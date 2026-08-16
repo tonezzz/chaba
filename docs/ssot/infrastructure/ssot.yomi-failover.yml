@@ -9,6 +9,8 @@ primary:
     image: docker.io/pgvector/pgvector:pg16
     data_volume: /home/tony/.config/containers/postgres/data
     port: 5432
+    port_mapping: 127.0.0.1:5432:5432
+    port_mapping_note: 0.0.0.0:5432 conflicts with tailscale serve for 5432
     exposed_by: tailscale serve --bg --tcp 5432 127.0.0.1:5432
     dns_alias: postgre
     dns_target: 100.68.142.13
@@ -16,8 +18,12 @@ primary:
     container_runtime: podman
     image: docker.io/library/node:22-slim
     tailscale_serve: --bg --tcp 3000 127.0.0.1:3000
-    caddy_upstream: tony-dell:3000
+    caddy_upstream: 100.68.142.13:3000
     data_volume: /home/tony/.local/share/yomi
+    env:
+      POSTGRES_HOST: postgre
+      POSTGRES_PORT: 5432
+      REDIS_URL: redis://100.75.102.88:6379
   services:
     - yomi-api.service
     - yomi-update-all.timer
@@ -56,17 +62,18 @@ failover:
 
 health_checks:
   - name: yomi-api on tony-dell
-    command: curl -s http://tony-dell:3000/api/yomi/health
+    command: curl -s http://100.68.142.13:3000/api/yomi/health
     expect: ok=true
   - name: postgre resolves to tony-dell
     command: resolvectl query postgre
     expect: 100.68.142.13
   - name: caddy proxy
-    command: curl -s http://tony-omen:8080/api/yomi/health
+    command: curl -s http://100.75.102.88:8080/api/yomi/health
     expect: ok=true
 
 notes:
   - Backup is not streaming replication; RPO is up to 24 hours.
   - The failover script is intentionally manual because DNS/ Caddy changes require a decision.
   - The GEMINI_API_KEY is stored only in /home/tony/.config/systemd/user/yomi-api.service on tony-dell and tony-omen and is not committed.
-  - mcp-health and Yomi GPU/Weaviate dependencies remain on tony_omen and are still reachable over the tailnet.
+  - mcp-health, Redis, and Yomi GPU/Weaviate dependencies remain on tony_omen and are still reachable over the tailnet.
+  - resolvectl query postgre requires systemd-resolved to use the tony-dell dnsmasq for the postgre alias.
