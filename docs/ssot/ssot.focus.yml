@@ -194,7 +194,10 @@ sections:
       importance: 6
       complication: 5
   - label: Tailscale Funnel 404 and healthcheck
-    text: User reports https://tony-dell.taila0626a.ts.net/ returns 404. Curl from tony-omen returns 200 for the same URL, /apps/tailscale-funnel/, and /mcp-savings.json, so the failure may be client-specific or cache-related. Investigate root path handling, verify expected landing/health endpoint, and add a health check for the Funnel root and mcp endpoints in SSOT health definitions.
+    text: User reports https://tony-dell.taila0626a.ts.net/ returns 404. Curl from tony-omen returns 200 for the same URL,
+      /apps/tailscale-funnel/, and /mcp-savings.json, so the failure may be client-specific or cache-related. Investigate
+      root path handling, verify expected landing/health endpoint, and add a health check for the Funnel root and mcp endpoints
+      in SSOT health definitions.
     branch: tony-dell
     status: active
     priority: high
@@ -773,6 +776,24 @@ sections:
     - focus
     - ssot
     - session-router
+    - completed
+  - label: Tailscale Funnel 404 and healthcheck
+    text: User reports https://tony-dell.taila0626a.ts.net/ returns 404. Curl from tony-omen returns 200 for the same URL,
+      /apps/tailscale-funnel/, and /mcp-savings.json, so the failure may be client-specific or cache-related. Investigate
+      root path handling, verify expected landing/health endpoint, and add a health check for the Funnel root and mcp endpoints
+      in SSOT health definitions.
+    date: '2026-08-16'
+    duration: 1 session
+    outcome: 'Completed subtasks: Reproduce the 404 from different clients and caches, Verify tailscale serve / Funnel root
+      path configuration on tony-dell, Add a landing/health endpoint for the Funnel root, Add SSOT health checks for Funnel
+      root and mcp endpoints'
+    tags:
+    - tailscale
+    - funnel
+    - tony-dell
+    - health-check
+    - 404
+    - mcp-debug
     - completed
 config:
   version: 2
