@@ -1,0 +1,98 @@
+title: Technical Decisions
+subtitle: Record of significant design trade-offs and the reasoning behind them
+icon: ⚖️
+version: 1
+
+overview:
+  purpose: |
+    Keep a durable, searchable record of why a particular design or implementation
+    choice was made, what options were considered, and what the consequences were.
+    This is not a discussion log; it is a concise decision record that other SSOTs
+    can reference.
+  scope:
+    - Cross-cutting architecture choices
+    - Security and deployment trade-offs
+    - Tooling and host selection decisions
+    - Focus and workflow policy changes
+  out_of_scope:
+    - Routine bug fixes with no design options
+    - Focus history (see ssot.focus.yml)
+    - Session notes (see ssot.focus.sessions.yml)
+
+decision_schema:
+  required:
+    - id
+    - date
+    - title
+    - context
+    - options
+    - chosen
+    - reasoning
+    - consequences
+  optional:
+    - status
+    - participants
+    - related
+    - owner
+    - review_date
+
+decision:
+  id: kebab-case unique id
+  date: YYYY-MM-DD
+  title: short summary
+  status: proposed | accepted | deprecated | superseded
+  context: why the decision was needed
+  options:
+    - label: short name
+      pros: [list]
+      cons: [list]
+  chosen: the chosen option label
+  reasoning: why the chosen option won
+  consequences:
+    - immediate effects
+    - future work or follow-up
+  related:
+    - ssot or script ids
+
+decisions:
+  - id: mcp-debug-cors-proxy
+    date: '2026-08-16'
+    title: How to serve live mcp-savings.json to the HTTPS chaba.h3 page
+    status: accepted
+    context: |
+      The chaba.h3 page is served over HTTPS. Browsers block the public page from
+      fetching the tony-omen/tony-dell CORS HTTP endpoint (mixed-content and .local
+      mDNS resolution issues). The report must still refresh without a full page
+      reload.
+    options:
+      - label: HTTPS CORS endpoint on tony-dell
+        pros: [simple fetch from the page, no server-side proxy]
+        cons: [requires TLS termination and certificate on tony-dell, opens tony-dell port to HTTPS]
+      - label: Same-origin PHP proxy on chaba.h3
+        pros: [avoids mixed-content, hides upstream HTTP URL from browser, fast to deploy, falls back to cached snapshot]
+        cons: [adds PHP dependency, one more network hop, proxy must be maintained]
+      - label: Disable live URL until a secure endpoint is available
+        pros: [no mixed-content risk, no extra code]
+        cons: [page never shows live data, must regenerate and commit snapshot manually]
+    chosen: Same-origin PHP proxy on chaba.h3
+    reasoning: |
+      The PHP proxy gives the page live data without waiting for TLS infrastructure
+      on tony-dell. It keeps the upstream HTTP endpoint inside the server network
+      and lets the browser make a same-origin HTTPS request. A cached snapshot
+      fallback means the page still renders if tony-dell is unreachable. The proxy
+      can be replaced by a direct HTTPS endpoint later without changing the public
+      contract because callers use /api/mcp-savings.php.
+    consequences:
+      - chaba-h3/public/api/mcp-savings.php fetches http://100.68.142.13:9100/mcp-savings.json
+      - app.js sets LIVE_DATA_URL to "/api/mcp-savings.php"
+      - CORS server remains on tony-dell for now
+      - Future option to add TLS to tony-dell and switch the proxy upstream
+    related:
+      - docs/ssot/infrastructure/ssot.mcp-debug.cors.yml
+      - chaba-h3/public/api/mcp-savings.php
+      - chaba-h3/public/apps/docs/mcp_debug/app.js
+
+related_files:
+  - docs/ssot/ssot.focus.decisions.yml
+  - docs/ssot/ssot.focus.sessions.yml
+  - docs/ssot/infrastructure/ssot.mcp-focus.yml

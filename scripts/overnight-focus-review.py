@@ -9,7 +9,7 @@ REPO = Path(__file__).resolve().parent.parent
 
 
 def run(relative_args):
-    cmd = [sys.executable] + [str(REPO / a) for a in relative_args]
+    cmd = [sys.executable, str(REPO / relative_args[0])] + relative_args[1:]
     print(f"[overnight] {relative_args[0]}")
     result = subprocess.run(cmd, cwd=REPO, text=True, capture_output=True)
     if result.stdout:
