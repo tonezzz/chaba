@@ -1,0 +1,35 @@
+title: Focus Inbox Item
+subtitle: TCP/IP link monitoring with auto-scan and safe fix
+icon: inbox
+
+focus:
+  label: TCP/IP link monitoring with auto-scan and safe fix
+  text: Watch reachability to tony_omen, tony_dell, and macbook. On consecutive misses, scan and apply safe fixes, escalate to a focus-inbox alert if unresolved.
+  priority: medium
+  status: draft
+  tags:
+    - monitoring
+    - network
+    - mcp-health
+    - automation
+    - focus
+  missing_info:
+    - Should the monitor run as a systemd timer or inside mcp-health?
+    - Which address types to prefer? (Tailscale IP, .local, Magic DNS)
+    - Which fix actions are allowed automatically vs require user confirmation?
+    - Where should scan/fix logs live? (ssot.health.yml, reports, or a new ssot.link-monitor.yml?)
+  subtasks:
+    - label: Create ssot.link-monitor.yml schema
+      status: not_started
+    - label: Implement scripts/mcp-link-monitor.py
+      status: not_started
+    - label: Add systemd service/timer for periodic checks
+      status: not_started
+    - label: Wire scan/fix output into focus-inbox creation
+      status: not_started
+    - label: Add IP-drift detection and safe SSOT update path
+      status: not_started
+
+source:
+  session: 2026-08-16
+  date: 2026-08-16
