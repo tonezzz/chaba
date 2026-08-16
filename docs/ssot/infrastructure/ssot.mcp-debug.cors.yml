@@ -1,0 +1,55 @@
+title: MCP Debug CORS Endpoint
+subtitle: HTTP endpoint serving mcp-savings.json to the chaba.h3 web page
+icon: 🌐
+version: 1
+
+overview:
+  purpose: Expose a read-only CORS endpoint on tony_omen so the chaba.h3 MCP Debug page can refresh the latest savings report.
+  source: scripts/mcp_debug/http_server.py
+  service: ~/.config/systemd/user/mcp-debug-cors.service
+
+endpoint:
+  host: 0.0.0.0
+  port: 9100
+  path: /mcp-savings.json
+  cors:
+    allow_origin: "*"
+    allow_methods: "GET, OPTIONS"
+    allow_headers: "Content-Type"
+
+addressing:
+  note: The chaba.h3 page cannot resolve .local mDNS from a public browser. Use a Tailscale IP or Magic DNS name.
+  preferred:
+    - http://100.75.102.88:9100/mcp-savings.json
+    - http://tony-omen.taila0626a.ts.net:9100/mcp-savings.json
+  avoid:
+    - http://tony-omen.local:9100/mcp-savings.json
+
+resource_policy:
+  - mcp_report(format="json") is expensive because it runs all vetted commands on all hosts.
+  - The endpoint MUST NOT run mcp_report on every HTTP request.
+  - Implement a cache with a refresh interval (default 60s).
+  - Serve stale cached JSON on each request; refresh in the background or on a timer.
+  - Provide a cache-buster or ?refresh=1 endpoint for on-demand regeneration, rate-limited to once per cache interval.
+
+suggested_cache_implementation:
+  refresh_interval: 60
+  background_refresh: true
+  headers:
+    Cache-Control: "public, max-age=60"
+  on_refresh:
+    - run mcp_report(format="json", save=false)
+    - store report string in memory
+    - serve from memory until next refresh
+  concurrency: single in-flight refresh; reject overlapping refresh requests
+
+security:
+  - Expose only pre-generated mcp-savings.json.
+  - Do not allow arbitrary command execution via the HTTP endpoint.
+  - Bind to 0.0.0.0 only when needed; consider 127.0.0.1 + a reverse proxy for stricter control.
+
+related_files:
+  - docs/ssot/infrastructure/ssot.mcp-debug.reports.yml
+  - docs/ssot/infrastructure/ssot.link-monitor.yml
+  - scripts/mcp_debug/http_server.py
+  - public/apps/docs/mcp_debug/app.js
