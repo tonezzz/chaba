@@ -1,0 +1,113 @@
+title: MCP Debug File Bridge
+subtitle: Auditable remote file get/put via mcp_debug
+icon: file-transfer
+version: 1
+
+tools:
+  mcp_get_file:
+    description: Fetch a remote file and return it base64-encoded with metadata.
+    input:
+      host: string from HOSTS
+      path: absolute or home-relative file path
+      max_bytes: integer, default 65536, hard cap 262144
+    output:
+      ok: boolean
+      path: the requested path
+      size: bytes read
+      truncated: true if file was larger than max_bytes
+      encoding: base64
+      content_base64: base64 string when ok
+      error: string when not ok
+    transport: |
+      For each host, run a remote command that is safe and small:
+      - If the path is a directory, fail.
+      - If the file is larger than max_bytes, read only the first max_bytes bytes and set truncated=true.
+      - Encode the bytes with base64 and write to stdout.
+      For Linux, use `head -c N < path | base64 -w0` or `base64 -w0 <(head -c N path)`.
+      For macOS, use `base64 -b 0` with `head -c`.
+    security:
+      - Vet the resolved absolute path against the host's allowed_path_prefixes.
+      - Reject paths containing .. or that escape the allowed prefix.
+      - Reject symlinks that point outside an allowed prefix.
+      - Always fail closed (deny if vetting cannot be performed).
+  mcp_put_file:
+    description: Write a base64-encoded blob to a remote path after allowlist vetting.
+    input:
+      host: string from HOSTS
+      path: target absolute or home-relative file path
+      content_base64: base64 string
+      mode: octal string, default "644"
+      overwrite: boolean, default false
+    output:
+      ok: boolean
+      path: the resolved target path
+      bytes_written: integer
+      error: string when not ok
+    transport: |
+      1. Vet the target directory against allowed_path_prefixes.
+      2. If overwrite=false and the target exists, fail.
+      3. Decode base64 locally and write the bytes to a temporary file on the remote host.
+      4. Move the temp file into place.
+      5. Set the requested mode.
+    security:
+      - Vet the target directory (resolved absolute) against allowed_path_prefixes.
+      - Reject paths containing .. or that escape the allowed prefix.
+      - Reject symlinks for the target or any intermediate directory outside an allowed prefix.
+      - overwrite=false by default; writes outside the allow-list require explicit confirmation.
+      - All writes are logged with host, path, bytes, and mode.
+  mcp_clipboard_get:
+    description: Read the host clipboard. Experimental and disabled by default.
+    input:
+      host: string from HOSTS
+    output:
+      ok: boolean
+      text: clipboard text when ok
+      error: string when not ok
+    transport: macOS `pbpaste`, Linux `xclip -o -selection clipboard` or `xsel -b` or `wl-paste`.
+    security:
+      - Requires host.clipboard=true opt-in.
+      - Never called automatically.
+  mcp_clipboard_set:
+    description: Write text to the host clipboard. Experimental and disabled by default.
+    input:
+      host: string from HOSTS
+      text: string
+    output:
+      ok: boolean
+      error: string when not ok
+    transport: macOS `pbcopy`, Linux `xclip -selection clipboard` or `xsel -b` or `wl-copy`.
+    security:
+      - Requires host.clipboard=true opt-in.
+      - Never called automatically.
+
+limits:
+  max_bytes:
+    default: 65536
+    hard: 262144
+  allowed_path_prefixes:
+    tony_omen:
+    - /home/tony/.local
+    - /home/tony/.config
+    - /home/tony/CascadeProjects
+    - /tmp
+    - /var/log
+    - /home/tony/var
+    tony_dell:
+    - /home/tony/.local
+    - /home/tony/.config
+    - /home/tony/CascadeProjects
+    - /tmp
+    - /home/tony/var
+    - /var/log
+    macbook:
+    - /Users/kkkakk/.local
+    - /Users/kkkakk/.config
+    - /Users/kkkakk/CascadeProjects
+    - /tmp
+    - /var/log
+  clipboard:
+    enabled: false
+
+logging:
+  destination: docs/ssot/ssot.focus.decisions.yml
+  note: File bridge calls are appended to the decisions log for audit; include action, host, path, size, and result.

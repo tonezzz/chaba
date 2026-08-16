@@ -17,6 +17,8 @@ from .tools import (
     mcp_gpu,
     mcp_health,
     mcp_adaptive,
+    mcp_get_file,
+    mcp_put_file,
     mcp_preset_list,
     mcp_preset_run,
 )
@@ -196,6 +198,34 @@ def handle_tools_list(id_):
             },
         },
         {
+            "name": "mcp_get_file",
+            "description": "Fetch a remote file as base64 with size and truncation metadata.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "host": {"type": "string", "enum": list(HOSTS.keys()), "description": "Target host"},
+                    "path": {"type": "string", "description": "Remote file path to read"},
+                    "max_bytes": {"type": "integer", "description": "Maximum bytes to read", "default": 65536},
+                },
+                "required": ["host", "path"],
+            },
+        },
+        {
+            "name": "mcp_put_file",
+            "description": "Write base64 content to a remote path after allowlist vetting.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "host": {"type": "string", "enum": list(HOSTS.keys()), "description": "Target host"},
+                    "path": {"type": "string", "description": "Remote file path to write"},
+                    "content_base64": {"type": "string", "description": "Base64-encoded content"},
+                    "mode": {"type": "string", "description": "File mode (octal)", "default": "644"},
+                    "overwrite": {"type": "boolean", "description": "Allow overwriting existing file", "default": False},
+                },
+                "required": ["host", "path", "content_base64"],
+            },
+        },
+        {
             "name": "mcp_preset_list",
             "description": "List available multi-host diagnostic presets.",
             "inputSchema": {
@@ -340,6 +370,19 @@ def handle_tools_call(id_, params):
         if not host or not command:
             return {"jsonrpc": "2.0", "id": id_, "error": {"code": -32602, "message": "host and command are required"}}
         output = mcp_adaptive(host, command)
+    elif name == "mcp_get_file":
+        p = arguments.get("path")
+        if not host or not p:
+            return {"jsonrpc": "2.0", "id": id_, "error": {"code": -32602, "message": "host and path are required"}}
+        result = mcp_get_file(host, p, max_bytes=arguments.get("max_bytes"))
+        output = json.dumps(result, separators=(",", ":"))
+    elif name == "mcp_put_file":
+        p = arguments.get("path")
+        b = arguments.get("content_base64")
+        if not host or not p or not b:
+            return {"jsonrpc": "2.0", "id": id_, "error": {"code": -32602, "message": "host, path, and content_base64 are required"}}
+        result = mcp_put_file(host, p, b, mode=arguments.get("mode", "644"), overwrite=arguments.get("overwrite", False))
+        output = json.dumps(result, separators=(",", ":"))
     elif name == "mcp_preset_list":
         result = mcp_preset_list()
         output = json.dumps(result, separators=(",", ":"))

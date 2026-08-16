@@ -15,7 +15,7 @@ def _is_local(host):
     return current in (host, h.get("hostname"), h.get("name"))
 
 
-def run_on_host(host, command, compact):
+def run_on_host(host, command, compact, shell=False):
     if host not in HOSTS:
         return {"ok": False, "error": f"unknown host: {host}", "available_hosts": list(HOSTS.keys())}
     h = HOSTS[host]
@@ -23,7 +23,7 @@ def run_on_host(host, command, compact):
         return {"ok": False, "error": f"compact mcp_debug not supported for host: {host}", "host": host, "rc": 1, "out": "", "err": ""}
     mcp_debug = h.get("mcp_debug_path", "/home/tony/.local/bin/mcp-debug")
 
-    if not compact:
+    if not compact and not shell:
         base = shlex.split(command)[0]
         base_name = base.split("/")[-1]
         if base_name not in RAW_PREFIXES:
@@ -33,7 +33,7 @@ def run_on_host(host, command, compact):
         if compact:
             argv = [mcp_debug] + shlex.split(command)
         else:
-            argv = shlex.split(command)
+            argv = ["bash", "-c", command]
         proc = subprocess.run(argv, capture_output=True, text=True, timeout=300)
     else:
         ssh = ["ssh", "-o", "StrictHostKeyChecking=no", "-o", "ServerAliveInterval=60", "-o", "ServerAliveCountMax=3", "-o", "ConnectTimeout=5", "-o", "BatchMode=yes"]

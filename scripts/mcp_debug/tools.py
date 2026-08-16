@@ -1,9 +1,12 @@
 """MCP Debug tool functions."""
+import base64
 import difflib
 import json
+import os
 import shlex
+import time
 import yaml
-from .config import HOSTS, DEBUG_COMMANDS, PRESETS, SSOT, logger
+from .config import HOSTS, FILE_LIMITS, DEBUG_COMMANDS, PRESETS, SSOT, logger
 from .hosts import run_on_host
 
 
@@ -225,6 +228,150 @@ def mcp_adaptive(host, command):
     raw_result["h"] = host
     raw_result["adaptive"] = "raw_fallback"
     return json.dumps(raw_result, separators=(",", ":"))
+
+
+def _file_max_bytes(requested):
+    hard = FILE_LIMITS.get("max_bytes", {}).get("hard", 262144)
+    default = FILE_LIMITS.get("max_bytes", {}).get("default", 65536)
+    if requested is None:
+        return default
+    try:
+        n = int(requested)
+    except (TypeError, ValueError):
+        return default
+    return min(n, hard)
+
+
+def _allowed_prefixes(host):
+    return FILE_LIMITS.get("allowed_path_prefixes", {}).get(host, [])
+
+
+def _normalize_path(path):
+    if not path:
+        return None
+    path = os.path.expanduser(str(path))
+    if not path.startswith("/"):
+        path = os.path.abspath(path)
+    return path
+
+
+def _check_path_allowed(host, path):
+    path = _normalize_path(path)
+    if path is None:
+        return None, "path is required"
+    if ".." in path:
+        return None, "path contains '..'"
+    for prefix in _allowed_prefixes(host):
+        expanded = _normalize_path(prefix)
+        if not expanded:
+            continue
+        if path == expanded or path.startswith(expanded + "/"):
+            return path, None
+    return None, f"path not in allowed prefixes for {host}"
+
+
+def _realpath_check(host, path):
+    """Use readlink -f on the remote host to resolve symlinks; then vet the target."""
+    real = run_on_host(host, f"readlink -f {shlex.quote(path)} || echo {shlex.quote(path)}", compact=False)
+    if not real.get("ok") or not real.get("out"):
+        return path
+    resolved = real.get("out").strip().splitlines()[0]
+    return _normalize_path(resolved) if resolved.startswith("/") else path
+
+
+def mcp_get_file(host, path, max_bytes=None):
+    if host not in HOSTS:
+        return {"ok": False, "error": f"unknown host: {host}", "path": path}
+    allowed, err = _check_path_allowed(host, path)
+    if err:
+        return {"ok": False, "error": err, "path": path}
+
+    # Resolve symlinks and ensure the target is also allowed.
+    real_path = _realpath_check(host, allowed)
+    allowed, err = _check_path_allowed(host, real_path)
+    if err:
+        return {"ok": False, "error": err, "path": path}
+
+    size = _file_max_bytes(max_bytes)
+    # Check it is a regular file and get exact size before reading.
+    stat = run_on_host(host, f"if [ -f {shlex.quote(allowed)} ]; then stat -c%s {shlex.quote(allowed)}; elif [ -d {shlex.quote(allowed)} ]; then echo 'dir'; else echo 'missing'; fi", compact=False, shell=True)
+    if not stat.get("ok"):
+        return {"ok": False, "error": stat.get("err", "stat failed"), "path": path}
+    status = stat.get("out", "").strip()
+    if status == "dir":
+        return {"ok": False, "error": "path is a directory", "path": path}
+    if status == "missing":
+        return {"ok": False, "error": "file not found", "path": path}
+    try:
+        file_size = int(status)
+    except ValueError:
+        file_size = size
+
+    read_size = min(file_size, size)
+    base64_cmd = f"head -c {read_size} {shlex.quote(allowed)} | base64 -w0 2>/dev/null || head -c {read_size} {shlex.quote(allowed)} | base64"
+    result = run_on_host(host, base64_cmd, compact=False, shell=True)
+    if not result.get("ok"):
+        return {"ok": False, "error": result.get("err", "read failed"), "path": path}
+    b64 = result.get("out", "").strip()
+    try:
+        decoded = base64.b64decode(b64)
+    except Exception as e:
+        return {"ok": False, "error": f"base64 decode failed: {e}", "path": path}
+    return {
+        "ok": True,
+        "path": allowed,
+        "size": len(decoded),
+        "truncated": file_size > size,
+        "encoding": "base64",
+        "content_base64": b64,
+    }
+
+
+def mcp_put_file(host, path, content_base64, mode="644", overwrite=False):
+    if host not in HOSTS:
+        return {"ok": False, "error": f"unknown host: {host}", "path": path}
+    allowed, err = _check_path_allowed(host, path)
+    if err:
+        return {"ok": False, "error": err, "path": path}
+
+    target_dir = os.path.dirname(allowed) or "/"
+    dir_check = run_on_host(host, f"test -d {shlex.quote(target_dir)} && readlink -f {shlex.quote(target_dir)}", compact=False, shell=True)
+    if not dir_check.get("ok") or not dir_check.get("out"):
+        return {"ok": False, "error": "target directory does not exist or is not allowed", "path": path}
+    real_dir = _normalize_path(dir_check.get("out").strip().splitlines()[0])
+    if _check_path_allowed(host, real_dir)[1]:
+        return {"ok": False, "error": "resolved target directory is not in allowed prefixes", "path": path}
+
+    if not overwrite:
+        exists = run_on_host(host, f"test -e {shlex.quote(allowed)} && echo yes || echo no", compact=False, shell=True)
+        if exists.get("ok") and exists.get("out", "").strip() == "yes":
+            return {"ok": False, "error": "file exists and overwrite=false", "path": allowed}
+
+    try:
+        data = base64.b64decode(content_base64)
+    except Exception as e:
+        return {"ok": False, "error": f"invalid content_base64: {e}", "path": path}
+
+    b64 = base64.b64encode(data).decode()
+    max_arg = 200000
+    if len(b64) > max_arg:
+        return {"ok": False, "error": f"payload exceeds safe ssh argument size ({max_arg})", "path": path}
+
+    temp = f"/tmp/mcp-put-{host}-{int(time.time() * 1000)}.tmp"
+    script = (
+        f"echo {shlex.quote(b64)} | base64 -d > {shlex.quote(temp)} && "
+        f"chmod {shlex.quote(str(mode))} {shlex.quote(temp)} && "
+        f"mv -f {shlex.quote(temp)} {shlex.quote(allowed)}"
+    )
+    result = run_on_host(host, script, compact=False, shell=True)
+    if not result.get("ok"):
+        return {"ok": False, "error": result.get("err", "write failed"), "path": allowed}
+    return {
+        "ok": True,
+        "path": allowed,
+        "bytes_written": len(data),
+        "mode": mode,
+    }
 
 def mcp_preset_list():
     return {
