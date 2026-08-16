@@ -140,12 +140,15 @@ sections:
     - tony-omen
     subtasks:
     - label: Reproduce and confirm the mixed-content error in browser dev tools
-      status: not_started
+      status: completed
     - label: Choose and implement the fix (HTTPS endpoint, proxy path, or disable live)
-      status: not_started
+      status: completed
     - label: Verify the page loads without mixed-content warnings and shows live or cached data
       status: not_started
-    request_log: []
+    request_log:
+    - date: '2026-08-16'
+      request: When click refresh it takes long time to update. Can we do ajax style update for each item so we don't have to do a page reload? what is the gap for doing that?
+      matched_to: Implemented skeleton, fetch timeout, and disabled the broken HTTP live URL to avoid mixed-content; per-item live endpoints require a same-origin proxy and allowlisted per-command API.
     branch: chaba-h3
     source: /home/tony/CascadeProjects/chaba/docs/ssot/focus-inbox/processed/2026-08-16-045950-mcp-debug-h3-mixed-content.yml
 - title: Quick Wins
