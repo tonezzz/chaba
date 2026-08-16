@@ -1,0 +1,80 @@
+title: TradeCanvas UI State SSOT
+subtitle: Canonical definition of persistable UI state across TradeCanvas pages
+status: active
+
+# Scope
+# Defines what user selections and view state should be remembered across
+# page reloads / sessions, and the keys used for localStorage persistence.
+# This SSOT is the contract that the JS state manager and the SSOT config
+# both follow; mismatches should be treated as bugs.
+
+persistence:
+  mechanism: localStorage
+  scope: "same-origin"
+
+state_schema:
+  version: "1"
+  fields:
+    - key: trade-canvas-selected-currency
+      label: "Selected Currency / Symbol"
+      type: string
+      default: "THB"
+      allowed_values_ref: "ssot.ui.compare-family.yml#currency_selector.currencies"
+      pages:
+        - compare2.html
+        - compare.html
+        - index.html
+      notes: |
+        Restored before the chart loader is created. The CurrencySelector
+        must also render with this value, not a hard-coded default.
+
+    - key: trade-canvas-selected-timeframe
+      label: "Selected Timeframe"
+      type: string
+      default: "1Y"
+      allowed_values:
+        - "1D"
+        - "1W"
+        - "1M"
+        - "3M"
+        - "6M"
+        - "1Y"
+        - "5Y"
+        - "ALL"
+      pages:
+        - compare2.html
+      notes: |
+        Written when the user changes the timeframe selector.
+
+    - key: trade-canvas-chart-type
+      label: "Chart Type"
+      type: string
+      default: "candlestick"
+      allowed_values:
+        - candlestick
+        - line
+        - area
+      pages:
+        - index.html
+      status: candidate
+      notes: |
+        Not yet implemented. Add when chart-type controls are wired to the
+        shared ChartLoader.
+
+    - key: trade-canvas-active-indicators
+      label: "Active Chart Indicators"
+      type: array
+      default: []
+      status: candidate
+      notes: |
+        Not yet implemented. Intended for SMA/EMA/RSI/MACD/BB toggles.
+
+validation:
+  - Every page that reads a key must declare it in this SSOT.
+  - Default values must match the page-level SSOT fallback defaults.
+  - Selectors must render with the stored value before chart init.
+
+recent_changes:
+  - date: 2026-08-15
+    description: "Created ssot.ui.state.yml to canonicalize localStorage keys and selection defaults"
+    impact: "Single contract for UI state persistence"
