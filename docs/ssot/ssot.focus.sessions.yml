@@ -55,6 +55,23 @@ example:
     - Monitor whether 60s is too long for live CORS data
     next_action: Continue with mcp_focus implementation or activate next backlog item
 
+sessions:
+  - date: '2026-08-16'
+    session: chaba-2026-08-16
+    focus: TCP/IP link monitoring with auto-scan and safe fix
+    source: continue
+    plan:
+      - Implement scripts/mcp-link-monitor.py
+      - Update ssot.index.yml with new SSOTs
+      - Add 60s cache to scripts/mcp_debug/http_server.py
+    done:
+      - Implemented mcp-link-monitor.py with cheap ICMP/TCP probes, state machine, scan/fix/alert flow, and IP-drift detection
+      - Added ssot.host-roles.yml and related entries to ssot.index.yml
+      - Added 60s cached mcp-savings.json CORS endpoint with background refresh to mcp_debug/http_server.py
+    follow_up:
+      - Deploy mcp-link-monitor.py as a systemd user timer/service for periodic checks
+    next_action: Create and enable the mcp-link-monitor systemd units, or activate the next backlog focus
+
 related_files:
   - docs/ssot/ssot.focus.current.yml
   - docs/ssot/ssot.focus.yml
