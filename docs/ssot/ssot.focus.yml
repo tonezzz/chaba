@@ -367,6 +367,51 @@ sections:
     - monitoring
     - cleanup
     - completed
+  - label: Streamline focus-driven workflow
+    text: Improve the focus dispatcher, archive completed active items, auto-commit/push safe changes, suggest backlog when
+      empty, and document MCP/sub-agent/mcp-debug integration.
+    date: '2026-08-16'
+    duration: 1 session
+    outcome: 'Completed subtasks: Archive completed active items from ssot.focus.yml and ssot.focus.current.yml, Add auto-commit
+      and optional push for safe focus-dispatcher changes, Suggest the highest-priority backlog item when no active or inbox
+      focus, Document MCP tool integration for focus intake and monitoring, Design sub-agent execution from reports/NEXT_FOCUS.md,
+      Extend mcp-debug with an mcp_focus tool'
+    tags:
+    - focus
+    - workflow
+    - automation
+    - mcp
+    - subagents
+    - completed
+  - label: Service Failures Detected
+    text: Multiple services failed health checks during the overnight assessment. mcp-health get_health_status shows 10 services
+      as unknown because curl health checks to tony-omen.local endpoints timed out. 23 services are healthy and 0 are error
+      or degraded, so these are not hard failures. The issue is likely mDNS/.local resolution or the configured health-check
+      endpoints.
+    date: '2026-08-16'
+    duration: 1 session
+    outcome: 'Completed subtasks: Identify failing services from overnight assessment, Determine root cause and severity,
+      Apply fixes or document acceptable state'
+    tags:
+    - auto-generated
+    - service-health
+    - overnight-assessment
+    - chaba
+    - completed
+  - label: Security Vulnerabilities Found
+    text: Overnight security scan found vulnerabilities requiring immediate attention. Reviewed the latest overnight assessment
+      report (overnight-assessment-20260816-020001.md); no security, CVE, HIGH, or CRITICAL findings were found. The auto-generated
+      alert has no actionable scan output, so the accepted state is no immediate patches required.
+    date: '2026-08-16'
+    duration: 1 session
+    outcome: 'Completed subtasks: Locate and review overnight security scan output, Triage and score vulnerabilities, Apply
+      patches or document accepted risk'
+    tags:
+    - auto-generated
+    - security
+    - overnight-assessment
+    - chaba
+    - completed
 config:
   version: 2
   last_updated: '2026-08-16'

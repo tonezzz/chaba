@@ -411,6 +411,34 @@ def mcp_report(hosts=None, save=False):
     }
 
 
+def mcp_focus():
+    focus_current = REPO_DIR / "docs" / "ssot" / "ssot.focus.current.yml"
+    if not focus_current.exists():
+        return {"ok": False, "error": "ssot.focus.current.yml not found"}
+    with open(focus_current) as f:
+        doc = yaml.safe_load(f)
+    active = {}
+    for sec in doc.get("sections", []):
+        if sec.get("title") in ("Active Shared Focus", "Active Branch Focus"):
+            for item in sec.get("items", []):
+                if not item or item.get("status") != "active":
+                    continue
+                section = sec.get("title")
+                if section == "Active Shared Focus":
+                    active["shared"] = item
+                else:
+                    active["branch"] = item
+    return {
+        "ok": True,
+        "active": active,
+        "quick_wins": [
+            i for s in doc.get("sections", [])
+            if s.get("title") == "Quick Wins"
+            for i in s.get("items", [])
+        ],
+    }
+
+
 def handle_initialize(id_):
     return {
         "jsonrpc": "2.0",
@@ -601,6 +629,14 @@ def handle_tools_list(id_):
                 },
             },
         },
+        {
+            "name": "mcp_focus",
+            "description": "Return the current active focus from ssot.focus.current.yml and any quick wins.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {},
+            },
+        },
     ]
     return {"jsonrpc": "2.0", "id": id_, "result": {"tools": tools}}
 
@@ -694,6 +730,9 @@ def handle_tools_call(id_, params):
         output = json.dumps(result, separators=(",", ":"))
     elif name == "mcp_report":
         result = mcp_report(arguments.get("hosts"), save=arguments.get("save", False))
+        output = json.dumps(result, separators=(",", ":"))
+    elif name == "mcp_focus":
+        result = mcp_focus()
         output = json.dumps(result, separators=(",", ":"))
     else:
         return {"jsonrpc": "2.0", "id": id_, "error": {"code": -32601, "message": f"unknown tool: {name}"}}
