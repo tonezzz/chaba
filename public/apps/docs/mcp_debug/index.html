@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>MCP Debug Savings</title>
+  <link rel="stylesheet" href="/assets/tailwind.css">
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 0; }
+    body.bright { background-color: #f8fafc; color: #111827; }
+    table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: 0.85rem; }
+    th, td { border: 1px solid #e2e8f0; padding: 0.5rem; text-align: left; }
+    th { background: #f3f4f6; }
+    tr:nth-child(even) { background: #f9fafb; }
+    .negative { color: #dc2626; font-weight: 600; }
+    .totals { margin: 0.5rem 0 1.5rem; }
+  </style>
+</head>
+<body class="bg-bg text-gray-200 min-h-screen bright">
+  <div id="app-nav"></div>
+  <div id="app-subnav"></div>
+  <main class="max-w-7xl mx-auto px-4 py-8">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-4">
+      <h1 class="text-2xl font-bold">MCP Debug Savings Report</h1>
+      <div class="flex items-center gap-3">
+        <span id="status" class="text-sm text-gray-500"></span>
+        <button id="refresh" class="px-4 py-2 rounded text-white" style="background-color: #0a84ff; border: none; cursor: pointer;">
+          Refresh
+        </button>
+      </div>
+    </div>
+    <p class="text-gray-500 text-sm mb-6">
+      Data is a static snapshot from <code>mcp_report --format json</code>.
+      Refresh reloads the cached JSON; to update the numbers, regenerate the snapshot and push <code>data/mcp-savings.json</code>.
+    </p>
+    <div id="report"></div>
+  </main>
+  <script src="https://cdn.jsdelivr.net/npm/js-yaml@4.1.0/dist/js-yaml.min.js"></script>
+  <script src="/apps/nav.js"></script>
+  <script src="app.js"></script>
+  <script>
+    Promise.all([
+      fetch('/apps/apps.yml').then(r => r.text()),
+      fetch('/apps/docs/docs.yml').then(r => r.text())
+    ]).then(([appsText, docsText]) => {
+      const apps = jsyaml.load(appsText);
+      const docs = jsyaml.load(docsText);
+      document.getElementById('app-nav').innerHTML = ChabaNav.renderNav(apps.nav);
+      document.getElementById('app-subnav').innerHTML = ChabaNav.renderSubnav(docs.nav);
+    });
+  </script>
+</body>
+</html>
