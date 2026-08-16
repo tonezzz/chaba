@@ -65,25 +65,20 @@ auto_commit:
   - Auto-commit is disabled by default; enable by setting the variables in the systemd user service.
 
 schedule:
-  suggested_cron: "*/30 * * * * /home/tony/CascadeProjects/chaba/scripts/focus-dispatcher.py >> /home/tony/var/chaba/focus-dispatcher.log 2>&1"
-  suggested_systemd_user_timer: |
-    # Auto-commit/push is disabled by default. To enable hands-off operation, add
-    # the Environment lines below after user confirmation:
-    #
-    # ~/.config/systemd/user/focus-dispatcher.service
-    # [Service]
-    # Type=oneshot
-    # ExecStart=/home/tony/CascadeProjects/chaba/scripts/focus-dispatcher.py
-    # Environment="FOCUS_DISPATCHER_COMMIT=1"
-    # Environment="FOCUS_DISPATCHER_PUSH=1"
-    #
-    # ~/.config/systemd/user/focus-dispatcher.timer
-    # [Timer]
-    # OnCalendar=*-*-* *:00/30
-    # Persistent=true
-    #
-    # [Install]
-    # WantedBy=timers.target
+  every_30_minutes:
+    command: /home/tony/CascadeProjects/chaba/scripts/focus-dispatcher.py
+    purpose: Archive completed focuses, select the next active or inbox focus, and write reports/NEXT_FOCUS.md
+    cron: "*/30 * * * * /home/tony/CascadeProjects/chaba/scripts/focus-dispatcher.py >> /home/tony/var/chaba/focus-dispatcher.log 2>&1"
+  overnight_review:
+    command: /home/tony/CascadeProjects/chaba/scripts/overnight-focus-review.py
+    purpose: Generate health inbox drafts and update the next active focus sub-agent contract
+    cron: "0 3 * * * /home/tony/CascadeProjects/chaba/scripts/overnight-focus-review.py >> /home/tony/var/chaba/overnight-focus-review.log 2>&1"
+    systemd:
+      - ~/.config/systemd/user/focus-dispatcher-overnight.service
+      - ~/.config/systemd/user/focus-dispatcher-overnight.timer
+      - OnCalendar=*-*-* 03:00:00
+  auto_commit:
+    note: Set FOCUS_DISPATCHER_COMMIT=1 and FOCUS_DISPATCHER_PUSH=1 in the service unit to enable hands-off commit/push
 
 mcp_integration:
   - mcp-health: critical-failure or service-down events can create docs/ssot/focus-inbox/<service>-health.yml items.

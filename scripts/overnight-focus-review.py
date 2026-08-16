@@ -1,0 +1,36 @@
+#!/usr/bin/env python3
+"""Overnight focus review: generate health inbox drafts and update focus contracts."""
+import subprocess
+import sys
+from datetime import datetime
+from pathlib import Path
+
+REPO = Path(__file__).resolve().parent.parent
+
+
+def run(relative_args):
+    cmd = [sys.executable] + [str(REPO / a) for a in relative_args]
+    print(f"[overnight] {relative_args[0]}")
+    result = subprocess.run(cmd, cwd=REPO, text=True, capture_output=True)
+    if result.stdout:
+        print(result.stdout)
+    if result.stderr:
+        print(result.stderr, file=sys.stderr)
+    return result.returncode
+
+
+def main():
+    now = datetime.now().isoformat(timespec="seconds")
+    print(f"[overnight] starting at {now}")
+    rc = 0
+    rc |= run(["scripts/mcp-health-to-inbox.py"])
+    rc |= run(["scripts/focus-dispatcher.py", "--sub-agent"])
+    if rc:
+        print("[overnight] completed with errors")
+    else:
+        print("[overnight] completed")
+    return rc
+
+
+if __name__ == "__main__":
+    sys.exit(main())
