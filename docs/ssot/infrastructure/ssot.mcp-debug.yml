@@ -193,6 +193,7 @@ server:
   - mcp_env
   - mcp_gpu
   - mcp_health
+  - mcp_adaptive
   - mcp_preset_list
   - mcp_preset_run
   - mcp_report
@@ -553,6 +554,7 @@ workflow:
   default_tool: mcp_raw
   compact_when: savings_pct_chars > 0 on the target host
   vet_new_command: mcp_stats(host, command)
+  adaptive_tool: mcp_adaptive(host, command)
   recommended:
   - systemctl list-units
   - ps
