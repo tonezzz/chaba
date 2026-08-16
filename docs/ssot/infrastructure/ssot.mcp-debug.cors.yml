@@ -4,9 +4,9 @@ icon: 🌐
 version: 1
 
 overview:
-  purpose: Expose a read-only CORS endpoint on tony_omen so the chaba.h3 MCP Debug page can refresh the latest savings report.
+  purpose: Expose a read-only CORS endpoint on tony_dell so the chaba.h3 MCP Debug page can refresh the latest savings report.
   source: scripts/mcp_debug/http_server.py
-  service: ~/.config/systemd/user/mcp-debug-cors.service
+  service: ~/.config/systemd/user/mcp-debug-cors.service on tony-dell
 
 endpoint:
   host: 0.0.0.0
@@ -59,5 +59,7 @@ security:
 related_files:
   - docs/ssot/infrastructure/ssot.mcp-debug.reports.yml
   - docs/ssot/infrastructure/ssot.link-monitor.yml
+  - docs/ssot/infrastructure/ssot.host-roles.yml
   - scripts/mcp_debug/http_server.py
   - public/apps/docs/mcp_debug/app.js
+  - public/api/mcp-savings.php

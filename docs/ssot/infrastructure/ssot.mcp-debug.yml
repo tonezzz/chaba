@@ -2,6 +2,19 @@ title: MCP Debug
 subtitle: Multi-host compact debug output and remote execution
 icon: bug
 version: 1
+
+output_formats:
+  table_commands:
+    compact: csv_with_header
+    proxy_envelope:
+      ok: boolean
+      headers: list of strings
+      rows: list of string arrays
+    notes:
+      - CSV header row is included in the mcp_debug server output.
+      - The H3 PHP proxy wraps CSV into the proxy_envelope JSON for the JS app.
+      - Keep the existing keyed JSON compact format for non-table or hierarchical output.
+
 hosts:
   tony_omen:
     name: Tony Omen
