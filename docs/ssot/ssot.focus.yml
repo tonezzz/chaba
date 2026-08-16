@@ -638,6 +638,29 @@ sections:
     - automation
     - focus
     - completed
+  - label: Fix mcp_debug H3 page mixed-content (HTTP/HTTPS) error
+    text: 'The H3 page at https://chaba.h3.gizmo-thailand.com/apps/docs/mcp_debug/index.html fails to load live data because
+      app.js fetches http://tony-omen.local:9100/mcp-savings.json, which is blocked by browsers when the page is served over
+      HTTPS (mixed-content error). The page currently falls back to the cached data/mcp-savings.json snapshot, so the report
+      still renders, but the live tony-omen connection is unavailable and an error is logged. Decide whether to (a) serve
+      the tony-omen mcp-savings endpoint over HTTPS and update the CORS allowlist, (b) add an HTTPS CORS endpoint in the h3/proxy
+      layer, (c) use a relative/proxied path such as /api/mcp-savings.json inside app.js, or (d) remove the live URL until
+      a secure endpoint is available.
+
+      '
+    date: '2026-08-16'
+    duration: 1 session
+    outcome: 'Completed subtasks: Reproduce and confirm the mixed-content error in browser dev tools, Choose and implement
+      the fix (HTTPS endpoint, proxy path, or disable live), Verify the page loads without mixed-content warnings and shows
+      live or cached data'
+    tags:
+    - h3
+    - mcp-debug
+    - mixed-content
+    - https
+    - cors
+    - tony-omen
+    - completed
 config:
   version: 2
   last_updated: '2026-08-16'
