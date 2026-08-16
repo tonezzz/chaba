@@ -1,0 +1,63 @@
+title: Focus Sessions
+subtitle: Lightweight per-session plan and follow-up log
+icon: 📒
+version: 1
+
+overview:
+  purpose: |
+    Keep a chronological, low-noise record of what was planned, what was done, and what
+    needs follow-up for each focus session. This is not a duplicate of ssot.focus.yml
+    history; it is a short-term working memory for the assistant and the user.
+  scope: active and recently completed focuses only
+  max_in_memory: 10
+  archive_to: docs/ssot/ssot.focus.yml history section when a focus is archived
+
+principles:
+  - Append-only. Never rewrite past entries; create a new entry each session.
+  - One entry per session, tied to one focus by label.
+  - Skip empty fields. If there is no follow-up, omit it.
+  - No full duplication of ssot.focus.current.yml or ssot.focus.yml.
+  - Keep text terse; long artifacts belong in reports/ or KB.
+
+entry_schema:
+  date: ISO date of the session
+  session: optional session id
+  focus: label of the active focus being worked on
+  source: how the session started (e.g., user request, continue, dispatcher)
+  plan:
+    - concise bullet of what was planned to do
+  done:
+    - concise bullet of what was actually completed
+  follow_up:
+    - next step, unresolved question, or deferred work
+  next_action: one-line recommendation for the next session
+  kb_items:
+    - optional list of KB entries created or updated
+
+workflow:
+  - At session start, read the most recent session entry for the active focus to pick up follow_ups.
+  - If the user asks for a plan, create a new entry with plan filled in and done/follow_up empty.
+  - At session end, update done and follow_up in a new entry (do not edit the plan entry).
+  - The mcp_focus tool may read the latest follow_up when there is no explicit user request.
+  - The focus-dispatcher may append a summary entry after auto-activation.
+
+example:
+  - date: '2026-08-16'
+    focus: TCP/IP link monitoring with auto-scan and safe fix
+    source: continue
+    plan:
+    - Add 60s cache to mcp_debug/http_server.py
+    - Update ssot.index.yml
+    done:
+    - Added cache and background refresh
+    - Added ssot.index.yml entries
+    follow_up:
+    - Monitor whether 60s is too long for live CORS data
+    next_action: Continue with mcp_focus implementation or activate next backlog item
+
+related_files:
+  - docs/ssot/ssot.focus.current.yml
+  - docs/ssot/ssot.focus.yml
+  - docs/ssot/infrastructure/ssot.focus-dispatcher.yml
+  - docs/ssot/infrastructure/ssot.mcp-focus.yml
+  - docs/kb/
