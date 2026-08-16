@@ -51,6 +51,41 @@ tony-dell:
       - yomi-backup.timer
     status: implemented (2026-08-16)
     failover_plan: docs/ssot/infrastructure/ssot.yomi-failover.yml
+  mcp-debug-cors:
+    service: mcp-debug-cors.service
+    host: tony_dell
+    port: 9100
+    upstream_files:
+      - /mcp-savings.json
+      - /mcp-table.json
+    tailscale_funnel: https://tony-dell.taila0626a.ts.net
+    status: implemented (2026-08-13)
+  mcp-link-monitor:
+    service: mcp-link-monitor.service
+    host: tony_dell
+    purpose: TCP/IP reachability watchdog for tony-omen, tony-dell, macbook
+    status: implemented (2026-08-13)
+  playlived-dell:
+    service: playlived-dell.service
+    host: tony_dell
+    purpose: PlayLive browser automation on tony-dell
+    status: implemented (2026-08-13)
+  focus-dispatcher-overnight:
+    timer: focus-dispatcher-overnight.timer
+    host: tony_dell
+    purpose: Nightly focus/dispatch run
+    status: implemented (2026-08-13)
+  dnsmasq-postgre:
+    service: dnsmasq-postgre.service
+    host: tony_dell
+    port: 5353
+    purpose: User dnsmasq resolver for the postgre DNS alias
+    status: implemented (2026-08-13)
+  multi-wan:
+    ssot: docs/ssot/infrastructure/ssot.tony-dell-multi-wan.yml
+    host: tony_dell
+    purpose: Wired ADSL primary with Naris Wi-Fi ADSL backup
+    status: implemented (2026-08-13)
 
 tony-omen:
   llama-router:
