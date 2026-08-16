@@ -17,8 +17,8 @@ const __dirname = dirname(__filename);
 // PostgreSQL connection setup
 const { Pool } = pg;
 const pool = new Pool({
-  host: 'localhost',
-  port: 5432,
+  host: process.env.POSTGRES_HOST || 'localhost',
+  port: parseInt(process.env.POSTGRES_PORT, 10) || 5432,
   database: 'chaba',
   user: 'chaba',
   password: process.env.POSTGRES_PASSWORD || 'chabapass',
