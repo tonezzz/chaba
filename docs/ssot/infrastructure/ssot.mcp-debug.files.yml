@@ -110,6 +110,10 @@ limits:
     tony_dell: false
     macbook: true
 
+warnings:
+  - Headless Linux clipboard operations can hang if no X11/Wayland session or clipboard manager is running. The tools use `timeout -k 1 2` to avoid runaway `xclip` / `xsel` / `wl-copy` processes, but the default is disabled on tony-omen and tony-dell.
+  - macOS `pbpaste` / `pbcopy` do not require a display and are the safest clipboard target; macbook has `clipboard: true`.
+
 logging:
   destination: docs/ssot/ssot.focus.decisions.yml
   note: File bridge calls are appended to the decisions log for audit; include action, host, path, size, and result.

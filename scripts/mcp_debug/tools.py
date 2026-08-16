@@ -390,9 +390,9 @@ def mcp_clipboard_get(host):
     cmd = (
         "set -o pipefail; "
         "( pbpaste 2>/dev/null | base64 | tr -d '\\n' ) 2>/dev/null || "
-        "( timeout -k 1 2 xclip -o -selection clipboard 2>/dev/null | base64 | tr -d '\\n' ) 2>/dev/null || "
-        "( timeout -k 1 2 xsel -b 2>/dev/null | base64 | tr -d '\\n' ) 2>/dev/null || "
-        "( timeout -k 1 2 wl-paste 2>/dev/null | base64 | tr -d '\\n' ) 2>/dev/null || "
+        "( [ -n \"$DISPLAY\" ] && timeout -k 1 2 xclip -o -selection clipboard 2>/dev/null | base64 | tr -d '\\n' ) 2>/dev/null || "
+        "( [ -n \"$DISPLAY\" ] && timeout -k 1 2 xsel -b 2>/dev/null | base64 | tr -d '\\n' ) 2>/dev/null || "
+        "( [ -n \"$WAYLAND_DISPLAY\" ] && timeout -k 1 2 wl-paste 2>/dev/null | base64 | tr -d '\\n' ) 2>/dev/null || "
         "echo CLIPBOARD_UNAVAILABLE"
     )
     result = run_on_host(host, cmd, compact=False, shell=True)
@@ -427,9 +427,9 @@ def mcp_clipboard_set(host, text):
         "set -o pipefail; "
         "DATA=$(printf '%s' " + shlex.quote(b64) + " | base64 -d); "
         "( printf '%s' \"$DATA\" | pbcopy ) 2>/dev/null || "
-        "( printf '%s' \"$DATA\" | timeout -k 1 2 xclip -selection clipboard ) 2>/dev/null || "
-        "( printf '%s' \"$DATA\" | timeout -k 1 2 xsel -b ) 2>/dev/null || "
-        "( printf '%s' \"$DATA\" | timeout -k 1 2 wl-copy ) 2>/dev/null || "
+        "( [ -n \"$DISPLAY\" ] && printf '%s' \"$DATA\" | timeout -k 1 2 xclip -selection clipboard ) 2>/dev/null || "
+        "( [ -n \"$DISPLAY\" ] && printf '%s' \"$DATA\" | timeout -k 1 2 xsel -b ) 2>/dev/null || "
+        "( [ -n \"$WAYLAND_DISPLAY\" ] && printf '%s' \"$DATA\" | timeout -k 1 2 wl-copy ) 2>/dev/null || "
         "{ echo CLIPBOARD_UNAVAILABLE; exit 1; }"
     )
     result = run_on_host(host, cmd, compact=False, shell=True)
