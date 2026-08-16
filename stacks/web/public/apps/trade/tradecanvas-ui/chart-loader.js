@@ -55,6 +55,12 @@ class ChartLoader {
     async init() {
         console.log('ChartLoader initializing for', this.config.symbol);
 
+        const statusEl = document.getElementById('connection-status');
+        if (statusEl) {
+            statusEl.textContent = 'Loading';
+            statusEl.className = 'status';
+        }
+
         try {
             this.dataProvider = new ChartDataProvider({
                 basePrices: this.getBasePrices()
@@ -109,6 +115,25 @@ class ChartLoader {
     }
 
     updateUI() {
+        // Update connection status even when data is empty so the user
+        // sees whether the loader is working, empty, or on sample data.
+        const statusEl = document.getElementById('connection-status');
+        if (statusEl) {
+            if (this.isSampleData) {
+                statusEl.textContent = 'Sample Data';
+                statusEl.className = 'status disconnected';
+            } else if (this.loadedFromAPI) {
+                statusEl.textContent = 'API Data';
+                statusEl.className = 'status connected';
+            } else if (this.data.length > 0) {
+                statusEl.textContent = 'CSV Data';
+                statusEl.className = 'status connected';
+            } else {
+                statusEl.textContent = 'No Data';
+                statusEl.className = 'status disconnected';
+            }
+        }
+
         if (this.data.length === 0) return;
 
         const latestData = this.data[this.data.length - 1];
@@ -127,21 +152,6 @@ class ChartLoader {
             const changePercent = ((change / previousData.close) * 100).toFixed(2);
             priceChangeEl.textContent = `${change >= 0 ? '+' : ''}${changePercent}%`;
             priceChangeEl.className = change >= 0 ? 'positive' : 'negative';
-        }
-
-        // Update connection status.
-        const statusEl = document.getElementById('connection-status');
-        if (statusEl) {
-            if (this.isSampleData) {
-                statusEl.textContent = 'Sample Data';
-                statusEl.className = 'status disconnected';
-            } else if (this.loadedFromAPI) {
-                statusEl.textContent = 'API Data';
-                statusEl.className = 'status connected';
-            } else {
-                statusEl.textContent = 'CSV Data';
-                statusEl.className = 'status connected';
-            }
         }
 
         // Update summary stats.

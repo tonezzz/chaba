@@ -90,7 +90,8 @@ class CurrencySelector extends UIComponent {
 
         this.container.innerHTML = '';
         this.container.appendChild(select);
-        
+        select.value = this.selectedCurrency;
+
         this.selectElement = select;
         return select;
     }
@@ -183,7 +184,8 @@ class TimeframeSelector extends UIComponent {
 
         this.container.innerHTML = '';
         this.container.appendChild(select);
-        
+        select.value = this.selectedTimeframe;
+
         this.selectElement = select;
         return select;
     }
