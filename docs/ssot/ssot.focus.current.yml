@@ -79,31 +79,32 @@ sections:
   icon: active
   layout: list
   items:
-  - label: Live CORS endpoint for h3 mcp debug report
-    text: Expose tony-omen data so the chaba.h3 MCP Debug report page can refresh live results instead of relying on pushed
-      snapshots.
+  - label: TCP/IP link monitoring with auto-scan and safe fix
+    text: Watch reachability to tony_omen, tony_dell, and macbook. On consecutive misses, scan and apply safe fixes, escalate
+      to a focus-inbox alert if unresolved.
     status: active
     priority: medium
     started: '2026-08-16'
     estimated_duration: 1 session
     tags:
-    - mcp
-    - h3
-    - web
-    - cors
-    - tony-omen
-    - live-data
+    - monitoring
+    - network
+    - mcp-health
+    - automation
+    - focus
     subtasks:
-    - label: Choose endpoint implementation
+    - label: Create ssot.link-monitor.yml schema
       status: not_started
-    - label: Add CORS headers to serve mcp-savings.json
+    - label: Implement scripts/mcp-link-monitor.py
       status: not_started
-    - label: Update h3 app.js LIVE_DATA_URL
+    - label: Add systemd service/timer for periodic checks
       status: not_started
-    - label: Test live refresh from tony-omen
+    - label: Wire scan/fix output into focus-inbox creation
+      status: not_started
+    - label: Add IP-drift detection and safe SSOT update path
       status: not_started
     request_log: []
-    source: docs/ssot/focus-inbox/2026-08-16-mcp-debug-live-endpoint.yml
+    source: /home/tony/CascadeProjects/chaba/docs/ssot/focus-inbox/2026-08-16-tcp-ip-link-monitor.yml
 - title: Active Branch Focus
   icon: branch
   layout: list
