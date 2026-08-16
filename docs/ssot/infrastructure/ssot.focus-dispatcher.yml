@@ -9,6 +9,7 @@ runner:
     - no arguments: archive completed, validate limits, then select the highest-priority active or inbox focus
     - --inbox <path>: force-activate a specific inbox file
     - --park: park the existing active focus in the same section before activating a new one
+    - --sub-agent: write a sub-agent contract for the selected active focus to reports/SUBAGENT_CONTRACT.md
     - --intake <request>: classify a new request and write it to the correct place
     - --dry-run: show selection without modifying files
   permissions:
@@ -93,10 +94,11 @@ mcp_integration:
   - mcp-gpu: GPU queue pressure can generate a focus-inbox item to review model selection or queue limits.
 
 sub_agent:
-  - NEXT_FOCUS.md is the contract between the dispatcher and a sub-agent.
-  - A sub-agent reads the file, works inside the named focus, and updates subtask status before exiting.
+  - NEXT_FOCUS.md is the default contract between the dispatcher and a sub-agent.
+  - With --sub-agent the dispatcher also writes reports/SUBAGENT_CONTRACT.md with the same content plus sub-agent ground rules.
+  - A sub-agent reads the contract, works inside the named focus, and updates subtask status before exiting.
   - The main session can then review the diff, validate YAML, and commit.
-  - Future: add a --sub-agent flag to the dispatcher that invokes the next focus in a background sub-agent (requires tool permissions and user confirmation).
+  - Future: invoke the sub-agent automatically from the dispatcher via a background runner.
 
 failure_handling:
   - If ssot.focus.current.yml is missing or unparsable, exit with an error and do not modify files.

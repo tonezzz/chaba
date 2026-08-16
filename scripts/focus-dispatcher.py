@@ -18,6 +18,7 @@ INBOX_DIR = REPO / "docs" / "ssot" / "focus-inbox"
 PROCESSED_DIR = INBOX_DIR / "processed"
 REPORTS_DIR = REPO / "reports"
 NEXT_FOCUS_MD = REPORTS_DIR / "NEXT_FOCUS.md"
+SUBAGENT_CONTRACT_MD = REPORTS_DIR / "SUBAGENT_CONTRACT.md"
 
 PRIORITY = {"high": 3, "medium": 2, "low": 1}
 
@@ -372,6 +373,22 @@ def generate_suggestion_prompt(item):
     return "\n".join(lines)
 
 
+def generate_subagent_contract(title, item, source):
+    prompt = generate_prompt(title, item, source)
+    notes = [
+        "",
+        "## Sub-agent contract",
+        "",
+        "- This focus is delegated to a background sub-agent.",
+        "- The sub-agent should not ask clarifying questions; make reasonable assumptions and proceed.",
+        "- Mark subtasks completed in `docs/ssot/ssot.focus.current.yml` as you finish them.",
+        "- Do not commit or push; the main session will review the diff and commit.",
+        "- If a task requires destructive changes, stop and ask for confirmation.",
+        "- Run py_compile / validation before finishing.",
+    ]
+    return prompt + "\n".join(notes)
+
+
 def activate_inbox(inbox, park=False):
     doc = load_current()
     validate_current(doc)
@@ -530,6 +547,7 @@ def main():
     parser.add_argument("--inbox", help="Path to a specific inbox file to activate")
     parser.add_argument("--intake", help="Register a new request for focus intake")
     parser.add_argument("--park", action="store_true", help="Park the existing active focus in the same section before activating a new one")
+    parser.add_argument("--sub-agent", action="store_true", help="Write a sub-agent contract in addition to NEXT_FOCUS.md")
     parser.add_argument("--dry-run", action="store_true", help="Show selection without modifying files")
     args = parser.parse_args()
 
@@ -622,6 +640,11 @@ def main():
     REPORTS_DIR.mkdir(parents=True, exist_ok=True)
     NEXT_FOCUS_MD.write_text(prompt)
     print(f"Wrote {NEXT_FOCUS_MD}")
+
+    if args.sub_agent:
+        contract = generate_subagent_contract(title, item, source)
+        SUBAGENT_CONTRACT_MD.write_text(contract)
+        print(f"Wrote {SUBAGENT_CONTRACT_MD}")
 
     if not args.dry_run and changed and os.environ.get("FOCUS_DISPATCHER_COMMIT") == "1":
         msg = f"tweak: focus-dispatcher activated {item['label']}"
