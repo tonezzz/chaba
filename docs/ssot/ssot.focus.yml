@@ -61,6 +61,63 @@ sections:
     tags:
     - playlive
     - testing
+  - label: mcp_focus intake decision tool
+    text: Extend mcp_focus to accept a user request and return the exact intake action: active focus match, quick_win, inbox, or backlog.
+    branch: chaba
+    status: pending
+    priority: medium
+    tags:
+    - mcp
+    - focus
+    - intake
+    - automation
+  - label: focus-dispatcher --intake flag
+    text: Add an intake CLI to scripts/focus-dispatcher.py that writes a new item to the correct place based on active focus state.
+    branch: chaba
+    status: pending
+    priority: medium
+    tags:
+    - focus
+    - dispatcher
+    - cli
+    - automation
+  - label: ssot.focus.current.yml decision_tree
+    text: Add explicit decision rules to docs/ssot/ssot.focus.current.yml so the assistant no longer has to infer the disposition.
+    branch: chaba
+    status: pending
+    priority: medium
+    tags:
+    - focus
+    - ssot
+    - workflow
+  - label: quick_win criteria in current focus
+    text: Define clear quick-win criteria (single file, <5 min, no deploy) in docs/ssot/ssot.focus.current.yml.
+    branch: chaba
+    status: pending
+    priority: medium
+    tags:
+    - focus
+    - workflow
+    - quick-wins
+  - label: subagent_focus_triage
+    text: Create a read-only sub-agent profile for focus triage so ambiguous requests can be handed off.
+    branch: chaba
+    status: pending
+    priority: low
+    tags:
+    - subagents
+    - focus
+    - triage
+  - label: ssot.focus.decisions.yml log
+    text: Create a canonical decision log for focus intake decisions so the rules can be reviewed and reused.
+    branch: chaba
+    status: pending
+    priority: low
+    tags:
+    - focus
+    - ssot
+    - kb
+    - decisions
 - title: Quick Wins
   icon: quick
   layout: list
