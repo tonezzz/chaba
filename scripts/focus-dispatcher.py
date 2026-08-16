@@ -367,11 +367,133 @@ def activate_inbox(inbox):
     return section_title, new_item, str(target)
 
 
+def suggest_intake(request, current_doc):
+    req = request.lower()
+    active = {}
+    for sec in current_doc.get("sections", []):
+        if sec.get("title") in ("Active Shared Focus", "Active Branch Focus"):
+            for item in sec.get("items", []):
+                if not item or item.get("status") != "active":
+                    continue
+                active[sec.get("title")] = item
+
+    for section, item in active.items():
+        if item.get("label", "").lower() in req:
+            return "active", section, item["label"], None
+        for st in item.get("subtasks", []):
+            if st.get("label", "").lower() in req:
+                return "active", section, item["label"], st["label"]
+
+    for cue in ("quick", "small", "fix", "tweak"):
+        if cue in req:
+            return "quick_win", None, None, None
+
+    for cue in ("all", "focus", "continue"):
+        if cue in req:
+            return "active", None, None, None
+
+    for cue in ("design", "workflow", "rebuild", "implement"):
+        if cue in req:
+            return "backlog", None, None, None
+
+    return "inbox", None, None, None
+
+
+def handle_intake(request, dry_run=False):
+    current_doc = load_current()
+    focus_doc = load_focus()
+    action, section, active_label, subtask = suggest_intake(request, current_doc)
+    changed = []
+    result = {"action": action}
+    today = datetime.now().strftime("%Y-%m-%d")
+
+    if action == "active":
+        if section is None:
+            section = "Active Shared Focus"
+            sec = find_section(current_doc.get("sections", []), section)
+            item = sec.get("items", [None])[0]
+            active_label = item.get("label") if item else "active focus"
+            subtask = None
+        else:
+            sec = find_section(current_doc.get("sections", []), section)
+            for it in sec.get("items", []):
+                if it.get("label") == active_label:
+                    item = it
+                    break
+        if item:
+            item.setdefault("request_log", []).append({
+                "date": today,
+                "request": request,
+                "matched_to": subtask or active_label,
+            })
+        if not dry_run:
+            save_current(current_doc)
+            changed = [CURRENT]
+        result["message"] = f"Intake: appended to active focus '{active_label}'"
+    elif action == "quick_win":
+        quick = {
+            "label": request.strip()[:80],
+            "text": request.strip(),
+            "status": "completed",
+            "priority": "medium",
+            "tags": ["quick-win"],
+        }
+        sec = find_section(current_doc.get("sections", []), "Quick Wins")
+        if not dry_run:
+            sec["items"].append(quick)
+            save_current(current_doc)
+            changed = [CURRENT]
+        result["message"] = "Intake: added quick win"
+    elif action == "backlog":
+        backlog_item = {
+            "label": request.strip()[:80],
+            "text": request.strip(),
+            "status": "pending",
+            "priority": "medium",
+            "tags": ["intake"],
+        }
+        sec = find_section(focus_doc.get("sections", []), "Backlog - Triage Queue")
+        if not dry_run:
+            sec["items"].append(backlog_item)
+            save_focus(focus_doc)
+            changed = [FOCUS]
+        result["message"] = "Intake: added to backlog"
+    else:
+        path = INBOX_DIR / f"{datetime.now().strftime('%Y-%m-%d-%H%M%S')}-intake.yml"
+        doc = {
+            "title": "Focus Inbox Item",
+            "subtitle": f"Intake for: {request}",
+            "focus": {
+                "label": request.strip()[:80],
+                "text": request.strip(),
+                "status": "draft",
+                "priority": "medium",
+                "tags": ["intake"],
+                "missing_info": ["What is the desired outcome?"],
+            },
+        }
+        if not dry_run:
+            INBOX_DIR.mkdir(parents=True, exist_ok=True)
+            path.write_text(yaml.safe_dump(doc, sort_keys=False, allow_unicode=True, width=120, default_flow_style=False))
+            changed = [path]
+        result["message"] = f"Intake: saved inbox draft at {path}"
+
+    return result, changed
+
+
 def main():
     parser = argparse.ArgumentParser(description="Focus dispatcher for chaba")
     parser.add_argument("--inbox", help="Path to a specific inbox file to activate")
+    parser.add_argument("--intake", help="Register a new request for focus intake")
     parser.add_argument("--dry-run", action="store_true", help="Show selection without modifying files")
     args = parser.parse_args()
+
+    if args.intake:
+        result, changed = handle_intake(args.intake, dry_run=args.dry_run)
+        print(result["message"])
+        if not args.dry_run and changed and os.environ.get("FOCUS_DISPATCHER_COMMIT") == "1":
+            git_commit(changed, f"tweak: focus-dispatcher intake {args.intake[:50]}")
+        sys.exit(0)
 
     changed = []
     if not args.dry_run:
