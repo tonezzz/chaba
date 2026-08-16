@@ -1,17 +1,57 @@
-const LIVE_DATA_URL = "http://tony-omen.local:9100/mcp-savings.json"; // served by mcp_debug.http_server on tony-omen
+const LIVE_DATA_URL = null; // HTTPS mixed-content blocker; set to a same-origin proxy path such as "/api/mcp-savings.json" when available.
+const FETCH_TIMEOUT = 3000;
+
+function renderSkeleton() {
+  const report = document.getElementById('report');
+  report.innerHTML = `
+    <div class="p-4 rounded mb-4" style="background: #f9fafb;">
+      <p class="text-gray-500 text-sm">Loading report...</p>
+    </div>
+    <div id="skeleton-tables"></div>
+  `;
+  const skel = document.getElementById('skeleton-tables');
+  const hosts = ['tony_omen', 'tony_dell'];
+  let html = '';
+  for (const host of hosts) {
+    html += `<h2 class="text-xl font-semibold mt-8 mb-2">${host}</h2>`;
+    html += '<table><thead><tr>';
+    ['Command', 'Raw chars', 'Compact chars', 'Saved chars', 'Char %', 'Word %'].forEach(h => {
+      html += `<th>${h}</th>`;
+    });
+    html += '</tr></thead><tbody>';
+    for (let i = 0; i < 8; i++) {
+      html += '<tr><td class="text-gray-400">...</td><td class="text-gray-400">-</td><td class="text-gray-400">-</td><td class="text-gray-400">-</td><td class="text-gray-400">-</td><td class="text-gray-400">-</td></tr>';
+    }
+    html += '</tbody></table>';
+  }
+  skel.innerHTML = html;
+}
+
+async function fetchWithTimeout(url, options = {}, timeout = FETCH_TIMEOUT) {
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), timeout);
+  try {
+    const res = await fetch(url, { ...options, signal: controller.signal });
+    clearTimeout(id);
+    return res;
+  } catch (e) {
+    clearTimeout(id);
+    throw e;
+  }
+}
 
 async function loadReport() {
   const status = document.getElementById('status');
   const report = document.getElementById('report');
   const live = document.getElementById('live-note');
   status.textContent = 'Loading...';
-  report.innerHTML = '';
+  renderSkeleton();
   if (live) live.textContent = '';
 
   let data;
   if (LIVE_DATA_URL) {
     try {
-      const res = await fetch(LIVE_DATA_URL + '?t=' + Date.now(), { mode: 'cors' });
+      const res = await fetchWithTimeout(LIVE_DATA_URL + '?t=' + Date.now(), { mode: 'cors' });
       if (res.ok) data = await res.json();
       else throw new Error('live endpoint unavailable');
       if (live) live.textContent = 'Live data from tony-omen';
@@ -19,11 +59,13 @@ async function loadReport() {
       console.warn('Live data failed, falling back to cached snapshot:', e);
       if (live) live.textContent = 'Live data unavailable; showing cached snapshot.';
     }
+  } else if (live) {
+    live.textContent = 'Live endpoint disabled until HTTPS/proxy is configured.';
   }
 
   try {
     if (!data) {
-      const res = await fetch('data/mcp-savings.json?t=' + Date.now());
+      const res = await fetchWithTimeout('data/mcp-savings.json?t=' + Date.now());
       if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
       data = await res.json();
     }
@@ -58,7 +100,7 @@ function renderReport(data) {
     );
     for (const c of commands) {
       const negative = (c.savings_pct_chars || 0) < 0 ? 'negative' : '';
-      html += `<tr>
+      html += `<tr data-host="${host}" data-command="${c.command}">
         <td>${escapeHtml(c.command)}</td>
         <td>${c.raw_chars}</td>
         <td>${c.compact_chars}</td>
@@ -91,4 +133,5 @@ function escapeHtml(str) {
 }
 
 document.getElementById('refresh').addEventListener('click', loadReport);
+renderSkeleton();
 loadReport();

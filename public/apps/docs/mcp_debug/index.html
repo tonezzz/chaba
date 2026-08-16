@@ -36,7 +36,7 @@
       </div>
     </div>
     <p class="text-gray-500 text-sm mb-6">
-      chaba.h3 is static, so a real-time tony-omen connection is not available by default. If a public CORS endpoint is added later, set <code>LIVE_DATA_URL</code> in <code>app.js</code>. Until then, Refresh reloads the latest cached snapshot with its generation timestamp.
+      The table uses a skeleton and in-place update, so the page does not blank out on refresh. The live endpoint is currently disabled because <code>http://tony-omen.local:9100</code> is blocked by the HTTPS page (mixed-content). When a same-origin proxy or HTTPS endpoint is available, set <code>LIVE_DATA_URL</code> in <code>app.js</code>. Refresh will then fall back to the cached snapshot with a 3-second timeout if live is unreachable.
     </p>
     <div id="report"></div>
   </main>
