@@ -1,0 +1,333 @@
+title: Registry
+subtitle: Master catalog of project assets — scripts, SSOTs, services, apps, and related artifacts
+icon: 🗃️
+version: 1
+
+overview:
+  purpose: |
+    One place to answer: "What things do we have, where do they live, what are they for,
+    and what is their current status?" It does not replace per-file documentation; it
+    provides a lightweight index and a status-aware map.
+  scope:
+    - SSOTs and docs that are part of an active workflow
+    - Scripts and daemons we maintain
+    - Systemd user services and timers
+    - h3 app pages under chaba-h3
+    - Repos and stacks with active configuration
+  out_of_scope:
+    - Every line of source code
+    - Generated build artifacts
+    - Transient logs
+
+schema:
+  required:
+    - id
+    - name
+    - type
+    - path
+    - purpose
+    - status
+  optional:
+    - project
+    - environment
+    - owner
+    - tags
+    - related
+    - added
+    - last_verified
+    - notes
+
+types:
+  - ssot
+  - script
+  - service
+  - timer
+  - h3-app
+  - kb
+  - repo
+  - stack
+  - config
+
+statuses:
+  - draft
+  - active
+  - stable
+  - experimental
+  - parked
+  - deprecated
+  - unknown
+
+rules:
+  - One entry per top-level asset; do not list every module inside a package.
+  - The canonical id is kebab-case and stable.
+  - The path should be the primary human-findable location.
+  - "For user-config files outside the repo, set project: chaba and location: user."
+  - Use related to link to SSOTs, services, scripts, or parent repos.
+  - Keep purpose to one or two short sentences.
+  - When a status changes to deprecated, add a deprecation note and keep the entry for 90 days.
+  - Run scripts/registry-drafts.py periodically to find missing assets.
+
+assets:
+  - id: ssot-focus
+    name: ssot.focus.yml
+    type: ssot
+    path: docs/ssot/ssot.focus.yml
+    project: chaba
+    purpose: Strategic focus backlog, active/pending/completed tracking, and focus history.
+    status: stable
+    tags: [ssot, focus, backlog, history]
+    related: [ssot-focus-current, ssot-focus-sessions, focus-dispatcher]
+    added: '2026-08-16'
+
+  - id: ssot-focus-current
+    name: ssot.focus.current.yml
+    type: ssot
+    path: docs/ssot/ssot.focus.current.yml
+    project: chaba
+    purpose: Lightweight view of active shared/branch focuses and quick wins for session starts.
+    status: active
+    tags: [ssot, focus, current, workflow]
+    related: [ssot-focus, ssot-focus-sessions, mcp-focus-policy]
+    added: '2026-08-16'
+
+  - id: ssot-focus-sessions
+    name: ssot.focus.sessions.yml
+    type: ssot
+    path: docs/ssot/ssot.focus.sessions.yml
+    project: chaba
+    purpose: Append-only session plan and follow-up log for active and recently completed focuses.
+    status: active
+    tags: [ssot, focus, sessions, planning]
+    related: [ssot-focus-current, ssot-mcp-focus]
+    added: '2026-08-16'
+
+  - id: ssot-index
+    name: ssot.index.yml
+    type: ssot
+    path: docs/ssot/ssot.index.yml
+    project: chaba
+    purpose: Master index of all SSOT files and their purposes.
+    status: active
+    tags: [ssot, index, catalog]
+    related: [ssot-registry, ssot-file-control]
+    added: '2026-08-16'
+
+  - id: ssot-mcp-focus
+    name: ssot.mcp-focus.yml
+    type: ssot
+    path: docs/ssot/infrastructure/ssot.mcp-focus.yml
+    project: chaba
+    purpose: Policy and contract for the mcp_focus session-router tool.
+    status: active
+    tags: [ssot, mcp, focus, policy]
+    related: [mcp-debug-server, mcp-debug-focus, ssot-mcp-tools]
+    added: '2026-08-16'
+
+  - id: ssot-mcp-debug
+    name: ssot.mcp-debug.yml
+    type: ssot
+    path: docs/ssot/infrastructure/ssot.mcp-debug.yml
+    project: chaba
+    purpose: Multi-host compact debug output, remote execution, and host definitions.
+    status: active
+    tags: [ssot, mcp, debug, hosts]
+    related: [ssot-host-roles, mcp-debug-server, mcp-debug-tools]
+    added: '2026-08-16'
+
+  - id: ssot-mcp-debug-cors
+    name: ssot.mcp-debug.cors.yml
+    type: ssot
+    path: docs/ssot/infrastructure/ssot.mcp-debug.cors.yml
+    project: chaba
+    purpose: Policy for the live mcp-savings.json CORS endpoint on tony-omen.
+    status: active
+    tags: [ssot, mcp, debug, cors, web]
+    related: [ssot-mcp-debug, mcp-debug-http-server, mcp-debug-cors-service]
+    added: '2026-08-16'
+
+  - id: ssot-link-monitor
+    name: ssot.link-monitor.yml
+    type: ssot
+    path: docs/ssot/infrastructure/ssot.link-monitor.yml
+    project: chaba
+    purpose: Reachability watchdog with probes, scans, safe fixes, and focus-inbox alerts.
+    status: active
+    tags: [ssot, monitoring, network, link]
+    related: [mcp-link-monitor, mcp-link-monitor-service, ssot-host-roles]
+    added: '2026-08-16'
+
+  - id: ssot-host-roles
+    name: ssot.host-roles.yml
+    type: ssot
+    path: docs/ssot/infrastructure/ssot.host-roles.yml
+    project: chaba
+    purpose: Canonical host roles, headless browser priority, and web preview targets.
+    status: active
+    tags: [ssot, hosts, roles, headless]
+    related: [ssot-mysystem-home, ssot-mcp-debug, mcp-link-monitor]
+    added: '2026-08-16'
+
+  - id: ssot-mysystem-home
+    name: ssot.mysystem.home.yml
+    type: ssot
+    path: docs/ssot/ssot.mysystem.home.yml
+    project: chaba
+    purpose: Home environment workstations, hardware, network, and services.
+    status: stable
+    tags: [ssot, home, workstations, network]
+    related: [ssot-host-roles, ssot-mysystem-macbook]
+    added: '2026-08-16'
+
+  - id: mcp-debug-server
+    name: mcp_debug.server
+    type: script
+    path: scripts/mcp_debug/server.py
+    project: chaba
+    purpose: MCP server wiring and tool dispatch for mcp_debug, mcp_focus, mcp_read_ssot, and mcp_search_ssot.
+    status: active
+    environment: tony-omen
+    tags: [mcp, debug, server, python]
+    related: [mcp-debug-tools, mcp-debug-reports, mcp-debug-http-server, ssot-mcp-debug]
+    added: '2026-08-16'
+
+  - id: mcp-debug-http-server
+    name: mcp_debug.http_server
+    type: script
+    path: scripts/mcp_debug/http_server.py
+    project: chaba
+    purpose: CORS HTTP endpoint that serves cached mcp-savings.json to the chaba.h3 report page.
+    status: active
+    environment: tony-omen
+    tags: [mcp, debug, http, cors]
+    related: [ssot-mcp-debug-cors, mcp-debug-cors-service, mcp-debug-reports]
+    added: '2026-08-16'
+
+  - id: mcp-debug-tools
+    name: mcp_debug.tools
+    type: script
+    path: scripts/mcp_debug/tools.py
+    project: chaba
+    purpose: MCP debug command vetting and compact output for tony_omen, tony_dell, and macbook.
+    status: stable
+    tags: [mcp, debug, tools, python]
+    related: [mcp-debug-server, ssot-mcp-debug]
+    added: '2026-08-16'
+
+  - id: mcp-debug-reports
+    name: mcp_debug.reports
+    type: script
+    path: scripts/mcp_debug/reports.py
+    project: chaba
+    purpose: JSON, CSV, and HTML report generation for mcp_debug savings and sessions.
+    status: active
+    tags: [mcp, debug, reports, python]
+    related: [mcp-debug-server, mcp-debug-http-server]
+    added: '2026-08-16'
+
+  - id: mcp-link-monitor
+    name: mcp-link-monitor.py
+    type: script
+    path: scripts/mcp-link-monitor.py
+    project: chaba
+    purpose: TCP/IP reachability monitor with probe, scan, safe fixes, drift detection, and focus-inbox alerts.
+    status: active
+    environment: tony-omen
+    tags: [monitoring, network, python, link]
+    related: [ssot-link-monitor, mcp-link-monitor-service]
+    added: '2026-08-16'
+
+  - id: focus-dispatcher
+    name: focus-dispatcher.py
+    type: script
+    path: scripts/focus-dispatcher.py
+    project: chaba
+    purpose: Archive completed focuses, validate active limits, select next focus/inbox/backlog, and write next-focus contracts.
+    status: active
+    tags: [focus, dispatcher, python, automation]
+    related: [ssot-focus, ssot-focus-current, overnight-focus-review]
+    added: '2026-08-16'
+
+  - id: mcp-health-to-inbox
+    name: mcp-health-to-inbox.py
+    type: script
+    path: scripts/mcp-health-to-inbox.py
+    project: chaba
+    purpose: Convert mcp-health status into draft focus-inbox items for triage.
+    status: active
+    tags: [mcp, health, focus-inbox, automation]
+    related: [ssot-health, overnight-focus-review]
+    added: '2026-08-16'
+
+  - id: overnight-focus-review
+    name: overnight-focus-review.py
+    type: script
+    path: scripts/overnight-focus-review.py
+    project: chaba
+    purpose: Orchestrate health-to-inbox and focus-dispatcher --sub-agent for the 03:00 review.
+    status: active
+    tags: [focus, automation, systemd, health]
+    related: [focus-dispatcher, mcp-health-to-inbox, focus-dispatcher-overnight-timer]
+    added: '2026-08-16'
+
+  - id: mcp-debug-cors-service
+    name: mcp-debug-cors.service
+    type: service
+    path: ~/.config/systemd/user/mcp-debug-cors.service
+    project: chaba
+    purpose: Run the mcp_debug CORS HTTP endpoint on tony-omen port 9100.
+    status: active
+    environment: tony-omen
+    tags: [systemd, service, mcp, cors]
+    related: [mcp-debug-http-server, ssot-mcp-debug-cors]
+    added: '2026-08-16'
+
+  - id: mcp-link-monitor-service
+    name: mcp-link-monitor.service
+    type: service
+    path: ~/.config/systemd/user/mcp-link-monitor.service
+    project: chaba
+    purpose: Run mcp-link-monitor.py as a background daemon.
+    status: active
+    environment: tony-omen
+    tags: [systemd, service, monitoring, network]
+    related: [mcp-link-monitor, ssot-link-monitor]
+    added: '2026-08-16'
+
+  - id: focus-dispatcher-overnight-timer
+    name: focus-dispatcher-overnight.timer
+    type: timer
+    path: ~/.config/systemd/user/focus-dispatcher-overnight.timer
+    project: chaba
+    purpose: Trigger the overnight focus review at 03:00 daily.
+    status: active
+    environment: tony-omen
+    tags: [systemd, timer, automation, focus]
+    related: [overnight-focus-review, focus-dispatcher-overnight-service]
+    added: '2026-08-16'
+
+  - id: chaba-h3-mcp-debug-report
+    name: chaba.h3 MCP Debug Report page
+    type: h3-app
+    path: chaba-h3/public/apps/docs/mcp_debug/
+    project: chaba-h3
+    purpose: Web page that refreshes live mcp-savings.json from tony-omen.
+    status: active
+    tags: [h3, app, web, mcp, debug]
+    related: [mcp-debug-http-server, ssot-mcp-debug-cors]
+    added: '2026-08-16'
+
+  - id: registry-drafts
+    name: registry-drafts.py
+    type: script
+    path: scripts/registry-drafts.py
+    project: chaba
+    purpose: Scan the project and propose missing registry entries without overwriting ssot.registry.yml.
+    status: active
+    tags: [registry, automation, python]
+    related: [ssot-registry]
+    added: '2026-08-16'
+
+related_files:
+  - docs/ssot/ssot.index.yml
+  - docs/ssot/ssot.file-control.yml
+  - scripts/registry-drafts.py
