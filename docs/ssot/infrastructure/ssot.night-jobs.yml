@@ -1,0 +1,100 @@
+title: Chaba Night Jobs
+subtitle: Scheduled overnight tasks and their runtime disposition
+version: 1
+
+overnight_window:
+  start: "03:00"
+  host: tony_dell
+  summary: The main overnight run executes the focus review, registry drift, and backlog triage on tony-dell.
+
+jobs:
+  - id: focus-dispatcher-overnight
+    name: Chaba Overnight Focus Review
+    host: tony_dell
+    type: systemd-user-timer
+    unit: focus-dispatcher-overnight.timer
+    service: focus-dispatcher-overnight.service
+    schedule: "*-*-* 03:00:00"
+    enabled: true
+    status: active
+    description: Runs scripts/overnight-focus-review.py which calls registry-drafts.py and focus-dispatcher.py --sub-agent.
+    environment:
+      SKIP_HEALTH: "1"
+      FOCUS_DISPATCHER_COMMIT: "1"
+      FOCUS_DISPATCHER_PUSH: "0"
+    log: /home/tony/var/chaba/overnight-focus-review.log
+    outputs:
+      - docs/ssot/focus-inbox/*.yml
+      - updates to docs/ssot/ssot.focus.current.yml
+    notes:
+      - Health ingestion is disabled because mcp-health is not yet stable across the failover window.
+      - The job commits locally to the tony-dell working tree but does not push.
+      - Review the log and push any useful commits in the morning.
+
+  - id: yomi-backup
+    name: Yomi and PostgreSQL Backup
+    host: tony_dell
+    type: systemd-user-timer
+    unit: yomi-backup.timer
+    schedule: daily
+    enabled: true
+    status: active
+    description: pg_dump the chaba DB and rsync /home/tony/.local/share/yomi to tony-omen.
+    targets:
+      - tony_omen:/home/tony/backups/yomi/chaba-latest.dump
+      - tony_omen:/home/tony/backups/yomi-data/
+    note: The backup continues to run even when yomi-api is failed over to tony-omen, as long as tony-dell is up.
+
+  - id: yomi-update-all
+    name: Yomi Update All
+    host: tony_dell
+    type: systemd-user-timer
+    unit: yomi-update-all.timer
+    schedule: hourly
+    enabled: true
+    status: active
+    note: Paused if yomi-api has been failed over to tony-omen.
+
+  - id: yomi-update-active
+    name: Yomi Update Active
+    host: tony_dell
+    type: systemd-user-timer
+    unit: yomi-update-active.timer
+    schedule: every 15 minutes
+    enabled: true
+    status: active
+    note: Paused if yomi-api has been failed over to tony-omen.
+
+  - id: chaba-health-monitor
+    name: Chaba Health Monitor
+    host: tony_omen
+    type: systemd-user-timer
+    unit: chaba-health-monitor.timer
+    schedule: every 15 minutes
+    enabled: true
+    status: active
+    description: Collect tony-omen health snapshots.
+    note: Independent of tony-dell.
+
+  - id: macbook-health
+    name: MacBook Health Snapshot
+    host: macbook
+    type: launchd
+    unit: com.chaba.macbook-health
+    schedule: every 15 minutes
+    enabled: true
+    status: active
+    output: /Users/kkkakk/var/chaba/health/macbook-snapshot.json
+    note: Captures lan_ip, tailscale_ip, wifi_ssid, memory pressure, process counts, disk hogs, and ports.
+
+parked_during_night:
+  - Trade Canvas UI fixes and modularization
+  - mcp-debug file & clipboard bridge
+  note: Parked focuses are not auto-activated overnight. focus-dispatcher.py may create draft inbox items for them, but the user must activate them.
+
+improvements:
+  - Consolidate night-job logs under /home/tony/var/chaba/night/ by job name.
+  - Add a "git pull --ff-only" step before focus-dispatcher-overnight.service runs.
+  - Add a post-run health-check that reports commit count and inbox files created.
+  - Move yomi-backup to a host-agnostic timer so it can run on tony-omen if tony-dell is down.
+  - Document how to fail over focus-dispatcher-overnight to tony-omen for tony-dell outages.
