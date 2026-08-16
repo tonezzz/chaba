@@ -18,7 +18,7 @@ primary:
     container_runtime: podman
     image: docker.io/library/node:22-slim
     tailscale_serve: --bg --tcp 3000 127.0.0.1:3000
-    caddy_upstream: 100.68.142.13:3000
+    caddy_upstream: tony-dell:3000
     data_volume: /home/tony/.local/share/yomi
     env:
       POSTGRES_HOST: postgre
@@ -62,7 +62,7 @@ failover:
 
 health_checks:
   - name: yomi-api on tony-dell
-    command: curl -s http://100.68.142.13:3000/api/yomi/health
+    command: curl -s http://tony-dell:3000/api/yomi/health
     expect: ok=true
   - name: postgre resolves to tony-dell
     command: resolvectl query postgre

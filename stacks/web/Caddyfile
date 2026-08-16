@@ -87,7 +87,7 @@
 	@api_cache path /api/*
 	handle @api_cache {
 		header Cache-Control "public, max-age=60, s-maxage=300"
-		reverse_proxy 100.68.142.13:3000 {
+		reverse_proxy tony-dell:3000 {
 			header_up Host localhost
 		}
 	}
@@ -96,7 +96,7 @@
 	@yomi_read_api path /api/yomi/conversations /api/yomi/daily /api/yomi/last-updated
 	handle @yomi_read_api {
 		header Cache-Control "public, max-age=300, s-maxage=600"
-		reverse_proxy 100.68.142.13:3000 {
+		reverse_proxy tony-dell:3000 {
 			header_up Host localhost
 		}
 	}
@@ -148,7 +148,7 @@
 
 	# Yomi API proxy (must come before catchall)
 	handle /api/yomi/* {
-		reverse_proxy 100.68.142.13:3000 {
+		reverse_proxy tony-dell:3000 {
 			header_up Host localhost
 		}
 	}
@@ -187,7 +187,7 @@
 	redir /chatlocal /chatlocal/ 308
 
 	handle_path /chatlocal/* {
-		reverse_proxy 100.68.142.13:3000 {
+		reverse_proxy tony-dell:3000 {
 			header_up Host localhost
 		}
 	}
@@ -211,7 +211,7 @@
 
 	@chatlocal path /apps/chatlocal /apps/chatlocal/*
 	handle @chatlocal {
-		reverse_proxy 100.68.142.13:3000 {
+		reverse_proxy tony-dell:3000 {
 			header_up Host localhost:3000
 		}
 	}
