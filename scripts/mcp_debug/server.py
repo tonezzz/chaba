@@ -21,6 +21,7 @@ from .tools import (
 )
 from .reports import mcp_report
 from .focus import mcp_focus
+from .ssot import mcp_read_ssot, mcp_search_ssot
 
 logger = logging.getLogger(__name__)
 
@@ -217,6 +218,31 @@ def handle_tools_list(id_):
             },
         },
         {
+            "name": "mcp_read_ssot",
+            "description": "Read the content of an SSOT file within the repository.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "path": {"type": "string", "description": "Relative or absolute path to the SSOT file"},
+                    "limit": {"type": "integer", "description": "Maximum characters to return", "default": 20000},
+                },
+                "required": ["path"],
+            },
+        },
+        {
+            "name": "mcp_search_ssot",
+            "description": "Search SSOT files using MDDB vector search with a local YAML keyword fallback.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "query": {"type": "string", "description": "Natural language or keyword query"},
+                    "collection": {"type": "string", "description": "MDDB collection to search", "default": "ssot-infrastructure"},
+                    "limit": {"type": "integer", "description": "Maximum results", "default": 5},
+                },
+                "required": ["query"],
+            },
+        },
+        {
             "name": "mcp_focus",
             "description": "Return the current active focus and suggest an intake action for an optional request.",
             "inputSchema": {
@@ -307,6 +333,16 @@ def handle_tools_call(id_, params):
         output = json.dumps(result, separators=(",", ":"))
     elif name == "mcp_report":
         result = mcp_report(arguments.get("hosts"), save=arguments.get("save", False), format=arguments.get("format", "markdown"))
+        output = json.dumps(result, separators=(",", ":"))
+    elif name == "mcp_read_ssot":
+        result = mcp_read_ssot(path=arguments.get("path"), limit=arguments.get("limit", 20000))
+        output = json.dumps(result, separators=(",", ":"))
+    elif name == "mcp_search_ssot":
+        result = mcp_search_ssot(
+            query=arguments.get("query"),
+            collection=arguments.get("collection", "ssot-infrastructure"),
+            limit=arguments.get("limit", 5),
+        )
         output = json.dumps(result, separators=(",", ":"))
     elif name == "mcp_focus":
         result = mcp_focus(request=arguments.get("request"))
