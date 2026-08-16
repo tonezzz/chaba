@@ -202,7 +202,7 @@ def handle_tools_list(id_):
         },
         {
             "name": "mcp_report",
-            "description": "Generate a savings report in markdown, json, or csv from mcp_savings and optionally save it to reports/.",
+            "description": "Generate a savings report in markdown, json, csv, or html from mcp_savings and optionally save it to reports/.",
             "inputSchema": {
                 "type": "object",
                 "properties": {
@@ -212,7 +212,7 @@ def handle_tools_list(id_):
                         "description": "Hosts to include (defaults to all)",
                     },
                     "save": {"type": "boolean", "description": "Save the report to reports/mcp-savings-YYYY-MM-DD.{format}", "default": False},
-                    "format": {"type": "string", "enum": ["markdown", "json", "csv"], "description": "Output format", "default": "markdown"},
+                    "format": {"type": "string", "enum": ["markdown", "json", "csv", "html"], "description": "Output format", "default": "markdown"},
                 },
             },
         },
