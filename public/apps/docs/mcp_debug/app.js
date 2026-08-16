@@ -41,7 +41,7 @@ async function fetchWithTimeout(url, options = {}, timeout = FETCH_TIMEOUT) {
   }
 }
 
-async function loadReport() {
+async function loadReport(forceRefresh = false) {
   const status = document.getElementById('status');
   const report = document.getElementById('report');
   const live = document.getElementById('live-note');
@@ -52,7 +52,7 @@ async function loadReport() {
   let data;
   if (LIVE_DATA_URL) {
     try {
-      const res = await fetchWithTimeout(LIVE_DATA_URL + '?t=' + Date.now(), { mode: 'cors' });
+      const res = await fetchWithTimeout(LIVE_DATA_URL + '?t=' + Date.now() + (forceRefresh ? '&refresh=1' : ''), { mode: 'cors' });
       if (res.ok) data = await res.json();
       else throw new Error('live endpoint unavailable');
       if (live) live.textContent = 'Live data from tony-omen';
@@ -192,6 +192,6 @@ document.getElementById('detail-close').addEventListener('click', () => {
   document.getElementById('detail').classList.add('hidden');
 });
 
-document.getElementById('refresh').addEventListener('click', loadReport);
+document.getElementById('refresh').addEventListener('click', () => loadReport(true));
 renderSkeleton();
 loadReport();
