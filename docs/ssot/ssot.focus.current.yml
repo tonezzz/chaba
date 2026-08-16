@@ -242,11 +242,23 @@ sections:
       status: completed
     - label: Redelegate Yomi/backup timers after verifying PG and storage
       status: completed
-      note: 'Decision: chaba-backup already runs on tony-dell. yomi-update-all stays on tony-omen because the mcpb package and ~/.local/share/yomi LINE session are host-local; moving them would require copying the private mcpb package and the session database, and only one Yomi MCP server can hold search-index.db at a time. PG and storage were already verified on tony-dell, so this is the safest disposition.'
+      note: 'Decision: chaba-backup already runs on tony-dell. After building a pgvector Podman container on tony-dell and copying the mcpb package and ~/.local/share/yomi, the full Yomi stack (yomi-api, yomi-update-all, yomi-update-active) now runs on tony-dell. A daily yomi-backup to tony-omen and a failover script are in place.'
     - label: Move central mcp-health server to tony-dell (Phase 3/4)
       status: blocked
       note: mcp-health needs host systemctl/curl; running in a rootless podman container lacks these; keep on tony-omen
-    request_log: []
+    - label: Reconcile postgre DNS alias with postgres container host
+      status: completed
+      note: ssot.services.yml now places postgres and yomi-api under tony_dell and ssot.host-roles.yml keeps the postgre alias pointed at tony_dell; the failover plan is in ssot.yomi-failover.yml
+    - label: Document Yomi/PostgreSQL backup and failover plan
+      status: completed
+      note: created docs/ssot/infrastructure/ssot.yomi-failover.yml and linked it in ssot.index.yml and ssot.host-roles.yml
+    - label: Complete mcp-debug baselines split
+      status: not_started
+      note: 'Add related_files link in ssot.mcp-debug.yml, align mcp_vet to write to ssot.mcp-debug.baselines.yml, fix mcp-debug-refresh-baselines.py help text'
+    request_log:
+    - date: '2026-08-16'
+      request: Assess recent SSOT updates (mcp-debug baselines split, postgre alias, macbook snapshot) and update next steps
+      matched_to: Delegate tony-omen services and timers to tony-dell
     branch: tony-dell
     source: /home/tony/CascadeProjects/chaba/docs/ssot/focus-inbox/2026-08-16-070919-tony-omen-to-tony-dell-delegation.yml
 - title: Quick Wins
