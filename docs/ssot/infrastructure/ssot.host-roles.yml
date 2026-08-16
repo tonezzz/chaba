@@ -80,6 +80,17 @@ policies:
     - source: docs/ssot/ssot.mysystem.home.yml
       note: chaba-h3 preview on tony-omen port 8081 is for pre-deploy parity, not default local browsing
 
+dns_aliases:
+  postgre:
+    target: 100.75.102.88
+    current_host: tony_omen
+    dns_server: 100.68.142.13:5353
+    managed_by: user systemd dnsmasq on tony_dell
+    notes:
+      - If PostgreSQL moves to another host, update /home/tony/.config/dnsmasq/postgre.conf on tony_dell and restart dnsmasq-postgre.service.
+      - tony_omen resolves postgre via tailscale0 DNS 100.68.142.13:5353.
+      - tony_dell resolves postgre via loopback 127.0.0.1:5353; use resolvectl with sudo to set it.
+
 related_files:
 - docs/ssot/infrastructure/ssot.mcp-debug.yml
 - docs/ssot/infrastructure/ssot.health.yml
