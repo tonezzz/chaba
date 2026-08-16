@@ -1,0 +1,80 @@
+title: Focus Inbox Item
+subtitle: Modularize mcp-debug-server.py and other oversized Python/SSOT files
+icon: inbox
+
+focus:
+  label: Modularize mcp-debug-server.py and large files
+  text: mcp-debug-server.py has grown to 863 lines and is mixing host operations, tool logic, report generation, focus integration, and MCP server wiring. Propose to split it into a small package and apply the same pattern to other large files.
+  branch: chaba
+  priority: medium
+  status: draft
+  tags:
+    - refactor
+    - mcp
+    - modularity
+    - python
+    - ssot
+  missing_info:
+    - Which module layout is preferred? (scripts/mcp_debug/ vs scripts/mcp-debug-libs/)
+    - Should we create a new SSOT for Python module conventions or extend ssot.libs.yml?
+    - Which other files are the highest priority to split after mcp-debug-server.py?
+  subtasks:
+    - label: Scan and rank the largest Python and SSOT files by line count
+      status: completed
+    - label: Define module boundaries for mcp-debug-server.py
+      status: not_started
+    - label: Create or update the relevant SSOT for module conventions
+      status: not_started
+    - label: Move host operations, tools, reports, focus, and server into modules
+      status: not_started
+    - label: Split the next highest-priority file (likely focus-dispatcher.py or a large SSOT)
+      status: not_started
+    - label: Run py_compile and mcp smoke tests after modularization
+      status: not_started
+
+assessment:
+  current_largest_python:
+    - file: scripts/mcp-debug-server.py
+      lines: 863
+    - file: scripts/focus-dispatcher.py
+      lines: 632
+    - file: scripts/generate-mcp-config.py
+      lines: 316
+    - file: scripts/generate-mcp-configs.py
+      lines: 226
+  current_largest_ssot:
+    - file: docs/ssot/ssot.improvements.yml
+      lines: 1216
+    - file: docs/ssot/infrastructure/ssot.health.yml
+      lines: 755
+    - file: docs/ssot/infrastructure/ssot.gemini-models.yml
+      lines: 727
+    - file: docs/ssot/infrastructure/ssot.mcp-debug.yml
+      lines: 669
+    - file: docs/ssot/ssot.focus.yml
+      lines: 566
+  existing_modularity_ssot:
+    - docs/ssot/ssot.libs.yml exists, but it is UI-library focused, not Python code modules
+  proposed_module_layout:
+    - scripts/mcp_debug/__init__.py
+    - scripts/mcp_debug/config.py       # hosts, SSOT, PRESETS, REPO_DIR
+    - scripts/mcp_debug/hosts.py       # run_on_host and host-specific tool helpers
+    - scripts/mcp_debug/tools.py       # mcp_debug, mcp_raw, mcp_stats, mcp_vet, mcp_savings, ...
+    - scripts/mcp_debug/reports.py     # generate_savings_report, generate_json_report, generate_csv_report, mcp_report
+    - scripts/mcp_debug/focus.py       # mcp_focus
+    - scripts/mcp_debug/server.py      # handle_initialize, handle_tools_list, handle_tools_call
+    - scripts/mcp-debug-server.py      # main() and imports the package
+  rationale:
+    - Each file has a single responsibility.
+    - Adding a new tool or report only touches one module.
+    - The server entry point becomes a thin wiring file.
+    - Unit testing individual modules becomes possible.
+    - The pre-commit hook already runs py_compile, so the package must compile cleanly.
+  best_practice_precedent:
+    - We already split ssot.focus.yml into ssot.focus.current.yml + full ssot.focus.yml.
+    - We already keep mcp-debug.py (client wrapper) separate from mcp-debug-server.py.
+    - The package layout follows the same pattern as chaba-h3 public/apps/ modules.
+
+source:
+  session: 2026-08-16
+  date: 2026-08-16
