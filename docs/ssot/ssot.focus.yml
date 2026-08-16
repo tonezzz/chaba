@@ -701,6 +701,23 @@ sections:
     - focus-dispatcher
     - automation
     - completed
+  - label: Modularize mcp-debug-server.py and large files
+    text: mcp-debug-server.py has grown to 863 lines and is mixing host operations, tool logic, report generation, focus integration,
+      and MCP server wiring. Propose to split it into a small package and apply the same pattern to other large files. The
+      next large file is focus-dispatcher.py (663 lines), which is the focus system itself.
+    date: '2026-08-16'
+    duration: 1 session
+    outcome: 'Completed subtasks: Scan and rank the largest Python and SSOT files by line count, Define module boundaries
+      for focus-dispatcher.py, Create or update the relevant SSOT for module conventions, Move host operations, tools, reports,
+      focus, and server into modules, Split the next highest-priority file (focus-dispatcher.py at 663 lines), Run py_compile
+      and mcp smoke tests after modularization'
+    tags:
+    - refactor
+    - mcp
+    - modularity
+    - python
+    - ssot
+    - completed
 config:
   version: 2
   last_updated: '2026-08-16'

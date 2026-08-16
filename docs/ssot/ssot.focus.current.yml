@@ -89,42 +89,6 @@ sections:
   icon: branch
   layout: list
   items:
-  - label: Modularize mcp-debug-server.py and large files
-    text: mcp-debug-server.py has grown to 863 lines and is mixing host operations, tool logic, report generation, focus integration,
-      and MCP server wiring. Propose to split it into a small package and apply the same pattern to other large files. The next
-      large file is focus-dispatcher.py (663 lines), which is the focus system itself.
-    status: active
-    priority: medium
-    started: '2026-08-16'
-    estimated_duration: 1 session
-    tags:
-    - refactor
-    - mcp
-    - modularity
-    - python
-    - ssot
-    subtasks:
-    - label: Scan and rank the largest Python and SSOT files by line count
-      status: completed
-    - label: Define module boundaries for focus-dispatcher.py
-      status: in_progress
-    - label: Create or update the relevant SSOT for module conventions
-      status: in_progress
-    - label: Move host operations, tools, reports, focus, and server into modules
-      status: completed
-    - label: Split the next highest-priority file (focus-dispatcher.py at 663 lines)
-      status: not_started
-    - label: Run py_compile and mcp smoke tests after modularization
-      status: not_started
-    request_log:
-    - date: '2026-08-16'
-      request: next? how can we be more hands-off?
-      matched_to: Modularize mcp-debug-server.py and large files
-    - date: '2026-08-16'
-      request: yes, please do a deep assessment and improve related focus before you start.
-      matched_to: Modularize mcp-debug-server.py and large files
-    branch: chaba
-    source: docs/ssot/focus-inbox/2026-08-16-modularize-mcp-debug.yml
   - label: Trade Canvas UI fixes and modularization
     text: "Continue the work from the 2026-08-15 trade session. Two high-priority\nUI bugs (initial \"Disconnected\" status\
       \ and selection state persistence)\nwere resolved. The remaining in-progress items need triage and\nactivation:\n  -\
@@ -160,6 +124,44 @@ sections:
       matched_to: Trade Canvas UI fixes and modularization
     branch: trade
     source: /home/tony/CascadeProjects/chaba/docs/ssot/focus-inbox/2026-08-15-trade-canvas-continued.yml
+  - label: mcp-debug file & clipboard bridge
+    text: "Extend mcp-debug with small, auditable file-transfer tools so the assistant can\nfetch remote logs/configs and\
+      \ push small scripts without leaving the MCP workflow.\nClipboard support is out-of-scope for the first pass and should\
+      \ be added as a\nseparate, experimental tool after file transfer is stable.\n\nProposed design for the complicated bits\
+      \ (so this session does not need to solve them again):\n- `mcp_get_file(host, path, max_bytes=65536)` returns `{ok,\
+      \ encoding, content_base64, size, truncated}`.\n  Transport: existing SSH exec with `cat` or `head -c`, base64-encode\
+      \ the payload.\n- `mcp_put_file(host, path, content_base64, mode=\"644\", overwrite=false)` returns `{ok, path, bytes_written}`.\n\
+      \  Transport: existing SSH exec with a heredoc after path-allowlist vetting.\n- `mcp_clipboard_get(host)` / `mcp_clipboard_set(host,\
+      \ text)` are macOS `pbpaste`/`pbcopy`\n  or Linux `xclip`/`xsel`/`wl-clipboard`. Disabled by default; per-host opt-in\
+      \ only.\n\nSecurity defaults:\n- Per-host `allowed_path_prefixes` (e.g. `~/.local`, `/tmp`, `~/.config`, project dirs).\n\
+      - Hard `max_bytes` cap and a `truncated` flag.\n- `overwrite=false` by default; confirmation required for writes outside\
+      \ the allow-list.\n- All get/put calls logged with host, path, size, and result.\n"
+    status: active
+    priority: medium
+    started: '2026-08-16'
+    estimated_duration: 1 session
+    tags:
+    - mcp
+    - mcp-debug
+    - file-transfer
+    - remote-ops
+    - security
+    subtasks:
+    - label: Promote this design to a dedicated SSOT (docs/ssot/infrastructure/ssot.mcp-debug.files.yml)
+      status: not_started
+    - label: Add mcp_get_file and mcp_put_file to the mcp-debug server
+      status: not_started
+    - label: Implement path-allowlist and size-limit vetting
+      status: not_started
+    - label: Update ssot.mcp-debug.yml with new tools, limits, and host allowlists
+      status: not_started
+    - label: Add smoke tests for get/put round-trip on tony-omen and tony-dell
+      status: not_started
+    - label: Design and optionally add mcp_clipboard_get/set as experimental
+      status: not_started
+    request_log: []
+    branch: chaba
+    source: /home/tony/CascadeProjects/chaba/docs/ssot/focus-inbox/2026-08-16-061308-mcp-debug-file-bridge.yml
 - title: Quick Wins
   icon: quick
   layout: list
