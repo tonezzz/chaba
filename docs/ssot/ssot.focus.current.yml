@@ -19,49 +19,49 @@ decision_tree:
     condition: Request matches an active shared/branch focus label, subtask, or quick win
     action: Append to the item's request_log and do the work inside that focus
     examples:
-      - let's process focus matched to Service Failures Detected and then Security Vulnerabilities Found
-      - do all the streamlining suggestions matched to Streamline focus-driven workflow
+    - let's process focus matched to Service Failures Detected and then Security Vulnerabilities Found
+    - do all the streamlining suggestions matched to Streamline focus-driven workflow
   - case: quick_win
     condition: Meets all quick_win_criteria below
     action: Add to Quick Wins, complete immediately, and append to Focus History at session end
     examples:
-      - Reduce focus.current bloat
-      - Tony-Dell wired DHCP release and renew
+    - Reduce focus.current bloat
+    - Tony-Dell wired DHCP release and renew
   - case: new_strategic_work
     condition: Multi-step or multi-session work that requires planning and tracking
     action: Add to Backlog in ssot.focus.yml with priority; do not start until user activates
     examples:
-      - Streamline focus-driven workflow
-      - Request-to-Focus Workflow redesign
+    - Streamline focus-driven workflow
+    - Request-to-Focus Workflow redesign
   - case: side_session_or_ambiguous
     condition: New idea from another session or request is vague and needs triage
     action: Save as docs/ssot/focus-inbox/<session>.yml with status draft and missing_info
     examples:
-      - Service Failures Detected from overnight assessment
-      - Security Vulnerabilities Found from overnight assessment
+    - Service Failures Detected from overnight assessment
+    - Security Vulnerabilities Found from overnight assessment
   - case: auto_generated_alert
     condition: Auto-generated item from overnight assessment with missing details
     action: Gather facts with allowed MCP tools, classify as hard or transient, then fix or document accepted state
     examples:
-      - Service Failures Detected investigated with mcp-health; .local health-check timeouts, not hard failures
-      - Security Vulnerabilities Found had no actionable scan output; documented no immediate patches required
+    - Service Failures Detected investigated with mcp-health; .local health-check timeouts, not hard failures
+    - Security Vulnerabilities Found had no actionable scan output; documented no immediate patches required
   - case: no_active_or_inbox
     condition: No active focus and no inbox items
     action: Suggest the highest-priority backlog item in reports/NEXT_FOCUS.md; do not auto-activate unless requested
     examples:
-      - Dispatcher suggests MacBook macOS App Development when the queue is empty
+    - Dispatcher suggests MacBook macOS App Development when the queue is empty
   - case: requires_mcp_data
     condition: Decision needs health, system, or infrastructure data
     action: Use the relevant MCP server per policy, document source, and do not take destructive actions without user confirmation
     examples:
-      - mcp-health used for Service Failures investigation
+    - mcp-health used for Service Failures investigation
 quick_win_criteria:
-  - Single file or single small edit set
-  - No new dependencies, installs, or infrastructure changes
-  - No deploy, restart, or destructive operation required
-  - Can be verified by a single command or small test
-  - Completable in under 5 minutes of assistant time
-  - User has not asked for a decision tree or design review
+- Single file or single small edit set
+- No new dependencies, installs, or infrastructure changes
+- No deploy, restart, or destructive operation required
+- Can be verified by a single command or small test
+- Completable in under 5 minutes of assistant time
+- User has not asked for a decision tree or design review
 validation:
   max_active_shared_focus: 1
   max_active_branch_focus: 1
@@ -72,41 +72,7 @@ sections:
 - title: Active Shared Focus
   icon: active
   layout: list
-  items:
-  - label: Focus Intake Decision Tree Design
-    text: Design explicit, history-driven decision rules for how the assistant disposes of every user request.
-    status: active
-    priority: high
-    started: '2026-08-16'
-    estimated_duration: 1 session
-    tags:
-    - focus
-    - workflow
-    - decision-tree
-    - automation
-    subtasks:
-    - label: Add decision_tree section to ssot.focus.current.yml
-      status: completed
-    - label: Define quick_win criteria
-      status: completed
-    - label: Extend mcp_focus to return intake action
-      status: completed
-    - label: Add focus-dispatcher --intake flag
-      status: completed
-    - label: Create subagent_focus_triage profile
-      status: completed
-    - label: Create ssot.focus.decisions.yml log
-      status: not_started
-    request_log:
-    - date: '2026-08-16'
-      request: Add a focus to design decision trees for each case, suggest from our history data, and assess the focus list to select the next high-value one.
-      matched_to: Focus Intake Decision Tree Design
-    - date: '2026-08-16'
-      request: 'next?'
-      matched_to: Focus Intake Decision Tree Design
-    - date: '2026-08-16'
-      request: Suggest improvement list for the focus intake and dispatcher system
-      matched_to: Focus Intake Decision Tree Design
+  items: []
 - title: Active Branch Focus
   icon: branch
   layout: list
@@ -134,5 +100,8 @@ config:
   validation_enabled: true
   related_files:
   - docs/ssot/ssot.focus.yml
+  - docs/ssot/ssot.focus.decisions.yml
   - docs/ssot/ssot.index.yml
   - docs/ssot/focus-inbox
+  - docs/ssot/infrastructure/ssot.subagent-focus-triage.yml
+  - docs/ssot/infrastructure/ssot.focus-dispatcher.yml

@@ -1,0 +1,58 @@
+title: Focus Intake Decision Log
+subtitle: Canonical record of request intake decisions for review and reuse
+icon: history
+version: 1
+
+schema:
+  required:
+  - date
+  - request
+  - action
+  - reason
+  optional:
+  - target
+  - confidence
+  - source
+  - matched_to
+
+notes:
+- This log is append-only; never delete or rewrite history.
+- Use it to audit the decision_tree and retrain intake heuristics.
+- Cross-reference with Focus History in docs/ssot/ssot.focus.yml.
+
+sections:
+- title: Decisions
+  icon: log
+  layout: timeline
+  items:
+  - date: '2026-08-16'
+    request: Add a focus to design decision trees for each case, suggest from our history data, and assess the focus list to select the next high-value one.
+    action: active
+    target: Focus Intake Decision Tree Design
+    reason: Request matched the active focus and requested design work.
+    confidence: high
+    source: direct
+    matched_to: Focus Intake Decision Tree Design
+  - date: '2026-08-16'
+    request: next?
+    action: active
+    target: Focus Intake Decision Tree Design
+    reason: Continuation request; keep processing the active focus.
+    confidence: high
+    source: direct
+    matched_to: Focus Intake Decision Tree Design
+  - date: '2026-08-16'
+    request: continue
+    action: active
+    target: Focus Intake Decision Tree Design
+    reason: Continuation cue matched the active focus.
+    confidence: high
+    source: direct
+    matched_to: Focus Intake Decision Tree Design
+
+config:
+  related_files:
+  - docs/ssot/ssot.focus.current.yml
+  - docs/ssot/ssot.focus.yml
+  - docs/ssot/infrastructure/ssot.subagent-focus-triage.yml
+  - docs/ssot/infrastructure/ssot.focus-dispatcher.yml

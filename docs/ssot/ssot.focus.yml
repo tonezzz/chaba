@@ -62,7 +62,8 @@ sections:
     - playlive
     - testing
   - label: mcp_focus intake decision tool
-    text: "Extend mcp_focus to accept a user request and return the exact intake action: active focus match, quick_win, inbox, or backlog."
+    text: 'Extend mcp_focus to accept a user request and return the exact intake action: active focus match, quick_win, inbox,
+      or backlog.'
     branch: chaba
     status: pending
     priority: medium
@@ -72,7 +73,8 @@ sections:
     - intake
     - automation
   - label: focus-dispatcher --intake flag
-    text: Add an intake CLI to scripts/focus-dispatcher.py that writes a new item to the correct place based on active focus state.
+    text: Add an intake CLI to scripts/focus-dispatcher.py that writes a new item to the correct place based on active focus
+      state.
     branch: chaba
     status: pending
     priority: medium
@@ -119,7 +121,8 @@ sections:
     - kb
     - decisions
   - label: mcp-debug SSOT read and search tools
-    text: Build mcp_read_ssot and mcp_search_ssot in scripts/mcp-debug-server.py. mcp_search_ssot should use mddb semantic search first and fall back to a local YAML keyword scan when mddb is unavailable or stale.
+    text: Build mcp_read_ssot and mcp_search_ssot in scripts/mcp-debug-server.py. mcp_search_ssot should use mddb semantic
+      search first and fall back to a local YAML keyword scan when mddb is unavailable or stale.
     branch: chaba
     status: pending
     priority: medium
@@ -130,7 +133,8 @@ sections:
     - search
     - mddb
   - label: Re-assess mcp-debug SSOT editing tools
-    text: After mcp_read_ssot and mcp_search_ssot are in use, measure whether sub-agents or scripts need mutation tools. If they do, scope a narrow mcp_ssot_append for request_log/subtasks/quick_wins only.
+    text: After mcp_read_ssot and mcp_search_ssot are in use, measure whether sub-agents or scripts need mutation tools. If
+      they do, scope a narrow mcp_ssot_append for request_log/subtasks/quick_wins only.
     branch: chaba
     status: pending
     priority: low
@@ -489,6 +493,19 @@ sections:
     - security
     - overnight-assessment
     - chaba
+    - completed
+  - label: Focus Intake Decision Tree Design
+    text: Design explicit, history-driven decision rules for how the assistant disposes of every user request.
+    date: '2026-08-16'
+    duration: 1 session
+    outcome: 'Completed subtasks: Add decision_tree section to ssot.focus.current.yml, Define quick_win criteria, Extend mcp_focus
+      to return intake action, Add focus-dispatcher --intake flag, Create subagent_focus_triage profile, Create ssot.focus.decisions.yml
+      log'
+    tags:
+    - focus
+    - workflow
+    - decision-tree
+    - automation
     - completed
 config:
   version: 2
