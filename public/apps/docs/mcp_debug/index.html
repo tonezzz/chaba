@@ -39,6 +39,14 @@
       The table uses a skeleton and in-place update, so the page does not blank out on refresh. Live data is proxied through <code>/api/mcp-savings.php</code> on chaba.h3, which fetches the tony-omen <code>mcp_debug.http_server</code> on the server side. This avoids the HTTPS mixed-content blocker. If the proxy or tony-omen is unreachable, the page falls back to the cached <code>data/mcp-savings.json</code> snapshot.
     </p>
     <div id="report"></div>
+    <div id="detail" class="mt-8 hidden" style="border: 1px solid #e2e8f0; border-radius: 0.5rem; background: #fff; padding: 1rem;">
+      <div class="flex items-center justify-between mb-4">
+        <h2 id="detail-title" class="text-xl font-semibold">Table</h2>
+        <button id="detail-close" class="text-sm text-gray-500 hover:text-gray-700">Close</button>
+      </div>
+      <div id="detail-table"></div>
+      <p id="detail-status" class="text-sm text-gray-500 mt-2"></p>
+    </div>
   </main>
   <script src="https://cdn.jsdelivr.net/npm/js-yaml@4.1.0/dist/js-yaml.min.js"></script>
   <script src="/apps/nav.js"></script>

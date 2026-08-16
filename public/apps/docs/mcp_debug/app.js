@@ -1,4 +1,5 @@
 const LIVE_DATA_URL = "/api/mcp-savings.php"; // same-origin PHP proxy to tony-omen
+const TABLE_DATA_URL = "/api/mcp-table.php"; // same-origin proxy for /mcp-table.json
 const FETCH_TIMEOUT = 8000; // proxy + mcp_report cache may take a few seconds
 
 function renderSkeleton() {
@@ -131,6 +132,65 @@ function escapeHtml(str) {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
 }
+
+async function loadTable(host, command) {
+  const detail = document.getElementById('detail');
+  const title = document.getElementById('detail-title');
+  const table = document.getElementById('detail-table');
+  const status = document.getElementById('detail-status');
+
+  detail.classList.remove('hidden');
+  title.textContent = `${host} — ${command}`;
+  table.innerHTML = '<p class="text-gray-500 text-sm">Loading table...</p>';
+  status.textContent = '';
+
+  try {
+    const res = await fetchWithTimeout(`${TABLE_DATA_URL}?host=${encodeURIComponent(host)}&command=${encodeURIComponent(command)}&t=` + Date.now());
+    if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+    const data = await res.json();
+    if (!data.ok) throw new Error(data.error || 'table not ok');
+    renderDetailTable(data);
+    status.textContent = 'Live data from tony-dell';
+  } catch (e) {
+    table.innerHTML = `<p style="color:#dc2626">Failed to load table: ${escapeHtml(e.message)}</p>`;
+    status.textContent = 'Live table unavailable';
+  }
+}
+
+function renderDetailTable(data) {
+  const table = document.getElementById('detail-table');
+  if (!data.headers || !data.rows || data.rows.length === 0) {
+    table.innerHTML = '<p class="text-gray-500 text-sm">No table rows returned.</p>';
+    return;
+  }
+
+  let html = '<table><thead><tr>';
+  for (const h of data.headers) {
+    html += `<th>${escapeHtml(h)}</th>`;
+  }
+  html += '</tr></thead><tbody>';
+  for (const row of data.rows) {
+    html += '<tr>';
+    for (const cell of row) {
+      html += `<td>${escapeHtml(cell)}</td>`;
+    }
+    html += '</tr>';
+  }
+  html += '</tbody></table>';
+  table.innerHTML = html;
+}
+
+document.getElementById('report').addEventListener('click', (e) => {
+  const row = e.target.closest('tr[data-host]');
+  if (!row) return;
+  const host = row.getAttribute('data-host');
+  const command = row.getAttribute('data-command');
+  if (host && command) loadTable(host, command);
+});
+
+document.getElementById('detail-close').addEventListener('click', () => {
+  document.getElementById('detail').classList.add('hidden');
+});
 
 document.getElementById('refresh').addEventListener('click', loadReport);
 renderSkeleton();
