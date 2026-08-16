@@ -78,7 +78,32 @@ sections:
 - title: Active Shared Focus
   icon: active
   layout: list
-  items: []
+  items:
+  - label: Live CORS endpoint for h3 mcp debug report
+    text: Expose tony-omen data so the chaba.h3 MCP Debug report page can refresh live results instead of relying on pushed
+      snapshots.
+    status: active
+    priority: medium
+    started: '2026-08-16'
+    estimated_duration: 1 session
+    tags:
+    - mcp
+    - h3
+    - web
+    - cors
+    - tony-omen
+    - live-data
+    subtasks:
+    - label: Choose endpoint implementation
+      status: not_started
+    - label: Add CORS headers to serve mcp-savings.json
+      status: not_started
+    - label: Update h3 app.js LIVE_DATA_URL
+      status: not_started
+    - label: Test live refresh from tony-omen
+      status: not_started
+    request_log: []
+    source: docs/ssot/focus-inbox/2026-08-16-mcp-debug-live-endpoint.yml
 - title: Active Branch Focus
   icon: branch
   layout: list
