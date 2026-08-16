@@ -36,7 +36,7 @@
       </div>
     </div>
     <p class="text-gray-500 text-sm mb-6">
-      The table uses a skeleton and in-place update, so the page does not blank out on refresh. The live endpoint is currently disabled because <code>http://tony-omen.local:9100</code> is blocked by the HTTPS page (mixed-content). When a same-origin proxy or HTTPS endpoint is available, set <code>LIVE_DATA_URL</code> in <code>app.js</code>. Refresh will then fall back to the cached snapshot with a 3-second timeout if live is unreachable.
+      The table uses a skeleton and in-place update, so the page does not blank out on refresh. Live data is proxied through <code>/api/mcp-savings.php</code> on chaba.h3, which fetches the tony-omen <code>mcp_debug.http_server</code> on the server side. This avoids the HTTPS mixed-content blocker. If the proxy or tony-omen is unreachable, the page falls back to the cached <code>data/mcp-savings.json</code> snapshot.
     </p>
     <div id="report"></div>
   </main>

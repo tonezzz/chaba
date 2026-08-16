@@ -1,5 +1,5 @@
-const LIVE_DATA_URL = null; // HTTPS mixed-content blocker; set to a same-origin proxy path such as "/api/mcp-savings.json" when available.
-const FETCH_TIMEOUT = 3000;
+const LIVE_DATA_URL = "/api/mcp-savings.php"; // same-origin PHP proxy to tony-omen
+const FETCH_TIMEOUT = 8000; // proxy + mcp_report cache may take a few seconds
 
 function renderSkeleton() {
   const report = document.getElementById('report');
