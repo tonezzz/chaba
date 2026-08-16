@@ -73,10 +73,13 @@ schedule:
     command: /home/tony/CascadeProjects/chaba/scripts/overnight-focus-review.py
     purpose: Generate health inbox drafts and update the next active focus sub-agent contract
     cron: "0 3 * * * /home/tony/CascadeProjects/chaba/scripts/overnight-focus-review.py >> /home/tony/var/chaba/overnight-focus-review.log 2>&1"
+    host: tony_dell
     systemd:
       - ~/.config/systemd/user/focus-dispatcher-overnight.service
       - ~/.config/systemd/user/focus-dispatcher-overnight.timer
       - OnCalendar=*-*-* 03:00:00
+    notes:
+      - mcp-health-to-inbox requires node on the runner host; install nodejs/npm on tony_dell to enable health drafts
   auto_commit:
     note: Set FOCUS_DISPATCHER_COMMIT=1 and FOCUS_DISPATCHER_PUSH=1 in the service unit to enable hands-off commit/push
 
