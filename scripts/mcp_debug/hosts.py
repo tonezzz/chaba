@@ -1,7 +1,18 @@
 """MCP Debug host operations."""
 import shlex
+import socket
 import subprocess
 from .config import HOSTS, RAW_PREFIXES
+
+
+def _is_local(host):
+    if host not in HOSTS:
+        return False
+    h = HOSTS[host]
+    if h.get("local"):
+        return True
+    current = socket.gethostname()
+    return current in (host, h.get("hostname"), h.get("name"))
 
 
 def run_on_host(host, command, compact):
@@ -18,7 +29,7 @@ def run_on_host(host, command, compact):
         if base_name not in RAW_PREFIXES:
             return {"ok": False, "error": f"raw command base '{base_name}' not in allowed_prefixes", "allowed": RAW_PREFIXES}
 
-    if h.get("local"):
+    if _is_local(host):
         if compact:
             argv = [mcp_debug] + shlex.split(command)
         else:

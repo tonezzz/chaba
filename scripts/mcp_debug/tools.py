@@ -198,6 +198,34 @@ def mcp_health(host):
     mcp_debug = h.get("mcp_debug_path", "/home/tony/.local/bin/mcp-debug")
     return run_on_host(host, f"ls -l {shlex.quote(mcp_debug)}", compact=False)
 
+
+def mcp_adaptive(host, command):
+    """Run compact and raw, returning whichever is smaller for the LLM payload."""
+    raw_result = run_on_host(host, command, compact=False)
+    compact_result = run_on_host(host, command, compact=True)
+
+    if compact_result.get("ok") and raw_result.get("ok"):
+        compact_len = len(compact_result.get("out", ""))
+        raw_len = len(raw_result.get("out", ""))
+        if compact_len <= raw_len:
+            data = json.loads(compact_result.get("out", "") or "{}")
+            data["h"] = host
+            data["adaptive"] = "compact"
+            return json.dumps(data, separators=(",", ":"))
+        raw_result["h"] = host
+        raw_result["adaptive"] = "raw"
+        return json.dumps(raw_result, separators=(",", ":"))
+
+    if compact_result.get("ok"):
+        data = json.loads(compact_result.get("out", "") or "{}")
+        data["h"] = host
+        data["adaptive"] = "compact"
+        return json.dumps(data, separators=(",", ":"))
+
+    raw_result["h"] = host
+    raw_result["adaptive"] = "raw_fallback"
+    return json.dumps(raw_result, separators=(",", ":"))
+
 def mcp_preset_list():
     return {
         "ok": True,

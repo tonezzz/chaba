@@ -16,6 +16,7 @@ from .tools import (
     mcp_env,
     mcp_gpu,
     mcp_health,
+    mcp_adaptive,
     mcp_preset_list,
     mcp_preset_run,
 )
@@ -183,6 +184,18 @@ def handle_tools_list(id_):
             },
         },
         {
+            "name": "mcp_adaptive",
+            "description": "Run a compact debug command and fall back to raw output when compact does not reduce size.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "host": {"type": "string", "enum": list(HOSTS.keys()), "description": "Target host"},
+                    "command": {"type": "string", "description": "Debug command, e.g. 'df -h'"},
+                },
+                "required": ["host", "command"],
+            },
+        },
+        {
             "name": "mcp_preset_list",
             "description": "List available multi-host diagnostic presets.",
             "inputSchema": {
@@ -322,6 +335,10 @@ def handle_tools_call(id_, params):
             return {"jsonrpc": "2.0", "id": id_, "error": {"code": -32602, "message": "host is required"}}
         result = mcp_health(h)
         output = json.dumps(result, separators=(",", ":"))
+    elif name == "mcp_adaptive":
+        if not host or not command:
+            return {"jsonrpc": "2.0", "id": id_, "error": {"code": -32602, "message": "host and command are required"}}
+        output = mcp_adaptive(host, command)
     elif name == "mcp_preset_list":
         result = mcp_preset_list()
         output = json.dumps(result, separators=(",", ":"))
