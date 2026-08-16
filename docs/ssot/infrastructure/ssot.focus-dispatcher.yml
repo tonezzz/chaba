@@ -27,7 +27,9 @@ runner:
 selection_rules:
   - Active focuses are chosen first when they are not completed and have incomplete subtasks.
   - Inbox files are chosen when no active focus remains or when a specific inbox is requested.
-  - Priority order: high > medium > low.
+  - Backlog items are sorted by triage_score, then priority, then started date.
+  - triage_score comes from docs/ssot/infrastructure/ssot.focus.triage.yml (urgency 40%, importance 35%, simplicity 25%).
+  - Priority order is high > medium > low and is only used as a tie-breaker when triage is missing.
   - Tie-breaker for active focuses: older started date first.
   - Inbox items are sorted by priority then filename for a stable order.
 

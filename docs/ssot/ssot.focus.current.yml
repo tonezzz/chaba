@@ -47,7 +47,7 @@ decision_tree:
     - Security Vulnerabilities Found had no actionable scan output; documented no immediate patches required
   - case: no_active_or_inbox
     condition: No active focus and no inbox items
-    action: Suggest the highest-priority backlog item in reports/NEXT_FOCUS.md; do not auto-activate unless requested
+    action: Suggest the highest triage_score backlog item in reports/NEXT_FOCUS.md; do not auto-activate unless requested
     examples:
     - Dispatcher suggests MacBook macOS App Development when the queue is empty
   - case: requires_mcp_data
@@ -101,6 +101,7 @@ config:
   related_files:
   - docs/ssot/ssot.focus.yml
   - docs/ssot/ssot.focus.decisions.yml
+  - docs/ssot/infrastructure/ssot.focus.triage.yml
   - docs/ssot/ssot.index.yml
   - docs/ssot/focus-inbox
   - docs/ssot/infrastructure/ssot.subagent-focus-triage.yml

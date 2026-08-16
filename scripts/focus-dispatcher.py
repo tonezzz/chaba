@@ -26,6 +26,19 @@ def priority_value(item):
     return PRIORITY.get(item.get("priority", "medium"), 2)
 
 
+def triage_score(item):
+    triage = item.get("triage", {})
+    if not triage:
+        return 0.0
+    try:
+        urgency = float(triage.get("urgency", 0))
+        importance = float(triage.get("importance", 0))
+        complication = float(triage.get("complication", 0))
+    except (TypeError, ValueError):
+        return 0.0
+    return round(urgency * 0.4 + importance * 0.35 + (10 - complication) * 0.25, 2)
+
+
 def is_active(item):
     status = item.get("status", "")
     return status in ("active", "in_progress", "not_started")
@@ -158,7 +171,9 @@ def next_from_backlog():
     items = [i for i in section.get("items", []) if i.get("status") in ("pending", "not_started", "active")]
     if not items:
         return None
-    items.sort(key=lambda it: (priority_value(it), it.get("started", "")), reverse=True)
+    for it in items:
+        it["__triage_score"] = triage_score(it)
+    items.sort(key=lambda it: (it.get("__triage_score", 0), priority_value(it), it.get("started", "")), reverse=True)
     return items[0]
 
 

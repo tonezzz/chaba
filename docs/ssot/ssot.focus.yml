@@ -45,6 +45,10 @@ sections:
     - macbook
     - appdev
     - xcode
+    triage:
+      urgency: 4
+      importance: 2
+      complication: 5
   - label: Tony-Dell Phase 3 Safe Auto-Recovery
     text: Implement safe auto-restart commands for tony-dell monitoring after the observe phase.
     branch: tony-dell
@@ -53,6 +57,10 @@ sections:
     tags:
     - monitoring
     - auto-recovery
+    triage:
+      urgency: 5
+      importance: 8
+      complication: 5
   - label: PlayLive Host-Prefixed Session IDs
     text: Implement host-prefixed session IDs in playlive-server.py per previous discussion.
     branch: chaba
@@ -61,65 +69,99 @@ sections:
     tags:
     - playlive
     - testing
+    triage:
+      urgency: 2
+      importance: 3
+      complication: 3
   - label: mcp_focus intake decision tool
     text: 'Extend mcp_focus to accept a user request and return the exact intake action: active focus match, quick_win, inbox,
       or backlog.'
     branch: chaba
-    status: pending
+    status: completed
     priority: medium
     tags:
     - mcp
     - focus
     - intake
     - automation
+    triage:
+      urgency: 4
+      importance: 6
+      complication: 4
+    completed: '2026-08-16'
   - label: focus-dispatcher --intake flag
     text: Add an intake CLI to scripts/focus-dispatcher.py that writes a new item to the correct place based on active focus
       state.
     branch: chaba
-    status: pending
+    status: completed
     priority: medium
     tags:
     - focus
     - dispatcher
     - cli
     - automation
+    triage:
+      urgency: 4
+      importance: 7
+      complication: 4
+    completed: '2026-08-16'
   - label: ssot.focus.current.yml decision_tree
     text: Add explicit decision rules to docs/ssot/ssot.focus.current.yml so the assistant no longer has to infer the disposition.
     branch: chaba
-    status: pending
+    status: completed
     priority: medium
     tags:
     - focus
     - ssot
     - workflow
+    triage:
+      urgency: 4
+      importance: 8
+      complication: 4
+    completed: '2026-08-16'
   - label: quick_win criteria in current focus
     text: Define clear quick-win criteria (single file, <5 min, no deploy) in docs/ssot/ssot.focus.current.yml.
     branch: chaba
-    status: pending
+    status: completed
     priority: medium
     tags:
     - focus
     - workflow
     - quick-wins
+    triage:
+      urgency: 4
+      importance: 6
+      complication: 2
+    completed: '2026-08-16'
   - label: subagent_focus_triage
     text: Create a read-only sub-agent profile for focus triage so ambiguous requests can be handed off.
     branch: chaba
-    status: pending
+    status: completed
     priority: low
     tags:
     - subagents
     - focus
     - triage
+    triage:
+      urgency: 3
+      importance: 5
+      complication: 3
+    completed: '2026-08-16'
   - label: ssot.focus.decisions.yml log
     text: Create a canonical decision log for focus intake decisions so the rules can be reviewed and reused.
     branch: chaba
-    status: pending
+    status: completed
     priority: low
     tags:
     - focus
     - ssot
     - kb
     - decisions
+    triage:
+      urgency: 3
+      importance: 5
+      complication: 3
+    completed: '2026-08-16'
   - label: mcp-debug SSOT read and search tools
     text: Build mcp_read_ssot and mcp_search_ssot in scripts/mcp-debug-server.py. mcp_search_ssot should use mddb semantic
       search first and fall back to a local YAML keyword scan when mddb is unavailable or stale.
@@ -132,6 +174,10 @@ sections:
     - read
     - search
     - mddb
+    triage:
+      urgency: 6
+      importance: 8
+      complication: 6
   - label: Re-assess mcp-debug SSOT editing tools
     text: After mcp_read_ssot and mcp_search_ssot are in use, measure whether sub-agents or scripts need mutation tools. If
       they do, scope a narrow mcp_ssot_append for request_log/subtasks/quick_wins only.
@@ -143,6 +189,10 @@ sections:
     - ssot
     - editing
     - assessment
+    triage:
+      urgency: 4
+      importance: 6
+      complication: 4
 - title: Quick Wins
   icon: quick
   layout: list
