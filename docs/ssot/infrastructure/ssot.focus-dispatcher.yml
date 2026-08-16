@@ -5,6 +5,7 @@ version: 2
 
 runner:
   script: /home/tony/CascadeProjects/chaba/scripts/focus-dispatcher.py
+  note: Thin CLI that imports and calls the focus_dispatcher package. Legacy systemd/cron paths remain unchanged.
   entry_points:
     - no arguments: archive completed, validate limits, then select the highest-priority active or inbox focus
     - --inbox <path>: force-activate a specific inbox file
@@ -25,6 +26,24 @@ runner:
     - python3
     - PyYAML
     - git
+
+package_design:
+  package: /home/tony/CascadeProjects/chaba/scripts/focus_dispatcher/
+  cli: /home/tony/CascadeProjects/chaba/scripts/focus-dispatcher.py
+  layout:
+    - state.py: repository paths, YAML I/O, section helpers, status predicates, validate_current
+    - triage.py: priority_value, triage_score, next_from_active/inbox/backlog
+    - history.py: archive helpers, _archive_section, outcome and tag helpers
+    - actions.py: activate_inbox, suggest_intake, handle_intake
+    - prompts.py: generate_prompt, generate_suggestion_prompt, generate_subagent_contract
+    - git.py: git_mv_inbox, _is_allowed_staged_path, git_commit
+    - cli.py: argument parser and main entry point
+  conventions:
+    - Each module owns one responsibility; avoid cross-circular imports.
+    - Pure logic stays in triage/history/prompts; side effects live in actions/git/cli.
+    - cli.py is a thin wrapper that imports package modules and calls their functions.
+    - The public script path remains scripts/focus-dispatcher.py so systemd and cron units keep working.
+    - Shared constants and file paths stay in state.py so tests and other scripts can import them.
 
 selection_rules:
   - Active focuses are chosen first when they are not completed and have incomplete subtasks.

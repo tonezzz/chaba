@@ -2,7 +2,6 @@ title: Focus Intake Decision Log
 subtitle: Canonical record of request intake decisions for review and reuse
 icon: history
 version: 1
-
 schema:
   required:
   - date
@@ -14,19 +13,18 @@ schema:
   - confidence
   - source
   - matched_to
-
 notes:
 - This log is append-only; never delete or rewrite history.
 - Use it to audit the decision_tree and retrain intake heuristics.
 - Cross-reference with Focus History in docs/ssot/ssot.focus.yml.
-
 sections:
 - title: Decisions
   icon: log
   layout: timeline
   items:
   - date: '2026-08-16'
-    request: Add a focus to design decision trees for each case, suggest from our history data, and assess the focus list to select the next high-value one.
+    request: Add a focus to design decision trees for each case, suggest from our
+      history data, and assess the focus list to select the next high-value one.
     action: active
     target: Focus Intake Decision Tree Design
     reason: Request matched the active focus and requested design work.
@@ -53,11 +51,20 @@ sections:
     request: Please add into focus, this page shows error mixing http/https.
     action: active
     target: Fix mcp_debug H3 page mixed-content (HTTP/HTTPS) error
-    reason: User reported a deployed H3 page mixed-content bug and asked to track it. The fix required disabling the HTTP live endpoint and adding skeleton/timeout UI, so it became the active branch focus.
+    reason: User reported a deployed H3 page mixed-content bug and asked to track
+      it. The fix required disabling the HTTP live endpoint and adding skeleton/timeout
+      UI, so it became the active branch focus.
     confidence: high
     source: direct
     matched_to: Fix mcp_debug H3 page mixed-content (HTTP/HTTPS) error
-
+  - date: '2026-08-16'
+    request: focus back to focus system
+    action: active
+    target: ''
+    reason: Request is about the focus system; continue active focus
+    confidence: medium
+    source: mcp_focus
+    matched_to: ''
 config:
   related_files:
   - docs/ssot/ssot.focus.current.yml
