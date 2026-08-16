@@ -4,7 +4,7 @@
  * chaba.h3 is served over HTTPS; this PHP endpoint fetches the HTTP backend
  * so the browser never makes a mixed-content request.
  */
-$host = getenv('MCP_DEBUG_HOST') ?: '100.75.102.88';
+$host = getenv('MCP_DEBUG_HOST') ?: '100.68.142.13';
 $port = getenv('MCP_DEBUG_PORT') ?: '9100';
 $upstream = "http://{$host}:{$port}/mcp-savings.json";
 
