@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-$upstream = 'http://100.68.142.13:9100/mcp-savings.json';
+$upstream = 'https://tony-dell.taila0626a.ts.net/mcp-savings.json';
 $timeout = 5;
 $fallback = __DIR__ . '/../apps/docs/mcp_debug/data/mcp-savings.json';
 

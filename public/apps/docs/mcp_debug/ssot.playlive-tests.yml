@@ -4,8 +4,8 @@ subtitle: Browser-driven verification for the mcp_debug savings report page
 base_url: https://chaba.h3.gizmo-thailand.com/apps/docs/mcp_debug
 
 prerequisites:
-  - The chaba.h3 server can reach the upstream mcp-savings endpoint (currently http://100.68.142.13:9100/mcp-savings.json on tony-dell) or the static data file must be updated out-of-band.
-  - If the upstream is unreachable, the PHP proxy serves the cached data/mcp-savings.json fallback.
+  - The H3 PHP proxy reaches the tony-dell Tailscale Funnel endpoint at https://tony-dell.taila0626a.ts.net/mcp-savings.json.
+  - If the Funnel endpoint is unreachable, the PHP proxy falls back to the static data/mcp-savings.json snapshot.
 
 components:
   - name: savings_report
