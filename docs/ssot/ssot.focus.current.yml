@@ -122,38 +122,37 @@ sections:
       matched_to: Modularize mcp-debug-server.py and large files
     branch: chaba
     source: docs/ssot/focus-inbox/2026-08-16-modularize-mcp-debug.yml
-  - label: Continuous decision capture for focus and technical choices
-    text: >
-      Design and implement a continuous decision-capture system. Extend mcp_focus and focus-dispatcher --intake to log
-      intake decisions to ssot.focus.decisions.yml, add a dedicated technical-decision SSOT for design trade-offs, and record
-      per-session decisions in ssot.focus.sessions.yml so the decision_tree and triage improve over time.
+  - label: Trade Canvas UI fixes and modularization
+    text: "Continue the work from the 2026-08-15 trade session. Two high-priority\nUI bugs (initial \"Disconnected\" status\
+      \ and selection state persistence)\nwere resolved. The remaining in-progress items need triage and\nactivation:\n  -\
+      \ Fix the 1 Week timeframe chart rendering for GOLD and other symbols.\n  - Continue the compare/compare2 SSOT-driven\
+      \ modularization.\n  - Validate and extend the data source reliability catalog.\n  - Complete the Perfect strategy benchmarking\
+      \ with full historical data.\n"
     status: active
     priority: high
     started: '2026-08-16'
-    estimated_duration: 2 sessions
+    estimated_duration: 1 session
     tags:
+    - trade
+    - ui
+    - compare
     - ssot
-    - decisions
-    - mcp-focus
-    - focus-dispatcher
-    - automation
+    - data-sources
+    - strategies
     subtasks:
-    - label: Define the decision-capture schema and file layout
-      status: completed
-    - label: Add automatic decision logging to mcp_focus
-      status: completed
-    - label: Add automatic decision logging to focus-dispatcher --intake
-      status: completed
-    - label: Create a dedicated technical-decision SSOT for the mcp_debug CORS proxy example
-      status: completed
-    - label: Validate the updated decision_tree and triage heuristics
+    - label: Reproduce the GOLD 1W empty chart and inspect data / renderer logic
       status: not_started
-    request_log:
-    - date: '2026-08-16'
-      request: 'yes. and how can we keep processing focus until all is done while I am away?'
-      matched_to: Continuous decision capture for focus and technical choices
-    branch: chaba
-    source: docs/ssot/ssot.focus.yml
+    - label: Add short-timeframe fallback zoom / density handling in chart-renderer.js
+      status: not_started
+    - label: Continue compare/compare2 modularization (promote-feature.sh, generic SSOT patterns)
+      status: not_started
+    - label: Integrate Frankfurter / exchangerate.dev and validate THB/commodity data paths
+      status: not_started
+    - label: Run Perfect strategy auto-detect and benchmark against existing strategies
+      status: not_started
+    request_log: []
+    branch: trade
+    source: /home/tony/CascadeProjects/chaba/docs/ssot/focus-inbox/2026-08-15-trade-canvas-continued.yml
 - title: Quick Wins
   icon: quick
   layout: list
