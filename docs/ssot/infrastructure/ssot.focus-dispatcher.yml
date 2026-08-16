@@ -6,8 +6,9 @@ version: 2
 runner:
   script: /home/tony/CascadeProjects/chaba/scripts/focus-dispatcher.py
   entry_points:
-    - no arguments: archive completed, then select the highest-priority active or inbox focus
+    - no arguments: archive completed, validate limits, then select the highest-priority active or inbox focus
     - --inbox <path>: force-activate a specific inbox file
+    - --park: park the existing active focus in the same section before activating a new one
     - --intake <request>: classify a new request and write it to the correct place
     - --dry-run: show selection without modifying files
   permissions:
@@ -34,9 +35,11 @@ selection_rules:
   - Inbox items are sorted by priority then filename for a stable order.
 
 activation_behavior:
+  - Runs validate_current() before any activation.
   - Loads the target inbox focus from docs/ssot/focus-inbox/.
   - Identifies shared vs branch by the presence of the branch field.
-  - Marks the previous active item in the same section as completed and sets completed date.
+  - Without --park: refuses to activate if the target section already has an active item.
+  - With --park: sets the existing active item(s) in the same section to status parked and records parked date.
   - Appends the new focus to the Active Shared Focus or Active Branch Focus section.
   - Archives completed active items to ssot.focus.yml Focus History before selecting.
   - Runs git mv to move the inbox file to docs/ssot/focus-inbox/processed/.
@@ -100,4 +103,5 @@ failure_handling:
   - If an inbox YAML is invalid, log a warning and continue to the next file.
   - If git mv fails (e.g. uncommitted merge conflict), leave ssot.focus.current.yml updated but report the git error.
   - If no active or inbox focus is found, suggest the highest-priority backlog item in reports/NEXT_FOCUS.md and exit 0.
-  - If activation is requested but no matching section exists, raise RuntimeError before any git or write.
+  - If ssot.focus.current.yml violates max_active_shared_focus or max_active_branch_focus, raise RuntimeError before selecting.
+  - If activation is requested but no matching section exists or the limit is already reached, raise RuntimeError before any git or write.

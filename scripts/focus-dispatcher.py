@@ -44,6 +44,10 @@ def is_active(item):
     return status in ("active", "in_progress", "not_started")
 
 
+def is_parked(item):
+    return item.get("status", "") == "parked"
+
+
 def is_completed(item):
     return item.get("status", "") == "completed"
 
@@ -77,6 +81,25 @@ def find_section(sections, title):
         if sec.get("title") == title:
             return sec
     return None
+
+
+def validate_current(doc=None):
+    if doc is None:
+        doc = load_current()
+    validation = doc.get("validation", {})
+    limits = {
+        "Active Shared Focus": validation.get("max_active_shared_focus", 1),
+        "Active Branch Focus": validation.get("max_active_branch_focus", 1),
+    }
+    for section_title, limit in limits.items():
+        sec = find_section(doc.get("sections", []), section_title)
+        if sec is None:
+            continue
+        active_count = sum(1 for it in sec.get("items", []) if is_active(it))
+        if active_count > limit:
+            labels = ", ".join(it.get("label", "?") for it in sec.get("items", []) if is_active(it))
+            raise RuntimeError(f"{section_title} has {active_count} active items (limit {limit}): {labels}")
+    return True
 
 
 def git_mv_inbox(inbox_path):
@@ -129,7 +152,7 @@ def next_from_active(doc):
     for sec in sections:
         if sec.get("title") in ("Active Shared Focus", "Active Branch Focus"):
             for item in sec.get("items", []):
-                if not is_completed(item) and incomplete_subtasks(item):
+                if is_active(item) and incomplete_subtasks(item):
                     candidates.append((sec["title"], item))
     if not candidates:
         return None, None
@@ -349,8 +372,9 @@ def generate_suggestion_prompt(item):
     return "\n".join(lines)
 
 
-def activate_inbox(inbox):
+def activate_inbox(inbox, park=False):
     doc = load_current()
+    validate_current(doc)
     sections = doc.get("sections", [])
     branch = inbox.get("branch")
     if branch:
@@ -361,11 +385,15 @@ def activate_inbox(inbox):
     if section is None:
         raise RuntimeError(f"Section {section_title} not found in {CURRENT}")
 
-    # Mark previous active items in the same section as completed
-    for item in section.get("items", []):
-        if not is_completed(item):
-            item["status"] = "completed"
-            item["completed"] = datetime.now().strftime("%Y-%m-%d")
+    active_items = [it for it in section.get("items", []) if is_active(it)]
+    if active_items:
+        if not park:
+            labels = ", ".join(it.get("label", "?") for it in active_items)
+            raise RuntimeError(f"{section_title} already has active item(s): {labels}. Use --park to interrupt.")
+        for item in active_items:
+            item["status"] = "parked"
+            item["parked"] = datetime.now().strftime("%Y-%m-%d")
+            item.pop("completed", None)
 
     new_item = make_focus_item(
         inbox.get("label"),
@@ -378,6 +406,7 @@ def activate_inbox(inbox):
     )
     section["items"].append(new_item)
     save_current(doc)
+    validate_current(doc)
     target = git_mv_inbox(inbox["__file"])
     return section_title, new_item, str(target)
 
@@ -500,6 +529,7 @@ def main():
     parser = argparse.ArgumentParser(description="Focus dispatcher for chaba")
     parser.add_argument("--inbox", help="Path to a specific inbox file to activate")
     parser.add_argument("--intake", help="Register a new request for focus intake")
+    parser.add_argument("--park", action="store_true", help="Park the existing active focus in the same section before activating a new one")
     parser.add_argument("--dry-run", action="store_true", help="Show selection without modifying files")
     args = parser.parse_args()
 
@@ -514,6 +544,7 @@ def main():
     if not args.dry_run:
         changed += archive_completed()
 
+    validate_current()
     active_title, active_item = next_from_active(load_current())
     inbox = None
     if args.inbox:
@@ -537,7 +568,7 @@ def main():
         print(f"Active focus: {item['label']} ({title})")
     elif args.inbox and inbox:
         if not args.dry_run:
-            title, item, target = activate_inbox(inbox)
+            title, item, target = activate_inbox(inbox, park=args.park)
             changed += [CURRENT, FOCUS, target]
         else:
             item = make_focus_item(
@@ -555,7 +586,7 @@ def main():
         print(f"Activated: {item['label']} ({title})")
     elif inbox:
         if not args.dry_run:
-            title, item, target = activate_inbox(inbox)
+            title, item, target = activate_inbox(inbox, park=args.park)
             changed += [CURRENT, FOCUS, target]
         else:
             item = make_focus_item(

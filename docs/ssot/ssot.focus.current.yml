@@ -45,6 +45,12 @@ decision_tree:
     examples:
     - Service Failures Detected investigated with mcp-health; .local health-check timeouts, not hard failures
     - Security Vulnerabilities Found had no actionable scan output; documented no immediate patches required
+  - case: interrupt
+    condition: New strategic work that must start now while an active shared focus is still incomplete
+    action: Park the active shared focus, activate the new work as a branch focus, and return to the parked focus when the
+      branch is completed
+    examples:
+    - Reviewing and implementing focus validation/parking while the mcp-debug shared focus stays parked
   - case: no_active_or_inbox
     condition: No active focus and no inbox items
     action: Suggest the highest triage_score backlog item in reports/NEXT_FOCUS.md; do not auto-activate unless requested
@@ -74,7 +80,8 @@ sections:
   layout: list
   items:
   - label: mcp-debug SSOT read and search tools
-    text: Build mcp_read_ssot and mcp_search_ssot in scripts/mcp-debug-server.py. mcp_search_ssot should use mddb semantic search first and fall back to a local YAML keyword scan when mddb is unavailable or stale.
+    text: Build mcp_read_ssot and mcp_search_ssot in scripts/mcp-debug-server.py. mcp_search_ssot should use mddb semantic
+      search first and fall back to a local YAML keyword scan when mddb is unavailable or stale.
     status: active
     priority: medium
     started: '2026-08-16'
@@ -92,7 +99,7 @@ sections:
       status: not_started
     request_log:
     - date: '2026-08-16'
-      request: 'next?'
+      request: next?
       matched_to: mcp-debug SSOT read and search tools
 - title: Active Branch Focus
   icon: branch
