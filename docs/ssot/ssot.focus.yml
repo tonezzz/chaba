@@ -193,6 +193,22 @@ sections:
       urgency: 4
       importance: 6
       complication: 5
+  - label: Tailscale Funnel 404 and healthcheck
+    text: User reports https://tony-dell.taila0626a.ts.net/ returns 404. Curl from tony-omen returns 200 for the same URL, /apps/tailscale-funnel/, and /mcp-savings.json, so the failure may be client-specific or cache-related. Investigate root path handling, verify expected landing/health endpoint, and add a health check for the Funnel root and mcp endpoints in SSOT health definitions.
+    branch: tony-dell
+    status: pending
+    priority: high
+    tags:
+    - tailscale
+    - funnel
+    - tony-dell
+    - health-check
+    - 404
+    - mcp-debug
+    triage:
+      urgency: 5
+      importance: 7
+      complication: 4
 - title: Quick Wins
   icon: quick
   layout: list
