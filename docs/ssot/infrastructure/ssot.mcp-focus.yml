@@ -117,5 +117,8 @@ related_files:
   - scripts/mcp_debug/server.py
 
 implementation_notes:
-  - The current mcp_focus implementation in scripts/mcp_debug/focus.py returns active foci and a basic intake suggestion.
-  - The next implementation should align with this policy, return the new recommendation schema, and add the status mode.
+  - Implemented in scripts/mcp_debug/focus.py and scripts/mcp_debug/server.py.
+  - mcp_focus supports mode=status (read-only active/Quick Wins listing) and mode=recommend (decision tree).
+  - The recommend decision tree maps directly to the assistant-level cases in docs/ssot/ssot.focus.current.yml#decision_tree.
+  - mcp_focus appends a decision record to docs/ssot/ssot.focus.decisions.yml whenever a request is provided.
+  - The assistant uses the returned action as the first disposition and only deviates for special cases (live_bug_report, auto_generated_alert, requires_mcp_data).
