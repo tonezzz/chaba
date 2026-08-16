@@ -103,6 +103,26 @@ sessions:
       - Decide whether to build the subagent runner or just enable the dispatcher scheduler
     next_action: Start the first subtask (define schema) or set up the focus-dispatcher systemd timer
 
+  - date: '2026-08-16'
+    session: chaba-2026-08-16-close
+    focus: mcp-debug file & clipboard bridge
+    source: user request
+    plan:
+      - Add all recent completed work into the focus sessions log and finish the session
+    done:
+      - Documented CSV-with-header table output and table_schemas in ssot.mcp-debug.yml
+      - Added mcp_debug/formatters.py and the /mcp-table.json endpoint in http_server.py
+      - Refactored focus-dispatcher.py into the scripts/focus_dispatcher/ package
+      - Pointed mcp_debug CORS endpoint and H3 PHP proxy to tony-dell
+      - Completed mcp_report json/csv/html quick wins
+      - Created ssot.technical-decisions.yml and registered it in ssot.index.yml
+      - Updated tony_dell host role in ssot.mcp-debug.yml (headless primary CORS/link/overnight host)
+      - Added UI policy SSOT item to the backlog in ssot.focus.yml
+    follow_up:
+      - Implement the 6 mcp-debug file & clipboard bridge subtasks
+      - Decide when to resume the parked Trade Canvas UI focus
+    next_action: Start the first file bridge subtask (create ssot.mcp-debug.files.yml)
+
 related_files:
   - docs/ssot/ssot.focus.current.yml
   - docs/ssot/ssot.focus.yml
