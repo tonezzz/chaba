@@ -1,0 +1,344 @@
+"""MCP Debug server wiring."""
+import json
+import logging
+import sys
+from .config import HOSTS, DEBUG_COMMANDS, PRESETS, PRESET_DESCRIPTIONS
+from .hosts import run_on_host
+from .tools import (
+    mcp_debug,
+    mcp_raw,
+    mcp_stats,
+    mcp_vet,
+    mcp_savings,
+    mcp_diff,
+    mcp_logs,
+    mcp_net,
+    mcp_env,
+    mcp_gpu,
+    mcp_health,
+    mcp_preset_list,
+    mcp_preset_run,
+)
+from .reports import mcp_report
+from .focus import mcp_focus
+
+logger = logging.getLogger(__name__)
+
+
+def handle_initialize(id_):
+    return {
+        "jsonrpc": "2.0",
+        "id": id_,
+        "result": {
+            "protocolVersion": "2024-11-05",
+            "capabilities": {"tools": {}},
+            "serverInfo": {"name": "mcp-debug", "version": "2"},
+        },
+    }
+
+
+def handle_tools_list(id_):
+    known = ", ".join(DEBUG_COMMANDS.keys())
+    tools = [
+        {
+            "name": "mcp_debug",
+            "description": f"Run a compact debug command on a host. Known commands: {known}",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "host": {"type": "string", "enum": list(HOSTS.keys()), "description": "Target host"},
+                    "command": {"type": "string", "description": "Debug command, e.g. 'systemctl list-units'"},
+                },
+                "required": ["host", "command"],
+            },
+        },
+        {
+            "name": "mcp_raw",
+            "description": "Run a raw command on a host with allowed prefixes.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "host": {"type": "string", "enum": list(HOSTS.keys()), "description": "Target host"},
+                    "command": {"type": "string", "description": "Raw shell command"},
+                },
+                "required": ["host", "command"],
+            },
+        },
+        {
+            "name": "mcp_stats",
+            "description": "Compare raw and compact output for a command and report word/character savings.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "host": {"type": "string", "enum": list(HOSTS.keys()), "description": "Target host"},
+                    "command": {"type": "string", "description": "Command to compare, e.g. 'df -h'"},
+                },
+                "required": ["host", "command"],
+            },
+        },
+        {
+            "name": "mcp_vet",
+            "description": "Vet a candidate command on all hosts and optionally add it to the SSOT.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "command": {"type": "string", "description": "Candidate command to vet"},
+                    "add": {"type": "boolean", "description": "Add to SSOT if all hosts pass", "default": False},
+                },
+                "required": ["command"],
+            },
+        },
+        {
+            "name": "mcp_savings",
+            "description": "Compute live total raw/compact/savings across all debug commands on one or more hosts.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "hosts": {
+                        "type": "array",
+                        "items": {"type": "string", "enum": list(HOSTS.keys())},
+                        "description": "Hosts to include (defaults to all)",
+                    },
+                },
+            },
+        },
+        {
+            "name": "mcp_diff",
+            "description": "Run the same command on two hosts and return a unified diff.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "command": {"type": "string", "description": "Command to diff"},
+                    "hosts": {
+                        "type": "array",
+                        "items": {"type": "string", "enum": list(HOSTS.keys())},
+                        "minItems": 2,
+                        "maxItems": 2,
+                        "description": "Two hosts to compare",
+                    },
+                    "compact": {"type": "boolean", "description": "Use compact output for both hosts", "default": False},
+                },
+                "required": ["command", "hosts"],
+            },
+        },
+        {
+            "name": "mcp_logs",
+            "description": "Tail a file or fetch journalctl logs for a service on a host.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "host": {"type": "string", "enum": list(HOSTS.keys()), "description": "Target host"},
+                    "unit": {"type": "string", "description": "systemd unit for journalctl"},
+                    "file": {"type": "string", "description": "File path for tail"},
+                    "lines": {"type": "integer", "description": "Number of lines", "default": 50},
+                },
+                "required": ["host"],
+            },
+        },
+        {
+            "name": "mcp_net",
+            "description": "Show listening sockets with ss -tlnp, optionally filtered by port.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "host": {"type": "string", "enum": list(HOSTS.keys()), "description": "Target host"},
+                    "port": {"type": "integer", "description": "Optional port filter"},
+                },
+                "required": ["host"],
+            },
+        },
+        {
+            "name": "mcp_env",
+            "description": "Dump remote environment variables, optionally filtered by a substring.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "host": {"type": "string", "enum": list(HOSTS.keys()), "description": "Target host"},
+                    "pattern": {"type": "string", "description": "Optional substring filter (case-insensitive)"},
+                },
+                "required": ["host"],
+            },
+        },
+        {
+            "name": "mcp_gpu",
+            "description": "Run nvidia-smi or rocm-smi on a host and return the output.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "host": {"type": "string", "enum": list(HOSTS.keys()), "description": "Target host"},
+                },
+                "required": ["host"],
+            },
+        },
+        {
+            "name": "mcp_health",
+            "description": "Check that the mcp-debug binary exists and is reachable on a host. Fails fast if SSH is down.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "host": {"type": "string", "enum": list(HOSTS.keys()), "description": "Target host"},
+                },
+                "required": ["host"],
+            },
+        },
+        {
+            "name": "mcp_preset_list",
+            "description": "List available multi-host diagnostic presets.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {},
+            },
+        },
+        {
+            "name": "mcp_preset_run",
+            "description": "Run a named preset. Presets are multi-step, multi-host diagnostic routines.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "preset": {"type": "string", "description": "Preset name, e.g. 'quick-health'"},
+                },
+                "required": ["preset"],
+            },
+        },
+        {
+            "name": "mcp_report",
+            "description": "Generate a savings report in markdown, json, or csv from mcp_savings and optionally save it to reports/.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "hosts": {
+                        "type": "array",
+                        "items": {"type": "string", "enum": list(HOSTS.keys())},
+                        "description": "Hosts to include (defaults to all)",
+                    },
+                    "save": {"type": "boolean", "description": "Save the report to reports/mcp-savings-YYYY-MM-DD.{format}", "default": False},
+                    "format": {"type": "string", "enum": ["markdown", "json", "csv"], "description": "Output format", "default": "markdown"},
+                },
+            },
+        },
+        {
+            "name": "mcp_focus",
+            "description": "Return the current active focus and suggest an intake action for an optional request.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "request": {"type": "string", "description": "Optional user request to classify"},
+                },
+            },
+        },
+    ]
+    return {"jsonrpc": "2.0", "id": id_, "result": {"tools": tools}}
+
+
+def handle_tools_call(id_, params):
+    name = params.get("name")
+    arguments = params.get("arguments", {})
+    host = arguments.get("host")
+    command = arguments.get("command")
+
+    if name == "mcp_debug":
+        if not host or not command:
+            return {"jsonrpc": "2.0", "id": id_, "error": {"code": -32602, "message": "host and command are required"}}
+        output = mcp_debug(host, command)
+    elif name == "mcp_raw":
+        if not host or not command:
+            return {"jsonrpc": "2.0", "id": id_, "error": {"code": -32602, "message": "host and command are required"}}
+        output = mcp_raw(host, command)
+    elif name == "mcp_stats":
+        if not host or not command:
+            return {"jsonrpc": "2.0", "id": id_, "error": {"code": -32602, "message": "host and command are required"}}
+        result = mcp_stats(host, command)
+        output = json.dumps(result, separators=(",", ":"))
+    elif name == "mcp_vet":
+        cmd = arguments.get("command")
+        if not cmd:
+            return {"jsonrpc": "2.0", "id": id_, "error": {"code": -32602, "message": "command is required"}}
+        result = mcp_vet(cmd, add=arguments.get("add", False))
+        output = json.dumps(result, separators=(",", ":"))
+    elif name == "mcp_savings":
+        result = mcp_savings(arguments.get("hosts"))
+        output = json.dumps(result, separators=(",", ":"))
+    elif name == "mcp_diff":
+        cmd = arguments.get("command")
+        hosts = arguments.get("hosts", [])
+        compact = arguments.get("compact", False)
+        if not cmd or len(hosts) != 2:
+            return {"jsonrpc": "2.0", "id": id_, "error": {"code": -32602, "message": "command and exactly 2 hosts are required"}}
+        result = mcp_diff(cmd, hosts, compact)
+        output = json.dumps(result, separators=(",", ":"))
+    elif name == "mcp_logs":
+        h = arguments.get("host")
+        if not h:
+            return {"jsonrpc": "2.0", "id": id_, "error": {"code": -32602, "message": "host is required"}}
+        result = mcp_logs(h, unit=arguments.get("unit"), file=arguments.get("file"), lines=arguments.get("lines", 50))
+        output = json.dumps(result, separators=(",", ":"))
+    elif name == "mcp_net":
+        h = arguments.get("host")
+        if not h:
+            return {"jsonrpc": "2.0", "id": id_, "error": {"code": -32602, "message": "host is required"}}
+        result = mcp_net(h, port=arguments.get("port"))
+        output = json.dumps(result, separators=(",", ":"))
+    elif name == "mcp_env":
+        h = arguments.get("host")
+        if not h:
+            return {"jsonrpc": "2.0", "id": id_, "error": {"code": -32602, "message": "host is required"}}
+        result = mcp_env(h, pattern=arguments.get("pattern"))
+        output = json.dumps(result, separators=(",", ":"))
+    elif name == "mcp_gpu":
+        h = arguments.get("host")
+        if not h:
+            return {"jsonrpc": "2.0", "id": id_, "error": {"code": -32602, "message": "host is required"}}
+        result = mcp_gpu(h)
+        output = json.dumps(result, separators=(",", ":"))
+    elif name == "mcp_health":
+        h = arguments.get("host")
+        if not h:
+            return {"jsonrpc": "2.0", "id": id_, "error": {"code": -32602, "message": "host is required"}}
+        result = mcp_health(h)
+        output = json.dumps(result, separators=(",", ":"))
+    elif name == "mcp_preset_list":
+        result = mcp_preset_list()
+        output = json.dumps(result, separators=(",", ":"))
+    elif name == "mcp_preset_run":
+        preset = arguments.get("preset")
+        if not preset:
+            return {"jsonrpc": "2.0", "id": id_, "error": {"code": -32602, "message": "preset is required"}}
+        result = mcp_preset_run(preset)
+        output = json.dumps(result, separators=(",", ":"))
+    elif name == "mcp_report":
+        result = mcp_report(arguments.get("hosts"), save=arguments.get("save", False), format=arguments.get("format", "markdown"))
+        output = json.dumps(result, separators=(",", ":"))
+    elif name == "mcp_focus":
+        result = mcp_focus(request=arguments.get("request"))
+        output = json.dumps(result, separators=(",", ":"))
+    else:
+        return {"jsonrpc": "2.0", "id": id_, "error": {"code": -32601, "message": f"unknown tool: {name}"}}
+
+    return {
+        "jsonrpc": "2.0",
+        "id": id_,
+        "result": {"content": [{"type": "text", "text": output}]},
+    }
+
+
+def main():
+    for line in sys.stdin:
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            msg = json.loads(line)
+            method = msg.get("method")
+            id_ = msg.get("id")
+            if method == "initialize":
+                print(json.dumps(handle_initialize(id_)))
+            elif method == "tools/list":
+                print(json.dumps(handle_tools_list(id_)))
+            elif method == "tools/call":
+                print(json.dumps(handle_tools_call(id_, msg.get("params", {}))))
+            elif "id" in msg:
+                print(json.dumps({"jsonrpc": "2.0", "id": msg["id"], "error": {"code": -32601, "message": "method not found"}}))
+            sys.stdout.flush()
+        except json.JSONDecodeError as e:
+            logger.error("invalid json: %s", e)
+
