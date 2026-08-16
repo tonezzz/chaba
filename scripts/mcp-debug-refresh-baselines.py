@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Refresh mcp-debug efficiency baselines by running mcp_savings and updating SSOT."""
+"""Refresh mcp-debug efficiency baselines by running mcp_savings and updating the baselines BASELINES."""
 import argparse
 import json
 import re
@@ -10,7 +10,7 @@ from pathlib import Path
 import yaml
 
 REPO = Path(__file__).resolve().parent.parent
-SSOT = REPO / "docs" / "ssot" / "infrastructure" / "ssot.mcp-debug.yml"
+BASELINES = REPO / "docs" / "ssot" / "infrastructure" / "ssot.mcp-debug.baselines.yml"
 
 
 def _section_yaml(key, data):
@@ -36,7 +36,7 @@ def main():
     )
     args = parser.parse_args()
 
-    # Import here so the package can find the local SSOT.
+    # Import here so the package can find the local BASELINES.
     sys.path.insert(0, str(REPO / "scripts"))
     from mcp_debug.tools import mcp_savings
 
@@ -94,14 +94,14 @@ def main():
         "not_recommended": [c for c, d in commands_cfg.items() if not d.get("recommended")],
     }
 
-    ssot_text = SSOT.read_text()
+    ssot_text = BASELINES.read_text()
     ssot_text = _replace_section(ssot_text, "efficiency", _section_yaml("efficiency", efficiency))
     ssot_text = _replace_section(ssot_text, "workflow", _section_yaml("workflow", workflow))
 
-    with open(SSOT, "w") as f:
+    with open(BASELINES, "w") as f:
         f.write(ssot_text)
 
-    print("Updated:", SSOT)
+    print("Updated:", BASELINES)
     print("Recommended:", workflow["recommended"])
     print("Not recommended:", workflow["not_recommended"])
 
