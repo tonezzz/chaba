@@ -118,6 +118,27 @@ sections:
     - ssot
     - kb
     - decisions
+  - label: mcp-debug SSOT read and search tools
+    text: Build mcp_read_ssot and mcp_search_ssot in scripts/mcp-debug-server.py. mcp_search_ssot should use mddb semantic search first and fall back to a local YAML keyword scan when mddb is unavailable or stale.
+    branch: chaba
+    status: pending
+    priority: medium
+    tags:
+    - mcp
+    - ssot
+    - read
+    - search
+    - mddb
+  - label: Re-assess mcp-debug SSOT editing tools
+    text: After mcp_read_ssot and mcp_search_ssot are in use, measure whether sub-agents or scripts need mutation tools. If they do, scope a narrow mcp_ssot_append for request_log/subtasks/quick_wins only.
+    branch: chaba
+    status: pending
+    priority: low
+    tags:
+    - mcp
+    - ssot
+    - editing
+    - assessment
 - title: Quick Wins
   icon: quick
   layout: list
