@@ -141,7 +141,7 @@ sections:
         text: launchctl for macOS service management
         tags: [services, launchctl, macos]
       - label: Health Snapshot Agent
-        text: Periodic macOS health snapshots collected by com.chaba.macbook-health launchd job and stored at ~/var/chaba/health/macbook-snapshot.json. Each snapshot now includes lan_ip, tailscale_ip, and wifi_ssid so we can fall back to the LAN path if Tailscale is unavailable.
+        text: Periodic macOS health snapshots collected by com.chaba.macbook-health launchd job and stored at ~/var/chaba/health/macbook-snapshot.json. Each snapshot includes lan_ip, tailscale_ip, wifi_ssid, memory pressure, top CPU/memory, Adobe/CRD/PlayLive process counts, disk hogs, and 9222/9231 ports. Run python3 /Users/kkkakk/chaba-health/collect-macbook-snapshot.py --fix to auto-kill Adobe CC, duplicate PlayLive Chrome, and orphaned /tmp/playlive-chrome-mac.
         status: active
         tags: [health, monitoring, snapshot]
       - label: PlayLive / CDP Node
@@ -156,6 +156,14 @@ sections:
         text: Homebrew installed at ~/.homebrew and available on the shell PATH via ~/.zshenv
         status: active
         tags: [homebrew, package-manager, macos]
+      - label: Podman
+        text: Podman v5.8.5 for Intel Mac installed at ~/.local/podman with helper binaries and containers.conf in ~/.config/containers. Machine 'podman-machine-default' runs a rootless VM via vfkit. PATH set in ~/.zshenv.
+        status: active
+        tags: [podman, containers, virtualization]
+      - label: Redis
+        text: Redis 7 Alpine running in a rootless Podman container 'redis-macbook' on port 16379 with persistent volume 'redis-data'. Started with --appendonly yes. Tested with PONG from the host.
+        status: active
+        tags: [redis, podman, cache]
       - label: Terminal Access
         text: Full terminal access via SSH for command-line operations
         tags: [terminal, ssh, command-line]

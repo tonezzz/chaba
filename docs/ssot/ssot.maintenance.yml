@@ -32,6 +32,10 @@ maintenance_schedule:
         description: Validate references between SSOT files
         tool: ssot-validate skill
         failure_action: warning
+      - label: Bloat Threshold Check
+        description: Count lines, sections, and items per SSOT file and warn when review or hard thresholds are exceeded
+        tool: ssot-validate skill
+        failure_action: warning
 
   - title: Weekly Quality Review
     icon: 📊
@@ -46,6 +50,7 @@ maintenance_schedule:
           - Validation error rate
           - Outdated entry count
           - Cross-reference accuracy
+          - Bloat threshold exceedance count (files above review / hard thresholds)
       - label: Content Freshness Check
         description: Review and update outdated entries, archive completed items
         focus:
