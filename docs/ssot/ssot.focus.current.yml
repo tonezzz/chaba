@@ -241,9 +241,11 @@ sections:
     - label: Move focus-dispatcher-overnight.timer to tony-dell
       status: completed
     - label: Redelegate Yomi/backup timers after verifying PG and storage
-      status: not_started
+      status: blocked
+      note: postgre alias and storage verified; chaba-backup is already on tony-dell; yomi-update-all blocked by /home/tony/.yomi/mcpb dependency on tony-omen
     - label: Move central mcp-health server to tony-dell (Phase 3/4)
-      status: not_started
+      status: blocked
+      note: mcp-health needs host systemctl/curl; running in a rootless podman container lacks these; keep on tony-omen
     request_log: []
     branch: tony-dell
     source: /home/tony/CascadeProjects/chaba/docs/ssot/focus-inbox/2026-08-16-070919-tony-omen-to-tony-dell-delegation.yml
