@@ -72,6 +72,22 @@ sessions:
       - Deploy mcp-link-monitor.py as a systemd user timer/service for periodic checks
     next_action: Create and enable the mcp-link-monitor systemd units, or activate the next backlog focus
 
+  - date: '2026-08-16'
+    session: chaba-2026-08-16-mcp-debug-h3
+    focus: Fix mcp_debug H3 page mixed-content (HTTP/HTTPS) error
+    source: user request
+    plan:
+      - Assess and improve the focus intake decision SSOT for this bug report
+      - Apply the chosen SSOT updates
+    done:
+      - Added live_bug_report case to ssot.focus.current.yml decision_tree
+      - Appended the mcp_debug H3 mixed-content intake decision to ssot.focus.decisions.yml
+      - User fixed chaba-h3 mcp_debug app.js and index.html (disabled HTTP live URL, added skeleton and fetch timeout)
+    follow_up:
+      - Verify the HTTPS page loads without mixed-content warnings
+      - Deploy or push the chaba-h3 app changes
+    next_action: Verify the page on chaba.h3 and push the chaba-h3 changes
+
 related_files:
   - docs/ssot/ssot.focus.current.yml
   - docs/ssot/ssot.focus.yml
