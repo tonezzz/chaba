@@ -102,7 +102,8 @@ confidence_rules:
   low: no match; a draft inbox must be created
 
 safety:
-  - mcp_focus must not call focus-dispatcher.py, write any file, or commit.
+  - mcp_focus must not call focus-dispatcher.py or commit.
+  - mcp_focus may append a decision record to docs/ssot/ssot.focus.decisions.yml when a request is provided.
   - If an active focus exists, the default recommendation is "continue" unless the user explicitly asks to switch.
   - The tool may expose a "status" mode that only returns active foci and quick wins.
   - Any drafted inbox YAML returned to the assistant must be reviewed by the user before activation.

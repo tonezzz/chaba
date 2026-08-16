@@ -11,9 +11,12 @@ from pathlib import Path
 
 import yaml
 
+from mcp_debug.focus import log_decision
+
 REPO = Path(__file__).resolve().parent.parent
 CURRENT = REPO / "docs" / "ssot" / "ssot.focus.current.yml"
 FOCUS = REPO / "docs" / "ssot" / "ssot.focus.yml"
+DECISIONS = REPO / "docs" / "ssot" / "ssot.focus.decisions.yml"
 INBOX_DIR = REPO / "docs" / "ssot" / "focus-inbox"
 PROCESSED_DIR = INBOX_DIR / "processed"
 REPORTS_DIR = REPO / "reports"
@@ -538,6 +541,11 @@ def handle_intake(request, dry_run=False):
             path.write_text(yaml.safe_dump(doc, sort_keys=False, allow_unicode=True, width=120, default_flow_style=False))
             changed = [path]
         result["message"] = f"Intake: saved inbox draft at {path}"
+
+    matched_to = active_label or subtask or ""
+    log_decision(request, action, matched_to, result["message"], "high", "focus-dispatcher", matched_to, dry_run=dry_run)
+    if not dry_run:
+        changed = list(set(changed + [DECISIONS]))
 
     return result, changed
 

@@ -1,6 +1,33 @@
 """MCP Debug focus integration."""
+from datetime import datetime
 import yaml
 from .config import REPO_DIR
+
+
+def log_decision(request, action, target, reason, confidence, source, matched_to, dry_run=False):
+    if dry_run:
+        return
+    path = REPO_DIR / "docs" / "ssot" / "ssot.focus.decisions.yml"
+    if not path.exists():
+        return
+    try:
+        with open(path) as f:
+            doc = yaml.safe_load(f) or {}
+    except Exception:
+        return
+    items = doc.get("sections", [{}])[0].get("items", [])
+    items.append({
+        "date": datetime.now().strftime("%Y-%m-%d"),
+        "request": str(request),
+        "action": action,
+        "target": target,
+        "reason": str(reason),
+        "confidence": confidence,
+        "source": source,
+        "matched_to": matched_to,
+    })
+    with open(path, "w") as f:
+        yaml.safe_dump(doc, f, sort_keys=False, allow_unicode=True)
 
 
 def mcp_focus(request=None):
@@ -68,5 +95,6 @@ def mcp_focus(request=None):
             suggestion = {"action": action, "reason": reason}
             break
 
+    matched_to = suggestion.get("label") or suggestion.get("subtask") or ""
+    log_decision(request, suggestion["action"], matched_to, suggestion["reason"], "medium", "mcp_focus", matched_to)
     return {"ok": True, "active": active, "quick_wins": quick_wins, "intake_suggestion": suggestion}
-
