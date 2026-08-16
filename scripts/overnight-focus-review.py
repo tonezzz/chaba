@@ -24,6 +24,7 @@ def main():
     print(f"[overnight] starting at {now}")
     rc = 0
     rc |= run(["scripts/mcp-health-to-inbox.py"])
+    rc |= run(["scripts/registry-drafts.py"])
     rc |= run(["scripts/focus-dispatcher.py", "--sub-agent"])
     if rc:
         print("[overnight] completed with errors")
