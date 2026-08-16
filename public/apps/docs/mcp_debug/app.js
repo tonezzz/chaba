@@ -1,18 +1,39 @@
+const LIVE_DATA_URL = null; // no public live endpoint yet; set to e.g. "http://tony-omen.local:11023/data/mcp-savings.json" if one is added
+
 async function loadReport() {
   const status = document.getElementById('status');
   const report = document.getElementById('report');
+  const live = document.getElementById('live-note');
   status.textContent = 'Loading...';
   report.innerHTML = '';
+  if (live) live.textContent = '';
+
+  let data;
+  if (LIVE_DATA_URL) {
+    try {
+      const res = await fetch(LIVE_DATA_URL + '?t=' + Date.now(), { mode: 'cors' });
+      if (res.ok) data = await res.json();
+      else throw new Error('live endpoint unavailable');
+      if (live) live.textContent = 'Live data from tony-omen';
+    } catch (e) {
+      console.warn('Live data failed, falling back to cached snapshot:', e);
+      if (live) live.textContent = 'Live data unavailable; showing cached snapshot.';
+    }
+  }
+
   try {
-    const res = await fetch('data/mcp-savings.json?t=' + Date.now());
-    if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
-    const data = await res.json();
+    if (!data) {
+      const res = await fetch('data/mcp-savings.json?t=' + Date.now());
+      if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+      data = await res.json();
+    }
     if (!data.ok) throw new Error(data.error || 'report not ok');
     renderReport(data);
-    status.textContent = new Date().toLocaleString();
+    const generated = data.generated ? new Date(data.generated).toLocaleString() : 'unknown';
+    status.innerHTML = `Snapshot: <span class="font-mono">${generated}</span>`;
   } catch (e) {
     status.textContent = 'Error';
-    report.innerHTML = `<p class="text-red-600">Failed to load report: ${e.message}</p>`;
+    report.innerHTML = `<p style="color:#dc2626">Failed to load report: ${escapeHtml(e.message)}</p>`;
   }
 }
 
