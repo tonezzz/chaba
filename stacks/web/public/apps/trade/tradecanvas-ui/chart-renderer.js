@@ -90,13 +90,23 @@ class ChartRenderer {
         });
     }
 
+    _formatTime(timestamp) {
+        if (typeof timestamp === 'string') return timestamp;
+        if (timestamp == null) return null;
+        const date = new Date(timestamp * 1000);
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        return `${year}-${month}-${day}`;
+    }
+
     updateChart(data) {
         if (!this.candlestickSeries || !data || data.length === 0) return;
 
         const chartData = data
             .filter(d => d.time != null && d.open != null && d.high != null && d.low != null && d.close != null)
             .map(d => ({
-                time: d.time,
+                time: this._formatTime(d.time),
                 open: d.open,
                 high: d.high,
                 low: d.low,

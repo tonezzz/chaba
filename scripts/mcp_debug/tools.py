@@ -373,6 +373,70 @@ def mcp_put_file(host, path, content_base64, mode="644", overwrite=False):
         "mode": mode,
     }
 
+
+def _clipboard_enabled(host):
+    return HOSTS.get(host, {}).get(
+        "clipboard",
+        FILE_LIMITS.get("clipboard", {}).get(host, False),
+    )
+
+
+def mcp_clipboard_get(host):
+    if host not in HOSTS:
+        return {"ok": False, "error": f"unknown host: {host}", "host": host}
+    if not _clipboard_enabled(host):
+        return {"ok": False, "error": "clipboard not enabled for this host", "host": host}
+
+    cmd = (
+        "set -o pipefail; "
+        "( pbpaste 2>/dev/null | base64 | tr -d '\\n' ) 2>/dev/null || "
+        "( timeout -k 1 2 xclip -o -selection clipboard 2>/dev/null | base64 | tr -d '\\n' ) 2>/dev/null || "
+        "( timeout -k 1 2 xsel -b 2>/dev/null | base64 | tr -d '\\n' ) 2>/dev/null || "
+        "( timeout -k 1 2 wl-paste 2>/dev/null | base64 | tr -d '\\n' ) 2>/dev/null || "
+        "echo CLIPBOARD_UNAVAILABLE"
+    )
+    result = run_on_host(host, cmd, compact=False, shell=True)
+    if not result.get("ok"):
+        return {"ok": False, "error": result.get("err", "clipboard read failed"), "host": host}
+    b64 = result.get("out", "").strip()
+    if b64 == "CLIPBOARD_UNAVAILABLE":
+        return {"ok": False, "error": "no clipboard tool found on host", "host": host}
+    try:
+        text = base64.b64decode(b64).decode("utf-8", "replace")
+    except Exception as e:
+        return {"ok": False, "error": f"clipboard decode failed: {e}", "host": host}
+    return {"ok": True, "text": text, "host": host}
+
+
+def mcp_clipboard_set(host, text):
+    if host not in HOSTS:
+        return {"ok": False, "error": f"unknown host: {host}", "host": host}
+    if not _clipboard_enabled(host):
+        return {"ok": False, "error": "clipboard not enabled for this host", "host": host}
+
+    try:
+        b64 = base64.b64encode(text.encode("utf-8")).decode()
+    except Exception as e:
+        return {"ok": False, "error": f"text encoding failed: {e}", "host": host}
+
+    max_arg = 200000
+    if len(b64) > max_arg:
+        return {"ok": False, "error": f"clipboard payload exceeds safe ssh argument size ({max_arg})", "host": host}
+
+    cmd = (
+        "set -o pipefail; "
+        "DATA=$(printf '%s' " + shlex.quote(b64) + " | base64 -d); "
+        "( printf '%s' \"$DATA\" | pbcopy ) 2>/dev/null || "
+        "( printf '%s' \"$DATA\" | timeout -k 1 2 xclip -selection clipboard ) 2>/dev/null || "
+        "( printf '%s' \"$DATA\" | timeout -k 1 2 xsel -b ) 2>/dev/null || "
+        "( printf '%s' \"$DATA\" | timeout -k 1 2 wl-copy ) 2>/dev/null || "
+        "{ echo CLIPBOARD_UNAVAILABLE; exit 1; }"
+    )
+    result = run_on_host(host, cmd, compact=False, shell=True)
+    if not result.get("ok"):
+        return {"ok": False, "error": result.get("err", "clipboard write failed"), "host": host}
+    return {"ok": True, "bytes_written": len(text.encode("utf-8")), "host": host}
+
 def mcp_preset_list():
     return {
         "ok": True,

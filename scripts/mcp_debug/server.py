@@ -19,6 +19,8 @@ from .tools import (
     mcp_adaptive,
     mcp_get_file,
     mcp_put_file,
+    mcp_clipboard_get,
+    mcp_clipboard_set,
     mcp_preset_list,
     mcp_preset_run,
 )
@@ -226,6 +228,29 @@ def handle_tools_list(id_):
             },
         },
         {
+            "name": "mcp_clipboard_get",
+            "description": "Read the host clipboard. Requires per-host clipboard opt-in.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "host": {"type": "string", "enum": list(HOSTS.keys()), "description": "Target host"},
+                },
+                "required": ["host"],
+            },
+        },
+        {
+            "name": "mcp_clipboard_set",
+            "description": "Write text to the host clipboard. Requires per-host clipboard opt-in.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "host": {"type": "string", "enum": list(HOSTS.keys()), "description": "Target host"},
+                    "text": {"type": "string", "description": "Text to copy"},
+                },
+                "required": ["host", "text"],
+            },
+        },
+        {
             "name": "mcp_preset_list",
             "description": "List available multi-host diagnostic presets.",
             "inputSchema": {
@@ -382,6 +407,19 @@ def handle_tools_call(id_, params):
         if not host or not p or not b:
             return {"jsonrpc": "2.0", "id": id_, "error": {"code": -32602, "message": "host, path, and content_base64 are required"}}
         result = mcp_put_file(host, p, b, mode=arguments.get("mode", "644"), overwrite=arguments.get("overwrite", False))
+        output = json.dumps(result, separators=(",", ":"))
+    elif name == "mcp_clipboard_get":
+        h = arguments.get("host")
+        if not h:
+            return {"jsonrpc": "2.0", "id": id_, "error": {"code": -32602, "message": "host is required"}}
+        result = mcp_clipboard_get(h)
+        output = json.dumps(result, separators=(",", ":"))
+    elif name == "mcp_clipboard_set":
+        h = arguments.get("host")
+        text = arguments.get("text")
+        if not h or not text:
+            return {"jsonrpc": "2.0", "id": id_, "error": {"code": -32602, "message": "host and text are required"}}
+        result = mcp_clipboard_set(h, text)
         output = json.dumps(result, separators=(",", ":"))
     elif name == "mcp_preset_list":
         result = mcp_preset_list()

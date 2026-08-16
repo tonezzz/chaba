@@ -1,0 +1,53 @@
+title: TradeCanvas PlayLive Test Cases
+subtitle: Reusable browser verification steps for TradeCanvas UI components
+
+components:
+  - name: ChartRenderer
+    test_page: test-chart.html
+    cases:
+      - step: Load test-chart.html?nocache=1 and click "Load Sample Data"
+        expected: The chart canvas contains non-transparent candle pixels; sample data length is logged.
+      - step: Click "Load Data" for GOLD / all
+        expected: Data loads from the API/CSV; visible logical range is shown; canvas has drawn candles.
+      - step: Resize the browser window
+        expected: Chart resizes without error and the status log stays clean.
+
+  - name: ChartDataProvider
+    test_page: test-chart.html
+    cases:
+      - step: Click "Load Data" for THB / 1Y
+        expected: Returns 200+ points, isSampleData=false, loadedFromAPI=true.
+      - step: Click "Load Data" for an unknown symbol (e.g. XYZ)
+        expected: Falls back to sample data with isSampleData=true.
+
+  - name: ChartLoader
+    test_page: compare2.html
+    cases:
+      - step: Fresh load with empty localStorage
+        expected: Defaults to THB / 1Y; pairLabel shows USD/THB; connection-status shows API Data; selectors show THB and 1Y.
+      - step: Select GOLD from the currency dropdown in the Symbol / Timeframe panel
+        expected: pairLabel updates to GOLD; GOLD data loads; visible logical range is a recent subset if all is selected.
+      - step: Set localStorage to {currency: GOLD, timeframe: all}, then reload
+        expected: Page restores GOLD / all on reload.
+
+  - name: CurrencySelector
+    test_page: compare2.html
+    cases:
+      - step: Render with a preselected currency
+        expected: Dropdown value matches the preselected currency.
+      - step: Select a different currency
+        expected: Emits currencyChange, ChartLoader.updateSymbol is called, chart reloads.
+
+  - name: TimeframeSelector
+    test_page: compare2.html
+    cases:
+      - step: Render with a preselected timeframe
+        expected: Dropdown value matches the preselected timeframe.
+      - step: Select 1Y vs all
+        expected: Emits timeframeChange, ChartLoader.updateTimeframe is called, data point count changes.
+
+  - name: Compare2 Layout
+    test_page: compare2.html
+    cases:
+      - step: Load compare2.html
+        expected: Header shows pairLabel, price, change, and status. Symbol / Timeframe panel is above Strategy Comparison panel.

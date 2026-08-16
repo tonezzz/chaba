@@ -178,12 +178,9 @@ sections:
       importance: 6
       complication: 4
   - label: UI policy SSOT
-    text: >-
-      Create a dedicated UI policy SSOT that captures decision rules and
-      guardrails. Audit ssot.libs.yml, ssot.ui.yml, and trade-specific
-      ssot.ui.* configs for redundant policy-like content; migrate it into
-      the policy SSOT and leave ssot.libs.yml as the component reference.
-      Update ssot.index.yml and cross-references.
+    text: Create a dedicated UI policy SSOT that captures decision rules and guardrails. Audit ssot.libs.yml, ssot.ui.yml,
+      and trade-specific ssot.ui.* configs for redundant policy-like content; migrate it into the policy SSOT and leave ssot.libs.yml
+      as the component reference. Update ssot.index.yml and cross-references.
     branch: chaba
     status: pending
     priority: medium
@@ -196,7 +193,6 @@ sections:
       urgency: 4
       importance: 6
       complication: 5
-
 - title: Quick Wins
   icon: quick
   layout: list
@@ -737,6 +733,30 @@ sections:
     - modularity
     - python
     - ssot
+    - completed
+  - label: Implement mcp_focus session router per ssot.mcp-focus.yml
+    text: 'Align scripts/mcp_debug/focus.py with the ssot.mcp-focus.yml policy.
+
+      Add a status mode, a richer recommendation schema (continue, quick_win, triage_backlog,
+
+      triage_inbox, draft_inbox), and the decision_tree logic. Keep the decision logging
+
+      to ssot.focus.decisions.yml. Update mcp_debug/server.py to expose the new mode and
+
+      recommendation fields.
+
+      '
+    date: '2026-08-16'
+    duration: 1 session
+    outcome: 'Completed subtasks: Add status mode to mcp_focus that only returns active foci and quick wins, Implement the
+      decision_tree for recommend mode, Update the return schema to match ssot.mcp-focus.yml output_schema, Update mcp_debug/server.py
+      tool registration for mode and recommendation, Add smoke tests for status and recommend modes'
+    tags:
+    - mcp
+    - mcp-focus
+    - focus
+    - ssot
+    - session-router
     - completed
 config:
   version: 2

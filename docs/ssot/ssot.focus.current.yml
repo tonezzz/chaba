@@ -13,27 +13,31 @@ workflow:
 - For backlog review, archived focuses, or focus history, read the full ssot.focus.yml
 - At session end, update subtask status and append a session summary to ssot.focus.sessions.yml
 - When an inbox item is activated, merge it into this file and git mv the source file to docs/ssot/focus-inbox/processed/
-- If the disposition is unclear, call mcp_focus(request, mode=recommend) and follow the returned action
-  (continue, quick_win, triage_backlog, triage_inbox, draft_inbox); see ssot.mcp-focus.yml for the machine-readable tree
+- If the disposition is unclear, call mcp_focus(request, mode=recommend) and follow the returned action (continue, quick_win,
+  triage_backlog, triage_inbox, draft_inbox); see ssot.mcp-focus.yml for the machine-readable tree
 mcp_focus:
   tool: mcp_focus
   source: docs/ssot/infrastructure/ssot.mcp-focus.yml
-  use_when: |
-    At session start or when the user request is ambiguous. Call mcp_focus with the user
+  use_when: 'At session start or when the user request is ambiguous. Call mcp_focus with the user
+
     request and mode=recommend; use the returned action as the first disposition.
+
     mode=status is a read-only way to list active foci and quick wins.
+
+    '
   actions:
     continue: The request matches an active focus or no request was given; keep working on the active focus.
     quick_win: The request is small and concrete; add to Quick Wins and complete immediately.
     triage_backlog: The request matches or should go to ssot.focus.yml Backlog; ask the user to activate.
     triage_inbox: The request matches an unprocessed focus-inbox draft; review/activate it.
     draft_inbox: No match; return an in-memory draft inbox YAML for the user to review before saving.
-
 decision_tree:
   question: How should this user request be disposed?
-  note: |
-    The canonical machine-readable tree is in docs/ssot/infrastructure/ssot.mcp-focus.yml.
+  note: 'The canonical machine-readable tree is in docs/ssot/infrastructure/ssot.mcp-focus.yml.
+
     This tree is the assistant-level guide; each case maps to the mcp_focus action listed below.
+
+    '
   cases:
   - case: matches_active
     mcp_focus_action: continue
@@ -197,40 +201,52 @@ sections:
       matched_to: mcp-debug file & clipboard bridge
     branch: chaba
     source: /home/tony/CascadeProjects/chaba/docs/ssot/focus-inbox/2026-08-16-061308-mcp-debug-file-bridge.yml
-  - label: Implement mcp_focus session router per ssot.mcp-focus.yml
-    text: |
-      Align scripts/mcp_debug/focus.py with the ssot.mcp-focus.yml policy.
-      Add a status mode, a richer recommendation schema (continue, quick_win, triage_backlog,
-      triage_inbox, draft_inbox), and the decision_tree logic. Keep the decision logging
-      to ssot.focus.decisions.yml. Update mcp_debug/server.py to expose the new mode and
-      recommendation fields.
+  - label: Delegate tony-omen services and timers to tony-dell
+    text: 'tony-omen is carrying the primary dev/web/DB/GPU load and is lagging.
+
+      Assess and move lightweight, non-GPU services to tony-dell.
+
+      Quick wins: mcp-debug-cors.service, mcp-link-monitor.service, and
+
+      focus-dispatcher-overnight.timer are already documented or fit tony-dell
+
+      but are currently on tony-omen per ssot.registry.yml.
+
+      Short term: Yomi update timers, backup timers, and mcp-health server authority.
+
+      Keep on tony-omen: PostgreSQL, Weaviate, Redis, MDDB, llama-router, imagen,
+
+      GPU queue, Caddy, Barrier.
+
+      Verify tony-dell storage, Tailscale reachability, and sudo before moving
+
+      stateful or Dockerized services.
+
+      '
     status: active
     priority: high
     started: '2026-08-16'
     estimated_duration: 1 session
     tags:
-    - mcp
-    - mcp-focus
-    - focus
-    - ssot
-    - session-router
+    - tony-omen
+    - tony-dell
+    - delegation
+    - monitoring
+    - performance
     subtasks:
-    - label: Add status mode to mcp_focus that only returns active foci and quick wins
-      status: completed
-    - label: Implement the decision_tree for recommend mode
-      status: completed
-    - label: Update the return schema to match ssot.mcp-focus.yml output_schema
-      status: completed
-    - label: Update mcp_debug/server.py tool registration for mode and recommendation
-      status: completed
-    - label: Add smoke tests for status and recommend modes
-      status: completed
-    request_log:
-    - date: '2026-08-16'
-      request: let's switch to mcp-focus
-      matched_to: Implement mcp_focus session router per ssot.mcp-focus.yml
-    branch: chaba
-    source: ssot.mcp-focus.yml
+    - label: Move mcp-debug-cors.service to tony-dell and update H3 proxy
+      status: not_started
+    - label: Move mcp-link-monitor.service to tony-dell
+      status: not_started
+    - label: Move focus-dispatcher-overnight.timer to tony-dell
+      status: not_started
+    - label: Redelegate Yomi/backup timers after verifying PG and storage
+      status: not_started
+    - label: Move central mcp-health server to tony-dell (Phase 3/4)
+      status: not_started
+    request_log: []
+    branch: tony-dell
+    source: /home/tony/CascadeProjects/chaba/docs/ssot/focus-inbox/2026-08-16-070919-tony-omen-to-tony-dell-delegation.yml
 - title: Quick Wins
   icon: quick
   layout: list

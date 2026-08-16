@@ -10,7 +10,7 @@ status: active
 bugs:
   - id: ui-bug-001
     title: Compare2 starts in "Disconnected" state
-    status: open
+    status: resolved
     severity: high
     pages:
       - compare2.html
@@ -38,7 +38,7 @@ bugs:
 
   - id: ui-bug-002
     title: Selections not remembered on page refresh
-    status: open
+    status: resolved
     severity: high
     pages:
       - compare2.html
@@ -65,6 +65,33 @@ bugs:
       - Audit all read/write points against ssot.ui.state.yml
       - Ensure selectors render with persisted selection before chart init
       - Add a small state-restoration smoke test with playlive
+
+  - id: ui-bug-003
+    title: Week timeframe chart does not render correctly for GOLD and others
+    status: open
+    severity: high
+    pages:
+      - compare2.html
+    symptom: |
+      Selecting the 1W timeframe on GOLD (and other symbols) shows an empty
+      or incorrectly rendered chart, while longer timeframes work.
+    repro:
+      - Open compare2.html
+      - Select GOLD
+      - Select "1 Week" from the timeframe selector
+      - Observe the chart area is empty or the candles are not visible
+    root_cause_hypothesis: |
+      The data provider may return too few points for 1W, or the visible
+      logical range / bar spacing calculation in ChartRenderer is not
+      handling very short timeframes correctly.
+    refs:
+      - config/ssot/ssot.ui.state.yml
+      - tradecanvas-ui/chart-data-provider.js
+      - tradecanvas-ui/chart-renderer.js
+    next_steps:
+      - Reproduce with playlive and capture data length for 1W on each symbol
+      - Inspect ChartRenderer.updateChart visible logical range logic
+      - Add a minimum point or zoom fallback for short timeframes
 
 review_cadence:
   - end_of_session: Triage any new bugs and update next steps.
