@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """MCP Debug server: compact and raw command dispatch to tony-omen and tony-dell."""
 import difflib
+import csv
+import io
 import json
 import logging
 import shlex
@@ -389,17 +391,64 @@ def generate_savings_report(savings, report_cfg):
     return "\n".join(lines)
 
 
-def mcp_report(hosts=None, save=False):
+def generate_json_report(savings):
+    return json.dumps(savings, indent=2, default=str, sort_keys=False)
+
+
+def generate_csv_report(savings):
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(["host", "command", "raw_chars", "compact_chars", "saved_chars", "char_pct", "word_pct"])
+    for host, data in savings.get("hosts", {}).items():
+        for cmd_name, cmd in data.get("commands", {}).items():
+            writer.writerow([
+                host,
+                cmd_name,
+                cmd.get("raw_chars", 0),
+                cmd.get("compact_chars", 0),
+                cmd.get("saved_chars", 0),
+                round(cmd.get("savings_pct_chars", 0), 1),
+                round(cmd.get("savings_pct", 0), 1),
+            ])
+        writer.writerow([
+            f"{host} totals",
+            "",
+            data.get("raw_chars", 0),
+            data.get("compact_chars", 0),
+            data.get("saved_chars", 0),
+            round(data.get("saved_chars", 0) / data.get("raw_chars", 0) * 100, 1) if data.get("raw_chars") else 0.0,
+            "",
+        ])
+    writer.writerow([
+        "overall totals",
+        "",
+        savings.get("total_raw_chars", 0),
+        savings.get("total_compact_chars", 0),
+        savings.get("total_saved_chars", 0),
+        round(savings.get("total_savings_pct", 0.0), 1),
+        "",
+    ])
+    return output.getvalue()
+
+
+def mcp_report(hosts=None, save=False, format="markdown"):
     if hosts is None:
         hosts = []
     savings = mcp_savings(hosts)
     report_cfg = load_report_config()
-    report = generate_savings_report(savings, report_cfg)
+    if format == "json":
+        report = generate_json_report(savings)
+    elif format == "csv":
+        report = generate_csv_report(savings)
+    else:
+        report = generate_savings_report(savings, report_cfg)
     saved_path = None
     if save:
         cfg = (report_cfg.get("reports") or {}).get("savings_table", {})
         template = cfg.get("save_path_template", "reports/mcp-savings-{date}.md")
         filename = template.format(date=datetime.now().strftime("%Y-%m-%d"))
+        if format in ("json", "csv") and filename.endswith(".md"):
+            filename = f"{filename[:-3]}.{format}"
         path = REPO_DIR / filename
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(report)
@@ -408,6 +457,7 @@ def mcp_report(hosts=None, save=False):
         "ok": savings.get("ok", True),
         "report": report,
         "saved_path": saved_path,
+        "format": format,
     }
 
 
@@ -656,7 +706,7 @@ def handle_tools_list(id_):
         },
         {
             "name": "mcp_report",
-            "description": "Generate a Markdown savings report from mcp_savings and optionally save it to reports/.",
+            "description": "Generate a savings report in markdown, json, or csv from mcp_savings and optionally save it to reports/.",
             "inputSchema": {
                 "type": "object",
                 "properties": {
@@ -665,7 +715,8 @@ def handle_tools_list(id_):
                         "items": {"type": "string", "enum": list(HOSTS.keys())},
                         "description": "Hosts to include (defaults to all)",
                     },
-                    "save": {"type": "boolean", "description": "Save the report to reports/mcp-savings-YYYY-MM-DD.md", "default": False},
+                    "save": {"type": "boolean", "description": "Save the report to reports/mcp-savings-YYYY-MM-DD.{format}", "default": False},
+                    "format": {"type": "string", "enum": ["markdown", "json", "csv"], "description": "Output format", "default": "markdown"},
                 },
             },
         },
@@ -771,7 +822,7 @@ def handle_tools_call(id_, params):
         result = mcp_preset_run(preset)
         output = json.dumps(result, separators=(",", ":"))
     elif name == "mcp_report":
-        result = mcp_report(arguments.get("hosts"), save=arguments.get("save", False))
+        result = mcp_report(arguments.get("hosts"), save=arguments.get("save", False), format=arguments.get("format", "markdown"))
         output = json.dumps(result, separators=(",", ":"))
     elif name == "mcp_focus":
         result = mcp_focus(request=arguments.get("request"))

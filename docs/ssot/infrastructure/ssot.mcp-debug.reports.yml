@@ -26,3 +26,16 @@ reports:
     negative_marker: "(expanded)"
     save_path_template: reports/mcp-savings-{date}.md
     include_totals: true
+    output_formats:
+      markdown:
+        default: true
+        description: Human-readable per-host Markdown tables.
+      json:
+        description: Structured machine-readable output for scripts and sub-agents.
+      csv:
+        description: Spreadsheet-friendly rows per host and command.
+    future_formats:
+      - html
+      - sjson
+      - ssot
+      - totals_only
