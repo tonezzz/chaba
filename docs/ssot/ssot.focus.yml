@@ -235,7 +235,9 @@ sections:
     - label: Harden existing tony-dell podman containers with Quadlet units
       text: Convert chaba-postgres-16 and yomi-api to ~/.config/containers/systemd/*.container Quadlet units so they auto-start
         and survive reboot. Currently both have restart=no.
-      status: not_started
+      status: completed
+      completed: '2026-08-17'
+      note: yomi-api.service already existed; generated chaba-postgres-16.service via podman generate systemd --new and enabled both
     - label: Decommission tony-omen duplicate postgres container
       text: Stop and remove the omen postgres container after verifying tony-dell chaba-postgres-16 is the primary per ssot.yomi-failover.yml.
       status: not_started
