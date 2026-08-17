@@ -190,8 +190,9 @@ def _make_recommendation(request, active, quick_wins):
 
     # Step 1: active focus match / continue
     key, it, subtask = _match_active(req, active)
-    if it or not req or req == "continue" or "continue" in req or "focus" in req:
-        if not req:
+    continue_cues = ("continue", "next", "proceed", "go on")
+    if it or not req or any(c in req for c in continue_cues):
+        if not it:
             it = active.get("branch") or active.get("shared")
             key = "branch" if active.get("branch") else "shared"
         if it:
