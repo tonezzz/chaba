@@ -49,6 +49,13 @@ sections:
       urgency: 4
       importance: 2
       complication: 5
+    subagent:
+      runnable: true
+      profile: subagent_general
+      parallel: false
+      requires_approval: true
+      can_change_host: true
+      notes: Needs macOS GUI / App Store / Xcode install; subagent can prepare install steps and verify.
   - label: Tony-Dell Phase 3 Safe Auto-Recovery
     text: Implement safe auto-restart commands for tony-dell monitoring after the observe phase.
     branch: tony-dell
@@ -313,6 +320,14 @@ sections:
       urgency: 2
       importance: 5
       complication: 7
+    subagent:
+      runnable: true
+      profile: subagent_general
+      parallel: true
+      requires_approval: false
+      can_change_host: true
+      host: tony-omen
+      notes: Self-contained GPU-host work; can pull Phi-3 GGUF and reconfigure ollama.
   - label: Split status-api into sensor reader and data API
     text: Refactor status-api into a stripped hardware-sensor reader that stays on tony-omen, plus a data/web API that runs
       on tony-dell and kk-macbook and receives sensor payloads. Frees tony-omen from the full web UI image.
@@ -329,11 +344,17 @@ sections:
       urgency: 2
       importance: 5
       complication: 8
+    subagent:
+      runnable: true
+      profile: subagent_explore
+      parallel: true
+      requires_approval: true
+      can_change_host: false
+      notes: Needs design and contract first; subagent should produce a design SSOT before implementation.
   - label: Gemini embedding GPU offload
-    text: Evaluate replacing Ollama nomic-embed-text and the stalled port-5000 all-MiniLM service with Google Gemini
-      text-embedding-004. Build an Ollama-compatible Gemini proxy for MDDB, create side-by-side Weaviate/MDDB test
-      collections, compare search relevance and latency, then switch and stop Ollama if successful. SSOT at
-      docs/ssot/infrastructure/ssot.gemini-embedding.yml.
+    text: Evaluate replacing Ollama nomic-embed-text and the stalled port-5000 all-MiniLM service with Google Gemini text-embedding-004.
+      Build an Ollama-compatible Gemini proxy for MDDB, create side-by-side Weaviate/MDDB test collections, compare search
+      relevance and latency, then switch and stop Ollama if successful. SSOT at docs/ssot/infrastructure/ssot.gemini-embedding.yml.
     branch: chaba
     status: pending
     priority: high
@@ -348,6 +369,14 @@ sections:
       urgency: 7
       importance: 8
       complication: 6
+    subagent:
+      runnable: true
+      profile: subagent_general
+      parallel: true
+      requires_approval: false
+      can_change_host: true
+      host: tony-omen
+      notes: Experiment on tony-omen; build Ollama-compatible Gemini embedding proxy and compare relevance.
 - title: Quick Wins
   icon: quick
   layout: list
@@ -554,8 +583,8 @@ sections:
       as experimental.
     date: '2026-08-17'
     duration: 1 session
-    outcome: mcp_get_file and mcp_put_file implemented and tested on tony-omen and tony-dell; mcp_clipboard_get/set kept
-      experimental/disabled by default.
+    outcome: mcp_get_file and mcp_put_file implemented and tested on tony-omen and tony-dell; mcp_clipboard_get/set kept experimental/disabled
+      by default.
     tags:
     - completed
     - mcp

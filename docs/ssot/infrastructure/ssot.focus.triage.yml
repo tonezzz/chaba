@@ -64,6 +64,27 @@ usage:
 - focus-dispatcher.py computes triage_score for each pending item and sorts by it.
 - For mcp_focus and subagent_focus_triage, the triage block can be returned as extra context.
 
+subagent_dispatch:
+  description: Backlog and active items may be delegated to sub-agents when they are self-contained,
+    low-interaction, and do not require real-time user approval.
+  enabled: true
+  item_fields:
+  - subagent
+  subagent_schema:
+    runnable: boolean
+    profile: string
+    parallel: boolean
+    requires_approval: boolean
+    can_change_host: boolean
+    notes: string
+  dispatch_rules:
+  - Only one foreground sub-agent may run at a time.
+  - Background sub-agents may run in parallel if they touch different branches/hosts and no write conflicts.
+  - Sub-agents must read the focus SSOTs and append a subagent_summary field to each subtask/focus they touch.
+  - Sub-agents must not activate new foci or park existing ones without main-agent confirmation.
+  - A focus with subagent.runnable false is foreground-only.
+
 validation:
 - triage is optional for backlog items; missing triage falls back to priority-based sorting.
 - When present, all three scores must be integers from 1 to 10.
+- subagent is optional; when present, runnable and parallel default to false.
