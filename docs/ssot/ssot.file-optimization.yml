@@ -46,6 +46,9 @@ sections:
       - label: Consistency
         text: Standardize icon usage, layout values, status enums, and optional fields such as last_updated; ensure every new SSOT is registered in ssot.index.yml
         priority: medium
+      - label: Conflict
+        text: Detect contradictory statuses, mixed addressing values, and overlapping active/completed items across SSOTs
+        priority: medium
       - label: Orchestration
         text: |
           Coordinate the SSOT file optimization phases through a repeatable
@@ -110,6 +113,8 @@ sections:
         text: All completed improvement items moved to archive; no focus-inbox item older than 30 days left unprocessed
       - label: Consistency
         text: All standard SSOTs pass ssot-validate and have a matching ssot.index.yml entry
+      - label: Conflict
+        text: No item is both active and completed; no hardcoded IP appears alongside a hostname for the same endpoint
 
   - title: Immediate Next Actions
     icon: 🚀
@@ -126,11 +131,13 @@ sections:
         text: Archive history and parked focuses to reduce active file size
       - label: Redundancy scan
         text: Run ssot-search across ssot.*.yml for repeated labels, topics, and boilerplate text
+      - label: Conflict sweep
+        text: Fix contradictory focus statuses and mixed hostname/IP health-check URLs
 
 config:
   version: 1
   created: 2026-08-16
-  last_updated: 2026-08-16
+  last_updated: 2026-08-17
   maintainer: tony
   status: active
   related_files:

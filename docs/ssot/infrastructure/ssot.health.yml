@@ -667,7 +667,7 @@ services:
   - id: mcp-debug-cors
     name: MCP Debug CORS endpoint
     type: http
-    url: http://100.68.142.13:9100/health
+    url: http://tony-dell:9100/health
     expected_status: 200
     timeout: 5
     category: mcp-debug
@@ -676,7 +676,7 @@ services:
     verification:
       - "Check systemd: systemctl --user status mcp-debug-cors.service"
       - "Check port: ss -tlnp | grep 9100"
-      - "Test tailnet: curl -s http://100.68.142.13:9100/health"
+      - "Test tailnet: curl -s http://tony-dell:9100/health"
       - "Test Funnel: curl -s https://tony-dell.taila0626a.ts.net/mcp-savings.json"
     recovery_actions:
       - "Restart: systemctl --user restart mcp-debug-cors.service"
