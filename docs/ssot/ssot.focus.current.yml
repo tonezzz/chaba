@@ -133,36 +133,7 @@ sections:
 - title: Active Branch Focus
   icon: branch
   layout: list
-  items:
-  - label: Gemini embedding GPU offload
-    text: Evaluate replacing Ollama nomic-embed-text and the stalled port-5000 all-MiniLM service with Google Gemini text-embedding-004.
-      Build an Ollama-compatible Gemini proxy for MDDB, create side-by-side Weaviate/MDDB test collections, compare search
-      relevance and latency, then switch and stop Ollama if successful. SSOT at docs/ssot/infrastructure/ssot.gemini-embedding.yml.
-    status: active
-    priority: high
-    started: '2026-08-17'
-    tags:
-    - gemini
-    - embeddings
-    - gpu
-    - tony-omen
-    - experiment
-    - ssot
-    subtasks:
-    - label: Verify Gemini quota and credentials
-      status: completed
-    - label: Build Gemini-Ollama embedding proxy
-      status: completed
-    - label: Create side-by-side MDDB/Weaviate test collections
-      status: blocked
-    - label: Compare search relevance and latency
-      status: completed
-    - label: Switch and stop Ollama if successful
-      status: not_started
-    request_log:
-    - text: User approved implementing the Gemini embedding offload plan from agent 2434cbca.
-    - text: Verified valid API key in /etc/systemd/system/yomi-process.service.d/override.conf; text-embedding-004 not available, proxy maps it to gemini-embedding-001 with outputDimensionality=768.
-    - text: Gemini-Ollama proxy container running on tony-omen port 11435 (healthy). Ollama not switched off because Gemini latency is ~3.7x higher than local Ollama; see reports/gemini-embedding-comparison.md.
+  items: []
 - title: Quick Wins
   icon: quick
   layout: list

@@ -357,7 +357,7 @@ sections:
       Build an Ollama-compatible Gemini proxy for MDDB, create side-by-side Weaviate/MDDB test collections, compare search
       relevance and latency, then switch and stop Ollama if successful. SSOT at docs/ssot/infrastructure/ssot.gemini-embedding.yml.
     branch: chaba
-    status: pending
+    status: completed
     priority: high
     tags:
     - gemini
@@ -378,6 +378,9 @@ sections:
       can_change_host: true
       host: tony-omen
       notes: Experiment on tony-omen; build Ollama-compatible Gemini embedding proxy and compare relevance.
+      summary: Built gemini-ollama-proxy on tony-omen port 11435; proxy maps text-embedding-004 to gemini-embedding-001. Gemini
+        latency ~3.7x Ollama; no switch. Report at reports/gemini-embedding-comparison.md.
+    completed: '2026-08-17'
 - title: Quick Wins
   icon: quick
   layout: list
@@ -579,13 +582,26 @@ sections:
   icon: history
   layout: timeline
   items:
+  - label: Gemini embedding GPU offload
+    text: Built an Ollama-compatible Gemini embedding proxy, compared latency vs Ollama nomic-embed-text. Gemini ~3.7x slower;
+      did not switch.
+    date: '2026-08-17'
+    duration: 1 session
+    outcome: Proxy running on tony-omen:11435. MDDB/Weaviate side-by-side blocked because neither runs on tony-omen. Latency
+      comparison saved.
+    tags:
+    - completed
+    - gemini
+    - embeddings
+    - gpu
+    - tony-omen
   - label: Trade Canvas remaining subtasks
     text: Reproduce and fix missing candle bars in TradeCanvas, modularize compare/compare2 pages with SSOT-driven page loader,
       integrate Frankfurter/THB data, and run Perfect strategy benchmark.
     date: '2026-08-17'
     duration: 1 session
-    outcome: 'Fixed flat-OHLC candle rendering, committed compare modularization (chaba-h3 08c072c), Frankfurter integration
-      (chaba-h3 c0e64f1), flat-candle fix (chaba-h3 ec694c5), recorded Perfect benchmark. All four subtasks completed.'
+    outcome: Fixed flat-OHLC candle rendering, committed compare modularization (chaba-h3 08c072c), Frankfurter integration
+      (chaba-h3 c0e64f1), flat-candle fix (chaba-h3 ec694c5), recorded Perfect benchmark. All four subtasks completed.
     tags:
     - completed
     - trade
