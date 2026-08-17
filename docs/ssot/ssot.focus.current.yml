@@ -145,13 +145,15 @@ sections:
     - xcode
     subtasks:
     - label: Install full Xcode 15.x on kk-macbook
-      status: in_progress
+      status: blocked
+      blocker: MacBook unreachable over SSH on 192.168.1.39 and 100.124.59.112
     - label: Run xcode-select --switch and xcodebuild -version
-      status: not_started
+      status: blocked
     - label: Accept Xcode license
-      status: not_started
+      status: blocked
     request_log:
     - text: User approved installing full Xcode 15.x on the MacBook.
+    - text: Attempted SSH to 192.168.1.39 and 100.124.59.112; both timed out. No install possible.
 - title: Quick Wins
   icon: quick
   layout: list
