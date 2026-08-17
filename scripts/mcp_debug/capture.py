@@ -102,8 +102,8 @@ def mcp_screenshot(host, region=None, fmt="png"):
     plat = _detect_platform(host)
     if plat == "unknown":
         return {"ok": False, "error": f"could not detect platform for {host}"}
-    if plat != "macos":
-        return {"ok": False, "error": f"screenshot not yet implemented for {plat}"}
+    if plat == "unknown":
+        return {"ok": False, "error": f"screenshot not supported for {plat}"}
     cmd = _build_screenshot_cmd(plat, region)
     if not cmd:
         return {"ok": False, "error": "invalid region or platform"}
@@ -145,20 +145,13 @@ def mcp_screenshot(host, region=None, fmt="png"):
     }
 
 
-def mcp_window_list(host):
-    if not _allowed(host, "capture"):
-        return {"ok": False, "error": f"capture not enabled for host: {host}"}
-    plat = _detect_platform(host)
-    if plat != "macos":
-        return {"ok": False, "error": f"window list not yet implemented for {plat}"}
-    # List visible, non-background apps and their frontmost status.
+def _macos_window_list(host):
     cmd = """osascript -e 'tell application "System Events" to get {name, frontmost} of (every process whose visible is true)'"""
     result = run_on_host(host, cmd, compact=False, shell=True)
     if not result.get("ok"):
         return {"ok": False, "host": host, "error": result.get("err") or "window list failed", "rc": result.get("rc")}
     out = (result.get("out") or "").strip()
     windows = []
-    # Parse AppleScript list: {name1, name2, ...}, {frontmost1, frontmost2, ...}
     try:
         match = re.search(r"\\{(.+?)\\},\\s*\\{(.+?)\\}", out)
         if match:
@@ -176,6 +169,67 @@ def mcp_window_list(host):
     except Exception as exc:
         logger.error("failed to parse window list: %s", exc)
     return {"ok": True, "host": host, "windows": windows, "count": len(windows)}
+
+
+def _linux_window_list_x11(host):
+    result = run_on_host(host, "xwininfo -root -children | head -n 100", compact=False, shell=True)
+    if not result.get("ok"):
+        return None
+    out = result.get("out") or ""
+    windows = []
+    # Lines look like: 0x... "Name" (...: ...) or 0x... "Name"
+    for line in out.splitlines():
+        m = re.match(r"\s*(0x[0-9a-fA-F]+)\s+\"([^\"]+)\"", line)
+        if m:
+            wid, title = m.group(1), m.group(2).strip()
+            windows.append({
+                "id": wid,
+                "app": title,
+                "title": title,
+                "pid": None,
+                "focused": False,
+                "bounds": None,
+            })
+    return windows
+
+
+def _linux_window_list_wayland(host):
+    result = run_on_host(host, "swaymsg -t get_tree 2>/dev/null | head -c 50000", compact=False, shell=True)
+    if not result.get("ok") or not result.get("out"):
+        return None
+    try:
+        tree = json.loads(result["out"])
+        windows = []
+        def walk(node):
+            if node.get("type") in ("con", "floating_con") and node.get("name"):
+                windows.append({
+                    "id": node.get("id"),
+                    "app": node.get("app_id") or node.get("class") or node.get("name"),
+                    "title": node.get("name"),
+                    "pid": node.get("pid"),
+                    "focused": node.get("focused", False),
+                    "bounds": None,
+                })
+            for child in node.get("nodes", []) + node.get("floating_nodes", []):
+                walk(child)
+        walk(tree)
+        return windows
+    except Exception:
+        return None
+
+
+def mcp_window_list(host):
+    if not _allowed(host, "capture"):
+        return {"ok": False, "error": f"capture not enabled for host: {host}"}
+    plat = _detect_platform(host)
+    if plat == "macos":
+        return _macos_window_list(host)
+    if plat == "linux":
+        windows = _linux_window_list_wayland(host) or _linux_window_list_x11(host)
+        if windows is None:
+            return {"ok": False, "host": host, "error": "no supported display manager found (X11 or Wayland)"}
+        return {"ok": True, "host": host, "windows": windows, "count": len(windows)}
+    return {"ok": False, "error": f"window list not supported for {plat}"}
 
 
 def mcp_clipboard_image_get(host):
