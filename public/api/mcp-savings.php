@@ -2,7 +2,7 @@
 declare(strict_types=1);
 
 $upstream = 'https://tony-dell.taila0626a.ts.net/mcp-savings.json';
-$timeout = 5;
+$timeout = 15;
 $fallback = __DIR__ . '/../apps/docs/mcp_debug/data/mcp-savings.json';
 
 $query = $_SERVER['QUERY_STRING'] ?? '';
