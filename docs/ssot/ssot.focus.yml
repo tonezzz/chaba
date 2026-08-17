@@ -225,7 +225,9 @@ sections:
 
       '
     branch: tony-dell
-    status: pending
+    status: completed
+    completed: '2026-08-17'
+    started: '2026-08-17'
     priority: high
     tags:
     - tony-dell
@@ -985,6 +987,30 @@ sections:
     - containers
     - migration
     - disk-pressure
+    - completed
+  - label: UI policy SSOT
+    text: Create a dedicated UI policy SSOT that captures decision rules and guardrails. Audit ssot.libs.yml, ssot.ui.yml,
+      and trade-specific ssot.ui.* configs for redundant policy-like content; migrate it into the policy SSOT and leave ssot.libs.yml
+      as the component reference. Update ssot.index.yml and cross-references.
+    date: '2026-08-17'
+    duration: 1 session
+    outcome: 'Completed subtasks: Audit ssot.libs.yml and ssot.ui.yml for policy-like content, Create docs/ssot/ssot.ui.policy.yml
+      with extracted guardrails, Migrate redundant policy content into the new SSOT, Update ssot.index.yml and cross-references'
+    tags:
+    - ui
+    - ssot
+    - policy
+    - documentation
+    - completed
+  - label: PlayLive Host-Prefixed Session IDs
+    text: Implement host-prefixed session IDs in playlive-server.py per previous discussion.
+    date: '2026-08-17'
+    duration: 1 session
+    outcome: 'Completed subtasks: Inspect playlive-server.py session ID logic, Add hostname prefix to session IDs, Smoke test
+      with playlive client'
+    tags:
+    - playlive
+    - testing
     - completed
 config:
   version: 2
