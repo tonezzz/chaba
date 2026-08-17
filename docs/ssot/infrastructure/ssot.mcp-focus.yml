@@ -22,7 +22,7 @@ output_schema:
     branch: active branch focus or null
   quick_wins: list of completed quick wins
   recommendation:
-    action: one of [continue, quick_win, triage_backlog, triage_inbox, draft_inbox]
+    action: one of [continue, quick_win, decompose, triage_backlog, triage_inbox, draft_inbox]
     target: label of the focus, quick win, or inbox item
     confidence: high | medium | low
     reasoning: short human-readable explanation
@@ -46,6 +46,16 @@ actions:
       such as "fix", "tweak", "small", "quick", "minor".
     output_target: matching quick-win label
     confidence: high when label matches, medium for cues
+
+  decompose:
+    when: |
+      The request is too large for a quick win but can be split into a small number of concrete subtasks that can each be completed in one session.
+    output:
+      - Create or update a focus with the subtasks listed.
+      - Start the first subtask immediately if the user has already approved.
+      - Otherwise return the subtask list under suggestion for review.
+    output_target: focus label or inbox path
+    confidence: medium
 
   triage_backlog:
     when: |
