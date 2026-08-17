@@ -218,6 +218,10 @@ server:
   - mcp_put_file
   - mcp_clipboard_get
   - mcp_clipboard_set
+  - mcp_screenshot
+  - mcp_window_list
+  - mcp_clipboard_image_get
+  - mcp_ssot_append
   - mcp_preset_list
   - mcp_preset_run
   - mcp_report
@@ -440,3 +444,36 @@ presets:
       - tony_omen
       - tony_dell
       compact: true
+  tony-dell-podman:
+    description: Rootless podman container state on tony-dell
+    steps:
+    - host: tony_dell
+      tool: mcp_raw
+      command: podman ps
+    - host: tony_dell
+      tool: mcp_raw
+      command: podman ps -a
+    - host: tony_dell
+      tool: mcp_raw
+      command: systemctl --user list-units 'redis*' 'mddb*' 'yomi*' 'chaba*'
+  tony-omen-docker:
+    description: Docker container state on tony-omen
+    steps:
+    - host: tony_omen
+      tool: mcp_raw
+      command: docker ps
+    - host: tony_omen
+      tool: mcp_raw
+      command: docker ps -a
+  migrated-services-check:
+    description: Verify redis, mddb, mddb-panel, and weaviate endpoints after migration
+    steps:
+    - host: tony_dell
+      tool: mcp_raw
+      command: systemctl --user status redis.service mddb.service mddb-panel.service yomi-api.service
+    - host: tony_dell
+      tool: mcp_raw
+      command: ss -tlnp | grep -E ':(6379|11023|3002|3000|5432)'
+    - host: tony_omen
+      tool: mcp_raw
+      command: curl -s --max-time 5 'http://tony-dell:11023/api/health'
