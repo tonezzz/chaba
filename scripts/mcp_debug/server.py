@@ -27,6 +27,11 @@ from .tools import (
 from .reports import mcp_report
 from .focus import mcp_focus
 from .ssot import mcp_read_ssot, mcp_search_ssot
+from .capture import (
+    mcp_screenshot,
+    mcp_window_list,
+    mcp_clipboard_image_get,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -311,6 +316,41 @@ def handle_tools_list(id_):
             },
         },
         {
+            "name": "mcp_screenshot",
+            "description": "Capture a screenshot on an allowed host and return it as base64 PNG.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "host": {"type": "string", "enum": ["macbook"], "description": "Target host"},
+                    "region": {"type": "object", "description": "Optional {x, y, width, height} crop"},
+                    "format": {"type": "string", "enum": ["png"], "default": "png", "description": "Output format"},
+                },
+                "required": ["host"],
+            },
+        },
+        {
+            "name": "mcp_window_list",
+            "description": "Return a list of visible windows/apps on an allowed host.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "host": {"type": "string", "enum": ["macbook"], "description": "Target host"},
+                },
+                "required": ["host"],
+            },
+        },
+        {
+            "name": "mcp_clipboard_image_get",
+            "description": "Return the image on an allowed host clipboard as base64 PNG.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "host": {"type": "string", "enum": ["macbook"], "description": "Target host"},
+                },
+                "required": ["host"],
+            },
+        },
+        {
             "name": "mcp_focus",
             "description": "Return the current active focus and recommend the next action for an optional request.",
             "inputSchema": {
@@ -442,6 +482,24 @@ def handle_tools_call(id_, params):
             collection=arguments.get("collection", "ssot-infrastructure"),
             limit=arguments.get("limit", 5),
         )
+        output = json.dumps(result, separators=(",", ":"))
+    elif name == "mcp_screenshot":
+        h = arguments.get("host")
+        if not h:
+            return {"jsonrpc": "2.0", "id": id_, "error": {"code": -32602, "message": "host is required"}}
+        result = mcp_screenshot(h, region=arguments.get("region"), fmt=arguments.get("format", "png"))
+        output = json.dumps(result, separators=(",", ":"))
+    elif name == "mcp_window_list":
+        h = arguments.get("host")
+        if not h:
+            return {"jsonrpc": "2.0", "id": id_, "error": {"code": -32602, "message": "host is required"}}
+        result = mcp_window_list(h)
+        output = json.dumps(result, separators=(",", ":"))
+    elif name == "mcp_clipboard_image_get":
+        h = arguments.get("host")
+        if not h:
+            return {"jsonrpc": "2.0", "id": id_, "error": {"code": -32602, "message": "host is required"}}
+        result = mcp_clipboard_image_get(h)
         output = json.dumps(result, separators=(",", ":"))
     elif name == "mcp_focus":
         result = mcp_focus(request=arguments.get("request"), mode=arguments.get("mode", "recommend"))
