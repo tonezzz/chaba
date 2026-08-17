@@ -189,11 +189,12 @@ raw_commands:
   - lsof
   - pgrep
   - pkill
+  - nohup
   - sw_vers
   - sysctl
   - top
 server:
-  script: /home/tony/CascadeProjects/chaba/scripts/mcp-debug-server.py
+  script: /home/tony/CascadeProjects/chaba/scripts/mcp_debug/server.py
   wrapper: /home/tony/.config/devin/mcp-scripts/mcp-debug.sh
   log_level: INFO
   tools:
@@ -217,6 +218,8 @@ server:
   - mcp_preset_run
   - mcp_report
   - mcp_focus
+  - mcp_read_ssot
+  - mcp_search_ssot
 phases:
 - id: 1
   name: SSOT and spec
