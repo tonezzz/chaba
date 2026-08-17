@@ -32,9 +32,11 @@ def mcp_debug(host, command):
         return json.dumps(result, separators=(",", ":"))
     try:
         data = json.loads(result.get("out", "") or "{}")
-        data["h"] = host
-        return json.dumps(data, separators=(",", ":"))
-    except json.JSONDecodeError:
+        if isinstance(data, dict):
+            data["h"] = host
+            return json.dumps(data, separators=(",", ":"))
+        return json.dumps({"h": host, "data": data}, separators=(",", ":"))
+    except (json.JSONDecodeError, TypeError):
         result["h"] = host
         return json.dumps(result, separators=(",", ":"))
 

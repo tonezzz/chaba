@@ -158,6 +158,16 @@ debug_commands:
     description: Interface IPv4 addresses
     compact: true
     expected_output: interfaces
+  podman info --format json:
+    description: Podman runtime, store, and graph driver info as JSON
+    compact: true
+    expected_output: json
+    note: Vetted positive on both tony_omen (51.5%) and tony_dell (51.6%).
+  podman image ls --format json:
+    description: Podman image list as compact JSON
+    compact: true
+    expected_output: json
+    note: Vetted positive on both tony_omen (48.7%) and tony_dell (78.5%).
 raw_commands:
   allowed_prefixes:
   - systemctl
@@ -444,6 +454,33 @@ presets:
       - tony_omen
       - tony_dell
       compact: true
+  podman-info-both:
+    description: Podman runtime info on both hosts
+    steps:
+    - host: tony_omen
+      tool: mcp_debug
+      command: podman info --format json
+    - host: tony_dell
+      tool: mcp_debug
+      command: podman info --format json
+  podman-images-both:
+    description: Podman image inventory on both hosts
+    steps:
+    - host: tony_omen
+      tool: mcp_debug
+      command: podman image ls --format json
+    - host: tony_dell
+      tool: mcp_debug
+      command: podman image ls --format json
+  tony-omen-podman:
+    description: Podman state on tony-omen
+    steps:
+    - host: tony_omen
+      tool: mcp_raw
+      command: podman ps
+    - host: tony_omen
+      tool: mcp_debug
+      command: podman image ls --format json
   tony-dell-podman:
     description: Rootless podman container state on tony-dell
     steps:
