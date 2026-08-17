@@ -12,9 +12,9 @@ components:
     test_page: index.html
     cases:
       - step: Load index.html and wait for the initial report
-        expected: "#status shows a generated ISO timestamp; #live-note indicates live or fallback; tony_omen and tony_dell tables render without JS errors."
+        expected: "#status starts with 'Snapshot:' when the PHP proxy serves the fallback, or 'Live:' when the Funnel endpoint is reachable; #live-note matches the source; tony_omen and tony_dell tables render without JS errors."
       - step: Click the "Refresh" button
-        expected: "A new live request is issued. When the PHP proxy reaches the upstream, #status timestamp updates to a new value and #live-note shows 'Live data from tony-omen'. If the upstream is unreachable, #status keeps the existing generated timestamp and #live-note reports that live data is unavailable."
+        expected: "A new live request is issued. When the Funnel endpoint is reachable, #status changes from 'Snapshot' to 'Live' and the timestamp updates; #live-note reads 'Live data from tony-omen'. When the Funnel is unreachable, the timestamp stays the same and #live-note reads 'Live data unavailable; showing cached snapshot.'"
       - step: Click a command row (e.g. "df -h" under tony_omen)
         expected: "The detail panel opens with a table of filesystems data; #detail-title matches the selected host and command."
 
