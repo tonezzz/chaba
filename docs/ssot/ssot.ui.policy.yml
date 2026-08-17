@@ -1,0 +1,145 @@
+title: UI Policy
+subtitle: Decision rules and guardrails for chaba.h3, 8080 web stack, and Trade UI
+icon: 🛡️
+version: 1
+
+overview:
+  purpose: |
+    Capture guardrails that shape UI implementation decisions. This SSOT is the
+    authority for "what is allowed" and "what is preferred" so that design
+    choices are consistent across chaba.h3, chaba-omen 8080 apps, and trade
+    canvas pages. It does not describe tokens or components; see ssot.libs.yml
+    for the component reference.
+  scope:
+    - Hosting and runtime constraints
+    - URL/path conventions
+    - Link, asset, and fetch rules
+    - Branch, deploy, and synchronization rules
+    - Security and mixed-content rules
+  out_of_scope:
+    - Color, typography, and spacing tokens (ssot.libs.yml)
+    - Component API definitions (ssot.libs.yml)
+
+policies:
+  - id: h3-static-only
+    title: chaba.h3 is static-only on Plesk
+    status: accepted
+    rule: |
+      The chaba.h3 public site is served by Plesk PHP. Do not add Node, Docker,
+      WebSocket, LAN-only APIs, or server-side state. PHP file IO is allowed but
+      shell/process functions are blocked by disable_functions.
+    applies_to:
+      - chaba-h3/public/
+    rationale: |
+      Plesk shared hosting does not support long-running processes or dynamic
+      runtimes. PHP same-origin proxies are acceptable if they only fetch
+      public/cached data and do not shell out.
+    consequences:
+      - All dynamic APIs live in chaba-omen stacks or the 8080 Caddy stack
+      - PHP proxies must keep upstream URLs server-side (e.g., mcp-savings.php)
+
+  - id: explicit-index-paths
+    title: Link to explicit /foo/index.html paths
+    status: accepted
+    rule: |
+      Use explicit `/foo/index.html` URLs unless proxy-server.mjs has a directory
+      special case. Do not rely on bare /foo/ redirects in Plesk or local dev.
+    applies_to:
+      - chaba-h3/public/apps
+    rationale: |
+      Directory-index and bare-URL behavior differs between local preview, Caddy,
+      and Plesk. Explicit index.html avoids 404s and asset resolution bugs.
+    consequences:
+      - All internal app links use /foo/index.html
+      - Proxy server directory special cases must be documented in ssot.h3.yml
+
+  - id: absolute-asset-paths
+    title: Use absolute asset/fetch paths
+    status: accepted
+    rule: |
+      Use absolute paths such as `/data.json` and `/apps/foo/asset.css` instead of
+      relative `data.json` or `asset.css`. This is required for directory-index
+      pages and nested routes.
+    applies_to:
+      - chaba-h3/public/apps
+    rationale: |
+      Relative paths break when a page is served through a directory-index
+      redirect or a nested URL.
+    consequences:
+      - All fetch calls use absolute paths
+      - CSS/JS imports use /apps/... paths
+
+  - id: chaba-h3-branch
+    title: chaba-h3 work lives on the chaba.h3 branch
+    status: accepted
+    rule: |
+      Work for chaba.h3.gizmo-thailand.com is done in /home/tony/CascadeProjects/chaba-h3
+      and pushed to the chaba.h3 branch. Files are placed under chaba-h3/public/.
+      The main web/public/ path is not served.
+    applies_to:
+      - chaba-h3
+    rationale: |
+      The deployed chaba.h3 site is built from a dedicated worktree and branch to
+      avoid mixing Plesk PHP with Caddy 8080 content.
+    consequences:
+      - PRs for chaba.h3 target the chaba.h3 branch
+      - Changes in chaba/stacks/web/public/ do not affect chaba.h3
+
+  - id: https-mixed-content
+    title: Avoid mixed-content HTTP requests from HTTPS chaba.h3
+    status: accepted
+    rule: |
+      Pages served over HTTPS on chaba.h3 must not directly fetch HTTP endpoints.
+      Use same-origin PHP proxies or HTTPS upstreams. Provide a cached fallback
+      so the page still renders if the upstream is unreachable.
+    applies_to:
+      - chaba-h3/public
+    rationale: |
+      Browsers block public-HTTPS pages from fetching private HTTP .local or
+      tailnet endpoints. A same-origin PHP proxy hides the HTTP upstream and
+      allows a local cached fallback.
+    consequences:
+      - mcp-savings.php proxies tony-dell:9100 and falls back to a committed JSON
+      - Any new live data needs a same-origin proxy or HTTPS upstream
+
+  - id: 8080-tailnet-routing
+    title: Caddy 8080 routes to tailnet IPs, not docker network names
+    status: accepted
+    rule: |
+      For migrated services on tony-dell, Caddy reverse_proxy must use the
+      100.68.142.13 tailnet IP and port, not docker network hostnames. Restart
+      the web container after Caddyfile changes because bind mounts can retain
+      stale inodes.
+    applies_to:
+      - stacks/web/Caddyfile
+    rationale: |
+      Cross-host services are not resolvable from the tony-omen Docker bridge.
+      The tailnet IP and explicit port are reachable. Caddy container bind mounts
+      can cache the old inode after the file is replaced.
+    consequences:
+      - Caddyfile upstreams use 100.68.142.13:<port>
+      - docker restart web is required after Caddyfile edits
+
+  - id: trade-ssot-driven
+    title: Trade Canvas UI is SSOT-driven
+    status: accepted
+    rule: |
+      Trade Canvas pages are configured by YAML SSOTs in trade/config/ssot/.
+      Features are promoted from experimental (ssot.ui.compare2.yml / ssot.ui.feature.*.yml)
+      to stable family SSOTs using promote-ui-feature.sh. Shared scripts are listed
+      in family SSOTs and page SSOTs reference family defaults.
+    applies_to:
+      - trade/config/ssot
+      - trade/tradecanvas-ui
+    rationale: |
+      SSOT-driven configuration makes page layout, feature activation, and
+      script/version management auditable and scriptable.
+    consequences:
+      - promote-ui-feature.sh moves feature refs from compare2 to family SSOT
+      - Family SSOTs (ssot.ui.compare-family.yml) hold shared scripts and defaults
+
+related_files:
+  - docs/ssot/ssot.libs.yml
+  - docs/ssot/ssot.ui.yml
+  - docs/ssot/infrastructure/ssot.h3.yml
+  - stacks/web/Caddyfile
