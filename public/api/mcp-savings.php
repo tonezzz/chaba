@@ -19,6 +19,7 @@ $body = @file_get_contents($upstreamUrl, false, $ctx);
 $status = $http_response_header[0] ?? 'HTTP/1.0 0';
 
 if ($body !== false && strpos($status, '200') !== false) {
+    @file_put_contents($fallback, $body);
     header('Content-Type: application/json');
     header('Cache-Control: public, max-age=60');
     header('Access-Control-Allow-Origin: *');
