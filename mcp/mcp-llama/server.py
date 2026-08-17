@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""mcp-llama — FastMCP wrapper for llama.cpp server.
+"""mcp-llama — FastMCP wrapper for Ollama.
 
 Runs over stdio by default for local IDE integration (e.g. Windsurf/Cascade).
-It calls the OpenAI-compatible HTTP API exposed by llama-server.
+It calls the OpenAI-compatible HTTP API exposed by Ollama on port 11434.
 """
 import json
 import os
@@ -15,7 +15,8 @@ from mcp.server.fastmcp import FastMCP
 
 mcp = FastMCP("mcp-llama")
 
-LLAMA_URL = os.environ.get("LLAMA_URL", "http://localhost:8008")
+LLAMA_URL = os.environ.get("LLAMA_URL", "http://localhost:11434")
+DEFAULT_MODEL = os.environ.get("LLAMA_MODEL", "phi3-gguf")
 MODEL_DIR = Path(
     os.environ.get(
         "LLAMA_MODEL_DIR",
@@ -59,6 +60,7 @@ def chat(
     resp = _post(
         "/v1/chat/completions",
         {
+            "model": DEFAULT_MODEL,
             "messages": messages,
             "max_tokens": max_tokens,
             "temperature": temperature,
@@ -77,6 +79,7 @@ def complete(
     resp = _post(
         "/v1/completions",
         {
+            "model": DEFAULT_MODEL,
             "prompt": prompt,
             "max_tokens": max_tokens,
             "temperature": temperature,
@@ -89,7 +92,7 @@ def complete(
 @mcp.tool()
 def tokenize(text: str) -> str:
     """Return token IDs for the given text."""
-    resp = _post("/tokenize", {"content": text})
+    resp = _post("/tokenize", {"model": DEFAULT_MODEL, "content": text})
     tokens = resp.get("tokens", [])
     return json.dumps({"count": len(tokens), "tokens": tokens})
 
@@ -107,9 +110,9 @@ def models() -> str:
 
 @mcp.tool()
 def status() -> str:
-    """Return llama-server /health or an error if unreachable."""
+    """Return Ollama /api/tags or an error if unreachable."""
     try:
-        return json.dumps(_get("/health"))
+        return json.dumps(_get("/api/tags"))
     except Exception as exc:
         return json.dumps({"error": str(exc), "llama_url": LLAMA_URL})
 
