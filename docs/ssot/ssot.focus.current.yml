@@ -4,6 +4,8 @@ icon: target
 workflow:
 - Assistant must read this SSOT at the start of each session - Read the most recent entry in docs/ssot/ssot.focus.sessions.yml
   to pick up pending follow-ups
+- Before any docs/ or SSOT read/grep, run `mcp_call_tool mddb semantic_search` on the request topic and record the query
+  in the active focus's request_log
 - List docs/ssot/focus-inbox/*.yml at session start and summarize any pending items for triage
 - Match the user request against active shared and branch focuses first
 - If it matches, append it to that item's request_log and do the work inside that focus
@@ -244,7 +246,10 @@ sections:
       status: not_started
     - label: Add smoke tests on macbook and one Linux host
       status: not_started
-    request_log: []
+    request_log:
+    - date: '2026-08-17'
+      request: 'assess the SSOT file optimization plan and continuous streamline workflow; suggest improvements and plan updates'
+      matched_to: SSOT file optimization
     branch: chaba
     source: /home/tony/CascadeProjects/chaba/docs/ssot/focus-inbox/2026-08-17-mcp-debug-visual-capture.yml
 - title: Quick Wins
