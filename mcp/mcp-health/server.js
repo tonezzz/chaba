@@ -228,7 +228,13 @@ async function loadHealthConfig() {
       console.error(`Using main config: ${configPath}`);
     }
 
-    config = yaml.parse(file);
+    const profileConfig = yaml.parse(file);
+
+    // Merge profile-specific services into the main config; keep common sections
+    config = { ...config, ...profileConfig };
+    if (profileConfig.services) {
+      config.services = profileConfig.services;
+    }
 
     // Substitute {profile} placeholders in service URLs
     if (config.services) {

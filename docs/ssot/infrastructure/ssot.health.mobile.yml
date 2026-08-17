@@ -1,0 +1,451 @@
+services:
+- id: caddy
+  name: Caddy
+  type: http
+  url: '{profile}/apps/'
+  expected_status: 200
+  timeout: 5
+  category: web
+  profiles:
+  - home
+  - mobile
+- id: bserver
+  name: BServer
+  type: http
+  url: '{profile}/'
+  expected_status: 200
+  timeout: 5
+  category: web
+  profiles:
+  - home
+  - mobile
+- id: helm
+  name: Helm Dashboard
+  type: http
+  url: http://tony-omen:8080/apps/helm
+  expected_status: 200
+  timeout: 5
+  category: web
+  profiles:
+  - home
+  - mobile
+  verification:
+  - 'Check container: docker ps | grep helm'
+  - 'Check container logs: docker logs helm --tail 20'
+  - 'Test direct container: curl -s http://localhost:3003/'
+  - 'Test Caddy proxy: curl -s http://tony-omen:8080/apps/helm/'
+  recovery_actions:
+  - 'Restart container: cd /home/tony/CascadeProjects/chaba/stacks/web && docker compose restart helm'
+  - 'Rebuild container: cd /home/tony/CascadeProjects/helm && docker build -t web-helm . && cd /home/tony/CascadeProjects/chaba/stacks/web
+    && docker compose up -d helm'
+  - Check Caddy proxy configuration in stacks/web/Caddyfile
+  - 'Verify environment variables: docker exec helm env | grep LLM'
+- id: status-api
+  name: Status API
+  type: http
+  url: '{profile}/health'
+  expected_status: 200
+  timeout: 5
+  category: api
+  profiles:
+  - home
+  - mobile
+  verification:
+  - 'Test container: docker ps | grep status-api'
+  - 'Test direct container: curl -s http://localhost:8000/health'
+  - 'Test Caddy proxy: curl -s {profile}/health'
+  - 'Check container logs: docker logs status-api --tail 20'
+  recovery_actions:
+  - 'Restart container: docker restart status-api'
+  - 'Check container networking: docker inspect status-api'
+  - Verify Caddy proxy configuration in stacks/web/Caddyfile
+- id: yomi-api
+  name: Yomi API
+  type: http
+  url: '{profile}/api/yomi/health'
+  expected_status: 200
+  timeout: 5
+  category: api
+  profiles:
+  - home
+  - mobile
+  recommendation: If yomi-api is down and tony-dell cannot be recovered, run /home/tony/.local/bin/yomi-failover-to-omen.sh
+    on tony-omen. See docs/ssot/infrastructure/ssot.yomi-failover.yml.
+  verification:
+  - 'Test direct Yomi API on tony-dell: curl -s http://tony-dell:3000/api/yomi/health'
+  - 'Test Caddy proxy on tony-omen: curl -s {profile}/api/yomi/health'
+  - 'Test chat page: curl -s {profile}/apps/yomi/chat.html?chat=test'
+- id: yomi-summarization
+  name: Yomi Summarization
+  type: http
+  url: '{profile}/api/yomi/summarization-status'
+  expected_status: 200
+  timeout: 5
+  category: api
+  profiles:
+  - home
+  - mobile
+  verification:
+  - 'Test API endpoint: curl -s {profile}/api/yomi/summarization-status'
+  - 'Test chat page with valid chat ID: curl -s {profile}/apps/yomi/chat.html?chat=valid_chat_id'
+  - Verify API returns JSON response with status information
+  - Check browser console for API errors when loading chat page
+- id: yomi-rate-limiter
+  name: Yomi Rate Limiter
+  type: http
+  url: '{profile}/api/yomi/rate-limiter-status'
+  expected_status: 200
+  timeout: 5
+  category: api
+  profiles:
+  - home
+  - mobile
+- id: yomi-activity-status
+  name: Yomi Activity Status
+  type: http
+  url: '{profile}/api/yomi/activity-status'
+  expected_status: 200
+  timeout: 5
+  category: api
+  profiles:
+  - home
+  - mobile
+- id: trade-api
+  name: Trade API
+  type: http
+  url: http://localhost:9000/api/health
+  expected_status: 200
+  timeout: 5
+  category: api
+  profiles:
+  - home
+  - mobile
+  verification:
+  - 'Test container: docker ps | grep trade-api'
+  - 'Test health endpoint: curl -s http://localhost:9000/api/health'
+  - 'Test root endpoint: curl -s http://localhost:9000/'
+  - 'Check container logs: docker logs trade-api'
+  recovery_actions:
+  - 'Restart container: docker restart trade-api'
+  - 'Check container networking: docker inspect trade-api'
+  - 'Verify port mapping: docker port trade-api'
+- id: redis
+  name: Redis
+  type: container
+  container: redis
+  expected_state: running
+  timeout: 5
+  category: datastore
+  profiles:
+  - home
+  - mobile
+  verification:
+  - 'Test container: docker ps | grep redis'
+  - 'Test connection: docker exec redis redis-cli ping'
+  - 'Test memory: docker exec redis redis-cli info memory'
+  - 'Check logs: docker logs redis --tail 20'
+  recovery_actions:
+  - 'Restart container: docker restart redis'
+  - 'Check data volume: docker inspect redis | grep -A 10 Mounts'
+  - 'Verify networking: docker network inspect bridge'
+- id: postgres
+  name: Postgres
+  type: container
+  container: chaba-postgres-16
+  host: tony_dell
+  expected_state: running
+  timeout: 5
+  category: datastore
+  profiles:
+  - home
+  - mobile
+  disabled: true
+  note: Postgres now runs in a rootless Podman container on tony_dell. Health is best inferred from yomi-api and the pg tailscale
+    endpoint. If both Postgres and Yomi are down on tony_dell, use the failover plan in docs/ssot/infrastructure/ssot.yomi-failover.yml.
+  verification:
+  - 'Test container on tony_dell: podman ps | grep chaba-postgres-16'
+  - 'Test port: nc -zv postgre 5432'
+  - 'Check logs: podman logs chaba-postgres-16 --tail 20'
+  recovery_actions:
+  - 'Restart container on tony_dell: podman restart chaba-postgres-16'
+  - 'Check data volume: /home/tony/.config/containers/postgres/data'
+  - 'If tony_dell cannot be recovered, run the failover script: /home/tony/.local/bin/yomi-failover-to-omen.sh'
+- id: weaviate
+  name: Weaviate
+  type: http
+  url: '{profile}/api/weaviate/v1/nodes'
+  expected_status: 200
+  timeout: 5
+  category: datastore
+  profiles:
+  - home
+  - mobile
+- id: mddb-api
+  name: MDDB API
+  type: http
+  url: http://tony-omen:11023/health
+  expected_status: 200
+  timeout: 5
+  category: datastore
+  profiles:
+  - home
+  - mobile
+  note: Direct port access for health check, bypasses Caddy routing
+- id: mddb-mcp
+  name: MDDB MCP Server
+  type: http
+  url: http://tony-omen:9001/mcp
+  expected_status: 400
+  timeout: 5
+  category: datastore
+  profiles:
+  - home
+  - mobile
+  note: MCP endpoint for AI agent integration; GET /mcp returns 400, only POST is valid, so 400 is the healthy response
+  recovery_actions:
+  - 'Check MDDB container: docker ps | grep mddb'
+  - 'Restart MDDB: cd /home/tony/CascadeProjects/chaba-kbman/stacks/web/mddb && docker compose restart mddb'
+  - 'Check MDDB logs: cd /home/tony/CascadeProjects/chaba-kbman/stacks/web/mddb && docker compose logs mddb'
+  - 'Verify MCP endpoint: curl -s http://tony-omen:9001/mcp'
+  - 'Check MCP config: cat ~/.config/devin/mcp_config.json | grep mddb'
+- id: mddb-panel
+  name: MDDB Panel
+  type: http
+  url: '{profile}/apps/mddb/'
+  expected_status: 200
+  timeout: 5
+  category: web
+  profiles:
+  - home
+  - mobile
+- id: mddb-stats
+  name: MDDB Stats Endpoint
+  type: http
+  url: http://tony-omen:11023/v1/stats
+  expected_status: 200
+  timeout: 5
+  category: datastore
+  profiles:
+  - home
+  - mobile
+  note: Direct port access for stats endpoint, bypasses Caddy routing
+  recovery_actions:
+  - 'Check MDDB container: docker ps | grep mddb'
+  - 'Restart MDDB: cd /home/tony/CascadeProjects/chaba-kbman/stacks/web/mddb && docker compose restart mddb'
+  - 'Check MDDB logs: cd /home/tony/CascadeProjects/chaba-kbman/stacks/web/mddb && docker compose logs mddb'
+  - 'Verify port 11023 is accessible: curl -s http://tony-omen:11023/v1/stats'
+- id: mddb-vector-stats
+  name: MDDB Vector Stats Endpoint
+  type: http
+  url: http://tony-omen:11023/v1/vector-stats
+  expected_status: 200
+  timeout: 5
+  category: datastore
+  profiles:
+  - home
+  - mobile
+  note: Direct port access for vector stats endpoint, bypasses Caddy routing
+  recovery_actions:
+  - 'Check MDDB container: docker ps | grep mddb'
+  - 'Restart MDDB: cd /home/tony/CascadeProjects/chaba-kbman/stacks/web/mddb && docker compose restart mddb'
+  - 'Check MDDB logs: cd /home/tony/CascadeProjects/chaba-kbman/stacks/web/mddb && docker compose logs mddb'
+  - 'Verify port 11023 is accessible: curl -s http://tony-omen:11023/v1/vector-stats'
+- id: mddb-metrics
+  name: MDDB Metrics Endpoint
+  type: http
+  url: http://tony-omen:11023/metrics
+  expected_status: 200
+  timeout: 5
+  category: datastore
+  profiles:
+  - home
+  - mobile
+  note: Direct port access for metrics endpoint, bypasses Caddy routing
+  recovery_actions:
+  - 'Check MDDB container: docker ps | grep mddb'
+  - 'Restart MDDB: cd /home/tony/CascadeProjects/chaba-kbman/stacks/web/mddb && docker compose restart mddb'
+  - 'Check MDDB logs: cd /home/tony/CascadeProjects/chaba-kbman/stacks/web/mddb && docker compose logs mddb'
+  - 'Verify port 11023 is accessible: curl -s http://tony-omen:11023/metrics'
+- id: mddb-container
+  name: MDDB Container
+  type: container
+  container: mddb
+  expected_state: running
+  timeout: 5
+  category: datastore
+  profiles:
+  - home
+  - mobile
+  note: 'Container-level health check for MDDB service (container name: mddb)'
+  recovery_actions:
+  - 'Check container status: docker ps -a | grep mddb'
+  - 'Start container: cd /home/tony/CascadeProjects/chaba-kbman/stacks/web/mddb && docker compose up -d mddb'
+  - 'Check container logs: cd /home/tony/CascadeProjects/chaba-kbman/stacks/web/mddb && docker compose logs mddb'
+  - 'Verify docker compose config: cd /home/tony/CascadeProjects/chaba-kbman/stacks/web/mddb && docker compose config'
+- id: activepieces
+  name: Activepieces
+  disabled: true
+  type: container
+  container: activepieces
+  expected_state: running
+  timeout: 5
+  category: optional
+  profiles:
+  - home
+  - mobile
+  note: 'Offline (2026-08-14) - intentionally stopped. Start manually when needed: docker compose -f stacks/activepieces/docker-compose.yml
+    up -d'
+- id: frigate
+  name: Frigate NVR
+  disabled: true
+  type: http
+  url: '{profile}/frigate/api/version'
+  expected_status: 200
+  timeout: 10
+  category: optional
+  profiles:
+  - home
+  - mobile
+  note: 'Offline (2026-08-14) - intentionally stopped; start manually when needed: docker compose -f frigate/docker-compose.yml
+    up -d'
+- id: yomi-update-all-timer
+  name: Yomi Update All Timer
+  type: systemd
+  service: yomi-update-all.timer
+  expected_state: active
+  timeout: 5
+  category: system
+  profiles:
+  - home
+  - mobile
+  disabled: true
+  note: 'Timer now runs on tony_dell as a Podman user unit. Check with tony_dell: systemctl --user status yomi-update-all.timer.'
+- id: yomi-update-active-timer
+  name: Yomi Update Active Timer
+  type: systemd
+  service: yomi-update-active.timer
+  expected_state: active
+  timeout: 5
+  category: system
+  profiles:
+  - home
+  - mobile
+  disabled: true
+  note: 'Timer now runs on tony_dell as a Podman user unit. Check with tony_dell: systemctl --user status yomi-update-active.timer.'
+- id: weaviate-index-timer
+  name: Weaviate Index Timer
+  type: systemd
+  service: weaviate-index.timer
+  expected_state: active
+  timeout: 5
+  category: system
+  profiles:
+  - home
+  - mobile
+- id: cpu-frequency-monitor
+  name: CPU Frequency Monitor
+  type: systemd
+  scope: system
+  service: cpufreq-limit.service
+  expected_state: active
+  timeout: 5
+  category: system
+  profiles:
+  - home
+  - mobile
+  note: Ensures CPU frequency limit is applied at boot (cpufreq-limit.service)
+  verification:
+  - 'Check service: systemctl status cpufreq-limit.service'
+  - 'Check current CPU frequency: cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq'
+  - 'Check CPU governor: cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor'
+  recovery_actions:
+  - 'Restart service: systemctl restart cpufreq-limit.service'
+  - 'Set performance governor: echo performance | sudo tee /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor'
+- id: chaba-health-monitor-timer
+  name: Chaba Health Monitor Timer
+  type: systemd
+  service: chaba-health-monitor.timer
+  expected_state: active
+  timeout: 5
+  category: system
+  profiles:
+  - home
+  - mobile
+  note: Runs health-monitor.sh every 10 minutes (CPU frequency, temperature, memory, disk, services)
+  verification:
+  - 'Check timer status: systemctl --user status chaba-health-monitor.timer'
+  - 'Check monitor log: tail -f /home/tony/CascadeProjects/chaba/logs/health-monitor.log'
+  - 'Test script manually: bash /home/tony/CascadeProjects/chaba/scripts/health-monitor.sh'
+  - 'Check CPU frequency: cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq'
+  - 'Check CPU governor: cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor'
+  recovery_actions:
+  - 'Restart timer: systemctl --user restart chaba-health-monitor.timer'
+  - 'Check script permissions: chmod +x /home/tony/CascadeProjects/chaba/scripts/health-monitor.sh'
+  - 'Monitor CPU frequency: watch -n 1 ''cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq'''
+  - 'Change CPU governor: echo performance | sudo tee /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor'
+  - 'Check thermal throttling: watch -n 1 ''cat /sys/class/thermal/thermal_zone*/temp'''
+- id: barrier-server
+  name: Barrier KVM Server
+  type: systemd
+  service: barriers.service
+  expected_state: active
+  timeout: 5
+  category: system
+  profiles:
+  - home
+  - mobile
+  note: Barrier KVM server on tony-omen; auto-restarts on failure. Client on tony-dell connects to 100.75.102.88:24800 over
+    Tailscale.
+  verification:
+  - 'Check service: systemctl --user status barriers.service'
+  - 'Check port: ss -tlnp | grep 24800'
+  - 'Check server log: tail -n 20 /tmp/barrier-server.log'
+  - 'Check connected client: tail -n 20 /tmp/barrier-client.log'
+  recovery_actions:
+  - 'Restart server: systemctl --user restart barriers.service'
+  - 'Check log: journalctl --user -u barriers.service -n 50'
+  - 'Check client: ssh -o ConnectTimeout=3 tony@tony-dell ''pgrep -a barrierc'''
+  - 'Restart client: ssh -o ConnectTimeout=3 tony@tony-dell ''pkill -x barrierc 2>/dev/null; nohup /home/tony/.local/bin/barrierc
+    --no-daemon --disable-crypto --name tony-dell --log /tmp/barrier-client.log 100.75.102.88 >/dev/null 2>&1 &'''
+- id: chaba-funnel
+  name: Chaba Funnel landing page
+  type: http
+  url: https://tony-dell.taila0626a.ts.net/health
+  expected_status: 200
+  timeout: 5
+  category: tailscale
+  profiles:
+  - home
+  - mobile
+  note: Funnel landing page, /health endpoint, and /apps/docs/ on tony-dell, proxied by tailscale serve to 127.0.0.1:8082.
+  verification:
+  - 'Check systemd: systemctl --user status chaba-funnel.service'
+  - 'Check port: ss -tlnp | grep 8082'
+  - 'Test root: curl -s -o /dev/null -w ''%{http_code}'' https://tony-dell.taila0626a.ts.net/'
+  - 'Test health: curl -s https://tony-dell.taila0626a.ts.net/health'
+  - 'Test docs: curl -s -o /dev/null -w ''%{http_code}'' https://tony-dell.taila0626a.ts.net/apps/docs/index.html'
+  recovery_actions:
+  - 'Restart: systemctl --user restart chaba-funnel.service'
+  - 'Check tailscale serve: tailscale serve status'
+  - 'Check syntax: python3 -m py_compile /home/tony/chaba-funnel/funnel-server.py'
+- id: mcp-debug-cors
+  name: MCP Debug CORS endpoint
+  type: http
+  url: http://tony-dell:9100/health
+  expected_status: 200
+  timeout: 5
+  category: mcp-debug
+  profiles:
+  - home
+  - mobile
+  note: CORS endpoint on tony-dell for mcp-savings.json and mcp-table.json, served by http_server.py via tailscale serve /
+    Funnel.
+  verification:
+  - 'Check systemd: systemctl --user status mcp-debug-cors.service'
+  - 'Check port: ss -tlnp | grep 9100'
+  - 'Test tailnet: curl -s http://tony-dell:9100/health'
+  - 'Test Funnel: curl -s https://tony-dell.taila0626a.ts.net/mcp-savings.json'
+  recovery_actions:
+  - 'Restart: systemctl --user restart mcp-debug-cors.service'
+  - 'Check tailscale serve: tailscale serve status'
+  - 'Check syntax: python3 -m py_compile /home/tony/CascadeProjects/chaba/scripts/mcp_debug/http_server.py'

@@ -1,812 +1,247 @@
 title: Chaba Health Check Configuration
-description: Health check endpoints and monitoring for all chaba services
-version: 8
-
-# Network profiles with auto-detection
+description: Common health check configuration — profiles, alerts, groups, and recovery actions. Profile-specific services are in ssot.health.home.yml and ssot.health.mobile.yml.
+version: 9
 profiles:
   default: auto-detect
   home:
     hostname: tony-omen
     base_url: http://tony-omen:8080
-    ssids: [TONY-WIFI, TONY-WIFI_5G]
+    ssids:
+    - TONY-WIFI
+    - TONY-WIFI_5G
     description: Home network with local hostname
   mobile:
     hostname: tony-omen
     base_url: http://tony-omen:8080
-    ssids: [TONY-IP]
+    ssids:
+    - TONY-IP
     description: Mobile/external network via Tailscale
-    note: Connect to Tailscale first; use the tailnet hostname `tony-omen` (100.75.102.88) instead of a dynamic IP or DDNS hostname
-
-# Alert configuration
+    note: Connect to Tailscale first; use the tailnet hostname `tony-omen` (100.75.102.88) instead of a dynamic IP or DDNS
+      hostname
 alerts:
   enabled: true
   channels:
-    - type: log
-      enabled: true
-      severity: [critical, error, degraded]
-      description: Log alerts to system journal
-    - type: webhook
-      enabled: false
-      url: ""
-      severity: [critical]
-      description: Webhook for external monitoring systems
-  
+  - type: log
+    enabled: true
+    severity:
+    - critical
+    - error
+    - degraded
+    description: Log alerts to system journal
+  - type: webhook
+    enabled: false
+    url: ''
+    severity:
+    - critical
+    description: Webhook for external monitoring systems
   thresholds:
     critical_services_down: 3
     sustained_failure_minutes: 5
     recovery_notification: true
     response_time_threshold_ms: 5000
-  
   service_criticality:
-    critical: [caddy, postgres, gpu-queue]
-    important: [yomi-api, status-api, trade-api, mddb-api, playlived-dell, playlived-omen, llama-server, barrier-server]
-    optional: [redis, weaviate, activepieces, frigate, camera-control, imagen2, txt2vid, thai-legal, cpu-frequency-monitor, gdrive-backup, trade-automation]
-
-# Service groups for dependency tracking
+    critical:
+    - caddy
+    - postgres
+    - gpu-queue
+    important:
+    - yomi-api
+    - status-api
+    - trade-api
+    - mddb-api
+    - playlived-dell
+    - playlived-omen
+    - llama-server
+    - barrier-server
+    optional:
+    - redis
+    - weaviate
+    - activepieces
+    - frigate
+    - camera-control
+    - imagen2
+    - txt2vid
+    - thai-legal
+    - cpu-frequency-monitor
+    - gdrive-backup
+    - trade-automation
 groups:
-  web-stack: [caddy, bserver, status-api, yomi-api, mddb-panel, helm]
-  api: [yomi-api, yomi-rate-limiter, yomi-activity-status, yomi-summarization, status-api, trade-api]
-  yomi: [yomi-api, yomi-update-all-timer, yomi-update-active-timer, yomi-rate-limiter, yomi-activity-status, yomi-summarization]
-  raceman: [raceman-web, raceman-php]
-  gpu-stack: [imagen2, txt2vid, thai-legal, llama-server]
-  datastore: [postgres, weaviate, mddb-api, weaviate-index-timer]
-  trading: [trade-api]
-  optional: [activepieces, frigate, camera-control]
-  automation: [playlived, trade-automation]
-  ssot-sync: [mddb-api, mddb-mcp, mddb-stats, mddb-vector-stats, mddb-metrics, mddb-container]
-  system: [cpu-frequency-monitor, chaba-health-monitor-timer, gdrive-backup, yomi-update-all-timer, yomi-update-active-timer]
-
-# Service dependencies
+  web-stack:
+  - caddy
+  - bserver
+  - status-api
+  - yomi-api
+  - mddb-panel
+  - helm
+  api:
+  - yomi-api
+  - yomi-rate-limiter
+  - yomi-activity-status
+  - yomi-summarization
+  - status-api
+  - trade-api
+  yomi:
+  - yomi-api
+  - yomi-update-all-timer
+  - yomi-update-active-timer
+  - yomi-rate-limiter
+  - yomi-activity-status
+  - yomi-summarization
+  raceman:
+  - raceman-web
+  - raceman-php
+  gpu-stack:
+  - imagen2
+  - txt2vid
+  - thai-legal
+  - llama-server
+  datastore:
+  - postgres
+  - weaviate
+  - mddb-api
+  - weaviate-index-timer
+  trading:
+  - trade-api
+  optional:
+  - activepieces
+  - frigate
+  - camera-control
+  automation:
+  - playlived
+  - trade-automation
+  ssot-sync:
+  - mddb-api
+  - mddb-mcp
+  - mddb-stats
+  - mddb-vector-stats
+  - mddb-metrics
+  - mddb-container
+  system:
+  - cpu-frequency-monitor
+  - chaba-health-monitor-timer
+  - gdrive-backup
+  - yomi-update-all-timer
+  - yomi-update-active-timer
 dependencies:
-  yomi-api: [caddy, postgres] # redis removed - not currently deployed
-  status-api: [caddy]
-  gpu-queue: [postgres]
-  activepieces: [postgres] # redis removed - not currently deployed
+  yomi-api:
+  - caddy
+  - postgres
+  status-api:
+  - caddy
+  gpu-queue:
+  - postgres
+  activepieces:
+  - postgres
   playlived: []
-
-services:
-  # Web Stack Services (8080/8081)
-  - id: caddy
-    name: Caddy
-    type: http
-    url: "{profile}/apps/"
-    expected_status: 200
-    timeout: 5
-    category: web
-    profiles: [home, mobile]
-
-  - id: bserver
-    name: BServer
-    type: http
-    url: "{profile}/"
-    expected_status: 200
-    timeout: 5
-    category: web
-    profiles: [home, mobile]
-
-  - id: raceman-web
-    name: Raceman Web
-    type: http
-    url: http://tony-omen:8083/apps/raceman/
-    expected_status: 200
-    timeout: 5
-    category: web
-    profiles: [home]
-
-  - id: helm
-    name: Helm Dashboard
-    type: http
-    url: http://tony-omen:8080/apps/helm
-    expected_status: 200
-    timeout: 5
-    category: web
-    profiles: [home, mobile]
-    verification:
-      - "Check container: docker ps | grep helm"
-      - "Check container logs: docker logs helm --tail 20"
-      - "Test direct container: curl -s http://localhost:3003/"
-      - "Test Caddy proxy: curl -s http://tony-omen:8080/apps/helm/"
-    recovery_actions:
-      - "Restart container: cd /home/tony/CascadeProjects/chaba/stacks/web && docker compose restart helm"
-      - "Rebuild container: cd /home/tony/CascadeProjects/helm && docker build -t web-helm . && cd /home/tony/CascadeProjects/chaba/stacks/web && docker compose up -d helm"
-      - "Check Caddy proxy configuration in stacks/web/Caddyfile"
-      - "Verify environment variables: docker exec helm env | grep LLM"
-
-  - id: raceman-php
-    name: Raceman PHP
-    type: container
-    container: raceman-php
-    expected_state: running
-    timeout: 5
-    category: web
-    profiles: [home]
-
-  - id: status-api
-    name: Status API
-    type: http
-    url: "{profile}/health"
-    expected_status: 200
-    timeout: 5
-    category: api
-    profiles: [home, mobile]
-    verification:
-      - "Test container: docker ps | grep status-api"
-      - "Test direct container: curl -s http://localhost:8000/health"
-      - "Test Caddy proxy: curl -s {profile}/health"
-      - "Check container logs: docker logs status-api --tail 20"
-    recovery_actions:
-      - "Restart container: docker restart status-api"
-      - "Check container networking: docker inspect status-api"
-      - "Verify Caddy proxy configuration in stacks/web/Caddyfile"
-
-  - id: yomi-api
-    name: Yomi API
-    type: http
-    url: "{profile}/api/yomi/health"
-    expected_status: 200
-    timeout: 5
-    category: api
-    profiles: [home, mobile]
-    recommendation: "If yomi-api is down and tony-dell cannot be recovered, run /home/tony/.local/bin/yomi-failover-to-omen.sh on tony-omen. See docs/ssot/infrastructure/ssot.yomi-failover.yml."
-    verification:
-      - "Test direct Yomi API on tony-dell: curl -s http://tony-dell:3000/api/yomi/health"
-      - "Test Caddy proxy on tony-omen: curl -s {profile}/api/yomi/health"
-      - "Test chat page: curl -s {profile}/apps/yomi/chat.html?chat=test"
-
-  - id: yomi-summarization
-    name: Yomi Summarization
-    type: http
-    url: "{profile}/api/yomi/summarization-status"
-    expected_status: 200
-    timeout: 5
-    category: api
-    profiles: [home, mobile]
-    verification:
-      - "Test API endpoint: curl -s {profile}/api/yomi/summarization-status"
-      - "Test chat page with valid chat ID: curl -s {profile}/apps/yomi/chat.html?chat=valid_chat_id"
-      - "Verify API returns JSON response with status information"
-      - "Check browser console for API errors when loading chat page"
-
-  - id: yomi-rate-limiter
-    name: Yomi Rate Limiter
-    type: http
-    url: "{profile}/api/yomi/rate-limiter-status"
-    expected_status: 200
-    timeout: 5
-    category: api
-    profiles: [home, mobile]
-
-  - id: yomi-activity-status
-    name: Yomi Activity Status
-    type: http
-    url: "{profile}/api/yomi/activity-status"
-    expected_status: 200
-    timeout: 5
-    category: api
-    profiles: [home, mobile]
-
-  - id: playlived-dell
-    name: Playlived (tony-dell)
-    type: http
-    url: http://tony-dell:9230/sessions
-    expected_status: 200
-    timeout: 5
-    category: api
-    profiles: [home]
-    verification:
-      - "Test sessions: curl -s http://tony-dell:9230/sessions"
-      - "Check pinned package: cat /home/tony/.local/playlive/package.json | grep '\"playwright\"'"
-      - "Check browsers: npx playwright install --dry-run"
-      - "Check service: ssh tony-dell systemctl --user status playlived.service"
-    recovery_actions:
-      - "Reinstall exact version: cd /home/tony/.local/playlive && npm ci && npx playwright install chromium"
-      - "Restart service: ssh tony-dell systemctl --user restart playlived.service"
-      - "Fix port: ssh tony-dell ss -tulpn | grep 9230 && kill conflicting process"
-
-  - id: playlived-omen
-    name: Playlived (tony-omen)
-    type: http
-    url: http://tony-omen:9231/sessions
-    expected_status: 200
-    timeout: 5
-    category: api
-    profiles: [home]
-    verification:
-      - "Test sessions: curl -s http://tony-omen:9231/sessions"
-      - "Check service: systemctl --user status playlived.service"
-    recovery_actions:
-      - "Restart service: systemctl --user restart playlived.service"
-      - "Fix port: ss -tulpn | grep 9231 && kill conflicting process"
-
-  # Trading Services
-  - id: trade-api
-    name: Trade API
-    type: http
-    url: http://localhost:9000/api/health
-    expected_status: 200
-    timeout: 5
-    category: api
-    profiles: [home, mobile]
-    verification:
-      - "Test container: docker ps | grep trade-api"
-      - "Test health endpoint: curl -s http://localhost:9000/api/health"
-      - "Test root endpoint: curl -s http://localhost:9000/"
-      - "Check container logs: docker logs trade-api"
-    recovery_actions:
-      - "Restart container: docker restart trade-api"
-      - "Check container networking: docker inspect trade-api"
-      - "Verify port mapping: docker port trade-api"
-
-  - id: trade-automation
-    name: Trade Automation
-    type: container
-    container: trade-automation
-    expected_state: running
-    timeout: 5
-    category: automation
-    profiles: [home]
-    note: "Background trade automation worker (same image as trade-api, no exposed host port)"
-    verification:
-      - "Check container: docker ps | grep trade-automation"
-      - "Check container logs: docker logs trade-automation"
-    recovery_actions:
-      - "Restart container: docker restart trade-automation"
-      - "Check status: docker inspect trade-automation"
-
-  # Note: trading-terminal container not currently deployed
-  # - id: trading-terminal
-  #   name: Trading Terminal
-  #   type: container
-  #   container: trading-terminal
-  #   expected_state: running
-  #   timeout: 5
-  #   category: api
-  #   profiles: [home, mobile]
-
-  # Data Services
-  - id: redis
-    name: Redis
-    type: container
-    container: redis
-    expected_state: running
-    timeout: 5
-    category: datastore
-    profiles: [home, mobile]
-    verification:
-      - "Test container: docker ps | grep redis"
-      - "Test connection: docker exec redis redis-cli ping"
-      - "Test memory: docker exec redis redis-cli info memory"
-      - "Check logs: docker logs redis --tail 20"
-    recovery_actions:
-      - "Restart container: docker restart redis"
-      - "Check data volume: docker inspect redis | grep -A 10 Mounts"
-      - "Verify networking: docker network inspect bridge"
-
-  - id: postgres
-    name: Postgres
-    type: container
-    container: chaba-postgres-16
-    host: tony_dell
-    expected_state: running
-    timeout: 5
-    category: datastore
-    profiles: [home, mobile]
-    disabled: true
-    note: "Postgres now runs in a rootless Podman container on tony_dell. Health is best inferred from yomi-api and the pg tailscale endpoint. If both Postgres and Yomi are down on tony_dell, use the failover plan in docs/ssot/infrastructure/ssot.yomi-failover.yml."
-    verification:
-      - "Test container on tony_dell: podman ps | grep chaba-postgres-16"
-      - "Test port: nc -zv postgre 5432"
-      - "Check logs: podman logs chaba-postgres-16 --tail 20"
-    recovery_actions:
-      - "Restart container on tony_dell: podman restart chaba-postgres-16"
-      - "Check data volume: /home/tony/.config/containers/postgres/data"
-      - "If tony_dell cannot be recovered, run the failover script: /home/tony/.local/bin/yomi-failover-to-omen.sh"
-
-  - id: weaviate
-    name: Weaviate
-    type: http
-    url: "{profile}/api/weaviate/v1/nodes"
-    expected_status: 200
-    timeout: 5
-    category: datastore
-    profiles: [home, mobile]
-
-  - id: mddb-api
-    name: MDDB API
-    type: http
-    url: "http://tony-omen:11023/health"
-    expected_status: 200
-    timeout: 5
-    category: datastore
-    profiles: [home, mobile]
-    note: Direct port access for health check, bypasses Caddy routing
-
-  - id: mddb-mcp
-    name: MDDB MCP Server
-    type: http
-    url: "http://tony-omen:9001/mcp"
-    expected_status: 400
-    timeout: 5
-    category: datastore
-    profiles: [home, mobile]
-    note: MCP endpoint for AI agent integration; GET /mcp returns 400, only POST is valid, so 400 is the healthy response
-    recovery_actions:
-      - "Check MDDB container: docker ps | grep mddb"
-      - "Restart MDDB: cd /home/tony/CascadeProjects/chaba-kbman/stacks/web/mddb && docker compose restart mddb"
-      - "Check MDDB logs: cd /home/tony/CascadeProjects/chaba-kbman/stacks/web/mddb && docker compose logs mddb"
-      - "Verify MCP endpoint: curl -s http://tony-omen:9001/mcp"
-      - "Check MCP config: cat ~/.config/devin/mcp_config.json | grep mddb"
-
-  - id: mddb-panel
-    name: MDDB Panel
-    type: http
-    url: "{profile}/apps/mddb/"
-    expected_status: 200
-    timeout: 5
-    category: web
-    profiles: [home, mobile]
-
-  - id: mddb-stats
-    name: MDDB Stats Endpoint
-    type: http
-    url: "http://tony-omen:11023/v1/stats"
-    expected_status: 200
-    timeout: 5
-    category: datastore
-    profiles: [home, mobile]
-    note: Direct port access for stats endpoint, bypasses Caddy routing
-    recovery_actions:
-      - "Check MDDB container: docker ps | grep mddb"
-      - "Restart MDDB: cd /home/tony/CascadeProjects/chaba-kbman/stacks/web/mddb && docker compose restart mddb"
-      - "Check MDDB logs: cd /home/tony/CascadeProjects/chaba-kbman/stacks/web/mddb && docker compose logs mddb"
-      - "Verify port 11023 is accessible: curl -s http://tony-omen:11023/v1/stats"
-
-  - id: mddb-vector-stats
-    name: MDDB Vector Stats Endpoint
-    type: http
-    url: "http://tony-omen:11023/v1/vector-stats"
-    expected_status: 200
-    timeout: 5
-    category: datastore
-    profiles: [home, mobile]
-    note: Direct port access for vector stats endpoint, bypasses Caddy routing
-    recovery_actions:
-      - "Check MDDB container: docker ps | grep mddb"
-      - "Restart MDDB: cd /home/tony/CascadeProjects/chaba-kbman/stacks/web/mddb && docker compose restart mddb"
-      - "Check MDDB logs: cd /home/tony/CascadeProjects/chaba-kbman/stacks/web/mddb && docker compose logs mddb"
-      - "Verify port 11023 is accessible: curl -s http://tony-omen:11023/v1/vector-stats"
-
-  - id: mddb-metrics
-    name: MDDB Metrics Endpoint
-    type: http
-    url: "http://tony-omen:11023/metrics"
-    expected_status: 200
-    timeout: 5
-    category: datastore
-    profiles: [home, mobile]
-    note: Direct port access for metrics endpoint, bypasses Caddy routing
-    recovery_actions:
-      - "Check MDDB container: docker ps | grep mddb"
-      - "Restart MDDB: cd /home/tony/CascadeProjects/chaba-kbman/stacks/web/mddb && docker compose restart mddb"
-      - "Check MDDB logs: cd /home/tony/CascadeProjects/chaba-kbman/stacks/web/mddb && docker compose logs mddb"
-      - "Verify port 11023 is accessible: curl -s http://tony-omen:11023/metrics"
-
-  - id: mddb-container
-    name: MDDB Container
-    type: container
-    container: mddb
-    expected_state: running
-    timeout: 5
-    category: datastore
-    profiles: [home, mobile]
-    note: "Container-level health check for MDDB service (container name: mddb)"
-    recovery_actions:
-      - "Check container status: docker ps -a | grep mddb"
-      - "Start container: cd /home/tony/CascadeProjects/chaba-kbman/stacks/web/mddb && docker compose up -d mddb"
-      - "Check container logs: cd /home/tony/CascadeProjects/chaba-kbman/stacks/web/mddb && docker compose logs mddb"
-      - "Verify docker compose config: cd /home/tony/CascadeProjects/chaba-kbman/stacks/web/mddb && docker compose config"
-
-  # SSOT Services
-  # Note: ssot-sync systemd service not found in current environment
-  # This service may be deployed in chaba-kbman project, not chaba
-#  # - id: ssot-sync-watcher
-#    name: SSOT Sync Watcher (systemd)
-#    type: systemd
-#    service: ssot-sync
-#    expected_state: active
-#    timeout: 5
-#    category: system
-#    profiles: [home, mobile]
-#    note: Systemd service for SSOT to MDDB auto-sync file watcher
-#    recovery_actions:
-#      - "Check service status: systemctl status ssot-sync.service"
-#      - "Restart service: systemctl restart ssot-sync.service"
-#      - "Check service logs: journalctl -xeu ssot-sync.service"
-#      - "Verify watch script exists: ls -la /home/tony/CascadeProjects/chaba-kbman/scripts/watch-ssot-sync.py"
-#      - "Check script permissions: chmod +x /home/tony/CascadeProjects/chaba-kbman/scripts/watch-ssot-sync.py"
-#      - "Reload systemd: systemctl daemon-reload"
-#      - "Enable service: systemctl enable ssot-sync.service"
-
-  # GPU Services (All offline due to GTX 1650 4GB VRAM constraints)
-  - id: thai-legal
-    name: Llama Router (Phi-3 only)
-    disabled: true
-    type: http
-    url: http://tony-omen:8001/health
-    expected_status: 200
-    timeout: 10
-    category: gpu
-    profiles: [home]
-    note: Offline (2026-08-09) - GTX 1650 4GB cannot run multiple GPU services concurrently. Use mcp1_hold_llama and run one GPU workload at a time.
-
-  - id: llama-server
-    name: Llama Server (MCP)
-    type: http
-    url: http://tony-omen:8008/health
-    expected_status: 200
-    timeout: 10
-    category: gpu
-    profiles: [home]
-    note: "Llama.cpp server for MCP text generation (mcp-llama, mcp-gpu). Started: 2026-08-12"
-    recovery_actions:
-      - "Check container: docker ps | grep llama-server"
-      - "Start container: cd /home/tony/CascadeProjects/chaba-omen/stacks/ai && docker compose up -d llama-server"
-      - "Check container logs: cd /home/tony/CascadeProjects/chaba-omen/stacks/ai && docker compose logs llama-server"
-      - "Verify port 8008 is accessible: curl -s http://tony-omen:8008/health"
-      - "Check model loading: curl -s http://tony-omen:8008/health (returns 503 while loading)"
-
-  - id: imagen2
-    name: Imagen2
-    type: http
-    url: http://tony-omen:8000/health
-    expected_status: 200
-    timeout: 10
-    category: gpu
-    profiles: [home]
-    note: "Offline (2026-08-09) - GPU memory constraints. Start manually when needed: docker compose -f stacks/gpu/docker-compose.yml up imagen2-inference"
-
-  - id: txt2vid
-    name: Txt2Vid
-    disabled: true
-    type: http
-    url: http://tony-omen:8002/health
-    expected_status: 200
-    timeout: 10
-    category: gpu
-    profiles: [home]
-    note: "Offline (2026-08-14) - intentionally stopped. Start manually when needed: docker compose -f stacks/gpu/docker-compose.yml up txt2vid-inference"
-
-  # Queue Services
-  - id: gpu-queue
-    name: GPU Queue
-    type: http
-    url: http://tony-omen:3001/health
-    expected_status: 200
-    timeout: 5
-    category: queue
-    profiles: [home]
-
-  # Optional Services
-  - id: activepieces
-    name: Activepieces
-    disabled: true
-    type: container
-    container: activepieces
-    expected_state: running
-    timeout: 5
-    category: optional
-    profiles: [home, mobile]
-    note: "Offline (2026-08-14) - intentionally stopped. Start manually when needed: docker compose -f stacks/activepieces/docker-compose.yml up -d"
-
-  - id: frigate
-    name: Frigate NVR
-    disabled: true
-    type: http
-    url: "{profile}/frigate/api/version"
-    expected_status: 200
-    timeout: 10
-    category: optional
-    profiles: [home, mobile]
-    note: "Offline (2026-08-14) - intentionally stopped; start manually when needed: docker compose -f frigate/docker-compose.yml up -d"
-
-  - id: camera-control
-    name: Camera Control
-    disabled: true
-    type: http
-    url: http://tony-omen:8090/
-    expected_status: 200
-    timeout: 5
-    category: optional
-    profiles: [home]
-    note: "Offline (2026-08-14) - intentionally stopped; start manually when needed (currently runs on tony-dell)"
-
-  # Systemd Services
-  # Note: yomi-api systemd service failed, but docker container is running and healthy
-  # Docker container provides the service, systemd service is redundant
-  # - id: yomi-api-service
-  #   name: Yomi API Service (systemd)
-  #   type: systemd
-  #   service: yomi-api.service
-  #   expected_state: active
-  #   timeout: 5
-  #   category: system
-  #   profiles: [home, mobile]
-
-  - id: yomi-update-all-timer
-    name: Yomi Update All Timer
-    type: systemd
-    service: yomi-update-all.timer
-    expected_state: active
-    timeout: 5
-    category: system
-    profiles: [home, mobile]
-    disabled: true
-    note: "Timer now runs on tony_dell as a Podman user unit. Check with tony_dell: systemctl --user status yomi-update-all.timer."
-
-  - id: yomi-update-active-timer
-    name: Yomi Update Active Timer
-    type: systemd
-    service: yomi-update-active.timer
-    expected_state: active
-    timeout: 5
-    category: system
-    profiles: [home, mobile]
-    disabled: true
-    note: "Timer now runs on tony_dell as a Podman user unit. Check with tony_dell: systemctl --user status yomi-update-active.timer."
-
-  - id: weaviate-index-timer
-    name: Weaviate Index Timer
-    type: systemd
-    service: weaviate-index.timer
-    expected_state: active
-    timeout: 5
-    category: system
-    profiles: [home, mobile]
-
-  - id: cpu-frequency-monitor
-    name: CPU Frequency Monitor
-    type: systemd
-    scope: system
-    service: cpufreq-limit.service
-    expected_state: active
-    timeout: 5
-    category: system
-    profiles: [home, mobile]
-    note: "Ensures CPU frequency limit is applied at boot (cpufreq-limit.service)"
-    verification:
-      - "Check service: systemctl status cpufreq-limit.service"
-      - "Check current CPU frequency: cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq"
-      - "Check CPU governor: cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor"
-    recovery_actions:
-      - "Restart service: systemctl restart cpufreq-limit.service"
-      - "Set performance governor: echo performance | sudo tee /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor"
-
-  - id: chaba-health-monitor-timer
-    name: Chaba Health Monitor Timer
-    type: systemd
-    service: chaba-health-monitor.timer
-    expected_state: active
-    timeout: 5
-    category: system
-    profiles: [home, mobile]
-    note: "Runs health-monitor.sh every 10 minutes (CPU frequency, temperature, memory, disk, services)"
-    verification:
-      - "Check timer status: systemctl --user status chaba-health-monitor.timer"
-      - "Check monitor log: tail -f /home/tony/CascadeProjects/chaba/logs/health-monitor.log"
-      - "Test script manually: bash /home/tony/CascadeProjects/chaba/scripts/health-monitor.sh"
-      - "Check CPU frequency: cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq"
-      - "Check CPU governor: cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor"
-    recovery_actions:
-      - "Restart timer: systemctl --user restart chaba-health-monitor.timer"
-      - "Check script permissions: chmod +x /home/tony/CascadeProjects/chaba/scripts/health-monitor.sh"
-      - "Monitor CPU frequency: watch -n 1 'cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq'"
-      - "Change CPU governor: echo performance | sudo tee /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor"
-      - "Check thermal throttling: watch -n 1 'cat /sys/class/thermal/thermal_zone*/temp'"
-
-  - id: barrier-server
-    name: Barrier KVM Server
-    type: systemd
-    service: barriers.service
-    expected_state: active
-    timeout: 5
-    category: system
-    profiles: [home, mobile]
-    note: "Barrier KVM server on tony-omen; auto-restarts on failure. Client on tony-dell connects to 100.75.102.88:24800 over Tailscale."
-    verification:
-      - "Check service: systemctl --user status barriers.service"
-      - "Check port: ss -tlnp | grep 24800"
-      - "Check server log: tail -n 20 /tmp/barrier-server.log"
-      - "Check connected client: tail -n 20 /tmp/barrier-client.log"
-    recovery_actions:
-      - "Restart server: systemctl --user restart barriers.service"
-      - "Check log: journalctl --user -u barriers.service -n 50"
-      - "Check client: ssh -o ConnectTimeout=3 tony@tony-dell 'pgrep -a barrierc'"
-      - "Restart client: ssh -o ConnectTimeout=3 tony@tony-dell 'pkill -x barrierc 2>/dev/null; nohup /home/tony/.local/bin/barrierc --no-daemon --disable-crypto --name tony-dell --log /tmp/barrier-client.log 100.75.102.88 >/dev/null 2>&1 &'"
-
-  - id: gdrive-backup
-    name: Google Drive Backup
-    type: mount
-    mount_point: /home/tony/GoogleDrive
-    expected_state: mounted
-    timeout: 10
-    category: system
-    profiles: [home]
-    note: "Google Drive mount for automated backup storage at /home/tony/GoogleDrive/Tony AI/backup/chaba"
-    verification:
-      - "Check mount status: mount | grep gdrive"
-      - "Check backup directory: ls -la /home/tony/GoogleDrive/Tony AI/backup/chaba"
-      - "Check recent backups: ls -lt /home/tony/GoogleDrive/Tony AI/backup/chaba/daily/ | head -5"
-      - "Test write access: echo 'test' > /home/tony/GoogleDrive/Tony AI/backup/chaba/test-write.txt && rm /home/tony/GoogleDrive/Tony AI/backup/chaba/test-write.txt"
-      - "Check backup logs: tail -f /var/log/chaba-backup.log"
-    recovery_actions:
-      - "Check rclone status: rclone status gdrive"
-      - "Remount Google Drive: rclone mount gdrive: /home/tony/GoogleDrive --daemon"
-      - "Check rclone config: rclone config show gdrive"
-      - "Check backup service: systemctl status chaba-backup.timer"
-      - "Check backup logs for errors: tail -100 /var/log/chaba-backup.log"
-
-  - id: chaba-funnel
-    name: Chaba Funnel landing page
-    type: http
-    url: https://tony-dell.taila0626a.ts.net/health
-    expected_status: 200
-    timeout: 5
-    category: tailscale
-    profiles: [home, mobile]
-    note: "Funnel landing page, /health endpoint, and /apps/docs/ on tony-dell, proxied by tailscale serve to 127.0.0.1:8082."
-    verification:
-      - "Check systemd: systemctl --user status chaba-funnel.service"
-      - "Check port: ss -tlnp | grep 8082"
-      - "Test root: curl -s -o /dev/null -w '%{http_code}' https://tony-dell.taila0626a.ts.net/"
-      - "Test health: curl -s https://tony-dell.taila0626a.ts.net/health"
-      - "Test docs: curl -s -o /dev/null -w '%{http_code}' https://tony-dell.taila0626a.ts.net/apps/docs/index.html"
-    recovery_actions:
-      - "Restart: systemctl --user restart chaba-funnel.service"
-      - "Check tailscale serve: tailscale serve status"
-      - "Check syntax: python3 -m py_compile /home/tony/chaba-funnel/funnel-server.py"
-
-  - id: mcp-debug-cors
-    name: MCP Debug CORS endpoint
-    type: http
-    url: http://tony-dell:9100/health
-    expected_status: 200
-    timeout: 5
-    category: mcp-debug
-    profiles: [home, mobile]
-    note: "CORS endpoint on tony-dell for mcp-savings.json and mcp-table.json, served by http_server.py via tailscale serve / Funnel."
-    verification:
-      - "Check systemd: systemctl --user status mcp-debug-cors.service"
-      - "Check port: ss -tlnp | grep 9100"
-      - "Test tailnet: curl -s http://tony-dell:9100/health"
-      - "Test Funnel: curl -s https://tony-dell.taila0626a.ts.net/mcp-savings.json"
-    recovery_actions:
-      - "Restart: systemctl --user restart mcp-debug-cors.service"
-      - "Check tailscale serve: tailscale serve status"
-      - "Check syntax: python3 -m py_compile /home/tony/CascadeProjects/chaba/scripts/mcp_debug/http_server.py"
-
-# Recovery suggestions for common failure modes
 recovery_actions:
-  container_down: "Check docker compose status: docker compose ps, Restart container: docker compose restart <container>, Check logs: docker compose logs <container>"
-  http_error: "Check if service is running: docker compose ps, Check service logs for errors, Verify port is accessible: curl -v <url>, Restart service if needed"
-  timeout: "Check if service is overloaded, Check system resources: htop or docker stats, Consider restarting the service"
-  systemd_service_down: "Check service status: systemctl --user status <service>, Restart service: systemctl --user restart <service>, Check logs: journalctl --user -xeu <service>"
+  container_down: 'Check docker compose status: docker compose ps, Restart container: docker compose restart <container>,
+    Check logs: docker compose logs <container>'
+  http_error: 'Check if service is running: docker compose ps, Check service logs for errors, Verify port is accessible: curl
+    -v <url>, Restart service if needed'
+  timeout: 'Check if service is overloaded, Check system resources: htop or docker stats, Consider restarting the service'
+  systemd_service_down: 'Check service status: systemctl --user status <service>, Restart service: systemctl --user restart
+    <service>, Check logs: journalctl --user -xeu <service>'
   gpu_service_down:
-    - Check GPU status with mcp1_gpu_status
-    - Check if llama is holding GPU: mcp2_status
-    - Hold llama if needed: mcp1_hold_llama
-    - Restart GPU service
-
+  - Check GPU status with mcp1_gpu_status
+  - Check if llama is holding GPU: mcp2_status
+  - Hold llama if needed: mcp1_hold_llama
+  - Restart GPU service
   gpu_vram_high:
-    - Check GPU memory with nvidia-smi or mcp1_gpu_status
-    - Identify processes using GPU memory
-    - Hold llama if needed: mcp1_hold_llama
-    - Check for stuck jobs in GPU queue
-
+  - Check GPU memory with nvidia-smi or mcp1_gpu_status
+  - Identify processes using GPU memory
+  - Hold llama if needed: mcp1_hold_llama
+  - Check for stuck jobs in GPU queue
   gpu_overheating:
-    - Check GPU temperature with nvidia-smi
-    - Check system cooling and airflow
-    - Reduce GPU workload if needed
-    - Monitor for thermal throttling
-
+  - Check GPU temperature with nvidia-smi
+  - Check system cooling and airflow
+  - Reduce GPU workload if needed
+  - Monitor for thermal throttling
   yomi_api_404_error:
-    - "Check Caddyfile uses handle_path not handle for /api/yomi/* routes"
-    - "Restart web container after Caddyfile changes: docker compose restart web"
-    - "Verify container networking: docker exec web ping -c 2 host.docker.internal"
-    - "Test direct container access: docker exec web wget -qO- http://host.docker.internal:3000/api/yomi/health"
-    - "Check yomi-api systemd service: systemctl --user status yomi-api.service"
-    - "Verify yomi-api is listening on port 3000: ss -tlnp | grep 3000"
-
+  - Check Caddyfile uses handle_path not handle for /api/yomi/* routes
+  - 'Restart web container after Caddyfile changes: docker compose restart web'
+  - 'Verify container networking: docker exec web ping -c 2 host.docker.internal'
+  - 'Test direct container access: docker exec web wget -qO- http://host.docker.internal:3000/api/yomi/health'
+  - 'Check yomi-api systemd service: systemctl --user status yomi-api.service'
+  - 'Verify yomi-api is listening on port 3000: ss -tlnp | grep 3000'
   yomi_line_session_expired:
-    - "Re-login to LINE via Yomi MCP server: call login tool"
-    - Check if LINE account logged in elsewhere (causes session revocation)
-    - Verify MCP server connection is healthy
-    - "Test with list_conversations after re-login"
-
+  - 'Re-login to LINE via Yomi MCP server: call login tool'
+  - Check if LINE account logged in elsewhere (causes session revocation)
+  - Verify MCP server connection is healthy
+  - Test with list_conversations after re-login
   playlived_browsers_missing:
-    - "Install Playwright browsers: cd /home/tony/.local/playlive && npx playwright install"
-    - "Verify browser installation: npx playwright install --dry-run"
-    - "Check browser cache: ls -la ~/.cache/ms-playwright/"
-    - "Test session creation: curl -s -X POST http://tony-omen:9230/sessions -H 'Content-Type: application/json' -d '{\"type\":\"playwright-headless\",\"target\":\"local\"}'"
-    - "Restart playlived service: systemctl --user restart playlived.service"
-
+  - 'Install Playwright browsers: cd /home/tony/.local/playlive && npx playwright install'
+  - 'Verify browser installation: npx playwright install --dry-run'
+  - 'Check browser cache: ls -la ~/.cache/ms-playwright/'
+  - 'Test session creation: curl -s -X POST http://tony-omen:9230/sessions -H ''Content-Type: application/json'' -d ''{"type":"playwright-headless","target":"local"}'''
+  - 'Restart playlived service: systemctl --user restart playlived.service'
   raceman_service_down:
-    - "Check raceman containers: cd /home/tony/CascadeProjects/chaba-raceman && docker compose ps"
-    - "Restart raceman services: cd /home/tony/CascadeProjects/chaba-raceman && docker compose restart"
-    - "Check raceman logs: cd /home/tony/CascadeProjects/chaba-raceman && docker compose logs"
-    - "Verify nginx config: cat /home/tony/CascadeProjects/chaba-raceman/nginx.conf"
-    - "Test direct access: curl -s http://tony-omen:8083/apps/raceman/"
-
+  - 'Check raceman containers: cd /home/tony/CascadeProjects/chaba-raceman && docker compose ps'
+  - 'Restart raceman services: cd /home/tony/CascadeProjects/chaba-raceman && docker compose restart'
+  - 'Check raceman logs: cd /home/tony/CascadeProjects/chaba-raceman && docker compose logs'
+  - 'Verify nginx config: cat /home/tony/CascadeProjects/chaba-raceman/nginx.conf'
+  - 'Test direct access: curl -s http://tony-omen:8083/apps/raceman/'
   ssot_sync_watcher_down:
-    - "Check service status: systemctl status ssot-sync.service"
-    - "Restart service: systemctl restart ssot-sync.service"
-    - "Check service logs: journalctl -xeu ssot-sync.service"
-    - "Verify watch script exists: ls -la /home/tony/CascadeProjects/chaba-kbman/scripts/watch-ssot-sync.py"
-    - "Check script permissions: chmod +x /home/tony/CascadeProjects/chaba-kbman/scripts/watch-ssot-sync.py"
-    - "Reload systemd: systemctl daemon-reload"
-    - "Enable service: systemctl enable ssot-sync.service"
-
+  - 'Check service status: systemctl status ssot-sync.service'
+  - 'Restart service: systemctl restart ssot-sync.service'
+  - 'Check service logs: journalctl -xeu ssot-sync.service'
+  - 'Verify watch script exists: ls -la /home/tony/CascadeProjects/chaba-kbman/scripts/watch-ssot-sync.py'
+  - 'Check script permissions: chmod +x /home/tony/CascadeProjects/chaba-kbman/scripts/watch-ssot-sync.py'
+  - 'Reload systemd: systemctl daemon-reload'
+  - 'Enable service: systemctl enable ssot-sync.service'
   mddb_endpoint_unreachable:
-    - "Check MDDB container: docker ps | grep mddb"
-    - "Restart MDDB: cd /home/tony/CascadeProjects/chaba-kbman/stacks/web/mddb && docker compose restart mddb"
-    - "Check MDDB logs: cd /home/tony/CascadeProjects/chaba-kbman/stacks/web/mddb && docker compose logs mddb"
-    - "Verify port 11023 is accessible: curl -s http://tony-omen:11023/health"
-    - "Check docker compose config: cd /home/tony/CascadeProjects/chaba-kbman/stacks/web/mddb && docker compose config"
-    - "Verify network connectivity: ping -c 2 tony-omen"
-
+  - 'Check MDDB container: docker ps | grep mddb'
+  - 'Restart MDDB: cd /home/tony/CascadeProjects/chaba-kbman/stacks/web/mddb && docker compose restart mddb'
+  - 'Check MDDB logs: cd /home/tony/CascadeProjects/chaba-kbman/stacks/web/mddb && docker compose logs mddb'
+  - 'Verify port 11023 is accessible: curl -s http://tony-omen:11023/health'
+  - 'Check docker compose config: cd /home/tony/CascadeProjects/chaba-kbman/stacks/web/mddb && docker compose config'
+  - 'Verify network connectivity: ping -c 2 tony-omen'
   mddb_container_down:
-    - "Check container status: docker ps -a | grep mddb"
-    - "Start container: cd /home/tony/CascadeProjects/chaba-kbman/stacks/web/mddb && docker compose up -d mddb"
-    - "Check container logs: cd /home/tony/CascadeProjects/chaba-kbman/stacks/web/mddb && docker compose logs mddb"
-    - "Verify docker compose config: cd /home/tony/CascadeProjects/chaba-kbman/stacks/web/mddb && docker compose config"
-    - "Check docker daemon: systemctl status docker"
-    - "Restart docker if needed: systemctl restart docker"
-
+  - 'Check container status: docker ps -a | grep mddb'
+  - 'Start container: cd /home/tony/CascadeProjects/chaba-kbman/stacks/web/mddb && docker compose up -d mddb'
+  - 'Check container logs: cd /home/tony/CascadeProjects/chaba-kbman/stacks/web/mddb && docker compose logs mddb'
+  - 'Verify docker compose config: cd /home/tony/CascadeProjects/chaba-kbman/stacks/web/mddb && docker compose config'
+  - 'Check docker daemon: systemctl status docker'
+  - 'Restart docker if needed: systemctl restart docker'
   network_connectivity_home:
-    - "Check if tony-omen is reachable: ping -c 2 tony-omen"
-    - "Test HTTP connectivity: curl -s -o /dev/null -w '%{http_code}' http://tony-omen:8080/"
-    - "Test localhost access: curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/"
-    - "Check network interface status: ip addr show"
-    - "Verify DNS resolution: nslookup tony-omen"
-    - "Check firewall rules: sudo iptables -L -n"
-    - "Test if on home network vs mobile profile"
-
+  - 'Check if tony-omen is reachable: ping -c 2 tony-omen'
+  - 'Test HTTP connectivity: curl -s -o /dev/null -w ''%{http_code}'' http://tony-omen:8080/'
+  - 'Test localhost access: curl -s -o /dev/null -w ''%{http_code}'' http://localhost:8080/'
+  - 'Check network interface status: ip addr show'
+  - 'Verify DNS resolution: nslookup tony-omen'
+  - 'Check firewall rules: sudo iptables -L -n'
+  - Test if on home network vs mobile profile
   hostname_resolution_issues:
-    - "Verify /etc/hosts mapping: cat /etc/hosts | grep tony-omen"
-    - "Check resolved IP vs local IP: nslookup tony-omen and compare with ip addr show"
-    - "Get reliable local IP: ip route get 1.1.1.1 | awk '{print $7}'"
-    - "Fix incorrect /etc/hosts: sudo sed -i 's/OLD_IP/NEW_IP/' /etc/hosts"
-    - "Verify hostname-based HTTP: curl -s http://tony-omen:8080/"
-    - "Universal health check now includes hostname resolution verification"
-    - "Health workflows use hostname-based checks instead of hardcoded IPs"
-
-# Testing and debugging guidance
+  - 'Verify /etc/hosts mapping: cat /etc/hosts | grep tony-omen'
+  - 'Check resolved IP vs local IP: nslookup tony-omen and compare with ip addr show'
+  - 'Get reliable local IP: ip route get 1.1.1.1 | awk ''{print $7}'''
+  - 'Fix incorrect /etc/hosts: sudo sed -i ''s/OLD_IP/NEW_IP/'' /etc/hosts'
+  - 'Verify hostname-based HTTP: curl -s http://tony-omen:8080/'
+  - Universal health check now includes hostname resolution verification
+  - Health workflows use hostname-based checks instead of hardcoded IPs
 debugging_guidance:
   web_testing:
-    - Use direct hostname URLs for local testing (tony-omen at Home, localhost on Mobile)
-    - Avoid browser preview for local testing - use regular browser instead
-    - Browser preview is only for isolated environments or when direct access unavailable
-    - See docs/ssot/infrastructure/ssot.host-roles.yml for headless browser priority and chaba-h3 preview targets
-    - Test in multiple browsers for compatibility issues
-
+  - Use direct hostname URLs for local testing (tony-omen at Home, localhost on Mobile)
+  - Avoid browser preview for local testing - use regular browser instead
+  - Browser preview is only for isolated environments or when direct access unavailable
+  - See docs/ssot/infrastructure/ssot.host-roles.yml for headless browser priority and chaba-h3 preview targets
+  - Test in multiple browsers for compatibility issues
   location_testing:
-    - At Home: Use tony-omen for direct local network access
-    - On Mobile: Use localhost if testing on the same machine
-    - External: Use VPN or external domain when away from home network
-    - Network connectivity issues: DNS may resolve but HTTP may fail (ping vs curl discrepancy)
-    - Universal health check uses HTTP connectivity detection instead of ping for accuracy
-
+  - At Home: Use tony-omen for direct local network access
+  - On Mobile: Use localhost if testing on the same machine
+  - External: Use VPN or external domain when away from home network
+  - Network connectivity issues: DNS may resolve but HTTP may fail (ping vs curl discrepancy)
+  - Universal health check uses HTTP connectivity detection instead of ping for accuracy
   service_testing:
-    - "Use curl for quick endpoint checks: curl -v <url>"
-    - "Check service logs: docker compose logs <service>"
-    - "Verify port accessibility: ss -tlnp | grep <port>"
-    - Test API endpoints with proper HTTP methods
-
+  - 'Use curl for quick endpoint checks: curl -v <url>'
+  - 'Check service logs: docker compose logs <service>'
+  - 'Verify port accessibility: ss -tlnp | grep <port>'
+  - Test API endpoints with proper HTTP methods
   yomi_chat_testing:
-    - "Test health endpoint: curl -s http://tony-omen:8080/api/yomi/health"
-    - "Test chat page load: curl -s http://tony-omen:8080/apps/yomi/chat.html?chat=test_id"
-    - "Verify Caddy proxy uses handle_path not handle for /api/yomi/* routes"
-    - "Check container networking: docker exec web ping -c 2 host.docker.internal"
-    - "Test direct container access: docker exec web wget -qO- http://host.docker.internal:3000/api/yomi/health"
-    - Verify LINE session is active via Yomi MCP server (call list_conversations)
-    - Check browser console for API errors when loading chat page
-    - Test with valid chat ID from Yomi conversations list
+  - 'Test health endpoint: curl -s http://tony-omen:8080/api/yomi/health'
+  - 'Test chat page load: curl -s http://tony-omen:8080/apps/yomi/chat.html?chat=test_id'
+  - Verify Caddy proxy uses handle_path not handle for /api/yomi/* routes
+  - 'Check container networking: docker exec web ping -c 2 host.docker.internal'
+  - 'Test direct container access: docker exec web wget -qO- http://host.docker.internal:3000/api/yomi/health'
+  - Verify LINE session is active via Yomi MCP server (call list_conversations)
+  - Check browser console for API errors when loading chat page
+  - Test with valid chat ID from Yomi conversations list
