@@ -203,7 +203,10 @@ sections:
     - label: Migrate raceman stack to tony-dell podman
       text: Move raceman-web (nginx:alpine) and raceman-php (php-fpm) to tony-dell. Update Caddy to route :8083 to tony-dell.
         Frees omen disk.
-      status: not_started
+      status: completed
+      completed: '2026-08-17'
+      note: Imported chaba-raceman-raceman-php image to tony-dell; rsynced /home/tony/CascadeProjects/chaba-raceman; started raceman-php on 0.0.0.0:9001
+        and raceman-web on 0.0.0.0:8083 with host network; updated Caddyfile reverse_proxy to 100.68.142.13:8083; http://127.0.0.1:8080/apps/raceman/ returns 200.
     - label: Assess weaviate migration to tony-dell
       text: Weaviate has no GPU dependency but depends on postgres (already on tony-dell). Measure working set size and migration
         risk before moving.

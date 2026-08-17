@@ -181,6 +181,16 @@ sections:
         status: completed
         completed: 2026-08-17
         tags: ['tony-dell', 'podman', 'mddb', 'panel', 'host-network']
+      - label: raceman-php
+        text: 'Migrated to tony-dell rootless podman with --network host. Image imported via docker save | podman load. php-fpm listens on 0.0.0.0:9001. Project source at /home/tony/CascadeProjects/chaba-raceman.'
+        status: completed
+        completed: 2026-08-17
+        tags: ['tony-dell', 'podman', 'raceman', 'php', 'host-network']
+      - label: raceman-web
+        text: 'Migrated to tony-dell rootless podman with --network host. Nginx on port 8083 with custom nginx.conf. Caddy /apps/raceman/*, /apps/common.css, and /apps/nav.js now proxy to 100.68.142.13:8083.'
+        status: completed
+        completed: 2026-08-17
+        tags: ['tony-dell', 'podman', 'raceman', 'nginx', 'host-network']
       - label: weaviate
         text: 'Assessed and approved for migration. ~50MiB working set, 0.12% CPU, no GPU dependency. Quadlet units planned at ~/.config/containers/systemd/weaviate.container and ~/.config/systemd/user/weaviate.service.'
         status: approved

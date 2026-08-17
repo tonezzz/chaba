@@ -101,6 +101,32 @@ tony-dell:
       - mddb-panel.service
     status: implemented (2026-08-17)
     note: Caddy /mddb/* reverse proxy updated to 100.68.142.13:3002.
+  raceman-php:
+    container: raceman-php
+    image: docker.io/library/chaba-raceman-raceman-php:latest
+    runtime: rootless podman
+    network: host
+    port: 9001
+    host_port: 100.68.142.13:9001
+    data_volume: /home/tony/CascadeProjects/chaba-raceman
+    quadlet:
+      container_unit: ~/.config/containers/systemd/raceman-php.container
+      service_unit: ~/.config/systemd/user/raceman-php.service
+    status: implemented (2026-08-17)
+    note: Migrated from tony-omen; php-fpm listens on 0.0.0.0:9001 to avoid conflict with mddb :9000.
+  raceman-web:
+    container: raceman-web
+    image: docker.io/library/nginx:alpine
+    runtime: rootless podman
+    network: host
+    port: 8083
+    host_port: 100.68.142.13:8083
+    data_volume: /home/tony/CascadeProjects/chaba-raceman
+    quadlet:
+      container_unit: ~/.config/containers/systemd/raceman-web.container
+      service_unit: ~/.config/systemd/user/raceman-web.service
+    status: implemented (2026-08-17)
+    note: Nginx listens on 8083; Caddy /apps/raceman/* and /apps/common.css and /apps/nav.js now proxy to 100.68.142.13:8083.
   weaviate:
     container: weaviate
     image: docker.io/semitechnologies/weaviate:latest
