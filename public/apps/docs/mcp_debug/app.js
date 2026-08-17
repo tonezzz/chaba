@@ -1,6 +1,6 @@
-const LIVE_DATA_URL = "/api/mcp-savings.php"; // same-origin PHP proxy to tony-omen
+const LIVE_DATA_URL = "/api/mcp-savings.php"; // same-origin PHP proxy to tony-dell
 const TABLE_DATA_URL = "/api/mcp-table.php"; // same-origin proxy for /mcp-table.json
-const FETCH_TIMEOUT = 8000; // proxy + mcp_report cache may take a few seconds
+const FETCH_TIMEOUT = 30000; // proxy + remote fetch may take several seconds
 
 let currentReportData = null;
 let autoRefreshId = null;
