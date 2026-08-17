@@ -195,6 +195,22 @@ sessions:
       - Restart avahi-daemon/systemd-resolved if user wants tony-omen.local mDNS fixed
     next_action: Close session
 
+  - date: '2026-08-17'
+    session: chaba-2026-08-17-capture-bridge
+    focus: mcp-debug visual capture bridge
+    source: user request
+    plan:
+      - Finish mcp-debug capture bridge and close session
+    done:
+      - Enabled tony_dell capture in ssot.mcp-debug.capture.yml with note on headless screenshot
+      - Expanded mcp_screenshot/window_list/clipboard_image_get host enum to tony_dell, tony_omen, kk-macbook
+      - Marked mcp_window_list and mcp_clipboard_image_get subtasks completed
+      - Completed Linux smoke tests on tony_dell (window list OK, screenshot fails without display)
+      - Committed remaining capture bridge changes
+    follow_up:
+      - Resolve macbook SSH and run macOS smoke tests
+    next_action: Close session
+
 related_files:
   - docs/ssot/ssot.focus.current.yml
   - docs/ssot/ssot.focus.yml
