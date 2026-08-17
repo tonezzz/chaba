@@ -360,10 +360,8 @@ def compact_podman_image_ls():
         if isinstance(names, list):
             names = names[0] if names else ""
         images.append({
-            "i": img.get("Id") or img.get("id") or "",
             "n": names,
             "t": img.get("Tag") or img.get("tag") or "",
-            "s": img.get("Size") or img.get("size") or "",
         })
     return {"ok": True, "cmd": "podman image ls", "n": len(images), "i": images}
 
