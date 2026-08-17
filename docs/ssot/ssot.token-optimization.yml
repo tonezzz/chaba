@@ -164,17 +164,22 @@ sections:
         type: configuration
         savings: 81% on cached input tokens (varies by model and provider)
         implementation_effort: trivial
-        status: pending
+        status: in_progress
         priority: high
-        action: Interim default set to swe-1-7-medium; start a fresh session with GLM-5.2 to verify its cached input token behavior before making a final decision
+        action: Default switched to glm-5-2 on 2026-08-17; monitoring output_tokens/msg as a proxy for internal thinking length
         findings:
           - swe-1-7-medium reports non-zero cached_input_tokens from the first message (proxy-level cache of the system prefix)
           - claude-sonnet-4-6-thinking reports large cached_input_tokens (31.9M in a single long session)
           - swe-1-6 sessions consistently report 0 cached_input_tokens across 1 to 1048 messages
           - GLM-5.2 test was inconclusive because the model was switched mid-session; the session metadata showed display model SWE-1.6 while the config had already changed to glm-5-2
-          - Session token statistics are stored in ~/.local/share/devin/cli/sessions.db under the metadata JSON column
+          - Session token statistics are stored in ~/.local/share/devin/cli/sessions.db under the metadata JSON column (response_dimensions array, not token_stats key)
+          - 'GLM-5.2 confirmed to support prompt caching: 605,953 cached_input_tokens in a 20-message session (2026-08-17, session tide-krypton)'
+          - 'GLM-5.2 output_tokens/msg = 501 vs SWE-1.7 Medium 561-717 across sessions of 260-1803 msgs; GLM-5.2 shows ~11-30% shorter output per turn, indicating shorter internal thinking'
+          - 'GLM-5.2 input_tokens/msg = 4,653 vs SWE-1.7 4,983-6,969; lower context overhead per turn'
+          - 'Caveat: GLM-5.2 sample is only 20 messages; cached_per_msg naturally grows in longer sessions as prefix accumulates; need to re-measure after 100+ messages'
         pending_tests:
-          - Start a fresh GLM-5.2 session and check cached_input_tokens after the second turn to confirm whether GLM-5.2 supports prompt caching through Cognition's proxy
+          - Re-measure GLM-5.2 token stats after 100+ messages to confirm output_tokens/msg stays low in long sessions
+          - Compare task quality (code correctness, instruction following) between GLM-5.2 and SWE-1.7 Medium
 
       - label: Rules Optimization
         text: Convert always_on rules to glob or model_decision where possible to reduce context overhead
