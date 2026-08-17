@@ -1,0 +1,145 @@
+title: Yomi
+subtitle: LINE conversation archive, search, and viewer with two-stage fetch/process pipeline, Gemini summarization, and PostgreSQL backend.
+icon: 💬
+sections:
+  - title: Core Features
+    icon: ✅
+    layout: list
+    items:
+      - label: Conversation Archive
+        text: 'Archives LINE 1:1 and group chats with full message history, media downloads, and PostgreSQL storage.'
+      - label: AI Summarization
+        text: 'Gemini API (gemma-4-31b-it) generates per-conversation summaries and structured daily summaries (events, actions, topics) with Thai/English/mixed language detection.'
+      - label: Semantic Search
+        text: 'Weaviate vector index (YomiMessage collection, 3000+ messages) provides hybrid BM25+vector search across all conversations via /api/yomi/search.'
+      - label: Web Viewer
+        text: 'Basic-auth protected web UI at /apps/yomi/ with conversation list, category filters, single-chat view, media lightbox, and per-chat refetch.'
+      - label: On-Demand Media
+        text: 'Images downloaded during export; video/audio/file served on demand via /api/yomi/media/<chatId>/<messageId> with caching.'
+      - label: Categorization
+        text: 'Automated keyword/brand-based categorization into Personal, Work, Family, Group, Official, Promo, or Other. Categories preserved across exports.'
+
+  - title: Technical Architecture
+    icon: ⚙️
+    layout: list
+    items:
+      - label: Two-Stage Pipeline
+        text: 'Stage 1 (fetch-conversations.mjs) fetches conversations and messages from LINE API, stores to PostgreSQL. Stage 2 (process-conversations.mjs) generates AI summaries, daily summaries, and categories. Decoupled for reliability and monitoring.'
+      - label: API Server
+        text: 'yomi-api.mjs Node.js HTTP server on port 3000, reverse-proxied from Caddy at /api/yomi/*. Managed by systemd user service yomi-api.service with auto-restart.'
+      - label: Database Backend
+        text: 'PostgreSQL (pgvector/pgvector:pg16) stores conversations, messages, daily_summaries, and overrides tables. Connection via stacks/web/.env credentials.'
+      - label: Summarization Engine
+        text: 'Gemini API primary (gemma-4-31b-it) with local Llama (Phi-3-mini-4k-instruct-q4) fallback. Rate limiters and circuit breakers manage GPU/API load.'
+      - label: Rate Limiting
+        text: 'LINE API rate limit (code 103) mitigation with exponential backoff (1min-4hr), login attempt throttling (max 1/hour), and session validation before fetches.'
+      - label: LINE Session
+        text: 'Yomi MCP server (mcpb) at /home/tony/.yomi/mcpb/run.mjs holds the LINE secondary-device session in ~/.local/share/yomi. Session expiry requires interactive login via mcp13_login tool.'
+      - label: Failover
+        text: 'Primary on tony-dell, backup on tony-omen with daily pg_dump + rsync. Manual failover script at tony_omen:/home/tony/.local/bin/yomi-failover-to-omen.sh. See ssot.yomi-failover.yml.'
+
+  - title: Files & Modules
+    icon: 📁
+    layout: list
+    items:
+      - label: scripts/yomi/fetch-conversations.mjs
+        text: 'Stage 1: Fetch conversations and messages from LINE API with retry/backoff logic. Updates PostgreSQL.'
+      - label: scripts/yomi/process-conversations.mjs
+        text: 'Stage 2: Generate AI summaries, daily summaries, and categories. Language detection and batch processing.'
+      - label: scripts/yomi/yomi-api.mjs
+        text: 'HTTP API server on port 3000. Endpoints for conversations, messages, media, daily summaries, session status, login, rate limiter status, activity status.'
+      - label: scripts/yomi/categorize-conversations.mjs
+        text: 'Keyword/brand-based conversation categorizer. Brand list for known official accounts.'
+      - label: scripts/yomi/summary-utils.mjs
+        text: 'Summary generation helpers and quality evaluation functions.'
+      - label: scripts/yomi/db.mjs
+        text: 'PostgreSQL connection module. Reads credentials from stacks/web/.env.'
+      - label: scripts/yomi/llama-rate-limiter.mjs
+        text: 'Rate limiter and circuit breaker classes for managing Llama/Gemini API load.'
+      - label: scripts/yomi/gpu-queue-integration.mjs
+        text: 'GPU queue job submission module for managed GPU workload scheduling.'
+      - label: scripts/yomi/download-media.mjs
+        text: 'Generic Yomi media downloader for on-demand API media endpoint.'
+      - label: scripts/yomi/init.sql
+        text: 'PostgreSQL schema: conversations, messages, overrides, daily_summaries tables.'
+      - label: stacks/web/public/apps/yomi/index.html
+        text: 'Conversation list UI with category filters, session status indicator, login button, semantic search bar.'
+      - label: stacks/web/public/apps/yomi/chat.html
+        text: 'Single-conversation view with messages, media rendering, lightbox, and refetch button.'
+      - label: stacks/web/Caddyfile
+        text: 'handle_path /apps/yomi/* serves static files; /api/yomi/* reverse-proxies to host.docker.internal:3000. Basic auth with YOMI_PASSWORD_HASH.'
+
+  - title: Deployment
+    icon: 🚀
+    layout: list
+    items:
+      - label: Location
+        text: 'chaba/scripts/yomi/ (backend), chaba/stacks/web/public/apps/yomi/ (frontend), chaba/stacks/web/Caddyfile (routing).'
+      - label: URLs
+        text: 'List: http://tony-omen.local:8080/apps/yomi/ (basic-auth). Chat: /apps/yomi/chat.html?chat=<chatId>. API: /api/yomi/*.'
+      - label: Registry
+        text: 'Listed in stacks/web/public/apps/apps.yml on 8080 stack. Not on chaba-h3 8081 stack.'
+      - label: Branch
+        text: 'main branch of chaba repository. No separate deployment branch needed.'
+      - label: Systemd Services
+        text: 'yomi-api.service (API server, auto-restart), yomi-fetch.timer (every 30min), yomi-process.timer (hourly overnight + 12PM/6PM/8PM), yomi-fetch-on-boot.service, yomi-process-on-boot.service. Managed via systemctl --user.'
+      - label: Primary Host
+        text: 'tony-dell (failover primary). Backup on tony-omen with daily pg_dump + rsync. See infrastructure/ssot.yomi-failover.yml.'
+
+  - title: Testing
+    icon: 🧪
+    layout: list
+    items:
+      - label: Syntax Validation
+        text: 'node --check on modified .mjs files before commits.'
+      - label: Endpoint Verification
+        text: 'curl tests for /api/yomi/health, /api/yomi/conversations, /api/yomi/rate-limiter-status, /api/yomi/session-status through Caddy.'
+      - label: MCP Verification
+        text: 'mcp13_list_conversations and mcp13_get_chat_messages confirm LINE session is active and data is accessible.'
+      - label: Health Check Integration
+        text: 'Monitored by mcp-health: yomi-api, yomi-summarization, yomi-rate-limiter, yomi-activity-status endpoints. Config in ssot.health.yml.'
+
+  - title: Integration
+    icon: 🔗
+    layout: list
+    items:
+      - label: LINE MCP Server
+        text: 'Yomi mcpb at /home/tony/.yomi/mcpb/run.mjs provides list_conversations, get_chat_messages, get_insight, send_message, search_messages, get_message_media tools. Registered in ssot.mcp.yml.'
+      - label: PostgreSQL
+        text: 'Shared pgvector/pgvector:pg16 container in web stack. Database "chaba" with conversations, messages, daily_summaries, overrides tables.'
+      - label: Weaviate
+        text: 'YomiMessage collection (3000+ messages) indexed by scripts/yomi/index-yomi-weaviate.mjs. Hybrid search via /api/yomi/search.'
+      - label: GPU Queue
+        text: 'Yomi workloads (yomi_summary, yomi_daily) at priority P4 (highest). Integration module ready, pending full migration from direct API calls.'
+      - label: Gemini API
+        text: 'Primary summarization model (gemma-4-31b-it). API key in systemd service environment. Fallback to local Llama when USE_GEMINI=false.'
+      - label: Health Check System
+        text: '4 Yomi endpoints monitored: yomi-api, yomi-summarization, yomi-rate-limiter, yomi-activity-status. Dependencies: yomi-api depends on [caddy, postgres, redis].'
+      - label: Failover Plan
+        text: 'Primary/backup disposition documented in infrastructure/ssot.yomi-failover.yml. Manual failover script on tony-omen.'
+
+  - title: Known Issues
+    icon: ⚠️
+    layout: list
+    items:
+      - label: E2EE Media Unavailable
+        text: 'Some messages lack OBS object metadata (OID/SID) for E2EE decryption. The Yomi secondary device did not receive keys for these messages. Cannot be retroactively fixed by code. Workaround: forward missing media from primary phone to a chat that includes the Yomi session.'
+      - label: LINE Session Expiry
+        text: 'Session expires when the same LINE account logs in elsewhere. Requires interactive login via mcp13_login tool. Rate limit (code 103) can block re-login for 1-24 hours if too many attempts.'
+      - label: GPU Queue Integration Incomplete
+        text: 'GPU queue integration module created but not yet wired into process-conversations.mjs. Direct Llama/Gemini API calls still used.'
+      - label: Summary Quality Variance
+        text: 'Some conversations show rich daily summary extraction while others have empty events/actions/topics arrays. Monitor via /api/yomi/summary-quality.'
+
+config:
+  version: 1
+  created: 2026-08-17
+  maintainer: tony
+  status: active
+  deployment: tony-omen (8080 stack), tony-dell (failover primary)
+  related_files:
+    - infrastructure/ssot.yomi-failover.yml
+    - infrastructure/ssot.mcp.yml
+    - infrastructure/ssot.health.yml
+    - docs/kb/yomi.md
+    - docs/overview/apps.yomi.yml
