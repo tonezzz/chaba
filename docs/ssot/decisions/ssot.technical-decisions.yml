@@ -129,6 +129,51 @@ decisions:
       - scripts/mcp_debug/tools.py
       - scripts/mcp_debug/server.py
 
+  - id: migrate-core-services-to-tony-dell-podman
+    date: '2026-08-17'
+    title: Migrate core chaba services from tony-omen Docker to tony-dell rootless Podman with Quadlet
+    status: accepted
+    context: |
+      Several long-running chaba services (mddb, mddb-panel, redis, yomi-api, weaviate, raceman, postgres)
+      had been running on tony-omen under Docker. To consolidate hosting, improve startup reliability,
+      and run containers as an unprivileged user, we moved the workload to tony-dell using rootless Podman
+      with Quadlet systemd units.
+    options:
+      - label: Keep Docker on tony-omen
+        pros: [no migration work, existing volumes and compose files keep working]
+        cons: [continues to rely on tony-omen for critical data services, no rootless isolation]
+      - label: Move to tony-dell Docker with compose
+        pros: [familiar docker compose tooling, direct volume migration]
+        cons: [still requires rootful Docker or complex rootless setup, no native systemd integration]
+      - label: Move to tony-dell rootless Podman with Quadlet
+        pros: [systemd user units auto-start on boot, no root privileges, host-network simplifies known ports, aligns with existing Quadlet work]
+        cons: [new Quadlet units to write, image imports via docker save | podman load, port conflicts must be resolved per service]
+    chosen: Move to tony-dell rootless Podman with Quadlet
+    reasoning: |
+      Rootless Podman with Quadlet gives native systemd user integration, starts containers at boot without
+      root, and keeps the network model simple by using --network host for most services. The migration
+      reused already-built Docker images where possible (docker save | podman load) and copied data volumes
+      to per-service paths under ~/.config/containers on tony-dell. Known port conflicts were resolved by
+      explicit port assignments: mddb API 11023, mddb MCP 9000, raceman-php 9001, mddb-panel 3002,
+      weaviate 8084 (because chaba-funnel uses 8082), and raceman-web 8083. Caddy on tony-omen now
+      reverse-proxies these services from 100.68.142.13. Client MCP configs were repointed from
+      localhost:9001 to 100.68.142.13:9000.
+    consequences:
+      - Quadlet units created at ~/.config/containers/systemd/ and enabled user services
+      - Service data copied to tony-dell under /home/tony/.config/containers/<service>
+      - Caddy /mddb/*, /apps/raceman/*, /apps/weaviate, and other routes now proxy to 100.68.142.13
+      - mddb decommissioned on tony-omen; mddb-mcp health check now targets 100.68.142.13:9000
+      - Local client configs updated: ~/.config/devin/mcp_config.json, ~/.config/windsurf/mcp_config.json, and ~/.config/Claude/mddb-bridge.py
+      - Recovery actions in ssot.health.*.yml still reference old docker compose paths and should be updated
+    related:
+      - docs/ssot/infrastructure/ssot.services.yml
+      - docs/ssot/infrastructure/ssot.containerization.yml
+      - docs/ssot/infrastructure/ssot.health.home.yml
+      - docs/ssot/infrastructure/ssot.mcp.yml
+      - ~/.config/devin/mcp_config.json
+      - ~/.config/Claude/mddb-bridge.py
+      - stacks/web/Caddyfile
+
 related_files:
   - docs/ssot/ssot.focus.decisions.yml
   - docs/ssot/ssot.focus.sessions.yml
