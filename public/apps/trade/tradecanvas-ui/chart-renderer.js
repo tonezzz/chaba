@@ -16,6 +16,8 @@ class ChartRenderer {
         this.candlestickSeries = null;
         this.volumeSeries = null;
         this.indicatorSeries = null;
+        this.flatLineSeries = null;
+        this.isFlat = false;
     }
 
     initializeChart() {
@@ -113,10 +115,28 @@ class ChartRenderer {
                 close: d.close
             }));
 
-        this.candlestickSeries.setData(chartData);
-
         if (chartData.length === 0) {
             return;
+        }
+
+        const isFlat = chartData.length > 0 && chartData.every(d => d.open === d.close && d.high === d.low);
+        this.isFlat = isFlat;
+
+        if (isFlat) {
+            const lineData = chartData.map(d => ({ time: d.time, value: d.close }));
+            if (!this.flatLineSeries) {
+                this.flatLineSeries = this.chart.addLineSeries({
+                    color: '#58a6ff',
+                    lineWidth: 2,
+                });
+            }
+            this.flatLineSeries.setData(lineData);
+            this.candlestickSeries.setData([]);
+        } else {
+            if (this.flatLineSeries) {
+                this.flatLineSeries.setData([]);
+            }
+            this.candlestickSeries.setData(chartData);
         }
 
         if (chartData.length === 1) {

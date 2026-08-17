@@ -44,7 +44,7 @@ class ChartDataProvider {
                 const apiData = await response.json();
                 console.log('Loaded data from API:', apiData.data.length, 'points');
                 console.log('Last updated:', apiData.last_updated);
-                return { data: apiData.data, isSampleData: false, loadedFromAPI: true };
+                return { data: this.synthesizeFlatOHLC(apiData.data), isSampleData: false, loadedFromAPI: true };
             } else {
                 console.log('API not available, falling back to CSV');
             }
@@ -58,7 +58,7 @@ class ChartDataProvider {
                 const fxData = await this.fetchFromFrankfurter(symbol, timeframe);
                 if (fxData && fxData.length > 0) {
                     console.log('Loaded data from Frankfurter for', symbol);
-                    return { data: fxData, isSampleData: false, loadedFromAPI: true };
+                    return { data: this.synthesizeFlatOHLC(fxData), isSampleData: false, loadedFromAPI: true };
                 }
             } catch (error) {
                 console.log('Frankfurter loading error, falling back to CSV:', error.message);
@@ -68,13 +68,13 @@ class ChartDataProvider {
         // Fall back to the corresponding CSV file.
         const csvData = await this.loadFromCSV(symbol, timeframe);
         if (csvData && csvData.length > 0) {
-            return { data: csvData, isSampleData: false, loadedFromAPI: false };
+            return { data: this.synthesizeFlatOHLC(csvData), isSampleData: false, loadedFromAPI: false };
         }
 
         // Last resort: generate sample data for the symbol.
         console.log('CSV not available, using sample data');
         return {
-            data: this.generateSampleData(symbol, timeframe),
+            data: this.synthesizeFlatOHLC(this.generateSampleData(symbol, timeframe)),
             isSampleData: true,
             loadedFromAPI: false
         };
@@ -204,6 +204,52 @@ class ChartDataProvider {
 
         console.log('No known data path for symbol:', symbol);
         return { valid: false, source: 'none' };
+    }
+
+    synthesizeFlatOHLC(data) {
+        if (!data || data.length === 0) {
+            return [];
+        }
+
+        const result = [];
+        let previousClose = null;
+
+        for (let i = 0; i < data.length; i++) {
+            const point = data[i];
+            const open = point.open;
+            const high = point.high;
+            const low = point.low;
+            const close = point.close;
+
+            // If all OHLC values are identical, we have close-only data.
+            if (open === high && high === low && low === close) {
+                const syntheticOpen = previousClose !== null ? previousClose : close;
+                const body = Math.abs(close - syntheticOpen);
+                const range = Math.max(body * 0.5, close * 0.005);
+
+                result.push({
+                    time: point.time,
+                    open: syntheticOpen,
+                    high: Math.max(syntheticOpen, close) + range,
+                    low: Math.min(syntheticOpen, close) - range,
+                    close: close
+                });
+
+                previousClose = close;
+            } else {
+                result.push({
+                    time: point.time,
+                    open: open,
+                    high: high,
+                    low: low,
+                    close: close
+                });
+
+                previousClose = close;
+            }
+        }
+
+        return result;
     }
 
     parseCSV(csvText, timeframe) {
