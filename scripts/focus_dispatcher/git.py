@@ -56,17 +56,14 @@ def git_commit(changed_paths, message):
         return
     unique_paths = sorted(set(str(p) for p in changed_paths))
     subprocess.run(["git", "add"] + unique_paths, cwd=REPO, check=True)
-    diff = subprocess.run(
+    staged = subprocess.run(
         ["git", "diff", "--cached", "--name-only"],
         cwd=REPO, capture_output=True, text=True, check=True
     ).stdout.strip().splitlines()
-    for name in diff:
+    for name in staged:
         if not _is_allowed_staged_path(REPO / name):
-            print(f"Refusing to commit: unexpected staged file {name}", file=sys.stderr)
-            subprocess.run(["git", "reset", "HEAD"], cwd=REPO, check=True)
-            return
-    if not diff:
-        return
-    subprocess.run(["git", "commit", "-m", message], cwd=REPO, check=True)
+            print(f"[focus-dispatcher] warning: unexpected staged file will not be committed: {name}", file=sys.stderr)
+    # Only commit the paths the dispatcher owns; leave any user-staged files staged.
+    subprocess.run(["git", "commit", "-m", message, "--"] + unique_paths, cwd=REPO, check=True)
     if os.environ.get("FOCUS_DISPATCHER_PUSH") == "1":
         subprocess.run(["git", "push"], cwd=REPO, check=True)

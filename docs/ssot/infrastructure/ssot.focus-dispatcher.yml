@@ -79,8 +79,8 @@ prompt_output:
 auto_commit:
   - Set environment FOCUS_DISPATCHER_COMMIT=1 to auto-commit safe changes.
   - Set environment FOCUS_DISPATCHER_PUSH=1 to also push to origin.
-  - Only docs/ssot/ssot.focus.current.yml, docs/ssot/ssot.focus.yml, and docs/ssot/focus-inbox/processed/* are allowed in the commit.
-  - The dispatcher aborts the commit if any unexpected staged files are detected.
+  - Only docs/ssot/ssot.focus.current.yml, docs/ssot/ssot.focus.yml, and docs/ssot/focus-inbox/processed/* are committed.
+  - The dispatcher now commits only its own paths and warns about any unexpected staged files it left behind, so user or overnight changes to other files no longer abort the run.
   - Auto-commit is disabled by default; enable by setting the variables in the systemd user service.
 
 schedule:
