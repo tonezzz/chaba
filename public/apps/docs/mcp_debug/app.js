@@ -118,7 +118,7 @@ function renderReport(data) {
 
     function commandStatus(c) {
       if (!c.ok) return { text: 'failed', class: 'negative' };
-      if ((c.savings_pct_chars || 0) < 0) return { text: 'negative', class: 'negative' };
+      if ((c.savings_pct_chars || 0) < 0) return { text: 'negative', class: 'warning' };
       return { text: 'recommended', class: '' };
     }
 
@@ -126,7 +126,7 @@ function renderReport(data) {
       (b.savings_pct_chars || 0) - (a.savings_pct_chars || 0)
     );
     for (const c of commands) {
-      const negative = (c.savings_pct_chars || 0) < 0 ? 'negative' : '';
+      const warn = (c.savings_pct_chars || 0) < 0 ? 'warning' : '';
       const savedNegative = (c.saved_chars || 0) < 0 ? 'negative' : '';
       const tokens = Math.round((c.saved_chars || 0) / 4);
       const st = commandStatus(c);
@@ -137,7 +137,7 @@ function renderReport(data) {
         <td>${c.compact_chars}</td>
         <td class="${savedNegative}">${c.saved_chars}</td>
         <td class="${savedNegative}">${tokens}</td>
-        <td class="${negative}">${(c.savings_pct_chars || 0).toFixed(1)}</td>
+        <td class="${warn}">${(c.savings_pct_chars || 0).toFixed(1)}</td>
         <td>${(c.savings_pct || 0).toFixed(1)}</td>
       </tr>`;
     }
