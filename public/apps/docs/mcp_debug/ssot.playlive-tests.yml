@@ -13,8 +13,14 @@ components:
     cases:
       - step: Load index.html and wait for the initial report
         expected: "#status starts with 'Snapshot:' when the PHP proxy serves the fallback, or 'Live:' when the Funnel endpoint is reachable; #live-note matches the source; tony_omen and tony_dell tables render without JS errors."
+      - step: Verify the freshness metadata and status columns
+        expected: "#meta shows collection time and cache age when live; each command row has a Status cell with 'recommended', 'negative', or 'failed'."
       - step: Click the "Refresh" button
         expected: "A new live request is issued. When the Funnel endpoint is reachable, #status changes from 'Snapshot' to 'Live' and the timestamp updates; #live-note reads 'Live data from tony-omen'. When the Funnel is unreachable, the timestamp stays the same and #live-note reads 'Live data unavailable; showing cached snapshot.'"
+      - step: Click the "Download JSON" button
+        expected: "A file download for 'mcp-savings.json' is initiated (browser triggers download event)."
+      - step: Toggle the "Auto-refresh" checkbox
+        expected: "The checkbox becomes checked; the page continues to refresh the report every 60 seconds without manual clicks."
       - step: Click a command row (e.g. "df -h" under tony_omen)
         expected: "The detail panel opens with a table of filesystems data; #detail-title matches the selected host and command."
 

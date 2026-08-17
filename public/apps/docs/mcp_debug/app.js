@@ -2,6 +2,15 @@ const LIVE_DATA_URL = "/api/mcp-savings.php"; // same-origin PHP proxy to tony-o
 const TABLE_DATA_URL = "/api/mcp-table.php"; // same-origin proxy for /mcp-table.json
 const FETCH_TIMEOUT = 8000; // proxy + mcp_report cache may take a few seconds
 
+let currentReportData = null;
+let autoRefreshId = null;
+
+function formatAge(ms) {
+  if (ms == null || ms < 0) return 'unknown';
+  if (ms < 1000) return `${ms}ms`;
+  return `${(ms / 1000).toFixed(1)}s`;
+}
+
 function renderSkeleton() {
   const report = document.getElementById('report');
   report.innerHTML = `
@@ -43,9 +52,11 @@ async function fetchWithTimeout(url, options = {}, timeout = FETCH_TIMEOUT) {
 
 async function loadReport(forceRefresh = false) {
   const status = document.getElementById('status');
+  const meta = document.getElementById('meta');
   const report = document.getElementById('report');
   const live = document.getElementById('live-note');
   status.textContent = 'Loading...';
+  if (meta) meta.textContent = '';
   renderSkeleton();
   if (live) live.textContent = '';
 
@@ -71,10 +82,16 @@ async function loadReport(forceRefresh = false) {
       data = await res.json();
     }
     if (!data.ok) throw new Error(data.error || 'report not ok');
+    currentReportData = data;
     renderReport(data);
     const generated = data.generated ? new Date(data.generated).toLocaleString() : 'unknown';
     const source = data.freshness ? 'Live' : 'Snapshot';
     status.innerHTML = `${source}: <span class="font-mono">${generated}</span>`;
+    if (meta && data.freshness) {
+      const age = formatAge(data.freshness.cache_age_ms);
+      const duration = data.freshness.duration_ms != null ? `, took ${data.freshness.duration_ms.toFixed(0)}ms` : '';
+      meta.textContent = `collected ${new Date(data.freshness.collected_at).toLocaleTimeString()}, cached ${age} ago${duration}`;
+    }
   } catch (e) {
     status.textContent = 'Error';
     report.innerHTML = `<p style="color:#dc2626">Failed to load report: ${escapeHtml(e.message)}</p>`;
@@ -90,6 +107,7 @@ function renderReport(data) {
     html += `<h2 class="text-xl font-semibold mt-8 mb-2">${host}</h2>`;
     html += '<table><thead><tr>';
     html += '<th>Command</th>';
+    html += '<th>Status</th>';
     html += '<th>Raw chars</th>';
     html += '<th>Compact chars</th>';
     html += '<th>Saved chars</th>';
@@ -97,13 +115,21 @@ function renderReport(data) {
     html += '<th>Word %</th>';
     html += '</tr></thead><tbody>';
 
+    function commandStatus(c) {
+      if (!c.ok) return { text: 'failed', class: 'negative' };
+      if ((c.savings_pct_chars || 0) < 0) return { text: 'negative', class: 'negative' };
+      return { text: 'recommended', class: '' };
+    }
+
     const commands = Object.values(hdata.commands).sort((a, b) =>
       (b.savings_pct_chars || 0) - (a.savings_pct_chars || 0)
     );
     for (const c of commands) {
       const negative = (c.savings_pct_chars || 0) < 0 ? 'negative' : '';
+      const st = commandStatus(c);
       html += `<tr data-host="${host}" data-command="${c.command}">
         <td>${escapeHtml(c.command)}</td>
+        <td class="${st.class}">${st.text}</td>
         <td>${c.raw_chars}</td>
         <td>${c.compact_chars}</td>
         <td>${c.saved_chars}</td>
@@ -193,6 +219,33 @@ document.getElementById('detail-close').addEventListener('click', () => {
   document.getElementById('detail').classList.add('hidden');
 });
 
+function toggleAutoRefresh() {
+  const cb = document.getElementById('auto-refresh');
+  if (!cb) return;
+  if (autoRefreshId) {
+    clearInterval(autoRefreshId);
+    autoRefreshId = null;
+  }
+  if (cb.checked) {
+    autoRefreshId = setInterval(() => loadReport(), 60000);
+  }
+}
+
+function downloadJson() {
+  if (!currentReportData) return;
+  const blob = new Blob([JSON.stringify(currentReportData, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'mcp-savings.json';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
 document.getElementById('refresh').addEventListener('click', () => loadReport(true));
+document.getElementById('auto-refresh').addEventListener('change', toggleAutoRefresh);
+document.getElementById('download').addEventListener('click', downloadJson);
 renderSkeleton();
 loadReport();
