@@ -237,19 +237,27 @@ sections:
       status: completed
       note: 'Created docs/ssot/infrastructure/ssot.mcp-debug.capture.yml and registered it in ssot.index.yml'
     - label: Add mcp_screenshot with macOS transport and size cap
-      status: not_started
+      status: completed
+      note: macOS transport implemented; Linux fallbacks pending
     - label: Add mcp_window_list for macOS and Linux
-      status: not_started
+      status: partial
+      note: macOS osascript implementation in place; Linux X11/Wayland fallbacks pending
     - label: Add mcp_clipboard_image_get for macOS
-      status: not_started
+      status: completed
+      note: macOS osascript PNG path implemented; Linux xclip pending
     - label: Update ssot.mcp-debug.yml with capture tools, per-host flags, and limits
-      status: not_started
+      status: completed
+      note: Capture allowlist and limits live in ssot.mcp-debug.capture.yml; server.py registers the tools
     - label: Add smoke tests on macbook and one Linux host
       status: not_started
+      note: macbook was unreachable over SSH during this session
     request_log:
     - date: '2026-08-17'
       request: 'assess the SSOT file optimization plan and continuous streamline workflow; suggest improvements and plan updates'
       matched_to: SSOT file optimization
+    - date: '2026-08-17'
+      request: implement the mcp-debug visual capture bridge
+      matched_to: mcp-debug visual capture bridge
     branch: chaba
     source: /home/tony/CascadeProjects/chaba/docs/ssot/focus-inbox/2026-08-17-mcp-debug-visual-capture.yml
 - title: Quick Wins
