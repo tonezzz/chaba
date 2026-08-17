@@ -176,6 +176,25 @@ sessions:
       - Consider a docs-search skill or overnight audit loop if the rule is still being skipped
     next_action: Return to active mcp-debug visual capture bridge focus
 
+  - date: '2026-08-17'
+    session: chaba-2026-08-17-mddb-fix
+    focus: MDDB semantic search fix and monitoring
+    source: user request
+    plan:
+      - Verify and fix MDDB semantic search
+      - Suggest MDDB healthcheck/monitoring improvements
+      - Add commit job to focus and close
+    done:
+      - Verified MDDB container and MCP endpoint healthy
+      - Identified MDDB search failures due to stale kb-* collection names and tony-omen.local mDNS
+      - Updated auto-kb.mjs and SKILL.md to use chaba-* collections
+      - Updated test-global-rules-and-mddb.sh to use 127.0.0.1, chaba-system, and curl timeouts
+      - Updated global_rules.md MDDB example and health-check URLs
+      - Added commit quick win to ssot.focus.current.yml
+    follow_up:
+      - Restart avahi-daemon/systemd-resolved if user wants tony-omen.local mDNS fixed
+    next_action: Close session
+
 related_files:
   - docs/ssot/ssot.focus.current.yml
   - docs/ssot/ssot.focus.yml

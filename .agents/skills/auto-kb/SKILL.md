@@ -37,7 +37,7 @@ The KB review section should be a concise summary of decisions, discoveries, or 
    - Reusable patterns
 
 2. **Checks for redundancy** with existing KB entries using MDDB:
-   - Uses MDDB semantic search across KB collections (kb-development, kb-features, kb-operations, kb-system)
+   - Uses MDDB semantic search across KB collections (chaba-development, chaba-features, chaba-operations, chaba-system)
    - Provides relevance scores (0.4-1.0) for similarity detection
    - Falls back to local file-based check if MDDB unavailable
    - Updates existing entries instead of creating duplicates

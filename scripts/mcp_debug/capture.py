@@ -70,17 +70,28 @@ def _base64_to_bytes(b64text):
 
 
 def _build_screenshot_cmd(platform, region=None):
-    if platform != "macos":
-        return None
-    if region:
-        x = int(region.get("x", 0))
-        y = int(region.get("y", 0))
-        w = int(region.get("width", 0))
-        h = int(region.get("height", 0))
-        if w <= 0 or h <= 0:
-            return None
-        return f"screencapture -R{x},{y},{w},{h} -x - | base64"
-    return "screencapture -x - | base64"
+    if platform == "macos":
+        if region:
+            x = int(region.get("x", 0))
+            y = int(region.get("y", 0))
+            w = int(region.get("width", 0))
+            h = int(region.get("height", 0))
+            if w <= 0 or h <= 0:
+                return None
+            return f"screencapture -R{x},{y},{w},{h} -x - | base64"
+        return "screencapture -x - | base64"
+    if platform == "linux":
+        # Try grim (Wayland) first, then import (ImageMagick), then gnome-screenshot.
+        if region:
+            x = int(region.get("x", 0))
+            y = int(region.get("y", 0))
+            w = int(region.get("width", 0))
+            h = int(region.get("height", 0))
+            if w <= 0 or h <= 0:
+                return None
+            return f"(grim -g '{x},{y} {w}x{h}' - || import -silent -window root -crop {w}x{h}+{x}+{y} png:- || gnome-screenshot -a -f -) | base64"
+        return "(grim - || import -silent -window root png:- || gnome-screenshot -f -) | base64"
+    return None
 
 
 def mcp_screenshot(host, region=None, fmt="png"):

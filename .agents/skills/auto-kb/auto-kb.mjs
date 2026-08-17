@@ -15,7 +15,7 @@ import { join } from 'path';
 
 const KB_DIR = '/home/tony/CascadeProjects/chaba/docs/kb';
 const LOCK_FILE = '/tmp/auto-kb.lock';
-const KB_COLLECTIONS = ['kb-development', 'kb-features', 'kb-operations', 'kb-system'];
+const KB_COLLECTIONS = ['chaba-development', 'chaba-features', 'chaba-operations', 'chaba-system'];
 
 // Check if running in skill context (MCP tools available)
 const HAS_MCP_TOOLS = typeof mcp_call_tool === 'function' || typeof global.mcp_call_tool === 'function';
@@ -223,7 +223,7 @@ ${content}
 
 ## Related Documentation
 
-- **[auto-kb-creation.md](../../.windsurf/workflows/auto-kb-creation.md)** - Automated KB creation workflow
+- **[auto-chaba-creation.md](../../.windsurf/workflows/auto-chaba-creation.md)** - Automated KB creation workflow
 
 ## Tags
 
@@ -245,17 +245,17 @@ async function addToMDDB(filepath, filename, content) {
     console.log('Adding KB entry to MDDB...');
     
     // Determine appropriate collection based on content analysis
-    let collection = 'kb-features'; // Default
+    let collection = 'chaba-features'; // Default
     const contentLower = content.toLowerCase();
     
     if (contentLower.includes('bug') || contentLower.includes('fix') || contentLower.includes('error') || contentLower.includes('corruption')) {
-      collection = 'kb-development';
+      collection = 'chaba-development';
     } else if (contentLower.includes('feature') || contentLower.includes('implementation') || contentLower.includes('integration')) {
-      collection = 'kb-features';
+      collection = 'chaba-features';
     } else if (contentLower.includes('system') || contentLower.includes('service') || contentLower.includes('infrastructure')) {
-      collection = 'kb-system';
+      collection = 'chaba-system';
     } else if (contentLower.includes('operation') || contentLower.includes('deployment') || contentLower.includes('monitoring')) {
-      collection = 'kb-operations';
+      collection = 'chaba-operations';
     }
     
     // Extract title from content (first line after #)
@@ -296,7 +296,7 @@ async function getInput() {
   }
   if (process.stdin.isTTY) {
     throw new Error(
-      'Usage: auto-kb.mjs <kb-review-content> [context]\n' +
+      'Usage: auto-kb.mjs <chaba-review-content> [context]\n' +
       '       KB_REVIEW_CONTENT="..." node auto-kb.mjs\n' +
       '       echo "..." | node auto-kb.mjs'
     );
@@ -375,7 +375,7 @@ async function main() {
     
     // Generate filename
     const timestamp = Date.now();
-    const filename = `auto-kb-${timestamp}.md`;
+    const filename = `auto-chaba-${timestamp}.md`;
     const filepath = join(KB_DIR, filename);
     
     // Write entry

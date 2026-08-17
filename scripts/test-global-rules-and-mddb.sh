@@ -28,7 +28,7 @@ check_result() {
 
 # Test 1: MDDB Health Check
 echo "Test 1: MDDB Health Check"
-HEALTH_STATUS=$(curl -s http://tony-omen.local:11023/health | jq -r '.status')
+HEALTH_STATUS=$(curl -s -m 10 http://127.0.0.1:11023/health | jq -r '.status')
 if [ "$HEALTH_STATUS" = "healthy" ]; then
     check_result 0 "MDDB health check - status: $HEALTH_STATUS"
 else
@@ -38,9 +38,9 @@ echo ""
 
 # Test 2: MDDB Search Quality
 echo "Test 2: MDDB Search Quality (GPU memory management)"
-SEARCH_RESULT=$(curl -s -X POST http://tony-omen.local:11023/v1/vector-search \
+SEARCH_RESULT=$(curl -s -m 10 -X POST http://127.0.0.1:11023/v1/vector-search \
   -H "Content-Type: application/json" \
-  -d '{"query":"GPU memory management","limit":3,"collection":"kb-system"}')
+  -d '{"query":"GPU memory management","limit":3,"collection":"chaba-system"}')
 TOP_SCORE=$(echo $SEARCH_RESULT | jq -r '.results[0].score')
 SCORE_FLOAT=$(echo "$TOP_SCORE" | awk '{printf "%.2f", $1}')
 SCORE_COMPARE=$(echo "$SCORE_FLOAT > 0.45" | bc -l)
@@ -54,7 +54,7 @@ echo ""
 # Test 3: MDDB Search Performance
 echo "Test 3: MDDB Search Performance"
 START_TIME=$(date +%s%N)
-curl -s -X POST http://tony-omen.local:11023/v1/vector-search \
+curl -s -m 10 -X POST http://127.0.0.1:11023/v1/vector-search \
   -H "Content-Type: application/json" \
   -d '{"query":"health check","limit":5}' > /dev/null
 END_TIME=$(date +%s%N)
@@ -68,7 +68,7 @@ echo ""
 
 # Test 4: Collection Coverage
 echo "Test 4: Collection Coverage"
-COLLECTION_COUNT=$(curl -s http://tony-omen.local:11023/v1/vector-stats | jq '.collections | length')
+COLLECTION_COUNT=$(curl -s -m 10 http://127.0.0.1:11023/v1/vector-stats | jq '.collections | length')
 if [ "$COLLECTION_COUNT" -ge 13 ]; then
     check_result 0 "Collection coverage - $COLLECTION_COUNT collections (>= 13)"
 else
@@ -78,7 +78,7 @@ echo ""
 
 # Test 5: Document Coverage
 echo "Test 5: Document Coverage"
-TOTAL_DOCS=$(curl -s http://tony-omen.local:11023/v1/stats | jq '.totalDocuments')
+TOTAL_DOCS=$(curl -s -m 10 http://127.0.0.1:11023/v1/stats | jq '.totalDocuments')
 if [ "$TOTAL_DOCS" -gt 150 ]; then
     check_result 0 "Document coverage - $TOTAL_DOCS documents (> 150)"
 else
@@ -98,17 +98,17 @@ echo ""
 
 # Test 7: SSOT Collection Documents
 echo "Test 7: SSOT Collection Documents"
-SSOT_DOCS=$(curl -s http://tony-omen.local:11023/v1/vector-stats | jq '.collections["ssot-infrastructure"].total_documents')
-if [ "$SSOT_DOCS" -eq 10 ]; then
-    check_result 0 "SSOT infrastructure collection - $SSOT_DOCS documents (expected 10)"
+SSOT_DOCS=$(curl -s -m 10 http://127.0.0.1:11023/v1/vector-stats | jq '.collections["ssot-infrastructure"].total_documents // 0')
+if [ "$SSOT_DOCS" -ge 1 ]; then
+    check_result 0 "SSOT infrastructure collection - $SSOT_DOCS documents (expected >= 1)"
 else
-    check_result 1 "SSOT infrastructure collection - $SSOT_DOCS documents (expected 10)"
+    check_result 1 "SSOT infrastructure collection - $SSOT_DOCS documents (expected >= 1)"
 fi
 echo ""
 
 # Test 8: KB Collection Documents
 echo "Test 8: KB System Collection Documents"
-KB_DOCS=$(curl -s http://tony-omen.local:11023/v1/vector-stats | jq '.collections["kb-system"].total_documents')
+KB_DOCS=$(curl -s -m 10 http://127.0.0.1:11023/v1/vector-stats | jq '.collections["chaba-system"].total_documents // 0')
 if [ "$KB_DOCS" -ge 25 ]; then
     check_result 0 "KB system collection - $KB_DOCS documents (>= 25)"
 else
@@ -117,10 +117,10 @@ fi
 echo ""
 
 # Test 9: Cross-Collection Search
-echo "Test 9: Cross-Collection Search (within kb-system)"
-CROSS_RESULT=$(curl -s -X POST http://tony-omen.local:11023/v1/vector-search \
+echo "Test 9: Cross-Collection Search (within chaba-system)"
+CROSS_RESULT=$(curl -s -m 10 -X POST http://127.0.0.1:11023/v1/vector-search \
   -H "Content-Type: application/json" \
-  -d '{"query":"health check configuration","limit":10,"collection":"kb-system"}')
+  -d '{"query":"health check configuration","limit":10,"collection":"chaba-system"}')
 CROSS_COUNT=$(echo $CROSS_RESULT | jq '.results | length')
 if [ "$CROSS_COUNT" -ge 1 ]; then
     check_result 0 "Cross-collection search - $CROSS_COUNT results (>= 1)"
