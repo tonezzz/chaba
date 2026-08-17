@@ -83,6 +83,12 @@
 		}
 	}
 
+	# Weaviate API
+	handle_path /api/weaviate/* {
+		reverse_proxy 100.68.142.13:8084
+		encode gzip
+	}
+
 	# API response caching
 	@api_cache path /api/*
 	handle @api_cache {

@@ -1,0 +1,57 @@
+NAMES                 IMAGE                                    STATUS                      PORTS                                                                                                 SIZE
+trade-automation      trade-trade-api                          Up 2 days                   9000/tcp                                                                                              1.04MB (virtual 873MB)
+trade-api             trade-trade-api                          Up 2 days (healthy)         0.0.0.0:9000->9000/tcp, [::]:9000->9000/tcp                                                           803kB (virtual 873MB)
+helm                  web-helm                                 Up 2 days                   0.0.0.0:3003->3000/tcp, [::]:3003->3000/tcp                                                           212MB (virtual 1.15GB)
+web                   caddy:latest                             Up 13 minutes (healthy)     80/tcp, 443/tcp, 2019/tcp, 443/udp, 0.0.0.0:8080-8081->8080-8081/tcp, [::]:8080-8081->8080-8081/tcp   36.9kB (virtual 64.5MB)
+gpu-queue-processor   node:20-alpine                           Up 38 minutes                                                                                                                     41kB (virtual 145MB)
+gpu-queue             node:20-alpine                           Up 38 minutes (unhealthy)   0.0.0.0:3001->3001/tcp, [::]:3001->3001/tcp                                                           57.3kB (virtual 145MB)
+status-api            web-status-api                           Up 4 days                   8000/tcp                                                                                              307kB (virtual 540MB)
+ai-llama-server-1     ghcr.io/ggml-org/llama.cpp:server-cuda   Up 4 days (unhealthy)       0.0.0.0:8008->8008/tcp, [::]:8008->8008/tcp                                                           45.7MB (virtual 4.44GB)
+ollama                ollama/ollama:latest                     Up 4 days                   0.0.0.0:11434->11434/tcp, [::]:11434->11434/tcp                                                       76.1MB (virtual 3.83GB)
+imagen2-inference     web-imagen2-inference                    Up 4 days                   0.0.0.0:8000->8000/tcp, [::]:8000->8000/tcp                                                           307kB (virtual 8.08GB)
+REPOSITORY                         TAG            IMAGE ID       SIZE
+trade-trade-api                    latest         423a28f63de1   1.13GB
+web-helm                           latest         8c0c58f34374   1.31GB
+chaba-raceman-raceman-php          latest         5c6077669541   719MB
+web-status-api                     latest         3d4ca54c62ec   720MB
+ollama/ollama                      latest         168574145677   6.28GB
+web-imagen2-inference              latest         d600885cd61f   11.9GB
+tradik/mddb                        latest         b258d370f3ae   124MB
+tradik/mddb                        panel-latest   30531cd0cb38   421MB
+pgvector/pgvector                  pg16           a36250871de0   621MB
+semitechnologies/weaviate          latest         84e00a8e93b4   286MB
+redis                              7.4-alpine     e7723ff73d96   57.8MB
+ghcr.io/ggml-org/llama.cpp         server-cuda    c67fe8ed3766   6.98GB
+ghcr.io/github/github-mcp-server   latest         c491ffdf6f4c   65.5MB
+nginx                              alpine         4a73073bd557   93.6MB
+caddy                              latest         844f60b64e47   88.7MB
+alpine                             latest         28bd5fe8b56d   13MB
+node                               20-alpine      fb4cd12c85ee   194MB
+--- df -h ---
+Filesystem      Size  Used Avail Use% Mounted on
+tmpfs           6.2G  4.7M  6.2G   1% /run
+/dev/nvme0n1p6   98G   35G   63G  36% /
+tmpfs            16G  872M   15G   6% /dev/shm
+efivarfs        192K   71K  117K  38% /sys/firmware/efi/efivars
+none            1.0M     0  1.0M   0% /run/credentials/systemd-journald.service
+none            1.0M     0  1.0M   0% /run/credentials/systemd-resolved.service
+/dev/nvme0n1p3   92G   78G  9.4G  90% /home
+/dev/nvme0n1p7  295G  146G  149G  50% /data
+tmpfs            16G  1.1G   15G   7% /tmp
+/dev/nvme0n1p1   96M   61M   36M  64% /boot/efi
+tmpfs           3.1G  128K  3.1G   1% /run/user/1000
+gdrive:         2.1T  245G  1.8T  12% /home/tony/GoogleDrive
+--- df -h ---
+Filesystem      Size  Used Avail Use% Mounted on
+tmpfs           6.2G  4.7M  6.2G   1% /run
+/dev/nvme0n1p6   98G   35G   63G  36% /
+tmpfs            16G  869M   15G   6% /dev/shm
+efivarfs        192K   71K  117K  38% /sys/firmware/efi/efivars
+none            1.0M     0  1.0M   0% /run/credentials/systemd-journald.service
+none            1.0M     0  1.0M   0% /run/credentials/systemd-resolved.service
+/dev/nvme0n1p3   92G   78G  9.4G  90% /home
+/dev/nvme0n1p7  295G  146G  149G  50% /data
+tmpfs            16G  1.1G   15G   7% /tmp
+/dev/nvme0n1p1   96M   61M   36M  64% /boot/efi
+tmpfs           3.1G  128K  3.1G   1% /run/user/1000
+gdrive:         2.1T  245G  1.8T  12% /home/tony/GoogleDrive

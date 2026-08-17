@@ -23,7 +23,7 @@ primary:
     env:
       POSTGRES_HOST: postgre
       POSTGRES_PORT: 5432
-      REDIS_URL: redis://100.75.102.88:6379
+      REDIS_URL: redis://100.68.142.13:6379
   services:
     - yomi-api.service
     - yomi-update-all.timer
@@ -75,5 +75,5 @@ notes:
   - Backup is not streaming replication; RPO is up to 24 hours.
   - The failover script is intentionally manual because DNS/ Caddy changes require a decision.
   - The GEMINI_API_KEY is stored only in /home/tony/.config/systemd/user/yomi-api.service on tony-dell and tony-omen and is not committed.
-  - mcp-health, Redis, and Yomi GPU/Weaviate dependencies remain on tony_omen and are still reachable over the tailnet.
+  - mcp-health and Yomi GPU dependencies remain on tony_omen; Redis, Weaviate, MDDB, Raceman, and PostgreSQL are now on tony_dell and reachable over the tailnet.
   - resolvectl query postgre requires systemd-resolved to use the tony-dell dnsmasq for the postgre alias.
