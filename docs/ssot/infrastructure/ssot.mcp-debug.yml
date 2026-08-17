@@ -362,6 +362,27 @@ suggested_extensions:
   priority: high
   status: completed
 
+- id: containers
+  name: Unified container list
+  description: 'One `containers` command that auto-detects podman then docker and returns a compact, runtime-labeled JSON list.'
+  priority: high
+  status: in_progress
+- id: services
+  name: Unified service manager list
+  description: 'One `services` command that uses `systemctl list-units` on Linux and `launchctl list` on macOS, returning a compact, runtime-labeled list.'
+  priority: high
+  status: in_progress
+- id: sockets
+  name: Unified listening/open socket list
+  description: 'One `sockets` command that tries `ss -tlnp`, `netstat -an`, and `lsof -nP -iTCP` and returns a compact, runtime-labeled list.'
+  priority: medium
+  status: in_progress
+- id: gpu
+  name: Unified GPU summary
+  description: 'One `gpu` command that tries `nvidia-smi` then `rocm-smi` and returns a compact, runtime-labeled summary.'
+  priority: medium
+  status: in_progress
+
 baselines_source: docs/ssot/infrastructure/ssot.mcp-debug.baselines.yml
 
 related_files:

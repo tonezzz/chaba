@@ -55,6 +55,43 @@ decision:
     - ssot or script ids
 
 decisions:
+  - id: mcp-debug-unified-commands
+    date: '2026-08-17'
+    title: Add unified cross-platform commands to mcp-debug
+    status: accepted
+    context: |
+      The mcp-debug command list has grown and now includes multiple tools that
+      have equivalent implementations on Linux, macOS, or different runtimes
+      (e.g., podman vs docker, systemctl vs launchctl, ss vs netstat, nvidia-smi
+      vs rocm-smi). We want fewer command variants and more host-agnostic
+      diagnostics without losing the ability to tell which backend answered.
+    options:
+      - label: Keep every runtime-specific command separate
+        pros: [exact output per tool, no parser abstraction, simple wrappers]
+        cons: [long allowlists, presets must branch per host, harder for sub-agents]
+      - label: Add one abstract command per concept with backend auto-detection
+        pros: [shorter allowlists, host-agnostic presets, consistent compact JSON]
+        cons: [more complex wrappers, parsers may differ, can mask runtime details]
+    chosen: Add one abstract command per concept with backend auto-detection
+    reasoning: |
+      The compact layer already normalizes raw text into JSON. Auto-detecting a
+      backend inside a single `containers`, `services`, `sockets`, or `gpu` command
+      keeps the user-facing command list small while still exposing the actual
+      backend in a `runtime` key. Commands will be vetted with `mcp_stats` before
+      promotion to `recommended: true`.
+    consequences:
+      immediate:
+        - New `containers`, `services`, `sockets`, and `gpu` commands in mcp-debug
+        - Backend runtime recorded in compact JSON output
+        - New suggested extensions and active focus created
+      future:
+        - May add `memory` and `block_devices` abstractions if these prove useful
+        - Raw allowlist can shrink as abstract commands replace duplicates
+    related:
+      - docs/ssot/infrastructure/ssot.mcp-debug.yml
+      - docs/ssot/infrastructure/ssot.mcp-tools.yml
+      - scripts/mcp_debug/mcp-debug-macos
+      - ~/.local/bin/mcp-debug
   - id: mcp-debug-cors-proxy
     date: '2026-08-16'
     title: How to serve live mcp-savings.json to the HTTPS chaba.h3 page
