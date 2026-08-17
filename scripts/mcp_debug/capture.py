@@ -232,23 +232,39 @@ def mcp_window_list(host):
     return {"ok": False, "error": f"window list not supported for {plat}"}
 
 
-def mcp_clipboard_image_get(host):
-    if not _allowed(host, "clipboard_image"):
-        return {"ok": False, "error": f"clipboard image not enabled for host: {host}"}
-    plat = _detect_platform(host)
-    if plat != "macos":
-        return {"ok": False, "error": f"clipboard image not yet implemented for {plat}"}
-    # Use a fifo-ish approach: osascript writes PNG bytes to a temp file, then
-    # we base64 it and delete. This is the most reliable way to get binary data
-    # from the macOS pasteboard through AppleScript.
+def _macos_clipboard_image_get(host):
     cmd = """osascript -e '
 set tempPath to "/tmp/mcp_clipboard_image_get_" & (do shell script "uuidgen")
 set pngData to the clipboard as «class PNGf»
 set outFile to open for access file tempPath with write permission
 write pngData to outFile
 close access outFile
-do shell script "base64 " & quoted form of tempPath & "; rm -f " & quoted form of tempPath'
+do shell script "base64 " & quoted form of tempPath & "; rm -f " & quoted form of tempPath
+'
 """
+    result = run_on_host(host, cmd, compact=False, shell=True)
+    if not result.get("ok"):
+        # Clean up on failure if file remains
+        run_on_host(host, "rm -f /tmp/mcp_clipboard_image_get_*", compact=False, shell=True)
+        return {"ok": False, "host": host, "error": result.get("err") or "clipboard image failed", "rc": result.get("rc")}
+    return result
+
+
+def _linux_clipboard_image_get(host):
+    cmd = "xclip -selection clipboard -t image/png -o | base64"
+    return run_on_host(host, cmd, compact=False, shell=True)
+
+
+def mcp_clipboard_image_get(host):
+    if not _allowed(host, "clipboard_image"):
+        return {"ok": False, "error": f"clipboard image not enabled for host: {host}"}
+    plat = _detect_platform(host)
+    if plat == "macos":
+        result = _macos_clipboard_image_get(host)
+    elif plat == "linux":
+        result = _linux_clipboard_image_get(host)
+    else:
+        return {"ok": False, "error": f"clipboard image not supported for {plat}"}
     result = run_on_host(host, cmd, compact=False, shell=True)
     if not result.get("ok"):
         # Clean up on failure if file remains

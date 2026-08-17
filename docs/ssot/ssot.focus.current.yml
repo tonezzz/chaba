@@ -240,17 +240,17 @@ sections:
       status: completed
       note: macOS transport implemented; Linux fallbacks pending
     - label: Add mcp_window_list for macOS and Linux
-      status: partial
-      note: macOS osascript implementation in place; Linux X11/Wayland fallbacks pending
+      status: completed
+      note: macOS osascript and Linux X11/Wayland fallbacks implemented; tested on tony_dell (headless, returns empty)
     - label: Add mcp_clipboard_image_get for macOS
       status: completed
-      note: macOS osascript PNG path implemented; Linux xclip pending
+      note: macOS osascript and Linux xclip implemented; clipboard_image opt-in per host
     - label: Update ssot.mcp-debug.yml with capture tools, per-host flags, and limits
       status: completed
       note: Capture allowlist and limits live in ssot.mcp-debug.capture.yml; server.py registers the tools
     - label: Add smoke tests on macbook and one Linux host
-      status: not_started
-      note: macbook was unreachable over SSH during this session
+      status: partial
+      note: Linux smoke tests on tony_dell passed (window list OK; screenshot fails with no display; clipboard not enabled); macbook still unreachable
     request_log:
     - date: '2026-08-17'
       request: "suggest next long action please, I'll be away again"
