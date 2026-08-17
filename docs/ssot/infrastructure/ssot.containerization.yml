@@ -171,6 +171,16 @@ sections:
         status: completed
         completed: 2026-08-17
         tags: ['tony-dell', 'podman', 'redis', 'quadlet', 'host-network']
+      - label: mddb
+        text: 'Migrated to tony-dell rootless podman with --network host. Quadlet units at ~/.config/containers/systemd/mddb.container and ~/.config/systemd/user/mddb.service. Data copied from /data/docker/volumes/mddb_mddb-data/_data and vaults to ~/.config/containers/mddb/.'
+        status: completed
+        completed: 2026-08-17
+        tags: ['tony-dell', 'podman', 'mddb', 'quadlet', 'host-network']
+      - label: mddb-panel
+        text: 'Migrated to tony-dell rootless podman with --network host and PORT=3002. Quadlet unit at ~/.config/systemd/user/mddb-panel.service. Caddy /mddb/* reverse proxy updated to 100.68.142.13:3002.'
+        status: completed
+        completed: 2026-08-17
+        tags: ['tony-dell', 'podman', 'mddb', 'panel', 'host-network']
       - label: weaviate
         text: 'Assessed and approved for migration. ~50MiB working set, 0.12% CPU, no GPU dependency. Quadlet units planned at ~/.config/containers/systemd/weaviate.container and ~/.config/systemd/user/weaviate.service.'
         status: approved

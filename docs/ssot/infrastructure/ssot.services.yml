@@ -72,6 +72,35 @@ tony-dell:
       - yomi-api.service
     status: implemented (2026-08-17)
     note: Migrated from tony-omen; yomi-api REDIS_URL now points to tony-dell tailnet IP 100.68.142.13:6379.
+  mddb:
+    container: mddb
+    image: docker.io/tradik/mddb:latest
+    runtime: rootless podman
+    network: host
+    port: 11023 (API), 11024 (gRPC), 9000 (MCP)
+    host_port: 100.68.142.13:11023
+    data_volume: /home/tony/.config/containers/mddb/data
+    quadlet:
+      container_unit: ~/.config/containers/systemd/mddb.container
+      service_unit: ~/.config/systemd/user/mddb.service
+    related_units:
+      - mddb.service
+    status: implemented (2026-08-17)
+    note: Migrated from tony-omen; copied mddb.db (~101MB) and vaults to tony-dell; Caddy reverse proxy updated to 100.68.142.13:11023.
+  mddb-panel:
+    container: mddb-panel
+    image: docker.io/tradik/mddb:panel-latest
+    runtime: rootless podman
+    network: host
+    port: 3002
+    host_port: 100.68.142.13:3002
+    quadlet:
+      container_unit: ~/.config/containers/systemd/mddb-panel.container
+      service_unit: ~/.config/systemd/user/mddb-panel.service
+    related_units:
+      - mddb-panel.service
+    status: implemented (2026-08-17)
+    note: Caddy /mddb/* reverse proxy updated to 100.68.142.13:3002.
   weaviate:
     container: weaviate
     image: docker.io/semitechnologies/weaviate:latest
@@ -155,21 +184,18 @@ tony-omen:
     container: mddb
     image: tradik/mddb:latest
     port: 11023 (API), 9000 (web)
-    status: implemented (2026-08-12)
+    status: decommissioned (2026-08-17)
     routing:
-      - /api/mddb/* → mddb:11023 (Caddy reverse proxy)
-      - /apps/mddb/* → mddb-panel:3000 (container name routing)
-    notes: Personal Knowledge Base system with panel and API services
+      - /api/mddb/* → 100.68.142.13:11023 (tony-dell, Caddy reverse proxy)
+    notes: Container stopped and removed; data migrated to tony-dell; Caddy now routes to tony-dell.
   mddb-panel:
     container: mddb-panel
     image: tradik/mddb:panel-latest
     port: 3002 (host), 3000 (internal)
-    status: implemented (2026-08-13), resolved with dedicated path routing
+    status: decommissioned (2026-08-17)
     routing:
-      - /mddb/* → mddb-panel:3000 (dedicated path to avoid asset conflicts)
-      - /apps/mddb/* → /mddb/* (redirect to dedicated path)
-      - /api/mddb/* → mddb:11023 (Caddy reverse proxy for API)
-    notes: MDDB web panel interface, resolved asset routing conflicts by using dedicated /mddb/ path instead of /apps/mddb/. Panel SPA uses root-relative assets which conflicted with other services' /assets/* handlers.
+      - /mddb/* → 100.68.142.13:3002 (tony-dell, Caddy reverse proxy)
+    notes: Container stopped and removed; panel migrated to tony-dell on port 3002.
   gemini-api:
     service: Google Gemini API
     provider: Google Cloud

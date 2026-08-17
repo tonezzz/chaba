@@ -195,7 +195,11 @@ sections:
     - label: Migrate mddb + mddb-panel to tony-dell podman
       text: Move tradik/mddb:latest and tradik/mddb:panel-latest to tony-dell. Update Caddy reverse proxy on tony-omen to
         route /api/mddb/* and /mddb/* to tony-dell over the tailnet. Migrate the mddb data volume (~100MB).
-      status: not_started
+      status: completed
+      completed: '2026-08-17'
+      note: Migrated mddb and mddb-panel to tony-dell with --network host; copied mddb.db (~101MB) and vaults; generated systemd
+        services; stopped and removed tony-omen mddb/mddb-panel containers; updated Caddyfile /api/mddb/* → 100.68.142.13:11023
+        and /mddb/* → 100.68.142.13:3002; restarted web container; http://127.0.0.1:8080/mddb/ returns 200.
     - label: Migrate raceman stack to tony-dell podman
       text: Move raceman-web (nginx:alpine) and raceman-php (php-fpm) to tony-dell. Update Caddy to route :8083 to tony-dell.
         Frees omen disk.

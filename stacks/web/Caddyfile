@@ -3,13 +3,13 @@
 
 	# MDDB API (for panel proxy) - must come before panel route
 	handle /api/mddb/* {
-		reverse_proxy mddb:11023
+		reverse_proxy 100.68.142.13:11023
 		encode gzip
 	}
 
 	# MDDB Panel (dedicated path to avoid asset conflicts)
 	handle /mddb/* {
-		reverse_proxy mddb-panel:3000
+		reverse_proxy 100.68.142.13:3002
 		encode gzip
 	}
 
