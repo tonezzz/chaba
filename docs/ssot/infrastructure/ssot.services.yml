@@ -65,6 +65,14 @@ tony-dell:
     host: tony_dell
     purpose: TCP/IP reachability watchdog for tony-omen, tony-dell, macbook
     status: implemented (2026-08-13)
+  chaba-funnel:
+    service: chaba-funnel.service
+    host: tony_dell
+    port: 8082
+    purpose: Tailscale Funnel landing page, docs, and health endpoint
+    tailscale_funnel: https://tony-dell.taila0626a.ts.net
+    source: stacks/tony-dell/chaba-funnel/funnel-server.py
+    status: implemented (2026-08-17)
   playlived-dell:
     service: playlived-dell.service
     host: tony_dell
