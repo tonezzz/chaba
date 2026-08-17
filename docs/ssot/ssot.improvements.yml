@@ -251,13 +251,11 @@ sections:
     - optimization
     - tooling
   - label: SSOT optimization orchestration
-    text: 'Build an orchestrated pipeline for the SSOT file optimization plan.
+    text: 'Implement scripts/ssot-optimize.mjs and the ssot-optimization-snapshot night job.
 
-      The pipeline should run the plan''s phases in order, produce a delta
-
-      report, and queue resulting actions into focus-inbox or overnight
-
-      review, keeping generated metrics out of canonical SSOTs.
+      The script should run bloat, data-isolation, obsolescence, redundancy, consistency,
+      and conflict checks in order, produce a delta report, and queue resulting actions
+      into focus-inbox or overnight review, keeping generated metrics out of canonical SSOTs.
 
       '
     status: pending

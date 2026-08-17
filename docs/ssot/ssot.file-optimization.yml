@@ -116,6 +116,27 @@ sections:
       - label: Conflict
         text: No item is both active and completed; no hardcoded IP appears alongside a hostname for the same endpoint
 
+  - title: Continuous Optimization Run
+    icon: ♻
+    layout: list
+    items:
+      - label: Goal
+        text: Run optimization checks continuously without manual activation so bloat, drift, and isolation violations are caught before they become cleanup projects.
+      - label: Trigger
+        text: Daily as part of the overnight jobs and on every ssot-validate run.
+      - label: Optimizer script
+        text: scripts/ssot-optimize.mjs reads every SSOT YAML, computes line/section/item counts, flags bloat, data-isolation, obsolescence, redundancy, and conflict candidates, then writes a report.
+      - label: Report outputs
+        text: reports/SSOT_OPTIMIZATION_METRICS.json (per-file metrics) and reports/SSOT_OPTIMIZATION_SUGGESTIONS.md (top candidates for the day)
+      - label: Non-destructive rule
+        text: The optimizer never edits SSOTs. It only writes reports. The focus-dispatcher-overnight may create focus-inbox drafts from the highest-priority suggestions if no active focus conflicts.
+      - label: Delta tracking
+        text: Each run compares to reports/SSOT_OPTIMIZATION_METRICS.previous.json; the suggestions report highlights new regressions and confirms previous ones.
+      - label: Weekly review gate
+        text: On Sunday, the overnight run also emits a weekly aggregate and archives the daily metrics to data/ssot-optimization/<week>.json.
+      - label: Manual override
+        text: A user can run `node scripts/ssot-optimize.mjs --suggest` to see the report without committing; run `--apply` only after review and only on a small set of files.
+
   - title: Immediate Next Actions
     icon: 🚀
     layout: list
@@ -146,4 +167,6 @@ config:
     - docs/ssot/ssot.maintenance.yml
     - docs/ssot/ssot.improvements.yml
     - docs/ssot/ssot.index.yml
+    - docs/ssot/infrastructure/ssot.night-jobs.yml
     - scripts/ssot-validate-all.mjs
+    - scripts/ssot-optimize.mjs

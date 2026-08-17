@@ -97,6 +97,21 @@ jobs:
     status: planned
     note: Keeps the Tailscale Funnel docs on tony-dell in sync with the chaba-h3 docs source.
 
+  - id: ssot-optimization-snapshot
+    name: SSOT Optimization Snapshot
+    host: tony_dell
+    type: systemd-user-timer
+    unit: ssot-optimization-snapshot.timer
+    schedule: "*-*-* 03:30:00"
+    enabled: false
+    status: planned
+    description: Run scripts/ssot-optimize.mjs after the focus review to emit reports/SSOT_OPTIMIZATION_METRICS.json and reports/SSOT_OPTIMIZATION_SUGGESTIONS.md.
+    log: /home/tony/var/chaba/night/ssot-optimization-snapshot.log
+    outputs:
+      - reports/SSOT_OPTIMIZATION_METRICS.json
+      - reports/SSOT_OPTIMIZATION_SUGGESTIONS.md
+    note: Disabled by default until ssot-optimize.mjs is implemented and the first dry run is reviewed.
+
 parked_during_night:
   items:
     - Trade Canvas UI fixes and modularization

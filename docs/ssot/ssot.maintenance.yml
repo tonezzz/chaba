@@ -280,7 +280,35 @@ documentation:
         path: docs/ssot/ssot.maintenance.yml
         purpose: Maintenance framework and schedule
 
+continuous_improvement:
+  - title: Streamline Workflow
+    icon: 🌊
+    frequency: weekly
+    owner: system + tony
+    summary: Tighten the request-to-focus pipeline and reduce friction for repeated maintenance tasks.
+    steps:
+      - label: Measure request handling
+        text: Count requests per session that hit quick_win, continue, triage_backlog, triage_inbox, and draft_inbox. Look for patterns where the decision tree under-serves the user.
+      - label: Tune mcp_focus
+        text: Adjust cue words, confidence rules, and triage weights when more than 10% of recommendations are corrected by the user.
+      - label: Reduce repetitive reads
+        text: Track which SSOT files are read most often and are not yet in quick-reference summaries. Promote heavily-read sections to KB or quick-wins.
+      - label: Optimize overnight pipeline
+        text: Review `reports/REMAINING_FOCUS_PLAN.md` weekly; delete drafts that never activate; merge similar suggestions; improve `process-remaining-focuses.py` labels.
+      - label: Archive stale decisions
+        text: Summarize and archive `ssot.focus.decisions.yml` quarterly to keep it under the bloat threshold.
+    metrics:
+      - label: Request match rate
+        target: 85%
+        measurement: percentage of requests where the first mcp_focus recommendation is accepted
+      - label: Focus switch rate
+        target: below 15%
+        measurement: percentage of sessions where the active focus is parked/switched
+      - label: Overnight report utility
+        target: 70%
+        measurement: percentage of overnight suggestions that become backlog/inbox/quick_win within 7 days
+
 next_review: 2026-09-12
 validation_test: true
-last_updated: 2026-08-12
+last_updated: 2026-08-17
 maintainer: tony
