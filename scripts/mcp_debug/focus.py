@@ -174,7 +174,10 @@ def log_decision(request, action, target, reason, confidence, source, matched_to
     except Exception:
         return
     items = doc.get("sections", [{}])[0].get("items", [])
+    now = datetime.now()
+    label = f"{action}: {target} ({now.strftime('%Y-%m-%d %H:%M:%S')})"[:120]
     items.append({
+        "label": label,
         "date": datetime.now().strftime("%Y-%m-%d"),
         "request": str(request),
         "action": action,
