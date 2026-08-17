@@ -885,3 +885,134 @@ body {
         flex-wrap: wrap;
     }
 }
+
+.layout-full .container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 20px;
+    height: auto;
+}
+
+.layout-compact {
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.layout-compact .container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    margin: 0;
+    padding: 0;
+    max-width: none;
+    height: 100%;
+}
+
+.layout-compact .header-compact {
+    flex-shrink: 0;
+    padding: 10px 20px;
+    background-color: #161b22;
+    border-bottom: 1px solid #30363d;
+}
+
+.layout-compact .main-content-compact {
+    flex: 1;
+    display: flex;
+    overflow: hidden;
+    padding: 0;
+}
+
+.layout-compact .chart-section-compact {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.layout-compact .chart-container-compact {
+    flex: 1;
+    min-height: 0;
+}
+
+.layout-compact .side-panel-compact {
+    width: 350px;
+    flex-shrink: 0;
+    overflow-y: auto;
+    background-color: #161b22;
+    border-left: 1px solid #30363d;
+}
+
+.layout-compact .footer-compact {
+    flex-shrink: 0;
+    padding: 5px 20px;
+    background-color: #161b22;
+    border-top: 1px solid #30363d;
+}
+
+.layout-compact .symbol-panel .currency-selector,
+.layout-compact .symbol-panel .timeframe-selector {
+    width: 100%;
+    margin-bottom: 10px;
+    padding: 6px 10px;
+    border: 1px solid #30363d;
+    border-radius: 6px;
+    background-color: #21262d;
+    color: #e6edf3;
+    font-size: 14px;
+}
+
+.layout-compact .market-info {
+    margin-top: 12px;
+    padding: 12px;
+    background-color: #21262d;
+    border: 1px solid #30363d;
+    border-radius: 8px;
+}
+
+.layout-compact .market-info-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.layout-compact .market-info-row + .market-info-row {
+    margin-top: 8px;
+}
+
+.layout-compact .market-info .pair-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #a8d5ff;
+}
+
+.layout-compact .market-info .status {
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.layout-compact .market-info .price-display {
+    font-size: 18px;
+    font-weight: 700;
+    color: #e6edf3;
+}
+
+.layout-compact .market-info .price-change {
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.layout-compact .market-info .price-change.positive {
+    color: #3fb950;
+}
+
+.layout-compact .market-info .price-change.negative {
+    color: #da3633;
+}

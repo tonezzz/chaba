@@ -83,61 +83,7 @@
         </footer>
     </div>
 
-    <script src="chart-data-provider.js?v=8"></script>
-    <script src="chart-renderer.js?v=9"></script>
-    <script src="chart-loader.js?v=8"></script>
-    <script src="strategies.js"></script>
-    <script src="hindsight-strategies-new.js"></script>
-    <script src="strategy-compare-new.js?v=15"></script>
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('DOM loaded, initializing chart loader...');
-            // Initialize chart with shared loader
-            const chartLoader = new ChartLoader({
-                containerId: 'main-chart',
-                symbol: 'THB',
-                timeframe: 'all',
-                showVolume: false,
-                showIndicators: false,
-                enableControls: false,
-                enableWebSocket: false,
-                enableMarkers: false,
-                autoRefresh: false
-            });
-
-            window.chartLoader = chartLoader;
-            console.log('Chart loader created, calling init...');
-            chartLoader.init().then(() => {
-                console.log('Chart loader init complete, calling initComparePanel...');
-                initComparePanel(chartLoader);
-                
-                // Initialize currency selector after chart loader is ready
-                if (typeof CurrencySelector !== 'undefined') {
-                    const currencySelector = new CurrencySelector({
-                        containerId: 'currency-selector-container',
-                        chartLoader: chartLoader,
-                        selectedCurrency: 'THB',
-                        mode: 'full',
-                        className: 'currency-selector'
-                    });
-                    
-                    currencySelector.render();
-                    
-                    // Update pair label when currency changes
-                    currencySelector.on('currencyChange', (data) => {
-                        const pairLabel = document.getElementById('pair-label');
-                        if (pairLabel) {
-                            pairLabel.textContent = data.label;
-                        }
-                    });
-                    
-                    window.currencySelector = currencySelector;
-                }
-            }).catch(error => {
-                console.error('Chart loader init failed:', error);
-                document.getElementById('strategy-controls').innerHTML = 'Chart initialization failed: ' + error.message;
-            });
-        });
-    </script>
+    <script src="ssot-page-loader.js"></script>
+    <script src="page-initializer.js"></script>
 </body>
 </html>

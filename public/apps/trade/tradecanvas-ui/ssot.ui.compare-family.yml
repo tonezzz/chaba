@@ -9,9 +9,12 @@ chart_loader:
   timeframe: all
   data_source: api
   api_endpoint: http://100.75.102.88:9000/api/ui/chart-data
+  show_volume: true
   show_indicators: false
   enable_web_socket: false
   auto_refresh: false
+  enable_controls: true
+  enable_markers: true
 currency_selector:
   container_id: currency-selector-container
   selected_currency: THB
@@ -37,16 +40,49 @@ currency_selector:
   - value: OIL
     label: OIL
     csv: wti_formatted.csv
+timeframe_selector:
+  container_id: timeframe-selector-container
+  selected_timeframe: 1Y
+  class_name: timeframe-selector
+  timeframes:
+  - value: 1D
+    label: 1 Day
+  - value: 1W
+    label: 1 Week
+  - value: 1M
+    label: 1 Month
+  - value: 3M
+    label: 3 Months
+  - value: 6M
+    label: 6 Months
+  - value: 1Y
+    label: 1 Year
+  - value: 2Y
+    label: 2 Years
+  - value: all
+    label: All
 strategy_panel:
   ref: ssot.ui.yml#strategy_panel
   enabled: true
   position: side-panel
+layout:
+  full_viewport: false
+  header_class: header
+  side_panel_width: 300
+  side_panel_title: Strategy Control & Results
 scripts:
   shared:
   - chart-data-provider.js
   - chart-renderer.js
   - chart-loader.js
+  tail:
   - hindsight-strategies-new.js
   - strategy-compare-new.js
-features:
-- ssot.ui.feature.chart-controls.yml
+cache_busting:
+  query_param: v
+  versions:
+    chart_loader: 8
+    chart_data_provider: 8
+    chart_renderer: 9
+    ui_components: 4
+    strategy_compare_new: 15
