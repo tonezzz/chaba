@@ -65,7 +65,7 @@ sections:
         status: completed
       - label: Phase 3 — Safe auto-recovery
         text: Enable restart commands for services with a known-good restart path and require two consecutive failures
-        status: pending
+        status: in_progress
       - label: Phase 4 — Alerting & correlation
         text: Send notifications to yomi/api and add tony-dell monitor log to mcp-debug snapshots
         status: pending
@@ -120,6 +120,13 @@ sections:
         precheck: ssh tony-omen systemctl --user is-active caddy.service
         command: ssh tony-omen systemctl --user reload caddy.service
         verify: curl -s -o /dev/null -w '%{http_code}' http://tony-omen:8080/
+
+      - label: chaba-funnel
+        text: Restart the tony-dell Tailscale Funnel landing page and docs server.
+        trigger: 2 consecutive failures of https://tony-dell.taila0626a.ts.net/health
+        precheck: systemctl --user is-active chaba-funnel.service
+        command: systemctl --user restart chaba-funnel.service
+        verify: curl -s -o /dev/null -w '%{http_code}' https://tony-dell.taila0626a.ts.net/health
 
   - title: Files & Paths
     icon: 📁
