@@ -25,12 +25,12 @@ function renderSkeleton() {
   for (const host of hosts) {
     html += `<h2 class="text-xl font-semibold mt-8 mb-2">${host}</h2>`;
     html += '<table><thead><tr>';
-    ['Command', 'Raw chars', 'Compact chars', 'Saved chars', 'Char %', 'Word %'].forEach(h => {
+    ['Command', 'Raw chars', 'Compact chars', 'Saved chars', 'Tokens saved', 'Char %', 'Word %'].forEach(h => {
       html += `<th>${h}</th>`;
     });
     html += '</tr></thead><tbody>';
     for (let i = 0; i < 8; i++) {
-      html += '<tr><td class="text-gray-400">...</td><td class="text-gray-400">-</td><td class="text-gray-400">-</td><td class="text-gray-400">-</td><td class="text-gray-400">-</td><td class="text-gray-400">-</td></tr>';
+      html += '<tr><td class="text-gray-400">...</td><td class="text-gray-400">-</td><td class="text-gray-400">-</td><td class="text-gray-400">-</td><td class="text-gray-400">-</td><td class="text-gray-400">-</td><td class="text-gray-400">-</td></tr>';
     }
     html += '</tbody></table>';
   }
@@ -111,6 +111,7 @@ function renderReport(data) {
     html += '<th>Raw chars</th>';
     html += '<th>Compact chars</th>';
     html += '<th>Saved chars</th>';
+    html += '<th>Tokens saved</th>';
     html += '<th>Char %</th>';
     html += '<th>Word %</th>';
     html += '</tr></thead><tbody>';
@@ -126,26 +127,29 @@ function renderReport(data) {
     );
     for (const c of commands) {
       const negative = (c.savings_pct_chars || 0) < 0 ? 'negative' : '';
+      const savedNegative = (c.saved_chars || 0) < 0 ? 'negative' : '';
+      const tokens = Math.round((c.saved_chars || 0) / 4);
       const st = commandStatus(c);
       html += `<tr data-host="${host}" data-command="${c.command}">
         <td>${escapeHtml(c.command)}</td>
         <td class="${st.class}">${st.text}</td>
         <td>${c.raw_chars}</td>
         <td>${c.compact_chars}</td>
-        <td>${c.saved_chars}</td>
+        <td class="${savedNegative}">${c.saved_chars}</td>
+        <td class="${savedNegative}">${tokens}</td>
         <td class="${negative}">${(c.savings_pct_chars || 0).toFixed(1)}</td>
         <td>${(c.savings_pct || 0).toFixed(1)}</td>
       </tr>`;
     }
     html += '</tbody></table>';
     html += `<p class="totals text-sm"><strong>${host} totals</strong>: `;
-    html += `raw=${hdata.raw_chars}, compact=${hdata.compact_chars}, saved=${hdata.saved_chars} `;
+    html += `raw=${hdata.raw_chars}, compact=${hdata.compact_chars}, saved=${hdata.saved_chars}, tokens=${Math.round(hdata.saved_chars / 4)} `;
     html += `(${hdata.saved_chars ? ((hdata.saved_chars / hdata.raw_chars) * 100).toFixed(1) : '0.0'}%)</p>`;
   }
 
   html += `<div class="mt-8 p-4 rounded" style="background: #f3f4f6;">`;
   html += `<p class="font-semibold">Overall totals</p>`;
-  html += `<p>raw=${data.total_raw_chars}, compact=${data.total_compact_chars}, saved=${data.total_saved_chars} `;
+  html += `<p>raw=${data.total_raw_chars}, compact=${data.total_compact_chars}, saved=${data.total_saved_chars}, tokens=${Math.round(data.total_saved_chars / 4)} `;
   html += `(${data.total_savings_pct.toFixed ? data.total_savings_pct.toFixed(1) : data.total_savings_pct}%)</p>`;
   html += `</div>`;
 
