@@ -12,6 +12,7 @@ runner:
     - --park: park the existing active focus in the same section before activating a new one
     - --sub-agent: write a sub-agent contract for the selected active focus to reports/SUBAGENT_CONTRACT.md
     - --intake <request>: classify a new request and write it to the correct place
+    - --decompose <request>: classify a large request, split it into subtasks, and write the resulting focus to the active focus or backlog
     - --dry-run: show selection without modifying files
   permissions:
     - read docs/ssot/ssot.focus.current.yml
@@ -34,7 +35,7 @@ package_design:
     - state.py: repository paths, YAML I/O, section helpers, status predicates, validate_current
     - triage.py: priority_value, triage_score, next_from_active/inbox/backlog
     - history.py: archive helpers, _archive_section, outcome and tag helpers
-    - actions.py: activate_inbox, suggest_intake, handle_intake
+    - actions.py: activate_inbox, suggest_intake, handle_intake, decompose_request
     - prompts.py: generate_prompt, generate_suggestion_prompt, generate_subagent_contract
     - git.py: git_mv_inbox, _is_allowed_staged_path, git_commit
     - cli.py: argument parser and main entry point
