@@ -477,3 +477,7 @@ def main():
         except json.JSONDecodeError as e:
             logger.error("invalid json: %s", e)
 
+
+if __name__ == "__main__":
+    main()
+
