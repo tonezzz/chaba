@@ -81,6 +81,46 @@ sections:
       - label: Escalation
         text: after 3 failed recovery attempts, stop auto-retry and send critical alert
 
+  - title: Recovery Commands
+    icon: 🛠
+    layout: list
+    items:
+      - label: barrier-client
+        text: Restart the Barrier KVM client on tony-dell. Safe because it is non-critical and reconnects automatically.
+        trigger: 2 consecutive failures of the barrier-client process check
+        precheck: ssh tony-dell 'pgrep -a barrierc || echo missing'
+        command: ssh tony-dell 'pkill -x barrierc 2>/dev/null; nohup /home/tony/.local/bin/barrierc --no-daemon --disable-crypto --name tony-dell --log /tmp/barrier-client.log 100.75.102.88 >/dev/null 2>&1 &'
+        verify: ssh tony-dell 'pgrep -a barrierc'
+
+      - label: playlived
+        text: Restart the PlayLive daemon on tony-dell. Safe because it is stateless and re-scans sessions on start.
+        trigger: 2 consecutive failures of http://tony-dell:9230/sessions
+        precheck: ssh tony-dell systemctl --user is-active playlived.service
+        command: ssh tony-dell systemctl --user restart playlived.service
+        verify: curl -s http://tony-dell:9230/sessions
+
+      - label: yomi-update-timers
+        text: Reset the Yomi fetch/update timers on tony-dell. Safe when yomi-api itself is healthy but the timers have failed.
+        trigger: 2 consecutive failures of the yomi-update-active or yomi-update-all timer unit
+        precheck: ssh tony-dell systemctl --user is-active yomi-update-active.timer yomi-update-all.timer
+        command: ssh tony-dell systemctl --user restart yomi-update-active.timer yomi-update-all.timer
+        verify: ssh tony-dell systemctl --user is-active yomi-update-active.timer yomi-update-all.timer
+
+      - label: llama-server
+        text: Restart the Llama router on tony-omen only when the GPU queue is idle and tony-dell is not actively routing.
+        trigger: 3 consecutive failures of http://100.75.102.88:8008/health with GPU queue idle
+        precheck: curl -s http://100.75.102.88:3001/health | grep -q idle
+        command: ssh tony-omen systemctl --user restart thai-legal-inference.service
+        verify: curl -s http://100.75.102.88:8008/health
+
+      - label: caddy
+        text: Reload Caddy on tony-omen. Requires operator confirmation because it affects all web endpoints.
+        trigger: Caddy returns 5xx or is unresponsive on 3 consecutive checks
+        confirmation: true
+        precheck: ssh tony-omen systemctl --user is-active caddy.service
+        command: ssh tony-omen systemctl --user reload caddy.service
+        verify: curl -s -o /dev/null -w '%{http_code}' http://tony-omen:8080/
+
   - title: Files & Paths
     icon: 📁
     layout: list
