@@ -92,6 +92,43 @@ decisions:
       - chaba-h3/public/api/mcp-savings.php
       - chaba-h3/public/apps/docs/mcp_debug/app.js
 
+  - id: mcp-debug-file-clipboard-bridge
+    date: '2026-08-17'
+    title: How to add auditable remote file get/put to mcp-debug
+    status: accepted
+    context: |
+      The assistant frequently needs to fetch remote logs/configs and push small scripts
+      to tony-omen and tony-dell without leaving the MCP workflow. Existing `mcp_raw` is
+      too permissive and does not enforce path allowlists, size caps, or base64 transport.
+    options:
+      - label: Extend mcp_raw with allowlist and size arguments
+        pros: [reuses the existing raw-command path, minimal new code]
+        cons: [blurs the line between raw and auditable commands, harder to log, harder to vet]
+      - label: Add dedicated mcp_get_file and mcp_put_file tools
+        pros: [clear contract, path-allowlist per host, hard size cap, base64 payload, overwrite control, detailed logging]
+        cons: [new tool schemas, new SSOT file, more code in tools.py]
+      - label: Use a separate file-transfer MCP server
+        pros: [isolated security surface, could reuse scp/sftp]
+        cons: [extra process, extra configuration, tailnet auth complexity]
+    chosen: Add dedicated mcp_get_file and mcp_put_file tools
+    reasoning: |
+      A dedicated tool gives a precise contract and security defaults: per-host
+      allowed_path_prefixes, 1 MiB hard cap, overwrite=false by default, and base64
+      transport so binary content is safe over JSON. It lives in the same mcp-debug
+      server, reusing existing `run_on_host` SSH transport, but is auditable and
+      user-confirmable. Clipboard support is kept as an experimental, disabled-by-default
+      add-on after file transfer is stable.
+    consequences:
+      - docs/ssot/infrastructure/ssot.mcp-debug.files.yml added with tool contract, allowlists, and limits
+      - tools.py already contains mcp_get_file, mcp_put_file, mcp_clipboard_get, mcp_clipboard_set
+      - server.py already exposes the tool schemas and dispatch
+      - Round-trip smoke tests succeeded on tony-omen and tony-dell
+    related:
+      - docs/ssot/infrastructure/ssot.mcp-debug.files.yml
+      - docs/ssot/infrastructure/ssot.mcp-debug.yml
+      - scripts/mcp_debug/tools.py
+      - scripts/mcp_debug/server.py
+
 related_files:
   - docs/ssot/ssot.focus.decisions.yml
   - docs/ssot/ssot.focus.sessions.yml
