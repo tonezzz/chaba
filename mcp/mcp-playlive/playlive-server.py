@@ -7,7 +7,9 @@ long-running playlived daemon, so many AI clients can use it at once.
 """
 import json
 import os
+import socket
 import urllib.error
+import urllib.parse
 import urllib.request
 
 from mcp.server.fastmcp import FastMCP
@@ -16,6 +18,25 @@ import mcp.types as mcp_types
 mcp = FastMCP("mcp-playlive")
 
 DAEMON_URL = os.environ.get("PLAYLIVE_URL", "http://tony-dell:9230")
+
+
+def _daemon_host():
+    """Return the host part of the daemon URL, used as a session ID prefix."""
+    return urllib.parse.urlparse(DAEMON_URL).hostname or socket.gethostname()
+
+
+def _prefixed_session_id(session_id: str) -> str:
+    prefix = _daemon_host()
+    if session_id.startswith(f"{prefix}-"):
+        return session_id
+    return f"{prefix}-{session_id}"
+
+
+def _unprefix_session_id(session_id: str) -> str:
+    prefix = _daemon_host()
+    if session_id.startswith(f"{prefix}-"):
+        return session_id[len(prefix) + 1:]
+    return session_id
 
 
 def _request(method, path, payload=None):
@@ -49,7 +70,10 @@ def playlive_create_chrome_live(target: str = "remote", remote_url: str | None =
         body["reuse_context"] = True
     if attach_url:
         body["attach_url"] = attach_url
-    return json.dumps(_request("POST", "/sessions", body), indent=2)
+    res = _request("POST", "/sessions", body)
+    if res.get("ok") and "session_id" in res:
+        res["session_id"] = _prefixed_session_id(res["session_id"])
+    return json.dumps(res, indent=2)
 
 
 @mcp.tool()
@@ -62,7 +86,10 @@ def playlive_create_playwright_chrome(target: str = "remote", remote_url: str | 
         body["reuse_context"] = True
     if attach_url:
         body["attach_url"] = attach_url
-    return json.dumps(_request("POST", "/sessions", body), indent=2)
+    res = _request("POST", "/sessions", body)
+    if res.get("ok") and "session_id" in res:
+        res["session_id"] = _prefixed_session_id(res["session_id"])
+    return json.dumps(res, indent=2)
 
 
 @mcp.tool()
@@ -73,55 +100,63 @@ def playlive_create_playwright(target: str = "local", remote_url: str | None = N
     body = {"type": "playwright-headless", "target": "local"}
     if remote_url:
         body["remote_url"] = remote_url
-    return json.dumps(_request("POST", "/sessions", body), indent=2)
+    res = _request("POST", "/sessions", body)
+    if res.get("ok") and "session_id" in res:
+        res["session_id"] = _prefixed_session_id(res["session_id"])
+    return json.dumps(res, indent=2)
 
 
 @mcp.tool()
 def playlive_list_sessions() -> str:
     """List active sessions managed by the daemon."""
-    return json.dumps(_request("GET", "/sessions"), indent=2)
+    res = _request("GET", "/sessions")
+    if res.get("ok") and isinstance(res.get("sessions"), list):
+        for s in res["sessions"]:
+            if "id" in s:
+                s["id"] = _prefixed_session_id(s["id"])
+    return json.dumps(res, indent=2)
 
 
 @mcp.tool()
 def playlive_close_session(session_id: str) -> str:
     """Close a session and free its browser resources."""
-    return json.dumps(_request("DELETE", f"/sessions/{session_id}"), indent=2)
+    return json.dumps(_request("DELETE", f"/sessions/{_unprefix_session_id(session_id)}"), indent=2)
 
 
 @mcp.tool()
 def playlive_navigate(session_id: str, url: str) -> str:
     """Navigate a session's current page to a URL."""
-    return json.dumps(_request("POST", f"/sessions/{session_id}/navigate", {"url": url}), indent=2)
+    return json.dumps(_request("POST", f"/sessions/{_unprefix_session_id(session_id)}/navigate", {"url": url}), indent=2)
 
 
 @mcp.tool()
 def playlive_click(session_id: str, selector: str) -> str:
     """Click the element matched by the CSS selector."""
-    return json.dumps(_request("POST", f"/sessions/{session_id}/click", {"selector": selector}), indent=2)
+    return json.dumps(_request("POST", f"/sessions/{_unprefix_session_id(session_id)}/click", {"selector": selector}), indent=2)
 
 
 @mcp.tool()
 def playlive_fill(session_id: str, selector: str, value: str) -> str:
     """Fill an input identified by the CSS selector."""
-    return json.dumps(_request("POST", f"/sessions/{session_id}/fill", {"selector": selector, "value": value}), indent=2)
+    return json.dumps(_request("POST", f"/sessions/{_unprefix_session_id(session_id)}/fill", {"selector": selector, "value": value}), indent=2)
 
 
 @mcp.tool()
 def playlive_select(session_id: str, selector: str, value: str) -> str:
     """Select an option in a dropdown identified by the CSS selector."""
-    return json.dumps(_request("POST", f"/sessions/{session_id}/select", {"selector": selector, "value": value}), indent=2)
+    return json.dumps(_request("POST", f"/sessions/{_unprefix_session_id(session_id)}/select", {"selector": selector, "value": value}), indent=2)
 
 
 @mcp.tool()
 def playlive_eval(session_id: str, script: str) -> str:
     """Run a JavaScript snippet in the current page and return the result."""
-    return json.dumps(_request("POST", f"/sessions/{session_id}/eval", {"script": script}), indent=2)
+    return json.dumps(_request("POST", f"/sessions/{_unprefix_session_id(session_id)}/eval", {"script": script}), indent=2)
 
 
 @mcp.tool()
 def playlive_state(session_id: str) -> str:
     """Return the current session page URL and title."""
-    return json.dumps(_request("POST", f"/sessions/{session_id}/state", {}), indent=2)
+    return json.dumps(_request("POST", f"/sessions/{_unprefix_session_id(session_id)}/state", {}), indent=2)
 
 
 @mcp.tool()
@@ -130,14 +165,14 @@ def playlive_screenshot(session_id: str, path: str | None = None, full_page: boo
     payload = {"fullPage": full_page}
     if path:
         payload["path"] = path
-    return json.dumps(_request("POST", f"/sessions/{session_id}/screenshot", payload), indent=2)
+    return json.dumps(_request("POST", f"/sessions/{_unprefix_session_id(session_id)}/screenshot", payload), indent=2)
 
 
 @mcp.tool()
 def playlive_screenshot_image(session_id: str, full_page: bool = False) -> list:
     """Take a screenshot and return it as an image plus a text note."""
     payload = {"fullPage": full_page}
-    res = _request("POST", f"/sessions/{session_id}/screenshot", payload)
+    res = _request("POST", f"/sessions/{_unprefix_session_id(session_id)}/screenshot", payload)
     if not res.get("ok") or "base64" not in res:
         return [mcp_types.TextContent(type="text", text=json.dumps(res, indent=2))]
     return [
@@ -151,7 +186,7 @@ def playlive_upload_file(session_id: str, selector: str, file_base64: str, filen
     """Upload a base64-encoded file to a <input type=file> matched by the CSS selector."""
     return json.dumps(_request(
         "POST",
-        f"/sessions/{session_id}/upload",
+        f"/sessions/{_unprefix_session_id(session_id)}/upload",
         {"selector": selector, "base64": file_base64, "filename": filename, "mimeType": mime_type},
     ), indent=2)
 
@@ -161,7 +196,7 @@ def playlive_upload_from_stash(session_id: str, selector: str, stash_id: str) ->
     """Upload a previously stashed file by its stash_id to a <input type=file> matched by the CSS selector."""
     return json.dumps(_request(
         "POST",
-        f"/sessions/{session_id}/upload",
+        f"/sessions/{_unprefix_session_id(session_id)}/upload",
         {"selector": selector, "stash_id": stash_id},
     ), indent=2)
 
@@ -171,7 +206,7 @@ def playlive_drop_files(session_id: str, selector: str, file_base64: str, filena
     """Dispatch synthetic drag-and-drop events with a file onto a drop-zone element matched by the CSS selector."""
     return json.dumps(_request(
         "POST",
-        f"/sessions/{session_id}/drop",
+        f"/sessions/{_unprefix_session_id(session_id)}/drop",
         {"selector": selector, "base64": file_base64, "filename": filename, "mimeType": mime_type},
     ), indent=2)
 
@@ -181,7 +216,7 @@ def playlive_drop_from_stash(session_id: str, selector: str, stash_id: str) -> s
     """Dispatch synthetic drag-and-drop events with a previously stashed file onto a drop-zone element."""
     return json.dumps(_request(
         "POST",
-        f"/sessions/{session_id}/drop",
+        f"/sessions/{_unprefix_session_id(session_id)}/drop",
         {"selector": selector, "stash_id": stash_id},
     ), indent=2)
 
@@ -211,25 +246,25 @@ def playlive_delete_stash(stash_id: str) -> str:
 @mcp.tool()
 def playlive_set_clipboard(session_id: str, text: str) -> str:
     """Write text to the browser's page clipboard via navigator.clipboard."""
-    return json.dumps(_request("POST", f"/sessions/{session_id}/set_clipboard", {"text": text}), indent=2)
+    return json.dumps(_request("POST", f"/sessions/{_unprefix_session_id(session_id)}/set_clipboard", {"text": text}), indent=2)
 
 
 @mcp.tool()
 def playlive_get_clipboard(session_id: str) -> str:
     """Read text from the browser's page clipboard via navigator.clipboard."""
-    return json.dumps(_request("POST", f"/sessions/{session_id}/get_clipboard", {}), indent=2)
+    return json.dumps(_request("POST", f"/sessions/{_unprefix_session_id(session_id)}/get_clipboard", {}), indent=2)
 
 
 @mcp.tool()
 def playlive_set_auth(session_id: str, username: str, password: str) -> str:
     """Set basic authentication credentials for the session. These credentials will be used for all subsequent navigate requests."""
-    return json.dumps(_request("POST", f"/sessions/{session_id}/set_auth", {"username": username, "password": password}), indent=2)
+    return json.dumps(_request("POST", f"/sessions/{_unprefix_session_id(session_id)}/set_auth", {"username": username, "password": password}), indent=2)
 
 
 @mcp.tool()
 def playlive_clear_auth(session_id: str) -> str:
     """Clear basic authentication credentials from the session."""
-    return json.dumps(_request("POST", f"/sessions/{session_id}/clear_auth", {}), indent=2)
+    return json.dumps(_request("POST", f"/sessions/{_unprefix_session_id(session_id)}/clear_auth", {}), indent=2)
 
 
 if __name__ == "__main__":
