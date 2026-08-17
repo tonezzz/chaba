@@ -87,9 +87,20 @@ jobs:
     output: /Users/kkkakk/var/chaba/health/macbook-snapshot.json
     note: Captures lan_ip, tailscale_ip, wifi_ssid, memory pressure, process counts, disk hogs, and ports.
 
+  - id: chaba-funnel-docs-sync
+    name: Sync docs to tony-dell chaba-funnel
+    host: tony_omen
+    type: shell
+    schedule: daily
+    command: "rsync -avP /home/tony/CascadeProjects/chaba-h3/public/apps/docs/ tony@tony-dell:/home/tony/chaba-funnel/public/apps/docs/"
+    enabled: true
+    status: planned
+    note: Keeps the Tailscale Funnel docs on tony-dell in sync with the chaba-h3 docs source.
+
 parked_during_night:
-  - Trade Canvas UI fixes and modularization
-  - mcp-debug file & clipboard bridge
+  items:
+    - Trade Canvas UI fixes and modularization
+    - mcp-debug file & clipboard bridge
   note: Parked focuses are not auto-activated overnight. focus-dispatcher.py may create draft inbox items for them, but the user must activate them.
 
 improvements:

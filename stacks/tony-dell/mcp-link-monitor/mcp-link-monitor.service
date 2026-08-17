@@ -1,0 +1,13 @@
+[Unit]
+Description=TCP/IP link monitor for chaba hosts
+After=network.target mcp-debug-cors.service
+
+[Service]
+Type=simple
+ExecStart=/home/tony/CascadeProjects/chaba/venv/bin/python /home/tony/CascadeProjects/chaba/scripts/mcp-link-monitor.py
+WorkingDirectory=/home/tony/CascadeProjects/chaba
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=default.target
