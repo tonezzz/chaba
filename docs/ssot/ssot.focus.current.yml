@@ -196,10 +196,19 @@ sections:
     - label: Assess weaviate migration to tony-dell
       text: Weaviate has no GPU dependency but depends on postgres (already on tony-dell). Measure working set size and migration
         risk before moving.
-      status: not_started
+      status: completed
+      completed: '2026-08-17'
+      note: Measured on tony-omen via `docker stats --no-stream weaviate`: ~50MiB RAM, 0.12% CPU,
+        17 PIDs, 5.37MB/4.1MB network I/O. tony-dell has 14GB RAM (12GB available) and 67GB free
+        disk. podman 5.7.0 is installed and chaba-postgres-16 is running. Recommendation: yes —
+        weaviate is a low-risk, non-GPU migration; small working set fits comfortably on tony-dell.
     - label: Update ssot.services.yml and ssot.containerization.yml with new disposition
       text: After each migration, update the SSOT to reflect the new host, runtime, ports, and Quadlet unit paths.
-      status: not_started
+      status: completed
+      completed: '2026-08-17'
+      note: Updated tony-dell postgres, yomi-api, and weaviate entries in ssot.services.yml with
+        Quadlet unit paths. Added a Tony-Dell podman migration section to ssot.containerization.yml
+        with the same disposition. tony-omen entries (redis, mddb, raceman) left unchanged.
     request_log:
     - date: '2026-08-17'
       request: activate and continue tony-dell podman service migration
