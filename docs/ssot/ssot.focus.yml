@@ -262,6 +262,31 @@ sections:
     - label: Update ssot.services.yml and ssot.containerization.yml with new disposition
       text: After each migration, update the SSOT to reflect the new host, runtime, ports, and Quadlet unit paths.
       status: not_started
+  - label: SSOT branch/worktree registry
+    text: |
+      Create a canonical SSOT that maps each SSOT focus branch to a git branch,
+      local worktree path, deploy host, and the systemd services it owns. Derive
+      git worktree creation, deployment rsync, and health-check verification from
+      this file instead of ad-hoc scp/sed. Start by moving funnel-server.py and the
+      tony-dell deployment directory onto a tracked topic branch and worktree.
+    branch: chaba
+    status: pending
+    priority: medium
+    tags:
+    - ssot
+    - git
+    - worktrees
+    - deployment
+    - workflow
+    subtasks:
+    - label: Create or update the SSOT registry file
+      status: not_started
+    - label: Add mcp_debug policy entries for any new deploy/restart commands
+      status: not_started
+    - label: Convert tony-dell deployment copy into a chaba-tony-dell worktree
+      status: not_started
+    - label: Track funnel-server.py in the repo on a topic/tailscale branch
+      status: not_started
 - title: Quick Wins
   icon: quick
   layout: list
