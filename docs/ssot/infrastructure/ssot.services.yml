@@ -187,21 +187,19 @@ tony-dell:
     status: implemented (2026-08-13)
 
 tony-omen:
-  llama-router:
-    container: ai-llama-server-1
-    image: ghcr.io/ggml-org/llama.cpp:server-cuda
-    mode: router (--models-dir, --models-max 2, --models-autoload)
+  ollama:
+    container: ollama
+    image: ollama/ollama:latest
+    mode: server
     models:
-      - thai-legal-gemma-4b-cpt.Q4_K_M.gguf (5GB)
-      - Phi-3-mini-4k-instruct-Q4_K_M.gguf (2.3GB)
-    port: 8008 (host), 8008 (internal)
-    network: ai_default (external network)
-    vram_overhead: ~70MB (vs 4.8GB for separate container)
+      - nomic-embed-text:latest
+      - phi3-gguf:latest (imported from Phi-3-mini-4k-instruct-Q4_K_M.gguf)
+    port: 11434 (host), 11434 (internal)
+    network: web_default
     routing:
-      - /v1/chat/completions → Phi-3-mini-4k-instruct-q4
-      - GPU queue → http://ai-llama-server-1:8008/v1/chat/completions
-      - MCP llama server → http://ai-llama-server-1:8008
-    status: implemented (2026-08-13), network configuration fixed
+      - /v1/chat/completions → phi3-gguf
+      - mcp-llama → http://tony-omen:11434
+    status: migrated to Ollama (2026-08-18); ghcr.io/ggml-org/llama.cpp retired
   postgres:
     container: postgres
     image: postgres:16-alpine
