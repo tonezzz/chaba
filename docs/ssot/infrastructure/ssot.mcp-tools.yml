@@ -81,10 +81,10 @@ policy:
     policy: |
       Read and search first. Use mcp_search_ssot with the appropriate
       collection; it prefers MDDB and falls back to a local keyword scan. Only
-      use mcp_ssot_append for whitelisted append-only sections
-      (quick_wins, history, request_log, subtasks, improvements, notes, items,
-      services, etc.). It may not delete, move, or in-place edit SSOT files.
-      Paths must be under docs/ssot/ and end in .yml.
+      use mcp_ssot_append for the exact whitelisted append-only list sections:
+      quick_wins, history, request_log, subtasks, improvements, improvements.done,
+      notes, items, and services. It may not delete, move, or in-place edit SSOT
+      files. Paths must be under docs/ssot/ and end in .yml.
 
   line_conversations:
     primary: yomi
