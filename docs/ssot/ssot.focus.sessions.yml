@@ -160,6 +160,22 @@ sessions:
       - Push the uncommitted SSOT and infrastructure drift to origin
     next_action: Start the first capture bridge subtask (mcp_screenshot) or commit/push current changes
 
+  - date: '2026-08-17'
+    session: chaba-2026-08-17-mddb-search
+    focus: SSOT documentation search protocol
+    source: user request
+    plan:
+      - Harden .windsurfrules to require MDDB first
+      - Add MDDB-first step to ssot.focus.current.yml workflow
+    done:
+      - Hardened .windsurfrules Documentation Search Standards to a mandatory MDDB-first gate
+      - Added MDDB-first workflow step to ssot.focus.current.yml
+      - Verified with MDDB that no existing capture/screen docs were duplicated by the visual capture bridge design
+    follow_up:
+      - Apply the MDDB-first rule in every future session
+      - Consider a docs-search skill or overnight audit loop if the rule is still being skipped
+    next_action: Return to active mcp-debug visual capture bridge focus
+
 related_files:
   - docs/ssot/ssot.focus.current.yml
   - docs/ssot/ssot.focus.yml
