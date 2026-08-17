@@ -57,6 +57,21 @@ tony-dell:
       - yomi-backup.timer
     status: implemented (2026-08-16)
     failover_plan: docs/ssot/infrastructure/ssot.yomi-failover.yml
+  redis:
+    container: redis
+    image: docker.io/library/redis:7.4-alpine
+    runtime: rootless podman
+    network: host
+    port: 6379
+    host_port: 100.68.142.13:6379
+    data_volume: none (in-memory only)
+    quadlet:
+      container_unit: ~/.config/containers/systemd/redis.container
+      service_unit: ~/.config/systemd/user/redis.service
+    related_units:
+      - yomi-api.service
+    status: implemented (2026-08-17)
+    note: Migrated from tony-omen; yomi-api REDIS_URL now points to tony-dell tailnet IP 100.68.142.13:6379.
   weaviate:
     container: weaviate
     image: docker.io/semitechnologies/weaviate:latest

@@ -188,7 +188,10 @@ sections:
     - label: Migrate redis to tony-dell podman
       text: Move redis:7.4-alpine to tony-dell so yomi-api no longer crosses the tailnet for redis://100.75.102.88:6379. Update
         yomi-api env REDIS_URL to 127.0.0.1:6379.
-      status: not_started
+      status: completed
+      completed: '2026-08-17'
+      note: Started redis rootless podman container with --network host on tony-dell; generated redis.service; updated yomi-api.service
+        REDIS_URL to redis://100.68.142.13:6379; yomi-api restarted and Redis connected successfully. SSOT disposition updated.
     - label: Migrate mddb + mddb-panel to tony-dell podman
       text: Move tradik/mddb:latest and tradik/mddb:panel-latest to tony-dell. Update Caddy reverse proxy on tony-omen to
         route /api/mddb/* and /mddb/* to tony-dell over the tailnet. Migrate the mddb data volume (~100MB).
