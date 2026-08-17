@@ -32,6 +32,7 @@ from .capture import (
     mcp_window_list,
     mcp_clipboard_image_get,
 )
+from .ssot_edit import mcp_ssot_append
 
 logger = logging.getLogger(__name__)
 
@@ -351,6 +352,19 @@ def handle_tools_list(id_):
             },
         },
         {
+            "name": "mcp_ssot_append",
+            "description": "Append a new item to a whitelisted list section in a docs/ssot/ YAML file.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "path": {"type": "string", "description": "SSOT file path, e.g. docs/ssot/ssot.focus.current.yml"},
+                    "section": {"type": "string", "enum": ["quick_wins", "history", "request_log", "subtasks", "improvements", "notes", "items", "services"], "description": "Top-level list section to append to"},
+                    "item": {"type": "string", "description": "YAML snippet for the new list entry"},
+                },
+                "required": ["path", "section", "item"],
+            },
+        },
+        {
             "name": "mcp_focus",
             "description": "Return the current active focus and recommend the next action for an optional request.",
             "inputSchema": {
@@ -500,6 +514,14 @@ def handle_tools_call(id_, params):
         if not h:
             return {"jsonrpc": "2.0", "id": id_, "error": {"code": -32602, "message": "host is required"}}
         result = mcp_clipboard_image_get(h)
+        output = json.dumps(result, separators=(",", ":"))
+    elif name == "mcp_ssot_append":
+        p = arguments.get("path")
+        s = arguments.get("section")
+        item = arguments.get("item")
+        if not p or not s or item is None:
+            return {"jsonrpc": "2.0", "id": id_, "error": {"code": -32602, "message": "path, section, and item are required"}}
+        result = mcp_ssot_append(p, s, item)
         output = json.dumps(result, separators=(",", ":"))
     elif name == "mcp_focus":
         result = mcp_focus(request=arguments.get("request"), mode=arguments.get("mode", "recommend"))
