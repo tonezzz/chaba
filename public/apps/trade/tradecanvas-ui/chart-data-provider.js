@@ -22,6 +22,13 @@ class ChartDataProvider {
             'DXY': 'dxy_formatted.csv',
             'OIL': 'wti_formatted.csv'
         };
+
+        this.currencyPairs = {
+            'THB': { base: 'USD', quote: 'THB' },
+            'EUR': { base: 'EUR', quote: 'USD' },
+            'GBP': { base: 'GBP', quote: 'USD' },
+            'JPY': { base: 'USD', quote: 'JPY' }
+        };
     }
 
     async loadData(symbol, timeframe) {
@@ -45,6 +52,19 @@ class ChartDataProvider {
             console.log('API loading error, falling back to CSV:', error.message);
         }
 
+        // Try Frankfurter for supported currency pairs.
+        if (this.currencyPairs[symbol]) {
+            try {
+                const fxData = await this.fetchFromFrankfurter(symbol, timeframe);
+                if (fxData && fxData.length > 0) {
+                    console.log('Loaded data from Frankfurter for', symbol);
+                    return { data: fxData, isSampleData: false, loadedFromAPI: true };
+                }
+            } catch (error) {
+                console.log('Frankfurter loading error, falling back to CSV:', error.message);
+            }
+        }
+
         // Fall back to the corresponding CSV file.
         const csvData = await this.loadFromCSV(symbol, timeframe);
         if (csvData && csvData.length > 0) {
@@ -58,6 +78,66 @@ class ChartDataProvider {
             isSampleData: true,
             loadedFromAPI: false
         };
+    }
+
+    async fetchFromFrankfurter(symbol, timeframe) {
+        const pair = this.currencyPairs[symbol];
+        if (!pair) {
+            console.log('No Frankfurter pair mapping for', symbol);
+            return [];
+        }
+
+        const endDate = new Date();
+        const startDate = this.calculateStartDate(endDate, timeframe);
+        const startStr = startDate.toISOString().split('T')[0];
+        const endStr = endDate.toISOString().split('T')[0];
+
+        const url = `https://api.frankfurter.app/${startStr}..${endStr}?from=${pair.base}&to=${pair.quote}`;
+        console.log('Fetching from Frankfurter:', url);
+
+        const response = await fetch(url);
+        if (!response.ok) {
+            console.log('Frankfurter request failed:', response.status);
+            return [];
+        }
+
+        const json = await response.json();
+        const rates = json.rates;
+        if (!rates) {
+            console.log('Frankfurter response missing rates');
+            return [];
+        }
+
+        const dates = Object.keys(rates).sort();
+        const data = [];
+        let previousClose = null;
+
+        for (const date of dates) {
+            const close = parseFloat(rates[date][pair.quote]);
+            if (isNaN(close)) {
+                continue;
+            }
+
+            const open = previousClose !== null ? previousClose : close;
+            const range = Math.abs(close - open) * 0.2 + close * 0.001;
+            const high = Math.max(open, close) + range;
+            const low = Math.min(open, close) - range;
+
+            const timestamp = Math.floor(new Date(date + 'T00:00:00Z').getTime() / 1000);
+
+            data.push({
+                time: timestamp,
+                open: open,
+                high: high,
+                low: low,
+                close: close
+            });
+
+            previousClose = close;
+        }
+
+        console.log('Loaded data from Frankfurter:', data.length, 'points');
+        return data;
     }
 
     async loadFromCSV(symbol, timeframe) {
@@ -85,6 +165,45 @@ class ChartDataProvider {
             console.log('CSV loading error:', error.message);
             return [];
         }
+    }
+
+    async validateDataPath(symbol) {
+        const pair = this.currencyPairs[symbol];
+        if (pair) {
+            const url = `https://api.frankfurter.app/latest?from=${pair.base}&to=${pair.quote}`;
+            try {
+                const response = await fetch(url);
+                if (response.ok) {
+                    console.log('Validated currency data path for', symbol, 'via Frankfurter:', url);
+                    return { valid: true, source: 'frankfurter', url };
+                }
+                console.log('Currency data path validation failed for', symbol, ':', response.status);
+                return { valid: false, source: 'frankfurter', status: response.status };
+            } catch (error) {
+                console.log('Currency data path validation error for', symbol, ':', error.message);
+                return { valid: false, source: 'frankfurter', error: error.message };
+            }
+        }
+
+        const csvFile = this.symbolFiles[symbol];
+        if (csvFile) {
+            const csvUrl = `../data/imported/${csvFile}`;
+            try {
+                const response = await fetch(csvUrl);
+                if (response.ok) {
+                    console.log('Validated commodity data path for', symbol, 'via CSV:', csvUrl);
+                    return { valid: true, source: 'csv', url: csvUrl };
+                }
+                console.log('Commodity data path validation failed for', symbol, ':', csvUrl, response.status);
+                return { valid: false, source: 'csv', status: response.status, note: 'will fall back to sample data' };
+            } catch (error) {
+                console.log('Commodity data path validation error for', symbol, ':', csvUrl, error.message);
+                return { valid: false, source: 'csv', error: error.message, note: 'will fall back to sample data' };
+            }
+        }
+
+        console.log('No known data path for symbol:', symbol);
+        return { valid: false, source: 'none' };
     }
 
     parseCSV(csvText, timeframe) {
