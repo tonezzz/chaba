@@ -155,37 +155,35 @@ sections:
     - date: '2026-08-17'
       request: switch to UI policy SSOT and PlayLive
       matched_to: Continuous decision capture for focus and technical choices
-  - label: UI policy SSOT
-    text: 'Create a dedicated UI policy SSOT that captures decision rules and guardrails. Audit ssot.libs.yml, ssot.ui.yml,
-      and trade-specific ssot.ui.* configs for redundant policy-like content; migrate it into the policy SSOT and leave ssot.libs.yml
-      as the component reference. Update ssot.index.yml and cross-references.'
+  - label: Re-assess mcp-debug SSOT editing tools
+    text: 'After mcp_read_ssot and mcp_search_ssot are in use, measure whether sub-agents or scripts need mutation tools. If
+      they do, scope a narrow mcp_ssot_append for request_log/subtasks/quick_wins only.'
     branch: chaba
-    status: completed
-    completed: '2026-08-17'
-    priority: medium
+    status: active
+    priority: low
     started: '2026-08-17'
     tags:
-    - ui
+    - mcp
     - ssot
-    - policy
-    - documentation
+    - editing
+    - assessment
     subtasks:
-    - label: Audit ssot.libs.yml and ssot.ui.yml for policy-like content
+    - label: Audit current SSOT read/search tool usage and policy
       status: completed
       completed: '2026-08-17'
-    - label: Create docs/ssot/ssot.ui.policy.yml with extracted guardrails
+      note: mcp_read_ssot and mcp_search_ssot are implemented; mcp_ssot_append exists and is append-only to whitelisted sections
+    - label: Decide whether a mutation/append tool is needed
       status: completed
       completed: '2026-08-17'
-    - label: Migrate redundant policy content into the new SSOT
+      note: mcp_ssot_append is already available; useful for sub-agents to append quick_wins, request_log, subtasks, history, notes
+    - label: Scope mcp_ssot_append and update ssot.mcp-tools.yml
       status: completed
       completed: '2026-08-17'
-    - label: Update ssot.index.yml and cross-references
-      status: completed
-      completed: '2026-08-17'
+      note: Added ssot_editing domain to ssot.mcp-tools.yml and ssot-editing suggested extension to ssot.mcp-debug.yml
     request_log:
     - date: '2026-08-17'
-      request: switch to UI policy SSOT and PlayLive
-      matched_to: UI policy SSOT
+      request: 'next? -> 1'
+      matched_to: Re-assess mcp-debug SSOT editing tools
 - title: Active Branch Focus
   icon: branch
   layout: list
@@ -284,31 +282,6 @@ sections:
       matched_to: mcp-debug file & clipboard bridge
     branch: chaba
     source: /home/tony/CascadeProjects/chaba/docs/ssot/focus-inbox/2026-08-16-061308-mcp-debug-file-bridge.yml
-  - label: PlayLive Host-Prefixed Session IDs
-    text: Implement host-prefixed session IDs in playlive-server.py per previous discussion.
-    branch: chaba
-    status: completed
-    completed: '2026-08-17'
-    priority: low
-    started: '2026-08-17'
-    tags:
-    - playlive
-    - testing
-    subtasks:
-    - label: Inspect playlive-server.py session ID logic
-      status: completed
-      completed: '2026-08-17'
-    - label: Add hostname prefix to session IDs
-      status: completed
-      completed: '2026-08-17'
-    - label: Smoke test with playlive client
-      status: completed
-      completed: '2026-08-17'
-      note: playlive-server.py compiles; live playlived smoke test deferred to next session
-    request_log:
-    - date: '2026-08-17'
-      request: switch to UI policy SSOT and PlayLive
-      matched_to: PlayLive Host-Prefixed Session IDs
 - title: Quick Wins
   icon: quick
   layout: list
