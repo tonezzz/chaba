@@ -128,6 +128,7 @@ debug_commands:
     description: Top 20 processes by CPU
     compact: true
     expected_output: processes
+    raw_command: 'ps aux'
   ps -eo pid,ppid,cmd,%cpu --sort=-%cpu:
     description: Top processes by CPU
     compact: true
@@ -177,11 +178,13 @@ debug_commands:
     description: Podman runtime, store, and graph driver info as JSON
     compact: true
     expected_output: json
+    raw_command: 'podman info'
     note: Vetted positive on both tony_omen (51.5%) and tony_dell (51.6%).
   podman image ls --format json:
     description: Podman image list as compact JSON
     compact: true
     expected_output: json
+    raw_command: 'podman image ls -a'
     note: Vetted positive on both tony_omen (48.7%) and tony_dell (78.5%).
   top -l 1 -n 10 -o cpu:
     description: macOS top 10 processes by CPU

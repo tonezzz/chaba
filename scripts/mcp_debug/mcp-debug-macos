@@ -37,15 +37,9 @@ def compact_df():
             # macOS df -h has: Filesystem Size Used Avail Capacity iused ifree %iused Mounted on
             # Filesystem may contain a space (e.g., "map auto_home"), so parse from the right.
             fss.append({
-                "m": parts[-1],
-                "iu": parts[-2],
-                "if": parts[-3],
-                "ic": parts[-4],
-                "c": parts[-5],
-                "a": parts[-6],
-                "u": parts[-7],
-                "s": parts[-8],
                 "f": " ".join(parts[:-8]),
+                "c": parts[-5],
+                "m": parts[-1],
             })
     return {"ok": True, "cmd": "df -h", "n": len(fss), "fs": fss}
 
@@ -99,17 +93,13 @@ def compact_uptime():
         return {"ok": False, "error": err}
     text = result.stdout.strip()
     up = ""
-    users = ""
     m = re.search(r"up\s+(.+?),\s+(\d+)\s+user", text)
+    if not m:
+        m = re.search(r"up\s+(.+?)$", text)
     if m:
-        up = m.group(1)
-        users = m.group(2)
-    else:
-        m = re.search(r"(\d+)\s+user", text)
-        if m:
-            users = m.group(1)
+        up = m.group(1).rstrip(",")
     load = re.findall(r"load\s+average[s]?:\s*([\d.]+)", text)
-    return {"ok": True, "cmd": "uptime", "up": up, "u": users, "l": load}
+    return {"ok": True, "cmd": "uptime", "up": up, "l": load}
 
 
 def compact_mount():
@@ -123,7 +113,6 @@ def compact_mount():
             mounts.append({
                 "d": m.group(1),
                 "p": m.group(2),
-                "o": m.group(3),
             })
     return {"ok": True, "cmd": "mount", "n": len(mounts), "m": mounts}
 
@@ -340,6 +329,45 @@ def compact_gpu():
     return {"ok": False, "error": "no GPU tool available on macOS"}
 
 
+def compact_podman_info():
+    result, err = _run(["podman", "info", "--format", "json"])
+    if err:
+        return {"ok": False, "error": err}
+    if result.returncode != 0:
+        return {"ok": False, "error": result.stderr.strip() or "podman info failed"}
+    try:
+        data = json.loads(result.stdout)
+    except Exception as exc:
+        return {"ok": False, "error": f"podman info json: {exc}"}
+    return {"ok": True, "cmd": "podman info", "data": data}
+
+
+def compact_podman_image_ls():
+    result, err = _run(["podman", "image", "ls", "--format", "json"])
+    if err:
+        return {"ok": False, "error": err}
+    if result.returncode != 0:
+        return {"ok": False, "error": result.stderr.strip() or "podman image ls failed"}
+    try:
+        data = json.loads(result.stdout)
+    except Exception as exc:
+        return {"ok": False, "error": f"podman image ls json: {exc}"}
+    if not isinstance(data, list):
+        return {"ok": False, "error": "podman image ls output not a list"}
+    images = []
+    for img in data:
+        names = img.get("Names") or img.get("names") or []
+        if isinstance(names, list):
+            names = names[0] if names else ""
+        images.append({
+            "i": img.get("Id") or img.get("id") or "",
+            "n": names,
+            "t": img.get("Tag") or img.get("tag") or "",
+            "s": img.get("Size") or img.get("size") or "",
+        })
+    return {"ok": True, "cmd": "podman image ls", "n": len(images), "i": images}
+
+
 def run(args):
     if not args:
         return {"ok": False, "error": "usage: mcp-debug <command> [args...]"}
@@ -370,6 +398,10 @@ def run(args):
         return compact_sockets()
     if base == "gpu":
         return compact_gpu()
+    if base == "podman" and "info" in args:
+        return compact_podman_info()
+    if base == "podman" and "image" in args and "ls" in args:
+        return compact_podman_image_ls()
     if base in ("systemctl", "free", "lsblk", "lsusb", "ip", "ss", "journalctl"):
         return {"ok": False, "error": f"{base} is not supported on macOS"}
 
