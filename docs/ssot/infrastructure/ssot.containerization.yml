@@ -152,10 +152,30 @@ sections:
         text: Core desktop functionality stays on host for proper integration (GNOME, PipeWire, D-Bus, etc.)
         tags: ['host-services', 'desktop', 'system']
 
+  - title: "Tony-Dell podman migration (in progress)"
+    icon: "🔄"
+    layout: list
+    items:
+      - label: chaba-postgres-16
+        text: 'Migrated to tony-dell rootless podman. Quadlet units at ~/.config/containers/systemd/chaba-postgres-16.container and ~/.config/systemd/user/chaba-postgres-16.service. Auto-starts on boot.'
+        status: completed
+        completed: 2026-08-17
+        tags: ['tony-dell', 'podman', 'postgres', 'quadlet']
+      - label: yomi-api
+        text: 'Migrated to tony-dell rootless podman. Quadlet units at ~/.config/containers/systemd/yomi-api.container and ~/.config/systemd/user/yomi-api.service. Tailscale TCP 3000 served locally.'
+        status: completed
+        completed: 2026-08-17
+        tags: ['tony-dell', 'podman', 'yomi-api', 'quadlet']
+      - label: weaviate
+        text: 'Assessed and approved for migration. ~50MiB working set, 0.12% CPU, no GPU dependency. Quadlet units planned at ~/.config/containers/systemd/weaviate.container and ~/.config/systemd/user/weaviate.service.'
+        status: approved
+        completed: 2026-08-17
+        tags: ['tony-dell', 'podman', 'weaviate', 'quadlet', 'approved']
+
 config:
-  version: 2
-  last_updated: 2026-08-09
-  status: completed
+  version: 3
+  last_updated: 2026-08-17
+  status: in_progress
   maintainer: tony
   summary: Successfully containerized 3 high-value services (Yomi API, GPU Queue services) and appropriately retained 4 complex/low-benefit services on host (Playlived, Clip Sync, Barriers, Rclone)
   related_files:
