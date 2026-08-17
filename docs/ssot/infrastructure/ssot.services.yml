@@ -132,16 +132,16 @@ tony-dell:
     image: docker.io/semitechnologies/weaviate:latest
     runtime: rootless podman
     port: 8080
-    host_port: 127.0.0.1:8082
-    tailscale_serve: --bg --tcp 8082 127.0.0.1:8082
-    caddy_upstream: tony-dell:8082
+    host_port: 0.0.0.0:8084
+    tailscale_serve: --bg --tcp 8084 127.0.0.1:8084
+    caddy_upstream: tony-dell:8084
     data_volume: /home/tony/.config/containers/weaviate/data
     quadlet:
       container_unit: ~/.config/containers/systemd/weaviate.container
       service_unit: ~/.config/systemd/user/weaviate.service
     depends_on: chaba-postgres-16
-    status: approved for migration (2026-08-17)
-    note: Migration approved after measurement on tony-omen — ~50MiB RAM, 0.12% CPU, no GPU dependency.
+    status: implemented (2026-08-17)
+    note: Migrated from tony-omen; data (~40MB) copied to tony-dell. Port 8084 used because chaba-funnel already binds 0.0.0.0:8082 on tony-dell. yomi-api WEAVIATE_URL updated to http://100.68.142.13:8084.
   mcp-debug-cors:
     service: mcp-debug-cors.service
     host: tony_dell
