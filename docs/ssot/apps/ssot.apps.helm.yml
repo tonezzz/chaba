@@ -117,17 +117,17 @@ sections:
     layout: list
     items:
       - label: Location
-        text: '/home/tony/CascadeProjects/helm/ with Docker deployment in chaba/stacks/web/'
+        text: '/home/tony/CascadeProjects/helm/ built and deployed to tony-dell rootless podman via chaba-tony-dell/tony-dell/chaba-funnel/deploy.sh'
       - label: URLs
-        text: 'http://tony-omen.local:8080/apps/helm/ (home LAN), http://tony-omen:8080/apps/helm/ (Tailscale)'
+        text: 'http://tony-omen:8080/apps/helm/ (Caddy edge), http://tony-dell:3003/apps/helm/ (direct podman)'
       - label: Container
-        text: 'web-helm:latest built from Dockerfile with Node.js 20 Alpine'
+        text: 'web-helm:latest rootless podman container on tony-dell with Node.js 20 Alpine'
       - label: Database
-        text: 'Shared PostgreSQL service (chaba database) with projects, project_status, conversations tables'
+        text: 'Shared PostgreSQL service on tony-dell (chaba database) with projects, project_status, conversations tables'
       - label: Environment
         text: '.env.local with DATABASE_URL, LLM_PROVIDER, GEMINI_API_KEY, GEMINI_MODEL'
       - label: Caddy routing
-        text: 'Path-based routing preserving /apps/helm prefix with reverse_proxy to helm:3000'
+        text: 'Path-based routing preserving /apps/helm prefix with reverse_proxy to 100.68.142.13:3003'
 
   - title: Database Schema
     icon: 🗄️
@@ -191,8 +191,10 @@ sections:
     items:
       - label: Home LAN
         text: 'http://tony-omen.local:8080/apps/helm/'
-      - label: Tailscale
+      - label: Tailscale via Caddy
         text: 'http://tony-omen:8080/apps/helm/'
+      - label: Direct podman
+        text: 'http://tony-dell:3003/apps/helm/'
       - label: Funnel
         text: 'Not available (Funnel on tony-dell only)'
       - label: Demos
