@@ -29,7 +29,7 @@ class ChartDataProvider {
 
         // Try the Trade API first.
         try {
-            const apiUrl = `http://100.75.102.88:9000/api/ui/chart-data/${symbol}?timeframe=${timeframe.toLowerCase()}`;
+            const apiUrl = `/apps/trade/api/ui/chart-data/${symbol}?timeframe=${timeframe.toLowerCase()}`;
             console.log('Fetching from API:', apiUrl);
 
             const response = await fetch(apiUrl);
