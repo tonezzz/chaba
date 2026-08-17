@@ -653,12 +653,13 @@ services:
     timeout: 5
     category: tailscale
     profiles: [home, mobile]
-    note: "Funnel landing page and /health endpoint on tony-dell, proxied by tailscale serve to 127.0.0.1:8082."
+    note: "Funnel landing page, /health endpoint, and /apps/docs/ on tony-dell, proxied by tailscale serve to 127.0.0.1:8082."
     verification:
       - "Check systemd: systemctl --user status chaba-funnel.service"
       - "Check port: ss -tlnp | grep 8082"
       - "Test root: curl -s -o /dev/null -w '%{http_code}' https://tony-dell.taila0626a.ts.net/"
       - "Test health: curl -s https://tony-dell.taila0626a.ts.net/health"
+      - "Test docs: curl -s -o /dev/null -w '%{http_code}' https://tony-dell.taila0626a.ts.net/apps/docs/index.html"
     recovery_actions:
       - "Restart: systemctl --user restart chaba-funnel.service"
       - "Check tailscale serve: tailscale serve status"
