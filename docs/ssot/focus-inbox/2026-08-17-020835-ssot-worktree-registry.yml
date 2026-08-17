@@ -1,0 +1,39 @@
+title: Focus Inbox Item
+subtitle: SSOT-driven branch and worktree registry for isolated, deployable work areas
+icon: inbox
+
+focus:
+  label: SSOT branch/worktree registry
+  text: |
+    Create a canonical SSOT that maps each SSOT focus branch to a git branch,
+    local worktree path, deploy host, and the systemd services it owns. Derive
+    git worktree creation, deployment rsync, and health-check verification from
+    this file instead of ad-hoc scp/sed. Start by moving funnel-server.py and the
+    tony-dell deployment directory onto a tracked topic branch and worktree.
+  branch: chaba
+  priority: medium
+  status: draft
+  tags:
+  - ssot
+  - git
+  - worktrees
+  - deployment
+  - workflow
+  missing_info:
+  - Decide whether to reuse ssot.host-roles.yml or create ssot.repositories.yml for the mapping.
+  - Determine where funnel-server.py should live (stacks/funnel, scripts/mcp_debug, or a separate repo).
+  - Confirm how each existing worktree (chaba-omen, chaba.h3, chaba-yomi, chaba-raceman, mcp-kbman) should be registered.
+  - Agree on the deploy tool name and invocation (scripts/ssot-sync-worktrees.py vs a just target).
+  subtasks:
+  - label: Create or update the SSOT registry file
+    status: not_started
+  - label: Add mcp_debug policy entries for any new deploy/restart commands
+    status: not_started
+  - label: Convert tony-dell deployment copy into a chaba-tony-dell worktree
+    status: not_started
+  - label: Track funnel-server.py in the repo on a topic/tailscale branch
+    status: not_started
+
+source:
+  session: chaba-2026-08-17
+  date: '2026-08-17'

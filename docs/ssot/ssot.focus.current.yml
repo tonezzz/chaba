@@ -201,6 +201,52 @@ sections:
       matched_to: mcp-debug file & clipboard bridge
     branch: chaba
     source: /home/tony/CascadeProjects/chaba/docs/ssot/focus-inbox/2026-08-16-061308-mcp-debug-file-bridge.yml
+  - label: mcp-debug visual capture bridge
+    text: "Extend mcp-debug with lightweight, opt-in visual capture tools so the assistant\ncan see remote host state without\
+      \ switching to PlayLive or another MCP server.\nStart with non-interactive capture tools; avoid duplicating PlayLive's\
+      \ browser\nautomation and click/keyboard control.\n\nProposed design for the complicated bits (so this session does\
+      \ not need to solve them again):\n- `mcp_screenshot(host, region, format=png)` returns `{ok, content_base64, width,\
+      \ height, bytes, error}`.\n  Transport: macOS `screencapture -x -`; Linux `gnome-screenshot -f -`, `grim`, or `import`;\n\
+      \  always base64-encode and cap at 2 MB (resize/compress if larger).\n- `mcp_window_list(host)` returns `{ok, windows:\
+      \ [{id, app, title, pid, focused}]}`.\n  Transport: macOS `lsappinfo`/`osascript`; X11 `xwininfo -root -tree`; Wayland\
+      \ `swaymsg -t get_tree`.\n- `mcp_clipboard_image_get(host)` returns `{ok, content_base64, format, bytes, error}`.\n\
+      \  Transport: macOS `pbpaste -Prefer rtf` image path/NSPasteboard read; Linux `xclip -selection clipboard -t image/png\
+      \ -o`.\n- `mcp_a11y_tree(host, app)` returns a JSON UI element tree of a given app/window.\n  Transport: macOS AppleScript\
+      \ accessibility APIs; optional for later.\n\nSecurity defaults:\n- Per-host `capture: true` opt-in; default false on\
+      \ all hosts.\n- `mcp_screenshot` must support `region` cropping to avoid leaking full displays.\n- Hard cap on image\
+      \ size (2 MB default, 4 MB hard) with downscale for oversize.\n- All capture calls logged with host, type, region, and\
+      \ size.\n- clipboard-image is opt-in alongside clipboard text; never called automatically.\n\nImplementation order:\n\
+      1. macbook first (pbcopy/pbpaste + screencapture are safest and well documented).\n2. Add Linux screenshot fallbacks\
+      \ only after macOS path is stable.\n3. Do not add click/drag/keyboard automation; that stays in PlayLive.\n"
+    status: active
+    priority: medium
+    started: '2026-08-17'
+    estimated_duration: 1 session
+    tags:
+    - mcp
+    - mcp-debug
+    - capture
+    - screenshot
+    - macos
+    - visual
+    - clipboard
+    subtasks:
+    - label: Promote this design to a dedicated SSOT (docs/ssot/infrastructure/ssot.mcp-debug.capture.yml)
+      status: completed
+      note: 'Created docs/ssot/infrastructure/ssot.mcp-debug.capture.yml and registered it in ssot.index.yml'
+    - label: Add mcp_screenshot with macOS transport and size cap
+      status: not_started
+    - label: Add mcp_window_list for macOS and Linux
+      status: not_started
+    - label: Add mcp_clipboard_image_get for macOS
+      status: not_started
+    - label: Update ssot.mcp-debug.yml with capture tools, per-host flags, and limits
+      status: not_started
+    - label: Add smoke tests on macbook and one Linux host
+      status: not_started
+    request_log: []
+    branch: chaba
+    source: /home/tony/CascadeProjects/chaba/docs/ssot/focus-inbox/2026-08-17-mcp-debug-visual-capture.yml
 - title: Quick Wins
   icon: quick
   layout: list

@@ -1,0 +1,135 @@
+title: MCP Debug Visual Capture Bridge
+subtitle: Lightweight, opt-in screenshot, window list, clipboard image, and accessibility tree tools
+icon: camera
+version: 1
+
+overview:
+  purpose: |
+    Extend mcp-debug with non-interactive visual capture tools so the assistant can
+    observe remote host state without leaving the MCP workflow or duplicating
+    PlayLive's browser automation and click/keyboard control.
+  scope:
+    - Capture the screen or a cropped region as a PNG.
+    - List visible windows and their basic metadata.
+    - Read an image from the clipboard when explicitly allowed.
+    - Accessibility tree is optional for later; not in the first pass.
+  out_of_scope:
+    - Mouse/keyboard automation, clicks, drags, or live interactions.
+    - Browser page capture and DOM inspection (PlayLive).
+    - Video or continuous screen recording.
+
+tools:
+  - name: mcp_screenshot
+    description: Return a base64-encoded PNG screenshot for a host.
+    params:
+      - name: host
+        type: string
+        required: true
+      - name: region
+        type: object
+        required: false
+        note: optional {x, y, width, height} crop to avoid leaking full displays
+      - name: format
+        type: string
+        default: png
+        note: png only in the first pass
+    returns: '{ok, content_base64, width, height, bytes, error}'
+    transport:
+      macos: screencapture -x -
+      linux:
+        - gnome-screenshot -f -
+        - grim
+        - import
+    note: always base64-encode; resize/compress if the encoded payload exceeds the soft cap
+
+  - name: mcp_window_list
+    description: Return a list of visible windows and metadata for a host.
+    params:
+      - name: host
+        type: string
+        required: true
+    returns: '{ok, windows: [{id, app, title, pid, focused, bounds}], error}'
+    transport:
+      macos: lsappinfo / osascript
+      linux_x11: xwininfo -root -tree
+      linux_wayland: swaymsg -t get_tree
+    note: no input/keyboard state is returned
+
+  - name: mcp_clipboard_image_get
+    description: Return a base64-encoded image from the host clipboard when allowed.
+    params:
+      - name: host
+        type: string
+        required: true
+    returns: '{ok, content_base64, format, bytes, error}'
+    transport:
+      macos: pbpaste -Prefer rtf image path / NSPasteboard read
+      linux: xclip -selection clipboard -t image/png -o
+    note: never called automatically; explicit opt-in per host
+
+  - name: mcp_a11y_tree
+    description: Return a JSON UI element tree for an app or window.
+    params:
+      - name: host
+        type: string
+        required: true
+      - name: app
+        type: string
+        required: false
+        note: target application or window name
+    returns: '{ok, tree, error}'
+    transport:
+      macos: AppleScript accessibility APIs
+    status: experimental
+    note: optional for later; do not implement in the first pass
+
+security:
+  - "Per-host `capture: true` is required; default is `capture: false` for all hosts."
+  - "`mcp_screenshot` must support `region` cropping and avoid full-screen capture when a region is supplied."
+  - "Soft size cap: 2 MB encoded base64; hard cap: 4 MB."
+  - "Oversize images are downscaled or re-encoded before returning."
+  - "All capture calls are logged with host, tool, region, and returned bytes."
+  - "`mcp_clipboard_image_get` requires a separate `clipboard_image: true` opt-in."
+  - "No capture tool is invoked automatically; the user or an explicit policy must trigger each call."
+
+host_allowlist:
+  macbook:
+    capture: true
+    clipboard_image: false
+    note: safest first target; screencapture and pbcopy/pbpaste are well documented
+  tony-omen:
+    capture: false
+    clipboard_image: false
+  tony-dell:
+    capture: false
+    clipboard_image: false
+  kk-macbook:
+    capture: false
+    clipboard_image: false
+
+limits:
+  max_image_bytes_soft: 2097152
+  max_image_bytes_hard: 4194304
+  default_format: png
+  allowed_formats: [png]
+  max_window_count: 1000
+
+implementation:
+  order:
+    - 1. macbook first (screencapture + pbcopy/pbpaste)
+    - 2. Linux screenshot fallbacks after macOS path is stable
+    - 3. mcp_window_list for macOS and one Linux host
+    - 4. mcp_clipboard_image_get for macOS
+    - 5. mcp_a11y_tree only if explicitly requested later
+  notes:
+    - Keep tools small and auditable; avoid shell pipelines that leak display contents to files.
+    - Store no temporary image files on the host when possible; prefer stdout/fifo.
+    - Update ssot.mcp-debug.yml with tool definitions, per-host flags, and limits.
+    - Add smoke tests on macbook and one Linux host before marking completed.
+
+related_files:
+  - docs/ssot/infrastructure/ssot.mcp-debug.yml
+  - scripts/mcp_debug/server.py
+  - scripts/mcp_debug/capture.py
+  - docs/ssot/infrastructure/ssot.host-roles.yml
+  - docs/ssot/infrastructure/ssot.health.yml
