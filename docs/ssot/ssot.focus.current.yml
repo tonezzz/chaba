@@ -129,7 +129,36 @@ sections:
 - title: Active Shared Focus
   icon: active
   layout: list
-  items: []
+  items:
+  - label: SSOT branch/worktree registry
+    text: 'Create a canonical SSOT that maps each SSOT focus branch to a git branch,
+      local worktree path, deploy host, and the systemd services it owns. Derive
+      git worktree creation, deployment rsync, and health-check verification from
+      this file instead of ad-hoc scp/sed. Start by moving funnel-server.py and the
+      tony-dell deployment directory onto a tracked topic branch and worktree.'
+    branch: chaba
+    status: active
+    priority: medium
+    started: '2026-08-17'
+    tags:
+    - ssot
+    - git
+    - worktrees
+    - deployment
+    - workflow
+    subtasks:
+    - label: Create or update the SSOT registry file
+      status: in_progress
+    - label: Add mcp_debug policy entries for any new deploy/restart commands
+      status: not_started
+    - label: Convert tony-dell deployment copy into a chaba-tony-dell worktree
+      status: not_started
+    - label: Track funnel-server.py in the repo on a topic/tailscale branch
+      status: not_started
+    request_log:
+    - date: '2026-08-17'
+      request: Activate SSOT branch/worktree registry backlog item
+      matched_to: SSOT branch/worktree registry
 - title: Active Branch Focus
   icon: branch
   layout: list
