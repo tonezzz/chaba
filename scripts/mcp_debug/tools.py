@@ -48,7 +48,8 @@ def mcp_raw(host, command):
 
 
 def mcp_stats(host, command):
-    raw_result = run_on_host(host, command, compact=False)
+    raw_cmd = DEBUG_COMMANDS.get(command, {}).get("raw_command", command)
+    raw_result = run_on_host(host, raw_cmd, compact=False)
     compact_result = run_on_host(host, command, compact=True)
 
     raw_out = raw_result.get("out", "") or ""

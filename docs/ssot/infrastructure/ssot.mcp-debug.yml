@@ -197,6 +197,30 @@ debug_commands:
     compact: true
     expected_output: launchd_services
     note: macOS only; Linux has no launchctl.
+  containers:
+    description: Running containers from podman or docker
+    compact: true
+    expected_output: containers
+    note: 'Abstract command; mcp-debug auto-detects podman then docker. raw_command uses the same order.'
+    raw_command: 'podman ps --format json 2>/dev/null || docker ps --format json'
+  services:
+    description: Running system services
+    compact: true
+    expected_output: services
+    note: 'Abstract command; mcp-debug uses systemctl on Linux and launchctl on macOS. raw_command tries launchctl first, then systemctl.'
+    raw_command: 'launchctl list 2>/dev/null || systemctl list-units --type=service --state=running --no-pager --no-legend --plain'
+  sockets:
+    description: Listening TCP sockets
+    compact: true
+    expected_output: sockets
+    note: 'Abstract command; mcp-debug tries ss, then lsof, then netstat. raw_command uses the same order.'
+    raw_command: 'ss -tlnp 2>/dev/null || lsof -nP -iTCP -sTCP:LISTEN 2>/dev/null || netstat -an'
+  gpu:
+    description: GPU utilization and memory
+    compact: true
+    expected_output: gpu
+    note: 'Abstract command; mcp-debug uses nvidia-smi then rocm-smi. raw_command uses the same order.'
+    raw_command: 'nvidia-smi --query-gpu=name,pci.bus_id,driver_version,temperature.gpu,utilization.gpu,memory.used,memory.total --format=csv,noheader,nounits 2>/dev/null || rocm-smi --json'
 raw_commands:
   allowed_prefixes:
   - systemctl
