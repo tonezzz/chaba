@@ -271,9 +271,10 @@ sections:
 
       '
     branch: chaba
-    status: active
+    status: completed
+    completed: '2026-08-17'
     started: '2026-08-17'
-    previous_status: pending
+    previous_status: active
     priority: medium
     tags:
     - ssot
@@ -289,11 +290,43 @@ sections:
       status: completed
       completed: '2026-08-17'
     - label: Convert tony-dell deployment copy into a chaba-tony-dell worktree
-      status: blocked
-      note: Requires user confirmation to move stacks/tony-dell into a git worktree.
+      status: completed
+      completed: '2026-08-17'
+      note: Created /home/tony/CascadeProjects/chaba-tony-dell on topic/tailscale branch
     - label: Track funnel-server.py in the repo on a topic/tailscale branch
-      status: blocked
-      note: Requires user confirmation to commit funnel-server.py to a new topic branch.
+      status: completed
+      completed: '2026-08-17'
+      note: funnel-server.py is in tony-dell/chaba-funnel on topic/tailscale
+  - label: Merge ollama and llama.cpp into ollama
+    text: Retire the ghcr.io/ggml-org/llama.cpp container and serve the Phi-3 GGUF through ollama. Update mcp-llama to use ollama API/OpenAI-compatible endpoint at 11434. Frees ~7 GB on tony-omen.
+    branch: tony-omen
+    status: pending
+    priority: low
+    tags:
+    - ollama
+    - llama
+    - mcp-llama
+    - gpu
+    - merge
+    triage:
+      urgency: 2
+      importance: 5
+      complication: 7
+  - label: Split status-api into sensor reader and data API
+    text: Refactor status-api into a stripped hardware-sensor reader that stays on tony-omen, plus a data/web API that runs on tony-dell and kk-macbook and receives sensor payloads. Frees tony-omen from the full web UI image.
+    branch: chaba
+    status: pending
+    priority: low
+    tags:
+    - status-api
+    - tony-omen
+    - tony-dell
+    - macbook
+    - refactor
+    triage:
+      urgency: 2
+      importance: 5
+      complication: 8
 - title: Quick Wins
   icon: quick
   layout: list

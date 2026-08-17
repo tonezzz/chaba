@@ -137,7 +137,8 @@ sections:
       this file instead of ad-hoc scp/sed. Start by moving funnel-server.py and the
       tony-dell deployment directory onto a tracked topic branch and worktree.'
     branch: chaba
-    status: active
+    status: completed
+    completed: '2026-08-17'
     priority: medium
     started: '2026-08-17'
     tags:
@@ -154,11 +155,13 @@ sections:
       status: completed
       completed: '2026-08-17'
     - label: Convert tony-dell deployment copy into a chaba-tony-dell worktree
-      status: blocked
-      note: Requires user confirmation to move stacks/tony-dell into a git worktree.
+      status: completed
+      completed: '2026-08-17'
+      note: Created /home/tony/CascadeProjects/chaba-tony-dell on topic/tailscale branch
     - label: Track funnel-server.py in the repo on a topic/tailscale branch
-      status: blocked
-      note: Requires user confirmation to commit funnel-server.py to a new topic branch.
+      status: completed
+      completed: '2026-08-17'
+      note: funnel-server.py is in tony-dell/chaba-funnel on topic/tailscale
     request_log:
     - date: '2026-08-17'
       request: Activate SSOT branch/worktree registry backlog item
@@ -264,7 +267,18 @@ sections:
 - title: Quick Wins
   icon: quick
   layout: list
-  items: []
+  items:
+  - label: Migrate helm to tony-dell podman
+    text: Move the web-helm service from tony-omen docker to tony-dell rootless podman, update Caddy /apps/helm proxy, and retire the tony-omen container.
+    status: in_progress
+    started: '2026-08-17'
+    priority: high
+    tags:
+    - tony-dell
+    - podman
+    - helm
+    - migration
+    - quick-win
 config:
   version: 2
   last_updated: '2026-08-17'
