@@ -109,7 +109,7 @@ def main():
     lines.append("|---|---|---|---|---|---|\n")
 
     for r in remaining:
-        request = f"{r['label']}: {r['text']}".strip()
+        request = r['label'].strip()
         rec = _make_recommendation(request, active, quick_wins)
         lines.append(
             f"| {r['source']} | {r['label'][:60]} | {r['priority']} | "
