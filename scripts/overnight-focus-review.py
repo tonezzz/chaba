@@ -28,6 +28,7 @@ def main():
         rc |= run(["scripts/mcp-health-to-inbox.py"])
     rc |= run(["scripts/registry-drafts.py"])
     rc |= run(["scripts/focus-dispatcher.py", "--sub-agent"])
+    rc |= run(["scripts/process-remaining-focuses.py"])
     if rc:
         print("[overnight] completed with errors")
     else:
