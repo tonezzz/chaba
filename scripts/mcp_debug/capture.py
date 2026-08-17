@@ -7,9 +7,10 @@ raw pixels are leaked to the local filesystem if stdout capture is used.
 import base64
 import json
 import logging
-import platform
+import os
 import re
 import shlex
+import struct
 import sys
 from pathlib import Path
 
@@ -78,8 +79,15 @@ def _build_screenshot_cmd(platform, region=None):
             h = int(region.get("height", 0))
             if w <= 0 or h <= 0:
                 return None
-            return f"screencapture -R{x},{y},{w},{h} -x - | base64"
-        return "screencapture -x - | base64"
+            return (
+                f"tmp=$(mktemp /tmp/mcp_screenshot.XXXXXX); "
+                f"screencapture -R{x},{y},{w},{h} -x -t png \"$tmp\" && "
+                f"base64 -i \"$tmp\" && rm -f \"$tmp\""
+            )
+        return (
+            "tmp=$(mktemp /tmp/mcp_screenshot.XXXXXX); "
+            "screencapture -x -t png \"$tmp\" && base64 -i \"$tmp\" && rm -f \"$tmp\""
+        )
     if platform == "linux":
         # Try grim (Wayland) first, then import (ImageMagick), then gnome-screenshot.
         if region:
@@ -118,19 +126,11 @@ def mcp_screenshot(host, region=None, fmt="png"):
         return {"ok": False, "error": "screenshot returned invalid base64"}
     if len(raw) > HARD_CAP:
         return {"ok": False, "error": f"image exceeds hard cap ({len(raw)} > {HARD_CAP} bytes)"}
-    # Basic metadata: sips can read dimensions from stdin with the png - syntax.
+    # Parse PNG dimensions from the IHDR chunk.
     width, height = 0, 0
     try:
-        dim = run_on_host(
-            host,
-            f"python3 - <<'PY'\nimport sys, struct\ndata=sys.stdin.buffer.read()\nif data[:8]==b'\\x89PNG\\r\\n\\x1a\\n':\n    w,h=struct.unpack('>II', data[16:24])\n    print(w, h)\nPY",
-            compact=False,
-            shell=True,
-        )
-        if dim.get("ok"):
-            parts = (dim.get("out") or "").strip().split()
-            if len(parts) == 2:
-                width, height = int(parts[0]), int(parts[1])
+        if raw[:8] == b"\x89PNG\r\n\x1a\n" and len(raw) >= 24:
+            width, height = struct.unpack(">II", raw[16:24])
     except Exception:
         pass
     return {
@@ -146,28 +146,47 @@ def mcp_screenshot(host, region=None, fmt="png"):
 
 
 def _macos_window_list(host):
-    cmd = """osascript -e 'tell application "System Events" to get {name, frontmost} of (every process whose visible is true)'"""
-    result = run_on_host(host, cmd, compact=False, shell=True)
+    # Use lsappinfo for visible apps; it does not require GUI permissions or System Events.
+    result = run_on_host(host, "lsappinfo visibleProcessList", compact=False, shell=True)
     if not result.get("ok"):
         return {"ok": False, "host": host, "error": result.get("err") or "window list failed", "rc": result.get("rc")}
     out = (result.get("out") or "").strip()
     windows = []
-    try:
-        match = re.search(r"\\{(.+?)\\},\\s*\\{(.+?)\\}", out)
-        if match:
-            names = [s.strip().strip('"') for s in match.group(1).split(",")]
-            fronts = [s.strip() == "true" for s in match.group(2).split(",")]
-            for i, name in enumerate(names):
-                windows.append({
-                    "id": i,
-                    "app": name,
-                    "title": name,
-                    "pid": None,
-                    "focused": fronts[i] if i < len(fronts) else False,
-                    "bounds": None,
-                })
-    except Exception as exc:
-        logger.error("failed to parse window list: %s", exc)
+    # visibleProcessList returns: ASN:0x...-"Name": ...
+    matches = re.findall(r'ASN:0x[0-9a-fA-F]+-0x[0-9a-fA-F]+-"([^"]+)"', out)
+    # Build a map of process names (with spaces) to the first pid from ps.
+    ps_result = run_on_host(host, "ps -e -o pid,comm", compact=False, shell=True)
+    pid_map = {}
+    if ps_result.get("ok"):
+        for line in (ps_result.get("out") or "").splitlines():
+            parts = line.split(None, 1)
+            if len(parts) != 2:
+                continue
+            pid_str, comm = parts
+            if not pid_str.isdigit():
+                continue
+            basename = os.path.basename(comm).strip()
+            if basename:
+                pid_map.setdefault(basename, int(pid_str))
+    for i, raw_name in enumerate(matches):
+        name = raw_name.replace("_", " ")
+        pid = pid_map.get(name)
+        if pid is None:
+            # Fallback to pgrep for names that ps didn't match.
+            pg = run_on_host(host, f"pgrep -x {shlex.quote(name)} | head -1", compact=False, shell=True)
+            if pg.get("ok") and pg.get("out", "").strip():
+                try:
+                    pid = int(pg.get("out").strip().splitlines()[0])
+                except ValueError:
+                    pid = None
+        windows.append({
+            "id": i,
+            "app": name,
+            "title": name,
+            "pid": pid,
+            "focused": i == 0,
+            "bounds": None,
+        })
     return {"ok": True, "host": host, "windows": windows, "count": len(windows)}
 
 
