@@ -145,6 +145,64 @@ def compact_tailscale_status():
     return {"ok": True, "cmd": "tailscale status", "n": len(peers), "p": peers}
 
 
+def compact_top(args):
+    # args includes the 'top' base; use the rest as flags
+    result, err = _run(["top"] + args[1:])
+    if err:
+        return {"ok": False, "error": err}
+    procs = []
+    for line in result.stdout.splitlines():
+        # PID  COMMAND ... %CPU  TIME(mm:ss.cc) ...
+        m = re.match(r"^(\d+)\s+(.+?)\s+(\d+\.\d+)\s+\d+:\d+\.\d+", line)
+        if not m:
+            continue
+        procs.append({
+            "p": m.group(1),
+            "c": m.group(2).strip(),
+            "u": m.group(3),
+        })
+    # top -l 1 -n 10 already limits output; trim to first 10 data rows
+    return {"ok": True, "cmd": " ".join(args), "n": min(10, len(procs)), "p": procs[:10]}
+
+
+def compact_lsof(args):
+    # args includes the 'lsof' base; use the rest as flags
+    result, err = _run(["lsof"] + args[1:])
+    if err:
+        return {"ok": False, "error": err}
+    rows = []
+    for line in result.stdout.strip().splitlines()[1:]:
+        parts = line.split(None, 8)
+        if len(parts) < 9:
+            continue
+        rows.append({
+            "c": parts[0],
+            "p": parts[1],
+            "u": parts[2],
+            "t": parts[4],
+            "n": parts[8],
+        })
+    return {"ok": True, "cmd": " ".join(args), "n": len(rows), "r": rows}
+
+
+def compact_launchctl_list():
+    result, err = _run(["launchctl", "list"])
+    if err:
+        return {"ok": False, "error": err}
+    services = []
+    for line in result.stdout.strip().splitlines()[1:]:
+        parts = line.split(None, 2)
+        if not parts:
+            continue
+        services.append({
+            "p": parts[0],
+            "l": parts[2] if len(parts) > 2 else "",
+        })
+    # Keep a representative sample to keep compact output much smaller than raw.
+    services = services[:50]
+    return {"ok": True, "cmd": "launchctl list", "n": len(services), "s": services}
+
+
 def raw_fallback(args):
     if not args:
         return {"ok": False, "error": "no command"}
@@ -181,7 +239,13 @@ def run(args):
         return compact_mount()
     if base == "tailscale" and "status" in args:
         return compact_tailscale_status()
-    if base in ("systemctl", "free", "lsblk", "lsusb", "ip", "ss", "podman", "journalctl"):
+    if base == "top" and ("-l" in args and "-n" in args):
+        return compact_top(args)
+    if base == "lsof" and ("-nP" in args or "-i" in args):
+        return compact_lsof(args)
+    if base == "launchctl" and "list" in args:
+        return compact_launchctl_list()
+    if base in ("systemctl", "free", "lsblk", "lsusb", "ip", "ss", "journalctl"):
         return {"ok": False, "error": f"{base} is not supported on macOS"}
 
     return raw_fallback(args)

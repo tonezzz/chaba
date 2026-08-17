@@ -182,6 +182,21 @@ debug_commands:
     compact: true
     expected_output: json
     note: Vetted positive on both tony_omen (48.7%) and tony_dell (78.5%).
+  top -l 1 -n 10 -o cpu:
+    description: macOS top 10 processes by CPU
+    compact: true
+    expected_output: top_processes
+    note: macOS only; Linux top does not support these flags.
+  lsof -nP -iTCP:
+    description: macOS TCP sockets and network connections
+    compact: true
+    expected_output: lsof_tcp
+    note: Works on Linux too, but may be macOS-only in savings report.
+  launchctl list:
+    description: macOS launchd loaded services
+    compact: true
+    expected_output: launchd_services
+    note: macOS only; Linux has no launchctl.
 raw_commands:
   allowed_prefixes:
   - systemctl
@@ -195,6 +210,9 @@ raw_commands:
   - journalctl
   - ss
   - env
+  - top
+  - lsof
+  - launchctl
   - nvidia-smi
   - rocm-smi
   - tailscale
