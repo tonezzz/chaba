@@ -298,7 +298,8 @@ sections:
       completed: '2026-08-17'
       note: funnel-server.py is in tony-dell/chaba-funnel on topic/tailscale
   - label: Merge ollama and llama.cpp into ollama
-    text: Retire the ghcr.io/ggml-org/llama.cpp container and serve the Phi-3 GGUF through ollama. Update mcp-llama to use ollama API/OpenAI-compatible endpoint at 11434. Frees ~7 GB on tony-omen.
+    text: Retire the ghcr.io/ggml-org/llama.cpp container and serve the Phi-3 GGUF through ollama. Update mcp-llama to use
+      ollama API/OpenAI-compatible endpoint at 11434. Frees ~7 GB on tony-omen.
     branch: tony-omen
     status: pending
     priority: low
@@ -313,7 +314,8 @@ sections:
       importance: 5
       complication: 7
   - label: Split status-api into sensor reader and data API
-    text: Refactor status-api into a stripped hardware-sensor reader that stays on tony-omen, plus a data/web API that runs on tony-dell and kk-macbook and receives sensor payloads. Frees tony-omen from the full web UI image.
+    text: Refactor status-api into a stripped hardware-sensor reader that stays on tony-omen, plus a data/web API that runs
+      on tony-dell and kk-macbook and receives sensor payloads. Frees tony-omen from the full web UI image.
     branch: chaba
     status: pending
     priority: low
@@ -372,6 +374,19 @@ sections:
     - mcp
     - mddb
     - commit
+    - quick-win
+  - label: Migrate helm to tony-dell podman
+    text: Moved the web-helm service from tony-omen docker to tony-dell rootless podman, updated Caddy /apps/helm proxy, and
+      retired the tony-omen container.
+    status: completed
+    completed: '2026-08-17'
+    started: '2026-08-17'
+    priority: high
+    tags:
+    - tony-dell
+    - podman
+    - helm
+    - migration
     - quick-win
 - title: Inactive Strategic Focus Archive
   icon: archive
@@ -516,15 +531,13 @@ sections:
   layout: timeline
   items:
   - label: mcp-debug unified cross-platform commands
-    text: 'Implement host-agnostic compact commands in mcp-debug that auto-detect the
-      appropriate backend. Initial set: containers (podman/docker), services (systemctl/launchctl),
-      sockets (ss/netstat/lsof), and gpu (nvidia-smi/rocm-smi).'
+    text: 'Implement host-agnostic compact commands in mcp-debug that auto-detect the appropriate backend. Initial set: containers
+      (podman/docker), services (systemctl/launchctl), sockets (ss/netstat/lsof), and gpu (nvidia-smi/rocm-smi).'
     date: '2026-08-17'
     duration: 1 session
-    outcome: 'Implemented containers, services, sockets, and gpu in both the Linux mcp-debug wrapper
-      and scripts/mcp_debug/mcp-debug-macos. Tested on tony-omen, tony-dell, and macbook. The
-      backend runtime is included in the compact JSON output for transparency. gpu is not available
-      on macOS because neither nvidia-smi nor rocm-smi is installed.'
+    outcome: Implemented containers, services, sockets, and gpu in both the Linux mcp-debug wrapper and scripts/mcp_debug/mcp-debug-macos.
+      Tested on tony-omen, tony-dell, and macbook. The backend runtime is included in the compact JSON output for transparency.
+      gpu is not available on macOS because neither nvidia-smi nor rocm-smi is installed.
     tags:
     - completed
     - mcp
@@ -1107,6 +1120,23 @@ sections:
     tags:
     - playlive
     - testing
+    - completed
+  - label: SSOT branch/worktree registry
+    text: Create a canonical SSOT that maps each SSOT focus branch to a git branch, local worktree path, deploy host, and
+      the systemd services it owns. Derive git worktree creation, deployment rsync, and health-check verification from this
+      file instead of ad-hoc scp/sed. Start by moving funnel-server.py and the tony-dell deployment directory onto a tracked
+      topic branch and worktree.
+    date: '2026-08-17'
+    duration: 1 session
+    outcome: 'Completed subtasks: Create or update the SSOT registry file, Add mcp_debug policy entries for any new deploy/restart
+      commands, Convert tony-dell deployment copy into a chaba-tony-dell worktree, Track funnel-server.py in the repo on a
+      topic/tailscale branch'
+    tags:
+    - ssot
+    - git
+    - worktrees
+    - deployment
+    - workflow
     - completed
 config:
   version: 2
