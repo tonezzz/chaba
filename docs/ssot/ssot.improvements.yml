@@ -290,7 +290,28 @@ sections:
 - title: Low Priority Improvements
   icon: 🟢
   layout: list
-  items: []
+  items:
+  - label: SSOT and docs currency check after changes
+    text: After every code or focus change, run ssot-validate-all and verify that all SSOTs and docs directly affected by the change are updated. Add a lightweight checklist or pre-commit hook that flags when a commit touches scripts/ but does not touch the matching ssot/ docs.
+    status: pending
+    priority: low
+    effort: small
+    category: ssot
+    discovered: '2026-08-17'
+    target_date: '2026-08-30'
+    action_items:
+    - Document the currency checklist in docs/kb/change-tracking.md
+    - Add a pre-commit or CI step that runs ssot-validate-all
+    - Track cases where script changes do not have matching SSOT updates
+    related_files:
+    - scripts/ssot-validate-all.mjs
+    - .githooks/pre-commit
+    - docs/ssot/ssot.index.yml
+    tags:
+    - ssot
+    - validation
+    - documentation
+    - change-tracking
 - title: System Architecture Improvements
   icon: 🔵
   layout: list
