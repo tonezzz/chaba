@@ -9,11 +9,12 @@ overview:
     request, it recommends the next action without modifying any focus state.
   inputs:
     - request: optional free-text user request
-    - mode: optional "recommend" or "status" (default "recommend")
+    - mode: optional "recommend" (default), "status", "technical_decision", or "session_summary"
   guarantees:
     - Read-only. It never writes to ssot.focus.current.yml, ssot.focus.yml, or the focus-inbox/ directory.
     - If no request is provided, it always returns the current active foci and quick wins.
     - If a request is provided, it returns a single recommended action and the supporting reasoning.
+    - technical_decision and session_summary modes append only to their respective SSOTs and never modify focus state.
 
 output_schema:
   ok: boolean
@@ -80,6 +81,22 @@ actions:
       - Return the draft content under suggestion.
     confidence: low
 
+  technical_decision:
+    when: |
+      The assistant needs to record a design trade-off or architecture decision.
+    output:
+      - Append a structured decision to docs/ssot/decisions/ssot.technical-decisions.yml.
+    mode: technical_decision
+    input: decision object with id, title, context, options, chosen, reasoning, consequences
+
+  session_summary:
+    when: |
+      The assistant wants to close a session and record what was decided, planned, and deferred.
+    output:
+      - Append a summary entry to docs/ssot/ssot.focus.sessions.yml.
+    mode: session_summary
+    input: summary object with focus, source, plan, done, follow_up, next_action, decisions
+
 decision_tree:
   - step: 1
     check: Is there an active shared or branch focus?
@@ -114,6 +131,8 @@ confidence_rules:
 safety:
   - mcp_focus must not call focus-dispatcher.py or commit.
   - mcp_focus may append a decision record to docs/ssot/ssot.focus.decisions.yml when a request is provided.
+  - mcp_focus may append a technical decision record to docs/ssot/decisions/ssot.technical-decisions.yml in technical_decision mode.
+  - mcp_focus may append a session summary to docs/ssot/ssot.focus.sessions.yml in session_summary mode.
   - If an active focus exists, the default recommendation is "continue" unless the user explicitly asks to switch.
   - The tool may expose a "status" mode that only returns active foci and quick wins.
   - Any drafted inbox YAML returned to the assistant must be reviewed by the user before activation.
@@ -128,7 +147,9 @@ related_files:
 
 implementation_notes:
   - Implemented in scripts/mcp_debug/focus.py and scripts/mcp_debug/server.py.
-  - mcp_focus supports mode=status (read-only active/Quick Wins listing) and mode=recommend (decision tree).
+  - mcp_focus supports mode=status (read-only active/Quick Wins listing), mode=recommend (decision tree), mode=technical_decision, and mode=session_summary.
   - The recommend decision tree maps directly to the assistant-level cases in docs/ssot/ssot.focus.current.yml#decision_tree.
   - mcp_focus appends a decision record to docs/ssot/ssot.focus.decisions.yml whenever a request is provided.
+  - mcp_focus mode=technical_decision appends to docs/ssot/decisions/ssot.technical-decisions.yml.
+  - mcp_focus mode=session_summary appends to docs/ssot/ssot.focus.sessions.yml.
   - The assistant uses the returned action as the first disposition and only deviates for special cases (live_bug_report, auto_generated_alert, requires_mcp_data).

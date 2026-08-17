@@ -366,12 +366,14 @@ def handle_tools_list(id_):
         },
         {
             "name": "mcp_focus",
-            "description": "Return the current active focus and recommend the next action for an optional request.",
+            "description": "Focus router, decision logger, and session summary writer. Modes: recommend (default), status, technical_decision, session_summary.",
             "inputSchema": {
                 "type": "object",
                 "properties": {
-                    "request": {"type": "string", "description": "Optional user request to classify"},
-                    "mode": {"type": "string", "enum": ["recommend", "status"], "default": "recommend", "description": "recommend returns a recommendation; status returns active foci and quick wins only"},
+                    "request": {"type": "string", "description": "Optional user request to classify for recommend/status"},
+                    "mode": {"type": "string", "enum": ["recommend", "status", "technical_decision", "session_summary"], "default": "recommend", "description": "recommend returns a recommendation; status returns active foci and quick wins only; technical_decision appends to ssot.technical-decisions.yml; session_summary appends to ssot.focus.sessions.yml"},
+                    "decision": {"type": "object", "description": "Decision object for technical_decision mode (id, title, context, options, chosen, reasoning, consequences)"},
+                    "summary": {"type": "object", "description": "Session summary object for session_summary mode (focus, source, plan, done, follow_up, next_action, decisions)"},
                 },
             },
         },
@@ -524,7 +526,12 @@ def handle_tools_call(id_, params):
         result = mcp_ssot_append(p, s, item)
         output = json.dumps(result, separators=(",", ":"))
     elif name == "mcp_focus":
-        result = mcp_focus(request=arguments.get("request"), mode=arguments.get("mode", "recommend"))
+        result = mcp_focus(
+            request=arguments.get("request"),
+            mode=arguments.get("mode", "recommend"),
+            decision=arguments.get("decision"),
+            summary=arguments.get("summary"),
+        )
         output = json.dumps(result, separators=(",", ":"))
     else:
         return {"jsonrpc": "2.0", "id": id_, "error": {"code": -32601, "message": f"unknown tool: {name}"}}

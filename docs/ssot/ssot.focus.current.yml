@@ -138,16 +138,28 @@ sections:
 
       '
     branch: chaba
-    status: parked
+    status: active
     priority: high
     started: '2026-08-16'
-    parked: '2026-08-17'
     tags:
     - ssot
     - decisions
     - mcp-focus
     - focus-dispatcher
     - automation
+    subtasks:
+    - label: Extend mcp_focus and focus-dispatcher --intake to log intake decisions
+      status: completed
+      completed: '2026-08-17'
+      note: log_decision already writes to ssot.focus.decisions.yml from both paths
+    - label: Add dedicated technical-decision SSOT for design trade-offs
+      status: completed
+      completed: '2026-08-17'
+      note: ssot.technical-decisions.yml exists; added mcp_focus technical_decision mode to append to it
+    - label: Wire session summaries to record per-session decisions
+      status: completed
+      completed: '2026-08-17'
+      note: Added session_summary mode to mcp_focus and decisions field to ssot.focus.sessions.yml entry_schema
     request_log:
     - date: '2026-08-17'
       request: commit and continue to the active shared focus

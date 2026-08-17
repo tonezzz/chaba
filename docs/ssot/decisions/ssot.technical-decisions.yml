@@ -174,6 +174,38 @@ decisions:
       - ~/.config/Claude/mddb-bridge.py
       - stacks/web/Caddyfile
 
+  - id: mcp-focus-decision-logging
+    date: '2026-08-17'
+    title: How to record focus intake, technical, and session decisions through mcp_focus
+    status: accepted
+    context: |
+      The focus system needs continuous decision capture: intake dispositions,
+      design trade-offs, and per-session choices. These should be durable,
+      searchable, and append-only without allowing arbitrary SSOT edits.
+    options:
+      - label: Separate tools for each log type
+        pros: [clear contract per destination, easy to permission independently]
+        cons: [more MCP tools, more server wiring, more to remember]
+      - label: Single mcp_focus with modes
+        pros: [reuses existing session-start tool, keeps decision writing next to focus router, fewer tools]
+        cons: [larger tool schema, mode dispatch adds complexity]
+    chosen: Single mcp_focus with modes
+    reasoning: |
+      mcp_focus is already the session router. Adding technical_decision and
+      session_summary modes keeps the decision capture surface small. The tools
+      append only to whitelisted SSOTs and do not modify focus state. Intake
+      decisions continue to be logged automatically in recommend mode.
+    consequences:
+      - scripts/mcp_debug/focus.py now supports mode=technical_decision and mode=session_summary
+      - scripts/mcp_debug/server.py exposes the new modes in the mcp_focus tool schema
+      - docs/ssot/infrastructure/ssot.mcp-focus.yml documents the new modes
+      - docs/ssot/ssot.focus.sessions.yml entry_schema now includes a decisions list
+    related:
+      - docs/ssot/infrastructure/ssot.mcp-focus.yml
+      - scripts/mcp_debug/focus.py
+      - scripts/mcp_debug/server.py
+      - docs/ssot/ssot.focus.sessions.yml
+
 related_files:
   - docs/ssot/ssot.focus.decisions.yml
   - docs/ssot/ssot.focus.sessions.yml

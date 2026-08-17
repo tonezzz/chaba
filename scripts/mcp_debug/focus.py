@@ -9,6 +9,9 @@ REPO = REPO_DIR
 CURRENT = REPO / "docs" / "ssot" / "ssot.focus.current.yml"
 FOCUS = REPO / "docs" / "ssot" / "ssot.focus.yml"
 INBOX_DIR = REPO / "docs" / "ssot" / "focus-inbox"
+DECISIONS = REPO / "docs" / "ssot" / "ssot.focus.decisions.yml"
+TECHNICAL = REPO / "docs" / "ssot" / "decisions" / "ssot.technical-decisions.yml"
+SESSIONS = REPO / "docs" / "ssot" / "ssot.focus.sessions.yml"
 
 PRIORITY = {"high": 3, "medium": 2, "low": 1}
 QUICK_WIN_CUES = ("fix", "tweak", "small", "quick", "minor")
@@ -185,6 +188,40 @@ def log_decision(request, action, target, reason, confidence, source, matched_to
         yaml.safe_dump(doc, f, sort_keys=False, allow_unicode=True)
 
 
+def log_technical_decision(decision, dry_run=False):
+    if dry_run:
+        return
+    if not TECHNICAL.exists():
+        return
+    try:
+        with open(TECHNICAL) as f:
+            doc = yaml.safe_load(f) or {}
+    except Exception:
+        return
+    decisions = doc.setdefault("decisions", [])
+    decision.setdefault("date", datetime.now().strftime("%Y-%m-%d"))
+    decisions.append(decision)
+    with open(TECHNICAL, "w") as f:
+        yaml.safe_dump(doc, f, sort_keys=False, allow_unicode=True, width=120, default_flow_style=False)
+
+
+def log_session_summary(summary, dry_run=False):
+    if dry_run:
+        return
+    if not SESSIONS.exists():
+        return
+    try:
+        with open(SESSIONS) as f:
+            doc = yaml.safe_load(f) or {}
+    except Exception:
+        return
+    sessions = doc.setdefault("sessions", [])
+    summary.setdefault("date", datetime.now().strftime("%Y-%m-%d"))
+    sessions.append(summary)
+    with open(SESSIONS, "w") as f:
+        yaml.safe_dump(doc, f, sort_keys=False, allow_unicode=True, width=120, default_flow_style=False)
+
+
 def _make_recommendation(request, active, quick_wins):
     req = str(request).lower()
 
@@ -269,7 +306,19 @@ def _make_recommendation(request, active, quick_wins):
     }
 
 
-def mcp_focus(request=None, mode="recommend"):
+def mcp_focus(request=None, mode="recommend", decision=None, summary=None):
+    if mode == "technical_decision":
+        if not decision:
+            return {"ok": False, "error": "decision is required for technical_decision mode"}
+        log_technical_decision(decision)
+        return {"ok": True, "action": "logged", "target": decision.get("id", "")}
+
+    if mode == "session_summary":
+        if not summary:
+            return {"ok": False, "error": "summary is required for session_summary mode"}
+        log_session_summary(summary)
+        return {"ok": True, "action": "logged", "focus": summary.get("focus", "")}
+
     if not CURRENT.exists():
         return {"ok": False, "error": "ssot.focus.current.yml not found"}
 
