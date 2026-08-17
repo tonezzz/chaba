@@ -69,7 +69,7 @@ services:
     - /home/tony/CascadeProjects/helm/.env.local
     environment:
     - NODE_ENV=production
-    - DB_HOST=postgres
+    - DB_HOST=100.68.142.13
     - DB_PORT=5432
     - DB_NAME=trade
     - DB_USER=chaba
@@ -92,7 +92,7 @@ services:
     restart: unless-stopped
     environment:
     - NODE_ENV=development
-    - DATABASE_URL=postgresql://chaba:chabapass@postgres:5432/chaba
+    - DATABASE_URL=postgresql://chaba:chabapass@100.68.142.13:5432/chaba
     - PROJECTS_PATH=/home/tony/CascadeProjects
     ports:
     - 3003:3000
@@ -337,7 +337,7 @@ services:
     - gpu_queue_node_modules:/app/gpu-queue/node_modules
     environment:
     - NODE_ENV=production
-    - DATABASE_URL=postgres://chaba:chabapass@postgres:5432/chaba
+    - DATABASE_URL=postgres://chaba:chabapass@100.68.142.13:5432/chaba
     - GPU_QUEUE_PORT=3001
     ports:
     - 3001:3001
@@ -376,7 +376,7 @@ services:
     - gpu_queue_node_modules:/app/gpu-queue/node_modules
     environment:
     - NODE_ENV=production
-    - DATABASE_URL=postgres://chaba:chabapass@postgres:5432/chaba
+    - DATABASE_URL=postgres://chaba:chabapass@100.68.142.13:5432/chaba
     - GPU_QUEUE_PORT=3001
     extra_hosts:
     - host.docker.internal:host-gateway
