@@ -176,11 +176,15 @@ sections:
       note: yomi-api.service already existed; generated chaba-postgres-16.service via podman generate systemd --new and enabled both
     - label: Decommission tony-omen duplicate postgres container
       text: Stop and remove the omen postgres container after verifying tony-dell chaba-postgres-16 is the primary per ssot.yomi-failover.yml.
-      status: not_started
+      status: completed
+      completed: '2026-08-17'
+      note: Verified yomi-api on tony-dell uses POSTGRES_HOST=postgre (tony-dell); stopped and removed tony-omen 'postgres' container
     - label: Remove six duplicate github-mcp-server containers on tony-omen
       text: docker rm the 6 stale ghcr.io/github/github-mcp-server containers (musing_bohr, thirsty_nobel, sleepy_ritchie,
         blissful_bassi, frosty_mcclintock, frosty_noether).
-      status: not_started
+      status: completed
+      completed: '2026-08-17'
+      note: docker rm -f removed all six stale containers successfully
     - label: Migrate redis to tony-dell podman
       text: Move redis:7.4-alpine to tony-dell so yomi-api no longer crosses the tailnet for redis://100.75.102.88:6379. Update
         yomi-api env REDIS_URL to 127.0.0.1:6379.
