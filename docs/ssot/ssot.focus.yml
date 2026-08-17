@@ -329,6 +329,25 @@ sections:
       urgency: 2
       importance: 5
       complication: 8
+  - label: Gemini embedding GPU offload
+    text: Evaluate replacing Ollama nomic-embed-text and the stalled port-5000 all-MiniLM service with Google Gemini
+      text-embedding-004. Build an Ollama-compatible Gemini proxy for MDDB, create side-by-side Weaviate/MDDB test
+      collections, compare search relevance and latency, then switch and stop Ollama if successful. SSOT at
+      docs/ssot/infrastructure/ssot.gemini-embedding.yml.
+    branch: chaba
+    status: pending
+    priority: high
+    tags:
+    - gemini
+    - embeddings
+    - gpu
+    - tony-omen
+    - experiment
+    - ssot
+    triage:
+      urgency: 7
+      importance: 8
+      complication: 6
 - title: Quick Wins
   icon: quick
   layout: list
