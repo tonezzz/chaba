@@ -102,7 +102,7 @@ def mcp_screenshot(host, region=None, fmt="png"):
     plat = _detect_platform(host)
     if plat == "unknown":
         return {"ok": False, "error": f"could not detect platform for {host}"}
-    if plat == "unknown":
+    if plat not in ("macos", "linux"):
         return {"ok": False, "error": f"screenshot not supported for {plat}"}
     cmd = _build_screenshot_cmd(plat, region)
     if not cmd:
@@ -265,7 +265,6 @@ def mcp_clipboard_image_get(host):
         result = _linux_clipboard_image_get(host)
     else:
         return {"ok": False, "error": f"clipboard image not supported for {plat}"}
-    result = run_on_host(host, cmd, compact=False, shell=True)
     if not result.get("ok"):
         # Clean up on failure if file remains
         run_on_host(host, "rm -f /tmp/mcp_clipboard_image_get_*", compact=False, shell=True)

@@ -211,6 +211,24 @@ sessions:
       - Resolve macbook SSH and run macOS smoke tests
     next_action: Close session
 
+  - date: '2026-08-17'
+    session: chaba-2026-08-17-podman-assessment
+    focus: tony-dell podman service migration (backlog triage)
+    source: user request
+    plan:
+      - Assess whether tony-dell has been tested with podman and what can migrate
+    done:
+      - Verified tony-dell runs podman 5.7.0 rootless with 2 containers (chaba-postgres-16, yomi-api) since 2026-08-16
+      - Identified that both tony-dell containers have restart=no and no Quadlet units (will not survive reboot)
+      - Found tony-omen /home at 89% (9.6GB free) with 21 Docker containers including duplicate postgres and 6 stale github-mcp-server containers
+      - Assessed migration candidates (redis, mddb, raceman, weaviate) vs must-stay GPU services (llama, imagen2, ollama, gpu-queue)
+      - Added "tony-dell podman service migration" high-priority focus to ssot.focus.yml backlog with 8 subtasks
+      - Committed capture bridge fixes (host key normalization, kk-macbook removal, capture.py duplicate condition and undefined cmd fixes)
+    follow_up:
+      - Activate the tony-dell podman migration focus when ready (requires parking current branch focus)
+      - Harden existing tony-dell containers with Quadlet units as the first subtask
+    next_action: Close session
+
 related_files:
   - docs/ssot/ssot.focus.current.yml
   - docs/ssot/ssot.focus.yml

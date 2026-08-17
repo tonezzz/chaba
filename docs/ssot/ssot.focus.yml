@@ -194,6 +194,66 @@ sections:
       urgency: 4
       importance: 6
       complication: 5
+  - label: tony-dell podman service migration
+    text: |
+      Migrate non-GPU Docker services from tony-omen (89% full on /home, 9.6GB free)
+      to tony-dell rootless podman (14GB RAM, 67GB free disk, podman 5.7.0). tony-dell
+      already runs postgres (chaba-postgres-16) and yomi-api under podman since
+      2026-08-16, but both have restart=no and no Quadlet units, so they will not
+      survive a reboot. tony-omen still runs a duplicate postgres container and six
+      duplicate github-mcp-server containers that should be removed.
+      Migration candidates (no GPU): redis, mddb + mddb-panel, raceman-php +
+      raceman-web, status-api, weaviate. Must stay on tony-omen: GPU services
+      (llama-server, imagen2, ollama, gpu-queue, gpu-queue-processor) and the caddy
+      web edge. See ssot.containerization.yml, ssot.services.yml, and
+      ssot.yomi-failover.yml for current disposition.
+    branch: tony-dell
+    status: pending
+    priority: high
+    tags:
+    - tony-dell
+    - podman
+    - containers
+    - migration
+    - disk-pressure
+    triage:
+      urgency: 9
+      importance: 8
+      complication: 6
+    subtasks:
+    - label: Harden existing tony-dell podman containers with Quadlet units
+      text: Convert chaba-postgres-16 and yomi-api to ~/.config/containers/systemd/*.container
+        Quadlet units so they auto-start and survive reboot. Currently both have restart=no.
+      status: not_started
+    - label: Decommission tony-omen duplicate postgres container
+      text: Stop and remove the omen postgres container after verifying tony-dell
+        chaba-postgres-16 is the primary per ssot.yomi-failover.yml.
+      status: not_started
+    - label: Remove six duplicate github-mcp-server containers on tony-omen
+      text: docker rm the 6 stale ghcr.io/github/github-mcp-server containers (musing_bohr,
+        thirsty_nobel, sleepy_ritchie, blissful_bassi, frosty_mcclintock, frosty_noether).
+      status: not_started
+    - label: Migrate redis to tony-dell podman
+      text: Move redis:7.4-alpine to tony-dell so yomi-api no longer crosses the tailnet
+        for redis://100.75.102.88:6379. Update yomi-api env REDIS_URL to 127.0.0.1:6379.
+      status: not_started
+    - label: Migrate mddb + mddb-panel to tony-dell podman
+      text: Move tradik/mddb:latest and tradik/mddb:panel-latest to tony-dell. Update
+        Caddy reverse proxy on tony-omen to route /api/mddb/* and /mddb/* to tony-dell
+        over the tailnet. Migrate the mddb data volume (~100MB).
+      status: not_started
+    - label: Migrate raceman stack to tony-dell podman
+      text: Move raceman-web (nginx:alpine) and raceman-php (php-fpm) to tony-dell.
+        Update Caddy to route :8083 to tony-dell. Frees omen disk.
+      status: not_started
+    - label: Assess weaviate migration to tony-dell
+      text: Weaviate has no GPU dependency but depends on postgres (already on tony-dell).
+        Measure working set size and migration risk before moving.
+      status: not_started
+    - label: Update ssot.services.yml and ssot.containerization.yml with new disposition
+      text: After each migration, update the SSOT to reflect the new host, runtime,
+        ports, and Quadlet unit paths.
+      status: not_started
 
 - title: Quick Wins
   icon: quick

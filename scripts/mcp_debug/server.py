@@ -321,7 +321,7 @@ def handle_tools_list(id_):
             "inputSchema": {
                 "type": "object",
                 "properties": {
-                    "host": {"type": "string", "enum": ["macbook", "tony_dell", "tony_omen", "kk-macbook"], "description": "Target host"},
+                    "host": {"type": "string", "enum": ["macbook", "tony_dell", "tony_omen"], "description": "Target host"},
                     "region": {"type": "object", "description": "Optional {x, y, width, height} crop"},
                     "format": {"type": "string", "enum": ["png"], "default": "png", "description": "Output format"},
                 },
@@ -334,7 +334,7 @@ def handle_tools_list(id_):
             "inputSchema": {
                 "type": "object",
                 "properties": {
-                    "host": {"type": "string", "enum": ["macbook", "tony_dell", "tony_omen", "kk-macbook"], "description": "Target host"},
+                    "host": {"type": "string", "enum": ["macbook", "tony_dell", "tony_omen"], "description": "Target host"},
                 },
                 "required": ["host"],
             },
@@ -345,7 +345,7 @@ def handle_tools_list(id_):
             "inputSchema": {
                 "type": "object",
                 "properties": {
-                    "host": {"type": "string", "enum": ["macbook", "tony_dell", "tony_omen", "kk-macbook"], "description": "Target host"},
+                    "host": {"type": "string", "enum": ["macbook", "tony_dell", "tony_omen"], "description": "Target host"},
                 },
                 "required": ["host"],
             },
