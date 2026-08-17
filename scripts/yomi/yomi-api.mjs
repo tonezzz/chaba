@@ -925,10 +925,7 @@ const server = createServer(async (req, res) => {
 
   if (url.pathname === '/api/yomi/conversations' && req.method === 'GET') {
     try {
-      // Apply cache middleware with 5-minute TTL
-      await cacheMiddleware(300)(req, res, async () => {
-        await handleConversations(res);
-      });
+      await handleConversations(res);
     } catch (err) {
       sendJson(res, 500, { ok: false, error: err.message });
     }
