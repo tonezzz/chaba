@@ -173,11 +173,12 @@ def mcp_savings(hosts):
         for command in commands:
             s = mcp_stats(host, command)
             per_host[host]["commands"][command] = s
-            per_host[host]["raw_chars"] += s["raw_chars"]
-            per_host[host]["compact_chars"] += s["compact_chars"]
-            per_host[host]["saved_chars"] += s["saved_chars"]
-            total_raw += s["raw_chars"]
-            total_compact += s["compact_chars"]
+            if s.get("ok"):
+                per_host[host]["raw_chars"] += s["raw_chars"]
+                per_host[host]["compact_chars"] += s["compact_chars"]
+                per_host[host]["saved_chars"] += s["saved_chars"]
+                total_raw += s["raw_chars"]
+                total_compact += s["compact_chars"]
     saved = total_raw - total_compact
     pct = round(saved / total_raw * 100, 1) if total_raw > 0 else 0.0
     return {

@@ -7,7 +7,7 @@ import shutil
 import subprocess
 import sys
 
-MAX_RAW = 2000
+MAX_RAW = 10000
 
 
 def _run(argv, timeout=15):
@@ -173,10 +173,8 @@ def run(args):
 
     if base == "df" and (len(args) == 1 or "-h" in args):
         return compact_df()
-    if base == "ps" and (len(args) == 1 or "-eo" in args):
-        if len(args) > 1 and "-eo" in args:
-            return compact_ps_top(args)
-        return compact_ps()
+    if base == "ps" and "-eo" in args:
+        return compact_ps_top(args)
     if base == "uptime":
         return compact_uptime()
     if base == "mount":
