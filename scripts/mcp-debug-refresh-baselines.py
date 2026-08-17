@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
-"""Refresh mcp-debug efficiency baselines by running mcp_savings and updating the baselines SSOT."""
+"""Refresh mcp-debug efficiency baselines by running mcp_savings and updating the baselines SSOT.
+
+Server-side implementation: for live use, prefer the `mcp-debug` MCP tools over importing this module directly."""
 import argparse
 import json
 import sys

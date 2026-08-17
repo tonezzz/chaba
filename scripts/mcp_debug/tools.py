@@ -1,4 +1,6 @@
-"""MCP Debug tool functions."""
+"""MCP Debug tool functions.
+
+These functions back the `mcp-debug` MCP server. Consumers should call `mcp-debug` tools rather than importing this module directly."""
 import base64
 import difflib
 import json
