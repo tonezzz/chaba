@@ -52,14 +52,20 @@ generate_api_docs() {
         echo "## Endpoints"
         echo ""
         
-        # Extract service information using Python
+        # Extract service information from all health SSOTs using Python
         python3 -c "
-import yaml
-with open('$health_file') as f:
-    data = yaml.safe_load(f)
-    if 'services' in data:
-        for service in data['services']:
+import yaml, glob
+seen = set()
+for path in glob.glob('$SSOT_DIR/infrastructure/ssot.health*.yml'):
+    with open(path) as f:
+        data = yaml.safe_load(f) or {}
+    if 'services' not in data:
+        continue
+    for service in data['services']:
             service_id = service.get('id', 'unknown')
+            if service_id in seen:
+                continue
+            seen.add(service_id)
             service_name = service.get('name', service_id)
             service_type = service.get('type', 'unknown')
             

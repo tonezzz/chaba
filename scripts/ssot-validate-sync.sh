@@ -89,14 +89,16 @@ check_service_consistency() {
         return 0
     fi
     
-    # Extract service IDs from health file using Python
+    # Extract service IDs from all health files using Python
     local health_services=$(python3 -c "
 import yaml
-with open('$health_file') as f:
-    data = yaml.safe_load(f)
-    if 'services' in data:
-        for service in data['services']:
-            print(service.get('id', ''))
+import glob
+for path in glob.glob('$SSOT_DIR/infrastructure/ssot.health*.yml'):
+    with open(path) as f:
+        data = yaml.safe_load(f) or {}
+        if 'services' in data:
+            for service in data['services']:
+                print(service.get('id', ''))
 " 2>/dev/null | sort -u)
     
     local services_count=$(echo "$health_services" | grep -v '^$' | wc -l)
