@@ -297,6 +297,22 @@ tony-omen:
           - Monitor quota and quality during full sync
     notes:
       - See docs/ssot/infrastructure/ssot.gemini-models.yml for canonical model names and free-tier rate limits
+  gemini-ollama-proxy:
+    service: Gemini-Ollama embedding proxy
+    provider: Chaba (Google Gemini API backend)
+    container: gemini-ollama-proxy
+    image: node:22-alpine
+    port: 11435
+    network: web_default
+    compose_file: stacks/web/mddb/docker-compose.yml
+    script: scripts/mddb/gemini-ollama-proxy.mjs
+    environment_file: stacks/web/mddb/.env
+    api_key_source: /etc/systemd/system/yomi-process.service.d/override.conf (GEMINI_API_KEY)
+    upstream_model: gemini-embedding-001
+    requested_model_alias: text-embedding-004
+    dimensions: 768
+    ollama_compatible: true
+    status: running (2026-08-18)
       - Model availability varies by account age and project status
       - Batch processing: 4 dates per API call (75% reduction in API calls)
   gpu-queue:

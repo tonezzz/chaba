@@ -200,7 +200,7 @@ tools:
     - mcp6_get_message_media: Download media (image/video/audio/file)
 
 current_state:
-  last_checked: 2026-08-03
+  last_checked: 2026-08-18
   vram_used_mb: 2616
   vram_free_mb: 1101
   running_processes:
@@ -208,6 +208,13 @@ current_state:
     - /opt/conda/bin/python3.11 (58 MB)
     - /opt/conda/bin/python (58 MB)
   note: Llama router on port 8001, models loaded on-demand, thai-legal CPU-only
+
+embedding_offload:
+  status: not_switched
+  reason: Gemini round-trip latency is ~3.7x higher than local Ollama (see reports/gemini-embedding-comparison.md)
+  ollama_service: still running on tony-omen port 11434 for query-time MDDB embeddings
+  gemini_proxy: available on tony-omen port 11435 for batch/off-peak re-indexing
+  gpu_usage_ollama: ~388 MB reported by nomic-embed-text
 
 monitoring:
   netdata:

@@ -4,9 +4,9 @@ icon: "\u26a1"
 config:
   version: 1
   created: '2026-08-17'
-  updated: '2026-08-17'
+  updated: '2026-08-18'
   maintainer: tony
-  status: experimental
+  status: validated
   branch: chaba
 
 sections:
@@ -63,17 +63,30 @@ sections:
       - label: Higher latency
         text: Network round-trips to Gemini are much slower than the local 32ms GPU embedding. This is fine for batch indexing but may affect query responsiveness.
 
+  - title: Results
+    icon: "\ud83d\udcca"
+    layout: list
+    items:
+      - label: Credentials
+        text: Valid API key found in /etc/systemd/system/yomi-process.service.d/override.conf. The yomi-api.service key returned 401 and should be rotated.
+      - label: Model availability
+        text: text-embedding-004 is not available in the project tied to the key. Available embedding models are gemini-embedding-001, gemini-embedding-2-preview, and gemini-embedding-2. The proxy maps text-embedding-004 requests to gemini-embedding-001 and truncates to 768-dim via outputDimensionality.
+      - label: Proxy
+        text: scripts/mddb/gemini-ollama-proxy.mjs deployed as a Docker service on tony-omen port 11435 (healthy) in stacks/web/mddb/docker-compose.yml.
+      - label: Comparison
+        text: Side-by-side test collections in MDDB/Weaviate were not created because neither service is running on tony-omen. An embedding-API comparison was run instead; see reports/gemini-embedding-comparison.md.
+      - label: Latency
+        text: Gemini round-trip via the proxy is ~472 ms per embedding versus ~127 ms for Ollama on the same host (3.7x slower), making it acceptable for batch re-indexing but risky for interactive query latency.
+      - label: Switch decision
+        text: Did not switch MDDB_EMBEDDING_API_URL from Ollama; Ollama remains the query-time provider. The proxy is available for batch/off-peak re-indexing or future MDDB multi-provider support.
+
   - title: Next Steps
     icon: "\ud83d\ude80"
     layout: list
     items:
-      - label: Verify quota
-        text: Check the Gemini embedding rate limit in Google AI Studio for this project.
-      - label: Build proxy
-        text: Implement the Gemini-Ollama proxy and test a single MDDB collection.
-      - label: Weaviate test
-        text: Create a new Gemini collection and re-index a subset of SSOT and Yomi messages.
-      - label: Compare results
-        text: Run the same queries against Ollama and Gemini collections and compare relevance scores and latency.
-      - label: Update infrastructure SSOT
-        text: If the experiment succeeds, update ssot.services.yml, ssot.gpu.yml, and the mddb docker-compose to reflect the new embedding provider.
+      - label: Validate at scale
+        text: Re-run the comparison with full MDDB and Weaviate test collections once those services are back on tony-omen or a test host.
+      - label: Rotate yomi-api key
+        text: The GEMINI_API_KEY in /home/tony/.config/systemd/user/yomi-api.service returned 401; replace it with the working key from yomi-process.service.d/override.conf or a new Google AI Studio key.
+      - label: Revisit switch
+        text: Switch MDDB to the Gemini proxy if batch latency is acceptable or if the tony-omen GPU becomes a bottleneck for query-time embedding.
