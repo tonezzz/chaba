@@ -15,8 +15,9 @@ workflow:
 - For backlog review, archived focuses, or focus history, read the full ssot.focus.yml
 - At session end, update subtask status and append a session summary to ssot.focus.sessions.yml
 - When an inbox item is activated, merge it into this file and git mv the source file to docs/ssot/focus-inbox/processed/
+- If the request can be decomposed into subtasks, use the decompose action to create or update a focus with subtasks before starting
 - If the disposition is unclear, call mcp_focus(request, mode=recommend) and follow the returned action (continue, quick_win,
-  triage_backlog, triage_inbox, draft_inbox); see ssot.mcp-focus.yml for the machine-readable tree
+  decompose, triage_backlog, triage_inbox, draft_inbox); see ssot.mcp-focus.yml for the machine-readable tree
 mcp_focus:
   tool: mcp_focus
   source: docs/ssot/infrastructure/ssot.mcp-focus.yml
@@ -30,6 +31,7 @@ mcp_focus:
   actions:
     continue: The request matches an active focus or no request was given; keep working on the active focus.
     quick_win: The request is small and concrete; add to Quick Wins and complete immediately.
+    decompose: The request is too large for a quick win but can be split into subtasks; decompose it into a focus and start the first subtask.
     triage_backlog: The request matches or should go to ssot.focus.yml Backlog; ask the user to activate.
     triage_inbox: The request matches an unprocessed focus-inbox draft; review/activate it.
     draft_inbox: No match; return an in-memory draft inbox YAML for the user to review before saving.
@@ -68,6 +70,13 @@ decision_tree:
     examples:
     - Streamline focus-driven workflow
     - Request-to-Focus Workflow redesign
+  - case: decompose
+    mcp_focus_action: decompose
+    condition: Request is too large for a quick win but can be broken into smaller, trackable subtasks
+    action: Decompose into subtasks, add to the active focus or an inbox item, and start the first subtask
+    examples:
+    - Decompose the podman migration into Quadlet, container move, and SSOT update tasks
+    - Break the visual-capture workflow into capture, triage, and annotate steps
   - case: side_session_or_ambiguous
     mcp_focus_action: draft_inbox
     condition: New idea from another session or request is vague and needs triage
@@ -227,7 +236,7 @@ sections:
     - triage
     subtasks:
     - label: Add 'decompose' case to ssot.focus.current.yml decision_tree and workflow
-      status: not_started
+      status: completed
     - label: Add 'decompose' action to ssot.subagent-focus-triage.yml
       status: not_started
     - label: Add 'decompose' to ssot.mcp-focus.yml action schema
