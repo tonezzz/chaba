@@ -29,10 +29,12 @@ task: |
   3. Read docs/ssot/focus-inbox/*.yml for any pending draft items.
   4. Compare the user's request against the decision_tree cases.
   5. Return ONLY a JSON object with these fields:
-     - action: one of [active, quick_win, backlog, inbox]
+     - action: one of [active, quick_win, backlog, inbox, decompose]
      - target: the active focus or quick-win label, or null
      - reason: one sentence explaining the choice
      - confidence: one of [high, medium, low]
+
+  Use `decompose` when the request is too large for a quick win but can be split into subtasks; identify the subtasks in the reason.
 
   Do NOT modify any files. Do NOT create or merge pull requests. Do NOT commit. This is triage only.
 
@@ -41,7 +43,7 @@ outputs:
   schema:
     action:
       type: string
-      enum: [active, quick_win, backlog, inbox]
+      enum: [active, quick_win, backlog, inbox, decompose]
     target:
       type: [string, "null"]
     reason:
