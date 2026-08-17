@@ -181,10 +181,9 @@ sections:
       \ only.\n\nSecurity defaults:\n- Per-host `allowed_path_prefixes` (e.g. `~/.local`, `/tmp`, `~/.config`, project dirs).\n\
       - Hard `max_bytes` cap and a `truncated` flag.\n- `overwrite=false` by default; confirmation required for writes outside\
       \ the allow-list.\n- All get/put calls logged with host, path, size, and result.\n"
-    status: parked
+    status: active
     priority: medium
     started: '2026-08-16'
-    parked: '2026-08-16'
     estimated_duration: 1 session
     tags:
     - mcp
@@ -194,23 +193,34 @@ sections:
     - security
     subtasks:
     - label: Promote this design to a dedicated SSOT (docs/ssot/infrastructure/ssot.mcp-debug.files.yml)
-      status: not_started
+      status: completed
+      completed: '2026-08-17'
     - label: Add mcp_get_file and mcp_put_file to the mcp-debug server
-      status: not_started
+      status: completed
+      completed: '2026-08-17'
     - label: Implement path-allowlist and size-limit vetting
-      status: not_started
+      status: completed
+      completed: '2026-08-17'
     - label: Update ssot.mcp-debug.yml with new tools, limits, and host allowlists
-      status: not_started
+      status: completed
+      completed: '2026-08-17'
     - label: Add smoke tests for get/put round-trip on tony-omen and tony-dell
-      status: not_started
+      status: completed
+      completed: '2026-08-17'
+      note: Round-trip put/get verified on both hosts via /tmp/mcp-smoke-*.txt
     - label: Design and optionally add mcp_clipboard_get/set as experimental
-      status: not_started
+      status: completed
+      completed: '2026-08-17'
+      note: Documented in ssot.mcp-debug.files.yml as experimental/disabled by default; implementation already in tools.py
     request_log:
     - date: '2026-08-16'
       request: add all into focus and finish before closing
       matched_to: mcp-debug file & clipboard bridge
     - date: '2026-08-16'
       request: let's switch to mcp-focus
+      matched_to: mcp-debug file & clipboard bridge
+    - date: '2026-08-17'
+      request: can you do mcp-debug subtasks then Trade Canvas subtasks
       matched_to: mcp-debug file & clipboard bridge
     branch: chaba
     source: /home/tony/CascadeProjects/chaba/docs/ssot/focus-inbox/2026-08-16-061308-mcp-debug-file-bridge.yml

@@ -1,119 +1,120 @@
-title: MCP Debug File Bridge
-subtitle: Auditable remote file get/put via mcp_debug
-icon: file-transfer
+title: MCP-Debug File and Clipboard Bridge
+subtitle: Design and policy for remote file get/put and optional clipboard tools
 version: 1
+
+purpose:
+  - Extend mcp-debug with small, auditable file-transfer tools.
+  - Allow the assistant to fetch remote logs/configs and push small scripts without leaving the MCP workflow.
+  - Keep clipboard support experimental and disabled by default.
 
 tools:
   mcp_get_file:
-    description: Fetch a remote file and return it base64-encoded with metadata.
+    description: Fetch a remote file as base64 with a hard size cap.
     input:
-      host: string from HOSTS
-      path: absolute or home-relative file path
-      max_bytes: integer, default 65536, hard cap 262144
+      host: target host (must be in allowed host list)
+      path: absolute or home-prefixed file path
+      max_bytes: optional, default 65536, hard cap 1048576
     output:
-      ok: boolean
-      path: the requested path
+      ok: true | false
+      path: resolved path
+      encoding: base64
+      content_base64: base64-encoded bytes
       size: bytes read
       truncated: true if file was larger than max_bytes
-      encoding: base64
-      content_base64: base64 string when ok
-      error: string when not ok
+      error: error message if ok is false
     transport: |
-      For each host, run a remote command that is safe and small:
-      - If the path is a directory, fail.
-      - If the file is larger than max_bytes, read only the first max_bytes bytes and set truncated=true.
-      - Encode the bytes with base64 and write to stdout.
-      For Linux, use `head -c N < path | base64 -w0` or `base64 -w0 <(head -c N path)`.
-      For macOS, use `base64 -b 0` with `head -c`.
+      SSH exec with `cat` or `head -c <max_bytes>` depending on size, then base64-encode the payload.
     security:
-      - Vet the resolved absolute path against the host's allowed_path_prefixes.
-      - Reject paths containing .. or that escape the allowed prefix.
-      - Reject symlinks that point outside an allowed prefix.
-      - Always fail closed (deny if vetting cannot be performed).
+      - path must match one allowed_path_prefix for the host
+      - max_bytes cannot exceed hard cap
+      - all calls logged with host, path, size, truncated flag
+      - reads outside allowlist are rejected
+
   mcp_put_file:
-    description: Write a base64-encoded blob to a remote path after allowlist vetting.
+    description: Write a small script or config to a remote host as base64.
     input:
-      host: string from HOSTS
-      path: target absolute or home-relative file path
-      content_base64: base64 string
-      mode: octal string, default "644"
-      overwrite: boolean, default false
+      host: target host (must be in allowed host list)
+      path: absolute or home-prefixed file path
+      content_base64: base64-encoded file content
+      mode: optional file mode, default "644" (octal string)
+      overwrite: optional, default false
     output:
-      ok: boolean
-      path: the resolved target path
-      bytes_written: integer
-      error: string when not ok
+      ok: true | false
+      path: resolved path
+      bytes_written: number of bytes written
+      error: error message if ok is false
     transport: |
-      1. Vet the target directory against allowed_path_prefixes.
-      2. If overwrite=false and the target exists, fail.
-      3. Decode base64 locally and write the bytes to a temporary file on the remote host.
-      4. Move the temp file into place.
-      5. Set the requested mode.
+      SSH exec with a heredoc after path-allowlist vetting. File is written to a temp path and atomically moved.
     security:
-      - Vet the target directory (resolved absolute) against allowed_path_prefixes.
-      - Reject paths containing .. or that escape the allowed prefix.
-      - Reject symlinks for the target or any intermediate directory outside an allowed prefix.
-      - overwrite=false by default; writes outside the allow-list require explicit confirmation.
-      - All writes are logged with host, path, bytes, and mode.
+      - path must match one allowed_path_prefix for the host
+      - size cannot exceed hard cap (1 MiB)
+      - overwrite=false by default; confirmation required for writes outside allowlist
+      - all calls logged with host, path, size, mode, overwrite
+      - writes to paths outside allowlist are rejected
+
   mcp_clipboard_get:
-    description: Read the host clipboard. Experimental and disabled by default.
-    input:
-      host: string from HOSTS
-    output:
-      ok: boolean
-      text: clipboard text when ok
-      error: string when not ok
-    transport: macOS `pbpaste`, Linux `xclip -o -selection clipboard` or `xsel -b` or `wl-paste`.
+    description: Read the target host's clipboard as text.
+    status: experimental
+    default: disabled
+    transport: macOS `pbpaste`; Linux `xclip -selection clipboard -o` or `wl-paste`
     security:
-      - Requires host.clipboard=true opt-in.
-      - Never called automatically.
+      - per-host opt-in only
+      - host must have clipboard: true in ssot.mcp-debug.capture.yml
+      - all calls logged
+
   mcp_clipboard_set:
-    description: Write text to the host clipboard. Experimental and disabled by default.
-    input:
-      host: string from HOSTS
-      text: string
-    output:
-      ok: boolean
-      error: string when not ok
-    transport: macOS `pbcopy`, Linux `xclip -selection clipboard` or `xsel -b` or `wl-copy`.
+    description: Write text to the target host's clipboard.
+    status: experimental
+    default: disabled
+    transport: macOS `pbpaste`; Linux `xclip -selection clipboard -i` or `wl-copy`
     security:
-      - Requires host.clipboard=true opt-in.
-      - Never called automatically.
+      - per-host opt-in only
+      - host must have clipboard: true in ssot.mcp-debug.capture.yml
+      - all calls logged
 
 limits:
   max_bytes:
+    hard: 1048576
     default: 65536
-    hard: 262144
+  default_get_bytes: 65536
+  max_path_length: 1024
+  allowed_modes: ["400", "600", "644", "664", "755"]
   allowed_path_prefixes:
     tony_omen:
-    - /home/tony/.local
-    - /home/tony/.config
-    - /home/tony/CascadeProjects
-    - /tmp
-    - /var/log
-    - /home/tony/var
+      - /tmp
+      - /home/tony/.local
+      - /home/tony/.config
+      - /home/tony/CascadeProjects/chaba
+      - /home/tony/CascadeProjects/chaba-omen
+      - /home/tony/CascadeProjects/chaba-h3
+      - /home/tony/CascadeProjects/chaba-kbman
+      - /var/log
     tony_dell:
-    - /home/tony/.local
-    - /home/tony/.config
-    - /home/tony/CascadeProjects
-    - /tmp
-    - /home/tony/var
-    - /var/log
+      - /tmp
+      - /home/tony/.local
+      - /home/tony/.config
+      - /home/tony/CascadeProjects/chaba
+      - /home/tony/CascadeProjects/chaba-omen
+      - /home/tony/CascadeProjects/chaba-h3
+      - /home/tony/CascadeProjects/chaba-kbman
+      - /var/log
     macbook:
-    - /Users/kkkakk/.local
-    - /Users/kkkakk/.config
-    - /Users/kkkakk/CascadeProjects
-    - /tmp
-    - /var/log
-  clipboard:
-    tony_omen: false
-    tony_dell: false
-    macbook: true
-
-warnings:
-  - Headless Linux clipboard operations can hang if no X11/Wayland session or clipboard manager is running. The tools use `timeout -k 1 2` to avoid runaway `xclip` / `xsel` / `wl-copy` processes, but the default is disabled on tony-omen and tony-dell.
-  - macOS `pbpaste` / `pbcopy` do not require a display and are the safest clipboard target; macbook has `clipboard: true`.
+      - /tmp
+      - /Users/tony
+      - /var/log
 
 logging:
-  destination: docs/ssot/ssot.focus.decisions.yml
-  note: File bridge calls are appended to the decisions log for audit; include action, host, path, size, and result.
+  level: info
+  fields:
+    - timestamp
+    - tool
+    - host
+    - path
+    - size
+    - truncated
+    - overwrite
+    - ok
+
+status: designed
+last_updated: '2026-08-17'
+maintainer: tony

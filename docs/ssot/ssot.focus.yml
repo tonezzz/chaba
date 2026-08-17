@@ -237,7 +237,8 @@ sections:
         and survive reboot. Currently both have restart=no.
       status: completed
       completed: '2026-08-17'
-      note: yomi-api.service already existed; generated chaba-postgres-16.service via podman generate systemd --new and enabled both
+      note: yomi-api.service already existed; generated chaba-postgres-16.service via podman generate systemd --new and enabled
+        both
     - label: Decommission tony-omen duplicate postgres container
       text: Stop and remove the omen postgres container after verifying tony-dell chaba-postgres-16 is the primary per ssot.yomi-failover.yml.
       status: not_started
@@ -265,12 +266,17 @@ sections:
       text: After each migration, update the SSOT to reflect the new host, runtime, ports, and Quadlet unit paths.
       status: not_started
   - label: SSOT branch/worktree registry
-    text: |
-      Create a canonical SSOT that maps each SSOT focus branch to a git branch,
+    text: 'Create a canonical SSOT that maps each SSOT focus branch to a git branch,
+
       local worktree path, deploy host, and the systemd services it owns. Derive
+
       git worktree creation, deployment rsync, and health-check verification from
+
       this file instead of ad-hoc scp/sed. Start by moving funnel-server.py and the
+
       tony-dell deployment directory onto a tracked topic branch and worktree.
+
+      '
     branch: chaba
     status: pending
     priority: medium
@@ -438,11 +444,15 @@ sections:
     text: Processed the SSOT improvements from the intake and decomposition conversation.
     date: '2026-08-17'
     duration: 1 session
-    outcome: |
-      Added decompose to ssot.focus.current.yml decision tree, subagent-focus-triage,
+    outcome: 'Added decompose to ssot.focus.current.yml decision tree, subagent-focus-triage,
+
       ssot.mcp-focus.yml, and ssot.focus-dispatcher.yml; verified tony-dell recovery
+
       commands and mcp-debug-cors hostname resolution; activated the file-optimization
+
       Conflict sweep; promoted the SSOT worktree registry from draft inbox to backlog.
+
+      '
     tags:
     - completed
     - ssot
@@ -931,6 +941,43 @@ sections:
     - macos
     - visual
     - clipboard
+    - completed
+  - label: tony-dell podman service migration
+    text: 'Migrate non-GPU Docker services from tony-omen (89% full on /home, 9.6GB free)
+
+      to tony-dell rootless podman (14GB RAM, 67GB free disk, podman 5.7.0). tony-dell
+
+      already runs postgres (chaba-postgres-16) and yomi-api under podman since
+
+      2026-08-16, but both have restart=no and no Quadlet units, so they will not
+
+      survive a reboot. tony-omen still runs a duplicate postgres container and six
+
+      duplicate github-mcp-server containers that should be removed.
+
+      Migration candidates (no GPU): redis, mddb + mddb-panel, raceman-php +
+
+      raceman-web, status-api, weaviate. Must stay on tony-omen: GPU services
+
+      (llama-server, imagen2, ollama, gpu-queue, gpu-queue-processor) and the caddy
+
+      web edge. See ssot.containerization.yml, ssot.services.yml, and
+
+      ssot.yomi-failover.yml for current disposition.
+
+      '
+    date: '2026-08-17'
+    duration: 2 sessions
+    outcome: 'Completed subtasks: Harden existing tony-dell podman containers with Quadlet units, Decommission tony-omen duplicate
+      postgres container, Remove six duplicate github-mcp-server containers on tony-omen, Migrate redis to tony-dell podman,
+      Migrate mddb + mddb-panel to tony-dell podman, Migrate raceman stack to tony-dell podman, Assess weaviate migration
+      to tony-dell, Update ssot.services.yml and ssot.containerization.yml with new disposition'
+    tags:
+    - tony-dell
+    - podman
+    - containers
+    - migration
+    - disk-pressure
     - completed
 config:
   version: 2
