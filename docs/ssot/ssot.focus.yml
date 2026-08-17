@@ -434,6 +434,23 @@ sections:
   icon: history
   layout: timeline
   items:
+  - label: mcp-debug unified cross-platform commands
+    text: 'Implement host-agnostic compact commands in mcp-debug that auto-detect the
+      appropriate backend. Initial set: containers (podman/docker), services (systemctl/launchctl),
+      sockets (ss/netstat/lsof), and gpu (nvidia-smi/rocm-smi).'
+    date: '2026-08-17'
+    duration: 1 session
+    outcome: 'Implemented containers, services, sockets, and gpu in both the Linux mcp-debug wrapper
+      and scripts/mcp_debug/mcp-debug-macos. Tested on tony-omen, tony-dell, and macbook. The
+      backend runtime is included in the compact JSON output for transparency. gpu is not available
+      on macOS because neither nvidia-smi nor rocm-smi is installed.'
+    tags:
+    - completed
+    - mcp
+    - mcp-debug
+    - cross-platform
+    - diagnostics
+    - automation
   - label: Re-assess mcp-debug SSOT editing tools
     text: After mcp_read_ssot and mcp_search_ssot are in use, measure whether sub-agents or scripts need mutation tools.
     date: '2026-08-17'

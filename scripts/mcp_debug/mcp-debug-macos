@@ -223,6 +223,123 @@ def raw_fallback(args):
     }
 
 
+def compact_containers():
+    for engine in ("podman", "docker"):
+        if not shutil.which(engine):
+            continue
+        result, err = _run([engine, "ps", "--format", "json"])
+        if err:
+            continue
+        try:
+            data = json.loads(result.stdout)
+        except Exception:
+            continue
+        if not isinstance(data, list):
+            continue
+        def _port_str(p):
+            if isinstance(p, dict):
+                host = p.get("host_port") or ""
+                cont = p.get("container_port") or ""
+                proto = p.get("protocol") or ""
+                if host:
+                    return f"{host}:{cont}/{proto}" if cont and proto else f"{host}:{cont}" if cont else str(p)
+                return f"{cont}/{proto}" if cont and proto else str(p)
+            return str(p)
+
+        containers = []
+        for c in data:
+            names = c.get("Names") or c.get("names") or c.get("name") or ""
+            if isinstance(names, list):
+                names = names[0] if names else ""
+            ports = c.get("Ports") or c.get("ports") or ""
+            if isinstance(ports, list):
+                ports = ",".join(_port_str(p) for p in ports)
+            elif isinstance(ports, dict):
+                ports = _port_str(ports)
+            image = c.get("Image") or c.get("image") or ""
+            if isinstance(image, list):
+                image = image[0] if image else ""
+            containers.append({
+                "n": names,
+                "i": image,
+                "s": c.get("Status") or c.get("status") or c.get("State") or "",
+                "p": ports,
+            })
+        return {"ok": True, "cmd": "containers", "runtime": engine, "n": len(containers), "c": containers}
+    return {"ok": False, "error": "no container engine found"}
+
+
+def compact_services():
+    out = compact_launchctl_list()
+    if not out.get("ok"):
+        return out
+    out["cmd"] = "services"
+    out["runtime"] = "launchctl"
+    return out
+
+
+def _port_only(s):
+    if not s:
+        return s
+    if ":" in s:
+        return s.rsplit(":", 1)[-1]
+    if "." in s and s.count(".") >= 4:
+        return s.rsplit(".", 1)[-1]
+    return s
+
+
+def compact_sockets():
+    """sockets -> compact listening TCP sockets from lsof or netstat."""
+    tried = []
+
+    if shutil.which("lsof"):
+        result, err = _run(["lsof", "-nP", "-iTCP", "-sTCP:LISTEN"])
+        if err:
+            tried.append(f"lsof: {err}")
+        elif result.returncode == 0:
+            sockets = []
+            for line in result.stdout.strip().splitlines()[1:]:
+                parts = line.split(None, 8)
+                if len(parts) < 9:
+                    continue
+                sockets.append({
+                    "c": parts[0],
+                    "p": parts[1],
+                    "l": parts[8],
+                    "n": parts[8],
+                })
+            return {"ok": True, "cmd": "sockets", "runtime": "lsof", "n": len(sockets), "s": sockets}
+        else:
+            tried.append(f"lsof: {result.stderr.strip() or 'no listening sockets'}")
+
+    if shutil.which("netstat"):
+        result, err = _run(["netstat", "-an"])
+        if err:
+            tried.append(f"netstat: {err}")
+        elif result.returncode == 0:
+            sockets = []
+            for line in result.stdout.strip().splitlines():
+                parts = line.split()
+                if not parts or "LISTEN" not in parts:
+                    continue
+                if len(parts) >= 5:
+                    local = parts[3]
+                    sockets.append({
+                        "l": local,
+                        "p": _port_only(local),
+                        "n": "",
+                    })
+            return {"ok": True, "cmd": "sockets", "runtime": "netstat", "n": len(sockets), "s": sockets}
+        else:
+            tried.append(f"netstat: {result.stderr.strip() or 'no listening sockets'}")
+
+    return {"ok": False, "error": "; ".join(tried) if tried else "no socket tool found"}
+
+
+def compact_gpu():
+    return {"ok": False, "error": "no GPU tool available on macOS"}
+
+
 def run(args):
     if not args:
         return {"ok": False, "error": "usage: mcp-debug <command> [args...]"}
@@ -245,6 +362,14 @@ def run(args):
         return compact_lsof(args)
     if base == "launchctl" and "list" in args:
         return compact_launchctl_list()
+    if base == "containers":
+        return compact_containers()
+    if base == "services":
+        return compact_services()
+    if base == "sockets":
+        return compact_sockets()
+    if base == "gpu":
+        return compact_gpu()
     if base in ("systemctl", "free", "lsblk", "lsusb", "ip", "ss", "journalctl"):
         return {"ok": False, "error": f"{base} is not supported on macOS"}
 

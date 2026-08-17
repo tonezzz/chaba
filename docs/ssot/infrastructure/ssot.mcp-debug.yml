@@ -366,22 +366,30 @@ suggested_extensions:
   name: Unified container list
   description: 'One `containers` command that auto-detects podman then docker and returns a compact, runtime-labeled JSON list.'
   priority: high
-  status: in_progress
+  status: completed
+  completed: '2026-08-17'
+  notes: 'Implemented in scripts/mcp_debug/mcp-debug-macos and /home/tony/mcp-debug/mcp-debug.py; tested on tony-omen, tony-dell, and macbook.'
 - id: services
   name: Unified service manager list
   description: 'One `services` command that uses `systemctl list-units` on Linux and `launchctl list` on macOS, returning a compact, runtime-labeled list.'
   priority: high
-  status: in_progress
+  status: completed
+  completed: '2026-08-17'
+  notes: 'Implemented in both wrappers; tested on tony-omen and macbook.'
 - id: sockets
   name: Unified listening/open socket list
   description: 'One `sockets` command that tries `ss -tlnp`, `netstat -an`, and `lsof -nP -iTCP` and returns a compact, runtime-labeled list.'
   priority: medium
-  status: in_progress
+  status: completed
+  completed: '2026-08-17'
+  notes: 'Implemented in both wrappers; tony-omen uses ss, macbook uses lsof, netstat fallback available.'
 - id: gpu
   name: Unified GPU summary
   description: 'One `gpu` command that tries `nvidia-smi` then `rocm-smi` and returns a compact, runtime-labeled summary.'
   priority: medium
-  status: in_progress
+  status: completed
+  completed: '2026-08-17'
+  notes: 'Implemented in Linux wrapper using nvidia-smi; macOS has no GPU tool and returns ok:false.'
 
 baselines_source: docs/ssot/infrastructure/ssot.mcp-debug.baselines.yml
 
