@@ -21,7 +21,7 @@ from .state import (
 )
 
 
-def make_focus_item(label, text, branch, priority, tags, subtasks, source=None):
+def make_focus_item(label, text, branch, priority, tags, subtasks, source=None, session=None):
     today = datetime.now().strftime("%Y-%m-%d")
     item = {
         "label": label,
@@ -33,12 +33,45 @@ def make_focus_item(label, text, branch, priority, tags, subtasks, source=None):
         "tags": tags or ["focus"],
         "subtasks": subtasks or [],
         "request_log": [],
+        "owner": "tony",
+        "session": session or "",
+        "locked": True,
+        "lock_reason": "Activated as active focus",
     }
     if branch:
         item["branch"] = branch
     if source:
         item["source"] = source
     return item
+
+
+def make_ready_safe_item(item, session=None):
+    today = datetime.now().strftime("%Y-%m-%d")
+    source = item.pop("__source", item.get("source", item.get("__file", "")))
+    for key in ("__triage_score", "__file"):
+        item.pop(key, None)
+    ready = {
+        "label": item.get("label"),
+        "text": item.get("text", ""),
+        "branch": item.get("branch", ""),
+        "priority": item.get("priority", "medium"),
+        "status": "ready",
+        "queued_at": today,
+        "tags": item.get("tags", []),
+        "triage": item.get("triage", {}),
+        "safe_to_parallel": item.get("safe_to_parallel", True),
+        "subtasks": item.get("subtasks", []),
+        "source": source,
+        "owner": item.get("owner", "focus-dispatcher"),
+        "session": session or item.get("session", ""),
+        "locked": False,
+        "lock_reason": "",
+    }
+    if item.get("job_lifecycle"):
+        ready["job_lifecycle"] = item["job_lifecycle"]
+    if item.get("estimated_duration"):
+        ready["estimated_duration"] = item["estimated_duration"]
+    return ready
 
 
 def activate_inbox(inbox, park=False):
@@ -110,6 +143,19 @@ def suggest_intake(request, current_doc):
             return "backlog", None, None, None
 
     return "inbox", None, None, None
+
+
+def add_ready_safe(item, session=None):
+    doc = load_current()
+    validate_current(doc)
+    section = find_section(doc.get("sections", []), "Ready (Safe)")
+    if section is None:
+        raise RuntimeError("Ready (Safe) section not found in ssot.focus.current.yml")
+    new_item = make_ready_safe_item(item, session=session)
+    section["items"].append(new_item)
+    save_current(doc)
+    validate_current(doc)
+    return new_item
 
 
 def handle_intake(request, dry_run=False):

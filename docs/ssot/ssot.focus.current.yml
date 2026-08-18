@@ -173,16 +173,29 @@ sections:
       completed: '2026-08-18'
       note: Added safe_next and ready_queue modes to mcp_debug/focus.py, updated server schemas, and verified status and safe_next output.
     - label: Update focus-dispatcher to auto-dispatch safe foci
-      status: not_started
+      status: completed
+      completed: '2026-08-18'
+      note: Added --safe-dispatch to focus-dispatcher, safe_to_dispatch in triage.py, add_ready_safe in actions.py, and make_ready_safe_item. Verified dry-run and live run both report no safe focus.
     - label: Add session ownership/lock fields to active foci
-      status: not_started
+      status: completed
+      completed: '2026-08-18'
+      note: Added ownership block to make_focus_item and the active Safe focus in ssot.focus.current.yml.
     - label: Update subagent-focus-triage and contracts
-      status: not_started
+      status: completed
+      completed: '2026-08-18'
+      note: Updated ssot.subagent-focus-triage.yml to include Ready (Safe) inspection, safe action, safe_to_parallel output, and safe/ready examples.
     - label: Validate and test the workflow
-      status: not_started
+      status: completed
+      completed: '2026-08-18'
+      note: SSOT validation clean; focus-dispatcher --safe-dispatch and --dry-run work; mcp_focus safe_next and ready_queue return empty lists correctly (no safe foci currently meet criteria).
     request_log:
     - text: User asked to park Gemini focus and switch to safe-focus continuous processing.
       date: '2026-08-18'
+    ownership:
+      owner: tony
+      session: chaba-2026-08-18
+      locked: true
+      lock_reason: Active branch focus for safe-focus continuous processing
     branch: chaba
     source: /home/tony/CascadeProjects/chaba/docs/ssot/ssot.focus.yml
 - title: Ready (Safe)

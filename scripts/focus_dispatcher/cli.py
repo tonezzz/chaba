@@ -6,7 +6,7 @@ from pathlib import Path
 
 import yaml
 
-from .actions import activate_inbox, handle_intake, make_focus_item
+from .actions import activate_inbox, add_ready_safe, handle_intake, make_focus_item
 from .git import git_commit
 from .history import archive_completed
 from .prompts import (
@@ -23,7 +23,13 @@ from .state import (
     load_current,
     validate_current,
 )
-from .triage import dispatchable_backlog, next_from_active, next_from_backlog, next_from_inbox
+from .triage import (
+    dispatchable_backlog,
+    next_from_active,
+    next_from_backlog,
+    next_from_inbox,
+    safe_to_dispatch,
+)
 
 
 def main():
@@ -33,6 +39,8 @@ def main():
     parser.add_argument("--park", action="store_true", help="Park the existing active focus in the same section before activating a new one")
     parser.add_argument("--sub-agent", action="store_true", help="Write a sub-agent contract in addition to NEXT_FOCUS.md")
     parser.add_argument("--auto-dispatch", action="store_true", help="Scan backlog and write subagent contracts for eligible items without activating them")
+    parser.add_argument("--safe-dispatch", action="store_true", help="Find the highest-scoring safe-to-parallel focus and add it to the Ready (Safe) section")
+    parser.add_argument("--session", default="", help="Session ID to attach to a safe-dispatched focus for ownership/locking")
     parser.add_argument("--dry-run", action="store_true", help="Show selection without modifying files")
     args = parser.parse_args()
 
@@ -56,6 +64,20 @@ def main():
             if not args.dry_run:
                 path.write_text(contract)
             print(f"{'Would write' if args.dry_run else 'Wrote'} {path}")
+        sys.exit(0)
+
+    if args.safe_dispatch:
+        item = safe_to_dispatch()
+        if not item:
+            print("No safe-to-parallel focus found.")
+            sys.exit(0)
+        if args.dry_run:
+            print(f"Would add to Ready (Safe): {item['label']} (source: {item.get('__source', 'unknown')})")
+            sys.exit(0)
+        new_item = add_ready_safe(item, session=args.session)
+        print(f"Added to Ready (Safe): {new_item['label']}")
+        if os.environ.get("FOCUS_DISPATCHER_COMMIT") == "1":
+            git_commit([CURRENT], f"tweak: ready-safe dispatch {new_item['label'][:50]}")
         sys.exit(0)
 
     changed = []

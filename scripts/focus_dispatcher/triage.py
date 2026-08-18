@@ -9,6 +9,7 @@ from .state import (
     find_section,
     incomplete_subtasks,
     is_active,
+    load_current,
     load_focus,
 )
 
@@ -28,6 +29,82 @@ def triage_score(item):
     except (TypeError, ValueError):
         return 0.0
     return round(urgency * 0.4 + importance * 0.35 + (10 - complication) * 0.25, 2)
+
+
+def active_branches(doc):
+    branches = set()
+    for sec in doc.get("sections", []):
+        if sec.get("title") in ("Active Shared Focus", "Active Branch Focus"):
+            for item in sec.get("items", []):
+                if is_active(item):
+                    branches.add(item.get("branch", ""))
+    return branches
+
+
+def _meets_safe_criteria(item, active_branch_set):
+    safe = item.get("safe_to_parallel")
+    if safe is False:
+        return False
+    if safe is True:
+        return True
+    if item.get("missing_info"):
+        return False
+    if item.get("subagent", {}).get("requires_approval"):
+        return False
+    triage = item.get("triage", {})
+    try:
+        complication = float(triage.get("complication", 10))
+    except (TypeError, ValueError):
+        complication = 10
+    if complication > 4:
+        return False
+    if item.get("branch", "") in active_branch_set and item.get("branch"):
+        return False
+    return True
+
+
+def safe_to_dispatch():
+    """Return the highest-scoring backlog or inbox item that is safe to run in parallel."""
+    current = load_current()
+    branch_set = active_branches(current)
+    candidates = []
+
+    doc = load_focus()
+    section = find_section(doc.get("sections", []), "Backlog - Triage Queue")
+    if section:
+        for item in section.get("items", []):
+            if not is_active(item) and not item.get("status") == "parked":
+                continue
+            if _meets_safe_criteria(item, branch_set):
+                item["__source"] = "backlog"
+                candidates.append(item)
+
+    if INBOX_DIR.is_dir():
+        for p in sorted(INBOX_DIR.glob("*.yml")):
+            if p.name.startswith("TEMPLATE") or p.name.startswith("processed"):
+                continue
+            try:
+                inbox_doc = yaml.safe_load(p.read_text())
+            except yaml.YAMLError:
+                continue
+            focus = inbox_doc.get("focus") or inbox_doc
+            if not focus or not focus.get("label"):
+                continue
+            if _meets_safe_criteria(focus, branch_set):
+                focus["__source"] = str(p)
+                candidates.append(focus)
+
+    if not candidates:
+        return None
+    candidates.sort(
+        key=lambda it: (
+            triage_score(it),
+            priority_value(it),
+            it.get("started", ""),
+        ),
+        reverse=True,
+    )
+    return candidates[0]
 
 
 def next_from_active(doc):

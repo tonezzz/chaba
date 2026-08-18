@@ -65,16 +65,24 @@ processing:
       notes: Added safe_next and ready_queue modes to mcp_debug/focus.py and both MCP servers; verified status and safe_next output.
     - id: 4
       label: Update focus-dispatcher to auto-dispatch safe foci
-      status: not_started
+      status: completed
+      completed: '2026-08-18'
+      notes: Added --safe-dispatch to scripts/focus-dispatcher.py, safe_to_dispatch in triage.py, add_ready_safe in actions.py. Dry-run and live run tested with no safe foci.
     - id: 5
       label: Add session ownership/lock fields to active foci
-      status: not_started
+      status: completed
+      completed: '2026-08-18'
+      notes: Added ownership block to make_focus_item and the active Safe focus in ssot.focus.current.yml.
     - id: 6
       label: Update subagent-focus-triage and contracts
-      status: not_started
+      status: completed
+      completed: '2026-08-18'
+      notes: Updated ssot.subagent-focus-triage.yml to include safe_to_parallel and Ready (Safe) guidance.
     - id: 7
       label: Validate and test the workflow
-      status: not_started
+      status: completed
+      completed: '2026-08-18'
+      notes: SSOT validation clean; focus-dispatcher --safe-dispatch and mcp_focus safe_next/ready_queue verified.
   decisions: []
   changes: []
 

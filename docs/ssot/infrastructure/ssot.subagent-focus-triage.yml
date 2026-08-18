@@ -20,21 +20,24 @@ task: |
 
   Steps:
   1. Read docs/ssot/ssot.focus.current.yml and inspect:
-     - Active Shared Focus and Active Branch Focus labels and subtasks
+     - Active Shared Focus and Active Branch Focus labels, subtasks, and ownership/lock fields
+     - Ready (Safe) section and any already-queued safe foci
      - Quick Wins
      - decision_tree cases and quick_win_criteria
   2. Read docs/ssot/ssot.focus.yml for:
-     - Backlog - Triage Queue items and priorities
+     - Backlog - Triage Queue items, priorities, and safe_to_parallel values
      - Focus History patterns
   3. Read docs/ssot/focus-inbox/*.yml for any pending draft items.
   4. Compare the user's request against the decision_tree cases.
   5. Return ONLY a JSON object with these fields:
-     - action: one of [active, quick_win, backlog, inbox, decompose]
-     - target: the active focus or quick-win label, or null
+     - action: one of [active, safe, quick_win, backlog, inbox, decompose]
+     - target: the active focus, safe focus, quick-win label, or null
+     - safe_to_parallel: boolean, required when action is safe or backlog; optional otherwise
      - reason: one sentence explaining the choice
      - confidence: one of [high, medium, low]
 
   Use `decompose` when the request is too large for a quick win but can be split into subtasks; identify the subtasks in the reason.
+  Use `safe` when the request can run in parallel with the active focus (different branch, low complication, no missing_info, no approval required).
 
   Do NOT modify any files. Do NOT create or merge pull requests. Do NOT commit. This is triage only.
 
@@ -43,9 +46,11 @@ outputs:
   schema:
     action:
       type: string
-      enum: [active, quick_win, backlog, inbox, decompose]
+      enum: [active, safe, quick_win, backlog, inbox, decompose]
     target:
       type: [string, "null"]
+    safe_to_parallel:
+      type: boolean
     reason:
       type: string
     confidence:
