@@ -1,9 +1,11 @@
 """Focus activation and intake actions."""
+import sys
 from datetime import datetime
+from pathlib import Path
 
 import yaml
 
-from mcp_debug.focus import log_decision
+from mcp_debug.focus import log_decision, mcp_focus
 
 from .git import git_mv_inbox
 from .state import (
@@ -149,6 +151,43 @@ def suggest_intake(request, current_doc):
             return "backlog", None, None, None
 
     return "inbox", None, None, None
+
+
+def _is_focus_complete(it):
+    if not it:
+        return True
+    if it.get("status") == "completed":
+        return True
+    for st in it.get("subtasks", []):
+        if st.get("status") not in ("completed", "deferred"):
+            return False
+    return True
+
+
+def advance_focus(resume_session=None):
+    """If the active focus is complete (or none), archive it and activate the next one."""
+    from .history import archive_completed
+    from .state import load_current
+
+    changed = archive_completed()
+    current = load_current()
+    active_branch = None
+    active_shared = None
+    for sec in current.get("sections", []):
+        if sec.get("title") == "Active Branch Focus" and sec.get("items"):
+            active_branch = sec["items"][0] if sec["items"] else None
+        if sec.get("title") == "Active Shared Focus" and sec.get("items"):
+            active_shared = sec["items"][0] if sec["items"] else None
+    if active_branch and not _is_focus_complete(active_branch):
+        return {"ok": False, "error": f"Active branch focus not complete: {active_branch.get('label')}"}
+    if active_shared and not _is_focus_complete(active_shared):
+        return {"ok": False, "error": f"Active shared focus not complete: {active_shared.get('label')}"}
+    return mcp_focus(mode="next", resume_session=resume_session)
+
+
+def next_focus(resume_session=None):
+    """Activate the next focus (will fail if another active focus exists)."""
+    return mcp_focus(mode="next", resume_session=resume_session)
 
 
 def add_ready_safe(item, session=None):

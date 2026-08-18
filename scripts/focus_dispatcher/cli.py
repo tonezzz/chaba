@@ -6,7 +6,7 @@ from pathlib import Path
 
 import yaml
 
-from .actions import activate_inbox, add_ready_safe, handle_intake, make_focus_item
+from .actions import activate_inbox, add_ready_safe, advance_focus, handle_intake, make_focus_item, next_focus
 from .git import git_commit
 from .history import archive_completed
 from .prompts import (
@@ -42,7 +42,30 @@ def main():
     parser.add_argument("--safe-dispatch", action="store_true", help="Find the highest-scoring safe-to-parallel focus and add it to the Ready (Safe) section")
     parser.add_argument("--session", default="", help="Session ID to attach to a safe-dispatched focus for ownership/locking")
     parser.add_argument("--dry-run", action="store_true", help="Show selection without modifying files")
+    parser.add_argument("--next", action="store_true", help="Activate the next highest-priority parked/deferred focus")
+    parser.add_argument("--advance", action="store_true", help="Advance to the next focus only if the active one is complete")
+    parser.add_argument("--resume-session", default=None, help="Restrict next/advance to a specific session name")
     args = parser.parse_args()
+
+    if args.next:
+        if args.dry_run:
+            print("--next requires a real run")
+            sys.exit(1)
+        result = next_focus(resume_session=args.resume_session)
+        print(result)
+        if result.get("ok") and os.environ.get("FOCUS_DISPATCHER_COMMIT") == "1":
+            git_commit([CURRENT, FOCUS], f"tweak: focus-dispatcher next {result.get('next', {}).get('label', '')[:50]}")
+        sys.exit(0)
+
+    if args.advance:
+        if args.dry_run:
+            print("--advance requires a real run")
+            sys.exit(1)
+        result = advance_focus(resume_session=args.resume_session)
+        print(result)
+        if result.get("ok") and os.environ.get("FOCUS_DISPATCHER_COMMIT") == "1":
+            git_commit([CURRENT, FOCUS], f"tweak: focus-dispatcher advance {result.get('next', {}).get('label', '')[:50]}")
+        sys.exit(0)
 
     if args.intake:
         result, changed = handle_intake(args.intake, dry_run=args.dry_run)

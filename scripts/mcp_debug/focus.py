@@ -910,6 +910,10 @@ def mcp_focus(request=None, mode="recommend", decision=None, summary=None, resum
         }
 
     if mode == "next":
+        for key in ("branch", "shared"):
+            it = active.get(key)
+            if it and it.get("status") != "completed":
+                return {"ok": False, "error": f"Active {key} focus not complete: {it.get('label')}"}
         next_candidates = [c for c in _sweep_candidates(doc, active, _backlog_items(), _inbox_items()) if c.get("status") in ("parked", "deferred", "draft", "pending")]
         if resume_session:
             resume_session = resume_session.strip().lower()
@@ -919,19 +923,20 @@ def mcp_focus(request=None, mode="recommend", decision=None, summary=None, resum
             return {"ok": True, "next": None, "reason": "No parked or deferred foci to process."}
         chosen = next_candidates[0]
         activated = _activate_candidate(chosen)
-        if activated:
-            log_session_summary({
-                "focus": chosen["label"],
-                "source": "mcp_focus next",
-                "plan": [f"Activate {chosen['label']}"],
-                "done": [],
-                "follow_up": ["Complete the focus or defer it"],
-                "next_action": [f"Work on {chosen['label']}"],
-            })
+        if not activated:
+            return {"ok": False, "error": f"Could not activate {chosen.get('label')} because another focus is active", "next": chosen}
+        log_session_summary({
+            "focus": chosen["label"],
+            "source": "mcp_focus next",
+            "plan": [f"Activate {chosen['label']}"],
+            "done": [],
+            "follow_up": ["Complete the focus or defer it"],
+            "next_action": [f"Work on {chosen['label']}"],
+        })
         return {
             "ok": True,
             "next": chosen,
-            "activated": activated,
+            "activated": True,
             "recommendation": {
                 "action": "next",
                 "target": chosen.get("label"),

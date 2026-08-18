@@ -32,6 +32,7 @@ def main():
         print("[overnight] aborting: SSOT validation failed", file=sys.stderr)
         return rc
     rc |= run(["scripts/focus-dispatcher.py", "--sub-agent"])
+    rc |= run(["scripts/focus-dispatcher.py", "--advance"])
     rc |= run(["scripts/process-remaining-focuses.py"])
     if rc:
         print("[overnight] completed with errors")

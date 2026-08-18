@@ -13,6 +13,9 @@ runner:
     - --sub-agent: write a sub-agent contract for the selected active focus to reports/SUBAGENT_CONTRACT.md
     - --intake <request>: classify a new request and write it to the correct place
     - --decompose <request>: classify a large request, split it into subtasks, and write the resulting focus to the active focus or backlog
+    - --next: activate the highest-priority parked/deferred focus (fails if another focus is active)
+    - --advance: archive completed focuses and then --next, if the current active focus is complete
+    - --resume-session <name>: restrict --next / --advance to a named session
     - --dry-run: show selection without modifying files
   permissions:
     - read docs/ssot/ssot.focus.current.yml
