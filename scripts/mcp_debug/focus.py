@@ -54,13 +54,14 @@ def _load_focus():
 
 def _active_items(doc):
     active = {}
-    quick_wins = [
-        i for s in doc.get("sections", [])
-        if s.get("title") == "Quick Wins"
-        for i in s.get("items", [])
-    ]
+    quick_wins = []
+    hand_off_queue = []
     for sec in doc.get("sections", []):
-        if sec.get("title") in ("Active Shared Focus", "Active Branch Focus"):
+        if sec.get("title") == "Quick Wins":
+            quick_wins = [i for i in sec.get("items", [])]
+        elif sec.get("title") == "Hand-off Queue":
+            hand_off_queue = [i for i in sec.get("items", [])]
+        elif sec.get("title") in ("Active Shared Focus", "Active Branch Focus"):
             for item in sec.get("items", []):
                 if not item or item.get("status") != "active":
                     continue
@@ -69,7 +70,7 @@ def _active_items(doc):
                     active["shared"] = item
                 else:
                     active["branch"] = item
-    return active, quick_wins
+    return active, quick_wins, hand_off_queue
 
 
 def _inbox_items():
@@ -254,7 +255,7 @@ def _decision_log():
 
 def _pre_action_summary(request):
     doc = _load_current()
-    active, quick_wins = _active_items(doc)
+    active, quick_wins, hand_off_queue = _active_items(doc)
     req = str(request).lower()
 
     duplicate_active = []
@@ -308,6 +309,7 @@ def _pre_action_summary(request):
     return {
         "request": request,
         "active_foci": active,
+        "hand_off_queue": hand_off_queue,
         "duplicate_active_matches": duplicate_active,
         "similar_historical": similar_historical[:5],
         "related_decision_tree_cases": related_cases[:5],
@@ -417,10 +419,10 @@ def mcp_focus(request=None, mode="recommend", decision=None, summary=None):
         return {"ok": False, "error": "ssot.focus.current.yml not found"}
 
     doc = _load_current()
-    active, quick_wins = _active_items(doc)
+    active, quick_wins, hand_off_queue = _active_items(doc)
 
     if mode == "status":
-        return {"ok": True, "active": active, "quick_wins": quick_wins}
+        return {"ok": True, "active": active, "quick_wins": quick_wins, "hand_off_queue": hand_off_queue}
 
     if mode == "pre_action":
         return {
@@ -440,5 +442,6 @@ def mcp_focus(request=None, mode="recommend", decision=None, summary=None):
         "ok": True,
         "active": active,
         "quick_wins": quick_wins,
+        "hand_off_queue": hand_off_queue,
         "recommendation": recommendation,
     }
