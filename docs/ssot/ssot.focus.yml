@@ -48,11 +48,17 @@ sections:
     - duplication
     subtasks:
     - label: Design gate fields in ssot.focus.current.yml
-      status: in_progress
+      status: completed
+      completed: '2026-08-18'
+      note: Added pre_action_summary decision-tree case and documented the gate in ssot.focus.current.yml.
     - label: Update mcp_focus intake to run the gate and emit summary
-      status: not_started
+      status: completed
+      completed: '2026-08-18'
+      note: Added pre_action mode to mcp_focus in scripts/mcp_debug/focus.py and inputSchema in server.py.
     - label: Validate with test requests and commit
-      status: not_started
+      status: completed
+      completed: '2026-08-18'
+      note: Tested mcp_focus mode pre_action via Python; it returned active foci, similar historical, and related decision cases.
 
 - title: Backlog - Triage Queue
   icon: backlog
@@ -264,30 +270,44 @@ sections:
         both
     - label: Decommission tony-omen duplicate postgres container
       text: Stop and remove the omen postgres container after verifying tony-dell chaba-postgres-16 is the primary per ssot.yomi-failover.yml.
-      status: not_started
+      status: completed
+      completed: '2026-08-17'
+      note: No duplicate postgres container remains on tony-omen; tony-dell Quadlet unit is enabled and is the primary.
     - label: Remove six duplicate github-mcp-server containers on tony-omen
       text: docker rm the 6 stale ghcr.io/github/github-mcp-server containers (musing_bohr, thirsty_nobel, sleepy_ritchie,
         blissful_bassi, frosty_mcclintock, frosty_noether).
-      status: not_started
+      status: completed
+      completed: '2026-08-17'
+      note: No github-mcp-server containers (running or stopped) remain on tony-omen; images also absent.
     - label: Migrate redis to tony-dell podman
       text: Move redis:7.4-alpine to tony-dell so yomi-api no longer crosses the tailnet for redis://100.75.102.88:6379. Update
         yomi-api env REDIS_URL to 127.0.0.1:6379.
-      status: not_started
+      status: completed
+      completed: '2026-08-17'
+      note: Quadlet unit ~/.config/containers/systemd/redis.container enabled; yomi-api REDIS_URL set to tony-dell tailnet IP.
     - label: Migrate mddb + mddb-panel to tony-dell podman
       text: Move tradik/mddb:latest and tradik/mddb:panel-latest to tony-dell. Update Caddy reverse proxy on tony-omen to
         route /api/mddb/* and /mddb/* to tony-dell over the tailnet. Migrate the mddb data volume (~100MB).
-      status: not_started
+      status: completed
+      completed: '2026-08-17'
+      note: Quadlet units enabled; Caddy on tony-omen routes to 100.68.142.13:11023 and :3002. mddb_mddb-data volume still exists on omen and can be reclaimed with user approval.
     - label: Migrate raceman stack to tony-dell podman
       text: Move raceman-web (nginx:alpine) and raceman-php (php-fpm) to tony-dell. Update Caddy to route :8083 to tony-dell.
         Frees omen disk.
-      status: not_started
+      status: completed
+      completed: '2026-08-17'
+      note: raceman-web and raceman-php Quadlet units enabled; Caddy routes /apps/raceman/*, /apps/common.css, and /apps/nav.js to tony-dell:8083.
     - label: Assess weaviate migration to tony-dell
       text: Weaviate has no GPU dependency but depends on postgres (already on tony-dell). Measure working set size and migration
         risk before moving.
-      status: not_started
+      status: completed
+      completed: '2026-08-17'
+      note: Migrated; ~40MB data copied. Weaviate Quadlet unit enabled on port 8084 because chaba-funnel binds 0.0.0.0:8082.
     - label: Update ssot.services.yml and ssot.containerization.yml with new disposition
       text: After each migration, update the SSOT to reflect the new host, runtime, ports, and Quadlet unit paths.
-      status: not_started
+      status: completed
+      completed: '2026-08-18'
+      note: ssot.containerization.yml and ssot.services.yml already describe the tony-dell podman disposition and routing.
   - label: SSOT branch/worktree registry
     text: 'Create a canonical SSOT that maps each SSOT focus branch to a git branch,
 

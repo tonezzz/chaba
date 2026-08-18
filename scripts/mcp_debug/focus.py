@@ -225,6 +225,97 @@ def log_session_summary(summary, dry_run=False):
         yaml.safe_dump(doc, f, sort_keys=False, allow_unicode=True, width=120, default_flow_style=False)
 
 
+def _historical_items():
+    doc = _load_focus()
+    sections = doc.get("sections", [])
+    historical = []
+    for sec in sections:
+        if "History" in sec.get("title", "") or sec.get("title") == "Archived - Focus History":
+            historical.extend(sec.get("items", []))
+    return historical
+
+
+def _decision_tree_cases():
+    doc = _load_current()
+    tree = doc.get("decision_tree", {}) or {}
+    return tree.get("cases", []) if isinstance(tree, dict) else tree
+
+
+def _decision_log():
+    if not DECISIONS.exists():
+        return []
+    try:
+        with open(DECISIONS) as f:
+            doc = yaml.safe_load(f) or {}
+    except Exception:
+        return []
+    return doc.get("sections", [{}])[0].get("items", [])
+
+
+def _pre_action_summary(request):
+    doc = _load_current()
+    active, quick_wins = _active_items(doc)
+    req = str(request).lower()
+
+    duplicate_active = []
+    for key in ("shared", "branch"):
+        it = active.get(key)
+        if it and (not req or any(part in it.get("label", "").lower() for part in req.split())):
+            duplicate_active.append(f"{key}: {it.get('label', '')}")
+
+    similar_historical = []
+    for h in _historical_items():
+        text = " ".join([
+            h.get("label", ""),
+            h.get("text", ""),
+            " ".join(str(t) for t in h.get("tags", []))
+        ]).lower()
+        if not req or any(part in text for part in req.split()):
+            similar_historical.append({
+                "label": h.get("label", ""),
+                "date": str(h.get("date", "")),
+                "outcome": h.get("outcome", "")[:120]
+            })
+
+    related_cases = []
+    for case in _decision_tree_cases():
+        case_text = " ".join([
+            str(case.get("case", "")),
+            str(case.get("condition", "")),
+            str(case.get("action", "")),
+        ]).lower()
+        if not req or any(part in case_text for part in req.split()):
+            related_cases.append({
+                "case": case.get("case", ""),
+                "condition": case.get("condition", "")[:120],
+                "action": case.get("action", "")[:120],
+            })
+
+    related_decisions = []
+    for d in _decision_log():
+        decision_text = " ".join([
+            str(d.get("request", "")),
+            str(d.get("action", "")),
+            str(d.get("reason", "")),
+        ]).lower()
+        if not req or any(part in decision_text for part in req.split()):
+            related_decisions.append({
+                "date": str(d.get("date", "")),
+                "action": d.get("action", ""),
+                "target": d.get("target", "")[:120]
+            })
+
+    return {
+        "request": request,
+        "active_foci": active,
+        "duplicate_active_matches": duplicate_active,
+        "similar_historical": similar_historical[:5],
+        "related_decision_tree_cases": related_cases[:5],
+        "related_decision_log": related_decisions[:5],
+        "ready_to_proceed": not duplicate_active and not similar_historical,
+    }
+
+
 def _make_recommendation(request, active, quick_wins):
     req = str(request).lower()
 
@@ -330,6 +421,12 @@ def mcp_focus(request=None, mode="recommend", decision=None, summary=None):
 
     if mode == "status":
         return {"ok": True, "active": active, "quick_wins": quick_wins}
+
+    if mode == "pre_action":
+        return {
+            "ok": True,
+            "pre_action_summary": _pre_action_summary(request or ""),
+        }
 
     if not request:
         recommendation = _make_recommendation("", active, quick_wins)

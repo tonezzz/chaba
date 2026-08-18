@@ -112,6 +112,14 @@ decision_tree:
     action: Use the relevant MCP server per policy, document source, and do not take destructive actions without user confirmation
     examples:
     - mcp-health used for Service Failures investigation
+  - case: pre_action_summary
+    mcp_focus_action: pre_action
+    condition: Before beginning any non-trivial work, or when the user asks for the current focus landscape
+    action: Call mcp_focus with mode pre_action to get active foci, duplicate/historical matches, and related decision-tree entries,
+      then present a concise summary and ask for confirmation before proceeding
+    examples:
+    - User asks 'what is our focus?' or 'let's plan to finish all backlog'
+    - Assistant is about to start a multi-step focus after a request
 quick_win_criteria:
 - Single file or single small edit set
 - No new dependencies, installs, or infrastructure changes
@@ -150,11 +158,17 @@ sections:
     - duplication
     subtasks:
     - label: Design gate fields in ssot.focus.current.yml
-      status: not_started
+      status: completed
+      completed: '2026-08-18'
+      note: Added pre_action_summary decision-tree case and documented the gate in ssot.focus.current.yml.
     - label: Update mcp_focus intake to run the gate and emit summary
-      status: not_started
+      status: completed
+      completed: '2026-08-18'
+      note: Added pre_action mode to mcp_focus in scripts/mcp_debug/focus.py and inputSchema in server.py.
     - label: Validate with test requests and commit
-      status: not_started
+      status: completed
+      completed: '2026-08-18'
+      note: Tested mcp_focus mode pre_action via Python; it returned active foci, similar historical, and related decision cases.
     request_log: []
 - title: Quick Wins
   icon: quick

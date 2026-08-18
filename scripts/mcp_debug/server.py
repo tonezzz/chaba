@@ -404,12 +404,12 @@ def handle_tools_list(id_):
         },
         {
             "name": "mcp_focus",
-            "description": "Focus router, decision logger, and session summary writer. Modes: recommend (default), status, technical_decision, session_summary.",
+            "description": "Focus router, decision logger, and session summary writer. Modes: recommend (default), status, pre_action, technical_decision, session_summary.",
             "inputSchema": {
                 "type": "object",
                 "properties": {
-                    "request": {"type": "string", "description": "Optional user request to classify for recommend/status"},
-                    "mode": {"type": "string", "enum": ["recommend", "status", "technical_decision", "session_summary"], "default": "recommend", "description": "recommend returns a recommendation; status returns active foci and quick wins only; technical_decision appends to ssot.technical-decisions.yml; session_summary appends to ssot.focus.sessions.yml"},
+                    "request": {"type": "string", "description": "Optional user request to classify for recommend/status/pre_action"},
+                    "mode": {"type": "string", "enum": ["recommend", "status", "pre_action", "technical_decision", "session_summary"], "default": "recommend", "description": "recommend returns a recommendation; status returns active foci and quick wins only; pre_action returns duplicate/history/decision-tree summary before work begins; technical_decision appends to ssot.technical-decisions.yml; session_summary appends to ssot.focus.sessions.yml"},
                     "decision": {"type": "object", "description": "Decision object for technical_decision mode (id, title, context, options, chosen, reasoning, consequences)"},
                     "summary": {"type": "object", "description": "Session summary object for session_summary mode (focus, source, plan, done, follow_up, next_action, decisions)"},
                 },
