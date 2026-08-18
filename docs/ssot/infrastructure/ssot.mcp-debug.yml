@@ -194,10 +194,11 @@ debug_commands:
     expected_output: top_processes
     note: macOS only; Linux top does not support these flags.
   lsof -nP -iTCP:
-    description: macOS TCP sockets and network connections
+    description: TCP sockets and network connections
     compact: true
     expected_output: lsof_tcp
-    note: Works on Linux too, but may be macOS-only in savings report.
+    raw_command: 'lsof -nP'
+    note: Works on Linux and macOS; raw uses 'lsof -nP' to include UDP as a larger baseline.
   launchctl list:
     description: macOS launchd loaded services
     compact: true
