@@ -8,6 +8,7 @@ def generate_prompt(title, item, source):
     branch = item.get("branch")
     subtasks = item.get("subtasks", [])
 
+    ownership = item.get("ownership") or {}
     lines = [
         f"# NEXT FOCUS: {label}",
         "",
@@ -17,13 +18,25 @@ def generate_prompt(title, item, source):
         "",
         f"**Priority:** {item.get('priority', 'medium')}",
         "",
+    ]
+    if ownership:
+        lines.append(f"**Owner:** {ownership.get('owner', 'tony')}")
+        lines.append(f"**Session:** {ownership.get('session', '')}")
+        lines.append(f"**Locked:** {ownership.get('locked', False)}")
+        if ownership.get('lock_reason'):
+            lines.append(f"**Lock reason:** {ownership.get('lock_reason')}")
+        lines.append("")
+    if item.get("safe_to_parallel"):
+        lines.append("**Safe to run in parallel:** yes")
+        lines.append("")
+    lines.extend([
         "## Description",
         "",
         text.strip() if isinstance(text, str) and text.strip() else "(no description)",
         "",
         "## Incomplete subtasks",
         "",
-    ]
+    ])
     incomplete = incomplete_subtasks(item)
     if incomplete:
         for st in incomplete:
@@ -77,6 +90,8 @@ def generate_suggestion_prompt(item):
 def generate_subagent_contract(title, item, source):
     prompt = generate_prompt(title, item, source)
     subagent = item.get("subagent", {})
+    ownership = item.get("ownership") or {}
+    safe = item.get("safe_to_parallel", False)
     if subagent:
         profile = subagent.get("profile", "subagent_general")
         parallel = subagent.get("parallel", False)
@@ -87,12 +102,21 @@ def generate_subagent_contract(title, item, source):
             "",
             "## Sub-agent contract",
             "",
+        ]
+        if safe:
+            contract.extend([
+                "- This focus is safe to run in parallel with the active focus.",
+                f"- Safe to parallel: {safe}",
+            ])
+        if ownership:
+            contract.append(f"- Owner: {ownership.get('owner', 'tony')} | Session: {ownership.get('session', '')} | Locked: {ownership.get('locked', False)}")
+        contract.extend([
             f"- This focus is delegated to a background sub-agent.",
             f"- Profile: `{profile}`",
             f"- Parallel: {parallel}",
             f"- Requires approval before destructive changes: {requires_approval}",
             f"- Can change host: {can_change_host}",
-        ]
+        ])
         if notes:
             contract.extend([f"- Notes: {notes}", ""])
         contract.extend([

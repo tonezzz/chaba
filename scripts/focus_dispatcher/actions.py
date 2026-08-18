@@ -33,10 +33,12 @@ def make_focus_item(label, text, branch, priority, tags, subtasks, source=None, 
         "tags": tags or ["focus"],
         "subtasks": subtasks or [],
         "request_log": [],
-        "owner": "tony",
-        "session": session or "",
-        "locked": True,
-        "lock_reason": "Activated as active focus",
+        "ownership": {
+            "owner": "tony",
+            "session": session or "",
+            "locked": True,
+            "lock_reason": "Activated as active focus",
+        },
     }
     if branch:
         item["branch"] = branch

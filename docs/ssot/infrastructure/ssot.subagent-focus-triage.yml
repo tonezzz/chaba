@@ -73,5 +73,13 @@ examples:
   output:
     action: backlog
     target: null
+    safe_to_parallel: true
     reason: The request is a multi-step improvement to an existing system component.
     confidence: medium
+- request: "Can you run a quick py_compile check on mcp_debug?"
+  output:
+    action: safe
+    target: null
+    safe_to_parallel: true
+    reason: The request is a read-only validation that can run in parallel on a different branch.
+    confidence: high
