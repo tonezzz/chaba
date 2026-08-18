@@ -1,0 +1,16 @@
+[Unit]
+Description=Status Data API on tony-dell
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/tony/tony-dell/status-data-api
+ExecStartPre=-/usr/bin/podman build -t status-data-api -f ./Dockerfile .
+ExecStart=/usr/bin/podman run --rm --replace --name status-data-api -p 8000:8000 -v /home/tony/tony-dell/status-data-api/repo:/repo:ro -e REPO_PATH=/repo -e FRIGATE_URL=http://100.75.102.88:8080/frigate -e SENSOR_READER_URL=http://100.75.102.88:8001 status-data-api
+ExecStop=/usr/bin/podman stop -t 10 status-data-api
+ExecStopPost=-/usr/bin/podman rm status-data-api
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target
