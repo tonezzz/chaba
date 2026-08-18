@@ -193,7 +193,17 @@ def _sweep_candidates(doc, active, backlog, inbox):
     return candidates
 
 
-def _bulk_defer(candidates, hold_label, session, reason):
+def _resolve_session(session_map, candidate, bulk_session):
+    if not session_map:
+        return bulk_session
+    if isinstance(session_map, str):
+        return session_map
+    label = candidate.get("label", "")
+    branch = candidate.get("branch", "")
+    return session_map.get(label) or session_map.get(branch) or session_map.get("default") or bulk_session
+
+
+def _bulk_defer(candidates, hold_label, session_map, bulk_session, reason):
     today = datetime.now().strftime("%Y-%m-%d")
     changed = []
     # Load focus doc once for backlog edits
@@ -207,6 +217,7 @@ def _bulk_defer(candidates, hold_label, session, reason):
         source = c.get("source", "")
         if not source:
             continue
+        session = _resolve_session(session_map, c, bulk_session)
 
         # Focus-inbox file
         if "focus-inbox" in source:
@@ -224,16 +235,19 @@ def _bulk_defer(candidates, hold_label, session, reason):
                     doc = focus
                 with open(p, "w") as f:
                     yaml.safe_dump(doc, f, sort_keys=False, allow_unicode=True, width=120, default_flow_style=False)
-                changed.append({"label": c["label"], "to": "deferred", "file": str(p)})
+                changed.append({"label": c["label"], "to": "deferred", "session": session, "file": str(p)})
             continue
 
         # Backlog in ssot.focus.yml
         if "ssot.focus.yml" in source:
             for item in focus_section.get("items", []):
                 if item and item.get("label") == c["label"]:
+                    prev = item.get("status")
+                    if prev == "parked":
+                        prev = item.get("previous_status", prev)
                     item["status"] = "parked"
                     item["parked"] = today
-                    item["previous_status"] = item.get("status") if item.get("status") != "parked" else item.get("previous_status")
+                    item["previous_status"] = prev
                     item["deferred"] = {
                         "to_session": session,
                         "reason": reason,
@@ -246,9 +260,12 @@ def _bulk_defer(candidates, hold_label, session, reason):
             if sec.get("title") in ("Active Shared Focus", "Active Branch Focus"):
                 for item in sec.get("items", []):
                     if item and item.get("label") == c["label"]:
+                        prev = item.get("status")
+                        if prev == "parked":
+                            prev = item.get("previous_status", prev)
                         item["status"] = "parked"
                         item["parked"] = today
-                        item["previous_status"] = item.get("status") if item.get("status") != "parked" else item.get("previous_status")
+                        item["previous_status"] = prev
                         item["deferred"] = {
                             "to_session": session,
                             "reason": reason,
@@ -679,7 +696,7 @@ def _load_sessions():
         return {}
 
 
-def mcp_focus(request=None, mode="recommend", decision=None, summary=None, resume_session=None, reason=None, hold=None, bulk_session=None):
+def mcp_focus(request=None, mode="recommend", decision=None, summary=None, resume_session=None, reason=None, hold=None, bulk_session=None, session_map=None):
     if mode == "technical_decision":
         if not decision:
             return {"ok": False, "error": "decision is required for technical_decision mode"}
@@ -779,8 +796,8 @@ def mcp_focus(request=None, mode="recommend", decision=None, summary=None, resum
             hold_item = {"label": active["branch"].get("label"), "status": "active", "why": "active branch focus"}
 
         deferred = []
-        if bulk_session:
-            deferred = _bulk_defer(process_queue, hold_label, bulk_session, reason or "Bulk defer via mcp_focus sweep")
+        if bulk_session or session_map:
+            deferred = _bulk_defer(process_queue, hold_label, session_map, bulk_session, reason or "Bulk defer via mcp_focus sweep")
             log_session_summary({
                 "focus": hold_item.get("label", ""),
                 "source": "mcp_focus sweep bulk defer",
@@ -801,7 +818,7 @@ def mcp_focus(request=None, mode="recommend", decision=None, summary=None, resum
                 "target": hold_item.get("label") if hold_item else None,
                 "confidence": "medium",
                 "reasoning": f"Hold '{hold_item.get('label') if hold_item else 'none'}' and process {len(process_queue)} remaining focuses/parked/backlog items.",
-                "next_prompt": f"Review the {len(process_queue)} items in process_queue. Activate the first, or defer them all to specific sessions." if not bulk_session else f"Bulk-deferred {len(deferred)} items to session '{bulk_session}'. Continue {hold_item.get('label', '')}.",
+                "next_prompt": f"Review the {len(process_queue)} items in process_queue. Activate the first, or defer them all to specific sessions." if not (bulk_session or session_map) else f"Bulk-deferred {len(deferred)} items to their assigned sessions. Continue {hold_item.get('label', '')}.",
             },
         }
 

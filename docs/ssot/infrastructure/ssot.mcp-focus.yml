@@ -13,7 +13,8 @@ overview:
     - resume_session: target session identifier for defer mode
     - reason: reason for deferring
     - hold: label of the focus to hold while sweeping the rest
-    - bulk_session: if provided in sweep mode, bulk-defer all non-hold candidates to this session
+    - bulk_session: fallback session for any non-hold candidate not matched by session_map
+    - session_map: mapping of focus label, branch, or 'default' to a session name for per-item routing
   guarantees:
     - Read-only. It never writes to ssot.focus.current.yml, ssot.focus.yml, or the focus-inbox/ directory.
     - If no request is provided, it always returns the current active foci and quick wins.
@@ -102,7 +103,7 @@ actions:
     output:
       - Return a hold candidate and a sorted process queue of all other parked, backlog, inbox, active, and deferred subtask candidates.
       - Default hold is the active branch focus if no hold is specified.
-      - If bulk_session is provided, bulk-defer the entire process queue to that session and write the changes.
+      - If bulk_session or session_map is provided, bulk-defer the process queue to the matched sessions and write the changes.
       - Return the draft content under suggestion.
     confidence: low
 

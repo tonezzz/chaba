@@ -438,7 +438,8 @@ def handle_tools_list(id_):
                     "resume_session": {"type": "string", "description": "Target session identifier for defer mode (e.g. 'chaba-2026-08-19')"},
                     "reason": {"type": "string", "description": "Reason for deferring the active focus or subtask"},
                     "hold": {"type": "string", "description": "Label of the focus to hold while sweeping the rest"},
-                    "bulk_session": {"type": "string", "description": "If provided in sweep mode, all non-hold candidates are bulk-deferred to this session"},
+                    "bulk_session": {"type": "string", "description": "If provided in sweep mode, non-hold candidates without a session_map match are bulk-deferred to this session"},
+                    "session_map": {"type": "object", "description": "Optional mapping of label/branch/default to session for sweep bulk-defer"},
                     "decision": {"type": "object", "description": "Decision object for technical_decision mode (id, title, context, options, chosen, reasoning, consequences)"},
                     "summary": {"type": "object", "description": "Session summary object for session_summary mode (focus, source, plan, done, follow_up, next_action, decisions)"},
                 },
@@ -636,6 +637,7 @@ def handle_tools_call(id_, params):
             reason=arguments.get("reason"),
             hold=arguments.get("hold"),
             bulk_session=arguments.get("bulk_session"),
+            session_map=arguments.get("session_map"),
         )
         output = json.dumps(result, separators=(",", ":"))
     else:

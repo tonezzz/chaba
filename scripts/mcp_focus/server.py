@@ -40,7 +40,8 @@ def handle_tools_list(id_):
                             "resume_session": {"type": "string", "description": "Target session identifier for defer"},
                             "reason": {"type": "string", "description": "Reason for deferring"},
                             "hold": {"type": "string", "description": "Label of the focus to hold while sweeping the rest"},
-                            "bulk_session": {"type": "string", "description": "If provided in sweep mode, all non-hold candidates are bulk-deferred to this session"},
+                            "bulk_session": {"type": "string", "description": "If provided in sweep mode, non-hold candidates without a session_map match are bulk-deferred to this session"},
+                            "session_map": {"type": "object", "description": "Optional mapping of label/branch/default to session for sweep bulk-defer"},
                         },
                         "required": ["request"],
                     },
@@ -68,6 +69,7 @@ def handle_tools_call(id_, params):
             reason=arguments.get("reason"),
             hold=arguments.get("hold"),
             bulk_session=arguments.get("bulk_session"),
+            session_map=arguments.get("session_map"),
         )
         _send({"jsonrpc": "2.0", "id": id_, "result": {"content": [{"type": "text", "text": json.dumps(result, default=str)}]}})
         return
