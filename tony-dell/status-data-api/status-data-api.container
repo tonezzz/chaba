@@ -1,0 +1,18 @@
+[Unit]
+Description=Status Data API Quadlet on tony-dell
+
+[Container]
+Image=status-data-api
+ContainerName=status-data-api
+PublishPort=8000:8000
+Volume=/home/tony/tony-dell/status-data-api/repo:/repo:ro
+Environment=REPO_PATH=/repo
+Environment=FRIGATE_URL=http://100.75.102.88:8080/frigate
+Environment=SENSOR_READER_URL=http://100.75.102.88:8001
+
+[Service]
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target
