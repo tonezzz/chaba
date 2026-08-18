@@ -91,7 +91,7 @@ services:
     - default
   gpu-queue:
     container_name: gpu-queue
-    image: node:20-alpine
+    image: node:22-alpine
     restart: unless-stopped
     env_file:
     - /home/tony/CascadeProjects/helm/.env.local
@@ -126,7 +126,7 @@ services:
     - production
   gpu-queue-processor:
     container_name: gpu-queue-processor
-    image: node:20-alpine
+    image: node:22-alpine
     restart: unless-stopped
     env_file:
     - /home/tony/CascadeProjects/helm/.env.local
