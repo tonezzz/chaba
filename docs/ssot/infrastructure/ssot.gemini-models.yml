@@ -547,6 +547,7 @@ models:
     last_verified: '2026-08-15'
   gemini-embedding-1:
     display_name: Gemini Embedding 1
+    api_name: gemini-embedding-001
     family: Embedding
     category: Other models
     free_tier:
@@ -554,10 +555,11 @@ models:
       tpm: 30000
       rpd: 1000
     status: available
-    notes: Limits from AI Studio rate-limits dashboard on 2026-08-15
-    last_verified: '2026-08-15'
+    notes: Confirmed in AI Studio rate-limits dashboard on 2026-08-18. Actual API model name is gemini-embedding-001.
+    last_verified: '2026-08-18'
   gemini-embedding-2:
     display_name: Gemini Embedding 2
+    api_name: gemini-embedding-002
     family: Embedding
     category: Other models
     free_tier:
@@ -565,8 +567,8 @@ models:
       tpm: 30000
       rpd: 1000
     status: available
-    notes: Limits from AI Studio rate-limits dashboard on 2026-08-15
-    last_verified: '2026-08-15'
+    notes: Confirmed in AI Studio rate-limits dashboard on 2026-08-18. Actual API model name is gemini-embedding-002. Lower project usage than gemini-embedding-001.
+    last_verified: '2026-08-18'
   gemini-omni-flash:
     display_name: Gemini Omni Flash
     family: Omni
@@ -690,17 +692,26 @@ models:
     last_verified: '2026-08-15'
 fallbacks:
   helm-llm:
-    primary: gemini-2.5-flash
+    primary: gemini-3.1-flash-lite
     chain:
-      - model: gemini-2.5-flash-lite
-        expected_quality: high
-        reason: Same Gemini 2.5 family; 2x RPM with identical TPM
       - model: gemini-3.5-flash-lite
-        expected_quality: medium-high
-        reason: 3x RPM and 25x RPD; slightly older family but proven
+        expected_quality: high
+        reason: 3x RPM and 25x RPD vs Gemini 2.5 Flash; identical limits to gemini-3.1-flash-lite
       - model: gemini-3.7-flash
+        expected_quality: medium-high
+        reason: Newest Flash family with low observed usage; 5 RPM / 20 RPD, adequate for code
+      - model: gemini-3.5-flash
         expected_quality: medium
-        reason: Same Flash-tier limits; adequate for code when newer models exhausted
+        reason: Same 5 RPM / 20 RPD as 3.7; useful when 3.1/3.5-lite quotas are exhausted
+      - model: gemini-2.5-flash-lite
+        expected_quality: medium
+        reason: Higher RPM (10) but observed over RPD on 2026-08-18; use after daily reset
+      - model: gemini-2.5-flash
+        expected_quality: medium
+        reason: Previously primary; 5 RPM / 20 RPD and observed over RPD on 2026-08-18
+      - model: gemini-3.6-flash
+        expected_quality: medium
+        reason: 5 RPM / 20 RPD; observed over RPD on 2026-08-18; fall back to this after reset
   yomi-summarization:
     primary: gemma-4-31b-it
     chain:

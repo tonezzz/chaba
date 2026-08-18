@@ -6,14 +6,25 @@ const HOST = process.env.GEMINI_PROXY_HOST || '0.0.0.0';
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const GEMINI_EMBEDDING_MODEL = process.env.GEMINI_EMBEDDING_MODEL || 'gemini-embedding-001';
 const DEFAULT_DIMENSIONS = parseInt(process.env.GEMINI_EMBEDDING_DIMENSIONS || '768', 10);
+const MAX_RPM = parseInt(process.env.GEMINI_PROXY_MAX_RPM || '100', 10);
+const BATCH_SIZE = parseInt(process.env.GEMINI_PROXY_BATCH_SIZE || '100', 10);
+const MAX_RETRIES = parseInt(process.env.GEMINI_PROXY_MAX_RETRIES || '5', 10);
+const INITIAL_BACKOFF_MS = 500;
+const MAX_BACKOFF_MS = 30000;
 
 const MODEL_ALIASES = {
-  'text-embedding-004': GEMINI_EMBEDDING_MODEL,
-  'nomic-embed-text': GEMINI_EMBEDDING_MODEL,
+  'text-embedding-004': 'gemini-embedding-001',
+  'nomic-embed-text': 'gemini-embedding-001',
   'gemini-embedding-001': 'gemini-embedding-001',
-  'gemini-embedding-2': 'gemini-embedding-2',
-  'gemini-embedding-2-preview': 'gemini-embedding-2-preview',
+  'gemini-embedding-1': 'gemini-embedding-001',
+  'gemini-embedding-002': 'gemini-embedding-002',
+  'gemini-embedding-2': 'gemini-embedding-002',
+  'gemini-embedding-2-preview': 'gemini-embedding-002',
 };
+
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
 
 function sendJson(res, status, obj) {
   const body = JSON.stringify(obj);
@@ -32,28 +43,98 @@ function resolveGeminiModel(requested) {
   return MODEL_ALIASES[key] || GEMINI_EMBEDDING_MODEL;
 }
 
-async function fetchGeminiEmbedding(text, geminiModel, outputDimensionality) {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:embedContent?key=${GEMINI_API_KEY}`;
-  const body = {
-    content: { parts: [{ text }] },
-  };
-  if (outputDimensionality) {
-    body.outputDimensionality = outputDimensionality;
+class RateLimiter {
+  constructor(rpm) {
+    this.minInterval = 60000 / rpm;
+    this.nextAvailable = 0;
+    this.tail = Promise.resolve();
   }
 
-  const response = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
+  acquire() {
+    const p = this.tail;
+    this.tail = p.then(async () => {
+      const now = Date.now();
+      const wait = Math.max(0, this.nextAvailable - now);
+      if (wait > 0) await sleep(wait);
+      this.nextAvailable = Date.now() + this.minInterval;
+    });
+    return this.tail;
+  }
+}
+
+const geminiRateLimiter = new RateLimiter(MAX_RPM);
+
+function retryAfterMs(response) {
+  const raw = response.headers.get('retry-after') || response.headers.get('Retry-After');
+  if (!raw) return null;
+  const seconds = parseInt(raw, 10);
+  return isNaN(seconds) ? null : seconds * 1000;
+}
+
+function parseGeminiBatch(data, count) {
+  if (!data.embeddings || !Array.isArray(data.embeddings)) {
+    if (data.embedding && Array.isArray(data.embedding.values)) {
+      return [data.embedding.values];
+    }
+    throw new Error('unexpected Gemini response: missing embeddings array');
+  }
+  if (data.embeddings.length !== count) {
+    throw new Error(`expected ${count} embeddings, got ${data.embeddings.length}`);
+  }
+  return data.embeddings.map((entry, i) => {
+    if (Array.isArray(entry.values)) return entry.values;
+    if (entry.embedding && Array.isArray(entry.embedding.values)) return entry.embedding.values;
+    throw new Error(`unexpected embedding shape at index ${i}`);
   });
+}
 
-  if (!response.ok) {
-    const error = await response.text();
-    throw new Error(`Gemini API error: ${response.status} - ${error}`);
+async function fetchGeminiBatch(texts, geminiModel, outputDimensionality) {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:batchEmbedContents?key=${GEMINI_API_KEY}`;
+  const requests = texts.map(text => ({
+    model: `models/${geminiModel}`,
+    content: { parts: [{ text }] },
+    outputDimensionality,
+  }));
+
+  let lastError;
+  for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+    if (attempt > 0) {
+      const backoff = Math.min(INITIAL_BACKOFF_MS * (2 ** (attempt - 1)), MAX_BACKOFF_MS);
+      await sleep(backoff);
+    }
+
+    await geminiRateLimiter.acquire();
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ requests }),
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      return parseGeminiBatch(data, texts.length);
+    }
+
+    const errorText = await response.text();
+    lastError = `Gemini API error: ${response.status} - ${errorText}`;
+
+    if (response.status === 429) {
+      const retryMs = retryAfterMs(response);
+      if (retryMs && retryMs > 0) {
+        await sleep(Math.min(retryMs, MAX_BACKOFF_MS));
+      }
+      continue;
+    }
+
+    if (response.status >= 500) {
+      continue;
+    }
+
+    throw new Error(lastError);
   }
 
-  const data = await response.json();
-  return data.embedding.values;
+  throw new Error(lastError);
 }
 
 async function handleEmbed(req, res) {
@@ -72,11 +153,16 @@ async function handleEmbed(req, res) {
   const requestedModel = payload.model || 'text-embedding-004';
   const geminiModel = resolveGeminiModel(requestedModel);
 
-  let inputs = payload.input;
-  if (typeof inputs === 'string') {
-    inputs = [inputs];
-  } else if (!Array.isArray(inputs) || inputs.length === 0) {
+  const isSingle = typeof payload.input === 'string';
+  let inputs = isSingle ? [payload.input] : payload.input;
+  if (!Array.isArray(inputs) || inputs.length === 0) {
     return sendJson(res, 400, { error: 'input must be a non-empty string or array of strings' });
+  }
+
+  for (let i = 0; i < inputs.length; i++) {
+    if (typeof inputs[i] !== 'string' || inputs[i].trim().length === 0) {
+      return sendJson(res, 400, { error: `input at index ${i} must be a non-empty string` });
+    }
   }
 
   let outputDimensionality = payload.outputDimensionality;
@@ -91,27 +177,31 @@ async function handleEmbed(req, res) {
 
   const start = process.hrtime.bigint();
   const embeddings = [];
-  for (const text of inputs) {
-    if (typeof text !== 'string' || text.trim().length === 0) {
-      return sendJson(res, 400, { error: 'each input must be a non-empty string' });
+  try {
+    for (let i = 0; i < inputs.length; i += BATCH_SIZE) {
+      const chunk = inputs.slice(i, i + BATCH_SIZE);
+      const chunkEmbeddings = await fetchGeminiBatch(chunk, geminiModel, outputDimensionality);
+      embeddings.push(...chunkEmbeddings);
     }
-    try {
-      const values = await fetchGeminiEmbedding(text, geminiModel, outputDimensionality);
-      embeddings.push(values);
-    } catch (err) {
-      return sendJson(res, 502, { error: err.message });
-    }
+  } catch (err) {
+    return sendJson(res, 502, { error: err.message });
   }
   const end = process.hrtime.bigint();
   const durationMs = Number((end - start) / 1000000n);
 
-  sendJson(res, 200, {
+  const result = {
     model: requestedModel,
     gemini_model: geminiModel,
     output_dimensionality: outputDimensionality,
-    embeddings,
     duration_ms: durationMs,
-  });
+  };
+  if (isSingle) {
+    result.embedding = embeddings[0];
+  } else {
+    result.embeddings = embeddings;
+  }
+
+  sendJson(res, 200, result);
 }
 
 const server = createServer((req, res) => {

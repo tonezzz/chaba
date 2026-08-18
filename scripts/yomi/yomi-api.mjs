@@ -18,7 +18,7 @@ const WEAVIATE_SEARCH_URL = process.env.WEAVIATE_SEARCH_URL || 'http://localhost
 const WEAVIATE_URL = process.env.WEAVIATE_URL || 'http://localhost:8082';
 const EMBEDDING_URL = process.env.EMBEDDING_SERVICE_URL || 'http://localhost:5000';
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-const GEMINI_EMBEDDING_MODEL = process.env.GEMINI_EMBEDDING_MODEL || 'text-embedding-004';
+const GEMINI_EMBEDDING_MODEL = process.env.GEMINI_EMBEDDING_MODEL || 'gemini-embedding-001';
 
 const EXT_TO_MIME = {
   jpg: 'image/jpeg', jpeg: 'image/jpeg', png: 'image/png', gif: 'image/gif',
