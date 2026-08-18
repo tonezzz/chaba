@@ -148,8 +148,7 @@ sections:
       hotspot is using a hidden SSID.
 
       '
-    status: parked
-    parked: '2026-08-18'
+    status: active
     priority: medium
     started: '2026-08-18'
     estimated_duration: 1 session
@@ -162,9 +161,11 @@ sections:
     - mt7601u
     subtasks:
     - label: Enable "Maximize Compatibility" on iPhone Personal Hotspot and rescan on tony-dell
-      status: not_started
+      status: in_progress
     - label: If still invisible, verify driver/firmware and regulatory domain for MT7601U
-      status: not_started
+      status: completed
+      completed: '2026-08-18'
+      note: 'MT7601U (148f:7601) is present and the driver mt7601u is loaded. The adapter is 2.4 GHz only (channels 1-14, 2412-2484 MHz). This confirms the iPhone hotspot must be forced to 2.4 GHz via Maximize Compatibility.'
     request_log: []
     branch: tony-dell
     source: /home/tony/CascadeProjects/chaba/docs/ssot/focus-inbox/2026-08-18-014542-tony-dell-iphone-hotspot.yml
