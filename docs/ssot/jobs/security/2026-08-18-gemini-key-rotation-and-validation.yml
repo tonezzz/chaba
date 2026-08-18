@@ -1,0 +1,96 @@
+title: Gemini Embedding Key Rotation and Validation
+subtitle: Continue the Gemini embedding GPU offload experiment after key rotation
+icon: target
+
+planning:
+  goal: Validate the rotated yomi-api GEMINI_API_KEY, restart yomi-api cleanly, and continue the Gemini embedding GPU offload work including proxy rate limits, side-by-side test collections, and the MDDB switch.
+  scope: |
+    In scope:
+    - Resolve yomi-api port 3000 EADDRINUSE conflict on tony-omen.
+    - Rotate and confirm the yomi-api GEMINI_API_KEY in override.conf.
+    - Validate Gemini proxy rate limits and batchEmbedContents during bulk indexing.
+    - Create MDDB/Weaviate side-by-side test collections on a test host.
+    - Revisit the MDDB switch from Ollama to Gemini proxy.
+    Out of scope:
+    - Production traffic migration to Gemini.
+    - New model fine-tuning or non-Gemini embedding providers.
+  success_criteria:
+    - yomi-api starts cleanly on tony-omen without port 3000 EADDRINUSE.
+    - Gemini proxy responds to batchEmbedContents within rate limits.
+    - Side-by-side test collections produce comparable query results.
+    - MDDB switch decision is documented in ssot.technical-decisions.yml.
+  risks:
+    - EADDRINUSE may indicate another yomi-api instance still running.
+    - Rotated key may not have required quota or permissions; mitigation: keep old key backup until validated.
+    - MDDB/Weaviate may be unreachable on tony-omen; mitigation: use tony-dell as test host.
+  resources:
+    - yomi-api systemd user service on tony-omen
+    - GEMINI_API_KEY in ~/.config/systemd/user/yomi-api.service.d/override.conf
+    - mcp_debug / mcp_health tools for remote verification
+    - MDDB/Weaviate on tony-omen or tony-dell
+  owner: tony
+  estimated_duration: 2 sessions
+  related_focus:
+    - label: Gemini key rotation and validation
+      file: docs/ssot/ssot.focus.current.yml
+
+processing:
+  status: not_started
+  started_at: null
+  steps:
+    - id: 1
+      label: Diagnose and resolve tony-omen yomi-api port 3000 EADDRINUSE
+      status: not_started
+      notes: Identify the conflicting process and free port 3000 or reconfigure yomi-api.
+    - id: 2
+      label: Apply and confirm GEMINI_API_KEY rotation
+      status: not_started
+      notes: Verify override.conf, reload systemd, and start yomi-api.
+    - id: 3
+      label: Validate Gemini proxy rate limits and batchEmbedContents
+      status: not_started
+      notes: Run a small batch embedding test and observe 429/200 responses.
+    - id: 4
+      label: Create MDDB/Weaviate side-by-side test collections
+      status: not_started
+      notes: Index a representative sample into both stores and compare results.
+    - id: 5
+      label: Revisit MDDB switch from Ollama to Gemini proxy
+      status: not_started
+      notes: Compare latency, cost, and quality; record decision.
+  decisions: []
+  changes: []
+
+followup:
+  verification:
+    - yomi-api service status is active (running) and healthy.
+    - Gemini batchEmbedContents returns 200 without rate-limit errors.
+    - Test collections return expected nearest-neighbor results.
+    - SSOT decision log and focus history are updated.
+  rollback_plan:
+    - Restore the previous GEMINI_API_KEY in override.conf.
+    - Restart yomi-api with the previous key.
+    - Disable any new systemd overrides or configuration changes.
+  handoff:
+    - Nightly focus review and registry drift jobs on tony-dell
+  deferred:
+    - Full production MDDB migration.
+    - GPU-offload continuous benchmarking pipeline.
+
+report:
+  status: not_started
+  completed_at: null
+  summary: TBD after validation completes.
+  metrics: []
+  links: []
+  kb_review: []
+  lessons_learned: []
+
+config:
+  version: 1
+  created_at: '2026-08-18'
+  last_updated: '2026-08-18'
+  maintainer: tony
+  related_files:
+    - docs/ssot/templates/job.yml
+    - docs/ssot/focus-inbox/2026-08-18-104228-gemini-key-rotation-and-validation.yml

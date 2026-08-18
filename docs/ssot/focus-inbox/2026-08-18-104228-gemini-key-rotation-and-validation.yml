@@ -1,0 +1,28 @@
+title: Gemini Embedding Key Rotation and Validation
+subtitle: Continue the Gemini embedding GPU offload experiment after key rotation
+icon: inbox
+
+focus:
+  label: Gemini key rotation and validation
+  text: The yomi-api GEMINI_API_KEY was rotated in a side session. Complete the remaining Gemini embedding GPU offload work - validate proxy rate limits, create side-by-side test collections, and revisit the MDDB switch.
+  branch: chaba
+  priority: high
+  status: draft
+  tags: [gemini, embedding, gpu-offload, yomi, validation]
+  missing_info:
+    - Confirm yomi-api starts cleanly after resolving the port 3000 EADDRINUSE conflict on tony-omen
+    - MDDB/Weaviate need to be available on tony-omen or a test host for side-by-side collections
+  subtasks:
+    - label: Rotate yomi-api GEMINI_API_KEY and restart service
+      status: in_progress
+      note: New key applied to ~/.config/systemd/user/yomi-api.service.d/override.conf; clean restart pending resolution of EADDRINUSE on port 3000
+    - label: Validate proxy rate limits and batchEmbedContents during bulk indexing
+      status: not_started
+    - label: Create MDDB/Weaviate side-by-side test collections
+      status: not_started
+    - label: Revisit MDDB switch from Ollama to Gemini proxy
+      status: not_started
+
+source:
+  session: mcp-debug-side
+  date: 2026-08-18
