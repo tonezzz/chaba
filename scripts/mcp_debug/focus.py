@@ -263,6 +263,86 @@ def _session_groups(active, backlog, inbox, current_doc=None):
     return groups
 
 
+def _activate_candidate(candidate):
+    today = datetime.now().strftime("%Y-%m-%d")
+    current_doc = _load_current()
+    focus_doc = _load_focus()
+    focus_section = _find_section(focus_doc.get("sections", []), "Backlog - Triage Queue")
+    label = candidate.get("label", "")
+    source = candidate.get("source", "")
+    if not label:
+        return False
+
+    # If already in current active/parked sections, update in place and ensure only one active branch focus
+    for sec in current_doc.get("sections", []):
+        if sec.get("title") in ("Active Shared Focus", "Active Branch Focus"):
+            for item in sec.get("items", []):
+                if item and item.get("label") == label:
+                    # If in shared, keep shared; if in branch and there is another active branch, reject
+                    if sec.get("title") == "Active Branch Focus":
+                        branch_sec = _find_section(current_doc.get("sections", []), "Active Branch Focus")
+                        if any(i.get("label") != label and i.get("status") == "active" for i in branch_sec.get("items", [])):
+                            return False
+                    item["status"] = "active"
+                    item["started"] = today
+                    if "parked" in item:
+                        item["previous_status"] = item.pop("parked")
+                    item.pop("deferred", None)
+                    _save_current(current_doc)
+                    return True
+
+    # Backlog in ssot.focus.yml
+    if "ssot.focus.yml" in source:
+        for i, item in enumerate(list(focus_section.get("items", []))):
+            if item and item.get("label") == label:
+                focus_section["items"].pop(i)
+                item["status"] = "active"
+                item["started"] = today
+                item.pop("parked", None)
+                item.pop("deferred", None)
+                # Add to active branch focus section
+                branch_sec = _find_section(current_doc.get("sections", []), "Active Branch Focus")
+                if branch_sec:
+                    branch_sec["items"].append(item)
+                _save_focus(focus_doc)
+                _save_current(current_doc)
+                return True
+        return False
+
+    # Focus-inbox file (not already processed)
+    if "focus-inbox" in source and "processed" not in source:
+        p = Path(source)
+        if p.exists():
+            doc = yaml.safe_load(p.read_text()) or {}
+            focus = doc.get("focus") or doc
+            focus["status"] = "active"
+            focus["started"] = today
+            focus.pop("deferred_at", None)
+            focus.pop("deferred_session", None)
+            focus.pop("deferred_reason", None)
+            # Move to processed
+            processed_dir = INBOX_DIR / "processed"
+            processed_dir.mkdir(exist_ok=True)
+            new_path = processed_dir / p.name
+            p.rename(new_path)
+            if "focus" in doc:
+                doc["focus"] = focus
+            else:
+                doc = focus
+            with open(new_path, "w") as f:
+                yaml.safe_dump(doc, f, sort_keys=False, allow_unicode=True, width=120, default_flow_style=False)
+            # Add to current active branch
+            branch_sec = _find_section(current_doc.get("sections", []), "Active Branch Focus")
+            if branch_sec:
+                focus["source"] = str(new_path)
+                branch_sec["items"].append(focus)
+            _save_current(current_doc)
+            return True
+        return False
+
+    return False
+
+
 def _bulk_defer(candidates, hold_label, session_map, bulk_session, reason):
     today = datetime.now().strftime("%Y-%m-%d")
     changed = []
@@ -827,6 +907,38 @@ def mcp_focus(request=None, mode="recommend", decision=None, summary=None, resum
             "subtask": subtask_label,
             "resume_session": resume_session or request or "",
             "reason": reason or request or "",
+        }
+
+    if mode == "next":
+        next_candidates = [c for c in _sweep_candidates(doc, active, _backlog_items(), _inbox_items()) if c.get("status") in ("parked", "deferred", "draft", "pending")]
+        if resume_session:
+            resume_session = resume_session.strip().lower()
+            next_candidates = [c for c in next_candidates if _resolve_session(None, c, "").lower() == resume_session]
+        next_candidates.sort(key=lambda x: (_priority_value(x), _triage_score(x), x["label"]), reverse=True)
+        if not next_candidates:
+            return {"ok": True, "next": None, "reason": "No parked or deferred foci to process."}
+        chosen = next_candidates[0]
+        activated = _activate_candidate(chosen)
+        if activated:
+            log_session_summary({
+                "focus": chosen["label"],
+                "source": "mcp_focus next",
+                "plan": [f"Activate {chosen['label']}"],
+                "done": [],
+                "follow_up": ["Complete the focus or defer it"],
+                "next_action": [f"Work on {chosen['label']}"],
+            })
+        return {
+            "ok": True,
+            "next": chosen,
+            "activated": activated,
+            "recommendation": {
+                "action": "next",
+                "target": chosen.get("label"),
+                "confidence": "medium",
+                "reasoning": f"Activated the highest-priority parked/deferred focus: {chosen.get('label')}.",
+                "next_prompt": f"Start working on {chosen.get('label')} or defer it to a session.",
+            },
         }
 
     if mode == "resume":

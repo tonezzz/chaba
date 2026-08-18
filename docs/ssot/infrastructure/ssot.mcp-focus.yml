@@ -9,7 +9,7 @@ overview:
     request, it recommends the next action without modifying any focus state.
   inputs:
     - request: optional free-text user request
-    - mode: optional "recommend" (default), "status", "pre_action", "safe_next", "ready_queue", "defer", "resume", "sweep", "technical_decision", or "session_summary"
+    - mode: optional "recommend" (default), "status", "pre_action", "safe_next", "ready_queue", "defer", "resume", "sweep", "next", "technical_decision", or "session_summary"
     - resume_session: target session identifier for defer mode
     - reason: reason for deferring
     - hold: label of the focus to hold while sweeping the rest
@@ -105,6 +105,14 @@ actions:
       - Return a hold candidate and a sorted process queue of all other parked, backlog, inbox, active, and deferred subtask candidates.
       - Default hold is the active branch focus if no hold is specified.
       - If bulk_session or session_map is provided, bulk-defer the process queue to the matched sessions and write the changes.
+
+  next:
+    when: |
+      The user wants to activate the highest-priority parked or deferred focus and start processing it.
+    output:
+      - Find the highest-priority parked/deferred focus (optionally filtered by resume_session).
+      - Activate it in ssot.focus.current.yml, ssot.focus.yml, or the focus-inbox file.
+      - Return the activated focus and a recommendation.
       - Return the draft content under suggestion.
     confidence: low
 

@@ -146,7 +146,7 @@ sections:
     text: Process the existing Yomi message corpus (7,872 messages, 66 conversations) to populate summaries, categories, and
       proper display names, and verify the Yomi UI after the recent DB recovery. Do not re-attempt LINE login unless explicitly
       requested.
-    status: parked
+    status: active
     priority: high
     started: '2026-08-18'
     estimated_duration: 1 session
@@ -158,10 +158,9 @@ sections:
     - ui
     subtasks:
     - label: Process existing messages and conversations
-      status: deferred
-      deferred_at: '2026-08-18'
-      resume_session: yomi session
-      resume_note: Leave Yomi for the yomi session
+      status: in_progress
+      started_at: '2026-08-18'
+      note: 'Processing Yomi corpus: populate summaries, categories, display names. Do not re-attempt LINE login unless requested.'
     - label: Generate daily summaries for conversations
       status: not_started
     - label: Restore conversation display names from message data
@@ -171,16 +170,11 @@ sections:
     request_log: []
     ownership:
       owner: tony
-      session: ''
+      session: chaba
       locked: true
       lock_reason: Activated as active focus
     branch: chaba
     source: /home/tony/CascadeProjects/chaba/docs/ssot/focus-inbox/processed/2026-08-18-190030-yomi-conversation-processing.yml
-    parked: '2026-08-18'
-    previous_status: parked
-    deferred:
-      to_session: yomi session
-      reason: No active hold; process all foci later to avoid session conflicts
   - label: Switch MDDB embedding provider from Ollama to Gemini proxy
     text: Apply the validated Gemini proxy to the live MDDB on tony-dell. Update the MDDB container/Quadlet config to use
       http://gemini:11435, reindex all collections, then stop Ollama and reclaim tony-omen GPU.
@@ -219,6 +213,7 @@ sections:
     deferred:
       to_session: chaba-pool
       reason: No active hold; process all foci later to avoid session conflicts
+
 - title: Ready (Safe)
   icon: safe
   layout: list
