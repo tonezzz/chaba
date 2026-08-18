@@ -512,7 +512,7 @@ def mcp_preset_run(name):
             results.append({"ok": False, "error": "step missing tool", "step": step})
             all_ok = False
             continue
-        if tool != "mcp_diff" and not host:
+        if tool not in ("mcp_diff", "mcp_debug_audit") and not host:
             results.append({"ok": False, "error": "step missing host", "step": step})
             all_ok = False
             continue
@@ -557,6 +557,11 @@ def mcp_preset_run(name):
             results.append(r)
             if not r.get("ok"):
                 all_ok = False
+        elif tool == "mcp_debug_audit":
+            r = mcp_debug_audit(hosts=step.get("hosts"), threshold=float(step.get("threshold", 0.0)))
+            results.append(r)
+            if not r.get("ok"):
+                all_ok = False
         else:
             results.append({"ok": False, "error": f"unsupported tool: {tool}", "step": step})
             all_ok = False
@@ -565,5 +570,71 @@ def mcp_preset_run(name):
         "preset": name,
         "description": preset.get("description", ""),
         "results": results,
+    }
+
+
+def mcp_debug_audit(hosts=None, threshold=0.0):
+    """Fetch the live mcp_savings report and return only negative/failed commands, sorted by savings."""
+    if hosts is None:
+        hosts = list(HOSTS.keys())
+    report = mcp_savings(hosts)
+    if not report.get("ok"):
+        return report
+    flagged = []
+    for h, hd in report.get("hosts", {}).items():
+        for c, cd in hd.get("commands", {}).items():
+            pct = cd.get("savings_pct_chars", 0)
+            if not cd.get("ok") or pct < threshold:
+                flagged.append({
+                    "h": h,
+                    "c": c,
+                    "ok": cd.get("ok"),
+                    "pct": pct,
+                    "raw": cd.get("raw_chars"),
+                    "compact": cd.get("compact_chars"),
+                })
+    flagged.sort(key=lambda x: (0 if not x["ok"] else 1, x["pct"]))
+    raw_full = json.dumps(report, separators=(",", ":"))
+    compact = json.dumps({"ok": True, "threshold": threshold, "n": len(flagged), "f": flagged}, separators=(",", ":"))
+    return {
+        "ok": True,
+        "threshold": threshold,
+        "n_total": sum(len(hd.get("commands", {})) for hd in report.get("hosts", {}).values()),
+        "n_flagged": len(flagged),
+        "f": flagged,
+        "raw_chars": len(raw_full),
+        "compact_chars": len(compact),
+        "savings_pct_chars": round((len(raw_full) - len(compact)) / len(raw_full) * 100, 1) if raw_full else 0.0,
+    }
+
+
+def mcp_preset_savings(name):
+    """Compare running a preset as one call vs running each step as a separate MCP tool call."""
+    if name not in PRESETS:
+        return {"ok": False, "error": f"unknown preset: {name}", "available_presets": list(PRESETS.keys())}
+    preset = PRESETS[name]
+    steps = preset.get("steps", [])
+    compact_result = mcp_preset_run(name)
+    if not compact_result.get("ok") and not compact_result.get("results"):
+        return compact_result
+    compact_text = json.dumps(compact_result, separators=(",", ":"), default=str)
+    step_results = compact_result.get("results", [])
+    step_texts = [json.dumps(r, separators=(",", ":"), default=str) for r in step_results]
+    step_data = sum(len(t) for t in step_texts)
+    per_step_overhead = 80
+    raw_text = (len(steps) * per_step_overhead) + step_data
+    n_steps = len(steps) if steps else 1
+    message_savings_pct = round((1 - (2 / (2 * n_steps))) * 100, 1)
+    payload_savings_pct = round((1 - len(compact_text) / raw_text) * 100, 1) if raw_text > 0 else 0.0
+    combined_score = round(0.6 * message_savings_pct + 0.4 * payload_savings_pct, 1)
+    return {
+        "ok": True,
+        "preset": name,
+        "n_steps": n_steps,
+        "raw_chars": raw_text,
+        "compact_chars": len(compact_text),
+        "message_savings_pct": message_savings_pct,
+        "payload_savings_pct": payload_savings_pct,
+        "preset_score": combined_score,
     }
 

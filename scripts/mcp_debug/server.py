@@ -23,6 +23,8 @@ from .tools import (
     mcp_clipboard_set,
     mcp_preset_list,
     mcp_preset_run,
+    mcp_debug_audit,
+    mcp_preset_savings,
 )
 from .reports import mcp_report
 from .focus import mcp_focus
@@ -276,6 +278,28 @@ def handle_tools_list(id_):
             },
         },
         {
+            "name": "mcp_debug_audit",
+            "description": "Filter the live mcp_savings report for negative/failed commands, sorted by savings.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "hosts": {"type": "array", "items": {"type": "string"}, "description": "Hosts to audit (defaults to all)"},
+                    "threshold": {"type": "number", "description": "Only return commands below this savings percentage (default 0.0)", "default": 0.0},
+                },
+            },
+        },
+        {
+            "name": "mcp_preset_savings",
+            "description": "Score a preset's message and payload savings compared to running each step separately.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "preset": {"type": "string", "description": "Preset name to score"},
+                },
+                "required": ["preset"],
+            },
+        },
+        {
             "name": "mcp_report",
             "description": "Generate a savings report in markdown, json, csv, or html from mcp_savings and optionally save it to reports/.",
             "inputSchema": {
@@ -485,6 +509,18 @@ def handle_tools_call(id_, params):
         if not preset:
             return {"jsonrpc": "2.0", "id": id_, "error": {"code": -32602, "message": "preset is required"}}
         result = mcp_preset_run(preset)
+        output = json.dumps(result, separators=(",", ":"))
+    elif name == "mcp_debug_audit":
+        result = mcp_debug_audit(
+            hosts=arguments.get("hosts"),
+            threshold=float(arguments.get("threshold", 0.0)),
+        )
+        output = json.dumps(result, separators=(",", ":"))
+    elif name == "mcp_preset_savings":
+        preset = arguments.get("preset")
+        if not preset:
+            return {"jsonrpc": "2.0", "id": id_, "error": {"code": -32602, "message": "preset is required"}}
+        result = mcp_preset_savings(preset)
         output = json.dumps(result, separators=(",", ":"))
     elif name == "mcp_report":
         result = mcp_report(arguments.get("hosts"), save=arguments.get("save", False), format=arguments.get("format", "markdown"))

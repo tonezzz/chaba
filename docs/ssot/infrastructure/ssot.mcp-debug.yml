@@ -305,6 +305,8 @@ server:
   - mcp_ssot_append
   - mcp_preset_list
   - mcp_preset_run
+  - mcp_debug_audit
+  - mcp_preset_savings
   - mcp_report
   - mcp_focus
   - mcp_read_ssot
@@ -392,9 +394,12 @@ suggested_extensions:
 - id: presets
   name: MCP Debug presets
   description: 'Named, multi-step, multi-host diagnostic routines exposed via mcp_preset_list
-    and mcp_preset_run. First presets: quick-health, top-cpu-both, service-diff.'
+    and mcp_preset_run. First presets: quick-health, top-cpu-both, service-diff. New: mcp-savings-audit
+    preset, mcp_debug_audit single-call audit, and mcp_preset_savings scoring for message and payload savings.'
   priority: high
   status: completed
+  completed: '2026-08-18'
+  notes: 'Added mcp_debug_audit and mcp_preset_savings tools; mcp-savings-audit preset runs the audit as one preset call.'
 
 - id: containers
   name: Unified container list
@@ -623,3 +628,8 @@ presets:
     - host: tony_omen
       tool: mcp_raw
       command: curl -s --max-time 5 'http://tony-dell:11023/api/health'
+  mcp-savings-audit:
+    description: Filter the live savings report for negative and failed commands
+    steps:
+    - tool: mcp_debug_audit
+      threshold: 0.0
