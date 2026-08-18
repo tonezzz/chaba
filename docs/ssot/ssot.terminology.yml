@@ -1,15 +1,15 @@
 title: Project Terminology
 subtitle: Canonical definitions for the Chaba assistant context, SSOT, and focus-decision vocabulary
-icon: glossary
+icon: "\ud83d\udcd6"
 
 ideas:
-  - Reduce ambiguity between rules, memories, SSOT, KB, context, and focus/decision terms.
-  - Provide a shared vocabulary for assistants, sub-agents, and users.
-  - Feed the decision-tree optimization by making request-disposition terms explicit.
+  - text: Reduce ambiguity between rules, memories, SSOT, KB, context, and focus/decision terms.
+  - text: Provide a shared vocabulary for assistants, sub-agents, and users.
+  - text: Feed the decision-tree optimization by making request-disposition terms explicit.
 
 sections:
   - title: Core Concepts
-    icon: core
+    icon: "\ud83e\udde9"
     layout: list
     items:
       - label: Context
@@ -28,11 +28,17 @@ sections:
         text: Model Context Protocol. The server/tool layer that exposes services (mddb, github, health, etc.) to the assistant.
 
   - title: Focus and Decision Vocabulary
-    icon: focus
+    icon: "\ud83c\udfaf"
     layout: list
     items:
       - label: Focus
         text: A tracked unit of multi-step work. A shared focus is not tied to a branch; a branch focus is.
+      - label: Shared Focus
+        text: A focus that is not tied to a specific branch or host.
+      - label: Branch Focus
+        text: A focus that is tied to a specific branch or host, such as tony-dell or macbook.
+      - label: Parked
+        text: A focus that was active but set aside, usually with the intent to return when the active work is completed.
       - label: Quick Win
         text: A small, concrete action completable in under ~5 minutes with no deploy, install, or destructive operation. Captured in ssot.focus.current.yml quick_wins.
       - label: Backlog
@@ -47,28 +53,41 @@ sections:
         text: The set of cases and conditions in ssot.focus.current.yml and docs/ssot/infrastructure/ssot.mcp-focus.yml that map a user request to a disposition.
       - label: mcp_focus actions
         text: Canonical actions returned by the focus tool — continue, quick_win, decompose, triage_backlog, triage_inbox, draft_inbox.
+      - label: Subtask
+        text: A smaller step within a focus.
+      - label: Request Log
+        text: A per-item record of user requests that map to a focus or quick win.
+      - label: Session
+        text: A single assistant-user interaction. Decisions, discoveries, and request logs are recorded per session.
 
-  - title: Recent Terminology Issues and Suggested Corrections
-    icon: corrections
+  - title: Common Terminology Ambiguities
+    icon: "\u26a0\ufe0f"
     layout: list
     items:
       - label: momeries
-        text: Typo for memories. Use memories or session memories.
+        text: Misspelling of memories.
+        recommendation: Use memories or session memories.
       - label: rules/momeries
-        text: Ambiguous slash. Use rules and memories or Devin/Windsurf rules and session memories.
+        text: Ambiguous slash.
+        recommendation: Use rules and memories or Devin/Windsurf rules and session memories.
       - label: both area
-        text: Area should be plural or replaced with a single noun. Prefer both areas or the combined space.
+        text: Area should be plural or replaced with a single noun.
+        recommendation: Prefer both areas or the combined space.
       - label: correct word to call both area
-        text: Rephrase to What is the umbrella term for ...? or What should we call the combined ...?
+        text: Vague phrasing that conflates singular and plural.
+        recommendation: Rephrase to What is the umbrella term for ...? or What should we call the combined ...?
       - label: decission
-        text: Typo for decision.
+        text: Misspelling of decision.
+        recommendation: Use decision.
       - label: adn
-        text: Typo for and.
+        text: Misspelling of and.
+        recommendation: Use and.
       - label: ssot (lowercase)
-        text: Use SSOT when referring to the Single Source of Truth system or docs/ssot/.
+        text: SSOT is an acronym.
+        recommendation: Use SSOT when referring to the Single Source of Truth system or docs/ssot/.
 
   - title: Recommendations for Clearer Terminology
-    icon: guide
+    icon: "\ud83d\udca1"
     layout: list
     items:
       - label: Use the umbrella term context
@@ -82,8 +101,29 @@ sections:
       - label: Prefer canonical action names
         text: When discussing the decision tree, use the exact mcp_focus action names — continue, quick_win, decompose, triage_backlog, triage_inbox, draft_inbox — to avoid misalignment.
 
+  - title: Canonical Sources
+    icon: "\ud83d\udccc"
+    layout: list
+    items:
+      - label: docs/overview/ssot.kb.yml
+        text: Chaba Knowledge Base & Session Memories — session learnings and corpus structure.
+      - label: docs/kb/ai-context-*.md
+        text: Personal context and preferences (general knowledge, tech stack, preferences).
+      - label: docs/ssot/ssot.focus.current.yml
+        text: Active focuses, quick wins, and the assistant-level decision tree cases.
+      - label: docs/ssot/infrastructure/ssot.mcp-focus.yml
+        text: Machine-readable mcp_focus policy and canonical action definitions.
+      - label: docs/ssot/infrastructure/ssot.focus-dispatcher.yml
+        text: Focus-dispatcher runner, sub-agent contracts, and focus selection rules.
+      - label: docs/ssot/ssot.file-control.yml
+        text: SSOT file governance, naming, validation, and change workflow.
+      - label: docs/ssot/ssot.validation-patterns.yml
+        text: Validation rules and standard SSOT structure.
+
 config:
   version: 1
+  status: active
+  created: 2026-08-18
   last_updated: 2026-08-18
   maintainer: tony
   related_files:
