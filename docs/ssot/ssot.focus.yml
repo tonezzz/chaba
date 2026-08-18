@@ -31,7 +31,27 @@ sections:
 - title: Active Branch Focus
   icon: branch
   layout: list
-  items: []
+  items:
+  - label: MCP Debug advanced tools wrap-up
+    text: Complete the mcp_debug_audit, mcp_preset_savings, and mcp_mddb_doc work. Resolve the MDDB REST endpoint timeout
+      so the new wrapper can use semantic ranking. Decide how to add systemctl/system raw commands if needed.
+    status: active
+    priority: medium
+    started: '2026-08-18'
+    estimated_duration: 1 session
+    tags:
+    - focus
+    subtasks:
+    - label: Restore MDDB REST endpoint on tony-dell (tony-dell:11023)
+      status: not_started
+    - label: Run end-to-end mcp_mddb_doc test with MDDB semantic search
+      status: not_started
+    - label: Extend mcp_debug preset transforms with captured values and filter/sort steps
+      status: not_started
+    - label: Add systemctl/system raw command handling if exact commands are specified
+      status: not_started
+    branch: mcp-debug
+    source: /home/tony/CascadeProjects/chaba/docs/ssot/focus-inbox/2026-08-18-mcp-debug-advance.yml
 
 - title: Backlog - Triage Queue
   icon: backlog
@@ -57,7 +77,7 @@ sections:
       requires_approval: true
       can_change_host: true
       notes: Needs macOS GUI / App Store / Xcode install; subagent can prepare install steps and verify.
-    blocker: MacBook unreachable over SSH on 192.168.1.39 and 100.124.59.112
+    blocker: Direct IP addresses (192.168.1.39, 100.124.59.112) still reject auth, but `ssh macbook` over Tailscale now works. Next step needs user approval for App Store login and Xcode install.
   - label: Tony-Dell Phase 3 Safe Auto-Recovery
     text: Implement safe auto-restart commands for tony-dell monitoring after the observe phase.
     branch: tony-dell
