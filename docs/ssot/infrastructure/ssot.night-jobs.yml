@@ -21,7 +21,6 @@ jobs:
     next_run: '2026-08-19T03:00:00+07:00'
     description: Runs scripts/overnight-focus-review.py which calls registry-drafts.py and focus-dispatcher.py --sub-agent.
     environment:
-      SKIP_HEALTH: "1"
       FOCUS_DISPATCHER_COMMIT: "1"
       FOCUS_DISPATCHER_PUSH: "1"
     log: /home/tony/var/chaba/overnight-focus-review.log
@@ -29,7 +28,7 @@ jobs:
       - docs/ssot/focus-inbox/*.yml
       - updates to docs/ssot/ssot.focus.current.yml
     notes:
-      - Health ingestion is disabled because mcp-health is not yet stable across the failover window.
+      - Health ingestion is re-enabled now that mcp-health is stable across the failover window.
       - The job now runs from the /home/tony/CascadeProjects/chaba-tony-dell worktree with ExecStartPre 'git pull --ff-only'.
       - GitHub token configured in tony-dell ~/.git-credentials; FOCUS_DISPATCHER_PUSH enabled after successful dry-run and test push.
 
@@ -41,11 +40,14 @@ jobs:
     schedule: daily
     enabled: true
     status: active
-    description: pg_dump the chaba DB and rsync /home/tony/.local/share/yomi to tony-omen.
+    description: pg_dump the chaba DB and rsync /home/tony/.local/share/yomi to a configurable backup host (default tony-omen).
     targets:
-      - tony_omen:/home/tony/backups/yomi/chaba-latest.dump
-      - tony_omen:/home/tony/backups/yomi-data/
-    note: The backup continues to run even when yomi-api is failed over to tony-omen, as long as tony-dell is up.
+      - ${BACKUP_HOST:-tony_omen}:/home/tony/backups/yomi/chaba-latest.dump
+      - ${BACKUP_HOST:-tony_omen}:/home/tony/backups/yomi-data/
+    environment:
+      BACKUP_HOST: tony-omen
+      BACKUP_USER: tony
+    note: The backup continues to run even when yomi-api is failed over to tony-omen, as long as tony-dell is up. Set BACKUP_HOST to fail over the backup destination.
 
   - id: yomi-update-all
     name: Yomi Update All
@@ -94,10 +96,10 @@ jobs:
     host: tony_omen
     type: shell
     schedule: daily
-    command: "rsync -avP /home/tony/CascadeProjects/chaba-h3/public/apps/docs/ tony@tony-dell:/home/tony/chaba-funnel/public/apps/docs/"
+    command: "rsync -avP --delete --checksum /home/tony/CascadeProjects/chaba-h3/public/apps/docs/ tony@tony-dell:/home/tony/chaba-funnel/public/apps/docs/"
     enabled: true
     status: planned
-    note: Keeps the Tailscale Funnel docs on tony-dell in sync with the chaba-h3 docs source.
+    note: Keeps the Tailscale Funnel docs on tony-dell in sync with the chaba-h3 docs source. --checksum verifies content, not just timestamp/size; --delete removes stale files on the target.
 
   - id: ssot-optimization-snapshot
     name: SSOT Optimization Snapshot

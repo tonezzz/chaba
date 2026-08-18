@@ -141,7 +141,52 @@ sections:
 - title: Active Branch Focus
   icon: branch
   layout: list
-  items: []
+  items:
+  - label: Tony-Dell sync, rsync, and mcp-focus hardening
+    text: >-
+      Harden the overnight repo-sync and start building mcp-focus on tony-dell.
+      First steps: disable stale tony-omen overnight timer and update chaba-funnel
+      docs-sync to use rsync --delete --checksum. Then add SSOT validation before
+      tony-dell commit, re-enable mcp-health-to-inbox, make yomi-backup
+      host-agnostic, and scaffold mcp-focus.
+    status: active
+    priority: high
+    started: '2026-08-18'
+    estimated_duration: 2 sessions
+    tags:
+    - tony-dell
+    - sync
+    - rsync
+    - mcp-focus
+    - systemd
+    - ssot
+    subtasks:
+    - label: Disable stale tony-omen focus-dispatcher-overnight timer
+      status: completed
+      completed: '2026-08-18'
+      note: Ran `systemctl --user disable --now focus-dispatcher-overnight.timer` on tony-omen.
+    - label: Update ssot.night-jobs.yml docs-sync to use rsync --delete --checksum
+      status: completed
+      completed: '2026-08-18'
+      note: 'chaba-funnel-docs-sync already uses `rsync -avP --delete --checksum`.'
+    - label: Add SSOT validation before tony-dell overnight commit
+      status: completed
+      completed: '2026-08-18'
+      note: '`scripts/overnight-focus-review.py` now runs `node scripts/ssot-validate-all.mjs` and aborts on validation errors before `focus-dispatcher.py --sub-agent`.'
+    - label: Re-enable mcp-health-to-inbox when health is stable
+      status: completed
+      completed: '2026-08-18'
+      note: Removed `SKIP_HEALTH` from `ssot.night-jobs.yml` focus-dispatcher-overnight environment; mcp-health-to-inbox will now run during the overnight job.
+    - label: Make yomi-backup host-agnostic
+      status: completed
+      completed: '2026-08-18'
+      note: Updated `/home/tony/.local/bin/yomi-backup.sh` on tony-dell to use `BACKUP_HOST`/`BACKUP_USER` with defaults and updated `ssot.night-jobs.yml`.
+    - label: Scaffold mcp-focus package and tony-dell service
+      status: in_progress
+    request_log:
+    - text: 'User asked to do all suggested improvements and confirmed the pre-action summary.'
+      date: '2026-08-18'
+    branch: tony-dell
 
 - title: Hand-off Queue
   icon: handoff
