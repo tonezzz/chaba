@@ -42,6 +42,44 @@ scoring:
   - Tie-breakers: triage_score, then priority, then started date.
   - For auto-generated health alerts, urgency and importance can be seeded from ssot.health.yml severity and service_criticality.
 
+safe_to_parallel:
+  description: A focus is safe to run in a parallel lane while another active focus remains in progress.
+  enabled: true
+  criteria:
+  - id: branch_isolation
+    label: No branch conflict
+    rule: The focus branch must differ from both the active shared focus and active branch focus branches, or it is repo-neutral (chaba meta/docs only with no code changes on an active branch).
+    weight: required
+  - id: no_user_approval
+    label: No real-time approval required
+    rule: subagent.requires_approval must be false or missing; no step requires a user prompt mid-flight.
+    weight: required
+  - id: low_blast_radius
+    label: Low blast radius
+    rule: triage.complication must be 4 or lower, or the work is read-only (explore/research/validate only).
+    weight: required
+  - id: complete_info
+    label: No missing info
+    rule: missing_info must be empty or all items resolved before the safe focus runs.
+    weight: required
+  - id: active_focus_untouched
+    label: Active focus state untouched
+    rule: The safe focus must not modify ssot.focus.current.yml, ssot.focus.yml active section, or the active focus job_lifecycle.
+    weight: required
+  - id: session_lock
+    label: Lock available
+    rule: The focus must not already be owned by another session (owner or session fields empty or match the current session).
+    weight: required
+  score:
+    description: |
+      safe_score = number of required criteria met (0-6). A focus is safe_to_parallel only if all required criteria are met.
+    safe_threshold: 6
+
+  parallel_rules:
+  - A safe focus may be activated in Ready (Safe) without parking the active branch focus.
+  - Only one safe focus may be active per session to avoid write races.
+  - Safe foci must still be committed and validated before claiming completion.
+
 mapping_to_health:
   urgency:
     from: docs/ssot/infrastructure/ssot.health.yml alerts.severity
@@ -70,6 +108,7 @@ subagent_dispatch:
   enabled: true
   item_fields:
   - subagent
+  - safe_to_parallel
   subagent_schema:
     runnable: boolean
     profile: string
@@ -77,6 +116,7 @@ subagent_dispatch:
     requires_approval: boolean
     can_change_host: boolean
     notes: string
+    safe_to_parallel: boolean
   dispatch_rules:
   - Only one foreground sub-agent may run at a time.
   - Background sub-agents may run in parallel if they touch different branches/hosts and no write conflicts.
@@ -88,3 +128,4 @@ validation:
 - triage is optional for backlog items; missing triage falls back to priority-based sorting.
 - When present, all three scores must be integers from 1 to 10.
 - subagent is optional; when present, runnable and parallel default to false.
+- safe_to_parallel is optional; when present, it must be a boolean or an object with criteria; if absent, it defaults to false.
