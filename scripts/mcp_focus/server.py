@@ -31,12 +31,12 @@ def handle_tools_list(id_):
             "tools": [
                 {
                     "name": "mcp_focus",
-                    "description": "Focus intake and status: classify a request, get active foci, or run pre_action summary.",
+                    "description": "Focus intake and status: classify a request, get active foci, or run pre_action summary. Modes: recommend (default), status, pre_action, safe_next, ready_queue.",
                     "inputSchema": {
                         "type": "object",
                         "properties": {
                             "request": {"type": "string", "description": "User request"},
-                            "mode": {"type": "string", "enum": ["", "status", "pre_action"], "default": ""},
+                            "mode": {"type": "string", "enum": ["recommend", "status", "pre_action", "safe_next", "ready_queue"], "default": "recommend", "description": "recommend returns the next focus recommendation; safe_next returns the highest safe-to-parallel focus"},
                         },
                         "required": ["request"],
                     },

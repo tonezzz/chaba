@@ -56,12 +56,16 @@ def _active_items(doc):
     active = {}
     quick_wins = []
     hand_off_queue = []
+    ready_safe = []
     for sec in doc.get("sections", []):
-        if sec.get("title") == "Quick Wins":
+        title = sec.get("title", "")
+        if title == "Quick Wins":
             quick_wins = [i for i in sec.get("items", [])]
-        elif sec.get("title") == "Hand-off Queue":
+        elif title == "Hand-off Queue":
             hand_off_queue = [i for i in sec.get("items", [])]
-        elif sec.get("title") in ("Active Shared Focus", "Active Branch Focus"):
+        elif title == "Ready (Safe)":
+            ready_safe = [i for i in sec.get("items", [])]
+        elif title in ("Active Shared Focus", "Active Branch Focus"):
             for item in sec.get("items", []):
                 if not item or item.get("status") != "active":
                     continue
@@ -70,7 +74,7 @@ def _active_items(doc):
                     active["shared"] = item
                 else:
                     active["branch"] = item
-    return active, quick_wins, hand_off_queue
+    return active, quick_wins, hand_off_queue, ready_safe
 
 
 def _inbox_items():
@@ -145,6 +149,54 @@ def _best_inbox(inbox):
     if not inbox:
         return None
     return max(inbox, key=lambda i: (_priority_value(i), i.get("__file", Path("")).stem))
+
+
+def _active_branches(active):
+    branches = set()
+    for it in active.values():
+        if it:
+            branches.add(it.get("branch", ""))
+    return branches
+
+
+def _is_safe_to_parallel(item, active):
+    if not item:
+        return False, "empty item"
+    safe = item.get("safe_to_parallel")
+    if safe is False:
+        return False, "explicitly marked not safe"
+    if safe is True:
+        return True, "explicitly marked safe"
+    # criteria-based check
+    if item.get("missing_info"):
+        return False, "missing_info not empty"
+    if item.get("subagent", {}).get("requires_approval"):
+        return False, "requires user approval"
+    triage = item.get("triage", {})
+    try:
+        complication = float(triage.get("complication", 10))
+    except (TypeError, ValueError):
+        complication = 10
+    if complication > 4:
+        return False, "complication above 4"
+    item_branch = item.get("branch", "")
+    if item_branch in _active_branches(active) and item_branch:
+        return False, "branch conflicts with active focus"
+    return True, "meets safe-to-parallel criteria"
+
+
+def _best_safe_focus(active, backlog, inbox):
+    candidates = []
+    for item in backlog + inbox:
+        is_safe, reason = _is_safe_to_parallel(item, active)
+        if not is_safe:
+            continue
+        item["reason"] = reason
+        item["source"] = "backlog" if item in backlog else "inbox"
+        candidates.append(item)
+    if not candidates:
+        return None
+    return max(candidates, key=lambda i: (_triage_score(i), _priority_value(i), i.get("started", "")))
 
 
 def _draft_inbox(request):
@@ -255,7 +307,7 @@ def _decision_log():
 
 def _pre_action_summary(request):
     doc = _load_current()
-    active, quick_wins, hand_off_queue = _active_items(doc)
+    active, quick_wins, hand_off_queue, ready_safe = _active_items(doc)
     req = str(request).lower()
 
     duplicate_active = []
@@ -419,10 +471,30 @@ def mcp_focus(request=None, mode="recommend", decision=None, summary=None):
         return {"ok": False, "error": "ssot.focus.current.yml not found"}
 
     doc = _load_current()
-    active, quick_wins, hand_off_queue = _active_items(doc)
+    active, quick_wins, hand_off_queue, ready_safe = _active_items(doc)
 
     if mode == "status":
-        return {"ok": True, "active": active, "quick_wins": quick_wins, "hand_off_queue": hand_off_queue}
+        return {"ok": True, "active": active, "quick_wins": quick_wins, "hand_off_queue": hand_off_queue, "ready_safe": ready_safe}
+
+    if mode == "safe_next":
+        best = _best_safe_focus(active, backlog=_backlog_items(), inbox=_inbox_items())
+        if not best:
+            return {"ok": True, "ready_safe": ready_safe, "recommendation": None, "reason": "No safe-to-parallel focus found."}
+        return {
+            "ok": True,
+            "ready_safe": ready_safe,
+            "recommendation": {
+                "action": "safe_next",
+                "target": best.get("label", ""),
+                "source": best.get("source", ""),
+                "confidence": "medium",
+                "reasoning": best.get("reason", "Highest-scoring safe focus available to run in parallel."),
+                "next_prompt": f"Activate safe focus '{best.get('label', '')}' in the Ready (Safe) lane.",
+            },
+        }
+
+    if mode == "ready_queue":
+        return {"ok": True, "ready_safe": ready_safe}
 
     if mode == "pre_action":
         return {
@@ -443,5 +515,6 @@ def mcp_focus(request=None, mode="recommend", decision=None, summary=None):
         "active": active,
         "quick_wins": quick_wins,
         "hand_off_queue": hand_off_queue,
+        "ready_safe": ready_safe,
         "recommendation": recommendation,
     }
