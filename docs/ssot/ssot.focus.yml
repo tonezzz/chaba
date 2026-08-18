@@ -31,34 +31,7 @@ sections:
 - title: Active Branch Focus
   icon: branch
   layout: list
-  items:
-  - label: Focus pre-action summary gate
-    text: Add a pre-action intake gate to ssot.focus.current.yml and mcp_focus that checks for duplicate active focuses,
-      similar historical focuses, and related decision-tree entries, then emits a concise summary before work begins.
-    branch: chaba
-    status: active
-    priority: medium
-    started: '2026-08-18'
-    estimated_duration: 1 session
-    tags:
-    - focus
-    - ssot
-    - mcp-focus
-    - workflow
-    - duplication
-    subtasks:
-    - label: Design gate fields in ssot.focus.current.yml
-      status: completed
-      completed: '2026-08-18'
-      note: Added pre_action_summary decision-tree case and documented the gate in ssot.focus.current.yml.
-    - label: Update mcp_focus intake to run the gate and emit summary
-      status: completed
-      completed: '2026-08-18'
-      note: Added pre_action mode to mcp_focus in scripts/mcp_debug/focus.py and inputSchema in server.py.
-    - label: Validate with test requests and commit
-      status: completed
-      completed: '2026-08-18'
-      note: Tested mcp_focus mode pre_action via Python; it returned active foci, similar historical, and related decision cases.
+  items: []
 
 - title: Backlog - Triage Queue
   icon: backlog
@@ -429,7 +402,10 @@ sections:
     text: Review the new SAFD workflow used last night (subagent metadata in focus items, subagent_dispatch rules, background
       planning + foreground implementation), decide whether it needs a dedicated KB entry, and codify any missing conventions.
     branch: chaba
-    status: pending
+    status: completed
+    completed: '2026-08-18'
+    started: '2026-08-18'
+    previous_status: pending
     priority: low
     tags:
     - safd
@@ -683,6 +659,20 @@ sections:
   icon: history
   layout: timeline
   items:
+  - label: Focus pre-action summary gate
+    text: Added a pre_action mode to mcp_focus that checks for duplicate active focuses, similar historical focuses, and related
+      decision-tree entries, then emits a concise summary before work begins. Also added the pre_action_summary case to the focus
+      decision tree.
+    date: '2026-08-18'
+    duration: 1 session
+    outcome: 'mcp_focus now supports mode pre_action and returns active foci, duplicate/historical matches, and related decision cases. Validated with a test request.'
+    tags:
+    - completed
+    - focus
+    - ssot
+    - mcp-focus
+    - workflow
+    - duplication
   - label: Enable tony-dell overnight git push
     text: Cloned chaba to the tony-dell worktree, configured the systemd overnight timer to pull --ff-only before review,
       set up GitHub credentials, enabled FOCUS_DISPATCHER_PUSH, and verified the focus dispatcher dry-run and test push.
