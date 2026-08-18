@@ -217,7 +217,7 @@ def _sweep_summary(hold, process_queue):
     return "\n".join(lines)
 
 
-def _session_groups(active, backlog, inbox):
+def _session_groups(active, backlog, inbox, current_doc=None):
     groups = {}
     def add(label, session, why, status):
         if not session:
@@ -238,6 +238,21 @@ def _session_groups(active, backlog, inbox):
         for st in it.get("subtasks", []):
             if st.get("status") == "deferred":
                 add(st.get("label"), st.get("resume_session"), f"subtask of {it.get('label')}", "deferred")
+
+    # Parked in current sections (when no active)
+    if current_doc is None:
+        current_doc = _load_current()
+    for sec in current_doc.get("sections", []):
+        if sec.get("title") in ("Active Shared Focus", "Active Branch Focus"):
+            for it in sec.get("items", []):
+                if not it:
+                    continue
+                d = it.get("deferred") or {}
+                add(it.get("label"), d.get("to_session"), f"current {it.get('status')}", it.get("status"))
+                for st in it.get("subtasks", []):
+                    if st.get("status") == "deferred":
+                        add(st.get("label"), st.get("resume_session"), f"subtask of {it.get('label')}", "deferred")
+
     # Backlog
     for item in backlog:
         d = item.get("deferred") or {}
@@ -264,8 +279,8 @@ def _bulk_defer(candidates, hold_label, session_map, bulk_session, reason):
             continue
         session = _resolve_session(session_map, c, bulk_session)
 
-        # Focus-inbox file
-        if "focus-inbox" in source:
+        # Focus-inbox file (not already processed/moved)
+        if "focus-inbox" in source and "processed" not in source:
             p = Path(source)
             if p.exists():
                 doc = yaml.safe_load(p.read_text()) or {}
@@ -767,7 +782,7 @@ def mcp_focus(request=None, mode="recommend", decision=None, summary=None, resum
             "quick_wins": quick_wins,
             "hand_off_queue": hand_off_queue,
             "ready_safe": ready_safe,
-            "session_groups": _session_groups(active, _backlog_items(), _inbox_items()),
+            "session_groups": _session_groups(active, _backlog_items(), _inbox_items(), doc),
         }
 
     if mode == "safe_next":
@@ -837,8 +852,12 @@ def mcp_focus(request=None, mode="recommend", decision=None, summary=None, resum
     if mode == "sweep":
         candidates = _sweep_candidates(doc, active, _backlog_items(), _inbox_items())
         hold_label = (hold or "").strip().lower()
-        # default hold to the active branch focus if not specified
-        if not hold_label and active.get("branch"):
+        # default hold to the active branch focus if not specified unless explicitly none
+        use_default_hold = hold is None
+        if hold is not None and hold_label in ("", "__none__", "none"):
+            use_default_hold = False
+            hold_label = ""
+        if use_default_hold and active.get("branch"):
             hold_label = active["branch"].get("label", "").lower()
         hold_item = None
         process_queue = []
@@ -847,19 +866,20 @@ def mcp_focus(request=None, mode="recommend", decision=None, summary=None, resum
                 hold_item = c
             else:
                 process_queue.append(c)
-        if not hold_item and active.get("branch"):
+        if not hold_item and active.get("branch") and hold_label:
             hold_item = {"label": active["branch"].get("label"), "status": "active", "why": "active branch focus"}
 
         deferred = []
         if bulk_session or session_map:
             deferred = _bulk_defer(process_queue, hold_label, session_map, bulk_session, reason or "Bulk defer via mcp_focus sweep")
+            plan = ([f"Hold {hold_item.get('label', '')}"] if hold_item else ["No hold; defer all"]) + [f"Defer {d['label']} to {d.get('session', bulk_session)}" for d in deferred]
             log_session_summary({
-                "focus": hold_item.get("label", ""),
+                "focus": hold_item.get("label", "") if hold_item else "sweep",
                 "source": "mcp_focus sweep bulk defer",
-                "plan": [f"Hold {hold_item.get('label', '')}"] + [f"Defer {d['label']} to {bulk_session}" for d in deferred],
+                "plan": plan,
                 "done": [],
                 "follow_up": ["Re-assess process queue after bulk defer"],
-                "next_action": [f"Continue {hold_item.get('label', '')}"],
+                "next_action": [f"Continue {hold_item.get('label', '')}"] if hold_item else ["Activate next focus from queue"],
             })
 
         for c in process_queue:
@@ -875,8 +895,8 @@ def mcp_focus(request=None, mode="recommend", decision=None, summary=None, resum
                 "action": "sweep",
                 "target": hold_item.get("label") if hold_item else None,
                 "confidence": "medium",
-                "reasoning": f"Hold '{hold_item.get('label') if hold_item else 'none'}' and process {len(process_queue)} remaining focuses/parked/backlog items.",
-                "next_prompt": f"Review the {len(process_queue)} items in process_queue. Activate the first, or defer them all to specific sessions." if not (bulk_session or session_map) else f"Bulk-deferred {len(deferred)} items to their assigned sessions. Continue {hold_item.get('label', '')}.",
+                "reasoning": f"Hold '{hold_item.get('label') if hold_item else 'none'}' and process {len(process_queue)} remaining focuses/parked/backlog items." if hold_item else f"No hold; process/defer all {len(process_queue)} remaining focuses.",
+                "next_prompt": f"Review the {len(process_queue)} items in process_queue. Activate the first, or defer them all to specific sessions." if not (bulk_session or session_map) else f"Bulk-deferred {len(deferred)} items to their assigned sessions. {'Continue ' + hold_item.get('label', '') if hold_item else 'No active focus; activate one from the queue when ready.'}",
             },
         }
 

@@ -177,10 +177,14 @@ sections:
     branch: chaba
     source: /home/tony/CascadeProjects/chaba/docs/ssot/focus-inbox/processed/2026-08-18-190030-yomi-conversation-processing.yml
     parked: '2026-08-18'
+    previous_status: parked
+    deferred:
+      to_session: yomi session
+      reason: No active hold; process all foci later to avoid session conflicts
   - label: Switch MDDB embedding provider from Ollama to Gemini proxy
     text: Apply the validated Gemini proxy to the live MDDB on tony-dell. Update the MDDB container/Quadlet config to use
       http://gemini:11435, reindex all collections, then stop Ollama and reclaim tony-omen GPU.
-    status: active
+    status: parked
     priority: high
     started: '2026-08-18'
     estimated_duration: 1 session
@@ -192,7 +196,10 @@ sections:
     - ollama
     subtasks:
     - label: Update tony-dell MDDB Quadlet to point at Gemini proxy
-      status: not_started
+      status: deferred
+      deferred_at: '2026-08-18'
+      resume_session: chaba-pool
+      resume_note: No active hold; process everything later to avoid session conflict
     - label: Restart live MDDB and reindex all collections
       status: not_started
     - label: Validate vector search on main MDDB
@@ -207,6 +214,11 @@ sections:
       lock_reason: Activated as active focus
     branch: chaba
     source: /home/tony/CascadeProjects/chaba/docs/ssot/focus-inbox/processed/2026-08-18-193000-mddb-switch-to-gemini.yml
+    parked: '2026-08-18'
+    previous_status: active
+    deferred:
+      to_session: chaba-pool
+      reason: No active hold; process all foci later to avoid session conflicts
 - title: Ready (Safe)
   icon: safe
   layout: list
