@@ -55,10 +55,11 @@ processing:
       status: in_progress
       started_at: '2026-08-18'
       notes: |
-        Initial reconnaissance:
-        - MDDB on tony-dell:11023 has 20 collections, 341 documents; adding via mcp_call_tool mddb add_document is possible.
-        - Weaviate on tony-dell:8084 has a YomiMessage class but no vectorizer configured (vectorizer: none).
-        - Next: determine Weaviate vector ingestion path (manual vectors via /v1/batch/objects or configure a vectorizer module) and the yomi-api /api/embed endpoint.
+        Weaviate side done:
+        - Created a manual-vector test class GeminiTest (vectorizer: none) with content/source text properties on tony-dell:8084.
+        - Verified a 768-dim zero-vector test object inserts and is returned by the GraphQL API.
+        - Added scripts/weaviate-gemini-test.py and reports/gemini-test-vectors-sample.json.
+        - Yomi/MDDB embedding will be provided in a separate yomi session.
     - id: 5
       label: Revisit MDDB switch from Ollama to Gemini proxy
       status: not_started
