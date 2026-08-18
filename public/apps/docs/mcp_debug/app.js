@@ -151,7 +151,29 @@ function renderReport(data) {
   html += `<p class="font-semibold">Overall totals</p>`;
   html += `<p>raw=${data.total_raw_chars}, compact=${data.total_compact_chars}, saved=${data.total_saved_chars}, tokens=${Math.round(data.total_saved_chars / 4)} `;
   html += `(${data.total_savings_pct.toFixed ? data.total_savings_pct.toFixed(1) : data.total_savings_pct}%)</p>`;
+  if (data.timeframe) {
+    html += `<p class="text-sm text-gray-600 mt-1">Collected from ${data.timeframe.started} to ${data.timeframe.ended} (${data.timeframe.duration_ms} ms)</p>`;
+  }
   html += `</div>`;
+
+  if (data.raw_allowed && data.raw_allowed.length) {
+    html += '<h2 class="text-xl font-semibold mt-8 mb-2">Raw-allowed command prefixes</h2>';
+    html += '<table><thead><tr><th>Prefix</th><th>Example</th></tr></thead><tbody>';
+    for (const r of data.raw_allowed) {
+      html += `<tr><td>${escapeHtml(r.prefix)}</td><td>${escapeHtml(r.example)}</td></tr>`;
+    }
+    html += '</tbody></table>';
+  }
+
+  if (data.presets && data.presets.length) {
+    html += '<h2 class="text-xl font-semibold mt-8 mb-2">Registered presets</h2>';
+    html += '<table><thead><tr><th>Preset</th><th>Steps</th><th>Raw chars</th><th>Compact chars</th><th>Score</th></tr></thead><tbody>';
+    for (const p of data.presets) {
+      const name = p.ok ? p.name : `${p.name} (failed)`;
+      html += `<tr><td>${escapeHtml(name)}</td><td>${p.n_steps}</td><td>${p.raw_chars}</td><td>${p.compact_chars}</td><td>${p.preset_score}</td></tr>`;
+    }
+    html += '</tbody></table>';
+  }
 
   report.innerHTML = html;
 }
