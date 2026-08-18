@@ -31,7 +31,49 @@ sections:
 - title: Active Branch Focus
   icon: branch
   layout: list
-  items: []
+  items:
+  - label: Add get_page/list_sections/read_tree to MDDB
+    text: Patch the upstream tradik/mddb Go server (services/mddbd) to expose three path-aware MCP tools (get_page, list_sections, read_tree) so MDDB can fully replace the legacy docs/docs-trade servers.
+    branch: mddb
+    status: active
+    started: '2026-08-18'
+    priority: high
+    tags:
+    - mddb
+    - mcp
+    - docs
+    - search
+    - chaba
+    triage:
+      urgency: 6
+      importance: 8
+      complication: 6
+    subtasks:
+    - label: Clone tradik/mddb repo
+      status: completed
+      completed: '2026-08-18'
+    - label: Create feature/mddb-page-tools branch
+      status: completed
+      completed: '2026-08-18'
+    - label: Identify MCP tool registration in services/mddbd
+      status: pending
+    - label: Implement get_page
+      status: pending
+    - label: Implement list_sections
+      status: pending
+    - label: Implement read_tree
+      status: pending
+    - label: Build custom mddb image
+      status: pending
+    - label: Update chaba-kbman docker-compose.yml to use custom image
+      status: pending
+    - label: Update Claude mddb-bridge and ssot.mcp.yml filtered_tools
+      status: pending
+    - label: Verify tools via mcp_call_tool
+      status: pending
+    request_log:
+    - text: User provided https://github.com/tradik/mddb and asked to create/improve SSOT to track the task to completion.
+      date: '2026-08-18'
 - title: Backlog - Triage Queue
   icon: backlog
   layout: list
@@ -383,6 +425,29 @@ sections:
       summary: Built gemini-ollama-proxy on tony-omen port 11435; proxy maps text-embedding-004 to gemini-embedding-001. Gemini
         latency ~3.7x Ollama; no switch. Report at reports/gemini-embedding-comparison.md.
     completed: '2026-08-17'
+  - label: Review and formalize Sub-Agent Focus Dispatch (SAFD) method
+    text: Review the new SAFD workflow used last night (subagent metadata in focus items, subagent_dispatch rules, background
+      planning + foreground implementation), decide whether it needs a dedicated KB entry, and codify any missing conventions.
+    branch: chaba
+    status: pending
+    priority: low
+    tags:
+    - safd
+    - focus
+    - subagent
+    - process
+    - review
+    triage:
+      urgency: 3
+      importance: 5
+      complication: 2
+    subagent:
+      runnable: true
+      profile: subagent_explore
+      parallel: true
+      requires_approval: false
+      can_change_host: false
+      notes: Read-only review; can run in background and produce a proposal.
 - title: Quick Wins
   icon: quick
   layout: list
@@ -585,12 +650,12 @@ sections:
   layout: timeline
   items:
   - label: Split status-api into sensor reader and data API
-    text: Extracted hardware sensor / GPU / Docker reading into sensor-reader running on tony-omen at port 8001; created
-      status-data-api on tony-dell at port 8000 to aggregate git, Frigate, cameras, and sensor payloads; updated Caddy /api/*
-      proxy to 100.68.142.13:8000 and refreshed SSOT services/health checks.
+    text: Extracted hardware sensor / GPU / Docker reading into sensor-reader running on tony-omen at port 8001; created status-data-api
+      on tony-dell at port 8000 to aggregate git, Frigate, cameras, and sensor payloads; updated Caddy /api/* proxy to 100.68.142.13:8000
+      and refreshed SSOT services/health checks.
     date: '2026-08-18'
     duration: 1 session
-    outcome: 'Sensor-reader and status-data-api deployed and responding; old status-api container removed from tony-omen.'
+    outcome: Sensor-reader and status-data-api deployed and responding; old status-api container removed from tony-omen.
     tags:
     - completed
     - status-api
