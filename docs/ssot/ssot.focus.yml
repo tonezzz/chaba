@@ -669,6 +669,20 @@ sections:
   icon: history
   layout: timeline
   items:
+  - label: Add get_page/list_sections/read_tree to MDDB
+    text: Patched the upstream tradik/mddb Go server to expose three path-aware MCP tools (get_page, list_sections, read_tree),
+      built a custom chaba/mddb-page-tools image, deployed it to tony-dell, and updated ssot.mcp.yml and the Claude mddb-bridge
+      filtered tools list.
+    date: '2026-08-18'
+    duration: 1 session
+    outcome: 'Custom mddb image built from feature/mddb-page-tools, deployed on tony-dell, and all three tools verified via mcp_call_tool against chaba-system collection.'
+    tags:
+    - completed
+    - mddb
+    - mcp
+    - docs
+    - search
+    - chaba
   - label: Split status-api into sensor reader and data API
     text: Extracted hardware sensor / GPU / Docker reading into sensor-reader running on tony-omen at port 8001; created status-data-api
       on tony-dell at port 8000 to aggregate git, Frigate, cameras, and sensor payloads; updated Caddy /api/* proxy to 100.68.142.13:8000
