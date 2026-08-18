@@ -682,6 +682,24 @@ sections:
   icon: history
   layout: timeline
   items:
+  - label: Tony-Dell sync, rsync, and mcp-focus hardening
+    text: >-
+      Harden the overnight repo-sync and start building mcp-focus on tony-dell.
+      First steps: disable stale tony-omen overnight timer and update chaba-funnel
+      docs-sync to use rsync --delete --checksum. Then add SSOT validation before
+      tony-dell commit, re-enable mcp-health-to-inbox, make yomi-backup
+      host-agnostic, and scaffold mcp-focus.
+    date: '2026-08-18'
+    duration: 1 session
+    outcome: 'Disabled tony-omen timer, updated docs-sync, added SSOT validation to overnight, re-enabled health, made yomi-backup host-agnostic, and scaffolded mcp-focus package and tony-dell service.'
+    tags:
+    - completed
+    - tony-dell
+    - sync
+    - rsync
+    - mcp-focus
+    - systemd
+    - ssot
   - label: Streamline focus processing and hand-off
     text: Improve the request-to-focus workflow so the assistant classifies, parks, dispatches, and hands off work more efficiently.
       Includes faster mcp_focus, subagent auto-dispatch, and clearer hand-off contracts.
