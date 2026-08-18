@@ -282,6 +282,23 @@ sessions:
       - Retire docs/docs-trade once migration is validated
     next_action: Closed
 
+  - date: '2026-08-18'
+    session: chaba-2026-08-18
+    focus: Gemini key rotation and validation
+    source: continue
+    plan:
+      - Resolve yomi-api EADDRINUSE and rotate GEMINI_API_KEY
+      - Validate Gemini proxy rate limits and batchEmbedContents
+      - Plan safe-focus continuous processing backlog item
+    done:
+      - Added REDIS_URL to yomi-api override.conf and restarted; service active with new GEMINI_API_KEY loaded
+      - Proxy health OK; 3-item batch returned 200 in 743ms; 10 rapid sequential requests all 200 with no 429s
+      - Created job-lifecycle SSOT and backlog item for safe-focus continuous processing
+    follow_up:
+      - Create MDDB/Weaviate side-by-side test collections
+      - Revisit MDDB switch from Ollama to Gemini proxy
+    next_action: Continue the Gemini focus or activate safe-focus continuous processing from backlog
+
 related_files:
   - docs/ssot/ssot.focus.current.yml
   - docs/ssot/ssot.focus.yml

@@ -142,40 +142,43 @@ sections:
   icon: branch
   layout: list
   items:
-  - label: Gemini key rotation and validation
-    text: The yomi-api GEMINI_API_KEY was rotated in a side session. Complete the remaining Gemini embedding GPU offload work - validate proxy rate limits, create side-by-side test collections, and revisit the MDDB switch.
+  - label: Safe focus continuous processing
+    text: Add a parallel safe-focus lane to the focus dispatcher so the main session can continuously pick up safe-to-run foci while side sessions prepare the inbox, without parking the active shared/branch focus.
     status: active
     priority: high
     started: '2026-08-18'
-    estimated_duration: 2 sessions
+    estimated_duration: 2-3 sessions
     tags:
-    - gemini
-    - embedding
-    - gpu-offload
-    - yomi
-    - validation
-    missing_info:
-    - Confirm yomi-api starts cleanly after resolving the port 3000 EADDRINUSE conflict on tony-omen
-    - MDDB/Weaviate need to be available on tony-omen or a test host for side-by-side collections
+    - focus
+    - workflow
+    - dispatcher
+    - subagent
+    - concurrency
+    triage:
+      urgency: 6
+      importance: 7
+      complication: 5
+    job_lifecycle: docs/ssot/jobs/workflow/2026-08-18-safe-focus-continuous-processing.yml
     subtasks:
-    - label: Rotate yomi-api GEMINI_API_KEY and restart service
-      status: completed
-      completed: '2026-08-18'
-      note: Added REDIS_URL to override.conf, restarted yomi-api; Redis now connected. New GEMINI_API_KEY is loaded.
-    - label: Validate proxy rate limits and batchEmbedContents during bulk indexing
-      status: completed
-      completed: '2026-08-18'
-      note: Proxy health OK (gemini-embedding-001, 768 dims). /api/embed returned 200 for 3-item batch (743ms) and 10 rapid sequential requests all returned 200 with ~450-550ms each; no 429s.
-    - label: Create MDDB/Weaviate side-by-side test collections
+    - label: Add safe_to_parallel schema and triage criteria
+      status: in_progress
+    - label: Add Ready (Safe) section to ssot.focus.current.yml
       status: not_started
-    - label: Revisit MDDB switch from Ollama to Gemini proxy
+    - label: Extend mcp_focus with safe_next / ready_queue mode
+      status: not_started
+    - label: Update focus-dispatcher to auto-dispatch safe foci
+      status: not_started
+    - label: Add session ownership/lock fields to active foci
+      status: not_started
+    - label: Update subagent-focus-triage and contracts
+      status: not_started
+    - label: Validate and test the workflow
       status: not_started
     request_log:
-    - text: User asked for the next focus.
+    - text: User asked to park Gemini focus and switch to safe-focus continuous processing.
       date: '2026-08-18'
     branch: chaba
-    source: /home/tony/CascadeProjects/chaba/docs/ssot/focus-inbox/2026-08-18-104228-gemini-key-rotation-and-validation.yml
-    job_lifecycle: docs/ssot/jobs/security/2026-08-18-gemini-key-rotation-and-validation.yml
+    source: /home/tony/CascadeProjects/chaba/docs/ssot/ssot.focus.yml
 - title: Hand-off Queue
   icon: handoff
   layout: list

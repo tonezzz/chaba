@@ -1,0 +1,106 @@
+title: Safe Focus Continuous Processing
+subtitle: Add a parallel safe-focus lane so the main session can keep picking work while side sessions prepare the inbox
+icon: target
+
+planning:
+  goal: |
+    Close the gap identified in the focus workflow by enabling a "main focus processing session"
+    to continuously pick up safe-to-run foci while other sessions work on other tasks or add
+    new items to the inbox, without parking the active shared/branch focus.
+  scope: |
+    - Extend the SSOT schema for foci/inbox items to declare whether a focus is safe to run in parallel.
+    - Add a Ready (Safe) section to ssot.focus.current.yml.
+    - Extend mcp_focus with a safe_next / ready_queue mode.
+    - Update focus-dispatcher.py to auto-dispatch safe foci without parking active focus.
+    - Add session ownership/lock fields to active foci and subtasks.
+    - Update subagent-focus-triage and contracts to handle safe_parallel items.
+    - Validate with ssot-validate and a few test scenarios.
+  out_of_scope: |
+    - Changing the core "one shared + one branch" active-focus limits.
+    - Auto-invoking subagents across hosts that require user approval.
+    - Any work that calls the Gemini API or other rate-limited external services.
+  success_criteria:
+    - The focus-dispatcher can list and activate a safe focus while an active focus remains in progress.
+    - ssot.focus.current.yml shows a Ready (Safe) section populated from the inbox.
+    - mcp_focus can recommend the next safe focus without modifying active focus state.
+    - Two sessions cannot race on the same active focus because ownership/lock fields are checked.
+    - All SSOT files validate cleanly with ssot-validate.
+  risks:
+    - "Over-parallelization: safe criteria may be too permissive and cause resource conflicts. Mitigation: strict safe_to_parallel criteria and branch/host isolation."
+    - "Race conditions: multiple sessions may still try to update the same focus file. Mitigation: session ownership and atomic git writes."
+    - "Scope creep: the dispatcher could grow into a full orchestrator. Mitigation: keep it to one safe lane and one main active lane."
+  resources:
+    - docs/ssot/ssot.focus.current.yml
+    - docs/ssot/ssot.focus.yml
+    - docs/ssot/infrastructure/ssot.mcp-focus.yml
+    - docs/ssot/infrastructure/ssot.focus-dispatcher.yml
+    - docs/ssot/infrastructure/ssot.subagent-focus-triage.yml
+    - docs/ssot/infrastructure/ssot.focus.triage.yml
+    - scripts/focus-dispatcher.py
+    - reports/NEXT_FOCUS.md
+  owner: tony
+  estimated_duration: 2-3 sessions
+  related_focus:
+    - label: Safe focus continuous processing
+      file: docs/ssot/ssot.focus.yml
+
+processing:
+  status: in_progress
+  started_at: '2026-08-18'
+  steps:
+    - id: 1
+      label: Add safe_to_parallel schema and triage criteria
+      status: in_progress
+      notes: Update ssot.focus.triage.yml, ssot.subagent-focus-triage.yml, and the focus TEMPLATE to include safe_to_parallel/parallel_safe criteria and ownership fields.
+    - id: 2
+      label: Add Ready (Safe) section to ssot.focus.current.yml
+      status: not_started
+    - id: 3
+      label: Extend mcp_focus with safe_next mode
+      status: not_started
+    - id: 4
+      label: Update focus-dispatcher to auto-dispatch safe foci
+      status: not_started
+    - id: 5
+      label: Add session ownership/lock fields to active foci
+      status: not_started
+    - id: 6
+      label: Update subagent-focus-triage and contracts
+      status: not_started
+    - id: 7
+      label: Validate and test the workflow
+      status: not_started
+  decisions: []
+  changes: []
+
+followup:
+  verification:
+    - Run ssot-validate on all modified SSOT files.
+    - Run focus-dispatcher.py --dry-run to confirm safe-focus selection.
+    - Run mcp_focus mode=safe_next to confirm it returns a ready safe focus.
+    - Simulate two sessions updating different parts of the focus SSOT without conflicts.
+  rollback_plan:
+    - Remove the Ready (Safe) section from ssot.focus.current.yml.
+    - Revert focus-dispatcher.py to previous version.
+    - Park the new focus if it causes conflicts.
+  handoff:
+    - Owner: tony
+    - Next system: focus-dispatcher.service
+  deferred: []
+
+report:
+  status: not_started
+  completed_at: null
+  summary: ''
+  metrics: []
+  links: []
+  kb_review: []
+  lessons_learned: []
+
+config:
+  version: 1
+  created_at: '2026-08-18'
+  last_updated: '2026-08-18'
+  maintainer: tony
+  related_files:
+    - docs/ssot/templates/job.yml
