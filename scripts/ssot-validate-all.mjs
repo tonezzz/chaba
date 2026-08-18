@@ -33,6 +33,7 @@ function buildPythonScript(filePaths) {
   return `
 import concurrent.futures
 import json
+import re
 import sys
 import yaml
 
@@ -42,9 +43,43 @@ FILE_PATHS = [
 
 CONFIG_TYPE_MARKERS = ('ssot.health', 'ssot.gpu', 'ssot.mcp', 'ssot.automation', 'ssot.containerization')
 
+REVIEW_LINES = 350
+REVIEW_SECTIONS = 10
+REVIEW_ITEMS = 45
+HARD_LINES = 750
+HARD_SECTIONS = 12
+HARD_ITEMS = 60
+
+IP4_RE = re.compile(r'''(?<!\d)(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)\.(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)\.(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)\.(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(?!\d)''')
+SECRETS_RE = re.compile(r'''(password|secret|token|api_key|private_key|access_key)["']?\s*[:=]\s*["']?[^\s\n"']+["']?''', re.IGNORECASE)
+RUNTIME_RE = re.compile(r'''(last_run|last_seen|last_login|discovered_at|generated_at|timestamp|updated_at|completed_at|deferred_at):\s+["']?\d{4}-\d{2}-\d{2}''', re.IGNORECASE)
+
 
 def _is_config_type(path):
     return any(marker in path for marker in CONFIG_TYPE_MARKERS)
+
+
+def _count_lines(content):
+    return content.count('\\n') + 1 if content else 0
+
+
+def _data_isolation_scan(rel, content, warnings):
+    # Skip per-host SSOTs and health/perf baseline files that legitimately contain runtime values
+    if any(skip in rel for skip in ('ssot.mysystem.', 'ssot.health.', 'performance-baselines')):
+        return
+    for match in IP4_RE.finditer(content):
+        # Skip local Tailscale/loopback ranges if they appear
+        ip = match.group(0)
+        if ip.startswith('127.') or ip.startswith('100.'):
+            continue
+        warnings.append(f'Data isolation: hardcoded IPv4 address {ip}')
+        break
+    for match in SECRETS_RE.finditer(content):
+        warnings.append('Data isolation: possible secret value embedded in YAML')
+        break
+    for match in RUNTIME_RE.finditer(content):
+        warnings.append('Data isolation: runtime timestamp field may not belong in canonical SSOT')
+        break
 
 
 def validate_one(file_path):
@@ -62,6 +97,11 @@ def validate_one(file_path):
 
         errors = []
         warnings = []
+        metrics = {
+            'lines': _count_lines(content),
+            'sections': 0,
+            'items': 0,
+        }
 
         is_config_type = _is_config_type(file_path)
         if not is_config_type and 'title' not in data:
@@ -69,6 +109,7 @@ def validate_one(file_path):
 
         if 'sections' in data and isinstance(data['sections'], list):
             section_titles = set()
+            metrics['sections'] = len(data['sections'])
             for idx, section in enumerate(data['sections']):
                 if 'title' not in section:
                     errors.append(f'Section {idx}: Missing required field: title')
@@ -82,6 +123,7 @@ def validate_one(file_path):
 
                 if 'items' in section and isinstance(section['items'], list):
                     item_labels = set()
+                    metrics['items'] += len(section['items'])
                     for item_idx, item in enumerate(section['items']):
                         if not isinstance(item, dict):
                             continue
@@ -91,6 +133,22 @@ def validate_one(file_path):
                             errors.append(f'Section {idx}: Duplicate item label: {item["label"]}')
                         item_labels.add(item.get('label', ''))
 
+        # Bloat thresholds
+        if metrics['lines'] > HARD_LINES:
+            warnings.append(f'Bloat: {metrics["lines"]} lines exceeds hard threshold of {HARD_LINES}')
+        elif metrics['lines'] > REVIEW_LINES:
+            warnings.append(f'Bloat: {metrics["lines"]} lines exceeds review threshold of {REVIEW_LINES}')
+        if metrics['sections'] > HARD_SECTIONS:
+            warnings.append(f'Bloat: {metrics["sections"]} sections exceeds hard threshold of {HARD_SECTIONS}')
+        elif metrics['sections'] > REVIEW_SECTIONS:
+            warnings.append(f'Bloat: {metrics["sections"]} sections exceeds review threshold of {REVIEW_SECTIONS}')
+        if metrics['items'] > HARD_ITEMS:
+            warnings.append(f'Bloat: {metrics["items"]} items exceeds hard threshold of {HARD_ITEMS}')
+        elif metrics['items'] > REVIEW_ITEMS:
+            warnings.append(f'Bloat: {metrics["items"]} items exceeds review threshold of {REVIEW_ITEMS}')
+
+        _data_isolation_scan(rel, content, warnings)
+
         if 'ideas' in data and isinstance(data['ideas'], list):
             for idx, idea in enumerate(data['ideas']):
                 if isinstance(idea, str):
@@ -98,10 +156,10 @@ def validate_one(file_path):
                 if isinstance(idea, dict) and 'text' not in idea:
                     warnings.append(f'Idea {idx}: Missing recommended field: text')
 
-        return {'path': rel, 'valid': len(errors) == 0, 'errors': errors, 'warnings': warnings}
+        return {'path': rel, 'valid': len(errors) == 0, 'errors': errors, 'warnings': warnings, 'metrics': metrics}
 
     except Exception as e:
-        return {'path': rel, 'valid': False, 'errors': [f'Validation error: {str(e)}'], 'warnings': []}
+        return {'path': rel, 'valid': False, 'errors': [f'Validation error: {str(e)}'], 'warnings': [], 'metrics': {'lines': 0, 'sections': 0, 'items': 0}}
 
 
 def main():
