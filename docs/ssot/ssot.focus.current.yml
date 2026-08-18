@@ -133,7 +133,40 @@ sections:
 - title: Active Branch Focus
   icon: branch
   layout: list
-  items: []
+  items:
+  - label: Add get_page/list_sections/read_tree to MDDB
+    text: Patch the upstream tradik/mddb Go server to expose path-aware MCP tools.
+    branch: mddb
+    status: active
+    started: '2026-08-18'
+    priority: high
+    tags:
+    - mddb
+    - mcp
+    - docs
+    - search
+    request_log:
+    - text: User provided https://github.com/tradik/mddb and asked to create/improve SSOT to track the task to completion.
+      date: '2026-08-18'
+    subtasks:
+    - label: Clone tradik/mddb repo
+      status: completed
+      completed: '2026-08-18'
+    - label: Create feature/mddb-page-tools branch
+      status: completed
+      completed: '2026-08-18'
+    - label: Identify MCP tool registration in services/mddbd
+      status: pending
+    - label: Implement get_page
+      status: pending
+    - label: Implement list_sections
+      status: pending
+    - label: Implement read_tree
+      status: pending
+    - label: Build and deploy custom image
+      status: pending
+    - label: Verify tools via mcp_call_tool
+      status: pending
 - title: Quick Wins
   icon: quick
   layout: list
