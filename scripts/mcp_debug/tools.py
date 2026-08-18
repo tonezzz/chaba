@@ -9,7 +9,8 @@ import re
 import shlex
 import time
 import yaml
-from .config import HOSTS, FILE_LIMITS, DEBUG_COMMANDS, PRESETS, SSOT, BASELINES, logger
+from datetime import datetime
+from .config import HOSTS, FILE_LIMITS, DEBUG_COMMANDS, RAW_PREFIXES, PRESETS, SSOT, BASELINES, logger
 from .hosts import run_on_host
 
 
@@ -228,6 +229,7 @@ def mcp_vet(command, add=False):
 def mcp_savings(hosts):
     if not hosts:
         hosts = list(HOSTS.keys())
+    started = time.time()
     commands = list(DEBUG_COMMANDS.keys())
     per_host = {}
     total_raw = 0
@@ -249,9 +251,44 @@ def mcp_savings(hosts):
                 total_compact += s["compact_chars"]
     saved = total_raw - total_compact
     pct = round(saved / total_raw * 100, 1) if total_raw > 0 else 0.0
+    ended = time.time()
+    raw_allowed = [
+        {"prefix": p, "example": DEBUG_COMMANDS.get(p, {}).get("raw_command") or f"{p} ..."}
+        for p in RAW_PREFIXES
+    ]
+    recursive_tools = {"mcp_debug_audit", "mcp_savings", "mcp_preset_run", "mcp_preset_savings"}
+    presets = []
+    for name in sorted(PRESETS.keys()):
+        steps = PRESETS[name].get("steps", [])
+        if any(step.get("tool") in recursive_tools for step in steps):
+            presets.append({
+                "name": name,
+                "description": PRESETS[name].get("description", ""),
+                "n_steps": len(steps),
+                "ok": False,
+                "error": "recursive: skipped to avoid calling mcp_savings",
+            })
+            continue
+        ps = mcp_preset_savings(name)
+        presets.append({
+            "name": name,
+            "description": PRESETS[name].get("description", ""),
+            "n_steps": ps.get("n_steps", 0),
+            "ok": ps.get("ok", False),
+            "raw_chars": ps.get("raw_chars", 0),
+            "compact_chars": ps.get("compact_chars", 0),
+            "preset_score": ps.get("preset_score", 0.0),
+        })
     return {
         "ok": True,
+        "timeframe": {
+            "started": datetime.fromtimestamp(started).isoformat(),
+            "ended": datetime.fromtimestamp(ended).isoformat(),
+            "duration_ms": round((ended - started) * 1000, 1),
+        },
         "hosts": per_host,
+        "raw_allowed": raw_allowed,
+        "presets": presets,
         "total_raw_chars": total_raw,
         "total_compact_chars": total_compact,
         "total_saved_chars": saved,

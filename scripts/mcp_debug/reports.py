@@ -7,6 +7,13 @@ from .config import REPO_DIR, load_report_config
 from .tools import mcp_savings
 
 
+def _format_timeframe(savings):
+    tf = savings.get("timeframe", {})
+    if not tf:
+        return ""
+    return f"collected from {tf.get('started', '?')} to {tf.get('ended', '?')} ({tf.get('duration_ms', 0)} ms)"
+
+
 def generate_savings_report(savings, report_cfg):
     cfg = report_cfg.get("reports", {}).get("savings_table", {})
     columns = cfg.get("columns", [
@@ -24,6 +31,11 @@ def generate_savings_report(savings, report_cfg):
 
     headers = [c["label"] for c in columns]
     lines = ["# MCP Debug Savings Report", ""]
+    generated = savings.get("generated", "")
+    timeframe = _format_timeframe(savings)
+    if generated or timeframe:
+        lines.append(f"*Generated: {generated or 'now'}; {timeframe}*")
+        lines.append("")
 
     for host, data in savings.get("hosts", {}).items():
         lines.append(f"## {host}")
@@ -65,6 +77,27 @@ def generate_savings_report(savings, report_cfg):
         total_saved = savings.get("total_saved_chars", 0)
         total_pct = savings.get("total_savings_pct", 0.0)
         lines.append(f"**Overall totals**: raw={total_raw}, compact={total_compact}, saved={total_saved} ({total_pct}%)")
+        lines.append("")
+
+    raw_allowed = savings.get("raw_allowed", [])
+    if raw_allowed:
+        lines.append("## Raw-allowed command prefixes")
+        lines.append("")
+        lines.append("| Prefix | Example |")
+        lines.append("|--------|---------|")
+        for r in raw_allowed:
+            lines.append(f"| {r.get('prefix', '')} | {r.get('example', '')} |")
+        lines.append("")
+
+    presets = savings.get("presets", [])
+    if presets:
+        lines.append("## Registered presets")
+        lines.append("")
+        lines.append("| Preset | Steps | Raw chars | Compact chars | Score |")
+        lines.append("|--------|-------|-----------|---------------|-------|")
+        for p in presets:
+            ok_marker = "" if p.get("ok") else " (failed)"
+            lines.append(f"| {p.get('name', '')}{ok_marker} | {p.get('n_steps', 0)} | {p.get('raw_chars', 0)} | {p.get('compact_chars', 0)} | {p.get('preset_score', 0.0)} |")
         lines.append("")
 
     return "\n".join(lines)
@@ -145,6 +178,10 @@ def generate_html_report(savings, report_cfg):
         "<body>",
         "<h1>MCP Debug Savings Report</h1>",
     ]
+    generated = savings.get("generated", "")
+    timeframe = _format_timeframe(savings)
+    if generated or timeframe:
+        parts.append(f"<p><em>Generated: {generated or 'now'}; {timeframe}</em></p>")
 
     for host, data in savings.get("hosts", {}).items():
         parts.append(f"<h2>{host}</h2>")
@@ -183,6 +220,25 @@ def generate_html_report(savings, report_cfg):
         total_saved = savings.get("total_saved_chars", 0)
         total_pct = savings.get("total_savings_pct", 0.0)
         parts.append(f"<p><strong>Overall totals</strong>: raw={total_raw}, compact={total_compact}, saved={total_saved} ({total_pct}%)</p>")
+
+    raw_allowed = savings.get("raw_allowed", [])
+    if raw_allowed:
+        parts.append("<h2>Raw-allowed command prefixes</h2>")
+        parts.append("<table><thead><tr><th>Prefix</th><th>Example</th></tr></thead><tbody>")
+        for r in raw_allowed:
+            parts.append(f"<tr><td>{r.get('prefix', '')}</td><td>{r.get('example', '')}</td></tr>")
+        parts.append("</tbody></table>")
+
+    presets = savings.get("presets", [])
+    if presets:
+        parts.append("<h2>Registered presets</h2>")
+        parts.append("<table><thead><tr><th>Preset</th><th>Steps</th><th>Raw chars</th><th>Compact chars</th><th>Score</th></tr></thead><tbody>")
+        for p in presets:
+            name = p.get('name', '')
+            if not p.get('ok'):
+                name += " (failed)"
+            parts.append(f"<tr><td>{name}</td><td>{p.get('n_steps', 0)}</td><td>{p.get('raw_chars', 0)}</td><td>{p.get('compact_chars', 0)}</td><td>{p.get('preset_score', 0.0)}</td></tr>")
+        parts.append("</tbody></table>")
 
     parts.extend(["</body>", "</html>"])
     return "\n".join(parts)
