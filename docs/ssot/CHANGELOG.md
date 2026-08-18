@@ -12,6 +12,19 @@ This file tracks significant changes to SSOT files for audit trail and rollback 
 
 ## Recent Changes
 
+### 2026-08-18
+- **File**: docs/ssot/ssot.terminology.yml
+- **Change Type**: minor
+- **Description**: Created canonical terminology SSOT defining assistant context, rules, memories, SSOT, KB, and focus/decision vocabulary; also lists recent ambiguous terms and recommended corrections.
+- **Impact**: Provides a shared vocabulary for decision-tree optimization and reduces terminology drift in sessions.
+- **Rollback**: Delete docs/ssot/ssot.terminology.yml and remove its index entry.
+
+- **File**: docs/ssot/ssot.index.yml
+- **Change Type**: patch
+- **Description**: Added ssot.terminology.yml to the Core / Cross-Project section.
+- **Impact**: Index now reflects the new terminology SSOT.
+- **Rollback**: Revert the ssot.index.yml addition.
+
 ### 2026-08-12
 - **File**: docs/ssot/ssot.mysystem.home.yml
 - **Change Type**: minor
