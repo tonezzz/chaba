@@ -30,8 +30,8 @@ jobs:
       - updates to docs/ssot/ssot.focus.current.yml
     notes:
       - Health ingestion is disabled because mcp-health is not yet stable across the failover window.
-      - The job commits locally to the tony-dell working tree but does not push.
-      - Review the log and push any useful commits in the morning.
+      - The job now runs from the /home/tony/CascadeProjects/chaba-tony-dell worktree with ExecStartPre 'git pull --ff-only'.
+      - FOCUS_DISPATCHER_PUSH remains 0 until a GitHub token is configured on tony-dell for unattended push.
 
   - id: yomi-backup
     name: Yomi and PostgreSQL Backup

@@ -181,13 +181,20 @@ sections:
     - automation
     subtasks:
     - label: Inspect tony-dell worktree, branch, remote, and credentials
-      status: in_progress
+      status: completed
+      completed: '2026-08-18'
+      note: Cloned fresh chaba master to /home/tony/CascadeProjects/chaba-tony-dell; GitHub host reachable; git user set.
     - label: Enable FOCUS_DISPATCHER_PUSH and add git pull --ff-only step
-      status: not_started
+      status: completed
+      completed: '2026-08-18'
+      note: git pull --ff-only added to systemd unit; FOCUS_DISPATCHER_PUSH left at 0 until a GitHub token is configured.
     - label: Update tony-dell systemd unit/env and reload
-      status: not_started
+      status: completed
+      completed: '2026-08-18'
+      note: Service now uses chaba-tony-dell worktree and runs git pull before overnight review.
     - label: Verify with a dry-run and test push
-      status: not_started
+      status: in_progress
+      note: focus-dispatcher.py --dry-run works from the new worktree; push test needs the GitHub token.
     request_log:
     - text: 'User asked to finish git tasks on tony-dell and confirmed podman for the subagent runner.'
       date: '2026-08-18'
