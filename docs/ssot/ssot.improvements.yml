@@ -370,6 +370,9 @@ sections:
     - Add grandfather exemptions for the five current oversized files
     - Wire the checks into .githooks/pre-commit
     - Update ssot.index.yml and ssot.file-optimization.yml as work proceeds
+    - Add focus-workload awareness to scripts/ssot-optimize.mjs (read ssot.focus.current.yml, cap suggestions, scope by active branch, skip focus-inbox queueing under load)
+    - Update ssot.file-optimization.yml with a workload policy (severity gates, suggestion budget per active focus, branch path scopes)
+    - Enable ssot-optimization-snapshot in ssot.night-jobs.yml after a dry run proves the workload logic is safe
     related_files:
     - scripts/ssot-validate-all.mjs
     - docs/ssot/ssot.file-control.yml
