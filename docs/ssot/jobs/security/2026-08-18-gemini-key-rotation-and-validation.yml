@@ -45,29 +45,11 @@ processing:
     - id: 2
       label: Apply and confirm GEMINI_API_KEY rotation
       status: completed
-      notes: Verified override.conf and /proc/<pid>/environ both contain the new key.
+      notes: Added REDIS_URL to yomi-api.service override.conf, reloaded and restarted; Redis connected and service active. Verified GEMINI_API_KEY loaded.
     - id: 3
       label: Validate Gemini proxy rate limits and batchEmbedContents
-      status: not_started
-    - id: 4
-      label: Create MDDB/Weaviate side-by-side test collections
-      status: not_started
-    - id: 5
-      label: Revisit MDDB switch from Ollama to Gemini proxy
-      status: not_started
-  steps:
-    - id: 1
-      label: Diagnose and resolve tony-omen yomi-api port 3000 EADDRINUSE
-      status: not_started
-      notes: Identify the conflicting process and free port 3000 or reconfigure yomi-api.
-    - id: 2
-      label: Apply and confirm GEMINI_API_KEY rotation
-      status: not_started
-      notes: Verify override.conf, reload systemd, and start yomi-api.
-    - id: 3
-      label: Validate Gemini proxy rate limits and batchEmbedContents
-      status: not_started
-      notes: Run a small batch embedding test and observe 429/200 responses.
+      status: completed
+      notes: /health OK; 3-item batch via /api/embed returned 200 in 743ms; 10 rapid sequential requests all 200 with ~450-550ms each, no 429s.
     - id: 4
       label: Create MDDB/Weaviate side-by-side test collections
       status: not_started

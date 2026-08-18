@@ -161,9 +161,11 @@ sections:
     - label: Rotate yomi-api GEMINI_API_KEY and restart service
       status: completed
       completed: '2026-08-18'
-      note: Port 3000 is held by the active yomi-api process. The new GEMINI_API_KEY is loaded in the process environment. A non-fatal Redis ENOTFOUND remains due to the default REDIS_URL=redis://host.docker.internal:6379.
+      note: Added REDIS_URL to override.conf, restarted yomi-api; Redis now connected. New GEMINI_API_KEY is loaded.
     - label: Validate proxy rate limits and batchEmbedContents during bulk indexing
-      status: in_progress
+      status: completed
+      completed: '2026-08-18'
+      note: Proxy health OK (gemini-embedding-001, 768 dims). /api/embed returned 200 for 3-item batch (743ms) and 10 rapid sequential requests all returned 200 with ~450-550ms each; no 429s.
     - label: Create MDDB/Weaviate side-by-side test collections
       status: not_started
     - label: Revisit MDDB switch from Ollama to Gemini proxy
