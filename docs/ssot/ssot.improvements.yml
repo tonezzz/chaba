@@ -245,7 +245,11 @@ sections:
       Evidence: Trivy scans in section 8 show HIGH/CRITICAL vulnerabilities across multiple containers, e.g. imagen2-inference
       Total 386 (HIGH 365, CRITICAL 21), status-api Total 63 (HIGH 46, CRITICAL 17), ollama Total 39 HIGH, web Total 14 HIGH,
       and gemini-ollama-proxy/gpu-queue-processor/gpu-queue each Total 18 with 1 CRITICAL. Dependency audit section 9 also
-      found outdated packages and secret-detection files. Decision: in_progress.
+      found outdated packages and secret-detection files. Progress (2026-08-18): first pass updated base images for ollama
+      (ollama/ollama:latest), gemini-ollama-proxy (node:22-alpine), web (caddy:latest), gpu-queue (node:22-alpine),
+      gpu-queue-processor (node:22-alpine), and removed the stale web-status-api image. Health checks confirmed for all
+      restarted containers. Outstanding: imagen2-inference (custom build not touched) and status-api (custom build not rebuilt).
+      Decision: in_progress.
     priority: high
     effort: TBD
     category: security
@@ -279,7 +283,11 @@ sections:
     triage_notes: >-
       Evidence: 2026-08-18 Trivy section 8 supersedes the prior '5 vulnerabilities' count. Scans show HIGH/CRITICAL issues in
       imagen2-inference (365 HIGH/21 CRITICAL), status-api (46 HIGH/17 CRITICAL), ollama (39 HIGH), web (14 HIGH),
-      gemini-ollama-proxy/gpu-queue-processor/gpu-queue (each 17 HIGH/1 CRITICAL). Decision: in_progress.
+      gemini-ollama-proxy/gpu-queue-processor/gpu-queue (each 17 HIGH/1 CRITICAL). Progress (2026-08-18): first pass updated
+      base images for ollama (ollama/ollama:latest), gemini-ollama-proxy (node:22-alpine), web (caddy:latest), gpu-queue
+      (node:22-alpine), gpu-queue-processor (node:22-alpine), and removed the stale web-status-api image. Health checks
+      confirmed for all restarted containers. Outstanding: imagen2-inference (custom build not touched) and status-api (custom
+      build not rebuilt). Decision: in_progress.
     priority: high
     effort: TBD
     category: security
