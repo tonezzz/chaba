@@ -177,55 +177,36 @@ sections:
     branch: chaba
     source: /home/tony/CascadeProjects/chaba/docs/ssot/focus-inbox/processed/2026-08-18-190030-yomi-conversation-processing.yml
     parked: '2026-08-18'
-  - label: Gemini key rotation and validation
-    text: The yomi-api GEMINI_API_KEY was rotated in a side session. Complete the remaining Gemini embedding GPU offload work
-      - validate proxy rate limits, create side-by-side test collections, and revisit the MDDB switch.
-    status: completed
-    completed: '2026-08-18'
+  - label: Switch MDDB embedding provider from Ollama to Gemini proxy
+    text: Apply the validated Gemini proxy to the live MDDB on tony-dell. Update the MDDB container/Quadlet config to use
+      http://gemini:11435, reindex all collections, then stop Ollama and reclaim tony-omen GPU.
+    status: active
     priority: high
     started: '2026-08-18'
-    estimated_duration: 2 sessions
+    estimated_duration: 1 session
     tags:
+    - mddb
     - gemini
-    - embedding
     - gpu-offload
-    - yomi
-    - validation
+    - tony-dell
+    - ollama
     subtasks:
-    - label: Rotate yomi-api GEMINI_API_KEY and restart service
-      status: completed
-      completed: '2026-08-18'
-      note: New key applied to yomi-api override and main service file; stray process killed; service active; Node fetch to
-        Gemini works; /api/yomi/search still fails because Weaviate at localhost:8082 is unreachable.
-    - label: Validate proxy rate limits and batchEmbedContents during bulk indexing
-      status: completed
-      completed: '2026-08-18'
-      note: Proxy health OK (gemini-embedding-001, 768 dims); /api/embed returned 200 for 3-item batch (743ms) and 10 rapid
-        sequential requests returned 200 with ~450-550ms each; no 429s.
-    - label: Create MDDB/Weaviate side-by-side test collections
-      status: completed
-      completed: '2026-08-18'
-      started_at: '2026-08-18'
-      notes: |
-        MDDB and Weaviate side-by-side test collections created.
-        - Weaviate: GeminiTest class on tony-dell:8084 with a 768-dim zero-vector test object.
-        - MDDB: mddb-gemini-test (tony-dell:12023, Gemini proxy) and mddb-ollama-test (tony-dell:12024, Ollama)
-          both loaded 3 test docs via GraphQL addBatch and indexed 3/3 chunks.
-        - Side-by-side vector search: Gemini gives comparable or slightly higher relevance at ~500-575ms/query;
-          Ollama is ~100ms when warm but 1.2-6s cold. Gemini quality sufficient, latency acceptable for MDDB load.
-    - label: Revisit MDDB switch from Ollama to Gemini proxy
-      status: completed
-      completed: '2026-08-18'
-      note: 'Side-by-side validation complete. Gemini quality comparable; latency ~500ms vs Ollama ~100ms warm. Decision: proceed with the switch. A follow-up focus inbox has been created for the live MDDB migration.'
+    - label: Update tony-dell MDDB Quadlet to point at Gemini proxy
+      status: not_started
+    - label: Restart live MDDB and reindex all collections
+      status: not_started
+    - label: Validate vector search on main MDDB
+      status: not_started
+    - label: Stop Ollama container on tony-omen and reclaim GPU
+      status: not_started
     request_log: []
     ownership:
       owner: tony
       session: ''
       locked: true
       lock_reason: Activated as active focus
-    job_lifecycle: docs/ssot/jobs/security/2026-08-18-gemini-key-rotation-and-validation.yml
     branch: chaba
-    source: docs/ssot/focus-inbox/2026-08-18-190100-gemini-resume.yml
+    source: /home/tony/CascadeProjects/chaba/docs/ssot/focus-inbox/2026-08-18-193000-mddb-switch-to-gemini.yml
 - title: Ready (Safe)
   icon: safe
   layout: list

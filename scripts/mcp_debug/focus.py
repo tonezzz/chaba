@@ -52,6 +52,11 @@ def _save_current(doc):
         yaml.safe_dump(doc, f, sort_keys=False, allow_unicode=True, width=120, default_flow_style=False)
 
 
+def _save_focus(doc):
+    with open(FOCUS, "w") as f:
+        yaml.safe_dump(doc, f, sort_keys=False, allow_unicode=True, width=120, default_flow_style=False)
+
+
 def _load_focus():
     with open(FOCUS) as f:
         return yaml.safe_load(f)
@@ -112,9 +117,26 @@ def _backlog_items():
     ]
 
 
-def _sweep_candidates(active, backlog, inbox):
+def _sweep_candidates(doc, active, backlog, inbox):
     candidates = []
     seen = set()
+    # Current sections (active and parked)
+    for sec in doc.get("sections", []):
+        if sec.get("title") in ("Active Shared Focus", "Active Branch Focus"):
+            for item in sec.get("items", []):
+                if not item or not item.get("label"):
+                    continue
+                seen.add(item.get("label"))
+                candidates.append({
+                    "label": item.get("label"),
+                    "text": item.get("text", ""),
+                    "status": item.get("status"),
+                    "priority": item.get("priority", "medium"),
+                    "branch": item.get("branch"),
+                    "score": _triage_score(item),
+                    "source": item.get("source", "ssot.focus.current.yml"),
+                    "why": "current " + sec.get("title", "").lower().replace(" focus", ""),
+                })
     # Backlog + parked
     for item in backlog:
         label = item.get("label")
@@ -169,6 +191,73 @@ def _sweep_candidates(active, backlog, inbox):
                     })
     candidates.sort(key=lambda x: (x["score"], _priority_value(x), x["label"]), reverse=True)
     return candidates
+
+
+def _bulk_defer(candidates, hold_label, session, reason):
+    today = datetime.now().strftime("%Y-%m-%d")
+    changed = []
+    # Load focus doc once for backlog edits
+    focus_doc = _load_focus()
+    focus_section = _find_section(focus_doc.get("sections", []), "Backlog - Triage Queue")
+    current_doc = _load_current()
+
+    for c in candidates:
+        if hold_label and c["label"].lower() == hold_label:
+            continue
+        source = c.get("source", "")
+        if not source:
+            continue
+
+        # Focus-inbox file
+        if "focus-inbox" in source:
+            p = Path(source)
+            if p.exists():
+                doc = yaml.safe_load(p.read_text()) or {}
+                focus = doc.get("focus") or doc
+                focus["status"] = "deferred"
+                focus["deferred_at"] = today
+                focus["deferred_session"] = session
+                focus["deferred_reason"] = reason
+                if "focus" in doc:
+                    doc["focus"] = focus
+                else:
+                    doc = focus
+                with open(p, "w") as f:
+                    yaml.safe_dump(doc, f, sort_keys=False, allow_unicode=True, width=120, default_flow_style=False)
+                changed.append({"label": c["label"], "to": "deferred", "file": str(p)})
+            continue
+
+        # Backlog in ssot.focus.yml
+        if "ssot.focus.yml" in source:
+            for item in focus_section.get("items", []):
+                if item and item.get("label") == c["label"]:
+                    item["status"] = "parked"
+                    item["parked"] = today
+                    item["previous_status"] = item.get("status") if item.get("status") != "parked" else item.get("previous_status")
+                    item["deferred"] = {
+                        "to_session": session,
+                        "reason": reason,
+                    }
+                    changed.append({"label": c["label"], "to": "parked in backlog", "session": session})
+            continue
+
+        # Active/ parked in ssot.focus.current.yml
+        for sec in current_doc.get("sections", []):
+            if sec.get("title") in ("Active Shared Focus", "Active Branch Focus"):
+                for item in sec.get("items", []):
+                    if item and item.get("label") == c["label"]:
+                        item["status"] = "parked"
+                        item["parked"] = today
+                        item["previous_status"] = item.get("status") if item.get("status") != "parked" else item.get("previous_status")
+                        item["deferred"] = {
+                            "to_session": session,
+                            "reason": reason,
+                        }
+                        changed.append({"label": c["label"], "to": "parked in current", "session": session})
+
+    _save_focus(focus_doc)
+    _save_current(current_doc)
+    return changed
 
 
 def _match_active(req, active):
@@ -590,7 +679,7 @@ def _load_sessions():
         return {}
 
 
-def mcp_focus(request=None, mode="recommend", decision=None, summary=None, resume_session=None, reason=None, hold=None):
+def mcp_focus(request=None, mode="recommend", decision=None, summary=None, resume_session=None, reason=None, hold=None, bulk_session=None):
     if mode == "technical_decision":
         if not decision:
             return {"ok": False, "error": "decision is required for technical_decision mode"}
@@ -674,7 +763,7 @@ def mcp_focus(request=None, mode="recommend", decision=None, summary=None, resum
         }
 
     if mode == "sweep":
-        candidates = _sweep_candidates(active, _backlog_items(), _inbox_items())
+        candidates = _sweep_candidates(doc, active, _backlog_items(), _inbox_items())
         hold_label = (hold or "").strip().lower()
         # default hold to the active branch focus if not specified
         if not hold_label and active.get("branch"):
@@ -688,17 +777,31 @@ def mcp_focus(request=None, mode="recommend", decision=None, summary=None, resum
                 process_queue.append(c)
         if not hold_item and active.get("branch"):
             hold_item = {"label": active["branch"].get("label"), "status": "active", "why": "active branch focus"}
+
+        deferred = []
+        if bulk_session:
+            deferred = _bulk_defer(process_queue, hold_label, bulk_session, reason or "Bulk defer via mcp_focus sweep")
+            log_session_summary({
+                "focus": hold_item.get("label", ""),
+                "source": "mcp_focus sweep bulk defer",
+                "plan": [f"Hold {hold_item.get('label', '')}"] + [f"Defer {d['label']} to {bulk_session}" for d in deferred],
+                "done": [],
+                "follow_up": ["Re-assess process queue after bulk defer"],
+                "next_action": [f"Continue {hold_item.get('label', '')}"],
+            })
+
         return {
             "ok": True,
             "hold": hold_item,
             "candidates": candidates,
             "process_queue": process_queue,
+            "deferred": deferred,
             "recommendation": {
                 "action": "sweep",
                 "target": hold_item.get("label") if hold_item else None,
                 "confidence": "medium",
                 "reasoning": f"Hold '{hold_item.get('label') if hold_item else 'none'}' and process {len(process_queue)} remaining focuses/parked/backlog items.",
-                "next_prompt": f"Review the {len(process_queue)} items in process_queue. Activate the first, or defer them all to specific sessions.",
+                "next_prompt": f"Review the {len(process_queue)} items in process_queue. Activate the first, or defer them all to specific sessions." if not bulk_session else f"Bulk-deferred {len(deferred)} items to session '{bulk_session}'. Continue {hold_item.get('label', '')}.",
             },
         }
 

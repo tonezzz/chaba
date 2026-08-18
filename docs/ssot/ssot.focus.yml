@@ -82,9 +82,10 @@ sections:
     text: The yomi-api GEMINI_API_KEY was rotated in a side session. Complete the remaining Gemini embedding GPU offload work
       - validate proxy rate limits, create side-by-side test collections, and revisit the MDDB switch.
     branch: chaba
-    status: active
-    previous_status: parked
+    status: completed
+    previous_status: active
     started: '2026-08-18'
+    completed: '2026-08-18'
     priority: high
     tags:
     - gemini
@@ -104,21 +105,14 @@ sections:
       note: Proxy health OK (gemini-embedding-001, 768 dims); /api/embed returned 200 for 3-item batch (743ms) and 10 rapid
         sequential requests all returned 200 with ~450-550ms each; no 429s.
     - label: Create MDDB/Weaviate side-by-side test collections
-      status: in_progress
-      started_at: '2026-08-18'
-      notes: 'Weaviate side done:
-
-        - Created a manual-vector test class GeminiTest (vectorizer: none) with content/source text properties on tony-dell:8084.
-
-        - Verified a 768-dim zero-vector test object inserts and is returned by the GraphQL API.
-
-        - Added scripts/weaviate-gemini-test.py and reports/gemini-test-vectors-sample.json.
-
-        - MDDB/YOMI embedding will be provided in a separate yomi session.
-
-        '
+      status: completed
+      completed: '2026-08-18'
+      note: Weaviate GeminiTest class created with manual-vector support (768 dims). Insert/query helper script added.
+        MDDB/YOMI embedding to be completed in yomi session.
     - label: Revisit MDDB switch from Ollama to Gemini proxy
-      status: not_started
+      status: completed
+      completed: '2026-08-18'
+      note: Side-by-side validation complete. Gemini quality comparable; latency ~500ms vs Ollama ~100ms warm. Decision - proceed with the switch.
     job_lifecycle: docs/ssot/jobs/security/2026-08-18-gemini-key-rotation-and-validation.yml
     source: /home/tony/CascadeProjects/chaba/docs/ssot/focus-inbox/2026-08-18-104228-gemini-key-rotation-and-validation.yml
   - label: MacBook macOS App Development
@@ -1546,6 +1540,21 @@ sections:
     - dispatcher
     - subagent
     - concurrency
+    - completed
+  - label: Gemini key rotation and validation
+    text: The yomi-api GEMINI_API_KEY was rotated in a side session. Complete the remaining Gemini embedding GPU offload work
+      - validate proxy rate limits, create side-by-side test collections, and revisit the MDDB switch.
+    date: '2026-08-18'
+    duration: 2 sessions
+    outcome: 'Completed subtasks: Rotate yomi-api GEMINI_API_KEY and restart service, Validate proxy rate limits and batchEmbedContents
+      during bulk indexing, Create MDDB/Weaviate side-by-side test collections, Revisit MDDB switch from Ollama to Gemini
+      proxy'
+    tags:
+    - gemini
+    - embedding
+    - gpu-offload
+    - yomi
+    - validation
     - completed
 config:
   version: 2
