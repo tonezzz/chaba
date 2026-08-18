@@ -54,7 +54,7 @@ def _unprocessed_inbox():
 def main():
     current = _load_current()
     focus = _load_focus()
-    active, quick_wins = _active_items(current)
+    active, quick_wins, hand_off_queue, ready_safe = _active_items(current)
 
     # Collect all remaining items
     remaining = []

@@ -10,7 +10,10 @@ REPO = Path(__file__).resolve().parent.parent
 
 
 def run(relative_args):
-    cmd = [sys.executable, str(REPO / relative_args[0])] + relative_args[1:]
+    if relative_args[0] == 'node':
+        cmd = ['node'] + [str(REPO / a) for a in relative_args[1:]]
+    else:
+        cmd = [sys.executable, str(REPO / relative_args[0])] + relative_args[1:]
     print(f"[overnight] {relative_args[0]}")
     result = subprocess.run(cmd, cwd=REPO, text=True, capture_output=True)
     if result.stdout:
@@ -33,7 +36,7 @@ def main():
         return rc
     rc |= run(["scripts/focus-dispatcher.py", "--sub-agent"])
     rc |= run(["scripts/focus-dispatcher.py", "--advance"])
-    rc |= run(["scripts/ssot-optimize.mjs"])
+    rc |= run(["node", "scripts/ssot-optimize.mjs"])
     rc |= run(["scripts/process-remaining-focuses.py"])
     if rc:
         print("[overnight] completed with errors")
