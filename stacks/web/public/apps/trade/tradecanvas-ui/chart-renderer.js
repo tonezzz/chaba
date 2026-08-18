@@ -16,6 +16,7 @@ class ChartRenderer {
         this.candlestickSeries = null;
         this.volumeSeries = null;
         this.indicatorSeries = null;
+        this.activeSeries = null;
     }
 
     initializeChart() {
@@ -70,14 +71,7 @@ class ChartRenderer {
             },
         });
 
-        this.candlestickSeries = this.chart.addCandlestickSeries({
-            upColor: this.chartSettings.upColor,
-            downColor: this.chartSettings.downColor,
-            borderDownColor: this.chartSettings.downColor,
-            borderUpColor: this.chartSettings.upColor,
-            wickDownColor: this.chartSettings.downColor,
-            wickUpColor: this.chartSettings.upColor,
-        });
+        this.activeSeries = null;
 
         // Handle window resize.
         window.addEventListener('resize', () => {
@@ -101,25 +95,65 @@ class ChartRenderer {
     }
 
     updateChart(data) {
-        if (!this.candlestickSeries || !data || data.length === 0) return;
+        if (!this.chart || !data || data.length === 0) return;
 
-        const chartData = data
-            .filter(d => d.time != null && d.open != null && d.high != null && d.low != null && d.close != null)
-            .map(d => ({
-                time: this._formatTime(d.time),
-                open: d.open,
-                high: d.high,
-                low: d.low,
-                close: d.close
-            }));
+        // Remove any previously-added series so we can switch between candle and line.
+        if (this.activeSeries) {
+            this.chart.removeSeries(this.activeSeries);
+            this.activeSeries = null;
+        }
 
-        this.candlestickSeries.setData(chartData);
+        // Detect whether the data has genuine OHLC variation. If not, draw a line chart.
+        const hasOhlc = data.some(d =>
+            Number.isFinite(d.open) && Number.isFinite(d.high) &&
+            Number.isFinite(d.low) && Number.isFinite(d.close) &&
+            (d.open !== d.close || d.high !== d.low || d.high !== d.close)
+        );
 
-        if (chartData.length === 0) {
+        let displayData = [];
+
+        if (hasOhlc) {
+            displayData = data
+                .filter(d => d.time != null && Number.isFinite(d.open) && Number.isFinite(d.high) && Number.isFinite(d.low) && Number.isFinite(d.close))
+                .map(d => ({
+                    time: this._formatTime(d.time),
+                    open: d.open,
+                    high: d.high,
+                    low: d.low,
+                    close: d.close
+                }));
+
+            this.candlestickSeries = this.chart.addCandlestickSeries({
+                upColor: this.chartSettings.upColor,
+                downColor: this.chartSettings.downColor,
+                borderDownColor: this.chartSettings.downColor,
+                borderUpColor: this.chartSettings.upColor,
+                wickDownColor: this.chartSettings.downColor,
+                wickUpColor: this.chartSettings.upColor,
+            });
+            this.candlestickSeries.setData(displayData);
+            this.activeSeries = this.candlestickSeries;
+        } else {
+            displayData = data
+                .filter(d => d.time != null && Number.isFinite(d.close))
+                .map(d => ({
+                    time: this._formatTime(d.time),
+                    value: d.close
+                }));
+
+            this.lineSeries = this.chart.addLineSeries({
+                color: this.chartSettings.upColor,
+                lineWidth: 2,
+            });
+            this.lineSeries.setData(displayData);
+            this.activeSeries = this.lineSeries;
+        }
+
+        if (displayData.length === 0) {
             return;
         }
 
-        if (chartData.length === 1) {
+        if (displayData.length === 1) {
             // Show a few logical bars of empty space around the lone candle.
             this.chart.timeScale().setVisibleLogicalRange({ from: -3.5, to: 3.5 });
             return;
@@ -133,9 +167,9 @@ class ChartRenderer {
         const desiredBarSpacing = 4; // px per bar, enough to see a candle
         const maxVisibleBars = Math.max(50, Math.floor(chartWidth / desiredBarSpacing));
 
-        if (chartData.length > maxVisibleBars) {
-            const from = Math.max(0, chartData.length - maxVisibleBars);
-            this.chart.timeScale().setVisibleLogicalRange({ from: from, to: chartData.length - 1 });
+        if (displayData.length > maxVisibleBars) {
+            const from = Math.max(0, displayData.length - maxVisibleBars);
+            this.chart.timeScale().setVisibleLogicalRange({ from: from, to: displayData.length - 1 });
         } else {
             this.chart.timeScale().fitContent();
         }
