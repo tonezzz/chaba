@@ -32,30 +32,27 @@ sections:
   icon: branch
   layout: list
   items:
-  - label: MCP Debug advanced tools wrap-up
-    text: Complete the mcp_debug_audit, mcp_preset_savings, and mcp_mddb_doc work. Resolve the MDDB REST endpoint timeout
-      so the new wrapper can use semantic ranking. Decide how to add systemctl/system raw commands if needed.
+  - label: Streamline focus processing and hand-off
+    text: Improve the request-to-focus workflow so the assistant classifies, parks, dispatches, and hands off work more efficiently.
+      Includes faster mcp_focus, subagent auto-dispatch, and clearer hand-off contracts.
     status: active
-    priority: medium
+    priority: low
     started: '2026-08-18'
     estimated_duration: 1 session
     tags:
     - focus
+    - workflow
+    - subagent
+    - hand-off
     subtasks:
-    - label: Restore MDDB REST endpoint on tony-dell (tony-dell:11023)
-      status: completed
-      completed: '2026-08-18'
-      note: The MDDB REST endpoint is responding and mcp_mddb_doc now uses the correct `document.meta.original_path` and `document.contentMd` fields.
-    - label: Run end-to-end mcp_mddb_doc test with MDDB semantic search
-      status: completed
-      completed: '2026-08-18'
-      note: Tested mcp_mddb_doc('health check') and it returned a full SSOT document from the ssot-infrastructure collection.
-    - label: Extend mcp_debug preset transforms with captured values and filter/sort steps
+    - label: Add hand-off queue fields to ssot.focus.current.yml and mcp_focus output
       status: not_started
-    - label: Add systemctl/system raw command handling if exact commands are specified
+    - label: Generate SUBAGENT_CONTRACT.md automatically from focus subagent block
       status: not_started
-    branch: mcp-debug
-    source: /home/tony/CascadeProjects/chaba/docs/ssot/focus-inbox/2026-08-18-mcp-debug-advance.yml
+    - label: Add auto-dispatch check to focus-dispatcher for eligible backlog items
+      status: not_started
+    - label: Review and tighten mcp_focus decision tree for faster classification
+      status: not_started
 
 - title: Backlog - Triage Queue
   icon: backlog
@@ -504,28 +501,6 @@ sections:
       requires_approval: false
       can_change_host: false
       notes: Use read-only subagent to assess current context quality and propose a phased plan before implementation.
-  - label: Streamline focus processing and hand-off
-    text: 'Improve the request-to-focus workflow so the assistant classifies, parks, dispatches, and hands off work more efficiently.
-      Includes faster mcp_focus, subagent auto-dispatch, and clearer hand-off contracts.'
-    branch: chaba
-    status: pending
-    priority: low
-    tags:
-    - focus
-    - workflow
-    - subagent
-    - hand-off
-    triage:
-      urgency: 2
-      importance: 7
-      complication: 5
-    subagent:
-      runnable: true
-      profile: subagent_explore
-      parallel: true
-      requires_approval: false
-      can_change_host: false
-      notes: Read-only subagent should review mcp_focus, focus-dispatcher, and subagent contract flow, then propose a focused redesign.
 - title: Quick Wins
   icon: quick
   layout: list
@@ -727,6 +702,19 @@ sections:
   icon: history
   layout: timeline
   items:
+  - label: MCP Debug advanced tools wrap-up
+    text: 'Complete the mcp_debug_audit, mcp_preset_savings, and mcp_mddb_doc work. Resolve the MDDB REST endpoint timeout
+      so the new wrapper can use semantic ranking. Decide how to add systemctl/system raw commands if needed.'
+    date: '2026-08-18'
+    duration: 1 session
+    outcome: 'Restored MDDB REST endpoint mapping in mcp_mddb_doc, added mcp_system and mcp_transform tools, and verified both with live calls.'
+    tags:
+    - completed
+    - mcp-debug
+    - mcp
+    - mddb
+    - systemctl
+    - presets
   - label: Focus pre-action summary gate
     text: Added a pre_action mode to mcp_focus that checks for duplicate active focuses, similar historical focuses, and related
       decision-tree entries, then emits a concise summary before work begins. Also added the pre_action_summary case to the focus

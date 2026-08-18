@@ -142,27 +142,26 @@ sections:
   icon: branch
   layout: list
   items:
-  - label: MCP Debug advanced tools wrap-up
-    text: Complete the mcp_debug_audit, mcp_preset_savings, and mcp_mddb_doc work. Resolve the MDDB REST endpoint timeout
-      so the new wrapper can use semantic ranking. Decide how to add systemctl/system raw commands if needed.
+  - label: Streamline focus processing and hand-off
+    text: Improve the request-to-focus workflow so the assistant classifies, parks, dispatches, and hands off work more efficiently.
+      Includes faster mcp_focus, subagent auto-dispatch, and clearer hand-off contracts.
     status: active
-    priority: medium
+    priority: low
     started: '2026-08-18'
     estimated_duration: 1 session
     tags:
     - focus
+    - workflow
+    - subagent
+    - hand-off
     subtasks:
-    - label: Restore MDDB REST endpoint on tony-dell (tony-dell:11023)
-      status: completed
-      completed: '2026-08-18'
-      note: The MDDB REST endpoint is responding and mcp_mddb_doc now uses the correct `document.meta.original_path` and `document.contentMd` fields.
-    - label: Run end-to-end mcp_mddb_doc test with MDDB semantic search
-      status: completed
-      completed: '2026-08-18'
-      note: Tested mcp_mddb_doc('health check') and it returned a full SSOT document from the ssot-infrastructure collection.
-    - label: Extend mcp_debug preset transforms with captured values and filter/sort steps
+    - label: Add hand-off queue fields to ssot.focus.current.yml and mcp_focus output
       status: not_started
-    - label: Add systemctl/system raw command handling if exact commands are specified
+    - label: Generate SUBAGENT_CONTRACT.md automatically from focus subagent block
+      status: not_started
+    - label: Add auto-dispatch check to focus-dispatcher for eligible backlog items
+      status: not_started
+    - label: Review and tighten mcp_focus decision tree for faster classification
       status: not_started
     request_log: []
     branch: mcp-debug

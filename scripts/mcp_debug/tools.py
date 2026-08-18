@@ -47,6 +47,73 @@ def mcp_raw(host, command):
     return json.dumps(result, separators=(",", ":"))
 
 
+def mcp_system(host, command):
+    """Run a raw systemctl/system command if it is an exact allowed command."""
+    if not command or not command.lstrip().startswith(("systemctl ", "systemctl\t")):
+        return json.dumps({"ok": False, "error": "mcp_system only supports systemctl commands", "host": host}, separators=(",", ":"))
+    result = run_on_host(host, command, compact=False)
+    result["h"] = host
+    result["tool"] = "mcp_system"
+    return json.dumps(result, separators=(",", ":"))
+
+
+def _resolve_input(source, results, captured):
+    if source is None:
+        return None
+    if isinstance(source, (int, float)):
+        idx = int(source)
+        if 0 <= idx < len(results):
+            return results[idx]
+        return None
+    if isinstance(source, str) and source.startswith("$"):
+        return captured.get(source[1:])
+    return source
+
+
+def _get_path(obj, path):
+    if not path:
+        return obj
+    parts = str(path).split(".") if isinstance(path, str) else []
+    for p in parts:
+        if obj is None:
+            return None
+        if isinstance(obj, dict):
+            obj = obj.get(p)
+        elif isinstance(obj, list):
+            try:
+                obj = obj[int(p)]
+            except (ValueError, IndexError):
+                return None
+        else:
+            return None
+    return obj
+
+
+def mcp_transform(input=None, op="identity", params=None, results=None, captured=None):
+    """Transform a previous step result: filter, sort, capture, or pick a value."""
+    data = _resolve_input(input, results or [], captured or {})
+    if data is None:
+        return {"ok": False, "error": "input not found"}
+    params = params or {}
+    if op == "capture":
+        return {"ok": True, "captured": {params.get("as"): _get_path(data, params.get("path"))}}
+    if op == "filter":
+        if not isinstance(data, list):
+            return {"ok": False, "error": "filter input must be a list"}
+        key = params.get("key")
+        value = params.get("value")
+        return {"ok": True, "items": [x for x in data if _get_path(x, key) == value]}
+    if op == "sort":
+        if not isinstance(data, list):
+            return {"ok": False, "error": "sort input must be a list"}
+        key = params.get("key")
+        reverse = params.get("reverse", False)
+        return {"ok": True, "items": sorted(data, key=lambda x: _get_path(x, key) or "", reverse=reverse)}
+    if op == "pick":
+        return {"ok": True, "value": _get_path(data, params.get("path"))}
+    return {"ok": False, "error": f"unknown transform op: {op}"}
+
+
 def mcp_stats(host, command):
     raw_cmd = DEBUG_COMMANDS.get(command, {}).get("raw_command", command)
     raw_result = run_on_host(host, raw_cmd, compact=False)
@@ -503,6 +570,7 @@ def mcp_preset_run(name):
     preset = PRESETS[name]
     steps = preset.get("steps", [])
     results = []
+    captured = {}
     all_ok = True
     for step in steps:
         host = step.get("host")
@@ -512,7 +580,7 @@ def mcp_preset_run(name):
             results.append({"ok": False, "error": "step missing tool", "step": step})
             all_ok = False
             continue
-        if tool not in ("mcp_diff", "mcp_debug_audit") and not host:
+        if tool not in ("mcp_diff", "mcp_debug_audit", "mcp_transform") and not host:
             results.append({"ok": False, "error": "step missing host", "step": step})
             all_ok = False
             continue
@@ -559,6 +627,28 @@ def mcp_preset_run(name):
                 all_ok = False
         elif tool == "mcp_debug_audit":
             r = mcp_debug_audit(hosts=step.get("hosts"), threshold=float(step.get("threshold", 0.0)))
+            results.append(r)
+            if not r.get("ok"):
+                all_ok = False
+        elif tool == "mcp_system":
+            if not command:
+                results.append({"ok": False, "error": "mcp_system step missing command", "step": step})
+                all_ok = False
+                continue
+            r = json.loads(mcp_system(host, command))
+            results.append(r)
+            if not r.get("ok"):
+                all_ok = False
+        elif tool == "mcp_transform":
+            r = mcp_transform(
+                input=step.get("input"),
+                op=step.get("op", "identity"),
+                params=step.get("params", {}),
+                results=results,
+                captured=captured,
+            )
+            if r.get("ok") and r.get("captured"):
+                captured.update(r.get("captured"))
             results.append(r)
             if not r.get("ok"):
                 all_ok = False

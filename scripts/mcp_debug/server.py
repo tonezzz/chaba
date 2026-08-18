@@ -300,6 +300,31 @@ def handle_tools_list(id_):
             },
         },
         {
+            "name": "mcp_system",
+            "description": "Run an exact systemctl command on a host. Requires the command to start with 'systemctl'.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "host": {"type": "string", "description": "Target host"},
+                    "command": {"type": "string", "description": "Exact systemctl command, e.g. 'systemctl --user status redis.service'"},
+                },
+                "required": ["host", "command"],
+            },
+        },
+        {
+            "name": "mcp_transform",
+            "description": "Transform a previous step or context value: filter, sort, capture, or pick.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "input": {"type": ["integer", "string"], "description": "Step index or '$captured' variable"},
+                    "op": {"type": "string", "enum": ["filter", "sort", "capture", "pick"], "description": "Transform operation"},
+                    "params": {"type": "object", "description": "Operation-specific parameters"},
+                },
+                "required": ["input", "op", "params"],
+            },
+        },
+        {
             "name": "mcp_report",
             "description": "Generate a savings report in markdown, json, csv, or html from mcp_savings and optionally save it to reports/.",
             "inputSchema": {
@@ -535,6 +560,20 @@ def handle_tools_call(id_, params):
         if not preset:
             return {"jsonrpc": "2.0", "id": id_, "error": {"code": -32602, "message": "preset is required"}}
         result = mcp_preset_savings(preset)
+        output = json.dumps(result, separators=(",", ":"))
+    elif name == "mcp_system":
+        h = arguments.get("host")
+        command = arguments.get("command")
+        if not h or not command:
+            return {"jsonrpc": "2.0", "id": id_, "error": {"code": -32602, "message": "host and command are required"}}
+        result = mcp_system(h, command)
+        output = result
+    elif name == "mcp_transform":
+        result = mcp_transform(
+            input=arguments.get("input"),
+            op=arguments.get("op", "identity"),
+            params=arguments.get("params", {}),
+        )
         output = json.dumps(result, separators=(",", ":"))
     elif name == "mcp_report":
         result = mcp_report(arguments.get("hosts"), save=arguments.get("save", False), format=arguments.get("format", "markdown"))
