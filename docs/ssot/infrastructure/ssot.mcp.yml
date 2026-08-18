@@ -244,7 +244,7 @@ servers:
   mddb:
     name: MDDB Knowledge Base
     description: Personal Knowledge Base system with document management and semantic search
-    implementation: docker tradik/mddb:latest (container mddb)
+    implementation: docker chaba/mddb-page-tools:latest (container mddb)
     wrapper: /home/tony/.config/Claude/mddb-bridge.py
     filter: bridge
     filtered_tools:
@@ -254,6 +254,9 @@ servers:
       - get_stats
       - aggregate
       - semantic_search
+      - get_page
+      - list_sections
+      - read_tree
     url: http://localhost:9001/mcp
     single_instance: false
     status: operational
