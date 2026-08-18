@@ -9,7 +9,9 @@ overview:
     request, it recommends the next action without modifying any focus state.
   inputs:
     - request: optional free-text user request
-    - mode: optional "recommend" (default), "status", "technical_decision", or "session_summary"
+    - mode: optional "recommend" (default), "status", "pre_action", "safe_next", "ready_queue", "defer", "resume", "technical_decision", or "session_summary"
+    - resume_session: target session identifier for defer mode
+    - reason: reason for deferring
   guarantees:
     - Read-only. It never writes to ssot.focus.current.yml, ssot.focus.yml, or the focus-inbox/ directory.
     - If no request is provided, it always returns the current active foci and quick wins.
@@ -78,6 +80,19 @@ actions:
     output:
       - Create an in-memory draft inbox YAML for review.
       - Do not write the file to disk.
+
+  defer:
+    when: |
+      The user wants to pause the active focus or its current subtask and resume it in a later session.
+    output:
+      - Mark the in_progress subtask (or the whole focus if none) as deferred with resume_session and resume_note.
+      - Append a session summary with next_action set to resume the focus.
+
+  resume:
+    when: |
+      The user wants to pick up a previously deferred focus, or no active focus exists and a session has a pending resume next_action.
+    output:
+      - Return the latest candidate focus from ssot.focus.sessions.yml with a resume/continue next_action.
       - Return the draft content under suggestion.
     confidence: low
 

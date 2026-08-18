@@ -47,6 +47,11 @@ def _load_current():
         return yaml.safe_load(f)
 
 
+def _save_current(doc):
+    with open(CURRENT, "w") as f:
+        yaml.safe_dump(doc, f, sort_keys=False, allow_unicode=True, width=120, default_flow_style=False)
+
+
 def _load_focus():
     with open(FOCUS) as f:
         return yaml.safe_load(f)
@@ -454,7 +459,79 @@ def _make_recommendation(request, active, quick_wins):
     }
 
 
-def mcp_focus(request=None, mode="recommend", decision=None, summary=None):
+def _find_current_active_item(doc):
+    for sec in doc.get("sections", []):
+        if sec.get("title") in ("Active Shared Focus", "Active Branch Focus"):
+            for item in sec.get("items", []):
+                if item and item.get("status") == "active":
+                    return item
+    return None
+
+
+def _defer_active_focus(doc, resume_session, reason):
+    item = _find_current_active_item(doc)
+    if not item:
+        return None
+    today = datetime.now().strftime("%Y-%m-%d")
+    # Prefer the in_progress subtask, otherwise the first not_started subtask
+    target_subtask = None
+    for st in item.get("subtasks", []):
+        if st.get("status") == "in_progress":
+            target_subtask = st
+            break
+    if not target_subtask:
+        for st in item.get("subtasks", []):
+            if st.get("status") == "not_started":
+                target_subtask = st
+                break
+    if target_subtask:
+        target_subtask["status"] = "deferred"
+        target_subtask["deferred_at"] = today
+        if resume_session:
+            target_subtask["resume_session"] = resume_session
+        if reason:
+            target_subtask["resume_note"] = reason
+    else:
+        item["status"] = "parked"
+        item["parked"] = today
+        item["deferred"] = {
+            "to_session": resume_session or "",
+            "reason": reason or "",
+        }
+    return item, target_subtask
+
+
+def _resume_suggestion():
+    sessions = _load_sessions()
+    candidates = []
+    for s in sessions.get("sessions", []):
+        next_action = s.get("next_action", [])
+        if not next_action:
+            continue
+        if isinstance(next_action, str):
+            next_action = [next_action]
+        for action in next_action:
+            if isinstance(action, str) and ("resume" in action.lower() or "continue" in action.lower()):
+                candidates.append({
+                    "focus": s.get("focus"),
+                    "date": s.get("date"),
+                    "next_action": action,
+                    "plan": s.get("plan", []),
+                })
+    return candidates
+
+
+def _load_sessions():
+    if not SESSIONS.exists():
+        return {}
+    try:
+        with open(SESSIONS) as f:
+            return yaml.safe_load(f) or {}
+    except Exception:
+        return {}
+
+
+def mcp_focus(request=None, mode="recommend", decision=None, summary=None, resume_session=None, reason=None):
     if mode == "technical_decision":
         if not decision:
             return {"ok": False, "error": "decision is required for technical_decision mode"}
@@ -495,6 +572,47 @@ def mcp_focus(request=None, mode="recommend", decision=None, summary=None):
 
     if mode == "ready_queue":
         return {"ok": True, "ready_safe": ready_safe}
+
+    if mode == "defer":
+        item, subtask = _defer_active_focus(doc, resume_session or request or "", reason or request or "")
+        if not item:
+            return {"ok": False, "error": "no active focus to defer"}
+        _save_current(doc)
+        focus_label = item.get("label", "")
+        subtask_label = subtask.get("label", "") if subtask else ""
+        log_session_summary({
+            "focus": focus_label,
+            "source": "mcp_focus defer",
+            "plan": [f"Defer {subtask_label or focus_label}"],
+            "done": [],
+            "follow_up": [],
+            "next_action": [f"Resume {focus_label}"],
+        })
+        return {
+            "ok": True,
+            "action": "deferred",
+            "focus": focus_label,
+            "subtask": subtask_label,
+            "resume_session": resume_session or request or "",
+            "reason": reason or request or "",
+        }
+
+    if mode == "resume":
+        candidates = _resume_suggestion()
+        if not candidates:
+            return {"ok": True, "candidates": [], "recommendation": None, "reason": "No resume candidates found."}
+        best = candidates[-1]
+        return {
+            "ok": True,
+            "candidates": candidates,
+            "recommendation": {
+                "action": "resume",
+                "target": best.get("focus"),
+                "confidence": "medium",
+                "reasoning": f"Latest session for '{best.get('focus')}' has a resume next_action.",
+                "next_prompt": f"Reactivate focus '{best.get('focus')}' to continue.",
+            },
+        }
 
     if mode == "pre_action":
         return {

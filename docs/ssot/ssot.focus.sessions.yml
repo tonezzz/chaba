@@ -2,306 +2,283 @@ title: Focus Sessions
 subtitle: Lightweight per-session plan and follow-up log
 icon: 📒
 version: 1
-
 overview:
-  purpose: |
-    Keep a chronological, low-noise record of what was planned, what was done, and what
+  purpose: 'Keep a chronological, low-noise record of what was planned, what was done, and what
+
     needs follow-up for each focus session. This is not a duplicate of ssot.focus.yml
+
     history; it is a short-term working memory for the assistant and the user.
+
+    '
   scope: active and recently completed focuses only
   max_in_memory: 10
   archive_to: docs/ssot/ssot.focus.yml history section when a focus is archived
-
 principles:
-  - Append-only. Never rewrite past entries; create a new entry each session.
-  - One entry per session, tied to one focus by label.
-  - Skip empty fields. If there is no follow-up, omit it.
-  - No full duplication of ssot.focus.current.yml or ssot.focus.yml.
-  - Keep text terse; long artifacts belong in reports/ or KB.
-
+- Append-only. Never rewrite past entries; create a new entry each session.
+- One entry per session, tied to one focus by label.
+- Skip empty fields. If there is no follow-up, omit it.
+- No full duplication of ssot.focus.current.yml or ssot.focus.yml.
+- Keep text terse; long artifacts belong in reports/ or KB.
 entry_schema:
   date: ISO date of the session
   session: optional session id
   focus: label of the active focus being worked on
   source: how the session started (e.g., user request, continue, dispatcher)
   plan:
-    - concise bullet of what was planned to do
+  - concise bullet of what was planned to do
   done:
-    - concise bullet of what was actually completed
+  - concise bullet of what was actually completed
   follow_up:
-    - next step, unresolved question, or deferred work
+  - next step, unresolved question, or deferred work
   next_action: one-line recommendation for the next session
   decisions:
-    - optional list of key technical or focus decisions made during the session
-    - each decision should include id, title, and chosen option
+  - optional list of key technical or focus decisions made during the session
+  - each decision should include id, title, and chosen option
   kb_items:
-    - optional list of KB entries created or updated
-
+  - optional list of KB entries created or updated
 workflow:
-  - At session start, read the most recent session entry for the active focus to pick up follow_ups.
-  - If the user asks for a plan, create a new entry with plan filled in and done/follow_up empty.
-  - At session end, update done and follow_up in a new entry (do not edit the plan entry).
-  - The mcp_focus tool may read the latest follow_up when there is no explicit user request.
-  - The focus-dispatcher may append a summary entry after auto-activation.
-
+- At session start, read the most recent session entry for the active focus to pick up follow_ups.
+- If the user asks for a plan, create a new entry with plan filled in and done/follow_up empty.
+- At session end, update done and follow_up in a new entry (do not edit the plan entry).
+- The mcp_focus tool may read the latest follow_up when there is no explicit user request.
+- The focus-dispatcher may append a summary entry after auto-activation.
 example:
-  - date: '2026-08-16'
-    focus: TCP/IP link monitoring with auto-scan and safe fix
-    source: continue
-    plan:
-    - Add 60s cache to mcp_debug/http_server.py
-    - Update ssot.index.yml
-    done:
-    - Added cache and background refresh
-    - Added ssot.index.yml entries
-    follow_up:
-    - Monitor whether 60s is too long for live CORS data
-    next_action: Continue with mcp_focus implementation or activate next backlog item
-
+- date: '2026-08-16'
+  focus: TCP/IP link monitoring with auto-scan and safe fix
+  source: continue
+  plan:
+  - Add 60s cache to mcp_debug/http_server.py
+  - Update ssot.index.yml
+  done:
+  - Added cache and background refresh
+  - Added ssot.index.yml entries
+  follow_up:
+  - Monitor whether 60s is too long for live CORS data
+  next_action: Continue with mcp_focus implementation or activate next backlog item
 sessions:
-  - date: '2026-08-16'
-    session: chaba-2026-08-16
-    focus: TCP/IP link monitoring with auto-scan and safe fix
-    source: continue
-    plan:
-      - Implement scripts/mcp-link-monitor.py
-      - Update ssot.index.yml with new SSOTs
-      - Add 60s cache to scripts/mcp_debug/http_server.py
-    done:
-      - Implemented mcp-link-monitor.py with cheap ICMP/TCP probes, state machine, scan/fix/alert flow, and IP-drift detection
-      - Added ssot.host-roles.yml and related entries to ssot.index.yml
-      - Added 60s cached mcp-savings.json CORS endpoint with background refresh to mcp_debug/http_server.py
-    follow_up:
-      - Deploy mcp-link-monitor.py as a systemd user timer/service for periodic checks
-    next_action: Create and enable the mcp-link-monitor systemd units, or activate the next backlog focus
-
-  - date: '2026-08-16'
-    session: chaba-2026-08-16-mcp-debug-h3
-    focus: Fix mcp_debug H3 page mixed-content (HTTP/HTTPS) error
-    source: user request
-    plan:
-      - Assess and improve the focus intake decision SSOT for this bug report
-      - Apply the chosen SSOT updates
-    done:
-      - Added live_bug_report case to ssot.focus.current.yml decision_tree
-      - Appended the mcp_debug H3 mixed-content intake decision to ssot.focus.decisions.yml
-      - User fixed chaba-h3 mcp_debug app.js and index.html (disabled HTTP live URL, added skeleton and fetch timeout)
-    follow_up:
-      - Verify the HTTPS page loads without mixed-content warnings
-      - Deploy or push the chaba-h3 app changes
-    next_action: Verify the page on chaba.h3 and push the chaba-h3 changes
-  - date: '2026-08-16'
-    session: chaba-2026-08-16-decision-capture
-    focus: Continuous decision capture for focus and technical choices
-    source: user request
-    plan:
-      - Answer how to continuously capture decision SSOT
-      - Activate the focus and discuss hands-off processing while away
-    done:
-      - Proposed a three-layer decision-capture system (intake, technical SSOT, session decisions)
-      - Activated the focus in ssot.focus.current.yml and ssot.focus.yml
-      - Outlined the hands-off focus loop (scheduled focus-dispatcher + separate subagent runner)
-    follow_up:
-      - Implement the decision-capture schema and wiring
-      - Decide whether to build the subagent runner or just enable the dispatcher scheduler
-    next_action: Start the first subtask (define schema) or set up the focus-dispatcher systemd timer
-
-  - date: '2026-08-16'
-    session: chaba-2026-08-16-close
-    focus: mcp-debug file & clipboard bridge
-    source: user request
-    plan:
-      - Add all recent completed work into the focus sessions log and finish the session
-    done:
-      - Documented CSV-with-header table output and table_schemas in ssot.mcp-debug.yml
-      - Added mcp_debug/formatters.py and the /mcp-table.json endpoint in http_server.py
-      - Refactored focus-dispatcher.py into the scripts/focus_dispatcher/ package
-      - Pointed mcp_debug CORS endpoint and H3 PHP proxy to tony-dell
-      - Added H3 mcp_debug table detail view and /api/mcp-table.php proxy in chaba-h3
-      - Completed mcp_report json/csv/html quick wins
-      - Created ssot.technical-decisions.yml and registered it in ssot.index.yml
-      - Updated tony_dell host role in ssot.mcp-debug.yml (headless primary CORS/link/overnight host)
-      - Added UI policy SSOT item to the backlog in ssot.focus.yml
-    follow_up:
-      - Implement the 6 mcp-debug file & clipboard bridge subtasks
-      - Decide when to resume the parked Trade Canvas UI focus
-    next_action: Start the first file bridge subtask (create ssot.mcp-debug.files.yml)
-
-  - date: '2026-08-16'
-    session: chaba-2026-08-16-cleanup
-    focus: Delegate tony-omen services and timers to tony-dell
-    source: user request
-    plan:
-      - Commit the uncommitted SSOT/infrastructure drift and trade-canvas UI changes
-      - Record the session in the focus log
-    done:
-      - Added SSOT optimization orchestration task and improvement
-      - Updated tony-dell hardware, file-control policy, maintenance bloat check, and macbook system state
-      - Completed mcp-debug baselines split (mcp_vet now writes to ssot.mcp-debug.baselines.yml)
-      - Updated yomi-failover and Caddyfile to use tony-dell tailnet IP
-      - Committed trade canvas compare UI and playlive-test SSOTs
-      - Added Tailscale Funnel 404 and healthcheck to the focus backlog
-    follow_up:
-      - Push the 5 unpushed commits on master
-      - Decide whether to activate the Tailscale Funnel 404 focus or a parked focus next
-    next_action: Push to origin or activate the next focus
-
-  - date: '2026-08-17'
-    session: chaba-2026-08-17
-    focus: mcp-debug visual capture bridge
-    source: user request
-    done:
-      - Created ssot.file-optimization.yml and registered it in ssot.index.yml
-      - Added bloat thresholds, data-isolation checks, and consistency metrics to the SSOT optimization plan
-      - Updated ssot.maintenance.yml and ssot.improvements.yml to track SSOT file optimization
-      - Resolved the Yomi mcpb blocker by keeping yomi-update-all on tony-omen
-      - User completed Tony-Dell Phase 3 Safe Auto-Recovery and activated mcp-debug visual capture bridge
-      - User created ssot.mcp-debug.capture.yml and registered it in ssot.index.yml
-      - User updated mcp-debug command baselines/cors/health and H3 mcp_debug UI with freshness, download, auto-refresh
-    follow_up:
-      - Implement the remaining 5 mcp-debug visual capture bridge subtasks
-      - Push the uncommitted SSOT and infrastructure drift to origin
-    next_action: Start the first capture bridge subtask (mcp_screenshot) or commit/push current changes
-
-  - date: '2026-08-17'
-    session: chaba-2026-08-17-mddb-search
-    focus: SSOT documentation search protocol
-    source: user request
-    plan:
-      - Harden .windsurfrules to require MDDB first
-      - Add MDDB-first step to ssot.focus.current.yml workflow
-    done:
-      - Hardened .windsurfrules Documentation Search Standards to a mandatory MDDB-first gate
-      - Added MDDB-first workflow step to ssot.focus.current.yml
-      - Verified with MDDB that no existing capture/screen docs were duplicated by the visual capture bridge design
-    follow_up:
-      - Apply the MDDB-first rule in every future session
-      - Consider a docs-search skill or overnight audit loop if the rule is still being skipped
-    next_action: Return to active mcp-debug visual capture bridge focus
-
-  - date: '2026-08-17'
-    session: chaba-2026-08-17-mddb-fix
-    focus: MDDB semantic search fix and monitoring
-    source: user request
-    plan:
-      - Verify and fix MDDB semantic search
-      - Suggest MDDB healthcheck/monitoring improvements
-      - Add commit job to focus and close
-    done:
-      - Verified MDDB container and MCP endpoint healthy
-      - Identified MDDB search failures due to stale kb-* collection names and tony-omen.local mDNS
-      - Updated auto-kb.mjs and SKILL.md to use chaba-* collections
-      - Updated test-global-rules-and-mddb.sh to use 127.0.0.1, chaba-system, and curl timeouts
-      - Updated global_rules.md MDDB example and health-check URLs
-      - Added commit quick win to ssot.focus.current.yml
-    follow_up:
-      - Restart avahi-daemon/systemd-resolved if user wants tony-omen.local mDNS fixed
-    next_action: Close session
-
-  - date: '2026-08-17'
-    session: chaba-2026-08-17-capture-bridge
-    focus: mcp-debug visual capture bridge
-    source: user request
-    plan:
-      - Finish mcp-debug capture bridge and close session
-    done:
-      - Enabled tony_dell capture in ssot.mcp-debug.capture.yml with note on headless screenshot
-      - Expanded mcp_screenshot/window_list/clipboard_image_get host enum to tony_dell, tony_omen, kk-macbook
-      - Marked mcp_window_list and mcp_clipboard_image_get subtasks completed
-      - Completed Linux smoke tests on tony_dell (window list OK, screenshot fails without display)
-      - Committed remaining capture bridge changes
-    follow_up:
-      - Resolve macbook SSH and run macOS smoke tests
-    next_action: Close session
-
-  - date: '2026-08-17'
-    session: chaba-2026-08-17-podman-assessment
-    focus: tony-dell podman service migration (backlog triage)
-    source: user request
-    plan:
-      - Assess whether tony-dell has been tested with podman and what can migrate
-    done:
-      - Verified tony-dell runs podman 5.7.0 rootless with 2 containers (chaba-postgres-16, yomi-api) since 2026-08-16
-      - Identified that both tony-dell containers have restart=no and no Quadlet units (will not survive reboot)
-      - Found tony-omen /home at 89% (9.6GB free) with 21 Docker containers including duplicate postgres and 6 stale github-mcp-server containers
-      - Assessed migration candidates (redis, mddb, raceman, weaviate) vs must-stay GPU services (llama, imagen2, ollama, gpu-queue)
-      - Added "tony-dell podman service migration" high-priority focus to ssot.focus.yml backlog with 8 subtasks
-      - Committed capture bridge fixes (host key normalization, kk-macbook removal, capture.py duplicate condition and undefined cmd fixes)
-    follow_up:
-      - Activate the tony-dell podman migration focus when ready (requires parking current branch focus)
-      - Harden existing tony-dell containers with Quadlet units as the first subtask
-    next_action: Close session
-
-  - date: '2026-08-17'
-    session: chaba-2026-08-17-podman-decision-capture
-    focus: Continuous decision capture for focus and technical choices
-    source: user request
-    plan:
-      - Park Trade Canvas and activate decision capture
-      - Create decisions/ namespace and wire session summaries
-    done:
-      - Parked Trade Canvas UI and committed the focus-state change
-      - Completed the 6 mcp-debug file & clipboard bridge subtasks and committed
-      - Verified focus-dispatcher --intake already calls log_decision()
-      - Moved ssot.technical-decisions.yml to docs/ssot/decisions/ namespace
-      - Added mcp-debug file bridge decision record to ssot.technical-decisions.yml
-      - Added a session entry for the podman migration and decision-capture handoff
-    follow_up:
-      - Add more technical decisions from the podman migration (port conflicts, Caddyfile inode restart, weaviate 8084)
-      - Wire ssot.focus.sessions.yml to be updated automatically by focus-dispatcher or mcp_focus
-    done:
-      - Parked Trade Canvas UI and committed the focus-state change
-      - Completed the 6 mcp-debug file & clipboard bridge subtasks and committed
-      - Verified focus-dispatcher --intake already calls log_decision()
-      - Moved ssot.technical-decisions.yml to docs/ssot/decisions/ namespace
-      - Added mcp-debug file bridge decision record to ssot.technical-decisions.yml
-      - Added a session entry for the podman migration and decision-capture handoff
-      - Added the tony-dell podman migration technical decision record
-      - Closed the session
-    follow_up:
-      - Add more technical decisions from the podman migration (port conflicts, Caddyfile inode restart, weaviate 8084)
-      - Wire ssot.focus.sessions.yml to be updated automatically by focus-dispatcher or mcp_focus
-    next_action: Closed
-
-  - date: '2026-08-18'
-    session: chaba-2026-08-18
-    focus: Add get_page/list_sections/read_tree to MDDB
-    source: user request
-    plan:
-      - Implement get_page, list_sections, and read_tree in mddbd
-      - Build and deploy custom chaba/mddb-page-tools image
-      - Update ssot.mcp.yml and Claude mddb-bridge filtered tools
-    done:
-      - Cloned tradik/mddb and created feature/mddb-page-tools branch
-      - Implemented the three path-aware MCP tools in services/mddbd
-      - Built and deployed chaba/mddb-page-tools image
-      - Updated ssot.mcp.yml and Claude bridge tool filters
-      - Verified all three tools via mcp_call_tool against chaba-system
-    follow_up:
-      - Monitor the new mddb image for stability
-      - Retire docs/docs-trade once migration is validated
-    next_action: Closed
-
-  - date: '2026-08-18'
-    session: chaba-2026-08-18
-    focus: Gemini key rotation and validation
-    source: continue
-    plan:
-      - Resolve yomi-api EADDRINUSE and rotate GEMINI_API_KEY
-      - Validate Gemini proxy rate limits and batchEmbedContents
-      - Plan safe-focus continuous processing backlog item
-    done:
-      - Added REDIS_URL to yomi-api override.conf and restarted; service active with new GEMINI_API_KEY loaded
-      - Proxy health OK; 3-item batch returned 200 in 743ms; 10 rapid sequential requests all 200 with no 429s
-      - Created job-lifecycle SSOT and backlog item for safe-focus continuous processing
-    follow_up:
-      - Create MDDB/Weaviate side-by-side test collections
-      - Revisit MDDB switch from Ollama to Gemini proxy
-    next_action: Continue the Gemini focus or activate safe-focus continuous processing from backlog
-
+- date: '2026-08-16'
+  session: chaba-2026-08-16
+  focus: TCP/IP link monitoring with auto-scan and safe fix
+  source: continue
+  plan:
+  - Implement scripts/mcp-link-monitor.py
+  - Update ssot.index.yml with new SSOTs
+  - Add 60s cache to scripts/mcp_debug/http_server.py
+  done:
+  - Implemented mcp-link-monitor.py with cheap ICMP/TCP probes, state machine, scan/fix/alert flow, and IP-drift detection
+  - Added ssot.host-roles.yml and related entries to ssot.index.yml
+  - Added 60s cached mcp-savings.json CORS endpoint with background refresh to mcp_debug/http_server.py
+  follow_up:
+  - Deploy mcp-link-monitor.py as a systemd user timer/service for periodic checks
+  next_action: Create and enable the mcp-link-monitor systemd units, or activate the next backlog focus
+- date: '2026-08-16'
+  session: chaba-2026-08-16-mcp-debug-h3
+  focus: Fix mcp_debug H3 page mixed-content (HTTP/HTTPS) error
+  source: user request
+  plan:
+  - Assess and improve the focus intake decision SSOT for this bug report
+  - Apply the chosen SSOT updates
+  done:
+  - Added live_bug_report case to ssot.focus.current.yml decision_tree
+  - Appended the mcp_debug H3 mixed-content intake decision to ssot.focus.decisions.yml
+  - User fixed chaba-h3 mcp_debug app.js and index.html (disabled HTTP live URL, added skeleton and fetch timeout)
+  follow_up:
+  - Verify the HTTPS page loads without mixed-content warnings
+  - Deploy or push the chaba-h3 app changes
+  next_action: Verify the page on chaba.h3 and push the chaba-h3 changes
+- date: '2026-08-16'
+  session: chaba-2026-08-16-decision-capture
+  focus: Continuous decision capture for focus and technical choices
+  source: user request
+  plan:
+  - Answer how to continuously capture decision SSOT
+  - Activate the focus and discuss hands-off processing while away
+  done:
+  - Proposed a three-layer decision-capture system (intake, technical SSOT, session decisions)
+  - Activated the focus in ssot.focus.current.yml and ssot.focus.yml
+  - Outlined the hands-off focus loop (scheduled focus-dispatcher + separate subagent runner)
+  follow_up:
+  - Implement the decision-capture schema and wiring
+  - Decide whether to build the subagent runner or just enable the dispatcher scheduler
+  next_action: Start the first subtask (define schema) or set up the focus-dispatcher systemd timer
+- date: '2026-08-16'
+  session: chaba-2026-08-16-close
+  focus: mcp-debug file & clipboard bridge
+  source: user request
+  plan:
+  - Add all recent completed work into the focus sessions log and finish the session
+  done:
+  - Documented CSV-with-header table output and table_schemas in ssot.mcp-debug.yml
+  - Added mcp_debug/formatters.py and the /mcp-table.json endpoint in http_server.py
+  - Refactored focus-dispatcher.py into the scripts/focus_dispatcher/ package
+  - Pointed mcp_debug CORS endpoint and H3 PHP proxy to tony-dell
+  - Added H3 mcp_debug table detail view and /api/mcp-table.php proxy in chaba-h3
+  - Completed mcp_report json/csv/html quick wins
+  - Created ssot.technical-decisions.yml and registered it in ssot.index.yml
+  - Updated tony_dell host role in ssot.mcp-debug.yml (headless primary CORS/link/overnight host)
+  - Added UI policy SSOT item to the backlog in ssot.focus.yml
+  follow_up:
+  - Implement the 6 mcp-debug file & clipboard bridge subtasks
+  - Decide when to resume the parked Trade Canvas UI focus
+  next_action: Start the first file bridge subtask (create ssot.mcp-debug.files.yml)
+- date: '2026-08-16'
+  session: chaba-2026-08-16-cleanup
+  focus: Delegate tony-omen services and timers to tony-dell
+  source: user request
+  plan:
+  - Commit the uncommitted SSOT/infrastructure drift and trade-canvas UI changes
+  - Record the session in the focus log
+  done:
+  - Added SSOT optimization orchestration task and improvement
+  - Updated tony-dell hardware, file-control policy, maintenance bloat check, and macbook system state
+  - Completed mcp-debug baselines split (mcp_vet now writes to ssot.mcp-debug.baselines.yml)
+  - Updated yomi-failover and Caddyfile to use tony-dell tailnet IP
+  - Committed trade canvas compare UI and playlive-test SSOTs
+  - Added Tailscale Funnel 404 and healthcheck to the focus backlog
+  follow_up:
+  - Push the 5 unpushed commits on master
+  - Decide whether to activate the Tailscale Funnel 404 focus or a parked focus next
+  next_action: Push to origin or activate the next focus
+- date: '2026-08-17'
+  session: chaba-2026-08-17
+  focus: mcp-debug visual capture bridge
+  source: user request
+  done:
+  - Created ssot.file-optimization.yml and registered it in ssot.index.yml
+  - Added bloat thresholds, data-isolation checks, and consistency metrics to the SSOT optimization plan
+  - Updated ssot.maintenance.yml and ssot.improvements.yml to track SSOT file optimization
+  - Resolved the Yomi mcpb blocker by keeping yomi-update-all on tony-omen
+  - User completed Tony-Dell Phase 3 Safe Auto-Recovery and activated mcp-debug visual capture bridge
+  - User created ssot.mcp-debug.capture.yml and registered it in ssot.index.yml
+  - User updated mcp-debug command baselines/cors/health and H3 mcp_debug UI with freshness, download, auto-refresh
+  follow_up:
+  - Implement the remaining 5 mcp-debug visual capture bridge subtasks
+  - Push the uncommitted SSOT and infrastructure drift to origin
+  next_action: Start the first capture bridge subtask (mcp_screenshot) or commit/push current changes
+- date: '2026-08-17'
+  session: chaba-2026-08-17-mddb-search
+  focus: SSOT documentation search protocol
+  source: user request
+  plan:
+  - Harden .windsurfrules to require MDDB first
+  - Add MDDB-first step to ssot.focus.current.yml workflow
+  done:
+  - Hardened .windsurfrules Documentation Search Standards to a mandatory MDDB-first gate
+  - Added MDDB-first workflow step to ssot.focus.current.yml
+  - Verified with MDDB that no existing capture/screen docs were duplicated by the visual capture bridge design
+  follow_up:
+  - Apply the MDDB-first rule in every future session
+  - Consider a docs-search skill or overnight audit loop if the rule is still being skipped
+  next_action: Return to active mcp-debug visual capture bridge focus
+- date: '2026-08-17'
+  session: chaba-2026-08-17-mddb-fix
+  focus: MDDB semantic search fix and monitoring
+  source: user request
+  plan:
+  - Verify and fix MDDB semantic search
+  - Suggest MDDB healthcheck/monitoring improvements
+  - Add commit job to focus and close
+  done:
+  - Verified MDDB container and MCP endpoint healthy
+  - Identified MDDB search failures due to stale kb-* collection names and tony-omen.local mDNS
+  - Updated auto-kb.mjs and SKILL.md to use chaba-* collections
+  - Updated test-global-rules-and-mddb.sh to use 127.0.0.1, chaba-system, and curl timeouts
+  - Updated global_rules.md MDDB example and health-check URLs
+  - Added commit quick win to ssot.focus.current.yml
+  follow_up:
+  - Restart avahi-daemon/systemd-resolved if user wants tony-omen.local mDNS fixed
+  next_action: Close session
+- date: '2026-08-17'
+  session: chaba-2026-08-17-capture-bridge
+  focus: mcp-debug visual capture bridge
+  source: user request
+  plan:
+  - Finish mcp-debug capture bridge and close session
+  done:
+  - Enabled tony_dell capture in ssot.mcp-debug.capture.yml with note on headless screenshot
+  - Expanded mcp_screenshot/window_list/clipboard_image_get host enum to tony_dell, tony_omen, kk-macbook
+  - Marked mcp_window_list and mcp_clipboard_image_get subtasks completed
+  - Completed Linux smoke tests on tony_dell (window list OK, screenshot fails without display)
+  - Committed remaining capture bridge changes
+  follow_up:
+  - Resolve macbook SSH and run macOS smoke tests
+  next_action: Close session
+- date: '2026-08-17'
+  session: chaba-2026-08-17-podman-assessment
+  focus: tony-dell podman service migration (backlog triage)
+  source: user request
+  plan:
+  - Assess whether tony-dell has been tested with podman and what can migrate
+  done:
+  - Verified tony-dell runs podman 5.7.0 rootless with 2 containers (chaba-postgres-16, yomi-api) since 2026-08-16
+  - Identified that both tony-dell containers have restart=no and no Quadlet units (will not survive reboot)
+  - Found tony-omen /home at 89% (9.6GB free) with 21 Docker containers including duplicate postgres and 6 stale github-mcp-server
+    containers
+  - Assessed migration candidates (redis, mddb, raceman, weaviate) vs must-stay GPU services (llama, imagen2, ollama, gpu-queue)
+  - Added "tony-dell podman service migration" high-priority focus to ssot.focus.yml backlog with 8 subtasks
+  - Committed capture bridge fixes (host key normalization, kk-macbook removal, capture.py duplicate condition and undefined
+    cmd fixes)
+  follow_up:
+  - Activate the tony-dell podman migration focus when ready (requires parking current branch focus)
+  - Harden existing tony-dell containers with Quadlet units as the first subtask
+  next_action: Close session
+- date: '2026-08-17'
+  session: chaba-2026-08-17-podman-decision-capture
+  focus: Continuous decision capture for focus and technical choices
+  source: user request
+  plan:
+  - Park Trade Canvas and activate decision capture
+  - Create decisions/ namespace and wire session summaries
+  done:
+  - Parked Trade Canvas UI and committed the focus-state change
+  - Completed the 6 mcp-debug file & clipboard bridge subtasks and committed
+  - Verified focus-dispatcher --intake already calls log_decision()
+  - Moved ssot.technical-decisions.yml to docs/ssot/decisions/ namespace
+  - Added mcp-debug file bridge decision record to ssot.technical-decisions.yml
+  - Added a session entry for the podman migration and decision-capture handoff
+  - Added the tony-dell podman migration technical decision record
+  - Closed the session
+  follow_up:
+  - Add more technical decisions from the podman migration (port conflicts, Caddyfile inode restart, weaviate 8084)
+  - Wire ssot.focus.sessions.yml to be updated automatically by focus-dispatcher or mcp_focus
+  next_action: Closed
+- date: '2026-08-18'
+  session: chaba-2026-08-18
+  focus: Add get_page/list_sections/read_tree to MDDB
+  source: user request
+  plan:
+  - Implement get_page, list_sections, and read_tree in mddbd
+  - Build and deploy custom chaba/mddb-page-tools image
+  - Update ssot.mcp.yml and Claude mddb-bridge filtered tools
+  done:
+  - Cloned tradik/mddb and created feature/mddb-page-tools branch
+  - Implemented the three path-aware MCP tools in services/mddbd
+  - Built and deployed chaba/mddb-page-tools image
+  - Updated ssot.mcp.yml and Claude bridge tool filters
+  - Verified all three tools via mcp_call_tool against chaba-system
+  follow_up:
+  - Monitor the new mddb image for stability
+  - Retire docs/docs-trade once migration is validated
+  next_action: Closed
+- date: '2026-08-18'
+  session: chaba-2026-08-18
+  focus: Gemini key rotation and validation
+  source: continue
+  plan:
+  - Resolve yomi-api EADDRINUSE and rotate GEMINI_API_KEY
+  - Validate Gemini proxy rate limits and batchEmbedContents
+  - Plan safe-focus continuous processing backlog item
+  done:
+  - Added REDIS_URL to yomi-api override.conf and restarted; service active with new GEMINI_API_KEY loaded
+  - Proxy health OK; 3-item batch returned 200 in 743ms; 10 rapid sequential requests all 200 with no 429s
+  - Created job-lifecycle SSOT and backlog item for safe-focus continuous processing
+  follow_up:
+  - Create MDDB/Weaviate side-by-side test collections
+  - Revisit MDDB switch from Ollama to Gemini proxy
+  next_action: Continue the Gemini focus or activate safe-focus continuous processing from backlog
 related_files:
-  - docs/ssot/ssot.focus.current.yml
-  - docs/ssot/ssot.focus.yml
-  - docs/ssot/infrastructure/ssot.focus-dispatcher.yml
-  - docs/ssot/infrastructure/ssot.mcp-focus.yml
-  - docs/kb/
+- docs/ssot/ssot.focus.current.yml
+- docs/ssot/ssot.focus.yml
+- docs/ssot/infrastructure/ssot.focus-dispatcher.yml
+- docs/ssot/infrastructure/ssot.mcp-focus.yml
+- docs/kb/

@@ -31,12 +31,14 @@ def handle_tools_list(id_):
             "tools": [
                 {
                     "name": "mcp_focus",
-                    "description": "Focus intake and status: classify a request, get active foci, or run pre_action summary. Modes: recommend (default), status, pre_action, safe_next, ready_queue.",
+                    "description": "Focus intake and status: classify a request, get active foci, or run pre_action summary. Modes: recommend (default), status, pre_action, safe_next, ready_queue, defer, resume.",
                     "inputSchema": {
                         "type": "object",
                         "properties": {
-                            "request": {"type": "string", "description": "User request"},
-                            "mode": {"type": "string", "enum": ["recommend", "status", "pre_action", "safe_next", "ready_queue"], "default": "recommend", "description": "recommend returns the next focus recommendation; safe_next returns the highest safe-to-parallel focus"},
+                            "request": {"type": "string", "description": "User request or defer reason"},
+                            "mode": {"type": "string", "enum": ["recommend", "status", "pre_action", "safe_next", "ready_queue", "defer", "resume"], "default": "recommend", "description": "recommend returns the next focus recommendation; safe_next returns the highest safe-to-parallel focus; defer parks the active focus and marks a resume note; resume suggests a focus to reactivate"},
+                            "resume_session": {"type": "string", "description": "Target session identifier for defer"},
+                            "reason": {"type": "string", "description": "Reason for deferring"},
                         },
                         "required": ["request"],
                     },
@@ -57,7 +59,12 @@ def handle_tools_call(id_, params):
     if name == "mcp_focus":
         request = arguments.get("request", "")
         mode = arguments.get("mode", "")
-        result = mcp_focus(request, mode)
+        result = mcp_focus(
+            request,
+            mode,
+            resume_session=arguments.get("resume_session"),
+            reason=arguments.get("reason"),
+        )
         _send({"jsonrpc": "2.0", "id": id_, "result": {"content": [{"type": "text", "text": json.dumps(result, default=str)}]}})
         return
     if name == "mcp_focus_status":

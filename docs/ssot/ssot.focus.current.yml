@@ -142,34 +142,28 @@ sections:
   icon: branch
   layout: list
   items:
-  - label: Gemini key rotation and validation
-    text: The yomi-api GEMINI_API_KEY was rotated in a side session. Complete the remaining Gemini embedding GPU offload work
-      - validate proxy rate limits, create side-by-side test collections, and revisit the MDDB switch.
+  - label: Yomi conversation processing and UI recovery
+    text: Process the existing Yomi message corpus (7,872 messages, 66 conversations) to populate summaries, categories, and
+      proper display names, and verify the Yomi UI after the recent DB recovery. Do not re-attempt LINE login unless explicitly
+      requested.
     status: active
     priority: high
     started: '2026-08-18'
     estimated_duration: 1 session
     tags:
-    - gemini
-    - embedding
-    - gpu-offload
     - yomi
-    - validation
+    - line
+    - summarization
+    - processing
+    - ui
     subtasks:
-    - label: Rotate yomi-api GEMINI_API_KEY and restart service
-      status: completed
-      completed: '2026-08-18'
-      note: New key applied to yomi-api override and main service file; stray process killed; service active; Node fetch to
-        Gemini works; /api/yomi/search still fails because Weaviate at localhost:8082 is unreachable.
-    - label: Validate proxy rate limits and batchEmbedContents during bulk indexing
-      status: completed
-      completed: '2026-08-18'
-      note: Proxy health OK (gemini-embedding-001, 768 dims); /api/embed returned 200 for a 3-item batch (743ms) and 10 rapid
-        sequential requests returned 200 with ~450-550ms each; no 429s.
-    - label: Create MDDB/Weaviate side-by-side test collections
-      status: in_progress
-      note: Weaviate GeminiTest class created with manual-vector support (768 dims). Insert/query helper script added. yomi/MDDB embedding to be completed in yomi session.
-    - label: Revisit MDDB switch from Ollama to Gemini proxy
+    - label: Process existing messages and conversations
+      status: not_started
+    - label: Generate daily summaries for conversations
+      status: not_started
+    - label: Restore conversation display names from message data
+      status: not_started
+    - label: Verify Yomi UI list and chat pages
       status: not_started
     request_log: []
     ownership:
@@ -178,7 +172,7 @@ sections:
       locked: true
       lock_reason: Activated as active focus
     branch: chaba
-    source: /home/tony/CascadeProjects/chaba/docs/ssot/focus-inbox/2026-08-18-104228-gemini-key-rotation-and-validation.yml
+    source: /home/tony/CascadeProjects/chaba/docs/ssot/focus-inbox/processed/2026-08-18-190030-yomi-conversation-processing.yml
 - title: Ready (Safe)
   icon: safe
   layout: list
