@@ -33,6 +33,7 @@ def main():
         return rc
     rc |= run(["scripts/focus-dispatcher.py", "--sub-agent"])
     rc |= run(["scripts/focus-dispatcher.py", "--advance"])
+    rc |= run(["scripts/ssot-optimize.mjs"])
     rc |= run(["scripts/process-remaining-focuses.py"])
     if rc:
         print("[overnight] completed with errors")
