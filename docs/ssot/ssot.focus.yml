@@ -32,14 +32,13 @@ sections:
   icon: branch
   layout: list
   items: []
-
-
 - title: Backlog - Triage Queue
   icon: backlog
   layout: list
   items:
   - label: Safe focus continuous processing
-    text: Add a parallel safe-focus lane to the focus dispatcher so the main session can continuously pick up safe-to-run foci while side sessions prepare the inbox, without parking the active shared/branch focus.
+    text: Add a parallel safe-focus lane to the focus dispatcher so the main session can continuously pick up safe-to-run
+      foci while side sessions prepare the inbox, without parking the active shared/branch focus.
     branch: chaba
     status: active
     previous_status: pending
@@ -72,7 +71,8 @@ sections:
     - label: Validate and test the workflow
       status: not_started
   - label: Gemini key rotation and validation
-    text: The yomi-api GEMINI_API_KEY was rotated in a side session. Complete the remaining Gemini embedding GPU offload work - validate proxy rate limits, create side-by-side test collections, and revisit the MDDB switch.
+    text: The yomi-api GEMINI_API_KEY was rotated in a side session. Complete the remaining Gemini embedding GPU offload work
+      - validate proxy rate limits, create side-by-side test collections, and revisit the MDDB switch.
     branch: chaba
     status: parked
     previous_status: active
@@ -92,7 +92,8 @@ sections:
     - label: Validate proxy rate limits and batchEmbedContents during bulk indexing
       status: completed
       completed: '2026-08-18'
-      note: Proxy health OK (gemini-embedding-001, 768 dims). /api/embed returned 200 for 3-item batch (743ms) and 10 rapid sequential requests all returned 200 with ~450-550ms each; no 429s.
+      note: Proxy health OK (gemini-embedding-001, 768 dims). /api/embed returned 200 for 3-item batch (743ms) and 10 rapid
+        sequential requests all returned 200 with ~450-550ms each; no 429s.
     - label: Create MDDB/Weaviate side-by-side test collections
       status: not_started
     - label: Revisit MDDB switch from Ollama to Gemini proxy
@@ -120,7 +121,8 @@ sections:
       requires_approval: true
       can_change_host: true
       notes: Needs macOS GUI / App Store / Xcode install; subagent can prepare install steps and verify.
-    blocker: Direct IP addresses (192.168.1.39, 100.124.59.112) still reject auth, but `ssh macbook` over Tailscale now works. Next step needs user approval for App Store login and Xcode install.
+    blocker: Direct IP addresses (192.168.1.39, 100.124.59.112) still reject auth, but `ssh macbook` over Tailscale now works.
+      Next step needs user approval for App Store login and Xcode install.
   - label: Tony-Dell Phase 3 Safe Auto-Recovery
     text: Implement safe auto-restart commands for tony-dell monitoring after the observe phase.
     branch: tony-dell
@@ -320,19 +322,22 @@ sections:
         yomi-api env REDIS_URL to 127.0.0.1:6379.
       status: completed
       completed: '2026-08-17'
-      note: Quadlet unit ~/.config/containers/systemd/redis.container enabled; yomi-api REDIS_URL set to tony-dell tailnet IP.
+      note: Quadlet unit ~/.config/containers/systemd/redis.container enabled; yomi-api REDIS_URL set to tony-dell tailnet
+        IP.
     - label: Migrate mddb + mddb-panel to tony-dell podman
       text: Move tradik/mddb:latest and tradik/mddb:panel-latest to tony-dell. Update Caddy reverse proxy on tony-omen to
         route /api/mddb/* and /mddb/* to tony-dell over the tailnet. Migrate the mddb data volume (~100MB).
       status: completed
       completed: '2026-08-17'
-      note: Quadlet units enabled; Caddy on tony-omen routes to 100.68.142.13:11023 and :3002. mddb_mddb-data volume still exists on omen and can be reclaimed with user approval.
+      note: Quadlet units enabled; Caddy on tony-omen routes to 100.68.142.13:11023 and :3002. mddb_mddb-data volume still
+        exists on omen and can be reclaimed with user approval.
     - label: Migrate raceman stack to tony-dell podman
       text: Move raceman-web (nginx:alpine) and raceman-php (php-fpm) to tony-dell. Update Caddy to route :8083 to tony-dell.
         Frees omen disk.
       status: completed
       completed: '2026-08-17'
-      note: raceman-web and raceman-php Quadlet units enabled; Caddy routes /apps/raceman/*, /apps/common.css, and /apps/nav.js to tony-dell:8083.
+      note: raceman-web and raceman-php Quadlet units enabled; Caddy routes /apps/raceman/*, /apps/common.css, and /apps/nav.js
+        to tony-dell:8083.
     - label: Assess weaviate migration to tony-dell
       text: Weaviate has no GPU dependency but depends on postgres (already on tony-dell). Measure working set size and migration
         risk before moving.
@@ -520,7 +525,8 @@ sections:
     - label: If still invisible, verify driver/firmware and regulatory domain for MT7601U
       status: completed
       completed: '2026-08-18'
-      note: 'MT7601U (148f:7601) is present and the driver mt7601u is loaded. The adapter is 2.4 GHz only (channels 1-14, 2412-2484 MHz). This confirms the iPhone hotspot must be forced to 2.4 GHz via Maximize Compatibility.'
+      note: MT7601U (148f:7601) is present and the driver mt7601u is loaded. The adapter is 2.4 GHz only (channels 1-14, 2412-2484
+        MHz). This confirms the iPhone hotspot must be forced to 2.4 GHz via Maximize Compatibility.
   - label: Context improvement and optimization
     text: 'Invest in self-improvement by making the assistant''s context more useful: better KB auto-update, structured project
       state, contextual relevance ranking, and periodic reflection. Run incrementally so it does not block product work.'
@@ -751,7 +757,8 @@ sections:
       and the live CORS fallback.
     date: '2026-08-18'
     duration: 1 session
-    outcome: 'mcp_savings now returns timeframe, raw_allowed, and presets; reports.py renders them; app.js updated; H3 fallback refreshed; tony-dell CORS service restarted.'
+    outcome: mcp_savings now returns timeframe, raw_allowed, and presets; reports.py renders them; app.js updated; H3 fallback
+      refreshed; tony-dell CORS service restarted.
     tags:
     - completed
     - focus
@@ -759,15 +766,13 @@ sections:
     - report
     - chaba-h3
   - label: Tony-Dell sync, rsync, and mcp-focus hardening
-    text: >-
-      Harden the overnight repo-sync and start building mcp-focus on tony-dell.
-      First steps: disable stale tony-omen overnight timer and update chaba-funnel
-      docs-sync to use rsync --delete --checksum. Then add SSOT validation before
-      tony-dell commit, re-enable mcp-health-to-inbox, make yomi-backup
-      host-agnostic, and scaffold mcp-focus.
+    text: 'Harden the overnight repo-sync and start building mcp-focus on tony-dell. First steps: disable stale tony-omen
+      overnight timer and update chaba-funnel docs-sync to use rsync --delete --checksum. Then add SSOT validation before
+      tony-dell commit, re-enable mcp-health-to-inbox, make yomi-backup host-agnostic, and scaffold mcp-focus.'
     date: '2026-08-18'
     duration: 1 session
-    outcome: 'Disabled tony-omen timer, updated docs-sync, added SSOT validation to overnight, re-enabled health, made yomi-backup host-agnostic, and scaffolded mcp-focus package and tony-dell service.'
+    outcome: Disabled tony-omen timer, updated docs-sync, added SSOT validation to overnight, re-enabled health, made yomi-backup
+      host-agnostic, and scaffolded mcp-focus package and tony-dell service.
     tags:
     - completed
     - tony-dell
@@ -781,7 +786,8 @@ sections:
       Includes faster mcp_focus, subagent auto-dispatch, and clearer hand-off contracts.
     date: '2026-08-18'
     duration: 1 session
-    outcome: 'Added Hand-off Queue section, updated mcp_focus, improved generate_subagent_contract, added --auto-dispatch, and verified decision_tree.'
+    outcome: Added Hand-off Queue section, updated mcp_focus, improved generate_subagent_contract, added --auto-dispatch,
+      and verified decision_tree.
     tags:
     - completed
     - focus
@@ -789,11 +795,12 @@ sections:
     - subagent
     - hand-off
   - label: MCP Debug advanced tools wrap-up
-    text: 'Complete the mcp_debug_audit, mcp_preset_savings, and mcp_mddb_doc work. Resolve the MDDB REST endpoint timeout
-      so the new wrapper can use semantic ranking. Decide how to add systemctl/system raw commands if needed.'
+    text: Complete the mcp_debug_audit, mcp_preset_savings, and mcp_mddb_doc work. Resolve the MDDB REST endpoint timeout
+      so the new wrapper can use semantic ranking. Decide how to add systemctl/system raw commands if needed.
     date: '2026-08-18'
     duration: 1 session
-    outcome: 'Restored MDDB REST endpoint mapping in mcp_mddb_doc, added mcp_system and mcp_transform tools, and verified both with live calls.'
+    outcome: Restored MDDB REST endpoint mapping in mcp_mddb_doc, added mcp_system and mcp_transform tools, and verified both
+      with live calls.
     tags:
     - completed
     - mcp-debug
@@ -803,11 +810,12 @@ sections:
     - presets
   - label: Focus pre-action summary gate
     text: Added a pre_action mode to mcp_focus that checks for duplicate active focuses, similar historical focuses, and related
-      decision-tree entries, then emits a concise summary before work begins. Also added the pre_action_summary case to the focus
-      decision tree.
+      decision-tree entries, then emits a concise summary before work begins. Also added the pre_action_summary case to the
+      focus decision tree.
     date: '2026-08-18'
     duration: 1 session
-    outcome: 'mcp_focus now supports mode pre_action and returns active foci, duplicate/historical matches, and related decision cases. Validated with a test request.'
+    outcome: mcp_focus now supports mode pre_action and returns active foci, duplicate/historical matches, and related decision
+      cases. Validated with a test request.
     tags:
     - completed
     - focus
@@ -820,7 +828,8 @@ sections:
       set up GitHub credentials, enabled FOCUS_DISPATCHER_PUSH, and verified the focus dispatcher dry-run and test push.
     date: '2026-08-18'
     duration: 1 session
-    outcome: 'tony-dell systemd timer now runs from /home/tony/CascadeProjects/chaba-tony-dell, pulls before processing, and can push unattended. Test git push succeeded.'
+    outcome: tony-dell systemd timer now runs from /home/tony/CascadeProjects/chaba-tony-dell, pulls before processing, and
+      can push unattended. Test git push succeeded.
     tags:
     - completed
     - tony-dell
@@ -833,7 +842,8 @@ sections:
       filtered tools list.
     date: '2026-08-18'
     duration: 1 session
-    outcome: 'Custom mddb image built from feature/mddb-page-tools, deployed on tony-dell, and all three tools verified via mcp_call_tool against chaba-system collection.'
+    outcome: Custom mddb image built from feature/mddb-page-tools, deployed on tony-dell, and all three tools verified via
+      mcp_call_tool against chaba-system collection.
     tags:
     - completed
     - mddb
@@ -1501,6 +1511,21 @@ sections:
     - worktrees
     - deployment
     - workflow
+    - completed
+  - label: Safe focus continuous processing
+    text: Add a parallel safe-focus lane to the focus dispatcher so the main session can continuously pick up safe-to-run
+      foci while side sessions prepare the inbox, without parking the active shared/branch focus.
+    date: '2026-08-18'
+    duration: 2-3 sessions
+    outcome: 'Completed subtasks: Add safe_to_parallel schema and triage criteria, Add Ready (Safe) section to ssot.focus.current.yml,
+      Extend mcp_focus with safe_next / ready_queue mode, Update focus-dispatcher to auto-dispatch safe foci, Add session
+      ownership/lock fields to active foci, Update subagent-focus-triage and contracts, Validate and test the workflow'
+    tags:
+    - focus
+    - workflow
+    - dispatcher
+    - subagent
+    - concurrency
     - completed
 config:
   version: 2

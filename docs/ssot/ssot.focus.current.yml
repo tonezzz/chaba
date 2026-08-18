@@ -142,63 +142,38 @@ sections:
   icon: branch
   layout: list
   items:
-  - label: Safe focus continuous processing
-    text: Add a parallel safe-focus lane to the focus dispatcher so the main session can continuously pick up safe-to-run foci while side sessions prepare the inbox, without parking the active shared/branch focus.
-    status: completed
-    completed: '2026-08-18'
+  - label: Gemini key rotation and validation
+    text: The yomi-api GEMINI_API_KEY was rotated in a side session. Complete the remaining Gemini embedding GPU offload work
+      - validate proxy rate limits, create side-by-side test collections, and revisit the MDDB switch.
+    status: active
     priority: high
     started: '2026-08-18'
-    estimated_duration: 2-3 sessions
+    estimated_duration: 1 session
     tags:
-    - focus
-    - workflow
-    - dispatcher
-    - subagent
-    - concurrency
-    triage:
-      urgency: 6
-      importance: 7
-      complication: 5
-    job_lifecycle: docs/ssot/jobs/workflow/2026-08-18-safe-focus-continuous-processing.yml
+    - gemini
+    - embedding
+    - gpu-offload
+    - yomi
+    - validation
     subtasks:
-    - label: Add safe_to_parallel schema and triage criteria
-      status: completed
-      completed: '2026-08-18'
-      note: Updated ssot.focus.triage.yml with safe_to_parallel criteria and subagent safe_to_parallel field. Updated focus-inbox/TEMPLATE.yml with safe_to_parallel and ownership fields.
-    - label: Add Ready (Safe) section to ssot.focus.current.yml
-      status: completed
-      completed: '2026-08-18'
-      note: Added Ready (Safe) section to ssot.focus.current.yml.
-    - label: Extend mcp_focus with safe_next / ready_queue mode
-      status: completed
-      completed: '2026-08-18'
-      note: Added safe_next and ready_queue modes to mcp_debug/focus.py, updated server schemas, and verified status and safe_next output.
-    - label: Update focus-dispatcher to auto-dispatch safe foci
-      status: completed
-      completed: '2026-08-18'
-      note: Added --safe-dispatch to focus-dispatcher, safe_to_dispatch in triage.py, add_ready_safe in actions.py, and make_ready_safe_item. Verified dry-run and live run both report no safe focus.
-    - label: Add session ownership/lock fields to active foci
-      status: completed
-      completed: '2026-08-18'
-      note: Added ownership block to make_focus_item and the active Safe focus in ssot.focus.current.yml.
-    - label: Update subagent-focus-triage and contracts
-      status: completed
-      completed: '2026-08-18'
-      note: Updated ssot.subagent-focus-triage.yml to include Ready (Safe) inspection, safe action, safe_to_parallel output, and safe/ready examples.
-    - label: Validate and test the workflow
-      status: completed
-      completed: '2026-08-18'
-      note: SSOT validation clean; focus-dispatcher --safe-dispatch and --dry-run work; mcp_focus safe_next and ready_queue return empty lists correctly (no safe foci currently meet criteria).
-    request_log:
-    - text: User asked to park Gemini focus and switch to safe-focus continuous processing.
-      date: '2026-08-18'
+    - label: Rotate yomi-api GEMINI_API_KEY and restart service
+      status: in_progress
+      note: New key applied to ~/.config/systemd/user/yomi-api.service.d/override.conf; clean restart pending resolution of
+        EADDRINUSE on port 3000
+    - label: Validate proxy rate limits and batchEmbedContents during bulk indexing
+      status: not_started
+    - label: Create MDDB/Weaviate side-by-side test collections
+      status: not_started
+    - label: Revisit MDDB switch from Ollama to Gemini proxy
+      status: not_started
+    request_log: []
     ownership:
       owner: tony
-      session: chaba-2026-08-18
+      session: ''
       locked: true
-      lock_reason: Active branch focus for safe-focus continuous processing
+      lock_reason: Activated as active focus
     branch: chaba
-    source: /home/tony/CascadeProjects/chaba/docs/ssot/ssot.focus.yml
+    source: /home/tony/CascadeProjects/chaba/docs/ssot/focus-inbox/2026-08-18-104228-gemini-key-rotation-and-validation.yml
 - title: Ready (Safe)
   icon: safe
   layout: list
