@@ -1,0 +1,1 @@
+"""MCP Focus server package."""
