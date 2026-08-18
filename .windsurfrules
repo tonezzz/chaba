@@ -227,3 +227,14 @@ At the start of every session, read `docs/ssot/ssot.focus.current.yml` to identi
 - At the start of every session, immediately after reading `docs/ssot/ssot.focus.current.yml`, invoke the `subtask-triage` skill on the active focus subtasks.
 - The skill may only create new `docs/ssot/focus-inbox/*.yml` drafts and must leave `ssot.focus.current.yml` and `ssot.focus.yml` untouched.
 - Treat any subtask that does not meet the quick_win_criteria as remaining in the active focus.
+
+## Job Lifecycle (SSOT)
+
+For context improvement/optimization jobs and any other critical/important work, create and maintain a job-lifecycle SSOT artifact before starting processing.
+
+A critical job is any non-quick-win task that touches infrastructure, security, data, deploys, or cross-cutting systems, or any work the user explicitly marks as important.
+
+1. **Create the artifact from the template.** Copy `docs/ssot/templates/job.yml` to `docs/ssot/jobs/<type>/<YYYY-MM-DD>-<short-name>.yml` and fill at least `planning` before processing begins.
+2. **Keep it live as you work.** Update `processing` with steps, decisions, and changes. Append `followup` with verification, rollback, and handoff notes.
+3. **Close with `report`.** The `report` section must be non-empty before the job is marked complete and before `auto-kb` is invoked.
+4. **Pilot on `ssot-optimization-snapshot`.** The `ssot-optimization-snapshot` night job must emit the four lifecycle sections (`planning`, `processing`, `followup`, `report`) in its output once `scripts/ssot-optimize.mjs` is implemented.

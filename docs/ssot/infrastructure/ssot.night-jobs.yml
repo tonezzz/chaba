@@ -115,6 +115,36 @@ jobs:
       - reports/SSOT_OPTIMIZATION_METRICS.json
       - reports/SSOT_OPTIMIZATION_SUGGESTIONS.md
     note: Disabled by default until ssot-optimize.mjs is implemented and the first dry run is reviewed.
+    lifecycle:
+      planning:
+        goal: Emit structured SSOT optimization metrics and suggestions
+        scope: Run scripts/ssot-optimize.mjs after the overnight focus review
+        success_criteria:
+          - reports/SSOT_OPTIMIZATION_METRICS.json is produced and valid
+          - reports/SSOT_OPTIMIZATION_SUGGESTIONS.md is produced
+          - All four lifecycle sections are present in the report
+        owner: tony
+        estimated_duration: 5 minutes
+      processing:
+        status: not_started
+        steps:
+          - id: 1
+            label: Run ssot-optimize.mjs
+            status: not_started
+            notes: Reads ssot.focus.current.yml and file-control SSOTs to produce suggestions.
+      followup:
+        verification:
+          - Check that both output files exist and are valid JSON/Markdown
+        rollback_plan:
+          - Disable the timer if the output is malformed
+        deferred:
+          - Add workload-aware capping as described in docs/ssot/ssot.improvements.yml
+      report:
+        status: not_started
+        summary: TBD after the first dry run
+        metrics: []
+        links: []
+        kb_review: []
 
 parked_during_night:
   items:
