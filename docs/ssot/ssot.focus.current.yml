@@ -115,8 +115,8 @@ decision_tree:
   - case: pre_action_summary
     mcp_focus_action: pre_action
     condition: Before beginning any non-trivial work, or when the user asks for the current focus landscape
-    action: Call mcp_focus with mode pre_action to get active foci, duplicate/historical matches, and related decision-tree entries,
-      then present a concise summary and ask for confirmation before proceeding
+    action: Call mcp_focus with mode pre_action to get active foci, duplicate/historical matches, and related decision-tree
+      entries, then present a concise summary and ask for confirmation before proceeding
     examples:
     - User asks 'what is our focus?' or 'let's plan to finish all backlog'
     - Assistant is about to start a multi-step focus after a request
@@ -141,7 +141,28 @@ sections:
 - title: Active Branch Focus
   icon: branch
   layout: list
-  items: []
+  items:
+  - label: MCP Debug advanced tools wrap-up
+    text: Complete the mcp_debug_audit, mcp_preset_savings, and mcp_mddb_doc work. Resolve the MDDB REST endpoint timeout
+      so the new wrapper can use semantic ranking. Decide how to add systemctl/system raw commands if needed.
+    status: active
+    priority: medium
+    started: '2026-08-18'
+    estimated_duration: 1 session
+    tags:
+    - focus
+    subtasks:
+    - label: Restore MDDB REST endpoint on tony-dell (tony-dell:11023)
+      status: not_started
+    - label: Run end-to-end mcp_mddb_doc test with MDDB semantic search
+      status: not_started
+    - label: Extend mcp_debug preset transforms with captured values and filter/sort steps
+      status: not_started
+    - label: Add systemctl/system raw command handling if exact commands are specified
+      status: not_started
+    request_log: []
+    branch: mcp-debug
+    source: /home/tony/CascadeProjects/chaba/docs/ssot/focus-inbox/2026-08-18-mcp-debug-advance.yml
 - title: Quick Wins
   icon: quick
   layout: list
