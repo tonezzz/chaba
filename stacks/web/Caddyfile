@@ -92,6 +92,43 @@
 	handle /tony-omen/apps/imagen/* {
 		file_server
 	}
+
+	# Trade API proxy - /apps/trade/api/* to trade-api (must come before UI files)
+	handle /apps/trade/api/* {
+		uri strip_prefix /apps/trade
+		reverse_proxy 100.68.142.13:9002 {
+			header_up Host localhost
+			header_up X-Forwarded-Prefix /apps/trade
+		}
+	}
+
+	# Trade WebSocket proxy - /apps/trade/api/ws/* to trade-api (must come before UI files)
+	handle /apps/trade/api/ws/* {
+		uri strip_prefix /apps/trade
+		reverse_proxy 100.68.142.13:9002 {
+			header_up Host localhost
+			header_up X-Forwarded-Prefix /apps/trade
+			header_up Connection {>Connection}
+			header_up Upgrade {>Upgrade}
+		}
+	}
+
+	# Trade UI files (must come after API routes)
+	handle_path /apps/trade/* {
+		root * /srv/public/apps/trade
+		file_server
+		header Cache-Control "public, max-age=3600"
+	}
+
+	# Trade WebSocket proxy - direct /api/ws/* to trade-api
+	handle /api/ws/* {
+		reverse_proxy 100.68.142.13:9002 {
+			header_up Host localhost
+			header_up Connection {>Connection}
+			header_up Upgrade {>Upgrade}
+		}
+	}
+
 }
 
 # chaba.h3 local dev root

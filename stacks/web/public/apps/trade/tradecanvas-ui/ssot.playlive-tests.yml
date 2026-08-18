@@ -1,0 +1,26 @@
+title: Trade PlayLive Test Catalog
+subtitle: Browser-driven and endpoint verification tests across Trade UIs, APIs, and connected apps
+
+base_url: http://100.75.102.88:8080/apps/trade/tradecanvas-ui
+api_base_url: http://100.75.102.88:9000
+
+apps:
+  - id: tradecanvas
+    label: TradeCanvas
+    test_files:
+      - config/ssot/ssot.ui.playlive-tests.yml
+
+  - id: trade-api
+    label: Trade API
+    test_files:
+      - config/ssot/ssot.api.playlive-tests.yml
+
+  - id: trade-data-imports
+    label: Trade Data Imports
+    test_files:
+      - config/ssot/ssot.data-imports.playlive-tests.yml
+
+  - id: health
+    label: Service Health
+    test_files:
+      - config/ssot/ssot.health.playlive-tests.yml

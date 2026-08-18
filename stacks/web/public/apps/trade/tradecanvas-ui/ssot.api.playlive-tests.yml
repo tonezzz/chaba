@@ -1,0 +1,27 @@
+title: Trade API PlayLive Tests
+subtitle: Endpoint and data verification through the browser
+
+components:
+  - name: chart-data-endpoint
+    endpoint: /api/ui/chart-data/{SYMBOL}?timeframe={TIMEFRAME}
+    cases:
+      - step: GET /api/ui/chart-data/THB?timeframe=1y
+        expected: HTTP 200, JSON with data array of 200+ points, last_updated, and valid OHLC fields
+      - step: GET /api/ui/chart-data/GOLD?timeframe=all
+        expected: HTTP 200, data array around 3600+ points, no null OHLC values
+      - step: GET /api/ui/chart-data/UNKNOWN?timeframe=all
+        expected: HTTP 404 or empty data; no unhandled exception
+
+  - name: datasource-routing
+    endpoint: /api/ui/chart-data/{SYMBOL}
+    cases:
+      - step: GET GOLD with no timeframe
+        expected: Defaults to a usable timeframe and returns data
+      - step: Verify response structure
+        expected: Contains data, source, and last_updated or equivalent metadata
+
+  - name: health-and-status
+    endpoint: /health
+    cases:
+      - step: GET /health
+        expected: HTTP 200 and a status object indicating the API is up

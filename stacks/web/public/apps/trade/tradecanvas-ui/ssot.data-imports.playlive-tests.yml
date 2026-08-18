@@ -1,0 +1,13 @@
+title: Trade Data Imports PlayLive Tests
+subtitle: Verify CSV data files are reachable and parseable in the browser
+
+components:
+  - name: csv-files
+    test_page: test-chart.html
+    cases:
+      - step: Fetch ../data/imported/thb_formatted.csv
+        expected: HTTP 200, first line contains date, open_price, high_price, low_price, close_price
+      - step: Fetch ../data/imported/gold_formatted.csv
+        expected: HTTP 200 and at least 1000 data rows
+      - step: Parse a CSV row into chart points
+        expected: Produces { time, open, high, low, close } with valid numbers

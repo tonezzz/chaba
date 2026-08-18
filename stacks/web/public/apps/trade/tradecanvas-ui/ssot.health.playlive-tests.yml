@@ -1,0 +1,21 @@
+title: Trade Service Health PlayLive Tests
+subtitle: Quick browser-based health checks for Trade services
+
+components:
+  - name: web-ui
+    test_page: index.html
+    cases:
+      - step: Load any TradeCanvas page
+        expected: Page renders HTTP 200, no console errors
+
+  - name: trade-api
+    endpoint: http://100.75.102.88:9000/health
+    cases:
+      - step: GET /health
+        expected: HTTP 200 with a healthy status
+
+  - name: chaba-web-server
+    test_page: http://100.75.102.88:8080/apps/trade/tradecanvas-ui/test-chart.html
+    cases:
+      - step: Load the static UI
+        expected: HTTP 200, scripts load, no 404s for shared JS/CSS

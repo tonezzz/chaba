@@ -1,0 +1,103 @@
+title: TradeCanvas UI Bugs SSOT
+subtitle: Open UI bugs, reproduction steps, and next-actions tracker
+status: active
+
+# Purpose
+# Single place to capture UI/UX bugs discovered during development and
+# testing. Each bug links to the code, the relevant test or SSOT, and the
+# next concrete step to resolve it.
+
+bugs:
+  - id: ui-bug-001
+    title: Compare2 starts in "Disconnected" state
+    status: resolved
+    severity: high
+    pages:
+      - compare2.html
+    symptom: |
+      On initial load the page shows the connection status badge as
+      "Disconnected" and the chart only updates after the user manually
+      changes the currency or timeframe selection.
+    repro:
+      - Open compare2.html
+      - Observe the connection-status badge in the symbol panel
+      - Note the chart and price display may not update
+      - Change currency; chart loads and status flips to "API Data"
+    root_cause_hypothesis: |
+      The initial loadData() call may not be reaching updateUI(), or the
+      chart loader is falling back to sample data with the status text
+      remaining at the initial HTML value.
+    refs:
+      - config/ssot/ssot.ui.compare2.yml
+      - tradecanvas-ui/chart-loader.js
+      - tradecanvas-ui/chart-renderer.js
+    next_steps:
+      - Verify loadData() triggers updateUI() on success and on fallback
+      - Set initial status text to "Loading" instead of "Disconnected"
+      - Re-test on a fresh browser session with playlive
+
+  - id: ui-bug-002
+    title: Selections not remembered on page refresh
+    status: resolved
+    severity: high
+    pages:
+      - compare2.html
+      - compare.html
+      - index.html
+    symptom: |
+      After the user chooses a currency or timeframe and refreshes the
+      page, the selectors and chart revert to a hard-coded default instead
+      of the previous selection.
+    repro:
+      - Open compare2.html
+      - Select a non-default currency (e.g. GOLD)
+      - Refresh the browser
+      - Page opens on THB instead of GOLD
+    root_cause_hypothesis: |
+      LocalStorage keys are read by chart-loader, but the CurrencySelector
+      and TimeframeSelector may not render with the persisted value, or
+      the chart init is happening before the selector state is restored.
+    refs:
+      - config/ssot/ssot.ui.state.yml
+      - tradecanvas-ui/ui-components.js
+      - tradecanvas-ui/chart-loader.js
+    next_steps:
+      - Audit all read/write points against ssot.ui.state.yml
+      - Ensure selectors render with persisted selection before chart init
+      - Add a small state-restoration smoke test with playlive
+
+  - id: ui-bug-003
+    title: Week timeframe chart does not render correctly for GOLD and others
+    status: resolved
+    severity: high
+    pages:
+      - compare2.html
+    symptom: |
+      Selecting the 1W timeframe on GOLD (and other symbols) shows an empty
+      or incorrectly rendered chart, while longer timeframes work.
+    repro:
+      - Open compare2.html
+      - Select GOLD
+      - Select "1 Week" from the timeframe selector
+      - Observe the chart area is empty or the candles are not visible
+    root_cause_hypothesis: |
+      The data provider may return too few points for 1W, or the visible
+      logical range / bar spacing calculation in ChartRenderer is not
+      handling very short timeframes correctly.
+    refs:
+      - config/ssot/ssot.ui.state.yml
+      - tradecanvas-ui/chart-data-provider.js
+      - tradecanvas-ui/chart-renderer.js
+    next_steps:
+      - Verify with playlive that GOLD 1W now renders the most recent available candles
+      - Confirm the single-candle visible range and 5-point CSV fallback work for other symbols
+      - Mark resolved if no empty charts; otherwise iterate on the fallback thresholds
+
+review_cadence:
+  - end_of_session: Triage any new bugs and update next steps.
+  - before_release: Confirm every open bug is resolved, skipped, or moved to backlog.
+
+recent_changes:
+  - date: 2026-08-15
+    description: "Created ssot.ui.bugs.yml to track compare2 UX issues"
+    impact: "Shared follow-up list for UI bugs"

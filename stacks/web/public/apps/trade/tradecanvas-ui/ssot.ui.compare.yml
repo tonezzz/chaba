@@ -1,0 +1,47 @@
+title: TradeCanvas Compare Page Configuration
+subtitle: Page-specific settings for compare.html
+
+family: compare-family
+features: []
+
+page:
+  id: compare
+  html_file: compare.html
+  cache_version: 2
+  title: "TradeCanvas - Compare"
+  layout: default
+
+chart_loader:
+  ref: "ssot.ui.compare-family.yml#chart_loader"
+  show_volume: false
+  enable_controls: false
+  enable_markers: false
+
+currency_selector:
+  ref: "ssot.ui.compare-family.yml#currency_selector"
+  mode: full
+  class_name: currency-selector
+
+strategy_panel:
+  ref: "ssot.ui.compare-family.yml#strategy_panel"
+
+scripts:
+  - chart-data-provider.js
+  - chart-renderer.js
+  - chart-loader.js
+  - strategies.js
+  - hindsight-strategies-new.js
+  - strategy-compare-new.js
+
+cache_busting:
+  query_param: v
+  versions:
+    compare_html: 2
+    chart_loader: 8
+    chart_data_provider: 9
+    chart_renderer: 9
+    ui_components: 4
+
+navigation:
+  ref: "ssot.ui.yml#navigation"
+  active_page: compare

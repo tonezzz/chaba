@@ -1,0 +1,55 @@
+title: TradeCanvas Compare Family Configuration
+subtitle: Shared settings for compare and compare2 pages
+family:
+  members:
+  - compare
+  - compare2
+chart_loader:
+  symbol: THB
+  timeframe: all
+  data_source: api
+  api_endpoint: /apps/trade/api/ui/chart-data
+  show_indicators: false
+  enable_web_socket: false
+  auto_refresh: false
+currency_selector:
+  container_id: currency-selector-container
+  selected_currency: THB
+  currencies:
+  - value: THB
+    label: USD/THB
+    csv: thb_formatted.csv
+  - value: EUR
+    label: EUR/USD
+    csv: eur_formatted.csv
+  - value: GBP
+    label: GBP/USD
+    csv: gbp_formatted.csv
+  - value: JPY
+    label: USD/JPY
+    csv: jpy_formatted.csv
+  - value: GOLD
+    label: GOLD
+    csv: gold_formatted.csv
+  - value: DXY
+    label: DXY
+    csv: dxy_formatted.csv
+  - value: OIL
+    label: OIL
+    csv: wti_formatted.csv
+strategy_panel:
+  ref: ssot.ui.yml#strategy_panel
+  enabled: true
+  position: side-panel
+scripts:
+  shared:
+  - chart-data-provider.js
+  - chart-renderer.js
+  - chart-loader.js
+  - hindsight-strategies-new.js
+  - strategy-compare-new.js
+features:
+- ssot.ui.feature.chart-controls.yml
+- ssot.ui.feature.currency-selector-compact.yml
+- ssot.ui.feature.strategy-panel-hindsight.yml
+- ssot.ui.feature.compact-layout.yml
