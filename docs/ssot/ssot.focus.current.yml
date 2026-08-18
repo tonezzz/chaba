@@ -134,26 +134,31 @@ sections:
   icon: branch
   layout: list
   items:
-  - label: MacBook macOS App Development
-    text: Continue macOS and iOS workstation setup after Tailscale install; full Xcode 15.x is next.
+  - label: Split status-api into sensor reader and data API
+    text: Refactor status-api into a stripped hardware-sensor reader that stays on tony-omen, plus a data/web API that runs
+      on tony-dell and kk-macbook and receives sensor payloads. Frees tony-omen from the full web UI image.
     status: active
-    priority: medium
+    priority: low
     started: '2026-08-17'
     tags:
+    - status-api
+    - tony-omen
+    - tony-dell
     - macbook
-    - appdev
-    - xcode
+    - refactor
     subtasks:
-    - label: Install full Xcode 15.x on kk-macbook
-      status: blocked
-      blocker: MacBook unreachable over SSH on 192.168.1.39 and 100.124.59.112
-    - label: Run xcode-select --switch and xcodebuild -version
-      status: blocked
-    - label: Accept Xcode license
-      status: blocked
+    - label: Create sensor-reader on tony-omen (extracted from status-api)
+      status: in_progress
+    - label: Create status-data-api on tony-dell and kk-macbook
+      status: not_started
+    - label: Update Caddy /api proxy to tony-dell
+      status: not_started
+    - label: Update health checks and SSOTs
+      status: not_started
+    - label: Decommission old status-api
+      status: not_started
     request_log:
-    - text: User approved installing full Xcode 15.x on the MacBook.
-    - text: Attempted SSH to 192.168.1.39 and 100.124.59.112; both timed out. No install possible.
+    - text: User approved implementing the status-api split after the MacBook focus was blocked.
 - title: Quick Wins
   icon: quick
   layout: list
