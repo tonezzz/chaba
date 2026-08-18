@@ -282,16 +282,14 @@ servers:
     env:
       HEALTH_CONFIG: infrastructure/ssot.health.yml
       HEALTH_SKILL: .agents/skills/health-check/SKILL.md
+      POSTGRES_HOST: tony-dell
     single_instance: true
     status: operational
     config_files:
       - devin: true
       - windsurf: true
     notes: |
-      Phase 1 (MVP): Complete - Basic health check orchestration
-      Phase 2: Complete - SQLite persistence for health history and trends
-      Phase 1+2 (Real Health Checks): Complete - HTTP, container, systemd checks with categorization
-      Phase 3: Complete - Alerting and notification capabilities with enhanced monitoring
+      Persist results to tony-dell Postgres (health_checks and alerts tables).
       Phase 3 Enhanced: Complete - Port conflict detection, proxy validation, automated recovery, enhanced error context
       Phase 4: Complete - Streamlined health monitoring with advanced features (2026-08-12)
       Features: 4-level status categorization, profile filtering, dependency analysis, recovery suggestions, alert system
