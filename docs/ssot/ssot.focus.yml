@@ -107,12 +107,13 @@ sections:
     - label: Create MDDB/Weaviate side-by-side test collections
       status: completed
       completed: '2026-08-18'
-      note: Weaviate GeminiTest class created with manual-vector support (768 dims). Insert/query helper script added.
-        MDDB/YOMI embedding to be completed in yomi session.
+      note: Weaviate GeminiTest class created with manual-vector support (768 dims). Insert/query helper script added. MDDB/YOMI
+        embedding to be completed in yomi session.
     - label: Revisit MDDB switch from Ollama to Gemini proxy
       status: completed
       completed: '2026-08-18'
-      note: Side-by-side validation complete. Gemini quality comparable; latency ~500ms vs Ollama ~100ms warm. Decision - proceed with the switch.
+      note: Side-by-side validation complete. Gemini quality comparable; latency ~500ms vs Ollama ~100ms warm. Decision -
+        proceed with the switch.
     job_lifecycle: docs/ssot/jobs/security/2026-08-18-gemini-key-rotation-and-validation.yml
     source: /home/tony/CascadeProjects/chaba/docs/ssot/focus-inbox/2026-08-18-104228-gemini-key-rotation-and-validation.yml
   - label: MacBook macOS App Development
@@ -137,6 +138,11 @@ sections:
       notes: Needs macOS GUI / App Store / Xcode install; subagent can prepare install steps and verify.
     blocker: Direct IP addresses (192.168.1.39, 100.124.59.112) still reject auth, but `ssh macbook` over Tailscale now works.
       Next step needs user approval for App Store login and Xcode install.
+    parked: '2026-08-18'
+    previous_status: parked
+    deferred:
+      to_session: macbook session
+      reason: Bulk defer remaining foci while holding the active MDDB switch
   - label: Tony-Dell Phase 3 Safe Auto-Recovery
     text: Implement safe auto-restart commands for tony-dell monitoring after the observe phase.
     branch: tony-dell
@@ -541,11 +547,15 @@ sections:
       completed: '2026-08-18'
       note: MT7601U (148f:7601) is present and the driver mt7601u is loaded. The adapter is 2.4 GHz only (channels 1-14, 2412-2484
         MHz). This confirms the iPhone hotspot must be forced to 2.4 GHz via Maximize Compatibility.
+    previous_status: parked
+    deferred:
+      to_session: tony-dell session
+      reason: Bulk defer remaining foci while holding the active MDDB switch
   - label: Context improvement and optimization
     text: 'Invest in self-improvement by making the assistant''s context more useful: better KB auto-update, structured project
       state, contextual relevance ranking, and periodic reflection. Run incrementally so it does not block product work.'
     branch: chaba
-    status: pending
+    status: parked
     priority: low
     tags:
     - context
@@ -563,6 +573,11 @@ sections:
       requires_approval: false
       can_change_host: false
       notes: Use read-only subagent to assess current context quality and propose a phased plan before implementation.
+    parked: '2026-08-18'
+    previous_status: pending
+    deferred:
+      to_session: chaba-pool
+      reason: Bulk defer remaining foci while holding the active MDDB switch
 - title: Quick Wins
   icon: quick
   layout: list

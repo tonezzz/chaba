@@ -1,27 +1,35 @@
 title: Yomi Conversation Processing and UI Recovery
 subtitle: Process existing Yomi messages and conversations after DB recovery
 icon: inbox
-
 focus:
   label: Yomi conversation processing and UI recovery
-  text: Process the existing Yomi message corpus (7,872 messages, 66 conversations) to populate summaries, categories, and proper display names, and verify the Yomi UI after the recent DB recovery. Do not re-attempt LINE login unless explicitly requested.
+  text: Process the existing Yomi message corpus (7,872 messages, 66 conversations) to populate summaries, categories, and
+    proper display names, and verify the Yomi UI after the recent DB recovery. Do not re-attempt LINE login unless explicitly
+    requested.
   branch: chaba
   priority: high
-  status: draft
-  tags: [yomi, line, summarization, processing, ui]
+  status: deferred
+  tags:
+  - yomi
+  - line
+  - summarization
+  - processing
+  - ui
   missing_info:
-    - Whether the user will re-authenticate the Yomi LINE session
-    - Which Yomi processing scripts should run and in what order
+  - Whether the user will re-authenticate the Yomi LINE session
+  - Which Yomi processing scripts should run and in what order
   subtasks:
-    - label: Process existing messages and conversations
-      status: not_started
-    - label: Generate daily summaries for conversations
-      status: not_started
-    - label: Restore conversation display names from message data
-      status: not_started
-    - label: Verify Yomi UI list and chat pages
-      status: not_started
-
+  - label: Process existing messages and conversations
+    status: not_started
+  - label: Generate daily summaries for conversations
+    status: not_started
+  - label: Restore conversation display names from message data
+    status: not_started
+  - label: Verify Yomi UI list and chat pages
+    status: not_started
+  deferred_at: '2026-08-18'
+  deferred_session: yomi session
+  deferred_reason: Bulk defer remaining foci while holding the active MDDB switch
 source:
   session: assistant
   date: 2026-08-18
