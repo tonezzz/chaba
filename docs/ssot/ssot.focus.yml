@@ -40,9 +40,10 @@ sections:
     text: Add a parallel safe-focus lane to the focus dispatcher so the main session can continuously pick up safe-to-run
       foci while side sessions prepare the inbox, without parking the active shared/branch focus.
     branch: chaba
-    status: active
-    previous_status: pending
+    status: completed
+    previous_status: active
     started: '2026-08-18'
+    completed: '2026-08-18'
     priority: high
     tags:
     - focus
@@ -57,25 +58,32 @@ sections:
     job_lifecycle: docs/ssot/jobs/workflow/2026-08-18-safe-focus-continuous-processing.yml
     subtasks:
     - label: Add safe_to_parallel schema and triage criteria
-      status: in_progress
+      status: completed
+      completed: '2026-08-18'
     - label: Add Ready (Safe) section to ssot.focus.current.yml
-      status: not_started
+      status: completed
+      completed: '2026-08-18'
     - label: Extend mcp_focus with safe_next / ready_queue mode
-      status: not_started
+      status: completed
+      completed: '2026-08-18'
     - label: Update focus-dispatcher to auto-dispatch safe foci
-      status: not_started
+      status: completed
+      completed: '2026-08-18'
     - label: Add session ownership/lock fields to active foci
-      status: not_started
+      status: completed
+      completed: '2026-08-18'
     - label: Update subagent-focus-triage and contracts
-      status: not_started
+      status: completed
+      completed: '2026-08-18'
     - label: Validate and test the workflow
-      status: not_started
+      status: completed
+      completed: '2026-08-18'
   - label: Gemini key rotation and validation
     text: The yomi-api GEMINI_API_KEY was rotated in a side session. Complete the remaining Gemini embedding GPU offload work
       - validate proxy rate limits, create side-by-side test collections, and revisit the MDDB switch.
     branch: chaba
-    status: parked
-    previous_status: active
+    status: active
+    previous_status: parked
     started: '2026-08-18'
     priority: high
     tags:
@@ -88,17 +96,29 @@ sections:
     - label: Rotate yomi-api GEMINI_API_KEY and restart service
       status: completed
       completed: '2026-08-18'
-      note: Added REDIS_URL to override.conf, restarted yomi-api; Redis now connected. New GEMINI_API_KEY is loaded.
+      note: New key applied to yomi-api override and main service file; stray process killed; service active; Node fetch to
+        Gemini works; /api/yomi/search still fails because Weaviate at localhost:8082 is unreachable.
     - label: Validate proxy rate limits and batchEmbedContents during bulk indexing
       status: completed
       completed: '2026-08-18'
-      note: Proxy health OK (gemini-embedding-001, 768 dims). /api/embed returned 200 for 3-item batch (743ms) and 10 rapid
+      note: Proxy health OK (gemini-embedding-001, 768 dims); /api/embed returned 200 for 3-item batch (743ms) and 10 rapid
         sequential requests all returned 200 with ~450-550ms each; no 429s.
     - label: Create MDDB/Weaviate side-by-side test collections
-      status: not_started
+      status: in_progress
+      started_at: '2026-08-18'
+      notes: 'Weaviate side done:
+
+        - Created a manual-vector test class GeminiTest (vectorizer: none) with content/source text properties on tony-dell:8084.
+
+        - Verified a 768-dim zero-vector test object inserts and is returned by the GraphQL API.
+
+        - Added scripts/weaviate-gemini-test.py and reports/gemini-test-vectors-sample.json.
+
+        - MDDB/YOMI embedding will be provided in a separate yomi session.
+
+        '
     - label: Revisit MDDB switch from Ollama to Gemini proxy
       status: not_started
-    blocker: MDDB/Weaviate test collections deferred to another session.
     job_lifecycle: docs/ssot/jobs/security/2026-08-18-gemini-key-rotation-and-validation.yml
     source: /home/tony/CascadeProjects/chaba/docs/ssot/focus-inbox/2026-08-18-104228-gemini-key-rotation-and-validation.yml
   - label: MacBook macOS App Development

@@ -21,7 +21,7 @@ from .state import (
 )
 
 
-def make_focus_item(label, text, branch, priority, tags, subtasks, source=None, session=None):
+def make_focus_item(label, text, branch, priority, tags, subtasks, source=None, session=None, estimated_duration=None, job_lifecycle=None):
     today = datetime.now().strftime("%Y-%m-%d")
     item = {
         "label": label,
@@ -29,7 +29,7 @@ def make_focus_item(label, text, branch, priority, tags, subtasks, source=None, 
         "status": "active",
         "priority": priority,
         "started": today,
-        "estimated_duration": "1 session",
+        "estimated_duration": estimated_duration or "1 session",
         "tags": tags or ["focus"],
         "subtasks": subtasks or [],
         "request_log": [],
@@ -40,6 +40,8 @@ def make_focus_item(label, text, branch, priority, tags, subtasks, source=None, 
             "lock_reason": "Activated as active focus",
         },
     }
+    if job_lifecycle:
+        item["job_lifecycle"] = job_lifecycle
     if branch:
         item["branch"] = branch
     if source:
@@ -107,6 +109,8 @@ def activate_inbox(inbox, park=False):
         inbox.get("tags", []),
         inbox.get("subtasks", []),
         source=str(inbox.get("__file")),
+        estimated_duration=inbox.get("estimated_duration"),
+        job_lifecycle=inbox.get("job_lifecycle"),
     )
     section["items"].append(new_item)
     save_current(doc)
