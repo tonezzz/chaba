@@ -334,7 +334,8 @@ sections:
     text: Refactor status-api into a stripped hardware-sensor reader that stays on tony-omen, plus a data/web API that runs
       on tony-dell and kk-macbook and receives sensor payloads. Frees tony-omen from the full web UI image.
     branch: chaba
-    status: pending
+    status: completed
+    completed: '2026-08-18'
     priority: low
     tags:
     - status-api
@@ -583,6 +584,19 @@ sections:
   icon: history
   layout: timeline
   items:
+  - label: Split status-api into sensor reader and data API
+    text: Extracted hardware sensor / GPU / Docker reading into sensor-reader running on tony-omen at port 8001; created
+      status-data-api on tony-dell at port 8000 to aggregate git, Frigate, cameras, and sensor payloads; updated Caddy /api/*
+      proxy to 100.68.142.13:8000 and refreshed SSOT services/health checks.
+    date: '2026-08-18'
+    duration: 1 session
+    outcome: 'Sensor-reader and status-data-api deployed and responding; old status-api container removed from tony-omen.'
+    tags:
+    - completed
+    - status-api
+    - tony-omen
+    - tony-dell
+    - refactor
   - label: Gemini embedding GPU offload
     text: Built an Ollama-compatible Gemini embedding proxy, compared latency vs Ollama nomic-embed-text. Gemini ~3.7x slower;
       did not switch.

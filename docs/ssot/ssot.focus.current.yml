@@ -137,7 +137,8 @@ sections:
   - label: Split status-api into sensor reader and data API
     text: Refactor status-api into a stripped hardware-sensor reader that stays on tony-omen, plus a data/web API that runs
       on tony-dell and kk-macbook and receives sensor payloads. Frees tony-omen from the full web UI image.
-    status: active
+    status: completed
+    completed: '2026-08-18'
     priority: low
     started: '2026-08-17'
     tags:
@@ -148,15 +149,20 @@ sections:
     - refactor
     subtasks:
     - label: Create sensor-reader on tony-omen (extracted from status-api)
-      status: in_progress
+      status: completed
+      completed: '2026-08-18'
     - label: Create status-data-api on tony-dell and kk-macbook
-      status: not_started
+      status: completed
+      completed: '2026-08-18'
     - label: Update Caddy /api proxy to tony-dell
-      status: not_started
+      status: completed
+      completed: '2026-08-18'
     - label: Update health checks and SSOTs
-      status: not_started
+      status: completed
+      completed: '2026-08-18'
     - label: Decommission old status-api
-      status: not_started
+      status: completed
+      completed: '2026-08-18'
     request_log:
     - text: User approved implementing the status-api split after the MacBook focus was blocked.
 - title: Quick Wins

@@ -39,10 +39,10 @@ services:
   - 'Rebuild: ssh tony-dell "cd /home/tony/CascadeProjects/chaba-tony-dell/tony-dell/chaba-funnel && ./deploy.sh"'
   - Check Caddy proxy configuration in stacks/web/Caddyfile
   - 'Verify env: ssh tony-dell podman exec helm env | grep LLM'
-- id: status-api
-  name: Status API
+- id: sensor-reader
+  name: Sensor Reader
   type: http
-  url: '{profile}/health'
+  url: http://tony-omen:8001/health
   expected_status: 200
   timeout: 5
   category: api
@@ -50,13 +50,30 @@ services:
   - home
   - mobile
   verification:
-  - 'Test container: docker ps | grep status-api'
-  - 'Test direct container: curl -s http://localhost:8000/health'
-  - 'Test Caddy proxy: curl -s {profile}/health'
-  - 'Check container logs: docker logs status-api --tail 20'
+  - 'Test container: docker ps | grep sensor-reader'
+  - 'Test direct container: curl -s http://tony-omen:8001/health'
+  - 'Check container logs: docker logs sensor-reader --tail 20'
   recovery_actions:
-  - 'Restart container: docker restart status-api'
-  - 'Check container networking: docker inspect status-api'
+  - 'Restart container: docker compose -f stacks/web/docker-compose.yml restart sensor-reader'
+  - 'Check Caddy /api/* proxy to 100.68.142.13:8000'
+- id: status-data-api
+  name: Status Data API
+  type: http
+  url: '{profile}/api/health'
+  expected_status: 200
+  timeout: 5
+  category: api
+  profiles:
+  - home
+  - mobile
+  verification:
+  - 'Test service: ssh tony-dell systemctl --user status status-data-api'
+  - 'Test direct container: curl -s http://tony-dell:8000/health'
+  - 'Test Caddy proxy: curl -s {profile}/api/health'
+  - 'Check podman logs: ssh tony-dell podman logs status-data-api --tail 20'
+  recovery_actions:
+  - 'Restart service: ssh tony-dell systemctl --user restart status-data-api'
+  - 'Verify status-data-api can reach http://tony-omen:8001/health'
   - Verify Caddy proxy configuration in stacks/web/Caddyfile
 - id: yomi-api
   name: Yomi API

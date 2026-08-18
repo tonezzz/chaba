@@ -185,6 +185,23 @@ tony-dell:
     host: tony_dell
     purpose: Wired ADSL primary with Naris Wi-Fi ADSL backup
     status: implemented (2026-08-13)
+  status-data-api:
+    container: status-data-api
+    image: docker.io/library/chaba-tony-dell-status-data-api:latest
+    runtime: rootless podman
+    host: tony_dell
+    port: 8000
+    host_port: 0.0.0.0:8000
+    source: tony-dell/status-data-api
+    quadlet:
+      container_unit: ~/.config/containers/systemd/status-data-api.container
+      service_unit: ~/.config/systemd/user/status-data-api.service
+    upstream: 100.68.142.13:8000
+    caddy_upstream: 100.68.142.13:8000
+    depends_on:
+      - sensor-reader
+    status: implemented (2026-08-18)
+    note: Aggregates git, Frigate, camera summary, and sensor payloads from tony-omen:8001; Caddy /api/* now proxies to tony-dell.
 
 tony-omen:
   ollama:
@@ -345,3 +362,22 @@ tony-omen:
       - Average execution time: 871ms
       - Average queue wait: 3.6s
     status: implemented (2026-08-13), fully operational with improved prediction accuracy
+
+  sensor-reader:
+    container: sensor-reader
+    image: docker.io/library/chaba-omen-sensor-reader:latest
+    runtime: docker
+    host: tony_omen
+    port: 8001
+    host_port: 0.0.0.0:8001
+    compose_file: stacks/web/docker-compose.yml
+    source: stacks/web/sensor-reader
+    privileged: true
+    volumes:
+      - /var/run/docker.sock
+      - /sys/class/thermal
+      - /sys/class/hwmon
+      - /sys/devices/platform/hp-wmi
+      - /sys/devices/system/cpu/intel_pstate
+    status: implemented (2026-08-18)
+    note: Extracted from the old status-api; provides hardware sensors, GPU, and Docker container data to the data API.

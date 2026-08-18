@@ -46,7 +46,8 @@ alerts:
     - gpu-queue
     important:
     - yomi-api
-    - status-api
+    - status-data-api
+    - sensor-reader
     - trade-api
     - mddb-api
     - playlived-dell
@@ -69,7 +70,7 @@ groups:
   web-stack:
   - caddy
   - bserver
-  - status-api
+  - status-data-api
   - yomi-api
   - mddb-panel
   - helm
@@ -126,8 +127,12 @@ dependencies:
   yomi-api:
   - caddy
   - postgres
-  status-api:
+  status-data-api:
   - caddy
+  - sensor-reader
+  sensor-reader:
+  - docker
+  - thai-legal-inference
   gpu-queue:
   - postgres
   activepieces:
