@@ -18,15 +18,16 @@ services:
       - frigate_default
       - chaba-h3_default
 
-  status-api:
-    container_name: status-api
+  sensor-reader:
+    container_name: sensor-reader
     build:
-      context: ./status-api
+      context: ./sensor-reader
       dockerfile: Dockerfile
     restart: unless-stopped
+    ports:
+      - "8001:8001"
     environment:
       - REPO_PATH=/repo
-      - FRIGATE_URL=http://frigate:5000
     volumes:
       - ../..:/repo
       - /var/run/docker.sock:/var/run/docker.sock:ro
@@ -34,7 +35,7 @@ services:
       - /sys/class/hwmon:/sys/class/hwmon:ro
       - /sys/devices/platform/hp-wmi:/sys/devices/platform/hp-wmi:rw
       - /sys/devices/system/cpu/intel_pstate:/sys/devices/system/cpu/intel_pstate:rw
-      - ./status-api/main.py:/app/main.py:ro
+      - ./sensor-reader/main.py:/app/main.py:ro
     privileged: true
     networks:
       - default
