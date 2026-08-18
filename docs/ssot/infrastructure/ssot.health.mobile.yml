@@ -149,21 +149,23 @@ services:
   name: Redis
   type: container
   container: redis
+  host: tony_dell
   expected_state: running
   timeout: 5
   category: datastore
   profiles:
   - home
   - mobile
+  note: 'Migrated to tony_dell rootless podman. Health checks must run on tony_dell, not tony_omen.'
   verification:
-  - 'Test container: docker ps | grep redis'
-  - 'Test connection: docker exec redis redis-cli ping'
-  - 'Test memory: docker exec redis redis-cli info memory'
-  - 'Check logs: docker logs redis --tail 20'
+  - 'Test container on tony_dell: ssh tony-dell podman ps | grep redis'
+  - 'Test connection: ssh tony-dell podman exec redis redis-cli ping'
+  - 'Test memory: ssh tony-dell podman exec redis redis-cli info memory'
+  - 'Check logs: ssh tony-dell podman logs redis --tail 20'
   recovery_actions:
-  - 'Restart container: docker restart redis'
-  - 'Check data volume: docker inspect redis | grep -A 10 Mounts'
-  - 'Verify networking: docker network inspect bridge'
+  - 'Restart container on tony_dell: ssh tony-dell podman restart redis'
+  - 'Check data volume: ssh tony-dell podman inspect redis | grep -A 10 Mounts'
+  - 'Verify networking on tony_dell: ssh tony-dell podman network inspect bridge'
 - id: postgres
   name: Postgres
   type: container
