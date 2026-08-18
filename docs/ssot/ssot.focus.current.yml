@@ -159,9 +159,11 @@ sections:
     - MDDB/Weaviate need to be available on tony-omen or a test host for side-by-side collections
     subtasks:
     - label: Rotate yomi-api GEMINI_API_KEY and restart service
-      status: in_progress
+      status: completed
+      completed: '2026-08-18'
+      note: Port 3000 is held by the active yomi-api process. The new GEMINI_API_KEY is loaded in the process environment. A non-fatal Redis ENOTFOUND remains due to the default REDIS_URL=redis://host.docker.internal:6379.
     - label: Validate proxy rate limits and batchEmbedContents during bulk indexing
-      status: not_started
+      status: in_progress
     - label: Create MDDB/Weaviate side-by-side test collections
       status: not_started
     - label: Revisit MDDB switch from Ollama to Gemini proxy

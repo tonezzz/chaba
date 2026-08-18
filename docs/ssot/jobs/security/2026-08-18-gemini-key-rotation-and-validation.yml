@@ -35,8 +35,26 @@ planning:
       file: docs/ssot/ssot.focus.current.yml
 
 processing:
-  status: not_started
-  started_at: null
+  status: in_progress
+  started_at: '2026-08-18'
+  steps:
+    - id: 1
+      label: Diagnose and resolve tony-omen yomi-api port 3000 EADDRINUSE
+      status: completed
+      notes: Port 3000 is held by the active yomi-api process (node). The rotated GEMINI_API_KEY is loaded in the process environment. One remaining issue is the default REDIS_URL=redis://host.docker.internal:6379, which does not resolve on tony-omen; yomi-api is running but logs a non-fatal redis connection error.
+    - id: 2
+      label: Apply and confirm GEMINI_API_KEY rotation
+      status: completed
+      notes: Verified override.conf and /proc/<pid>/environ both contain the new key.
+    - id: 3
+      label: Validate Gemini proxy rate limits and batchEmbedContents
+      status: not_started
+    - id: 4
+      label: Create MDDB/Weaviate side-by-side test collections
+      status: not_started
+    - id: 5
+      label: Revisit MDDB switch from Ollama to Gemini proxy
+      status: not_started
   steps:
     - id: 1
       label: Diagnose and resolve tony-omen yomi-api port 3000 EADDRINUSE
