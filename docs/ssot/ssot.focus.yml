@@ -31,31 +31,8 @@ sections:
 - title: Active Branch Focus
   icon: branch
   layout: list
-  items:
-  - label: Enable tony-dell overnight git push
-    text: Enable and verify unattended git commit/push from tony-dell for the overnight focus dispatcher.
-    status: active
-    priority: high
-    started: '2026-08-18'
-    estimated_duration: 1 session
-    tags:
-    - tony-dell
-    - git
-    - focus-dispatcher
-    - automation
-    subtasks:
-    - label: Inspect tony-dell worktree, branch, remote, and credentials
-      status: in_progress
-    - label: Enable FOCUS_DISPATCHER_PUSH and add git pull --ff-only step
-      status: not_started
-    - label: Update tony-dell systemd unit/env and reload
-      status: not_started
-    - label: Verify with a dry-run and test push
-      status: not_started
-    request_log:
-    - text: 'User asked to finish git tasks on tony-dell and confirmed podman for the subagent runner.'
-      date: '2026-08-18'
-    branch: tony-dell
+  items: []
+
 - title: Backlog - Triage Queue
   icon: backlog
   layout: list
@@ -631,6 +608,18 @@ sections:
   icon: history
   layout: timeline
   items:
+  - label: Enable tony-dell overnight git push
+    text: Cloned chaba to the tony-dell worktree, configured the systemd overnight timer to pull --ff-only before review,
+      set up GitHub credentials, enabled FOCUS_DISPATCHER_PUSH, and verified the focus dispatcher dry-run and test push.
+    date: '2026-08-18'
+    duration: 1 session
+    outcome: 'tony-dell systemd timer now runs from /home/tony/CascadeProjects/chaba-tony-dell, pulls before processing, and can push unattended. Test git push succeeded.'
+    tags:
+    - completed
+    - tony-dell
+    - git
+    - focus-dispatcher
+    - automation
   - label: Add get_page/list_sections/read_tree to MDDB
     text: Patched the upstream tradik/mddb Go server to expose three path-aware MCP tools (get_page, list_sections, read_tree),
       built a custom chaba/mddb-page-tools image, deployed it to tony-dell, and updated ssot.mcp.yml and the Claude mddb-bridge

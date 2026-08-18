@@ -23,7 +23,7 @@ jobs:
     environment:
       SKIP_HEALTH: "1"
       FOCUS_DISPATCHER_COMMIT: "1"
-      FOCUS_DISPATCHER_PUSH: "0"
+      FOCUS_DISPATCHER_PUSH: "1"
     log: /home/tony/var/chaba/overnight-focus-review.log
     outputs:
       - docs/ssot/focus-inbox/*.yml
@@ -31,7 +31,7 @@ jobs:
     notes:
       - Health ingestion is disabled because mcp-health is not yet stable across the failover window.
       - The job now runs from the /home/tony/CascadeProjects/chaba-tony-dell worktree with ExecStartPre 'git pull --ff-only'.
-      - FOCUS_DISPATCHER_PUSH remains 0 until a GitHub token is configured on tony-dell for unattended push.
+      - GitHub token configured in tony-dell ~/.git-credentials; FOCUS_DISPATCHER_PUSH enabled after successful dry-run and test push.
 
   - id: yomi-backup
     name: Yomi and PostgreSQL Backup
