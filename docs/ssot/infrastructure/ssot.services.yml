@@ -336,8 +336,8 @@ tony-omen:
     ollama_compatible: true
     status: running (2026-08-18)
     notes:
-    - Model availability varies by account age and project status
-    - 'Batch processing: 4 dates per API call (75% reduction in API calls)'
+    - Proxy updated to use Gemini batchEmbedContents with a 100 RPM token-bucket limiter and 429 exponential backoff.
+    - Maps text-embedding-004, nomic-embed-text, and gemini-embedding-* aliases to gemini-embedding-001/002.
   gpu-queue:
     container: gpu-queue
     image: node:22-alpine
