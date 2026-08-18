@@ -263,6 +263,25 @@ sessions:
       - Wire ssot.focus.sessions.yml to be updated automatically by focus-dispatcher or mcp_focus
     next_action: Closed
 
+  - date: '2026-08-18'
+    session: chaba-2026-08-18
+    focus: Add get_page/list_sections/read_tree to MDDB
+    source: user request
+    plan:
+      - Implement get_page, list_sections, and read_tree in mddbd
+      - Build and deploy custom chaba/mddb-page-tools image
+      - Update ssot.mcp.yml and Claude mddb-bridge filtered tools
+    done:
+      - Cloned tradik/mddb and created feature/mddb-page-tools branch
+      - Implemented the three path-aware MCP tools in services/mddbd
+      - Built and deployed chaba/mddb-page-tools image
+      - Updated ssot.mcp.yml and Claude bridge tool filters
+      - Verified all three tools via mcp_call_tool against chaba-system
+    follow_up:
+      - Monitor the new mddb image for stability
+      - Retire docs/docs-trade once migration is validated
+    next_action: Closed
+
 related_files:
   - docs/ssot/ssot.focus.current.yml
   - docs/ssot/ssot.focus.yml

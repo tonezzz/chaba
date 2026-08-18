@@ -148,7 +148,8 @@ sections:
       hotspot is using a hidden SSID.
 
       '
-    status: active
+    status: parked
+    parked: '2026-08-18'
     priority: medium
     started: '2026-08-18'
     estimated_duration: 1 session
@@ -167,6 +168,30 @@ sections:
     request_log: []
     branch: tony-dell
     source: /home/tony/CascadeProjects/chaba/docs/ssot/focus-inbox/2026-08-18-014542-tony-dell-iphone-hotspot.yml
+  - label: Enable tony-dell overnight git push
+    text: Enable and verify unattended git commit/push from tony-dell for the overnight focus dispatcher.
+    status: active
+    priority: high
+    started: '2026-08-18'
+    estimated_duration: 1 session
+    tags:
+    - tony-dell
+    - git
+    - focus-dispatcher
+    - automation
+    subtasks:
+    - label: Inspect tony-dell worktree, branch, remote, and credentials
+      status: in_progress
+    - label: Enable FOCUS_DISPATCHER_PUSH and add git pull --ff-only step
+      status: not_started
+    - label: Update tony-dell systemd unit/env and reload
+      status: not_started
+    - label: Verify with a dry-run and test push
+      status: not_started
+    request_log:
+    - text: 'User asked to finish git tasks on tony-dell and confirmed podman for the subagent runner.'
+      date: '2026-08-18'
+    branch: tony-dell
 - title: Quick Wins
   icon: quick
   layout: list
@@ -198,7 +223,7 @@ sections:
     - quick-win
 config:
   version: 2
-  last_updated: '2026-08-17'
+  last_updated: '2026-08-18'
   maintainer: tony
   full_focus_file: docs/ssot/ssot.focus.yml
   inbox_dir: docs/ssot/focus-inbox

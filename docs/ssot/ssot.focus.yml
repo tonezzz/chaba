@@ -32,68 +32,30 @@ sections:
   icon: branch
   layout: list
   items:
-  - label: Add get_page/list_sections/read_tree to MDDB
-    text: Patch the upstream tradik/mddb Go server (services/mddbd) to expose three path-aware MCP tools (get_page, list_sections, read_tree) so MDDB can fully replace the legacy docs/docs-trade servers.
-    branch: mddb
+  - label: Enable tony-dell overnight git push
+    text: Enable and verify unattended git commit/push from tony-dell for the overnight focus dispatcher.
     status: active
-    started: '2026-08-18'
     priority: high
+    started: '2026-08-18'
+    estimated_duration: 1 session
     tags:
-    - mddb
-    - mcp
-    - docs
-    - search
-    - chaba
-    triage:
-      urgency: 6
-      importance: 8
-      complication: 6
+    - tony-dell
+    - git
+    - focus-dispatcher
+    - automation
     subtasks:
-    - label: Clone tradik/mddb repo
-      status: completed
-      completed: '2026-08-18'
-    - label: Create feature/mddb-page-tools branch
-      status: completed
-      completed: '2026-08-18'
-    - label: Identify MCP tool registration in services/mddbd
-      status: completed
-      completed: '2026-08-18'
-    - label: Implement get_page
-      status: completed
-      completed: '2026-08-18'
-    - label: Implement list_sections
-      status: completed
-      completed: '2026-08-18'
-    - label: Implement read_tree
-      status: completed
-      completed: '2026-08-18'
-    - label: Check cached Docker base images
-      status: completed
-      completed: '2026-08-18'
-    - label: Build mddb:path-tools image
-      status: completed
-      completed: '2026-08-18'
-    - label: Update chaba-kbman docker-compose.yml
-      status: completed
-      completed: '2026-08-18'
-    - label: Update ssot.mcp.yml and Claude bridge
-      status: completed
-      completed: '2026-08-18'
-    - label: Deploy mddb:path-tools
-      status: completed
-      completed: '2026-08-18'
-    - label: Verify get_page/list_sections/read_tree via mcp_call_tool
-      status: completed
-      completed: '2026-08-18'
-    subagent:
-      runnable: true
-      parallel: true
-      requires_approval: true
-      can_change_host: true
-      notes: Image build is sequential; config/bridge updates can run in parallel to avoid Docker Hub rate limits.
+    - label: Inspect tony-dell worktree, branch, remote, and credentials
+      status: in_progress
+    - label: Enable FOCUS_DISPATCHER_PUSH and add git pull --ff-only step
+      status: not_started
+    - label: Update tony-dell systemd unit/env and reload
+      status: not_started
+    - label: Verify with a dry-run and test push
+      status: not_started
     request_log:
-    - text: User provided https://github.com/tradik/mddb and asked to create/improve SSOT to track the task to completion.
+    - text: 'User asked to finish git tasks on tony-dell and confirmed podman for the subagent runner.'
       date: '2026-08-18'
+    branch: tony-dell
 - title: Backlog - Triage Queue
   icon: backlog
   layout: list
