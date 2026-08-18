@@ -9,9 +9,10 @@ overview:
     request, it recommends the next action without modifying any focus state.
   inputs:
     - request: optional free-text user request
-    - mode: optional "recommend" (default), "status", "pre_action", "safe_next", "ready_queue", "defer", "resume", "technical_decision", or "session_summary"
+    - mode: optional "recommend" (default), "status", "pre_action", "safe_next", "ready_queue", "defer", "resume", "sweep", "technical_decision", or "session_summary"
     - resume_session: target session identifier for defer mode
     - reason: reason for deferring
+    - hold: label of the focus to hold while sweeping the rest
   guarantees:
     - Read-only. It never writes to ssot.focus.current.yml, ssot.focus.yml, or the focus-inbox/ directory.
     - If no request is provided, it always returns the current active foci and quick wins.
@@ -93,6 +94,13 @@ actions:
       The user wants to pick up a previously deferred focus, or no active focus exists and a session has a pending resume next_action.
     output:
       - Return the latest candidate focus from ssot.focus.sessions.yml with a resume/continue next_action.
+
+  sweep:
+    when: |
+      The user wants to review all remaining parked/backlog/inbox foci and choose one to hold while the rest are queued for processing.
+    output:
+      - Return a hold candidate and a sorted process queue of all other parked, backlog, inbox, and deferred subtask candidates.
+      - Default hold is the active branch focus if no hold is specified.
       - Return the draft content under suggestion.
     confidence: low
 

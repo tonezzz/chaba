@@ -180,7 +180,8 @@ sections:
   - label: Gemini key rotation and validation
     text: The yomi-api GEMINI_API_KEY was rotated in a side session. Complete the remaining Gemini embedding GPU offload work
       - validate proxy rate limits, create side-by-side test collections, and revisit the MDDB switch.
-    status: active
+    status: completed
+    completed: '2026-08-18'
     priority: high
     started: '2026-08-18'
     estimated_duration: 2 sessions
@@ -202,21 +203,20 @@ sections:
       note: Proxy health OK (gemini-embedding-001, 768 dims); /api/embed returned 200 for 3-item batch (743ms) and 10 rapid
         sequential requests returned 200 with ~450-550ms each; no 429s.
     - label: Create MDDB/Weaviate side-by-side test collections
-      status: in_progress
+      status: completed
+      completed: '2026-08-18'
       started_at: '2026-08-18'
-      notes: 'Weaviate side done:
-
-        - Created a manual-vector test class GeminiTest (vectorizer: none) with content/source text properties on tony-dell:8084.
-
-        - Verified a 768-dim zero-vector test object inserts and is returned by the GraphQL API.
-
-        - Added scripts/weaviate-gemini-test.py and reports/gemini-test-vectors-sample.json.
-
-        - MDDB/YOMI embedding will be provided in a separate yomi session.
-
-        '
+      notes: |
+        MDDB and Weaviate side-by-side test collections created.
+        - Weaviate: GeminiTest class on tony-dell:8084 with a 768-dim zero-vector test object.
+        - MDDB: mddb-gemini-test (tony-dell:12023, Gemini proxy) and mddb-ollama-test (tony-dell:12024, Ollama)
+          both loaded 3 test docs via GraphQL addBatch and indexed 3/3 chunks.
+        - Side-by-side vector search: Gemini gives comparable or slightly higher relevance at ~500-575ms/query;
+          Ollama is ~100ms when warm but 1.2-6s cold. Gemini quality sufficient, latency acceptable for MDDB load.
     - label: Revisit MDDB switch from Ollama to Gemini proxy
-      status: not_started
+      status: completed
+      completed: '2026-08-18'
+      note: 'Side-by-side validation complete. Gemini quality comparable; latency ~500ms vs Ollama ~100ms warm. Decision: proceed with the switch. A follow-up focus inbox has been created for the live MDDB migration.'
     request_log: []
     ownership:
       owner: tony

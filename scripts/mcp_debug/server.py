@@ -429,14 +429,15 @@ def handle_tools_list(id_):
         },
         {
             "name": "mcp_focus",
-            "description": "Focus router, decision logger, and session summary writer. Modes: recommend (default), status, pre_action, safe_next, ready_queue, defer, resume, technical_decision, session_summary.",
+            "description": "Focus router, decision logger, and session summary writer. Modes: recommend (default), status, pre_action, safe_next, ready_queue, defer, resume, sweep, technical_decision, session_summary.",
             "inputSchema": {
                 "type": "object",
                 "properties": {
                     "request": {"type": "string", "description": "Optional user request to classify for recommend/status/pre_action or the resume reason for defer"},
-                    "mode": {"type": "string", "enum": ["recommend", "status", "pre_action", "safe_next", "ready_queue", "defer", "resume", "technical_decision", "session_summary"], "default": "recommend", "description": "recommend returns a recommendation; status returns active foci and quick wins only; pre_action returns duplicate/history/decision-tree summary before work begins; safe_next returns the highest-scoring safe-to-parallel focus; ready_queue returns the list of ready safe foci; defer marks the active focus or its in_progress subtask as deferred; resume suggests a focus to resume from ssot.focus.sessions.yml; technical_decision appends to ssot.technical-decisions.yml; session_summary appends to ssot.focus.sessions.yml"},
+                    "mode": {"type": "string", "enum": ["recommend", "status", "pre_action", "safe_next", "ready_queue", "defer", "resume", "sweep", "technical_decision", "session_summary"], "default": "recommend", "description": "recommend returns a recommendation; status returns active foci and quick wins only; pre_action returns duplicate/history/decision-tree summary before work begins; safe_next returns the highest-scoring safe-to-parallel focus; ready_queue returns the list of ready safe foci; defer marks the active focus or its in_progress subtask as deferred; resume suggests a focus to resume from ssot.focus.sessions.yml; sweep returns all parked/backlog/inbox candidates and a hold/process queue; technical_decision appends to ssot.technical-decisions.yml; session_summary appends to ssot.focus.sessions.yml"},
                     "resume_session": {"type": "string", "description": "Target session identifier for defer mode (e.g. 'chaba-2026-08-19')"},
                     "reason": {"type": "string", "description": "Reason for deferring the active focus or subtask"},
+                    "hold": {"type": "string", "description": "Label of the focus to hold while sweeping the rest"},
                     "decision": {"type": "object", "description": "Decision object for technical_decision mode (id, title, context, options, chosen, reasoning, consequences)"},
                     "summary": {"type": "object", "description": "Session summary object for session_summary mode (focus, source, plan, done, follow_up, next_action, decisions)"},
                 },
@@ -632,6 +633,7 @@ def handle_tools_call(id_, params):
             summary=arguments.get("summary"),
             resume_session=arguments.get("resume_session"),
             reason=arguments.get("reason"),
+            hold=arguments.get("hold"),
         )
         output = json.dumps(result, separators=(",", ":"))
     else:

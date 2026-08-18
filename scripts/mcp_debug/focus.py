@@ -112,6 +112,65 @@ def _backlog_items():
     ]
 
 
+def _sweep_candidates(active, backlog, inbox):
+    candidates = []
+    seen = set()
+    # Backlog + parked
+    for item in backlog:
+        label = item.get("label")
+        if not label or label in seen:
+            continue
+        seen.add(label)
+        candidates.append({
+            "label": label,
+            "text": item.get("text", ""),
+            "status": item.get("status"),
+            "priority": item.get("priority", "medium"),
+            "branch": item.get("branch"),
+            "score": _triage_score(item),
+            "source": item.get("source", "ssot.focus.yml"),
+            "why": "backlog" if item.get("status") not in ("parked",) else "parked",
+        })
+    # Inbox (not yet processed)
+    for item in inbox:
+        label = item.get("label")
+        if not label or label in seen:
+            continue
+        seen.add(label)
+        candidates.append({
+            "label": label,
+            "text": item.get("text", ""),
+            "status": item.get("status", "pending"),
+            "priority": item.get("priority", "medium"),
+            "branch": item.get("branch"),
+            "score": _triage_score(item),
+            "source": str(item.get("__file", "")),
+            "why": "inbox",
+        })
+    # Active focus deferred subtasks
+    for key in ("branch", "shared"):
+        it = active.get(key)
+        if not it:
+            continue
+        for st in it.get("subtasks", []):
+            if st.get("status") == "deferred":
+                label = st.get("label", "")
+                if label and label not in seen:
+                    seen.add(label)
+                    candidates.append({
+                        "label": label,
+                        "text": it.get("text", ""),
+                        "status": "deferred",
+                        "priority": it.get("priority", "medium"),
+                        "branch": it.get("branch"),
+                        "score": _triage_score(it),
+                        "source": it.get("source", ""),
+                        "why": f"deferred subtask of {it.get('label')}",
+                    })
+    candidates.sort(key=lambda x: (x["score"], _priority_value(x), x["label"]), reverse=True)
+    return candidates
+
+
 def _match_active(req, active):
     for key in ("branch", "shared"):
         it = active.get(key)
@@ -531,7 +590,7 @@ def _load_sessions():
         return {}
 
 
-def mcp_focus(request=None, mode="recommend", decision=None, summary=None, resume_session=None, reason=None):
+def mcp_focus(request=None, mode="recommend", decision=None, summary=None, resume_session=None, reason=None, hold=None):
     if mode == "technical_decision":
         if not decision:
             return {"ok": False, "error": "decision is required for technical_decision mode"}
@@ -611,6 +670,35 @@ def mcp_focus(request=None, mode="recommend", decision=None, summary=None, resum
                 "confidence": "medium",
                 "reasoning": f"Latest session for '{best.get('focus')}' has a resume next_action.",
                 "next_prompt": f"Reactivate focus '{best.get('focus')}' to continue.",
+            },
+        }
+
+    if mode == "sweep":
+        candidates = _sweep_candidates(active, _backlog_items(), _inbox_items())
+        hold_label = (hold or "").strip().lower()
+        # default hold to the active branch focus if not specified
+        if not hold_label and active.get("branch"):
+            hold_label = active["branch"].get("label", "").lower()
+        hold_item = None
+        process_queue = []
+        for c in candidates:
+            if hold_label and c["label"].lower() == hold_label:
+                hold_item = c
+            else:
+                process_queue.append(c)
+        if not hold_item and active.get("branch"):
+            hold_item = {"label": active["branch"].get("label"), "status": "active", "why": "active branch focus"}
+        return {
+            "ok": True,
+            "hold": hold_item,
+            "candidates": candidates,
+            "process_queue": process_queue,
+            "recommendation": {
+                "action": "sweep",
+                "target": hold_item.get("label") if hold_item else None,
+                "confidence": "medium",
+                "reasoning": f"Hold '{hold_item.get('label') if hold_item else 'none'}' and process {len(process_queue)} remaining focuses/parked/backlog items.",
+                "next_prompt": f"Review the {len(process_queue)} items in process_queue. Activate the first, or defer them all to specific sessions.",
             },
         }
 

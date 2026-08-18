@@ -153,8 +153,23 @@ async function handleEmbed(req, res) {
   const requestedModel = payload.model || 'text-embedding-004';
   const geminiModel = resolveGeminiModel(requestedModel);
 
-  const isSingle = typeof payload.input === 'string';
-  let inputs = isSingle ? [payload.input] : payload.input;
+  let isSingle;
+  let inputs;
+  if (typeof payload.input === 'string') {
+    isSingle = true;
+    inputs = [payload.input];
+  } else if (Array.isArray(payload.input)) {
+    isSingle = false;
+    inputs = payload.input;
+  } else if (typeof payload.prompt === 'string') {
+    isSingle = true;
+    inputs = [payload.prompt];
+  } else if (Array.isArray(payload.prompts)) {
+    isSingle = false;
+    inputs = payload.prompts;
+  } else {
+    return sendJson(res, 400, { error: 'input must be a non-empty string or array of strings' });
+  }
   if (!Array.isArray(inputs) || inputs.length === 0) {
     return sendJson(res, 400, { error: 'input must be a non-empty string or array of strings' });
   }
@@ -194,11 +209,10 @@ async function handleEmbed(req, res) {
     gemini_model: geminiModel,
     output_dimensionality: outputDimensionality,
     duration_ms: durationMs,
+    embeddings: embeddings,
   };
   if (isSingle) {
     result.embedding = embeddings[0];
-  } else {
-    result.embeddings = embeddings;
   }
 
   sendJson(res, 200, result);
@@ -219,7 +233,7 @@ const server = createServer((req, res) => {
     return sendJson(res, 200, { status: 'ok', gemini_model: GEMINI_EMBEDDING_MODEL, dimensions: DEFAULT_DIMENSIONS });
   }
 
-  if (req.method === 'POST' && req.url === '/api/embed') {
+  if (req.method === 'POST' && (req.url === '/api/embed' || req.url === '/api/embeddings')) {
     return handleEmbed(req, res);
   }
 
