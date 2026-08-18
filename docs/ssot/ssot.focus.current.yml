@@ -141,9 +141,28 @@ sections:
 - title: Active Branch Focus
   icon: branch
   layout: list
-  items: []
-
-
+  items:
+  - label: Extend MCP Debug savings report page
+    text: Add separate sections to the public/live MCP Debug savings report for raw-allowed prefixes (e.g., python3, find,
+      grep) and registered MCP tools/presets (e.g., mcp_debug_audit, mcp_preset_savings, mcp-savings-audit). The current page
+      only lists DEBUG_COMMANDS with raw/compact savings. Update mcp_savings/mcp_report output, chaba-h3 public report HTML/JS,
+      and the live CORS fallback.
+    status: active
+    priority: low
+    started: '2026-08-18'
+    estimated_duration: 1 session
+    tags:
+    - focus
+    subtasks:
+    - label: Add raw_allowed_prefixes and presets metadata to mcp_savings/mcp_report JSON
+      status: not_started
+    - label: Update chaba-h3 mcp_debug report page to render the new sections
+      status: not_started
+    - label: Refresh live report and H3 fallback
+      status: not_started
+    request_log: []
+    branch: chaba
+    source: /home/tony/CascadeProjects/chaba/docs/ssot/focus-inbox/2026-08-18-mcp-debug-report-page.yml
 - title: Hand-off Queue
   icon: handoff
   layout: list
