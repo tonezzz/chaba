@@ -117,3 +117,33 @@ def mcp_search_ssot(query=None, collection="ssot-infrastructure", limit=5):
         source = "local"
 
     return {"ok": True, "query": query, "source": source, "results": results}
+
+
+def mcp_mddb_doc(query=None, collection="ssot-infrastructure", top_k=1, read_limit=20000):
+    """Find the most relevant SSOT document with MDDB and return its full content."""
+    if not query:
+        return {"ok": False, "error": "query is required"}
+    search = mcp_search_ssot(query=query, collection=collection, limit=top_k)
+    if not search.get("ok") or not search.get("results"):
+        return {"ok": False, "error": "no matching document found"}
+    docs = []
+    for r in search.get("results")[:top_k]:
+        path = r.get("path")
+        if not path:
+            continue
+        read = mcp_read_ssot(path=path, limit=read_limit)
+        docs.append({
+            "path": path,
+            "excerpt": r.get("excerpt", ""),
+            "source": r.get("source", "local"),
+            "content": read.get("content") if read.get("ok") else None,
+            "truncated": read.get("truncated", False) if read.get("ok") else None,
+            "read_error": None if read.get("ok") else read.get("error"),
+        })
+    return {
+        "ok": True,
+        "query": query,
+        "source": search.get("source", "local"),
+        "n": len(docs),
+        "docs": docs,
+    }

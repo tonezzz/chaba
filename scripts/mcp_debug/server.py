@@ -28,7 +28,7 @@ from .tools import (
 )
 from .reports import mcp_report
 from .focus import mcp_focus
-from .ssot import mcp_read_ssot, mcp_search_ssot
+from .ssot import mcp_read_ssot, mcp_search_ssot, mcp_mddb_doc
 from .capture import (
     mcp_screenshot,
     mcp_window_list,
@@ -341,6 +341,20 @@ def handle_tools_list(id_):
             },
         },
         {
+            "name": "mcp_mddb_doc",
+            "description": "Search for the most relevant SSOT document and return its full content. Uses MDDB if available, falls back to local search.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "query": {"type": "string", "description": "Natural language or keyword query"},
+                    "collection": {"type": "string", "description": "MDDB collection to search", "default": "ssot-infrastructure"},
+                    "top_k": {"type": "integer", "description": "Number of full documents to return", "default": 1},
+                    "read_limit": {"type": "integer", "description": "Maximum characters per document", "default": 20000},
+                },
+                "required": ["query"],
+            },
+        },
+        {
             "name": "mcp_screenshot",
             "description": "Capture a screenshot on an allowed host and return it as base64 PNG.",
             "inputSchema": {
@@ -533,6 +547,14 @@ def handle_tools_call(id_, params):
             query=arguments.get("query"),
             collection=arguments.get("collection", "ssot-infrastructure"),
             limit=arguments.get("limit", 5),
+        )
+        output = json.dumps(result, separators=(",", ":"))
+    elif name == "mcp_mddb_doc":
+        result = mcp_mddb_doc(
+            query=arguments.get("query"),
+            collection=arguments.get("collection", "ssot-infrastructure"),
+            top_k=arguments.get("top_k", 1),
+            read_limit=arguments.get("read_limit", 20000),
         )
         output = json.dumps(result, separators=(",", ":"))
     elif name == "mcp_screenshot":
