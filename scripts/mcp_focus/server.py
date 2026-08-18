@@ -37,7 +37,7 @@ def handle_tools_list(id_):
                         "properties": {
                             "request": {"type": "string", "description": "User request or defer reason"},
                             "mode": {"type": "string", "enum": ["recommend", "status", "pre_action", "safe_next", "ready_queue", "defer", "resume", "sweep"], "default": "recommend", "description": "recommend returns the next focus recommendation; safe_next returns the highest safe-to-parallel focus; defer parks the active focus and marks a resume note; resume suggests a focus to reactivate; sweep returns all parked/backlog/inbox candidates and optionally bulk-defers them to a named session"},
-                            "resume_session": {"type": "string", "description": "Target session identifier for defer"},
+                            "resume_session": {"type": "string", "description": "Target session identifier for defer, or filter for resume"},
                             "reason": {"type": "string", "description": "Reason for deferring"},
                             "hold": {"type": "string", "description": "Label of the focus to hold while sweeping the rest"},
                             "bulk_session": {"type": "string", "description": "If provided in sweep mode, non-hold candidates without a session_map match are bulk-deferred to this session"},

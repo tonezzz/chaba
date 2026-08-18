@@ -96,6 +96,7 @@ actions:
       The user wants to pick up a previously deferred focus, or no active focus exists and a session has a pending resume next_action.
     output:
       - Return the latest candidate focus from ssot.focus.sessions.yml with a resume/continue next_action.
+      - If resume_session is provided, only return candidates whose next_action contains that session.
 
   sweep:
     when: |

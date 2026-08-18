@@ -203,6 +203,51 @@ def _resolve_session(session_map, candidate, bulk_session):
     return session_map.get(label) or session_map.get(branch) or session_map.get("default") or bulk_session
 
 
+def _sweep_summary(hold, process_queue):
+    hold_label = hold.get("label", "(no active focus)") if hold else "(no active focus)"
+    lines = [
+        f"Hold: {hold_label}",
+        f"Queue: {len(process_queue)} focus(es) to process",
+    ]
+    if process_queue:
+        lines.append("")
+    for i, c in enumerate(process_queue, 1):
+        session = c.get("deferred_session") or "-"
+        lines.append(f"{i}. {c['label']} ({c.get('status')}, {c.get('branch', 'no branch')}, session: {session})")
+    return "\n".join(lines)
+
+
+def _session_groups(active, backlog, inbox):
+    groups = {}
+    def add(label, session, why, status):
+        if not session:
+            return
+        if session not in groups:
+            groups[session] = []
+        groups[session].append({"label": label, "status": status, "why": why})
+
+    # Active/parked in current + deferred subtasks
+    for key in ("branch", "shared"):
+        it = active.get(key)
+        if not it:
+            continue
+        # whole focus deferred
+        d = it.get("deferred") or {}
+        add(it.get("label"), d.get("to_session"), "focus", it.get("status"))
+        # subtasks
+        for st in it.get("subtasks", []):
+            if st.get("status") == "deferred":
+                add(st.get("label"), st.get("resume_session"), f"subtask of {it.get('label')}", "deferred")
+    # Backlog
+    for item in backlog:
+        d = item.get("deferred") or {}
+        add(item.get("label"), d.get("to_session"), "backlog", item.get("status"))
+    # Inbox
+    for item in inbox:
+        add(item.get("label"), item.get("deferred_session"), "inbox", item.get("status", "pending"))
+    return groups
+
+
 def _bulk_defer(candidates, hold_label, session_map, bulk_session, reason):
     today = datetime.now().strftime("%Y-%m-%d")
     changed = []
@@ -716,7 +761,14 @@ def mcp_focus(request=None, mode="recommend", decision=None, summary=None, resum
     active, quick_wins, hand_off_queue, ready_safe = _active_items(doc)
 
     if mode == "status":
-        return {"ok": True, "active": active, "quick_wins": quick_wins, "hand_off_queue": hand_off_queue, "ready_safe": ready_safe}
+        return {
+            "ok": True,
+            "active": active,
+            "quick_wins": quick_wins,
+            "hand_off_queue": hand_off_queue,
+            "ready_safe": ready_safe,
+            "session_groups": _session_groups(active, _backlog_items(), _inbox_items()),
+        }
 
     if mode == "safe_next":
         best = _best_safe_focus(active, backlog=_backlog_items(), inbox=_inbox_items())
@@ -764,8 +816,11 @@ def mcp_focus(request=None, mode="recommend", decision=None, summary=None, resum
 
     if mode == "resume":
         candidates = _resume_suggestion()
+        if resume_session:
+            resume_session = resume_session.strip().lower()
+            candidates = [c for c in candidates if resume_session in c.get("next_action", "").lower()]
         if not candidates:
-            return {"ok": True, "candidates": [], "recommendation": None, "reason": "No resume candidates found."}
+            return {"ok": True, "candidates": [], "recommendation": None, "reason": f"No resume candidates found for session '{resume_session}'."}
         best = candidates[-1]
         return {
             "ok": True,
@@ -807,12 +862,15 @@ def mcp_focus(request=None, mode="recommend", decision=None, summary=None, resum
                 "next_action": [f"Continue {hold_item.get('label', '')}"],
             })
 
+        for c in process_queue:
+            c["deferred_session"] = _resolve_session(session_map, c, bulk_session) if (bulk_session or session_map) else "-"
         return {
             "ok": True,
             "hold": hold_item,
             "candidates": candidates,
             "process_queue": process_queue,
             "deferred": deferred,
+            "summary": _sweep_summary(hold_item, process_queue),
             "recommendation": {
                 "action": "sweep",
                 "target": hold_item.get("label") if hold_item else None,
