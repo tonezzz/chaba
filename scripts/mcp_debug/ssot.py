@@ -97,6 +97,15 @@ def _local_ssot_search(query, limit=10):
     return results
 
 
+def _meta_list(meta, key):
+    if not meta:
+        return None
+    value = meta.get(key)
+    if isinstance(value, list):
+        return value[0] if value else None
+    return value
+
+
 def mcp_search_ssot(query=None, collection="ssot-infrastructure", limit=5):
     if not query:
         return {"ok": False, "error": "query is required"}
@@ -106,9 +115,17 @@ def mcp_search_ssot(query=None, collection="ssot-infrastructure", limit=5):
     results = []
     if mddb and mddb.get("results"):
         for r in mddb.get("results")[:limit]:
+            doc = r.get("document") or {}
+            meta = doc.get("meta") or {}
+            original = _meta_list(meta, "original_path") or doc.get("key", "")
+            if original and not original.startswith("docs/"):
+                original = f"docs/ssot/{original}"
+            content = doc.get("contentMd") or doc.get("content", "")
+            title = _meta_list(meta, "title") or ""
+            excerpt = (content[:200] if content else title[:200])
             results.append({
-                "path": r.get("key") or r.get("path") or r.get("source"),
-                "excerpt": r.get("excerpt") or r.get("content_md", "")[:200],
+                "path": original,
+                "excerpt": excerpt,
                 "source": "mddb",
             })
 
