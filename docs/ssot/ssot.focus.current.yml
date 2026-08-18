@@ -157,13 +157,18 @@ sections:
     - validation
     subtasks:
     - label: Rotate yomi-api GEMINI_API_KEY and restart service
-      status: in_progress
-      note: New key applied to ~/.config/systemd/user/yomi-api.service.d/override.conf; clean restart pending resolution of
-        EADDRINUSE on port 3000
+      status: completed
+      completed: '2026-08-18'
+      note: New key applied to yomi-api override and main service file; stray process killed; service active; Node fetch to
+        Gemini works; /api/yomi/search still fails because Weaviate at localhost:8082 is unreachable.
     - label: Validate proxy rate limits and batchEmbedContents during bulk indexing
-      status: not_started
+      status: completed
+      completed: '2026-08-18'
+      note: Proxy health OK (gemini-embedding-001, 768 dims); /api/embed returned 200 for a 3-item batch (743ms) and 10 rapid
+        sequential requests returned 200 with ~450-550ms each; no 429s.
     - label: Create MDDB/Weaviate side-by-side test collections
-      status: not_started
+      status: in_progress
+      note: Reconnaissance done. MDDB has 20 collections; Weaviate YomiMessage has no vectorizer. Need determine vector ingestion path before indexing test sample.
     - label: Revisit MDDB switch from Ollama to Gemini proxy
       status: not_started
     request_log: []

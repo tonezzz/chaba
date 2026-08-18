@@ -52,8 +52,13 @@ processing:
       notes: /health OK; 3-item batch via /api/embed returned 200 in 743ms; 10 rapid sequential requests all 200 with ~450-550ms each, no 429s.
     - id: 4
       label: Create MDDB/Weaviate side-by-side test collections
-      status: not_started
-      notes: Index a representative sample into both stores and compare results.
+      status: in_progress
+      started_at: '2026-08-18'
+      notes: |
+        Initial reconnaissance:
+        - MDDB on tony-dell:11023 has 20 collections, 341 documents; adding via mcp_call_tool mddb add_document is possible.
+        - Weaviate on tony-dell:8084 has a YomiMessage class but no vectorizer configured (vectorizer: none).
+        - Next: determine Weaviate vector ingestion path (manual vectors via /v1/batch/objects or configure a vectorizer module) and the yomi-api /api/embed endpoint.
     - id: 5
       label: Revisit MDDB switch from Ollama to Gemini proxy
       status: not_started
