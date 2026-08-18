@@ -173,7 +173,12 @@ tony-dell:
     timer: focus-dispatcher-overnight.timer
     host: tony_dell
     purpose: Nightly focus/dispatch run
-    status: implemented (2026-08-13)
+    status: enabled (2026-08-18)
+    last_run: '2026-08-18T02:00:00+07:00'
+    next_run: '2026-08-19T03:00:00+07:00'
+    verification:
+    - systemctl --user is-active focus-dispatcher-overnight.timer
+    - systemctl --user is-enabled focus-dispatcher-overnight.timer
   dnsmasq-postgre:
     service: dnsmasq-postgre.service
     host: tony_dell

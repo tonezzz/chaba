@@ -16,7 +16,9 @@ jobs:
     service: focus-dispatcher-overnight.service
     schedule: "*-*-* 03:00:00"
     enabled: true
-    status: active
+    status: enabled
+    last_run: '2026-08-18T02:00:00+07:00'
+    next_run: '2026-08-19T03:00:00+07:00'
     description: Runs scripts/overnight-focus-review.py which calls registry-drafts.py and focus-dispatcher.py --sub-agent.
     environment:
       SKIP_HEALTH: "1"
