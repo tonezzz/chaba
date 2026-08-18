@@ -133,7 +133,40 @@ sections:
 - title: Active Branch Focus
   icon: branch
   layout: list
-  items: []
+  items:
+  - label: Tony-Dell cannot see iPhone Personal Hotspot SSID
+    text: 'tony-dell''s Wi-Fi interface (wlx00761100125e) does not show the iPhone Personal Hotspot in scans.
+
+      Initial check: the adapter is a Ralink MT7601U (148f:7601) which is 2.4 GHz only.
+
+      iPhone Personal Hotspot on newer iOS defaults to 5 GHz when "Maximize Compatibility" is off,
+
+      so the most likely fix is enabling "Maximize Compatibility" on the iPhone, forcing 2.4 GHz.
+
+      If that is not enough, investigate driver/regulatory region, power-saving, and whether the
+
+      hotspot is using a hidden SSID.
+
+      '
+    status: active
+    priority: medium
+    started: '2026-08-18'
+    estimated_duration: 1 session
+    tags:
+    - tony-dell
+    - wifi
+    - iphone
+    - hotspot
+    - network
+    - mt7601u
+    subtasks:
+    - label: Enable "Maximize Compatibility" on iPhone Personal Hotspot and rescan on tony-dell
+      status: not_started
+    - label: If still invisible, verify driver/firmware and regulatory domain for MT7601U
+      status: not_started
+    request_log: []
+    branch: tony-dell
+    source: /home/tony/CascadeProjects/chaba/docs/ssot/focus-inbox/2026-08-18-014542-tony-dell-iphone-hotspot.yml
 - title: Quick Wins
   icon: quick
   layout: list
@@ -152,8 +185,8 @@ sections:
     - migration
     - quick-win
   - label: Re-enable overnight focus review timer and sync SSOT
-    text: Re-enable the systemd focus-dispatcher-overnight timer and update the SSOT
-      records for services, night jobs, and quick wins.
+    text: Re-enable the systemd focus-dispatcher-overnight timer and update the SSOT records for services, night jobs, and
+      quick wins.
     status: completed
     completed: '2026-08-18'
     started: '2026-08-18'
