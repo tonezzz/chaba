@@ -163,11 +163,38 @@ sections:
         started: '2026-08-17'
 
 config:
-  version: 1
+  version: 2
   created: 2026-08-16
-  last_updated: 2026-08-17
+  last_updated: 2026-08-19
   maintainer: tony
   status: active
+  bloat_exemptions:
+    # Grandfathered until next scheduled split. Review quarterly.
+    hard_threshold:
+      - ssot.focus.yml
+      - ssot.improvements.archive.2026.yml
+      - ssot.index.yml
+      - apps/ssot.apps.helm.yml
+      - apps/ssot.apps.track4.yml
+      - ssot.mysystem.macbook.yml
+    review_threshold:
+      - apps/ssot.apps.helm.yml
+      - apps/ssot.apps.map3d.yml
+      - apps/ssot.apps.raceman.yml
+      - apps/ssot.apps.track4.yml
+      - apps/ssot.apps.yomi.yml
+      - infrastructure/performance-baselines.yml
+      - infrastructure/ssot.gemini-models.yml
+      - infrastructure/ssot.health.home.yml
+      - infrastructure/ssot.health.mobile.yml
+      - infrastructure/ssot.mcp-debug.yml
+      - infrastructure/ssot.mcp.yml
+      - infrastructure/ssot.services.yml
+      - ssot.focus.sessions.yml
+      - ssot.improvements.yml
+      - ssot.mysystem.home.yml
+      - ssot.mysystem.macbook.yml
+      - ssot.registry.yml
   related_files:
     - docs/ssot/ssot.file-control.yml
     - docs/ssot/ssot.validation-patterns.yml

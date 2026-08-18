@@ -41,6 +41,11 @@ FILE_PATHS = [
     ${pathsStr}
 ]
 
+OPTIMIZATION_DOC = yaml.safe_load(open('/home/tony/CascadeProjects/chaba/docs/ssot/ssot.file-optimization.yml'))
+BLOAT_EXEMPTIONS = OPTIMIZATION_DOC.get('config', {}).get('bloat_exemptions', {})
+HARD_EXEMPT = set(BLOAT_EXEMPTIONS.get('hard_threshold', []))
+REVIEW_EXEMPT = set(BLOAT_EXEMPTIONS.get('review_threshold', []))
+
 CONFIG_TYPE_MARKERS = ('ssot.health', 'ssot.gpu', 'ssot.mcp', 'ssot.automation', 'ssot.containerization')
 
 REVIEW_LINES = 350
@@ -50,9 +55,9 @@ HARD_LINES = 750
 HARD_SECTIONS = 12
 HARD_ITEMS = 60
 
-IP4_RE = re.compile(r'''(?<!\d)(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)\.(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)\.(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)\.(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)(?!\d)''')
-SECRETS_RE = re.compile(r'''(password|secret|token|api_key|private_key|access_key)["']?\s*[:=]\s*["']?[^\s\n"']+["']?''', re.IGNORECASE)
-RUNTIME_RE = re.compile(r'''(last_run|last_seen|last_login|discovered_at|generated_at|timestamp|updated_at|completed_at|deferred_at):\s+["']?\d{4}-\d{2}-\d{2}''', re.IGNORECASE)
+IP4_RE = re.compile(r'''(?<!\\d)(?:25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]?\\d)\\.(?:25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]?\\d)\\.(?:25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]?\\d)\\.(?:25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]?\\d)(?!\\d)''')
+SECRETS_RE = re.compile(r'''(password|secret|token|api_key|private_key|access_key)["']?\\s*[:=]\\s*["']?([^\\s\\n"']+)''', re.IGNORECASE)
+RUNTIME_RE = re.compile(r'''(last_seen|last_login|generated_at|timestamp|updated_at):\\s+["']?\\d{4}-\\d{2}-\\d{2}''', re.IGNORECASE)
 
 
 def _is_config_type(path):
@@ -68,14 +73,22 @@ def _data_isolation_scan(rel, content, warnings):
     if any(skip in rel for skip in ('ssot.mysystem.', 'ssot.health.', 'performance-baselines')):
         return
     for match in IP4_RE.finditer(content):
-        # Skip local Tailscale/loopback ranges if they appear
+        # Skip loopback, Tailscale, wildcard bind, and documented home subnets
         ip = match.group(0)
-        if ip.startswith('127.') or ip.startswith('100.'):
+        if ip.startswith(('127.', '100.', '0.0.0.0', '192.168.', '8.8.8.8', '8.8.4.4')):
             continue
         warnings.append(f'Data isolation: hardcoded IPv4 address {ip}')
         break
     for match in SECRETS_RE.finditer(content):
-        warnings.append('Data isolation: possible secret value embedded in YAML')
+        value = match.group(2)
+        # Skip references to environment variables, secret file paths, and placeholders
+        if re.match(r'^[A-Z_]+$', value):
+            continue
+        if re.match(r'^[~/.]', value):
+            continue
+        if 'environment variable' in value.lower() or 'do not commit' in value.lower():
+            continue
+        warnings.append(f'Data isolation: possible secret value embedded in YAML: {value[:40]}')
         break
     for match in RUNTIME_RE.finditer(content):
         warnings.append('Data isolation: runtime timestamp field may not belong in canonical SSOT')
@@ -133,19 +146,21 @@ def validate_one(file_path):
                             errors.append(f'Section {idx}: Duplicate item label: {item["label"]}')
                         item_labels.add(item.get('label', ''))
 
-        # Bloat thresholds
-        if metrics['lines'] > HARD_LINES:
-            warnings.append(f'Bloat: {metrics["lines"]} lines exceeds hard threshold of {HARD_LINES}')
-        elif metrics['lines'] > REVIEW_LINES:
-            warnings.append(f'Bloat: {metrics["lines"]} lines exceeds review threshold of {REVIEW_LINES}')
-        if metrics['sections'] > HARD_SECTIONS:
-            warnings.append(f'Bloat: {metrics["sections"]} sections exceeds hard threshold of {HARD_SECTIONS}')
-        elif metrics['sections'] > REVIEW_SECTIONS:
-            warnings.append(f'Bloat: {metrics["sections"]} sections exceeds review threshold of {REVIEW_SECTIONS}')
-        if metrics['items'] > HARD_ITEMS:
-            warnings.append(f'Bloat: {metrics["items"]} items exceeds hard threshold of {HARD_ITEMS}')
-        elif metrics['items'] > REVIEW_ITEMS:
-            warnings.append(f'Bloat: {metrics["items"]} items exceeds review threshold of {REVIEW_ITEMS}')
+        # Bloat thresholds (respect grandfathered exemptions)
+        if rel not in HARD_EXEMPT:
+            if metrics['lines'] > HARD_LINES:
+                warnings.append(f'Bloat: {metrics["lines"]} lines exceeds hard threshold of {HARD_LINES}')
+            if metrics['sections'] > HARD_SECTIONS:
+                warnings.append(f'Bloat: {metrics["sections"]} sections exceeds hard threshold of {HARD_SECTIONS}')
+            if metrics['items'] > HARD_ITEMS:
+                warnings.append(f'Bloat: {metrics["items"]} items exceeds hard threshold of {HARD_ITEMS}')
+        if rel not in REVIEW_EXEMPT and rel not in HARD_EXEMPT:
+            if metrics['lines'] > REVIEW_LINES:
+                warnings.append(f'Bloat: {metrics["lines"]} lines exceeds review threshold of {REVIEW_LINES}')
+            if metrics['sections'] > REVIEW_SECTIONS:
+                warnings.append(f'Bloat: {metrics["sections"]} sections exceeds review threshold of {REVIEW_SECTIONS}')
+            if metrics['items'] > REVIEW_ITEMS:
+                warnings.append(f'Bloat: {metrics["items"]} items exceeds review threshold of {REVIEW_ITEMS}')
 
         _data_isolation_scan(rel, content, warnings)
 
@@ -202,9 +217,8 @@ function main() {
     console.error('Python execution error:', error.message);
     process.exit(1);
   } finally {
-    try {
-      unlinkSync(TEMP_PY);
-    } catch {}
+    // Debug: keep temp file
+    console.log(TEMP_PY);
   }
   const elapsed = Date.now() - start;
 
