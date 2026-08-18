@@ -84,3 +84,19 @@ def next_from_backlog():
         it["__triage_score"] = triage_score(it)
     items.sort(key=lambda it: (it.get("__triage_score", 0), priority_value(it), it.get("started", "")), reverse=True)
     return items[0]
+
+
+def dispatchable_backlog():
+    """Return backlog items with subagent.runnable == true and requires_approval == false."""
+    doc = load_focus()
+    section = find_section(doc.get("sections", []), "Backlog - Triage Queue")
+    if not section:
+        return []
+    eligible = []
+    for item in section.get("items", []):
+        if item.get("status") not in ("pending", "not_started"):
+            continue
+        subagent = item.get("subagent", {})
+        if subagent.get("runnable") and not subagent.get("requires_approval"):
+            eligible.append(item)
+    return eligible

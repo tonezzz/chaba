@@ -31,30 +31,8 @@ sections:
 - title: Active Branch Focus
   icon: branch
   layout: list
-  items:
-  - label: Streamline focus processing and hand-off
-    text: Improve the request-to-focus workflow so the assistant classifies, parks, dispatches, and hands off work more efficiently.
-      Includes faster mcp_focus, subagent auto-dispatch, and clearer hand-off contracts.
-    status: active
-    priority: low
-    started: '2026-08-18'
-    estimated_duration: 1 session
-    tags:
-    - focus
-    - workflow
-    - subagent
-    - hand-off
-    subtasks:
-    - label: Add hand-off queue fields to ssot.focus.current.yml and mcp_focus output
-      status: completed
-      completed: '2026-08-18'
-      note: Added 'Hand-off Queue' section to ssot.focus.current.yml and updated mcp_focus status/pre_action to include hand_off_queue.
-    - label: Generate SUBAGENT_CONTRACT.md automatically from focus subagent block
-      status: not_started
-    - label: Add auto-dispatch check to focus-dispatcher for eligible backlog items
-      status: not_started
-    - label: Review and tighten mcp_focus decision tree for faster classification
-      status: not_started
+  items: []
+
 
 - title: Backlog - Triage Queue
   icon: backlog
@@ -704,6 +682,18 @@ sections:
   icon: history
   layout: timeline
   items:
+  - label: Streamline focus processing and hand-off
+    text: Improve the request-to-focus workflow so the assistant classifies, parks, dispatches, and hands off work more efficiently.
+      Includes faster mcp_focus, subagent auto-dispatch, and clearer hand-off contracts.
+    date: '2026-08-18'
+    duration: 1 session
+    outcome: 'Added Hand-off Queue section, updated mcp_focus, improved generate_subagent_contract, added --auto-dispatch, and verified decision_tree.'
+    tags:
+    - completed
+    - focus
+    - workflow
+    - subagent
+    - hand-off
   - label: MCP Debug advanced tools wrap-up
     text: 'Complete the mcp_debug_audit, mcp_preset_savings, and mcp_mddb_doc work. Resolve the MDDB REST endpoint timeout
       so the new wrapper can use semantic ranking. Decide how to add systemctl/system raw commands if needed.'

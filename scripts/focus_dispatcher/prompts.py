@@ -76,15 +76,42 @@ def generate_suggestion_prompt(item):
 
 def generate_subagent_contract(title, item, source):
     prompt = generate_prompt(title, item, source)
-    notes = [
-        "",
-        "## Sub-agent contract",
-        "",
-        "- This focus is delegated to a background sub-agent.",
-        "- The sub-agent should not ask clarifying questions; make reasonable assumptions and proceed.",
-        "- Mark subtasks completed in `docs/ssot/ssot.focus.current.yml` as you finish them.",
-        "- Do not commit or push; the main session will review the diff and commit.",
-        "- If a task requires destructive changes, stop and ask for confirmation.",
-        "- Run py_compile / validation before finishing.",
-    ]
-    return prompt + "\n".join(notes)
+    subagent = item.get("subagent", {})
+    if subagent:
+        profile = subagent.get("profile", "subagent_general")
+        parallel = subagent.get("parallel", False)
+        requires_approval = subagent.get("requires_approval", False)
+        can_change_host = subagent.get("can_change_host", False)
+        notes = subagent.get("notes", "")
+        contract = [
+            "",
+            "## Sub-agent contract",
+            "",
+            f"- This focus is delegated to a background sub-agent.",
+            f"- Profile: `{profile}`",
+            f"- Parallel: {parallel}",
+            f"- Requires approval before destructive changes: {requires_approval}",
+            f"- Can change host: {can_change_host}",
+        ]
+        if notes:
+            contract.extend([f"- Notes: {notes}", ""])
+        contract.extend([
+            "- The sub-agent should not ask clarifying questions; make reasonable assumptions and proceed.",
+            "- Mark subtasks completed in `docs/ssot/ssot.focus.current.yml` as you finish them.",
+            "- Do not commit or push; the main session will review the diff and commit.",
+            "- If a task requires destructive changes, stop and ask for confirmation.",
+            "- Run py_compile / validation before finishing.",
+        ])
+    else:
+        contract = [
+            "",
+            "## Sub-agent contract",
+            "",
+            "- This focus is delegated to a background sub-agent.",
+            "- The sub-agent should not ask clarifying questions; make reasonable assumptions and proceed.",
+            "- Mark subtasks completed in `docs/ssot/ssot.focus.current.yml` as you finish it.",
+            "- Do not commit or push; the main session will review the diff and commit.",
+            "- If a task requires destructive changes, stop and ask for confirmation.",
+            "- Run py_compile / validation before finishing.",
+        ]
+    return prompt + "\n".join(contract)

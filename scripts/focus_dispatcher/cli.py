@@ -23,7 +23,7 @@ from .state import (
     load_current,
     validate_current,
 )
-from .triage import next_from_active, next_from_backlog, next_from_inbox
+from .triage import dispatchable_backlog, next_from_active, next_from_backlog, next_from_inbox
 
 
 def main():
@@ -32,6 +32,7 @@ def main():
     parser.add_argument("--intake", help="Register a new request for focus intake")
     parser.add_argument("--park", action="store_true", help="Park the existing active focus in the same section before activating a new one")
     parser.add_argument("--sub-agent", action="store_true", help="Write a sub-agent contract in addition to NEXT_FOCUS.md")
+    parser.add_argument("--auto-dispatch", action="store_true", help="Scan backlog and write subagent contracts for eligible items without activating them")
     parser.add_argument("--dry-run", action="store_true", help="Show selection without modifying files")
     args = parser.parse_args()
 
@@ -40,6 +41,21 @@ def main():
         print(result["message"])
         if not args.dry_run and changed and os.environ.get("FOCUS_DISPATCHER_COMMIT") == "1":
             git_commit(changed, f"tweak: focus-dispatcher intake {args.intake[:50]}")
+        sys.exit(0)
+
+    if args.auto_dispatch:
+        eligible = dispatchable_backlog()
+        if not eligible:
+            print("No dispatchable backlog items found.")
+            sys.exit(0)
+        if not args.dry_run:
+            REPORTS_DIR.mkdir(parents=True, exist_ok=True)
+        for item in eligible:
+            contract = generate_subagent_contract("Backlog - Triage Queue", item, None)
+            path = REPORTS_DIR / f"SUBAGENT_CONTRACT_{item['label'].replace(' ', '_').replace('/', '_')[:40]}.md"
+            if not args.dry_run:
+                path.write_text(contract)
+            print(f"{'Would write' if args.dry_run else 'Wrote'} {path}")
         sys.exit(0)
 
     changed = []

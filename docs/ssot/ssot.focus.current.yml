@@ -141,36 +141,19 @@ sections:
 - title: Active Branch Focus
   icon: branch
   layout: list
-  items:
-  - label: Streamline focus processing and hand-off
-    text: Improve the request-to-focus workflow so the assistant classifies, parks, dispatches, and hands off work more efficiently.
-      Includes faster mcp_focus, subagent auto-dispatch, and clearer hand-off contracts.
-    status: active
-    priority: low
-    started: '2026-08-18'
-    estimated_duration: 1 session
-    tags:
-    - focus
-    - workflow
-    - subagent
-    - hand-off
-    subtasks:
-    - label: Add hand-off queue fields to ssot.focus.current.yml and mcp_focus output
-      status: completed
-      completed: '2026-08-18'
-      note: Added 'Hand-off Queue' section to ssot.focus.current.yml and updated mcp_focus status/pre_action to include hand_off_queue.
-    - label: Generate SUBAGENT_CONTRACT.md automatically from focus subagent block
-      status: not_started
-    - label: Add auto-dispatch check to focus-dispatcher for eligible backlog items
-      status: not_started
-    - label: Review and tighten mcp_focus decision tree for faster classification
-      status: not_started
-    request_log: []
-    branch: chaba
+  items: []
+
 - title: Hand-off Queue
   icon: handoff
   layout: list
-  items: []
+  items:
+  - label: Context improvement and optimization
+    branch: chaba
+    subagent: subagent_explore
+    status: delegated
+    delegated: '2026-08-18'
+    expected_back: '2026-08-19'
+    notes: Subagent is reviewing KB, SSOT, and MDDB usage to propose an incremental context improvement plan.
 - title: Quick Wins
   icon: quick
   layout: list
