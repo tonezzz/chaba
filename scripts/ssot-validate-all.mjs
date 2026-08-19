@@ -8,10 +8,12 @@
  */
 
 import { readFileSync, readdirSync, existsSync, writeFileSync, statSync, unlinkSync } from 'fs';
-import { join, relative } from 'path';
+import { dirname, join, relative } from 'path';
+import { fileURLToPath } from 'url';
 import { execSync } from 'child_process';
 
-const SSOT_DIR = '/home/tony/CascadeProjects/chaba/docs/ssot';
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const SSOT_DIR = join(__dirname, '..', 'docs', 'ssot');
 const TEMP_PY = '/tmp/ssot-validate-batch.py';
 
 function findYAMLFiles(dir, files = []) {
@@ -41,7 +43,7 @@ FILE_PATHS = [
     ${pathsStr}
 ]
 
-OPTIMIZATION_DOC = yaml.safe_load(open('/home/tony/CascadeProjects/chaba/docs/ssot/ssot.file-optimization.yml'))
+OPTIMIZATION_DOC = yaml.safe_load(open('${SSOT_DIR}/ssot.file-optimization.yml'))
 BLOAT_EXEMPTIONS = OPTIMIZATION_DOC.get('config', {}).get('bloat_exemptions', {})
 HARD_EXEMPT = set(BLOAT_EXEMPTIONS.get('hard_threshold', []))
 REVIEW_EXEMPT = set(BLOAT_EXEMPTIONS.get('review_threshold', []))
