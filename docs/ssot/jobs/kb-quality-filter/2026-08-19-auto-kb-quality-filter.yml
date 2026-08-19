@@ -1,0 +1,89 @@
+title: Auto-KB Quality Filter
+subtitle: Phase 1 of the Context Improvement Plan — eliminate low-value auto-generated KB entries
+icon: target
+
+planning:
+  goal: |
+    Add negative triggers and minimum content thresholds to the auto-kb skill so it no longer creates
+    low-value entries, and archive existing low-value auto-generated entries in docs/kb/.
+  scope: |
+    - Update .agents/skills/auto-kb/auto-kb.mjs with negative triggers and content thresholds.
+    - Run a scan of existing docs/kb/auto-chaba-*.md and archive low-value entries.
+    - Success: zero new low-value entries; average relevance or quality above a minimum.
+  success_criteria:
+    - auto-kb rejects content with negative triggers or insufficient technical detail.
+    - Existing low-value auto-kb entries are moved to docs/kb/archive/.
+    - All SSOT files remain valid after any SSOT updates.
+  risks:
+    - Over-filtering removes useful entries; mitigate by reviewing archived files before final move.
+    - MDDB index not updated after archive; mitigate by reindexing KB collections.
+  resources:
+    - .agents/skills/auto-kb/auto-kb.mjs
+    - docs/kb/
+    - docs/kb/archive/
+    - scripts/ssot-validate-all.mjs
+  owner: tony
+  estimated_duration: 1 session
+  related_focus:
+    - label: Context improvement and optimization
+      file: docs/ssot/ssot.focus.current.yml
+
+processing:
+  status: completed
+  completed_at: '2026-08-19'
+  steps:
+    - id: 1
+      label: Add negative triggers and content thresholds to auto-kb.mjs
+      status: completed
+      completed_at: '2026-08-19'
+    - id: 2
+      label: Scan and archive existing low-value auto-kb entries
+      status: completed
+      completed_at: '2026-08-19'
+    - id: 3
+      label: Validate SSOT and test auto-kb on sample content
+      status: completed
+      completed_at: '2026-08-19'
+  decisions:
+    - Added negative triggers for 'no new KB-worthy' meta-reviews and transient notes.
+    - Set minimum thresholds of 2 sentences and 2 positive/technical signals.
+  changes:
+    - .agents/skills/auto-kb/auto-kb.mjs: added negative triggers, sentence count, and technical term thresholds.
+    - scripts/auto-kb-quality-audit.mjs: reusable audit script that archives low-value auto-*.md entries.
+    - docs/kb/archive/: 4 low-value auto-kb entries archived.
+
+followup:
+  verification:
+    - Run auto-kb with low-value content and confirm it is rejected.
+    - Run ssot-validate-all.mjs and confirm 0 errors.
+    - Check archived entries are not in the main KB path.
+  rollback_plan:
+    - Restore archived files from docs/kb/archive/ to docs/kb/.
+    - Revert auto-kb.mjs changes.
+  handoff:
+    - chaba overnight review
+  deferred:
+    - Phase 2+ of the context improvement plan.
+
+report:
+  status: not_started
+  completed_at: null
+  summary: ''
+  metrics:
+    - files_archived: 0
+    - new_rejections: 0
+  links:
+    - title: Auto-kb skill
+      file: .agents/skills/auto-kb/auto-kb.mjs
+    - title: KB directory
+      file: docs/kb/
+  kb_review: []
+  lessons_learned: []
+
+config:
+  version: 1
+  created_at: '2026-08-19'
+  last_updated: '2026-08-19'
+  maintainer: tony
+  related_files:
+    - docs/ssot/templates/job.yml

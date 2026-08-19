@@ -30,6 +30,25 @@ const KB_WORTHY_TRIGGERS = [
   'convention', 'template', 'best practice'
 ];
 
+// Negative triggers that reject low-value or meta-only content
+const KB_NEGATIVE_TRIGGERS = [
+  'no kb-worthy facts', 'does not meet kb-worthy', 'not kb-worthy',
+  'no new kb-worthy', 'no new kb', 'nothing to save', 'consider manual creation',
+  'temporary commands', 'one-off output', 'transient',
+  'trivial', 'obvious', 'personal preference'
+];
+
+// Minimum thresholds
+const MIN_SENTENCES = 2;
+const MIN_TECHNICAL_TERMS = 2;
+
+const TECHNICAL_INDICATORS = [
+  'error', 'bug', 'fix', 'config', 'script', 'service', 'container',
+  'database', 'api', 'endpoint', 'mcp', 'ssot', 'yaml', 'json',
+  'python', 'node', 'docker', 'podman', 'systemd', 'git', 'commit',
+  'deploy', 'proxy', 'network', 'host', 'gpu', 'embedding'
+];
+
 /**
  * Check if auto-kb is already running (concurrency protection)
  */
@@ -78,7 +97,24 @@ function removeLock() {
  */
 function isKBWorthy(content) {
   const lowerContent = content.toLowerCase();
-  return KB_WORTHY_TRIGGERS.some(trigger => lowerContent.includes(trigger));
+
+  // Reject explicit low-value signals
+  for (const negative of KB_NEGATIVE_TRIGGERS) {
+    if (lowerContent.includes(negative)) {
+      return false;
+    }
+  }
+
+  // Require at least two sentences of content
+  const sentences = content.split(/[.!?]/).filter(s => s.trim().length > 3);
+  if (sentences.length < MIN_SENTENCES) {
+    return false;
+  }
+
+  // Require positive trigger or multiple technical terms
+  const hasPositiveTrigger = KB_WORTHY_TRIGGERS.some(trigger => lowerContent.includes(trigger));
+  const technicalMatches = TECHNICAL_INDICATORS.filter(term => lowerContent.includes(term));
+  return hasPositiveTrigger || technicalMatches.length >= MIN_TECHNICAL_TERMS;
 }
 
 /**
