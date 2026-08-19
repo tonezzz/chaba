@@ -219,6 +219,9 @@ embedding_offload:
 monitoring:
   netdata:
     status: deployed
+    version: v2.11.0
+    container: netdata
+    host: tony-omen
     access_points:
       - http://tony-omen.local:8080/apps/netdata/
       - http://tony-omen.local:8081/apps/netdata/
@@ -231,9 +234,13 @@ monitoring:
       - GPU clock frequencies
       - GPU processes and memory usage
       - Historical GPU performance data
-    integration: Auto-discovers NVIDIA GPU via nvidia-smi
+    integration: Auto-discovers NVIDIA GPU via nvidia-smi using the go.d nvidia_smi collector; requires --gpus all and a container restart after creation for the first GPU chart discovery
     retention: Default Netdata retention (1 hour detail, 1 day reduced resolution)
     alerts: Configurable alerts for GPU temperature, VRAM usage, utilization
+    notes:
+      - NETDATA_DISABLE=ebpf,nfacct,perf to avoid ENOBUFS errors
+      - Caddy /apps/netdata/ reverse proxy added to chaba-omen/stacks/web/Caddyfile
+      - Netdata compose service added to chaba-omen/stacks/web/docker-compose.yml
 
   mcp_gpu:
     tool: mcp1_gpu_status
