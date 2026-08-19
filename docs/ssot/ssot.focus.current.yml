@@ -142,150 +142,11 @@ sections:
   icon: branch
   layout: list
   items:
-  - label: Yomi conversation processing and UI recovery
-    text: Process the existing Yomi message corpus (7,872 messages, 66 conversations) to populate summaries, categories, and
-      proper display names, and verify the Yomi UI after the recent DB recovery. Do not re-attempt LINE login unless explicitly
-      requested.
-    status: blocked
-    priority: high
-    started: '2026-08-19'
-    estimated_duration: 1 session
-    tags:
-    - yomi
-    - line
-    - summarization
-    - processing
-    - ui
-    subtasks:
-    - label: Process existing messages and conversations
-      status: deferred
-      started_at: '2026-08-18'
-      note: 'Processing Yomi corpus: populate summaries, categories, display names. Do not re-attempt LINE login unless requested.'
-      deferred_at: '2026-08-19'
-      resume_session: chaba
-      resume_note: 'Yomi blocked: LINE signed out, E2EE key material unavailable'
-    - label: Generate daily summaries for conversations
-      status: not_started
-    - label: Restore conversation display names from message data
-      status: not_started
-    - label: Verify Yomi UI list and chat pages
-      status: not_started
-    request_log: []
-    ownership:
-      owner: tony
-      session: chaba
-      locked: true
-      lock_reason: Activated as active focus
-    branch: chaba
-    source: /home/tony/CascadeProjects/chaba/docs/ssot/focus-inbox/processed/2026-08-18-190030-yomi-conversation-processing.yml
-    previous_status: '2026-08-19'
-  - label: Switch MDDB embedding provider from Ollama to Gemini proxy
-    text: Apply the validated Gemini proxy to the live MDDB on tony-dell. Update the MDDB container/Quadlet config to use
-      http://gemini:11435, reindex all collections, then stop Ollama and reclaim tony-omen GPU.
-    status: blocked
-    priority: high
-    started: '2026-08-19'
-    estimated_duration: 1 session
-    tags:
-    - mddb
-    - gemini
-    - gpu-offload
-    - tony-dell
-    - ollama
-    subtasks:
-    - label: Update tony-dell MDDB Quadlet to point at Gemini proxy
-      status: completed
-      completed_at: '2026-08-19'
-    - label: Restart live MDDB and reindex all collections
-      status: deferred
-      started_at: '2026-08-19'
-      deferred_at: '2026-08-19'
-      resume_session: chaba
-      resume_note: MDDB reindex is running in background with Ollama; resume when it finishes and validate
-    - label: Validate vector search on main MDDB
-      status: not_started
-    - label: Stop Ollama container on tony-omen and reclaim GPU
-      status: completed
-      completed_at: '2026-08-19'
-    request_log: []
-    ownership:
-      owner: tony
-      session: ''
-      locked: true
-      lock_reason: Activated as active focus
-    branch: chaba
-    source: /home/tony/CascadeProjects/chaba/docs/ssot/focus-inbox/processed/2026-08-18-193000-mddb-switch-to-gemini.yml
-    previous_status: '2026-08-19'
-  - label: Tony-Dell cannot see iPhone Personal Hotspot SSID
-    text: 'tony-dell''s Wi-Fi interface (wlx00761100125e) does not show the iPhone Personal Hotspot in scans.
-
-      Initial check: the adapter is a Ralink MT7601U (148f:7601) which is 2.4 GHz only.
-
-      iPhone Personal Hotspot on newer iOS defaults to 5 GHz when "Maximize Compatibility" is off,
-
-      so the most likely fix is enabling "Maximize Compatibility" on the iPhone, forcing 2.4 GHz.
-
-      If that is not enough, investigate driver/regulatory region, power-saving, and whether the
-
-      hotspot is using a hidden SSID.
-
-      '
-    branch: tony-dell
-    status: blocked
-    priority: medium
-    started: '2026-08-19'
-    blocker:
-      reason: Requires manual iPhone setting change; user will handle in another session
-    estimated_duration: 1 session
-    tags:
-    - tony-dell
-    - wifi
-    - iphone
-    - hotspot
-    - network
-    - mt7601u
-    subtasks:
-    - label: Enable "Maximize Compatibility" on iPhone Personal Hotspot and rescan on tony-dell
-      status: deferred
-      deferred_at: '2026-08-19'
-      resume_session: chaba
-      resume_note: iPhone manual step; will be handled in another session
-    - label: If still invisible, verify driver/firmware and regulatory domain for MT7601U
-      status: completed
-      completed: '2026-08-18'
-      note: MT7601U (148f:7601) is present and the driver mt7601u is loaded. The adapter is 2.4 GHz only (channels 1-14, 2412-2484
-        MHz). This confirms the iPhone hotspot must be forced to 2.4 GHz via Maximize Compatibility.
-    previous_status: parked
-  - label: MacBook macOS App Development
-    text: Continue macOS and iOS workstation setup after Tailscale install; full Xcode 15.x is next.
-    branch: macbook
-    status: blocked
-    priority: medium
-    tags:
-    - macbook
-    - appdev
-    - xcode
-    triage:
-      urgency: 4
-      importance: 2
-      complication: 5
-    subagent:
-      runnable: true
-      profile: subagent_general
-      parallel: false
-      requires_approval: true
-      can_change_host: true
-      notes: Needs macOS GUI / App Store / Xcode install; subagent can prepare install steps and verify.
-    blocker: Direct IP addresses (192.168.1.39, 100.124.59.112) still reject auth, but `ssh macbook` over Tailscale now works.
-      Next step needs user approval for App Store login and Xcode install.
-    previous_status: '2026-08-19'
-    started: '2026-08-19'
   - label: Add SSOT registry reading support to mcp-debug
     text: Extend the mcp-debug MCP server with lightweight SSOT read/query tools. This lets remote hosts and MCP consumers
       look up registry assets (apps, scripts, services, SSOTs) by id, name, type, or keyword, and fetch small SSOT files on
       demand without pulling the full registry into the prompt.
-    status: completed
-    completed_at: '2026-08-19'
+    status: active
     priority: medium
     started: '2026-08-19'
     estimated_duration: 1 session
@@ -293,25 +154,15 @@ sections:
     - focus
     subtasks:
     - label: Survey current mcp-debug file/SSOT capabilities and decide tool shape
-      status: completed
-      completed_at: '2026-08-19'
-      note: 'Existing tools: mcp_read_ssot, mcp_query_ssot, mcp_search_ssot. Gap is asset-oriented lookup across split registry partitions.'
-    - label: Design mcp_registry tool input/output contract
-      status: completed
-      completed_at: '2026-08-19'
-      note: 'Design doc: docs/kb/mcp-debug-ssot-reading-design.md with mcp_registry_lookup and mcp_registry_get contracts.'
-    - label: Implement mcp_registry_lookup and mcp_registry_get in scripts/mcp_debug/registry.py
-      status: completed
-      completed_at: '2026-08-19'
-      note: 'Implemented paginated lookup by q/type/by and single-asset get with source SSOT fetch.'
+      status: not_started
+    - label: Design mcp_ssot tool input/output contract
+      status: not_started
+    - label: Implement mcp_ssot_query and mcp_ssot_get in scripts/mcp_debug/tools.py
+      status: not_started
     - label: Register new tools in mcp-debug-server.py and MCP config
-      status: completed
-      completed_at: '2026-08-19'
-      note: 'Added tool schemas and dispatch to scripts/mcp_debug/server.py; mcp_config.json not required because server advertises tools dynamically.'
+      status: not_started
     - label: Test lookup for a registry asset and a small SSOT file
-      status: completed
-      completed_at: '2026-08-19'
-      note: 'Tested mcp_registry_lookup(q=helm) returns ssot-apps-helm; mcp_registry_get(id=ssot-apps-helm) returns asset + full SSOT.'
+      status: not_started
     - label: Update ssot.mcp-debug.yml suggested_extensions and commit
       status: not_started
     request_log: []
@@ -329,55 +180,14 @@ sections:
 - title: Hand-off Queue
   icon: handoff
   layout: list
-  items:
-  - label: Context improvement and optimization
-    branch: chaba
-    subagent: subagent_explore
-    status: completed
-    delegated: '2026-08-18'
-    completed: '2026-08-18'
-    plan: reports/CONTEXT_IMPROVEMENT_PLAN.md
-    summary: Subagent produced a 6-phase plan. Phase 1 (Auto-KB quality filter) is the highest value/lowest risk next step.
-    contract_path: docs/ssot/infrastructure/ssot.handoff.context-improvement.yml
-    completion_criteria:
-    - Sub-agent produced a 6-phase improvement plan
-    - Plan is stored in reports/CONTEXT_IMPROVEMENT_PLAN.md
-    - Phase 1 identified and approved
-    deliverables:
-    - reports/CONTEXT_IMPROVEMENT_PLAN.md
-    feedback_required: false
+  items: []
 - title: Quick Wins
   icon: quick
   layout: list
-  items:
-  - label: Migrate helm to tony-dell podman
-    text: Move the web-helm service from tony-omen docker to tony-dell rootless podman, update Caddy /apps/helm proxy, and
-      retire the tony-omen container.
-    status: completed
-    completed: '2026-08-17'
-    started: '2026-08-17'
-    priority: high
-    tags:
-    - tony-dell
-    - podman
-    - helm
-    - migration
-    - quick-win
-  - label: Re-enable overnight focus review timer and sync SSOT
-    text: Re-enable the systemd focus-dispatcher-overnight timer and update the SSOT records for services, night jobs, and
-      quick wins.
-    status: completed
-    completed: '2026-08-18'
-    started: '2026-08-18'
-    priority: medium
-    tags:
-    - systemd
-    - focus
-    - ssot
-    - quick-win
+  items: []
 config:
   version: 2
-  last_updated: '2026-08-18'
+  last_updated: '2026-08-19'
   maintainer: tony
   full_focus_file: docs/ssot/ssot.focus.yml
   inbox_dir: docs/ssot/focus-inbox

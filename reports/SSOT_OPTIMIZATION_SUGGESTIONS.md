@@ -1,13 +1,13 @@
 === SSOT Optimization Suggestions ===
 
-Generated: 2026-08-19T11:28:44.456Z
-Bloat warnings: 1
+Generated: 2026-08-19T12:45:32.252Z
+Bloat warnings: 0
 Data-isolation warnings: 0
 Other warnings: 0
 
 ## Bloat candidates (highest priority)
 
-- `ssot.focus.current.yml`: Bloat: 372 lines exceeds review threshold of 350
+No bloat warnings.
 
 ## Data isolation candidates
 
@@ -18,4 +18,4 @@ No data-isolation warnings.
 No other warnings.
 
 ---
-_Report produced by scripts/ssot-optimize.mjs in 3432ms_
+_Report produced by scripts/ssot-optimize.mjs in 4411ms_
