@@ -739,6 +739,9 @@ def mcp_debug_audit(hosts=None, threshold=0.0):
     }
 
 
+from .registry import mcp_registry_lookup as mcp_ssot_query, mcp_registry_get as mcp_ssot_get
+
+
 def mcp_preset_savings(name):
     """Compare running a preset as one call vs running each step as a separate MCP tool call."""
     if name not in PRESETS:

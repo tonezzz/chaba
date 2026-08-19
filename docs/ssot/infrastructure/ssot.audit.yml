@@ -160,6 +160,14 @@ audits:
     severity_on_fail: warning
     description: Health SSOT config completeness and consistency
 
+  - name: mddb
+    script: scripts/audits/mddb-audit.mjs
+    command: node
+    args: []
+    schedule: weekly
+    severity_on_fail: warning
+    description: MDDB health, embedding proxy, stats, and DB size
+
 groups:
   - name: kb-suite
     description: All KB health, quality, categorization, and modularity audits

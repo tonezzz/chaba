@@ -1,6 +1,6 @@
 === SSOT Optimization Suggestions ===
 
-Generated: 2026-08-19T12:45:32.252Z
+Generated: 2026-08-19T12:48:42.249Z
 Bloat warnings: 0
 Data-isolation warnings: 0
 Other warnings: 0
@@ -18,4 +18,4 @@ No data-isolation warnings.
 No other warnings.
 
 ---
-_Report produced by scripts/ssot-optimize.mjs in 4411ms_
+_Report produced by scripts/ssot-optimize.mjs in 3727ms_

@@ -25,11 +25,12 @@ from .tools import (
     mcp_preset_run,
     mcp_debug_audit,
     mcp_preset_savings,
+    mcp_ssot_query,
+    mcp_ssot_get,
 )
 from .reports import mcp_report
 from .focus import mcp_focus
 from .ssot import mcp_read_ssot, mcp_search_ssot, mcp_mddb_doc, mcp_query_ssot
-from .registry import mcp_registry_lookup, mcp_registry_get
 from .context import mcp_context, mcp_session_summary
 from .preprocess import mcp_preprocess
 from .capture import (
@@ -396,7 +397,7 @@ def handle_tools_list(id_):
             },
         },
         {
-            "name": "mcp_registry_lookup",
+            "name": "mcp_ssot_query",
             "description": "Search the SSOT registry for assets across all partitions.",
             "inputSchema": {
                 "type": "object",
@@ -412,8 +413,8 @@ def handle_tools_list(id_):
             },
         },
         {
-            "name": "mcp_registry_get",
-            "description": "Resolve a single registry asset by id or path and return its metadata plus source SSOT content.",
+            "name": "mcp_ssot_get",
+            "description": "Resolve a single SSOT/registry asset by id or path and return its metadata plus source SSOT content.",
             "inputSchema": {
                 "type": "object",
                 "properties": {
@@ -684,11 +685,11 @@ def handle_tools_call(id_, params):
             limit=arguments.get("limit", 50),
         )
         output = json.dumps(result, separators=(",", ":"))
-    elif name == "mcp_registry_lookup":
+    elif name == "mcp_ssot_query":
         h = arguments.get("host")
         if not h:
             return {"jsonrpc": "2.0", "id": id_, "error": {"code": -32602, "message": "host is required"}}
-        result = mcp_registry_lookup(
+        result = mcp_ssot_query(
             host=h,
             q=arguments.get("q"),
             type=arguments.get("type", "all"),
@@ -697,11 +698,11 @@ def handle_tools_call(id_, params):
             offset=arguments.get("offset", 0),
         )
         output = json.dumps(result, separators=(",", ":"))
-    elif name == "mcp_registry_get":
+    elif name == "mcp_ssot_get":
         h = arguments.get("host")
         if not h:
             return {"jsonrpc": "2.0", "id": id_, "error": {"code": -32602, "message": "host is required"}}
-        result = mcp_registry_get(
+        result = mcp_ssot_get(
             host=h,
             id=arguments.get("id"),
             path=arguments.get("path"),
