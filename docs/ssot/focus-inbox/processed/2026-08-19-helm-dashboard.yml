@@ -1,0 +1,38 @@
+title: Helm Dashboard Service Failure
+subtitle: Helm Dashboard returned 404 and is unhealthy
+icon: helm
+focus:
+  label: Helm Dashboard Service Failure
+  text: Investigate why Helm Dashboard returns 404 (expected 200) and restore it.
+  branch: chaba
+  priority: high
+  status: active
+  tags:
+  - helm
+  - dashboard
+  - 404
+  - service-health
+  - high-priority
+  missing_info:
+  - Which host is running the Helm dashboard container
+  - Whether the Caddy /apps/helm proxy is configured correctly
+  - If the container is running or stopped
+  safe_to_parallel:
+    value: false
+    reason: May involve stopping/starting the helm web service and updating Caddy
+  subtasks:
+  - label: Check helm container status and Caddy /apps/helm route
+    status: not_started
+  - label: Fix the 404 cause (container, proxy, or path)
+    status: not_started
+  - label: Re-run health check and verify 200 response
+    status: not_started
+  started: '2026-08-19'
+ownership:
+  owner: tony
+  session: '2026-08-19'
+  locked: false
+  lock_reason: ''
+source:
+  session: ssot.improvements.yml
+  date: '2026-08-19'

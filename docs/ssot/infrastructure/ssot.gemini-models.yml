@@ -134,7 +134,7 @@ models:
       rpd: null
       status: unverified
     status: deprecated
-    notes: Legacy fallback referenced in gemini-integration.mjs. Verify availability before relying on it.
+    notes: Deprecated. No longer a recommended fallback. Consumers should use gemini-2.5-flash / gemini-2.5-flash-lite or gemini-3.5-flash-lite.
   gemini-flash-latest:
     display_name: Gemini Flash Latest
     api_name: gemini-flash-latest
@@ -271,7 +271,9 @@ models:
       tpm: 250000
       rpd: 500
     status: available
-    notes: Limits from AI Studio rate-limits dashboard on 2026-08-15
+    fallback_for:
+    - helm-llm
+    notes: Recommended fallback for helm-llm; higher daily quota (500 rpd) vs primary gemini-2.5-flash (20 rpd).
     last_verified: '2026-08-15'
   gemini-3.5-flash:
     display_name: Gemini 3.5 Flash
@@ -555,7 +557,10 @@ models:
       tpm: 30000
       rpd: 1000
     status: available
-    notes: Confirmed in AI Studio rate-limits dashboard on 2026-08-18. Actual API model name is gemini-embedding-001.
+    fallback_for:
+    - mddb-embedding
+    notes: Confirmed in AI Studio rate-limits dashboard on 2026-08-18. Actual API model name is gemini-embedding-001. Now used as
+      fallback for mddb-embedding after gemini-embedding-002.
     last_verified: '2026-08-18'
   gemini-embedding-2:
     display_name: Gemini Embedding 2
@@ -566,8 +571,11 @@ models:
       rpm: 100
       tpm: 30000
       rpd: 1000
-    status: available
-    notes: Confirmed in AI Studio rate-limits dashboard on 2026-08-18. Actual API model name is gemini-embedding-002. Lower project usage than gemini-embedding-001.
+    status: active
+    primary_for:
+    - mddb-embedding
+    notes: Confirmed in AI Studio rate-limits dashboard on 2026-08-18. Actual API model name is gemini-embedding-002. Lower project
+      usage; promoted to primary for mddb-embedding. gemini-embedding-001 is fallback.
     last_verified: '2026-08-18'
   gemini-omni-flash:
     display_name: Gemini Omni Flash

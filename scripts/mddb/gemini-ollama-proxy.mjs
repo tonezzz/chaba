@@ -4,7 +4,8 @@ import { createServer } from 'node:http';
 const PORT = parseInt(process.env.GEMINI_PROXY_PORT || '11435', 10);
 const HOST = process.env.GEMINI_PROXY_HOST || '0.0.0.0';
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-const GEMINI_EMBEDDING_MODEL = process.env.GEMINI_EMBEDDING_MODEL || 'gemini-embedding-001';
+const GEMINI_EMBEDDING_MODEL = process.env.GEMINI_EMBEDDING_MODEL || 'gemini-embedding-002';
+const GEMINI_EMBEDDING_FALLBACK_MODEL = process.env.GEMINI_EMBEDDING_FALLBACK_MODEL || (GEMINI_EMBEDDING_MODEL === 'gemini-embedding-001' ? 'gemini-embedding-002' : 'gemini-embedding-001');
 const DEFAULT_DIMENSIONS = parseInt(process.env.GEMINI_EMBEDDING_DIMENSIONS || '768', 10);
 const MAX_RPM = parseInt(process.env.GEMINI_PROXY_MAX_RPM || '100', 10);
 const BATCH_SIZE = parseInt(process.env.GEMINI_PROXY_BATCH_SIZE || '100', 10);
@@ -13,8 +14,8 @@ const INITIAL_BACKOFF_MS = 500;
 const MAX_BACKOFF_MS = 30000;
 
 const MODEL_ALIASES = {
-  'text-embedding-004': 'gemini-embedding-001',
-  'nomic-embed-text': 'gemini-embedding-001',
+  'text-embedding-004': 'gemini-embedding-002',
+  'nomic-embed-text': 'gemini-embedding-002',
   'gemini-embedding-001': 'gemini-embedding-001',
   'gemini-embedding-1': 'gemini-embedding-001',
   'gemini-embedding-002': 'gemini-embedding-002',
@@ -88,7 +89,7 @@ function parseGeminiBatch(data, count) {
   });
 }
 
-async function fetchGeminiBatch(texts, geminiModel, outputDimensionality) {
+async function _fetchGeminiBatchForModel(texts, geminiModel, outputDimensionality) {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${geminiModel}:batchEmbedContents?key=${GEMINI_API_KEY}`;
   const requests = texts.map(text => ({
     model: `models/${geminiModel}`,
@@ -135,6 +136,18 @@ async function fetchGeminiBatch(texts, geminiModel, outputDimensionality) {
   }
 
   throw new Error(lastError);
+}
+
+async function fetchGeminiBatch(texts, geminiModel, outputDimensionality, fallbackModel = null) {
+  try {
+    return await _fetchGeminiBatchForModel(texts, geminiModel, outputDimensionality);
+  } catch (err) {
+    if (fallbackModel && String(err).includes('429')) {
+      console.log(`Primary Gemini model ${geminiModel} rate-limited; trying fallback ${fallbackModel}`);
+      return await _fetchGeminiBatchForModel(texts, fallbackModel, outputDimensionality);
+    }
+    throw err;
+  }
 }
 
 async function handleEmbed(req, res) {
@@ -195,7 +208,7 @@ async function handleEmbed(req, res) {
   try {
     for (let i = 0; i < inputs.length; i += BATCH_SIZE) {
       const chunk = inputs.slice(i, i + BATCH_SIZE);
-      const chunkEmbeddings = await fetchGeminiBatch(chunk, geminiModel, outputDimensionality);
+      const chunkEmbeddings = await fetchGeminiBatch(chunk, geminiModel, outputDimensionality, GEMINI_EMBEDDING_FALLBACK_MODEL);
       embeddings.push(...chunkEmbeddings);
     }
   } catch (err) {
