@@ -141,7 +141,40 @@ sections:
 - title: Active Branch Focus
   icon: branch
   layout: list
-  items: []
+  items:
+  - label: Yomi conversation processing and UI recovery
+    text: Process the existing Yomi message corpus (7,872 messages, 66 conversations) to populate summaries, categories, and
+      proper display names, and verify the Yomi UI after the recent DB recovery. Do not re-attempt LINE login unless explicitly
+      requested.
+    status: active
+    priority: high
+    started: '2026-08-20'
+    estimated_duration: 1 session
+    tags:
+    - yomi
+    - line
+    - summarization
+    - processing
+    - ui
+    subtasks:
+    - label: Process existing messages and conversations
+      status: deferred
+      started_at: '2026-08-18'
+      note: 'Processing Yomi corpus: populate summaries, categories, display names. Do not re-attempt LINE login unless requested.'
+      deferred_at: '2026-08-19'
+      resume_session: chaba
+      resume_note: 'Yomi blocked: LINE signed out, E2EE key material unavailable'
+    - label: Generate daily summaries for conversations
+      status: deferred
+      deferred_at: '2026-08-19'
+      resume_session: chaba
+      resume_note: User chose to switch to a different focus; Yomi blocked by LINE login
+    - label: Restore conversation display names from message data
+      status: not_started
+    - label: Verify Yomi UI list and chat pages
+      status: not_started
+    branch: chaba
+    previous_status: active
 - title: Ready (Safe)
   icon: safe
   layout: list
