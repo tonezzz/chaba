@@ -337,11 +337,17 @@ sections:
       reason: SSOT-wide changes can affect validation and CI
     subtasks:
     - label: Review ssot.file-optimization.yml and current bloat scan results
-      status: not_started
+      status: completed
+      completed_at: '2026-08-19'
+      note: 'Ran scripts/ssot-optimize.mjs. 4 bloat candidates: ssot.registry.yml (1882), ssot.mcp-debug.yml (778), ssot.mcp-debug.baselines.yml (727), ssot.focus.current.yml (420). 4 missing-icon warnings in ssot.tuya-smart-plug.yml. No data-isolation warnings.'
     - label: Identify files exceeding thresholds and bloat causes
-      status: not_started
+      status: completed
+      completed_at: '2026-08-19'
+      note: 'Identified: ssot.registry.yml hard threshold 1882, ssot.mcp-debug.yml hard threshold 778, ssot.mcp-debug.baselines.yml review 727, ssot.focus.current.yml review 420. ssot.tuya-smart-plug.yml missing icons.'
     - label: Apply cleanups or splits to reduce bloat
-      status: not_started
+      status: in_progress
+      started_at: '2026-08-19'
+      note: 'Fixed 4 missing icon warnings in ssot.tuya-smart-plug.yml. Bloat still needs work: ssot.registry.yml, ssot.mcp-debug.yml, ssot.mcp-debug.baselines.yml, ssot.focus.current.yml.'
     - label: Wire bloat and isolation checks into ssot-validate or pre-commit
       status: not_started
     - label: Re-run validation and commit results
