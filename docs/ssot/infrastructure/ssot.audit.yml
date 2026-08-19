@@ -41,6 +41,7 @@ schedule:
       - kb
       - ssot
       - security-scan
+      - caddy
   full:
     frequency: monthly
     timer: systemd/chaba-audit-full.timer
@@ -82,6 +83,14 @@ audits:
     schedule: monthly
     severity_on_fail: error
     description: System-level security review; run only with --full because it may need privileges
+
+  - name: caddy
+    script: scripts/audits/caddy-audit.mjs
+    command: node
+    args: []
+    schedule: weekly
+    severity_on_fail: error
+    description: Caddyfile format and syntax validation
 
 plan:
   current_state:

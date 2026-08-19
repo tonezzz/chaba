@@ -39,8 +39,8 @@ planning:
       file: docs/ssot/ssot.focus.current.yml
 
 processing:
-  status: not_started
-  started_at: null
+  status: in_progress
+  started_at: '2026-08-19'
   findings:
     - file: stacks/web/Caddyfile
       issue: The @api_cache /api/* block at line 93 appears before more specific /api/yomi, /api/tailscale, /api/ws, /api/focus, and status_api routes, which may prevent them from matching.
@@ -77,7 +77,15 @@ processing:
       label: Add Caddy /health endpoint and reload the web container
       status: not_started
   decisions: []
-  changes: []
+  changes:
+    - file: stacks/web/Caddyfile
+      summary: removed shadowing @api_cache and duplicate weaviate; fixed redir typo; added /health; caddy fmt'd
+    - file: chaba-omen/stacks/web/Caddyfile
+      summary: /api/yomi/* now proxies to tony-dell:3000; caddy fmt'd
+    - file: scripts/audits/caddy-audit.mjs
+      summary: new Caddyfile format and syntax audit script
+    - file: docs/ssot/infrastructure/ssot.audit.yml
+      summary: added caddy audit to default weekly runs
 
 followup:
   verification:

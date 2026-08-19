@@ -1,6 +1,11 @@
 :8080 {
 	root * /srv/public
 
+	# Simple health endpoint for the Caddy web container
+	handle /health {
+		respond "ok" 200
+	}
+
 	# MDDB API (for panel proxy) - must come before panel route
 	handle /api/mddb/* {
 		reverse_proxy 100.68.142.13:11023
@@ -20,7 +25,7 @@
 	}
 
 	@tony_omen_temp_bare path /apps/tony-omen-temp
-	redir @tony_omen_temp_bare /apps/tony-omen-temp/308
+	redir @tony_omen_temp_bare /apps/tony-omen-temp/ 308
 
 	@static_html path *.html
 	handle @static_html {
@@ -87,15 +92,6 @@
 	handle_path /api/weaviate/* {
 		reverse_proxy tony-dell:8084
 		encode gzip
-	}
-
-	# API response caching
-	@api_cache path /api/*
-	handle @api_cache {
-		header Cache-Control "public, max-age=60, s-maxage=300"
-		reverse_proxy tony-dell:3000 {
-			header_up Host localhost
-		}
 	}
 
 	# Yomi API with longer cache for read endpoints
@@ -171,13 +167,6 @@
 		root * /srv/public/apps/shared
 		file_server
 		header Cache-Control "public, max-age=86400"
-	}
-
-	# Weaviate API proxy (must come before catchall) -- now on tony-dell
-	handle_path /api/weaviate/* {
-		reverse_proxy tony-dell:8084 {
-			header_up Host localhost
-		}
 	}
 
 	handle_path /new/* {
