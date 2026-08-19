@@ -101,6 +101,30 @@ followup:
         Added stacks/web/public/apps/focus/decision.html + decision-app.js and
         scripts/generate-focus-tree.mjs which writes data/decision-tree.json
         from ssot.mcp-focus.yml.
+  completed_outside_initial_three:
+    - label: Audit trend history
+      completed_at: '2026-08-19'
+      notes: |
+        scripts/audits/run.mjs now archives a timestamped summary to
+        reports/audits/history/ and maintains a compact history.json with the
+        last 90 runs (timestamp, ok, passed, failed, total, duration_ms).
+    - label: Auto-KB quality scoring as a scheduled job
+      completed_at: '2026-08-19'
+      notes: |
+        auto-kb-quality-audit.mjs now defaults to report-only with --apply and
+        --json flags. A weekly systemd timer/service runs the quality and
+        categorization audits and writes reports.
+    - label: Web focus decision tree
+      completed_at: '2026-08-19'
+      notes: |
+        Added stacks/web/public/apps/focus/decision.html + decision-app.js and
+        scripts/generate-focus-tree.mjs which writes data/decision-tree.json
+        from ssot.mcp-focus.yml.
+    - label: Prompt preprocessor as MCP tool
+      completed_at: '2026-08-19'
+      notes: |
+        Added scripts/mcp_debug/preprocess.py wrapper and registered mcp_preprocess
+        in mcp_debug server and ssot.mcp-debug.yml.
   deferred:
     - SSOT value registry
 

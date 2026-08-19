@@ -30,6 +30,7 @@ from .reports import mcp_report
 from .focus import mcp_focus
 from .ssot import mcp_read_ssot, mcp_search_ssot, mcp_mddb_doc, mcp_query_ssot
 from .context import mcp_context, mcp_session_summary
+from .preprocess import mcp_preprocess
 from .capture import (
     mcp_screenshot,
     mcp_window_list,
@@ -413,6 +414,17 @@ def handle_tools_list(id_):
             },
         },
         {
+            "name": "mcp_preprocess",
+            "description": "Ground a user request in the active focus and return a structured, unambiguous prompt.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "request": {"type": "string", "description": "The user request to preprocess"},
+                },
+                "required": ["request"],
+            },
+        },
+        {
             "name": "mcp_screenshot",
             "description": "Capture a screenshot on an allowed host and return it as base64 PNG.",
             "inputSchema": {
@@ -650,6 +662,9 @@ def handle_tools_call(id_, params):
         output = json.dumps(result, separators=(",", ":"))
     elif name == "mcp_session_summary":
         result = mcp_session_summary()
+        output = json.dumps(result, separators=(",", ":"))
+    elif name == "mcp_preprocess":
+        result = mcp_preprocess(request=arguments.get("request"))
         output = json.dumps(result, separators=(",", ":"))
     elif name == "mcp_screenshot":
         h = arguments.get("host")
