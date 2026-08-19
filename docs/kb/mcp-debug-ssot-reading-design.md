@@ -28,7 +28,7 @@ Add registry-aware lookup to `mcp-debug` so MCP consumers can resolve a project 
 
 ## Proposed design
 
-Add one new tool and one helper, keep existing tools unchanged.
+Add two new registry tools, keep existing SSOT tools unchanged.
 
 ### 1. `mcp_registry_lookup` tool
 
@@ -40,15 +40,17 @@ Add one new tool and one helper, keep existing tools unchanged.
   "q": "helm",
   "type": "ssot",
   "by": "any",
-  "limit": 5
+  "limit": 5,
+  "offset": 0
 }
 ```
 
-- `host`: target host (for routing; the registry is read from that host's repo).
-- `q`: keyword/id/name/path fragment.
-- `type`: optional filter (`ssot`, `script`, `service`, `timer`, `stack`, `h3-app`).
-- `by`: search fields — `any` (default), `id`, `name`, `path`, `label`.
+- `host`: target host (the `mcp-debug` MCP server on that host reads its local `chaba` repo). For now the lookup uses the server's `REPO_DIR`; `host` selects which server to query.
+- `q`: optional keyword/id/name/path fragment. If omitted, returns assets filtered only by `type`.
+- `type`: optional filter (`ssot`, `script`, `service`, `timer`, `stack`, `h3-app`, `all`).
+- `by`: search fields — `any` (default), `id`, `name`, `path`, `purpose`, `tags`. Matching is case-insensitive and substring-based.
 - `limit`: max results.
+- `offset`: pagination offset (default 0).
 
 **Output contract:**
 
@@ -56,6 +58,11 @@ Add one new tool and one helper, keep existing tools unchanged.
 {
   "ok": true,
   "q": "helm",
+  "by": "any",
+  "type": "ssot",
+  "offset": 0,
+  "limit": 5,
+  "total": 1,
   "results": [
     {
       "id": "helm",
@@ -66,7 +73,8 @@ Add one new tool and one helper, keep existing tools unchanged.
       "purpose": "...",
       "status": "active",
       "tags": ["helm", "apps"],
-      "registry_file": "docs/ssot/ssot.registry.ssot-apps.yml"
+      "registry_file": "docs/ssot/ssot.registry.ssot-apps.yml",
+      "partition": "ssot-apps"
     }
   ]
 }
@@ -81,11 +89,15 @@ Convenience wrapper that takes `id` or `path` and returns the full asset metadat
 ```json
 {
   "host": "tony_omen",
-  "id": "helm"
+  "id": "helm",
+  "ssot_limit": 20000
 }
 ```
 
-**Output contract:**
+- `id` or `path`: one is required. `id` is searched across partitions; `path` resolves directly to the asset's `path`.
+- `ssot_limit`: max characters of the source SSOT file to return (default 20000).
+
+**Output contract (single match):**
 
 ```json
 {
@@ -99,12 +111,29 @@ Convenience wrapper that takes `id` or `path` and returns the full asset metadat
 }
 ```
 
+**Output contract (ambiguous id):**
+
+```json
+{
+  "ok": false,
+  "error": "multiple assets match 'helm'",
+  "candidates": [
+    { ... },
+    { ... }
+  ]
+}
+```
+
 ### 3. Implementation plan
 
-- Add `scripts/mcp_debug/registry.py` with `_load_registry()`, `_match_asset()`, `mcp_registry_lookup(...)`, and `mcp_registry_get(...)`.
-- `mcp_registry_lookup` loads `docs/ssot/ssot.registry.yml` to discover partitions, then loads each partition's `assets` list and filters in memory. This keeps the memory footprint small (each partition is now <350 lines).
+- Add `scripts/mcp_debug/registry.py` with:
+  - `_load_registry()` — parse `ssot.registry.yml`, discover partitions, and load all `assets` into an in-memory index.
+  - `_match_asset(asset, q, by)` — case-insensitive substring matching across selected fields.
+  - `mcp_registry_lookup(...)` — return paginated, filtered asset metadata.
+  - `mcp_registry_get(...)` — resolve one asset by `id`/`path` and read its source SSOT.
+- `mcp_registry_lookup` loads `docs/ssot/ssot.registry.yml` to discover partitions, then loads each partition's `assets` list and filters in memory. Each partition is now <350 lines, so the total index is small.
 - Add tool schemas to `scripts/mcp_debug/server.py` `handle_tools_list` and dispatch in `handle_tools_call`.
-- Register the tools in `~/.config/devin/mcp_config.json` and `~/.config/windsurf/mcp_config.json` if required by the client.
+- If the Devin/Windsurf MCP client requires static tool lists, update `~/.config/devin/mcp_config.json` and `~/.config/windsurf/mcp_config.json`. The `mcp-debug` server already advertises tools dynamically, so this is likely unnecessary.
 - Update `docs/ssot/infrastructure/ssot.mcp-debug.yml` `suggested_extensions` with a completed entry for `mcp_registry_lookup`/`mcp_registry_get`.
 
 ### 4. Security and data isolation
@@ -118,11 +147,17 @@ Convenience wrapper that takes `id` or `path` and returns the full asset metadat
 - Existing `mcp_read_ssot`, `mcp_search_ssot`, `mcp_query_ssot` remain unchanged.
 - `mcp_query_ssot` can still be used if the caller already knows the partition path; the new tools cover the common "I know the name but not the file" case.
 
-### 6. Open questions
+### 6. Future extensions
 
-1. Should `mcp_registry_lookup` also search MDDB for semantic matches, or only the local registry partitions?
-2. Should we cache partition loads in memory for repeated calls in one session?
-3. Should `mcp_registry_get` auto-detect `type` from the asset's `path` for callers who only know the `id`?
+- `mcp_registry_list(type, limit, offset)` could be a thin alias over `mcp_registry_lookup` with `q` omitted. For v1, the optional `q` handles this case.
+- Add `mcp_registry_refresh()` to clear an in-memory partition cache (if caching is added later).
+- Add `mcp_registry_related(id)` to follow `related`/`related_files` links and return a small graph.
+
+### 7. Open questions
+
+1. Should `mcp_registry_lookup` also search MDDB for semantic matches, or only the local registry partitions? (Proposed: local partitions for v1; MDDB fallback can be added later.)
+2. Should we cache partition loads in memory for repeated calls in one session? (Proposed: no cache for v1; read is cheap and stateless.)
+3. Should `mcp_registry_get` auto-detect `type` from the asset's `path` for callers who only know the `id`? (Proposed: yes — it searches all partitions and disambiguates by `id`/`path`.)
 
 ## Recommendation
 
