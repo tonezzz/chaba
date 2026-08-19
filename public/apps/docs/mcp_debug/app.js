@@ -105,7 +105,7 @@ async function loadReport(forceRefresh = false) {
     if (!data || (!data.ok && !data.total_raw_chars)) throw new Error(data?.error || 'report not ok');
     renderReport(data);
     const generated = data.generated ? new Date(data.generated).toLocaleString() : 'unknown';
-    const source = data.freshness ? 'Live' : 'Snapshot';
+    const source = data.freshness && data.ok ? 'Live' : 'Snapshot';
     status.innerHTML = `${source}: <span class="font-mono">${generated}</span>`;
     if (meta && data.freshness) {
       const age = formatAge(data.freshness.cache_age_ms);
