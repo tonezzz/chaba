@@ -29,7 +29,7 @@ services:
       - MDDB_AUDIT_ENABLED=false
       - MDDB_RATE_LIMIT_ENABLED=false
       - MDDB_EMBEDDING_PROVIDER=ollama
-      - MDDB_EMBEDDING_API_URL=http://ollama:11434
+      - MDDB_EMBEDDING_API_URL=http://gemini:11435
       - MDDB_EMBEDDING_MODEL=nomic-embed-text
       - MDDB_EMBEDDING_DIMENSIONS=768
     networks:
@@ -90,7 +90,9 @@ services:
     volumes:
       - ../../../scripts/mddb:/app
     networks:
-      - default
+      default:
+        aliases:
+          - gemini
     healthcheck:
       test: ["CMD", "node", "-e", "fetch('http://localhost:11435/health').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
       interval: 15s

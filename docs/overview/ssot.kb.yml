@@ -73,6 +73,7 @@ corpus:
       - h3-pages.md
       - impact-scoring-system.md
       - overnight-assessment.md
+      - mcp-debug-allowlist-conventions.md
 
   features:
     description: Feature implementations, enhancements, and user-facing changes
@@ -287,7 +288,7 @@ sessions:
           - Configure custom metadata for document categorization ✅
           - Import all 53 KB files from docs/kb/ directory ✅
           - Verify data integrity and search functionality ✅
-          - Migrate 53 files across 4 collections (kb-system: 27, kb-development: 15, kb-operations: 4, kb-features: 42) ✅
+          - "Migrate 53 files across 4 collections (kb-system: 27, kb-development: 15, kb-operations: 4, kb-features: 42) ✅"
       phase_4_integration_testing:
         status: completed
         tasks:
@@ -322,7 +323,7 @@ sessions:
           - Verify dependency analysis functionality ✅
     next_steps:
       - MDDB implementation complete with Ollama embeddings (nomic-embed-text, 768 dimensions, GPU-accelerated)
-      - All 53 KB files migrated to MDDB across 4 collections (kb-system: 27, kb-development: 15, kb-operations: 4, kb-features: 42)
+      - "All 53 KB files migrated to MDDB across 4 collections (kb-system: 27, kb-development: 15, kb-operations: 4, kb-features: 42)"
       - Semantic search operational with high relevance scores (0.45-0.76) and fast response times (88-451ms)
       - MDDB Panel fully functional at http://tony-omen.local:3002/ with 91 documents accessible
       - Comprehensive 6-phase implementation strategy documented with rollback procedures
@@ -464,7 +465,7 @@ sessions:
     topics: [mddb, multi-project, trade-migration, unified-kb, docs-trade-removal]
     outcomes:
       - Implemented unified MDDB architecture for multi-project KB support (chaba + trade)
-      - Migrated 58 trade documentation files to MDDB across 4 collections (trade-kb-system: 13, trade-kb-development: 20, trade-kb-operations: 0, trade-kb-features: 25)
+      - "Migrated 58 trade documentation files to MDDB across 4 collections (trade-kb-system: 13, trade-kb-development: 20, trade-kb-operations: 0, trade-kb-features: 25)"
       - Removed docs-trade MCP server from configuration (redundant with MDDB)
       - Added project context metadata to all migrated documents (project: trade, source: trade, original_path: rel_path)
       - Created migration script (migrate-trade-kb.py) with recursive file discovery and path-based key generation

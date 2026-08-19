@@ -1,8 +1,13 @@
 """MCP Focus session-start router."""
 from datetime import datetime
 from pathlib import Path
+import sys
 import yaml
 from .config import REPO_DIR
+
+
+sys.path.insert(0, str(REPO_DIR / "scripts"))
+from focus_common import PRIORITY, QUICK_WIN_CUES, BACKLOG_CUES, priority_value, triage_score, is_active, active_branches, incomplete_subtasks, meets_safe_criteria
 
 
 REPO = REPO_DIR
@@ -12,27 +17,6 @@ INBOX_DIR = REPO / "docs" / "ssot" / "focus-inbox"
 DECISIONS = REPO / "docs" / "ssot" / "ssot.focus.decisions.yml"
 TECHNICAL = REPO / "docs" / "ssot" / "decisions" / "ssot.technical-decisions.yml"
 SESSIONS = REPO / "docs" / "ssot" / "ssot.focus.sessions.yml"
-
-PRIORITY = {"high": 3, "medium": 2, "low": 1}
-QUICK_WIN_CUES = ("fix", "tweak", "small", "quick", "minor")
-BACKLOG_CUES = ("design", "workflow", "rebuild", "implement", "refactor")
-
-
-def _priority_value(item):
-    return PRIORITY.get(item.get("priority", "medium"), 2)
-
-
-def _triage_score(item):
-    triage = item.get("triage", {})
-    if not triage:
-        return 0.0
-    try:
-        urgency = float(triage.get("urgency", 0))
-        importance = float(triage.get("importance", 0))
-        complication = float(triage.get("complication", 0))
-    except (TypeError, ValueError):
-        return 0.0
-    return round(urgency * 0.4 + importance * 0.35 + (10 - complication) * 0.25, 2)
 
 
 def _find_section(sections, title):
@@ -77,7 +61,7 @@ def _active_items(doc):
             ready_safe = [i for i in sec.get("items", [])]
         elif title in ("Active Shared Focus", "Active Branch Focus"):
             for item in sec.get("items", []):
-                if not item or item.get("status") != "active":
+                if not is_active(item):
                     continue
                 section = sec.get("title")
                 if section == "Active Shared Focus":
@@ -133,7 +117,7 @@ def _sweep_candidates(doc, active, backlog, inbox):
                     "status": item.get("status"),
                     "priority": item.get("priority", "medium"),
                     "branch": item.get("branch"),
-                    "score": _triage_score(item),
+                    "score": triage_score(item),
                     "source": item.get("source", "ssot.focus.current.yml"),
                     "why": "current " + sec.get("title", "").lower().replace(" focus", ""),
                 })
@@ -149,7 +133,7 @@ def _sweep_candidates(doc, active, backlog, inbox):
             "status": item.get("status"),
             "priority": item.get("priority", "medium"),
             "branch": item.get("branch"),
-            "score": _triage_score(item),
+            "score": triage_score(item),
             "source": item.get("source", "ssot.focus.yml"),
             "why": "backlog" if item.get("status") not in ("parked",) else "parked",
         })
@@ -165,7 +149,7 @@ def _sweep_candidates(doc, active, backlog, inbox):
             "status": item.get("status", "pending"),
             "priority": item.get("priority", "medium"),
             "branch": item.get("branch"),
-            "score": _triage_score(item),
+            "score": triage_score(item),
             "source": str(item.get("__file", "")),
             "why": "inbox",
         })
@@ -185,11 +169,11 @@ def _sweep_candidates(doc, active, backlog, inbox):
                         "status": "deferred",
                         "priority": it.get("priority", "medium"),
                         "branch": it.get("branch"),
-                        "score": _triage_score(it),
+                        "score": triage_score(it),
                         "source": it.get("source", ""),
                         "why": f"deferred subtask of {it.get('label')}",
                     })
-    candidates.sort(key=lambda x: (x["score"], _priority_value(x), x["label"]), reverse=True)
+    candidates.sort(key=lambda x: (x["score"], priority_value(x), x["label"]), reverse=True)
     return candidates
 
 
@@ -452,13 +436,13 @@ def _match_backlog(req, backlog):
 def _best_backlog(backlog):
     if not backlog:
         return None
-    return max(backlog, key=lambda i: (_triage_score(i), _priority_value(i), i.get("started", "")))
+    return max(backlog, key=lambda i: (triage_score(i), priority_value(i), i.get("started", "")))
 
 
 def _best_inbox(inbox):
     if not inbox:
         return None
-    return max(inbox, key=lambda i: (_priority_value(i), i.get("__file", Path("")).stem))
+    return max(inbox, key=lambda i: (priority_value(i), i.get("__file", Path("")).stem))
 
 
 def _active_branches(active):
@@ -506,7 +490,7 @@ def _best_safe_focus(active, backlog, inbox):
         candidates.append(item)
     if not candidates:
         return None
-    return max(candidates, key=lambda i: (_triage_score(i), _priority_value(i), i.get("started", "")))
+    return max(candidates, key=lambda i: (triage_score(i), priority_value(i), i.get("started", "")))
 
 
 def _draft_inbox(request):
@@ -918,7 +902,7 @@ def mcp_focus(request=None, mode="recommend", decision=None, summary=None, resum
         if resume_session:
             resume_session = resume_session.strip().lower()
             next_candidates = [c for c in next_candidates if _resolve_session(None, c, "").lower() == resume_session]
-        next_candidates.sort(key=lambda x: (_priority_value(x), _triage_score(x), x["label"]), reverse=True)
+        next_candidates.sort(key=lambda x: (priority_value(x), triage_score(x), x["label"]), reverse=True)
         if not next_candidates:
             return {"ok": True, "next": None, "reason": "No parked or deferred foci to process."}
         chosen = next_candidates[0]

@@ -1,0 +1,92 @@
+title: Streamline mcp-focus and SSOT focus system
+subtitle: Consolidate drifted focus implementations and update SSOT policy to v2
+icon: target
+
+planning:
+  goal: |
+    Consolidate duplicated triage/safe-to-parallel logic between mcp_debug/focus.py
+    and focus_dispatcher/triage.py, update ssot.mcp-focus.yml to v2, and wire Ready (Safe) dispatch.
+  scope: |
+    - Centralize focus model (triage scoring, priority, safe-to-parallel, branch detection)
+    - Update ssot.mcp-focus.yml to match standalone server (v2, related_files, mode docs)
+    - Add Ready (Safe) population and ownership/lock checks
+    - Improve error handling and make request optional for read-only modes
+  success_criteria:
+    - mcp_debug/focus.py imports a shared focus library instead of duplicating logic
+    - focus_dispatcher/triage.py uses the same library
+    - ssot.mcp-focus.yml reflects the v2 implementation
+    - mcp_focus read-only modes work without a request argument
+    - focus-dispatcher still passes smoke tests
+  risks:
+    - Refactor breaks focus activation/defer semantics; mitigate by running focus-dispatcher --dry-run and checking mcp_focus status
+    - Standalone mcp_focus server is out of sync; mitigate by updating both or choosing one canonical implementation
+  resources:
+    - /home/tony/CascadeProjects/chaba/scripts/mcp_debug/focus.py
+    - /home/tony/CascadeProjects/chaba/scripts/focus_dispatcher/triage.py
+    - /home/tony/CascadeProjects/chaba/docs/ssot/infrastructure/ssot.mcp-focus.yml
+    - /home/tony/CascadeProjects/chaba/docs/ssot/ssot.focus.current.yml
+  owner: tony
+  estimated_duration: 2 sessions
+  related_focus:
+    - label: Streamline mcp-focus and SSOT focus system
+      file: docs/ssot/ssot.focus.current.yml
+
+processing:
+  status: in_progress
+  started_at: '2026-08-19'
+  steps:
+    - id: 1
+      label: Audit duplicated logic between mcp_debug/focus.py and focus_dispatcher/triage.py
+      status: in_progress
+      notes: Read both files and identify which functions/classes overlap
+    - id: 2
+      label: Extract shared focus model into a library module
+      status: not_started
+    - id: 3
+      label: Update ssot.mcp-focus.yml to v2 with mode docs
+      status: not_started
+    - id: 4
+      label: Wire Ready (Safe) population and ownership/lock checks
+      status: not_started
+    - id: 5
+      label: Make request optional for read-only mcp_focus modes
+      status: not_started
+    - id: 6
+      label: Verify focus-dispatcher and mcp_focus status still work
+      status: not_started
+  decisions: []
+  changes: []
+
+followup:
+  verification:
+    - mcp_focus mode=status returns active/ready/parked correctly
+    - focus-dispatcher --next --dry-run selects the expected next focus
+    - scripts/overnight-focus-review.py runs without focus errors
+  rollback_plan:
+    - Restore from git or the pre-refactor backup of mcp_debug/focus.py and focus_dispatcher/triage.py
+  handoff:
+    - chaba focus-dispatcher overnight review
+  deferred:
+    - Standalone mcp_focus server full reconciliation may need its own session
+
+report:
+  status: not_started
+  completed_at: null
+  summary: ''
+  metrics:
+    - files_changed: 0
+  links:
+    - title: Related focus
+      file: docs/ssot/ssot.focus.current.yml
+    - title: Job file
+      file: docs/ssot/jobs/mcp-focus/2026-08-19-streamline-mcp-focus.yml
+  kb_review: []
+  lessons_learned: []
+
+config:
+  version: 1
+  created_at: '2026-08-19'
+  last_updated: '2026-08-19'
+  maintainer: tony
+  related_files:
+    - docs/ssot/templates/job.yml

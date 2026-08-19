@@ -1,66 +1,18 @@
 """Focus triage and selection helpers."""
 import sys
+from pathlib import Path
 
 import yaml
 
 from .state import (
     INBOX_DIR,
-    PRIORITY,
     find_section,
-    incomplete_subtasks,
-    is_active,
     load_current,
     load_focus,
 )
 
-
-def priority_value(item):
-    return PRIORITY.get(item.get("priority", "medium"), 2)
-
-
-def triage_score(item):
-    triage = item.get("triage", {})
-    if not triage:
-        return 0.0
-    try:
-        urgency = float(triage.get("urgency", 0))
-        importance = float(triage.get("importance", 0))
-        complication = float(triage.get("complication", 0))
-    except (TypeError, ValueError):
-        return 0.0
-    return round(urgency * 0.4 + importance * 0.35 + (10 - complication) * 0.25, 2)
-
-
-def active_branches(doc):
-    branches = set()
-    for sec in doc.get("sections", []):
-        if sec.get("title") in ("Active Shared Focus", "Active Branch Focus"):
-            for item in sec.get("items", []):
-                if is_active(item):
-                    branches.add(item.get("branch", ""))
-    return branches
-
-
-def _meets_safe_criteria(item, active_branch_set):
-    safe = item.get("safe_to_parallel")
-    if safe is False:
-        return False
-    if safe is True:
-        return True
-    if item.get("missing_info"):
-        return False
-    if item.get("subagent", {}).get("requires_approval"):
-        return False
-    triage = item.get("triage", {})
-    try:
-        complication = float(triage.get("complication", 10))
-    except (TypeError, ValueError):
-        complication = 10
-    if complication > 4:
-        return False
-    if item.get("branch", "") in active_branch_set and item.get("branch"):
-        return False
-    return True
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from focus_common import priority_value, triage_score, is_active, active_branches, meets_safe_criteria, incomplete_subtasks
 
 
 def safe_to_dispatch():
@@ -75,7 +27,7 @@ def safe_to_dispatch():
         for item in section.get("items", []):
             if not is_active(item) and not item.get("status") == "parked":
                 continue
-            if _meets_safe_criteria(item, branch_set):
+            if meets_safe_criteria(item, branch_set):
                 item["__source"] = "backlog"
                 candidates.append(item)
 
@@ -90,7 +42,7 @@ def safe_to_dispatch():
             focus = inbox_doc.get("focus") or inbox_doc
             if not focus or not focus.get("label"):
                 continue
-            if _meets_safe_criteria(focus, branch_set):
+            if meets_safe_criteria(focus, branch_set):
                 focus["__source"] = str(p)
                 candidates.append(focus)
 
