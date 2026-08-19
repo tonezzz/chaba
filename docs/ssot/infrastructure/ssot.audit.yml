@@ -41,6 +41,7 @@ schedule:
       - kb-suite
       - ssot-suite
       - caddy
+      - infrastructure-suite
       - standardization-suite
     note: groups are expanded to individual audits by the runner
   full:
@@ -52,6 +53,7 @@ schedule:
       - kb-suite
       - ssot-suite
       - caddy
+      - infrastructure-suite
       - security-suite
       - standardization-suite
     note: installed and enabled on tony-dell; security-audit may need privileges
@@ -150,6 +152,14 @@ audits:
     severity_on_fail: error
     description: Cross-reference integrity for audits, systemd units, and MCP tool registration
 
+  - name: infrastructure
+    script: scripts/audits/infrastructure-audit.mjs
+    command: node
+    args: []
+    schedule: weekly
+    severity_on_fail: warning
+    description: Health SSOT config completeness and consistency
+
 groups:
   - name: kb-suite
     description: All KB health, quality, categorization, and modularity audits
@@ -172,6 +182,10 @@ groups:
     children:
       - security-scan
       - security-audit
+  - name: infrastructure-suite
+    description: Health SSOT and infrastructure configuration consistency
+    children:
+      - infrastructure
   - name: standardization-suite
     description: Cross-reference and naming consistency checks
     children:

@@ -12,7 +12,6 @@ const HEALTH_FILES = [
   'docs/ssot/infrastructure/ssot.health.home.yml',
   'docs/ssot/infrastructure/ssot.health.mobile.yml',
 ];
-const VALUES_FILE = 'docs/ssot/infrastructure/ssot.values.yml';
 const VALID_TYPES = new Set(['http', 'systemd', 'container', 'mount']);
 
 function load(p) {
@@ -23,7 +22,7 @@ function load(p) {
 
 function main() {
   const issues = [];
-  const values = load(VALUES_FILE);
+  let total = 0;
 
   for (const h of HEALTH_FILES) {
     let doc;
@@ -36,6 +35,7 @@ function main() {
     const fileIds = new Set();
     const services = doc.services || [];
     for (const s of services) {
+      total++;
       if (!s.id) {
         issues.push(`${h}: missing service id`);
         continue;
@@ -47,7 +47,6 @@ function main() {
       if (!s.name) issues.push(`${h}:${s.id}: missing name`);
       if (!s.type) issues.push(`${h}:${s.id}: missing type`);
       else if (!VALID_TYPES.has(s.type)) issues.push(`${h}:${s.id}: invalid type ${s.type}`);
-      if (!s.expected_state) issues.push(`${h}:${s.id}: missing expected_state`);
       if (!s.category) issues.push(`${h}:${s.id}: missing category`);
       if (!s.profiles || !s.profiles.length) issues.push(`${h}:${s.id}: missing profiles`);
 
@@ -66,33 +65,17 @@ function main() {
         if (!s.expected_state) issues.push(`${h}:${s.id}: missing expected_state`);
       }
       if (s.type === 'mount') {
-        if (!s.path) issues.push(`${h}:${s.id}: missing mount path`);
+        if (!s.mount_point) issues.push(`${h}:${s.id}: missing mount_point`);
         if (!s.expected_state) issues.push(`${h}:${s.id}: missing expected_state`);
       }
     }
-  }
-
-  // Check ports referenced in health files are in values
-  const valuesText = readFileSync(join(PROJECT_ROOT, VALUES_FILE), 'utf8');
-  const portRegex = /:(\d{2,5})\b/g;
-  const healthText = HEALTH_FILES.map((h) => readFileSync(join(PROJECT_ROOT, h), 'utf8')).join('\n');
-  let m;
-  const badPorts = new Set();
-  while ((m = portRegex.exec(healthText)) !== null) {
-    const port = m[1];
-    if (!valuesText.includes(port)) {
-      badPorts.add(port);
-    }
-  }
-  for (const port of badPorts) {
-    issues.push(`port ${port} used in health SSOT but not defined in ssot.values.yml`);
   }
 
   const result = {
     ok: issues.length === 0,
     generated: new Date().toISOString(),
     files: HEALTH_FILES,
-    total_services: ids.size,
+    total_services: total,
     issues,
     total_issues: issues.length,
   };

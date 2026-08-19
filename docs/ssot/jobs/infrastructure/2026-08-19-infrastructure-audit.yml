@@ -1,0 +1,85 @@
+title: Infrastructure audit
+subtitle: Add health SSOT consistency checks to the consolidated audit suite
+icon: infrastructure
+version: 1
+
+planning:
+  goal: |
+    Audit the project's infrastructure configuration by validating the health SSOT
+    files for completeness and consistency. The audit should be safe to run
+    without live service access and should plug into the existing consolidated
+    audit plan.
+  scope:
+    - docs/ssot/infrastructure/ssot.health.home.yml
+    - docs/ssot/infrastructure/ssot.health.mobile.yml
+    - scripts/audits/infrastructure-audit.mjs
+    - docs/ssot/infrastructure/ssot.audit.yml
+  out_of_scope:
+    - Live service health checks (handled by mcp-health)
+    - Remote command execution on tony-omen or tony-dell
+    - Tailscale or network connectivity probes
+  success_criteria:
+    - infrastructure-audit.mjs runs without errors
+    - All health SSOT services have required fields for their type
+    - ssot.audit.yml includes the infrastructure audit in the weekly schedule
+    - Consolidated audit passes with the new audit
+  risks:
+    - False positives if field names differ by service type
+    - Adding the audit to the default run may fail until health SSOT is cleaned up
+  estimated_duration: 1 session
+  related_focus:
+    - label: Infrastructure audit
+      file: docs/ssot/ssot.focus.current.yml
+
+processing:
+  status: in_progress
+  started_at: '2026-08-19'
+  findings: []
+  steps:
+    - id: 1
+      label: Create infrastructure-audit.mjs for health SSOT validation
+      status: completed
+    - id: 2
+      label: Add infrastructure audit to ssot.audit.yml and groups
+      status: completed
+    - id: 3
+      label: Run consolidated audit and validate
+      status: in_progress
+    - id: 4
+      label: Commit
+      status: not_started
+  decisions: []
+  changes:
+    - file: scripts/audits/infrastructure-audit.mjs
+      summary: new health SSOT consistency audit
+    - file: docs/ssot/infrastructure/ssot.audit.yml
+      summary: added infrastructure audit and infrastructure-suite group
+
+followup:
+  verification:
+    - Run node scripts/audits/run.mjs and confirm PASS
+    - Check reports/audits/infrastructure.json for any issues
+  rollback_plan:
+    - Revert ssot.audit.yml and remove infrastructure-audit.mjs
+  handoff:
+    - tony
+  deferred:
+    - Add live endpoint checks using mcp-health when a lightweight API is stable
+    - Add systemd and container runtime checks
+
+report:
+  status: not_started
+  completed_at: null
+  summary: ''
+  metrics: {}
+  links: []
+  kb_review: []
+  lessons_learned: []
+
+config:
+  version: 1
+  created_at: '2026-08-19'
+  last_updated: '2026-08-19'
+  maintainer: tony
+  related_files:
+    - docs/ssot/templates/job.yml
