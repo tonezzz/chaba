@@ -142,50 +142,35 @@ sections:
   icon: branch
   layout: list
   items:
-  - label: Add SSOT registry reading support to mcp-debug
-    text: Extend the mcp-debug MCP server with lightweight SSOT read/query tools. This lets remote hosts and MCP consumers
-      look up registry assets (apps, scripts, services, SSOTs) by id, name, type, or keyword, and fetch small SSOT files on
-      demand without pulling the full registry into the prompt.
-    status: completed
-    completed_at: '2026-08-19'
-    priority: medium
+  - label: Switch MDDB embedding provider from Ollama to Gemini proxy
+    text: Apply the validated Gemini proxy to the live MDDB on tony-dell. Update the MDDB container/Quadlet config to use
+      http://gemini:11435, reindex all collections, then stop Ollama and reclaim tony-omen GPU.
+    status: active
+    priority: high
     started: '2026-08-19'
     estimated_duration: 1 session
     tags:
-    - focus
+    - mddb
+    - gemini
+    - gpu-offload
+    - tony-dell
+    - ollama
     subtasks:
-    - label: Survey current mcp-debug file/SSOT capabilities and decide tool shape
+    - label: Update tony-dell MDDB Quadlet to point at Gemini proxy
       status: completed
       completed_at: '2026-08-19'
-      note: 'Existing mcp_read_ssot, mcp_query_ssot, mcp_search_ssot. Gap is asset-oriented lookup across split registry partitions.'
-    - label: Design mcp_ssot tool input/output contract
+    - label: Restart live MDDB and reindex all collections
+      status: deferred
+      started_at: '2026-08-19'
+      deferred_at: '2026-08-19'
+      resume_session: chaba
+      resume_note: MDDB reindex is running in background with Ollama; resume when it finishes and validate
+    - label: Validate vector search on main MDDB
+      status: not_started
+    - label: Stop Ollama container on tony-omen and reclaim GPU
       status: completed
       completed_at: '2026-08-19'
-      note: 'mcp_ssot_query (search by q/type/by/limit/offset) and mcp_ssot_get (resolve by id/path + source SSOT).'
-    - label: Implement mcp_ssot_query and mcp_ssot_get in scripts/mcp_debug/tools.py
-      status: completed
-      completed_at: '2026-08-19'
-      note: 'Added in tools.py as aliases wrapping registry.mcp_registry_lookup and registry.mcp_registry_get.'
-    - label: Register new tools in mcp-debug-server.py and MCP config
-      status: completed
-      completed_at: '2026-08-19'
-      note: 'Registered mcp_ssot_query and mcp_ssot_get in server.py tool list and dispatch.'
-    - label: Test lookup for a registry asset and a small SSOT file
-      status: completed
-      completed_at: '2026-08-19'
-      note: 'mcp_ssot_query(q=helm) returns ssot-apps-helm; mcp_ssot_get(id=ssot-apps-helm) returns asset + SSOT content.'
-    - label: Update ssot.mcp-debug.yml suggested_extensions and commit
-      status: completed
-      completed_at: '2026-08-19'
-      note: 'ssot.mcp-debug.yml already lists registry-lookup extension as completed.'
-    request_log: []
-    ownership:
-      owner: tony
-      session: ''
-      locked: true
-      lock_reason: Activated as active focus
     branch: chaba
-    source: /home/tony/CascadeProjects/chaba/docs/ssot/focus-inbox/2026-08-19-mcp-debug-ssot-reading.yml
 - title: Ready (Safe)
   icon: safe
   layout: list
