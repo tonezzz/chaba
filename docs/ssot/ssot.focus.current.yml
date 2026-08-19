@@ -280,49 +280,6 @@ sections:
       Next step needs user approval for App Store login and Xcode install.
     previous_status: '2026-08-19'
     started: '2026-08-19'
-  - label: SSOT file optimization
-    text: Implement the SSOT file optimization plan. Enforce bloat thresholds, scan for data-isolation violations, remove
-      redundant and obsolete entries, standardize consistency, and wire all checks into ssot-validate and .githooks/pre-commit.
-    branch: chaba
-    priority: medium
-    status: completed
-    completed_at: '2026-08-19'
-    tags:
-    - ssot
-    - optimization
-    - bloat
-    - validation
-    - cleanup
-    missing_info:
-    - Specific threshold values in ssot.file-optimization.yml
-    - Which files currently exceed thresholds
-    - Whether pre-commit hook already runs ssot-validate
-    safe_to_parallel:
-      value: false
-      reason: SSOT-wide changes can affect validation and CI
-    subtasks:
-    - label: Review ssot.file-optimization.yml and current bloat scan results
-      status: completed
-      completed_at: '2026-08-19'
-      note: 'Ran scripts/ssot-optimize.mjs. 4 bloat candidates: ssot.registry.yml (1882), ssot.mcp-debug.yml (778), ssot.mcp-debug.baselines.yml
-        (727), ssot.focus.current.yml (420). 4 missing-icon warnings in ssot.tuya-smart-plug.yml. No data-isolation warnings.'
-    - label: Identify files exceeding thresholds and bloat causes
-      status: completed
-      completed_at: '2026-08-19'
-      note: 'Identified: ssot.registry.yml hard threshold 1882, ssot.mcp-debug.yml hard threshold 778, ssot.mcp-debug.baselines.yml
-        review 727, ssot.focus.current.yml review 420. ssot.tuya-smart-plug.yml missing icons.'
-    - label: Apply cleanups or splits to reduce bloat
-      status: completed
-      completed_at: '2026-08-19'
-      note: 'Split ssot.registry.yml and script registry; moved mcp-debug baselines to data; removed mcp-debug presets to a separate file. ssot-validate now reports 0 errors and 1 bloat warning (ssot.focus.current.yml 392). Only review threshold remaining.'
-    - label: Wire bloat and isolation checks into ssot-validate or pre-commit
-      status: completed
-      completed_at: '2026-08-19'
-      note: 'scripts/ssot-validate-all.mjs reports bloat warnings. scripts/ssot-optimize.mjs reports bloat and data-isolation candidates.'
-    - label: Re-run validation and commit results
-      status: not_started
-    started: '2026-08-19'
-    source: /home/tony/CascadeProjects/chaba/docs/ssot/focus-inbox/processed/2026-08-19-ssot-file-optimization.yml
 - title: Ready (Safe)
   icon: safe
   layout: list
