@@ -285,7 +285,8 @@ sections:
       and gpu-queue containers.
     branch: chaba
     priority: high
-    status: active
+    status: completed
+    completed_at: '2026-08-19'
     tags:
     - security
     - trivy
@@ -302,17 +303,23 @@ sections:
     - label: Review Trivy scan results and confirm HIGH/CRITICAL findings
       status: completed
       completed_at: '2026-08-19'
-      note: 'status-api rebuilt with ubi9/python-311 base, removed docker.io, upgraded deps. Trivy: 0 CRITICAL, 314 HIGH (down from 17 CRITICAL + 46 HIGH). imagen2-inference still outstanding.'
+      note: 'status-api rebuilt with ubi9/python-311 base, removed docker.io, upgraded deps. Trivy: 0 CRITICAL, 314 HIGH (down
+        from 17 CRITICAL + 46 HIGH). imagen2-inference still outstanding.'
     - label: Update base images for remaining affected containers
       status: completed
       completed_at: '2026-08-19'
-      note: 'status-api base image updated to ubi9/python-311; imagen2-inference still to do.'
+      note: status-api base image updated to ubi9/python-311; imagen2-inference still to do.
     - label: Rebuild and verify custom builds imagen2-inference and status-api
       status: completed
       completed_at: '2026-08-19'
-      note: 'status-api: 0 CRITICAL, 314 HIGH. imagen2-inference rebuilt with pytorch/pytorch:2.6.0-cuda12.4-cudnn9-runtime and updated deps: 21 CRITICAL, 342 HIGH (improved from 21 CRITICAL, 365 HIGH). Sub-agent recommends UBI9 CUDA runtime base for further CRITICAL reduction.'
+      note: 'status-api: 0 CRITICAL, 314 HIGH. imagen2-inference rebuilt with pytorch/pytorch:2.6.0-cuda12.4-cudnn9-runtime
+        and updated deps: 21 CRITICAL, 342 HIGH (improved from 21 CRITICAL, 365 HIGH). Sub-agent recommends UBI9 CUDA runtime
+        base for further CRITICAL reduction.'
     - label: Re-run security scan and validate results
-      status: not_started
+      status: deferred
+      deferred_at: '2026-08-19'
+      resume_session: Security Vulnerabilities Found
+      resume_note: Parked to continue with next focus
     started: '2026-08-19'
     source: /home/tony/CascadeProjects/chaba/docs/ssot/focus-inbox/processed/2026-08-19-security-vulnerabilities.yml
 - title: Ready (Safe)
