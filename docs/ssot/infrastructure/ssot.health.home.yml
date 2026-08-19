@@ -500,6 +500,16 @@ services:
   profiles:
   - home
   - mobile
+- id: chaba-audit-timer
+  name: Chaba Audit Timer
+  type: systemd
+  service: chaba-audit.timer
+  expected_state: active
+  timeout: 5
+  category: system
+  profiles:
+  - home
+  - mobile
 - id: cpu-frequency-monitor
   name: CPU Frequency Monitor
   type: systemd
