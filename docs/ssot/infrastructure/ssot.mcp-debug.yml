@@ -428,6 +428,31 @@ server:
   - mcp_context
   - mcp_session_summary
   - mcp_preprocess
+
+tool_selection:
+  description: |
+    The SSOT query and context tools are arranged from the most precise to the
+    broadest. Use the smallest tool that can answer the question.
+  hierarchy:
+    - tool: mcp_query_ssot
+      for: one precise value or list at a dotted path in a known or discovered SSOT file
+      example: path=docs/ssot/infrastructure/ssot.values.yml, key=ports.mcp_debug_cors
+    - tool: mcp_mddb_doc
+      for: full content of the most relevant SSOT document discovered by MDDB or keywords
+      example: query="audit framework"
+    - tool: mcp_read_ssot
+      for: bounded direct read of a known SSOT file
+      example: path=docs/ssot/infrastructure/ssot.mcp-debug.yml, limit=5000
+    - tool: mcp_search_ssot
+      for: search results/excerpts only, not full content
+      example: query="focus decision tree"
+    - tool: mcp_context
+      for: curated set of KB/SSOT documents relevant to the active focus and an optional query
+      example: query="audit"
+    - tool: mcp_preprocess
+      for: grounding an ambiguous request in active focus and returning a structured prompt
+      example: request="continue"
+
 phases:
 - id: 1
   name: SSOT and spec
