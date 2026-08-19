@@ -1,7 +1,22 @@
 title: MCP Focus
 subtitle: Session-start router and focus recommendation policy for the mcp_focus tool
 icon: 🎯
-version: 1
+version: 2
+
+config:
+  version: 2
+  last_updated: '2026-08-19'
+  maintainer: tony
+  status: active
+  canonical_implementation: scripts/mcp_debug/focus.py
+  related_files:
+    - scripts/mcp_debug/focus.py
+    - scripts/mcp_focus/server.py
+    - scripts/focus_common.py
+    - docs/ssot/ssot.focus.current.yml
+    - docs/ssot/ssot.focus.yml
+    - docs/ssot/ssot.focus.sessions.yml
+    - docs/ssot/infrastructure/ssot.focus.triage.yml
 
 overview:
   purpose: |
@@ -171,6 +186,71 @@ safety:
   - If an active focus exists, the default recommendation is "continue" unless the user explicitly asks to switch.
   - The tool may expose a "status" mode that only returns active foci and quick wins.
   - Any drafted inbox YAML returned to the assistant must be reviewed by the user before activation.
+
+modes:
+  - name: recommend
+    description: Default. Classify the request and return a recommendation.
+    read_only: true
+    request_optional: true
+  - name: status
+    description: Return active foci, quick wins, hand-off queue, ready safe, and session groups.
+    read_only: true
+    request_optional: true
+  - name: pre_action
+    description: Summarize the active focus state before an action is taken.
+    read_only: true
+    request_optional: true
+  - name: safe_next
+    description: Return the highest-scoring focus that is safe to run in parallel.
+    read_only: true
+    request_optional: true
+  - name: ready_queue
+    description: Return the Ready (Safe) queue.
+    read_only: true
+    request_optional: true
+  - name: defer
+    description: Defer the active focus subtask or the focus itself.
+    read_only: false
+    request_optional: true
+    extra_inputs:
+      - resume_session
+      - reason
+  - name: resume
+    description: Suggest a previously deferred focus to resume.
+    read_only: true
+    request_optional: true
+    extra_inputs:
+      - resume_session
+  - name: sweep
+    description: Review all parked/backlog/inbox foci and optionally bulk-defer.
+    read_only: false
+    request_optional: true
+    extra_inputs:
+      - hold
+      - bulk_session
+      - session_map
+  - name: next
+    description: Activate the highest-priority parked or deferred focus.
+    read_only: false
+    request_optional: true
+    extra_inputs:
+      - resume_session
+  - name: technical_decision
+    description: Append a structured technical decision.
+    read_only: false
+    request_optional: false
+  - name: session_summary
+    description: Append a session summary.
+    read_only: false
+    request_optional: false
+
+tools:
+  - name: mcp_focus
+    description: Main focus router; see modes above.
+    server: mcp-focus
+  - name: mcp_focus_status
+    description: Lightweight status endpoint, equivalent to mcp_focus mode=status with no request.
+    server: mcp-focus
 
 related_files:
   - docs/ssot/ssot.focus.current.yml
