@@ -1,3 +1,7 @@
+---
+category: operations
+---
+
 # Task: Android TV Box WiFi Connection + MCP Server
 
 **Created:** 2026-06-25  

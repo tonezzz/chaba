@@ -1,3 +1,7 @@
+---
+category: troubleshooting
+---
+
 # YAML Syntax Error Patterns and Fixes
 
 ## What it is

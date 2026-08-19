@@ -4,7 +4,7 @@ description: Software environment, runtimes, and active projects on tony-omen ma
 tags: [hardware, software, environment, tony-omen]
 created: 2026-07-08
 updated: 2026-08-11
-category: hardware
+category: troubleshooting
 status: active
 ---
 

@@ -3,6 +3,7 @@ title: "tony-omen local Imagen website"
 date: 2026-07-23
 tags: [tony-omen, caddy, imagen, docker, ai]
 status: completed
+category: implementation
 ---
 
 ## Context

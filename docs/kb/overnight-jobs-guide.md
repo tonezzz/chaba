@@ -1,3 +1,7 @@
+---
+category: operations
+---
+
 # Overnight Assessment Jobs Guide
 
 ## Overview

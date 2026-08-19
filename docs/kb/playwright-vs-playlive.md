@@ -1,3 +1,7 @@
+---
+category: operations
+---
+
 # Playwright vs PlayLive Comparison
 ## What it is
 

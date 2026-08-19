@@ -1,3 +1,7 @@
+---
+category: operations
+---
+
 # Android TV Box — WiFi Connection & MCP Server Notes
 
 **Date:** 2026-06-25  

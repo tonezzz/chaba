@@ -1,3 +1,7 @@
+---
+category: troubleshooting
+---
+
 # TradeCanvas Chart Graph Display Issues
 ## What it is
 

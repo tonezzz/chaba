@@ -2,7 +2,7 @@
 title: Chrome Remote Desktop Profile Management Strategy
 description: Best practices for managing Chrome Remote Desktop with multiple Chrome profiles and users on macOS
 tags: [chrome-remote-desktop, profile-management, multi-user, remote-access, macos]
-category: remote-access
+category: operations
 search_keywords: [chrome remote desktop, multiple profiles, concurrent access, profile strategy, multi-user]
 ---
 

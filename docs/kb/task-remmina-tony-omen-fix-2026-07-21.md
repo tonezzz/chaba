@@ -1,3 +1,7 @@
+---
+category: troubleshooting
+---
+
 # Remmina RDP to tony-omen fails via hostname and IP
 
 **Date:** 2026-07-21  

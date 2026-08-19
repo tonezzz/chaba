@@ -1,3 +1,7 @@
+---
+category: operations
+---
+
 # tony-omen Remote Session Setup
 
 **Date:** 2026-07-22  

@@ -1,3 +1,7 @@
+---
+category: troubleshooting
+---
+
 # Yomi MCP Process Leak
 
 ## What it is

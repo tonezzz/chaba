@@ -1,3 +1,7 @@
+---
+category: operations
+---
+
 # PlayLive Basic Authentication
 
 ## What it is

@@ -1,3 +1,7 @@
+---
+category: implementation
+---
+
 # Security Scanning Implementation and Timeout Fixes
 
 ## What it is

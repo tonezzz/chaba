@@ -7,7 +7,7 @@ import { readFileSync, readdirSync, writeFileSync } from 'fs';
 import { join } from 'path';
 
 const KB_DIR = '/home/tony/CascadeProjects/chaba/docs/kb';
-const CORE_CATEGORIES = ['operations', 'development', 'architecture', 'troubleshooting', 'implementation'];
+const CORE_CATEGORIES = ['operations', 'development', 'architecture', 'troubleshooting', 'implementation', 'features', 'system'];
 
 const SUGGESTED_MAP = {
   'operations': 'operations',

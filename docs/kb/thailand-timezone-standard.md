@@ -1,3 +1,7 @@
+---
+category: operations
+---
+
 # Thailand Timezone Standard for Date Handling
 
 ## What it is

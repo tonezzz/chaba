@@ -1,3 +1,7 @@
+---
+category: implementation
+---
+
 # Trade API Integration
 
 ## What it is

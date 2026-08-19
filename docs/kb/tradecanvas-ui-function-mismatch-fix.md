@@ -1,3 +1,7 @@
+---
+category: troubleshooting
+---
+
 # TradeCanvas UI Function Mismatch Fix & Modular Refactoring
 ## What it is
 

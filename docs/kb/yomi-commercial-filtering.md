@@ -1,3 +1,7 @@
+---
+category: operations
+---
+
 # Yomi Commercial Message Filtering
 
 ## What it is

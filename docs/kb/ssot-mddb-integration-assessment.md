@@ -1,3 +1,7 @@
+---
+category: operations
+---
+
 # SSOT-MDDB Integration Assessment
 
 **Date**: 2026-08-12

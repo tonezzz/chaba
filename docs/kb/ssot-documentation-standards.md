@@ -1,3 +1,7 @@
+---
+category: operations
+---
+
 # SSOT Documentation Standards
 
 ## What it is

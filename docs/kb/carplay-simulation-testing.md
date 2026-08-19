@@ -4,7 +4,7 @@ description: CarPlay-style interface simulation for iPad testing with GPS tracki
 tags: [carplay, ipad, testing, simulation, gps, navigation]
 created: 2026-08-06
 updated: 2026-08-06
-category: testing
+category: implementation
 related: [ssot.apps.test-carplay.yml, app-ssot-standards.md, h3-pages.md]
 search_keywords: [carplay simulation, ipad testing, gps tracking, route planning, navigation testing, ios interface]
 ---

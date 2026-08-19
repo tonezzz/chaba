@@ -1,3 +1,7 @@
+---
+category: system
+---
+
 # System Automation
 ## What it is
 

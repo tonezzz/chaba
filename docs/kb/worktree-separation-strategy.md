@@ -1,3 +1,7 @@
+---
+category: operations
+---
+
 # Worktree Separation Strategy
 
 ## What it is

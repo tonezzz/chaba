@@ -1,3 +1,7 @@
+---
+category: operations
+---
+
 # Prompt / command preprocessor
 
 ## Purpose

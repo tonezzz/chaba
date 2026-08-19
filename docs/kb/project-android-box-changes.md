@@ -3,6 +3,7 @@ project: android-box
 date: 2026-07-21
 tags: [changelog]
 status: active
+category: operations
 ---
 
 # Android TV box — Change log

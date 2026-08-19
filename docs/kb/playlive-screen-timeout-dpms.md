@@ -1,3 +1,7 @@
+---
+category: troubleshooting
+---
+
 # PlayLive Screen Timeout: DPMS Session Closure
 
 ## What it is

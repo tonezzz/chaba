@@ -4,7 +4,7 @@ description: Technology stack, tools, and systems used across development enviro
 tags: [tech-stack, tools, infrastructure, development]
 created: 2026-08-11
 updated: 2026-08-13
-category: meta
+category: operations
 status: active
 ---
 

@@ -5,6 +5,7 @@ tags: [tailscale, vpn, networking, ssot, remote-access, mobile]
 created: 2026-08-13
 updated: 2026-08-14
 status: completed
+category: operations
 ---
 
 # Tailscale Rollout Plan for Chaba

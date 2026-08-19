@@ -1,3 +1,7 @@
+---
+category: features
+---
+
 # Yomi Daily2 Calendar Page
 
 ## What it is

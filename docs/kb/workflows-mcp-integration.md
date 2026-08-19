@@ -1,3 +1,7 @@
+---
+category: operations
+---
+
 # workflows-mcp Integration
 
 ## What it is

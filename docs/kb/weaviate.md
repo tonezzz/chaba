@@ -1,3 +1,7 @@
+---
+category: operations
+---
+
 # Weaviate Vector Database
 
 ## What it is

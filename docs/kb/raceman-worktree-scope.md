@@ -1,3 +1,7 @@
+---
+category: operations
+---
+
 # Raceman Worktree Scope Definition
 
 ## What it is

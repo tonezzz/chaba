@@ -1,3 +1,7 @@
+---
+category: operations
+---
+
 # Yomi Gemini Priority System
 ## What it is
 

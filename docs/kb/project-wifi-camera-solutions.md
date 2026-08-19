@@ -1,3 +1,7 @@
+---
+category: implementation
+---
+
 # WiFi Camera Solutions
 
 ## Goal

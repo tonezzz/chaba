@@ -1,3 +1,7 @@
+---
+category: operations
+---
+
 # Token Optimization
 ## What it is
 

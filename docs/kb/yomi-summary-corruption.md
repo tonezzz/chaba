@@ -1,3 +1,7 @@
+---
+category: troubleshooting
+---
+
 # Yomi Summary Corruption Prevention
 
 ## What it is

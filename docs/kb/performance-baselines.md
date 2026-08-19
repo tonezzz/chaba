@@ -1,3 +1,7 @@
+---
+category: operations
+---
+
 # Performance Baselines System
 
 ## Overview

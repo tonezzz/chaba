@@ -4,7 +4,7 @@ description: General information about Tony, timezone, workflows, and knowledge 
 tags: [general, personal, workflow, architecture]
 created: 2026-08-11
 updated: 2026-08-13
-category: meta
+category: operations
 status: active
 ---
 

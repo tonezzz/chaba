@@ -1,3 +1,7 @@
+---
+category: operations
+---
+
 # Wifi Camera Solutions - July 15, 2026
 
 ## Context

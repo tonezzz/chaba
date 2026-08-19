@@ -1,3 +1,7 @@
+---
+category: operations
+---
+
 # Sub-Agent Focus Dispatch (SAFD)
 
 ## Overview

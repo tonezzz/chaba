@@ -4,7 +4,7 @@ description: Communication style, code conventions, and tool preferences for AI 
 tags: [preferences, communication, code-style, tools]
 created: 2026-08-11
 updated: 2026-08-11
-category: meta
+category: operations
 status: active
 ---
 

@@ -1,3 +1,7 @@
+---
+category: operations
+---
+
 # Shared JavaScript Utilities Approach
 ## What it is
 

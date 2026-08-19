@@ -3,6 +3,7 @@ title: "Chaba status site deployment"
 date: 2026-07-22
 tags: [chaba, plesk, git, monitoring]
 status: active
+category: implementation
 ---
 
 ## Context

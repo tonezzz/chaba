@@ -4,7 +4,7 @@ description: Final status of MDDB collection restructuring with current state an
 tags: [mddb, migration, final-status, database, collections]
 created: 2026-08-13
 updated: 2026-08-13
-category: infrastructure
+category: operations
 related: [storage-performance-analysis.md, postgres-performance-comparison.md]
 search_keywords: [mddb migration final, collection restructuring complete]
 ---
