@@ -50,6 +50,17 @@ output_schema:
     confidence: high | medium | low
     reasoning: short human-readable explanation
     next_prompt: what to tell the user or assistant next
+    canonical_request: preprocessed canonical request when a command or alias was expanded
+    command: detected command metadata for direct dispatch
+  preprocessed:
+    ok: boolean
+    request: original request
+    canonical_request: expanded/grounded request string
+    confidence: match score 0-1
+    suggested_action: continue_focus, quick_win, backlog, inbox, continue_job, or direct
+    grounding: source label, file, status, priority, branch
+    command: detected command metadata
+    similar_items: top similar focus/backlog/job items
 
 actions:
   continue:

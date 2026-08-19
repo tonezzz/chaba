@@ -7,6 +7,7 @@ from .config import REPO_DIR
 
 
 sys.path.insert(0, str(REPO_DIR / "scripts"))
+from prompt_preprocessor import preprocess as _preprocess_request
 from focus_common import (
     PRIORITY, QUICK_WIN_CUES, BACKLOG_CUES, priority_value, triage_score, is_active,
     active_branch_set, active_items, backlog_items, find_section, incomplete_subtasks,
@@ -883,10 +884,20 @@ def mcp_focus(request=None, mode="recommend", decision=None, summary=None, resum
             "pre_action_summary": _pre_action_summary(request or ""),
         }
 
+    preprocessed = _preprocess_request(request or "")
+    if preprocessed and preprocessed.get("ok") and preprocessed.get("confidence", 0) > 0.8 and preprocessed.get("canonical_request"):
+        lookup_request = preprocessed["canonical_request"]
+    else:
+        lookup_request = request or ""
+
     if not request:
         recommendation = _make_recommendation("", active, quick_wins)
     else:
-        recommendation = _make_recommendation(request, active, quick_wins)
+        recommendation = _make_recommendation(lookup_request, active, quick_wins)
+
+    if preprocessed and preprocessed.get("command"):
+        recommendation["command"] = preprocessed["command"]
+        recommendation["canonical_request"] = preprocessed["canonical_request"]
 
     matched_to = recommendation.get("target", "")
     log_decision(request or "", recommendation["action"], matched_to, recommendation["reasoning"], recommendation["confidence"], "mcp_focus", matched_to)
@@ -898,4 +909,5 @@ def mcp_focus(request=None, mode="recommend", decision=None, summary=None, resum
         "hand_off_queue": hand_off_queue,
         "ready_safe": ready_safe,
         "recommendation": recommendation,
+        "preprocessed": preprocessed,
     }

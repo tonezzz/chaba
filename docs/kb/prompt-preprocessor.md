@@ -49,8 +49,37 @@ $ python3 scripts/prompt_preprocessor.py "promt preprocessor"
 
 Resolves to the `Prompt / command preprocessor for context and precision` job with 0.955 confidence and `suggested_action: continue_job`.
 
+## Integration with `mcp_focus`
+
+`mcp_focus` now calls `_preprocess_request` internally for `mode="recommend"`.
+
+```text
+mcp_focus(request="promt preprocessor", mode="recommend")
+  │
+  ▼
+preprocess("promt preprocessor")
+  │
+  ▼
+_use canonical_request for matching if confidence > 0.8_
+  │
+  ▼
+return recommendation + preprocessed metadata
+```
+
+The `mcp_focus` output now includes a `preprocessed` field with:
+
+- `canonical_request`
+- `suggested_action`
+- `grounding`
+- `command` (for direct command dispatch)
+- `similar_items`
+
+If the request is a bare command (e.g. `mcp_raw tony-omen systemctl status web`),
+`mcp_focus` also sets `recommendation.command` and `recommendation.canonical_request`
+so the assistant can dispatch it without treating it as a focus request.
+
 ## Future work
 
-- Hook into `mcp_focus` session start.
+- Use `preprocessed.suggested_action` to short-circuit focus routing for high-confidence matches.
 - Add MDDB semantic search for richer grounding.
 - Allow the assistant to register the preprocessor as an MCP tool once the contract is stable.
