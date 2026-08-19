@@ -16,29 +16,38 @@ related:
 
 ## What it is
 
-This entry documents the conventions for maintaining the raw-command allowlist in `docs/ssot/infrastructure/ssot.mcp-debug.yml`. The allowlist controls which shell commands the `mcp-debug` server may run on remote hosts.
+This entry documents the conventions for maintaining the raw-command allowlist in `docs/ssot/infrastructure/ssot.mcp-debug.yml`. The `raw` list defines which shell commands the `mcp-debug` server may execute on remote hosts. The `categories` map tags every allowed command by function.
 
 ## Context/Background
 
-The allowlist started with a small set of vetted diagnostic commands. As the tool grew, more commands were added for git, networking, storage, hardware, and system inspection. Without structure, the list becomes hard to review, risks token bloat, and may expose privileged or interactive commands.
+The allowlist grew from a small set of vetted diagnostic commands to cover git, networking, storage, hardware, and system inspection. To keep it maintainable, each raw command now has a category, and several risky or open-ended commands have been removed from the list.
 
 ## Key Details
 
-### 1. Categorize by purpose
+### 1. Categorize every command
 
-Group the `raw` list by function so reviewers know why a command is present:
+The SSOT now keeps a `categories` map that assigns each raw prefix to a functional category. Current categories include:
 
-- `system-info` — `whoami`, `id`, `uname`, `hostname`, `lsb_release`
-- `hardware` — `lspci`, `lscpu`, `lsmem` (avoid heavy scans)
-- `storage` — `df -h`, `du` (with path limits), `lsblk`
-- `network` — `ip`, `ss`, `lsof -nP`, `dig`, `resolvectl`, `ping` (with timeout)
-- `process` — `ps`, `lsof -nP`, `systemctl`
-- `git` — read-only subcommands only
-- `json/yaml` — `jq`, `yq` for filtering output
+- `process` — `systemctl`, `ps`, `pgrep`, `pkill`, `nohup`, `top`
+- `container` — `podman`, `docker`
+- `storage` — `df`, `mount`, `lsblk`, `lsusb`, `du`
+- `network` — `ss`, `lsof`, `ip`, `tailscale`, `dig`, `nslookup`, `host`, `resolvectl`, `netstat`, `ssh`, `curl`
+- `system` — `journalctl`, `env`, `free`, `uptime`, `systemd-analyze`
+- `system-info` — `whoami`, `id`, `uname`, `hostname`, `lsb_release`, `which`, `whereis`
+- `hardware` — `lspci`, `lsmod`, `modinfo`, `lsmem`, `lscpu`
+- `macos` — `launchctl`, `vm_stat`, `diskutil`, `system_profiler`, `scutil`, `sw_vers`, `sysctl`
+- `text` — `tail`, `head`, `cat`, `ls`, `find`, `locate`, `grep`, `sed`, `awk`, `xargs`, `sort`, `uniq`, `cut`, `wc`, `file`, `stat`, `readlink`, `realpath`
+- `json` — `jq`, `yq`
+- `package` — `apt`, `apt-get`, `apt-cache`, `apt-mark`, `dpkg`
+- `gpu` — `nvidia-smi`, `rocm-smi`
+- `git` — `git` (must still be gated to read-only subcommands)
+- `script` — `python3`
+
+When adding a new raw command, add it to the `raw` list and to the `categories` map. Use an existing category or create a new one and document why it is needed.
 
 ### 2. Gate git tightly
 
-Only allow read-only, non-destructive forms:
+`git` is in the allowlist, but only read-only, non-destructive subcommands should be used:
 
 - `git status`
 - `git log ...`
@@ -48,40 +57,30 @@ Only allow read-only, non-destructive forms:
 
 Do not allow `git checkout`, `git reset`, `git push`, `git pull`, `git clean`, `git rebase`, or any write without explicit user approval.
 
-### 3. Add per-command metadata
+### 3. Avoid risky or open-ended commands
 
-If the SSOT schema allows, annotate each command:
+The following are currently **not** in the allowlist because they are unsafe, slow, or too open-ended:
 
-- `read_only: true` — command never modifies state
-- `timeout` — seconds before abort
-- `max_output` — soft character limit to avoid token bloat
-- `hosts` — `linux`, `macos`, or `both`
-- `requires_privilege` — flag commands that may need `root`
-
-### 4. Avoid risky or open-ended commands
-
-Remove or heavily gate:
-
-- `python`, `node`, `npm`, `npx` — arbitrary code execution
 - `dmesg` — may require root and is large
-- `ping`, `traceroute`, `mtr` — can hang; require timeout and non-privileged flags
+- `ping`, `traceroute`, `mtr` — can hang; use `curl`/`dig` for network checks instead
+- `python`, `node`, `npm`, `npx` — arbitrary code execution; the only script interpreter is `python3`, and it should be used with extreme caution
 - `du` without path limits — expensive on large trees
 - `find` with broad roots — slow and high-output
 
-### 5. Baseline before whitelisting
+### 4. Baseline before whitelisting
 
-Before adding a new command, run `mcp_stats` on both `tony_omen` and `tony_dell` and confirm `savings_pct_chars` is positive on both hosts. Only add commands that are more compact than raw shell output.
+Before adding a new command, run `mcp_stats` on both `tony_omen` and `tony_dell` and confirm `savings_pct_chars` is positive on both hosts. Only add commands that are more compact than raw shell output. The `mcp_savings` report now includes the `category` for each raw prefix.
 
-### 6. Validate after edits
+### 5. Validate after edits
 
-Run `ssot-validate` after modifying `ssot.mcp-debug.yml` to catch YAML syntax errors, duplicate list items, or invalid command names.
+Run `ssot-validate` after modifying `ssot.mcp-debug.yml` to catch YAML syntax errors, duplicate list items, missing category entries, or invalid command names.
 
 ## Usage/Commands
 
 Adding a new raw command:
 
 ```bash
-# 1. Propose the command and category
+# 1. Propose the command and add it to both the raw list and the categories map
 # 2. Run baseline on both hosts
 mcp_stats(host="tony_omen", command="your-proposed-command")
 mcp_stats(host="tony_dell", command="your-proposed-command")
@@ -97,7 +96,7 @@ git commit -m "docs: add <command> to mcp-debug allowlist"
 
 - **Command works on one host but not the other** — add a `hosts` filter or an abstract wrapper like `podman ... || docker ...`.
 - **Token output is too large** — add `max_output`, use compacting, or remove low-value flags.
-- **`ssot-validate` fails** — check for duplicate entries, trailing whitespace, or inconsistent 2-space indentation.
+- **`ssot-validate` fails** — check for duplicate entries, missing `categories` map entry, trailing whitespace, or inconsistent 2-space indentation.
 
 ## Related Documentation
 

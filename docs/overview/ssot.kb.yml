@@ -106,9 +106,9 @@ sessions:
       - Improved Yomi with language detection and batch processing
     decisions:
       - Weighted average formula for impact scoring (business 30%, technical 30%, UX 20%, cost 20%)
-      - Dependency fields: depends_on, dependency_reason, blocks, blocking_reason
-      - GPU temperature thresholds: 80°C high, 85°C critical, 75°C moderate
-      - Yomi batch processing: 4 dates per API call, 30-day filtering, 3 concurrent
+      - "Dependency fields: depends_on, dependency_reason, blocks, blocking_reason"
+      - "GPU temperature thresholds: 80°C high, 85°C critical, 75°C moderate"
+      - "Yomi batch processing: 4 dates per API call, 30-day filtering, 3 concurrent"
       - Thai language detection using Unicode range U+0E00-U+0E7F
     discoveries:
       - GPU temperature thresholds needed adjustment to realistic values
@@ -176,9 +176,9 @@ sessions:
       - Configured comprehensive health checks for SSOT and MDDB services
     decisions:
       - Selected MDDB over alternatives (WebObsidian, Kryton, enterprise platforms)
-      - MDDB chosen for: 77 MCP tools, multi-protocol support, zero-config deployment, advanced search
-      - Deployment location: /home/tony/CascadeProjects/chaba-kbman/stacks/web/mddb/
-      - Access domain: kb.tony-omen.local via existing Caddy reverse proxy
+      - "MDDB chosen for: 77 MCP tools, multi-protocol support, zero-config deployment, advanced search"
+      - "Deployment location: /home/tony/CascadeProjects/chaba-kbman/stacks/web/mddb/"
+      - "Access domain: kb.tony-omen.local via existing Caddy reverse proxy"
       - Use MDDB's native load-md-folder.sh for content migration instead of manual approach
       - Implement native MDDB backup API (/v1/backup) instead of custom Docker volume backups
       - Defer AKB evaluation to later (Git-backed vs BoltDB storage decision)
@@ -191,8 +191,8 @@ sessions:
       - Focus on MDDB functionality rather than routing complexity
     discoveries:
       - MDDB provides 79 built-in MCP tools (vs Kryton's 20, WebObsidian's REST API)
-      - Multi-protocol support: REST, gRPC, GraphQL, WebSocket (vs single protocol alternatives)
-      - Advanced search algorithms: NewTF-IDF, BM25, BM25F, HNSW, PMISparse, geospatial
+      - "Multi-protocol support: REST, gRPC, GraphQL, WebSocket (vs single protocol alternatives)"
+      - "Advanced search algorithms: NewTF-IDF, BM25, BM25F, HNSW, PMISparse, geospatial"
       - Zero-config single binary deployment vs complex PostgreSQL setups
       - Enterprise platforms (Neo4j, SAP, Pinecone) are overkill and expensive for this use case
       - MDDB has native bulk import script (load-md-folder.sh) for automated content migration
@@ -200,15 +200,15 @@ sessions:
       - Container startup requires explicit command-line arguments, not environment variables
       - Volume mapping must be mddb-data:/app/data for proper database persistence
       - Port 9000 conflict resolved by using 9001 (trade-api conflict)
-      - AKB alternative discovered: Git-backed knowledge base with PostgreSQL hybrid index
+      - "AKB alternative discovered: Git-backed knowledge base with PostgreSQL hybrid index"
       - MDDB has built-in load-md-folder.sh script with automatic key generation, YAML frontmatter extraction, recursive scanning
       - MDDB has native backup/restore API endpoints (/v1/backup, /v1/restore) with path jail security
-      - AKB alternative: Git-backed knowledge base with PostgreSQL hybrid index, agent plugins for Claude Code
-      - MCP workflow engine pattern: separate intelligence from execution for 99% token reduction
-      - MDDB Airbyte integration: 300+ data sources with native destination connector
+      - "AKB alternative: Git-backed knowledge base with PostgreSQL hybrid index, agent plugins for Claude Code"
+      - "MCP workflow engine pattern: separate intelligence from execution for 99% token reduction"
+      - "MDDB Airbyte integration: 300+ data sources with native destination connector"
       - MDDB Panel provides modern web UI for browsing collections and documents
       - Panel runs on port 3002 (conflict with 3000/3001 resolved)
-      - MDDB supports multiple embedding providers: OpenAI, Ollama, Voyage
+      - "MDDB supports multiple embedding providers: OpenAI, Ollama, Voyage"
       - Ollama provides local GPU-based embeddings (no API key needed)
       - OpenAI provides cloud-based embeddings (API key required)
       - Gemini API not directly supported as embedding provider in MDDB
@@ -218,7 +218,7 @@ sessions:
       - MDDB Panel expects full path for internal API proxy to http://mddb:11023
       - Caddy routing through /apps/mddb/* causes blank page due to API proxy failure
       - Direct port access provides full functionality without routing complexity
-      - MDDB Panel internal proxy configuration: MDDB_SERVER=http://mddb:11023
+      - "MDDB Panel internal proxy configuration: MDDB_SERVER=http://mddb:11023"
       - Playlive investigation confirmed security warnings are intentional MDDB behavior for development mode
       - Security warnings displayed as text content at top of MDDB Panel page (not a bug)
       - MDDB Panel fully functional despite security warnings (no JS errors, all features working)
@@ -227,7 +227,7 @@ sessions:
       - mcp-health MCP server provides comprehensive health monitoring for SSOT and MDDB services
       - SSOT health configuration includes systemd service monitoring for ssot-sync-watcher
       - MDDB enhanced monitoring includes 5 HTTP endpoints (health, stats, vector-stats, metrics) and container health
-      - Service dependency tracking: ssot-sync-watcher depends on mddb-api
+      - "Service dependency tracking: ssot-sync-watcher depends on mddb-api"
       - Recovery actions configured for all SSOT and MDDB services
       - Systemd service ssot-sync.service deployed and active for SSOT file watcher automation
       - docs/ssot/infrastructure/ssot.health.yml - Updated with SSOT and MDDB health monitoring configuration
@@ -373,7 +373,7 @@ sessions:
       - docs/kb/mddb-implementation-complete.md - Created comprehensive implementation status documentation
       - docs/kb/mddb-migration-strategy.md - Created 4-phase migration plan with rollback procedures
       - docs/kb/mddb-ollama-embedding-setup.md - Created Ollama integration and configuration documentation
-      - docs/kb.archive/ - Archived old docs/kb/ directory for rollback capability (backup: docs/kb-backup-2026-08-12.tar.gz)
+      - "docs/kb.archive/ - Archived old docs/kb/ directory for rollback capability (backup: docs/kb-backup-2026-08-12.tar.gz)"
       - docs/kb.archive/README.md - Created rollback procedure documentation
     related_kb:
       - docs/kb/mddb-implementation-complete.md
@@ -430,20 +430,20 @@ sessions:
       - docs/overview/ssot.kb.yml
     notes:
       - Corpus structure now matches actual 52 KB files in docs/kb/ directory
-      - System category: 23 files (architecture, infrastructure, configuration)
-      - Development category: 10 files (workflow, conventions, tooling)
-      - Operations category: 5 files (operations, monitoring, incidents)
-      - Features category: 14 files (features, enhancements, user-facing)
+      - "System category: 23 files (architecture, infrastructure, configuration)"
+      - "Development category: 10 files (workflow, conventions, tooling)"
+      - "Operations category: 5 files (operations, monitoring, incidents)"
+      - "Features category: 14 files (features, enhancements, user-facing)"
       - All KB files now follow consistent docs/kb/ directory structure
 
   - date: 2026-08-12
     duration: 45 minutes
     topics: [multi-project-kb, architecture-assessment, docs-trade, tool-selection, ai-context]
     outcomes:
-      - Assessed current fragmented KB architecture across projects (chaba: MDDB, trade: file-based + docs-trade MCP)
-      - Identified gaps: fragmented architecture, tool selection ambiguity, no cross-project search, inconsistent KB management
-      - Documented three solution options: unified MDDB (recommended), enhanced multi-project mcp-kbman, project context tool naming
-      - Proposed AI agent tool selection improvements: project context metadata, context-aware selection, unified search interface
+      - "Assessed current fragmented KB architecture across projects (chaba: MDDB, trade: file-based + docs-trade MCP)"
+      - "Identified gaps: fragmented architecture, tool selection ambiguity, no cross-project search, inconsistent KB management"
+      - "Documented three solution options: unified MDDB (recommended), enhanced multi-project mcp-kbman, project context tool naming"
+      - "Proposed AI agent tool selection improvements: project context metadata, context-aware selection, unified search interface"
       - Created comprehensive architecture assessment with short/medium/long-term recommendations
       - Kept docs-trade active for trade project (needs search capability)
       - Recommended immediate project context addition to tool names for clarity
@@ -467,11 +467,11 @@ sessions:
       - Implemented unified MDDB architecture for multi-project KB support (chaba + trade)
       - "Migrated 58 trade documentation files to MDDB across 4 collections (trade-kb-system: 13, trade-kb-development: 20, trade-kb-operations: 0, trade-kb-features: 25)"
       - Removed docs-trade MCP server from configuration (redundant with MDDB)
-      - Added project context metadata to all migrated documents (project: trade, source: trade, original_path: rel_path)
+      - "Added project context metadata to all migrated documents (project: trade, source: trade, original_path: rel_path)"
       - Created migration script (migrate-trade-kb.py) with recursive file discovery and path-based key generation
-      - Tested unified search across projects: chaba kb-development (automation) and trade-kb-development (automation) both working
-      - Verified semantic search relevance: trading signals query returns 0.59-0.71 scores in trade-kb-features
-      - Confirmed project isolation: collections maintain separation while enabling unified search interface
+      - "Tested unified search across projects: chaba kb-development (automation) and trade-kb-development (automation) both working"
+      - "Verified semantic search relevance: trading signals query returns 0.59-0.71 scores in trade-kb-features"
+      - "Confirmed project isolation: collections maintain separation while enabling unified search interface"
     decisions:
       - Implement unified MDDB approach for multi-project KB support (recommended option from assessment)
       - Remove docs-trade MCP server to eliminate infrastructure redundancy
@@ -481,8 +481,8 @@ sessions:
     configuration_changes:
       - stacks/web/mddb/migrate-trade-kb.py - Created trade KB migration script with recursive discovery
       - ~/.config/devin/mcp_config.json - Removed docs-trade MCP server entry
-      - MDDB collections - Added 4 trade collections: trade-kb-system, trade-kb-development, trade-kb-operations, trade-kb-features
-      - MDDB metadata - Added project context to all trade documents (project: trade, source: trade, original_path: rel_path)
+      - "MDDB collections - Added 4 trade collections: trade-kb-system, trade-kb-development, trade-kb-operations, trade-kb-features"
+      - "MDDB metadata - Added project context to all trade documents (project: trade, source: trade, original_path: rel_path)"
     related_kb:
       - docs/kb/mddb-implementation-complete.md
       - docs/kb/mddb-migration-strategy.md
@@ -496,12 +496,12 @@ sessions:
     outcomes:
       - Implemented SSOT YAML → MDDB sync (Option 1 from assessment) for semantic search
       - Created sync script (sync-ssot-to-mddb.py) with YAML parsing and MDDB formatting
-      - Synced 40 SSOT YAML files to MDDB across 3 collections (ssot-infrastructure: 10, ssot-apps: 15, ssot-general: 15)
+      - "Synced 40 SSOT YAML files to MDDB across 3 collections (ssot-infrastructure: 10, ssot-apps: 15, ssot-general: 15)"
       - Implemented file watcher (watch-ssot-sync.py) for auto-sync on YAML changes
       - Created systemd service (ssot-sync.service) for background auto-sync
-      - Verified semantic search quality: mcp server configuration (0.54-0.72 scores, 143ms), health check configuration (0.54-0.70 scores, 110ms)
+      - "Verified semantic search quality: mcp server configuration (0.54-0.72 scores, 143ms), health check configuration (0.54-0.70 scores, 110ms)"
       - Preserved direct YAML editing workflow while enabling MDDB semantic search
-      - Added metadata to SSOT documents (source: ssot, original_path: rel_path, type: yaml, last_synced: timestamp)
+      - "Added metadata to SSOT documents (source: ssot, original_path: rel_path, type: yaml, last_synced: timestamp)"
       - Implemented mcp-health extension for SSOT file watcher and MDDB monitoring
       - Updated SSOT health configuration with comprehensive service monitoring
       - Deployed systemd service for SSOT file watcher automation
@@ -519,12 +519,12 @@ sessions:
       - Monitor ssot-sync-watcher as systemd service (important criticality)
       - Enhanced MDDB monitoring with 5 HTTP endpoints (health, stats, vector-stats, metrics, container)
       - Configure ssot-sync service group for dependency tracking
-      - Add dependency: ssot-sync-watcher → mddb-api
+      - "Add dependency: ssot-sync-watcher → mddb-api"
       - Configure recovery actions for all SSOT and MDDB services
     discoveries:
       - SSOT health configuration already well-structured with required services
       - MDDB container name is "mddb" (not "mddb-api")
-      - mcp-health provides comprehensive tools: check_health, get_health_status, analyze_dependencies, get_troubleshooting_info
+      - "mcp-health provides comprehensive tools: check_health, get_health_status, analyze_dependencies, get_troubleshooting_info"
       - Service dependency analysis detects cascading failures
       - Recovery actions provide automated troubleshooting guidance
       - Systemd service ssot-sync.service successfully deployed and active
@@ -536,7 +536,7 @@ sessions:
       - scripts/ssot-sync.service - Created systemd service for background auto-sync
       - docs/ssot/infrastructure/ssot.health.yml - Updated with SSOT and MDDB health monitoring configuration
       - /etc/systemd/system/ssot-sync.service - Deployed systemd service for SSOT file watcher
-      - MDDB collections - Added 3 SSOT collections: ssot-infrastructure, ssot-apps, ssot-general
+      - "MDDB collections - Added 3 SSOT collections: ssot-infrastructure, ssot-apps, ssot-general"
       - MDDB metadata - Added SSOT-specific metadata (source, original_path, type, last_synced)
     related_kb:
       - docs/kb/mddb-implementation-complete.md
@@ -548,12 +548,12 @@ sessions:
     topics: [chaba-docs-migration, unified-search, docs-mcp-removal, mddb-complete]
     outcomes:
       - Migrated 55 chaba documentation files to MDDB (architecture, assessments, reports, implementation, general)
-      - Created 5 new collections: chaba-architecture (3), chaba-assessments (11), chaba-reports (2), chaba-implementation (3), chaba-general (36)
-      - Verified semantic search on chaba documentation: gpu embedding assessment (0.73-0.80 scores, 248ms response time)
+      - "Created 5 new collections: chaba-architecture (3), chaba-assessments (11), chaba-reports (2), chaba-implementation (3), chaba-general (36)"
+      - "Verified semantic search on chaba documentation: gpu embedding assessment (0.73-0.80 scores, 248ms response time)"
       - Removed docs MCP server from configuration (all chaba docs now in MDDB)
       - Achieved unified search across all chaba documentation via MDDB
       - SSOT search operational with high relevance (0.73-0.80 scores)
-      - Total MDDB documents: 154+ across 13 collections (chaba KB, trade KB, SSOT, chaba docs)
+      - "Total MDDB documents: 154+ across 13 collections (chaba KB, trade KB, SSOT, chaba docs)"
     decisions:
       - Migrate all chaba documentation to MDDB for unified search
       - Remove docs MCP server (redundant with MDDB)
@@ -603,12 +603,12 @@ sessions:
     topics: [chaba-docs-migration, unified-search, docs-mcp-removal, mddb-complete]
     outcomes:
       - Migrated 55 chaba documentation files to MDDB (architecture, assessments, reports, implementation, general)
-      - Created 5 new collections: chaba-architecture (3), chaba-assessments (11), chaba-reports (2), chaba-implementation (3), chaba-general (36)
-      - Verified semantic search on chaba documentation: gpu embedding assessment (0.73-0.80 scores, 248ms response time)
+      - "Created 5 new collections: chaba-architecture (3), chaba-assessments (11), chaba-reports (2), chaba-implementation (3), chaba-general (36)"
+      - "Verified semantic search on chaba documentation: gpu embedding assessment (0.73-0.80 scores, 248ms response time)"
       - Removed docs MCP server from configuration (all chaba docs now in MDDB)
       - Achieved unified search across all chaba documentation via MDDB
       - SSOT search operational with high relevance (0.54-0.72 scores)
-      - Total MDDB documents: 154+ across 13 collections (chaba KB, trade KB, SSOT, chaba docs)
+      - "Total MDDB documents: 154+ across 13 collections (chaba KB, trade KB, SSOT, chaba docs)"
       - Updated SSOT documentation to clearly state "direct YAML editing preserved, automatic sync to MDDB" policy
     decisions:
       - Migrate all chaba documentation to MDDB for unified search
@@ -635,10 +635,10 @@ sessions:
     outcomes:
       - Extended mcp-health to monitor SSOT file watcher service (ssot-sync-watcher) and MDDB system
       - Deployed ssot-sync.service to systemd (active and running for 10+ minutes)
-      - Added comprehensive MDDB health checks: API, stats, vector-stats, metrics, container
-      - Configured service criticality: ssot-sync-watcher as "important" service
-      - Added service groups: ssot-sync group with all SSOT and MDDB services
-      - Configured dependencies: ssot-sync-watcher → mddb-api for dependency tracking
+      - "Added comprehensive MDDB health checks: API, stats, vector-stats, metrics, container"
+      - "Configured service criticality: ssot-sync-watcher as \"important\" service"
+      - "Added service groups: ssot-sync group with all SSOT and MDDB services"
+      - "Configured dependencies: ssot-sync-watcher → mddb-api for dependency tracking"
       - Tested all health checks via mcp-health MCP tools (all healthy, 148-158ms response times)
       - Verified dependency analysis functional for ssot-sync-watcher → mddb-api
     decisions:
