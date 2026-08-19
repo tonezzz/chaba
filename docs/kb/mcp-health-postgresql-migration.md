@@ -84,6 +84,21 @@ The MCP health server was originally using SQLite for health check history stora
 - Updated syntax for PostgreSQL functions (NOW(), INTERVAL)
 - Graceful fallback if PostgreSQL container unavailable
 
+## Troubleshooting
+
+### mcp-health server fails with `connect ECONNREFUSED 127.0.0.1:5432`
+
+**Cause:** `mcp/mcp-health/server.js` defaults `POSTGRES_HOST` to `localhost`.
+
+**Fix:** The `mcp-health-client.py` caller must export `POSTGRES_HOST` pointing to the host that actually runs PostgreSQL. For the `tony-dell-mcp-health` timer, Postgres lives on `tony-dell`, so `mcp-health-client.py` sets:
+
+```python
+env["POSTGRES_HOST"] = env.get("POSTGRES_HOST", "tony-dell")
+env["POSTGRES_PORT"] = env.get("POSTGRES_PORT", "5432")
+```
+
+Without this, the server on `tony-omen` will crash immediately and the systemd service exits with `mcp-health: failed` and a `BrokenPipeError` in the client.
+
 **Example PostgreSQL Query:**
 ```bash
 docker exec postgres psql -U chaba -d chaba -c "
