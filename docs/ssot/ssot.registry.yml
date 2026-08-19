@@ -1,11 +1,14 @@
 title: Registry
-subtitle: Master catalog of project assets — scripts, SSOTs, services, apps, and related artifacts
+subtitle: Master catalog of project assets — scripts, SSOTs, services, apps, and related
+  artifacts
 icon: 🗃️
 version: 1
 overview:
-  purpose: 'One place to answer: "What things do we have, where do they live, what are they for,
+  purpose: 'One place to answer: "What things do we have, where do they live, what
+    are they for,
 
-    and what is their current status?" It does not replace per-file documentation; it
+    and what is their current status?" It does not replace per-file documentation;
+    it
 
     provides a lightweight index and a status-aware map.
 
@@ -62,7 +65,8 @@ rules:
 - 'For user-config files outside the repo, set project: chaba and location: user.'
 - Use related to link to SSOTs, services, scripts, or parent repos.
 - Keep purpose to one or two short sentences.
-- When a status changes to deprecated, add a deprecation note and keep the entry for 90 days.
+- When a status changes to deprecated, add a deprecation note and keep the entry for
+  90 days.
 - Run scripts/registry-drafts.py periodically to find missing assets.
 assets:
 - id: ssot-focus
@@ -87,7 +91,8 @@ assets:
   type: ssot
   path: docs/ssot/ssot.focus.current.yml
   project: chaba
-  purpose: Lightweight view of active shared/branch focuses and quick wins for session starts.
+  purpose: Lightweight view of active shared/branch focuses and quick wins for session
+    starts.
   status: active
   tags:
   - ssot
@@ -104,7 +109,8 @@ assets:
   type: ssot
   path: docs/ssot/ssot.focus.sessions.yml
   project: chaba
-  purpose: Append-only session plan and follow-up log for active and recently completed focuses.
+  purpose: Append-only session plan and follow-up log for active and recently completed
+    focuses.
   status: active
   tags:
   - ssot
@@ -237,7 +243,8 @@ assets:
   type: script
   path: scripts/mcp_debug/server.py
   project: chaba
-  purpose: MCP server wiring and tool dispatch for mcp_debug, mcp_focus, mcp_read_ssot, and mcp_search_ssot.
+  purpose: MCP server wiring and tool dispatch for mcp_debug, mcp_focus, mcp_read_ssot,
+    and mcp_search_ssot.
   status: active
   environment: tony-omen
   tags:
@@ -256,7 +263,8 @@ assets:
   type: script
   path: scripts/mcp_debug/http_server.py
   project: chaba
-  purpose: CORS HTTP endpoint that serves cached mcp-savings.json to the chaba.h3 report page.
+  purpose: CORS HTTP endpoint that serves cached mcp-savings.json to the chaba.h3
+    report page.
   status: active
   environment: tony-omen
   tags:
@@ -274,7 +282,8 @@ assets:
   type: script
   path: scripts/mcp_debug/tools.py
   project: chaba
-  purpose: MCP debug command vetting and compact output for tony_omen, tony_dell, and macbook.
+  purpose: MCP debug command vetting and compact output for tony_omen, tony_dell,
+    and macbook.
   status: stable
   tags:
   - mcp
@@ -306,7 +315,8 @@ assets:
   type: script
   path: scripts/mcp-link-monitor.py
   project: chaba
-  purpose: TCP/IP reachability monitor with probe, scan, safe fixes, drift detection, and focus-inbox alerts.
+  purpose: TCP/IP reachability monitor with probe, scan, safe fixes, drift detection,
+    and focus-inbox alerts.
   status: active
   environment: tony-omen
   tags:
@@ -323,7 +333,8 @@ assets:
   type: script
   path: scripts/focus-dispatcher.py
   project: chaba
-  purpose: Archive completed focuses, validate active limits, select next focus/inbox/backlog, and write next-focus contracts.
+  purpose: Archive completed focuses, validate active limits, select next focus/inbox/backlog,
+    and write next-focus contracts.
   status: active
   tags:
   - focus
@@ -356,7 +367,8 @@ assets:
   type: script
   path: scripts/overnight-focus-review.py
   project: chaba
-  purpose: Orchestrate health-to-inbox and focus-dispatcher --sub-agent for the 03:00 review.
+  purpose: Orchestrate health-to-inbox and focus-dispatcher --sub-agent for the 03:00
+    review.
   status: active
   tags:
   - focus
@@ -441,7 +453,8 @@ assets:
   type: script
   path: scripts/registry-drafts.py
   project: chaba
-  purpose: Scan the project and propose missing registry entries without overwriting ssot.registry.yml.
+  purpose: Scan the project and propose missing registry entries without overwriting
+    ssot.registry.yml.
   status: active
   tags:
   - registry
@@ -549,7 +562,8 @@ assets:
   type: ssot
   path: docs/ssot/decisions/ssot.technical-decisions.yml
   project: chaba
-  purpose: Technical design decision records for significant architecture and trade-off choices.
+  purpose: Technical design decision records for significant architecture and trade-off
+    choices.
   status: active
   tags:
   - ssot
@@ -564,7 +578,8 @@ assets:
   type: ssot
   path: docs/ssot/infrastructure/ssot.focus-dispatcher.yml
   project: chaba
-  purpose: Policy and wiring for the focus-dispatcher script and scheduled overnight review.
+  purpose: Policy and wiring for the focus-dispatcher script and scheduled overnight
+    review.
   status: active
   tags:
   - ssot
@@ -710,7 +725,8 @@ assets:
   type: ssot
   path: docs/ssot/ssot.ui.policy.yml
   project: chaba
-  purpose: UI policy guardrails for hosting, paths, mixed-content, branch/deploy, and Trade Canvas conventions.
+  purpose: UI policy guardrails for hosting, paths, mixed-content, branch/deploy,
+    and Trade Canvas conventions.
   status: active
   tags:
   - ssot
@@ -735,6 +751,1129 @@ assets:
   - ssot-index
   - ssot-validate
   added: '2026-08-17'
+- id: gemini-models
+  name: gemini-models
+  type: h3-app
+  path: chaba-h3/public/apps/docs/gemini-models/index.html
+  project: chaba
+  purpose: h3-app asset at chaba-h3/public/apps/docs/gemini-models/index.html; purpose
+    to be documented.
+  status: draft
+- id: home-network
+  name: home-network
+  type: h3-app
+  path: chaba-h3/public/apps/docs/home-network/index.html
+  project: chaba
+  purpose: h3-app asset at chaba-h3/public/apps/docs/home-network/index.html; purpose
+    to be documented.
+  status: draft
+- id: docs
+  name: docs
+  type: h3-app
+  path: chaba-h3/public/apps/docs/index.html
+  project: chaba
+  purpose: h3-app asset at chaba-h3/public/apps/docs/index.html; purpose to be documented.
+  status: draft
+- id: mcp-debug
+  name: mcp_debug
+  type: h3-app
+  path: chaba-h3/public/apps/docs/mcp_debug/index.html
+  project: chaba
+  purpose: h3-app asset at chaba-h3/public/apps/docs/mcp_debug/index.html; purpose
+    to be documented.
+  status: draft
+- id: focus
+  name: focus
+  type: h3-app
+  path: chaba-h3/public/apps/focus/index.html
+  project: chaba
+  purpose: h3-app asset at chaba-h3/public/apps/focus/index.html; purpose to be documented.
+  status: draft
+- id: apps
+  name: apps
+  type: h3-app
+  path: chaba-h3/public/apps/index.html
+  project: chaba
+  purpose: h3-app asset at chaba-h3/public/apps/index.html; purpose to be documented.
+  status: draft
+- id: map3d
+  name: map3d
+  type: h3-app
+  path: chaba-h3/public/apps/map3d/index.html
+  project: chaba
+  purpose: h3-app asset at chaba-h3/public/apps/map3d/index.html; purpose to be documented.
+  status: draft
+- id: postgres-test
+  name: postgres-test
+  type: h3-app
+  path: chaba-h3/public/apps/postgres-test/index.html
+  project: chaba
+  purpose: h3-app asset at chaba-h3/public/apps/postgres-test/index.html; purpose
+    to be documented.
+  status: draft
+- id: raceman
+  name: raceman
+  type: h3-app
+  path: chaba-h3/public/apps/raceman/index.html
+  project: chaba
+  purpose: h3-app asset at chaba-h3/public/apps/raceman/index.html; purpose to be
+    documented.
+  status: draft
+- id: sim
+  name: sim
+  type: h3-app
+  path: chaba-h3/public/apps/raceman/sim/index.html
+  project: chaba
+  purpose: h3-app asset at chaba-h3/public/apps/raceman/sim/index.html; purpose to
+    be documented.
+  status: draft
+- id: test-carplay
+  name: test-carplay
+  type: h3-app
+  path: chaba-h3/public/apps/test-carplay/index.html
+  project: chaba
+  purpose: h3-app asset at chaba-h3/public/apps/test-carplay/index.html; purpose to
+    be documented.
+  status: draft
+- id: test-pwa
+  name: test-pwa
+  type: h3-app
+  path: chaba-h3/public/apps/test-pwa/index.html
+  project: chaba
+  purpose: h3-app asset at chaba-h3/public/apps/test-pwa/index.html; purpose to be
+    documented.
+  status: draft
+- id: test-splat
+  name: test-splat
+  type: h3-app
+  path: chaba-h3/public/apps/test-splat/index.html
+  project: chaba
+  purpose: h3-app asset at chaba-h3/public/apps/test-splat/index.html; purpose to
+    be documented.
+  status: draft
+- id: track2
+  name: track2
+  type: h3-app
+  path: chaba-h3/public/apps/track2/index.html
+  project: chaba
+  purpose: h3-app asset at chaba-h3/public/apps/track2/index.html; purpose to be documented.
+  status: draft
+- id: track3
+  name: track3
+  type: h3-app
+  path: chaba-h3/public/apps/track3/index.html
+  project: chaba
+  purpose: h3-app asset at chaba-h3/public/apps/track3/index.html; purpose to be documented.
+  status: draft
+- id: sim
+  name: sim
+  type: h3-app
+  path: chaba-h3/public/apps/track3/sim/index.html
+  project: chaba
+  purpose: h3-app asset at chaba-h3/public/apps/track3/sim/index.html; purpose to
+    be documented.
+  status: draft
+- id: track4
+  name: track4
+  type: h3-app
+  path: chaba-h3/public/apps/track4/index.html
+  project: chaba
+  purpose: h3-app asset at chaba-h3/public/apps/track4/index.html; purpose to be documented.
+  status: draft
+- id: sim
+  name: sim
+  type: h3-app
+  path: chaba-h3/public/apps/track4/sim/index.html
+  project: chaba
+  purpose: h3-app asset at chaba-h3/public/apps/track4/sim/index.html; purpose to
+    be documented.
+  status: draft
+- id: tradecanvas-ui
+  name: tradecanvas-ui
+  type: h3-app
+  path: chaba-h3/public/apps/trade/tradecanvas-ui/index.html
+  project: chaba
+  purpose: h3-app asset at chaba-h3/public/apps/trade/tradecanvas-ui/index.html; purpose
+    to be documented.
+  status: draft
+- id: wind
+  name: wind
+  type: h3-app
+  path: chaba-h3/public/apps/wind/index.html
+  project: chaba
+  purpose: h3-app asset at chaba-h3/public/apps/wind/index.html; purpose to be documented.
+  status: draft
+- id: chunk-text
+  name: chunk-text.py
+  type: script
+  path: scripts/chunk-text.py
+  project: chaba
+  purpose: script asset at scripts/chunk-text.py; purpose to be documented.
+  status: draft
+- id: collect-macbook-snapshot
+  name: collect-macbook-snapshot.py
+  type: script
+  path: scripts/collect-macbook-snapshot.py
+  project: chaba
+  purpose: script asset at scripts/collect-macbook-snapshot.py; purpose to be documented.
+  status: draft
+- id: embedding-service-gpu
+  name: embedding-service-gpu.py
+  type: script
+  path: scripts/embeddings/embedding-service-gpu.py
+  project: chaba
+  purpose: script asset at scripts/embeddings/embedding-service-gpu.py; purpose to
+    be documented.
+  status: draft
+- id: embedding-service-host
+  name: embedding-service-host.py
+  type: script
+  path: scripts/embeddings/embedding-service-host.py
+  project: chaba
+  purpose: script asset at scripts/embeddings/embedding-service-host.py; purpose to
+    be documented.
+  status: draft
+- id: embedding-service
+  name: embedding-service.py
+  type: script
+  path: scripts/embeddings/embedding-service.py
+  project: chaba
+  purpose: script asset at scripts/embeddings/embedding-service.py; purpose to be
+    documented.
+  status: draft
+- id: focus-common
+  name: focus_common.py
+  type: script
+  path: scripts/focus_common.py
+  project: chaba
+  purpose: script asset at scripts/focus_common.py; purpose to be documented.
+  status: draft
+- id: init
+  name: __init__.py
+  type: script
+  path: scripts/focus_dispatcher/__init__.py
+  project: chaba
+  purpose: script asset at scripts/focus_dispatcher/__init__.py; purpose to be documented.
+  status: draft
+- id: actions
+  name: actions.py
+  type: script
+  path: scripts/focus_dispatcher/actions.py
+  project: chaba
+  purpose: script asset at scripts/focus_dispatcher/actions.py; purpose to be documented.
+  status: draft
+- id: cli
+  name: cli.py
+  type: script
+  path: scripts/focus_dispatcher/cli.py
+  project: chaba
+  purpose: script asset at scripts/focus_dispatcher/cli.py; purpose to be documented.
+  status: draft
+- id: git
+  name: git.py
+  type: script
+  path: scripts/focus_dispatcher/git.py
+  project: chaba
+  purpose: script asset at scripts/focus_dispatcher/git.py; purpose to be documented.
+  status: draft
+- id: history
+  name: history.py
+  type: script
+  path: scripts/focus_dispatcher/history.py
+  project: chaba
+  purpose: script asset at scripts/focus_dispatcher/history.py; purpose to be documented.
+  status: draft
+- id: prompts
+  name: prompts.py
+  type: script
+  path: scripts/focus_dispatcher/prompts.py
+  project: chaba
+  purpose: script asset at scripts/focus_dispatcher/prompts.py; purpose to be documented.
+  status: draft
+- id: state
+  name: state.py
+  type: script
+  path: scripts/focus_dispatcher/state.py
+  project: chaba
+  purpose: script asset at scripts/focus_dispatcher/state.py; purpose to be documented.
+  status: draft
+- id: triage
+  name: triage.py
+  type: script
+  path: scripts/focus_dispatcher/triage.py
+  project: chaba
+  purpose: script asset at scripts/focus_dispatcher/triage.py; purpose to be documented.
+  status: draft
+- id: generate-gemini-h3-docs
+  name: generate-gemini-h3-docs.py
+  type: script
+  path: scripts/generate-gemini-h3-docs.py
+  project: chaba
+  purpose: script asset at scripts/generate-gemini-h3-docs.py; purpose to be documented.
+  status: draft
+- id: generate-h3-docs
+  name: generate-h3-docs.py
+  type: script
+  path: scripts/generate-h3-docs.py
+  project: chaba
+  purpose: script asset at scripts/generate-h3-docs.py; purpose to be documented.
+  status: draft
+- id: generate-mcp-config
+  name: generate-mcp-config.py
+  type: script
+  path: scripts/generate-mcp-config.py
+  project: chaba
+  purpose: script asset at scripts/generate-mcp-config.py; purpose to be documented.
+  status: draft
+- id: generate-mcp-configs
+  name: generate-mcp-configs.py
+  type: script
+  path: scripts/generate-mcp-configs.py
+  project: chaba
+  purpose: script asset at scripts/generate-mcp-configs.py; purpose to be documented.
+  status: draft
+- id: ingest-gemini-rate-limits
+  name: ingest-gemini-rate-limits.py
+  type: script
+  path: scripts/ingest-gemini-rate-limits.py
+  project: chaba
+  purpose: script asset at scripts/ingest-gemini-rate-limits.py; purpose to be documented.
+  status: draft
+- id: mcp-debug-refresh-baselines
+  name: mcp-debug-refresh-baselines.py
+  type: script
+  path: scripts/mcp-debug-refresh-baselines.py
+  project: chaba
+  purpose: script asset at scripts/mcp-debug-refresh-baselines.py; purpose to be documented.
+  status: draft
+- id: mcp-debug-server
+  name: mcp-debug-server.py
+  type: script
+  path: scripts/mcp-debug-server.py
+  project: chaba
+  purpose: script asset at scripts/mcp-debug-server.py; purpose to be documented.
+  status: draft
+- id: mcp-health-client
+  name: mcp-health-client.py
+  type: script
+  path: scripts/mcp-health-client.py
+  project: chaba
+  purpose: script asset at scripts/mcp-health-client.py; purpose to be documented.
+  status: draft
+- id: mcp-context
+  name: mcp_context.py
+  type: script
+  path: scripts/mcp_context.py
+  project: chaba
+  purpose: script asset at scripts/mcp_context.py; purpose to be documented.
+  status: draft
+- id: init
+  name: __init__.py
+  type: script
+  path: scripts/mcp_debug/__init__.py
+  project: chaba
+  purpose: script asset at scripts/mcp_debug/__init__.py; purpose to be documented.
+  status: draft
+- id: capture
+  name: capture.py
+  type: script
+  path: scripts/mcp_debug/capture.py
+  project: chaba
+  purpose: script asset at scripts/mcp_debug/capture.py; purpose to be documented.
+  status: draft
+- id: config
+  name: config.py
+  type: script
+  path: scripts/mcp_debug/config.py
+  project: chaba
+  purpose: script asset at scripts/mcp_debug/config.py; purpose to be documented.
+  status: draft
+- id: formatters
+  name: formatters.py
+  type: script
+  path: scripts/mcp_debug/formatters.py
+  project: chaba
+  purpose: script asset at scripts/mcp_debug/formatters.py; purpose to be documented.
+  status: draft
+- id: hosts
+  name: hosts.py
+  type: script
+  path: scripts/mcp_debug/hosts.py
+  project: chaba
+  purpose: script asset at scripts/mcp_debug/hosts.py; purpose to be documented.
+  status: draft
+- id: init
+  name: __init__.py
+  type: script
+  path: scripts/mcp_focus/__init__.py
+  project: chaba
+  purpose: script asset at scripts/mcp_focus/__init__.py; purpose to be documented.
+  status: draft
+- id: server
+  name: server.py
+  type: script
+  path: scripts/mcp_focus/server.py
+  project: chaba
+  purpose: script asset at scripts/mcp_focus/server.py; purpose to be documented.
+  status: draft
+- id: mcp-session-summary
+  name: mcp_session_summary.py
+  type: script
+  path: scripts/mcp_session_summary.py
+  project: chaba
+  purpose: script asset at scripts/mcp_session_summary.py; purpose to be documented.
+  status: draft
+- id: compare-embeddings
+  name: compare-embeddings.py
+  type: script
+  path: scripts/mddb/compare-embeddings.py
+  project: chaba
+  purpose: script asset at scripts/mddb/compare-embeddings.py; purpose to be documented.
+  status: draft
+- id: migrate-chaba-docs
+  name: migrate-chaba-docs.py
+  type: script
+  path: scripts/migrate-chaba-docs.py
+  project: chaba
+  purpose: script asset at scripts/migrate-chaba-docs.py; purpose to be documented.
+  status: draft
+- id: process-remaining-focuses
+  name: process-remaining-focuses.py
+  type: script
+  path: scripts/process-remaining-focuses.py
+  project: chaba
+  purpose: script asset at scripts/process-remaining-focuses.py; purpose to be documented.
+  status: draft
+- id: prompt-preprocessor
+  name: prompt_preprocessor.py
+  type: script
+  path: scripts/prompt_preprocessor.py
+  project: chaba
+  purpose: script asset at scripts/prompt_preprocessor.py; purpose to be documented.
+  status: draft
+- id: registry-apply
+  name: registry-apply.py
+  type: script
+  path: scripts/registry-apply.py
+  project: chaba
+  purpose: script asset at scripts/registry-apply.py; purpose to be documented.
+  status: draft
+- id: sync-ssot-to-mddb
+  name: sync-ssot-to-mddb.py
+  type: script
+  path: scripts/sync-ssot-to-mddb.py
+  project: chaba
+  purpose: script asset at scripts/sync-ssot-to-mddb.py; purpose to be documented.
+  status: draft
+- id: watch-ssot-sync
+  name: watch-ssot-sync.py
+  type: script
+  path: scripts/watch-ssot-sync.py
+  project: chaba
+  purpose: script asset at scripts/watch-ssot-sync.py; purpose to be documented.
+  status: draft
+- id: weaviate-gemini-test
+  name: weaviate-gemini-test.py
+  type: script
+  path: scripts/weaviate-gemini-test.py
+  project: chaba
+  purpose: script asset at scripts/weaviate-gemini-test.py; purpose to be documented.
+  status: draft
+- id: windsurfrules-check
+  name: windsurfrules-check.py
+  type: script
+  path: scripts/windsurfrules-check.py
+  project: chaba
+  purpose: script asset at scripts/windsurfrules-check.py; purpose to be documented.
+  status: draft
+- id: barriers
+  name: barriers.service
+  type: service
+  path: ~/.config/systemd/user/barriers.service
+  project: chaba
+  purpose: service asset at ~/.config/systemd/user/barriers.service; purpose to be
+    documented.
+  status: draft
+- id: chaba-health-monitor
+  name: chaba-health-monitor.service
+  type: service
+  path: ~/.config/systemd/user/chaba-health-monitor.service
+  project: chaba
+  purpose: service asset at ~/.config/systemd/user/chaba-health-monitor.service; purpose
+    to be documented.
+  status: draft
+- id: clip-sync-dell
+  name: clip-sync-dell.service
+  type: service
+  path: ~/.config/systemd/user/clip-sync-dell.service
+  project: chaba
+  purpose: service asset at ~/.config/systemd/user/clip-sync-dell.service; purpose
+    to be documented.
+  status: draft
+- id: evolution-alarm-notify
+  name: evolution-alarm-notify.service
+  type: service
+  path: ~/.config/systemd/user/evolution-alarm-notify.service
+  project: chaba
+  purpose: service asset at ~/.config/systemd/user/evolution-alarm-notify.service;
+    purpose to be documented.
+  status: draft
+- id: gpu-queue-processor
+  name: gpu-queue-processor.service
+  type: service
+  path: ~/.config/systemd/user/gpu-queue-processor.service
+  project: chaba
+  purpose: service asset at ~/.config/systemd/user/gpu-queue-processor.service; purpose
+    to be documented.
+  status: draft
+- id: gpu-queue
+  name: gpu-queue.service
+  type: service
+  path: ~/.config/systemd/user/gpu-queue.service
+  project: chaba
+  purpose: service asset at ~/.config/systemd/user/gpu-queue.service; purpose to be
+    documented.
+  status: draft
+- id: playlived
+  name: playlived.service
+  type: service
+  path: ~/.config/systemd/user/playlived.service
+  project: chaba
+  purpose: service asset at ~/.config/systemd/user/playlived.service; purpose to be
+    documented.
+  status: draft
+- id: rclone-gdrive
+  name: rclone-gdrive.service
+  type: service
+  path: ~/.config/systemd/user/rclone-gdrive.service
+  project: chaba
+  purpose: service asset at ~/.config/systemd/user/rclone-gdrive.service; purpose
+    to be documented.
+  status: draft
+- id: tailscale-connections
+  name: tailscale-connections.service
+  type: service
+  path: ~/.config/systemd/user/tailscale-connections.service
+  project: chaba
+  purpose: service asset at ~/.config/systemd/user/tailscale-connections.service;
+    purpose to be documented.
+  status: draft
+- id: weaviate-index
+  name: weaviate-index.service
+  type: service
+  path: ~/.config/systemd/user/weaviate-index.service
+  project: chaba
+  purpose: service asset at ~/.config/systemd/user/weaviate-index.service; purpose
+    to be documented.
+  status: draft
+- id: workflows-mcp
+  name: workflows-mcp.service
+  type: service
+  path: ~/.config/systemd/user/workflows-mcp.service
+  project: chaba
+  purpose: service asset at ~/.config/systemd/user/workflows-mcp.service; purpose
+    to be documented.
+  status: draft
+- id: yomi-api
+  name: yomi-api.service
+  type: service
+  path: ~/.config/systemd/user/yomi-api.service
+  project: chaba
+  purpose: service asset at ~/.config/systemd/user/yomi-api.service; purpose to be
+    documented.
+  status: draft
+- id: yomi-update-active
+  name: yomi-update-active.service
+  type: service
+  path: ~/.config/systemd/user/yomi-update-active.service
+  project: chaba
+  purpose: service asset at ~/.config/systemd/user/yomi-update-active.service; purpose
+    to be documented.
+  status: draft
+- id: yomi-update-all
+  name: yomi-update-all.service
+  type: service
+  path: ~/.config/systemd/user/yomi-update-all.service
+  project: chaba
+  purpose: service asset at ~/.config/systemd/user/yomi-update-all.service; purpose
+    to be documented.
+  status: draft
+- id: ssot-apps-aihub
+  name: ssot.apps.aihub.yml
+  type: ssot
+  path: docs/ssot/apps/ssot.apps.aihub.yml
+  project: chaba
+  purpose: ssot asset at docs/ssot/apps/ssot.apps.aihub.yml; purpose to be documented.
+  status: draft
+- id: ssot-apps-cams
+  name: ssot.apps.cams.yml
+  type: ssot
+  path: docs/ssot/apps/ssot.apps.cams.yml
+  project: chaba
+  purpose: ssot asset at docs/ssot/apps/ssot.apps.cams.yml; purpose to be documented.
+  status: draft
+- id: ssot-apps-chaba
+  name: ssot.apps.chaba.yml
+  type: ssot
+  path: docs/ssot/apps/ssot.apps.chaba.yml
+  project: chaba
+  purpose: ssot asset at docs/ssot/apps/ssot.apps.chaba.yml; purpose to be documented.
+  status: draft
+- id: ssot-apps-deka
+  name: ssot.apps.deka.yml
+  type: ssot
+  path: docs/ssot/apps/ssot.apps.deka.yml
+  project: chaba
+  purpose: ssot asset at docs/ssot/apps/ssot.apps.deka.yml; purpose to be documented.
+  status: draft
+- id: ssot-apps-docs
+  name: ssot.apps.docs.yml
+  type: ssot
+  path: docs/ssot/apps/ssot.apps.docs.yml
+  project: chaba
+  purpose: ssot asset at docs/ssot/apps/ssot.apps.docs.yml; purpose to be documented.
+  status: draft
+- id: ssot-apps-h3
+  name: ssot.apps.h3.yml
+  type: ssot
+  path: docs/ssot/apps/ssot.apps.h3.yml
+  project: chaba
+  purpose: ssot asset at docs/ssot/apps/ssot.apps.h3.yml; purpose to be documented.
+  status: draft
+- id: ssot-apps-helm
+  name: ssot.apps.helm.yml
+  type: ssot
+  path: docs/ssot/apps/ssot.apps.helm.yml
+  project: chaba
+  purpose: ssot asset at docs/ssot/apps/ssot.apps.helm.yml; purpose to be documented.
+  status: draft
+- id: ssot-apps-imagen2
+  name: ssot.apps.imagen2.yml
+  type: ssot
+  path: docs/ssot/apps/ssot.apps.imagen2.yml
+  project: chaba
+  purpose: ssot asset at docs/ssot/apps/ssot.apps.imagen2.yml; purpose to be documented.
+  status: draft
+- id: ssot-apps-imagen3
+  name: ssot.apps.imagen3.yml
+  type: ssot
+  path: docs/ssot/apps/ssot.apps.imagen3.yml
+  project: chaba
+  purpose: ssot asset at docs/ssot/apps/ssot.apps.imagen3.yml; purpose to be documented.
+  status: draft
+- id: ssot-apps-map3d
+  name: ssot.apps.map3d.yml
+  type: ssot
+  path: docs/ssot/apps/ssot.apps.map3d.yml
+  project: chaba
+  purpose: ssot asset at docs/ssot/apps/ssot.apps.map3d.yml; purpose to be documented.
+  status: draft
+- id: ssot-apps-playlive
+  name: ssot.apps.playlive.yml
+  type: ssot
+  path: docs/ssot/apps/ssot.apps.playlive.yml
+  project: chaba
+  purpose: ssot asset at docs/ssot/apps/ssot.apps.playlive.yml; purpose to be documented.
+  status: draft
+- id: ssot-apps-raceman
+  name: ssot.apps.raceman.yml
+  type: ssot
+  path: docs/ssot/apps/ssot.apps.raceman.yml
+  project: chaba
+  purpose: ssot asset at docs/ssot/apps/ssot.apps.raceman.yml; purpose to be documented.
+  status: draft
+- id: ssot-apps-test-carplay
+  name: ssot.apps.test-carplay.yml
+  type: ssot
+  path: docs/ssot/apps/ssot.apps.test-carplay.yml
+  project: chaba
+  purpose: ssot asset at docs/ssot/apps/ssot.apps.test-carplay.yml; purpose to be
+    documented.
+  status: draft
+- id: ssot-apps-test-pwa
+  name: ssot.apps.test-pwa.yml
+  type: ssot
+  path: docs/ssot/apps/ssot.apps.test-pwa.yml
+  project: chaba
+  purpose: ssot asset at docs/ssot/apps/ssot.apps.test-pwa.yml; purpose to be documented.
+  status: draft
+- id: ssot-apps-track4
+  name: ssot.apps.track4.yml
+  type: ssot
+  path: docs/ssot/apps/ssot.apps.track4.yml
+  project: chaba
+  purpose: ssot asset at docs/ssot/apps/ssot.apps.track4.yml; purpose to be documented.
+  status: draft
+- id: ssot-apps-wind
+  name: ssot.apps.wind.yml
+  type: ssot
+  path: docs/ssot/apps/ssot.apps.wind.yml
+  project: chaba
+  purpose: ssot asset at docs/ssot/apps/ssot.apps.wind.yml; purpose to be documented.
+  status: draft
+- id: ssot-apps
+  name: ssot.apps.yml
+  type: ssot
+  path: docs/ssot/apps/ssot.apps.yml
+  project: chaba
+  purpose: ssot asset at docs/ssot/apps/ssot.apps.yml; purpose to be documented.
+  status: draft
+- id: ssot-apps-yomi
+  name: ssot.apps.yomi.yml
+  type: ssot
+  path: docs/ssot/apps/ssot.apps.yomi.yml
+  project: chaba
+  purpose: ssot asset at docs/ssot/apps/ssot.apps.yomi.yml; purpose to be documented.
+  status: draft
+- id: template-app
+  name: template.app.yml
+  type: ssot
+  path: docs/ssot/apps/template.app.yml
+  project: chaba
+  purpose: ssot asset at docs/ssot/apps/template.app.yml; purpose to be documented.
+  status: draft
+- id: performance-baselines
+  name: performance-baselines.yml
+  type: ssot
+  path: docs/ssot/infrastructure/performance-baselines.yml
+  project: chaba
+  purpose: ssot asset at docs/ssot/infrastructure/performance-baselines.yml; purpose
+    to be documented.
+  status: draft
+- id: ssot-audit
+  name: ssot.audit.yml
+  type: ssot
+  path: docs/ssot/infrastructure/ssot.audit.yml
+  project: chaba
+  purpose: ssot asset at docs/ssot/infrastructure/ssot.audit.yml; purpose to be documented.
+  status: draft
+- id: ssot-automation
+  name: ssot.automation.yml
+  type: ssot
+  path: docs/ssot/infrastructure/ssot.automation.yml
+  project: chaba
+  purpose: ssot asset at docs/ssot/infrastructure/ssot.automation.yml; purpose to
+    be documented.
+  status: draft
+- id: ssot-containerization
+  name: ssot.containerization.yml
+  type: ssot
+  path: docs/ssot/infrastructure/ssot.containerization.yml
+  project: chaba
+  purpose: ssot asset at docs/ssot/infrastructure/ssot.containerization.yml; purpose
+    to be documented.
+  status: draft
+- id: ssot-disaster-recovery
+  name: ssot.disaster-recovery.yml
+  type: ssot
+  path: docs/ssot/infrastructure/ssot.disaster-recovery.yml
+  project: chaba
+  purpose: ssot asset at docs/ssot/infrastructure/ssot.disaster-recovery.yml; purpose
+    to be documented.
+  status: draft
+- id: ssot-focus-triage
+  name: ssot.focus.triage.yml
+  type: ssot
+  path: docs/ssot/infrastructure/ssot.focus.triage.yml
+  project: chaba
+  purpose: ssot asset at docs/ssot/infrastructure/ssot.focus.triage.yml; purpose to
+    be documented.
+  status: draft
+- id: ssot-gemini-embedding
+  name: ssot.gemini-embedding.yml
+  type: ssot
+  path: docs/ssot/infrastructure/ssot.gemini-embedding.yml
+  project: chaba
+  purpose: ssot asset at docs/ssot/infrastructure/ssot.gemini-embedding.yml; purpose
+    to be documented.
+  status: draft
+- id: ssot-gemini-models
+  name: ssot.gemini-models.yml
+  type: ssot
+  path: docs/ssot/infrastructure/ssot.gemini-models.yml
+  project: chaba
+  purpose: ssot asset at docs/ssot/infrastructure/ssot.gemini-models.yml; purpose
+    to be documented.
+  status: draft
+- id: ssot-gpu
+  name: ssot.gpu.yml
+  type: ssot
+  path: docs/ssot/infrastructure/ssot.gpu.yml
+  project: chaba
+  purpose: ssot asset at docs/ssot/infrastructure/ssot.gpu.yml; purpose to be documented.
+  status: draft
+- id: ssot-hardware
+  name: ssot.hardware.yml
+  type: ssot
+  path: docs/ssot/infrastructure/ssot.hardware.yml
+  project: chaba
+  purpose: ssot asset at docs/ssot/infrastructure/ssot.hardware.yml; purpose to be
+    documented.
+  status: draft
+- id: ssot-health-home
+  name: ssot.health.home.yml
+  type: ssot
+  path: docs/ssot/infrastructure/ssot.health.home.yml
+  project: chaba
+  purpose: ssot asset at docs/ssot/infrastructure/ssot.health.home.yml; purpose to
+    be documented.
+  status: draft
+- id: ssot-health-mobile
+  name: ssot.health.mobile.yml
+  type: ssot
+  path: docs/ssot/infrastructure/ssot.health.mobile.yml
+  project: chaba
+  purpose: ssot asset at docs/ssot/infrastructure/ssot.health.mobile.yml; purpose
+    to be documented.
+  status: draft
+- id: ssot-health
+  name: ssot.health.yml
+  type: ssot
+  path: docs/ssot/infrastructure/ssot.health.yml
+  project: chaba
+  purpose: ssot asset at docs/ssot/infrastructure/ssot.health.yml; purpose to be documented.
+  status: draft
+- id: ssot-mcp-debug-baselines
+  name: ssot.mcp-debug.baselines.yml
+  type: ssot
+  path: docs/ssot/infrastructure/ssot.mcp-debug.baselines.yml
+  project: chaba
+  purpose: ssot asset at docs/ssot/infrastructure/ssot.mcp-debug.baselines.yml; purpose
+    to be documented.
+  status: draft
+- id: ssot-mcp-debug-capture
+  name: ssot.mcp-debug.capture.yml
+  type: ssot
+  path: docs/ssot/infrastructure/ssot.mcp-debug.capture.yml
+  project: chaba
+  purpose: ssot asset at docs/ssot/infrastructure/ssot.mcp-debug.capture.yml; purpose
+    to be documented.
+  status: draft
+- id: ssot-mcp-debug-files
+  name: ssot.mcp-debug.files.yml
+  type: ssot
+  path: docs/ssot/infrastructure/ssot.mcp-debug.files.yml
+  project: chaba
+  purpose: ssot asset at docs/ssot/infrastructure/ssot.mcp-debug.files.yml; purpose
+    to be documented.
+  status: draft
+- id: ssot-mcp-debug-reports
+  name: ssot.mcp-debug.reports.yml
+  type: ssot
+  path: docs/ssot/infrastructure/ssot.mcp-debug.reports.yml
+  project: chaba
+  purpose: ssot asset at docs/ssot/infrastructure/ssot.mcp-debug.reports.yml; purpose
+    to be documented.
+  status: draft
+- id: ssot-mcp
+  name: ssot.mcp.yml
+  type: ssot
+  path: docs/ssot/infrastructure/ssot.mcp.yml
+  project: chaba
+  purpose: ssot asset at docs/ssot/infrastructure/ssot.mcp.yml; purpose to be documented.
+  status: draft
+- id: ssot-night-jobs
+  name: ssot.night-jobs.yml
+  type: ssot
+  path: docs/ssot/infrastructure/ssot.night-jobs.yml
+  project: chaba
+  purpose: ssot asset at docs/ssot/infrastructure/ssot.night-jobs.yml; purpose to
+    be documented.
+  status: draft
+- id: ssot-services
+  name: ssot.services.yml
+  type: ssot
+  path: docs/ssot/infrastructure/ssot.services.yml
+  project: chaba
+  purpose: ssot asset at docs/ssot/infrastructure/ssot.services.yml; purpose to be
+    documented.
+  status: draft
+- id: ssot-subagent-focus-triage
+  name: ssot.subagent-focus-triage.yml
+  type: ssot
+  path: docs/ssot/infrastructure/ssot.subagent-focus-triage.yml
+  project: chaba
+  purpose: ssot asset at docs/ssot/infrastructure/ssot.subagent-focus-triage.yml;
+    purpose to be documented.
+  status: draft
+- id: ssot-tony-dell-monitoring
+  name: ssot.tony-dell-monitoring.yml
+  type: ssot
+  path: docs/ssot/infrastructure/ssot.tony-dell-monitoring.yml
+  project: chaba
+  purpose: ssot asset at docs/ssot/infrastructure/ssot.tony-dell-monitoring.yml; purpose
+    to be documented.
+  status: draft
+- id: ssot-tony-dell-multi-wan
+  name: ssot.tony-dell-multi-wan.yml
+  type: ssot
+  path: docs/ssot/infrastructure/ssot.tony-dell-multi-wan.yml
+  project: chaba
+  purpose: ssot asset at docs/ssot/infrastructure/ssot.tony-dell-multi-wan.yml; purpose
+    to be documented.
+  status: draft
+- id: ssot-tuya-smart-plug
+  name: ssot.tuya-smart-plug.yml
+  type: ssot
+  path: docs/ssot/infrastructure/ssot.tuya-smart-plug.yml
+  project: chaba
+  purpose: ssot asset at docs/ssot/infrastructure/ssot.tuya-smart-plug.yml; purpose
+    to be documented.
+  status: draft
+- id: ssot-yomi-failover
+  name: ssot.yomi-failover.yml
+  type: ssot
+  path: docs/ssot/infrastructure/ssot.yomi-failover.yml
+  project: chaba
+  purpose: ssot asset at docs/ssot/infrastructure/ssot.yomi-failover.yml; purpose
+    to be documented.
+  status: draft
+- id: 2026-08-19-context-retrieval
+  name: 2026-08-19-context-retrieval.yml
+  type: ssot
+  path: docs/ssot/jobs/context-retrieval/2026-08-19-context-retrieval.yml
+  project: chaba
+  purpose: ssot asset at docs/ssot/jobs/context-retrieval/2026-08-19-context-retrieval.yml;
+    purpose to be documented.
+  status: draft
+- id: 2026-08-19-focus-decision-tree
+  name: 2026-08-19-focus-decision-tree.yml
+  type: ssot
+  path: docs/ssot/jobs/focus-decision-tree/2026-08-19-focus-decision-tree.yml
+  project: chaba
+  purpose: ssot asset at docs/ssot/jobs/focus-decision-tree/2026-08-19-focus-decision-tree.yml;
+    purpose to be documented.
+  status: draft
+- id: 2026-08-19-iphone-mcp-oauth-kk-macbook
+  name: 2026-08-19-iphone-mcp-oauth-kk-macbook.yml
+  type: ssot
+  path: docs/ssot/jobs/infrastructure/2026-08-19-iphone-mcp-oauth-kk-macbook.yml
+  project: chaba
+  purpose: ssot asset at docs/ssot/jobs/infrastructure/2026-08-19-iphone-mcp-oauth-kk-macbook.yml;
+    purpose to be documented.
+  status: draft
+- id: 2026-08-19-kb-categorization
+  name: 2026-08-19-kb-categorization.yml
+  type: ssot
+  path: docs/ssot/jobs/kb-categorization/2026-08-19-kb-categorization.yml
+  project: chaba
+  purpose: ssot asset at docs/ssot/jobs/kb-categorization/2026-08-19-kb-categorization.yml;
+    purpose to be documented.
+  status: draft
+- id: 2026-08-19-auto-kb-quality-filter
+  name: 2026-08-19-auto-kb-quality-filter.yml
+  type: ssot
+  path: docs/ssot/jobs/kb-quality-filter/2026-08-19-auto-kb-quality-filter.yml
+  project: chaba
+  purpose: ssot asset at docs/ssot/jobs/kb-quality-filter/2026-08-19-auto-kb-quality-filter.yml;
+    purpose to be documented.
+  status: draft
+- id: 2026-08-19-streamline-mcp-focus
+  name: 2026-08-19-streamline-mcp-focus.yml
+  type: ssot
+  path: docs/ssot/jobs/mcp-focus/2026-08-19-streamline-mcp-focus.yml
+  project: chaba
+  purpose: ssot asset at docs/ssot/jobs/mcp-focus/2026-08-19-streamline-mcp-focus.yml;
+    purpose to be documented.
+  status: draft
+- id: 2026-08-19-prompt-preprocessor
+  name: 2026-08-19-prompt-preprocessor.yml
+  type: ssot
+  path: docs/ssot/jobs/prompt-preprocessor/2026-08-19-prompt-preprocessor.yml
+  project: chaba
+  purpose: ssot asset at docs/ssot/jobs/prompt-preprocessor/2026-08-19-prompt-preprocessor.yml;
+    purpose to be documented.
+  status: draft
+- id: 2026-08-18-gemini-key-rotation-and-validation
+  name: 2026-08-18-gemini-key-rotation-and-validation.yml
+  type: ssot
+  path: docs/ssot/jobs/security/2026-08-18-gemini-key-rotation-and-validation.yml
+  project: chaba
+  purpose: ssot asset at docs/ssot/jobs/security/2026-08-18-gemini-key-rotation-and-validation.yml;
+    purpose to be documented.
+  status: draft
+- id: 2026-08-19-session-summary
+  name: 2026-08-19-session-summary.yml
+  type: ssot
+  path: docs/ssot/jobs/session-summary/2026-08-19-session-summary.yml
+  project: chaba
+  purpose: ssot asset at docs/ssot/jobs/session-summary/2026-08-19-session-summary.yml;
+    purpose to be documented.
+  status: draft
+- id: 2026-08-18-safe-focus-continuous-processing
+  name: 2026-08-18-safe-focus-continuous-processing.yml
+  type: ssot
+  path: docs/ssot/jobs/workflow/2026-08-18-safe-focus-continuous-processing.yml
+  project: chaba
+  purpose: ssot asset at docs/ssot/jobs/workflow/2026-08-18-safe-focus-continuous-processing.yml;
+    purpose to be documented.
+  status: draft
+- id: ssot-devin-tools
+  name: ssot.devin.tools.yml
+  type: ssot
+  path: docs/ssot/ssot.devin.tools.yml
+  project: chaba
+  purpose: ssot asset at docs/ssot/ssot.devin.tools.yml; purpose to be documented.
+  status: draft
+- id: ssot-diagrams
+  name: ssot.diagrams.yml
+  type: ssot
+  path: docs/ssot/ssot.diagrams.yml
+  project: chaba
+  purpose: ssot asset at docs/ssot/ssot.diagrams.yml; purpose to be documented.
+  status: draft
+- id: ssot-docs
+  name: ssot.docs.yml
+  type: ssot
+  path: docs/ssot/ssot.docs.yml
+  project: chaba
+  purpose: ssot asset at docs/ssot/ssot.docs.yml; purpose to be documented.
+  status: draft
+- id: ssot-documentation-infrastructure
+  name: ssot.documentation-infrastructure.yml
+  type: ssot
+  path: docs/ssot/ssot.documentation-infrastructure.yml
+  project: chaba
+  purpose: ssot asset at docs/ssot/ssot.documentation-infrastructure.yml; purpose
+    to be documented.
+  status: draft
+- id: ssot-file-control
+  name: ssot.file-control.yml
+  type: ssot
+  path: docs/ssot/ssot.file-control.yml
+  project: chaba
+  purpose: ssot asset at docs/ssot/ssot.file-control.yml; purpose to be documented.
+  status: draft
+- id: ssot-libs
+  name: ssot.libs.yml
+  type: ssot
+  path: docs/ssot/ssot.libs.yml
+  project: chaba
+  purpose: ssot asset at docs/ssot/ssot.libs.yml; purpose to be documented.
+  status: draft
+- id: ssot-maintenance
+  name: ssot.maintenance.yml
+  type: ssot
+  path: docs/ssot/ssot.maintenance.yml
+  project: chaba
+  purpose: ssot asset at docs/ssot/ssot.maintenance.yml; purpose to be documented.
+  status: draft
+- id: ssot-registry
+  name: ssot.registry.yml
+  type: ssot
+  path: docs/ssot/ssot.registry.yml
+  project: chaba
+  purpose: ssot asset at docs/ssot/ssot.registry.yml; purpose to be documented.
+  status: draft
+- id: ssot-terminology
+  name: ssot.terminology.yml
+  type: ssot
+  path: docs/ssot/ssot.terminology.yml
+  project: chaba
+  purpose: ssot asset at docs/ssot/ssot.terminology.yml; purpose to be documented.
+  status: draft
+- id: ssot-test-weaviate
+  name: ssot.test.weaviate.yml
+  type: ssot
+  path: docs/ssot/ssot.test.weaviate.yml
+  project: chaba
+  purpose: ssot asset at docs/ssot/ssot.test.weaviate.yml; purpose to be documented.
+  status: draft
+- id: ssot-token-optimization
+  name: ssot.token-optimization.yml
+  type: ssot
+  path: docs/ssot/ssot.token-optimization.yml
+  project: chaba
+  purpose: ssot asset at docs/ssot/ssot.token-optimization.yml; purpose to be documented.
+  status: draft
+- id: ssot-ui
+  name: ssot.ui.yml
+  type: ssot
+  path: docs/ssot/ssot.ui.yml
+  project: chaba
+  purpose: ssot asset at docs/ssot/ssot.ui.yml; purpose to be documented.
+  status: draft
+- id: ssot-windsurf
+  name: ssot.windsurf.yml
+  type: ssot
+  path: docs/ssot/ssot.windsurf.yml
+  project: chaba
+  purpose: ssot asset at docs/ssot/ssot.windsurf.yml; purpose to be documented.
+  status: draft
+- id: template
+  name: template.yml
+  type: ssot
+  path: docs/ssot/template.yml
+  project: chaba
+  purpose: ssot asset at docs/ssot/template.yml; purpose to be documented.
+  status: draft
+- id: handoff
+  name: handoff.yml
+  type: ssot
+  path: docs/ssot/templates/handoff.yml
+  project: chaba
+  purpose: ssot asset at docs/ssot/templates/handoff.yml; purpose to be documented.
+  status: draft
+- id: job
+  name: job.yml
+  type: ssot
+  path: docs/ssot/templates/job.yml
+  project: chaba
+  purpose: ssot asset at docs/ssot/templates/job.yml; purpose to be documented.
+  status: draft
+- id: docker-compose
+  name: docker-compose.yml
+  type: stack
+  path: stacks/web/docker-compose.yml
+  project: chaba
+  purpose: stack asset at stacks/web/docker-compose.yml; purpose to be documented.
+  status: draft
+- id: docker-compose
+  name: docker-compose.yml
+  type: stack
+  path: stacks/web/mddb/docker-compose.yml
+  project: chaba
+  purpose: stack asset at stacks/web/mddb/docker-compose.yml; purpose to be documented.
+  status: draft
+- id: chaba-health-monitor
+  name: chaba-health-monitor.timer
+  type: timer
+  path: ~/.config/systemd/user/chaba-health-monitor.timer
+  project: chaba
+  purpose: timer asset at ~/.config/systemd/user/chaba-health-monitor.timer; purpose
+    to be documented.
+  status: draft
+- id: weaviate-index
+  name: weaviate-index.timer
+  type: timer
+  path: ~/.config/systemd/user/weaviate-index.timer
+  project: chaba
+  purpose: timer asset at ~/.config/systemd/user/weaviate-index.timer; purpose to
+    be documented.
+  status: draft
+- id: yomi-update-active
+  name: yomi-update-active.timer
+  type: timer
+  path: ~/.config/systemd/user/yomi-update-active.timer
+  project: chaba
+  purpose: timer asset at ~/.config/systemd/user/yomi-update-active.timer; purpose
+    to be documented.
+  status: draft
+- id: yomi-update-all
+  name: yomi-update-all.timer
+  type: timer
+  path: ~/.config/systemd/user/yomi-update-all.timer
+  project: chaba
+  purpose: timer asset at ~/.config/systemd/user/yomi-update-all.timer; purpose to
+    be documented.
+  status: draft
+- id: import-registry-drafts
+  name: import-registry-drafts.py
+  type: script
+  path: scripts/import-registry-drafts.py
+  project: chaba
+  purpose: script asset at scripts/import-registry-drafts.py; purpose to be documented.
+  status: draft
 related_files:
 - docs/ssot/ssot.index.yml
 - docs/ssot/ssot.file-control.yml

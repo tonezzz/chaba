@@ -59,12 +59,20 @@ def _active_focus_label(status):
 
 
 def _active_subtask(status):
+    # Prefer the subtask that is actually in progress; fall back to the first not-started one.
     for k in ("branch", "shared"):
         item = status.get("active", {}).get(k)
         if not item:
             continue
         for st in item.get("subtasks", []):
-            if st.get("status") in ("in_progress", "not_started"):
+            if st.get("status") == "in_progress":
+                return st.get("label", "")
+    for k in ("branch", "shared"):
+        item = status.get("active", {}).get(k)
+        if not item:
+            continue
+        for st in item.get("subtasks", []):
+            if st.get("status") == "not_started":
                 return st.get("label", "")
     return ""
 
@@ -94,12 +102,13 @@ def preprocess(request):
         # Expand shorthand cues
         inferred = request.strip()
         req_lower = request.lower()
-        if any(c == req_lower for c in CONTINUE_CUES) or any(req_lower.endswith(c) for c in ("do this", "do that")):
+        # Quick-win cues take priority over "... this/that" continuation
+        if any(c in req_lower for c in QUICK_WIN_CUES):
+            action = "quick_win"
+        elif any(c == req_lower for c in CONTINUE_CUES) or req_lower.endswith(" this") or req_lower.endswith(" that"):
             action = "active"
             inferred = f"Continue active focus: {active_label or 'unknown'}"
-        elif any(c in req_lower for c in QUICK_WIN_CUES):
-            action = "quick_win"
-        elif inferred.lower().startswith("do "):
+        elif req_lower.startswith("do "):
             inferred = f"{inferred} in the context of {active_label or 'active focus'}"
         suggested_tools = ACTION_TOOL_MAP.get(action, ["mcp_focus"])
 
