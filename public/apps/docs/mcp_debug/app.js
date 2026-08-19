@@ -1,88 +1,108 @@
-const LIVE_DATA_URL = "/api/mcp-savings.php"; // same-origin PHP proxy to tony-dell
-const TABLE_DATA_URL = "/api/mcp-table.php"; // same-origin proxy for /mcp-table.json
-const FETCH_TIMEOUT = 30000; // proxy + remote fetch may take several seconds
+const LIVE_DATA_URL = "/api/mcp-savings.php";
+const PREVIOUS_DATA_URL = "/apps/docs/mcp_debug/data/mcp-savings-previous.json";
+const TABLE_DATA_URL = "/api/mcp-table.php";
+const FETCH_TIMEOUT = 130000;
 
 let currentReportData = null;
+let previousReportData = null;
 let autoRefreshId = null;
+
+function formatNumber(n) {
+  if (n == null) return '-';
+  if (n >= 1_000_000_000) return (n / 1_000_000_000).toFixed(1) + 'B';
+  if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + 'M';
+  if (n >= 1_000) return (n / 1_000).toFixed(1) + 'k';
+  return n.toString();
+}
 
 function formatAge(ms) {
   if (ms == null || ms < 0) return 'unknown';
   if (ms < 1000) return `${ms}ms`;
-  return `${(ms / 1000).toFixed(1)}s`;
+  if (ms < 60_000) return `${(ms / 1000).toFixed(1)}s`;
+  if (ms < 3_600_000) return `${(ms / 60_000).toFixed(1)}m`;
+  return `${(ms / 3_600_000).toFixed(1)}h`;
 }
 
-function renderSkeleton() {
-  const report = document.getElementById('report');
-  report.innerHTML = `
-    <div class="p-4 rounded mb-4" style="background: #f9fafb;">
-      <p class="text-gray-500 text-sm">Loading report...</p>
-    </div>
-    <div id="skeleton-tables"></div>
-  `;
-  const skel = document.getElementById('skeleton-tables');
-  const hosts = ['tony_omen', 'tony_dell'];
-  let html = '';
-  for (const host of hosts) {
-    html += `<h2 class="text-xl font-semibold mt-8 mb-2">${host}</h2>`;
-    html += '<table><thead><tr>';
-    ['Command', 'Raw chars', 'Compact chars', 'Saved chars', 'Tokens saved', 'Char %', 'Word %'].forEach(h => {
-      html += `<th>${h}</th>`;
-    });
-    html += '</tr></thead><tbody>';
-    for (let i = 0; i < 8; i++) {
-      html += '<tr><td class="text-gray-400">...</td><td class="text-gray-400">-</td><td class="text-gray-400">-</td><td class="text-gray-400">-</td><td class="text-gray-400">-</td><td class="text-gray-400">-</td><td class="text-gray-400">-</td></tr>';
-    }
-    html += '</tbody></table>';
-  }
-  skel.innerHTML = html;
+function escapeHtml(str) {
+  return (str ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
 }
 
-async function fetchWithTimeout(url, options = {}, timeout = FETCH_TIMEOUT) {
+function fetchWithTimeout(url, options = {}, timeout = FETCH_TIMEOUT) {
   const controller = new AbortController();
   const id = setTimeout(() => controller.abort(), timeout);
-  try {
-    const res = await fetch(url, { ...options, signal: controller.signal });
-    clearTimeout(id);
-    return res;
-  } catch (e) {
-    clearTimeout(id);
-    throw e;
-  }
+  return fetch(url, { ...options, signal: controller.signal })
+    .finally(() => clearTimeout(id));
+}
+
+function showProgress(text, percent = 0) {
+  const el = document.getElementById('progress');
+  const fill = document.getElementById('progress-fill');n  const label = document.getElementById('progress-text');
+  el.classList.remove('hidden');
+  label.textContent = text;
+  fill.style.width = percent + '%';
+}
+
+function hideProgress() {
+  document.getElementById('progress').classList.add('hidden');
+}
+
+function setLoading(isLoading) {
+  const btn = document.getElementById('refresh');
+  const search = document.getElementById('command-search');
+  btn.disabled = isLoading;
+  search.disabled = isLoading;
+  btn.textContent = isLoading ? 'Refreshing...' : 'Refresh';
 }
 
 async function loadReport(forceRefresh = false) {
   const status = document.getElementById('status');
   const meta = document.getElementById('meta');
-  const report = document.getElementById('report');
   const live = document.getElementById('live-note');
   status.textContent = 'Loading...';
   if (meta) meta.textContent = '';
-  renderSkeleton();
   if (live) live.textContent = '';
+  setLoading(true);
+  if (forceRefresh) showProgress('Collecting fresh data from tony-dell, this takes ~5 minutes...', 10);
 
   let data;
-  if (LIVE_DATA_URL) {
+  try {
+    const res = await fetchWithTimeout(LIVE_DATA_URL + '?t=' + Date.now() + (forceRefresh ? '&refresh=1' : ''), { mode: 'cors' });
+    if (res.ok) data = await res.json();
+  } catch (e) {
+    console.warn('Live data failed:', e);
+  }
+
+  if (data && data.ok) {
+    if (live) live.textContent = 'Live data from tony-dell';
+    currentReportData = data;
     try {
-      const res = await fetchWithTimeout(LIVE_DATA_URL + '?t=' + Date.now() + (forceRefresh ? '&refresh=1' : ''), { mode: 'cors' });
-      if (res.ok) data = await res.json();
-      else throw new Error('live endpoint unavailable');
-      if (live) live.textContent = data.freshness ? 'Live data from tony-dell' : 'Live data unavailable; showing cached snapshot.';
+      const prevRes = await fetchWithTimeout(PREVIOUS_DATA_URL + '?t=' + Date.now());
+      if (prevRes.ok) previousReportData = await prevRes.json();
     } catch (e) {
-      console.warn('Live data failed, falling back to cached snapshot:', e);
-      if (live) live.textContent = 'Live data unavailable; showing cached snapshot.';
+      previousReportData = null;
     }
-  } else if (live) {
-    live.textContent = 'Live endpoint disabled until HTTPS/proxy is configured.';
+  } else {
+    if (live) live.textContent = 'Live data unavailable; showing cached snapshot.';
+    if (data) {
+      data.ok = false;
+      currentReportData = data;
+    } else {
+      try {
+        const res = await fetchWithTimeout('data/mcp-savings.json?t=' + Date.now());
+        if (res.ok) data = await res.json();
+        currentReportData = data;
+      } catch (e) {
+        console.warn('Cached fallback failed:', e);
+      }
+    }
   }
 
   try {
-    if (!data) {
-      const res = await fetchWithTimeout('data/mcp-savings.json?t=' + Date.now());
-      if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
-      data = await res.json();
-    }
-    if (!data.ok) throw new Error(data.error || 'report not ok');
-    currentReportData = data;
+    if (!data || (!data.ok && !data.total_raw_chars)) throw new Error(data?.error || 'report not ok');
     renderReport(data);
     const generated = data.generated ? new Date(data.generated).toLocaleString() : 'unknown';
     const source = data.freshness ? 'Live' : 'Snapshot';
@@ -94,184 +114,287 @@ async function loadReport(forceRefresh = false) {
     }
   } catch (e) {
     status.textContent = 'Error';
-    report.innerHTML = `<p style="color:#dc2626">Failed to load report: ${escapeHtml(e.message)}</p>`;
+    document.getElementById('report').innerHTML = `<p style="color:#dc2626">Failed to load report: ${escapeHtml(e.message)}</p>`;
+  } finally {
+    hideProgress();
+    setLoading(false);
   }
 }
 
-function renderReport(data) {
-  const report = document.getElementById('report');
-  let html = '';
+function renderSummary(data) {
+  const el = document.getElementById('summary');
+  const hosts = data.hosts ? Object.keys(data.hosts).length : 0;
+  const raw = data.total_raw_chars || 0;
+  const compact = data.total_compact_chars || 0;
+  const saved = data.total_saved_chars || 0;
+  const pct = data.total_savings_pct != null ? data.total_savings_pct.toFixed(1) : '0.0';
+  const prefixes = data.raw_allowed ? data.raw_allowed.length : 0;
+  const presets = data.presets ? data.presets.length : 0;
+  const cards = [
+    { label: 'Total raw', value: formatNumber(raw) },
+    { label: 'Total compact', value: formatNumber(compact) },
+    { label: 'Saved chars', value: formatNumber(saved) },
+    { label: 'Savings %', value: pct + '%' },
+    { label: 'Hosts', value: hosts },
+    { label: 'Raw prefixes', value: prefixes },
+  ];
+  el.innerHTML = cards.map(c => `
+    <div class="summary-card">
+      <div class="summary-value">${c.value}</div>
+      <div class="summary-label">${c.label}</div>
+    </div>
+  `).join('');
+}
 
-  const hosts = Object.entries(data.hosts).sort(([a], [b]) => a.localeCompare(b));
-  for (const [host, hdata] of hosts) {
-    html += `<h2 class="text-xl font-semibold mt-8 mb-2">${host}</h2>`;
-    html += '<table><thead><tr>';
-    html += '<th>Command</th>';
-    html += '<th>Status</th>';
-    html += '<th>Raw chars</th>';
-    html += '<th>Compact chars</th>';
-    html += '<th>Saved chars</th>';
-    html += '<th>Tokens saved</th>';
-    html += '<th>Char %</th>';
-    html += '<th>Word %</th>';
-    html += '</tr></thead><tbody>';
+function commandStatus(c) {
+  if (!c.ok) return { text: 'failed', cls: 'badge-failed' };
+  if ((c.savings_pct_chars || 0) < 0) return { text: 'negative', cls: 'badge-warning' };
+  return { text: 'recommended', cls: 'badge-recommended' };
+}
 
-    function commandStatus(c) {
-      if (!c.ok) return { text: 'failed', class: 'negative' };
-      if ((c.savings_pct_chars || 0) < 0) return { text: 'negative', class: 'warning' };
-      return { text: 'recommended', class: '' };
+function collectAudit(hosts) {
+  const failed = [];
+  const negative = [];
+  if (!hosts) return { failed, negative };
+  for (const [host, hdata] of Object.entries(hosts)) {
+    for (const [cmd, c] of Object.entries(hdata.commands || {})) {
+      const row = { ...c, host, command: c.command || cmd };
+      if (!c.ok) failed.push(row);
+      else if ((c.savings_pct_chars || 0) < 0) negative.push(row);
     }
+  }
+  failed.sort((a, b) => (a.savings_pct_chars || 0) - (b.savings_pct_chars || 0));
+  negative.sort((a, b) => (a.savings_pct_chars || 0) - (b.savings_pct_chars || 0));
+  return { failed, negative };
+}
 
-    const commands = Object.values(hdata.commands).sort((a, b) =>
-      (b.savings_pct_chars || 0) - (a.savings_pct_chars || 0)
-    );
-    for (const c of commands) {
-      const warn = (c.savings_pct_chars || 0) < 0 ? 'warning' : '';
-      const savedNegative = (c.saved_chars || 0) < 0 ? 'negative' : '';
-      const tokens = Math.round((c.saved_chars || 0) / 4);
-      const st = commandStatus(c);
-      html += `<tr data-host="${host}" data-command="${c.command}">
+function renderAudit(data) {
+  const el = document.getElementById('audit');
+  const { failed, negative } = collectAudit(data.hosts);
+  if (!failed.length && !negative.length) {
+    el.classList.add('hidden');
+    return;
+  }
+  el.classList.remove('hidden');
+  let html = '<h2 class="text-lg font-semibold mb-2">Needs attention</h2>';
+  if (failed.length) {
+    html += `<p class="text-sm text-gray-700 mb-2">${failed.length} command(s) failed on at least one host.</p>`;
+    html += '<table><thead><tr><th>Host</th><th>Command</th><th>Status</th><th>Raw</th><th>Compact</th></tr></thead><tbody>';
+    for (const c of failed.slice(0, 20)) {
+      html += `<tr>
+        <td>${c.host}</td>
         <td>${escapeHtml(c.command)}</td>
-        <td class="${st.class}">${st.text}</td>
+        <td><span class="badge badge-failed">failed</span></td>
         <td>${c.raw_chars}</td>
         <td>${c.compact_chars}</td>
-        <td class="${savedNegative}">${c.saved_chars}</td>
-        <td class="${savedNegative}">${tokens}</td>
-        <td class="${warn}">${(c.savings_pct_chars || 0).toFixed(1)}</td>
-        <td>${(c.savings_pct || 0).toFixed(1)}</td>
+      </tr>`;
+    }
+    html += '</tbody></table>';
+  }
+  if (negative.length) {
+    html += `<p class="text-sm text-gray-700 mb-2">${negative.length} command(s) have negative savings.</p>`;
+    html += '<table><thead><tr><th>Host</th><th>Command</th><th>Saved chars</th><th>Savings %</th></tr></thead><tbody>';
+    for (const c of negative.slice(0, 20)) {
+      const cls = c.saved_chars < 0 ? 'negative' : '';
+      html += `<tr>
+        <td>${c.host}</td>
+        <td>${escapeHtml(c.command)}</td>
+        <td class="${cls}">${c.saved_chars}</td>
+        <td class="${cls}">${(c.savings_pct_chars || 0).toFixed(1)}%</td>
+      </tr>`;
+    }
+    html += '</tbody></table>';
+  }
+  el.innerHTML = html;
+}
+
+function renderRawAllowed(rawAllowed) {
+  if (!rawAllowed || !rawAllowed.length) return '';
+  const byCat = {};
+  for (const r of rawAllowed) {
+    const cat = r.category || 'other';
+    if (!byCat[cat]) byCat[cat] = [];
+    byCat[cat].push(r);
+  }
+  let html = '<h2 class="text-xl font-semibold mt-8 mb-2">Raw-allowed command prefixes</h2>';
+  for (const cat of Object.keys(byCat).sort()) {
+    html += `<div class="mb-4">
+      <h3 class="text-sm font-semibold text-gray-600 mb-1 uppercase">${escapeHtml(cat)}</h3>
+      <div>`;
+    for (const r of byCat[cat]) {
+      html += `<span class="category-pill" title="${escapeHtml(r.example || '')}">${escapeHtml(r.prefix)}</span>`;
+    }
+    html += '</div></div>';
+  }
+  return html;
+}
+
+function renderPresets(presets) {
+  if (!presets || !presets.length) return '';
+  const sorted = [...presets].sort((a, b) => (b.preset_score || 0) - (a.preset_score || 0));
+  let html = '<h2 class="text-xl font-semibold mt-8 mb-2">Registered presets</h2>';
+  for (const p of sorted) {
+    const score = p.preset_score != null ? p.preset_score.toFixed(1) : '0.0';
+    const color = p.ok ? (score >= 30 ? '#16a34a' : (score >= 0 ? '#f59e0b' : '#dc2626')) : '#9ca3af';
+    const width = Math.min(100, Math.max(0, (p.preset_score || 0) + 20)) + '%';
+    html += `<div class="preset-row">
+      <div class="w-48 text-sm truncate" title="${escapeHtml(p.description || '')}">${escapeHtml(p.name)}</div>
+      <div class="preset-bar"><div class="preset-fill" style="width:${width}; background:${color};"></div></div>
+      <div class="w-12 text-right text-sm font-mono">${score}</div>
+      <div class="w-16 text-xs text-gray-500">${p.ok ? 'ok' : 'failed'}</div>
+    </div>`;
+  }
+  return html;
+}
+
+function renderWhatsNew(current, previous) {
+  const el = document.getElementById('whats-new');
+  if (!previous || !current) {
+    el.classList.add('hidden');
+    return;
+  }
+  const curPrefixes = new Set((current.raw_allowed || []).map(r => r.prefix));
+  const prevPrefixes = new Set((previous.raw_allowed || []).map(r => r.prefix));
+  const added = [...curPrefixes].filter(x => !prevPrefixes.has(x));
+  const removed = [...prevPrefixes].filter(x => !curPrefixes.has(x));
+  const curPresets = new Set((current.presets || []).map(p => p.name));
+  const prevPresets = new Set((previous.presets || []).map(p => p.name));
+  const addedPresets = [...curPresets].filter(x => !prevPresets.has(x));
+  if (!added.length && !removed.length && !addedPresets.length) {
+    el.classList.add('hidden');
+    return;
+  }
+  el.classList.remove('hidden');
+  let html = '<h2 class="text-lg font-semibold mb-2">What changed since last snapshot</h2><div class="flex flex-wrap gap-2 text-sm">';
+  for (const p of added) html += `<span class="diff-added">+ ${escapeHtml(p)}</span>`;
+  for (const p of removed) html += `<span class="diff-removed">- ${escapeHtml(p)}</span>`;
+  for (const p of addedPresets) html += `<span class="diff-added">+ preset ${escapeHtml(p)}</span>`;
+  html += '</div>';
+  el.innerHTML = html;
+}
+
+function renderCommandTables(data, filter = '') {
+  const report = document.getElementById('report');
+  if (!data || !data.hosts) return;
+  const lower = filter.toLowerCase();
+  const hosts = Object.entries(data.hosts).sort(([a], [b]) => a.localeCompare(b));
+  let html = '';
+  for (const [host, hdata] of hosts) {
+    const commands = Object.values(hdata.commands || {})
+      .filter(c => !lower || (c.command || '').toLowerCase().includes(lower))
+      .sort((a, b) => (b.savings_pct_chars || 0) - (a.savings_pct_chars || 0));
+    if (filter && !commands.length) continue;
+    html += `<h2 class="text-xl font-semibold mt-8 mb-2 flex items-center gap-2">
+      <span class="w-3 h-3 rounded-full" style="background:#22c55e"></span>${host}
+    </h2>`;
+    html += '<table><thead><tr>';
+    html += '<th>Command</th><th>Status</th><th>Raw chars</th><th>Compact chars</th><th>Saved chars</th><th>Tokens saved</th><th>Char %</th><th>Word %</th><th>Action</th>';
+    html += '</tr></thead><tbody>';
+    for (const c of commands) {
+      const st = commandStatus(c);
+      const savedNegative = (c.saved_chars || 0) < 0 ? 'negative' : '';
+      const tokens = Math.round((c.saved_chars || 0) / 4);
+      html += `<tr data-host="${host}" data-command="${escapeHtml(c.command)}">
+        <td>${escapeHtml(c.command)}</td>
+        <td><span class="badge ${st.cls}">${st.text}</span></td>
+        <td>${formatNumber(c.raw_chars)}</td>
+        <td>${formatNumber(c.compact_chars)}</td>
+        <td class="${savedNegative}">${formatNumber(c.saved_chars)}</td>
+        <td class="${savedNegative}">${formatNumber(tokens)}</td>
+        <td class="${(c.savings_pct_chars || 0) < 0 ? 'negative' : ''}">${(c.savings_pct_chars || 0).toFixed(1)}%</td>
+        <td>${(c.savings_pct || 0).toFixed(1)}%</td>
+        <td><button class="text-sm text-blue-600 hover:underline detail-btn" data-host="${host}" data-command="${escapeHtml(c.command)}">Detail</button></td>
       </tr>`;
     }
     html += '</tbody></table>';
     html += `<p class="totals text-sm"><strong>${host} totals</strong>: `;
-    html += `raw=${hdata.raw_chars}, compact=${hdata.compact_chars}, saved=${hdata.saved_chars}, tokens=${Math.round(hdata.saved_chars / 4)} `;
-    html += `(${hdata.saved_chars ? ((hdata.saved_chars / hdata.raw_chars) * 100).toFixed(1) : '0.0'}%)</p>`;
+    html += `raw=${formatNumber(hdata.raw_chars)}, compact=${formatNumber(hdata.compact_chars)}, saved=${formatNumber(hdata.saved_chars)}, tokens=${formatNumber(Math.round(hdata.saved_chars / 4))} `;
+    html += `(${(hdata.saved_chars ? ((hdata.saved_chars / hdata.raw_chars) * 100).toFixed(1) : '0.0')}%)</p>`;
   }
-
-  html += `<div class="mt-8 p-4 rounded" style="background: #f3f4f6;">`;
-  html += `<p class="font-semibold">Overall totals</p>`;
-  html += `<p>raw=${data.total_raw_chars}, compact=${data.total_compact_chars}, saved=${data.total_saved_chars}, tokens=${Math.round(data.total_saved_chars / 4)} `;
-  html += `(${data.total_savings_pct.toFixed ? data.total_savings_pct.toFixed(1) : data.total_savings_pct}%)</p>`;
-  if (data.timeframe) {
-    html += `<p class="text-sm text-gray-600 mt-1">Collected from ${data.timeframe.started} to ${data.timeframe.ended} (${data.timeframe.duration_ms} ms)</p>`;
-  }
-  html += `</div>`;
-
-  if (data.raw_allowed && data.raw_allowed.length) {
-    html += '<h2 class="text-xl font-semibold mt-8 mb-2">Raw-allowed command prefixes</h2>';
-    html += '<table><thead><tr><th>Prefix</th><th>Example</th></tr></thead><tbody>';
-    for (const r of data.raw_allowed) {
-      html += `<tr><td>${escapeHtml(r.prefix)}</td><td>${escapeHtml(r.example)}</td></tr>`;
-    }
-    html += '</tbody></table>';
-  }
-
-  if (data.presets && data.presets.length) {
-    html += '<h2 class="text-xl font-semibold mt-8 mb-2">Registered presets</h2>';
-    html += '<table><thead><tr><th>Preset</th><th>Steps</th><th>Raw chars</th><th>Compact chars</th><th>Score</th></tr></thead><tbody>';
-    for (const p of data.presets) {
-      const name = p.ok ? p.name : `${p.name} (failed)`;
-      html += `<tr><td>${escapeHtml(name)}</td><td>${p.n_steps}</td><td>${p.raw_chars}</td><td>${p.compact_chars}</td><td>${p.preset_score}</td></tr>`;
-    }
-    html += '</tbody></table>';
-  }
-
+  html += renderRawAllowed(data.raw_allowed);
+  html += renderPresets(data.presets);
   report.innerHTML = html;
+  report.querySelectorAll('.detail-btn').forEach(b => b.addEventListener('click', (e) => {
+    const host = e.target.dataset.host;
+    const command = e.target.dataset.command;
+    loadTable(host, command);
+  }));
 }
 
-function escapeHtml(str) {
-  return (str ?? '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
+function renderReport(data) {
+  renderSummary(data);
+  renderWhatsNew(data, previousReportData);
+  renderAudit(data);
+  renderCommandTables(data, document.getElementById('command-search').value);
 }
 
 async function loadTable(host, command) {
-  const detail = document.getElementById('detail');
-  const title = document.getElementById('detail-title');
-  const table = document.getElementById('detail-table');
-  const status = document.getElementById('detail-status');
-
-  detail.classList.remove('hidden');
+  const title = document.getElementById('modal-title');
+  const body = document.getElementById('modal-body');
+  const modal = document.getElementById('modal');
   title.textContent = `${host} — ${command}`;
-  table.innerHTML = '<p class="text-gray-500 text-sm">Loading table...</p>';
-  status.textContent = '';
-
+  body.innerHTML = '<p class="text-gray-500">Loading...</p>';
+  modal.style.display = 'flex';
+  modal.classList.remove('hidden');
   try {
-    const res = await fetchWithTimeout(`${TABLE_DATA_URL}?host=${encodeURIComponent(host)}&command=${encodeURIComponent(command)}&t=` + Date.now());
-    if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+    const res = await fetchWithTimeout(`${TABLE_DATA_URL}?host=${encodeURIComponent(host)}&command=${encodeURIComponent(command)}&t=${Date.now()}`);
     const data = await res.json();
-    if (!data.ok) throw new Error(data.error || 'table not ok');
-    renderDetailTable(data);
-    status.textContent = 'Live data from tony-dell';
-  } catch (e) {
-    table.innerHTML = `<p style="color:#dc2626">Failed to load table: ${escapeHtml(e.message)}</p>`;
-    status.textContent = 'Live table unavailable';
-  }
-}
-
-function renderDetailTable(data) {
-  const table = document.getElementById('detail-table');
-  if (!data.headers || !data.rows || data.rows.length === 0) {
-    table.innerHTML = '<p class="text-gray-500 text-sm">No table rows returned.</p>';
-    return;
-  }
-
-  let html = '<table><thead><tr>';
-  for (const h of data.headers) {
-    html += `<th>${escapeHtml(h)}</th>`;
-  }
-  html += '</tr></thead><tbody>';
-  for (const row of data.rows) {
-    html += '<tr>';
-    for (const cell of row) {
-      html += `<td>${escapeHtml(cell)}</td>`;
+    if (!data.ok) throw new Error(data.error || 'detail unavailable');
+    let html = '';
+    if (data.headers && data.headers.length) {
+      html += '<div><h3 class="font-semibold mb-2">Compact table</h3><table><thead><tr>';
+      for (const h of data.headers) html += `<th>${escapeHtml(h)}</th>`;
+      html += '</tr></thead><tbody>';
+      for (const row of data.rows) {
+        html += '<tr>';
+        for (const cell of row) html += `<td>${escapeHtml(cell)}</td>`;
+        html += '</tr>';
+      }
+      html += '</tbody></table></div>';
+    } else {
+      html += '<div><h3 class="font-semibold mb-2">Compact output</h3><pre class="modal-pre">' + escapeHtml(JSON.stringify(data.compact_out, null, 2)) + '</pre></div>';
     }
-    html += '</tr>';
+    html += '<div><h3 class="font-semibold mb-2">Raw output</h3><pre class="modal-pre">' + escapeHtml(data.raw_out || '(none)') + '</pre></div>';
+    body.innerHTML = html;
+  } catch (e) {
+    body.innerHTML = `<p style="color:#dc2626">Failed to load detail: ${escapeHtml(e.message)}</p>`;
   }
-  html += '</tbody></table>';
-  table.innerHTML = html;
 }
 
-document.getElementById('report').addEventListener('click', (e) => {
-  const row = e.target.closest('tr[data-host]');
-  if (!row) return;
-  const host = row.getAttribute('data-host');
-  const command = row.getAttribute('data-command');
-  if (host && command) loadTable(host, command);
-});
-
-document.getElementById('detail-close').addEventListener('click', () => {
-  document.getElementById('detail').classList.add('hidden');
-});
-
-function toggleAutoRefresh() {
-  const cb = document.getElementById('auto-refresh');
-  if (!cb) return;
-  if (autoRefreshId) {
-    clearInterval(autoRefreshId);
-    autoRefreshId = null;
-  }
-  if (cb.checked) {
-    autoRefreshId = setInterval(() => loadReport(), 60000);
-  }
+function closeModal() {
+  const modal = document.getElementById('modal');
+  modal.style.display = 'none';
+  modal.classList.add('hidden');
 }
 
 function downloadJson() {
   if (!currentReportData) return;
   const blob = new Blob([JSON.stringify(currentReportData, null, 2)], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
-  a.href = url;
+  a.href = URL.createObjectURL(blob);
   a.download = 'mcp-savings.json';
-  document.body.appendChild(a);
   a.click();
-  document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+  URL.revokeObjectURL(a.href);
+}
+
+function startAutoRefresh() {
+  stopAutoRefresh();
+  autoRefreshId = setInterval(() => loadReport(false), 60000);
+}
+
+function stopAutoRefresh() {
+  if (autoRefreshId) { clearInterval(autoRefreshId); autoRefreshId = null; }
 }
 
 document.getElementById('refresh').addEventListener('click', () => loadReport(true));
-document.getElementById('auto-refresh').addEventListener('change', toggleAutoRefresh);
 document.getElementById('download').addEventListener('click', downloadJson);
-renderSkeleton();
+document.getElementById('modal-close').addEventListener('click', closeModal);
+document.getElementById('modal').addEventListener('click', (e) => { if (e.target.id === 'modal') closeModal(); });
+document.getElementById('command-search').addEventListener('input', (e) => {
+  if (currentReportData) renderCommandTables(currentReportData, e.target.value);
+});
+document.getElementById('auto-refresh').addEventListener('change', (e) => {
+  e.target.checked ? startAutoRefresh() : stopAutoRefresh();
+});
+
 loadReport();

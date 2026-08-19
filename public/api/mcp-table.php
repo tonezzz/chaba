@@ -12,7 +12,7 @@ if (!$host || !$command) {
 }
 
 $upstream = 'https://tony-dell.taila0626a.ts.net/mcp-table.json?' . http_build_query(['host' => $host, 'command' => $command]);
-$timeout = 8;
+$timeout = 60;
 
 $ctx = stream_context_create([
     'http' => [
