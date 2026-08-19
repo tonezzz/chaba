@@ -5,7 +5,9 @@ After=network.target
 [Service]
 Type=oneshot
 User=tony
-ExecStart=/usr/bin/node /home/tony/CascadeProjects/chaba/scripts/audits/run.mjs
+Environment=MDDB_BASE=http://localhost:11023
+Environment=MDDB_DB_PATH=/home/tony/.config/containers/mddb/data/mddb.db
+ExecStart=/home/tony/.n/bin/node /home/tony/CascadeProjects/chaba/scripts/audits/run.mjs
 WorkingDirectory=/home/tony/CascadeProjects/chaba
 StandardOutput=append:/home/tony/CascadeProjects/chaba/logs/audit-suite.log
 StandardError=append:/home/tony/CascadeProjects/chaba/logs/audit-suite.log

@@ -1,0 +1,152 @@
+title: Fix DHCP on eno1 and make settings persistent
+subtitle: Restore DHCP for the tony-omen wired Ethernet interface eno1, persist ethtool settings, and compare real performance with wlo1
+icon: network
+
+planning:
+  goal: >-
+    Configure the eno1 wired Ethernet interface on tony-omen to obtain an IPv4 address
+    via DHCP, persist the required 100 Mb/s full-duplex ethtool setting across reboots,
+    and compare real-world throughput against wlo1.
+  scope: >-
+    In scope: inspect eno1 connection profile, set DHCP, persist ethtool duplex,
+    bring the interface up, verify address/route, and run comparative speed tests.
+    Out of scope: modifying other hosts or physical cable replacement.
+  success_criteria:
+    - eno1 obtains a non-link-local IPv4 address via DHCP
+    - eno1 has a stable link and default gateway route
+    - ethtool 100/full setting persists after a connection down/up cycle
+    - Real throughput numbers for eno1 and wlo1 are collected
+    - wlo1 remains the primary default route
+  risks:
+    - risk: Enabling DHCP on eno1 could shift default route and traffic.
+      mitigation: Set eno1 ipv4.route-metric higher than wlo1 (50) so wlo1 stays primary.
+    - risk: No DHCP server on the wired segment.
+      mitigation: Inspect link/carrier first; report if no link.
+    - risk: Temporarily swapping metrics to measure eno1 briefly moves default traffic.
+      mitigation: Keep tests short (5 MB), restore wlo1 metric immediately.
+  resources:
+    - mcp-debug on tony_omen
+    - nmcli, NetworkManager, ethtool
+  owner: tony
+  estimated_duration: 15 minutes
+  related_focus: []
+
+processing:
+  status: completed
+  started_at: '2026-08-19'
+  completed_at: '2026-08-19'
+  steps:
+    - id: 1
+      label: Create job SSOT
+      status: completed
+    - id: 2
+      label: Inspect eno1 connection and carrier state
+      status: completed
+      notes: >-
+        eno1 was in link-local mode (ipv4.method link-local) with a 169.254.x address.
+        The physical link came up at 100 Mb/s after forcing full-duplex with ethtool.
+    - id: 3
+      label: Configure DHCP, duplex, and activate eno1
+      status: completed
+      notes: >-
+        Set ipv4.method auto on netplan-eno1 and forced 100 Mb/s full-duplex via ethtool.
+        DHCP lease obtained 192.168.2.80/24.
+    - id: 4
+      label: Set eno1 as fallback and verify primary is still wlo1
+      status: completed
+      notes: >-
+        Set ipv4.route-metric 60. wlo1 remains primary at metric 50; enx at metric 102.
+    - id: 5
+      label: Persist ethtool 100/full setting across reboots
+      status: completed
+      notes: >-
+        Created /etc/NetworkManager/dispatcher.d/99-eno1-100-full owned by root, mode 755.
+        It runs /usr/sbin/ethtool -s eno1 autoneg off speed 100 duplex full on
+        pre-up and up. Verified by down/up cycle: ethtool still reports 100Mb/s Full.
+    - id: 6
+      label: Compare real throughput of eno1 and wlo1
+      status: completed
+      notes: >-
+        Temporarily lowered eno1 metric to 40 to make it the active default, ran three
+        5 MB Cloudflare tests, then restored wlo1 primary (metric 50) and ran the same test.
+        eno1: 7.6-9.5 MB/s (~60-76 Mbps). wlo1: 19 MB/s (~152 Mbps).
+  decisions:
+    - label: Force 100 Mb/s full-duplex on eno1 and persist it with a NetworkManager dispatcher
+      rationale: Auto-negotiation was not establishing a link; forcing 100/full brought the carrier up.
+      alternatives_considered: Use auto-negotiate; rejected because the peer did not bring up the link.
+    - label: Keep wlo1 as primary and use eno1 as the first fallback
+      rationale: wlo1 measured throughput is roughly 2x faster than eno1 in current conditions.
+      alternatives_considered: Make eno1 primary because it is wired; rejected because wlo1 is faster.
+  changes:
+    - file: docs/ssot/jobs/infrastructure/2026-08-19-fix-eno1-dhcp.yml
+      summary: Job artifact updated with persistence and performance comparison
+    - file: tony-omen /etc/NetworkManager/dispatcher.d/99-eno1-100-full
+      summary: >-
+        New dispatcher script that forces eno1 to 100 Mb/s full-duplex on pre-up/up.
+    - file: tony-omen NetworkManager connection netplan-eno1
+      summary: >-
+        ipv4.method auto, ipv4.route-metric 60, 802-3-ethernet.auto-negotiate no.
+    - file: tony-omen route table
+      summary: >-
+        eno1 now has a fallback default route (metric 60) that activates if wlo1 is down.
+
+followup:
+  verification:
+    - eno1 has 192.168.2.80/24 and DNS 192.168.2.1
+    - ethtool reports Speed 100Mb/s, Duplex Full, Link detected yes
+    - Down/up cycle preserved the 100/full setting (dispatcher fired)
+    - wlo1 remains the active default route (metric 50)
+    - eno1 measured ~8.5 MB/s, wlo1 measured ~19 MB/s
+  rollback_plan:
+    - sudo rm /etc/NetworkManager/dispatcher.d/99-eno1-100-full
+    - sudo nmcli connection modify netplan-eno1 ipv4.method link-local
+    - sudo nmcli connection up netplan-eno1
+  handoff: []
+  deferred:
+    - Future comparison can use iperf3 between tony-omen and another local host, or repeat the metric-swap curl test.
+
+report:
+  status: completed
+  completed_at: '2026-08-19'
+  summary: >-
+    eno1 DHCP is fixed and the required 100 Mb/s full-duplex setting is now persistent
+    via a NetworkManager dispatcher script. eno1 obtained 192.168.2.80/24 and is the
+    fallback default route (metric 60) behind wlo1 (metric 50). Performance comparison
+    shows wlo1 is roughly twice as fast as eno1 in the current environment: wlo1 reached
+    ~19 MB/s (~152 Mbps) while eno1 reached ~8.5 MB/s (~68 Mbps). wlo1 should stay
+    primary; eno1 is a stable wired fallback if wlo1 fails.
+  metrics:
+    - metric: eno1 IP
+      value: 192.168.2.80/24
+    - metric: eno1 link speed
+      value: 100 Mb/s Full Duplex
+    - metric: eno1 throughput (average of 3 samples)
+      value: 8.5 MB/s (~68 Mbps)
+    - metric: wlo1 throughput
+      value: 19 MB/s (~152 Mbps)
+    - metric: eno1 route metric
+      value: 60
+    - metric: wlo1 route metric
+      value: 50
+    - metric: enx route metric
+      value: 102
+  links:
+    - title: Dispatcher script
+      path: /etc/NetworkManager/dispatcher.d/99-eno1-100-full
+  kb_review:
+    - eno1 on tony-omen now uses DHCP and is a wired fallback path
+    - eno1 requires forced 100 Mb/s full-duplex, persisted via NetworkManager dispatcher
+    - eno1 real throughput is ~8.5 MB/s, wlo1 is ~19 MB/s in current conditions
+  lessons_learned:
+    - NetworkManager 802-3-ethernet.speed/duplex did not stick; a dispatcher script calling ethtool is reliable
+    - Two interfaces on the same subnet with the same gateway need different metrics to act as primary/fallback
+    - Temporarily lowering the metric of an interface is the simplest way to test its real internet throughput
+
+config:
+  version: 1
+  created_at: '2026-08-19'
+  last_updated: '2026-08-19'
+  maintainer: tony
+  related_files:
+    - docs/ssot/templates/job.yml
+    - /etc/NetworkManager/dispatcher.d/99-eno1-100-full
