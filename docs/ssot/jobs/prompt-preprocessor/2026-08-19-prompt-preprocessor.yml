@@ -36,27 +36,32 @@ planning:
       file: docs/ssot/ssot.focus.current.yml
 
 processing:
-  status: in_progress
+  status: completed
   started_at: '2026-08-19'
+  completed_at: '2026-08-19'
   steps:
     - id: 1
       label: Survey existing disambiguation logic in mcp_focus, mcp_debug, and subagent-focus-triage
-      status: in_progress
-      notes: Identify what already resolves ambiguity and what is missing.
+      status: completed
+      notes: Reused focus_common scoring and mcp_debug/focus.py candidate loading patterns.
     - id: 2
       label: Design preprocessor schema and output contract
-      status: not_started
+      status: completed
     - id: 3
       label: Implement read-only prototype
-      status: not_started
+      status: completed
     - id: 4
       label: Add command canonicalization for mcp_debug/mcp_raw
-      status: not_started
+      status: completed
     - id: 5
       label: Validate with ambiguous requests
-      status: not_started
-  decisions: []
-  changes: []
+      status: completed
+  decisions:
+    - Stored the contract as a docstring and JSON output; no new SSOT schema needed for v1
+    - Used Python stdlib and existing PyYAML; no new dependencies
+  changes:
+    - file: scripts/prompt_preprocessor.py
+      summary: New read-only prompt preprocessor prototype
 
 followup:
   verification:
@@ -71,9 +76,9 @@ followup:
     - Full MCP tool registration and production wiring may need a follow-up session.
 
 report:
-  status: not_started
-  completed_at: null
-  summary: ''
+  status: completed
+  completed_at: '2026-08-19'
+  summary: 'Implemented scripts/prompt_preprocessor.py. Validated with "promt preprocessor" (confidence 0.955) and "mcp_raw tony-omen systemctl status web" (direct dispatch). Outputs JSON with canonical_request, suggested_action, grounding source, and command canonicalization.'
   metrics:
     - files_changed: 0
   links:
