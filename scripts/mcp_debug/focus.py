@@ -493,6 +493,27 @@ def _best_safe_focus(active, backlog, inbox):
     return max(candidates, key=lambda i: (triage_score(i), priority_value(i), i.get("started", "")))
 
 
+def _ready_safe_items(active, backlog, inbox):
+    """Return all focus candidates that are safe to run in parallel, sorted by score."""
+    candidates = []
+    branch_set = _active_branches(active)
+    for source, pool in [("backlog", backlog), ("inbox", inbox)]:
+        for item in pool:
+            if not item or item.get("status") in ("completed", "archived", "draft"):
+                continue
+            if meets_safe_criteria(item, branch_set):
+                candidates.append({
+                    "label": item.get("label", ""),
+                    "branch": item.get("branch", ""),
+                    "priority": item.get("priority", "medium"),
+                    "triage_score": triage_score(item),
+                    "source": source,
+                    "safe_to_parallel": item.get("safe_to_parallel"),
+                })
+    candidates.sort(key=lambda i: (i["triage_score"], priority_value(i), i.get("started", "")), reverse=True)
+    return candidates
+
+
 def _draft_inbox(request):
     label = request.strip()[:80]
     return {
@@ -837,7 +858,10 @@ def mcp_focus(request=None, mode="recommend", decision=None, summary=None, resum
         return {"ok": False, "error": "ssot.focus.current.yml not found"}
 
     doc = _load_current()
-    active, quick_wins, hand_off_queue, ready_safe = _active_items(doc)
+    active, quick_wins, hand_off_queue, _ = _active_items(doc)
+    backlog = _backlog_items()
+    inbox = _inbox_items()
+    ready_safe = _ready_safe_items(active, backlog, inbox)
 
     if mode == "status":
         return {
@@ -846,11 +870,11 @@ def mcp_focus(request=None, mode="recommend", decision=None, summary=None, resum
             "quick_wins": quick_wins,
             "hand_off_queue": hand_off_queue,
             "ready_safe": ready_safe,
-            "session_groups": _session_groups(active, _backlog_items(), _inbox_items(), doc),
+            "session_groups": _session_groups(active, backlog, inbox, doc),
         }
 
     if mode == "safe_next":
-        best = _best_safe_focus(active, backlog=_backlog_items(), inbox=_inbox_items())
+        best = _best_safe_focus(active, backlog=backlog, inbox=inbox)
         if not best:
             return {"ok": True, "ready_safe": ready_safe, "recommendation": None, "reason": "No safe-to-parallel focus found."}
         return {

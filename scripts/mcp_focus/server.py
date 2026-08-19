@@ -43,7 +43,7 @@ def handle_tools_list(id_):
                             "bulk_session": {"type": "string", "description": "If provided in sweep mode, non-hold candidates without a session_map match are bulk-deferred to this session"},
                             "session_map": {"type": "object", "description": "Optional mapping of label/branch/default to session for sweep bulk-defer"},
                         },
-                        "required": ["request"],
+                        "required": [],
                     },
                 },
                 {
