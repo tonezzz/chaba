@@ -1,0 +1,142 @@
+title: SSOT Follow-up Consolidation
+subtitle: Master index and plan for closing open SSOT items
+icon: checklist
+version: 1
+description: |
+  Tracks all non-completed SSOT items across focus, jobs, infrastructure, and
+  improvements files. Serves as the starting point for triage, consolidation, and
+  regular follow-up.
+
+summary:
+  total_items: 213
+  files_with_open: 49
+  last_scan: '2026-08-19'
+  scan_command: "grep -R 'status: (not_started|pending|in_progress|blocked)' docs/ssot"
+
+sources:
+- path: focus-inbox/processed
+  count: 109
+  note: Processed intake requests; many are already in ssot.focus.current.yml or should be archived
+- path: jobs/infrastructure
+  count: 29
+  note: Caddy, infrastructure, tony-omen internet, and real-infrastructure audit jobs
+- path: jobs/mcp-focus
+  count: 8
+  note: MCP focus streamlining work
+- path: jobs/prompt-preprocessor
+  count: 7
+  note: Prompt preprocessor implementation
+- path: ssot.improvements.yml
+  count: 10
+  note: Overnight assessment auto-generated improvements; may duplicate mcp-health findings
+- path: ssot.focus.current.yml
+  count: 9
+  note: Active shared focus subtasks; should be the canonical active work list
+- path: ssot.focus.yml
+  count: 8
+  note: Historical focus items with previous_status pending; likely stale or completed
+- path: ssot.token-optimization.yml
+  count: 7
+  note: Token optimization subtasks
+- path: ssot.mysystem.macbook-appdev.yml
+  count: 7
+  note: macOS appdev tasks; may need relocation to mysystem backlog
+- path: jobs/context-retrieval
+  count: 4
+  note: Context retrieval job subtasks
+- path: jobs/security
+  count: 4
+  note: Gemini key rotation and security follow-up
+- path: infrastructure/ssot.mcp-debug.yml
+  count: 2
+  note: MCP debug baseline refresh in progress
+- path: infrastructure/ssot.tony-dell-monitoring.yml
+  count: 2
+  note: tony-dell monitoring setup
+- path: jobs/workflow
+  count: 2
+  note: Safe focus continuous processing
+- path: jobs/session-summary
+  count: 2
+  note: Session summary automation
+- path: jobs/kb-categorization
+  count: 2
+  note: KB categorization follow-up
+- path: jobs/kb-quality-filter
+  count: 1
+  note: Auto-KB quality filter
+- path: ssot.file-optimization.yml
+  count: 1
+  note: File optimization follow-up
+- path: ssot.test.weaviate.yml
+  count: 1
+  note: Weaviate test status
+- path: infrastructure/ssot.night-jobs.yml
+  count: 3
+  note: Nightly job definitions
+- path: ssot.mysystem.macbook.yml
+  count: 3
+  note: macOS system tasks
+
+consolidation_rules:
+- rule: Archive processed focus-inbox items older than 7 days that are already in ssot.focus.current.yml
+- rule: Mark ssot.focus.yml items with previous_status pending as completed or archived if the focus is already closed
+- rule: Merge duplicate improvement entries in ssot.improvements.yml that reference the same overnight assessment
+- rule: Close job artifacts whose report section is non-empty and all steps are completed
+- rule: Move macbook/mysystem tasks to a dedicated macbook backlog if not relevant to chaba master
+- rule: Keep ssot.focus.current.yml as the single active-work SSOT; all other open items must link to it or be archived
+
+quick_wins:
+- label: Close completed focus-inbox drafts
+  action: Mark processed/merged focus-inbox items as archived or completed
+  estimated: 1 session
+- label: Deduplicate ssot.improvements.yml
+  action: Merge or archive duplicate Helm Dashboard, security, and network entries
+  estimated: 1 session
+- label: Update job artifact statuses
+  action: Mark completed caddy-audit and infrastructure-audit jobs as completed
+  estimated: 30 minutes
+- label: Archive stale ssot.focus.yml items
+  action: Review 8 pending previous_status entries and archive completed ones
+  estimated: 30 minutes
+
+backlog:
+- file: docs/ssot/jobs/infrastructure/2026-08-19-real-infrastructure-audit.yml
+  label: Real infrastructure audit
+  status: not_started
+- file: docs/ssot/jobs/infrastructure/2026-08-19-caddy-audit.yml
+  label: Caddy routing and CI fixes
+  status: in_progress
+- file: docs/ssot/jobs/infrastructure/2026-08-19-tony-omen-internet-impact.yml
+  label: Tony-omen internet impact
+  status: in_progress
+- file: docs/ssot/jobs/mcp-focus/2026-08-19-streamline-mcp-focus.yml
+  label: Streamline MCP focus
+  status: in_progress
+- file: docs/ssot/jobs/prompt-preprocessor/2026-08-19-prompt-preprocessor.yml
+  label: Prompt preprocessor
+  status: in_progress
+
+next_actions:
+- id: 1
+  label: Run a follow-up triage pass on focus-inbox/processed
+  status: not_started
+  owner: tony
+- id: 2
+  label: Deduplicate ssot.improvements.yml
+  status: not_started
+  owner: tony
+- id: 3
+  label: Update completed job artifacts to completed status
+  status: not_started
+  owner: tony
+- id: 4
+  label: Add real-infrastructure audit to mcp-health integration
+  status: not_started
+  owner: tony
+
+metrics:
+  open_items: 213
+  open_files: 49
+  high_density_sources: 5
+  quick_wins: 4

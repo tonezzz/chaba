@@ -1,0 +1,84 @@
+title: Real infrastructure audit
+subtitle: Capture live service health from mcp-health and produce a consolidated report
+icon: activity
+version: 1
+
+planning:
+  goal: |
+    Add a live infrastructure audit to the consolidated audit suite. The audit uses
+    mcp-health as the single source of truth for runtime service status and produces
+    a report that can be compared to the canonical health SSOT over time.
+  scope:
+    - docs/ssot/infrastructure/ssot.health.home.yml
+    - docs/ssot/infrastructure/ssot.health.mobile.yml
+    - docs/ssot/infrastructure/ssot.health.yml
+    - mcp/mcp-health/server.js
+    - scripts/audits/run.mjs
+    - docs/ssot/infrastructure/ssot.audit.yml
+  out_of_scope:
+    - Direct ssh/remote command execution from the audit script
+    - Reimplementing health checks that already exist in mcp-health
+  success_criteria:
+    - Audit produces a real-infrastructure report at least weekly
+    - Report shows healthy/unknown/error counts and lists failing services
+    - Unknown services are classified as intentional, expected, or needing attention
+    - Report is stored in reports/audits/real-infrastructure.{json,md}
+  risks:
+    - mcp-health must be reachable; if it is down the audit cannot run
+    - Stale health data may be older than 24 hours
+    - False positives for optional or intentionally disabled services
+  estimated_duration: 1-2 sessions
+  related_focus:
+    - label: Infrastructure audit
+      file: docs/ssot/ssot.focus.current.yml
+
+processing:
+  status: not_started
+  started_at: null
+  findings:
+    - file: docs/ssot/infrastructure/ssot.health.home.yml
+      issue: 18 of 45 services are currently unknown in mcp-health, many on tony-omen.local or local ports
+      severity: medium
+    - file: mcp/mcp-health/server.js
+      issue: mcp-health is an stdio MCP server; the consolidated runner cannot call it directly
+      severity: high
+  steps:
+    - id: 1
+      label: Decide integration pattern (MCP workflow, HTTP endpoint, or stdio bridge)
+      status: not_started
+    - id: 2
+      label: Implement real-infrastructure-audit script or MCP tool
+      status: not_started
+    - id: 3
+      label: Add real-infrastructure to ssot.audit.yml schedule
+      status: not_started
+    - id: 4
+      label: Run and validate report
+      status: not_started
+  decisions: []
+  changes: []
+
+followup:
+  verification:
+    - Run the audit and confirm real-infrastructure.{json,md} is generated
+    - Compare the report to ssot.health.home.yml and identify mismatches
+  rollback_plan:
+    - Remove the audit from ssot.audit.yml and delete the script
+  handoff:
+    - tony
+  deferred: []
+
+report:
+  status: not_started
+  completed_at: null
+  summary: ''
+  metrics: {}
+  links: []
+  kb_review: []
+  lessons_learned: []
+
+config:
+  version: 1
+  created_at: '2026-08-19'
+  last_updated: '2026-08-19'
+  maintainer: tony
