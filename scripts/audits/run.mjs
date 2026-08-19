@@ -18,6 +18,21 @@ function loadAuditSSOT() {
   return yaml.load(text);
 }
 
+function expandRuns(doc, runNames) {
+  const groups = Object.fromEntries((doc.groups || []).map((g) => [g.name, g.children || []]));
+  const expanded = [];
+  for (const name of runNames) {
+    if (groups[name]) {
+      for (const child of groups[name]) {
+        if (!expanded.includes(child)) expanded.push(child);
+      }
+    } else if (!expanded.includes(name)) {
+      expanded.push(name);
+    }
+  }
+  return expanded;
+}
+
 function getAudits(full = false) {
   const doc = loadAuditSSOT();
   const allAudits = (doc.audits || []).map((a) => ({
@@ -26,9 +41,10 @@ function getAudits(full = false) {
     args: a.args || [],
     script: a.script,
   }));
-  const runs = full
+  const runNames = full
     ? (doc.schedule?.full?.runs || allAudits.map((a) => a.name))
     : (doc.schedule?.default?.runs || allAudits.filter((a) => a.name !== 'security-audit').map((a) => a.name));
+  const runs = expandRuns(doc, runNames);
   return allAudits.filter((a) => runs.includes(a.name));
 }
 

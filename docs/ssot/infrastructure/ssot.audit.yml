@@ -38,16 +38,21 @@ schedule:
     service: systemd/chaba-audit.service
     args: default_args
     runs:
-      - kb
-      - ssot
-      - security-scan
+      - kb-suite
+      - ssot-suite
       - caddy
+    note: groups are expanded to individual audits by the runner
   full:
     frequency: monthly
     timer: systemd/chaba-audit-full.timer
     service: systemd/chaba-audit-full.service
     args: full_args
-    note: installed and enabled on tony-dell; includes security-audit which may need privileges
+    runs:
+      - kb-suite
+      - ssot-suite
+      - caddy
+      - security-suite
+    note: installed and enabled on tony-dell; security-audit may need privileges
 
 audits:
   - name: kb
@@ -67,6 +72,32 @@ audits:
     severity_on_fail: error
     description: SSOT YAML syntax and cross-reference validation
 
+  - name: kb-modularity
+    script: scripts/audits/kb-modularity-audit.mjs
+    command: node
+    args: []
+    schedule: weekly
+    severity_on_fail: warning
+    description: KB entry focus, size, and duplicate detection
+    thresholds:
+      max_words: 1200
+      max_headings: 5
+      min_links: 0
+      max_similarity: 0.85
+
+  - name: ssot-modularity
+    script: scripts/audits/ssot-modularity-audit.mjs
+    command: node
+    args: []
+    schedule: weekly
+    severity_on_fail: warning
+    description: SSOT file scope, nesting, and title uniqueness
+    thresholds:
+      max_words: 3000
+      max_top_level_keys: 12
+      max_nesting_depth: 8
+      max_duplicate_titles: 1
+
   - name: security-scan
     script: scripts/security-scan.mjs
     command: node
@@ -84,6 +115,23 @@ audits:
     severity_on_fail: error
     description: System-level security review; run only with --full because it may need privileges
 
+  - name: auto-kb-quality
+    script: scripts/auto-kb-quality-audit.mjs
+    command: node
+    args:
+      - --json
+    schedule: weekly
+    severity_on_fail: warning
+    description: Scan auto-*.md KB entries and report/archive low-value candidates
+
+  - name: kb-categorize
+    script: scripts/kb-categorize-audit.mjs
+    command: node
+    args: []
+    schedule: weekly
+    severity_on_fail: warning
+    description: Audit KB category tags and propose core-category mapping
+
   - name: caddy
     script: scripts/audits/caddy-audit.mjs
     command: node
@@ -91,6 +139,29 @@ audits:
     schedule: weekly
     severity_on_fail: error
     description: Caddyfile format and syntax validation
+
+groups:
+  - name: kb-suite
+    description: All KB health, quality, categorization, and modularity audits
+    children:
+      - kb
+      - auto-kb-quality
+      - kb-categorize
+      - kb-modularity
+  - name: ssot-suite
+    description: All SSOT validation and modularity audits
+    children:
+      - ssot
+      - ssot-modularity
+  - name: caddy
+    description: Caddy reverse proxy checks
+    children:
+      - caddy
+  - name: security-suite
+    description: Secret scan and system-level security review
+    children:
+      - security-scan
+      - security-audit
 
 plan:
   current_state:
