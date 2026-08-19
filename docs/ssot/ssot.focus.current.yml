@@ -308,9 +308,9 @@ sections:
       completed_at: '2026-08-19'
       note: 'status-api base image updated to ubi9/python-311; imagen2-inference still to do.'
     - label: Rebuild and verify custom builds imagen2-inference and status-api
-      status: in_progress
-      started_at: '2026-08-19'
-      note: 'status-api complete. imagen2-inference rebuild delegated to background sub-agent f7fec02a on tony-omen.'
+      status: completed
+      completed_at: '2026-08-19'
+      note: 'status-api: 0 CRITICAL, 314 HIGH. imagen2-inference rebuilt with pytorch/pytorch:2.6.0-cuda12.4-cudnn9-runtime and updated deps: 21 CRITICAL, 342 HIGH (improved from 21 CRITICAL, 365 HIGH). Sub-agent recommends UBI9 CUDA runtime base for further CRITICAL reduction.'
     - label: Re-run security scan and validate results
       status: not_started
     started: '2026-08-19'
