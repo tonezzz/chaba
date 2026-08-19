@@ -44,7 +44,7 @@ def _part_file(asset_type, path):
 
 def _known_paths():
     known = set()
-    for f in sorted(REGISTRY_DIR.glob("ssot.registry.*.yml")):
+    for f in sorted(REGISTRY_DIR.glob("ssot.registry*.yml")):
         doc = yaml.safe_load(f.read_text()) or {}
         for a in doc.get("assets", []):
             if a.get("path"):

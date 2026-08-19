@@ -1,0 +1,28 @@
+title: SSOT and docs currency check after changes
+subtitle: Validate registry, index, and docs are current after the latest SSOT refactor
+icon: check
+tags:
+- ssot
+- validation
+- docs
+- currency
+focus:
+  label: SSOT and docs currency check after changes
+  text: Run ssot-validate, ssot-optimize, and registry scans to ensure all new SSOT files are registered, no stale docs remain,
+    and all cross-references are accurate after the registry and mcp-debug splits.
+  branch: chaba
+  priority: low
+  status: active
+  safe_to_parallel: false
+  subtasks:
+  - label: Run ssot-validate and verify 0 errors
+    status: not_started
+  - label: Run ssot-optimize and review remaining suggestions
+    status: not_started
+  - label: Run registry-drafts and import any missing assets
+    status: not_started
+  - label: Verify ssot.index.yml reflects all docs/ssot files
+    status: not_started
+  - label: Update ssot.improvements.yml status and commit
+    status: not_started
+  started: '2026-08-19'

@@ -280,6 +280,36 @@ sections:
       Next step needs user approval for App Store login and Xcode install.
     previous_status: '2026-08-19'
     started: '2026-08-19'
+  - label: SSOT and docs currency check after changes
+    text: Run ssot-validate, ssot-optimize, and registry scans to ensure all new SSOT files are registered, no stale docs
+      remain, and all cross-references are accurate after the registry and mcp-debug splits.
+    branch: chaba
+    priority: low
+    status: completed
+    completed_at: '2026-08-19'
+    safe_to_parallel: false
+    subtasks:
+    - label: Run ssot-validate and verify 0 errors
+      status: completed
+      completed_at: '2026-08-19'
+      note: 'ssot-validate reports 0 errors and 1 review warning (ssot.focus.current.yml bloat 372).'
+    - label: Run ssot-optimize and review remaining suggestions
+      status: completed
+      completed_at: '2026-08-19'
+      note: 'Only bloat warning is ssot.focus.current.yml. Data isolation warnings resolved.'
+    - label: Run registry-drafts and import any missing assets
+      status: completed
+      completed_at: '2026-08-19'
+      note: 'Imported 1 missing ssot asset into ssot.registry.ssot-core.yml. Known_paths now includes main ssot.registry.yml to avoid duplicate partition entries.'
+    - label: Verify ssot.index.yml reflects all docs/ssot files
+      status: completed
+      completed_at: '2026-08-19'
+      note: 'Added ssot.registry.ssot-extra.yml to ssot.index.yml.'
+    - label: Update ssot.improvements.yml status and commit
+      status: completed
+      completed_at: '2026-08-19'
+    started: '2026-08-19'
+    source: /home/tony/CascadeProjects/chaba/docs/ssot/focus-inbox/processed/2026-08-19-ssot-docs-currency-check.yml
 - title: Ready (Safe)
   icon: safe
   layout: list
