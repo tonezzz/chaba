@@ -20,10 +20,18 @@ Invoke this skill when:
 
 Input (one of):
 - CLI argument: `node auto-kb.mjs "<kb-review-content>" ["<context>"]`
-- Environment: `KB_REVIEW_CONTENT="..."` and optional `KB_SESSION_CONTEXT="..."`
+- Environment: `KB_REVIEW_CONTENT="..."` and optional `KB_SESSION_CONTEXT="..."`, plus either `MCP_REDUNDANCY_FILE` or `MCP_REDUNDANCY_RESULT`
 - Stdin: `echo "..." | node auto-kb.mjs`
 
 The KB review section should be a concise summary of decisions, discoveries, or fixes from the session.
+
+`auto-kb` does **not** call MCP tools itself. The assistant must provide MDDB redundancy results before invoking it:
+
+1. Call `mcp_call_tool mddb semantic_search` for the relevant collections.
+2. Combine the results into an array and either:
+   - Set `MCP_REDUNDANCY_RESULT` to the JSON string, or
+   - Write the JSON to a file and set `MCP_REDUNDANCY_FILE` to its path.
+3. After `auto-kb` creates the file, call `mcp_call_tool mddb add_document` to index it.
 
 ## Processing steps
 
@@ -36,12 +44,10 @@ The KB review section should be a concise summary of decisions, discoveries, or 
    - Root cause analyses
    - Reusable patterns
 
-2. **Checks for redundancy** with existing KB entries using MDDB:
-   - Uses MDDB semantic search across KB collections (chaba-development, chaba-features, chaba-operations, chaba-system)
-   - Provides relevance scores (0.4-1.0) for similarity detection
-   - Falls back to local file-based check if MDDB unavailable
-   - Updates existing entries instead of creating duplicates
-   - Archives outdated entries if needed
+2. **Checks for redundancy** with existing KB entries using the MDDB result supplied by the assistant:
+   - Uses `MCP_REDUNDANCY_RESULT` or `MCP_REDUNDANCY_FILE` if provided
+   - Falls back to local file-based check if an MDDB result is not provided
+   - Skips creation if high redundancy is detected
 
 3. **Creates KB entries** following the standard template:
    - Title and description
@@ -53,13 +59,11 @@ The KB review section should be a concise summary of decisions, discoveries, or 
    - Tags
 
 4. **Places entries** in the correct location:
-   - `/home/tony/CascadeProjects/chaba/docs/kb/` (local file)
-   - Automatically indexes in MDDB for semantic search
+   - `/home/tony/CascadeProjects/chaba/docs/kb/` (local file) or `KB_DIR` if overridden
 
 5. **Indexes in MDDB** for future semantic search:
-   - Automatically determines appropriate collection based on content
-   - Adds metadata (title, source, creation date, auto-generated flag)
-   - Enables future redundancy checking via semantic search
+   - The assistant calls `mcp_call_tool mddb add_document` with the collection, filename, and metadata
+   - `auto-kb` outputs the chosen collection and filename so the assistant can index it
 
 ## Quality criteria
 
@@ -79,13 +83,21 @@ Does NOT create entries for:
 ## Example usage
 
 ```bash
-node .agents/skills/auto-kb/auto-kb.mjs "Created daily2 page with calendar layout for Yomi daily summaries. Required web stack restart to pick up new file. Page now accessible at /apps/yomi/daily2/index.html with basic auth. Uses existing API endpoints and follows project styling conventions."
+# Basic (no MDDB redundancy result, uses file-based fallback)
+node .agents/skills/auto-kb/auto-kb.mjs "Created daily2 page with calendar layout..."
 
-# Or via environment
-KB_REVIEW_CONTENT="Created daily2 page..." node .agents/skills/auto-kb/auto-kb.mjs
+# With pre-computed MDDB redundancy result as a JSON file
+KB_REVIEW_CONTENT="Created daily2 page..." \
+MCP_REDUNDANCY_FILE=/tmp/kb-redundancy.json \
+  node .agents/skills/auto-kb/auto-kb.mjs
+
+# Or pass the result directly as a JSON string
+KB_REVIEW_CONTENT="Created daily2 page..." \
+MCP_REDUNDANCY_RESULT='[{"collection":"chaba-features","key":"...","score":0.85,"title":"..."}]' \
+  node .agents/skills/auto-kb/auto-kb.mjs
 
 # Or piped
-echo "Created daily2 page..." | node .agents/skills/auto-kb/auto-kb.mjs
+echo "Created daily2 page..." | MCP_REDUNDANCY_FILE=/tmp/kb-redundancy.json node .agents/skills/auto-kb/auto-kb.mjs
 ```
 
 ## Related documentation

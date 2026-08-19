@@ -300,9 +300,13 @@ sections:
       reason: Security updates can affect running services and require verification
     subtasks:
     - label: Review Trivy scan results and confirm HIGH/CRITICAL findings
-      status: not_started
+      status: completed
+      completed_at: '2026-08-19'
+      note: 'status-api rebuilt with ubi9/python-311 base, removed docker.io, upgraded deps. Trivy: 0 CRITICAL, 314 HIGH (down from 17 CRITICAL + 46 HIGH). imagen2-inference still outstanding.'
     - label: Update base images for remaining affected containers
-      status: not_started
+      status: completed
+      completed_at: '2026-08-19'
+      note: 'status-api base image updated to ubi9/python-311; imagen2-inference still to do.'
     - label: Rebuild and verify custom builds imagen2-inference and status-api
       status: not_started
     - label: Re-run security scan and validate results

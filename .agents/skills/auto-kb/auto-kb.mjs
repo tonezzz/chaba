@@ -2,23 +2,30 @@
 
 /**
  * Auto KB Creation Skill
- * 
+ *
  * Analyzes KB review sections and automatically creates knowledge base entries
- * for high-value information while checking for redundancy using MCP MDDB.
- * 
- * Note: This skill should be invoked through the skill system to access MCP tools.
- * Direct execution will use fallback local file-based redundancy checking.
+ * for high-value information while checking for redundancy using MDDB.
+ *
+ * MDDB access is intentionally not performed inside this Node process, because
+ * mcp_call_tool is a Devin assistant tool and is not available as a Node
+ * global. The caller (assistant) is expected to:
+ *   1. Call mcp_call_tool mddb semantic_search for relevant collections.
+ *   2. Pass the combined result as MCP_REDUNDANCY_RESULT (JSON string) or
+ *      MCP_REDUNDANCY_FILE (path to a JSON file).
+ *   3. After a local KB file is created, call mcp_call_tool mddb add_document
+ *      to index it.
+ *
+ * Usage:
+ *   KB_REVIEW_CONTENT="..." [MCP_REDUNDANCY_FILE=/tmp/kb-redundancy.json] node auto-kb.mjs
+ *   echo "..." | MCP_REDUNDANCY_FILE=/tmp/kb-redundancy.json node auto-kb.mjs
+ *   node auto-kb.mjs "..."
  */
 
 import { readFileSync, writeFileSync, readdirSync, existsSync, unlinkSync } from 'fs';
 import { join } from 'path';
 
-const KB_DIR = '/home/tony/CascadeProjects/chaba/docs/kb';
+const KB_DIR = process.env.KB_DIR || '/home/tony/CascadeProjects/chaba/docs/kb';
 const LOCK_FILE = '/tmp/auto-kb.lock';
-const KB_COLLECTIONS = ['chaba-development', 'chaba-features', 'chaba-operations', 'chaba-system'];
-
-// Check if running in skill context (MCP tools available)
-const HAS_MCP_TOOLS = typeof mcp_call_tool === 'function' || typeof global.mcp_call_tool === 'function';
 
 // KB-worthy triggers
 const KB_WORTHY_TRIGGERS = [
@@ -118,101 +125,94 @@ function isKBWorthy(content) {
 }
 
 /**
- * Call MCP tool (only available when skill is invoked through skill system)
+ * Read combined MDDB redundancy result from env or a JSON file.
+ * Expected format: an array of { collection, key, score, title }
  */
-async function callMCPTool(serverName, toolName, args) {
-  if (HAS_MCP_TOOLS) {
+function getMcpRedundancy() {
+  if (process.env.MCP_REDUNDANCY_RESULT) {
     try {
-      // When running in skill context, use the global mcp_call_tool function
-      return await mcp_call_tool(serverName, toolName, args);
-    } catch (error) {
-      throw new Error(`MCP tool call failed: ${error.message}`);
+      const parsed = JSON.parse(process.env.MCP_REDUNDANCY_RESULT);
+      if (Array.isArray(parsed)) {
+        return parsed;
+      }
+    } catch (e) {
+      console.log('Warning: MCP_REDUNDANCY_RESULT is not valid JSON; ignoring.');
     }
-  } else {
-    throw new Error('MCP tools not available - skill must be invoked through skill system');
   }
+
+  if (process.env.MCP_REDUNDANCY_FILE) {
+    try {
+      const data = readFileSync(process.env.MCP_REDUNDANCY_FILE, 'utf8');
+      const parsed = JSON.parse(data);
+      if (Array.isArray(parsed)) {
+        return parsed;
+      }
+    } catch (e) {
+      console.log(`Warning: Failed to read MCP_REDUNDANCY_FILE: ${e.message}`);
+    }
+  }
+
+  return null;
 }
 
 /**
- * Search existing KB entries for redundancy using MDDB semantic search
+ * Map a score to a relevance label
+ */
+function relevanceForScore(score) {
+  return score > 0.7 ? 'high' : score > 0.4 ? 'medium' : 'low';
+}
+
+/**
+ * Search existing KB entries for redundancy using MDDB or local files
  */
 async function checkRedundancy(content) {
-  const similarEntries = [];
-  
-  if (HAS_MCP_TOOLS) {
-    try {
-      console.log('Checking redundancy using MDDB semantic search...');
-      
-      // Search across all KB collections
-      for (const collection of KB_COLLECTIONS) {
-        try {
-          const result = await callMCPTool('mddb', 'semantic_search', {
-            collection: collection,
-            query: content,
-            top_k: 5,
-            threshold: 0.4  // Only consider results with relevance > 0.4
-          });
-          
-          if (result.results && Array.isArray(result.results)) {
-            for (const hit of result.results) {
-              const relevance = hit.score || 0;
-              if (relevance > 0.4) {
-                similarEntries.push({
-                  collection: collection,
-                  key: hit.key || hit.id,
-                  score: relevance,
-                  relevance: relevance > 0.7 ? 'high' : 'medium',
-                  title: hit.meta?.title || hit.key
-                });
-              }
-            }
-          }
-        } catch (collectionError) {
-          console.log(`Warning: Failed to search collection ${collection}: ${collectionError.message}`);
-          // Continue with other collections
-        }
-      }
-      
-      // Sort by relevance score (highest first)
-      similarEntries.sort((a, b) => b.score - a.score);
-      
-      return {
-        hasRedundancy: similarEntries.some(e => e.relevance === 'high'),
-        similarEntries,
-        method: 'mddb'
-      };
-      
-    } catch (mcpError) {
-      console.log(`Warning: MDDB semantic search failed: ${mcpError.message}`);
-      console.log('Falling back to local file-based redundancy check...');
-      // Fall through to local file-based check
-    }
-  } else {
-    console.log('MCP tools not available, using local file-based redundancy check...');
+  const mcpEntries = getMcpRedundancy();
+
+  // Prefer MDDB result provided by the caller
+  if (mcpEntries && mcpEntries.length > 0) {
+    const similarEntries = mcpEntries
+      .map(e => ({
+        collection: e.collection,
+        key: e.key || e.id,
+        score: e.score || 0,
+        title: e.title || e.key || e.id,
+        relevance: e.relevance || relevanceForScore(e.score || 0),
+        method: 'mcp'
+      }))
+      .sort((a, b) => b.score - a.score);
+
+    return {
+      hasRedundancy: similarEntries.some(e => e.relevance === 'high'),
+      similarEntries,
+      method: 'mcp'
+    };
   }
-  
+
+  console.log('MCP redundancy result not available, using local file-based redundancy check...');
+
   // Fallback to local file-based check
   if (!existsSync(KB_DIR)) {
-    return { hasRedundancy: false, similarEntries: [], method: 'none' };
+    return { hasRedundancy: false, similarEntries: [], method: 'fallback' };
   }
 
   const files = readdirSync(KB_DIR).filter(f => f.endsWith('.md'));
   const contentLower = content.toLowerCase();
+  const similarEntries = [];
 
   for (const file of files) {
     const filePath = join(KB_DIR, file);
     const existingContent = readFileSync(filePath, 'utf8').toLowerCase();
-    
+
     const words = contentLower.split(/\s+/);
-    const overlapCount = words.filter(word => 
+    const overlapCount = words.filter(word =>
       word.length > 4 && existingContent.includes(word)
     ).length;
-    
+
     if (overlapCount > 5) {
       similarEntries.push({
         file,
         overlapCount,
-        score: overlapCount / 20, // Rough score estimation
+        score: overlapCount / 20,
         relevance: overlapCount > 10 ? 'high' : 'medium',
         method: 'fallback'
       });
@@ -283,55 +283,17 @@ function determineCategory(content) {
   return 'implementation';
 }
 
-/**
- * Add KB entry to MDDB
- */
-async function addToMDDB(filepath, filename, content) {
-  if (!HAS_MCP_TOOLS) {
-    console.log('MCP tools not available, skipping MDDB indexing.');
-    return { success: false, error: 'MCP tools not available' };
+function getMDDBCollection(category) {
+  if (category === 'troubleshooting' || category === 'development') {
+    return 'chaba-development';
   }
-  
-  try {
-    console.log('Adding KB entry to MDDB...');
-    
-    const KB_CATEGORIES = ['operations', 'development', 'architecture', 'troubleshooting', 'implementation'];
-
-    // Determine category and collection from content
-    const category = determineCategory(content);
-    let collection = 'chaba-features'; // Default
-    if (category === 'troubleshooting' || category === 'development') {
-      collection = 'chaba-development';
-    } else if (category === 'operations') {
-      collection = 'chaba-operations';
-    } else if (category === 'architecture' || category === 'implementation') {
-      collection = 'chaba-system';
-    }
-    
-    // Extract title from content (first line after #)
-    const titleMatch = content.match(/^#\s+(.+)$/m);
-    const title = titleMatch ? titleMatch[1] : filename.replace('.md', '');
-    
-    const result = await callMCPTool('mddb', 'add_document', {
-      collection: collection,
-      key: filename,
-      lang: 'en',
-      content_md: content,
-      meta: {
-        title: title,
-        source: 'auto-kb',
-        created_at: new Date().toISOString(),
-        auto_generated: true
-      }
-    });
-    
-    console.log(`KB entry added to MDDB collection: ${collection}`);
-    return { success: true, collection };
-  } catch (mcpError) {
-    console.log(`Warning: Failed to add KB entry to MDDB: ${mcpError.message}`);
-    console.log('KB entry was created locally but not indexed in MDDB.');
-    return { success: false, error: mcpError.message };
+  if (category === 'operations') {
+    return 'chaba-operations';
   }
+  if (category === 'architecture' || category === 'implementation') {
+    return 'chaba-system';
+  }
+  return 'chaba-features';
 }
 
 /**
@@ -347,8 +309,8 @@ async function getInput() {
   if (process.stdin.isTTY) {
     throw new Error(
       'Usage: auto-kb.mjs <chaba-review-content> [context]\n' +
-      '       KB_REVIEW_CONTENT="..." node auto-kb.mjs\n' +
-      '       echo "..." | node auto-kb.mjs'
+      '       KB_REVIEW_CONTENT="..." [MCP_REDUNDANCY_FILE=/tmp/kb-redundancy.json] node auto-kb.mjs\n' +
+      '       echo "..." | MCP_REDUNDANCY_FILE=/tmp/kb-redundancy.json node auto-kb.mjs'
     );
   }
   const chunks = [];
@@ -367,15 +329,15 @@ async function main() {
     console.log('Auto-kb is already running. Skipping duplicate invocation.');
     return;
   }
-  
+
   createLock();
-  
+
   try {
     const content = await getInput();
     const context = process.env.KB_SESSION_CONTEXT || process.argv[3] || '';
 
     console.log('Analyzing KB review content...');
-    
+
     // Check if KB-worthy
     if (!isKBWorthy(content)) {
       console.log('Content does not meet KB-worthy criteria.');
@@ -384,16 +346,16 @@ async function main() {
     }
 
     console.log('Content is KB-worthy. Checking for redundancy...');
-    
-    // Check redundancy (now async with MDDB)
+
+    // Check redundancy (now async with optional MDDB result from assistant)
     const redundancyCheck = await checkRedundancy(content);
-    
-    if (redundancyCheck.method === 'mddb') {
-      console.log('Used MDDB semantic search for redundancy checking.');
+
+    if (redundancyCheck.method === 'mcp') {
+      console.log('Used MDDB result for redundancy checking.');
     } else {
       console.log('Used fallback local file-based redundancy checking.');
     }
-    
+
     if (redundancyCheck.hasRedundancy) {
       console.log('High redundancy detected with existing entries:');
       redundancyCheck.similarEntries.forEach(entry => {
@@ -419,29 +381,32 @@ async function main() {
     }
 
     console.log('Generating KB entry...');
-    
+
     // Determine category and generate entry
     const category = determineCategory(content);
+    const collection = getMDDBCollection(category);
     const entry = generateKBEntry(content, context, category);
-    
+
     // Generate filename
     const timestamp = Date.now();
     const filename = `auto-chaba-${timestamp}.md`;
     const filepath = join(KB_DIR, filename);
-    
+
+    // Ensure directory exists
+    if (!existsSync(KB_DIR)) {
+      // noop: let writeFileSync fail if needed, or create with mkdirSync?
+      // Keep minimal: original did not create KB_DIR.
+    }
+
     // Write entry
     writeFileSync(filepath, entry, 'utf8');
-    
+
     console.log(`KB entry created: ${filename}`);
     console.log(`Location: ${filepath}`);
-    
-    // Add to MDDB
-    const mddbResult = await addToMDDB(filepath, filename, entry);
-    if (mddbResult.success) {
-      console.log(`Indexed in MDDB collection: ${mddbResult.collection}`);
-    }
-    
-    console.log('Please review and refine the entry as needed.');
+    console.log(`Category: ${category}`);
+    console.log(`MDDB collection: ${collection}`);
+    console.log('To index in MDDB, call:');
+    console.log(`  mcp_call_tool mddb add_document collection=${collection} key=${filename} lang=en content_md=<entry> meta={title:"...",source:"auto-kb",auto_generated:true}`);
   } finally {
     removeLock();
   }
