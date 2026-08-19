@@ -284,7 +284,8 @@ sections:
     text: Extend the mcp-debug MCP server with lightweight SSOT read/query tools. This lets remote hosts and MCP consumers
       look up registry assets (apps, scripts, services, SSOTs) by id, name, type, or keyword, and fetch small SSOT files on
       demand without pulling the full registry into the prompt.
-    status: active
+    status: completed
+    completed_at: '2026-08-19'
     priority: medium
     started: '2026-08-19'
     estimated_duration: 1 session
@@ -292,15 +293,25 @@ sections:
     - focus
     subtasks:
     - label: Survey current mcp-debug file/SSOT capabilities and decide tool shape
-      status: not_started
-    - label: Design mcp_ssot tool input/output contract
-      status: not_started
-    - label: Implement mcp_ssot_query and mcp_ssot_get in scripts/mcp_debug/tools.py
-      status: not_started
+      status: completed
+      completed_at: '2026-08-19'
+      note: 'Existing tools: mcp_read_ssot, mcp_query_ssot, mcp_search_ssot. Gap is asset-oriented lookup across split registry partitions.'
+    - label: Design mcp_registry tool input/output contract
+      status: completed
+      completed_at: '2026-08-19'
+      note: 'Design doc: docs/kb/mcp-debug-ssot-reading-design.md with mcp_registry_lookup and mcp_registry_get contracts.'
+    - label: Implement mcp_registry_lookup and mcp_registry_get in scripts/mcp_debug/registry.py
+      status: completed
+      completed_at: '2026-08-19'
+      note: 'Implemented paginated lookup by q/type/by and single-asset get with source SSOT fetch.'
     - label: Register new tools in mcp-debug-server.py and MCP config
-      status: not_started
+      status: completed
+      completed_at: '2026-08-19'
+      note: 'Added tool schemas and dispatch to scripts/mcp_debug/server.py; mcp_config.json not required because server advertises tools dynamically.'
     - label: Test lookup for a registry asset and a small SSOT file
-      status: not_started
+      status: completed
+      completed_at: '2026-08-19'
+      note: 'Tested mcp_registry_lookup(q=helm) returns ssot-apps-helm; mcp_registry_get(id=ssot-apps-helm) returns asset + full SSOT.'
     - label: Update ssot.mcp-debug.yml suggested_extensions and commit
       status: not_started
     request_log: []
