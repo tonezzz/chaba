@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Focus Decision Tree</title>
+  <style>
+    :root { --bg: #0f172a; --card: #1e293b; --text: #e2e8f0; --muted: #94a3b8; --yes: #22c55e; --no: #ef4444; }
+    body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 2rem; }
+    h1 { margin-top: 0; }
+    .step { background: var(--card); border-radius: 0.5rem; padding: 1rem; margin: 0.5rem 0; border-left: 4px solid #3b82f6; }
+    .step h3 { margin: 0 0 0.5rem; }
+    .outcome { display: inline-block; padding: 0.25rem 0.5rem; border-radius: 0.25rem; font-weight: bold; }
+    .yes { background: #064e3b; color: var(--yes); }
+    .no { background: #7f1d1d; color: var(--no); }
+    .arrow { color: var(--muted); margin: 0 0.5rem; }
+    a { color: #60a5fa; }
+  </style>
+</head>
+<body>
+  <h1>Focus Decision Tree</h1>
+  <p>Interactive view of <a href="/">mcp_focus</a> routing. Source: <code>docs/ssot/infrastructure/ssot.mcp-focus.yml</code></p>
+  <div id="tree"></div>
+  <script src="decision-app.js"></script>
+</body>
+</html>
