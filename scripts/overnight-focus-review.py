@@ -1,17 +1,19 @@
 #!/usr/bin/env python3
 """Overnight focus review: generate health inbox drafts and update focus contracts."""
 import os
+import shutil
 import subprocess
 import sys
 from datetime import datetime
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parent.parent
+NODE = os.environ.get('NODE_BIN') or shutil.which('node') or str(Path.home() / '.n' / 'bin' / 'node')
 
 
 def run(relative_args):
     if relative_args[0] == 'node':
-        cmd = ['node'] + [str(REPO / a) for a in relative_args[1:]]
+        cmd = [NODE] + [str(REPO / a) for a in relative_args[1:]]
     else:
         cmd = [sys.executable, str(REPO / relative_args[0])] + relative_args[1:]
     print(f"[overnight] {relative_args[0]}")
