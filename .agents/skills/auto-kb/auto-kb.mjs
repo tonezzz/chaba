@@ -229,14 +229,18 @@ async function checkRedundancy(content) {
 /**
  * Generate KB entry from content
  */
-function generateKBEntry(content, context = '') {
+function generateKBEntry(content, context = '', category = 'implementation') {
   const timestamp = new Date().toISOString().split('T')[0];
-  
+
   // Extract key information from content
   const sentences = content.split('. ').filter(s => s.trim());
   const title = sentences[0]?.substring(0, 60) || 'KB Entry';
-  
-  return `# ${title}
+
+  return `---
+category: ${category}
+---
+
+# ${title}
 
 ## What it is
 
@@ -253,6 +257,7 @@ ${context ? `Additional context: ${context}` : ''}
 ### Technical Details
 - **Generated**: ${timestamp}
 - **Source**: Automated KB creation skill
+- **Category**: ${category}
 
 ### Implementation
 ${content}
@@ -268,6 +273,16 @@ ${content}
 `;
 }
 
+function determineCategory(content) {
+  const contentLower = content.toLowerCase();
+  function has(...words) { return words.some(w => contentLower.includes(w)); }
+  if (has('bug', 'fix', 'error', 'corruption')) return 'troubleshooting';
+  if (has('feature', 'implementation', 'integration')) return 'implementation';
+  if (has('system', 'service', 'infrastructure', 'operation', 'deployment', 'monitoring')) return 'operations';
+  if (has('architecture', 'design', 'pattern', 'workflow')) return 'architecture';
+  return 'implementation';
+}
+
 /**
  * Add KB entry to MDDB
  */
@@ -280,18 +295,17 @@ async function addToMDDB(filepath, filename, content) {
   try {
     console.log('Adding KB entry to MDDB...');
     
-    // Determine appropriate collection based on content analysis
+    const KB_CATEGORIES = ['operations', 'development', 'architecture', 'troubleshooting', 'implementation'];
+
+    // Determine category and collection from content
+    const category = determineCategory(content);
     let collection = 'chaba-features'; // Default
-    const contentLower = content.toLowerCase();
-    
-    if (contentLower.includes('bug') || contentLower.includes('fix') || contentLower.includes('error') || contentLower.includes('corruption')) {
+    if (category === 'troubleshooting' || category === 'development') {
       collection = 'chaba-development';
-    } else if (contentLower.includes('feature') || contentLower.includes('implementation') || contentLower.includes('integration')) {
-      collection = 'chaba-features';
-    } else if (contentLower.includes('system') || contentLower.includes('service') || contentLower.includes('infrastructure')) {
-      collection = 'chaba-system';
-    } else if (contentLower.includes('operation') || contentLower.includes('deployment') || contentLower.includes('monitoring')) {
+    } else if (category === 'operations') {
       collection = 'chaba-operations';
+    } else if (category === 'architecture' || category === 'implementation') {
+      collection = 'chaba-system';
     }
     
     // Extract title from content (first line after #)
@@ -406,8 +420,9 @@ async function main() {
 
     console.log('Generating KB entry...');
     
-    // Generate entry
-    const entry = generateKBEntry(content, context);
+    // Determine category and generate entry
+    const category = determineCategory(content);
+    const entry = generateKBEntry(content, context, category);
     
     // Generate filename
     const timestamp = Date.now();
