@@ -29,11 +29,26 @@ ACTION_TOOL_MAP = {
 }
 
 CURRENT = REPO / "docs" / "ssot" / "ssot.focus.current.yml"
+MCP_DEBUG = REPO / "docs" / "ssot" / "infrastructure" / "ssot.mcp-debug.yml"
 
 
 def _load_current():
     with open(CURRENT) as f:
         return yaml.safe_load(f) or {}
+
+
+def _load_mcp_debug():
+    with open(MCP_DEBUG) as f:
+        return yaml.safe_load(f) or {}
+
+
+def _allowed_prefixes(host=None):
+    doc = _load_mcp_debug()
+    base = doc.get("raw_commands", {}).get("allowed_prefixes", [])
+    per_host = doc.get("raw_commands", {}).get("per_host", {})
+    if host and host in per_host:
+        return list(set(base + per_host[host].get("allowed_prefixes", [])))
+    return base
 
 
 def _active_focus_label(status):
@@ -67,17 +82,26 @@ def preprocess(request):
 
     active_label = _active_focus_label(status)
     active_subtask = _active_subtask(status)
+    command = canonicalize_command(request)
 
-    # Expand shorthand cues
-    inferred = request.strip()
-    req_lower = request.lower()
-    if any(c == req_lower for c in CONTINUE_CUES) or any(req_lower.endswith(c) for c in ("do this", "do that")):
-        action = "active"
-        inferred = f"Continue active focus: {active_label or 'unknown'}"
-    elif any(c in req_lower for c in QUICK_WIN_CUES):
-        action = "quick_win"
-    elif inferred.lower().startswith("do "):
-        inferred = f"{inferred} in the context of {active_label or 'active focus'}"
+    # If the request is a valid shell command, prefer command dispatch
+    if command.get("ok"):
+        action = "mcp_raw"
+        inferred = command["canonical"]
+        target = command["original"]
+        suggested_tools = ["mcp_debug"]
+    else:
+        # Expand shorthand cues
+        inferred = request.strip()
+        req_lower = request.lower()
+        if any(c == req_lower for c in CONTINUE_CUES) or any(req_lower.endswith(c) for c in ("do this", "do that")):
+            action = "active"
+            inferred = f"Continue active focus: {active_label or 'unknown'}"
+        elif any(c in req_lower for c in QUICK_WIN_CUES):
+            action = "quick_win"
+        elif inferred.lower().startswith("do "):
+            inferred = f"{inferred} in the context of {active_label or 'active focus'}"
+        suggested_tools = ACTION_TOOL_MAP.get(action, ["mcp_focus"])
 
     return {
         "ok": True,
@@ -94,8 +118,73 @@ def preprocess(request):
             "active_subtask": active_subtask,
             "quick_wins": [q.get("label") for q in status.get("quick_wins", [])],
         },
-        "suggested_tools": ACTION_TOOL_MAP.get(action, ["mcp_focus"]),
+        "suggested_tools": suggested_tools,
         "missing_info": [],
+    }
+
+
+COMMAND_ALIASES = {
+    "reboot": "systemctl reboot",
+    "shutdown": "systemctl poweroff",
+    "ipconfig": "ip addr",
+    "ifconfig": "ip addr",
+    "netstat": "ss",
+    "top": "top",
+    "htop": "top",
+    "vi": "cat",
+    "vim": "cat",
+    "nano": "cat",
+    "less": "head",
+    "more": "head",
+    "pstree": "ps -ef --forest",
+    "free -h": "free -h",
+    "uptime": "uptime",
+    "whoami": "whoami",
+}
+
+
+def canonicalize_command(command, host=None):
+    if not command or not command.strip():
+        return {"ok": False, "error": "command is required"}
+
+    import shlex
+    try:
+        tokens = shlex.split(command.strip())
+    except ValueError as e:
+        return {"ok": False, "error": f"Failed to parse command: {e}"}
+
+    if not tokens:
+        return {"ok": False, "error": "empty command"}
+
+    # Expand known aliases
+    clean = command.strip().lower()
+    base = clean.split(None, 1)[0]
+    if clean in COMMAND_ALIASES:
+        canonical = COMMAND_ALIASES[clean]
+        tokens = shlex.split(canonical)
+    elif base in COMMAND_ALIASES:
+        rest = clean[len(base):].strip()
+        canonical = (COMMAND_ALIASES[base] + " " + rest).strip()
+        tokens = shlex.split(canonical)
+    else:
+        canonical = command.strip()
+
+    allowed = _allowed_prefixes(host)
+    if tokens[0] not in allowed:
+        return {
+            "ok": False,
+            "error": f"Command prefix '{tokens[0]}' is not in the mcp_debug allowlist for host {host or 'global'}",
+            "canonical": canonical,
+            "original": command,
+            "suggested_prefixes": [p for p in allowed if p.startswith(base[:3])][:5],
+        }
+
+    return {
+        "ok": True,
+        "canonical": canonical,
+        "original": command,
+        "host": host,
+        "tool": "mcp_raw",
     }
 
 
