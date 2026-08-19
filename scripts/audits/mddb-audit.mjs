@@ -8,12 +8,12 @@ import http from 'http';
 import { URL } from 'url';
 import { statSync } from 'fs';
 
-const MDDB_BASE = 'http://localhost:11023';
+const MDDB_BASE = process.env.MDDB_BASE || 'http://tony-dell:11023';
 const PROXY_URLS = [
   'http://tony-omen:11435',
   'http://100.75.102.88:11435',
 ];
-const DB_PATH = '/home/tony/.config/containers/mddb/data/mddb.db';
+const DB_PATH = process.env.MDDB_DB_PATH || '';
 const MIN_DOCUMENTS = 50;
 const MAX_DB_SIZE_BYTES = 1024 * 1024 * 1024; // 1 GB
 
@@ -126,6 +126,10 @@ async function checkProxyHealth() {
 }
 
 function checkDbFile() {
+  if (!DB_PATH) {
+    note('DB_PATH not set; skipping local DB size check');
+    return;
+  }
   try {
     const st = statSync(DB_PATH);
     const sizeMB = (st.size / 1024 / 1024).toFixed(1);
