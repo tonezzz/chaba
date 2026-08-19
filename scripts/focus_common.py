@@ -87,9 +87,13 @@ def get_ownership(item):
 
 def _session_matches(item, session):
     """Return True if the item's owner/session is empty or matches the session."""
+    o = get_ownership(item)
+    # Unowned items are always safe; only reject if an owner/session is set and
+    # it does not match the current session.
+    if not o["session"] and not o["owner"]:
+        return True
     if not session:
         return False
-    o = get_ownership(item)
     if o["session"] and o["session"] != session:
         return False
     if o["owner"] and o["owner"] != session:

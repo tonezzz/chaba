@@ -90,7 +90,7 @@ def main():
         sys.exit(0)
 
     if args.safe_dispatch:
-        item = safe_to_dispatch()
+        item = safe_to_dispatch(session=args.session)
         if not item:
             print("No safe-to-parallel focus found.")
             sys.exit(0)

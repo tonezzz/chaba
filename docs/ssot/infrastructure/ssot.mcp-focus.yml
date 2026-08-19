@@ -13,6 +13,8 @@ config:
     - scripts/mcp_debug/focus.py
     - scripts/mcp_focus/server.py
     - scripts/focus_common.py
+    - scripts/focus_dispatcher/triage.py
+    - scripts/prompt_preprocessor.py
     - docs/ssot/ssot.focus.current.yml
     - docs/ssot/ssot.focus.yml
     - docs/ssot/ssot.focus.sessions.yml
@@ -259,9 +261,13 @@ related_files:
   - docs/ssot/infrastructure/ssot.focus-dispatcher.yml
   - scripts/mcp_debug/focus.py
   - scripts/mcp_debug/server.py
+  - scripts/focus_common.py
+  - scripts/focus_dispatcher/triage.py
+  - scripts/prompt_preprocessor.py
 
 implementation_notes:
   - Implemented in scripts/mcp_debug/focus.py and scripts/mcp_debug/server.py.
+  - Shared focus model helpers (triage scoring, safe-to-parallel/ownership/lock checks, active/backlog/inbox extraction, sweep) live in scripts/focus_common.py and are imported by scripts/mcp_debug/focus.py, scripts/focus_dispatcher/triage.py, and scripts/prompt_preprocessor.py.
   - mcp_focus supports mode=status (read-only active/Quick Wins listing), mode=recommend (decision tree), mode=technical_decision, and mode=session_summary.
   - The recommend decision tree maps directly to the assistant-level cases in docs/ssot/ssot.focus.current.yml#decision_tree.
   - mcp_focus appends a decision record to docs/ssot/ssot.focus.decisions.yml whenever a request is provided.

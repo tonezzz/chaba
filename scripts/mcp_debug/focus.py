@@ -7,7 +7,11 @@ from .config import REPO_DIR
 
 
 sys.path.insert(0, str(REPO_DIR / "scripts"))
-from focus_common import PRIORITY, QUICK_WIN_CUES, BACKLOG_CUES, priority_value, triage_score, is_active, active_branches, incomplete_subtasks, meets_safe_criteria
+from focus_common import (
+    PRIORITY, QUICK_WIN_CUES, BACKLOG_CUES, priority_value, triage_score, is_active,
+    active_branch_set, active_items, backlog_items, find_section, incomplete_subtasks,
+    inbox_items, load_yaml, ready_safe_items, safe_to_parallel_reason, sweep_candidates,
+)
 
 
 REPO = REPO_DIR
@@ -20,15 +24,11 @@ SESSIONS = REPO / "docs" / "ssot" / "ssot.focus.sessions.yml"
 
 
 def _find_section(sections, title):
-    for sec in sections:
-        if sec.get("title") == title:
-            return sec
-    return None
+    return find_section(sections, title)
 
 
 def _load_current():
-    with open(CURRENT) as f:
-        return yaml.safe_load(f)
+    return load_yaml(CURRENT)
 
 
 def _save_current(doc):
@@ -42,139 +42,23 @@ def _save_focus(doc):
 
 
 def _load_focus():
-    with open(FOCUS) as f:
-        return yaml.safe_load(f)
+    return load_yaml(FOCUS)
 
 
 def _active_items(doc):
-    active = {}
-    quick_wins = []
-    hand_off_queue = []
-    ready_safe = []
-    for sec in doc.get("sections", []):
-        title = sec.get("title", "")
-        if title == "Quick Wins":
-            quick_wins = [i for i in sec.get("items", [])]
-        elif title == "Hand-off Queue":
-            hand_off_queue = [i for i in sec.get("items", [])]
-        elif title == "Ready (Safe)":
-            ready_safe = [i for i in sec.get("items", [])]
-        elif title in ("Active Shared Focus", "Active Branch Focus"):
-            for item in sec.get("items", []):
-                if not is_active(item):
-                    continue
-                section = sec.get("title")
-                if section == "Active Shared Focus":
-                    active["shared"] = item
-                else:
-                    active["branch"] = item
-    return active, quick_wins, hand_off_queue, ready_safe
+    return active_items(doc)
 
 
 def _inbox_items():
-    items = []
-    if not INBOX_DIR.is_dir():
-        return items
-    for p in sorted(INBOX_DIR.glob("*.yml")):
-        if p.name.startswith("TEMPLATE") or p.name == "processed":
-            continue
-        try:
-            doc = yaml.safe_load(p.read_text())
-        except yaml.YAMLError as e:
-            continue
-        focus = doc.get("focus") or doc
-        if not focus or not focus.get("label"):
-            continue
-        focus["__file"] = p
-        items.append(focus)
-    return items
+    return inbox_items(INBOX_DIR)
 
 
 def _backlog_items():
-    doc = _load_focus()
-    section = _find_section(doc.get("sections", []), "Backlog - Triage Queue")
-    if not section:
-        return []
-    return [
-        i for i in section.get("items", [])
-        if i and i.get("status") not in ("completed", "archived")
-    ]
+    return backlog_items(_load_focus())
 
 
 def _sweep_candidates(doc, active, backlog, inbox):
-    candidates = []
-    seen = set()
-    # Current sections (active and parked)
-    for sec in doc.get("sections", []):
-        if sec.get("title") in ("Active Shared Focus", "Active Branch Focus"):
-            for item in sec.get("items", []):
-                if not item or not item.get("label"):
-                    continue
-                seen.add(item.get("label"))
-                candidates.append({
-                    "label": item.get("label"),
-                    "text": item.get("text", ""),
-                    "status": item.get("status"),
-                    "priority": item.get("priority", "medium"),
-                    "branch": item.get("branch"),
-                    "score": triage_score(item),
-                    "source": item.get("source", "ssot.focus.current.yml"),
-                    "why": "current " + sec.get("title", "").lower().replace(" focus", ""),
-                })
-    # Backlog + parked
-    for item in backlog:
-        label = item.get("label")
-        if not label or label in seen:
-            continue
-        seen.add(label)
-        candidates.append({
-            "label": label,
-            "text": item.get("text", ""),
-            "status": item.get("status"),
-            "priority": item.get("priority", "medium"),
-            "branch": item.get("branch"),
-            "score": triage_score(item),
-            "source": item.get("source", "ssot.focus.yml"),
-            "why": "backlog" if item.get("status") not in ("parked",) else "parked",
-        })
-    # Inbox (not yet processed)
-    for item in inbox:
-        label = item.get("label")
-        if not label or label in seen:
-            continue
-        seen.add(label)
-        candidates.append({
-            "label": label,
-            "text": item.get("text", ""),
-            "status": item.get("status", "pending"),
-            "priority": item.get("priority", "medium"),
-            "branch": item.get("branch"),
-            "score": triage_score(item),
-            "source": str(item.get("__file", "")),
-            "why": "inbox",
-        })
-    # Active focus deferred subtasks
-    for key in ("branch", "shared"):
-        it = active.get(key)
-        if not it:
-            continue
-        for st in it.get("subtasks", []):
-            if st.get("status") == "deferred":
-                label = st.get("label", "")
-                if label and label not in seen:
-                    seen.add(label)
-                    candidates.append({
-                        "label": label,
-                        "text": it.get("text", ""),
-                        "status": "deferred",
-                        "priority": it.get("priority", "medium"),
-                        "branch": it.get("branch"),
-                        "score": triage_score(it),
-                        "source": it.get("source", ""),
-                        "why": f"deferred subtask of {it.get('label')}",
-                    })
-    candidates.sort(key=lambda x: (x["score"], priority_value(x), x["label"]), reverse=True)
-    return candidates
+    return sweep_candidates(doc, backlog, inbox, active=active)
 
 
 def _resolve_session(session_map, candidate, bulk_session):
@@ -446,37 +330,12 @@ def _best_inbox(inbox):
 
 
 def _active_branches(active):
-    branches = set()
-    for it in active.values():
-        if it:
-            branches.add(it.get("branch", ""))
-    return branches
+    return active_branch_set(active)
 
 
 def _is_safe_to_parallel(item, active):
-    if not item:
-        return False, "empty item"
-    safe = item.get("safe_to_parallel")
-    if safe is False:
-        return False, "explicitly marked not safe"
-    if safe is True:
-        return True, "explicitly marked safe"
-    # criteria-based check
-    if item.get("missing_info"):
-        return False, "missing_info not empty"
-    if item.get("subagent", {}).get("requires_approval"):
-        return False, "requires user approval"
-    triage = item.get("triage", {})
-    try:
-        complication = float(triage.get("complication", 10))
-    except (TypeError, ValueError):
-        complication = 10
-    if complication > 4:
-        return False, "complication above 4"
-    item_branch = item.get("branch", "")
-    if item_branch in _active_branches(active) and item_branch:
-        return False, "branch conflicts with active focus"
-    return True, "meets safe-to-parallel criteria"
+    branch_set = active_branch_set(active)
+    return safe_to_parallel_reason(item, branch_set)
 
 
 def _best_safe_focus(active, backlog, inbox):
@@ -495,23 +354,7 @@ def _best_safe_focus(active, backlog, inbox):
 
 def _ready_safe_items(active, backlog, inbox):
     """Return all focus candidates that are safe to run in parallel, sorted by score."""
-    candidates = []
-    branch_set = _active_branches(active)
-    for source, pool in [("backlog", backlog), ("inbox", inbox)]:
-        for item in pool:
-            if not item or item.get("status") in ("completed", "archived", "draft"):
-                continue
-            if meets_safe_criteria(item, branch_set):
-                candidates.append({
-                    "label": item.get("label", ""),
-                    "branch": item.get("branch", ""),
-                    "priority": item.get("priority", "medium"),
-                    "triage_score": triage_score(item),
-                    "source": source,
-                    "safe_to_parallel": item.get("safe_to_parallel"),
-                })
-    candidates.sort(key=lambda i: (i["triage_score"], priority_value(i), i.get("started", "")), reverse=True)
-    return candidates
+    return ready_safe_items(active, backlog, inbox)
 
 
 def _draft_inbox(request):

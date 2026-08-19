@@ -12,39 +12,29 @@ from .state import (
 )
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from focus_common import priority_value, triage_score, is_active, active_branches, meets_safe_criteria, incomplete_subtasks
+from focus_common import (
+    active_branches, backlog_items, incomplete_subtasks, inbox_items, is_active,
+    meets_safe_criteria, priority_value, triage_score,
+)
 
 
-def safe_to_dispatch():
+def safe_to_dispatch(session=None):
     """Return the highest-scoring backlog or inbox item that is safe to run in parallel."""
     current = load_current()
     branch_set = active_branches(current)
     candidates = []
 
-    doc = load_focus()
-    section = find_section(doc.get("sections", []), "Backlog - Triage Queue")
-    if section:
-        for item in section.get("items", []):
-            if not is_active(item) and not item.get("status") == "parked":
-                continue
-            if meets_safe_criteria(item, branch_set):
-                item["__source"] = "backlog"
-                candidates.append(item)
+    for item in backlog_items(load_focus()):
+        if not is_active(item) and not item.get("status") == "parked":
+            continue
+        if meets_safe_criteria(item, branch_set, session=session):
+            item["__source"] = "backlog"
+            candidates.append(item)
 
-    if INBOX_DIR.is_dir():
-        for p in sorted(INBOX_DIR.glob("*.yml")):
-            if p.name.startswith("TEMPLATE") or p.name.startswith("processed"):
-                continue
-            try:
-                inbox_doc = yaml.safe_load(p.read_text())
-            except yaml.YAMLError:
-                continue
-            focus = inbox_doc.get("focus") or inbox_doc
-            if not focus or not focus.get("label"):
-                continue
-            if meets_safe_criteria(focus, branch_set):
-                focus["__source"] = str(p)
-                candidates.append(focus)
+    for focus in inbox_items(INBOX_DIR):
+        if meets_safe_criteria(focus, branch_set, session=session):
+            focus["__source"] = str(focus.get("__file", ""))
+            candidates.append(focus)
 
     if not candidates:
         return None
