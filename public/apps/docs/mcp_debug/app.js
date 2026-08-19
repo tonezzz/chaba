@@ -1,6 +1,7 @@
-const LIVE_DATA_URL = "/api/mcp-savings.php";
+const LIVE_DATA_URL = "https://tony-dell.taila0626a.ts.net/mcp-savings.json";
 const PREVIOUS_DATA_URL = "/apps/docs/mcp_debug/data/mcp-savings-previous.json";
 const TABLE_DATA_URL = "/api/mcp-table.php";
+const TABLE_LIVE_URL = "https://tony-dell.taila0626a.ts.net/mcp-table.json";
 const FETCH_TIMEOUT = 130000;
 
 let currentReportData = null;
@@ -357,10 +358,19 @@ async function loadTable(host, command) {
   body.innerHTML = '<p class="text-gray-500">Loading...</p>';
   modal.style.display = 'flex';
   modal.classList.remove('hidden');
+  let data;
   try {
-    const res = await fetchWithTimeout(`${TABLE_DATA_URL}?host=${encodeURIComponent(host)}&command=${encodeURIComponent(command)}&t=${Date.now()}`);
-    const data = await res.json();
-    if (!data.ok) throw new Error(data.error || 'detail unavailable');
+    const liveRes = await fetchWithTimeout(`${TABLE_LIVE_URL}?host=${encodeURIComponent(host)}&command=${encodeURIComponent(command)}&t=${Date.now()}`, { mode: 'cors' }, 15000);
+    if (liveRes.ok) data = await liveRes.json();
+  } catch (e) { console.warn('Live table failed:', e); }
+  if (!data) {
+    try {
+      const res = await fetchWithTimeout(`${TABLE_DATA_URL}?host=${encodeURIComponent(host)}&command=${encodeURIComponent(command)}&t=${Date.now()}`);
+      if (res.ok) data = await res.json();
+    } catch (e) { console.warn('Proxy table failed:', e); }
+  }
+  try {
+    if (!data || !data.ok) throw new Error(data?.error || 'detail unavailable');
     let html = '';
     if (data.headers && data.headers.length) {
       html += '<div><h3 class="font-semibold mb-2">Compact table</h3><table><thead><tr>';
