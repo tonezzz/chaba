@@ -44,15 +44,15 @@ processing:
       label: Collect tony-omen interface and routing state
       status: completed
       notes: >-
-        wlo1 is up at 192.168.2.68/24; enx7ed2da73308a is up at <enx_ip>/28.
-        Initial default route was via enx (metric 101); wlo1 was metric 600.
+        wlo1 is up at 192.168.2.68/24; enx7ed2da73308a is up at <enx_ip>/28; eno1 is link-local only.
+        Final default routes: wlo1 metric 50 (primary), enx metric 101 (fallback).
     - id: 3
-      label: Measure wlo1 and enx throughput/latency
+      label: Measure wlo1, enx, and eno1 throughput/link speed
       status: completed
       notes: >-
-        5 MB Cloudflare test before switching: enx 5.46 MB/s (~44 Mbps), wlo1 32.2 MB/s (~257 Mbps).
-        After switching default to wlo1: default-path speed 26.8 MB/s (~215 Mbps), explicit wlo1 26.3 MB/s.
-        enx bound test failed without a default route; only the enx subnet is reachable.
+        5 MB Cloudflare tests: enx ~5.46 MB/s (~44 Mbps), wlo1 peaks ~26.8 MB/s (~215 Mbps),
+        recent wlo1 run ~14.4 MB/s (~115 Mbps). eno1 link speed is 100 Mb/s but is currently
+        link-local (169.254.x.x) with no internet gateway.
     - id: 4
       label: Run mcp-health checks and review service dependencies
       status: completed
@@ -61,74 +61,81 @@ processing:
         status-api not found in config. Response times 130-950 ms. Unknowns appear to be local
         .local/mDNS resolution or endpoint issues, not caused by internet path change.
     - id: 5
+      label: Tune enx fallback metric and verify primary remains wlo1
+      status: completed
+      notes: >-
+        Reset Wired connection 1 (enx) to automatic route metric (101) and confirmed
+        wlo1 stays primary with metric 50. ip route get 8.8.8.8 uses wlo1.
+    - id: 6
       label: Draft impact report and policy recommendations
       status: completed
       notes: Report written below.
   decisions:
     - label: Default route should be wlo1; enx iPhone tether should be a fallback
-      rationale: wlo1 is ~6x faster (257 Mbps vs 44 Mbps). Leaving iPhone as default degrades outbound throughput.
+      rationale: wlo1 is at least 2-6x faster than enx and has a much higher link bitrate (866.7 Mb/s).
       alternatives_considered: Keep enx as primary for redundancy; rejected due to severe speed penalty.
-    - label: Use NetworkManager ipv4.route-metric to control priority rather than nmcli default
-      rationale: Setting ipv4.never-default and explicit route metrics allows wlo1 to win and enx to act as a fallback.
-      alternatives_considered: Use ip route directly; rejected because NetworkManager overrides on reconnection.
+    - label: Keep eno1 wired ethernet as a future primary if a cable is connected
+      rationale: eno1 link speed is 100 Mb/s, which is lower than wlo1's current effective throughput and far below wlo1's link bitrate.
+      alternatives_considered: Promote eno1 over wlo1; rejected because eno1 currently has no internet gateway.
   changes:
     - file: docs/ssot/jobs/infrastructure/2026-08-19-tony-omen-internet-impact.yml
       summary: Job artifact created and updated with findings
     - file: tony-omen NetworkManager configuration
       summary: >-
-        Set TONY-WIFI_5G ipv4.route-metric to 50 and Wired connection 1 (enx) to
-        ipv4.never-default no with ipv4.route-metric 700 (actual route metric 20700).
-        wlo1 is now primary; enx is a fallback default.
+        Set TONY-WIFI_5G ipv4.route-metric to 50. Reset Wired connection 1 (enx) to
+        automatic route metric, giving enx metric 101. eno1 left unchanged.
 
 followup:
   verification:
-    - ip route show default reports wlo1 metric 50 and enx as a higher-metric fallback
-    - 5 MB speed test through default path is ~215 Mbps
-    - mcp-health batch_check completes and records current service states
+    - ip route show default reports wlo1 metric 50 and enx metric 101
+    - ip route get 8.8.8.8 uses dev wlo1
+    - 5 MB speed test through default path remains well above enx (>= 2x)
   rollback_plan:
-    - >
-      To restore enx as primary: sudo nmcli connection modify 'Wired connection 1'
-      ipv4.never-default no and lower its ipv4.route-metric below 50, then re-up.
-    - >
-      To undo entirely: sudo nmcli connection modify 'Wired connection 1'
-      ipv4.never-default yes and re-up, then remove wlo1 route-metric override.
+    - To restore enx as primary: sudo nmcli connection modify 'Wired connection 1' ipv4.route-metric 1 && sudo nmcli connection up 'Wired connection 1'
+    - To undo wlo1 priority: sudo nmcli connection modify 'TONY-WIFI_5G' ipv4.route-metric -1 && sudo nmcli connection up 'TONY-WIFI_5G'
   handoff: []
   deferred:
-    - Fine-tune enx fallback metric; current 20700 is high but functional as backup
+    - Re-test eno1 when an Ethernet cable with internet is connected
     - Create a formal internet-connections SSOT if this configuration is kept
 
 report:
   status: completed
   completed_at: '2026-08-19'
   summary: >-
-    tony-omen's default internet path was switched from the iPhone USB tether (enx) to the
-    faster wlo1 Wi-Fi link. wlo1 now provides ~215 Mbps while enx remains up as a fallback.
-    Live mcp-health checks are mostly 'unknown' for local services, reflecting pre-existing
-    .local/mDNS or endpoint issues rather than the internet change. The main system impact is
-    improved outbound bandwidth; no service appeared to break due to the path change. A formal
-    internet-connection SSOT is recommended to capture these priorities, metrics, and fallback
-    behavior.
+    tony-omen's default internet path was set to wlo1 (Wi-Fi) with metric 50, with the
+    iPhone USB tether (enx) as a fallback at metric 101. wlo1 link bitrate is 866.7 Mb/s
+    and measured throughput 14-26 MB/s (~115-215 Mbps). enx is ~44 Mbps. eno1 (wired
+    Ethernet) is 100 Mb/s link but has no active internet gateway (169.254.x.x). Live
+    mcp-health checks are mostly 'unknown' for local services, reflecting pre-existing
+    .local/mDNS or endpoint issues rather than the internet path change. The main impact
+    is improved outbound bandwidth with automatic fallback to the iPhone tether. A formal
+    internet-connection SSOT is recommended to capture these priorities.
   metrics:
-    - metric: wlo1 download speed
+    - metric: wlo1 download speed (best)
       value: 26.8 MB/s (~215 Mbps)
-    - metric: enx download speed (when primary)
+    - metric: wlo1 download speed (recent)
+      value: 14.4 MB/s (~115 Mbps)
+    - metric: wlo1 link bitrate (TX/RX)
+      value: 866.7 / 433.3 Mb/s
+    - metric: enx download speed
       value: 5.46 MB/s (~44 Mbps)
-    - metric: wlo1 explicit speed
-      value: 26.3 MB/s (~211 Mbps)
     - metric: enx route metric (fallback)
-      value: 20700
+      value: 101
     - metric: wlo1 route metric (primary)
       value: 50
+    - metric: eno1 link speed
+      value: 100 Mb/s (no internet gateway)
     - metric: mcp-health live batch (8 services)
       value: 1 healthy, 6 unknown, 1 not-found
   links: []
   kb_review:
-    - wlo1 should be tony-omen's primary internet; iPhone USB tether is the fallback
-    - mcp-health batch_check unknowns are likely local .local/mDNS issues, not internet-path related
+    - wlo1 is tony-omen's primary internet; iPhone USB tether (enx) is the fallback at metric 101
+    - eno1 wired link is 100 Mb/s but currently has no internet gateway
+    - mcp-health unknowns are likely local .local/mDNS issues, not internet-path related
   lessons_learned:
-    - NetworkManager ipv4.route-metric is a reliable way to rank Wi-Fi vs USB-tether priorities
+    - NetworkManager route metrics on enx can be transiently inflated; waiting for a full reapply gives the expected metric
     - sudo is available through mcp-debug on tony_omen, making safe network changes possible via python3 subprocess
-    - curl --interface is not enough to test a non-default path; a temporary route or explicit default is needed
+    - curl --interface is not enough to test a non-default path; routing priority determines the path
 
 config:
   version: 1

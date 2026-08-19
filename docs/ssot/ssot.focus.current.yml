@@ -141,36 +141,7 @@ sections:
 - title: Active Branch Focus
   icon: branch
   layout: list
-  items:
-  - label: Switch MDDB embedding provider from Ollama to Gemini proxy
-    text: Apply the validated Gemini proxy to the live MDDB on tony-dell. Update the MDDB container/Quadlet config to use
-      http://gemini:11435, reindex all collections, then stop Ollama and reclaim tony-omen GPU.
-    status: active
-    priority: high
-    started: '2026-08-19'
-    estimated_duration: 1 session
-    tags:
-    - mddb
-    - gemini
-    - gpu-offload
-    - tony-dell
-    - ollama
-    subtasks:
-    - label: Update tony-dell MDDB Quadlet to point at Gemini proxy
-      status: completed
-      completed_at: '2026-08-19'
-    - label: Restart live MDDB and reindex all collections
-      status: deferred
-      started_at: '2026-08-19'
-      deferred_at: '2026-08-19'
-      resume_session: chaba
-      resume_note: MDDB reindex is running in background with Ollama; resume when it finishes and validate
-    - label: Validate vector search on main MDDB
-      status: not_started
-    - label: Stop Ollama container on tony-omen and reclaim GPU
-      status: completed
-      completed_at: '2026-08-19'
-    branch: chaba
+  items: []
 - title: Ready (Safe)
   icon: safe
   layout: list

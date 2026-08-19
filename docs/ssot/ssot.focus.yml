@@ -482,66 +482,6 @@ sections:
       requires_approval: false
       can_change_host: false
       notes: Read-only review; can run in background and produce a proposal.
-  - label: Yomi conversation processing and UI recovery
-    text: Process the existing Yomi message corpus (7,872 messages, 66 conversations) to populate summaries, categories, and
-      proper display names, and verify the Yomi UI after the recent DB recovery. Do not re-attempt LINE login unless explicitly
-      requested.
-    status: parked
-    priority: high
-    started: '2026-08-19'
-    estimated_duration: 1 session
-    tags:
-    - yomi
-    - line
-    - summarization
-    - processing
-    - ui
-    subtasks:
-    - label: Process existing messages and conversations
-      status: deferred
-      started_at: '2026-08-18'
-      note: 'Processing Yomi corpus: populate summaries, categories, display names. Do not re-attempt LINE login unless requested.'
-      deferred_at: '2026-08-19'
-      resume_session: chaba
-      resume_note: 'Yomi blocked: LINE signed out, E2EE key material unavailable'
-    - label: Generate daily summaries for conversations
-      status: not_started
-    - label: Restore conversation display names from message data
-      status: not_started
-    - label: Verify Yomi UI list and chat pages
-      status: not_started
-    branch: chaba
-    previous_status: active
-  - label: Switch MDDB embedding provider from Ollama to Gemini proxy
-    text: Apply the validated Gemini proxy to the live MDDB on tony-dell. Update the MDDB container/Quadlet config to use
-      http://gemini:11435, reindex all collections, then stop Ollama and reclaim tony-omen GPU.
-    status: parked
-    priority: high
-    started: '2026-08-19'
-    estimated_duration: 1 session
-    tags:
-    - mddb
-    - gemini
-    - gpu-offload
-    - tony-dell
-    - ollama
-    subtasks:
-    - label: Update tony-dell MDDB Quadlet to point at Gemini proxy
-      status: completed
-      completed_at: '2026-08-19'
-    - label: Restart live MDDB and reindex all collections
-      status: deferred
-      started_at: '2026-08-19'
-      deferred_at: '2026-08-19'
-      resume_session: chaba
-      resume_note: MDDB reindex is running in background with Ollama; resume when it finishes and validate
-    - label: Validate vector search on main MDDB
-      status: not_started
-    - label: Stop Ollama container on tony-omen and reclaim GPU
-      status: completed
-      completed_at: '2026-08-19'
-    branch: chaba
-    previous_status: active
   - label: Tony-Dell cannot see iPhone Personal Hotspot SSID
     text: 'tony-dell''s Wi-Fi interface (wlx00761100125e) does not show the iPhone Personal Hotspot in scans.
 
@@ -606,6 +546,39 @@ sections:
       Next step needs user approval for App Store login and Xcode install.
     previous_status: active
     started: '2026-08-19'
+  - label: Yomi conversation processing and UI recovery
+    text: Process the existing Yomi message corpus (7,872 messages, 66 conversations) to populate summaries, categories, and
+      proper display names, and verify the Yomi UI after the recent DB recovery. Do not re-attempt LINE login unless explicitly
+      requested.
+    status: parked
+    priority: high
+    started: '2026-08-19'
+    estimated_duration: 1 session
+    tags:
+    - yomi
+    - line
+    - summarization
+    - processing
+    - ui
+    subtasks:
+    - label: Process existing messages and conversations
+      status: deferred
+      started_at: '2026-08-18'
+      note: 'Processing Yomi corpus: populate summaries, categories, display names. Do not re-attempt LINE login unless requested.'
+      deferred_at: '2026-08-19'
+      resume_session: chaba
+      resume_note: 'Yomi blocked: LINE signed out, E2EE key material unavailable'
+    - label: Generate daily summaries for conversations
+      status: deferred
+      deferred_at: '2026-08-19'
+      resume_session: chaba
+      resume_note: User chose to switch to a different focus; Yomi blocked by LINE login
+    - label: Restore conversation display names from message data
+      status: not_started
+    - label: Verify Yomi UI list and chat pages
+      status: not_started
+    branch: chaba
+    previous_status: active
 - title: Quick Wins
   icon: quick
   layout: list
@@ -1744,6 +1717,22 @@ sections:
     - quick-win
     - quick-win
     - completed
+  - label: Switch MDDB embedding provider from Ollama to Gemini proxy
+    text: Apply the validated Gemini proxy to the live MDDB on tony-dell. Update the MDDB container/Quadlet config to use
+      http://gemini:11435, reindex all collections, then stop Ollama and reclaim tony-omen GPU.
+    status: completed
+    completed_at: '2026-08-19'
+    tags:
+    - mddb
+    - gemini
+    - gpu-offload
+    - tony-dell
+    - ollama
+    - completed
+    date: '2026-08-19'
+    duration: 1 session
+    outcome: Reindexed all MDDB collections via the Gemini-Ollama proxy and validated vector search. Ollama container already
+      stopped.
 config:
   version: 2
   last_updated: '2026-08-19'
