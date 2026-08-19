@@ -66,7 +66,7 @@ async function loadReport(forceRefresh = false) {
       const res = await fetchWithTimeout(LIVE_DATA_URL + '?t=' + Date.now() + (forceRefresh ? '&refresh=1' : ''), { mode: 'cors' });
       if (res.ok) data = await res.json();
       else throw new Error('live endpoint unavailable');
-      if (live) live.textContent = data.freshness ? 'Live data from tony-omen' : 'Live data unavailable; showing cached snapshot.';
+      if (live) live.textContent = data.freshness ? 'Live data from tony-dell' : 'Live data unavailable; showing cached snapshot.';
     } catch (e) {
       console.warn('Live data failed, falling back to cached snapshot:', e);
       if (live) live.textContent = 'Live data unavailable; showing cached snapshot.';
