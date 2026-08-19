@@ -258,6 +258,97 @@ sections:
       completed_at: '2026-08-19'
     started: '2026-08-19'
     source: /home/tony/CascadeProjects/chaba/docs/ssot/focus-inbox/processed/2026-08-18-122128-mcp-focus-and-ssot-streamlining.yml
+  - label: Tony-Dell cannot see iPhone Personal Hotspot SSID
+    text: 'tony-dell''s Wi-Fi interface (wlx00761100125e) does not show the iPhone Personal Hotspot in scans.
+
+      Initial check: the adapter is a Ralink MT7601U (148f:7601) which is 2.4 GHz only.
+
+      iPhone Personal Hotspot on newer iOS defaults to 5 GHz when "Maximize Compatibility" is off,
+
+      so the most likely fix is enabling "Maximize Compatibility" on the iPhone, forcing 2.4 GHz.
+
+      If that is not enough, investigate driver/regulatory region, power-saving, and whether the
+
+      hotspot is using a hidden SSID.
+
+      '
+    branch: tony-dell
+    status: blocked
+    priority: medium
+    started: '2026-08-19'
+    blocker:
+      reason: Requires manual iPhone setting change; user will handle in another session
+    estimated_duration: 1 session
+    tags:
+    - tony-dell
+    - wifi
+    - iphone
+    - hotspot
+    - network
+    - mt7601u
+    subtasks:
+    - label: Enable "Maximize Compatibility" on iPhone Personal Hotspot and rescan on tony-dell
+      status: deferred
+      deferred_at: '2026-08-19'
+      resume_session: chaba
+      resume_note: iPhone manual step; will be handled in another session
+    - label: If still invisible, verify driver/firmware and regulatory domain for MT7601U
+      status: completed
+      completed: '2026-08-18'
+      note: MT7601U (148f:7601) is present and the driver mt7601u is loaded. The adapter is 2.4 GHz only (channels 1-14, 2412-2484
+        MHz). This confirms the iPhone hotspot must be forced to 2.4 GHz via Maximize Compatibility.
+    previous_status: parked
+  - label: Prompt / command preprocessor for context and precision
+    text: 'Build a preprocessing layer that runs before assistant interpretation of user requests and commands.
+
+      It should:
+
+      - Resolve ambiguity by fetching relevant project KB, SSOT, and active focus context.
+
+      - Expand shorthand, aliases, and cues (e.g., "next", "do this", "optimize that") into explicit, actionable requests.
+
+      - Link the user''s goal to the active focus, quick wins, backlog, and decision-tree cases.
+
+      - Emit a structured, unambiguous prompt with: user request, inferred goal, active focus relevance, relevant SSOT/docs,
+      expected tool(s), and any missing info.
+
+      - Reduce misunderstandings, false assumptions, and misinformation by grounding the prompt in the project KB before any
+      tool is called.
+
+      - Optionally rewrite a bare shell command to a canonical, allowed, and compact form before dispatch to mcp_debug/mcp_raw.
+
+      '
+    branch: chaba
+    priority: medium
+    status: active
+    tags:
+    - mcp
+    - prompt
+    - preprocessor
+    - context
+    - kb
+    - focus
+    - workflow
+    missing_info:
+    - Whether the preprocessor should be a standalone MCP tool (mcp_prompt), a prompt-template in SSOT, or a step in mcp_focus.
+    - Which KB sources to prioritize: MDDB, ssot.*, decisions, focus current, or all.
+    - How much of the processing should be read-only versus allowed to update focus/inbox.
+    safe_to_parallel:
+      value: false
+      reason: Touches the active focus router, mcp_focus, and KB retrieval; must be the active branch or shared focus.
+    subtasks:
+    - label: Survey current mcp_focus, mcp_debug, and subagent-focus-triage to find existing disambiguation logic
+      status: not_started
+    - label: Design the preprocessor schema and output contract
+      status: not_started
+    - label: Implement a read-only prototype that grounds a user request in active focus and KB
+      status: not_started
+    - label: Add command canonicalization for mcp_debug/mcp_raw
+      status: not_started
+    - label: Validate with real ambiguous requests and measure precision improvement
+      status: not_started
+    started: '2026-08-19'
+    source: /home/tony/CascadeProjects/chaba/docs/ssot/focus-inbox/processed/2026-08-18-194241-prompt-preprocessor.yml
 - title: Ready (Safe)
   icon: safe
   layout: list
