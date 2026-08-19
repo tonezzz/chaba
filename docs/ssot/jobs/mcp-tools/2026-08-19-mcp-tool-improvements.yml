@@ -82,9 +82,15 @@ followup:
     - Remove new H3 files if deployed
   handoff:
     - tony for monitoring
+  completed_outside_initial_three:
+    - label: Audit trend history
+      completed_at: '2026-08-19'
+      notes: |
+        scripts/audits/run.mjs now archives a timestamped summary to
+        reports/audits/history/ and maintains a compact history.json with the
+        last 90 runs (timestamp, ok, passed, failed, total, duration_ms).
   deferred:
     - Web focus decision tree
-    - Audit trend history
     - SSOT value registry
 
 report:

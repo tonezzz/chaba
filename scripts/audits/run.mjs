@@ -86,14 +86,6 @@ async function main() {
     results,
   };
 
-  writeFileSync(join(REPORTS_DIR, 'summary.json'), JSON.stringify(summary, null, 2));
-
-  // Publish the latest summary for the web audit report
-  const webDataDir = join(PROJECT_ROOT, 'stacks', 'web', 'public', 'apps', 'audit', 'data');
-  mkdirSync(webDataDir, { recursive: true });
-  copyFileSync(join(REPORTS_DIR, 'summary.json'), join(webDataDir, 'summary.json'));
-  copyFileSync(join(REPORTS_DIR, 'summary.md'), join(webDataDir, 'summary.md'));
-
   const md = [
     '# Chaba Audit Summary',
     '',
@@ -120,7 +112,39 @@ async function main() {
     ].join('\n')),
   ].join('\n');
 
+  writeFileSync(join(REPORTS_DIR, 'summary.json'), JSON.stringify(summary, null, 2));
   writeFileSync(join(REPORTS_DIR, 'summary.md'), md);
+
+  // Publish the latest summary for the web audit report
+  const webDataDir = join(PROJECT_ROOT, 'stacks', 'web', 'public', 'apps', 'audit', 'data');
+  mkdirSync(webDataDir, { recursive: true });
+  copyFileSync(join(REPORTS_DIR, 'summary.json'), join(webDataDir, 'summary.json'));
+  copyFileSync(join(REPORTS_DIR, 'summary.md'), join(webDataDir, 'summary.md'));
+
+  // Archive a timestamped copy for history/trend analysis
+  const historyDir = join(PROJECT_ROOT, 'reports', 'audits', 'history');
+  mkdirSync(historyDir, { recursive: true });
+  const ts = new Date().toISOString().replace(/[:.]/g, '-');
+  writeFileSync(join(historyDir, `summary-${ts}.json`), JSON.stringify(summary, null, 2));
+
+  const historyFile = join(historyDir, 'history.json');
+  let history = [];
+  try {
+    history = JSON.parse(readFileSync(historyFile, 'utf8'));
+  } catch {}
+  history.push({
+    timestamp: summary.generated,
+    ok: summary.ok,
+    total: summary.summary.total,
+    passed: summary.summary.passed,
+    failed: summary.summary.failed,
+    duration_ms: results.reduce((a, r) => a + r.duration_ms, 0),
+  });
+  // Keep the last 90 entries (~3 months of daily runs, or many weekly runs)
+  if (history.length > 90) {
+    history = history.slice(-90);
+  }
+  writeFileSync(historyFile, JSON.stringify(history, null, 2));
 
   if (summary.ok) {
     console.log('All audits passed.');
