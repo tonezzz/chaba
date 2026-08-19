@@ -10,7 +10,7 @@ import shlex
 import time
 import yaml
 from datetime import datetime
-from .config import HOSTS, FILE_LIMITS, DEBUG_COMMANDS, RAW_PREFIXES, PRESETS, SSOT, BASELINES, logger
+from .config import HOSTS, FILE_LIMITS, DEBUG_COMMANDS, RAW_PREFIXES, RAW_CATEGORIES, PRESETS, SSOT, BASELINES, logger
 from .hosts import run_on_host
 
 
@@ -253,7 +253,11 @@ def mcp_savings(hosts):
     pct = round(saved / total_raw * 100, 1) if total_raw > 0 else 0.0
     ended = time.time()
     raw_allowed = [
-        {"prefix": p, "example": DEBUG_COMMANDS.get(p, {}).get("raw_command") or f"{p} ..."}
+        {
+            "prefix": p,
+            "example": DEBUG_COMMANDS.get(p, {}).get("raw_command") or f"{p} ...",
+            "category": RAW_CATEGORIES.get(p, "other"),
+        }
         for p in RAW_PREFIXES
     ]
     recursive_tools = {"mcp_debug_audit", "mcp_savings", "mcp_preset_run", "mcp_preset_savings"}

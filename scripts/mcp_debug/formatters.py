@@ -72,21 +72,29 @@ def to_envelope(command, data):
 
 
 def mcp_table(host, command):
-    """Run a compact debug command on a host and return a proxy_envelope table."""
-    from .tools import mcp_debug
+    """Run a compact debug command on a host and return a proxy_envelope table with raw sidecar."""
+    from .tools import mcp_debug, mcp_raw
 
     start = time.perf_counter()
     try:
-        raw = mcp_debug(host, command)
-        data = json.loads(raw)
+        compact_text = mcp_debug(host, command)
+        data = json.loads(compact_text)
     except json.JSONDecodeError as e:
         return {"ok": False, "error": f"invalid compact JSON: {e}", "command": command, "host": host}
     except Exception as e:
         return {"ok": False, "error": str(e), "command": command, "host": host}
     duration_ms = (time.perf_counter() - start) * 1000
 
+    try:
+        raw_json = json.loads(mcp_raw(host, DEBUG_COMMANDS.get(command, {}).get("raw_command", command)))
+        raw_out = raw_json.get("out", "")
+    except Exception:
+        raw_out = ""
+
     envelope = to_envelope(command, data)
     envelope["host"] = host
+    envelope["raw_out"] = raw_out
+    envelope["compact_out"] = data
     envelope["freshness"] = {
         "collected_at": datetime.now().isoformat(),
         "duration_ms": round(duration_ms, 2),
