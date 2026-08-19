@@ -33,9 +33,9 @@ planning:
   related_focus: []
 
 processing:
-  status: completed
+  status: in_progress
   started_at: '2026-08-19'
-  completed_at: '2026-08-19'
+  completed_at: null
   steps:
     - id: 1
       label: Create job lifecycle SSOT
@@ -43,26 +43,32 @@ processing:
     - id: 2
       label: Collect tony-omen interface and routing state
       status: completed
-      notes: Found wlo1 active at 192.168.2.68, default route via 192.168.2.1, eno1 link-local, no enx interface present.
+      notes: >-
+        wlo1 is up at 192.168.2.68/24; enx7ed2da73308a is up at 172.20.10.12/28.
+        Current default route is via 172.20.10.1 (enx) metric 101, with wlo1 default at metric 600.
+        Tailscale table 52 is active. eno1 is link-local only.
     - id: 3
       label: Measure wlo1 and enx throughput/latency
       status: completed
-      notes: 1 MB and 5 MB Cloudflare speed tests on default route (wlo1). enx not present so not measurable.
+      notes: >-
+        5 MB Cloudflare test: enx 5.46 MB/s (~44 Mbps), wlo1 32.2 MB/s (~257 Mbps).
+        enx is ~6x slower. Additional latency checks were interrupted.
     - id: 4
       label: Run mcp-health checks and review service dependencies
-      status: completed
-      notes: mcp-health snapshot from 2026-08-15 shows 22 healthy, 18 unknown, several .local mDNS failures.
+      status: in_progress
+      notes: >-
+        get_health_status returned a snapshot from 2026-08-15 (22 healthy, 16+ unknown).
+        quick_health returned 0 services checked, so live health data is not yet available.
+        Need either a fresh mcp-health run or confirmation that the cached snapshot is acceptable.
     - id: 5
       label: Draft impact report and policy recommendations
-      status: completed
-      notes: Report written to job report section.
+      status: not_started
+      notes: Pending completion of health/dependency review
   decisions:
-    - enx iPhone USB tether interface is not currently present on tony-omen; only wlo1 and eno1 are active
-    - Default internet is wlo1 via 192.168.2.1 with good throughput (25 MB/s observed)
-    - Several mcp-health unknowns are due to .local mDNS resolution, not internet path
-  changes:
-    - file: docs/ssot/jobs/infrastructure/2026-08-19-tony-omen-internet-impact.yml
-      summary: Collected interface, route, and speed data
+    - label: Default route should not remain on enx unless intentionally needed
+      rationale: enx is ~44 Mbps vs wlo1 ~257 Mbps; leaving iPhone as default degrades outbound throughput.
+      alternatives_considered: Keep enx as default for redundancy; rejected because it makes normal traffic 6x slower.
+  changes: []
 
 followup:
   verification:
@@ -75,9 +81,9 @@ followup:
     - Make the routing change permanent only if the user explicitly asks and a separate job is opened
 
 report:
-  status: completed
-  completed_at: '2026-08-19'
-  summary: 'tony-omen currently uses wlo1 (192.168.2.68) as the default internet path. No enx USB tether interface was found. 5 MB Cloudflare speed test measured ~25 MB/s. mcp-health shows 22 healthy, 18 unknown services; most unknowns are .local mDNS timeouts, not internet path related. Recommend keeping wlo1 primary and enabling Tailscale as fallback; re-test with enx connected if USB tether is needed.'
+  status: not_started
+  completed_at: null
+  summary: ''
   metrics: []
   links: []
   kb_review: []
