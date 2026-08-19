@@ -1,4 +1,5 @@
 """Git helpers for focus dispatcher."""
+import filecmp
 import os
 import shutil
 import subprocess
@@ -36,18 +37,30 @@ def git_mv_inbox(inbox_path):
         capture_output=True,
     ).returncode == 0
     if tracked:
-        subprocess.run(
-            ["git", "mv", str(inbox_path), str(target)],
-            cwd=REPO,
-            check=True,
-        )
+        if target.exists() and filecmp.cmp(str(inbox_path), str(target), shallow=False):
+            # Duplicate already processed; just remove the source.
+            subprocess.run(
+                ["git", "rm", str(inbox_path)],
+                cwd=REPO,
+                check=True,
+            )
+        else:
+            # Use -f so git mv succeeds if an older processed copy exists.
+            subprocess.run(
+                ["git", "mv", "-f", str(inbox_path), str(target)],
+                cwd=REPO,
+                check=True,
+            )
     else:
-        shutil.move(str(inbox_path), str(target))
-        subprocess.run(
-            ["git", "add", str(target)],
-            cwd=REPO,
-            check=True,
-        )
+        if target.exists() and filecmp.cmp(str(inbox_path), str(target), shallow=False):
+            os.remove(str(inbox_path))
+        else:
+            shutil.move(str(inbox_path), str(target))
+            subprocess.run(
+                ["git", "add", str(target)],
+                cwd=REPO,
+                check=True,
+            )
     return target
 
 
