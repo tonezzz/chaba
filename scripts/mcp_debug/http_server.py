@@ -44,9 +44,14 @@ def _regenerate_cache():
 def _get_report(force=False):
     with _cache_lock:
         now = time.time()
-        if _cache["report"] is not None and not force and (now - _cache["generated"]) < REFRESH_INTERVAL:
-            return _cache["report"]
-    _regenerate_cache()
+        is_fresh = _cache["report"] is not None and (now - _cache["generated"]) < REFRESH_INTERVAL
+    # If a forced refresh is requested and none is in progress, trigger a background re-generation
+    # and return the current cache immediately so the client does not wait ~5 minutes.
+    if force or not is_fresh:
+        with _cache_lock:
+            already_refreshing = _cache["refreshing"]
+        if not already_refreshing:
+            threading.Thread(target=_regenerate_cache, daemon=True).start()
     with _cache_lock:
         return _cache["report"]
 
@@ -107,17 +112,22 @@ class CORSHandler(BaseHTTPRequestHandler):
         force = query.get("refresh", ["0"])[0] in ("1", "true", "yes")
         report = _get_report(force=force)
 
-        if report is None:
-            self._send_json(500, {"ok": False, "error": "report generation failed"})
-            return
+        with _cache_lock:
+            is_refreshing = _cache["refreshing"]
 
-        payload = json.loads(report)
-        payload["freshness"] = {
-            "collected_at": _cache.get("collected_at"),
-            "cache_age_ms": round((time.time() - _cache["generated"]) * 1000, 1),
-            "duration_ms": _cache.get("duration_ms", 0.0),
-        }
-        self._send_json(200, payload)
+        if report is None:
+            status = 202
+            payload = {"ok": False, "refreshing": True, "error": "report is being generated"}
+        else:
+            status = 202 if (force and is_refreshing) else 200
+            payload = json.loads(report)
+            payload["freshness"] = {
+                "collected_at": _cache.get("collected_at"),
+                "cache_age_ms": round((time.time() - _cache["generated"]) * 1000, 1),
+                "duration_ms": _cache.get("duration_ms", 0.0),
+            }
+            payload["refreshing"] = is_refreshing
+        self._send_json(status, payload)
 
     def _send_json(self, status, payload):
         body = json.dumps(payload, separators=(",", ":")).encode()
