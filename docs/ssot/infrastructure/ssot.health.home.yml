@@ -650,3 +650,23 @@ services:
   - 'Restart: systemctl --user restart mcp-debug-cors.service'
   - 'Check tailscale serve: tailscale serve status'
   - 'Check syntax: python3 -m py_compile /home/tony/CascadeProjects/chaba/scripts/mcp_debug/http_server.py'
+- id: mcp-debug-audit
+  name: MCP Debug Audit Health
+  type: http
+  url: http://tony-dell:9100/audit-health
+  expected_status: 200
+  timeout: 10
+  category: mcp-debug
+  profiles:
+  - home
+  - mobile
+  note: |
+    Returns the latest consolidated audit suite status from
+    reports/audits/summary.json on tony-dell.
+  verification:
+  - 'Check systemd: systemctl --user status mcp-debug-cors.service'
+  - 'Test endpoint: curl -s http://tony-dell:9100/audit-health'
+  - 'Tailnet test: curl -s https://tony-dell.taila0626a.ts.net/audit-health'
+  recovery_actions:
+  - 'Restart: systemctl --user restart mcp-debug-cors.service'
+  - 'Run audit manually: ssh tony-dell node /home/tony/CascadeProjects/chaba-tony-dell/scripts/audits/run.mjs'
