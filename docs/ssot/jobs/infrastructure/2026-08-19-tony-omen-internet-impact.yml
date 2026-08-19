@@ -1,0 +1,86 @@
+title: tony-omen internet connection impact assessment
+subtitle: Assess the whole-system impact of changing tony-omen's active internet path and collect data for an internet connection policy
+icon: network
+
+planning:
+  goal: >-
+    Understand how switching tony-omen's default internet between wlo1 (Wi-Fi) and the
+    iPhone USB tether (enx) affects services, health checks, backups, and user-facing
+    endpoints. Collect speed and dependency data, then recommend an internet connection
+    policy and route priorities.
+  scope: >-
+    In scope: tony-omen routes, interfaces, mcp-health service status, speed/latency
+    tests on wlo1 and enx, service dependency review, and a draft internet connection
+    policy. Out of scope: actually changing the default route on tony-omen, modifying
+    other hosts, or installing packages.
+  success_criteria:
+    - Current wlo1 and enx speeds are measured
+    - List of tony-omen services and dependencies impacted by internet path is documented
+    - No service health degradation is caused by the assessment
+    - Draft recommendations for internet connection policy are produced
+  risks:
+    - risk: Running tests over the slower enx link may briefly reduce outbound throughput.
+      mitigation: Keep tests short (5 MB), do not make routing changes, and avoid heavy parallel downloads.
+    - risk: Health checks may flap during the assessment.
+      mitigation: Run mcp-health before and after, compare only read-only results.
+  resources:
+    - mcp-health for service status
+    - mcp-debug for network commands on tony_omen
+    - docs/ssot/infrastructure/ssot.health.home.yml for tony-omen services
+    - docs/ssot/infrastructure/ssot.audit.yml for existing audit/assessment patterns
+  owner: tony
+  estimated_duration: 1 session
+  related_focus: []
+
+processing:
+  status: in_progress
+  started_at: '2026-08-19'
+  steps:
+    - id: 1
+      label: Create job lifecycle SSOT
+      status: completed
+    - id: 2
+      label: Collect tony-omen interface and routing state
+      status: in_progress
+      notes: Run ip addr, ip route, and lsmod on tony_omen
+    - id: 3
+      label: Measure wlo1 and enx throughput/latency
+      status: not_started
+      notes: 5 MB Cloudflare speed test on each interface
+    - id: 4
+      label: Run mcp-health checks and review service dependencies
+      status: not_started
+      notes: Use mcp-health to capture current tony-omen service status
+    - id: 5
+      label: Draft impact report and policy recommendations
+      status: not_started
+      notes: Update the report section of this job
+  decisions: []
+  changes: []
+
+followup:
+  verification:
+    - ip route and service health remain unchanged after data collection
+    - All speed/latency numbers are recorded in the report section
+  rollback_plan:
+    - No persistent changes made; only data collected
+  handoff: []
+  deferred:
+    - Make the routing change permanent only if the user explicitly asks and a separate job is opened
+
+report:
+  status: not_started
+  completed_at: null
+  summary: ''
+  metrics: []
+  links: []
+  kb_review: []
+  lessons_learned: []
+
+config:
+  version: 1
+  created_at: '2026-08-19'
+  last_updated: '2026-08-19'
+  maintainer: tony
+  related_files:
+    - docs/ssot/templates/job.yml

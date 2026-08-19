@@ -11,6 +11,36 @@ SECURITY_LOG="/home/tony/CascadeProjects/chaba/logs/security-audit.log"
 REPORT_FILE="/home/tony/CascadeProjects/chaba/reports/security-audit-$(date +%Y%m%d_%H%M%S).txt"
 PROJECT_ROOT="/home/tony/CascadeProjects/chaba"
 
+# Load accepted baseline from ssot.audit.yml
+ACCEPTED_ROOT_CONTAINERS=""
+ACCEPTED_PUBLIC_ENDPOINTS=""
+
+function load_baseline() {
+    local ssot_file="$PROJECT_ROOT/docs/ssot/infrastructure/ssot.audit.yml"
+    if [ -f "$ssot_file" ]; then
+        ACCEPTED_ROOT_CONTAINERS=$(python3 -c "
+import yaml
+try:
+    with open('$ssot_file') as f:
+        data = yaml.safe_load(f)
+    for c in data.get('baseline', {}).get('accepted_root_containers', []):
+        print(c)
+except Exception:
+    pass
+")
+        ACCEPTED_PUBLIC_ENDPOINTS=$(python3 -c "
+import yaml
+try:
+    with open('$ssot_file') as f:
+        data = yaml.safe_load(f)
+    for e in data.get('baseline', {}).get('accepted_public_endpoints', []):
+        print(e)
+except Exception:
+    pass
+")
+    fi
+}
+
 # Create directories
 mkdir -p "$(dirname "$SECURITY_LOG")"
 mkdir -p "$(dirname "$REPORT_FILE")"
@@ -129,7 +159,15 @@ check_docker_security() {
         done)
         
         if [ -n "$root_containers" ]; then
-            report_issue "medium" "docker-security" "Containers running as root: $root_containers" "Configure containers to run as non-root users"
+            # Filter out accepted baseline root containers
+            local unexpected_root_containers=$(echo "$root_containers" | while IFS= read -r c; do
+                if [ -n "$c" ] && ! echo "$ACCEPTED_ROOT_CONTAINERS" | grep -qx "$c"; then
+                    echo "$c"
+                fi
+            done)
+            if [ -n "$unexpected_root_containers" ]; then
+                report_issue "medium" "docker-security" "Containers running as root: $unexpected_root_containers" "Configure containers to run as non-root users or accept in ssot.audit.yml baseline"
+            fi
         fi
     fi
     
@@ -153,7 +191,15 @@ check_network_security() {
     # Check for services listening on all interfaces
     local all_interfaces=$(ss -tuln | awk '$5 ~ /0\.0\.0\.0/ || $5 ~ /:::/ {print $5}' | sort -u)
     if [ -n "$all_interfaces" ]; then
-        report_issue "medium" "network-security" "Services listening on all interfaces: $all_interfaces" "Restrict services to specific interfaces when possible"
+        # Filter out accepted public endpoints from the baseline
+        local unexpected_endpoints=$(echo "$all_interfaces" | while IFS= read -r endpoint; do
+            if [ -n "$endpoint" ] && ! echo "$ACCEPTED_PUBLIC_ENDPOINTS" | grep -qx "$endpoint"; then
+                echo "$endpoint"
+            fi
+        done)
+        if [ -n "$unexpected_endpoints" ]; then
+            report_issue "medium" "network-security" "Services listening on all interfaces: $unexpected_endpoints" "Restrict services to specific interfaces or accept in ssot.audit.yml baseline"
+        fi
     fi
 }
 
@@ -309,6 +355,7 @@ EOF
 
 # Main audit function
 main() {
+    load_baseline
     log "INFO" "=========================================="
     log "INFO" "Starting Chaba Security Audit"
     log "INFO" "=========================================="

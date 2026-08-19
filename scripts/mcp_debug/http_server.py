@@ -4,6 +4,7 @@ import time
 import json
 from datetime import datetime
 from http.server import HTTPServer, BaseHTTPRequestHandler
+from pathlib import Path
 from urllib.parse import urlparse, parse_qs
 
 from .config import HOSTS
@@ -83,12 +84,34 @@ class CORSHandler(BaseHTTPRequestHandler):
         if parsed.path == "/health":
             self._send_json(200, {"ok": True})
             return
+        if parsed.path == "/audit-health":
+            self._handle_audit_health()
+            return
 
         self.send_response(404)
         self.send_header("Content-Type", "application/json")
         self._send_cors()
         self.end_headers()
         self.wfile.write(b'{"ok":false,"error":"not found"}')
+
+    def _handle_audit_health(self):
+        summary_path = Path("/home/tony/CascadeProjects/chaba/reports/audits/summary.json")
+        if not summary_path.exists():
+            self._send_json(503, {"ok": False, "error": "no audit summary available"})
+            return
+        try:
+            with open(summary_path) as f:
+                summary = json.load(f)
+            status = 200 if summary.get("ok") else 503
+            self._send_json(status, {
+                "ok": summary.get("ok", False),
+                "timestamp": summary.get("generated"),
+                "total": summary.get("summary", {}).get("total"),
+                "passed": summary.get("summary", {}).get("passed"),
+                "failed": summary.get("summary", {}).get("failed"),
+            })
+        except Exception as e:
+            self._send_json(503, {"ok": False, "error": str(e)})
 
     def _handle_table(self, parsed):
         query = parse_qs(parsed.query)
