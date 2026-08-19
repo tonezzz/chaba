@@ -133,11 +133,19 @@ class CORSHandler(BaseHTTPRequestHandler):
 
 
 def main(port=9100):
-    _regenerate_cache()
-    threading.Timer(REFRESH_INTERVAL, _background_refresh).start()
     server = HTTPServer(("0.0.0.0", port), CORSHandler)
+    serve_thread = threading.Thread(target=server.serve_forever, daemon=True)
+    serve_thread.start()
     print(f"Listening on http://0.0.0.0:{port}/mcp-savings.json")
-    server.serve_forever()
+    # Start warming the cache in the background so the server can respond immediately.
+    refresh_thread = threading.Thread(target=_background_refresh, daemon=True)
+    refresh_thread.start()
+    try:
+        while serve_thread.is_alive():
+            serve_thread.join(1)
+    except KeyboardInterrupt:
+        server.shutdown()
+        serve_thread.join()
 
 
 if __name__ == "__main__":
