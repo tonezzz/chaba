@@ -20,8 +20,11 @@ def run(*cmd, **kw):
 def known_paths():
     if not REGISTRY.exists():
         return set()
-    doc = yaml.safe_load(REGISTRY.read_text()) or {}
-    return {a.get("path") for a in doc.get("assets", []) if a.get("path")}
+    paths = set()
+    for f in sorted(REGISTRY.parent.glob("ssot.registry.*.yml")):
+        doc = yaml.safe_load(f.read_text()) or {}
+        paths.update(a.get("path") for a in doc.get("assets", []) if a.get("path"))
+    return paths
 
 
 def scan_ssot():

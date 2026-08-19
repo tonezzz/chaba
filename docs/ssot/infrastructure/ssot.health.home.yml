@@ -398,6 +398,24 @@ services:
   - 'Check container logs: cd /home/tony/CascadeProjects/chaba/stacks/web/mddb && docker compose logs ollama'
   - 'Verify port 11434: curl -s http://tony-omen:11434/api/tags'
   - 'Check models: curl -s http://tony-omen:11434/api/tags | grep phi3-gguf'
+- id: gemini-ollama-proxy
+  name: Gemini-Ollama Embedding Proxy
+  type: http
+  url: http://tony-omen:11435/health
+  expected_status: 200
+  timeout: 5
+  category: api
+  profiles:
+  - home
+  - mobile
+  note: 'Ollama-compatible Gemini embedding proxy on tony-omen. Defaults to gemini-embedding-2 with gemini-embedding-001 fallback.'
+  verification:
+  - 'Check container: docker ps | grep gemini-ollama-proxy'
+  - 'Check proxy health: curl -s http://tony-omen:11435/health'
+  - 'Check proxy embed: curl -s -X POST http://tony-omen:11435/api/embed -H Content-Type: application/json -d {"model":"nomic-embed-text","input":"test"}'
+  recovery_actions:
+  - 'Restart container: cd /home/tony/CascadeProjects/chaba/stacks/web/mddb && docker compose restart gemini-ollama-proxy'
+  - 'Check logs: cd /home/tony/CascadeProjects/chaba/stacks/web/mddb && docker compose logs gemini-ollama-proxy'
 - id: imagen2
   name: Imagen2
   type: http

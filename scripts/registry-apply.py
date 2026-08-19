@@ -13,8 +13,11 @@ REGISTRY = REPO / "docs" / "ssot" / "ssot.registry.yml"
 def known_paths():
     if not REGISTRY.exists():
         return set()
-    doc = yaml.safe_load(REGISTRY.read_text()) or {}
-    return {a.get("path") for a in doc.get("assets", []) if a.get("path")}
+    paths = set()
+    for f in sorted(REGISTRY.parent.glob("ssot.registry.*.yml")):
+        doc = yaml.safe_load(f.read_text()) or {}
+        paths.update(a.get("path") for a in doc.get("assets", []) if a.get("path"))
+    return paths
 
 
 def path_key(p):
@@ -96,27 +99,35 @@ def gather_missing():
     return sorted(missing, key=lambda x: (x["type"], x["path"]))
 
 
+def _part_file(asset_type, path):
+    if asset_type == "ssot":
+        if path.startswith("docs/ssot/templates/"):
+            return "ssot.registry.ssot-template.yml"
+        if path.startswith("docs/ssot/ssot.") or path.startswith("docs/ssot/decisions/"):
+            return "ssot.registry.ssot-core.yml"
+        m = re.match(r"docs/ssot/([^/]+)", path)
+        if m:
+            return f"ssot.registry.ssot-{Path(m.group(1)).stem}.yml"
+    if asset_type in ("service", "timer", "stack"):
+        return "ssot.registry.infrastructure.yml"
+    return f"ssot.registry.{asset_type}.yml"
+
+
 def build_entry(c):
     entry_id = make_id(c["path"])
     name = make_name(c["path"])
     project = make_project(c["path"])
-    lines = [
-        f"  - id: {entry_id}",
-        f"    name: {name}",
-        f"    type: {c['type']}",
-        f"    path: {c['path']}",
-        f"    project: {project}",
-    ]
-    if c["path"].startswith("~"):
-        lines.append(f"    location: user")
-    lines.extend([
-        "    purpose: TBD — purpose not yet written.",
-        "    status: unknown",
-        f"    tags: [{c['type']}]",
-        f"    added: '{date.today().isoformat()}'",
-        "",
-    ])
-    return "\n".join(lines)
+    return {
+        "id": entry_id,
+        "name": name,
+        "type": c["type"],
+        "path": c["path"],
+        "project": project,
+        "purpose": "TBD — purpose not yet written.",
+        "status": "unknown",
+        "tags": [c["type"]],
+        "added": str(date.today().isoformat()),
+    }
 
 
 def main():
@@ -125,17 +136,20 @@ def main():
         print("No missing assets found.")
         return
 
-    text = REGISTRY.read_text()
-    marker = "related_files:"
-    if marker not in text:
-        print(f"Could not find {marker} in {REGISTRY}; aborting.")
-        return
+    part_assets = {}
+    for c in missing:
+        part = _part_file(c["type"], c["path"])
+        part_assets.setdefault(part, []).append(build_entry(c))
 
-    chunks = [build_entry(c) for c in missing]
-    body = "\n".join(chunks)
-    new_text = text.replace(marker, body + marker, 1)
-    REGISTRY.write_text(new_text)
-    print(f"Added {len(missing)} missing asset(s) to {REGISTRY}")
+    for part, entries in part_assets.items():
+        f = REGISTRY.parent / part
+        doc = yaml.safe_load(f.read_text()) or {}
+        assets = doc.get("assets", [])
+        assets.extend(entries)
+        assets.sort(key=lambda a: (a.get("type", ""), a.get("path", "")))
+        doc["assets"] = assets
+        f.write_text(yaml.safe_dump(doc, sort_keys=False, allow_unicode=True))
+        print(f"Added {len(entries)} missing asset(s) to {f}")
 
 
 if __name__ == "__main__":

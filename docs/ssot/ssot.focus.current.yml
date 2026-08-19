@@ -313,8 +313,7 @@ sections:
     - label: Apply cleanups or splits to reduce bloat
       status: in_progress
       started_at: '2026-08-19'
-      note: 'Fixed 4 missing icon warnings in ssot.tuya-smart-plug.yml. Bloat still needs work: ssot.registry.yml, ssot.mcp-debug.yml,
-        ssot.mcp-debug.baselines.yml, ssot.focus.current.yml.'
+      note: 'Split ssot.registry.yml into 9 per-type partition files; registry no longer a hard bloat. Tuya icons fixed. Remaining hard bloat: ssot.mcp-debug.yml (778) and ssot.mcp-debug.baselines.yml (727). Review bloat: ssot.focus.current.yml (393), ssot.registry.script.yml (514), ssot.registry.ssot-core.yml (411). Next: mcp-debug split.'
     - label: Wire bloat and isolation checks into ssot-validate or pre-commit
       status: not_started
     - label: Re-run validation and commit results

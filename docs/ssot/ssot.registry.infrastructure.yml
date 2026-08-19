@@ -1,0 +1,245 @@
+title: Registry — Infrastructure
+subtitle: Catalog of 26 infrastructure assets
+icon: 🗃️
+version: 1
+source: ssot.registry.yml
+assets:
+- id: docker-compose
+  name: docker-compose.yml
+  type: stack
+  path: stacks/web/docker-compose.yml
+  project: chaba
+  purpose: stack asset at stacks/web/docker-compose.yml; purpose to be documented.
+  status: draft
+- id: docker-compose
+  name: docker-compose.yml
+  type: stack
+  path: stacks/web/mddb/docker-compose.yml
+  project: chaba
+  purpose: stack asset at stacks/web/mddb/docker-compose.yml; purpose to be documented.
+  status: draft
+- id: barriers
+  name: barriers.service
+  type: service
+  path: ~/.config/systemd/user/barriers.service
+  project: chaba
+  purpose: service asset at ~/.config/systemd/user/barriers.service; purpose to be documented.
+  status: draft
+- id: chaba-health-monitor
+  name: chaba-health-monitor.service
+  type: service
+  path: ~/.config/systemd/user/chaba-health-monitor.service
+  project: chaba
+  purpose: service asset at ~/.config/systemd/user/chaba-health-monitor.service; purpose to be documented.
+  status: draft
+- id: chaba-health-monitor
+  name: chaba-health-monitor.timer
+  type: timer
+  path: ~/.config/systemd/user/chaba-health-monitor.timer
+  project: chaba
+  purpose: timer asset at ~/.config/systemd/user/chaba-health-monitor.timer; purpose to be documented.
+  status: draft
+- id: clip-sync-dell
+  name: clip-sync-dell.service
+  type: service
+  path: ~/.config/systemd/user/clip-sync-dell.service
+  project: chaba
+  purpose: service asset at ~/.config/systemd/user/clip-sync-dell.service; purpose to be documented.
+  status: draft
+- id: evolution-alarm-notify
+  name: evolution-alarm-notify.service
+  type: service
+  path: ~/.config/systemd/user/evolution-alarm-notify.service
+  project: chaba
+  purpose: service asset at ~/.config/systemd/user/evolution-alarm-notify.service; purpose to be documented.
+  status: draft
+- id: focus-dispatcher-overnight-service
+  name: focus-dispatcher-overnight.service
+  type: service
+  path: ~/.config/systemd/user/focus-dispatcher-overnight.service
+  project: chaba
+  purpose: Overnight service that archives completed focuses and creates review prompts.
+  status: active
+  location: user
+  tags:
+  - focus
+  - systemd
+  - overnight
+  related:
+  - focus-dispatcher
+  - ssot-focus
+  added: '2026-08-17'
+- id: focus-dispatcher-overnight-timer
+  name: focus-dispatcher-overnight.timer
+  type: timer
+  path: ~/.config/systemd/user/focus-dispatcher-overnight.timer
+  project: chaba
+  purpose: Trigger the overnight focus review at 03:00 daily.
+  status: active
+  environment: tony-omen
+  tags:
+  - systemd
+  - timer
+  - automation
+  - focus
+  related:
+  - overnight-focus-review
+  - focus-dispatcher-overnight-service
+  added: '2026-08-16'
+- id: focus-dispatcher-service
+  name: focus-dispatcher.service
+  type: service
+  path: ~/.config/systemd/user/focus-dispatcher.service
+  project: chaba
+  purpose: Systemd user service that runs the focus-dispatcher session selection logic.
+  status: active
+  location: user
+  tags:
+  - focus
+  - systemd
+  - service
+  related:
+  - focus-dispatcher
+  - ssot-focus
+  added: '2026-08-17'
+- id: focus-dispatcher-timer
+  name: focus-dispatcher.timer
+  type: timer
+  path: ~/.config/systemd/user/focus-dispatcher.timer
+  project: chaba
+  purpose: Systemd timer that triggers focus-dispatcher.service.
+  status: active
+  location: user
+  tags:
+  - focus
+  - systemd
+  - timer
+  related:
+  - focus-dispatcher-service
+  - ssot-focus
+  added: '2026-08-17'
+- id: gpu-queue-processor
+  name: gpu-queue-processor.service
+  type: service
+  path: ~/.config/systemd/user/gpu-queue-processor.service
+  project: chaba
+  purpose: service asset at ~/.config/systemd/user/gpu-queue-processor.service; purpose to be documented.
+  status: draft
+- id: gpu-queue
+  name: gpu-queue.service
+  type: service
+  path: ~/.config/systemd/user/gpu-queue.service
+  project: chaba
+  purpose: service asset at ~/.config/systemd/user/gpu-queue.service; purpose to be documented.
+  status: draft
+- id: mcp-debug-cors-service
+  name: mcp-debug-cors.service
+  type: service
+  path: ~/.config/systemd/user/mcp-debug-cors.service
+  project: chaba
+  purpose: Run the mcp_debug CORS HTTP endpoint on tony-omen port 9100.
+  status: active
+  environment: tony-omen
+  tags:
+  - systemd
+  - service
+  - mcp
+  - cors
+  related:
+  - mcp-debug-http-server
+  - ssot-mcp-debug-cors
+  added: '2026-08-16'
+- id: mcp-link-monitor-service
+  name: mcp-link-monitor.service
+  type: service
+  path: ~/.config/systemd/user/mcp-link-monitor.service
+  project: chaba
+  purpose: Run mcp-link-monitor.py as a background daemon.
+  status: active
+  environment: tony-omen
+  tags:
+  - systemd
+  - service
+  - monitoring
+  - network
+  related:
+  - mcp-link-monitor
+  - ssot-link-monitor
+  added: '2026-08-16'
+- id: playlived
+  name: playlived.service
+  type: service
+  path: ~/.config/systemd/user/playlived.service
+  project: chaba
+  purpose: service asset at ~/.config/systemd/user/playlived.service; purpose to be documented.
+  status: draft
+- id: rclone-gdrive
+  name: rclone-gdrive.service
+  type: service
+  path: ~/.config/systemd/user/rclone-gdrive.service
+  project: chaba
+  purpose: service asset at ~/.config/systemd/user/rclone-gdrive.service; purpose to be documented.
+  status: draft
+- id: tailscale-connections
+  name: tailscale-connections.service
+  type: service
+  path: ~/.config/systemd/user/tailscale-connections.service
+  project: chaba
+  purpose: service asset at ~/.config/systemd/user/tailscale-connections.service; purpose to be documented.
+  status: draft
+- id: weaviate-index
+  name: weaviate-index.service
+  type: service
+  path: ~/.config/systemd/user/weaviate-index.service
+  project: chaba
+  purpose: service asset at ~/.config/systemd/user/weaviate-index.service; purpose to be documented.
+  status: draft
+- id: weaviate-index
+  name: weaviate-index.timer
+  type: timer
+  path: ~/.config/systemd/user/weaviate-index.timer
+  project: chaba
+  purpose: timer asset at ~/.config/systemd/user/weaviate-index.timer; purpose to be documented.
+  status: draft
+- id: workflows-mcp
+  name: workflows-mcp.service
+  type: service
+  path: ~/.config/systemd/user/workflows-mcp.service
+  project: chaba
+  purpose: service asset at ~/.config/systemd/user/workflows-mcp.service; purpose to be documented.
+  status: draft
+- id: yomi-api
+  name: yomi-api.service
+  type: service
+  path: ~/.config/systemd/user/yomi-api.service
+  project: chaba
+  purpose: service asset at ~/.config/systemd/user/yomi-api.service; purpose to be documented.
+  status: draft
+- id: yomi-update-active
+  name: yomi-update-active.service
+  type: service
+  path: ~/.config/systemd/user/yomi-update-active.service
+  project: chaba
+  purpose: service asset at ~/.config/systemd/user/yomi-update-active.service; purpose to be documented.
+  status: draft
+- id: yomi-update-active
+  name: yomi-update-active.timer
+  type: timer
+  path: ~/.config/systemd/user/yomi-update-active.timer
+  project: chaba
+  purpose: timer asset at ~/.config/systemd/user/yomi-update-active.timer; purpose to be documented.
+  status: draft
+- id: yomi-update-all
+  name: yomi-update-all.service
+  type: service
+  path: ~/.config/systemd/user/yomi-update-all.service
+  project: chaba
+  purpose: service asset at ~/.config/systemd/user/yomi-update-all.service; purpose to be documented.
+  status: draft
+- id: yomi-update-all
+  name: yomi-update-all.timer
+  type: timer
+  path: ~/.config/systemd/user/yomi-update-all.timer
+  project: chaba
+  purpose: timer asset at ~/.config/systemd/user/yomi-update-all.timer; purpose to be documented.
+  status: draft

@@ -570,6 +570,28 @@ sessions:
   next_action:
   - Work on SSOT file optimization
   date: '2026-08-19'
+- date: '2026-08-19'
+  session: chaba-2026-08-19-audit
+  focus: Audit framework
+  source: user request
+  plan:
+  - Review updated audit runner and ssot.audit.yml
+  - Fix security-audit findings so full run passes
+  done:
+  - Assessed focus processing and Devin/Windsurf orchestration gaps
+  - Updated ssot.audit.yml with default/full runner, schedule, and accepted baseline
+  - Fixed file permissions on stacks/web/.env.production, docker-compose.secrets.yml, and scripts/generate-secrets.sh
+  - Updated security-audit.sh to load and filter against the ssot.audit.yml baseline
+  - Full audit suite (node scripts/audits/run.mjs --full) now passes
+  follow_up:
+  - Monitor first weekly and monthly timer runs on tony-dell
+  - Revisit unexpected root containers or public endpoints that appear after the next run
+  next_action:
+  - Continue with the active Yomi focus or the next in-progress item from ssot.follow-up.yml
+  decisions:
+  - id: audit-baseline
+    title: How to handle accepted root containers and public 0.0.0.0 endpoints
+    chosen: Document them in ssot.audit.yml baseline and filter security-audit.sh against the SSOT; any new root container or public endpoint still alerts as a medium finding
 related_files:
 - docs/ssot/ssot.focus.current.yml
 - docs/ssot/ssot.focus.yml

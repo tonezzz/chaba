@@ -4,7 +4,7 @@ icon: "\u26a1"
 config:
   version: 1
   created: '2026-08-17'
-  updated: '2026-08-18'
+  updated: '2026-08-19'
   maintainer: tony
   status: validated
   branch: chaba
@@ -72,15 +72,15 @@ sections:
       - label: Credentials
         text: Valid API key found in /etc/systemd/system/yomi-process.service.d/override.conf. The yomi-api.service key returned 401 and should be rotated.
       - label: Model availability
-        text: text-embedding-004 is not available in this project. Available embedding models are gemini-embedding-001 and gemini-embedding-002. The proxy maps text-embedding-004 and nomic-embed-text requests to gemini-embedding-001.
+        text: text-embedding-004 is not available in this project. The Google API model names are gemini-embedding-001 and gemini-embedding-2 (not gemini-embedding-002). The proxy maps nomic-embed-text requests to gemini-embedding-2 by default and text-embedding-004 to gemini-embedding-001.
       - label: Proxy
-        text: scripts/mddb/gemini-ollama-proxy.mjs deployed as a Docker service on tony-omen port 11435 (healthy). It now uses batchEmbedContents with a 100 RPM token-bucket limiter and 429 exponential backoff.
+        text: scripts/mddb/gemini-ollama-proxy.mjs deployed as a Docker service on tony-omen port 11435 (healthy). It uses batchEmbedContents with a 100 RPM token-bucket limiter, 429 exponential backoff, and now automatically falls back from gemini-embedding-2 to gemini-embedding-001 on 429 rate-limit.
       - label: Comparison
         text: Side-by-side test collections in MDDB/Weaviate were not created because neither service is running on tony-omen. An embedding-API comparison was run instead; see reports/gemini-embedding-comparison.md.
       - label: Latency
-        text: Gemini round-trip via the proxy is ~472 ms per embedding versus ~127 ms for Ollama on the same host (3.7x slower). batchEmbedContents reduces the effective request-per-text overhead, so bulk re-indexing is more efficient.
+        text: Gemini round-trip via the proxy is ~472 ms per embedding for gemini-embedding-001 and ~720 ms for gemini-embedding-2, versus ~127 ms for Ollama on the same host. batchEmbedContents reduces the effective request-per-text overhead, so bulk re-indexing is more efficient.
       - label: Switch decision
-        text: Did not switch MDDB_EMBEDDING_API_URL from Ollama; Ollama remains the query-time provider. The proxy is available for batch/off-peak re-indexing or future MDDB multi-provider support.
+        text: Did not switch MDDB_EMBEDDING_API_URL from Ollama; Ollama remains the query-time provider and the live MDDB collections are fully indexed. The proxy is ready for a future cutover or batch/off-peak re-indexing.
 
   - title: Next Steps
     icon: "\ud83d\ude80"
@@ -93,4 +93,4 @@ sections:
       - label: Rate-limit verification
         text: Confirm that the new proxy token-bucket and batchEmbedContents keep 429s under control during the next batch re-index.
       - label: Revisit switch
-        text: Switch MDDB to the Gemini proxy only if batch latency and the 1,000 RPD cap are acceptable for the target workload.
+        text: Switch MDDB to the Gemini proxy only if batch latency and the 1,000 RPD per model cap (2,000 RPD combined if both gemini-embedding-2 and gemini-embedding-001 are used with fallback) are acceptable for the target workload.
