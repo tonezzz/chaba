@@ -2,6 +2,7 @@
 """One-shot MCP client for mcp-health. Runs the server over stdio, calls a tool, prints the JSON result, and exits."""
 import json
 import os
+import shutil
 import subprocess
 import sys
 import threading
@@ -9,6 +10,7 @@ import time
 
 SERVER = "/home/tony/CascadeProjects/chaba/mcp/mcp-health/server.js"
 CWD = "/home/tony/CascadeProjects/chaba"
+NODE = os.environ.get("NODE_BIN") or shutil.which("node") or "/home/tony/.n/bin/node"
 INIT_TIMEOUT = 15
 CALL_TIMEOUT = 60
 
@@ -22,7 +24,7 @@ def main():
     env["HEALTH_CONFIG"] = env.get("HEALTH_CONFIG", os.path.join(CWD, "docs/ssot/infrastructure/ssot.health.yml"))
 
     proc = subprocess.Popen(
-        ["node", SERVER],
+        [NODE, SERVER],
         cwd=CWD,
         env=env,
         stdin=subprocess.PIPE,

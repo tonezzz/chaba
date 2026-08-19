@@ -18,7 +18,7 @@ const METRICS = join(REPORTS_DIR, 'SSOT_OPTIMIZATION_METRICS.json');
 
 function main() {
   const start = Date.now();
-  const report = execSync('node scripts/ssot-validate-all.mjs', {
+  const report = execSync(`${process.execPath} scripts/ssot-validate-all.mjs`, {
     cwd: REPO,
     encoding: 'utf8',
     stdio: ['ignore', 'pipe', 'pipe'],
