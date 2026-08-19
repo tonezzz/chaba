@@ -39,8 +39,9 @@ planning:
       file: docs/ssot/ssot.focus.current.yml
 
 processing:
-  status: in_progress
+  status: completed
   started_at: '2026-08-19'
+  completed_at: '2026-08-19'
   findings:
     - file: stacks/web/Caddyfile
       issue: The @api_cache /api/* block at line 93 appears before more specific /api/yomi, /api/tailscale, /api/ws, /api/focus, and status_api routes, which may prevent them from matching.
@@ -63,19 +64,19 @@ processing:
   steps:
     - id: 1
       label: Validate and format both Caddyfiles
-      status: not_started
+      status: completed
     - id: 2
       label: Reconcile or merge chaba-omen Caddyfile into canonical
-      status: not_started
+      status: completed
     - id: 3
       label: Fix @api_cache ordering and redir typo
-      status: not_started
+      status: completed
     - id: 4
       label: Add Caddy syntax/format check to CI/audit
-      status: not_started
+      status: completed
     - id: 5
       label: Add Caddy /health endpoint and reload the web container
-      status: not_started
+      status: completed
   decisions: []
   changes:
     - file: stacks/web/Caddyfile
@@ -103,9 +104,9 @@ followup:
     - Caddy performance/load metrics
 
 report:
-  status: not_started
-  completed_at: null
-  summary: ''
+  status: completed
+  completed_at: '2026-08-19'
+  summary: 'Caddy routing fixes, Caddyfile formatting, and CI audit implemented and tested'
   metrics: {}
   links: []
   kb_review: []

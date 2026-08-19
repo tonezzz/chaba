@@ -96,6 +96,7 @@ quick_wins:
 - label: Update job artifact statuses
   action: Mark completed caddy-audit and infrastructure-audit jobs as completed
   estimated: 30 minutes
+  status: completed
 - label: Archive stale ssot.focus.yml items
   action: Review 8 pending previous_status entries and archive completed ones
   estimated: 30 minutes
@@ -106,7 +107,10 @@ backlog:
   status: not_started
 - file: docs/ssot/jobs/infrastructure/2026-08-19-caddy-audit.yml
   label: Caddy routing and CI fixes
-  status: in_progress
+  status: completed
+- file: docs/ssot/jobs/infrastructure/2026-08-19-infrastructure-audit.yml
+  label: Health SSOT consistency audit
+  status: completed
 - file: docs/ssot/jobs/infrastructure/2026-08-19-tony-omen-internet-impact.yml
   label: Tony-omen internet impact
   status: in_progress
@@ -128,7 +132,7 @@ next_actions:
   owner: tony
 - id: 3
   label: Update completed job artifacts to completed status
-  status: not_started
+  status: completed
   owner: tony
 - id: 4
   label: Add real-infrastructure audit to mcp-health integration
