@@ -8,15 +8,21 @@ description: |
   regular follow-up.
 
 summary:
-  total_items: 213
-  files_with_open: 49
+  total_items: 182
+  files_with_open: 48
+  active_items: 96
+  archived_items: 109
+  note: active_items excludes 23 archived focus-inbox files (109 historical subtask statuses) now in docs/ssot/focus-inbox/archived/
   last_scan: '2026-08-19'
   scan_command: "grep -R 'status: (not_started|pending|in_progress|blocked)' docs/ssot"
 
 sources:
-- path: focus-inbox/processed
+- path: focus-inbox/archived
   count: 109
-  note: Processed intake requests; many are already in ssot.focus.current.yml or should be archived
+  note: Processed intake drafts archived after being handled or promoted to focus
+- path: focus-inbox/processed
+  count: 2
+  note: Active intake items still referenced by ssot.focus.current.yml
 - path: jobs/infrastructure
   count: 29
   note: Caddy, infrastructure, tony-omen internet, and real-infrastructure audit jobs
@@ -90,9 +96,11 @@ quick_wins:
 - label: Close completed focus-inbox drafts
   action: Mark processed/merged focus-inbox items as archived or completed
   estimated: 1 session
+  status: completed
 - label: Deduplicate ssot.improvements.yml
   action: Merge or archive duplicate Helm Dashboard, security, and network entries
   estimated: 1 session
+  status: completed
 - label: Update job artifact statuses
   action: Mark completed caddy-audit and infrastructure-audit jobs as completed
   estimated: 30 minutes
@@ -100,6 +108,7 @@ quick_wins:
 - label: Archive stale ssot.focus.yml items
   action: Review 8 pending previous_status entries and archive completed ones
   estimated: 30 minutes
+  status: completed
 
 backlog:
 - file: docs/ssot/jobs/infrastructure/2026-08-19-real-infrastructure-audit.yml
