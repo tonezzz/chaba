@@ -300,7 +300,9 @@ sections:
       reason: May involve stopping/starting the helm web service and updating Caddy
     subtasks:
     - label: Check helm container status and Caddy /apps/helm route
-      status: not_started
+      status: completed
+      completed_at: '2026-08-19'
+      note: 'helm container is running on tony-dell:3003 and responds 200 to /apps/helm. Caddy on tony-omen:8080 is using /home/tony/CascadeProjects/chaba-omen/stacks/web/Caddyfile which has no /apps/helm route. chaba/stacks/web/Caddyfile has the correct route.'
     - label: Fix the 404 cause (container, proxy, or path)
       status: not_started
     - label: Re-run health check and verify 200 response

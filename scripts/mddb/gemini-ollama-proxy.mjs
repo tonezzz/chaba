@@ -4,8 +4,8 @@ import { createServer } from 'node:http';
 const PORT = parseInt(process.env.GEMINI_PROXY_PORT || '11435', 10);
 const HOST = process.env.GEMINI_PROXY_HOST || '0.0.0.0';
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-const GEMINI_EMBEDDING_MODEL = process.env.GEMINI_EMBEDDING_MODEL || 'gemini-embedding-002';
-const GEMINI_EMBEDDING_FALLBACK_MODEL = process.env.GEMINI_EMBEDDING_FALLBACK_MODEL || (GEMINI_EMBEDDING_MODEL === 'gemini-embedding-001' ? 'gemini-embedding-002' : 'gemini-embedding-001');
+const GEMINI_EMBEDDING_MODEL = process.env.GEMINI_EMBEDDING_MODEL || 'gemini-embedding-2';
+const GEMINI_EMBEDDING_FALLBACK_MODEL = process.env.GEMINI_EMBEDDING_FALLBACK_MODEL || (GEMINI_EMBEDDING_MODEL === 'gemini-embedding-001' ? 'gemini-embedding-2' : 'gemini-embedding-001');
 const DEFAULT_DIMENSIONS = parseInt(process.env.GEMINI_EMBEDDING_DIMENSIONS || '768', 10);
 const MAX_RPM = parseInt(process.env.GEMINI_PROXY_MAX_RPM || '100', 10);
 const BATCH_SIZE = parseInt(process.env.GEMINI_PROXY_BATCH_SIZE || '100', 10);
@@ -14,13 +14,13 @@ const INITIAL_BACKOFF_MS = 500;
 const MAX_BACKOFF_MS = 30000;
 
 const MODEL_ALIASES = {
-  'text-embedding-004': 'gemini-embedding-002',
-  'nomic-embed-text': 'gemini-embedding-002',
+  'text-embedding-004': 'gemini-embedding-001',
+  'nomic-embed-text': 'gemini-embedding-2',
   'gemini-embedding-001': 'gemini-embedding-001',
   'gemini-embedding-1': 'gemini-embedding-001',
-  'gemini-embedding-002': 'gemini-embedding-002',
-  'gemini-embedding-2': 'gemini-embedding-002',
-  'gemini-embedding-2-preview': 'gemini-embedding-002',
+  'gemini-embedding-002': 'gemini-embedding-2',
+  'gemini-embedding-2': 'gemini-embedding-2',
+  'gemini-embedding-2-preview': 'gemini-embedding-2',
 };
 
 function sleep(ms) {
