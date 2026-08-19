@@ -115,6 +115,20 @@ automation:
     report_dir: reports/audits
     status: active (2026-08-19)
 
+  kb_audit:
+    ssot: docs/ssot/ssot.kb.yml
+    runner: scripts/auto-kb-quality-audit.mjs
+    extra: scripts/kb-categorize-audit.mjs
+    schedule: "0 4 * * 0"
+    frequency: Sunday at 4 AM
+    timer: systemd/chaba-kb-audit.timer
+    service: systemd/chaba-kb-audit.service
+    log_file: logs/kb-audit.log
+    reports:
+      - reports/KB_QUALITY_AUDIT.json
+      - reports/KB_CATEGORIZATION_REPORT.md
+    status: active (2026-08-19)
+
 monitoring:
   gpu:
     metrics:

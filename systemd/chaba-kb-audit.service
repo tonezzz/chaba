@@ -1,0 +1,11 @@
+[Unit]
+Description=Chaba KB quality and categorization audit
+After=network.target
+
+[Service]
+Type=oneshot
+User=tony
+ExecStart=/bin/bash -c 'cd /home/tony/CascadeProjects/chaba && node scripts/auto-kb-quality-audit.mjs --json && node scripts/kb-categorize-audit.mjs'
+WorkingDirectory=/home/tony/CascadeProjects/chaba
+StandardOutput=append:/home/tony/CascadeProjects/chaba/logs/kb-audit.log
+StandardError=append:/home/tony/CascadeProjects/chaba/logs/kb-audit.log

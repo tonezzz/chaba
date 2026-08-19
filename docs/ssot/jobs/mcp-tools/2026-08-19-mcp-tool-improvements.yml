@@ -89,6 +89,12 @@ followup:
         scripts/audits/run.mjs now archives a timestamped summary to
         reports/audits/history/ and maintains a compact history.json with the
         last 90 runs (timestamp, ok, passed, failed, total, duration_ms).
+    - label: Auto-KB quality scoring as a scheduled job
+      completed_at: '2026-08-19'
+      notes: |
+        auto-kb-quality-audit.mjs now defaults to report-only with --apply and
+        --json flags. A weekly systemd timer/service runs the quality and
+        categorization audits and writes reports.
   deferred:
     - Web focus decision tree
     - SSOT value registry

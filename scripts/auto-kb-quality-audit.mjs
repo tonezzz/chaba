@@ -1,13 +1,18 @@
 #!/usr/bin/env node
 /*
- * Scan existing auto-*.md KB entries and archive low-value ones.
+ * Scan existing auto-*.md KB entries and report/archive low-value ones.
  * Uses the same quality filter as .agents/skills/auto-kb/auto-kb.mjs.
+ *
+ * Default mode is report-only.
+ * Pass --apply to move low-quality entries to docs/kb/archive.
+ * Pass --json to also write a JSON report to reports/KB_QUALITY_AUDIT.json.
  */
 import { readFileSync, readdirSync, renameSync, existsSync, mkdirSync, writeFileSync } from 'fs';
 import { join, basename } from 'path';
 
 const KB_DIR = '/home/tony/CascadeProjects/chaba/docs/kb';
 const ARCHIVE_DIR = join(KB_DIR, 'archive');
+const REPORTS_DIR = '/home/tony/CascadeProjects/chaba/reports';
 
 const KB_WORTHY_TRIGGERS = [
   'bug fix', 'corruption', 'security', 'vulnerability',
@@ -53,31 +58,62 @@ function extractText(filepath) {
 }
 
 function main() {
+  const args = process.argv.slice(2);
+  const apply = args.includes('--apply');
+  const json = args.includes('--json');
+  const mode = apply ? 'archive' : 'report-only';
+
   if (!existsSync(ARCHIVE_DIR)) mkdirSync(ARCHIVE_DIR, { recursive: true });
+  if (!existsSync(REPORTS_DIR)) mkdirSync(REPORTS_DIR, { recursive: true });
+
   const files = readdirSync(KB_DIR).filter(f => f.startsWith('auto-') && f.endsWith('.md'));
   let archived = 0;
   let kept = 0;
   const report = [];
+  const candidates = [];
 
   for (const file of files) {
     const path = join(KB_DIR, file);
     const text = extractText(path);
-    if (!isKBWorthy(text)) {
-      const archivePath = join(ARCHIVE_DIR, file);
-      const archiveNote = `\n\n_Archived ${new Date().toISOString().split('T')[0]}: did not meet updated KB quality threshold._\n`;
-      writeFileSync(path, archiveNote, { flag: 'a' });
-      renameSync(path, archivePath);
-      archived++;
-      report.push(`archived: ${file}`);
+    const worthy = isKBWorthy(text);
+    if (!worthy) {
+      candidates.push(file);
+      if (apply) {
+        const archivePath = join(ARCHIVE_DIR, file);
+        const archiveNote = `\n\n_Archived ${new Date().toISOString().split('T')[0]}: did not meet updated KB quality threshold._\n`;
+        writeFileSync(path, archiveNote, { flag: 'a' });
+        renameSync(path, archivePath);
+        archived++;
+      }
+      report.push(`archive candidate: ${file}`);
     } else {
       kept++;
       report.push(`kept: ${file}`);
     }
   }
 
-  const log = `auto-kb quality audit: ${archived} archived, ${kept} kept\n\n${report.join('\n')}\n`;
-  writeFileSync(join(KB_DIR, 'archive', 'audit.log'), log);
-  console.log(log.trim());
+  if (apply) {
+    const log = `auto-kb quality audit: ${archived} archived, ${kept} kept\n\n${report.join('\n')}\n`;
+    writeFileSync(join(ARCHIVE_DIR, 'audit.log'), log);
+    console.log(log.trim());
+  } else {
+    const log = `auto-kb quality audit (report-only): ${candidates.length} archive candidates, ${kept} kept\n\n${report.join('\n')}\n`;
+    console.log(log.trim());
+  }
+
+  if (json) {
+    const result = {
+      ok: true,
+      mode,
+      generated: new Date().toISOString(),
+      total: files.length,
+      kept,
+      archived: apply ? archived : 0,
+      candidates: apply ? [] : candidates,
+    };
+    writeFileSync(join(REPORTS_DIR, 'KB_QUALITY_AUDIT.json'), JSON.stringify(result, null, 2));
+    console.log('Wrote reports/KB_QUALITY_AUDIT.json');
+  }
 }
 
 main();
