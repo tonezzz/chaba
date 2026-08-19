@@ -284,7 +284,8 @@ sections:
     text: Investigate why Helm Dashboard returns 404 (expected 200) and restore it.
     branch: chaba
     priority: high
-    status: active
+    status: completed
+    completed_at: '2026-08-19'
     tags:
     - helm
     - dashboard
@@ -304,9 +305,13 @@ sections:
       completed_at: '2026-08-19'
       note: 'helm container is running on tony-dell:3003 and responds 200 to /apps/helm. Caddy on tony-omen:8080 is using /home/tony/CascadeProjects/chaba-omen/stacks/web/Caddyfile which has no /apps/helm route. chaba/stacks/web/Caddyfile has the correct route.'
     - label: Fix the 404 cause (container, proxy, or path)
-      status: not_started
+      status: completed
+      completed_at: '2026-08-19'
+      note: 'Caddy was in web Docker container using chaba-omen/stacks/web/Caddyfile. Copied chaba/stacks/web/Caddyfile to chaba-omen/stacks/web/Caddyfile and restarted web container. Now http://tony-omen:8080/apps/helm returns 200.'
     - label: Re-run health check and verify 200 response
-      status: not_started
+      status: completed
+      completed_at: '2026-08-19'
+      note: 'curl http://tony-omen:8080/apps/helm returns 200.'
     started: '2026-08-19'
     source: /home/tony/CascadeProjects/chaba/docs/ssot/focus-inbox/processed/2026-08-19-helm-dashboard.yml
 - title: Ready (Safe)

@@ -269,7 +269,9 @@ sections:
   - label: Helm Dashboard Service Failure
     text: Helm Dashboard returned status 404 (expected 200) - service is unhealthy and needs investigation (Auto-generated
       by overnight assessment on 2026-08-18T19:00:03.827Z)
-    status: pending
+    status: completed
+    completed_at: '2026-08-19'
+    note: 'Caddy web container was using chaba-omen Caddyfile without /apps/helm route. Restored by copying chaba/stacks/web/Caddyfile and restarting web container. Now returns 200.'
     priority: high
     effort: TBD
     category: service-health
