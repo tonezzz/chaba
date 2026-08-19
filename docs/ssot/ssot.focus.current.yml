@@ -216,48 +216,6 @@ sections:
     branch: chaba
     source: /home/tony/CascadeProjects/chaba/docs/ssot/focus-inbox/processed/2026-08-18-193000-mddb-switch-to-gemini.yml
     previous_status: '2026-08-19'
-  - label: Streamline mcp-focus and SSOT focus system
-    text: 'The SSOT focus system and mcp-focus have drifted. mcp-focus now supports
-
-      defer/resume, but the SSOT policy, related files, and implementation are not
-
-      fully aligned. Consolidate duplicated triage/safe-to-parallel logic between
-
-      mcp_debug/focus.py and focus_dispatcher/triage.py, update ssot.mcp-focus.yml
-
-      to v2, and wire Ready (Safe) dispatch.
-
-      '
-    branch: chaba
-    priority: high
-    status: completed
-    completed_at: '2026-08-19'
-    tags:
-    - mcp-focus
-    - ssot
-    - focus
-    - streamlining
-    - job-lifecycle
-    missing_info: []
-    safe_to_parallel:
-      value: false
-      reason: Modifies the active focus router, focus-dispatcher, and SSOT; must be the active branch or shared focus.
-    subtasks:
-    - label: Centralize focus model (triage scoring, priority, safe-to-parallel, branch detection)
-      status: completed
-      started_at: '2026-08-19'
-      completed_at: '2026-08-19'
-    - label: Update ssot.mcp-focus.yml to match standalone server (v2, related_files, mode docs)
-      status: completed
-      completed_at: '2026-08-19'
-    - label: Add Ready (Safe) population and ownership/lock checks
-      status: completed
-      completed_at: '2026-08-19'
-    - label: Improve error handling and make request optional for read-only modes
-      status: completed
-      completed_at: '2026-08-19'
-    started: '2026-08-19'
-    source: /home/tony/CascadeProjects/chaba/docs/ssot/focus-inbox/processed/2026-08-18-122128-mcp-focus-and-ssot-streamlining.yml
   - label: Tony-Dell cannot see iPhone Personal Hotspot SSID
     text: 'tony-dell''s Wi-Fi interface (wlx00761100125e) does not show the iPhone Personal Hotspot in scans.
 
