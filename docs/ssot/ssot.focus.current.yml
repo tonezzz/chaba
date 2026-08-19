@@ -280,42 +280,6 @@ sections:
       Next step needs user approval for App Store login and Xcode install.
     previous_status: '2026-08-19'
     started: '2026-08-19'
-  - label: Helm Dashboard Service Failure
-    text: Investigate why Helm Dashboard returns 404 (expected 200) and restore it.
-    branch: chaba
-    priority: high
-    status: completed
-    completed_at: '2026-08-19'
-    tags:
-    - helm
-    - dashboard
-    - 404
-    - service-health
-    - high-priority
-    missing_info:
-    - Which host is running the Helm dashboard container
-    - Whether the Caddy /apps/helm proxy is configured correctly
-    - If the container is running or stopped
-    safe_to_parallel:
-      value: false
-      reason: May involve stopping/starting the helm web service and updating Caddy
-    subtasks:
-    - label: Check helm container status and Caddy /apps/helm route
-      status: completed
-      completed_at: '2026-08-19'
-      note: helm container is running on tony-dell:3003 and responds 200 to /apps/helm. Caddy on tony-omen:8080 is using /home/tony/CascadeProjects/chaba-omen/stacks/web/Caddyfile
-        which has no /apps/helm route. chaba/stacks/web/Caddyfile has the correct route.
-    - label: Fix the 404 cause (container, proxy, or path)
-      status: completed
-      completed_at: '2026-08-19'
-      note: Caddy was in web Docker container using chaba-omen/stacks/web/Caddyfile. Copied chaba/stacks/web/Caddyfile to
-        chaba-omen/stacks/web/Caddyfile and restarted web container. Now http://tony-omen:8080/apps/helm returns 200.
-    - label: Re-run health check and verify 200 response
-      status: completed
-      completed_at: '2026-08-19'
-      note: curl http://tony-omen:8080/apps/helm returns 200.
-    started: '2026-08-19'
-    source: /home/tony/CascadeProjects/chaba/docs/ssot/focus-inbox/processed/2026-08-19-helm-dashboard.yml
   - label: SSOT file optimization
     text: Implement the SSOT file optimization plan. Enforce bloat thresholds, scan for data-isolation violations, remove
       redundant and obsolete entries, standardize consistency, and wire all checks into ssot-validate and .githooks/pre-commit.
@@ -339,15 +303,18 @@ sections:
     - label: Review ssot.file-optimization.yml and current bloat scan results
       status: completed
       completed_at: '2026-08-19'
-      note: 'Ran scripts/ssot-optimize.mjs. 4 bloat candidates: ssot.registry.yml (1882), ssot.mcp-debug.yml (778), ssot.mcp-debug.baselines.yml (727), ssot.focus.current.yml (420). 4 missing-icon warnings in ssot.tuya-smart-plug.yml. No data-isolation warnings.'
+      note: 'Ran scripts/ssot-optimize.mjs. 4 bloat candidates: ssot.registry.yml (1882), ssot.mcp-debug.yml (778), ssot.mcp-debug.baselines.yml
+        (727), ssot.focus.current.yml (420). 4 missing-icon warnings in ssot.tuya-smart-plug.yml. No data-isolation warnings.'
     - label: Identify files exceeding thresholds and bloat causes
       status: completed
       completed_at: '2026-08-19'
-      note: 'Identified: ssot.registry.yml hard threshold 1882, ssot.mcp-debug.yml hard threshold 778, ssot.mcp-debug.baselines.yml review 727, ssot.focus.current.yml review 420. ssot.tuya-smart-plug.yml missing icons.'
+      note: 'Identified: ssot.registry.yml hard threshold 1882, ssot.mcp-debug.yml hard threshold 778, ssot.mcp-debug.baselines.yml
+        review 727, ssot.focus.current.yml review 420. ssot.tuya-smart-plug.yml missing icons.'
     - label: Apply cleanups or splits to reduce bloat
       status: in_progress
       started_at: '2026-08-19'
-      note: 'Fixed 4 missing icon warnings in ssot.tuya-smart-plug.yml. Bloat still needs work: ssot.registry.yml, ssot.mcp-debug.yml, ssot.mcp-debug.baselines.yml, ssot.focus.current.yml.'
+      note: 'Fixed 4 missing icon warnings in ssot.tuya-smart-plug.yml. Bloat still needs work: ssot.registry.yml, ssot.mcp-debug.yml,
+        ssot.mcp-debug.baselines.yml, ssot.focus.current.yml.'
     - label: Wire bloat and isolation checks into ssot-validate or pre-commit
       status: not_started
     - label: Re-run validation and commit results
