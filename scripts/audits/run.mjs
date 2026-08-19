@@ -22,17 +22,16 @@ function loadAuditSSOT() {
 
 function getAudits(full = false) {
   const doc = loadAuditSSOT();
-  const audits = (doc.audits || []).map((a) => ({
+  const allAudits = (doc.audits || []).map((a) => ({
     name: a.name,
     command: a.command,
     args: a.args || [],
     script: a.script,
   }));
-  if (!full) {
-    // Monthly/privileged audits are only included in --full mode.
-    return audits.filter((a) => a.name !== 'security-audit');
-  }
-  return audits;
+  const runs = full
+    ? (doc.schedule?.full?.runs || allAudits.map((a) => a.name))
+    : (doc.schedule?.default?.runs || allAudits.filter((a) => a.name !== 'security-audit').map((a) => a.name));
+  return allAudits.filter((a) => runs.includes(a.name));
 }
 
 function runOne(audit) {

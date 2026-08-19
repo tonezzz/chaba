@@ -77,6 +77,33 @@ automation:
       - configurations (Docker Compose, environment files, SSOT, systemd)
       - documentation (docs directory)
 
+  backup_monitor:
+    script: scripts/backup-monitor.sh
+    schedule: hourly
+    log_file: /var/log/chaba-backup-monitor.log
+    checks:
+      - backup freshness (36-hour threshold)
+      - backup size (10MB minimum)
+      - backup integrity (gzip verification)
+      - backup completeness
+      - backup rotation
+      - backup failures
+      - disk space
+
+  backup_restoration:
+    script: scripts/restore-manager.sh
+    features:
+      - selective restoration (database, volumes, configs)
+      - restoration verification
+      - user confirmation prompts
+      - safe restoration procedures
+    systemd_services:
+      - chaba-backup.service
+      - chaba-backup.timer
+      - chaba-backup-monitor.service
+      - chaba-backup-monitor.timer
+    status: active (2026-08-13)
+
   audit_suite:
     ssot: docs/ssot/infrastructure/ssot.audit.yml
     runner: scripts/audits/run.mjs
@@ -87,31 +114,6 @@ automation:
     log_file: logs/audit-suite.log
     report_dir: reports/audits
     status: active (2026-08-19)
-    monitoring:
-      script: scripts/backup-monitor.sh
-      schedule: hourly
-      log_file: /var/log/chaba-backup-monitor.log
-      checks:
-        - backup freshness (36-hour threshold)
-        - backup size (10MB minimum)
-        - backup integrity (gzip verification)
-        - backup completeness
-        - backup rotation
-        - backup failures
-        - disk space
-    restoration:
-      script: scripts/restore-manager.sh
-      features:
-        - selective restoration (database, volumes, configs)
-        - restoration verification
-        - user confirmation prompts
-        - safe restoration procedures
-    systemd_services:
-      - chaba-backup.service
-      - chaba-backup.timer
-      - chaba-backup-monitor.service
-      - chaba-backup-monitor.timer
-    status: active (2026-08-13)
 
 monitoring:
   gpu:

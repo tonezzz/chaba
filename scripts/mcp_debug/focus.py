@@ -930,6 +930,14 @@ def mcp_focus(request=None, mode="recommend", decision=None, summary=None, resum
         if not next_candidates:
             return {"ok": True, "next": None, "reason": "No parked or deferred foci to process."}
         chosen = next_candidates[0]
+        score = triage_score(chosen)
+        chosen["confidence_score"] = round(score / 10, 2)
+        if score >= 7:
+            confidence_level = "high"
+        elif score >= 4:
+            confidence_level = "medium"
+        else:
+            confidence_level = "low"
         activated = _activate_candidate(chosen)
         if not activated:
             return {"ok": False, "error": f"Could not activate {chosen.get('label')} because another focus is active", "next": chosen}
@@ -948,7 +956,8 @@ def mcp_focus(request=None, mode="recommend", decision=None, summary=None, resum
             "recommendation": {
                 "action": "next",
                 "target": chosen.get("label"),
-                "confidence": "medium",
+                "confidence": confidence_level,
+                "confidence_score": chosen["confidence_score"],
                 "reasoning": f"Activated the highest-priority parked/deferred focus: {chosen.get('label')}.",
                 "next_prompt": f"Start working on {chosen.get('label')} or defer it to a session.",
             },

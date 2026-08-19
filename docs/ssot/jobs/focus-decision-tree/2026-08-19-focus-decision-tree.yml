@@ -1,0 +1,76 @@
+title: Focus Decision Tree Simplification
+subtitle: Phase 5 of the Context Improvement Plan — add confidence thresholds to mcp_focus next
+icon: target
+
+planning:
+  goal: |
+    Simplify the focus decision tree to 4 primary paths and make mcp_focus next return
+    a confidence score and level.
+  scope: |
+    - Add confidence computation to mcp_debug/focus.py next() based on triage_score.
+    - Return high/medium/low confidence and a 0-1 score in the next output.
+  success_criteria:
+    - mcp_focus mode=next returns confidence_score and confidence.
+    - High confidence means triage_score >= 7, medium >= 4, else low.
+    - mcp_debug/focus.py passes py_compile.
+  risks:
+    - Existing consumers expect string confidence; mitigate by keeping the string and adding score.
+  resources:
+    - scripts/mcp_debug/focus.py
+    - scripts/focus_common.py
+    - docs/ssot/infrastructure/ssot.focus.triage.yml
+  owner: tony
+  estimated_duration: 1 session
+  related_focus:
+    - label: Context improvement and optimization
+      file: docs/ssot/ssot.focus.current.yml
+
+processing:
+  status: completed
+  completed_at: '2026-08-19'
+  steps:
+    - id: 1
+      label: Add confidence computation to mcp_focus next
+      status: completed
+      completed_at: '2026-08-19'
+    - id: 2
+      label: Validate mcp_debug/focus.py still compiles and status works
+      status: completed
+      completed_at: '2026-08-19'
+  decisions:
+    - Keep confidence as a string (high/medium/low) and add confidence_score (0.0-1.0).
+  changes:
+    - scripts/mcp_debug/focus.py: computes triage_score based confidence and injects it into next output.
+
+followup:
+  verification:
+    - Run mcp_focus status and mcp_focus next (or safe_next/ready_queue) and verify no errors.
+    - Run py_compile on mcp_debug/focus.py.
+  rollback_plan:
+    - Revert mcp_debug/focus.py.
+  handoff:
+    - chaba overnight review
+  deferred:
+    - Future work: reduce decision tree to 4 explicit paths in mcp_debug/focus.py and focus_dispatcher.
+
+report:
+  status: completed
+  completed_at: '2026-08-19'
+  summary: Added confidence_score and high/medium/low confidence to mcp_focus next output.
+  metrics:
+    - confidence_added: 1
+  links:
+    - title: mcp_debug focus
+      file: scripts/mcp_debug/focus.py
+    - title: Focus triage
+      file: docs/ssot/infrastructure/ssot.focus.triage.yml
+  kb_review: []
+  lessons_learned: []
+
+config:
+  version: 1
+  created_at: '2026-08-19'
+  last_updated: '2026-08-19'
+  maintainer: tony
+  related_files:
+    - docs/ssot/templates/job.yml
