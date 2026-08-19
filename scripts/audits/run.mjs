@@ -4,20 +4,18 @@
  * Reads the audit list from docs/ssot/infrastructure/ssot.audit.yml,
  * runs each audit, and produces a normalized summary report.
  */
-import { spawn, execSync } from 'child_process';
-import { writeFileSync, mkdirSync } from 'fs';
+import { spawn } from 'child_process';
+import { writeFileSync, readFileSync, mkdirSync } from 'fs';
 import { join } from 'path';
+import yaml from 'js-yaml';
 
 const PROJECT_ROOT = '/home/tony/CascadeProjects/chaba';
 const REPORTS_DIR = join(PROJECT_ROOT, 'reports', 'audits');
 const SSOT_FILE = join(PROJECT_ROOT, 'docs', 'ssot', 'infrastructure', 'ssot.audit.yml');
 
 function loadAuditSSOT() {
-  const out = execSync(
-    `python3 -c "import yaml, json; print(json.dumps(yaml.safe_load(open('${SSOT_FILE}'))))"`,
-    { encoding: 'utf8' }
-  );
-  return JSON.parse(out);
+  const text = readFileSync(SSOT_FILE, 'utf8');
+  return yaml.load(text);
 }
 
 function getAudits(full = false) {

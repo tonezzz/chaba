@@ -84,15 +84,13 @@ audits:
 
 plan:
   current_state:
-    - scripts/audits/run.mjs now supports --full to include the monthly security-audit
+    - scripts/audits/run.mjs now uses js-yaml and supports --full for the monthly security-audit
     - weekly chaba-audit.timer/service runs the default set (kb, ssot, security-scan)
-    - monthly full timer/service is not yet created
+    - monthly chaba-audit-full.timer/service runs the full set including security-audit
+    - timers are installed and enabled on tony-dell
   next_steps:
-    - test: node scripts/audits/run.mjs
-    - test: node scripts/audits/run.mjs --full
-    - create systemd/chaba-audit-full.timer and chaba-audit-full.service for monthly full runs
-    - register this file in docs/ssot/ssot.index.yml if not already present
-    - commit run.mjs and ssot.audit.yml when the plan is verified
+    - monitor first weekly and monthly runs
+    - consider adding KB entry docs/kb/audit-framework.md
 
 related_files:
   - scripts/audits/run.mjs
