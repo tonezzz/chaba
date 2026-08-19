@@ -1,13 +1,13 @@
 === SSOT Optimization Suggestions ===
 
-Generated: 2026-08-19T02:18:19.500Z
-Bloat warnings: 0
+Generated: 2026-08-19T05:00:41.538Z
+Bloat warnings: 1
 Data-isolation warnings: 0
 Other warnings: 4
 
 ## Bloat candidates (highest priority)
 
-No bloat warnings.
+- `ssot.focus.current.yml`: Bloat: 352 lines exceeds review threshold of 350
 
 ## Data isolation candidates
 
@@ -21,4 +21,4 @@ No data-isolation warnings.
 - `infrastructure/ssot.tuya-smart-plug.yml`: Section 3: Missing recommended field: icon
 
 ---
-_Report produced by scripts/ssot-optimize.mjs in 4848ms_
+_Report produced by scripts/ssot-optimize.mjs in 4961ms_
