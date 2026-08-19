@@ -2,7 +2,6 @@ title: MCP Debug
 subtitle: Multi-host compact debug output and remote execution
 icon: bug
 version: 1
-
 output_formats:
   table_commands:
     compact: csv_with_header
@@ -17,62 +16,153 @@ output_formats:
         duration_ms: float
         cache_age_ms: integer
     notes:
-      - The CORS endpoint /mcp-table.json returns the proxy_envelope JSON directly.
-      - A same-origin PHP proxy (api/mcp-table.php) is used for HTTPS sites.
-      - Keep the existing keyed JSON compact format for non-table or hierarchical output.
+    - The CORS endpoint /mcp-table.json returns the proxy_envelope JSON directly.
+    - A same-origin PHP proxy (api/mcp-table.php) is used for HTTPS sites.
+    - Keep the existing keyed JSON compact format for non-table or hierarchical output.
   report:
     freshness:
       collected_at: ISO-8601 timestamp
       cache_age_ms: integer
       duration_ms: float
     notes:
-      - Only commands listed in table_schemas are rendered as tables.
+    - Only commands listed in table_schemas are rendered as tables.
   table_schemas:
     filesystems:
       array_key: fs
-      headers: [Filesystem, Size, Used, Available, UsePercent, Mount]
-      fields: [f, s, u, a, m, p]
+      headers:
+      - Filesystem
+      - Size
+      - Used
+      - Available
+      - UsePercent
+      - Mount
+      fields:
+      - f
+      - s
+      - u
+      - a
+      - m
+      - p
     processes:
       array_key: p
-      headers: [PID, Command, CPU, MEM]
-      fields: [p, c, u, m]
+      headers:
+      - PID
+      - Command
+      - CPU
+      - MEM
+      fields:
+      - p
+      - c
+      - u
+      - m
     process_cpu:
       array_key: p
-      headers: [PID, PPID, Command, CPU]
-      fields: [p, pp, c, u]
+      headers:
+      - PID
+      - PPID
+      - Command
+      - CPU
+      fields:
+      - p
+      - pp
+      - c
+      - u
     process_mem:
       array_key: p
-      headers: [PID, PPID, Command, MEM]
-      fields: [p, pp, c, m]
+      headers:
+      - PID
+      - PPID
+      - Command
+      - MEM
+      fields:
+      - p
+      - pp
+      - c
+      - m
     mounts:
       array_key: m
-      headers: [Device, Path, Type, Options]
-      fields: [d, p, t, o]
+      headers:
+      - Device
+      - Path
+      - Type
+      - Options
+      fields:
+      - d
+      - p
+      - t
+      - o
     block_devices:
       array_key: d
-      headers: [Name, Size, FSType, Type, Mount]
-      fields: [n, s, f, t, m]
+      headers:
+      - Name
+      - Size
+      - FSType
+      - Type
+      - Mount
+      fields:
+      - n
+      - s
+      - f
+      - t
+      - m
     usb_devices:
       array_key: u
-      headers: [Bus, Device, ID, Name]
-      fields: [b, d, i, n]
+      headers:
+      - Bus
+      - Device
+      - ID
+      - Name
+      fields:
+      - b
+      - d
+      - i
+      - n
     interfaces:
       array_key: i
-      headers: [Interface, State, Address]
-      fields: [i, s, a]
+      headers:
+      - Interface
+      - State
+      - Address
+      fields:
+      - i
+      - s
+      - a
     routes:
       array_key: r
-      headers: [Destination, Gateway, Interface]
-      fields: [d, g, i]
+      headers:
+      - Destination
+      - Gateway
+      - Interface
+      fields:
+      - d
+      - g
+      - i
     tailscale:
       array_key: p
-      headers: [IP, Host, User, OS_State]
-      fields: [i, h, u, o]
+      headers:
+      - IP
+      - Host
+      - User
+      - OS_State
+      fields:
+      - i
+      - h
+      - u
+      - o
     systemd_units:
       array_key: u
-      headers: [Unit, Load, State, Active, Description]
-      fields: [u, l, s, a, d]
-
+      headers:
+      - Unit
+      - Load
+      - State
+      - Active
+      - Description
+      fields:
+      - u
+      - l
+      - s
+      - a
+      - d
 hosts:
   tony_omen:
     name: Tony Omen
@@ -82,7 +172,11 @@ hosts:
     ssh_user: tony
     mcp_debug_path: /home/tony/.local/bin/mcp-debug
     clipboard: false
-    tags: [primary, server, headless, fallback]
+    tags:
+    - primary
+    - server
+    - headless
+    - fallback
     note: Use the Tailscale IP because 'tony-omen' resolves to the unreachable 192.168.1.48 on tony-dell.
   tony_dell:
     name: Tony Dell
@@ -91,7 +185,11 @@ hosts:
     hostname: tony-dell
     ssh_user: tony
     mcp_debug_path: /home/tony/.local/bin/mcp-debug
-    tags: [secondary, testing, headless, primary]
+    tags:
+    - secondary
+    - testing
+    - headless
+    - primary
   macbook:
     name: MacBook Pro
     description: macOS / iOS verification workstation
@@ -101,7 +199,11 @@ hosts:
     mcp_debug_path: /Users/kkkakk/.local/bin/mcp-debug
     compact: true
     clipboard: true
-    tags: [macos, ios, verify, xcode]
+    tags:
+    - macos
+    - ios
+    - verify
+    - xcode
     note: Maps to kk-macbook. mcp-debug-macos is installed for df -h, ps, uptime, and mount.
   kk-macbook:
     name: KK MacBook Pro
@@ -113,7 +215,11 @@ hosts:
     compact: false
     clipboard: true
     capture: false
-    tags: [macos, ios, verify, xcode]
+    tags:
+    - macos
+    - ios
+    - verify
+    - xcode
     note: Alias for the same macOS host; capture tools use the same screencapture/osascript path as macbook.
 debug_commands:
   systemctl list-units:
@@ -128,7 +234,7 @@ debug_commands:
     description: Top 20 processes by CPU
     compact: true
     expected_output: processes
-    raw_command: 'ps aux'
+    raw_command: ps aux
   ps -eo pid,ppid,cmd,%cpu --sort=-%cpu:
     description: Top processes by CPU
     compact: true
@@ -153,12 +259,12 @@ debug_commands:
     description: Block devices
     compact: true
     expected_output: block_devices
-    raw_command: 'lsblk -O'
+    raw_command: lsblk -O
   lsusb:
     description: USB devices
     compact: true
     expected_output: usb_devices
-    raw_command: 'lsusb -v'
+    raw_command: lsusb -v
   tailscale status:
     description: Tailscale network status
     compact: true
@@ -175,18 +281,18 @@ debug_commands:
     description: Interface IPv4 addresses
     compact: true
     expected_output: interfaces
-    raw_command: 'ip -4 addr show'
+    raw_command: ip -4 addr show
   podman info --format json:
     description: Podman runtime, store, and graph driver info as JSON
     compact: true
     expected_output: json
-    raw_command: 'podman info'
+    raw_command: podman info
     note: Vetted positive on both tony_omen (51.5%) and tony_dell (51.6%).
   podman image ls --format json:
     description: Podman image list as compact JSON
     compact: true
     expected_output: json
-    raw_command: 'podman image ls -a'
+    raw_command: podman image ls -a
     note: Vetted positive on both tony_omen (48.7%) and tony_dell (78.5%).
   top -l 1 -n 10 -o cpu:
     description: macOS top 10 processes by CPU
@@ -197,7 +303,7 @@ debug_commands:
     description: TCP sockets and network connections
     compact: true
     expected_output: lsof_tcp
-    raw_command: 'lsof -nP'
+    raw_command: lsof -nP
     note: Works on Linux and macOS; raw uses 'lsof -nP' to include UDP as a larger baseline.
   launchctl list:
     description: macOS launchd loaded services
@@ -208,26 +314,29 @@ debug_commands:
     description: Running containers from podman or docker
     compact: true
     expected_output: containers
-    note: 'Abstract command; mcp-debug auto-detects podman then docker. raw_command uses the same order.'
-    raw_command: 'podman ps --format json 2>/dev/null || docker ps --format json'
+    note: Abstract command; mcp-debug auto-detects podman then docker. raw_command uses the same order.
+    raw_command: podman ps --format json 2>/dev/null || docker ps --format json
   services:
     description: Running system services
     compact: true
     expected_output: services
-    note: 'Abstract command; mcp-debug uses systemctl on Linux and launchctl on macOS. raw_command tries launchctl first, then systemctl.'
-    raw_command: 'launchctl list 2>/dev/null || systemctl list-units --type=service --state=running --no-pager --no-legend --plain'
+    note: Abstract command; mcp-debug uses systemctl on Linux and launchctl on macOS. raw_command tries launchctl first, then
+      systemctl.
+    raw_command: launchctl list 2>/dev/null || systemctl list-units --type=service --state=running --no-pager --no-legend
+      --plain
   sockets:
     description: Listening TCP sockets
     compact: true
     expected_output: sockets
-    note: 'Abstract command; mcp-debug tries ss, then lsof, then netstat. raw_command uses the same order.'
-    raw_command: 'ss -tlnp 2>/dev/null || lsof -nP -iTCP -sTCP:LISTEN 2>/dev/null || netstat -an'
+    note: Abstract command; mcp-debug tries ss, then lsof, then netstat. raw_command uses the same order.
+    raw_command: ss -tlnp 2>/dev/null || lsof -nP -iTCP -sTCP:LISTEN 2>/dev/null || netstat -an
   gpu:
     description: GPU utilization and memory
     compact: true
     expected_output: gpu
-    note: 'Abstract command; mcp-debug uses nvidia-smi --query-gpu. raw_command uses full nvidia-smi or rocm-smi --json to provide a larger raw baseline.'
-    raw_command: 'nvidia-smi 2>/dev/null || rocm-smi --json'
+    note: Abstract command; mcp-debug uses nvidia-smi --query-gpu. raw_command uses full nvidia-smi or rocm-smi --json to
+      provide a larger raw baseline.
+    raw_command: nvidia-smi 2>/dev/null || rocm-smi --json
 raw_commands:
   allowed_prefixes:
   - systemctl
@@ -428,31 +537,31 @@ server:
   - mcp_context
   - mcp_session_summary
   - mcp_preprocess
-
 tool_selection:
-  description: |
-    The SSOT query and context tools are arranged from the most precise to the
-    broadest. Use the smallest tool that can answer the question.
-  hierarchy:
-    - tool: mcp_query_ssot
-      for: one precise value or list at a dotted path in a known or discovered SSOT file
-      example: path=docs/ssot/infrastructure/ssot.values.yml, key=ports.mcp_debug_cors
-    - tool: mcp_mddb_doc
-      for: full content of the most relevant SSOT document discovered by MDDB or keywords
-      example: query="audit framework"
-    - tool: mcp_read_ssot
-      for: bounded direct read of a known SSOT file
-      example: path=docs/ssot/infrastructure/ssot.mcp-debug.yml, limit=5000
-    - tool: mcp_search_ssot
-      for: search results/excerpts only, not full content
-      example: query="focus decision tree"
-    - tool: mcp_context
-      for: curated set of KB/SSOT documents relevant to the active focus and an optional query
-      example: query="audit"
-    - tool: mcp_preprocess
-      for: grounding an ambiguous request in active focus and returning a structured prompt
-      example: request="continue"
+  description: 'The SSOT query and context tools are arranged from the most precise to the
 
+    broadest. Use the smallest tool that can answer the question.
+
+    '
+  hierarchy:
+  - tool: mcp_query_ssot
+    for: one precise value or list at a dotted path in a known or discovered SSOT file
+    example: path=docs/ssot/infrastructure/ssot.values.yml, key=ports.mcp_debug_cors
+  - tool: mcp_mddb_doc
+    for: full content of the most relevant SSOT document discovered by MDDB or keywords
+    example: query="audit framework"
+  - tool: mcp_read_ssot
+    for: bounded direct read of a known SSOT file
+    example: path=docs/ssot/infrastructure/ssot.mcp-debug.yml, limit=5000
+  - tool: mcp_search_ssot
+    for: search results/excerpts only, not full content
+    example: query="focus decision tree"
+  - tool: mcp_context
+    for: curated set of KB/SSOT documents relevant to the active focus and an optional query
+    example: query="audit"
+  - tool: mcp_preprocess
+    for: grounding an ambiguous request in active focus and returning a structured prompt
+    example: request="continue"
 phases:
 - id: 1
   name: SSOT and spec
@@ -465,8 +574,7 @@ phases:
 - id: 3
   name: Build host-aware mcp-debug-server
   status: completed
-  notes: /home/tony/CascadeProjects/chaba/scripts/mcp-debug-server.py with mcp_debug
-    and mcp_raw
+  notes: /home/tony/CascadeProjects/chaba/scripts/mcp-debug-server.py with mcp_debug and mcp_raw
 - id: 4
   name: Register in Devin/Windsurf MCP
   status: completed
@@ -482,8 +590,7 @@ phases:
 suggested_extensions:
 - id: stats
   name: mcp_stats tool
-  description: Measure raw vs compact word/char savings for candidate commands on
-    both hosts before adding them.
+  description: Measure raw vs compact word/char savings for candidate commands on both hosts before adding them.
   priority: high
   status: completed
 - id: host-identity
@@ -493,8 +600,7 @@ suggested_extensions:
   status: completed
 - id: ps-bound
   name: Bounded ps output
-  description: Replace full ps with "ps top-cpu" and "ps top-mem" returning top 20
-    processes by CPU or memory.
+  description: Replace full ps with "ps top-cpu" and "ps top-mem" returning top 20 processes by CPU or memory.
   priority: high
   status: completed
 - id: memory
@@ -522,256 +628,59 @@ suggested_extensions:
   description: Allow different raw command prefixes per host based on capabilities.
   priority: low
   status: in_progress
-  notes: macbook added with compact=false; global raw allowlist now accepts macOS
-    commands (vm_stat, launchctl, diskutil, etc.).
+  notes: macbook added with compact=false; global raw allowlist now accepts macOS commands (vm_stat, launchctl, diskutil,
+    etc.).
 - id: ssot-editing
   name: SSOT append-only editing tools
-  description: 'mcp_read_ssot, mcp_search_ssot, and mcp_ssot_append. Read/search
-    are operational; mcp_ssot_append is append-only and scoped to whitelisted
-    list sections (quick_wins, request_log, subtasks, history, notes, items,
-    services). Use to keep SSOTs current without full-file edits in sub-agents.'
+  description: mcp_read_ssot, mcp_search_ssot, and mcp_ssot_append. Read/search are operational; mcp_ssot_append is append-only
+    and scoped to whitelisted list sections (quick_wins, request_log, subtasks, history, notes, items, services). Use to keep
+    SSOTs current without full-file edits in sub-agents.
   priority: medium
   status: in_progress
   notes: mcp_ssot_append exists; needs policy review before promotion to operational.
 - id: presets
   name: MCP Debug presets
-  description: 'Named, multi-step, multi-host diagnostic routines exposed via mcp_preset_list
-    and mcp_preset_run. First presets: quick-health, top-cpu-both, service-diff. New: mcp-savings-audit
-    preset, mcp_debug_audit single-call audit, and mcp_preset_savings scoring for message and payload savings.'
+  description: 'Named, multi-step, multi-host diagnostic routines exposed via mcp_preset_list and mcp_preset_run. First presets:
+    quick-health, top-cpu-both, service-diff. New: mcp-savings-audit preset, mcp_debug_audit single-call audit, and mcp_preset_savings
+    scoring for message and payload savings.'
   priority: high
   status: completed
   completed: '2026-08-18'
-  notes: 'Added mcp_debug_audit and mcp_preset_savings tools; mcp-savings-audit preset runs the audit as one preset call.'
-
+  notes: Added mcp_debug_audit and mcp_preset_savings tools; mcp-savings-audit preset runs the audit as one preset call.
 - id: containers
   name: Unified container list
-  description: 'One `containers` command that auto-detects podman then docker and returns a compact, runtime-labeled JSON list.'
+  description: One `containers` command that auto-detects podman then docker and returns a compact, runtime-labeled JSON list.
   priority: high
   status: completed
   completed: '2026-08-17'
-  notes: 'Implemented in scripts/mcp_debug/mcp-debug-macos and /home/tony/mcp-debug/mcp-debug.py; tested on tony-omen, tony-dell, and macbook.'
+  notes: Implemented in scripts/mcp_debug/mcp-debug-macos and /home/tony/mcp-debug/mcp-debug.py; tested on tony-omen, tony-dell,
+    and macbook.
 - id: services
   name: Unified service manager list
-  description: 'One `services` command that uses `systemctl list-units` on Linux and `launchctl list` on macOS, returning a compact, runtime-labeled list.'
+  description: One `services` command that uses `systemctl list-units` on Linux and `launchctl list` on macOS, returning a
+    compact, runtime-labeled list.
   priority: high
   status: completed
   completed: '2026-08-17'
-  notes: 'Implemented in both wrappers; tested on tony-omen and macbook.'
+  notes: Implemented in both wrappers; tested on tony-omen and macbook.
 - id: sockets
   name: Unified listening/open socket list
-  description: 'One `sockets` command that tries `ss -tlnp`, `netstat -an`, and `lsof -nP -iTCP` and returns a compact, runtime-labeled list.'
+  description: One `sockets` command that tries `ss -tlnp`, `netstat -an`, and `lsof -nP -iTCP` and returns a compact, runtime-labeled
+    list.
   priority: medium
   status: completed
   completed: '2026-08-17'
-  notes: 'Implemented in both wrappers; tony-omen uses ss, macbook uses lsof, netstat fallback available.'
+  notes: Implemented in both wrappers; tony-omen uses ss, macbook uses lsof, netstat fallback available.
 - id: gpu
   name: Unified GPU summary
-  description: 'One `gpu` command that tries `nvidia-smi` then `rocm-smi` and returns a compact, runtime-labeled summary.'
+  description: One `gpu` command that tries `nvidia-smi` then `rocm-smi` and returns a compact, runtime-labeled summary.
   priority: medium
   status: completed
   completed: '2026-08-17'
-  notes: 'Implemented in Linux wrapper using nvidia-smi; macOS has no GPU tool and returns ok:false.'
-
+  notes: Implemented in Linux wrapper using nvidia-smi; macOS has no GPU tool and returns ok:false.
 baselines_source: docs/ssot/infrastructure/ssot.mcp-debug.baselines.yml
-
 related_files:
 - docs/ssot/infrastructure/ssot.mcp-debug.baselines.yml
 - docs/ssot/infrastructure/ssot.mcp-debug.cors.yml
 - docs/ssot/infrastructure/ssot.mcp-debug.files.yml
 - docs/ssot/infrastructure/ssot.mcp-debug.reports.yml
-
-presets:
-  quick-health:
-    description: Service count and memory for both hosts
-    steps:
-    - host: tony_omen
-      tool: mcp_debug
-      command: systemctl list-units
-    - host: tony_dell
-      tool: mcp_debug
-      command: systemctl list-units
-    - host: tony_omen
-      tool: mcp_raw
-      command: free -h
-    - host: tony_dell
-      tool: mcp_raw
-      command: free -h
-  tony-omen-snapshot:
-    description: Fetch the latest tony-omen health snapshot
-    steps:
-    - host: tony_omen
-      tool: mcp_raw
-      command: cat /home/tony/var/chaba/health/tony-omen-snapshot.json
-  tony-dell-snapshot:
-    description: Fetch the latest tony-dell health agent snapshot and check its freshness
-    steps:
-    - host: tony_dell
-      tool: mcp_raw
-      command: systemctl --user start tony-dell-health-snapshot
-    - host: tony_dell
-      tool: mcp_raw
-      command: ls -l --time-style=full-iso /home/tony/var/chaba/health/tony-dell-snapshot.json
-    - host: tony_dell
-      tool: mcp_raw
-      command: cat /home/tony/var/chaba/health/tony-dell-snapshot.json
-  macbook-quick-look:
-    description: Basic macOS system state via raw commands
-    steps:
-    - host: macbook
-      tool: mcp_raw
-      command: sw_vers
-    - host: macbook
-      tool: mcp_raw
-      command: vm_stat
-    - host: macbook
-      tool: mcp_raw
-      command: launchctl list | head -20
-    - host: macbook
-      tool: mcp_raw
-      command: diskutil list
-  macbook-snapshot:
-    description: Refresh and show the latest macbook health snapshot
-    steps:
-    - host: macbook
-      tool: mcp_raw
-      command: launchctl start com.chaba.macbook-health
-    - host: macbook
-      tool: mcp_raw
-      command: cat /Users/kkkakk/var/chaba/health/macbook-snapshot.json
-  top-cpu-both:
-    description: Top 20 processes by CPU on both Linux hosts
-    steps:
-    - host: tony_omen
-      tool: mcp_debug
-      command: ps -eo pid,ppid,cmd,%cpu --sort=-%cpu
-    - host: tony_dell
-      tool: mcp_debug
-      command: ps -eo pid,ppid,cmd,%cpu --sort=-%cpu
-  top-mem-both:
-    description: Top 20 processes by memory on both Linux hosts
-    steps:
-    - host: tony_omen
-      tool: mcp_debug
-      command: ps -eo pid,ppid,cmd,%mem --sort=-%mem
-    - host: tony_dell
-      tool: mcp_debug
-      command: ps -eo pid,ppid,cmd,%mem --sort=-%mem
-  all-snapshots:
-    description: Refresh and show health snapshots for all hosts
-    steps:
-    - host: tony_omen
-      tool: mcp_raw
-      command: cat /home/tony/var/chaba/health/tony-omen-snapshot.json
-    - host: tony_dell
-      tool: mcp_raw
-      command: systemctl --user start tony-dell-health-snapshot
-    - host: tony_dell
-      tool: mcp_raw
-      command: cat /home/tony/var/chaba/health/tony-dell-snapshot.json
-    - host: macbook
-      tool: mcp_raw
-      command: launchctl start com.chaba.macbook-health
-    - host: macbook
-      tool: mcp_raw
-      command: cat /Users/kkkakk/var/chaba/health/macbook-snapshot.json
-  macbook-network:
-    description: Listening ports on macOS
-    steps:
-    - host: macbook
-      tool: mcp_raw
-      command: lsof -i -P -n | grep LISTEN
-  macbook-disks:
-    description: Disk layout on macOS
-    steps:
-    - host: macbook
-      tool: mcp_raw
-      command: diskutil list
-  quick-network:
-    description: Listening TCP sockets and IPv4 routing on both Linux hosts
-    steps:
-    - host: tony_omen
-      tool: mcp_debug
-      command: ss -tlnp
-    - host: tony_dell
-      tool: mcp_debug
-      command: ss -tlnp
-    - host: tony_omen
-      tool: mcp_debug
-      command: ip -4 route
-    - host: tony_dell
-      tool: mcp_debug
-      command: ip -4 route
-  service-diff:
-    description: Diff running systemd units between tony-omen and tony-dell
-    steps:
-    - tool: mcp_diff
-      command: systemctl list-units
-      hosts:
-      - tony_omen
-      - tony_dell
-      compact: true
-  podman-info-both:
-    description: Podman runtime info on both hosts
-    steps:
-    - host: tony_omen
-      tool: mcp_debug
-      command: podman info --format json
-    - host: tony_dell
-      tool: mcp_debug
-      command: podman info --format json
-  podman-images-both:
-    description: Podman image inventory on both hosts
-    steps:
-    - host: tony_omen
-      tool: mcp_debug
-      command: podman image ls --format json
-    - host: tony_dell
-      tool: mcp_debug
-      command: podman image ls --format json
-  tony-omen-podman:
-    description: Podman state on tony-omen
-    steps:
-    - host: tony_omen
-      tool: mcp_raw
-      command: podman ps
-    - host: tony_omen
-      tool: mcp_debug
-      command: podman image ls --format json
-  tony-dell-podman:
-    description: Rootless podman container state on tony-dell
-    steps:
-    - host: tony_dell
-      tool: mcp_raw
-      command: podman ps
-    - host: tony_dell
-      tool: mcp_raw
-      command: podman ps -a
-    - host: tony_dell
-      tool: mcp_raw
-      command: systemctl --user list-units 'redis*' 'mddb*' 'yomi*' 'chaba*'
-  tony-omen-docker:
-    description: Docker container state on tony-omen
-    steps:
-    - host: tony_omen
-      tool: mcp_raw
-      command: docker ps
-    - host: tony_omen
-      tool: mcp_raw
-      command: docker ps -a
-  migrated-services-check:
-    description: Verify redis, mddb, mddb-panel, and weaviate endpoints after migration
-    steps:
-    - host: tony_dell
-      tool: mcp_raw
-      command: systemctl --user status redis.service mddb.service mddb-panel.service yomi-api.service
-    - host: tony_dell
-      tool: mcp_raw
-      command: ss -tlnp | grep -E ':(6379|11023|3002|3000|5432)'
-    - host: tony_omen
-      tool: mcp_raw
-      command: curl -s --max-time 5 'http://tony-dell:11023/api/health'
-  mcp-savings-audit:
-    description: Filter the live savings report for negative and failed commands
-    steps:
-    - tool: mcp_debug_audit
-      threshold: 0.0

@@ -285,7 +285,8 @@ sections:
       redundant and obsolete entries, standardize consistency, and wire all checks into ssot-validate and .githooks/pre-commit.
     branch: chaba
     priority: medium
-    status: active
+    status: completed
+    completed_at: '2026-08-19'
     tags:
     - ssot
     - optimization
@@ -311,11 +312,13 @@ sections:
       note: 'Identified: ssot.registry.yml hard threshold 1882, ssot.mcp-debug.yml hard threshold 778, ssot.mcp-debug.baselines.yml
         review 727, ssot.focus.current.yml review 420. ssot.tuya-smart-plug.yml missing icons.'
     - label: Apply cleanups or splits to reduce bloat
-      status: in_progress
-      started_at: '2026-08-19'
-      note: 'Split ssot.registry.yml into 9 per-type partition files; registry no longer a hard bloat. Tuya icons fixed. Remaining hard bloat: ssot.mcp-debug.yml (778) and ssot.mcp-debug.baselines.yml (727). Review bloat: ssot.focus.current.yml (393), ssot.registry.script.yml (514), ssot.registry.ssot-core.yml (411). Next: mcp-debug split.'
+      status: completed
+      completed_at: '2026-08-19'
+      note: 'Split ssot.registry.yml and script registry; moved mcp-debug baselines to data; removed mcp-debug presets to a separate file. ssot-validate now reports 0 errors and 1 bloat warning (ssot.focus.current.yml 392). Only review threshold remaining.'
     - label: Wire bloat and isolation checks into ssot-validate or pre-commit
-      status: not_started
+      status: completed
+      completed_at: '2026-08-19'
+      note: 'scripts/ssot-validate-all.mjs reports bloat warnings. scripts/ssot-optimize.mjs reports bloat and data-isolation candidates.'
     - label: Re-run validation and commit results
       status: not_started
     started: '2026-08-19'
