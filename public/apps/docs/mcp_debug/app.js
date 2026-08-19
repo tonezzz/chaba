@@ -230,6 +230,60 @@ function renderAudit(data) {
   el.innerHTML = html;
 }
 
+function renderStatusBreakdown(data) {
+  const el = document.getElementById('status-breakdown');
+  if (!data || !data.hosts) { el.innerHTML = ''; return; }
+  const counts = { recommended: 0, negative: 0, failed: 0 };
+  for (const [host, hdata] of Object.entries(data.hosts)) {
+    for (const c of Object.values(hdata.commands || {})) {
+      const st = commandStatus(c);
+      if (st.text === 'failed') counts.failed++;
+      else if (st.text === 'negative') counts.negative++;
+      else counts.recommended++;
+    }
+  }
+  const total = counts.recommended + counts.negative + counts.failed;
+  const chips = [
+    { label: 'Recommended', value: counts.recommended, color: '#dcfce7', text: '#166534' },
+    { label: 'Negative savings', value: counts.negative, color: '#fef3c7', text: '#92400e' },
+    { label: 'Failed', value: counts.failed, color: '#fee2e2', text: '#991b1b' },
+    { label: 'Total commands', value: total, color: '#e0f2fe', text: '#0c4a6e' }
+  ];
+  el.innerHTML = chips.map(c => `
+    <div class="status-chip">
+      <div class="summary-value" style="background:${c.color}; color:${c.text}; border-radius:9999px; padding:0.25rem 0.75rem; display:inline-block;">${c.value}</div>
+      <div class="summary-label mt-1">${c.label}</div>
+    </div>
+  `).join('');
+}
+
+function renderTopCommands(data) {
+  const el = document.getElementById('top-commands');
+  if (!data || !data.hosts) { el.innerHTML = ''; return; }
+  const topN = 10;
+  let html = '<h2 class="text-xl font-semibold mt-6 mb-2">Top commands by character savings</h2>';
+  html += '<p class="text-sm text-gray-500 mb-3">The 10 commands with the largest positive character savings on each host.</p>';
+  const hosts = Object.entries(data.hosts).sort(([a], [b]) => a.localeCompare(b));
+  for (const [host, hdata] of hosts) {
+    const commands = Object.values(hdata.commands || {})
+      .filter(c => (c.savings_pct_chars || 0) > 0)
+      .sort((a, b) => (b.savings_pct_chars || 0) - (a.savings_pct_chars || 0))
+      .slice(0, topN);
+    if (!commands.length) continue;
+    html += `<h3 class="text-lg font-semibold mt-4 mb-2">${host}</h3>`;
+    for (const c of commands) {
+      const width = Math.min(100, Math.max(0, c.savings_pct_chars || 0));
+      const color = width > 70 ? '#16a34a' : '#0a84ff';
+      html += `<div class="preset-row">
+        <div class="w-64 text-sm truncate" title="${escapeHtml(c.command)}">${escapeHtml(c.command)}</div>
+        <div class="preset-bar"><div class="preset-fill" style="width:${width}%; background:${color};"></div></div>
+        <div class="w-16 text-right text-sm font-mono">${width.toFixed(1)}%</div>
+      </div>`;
+    }
+  }
+  el.innerHTML = html || '<p class="text-sm text-gray-500">No positive savings to show.</p>';
+}
+
 function renderRawAllowed(rawAllowed) {
   if (!rawAllowed || !rawAllowed.length) return '';
   const byCat = {};
@@ -297,25 +351,32 @@ function renderWhatsNew(current, previous) {
 
 function renderCommandTables(data, filter = '') {
   const report = document.getElementById('report');
-  if (!data || !data.hosts) return;
+  const searchMeta = document.getElementById('search-meta');
+  if (!data || !data.hosts) { report.innerHTML = ''; return; }
   const lower = filter.toLowerCase();
   const hosts = Object.entries(data.hosts).sort(([a], [b]) => a.localeCompare(b));
   let html = '';
+  let total = 0, shown = 0;
   for (const [host, hdata] of hosts) {
-    const commands = Object.values(hdata.commands || {})
+    const allCommands = Object.values(hdata.commands || {});
+    const commands = allCommands
       .filter(c => !lower || (c.command || '').toLowerCase().includes(lower))
       .sort((a, b) => (b.savings_pct_chars || 0) - (a.savings_pct_chars || 0));
+    total += allCommands.length;
+    shown += commands.length;
     if (filter && !commands.length) continue;
     html += `<h2 class="text-xl font-semibold mt-8 mb-2 flex items-center gap-2">
       <span class="w-3 h-3 rounded-full" style="background:#22c55e"></span>${host}
     </h2>`;
     html += '<table><thead><tr>';
-    html += '<th>Command</th><th>Status</th><th>Raw chars</th><th>Compact chars</th><th>Saved chars</th><th>Tokens saved</th><th>Char %</th><th>Word %</th><th>Action</th>';
+    html += '<th>Command</th><th>Status</th><th>Raw chars</th><th>Compact chars</th><th>Saved chars</th><th>Tokens saved</th><th style="min-width:160px">Savings</th><th>Word %</th><th>Action</th>';
     html += '</tr></thead><tbody>';
     for (const c of commands) {
       const st = commandStatus(c);
       const savedNegative = (c.saved_chars || 0) < 0 ? 'negative' : '';
       const tokens = Math.round((c.saved_chars || 0) / 4);
+      const savingsWidth = Math.min(100, Math.max(0, c.savings_pct_chars || 0));
+      const savingsColor = c.savings_pct_chars < 0 ? '#dc2626' : savingsWidth > 70 ? '#16a34a' : '#0a84ff';
       html += `<tr data-host="${host}" data-command="${escapeHtml(c.command)}">
         <td>${escapeHtml(c.command)}</td>
         <td><span class="badge ${st.cls}">${st.text}</span></td>
@@ -323,7 +384,7 @@ function renderCommandTables(data, filter = '') {
         <td>${formatNumber(c.compact_chars)}</td>
         <td class="${savedNegative}">${formatNumber(c.saved_chars)}</td>
         <td class="${savedNegative}">${formatNumber(tokens)}</td>
-        <td class="${(c.savings_pct_chars || 0) < 0 ? 'negative' : ''}">${(c.savings_pct_chars || 0).toFixed(1)}%</td>
+        <td><div class="flex items-center gap-2"><div class="savings-bar"><div class="savings-fill" style="width:${savingsWidth}%; background:${savingsColor};"></div></div><span class="${(c.savings_pct_chars || 0) < 0 ? 'negative' : ''}">${(c.savings_pct_chars || 0).toFixed(1)}%</span></div></td>
         <td>${(c.savings_pct || 0).toFixed(1)}%</td>
         <td><button class="text-sm text-blue-600 hover:underline detail-btn" data-host="${host}" data-command="${escapeHtml(c.command)}">Detail</button></td>
       </tr>`;
@@ -341,12 +402,18 @@ function renderCommandTables(data, filter = '') {
     const command = e.target.dataset.command;
     loadTable(host, command);
   }));
+  searchMeta.classList.remove('hidden');
+  searchMeta.textContent = filter
+    ? `Showing ${shown} of ${total} commands matching "${escapeHtml(filter)}"`
+    : `Showing ${shown} commands`;
 }
 
 function renderReport(data) {
   renderSummary(data);
+  renderStatusBreakdown(data);
   renderWhatsNew(data, previousReportData);
   renderAudit(data);
+  renderTopCommands(data);
   renderCommandTables(data, document.getElementById('command-search').value);
 }
 

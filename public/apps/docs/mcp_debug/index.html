@@ -32,10 +32,17 @@
     .diff-panel { background: #f0fdf4; border: 1px solid #86efac; border-radius: 0.5rem; padding: 1rem; margin: 1rem 0; }
     .diff-removed { text-decoration: line-through; color: #ef4444; }
     .diff-added { color: #16a34a; font-weight: 600; }
-    .search-bar { width: 100%; padding: 0.5rem 0.75rem; border: 1px solid #d1d5db; border-radius: 0.375rem; margin-bottom: 1rem; }
+    .search-bar { width: 100%; padding: 0.5rem 0.75rem; border: 1px solid #d1d5db; border-radius: 0.375rem; margin-bottom: 0.5rem; }
     .progress-bar { width: 100%; height: 0.5rem; background: #e5e7eb; border-radius: 0.25rem; overflow: hidden; margin: 0.5rem 0; }
     .progress-fill { height: 100%; background: #0a84ff; width: 0%; transition: width 0.5s; }
     .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; z-index: 50; }
+    .howto { background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 0.5rem; padding: 1rem; }
+    .howto h2 { margin-top: 0; color: #1e3a8a; }
+    .howto code { background: #e0e7ff; padding: 0.1rem 0.25rem; border-radius: 0.2rem; font-size: 0.8rem; }
+    .status-chip { background: #fff; border: 1px solid #e2e8f0; border-radius: 0.5rem; padding: 0.75rem; text-align: center; }
+    .status-chip .summary-value { font-size: 1.25rem; }
+    .savings-bar { width: 6rem; height: 0.5rem; background: #e5e7eb; border-radius: 0.25rem; overflow: hidden; }
+    .savings-fill { height: 100%; border-radius: 0.25rem; }
     .modal { background: #fff; border-radius: 0.5rem; width: 90vw; max-width: 1200px; max-height: 90vh; overflow: auto; padding: 1rem; }
     .modal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
     .modal-pre { background: #f8fafc; border: 1px solid #e2e8f0; padding: 0.75rem; border-radius: 0.375rem; overflow: auto; font-size: 0.75rem; white-space: pre-wrap; }
@@ -72,13 +79,25 @@
       <p class="text-sm text-gray-600" id="progress-text">Warming live cache on tony-dell, this can take up to 5 minutes...</p>
       <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
     </div>
-    <p class="text-gray-500 text-sm mb-6">
-      The table uses a skeleton and in-place update, so the page does not blank out on refresh. Live data is proxied through <code>/api/mcp-savings.php</code> on chaba.h3, which fetches the tony-dell <code>mcp_debug.http_server</code> on the server side. This avoids the HTTPS mixed-content blocker. If the proxy or tony-dell is unreachable, the page falls back to the cached <code>data/mcp-savings.json</code> snapshot.
-    </p>
+    <div id="how-to" class="howto mb-6">
+      <h2 class="text-lg font-semibold mb-2">How to read this report</h2>
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm text-gray-700">
+        <div><strong>Raw chars</strong> — output size if run with <code>mcp_raw</code> (full shell output).</div>
+        <div><strong>Compact chars</strong> — output size after <code>mcp_debug</code> formatting (JSON or tables).</div>
+        <div><strong>Char %</strong> — character savings; green means compact is smaller, red means it grew.</div>
+        <div><strong>Word %</strong> — word/token savings; useful when the output is mostly text.</div>
+        <div><strong>Tokens saved</strong> — approximate LLM tokens (chars / 4) saved per command.</div>
+        <div><strong>Status</strong> — <span class="badge badge-recommended">recommended</span> smaller on every host, <span class="badge badge-warning">negative</span> if it grew, <span class="badge badge-failed">failed</span> if it errored.</div>
+      </div>
+      <p class="text-xs text-gray-500 mt-3">Live data is fetched directly from the tony-dell Tailscale Funnel endpoint. If tony-dell is unreachable, the page falls back to the cached <code>data/mcp-savings.json</code> snapshot.</p>
+    </div>
     <div id="summary" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 mb-6"></div>
+    <div id="status-breakdown" class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6"></div>
     <div id="whats-new" class="diff-panel hidden"></div>
     <div id="audit" class="audit-panel hidden"></div>
     <input id="command-search" class="search-bar" type="text" placeholder="Search commands..." />
+    <div id="search-meta" class="text-sm text-gray-500 mb-2 hidden"></div>
+    <div id="top-commands" class="mb-6"></div>
     <div id="report"></div>
   </main>
 
