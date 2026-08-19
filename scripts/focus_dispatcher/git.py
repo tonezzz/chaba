@@ -77,11 +77,24 @@ def _push_with_retry(repo, attempts=3):
     raise RuntimeError(f"git push failed after {attempts} attempts")
 
 
+def _resolve_autostash_conflicts(repo, dispatcher_relpaths):
+    unmerged = subprocess.run(
+        ["git", "diff", "--name-only", "--diff-filter=U"],
+        cwd=repo, capture_output=True, text=True, check=True
+    ).stdout.strip().splitlines()
+    for rel in unmerged:
+        if rel in dispatcher_relpaths:
+            raise RuntimeError(f"Dispatcher-owned file has unmerged changes after rebase: {rel}")
+        # Discard the autostash conflict for non-dispatcher files.
+        subprocess.run(["git", "checkout", "HEAD", "--", rel], cwd=repo, check=True)
+        subprocess.run(["git", "reset", "HEAD", "--", rel], cwd=repo, capture_output=True)
+
+
 def git_commit(changed_paths, message):
     if not changed_paths:
         return
     unique_paths = sorted(set(str(p) for p in changed_paths))
-    _pull_rebase(REPO)
+    unique_rel = {Path(p).relative_to(REPO).as_posix() for p in changed_paths}
     subprocess.run(["git", "add"] + unique_paths, cwd=REPO, check=True)
     staged = subprocess.run(
         ["git", "diff", "--cached", "--name-only"],
@@ -90,7 +103,15 @@ def git_commit(changed_paths, message):
     for name in staged:
         if not _is_allowed_staged_path(REPO / name):
             print(f"[focus-dispatcher] warning: unexpected staged file will not be committed: {name}", file=sys.stderr)
-    # Only commit the paths the dispatcher owns; leave any user-staged files staged.
-    subprocess.run(["git", "commit", "-m", message, "--"] + unique_paths, cwd=REPO, check=True)
-    if os.environ.get("FOCUS_DISPATCHER_PUSH") == "1":
-        _push_with_retry(REPO)
+    # Commit dispatcher-owned paths first so they are part of the rebase, not the autostash.
+    subprocess.run(["git", "commit", "-m", "focus-dispatcher temp", "--"] + unique_paths, cwd=REPO, check=True)
+    try:
+        _pull_rebase(REPO)
+        _resolve_autostash_conflicts(REPO, unique_rel)
+        subprocess.run(["git", "commit", "--amend", "-m", message, "--"] + unique_paths, cwd=REPO, check=True)
+        if os.environ.get("FOCUS_DISPATCHER_PUSH") == "1":
+            _push_with_retry(REPO)
+    except Exception:
+        # Undo the temporary commit and leave dispatcher-owned changes staged.
+        subprocess.run(["git", "reset", "--soft", "HEAD~1"], cwd=REPO, check=True)
+        raise
