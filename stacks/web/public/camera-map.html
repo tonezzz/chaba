@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cameras — HomeLab</title>
+    <title>Frigate Camera Map</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.17/dist/hls.min.js"></script>
     <script src="https://unpkg.com/leaflet-rotatedmarker@0.2.0/leaflet.rotatedMarker.js"></script>
@@ -14,6 +14,7 @@
         .camera-popup { min-width: 340px; }
         .camera-popup h3 { margin-bottom: 6px; font-size: 14px; }
         .camera-popup .meta { font-size: 12px; color: #888; margin-bottom: 8px; }
+        .camera-popup .coverage-tag { display: inline-block; background: #333; color: #ddd; padding: 1px 6px; border-radius: 4px; margin-right: 4px; font-size: 11px; }
         .camera-popup .video-container {
             position: relative; width: 320px; height: 180px;
             background: #000; border-radius: 6px; overflow: hidden; margin-bottom: 8px;
@@ -130,10 +131,10 @@
         }
 
         function startSnapshot(imgEl, camName) {
-            const url = `http://192.168.1.45:5000/api/${camName}/latest.jpg?h=180&cache=` + Date.now();
+            const url = `/frigate/api/${camName}/latest.jpg?h=180&cache=` + Date.now();
             imgEl.src = url;
             snapshotTimer = setInterval(() => {
-                imgEl.src = `http://192.168.1.45:5000/api/${camName}/latest.jpg?h=180&cache=` + Date.now();
+                imgEl.src = `/frigate/api/${camName}/latest.jpg?h=180&cache=` + Date.now();
             }, 2000);
         }
 
@@ -156,9 +157,13 @@
         }
 
         function createSnapshotTimerForPanel(imgEl, camName) {
-            const update = () => { imgEl.src = `http://192.168.1.45:5000/api/${camName}/latest.jpg?h=180&cache=` + Date.now(); };
+            const update = () => { imgEl.src = `/frigate/api/${camName}/latest.jpg?h=180&cache=` + Date.now(); };
             update();
             return setInterval(update, 2000);
+        }
+
+        function frigateUiUrl(camName) {
+            return `http://${window.location.hostname}:5000/cameras/${camName}`;
         }
 
         function updateConnector(camName) {
@@ -357,7 +362,11 @@
                 group: "local",
                 hls: null,
                 heading: null,
-                frigate: "http://192.168.1.45:5000"
+                frigate: null,
+                location: null,
+                perspective: null,
+                view: null,
+                description: null
             },
             {
                 name: "doh_vibhavadi",
@@ -366,7 +375,11 @@
                 group: "doh",
                 hls: "https://camerai1.iticfoundation.org/pass/180.180.242.207:1935/Phase3/PER_3_008_IN.stream/playlist.m3u8",
                 heading: 0,
-                frigate: "http://192.168.1.45:5000"
+                frigate: null,
+                location: null,
+                perspective: null,
+                view: null,
+                description: null
             },
             {
                 name: "doh_minburi",
@@ -375,7 +388,11 @@
                 group: "doh",
                 hls: "https://camerai1.iticfoundation.org/pass/180.180.242.207:1935/Phase9/PER_9_027_IN.stream/playlist.m3u8",
                 heading: 270,
-                frigate: "http://192.168.1.45:5000"
+                frigate: null,
+                location: null,
+                perspective: null,
+                view: null,
+                description: null
             },
             {
                 name: "itic_pracha",
@@ -384,7 +401,11 @@
                 group: "doh",
                 hls: "https://camerai1.iticfoundation.org/hls/charlie-new5.m3u8",
                 heading: null,
-                frigate: "http://192.168.1.45:5000"
+                frigate: null,
+                location: null,
+                perspective: null,
+                view: null,
+                description: null
             },
             {
                 name: "itic_pracha_uthit",
@@ -393,7 +414,11 @@
                 group: "doh",
                 hls: "https://camerai1.iticfoundation.org/hls/cl211-d.m3u8",
                 heading: null,
-                frigate: "http://192.168.1.45:5000"
+                frigate: null,
+                location: null,
+                perspective: null,
+                view: null,
+                description: null
             },
             {
                 name: "burapha_km0_east",
@@ -401,8 +426,12 @@
                 lat: 13.6689, lon: 100.6292,
                 group: "bangna",
                 hls: "https://camera1.iticfoundation.org/hls/10.8.0.21_8002.m3u8",
-                heading: 90,
-                frigate: "http://192.168.1.45:5000"
+                heading: 270,
+                frigate: null,
+                location: {"road": "Burapha Withi Expressway (Bangna-Trat)", "km": 0, "side": "outbound side", "area": "Bangna km 0 interchange"},
+                perspective: "bird's eye",
+                view: {"heading": 270, "heading_description": "Facing west from the outbound side, overlooking the km 0 interchange", "coverage": ["inbound lanes", "outbound lanes", "ground-level interchange", "expressway-level interchange"]},
+                description: "Bird's-eye camera on the outbound side of the Burapha Withi Expressway at km 0 (Bangna interchange). Facing west, it overlooks both inbound and outbound traffic across the ground-level and expressway-level interchange."
             },
             {
                 name: "burapha_km0_west",
@@ -411,7 +440,11 @@
                 group: "bangna",
                 hls: "https://camera1.iticfoundation.org/hls/10.8.0.21_8001.m3u8",
                 heading: 270,
-                frigate: "http://192.168.1.45:5000"
+                frigate: null,
+                location: null,
+                perspective: null,
+                view: null,
+                description: null
             },
             {
                 name: "burapha_km6_in",
@@ -420,7 +453,11 @@
                 group: "bangna",
                 hls: "http://180.180.242.207:1935/Phase3/PER_3_009_IN.stream/playlist.m3u8",
                 heading: 270,
-                frigate: "http://192.168.1.45:5000"
+                frigate: null,
+                location: null,
+                perspective: null,
+                view: null,
+                description: null
             },
             {
                 name: "burapha_km6_out",
@@ -429,7 +466,11 @@
                 group: "bangna",
                 hls: "http://180.180.242.207:1935/Phase3/PER_3_009_OUT.stream/playlist.m3u8",
                 heading: 90,
-                frigate: "http://192.168.1.45:5000"
+                frigate: null,
+                location: null,
+                perspective: null,
+                view: null,
+                description: null
             },
             {
                 name: "burapha_minburi_out",
@@ -438,7 +479,11 @@
                 group: "bangna",
                 hls: "http://180.180.242.207:1935/Phase9/PER_9_027_OUT.stream/playlist.m3u8",
                 heading: 90,
-                frigate: "http://192.168.1.45:5000"
+                frigate: null,
+                location: null,
+                perspective: null,
+                view: null,
+                description: null
             },
             {
                 name: "bangna_huanoin_n",
@@ -447,7 +492,11 @@
                 group: "bangna",
                 hls: "https://camera1.iticfoundation.org/hls/10.8.0.24_8554.m3u8",
                 heading: 0,
-                frigate: "http://192.168.1.45:5000"
+                frigate: null,
+                location: null,
+                perspective: null,
+                view: null,
+                description: null
             },
             {
                 name: "bangna_huanoin_e",
@@ -456,7 +505,11 @@
                 group: "bangna",
                 hls: "https://camera1.iticfoundation.org/hls/10.8.0.24_8555.m3u8",
                 heading: 90,
-                frigate: "http://192.168.1.45:5000"
+                frigate: null,
+                location: null,
+                perspective: null,
+                view: null,
+                description: null
             },
             {
                 name: "bangna_huanoin_s",
@@ -465,7 +518,11 @@
                 group: "bangna",
                 hls: "https://camera1.iticfoundation.org/hls/10.8.0.24_8556.m3u8",
                 heading: 180,
-                frigate: "http://192.168.1.45:5000"
+                frigate: null,
+                location: null,
+                perspective: null,
+                view: null,
+                description: null
             },
             {
                 name: "bangna_thepratch_n",
@@ -474,7 +531,11 @@
                 group: "bangna",
                 hls: "https://camera1.iticfoundation.org/hls/10.8.0.23_8556.m3u8",
                 heading: 0,
-                frigate: "http://192.168.1.45:5000"
+                frigate: null,
+                location: null,
+                perspective: null,
+                view: null,
+                description: null
             },
             {
                 name: "bangna_thepratch_s",
@@ -483,7 +544,11 @@
                 group: "bangna",
                 hls: "https://camera1.iticfoundation.org/hls/10.8.0.23_8554.m3u8",
                 heading: 180,
-                frigate: "http://192.168.1.45:5000"
+                frigate: null,
+                location: null,
+                perspective: null,
+                view: null,
+                description: null
             },
             {
                 name: "bangna_thepratch_w",
@@ -492,7 +557,11 @@
                 group: "bangna",
                 hls: "https://camera1.iticfoundation.org/hls/10.8.0.23_8555.m3u8",
                 heading: 270,
-                frigate: "http://192.168.1.45:5000"
+                frigate: null,
+                location: null,
+                perspective: null,
+                view: null,
+                description: null
             },
             {
                 name: "chonburi_hwy3_in",
@@ -501,7 +570,11 @@
                 group: "chonburi",
                 hls: "http://180.180.242.208:1935/Phase11/PER_11_028_IN.stream/playlist.m3u8",
                 heading: 0,
-                frigate: "http://192.168.1.45:5000"
+                frigate: null,
+                location: null,
+                perspective: null,
+                view: null,
+                description: null
             },
             {
                 name: "chonburi_hwy361_out",
@@ -510,7 +583,11 @@
                 group: "chonburi",
                 hls: "http://180.180.242.208:1935/Phase11/PER_11_027_OUT.stream/playlist.m3u8",
                 heading: 180,
-                frigate: "http://192.168.1.45:5000"
+                frigate: null,
+                location: null,
+                perspective: null,
+                view: null,
+                description: null
             },
             {
                 name: "chonburi_hwy331",
@@ -519,7 +596,11 @@
                 group: "chonburi",
                 hls: "http://180.180.242.208:1935/Phase11/PER_11_030.stream/playlist.m3u8",
                 heading: null,
-                frigate: "http://192.168.1.45:5000"
+                frigate: null,
+                location: null,
+                perspective: null,
+                view: null,
+                description: null
             },
             {
                 name: "chonburi_hwy36",
@@ -528,7 +609,11 @@
                 group: "chonburi",
                 hls: "http://180.180.242.208:1935/Phase12/PER_12_022.stream/playlist.m3u8",
                 heading: null,
-                frigate: "http://192.168.1.45:5000"
+                frigate: null,
+                location: null,
+                perspective: null,
+                view: null,
+                description: null
             },
             {
                 name: "chonburi_hwy34_in",
@@ -537,7 +622,11 @@
                 group: "chonburi",
                 hls: "http://180.180.242.208:1935/Phase12/PER_12_026_IN.stream/playlist.m3u8",
                 heading: 270,
-                frigate: "http://192.168.1.45:5000"
+                frigate: null,
+                location: null,
+                perspective: null,
+                view: null,
+                description: null
             },
             {
                 name: "chonburi_hwy34_out",
@@ -546,7 +635,11 @@
                 group: "chonburi",
                 hls: "http://180.180.242.208:1935/Phase12/PER_12_026_OUT.stream/playlist.m3u8",
                 heading: 90,
-                frigate: "http://192.168.1.45:5000"
+                frigate: null,
+                location: null,
+                perspective: null,
+                view: null,
+                description: null
             },
             {
                 name: "chonburi_hwy314",
@@ -555,7 +648,11 @@
                 group: "chonburi",
                 hls: "http://180.180.242.207:1935/Phase10/PER_10_026.stream/playlist.m3u8",
                 heading: null,
-                frigate: "http://192.168.1.45:5000"
+                frigate: null,
+                location: null,
+                perspective: null,
+                view: null,
+                description: null
             },
             {
                 name: "chonburi_khlongdan",
@@ -564,7 +661,11 @@
                 group: "chonburi",
                 hls: "http://180.180.242.208:1935/P16/PER_16_012.stream/playlist.m3u8",
                 heading: null,
-                frigate: "http://192.168.1.45:5000"
+                frigate: null,
+                location: null,
+                perspective: null,
+                view: null,
+                description: null
             },
             {
                 name: "chonburi_suwinthawong",
@@ -573,7 +674,11 @@
                 group: "chonburi",
                 hls: "http://180.180.242.208:1935/Phase14/PER_14_002_OUT.stream/playlist.m3u8",
                 heading: 90,
-                frigate: "http://192.168.1.45:5000"
+                frigate: null,
+                location: null,
+                perspective: null,
+                view: null,
+                description: null
             },
             {
                 name: "chonburi_phanthong",
@@ -582,7 +687,11 @@
                 group: "chonburi",
                 hls: "http://180.180.242.208:1935/Phase-17/PER_17_018.stream/playlist.m3u8",
                 heading: null,
-                frigate: "http://192.168.1.45:5000"
+                frigate: null,
+                location: null,
+                perspective: null,
+                view: null,
+                description: null
             },
             {
                 name: "chonburi_hwy331_south",
@@ -591,7 +700,11 @@
                 group: "chonburi",
                 hls: "http://180.180.242.207:1935/Phase7/PER_7_037.stream/playlist.m3u8",
                 heading: 180,
-                frigate: "http://192.168.1.45:5000"
+                frigate: null,
+                location: null,
+                perspective: null,
+                view: null,
+                description: null
             },
             {
                 name: "doh_per_12_015_in",
@@ -600,7 +713,11 @@
                 group: "doh",
                 hls: "http://180.180.242.208:1935/Phase12/PER_12_015_IN.stream/playlist.m3u8",
                 heading: 0,
-                frigate: "http://192.168.1.45:5000"
+                frigate: null,
+                location: null,
+                perspective: null,
+                view: null,
+                description: null
             },
             {
                 name: "doh_per_12_015_out",
@@ -609,7 +726,11 @@
                 group: "doh",
                 hls: "http://180.180.242.208:1935/Phase12/PER_12_015_OUT.stream/playlist.m3u8",
                 heading: 180,
-                frigate: "http://192.168.1.45:5000"
+                frigate: null,
+                location: null,
+                perspective: null,
+                view: null,
+                description: null
             },
             {
                 name: "doh_bangpu_sukhumvit_out",
@@ -618,7 +739,11 @@
                 group: "doh",
                 hls: "http://180.180.242.207:1935/Phase9/PER_9_022_OUT.stream/playlist.m3u8",
                 heading: 180,
-                frigate: "http://192.168.1.45:5000"
+                frigate: null,
+                location: null,
+                perspective: null,
+                view: null,
+                description: null
             },
             {
                 name: "itic_rama4_expressway",
@@ -627,7 +752,11 @@
                 group: "doh",
                 hls: "https://camera1.iticfoundation.org/hls/10.8.0.14_8003.m3u8",
                 heading: null,
-                frigate: "http://192.168.1.45:5000"
+                frigate: null,
+                location: null,
+                perspective: null,
+                view: null,
+                description: null
             },
             {
                 name: "itic_rama4_road",
@@ -636,7 +765,11 @@
                 group: "doh",
                 hls: "https://camera1.iticfoundation.org/hls/10.8.0.14_8001.m3u8",
                 heading: null,
-                frigate: "http://192.168.1.45:5000"
+                frigate: null,
+                location: null,
+                perspective: null,
+                view: null,
+                description: null
             },
             {
                 name: "itic_rama4_expressway2",
@@ -645,7 +778,11 @@
                 group: "doh",
                 hls: "https://camera1.iticfoundation.org/hls/10.8.0.14_8554.m3u8",
                 heading: null,
-                frigate: "http://192.168.1.45:5000"
+                frigate: null,
+                location: null,
+                perspective: null,
+                view: null,
+                description: null
             },
             {
                 name: "itic_rama4_road2",
@@ -654,7 +791,11 @@
                 group: "doh",
                 hls: "https://camera1.iticfoundation.org/hls/10.8.0.14_8002.m3u8",
                 heading: null,
-                frigate: "http://192.168.1.45:5000"
+                frigate: null,
+                location: null,
+                perspective: null,
+                view: null,
+                description: null
             }
         ];
 
@@ -709,6 +850,22 @@
                 ? `<div class="video-container"><button class="fs-btn" title="Full screen" onclick="document.getElementById('vid_${cam.name}').requestFullscreen()">⛶</button><video id="vid_${cam.name}" muted autoplay playsinline></video><div class="loading">Loading stream...</div></div>`
                 : `<img class="snapshot-img" id="snap_${cam.name}" src="" alt="Loading snapshot...">`;
 
+            const coverageHtml = cam.view && cam.view.coverage && cam.view.coverage.length
+                ? `<div class="meta">Coverage: ${cam.view.coverage.map(a => `<span class="coverage-tag">${a}</span>`).join(' ')}</div>`
+                : '';
+            const locationHtml = cam.location
+                ? `<div class="meta">${cam.location.road}${cam.location.km !== undefined ? ' km ' + cam.location.km : ''}${cam.location.side ? ' · ' + cam.location.side : ''}${cam.location.area ? ' · ' + cam.location.area : ''}</div>`
+                : '';
+            const perspectiveHtml = cam.perspective
+                ? `<div class="meta">Perspective: ${cam.perspective}</div>`
+                : '';
+            const viewHtml = cam.view && cam.view.heading_description
+                ? `<div class="meta">Facing: ${cam.view.heading_description}</div>`
+                : '';
+            const descHtml = cam.description
+                ? `<div class="meta">${cam.description}</div>`
+                : '';
+
             const popupHtml = `
                 <div class="camera-popup">
                     <h3>${cam.title}</h3>
@@ -716,7 +873,12 @@
                     <div class="meta">
                         Frigate: <b>${cam.name}</b> | GPS: ${cam.lat.toFixed(4)}, ${cam.lon.toFixed(4)}
                     </div>
-                    <a href="${cam.frigate}" target="_blank">Open Frigate</a>
+                    ${locationHtml}
+                    ${perspectiveHtml}
+                    ${viewHtml}
+                    ${coverageHtml}
+                    ${descHtml}
+                    <a href="#" onclick="window.open(frigateUiUrl('${cam.name}'), '_blank'); return false;">Open Frigate</a>
                     <button class="pin-btn" onclick="pinCamera(cameras.find(c => c.name === '${cam.name}')); map.closePopup();">📌 Pin Video</button>
                 </div>
             `;

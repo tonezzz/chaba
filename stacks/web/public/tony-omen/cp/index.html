@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang='en'>
+<head>
+  <meta charset='UTF-8' />
+  <meta name='viewport' content='width=device-width, initial-scale=1.0' />
+  <title>Tony Omen · CPU Control</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card: #1e293b;
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+      --accent: #38bdf8;
+      --ok: #22c55e;
+      --warn: #f59e0b;
+      --err: #ef4444;
+      --border: #334155;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+    }
+    header {
+      padding: 1.5rem 2rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+    h1 { margin: 0; font-size: 1.5rem; }
+    .updated { color: var(--muted); font-size: 0.9rem; }
+    main {
+      padding: 2rem;
+      max-width: 720px;
+      margin: 0 auto;
+    }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 0.75rem;
+      padding: 1.25rem;
+      margin-bottom: 1.5rem;
+    }
+    .card h2 { margin: 0 0 1rem; font-size: 1.1rem; color: var(--accent); }
+    .metric {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.75rem 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .metric:last-child { border-bottom: none; }
+    .metric-label { color: var(--muted); }
+    .metric-value { font-weight: 700; font-size: 1.1rem; }
+    .status-on { color: var(--ok); }
+    .status-off { color: var(--warn); }
+    .status-err { color: var(--err); }
+    .back {
+      color: var(--accent);
+      text-decoration: none;
+      font-size: 0.9rem;
+      display: inline-block;
+      margin-bottom: 0.25rem;
+    }
+    .back:hover { text-decoration: underline; }
+    button {
+      background: var(--accent);
+      border: none;
+      color: #0f172a;
+      padding: 0.75rem 1.5rem;
+      border-radius: 0.5rem;
+      cursor: pointer;
+      font-weight: 700;
+      font-size: 1rem;
+    }
+    button:hover { opacity: 0.9; }
+    button:disabled { opacity: 0.5; cursor: wait; }
+    .actions { display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; }
+    .msg { font-size: 0.9rem; color: var(--muted); min-height: 1.3rem; }
+    .msg.error { color: var(--err); }
+    .msg.ok { color: var(--ok); }
+    @media (max-width: 640px) { header, main { padding: 1rem; } }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <a href='/' class='back'>&#8592; Dashboard</a>
+      <a href='/tony-omen/' class='back'>&#8592; Thermal</a>
+      <h1>Tony Omen · CPU Control</h1>
+      <div class='updated' id='updated'>Loading...</div>
+    </div>
+  </header>
+
+  <main>
+    <section class='card'>
+      <h2>Turbo Boost</h2>
+      <div class='metric'>
+        <span class='metric-label'>Status</span>
+        <span class='metric-value' id='turbo-status'>—</span>
+      </div>
+      <div class='metric'>
+        <span class='metric-label'>Package Temperature</span>
+        <span class='metric-value' id='temp-status'>—</span>
+      </div>
+      <div class='metric'>
+        <span class='metric-label'>Average Frequency</span>
+        <span class='metric-value' id='freq-status'>—</span>
+      </div>
+      <div class='actions' style='margin-top: 1rem;'>
+        <button id='turbo-btn' disabled>Loading...</button>
+      </div>
+      <p class='msg' id='msg'></p>
+    </section>
+
+    <section class='card'>
+      <h2>About</h2>
+      <p style='color: var(--muted); margin: 0;'>
+        Disabling Intel Turbo Boost caps the CPU at its 2.6 GHz base clock, which
+        usually lowers temperatures by 10–20 °C. Use this toggle to switch it
+        on or off without rebooting.
+      </p>
+    </section>
+  </main>
+
+  <script>
+    const el = {
+      status: document.getElementById('turbo-status'),
+      temp: document.getElementById('temp-status'),
+      freq: document.getElementById('freq-status'),
+      btn: document.getElementById('turbo-btn'),
+      msg: document.getElementById('msg'),
+      updated: document.getElementById('updated'),
+    };
+
+    function setMsg(text, cls) {
+      el.msg.textContent = text;
+      el.msg.className = 'msg' + (cls ? ' ' + cls : '');
+    }
+
+    function packageTemp(data) {
+      const host = data.host || {};
+      const temps = host.temperatures || {};
+      for (const group of ['coretemp', 'k10temp', 'cpu_thermal', 'acpitz']) {
+        if (temps[group]) {
+          const pkg = temps[group].find(e => (e.label || '').toLowerCase().includes('package')) || temps[group][0];
+          if (pkg && pkg.current != null) return pkg.current;
+        }
+      }
+      return null;
+    }
+
+    function avgFreq(data) {
+      const host = data.host || {};
+      const freqs = host.cpu_freq || [];
+      if (!freqs.length) return null;
+      return freqs.reduce((s, f) => s + (f.current || 0), 0) / freqs.length;
+    }
+
+    async function load() {
+      try {
+        const [turboRes, statusRes] = await Promise.all([
+          fetch('/api/turbo'),
+          fetch('/api/status')
+        ]);
+        if (!turboRes.ok) throw new Error('turbo API ' + turboRes.status);
+        if (!statusRes.ok) throw new Error('status API ' + statusRes.status);
+        const turbo = await turboRes.json();
+        const status = await statusRes.json();
+
+        const noTurbo = turbo.no_turbo;
+        const turboEnabled = noTurbo === 0;
+        const unknown = noTurbo === -1;
+
+        if (unknown) {
+          el.status.textContent = 'Unknown';
+          el.status.className = 'metric-value status-err';
+          el.btn.textContent = 'Retry';
+          el.btn.disabled = false;
+          el.btn.onclick = load;
+        } else if (turboEnabled) {
+          el.status.textContent = 'ON';
+          el.status.className = 'metric-value status-on';
+          el.btn.textContent = 'Disable Turbo';
+          el.btn.disabled = false;
+          el.btn.onclick = () => setTurbo(true);
+        } else {
+          el.status.textContent = 'OFF';
+          el.status.className = 'metric-value status-off';
+          el.btn.textContent = 'Enable Turbo';
+          el.btn.disabled = false;
+          el.btn.onclick = () => setTurbo(false);
+        }
+
+        const t = packageTemp(status);
+        el.temp.textContent = t != null ? t.toFixed(1) + ' °C' : '—';
+
+        const f = avgFreq(status);
+        el.freq.textContent = f != null ? f.toFixed(0) + ' MHz' : '—';
+
+        el.updated.textContent = 'Updated: ' + new Date().toLocaleTimeString();
+        setMsg('');
+      } catch (err) {
+        el.updated.textContent = 'Error';
+        setMsg(err.message, 'error');
+        el.btn.textContent = 'Retry';
+        el.btn.disabled = false;
+        el.btn.onclick = load;
+      }
+    }
+
+    async function setTurbo(disable) {
+      el.btn.disabled = true;
+      setMsg(disable ? 'Disabling turbo...' : 'Enabling turbo...');
+      try {
+        const res = await fetch('/api/turbo', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ no_turbo: disable })
+        });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const data = await res.json();
+        if (!data.success) throw new Error('write failed');
+        setMsg('Saved. Refreshing...', 'ok');
+        await load();
+      } catch (err) {
+        setMsg('Failed: ' + err.message, 'error');
+        el.btn.disabled = false;
+      }
+    }
+
+    load();
+    setInterval(load, 3000);
+  </script>
+</body>
+</html>

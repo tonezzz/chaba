@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>chaba system docs</title>
+  <style>
+    body { font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif; background: #0d1117; color: #c9d1d9; padding: 2em; line-height: 1.5; }
+    h1 { color: #58a6ff; }
+    h2 { color: #79c0ff; border-bottom: 1px solid #30363d; padding-bottom: 0.3em; margin-top: 2em; }
+    a { color: #58a6ff; }
+    table { border-collapse: collapse; margin: 1em 0; }
+    th, td { border: 1px solid #30363d; padding: 0.5em 0.8em; text-align: left; }
+    th { background: #161b22; }
+    code { background: #21262d; padding: 0.1em 0.3em; border-radius: 4px; }
+    ul { margin: 0.5em 1em; }
+    .note { color: #8b949e; }
+  </style>
+</head>
+<body>
+
+<h1>chaba system docs</h1>
+<p class="note">tony-omen / 192.168.1.48 / updated 2026-07-23</p>
+
+<h2>host</h2>
+<ul>
+  <li><strong>hostname:</strong> tony-omen</li>
+  <li><strong>ip:</strong> 192.168.1.48</li>
+  <li><strong>os:</strong> Ubuntu/Debian Linux</li>
+  <li><strong>gpu:</strong> NVIDIA (CUDA 11.8+)</li>
+  <li><strong>docker:</strong> 24+ with NVIDIA Container Toolkit</li>
+</ul>
+
+<h2>lan devices</h2>
+<table>
+  <tr><th>device</th><th>ip</th><th>notes</th></tr>
+  <tr><td>tony-omen</td><td>192.168.1.48</td><td>docker host</td></tr>
+  <tr><td>tony-dell</td><td>192.168.1.42</td><td>workstation (tony-dell.local)</td></tr>
+  <tr><td>vstarcam</td><td>192.168.1.41</td><td>rtsp on port 10554</td></tr>
+</table>
+
+<h2>ports and services</h2>
+<table>
+  <tr><th>port</th><th>stack</th><th>service</th><th>notes</th></tr>
+  <tr><td>5000</td><td>nvr</td><td>frigate web ui</td><td>also proxied at <a href="/frigate/">/frigate/</a></td></tr>
+  <tr><td>8554</td><td>nvr</td><td>frigate rtsp restream</td><td></td></tr>
+  <tr><td>8555</td><td>nvr</td><td>frigate webrtc</td><td>tcp + udp</td></tr>
+  <tr><td>7007</td><td>ai</td><td>nerfstudio viewer</td><td></td></tr>
+  <tr><td>8888</td><td>ai</td><td>jupyter</td><td></td></tr>
+  <tr><td>8080</td><td>web</td><td>caddy</td><td>main web, reverse proxy</td></tr>
+  <tr><td>8090</td><td>web</td><td>camera-control</td><td>flask control panel</td></tr>
+  <tr><td>8000</td><td>web</td><td>status-api</td><td>internal only, not exposed directly</td></tr>
+</table>
+
+<h2>compose files and common commands</h2>
+<table>
+  <tr><th>stack</th><th>compose file</th><th>up</th></tr>
+  <tr><td>ai / 3dgs</td><td><code>stacks/ai/docker-compose.yml</code></td><td><code>make ai-up</code></td></tr>
+  <tr><td>nvr / frigate</td><td><code>stacks/nvr/docker-compose.yml</code></td><td><code>make nvr-up</code></td></tr>
+  <tr><td>web</td><td><code>stacks/web/docker-compose.yml</code></td><td><code>make web-up</code></td></tr>
+</table>
+<ul>
+  <li><code>make ai-up / ai-down / ai-build</code></li>
+  <li><code>make nvr-up / nvr-down / nvr-regenerate / nvr-restart</code></li>
+  <li><code>make web-up / web-down / sync</code></li>
+  <li><code>make status</code> — show running containers</li>
+</ul>
+
+<h2>camera system</h2>
+<ul>
+  <li>single source of truth: <code>stacks/nvr/cameras.json</code> (34 cameras, 4 groups)</li>
+  <li>generator: <code>python3 stacks/nvr/generate_config.py</code></li>
+  <li>generated files: <code>stacks/nvr/generated/config.yml</code> and <code>stacks/nvr/generated/camera-map.html</code></li>
+  <li>web map: <code>stacks/web/public/camera-map.html</code> (sync from generated)</li>
+</ul>
+<p>workflow:</p>
+<ol>
+  <li>edit <code>stacks/nvr/cameras.json</code></li>
+  <li>run <code>make nvr-regenerate</code> (or <code>python3 stacks/nvr/generate_config.py</code>)</li>
+  <li>restart frigate: <code>make nvr-restart</code></li>
+  <li>sync web map: <code>make sync</code></li>
+</ol>
+
+<h2>key cameras</h2>
+<table>
+  <tr><th>camera</th><th>source</th><th>notes</th></tr>
+  <tr><td>vstarcam</td><td>rtsp://admin:tonytony@192.168.1.41:10554/tcp/av0_0</td><td>main stream h.265 2304x1296; transcoded to h.264; audio dropped</td></tr>
+  <tr><td>doh wowza 1</td><td>180.180.242.207</td><td>direct ip works; domains fail (tls/sni)</td></tr>
+  <tr><td>doh wowza 2</td><td>180.180.242.208</td><td>direct ip works; domains fail (tls/sni)</td></tr>
+</table>
+<p><strong>recent discovery:</strong> enixma drr scan added 3 cameras (192.168.48.125, 131, 132). next source being tried is itic hls enumeration.</p>
+
+<h2>architecture decisions</h2>
+<ul>
+  <li><strong>caddy over nginx:</strong> caddy on port 8080; simpler config, auto-https ready, reverse proxy built-in</li>
+  <li><strong>separate compose files per stack:</strong> independent lifecycles for ai, nvr, and web</li>
+  <li><strong>doh direct ips:</strong> 180.180.242.207/208 used instead of domains to avoid tls/sni issues</li>
+  <li><strong>vstarcam transcode:</strong> h.265 transcoded to h.264 with libx264; audio dropped due to pcm a-law</li>
+  <li><strong>camera data inline:</strong> cameras embedded in camera-map.html to avoid cors and external file loading</li>
+</ul>
+
+<h2>directory layout</h2>
+<ul>
+  <li><code>stacks/ai/</code> — gpu research containers (3dgs, nerfstudio, colmap, variants, john, jupyter)</li>
+  <li><code>stacks/nvr/</code> — frigate config, camera registry, generated files, storage, db</li>
+  <li><code>stacks/web/</code> — caddy, status-api, camera-control, bserver, public static files</li>
+  <li><code>mcp/</code> — planned mcp server</li>
+  <li><code>docs/</code> — runbooks, investigations, adrs, knowledge base</li>
+</ul>
+
+<h2>quick links</h2>
+<ul>
+  <li><a href="/">main web (bserver)</a></li>
+  <li><a href="/camera-map.html">camera map</a></li>
+  <li><a href="/apps/map/">map app</a></li>
+  <li><a href="/frigate/">frigate ui (proxied)</a></li>
+  <li><a href="http://192.168.1.48:8090">camera-control</a></li>
+  <li><a href="proxy-server.html">old proxy-server source docs</a></li>
+</ul>
+
+</body>
+</html>

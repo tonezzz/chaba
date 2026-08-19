@@ -35,7 +35,7 @@
             <span class="text-lg font-bold text-white">🏠 HomeLab</span>
             <div class="flex gap-4 text-sm">
                 <a href="index.html" class="text-accent font-semibold">Dashboard</a>
-                <a href="cameras.html" class="text-gray-400 hover:text-white transition">Cameras</a>
+                <a href="/apps/cams/" class="text-gray-400 hover:text-white transition">Cameras</a>
                 <a href="infrastructure.html" class="text-gray-400 hover:text-white transition">Infrastructure</a>
                 <a href="decisions.html" class="text-gray-400 hover:text-white transition">Decisions</a>
             </div>
@@ -59,7 +59,7 @@
                 </div>
                 <h3 class="text-white font-semibold mb-1">Caddy</h3>
                 <p class="text-xs text-gray-500 mb-3">Static files + reverse proxy</p>
-                <a href="http://192.168.1.45:8080" class="text-accent text-sm hover:underline">:8080 →</a>
+                <a href="http://192.168.1.48:8080" class="text-accent text-sm hover:underline">:8080 →</a>
             </div>
 
             <div class="bg-card rounded-xl p-5 border border-gray-700">
@@ -69,7 +69,7 @@
                 </div>
                 <h3 class="text-white font-semibold mb-1">Frigate</h3>
                 <p class="text-xs text-gray-500 mb-3">AI-powered camera surveillance</p>
-                <a href="http://192.168.1.45:5000" class="text-accent text-sm hover:underline">:5000 →</a>
+                <a href="http://192.168.1.48:5000" class="text-accent text-sm hover:underline">:5000 →</a>
             </div>
 
             <div class="bg-card rounded-xl p-5 border border-gray-700">
@@ -79,17 +79,17 @@
                 </div>
                 <h3 class="text-white font-semibold mb-1">JupyterLab</h3>
                 <p class="text-xs text-gray-500 mb-3">Notebooks & experiments</p>
-                <a href="http://192.168.1.45:8888" class="text-accent text-sm hover:underline">:8888 →</a>
+                <a href="http://192.168.1.48:8888" class="text-accent text-sm hover:underline">:8888 →</a>
             </div>
         </div>
 
         <!-- Quick Links -->
         <h2 class="text-xl font-semibold text-white mb-4">Quick Links</h2>
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-10">
-            <a href="cameras.html" class="bg-card rounded-lg p-4 border border-gray-700 hover:border-accent transition text-center">
+        <div class="grid grid-cols-2 md:grid-cols-3 gap-3 mb-10">
+            <a href="/apps/cams/" class="bg-card rounded-lg p-4 border border-gray-700 hover:border-accent transition text-center">
                 <div class="text-2xl mb-2">📷</div>
                 <div class="text-sm text-white font-semibold">Camera Map</div>
-                <div class="text-xs text-gray-500">28 cameras</div>
+                <div class="text-xs text-gray-500">34 cameras</div>
             </a>
             <a href="infrastructure.html" class="bg-card rounded-lg p-4 border border-gray-700 hover:border-accent transition text-center">
                 <div class="text-2xl mb-2">🔌</div>
@@ -101,10 +101,20 @@
                 <div class="text-sm text-white font-semibold">Decisions</div>
                 <div class="text-xs text-gray-500">Architecture log</div>
             </a>
-            <a href="http://192.168.1.45:5000" class="bg-card rounded-lg p-4 border border-gray-700 hover:border-accent transition text-center">
+            <a href="http://192.168.1.48:5000" class="bg-card rounded-lg p-4 border border-gray-700 hover:border-accent transition text-center">
                 <div class="text-2xl mb-2">🎥</div>
                 <div class="text-sm text-white font-semibold">Frigate UI</div>
                 <div class="text-xs text-gray-500">NVR interface</div>
+            </a>
+            <a href="http://192.168.1.48:8090/" class="bg-card rounded-lg p-4 border border-gray-700 hover:border-accent transition text-center">
+                <div class="text-2xl mb-2">⚙️</div>
+                <div class="text-sm text-white font-semibold">Camera Control</div>
+                <div class="text-xs text-gray-500">tony-omen · detection</div>
+            </a>
+            <a href="http://tony-dell.local:8090/" class="bg-card rounded-lg p-4 border border-gray-700 hover:border-accent transition text-center">
+                <div class="text-2xl mb-2">🖥️</div>
+                <div class="text-sm text-white font-semibold">Camera Control</div>
+                <div class="text-xs text-gray-500">tony-dell · detection</div>
             </a>
         </div>
 
@@ -144,7 +154,7 @@
                 <div class="flex items-center justify-between">
                     <div>
                         <span class="text-white font-semibold">Web Stack</span>
-                        <span class="text-xs text-gray-500 ml-2">stacks/web/docker-compose.yml</span>
+                        <span class="text-xs text-gray-500 ml-2">web/docker-compose.yml</span>
                     </div>
                     <span class="text-xs text-gray-400">24/7</span>
                 </div>
@@ -167,9 +177,9 @@
                 el.innerHTML = '<span class="status-dot"></span>Offline';
             }
         }
-        checkService('http://192.168.1.45:8080', 'status-web');
-        checkService('http://192.168.1.45:5000', 'status-frigate');
-        checkService('http://192.168.1.45:8888', 'status-jupyter');
+        checkService('http://192.168.1.48:8080', 'status-web');
+        checkService('http://192.168.1.48:5000', 'status-frigate');
+        checkService('http://192.168.1.48:8888', 'status-jupyter');
     </script>
 </body>
 </html>
