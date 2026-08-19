@@ -113,9 +113,18 @@ test_stage() {
             log "INFO" "Service health tests completed"
             ;;
         
+        audits)
+            log "INFO" "Running audit suite..."
+            if [ -f "$PROJECT_ROOT/scripts/audits/run.mjs" ]; then
+                node "$PROJECT_ROOT/scripts/audits/run.mjs" || error_exit "Audit suite failed"
+            fi
+            log "INFO" "Audit suite completed"
+            ;;
+        
         all)
             test_stage syntax
             test_stage validation
+            test_stage audits
             test_stage backup
             test_stage monitoring
             test_stage security
