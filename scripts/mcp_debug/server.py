@@ -29,6 +29,7 @@ from .tools import (
 from .reports import mcp_report
 from .focus import mcp_focus
 from .ssot import mcp_read_ssot, mcp_search_ssot, mcp_mddb_doc, mcp_query_ssot
+from .registry import mcp_registry_lookup, mcp_registry_get
 from .context import mcp_context, mcp_session_summary
 from .preprocess import mcp_preprocess
 from .capture import (
@@ -395,6 +396,35 @@ def handle_tools_list(id_):
             },
         },
         {
+            "name": "mcp_registry_lookup",
+            "description": "Search the SSOT registry for assets across all partitions.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "host": {"type": "string", "enum": list(HOSTS.keys()), "description": "Target host (the mcp-debug server on that host reads its local chaba repo)"},
+                    "q": {"type": "string", "description": "Optional keyword / id / name / path / purpose fragment. Omit to list assets."},
+                    "type": {"type": "string", "enum": ["all", "ssot", "script", "service", "timer", "stack", "h3-app"], "description": "Filter by asset type", "default": "all"},
+                    "by": {"type": "string", "enum": ["any", "id", "name", "path", "purpose", "label", "tags"], "description": "Fields to match against", "default": "any"},
+                    "limit": {"type": "integer", "description": "Maximum results", "default": 5},
+                    "offset": {"type": "integer", "description": "Pagination offset", "default": 0},
+                },
+                "required": ["host"],
+            },
+        },
+        {
+            "name": "mcp_registry_get",
+            "description": "Resolve a single registry asset by id or path and return its metadata plus source SSOT content.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "host": {"type": "string", "enum": list(HOSTS.keys()), "description": "Target host"},
+                    "id": {"type": "string", "description": "Asset id"},
+                    "path": {"type": "string", "description": "Asset path"},
+                    "ssot_limit": {"type": "integer", "description": "Maximum characters of source SSOT to return", "default": 20000},
+                },
+            },
+        },
+        {
             "name": "mcp_context",
             "description": "Return relevant KB and SSOT files based on the active focus and an optional query.",
             "inputSchema": {
@@ -652,6 +682,30 @@ def handle_tools_call(id_, params):
             path=arguments.get("path"),
             key=arguments.get("key"),
             limit=arguments.get("limit", 50),
+        )
+        output = json.dumps(result, separators=(",", ":"))
+    elif name == "mcp_registry_lookup":
+        h = arguments.get("host")
+        if not h:
+            return {"jsonrpc": "2.0", "id": id_, "error": {"code": -32602, "message": "host is required"}}
+        result = mcp_registry_lookup(
+            host=h,
+            q=arguments.get("q"),
+            type=arguments.get("type", "all"),
+            by=arguments.get("by", "any"),
+            limit=arguments.get("limit", 5),
+            offset=arguments.get("offset", 0),
+        )
+        output = json.dumps(result, separators=(",", ":"))
+    elif name == "mcp_registry_get":
+        h = arguments.get("host")
+        if not h:
+            return {"jsonrpc": "2.0", "id": id_, "error": {"code": -32602, "message": "host is required"}}
+        result = mcp_registry_get(
+            host=h,
+            id=arguments.get("id"),
+            path=arguments.get("path"),
+            ssot_limit=arguments.get("ssot_limit", 20000),
         )
         output = json.dumps(result, separators=(",", ":"))
     elif name == "mcp_context":
