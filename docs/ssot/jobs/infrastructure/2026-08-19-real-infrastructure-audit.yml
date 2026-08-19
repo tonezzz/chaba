@@ -33,8 +33,9 @@ planning:
       file: docs/ssot/ssot.focus.current.yml
 
 processing:
-  status: not_started
-  started_at: null
+  status: completed
+  started_at: '2026-08-19'
+  completed_at: '2026-08-19'
   findings:
     - file: docs/ssot/infrastructure/ssot.health.home.yml
       issue: 18 of 45 services are currently unknown in mcp-health, many on tony-omen.local or local ports
@@ -45,18 +46,21 @@ processing:
   steps:
     - id: 1
       label: Decide integration pattern (MCP workflow, HTTP endpoint, or stdio bridge)
-      status: not_started
+      status: completed
     - id: 2
-      label: Implement real-infrastructure-audit script or MCP tool
-      status: not_started
+      label: Implement real-infrastructure-audit MCP workflow and report
+      status: completed
     - id: 3
       label: Add real-infrastructure to ssot.audit.yml schedule
-      status: not_started
+      status: completed
     - id: 4
       label: Run and validate report
-      status: not_started
-  decisions: []
-  changes: []
+      status: completed
+  decisions:
+    - Chose MCP workflow over HTTP endpoint because mcp-health is currently stdio-only and the consolidated runner is not MCP-aware
+  changes:
+    - file: reports/audits/real-infrastructure.md
+      summary: First real-infrastructure audit report generated from mcp-health
 
 followup:
   verification:
@@ -69,9 +73,9 @@ followup:
   deferred: []
 
 report:
-  status: not_started
-  completed_at: null
-  summary: ''
+  status: completed
+  completed_at: '2026-08-19'
+  summary: 'First real-infrastructure audit report generated; 22 healthy, 18 unknown, 5 intentional. Common issues are .local mDNS timeouts and missing health endpoints.'
   metrics: {}
   links: []
   kb_review: []
