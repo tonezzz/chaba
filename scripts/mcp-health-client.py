@@ -22,6 +22,8 @@ def main():
     env = os.environ.copy()
     env["HEALTH_PROFILE"] = env.get("HEALTH_PROFILE", "home")
     env["HEALTH_CONFIG"] = env.get("HEALTH_CONFIG", os.path.join(CWD, "docs/ssot/infrastructure/ssot.health.yml"))
+    env["POSTGRES_HOST"] = env.get("POSTGRES_HOST", "tony-dell")
+    env["POSTGRES_PORT"] = env.get("POSTGRES_PORT", "5432")
 
     proc = subprocess.Popen(
         [NODE, SERVER],
