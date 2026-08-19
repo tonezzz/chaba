@@ -42,7 +42,8 @@ def get_health_status():
         timeout=120,
     )
     if result.returncode != 0:
-        raise RuntimeError(result.stderr or "mcp-health-client failed")
+        print(f"[mcp-health-to-inbox] warning: mcp-health-client failed: {result.stderr or 'unknown'}", file=sys.stderr)
+        return {"services_by_category": {}}
     return json.loads(result.stdout)
 
 
