@@ -280,34 +280,6 @@ sections:
       Next step needs user approval for App Store login and Xcode install.
     previous_status: '2026-08-19'
     started: '2026-08-19'
-  - label: Service Failures Detected
-    text: Multiple services failed health checks - investigation required.
-    branch: chaba
-    status: completed
-    completed_at: '2026-08-19'
-    priority: high
-    tags:
-    - service-health
-    - health-check
-    - investigation
-    triage:
-      urgency: 6
-      importance: 7
-      complication: 5
-    subtasks:
-    - label: Identify which services are failing health checks
-      status: completed
-      completed_at: '2026-08-19'
-      note: 'tony-omen: weaviate-index, yomi-update-active, yomi-update-all; tony-dell: dnsmasq-postgre, mcp-focus, tony-dell-mcp-health, yomi-backup; focus-dispatcher-overnight already fixed.'
-    - label: Determine root cause and severity
-      status: completed
-      completed_at: '2026-08-19'
-      note: Root causes documented in reports/SERVICE_FAILURES_DIAGNOSIS.md.
-    - label: Apply fixes or dispatch to appropriate hosts
-      status: completed
-      completed_at: '2026-08-19'
-      note: 'tony-dell: disabled mcp-focus, fixed dnsmasq-postgre tailscale dependency, fixed yomi-backup SSH via 100.75.102.88; tony-omen: stopped/disabled yomi-update-* and weaviate-index timers (weaviate container absent). tony-dell now 0 failed units; tony-omen only weaviate-index is intentionally disabled.'
-    started: '2026-08-19'
 - title: Ready (Safe)
   icon: safe
   layout: list
