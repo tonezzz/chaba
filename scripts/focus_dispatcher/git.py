@@ -51,10 +51,37 @@ def git_mv_inbox(inbox_path):
     return target
 
 
+def _pull_rebase(repo):
+    result = subprocess.run(
+        ["git", "pull", "--rebase", "--autostash"],
+        cwd=repo, capture_output=True, text=True
+    )
+    if result.returncode != 0:
+        subprocess.run(["git", "rebase", "--abort"], cwd=repo, capture_output=True)
+        raise RuntimeError(f"git pull --rebase --autostash failed: {result.stderr}")
+
+
+def _push_with_retry(repo, attempts=3):
+    for i in range(attempts):
+        push = subprocess.run(["git", "push"], cwd=repo, capture_output=True, text=True)
+        if push.returncode == 0:
+            return
+        # Remote moved; rebase onto it and retry.
+        rebase = subprocess.run(
+            ["git", "pull", "--rebase", "--autostash"],
+            cwd=repo, capture_output=True, text=True
+        )
+        if rebase.returncode != 0:
+            subprocess.run(["git", "rebase", "--abort"], cwd=repo, capture_output=True)
+            raise RuntimeError(f"git push failed and rebase retry failed: {rebase.stderr}")
+    raise RuntimeError(f"git push failed after {attempts} attempts")
+
+
 def git_commit(changed_paths, message):
     if not changed_paths:
         return
     unique_paths = sorted(set(str(p) for p in changed_paths))
+    _pull_rebase(REPO)
     subprocess.run(["git", "add"] + unique_paths, cwd=REPO, check=True)
     staged = subprocess.run(
         ["git", "diff", "--cached", "--name-only"],
@@ -66,4 +93,4 @@ def git_commit(changed_paths, message):
     # Only commit the paths the dispatcher owns; leave any user-staged files staged.
     subprocess.run(["git", "commit", "-m", message, "--"] + unique_paths, cwd=REPO, check=True)
     if os.environ.get("FOCUS_DISPATCHER_PUSH") == "1":
-        subprocess.run(["git", "push"], cwd=REPO, check=True)
+        _push_with_retry(REPO)
