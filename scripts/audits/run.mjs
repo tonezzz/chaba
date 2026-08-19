@@ -5,7 +5,7 @@
  * runs each audit, and produces a normalized summary report.
  */
 import { spawn } from 'child_process';
-import { writeFileSync, readFileSync, mkdirSync } from 'fs';
+import { writeFileSync, readFileSync, mkdirSync, copyFileSync } from 'fs';
 import { join } from 'path';
 import yaml from 'js-yaml';
 
@@ -87,6 +87,12 @@ async function main() {
   };
 
   writeFileSync(join(REPORTS_DIR, 'summary.json'), JSON.stringify(summary, null, 2));
+
+  // Publish the latest summary for the web audit report
+  const webDataDir = join(PROJECT_ROOT, 'stacks', 'web', 'public', 'apps', 'audit', 'data');
+  mkdirSync(webDataDir, { recursive: true });
+  copyFileSync(join(REPORTS_DIR, 'summary.json'), join(webDataDir, 'summary.json'));
+  copyFileSync(join(REPORTS_DIR, 'summary.md'), join(webDataDir, 'summary.md'));
 
   const md = [
     '# Chaba Audit Summary',

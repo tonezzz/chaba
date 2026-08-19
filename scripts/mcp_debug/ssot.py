@@ -2,6 +2,8 @@
 import os
 from pathlib import Path
 
+import yaml
+
 from .config import REPO_DIR
 
 
@@ -163,4 +165,80 @@ def mcp_mddb_doc(query=None, collection="ssot-infrastructure", top_k=1, read_lim
         "source": search.get("source", "local"),
         "n": len(docs),
         "docs": docs,
+    }
+
+
+def _navigate(data, key):
+    if not key:
+        return data, None
+    parts = [p for p in key.split(".") if p]
+    current = data
+    for part in parts:
+        if isinstance(current, list):
+            try:
+                idx = int(part)
+                current = current[idx]
+            except (ValueError, IndexError):
+                return None, f"invalid list index '{part}' at key '{key}'"
+        elif isinstance(current, dict):
+            if part not in current:
+                return None, f"key '{part}' not found at '{key}'"
+            current = current[part]
+        else:
+            return None, f"cannot traverse into non-container at '{part}'"
+    return current, None
+
+
+def mcp_query_ssot(query=None, path=None, key=None, limit=50):
+    """Find an SSOT document and return a specific value or list at a dotted/integer path."""
+    if not query and not path:
+        return {"ok": False, "error": "query or path is required"}
+
+    resolved_path = path
+    if not resolved_path:
+        search = mcp_search_ssot(query=query, collection="ssot-infrastructure", limit=1)
+        if not search.get("ok") or not search.get("results"):
+            return {"ok": False, "error": "no matching document found"}
+        resolved_path = search["results"][0].get("path")
+
+    if not resolved_path:
+        return {"ok": False, "error": "could not resolve document path"}
+
+    read = mcp_read_ssot(path=resolved_path, limit=100000)
+    if not read.get("ok"):
+        return {"ok": False, "error": read.get("error", "failed to read SSOT")}
+
+    try:
+        data = yaml.safe_load(read["content"])
+    except Exception as e:
+        return {"ok": False, "error": f"YAML parse error: {e}"}
+
+    value, error = _navigate(data, key)
+    if error:
+        return {"ok": False, "error": error, "path": resolved_path, "key": key}
+
+    result_type = type(value).__name__
+    truncated = False
+    if isinstance(value, list):
+        n = len(value)
+        if n > limit:
+            value = value[:limit]
+            truncated = True
+        return {
+            "ok": True,
+            "path": resolved_path,
+            "key": key,
+            "type": "list",
+            "n": n,
+            "returned": len(value),
+            "truncated": truncated,
+            "value": value,
+        }
+
+    return {
+        "ok": True,
+        "path": resolved_path,
+        "key": key,
+        "type": result_type,
+        "value": value,
     }

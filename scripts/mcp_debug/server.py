@@ -28,7 +28,8 @@ from .tools import (
 )
 from .reports import mcp_report
 from .focus import mcp_focus
-from .ssot import mcp_read_ssot, mcp_search_ssot, mcp_mddb_doc
+from .ssot import mcp_read_ssot, mcp_search_ssot, mcp_mddb_doc, mcp_query_ssot
+from .context import mcp_context, mcp_session_summary
 from .capture import (
     mcp_screenshot,
     mcp_window_list,
@@ -380,6 +381,38 @@ def handle_tools_list(id_):
             },
         },
         {
+            "name": "mcp_query_ssot",
+            "description": "Find a relevant SSOT document and return a specific value or list at a dotted/integer path.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "query": {"type": "string", "description": "Natural language or keyword query to locate the SSOT file"},
+                    "path": {"type": "string", "description": "Direct relative path to the SSOT file"},
+                    "key": {"type": "string", "description": "Dotted path inside the YAML, e.g. 'audits' or 'schedule.default.runs' or 'audits.0.name'"},
+                    "limit": {"type": "integer", "description": "If the result is a list, return up to this many items", "default": 50},
+                },
+            },
+        },
+        {
+            "name": "mcp_context",
+            "description": "Return relevant KB and SSOT files based on the active focus and an optional query.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "query": {"type": "string", "description": "Optional query to expand the active focus context"},
+                    "top_k": {"type": "integer", "description": "Maximum number of results per category", "default": 10},
+                },
+            },
+        },
+        {
+            "name": "mcp_session_summary",
+            "description": "Return a structured summary of the active focus and recent sessions/decisions.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {},
+            },
+        },
+        {
             "name": "mcp_screenshot",
             "description": "Capture a screenshot on an allowed host and return it as base64 PNG.",
             "inputSchema": {
@@ -600,6 +633,23 @@ def handle_tools_call(id_, params):
             top_k=arguments.get("top_k", 1),
             read_limit=arguments.get("read_limit", 20000),
         )
+        output = json.dumps(result, separators=(",", ":"))
+    elif name == "mcp_query_ssot":
+        result = mcp_query_ssot(
+            query=arguments.get("query"),
+            path=arguments.get("path"),
+            key=arguments.get("key"),
+            limit=arguments.get("limit", 50),
+        )
+        output = json.dumps(result, separators=(",", ":"))
+    elif name == "mcp_context":
+        result = mcp_context(
+            query=arguments.get("query"),
+            top_k=arguments.get("top_k", 10),
+        )
+        output = json.dumps(result, separators=(",", ":"))
+    elif name == "mcp_session_summary":
+        result = mcp_session_summary()
         output = json.dumps(result, separators=(",", ":"))
     elif name == "mcp_screenshot":
         h = arguments.get("host")
