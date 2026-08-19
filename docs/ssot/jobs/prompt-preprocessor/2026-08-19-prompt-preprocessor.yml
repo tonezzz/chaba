@@ -1,0 +1,93 @@
+title: Prompt / command preprocessor for context and precision
+subtitle: Design and prototype a pre-processing layer that grounds user requests in active focus, KB, and SSOT
+icon: target
+
+planning:
+  goal: |
+    Build a preprocessing step that runs before assistant interpretation of user requests and commands.
+    It should resolve ambiguity, expand shorthand and aliases, link the goal to active focus/backlog/quick wins,
+    and emit a structured, unambiguous prompt grounded in the project KB.
+  scope: |
+    - Survey existing disambiguation logic in mcp_focus, mcp_debug, and subagent-focus-triage.
+    - Design the preprocessor schema and output contract.
+    - Implement a read-only prototype that grounds a user request in active focus and KB.
+    - Optionally add command canonicalization for mcp_debug/mcp_raw.
+    - Validate with real ambiguous requests.
+  success_criteria:
+    - A documented preprocessor contract (input / output schema).
+    - A working read-only prototype callable from the current session.
+    - At least one real ambiguous request correctly resolved using the prototype.
+    - SSOT and KB entries updated to reflect the new workflow.
+  risks:
+    - Over-engineering the prompt layer; mitigate by scoping to read-only v1 first.
+    - Duplicating existing mcp_focus logic; mitigate by reusing focus_common and mcp_focus where possible.
+  resources:
+    - scripts/mcp_debug/focus.py
+    - scripts/focus_common.py
+    - scripts/subagent-focus-triage (if exists)
+    - docs/ssot/infrastructure/ssot.mcp-focus.yml
+    - docs/ssot/ssot.focus.current.yml
+    - docs/kb/
+    - MDDB for semantic search
+  owner: tony
+  estimated_duration: 2 sessions
+  related_focus:
+    - label: Prompt / command preprocessor for context and precision
+      file: docs/ssot/ssot.focus.current.yml
+
+processing:
+  status: in_progress
+  started_at: '2026-08-19'
+  steps:
+    - id: 1
+      label: Survey existing disambiguation logic in mcp_focus, mcp_debug, and subagent-focus-triage
+      status: in_progress
+      notes: Identify what already resolves ambiguity and what is missing.
+    - id: 2
+      label: Design preprocessor schema and output contract
+      status: not_started
+    - id: 3
+      label: Implement read-only prototype
+      status: not_started
+    - id: 4
+      label: Add command canonicalization for mcp_debug/mcp_raw
+      status: not_started
+    - id: 5
+      label: Validate with ambiguous requests
+      status: not_started
+  decisions: []
+  changes: []
+
+followup:
+  verification:
+    - Run the prototype on "next" and "do this" style inputs.
+    - Run SSOT validation after adding new files.
+    - Run mcp_focus status to ensure no focus state regressions.
+  rollback_plan:
+    - Remove the new preprocessor module and revert any mcp_focus hook changes.
+  handoff:
+    - chaba focus-dispatcher overnight review
+  deferred:
+    - Full MCP tool registration and production wiring may need a follow-up session.
+
+report:
+  status: not_started
+  completed_at: null
+  summary: ''
+  metrics:
+    - files_changed: 0
+  links:
+    - title: Related focus
+      file: docs/ssot/ssot.focus.current.yml
+    - title: Job file
+      file: docs/ssot/jobs/prompt-preprocessor/2026-08-19-prompt-preprocessor.yml
+  kb_review: []
+  lessons_learned: []
+
+config:
+  version: 1
+  created_at: '2026-08-19'
+  last_updated: '2026-08-19'
+  maintainer: tony
+  related_files:
+    - docs/ssot/templates/job.yml

@@ -1532,6 +1532,30 @@ sections:
     - yomi
     - validation
     - completed
+  - label: Streamline mcp-focus and SSOT focus system
+    text: 'The SSOT focus system and mcp-focus have drifted. mcp-focus now supports
+
+      defer/resume, but the SSOT policy, related files, and implementation are not
+
+      fully aligned. Consolidate duplicated triage/safe-to-parallel logic between
+
+      mcp_debug/focus.py and focus_dispatcher/triage.py, update ssot.mcp-focus.yml
+
+      to v2, and wire Ready (Safe) dispatch.
+
+      '
+    date: '2026-08-19'
+    duration: 1 session
+    outcome: 'Completed subtasks: Centralize focus model (triage scoring, priority, safe-to-parallel, branch detection), Update
+      ssot.mcp-focus.yml to match standalone server (v2, related_files, mode docs), Add Ready (Safe) population and ownership/lock
+      checks, Improve error handling and make request optional for read-only modes'
+    tags:
+    - mcp-focus
+    - ssot
+    - focus
+    - streamlining
+    - job-lifecycle
+    - completed
 config:
   version: 2
   last_updated: '2026-08-16'
