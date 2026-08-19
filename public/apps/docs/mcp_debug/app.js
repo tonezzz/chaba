@@ -6,6 +6,7 @@ const FETCH_TIMEOUT = 130000;
 let currentReportData = null;
 let previousReportData = null;
 let autoRefreshId = null;
+let refreshPollId = null;
 
 function formatNumber(n) {
   if (n == null) return '-';
@@ -40,7 +41,8 @@ function fetchWithTimeout(url, options = {}, timeout = FETCH_TIMEOUT) {
 
 function showProgress(text, percent = 0) {
   const el = document.getElementById('progress');
-  const fill = document.getElementById('progress-fill');n  const label = document.getElementById('progress-text');
+  const fill = document.getElementById('progress-fill');
+  const label = document.getElementById('progress-text');
   el.classList.remove('hidden');
   label.textContent = text;
   fill.style.width = percent + '%';
@@ -58,27 +60,42 @@ function setLoading(isLoading) {
   btn.textContent = isLoading ? 'Refreshing...' : 'Refresh';
 }
 
-async function loadReport(forceRefresh = false) {
+function startRefreshPoll() {
+  if (refreshPollId) return;
+  showProgress('Waiting for fresh data from tony-dell, polling every 20 seconds...', 30);
+  refreshPollId = setInterval(() => loadReport(false, { poll: true }), 20000);
+}
+
+function stopRefreshPoll() {
+  if (refreshPollId) { clearInterval(refreshPollId); refreshPollId = null; }
+}
+
+async function loadReport(forceRefresh = false, { poll = false } = {}) {
   const status = document.getElementById('status');
   const meta = document.getElementById('meta');
   const live = document.getElementById('live-note');
-  status.textContent = 'Loading...';
-  if (meta) meta.textContent = '';
+  if (!poll) {
+    status.textContent = 'Loading...';
+    if (meta) meta.textContent = '';
+  }
   if (live) live.textContent = '';
-  setLoading(true);
-  if (forceRefresh) showProgress('Collecting fresh data from tony-dell, this takes ~5 minutes...', 10);
+  if (!poll) setLoading(true);
+  if (forceRefresh) showProgress('Refresh triggered on tony-dell. It will be ready in a few minutes.', 10);
 
   let data;
   try {
-    const res = await fetchWithTimeout(LIVE_DATA_URL + '?t=' + Date.now() + (forceRefresh ? '&refresh=1' : ''), { mode: 'cors' });
+    const res = await fetchWithTimeout(LIVE_DATA_URL + '?t=' + Date.now() + (forceRefresh ? '&refresh=1' : ''), { mode: 'cors' }, poll ? 25000 : FETCH_TIMEOUT);
     if (res.ok) data = await res.json();
   } catch (e) {
     console.warn('Live data failed:', e);
   }
 
-  if (data && data.ok) {
+  const isRefreshing = data?.refreshing === true;
+
+  if (data && data.ok && !isRefreshing) {
     if (live) live.textContent = 'Live data from tony-dell';
     currentReportData = data;
+    stopRefreshPoll();
     try {
       const prevRes = await fetchWithTimeout(PREVIOUS_DATA_URL + '?t=' + Date.now());
       if (prevRes.ok) previousReportData = await prevRes.json();
@@ -86,9 +103,9 @@ async function loadReport(forceRefresh = false) {
       previousReportData = null;
     }
   } else {
-    if (live) live.textContent = 'Live data unavailable; showing cached snapshot.';
+    if (live) live.textContent = isRefreshing ? 'Live refresh in progress on tony-dell...' : 'Live data unavailable; showing cached snapshot.';
     if (data) {
-      data.ok = false;
+      data.ok = data.ok && !isRefreshing;
       currentReportData = data;
     } else {
       try {
@@ -99,6 +116,8 @@ async function loadReport(forceRefresh = false) {
         console.warn('Cached fallback failed:', e);
       }
     }
+    // If the server is still refreshing, start polling for the new report.
+    if (isRefreshing && !refreshPollId) startRefreshPoll();
   }
 
   try {
@@ -116,8 +135,10 @@ async function loadReport(forceRefresh = false) {
     status.textContent = 'Error';
     document.getElementById('report').innerHTML = `<p style="color:#dc2626">Failed to load report: ${escapeHtml(e.message)}</p>`;
   } finally {
-    hideProgress();
-    setLoading(false);
+    if (!refreshPollId) {
+      hideProgress();
+      setLoading(false);
+    }
   }
 }
 

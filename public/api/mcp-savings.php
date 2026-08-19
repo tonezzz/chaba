@@ -2,12 +2,16 @@
 declare(strict_types=1);
 
 $upstream = 'https://tony-dell.taila0626a.ts.net/mcp-savings.json';
-$timeout = 120;
 $fallback = __DIR__ . '/../apps/docs/mcp_debug/data/mcp-savings.json';
 $previous = __DIR__ . '/../apps/docs/mcp_debug/data/mcp-savings-previous.json';
 
 $query = $_SERVER['QUERY_STRING'] ?? '';
 $upstreamUrl = $query ? "$upstream?$query" : $upstream;
+$force = isset($_GET['refresh']) && in_array($_GET['refresh'], ['1', 'true', 'yes'], true);
+
+// For forced refresh, wait up to 15 seconds to give tony-dell a chance to respond with the
+// current cache and a 202 "refreshing" marker. For normal reads, wait up to 60 seconds.
+$timeout = $force ? 15 : 60;
 
 $ctx = stream_context_create([
     'http' => [
@@ -18,23 +22,32 @@ $ctx = stream_context_create([
 
 $body = @file_get_contents($upstreamUrl, false, $ctx);
 $status = $http_response_header[0] ?? 'HTTP/1.0 0';
-$isOk = $body !== false && strpos($status, '200') !== false;
+$statusOk = strpos($status, '200') !== false;
+$statusAccepted = strpos($status, '202') !== false;
 $decoded = null;
-if ($isOk) {
+$isUpstreamOk = false;
+
+if ($body !== false && ($statusOk || $statusAccepted)) {
     $decoded = @json_decode($body, true);
-    $isOk = $decoded !== null && ($decoded['ok'] ?? false);
+    if ($decoded !== null) {
+        $isUpstreamOk = true;
+    }
 }
 
-if ($isOk) {
-    // Keep the previous snapshot before overwriting, for diff panels.
-    if (file_exists($fallback)) {
-        @copy($fallback, $previous);
+if ($isUpstreamOk) {
+    // For 200 (fresh or cached data), store it as the fallback. For 202 (refresh in progress),
+    // pass through immediately without overwriting the fallback.
+    if ($statusOk) {
+        if (file_exists($fallback)) {
+            @copy($fallback, $previous);
+        }
+        @file_put_contents($fallback, $body);
     }
-    @file_put_contents($fallback, $body);
     header('Content-Type: application/json');
     header('Cache-Control: public, max-age=60');
     header('Access-Control-Allow-Origin: *');
-    echo $body;
+    http_response_code($statusAccepted ? 202 : 200);
+    echo json_encode($decoded);
     exit;
 }
 
@@ -50,6 +63,7 @@ if ($fallbackBody !== false) {
     header('Cache-Control: public, max-age=60');
     header('Access-Control-Allow-Origin: *');
     header('X-Fallback: data/mcp-savings.json');
+    http_response_code(200);
     echo json_encode($fallbackData);
     exit;
 }
