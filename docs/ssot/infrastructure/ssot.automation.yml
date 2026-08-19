@@ -76,6 +76,17 @@ automation:
       - docker_volumes (postgres_data, redis_data, weaviate_data)
       - configurations (Docker Compose, environment files, SSOT, systemd)
       - documentation (docs directory)
+
+  audit_suite:
+    ssot: docs/ssot/infrastructure/ssot.audit.yml
+    runner: scripts/audits/run.mjs
+    schedule: "0 2 * * 0"
+    frequency: Sunday at 2 AM
+    timer: systemd/chaba-audit.timer
+    service: systemd/chaba-audit.service
+    log_file: logs/audit-suite.log
+    report_dir: reports/audits
+    status: active (2026-08-19)
     monitoring:
       script: scripts/backup-monitor.sh
       schedule: hourly

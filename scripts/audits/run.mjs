@@ -1,32 +1,44 @@
 #!/usr/bin/env node
 /**
  * Lightweight audit runner.
- * Calls each registered audit script and produces a normalized summary report.
+ * Reads the audit list from docs/ssot/infrastructure/ssot.audit.yml,
+ * runs each audit, and produces a normalized summary report.
  */
-import { spawn } from 'child_process';
+import { spawn, execSync } from 'child_process';
 import { writeFileSync, mkdirSync } from 'fs';
 import { join } from 'path';
-import { fileURLToPath } from 'url';
 
 const PROJECT_ROOT = '/home/tony/CascadeProjects/chaba';
 const REPORTS_DIR = join(PROJECT_ROOT, 'reports', 'audits');
+const SSOT_FILE = join(PROJECT_ROOT, 'docs', 'ssot', 'infrastructure', 'ssot.audit.yml');
 
-const DEFAULT_AUDITS = [
-  { name: 'kb', command: 'node', args: ['scripts/kb-audit.mjs', '--json'] },
-  { name: 'ssot', command: 'node', args: ['scripts/ssot-validate-all.mjs'] },
-  { name: 'security-scan', command: 'node', args: ['scripts/security-scan.mjs', '--json'] },
-];
+function loadAuditSSOT() {
+  const out = execSync(
+    `python3 -c "import yaml, json; print(json.dumps(yaml.safe_load(open('${SSOT_FILE}'))))"`,
+    { encoding: 'utf8' }
+  );
+  return JSON.parse(out);
+}
 
-const FULL_AUDITS = [
-  ...DEFAULT_AUDITS,
-  { name: 'security-audit', command: 'bash', args: ['scripts/security-audit.sh'] },
-];
-
+function getAudits(full = false) {
+  const doc = loadAuditSSOT();
+  const audits = (doc.audits || []).map((a) => ({
+    name: a.name,
+    command: a.command,
+    args: a.args || [],
+    script: a.script,
+  }));
+  if (!full) {
+    // Monthly/privileged audits are only included in --full mode.
+    return audits.filter((a) => a.name !== 'security-audit');
+  }
+  return audits;
+}
 
 function runOne(audit) {
   return new Promise((resolve) => {
     const start = Date.now();
-    const child = spawn(audit.command, audit.args, {
+    const child = spawn(audit.command, [audit.script, ...audit.args], {
       cwd: PROJECT_ROOT,
       stdio: ['ignore', 'pipe', 'pipe'],
     });
@@ -37,7 +49,7 @@ function runOne(audit) {
     child.on('close', (code) => {
       resolve({
         name: audit.name,
-        command: `${audit.command} ${audit.args.join(' ')}`,
+        command: `${audit.command} ${[audit.script, ...audit.args].join(' ')}`,
         ok: code === 0,
         duration_ms: Date.now() - start,
         exit_code: code,
@@ -50,7 +62,9 @@ function runOne(audit) {
 
 async function main() {
   const full = process.argv.slice(2).includes('--full');
-  const AUDITS = full ? FULL_AUDITS : DEFAULT_AUDITS;
+  const AUDITS = getAudits(full);
+  const doc = loadAuditSSOT();
+
   mkdirSync(REPORTS_DIR, { recursive: true });
   const started = new Date().toISOString();
   const results = [];
@@ -62,7 +76,8 @@ async function main() {
   }
 
   const summary = {
-    audit: 'chaba-audit-suite',
+    audit: doc.title || 'chaba-audit-suite',
+    ssot: SSOT_FILE,
     timestamp: started,
     generated: new Date().toISOString(),
     ok: results.every((r) => r.ok),
@@ -79,6 +94,7 @@ async function main() {
   const md = [
     '# Chaba Audit Summary',
     '',
+    `- SSOT: ${SSOT_FILE}`,
     `- Generated: ${summary.generated}`,
     `- Overall: ${summary.ok ? 'PASS' : 'FAIL'}`,
     `- Passed: ${summary.summary.passed}/${summary.summary.total}`,
@@ -112,4 +128,7 @@ async function main() {
   }
 }
 
-main();
+main().catch((e) => {
+  console.error(e);
+  process.exit(1);
+});

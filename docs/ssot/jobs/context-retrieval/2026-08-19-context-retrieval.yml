@@ -1,0 +1,84 @@
+title: Context Retrieval for Active Focuses
+subtitle: Phase 3 of the Context Improvement Plan — provide relevant KB, SSOT, and session summaries when a focus is activated
+icon: target
+
+planning:
+  goal: |
+    Create an mcp_context tool that, given an active focus and a query, returns the most relevant
+    KB, SSOT, and session summaries from MDDB with sub-second latency.
+  scope: |
+    - Design the mcp_context input/output contract.
+    - Prototype a local fallback that ranks relevant docs/kb and docs/ssot files by keyword.
+    - Wire the prototype to MDDB semantic search once the API contract is validated.
+    - Cache results for 24 hours.
+  success_criteria:
+    - mcp_context returns a structured list of relevant items for any active focus.
+    - Response time < 500ms for cached queries.
+    - 90% of known-relevant items appear in top 10.
+  risks:
+    - MDDB API is not stable; mitigate with a local keyword fallback.
+    - Over-querying MDDB; mitigate with file-based cache.
+  resources:
+    - docs/ssot/infrastructure/ssot.mcp-tools.yml
+    - docs/kb/
+    - docs/ssot/
+    - reports/CONTEXT_IMPROVEMENT_PLAN.md
+  owner: tony
+  estimated_duration: 2 sessions
+  related_focus:
+    - label: Context improvement and optimization
+      file: docs/ssot/ssot.focus.current.yml
+
+processing:
+  status: in_progress
+  started_at: '2026-08-19'
+  steps:
+    - id: 1
+      label: Design mcp_context input/output contract
+      status: completed
+      completed_at: '2026-08-19'
+    - id: 2
+      label: Implement local keyword prototype
+      status: completed
+      completed_at: '2026-08-19'
+    - id: 3
+      label: Wire to MDDB semantic search
+      status: not_started
+    - id: 4
+      label: Add 24-hour cache and integrate into session start
+      status: not_started
+  decisions: []
+  changes: []
+
+followup:
+  verification:
+    - Run mcp_context on active focus and review top 10.
+    - Validate SSOT after adding new files.
+  rollback_plan:
+    - Remove mcp_context script and template SSOT.
+  handoff:
+    - chaba overnight review
+  deferred:
+    - Real MDDB integration may need a follow-up session.
+
+report:
+  status: not_started
+  completed_at: null
+  summary: ''
+  metrics:
+    - relevant_items_top_10: 0
+  links:
+    - title: mcp_context script
+      file: scripts/mcp_context.py
+    - title: Active focus
+      file: docs/ssot/ssot.focus.current.yml
+  kb_review: []
+  lessons_learned: []
+
+config:
+  version: 1
+  created_at: '2026-08-19'
+  last_updated: '2026-08-19'
+  maintainer: tony
+  related_files:
+    - docs/ssot/templates/job.yml

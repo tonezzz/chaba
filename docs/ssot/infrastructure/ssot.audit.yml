@@ -1,0 +1,114 @@
+title: Audit Framework
+subtitle: Consolidated testing, validation, and security audit suite
+icon: 🕵️
+version: 1
+
+overview:
+  purpose: |
+    Centralize all project audits (KB, SSOT, security) under one runner and one
+    normalized report format. The framework is SSOT-driven: this file defines
+    which audits exist, how to run them, and where they are scheduled.
+
+config:
+  version: 1
+  last_updated: '2026-08-19'
+  maintainer: tony
+  status: active
+
+runner:
+  script: scripts/audits/run.mjs
+  command: node
+  default_args: []
+  full_args:
+    - --full
+  report_dir: reports/audits
+  outputs:
+    - reports/audits/summary.json
+    - reports/audits/summary.md
+
+ci:
+  pipeline_stage: audits
+  pipeline_script: scripts/ci-pipeline.sh
+
+schedule:
+  default:
+    frequency: weekly
+    timer: systemd/chaba-audit.timer
+    service: systemd/chaba-audit.service
+    args: default_args
+    runs:
+      - kb
+      - ssot
+      - security-scan
+  full:
+    frequency: monthly
+    timer: systemd/chaba-audit-full.timer
+    service: systemd/chaba-audit-full.service
+    args: full_args
+    note: to be created; includes security-audit which may need privileges
+
+audits:
+  - name: kb
+    script: scripts/kb-audit.mjs
+    command: node
+    args:
+      - --json
+    schedule: weekly
+    severity_on_fail: warning
+    description: KB coverage, freshness, and section quality
+
+  - name: ssot
+    script: scripts/ssot-validate-all.mjs
+    command: node
+    args: []
+    schedule: weekly
+    severity_on_fail: error
+    description: SSOT YAML syntax and cross-reference validation
+
+  - name: security-scan
+    script: scripts/security-scan.mjs
+    command: node
+    args:
+      - --json
+    schedule: weekly
+    severity_on_fail: error
+    description: Credential and secret scan across the repo
+
+  - name: security-audit
+    script: scripts/security-audit.sh
+    command: bash
+    args: []
+    schedule: monthly
+    severity_on_fail: error
+    description: System-level security review; run only with --full because it may need privileges
+
+plan:
+  current_state:
+    - scripts/audits/run.mjs now supports --full to include the monthly security-audit
+    - weekly chaba-audit.timer/service runs the default set (kb, ssot, security-scan)
+    - monthly full timer/service is not yet created
+  next_steps:
+    - test: node scripts/audits/run.mjs
+    - test: node scripts/audits/run.mjs --full
+    - create systemd/chaba-audit-full.timer and chaba-audit-full.service for monthly full runs
+    - register this file in docs/ssot/ssot.index.yml if not already present
+    - commit run.mjs and ssot.audit.yml when the plan is verified
+
+related_files:
+  - scripts/audits/run.mjs
+  - scripts/kb-audit.mjs
+  - scripts/ssot-validate-all.mjs
+  - scripts/security-scan.mjs
+  - scripts/security-audit.sh
+  - scripts/ci-pipeline.sh
+  - systemd/chaba-audit.service
+  - systemd/chaba-audit.timer
+
+related_ssot:
+  - docs/ssot/ssot.index.yml
+  - docs/ssot/infrastructure/ssot.automation.yml
+  - docs/ssot/infrastructure/ssot.health.yml
+  - docs/ssot/infrastructure/ssot.mcp-tools.yml
+
+related_kb:
+  - docs/kb/audit-framework.md
