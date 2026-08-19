@@ -1,21 +1,21 @@
 === SSOT Optimization Suggestions ===
 
-Generated: 2026-08-19T13:12:08.077Z
-Bloat warnings: 1
-Data-isolation warnings: 1
+Generated: 2026-08-19T14:47:15.014Z
+Bloat warnings: 0
+Data-isolation warnings: 0
 Other warnings: 0
 
 ## Bloat candidates (highest priority)
 
-- `ssot.focus.decisions.yml`: Bloat: 359 lines exceeds review threshold of 350
+No bloat warnings.
 
 ## Data isolation candidates
 
-- `jobs/infrastructure/2026-08-19-tony-omen-internet-impact.yml`: Data isolation: hardcoded IPv4 address 172.20.10.12
+No data-isolation warnings.
 
 ## Other warnings
 
 No other warnings.
 
 ---
-_Report produced by scripts/ssot-optimize.mjs in 5418ms_
+_Report produced by scripts/ssot-optimize.mjs in 5156ms_
