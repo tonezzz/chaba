@@ -198,6 +198,7 @@ services:
   profiles:
   - home
   - mobile
+  note: 'Weaviate container runs on tony_dell:8084; Caddy on tony_omen proxies /api/weaviate/ to 100.68.142.42:8084'
 - id: mddb-api
   name: MDDB API
   type: http
@@ -360,6 +361,8 @@ services:
   profiles:
   - home
   - mobile
+  disabled: true
+  note: 'The weaviate container and its index timer now run on tony-dell as Podman user units. Check with tony_dell: systemctl --user status weaviate-index.timer'
 - id: cpu-frequency-monitor
   name: CPU Frequency Monitor
   type: systemd
