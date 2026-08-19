@@ -4,6 +4,7 @@
 class ChartRenderer {
     constructor(options = {}) {
         this.containerId = options.containerId || 'main-chart';
+        this.chartType = options.chartType || 'candlestick';
         this.chartSettings = {
             upColor: options.upColor || '#238636',
             downColor: options.downColor || '#da3633',
@@ -94,7 +95,7 @@ class ChartRenderer {
         return `${year}-${month}-${day}`;
     }
 
-    updateChart(data) {
+    updateChart(data, chartType) {
         if (!this.chart || !data || data.length === 0) return;
 
         // Remove any previously-added series so we can switch between candle and line.
@@ -103,16 +104,20 @@ class ChartRenderer {
             this.activeSeries = null;
         }
 
-        // Detect whether the data has genuine OHLC variation. If not, draw a line chart.
+        chartType = chartType || this.chartType || 'candlestick';
+
+        // Detect whether the data has genuine OHLC variation. When the mode is
+        // 'auto' (unspecified or non-candle), fall back to a line chart for flat data.
         const hasOhlc = data.some(d =>
             Number.isFinite(d.open) && Number.isFinite(d.high) &&
             Number.isFinite(d.low) && Number.isFinite(d.close) &&
             (d.open !== d.close || d.high !== d.low || d.high !== d.close)
         );
+        const useCandles = chartType === 'candlestick' || (chartType !== 'line' && hasOhlc);
 
         let displayData = [];
 
-        if (hasOhlc) {
+        if (useCandles) {
             displayData = data
                 .filter(d => d.time != null && Number.isFinite(d.open) && Number.isFinite(d.high) && Number.isFinite(d.low) && Number.isFinite(d.close))
                 .map(d => ({

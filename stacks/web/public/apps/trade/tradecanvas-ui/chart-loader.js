@@ -7,6 +7,7 @@ class ChartLoader {
             containerId: options.containerId || 'main-chart',
             symbol: options.symbol || localStorage.getItem('trade-canvas-selected-currency') || 'THB',
             timeframe: options.timeframe || localStorage.getItem('trade-canvas-selected-timeframe') || '1Y',
+            chartType: options.chartType || localStorage.getItem('trade-canvas-chart-type') || 'candlestick',
             showVolume: options.showVolume !== false,
             showIndicators: options.showIndicators || false,
             enableWebSocket: options.enableWebSocket || false,
@@ -68,6 +69,7 @@ class ChartLoader {
 
             this.renderer = new ChartRenderer({
                 containerId: this.config.containerId,
+                chartType: this.config.chartType,
                 chartSettings: this.chartSettings
             });
 
@@ -95,7 +97,7 @@ class ChartLoader {
                 this.data = this.dataProvider.generateSampleData(this.config.symbol, this.config.timeframe);
                 this.isSampleData = true;
                 this.loadedFromAPI = false;
-                this.renderer.updateChart(this.data);
+                this.renderer.updateChart(this.data, this.config.chartType);
                 this.updateUI();
             }
         }
@@ -110,7 +112,7 @@ class ChartLoader {
         this.isSampleData = result.isSampleData;
         this.loadedFromAPI = result.loadedFromAPI;
 
-        this.renderer.updateChart(this.data);
+        this.renderer.updateChart(this.data, this.config.chartType);
         this.updateUI();
     }
 
