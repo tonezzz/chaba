@@ -85,7 +85,7 @@
 
 	# Weaviate API (now on tony-dell)
 	handle_path /api/weaviate/* {
-		reverse_proxy 100.68.142.42:8084
+		reverse_proxy tony-dell:8084
 		encode gzip
 	}
 
@@ -175,7 +175,7 @@
 
 	# Weaviate API proxy (must come before catchall) -- now on tony-dell
 	handle_path /api/weaviate/* {
-		reverse_proxy 100.68.142.42:8084 {
+		reverse_proxy tony-dell:8084 {
 			header_up Host localhost
 		}
 	}
