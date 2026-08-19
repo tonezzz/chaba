@@ -1,0 +1,43 @@
+title: SSOT file optimization
+subtitle: Reduce bloat and enforce thresholds across SSOT files
+icon: optimize
+focus:
+  label: SSOT file optimization
+  text: Implement the SSOT file optimization plan. Enforce bloat thresholds, scan for data-isolation violations, remove redundant
+    and obsolete entries, standardize consistency, and wire all checks into ssot-validate and .githooks/pre-commit.
+  branch: chaba
+  priority: medium
+  status: active
+  tags:
+  - ssot
+  - optimization
+  - bloat
+  - validation
+  - cleanup
+  missing_info:
+  - Specific threshold values in ssot.file-optimization.yml
+  - Which files currently exceed thresholds
+  - Whether pre-commit hook already runs ssot-validate
+  safe_to_parallel:
+    value: false
+    reason: SSOT-wide changes can affect validation and CI
+  subtasks:
+  - label: Review ssot.file-optimization.yml and current bloat scan results
+    status: not_started
+  - label: Identify files exceeding thresholds and bloat causes
+    status: not_started
+  - label: Apply cleanups or splits to reduce bloat
+    status: not_started
+  - label: Wire bloat and isolation checks into ssot-validate or pre-commit
+    status: not_started
+  - label: Re-run validation and commit results
+    status: not_started
+  started: '2026-08-19'
+ownership:
+  owner: tony
+  session: '2026-08-19'
+  locked: false
+  lock_reason: ''
+source:
+  session: ssot.improvements.yml
+  date: '2026-08-19'
