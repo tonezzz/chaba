@@ -1,3 +1,7 @@
+---
+category: operations
+---
+
 # mddb MCP Server Configuration
 
 ## Context

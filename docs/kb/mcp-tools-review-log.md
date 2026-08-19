@@ -1,3 +1,7 @@
+---
+category: operations
+---
+
 # MCP Tools Review Log
 
 Track usage, fallback decisions, and policy updates for `ssot.mcp-tools.yml`.

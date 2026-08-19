@@ -1,3 +1,7 @@
+---
+category: operations
+---
+
 # Language Detection for Yomi Summarization
 
 ## What it is

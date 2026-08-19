@@ -1,3 +1,7 @@
+---
+category: operations
+---
+
 # Impact Scoring System
 
 ## What it is

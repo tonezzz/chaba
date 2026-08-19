@@ -1,3 +1,7 @@
+---
+category: operations
+---
+
 # Local HTTPS Endpoint for MDDB
 
 This is a reusable recipe for exposing the local MDDB MCP endpoint over HTTPS using `mkcert` and Caddy. It is **not** used by Claude Desktop's connector (which cannot handle MDDB's MCP 2025 protocol), but it is useful for any client that needs a trusted `https://` URL to a local MCP server.

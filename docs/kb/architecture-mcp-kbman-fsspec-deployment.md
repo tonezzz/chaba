@@ -2,6 +2,7 @@
 knowledge_key: mcp-kbman-fsspec-container-deployment
 type: architecture
 title: mcp-kbman fsspec Container Deployment
+category: operations
 description: Container-friendly Google Drive access using fsspec with service account authentication
 tags: [mcp-kbman, fsspec, container, google-drive, service-account]
 created: '2026-08-11'

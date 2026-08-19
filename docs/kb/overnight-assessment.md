@@ -1,3 +1,7 @@
+---
+category: operations
+---
+
 # Overnight System Assessment
 ## What it is
 

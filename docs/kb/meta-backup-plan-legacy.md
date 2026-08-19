@@ -1,5 +1,6 @@
 ---
 title: "KB backup plan"
+category: operations
 date: 2026-07-21
 tags: [meta, backup]
 status: backlog

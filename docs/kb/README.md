@@ -1,3 +1,7 @@
+---
+category: operations
+---
+
 # Knowledge Base Index
 
 Auto-generated index of all KB entries

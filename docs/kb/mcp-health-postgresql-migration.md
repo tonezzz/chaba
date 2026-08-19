@@ -1,3 +1,7 @@
+---
+category: operations
+---
+
 # MCP Health Database Migration (SQLite → PostgreSQL)
 
 ## Context

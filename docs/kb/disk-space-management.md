@@ -1,3 +1,7 @@
+---
+category: operations
+---
+
 # Disk Space Management
 ## What it is
 

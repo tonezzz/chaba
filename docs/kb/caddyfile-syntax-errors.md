@@ -1,3 +1,7 @@
+---
+category: operations
+---
+
 # Caddyfile Syntax Errors
 
 ## What it is

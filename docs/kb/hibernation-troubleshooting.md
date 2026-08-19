@@ -1,3 +1,7 @@
+---
+category: operations
+---
+
 # Hibernation Troubleshooting - Kernel Parameter Mismatch
 ## What it is
 

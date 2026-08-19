@@ -1,3 +1,7 @@
+---
+category: operations
+---
+
 # MDDB Claude Bridge Spec
 
 ## Purpose

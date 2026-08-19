@@ -1,3 +1,7 @@
+---
+category: operations
+---
+
 # Gemini API Integration for Yomi Summarization
 
 ## What it is

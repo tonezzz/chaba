@@ -1,3 +1,7 @@
+---
+category: operations
+---
+
 # Caddy Direct IP Routing for Docker Containers
 
 ## Context

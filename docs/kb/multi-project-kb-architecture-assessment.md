@@ -1,3 +1,7 @@
+---
+category: operations
+---
+
 # Multi-Project KB Architecture Assessment
 
 **Date**: 2026-08-12

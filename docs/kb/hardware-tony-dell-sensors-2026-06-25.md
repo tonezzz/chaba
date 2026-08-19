@@ -1,4 +1,5 @@
 ---
+category: development
 date: 2026-06-25
 hostname: tony-dell
 ip: 192.168.1.37

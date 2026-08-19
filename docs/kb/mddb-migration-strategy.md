@@ -1,3 +1,7 @@
+---
+category: operations
+---
+
 # MDDB Migration Strategy: Old KB to New System
 
 **Abstract**: Comprehensive migration strategy for transitioning from the old docs/kb file-based system to MDDB as the primary knowledge base, including phased approach, cutover criteria, and rollback procedures.

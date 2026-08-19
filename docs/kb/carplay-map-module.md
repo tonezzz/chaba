@@ -1,3 +1,7 @@
+---
+category: operations
+---
+
 # CarPlay Map Module Integration
 ## What it is
 

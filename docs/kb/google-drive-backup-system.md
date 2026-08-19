@@ -1,3 +1,7 @@
+---
+category: operations
+---
+
 # Google Drive Backup System with FUSE Compatibility
 
 ## Context

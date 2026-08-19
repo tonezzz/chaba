@@ -1,3 +1,7 @@
+---
+category: operations
+---
+
 # Google Drive KB Migration Summary
 
 **Date:** 2026-08-13  

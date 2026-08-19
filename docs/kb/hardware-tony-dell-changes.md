@@ -1,4 +1,5 @@
 ---
+category: troubleshooting
 hostname: tony-dell
 date: 2026-07-21
 tags: [hardware, changelog]

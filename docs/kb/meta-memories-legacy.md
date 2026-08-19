@@ -1,5 +1,6 @@
 ---
 title: "Persistent memory index — recurring issues and known fixes"
+category: operations
 date: 2026-07-21
 tags: [meta, memory]
 status: active

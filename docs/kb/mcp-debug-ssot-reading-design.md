@@ -1,3 +1,7 @@
+---
+category: operations
+---
+
 # Design: mcp-debug SSOT registry reading support
 
 ## Context

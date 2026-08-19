@@ -1,3 +1,7 @@
+---
+category: operations
+---
+
 # DNS Resolution: Avahi Interface Restriction Fix
 ## What it is
 

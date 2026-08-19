@@ -1,3 +1,7 @@
+---
+category: operations
+---
+
 # PC Memory Specs
 
 ## System Memory

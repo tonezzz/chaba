@@ -1,3 +1,7 @@
+---
+category: operations
+---
+
 # Headroom Integration & Monitoring Setup Summary
 ## What it is
 

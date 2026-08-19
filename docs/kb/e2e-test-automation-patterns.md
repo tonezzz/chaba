@@ -1,3 +1,7 @@
+---
+category: operations
+---
+
 # E2E Test Automation Patterns
 
 ## What it is

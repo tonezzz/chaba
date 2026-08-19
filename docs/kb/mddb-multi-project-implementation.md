@@ -1,3 +1,7 @@
+---
+category: operations
+---
+
 # MDDB Multi-Project Implementation
 
 **Date**: 2026-08-12

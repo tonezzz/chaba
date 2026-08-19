@@ -1,3 +1,7 @@
+---
+category: operations
+---
+
 # Container Management
 
 ## What it is

@@ -2,6 +2,7 @@
 knowledge_key: mcp-kbman-github-token-auth
 type: architecture
 title: mcp-kbman GitHub Token Authentication
+category: operations
 description: Alternative container deployment approach using GitHub token authentication instead of OAuth
 tags: [mcp-kbman, github, authentication, container]
 created: '2026-08-11'

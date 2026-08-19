@@ -1,3 +1,7 @@
+---
+category: operations
+---
+
 # tony-dell PC Assessment
 
 **Note**: This file contains static hardware specifications. For operational history and changes, see `hardware/tony-dell/changes.md`

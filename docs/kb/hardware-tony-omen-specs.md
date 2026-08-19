@@ -1,3 +1,7 @@
+---
+category: development
+---
+
 # tony-omen — Hardware Specs
 
 **Scanned:** 2026-07-08  

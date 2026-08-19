@@ -1,3 +1,7 @@
+---
+category: operations
+---
+
 # MCP Health Server vs Old Health-Check Skill Comparison
 
 ## Feature Comparison Matrix

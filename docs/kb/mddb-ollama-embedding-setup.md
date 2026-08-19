@@ -1,3 +1,7 @@
+---
+category: operations
+---
+
 # MDDB Ollama Embedding Setup
 
 **Abstract**: Ollama container deployment and configuration for MDDB semantic search with GPU-accelerated embeddings using nomic-embed-text model.

@@ -1,3 +1,7 @@
+---
+category: operations
+---
+
 # MDDB Implementation Complete: KB Replacement Ready
 
 **Abstract**: MDDB implementation successfully completed with full KB migration, Ollama embeddings, semantic search, and comprehensive testing. System is ready to replace old docs/kb with enhanced capabilities.

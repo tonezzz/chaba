@@ -1,3 +1,7 @@
+---
+category: operations
+---
+
 # Headroom Proxy Test Results
 ## What it is
 

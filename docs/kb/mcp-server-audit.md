@@ -1,3 +1,7 @@
+---
+category: operations
+---
+
 # MCP Server Audit Report
 ## What it is
 

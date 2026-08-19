@@ -1,5 +1,6 @@
 ---
 title: "tony-omen: 'Session Already Running' login blocker"
+category: operations
 hostname: tony-omen
 date: 2026-07-20
 tags: [hardware, ubuntu, gdm, xrdp, chrome-remote-desktop]

@@ -1,3 +1,7 @@
+---
+category: development
+---
+
 # Model Token Baseline — 2026-08-17
 
 **Purpose**: Baseline snapshot for comparing GLM-5.2 vs SWE-1.7 Medium token usage and internal thinking length. Re-measure after 100+ GLM-5.2 messages.

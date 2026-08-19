@@ -1,3 +1,7 @@
+---
+category: operations
+---
+
 # MCP Tools Inventory
 ## What it is
 

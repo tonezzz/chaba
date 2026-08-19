@@ -1,3 +1,7 @@
+---
+category: operations
+---
+
 # chaba.h3 Static Pages
 ## What it is
 

@@ -1,5 +1,6 @@
 ---
 title: "Journal — KB structure, memories, and tony-omen session fix"
+category: operations
 date: 2026-07-21
 tags: [journal, kb, tony-omen]
 status: completed
