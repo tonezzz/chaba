@@ -1,0 +1,58 @@
+title: Update pgvector container image and fix Trivy scan
+subtitle: Rebuild the PostgreSQL/pgvector container and resolve ENOBUFS during security scans
+icon: target
+
+planning:
+  goal: Update the pgvector/pgvector:pg16 image to the latest patched version and ensure Trivy can scan it without ENOBUFS errors.
+  scope: 'In scope: chaba-postgres-16 container image, tony-dell podman, Trivy scan configuration. Out of scope: database data volume migration (may need manual dump/restore if not shared).'
+  success_criteria:
+  - trivy image pgvector/pgvector:<new-tag> completes without ENOBUFS and reports only acceptable/accepted findings.
+  - chaba-postgres-16 container is running the new image and passes mcp-health.
+  - If ENOBUFS persists, a workaround (scan a stopped exported filesystem or increase buffer) is documented.
+  risks:
+  - Database container update requires a brief downtime and may need data compatibility checks.
+  - ENOBUFS may be caused by the large pgvector image; may need to increase spawnSync maxBuffer or use a file output.
+  resources:
+  - podman on tony-dell
+  - trivy
+  - docker.io/pgvector/pgvector
+  - postgres data volume
+  owner: tony
+  estimated_duration: 1 session
+  related_focus:
+  - label: Security Vulnerabilities Found (2026-08-20)
+    file: docs/ssot/ssot.focus.current.yml
+
+processing:
+  status: not_started
+  started_at: null
+  steps: []
+  decisions: []
+  changes: []
+
+followup:
+  verification:
+  - 'trivy image pgvector/pgvector:<new-tag> completes and reports severities'
+  - 'mcp-health check_health postgres healthy'
+  - 'podman ps | grep chaba-postgres-16 shows new image tag'
+  rollback_plan:
+  - 'Stop new container, start old container with previous image, verify postgres health'
+  handoff: []
+  deferred: []
+
+report:
+  status: not_started
+  completed_at: null
+  summary: ''
+  metrics: []
+  links: []
+  kb_review: []
+  lessons_learned: []
+
+config:
+  version: 1
+  created_at: '2026-08-20'
+  last_updated: '2026-08-20'
+  maintainer: tony
+  related_files:
+  - docs/ssot/jobs/security/2026-08-20-security-vulnerability-triage.yml
