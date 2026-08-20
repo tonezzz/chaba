@@ -1,0 +1,452 @@
+title: Backlog Archive 2026
+subtitle: Completed backlog items archived from ssot.focus.yml
+icon: archive
+archived_from: /home/tony/CascadeProjects/chaba/docs/ssot/ssot.focus.yml
+archived_at: '2026-08-20'
+layout: list
+items:
+- label: Safe focus continuous processing
+  text: Add a parallel safe-focus lane to the focus dispatcher so the main session can continuously pick up safe-to-run foci
+    while side sessions prepare the inbox, without parking the active shared/branch focus.
+  branch: chaba
+  status: completed
+  previous_status: active
+  started: '2026-08-18'
+  completed: '2026-08-18'
+  priority: high
+  tags:
+  - focus
+  - workflow
+  - dispatcher
+  - subagent
+  - concurrency
+  triage:
+    urgency: 6
+    importance: 7
+    complication: 5
+  job_lifecycle: docs/ssot/jobs/workflow/2026-08-18-safe-focus-continuous-processing.yml
+  subtasks:
+  - label: Add safe_to_parallel schema and triage criteria
+    status: completed
+    completed: '2026-08-18'
+  - label: Add Ready (Safe) section to ssot.focus.current.yml
+    status: completed
+    completed: '2026-08-18'
+  - label: Extend mcp_focus with safe_next / ready_queue mode
+    status: completed
+    completed: '2026-08-18'
+  - label: Update focus-dispatcher to auto-dispatch safe foci
+    status: completed
+    completed: '2026-08-18'
+  - label: Add session ownership/lock fields to active foci
+    status: completed
+    completed: '2026-08-18'
+  - label: Update subagent-focus-triage and contracts
+    status: completed
+    completed: '2026-08-18'
+  - label: Validate and test the workflow
+    status: completed
+    completed: '2026-08-18'
+- label: Gemini key rotation and validation
+  text: The yomi-api GEMINI_API_KEY was rotated in a side session. Complete the remaining Gemini embedding GPU offload work
+    - validate proxy rate limits, create side-by-side test collections, and revisit the MDDB switch.
+  branch: chaba
+  status: completed
+  previous_status: active
+  started: '2026-08-18'
+  completed: '2026-08-18'
+  priority: high
+  tags:
+  - gemini
+  - embedding
+  - gpu-offload
+  - yomi
+  - validation
+  subtasks:
+  - label: Rotate yomi-api GEMINI_API_KEY and restart service
+    status: completed
+    completed: '2026-08-18'
+    note: New key applied to yomi-api override and main service file; stray process killed; service active; Node fetch to
+      Gemini works; /api/yomi/search still fails because Weaviate at localhost:8082 is unreachable.
+  - label: Validate proxy rate limits and batchEmbedContents during bulk indexing
+    status: completed
+    completed: '2026-08-18'
+    note: Proxy health OK (gemini-embedding-001, 768 dims); /api/embed returned 200 for 3-item batch (743ms) and 10 rapid
+      sequential requests all returned 200 with ~450-550ms each; no 429s.
+  - label: Create MDDB/Weaviate side-by-side test collections
+    status: completed
+    completed: '2026-08-18'
+    note: Weaviate GeminiTest class created with manual-vector support (768 dims). Insert/query helper script added. MDDB/YOMI
+      embedding to be completed in yomi session.
+  - label: Revisit MDDB switch from Ollama to Gemini proxy
+    status: completed
+    completed: '2026-08-18'
+    note: Side-by-side validation complete. Gemini quality comparable; latency ~500ms vs Ollama ~100ms warm. Decision - proceed
+      with the switch.
+  job_lifecycle: docs/ssot/jobs/security/2026-08-18-gemini-key-rotation-and-validation.yml
+  source: /home/tony/CascadeProjects/chaba/docs/ssot/focus-inbox/2026-08-18-104228-gemini-key-rotation-and-validation.yml
+- label: Tony-Dell Phase 3 Safe Auto-Recovery
+  text: Implement safe auto-restart commands for tony-dell monitoring after the observe phase.
+  branch: tony-dell
+  status: completed
+  completed: '2026-08-17'
+  priority: medium
+  tags:
+  - monitoring
+  - auto-recovery
+  triage:
+    urgency: 5
+    importance: 8
+    complication: 5
+- label: PlayLive Host-Prefixed Session IDs
+  text: Implement host-prefixed session IDs in playlive-server.py per previous discussion.
+  branch: chaba
+  status: completed
+  completed: '2026-08-17'
+  started: '2026-08-17'
+  priority: low
+  tags:
+  - playlive
+  - testing
+  triage:
+    urgency: 2
+    importance: 3
+    complication: 3
+- label: mcp_focus intake decision tool
+  text: 'Extend mcp_focus to accept a user request and return the exact intake action: active focus match, quick_win, inbox,
+    or backlog.'
+  branch: chaba
+  status: completed
+  priority: medium
+  tags:
+  - mcp
+  - focus
+  - intake
+  - automation
+  triage:
+    urgency: 4
+    importance: 6
+    complication: 4
+  completed: '2026-08-16'
+- label: focus-dispatcher --intake flag
+  text: Add an intake CLI to scripts/focus-dispatcher.py that writes a new item to the correct place based on active focus
+    state.
+  branch: chaba
+  status: completed
+  priority: medium
+  tags:
+  - focus
+  - dispatcher
+  - cli
+  - automation
+  triage:
+    urgency: 4
+    importance: 7
+    complication: 4
+  completed: '2026-08-16'
+- label: ssot.focus.current.yml decision_tree
+  text: Add explicit decision rules to docs/ssot/ssot.focus.current.yml so the assistant no longer has to infer the disposition.
+  branch: chaba
+  status: completed
+  priority: medium
+  tags:
+  - focus
+  - ssot
+  - workflow
+  triage:
+    urgency: 4
+    importance: 8
+    complication: 4
+  completed: '2026-08-16'
+- label: quick_win criteria in current focus
+  text: Define clear quick-win criteria (single file, <5 min, no deploy) in docs/ssot/ssot.focus.current.yml.
+  branch: chaba
+  status: completed
+  priority: medium
+  tags:
+  - focus
+  - workflow
+  - quick-wins
+  triage:
+    urgency: 4
+    importance: 6
+    complication: 2
+  completed: '2026-08-16'
+- label: subagent_focus_triage
+  text: Create a read-only sub-agent profile for focus triage so ambiguous requests can be handed off.
+  branch: chaba
+  status: completed
+  priority: low
+  tags:
+  - subagents
+  - focus
+  - triage
+  triage:
+    urgency: 3
+    importance: 5
+    complication: 3
+  completed: '2026-08-16'
+- label: ssot.focus.decisions.yml log
+  text: Create a canonical decision log for focus intake decisions so the rules can be reviewed and reused.
+  branch: chaba
+  status: completed
+  priority: low
+  tags:
+  - focus
+  - ssot
+  - kb
+  - decisions
+  triage:
+    urgency: 3
+    importance: 5
+    complication: 3
+  completed: '2026-08-16'
+- label: UI policy SSOT
+  text: Create a dedicated UI policy SSOT that captures decision rules and guardrails. Audit ssot.libs.yml, ssot.ui.yml, and
+    trade-specific ssot.ui.* configs for redundant policy-like content; migrate it into the policy SSOT and leave ssot.libs.yml
+    as the component reference. Update ssot.index.yml and cross-references.
+  branch: chaba
+  status: completed
+  completed: '2026-08-17'
+  started: '2026-08-17'
+  priority: medium
+  tags:
+  - ui
+  - ssot
+  - policy
+  - documentation
+  triage:
+    urgency: 4
+    importance: 6
+    complication: 5
+- label: tony-dell podman service migration
+  text: 'Migrate non-GPU Docker services from tony-omen (89% full on /home, 9.6GB free)
+
+    to tony-dell rootless podman (14GB RAM, 67GB free disk, podman 5.7.0). tony-dell
+
+    already runs postgres (chaba-postgres-16) and yomi-api under podman since
+
+    2026-08-16, but both have restart=no and no Quadlet units, so they will not
+
+    survive a reboot. tony-omen still runs a duplicate postgres container and six
+
+    duplicate github-mcp-server containers that should be removed.
+
+    Migration candidates (no GPU): redis, mddb + mddb-panel, raceman-php +
+
+    raceman-web, status-api, weaviate. Must stay on tony-omen: GPU services
+
+    (llama-server, imagen2, ollama, gpu-queue, gpu-queue-processor) and the caddy
+
+    web edge. See ssot.containerization.yml, ssot.services.yml, and
+
+    ssot.yomi-failover.yml for current disposition.
+
+    '
+  branch: tony-dell
+  status: completed
+  completed: '2026-08-17'
+  started: '2026-08-17'
+  priority: high
+  tags:
+  - tony-dell
+  - podman
+  - containers
+  - migration
+  - disk-pressure
+  triage:
+    urgency: 9
+    importance: 8
+    complication: 6
+  subtasks:
+  - label: Harden existing tony-dell podman containers with Quadlet units
+    text: Convert chaba-postgres-16 and yomi-api to ~/.config/containers/systemd/*.container Quadlet units so they auto-start
+      and survive reboot. Currently both have restart=no.
+    status: completed
+    completed: '2026-08-17'
+    note: yomi-api.service already existed; generated chaba-postgres-16.service via podman generate systemd --new and enabled
+      both
+  - label: Decommission tony-omen duplicate postgres container
+    text: Stop and remove the omen postgres container after verifying tony-dell chaba-postgres-16 is the primary per ssot.yomi-failover.yml.
+    status: completed
+    completed: '2026-08-17'
+    note: No duplicate postgres container remains on tony-omen; tony-dell Quadlet unit is enabled and is the primary.
+  - label: Remove six duplicate github-mcp-server containers on tony-omen
+    text: docker rm the 6 stale ghcr.io/github/github-mcp-server containers (musing_bohr, thirsty_nobel, sleepy_ritchie, blissful_bassi,
+      frosty_mcclintock, frosty_noether).
+    status: completed
+    completed: '2026-08-17'
+    note: No github-mcp-server containers (running or stopped) remain on tony-omen; images also absent.
+  - label: Migrate redis to tony-dell podman
+    text: Move redis:7.4-alpine to tony-dell so yomi-api no longer crosses the tailnet for redis://100.75.102.88:6379. Update
+      yomi-api env REDIS_URL to 127.0.0.1:6379.
+    status: completed
+    completed: '2026-08-17'
+    note: Quadlet unit ~/.config/containers/systemd/redis.container enabled; yomi-api REDIS_URL set to tony-dell tailnet IP.
+  - label: Migrate mddb + mddb-panel to tony-dell podman
+    text: Move tradik/mddb:latest and tradik/mddb:panel-latest to tony-dell. Update Caddy reverse proxy on tony-omen to route
+      /api/mddb/* and /mddb/* to tony-dell over the tailnet. Migrate the mddb data volume (~100MB).
+    status: completed
+    completed: '2026-08-17'
+    note: Quadlet units enabled; Caddy on tony-omen routes to 100.68.142.13:11023 and :3002. mddb_mddb-data volume still exists
+      on omen and can be reclaimed with user approval.
+  - label: Migrate raceman stack to tony-dell podman
+    text: Move raceman-web (nginx:alpine) and raceman-php (php-fpm) to tony-dell. Update Caddy to route :8083 to tony-dell.
+      Frees omen disk.
+    status: completed
+    completed: '2026-08-17'
+    note: raceman-web and raceman-php Quadlet units enabled; Caddy routes /apps/raceman/*, /apps/common.css, and /apps/nav.js
+      to tony-dell:8083.
+  - label: Assess weaviate migration to tony-dell
+    text: Weaviate has no GPU dependency but depends on postgres (already on tony-dell). Measure working set size and migration
+      risk before moving.
+    status: completed
+    completed: '2026-08-17'
+    note: Migrated; ~40MB data copied. Weaviate Quadlet unit enabled on port 8084 because chaba-funnel binds 0.0.0.0:8082.
+  - label: Update ssot.services.yml and ssot.containerization.yml with new disposition
+    text: After each migration, update the SSOT to reflect the new host, runtime, ports, and Quadlet unit paths.
+    status: completed
+    completed: '2026-08-18'
+    note: ssot.containerization.yml and ssot.services.yml already describe the tony-dell podman disposition and routing.
+- label: SSOT branch/worktree registry
+  text: 'Create a canonical SSOT that maps each SSOT focus branch to a git branch,
+
+    local worktree path, deploy host, and the systemd services it owns. Derive
+
+    git worktree creation, deployment rsync, and health-check verification from
+
+    this file instead of ad-hoc scp/sed. Start by moving funnel-server.py and the
+
+    tony-dell deployment directory onto a tracked topic branch and worktree.
+
+    '
+  branch: chaba
+  status: completed
+  completed: '2026-08-17'
+  started: '2026-08-17'
+  previous_status: active
+  priority: medium
+  tags:
+  - ssot
+  - git
+  - worktrees
+  - deployment
+  - workflow
+  subtasks:
+  - label: Create or update the SSOT registry file
+    status: completed
+    completed: '2026-08-17'
+  - label: Add mcp_debug policy entries for any new deploy/restart commands
+    status: completed
+    completed: '2026-08-17'
+  - label: Convert tony-dell deployment copy into a chaba-tony-dell worktree
+    status: completed
+    completed: '2026-08-17'
+    note: Created /home/tony/CascadeProjects/chaba-tony-dell on topic/tailscale branch
+  - label: Track funnel-server.py in the repo on a topic/tailscale branch
+    status: completed
+    completed: '2026-08-17'
+    note: funnel-server.py is in tony-dell/chaba-funnel on topic/tailscale
+- label: Merge ollama and llama.cpp into ollama
+  text: Retire the ghcr.io/ggml-org/llama.cpp container and serve the Phi-3 GGUF through ollama. Update mcp-llama to use ollama
+    API/OpenAI-compatible endpoint at 11434. Frees ~7 GB on tony-omen.
+  branch: tony-omen
+  status: completed
+  completed: '2026-08-18'
+  priority: low
+  tags:
+  - ollama
+  - llama
+  - mcp-llama
+  - gpu
+  - merge
+  triage:
+    urgency: 2
+    importance: 5
+    complication: 7
+  subagent:
+    runnable: true
+    profile: subagent_general
+    parallel: true
+    requires_approval: false
+    can_change_host: true
+    host: tony-omen
+    notes: Self-contained GPU-host work; can pull Phi-3 GGUF and reconfigure ollama.
+- label: Split status-api into sensor reader and data API
+  text: Refactor status-api into a stripped hardware-sensor reader that stays on tony-omen, plus a data/web API that runs
+    on tony-dell and kk-macbook and receives sensor payloads. Frees tony-omen from the full web UI image.
+  branch: chaba
+  status: completed
+  completed: '2026-08-18'
+  priority: low
+  tags:
+  - status-api
+  - tony-omen
+  - tony-dell
+  - macbook
+  - refactor
+  triage:
+    urgency: 2
+    importance: 5
+    complication: 8
+  subagent:
+    runnable: true
+    profile: subagent_explore
+    parallel: true
+    requires_approval: true
+    can_change_host: false
+    notes: Needs design and contract first; subagent should produce a design SSOT before implementation.
+- label: Gemini embedding GPU offload
+  text: Evaluate replacing Ollama nomic-embed-text and the stalled port-5000 all-MiniLM service with Google Gemini text-embedding-004.
+    Build an Ollama-compatible Gemini proxy for MDDB, create side-by-side Weaviate/MDDB test collections, compare search relevance
+    and latency, then switch and stop Ollama if successful. SSOT at docs/ssot/infrastructure/ssot.gemini-embedding.yml.
+  branch: chaba
+  status: completed
+  priority: high
+  tags:
+  - gemini
+  - embeddings
+  - gpu
+  - tony-omen
+  - experiment
+  - ssot
+  triage:
+    urgency: 7
+    importance: 8
+    complication: 6
+  subagent:
+    runnable: true
+    profile: subagent_general
+    parallel: true
+    requires_approval: false
+    can_change_host: true
+    host: tony-omen
+    notes: Experiment on tony-omen; build Ollama-compatible Gemini embedding proxy and compare relevance.
+    summary: Built gemini-ollama-proxy on tony-omen port 11435; proxy maps text-embedding-004 to gemini-embedding-001. Gemini
+      latency ~3.7x Ollama; no switch. Report at reports/gemini-embedding-comparison.md.
+  completed: '2026-08-17'
+- label: Review and formalize Sub-Agent Focus Dispatch (SAFD) method
+  text: Review the new SAFD workflow used last night (subagent metadata in focus items, subagent_dispatch rules, background
+    planning + foreground implementation), decide whether it needs a dedicated KB entry, and codify any missing conventions.
+  branch: chaba
+  status: completed
+  completed: '2026-08-18'
+  started: '2026-08-18'
+  priority: low
+  tags:
+  - safd
+  - focus
+  - subagent
+  - process
+  - review
+  triage:
+    urgency: 3
+    importance: 5
+    complication: 2
+  subagent:
+    runnable: true
+    profile: subagent_explore
+    parallel: true
+    requires_approval: false
+    can_change_host: false
+    notes: Read-only review; can run in background and produce a proposal.

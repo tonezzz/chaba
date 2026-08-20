@@ -41,7 +41,7 @@ function main() {
   const maxDepth = thresholds.max_nesting_depth || 8;
   const maxFilesWithSameTitle = thresholds.max_duplicate_titles || 1;
   const excludedTitles = new Set(thresholds.excluded_titles || []);
-  const excludedPaths = (thresholds.excluded_paths || []).map((p) => p.endsWith('/') ? p : p + '/');
+  const excludedPaths = thresholds.excluded_paths || [];
 
   const files = [];
   for (const p of readdirSync(SSOT_DIR, { recursive: true })) {
@@ -75,10 +75,13 @@ function main() {
     };
   });
 
+  const pathMatches = (file, p) =>
+    p.endsWith('/') ? file.startsWith(p) : (file === p || file.startsWith(p + '/'));
+
   for (const item of items) {
     const isExcluded =
       excludedTitles.has(item.title) ||
-      excludedPaths.some((p) => item.file.startsWith(p.endsWith('/') ? p : p + '/'));
+      excludedPaths.some((p) => pathMatches(item.file, p));
     if (isExcluded) continue;
     if (item.parse_error) {
       item.issues.push(`parse error: ${item.parse_error}`);
@@ -99,7 +102,7 @@ function main() {
 
   const isExcluded = (item) =>
     excludedTitles.has(item.title) ||
-    excludedPaths.some((p) => item.file.startsWith(p));
+    excludedPaths.some((p) => pathMatches(item.file, p));
 
   const titleCounts = {};
   for (const item of items) {
