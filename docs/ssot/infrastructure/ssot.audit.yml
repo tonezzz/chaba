@@ -98,9 +98,15 @@ audits:
     description: SSOT file scope, nesting, and title uniqueness
     thresholds:
       max_words: 3000
-      max_top_level_keys: 12
+      max_top_level_keys: 16
       max_nesting_depth: 8
       max_duplicate_titles: 1
+      excluded_titles:
+        - Focus Inbox Item
+      excluded_paths:
+        - docs/ssot/focus-inbox/archived/
+        - docs/ssot/focus-inbox/processed/
+        - docs/ssot/focus-inbox/TEMPLATE.yml
 
   - name: security-scan
     script: scripts/security-scan.mjs

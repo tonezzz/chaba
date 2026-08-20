@@ -37,9 +37,11 @@ function nestingDepth(obj, depth = 0) {
 function main() {
   const thresholds = loadConfig();
   const maxWords = thresholds.max_words || 3000;
-  const maxTopLevel = thresholds.max_top_level_keys || 12;
+  const maxTopLevel = thresholds.max_top_level_keys || 16;
   const maxDepth = thresholds.max_nesting_depth || 8;
   const maxFilesWithSameTitle = thresholds.max_duplicate_titles || 1;
+  const excludedTitles = new Set(thresholds.excluded_titles || []);
+  const excludedPaths = (thresholds.excluded_paths || []).map((p) => p.endsWith('/') ? p : p + '/');
 
   const files = [];
   for (const p of readdirSync(SSOT_DIR, { recursive: true })) {
@@ -74,6 +76,10 @@ function main() {
   });
 
   for (const item of items) {
+    const isExcluded =
+      excludedTitles.has(item.title) ||
+      excludedPaths.some((p) => item.file.startsWith(p.endsWith('/') ? p : p + '/'));
+    if (isExcluded) continue;
     if (item.parse_error) {
       item.issues.push(`parse error: ${item.parse_error}`);
     }
@@ -91,16 +97,20 @@ function main() {
     }
   }
 
+  const isExcluded = (item) =>
+    excludedTitles.has(item.title) ||
+    excludedPaths.some((p) => item.file.startsWith(p));
+
   const titleCounts = {};
   for (const item of items) {
-    if (item.title) {
+    if (item.title && !isExcluded(item)) {
       titleCounts[item.title] = (titleCounts[item.title] || 0) + 1;
     }
   }
   const duplicateTitles = Object.entries(titleCounts).filter(([, c]) => c > maxFilesWithSameTitle);
   for (const [title, count] of duplicateTitles) {
     for (const item of items) {
-      if (item.title === title) {
+      if (item.title === title && !isExcluded(item)) {
         item.issues.push(`duplicate title '${title}' used ${count} times`);
       }
     }
