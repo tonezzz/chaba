@@ -189,9 +189,15 @@ Before using any MCP server, use `ssot-search` or `grep` to read only the releva
 
 ## Request-to-Focus Workflow
 
-At the start of every session, read `docs/ssot/ssot.focus.current.yml` to identify the active shared focus and active branch focus. For each user request:
+At the start of every session:
+- Call `mcp_focus` with `mode=status` (if the mcp-focus server is available) to retrieve active foci, quick wins, and the current recommendation.
+- If the mcp-focus server is not available, read `docs/ssot/ssot.focus.current.yml` directly.
+- For ambiguous or non-trivial requests, call `mcp_focus(request, mode=recommend)` and follow the returned action before doing any work.
+- The canonical machine-readable decision tree and actions are in `docs/ssot/infrastructure/ssot.mcp-focus.yml`; the numbers below are a human-readable summary.
 
-1. Match it against active focus labels, subtasks, quick wins, and backlog items.
+For each user request:
+
+1. Match it against active focus labels, subtasks, quick wins, and backlog items (or use the `mcp_focus` recommendation).
 2. If it matches an active task, append a `request_log` entry and do the work inside that focus.
 3. If it is a small standalone action, add it to `quick_wins` and complete it immediately.
 4. If it is new strategic work, add it to the backlog in `docs/ssot/ssot.focus.yml` and ask the user to activate it.
