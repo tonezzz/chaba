@@ -499,6 +499,11 @@ raw_commands:
     apt-cache: package
     apt-mark: package
     dpkg: package
+
+  caveats:
+  - title: systemctl root unit auth hang
+    text: Non-interactive mcp_raw calls cannot answer polkit or sudo prompts, so `systemctl` commands targeting root units (e.g. `systemctl cat <unit>` or `systemctl status <unit>`) can appear to hang indefinitely. For user services use `systemctl --user <command>`; for root unit files use `cat /etc/systemd/system/<unit>` or `cat /etc/systemd/system/<unit>.d/override.conf` directly.
+
 server:
   script: /home/tony/CascadeProjects/chaba/scripts/mcp_debug/server.py
   wrapper: /home/tony/.config/devin/mcp-scripts/mcp-debug.sh
@@ -651,7 +656,7 @@ suggested_extensions:
     scoring for message and payload savings.'
   priority: high
   status: completed
-  completed: '2026-08-18'
+  updated: '2026-08-20'
   notes: Added mcp_debug_audit and mcp_preset_savings tools; mcp-savings-audit preset runs the audit as one preset call.
 - id: containers
   name: Unified container list
