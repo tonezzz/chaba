@@ -1,47 +1,6 @@
-# Workspace Rules
-
-Distilled from https://github.com/detailobsessed/awesome-devin
-
-TODO: Revisit this repo later to harvest more rules and prompts (memories/, tips, official links).
-
-## Coding Principles
-- Favor clarity and maintainability over brevity or cleverness.
-- Respect language idioms; use descriptive, consistent naming and formatting.
-- Keep functions small and single-responsibility; keep components loosely coupled.
-- Encapsulate complexity behind clear interfaces; apply DRY.
-- Validate inputs; fail fast with clear, actionable error messages.
-- Write tests early and run them frequently; separate pure logic from side effects.
-- Profile before optimizing; manage resources properly (with, finally, RAII).
-
-## Cascade Workflow
-- Use the project's configured tooling and scripts for linting, formatting, and checks instead of manual edits.
-- Verify facts before stating them; double-check changes before committing or creating PRs.
-- Update PRs/issues as work progresses; read comments for context and updates.
-- For larger tasks, suggest creating a GitHub issue to track progress.
-- If Cascade ignores instructions, ask it to "check your guidelines and revise."
-- Reload the window if Cascade behavior degrades after long sessions.
-
-## Commit Messages
-Write a short English commit message (one sentence max) and format it as a code block:
-
-```
-prefix: short description
-```
-
-Allowed prefixes: feat, fix, tweak, style, refactor, perf, test, docs, chore, ci, build, revert, hotfix, init, merge, wip, release
-
-## chaba.h3 Web Pages
-
-When adding or editing pages for `chaba.h3.gizmo-thailand.com`, follow `.windsurf/workflows/add-h3-page.md` and `docs/kb-h3-pages.md`. Key reminders:
-- Work in `/home/tony/CascadeProjects/chaba-h3` and push to the `chaba.h3` branch.
-- Place files under `chaba-h3/public/`; the `web/public/` path from the main branch is not served.
-- Link to explicit `/foo/index.html` URLs unless `proxy-server.mjs` has a directory special case.
-- Use absolute fetch paths such as `/data.json` inside pages.
-
-## Documentation Search Standards
-
-- Use MDDB (`mcp_call_tool mddb semantic_search`) as the primary search method for all SSOT and documentation queries.
-- For SSOT-specific searches: Use MDDB first for conceptual/semantic queries; use the `ssot-search` skill with the "SSOT YAML only" option only when exact YAML pattern matching is required.
-- For broad documentation searches: Use MDDB first; fall back to the MCP docs server (`@devista/docs-mcp`) only if MDDB is unavailable or fails, with user confirmation per the Service Failure and Fallback Procedures.
-- `mcp_call_tool mddb get_stats` shows available collections and document counts; use `mcp_call_tool mddb search_documents` for metadata-only filtering.
-- See `docs/kb/documentation-search.md` for the comprehensive search guide.
+# Workspace rules are maintained in the chaba master SSOT.
+# Load the common rules first, then the branch-specific overlay.
+# If a section conflicts, the overlay takes precedence for this workspace.
+#
+# 1. Load: ../chaba/docs/ssot/ssot.windsurf.common.md
+# 2. Load: ../chaba/docs/ssot/ssot.windsurf.chaba-omen.md
