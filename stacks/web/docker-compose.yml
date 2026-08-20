@@ -90,6 +90,50 @@ services:
     networks:
     - default
 
+  status-api:
+    container_name: status-api
+    build:
+      context: ./status-api
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    expose:
+      - "8000"
+    environment:
+      - REPO_PATH=/repo
+    volumes:
+      - ../..:/repo
+    networks:
+      - default
+
+  netdata:
+    container_name: netdata
+    image: netdata/netdata:stable
+    restart: unless-stopped
+    pid: host
+    ports:
+      - 19999:19999
+    environment:
+      - NETDATA_DISABLE=ebpf,nfacct,perf
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - /etc/os-release:/host/etc/os-release:ro
+    cap_add:
+      - SYS_PTRACE
+      - SYS_ADMIN
+    security_opt:
+      - apparmor=unconfined
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities:
+                - gpu
+    networks:
+      - default
 volumes:
   caddy_data: null
   caddy_config: null
