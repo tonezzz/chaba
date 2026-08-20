@@ -1,0 +1,76 @@
+title: CascadeProjects Workspace Inventory
+subtitle: Classification of all directories under /home/tony/CascadeProjects
+icon: folder
+version: 1
+last_updated: '2026-08-20'
+maintainer: tony
+
+classifications:
+  canonical_git_worktree:
+    description: Main chaba repository on a branch; has thin .windsurfrules pointer.
+    worktrees:
+    - path: /home/tony/CascadeProjects/chaba
+      branch: master
+      purpose: canonical repository; master SSOT
+    - path: /home/tony/CascadeProjects/chaba-h3
+      branch: chaba.h3
+      purpose: chaba h3 public pages branch
+    - path: /home/tony/CascadeProjects/chaba-raceman
+      branch: raceman
+      purpose: raceman branch
+
+  auxiliary_git_worktree:
+    description: Additional chaba worktrees on branches; .windsurfrules now loads master SSOT.
+    worktrees:
+    - path: /home/tony/CascadeProjects/chaba-kbman
+      branch: mcp-kbman
+      purpose: kbman / auto-kb branch
+    - path: /home/tony/CascadeProjects/chaba-omen
+      branch: chaba-omen
+      purpose: omen branch
+    - path: /home/tony/CascadeProjects/chaba-tony-dell
+      branch: topic/tailscale
+      purpose: tony-dell / tailscale branch
+    - path: /home/tony/CascadeProjects/chaba-yomi
+      branch: yomi
+      purpose: yomi branch
+
+  external_project:
+    description: Independent Git repositories; not chaba branches.
+    worktrees:
+    - path: /home/tony/CascadeProjects/helm
+      branch: main
+      purpose: helm charts
+    - path: /home/tony/CascadeProjects/mddb
+      branch: feature/mddb-page-tools
+      purpose: mddb page tools
+    - path: /home/tony/CascadeProjects/trade
+      branch: trade
+      purpose: trade project
+    - path: /home/tony/CascadeProjects/trading-terminal
+      branch: main
+      purpose: trading terminal
+
+  runtime_helper_directory:
+    description: Standalone utility or runtime code; not a Git worktree.
+    worktrees:
+    - path: /home/tony/CascadeProjects/tony-dell-wstunnel
+      branch: null
+      purpose: WebSocket tunnel scripts (Node + Python) used for tony-dell routing
+      note: Consider git init or moving into a managed chaba project.
+
+  generated_deployment_artifact:
+    description: Build or deployment output; not a Git worktree.
+    worktrees:
+    - path: /home/tony/CascadeProjects/public
+      branch: null
+      purpose: Static site output for reefriders-01
+      note: Likely generated from a build; verify before deleting.
+
+  orphan_needs_review:
+    description: Looks like a typo or leftover; not a Git worktree.
+    worktrees:
+    - path: /home/tony/CascadeProjects/chbaba-kbman
+      branch: null
+      purpose: Typo of chaba-kbman; contains mcp-kbman/test_fsspec_detailed.py
+      note: 'Probably safe to delete or merge into chaba-kbman after confirming the test file.'
