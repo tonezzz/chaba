@@ -9,15 +9,17 @@ profiles:
     ssids:
     - TONY-WIFI
     - TONY-WIFI_5G
-    description: Home network with local hostname
+    description: Home network, but mcp-health always reaches tony-omen over the Tailscale tailnet short name (tony-omen).
+    note: Do not use .local/mDNS for health checks. Use tailnet hostnames (tony-omen, tony-dell) and Tailscale IPs. .local is unreliable
+      when mDNS is slow or when the host is on a different interface/path.
   mobile:
     hostname: tony-omen
     base_url: http://tony-omen:8080
     ssids:
     - TONY-IP
     description: Mobile/external network via Tailscale
-    note: Connect to Tailscale first; use the tailnet hostname `tony-omen` (100.75.102.88) instead of a dynamic IP or DDNS
-      hostname
+    note: Connect to Tailscale first; use the tailnet hostname `tony-omen` (100.75.102.88) instead of a dynamic IP, DDNS, or .local/mDNS
+      hostname. .local is intentionally not used by mcp-health.
 alerts:
   enabled: true
   channels:

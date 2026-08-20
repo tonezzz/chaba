@@ -167,7 +167,7 @@ async function loadHealthConfig() {
 
     // Auto-detect network profile
     let profile = 'home';
-    let baseUrl = config.profiles?.home?.base_url || 'http://tony-omen.local:8080';
+    let baseUrl = config.profiles?.home?.base_url || 'http://tony-omen:8080';
 
     // 1. Optional explicit override
     if (process.env.HEALTH_PROFILE) {
@@ -200,10 +200,10 @@ async function loadHealthConfig() {
         }
       }
 
-      // 3. Fall back to hostname reachability
+      // 3. Fall back to hostname reachability (tailnet short name, not .local mDNS)
       if (profile === 'home') {
         try {
-          execSync('ping -c 1 -W 2 tony-omen.local', { stdio: 'ignore' });
+          execSync('ping -c 1 -W 2 tony-omen', { stdio: 'ignore' });
         } catch {
           profile = 'mobile';
           try {

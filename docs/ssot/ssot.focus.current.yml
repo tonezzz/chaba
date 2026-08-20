@@ -196,9 +196,11 @@ sections:
       completed_at: '2026-08-20'
       notes: Disabled remote redis and mddb-container checks in ssot.health.*.yml. trade-api is reachable but slow (~3.4s). All other critical+important services healthy.
     - label: Reconcile .local vs tailnet hostname usage in ssot.health.*.yml
-      status: in_progress
+      status: completed
+      completed_at: '2026-08-20'
+      notes: Updated mcp-health auto-detect to ping tony-omen (tailnet) instead of tony-omen.local. Added notes to ssot.health.yml documenting tailnet-only and .local avoidance. ssot.health.home.yml and mobile.yml already use tony-dell/tony-omen (no .local hostnames).
     - label: Verify tony-dell iPhone hotspot fallback path
-      status: not_started
+      status: in_progress
     - label: Document mDNS vs tailnet behavior per host
       status: not_started
     request_log: []
