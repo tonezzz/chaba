@@ -1,0 +1,35 @@
+title: Home Network Connectivity Triage
+subtitle: Verify home network connectivity between tony-dell, tony-omen, and the macbook, and reconcile mDNS/hostname profiles.
+icon: target
+planning:
+  goal: Verify home network connectivity between tony-dell, tony-omen, and the macbook, and reconcile mDNS/hostname profiles.
+  scope: Internal network paths (tony-omen, tony-dell, tailscale), mDNS .local resolution, and the tony-dell iPhone hotspot
+    path.
+  success_criteria:
+  - All health-critical internal hosts resolve and respond on both home and mobile profiles.
+  - mDNS (.local) versus tailnet hostname behavior is documented for each host.
+  - iPhone hotspot path is either working or parked with a manual step.
+  risks:
+  - Changing hostname in health configs could break existing workflows.
+  - iPhone hotspot requires on-device action; cannot be fixed from tony-dell alone.
+  resources:
+  - ssot.health.home.yml
+  - ssot.health.mobile.yml
+  - mcp-health
+  - mcp_raw
+  owner: tony
+  estimated_duration: 1 session
+  related_focus:
+  - label: Network Connectivity Issues (2026-08-20)
+    file: docs/ssot/ssot.improvements.yml
+processing:
+  status: not_started
+  started_at: null
+  steps: []
+followup:
+  verification: []
+  rollback: []
+  handoff: []
+report:
+  status: pending
+  summary: ''

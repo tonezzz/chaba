@@ -1,0 +1,35 @@
+title: MCP Health Unknown Service Triage
+subtitle: Investigate and resolve mcp-health services reported as unknown after the overnight assessment.
+icon: target
+planning:
+  goal: Investigate and resolve mcp-health services reported as unknown after the overnight assessment.
+  scope: All 19 unknown mcp-health checks, especially those using tony-omen.local, tony-dell, and .local mDNS hostnames.
+  success_criteria:
+  - Each unknown service has been classified as real failure, false positive, or config issue.
+  - Hostname resolution for tony-omen services is consistent between home and mobile profiles.
+  - mcp-health shows fewer than 5 remaining unknown checks.
+  risks:
+  - .local mDNS may fail from tony-dell but succeed from tony-omen; verify which is authoritative.
+  - Disabling real checks as false positives could hide an outage.
+  resources:
+  - mcp-health
+  - ssot.health.home.yml
+  - ssot.health.mobile.yml
+  - tony-dell
+  - tony-omen
+  owner: tony
+  estimated_duration: 1 session
+  related_focus:
+  - label: Service Failures Detected (2026-08-20)
+    file: docs/ssot/ssot.improvements.yml
+processing:
+  status: not_started
+  started_at: null
+  steps: []
+followup:
+  verification: []
+  rollback: []
+  handoff: []
+report:
+  status: pending
+  summary: ''
