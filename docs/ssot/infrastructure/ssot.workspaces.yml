@@ -59,18 +59,16 @@ classifications:
       purpose: WebSocket tunnel scripts (Node + Python) used for tony-dell routing
       note: Consider git init or moving into a managed chaba project.
 
-  generated_deployment_artifact:
-    description: Build or deployment output; not a Git worktree.
+  removed:
+    description: Directories removed after this inventory was created.
     worktrees:
     - path: /home/tony/CascadeProjects/public
       branch: null
       purpose: Static site output for reefriders-01
-      note: Likely generated from a build; verify before deleting.
-
-  orphan_needs_review:
-    description: Looks like a typo or leftover; not a Git worktree.
-    worktrees:
+      removed: '2026-08-20'
+      note: Deleted by user request; verified to be a build artifact.
     - path: /home/tony/CascadeProjects/chbaba-kbman
       branch: null
-      purpose: Typo of chaba-kbman; contains mcp-kbman/test_fsspec_detailed.py
-      note: 'Probably safe to delete or merge into chaba-kbman after confirming the test file.'
+      purpose: Typo of chaba-kbman; contained mcp-kbman/test_fsspec_detailed.py
+      removed: '2026-08-20'
+      note: Deleted by user request; orphan typo directory.
