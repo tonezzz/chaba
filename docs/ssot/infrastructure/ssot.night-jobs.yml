@@ -107,8 +107,10 @@ jobs:
     type: systemd-user-timer
     unit: ssot-optimization-snapshot.timer
     schedule: "*-*-* 03:30:00"
-    enabled: false
-    status: planned
+    enabled: true
+    status: active
+    last_run: '2026-08-19T22:54:00+07:00'
+    next_run: '2026-08-20T03:30:00+07:00'
     description: Run scripts/ssot-optimize.mjs after the focus review to emit reports/SSOT_OPTIMIZATION_METRICS.json and reports/SSOT_OPTIMIZATION_SUGGESTIONS.md.
     log: /home/tony/var/chaba/night/ssot-optimization-snapshot.log
     outputs:
