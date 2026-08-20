@@ -1,0 +1,68 @@
+title: KB Modularity Cleanup - Split Oversized Entries
+subtitle: Reduce the remaining 59 kb-modularity flags by splitting or archiving long KB entries.
+icon: target
+planning:
+  goal: Get the kb-modularity audit under 10 flagged files by splitting the top oversized entries into focused sub-pages or
+    marking reference pages as exempt.
+  scope: docs/kb/*.md entries still flagged under the tuned thresholds (max_words 1500, max_headings 25).
+  success_criteria:
+  - kb-modularity audit reports fewer than 10 flagged files.
+  - All split KB files pass ssot-validate and kb-categorize audits.
+  - No broken internal links after splitting.
+  risks:
+  - Splitting KB entries can break existing MDDB semantic search and internal links.
+  - Overly aggressive exclusion can hide real bloat.
+  resources:
+  - scripts/audits/kb-modularity-audit.mjs
+  - ssot.audit.yml thresholds
+  - MDDB index
+  owner: tony
+  estimated_duration: 2-3 sessions
+  related_focus:
+  - label: KB modularity cleanup
+    file: docs/ssot/ssot.improvements.yml
+processing:
+  status: not_started
+  started_at: null
+  top_candidates:
+  - file: docs/kb/yomi.md
+    words: 4102
+    headings: 87
+  - file: docs/kb/overnight-assessment.md
+    words: 3536
+    headings: 58
+  - file: docs/kb/overnight-jobs-guide.md
+    words: 1648
+    headings: 66
+  - file: docs/kb/health-check.md
+    words: 2226
+    headings: 38
+  - file: docs/kb/mddb-future-improvements.md
+    words: 2029
+    headings: 33
+  - file: docs/kb/global-rules-testing-guide.md
+    words: 1974
+    headings: 32
+  - file: docs/kb/playwright-vs-playlive.md
+    words: 1783
+    headings: 49
+  - file: docs/kb/mddb-migration-strategy.md
+    words: 1703
+    headings: 48
+  - file: docs/kb/ssot-documentation-standards.md
+    words: 1729
+    headings: 45
+  - file: docs/kb/mddb-migration-summary.md
+    words: 1253
+    headings: 43
+  steps: []
+followup:
+  verification:
+  - Run scripts/audits/kb-modularity-audit.mjs
+  - Run scripts/audits/kb-categorize-audit.mjs
+  - Run scripts/ssot-validate-all.mjs
+  rollback: []
+  handoff: []
+report:
+  status: pending
+  summary: ''
