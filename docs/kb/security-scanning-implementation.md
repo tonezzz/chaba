@@ -272,6 +272,16 @@ const nodeDirectories = [
 - **Solution**: Check tool output format, handle non-zero exit codes
 - **Check**: Tool version compatibility with expected output
 
+## 2026-08-20 Update
+
+- `trivy image caddy:latest` found **19 HIGH/CRITICAL** vulnerabilities in the deployed web image:
+  - 5 OS package issues (c-ares, curl)
+  - 14 Go stdlib CVEs not surfaced by `scripts/security-scan.mjs`
+  - A dedicated rebuild job was created at `docs/ssot/jobs/security/2026-08-20-caddy-image-update.yml`.
+- `pgvector/pgvector:pg16` still fails with `ENOBUFS` during Trivy scan; dedicated job created at `docs/ssot/jobs/security/2026-08-20-pgvector-image-update.yml`.
+- `stacks/web/thai-legal-inference/requirements.txt` pip-audit fails because the build requires a Rust toolchain; accepted as a scan-environment limitation.
+- No uncommitted secrets were found in a `git grep` scan for private keys, AWS access keys, or GitHub tokens.
+
 **Missing Tools:**
 - **Error**: "command not found" for trivy/pip-audit/npm
 - **Solution**: Install required security scanning tools
