@@ -2,14 +2,15 @@ title: Focus Inbox Item
 subtitle: Health alert for GPU Queue
 focus:
   label: GPU Queue health
-  text: 'mcp-health reported status ''unknown'' for GPU Queue at 2026-08-20T03:00:18. Error: Command failed: curl -s -o /dev/null
-    -w "%{http_code}" --max-time 5 "http://tony-omen.local:3001/health"'
-  status: draft
+  text: 'mcp-health reported status ''unknown'' for GPU Queue at 2026-08-20T03:00:18. The health check used
+    http://tony-omen.local:3001/health, which does not resolve. A direct test of http://tony-omen:3001/health
+    from tony-omen returned HTTP 200 and the docker container ``gpu-queue'' is Up 46h (healthy).'
+  status: closed
   priority: high
   tags:
   - health
   - inbox
   - critical
+  - false-positive
   missing_info:
-  - Is this a hard failure or transient?
-  - Which other systems depend on this service?
+  - Update mcp-health configuration or the profile hostname so gpu-queue is checked via `tony-omen:3001` instead of `tony-omen.local:3001`.
