@@ -387,15 +387,16 @@ function renderCommandTables(data, { filter = '', sortKey = 'savings_pct_chars' 
       <span class="w-3 h-3 rounded-full" style="background:#22c55e"></span>${host}
     </h2>`;
     html += '<table><thead><tr>';
-    html += '<th>Command</th><th>Status</th><th>Raw chars</th><th>Compact chars</th><th>Saved chars</th><th>Tokens saved</th><th style="min-width:160px">Savings</th><th>Word %</th><th>Action</th>';
+    html += '<th>#</th><th>Command</th><th>Status</th><th>Raw chars</th><th>Compact chars</th><th>Saved chars</th><th>Tokens saved</th><th style="min-width:160px">Savings</th><th>Word %</th><th>Action</th>';
     html += '</tr></thead><tbody>';
-    for (const c of commands) {
+    for (const [idx, c] of commands.entries()) {
       const st = commandStatus(c);
       const savedNegative = (c.saved_chars || 0) < 0 ? 'negative' : '';
       const tokens = Math.round((c.saved_chars || 0) / 4);
       const savingsWidth = Math.min(100, Math.max(0, c.savings_pct_chars || 0));
       const savingsColor = c.savings_pct_chars < 0 ? '#dc2626' : savingsWidth > 70 ? '#16a34a' : '#0a84ff';
       html += `<tr data-host="${host}" data-command="${escapeHtml(c.command)}">
+        <td class="text-right text-xs text-gray-500 font-mono">${idx + 1}</td>
         <td>${escapeHtml(c.command)}</td>
         <td><span class="badge ${st.cls}">${st.text}</span></td>
         <td>${formatNumber(c.raw_chars)}</td>
