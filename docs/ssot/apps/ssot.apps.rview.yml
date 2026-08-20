@@ -1,0 +1,108 @@
+title: RView
+subtitle: Remote media view controller driven by the mcp-rview MCP server.
+icon: 🎬
+sections:
+  - title: Core Features
+    icon: ✅
+    layout: list
+    items:
+      - label: View sessions
+        text: Create, list, and delete named remote view sessions.
+      - label: Media playback
+        text: Show a URL as image, video, audio, PDF, or iframe in the remote view.
+      - label: Playlist queue
+        text: Replace or append a queue of items to a view.
+      - label: Playback controls
+        text: play, pause, stop, next, prev, seek, volume, fullscreen, loop, shuffle, and clear_queue.
+      - label: Status polling
+        text: Any client can read the current state of a view to keep a UI in sync.
+
+  - title: Technical Architecture
+    icon: ⚙️
+    layout: list
+    items:
+      - label: rview-api
+        text: Node.js HTTP service in stacks/web/rview-api/ exposing /state.php endpoints.
+      - label: Static UI
+        text: stacks/web/public/apps/rview/index.html polls the API and renders the current media.
+      - label: mcp-rview MCP server
+        text: scripts/mcp_rview/server.py exposes rview_* tools and proxies to the rview-api state.php endpoint.
+      - label: Caddy routing
+        text: /apps/rview/ serves the static UI; /apps/rview/api/state.php is reverse-proxied to the rview-api service.
+      - label: State persistence
+        text: View state is stored in /data/state.json inside the container via a named volume.
+
+  - title: Files & Modules
+    icon: 📁
+    layout: list
+    items:
+      - label: stacks/web/rview-api/rview-api.mjs
+        text: Node HTTP server implementing the state.php API.
+      - label: stacks/web/rview-api/Dockerfile
+        text: Container image for rview-api.
+      - label: stacks/web/public/apps/rview/index.html
+        text: Static remote view control and media display UI.
+      - label: stacks/web/Caddyfile
+        text: Routes for /apps/rview/ and /apps/rview/api/*.
+      - label: stacks/web/docker-compose.yml
+        text: rview-api container and rview_api_state volume.
+      - label: scripts/mcp_rview/server.py
+        text: MCP server that turns Gemini/function calls into state.php requests.
+
+  - title: Deployment
+    icon: 🚀
+    layout: list
+    items:
+      - label: Docker
+        text: docker compose up rview-api (production profile) builds from stacks/web/rview-api/.
+      - label: Caddy
+        text: Caddy routes /apps/rview/ to the static files and /apps/rview/api/* to rview-api:3007.
+      - label: Environment
+        text: RVIEW_API_PORT defaults to 3007; RVIEW_STATE_FILE defaults to /data/state.json.
+      - label: Registry
+        text: Listed in stacks/web/public/apps/apps.yml and docs/ssot/apps/ssot.apps.yml.
+
+  - title: Testing
+    icon: 🧪
+    layout: list
+    items:
+      - label: API smoke test
+        text: curl to create, show, control, status, and delete a view.
+      - label: MCP smoke test
+        text: Run scripts/mcp_rview/server.py and send tools/call JSON-RPC messages.
+      - label: UI smoke test
+        text: Open /apps/rview/, create a view, and show an image or video URL.
+
+  - title: Integration
+    icon: 🔗
+    layout: list
+    items:
+      - label: mcp-rview
+        text: The MCP server is the intended consumer of the state.php API.
+      - label: gemini-live
+        text: gemini-live will use the Gemini Live API to stream audio and call rview_* tools through mcp-rview.
+
+  - title: Known Issues
+    icon: ⚠️
+    layout: list
+    items:
+      - label: State file
+        text: The default state file is inside the container. Mount rview_api_state volume or set RVIEW_STATE_FILE to a persistent host path.
+      - label: Media playback state
+        text: The API tracks requested state; actual playback timing (currentTime, buffering) is not synchronized for live streams.
+
+config:
+  version: 1
+  created: 2026-08-20
+  maintainer: tony
+  status: experimental
+  deployment: production
+  related_files:
+    - stacks/web/rview-api/rview-api.mjs
+    - stacks/web/rview-api/Dockerfile
+    - stacks/web/public/apps/rview/index.html
+    - stacks/web/Caddyfile
+    - stacks/web/docker-compose.yml
+    - scripts/mcp_rview/server.py
+    - scripts/mcp_rview/views.py
+    - docs/ssot/apps/ssot.apps.yml

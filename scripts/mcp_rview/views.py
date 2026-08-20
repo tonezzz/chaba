@@ -24,8 +24,7 @@ def _request(action, view_id=None, payload=None):
 
     if action in ("list", "status"):
         qs = []
-        if action == "list":
-            qs.append("action=list")
+        qs.append(f"action={urllib.parse.quote(action)}")
         if view_id is not None:
             qs.append(f"view_id={urllib.parse.quote(view_id)}")
         if qs:

@@ -63,6 +63,19 @@
 		file_server
 	}
 
+	handle /apps/rview {
+		redir /apps/rview/ 308
+	}
+
+	handle_path /apps/rview/api/* {
+		reverse_proxy rview-api:3007
+	}
+
+	handle_path /apps/rview/* {
+		root * /srv/public/apps/rview
+		file_server
+	}
+
 	handle /api/yomi/* {
 		reverse_proxy tony-dell:3000
 	}
