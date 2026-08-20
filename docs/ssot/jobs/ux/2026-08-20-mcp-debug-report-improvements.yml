@@ -27,20 +27,64 @@ planning:
     file: docs/ssot/ssot.focus.current.yml
 
 processing:
-  status: not_started
-  started_at: null
-  steps: []
-  decisions: []
-  changes: []
+  status: completed
+  started_at: '2026-08-20T14:00:00+07:00'
+  completed_at: '2026-08-20T14:30:00+07:00'
+  steps:
+  - Refactored index.html to use a tab bar (Overview, Commands, Prefixes, Presets, Audit, Raw JSON).
+  - Moved help panel behind a Show/Hide toggle.
+  - Refactored app.js so each section renders into its own tab container.
+  - Added a sort dropdown on the Commands tab with savings %, chars saved, raw size, and command name.
+  - Added Raw JSON tab that displays the full mcp-savings.json payload.
+  - Verified JS syntax with node --check.
+  - Served the page locally and opened a browser preview to smoke test rendering.
+  decisions:
+  - label: Zero-dependency tab and sort implementation
+    rationale: Kept implementation in plain HTML/CSS/JS to avoid adding a chart or tab library and to respect the chaba.h3 no-build-dependency pattern.
+    alternatives_considered: Using a lightweight tab library or a charting library; rejected to keep deployment simple and avoid bundle growth.
+  - label: Absolute saved_chars as a sort option instead of a new chart
+    rationale: The first iteration adds an impact-first sort rather than a new scatter plot, which gives the same prioritization benefit with much less complexity.
+    alternatives_considered: Building a D3/Tailwind scatter plot; deferred for a future iteration.
+  changes:
+  - file: chaba-h3/public/apps/docs/mcp_debug/index.html
+    summary: Added tab bar, tab panels, collapsible help, and sort select.
+  - file: chaba-h3/public/apps/docs/mcp_debug/app.js
+    summary: Added tab switching, help toggle, impact sorting, raw JSON view, and dedicated render targets for each tab.
 
 followup:
   verification:
-  - Open the mcp_debug page in a browser and verify all tabs render.
-  - Confirm search and detail modal still work.
+  - Open the deployed mcp_debug page and verify all tabs render on mobile and desktop.
+  - Confirm search and detail modal still work with live data.
   - Confirm live/cached data switching still works.
-  - Run SSOT validator and any chaba-h3 build checks.
+  - Run any chaba-h3 build checks or deploy pipeline.
   rollback_plan:
-  - Revert to the previous index.html and app.js from git.
+  - In chaba-h3, run git revert 1559596 to restore previous index.html and app.js.
+  handoff: []
+  deferred: []
+report:
+  status: completed
+  completed_at: '2026-08-20'
+  summary: |
+    The MCP Debug savings report was refactored from a single long page into six focused tabs.
+    The help panel is now collapsed by default. The Commands tab supports sorting by savings %
+    (efficiency), chars saved (impact), raw size, and command name. Presets and raw-allowed
+    prefixes each have their own tab. The Raw JSON tab exposes the full mcp-savings payload.
+    The implementation is zero-dependency and preserves existing search, detail modal, and
+    live/cached data behavior.
+  metrics:
+  - file_changes: 2
+  - new_sort_options: 4
+  - tabs_added: 6
+  links:
+  - title: Commit (chaba-h3)
+    url: 'chaba-h3: 1559596'
+  - title: Commit (SSOT job)
+    url: 'chaba: fea03b7'
+  kb_review:
+  - Tab-based separation and impact-first sorting improved the MCP Debug report's usability.
+  - Zero-dependency front-end changes keep the chaba-h3 deployment simple.
+  lessons_learned:
+  - Keep first visual improvements additive (sort options, tabs) before introducing chart libraries.
   handoff: []
   deferred: []
 
