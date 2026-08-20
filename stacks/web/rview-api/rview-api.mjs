@@ -249,7 +249,7 @@ function readBody(req) {
 }
 
 function sendJson(res, status, data) {
-  res.writeHead(status, { "Content-Type": "application/json" });
+  res.writeHead(status, { "Content-Type": "application/json", "Cache-Control": "no-store" });
   res.end(JSON.stringify(data));
 }
 
