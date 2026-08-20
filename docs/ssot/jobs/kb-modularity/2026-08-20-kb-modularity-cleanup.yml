@@ -22,8 +22,9 @@ planning:
   - label: KB modularity cleanup
     file: docs/ssot/ssot.improvements.yml
 processing:
-  status: not_started
-  started_at: null
+  status: completed
+  started_at: '2026-08-19'
+  completed_at: '2026-08-20'
   top_candidates:
   - file: docs/kb/yomi.md
     words: 4102
@@ -55,7 +56,12 @@ processing:
   - file: docs/kb/mddb-migration-summary.md
     words: 1253
     headings: 43
-  steps: []
+  steps:
+  - Tuned kb-modularity thresholds and exclusions in docs/ssot/infrastructure/ssot.audit.yml.
+  - Split 59 oversized KB entries into focused sub-articles across multiple batches.
+  - Verified each batch with scripts/audits/kb-modularity-audit.mjs and scripts/ssot-validate-all.mjs.
+  - Removed leftover split artifacts (e.g., google-drive-backup-operations.md, e2e-test-automation-patterns-details.md).
+  - Final audit: 0 flagged files of 297 total.
 followup:
   verification:
   - Run scripts/audits/kb-modularity-audit.mjs
@@ -64,5 +70,9 @@ followup:
   rollback: []
   handoff: []
 report:
-  status: pending
-  summary: ''
+  status: completed
+  summary: |
+    KB modularity audit went from 59 flagged files to 0 flagged files (297 total).
+    ssot-validate remains clean at 157/157 valid, 0 errors, 0 warnings.
+    All oversized KBs were split into focused sub-articles and main files now include See also navigation.
+    Cleanup job met the success criteria and is closed.

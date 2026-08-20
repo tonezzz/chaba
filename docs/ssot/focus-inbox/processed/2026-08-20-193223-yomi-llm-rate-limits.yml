@@ -1,0 +1,49 @@
+title: Yomi LLM and rate-limit configuration on tony-dell
+subtitle: One new focus to triage
+icon: inbox
+
+focus:
+  label: yomi-llm-rate-limits
+  text: |
+    Yomi conversation processing on tony-dell is sensitive to the Gemini model
+    and rate limits configured in the yomi-api systemd user service. We already
+    switched the live `yomi-api.service` environment from `gemma-4-31b-it` (which
+    returns 401) to `gemini-3.5-flash-lite` (which connects), but the
+    `chaba-tony-dell/stacks/web/docker-compose.yml` still lists
+    `gemini-2.5-flash` and the `gemma-4` vision models. The
+    `EMBEDDING_SERVICE_URL` is also stale (`100.75.102.88:5000`) and unused by
+    `yomi-api.mjs`, which instead calls Google's `getGeminiEmbedding`.
+
+    The immediate goal is to make sure `process-conversations.mjs` can run
+    reliably without exhausting the Google free-tier, and to reconcile the
+    runtime `.service` configuration with the versioned compose/worktree source
+    of truth.
+  branch: tony-dell
+  priority: high
+  status: draft
+  tags: [yomi, gemini, rate-limit, tony-dell, process-conversations]
+  missing_info:
+    - Should the runtime source of truth move from `~/.config/systemd/user/yomi-api.service` to a Quadlet `.container` file or stay as the `.service`?
+    - Is `chaba-tony-dell/stacks/web/docker-compose.yml` actually used for yomi-api, or should it be the standalone `.service`?
+    - Do we still want an `EMBEDDING_SERVICE_URL` for `yomi-api` if only `getGeminiEmbedding` is used?
+    - Should `GEMINI_VISION_MODEL_*` also switch to `gemini-3.5-flash-lite` or is `gemini-2.5-flash` acceptable once the daily quota resets?
+  safe_to_parallel:
+    value: false
+    reason: Deploying and testing Yomi on tony-dell needs the same SSH/Podman host and the same `yomi-api` systemd unit; running other tony-dell work in parallel risks conflicting restarts.
+  subtasks:
+    - label: Sync docker-compose with the live .service env
+      status: not_started
+    - label: Verify a full end-to-end process-conversations run
+      status: not_started
+    - label: Document final model + rate-limit choices in SSOT
+      status: not_started
+
+ownership:
+  owner: tony
+  session: ""
+  locked: false
+  lock_reason: ""
+
+source:
+  session: ""
+  date: 2026-08-20

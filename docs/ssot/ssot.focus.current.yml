@@ -187,9 +187,10 @@ sections:
     text: mcp-health reported status 'unknown' for Sensor Reader at 2026-08-20T03:00:18. A direct test of http://tony-omen:8001/health
       from tony-omen returned HTTP 200 and the docker container ``sensor-reader'' is Up 2 days. The 'unknown' result was a
       transient or hostname-resolution false positive.
-    status: active
+    status: closed
     priority: medium
     started: '2026-08-20'
+    closed: '2026-08-20'
     estimated_duration: 1 session
     tags:
     - health
@@ -243,6 +244,58 @@ sections:
     branch: chaba
     previous_status: active
     parked: '2026-08-20'
+  - label: yomi-llm-rate-limits
+    text: 'Yomi conversation processing on tony-dell is sensitive to the Gemini model
+
+      and rate limits configured in the yomi-api systemd user service. We already
+
+      switched the live `yomi-api.service` environment from `gemma-4-31b-it` (which
+
+      returns 401) to `gemini-3.5-flash-lite` (which connects), but the
+
+      `chaba-tony-dell/stacks/web/docker-compose.yml` still lists
+
+      `gemini-2.5-flash` and the `gemma-4` vision models. The
+
+      `EMBEDDING_SERVICE_URL` is also stale (`100.75.102.88:5000`) and unused by
+
+      `yomi-api.mjs`, which instead calls Google''s `getGeminiEmbedding`.
+
+
+      The immediate goal is to make sure `process-conversations.mjs` can run
+
+      reliably without exhausting the Google free-tier, and to reconcile the
+
+      runtime `.service` configuration with the versioned compose/worktree source
+
+      of truth.
+
+      '
+    status: active
+    priority: high
+    started: '2026-08-20'
+    estimated_duration: 1 session
+    tags:
+    - yomi
+    - gemini
+    - rate-limit
+    - tony-dell
+    - process-conversations
+    subtasks:
+    - label: Sync docker-compose with the live .service env
+      status: not_started
+    - label: Verify a full end-to-end process-conversations run
+      status: not_started
+    - label: Document final model + rate-limit choices in SSOT
+      status: not_started
+    request_log: []
+    ownership:
+      owner: tony
+      session: ''
+      locked: true
+      lock_reason: Activated as active focus
+    branch: tony-dell
+    source: /home/tony/CascadeProjects/chaba/docs/ssot/focus-inbox/2026-08-20-193223-yomi-llm-rate-limits.yml
   - label: Consolidate focus system architecture
     text: 'The SSOT focus system has solid routing ideas but duplicated implementations between
 
@@ -255,9 +308,11 @@ sections:
       basic validation/tests.
 
       '
-    status: active
+    status: parked
+    previous_status: active
     priority: medium
     started: '2026-08-20'
+    parked: '2026-08-20'
     estimated_duration: 2-3 sessions
     tags:
     - focus

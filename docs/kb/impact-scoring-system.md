@@ -12,112 +12,6 @@ Data-driven improvement prioritization system that quantifies expected value usi
 Created 2026-08-04 as part of Chaba infrastructure documentation.
 
 
-## Impact Categories
-
-### Business Impact (1-10 scale)
-- Revenue impact, customer satisfaction, competitive advantage
-- 10: Critical business impact, revenue-generating
-- 7-9: Significant business value, strategic importance
-- 4-6: Moderate business value, operational improvement
-- 1-3: Low business value, nice to have
-
-### Technical Impact (1-10 scale)
-- Code quality, architecture, performance, security
-- 10: Critical technical debt, security vulnerability
-- 7-9: Significant technical improvement, performance gain
-- 4-6: Moderate technical improvement, code quality
-- 1-3: Low technical impact, minor cleanup
-
-### User Experience Impact (1-10 scale)
-- Usability, performance, reliability, features
-- 10: Critical UX issue, user-facing outage
-- 7-9: Significant UX improvement, major feature
-- 4-6: Moderate UX improvement, minor feature
-- 1-3: Low UX impact, polish
-
-### Cost Savings Impact (1-10 scale)
-- Infrastructure costs, operational efficiency, time savings
-- 10: Major cost reduction, significant savings
-- 7-9: Moderate cost reduction, measurable savings
-- 4-6: Minor cost reduction, some efficiency gains
-- 1-3: Minimal cost impact, negligible savings
-
-## Priority Calculation
-
-### Weighted Average Formula
-```
-Overall Impact = (business_impact × 0.3) + (technical_impact × 0.3) + 
-                 (user_experience_impact × 0.2) + (cost_savings_impact × 0.2)
-```
-
-### Priority Mapping
-- Overall Impact ≥ 8: HIGH priority
-- Overall Impact 5-7: MEDIUM priority
-- Overall Impact < 5: LOW priority
-
-## Impact Scoring Script
-
-### Script Location
-`scripts/impact-scoring.mjs`
-
-### Usage Modes
-
-#### Analyze Mode
-```bash
-node scripts/impact-scoring.mjs analyze
-```
-- Shows impact distribution by category
-- Displays category impact averages
-- Lists impact summaries for each improvement
-
-#### Score Mode
-```bash
-node scripts/impact-scoring.mjs score
-```
-- Calculates overall impact scores for all improvements
-- Suggests priority based on impact
-- Identifies priority mismatches (manual vs impact-based)
-- Sorts improvements by overall impact score
-
-#### Prioritize Mode
-```bash
-node scripts/impact-scoring.mjs prioritize
-```
-- Shows top 10 highest impact improvements
-- Displays priority mismatches with status and effort
-- Provides effort vs impact analysis
-- Identifies quick wins and low-impact/high-effort items
-
-## SSOT Integration
-
-### SSOT Fields
-```yaml
-- label: Improvement Name
-  business_impact: 6
-  technical_impact: 8
-  user_experience_impact: 7
-  cost_savings_impact: 5
-  impact_summary: Brief description of expected impact
-```
-
-### Default Values
-- Missing impact scores default to 5 (neutral impact)
-- Use explicit scoring for accurate prioritization
-
-## Overnight Assessment Integration
-
-### Impact Analysis in Reports
-- High Impact Improvements section (≥8/10)
-- Impact distribution counts (high/medium/low)
-- Category impact averages
-- Priority mismatch identification
-
-### Assessment Enhancements
-- Impact scores automatically analyzed during overnight assessments
-- High impact improvements highlighted in reports
-- Impact distribution included in assessment results
-- Priority mismatches identified for review
-
 ## Best Practices
 
 ### Scoring Guidelines
@@ -172,3 +66,9 @@ business_impact: 6  # Not "business_impact: 6/10"
 - **prioritization**: Resource allocation decisions
 - **assessment**: Overnight assessment integration
 - **ssot**: Single source of truth integration
+
+## See also
+
+- [Impact Scoring Calculation](impact-scoring-calculation.md)
+- [Impact Scoring Categories](impact-scoring-categories.md)
+- [Impact Scoring Integration](impact-scoring-integration.md)
