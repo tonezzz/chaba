@@ -2022,7 +2022,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         
         // If URL still contains placeholder, resolve it manually
         if (serviceUrl.includes('{profile}')) {
-          const baseUrl = config.detectedBaseUrl || 'http://tony-omen.local:8080';
+          const baseUrl = config.detectedBaseUrl || 'http://tony-omen:8080';
           serviceUrl = serviceUrl.replace('{profile}', baseUrl);
         }
         
