@@ -18,8 +18,8 @@ const contentTypes = {
   '.svg': 'image/svg+xml'
 };
 
-const GEMINI_LIVE_API = process.env.GEMINI_LIVE_API_URL || 'http://tony-omen.local:3002';
-const RVIEW_API = process.env.RVIEW_API_URL || 'http://tony-omen.local:3007';
+const GEMINI_LIVE_API = process.env.GEMINI_LIVE_API_URL || 'http://tony-dell:3008';
+const RVIEW_API = process.env.RVIEW_API_URL || 'http://tony-dell:3007';
 
 function rewriteHost(headers, host) {
   const copy = { ...headers };
