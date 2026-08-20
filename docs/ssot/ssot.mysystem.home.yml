@@ -60,9 +60,9 @@ sections:
         text: PostgreSQL database server (port 5432)
         tags: [database, postgres]
       - label: yomi-api
-        text: LINE conversation archive and viewer API (port 3000)
+        text: Caddy reverse proxy for Yomi API to tony-dell (port 3000)
         url: http://tony-omen.local:8080/api/yomi/conversations
-        tags: [api, line, messaging]
+        tags: [api, line, messaging, caddy]
       - label: Apps Server
         text: Main apps server on port 8080
         url: http://tony-omen.local:8080
@@ -74,6 +74,10 @@ sections:
     icon: ⚙️
     layout: list
     items:
+      - label: yomi-api
+        text: Primary Yomi API container in Podman on tony-dell (port 3000)
+        url: http://tony-dell.local:3000
+        tags: [api, line, messaging, podman]
       - label: Apps Server
         text: Testing apps server on port 8080
         url: http://tony-dell.local:8080
@@ -138,6 +142,20 @@ sections:
       - label: Mobile Health Config
         text: External/mobile health check configuration
         url: file:///home/tony/CascadeProjects/chaba/docs/ssot/infrastructure/ssot.health.mobile.yml
+
+  - title: mcp-debug & Service Discovery
+    icon: 🔧
+    layout: list
+    items:
+      - label: Root systemctl
+        text: Avoid root `systemctl` commands in `mcp-debug`/`mcp_raw` calls. They hang on polkit/sudo prompts in non-interactive sessions. Use `systemctl --user` for user services instead.
+        tags: [mcp-debug, systemctl, troubleshooting]
+      - label: Podman yomi-api
+        text: The primary `yomi-api` instance runs in a Podman container on tony-dell. Check it with `ssh tony@tony-dell podman ps` or `podman exec -it yomi-api ...` directly on the host. Caddy on tony-omen reverse-proxies `/api/yomi/*` to tony-dell:3000.
+        tags: [mcp-debug, podman, yomi]
+      - label: Service discovery
+        text: Do not assume a service is a local systemd unit. Verify with `systemctl --user status <service>` or `podman ps` before running `mcp-debug` commands. Yomi timers (`yomi-fetch`, `yomi-process`) may still be systemd units on tony-omen.
+        tags: [mcp-debug, systemctl, podman]
 
 config:
   version: 1
