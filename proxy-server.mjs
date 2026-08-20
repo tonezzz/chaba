@@ -2,7 +2,8 @@ import { createReadStream } from 'node:fs';
 import { stat } from 'node:fs/promises';
 import { extname, join, normalize } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { createServer } from 'node:http';
+import { createServer, request as httpRequest } from 'node:http';
+import { connect as netConnect } from 'node:net';
 
 const port = Number.parseInt(process.env.PORT ?? '8080', 10);
 const publicDirectory = fileURLToPath(new URL('./public/', import.meta.url));
@@ -17,13 +18,69 @@ const contentTypes = {
   '.svg': 'image/svg+xml'
 };
 
+const GEMINI_LIVE_API = process.env.GEMINI_LIVE_API_URL || 'http://tony-omen.local:3002';
+const RVIEW_API = process.env.RVIEW_API_URL || 'http://tony-omen.local:3007';
+
+function rewriteHost(headers, host) {
+  const copy = { ...headers };
+  copy.host = host;
+  delete copy.Host;
+  return copy;
+}
+
+function proxyHttp(req, res, base, prefix) {
+  const target = new URL(base);
+  const original = new URL(req.url ?? '/', 'http://localhost');
+  const proxyPath = original.pathname.slice(prefix.length) + original.search;
+  const proxyReq = httpRequest({
+    hostname: target.hostname,
+    port: target.port,
+    path: proxyPath,
+    method: req.method,
+    headers: rewriteHost(req.headers, `${target.hostname}:${target.port}`),
+  }, (proxyRes) => {
+    res.writeHead(proxyRes.statusCode ?? 502, proxyRes.statusMessage, proxyRes.headers);
+    proxyRes.pipe(res);
+  });
+  proxyReq.on('error', (err) => {
+    console.error('proxy error', prefix, err.message);
+    res.writeHead(502, { 'Content-Type': 'text/plain; charset=utf-8' });
+    res.end('Bad gateway');
+  });
+  req.pipe(proxyReq);
+}
+
+function proxyWs(req, socket, head, base, prefix) {
+  const original = new URL(req.url ?? '/', 'http://localhost');
+  const target = new URL(base);
+  const proxyPath = original.pathname.slice(prefix.length) + original.search;
+  const client = netConnect(target.port, target.hostname, () => {
+    let raw = `${req.method} ${proxyPath} HTTP/1.1\r\n`;
+    const headers = rewriteHost(req.headers, `${target.hostname}:${target.port}`);
+    for (const [key, value] of Object.entries(headers)) {
+      raw += `${key}: ${value}\r\n`;
+    }
+    raw += '\r\n';
+    client.write(raw);
+    if (head && head.length) client.write(head);
+    socket.pipe(client);
+    client.pipe(socket);
+  });
+  client.on('error', (err) => {
+    console.error('ws proxy error', prefix, err.message);
+    socket.destroy();
+  });
+  socket.on('error', () => client.destroy());
+}
+
 const server = createServer(async (request, response) => {
   response.setHeader('X-Content-Type-Options', 'nosniff');
   response.setHeader('X-Frame-Options', 'SAMEORIGIN');
   response.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
   response.setHeader('Strict-Transport-Security', 'max-age=31536000');
 
-  const pathname = decodeURIComponent(new URL(request.url ?? '/', 'http://localhost').pathname);
+  const url = new URL(request.url ?? '/', 'http://localhost');
+  const pathname = decodeURIComponent(url.pathname);
 
   if (pathname === '/health') {
     response.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
@@ -47,6 +104,16 @@ const server = createServer(async (request, response) => {
       response.writeHead(503, { 'Content-Type': 'application/json; charset=utf-8' });
       response.end(JSON.stringify({ error: 'Unable to reach health check service', message: error.message }));
     }
+    return;
+  }
+
+  if (pathname.startsWith('/api/gemini-live/')) {
+    proxyHttp(request, response, GEMINI_LIVE_API, '/api/gemini-live');
+    return;
+  }
+
+  if (pathname.startsWith('/apps/rview/api/')) {
+    proxyHttp(request, response, RVIEW_API, '/apps/rview/api');
     return;
   }
 
@@ -91,6 +158,18 @@ const server = createServer(async (request, response) => {
     'Content-Length': file.size
   });
   createReadStream(filePath).pipe(response);
+});
+
+server.on('upgrade', (request, socket, head) => {
+  const url = new URL(request.url ?? '/', 'http://localhost');
+  const pathname = decodeURIComponent(url.pathname);
+  if (pathname.startsWith('/api/gemini-live/')) {
+    proxyWs(request, socket, head, GEMINI_LIVE_API, '/api/gemini-live');
+  } else if (pathname.startsWith('/apps/rview/api/')) {
+    proxyWs(request, socket, head, RVIEW_API, '/apps/rview/api');
+  } else {
+    socket.destroy();
+  }
 });
 
 server.listen(port, '0.0.0.0', () => {

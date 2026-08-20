@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RView</title>
+  <style>
+    :root { --bg: #0f172a; --panel: #1e293b; --text: #f8fafc; --muted: #94a3b8; --accent: #06b6d4; }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; margin: 0; background: var(--bg); color: var(--text); font-family: system-ui, -apple-system, sans-serif; }
+    body { display: flex; flex-direction: column; }
+    header { display: flex; align-items: center; gap: 0.75rem; padding: 0.5rem 1rem; background: #0b1120; border-bottom: 1px solid #334155; }
+    h1 { margin: 0; font-size: 1rem; flex: 1; }
+    select, input, button { font: inherit; font-size: 0.85rem; padding: 0.4rem 0.6rem; border-radius: 6px; border: 1px solid #475569; background: #0f172a; color: var(--text); }
+    button { cursor: pointer; background: var(--accent); color: #082f49; border: none; font-weight: 600; }
+    button.secondary { background: #334155; color: var(--text); }
+    button:hover { opacity: 0.9; }
+    main { flex: 1; display: grid; grid-template-columns: 1fr 320px; gap: 1rem; padding: 1rem; overflow: hidden; }
+    #stage { background: #020617; border-radius: 8px; display: flex; align-items: center; justify-content: center; overflow: hidden; position: relative; }
+    #stage > * { max-width: 100%; max-height: 100%; }
+    #stage iframe, #stage embed { width: 100%; height: 100%; border: none; }
+    #sidebar { display: flex; flex-direction: column; gap: 0.75rem; overflow: auto; }
+    .panel { background: var(--panel); border-radius: 8px; padding: 0.75rem; }
+    .panel h2 { margin: 0 0 0.5rem; font-size: 0.8rem; color: var(--muted); text-transform: uppercase; }
+    label { font-size: 0.75rem; color: var(--muted); display: block; margin: 0.4rem 0 0.2rem; }
+    .controls { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+    .controls button { width: auto; flex: 1; min-width: 52px; }
+    .queue { list-style: none; padding: 0; margin: 0; max-height: 220px; overflow: auto; }
+    .queue li { padding: 0.35rem; border-bottom: 1px solid #334155; font-size: 0.78rem; display: flex; justify-content: space-between; gap: 0.5rem; }
+    .muted { color: var(--muted); }
+    #status { font-size: 0.75rem; color: var(--muted); white-space: nowrap; }
+    .row { display: flex; gap: 0.5rem; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>RView</h1>
+    <select id="viewSelect"></select>
+    <button id="createBtn" class="secondary">+</button>
+    <div id="status"></div>
+  </header>
+  <main>
+    <div id="stage"><div class="muted">No view selected</div></div>
+    <div id="sidebar">
+      <div class="panel">
+        <h2>Playback</h2>
+        <div class="controls">
+          <button id="play">▶</button>
+          <button id="pause">⏸</button>
+          <button id="stop">⏹</button>
+          <button id="prev">⏮</button>
+          <button id="next">⏭</button>
+          <button id="loop" class="secondary">Loop</button>
+          <button id="shuffle" class="secondary">Shuffle</button>
+          <button id="fs" class="secondary">FS</button>
+          <button id="clear" class="secondary">Clear</button>
+        </div>
+        <label>Volume</label>
+        <input type="range" id="volume" min="0" max="1" step="0.05" value="1">
+        <label>Seek</label>
+        <input type="range" id="seek" min="0" max="100" value="0">
+      </div>
+      <div class="panel">
+        <h2>Show URL</h2>
+        <input type="text" id="url" placeholder="https://...">
+        <input type="text" id="title" placeholder="Title">
+        <select id="type">
+          <option value="auto">auto</option>
+          <option value="image">image</option>
+          <option value="video">video</option>
+          <option value="audio">audio</option>
+          <option value="pdf">pdf</option>
+          <option value="iframe">iframe</option>
+        </select>
+        <label><input type="checkbox" id="enqueue"> Enqueue</label>
+        <button id="showBtn">Show</button>
+      </div>
+      <div class="panel">
+        <h2>Queue</h2>
+        <ul id="queue" class="queue"></ul>
+      </div>
+    </div>
+  </main>
+  <script>
+    const API = new URLSearchParams(window.location.search).get('api') || '/apps/rview/api/state.php';
+    let currentViewId = null;
+
+    async function api(action, body = {}) {
+      const res = await fetch(API, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action, ...body })
+      });
+      return res.json();
+    }
+
+    async function loadViews() {
+      const listRes = await fetch(`${API}?action=list`);
+      const { views = [] } = await listRes.json();
+      const sel = document.getElementById('viewSelect');
+      sel.innerHTML = views.map(v => `<option value="${v.view_id}">${v.display_name || v.view_id} — ${v.state || 'stopped'}</option>`).join('');
+      if (!currentViewId && views.length) currentViewId = views[0].view_id;
+      if (currentViewId && !views.find(v => v.view_id === currentViewId)) currentViewId = null;
+      if (currentViewId) sel.value = currentViewId;
+      status(`${views.length} view(s)`);
+      if (currentViewId) pollStatus();
+    }
+
+    async function pollStatus() {
+      if (!currentViewId) return;
+      const res = await fetch(`${API}?action=status&view_id=${encodeURIComponent(currentViewId)}`);
+      const data = await res.json();
+      if (data.ok) render(data.view);
+    }
+
+    function render(view) {
+      document.getElementById('volume').value = view.volume;
+      document.getElementById('seek').value = view.position || 0;
+      const stage = document.getElementById('stage');
+      const item = view.current_item;
+      if (!item) { stage.innerHTML = '<div class="muted">Nothing playing</div>'; return; }
+      const mt = item.media_type;
+      if (mt === 'image') stage.innerHTML = `<img src="${item.url}" alt="${item.title || ''}">`;
+      else if (mt === 'video') stage.innerHTML = `<video src="${item.url}" controls autoplay id="media"></video>`;
+      else if (mt === 'audio') stage.innerHTML = `<audio src="${item.url}" controls id="media"></audio>`;
+      else if (mt === 'pdf') stage.innerHTML = `<embed src="${item.url}" type="application/pdf">`;
+      else stage.innerHTML = `<iframe src="${item.url}" allowfullscreen></iframe>`;
+      const q = document.getElementById('queue');
+      q.innerHTML = (view.queue || []).map(it => `<li><span>${it.title || it.url}</span><span class="muted">${it.media_type}</span></li>`).join('');
+      status(`${view.state} | ${item.media_type} | ${item.title || item.url}`);
+    }
+
+    function status(text) { document.getElementById('status').textContent = text; }
+
+    document.getElementById('createBtn').onclick = async () => {
+      const id = prompt('New view id?');
+      if (!id) return;
+      await api('create', { view_id: id, display_name: id });
+      currentViewId = id;
+      loadViews();
+    };
+
+    document.getElementById('viewSelect').onchange = (e) => { currentViewId = e.target.value; pollStatus(); };
+
+    document.getElementById('showBtn').onclick = async () => {
+      await api('show', {
+        view_id: currentViewId,
+        url: document.getElementById('url').value,
+        title: document.getElementById('title').value,
+        media_type: document.getElementById('type').value,
+        enqueue: document.getElementById('enqueue').checked
+      });
+      pollStatus();
+    };
+
+    ['play', 'pause', 'stop', 'prev', 'next', 'loop', 'shuffle'].forEach(id => {
+      document.getElementById(id).onclick = async () => {
+        await api('control', { view_id: currentViewId, command: id });
+        pollStatus();
+      };
+    });
+
+    document.getElementById('clear').onclick = async () => {
+      await api('control', { view_id: currentViewId, command: 'clear_queue' });
+      pollStatus();
+    };
+
+    document.getElementById('fs').onclick = async () => {
+      const el = document.getElementById('stage');
+      if (document.fullscreenElement) document.exitFullscreen(); else el.requestFullscreen();
+      await api('control', { view_id: currentViewId, command: 'fullscreen' });
+      pollStatus();
+    };
+
+    document.getElementById('volume').onchange = async (e) => {
+      await api('control', { view_id: currentViewId, command: 'volume', value: parseFloat(e.target.value) });
+      pollStatus();
+    };
+
+    document.getElementById('seek').onchange = async (e) => {
+      await api('control', { view_id: currentViewId, command: 'seek', value: parseInt(e.target.value) });
+      pollStatus();
+    };
+
+    loadViews();
+    setInterval(pollStatus, 2000);
+  </script>
+</body>
+</html>
