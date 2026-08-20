@@ -1,0 +1,47 @@
+title: chaba.h3 Page Deployment Flow
+subtitle: How to deploy web pages from tony-omen to chaba.h3.gizmo-thailand.com
+icon: web
+version: 1
+last_updated: '2026-08-20'
+maintainer: tony
+
+overview:
+  source_worktree: /home/tony/CascadeProjects/chaba-h3
+  branch: chaba.h3
+  target_host: chaba.h3.gizmo-thailand.com
+  purpose: Publish static pages and assets for the managed h3 web host
+
+prerequisites:
+  - The chaba.h3 branch is checked out at /home/tony/CascadeProjects/chaba-h3
+  - The managed host serves files from the chaba.h3 branch public/ directory
+
+steps:
+  - id: 1
+    action: Work in the h3 worktree
+    command: cd /home/tony/CascadeProjects/chaba-h3
+  - id: 2
+    action: Add or edit pages
+    path: chaba-h3/public/
+    notes:
+      - Place files under chaba-h3/public/
+      - The web/public/ path from the master branch is not served
+  - id: 3
+    action: Test locally
+    command: node proxy-server.mjs
+    note: Local mimic of the managed host; use it to preview before pushing
+  - id: 4
+    action: Commit on the chaba.h3 branch
+    commands:
+      - git add public/...
+      - git commit -m "..."
+  - id: 5
+    action: Push to the remote
+    command: git push origin chaba.h3
+    note: The managed host picks up the branch and serves public/
+
+url_rules:
+  - Always link to explicit /foo/index.html URLs unless proxy-server.mjs has a directory special case
+  - Use absolute fetch paths such as /data.json inside pages
+
+gotcha:
+  - Do not commit h3 pages to the master branch web/public/; they will not be served
