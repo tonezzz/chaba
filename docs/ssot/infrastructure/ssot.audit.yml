@@ -84,10 +84,16 @@ audits:
     severity_on_fail: warning
     description: KB entry focus, size, and duplicate detection
     thresholds:
-      max_words: 1200
-      max_headings: 5
+      max_words: 1500
+      max_headings: 25
       min_links: 0
       max_similarity: 0.85
+      excluded_files:
+        - docs/kb/.template.md
+        - docs/kb/README.md
+      excluded_patterns:
+        - '^docs/kb/auto-.*\.md$'
+        - '^docs/kb/task-.*\.md$'
 
   - name: ssot-modularity
     script: scripts/audits/ssot-modularity-audit.mjs

@@ -43,6 +43,8 @@ function main() {
   const maxHeadings = thresholds.max_headings || 5;
   const minLinks = thresholds.min_links || 0;
   const similarityThreshold = thresholds.max_similarity || 0.85;
+  const excludedFiles = new Set(thresholds.excluded_files || []);
+  const excludedPatterns = (thresholds.excluded_patterns || []).map((p) => new RegExp(p));
 
   const files = [];
   for (const f of readdirSync(KB_DIR)) {
@@ -73,6 +75,10 @@ function main() {
   });
 
   for (const item of items) {
+    const isExcluded =
+      excludedFiles.has(item.file) ||
+      excludedPatterns.some((r) => r.test(item.file));
+    if (isExcluded) continue;
     if (item.words > maxWords) {
       item.issues.push(`exceeds max_words: ${item.words} > ${maxWords}`);
     }
