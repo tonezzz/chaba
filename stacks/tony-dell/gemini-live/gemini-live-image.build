@@ -1,0 +1,10 @@
+[Build]
+ImageTag=localhost/gemini-live:latest
+File=/home/tony/CascadeProjects/chaba/stacks/web/gemini-live/Dockerfile
+SetWorkingDirectory=/home/tony/CascadeProjects/chaba
+Pull=never
+PodmanArgs=--build-arg GEMINI_LIVE_PORT=3008
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes

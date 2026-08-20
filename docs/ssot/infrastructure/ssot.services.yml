@@ -216,13 +216,17 @@ tony-dell:
     port: 3007
     host_port: 100.68.142.13:3007
     data_volume: /home/tony/.local/share/rview-api
+    build_unit: ~/.config/containers/systemd/rview-api-image.build
     quadlet:
       container_unit: ~/.config/containers/systemd/rview-api.container
       service_unit: ~/.config/systemd/user/rview-api.service
+      build_unit: ~/.config/systemd/user/rview-api-image.service
     source: stacks/tony-dell/rview-api
     caddy_upstream: tony-dell:3007
+    tailscale_serve: --bg --tcp 3007 127.0.0.1:3007
+    health_check: curl -sf http://127.0.0.1:3007/state.php?action=list >/dev/null
     status: implemented (2026-08-20)
-    note: Migrated from tony-omen; state persisted to ~/.local/share/rview-api. Caddy /apps/rview/api/* reverse proxy updated to tony-dell:3007.
+    note: Migrated from tony-omen; state persisted to ~/.local/share/rview-api. Caddy /apps/rview/api/* reverse proxy updated to tony-dell:3007. Image is built by the rview-api-image.build Quadlet unit.
   gemini-live:
     container: gemini-live
     image: localhost/gemini-live:latest
@@ -231,15 +235,22 @@ tony-dell:
     host: tony_dell
     port: 3008
     host_port: 100.68.142.13:3008
+    build_unit: ~/.config/containers/systemd/gemini-live-image.build
     quadlet:
       container_unit: ~/.config/containers/systemd/gemini-live.container
       service_unit: ~/.config/systemd/user/gemini-live.service
+      build_unit: ~/.config/systemd/user/gemini-live-image.service
     source: stacks/tony-dell/gemini-live
     depends_on: rview-api
     caddy_upstream: tony-dell:3008
-    environment_file: ~/.config/containers/systemd/gemini-live.env
+    tailscale_serve: --bg --tcp 3008 127.0.0.1:3008
+    health_check: curl -sf http://127.0.0.1:3008/health >/dev/null
+    secrets:
+      - gemini-api-key
+    environment:
+      - GEMINI_LIVE_PORT=3008
     status: implemented (2026-08-20)
-    note: Migrated from tony-omen to avoid conflict with mddb-panel on port 3002. Caddy /api/gemini-live/* reverse proxy updated to tony-dell:3008. GEMINI_API_KEY sourced from EnvironmentFile.
+    note: Migrated from tony-omen to avoid conflict with mddb-panel on port 3002. Caddy /api/gemini-live/* reverse proxy updated to tony-dell:3008. GEMINI_API_KEY is injected from the podman secret `gemini-api-key` as an env variable. Image is built by the gemini-live-image.build Quadlet unit and depends on rview-api.
 
 tony-omen:
   ollama:

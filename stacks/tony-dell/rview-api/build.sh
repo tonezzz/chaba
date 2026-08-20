@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
-# Build the rview-api image from the repo root so the Containerfile can copy
-# stacks/web/rview-api/rview-api.mjs.
+# Manual build fallback. The Quadlet .build unit normally handles this.
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 cd "$REPO_ROOT"
-podman build -f stacks/tony-dell/rview-api/Containerfile -t rview-api:latest .
+podman build -f stacks/web/rview-api/Dockerfile -t rview-api:latest .

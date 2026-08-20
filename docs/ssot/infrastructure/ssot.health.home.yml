@@ -115,8 +115,10 @@ services:
   - 'Test Caddy proxy: curl -s {profile}/apps/rview/api/state.php?action=list'
   - 'Check podman container: ssh tony-dell podman ps | grep rview-api'
   - 'Check podman logs: ssh tony-dell podman logs rview-api --tail 20'
+  - 'Check build unit: ssh tony-dell systemctl --user status rview-api-image.service'
   recovery_actions:
   - 'Restart container: ssh tony-dell systemctl --user restart rview-api'
+  - 'Rebuild image: ssh tony-dell systemctl --user start rview-api-image.service && ssh tony-dell systemctl --user restart rview-api'
   - 'Check state directory: ssh tony-dell ls -la /home/tony/.local/share/rview-api'
   - Verify Caddy proxy configuration in stacks/web/Caddyfile
 - id: gemini-live
@@ -136,10 +138,11 @@ services:
   - 'Check podman container: ssh tony-dell podman ps | grep gemini-live'
   - 'Check podman logs: ssh tony-dell podman logs gemini-live --tail 20'
   - 'Verify GEMINI_API_KEY env: ssh tony-dell podman exec gemini-live env | grep GEMINI_API_KEY'
+  - 'Check build unit: ssh tony-dell systemctl --user status gemini-live-image.service'
   recovery_actions:
   - 'Restart container: ssh tony-dell systemctl --user restart gemini-live'
-  - 'Check env file: ssh tony-dell cat /home/tony/.config/containers/systemd/gemini-live.env'
-  - 'Rebuild image: ssh tony-dell "cd /home/tony/CascadeProjects/chaba && bash stacks/tony-dell/gemini-live/build.sh"'
+  - 'Check podman secret: ssh tony-dell podman secret inspect gemini-api-key'
+  - 'Rebuild image: ssh tony-dell systemctl --user start gemini-live-image.service && ssh tony-dell systemctl --user restart gemini-live'
   - Verify Caddy proxy configuration in stacks/web/Caddyfile
 - id: yomi-api
   name: Yomi API
