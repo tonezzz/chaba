@@ -243,6 +243,49 @@ sections:
     branch: chaba
     previous_status: active
     parked: '2026-08-20'
+  - label: Consolidate focus system architecture
+    text: 'The SSOT focus system has solid routing ideas but duplicated implementations between
+
+      `mcp_debug/focus.py` and `scripts/focus_dispatcher/`, keyword-based intake, and an
+
+      ambiguous safe-to-parallel fallback. Apply the assessment findings: unify the two
+
+      focus routers, deduplicate request intake, clarify safe-to-parallel rules, and add
+
+      basic validation/tests.
+
+      '
+    status: active
+    priority: medium
+    started: '2026-08-20'
+    estimated_duration: 2-3 sessions
+    tags:
+    - focus
+    - ssot
+    - mcp-focus
+    - refactoring
+    - assessment
+    subtasks:
+    - label: Pick canonical focus router (mcp_debug/focus.py vs focus_dispatcher)
+      status: not_started
+    - label: Merge duplicated activation, sweep, and safe-to-parallel logic into one module
+      status: not_started
+    - label: Replace cue-word intake with semantic/preprocessor matching
+      status: not_started
+    - label: Deduplicate new requests against active, parked, and recent backlog items
+      status: not_started
+    - label: Clarify and document safe_to_parallel default (false vs complication <= 4)
+      status: not_started
+    - label: Add dry-run tests for activate_inbox, next_focus, and safe_to_dispatch
+      status: not_started
+    request_log: []
+    ownership:
+      owner: tony
+      session: ''
+      locked: true
+      lock_reason: Activated as active focus
+    branch: chaba
+    source: docs/ssot/focus-inbox/2026-08-20-121531-focus-system-assessment.yml
 - title: Ready (Safe)
   icon: safe
   layout: list
