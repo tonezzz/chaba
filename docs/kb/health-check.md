@@ -16,7 +16,7 @@ Created 2026-08-04 as part of Chaba infrastructure documentation.
 
 ## Overview
 
-Real-time system health monitoring dashboard served from `http://tony-omen.local:8080/apps/health-check/` (home) or `http://localhost:8080/apps/health-check/` (mobile).
+Real-time system health monitoring dashboard served from `http://tony-omen:8080/apps/health-check/` (tailnet) or `http://localhost:8080/apps/health-check/` (local fallback).
 
 ## Purpose
 
@@ -36,8 +36,10 @@ Provides unified real-time monitoring of all Chaba infrastructure services with 
 ## Location Detection
 
 The dashboard auto-detects location (home vs mobile) by trying to reach local endpoints:
-- Home: `http://tony-dell.local:8080/api/status` or `http://tony-omen.local:8080/api/status`
+- Home: `http://tony-omen:8080/api/status`
 - Mobile: Fallback if home endpoints unreachable
+
+mDNS / `.local` hostnames are intentionally not used by `mcp-health` because they are unreliable across the iPhone hotspot path and when mDNS caches fail. Tailnet short names (`tony-omen`, `tony-dell`) are preferred for all health checks. Use `100.x` Tailscale IPs only when hostnames cannot resolve.
 
 Location-specific SSOT configs are loaded based on detected location.
 
@@ -60,6 +62,7 @@ Important routing rules in `chaba/stacks/web/Caddyfile`:
 
 | Date | Change | Author |
 |------|--------|--------|
+| 2026-08-20 | Switched health-check URLs and mcp-health auto-detect from `.local` mDNS to tailnet short names (`tony-omen`, `tony-dell`) | devin |
 | 2026-08-01 | Initial creation | tony |
 | 2026-08-03 | GPU service health checks, Txt2Vid migration | tony |
 | 2026-08-03 | Enhanced GPU queue monitoring with job type breakdown | tony |
