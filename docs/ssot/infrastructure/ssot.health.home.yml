@@ -170,38 +170,39 @@ services:
   - 'Fix port: ssh tony-dell ss -tulpn | grep 9230 && kill conflicting process'
 - id: playlived-omen
   name: Playlived (tony-omen)
-  type: http
-  url: http://tony-omen:9231/sessions
-  expected_status: 200
+  type: systemd
+  service: playlived.service
+  expected_state: active
   timeout: 5
-  category: api
+  category: system
   profiles:
   - home
+  - mobile
   verification:
-  - 'Test sessions: curl -s http://tony-omen:9231/sessions'
   - 'Check service: systemctl --user status playlived.service'
+  - 'Check logs: journalctl --user -u playlived.service -n 20'
   recovery_actions:
   - 'Restart service: systemctl --user restart playlived.service'
-  - 'Fix port: ss -tulpn | grep 9231 && kill conflicting process'
 - id: trade-api
   name: Trade API
   type: http
-  url: http://localhost:9000/api/health
+  url: http://tony-dell:9002/api/health
   expected_status: 200
   timeout: 5
   category: api
   profiles:
   - home
   - mobile
+  host: tony_dell
   verification:
-  - 'Test container: docker ps | grep trade-api'
-  - 'Test health endpoint: curl -s http://localhost:9000/api/health'
-  - 'Test root endpoint: curl -s http://localhost:9000/'
-  - 'Check container logs: docker logs trade-api'
+  - 'Test container: ssh tony-dell podman ps | grep trade-api'
+  - 'Test health endpoint: curl -s http://tony-dell:9002/api/health'
+  - 'Test root endpoint: curl -s http://tony-dell:9002/'
+  - 'Check container logs: ssh tony-dell podman logs trade-api'
   recovery_actions:
-  - 'Restart container: docker restart trade-api'
-  - 'Check container networking: docker inspect trade-api'
-  - 'Verify port mapping: docker port trade-api'
+  - 'Restart container: ssh tony-dell podman restart trade-api'
+  - 'Check container networking: ssh tony-dell podman inspect trade-api'
+  - 'Verify port mapping: ssh tony-dell podman port trade-api'
 - id: trade-automation
   name: Trade Automation
   type: container
