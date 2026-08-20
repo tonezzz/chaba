@@ -748,33 +748,48 @@ async function checkContainerService(service) {
   const { execSync } = await import('child_process');
   const startTime = Date.now();
   const expectedState = service.expected_state || 'running';
-  
+  const remoteHost = service.host ? service.host.replace('_', '-') : null;
+
   try {
     // Try docker ps first (does not depend on a compose project)
     let output = '';
     try {
-      output = execSync(`docker ps -a --filter "name=${service.container}" --format "table {{.Names}}\\t{{.Status}}"`, { 
-        encoding: 'utf8',
-        stdio: 'pipe'
-      });
-    } catch {}
-    
-    // Fallback to docker compose ps if docker ps found nothing
-    if (!output.trim() || !output.includes('Up')) {
-      try {
-        output = execSync(`docker compose ps -a ${service.container}`, { 
+      if (remoteHost) {
+        output = execSync(`ssh -o ConnectTimeout=5 ${remoteHost} podman ps -a --filter "name=${service.container}" --format "table {{.Names}}\\t{{.Status}}"`, {
           encoding: 'utf8',
           stdio: 'pipe'
         });
+      } else {
+        output = execSync(`docker ps -a --filter "name=${service.container}" --format "table {{.Names}}\\t{{.Status}}"`, {
+          encoding: 'utf8',
+          stdio: 'pipe'
+        });
+      }
+    } catch {}
+
+    // Fallback to docker compose ps if docker ps found nothing
+    if (!output.trim() || !output.includes('Up')) {
+      try {
+        if (remoteHost) {
+          output = execSync(`ssh -o ConnectTimeout=5 ${remoteHost} podman ps -a | grep ${service.container}`, {
+            encoding: 'utf8',
+            stdio: 'pipe'
+          });
+        } else {
+          output = execSync(`docker compose ps -a ${service.container}`, {
+            encoding: 'utf8',
+            stdio: 'pipe'
+          });
+        }
       } catch {}
     }
-    
+
     const responseTime = Date.now() - startTime;
-    
+
     // Parse docker compose output or docker ps output
     let status = '';
     let state = 'unknown';
-    
+
     if (output.includes('Up') || output.includes('running')) {
       state = 'running';
       status = output;
@@ -794,7 +809,7 @@ async function checkContainerService(service) {
         response_time: responseTime,
         container_state: 'not found',
         expected_state: expectedState,
-        error: `Container ${service.container} not found. Check: docker ps -a | grep ${service.container}`
+        error: `Container ${service.container} not found. Check: ${remoteHost ? 'ssh ' + remoteHost : ''} docker ps -a | grep ${service.container}`
       };
     } else {
       // Parse docker ps format output

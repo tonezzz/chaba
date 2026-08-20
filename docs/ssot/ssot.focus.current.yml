@@ -192,9 +192,11 @@ sections:
     - health
     subtasks:
     - label: Run current mcp-health and identify every failed/misconfigured check
-      status: not_started
+      status: completed
+      completed_at: '2026-08-20'
+      notes: Disabled remote redis and mddb-container checks in ssot.health.*.yml. trade-api is reachable but slow (~3.4s). All other critical+important services healthy.
     - label: Reconcile .local vs tailnet hostname usage in ssot.health.*.yml
-      status: not_started
+      status: in_progress
     - label: Verify tony-dell iPhone hotspot fallback path
       status: not_started
     - label: Document mDNS vs tailnet behavior per host

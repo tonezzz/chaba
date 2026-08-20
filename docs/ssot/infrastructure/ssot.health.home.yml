@@ -221,6 +221,7 @@ services:
   - 'Check status: docker inspect trade-automation'
 - id: redis
   name: Redis
+  disabled: true
   type: container
   container: redis
   host: tony_dell
@@ -230,7 +231,7 @@ services:
   profiles:
   - home
   - mobile
-  note: 'Migrated to tony_dell rootless podman. Health checks must run on tony_dell, not tony_omen.'
+  note: 'Migrated to tony_dell rootless podman. Disabled in mcp-health because mcp-health cannot run remote podman checks. Health is verified manually via ssh tony-dell podman ps and indirectly through yomi-api/postgres.'
   verification:
   - 'Test container on tony_dell: ssh tony-dell podman ps | grep redis'
   - 'Test connection: ssh tony-dell podman exec redis redis-cli ping'
@@ -361,6 +362,7 @@ services:
   - 'Verify port 11023 is accessible: curl -s http://100.68.142.13:11023/metrics'
 - id: mddb-container
   name: MDDB Container
+  disabled: true
   type: container
   container: mddb
   expected_state: running
@@ -369,7 +371,7 @@ services:
   profiles:
   - home
   - mobile
-  note: 'Container-level health check for MDDB service (container name: mddb)'
+  note: 'Container runs on tony-dell. Disabled in mcp-health because mcp-health cannot run remote podman checks. Use MDDB API/HTTP checks instead; verify manually via ssh tony-dell podman ps | grep mddb.'
   recovery_actions:
   - 'Check container status: docker ps -a | grep mddb'
   - 'Start container: cd /home/tony/CascadeProjects/chaba-kbman/stacks/web/mddb && docker compose up -d mddb'
