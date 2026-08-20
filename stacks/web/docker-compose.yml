@@ -165,6 +165,26 @@ services:
     - default
     profiles:
     - production
+  gemini-live:
+    container_name: gemini-live
+    build:
+      context: ./gemini-live
+      dockerfile: Dockerfile
+    image: gemini-live:latest
+    restart: unless-stopped
+    ports:
+    - 3002:3002
+    environment:
+    - GEMINI_LIVE_PORT=3002
+    - GEMINI_LIVE_MODEL=${GEMINI_LIVE_MODEL:-gemini-3.1-flash-live-preview}
+    - GEMINI_API_KEY=${GEMINI_API_KEY}
+    - RVIEW_API_URL=http://rview-api:3007/state.php
+    networks:
+    - default
+    depends_on:
+    - rview-api
+    profiles:
+    - production
 volumes:
   caddy_data: null
   caddy_config: null
