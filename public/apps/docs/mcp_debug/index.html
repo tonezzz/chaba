@@ -46,6 +46,9 @@
     .modal { background: #fff; border-radius: 0.5rem; width: 90vw; max-width: 1200px; max-height: 90vh; overflow: auto; padding: 1rem; }
     .modal-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
     .modal-pre { background: #f8fafc; border: 1px solid #e2e8f0; padding: 0.75rem; border-radius: 0.375rem; overflow: auto; font-size: 0.75rem; white-space: pre-wrap; }
+    .tab { background: #f8fafc; border: 1px solid #e2e8f0; border-bottom: none; color: #4b5563; }
+    .tab.active { background: #fff; color: #0a84ff; border-bottom: 2px solid #0a84ff; }
+    .tab:hover { background: #eff6ff; }
     @media (max-width: 768px) { .modal-grid { grid-template-columns: 1fr; } }
   </style>
 </head>
@@ -79,8 +82,14 @@
       <p class="text-sm text-gray-600" id="progress-text">Warming live cache on tony-dell, this can take up to 5 minutes...</p>
       <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
     </div>
-    <div id="how-to" class="howto mb-6">
-      <h2 class="text-lg font-semibold mb-2">How to read this report</h2>
+    <div class="flex items-center justify-between mb-2">
+      <button id="help-toggle" class="text-sm text-blue-600 hover:underline">Show help</button>
+    </div>
+    <div id="how-to" class="howto mb-6 hidden">
+      <div class="flex items-center justify-between mb-2">
+        <h2 class="text-lg font-semibold">How to read this report</h2>
+        <button id="help-close" class="text-sm text-gray-500 hover:text-gray-700">Hide</button>
+      </div>
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm text-gray-700">
         <div><strong>Raw chars</strong> — output size if run with <code>mcp_raw</code> (full shell output).</div>
         <div><strong>Compact chars</strong> — output size after <code>mcp_debug</code> formatting (JSON or tables).</div>
@@ -91,14 +100,45 @@
       </div>
       <p class="text-xs text-gray-500 mt-3">Live data is fetched directly from the tony-dell Tailscale Funnel endpoint. If tony-dell is unreachable, the page falls back to the cached <code>data/mcp-savings.json</code> snapshot.</p>
     </div>
-    <div id="summary" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 mb-6"></div>
-    <div id="status-breakdown" class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6"></div>
-    <div id="whats-new" class="diff-panel hidden"></div>
-    <div id="audit" class="audit-panel hidden"></div>
-    <input id="command-search" class="search-bar" type="text" placeholder="Search commands..." />
-    <div id="search-meta" class="text-sm text-gray-500 mb-2 hidden"></div>
-    <div id="top-commands" class="mb-6"></div>
-    <div id="report"></div>
+    <nav id="tabs" class="flex flex-wrap gap-2 border-b border-gray-300 mb-4" role="tablist">
+      <button class="tab active px-4 py-2 text-sm font-medium rounded-t-lg" data-tab="overview" role="tab" aria-selected="true">Overview</button>
+      <button class="tab px-4 py-2 text-sm font-medium rounded-t-lg" data-tab="commands" role="tab" aria-selected="false">Commands</button>
+      <button class="tab px-4 py-2 text-sm font-medium rounded-t-lg" data-tab="prefixes" role="tab" aria-selected="false">Prefixes</button>
+      <button class="tab px-4 py-2 text-sm font-medium rounded-t-lg" data-tab="presets" role="tab" aria-selected="false">Presets</button>
+      <button class="tab px-4 py-2 text-sm font-medium rounded-t-lg" data-tab="audit" role="tab" aria-selected="false">Audit</button>
+      <button class="tab px-4 py-2 text-sm font-medium rounded-t-lg" data-tab="raw" role="tab" aria-selected="false">Raw JSON</button>
+    </nav>
+    <section id="tab-overview" class="tab-panel">
+      <div id="summary" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 mb-6"></div>
+      <div id="status-breakdown" class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6"></div>
+      <div id="whats-new" class="diff-panel hidden mb-6"></div>
+      <div id="top-commands" class="mb-6"></div>
+    </section>
+    <section id="tab-commands" class="tab-panel hidden">
+      <div class="flex flex-col sm:flex-row gap-3 mb-4">
+        <input id="command-search" class="search-bar" type="text" placeholder="Search commands..." />
+        <select id="command-sort" class="search-bar" style="max-width: 220px;">
+          <option value="savings_pct_chars">Sort by: savings % (efficiency)</option>
+          <option value="saved_chars">Sort by: chars saved (impact)</option>
+          <option value="raw_chars">Sort by: raw size</option>
+          <option value="command">Sort by: command name</option>
+        </select>
+      </div>
+      <div id="search-meta" class="text-sm text-gray-500 mb-2 hidden"></div>
+      <div id="report"></div>
+    </section>
+    <section id="tab-prefixes" class="tab-panel hidden">
+      <div id="raw-allowed"></div>
+    </section>
+    <section id="tab-presets" class="tab-panel hidden">
+      <div id="presets"></div>
+    </section>
+    <section id="tab-audit" class="tab-panel hidden">
+      <div id="audit" class="audit-panel"></div>
+    </section>
+    <section id="tab-raw" class="tab-panel hidden">
+      <pre id="raw-json" class="modal-pre" style="height: 70vh; overflow: auto;"></pre>
+    </section>
   </main>
 
   <div id="modal" class="modal-overlay hidden" style="display:none;">

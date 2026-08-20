@@ -139,6 +139,7 @@ async function loadReport(forceRefresh = false, { poll = false } = {}) {
     if (!refreshPollId) {
       hideProgress();
       setLoading(false);
+      showTab(currentTab);
     }
   }
 }
@@ -285,14 +286,16 @@ function renderTopCommands(data) {
 }
 
 function renderRawAllowed(rawAllowed) {
-  if (!rawAllowed || !rawAllowed.length) return '';
+  const el = document.getElementById('raw-allowed');
+  if (!el) return;
+  if (!rawAllowed || !rawAllowed.length) { el.innerHTML = '<p class="text-sm text-gray-500">No raw-allowed prefixes configured.</p>'; return; }
   const byCat = {};
   for (const r of rawAllowed) {
     const cat = r.category || 'other';
     if (!byCat[cat]) byCat[cat] = [];
     byCat[cat].push(r);
   }
-  let html = '<h2 class="text-xl font-semibold mt-8 mb-2">Raw-allowed command prefixes</h2>';
+  let html = '<h2 class="text-xl font-semibold mt-4 mb-2">Raw-allowed command prefixes</h2>';
   for (const cat of Object.keys(byCat).sort()) {
     html += `<div class="mb-4">
       <h3 class="text-sm font-semibold text-gray-600 mb-1 uppercase">${escapeHtml(cat)}</h3>
@@ -302,13 +305,15 @@ function renderRawAllowed(rawAllowed) {
     }
     html += '</div></div>';
   }
-  return html;
+  el.innerHTML = html;
 }
 
 function renderPresets(presets) {
-  if (!presets || !presets.length) return '';
+  const el = document.getElementById('presets');
+  if (!el) return;
+  if (!presets || !presets.length) { el.innerHTML = '<p class="text-sm text-gray-500">No presets registered.</p>'; return; }
   const sorted = [...presets].sort((a, b) => (b.preset_score || 0) - (a.preset_score || 0));
-  let html = '<h2 class="text-xl font-semibold mt-8 mb-2">Registered presets</h2>';
+  let html = '<h2 class="text-xl font-semibold mt-4 mb-2">Registered presets</h2>';
   for (const p of sorted) {
     const score = p.preset_score != null ? p.preset_score.toFixed(1) : '0.0';
     const color = p.ok ? (score >= 30 ? '#16a34a' : (score >= 0 ? '#f59e0b' : '#dc2626')) : '#9ca3af';
@@ -320,7 +325,7 @@ function renderPresets(presets) {
       <div class="w-16 text-xs text-gray-500">${p.ok ? 'ok' : 'failed'}</div>
     </div>`;
   }
-  return html;
+  el.innerHTML = html;
 }
 
 function renderWhatsNew(current, previous) {
@@ -349,19 +354,32 @@ function renderWhatsNew(current, previous) {
   el.innerHTML = html;
 }
 
-function renderCommandTables(data, filter = '') {
+function renderCommandTables(data, { filter = '', sortKey = 'savings_pct_chars' } = {}) {
   const report = document.getElementById('report');
   const searchMeta = document.getElementById('search-meta');
   if (!data || !data.hosts) { report.innerHTML = ''; return; }
   const lower = filter.toLowerCase();
   const hosts = Object.entries(data.hosts).sort(([a], [b]) => a.localeCompare(b));
+  const sortDirections = {
+    savings_pct_chars: -1,
+    saved_chars: -1,
+    raw_chars: -1,
+    command: 1,
+  };
+  const dir = sortDirections[sortKey] || -1;
+  const sortFn = (a, b) => {
+    if (sortKey === 'command') return a.command.localeCompare(b.command) * dir;
+    const av = a[sortKey] != null ? a[sortKey] : -Infinity;
+    const bv = b[sortKey] != null ? b[sortKey] : -Infinity;
+    return (av - bv) * dir;
+  };
   let html = '';
   let total = 0, shown = 0;
   for (const [host, hdata] of hosts) {
     const allCommands = Object.values(hdata.commands || {});
     const commands = allCommands
       .filter(c => !lower || (c.command || '').toLowerCase().includes(lower))
-      .sort((a, b) => (b.savings_pct_chars || 0) - (a.savings_pct_chars || 0));
+      .sort(sortFn);
     total += allCommands.length;
     shown += commands.length;
     if (filter && !commands.length) continue;
@@ -394,8 +412,6 @@ function renderCommandTables(data, filter = '') {
     html += `raw=${formatNumber(hdata.raw_chars)}, compact=${formatNumber(hdata.compact_chars)}, saved=${formatNumber(hdata.saved_chars)}, tokens=${formatNumber(Math.round(hdata.saved_chars / 4))} `;
     html += `(${(hdata.saved_chars ? ((hdata.saved_chars / hdata.raw_chars) * 100).toFixed(1) : '0.0')}%)</p>`;
   }
-  html += renderRawAllowed(data.raw_allowed);
-  html += renderPresets(data.presets);
   report.innerHTML = html;
   report.querySelectorAll('.detail-btn').forEach(b => b.addEventListener('click', (e) => {
     const host = e.target.dataset.host;
@@ -408,13 +424,35 @@ function renderCommandTables(data, filter = '') {
     : `Showing ${shown} commands`;
 }
 
+let currentTab = 'overview';
+
+function renderRawJson(data) {
+  const el = document.getElementById('raw-json');
+  if (el) el.textContent = JSON.stringify(data, null, 2);
+}
+
+function showTab(tab) {
+  currentTab = tab;
+  document.querySelectorAll('.tab').forEach(b => {
+    const isActive = b.dataset.tab === tab;
+    b.classList.toggle('active', isActive);
+    b.setAttribute('aria-selected', isActive ? 'true' : 'false');
+  });
+  document.querySelectorAll('.tab-panel').forEach(p => {
+    p.classList.toggle('hidden', p.id !== `tab-${tab}`);
+  });
+}
+
 function renderReport(data) {
   renderSummary(data);
   renderStatusBreakdown(data);
   renderWhatsNew(data, previousReportData);
   renderAudit(data);
   renderTopCommands(data);
-  renderCommandTables(data, document.getElementById('command-search').value);
+  renderCommandTables(data, { filter: document.getElementById('command-search').value, sortKey: document.getElementById('command-sort').value });
+  renderRawAllowed(data.raw_allowed);
+  renderPresets(data.presets);
+  renderRawJson(data);
 }
 
 async function loadTable(host, command) {
@@ -484,15 +522,39 @@ function stopAutoRefresh() {
   if (autoRefreshId) { clearInterval(autoRefreshId); autoRefreshId = null; }
 }
 
-document.getElementById('refresh').addEventListener('click', () => loadReport(true));
-document.getElementById('download').addEventListener('click', downloadJson);
-document.getElementById('modal-close').addEventListener('click', closeModal);
-document.getElementById('modal').addEventListener('click', (e) => { if (e.target.id === 'modal') closeModal(); });
-document.getElementById('command-search').addEventListener('input', (e) => {
-  if (currentReportData) renderCommandTables(currentReportData, e.target.value);
-});
-document.getElementById('auto-refresh').addEventListener('change', (e) => {
-  e.target.checked ? startAutoRefresh() : stopAutoRefresh();
-});
+function toggleHelp(show) {
+  const el = document.getElementById('how-to');
+  const btn = document.getElementById('help-toggle');
+  el.classList.toggle('hidden', !show);
+  if (btn) btn.textContent = show ? 'Hide help' : 'Show help';
+}
 
+function setupEventListeners() {
+  document.getElementById('refresh').addEventListener('click', () => loadReport(true));
+  document.getElementById('download').addEventListener('click', downloadJson);
+  document.getElementById('modal-close').addEventListener('click', closeModal);
+  document.getElementById('modal').addEventListener('click', (e) => { if (e.target.id === 'modal') closeModal(); });
+  document.getElementById('command-search').addEventListener('input', (e) => {
+    if (currentReportData) renderCommandTables(currentReportData, { filter: e.target.value, sortKey: document.getElementById('command-sort').value });
+  });
+  document.getElementById('command-sort').addEventListener('change', (e) => {
+    if (currentReportData) renderCommandTables(currentReportData, { filter: document.getElementById('command-search').value, sortKey: e.target.value });
+  });
+  document.getElementById('auto-refresh').addEventListener('change', (e) => {
+    e.target.checked ? startAutoRefresh() : stopAutoRefresh();
+  });
+  document.getElementById('tabs').addEventListener('click', (e) => {
+    const tab = e.target.closest('.tab')?.dataset.tab;
+    if (tab) showTab(tab);
+  });
+  const helpToggle = document.getElementById('help-toggle');
+  const helpClose = document.getElementById('help-close');
+  if (helpToggle) helpToggle.addEventListener('click', () => {
+    const el = document.getElementById('how-to');
+    toggleHelp(el.classList.contains('hidden'));
+  });
+  if (helpClose) helpClose.addEventListener('click', () => toggleHelp(false));
+}
+
+setupEventListeners();
 loadReport();
