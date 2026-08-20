@@ -23,13 +23,31 @@ planning:
   - label: Network Connectivity Issues (2026-08-20)
     file: docs/ssot/ssot.improvements.yml
 processing:
-  status: not_started
-  started_at: null
-  steps: []
+  status: completed
+  started_at: '2026-08-20T03:00:00+07:00'
+  completed_at: '2026-08-20T03:20:00+07:00'
+  steps:
+  - Ran mcp-health check_health and identified Redis and MDDB Container as unknown due to mcp-health running on tony-omen and not being able to run podman ps on tony-dell.
+  - Disabled remote container checks for redis and mddb-container in ssot.health.home.yml and ssot.health.mobile.yml.
+  - Updated mcp-health/server.js auto-detect to use tailnet short name tony-omen instead of tony-omen.local.
+  - Verified tony-dell network state: enp0s31f6 up, no default route, wlx00761100125e down, no iPhone hotspot connection.
+  - Added iPhone hotspot manual setup steps to ssot.tony-dell-multi-wan.yml.
+  - Added Hostname / mDNS / Tailnet Reference table to ssot.tony-dell-multi-wan.yml.
+  - Validated all SSOT YAML files.
+  - Committed changes.
 followup:
-  verification: []
-  rollback: []
+  verification:
+  - Re-run mcp-health after the mcp-health server is restarted to confirm the new auto-detect code is active.
+  - Manually enable iPhone "Maximize Compatibility" and connect tony-dell to test the hotspot fallback.
+  rollback:
+  - Re-enable redis/mddb-container container checks if mcp-health later supports remote podman checks.
+  - Restore tony-omen.local ping in mcp-health/server.js if .local mDNS is preferred for the home network.
   handoff: []
 report:
-  status: pending
-  summary: ''
+  status: completed
+  summary: |
+    mcp-health now uses tailnet short names for profile auto-detect and service URLs. Remote podman container checks
+    (redis, mddb-container) are disabled because the mcp-health process runs on tony-omen and cannot invoke podman on tony-dell.
+    iPhone hotspot fallback is not currently configured; the Ralink MT7601U Wi-Fi adapter is 2.4 GHz only, so iPhone
+    "Maximize Compatibility" must be enabled before tony-dell can see the SSID. Manual setup steps are now in
+    ssot.tony-dell-multi-wan.yml. A per-host mDNS vs tailnet reference table is also documented there.
