@@ -1,0 +1,14 @@
+[Container]
+Image=localhost/gemini-live:latest
+ContainerName=gemini-live
+Network=host
+Environment=GEMINI_LIVE_PORT=3008
+Environment=GEMINI_LIVE_MODEL=gemini-3.1-flash-live-preview
+Environment=RVIEW_API_URL=http://127.0.0.1:3007/state.php
+EnvironmentFile=/home/tony/.config/containers/systemd/gemini-live.env
+
+[Service]
+Restart=always
+
+[Install]
+WantedBy=default.target

@@ -1,0 +1,13 @@
+[Container]
+Image=localhost/rview-api:latest
+ContainerName=rview-api
+Network=host
+Environment=RVIEW_API_PORT=3007
+Environment=RVIEW_STATE_FILE=/data/state.json
+Volume=/home/tony/.local/share/rview-api:/data:Z
+
+[Service]
+Restart=always
+
+[Install]
+WantedBy=default.target

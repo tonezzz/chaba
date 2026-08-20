@@ -99,6 +99,48 @@ services:
   - 'Restart service: ssh tony-dell systemctl --user restart status-data-api'
   - 'Verify status-data-api can reach http://tony-omen:8001/health'
   - Verify Caddy proxy configuration in stacks/web/Caddyfile
+- id: rview-api
+  name: RView API
+  type: http
+  url: '{profile}/apps/rview/api/state.php?action=list'
+  expected_status: 200
+  timeout: 5
+  category: api
+  profiles:
+  - home
+  - mobile
+  host: tony_dell
+  verification:
+  - 'Test direct: curl -s http://tony-dell:3007/state.php?action=list'
+  - 'Test Caddy proxy: curl -s {profile}/apps/rview/api/state.php?action=list'
+  - 'Check podman container: ssh tony-dell podman ps | grep rview-api'
+  - 'Check podman logs: ssh tony-dell podman logs rview-api --tail 20'
+  recovery_actions:
+  - 'Restart container: ssh tony-dell systemctl --user restart rview-api'
+  - 'Check state directory: ssh tony-dell ls -la /home/tony/.local/share/rview-api'
+  - Verify Caddy proxy configuration in stacks/web/Caddyfile
+- id: gemini-live
+  name: Gemini Live API
+  type: http
+  url: '{profile}/api/gemini-live/health'
+  expected_status: 200
+  timeout: 5
+  category: api
+  profiles:
+  - home
+  - mobile
+  host: tony_dell
+  verification:
+  - 'Test direct: curl -s http://tony-dell:3008/health'
+  - 'Test Caddy proxy: curl -s {profile}/api/gemini-live/health'
+  - 'Check podman container: ssh tony-dell podman ps | grep gemini-live'
+  - 'Check podman logs: ssh tony-dell podman logs gemini-live --tail 20'
+  - 'Verify GEMINI_API_KEY env: ssh tony-dell podman exec gemini-live env | grep GEMINI_API_KEY'
+  recovery_actions:
+  - 'Restart container: ssh tony-dell systemctl --user restart gemini-live'
+  - 'Check env file: ssh tony-dell cat /home/tony/.config/containers/systemd/gemini-live.env'
+  - 'Rebuild image: ssh tony-dell "cd /home/tony/CascadeProjects/chaba && bash stacks/tony-dell/gemini-live/build.sh"'
+  - Verify Caddy proxy configuration in stacks/web/Caddyfile
 - id: yomi-api
   name: Yomi API
   type: http

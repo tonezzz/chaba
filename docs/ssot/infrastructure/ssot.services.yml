@@ -207,6 +207,39 @@ tony-dell:
       - sensor-reader
     status: implemented (2026-08-18)
     note: Aggregates git, Frigate, camera summary, and sensor payloads from tony-omen:8001; Caddy /api/* now proxies to tony-dell.
+  rview-api:
+    container: rview-api
+    image: localhost/rview-api:latest
+    runtime: rootless podman
+    network: host
+    host: tony_dell
+    port: 3007
+    host_port: 100.68.142.13:3007
+    data_volume: /home/tony/.local/share/rview-api
+    quadlet:
+      container_unit: ~/.config/containers/systemd/rview-api.container
+      service_unit: ~/.config/systemd/user/rview-api.service
+    source: stacks/tony-dell/rview-api
+    caddy_upstream: tony-dell:3007
+    status: implemented (2026-08-20)
+    note: Migrated from tony-omen; state persisted to ~/.local/share/rview-api. Caddy /apps/rview/api/* reverse proxy updated to tony-dell:3007.
+  gemini-live:
+    container: gemini-live
+    image: localhost/gemini-live:latest
+    runtime: rootless podman
+    network: host
+    host: tony_dell
+    port: 3008
+    host_port: 100.68.142.13:3008
+    quadlet:
+      container_unit: ~/.config/containers/systemd/gemini-live.container
+      service_unit: ~/.config/systemd/user/gemini-live.service
+    source: stacks/tony-dell/gemini-live
+    depends_on: rview-api
+    caddy_upstream: tony-dell:3008
+    environment_file: ~/.config/containers/systemd/gemini-live.env
+    status: implemented (2026-08-20)
+    note: Migrated from tony-omen to avoid conflict with mddb-panel on port 3002. Caddy /api/gemini-live/* reverse proxy updated to tony-dell:3008. GEMINI_API_KEY sourced from EnvironmentFile.
 
 tony-omen:
   ollama:
