@@ -1,9 +1,9 @@
-title: Gemini Live
+title: RView Live
 subtitle: Real-time voice and text interaction with Gemini function-calling to drive RView
 icon: 🎙️
 
 ideas:
-- Gemini Live runs as a chaba.h3 app at /apps/gemini-live/.
+- RView Live runs as a chaba.h3 app at /apps/rview-live/.
 - It opens a WebSocket to a Gemini Live server, streams microphone PCM audio, and plays model audio responses.
 - It can send text prompts and receive tool-call events.
 - It embeds RView in an iframe and polls /apps/rview/api/state.php for view status.
@@ -13,6 +13,8 @@ sections:
     icon: ✅
     layout: list
     items:
+      - label: Tabbed controls
+        text: "Live, RView, and Settings tabs isolate each control surface."
       - label: Voice streaming
         text: "Captures browser microphone at 16kHz PCM, base64-encodes Int16 samples, and sends them over WebSocket to the Gemini Live server."
       - label: Audio playback
@@ -29,7 +31,7 @@ sections:
     layout: list
     items:
       - label: WebSocket endpoint
-        text: "'/api/gemini-live/ws' in production, 'ws://localhost:3002/ws' on localhost."
+        text: "'/api/rview-live/ws' in production, 'ws://localhost:3002/ws' on localhost."
       - label: Audio pipeline
         text: "getUserMedia -> AudioContext (16kHz) -> ScriptProcessorNode -> Int16 base64 -> WebSocket."
       - label: RView state API
@@ -41,8 +43,8 @@ sections:
     icon: 📁
     layout: list
     items:
-      - label: public/apps/gemini-live/index.html
-        text: "The single-page client for Gemini Live + RView."
+      - label: public/apps/rview-live/index.html
+        text: "The single-page client for RView Live."
       - label: public/apps/rview/index.html
         text: "The remote view client embedded in an iframe."
       - label: public/apps/rview/api/state.php
@@ -53,9 +55,9 @@ sections:
     layout: list
     items:
       - label: Location
-        text: "chaba-h3/public/apps/gemini-live/index.html"
+        text: "chaba-h3/public/apps/rview-live/index.html"
       - label: URLs
-        text: "https://chaba.h3.gizmo-thailand.com/apps/gemini-live/"
+        text: "https://chaba.h3.gizmo-thailand.com/apps/rview-live/"
       - label: Registry
         text: "Listed in chaba-h3/public/apps/apps.yml as a nav item and an app entry."
       - label: Branch
@@ -68,7 +70,7 @@ sections:
       - label: Local development
         text: "Open index.html on localhost; it will use ws://localhost:3002/ws for the WebSocket."
       - label: Production
-        text: "Deploy the chaba.h3 branch and open the /apps/gemini-live/ URL. The WebSocket must be served over wss: behind HTTPS."
+        text: "Deploy the chaba.h3 branch and open the /apps/rview-live/ URL. The WebSocket must be served over wss: behind HTTPS."
       - label: Audio permissions
         text: "Requires browser microphone permission. Use a secure or localhost origin."
 
@@ -77,7 +79,7 @@ sections:
     layout: list
     items:
       - label: RView
-        text: "The right panel embeds RView and refreshes its status every 2 seconds."
+        text: "The RView tab embeds RView and refreshes its status every 2 seconds."
       - label: Gemini Live server
         text: "Expects a WebSocket server implementing the 'audio', 'text', 'server-content', 'tool-call', and 'status' protocol."
 
