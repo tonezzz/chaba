@@ -9,13 +9,15 @@ ideas:
 
 sections:
   - title: Canonical Source
-    icon: 🏠
+    icon: source
     layout: list
     items:
-      - label: Canonical workspace
-        text: /home/tony/CascadeProjects/chaba/.windsurfrules is the source of truth for shared sections
-      - label: Shared section
-        text: Documentation Search Standards must be identical in all active workspaces
+      - label: Common rules
+        text: docs/ssot/ssot.windsurf.common.md is the source of truth for rules shared across all branches
+      - label: Branch-specific overlays
+        text: docs/ssot/ssot.windsurf.<branch>.md (master, chaba.h3, raceman) contain branch-specific rules
+      - label: Workspace pointers
+        text: Each workspace .windsurfrules is a thin pointer that loads the common SSOT plus the current branch overlay
 
   - title: Target Workspaces
     icon: 🗂️
@@ -37,9 +39,9 @@ sections:
     layout: list
     items:
       - label: Validator
-        text: scripts/windsurfrules-check.py compares Documentation Search Standards in each target workspace to the canonical
+        text: scripts/windsurfrules-check.py should be updated to verify each workspace .windsurfrules points to the correct SSOT files
       - label: Fix mode
-        text: scripts/windsurfrules-check.py --fix replaces or inserts the canonical section into all target .windsurfrules
+        text: scripts/windsurfrules-check.py --fix should re-point .windsurfrules to docs/ssot/ssot.windsurf.common.md and the branch overlay
       - label: Manual fallback
         text: If the validator fails, follow the procedure in docs/kb/documentation-search.md
 
