@@ -5,9 +5,8 @@ from pathlib import Path
 
 import yaml
 
-from mcp_debug.focus import log_decision, mcp_focus
-
 from .git import git_mv_inbox
+from .log import log_decision
 from .state import (
     CURRENT,
     DECISIONS,
@@ -20,6 +19,17 @@ from .state import (
     save_current,
     save_focus,
     validate_current,
+)
+
+# focus_common lives in scripts/ (parent of this package)
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from focus_common import (
+    active_items as _active_items_map,
+    backlog_items as _backlog_items,
+    inbox_items as _inbox_items,
+    priority_value,
+    triage_score,
+    sweep_candidates,
 )
 
 
@@ -80,7 +90,7 @@ def make_ready_safe_item(item, session=None):
     return ready
 
 
-def activate_inbox(inbox, park=False):
+def activate_inbox(inbox, park=False, dry_run=False):
     doc = load_current()
     validate_current(doc)
     sections = doc.get("sections", [])
@@ -115,6 +125,8 @@ def activate_inbox(inbox, park=False):
         job_lifecycle=inbox.get("job_lifecycle"),
     )
     section["items"].append(new_item)
+    if dry_run:
+        return section_title, new_item, str(inbox.get("__file", ""))
     save_current(doc)
     validate_current(doc)
     target = git_mv_inbox(inbox["__file"])
@@ -164,30 +176,166 @@ def _is_focus_complete(it):
     return True
 
 
-def advance_focus(resume_session=None):
+def activate_candidate(candidate, dry_run=False):
+    """Move a candidate (backlog, inbox, or parked current item) into the active branch focus."""
+    today = datetime.now().strftime("%Y-%m-%d")
+    current_doc = load_current()
+    focus_doc = load_focus()
+    focus_section = find_section(focus_doc.get("sections", []), "Backlog - Triage Queue")
+    label = candidate.get("label", "")
+    source = candidate.get("source", "")
+    if not label:
+        return None
+
+    # Already in current active/parked sections
+    for sec in current_doc.get("sections", []):
+        if sec.get("title") in ("Active Shared Focus", "Active Branch Focus"):
+            for item in sec.get("items", []):
+                if item and item.get("label") == label:
+                    if sec.get("title") == "Active Branch Focus":
+                        branch_sec = find_section(current_doc.get("sections", []), "Active Branch Focus")
+                        if any(i.get("label") != label and i.get("status") == "active" for i in branch_sec.get("items", [])):
+                            return None
+                    item["status"] = "active"
+                    item["started"] = today
+                    if "parked" in item:
+                        item["previous_status"] = item.pop("parked")
+                    item.pop("deferred", None)
+                    if not dry_run:
+                        save_current(current_doc)
+                    return item
+
+    # Backlog in ssot.focus.yml
+    if "ssot.focus.yml" in source:
+        if focus_section:
+            for i, item in enumerate(list(focus_section.get("items", []))):
+                if item and item.get("label") == label:
+                    if not dry_run:
+                        focus_section["items"].pop(i)
+                    item["status"] = "active"
+                    item["started"] = today
+                    item.pop("parked", None)
+                    item.pop("deferred", None)
+                    branch_sec = find_section(current_doc.get("sections", []), "Active Branch Focus")
+                    if branch_sec:
+                        if not dry_run:
+                            branch_sec["items"].append(item)
+                        else:
+                            branch_sec["items"] = branch_sec.get("items", []) + [item]
+                    if not dry_run:
+                        save_focus(focus_doc)
+                        save_current(current_doc)
+                    return item
+        return None
+
+    # Focus-inbox file (not already processed)
+    if "focus-inbox" in source and "processed" not in source:
+        p = Path(source)
+        if p.exists():
+            doc = yaml.safe_load(p.read_text()) or {}
+            focus = doc.get("focus") or doc
+            focus["status"] = "active"
+            focus["started"] = today
+            focus.pop("deferred_at", None)
+            focus.pop("deferred_session", None)
+            focus.pop("deferred_reason", None)
+            if not dry_run:
+                processed_dir = INBOX_DIR / "processed"
+                processed_dir.mkdir(exist_ok=True)
+                new_path = processed_dir / p.name
+                p.rename(new_path)
+                if "focus" in doc:
+                    doc["focus"] = focus
+                else:
+                    doc = focus
+                with open(new_path, "w") as f:
+                    yaml.safe_dump(doc, f, sort_keys=False, allow_unicode=True, width=120, default_flow_style=False)
+                focus["source"] = str(new_path)
+            branch_sec = find_section(current_doc.get("sections", []), "Active Branch Focus")
+            if branch_sec:
+                if not dry_run:
+                    branch_sec["items"].append(focus)
+                else:
+                    branch_sec["items"] = branch_sec.get("items", []) + [focus]
+            if not dry_run:
+                save_current(current_doc)
+            return focus
+        return None
+
+    return None
+
+
+def _candidate_session(candidate):
+    return (candidate.get("deferred_session") or candidate.get("resume_session") or "").strip().lower()
+
+
+def activate_next(resume_session=None, dry_run=False):
+    """Activate the highest-priority parked/deferred/draft/pending focus."""
+    current_doc = load_current()
+    active_map, _, _, _ = _active_items_map(current_doc)
+
+    for key in ("branch", "shared"):
+        it = active_map.get(key)
+        if it and not _is_focus_complete(it):
+            return {"ok": False, "error": f"Active {key} focus not complete: {it.get('label')}"}
+
+    backlog = _backlog_items(load_focus())
+    inbox = _inbox_items(INBOX_DIR)
+    candidates = [
+        c for c in sweep_candidates(current_doc, backlog, inbox, active=active_map)
+        if c.get("status") in ("parked", "deferred", "draft", "pending")
+    ]
+
+    if resume_session:
+        resume_session = resume_session.strip().lower()
+        candidates = [c for c in candidates if _candidate_session(c) == resume_session]
+
+    candidates.sort(key=lambda x: (priority_value(x), triage_score(x), x["label"]), reverse=True)
+
+    if not candidates:
+        return {"ok": True, "next": None, "reason": "No parked or deferred foci to process."}
+
+    chosen = candidates[0]
+    score = triage_score(chosen)
+    chosen["confidence_score"] = round(score / 10, 2)
+    if score >= 7:
+        confidence_level = "high"
+    elif score >= 4:
+        confidence_level = "medium"
+    else:
+        confidence_level = "low"
+
+    activated = activate_candidate(chosen, dry_run=dry_run)
+    if not activated:
+        return {"ok": False, "error": f"Could not activate {chosen.get('label')} because another focus is active", "next": chosen}
+
+    return {
+        "ok": True,
+        "next": chosen,
+        "activated": True,
+        "recommendation": {
+            "action": "next",
+            "target": chosen.get("label"),
+            "confidence": confidence_level,
+            "confidence_score": chosen["confidence_score"],
+            "reasoning": f"Activated the highest-priority parked/deferred focus: {chosen.get('label')}.",
+            "next_prompt": f"Start working on {chosen.get('label')} or defer it.",
+        },
+    }
+
+
+def advance_focus(resume_session=None, dry_run=False):
     """If the active focus is complete (or none), archive it and activate the next one."""
     from .history import archive_completed
-    from .state import load_current
 
-    changed = archive_completed()
-    current = load_current()
-    active_branch = None
-    active_shared = None
-    for sec in current.get("sections", []):
-        if sec.get("title") == "Active Branch Focus" and sec.get("items"):
-            active_branch = sec["items"][0] if sec["items"] else None
-        if sec.get("title") == "Active Shared Focus" and sec.get("items"):
-            active_shared = sec["items"][0] if sec["items"] else None
-    if active_branch and not _is_focus_complete(active_branch):
-        return {"ok": False, "error": f"Active branch focus not complete: {active_branch.get('label')}"}
-    if active_shared and not _is_focus_complete(active_shared):
-        return {"ok": False, "error": f"Active shared focus not complete: {active_shared.get('label')}"}
-    return mcp_focus(mode="next", resume_session=resume_session)
+    if not dry_run:
+        archive_completed()
+    return activate_next(resume_session=resume_session, dry_run=dry_run)
 
 
-def next_focus(resume_session=None):
+def next_focus(resume_session=None, dry_run=False):
     """Activate the next focus (will fail if another active focus exists)."""
-    return mcp_focus(mode="next", resume_session=resume_session)
+    return activate_next(resume_session=resume_session, dry_run=dry_run)
 
 
 def add_ready_safe(item, session=None):

@@ -6,6 +6,8 @@ from . import REPO
 CURRENT = REPO / "docs" / "ssot" / "ssot.focus.current.yml"
 FOCUS = REPO / "docs" / "ssot" / "ssot.focus.yml"
 DECISIONS = REPO / "docs" / "ssot" / "ssot.focus.decisions.yml"
+TECHNICAL = REPO / "docs" / "ssot" / "decisions" / "ssot.technical-decisions.yml"
+SESSIONS = REPO / "docs" / "ssot" / "ssot.focus.sessions.yml"
 INBOX_DIR = REPO / "docs" / "ssot" / "focus-inbox"
 PROCESSED_DIR = INBOX_DIR / "processed"
 REPORTS_DIR = REPO / "reports"

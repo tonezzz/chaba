@@ -13,6 +13,8 @@ from focus_common import (
     active_branch_set, active_items, backlog_items, find_section, incomplete_subtasks,
     inbox_items, load_yaml, ready_safe_items, safe_to_parallel_reason, sweep_candidates,
 )
+from focus_dispatcher.log import log_decision, log_technical_decision, log_session_summary
+from focus_dispatcher.actions import activate_next
 
 
 REPO = REPO_DIR
@@ -130,86 +132,6 @@ def _session_groups(active, backlog, inbox, current_doc=None):
     for item in inbox:
         add(item.get("label"), item.get("deferred_session"), "inbox", item.get("status", "pending"))
     return groups
-
-
-def _activate_candidate(candidate):
-    today = datetime.now().strftime("%Y-%m-%d")
-    current_doc = _load_current()
-    focus_doc = _load_focus()
-    focus_section = _find_section(focus_doc.get("sections", []), "Backlog - Triage Queue")
-    label = candidate.get("label", "")
-    source = candidate.get("source", "")
-    if not label:
-        return False
-
-    # If already in current active/parked sections, update in place and ensure only one active branch focus
-    for sec in current_doc.get("sections", []):
-        if sec.get("title") in ("Active Shared Focus", "Active Branch Focus"):
-            for item in sec.get("items", []):
-                if item and item.get("label") == label:
-                    # If in shared, keep shared; if in branch and there is another active branch, reject
-                    if sec.get("title") == "Active Branch Focus":
-                        branch_sec = _find_section(current_doc.get("sections", []), "Active Branch Focus")
-                        if any(i.get("label") != label and i.get("status") == "active" for i in branch_sec.get("items", [])):
-                            return False
-                    item["status"] = "active"
-                    item["started"] = today
-                    if "parked" in item:
-                        item["previous_status"] = item.pop("parked")
-                    item.pop("deferred", None)
-                    _save_current(current_doc)
-                    return True
-
-    # Backlog in ssot.focus.yml
-    if "ssot.focus.yml" in source:
-        for i, item in enumerate(list(focus_section.get("items", []))):
-            if item and item.get("label") == label:
-                focus_section["items"].pop(i)
-                item["status"] = "active"
-                item["started"] = today
-                item.pop("parked", None)
-                item.pop("deferred", None)
-                # Add to active branch focus section
-                branch_sec = _find_section(current_doc.get("sections", []), "Active Branch Focus")
-                if branch_sec:
-                    branch_sec["items"].append(item)
-                _save_focus(focus_doc)
-                _save_current(current_doc)
-                return True
-        return False
-
-    # Focus-inbox file (not already processed)
-    if "focus-inbox" in source and "processed" not in source:
-        p = Path(source)
-        if p.exists():
-            doc = yaml.safe_load(p.read_text()) or {}
-            focus = doc.get("focus") or doc
-            focus["status"] = "active"
-            focus["started"] = today
-            focus.pop("deferred_at", None)
-            focus.pop("deferred_session", None)
-            focus.pop("deferred_reason", None)
-            # Move to processed
-            processed_dir = INBOX_DIR / "processed"
-            processed_dir.mkdir(exist_ok=True)
-            new_path = processed_dir / p.name
-            p.rename(new_path)
-            if "focus" in doc:
-                doc["focus"] = focus
-            else:
-                doc = focus
-            with open(new_path, "w") as f:
-                yaml.safe_dump(doc, f, sort_keys=False, allow_unicode=True, width=120, default_flow_style=False)
-            # Add to current active branch
-            branch_sec = _find_section(current_doc.get("sections", []), "Active Branch Focus")
-            if branch_sec:
-                focus["source"] = str(new_path)
-                branch_sec["items"].append(focus)
-            _save_current(current_doc)
-            return True
-        return False
-
-    return False
 
 
 def _bulk_defer(candidates, hold_label, session_map, bulk_session, reason):
@@ -372,69 +294,6 @@ def _draft_inbox(request):
             "missing_info": ["What is the desired outcome?"],
         },
     }
-
-
-def log_decision(request, action, target, reason, confidence, source, matched_to, dry_run=False):
-    if dry_run:
-        return
-    path = REPO_DIR / "docs" / "ssot" / "ssot.focus.decisions.yml"
-    if not path.exists():
-        return
-    try:
-        with open(path) as f:
-            doc = yaml.safe_load(f) or {}
-    except Exception:
-        return
-    items = doc.get("sections", [{}])[0].get("items", [])
-    now = datetime.now()
-    label = f"{action}: {target} ({now.strftime('%Y-%m-%d %H:%M:%S')})"[:120]
-    items.append({
-        "label": label,
-        "date": datetime.now().strftime("%Y-%m-%d"),
-        "request": str(request),
-        "action": action,
-        "target": target,
-        "reason": str(reason),
-        "confidence": confidence,
-        "source": source,
-        "matched_to": matched_to,
-    })
-    with open(path, "w") as f:
-        yaml.safe_dump(doc, f, sort_keys=False, allow_unicode=True)
-
-
-def log_technical_decision(decision, dry_run=False):
-    if dry_run:
-        return
-    if not TECHNICAL.exists():
-        return
-    try:
-        with open(TECHNICAL) as f:
-            doc = yaml.safe_load(f) or {}
-    except Exception:
-        return
-    decisions = doc.setdefault("decisions", [])
-    decision.setdefault("date", datetime.now().strftime("%Y-%m-%d"))
-    decisions.append(decision)
-    with open(TECHNICAL, "w") as f:
-        yaml.safe_dump(doc, f, sort_keys=False, allow_unicode=True, width=120, default_flow_style=False)
-
-
-def log_session_summary(summary, dry_run=False):
-    if dry_run:
-        return
-    if not SESSIONS.exists():
-        return
-    try:
-        with open(SESSIONS) as f:
-            doc = yaml.safe_load(f) or {}
-    except Exception:
-        return
-    sessions = doc.setdefault("sessions", [])
-    summary.setdefault("date", datetime.now().strftime("%Y-%m-%d"))
-    sessions.append(summary)
-    with open(SESSIONS, "w") as f:
-        yaml.safe_dump(doc, f, sort_keys=False, allow_unicode=True, width=120, default_flow_style=False)
 
 
 def _historical_items():
@@ -762,50 +621,18 @@ def mcp_focus(request=None, mode="recommend", decision=None, summary=None, resum
         }
 
     if mode == "next":
-        for key in ("branch", "shared"):
-            it = active.get(key)
-            if it and it.get("status") != "completed":
-                return {"ok": False, "error": f"Active {key} focus not complete: {it.get('label')}"}
-        next_candidates = [c for c in _sweep_candidates(doc, active, _backlog_items(), _inbox_items()) if c.get("status") in ("parked", "deferred", "draft", "pending")]
-        if resume_session:
-            resume_session = resume_session.strip().lower()
-            next_candidates = [c for c in next_candidates if _resolve_session(None, c, "").lower() == resume_session]
-        next_candidates.sort(key=lambda x: (priority_value(x), triage_score(x), x["label"]), reverse=True)
-        if not next_candidates:
-            return {"ok": True, "next": None, "reason": "No parked or deferred foci to process."}
-        chosen = next_candidates[0]
-        score = triage_score(chosen)
-        chosen["confidence_score"] = round(score / 10, 2)
-        if score >= 7:
-            confidence_level = "high"
-        elif score >= 4:
-            confidence_level = "medium"
-        else:
-            confidence_level = "low"
-        activated = _activate_candidate(chosen)
-        if not activated:
-            return {"ok": False, "error": f"Could not activate {chosen.get('label')} because another focus is active", "next": chosen}
-        log_session_summary({
-            "focus": chosen["label"],
-            "source": "mcp_focus next",
-            "plan": [f"Activate {chosen['label']}"],
-            "done": [],
-            "follow_up": ["Complete the focus or defer it"],
-            "next_action": [f"Work on {chosen['label']}"],
-        })
-        return {
-            "ok": True,
-            "next": chosen,
-            "activated": True,
-            "recommendation": {
-                "action": "next",
-                "target": chosen.get("label"),
-                "confidence": confidence_level,
-                "confidence_score": chosen["confidence_score"],
-                "reasoning": f"Activated the highest-priority parked/deferred focus: {chosen.get('label')}.",
-                "next_prompt": f"Start working on {chosen.get('label')} or defer it to a session.",
-            },
-        }
+        result = activate_next(resume_session=resume_session)
+        if result.get("ok") and result.get("activated"):
+            chosen = result["next"]
+            log_session_summary({
+                "focus": chosen["label"],
+                "source": "mcp_focus next",
+                "plan": [f"Activate {chosen['label']}"],
+                "done": [],
+                "follow_up": ["Complete the focus or defer it"],
+                "next_action": [f"Work on {chosen['label']}"],
+            })
+        return result
 
     if mode == "resume":
         candidates = _resume_suggestion()
