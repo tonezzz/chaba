@@ -221,6 +221,20 @@ hosts:
     - verify
     - xcode
     note: Alias for the same macOS host; capture tools use the same screencapture/osascript path as macbook.
+  devin_vm:
+    name: Devin VM
+    description: Devin cloud session VM running the server locally
+    role: devin_local
+    local: true
+    ssh_user: ubuntu
+    mcp_debug_path: /home/ubuntu/repos/chaba/scripts/mcp_debug/mcp-debug-linux
+    clipboard: false
+    capture: false
+    tags:
+    - devin
+    - local
+    - linux
+    note: Local-only host for Devin cloud sessions; not reachable over Tailscale/SSH. Uses the in-repo mcp-debug-linux wrapper.
 debug_commands:
   systemctl list-units:
     description: Running systemd services
