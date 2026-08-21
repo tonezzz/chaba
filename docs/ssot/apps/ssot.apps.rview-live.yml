@@ -35,7 +35,7 @@ sections:
       - label: Audio pipeline
         text: "getUserMedia -> AudioContext (16kHz) -> ScriptProcessorNode -> Int16 base64 -> WebSocket."
       - label: RView state API
-        text: "'/apps/rview/api/state.php?action=status&view_id=<view>'."
+        text: "'/apps/rview/api/state.php?action=status&view_id=<view>' on Caddy; proxied to a Python state server on tony-dell."
       - label: Message types
         text: "'audio', 'text', 'server-content', 'tool-call', 'error', 'status'."
 
@@ -57,7 +57,9 @@ sections:
       - label: Location
         text: "chaba-h3/public/apps/rview-live/index.html"
       - label: URLs
-        text: "https://chaba.h3.gizmo-thailand.com/apps/rview-live/"
+        text: "https://chaba.h3.gizmo-thailand.com/apps/rview-live/ and http://tony-dell.local:8080/apps/rview-live/"
+      - label: State server
+        text: "scripts/rview-state-server.py runs on tony-dell port 3007 and is proxied by Caddy at /apps/rview/api/*."
       - label: Registry
         text: "Listed in chaba-h3/public/apps/apps.yml as a nav item and an app entry."
       - label: Branch
