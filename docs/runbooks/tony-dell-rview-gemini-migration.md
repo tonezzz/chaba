@@ -39,7 +39,7 @@ Move the backend services for `rview` (`rview-api`) and `gemini-live` from `tony
 - `tony-dell` reachable via Tailscale (`tony-dell` / `100.68.142.13`).
 - Rootless podman with Quadlet enabled (`systemd --user` generator) on `tony-dell`.
 - `GEMINI_API_KEY` available.
-- Repo cloned on `tony-dell` (e.g. `/home/tony/CascadeProjects/chaba` on the migration branch).
+- A repo clone on `tony-dell` that does **not** conflict with the running `/home/tony/CascadeProjects/chaba` worktree (e.g. `/home/tony/CascadeProjects/chaba-deploy`). Adjust the `/home/tony/CascadeProjects/chaba` paths in the `.build` units to match your clone.
 
 ## Repo-side changes (already in this branch)
 
@@ -62,10 +62,13 @@ mkdir -p /home/tony/.config/containers/systemd
 
 ### 2. Copy Quadlet units
 
-From the repo on `tony-dell`:
+From the repo clone on `tony-dell` (replace `chaba-deploy` with your clone path):
 
 ```bash
 cd /home/tony/CascadeProjects/chaba
+sed -e "s|/home/tony/CascadeProjects/chaba|/home/tony/CascadeProjects/chaba-deploy|g" \
+  -i stacks/tony-dell/rview-api/rview-api-image.build \
+     stacks/tony-dell/gemini-live/gemini-live-image.build
 cp stacks/tony-dell/rview-api/rview-api.container \
    stacks/tony-dell/rview-api/rview-api-image.build \
    /home/tony/.config/containers/systemd/
@@ -73,6 +76,8 @@ cp stacks/tony-dell/gemini-live/gemini-live.container \
    stacks/tony-dell/gemini-live/gemini-live-image.build \
    /home/tony/.config/containers/systemd/
 ```
+
+The `.container` units reference the generated build services `rview-api-image-build.service` and `gemini-live-image-build.service`.
 
 ### 3. Create the Podman secret for Gemini API key
 
@@ -91,19 +96,18 @@ podman secret inspect gemini-api-key
 
 ### 4. Start the systemd user services
 
-The first start also runs the `.build` units and creates the images.
+The first start also runs the `.build` units and creates the images. Quadlet reads the `[Install]` section of the `.container` files, so `systemctl enable` is not required (and fails for generated units).
 
 ```bash
 systemctl --user daemon-reload
 systemctl --user start rview-api gemini-live
-systemctl --user enable rview-api gemini-live
 systemctl --user status rview-api gemini-live
 ```
 
 Check that the build units ran:
 
 ```bash
-systemctl --user status rview-api-image gemini-live-image
+systemctl --user status rview-api-image-build gemini-live-image-build
 ```
 
 ### 5. Verify direct access on `tony-dell`
@@ -134,14 +138,14 @@ Then the services are also reachable at `tony-dell.taila0626a.ts.net:3007` and `
 Option A — use the `.build` units:
 
 ```bash
-systemctl --user start rview-api-image gemini-live-image
+systemctl --user start rview-api-image-build gemini-live-image-build
 systemctl --user restart rview-api gemini-live
 ```
 
-Option B — manual build fallback:
+Option B — manual build fallback (replace `chaba-deploy` with your clone path):
 
 ```bash
-cd /home/tony/CascadeProjects/chaba
+cd /home/tony/CascadeProjects/chaba-deploy
 bash stacks/tony-dell/rview-api/build.sh
 bash stacks/tony-dell/gemini-live/build.sh
 systemctl --user restart rview-api gemini-live
@@ -212,7 +216,7 @@ curl -s https://chaba.h3.gizmo-thailand.com/api/gemini-live/health
 ## Verification checklist
 
 - [ ] `podman secret inspect gemini-api-key` shows the secret.
-- [ ] `systemctl --user status rview-api-image gemini-live-image` shows the builds succeeded.
+- [ ] `systemctl --user status rview-api-image-build gemini-live-image-build` shows the builds succeeded.
 - [ ] `curl http://tony-dell:3007/state?action=list` returns JSON.
 - [ ] `curl http://tony-dell:3008/health` returns JSON.
 - [ ] `curl http://tony-omen.local:8080/apps/rview/api/state?action=list` returns JSON.
@@ -225,7 +229,7 @@ curl -s https://chaba.h3.gizmo-thailand.com/api/gemini-live/health
 
 1. On `tony-dell`:
    ```bash
-   systemctl --user stop rview-api gemini-live rview-api-image gemini-live-image
+   systemctl --user stop rview-api gemini-live rview-api-image-build gemini-live-image-build
    ```
 2. On `tony-omen`: restore the `rview-api` and `gemini-live` service blocks in `stacks/web/docker-compose.yml`, then `docker compose --profile production up -d`.
 3. Revert `stacks/web/Caddyfile` to proxy to the local service names.

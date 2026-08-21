@@ -1,7 +1,7 @@
 [Unit]
 Description=Gemini Live API (rootless podman)
-Requires=gemini-live-image.service rview-api.service
-After=gemini-live-image.service rview-api.service
+Requires=gemini-live-image-build.service rview-api.service
+After=gemini-live-image-build.service rview-api.service
 
 [Container]
 Image=localhost/gemini-live:latest
