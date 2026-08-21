@@ -11,7 +11,7 @@ Environment=RVIEW_API_PORT=3007
 Environment=RVIEW_STATE_FILE=/data/state.json
 Volume=/home/tony/.local/share/rview-api:/data:Z
 AutoUpdate=local
-HealthCmd=curl -sf http://127.0.0.1:3007/state.php?action=list >/dev/null
+HealthCmd=curl -sf http://127.0.0.1:3007/state?action=list >/dev/null
 HealthInterval=30s
 HealthTimeout=10s
 HealthRetries=3

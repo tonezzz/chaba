@@ -22,13 +22,13 @@ sections:
     layout: list
     items:
       - label: rview-api
-        text: Node.js HTTP service in stacks/web/rview-api/ exposing /state.php endpoints.
+        text: Node.js HTTP service in stacks/web/rview-api/ exposing /state endpoints.
       - label: Static UI
         text: stacks/web/public/apps/rview/index.html polls the API and renders the current media.
       - label: mcp-rview MCP server
-        text: scripts/mcp_rview/server.py exposes rview_* tools and proxies to the rview-api state.php endpoint.
+        text: scripts/mcp_rview/server.py exposes rview_* tools and proxies to the rview-api state endpoint.
       - label: Caddy routing
-        text: /apps/rview/ serves the static UI; /apps/rview/api/state.php is reverse-proxied to the rview-api service.
+        text: /apps/rview/ serves the static UI; /apps/rview/api/state is reverse-proxied to the rview-api service.
       - label: State persistence
         text: View state is stored in /data/state.json inside the container via a named volume.
 
@@ -37,7 +37,7 @@ sections:
     layout: list
     items:
       - label: stacks/web/rview-api/rview-api.mjs
-        text: Node HTTP server implementing the state.php API.
+        text: Node HTTP server implementing the state API.
       - label: stacks/web/rview-api/Dockerfile
         text: Container image for rview-api.
       - label: stacks/web/public/apps/rview/index.html
@@ -47,7 +47,7 @@ sections:
       - label: stacks/web/docker-compose.yml
         text: rview-api container and rview_api_state volume.
       - label: scripts/mcp_rview/server.py
-        text: MCP server that turns Gemini/function calls into state.php requests.
+        text: MCP server that turns Gemini/function calls into state requests.
 
   - title: Deployment
     icon: 🚀
@@ -78,7 +78,7 @@ sections:
     layout: list
     items:
       - label: mcp-rview
-        text: The MCP server is the intended consumer of the state.php API.
+        text: The MCP server is the intended consumer of the state API.
       - label: gemini-live
         text: gemini-live will use the Gemini Live API to stream audio and call rview_* tools through mcp-rview.
 

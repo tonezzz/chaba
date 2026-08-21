@@ -109,7 +109,7 @@ systemctl --user status rview-api-image gemini-live-image
 ### 5. Verify direct access on `tony-dell`
 
 ```bash
-curl -s http://127.0.0.1:3007/state.php?action=list
+curl -s http://127.0.0.1:3007/state?action=list
 curl -s http://127.0.0.1:3008/health
 ```
 
@@ -178,7 +178,7 @@ docker compose restart caddy
 ### 3. Test through Caddy
 
 ```bash
-curl -s http://tony-omen.local:8080/apps/rview/api/state.php?action=list
+curl -s http://tony-omen.local:8080/apps/rview/api/state?action=list
 curl -s http://tony-omen.local:8080/api/gemini-live/health
 ```
 
@@ -205,7 +205,7 @@ node proxy-server.mjs
 ### Test chaba.h3 proxy
 
 ```bash
-curl -s https://chaba.h3.gizmo-thailand.com/apps/rview/api/state.php?action=list
+curl -s https://chaba.h3.gizmo-thailand.com/apps/rview/api/state?action=list
 curl -s https://chaba.h3.gizmo-thailand.com/api/gemini-live/health
 ```
 
@@ -213,11 +213,11 @@ curl -s https://chaba.h3.gizmo-thailand.com/api/gemini-live/health
 
 - [ ] `podman secret inspect gemini-api-key` shows the secret.
 - [ ] `systemctl --user status rview-api-image gemini-live-image` shows the builds succeeded.
-- [ ] `curl http://tony-dell:3007/state.php?action=list` returns JSON.
+- [ ] `curl http://tony-dell:3007/state?action=list` returns JSON.
 - [ ] `curl http://tony-dell:3008/health` returns JSON.
-- [ ] `curl http://tony-omen.local:8080/apps/rview/api/state.php?action=list` returns JSON.
+- [ ] `curl http://tony-omen.local:8080/apps/rview/api/state?action=list` returns JSON.
 - [ ] `curl http://tony-omen.local:8080/api/gemini-live/health` returns JSON.
-- [ ] `curl https://chaba.h3.gizmo-thailand.com/apps/rview/api/state.php?action=list` returns JSON.
+- [ ] `curl https://chaba.h3.gizmo-thailand.com/apps/rview/api/state?action=list` returns JSON.
 - [ ] `curl https://chaba.h3.gizmo-thailand.com/api/gemini-live/health` returns JSON.
 - [ ] `gemini-live` can call `rview_show` end-to-end (open the UI, start a session, and confirm the remote view updates).
 
