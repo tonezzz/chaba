@@ -40,8 +40,8 @@ def compact_df():
                 "s": parts[-5],
                 "u": parts[-4],
                 "a": parts[-3],
-                "m": parts[-1],
-                "p": parts[-2],
+                "m": parts[-2],
+                "p": parts[-1],
             })
     return {"ok": True, "cmd": "df -h", "n": len(fss), "fs": fss}
 
@@ -155,20 +155,20 @@ def compact_systemctl_units():
 
 
 def compact_lsblk():
-    result, err = _run(["lsblk", "-rno", "NAME,SIZE,FSTYPE,TYPE,MOUNTPOINT"])
+    result, err = _run(["lsblk", "-Pno", "NAME,SIZE,FSTYPE,TYPE,MOUNTPOINT"])
     if err:
         return {"ok": False, "error": err}
     devices = []
     for line in result.stdout.strip().splitlines():
-        parts = line.split(None, 4)
-        if not parts:
+        fields = dict(re.findall(r'(\w+)="([^"]*)"', line))
+        if not fields:
             continue
         devices.append({
-            "n": parts[0],
-            "s": parts[1] if len(parts) > 1 else "",
-            "f": parts[2] if len(parts) > 2 else "",
-            "t": parts[3] if len(parts) > 3 else "",
-            "m": parts[4] if len(parts) > 4 else "",
+            "n": fields.get("NAME", ""),
+            "s": fields.get("SIZE", ""),
+            "f": fields.get("FSTYPE", ""),
+            "t": fields.get("TYPE", ""),
+            "m": fields.get("MOUNTPOINT", ""),
         })
     return {"ok": True, "cmd": "lsblk", "n": len(devices), "d": devices}
 
