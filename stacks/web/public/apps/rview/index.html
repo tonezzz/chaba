@@ -5,264 +5,204 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>RView</title>
   <style>
-    :root { --bg: #0f172a; --panel: #1e293b; --text: #f8fafc; --muted: #94a3b8; --accent: #06b6d4; --danger: #ef4444; }
+    :root { --bg: #000; --text: #f8fafc; --muted: #94a3b8; --danger: #ef4444; }
     * { box-sizing: border-box; }
-    html, body { height: 100%; margin: 0; background: var(--bg); color: var(--text); font-family: system-ui, -apple-system, sans-serif; }
-    body { display: flex; flex-direction: column; }
-    header { display: flex; align-items: center; gap: 0.75rem; padding: 0.5rem 1rem; background: #0b1120; border-bottom: 1px solid #334155; }
-    h1 { margin: 0; font-size: 1rem; flex: 1; }
-    select, input, button, textarea { font: inherit; font-size: 0.85rem; padding: 0.4rem 0.6rem; border-radius: 6px; border: 1px solid #475569; background: #0f172a; color: var(--text); }
-    button { cursor: pointer; background: var(--accent); color: #082f49; border: none; font-weight: 600; }
-    button.secondary { background: #334155; color: var(--text); }
-    button:hover { opacity: 0.9; }
-    button:disabled { opacity: 0.5; cursor: not-allowed; }
-    main { flex: 1; display: grid; grid-template-columns: 1fr 340px; gap: 1rem; padding: 1rem; overflow: hidden; }
-    #stage { background: #020617; border-radius: 8px; display: flex; align-items: center; justify-content: center; overflow: hidden; position: relative; }
-    #stage > * { max-width: 100%; max-height: 100%; }
-    #stage iframe, #stage embed { width: 100%; height: 100%; border: none; }
-    #stage .html-content { width: 100%; height: 100%; padding: 1rem; overflow: auto; background: #fff; color: #000; }
+    html, body { height: 100%; margin: 0; background: var(--bg); color: var(--text); overflow: hidden; font-family: system-ui, -apple-system, sans-serif; }
+    #stage { width: 100vw; height: 100vh; display: flex; align-items: center; justify-content: center; overflow: hidden; position: relative; background: #000; }
+    #stage > *:first-child { max-width: 100%; max-height: 100%; border: none; }
+    #stage img, #stage video { width: 100%; height: 100%; object-fit: contain; }
+    #stage iframe, #stage embed, #stage .html-content { width: 100%; height: 100%; }
+    #stage .html-content { overflow: auto; background: #fff; color: #000; }
     #stage .error { color: var(--danger); padding: 1rem; text-align: center; }
-    #sidebar { display: flex; flex-direction: column; gap: 0.75rem; overflow: auto; }
-    .panel { background: var(--panel); border-radius: 8px; padding: 0.75rem; }
-    .panel h2 { margin: 0 0 0.5rem; font-size: 0.8rem; color: var(--muted); text-transform: uppercase; }
-    label { font-size: 0.75rem; color: var(--muted); display: block; margin: 0.4rem 0 0.2rem; }
-    .controls { display: flex; flex-wrap: wrap; gap: 0.4rem; }
-    .controls button { width: auto; flex: 1; min-width: 52px; }
-    .queue { list-style: none; padding: 0; margin: 0; max-height: 220px; overflow: auto; }
-    .queue li { padding: 0.35rem; border-bottom: 1px solid #334155; font-size: 0.78rem; display: flex; justify-content: space-between; gap: 0.5rem; }
-    .muted { color: var(--muted); }
-    #status { font-size: 0.75rem; color: var(--muted); white-space: nowrap; }
-    .row { display: flex; gap: 0.5rem; align-items: center; }
-    textarea { width: 100%; min-height: 80px; resize: vertical; }
-    .hidden { display: none; }
+    #stage .muted { color: var(--muted); }
+    #overlay { position: absolute; top: 0.5rem; left: 0.5rem; right: 0.5rem; display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; font-size: 0.75rem; color: var(--muted); pointer-events: none; opacity: 0; transition: opacity 0.3s; z-index: 10; }
+    #stage:hover #overlay, #overlay.active { opacity: 1; }
+    #overlay span { background: rgba(0,0,0,0.6); padding: 0.25rem 0.5rem; border-radius: 4px; }
   </style>
 </head>
 <body>
-  <header>
-    <h1>RView</h1>
-    <select id="viewSelect"></select>
-    <button id="createBtn" class="secondary">+</button>
-    <div id="status"></div>
-  </header>
-  <main>
-    <div id="stage"><div class="muted">No view selected</div></div>
-    <div id="sidebar">
-      <div class="panel">
-        <h2>Playback</h2>
-        <div class="controls">
-          <button id="play">▶</button>
-          <button id="pause">⏸</button>
-          <button id="stop">⏹</button>
-          <button id="prev">⏮</button>
-          <button id="next">⏭</button>
-          <button id="loop" class="secondary">Loop</button>
-          <button id="shuffle" class="secondary">Shuffle</button>
-          <button id="slideshow" class="secondary">SS</button>
-          <button id="stopSlideshow" class="secondary">Stop SS</button>
-          <button id="fs" class="secondary">FS</button>
-          <button id="clear" class="secondary">Clear</button>
-        </div>
-        <label>Slideshow interval (sec)</label>
-        <input type="number" id="interval" min="1" value="5" step="1">
-        <label>Volume</label>
-        <input type="range" id="volume" min="0" max="1" step="0.05" value="1">
-        <label>Seek</label>
-        <input type="range" id="seek" min="0" max="100" value="0">
-      </div>
-      <div class="panel">
-        <h2>Show</h2>
-        <input type="text" id="url" placeholder="https://...">
-        <input type="text" id="title" placeholder="Title">
-        <select id="type">
-          <option value="auto">auto</option>
-          <option value="image">image</option>
-          <option value="video">video</option>
-          <option value="audio">audio</option>
-          <option value="pdf">pdf</option>
-          <option value="iframe">iframe</option>
-          <option value="html">html</option>
-        </select>
-        <label><input type="checkbox" id="enqueue"> Enqueue</label>
-        <textarea id="content" class="hidden" placeholder="Paste raw HTML here (used when type = html)"></textarea>
-        <button id="showBtn">Show</button>
-      </div>
-      <div class="panel">
-        <h2>Queue</h2>
-        <ul id="queue" class="queue"></ul>
-      </div>
-    </div>
-  </main>
-  <script>
-    const API = new URLSearchParams(window.location.search).get('api') || '/apps/rview/api/state';
-    let currentViewId = null;
-    let slideshowTimer = null;
-    let slideshowItemUrl = null;
-    let slideshowState = false;
+  <div id="stage">
+    <div class="muted">Nothing playing</div>
+    <div id="overlay"><span id="status"></span></div>
+  </div>
 
-    function reportError(e, src) {
-      console.error('media load error', e?.type, src);
-      status(`error loading ${src}`);
-    }
+<script>
+  const params = new URLSearchParams(window.location.search);
+  const API = params.get('api') || '/apps/rview/api/state';
+  const VIEW_ID = params.get('view') || 'default';
+  let slideshowTimer = null;
+  let slideshowItemUrl = null;
+  let slideshowState = false;
+  let lastItemJson = '';
 
-    async function api(action, body = {}) {
-      const res = await fetch(API, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action, ...body })
-      });
-      return res.json();
-    }
+  function status(text) {
+    const el = document.getElementById('status');
+    if (el) el.textContent = text;
+  }
 
-    async function loadViews() {
-      const listRes = await fetch(`${API}?action=list`);
-      const { views = [] } = await listRes.json();
-      const sel = document.getElementById('viewSelect');
-      sel.innerHTML = views.map(v => `<option value="${v.view_id}">${v.display_name || v.view_id} — ${v.state || 'stopped'}</option>`).join('');
-      if (!currentViewId && views.length) currentViewId = views[0].view_id;
-      if (currentViewId && !views.find(v => v.view_id === currentViewId)) currentViewId = null;
-      if (currentViewId) sel.value = currentViewId;
-      status(`${views.length} view(s)`);
-      if (currentViewId) pollStatus();
-    }
+  function reportError(e, src) {
+    console.error('media load error', e?.type, src);
+    status('error loading ' + (src || ''));
+  }
 
-    async function pollStatus() {
-      if (!currentViewId) return;
-      const res = await fetch(`${API}?action=status&view_id=${encodeURIComponent(currentViewId)}`);
+  async function api(action, body = {}) {
+    const res = await fetch(API, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action, ...body })
+    });
+    return res.json();
+  }
+
+  async function pollStatus() {
+    try {
+      const res = await fetch(`${API}?action=status&view_id=${encodeURIComponent(VIEW_ID)}`);
       const data = await res.json();
       if (data.ok) render(data.view);
+    } catch (e) {
+      status('polling error');
+      console.error(e);
     }
+  }
 
-    function stopSlideshow() {
-      if (slideshowTimer) clearTimeout(slideshowTimer);
-      slideshowTimer = null;
-      slideshowItemUrl = null;
-      slideshowState = false;
-    }
+  function stopSlideshow() {
+    if (slideshowTimer) clearTimeout(slideshowTimer);
+    slideshowTimer = null;
+    slideshowItemUrl = null;
+    slideshowState = false;
+  }
 
-    function startSlideshow(view, item) {
-      stopSlideshow();
-      const sec = Math.max(1, Number(view.slideshow_interval) || 5);
-      slideshowTimer = setTimeout(() => {
-        api('control', { view_id: currentViewId, command: 'next' }).then(pollStatus);
-      }, sec * 1000);
-      slideshowItemUrl = item.url;
-      slideshowState = view.slideshow;
-    }
+  function startSlideshow(view, item) {
+    stopSlideshow();
+    const sec = Math.max(1, Number(view.slideshow_interval) || 5);
+    slideshowTimer = setTimeout(() => {
+      api('control', { view_id: VIEW_ID, command: 'next' }).then(pollStatus);
+    }, sec * 1000);
+    slideshowItemUrl = item.url;
+    slideshowState = view.slideshow;
+  }
 
-    function render(view) {
-      document.getElementById('volume').value = view.volume;
-      document.getElementById('seek').value = view.position || 0;
-      const stage = document.getElementById('stage');
-      const item = view.current_item;
+  function mediaSelector(mt) {
+    if (mt === 'image') return 'img';
+    if (mt === 'video') return 'video';
+    if (mt === 'audio') return 'audio';
+    if (mt === 'pdf') return 'embed';
+    if (mt === 'html') return 'div.html-content';
+    return 'iframe';
+  }
 
-      if (!item) {
-        stage.innerHTML = '<div class="muted">Nothing playing</div>';
-        stopSlideshow();
-        return;
+  function createMedia(item) {
+    const url = item.url || '';
+    const title = item.title || '';
+    switch (item.media_type) {
+      case 'image': {
+        const el = document.createElement('img');
+        el.src = url;
+        el.alt = title;
+        el.onerror = (e) => reportError(e, url);
+        return el;
       }
-
-      const mt = item.media_type;
-      let html = '';
-      if (mt === 'image') {
-        html = `<img src="${item.url}" alt="${item.title || ''}" onerror="reportError(event,'${item.url}')">`;
-      } else if (mt === 'video') {
-        html = `<video src="${item.url}" controls autoplay playsinline id="media" onerror="reportError(event,'${item.url}')"></video>`;
-      } else if (mt === 'audio') {
-        html = `<audio src="${item.url}" controls id="media" onerror="reportError(event,'${item.url}')"></audio>`;
-      } else if (mt === 'pdf') {
-        html = `<embed src="${item.url}" type="application/pdf" onerror="reportError(event,'${item.url}')">`;
-      } else if (mt === 'html') {
-        const content = item.content || item.url || '';
-        html = `<div class="html-content">${content}</div>`;
-      } else {
-        html = `<iframe src="${item.url}" allowfullscreen allow="autoplay; fullscreen"></iframe>`;
+      case 'video': {
+        const el = document.createElement('video');
+        el.src = url;
+        el.autoplay = true;
+        el.playsInline = true;
+        el.onerror = (e) => reportError(e, url);
+        return el;
       }
-      stage.innerHTML = html;
+      case 'audio': {
+        const el = document.createElement('audio');
+        el.src = url;
+        el.autoplay = true;
+        el.onerror = (e) => reportError(e, url);
+        return el;
+      }
+      case 'pdf': {
+        const el = document.createElement('embed');
+        el.src = url;
+        el.type = 'application/pdf';
+        el.onerror = (e) => reportError(e, url);
+        return el;
+      }
+      case 'html': {
+        const el = document.createElement('div');
+        el.className = 'html-content';
+        el.innerHTML = item.content || item.url || '';
+        return el;
+      }
+      default: {
+        const el = document.createElement('iframe');
+        el.src = url;
+        el.allow = 'autoplay; fullscreen';
+        return el;
+      }
+    }
+  }
 
-      if (view.slideshow) {
-        if (!slideshowTimer || slideshowItemUrl !== item.url || slideshowState !== view.slideshow) {
-          startSlideshow(view, item);
+  function applyMediaState(el, view) {
+    if (!el) return;
+    try {
+      if (view.volume !== undefined && el.volume !== undefined) el.volume = view.volume;
+      if (view.position !== undefined && !isNaN(view.position) && el.currentTime !== undefined) {
+        const t = Number(view.position);
+        if (Math.abs(el.currentTime - t) > 1) el.currentTime = t;
+      }
+      if (view.state === 'playing') {
+        if (el.play) {
+          const p = el.play();
+          if (p && p.catch) p.catch(() => {});
         }
-      } else {
-        stopSlideshow();
+      } else if (view.state === 'paused') {
+        if (el.pause) el.pause();
+      } else if (view.state === 'stopped') {
+        if (el.pause) el.pause();
+        if (el.currentTime !== undefined) el.currentTime = 0;
       }
+    } catch (e) {
+      console.error('media state error', e);
+    }
+  }
 
-      const q = document.getElementById('queue');
-      q.innerHTML = (view.queue || []).map(it => `<li><span>${it.title || it.url}</span><span class="muted">${it.media_type}</span></li>`).join('');
-      status(`${view.state} | ${item.media_type} | ${item.title || item.url}`);
+  function render(view) {
+    const stage = document.getElementById('stage');
+    const item = view.current_item;
+
+    if (!item) {
+      stage.innerHTML = '<div class="muted">Nothing playing</div><div id="overlay"><span id="status"></span></div>';
+      lastItemJson = '';
+      stopSlideshow();
+      return;
     }
 
-    function status(text) { document.getElementById('status').textContent = text; }
+    const itemJson = JSON.stringify(item);
+    const desiredSelector = mediaSelector(item.media_type);
+    let mediaEl = stage.querySelector(desiredSelector);
+    if (!mediaEl || itemJson !== lastItemJson) {
+      lastItemJson = itemJson;
+      stage.innerHTML = '';
+      mediaEl = createMedia(item);
+      stage.appendChild(mediaEl);
+      const overlay = document.createElement('div');
+      overlay.id = 'overlay';
+      overlay.innerHTML = '<span id="status"></span>';
+      stage.appendChild(overlay);
+    }
 
-    document.getElementById('createBtn').onclick = async () => {
-      const id = prompt('New view id?');
-      if (!id) return;
-      await api('create', { view_id: id, display_name: id });
-      currentViewId = id;
-      loadViews();
-    };
+    applyMediaState(mediaEl, view);
 
-    document.getElementById('viewSelect').onchange = (e) => { currentViewId = e.target.value; pollStatus(); };
+    if (view.slideshow) {
+      if (!slideshowTimer || slideshowItemUrl !== item.url || slideshowState !== view.slideshow) {
+        startSlideshow(view, item);
+      }
+    } else {
+      stopSlideshow();
+    }
 
-    document.getElementById('type').onchange = (e) => {
-      document.getElementById('content').classList.toggle('hidden', e.target.value !== 'html');
-    };
+    status(`${view.state || 'stopped'} | ${item.media_type || '-'} | ${item.title || item.url || ''}`);
+  }
 
-    document.getElementById('showBtn').onclick = async () => {
-      const type = document.getElementById('type').value;
-      const payload = {
-        view_id: currentViewId,
-        url: document.getElementById('url').value,
-        title: document.getElementById('title').value,
-        media_type: type,
-        enqueue: document.getElementById('enqueue').checked
-      };
-      if (type === 'html') payload.content = document.getElementById('content').value;
-      await api('show', payload);
-      pollStatus();
-    };
-
-    ['play', 'pause', 'stop', 'prev', 'next', 'loop', 'shuffle'].forEach(id => {
-      document.getElementById(id).onclick = async () => {
-        await api('control', { view_id: currentViewId, command: id });
-        pollStatus();
-      };
-    });
-
-    document.getElementById('slideshow').onclick = async () => {
-      await api('control', { view_id: currentViewId, command: 'slideshow', value: document.getElementById('interval').value });
-      pollStatus();
-    };
-
-    document.getElementById('stopSlideshow').onclick = async () => {
-      await api('control', { view_id: currentViewId, command: 'stop_slideshow' });
-      pollStatus();
-    };
-
-    document.getElementById('clear').onclick = async () => {
-      await api('control', { view_id: currentViewId, command: 'clear_queue' });
-      pollStatus();
-    };
-
-    document.getElementById('fs').onclick = async () => {
-      const el = document.getElementById('stage');
-      if (document.fullscreenElement) document.exitFullscreen(); else el.requestFullscreen();
-      await api('control', { view_id: currentViewId, command: 'fullscreen' });
-      pollStatus();
-    };
-
-    document.getElementById('volume').onchange = async (e) => {
-      await api('control', { view_id: currentViewId, command: 'volume', value: parseFloat(e.target.value) });
-      pollStatus();
-    };
-
-    document.getElementById('seek').onchange = async (e) => {
-      await api('control', { view_id: currentViewId, command: 'seek', value: parseInt(e.target.value) });
-      pollStatus();
-    };
-
-    loadViews();
-    setInterval(pollStatus, 2000);
-  </script>
+  pollStatus();
+  setInterval(pollStatus, 2000);
+</script>
 </body>
 </html>
