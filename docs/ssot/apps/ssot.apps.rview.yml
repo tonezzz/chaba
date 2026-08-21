@@ -55,8 +55,12 @@ sections:
     items:
       - label: Docker
         text: docker compose up rview-api (production profile) builds from stacks/web/rview-api/.
+      - label: Rootless Podman
+        text: On tony-dell, rview-api runs as a Quadlet container on port 3007.
       - label: Caddy
         text: Caddy routes /apps/rview/ to the static files and /apps/rview/api/* to rview-api:3007.
+      - label: Tailscale
+        text: https://tony-dell.taila0626a.ts.net:8443/apps/rview/ serves the fullscreen PWA over HTTPS.
       - label: Environment
         text: RVIEW_API_PORT defaults to 3007; RVIEW_STATE_FILE defaults to /data/state.json.
       - label: Registry
