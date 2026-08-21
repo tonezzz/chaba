@@ -257,7 +257,7 @@ tony-dell:
     port: 9003
     host_port: '127.0.0.1:9003'
     service_unit: ~/.config/systemd/user/mcp-rview.service
-    source: scripts/mcp_rview
+    source: stacks/tony-dell/mcp-rview/mcp-rview.service
     depends_on: rview-api
     health_check: 'curl -sfI -H "Accept: text/event-stream" http://127.0.0.1:9003/sse >/dev/null'
     environment:
