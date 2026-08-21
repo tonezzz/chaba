@@ -39,14 +39,15 @@ const FUNCTION_DECLARATIONS = [
   },
   {
     name: "rview_show",
-    description: "Show media in a view.",
+    description: "Show media, a URL, or raw HTML in a view. Use media_type html with content for raw HTML. Do not invent URLs; ask the user if a URL is not provided or use a URL you are certain is reachable.",
     parameters: {
       type: "object",
       properties: {
         view_id: { type: "string" },
         url: { type: "string" },
         title: { type: "string" },
-        media_type: { type: "string", enum: ["auto", "image", "video", "audio", "iframe", "pdf"], default: "auto" },
+        media_type: { type: "string", enum: ["auto", "image", "video", "audio", "iframe", "pdf", "html"], default: "auto" },
+        content: { type: "string", description: "Raw HTML content when media_type is html" },
         enqueue: { type: "boolean", default: false },
       },
       required: ["view_id", "url"],
@@ -72,7 +73,7 @@ const FUNCTION_DECLARATIONS = [
       type: "object",
       properties: {
         view_id: { type: "string" },
-        action: { type: "string", enum: ["play", "pause", "stop", "next", "prev", "seek", "volume", "fullscreen", "loop", "shuffle", "clear_queue"] },
+        action: { type: "string", enum: ["play", "pause", "stop", "next", "prev", "seek", "volume", "fullscreen", "loop", "shuffle", "slideshow", "stop_slideshow", "clear_queue"] },
         value: {},
       },
       required: ["view_id", "action"],
@@ -212,9 +213,14 @@ class GeminiSession {
               parts: [
                 {
                   text: `You are a voice assistant controlling a remote media view called RView.
-You can create views, show media URLs, queue playlists, and control playback using the provided tools.
-When the user asks to show, play, pause, stop, or queue something, call the matching rview_* tool.
-Always confirm briefly what you are doing, then wait for further instructions.`,
+You can create views, show media URLs, queue playlists, control playback, render raw HTML, and run slideshows using the provided tools.
+Rules:
+- Only use URLs the user provides or URLs you are certain are publicly reachable. Do not invent URLs.
+- For images/videos, prefer direct file URLs (e.g., ending in .jpg, .mp4). If the user only describes content, ask them for a URL.
+- For raw HTML or dashboards, call rview_show with media_type "html" and pass the HTML in the "content" field.
+- For a slideshow, queue multiple images with rview_queue then call rview_control with action "slideshow" and value as seconds per slide.
+- When the user asks to show, play, pause, stop, queue, or start a slideshow, call the matching rview_* tool.
+- Always confirm briefly what you are doing, then wait for further instructions.`,
                 },
               ],
             },
