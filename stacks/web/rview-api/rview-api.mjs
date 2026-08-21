@@ -163,7 +163,10 @@ function advance(view) {
   if (view.loop && !view.queue.length && view.history.length) {
     view.queue = view.history.splice(0);
   }
-  if (!view.queue.length) return;
+  if (!view.queue.length) {
+    view.slideshow = false;
+    return;
+  }
   if (view.shuffle && view.queue.length > 1) {
     const idx = Math.floor(Math.random() * view.queue.length);
     const [item] = view.queue.splice(idx, 1);
