@@ -20,6 +20,8 @@ const contentTypes = {
 
 const GEMINI_LIVE_API = process.env.GEMINI_LIVE_API_URL || 'http://tony-dell:3008';
 const RVIEW_API = process.env.RVIEW_API_URL || 'http://tony-dell:3007';
+// rview-live is the chaba.h3 name for the same Gemini Live backend.
+const RVIEW_LIVE_API = process.env.RVIEW_LIVE_API_URL || GEMINI_LIVE_API;
 
 function rewriteHost(headers, host) {
   const copy = { ...headers };
@@ -112,6 +114,11 @@ const server = createServer(async (request, response) => {
     return;
   }
 
+  if (pathname.startsWith('/api/rview-live/')) {
+    proxyHttp(request, response, RVIEW_LIVE_API, '/api/rview-live');
+    return;
+  }
+
   if (pathname.startsWith('/apps/rview/api/')) {
     proxyHttp(request, response, RVIEW_API, '/apps/rview/api');
     return;
@@ -165,6 +172,8 @@ server.on('upgrade', (request, socket, head) => {
   const pathname = decodeURIComponent(url.pathname);
   if (pathname.startsWith('/api/gemini-live/')) {
     proxyWs(request, socket, head, GEMINI_LIVE_API, '/api/gemini-live');
+  } else if (pathname.startsWith('/api/rview-live/')) {
+    proxyWs(request, socket, head, RVIEW_LIVE_API, '/api/rview-live');
   } else if (pathname.startsWith('/apps/rview/api/')) {
     proxyWs(request, socket, head, RVIEW_API, '/apps/rview/api');
   } else {
