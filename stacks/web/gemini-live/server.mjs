@@ -11,7 +11,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const PORT = parseInt(process.env.GEMINI_LIVE_PORT || "3002", 10);
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const GEMINI_LIVE_MODEL = process.env.GEMINI_LIVE_MODEL || "gemini-3.1-flash-live-preview";
-const RVIEW_API_URL = process.env.RVIEW_API_URL || "http://localhost:8080/apps/rview/api/state.php";
+const RVIEW_API_URL = process.env.RVIEW_API_URL || "http://localhost:8080/apps/rview/api/state";
 
 const GEMINI_WS_URL = `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent?key=${GEMINI_API_KEY}`;
 

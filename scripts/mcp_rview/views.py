@@ -1,6 +1,6 @@
 """MCP RView state proxy.
 
-This module talks to the rview PHP API over HTTP.
+This module talks to the rview API over HTTP.
 The API URL can be set with the RVIEW_API_URL environment variable,
 defaulting to the local chaba-h3 Caddy endpoint.
 """
@@ -14,7 +14,7 @@ import urllib.request
 def _api_url():
     return os.environ.get(
         "RVIEW_API_URL",
-        "http://localhost:8080/apps/rview/api/state.php",
+        "http://localhost:8080/apps/rview/api/state",
     )
 
 

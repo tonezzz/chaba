@@ -18,6 +18,6 @@ EXPOSE ${GEMINI_LIVE_PORT}
 
 ENV GEMINI_LIVE_PORT=${GEMINI_LIVE_PORT}
 ENV GEMINI_LIVE_MODEL=gemini-3.1-flash-live-preview
-ENV RVIEW_API_URL=http://127.0.0.1:3007/state.php
+ENV RVIEW_API_URL=http://rview-api:3007/state
 
 CMD ["node", "server.mjs"]
