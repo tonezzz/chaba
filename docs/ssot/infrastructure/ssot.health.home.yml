@@ -144,6 +144,26 @@ services:
   - 'Check podman secret: ssh tony-dell podman secret inspect gemini-api-key'
   - 'Rebuild image: ssh tony-dell systemctl --user start gemini-live-image.service && ssh tony-dell systemctl --user restart gemini-live'
   - Verify Caddy proxy configuration in stacks/web/Caddyfile
+- id: mcp-rview
+  name: MCP RView Proxy
+  type: sse
+  url: http://127.0.0.1:9003/sse
+  expected_status: 200
+  timeout: 5
+  category: mcp
+  profiles:
+  - home
+  - mobile
+  host: tony_dell
+  verification:
+  - 'Test SSE endpoint: curl -sfI -H "Accept: text/event-stream" http://127.0.0.1:9003/sse'
+  - 'Check service: ssh tony-dell systemctl --user status mcp-rview'
+  - 'Check proxy log: ssh tony-dell journalctl --user -u mcp-rview --tail 20'
+  - 'Check tool list: ssh tony-dell podman exec gemini-live python3 /scripts/mcp_rview/server.py and send {"jsonrpc":"2.0","id":1,"method":"tools/list"}'
+  recovery_actions:
+  - 'Restart service: ssh tony-dell systemctl --user restart mcp-rview'
+  - 'Verify rview-api is reachable from mcp-rview: ssh tony-dell curl -sf http://127.0.0.1:3007/state?action=list'
+  - 'Check server.py source: /home/tony/CascadeProjects/chaba-tony-dell/scripts/mcp_rview/server.py'
 - id: yomi-api
   name: Yomi API
   type: http

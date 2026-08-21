@@ -250,7 +250,20 @@ tony-dell:
     environment:
       - GEMINI_LIVE_PORT=3008
     status: implemented (2026-08-20)
-    note: Migrated from tony-omen to avoid conflict with mddb-panel on port 3002. Caddy /api/gemini-live/* reverse proxy updated to tony-dell:3008. GEMINI_API_KEY is injected from the podman secret `gemini-api-key` as an env variable. Image is built by the gemini-live-image.build Quadlet unit and depends on rview-api.
+    note: Migrated from tony-omen to avoid conflict with mddb-panel on port 3002. Caddy /api/gemini-live/* reverse proxy updated to tony-dell:3008. GEMINI_API_KEY is injected from the podman secret `gemini-api-key` as an env variable. Image is built by the gemini-live-image.build Quadlet unit and depends on rview-api. The bundled scripts/mcp_rview/server.py now also exposes fetch_page for reading web pages.
+  mcp-rview:
+    service: mcp-rview
+    host: tony_dell
+    port: 9003
+    host_port: '127.0.0.1:9003'
+    service_unit: ~/.config/systemd/user/mcp-rview.service
+    source: scripts/mcp_rview
+    depends_on: rview-api
+    health_check: 'curl -sfI -H "Accept: text/event-stream" http://127.0.0.1:9003/sse >/dev/null'
+    environment:
+      - 'RVIEW_API_URL=http://127.0.0.1:3007/state'
+    status: implemented (2026-08-21)
+    note: stdio MCP proxy that exposes rview_* tools and fetch_page to external MCP clients (e.g., Claude Desktop via the mcp-rview-oauth-proxy on 9004). Spawns /home/tony/CascadeProjects/chaba-tony-dell/scripts/mcp_rview/server.py and proxies to http://127.0.0.1:3007/state.
 
 tony-omen:
   ollama:
