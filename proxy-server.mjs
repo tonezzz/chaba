@@ -18,8 +18,8 @@ const contentTypes = {
   '.svg': 'image/svg+xml'
 };
 
-const GEMINI_LIVE_API = process.env.GEMINI_LIVE_API_URL || 'http://tony-dell:3008';
-const RVIEW_API = process.env.RVIEW_API_URL || 'http://tony-dell:3007';
+const GEMINI_LIVE_API = process.env.GEMINI_LIVE_API_URL || 'http://100.68.142.13:3008';
+const RVIEW_API = process.env.RVIEW_API_URL || 'http://100.68.142.13:3007';
 // rview-live is the chaba.h3 name for the same Gemini Live backend.
 const RVIEW_LIVE_API = process.env.RVIEW_LIVE_API_URL || GEMINI_LIVE_API;
 
