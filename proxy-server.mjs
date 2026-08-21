@@ -19,7 +19,7 @@ const contentTypes = {
 };
 
 const GEMINI_LIVE_API = process.env.GEMINI_LIVE_API_URL || 'http://tony-omen.local:3002';
-const RVIEW_API = process.env.RVIEW_API_URL || 'http://tony-dell.local:3007';
+const RVIEW_API = process.env.RVIEW_API_URL || 'http://tony-omen.local:3007';
 
 function rewriteHost(headers, host) {
   const copy = { ...headers };
