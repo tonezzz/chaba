@@ -6,6 +6,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import views
+import fetch
 
 
 def _send(message):
@@ -132,6 +133,19 @@ def handle_tools_list(id_):
                 "required": ["view_id"],
             },
         ),
+        _tool(
+            "fetch_page",
+            "Fetch a web page and return its title, description, and extracted text. Use this before generating an HTML summary for RView. After fetching, call rview_show with media_type 'html' and the generated HTML in the 'content' field (pass the source URL as 'url').",
+            {
+                "type": "object",
+                "properties": {
+                    "url": {"type": "string"},
+                    "max_length": {"type": "integer", "default": 8000},
+                    "raw": {"type": "boolean", "default": False, "description": "Return full raw HTML"},
+                },
+                "required": ["url"],
+            },
+        ),
     ]
     return {"jsonrpc": "2.0", "id": id_, "result": {"tools": tools}}
 
@@ -171,6 +185,12 @@ def handle_tools_call(id_, params):
             result = views.status(arguments["view_id"])
         elif name == "rview_delete_view":
             result = views.delete_view(arguments["view_id"])
+        elif name == "fetch_page":
+            result = fetch.fetch_page(
+                arguments["url"],
+                max_length=arguments.get("max_length", 8000),
+                raw=arguments.get("raw", False),
+            )
         else:
             _send(
                 {

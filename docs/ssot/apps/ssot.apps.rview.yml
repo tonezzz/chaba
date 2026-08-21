@@ -26,7 +26,7 @@ sections:
       - label: Static UI
         text: stacks/web/public/apps/rview/index.html polls the API and renders the current media.
       - label: mcp-rview MCP server
-        text: scripts/mcp_rview/server.py exposes rview_* tools and proxies to the rview-api state endpoint.
+        text: scripts/mcp_rview/server.py exposes rview_* tools plus fetch_page for reading web pages, and proxies to the rview-api state endpoint.
       - label: Caddy routing
         text: /apps/rview/ serves the static UI; /apps/rview/api/state is reverse-proxied to the rview-api service.
       - label: State persistence
@@ -41,7 +41,7 @@ sections:
       - label: stacks/web/rview-api/Dockerfile
         text: Container image for rview-api.
       - label: stacks/web/public/apps/rview/index.html
-        text: Static remote view control and media display UI.
+        text: Fullscreen, AI-driven viewer with PWA support, object-fit cover, and first-interaction fullscreen.
       - label: stacks/web/Caddyfile
         text: Routes for /apps/rview/ and /apps/rview/api/*.
       - label: stacks/web/docker-compose.yml
@@ -105,4 +105,5 @@ config:
     - stacks/web/docker-compose.yml
     - scripts/mcp_rview/server.py
     - scripts/mcp_rview/views.py
+    - scripts/mcp_rview/fetch.py
     - docs/ssot/apps/ssot.apps.yml
