@@ -6,7 +6,7 @@ import { spawn } from "child_process";
 import { WebSocket, WebSocketServer } from "ws";
 import { fileURLToPath } from "url";
 import { dirname, join } from "path";
-import { searchWeb } from "./search.mjs";
+import { searchWeb, fetchPage } from "./search.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PORT = parseInt(process.env.GEMINI_LIVE_PORT || "3002", 10);
@@ -100,7 +100,7 @@ const FUNCTION_DECLARATIONS = [
   },
   {
     name: "web_search",
-    description: "Search the web for content. Returns result URLs that can be passed to rview_show or rview_queue. For images, use the 'image' field of a result as the URL for rview_show with media_type 'image'. For videos, use embed_url as an iframe or a direct .mp4 url with media_type 'video'. For web pages, use media_type 'iframe'.",
+    description: "Search the web for content. Returns result URLs that can be passed to rview_show or rview_queue. For images, use the 'image' field of a result as the URL for rview_show with media_type 'image'. For videos, use embed_url as an iframe or a direct .mp4 url with media_type 'video'. For web pages, call fetch_page to read the content and then use media_type 'html' with a generated HTML summary.",
     parameters: {
       type: "object",
       properties: {
@@ -109,6 +109,19 @@ const FUNCTION_DECLARATIONS = [
         max_results: { type: "integer", default: 5, description: "Number of results, 1-20" },
       },
       required: ["query"],
+    },
+  },
+  {
+    name: "fetch_page",
+    description: "Fetch and extract the readable text/HTML of a web page. Use this when the user wants to summarize or re-render a web page in RView. After fetching, generate a clean HTML summary and call rview_show with media_type 'html' and the HTML in the 'content' field (pass the source URL as 'url').",
+    parameters: {
+      type: "object",
+      properties: {
+        url: { type: "string", description: "Full http or https URL to fetch" },
+        max_length: { type: "integer", default: 8000, description: "Maximum characters of extracted text" },
+        raw: { type: "boolean", default: false, description: "Return full raw HTML instead of extracted text" },
+      },
+      required: ["url"],
     },
   },
 ];
@@ -229,8 +242,10 @@ class GeminiSession {
                   text: `You are a voice assistant controlling a remote media view called RView.
 You can create views, show media URLs, queue playlists, control playback, render raw HTML, and run slideshows using the provided tools.
 Rules:
-- If the user asks to search for or find content, call web_search first, then use rview_show or rview_queue with a result URL.
-- For image search results, use the "image" field as the URL and set media_type "image"; for video results use embed_url as iframe or a direct .mp4 URL as video; for web pages use media_type "iframe".
+- If the user asks to search for or find content, call web_search first.
+  - For image search results, use the "image" field as the URL and set media_type "image".
+  - For video results use embed_url as iframe or a direct .mp4 URL as media_type "video".
+  - For web pages, call fetch_page on the result URL to get the content, then generate a clean HTML summary and call rview_show with media_type "html", using the source URL as "url" and the HTML in the "content" field.
 - Otherwise, use only URLs the user provides or URLs you are certain are publicly reachable. Do not invent URLs.
 - For raw HTML or dashboards, call rview_show with media_type "html" and pass the HTML in the "content" field.
 - For a slideshow, queue multiple images with rview_queue then call rview_control with action "slideshow" and value as seconds per slide.
@@ -331,6 +346,9 @@ Rules:
   async invokeTool(name, args) {
     if (name === "web_search") {
       return searchWeb(args);
+    }
+    if (name === "fetch_page") {
+      return fetchPage(args);
     }
     return this.mcp.invokeTool(name, args);
   }

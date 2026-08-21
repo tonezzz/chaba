@@ -119,6 +119,45 @@ async function runVideoSearch(query, maxResults) {
   }));
 }
 
+export async function fetchPage({ url, max_length = 8000, raw = false }) {
+  if (!url || typeof url !== "string") throw new Error("url is required");
+  if (!/^https?:\/\//i.test(url)) throw new Error("url must be http or https");
+
+  const html = await fetchText(url, { redirect: "follow" });
+  const titleMatch = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
+  const title = titleMatch ? decodeHtmlEntities(stripTags(titleMatch[1])) : "";
+  const descMatch =
+    html.match(/<meta[^>]*name=["']description["'][^>]*content=["']([^"']*)/i) ||
+    html.match(/<meta[^>]*content=["']([^"']*)["'][^>]*name=["']description["']/i);
+  const description = descMatch ? descMatch[1] : "";
+
+  let contentHtml =
+    html.match(/<main[^>]*>([\s\S]*?)<\/main>/i)?.[1] ||
+    html.match(/<article[^>]*>([\s\S]*?)<\/article>/i)?.[1] ||
+    html.match(/<body[^>]*>([\s\S]*?)<\/body>/i)?.[1] ||
+    html;
+
+  // Drop scripts, styles, navs, headers, footers, asides
+  contentHtml = contentHtml
+    .replace(/<script[\s\S]*?<\/script>/gi, " ")
+    .replace(/<style[\s\S]*?<\/style>/gi, " ")
+    .replace(/<nav[\s\S]*?<\/nav>/gi, " ")
+    .replace(/<header[\s\S]*?<\/header>/gi, " ")
+    .replace(/<footer[\s\S]*?<\/footer>/gi, " ")
+    .replace(/<aside[\s\S]*?<\/aside>/gi, " ");
+
+  const text = decodeHtmlEntities(stripTags(contentHtml)).replace(/\s+/g, " ").trim();
+  const truncated = text.length > max_length ? text.slice(0, max_length) + "..." : text;
+
+  return {
+    url,
+    title,
+    description,
+    text: truncated,
+    html: raw ? html : undefined,
+  };
+}
+
 export async function searchWeb({ query, type = "web", max_results = 5 }) {
   const max = Math.min(Math.max(1, Number(max_results) || 5), 20);
   if (!query || typeof query !== "string") {
