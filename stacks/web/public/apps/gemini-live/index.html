@@ -127,6 +127,10 @@
   }
 
   async function listAudioInputs() {
+    if (!navigator.mediaDevices) {
+      log('mediaDevices unavailable — mic requires HTTPS or localhost', 'error');
+      return;
+    }
     try {
       const devices = await navigator.mediaDevices.enumerateDevices();
       const sel = document.getElementById('audioInput');
@@ -144,6 +148,10 @@
 
   async function startMic() {
     if (micStream) return;
+    if (!navigator.mediaDevices) {
+      log('mic unavailable — use the text input instead', 'error');
+      return;
+    }
     try {
       const id = document.getElementById('audioInput').value;
       micStream = await navigator.mediaDevices.getUserMedia({ audio: { deviceId: id ? { exact: id } : undefined, sampleRate: 16000, channelCount: 1, echoCancellation: true, noiseSuppression: true } });
@@ -263,7 +271,7 @@
       await startMic();
       connect();
       document.getElementById('toggleSession').textContent = 'Stop';
-      document.getElementById('muteBtn').disabled = false;
+      document.getElementById('muteBtn').disabled = !navigator.mediaDevices;
     }
   };
 
@@ -303,8 +311,12 @@
   document.getElementById('checkRview').onclick = refreshRview;
   setInterval(refreshRview, 2000);
 
-  navigator.mediaDevices.addEventListener('devicechange', listAudioInputs);
-  listAudioInputs();
+  if (navigator.mediaDevices) {
+    navigator.mediaDevices.addEventListener('devicechange', listAudioInputs);
+    listAudioInputs();
+  } else {
+    log('mic unavailable — text mode only (HTTPS or localhost required for audio)', 'error');
+  }
 </script>
 </body>
 </html>
