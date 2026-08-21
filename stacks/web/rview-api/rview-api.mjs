@@ -265,7 +265,7 @@ const server = createServer(async (req, res) => {
   }
 
   const url = new URL(req.url, `http://localhost:${PORT}`);
-  if (url.pathname !== "/state.php") {
+  if (!["/state.php", "/state"].includes(url.pathname)) {
     sendJson(res, 404, { ok: false, error: "not found" });
     return;
   }

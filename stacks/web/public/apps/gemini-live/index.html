@@ -68,8 +68,8 @@
       ? 'ws://localhost:3002/ws'
       : '/api/gemini-live/ws');
   const RVIEW_API = (location.hostname === 'localhost' && location.port !== '3007')
-    ? 'http://localhost:3007/state.php'
-    : '/apps/rview/api/state.php';
+    ? 'http://localhost:3007/state'
+    : '/apps/rview/api/state';
   document.getElementById('rviewFrame').src = `/apps/rview/index.html?api=${encodeURIComponent(RVIEW_API)}&view=default`;
   let ws = null;
   let audioCtx = null;
