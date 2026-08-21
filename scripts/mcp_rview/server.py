@@ -49,7 +49,7 @@ def handle_tools_list(id_):
         ),
         _tool(
             "rview_show",
-            "Show media in a view.",
+            "Show media, HTML, or a URL in a view. For raw HTML set media_type to html and provide content (or url as fallback). Only use URLs you are certain are reachable.",
             {
                 "type": "object",
                 "properties": {
@@ -58,9 +58,10 @@ def handle_tools_list(id_):
                     "title": {"type": "string"},
                     "media_type": {
                         "type": "string",
-                        "enum": ["auto", "image", "video", "audio", "iframe", "pdf"],
+                        "enum": ["auto", "image", "video", "audio", "iframe", "pdf", "html"],
                         "default": "auto",
                     },
+                    "content": {"type": "string", "description": "Raw HTML content when media_type is html"},
                     "enqueue": {"type": "boolean", "default": False},
                 },
                 "required": ["view_id", "url"],
@@ -68,7 +69,7 @@ def handle_tools_list(id_):
         ),
         _tool(
             "rview_queue",
-            "Set or append to a view's playlist.",
+            "Set or append to a view's playlist. Each item may have url, title, media_type, and content (for html).",
             {
                 "type": "object",
                 "properties": {
@@ -103,6 +104,8 @@ def handle_tools_list(id_):
                             "fullscreen",
                             "loop",
                             "shuffle",
+                            "slideshow",
+                            "stop_slideshow",
                             "clear_queue",
                         ],
                     },
@@ -150,6 +153,7 @@ def handle_tools_call(id_, params):
                 title=arguments.get("title"),
                 media_type=arguments.get("media_type", "auto"),
                 enqueue=arguments.get("enqueue", False),
+                content=arguments.get("content"),
             )
         elif name == "rview_queue":
             result = views.queue(

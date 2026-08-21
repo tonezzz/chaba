@@ -47,6 +47,7 @@ function inferMediaType(url, mediaType) {
   if (mediaType && mediaType !== "auto") return mediaType;
   if (!url) return "image";
   const lower = url.toLowerCase();
+  if (lower.startsWith("<")) return "html";
   if (/\.(mp4|webm|mov|mkv|m3u8|mpd)$/.test(lower)) return "video";
   if (/\.(mp3|wav|ogg|aac|m4a|flac)$/.test(lower)) return "audio";
   if (/\.(pdf)$/.test(lower)) return "pdf";
@@ -69,6 +70,8 @@ function getOrCreateView(viewId) {
       fullscreen: false,
       loop: false,
       shuffle: false,
+      slideshow: false,
+      slideshow_interval: 5,
       position: 0,
       created_at: now(),
       updated_at: now(),
@@ -105,12 +108,14 @@ function createView(viewId, displayName) {
   return { ok: true, view: fullView(view) };
 }
 
-function show(viewId, url, title, mediaType, enqueue) {
+function show(viewId, url, title, mediaType, enqueue, content) {
   const view = getOrCreateView(viewId);
+  const mt = inferMediaType(url, mediaType);
   const item = {
     url,
     title: title || "",
-    media_type: inferMediaType(url, mediaType),
+    media_type: mt,
+    content: mt === "html" ? (content || url) : undefined,
     added_at: now(),
   };
   if (enqueue) {
@@ -135,6 +140,7 @@ function queueView(viewId, items, mode) {
     url: it.url,
     title: it.title || "",
     media_type: inferMediaType(it.url, it.media_type),
+    content: it.content,
     added_at: now(),
   }));
   if (mode === "append") {
@@ -154,6 +160,9 @@ function queueView(viewId, items, mode) {
 }
 
 function advance(view) {
+  if (view.loop && !view.queue.length && view.history.length) {
+    view.queue = view.history.splice(0);
+  }
   if (!view.queue.length) return;
   if (view.shuffle && view.queue.length > 1) {
     const idx = Math.floor(Math.random() * view.queue.length);
@@ -209,6 +218,15 @@ function control(viewId, action, value) {
       break;
     case "shuffle":
       view.shuffle = value !== undefined && value !== null ? Boolean(value) : !view.shuffle;
+      break;
+    case "slideshow":
+      view.slideshow = value !== undefined && value !== null ? Boolean(value) : !view.slideshow;
+      if (value && !isNaN(Number(value)) && Number(value) > 0) {
+        view.slideshow_interval = Number(value);
+      }
+      break;
+    case "stop_slideshow":
+      view.slideshow = false;
       break;
     case "clear_queue":
       view.queue = [];
@@ -300,7 +318,7 @@ const server = createServer(async (req, res) => {
           result = createView(viewId, payload.display_name);
           break;
         case "show":
-          result = show(viewId, payload.url, payload.title, payload.media_type, payload.enqueue);
+          result = show(viewId, payload.url, payload.title, payload.media_type, payload.enqueue, payload.content);
           break;
         case "queue":
           result = queueView(viewId, payload.items, payload.mode || "replace");

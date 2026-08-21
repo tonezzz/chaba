@@ -65,16 +65,19 @@ def create_view(view_id, display_name=None):
     )
 
 
-def show(view_id, url, title=None, media_type="auto", enqueue=False):
+def show(view_id, url, title=None, media_type="auto", enqueue=False, content=None):
+    payload = {
+        "url": url,
+        "title": title or "",
+        "media_type": media_type or "auto",
+        "enqueue": bool(enqueue),
+    }
+    if content is not None:
+        payload["content"] = content
     return _request(
         "show",
         view_id=view_id,
-        payload={
-            "url": url,
-            "title": title or "",
-            "media_type": media_type or "auto",
-            "enqueue": bool(enqueue),
-        },
+        payload=payload,
     )
 
 
