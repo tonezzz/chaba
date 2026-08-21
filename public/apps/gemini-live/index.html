@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>RView Live</title>
+  <title>Gemini Live + RView</title>
   <style>
     :root { --bg: #0f172a; --panel: #1e293b; --text: #f8fafc; --muted: #94a3b8; --accent: #06b6d4; --danger: #ef4444; }
     * { box-sizing: border-box; }
@@ -14,13 +14,8 @@
     button { font: inherit; font-size: 0.85rem; padding: 0.4rem 0.8rem; border-radius: 6px; border: none; background: var(--accent); color: #082f49; font-weight: 600; cursor: pointer; }
     button.secondary { background: #334155; color: var(--text); }
     button.danger { background: var(--danger); color: #fff; }
-    main { flex: 1; overflow: hidden; }
-    .tabs { display: flex; gap: 0.25rem; padding: 0.5rem 1rem 0; background: #0b1120; border-bottom: 1px solid #334155; }
-    .tab { padding: 0.5rem 1rem; background: transparent; color: var(--muted); border: none; border-bottom: 2px solid transparent; border-radius: 0; cursor: pointer; }
-    .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
-    .tab-panel { display: none; height: calc(100% - 40px); padding: 1rem; gap: 1rem; }
-    .tab-panel.active { display: flex; }
-    .panel { background: var(--panel); border-radius: 8px; padding: 0.75rem; overflow: auto; display: flex; flex-direction: column; gap: 0.5rem; flex: 1; }
+    main { flex: 1; display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; padding: 1rem; overflow: hidden; }
+    .panel { background: var(--panel); border-radius: 8px; padding: 0.75rem; overflow: auto; display: flex; flex-direction: column; gap: 0.5rem; }
     .panel h2 { margin: 0; font-size: 0.8rem; color: var(--muted); text-transform: uppercase; }
     #log { flex: 1; overflow: auto; font-size: 0.8rem; line-height: 1.4; background: #020617; border-radius: 6px; padding: 0.5rem; }
     .log-entry { margin-bottom: 0.4rem; }
@@ -33,85 +28,49 @@
     .row { display: flex; gap: 0.5rem; }
     input, select { font: inherit; font-size: 0.85rem; padding: 0.35rem 0.5rem; border-radius: 6px; border: 1px solid #475569; background: #0f172a; color: var(--text); }
     iframe { width: 100%; flex: 1; border: none; border-radius: 6px; background: #020617; }
-    .status { font-size: 0.75rem; color: var(--muted); }
-    .setting { display: flex; align-items: center; gap: 0.5rem; margin: 0.3rem 0; }
-    .setting label { width: 8rem; font-size: 0.85rem; color: var(--muted); }
-    .setting input, .setting select { flex: 1; max-width: 24rem; }
+    #rviewStatus { font-size: 0.75rem; color: var(--muted); }
+    #status { font-size: 0.75rem; color: var(--muted); }
   </style>
 </head>
 <body>
   <header>
-    <h1>RView Live</h1>
-    <div id="wsStatus" class="status">disconnected</div>
+    <h1>Gemini Live + RView</h1>
+    <div id="status">disconnected</div>
     <button id="toggleSession">Start</button>
     <button id="muteBtn" class="secondary" disabled>Mute</button>
   </header>
-  <nav class="tabs" role="tablist">
-    <button class="tab active" data-tab="live" role="tab" aria-selected="true">Live</button>
-    <button class="tab" data-tab="rview" role="tab" aria-selected="false">RView</button>
-    <button class="tab" data-tab="settings" role="tab" aria-selected="false">Settings</button>
-  </nav>
   <main>
-    <section id="tab-live" class="tab-panel active" role="tabpanel">
-      <div class="panel" style="flex: 2;">
-        <h2>Conversation</h2>
-        <div id="log"></div>
-        <div class="row">
-          <input type="text" id="textInput" placeholder="Type a message..." style="flex:1">
-          <button id="sendText" class="secondary">Send</button>
-        </div>
+    <div class="panel">
+      <h2>Conversation</h2>
+      <div id="log"></div>
+      <div class="row">
+        <input type="text" id="textInput" placeholder="Type a message...">
+        <button id="sendText" class="secondary">Send</button>
       </div>
-      <div class="panel" style="flex: 1;">
-        <h2>Session</h2>
-        <p class="status" id="liveStatus">WebSocket is not connected.</p>
-        <div class="controls">
-          <button id="reconnectWs" class="secondary">Reconnect</button>
-        </div>
+      <div class="controls">
+        <label>Input:</label>
+        <select id="audioInput"></select>
+        <label>View:</label>
+        <input type="text" id="viewId" value="default" style="width:90px">
+        <button id="checkRview" class="secondary">RView status</button>
       </div>
-    </section>
-    <section id="tab-rview" class="tab-panel" role="tabpanel">
-      <div class="panel" style="flex: 1;">
-        <h2>Remote View Controls</h2>
-        <div class="controls">
-          <label>View ID:</label>
-          <input type="text" id="viewId" value="default" style="width:120px">
-          <button id="checkRview" class="secondary">RView status</button>
-          <button id="refreshRview" class="secondary">Refresh view</button>
-        </div>
-        <div class="status" id="rviewStatus">no view</div>
-      </div>
-      <div class="panel" style="flex: 2;">
-        <h2>Remote View</h2>
-        <iframe id="rviewFrame"></iframe>
-      </div>
-    </section>
-    <section id="tab-settings" class="tab-panel" role="tabpanel">
-      <div class="panel">
-        <h2>Audio</h2>
-        <div class="setting">
-          <label>Input device</label>
-          <select id="audioInput"></select>
-        </div>
-        <h2>Endpoints</h2>
-        <div class="setting">
-          <label>Live WS URL</label>
-          <input type="text" id="wsUrl" value="/api/rview-live/ws">
-        </div>
-        <div class="setting">
-          <label>RView API URL</label>
-          <input type="text" id="rviewApiUrl" value="/apps/rview/api/state.php">
-        </div>
-      </div>
-    </section>
+    </div>
+    <div class="panel">
+      <h2>Remote View</h2>
+      <iframe id="rviewFrame"></iframe>
+      <div id="rviewStatus"></div>
+    </div>
   </main>
 
 <script>
-  const WS_URL = window.GEMINI_WS_URL || '/api/rview-live/ws';
-  const RVIEW_API = window.RVIEW_API_URL || '/apps/rview/api/state.php';
-  document.getElementById('wsUrl').value = WS_URL;
-  document.getElementById('rviewApiUrl').value = RVIEW_API;
+  const WS_URL = window.GEMINI_WS_URL ||
+    (location.hostname === 'localhost' && location.port !== '3002'
+      ? 'ws://localhost:3002/ws'
+      : '/api/gemini-live/ws');
+  const RVIEW_API = (location.hostname === 'localhost' && location.port !== '3007')
+    ? 'http://localhost:3007/state'
+    : '/apps/rview/api/state';
   document.getElementById('rviewFrame').src = `/apps/rview/index.html?api=${encodeURIComponent(RVIEW_API)}&view=default`;
-
   let ws = null;
   let audioCtx = null;
   let inputNode = null;
@@ -161,7 +120,9 @@
 
   function int16ToFloat(int16) {
     const out = new Float32Array(int16.length);
-    for (let i = 0; i < int16.length; i++) out[i] = int16[i] / 0x7FFF;
+    for (let i = 0; i < int16.length; i++) {
+      out[i] = int16[i] / 0x7FFF;
+    }
     return out;
   }
 
@@ -176,7 +137,9 @@
         opt.text = d.label || d.deviceId.slice(0, 8);
         sel.appendChild(opt);
       });
-    } catch (e) { log('audio devices: ' + e.message, 'error'); }
+    } catch (e) {
+      log('audio devices: ' + e.message, 'error');
+    }
   }
 
   async function startMic() {
@@ -196,7 +159,9 @@
       source.connect(processor);
       processor.connect(audioCtx.destination);
       inputNode = processor;
-    } catch (e) { log('mic error: ' + e.message, 'error'); }
+    } catch (e) {
+      log('mic error: ' + e.message, 'error');
+    }
   }
 
   function stopMic() {
@@ -216,11 +181,16 @@
         const chunk = outputQueue[0];
         const take = Math.min(chunk.length, needed - written);
         out.set(chunk.subarray(0, take), written);
-        if (take === chunk.length) outputQueue.shift();
-        else outputQueue[0] = chunk.subarray(take);
+        if (take === chunk.length) {
+          outputQueue.shift();
+        } else {
+          outputQueue[0] = chunk.subarray(take);
+        }
         written += take;
       }
-      if (written < needed) out.fill(0, written);
+      if (written < needed) {
+        out.fill(0, written);
+      }
     };
     outProcessor.connect(outCtx.destination);
     outputNode = { ctx: outCtx, node: outProcessor };
@@ -239,19 +209,21 @@
 
   function connect() {
     if (ws) return;
-    const cfg = document.getElementById('wsUrl').value;
     let url;
-    if (cfg.startsWith('ws://') || cfg.startsWith('wss://')) url = cfg;
-    else { const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:'; url = `${proto}//${window.location.host}${cfg}`; }
+    if (WS_URL.startsWith('ws://') || WS_URL.startsWith('wss://')) {
+      url = WS_URL;
+    } else {
+      const proto = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      url = `${proto}//${window.location.host}${WS_URL}`;
+    }
     ws = new WebSocket(url);
     ws.onopen = () => {
-      document.getElementById('wsStatus').textContent = 'connected';
-      document.getElementById('liveStatus').textContent = 'Connected to live model.';
-      log('Connected', 'model');
+      document.getElementById('status').textContent = 'connected';
+      log('Connected to Gemini Live', 'model');
     };
     ws.onclose = () => {
-      document.getElementById('wsStatus').textContent = 'disconnected';
-      document.getElementById('liveStatus').textContent = 'WebSocket is not connected.';
+      document.getElementById('status').textContent = 'disconnected';
+      log('Disconnected', 'error');
       ws = null;
       stopMic();
       stopPlayback();
@@ -265,31 +237,35 @@
         const sc = msg.content;
         if (sc.inputTranscription?.text) log('You: ' + sc.inputTranscription.text, 'user');
         if (sc.outputTranscription?.text) log('Gemini: ' + sc.outputTranscription.text, 'model');
-        if (sc.modelTurn?.parts) for (const part of sc.modelTurn.parts) if (part.inlineData?.data) playAudio(part.inlineData.data);
+        if (sc.modelTurn?.parts) {
+          for (const part of sc.modelTurn.parts) {
+            if (part.inlineData?.data) playAudio(part.inlineData.data);
+          }
+        }
       } else if (msg.type === 'tool-call') {
         log('Tool: ' + msg.calls.map(c => c.name).join(', '), 'tool');
       } else if (msg.type === 'error') {
         log('Error: ' + msg.message, 'error');
       } else if (msg.type === 'status') {
-        document.getElementById('wsStatus').textContent = msg.message;
+        document.getElementById('status').textContent = msg.message;
       }
     };
   }
 
-  function disconnect() { if (ws) ws.close(); }
+  function disconnect() {
+    if (ws) { ws.close(); }
+  }
 
-  async function toggleSession() {
-    if (ws) { disconnect(); }
-    else {
+  document.getElementById('toggleSession').onclick = async () => {
+    if (ws) {
+      disconnect();
+    } else {
       await startMic();
       connect();
       document.getElementById('toggleSession').textContent = 'Stop';
       document.getElementById('muteBtn').disabled = false;
     }
-  }
-
-  document.getElementById('toggleSession').onclick = toggleSession;
-  document.getElementById('reconnectWs').onclick = toggleSession;
+  };
 
   document.getElementById('muteBtn').onclick = () => {
     isMuted = !isMuted;
@@ -308,38 +284,25 @@
 
   async function refreshRview() {
     const viewId = document.getElementById('viewId').value || 'default';
-    const api = document.getElementById('rviewApiUrl').value;
     try {
-      const res = await fetch(`${api}?action=status&view_id=${encodeURIComponent(viewId)}`);
+      const res = await fetch(`${RVIEW_API}?action=status&view_id=${encodeURIComponent(viewId)}`);
       const data = await res.json();
       const st = document.getElementById('rviewStatus');
       if (data.ok && data.view) {
         const v = data.view;
         const item = v.current_item || {};
         st.textContent = `${v.state || 'stopped'} | ${item.media_type || '-'} | ${item.title || item.url || 'nothing'}`;
-      } else { st.textContent = 'no view'; }
-    } catch (e) { document.getElementById('rviewStatus').textContent = 'error: ' + e.message; }
-  }
-
-  function reloadRviewFrame() {
-    const viewId = document.getElementById('viewId').value || 'default';
-    const api = document.getElementById('rviewApiUrl').value;
-    document.getElementById('rviewFrame').src = `/apps/rview/index.html?api=${encodeURIComponent(api)}&view=${encodeURIComponent(viewId)}`;
+      } else {
+        st.textContent = 'no view';
+      }
+    } catch (e) {
+      document.getElementById('rviewStatus').textContent = 'error: ' + e.message;
+    }
   }
 
   document.getElementById('checkRview').onclick = refreshRview;
-  document.getElementById('refreshRview').onclick = reloadRviewFrame;
-  document.getElementById('rviewApiUrl').onchange = reloadRviewFrame;
-
-  document.querySelectorAll('.tab').forEach(b => b.addEventListener('click', () => {
-    document.querySelectorAll('.tab').forEach(t => { t.classList.remove('active'); t.setAttribute('aria-selected', 'false'); });
-    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
-    b.classList.add('active');
-    b.setAttribute('aria-selected', 'true');
-    document.getElementById('tab-' + b.dataset.tab).classList.add('active');
-  }));
-
   setInterval(refreshRview, 2000);
+
   navigator.mediaDevices.addEventListener('devicechange', listAudioInputs);
   listAudioInputs();
 </script>
