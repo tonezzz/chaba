@@ -12,6 +12,7 @@ WORKDIR /app
 COPY stacks/web/gemini-live/package*.json ./
 RUN npm ci --omit=dev
 COPY stacks/web/gemini-live/server.mjs ./
+COPY stacks/web/gemini-live/search.mjs ./
 COPY scripts/mcp_rview /scripts/mcp_rview
 
 EXPOSE ${GEMINI_LIVE_PORT}

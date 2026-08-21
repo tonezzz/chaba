@@ -6,6 +6,7 @@ import { spawn } from "child_process";
 import { WebSocket, WebSocketServer } from "ws";
 import { fileURLToPath } from "url";
 import { dirname, join } from "path";
+import { searchWeb } from "./search.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PORT = parseInt(process.env.GEMINI_LIVE_PORT || "3002", 10);
@@ -39,7 +40,7 @@ const FUNCTION_DECLARATIONS = [
   },
   {
     name: "rview_show",
-    description: "Show media, a URL, or raw HTML in a view. Use media_type html with content for raw HTML. Do not invent URLs; ask the user if a URL is not provided or use a URL you are certain is reachable.",
+    description: "Show media, a URL, or raw HTML in a view. Use media_type html with content for raw HTML. If the user asks to find or search for content, call web_search first, then pass the chosen result URL to rview_show. Otherwise, use only URLs the user provides or URLs you are certain are publicly reachable.",
     parameters: {
       type: "object",
       properties: {
@@ -95,6 +96,19 @@ const FUNCTION_DECLARATIONS = [
       type: "object",
       properties: { view_id: { type: "string" } },
       required: ["view_id"],
+    },
+  },
+  {
+    name: "web_search",
+    description: "Search the web for content. Returns result URLs that can be passed to rview_show or rview_queue. For images, use the 'image' field of a result as the URL for rview_show with media_type 'image'. For videos, use embed_url as an iframe or a direct .mp4 url with media_type 'video'. For web pages, use media_type 'iframe'.",
+    parameters: {
+      type: "object",
+      properties: {
+        query: { type: "string", description: "Search query" },
+        type: { type: "string", enum: ["web", "images", "videos"], default: "web" },
+        max_results: { type: "integer", default: 5, description: "Number of results, 1-20" },
+      },
+      required: ["query"],
     },
   },
 ];
@@ -215,8 +229,9 @@ class GeminiSession {
                   text: `You are a voice assistant controlling a remote media view called RView.
 You can create views, show media URLs, queue playlists, control playback, render raw HTML, and run slideshows using the provided tools.
 Rules:
-- Only use URLs the user provides or URLs you are certain are publicly reachable. Do not invent URLs.
-- For images/videos, prefer direct file URLs (e.g., ending in .jpg, .mp4). If the user only describes content, ask them for a URL.
+- If the user asks to search for or find content, call web_search first, then use rview_show or rview_queue with a result URL.
+- For image search results, use the "image" field as the URL and set media_type "image"; for video results use embed_url as iframe or a direct .mp4 URL as video; for web pages use media_type "iframe".
+- Otherwise, use only URLs the user provides or URLs you are certain are publicly reachable. Do not invent URLs.
 - For raw HTML or dashboards, call rview_show with media_type "html" and pass the HTML in the "content" field.
 - For a slideshow, queue multiple images with rview_queue then call rview_control with action "slideshow" and value as seconds per slide.
 - When the user asks to show, play, pause, stop, queue, or start a slideshow, call the matching rview_* tool.
@@ -263,7 +278,7 @@ Rules:
       const functionResponses = [];
       for (const fc of msg.toolCall.functionCalls || []) {
         try {
-          const result = await this.mcp.invokeTool(fc.name, fc.args || {});
+          const result = await this.invokeTool(fc.name, fc.args || {});
           functionResponses.push({ id: fc.id, name: fc.name, response: { result } });
         } catch (e) {
           functionResponses.push({ id: fc.id, name: fc.name, response: { error: e.message } });
@@ -311,6 +326,13 @@ Rules:
     } else if (msg.type === "client-content") {
       this.geminiWs.send(JSON.stringify({ clientContent: msg.clientContent }));
     }
+  }
+
+  async invokeTool(name, args) {
+    if (name === "web_search") {
+      return searchWeb(args);
+    }
+    return this.mcp.invokeTool(name, args);
   }
 
   close() {
