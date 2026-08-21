@@ -503,6 +503,8 @@ raw_commands:
   caveats:
   - title: systemctl root unit auth hang
     text: Non-interactive mcp_raw calls cannot answer polkit or sudo prompts, so `systemctl` commands targeting root units (e.g. `systemctl cat <unit>` or `systemctl status <unit>`) can appear to hang indefinitely. For user services use `systemctl --user <command>`; for root unit files use `cat /etc/systemd/system/<unit>` or `cat /etc/systemd/system/<unit>.d/override.conf` directly.
+  - title: interactive latency and cancellation
+    text: mcp_debug commands carry SSH setup overhead and are not cancellable mid-flight; they can appear to hang and be canceled by the user. For fast, read-only, or API-probe steps (e.g. listing Gemini models, local file checks), prefer local bash/ssh on the control host. Reserve mcp_debug for compact, multi-host snapshots or when its compact-output wrappers are specifically needed.
 
 server:
   script: /home/tony/CascadeProjects/chaba/scripts/mcp_debug/server.py

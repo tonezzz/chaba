@@ -1,6 +1,6 @@
 === SSOT Optimization Suggestions ===
 
-Generated: 2026-08-19T20:00:28.663Z
+Generated: 2026-08-20T20:00:29.355Z
 Bloat warnings: 0
 Data-isolation warnings: 0
 Other warnings: 3
@@ -20,4 +20,4 @@ No data-isolation warnings.
 - `ssot.improvements.yml`: Section 1: Duplicate item label: Network Connectivity Issues
 
 ---
-_Report produced by scripts/ssot-optimize.mjs in 4364ms_
+_Report produced by scripts/ssot-optimize.mjs in 4669ms_
