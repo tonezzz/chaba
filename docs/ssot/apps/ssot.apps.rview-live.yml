@@ -3,7 +3,7 @@ subtitle: Real-time voice and text interaction with Gemini function-calling to d
 icon: 🎙️
 
 ideas:
-- RView Live runs as a chaba.h3 app at /apps/rview-live/.
+- RView Live runs on tony-dell at /apps/rview-live/.
 - It opens a WebSocket to a Gemini Live server, streams microphone PCM audio, and plays model audio responses.
 - It can send text prompts and receive tool-call events.
 - It embeds RView in an iframe and polls /apps/rview/api/state.php for view status.
@@ -43,36 +43,36 @@ sections:
     icon: 📁
     layout: list
     items:
-      - label: public/apps/rview-live/index.html
+      - label: chaba-tony-dell/stacks/web/public/apps/rview-live/index.html
         text: "The single-page client for RView Live."
-      - label: public/apps/rview/index.html
+      - label: chaba-tony-dell/stacks/web/public/apps/rview/index.html
         text: "The remote view client embedded in an iframe."
-      - label: public/apps/rview/api/state.php
-        text: "Provides view state for the RView integration."
+      - label: chaba-tony-dell/scripts/rview-state-server.py
+        text: "Python HTTP state API for RView."
 
   - title: Deployment
     icon: 🚀
     layout: list
     items:
       - label: Location
-        text: "chaba-h3/public/apps/rview-live/index.html"
+        text: "chaba-tony-dell/stacks/web/public/apps/rview-live/index.html"
       - label: URLs
-        text: "https://chaba.h3.gizmo-thailand.com/apps/rview-live/ and http://tony-dell.local:8080/apps/rview-live/"
+        text: "http://tony-dell.local:8080/apps/rview-live/"
       - label: State server
         text: "scripts/rview-state-server.py runs on tony-dell port 3007 and is proxied by Caddy at /apps/rview/api/*."
       - label: Registry
-        text: "Listed in chaba-h3/public/apps/apps.yml as a nav item and an app entry."
+        text: "Listed in chaba-tony-dell/stacks/web/public/apps/apps.yml."
       - label: Branch
-        text: "chaba.h3"
+        text: "chaba-tony-dell master"
 
   - title: Testing
     icon: 🧪
     layout: list
     items:
       - label: Local development
-        text: "Open index.html on localhost; it will use ws://localhost:3002/ws for the WebSocket."
+        text: "Open the tony-dell page at http://tony-dell.local:8080/apps/rview-live/; the WebSocket uses wss://tony-omen:3002/ws."
       - label: Production
-        text: "Deploy the chaba.h3 branch and open the /apps/rview-live/ URL. The WebSocket must be served over wss: behind HTTPS."
+        text: "The page is served by Caddy on tony-dell port 8080. The WebSocket must be reachable from the browser."
       - label: Audio permissions
         text: "Requires browser microphone permission. Use a secure or localhost origin."
 
@@ -99,4 +99,4 @@ config:
   created: '2026-08-20'
   maintainer: tony
   status: active
-  deployment: chaba.h3
+  deployment: tony-dell
