@@ -188,12 +188,21 @@ curl -s http://tony-omen.local:8080/api/gemini-live/health
 
 ## chaba.h3 steps
 
-The `chaba.h3` Node proxy server (`proxy-server.mjs`) already defaults to `tony-dell:3007` / `tony-dell:3008` in this branch. Restart the app so the new defaults take effect:
+The `chaba.h3` Node proxy server (`proxy-server.mjs`) now proxies API calls to the public Tailscale Funnel HTTPS endpoint on `tony-dell`:
+
+- `https://tony-dell.taila0626a.ts.net:8443/apps/rview/api/*` for `rview-api`
+- `https://tony-dell.taila0626a.ts.net:8443/api/gemini-live/*` for `gemini-live`
+
+It supports HTTPS upstreams and TLS WebSocket (`wss://`) upgrades.
+
+Deploy the updated `proxy-server.mjs` and restart the Plesk/Node process:
 
 ```bash
 ssh <chaba-h3-host>
 cd /path/to/chaba-h3
-# however the Plesk/Node process is managed, e.g.
+git fetch origin
+git checkout origin/devin/tony-dell-rview-gemini-h3
+# or however the Plesk/Node app is restarted
 npm restart
 # or kill and restart the process
 ```
@@ -201,8 +210,8 @@ npm restart
 If you need to override without redeploying, set env vars before starting:
 
 ```bash
-export RVIEW_API_URL=http://tony-dell:3007
-export GEMINI_LIVE_API_URL=http://tony-dell:3008
+export RVIEW_API_URL=https://tony-dell.taila0626a.ts.net:8443/apps/rview/api
+export GEMINI_LIVE_API_URL=https://tony-dell.taila0626a.ts.net:8443/api/gemini-live
 node proxy-server.mjs
 ```
 
