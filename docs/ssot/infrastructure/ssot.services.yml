@@ -207,6 +207,65 @@ tony-dell:
       - sensor-reader
     status: implemented (2026-08-18)
     note: Aggregates git, Frigate, camera summary, and sensor payloads from tony-omen:8001; Caddy /api/* now proxies to tony-dell.
+  rview-api:
+    container: rview-api
+    image: localhost/rview-api:latest
+    runtime: rootless podman
+    network: host
+    host: tony_dell
+    port: 3007
+    host_port: '100.68.142.13:3007'
+    data_volume: /home/tony/.local/share/rview-api
+    build_unit: ~/.config/containers/systemd/rview-api-image.build
+    quadlet:
+      container_unit: ~/.config/containers/systemd/rview-api.container
+      service_unit: ~/.config/systemd/user/rview-api.service
+      build_unit: ~/.config/systemd/user/rview-api-image.service
+    source: stacks/tony-dell/rview-api
+    caddy_upstream: tony-dell:3007
+    public_funnel: 'tony-dell.taila0626a.ts.net:3007'
+    tailscale_funnel: '--tcp=3007 --bg 3007'
+    health_check: curl -sf http://127.0.0.1:3007/state?action=list >/dev/null
+    status: implemented (2026-08-20)
+    note: 'Migrated from tony-omen; state persisted to ~/.local/share/rview-api. Caddy /apps/rview/api/* reverse proxy updated to tony-dell:3007. Image is built by the rview-api-image.build Quadlet unit. Public access is also available via Tailscale Funnel TCP (tony-dell.taila0626a.ts.net:3007) for the chaba.h3 proxy.'
+  gemini-live:
+    container: gemini-live
+    image: localhost/gemini-live:latest
+    runtime: rootless podman
+    network: host
+    host: tony_dell
+    port: 3008
+    host_port: '100.68.142.13:3008'
+    build_unit: ~/.config/containers/systemd/gemini-live-image.build
+    quadlet:
+      container_unit: ~/.config/containers/systemd/gemini-live.container
+      service_unit: ~/.config/systemd/user/gemini-live.service
+      build_unit: ~/.config/systemd/user/gemini-live-image.service
+    source: stacks/tony-dell/gemini-live
+    depends_on: rview-api
+    caddy_upstream: tony-dell:3008
+    public_funnel: 'tony-dell.taila0626a.ts.net:3008'
+    tailscale_funnel: '--tcp=3008 --bg 3008'
+    health_check: curl -sf http://127.0.0.1:3008/health >/dev/null
+    secrets:
+      - gemini-api-key
+    environment:
+      - GEMINI_LIVE_PORT=3008
+    status: implemented (2026-08-20)
+    note: 'Migrated from tony-omen to avoid conflict with mddb-panel on port 3002. Caddy /api/gemini-live/* reverse proxy updated to tony-dell:3008. GEMINI_API_KEY is injected from the podman secret `gemini-api-key` as an env variable. Image is built by the gemini-live-image.build Quadlet unit and depends on rview-api. The bundled scripts/mcp_rview/server.py now also exposes fetch_page for reading web pages. Public access is also available via Tailscale Funnel TCP (tony-dell.taila0626a.ts.net:3008) for the chaba.h3 proxy.'
+  mcp-rview:
+    service: mcp-rview
+    host: tony_dell
+    port: 9003
+    host_port: '127.0.0.1:9003'
+    service_unit: ~/.config/systemd/user/mcp-rview.service
+    source: stacks/tony-dell/mcp-rview/mcp-rview.service
+    depends_on: rview-api
+    health_check: 'curl -sfI -H "Accept: text/event-stream" http://127.0.0.1:9003/sse >/dev/null'
+    environment:
+      - 'RVIEW_API_URL=http://127.0.0.1:3007/state'
+    status: implemented (2026-08-21)
+    note: stdio MCP proxy that exposes rview_* tools and fetch_page to external MCP clients (e.g., Claude Desktop via the mcp-rview-oauth-proxy on 9004). Spawns /home/tony/CascadeProjects/chaba-tony-dell/scripts/mcp_rview/server.py and proxies to http://127.0.0.1:3007/state.
 
 tony-omen:
   ollama:

@@ -1,8 +1,12 @@
 FROM node:22-alpine
 
-WORKDIR /app
+# Used by the Quadlet health check.
+RUN apk add --no-cache curl
 
-COPY rview-api.mjs ./
+# Build this image from the repo root so the COPY path resolves:
+#   podman build -f stacks/web/rview-api/Dockerfile -t rview-api:latest .
+WORKDIR /app
+COPY stacks/web/rview-api/rview-api.mjs ./
 
 EXPOSE 3007
 

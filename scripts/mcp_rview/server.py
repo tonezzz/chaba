@@ -6,6 +6,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import views
+import fetch
 
 
 def _send(message):
@@ -49,11 +50,12 @@ def handle_tools_list(id_):
         ),
         _tool(
             "rview_show",
-            "Show media, HTML, or a URL in a view. For raw HTML set media_type to html and provide content (or url as fallback). Only use URLs you are certain are reachable.",
+            "Show media, HTML, or a URL in a view. Provide either view_id or view_number. For raw HTML set media_type to html and provide content (or url as fallback). Only use URLs you are certain are reachable.",
             {
                 "type": "object",
                 "properties": {
-                    "view_id": {"type": "string"},
+                    "view_id": {"type": "string", "description": "View ID. Either view_id or view_number must be provided."},
+                    "view_number": {"type": "integer", "description": "Numeric view number shown in the UI. Either view_id or view_number must be provided."},
                     "url": {"type": "string"},
                     "title": {"type": "string"},
                     "media_type": {
@@ -64,16 +66,17 @@ def handle_tools_list(id_):
                     "content": {"type": "string", "description": "Raw HTML content when media_type is html"},
                     "enqueue": {"type": "boolean", "default": False},
                 },
-                "required": ["view_id", "url"],
+                "required": ["url"],
             },
         ),
         _tool(
             "rview_queue",
-            "Set or append to a view's playlist. Each item may have url, title, media_type, and content (for html).",
+            "Set or append to a view's playlist. Provide either view_id or view_number. Each item may have url, title, media_type, and content (for html).",
             {
                 "type": "object",
                 "properties": {
-                    "view_id": {"type": "string"},
+                    "view_id": {"type": "string", "description": "View ID. Either view_id or view_number must be provided."},
+                    "view_number": {"type": "integer", "description": "Numeric view number shown in the UI. Either view_id or view_number must be provided."},
                     "items": {"type": "array", "items": {"type": "object"}},
                     "mode": {
                         "type": "string",
@@ -81,16 +84,17 @@ def handle_tools_list(id_):
                         "default": "replace",
                     },
                 },
-                "required": ["view_id", "items"],
+                "required": ["items"],
             },
         ),
         _tool(
             "rview_control",
-            "Control playback for a view.",
+            "Control playback for a view. Provide either view_id or view_number.",
             {
                 "type": "object",
                 "properties": {
-                    "view_id": {"type": "string"},
+                    "view_id": {"type": "string", "description": "View ID. Either view_id or view_number must be provided."},
+                    "view_number": {"type": "integer", "description": "Numeric view number shown in the UI. Either view_id or view_number must be provided."},
                     "action": {
                         "type": "string",
                         "enum": [
@@ -111,25 +115,44 @@ def handle_tools_list(id_):
                     },
                     "value": {},
                 },
-                "required": ["view_id", "action"],
+                "required": ["action"],
             },
         ),
         _tool(
             "rview_status",
-            "Get the current state of a view.",
+            "Get the current state of a view. Provide either view_id or view_number.",
             {
                 "type": "object",
-                "properties": {"view_id": {"type": "string"}},
-                "required": ["view_id"],
+                "properties": {
+                    "view_id": {"type": "string", "description": "View ID. Either view_id or view_number must be provided."},
+                    "view_number": {"type": "integer", "description": "Numeric view number shown in the UI."},
+                },
+                "required": [],
             },
         ),
         _tool(
             "rview_delete_view",
-            "Delete a view session.",
+            "Delete a view session. Provide either view_id or view_number.",
             {
                 "type": "object",
-                "properties": {"view_id": {"type": "string"}},
-                "required": ["view_id"],
+                "properties": {
+                    "view_id": {"type": "string", "description": "View ID. Either view_id or view_number must be provided."},
+                    "view_number": {"type": "integer", "description": "Numeric view number shown in the UI."},
+                },
+                "required": [],
+            },
+        ),
+        _tool(
+            "fetch_page",
+            "Fetch a web page and return its title, description, and extracted text. Use this before generating an HTML summary for RView. After fetching, call rview_show with media_type 'html' and the generated HTML in the 'content' field (pass the source URL as 'url').",
+            {
+                "type": "object",
+                "properties": {
+                    "url": {"type": "string"},
+                    "max_length": {"type": "integer", "default": 8000},
+                    "raw": {"type": "boolean", "default": False, "description": "Return full raw HTML"},
+                },
+                "required": ["url"],
             },
         ),
     ]
@@ -148,8 +171,9 @@ def handle_tools_call(id_, params):
             )
         elif name == "rview_show":
             result = views.show(
-                arguments["view_id"],
-                arguments["url"],
+                view_id=arguments.get("view_id"),
+                view_number=arguments.get("view_number"),
+                url=arguments["url"],
                 title=arguments.get("title"),
                 media_type=arguments.get("media_type", "auto"),
                 enqueue=arguments.get("enqueue", False),
@@ -157,20 +181,34 @@ def handle_tools_call(id_, params):
             )
         elif name == "rview_queue":
             result = views.queue(
-                arguments["view_id"],
-                arguments.get("items", []),
+                view_id=arguments.get("view_id"),
+                view_number=arguments.get("view_number"),
+                items=arguments.get("items", []),
                 mode=arguments.get("mode", "replace"),
             )
         elif name == "rview_control":
             result = views.control(
-                arguments["view_id"],
-                arguments["action"],
+                view_id=arguments.get("view_id"),
+                view_number=arguments.get("view_number"),
+                action=arguments["action"],
                 value=arguments.get("value"),
             )
         elif name == "rview_status":
-            result = views.status(arguments["view_id"])
+            result = views.status(
+                view_id=arguments.get("view_id"),
+                view_number=arguments.get("view_number"),
+            )
         elif name == "rview_delete_view":
-            result = views.delete_view(arguments["view_id"])
+            result = views.delete_view(
+                view_id=arguments.get("view_id"),
+                view_number=arguments.get("view_number"),
+            )
+        elif name == "fetch_page":
+            result = fetch.fetch_page(
+                arguments["url"],
+                max_length=arguments.get("max_length", 8000),
+                raw=arguments.get("raw", False),
+            )
         else:
             _send(
                 {

@@ -18,7 +18,7 @@ def _api_url():
     )
 
 
-def _request(action, view_id=None, payload=None):
+def _request(action, view_id=None, view_number=None, payload=None):
     payload = payload or {}
     url = _api_url()
 
@@ -27,11 +27,15 @@ def _request(action, view_id=None, payload=None):
         qs.append(f"action={urllib.parse.quote(action)}")
         if view_id is not None:
             qs.append(f"view_id={urllib.parse.quote(view_id)}")
+        if view_number is not None:
+            qs.append(f"view_number={urllib.parse.quote(str(view_number))}")
         if qs:
             url += "?" + "&".join(qs)
         req = urllib.request.Request(url, method="GET")
     else:
         body = {"action": action, "view_id": view_id}
+        if view_number is not None:
+            body["view_number"] = view_number
         body.update(payload)
         data = json.dumps(body).encode("utf-8")
         req = urllib.request.Request(
@@ -65,7 +69,7 @@ def create_view(view_id, display_name=None):
     )
 
 
-def show(view_id, url, title=None, media_type="auto", enqueue=False, content=None):
+def show(view_id=None, url=None, title=None, media_type="auto", enqueue=False, content=None, view_number=None):
     payload = {
         "url": url,
         "title": title or "",
@@ -77,28 +81,30 @@ def show(view_id, url, title=None, media_type="auto", enqueue=False, content=Non
     return _request(
         "show",
         view_id=view_id,
+        view_number=view_number,
         payload=payload,
     )
 
 
-def queue(view_id, items, mode="replace"):
+def queue(view_id=None, items=None, mode="replace", view_number=None):
     return _request(
         "queue",
         view_id=view_id,
+        view_number=view_number,
         payload={"items": list(items or []), "mode": mode},
     )
 
 
-def control(view_id, action, value=None):
+def control(view_id=None, action=None, value=None, view_number=None):
     payload = {"command": action}
     if value is not None:
         payload["value"] = value
-    return _request("control", view_id=view_id, payload=payload)
+    return _request("control", view_id=view_id, view_number=view_number, payload=payload)
 
 
-def status(view_id):
-    return _request("status", view_id=view_id)
+def status(view_id=None, view_number=None):
+    return _request("status", view_id=view_id, view_number=view_number)
 
 
-def delete_view(view_id):
-    return _request("delete", view_id=view_id)
+def delete_view(view_id=None, view_number=None):
+    return _request("delete", view_id=view_id, view_number=view_number)

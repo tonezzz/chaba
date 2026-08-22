@@ -11,7 +11,7 @@ sections:
       - label: Gemini Live bridge
         text: Node WebSocket server proxies browser audio to the Gemini Live WebSocket and streams the 24 kHz audio response back.
       - label: Function calling
-        text: Exposes all rview_* tools (list, create, show, queue, control, status, delete) so Gemini can drive the RView media view.
+        text: Exposes rview_* tools and web_search/fetch_page so Gemini can search the web, read pages, and render HTML summaries in RView. rview tools accept either a view_id or the numeric view_number displayed in the UI.
       - label: Manual text chat
         text: Users can also type messages to trigger Gemini function-calling without voice.
   - title: Technical Architecture
@@ -29,7 +29,9 @@ sections:
     layout: list
     items:
       - label: stacks/web/gemini-live/server.mjs
-        text: Main Node entrypoint handling client WS, Gemini Live WSS, and MCP stdio.
+        text: Main Node entrypoint handling client WS, Gemini Live WSS, MCP stdio, and tool calls.
+      - label: stacks/web/gemini-live/search.mjs
+        text: Free web search (web/images/videos) and fetch_page URL extraction.
       - label: stacks/web/gemini-live/Dockerfile
         text: Container image for deployment behind Caddy.
       - label: stacks/web/public/apps/gemini-live/index.html
@@ -41,7 +43,7 @@ sections:
       - label: Location
         text: stacks/web/gemini-live/ and stacks/web/public/apps/gemini-live/
       - label: URLs
-        text: https://chaba.h3.gizmo-thailand.com/apps/gemini-live/ and http://tony-omen.local:8080/apps/gemini-live/
+        text: 'https://tony-dell.taila0626a.ts.net:8443/apps/gemini-live/ and http://tony-dell:8080/apps/gemini-live/ (https://chaba.h3.gizmo-thailand.com/apps/gemini-live/ proxies to tony-dell.taila0626a.ts.net:3008 via Tailscale Funnel TCP)'
       - label: Registry
         text: Listed in stacks/web/public/apps/apps.yml and docs/ssot/apps/ssot.apps.yml
       - label: Branch
@@ -73,4 +75,4 @@ config:
   created: '2026-08-20'
   maintainer: tony
   status: active
-  deployment: tony-omen, chaba.h3
+  deployment: tony-dell, chaba.h3

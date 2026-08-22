@@ -6,6 +6,7 @@ import { spawn } from "child_process";
 import { WebSocket, WebSocketServer } from "ws";
 import { fileURLToPath } from "url";
 import { dirname, join } from "path";
+import { searchWeb, fetchPage } from "./search.mjs";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PORT = parseInt(process.env.GEMINI_LIVE_PORT || "3002", 10);
@@ -39,62 +40,97 @@ const FUNCTION_DECLARATIONS = [
   },
   {
     name: "rview_show",
-    description: "Show media, a URL, or raw HTML in a view. Use media_type html with content for raw HTML. Do not invent URLs; ask the user if a URL is not provided or use a URL you are certain is reachable.",
+    description: "Show media, a URL, or raw HTML in a view. Provide either view_id or view_number. Use media_type html with content for raw HTML. If the user asks to find or search for content, call web_search first, then pass the chosen result URL to rview_show. Otherwise, use only URLs the user provides or URLs you are certain are publicly reachable.",
     parameters: {
       type: "object",
       properties: {
-        view_id: { type: "string" },
+        view_id: { type: "string", description: "View ID. Either view_id or view_number must be provided." },
+        view_number: { type: "integer", description: "Numeric view number shown in the RView UI. Either view_id or view_number must be provided." },
         url: { type: "string" },
         title: { type: "string" },
         media_type: { type: "string", enum: ["auto", "image", "video", "audio", "iframe", "pdf", "html"], default: "auto" },
         content: { type: "string", description: "Raw HTML content when media_type is html" },
         enqueue: { type: "boolean", default: false },
       },
-      required: ["view_id", "url"],
+      required: ["url"],
     },
   },
   {
     name: "rview_queue",
-    description: "Set or append to a view's playlist.",
+    description: "Set or append to a view's playlist. Provide either view_id or view_number.",
     parameters: {
       type: "object",
       properties: {
-        view_id: { type: "string" },
+        view_id: { type: "string", description: "View ID. Either view_id or view_number must be provided." },
+        view_number: { type: "integer", description: "Numeric view number shown in the RView UI." },
         items: { type: "array", items: { type: "object" } },
         mode: { type: "string", enum: ["replace", "append"], default: "replace" },
       },
-      required: ["view_id", "items"],
+      required: ["items"],
     },
   },
   {
     name: "rview_control",
-    description: "Control playback for a view.",
+    description: "Control playback for a view. Provide either view_id or view_number.",
     parameters: {
       type: "object",
       properties: {
-        view_id: { type: "string" },
+        view_id: { type: "string", description: "View ID. Either view_id or view_number must be provided." },
+        view_number: { type: "integer", description: "Numeric view number shown in the RView UI." },
         action: { type: "string", enum: ["play", "pause", "stop", "next", "prev", "seek", "volume", "fullscreen", "loop", "shuffle", "slideshow", "stop_slideshow", "clear_queue"] },
         value: {},
       },
-      required: ["view_id", "action"],
+      required: ["action"],
     },
   },
   {
     name: "rview_status",
-    description: "Get the current state of a view.",
+    description: "Get the current state of a view. Provide either view_id or view_number.",
     parameters: {
       type: "object",
-      properties: { view_id: { type: "string" } },
-      required: ["view_id"],
+      properties: {
+        view_id: { type: "string", description: "View ID. Either view_id or view_number must be provided." },
+        view_number: { type: "integer", description: "Numeric view number shown in the RView UI." },
+      },
+      required: [],
     },
   },
   {
     name: "rview_delete_view",
-    description: "Delete a view session.",
+    description: "Delete a view session. Provide either view_id or view_number.",
     parameters: {
       type: "object",
-      properties: { view_id: { type: "string" } },
-      required: ["view_id"],
+      properties: {
+        view_id: { type: "string", description: "View ID. Either view_id or view_number must be provided." },
+        view_number: { type: "integer", description: "Numeric view number shown in the RView UI." },
+      },
+      required: [],
+    },
+  },
+  {
+    name: "web_search",
+    description: "Search the web for content. Returns result URLs that can be passed to rview_show or rview_queue. For images, use the 'image' field of a result as the URL for rview_show with media_type 'image'. For videos, use embed_url as an iframe or a direct .mp4 url with media_type 'video'. For web pages, call fetch_page to read the content and then use media_type 'html' with a generated HTML summary.",
+    parameters: {
+      type: "object",
+      properties: {
+        query: { type: "string", description: "Search query" },
+        type: { type: "string", enum: ["web", "images", "videos"], default: "web" },
+        max_results: { type: "integer", default: 5, description: "Number of results, 1-20" },
+      },
+      required: ["query"],
+    },
+  },
+  {
+    name: "fetch_page",
+    description: "Fetch and extract the readable text/HTML of a web page. Use this when the user wants to summarize or re-render a web page in RView. After fetching, generate a clean HTML summary and call rview_show with media_type 'html' and the HTML in the 'content' field (pass the source URL as 'url').",
+    parameters: {
+      type: "object",
+      properties: {
+        url: { type: "string", description: "Full http or https URL to fetch" },
+        max_length: { type: "integer", default: 8000, description: "Maximum characters of extracted text" },
+        raw: { type: "boolean", default: false, description: "Return full raw HTML instead of extracted text" },
+      },
+      required: ["url"],
     },
   },
 ];
@@ -215,8 +251,11 @@ class GeminiSession {
                   text: `You are a voice assistant controlling a remote media view called RView.
 You can create views, show media URLs, queue playlists, control playback, render raw HTML, and run slideshows using the provided tools.
 Rules:
-- Only use URLs the user provides or URLs you are certain are publicly reachable. Do not invent URLs.
-- For images/videos, prefer direct file URLs (e.g., ending in .jpg, .mp4). If the user only describes content, ask them for a URL.
+- If the user asks to search for or find content, call web_search first.
+  - For image search results, use the "image" field as the URL and set media_type "image".
+  - For video results use embed_url as iframe or a direct .mp4 URL as media_type "video".
+  - For web pages, call fetch_page on the result URL to get the content, then generate a clean HTML summary and call rview_show with media_type "html", using the source URL as "url" and the HTML in the "content" field.
+- Otherwise, use only URLs the user provides or URLs you are certain are publicly reachable. Do not invent URLs.
 - For raw HTML or dashboards, call rview_show with media_type "html" and pass the HTML in the "content" field.
 - For a slideshow, queue multiple images with rview_queue then call rview_control with action "slideshow" and value as seconds per slide.
 - When the user asks to show, play, pause, stop, queue, or start a slideshow, call the matching rview_* tool.
@@ -263,7 +302,7 @@ Rules:
       const functionResponses = [];
       for (const fc of msg.toolCall.functionCalls || []) {
         try {
-          const result = await this.mcp.invokeTool(fc.name, fc.args || {});
+          const result = await this.invokeTool(fc.name, fc.args || {});
           functionResponses.push({ id: fc.id, name: fc.name, response: { result } });
         } catch (e) {
           functionResponses.push({ id: fc.id, name: fc.name, response: { error: e.message } });
@@ -311,6 +350,16 @@ Rules:
     } else if (msg.type === "client-content") {
       this.geminiWs.send(JSON.stringify({ clientContent: msg.clientContent }));
     }
+  }
+
+  async invokeTool(name, args) {
+    if (name === "web_search") {
+      return searchWeb(args);
+    }
+    if (name === "fetch_page") {
+      return fetchPage(args);
+    }
+    return this.mcp.invokeTool(name, args);
   }
 
   close() {

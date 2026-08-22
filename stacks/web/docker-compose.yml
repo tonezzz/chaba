@@ -147,44 +147,7 @@ services:
     profiles:
     - gpu-services
     - production
-  rview-api:
-    container_name: rview-api
-    build:
-      context: ./rview-api
-      dockerfile: Dockerfile
-    image: rview-api:latest
-    restart: unless-stopped
-    ports:
-    - 3007:3007
-    environment:
-    - RVIEW_API_PORT=3007
-    - RVIEW_STATE_FILE=/data/state.json
-    volumes:
-    - rview_api_state:/data
-    networks:
-    - default
-    profiles:
-    - production
-  gemini-live:
-    container_name: gemini-live
-    build:
-      context: ./gemini-live
-      dockerfile: Dockerfile
-    image: gemini-live:latest
-    restart: unless-stopped
-    ports:
-    - 3002:3002
-    environment:
-    - GEMINI_LIVE_PORT=3002
-    - GEMINI_LIVE_MODEL=${GEMINI_LIVE_MODEL:-gemini-3.1-flash-live-preview}
-    - GEMINI_API_KEY=${GEMINI_API_KEY}
-    - RVIEW_API_URL=http://rview-api:3007/state.php
-    networks:
-    - default
-    depends_on:
-    - rview-api
-    profiles:
-    - production
+
 volumes:
   caddy_data: null
   caddy_config: null

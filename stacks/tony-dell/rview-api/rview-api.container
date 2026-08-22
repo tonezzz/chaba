@@ -1,0 +1,25 @@
+[Unit]
+Description=RView API (rootless podman)
+Requires=rview-api-image-build.service
+After=rview-api-image-build.service
+
+[Container]
+Image=localhost/rview-api:latest
+ContainerName=rview-api
+Network=host
+Environment=RVIEW_API_PORT=3007
+Environment=RVIEW_STATE_FILE=/data/state.json
+Volume=/home/tony/.local/share/rview-api:/data:Z
+AutoUpdate=local
+HealthCmd=curl -sf http://127.0.0.1:3007/state?action=list >/dev/null
+HealthInterval=30s
+HealthTimeout=10s
+HealthRetries=3
+HealthStartPeriod=10s
+
+[Service]
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target

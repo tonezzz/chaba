@@ -10,7 +10,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const PORT = parseInt(process.env.RVIEW_API_PORT || "3007", 10);
 const STATE_FILE = process.env.RVIEW_STATE_FILE || join(__dirname, "state.json");
 
-let state = { views: {} };
+let state = { views: {}, next_view_number: 1 };
 
 function ensureStateDir() {
   const dir = dirname(STATE_FILE);
@@ -28,6 +28,12 @@ function loadState() {
       console.error("rview load error:", e.message);
     }
   }
+  if (typeof state.next_view_number !== "number") state.next_view_number = 1;
+  Object.values(state.views).forEach((v) => {
+    if (v && typeof v.view_number !== "number") {
+      v.view_number = state.next_view_number++;
+    }
+  });
 }
 
 function saveState() {
@@ -61,6 +67,7 @@ function getOrCreateView(viewId) {
   if (!state.views[viewId]) {
     state.views[viewId] = {
       view_id: viewId,
+      view_number: state.next_view_number++,
       display_name: viewId,
       current_item: null,
       queue: [],
@@ -83,6 +90,7 @@ function getOrCreateView(viewId) {
 function viewSummary(view) {
   return {
     view_id: view.view_id,
+    view_number: view.view_number,
     display_name: view.display_name,
     current_url: view.current_item ? view.current_item.url : null,
     media_type: view.current_item ? view.current_item.media_type : null,
@@ -93,6 +101,16 @@ function viewSummary(view) {
 
 function fullView(view) {
   return { ...view };
+}
+
+function resolveViewId(viewId, viewNumber) {
+  if (viewId && !/^(\d+)$/.test(String(viewId))) return viewId;
+  const n = Number(viewNumber !== undefined && viewNumber !== null ? viewNumber : viewId);
+  if (!isNaN(n) && n > 0) {
+    const view = Object.values(state.views).find((v) => v.view_number === n);
+    if (view) return view.view_id;
+  }
+  return viewId;
 }
 
 function setCurrent(view, item) {
@@ -294,12 +312,12 @@ const server = createServer(async (req, res) => {
   try {
     if (req.method === "GET") {
       const action = url.searchParams.get("action");
-      const viewId = url.searchParams.get("view_id");
+      const viewId = resolveViewId(url.searchParams.get("view_id"), url.searchParams.get("view_number"));
       if (action === "list") {
         sendJson(res, 200, listViews());
       } else if (action === "status") {
         if (!viewId) {
-          sendJson(res, 400, { ok: false, error: "view_id required" });
+          sendJson(res, 400, { ok: false, error: "view_id or view_number required" });
           return;
         }
         sendJson(res, 200, statusView(viewId));
@@ -314,6 +332,7 @@ const server = createServer(async (req, res) => {
       const payload = body ? JSON.parse(body) : {};
       const action = payload.action;
       const viewId = payload.view_id;
+      const effectiveViewId = resolveViewId(viewId, payload.view_number);
       let result;
 
       switch (action) {
@@ -321,19 +340,19 @@ const server = createServer(async (req, res) => {
           result = createView(viewId, payload.display_name);
           break;
         case "show":
-          result = show(viewId, payload.url, payload.title, payload.media_type, payload.enqueue, payload.content);
+          result = show(effectiveViewId, payload.url, payload.title, payload.media_type, payload.enqueue, payload.content);
           break;
         case "queue":
-          result = queueView(viewId, payload.items, payload.mode || "replace");
+          result = queueView(effectiveViewId, payload.items, payload.mode || "replace");
           break;
         case "control":
-          result = control(viewId, payload.command, payload.value);
+          result = control(effectiveViewId, payload.command, payload.value);
           break;
         case "status":
-          result = statusView(viewId);
+          result = statusView(effectiveViewId);
           break;
         case "delete":
-          result = deleteView(viewId);
+          result = deleteView(effectiveViewId);
           break;
         default:
           result = { ok: false, error: `unknown action: ${action}` };
