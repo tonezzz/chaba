@@ -243,6 +243,44 @@ decisions:
       - scripts/mcp_debug/server.py
       - docs/ssot/ssot.focus.sessions.yml
 
+  - id: rview-view-number-and-media-fallback
+    date: '2026-08-22'
+    title: Auto-number RView views and fall back to iframe on media load failure
+    status: accepted
+    context: |
+      RView views were referenced only by opaque view_id. Users wanted to open
+      any view by a stable number and have a fallback when remote images/videos
+      failed to load.
+    options:
+      - label: Keep view_id only and expose a separate number mapping
+        pros: [no schema change, simple lookup table]
+        cons: [extra API surface, number can drift when views are deleted]
+      - label: Add view_number to each view and resolve numeric view_id as view_number
+        pros: [stable auto-number, backward-compatible view_id support, easy URL sharing]
+        cons: [requires migration for persisted views without view_number]
+      - label: Fail visibly and require the user to pick a different URL
+        pros: [no UI complexity]
+        cons: [poor UX for Gemini-generated or third-party media]
+      - label: Replace failed media with an iframe fallback
+        pros: [handles broken images/videos/PDFs gracefully, keeps viewer visible]
+        cons: [iframing some URLs may still fail or show mixed-content errors]
+    chosen: Add view_number and use iframe fallback
+    reasoning: |
+      Auto-numbering gives every view a stable, shareable `?view=<number>` URL
+      while preserving `view_id` compatibility. Interpreting a numeric `view_id`
+      as `view_number` is intuitive and matches the URL parameter. Falling back
+      to an iframe lets Gemini-supplied or third-party URLs still render even
+      when the browser cannot decode them natively.
+    consequences:
+      - rview-api.mjs assigns view_number on creation and migrates existing state
+      - RView UI uses VIEW_KEY ('view_number' for numeric, 'view_id' otherwise)
+      - Failed image/video/audio/PDF elements are replaced by an iframe with the same URL
+      - SSOT and MCP tool schemas updated to expose view_number
+    related:
+      - docs/kb/rview-tony-dell-operations.md
+      - stacks/web/rview-api/rview-api.mjs
+      - stacks/web/public/apps/rview/index.html
+
 related_files:
   - docs/ssot/ssot.focus.decisions.yml
   - docs/ssot/ssot.focus.sessions.yml
