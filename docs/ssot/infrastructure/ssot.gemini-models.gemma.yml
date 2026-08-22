@@ -1,0 +1,62 @@
+title: Google Generative Models — Gemma
+subtitle: Gemma model registry with free-tier rate limits and usage assignments
+icon: 🧠
+config:
+  version: 1
+  last_updated: 2026-08-15
+  maintainer: tony
+  status: active
+source:
+  url: https://aistudio.google.com/app/apikey
+  last_verified: '2026-08-15'
+  input_file: /tmp/rate-limits.txt
+  note: Free-tier limits captured from the Google AI Studio rate-limits dashboard
+models:
+  gemma-4-31b-it:
+    display_name: Gemma 4 31B
+    api_name: gemma-4-31b-it
+    family: Gemma
+    category: Other models
+    params: 30.7B
+    context_window: 256K
+    free_tier:
+      rpm: 30
+      tpm: 16000
+      rpd: 14400
+    status: active
+    primary_for:
+    - yomi-summarization
+    - media-analysis
+    notes: Limits from AI Studio rate-limits dashboard on 2026-08-15
+    last_verified: '2026-08-15'
+  gemma-4-26b-a4b-it:
+    display_name: Gemma 4 26B
+    api_name: gemma-4-26b-a4b-it
+    family: Gemma
+    category: Other models
+    params: 25.2B (3.8B active, MoE)
+    context_window: 256K
+    free_tier:
+      rpm: 30
+      tpm: 16000
+      rpd: 14400
+    status: active
+    fallback_for:
+    - yomi-summarization
+    - media-analysis
+    notes: Limits from AI Studio rate-limits dashboard on 2026-08-15
+    last_verified: '2026-08-15'
+  gemma-4-12b-unified:
+    display_name: Gemma 4 12B
+    api_name: gemma-4-12b-unified
+    family: Gemma
+    category: Other models
+    params: 11.95B
+    context_window: 256K
+    free_tier:
+      rpm: null
+      tpm: null
+      rpd: null
+      status: unverified
+    status: available
+    notes: Not currently used. Capture free-tier limits from AI Studio if enabled.

@@ -1,0 +1,52 @@
+title: Chaba Health Checks (Home Profile) — Gpu
+subtitle: Home network health checks for the gpu category
+icon: heart-pulse
+services:
+- id: thai-legal
+  name: Llama Router (Phi-3 only)
+  disabled: true
+  type: http
+  url: http://tony-omen:8001/health
+  expected_status: 200
+  timeout: 10
+  category: gpu
+  profiles:
+  - home
+  note: Offline (2026-08-09) - GTX 1650 4GB cannot run multiple GPU services concurrently. Use mcp1_hold_llama and run one GPU workload at a time.
+- id: ollama
+  name: Ollama Server
+  type: http
+  url: http://tony-omen:11434/api/tags
+  expected_status: 200
+  timeout: 10
+  category: gpu
+  profiles:
+  - home
+  note: 'Ollama server for MCP text generation (mcp-llama, embeddings). Model: phi3-gguf'
+  recovery_actions:
+  - 'Check container: docker ps | grep ollama'
+  - 'Start container: cd /home/tony/CascadeProjects/chaba/stacks/web/mddb && docker compose up -d ollama'
+  - 'Check container logs: cd /home/tony/CascadeProjects/chaba/stacks/web/mddb && docker compose logs ollama'
+  - 'Verify port 11434: curl -s http://tony-omen:11434/api/tags'
+  - 'Check models: curl -s http://tony-omen:11434/api/tags | grep phi3-gguf'
+- id: imagen2
+  name: Imagen2
+  type: http
+  url: http://tony-omen:8000/health
+  expected_status: 200
+  timeout: 10
+  category: gpu
+  profiles:
+  - home
+  note: 'Offline (2026-08-09) - GPU memory constraints. Start manually when needed: docker compose -f stacks/gpu/docker-compose.yml up imagen2-inference'
+- id: txt2vid
+  name: Txt2Vid
+  disabled: true
+  type: http
+  url: http://tony-omen:8002/health
+  expected_status: 200
+  timeout: 10
+  category: gpu
+  profiles:
+  - home
+  note: 'Offline (2026-08-14) - intentionally stopped. Start manually when needed: docker compose -f stacks/gpu/docker-compose.yml up txt2vid-inference'

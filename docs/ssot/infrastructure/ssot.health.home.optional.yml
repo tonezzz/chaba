@@ -1,0 +1,39 @@
+title: Chaba Health Checks (Home Profile) — Optional
+subtitle: Home network health checks for the optional category
+icon: heart-pulse
+services:
+- id: activepieces
+  name: Activepieces
+  disabled: true
+  type: container
+  container: activepieces
+  expected_state: running
+  timeout: 5
+  category: optional
+  profiles:
+  - home
+  - mobile
+  note: 'Offline (2026-08-14) - intentionally stopped. Start manually when needed: docker compose -f stacks/activepieces/docker-compose.yml up -d'
+- id: frigate
+  name: Frigate NVR
+  disabled: true
+  type: http
+  url: '{profile}/frigate/api/version'
+  expected_status: 200
+  timeout: 10
+  category: optional
+  profiles:
+  - home
+  - mobile
+  note: 'Offline (2026-08-14) - intentionally stopped; start manually when needed: docker compose -f frigate/docker-compose.yml up -d'
+- id: camera-control
+  name: Camera Control
+  disabled: true
+  type: http
+  url: http://tony-omen:8090/
+  expected_status: 200
+  timeout: 5
+  category: optional
+  profiles:
+  - home
+  note: Offline (2026-08-14) - intentionally stopped; start manually when needed (currently runs on tony-dell)

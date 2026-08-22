@@ -1,0 +1,74 @@
+title: Chaba Health Checks (Home Profile) — Web
+subtitle: Home network health checks for the web category
+icon: heart-pulse
+services:
+- id: caddy
+  name: Caddy
+  type: http
+  url: '{profile}/apps/map/'
+  expected_status: 200
+  timeout: 5
+  category: web
+  profiles:
+  - home
+  - mobile
+- id: bserver
+  name: BServer
+  type: http
+  url: '{profile}/'
+  expected_status: 200
+  timeout: 5
+  category: web
+  profiles:
+  - home
+  - mobile
+- id: raceman-web
+  name: Raceman Web
+  type: http
+  url: http://tony-dell:8083/apps/raceman/
+  expected_status: 200
+  timeout: 5
+  category: web
+  profiles:
+  - home
+- id: helm
+  name: Helm Dashboard
+  type: http
+  url: http://tony-omen:8080/apps/helm
+  expected_status: 200
+  timeout: 5
+  category: web
+  profiles:
+  - home
+  - mobile
+  verification:
+  - 'Check podman container: ssh tony-dell podman ps | grep helm'
+  - 'Check podman logs: ssh tony-dell podman logs helm --tail 20'
+  - 'Test direct podman container: curl -s http://tony-dell:3003/apps/helm/'
+  - 'Test Caddy proxy: curl -s http://tony-omen:8080/apps/helm/'
+  recovery_actions:
+  - 'Restart service: ssh tony-dell systemctl --user restart helm'
+  - 'Rebuild: ssh tony-dell "cd /home/tony/CascadeProjects/chaba-tony-dell/tony-dell/chaba-funnel && ./deploy.sh"'
+  - Check Caddy proxy configuration in stacks/web/Caddyfile
+  - 'Verify env: ssh tony-dell podman exec helm env | grep LLM'
+- id: raceman-php
+  name: Raceman PHP
+  type: container
+  container: raceman-php
+  host: tony_dell
+  expected_state: running
+  timeout: 5
+  category: web
+  profiles:
+  - home
+  note: Migrated to tony_dell rootless podman.
+- id: mddb-panel
+  name: MDDB Panel
+  type: http
+  url: '{profile}/apps/mddb/'
+  expected_status: 200
+  timeout: 5
+  category: web
+  profiles:
+  - home
+  - mobile

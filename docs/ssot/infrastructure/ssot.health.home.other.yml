@@ -1,0 +1,259 @@
+title: Chaba Health Checks (Home Profile) — Other
+subtitle: Home network health checks for the other category
+icon: heart-pulse
+services:
+- id: chaba-funnel
+  name: Chaba Funnel landing page
+  type: http
+  url: https://tony-dell.taila0626a.ts.net/health
+  expected_status: 200
+  timeout: 5
+  category: tailscale
+  profiles:
+  - home
+  - mobile
+  note: Funnel landing page, /health endpoint, and /apps/docs/ on tony-dell, proxied by tailscale serve to 127.0.0.1:8082.
+  verification:
+  - 'Check systemd: systemctl --user status chaba-funnel.service'
+  - 'Check port: ss -tlnp | grep 8082'
+  - 'Test root: curl -s -o /dev/null -w ''%{http_code}'' https://tony-dell.taila0626a.ts.net/'
+  - 'Test health: curl -s https://tony-dell.taila0626a.ts.net/health'
+  - 'Test docs: curl -s -o /dev/null -w ''%{http_code}'' https://tony-dell.taila0626a.ts.net/apps/docs/index.html'
+  recovery_actions:
+  - 'Restart: systemctl --user restart chaba-funnel.service'
+  - 'Check tailscale serve: tailscale serve status'
+  - 'Check syntax: python3 -m py_compile /home/tony/chaba-funnel/funnel-server.py'
+- id: trade-automation
+  name: Trade Automation
+  type: container
+  container: trade-automation
+  expected_state: running
+  timeout: 5
+  category: automation
+  profiles:
+  - home
+  note: Background trade automation worker (same image as trade-api, no exposed host port)
+  verification:
+  - 'Check container: docker ps | grep trade-automation'
+  - 'Check container logs: docker logs trade-automation'
+  recovery_actions:
+  - 'Restart container: docker restart trade-automation'
+  - 'Check status: docker inspect trade-automation'
+- id: mcp-debug-cors
+  name: MCP Debug CORS endpoint
+  type: http
+  url: http://tony-dell:9100/health
+  expected_status: 200
+  timeout: 5
+  category: mcp-debug
+  profiles:
+  - home
+  - mobile
+  note: CORS endpoint on tony-dell for mcp-savings.json and mcp-table.json, served by http_server.py via tailscale serve / Funnel.
+  verification:
+  - 'Check systemd: systemctl --user status mcp-debug-cors.service'
+  - 'Check port: ss -tlnp | grep 9100'
+  - 'Test tailnet: curl -s http://tony-dell:9100/health'
+  - 'Test Funnel: curl -s https://tony-dell.taila0626a.ts.net/mcp-savings.json'
+  recovery_actions:
+  - 'Restart: systemctl --user restart mcp-debug-cors.service'
+  - 'Check tailscale serve: tailscale serve status'
+  - 'Check syntax: python3 -m py_compile /home/tony/CascadeProjects/chaba/scripts/mcp_debug/http_server.py'
+- id: mcp-debug-audit
+  name: MCP Debug Audit Health
+  type: http
+  url: http://tony-dell:9100/audit-health
+  expected_status: 200
+  timeout: 10
+  category: mcp-debug
+  profiles:
+  - home
+  - mobile
+  note: 'Returns the latest consolidated audit suite status from
+
+    reports/audits/summary.json on tony-dell.
+
+    '
+  verification:
+  - 'Check systemd: systemctl --user status mcp-debug-cors.service'
+  - 'Test endpoint: curl -s http://tony-dell:9100/audit-health'
+  - 'Tailnet test: curl -s https://tony-dell.taila0626a.ts.net/audit-health'
+  recovery_actions:
+  - 'Restart: systemctl --user restart mcp-debug-cors.service'
+  - 'Run audit manually: ssh tony-dell node /home/tony/CascadeProjects/chaba-tony-dell/scripts/audits/run.mjs'
+- id: playlived-omen
+  name: Playlived (tony-omen)
+  type: systemd
+  service: playlived.service
+  expected_state: active
+  timeout: 5
+  category: system
+  profiles:
+  - home
+  - mobile
+  verification:
+  - 'Check service: systemctl --user status playlived.service'
+  - 'Check logs: journalctl --user -u playlived.service -n 20'
+  recovery_actions:
+  - 'Restart service: systemctl --user restart playlived.service'
+- id: yomi-update-all-timer
+  name: Yomi Update All Timer
+  type: systemd
+  service: yomi-update-all.timer
+  expected_state: active
+  timeout: 5
+  category: system
+  profiles:
+  - home
+  - mobile
+  disabled: true
+  note: 'Timer now runs on tony_dell as a Podman user unit. Check with tony_dell: systemctl --user status yomi-update-all.timer.'
+- id: yomi-update-active-timer
+  name: Yomi Update Active Timer
+  type: systemd
+  service: yomi-update-active.timer
+  expected_state: active
+  timeout: 5
+  category: system
+  profiles:
+  - home
+  - mobile
+  disabled: true
+  note: 'Timer now runs on tony_dell as a Podman user unit. Check with tony_dell: systemctl --user status yomi-update-active.timer.'
+- id: weaviate-index-timer
+  name: Weaviate Index Timer
+  type: systemd
+  service: weaviate-index.timer
+  expected_state: active
+  timeout: 5
+  category: system
+  profiles:
+  - home
+  - mobile
+  disabled: true
+  note: 'The weaviate container and its index timer now run on tony-dell as Podman user units. Check with tony_dell: systemctl --user status weaviate-index.timer'
+- id: chaba-audit-timer
+  name: Chaba Audit Timer
+  type: systemd
+  service: chaba-audit.timer
+  expected_state: active
+  timeout: 5
+  category: system
+  profiles:
+  - home
+  - mobile
+- id: chaba-kb-audit-timer
+  name: Chaba KB Audit Timer
+  type: systemd
+  service: chaba-kb-audit.timer
+  expected_state: active
+  timeout: 5
+  category: system
+  profiles:
+  - home
+  - mobile
+- id: cpu-frequency-monitor
+  name: CPU Frequency Monitor
+  type: systemd
+  scope: system
+  service: cpufreq-limit.service
+  expected_state: active
+  timeout: 5
+  category: system
+  profiles:
+  - home
+  - mobile
+  note: Ensures CPU frequency limit is applied at boot (cpufreq-limit.service)
+  verification:
+  - 'Check service: systemctl status cpufreq-limit.service'
+  - 'Check current CPU frequency: cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq'
+  - 'Check CPU governor: cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor'
+  recovery_actions:
+  - 'Restart service: systemctl restart cpufreq-limit.service'
+  - 'Set performance governor: echo performance | sudo tee /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor'
+- id: chaba-health-monitor-timer
+  name: Chaba Health Monitor Timer
+  type: systemd
+  service: chaba-health-monitor.timer
+  expected_state: active
+  timeout: 5
+  category: system
+  profiles:
+  - home
+  - mobile
+  note: Runs health-monitor.sh every 10 minutes (CPU frequency, temperature, memory, disk, services)
+  verification:
+  - 'Check timer status: systemctl --user status chaba-health-monitor.timer'
+  - 'Check monitor log: tail -f /home/tony/CascadeProjects/chaba/logs/health-monitor.log'
+  - 'Test script manually: bash /home/tony/CascadeProjects/chaba/scripts/health-monitor.sh'
+  - 'Check CPU frequency: cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq'
+  - 'Check CPU governor: cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor'
+  recovery_actions:
+  - 'Restart timer: systemctl --user restart chaba-health-monitor.timer'
+  - 'Check script permissions: chmod +x /home/tony/CascadeProjects/chaba/scripts/health-monitor.sh'
+  - 'Monitor CPU frequency: watch -n 1 ''cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq'''
+  - 'Change CPU governor: echo performance | sudo tee /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor'
+  - 'Check thermal throttling: watch -n 1 ''cat /sys/class/thermal/thermal_zone*/temp'''
+- id: barrier-server
+  name: Barrier KVM Server
+  type: systemd
+  service: barriers.service
+  expected_state: active
+  timeout: 5
+  category: system
+  profiles:
+  - home
+  - mobile
+  note: Barrier KVM server on tony-omen; auto-restarts on failure. Client on tony-dell connects to 100.75.102.88:24800 over Tailscale.
+  verification:
+  - 'Check service: systemctl --user status barriers.service'
+  - 'Check port: ss -tlnp | grep 24800'
+  - 'Check server log: tail -n 20 /tmp/barrier-server.log'
+  - 'Check connected client: tail -n 20 /tmp/barrier-client.log'
+  recovery_actions:
+  - 'Restart server: systemctl --user restart barriers.service'
+  - 'Check log: journalctl --user -u barriers.service -n 50'
+  - 'Check client: ssh -o ConnectTimeout=3 tony@tony-dell ''pgrep -a barrierc'''
+  - 'Restart client: ssh -o ConnectTimeout=3 tony@tony-dell ''pkill -x barrierc 2>/dev/null; nohup /home/tony/.local/bin/barrierc --no-daemon --disable-crypto --name tony-dell --log /tmp/barrier-client.log 100.75.102.88 >/dev/null 2>&1 &'''
+- id: gdrive-backup
+  name: Google Drive Backup
+  type: mount
+  mount_point: /home/tony/GoogleDrive
+  expected_state: mounted
+  timeout: 10
+  category: system
+  profiles:
+  - home
+  note: Google Drive mount for automated backup storage at /home/tony/GoogleDrive/Tony AI/backup/chaba
+  verification:
+  - 'Check mount status: mount | grep gdrive'
+  - 'Check backup directory: ls -la /home/tony/GoogleDrive/Tony AI/backup/chaba'
+  - 'Check recent backups: ls -lt /home/tony/GoogleDrive/Tony AI/backup/chaba/daily/ | head -5'
+  - 'Test write access: echo ''test'' > /home/tony/GoogleDrive/Tony AI/backup/chaba/test-write.txt && rm /home/tony/GoogleDrive/Tony AI/backup/chaba/test-write.txt'
+  - 'Check backup logs: tail -f /var/log/chaba-backup.log'
+  recovery_actions:
+  - 'Check rclone status: rclone status gdrive'
+  - 'Remount Google Drive: rclone mount gdrive: /home/tony/GoogleDrive --daemon'
+  - 'Check rclone config: rclone config show gdrive'
+  - 'Check backup service: systemctl status chaba-backup.timer'
+  - 'Check backup logs for errors: tail -100 /var/log/chaba-backup.log'
+- id: mcp-rview
+  name: MCP RView Proxy
+  type: sse
+  url: http://127.0.0.1:9003/sse
+  expected_status: 200
+  timeout: 5
+  category: mcp
+  profiles:
+  - home
+  - mobile
+  host: tony_dell
+  verification:
+  - 'Test SSE endpoint: curl -sfI -H "Accept: text/event-stream" http://127.0.0.1:9003/sse'
+  - 'Check service: ssh tony-dell systemctl --user status mcp-rview'
+  - 'Check proxy log: ssh tony-dell journalctl --user -u mcp-rview --tail 20'
+  - 'Check tool list: ssh tony-dell podman exec gemini-live python3 /scripts/mcp_rview/server.py and send {"jsonrpc":"2.0","id":1,"method":"tools/list"}'
+  recovery_actions:
+  - 'Restart service: ssh tony-dell systemctl --user restart mcp-rview'
+  - 'Verify rview-api is reachable from mcp-rview: ssh tony-dell curl -sf http://127.0.0.1:3007/state?action=list'
+  - 'Check server.py source: /home/tony/CascadeProjects/chaba-tony-dell/scripts/mcp_rview/server.py'

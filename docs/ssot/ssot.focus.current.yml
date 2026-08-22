@@ -1,11 +1,9 @@
 title: Current Focus
-subtitle: Active shared and branch focuses plus quick wins — read this at the start of every session
+subtitle: Common workflow for session start and focus disposition
 icon: target
 workflow:
-- Assistant must read this SSOT at the start of each session - Read the most recent entry in docs/ssot/ssot.focus.sessions.yml
-  to pick up pending follow-ups
-- Before any docs/ or SSOT read/grep, run `mcp_call_tool mddb semantic_search` on the request topic and record the query in
-  the active focus's request_log
+- Assistant must read this SSOT at the start of each session - Read the most recent entry in docs/ssot/ssot.focus.sessions.yml to pick up pending follow-ups
+- Before any docs/ or SSOT read/grep, run `mcp_call_tool mddb semantic_search` on the request topic and record the query in the active focus's request_log
 - List docs/ssot/focus-inbox/*.yml at session start and summarize any pending items for triage
 - Match the user request against active shared and branch focuses first
 - If it matches, append it to that item's request_log and do the work inside that focus
@@ -15,10 +13,8 @@ workflow:
 - For backlog review, archived focuses, or focus history, read the full ssot.focus.yml
 - At session end, update subtask status and append a session summary to ssot.focus.sessions.yml
 - When an inbox item is activated, merge it into this file and git mv the source file to docs/ssot/focus-inbox/processed/
-- If the request can be decomposed into subtasks, use the decompose action to create or update a focus with subtasks before
-  starting
-- If the disposition is unclear, call mcp_focus(request, mode=recommend) and follow the returned action (continue, quick_win,
-  decompose, triage_backlog, triage_inbox, draft_inbox); see ssot.mcp-focus.yml for the machine-readable tree
+- If the request can be decomposed into subtasks, use the decompose action to create or update a focus with subtasks before starting
+- If the disposition is unclear, call mcp_focus(request, mode=recommend) and follow the returned action (continue, quick_win, decompose, triage_backlog, triage_inbox, draft_inbox); see ssot.mcp-focus.yml for the machine-readable tree
 mcp_focus:
   tool: mcp_focus
   source: docs/ssot/infrastructure/ssot.mcp-focus.yml
@@ -32,8 +28,7 @@ mcp_focus:
   actions:
     continue: The request matches an active focus or no request was given; keep working on the active focus.
     quick_win: The request is small and concrete; add to Quick Wins and complete immediately.
-    decompose: The request is too large for a quick win but can be split into subtasks; decompose it into a focus and start
-      the first subtask.
+    decompose: The request is too large for a quick win but can be split into subtasks; decompose it into a focus and start the first subtask.
     triage_backlog: The request matches or should go to ssot.focus.yml Backlog; ask the user to activate.
     triage_inbox: The request matches an unprocessed focus-inbox draft; review/activate it.
     draft_inbox: No match; return an in-memory draft inbox YAML for the user to review before saving.
@@ -96,8 +91,7 @@ decision_tree:
   - case: interrupt
     mcp_focus_action: continue
     condition: New strategic work that must start now while an active shared focus is still incomplete
-    action: Park the active shared focus, activate the new work as a branch focus, and return to the parked focus when the
-      branch is completed
+    action: Park the active shared focus, activate the new work as a branch focus, and return to the parked focus when the branch is completed
     examples:
     - Reviewing and implementing focus validation/parking while the mcp-debug shared focus stays parked
   - case: no_active_or_inbox
@@ -115,8 +109,7 @@ decision_tree:
   - case: pre_action_summary
     mcp_focus_action: pre_action
     condition: Before beginning any non-trivial work, or when the user asks for the current focus landscape
-    action: Call mcp_focus with mode pre_action to get active foci, duplicate/historical matches, and related decision-tree
-      entries, then present a concise summary and ask for confirmation before proceeding
+    action: Call mcp_focus with mode pre_action to get active foci, duplicate/historical matches, and related decision-tree entries, then present a concise summary and ask for confirmation before proceeding
     examples:
     - User asks 'what is our focus?' or 'let's plan to finish all backlog'
     - Assistant is about to start a multi-step focus after a request
@@ -133,262 +126,6 @@ validation:
   require_priority: true
   require_tags: true
   require_request_log: true
-sections:
-- title: Active Shared Focus
-  icon: active
-  layout: list
-  items:
-  - label: GPU Queue health
-    text: mcp-health reported status 'unknown' for GPU Queue at 2026-08-20T03:00:18. The health check used http://tony-omen.local:3001/health,
-      which does not resolve. A direct test of http://tony-omen:3001/health from tony-omen returned HTTP 200 and the docker
-      container ``gpu-queue' is Up 46h (healthy).
-    status: closed
-    priority: high
-    started: '2026-08-20'
-    closed: '2026-08-20'
-    estimated_duration: 1 session
-    tags:
-    - health
-    - inbox
-    - critical
-    - false-positive
-    subtasks: []
-    request_log: []
-    ownership:
-      owner: tony
-      session: ''
-      locked: true
-      lock_reason: Activated as active focus
-    source: /home/tony/CascadeProjects/chaba/docs/ssot/focus-inbox/2026-08-20-030018-gpu-queue-health.yml
-  - label: Status Data API health
-    text: 'mcp-health reported status ''unknown'' for Status Data API at 2026-08-20T03:00:18. Root cause: the Caddy reverse
-      proxy in the tony-omen web container was trying to resolve ``status-api:8000`` but the ``status-api`` service was not
-      defined in stacks/web/docker-compose.yml. Added the missing status-api service with build context ./status-api and exposed
-      port 8000 on the docker network. Caddy now returns HTTP 200 for /api/health.'
-    status: closed
-    priority: medium
-    started: '2026-08-20'
-    closed: '2026-08-20'
-    estimated_duration: 1 session
-    tags:
-    - health
-    - inbox
-    - important
-    - resolved
-    subtasks: []
-    request_log: []
-    ownership:
-      owner: tony
-      session: ''
-      locked: true
-      lock_reason: Activated as active focus
-    source: /home/tony/CascadeProjects/chaba/docs/ssot/focus-inbox/2026-08-20-030018-status-data-api-health.yml
-  - label: Sensor Reader health
-    text: mcp-health reported status 'unknown' for Sensor Reader at 2026-08-20T03:00:18. A direct test of http://tony-omen:8001/health
-      from tony-omen returned HTTP 200 and the docker container ``sensor-reader'' is Up 2 days. The 'unknown' result was a
-      transient or hostname-resolution false positive.
-    status: closed
-    priority: medium
-    started: '2026-08-20'
-    closed: '2026-08-20'
-    estimated_duration: 1 session
-    tags:
-    - health
-    - inbox
-    - important
-    - false-positive
-    subtasks: []
-    request_log: []
-    ownership:
-      owner: tony
-      session: ''
-      locked: true
-      lock_reason: Activated as active focus
-    source: /home/tony/CascadeProjects/chaba/docs/ssot/focus-inbox/2026-08-20-030018-sensor-reader-health.yml
-  - label: MCP Debug Audit Health health
-    text: mcp-health reported status 'error' for MCP Debug Audit Health at 2026-08-21T03:00:18.
-    status: active
-    priority: high
-    started: '2026-08-22'
-    estimated_duration: 1 session
-    tags:
-    - health
-    - inbox
-    - optional
-    subtasks: []
-    request_log: []
-    ownership:
-      owner: tony
-      session: ''
-      locked: true
-      lock_reason: Activated as active focus
-    source: /home/tony/CascadeProjects/chaba/docs/ssot/focus-inbox/2026-08-21-030018-mcp-debug-audit-health-health.yml
-- title: Active Branch Focus
-  icon: branch
-  layout: list
-  items:
-  - label: Yomi conversation processing and UI recovery
-    text: Process the existing Yomi message corpus (7,872 messages, 66 conversations) to populate summaries, categories, and
-      proper display names, and verify the Yomi UI after the recent DB recovery. Do not re-attempt LINE login unless explicitly
-      requested.
-    status: parked
-    priority: high
-    started: '2026-08-19'
-    estimated_duration: 1 session
-    tags:
-    - yomi
-    - line
-    - summarization
-    - processing
-    - ui
-    subtasks:
-    - label: Process existing messages and conversations
-      status: deferred
-      started_at: '2026-08-18'
-      note: 'Processing Yomi corpus: populate summaries, categories, display names. Do not re-attempt LINE login unless requested.'
-      deferred_at: '2026-08-19'
-      resume_session: chaba
-      resume_note: 'Yomi blocked: LINE signed out, E2EE key material unavailable'
-    - label: Generate daily summaries for conversations
-      status: deferred
-      deferred_at: '2026-08-19'
-      resume_session: chaba
-      resume_note: User chose to switch to a different focus; Yomi blocked by LINE login
-    - label: Restore conversation display names from message data
-      status: deferred
-      deferred_at: '2026-08-20'
-    - label: Verify Yomi UI list and chat pages
-      status: not_started
-    branch: chaba
-    previous_status: active
-    parked: '2026-08-20'
-  - label: yomi-llm-rate-limits
-    text: 'Yomi conversation processing on tony-dell is sensitive to the Gemini model
-
-      and rate limits configured in the yomi-api systemd user service. We already
-
-      switched the live `yomi-api.service` environment from `gemma-4-31b-it` (which
-
-      returns 401) to `gemini-3.5-flash-lite` (which connects), but the
-
-      `chaba-tony-dell/stacks/web/docker-compose.yml` still lists
-
-      `gemini-2.5-flash` and the `gemma-4` vision models. The
-
-      `EMBEDDING_SERVICE_URL` is also stale (`100.75.102.88:5000`) and unused by
-
-      `yomi-api.mjs`, which instead calls Google''s `getGeminiEmbedding`.
-
-
-      The immediate goal is to make sure `process-conversations.mjs` can run
-
-      reliably without exhausting the Google free-tier, and to reconcile the
-
-      runtime `.service` configuration with the versioned compose/worktree source
-
-      of truth.
-
-      '
-    status: parked
-    previous_status: active
-    parked: '2026-08-20'
-    priority: high
-    started: '2026-08-20'
-    estimated_duration: 1 session
-    tags:
-    - yomi
-    - gemini
-    - rate-limit
-    - tony-dell
-    - process-conversations
-    subtasks:
-    - label: Sync docker-compose with the live .service env
-      status: not_started
-    - label: Verify a full end-to-end process-conversations run
-      status: not_started
-    - label: Document final model + rate-limit choices in SSOT
-      status: not_started
-    request_log: []
-    ownership:
-      owner: tony
-      session: ''
-      locked: true
-      lock_reason: Activated as active focus
-    branch: tony-dell
-    source: /home/tony/CascadeProjects/chaba/docs/ssot/focus-inbox/2026-08-20-193223-yomi-llm-rate-limits.yml
-  - label: rview-improvements
-    text: 'Improve the RView remote media viewer: support ?view=<number> so each auto-numbered view is reachable by URL, add
-      media load fallback when an image/video fails, and update the UI to resolve view_number correctly.'
-    status: closed
-    previous_status: active
-    priority: high
-    started: '2026-08-20'
-    closed: '2026-08-22'
-    estimated_duration: 1 session
-    tags:
-    - rview
-    - gemini-live
-    - tony-dell
-    - ui
-    subtasks:
-    - label: Support ?view=<number> via view_number resolution in API and UI
-      status: completed
-      completed_at: '2026-08-22'
-    - label: Add media load fallback / error overlay in RView UI
-      status: completed
-      completed_at: '2026-08-22'
-    - label: Deploy and verify on tony-dell
-      status: completed
-      completed_at: '2026-08-22'
-    request_log: []
-    ownership:
-      owner: tony
-      session: devin-181a033def8747289005beb98146423f
-      locked: true
-      lock_reason: Activated as active focus
-    branch: tony-dell
-  - label: context-memory-improvements
-    text: 'Capture durable project context across Devin sessions: consolidate tony-dell RView/Gemini access, deployment, and
-      fallback knowledge into KB/runbooks and SSOT decisions, and create a Devin playbook for smoke-test/deployment.'
-    status: active
-    priority: high
-    started: '2026-08-22'
-    estimated_duration: 1 session
-    tags:
-    - rview
-    - gemini-live
-    - devin
-    - kb
-    - ssot
-    subtasks:
-    - label: Create KB/runbook entries for tony-dell RView/Gemini deployment and access
-      status: completed
-      completed_at: '2026-08-22'
-    - label: Record key design decisions in SSOT decisions
-      status: completed
-      completed_at: '2026-08-22'
-    - label: Set up a Devin playbook for RView/Gemini deployment smoke-test
-      status: completed
-      completed_at: '2026-08-22'
-    request_log: []
-    ownership:
-      owner: tony
-      session: devin-181a033def8747289005beb98146423f
-      locked: true
-      lock_reason: Activated after rview-improvements closure
-    branch: tony-dell
-- title: Ready (Safe)
-  icon: safe
-  layout: list
-  items: []
-- title: Hand-off Queue
-  icon: handoff
-  layout: list
-  items: []
-- title: Quick Wins
-  icon: quick
-  layout: list
-  items: []
 config:
   version: 2
   last_updated: '2026-08-19'
@@ -405,3 +142,8 @@ config:
   - docs/ssot/focus-inbox
   - docs/ssot/infrastructure/ssot.subagent-focus-triage.yml
   - docs/ssot/infrastructure/ssot.focus-dispatcher.yml
+sources:
+- label: Active focuses
+  file: docs/ssot/ssot.focus.current.active.yml
+- label: Backlog and quick wins
+  file: docs/ssot/ssot.focus.current.backlog.yml

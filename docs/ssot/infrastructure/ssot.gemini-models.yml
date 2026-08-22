@@ -1,5 +1,5 @@
 title: Google Generative Models
-subtitle: Canonical model registry with free-tier rate limits for all Chaba Google API usage
+subtitle: Canonical model registry with free-tier rate limits for all Chaba Google API usage (largest families split into ssot.gemini-models.<family>.yml)
 icon: 🧠
 config:
   version: 1
@@ -37,92 +37,6 @@ sections:
   - label: not_used
     text: Not relevant to Chaba workload
 models:
-  gemma-4-31b-it:
-    display_name: Gemma 4 31B
-    api_name: gemma-4-31b-it
-    family: Gemma
-    category: Other models
-    params: 30.7B
-    context_window: 256K
-    free_tier:
-      rpm: 30
-      tpm: 16000
-      rpd: 14400
-    status: active
-    primary_for:
-    - yomi-summarization
-    - media-analysis
-    notes: Limits from AI Studio rate-limits dashboard on 2026-08-15
-    last_verified: '2026-08-15'
-  gemma-4-26b-a4b-it:
-    display_name: Gemma 4 26B
-    api_name: gemma-4-26b-a4b-it
-    family: Gemma
-    category: Other models
-    params: 25.2B (3.8B active, MoE)
-    context_window: 256K
-    free_tier:
-      rpm: 30
-      tpm: 16000
-      rpd: 14400
-    status: active
-    fallback_for:
-    - yomi-summarization
-    - media-analysis
-    notes: Limits from AI Studio rate-limits dashboard on 2026-08-15
-    last_verified: '2026-08-15'
-  gemma-4-12b-unified:
-    display_name: Gemma 4 12B
-    api_name: gemma-4-12b-unified
-    family: Gemma
-    category: Other models
-    params: 11.95B
-    context_window: 256K
-    free_tier:
-      rpm: null
-      tpm: null
-      rpd: null
-      status: unverified
-    status: available
-    notes: Not currently used. Capture free-tier limits from AI Studio if enabled.
-  gemini-3.6-flash:
-    display_name: Gemini 3.6 Flash
-    api_name: gemini-3.6-flash
-    family: Gemini 3
-    category: Text-out models
-    free_tier:
-      rpm: 5
-      tpm: 250000
-      rpd: 20
-    status: available
-    notes: Limits from AI Studio rate-limits dashboard on 2026-08-15
-    last_verified: '2026-08-15'
-  gemini-2.5-flash:
-    display_name: Gemini 2.5 Flash
-    api_name: gemini-2.5-flash
-    family: Gemini 2.5
-    category: Text-out models
-    free_tier:
-      rpm: 5
-      tpm: 250000
-      rpd: 20
-    status: active
-    primary_for:
-    - helm-llm
-    notes: Limits from AI Studio rate-limits dashboard on 2026-08-15
-    last_verified: '2026-08-15'
-  gemini-2.5-flash-lite:
-    display_name: Gemini 2.5 Flash Lite
-    api_name: gemini-2.5-flash-lite
-    family: Gemini 2.5
-    category: Text-out models
-    free_tier:
-      rpm: 10
-      tpm: 250000
-      rpd: 20
-    status: available
-    notes: Limits from AI Studio rate-limits dashboard on 2026-08-15
-    last_verified: '2026-08-15'
   gemini-1.5-flash:
     display_name: Gemini 1.5 Flash
     api_name: gemini-1.5-flash
@@ -135,18 +49,6 @@ models:
       status: unverified
     status: deprecated
     notes: Deprecated. No longer a recommended fallback. Consumers should use gemini-2.5-flash / gemini-2.5-flash-lite or gemini-3.5-flash-lite.
-  gemini-flash-latest:
-    display_name: Gemini Flash Latest
-    api_name: gemini-flash-latest
-    family: Gemini 3
-    category: Text-out models
-    free_tier:
-      rpm: null
-      tpm: null
-      rpd: null
-      status: alias
-    status: available
-    notes: Rolling API alias. Rate limits match whichever Flash model it currently resolves to.
   antigravity:
     display_name: Antigravity
     api_name: antigravity
@@ -157,286 +59,6 @@ models:
       tpm: 100000
       rpd: 100
     status: not_used
-    notes: Limits from AI Studio rate-limits dashboard on 2026-08-15
-    last_verified: '2026-08-15'
-  gemini-2.0-flash-live:
-    display_name: Gemini 2.0 Flash Live
-    api_name: gemini-2.0-flash-live
-    family: Gemini 2
-    category: Live API
-    free_tier:
-      status: unverified
-    status: active
-    primary_for:
-    - gemini-live
-    notes: Gemini 2.0 Flash Live API for real-time audio/video. Add free-tier RPM/TPM/RPD from AI Studio.
-  gemini-2.0-flash-001:
-    display_name: Gemini 2.0 Flash 001
-    api_name: gemini-2.0-flash-001
-    family: Gemini 2
-    category: Gemini 2
-    free_tier:
-      status: unverified
-    status: available
-    notes: Add free-tier RPM/TPM/RPD from AI Studio. Group Gemini 2.
-  gemini-2.0-flash:
-    display_name: Gemini 2 Flash
-    api_name: gemini-2.0-flash
-    family: Gemini 2
-    category: Text-out models
-    free_tier:
-      rpm: 0
-      tpm: 0
-      rpd: 0
-    status: available
-    notes: Limits from AI Studio rate-limits dashboard on 2026-08-15
-    last_verified: '2026-08-15'
-  gemini-2.5-pro:
-    display_name: Gemini 2.5 Pro
-    api_name: gemini-2.5-pro
-    family: Gemini 2.5
-    category: Text-out models
-    free_tier:
-      rpm: 0
-      tpm: 0
-      rpd: 0
-    status: available
-    notes: Limits from AI Studio rate-limits dashboard on 2026-08-15
-    last_verified: '2026-08-15'
-  gemini-2.5-flash-native-audio-preview-12-2025:
-    display_name: Gemini 2.5 Flash Native Audio Preview 12 2025
-    api_name: gemini-2.5-flash-native-audio-preview-12-2025
-    family: Gemini 2.5
-    category: Gemini 2.5
-    free_tier:
-      status: unverified
-    status: available
-    notes: Add free-tier RPM/TPM/RPD from AI Studio. Group Gemini 2.5.
-  gemini-2.5-flash-native-audio-preview-09-2025:
-    display_name: Gemini 2.5 Flash Native Audio Preview 09 2025
-    api_name: gemini-2.5-flash-native-audio-preview-09-2025
-    family: Gemini 2.5
-    category: Gemini 2.5
-    free_tier:
-      status: unverified
-    status: available
-    notes: Add free-tier RPM/TPM/RPD from AI Studio. Group Gemini 2.5.
-  gemini-2.5-flash-native-audio-latest:
-    display_name: Gemini 2.5 Flash Native Audio Dialog
-    api_name: gemini-2.5-flash-native-audio-latest
-    family: Gemini 2.5
-    category: Live API
-    free_tier:
-      rpm: null
-      tpm: 1000000
-      rpd: null
-    status: available
-    notes: Limits from AI Studio rate-limits dashboard on 2026-08-15
-    last_verified: '2026-08-15'
-  nano-banana-pro-preview:
-    display_name: Nano Banana Pro Preview
-    api_name: nano-banana-pro-preview
-    family: Gemini 3
-    category: Gemini 3
-    free_tier:
-      status: unverified
-    status: available
-    notes: Add free-tier RPM/TPM/RPD from AI Studio. Group Gemini 3.
-  gemini-pro-latest:
-    display_name: Gemini Pro Latest
-    api_name: gemini-pro-latest
-    family: Gemini 3
-    category: Gemini 3
-    free_tier:
-      status: unverified
-    status: available
-    notes: Add free-tier RPM/TPM/RPD from AI Studio. Group Gemini 3.
-  gemini-flash-lite-latest:
-    display_name: Gemini Flash Lite Latest
-    api_name: gemini-flash-lite-latest
-    family: Gemini 3
-    category: Gemini 3
-    free_tier:
-      status: unverified
-    status: available
-    notes: Add free-tier RPM/TPM/RPD from AI Studio. Group Gemini 3.
-  gemini-3.7-flash:
-    display_name: Gemini 3.7 Flash
-    api_name: gemini-3.7-flash
-    family: Gemini 3
-    category: Text-out models
-    free_tier:
-      rpm: 5
-      tpm: 250000
-      rpd: 20
-    status: available
-    notes: Limits from AI Studio rate-limits dashboard on 2026-08-15
-    last_verified: '2026-08-15'
-  gemini-3.5-flash-lite:
-    display_name: Gemini 3.5 Flash Lite
-    api_name: gemini-3.5-flash-lite
-    family: Gemini 3
-    category: Text-out models
-    free_tier:
-      rpm: 15
-      tpm: 250000
-      rpd: 500
-    status: available
-    fallback_for:
-    - helm-llm
-    notes: Recommended fallback for helm-llm; higher daily quota (500 rpd) vs primary gemini-2.5-flash (20 rpd).
-    last_verified: '2026-08-15'
-  gemini-3.5-flash:
-    display_name: Gemini 3.5 Flash
-    api_name: gemini-3.5-flash
-    family: Gemini 3
-    category: Text-out models
-    free_tier:
-      rpm: 5
-      tpm: 250000
-      rpd: 20
-    status: available
-    notes: Limits from AI Studio rate-limits dashboard on 2026-08-15
-    last_verified: '2026-08-15'
-  gemini-3.1-pro-preview-customtools:
-    display_name: Gemini 3.1 Pro Preview Customtools
-    api_name: gemini-3.1-pro-preview-customtools
-    family: Gemini 3
-    category: Gemini 3
-    free_tier:
-      status: unverified
-    status: available
-    notes: Add free-tier RPM/TPM/RPD from AI Studio. Group Gemini 3.
-  gemini-3.1-pro-preview:
-    display_name: Gemini 3.1 Pro
-    api_name: gemini-3.1-pro-preview
-    family: Gemini 3
-    category: Text-out models
-    free_tier:
-      rpm: 0
-      tpm: 0
-      rpd: 0
-    status: available
-    notes: Limits from AI Studio rate-limits dashboard on 2026-08-15
-    last_verified: '2026-08-15'
-  gemini-3.1-flash-tts-preview:
-    display_name: Gemini 3.1 Flash TTS
-    api_name: gemini-3.1-flash-tts-preview
-    family: Gemini 3
-    category: Multi-modal generative models
-    free_tier:
-      rpm: 3
-      tpm: 10000
-      rpd: 10
-    status: available
-    notes: Limits from AI Studio rate-limits dashboard on 2026-08-15
-    last_verified: '2026-08-15'
-  gemini-3.1-flash-live-preview:
-    display_name: Gemini 3.1 Flash Live Preview
-    api_name: gemini-3.1-flash-live-preview
-    family: Gemini 3
-    category: Live API
-    free_tier:
-      status: unverified
-    status: active
-    primary_for:
-    - gemini-live
-    notes: Verified for Gemini Live WebSocket + function calling (rview tools). Add free-tier limits when available.
-    last_verified: '2026-08-20'
-  gemini-3.1-flash-lite-preview:
-    display_name: Gemini 3.1 Flash Lite Preview
-    api_name: gemini-3.1-flash-lite-preview
-    family: Gemini 3
-    category: Gemini 3
-    free_tier:
-      status: unverified
-    status: available
-    notes: Add free-tier RPM/TPM/RPD from AI Studio. Group Gemini 3.
-  gemini-3.1-flash-lite-image:
-    display_name: Nano Banana 2 Lite (Gemini 3.1 Flash Lite Image)
-    api_name: gemini-3.1-flash-lite-image
-    family: Gemini 3
-    category: Multi-modal generative models
-    free_tier:
-      rpm: 0
-      tpm: 0
-      rpd: 0
-    status: available
-    notes: Limits from AI Studio rate-limits dashboard on 2026-08-15
-    last_verified: '2026-08-15'
-  gemini-3.1-flash-lite:
-    display_name: Gemini 3.1 Flash Lite
-    api_name: gemini-3.1-flash-lite
-    family: Gemini 3
-    category: Text-out models
-    free_tier:
-      rpm: 15
-      tpm: 250000
-      rpd: 500
-    status: available
-    notes: Limits from AI Studio rate-limits dashboard on 2026-08-15
-    last_verified: '2026-08-15'
-  gemini-3.1-flash-image-preview:
-    display_name: Gemini 3.1 Flash Image Preview
-    api_name: gemini-3.1-flash-image-preview
-    family: Gemini 3
-    category: Gemini 3
-    free_tier:
-      status: unverified
-    status: available
-    notes: Add free-tier RPM/TPM/RPD from AI Studio. Group Gemini 3.
-  gemini-3.1-flash-image:
-    display_name: Nano Banana 2 (Gemini 3.1 Flash Image)
-    api_name: gemini-3.1-flash-image
-    family: Gemini 3
-    category: Multi-modal generative models
-    free_tier:
-      rpm: 0
-      tpm: 0
-      rpd: 0
-    status: available
-    notes: Limits from AI Studio rate-limits dashboard on 2026-08-15
-    last_verified: '2026-08-15'
-  gemini-3-pro-preview:
-    display_name: Gemini 3 Pro Preview
-    api_name: gemini-3-pro-preview
-    family: Gemini 3
-    category: Gemini 3
-    free_tier:
-      status: unverified
-    status: available
-    notes: Add free-tier RPM/TPM/RPD from AI Studio. Group Gemini 3.
-  gemini-3-pro-image-preview:
-    display_name: Gemini 3 Pro Image Preview
-    api_name: gemini-3-pro-image-preview
-    family: Gemini 3
-    category: Gemini 3
-    free_tier:
-      status: unverified
-    status: available
-    notes: Add free-tier RPM/TPM/RPD from AI Studio. Group Gemini 3.
-  gemini-3-pro-image:
-    display_name: Nano Banana Pro (Gemini 3 Pro Image)
-    api_name: gemini-3-pro-image
-    family: Gemini 3
-    category: Multi-modal generative models
-    free_tier:
-      rpm: 0
-      tpm: 0
-      rpd: 0
-    status: available
-    notes: Limits from AI Studio rate-limits dashboard on 2026-08-15
-    last_verified: '2026-08-15'
-  gemini-3-flash-preview:
-    display_name: Gemini 3 Flash
-    api_name: gemini-3-flash-preview
-    family: Gemini 3
-    category: Text-out models
-    free_tier:
-      rpm: 5
-      tpm: 250000
-      rpd: 20
-    status: available
     notes: Limits from AI Studio rate-limits dashboard on 2026-08-15
     last_verified: '2026-08-15'
   gemini-robotics-er-2-preview:
@@ -472,18 +94,6 @@ models:
       rpm: 10
       tpm: 250000
       rpd: 20
-    status: available
-    notes: Limits from AI Studio rate-limits dashboard on 2026-08-15
-    last_verified: '2026-08-15'
-  gemini-2.5-computer-use-preview-10-2025:
-    display_name: Computer Use Preview
-    api_name: gemini-2.5-computer-use-preview-10-2025
-    family: Gemini 2.5
-    category: Other models
-    free_tier:
-      rpm: 0
-      tpm: 0
-      rpd: 0
     status: available
     notes: Limits from AI Studio rate-limits dashboard on 2026-08-15
     last_verified: '2026-08-15'
@@ -526,50 +136,6 @@ models:
       status: unverified
     status: available
     notes: Add free-tier RPM/TPM/RPD from AI Studio. Group Default.
-  gemini-2.0-flash-lite:
-    display_name: Gemini 2 Flash Lite
-    family: Gemini 2
-    category: Text-out models
-    free_tier:
-      rpm: 0
-      tpm: 0
-      rpd: 0
-    status: available
-    notes: Limits from AI Studio rate-limits dashboard on 2026-08-15
-    last_verified: '2026-08-15'
-  gemini-2.5-flash-image-preview:
-    display_name: Nano Banana (Gemini 2.5 Flash Preview Image)
-    family: Gemini 2.5
-    category: Multi-modal generative models
-    free_tier:
-      rpm: 0
-      tpm: 0
-      rpd: 0
-    status: available
-    notes: Limits from AI Studio rate-limits dashboard on 2026-08-15
-    last_verified: '2026-08-15'
-  gemini-2.5-flash-tts:
-    display_name: Gemini 2.5 Flash TTS
-    family: Gemini 2.5
-    category: Multi-modal generative models
-    free_tier:
-      rpm: 3
-      tpm: 10000
-      rpd: 10
-    status: available
-    notes: Limits from AI Studio rate-limits dashboard on 2026-08-15
-    last_verified: '2026-08-15'
-  gemini-2.5-pro-tts:
-    display_name: Gemini 2.5 Pro TTS
-    family: Gemini 2.5
-    category: Multi-modal generative models
-    free_tier:
-      rpm: 0
-      tpm: 0
-      rpd: 0
-    status: available
-    notes: Limits from AI Studio rate-limits dashboard on 2026-08-15
-    last_verified: '2026-08-15'
   gemini-embedding-1:
     display_name: Gemini Embedding 1
     api_name: gemini-embedding-001
@@ -582,8 +148,7 @@ models:
     status: available
     fallback_for:
     - mddb-embedding
-    notes: Confirmed in AI Studio rate-limits dashboard on 2026-08-18. Actual API model name is gemini-embedding-001. Now used as
-      fallback for mddb-embedding after gemini-embedding-002.
+    notes: Confirmed in AI Studio rate-limits dashboard on 2026-08-18. Actual API model name is gemini-embedding-001. Now used as fallback for mddb-embedding after gemini-embedding-002.
     last_verified: '2026-08-18'
   gemini-embedding-2:
     display_name: Gemini Embedding 2
@@ -597,8 +162,7 @@ models:
     status: active
     primary_for:
     - mddb-embedding
-    notes: Confirmed in AI Studio rate-limits dashboard on 2026-08-18. Actual API model name is gemini-embedding-002. Lower project
-      usage; promoted to primary for mddb-embedding. gemini-embedding-001 is fallback.
+    notes: Confirmed in AI Studio rate-limits dashboard on 2026-08-18. Actual API model name is gemini-embedding-002. Lower project usage; promoted to primary for mddb-embedding. gemini-embedding-001 is fallback.
     last_verified: '2026-08-18'
   gemini-omni-flash:
     display_name: Gemini Omni Flash
@@ -699,71 +263,49 @@ models:
     status: available
     notes: Limits from AI Studio rate-limits dashboard on 2026-08-15
     last_verified: '2026-08-15'
-  gemini-3-flash-live:
-    display_name: Gemini 3 Flash Live
-    family: Gemini 3
-    category: Live API
-    free_tier:
-      rpm: null
-      tpm: 65000
-      rpd: null
-    status: available
-    notes: Limits from AI Studio rate-limits dashboard on 2026-08-15
-    last_verified: '2026-08-15'
-  gemini-3.5-live-translate:
-    display_name: Gemini 3.5 Live Translate
-    family: Gemini 3
-    category: Live API
-    free_tier:
-      rpm: null
-      tpm: 20000
-      rpd: null
-    status: available
-    notes: Limits from AI Studio rate-limits dashboard on 2026-08-15
-    last_verified: '2026-08-15'
 fallbacks:
   helm-llm:
     primary: gemini-3.1-flash-lite
     chain:
-      - model: gemini-3.5-flash-lite
-        expected_quality: high
-        reason: 3x RPM and 25x RPD vs Gemini 2.5 Flash; identical limits to gemini-3.1-flash-lite
-      - model: gemini-3.7-flash
-        expected_quality: medium-high
-        reason: Newest Flash family with low observed usage; 5 RPM / 20 RPD, adequate for code
-      - model: gemini-3.5-flash
-        expected_quality: medium
-        reason: Same 5 RPM / 20 RPD as 3.7; useful when 3.1/3.5-lite quotas are exhausted
-      - model: gemini-2.5-flash-lite
-        expected_quality: medium
-        reason: Higher RPM (10) but observed over RPD on 2026-08-18; use after daily reset
-      - model: gemini-2.5-flash
-        expected_quality: medium
-        reason: Previously primary; 5 RPM / 20 RPD and observed over RPD on 2026-08-18
-      - model: gemini-3.6-flash
-        expected_quality: medium
-        reason: 5 RPM / 20 RPD; observed over RPD on 2026-08-18; fall back to this after reset
+    - model: gemini-3.5-flash-lite
+      expected_quality: high
+      reason: 3x RPM and 25x RPD vs Gemini 2.5 Flash; identical limits to gemini-3.1-flash-lite
+    - model: gemini-3.7-flash
+      expected_quality: medium-high
+      reason: Newest Flash family with low observed usage; 5 RPM / 20 RPD, adequate for code
+    - model: gemini-3.5-flash
+      expected_quality: medium
+      reason: Same 5 RPM / 20 RPD as 3.7; useful when 3.1/3.5-lite quotas are exhausted
+    - model: gemini-2.5-flash-lite
+      expected_quality: medium
+      reason: Higher RPM (10) but observed over RPD on 2026-08-18; use after daily reset
+    - model: gemini-2.5-flash
+      expected_quality: medium
+      reason: Previously primary; 5 RPM / 20 RPD and observed over RPD on 2026-08-18
+    - model: gemini-3.6-flash
+      expected_quality: medium
+      reason: 5 RPM / 20 RPD; observed over RPD on 2026-08-18; fall back to this after reset
   yomi-summarization:
     primary: gemma-4-31b-it
     chain:
-      - model: gemma-4-26b-a4b-it
-        expected_quality: high
-        reason: Same Gemma 4 family; MoE variant with identical limits
-      - model: gemini-2.5-flash-lite
-        expected_quality: medium-high
-        reason: 2x RPM and large context; good for long Thai/English summaries
-      - model: gemini-2.5-flash
-        expected_quality: medium
-        reason: Large context and TPM; lower RPM and different style
+    - model: gemma-4-26b-a4b-it
+      expected_quality: high
+      reason: Same Gemma 4 family; MoE variant with identical limits
+    - model: gemini-2.5-flash-lite
+      expected_quality: medium-high
+      reason: 2x RPM and large context; good for long Thai/English summaries
+    - model: gemini-2.5-flash
+      expected_quality: medium
+      reason: Large context and TPM; lower RPM and different style
   media-analysis:
     primary: gemma-4-31b-it
     chain:
-      - model: gemma-4-26b-a4b-it
-        expected_quality: high
-        reason: Same Gemma 4 family; MoE variant with identical limits
-      - model: gemini-2.5-flash
-        expected_quality: medium-high
-        reason: Strong multimodal/text reasoning; lower RPM
-      - model: gemini-2.5-flash-lite
-        expected_quality: medium
-        reason: Higher RPM for batched media jobs; slightly lighter model
+    - model: gemma-4-26b-a4b-it
+      expected_quality: high
+      reason: Same Gemma 4 family; MoE variant with identical limits
+    - model: gemini-2.5-flash
+      expected_quality: medium-high
+      reason: Strong multimodal/text reasoning; lower RPM
+    - model: gemini-2.5-flash-lite
+      expected_quality: medium
+      reason: Higher RPM for batched media jobs; slightly lighter model

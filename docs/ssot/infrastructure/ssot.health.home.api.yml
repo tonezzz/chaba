@@ -1,0 +1,191 @@
+title: Chaba Health Checks (Home Profile) — Api
+subtitle: Home network health checks for the api category
+icon: heart-pulse
+services:
+- id: sensor-reader
+  name: Sensor Reader
+  type: http
+  url: http://tony-omen:8001/health
+  expected_status: 200
+  timeout: 5
+  category: api
+  profiles:
+  - home
+  - mobile
+  verification:
+  - 'Test container: docker ps | grep sensor-reader'
+  - 'Test direct container: curl -s http://tony-omen:8001/health'
+  - 'Check container logs: docker logs sensor-reader --tail 20'
+  recovery_actions:
+  - 'Restart container: docker compose -f stacks/web/docker-compose.yml restart sensor-reader'
+  - Check Caddy /api/* proxy to tony-dell:8000
+- id: status-data-api
+  name: Status Data API
+  type: http
+  url: '{profile}/api/health'
+  expected_status: 200
+  timeout: 5
+  category: api
+  profiles:
+  - home
+  - mobile
+  verification:
+  - 'Test service: ssh tony-dell systemctl --user status status-data-api'
+  - 'Test direct container: curl -s http://tony-dell:8000/health'
+  - 'Test Caddy proxy: curl -s {profile}/api/health'
+  - 'Check podman logs: ssh tony-dell podman logs status-data-api --tail 20'
+  recovery_actions:
+  - 'Restart service: ssh tony-dell systemctl --user restart status-data-api'
+  - Verify status-data-api can reach http://tony-omen:8001/health
+  - Verify Caddy proxy configuration in stacks/web/Caddyfile
+- id: rview-api
+  name: RView API
+  type: http
+  url: '{profile}/apps/rview/api/state?action=list'
+  expected_status: 200
+  timeout: 5
+  category: api
+  profiles:
+  - home
+  - mobile
+  host: tony_dell
+  verification:
+  - 'Test direct: curl -s http://tony-dell:3007/state?action=list'
+  - 'Test Caddy proxy: curl -s {profile}/apps/rview/api/state?action=list'
+  - 'Check podman container: ssh tony-dell podman ps | grep rview-api'
+  - 'Check podman logs: ssh tony-dell podman logs rview-api --tail 20'
+  - 'Check build unit: ssh tony-dell systemctl --user status rview-api-image.service'
+  recovery_actions:
+  - 'Restart container: ssh tony-dell systemctl --user restart rview-api'
+  - 'Rebuild image: ssh tony-dell systemctl --user start rview-api-image.service && ssh tony-dell systemctl --user restart rview-api'
+  - 'Check state directory: ssh tony-dell ls -la /home/tony/.local/share/rview-api'
+  - Verify Caddy proxy configuration in stacks/web/Caddyfile
+- id: gemini-live
+  name: Gemini Live API
+  type: http
+  url: '{profile}/api/gemini-live/health'
+  expected_status: 200
+  timeout: 5
+  category: api
+  profiles:
+  - home
+  - mobile
+  host: tony_dell
+  verification:
+  - 'Test direct: curl -s http://tony-dell:3008/health'
+  - 'Test Caddy proxy: curl -s {profile}/api/gemini-live/health'
+  - 'Check podman container: ssh tony-dell podman ps | grep gemini-live'
+  - 'Check podman logs: ssh tony-dell podman logs gemini-live --tail 20'
+  - 'Verify GEMINI_API_KEY env: ssh tony-dell podman exec gemini-live env | grep GEMINI_API_KEY'
+  - 'Check build unit: ssh tony-dell systemctl --user status gemini-live-image.service'
+  recovery_actions:
+  - 'Restart container: ssh tony-dell systemctl --user restart gemini-live'
+  - 'Check podman secret: ssh tony-dell podman secret inspect gemini-api-key'
+  - 'Rebuild image: ssh tony-dell systemctl --user start gemini-live-image.service && ssh tony-dell systemctl --user restart gemini-live'
+  - Verify Caddy proxy configuration in stacks/web/Caddyfile
+- id: yomi-api
+  name: Yomi API
+  type: http
+  url: '{profile}/api/yomi/health'
+  expected_status: 200
+  timeout: 5
+  category: api
+  profiles:
+  - home
+  - mobile
+  recommendation: If yomi-api is down and tony-dell cannot be recovered, run /home/tony/.local/bin/yomi-failover-to-omen.sh on tony-omen. See docs/ssot/infrastructure/ssot.yomi-failover.yml.
+  verification:
+  - 'Test direct Yomi API on tony-dell: curl -s http://tony-dell:3000/api/yomi/health'
+  - 'Test Caddy proxy on tony-omen: curl -s {profile}/api/yomi/health'
+  - 'Test chat page: curl -s {profile}/apps/yomi/chat.html?chat=test'
+- id: yomi-summarization
+  name: Yomi Summarization
+  type: http
+  url: '{profile}/api/yomi/summarization-status'
+  expected_status: 200
+  timeout: 5
+  category: api
+  profiles:
+  - home
+  - mobile
+  verification:
+  - 'Test API endpoint: curl -s {profile}/api/yomi/summarization-status'
+  - 'Test chat page with valid chat ID: curl -s {profile}/apps/yomi/chat.html?chat=valid_chat_id'
+  - Verify API returns JSON response with status information
+  - Check browser console for API errors when loading chat page
+- id: yomi-rate-limiter
+  name: Yomi Rate Limiter
+  type: http
+  url: '{profile}/api/yomi/rate-limiter-status'
+  expected_status: 200
+  timeout: 5
+  category: api
+  profiles:
+  - home
+  - mobile
+- id: yomi-activity-status
+  name: Yomi Activity Status
+  type: http
+  url: '{profile}/api/yomi/activity-status'
+  expected_status: 200
+  timeout: 5
+  category: api
+  profiles:
+  - home
+  - mobile
+- id: playlived-dell
+  name: Playlived (tony-dell)
+  type: http
+  url: http://tony-dell:9230/sessions
+  expected_status: 200
+  timeout: 5
+  category: api
+  profiles:
+  - home
+  verification:
+  - 'Test sessions: curl -s http://tony-dell:9230/sessions'
+  - 'Check pinned package: cat /home/tony/.local/playlive/package.json | grep ''"playwright"'''
+  - 'Check browsers: npx playwright install --dry-run'
+  - 'Check service: ssh tony-dell systemctl --user status playlived.service'
+  recovery_actions:
+  - 'Reinstall exact version: cd /home/tony/.local/playlive && npm ci && npx playwright install chromium'
+  - 'Restart service: ssh tony-dell systemctl --user restart playlived.service'
+  - 'Fix port: ssh tony-dell ss -tulpn | grep 9230 && kill conflicting process'
+- id: trade-api
+  name: Trade API
+  type: http
+  url: http://tony-dell:9002/api/health
+  expected_status: 200
+  timeout: 5
+  category: api
+  profiles:
+  - home
+  - mobile
+  host: tony_dell
+  verification:
+  - 'Test container: ssh tony-dell podman ps | grep trade-api'
+  - 'Test health endpoint: curl -s http://tony-dell:9002/api/health'
+  - 'Test root endpoint: curl -s http://tony-dell:9002/'
+  - 'Check container logs: ssh tony-dell podman logs trade-api'
+  recovery_actions:
+  - 'Restart container: ssh tony-dell podman restart trade-api'
+  - 'Check container networking: ssh tony-dell podman inspect trade-api'
+  - 'Verify port mapping: ssh tony-dell podman port trade-api'
+- id: gemini-ollama-proxy
+  name: Gemini-Ollama Embedding Proxy
+  type: http
+  url: http://tony-omen:11435/health
+  expected_status: 200
+  timeout: 5
+  category: api
+  profiles:
+  - home
+  - mobile
+  note: Ollama-compatible Gemini embedding proxy on tony-omen. Defaults to gemini-embedding-2 with gemini-embedding-001 fallback.
+  verification:
+  - 'Check container: docker ps | grep gemini-ollama-proxy'
+  - 'Check proxy health: curl -s http://tony-omen:11435/health'
+  - 'Check proxy embed: curl -s -X POST http://tony-omen:11435/api/embed -H Content-Type: application/json -d {"model":"nomic-embed-text","input":"test"}'
+  recovery_actions:
+  - 'Restart container: cd /home/tony/CascadeProjects/chaba/stacks/web/mddb && docker compose restart gemini-ollama-proxy'
+  - 'Check logs: cd /home/tony/CascadeProjects/chaba/stacks/web/mddb && docker compose logs gemini-ollama-proxy'

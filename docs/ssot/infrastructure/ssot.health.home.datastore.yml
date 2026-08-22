@@ -1,0 +1,151 @@
+title: Chaba Health Checks (Home Profile) — Datastore
+subtitle: Home network health checks for the datastore category
+icon: heart-pulse
+services:
+- id: redis
+  name: Redis
+  disabled: true
+  type: container
+  container: redis
+  host: tony_dell
+  expected_state: running
+  timeout: 5
+  category: datastore
+  profiles:
+  - home
+  - mobile
+  note: Migrated to tony_dell rootless podman. Disabled in mcp-health because mcp-health cannot run remote podman checks. Health is verified manually via ssh tony-dell podman ps and indirectly through yomi-api/postgres.
+  verification:
+  - 'Test container on tony_dell: ssh tony-dell podman ps | grep redis'
+  - 'Test connection: ssh tony-dell podman exec redis redis-cli ping'
+  - 'Test memory: ssh tony-dell podman exec redis redis-cli info memory'
+  - 'Check logs: ssh tony-dell podman logs redis --tail 20'
+  recovery_actions:
+  - 'Restart container on tony_dell: ssh tony-dell podman restart redis'
+  - 'Check data volume: ssh tony-dell podman inspect redis | grep -A 10 Mounts'
+  - 'Verify networking on tony_dell: ssh tony-dell podman network inspect bridge'
+- id: postgres
+  name: Postgres
+  type: container
+  container: chaba-postgres-16
+  host: tony_dell
+  expected_state: running
+  timeout: 5
+  category: datastore
+  profiles:
+  - home
+  - mobile
+  disabled: true
+  note: Postgres now runs in a rootless Podman container on tony_dell. Health is best inferred from yomi-api and the pg tailscale endpoint. If both Postgres and Yomi are down on tony_dell, use the failover plan in docs/ssot/infrastructure/ssot.yomi-failover.yml.
+  verification:
+  - 'Test container on tony_dell: podman ps | grep chaba-postgres-16'
+  - 'Test port: nc -zv postgre 5432'
+  - 'Check logs: podman logs chaba-postgres-16 --tail 20'
+  recovery_actions:
+  - 'Restart container on tony_dell: podman restart chaba-postgres-16'
+  - 'Check data volume: /home/tony/.config/containers/postgres/data'
+  - 'If tony_dell cannot be recovered, run the failover script: /home/tony/.local/bin/yomi-failover-to-omen.sh'
+- id: weaviate
+  name: Weaviate
+  type: http
+  url: '{profile}/api/weaviate/v1/nodes'
+  expected_status: 200
+  timeout: 5
+  category: datastore
+  profiles:
+  - home
+  - mobile
+  note: Weaviate container runs on tony_dell:8084; Caddy on tony_omen proxies /api/weaviate/ to 100.68.142.42:8084
+- id: mddb-api
+  name: MDDB API
+  type: http
+  url: http://tony-dell:11023/health
+  expected_status: 200
+  timeout: 5
+  category: datastore
+  profiles:
+  - home
+  - mobile
+  note: Direct port access for health check, bypasses Caddy routing
+- id: mddb-mcp
+  name: MDDB MCP Server
+  type: http
+  url: http://tony-dell:9000/mcp
+  expected_status: 400
+  timeout: 5
+  category: datastore
+  profiles:
+  - home
+  - mobile
+  note: MCP endpoint for AI agent integration; GET /mcp returns 400, only POST is valid, so 400 is the healthy response
+  recovery_actions:
+  - 'Check MDDB container: docker ps | grep mddb'
+  - 'Restart MDDB: cd /home/tony/CascadeProjects/chaba-kbman/stacks/web/mddb && docker compose restart mddb'
+  - 'Check MDDB logs: cd /home/tony/CascadeProjects/chaba-kbman/stacks/web/mddb && docker compose logs mddb'
+  - 'Verify MCP endpoint: curl -s http://tony-dell:9000/mcp'
+  - 'Check MCP config: cat ~/.config/devin/mcp_config.json | grep mddb'
+- id: mddb-stats
+  name: MDDB Stats Endpoint
+  type: http
+  url: http://tony-dell:11023/v1/stats
+  expected_status: 200
+  timeout: 5
+  category: datastore
+  profiles:
+  - home
+  - mobile
+  note: Direct port access for stats endpoint, bypasses Caddy routing
+  recovery_actions:
+  - 'Check MDDB container: docker ps | grep mddb'
+  - 'Restart MDDB: cd /home/tony/CascadeProjects/chaba-kbman/stacks/web/mddb && docker compose restart mddb'
+  - 'Check MDDB logs: cd /home/tony/CascadeProjects/chaba-kbman/stacks/web/mddb && docker compose logs mddb'
+  - 'Verify port 11023 is accessible: curl -s http://tony-dell:11023/v1/stats'
+- id: mddb-vector-stats
+  name: MDDB Vector Stats Endpoint
+  type: http
+  url: http://tony-dell:11023/v1/vector-stats
+  expected_status: 200
+  timeout: 5
+  category: datastore
+  profiles:
+  - home
+  - mobile
+  note: Direct port access for vector stats endpoint, bypasses Caddy routing
+  recovery_actions:
+  - 'Check MDDB container: docker ps | grep mddb'
+  - 'Restart MDDB: cd /home/tony/CascadeProjects/chaba-kbman/stacks/web/mddb && docker compose restart mddb'
+  - 'Check MDDB logs: cd /home/tony/CascadeProjects/chaba-kbman/stacks/web/mddb && docker compose logs mddb'
+  - 'Verify port 11023 is accessible: curl -s http://tony-dell:11023/v1/vector-stats'
+- id: mddb-metrics
+  name: MDDB Metrics Endpoint
+  type: http
+  url: http://tony-dell:11023/metrics
+  expected_status: 200
+  timeout: 5
+  category: datastore
+  profiles:
+  - home
+  - mobile
+  note: Direct port access for metrics endpoint, bypasses Caddy routing
+  recovery_actions:
+  - 'Check MDDB container: docker ps | grep mddb'
+  - 'Restart MDDB: cd /home/tony/CascadeProjects/chaba-kbman/stacks/web/mddb && docker compose restart mddb'
+  - 'Check MDDB logs: cd /home/tony/CascadeProjects/chaba-kbman/stacks/web/mddb && docker compose logs mddb'
+  - 'Verify port 11023 is accessible: curl -s http://tony-dell:11023/metrics'
+- id: mddb-container
+  name: MDDB Container
+  disabled: true
+  type: container
+  container: mddb
+  expected_state: running
+  timeout: 5
+  category: datastore
+  profiles:
+  - home
+  - mobile
+  note: Container runs on tony-dell. Disabled in mcp-health because mcp-health cannot run remote podman checks. Use MDDB API/HTTP checks instead; verify manually via ssh tony-dell podman ps | grep mddb.
+  recovery_actions:
+  - 'Check container status: docker ps -a | grep mddb'
+  - 'Start container: cd /home/tony/CascadeProjects/chaba-kbman/stacks/web/mddb && docker compose up -d mddb'
+  - 'Check container logs: cd /home/tony/CascadeProjects/chaba-kbman/stacks/web/mddb && docker compose logs mddb'
+  - 'Verify docker compose config: cd /home/tony/CascadeProjects/chaba-kbman/stacks/web/mddb && docker compose config'
