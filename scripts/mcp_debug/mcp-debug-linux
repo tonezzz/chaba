@@ -1,0 +1,394 @@
+#!/usr/bin/env python3
+"""mcp-debug-linux: compact, LLM-friendly output wrapper for Linux commands."""
+
+import json
+import re
+import shutil
+import subprocess
+import sys
+
+MAX_RAW = 10000
+
+
+def _run(argv, timeout=15):
+    if not shutil.which(argv[0]):
+        return None, f"command not found: {argv[0]}"
+    try:
+        result = subprocess.run(
+            argv,
+            capture_output=True,
+            text=True,
+            timeout=timeout,
+            check=False,
+        )
+        return result, None
+    except Exception as e:
+        return None, str(e)
+
+
+def compact_df():
+    result, err = _run(["df", "-h"])
+    if err:
+        return {"ok": False, "error": err}
+    fss = []
+    for line in result.stdout.strip().splitlines()[1:]:
+        parts = line.split()
+        if len(parts) >= 6:
+            # Linux df -h: Filesystem Size Used Avail Use% Mounted on
+            fss.append({
+                "f": " ".join(parts[:-5]),
+                "s": parts[-5],
+                "u": parts[-4],
+                "a": parts[-3],
+                "m": parts[-2],
+                "p": parts[-1],
+            })
+    return {"ok": True, "cmd": "df -h", "n": len(fss), "fs": fss}
+
+
+def compact_ps():
+    result, err = _run(["ps", "-e", "-o", "pid,pcpu,pmem,comm", "--sort=-pcpu"])
+    if err:
+        return {"ok": False, "error": err}
+    procs = []
+    for line in result.stdout.strip().splitlines()[1:21]:
+        parts = line.split(None, 3)
+        if len(parts) < 4:
+            continue
+        procs.append({
+            "p": parts[0],
+            "u": parts[1],
+            "m": parts[2],
+            "c": parts[3],
+        })
+    return {"ok": True, "cmd": "ps", "n": len(procs), "p": procs}
+
+
+def compact_ps_top(args):
+    # e.g. ps -eo pid,ppid,cmd,%cpu --sort=-%cpu
+    sort_metric = "mem" if any("%mem" in a for a in args) else "cpu"
+    sort_flag = "--sort=-pmem" if sort_metric == "mem" else "--sort=-pcpu"
+    metric_col = "pmem" if sort_metric == "mem" else "pcpu"
+    result, err = _run(["ps", "-e", "-o", f"pid,ppid,{metric_col},cmd", sort_flag])
+    if err:
+        return {"ok": False, "error": err}
+    procs = []
+    for line in result.stdout.strip().splitlines()[1:21]:
+        parts = line.split(None, 3)
+        if len(parts) < 4:
+            continue
+        procs.append({
+            "p": parts[0],
+            "pp": parts[1],
+            "c": parts[3],
+            "u" if sort_metric == "cpu" else "m": parts[2],
+        })
+    return {"ok": True, "cmd": " ".join(["ps"] + args), "n": len(procs), "p": procs}
+
+
+def compact_uptime():
+    result, err = _run(["uptime"])
+    if err:
+        return {"ok": False, "error": err}
+    text = result.stdout.strip()
+    up = ""
+    m = re.search(r"up\s+(.+?),\s+\d+\s+user", text)
+    if not m:
+        m = re.search(r"up\s+(.+?)$", text)
+    if m:
+        up = m.group(1).rstrip(",")
+    load = re.findall(r"[\d.]+", text.split("load average:")[-1]) if "load average:" in text else []
+    return {"ok": True, "cmd": "uptime", "up": up, "l": load}
+
+
+def compact_mount():
+    result, err = _run(["mount"])
+    if err:
+        return {"ok": False, "error": err}
+    mounts = []
+    for line in result.stdout.strip().splitlines():
+        m = re.match(r"^(\S+)\s+on\s+(\S+)\s+type\s+(\S+)\s+\((.+)\)$", line)
+        if m:
+            mounts.append({
+                "d": m.group(1),
+                "p": m.group(2),
+                "t": m.group(3),
+                "o": m.group(4),
+            })
+    return {"ok": True, "cmd": "mount", "n": len(mounts), "m": mounts}
+
+
+def compact_free():
+    result, err = _run(["free", "-h"])
+    if err:
+        return {"ok": False, "error": err}
+    rows = []
+    for line in result.stdout.strip().splitlines()[1:]:
+        parts = line.split()
+        if len(parts) >= 3:
+            rows.append({
+                "t": parts[0].rstrip(":"),
+                "s": parts[1],
+                "u": parts[2],
+                "f": parts[3] if len(parts) > 3 else "",
+            })
+    return {"ok": True, "cmd": "free -h", "n": len(rows), "r": rows}
+
+
+def compact_systemctl_units():
+    result, err = _run(["systemctl", "list-units", "--type=service", "--state=running", "--no-pager", "--no-legend", "--plain"])
+    if err:
+        return {"ok": False, "error": err}
+    units = []
+    for line in result.stdout.strip().splitlines():
+        parts = line.split(None, 4)
+        if len(parts) < 4:
+            continue
+        units.append({
+            "u": parts[0],
+            "l": parts[1],
+            "s": parts[2],
+            "a": parts[3],
+            "d": parts[4] if len(parts) > 4 else "",
+        })
+    return {"ok": True, "cmd": "systemctl list-units", "n": len(units), "u": units}
+
+
+def compact_lsblk():
+    result, err = _run(["lsblk", "-Pno", "NAME,SIZE,FSTYPE,TYPE,MOUNTPOINT"])
+    if err:
+        return {"ok": False, "error": err}
+    devices = []
+    for line in result.stdout.strip().splitlines():
+        fields = dict(re.findall(r'(\w+)="([^"]*)"', line))
+        if not fields:
+            continue
+        devices.append({
+            "n": fields.get("NAME", ""),
+            "s": fields.get("SIZE", ""),
+            "f": fields.get("FSTYPE", ""),
+            "t": fields.get("TYPE", ""),
+            "m": fields.get("MOUNTPOINT", ""),
+        })
+    return {"ok": True, "cmd": "lsblk", "n": len(devices), "d": devices}
+
+
+def compact_lsusb():
+    result, err = _run(["lsusb"])
+    if err:
+        return {"ok": False, "error": err}
+    devices = []
+    for line in result.stdout.strip().splitlines():
+        m = re.match(r"^Bus\s+(\S+)\s+Device\s+(\S+):\s+ID\s+(\S+)\s*(.*)$", line)
+        if m:
+            devices.append({
+                "b": m.group(1),
+                "d": m.group(2),
+                "i": m.group(3),
+                "n": m.group(4),
+            })
+    return {"ok": True, "cmd": "lsusb", "n": len(devices), "u": devices}
+
+
+def compact_tailscale_status():
+    result, err = _run(["tailscale", "status"])
+    if err:
+        return {"ok": False, "error": err}
+    peers = []
+    for line in result.stdout.strip().splitlines():
+        parts = line.split(None, 3)
+        if not parts:
+            continue
+        peers.append({
+            "i": parts[0],
+            "h": parts[1] if len(parts) > 1 else "",
+            "u": parts[2] if len(parts) > 2 else "",
+            "o": parts[3] if len(parts) > 3 else "",
+        })
+    return {"ok": True, "cmd": "tailscale status", "n": len(peers), "p": peers}
+
+
+def compact_routes():
+    result, err = _run(["ip", "-4", "route"])
+    if err:
+        return {"ok": False, "error": err}
+    routes = []
+    for line in result.stdout.strip().splitlines():
+        parts = line.split()
+        dest = parts[0] if parts else ""
+        gw = parts[parts.index("via") + 1] if "via" in parts else ""
+        dev = parts[parts.index("dev") + 1] if "dev" in parts else ""
+        routes.append({"d": dest, "g": gw, "i": dev})
+    return {"ok": True, "cmd": "ip -4 route", "n": len(routes), "r": routes}
+
+
+def compact_interfaces():
+    result, err = _run(["ip", "-4", "-br", "addr", "show"])
+    if err:
+        return {"ok": False, "error": err}
+    interfaces = []
+    for line in result.stdout.strip().splitlines():
+        parts = line.split(None, 2)
+        if not parts:
+            continue
+        interfaces.append({
+            "i": parts[0],
+            "s": parts[1] if len(parts) > 1 else "",
+            "a": parts[2] if len(parts) > 2 else "",
+        })
+    return {"ok": True, "cmd": "ip -4 -br addr show", "n": len(interfaces), "i": interfaces}
+
+
+def compact_sockets(args=None):
+    if shutil.which("ss"):
+        result, err = _run(["ss", "-tlnp"])
+        if not err and result.returncode == 0:
+            sockets = []
+            for line in result.stdout.strip().splitlines()[1:]:
+                parts = line.split()
+                if len(parts) < 4:
+                    continue
+                local = parts[3]
+                proc = parts[5] if len(parts) > 5 else ""
+                sockets.append({
+                    "l": local,
+                    "p": local.rsplit(":", 1)[-1],
+                    "n": proc,
+                })
+            return {"ok": True, "cmd": "sockets", "runtime": "ss", "n": len(sockets), "s": sockets}
+    if shutil.which("netstat"):
+        result, err = _run(["netstat", "-tln"])
+        if not err and result.returncode == 0:
+            sockets = []
+            for line in result.stdout.strip().splitlines():
+                parts = line.split()
+                if len(parts) >= 4 and "LISTEN" in parts:
+                    local = parts[3]
+                    sockets.append({
+                        "l": local,
+                        "p": local.rsplit(":", 1)[-1],
+                        "n": "",
+                    })
+            return {"ok": True, "cmd": "sockets", "runtime": "netstat", "n": len(sockets), "s": sockets}
+    return {"ok": False, "error": "no socket tool found"}
+
+
+def compact_containers():
+    for engine in ("podman", "docker"):
+        if not shutil.which(engine):
+            continue
+        result, err = _run([engine, "ps", "--format", "{{json .}}"])
+        if err or result.returncode != 0:
+            continue
+        containers = []
+        for line in result.stdout.strip().splitlines():
+            try:
+                c = json.loads(line)
+            except Exception:
+                continue
+            names = c.get("Names") or c.get("names") or ""
+            if isinstance(names, list):
+                names = names[0] if names else ""
+            containers.append({
+                "n": names,
+                "i": c.get("Image") or c.get("image") or "",
+                "s": c.get("Status") or c.get("status") or c.get("State") or "",
+                "p": c.get("Ports") or c.get("ports") or "",
+            })
+        return {"ok": True, "cmd": "containers", "runtime": engine, "n": len(containers), "c": containers}
+    return {"ok": False, "error": "no container engine found"}
+
+
+def compact_services():
+    out = compact_systemctl_units()
+    if not out.get("ok"):
+        return out
+    out["cmd"] = "services"
+    out["runtime"] = "systemctl"
+    return out
+
+
+def compact_gpu():
+    if shutil.which("nvidia-smi"):
+        result, err = _run(["nvidia-smi", "--query-gpu=name,utilization.gpu,memory.used,memory.total", "--format=csv,noheader"])
+        if err:
+            return {"ok": False, "error": err}
+        gpus = []
+        for line in result.stdout.strip().splitlines():
+            parts = [p.strip() for p in line.split(",")]
+            if len(parts) >= 4:
+                gpus.append({"n": parts[0], "u": parts[1], "m": parts[2], "t": parts[3]})
+        return {"ok": True, "cmd": "gpu", "runtime": "nvidia-smi", "n": len(gpus), "g": gpus}
+    return {"ok": False, "error": "no GPU tool found"}
+
+
+def raw_fallback(args):
+    if not args:
+        return {"ok": False, "error": "no command"}
+    if not shutil.which(args[0]):
+        return {"ok": False, "error": f"command not found: {args[0]}"}
+    result, err = _run(args, timeout=15)
+    if err:
+        return {"ok": False, "error": err}
+    text = result.stdout
+    if len(text) > MAX_RAW:
+        text = text[:MAX_RAW] + f"\n...truncated ({len(result.stdout)} chars total)"
+    return {
+        "ok": result.returncode == 0,
+        "cmd": " ".join(args),
+        "rc": result.returncode,
+        "out": text,
+        "err": result.stderr[:1000] if result.stderr else "",
+    }
+
+
+def run(args):
+    if not args:
+        return {"ok": False, "error": "usage: mcp-debug <command> [args...]"}
+
+    base = args[0]
+
+    if base == "df" and (len(args) == 1 or "-h" in args):
+        return compact_df()
+    if base == "ps" and len(args) == 1:
+        return compact_ps()
+    if base == "ps" and "-eo" in args:
+        return compact_ps_top(args[1:])
+    if base == "uptime":
+        return compact_uptime()
+    if base == "mount":
+        return compact_mount()
+    if base == "free":
+        return compact_free()
+    if base == "systemctl" and "list-units" in args:
+        return compact_systemctl_units()
+    if base == "lsblk":
+        return compact_lsblk()
+    if base == "lsusb":
+        return compact_lsusb()
+    if base == "tailscale" and "status" in args:
+        return compact_tailscale_status()
+    if base == "ip" and "route" in args:
+        return compact_routes()
+    if base == "ip" and "addr" in args:
+        return compact_interfaces()
+    if base == "ss":
+        return compact_sockets(args)
+    if base == "containers":
+        return compact_containers()
+    if base == "services":
+        return compact_services()
+    if base == "sockets":
+        return compact_sockets()
+    if base == "gpu":
+        return compact_gpu()
+    if base in ("launchctl", "top -l", "vm_stat", "sw_vers", "diskutil", "system_profiler"):
+        return {"ok": False, "error": f"{base} is not supported on Linux"}
+
+    return raw_fallback(args)
+
+
+if __name__ == "__main__":
+    out = run(sys.argv[1:])
+    print(json.dumps(out, default=str, separators=(",", ":")))
+    sys.exit(0 if out.get("ok") else 1)
