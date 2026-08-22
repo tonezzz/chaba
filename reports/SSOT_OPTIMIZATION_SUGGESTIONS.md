@@ -1,9 +1,9 @@
 === SSOT Optimization Suggestions ===
 
-Generated: 2026-08-20T20:00:29.355Z
+Generated: 2026-08-22T03:36:07.636Z
 Bloat warnings: 0
 Data-isolation warnings: 0
-Other warnings: 3
+Other warnings: 0
 
 ## Bloat candidates (highest priority)
 
@@ -15,9 +15,7 @@ No data-isolation warnings.
 
 ## Other warnings
 
-- `ssot.improvements.yml`: Section 1: Duplicate item label: Service Failures Detected
-- `ssot.improvements.yml`: Section 1: Duplicate item label: Security Vulnerabilities Found
-- `ssot.improvements.yml`: Section 1: Duplicate item label: Network Connectivity Issues
+No other warnings.
 
 ---
-_Report produced by scripts/ssot-optimize.mjs in 4669ms_
+_Report produced by scripts/ssot-optimize.mjs in 4331ms_
