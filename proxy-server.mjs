@@ -3,7 +3,9 @@ import { stat } from 'node:fs/promises';
 import { extname, join, normalize } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createServer, request as httpRequest } from 'node:http';
+import { request as httpsRequest } from 'node:https';
 import { connect as netConnect } from 'node:net';
+import { connect as tlsConnect } from 'node:tls';
 
 const port = Number.parseInt(process.env.PORT ?? '8080', 10);
 const publicDirectory = fileURLToPath(new URL('./public/', import.meta.url));
@@ -18,8 +20,8 @@ const contentTypes = {
   '.svg': 'image/svg+xml'
 };
 
-const GEMINI_LIVE_API = process.env.GEMINI_LIVE_API_URL || 'http://tony-dell.taila0626a.ts.net:3008';
-const RVIEW_API = process.env.RVIEW_API_URL || 'http://tony-dell.taila0626a.ts.net:3007';
+const GEMINI_LIVE_API = process.env.GEMINI_LIVE_API_URL || 'https://tony-dell.taila0626a.ts.net:8443/api/gemini-live';
+const RVIEW_API = process.env.RVIEW_API_URL || 'https://tony-dell.taila0626a.ts.net:8443/apps/rview/api';
 // rview-live is the chaba.h3 name for the same Gemini Live backend.
 const RVIEW_LIVE_API = process.env.RVIEW_LIVE_API_URL || GEMINI_LIVE_API;
 
@@ -30,16 +32,24 @@ function rewriteHost(headers, host) {
   return copy;
 }
 
+function upstreamPath(target, original, prefix) {
+  const base = target.pathname.replace(/\/$/, '') || '';
+  const suffix = original.pathname.slice(prefix.length) + original.search;
+  return base + suffix;
+}
+
 function proxyHttp(req, res, base, prefix) {
   const target = new URL(base);
   const original = new URL(req.url ?? '/', 'http://localhost');
-  const proxyPath = original.pathname.slice(prefix.length) + original.search;
-  const proxyReq = httpRequest({
+  const proxyPath = upstreamPath(target, original, prefix);
+  const requestFn = target.protocol === 'https:' ? httpsRequest : httpRequest;
+  const defaultPort = target.protocol === 'https:' ? 443 : 80;
+  const proxyReq = requestFn({
     hostname: target.hostname,
-    port: target.port,
+    port: target.port || defaultPort,
     path: proxyPath,
     method: req.method,
-    headers: rewriteHost(req.headers, `${target.hostname}:${target.port}`),
+    headers: rewriteHost(req.headers, `${target.hostname}:${target.port || defaultPort}`),
   }, (proxyRes) => {
     res.writeHead(proxyRes.statusCode ?? 502, proxyRes.statusMessage, proxyRes.headers);
     proxyRes.pipe(res);
@@ -55,10 +65,14 @@ function proxyHttp(req, res, base, prefix) {
 function proxyWs(req, socket, head, base, prefix) {
   const original = new URL(req.url ?? '/', 'http://localhost');
   const target = new URL(base);
-  const proxyPath = original.pathname.slice(prefix.length) + original.search;
-  const client = netConnect(target.port, target.hostname, () => {
+  const proxyPath = upstreamPath(target, original, prefix);
+  const isSecure = target.protocol === 'https:' || target.protocol === 'wss:';
+  const defaultPort = isSecure ? 443 : 80;
+  const port = target.port || defaultPort;
+
+  function onConnect(client) {
     let raw = `${req.method} ${proxyPath} HTTP/1.1\r\n`;
-    const headers = rewriteHost(req.headers, `${target.hostname}:${target.port}`);
+    const headers = rewriteHost(req.headers, `${target.hostname}:${port}`);
     for (const [key, value] of Object.entries(headers)) {
       raw += `${key}: ${value}\r\n`;
     }
@@ -67,7 +81,12 @@ function proxyWs(req, socket, head, base, prefix) {
     if (head && head.length) client.write(head);
     socket.pipe(client);
     client.pipe(socket);
-  });
+  }
+
+  const client = isSecure
+    ? tlsConnect({ host: target.hostname, port, servername: target.hostname }, () => onConnect(client))
+    : netConnect(port, target.hostname, () => onConnect(client));
+
   client.on('error', (err) => {
     console.error('ws proxy error', prefix, err.message);
     socket.destroy();
