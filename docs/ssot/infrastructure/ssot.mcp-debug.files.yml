@@ -55,7 +55,7 @@ tools:
   mcp_clipboard_get:
     description: Read the target host's clipboard as text.
     status: experimental
-    default: disabled
+    default: enabled
     transport: macOS `pbpaste`; Linux `xclip -selection clipboard -o` or `wl-paste`
     security:
       - per-host opt-in only
@@ -65,7 +65,7 @@ tools:
   mcp_clipboard_set:
     description: Write text to the target host's clipboard.
     status: experimental
-    default: disabled
+    default: enabled
     transport: macOS `pbpaste`; Linux `xclip -selection clipboard -i` or `wl-copy`
     security:
       - per-host opt-in only

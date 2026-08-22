@@ -25,6 +25,8 @@ from .tools import (
     mcp_preset_run,
     mcp_debug_audit,
     mcp_preset_savings,
+    mcp_system,
+    mcp_transform,
     mcp_ssot_query,
     mcp_ssot_get,
 )
