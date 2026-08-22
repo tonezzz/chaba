@@ -1,4 +1,4 @@
-import { createReadStream } from 'node:fs';
+import { createReadStream, existsSync, unlinkSync } from 'node:fs';
 import { stat } from 'node:fs/promises';
 import { extname, join, normalize } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -7,7 +7,9 @@ import { request as httpsRequest } from 'node:https';
 import { connect as netConnect } from 'node:net';
 import { connect as tlsConnect } from 'node:tls';
 
-const port = Number.parseInt(process.env.PORT ?? '8080', 10);
+const rawPort = process.env.PORT;
+const isSocket = rawPort && (rawPort.startsWith('/') || rawPort.includes('/'));
+const listenTarget = isSocket ? rawPort : Number.parseInt(rawPort ?? '8080', 10);
 const publicDirectory = fileURLToPath(new URL('./public/', import.meta.url));
 const contentTypes = {
   '.css': 'text/css; charset=utf-8',
@@ -200,6 +202,15 @@ server.on('upgrade', (request, socket, head) => {
   }
 });
 
-server.listen(port, '0.0.0.0', () => {
-  process.stdout.write(`Chaba test site listening on port ${port}\n`);
-});
+if (isSocket) {
+  if (existsSync(listenTarget)) {
+    try { unlinkSync(listenTarget); } catch { /* ignore */ }
+  }
+  server.listen(listenTarget, () => {
+    process.stdout.write(`Chaba.h3 listening on socket ${listenTarget}\n`);
+  });
+} else {
+  server.listen(listenTarget, '0.0.0.0', () => {
+    process.stdout.write(`Chaba.h3 listening on port ${listenTarget}\n`);
+  });
+}
