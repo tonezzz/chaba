@@ -181,6 +181,23 @@ sessions:
   next_action:
   - Resume Yomi conversation processing and UI recovery
   date: '2026-08-20'
+- focus: rview-improvements
+  session: devin-181a033def8747289005beb98146423f
+  source: user request
+  plan:
+  - Add view_number resolution so ?view=<number> works in API and UI
+  - Add media load fallback to iframe on image/video/audio/pdf errors
+  - Deploy to tony-dell and verify top-right badge and fallback
+  done:
+  - rview-api now resolves numeric view_id or view_number to the correct view
+  - RView UI sends view_number when URL view param is numeric
+  - Added fallbackMedia() that swaps failed media for an iframe and updates status
+  - Rebuilt/restarted rview-api on tony-dell and verified live URLs
+  - Removed temporary test view
+  follow_up:
+  - Re-activate yomi-llm-rate-limits or context/memory focus next
+  next_action: User chose RView first; RView focus is closed. Activate context/memory improvements or resume yomi next.
+  date: '2026-08-22'
 related_files:
 - docs/ssot/ssot.focus.current.yml
 - docs/ssot/ssot.focus.yml
