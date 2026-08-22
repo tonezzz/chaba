@@ -372,6 +372,10 @@ app.add_middleware(
 def health() -> dict[str, str]:
     return {"status": "ok"}
 
+@app.get("/api/health")
+def api_health() -> dict[str, str]:
+    return {"status": "ok"}
+
 @app.get("/api/container/{name}")
 def container_health(name: str):
     """Return health status for a single Docker container by name."""
@@ -400,6 +404,7 @@ def status() -> dict[str, Any]:
         "containers": container_info(),
         "frigate": frigate_info(),
         "cameras": camera_summary(),
+        "gpu": gpu_status(),
     }
 
 class TurboState(BaseModel):
@@ -434,6 +439,111 @@ def get_turbo() -> dict[str, Any]:
 def set_turbo(state: TurboState) -> dict[str, Any]:
     success = write_no_turbo(1 if state.no_turbo else 0)
     return {"no_turbo": read_no_turbo(), "success": success}
+
+
+def gpu_status() -> dict[str, Any]:
+    """Get GPU status using nvidia-smi via docker python library."""
+    try:
+        client = docker.DockerClient(base_url="unix://var/run/docker.sock")
+        
+        # Run nvidia-smi in thai-legal-inference container
+        container = client.containers.get("thai-legal-inference")
+        
+        # Get GPU info
+        exit_code, output = container.exec_run(
+            "nvidia-smi --query-gpu=name,memory.total,memory.used,memory.free,utilization.gpu,temperature.gpu --format=csv,noheader,nounits"
+        )
+        
+        stdout = output.decode('utf-8') if output else ""
+        lines = stdout.strip().split("\n") if stdout else []
+        gpus = []
+        for line in lines:
+            if not line.strip():
+                continue
+            parts = [p.strip() for p in line.split(",")]
+            if len(parts) >= 5:
+                gpus.append({
+                    "name": parts[0],
+                    "memory_total_mb": int(parts[1]),
+                    "memory_used_mb": int(parts[2]),
+                    "memory_free_mb": int(parts[3]),
+                    "utilization_percent": int(parts[4]) if parts[4] else None,
+                    "temperature_c": int(parts[5]) if len(parts) > 5 and parts[5] else None,
+                })
+        
+        # Get running processes
+        exit_code, output = container.exec_run(
+            "nvidia-smi --query-compute-apps=pid,used_memory --format=csv,noheader,nounits"
+        )
+        
+        processes = []
+        if output:
+            stdout = output.decode('utf-8')
+            for line in stdout.strip().split("\n"):
+                if not line.strip():
+                    continue
+                parts = [p.strip() for p in line.split(",")]
+                if len(parts) >= 2:
+                    try:
+                        pid = int(parts[0])
+                        memory_mb = int(parts[1])
+                        # Get process name from host
+                        try:
+                            proc = psutil.Process(pid)
+                            name = proc.name()
+                            exe = proc.exe() if proc.exe() else name
+                        except Exception:
+                            name = f"PID:{pid}"
+                            exe = f"PID:{pid}"
+                        processes.append({
+                            "pid": str(pid),
+                            "name": exe,
+                            "memory_used_mb": memory_mb,
+                        })
+                    except Exception:
+                        continue
+        
+        return {
+            "gpus": gpus,
+            "processes": processes,
+            "error": None,
+        }
+    except Exception as e:
+        return {
+            "gpus": [],
+            "processes": [],
+            "error": str(e),
+        }
+
+
+@app.get("/api/gpu/status")
+def get_gpu_status() -> dict[str, Any]:
+    """Get GPU status including VRAM usage and running processes."""
+    return gpu_status()
+
+
+class GPUAction(BaseModel):
+    timeout: int = 60
+
+
+@app.post("/api/gpu/hold-llama")
+def hold_llama(action: GPUAction = GPUAction()) -> dict[str, Any]:
+    """Hold llama on CPU - placeholder for MCP integration."""
+    return {
+        "success": False,
+        "message": "Use MCP tool mcp1_hold_llama directly from your IDE",
+        "note": "This endpoint requires MCP server integration which is not available in containerized environment",
+    }
+
+
+@app.post("/api/gpu/resume-llama")
+def resume_llama(action: GPUAction = GPUAction()) -> dict[str, Any]:
+    """Resume llama on GPU - placeholder for MCP integration."""
+    return {
+        "success": False,
+        "message": "Use MCP tool mcp1_resume_llama directly from your IDE",
+        "note": "This endpoint requires MCP server integration which is not available in containerized environment",
+    }
 
 
 if __name__ == "__main__":
