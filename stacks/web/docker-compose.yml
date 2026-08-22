@@ -1,7 +1,7 @@
 services:
   web:
     container_name: web
-    image: caddy:2-alpine
+    image: caddy:latest
     restart: unless-stopped
     ports:
       - "8080:8080"
@@ -18,6 +18,12 @@ services:
       - .env
     extra_hosts:
       - "host.docker.internal:host-gateway"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
     networks:
       - default
       - frigate_default
@@ -125,6 +131,9 @@ services:
             - driver: nvidia
               count: 1
               capabilities: [gpu]
+        limits:
+          cpus: '4'
+          memory: 8G
     networks:
       - default
 
@@ -150,6 +159,9 @@ services:
             - driver: nvidia
               count: 1
               capabilities: [gpu]
+        limits:
+          cpus: '4'
+          memory: 8G
     networks:
       - default
 
@@ -169,8 +181,10 @@ services:
       - "8000"
       - "--n-gpu-layers"
       - "${LLAMA_N_GPU_LAYERS:-auto}"
+      - "--ctx-size"
+      - "2048"
       - "--alias"
-      - "thai-legal:thai-legal-gemma-4b-cpt.Q4_K_M.gguf,phi-3:Phi-3-mini-4k-instruct-q4.gguf"
+      - "phi-3:Phi-3-mini-4k-instruct-q4.gguf"
     volumes:
       - /data/gguf:/models:ro
     ports:
@@ -182,6 +196,9 @@ services:
             - driver: nvidia
               count: 1
               capabilities: [gpu]
+        limits:
+          cpus: '4'
+          memory: 8G
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
       interval: 30s
@@ -246,8 +263,10 @@ services:
     volumes:
       - ./activepieces-index.html:/usr/src/app/dist/packages/web/index.html:ro
     depends_on:
-      - postgres
-      - redis
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     networks:
       - default
 

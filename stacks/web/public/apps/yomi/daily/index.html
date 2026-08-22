@@ -4,30 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Yomi Daily Summaries</title>
-  <link rel="stylesheet" href="/apps/yomi/common.css">
-  <style>
-    body { font-family: system-ui, -apple-system, sans-serif; margin: 0; padding: 0; background: #f1f5f9; }
-    header { background: #0f172a; color: #f8fafc; padding: 1rem 1.5rem; display: flex; align-items: center; gap: 1rem; }
-    header a.back { color: #f8fafc; text-decoration: none; font-size: 1.25rem; }
-    header h1 { margin: 0; font-size: 1.25rem; flex: 1; }
-    #chat-select { padding: 0.5rem 0.75rem; border: 1px solid #334155; border-radius: 0.375rem; background: #1e293b; color: #f8fafc; font-size: 0.9rem; min-width: 200px; }
-    main { max-width: 900px; margin: 2rem auto; padding: 0 1rem; }
-    .day-card { background: #fff; border-radius: 0.5rem; padding: 1.25rem; margin-bottom: 1rem; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-    .day-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
-    .day-date { font-weight: 600; color: #0f172a; font-size: 1.1rem; }
-    .day-count { color: #64748b; font-size: 0.85rem; }
-    .section { margin-bottom: 0.75rem; }
-    .section-title { font-weight: 600; color: #334155; font-size: 0.9rem; margin-bottom: 0.35rem; }
-    .tag-list { display: flex; flex-wrap: wrap; gap: 0.35rem; }
-    .tag { background: #e2e8f0; color: #334155; padding: 0.25rem 0.6rem; border-radius: 0.25rem; font-size: 0.85rem; }
-    .tag.events { background: #dbeafe; color: #1e40af; }
-    .tag.actions { background: #dcfce7; color: #166534; }
-    .tag.topics { background: #fef3c7; color: #92400e; }
-    .empty { text-align: center; color: #64748b; padding: 3rem; }
-    .view-chat { color: #3b82f6; text-decoration: none; font-size: 0.85rem; }
-    .view-chat:hover { text-decoration: underline; }
-    #status { text-align: center; color: #64748b; padding: 2rem; }
-  </style>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="styles/daily.css">
+  <link rel="stylesheet" href="styles/components.css">
+  <link rel="stylesheet" href="styles/calendar.css">
+  <link rel="stylesheet" href="styles/summary.css">
+  <link rel="stylesheet" href="styles/messages.css">
 </head>
 <body>
   <header>
@@ -35,119 +17,68 @@
     <h1>Daily Summaries</h1>
     <select id="chat-select"><option value="">Loading conversations...</option></select>
   </header>
-  <main id="app"><p id="status">Loading...</p></main>
-  <script>
-    const PAGE_LIMIT = 50;
-
-    async function loadConversations() {
-      const res = await fetch('/api/yomi/conversations', { credentials: 'include' });
-      if (!res.ok) throw new Error('HTTP ' + res.status);
-      const { conversations } = await res.json();
-      return conversations || [];
-    }
-
-    async function loadDailySummaries(chatId) {
-      const res = await fetch(`/api/yomi/daily?chat=${encodeURIComponent(chatId)}`, { credentials: 'include' });
-      if (!res.ok) throw new Error('HTTP ' + res.status);
-      const data = await res.json();
-      return data.summaries || [];
-    }
-
-    function formatDate(dateStr) {
-      const d = new Date(dateStr);
-      return d.toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric', weekday: 'long' });
-    }
-
-    function renderTag(tag, type) {
-      return `<span class="tag ${type}">${escapeHtml(tag)}</span>`;
-    }
-
-    function renderSection(title, items, type) {
-      if (!items || !items.length) return '';
-      return `
-        <div class="section">
-          <div class="section-title">${title}</div>
-          <div class="tag-list">${items.map(t => renderTag(t, type)).join('')}</div>
-        </div>
-      `;
-    }
-
-    function renderDayCard(summary, chatId) {
-      return `
-        <div class="day-card">
-          <div class="day-header">
-            <div class="day-date">${formatDate(summary.date)}</div>
-            <div class="day-count">${summary.message_count} messages</div>
-          </div>
-          ${renderSection('Events', summary.events, 'events')}
-          ${renderSection('Actions', summary.actions, 'actions')}
-          ${renderSection('Topics', summary.topics, 'topics')}
-          <a class="view-chat" href="/apps/yomi/chat.html?chat=${encodeURIComponent(chatId)}">View conversation</a>
-        </div>
-      `;
-    }
-
-    function escapeHtml(s) {
-      return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
-    }
-
-    async function init() {
-      const app = document.getElementById('app');
-      const status = document.getElementById('status');
-      const select = document.getElementById('chat-select');
-
-      try {
-        const conversations = await loadConversations();
-        if (!conversations.length) {
-          app.innerHTML = '<p class="empty">No conversations found.</p>';
-          return;
-        }
-
-        select.innerHTML = conversations.map(c => 
-          `<option value="${escapeHtml(c.id)}">${escapeHtml(c.name)}</option>`
-        ).join('');
-
-        const chatParam = new URLSearchParams(location.search).get('chat');
-        if (chatParam) {
-          select.value = chatParam;
-          await loadAndRender(chatParam);
-        } else if (conversations.length) {
-          select.value = conversations[0].id;
-          await loadAndRender(conversations[0].id);
-        }
-
-        select.addEventListener('change', () => {
-          const chatId = select.value;
-          if (chatId) {
-            const url = new URL(location.href);
-            url.searchParams.set('chat', chatId);
-            history.replaceState(null, '', url);
-            loadAndRender(chatId);
-          }
-        });
-      } catch (err) {
-        app.innerHTML = `<p class="empty">Error: ${escapeHtml(err.message)}</p>`;
-      }
-    }
-
-    async function loadAndRender(chatId) {
-      const app = document.getElementById('app');
-      app.innerHTML = '<p id="status">Loading summaries...</p>';
-
-      try {
-        const summaries = await loadDailySummaries(chatId);
-        if (!summaries.length) {
-          app.innerHTML = '<p class="empty">No daily summaries yet. Refresh the conversation to generate them.</p>';
-          return;
-        }
-
-        app.innerHTML = summaries.map(s => renderDayCard(s, chatId)).join('');
-      } catch (err) {
-        app.innerHTML = `<p class="empty">Error: ${escapeHtml(err.message)}</p>`;
-      }
-    }
-
-    init();
-  </script>
+  <div id="app">
+    <div class="calendar-panel">
+      <div class="calendar-header">
+        <button class="calendar-nav" id="prev-month">&laquo;</button>
+        <div class="calendar-title" id="calendar-title">Loading...</div>
+        <button class="calendar-nav" id="next-month">&raquo;</button>
+      </div>
+      <div class="calendar-grid" id="calendar-grid">
+        <div class="calendar-day-header">Sun</div>
+        <div class="calendar-day-header">Mon</div>
+        <div class="calendar-day-header">Tue</div>
+        <div class="calendar-day-header">Wed</div>
+        <div class="calendar-day-header">Thu</div>
+        <div class="calendar-day-header">Fri</div>
+        <div class="calendar-day-header">Sat</div>
+      </div>
+    </div>
+    <div class="summary-panel">
+      <div class="summary-header">
+        <div class="summary-date" id="summary-date">Select a date</div>
+        <div class="summary-count" id="summary-count"></div>
+        <button class="resummarize-btn" id="header-resummarize-btn" style="display: none;">Re-summarize</button>
+      </div>
+      <div class="summary-content" id="summary-content">
+        <div class="empty-state">Select a date from the calendar to view the daily summary</div>
+      </div>
+    </div>
+    <div class="message-list-panel">
+      <div class="message-list-header">
+        <div class="message-list-title">Messages</div>
+        <div class="message-list-count" id="message-list-count"></div>
+        <button class="batch-analyze-btn" id="batch-analyze-btn" onclick="analyzeBatchMedia(this)" style="display: none;">Batch Analyze</button>
+      </div>
+      <div class="message-list-content" id="message-list-content">
+        <div class="empty-state" style="padding: 1rem;">Select a date to view messages</div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Image popup modal -->
+  <div id="image-popup" class="image-popup" onclick="window.closeImagePopup()">
+    <div class="image-popup-content" onclick="event.stopPropagation()">
+      <button class="image-popup-close" onclick="window.closeImagePopup()">&times;</button>
+      <img id="image-popup-img" class="image-popup-img" src="" alt="Image">
+    </div>
+  </div>
+  
+  <!-- Load shared utilities in dependency order -->
+  <script src="/apps/shared/js/date-utils.js?v=1"></script>
+  <script src="/apps/shared/js/date-utils-thailand.js?v=1"></script>
+  <script src="/apps/shared/js/api-utils.js?v=1"></script>
+  <script src="/apps/shared/js/api-yomi.js?v=1"></script>
+  <script src="/apps/shared/js/ui-utils.js?v=1"></script>
+  
+  <!-- Load app modules in dependency order -->
+  <script src="js/config.js?v=1"></script>
+  <script src="js/namespace.js?v=1"></script>
+  <script src="js/init.js?v=1"></script>
+  <script src="js/calendar.js?v=1"></script>
+  <script src="js/summary.js?v=1"></script>
+  <script src="js/messages.js?v=1"></script>
+  <script src="js/media-analysis.js?v=1"></script>
+  <script src="js/app.js?v=1"></script>
 </body>
 </html>

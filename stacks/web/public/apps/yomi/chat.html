@@ -64,6 +64,11 @@
     .media-file:hover { background: #e2e8f0; }
     .media-placeholder { color: #64748b; font-style: italic; font-size: .85rem; }
     .error { color: #ef4444; }
+    .analyze-btn { background: #8b5cf6; color: #fff; border: none; border-radius: 4px; padding: 4px 8px; font-size: .75rem; cursor: pointer; margin-top: .25rem; }
+    .analyze-btn:hover { background: #7c3aed; }
+    .analyze-btn:disabled { background: #94a3b8; cursor: not-allowed; }
+    .media-analysis { background: #f0fdf4; border: 1px solid #86efac; border-radius: 4px; padding: .35rem .5rem; margin-top: .25rem; font-size: .8rem; color: #166534; }
+    .media-analysis.loading { background: #fef3c7; border-color: #fcd34d; color: #92400e; }
     #status { color: var(--muted); padding: 1rem; }
     #loader { color: var(--muted); padding: .5rem; text-align: center; font-size: .85rem; flex-shrink: 0; }
     #messages { flex: 1; overflow-y: auto; }
@@ -172,18 +177,22 @@
       const type = String(m.mediaType || '').toLowerCase();
       if (type === 'image') {
         const src = mediaSrc(m, chatId);
-        if (!src) return '<span class="text-null">[image unavailable]</span>';
-        return `<img class="media-img" src="${encodeURI(src)}" alt="image" loading="lazy" onclick="openLightbox(this.src)" onerror="this.outerHTML='<span class=\"text-null\">[image unavailable]</span>'">`;
+        if (!src) return '';
+        const analysisBtn = m.id ? `<button class="analyze-btn" data-msg-id="${escapeHtml(m.id)}" data-media-type="image" onclick="analyzeMedia(this)">🔍 Analyze</button>` : '';
+        const analysisDisplay = m.mediaAnalysis ? `<div class="media-analysis">AI: ${escapeHtml(m.mediaAnalysis)}</div>` : '';
+        return `<img class="media-img" src="${encodeURI(src)}" alt="image" loading="lazy" onclick="openLightbox(this.src)" onerror="this.style.display='none'">${analysisBtn}${analysisDisplay}`;
       }
       if (type === 'video') {
         const src = mediaSrc(m, chatId);
-        if (!src) return '<span class="media-placeholder">[video unavailable]</span>';
-        return `<video class="media-video" src="${encodeURI(src)}" controls preload="metadata" onerror="this.outerHTML='<span class=\"media-placeholder\">[video unavailable]</span>'"></video>`;
+        if (!src) return '';
+        const analysisBtn = m.id ? `<button class="analyze-btn" data-msg-id="${escapeHtml(m.id)}" data-media-type="video" onclick="analyzeMedia(this)">🔍 Analyze</button>` : '';
+        const analysisDisplay = m.mediaAnalysis ? `<div class="media-analysis">AI: ${escapeHtml(m.mediaAnalysis)}</div>` : '';
+        return `<video class="media-video" src="${encodeURI(src)}" controls preload="metadata" onerror="this.style.display='none'"></video>${analysisBtn}${analysisDisplay}`;
       }
       if (type === 'audio') {
         const src = mediaSrc(m, chatId);
-        if (!src) return '<span class="media-placeholder">[audio unavailable]</span>';
-        return `<audio class="media-audio" src="${encodeURI(src)}" controls preload="metadata" onerror="this.outerHTML='<span class=\"media-placeholder\">[audio unavailable]</span>'"></audio>`;
+        if (!src) return '';
+        return `<audio class="media-audio" src="${encodeURI(src)}" controls preload="metadata" onerror="this.style.display='none'"></audio>`;
       }
       if (type === 'file') {
         const src = mediaSrc(m, chatId);
@@ -191,7 +200,7 @@
           const name = m.mediaFile ? m.mediaFile.split('/').pop() : 'download';
           return `<a class="media-file" href="${encodeURI(src)}" download="${escapeHtml(name)}" target="_blank" rel="noopener">⬇ ${escapeHtml(name)}</a>`;
         }
-        return '<span class="media-placeholder">[file]</span>';
+        return '';
       }
       if (type) {
         if (type === 'unavailable' && (m.e2eeDecrypted === false || m.e2eeIntegrityVerified === false)) {
@@ -485,6 +494,112 @@
       }
     }
     initAutoRefresh();
+
+    async function analyzeMedia(btn) {
+      const msgId = btn.dataset.msgId;
+      const mediaType = btn.dataset.mediaType;
+      const chatId = new URLSearchParams(location.search).get('chat');
+      
+      if (!msgId || !chatId) {
+        console.error('Missing msgId or chatId');
+        return;
+      }
+      
+      // Disable button and show loading state
+      btn.disabled = true;
+      const originalText = btn.textContent;
+      btn.textContent = 'Analyzing...';
+      
+      // Create or update analysis display
+      let analysisDiv = btn.parentElement.querySelector('.media-analysis');
+      if (!analysisDiv) {
+        analysisDiv = document.createElement('div');
+        analysisDiv.className = 'media-analysis loading';
+        btn.parentElement.appendChild(analysisDiv);
+      } else {
+        analysisDiv.className = 'media-analysis loading';
+      }
+      analysisDiv.textContent = 'AI analysis in progress...';
+      
+      try {
+        // Start analysis job
+        const res = await fetch('/api/yomi/media/analyze', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ chatId, messageId: msgId, mediaType }),
+          credentials: 'include'
+        });
+        
+        if (!res.ok) {
+          const error = await res.json();
+          throw new Error(error.error || 'Analysis request failed');
+        }
+        
+        const { jobId } = await res.json();
+        
+        // Poll for job completion
+        pollAnalysisJob(jobId, btn, analysisDiv, originalText);
+        
+      } catch (err) {
+        console.error('Media analysis failed:', err);
+        analysisDiv.className = 'media-analysis';
+        analysisDiv.textContent = 'Analysis failed: ' + err.message;
+        btn.disabled = false;
+        btn.textContent = originalText;
+      }
+    }
+    
+    async function pollAnalysisJob(jobId, btn, analysisDiv, originalText) {
+      const maxAttempts = 60; // 2 minutes with 2-second intervals
+      let attempts = 0;
+      
+      const poll = async () => {
+        attempts++;
+        
+        try {
+          const res = await fetch(`/api/yomi/media/analyze/status?job=${jobId}`, { credentials: 'include' });
+          if (!res.ok) throw new Error('Status check failed');
+          
+          const { job } = await res.json();
+          
+          if (job.status === 'completed') {
+            analysisDiv.className = 'media-analysis';
+            analysisDiv.textContent = 'AI: ' + job.analysisResult;
+            btn.textContent = '✓ Analyzed';
+            btn.disabled = true;
+            // Refresh message data to get updated media_analysis field
+            setTimeout(() => location.reload(), 1000);
+          } else if (job.status === 'failed') {
+            analysisDiv.className = 'media-analysis';
+            const errorMsg = job.errorMessage || 'Analysis failed';
+            // Check for rate limiting
+            if (errorMsg.includes('quota') || errorMsg.includes('429')) {
+              analysisDiv.textContent = 'Rate limited. Try again later.';
+            } else {
+              analysisDiv.textContent = 'Analysis failed: ' + errorMsg.substring(0, 100);
+            }
+            btn.disabled = false;
+            btn.textContent = originalText;
+          } else if (attempts >= maxAttempts) {
+            analysisDiv.className = 'media-analysis';
+            analysisDiv.textContent = 'Analysis timed out';
+            btn.disabled = false;
+            btn.textContent = originalText;
+          } else {
+            // Continue polling
+            setTimeout(poll, 2000);
+          }
+        } catch (err) {
+          console.error('Polling failed:', err);
+          analysisDiv.className = 'media-analysis';
+          analysisDiv.textContent = 'Status check failed: ' + err.message;
+          btn.disabled = false;
+          btn.textContent = originalText;
+        }
+      };
+      
+      poll();
+    }
 
     const replyForm = document.getElementById('reply-form');
     const replyInput = document.getElementById('reply-input');
