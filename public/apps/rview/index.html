@@ -29,7 +29,7 @@
 <body>
   <div id="stage">
     <div class="muted">Nothing playing</div>
-    <div id="overlay"><span id="status"></span></div>
+    <div id="overlay"><span id="status"></span><span id="view-number"></span></div>
   </div>
 
 <script>
@@ -174,7 +174,7 @@
     const item = view.current_item;
 
     if (!item) {
-      stage.innerHTML = '<div class="muted">Nothing playing</div><div id="overlay"><span id="status"></span></div>';
+      stage.innerHTML = '<div class="muted">Nothing playing</div><div id="overlay"><span id="status"></span><span id="view-number"></span></div>';
       lastItemJson = '';
       stopSlideshow();
       return;
@@ -190,7 +190,7 @@
       stage.appendChild(mediaEl);
       const overlay = document.createElement('div');
       overlay.id = 'overlay';
-      overlay.innerHTML = '<span id="status"></span>';
+      overlay.innerHTML = '<span id="status"></span><span id="view-number"></span>';
       stage.appendChild(overlay);
     }
 
@@ -205,6 +205,8 @@
     }
 
     status(`${view.state || 'stopped'} | ${item.media_type || '-'} | ${item.title || item.url || ''}`);
+    const numEl = document.getElementById('view-number');
+    if (numEl) numEl.textContent = view.view_number ? `#${view.view_number}` : '';
   }
 
   function enterFullscreen() {
