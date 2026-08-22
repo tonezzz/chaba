@@ -36,6 +36,7 @@
   const params = new URLSearchParams(window.location.search);
   const API = params.get('api') || '/apps/rview/api/state';
   const VIEW_ID = params.get('view') || 'default';
+  const VIEW_KEY = /^\d+$/.test(VIEW_ID) ? 'view_number' : 'view_id';
   let slideshowTimer = null;
   let slideshowItemUrl = null;
   let slideshowState = false;
@@ -48,21 +49,42 @@
 
   function reportError(e, src) {
     console.error('media load error', e?.type, src);
-    status('error loading ' + (src || ''));
+  }
+
+  function fallbackMedia(el, url, message) {
+    if (!el || el.dataset.fallback) return;
+    el.dataset.fallback = 'true';
+    console.warn('media fallback to iframe', url, message);
+    const fallback = document.createElement('iframe');
+    fallback.src = url;
+    fallback.allow = 'autoplay; fullscreen';
+    fallback.style.width = '100%';
+    fallback.style.height = '100%';
+    fallback.style.border = 'none';
+    if (el.parentNode) {
+      el.parentNode.replaceChild(fallback, el);
+    } else {
+      const stage = document.getElementById('stage');
+      stage.innerHTML = '<div id="overlay"><span id="status"></span><span id="view-number"></span></div>';
+      stage.appendChild(fallback);
+    }
+    status('fallback: ' + url);
   }
 
   async function api(action, body = {}) {
+    const payload = { action };
+    payload[VIEW_KEY] = VIEW_ID;
     const res = await fetch(API, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action, ...body })
+      body: JSON.stringify({ ...body, ...payload })
     });
     return res.json();
   }
 
   async function pollStatus() {
     try {
-      const res = await fetch(`${API}?action=status&view_id=${encodeURIComponent(VIEW_ID)}`);
+      const res = await fetch(`${API}?action=status&${VIEW_KEY}=${encodeURIComponent(VIEW_ID)}`);
       const data = await res.json();
       if (data.ok) render(data.view);
     } catch (e) {
@@ -82,7 +104,9 @@
     stopSlideshow();
     const sec = Math.max(1, Number(view.slideshow_interval) || 5);
     slideshowTimer = setTimeout(() => {
-      api('control', { view_id: VIEW_ID, command: 'next' }).then(pollStatus);
+      const body = { command: 'next' };
+      body[VIEW_KEY] = VIEW_ID;
+      api('control', body).then(pollStatus);
     }, sec * 1000);
     slideshowItemUrl = item.url;
     slideshowState = view.slideshow;
@@ -105,7 +129,7 @@
         const el = document.createElement('img');
         el.src = url;
         el.alt = title;
-        el.onerror = (e) => reportError(e, url);
+        el.onerror = (e) => { reportError(e, url); fallbackMedia(el, url, e?.type); };
         return el;
       }
       case 'video': {
@@ -113,21 +137,24 @@
         el.src = url;
         el.autoplay = true;
         el.playsInline = true;
-        el.onerror = (e) => reportError(e, url);
+        el.muted = false;
+        el.onerror = (e) => { reportError(e, url); fallbackMedia(el, url, e?.type); };
+        el.addEventListener('stalled', (e) => { reportError(e, url); fallbackMedia(el, url, 'stalled'); });
         return el;
       }
       case 'audio': {
         const el = document.createElement('audio');
         el.src = url;
         el.autoplay = true;
-        el.onerror = (e) => reportError(e, url);
+        el.onerror = (e) => { reportError(e, url); fallbackMedia(el, url, e?.type); };
+        el.addEventListener('stalled', (e) => { reportError(e, url); fallbackMedia(el, url, 'stalled'); });
         return el;
       }
       case 'pdf': {
         const el = document.createElement('embed');
         el.src = url;
         el.type = 'application/pdf';
-        el.onerror = (e) => reportError(e, url);
+        el.onerror = (e) => { reportError(e, url); fallbackMedia(el, url, e?.type); };
         return el;
       }
       case 'html': {
@@ -181,9 +208,8 @@
     }
 
     const itemJson = JSON.stringify(item);
-    const desiredSelector = mediaSelector(item.media_type);
-    let mediaEl = stage.querySelector(desiredSelector);
-    if (!mediaEl || itemJson !== lastItemJson) {
+    let mediaEl = stage.children[0];
+    if (!mediaEl || mediaEl.id === 'overlay' || mediaEl.className === 'muted' || itemJson !== lastItemJson) {
       lastItemJson = itemJson;
       stage.innerHTML = '';
       mediaEl = createMedia(item);

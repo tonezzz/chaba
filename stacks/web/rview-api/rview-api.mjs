@@ -104,12 +104,13 @@ function fullView(view) {
 }
 
 function resolveViewId(viewId, viewNumber) {
-  if (viewId) return viewId;
-  if (viewNumber === undefined || viewNumber === null) return viewId;
-  const n = Number(viewNumber);
-  if (isNaN(n)) return viewId;
-  const view = Object.values(state.views).find((v) => v.view_number === n);
-  return view ? view.view_id : viewId;
+  if (viewId && !/^(\d+)$/.test(String(viewId))) return viewId;
+  const n = Number(viewNumber !== undefined && viewNumber !== null ? viewNumber : viewId);
+  if (!isNaN(n) && n > 0) {
+    const view = Object.values(state.views).find((v) => v.view_number === n);
+    if (view) return view.view_id;
+  }
+  return viewId;
 }
 
 function setCurrent(view, item) {
