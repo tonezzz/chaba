@@ -2,8 +2,10 @@ title: Current Focus
 subtitle: Common workflow for session start and focus disposition
 icon: target
 workflow:
-- Assistant must read this SSOT at the start of each session - Read the most recent entry in docs/ssot/ssot.focus.sessions.yml to pick up pending follow-ups
-- Before any docs/ or SSOT read/grep, run `mcp_call_tool mddb semantic_search` on the request topic and record the query in the active focus's request_log
+- Assistant must read this SSOT at the start of each session - Read the most recent entry in docs/ssot/ssot.focus.sessions.yml
+  to pick up pending follow-ups
+- Before any docs/ or SSOT read/grep, run `mcp_call_tool mddb semantic_search` on the request topic and record the query in
+  the active focus's request_log
 - List docs/ssot/focus-inbox/*.yml at session start and summarize any pending items for triage
 - Match the user request against active shared and branch focuses first
 - If it matches, append it to that item's request_log and do the work inside that focus
@@ -13,8 +15,10 @@ workflow:
 - For backlog review, archived focuses, or focus history, read the full ssot.focus.yml
 - At session end, update subtask status and append a session summary to ssot.focus.sessions.yml
 - When an inbox item is activated, merge it into this file and git mv the source file to docs/ssot/focus-inbox/processed/
-- If the request can be decomposed into subtasks, use the decompose action to create or update a focus with subtasks before starting
-- If the disposition is unclear, call mcp_focus(request, mode=recommend) and follow the returned action (continue, quick_win, decompose, triage_backlog, triage_inbox, draft_inbox); see ssot.mcp-focus.yml for the machine-readable tree
+- If the request can be decomposed into subtasks, use the decompose action to create or update a focus with subtasks before
+  starting
+- If the disposition is unclear, call mcp_focus(request, mode=recommend) and follow the returned action (continue, quick_win,
+  decompose, triage_backlog, triage_inbox, draft_inbox); see ssot.mcp-focus.yml for the machine-readable tree
 mcp_focus:
   tool: mcp_focus
   source: docs/ssot/infrastructure/ssot.mcp-focus.yml
@@ -28,7 +32,8 @@ mcp_focus:
   actions:
     continue: The request matches an active focus or no request was given; keep working on the active focus.
     quick_win: The request is small and concrete; add to Quick Wins and complete immediately.
-    decompose: The request is too large for a quick win but can be split into subtasks; decompose it into a focus and start the first subtask.
+    decompose: The request is too large for a quick win but can be split into subtasks; decompose it into a focus and start
+      the first subtask.
     triage_backlog: The request matches or should go to ssot.focus.yml Backlog; ask the user to activate.
     triage_inbox: The request matches an unprocessed focus-inbox draft; review/activate it.
     draft_inbox: No match; return an in-memory draft inbox YAML for the user to review before saving.
@@ -91,7 +96,8 @@ decision_tree:
   - case: interrupt
     mcp_focus_action: continue
     condition: New strategic work that must start now while an active shared focus is still incomplete
-    action: Park the active shared focus, activate the new work as a branch focus, and return to the parked focus when the branch is completed
+    action: Park the active shared focus, activate the new work as a branch focus, and return to the parked focus when the
+      branch is completed
     examples:
     - Reviewing and implementing focus validation/parking while the mcp-debug shared focus stays parked
   - case: no_active_or_inbox
@@ -109,7 +115,8 @@ decision_tree:
   - case: pre_action_summary
     mcp_focus_action: pre_action
     condition: Before beginning any non-trivial work, or when the user asks for the current focus landscape
-    action: Call mcp_focus with mode pre_action to get active foci, duplicate/historical matches, and related decision-tree entries, then present a concise summary and ask for confirmation before proceeding
+    action: Call mcp_focus with mode pre_action to get active foci, duplicate/historical matches, and related decision-tree
+      entries, then present a concise summary and ask for confirmation before proceeding
     examples:
     - User asks 'what is our focus?' or 'let's plan to finish all backlog'
     - Assistant is about to start a multi-step focus after a request
