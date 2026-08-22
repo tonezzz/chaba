@@ -1,100 +1,119 @@
 :8080 {
 	root * /srv/public
-	file_server
 
-	# Pretty URLs: /cameras → /cameras.json
-	rewrite /cameras /cameras.json
-
-	handle /chaba-h3 {
-		redir /chaba-h3/ 308
+	# Simple health endpoint for the Caddy web container
+	handle /health {
+		respond "ok" 200
 	}
 
-	handle_path /chaba-h3/* {
-		root * /srv/public/chaba-h3
+	# MDDB API (for panel proxy) - must come before panel route
+	handle /api/mddb/* {
+		reverse_proxy 100.68.142.13:11023
+		encode gzip
+	}
+
+	# MDDB Panel (dedicated path to avoid asset conflicts)
+	handle /mddb/* {
+		reverse_proxy 100.68.142.13:3002
+		encode gzip
+	}
+
+	# MDDB Panel at /apps/mddb (redirect to dedicated path)
+	@apps_mddb path /apps/mddb*
+	handle @apps_mddb {
+		redir /mddb{uri} 308
+	}
+
+	@tony_omen_temp_bare path /apps/tony-omen-temp
+	redir @tony_omen_temp_bare /apps/tony-omen-temp/ 308
+
+	@static_html path *.html
+	handle @static_html {
+		header Cache-Control "public, max-age=3600"
 		file_server
 	}
 
-	@root path /
-	handle @root {
-		reverse_proxy bserver:8092 {
-			header_up Host bserver.local
-		}
-	}
-
-	handle /new {
-		redir /new/ 308
-	}
-
-	handle_path /new/* {
-		reverse_proxy bserver:8092 {
-			header_up Host bserver.local
-		}
-	}
-
-	handle /decisions {
-		reverse_proxy bserver:8092 {
-			header_up Host bserver.local
-		}
-	}
-
-	handle /decisions/* {
-		reverse_proxy bserver:8092 {
-			header_up Host bserver.local
-		}
-	}
-
-	handle /infrastructure {
-		reverse_proxy bserver:8092 {
-			header_up Host bserver.local
-		}
-	}
-
-	handle /infrastructure/* {
-		reverse_proxy bserver:8092 {
-			header_up Host bserver.local
-		}
-	}
-
-	handle /apps/map {
-		redir /apps/map/ 308
-	}
-
-	handle /apps/map/* {
+	# Disable caching for CarPlay development files
+	@carplay_files path /apps/test-carplay/*.js
+	handle @carplay_files {
+		header Cache-Control "no-cache, no-store, must-revalidate"
+		header Pragma "no-cache"
+		header Expires "0"
 		file_server
 	}
 
-	handle /api/yomi/* {
-		reverse_proxy 100.68.142.13:3000
+	# Docs serving for health check config
+	handle /docs/* {
+		root * /srv/docs
+		file_server
 	}
 
+	handle /apps/common.css {
+		reverse_proxy 100.68.142.13:8083 {
+			header_up Host localhost
+		}
+	}
+
+	handle /apps/nav.js {
+		reverse_proxy 100.68.142.13:8083 {
+			header_up Host localhost
+		}
+	}
+
+	# Activepieces routes disabled (service is currently stopped)
+	# @ap_assets path /assets /assets/*
+	# handle @ap_assets {
+	# 	reverse_proxy activepieces:80
+	# }
+	#
+	# @ap_logo path /logo.svg /logo-192.png /logo-180.png
+	# handle @ap_logo {
+	# 	reverse_proxy activepieces:80
+	# }
+	#
+	# handle /apps/activepieces {
+	# 	redir /apps/activepieces/ 308
+	# }
+	#
+	# handle_path /apps/activepieces/* {
+	# 	reverse_proxy activepieces:80
+	# }
+
+	@raceman_noslash path /apps/raceman
+	redir @raceman_noslash /apps/raceman/ 308
+
+	handle /apps/raceman/* {
+		reverse_proxy 100.68.142.13:8083 {
+			header_up Host localhost
+		}
+	}
+
+	# Weaviate API (now on 100.68.142.13)
 	handle_path /api/weaviate/* {
 		reverse_proxy 100.68.142.13:8084
+		encode gzip
 	}
 
-	handle /api/* {
-		reverse_proxy 100.68.142.13:8000
+	# Yomi API with longer cache for read endpoints
+	@yomi_read_api path /api/yomi/conversations /api/yomi/daily /api/yomi/last-updated
+	handle @yomi_read_api {
+		header Cache-Control "public, max-age=300, s-maxage=600"
+		reverse_proxy 100.68.142.13:3000 {
+			header_up Host localhost
+		}
 	}
 
-	handle /frigate/* {
-		uri strip_prefix /frigate
-		reverse_proxy frigate:5000
-	}
-
-	handle /tony-omen/apps/imagen/api/* {
-		uri strip_prefix /tony-omen/apps/imagen/api
-		reverse_proxy imagen-inference:8000
-	}
-
-	handle /tony-omen/apps/imagen {
-		redir /tony-omen/apps/imagen/ 308
-	}
-
-	handle /tony-omen/apps/imagen/* {
-		file_server
+	# Helm proxy - /apps/helm/* to helm container (basePath configured, preserve full path)
+	@apps_helm path /apps/helm /apps/helm/*
+	handle @apps_helm {
+		reverse_proxy 100.68.142.13:3003 {
+			header_up Host localhost
+		}
 	}
 
 	# Trade API proxy - /apps/trade/api/* to trade-api (must come before UI files)
-	handle /apps/trade/api/* {
+	@trade_api_apps path /apps/trade/api/*
+	handle @trade_api_apps {
 		uri strip_prefix /apps/trade
 		reverse_proxy 100.68.142.13:9002 {
 			header_up Host localhost
@@ -103,7 +122,8 @@
 	}
 
 	# Trade WebSocket proxy - /apps/trade/api/ws/* to trade-api (must come before UI files)
-	handle /apps/trade/api/ws/* {
+	@trade_ws_apps path /apps/trade/api/ws/*
+	handle @trade_ws_apps {
 		uri strip_prefix /apps/trade
 		reverse_proxy 100.68.142.13:9002 {
 			header_up Host localhost
@@ -121,7 +141,8 @@
 	}
 
 	# Trade WebSocket proxy - direct /api/ws/* to trade-api
-	handle /api/ws/* {
+	@trade_ws path /api/ws/*
+	handle @trade_ws {
 		reverse_proxy 100.68.142.13:9002 {
 			header_up Host localhost
 			header_up Connection {>Connection}
@@ -129,10 +150,125 @@
 		}
 	}
 
-}
+	# Yomi API proxy (must come before catchall)
+	handle /api/yomi/* {
+		reverse_proxy 100.68.142.13:3000 {
+			header_up Host localhost
+		}
+	}
 
-# chaba.h3 local dev root
-:8081 {
-	root * /srv/public/chaba-h3
-	file_server
+	# Tailscale active connections API
+	handle /api/tailscale/connections {
+		reverse_proxy host.docker.internal:9010
+	}
+
+	# Shared JS files for all apps
+	handle_path /apps/shared/* {
+		root * /srv/public/apps/shared
+		file_server
+		header Cache-Control "public, max-age=86400"
+	}
+
+	handle_path /new/* {
+		reverse_proxy bserver:8092 {
+			header_up Host bserver.local
+		}
+	}
+
+	handle /decisions* {
+		reverse_proxy bserver:8092 {
+			header_up Host bserver.local
+		}
+	}
+
+	redir /chatlocal /chatlocal/ 308
+
+	handle_path /chatlocal/* {
+		reverse_proxy 100.68.142.13:3000 {
+			header_up Host localhost
+		}
+	}
+
+	@yomi_noslash path /apps/yomi
+	redir @yomi_noslash /apps/yomi/ 308
+
+	handle_path /apps/yomi/* {
+		root * /srv/public/apps/yomi
+		file_server
+		header Cache-Control "public, max-age=3600"
+	}
+
+	# Frigate proxy (disabled; re-enable when frigate is started)
+	# @frigate path /frigate/*
+	# handle @frigate {
+	# 	reverse_proxy host.docker.internal:5000 {
+	# 		header_up Host localhost
+	# 	}
+	# }
+
+	@chatlocal path /apps/chatlocal /apps/chatlocal/*
+	handle @chatlocal {
+		reverse_proxy 100.68.142.13:3000 {
+			header_up Host localhost:3000
+		}
+	}
+
+	# Focus app static files
+	handle_path /apps/focus/* {
+		root * /srv/public/apps/focus
+		file_server
+	}
+
+	# Focus Activity API proxy
+	handle_path /api/focus/* {
+		reverse_proxy host.docker.internal:3005 {
+			header_up Host localhost
+		}
+	}
+
+	# Status API proxy - /api/* catchall to status-api
+	@status_api {
+		path /api/*
+		not path /api/projects /api/projects/*
+	}
+	handle @status_api {
+		reverse_proxy status-api:8000 {
+			header_up Host localhost
+		}
+	}
+
+	# SSOT focus file serving
+	handle /ssot.focus.yml {
+		root * /srv/public
+		file_server
+	}
+
+	# Tailscale Funnel landing page (with CORS for cross-origin health checks)
+	handle_path /apps/tailscale-funnel/* {
+		root * /srv/public/apps/tailscale-funnel
+		file_server
+		header Access-Control-Allow-Origin "*"
+		header Vary "Origin"
+	}
+
+		# Netdata monitoring dashboard
+	handle /apps/netdata {
+		redir /apps/netdata/ 308
+	}
+
+	handle_path /apps/netdata/* {
+		reverse_proxy netdata:19999
+	}
+
+	# General catchall for other apps static files
+	@apps_other {
+		path /apps/*
+		not path /apps/helm /apps/helm/*
+	}
+	handle @apps_other {
+		uri strip_prefix /apps
+		root * /srv/public/apps
+		file_server
+		header Cache-Control "public, max-age=1800"
+	}
 }
