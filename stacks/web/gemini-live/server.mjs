@@ -40,62 +40,71 @@ const FUNCTION_DECLARATIONS = [
   },
   {
     name: "rview_show",
-    description: "Show media, a URL, or raw HTML in a view. Use media_type html with content for raw HTML. If the user asks to find or search for content, call web_search first, then pass the chosen result URL to rview_show. Otherwise, use only URLs the user provides or URLs you are certain are publicly reachable.",
+    description: "Show media, a URL, or raw HTML in a view. Provide either view_id or view_number. Use media_type html with content for raw HTML. If the user asks to find or search for content, call web_search first, then pass the chosen result URL to rview_show. Otherwise, use only URLs the user provides or URLs you are certain are publicly reachable.",
     parameters: {
       type: "object",
       properties: {
-        view_id: { type: "string" },
+        view_id: { type: "string", description: "View ID. Either view_id or view_number must be provided." },
+        view_number: { type: "integer", description: "Numeric view number shown in the RView UI. Either view_id or view_number must be provided." },
         url: { type: "string" },
         title: { type: "string" },
         media_type: { type: "string", enum: ["auto", "image", "video", "audio", "iframe", "pdf", "html"], default: "auto" },
         content: { type: "string", description: "Raw HTML content when media_type is html" },
         enqueue: { type: "boolean", default: false },
       },
-      required: ["view_id", "url"],
+      required: ["url"],
     },
   },
   {
     name: "rview_queue",
-    description: "Set or append to a view's playlist.",
+    description: "Set or append to a view's playlist. Provide either view_id or view_number.",
     parameters: {
       type: "object",
       properties: {
-        view_id: { type: "string" },
+        view_id: { type: "string", description: "View ID. Either view_id or view_number must be provided." },
+        view_number: { type: "integer", description: "Numeric view number shown in the RView UI." },
         items: { type: "array", items: { type: "object" } },
         mode: { type: "string", enum: ["replace", "append"], default: "replace" },
       },
-      required: ["view_id", "items"],
+      required: ["items"],
     },
   },
   {
     name: "rview_control",
-    description: "Control playback for a view.",
+    description: "Control playback for a view. Provide either view_id or view_number.",
     parameters: {
       type: "object",
       properties: {
-        view_id: { type: "string" },
+        view_id: { type: "string", description: "View ID. Either view_id or view_number must be provided." },
+        view_number: { type: "integer", description: "Numeric view number shown in the RView UI." },
         action: { type: "string", enum: ["play", "pause", "stop", "next", "prev", "seek", "volume", "fullscreen", "loop", "shuffle", "slideshow", "stop_slideshow", "clear_queue"] },
         value: {},
       },
-      required: ["view_id", "action"],
+      required: ["action"],
     },
   },
   {
     name: "rview_status",
-    description: "Get the current state of a view.",
+    description: "Get the current state of a view. Provide either view_id or view_number.",
     parameters: {
       type: "object",
-      properties: { view_id: { type: "string" } },
-      required: ["view_id"],
+      properties: {
+        view_id: { type: "string", description: "View ID. Either view_id or view_number must be provided." },
+        view_number: { type: "integer", description: "Numeric view number shown in the RView UI." },
+      },
+      required: [],
     },
   },
   {
     name: "rview_delete_view",
-    description: "Delete a view session.",
+    description: "Delete a view session. Provide either view_id or view_number.",
     parameters: {
       type: "object",
-      properties: { view_id: { type: "string" } },
-      required: ["view_id"],
+      properties: {
+        view_id: { type: "string", description: "View ID. Either view_id or view_number must be provided." },
+        view_number: { type: "integer", description: "Numeric view number shown in the RView UI." },
+      },
+      required: [],
     },
   },
   {
