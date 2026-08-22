@@ -2,13 +2,14 @@
 
 /**
  * SSOT Focus Validation Script
- * Validates strategic focus management rules in ssot.focus.yml
+ * Validates strategic focus management rules in ssot.focus.current.yml
  */
 
 import { readFileSync, existsSync } from 'fs';
+import { execSync } from 'child_process';
 import { join } from 'path';
 
-const FOCUS_FILE = join(process.cwd(), 'docs/ssot/ssot.focus.yml');
+const FOCUS_FILE = join(process.cwd(), 'docs/ssot/ssot.focus.current.yml');
 
 function parseSimpleYAML(content) {
   // Simple YAML parser for focus file structure
@@ -178,7 +179,11 @@ function loadFocusData() {
 
   try {
     const content = readFileSync(FOCUS_FILE, 'utf8');
-    return parseSimpleYAML(content);
+    const output = execSync(
+      'python3 -c "import yaml,json,sys; print(json.dumps(yaml.safe_load(sys.stdin)))"',
+      { input: content, encoding: 'utf8' }
+    );
+    return JSON.parse(output);
   } catch (error) {
     console.error(`❌ Error parsing focus file: ${error.message}`);
     process.exit(1);
@@ -209,15 +214,15 @@ function validateFocusRules(data) {
   const rules = data.validation;
   const sections = data.sections || [];
   
-  let sharedFocusSection = sections.find(s => s.title === 'Shared Strategic Focus Areas');
-  let branchFocusSection = sections.find(s => s.title === 'Per-Branch Strategic Focus Areas');
+  let sharedFocusSection = sections.find(s => s.title === 'Active Shared Focus');
+  let branchFocusSection = sections.find(s => s.title === 'Active Branch Focus');
   
   if (!sharedFocusSection) {
-    errors.push('Missing "Shared Strategic Focus Areas" section');
+    errors.push('Missing "Active Shared Focus" section');
   }
   
   if (!branchFocusSection) {
-    errors.push('Missing "Per-Branch Strategic Focus Areas" section');
+    errors.push('Missing "Active Branch Focus" section');
   }
 
   if (sharedFocusSection && branchFocusSection) {
@@ -339,8 +344,8 @@ function main() {
     console.log(`\n📊 Current Focus Status:`);
     
     const sections = data.sections || [];
-    const sharedSection = sections.find(s => s.title === 'Shared Strategic Focus Areas');
-    const branchSection = sections.find(s => s.title === 'Per-Branch Strategic Focus Areas');
+    const sharedSection = sections.find(s => s.title === 'Active Shared Focus');
+    const branchSection = sections.find(s => s.title === 'Active Branch Focus');
     
     if (sharedSection) {
       const activeShared = countActiveFocuses(sharedSection.items);
