@@ -90,11 +90,11 @@
 	}
 
 	handle /api/yomi/* {
-		reverse_proxy tony-dell:3000
+		reverse_proxy 100.68.142.13:3000
 	}
 
 	handle_path /api/weaviate/* {
-		reverse_proxy tony-dell:8084
+		reverse_proxy 100.68.142.13:8084
 	}
 
 	handle /api/* {
