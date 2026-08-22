@@ -1,0 +1,12 @@
+FROM node:22-alpine
+
+WORKDIR /app
+
+COPY rview-api.mjs ./
+
+EXPOSE 3007
+
+ENV RVIEW_API_PORT=3007
+ENV RVIEW_STATE_FILE=/data/state.json
+
+CMD ["node", "rview-api.mjs"]
