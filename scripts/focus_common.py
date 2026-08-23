@@ -59,7 +59,8 @@ def priority_value(item):
 def triage_score(item):
     triage = item.get("triage") or {}
     if not triage:
-        return 0.0
+        # Fall back to priority-based score so items without explicit triage still sort
+        return round(priority_value(item) * 2.5, 2)
     try:
         urgency = float(triage.get("urgency", 0))
         importance = float(triage.get("importance", 0))

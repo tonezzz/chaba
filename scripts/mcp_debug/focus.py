@@ -2,6 +2,7 @@
 from datetime import datetime
 from pathlib import Path
 import os
+import subprocess
 import sys
 import yaml
 from .config import REPO_DIR
@@ -96,23 +97,44 @@ def _load_workspaces(force=False):
 
 
 def _worktree_context():
-    """Return a lightweight summary of declared worktrees from SSOT."""
+    """Return a lightweight summary of declared worktrees from SSOT, with dirty state."""
     doc = _load_workspaces()
     result = []
     for classification in doc.get("classifications", {}).values():
         for wt in classification.get("worktrees", []):
             if not wt or wt.get("removed"):
                 continue
+            path = wt.get("path")
+            dirty = _is_worktree_dirty(path)
             result.append({
-                "path": wt.get("path"),
+                "path": path,
                 "branch": wt.get("branch"),
                 "purpose": wt.get("purpose"),
+                "dirty": dirty,
             })
     return result
 
 
+def _is_worktree_dirty(path):
+    """Check whether a git worktree has uncommitted changes. None if not a git repo."""
+    if not path or not os.path.isdir(path):
+        return None
+    try:
+        result = subprocess.run(
+            ["git", "-C", path, "status", "--short"],
+            capture_output=True,
+            text=True,
+            timeout=2,
+        )
+        if result.returncode != 0:
+            return None
+        return bool(result.stdout.strip())
+    except (subprocess.TimeoutExpired, OSError):
+        return None
+
+
 def _active_file_state(active_doc):
-    """Return a structured summary of everything in the active focus file."""
+    """Return a compact summary of open foci (active, parked, deferred) in the active file."""
     state = {}
     for sec in active_doc.get("sections", []):
         title = sec.get("title", "")
@@ -129,40 +151,78 @@ def _active_file_state(active_doc):
                     "subtasks": len(i.get("subtasks", [])),
                 }
                 for i in sec.get("items", [])
-                if i
+                if i and i.get("status") not in ("closed", "completed")
             ]
     return state
+
+
+def _open_foci(active_doc):
+    """Return all foci that are not closed or completed."""
+    open_foci = []
+    for sec in active_doc.get("sections", []):
+        if sec.get("title") in ("Active Shared Focus", "Active Branch Focus"):
+            for item in sec.get("items", []):
+                if item and item.get("status") not in ("closed", "completed"):
+                    open_foci.append(item)
+    return open_foci
+
+
+def _done_suggestion(open_foci, ready_safe):
+    """Suggest whether the user can stop for the day."""
+    if not open_foci:
+        return "All open foci are done. Good place to stop."
+    high = [i for i in open_foci if i.get("priority") == "high"]
+    if high:
+        return f"There are {len(high)} high-priority open foci remaining, including {high[0].get('label')}"
+    if ready_safe:
+        return f"No urgent work. {len(ready_safe)} safe-to-parallel foci are ready if you want to continue."
+    return f"{len(open_foci)} non-closed foci remain, all medium or low priority."
 
 
 def _stale_warning(active_doc):
     """Detect stale active/parked mismatches."""
     warnings = []
     allowed_statuses = {"active", "parked", "closed", "completed", "deferred", "draft"}
+    allowed_subtask_statuses = {"not_started", "in_progress", "completed", "deferred"}
     for sec in active_doc.get("sections", []):
         if sec.get("title") in ("Active Shared Focus", "Active Branch Focus"):
             for item in sec.get("items", []):
                 if not item:
                     continue
+                label = item.get("label", "")
                 status = item.get("status", "")
                 subtasks = item.get("subtasks", [])
                 if status not in allowed_statuses:
-                    warnings.append(f"{item.get('label')} has invalid status '{status}'")
+                    warnings.append(f"{label} has invalid status '{status}'")
+                if status in ("closed", "completed") and not item.get("completed_at") and not item.get("closed"):
+                    warnings.append(f"{label} is '{status}' but has no completed_at or closed date")
                 if status in ("active", "parked") and not subtasks:
-                    warnings.append(f"{item.get('label')} has no subtasks; consider decomposing or closing")
+                    warnings.append(f"{label} has no subtasks; consider decomposing or closing")
                 if status == "completed" and not item.get("completed_at"):
-                    warnings.append(f"{item.get('label')} is 'completed' but has no completed_at")
+                    warnings.append(f"{label} is 'completed' but has no completed_at")
                 completed = [s for s in subtasks if s.get("status") == "completed"]
                 total = len(subtasks)
                 if total and len(completed) == total and status not in ("closed", "completed"):
-                    warnings.append(f"{item.get('label')} has all {subtasks} subtasks completed but status is '{status}'")
+                    warnings.append(f"{label} has all {total} subtasks completed but status is '{status}'")
                 if status == "parked" and item.get("parked"):
                     try:
                         parked = item.get("parked")
                         days = (datetime.now() - datetime.strptime(parked, "%Y-%m-%d")).days
                         if days > 14:
-                            warnings.append(f"{item.get('label')} has been parked for {days} days")
+                            warnings.append(f"{label} has been parked for {days} days")
                     except (ValueError, TypeError):
                         pass
+                if status == "deferred" and item.get("deferred_at"):
+                    try:
+                        deferred = item.get("deferred_at")
+                        days = (datetime.now() - datetime.strptime(deferred, "%Y-%m-%d")).days
+                        if days > 14:
+                            warnings.append(f"{label} has been deferred for {days} days")
+                    except (ValueError, TypeError):
+                        pass
+                for sub in subtasks:
+                    if sub and sub.get("status") not in allowed_subtask_statuses:
+                        warnings.append(f"{label} subtask '{sub.get('label')}' has invalid status '{sub.get('status')}'")
     return warnings
 
 
@@ -855,6 +915,21 @@ def mcp_focus(request=None, mode="recommend", decision=None, summary=None, resum
     backlog = _backlog_items()
     inbox = _inbox_items()
     ready_safe = _ready_safe_items(active, backlog, inbox)
+
+    if mode == "done":
+        open_foci = _open_foci(active_doc)
+        high_open = [i for i in open_foci if i.get("priority") == "high"]
+        result = {
+            "ok": True,
+            "all_done": not open_foci,
+            "open_count": len(open_foci),
+            "high_priority_open": len(high_open),
+            "active_or_parked": [i.get("label") for i in open_foci if i.get("status") in ("active", "parked")],
+            "ready_safe_count": len(ready_safe),
+            "suggestion": _done_suggestion(open_foci, ready_safe),
+            "checked_at": datetime.now().isoformat(),
+        }
+        return result
 
     if mode == "status" or mode == "reload":
         if mode == "reload":

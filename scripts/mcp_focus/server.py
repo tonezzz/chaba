@@ -11,6 +11,7 @@ MODE_DESCRIPTION = (
     "recommend: return next focus; "
     "status: return current foci; "
     "reload: re-read SSOT then status; "
+    "done: check if all open foci are closed; "
     "safe_next: highest safe-to-parallel focus; "
     "defer: park active focus; "
     "resume: suggest a deferred focus; "
@@ -58,6 +59,7 @@ def handle_tools_list(id_):
                                     "recommend",
                                     "status",
                                     "reload",
+                                    "done",
                                     "pre_action",
                                     "safe_next",
                                     "ready_queue",
