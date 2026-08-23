@@ -1,0 +1,324 @@
+title: Archived Shared Focuses (2026 late)
+subtitle: Closed/shared focuses from 2026 late August
+icon: archive
+sections:
+- title: Active Shared Focus
+  icon: active
+  layout: list
+  items:
+  - label: MCP Debug Audit Health health
+    text: mcp-health reported status 'error' for MCP Debug Audit Health at 2026-08-21T03:00:18.
+    status: closed
+    closed: '2026-08-23'
+    priority: high
+    started: '2026-08-22'
+    estimated_duration: 1 session
+    tags:
+    - health
+    - inbox
+    - optional
+    subtasks: []
+    request_log: []
+    ownership:
+      owner: tony
+      session: ''
+      locked: true
+      lock_reason: Activated as active focus
+    source: /home/tony/CascadeProjects/chaba/docs/ssot/focus-inbox/2026-08-21-030018-mcp-debug-audit-health-health.yml
+  - label: Chaba KB Audit Timer health
+    text: mcp-health reported status 'error' for Chaba KB Audit Timer at 2026-08-21T03:00:18.
+    status: closed
+    closed: '2026-08-23'
+    priority: high
+    started: '2026-08-23'
+    estimated_duration: 1 session
+    tags:
+    - health
+    - inbox
+    - optional
+    subtasks: []
+    request_log: []
+    ownership:
+      owner: tony
+      session: ''
+      locked: true
+      lock_reason: Activated as active focus
+    source: /home/tony/CascadeProjects/chaba/docs/ssot/focus-inbox/2026-08-21-030018-chaba-kb-audit-timer-health.yml
+  - label: Chaba Audit Timer health
+    text: mcp-health reported status 'error' for Chaba Audit Timer at 2026-08-21T03:00:18.
+    status: closed
+    closed: '2026-08-23'
+    priority: high
+    started: '2026-08-23'
+    estimated_duration: 1 session
+    tags:
+    - health
+    - inbox
+    - optional
+    subtasks: []
+    request_log: []
+    ownership:
+      owner: tony
+      session: ''
+      locked: true
+      lock_reason: Activated as active focus
+    source: /home/tony/CascadeProjects/chaba/docs/ssot/focus-inbox/2026-08-21-030018-chaba-audit-timer-health.yml
+  - label: Extend wstunnel to kk-macbook
+    text: 'Make the tony-dell-wstunnel support a second target (kk-macbook) so it can be
+
+      reached from the road through chaba.h3.gizmo-thailand.com, the same way
+
+      tony-dell is reached today. Current server.js only bridges one client/user pair,
+
+      and the scripts are named and configured for tony-dell only.
+
+      '
+    status: closed
+    previous_status: active
+    parked: '2026-08-23'
+    completed_at: '2026-08-23'
+    priority: medium
+    started: '2026-08-23'
+    estimated_duration: 1 session
+    tags:
+    - wstunnel
+    - kk-macbook
+    - network
+    - infrastructure
+    subtasks:
+    - label: Design multi-target server routing
+      status: completed
+      completed_at: '2026-08-23'
+    - label: Create kk-macbook client variant
+      status: completed
+      completed_at: '2026-08-23'
+    - label: Update README and deployment docs
+      status: completed
+      completed_at: '2026-08-23'
+      note: Implemented in /home/tony/CascadeProjects/tony-dell-wstunnel. Deploy server to chaba.h3 and start clients on tony-dell
+        and kk-macbook.
+    request_log: []
+    ownership:
+      owner: tony
+      session: ''
+      locked: true
+      lock_reason: Activated as active focus
+    source: /home/tony/CascadeProjects/chaba/docs/ssot/focus-inbox/2026-08-20-130821-wstunnel-kk-macbook.yml
+  - label: Status API vulnerability rebuild
+    text: Rebuild the tony-dell status-data-api / status-api image to patch HIGH/CRITICAL vulnerabilities. imagen2-inference
+      is parked for now.
+    status: closed
+    completed_at: '2026-08-23'
+    priority: high
+    started: '2026-08-23'
+    estimated_duration: 1 session
+    tags:
+    - security
+    - status-api
+    - docker
+    - tony-dell
+    subtasks:
+    - label: Rebuild status-data-api image
+      status: not_started
+    - label: Restart Quadlet service
+      status: not_started
+    - label: Verify health and scan
+      status: not_started
+    request_log: []
+    ownership:
+      owner: tony
+      session: ''
+      locked: true
+      lock_reason: Activated as active focus
+    source: /home/tony/CascadeProjects/chaba/docs/ssot/jobs/security/2026-08-23-status-api-vulnerability-rebuild.yml
+  - label: Antigravity Helm adapter
+    text: Design and prototype an Antigravity managed-agent integration for Helm using the Gemini Interactions API instead
+      of generateContent.
+    status: closed
+    priority: high
+    started: '2026-08-23'
+    completed_at: '2026-08-23'
+    estimated_duration: 1 session
+    tags:
+    - antigravity
+    - gemini
+    - helm
+    - ai
+    subtasks:
+    - label: Clarify model list and adapter architecture
+      status: completed
+      completed_at: '2026-08-23'
+    - label: Draft minimal Interactions API smoke test
+      status: completed
+      completed_at: '2026-08-23'
+      note: Interaction v1_ChctNDZLYXRiR0ZjYThxZmtQcUp6Y3NBbx... completed; agent wrote and ran hello.py in environment 10a1e531c0c4079b6e8e1dee51e7f2e0.
+    - label: Implement Helm provider/service adapter
+      status: completed
+      completed_at: '2026-08-23'
+      note: Added callAntigravity in helm/src/lib/ai/llm-service.ts using v1beta/interactions and remote environment; configured
+        via LLM_PROVIDER=antigravity and ANTIGRAVITY_MODEL.
+    request_log: []
+    ownership:
+      owner: tony
+      session: ''
+      locked: true
+      lock_reason: Activated as active focus
+    source: /home/tony/CascadeProjects/chaba/docs/ssot/infrastructure/ssot.gemini-models.yml
+  - label: mcp-debug Helm proxy POC
+    text: Add a Helm App Router proxy at /api/debug/[host]/[command] that calls the mcp-debug CORS endpoint /mcp-table.json
+      on the target host and returns the compact table JSON.
+    status: closed
+    priority: medium
+    started: '2026-08-23'
+    completed_at: '2026-08-23'
+    estimated_duration: 1 session
+    tags:
+    - mcp-debug
+    - helm
+    - proxy
+    - api
+    subtasks:
+    - label: Add host map and proxy route
+      status: completed
+      completed_at: '2026-08-23'
+    - label: Verify route with a live mcp-debug command
+      status: completed
+      completed_at: '2026-08-23'
+      note: curl http://localhost:3002/apps/helm/api/debug/tony_dell/df%20-h returned the df -h table.
+    - label: Update SSOT and close focus
+      status: completed
+      completed_at: '2026-08-23'
+    request_log: []
+    ownership:
+      owner: tony
+      session: ''
+      locked: true
+      lock_reason: Activated as active focus
+    source: /home/tony/CascadeProjects/chaba/docs/ssot/infrastructure/ssot.mcp-debug.yml
+  - label: Add authentication to Helm
+    text: Protect Helm demo pages and API routes behind a shared secret or session token so they cannot be used by anyone
+      with the public URL.
+    status: closed
+    priority: high
+    started: '2026-08-23'
+    closed: '2026-08-23'
+    estimated_duration: 1 session
+    tags:
+    - helm
+    - security
+    - auth
+    subtasks:
+    - label: Add HELM_TOKEN middleware to API and demo routes
+      status: completed
+      completed_at: '2026-08-23'
+    - label: Update Caddy/Compose to inject token
+      status: completed
+      completed_at: '2026-08-23'
+    - label: Verify protected endpoints return 401 without token
+      status: completed
+      completed_at: '2026-08-23'
+    request_log: []
+    ownership:
+      owner: tony
+      session: ''
+      locked: true
+      lock_reason: Activated as active focus
+    source: /home/tony/CascadeProjects/chaba/docs/ssot/ssot.focus.current.active.yml
+  - label: Add sandboxing to Helm execute
+    text: Run generated commands and code in a restricted environment so the execute demo cannot be used for remote code execution.
+    status: closed
+    priority: high
+    started: '2026-08-23'
+    closed: '2026-08-23'
+    estimated_duration: 1 session
+    tags:
+    - helm
+    - security
+    - sandbox
+    subtasks:
+    - label: Audit code-generator and execute demo for dangerous calls
+      status: completed
+      completed_at: '2026-08-23'
+    - label: Replace direct exec with a sandboxed runner
+      status: completed
+      completed_at: '2026-08-23'
+    - label: Verify safe commands still work and unsafe commands are rejected
+      status: completed
+      completed_at: '2026-08-23'
+    - label: Replace direct exec with a sandboxed runner
+      status: not_started
+    - label: Verify safe commands still work and unsafe commands are rejected
+      status: not_started
+    request_log: []
+    ownership:
+      owner: tony
+      session: ''
+      locked: true
+      lock_reason: Activated as active focus
+    source: /home/tony/CascadeProjects/chaba/docs/ssot/ssot.focus.current.active.yml
+  - label: Make Helm conversation memory persistent
+    text: Move conversation memory from /tmp/helm-memory/memory.json to a persisted volume so it survives container recreates
+      and restarts.
+    status: closed
+    priority: medium
+    started: '2026-08-23'
+    closed: '2026-08-23'
+    estimated_duration: 1 session
+    tags:
+    - helm
+    - memory
+    - persistence
+    subtasks:
+    - label: Add a persisted data directory in the container
+      status: completed
+      completed_at: '2026-08-23'
+    - label: Update conversation-memory.ts to use the persisted path
+      status: completed
+      completed_at: '2026-08-23'
+    - label: Verify memory survives a container recreate
+      status: completed
+      completed_at: '2026-08-23'
+    - label: Update conversation-memory.ts to use the persisted path
+      status: not_started
+    - label: Verify memory survives a container recreate
+      status: not_started
+    request_log: []
+    ownership:
+      owner: tony
+      session: ''
+      locked: true
+      lock_reason: Activated as active focus
+    source: /home/tony/CascadeProjects/chaba/docs/ssot/ssot.focus.current.active.yml
+  - label: Add health checks to Helm Compose service
+    text: Add a Docker health check and a Caddy fail-over route so the Caddy reverse proxy stops sending traffic to an unhealthy
+      Helm container.
+    status: closed
+    priority: medium
+    started: '2026-08-23'
+    closed: '2026-08-23'
+    estimated_duration: 1 session
+    tags:
+    - helm
+    - health
+    - caddy
+    subtasks:
+    - label: Add /api/health route and Docker healthcheck
+      status: completed
+      completed_at: '2026-08-23'
+    - label: Add Caddy active health check for helm upstream
+      status: completed
+      completed_at: '2026-08-23'
+    - label: Verify health endpoint via Caddy
+      status: completed
+      completed_at: '2026-08-23'
+    - label: Update Caddy to use active health checking or lb retries
+      status: not_started
+    - label: Verify container unhealthy state is detected
+      status: not_started
+    request_log: []
+    ownership:
+      owner: tony
+      session: ''
+      locked: true
+      lock_reason: Activated as active focus
+    source: /home/tony/CascadeProjects/chaba/docs/ssot/ssot.focus.current.active.yml
