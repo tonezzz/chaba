@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-$upstream = 'https://tony-dell.taila0626a.ts.net/mcp-savings.json';
+$upstream = 'https://tony-omen.taila0626a.ts.net/mcp-savings.json';
 $fallback = __DIR__ . '/../apps/docs/mcp_debug/data/mcp-savings.json';
 $previous = __DIR__ . '/../apps/docs/mcp_debug/data/mcp-savings-previous.json';
 

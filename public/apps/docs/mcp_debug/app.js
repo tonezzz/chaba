@@ -1,7 +1,7 @@
-const LIVE_DATA_URL = "https://tony-dell.taila0626a.ts.net/mcp-savings.json";
+const LIVE_DATA_URL = "https://tony-omen.taila0626a.ts.net/mcp-savings.json";
 const PREVIOUS_DATA_URL = "/apps/docs/mcp_debug/data/mcp-savings-previous.json";
 const TABLE_DATA_URL = "/api/mcp-table.php";
-const TABLE_LIVE_URL = "https://tony-dell.taila0626a.ts.net/mcp-table.json";
+const TABLE_LIVE_URL = "https://tony-omen.taila0626a.ts.net/mcp-table.json";
 const FETCH_TIMEOUT = 130000;
 
 let currentReportData = null;
