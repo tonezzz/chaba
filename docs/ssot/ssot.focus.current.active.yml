@@ -262,6 +262,105 @@ sections:
       locked: true
       lock_reason: Activated as active focus
     source: /home/tony/CascadeProjects/chaba/docs/ssot/infrastructure/ssot.mcp-debug.yml
+  - label: Add authentication to Helm
+    text: Protect Helm demo pages and API routes behind a shared secret or session token so they cannot be used by anyone with the public URL.
+    status: active
+    priority: high
+    started: '2026-08-23'
+    estimated_duration: 1 session
+    tags:
+    - helm
+    - security
+    - auth
+    subtasks:
+    - label: Add HELM_TOKEN middleware to API and demo routes
+      status: in_progress
+    - label: Update Caddy/Compose to inject token
+      status: not_started
+    - label: Verify protected endpoints return 401 without token
+      status: not_started
+    request_log: []
+    ownership:
+      owner: tony
+      session: ''
+      locked: true
+      lock_reason: Activated as active focus
+    source: /home/tony/CascadeProjects/chaba/docs/ssot/ssot.focus.current.active.yml
+  - label: Add sandboxing to Helm execute
+    text: Run generated commands and code in a restricted environment so the execute demo cannot be used for remote code execution.
+    status: parked
+    priority: high
+    started: '2026-08-23'
+    parked: '2026-08-23'
+    estimated_duration: 1 session
+    tags:
+    - helm
+    - security
+    - sandbox
+    subtasks:
+    - label: Audit code-generator and execute demo for dangerous calls
+      status: not_started
+    - label: Replace direct exec with a sandboxed runner
+      status: not_started
+    - label: Verify safe commands still work and unsafe commands are rejected
+      status: not_started
+    request_log: []
+    ownership:
+      owner: tony
+      session: ''
+      locked: true
+      lock_reason: Activated as active focus
+    source: /home/tony/CascadeProjects/chaba/docs/ssot/ssot.focus.current.active.yml
+  - label: Make Helm conversation memory persistent
+    text: Move conversation memory from /tmp/helm-memory/memory.json to a persisted volume so it survives container recreates and restarts.
+    status: parked
+    priority: medium
+    started: '2026-08-23'
+    parked: '2026-08-23'
+    estimated_duration: 1 session
+    tags:
+    - helm
+    - memory
+    - persistence
+    subtasks:
+    - label: Add a persisted data directory in the container
+      status: not_started
+    - label: Update conversation-memory.ts to use the persisted path
+      status: not_started
+    - label: Verify memory survives a container recreate
+      status: not_started
+    request_log: []
+    ownership:
+      owner: tony
+      session: ''
+      locked: true
+      lock_reason: Activated as active focus
+    source: /home/tony/CascadeProjects/chaba/docs/ssot/ssot.focus.current.active.yml
+  - label: Add health checks to Helm Compose service
+    text: Add a Docker health check and a Caddy fail-over route so the Caddy reverse proxy stops sending traffic to an unhealthy Helm container.
+    status: parked
+    priority: medium
+    started: '2026-08-23'
+    parked: '2026-08-23'
+    estimated_duration: 1 session
+    tags:
+    - helm
+    - health
+    - caddy
+    subtasks:
+    - label: Add /api/health route and Docker healthcheck
+      status: not_started
+    - label: Update Caddy to use active health checking or lb retries
+      status: not_started
+    - label: Verify container unhealthy state is detected
+      status: not_started
+    request_log: []
+    ownership:
+      owner: tony
+      session: ''
+      locked: true
+      lock_reason: Activated as active focus
+    source: /home/tony/CascadeProjects/chaba/docs/ssot/ssot.focus.current.active.yml
 - title: Active Branch Focus
   icon: branch
   layout: list
