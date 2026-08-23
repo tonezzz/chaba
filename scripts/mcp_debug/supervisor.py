@@ -118,7 +118,13 @@ def _stdin_forwarder(state):
             break
         if not data:
             with state["lock"]:
-                state["stop"] = True
+                state["stdin_closed"] = True
+                child = state["child"]
+            try:
+                if child:
+                    child.stdin.close()
+            except Exception:
+                pass
             break
         with state["lock"]:
             state["last_activity"] = time.time()
@@ -142,16 +148,18 @@ def _watcher(state, restart_event, pending, last_change, mt):
         time.sleep(POLL_INTERVAL)
         with state["lock"]:
             child = state["child"]
-        if child and child.poll() is not None:
+            stdin_closed = state["stdin_closed"]
+        if child and child.poll() is not None and not stdin_closed:
             pending[0] = True
             last_change[0] = time.time()
             restart_event.set()
         new_m = _mtimes()
         if _mtimes_changed(mt[0], new_m):
             mt[0] = new_m
-            pending[0] = True
-            last_change[0] = time.time()
-            restart_event.set()
+            if not stdin_closed:
+                pending[0] = True
+                last_change[0] = time.time()
+                restart_event.set()
 
 
 def _restart(state):
@@ -187,6 +195,7 @@ def main():
         "child": None,
         "last_activity": time.time(),
         "stop": False,
+        "stdin_closed": False,
         "lock": threading.Lock(),
     }
     restart_event = threading.Event()
@@ -204,6 +213,11 @@ def main():
 
     while not state["stop"]:
         if restart_event.is_set() and pending[0]:
+            with state["lock"]:
+                stdin_closed = state["stdin_closed"]
+            if stdin_closed:
+                state["stop"] = True
+                break
             now = time.time()
             if now - state["last_activity"] > IDLE_TIMEOUT and now - last_change[0] > DEBOUNCE:
                 _restart(state)
@@ -216,8 +230,10 @@ def main():
             time.sleep(0.2)
         with state["lock"]:
             child = state["child"]
-        if child and child.poll() is not None:
-            _restart(state)
+            stdin_closed = state["stdin_closed"]
+        if child and child.poll() is not None and stdin_closed:
+            state["stop"] = True
+            break
 
     _cleanup(state)
     sys.exit(0)
