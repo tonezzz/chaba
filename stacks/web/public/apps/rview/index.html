@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#0b0b0b">
+  <title>RView</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="icon-192.svg">
+  <link rel="icon" type="image/svg+xml" href="icon-192.svg">
+  <link rel="stylesheet" href="app.css">
+</head>
+<body>
+  <div id="setup" class="active">
+    <h1>RView</h1>
+    <p>Enter a view ID to join</p>
+    <input id="view-id-input" type="text" placeholder="e.g. living-room" autocomplete="off">
+    <button id="join-btn">Join View</button>
+    <a href="control.html" class="btn" style="background:#334155;">Open Controller</a>
+  </div>
+
+  <div id="media">
+    <div id="info">
+      <span id="view-label">view: <b id="view-id"></b></span>
+      <span id="status-label">waiting</span>
+    </div>
+    <div id="media-display">
+      <div id="idle">No media loaded</div>
+    </div>
+    <div id="controls">
+      <button id="btn-prev" title="Previous">Prev</button>
+      <button id="btn-play" title="Play/Pause">Play</button>
+      <button id="btn-next" title="Next">Next</button>
+      <button id="btn-full" title="Fullscreen">Full</button>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
