@@ -1,8 +1,8 @@
-FROM registry.access.redhat.com/ubi9/python-311:1-77
+FROM registry.access.redhat.com/ubi9/python-311:latest
 
 # Install git (for repo inspection) and upgrade packages for security patches.
 USER root
-RUN dnf install -y git && dnf clean all \
+RUN dnf update -y && dnf install -y git && (dnf remove -y kernel-headers vim-minimal vim-filesystem libcurl-devel libpng-devel mariadb-connector-c mariadb-connector-c-config mariadb-connector-c-devel || true) && dnf clean all \
     && git config --global --add safe.directory /repo
 
 WORKDIR /app
