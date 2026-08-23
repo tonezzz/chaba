@@ -292,9 +292,10 @@ sections:
     source: /home/tony/CascadeProjects/chaba/docs/ssot/ssot.focus.current.active.yml
   - label: Add sandboxing to Helm execute
     text: Run generated commands and code in a restricted environment so the execute demo cannot be used for remote code execution.
-    status: active
+    status: closed
     priority: high
     started: '2026-08-23'
+    closed: '2026-08-23'
     estimated_duration: 1 session
     tags:
     - helm
@@ -302,7 +303,14 @@ sections:
     - sandbox
     subtasks:
     - label: Audit code-generator and execute demo for dangerous calls
-      status: in_progress
+      status: completed
+      completed_at: '2026-08-23'
+    - label: Replace direct exec with a sandboxed runner
+      status: completed
+      completed_at: '2026-08-23'
+    - label: Verify safe commands still work and unsafe commands are rejected
+      status: completed
+      completed_at: '2026-08-23'
     - label: Replace direct exec with a sandboxed runner
       status: not_started
     - label: Verify safe commands still work and unsafe commands are rejected
@@ -316,10 +324,9 @@ sections:
     source: /home/tony/CascadeProjects/chaba/docs/ssot/ssot.focus.current.active.yml
   - label: Make Helm conversation memory persistent
     text: Move conversation memory from /tmp/helm-memory/memory.json to a persisted volume so it survives container recreates and restarts.
-    status: parked
+    status: active
     priority: medium
     started: '2026-08-23'
-    parked: '2026-08-23'
     estimated_duration: 1 session
     tags:
     - helm
@@ -327,7 +334,7 @@ sections:
     - persistence
     subtasks:
     - label: Add a persisted data directory in the container
-      status: not_started
+      status: in_progress
     - label: Update conversation-memory.ts to use the persisted path
       status: not_started
     - label: Verify memory survives a container recreate
