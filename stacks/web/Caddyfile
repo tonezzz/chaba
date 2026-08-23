@@ -1,3 +1,7 @@
+{
+	admin localhost:2018
+}
+
 :8080 {
 	root * /srv/public
 
@@ -108,6 +112,9 @@
 	handle @apps_helm {
 		reverse_proxy helm:3000 {
 			header_up Host localhost
+			health_uri /apps/helm/api/health
+			health_interval 30s
+			health_timeout 5s
 		}
 	}
 
@@ -251,7 +258,7 @@
 		header Vary "Origin"
 	}
 
-		# Netdata monitoring dashboard
+	# Netdata monitoring dashboard
 	handle /apps/netdata {
 		redir /apps/netdata/ 308
 	}

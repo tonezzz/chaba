@@ -119,6 +119,12 @@ services:
       dockerfile: Dockerfile
     env_file:
       - /home/tony/CascadeProjects/helm/.env.local
+    healthcheck:
+      test: ["CMD-SHELL", "node -e \"fetch('http://localhost:3000/apps/helm/api/health').then(r=>{if(!r.ok) process.exit(1)}).catch(()=>process.exit(1))\""]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
     restart: unless-stopped
     ports:
       - "3003:3000"
