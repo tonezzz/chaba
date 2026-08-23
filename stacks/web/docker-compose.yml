@@ -117,6 +117,8 @@ services:
     build:
       context: /home/tony/CascadeProjects/helm
       dockerfile: Dockerfile
+    env_file:
+      - /home/tony/CascadeProjects/helm/.env.local
     restart: unless-stopped
     ports:
       - "3003:3000"
