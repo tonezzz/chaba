@@ -356,9 +356,10 @@ sections:
     source: /home/tony/CascadeProjects/chaba/docs/ssot/ssot.focus.current.active.yml
   - label: Add health checks to Helm Compose service
     text: Add a Docker health check and a Caddy fail-over route so the Caddy reverse proxy stops sending traffic to an unhealthy Helm container.
-    status: active
+    status: closed
     priority: medium
     started: '2026-08-23'
+    closed: '2026-08-23'
     estimated_duration: 1 session
     tags:
     - helm
@@ -366,7 +367,14 @@ sections:
     - caddy
     subtasks:
     - label: Add /api/health route and Docker healthcheck
-      status: in_progress
+      status: completed
+      completed_at: '2026-08-23'
+    - label: Add Caddy active health check for helm upstream
+      status: completed
+      completed_at: '2026-08-23'
+    - label: Verify health endpoint via Caddy
+      status: completed
+      completed_at: '2026-08-23'
     - label: Update Caddy to use active health checking or lb retries
       status: not_started
     - label: Verify container unhealthy state is detected
