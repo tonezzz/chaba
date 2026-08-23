@@ -59,8 +59,8 @@ models:
       tpm: 100000
       rpd: 100
     status: not_used
-    notes: Limits from AI Studio rate-limits dashboard on 2026-08-15
-    last_verified: '2026-08-15'
+    notes: 'Managed agent via the Gemini Interactions API. Not a text-only generateContent model; requires environment_config and interaction lifecycle. Do not use as a direct LLM provider in Helm.'
+    last_verified: '2026-08-23'
   gemini-robotics-er-2-preview:
     display_name: Gemini Robotics ER 2 Preview
     api_name: gemini-robotics-er-2-preview
@@ -131,11 +131,11 @@ models:
     display_name: Antigravity Preview 05 2026
     api_name: antigravity-preview-05-2026
     family: Antigravity
-    category: Default
+    category: Agents
     free_tier:
       status: unverified
-    status: available
-    notes: Add free-tier RPM/TPM/RPD from AI Studio. Group Default.
+    status: not_used
+    notes: 'Antigravity managed-agent preview identifier. Requires the Gemini Interactions API (interactions.create/run) and an environment, not the standard generateContent endpoint. Not a Helm LLM provider.'
   gemini-embedding-1:
     display_name: Gemini Embedding 1
     api_name: gemini-embedding-001
