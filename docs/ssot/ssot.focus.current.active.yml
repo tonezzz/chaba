@@ -140,7 +140,9 @@ sections:
       and the scripts are named and configured for tony-dell only.
 
       '
-    status: active
+    status: parked
+    previous_status: active
+    parked: '2026-08-23'
     priority: medium
     started: '2026-08-23'
     estimated_duration: 1 session
@@ -163,6 +165,32 @@ sections:
       locked: true
       lock_reason: Activated as active focus
     source: /home/tony/CascadeProjects/chaba/docs/ssot/focus-inbox/2026-08-20-130821-wstunnel-kk-macbook.yml
+  - label: Status API vulnerability rebuild
+    text: 'Rebuild the tony-dell status-data-api / status-api image to patch HIGH/CRITICAL vulnerabilities. imagen2-inference is parked for now.'
+    status: closed
+    completed_at: '2026-08-23'
+    priority: high
+    started: '2026-08-23'
+    estimated_duration: 1 session
+    tags:
+    - security
+    - status-api
+    - docker
+    - tony-dell
+    subtasks:
+    - label: Rebuild status-data-api image
+      status: not_started
+    - label: Restart Quadlet service
+      status: not_started
+    - label: Verify health and scan
+      status: not_started
+    request_log: []
+    ownership:
+      owner: tony
+      session: ''
+      locked: true
+      lock_reason: Activated as active focus
+    source: /home/tony/CascadeProjects/chaba/docs/ssot/jobs/security/2026-08-23-status-api-vulnerability-rebuild.yml
 - title: Active Branch Focus
   icon: branch
   layout: list

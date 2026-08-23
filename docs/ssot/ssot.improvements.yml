@@ -490,7 +490,7 @@ sections:
       base images for ollama (ollama/ollama:latest), gemini-ollama-proxy (node:22-alpine), web (caddy:latest), gpu-queue (node:22-alpine),
       gpu-queue-processor (node:22-alpine), and removed the stale web-status-api image. Health checks confirmed for all restarted
       containers. Outstanding: imagen2-inference (custom build not touched) and status-api (custom build not rebuilt). Decision:
-      in_progress.'
+      in_progress. imagen2-inference parked by user; status-api now has active job docs/ssot/jobs/security/2026-08-23-status-api-vulnerability-rebuild.yml.'
     priority: high
     effort: TBD
     category: security
@@ -503,6 +503,8 @@ sections:
     related_files:
     - docker-compose.yml
     - scripts/security-scan.mjs
+    - docs/ssot/jobs/security/2026-08-23-status-api-vulnerability-rebuild.yml
+    note: 'status-api rebuilt and rescanned: 8 HIGH / 0 CRITICAL (was 46/17). imagen2-inference remains parked.'
     tags:
     - auto-generated
     - security
