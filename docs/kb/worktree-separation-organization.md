@@ -85,6 +85,14 @@ E2E tests only run relevant applications, reducing noise and maintenance.
 ### 6. Better Organization
 Related functionality is grouped logically, improving code discoverability.
 
+## Worktree vs Feature Branch
+
+Use a worktree when the main worktree is dirty and you need a quick, isolated place to test or spike without committing half-finished work first. This matches the existing `chaba-h3`, `chaba-raceman`, and `chaba-omen` overlay pattern.
+
+- `git worktree add -b <branch> <path>`: dirty working tree, prototype, cross-repo/infra spike.
+- `git checkout -b <branch>` or `git switch -c <branch>`: clean working tree, or an experiment already planned to become a production feature.
+- Record the work in `ssot.focus.current.active.yml` or the focus inbox if it extends beyond one session.
+
 ## Worktree Management
 
 ### Creating a Worktree

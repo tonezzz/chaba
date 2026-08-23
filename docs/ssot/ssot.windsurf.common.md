@@ -63,6 +63,19 @@ prefix: short description
 
 Allowed prefixes: feat, fix, tweak, style, refactor, perf, test, docs, chore, ci, build, revert, hotfix, init, merge, wip, release
 
+## Git Worktrees and Feature Branches
+
+When the working tree is dirty and the user wants to test, spike, or experiment without disturbing in-flight work, prefer a git worktree over creating a branch in the main working tree.
+
+- **Use `git worktree add -b <branch> <path>`** when:
+  - The current working tree has uncommitted changes.
+  - The task is a quick prototype or cross-repo/infra spike.
+  - The work mirrors the existing `chaba-h3` and `chaba-raceman` overlay pattern.
+- **Use a normal feature branch `git checkout -b <branch>`** when:
+  - The working tree is clean (or changes are committed/stashed first).
+  - The experiment is known to become a production feature.
+- **Always record the work** in `ssot.focus.current.active.yml` or the focus inbox if it extends beyond a single conversation.
+
 ## Hostname Usage Standards
 
 - Always use `.local` hostnames instead of IP addresses: `tony-omen.local` instead of `192.168.1.48`, `tony-dell.local` instead of `192.168.1.42`
