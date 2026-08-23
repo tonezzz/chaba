@@ -9,15 +9,19 @@ from mcp_debug.focus import log_decision, mcp_focus
 
 from .git import git_mv_inbox
 from .state import (
+    ACTIVE,
+    BACKLOG,
     CURRENT,
     DECISIONS,
     FOCUS,
     INBOX_DIR,
     find_section,
     is_active,
-    load_current,
+    load_active,
+    load_backlog,
     load_focus,
-    save_current,
+    save_active,
+    save_backlog,
     save_focus,
     validate_current,
 )
@@ -81,7 +85,7 @@ def make_ready_safe_item(item, session=None):
 
 
 def activate_inbox(inbox, park=False):
-    doc = load_current()
+    doc = load_active()
     validate_current(doc)
     sections = doc.get("sections", [])
     branch = inbox.get("branch")
@@ -91,7 +95,7 @@ def activate_inbox(inbox, park=False):
         section_title = "Active Shared Focus"
     section = find_section(sections, section_title)
     if section is None:
-        raise RuntimeError(f"Section {section_title} not found in {CURRENT}")
+        raise RuntimeError(f"Section {section_title} not found in {ACTIVE}")
 
     active_items = [it for it in section.get("items", []) if is_active(it)]
     if active_items:
@@ -115,7 +119,7 @@ def activate_inbox(inbox, park=False):
         job_lifecycle=inbox.get("job_lifecycle"),
     )
     section["items"].append(new_item)
-    save_current(doc)
+    save_active(doc)
     validate_current(doc)
     target = git_mv_inbox(inbox["__file"])
     return section_title, new_item, str(target)
@@ -191,20 +195,19 @@ def next_focus(resume_session=None):
 
 
 def add_ready_safe(item, session=None):
-    doc = load_current()
-    validate_current(doc)
+    doc = load_backlog()
     section = find_section(doc.get("sections", []), "Ready (Safe)")
     if section is None:
-        raise RuntimeError("Ready (Safe) section not found in ssot.focus.current.yml")
+        raise RuntimeError(f"Ready (Safe) section not found in {BACKLOG}")
     new_item = make_ready_safe_item(item, session=session)
     section["items"].append(new_item)
-    save_current(doc)
-    validate_current(doc)
+    save_backlog(doc)
     return new_item
 
 
 def handle_intake(request, dry_run=False):
-    current_doc = load_current()
+    current_doc = load_active()
+    backlog_doc = load_backlog()
     focus_doc = load_focus()
     action, section, active_label, subtask = suggest_intake(request, current_doc)
     changed = []
@@ -231,8 +234,8 @@ def handle_intake(request, dry_run=False):
                 "matched_to": subtask or active_label,
             })
         if not dry_run:
-            save_current(current_doc)
-            changed = [CURRENT]
+            save_active(current_doc)
+            changed = [ACTIVE]
         result["message"] = f"Intake: appended to active focus '{active_label}'"
     elif action == "quick_win":
         quick = {
@@ -242,11 +245,11 @@ def handle_intake(request, dry_run=False):
             "priority": "medium",
             "tags": ["quick-win"],
         }
-        sec = find_section(current_doc.get("sections", []), "Quick Wins")
+        sec = find_section(backlog_doc.get("sections", []), "Quick Wins")
         if not dry_run:
             sec["items"].append(quick)
-            save_current(current_doc)
-            changed = [CURRENT]
+            save_backlog(backlog_doc)
+            changed = [BACKLOG]
         result["message"] = "Intake: added quick win"
     elif action == "backlog":
         backlog_item = {

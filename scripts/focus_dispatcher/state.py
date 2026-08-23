@@ -3,7 +3,10 @@ import yaml
 
 from . import REPO
 
-CURRENT = REPO / "docs" / "ssot" / "ssot.focus.current.yml"
+CURRENT = REPO / "docs" / "ssot" / "ssot.focus.current.active.yml"
+ACTIVE = CURRENT
+BACKLOG = REPO / "docs" / "ssot" / "ssot.focus.current.backlog.yml"
+META = REPO / "docs" / "ssot" / "ssot.focus.current.yml"
 FOCUS = REPO / "docs" / "ssot" / "ssot.focus.yml"
 DECISIONS = REPO / "docs" / "ssot" / "ssot.focus.decisions.yml"
 INBOX_DIR = REPO / "docs" / "ssot" / "focus-inbox"
@@ -32,9 +35,19 @@ def incomplete_subtasks(item):
     return [s for s in item.get("subtasks", []) if s.get("status") != "completed"]
 
 
-def load_current():
-    with open(CURRENT) as f:
+def load_active():
+    with open(ACTIVE) as f:
         return yaml.safe_load(f)
+
+
+def load_backlog():
+    with open(BACKLOG) as f:
+        return yaml.safe_load(f)
+
+
+def load_current():
+    """Alias: load_current is the active file."""
+    return load_active()
 
 
 def load_focus():
@@ -42,9 +55,24 @@ def load_focus():
         return yaml.safe_load(f)
 
 
-def save_current(doc):
-    with open(CURRENT, "w") as f:
+def load_meta():
+    with open(META) as f:
+        return yaml.safe_load(f)
+
+
+def save_active(doc):
+    with open(ACTIVE, "w") as f:
         yaml.safe_dump(doc, f, sort_keys=False, allow_unicode=True, width=120, default_flow_style=False)
+
+
+def save_backlog(doc):
+    with open(BACKLOG, "w") as f:
+        yaml.safe_dump(doc, f, sort_keys=False, allow_unicode=True, width=120, default_flow_style=False)
+
+
+def save_current(doc):
+    """Alias: save_current is the active file."""
+    save_active(doc)
 
 
 def save_focus(doc):
@@ -62,7 +90,7 @@ def find_section(sections, title):
 def validate_current(doc=None):
     if doc is None:
         doc = load_current()
-    validation = doc.get("validation", {})
+    validation = load_meta().get("validation", {}) if META.exists() else doc.get("validation", {})
     limits = {
         "Active Shared Focus": validation.get("max_active_shared_focus", 1),
         "Active Branch Focus": validation.get("max_active_branch_focus", 1),

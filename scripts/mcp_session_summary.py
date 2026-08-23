@@ -10,7 +10,7 @@ from pathlib import Path
 import yaml
 
 REPO = Path(__file__).resolve().parent.parent
-CURRENT = REPO / "docs" / "ssot" / "ssot.focus.current.yml"
+ACTIVE = REPO / "docs" / "ssot" / "ssot.focus.current.active.yml"
 SESSIONS = REPO / "docs" / "ssot" / "ssot.focus.sessions.yml"
 DECISIONS = REPO / "docs" / "ssot" / "ssot.focus.decisions.yml"
 
@@ -40,7 +40,7 @@ def _recent_decisions(doc, limit=5):
 
 
 def session_summary():
-    current = _load(CURRENT)
+    current = _load(ACTIVE)
     sessions = _load(SESSIONS)
     decisions = _load(DECISIONS)
 

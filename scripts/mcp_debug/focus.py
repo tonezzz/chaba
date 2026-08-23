@@ -17,6 +17,8 @@ from focus_common import (
 
 REPO = REPO_DIR
 CURRENT = REPO / "docs" / "ssot" / "ssot.focus.current.yml"
+ACTIVE = REPO / "docs" / "ssot" / "ssot.focus.current.active.yml"
+BACKLOG = REPO / "docs" / "ssot" / "ssot.focus.current.backlog.yml"
 FOCUS = REPO / "docs" / "ssot" / "ssot.focus.yml"
 INBOX_DIR = REPO / "docs" / "ssot" / "focus-inbox"
 DECISIONS = REPO / "docs" / "ssot" / "ssot.focus.decisions.yml"
@@ -37,6 +39,24 @@ def _save_current(doc):
         yaml.safe_dump(doc, f, sort_keys=False, allow_unicode=True, width=120, default_flow_style=False)
 
 
+def _load_active():
+    return load_yaml(ACTIVE)
+
+
+def _save_active(doc):
+    with open(ACTIVE, "w") as f:
+        yaml.safe_dump(doc, f, sort_keys=False, allow_unicode=True, width=120, default_flow_style=False)
+
+
+def _load_backlog():
+    return load_yaml(BACKLOG)
+
+
+def _save_backlog(doc):
+    with open(BACKLOG, "w") as f:
+        yaml.safe_dump(doc, f, sort_keys=False, allow_unicode=True, width=120, default_flow_style=False)
+
+
 def _save_focus(doc):
     with open(FOCUS, "w") as f:
         yaml.safe_dump(doc, f, sort_keys=False, allow_unicode=True, width=120, default_flow_style=False)
@@ -46,8 +66,8 @@ def _load_focus():
     return load_yaml(FOCUS)
 
 
-def _active_items(doc):
-    return active_items(doc)
+def _active_items(active_doc, backlog_doc=None):
+    return active_items(active_doc, backlog_doc)
 
 
 def _inbox_items():
@@ -58,8 +78,8 @@ def _backlog_items():
     return backlog_items(_load_focus())
 
 
-def _sweep_candidates(doc, active, backlog, inbox):
-    return sweep_candidates(doc, backlog, inbox, active=active)
+def _sweep_candidates(active_doc, active, backlog, inbox):
+    return sweep_candidates(active_doc, backlog, inbox, active=active)
 
 
 def _resolve_session(session_map, candidate, bulk_session):
@@ -110,7 +130,7 @@ def _session_groups(active, backlog, inbox, current_doc=None):
 
     # Parked in current sections (when no active)
     if current_doc is None:
-        current_doc = _load_current()
+        current_doc = _load_active()
     for sec in current_doc.get("sections", []):
         if sec.get("title") in ("Active Shared Focus", "Active Branch Focus"):
             for it in sec.get("items", []):
@@ -134,7 +154,7 @@ def _session_groups(active, backlog, inbox, current_doc=None):
 
 def _activate_candidate(candidate):
     today = datetime.now().strftime("%Y-%m-%d")
-    current_doc = _load_current()
+    current_doc = _load_active()
     focus_doc = _load_focus()
     focus_section = _find_section(focus_doc.get("sections", []), "Backlog - Triage Queue")
     label = candidate.get("label", "")
@@ -157,7 +177,7 @@ def _activate_candidate(candidate):
                     if "parked" in item:
                         item["previous_status"] = item.pop("parked")
                     item.pop("deferred", None)
-                    _save_current(current_doc)
+                    _save_active(current_doc)
                     return True
 
     # Backlog in ssot.focus.yml
@@ -174,7 +194,7 @@ def _activate_candidate(candidate):
                 if branch_sec:
                     branch_sec["items"].append(item)
                 _save_focus(focus_doc)
-                _save_current(current_doc)
+                _save_active(current_doc)
                 return True
         return False
 
@@ -205,7 +225,7 @@ def _activate_candidate(candidate):
             if branch_sec:
                 focus["source"] = str(new_path)
                 branch_sec["items"].append(focus)
-            _save_current(current_doc)
+            _save_active(current_doc)
             return True
         return False
 
@@ -218,7 +238,7 @@ def _bulk_defer(candidates, hold_label, session_map, bulk_session, reason):
     # Load focus doc once for backlog edits
     focus_doc = _load_focus()
     focus_section = _find_section(focus_doc.get("sections", []), "Backlog - Triage Queue")
-    current_doc = _load_current()
+    current_doc = _load_active()
 
     for c in candidates:
         if hold_label and c["label"].lower() == hold_label:
@@ -282,7 +302,7 @@ def _bulk_defer(candidates, hold_label, session_map, bulk_session, reason):
                         changed.append({"label": c["label"], "to": "parked in current", "session": session})
 
     _save_focus(focus_doc)
-    _save_current(current_doc)
+    _save_active(current_doc)
     return changed
 
 
@@ -465,8 +485,9 @@ def _decision_log():
 
 
 def _pre_action_summary(request):
-    doc = _load_current()
-    active, quick_wins, hand_off_queue, ready_safe = _active_items(doc)
+    active_doc = _load_active()
+    backlog_doc = _load_backlog()
+    active, quick_wins, hand_off_queue, _ = _active_items(active_doc, backlog_doc)
     req = str(request).lower()
 
     duplicate_active = []
@@ -698,11 +719,12 @@ def mcp_focus(request=None, mode="recommend", decision=None, summary=None, resum
         log_session_summary(summary)
         return {"ok": True, "action": "logged", "focus": summary.get("focus", "")}
 
-    if not CURRENT.exists():
-        return {"ok": False, "error": "ssot.focus.current.yml not found"}
+    if not ACTIVE.exists():
+        return {"ok": False, "error": "ssot.focus.current.active.yml not found"}
 
-    doc = _load_current()
-    active, quick_wins, hand_off_queue, _ = _active_items(doc)
+    active_doc = _load_active()
+    backlog_doc = _load_backlog()
+    active, quick_wins, hand_off_queue, _ = _active_items(active_doc, backlog_doc)
     backlog = _backlog_items()
     inbox = _inbox_items()
     ready_safe = _ready_safe_items(active, backlog, inbox)
@@ -714,7 +736,7 @@ def mcp_focus(request=None, mode="recommend", decision=None, summary=None, resum
             "quick_wins": quick_wins,
             "hand_off_queue": hand_off_queue,
             "ready_safe": ready_safe,
-            "session_groups": _session_groups(active, backlog, inbox, doc),
+            "session_groups": _session_groups(active, backlog, inbox, active_doc),
         }
 
     if mode == "safe_next":
@@ -738,10 +760,10 @@ def mcp_focus(request=None, mode="recommend", decision=None, summary=None, resum
         return {"ok": True, "ready_safe": ready_safe}
 
     if mode == "defer":
-        item, subtask = _defer_active_focus(doc, resume_session or request or "", reason or request or "")
+        item, subtask = _defer_active_focus(active_doc, resume_session or request or "", reason or request or "")
         if not item:
             return {"ok": False, "error": "no active focus to defer"}
-        _save_current(doc)
+        _save_active(doc)
         focus_label = item.get("label", "")
         subtask_label = subtask.get("label", "") if subtask else ""
         log_session_summary({
@@ -766,7 +788,7 @@ def mcp_focus(request=None, mode="recommend", decision=None, summary=None, resum
             it = active.get(key)
             if it and it.get("status") != "completed":
                 return {"ok": False, "error": f"Active {key} focus not complete: {it.get('label')}"}
-        next_candidates = [c for c in _sweep_candidates(doc, active, _backlog_items(), _inbox_items()) if c.get("status") in ("parked", "deferred", "draft", "pending")]
+        next_candidates = [c for c in _sweep_candidates(active_doc, active, _backlog_items(), _inbox_items()) if c.get("status") in ("parked", "deferred", "draft", "pending")]
         if resume_session:
             resume_session = resume_session.strip().lower()
             next_candidates = [c for c in next_candidates if _resolve_session(None, c, "").lower() == resume_session]
@@ -828,7 +850,7 @@ def mcp_focus(request=None, mode="recommend", decision=None, summary=None, resum
         }
 
     if mode == "sweep":
-        candidates = _sweep_candidates(doc, active, _backlog_items(), _inbox_items())
+        candidates = _sweep_candidates(active_doc, active, _backlog_items(), _inbox_items())
         hold_label = (hold or "").strip().lower()
         # default hold to the active branch focus if not specified unless explicitly none
         use_default_hold = hold is None

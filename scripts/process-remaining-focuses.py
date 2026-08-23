@@ -6,7 +6,7 @@ import yaml
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "scripts"))
-from mcp_debug.focus import _load_current, _load_focus, _make_recommendation, _active_items  # noqa: E402
+from mcp_debug.focus import _load_active, _load_backlog, _load_focus, _make_recommendation, _active_items  # noqa: E402
 
 REPO = Path(__file__).resolve().parent.parent
 FOCUS_INBOX = REPO / "docs" / "ssot" / "focus-inbox"
@@ -52,9 +52,9 @@ def _unprocessed_inbox():
 
 
 def main():
-    current = _load_current()
+    current = _load_active()
     focus = _load_focus()
-    active, quick_wins, hand_off_queue, ready_safe = _active_items(current)
+    active, quick_wins, hand_off_queue, ready_safe = _active_items(current, _load_backlog())
 
     # Collect all remaining items
     remaining = []
@@ -66,7 +66,7 @@ def main():
                 for sub in item.get("subtasks", []):
                     if sub.get("status") == "not_started":
                         remaining.append({
-                            "source": "ssot.focus.current.yml active subtask",
+                            "source": "ssot.focus.current.active.yml active subtask",
                             "label": sub["label"],
                             "text": sub["label"],
                             "priority": item.get("priority", "medium"),
@@ -77,7 +77,7 @@ def main():
         for item in section.get("items", []):
             if item.get("status") == "parked":
                 remaining.append({
-                    "source": "ssot.focus.current.yml parked",
+                    "source": "ssot.focus.current.active.yml parked",
                     "label": item["label"],
                     "text": (item.get("text") or "").replace("\n", " ")[:200],
                     "priority": item.get("priority", "medium"),

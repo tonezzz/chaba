@@ -15,11 +15,14 @@ from .prompts import (
     generate_suggestion_prompt,
 )
 from .state import (
-    CURRENT,
+    ACTIVE,
+    BACKLOG,
+
     FOCUS,
     NEXT_FOCUS_MD,
     REPORTS_DIR,
     SUBAGENT_CONTRACT_MD,
+    load_active,
     load_current,
     validate_current,
 )
@@ -54,7 +57,7 @@ def main():
         result = next_focus(resume_session=args.resume_session)
         print(result)
         if result.get("ok") and os.environ.get("FOCUS_DISPATCHER_COMMIT") == "1":
-            git_commit([CURRENT, FOCUS], f"tweak: focus-dispatcher next {result.get('next', {}).get('label', '')[:50]}")
+            git_commit([ACTIVE, FOCUS], f"tweak: focus-dispatcher next {result.get('next', {}).get('label', '')[:50]}")
         sys.exit(0)
 
     if args.advance:
@@ -64,7 +67,7 @@ def main():
         result = advance_focus(resume_session=args.resume_session)
         print(result)
         if result.get("ok") and os.environ.get("FOCUS_DISPATCHER_COMMIT") == "1":
-            git_commit([CURRENT, FOCUS], f"tweak: focus-dispatcher advance {result.get('next', {}).get('label', '')[:50]}")
+            git_commit([ACTIVE, FOCUS], f"tweak: focus-dispatcher advance {result.get('next', {}).get('label', '')[:50]}")
         sys.exit(0)
 
     if args.intake:
@@ -100,7 +103,7 @@ def main():
         new_item = add_ready_safe(item, session=args.session)
         print(f"Added to Ready (Safe): {new_item['label']}")
         if os.environ.get("FOCUS_DISPATCHER_COMMIT") == "1":
-            git_commit([CURRENT], f"tweak: ready-safe dispatch {new_item['label'][:50]}")
+            git_commit([BACKLOG], f"tweak: ready-safe dispatch {new_item['label'][:50]}")
         sys.exit(0)
 
     changed = []
@@ -108,7 +111,7 @@ def main():
         changed += archive_completed()
 
     validate_current()
-    active_title, active_item = next_from_active(load_current())
+    active_title, active_item = next_from_active(load_active())
     inbox = None
     if args.inbox:
         path = Path(args.inbox)
@@ -132,7 +135,7 @@ def main():
     elif args.inbox and inbox:
         if not args.dry_run:
             title, item, target = activate_inbox(inbox, park=args.park)
-            changed += [CURRENT, FOCUS, target]
+            changed += [ACTIVE, FOCUS, target]
         else:
             item = make_focus_item(
                 inbox.get("label"),
@@ -150,7 +153,7 @@ def main():
     elif inbox:
         if not args.dry_run:
             title, item, target = activate_inbox(inbox, park=args.park)
-            changed += [CURRENT, FOCUS, target]
+            changed += [ACTIVE, FOCUS, target]
         else:
             item = make_focus_item(
                 inbox.get("label"),

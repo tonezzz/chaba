@@ -8,6 +8,31 @@ from pathlib import Path
 import yaml
 
 
+REPO = Path(__file__).resolve().parent.parent
+CURRENT = REPO / "docs" / "ssot" / "ssot.focus.current.yml"
+ACTIVE = REPO / "docs" / "ssot" / "ssot.focus.current.active.yml"
+BACKLOG = REPO / "docs" / "ssot" / "ssot.focus.current.backlog.yml"
+FOCUS = REPO / "docs" / "ssot" / "ssot.focus.yml"
+
+
+def load_active():
+    return load_yaml(ACTIVE)
+
+
+def save_active(doc):
+    with open(ACTIVE, "w") as f:
+        yaml.safe_dump(doc, f, sort_keys=False, allow_unicode=True, width=120, default_flow_style=False)
+
+
+def load_backlog():
+    return load_yaml(BACKLOG)
+
+
+def save_backlog(doc):
+    with open(BACKLOG, "w") as f:
+        yaml.safe_dump(doc, f, sort_keys=False, allow_unicode=True, width=120, default_flow_style=False)
+
+
 PRIORITY = {"high": 3, "medium": 2, "low": 1}
 QUICK_WIN_CUES = ("fix", "tweak", "small", "quick", "minor")
 BACKLOG_CUES = ("design", "workflow", "rebuild", "implement", "refactor")
@@ -165,13 +190,19 @@ def safe_to_parallel_reason(item, active_branch_set, session=None):
     return True, "meets safe-to-parallel criteria"
 
 
-def active_items(doc):
-    """Extract active foci, quick wins, hand-off queue, and ready-safe from current."""
+def active_items(active_doc, backlog_doc=None):
+    """Extract active foci, quick wins, hand-off queue, and ready-safe.
+
+    active_doc contains the Active Shared Focus and Active Branch Focus sections.
+    If backlog_doc is supplied, Quick Wins/Hand-off Queue/Ready (Safe) are read
+    from it; otherwise they are taken from active_doc for backward compatibility.
+    """
     active = {}
     quick_wins = []
     hand_off_queue = []
     ready_safe = []
-    for sec in doc.get("sections", []):
+    source = backlog_doc if backlog_doc is not None else active_doc
+    for sec in source.get("sections", []):
         title = sec.get("title", "")
         if title == "Quick Wins":
             quick_wins = [i for i in sec.get("items", [])]
@@ -179,7 +210,9 @@ def active_items(doc):
             hand_off_queue = [i for i in sec.get("items", [])]
         elif title == "Ready (Safe)":
             ready_safe = [i for i in sec.get("items", [])]
-        elif title in ("Active Shared Focus", "Active Branch Focus"):
+    for sec in active_doc.get("sections", []):
+        title = sec.get("title", "")
+        if title in ("Active Shared Focus", "Active Branch Focus"):
             for item in sec.get("items", []):
                 if not is_active(item):
                     continue
@@ -256,7 +289,7 @@ def sweep_candidates(current_doc, backlog, inbox, active=None):
                     "priority": item.get("priority", "medium"),
                     "branch": item.get("branch"),
                     "score": triage_score(item),
-                    "source": item.get("source", "ssot.focus.current.yml"),
+                    "source": item.get("source", "ssot.focus.current.active.yml"),
                     "why": "current " + sec.get("title", "").lower().replace(" focus", ""),
                 })
     # Backlog + parked

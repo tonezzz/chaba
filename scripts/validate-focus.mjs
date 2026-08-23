@@ -2,14 +2,17 @@
 
 /**
  * SSOT Focus Validation Script
- * Validates strategic focus management rules in ssot.focus.current.yml
+ * Validates strategic focus management rules in ssot.focus.current.active.yml
+ * and optionally the backlog file.
  */
 
 import { readFileSync, existsSync } from 'fs';
 import { execSync } from 'child_process';
 import { join } from 'path';
 
-const FOCUS_FILE = join(process.cwd(), 'docs/ssot/ssot.focus.current.yml');
+const FOCUS_FILE = join(process.cwd(), 'docs/ssot/ssot.focus.current.active.yml');
+const META_FILE = join(process.cwd(), 'docs/ssot/ssot.focus.current.yml');
+const BACKLOG_FILE = join(process.cwd(), 'docs/ssot/ssot.focus.current.backlog.yml');
 
 function parseSimpleYAML(content) {
   // Simple YAML parser for focus file structure
@@ -171,6 +174,15 @@ function parseSimpleYAML(content) {
   return result;
 }
 
+function loadYAML(path) {
+  const content = readFileSync(path, 'utf8');
+  const output = execSync(
+    'python3 -c "import yaml,json,sys; print(json.dumps(yaml.safe_load(sys.stdin)))"',
+    { input: content, encoding: 'utf8' }
+  );
+  return JSON.parse(output);
+}
+
 function loadFocusData() {
   if (!existsSync(FOCUS_FILE)) {
     console.error(`❌ Focus file not found: ${FOCUS_FILE}`);
@@ -178,12 +190,10 @@ function loadFocusData() {
   }
 
   try {
-    const content = readFileSync(FOCUS_FILE, 'utf8');
-    const output = execSync(
-      'python3 -c "import yaml,json,sys; print(json.dumps(yaml.safe_load(sys.stdin)))"',
-      { input: content, encoding: 'utf8' }
-    );
-    return JSON.parse(output);
+    const data = loadYAML(FOCUS_FILE);
+    const meta = existsSync(META_FILE) ? loadYAML(META_FILE) : {};
+    data.validation = (meta && meta.validation) || {};
+    return data;
   } catch (error) {
     console.error(`❌ Error parsing focus file: ${error.message}`);
     process.exit(1);
@@ -333,11 +343,33 @@ function validateFocusRules(data) {
   return { errors, warnings };
 }
 
+function validateBacklog(data) {
+  const errors = [];
+  if (!data.sections) {
+    return { errors, warnings: ['No sections found in backlog file'] };
+  }
+  const required = ['Ready (Safe)', 'Hand-off Queue', 'Quick Wins'];
+  const titles = data.sections.map(s => s.title);
+  for (const title of required) {
+    if (!titles.includes(title)) {
+      errors.push(`Missing backlog section: ${title}`);
+    }
+  }
+  return { errors, warnings: [] };
+}
+
 function main() {
   console.log('🎯 Validating Strategic Focus Management\n');
   
   const data = loadFocusData();
-  const { errors, warnings } = validateFocusRules(data);
+  let { errors, warnings } = validateFocusRules(data);
+  
+  if (existsSync(BACKLOG_FILE)) {
+    const backlog = loadYAML(BACKLOG_FILE);
+    const backlogResult = validateBacklog(backlog);
+    errors = errors.concat(backlogResult.errors);
+    warnings = warnings.concat(backlogResult.warnings);
+  }
   
   if (errors.length === 0 && warnings.length === 0) {
     console.log('✅ All focus validation rules passed');

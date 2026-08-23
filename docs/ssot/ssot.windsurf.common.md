@@ -191,7 +191,7 @@ Before using any MCP server, use `ssot-search` or `grep` to read only the releva
 
 At the start of every session:
 - Call `mcp_focus` with `mode=status` (if the mcp-focus server is available) to retrieve active foci, quick wins, and the current recommendation.
-- If the mcp-focus server is not available, read `docs/ssot/ssot.focus.current.yml` directly.
+- If the mcp-focus server is not available, read `docs/ssot/ssot.focus.current.yml` for the workflow and decision tree, then read `docs/ssot/ssot.focus.current.active.yml` for active foci and `docs/ssot/ssot.focus.current.backlog.yml` for quick wins / ready-safe / hand-off.
 - For ambiguous or non-trivial requests, call `mcp_focus(request, mode=recommend)` and follow the returned action before doing any work.
 - The canonical machine-readable decision tree and actions are in `docs/ssot/infrastructure/ssot.mcp-focus.yml`; the numbers below are a human-readable summary.
 
@@ -208,7 +208,7 @@ For each user request:
 
 ## Subtask Inbox Triage
 
-- At the start of every session, immediately after reading `docs/ssot/ssot.focus.current.yml`, invoke the `subtask-triage` skill on the active focus subtasks.
+- At the start of every session, immediately after reading `docs/ssot/ssot.focus.current.active.yml` (active foci) and `docs/ssot/ssot.focus.current.backlog.yml` (quick wins), invoke the `subtask-triage` skill on the active focus subtasks.
 - The skill may only create new `docs/ssot/focus-inbox/*.yml` drafts and must leave `ssot.focus.current.yml` and `ssot.focus.yml` untouched.
 - Treat any subtask that does not meet the quick_win_criteria as remaining in the active focus.
 

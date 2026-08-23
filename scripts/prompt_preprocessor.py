@@ -15,9 +15,10 @@ from pathlib import Path
 import yaml
 
 REPO = Path(__file__).resolve().parent.parent
-CURRENT = REPO / "docs" / "ssot" / "ssot.focus.current.yml"
+ACTIVE = REPO / "docs" / "ssot" / "ssot.focus.current.active.yml"
+BACKLOG = REPO / "docs" / "ssot" / "ssot.focus.current.backlog.yml"
 FOCUS = REPO / "docs" / "ssot" / "ssot.focus.yml"
-INBOX_DIR = REPO / "docs" / "ssot" / "focus-inbox" / "inbox"
+INBOX_DIR = REPO / "docs" / "ssot" / "focus-inbox"
 JOBS_DIR = REPO / "docs" / "ssot" / "jobs"
 
 # Lightweight alias and cue expansion
@@ -87,7 +88,7 @@ def _active_items(doc):
         if sec.get("title") in ("Active Shared Focus", "Active Branch Focus"):
             for it in sec.get("items", []):
                 if it and it.get("label"):
-                    it["_source"] = "ssot.focus.current.yml"
+                    it["_source"] = "ssot.focus.current.active.yml"
                     it["_why"] = sec.get("title", "").lower()
                     items.append(it)
     return items
@@ -99,7 +100,7 @@ def _quick_wins(doc):
         if sec.get("title") == "Quick Wins":
             for it in sec.get("items", []):
                 if it and it.get("label"):
-                    it["_source"] = "ssot.focus.current.yml"
+                    it["_source"] = "ssot.focus.current.backlog.yml"
                     it["_why"] = "quick_win"
                     wins.append(it)
     return wins
@@ -199,12 +200,13 @@ def preprocess(request):
 
     command_info = _detect_command(request)
 
-    current = _load_yaml(CURRENT)
+    active = _load_yaml(ACTIVE)
+    backlog = _load_yaml(BACKLOG)
     focus = _load_yaml(FOCUS)
 
     candidates = (
-        _active_items(current)
-        + _quick_wins(current)
+        _active_items(active)
+        + _quick_wins(backlog)
         + _backlog_items(focus)
         + _inbox_items()
         + _job_items()

@@ -3,11 +3,19 @@ subtitle: Reduce per-command latency and make mcp-debug feel responsive for inte
 icon: bug
 focus:
   label: mcp-debug-overhead
-  text: mcp-debug commands carry SSH wrapper overhead and are not cancellable mid-flight, causing them to appear hung and be cancelled by the user. For fast, read-only, or API-probe steps (e.g. listing Gemini models, local file checks), direct bash/ssh on the control host is much faster. This focus explores how to keep mcp-debug useful for compact multi-host snapshots while removing it from the critical path of quick, interactive probes.
+  text: mcp-debug commands carry SSH wrapper overhead and are not cancellable mid-flight, causing them to appear hung and
+    be cancelled by the user. For fast, read-only, or API-probe steps (e.g. listing Gemini models, local file checks), direct
+    bash/ssh on the control host is much faster. This focus explores how to keep mcp-debug useful for compact multi-host snapshots
+    while removing it from the critical path of quick, interactive probes.
   branch: main
   priority: high
-  status: draft
-  tags: [mcp-debug, ssh, tooling, performance, latency]
+  status: active
+  tags:
+  - mcp-debug
+  - ssh
+  - tooling
+  - performance
+  - latency
   missing_info:
   - Exact timing breakdown of mcp-debug vs raw ssh for the same command
   - Whether the mcp-debug wrapper can stream output or support cancellation/timeout
@@ -26,6 +34,7 @@ focus:
   - id: 4
     text: Verify long commands (e.g. process-conversations, curl probes) no longer hang in daily use
     status: pending
+  started: '2026-08-23'
 ownership:
   owner: tony
   created: '2026-08-20'
