@@ -112,7 +112,7 @@ sections:
       - label: GPU Queue
         text: 'Yomi workloads (yomi_summary, yomi_daily) at priority P4 (highest). Integration module ready, pending full migration from direct API calls.'
       - label: Gemini API
-        text: 'Primary summarization model (gemma-4-31b-it). API key in systemd service environment. Fallback to local Llama when USE_GEMINI=false.'
+        text: 'Primary summarization model (gemini-3.5-flash-lite). Vision model primary (gemini-2.5-flash), fallback (gemini-2.5-flash-lite). Rate limit: 15 req/min in gemini-integration.mjs; summary/embedding limiters use 1 concurrent. API key in systemd service environment. Fallback to local Llama when USE_GEMINI=false.'
       - label: Health Check System
         text: '4 Yomi endpoints monitored: yomi-api, yomi-summarization, yomi-rate-limiter, yomi-activity-status. Dependencies: yomi-api depends on [caddy, postgres, redis].'
       - label: Failover Plan
