@@ -43,6 +43,7 @@ schedule:
       - caddy
       - infrastructure-suite
       - standardization-suite
+      - code-suite
     note: groups are expanded to individual audits by the runner
   full:
     frequency: monthly
@@ -56,6 +57,7 @@ schedule:
       - infrastructure-suite
       - security-suite
       - standardization-suite
+      - code-suite
     note: installed and enabled on tony-dell; security-audit may need privileges
 
 audits:
@@ -210,6 +212,16 @@ audits:
     last_run:
     last_result:
 
+  - name: code-quality
+    script: scripts/audits/code-quality-audit.mjs
+    command: node
+    args: []
+    schedule: weekly
+    severity_on_fail: warning
+    description: Formatting, spell check, and npm audit
+    last_run:
+    last_result:
+
 groups:
   - name: kb-suite
     description: All KB health, quality, categorization, and modularity audits
@@ -237,6 +249,10 @@ groups:
     children:
       - infrastructure
       - mddb
+  - name: code-suite
+    description: Code formatting, spell, and dependency security
+    children:
+      - code-quality
   - name: standardization-suite
     description: Cross-reference and naming consistency checks
     children:
