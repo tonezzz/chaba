@@ -106,7 +106,7 @@
 	# Helm proxy - /apps/helm/* to helm container (basePath configured, preserve full path)
 	@apps_helm path /apps/helm /apps/helm/*
 	handle @apps_helm {
-		reverse_proxy 100.68.142.13:3003 {
+		reverse_proxy helm:3000 {
 			header_up Host localhost
 		}
 	}
