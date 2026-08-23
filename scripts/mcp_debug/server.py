@@ -507,19 +507,20 @@ def handle_tools_list(id_):
         },
         {
             "name": "mcp_focus",
-            "description": "Focus router, decision logger, and session summary writer. Modes: recommend (default), status, pre_action, safe_next, ready_queue, defer, resume, sweep, technical_decision, session_summary.",
+            "description": "Focus router. Modes: recommend, status, done, pre_action, safe_next, ready_queue, defer, resume, sweep, next, technical_decision, session_summary.",
             "inputSchema": {
                 "type": "object",
                 "properties": {
-                    "request": {"type": "string", "description": "Optional user request to classify for recommend/status/pre_action or the resume reason for defer"},
-                    "mode": {"type": "string", "enum": ["recommend", "status", "pre_action", "safe_next", "ready_queue", "defer", "resume", "sweep", "next", "technical_decision", "session_summary"], "default": "recommend", "description": "recommend returns a recommendation; status returns active foci and quick wins only; pre_action returns duplicate/history/decision-tree summary before work begins; safe_next returns the highest-scoring safe-to-parallel focus; ready_queue returns the list of ready safe foci; defer marks the active focus or its in_progress subtask as deferred; resume suggests a focus to resume from ssot.focus.sessions.yml; sweep returns all parked/backlog/inbox candidates and optionally bulk-defers them to a named session; next activates the highest-priority parked/deferred focus; technical_decision appends to ssot.technical-decisions.yml; session_summary appends to ssot.focus.sessions.yml"},
-                    "resume_session": {"type": "string", "description": "Target session identifier for defer mode, or filter for resume mode (e.g. 'chaba-2026-08-19', 'yomi session')"},
-                    "reason": {"type": "string", "description": "Reason for deferring the active focus or subtask"},
-                    "hold": {"type": "string", "description": "Label of the focus to hold while sweeping the rest"},
-                    "bulk_session": {"type": "string", "description": "If provided in sweep mode, non-hold candidates without a session_map match are bulk-deferred to this session"},
-                    "session_map": {"type": "object", "description": "Optional mapping of label/branch/default to session for sweep bulk-defer"},
-                    "decision": {"type": "object", "description": "Decision object for technical_decision mode (id, title, context, options, chosen, reasoning, consequences)"},
-                    "summary": {"type": "object", "description": "Session summary object for session_summary mode (focus, source, plan, done, follow_up, next_action, decisions)"},
+                    "request": {"type": "string", "description": "User request for recommend/status/pre_action or defer reason"},
+                    "mode": {"type": "string", "enum": ["recommend", "status", "done", "pre_action", "safe_next", "ready_queue", "defer", "resume", "sweep", "next", "technical_decision", "session_summary"], "default": "recommend", "description": "Focus mode"},
+                    "resume_session": {"type": "string", "description": "Target session identifier for defer or resume"},
+                    "reason": {"type": "string", "description": "Reason for deferring"},
+                    "hold": {"type": "string", "description": "Label to hold during sweep"},
+                    "bulk_session": {"type": "string", "description": "Session for bulk-deferred sweep candidates"},
+                    "session_map": {"type": "object", "description": "Mapping of label/branch/default to session"},
+                    "confirm": {"type": "boolean", "default": False, "description": "Confirm activation for mode=next"},
+                    "decision": {"type": "object", "description": "Decision object for technical_decision mode"},
+                    "summary": {"type": "object", "description": "Session summary object"},
                 },
             },
         },
@@ -760,6 +761,7 @@ def handle_tools_call(id_, params):
             hold=arguments.get("hold"),
             bulk_session=arguments.get("bulk_session"),
             session_map=arguments.get("session_map"),
+            confirm=arguments.get("confirm", False),
         )
         output = json.dumps(result, separators=(",", ":"))
     else:
