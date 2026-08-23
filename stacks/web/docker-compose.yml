@@ -410,7 +410,8 @@ services:
     - REDIS_URL=redis://redis:6379
     - GEMINI_VISION_MODEL_PRIMARY=gemini-2.5-flash
     - GEMINI_VISION_MODEL_FALLBACK=gemini-2.5-flash-lite
-    - GEMINI_MODEL=gemini-2.5-flash
+    - GEMINI_MODEL=gemini-3.5-flash-lite
+    - GEMINI_EMBEDDING_MODEL=gemini-embedding-001
     - CONTEXT_MESSAGES_BEFORE=3
     - CONTEXT_MESSAGES_AFTER=3
     - GEMINI_API_KEY=${GEMINI_API_KEY}
@@ -427,7 +428,6 @@ services:
     - POSTGRES_PORT=5432
     - WEAVIATE_SEARCH_URL=http://weaviate:8080
     - WEAVIATE_URL=http://weaviate:8080
-    - EMBEDDING_SERVICE_URL=http://embedding-service:5001
     healthcheck:
       test:
       - CMD
