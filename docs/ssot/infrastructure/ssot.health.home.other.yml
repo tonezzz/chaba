@@ -42,27 +42,26 @@ services:
 - id: mcp-debug-cors
   name: MCP Debug CORS endpoint
   type: http
-  url: http://tony-dell:9100/health
+  url: http://tony-omen:9100/health
   expected_status: 200
   timeout: 5
   category: mcp-debug
   profiles:
   - home
   - mobile
-  note: CORS endpoint on tony-dell for mcp-savings.json and mcp-table.json, served by http_server.py via tailscale serve / Funnel.
+  note: CORS endpoint on tony-omen for mcp-savings.json and mcp-table.json, served by http_server.py.
   verification:
   - 'Check systemd: systemctl --user status mcp-debug-cors.service'
   - 'Check port: ss -tlnp | grep 9100'
-  - 'Test tailnet: curl -s http://tony-dell:9100/health'
-  - 'Test Funnel: curl -s https://tony-dell.taila0626a.ts.net/mcp-savings.json'
+  - 'Test tailnet: curl -s http://tony-omen:9100/health'
+  - 'Test Funnel: curl -s https://tony-omen.taila0626a.ts.net/mcp-savings.json'
   recovery_actions:
   - 'Restart: systemctl --user restart mcp-debug-cors.service'
-  - 'Check tailscale serve: tailscale serve status'
   - 'Check syntax: python3 -m py_compile /home/tony/CascadeProjects/chaba/scripts/mcp_debug/http_server.py'
 - id: mcp-debug-audit
   name: MCP Debug Audit Health
   type: http
-  url: http://tony-dell:9100/audit-health
+  url: http://tony-omen:9100/audit-health
   expected_status: 200
   timeout: 10
   category: mcp-debug
@@ -71,16 +70,16 @@ services:
   - mobile
   note: 'Returns the latest consolidated audit suite status from
 
-    reports/audits/summary.json on tony-dell.
+    reports/audits/summary.json on tony-omen.
 
     '
   verification:
   - 'Check systemd: systemctl --user status mcp-debug-cors.service'
-  - 'Test endpoint: curl -s http://tony-dell:9100/audit-health'
-  - 'Tailnet test: curl -s https://tony-dell.taila0626a.ts.net/audit-health'
+  - 'Test endpoint: curl -s http://tony-omen:9100/audit-health'
+  - 'Tailnet test: curl -s https://tony-omen.taila0626a.ts.net/audit-health'
   recovery_actions:
   - 'Restart: systemctl --user restart mcp-debug-cors.service'
-  - 'Run audit manually: ssh tony-dell node /home/tony/CascadeProjects/chaba-tony-dell/scripts/audits/run.mjs'
+  - 'Run audit manually: cd /home/tony/CascadeProjects/chaba && node scripts/audits/run.mjs'
 - id: playlived-omen
   name: Playlived (tony-omen)
   type: systemd

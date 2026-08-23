@@ -507,21 +507,19 @@ services:
 - id: mcp-debug-cors
   name: MCP Debug CORS endpoint
   type: http
-  url: http://tony-dell:9100/health
+  url: http://tony-omen:9100/health
   expected_status: 200
   timeout: 5
   category: mcp-debug
   profiles:
   - home
   - mobile
-  note: CORS endpoint on tony-dell for mcp-savings.json and mcp-table.json, served by http_server.py via tailscale serve /
-    Funnel.
+  note: CORS endpoint on tony-omen for mcp-savings.json and mcp-table.json, served by http_server.py.
   verification:
   - 'Check systemd: systemctl --user status mcp-debug-cors.service'
   - 'Check port: ss -tlnp | grep 9100'
-  - 'Test tailnet: curl -s http://tony-dell:9100/health'
-  - 'Test Funnel: curl -s https://tony-dell.taila0626a.ts.net/mcp-savings.json'
+  - 'Test tailnet: curl -s http://tony-omen:9100/health'
+  - 'Test Funnel: curl -s https://tony-omen.taila0626a.ts.net/mcp-savings.json'
   recovery_actions:
   - 'Restart: systemctl --user restart mcp-debug-cors.service'
-  - 'Check tailscale serve: tailscale serve status'
   - 'Check syntax: python3 -m py_compile /home/tony/CascadeProjects/chaba/scripts/mcp_debug/http_server.py'

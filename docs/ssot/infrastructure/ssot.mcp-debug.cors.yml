@@ -4,9 +4,9 @@ icon: 🌐
 version: 1
 
 overview:
-  purpose: Expose a read-only CORS endpoint on tony_dell so the chaba.h3 MCP Debug page can refresh the latest savings report.
+  purpose: Expose a read-only CORS endpoint on tony_omen so the chaba.h3 MCP Debug page can refresh the latest savings report.
   source: scripts/mcp_debug/http_server.py
-  service: ~/.config/systemd/user/mcp-debug-cors.service on tony-dell
+  service: ~/.config/systemd/user/mcp-debug-cors.service on tony-omen
 
 endpoints:
   - path: /mcp-savings.json
@@ -20,14 +20,14 @@ cors:
   allow_headers: "Content-Type"
 
 addressing:
-  note: The chaba.h3 page cannot resolve .local mDNS from a public browser, and an HTTPS page cannot fetch an HTTP URL. Use a same-origin PHP proxy on chaba.h3 pointing to the public Tailscale Funnel endpoint on tony-dell.
+  note: The chaba.h3 page cannot resolve .local mDNS from a public browser, and an HTTPS page cannot fetch an HTTP URL. Use a same-origin PHP proxy on chaba.h3 pointing to the public Tailscale Funnel endpoint on tony-omen.
   preferred:
     - https://chaba.h3.gizmo-thailand.com/api/mcp-savings.php
-    - https://tony-dell.taila0626a.ts.net/mcp-savings.json
-    - https://tony-dell.taila0626a.ts.net/mcp-table.json
+    - https://tony-omen.taila0626a.ts.net/mcp-savings.json
+    - https://tony-omen.taila0626a.ts.net/mcp-table.json
   tailnet_only:
-    - http://100.68.142.13:9100/mcp-savings.json
-    - http://tony-dell.taila0626a.ts.net:9100/mcp-savings.json
+    - http://100.75.102.88:9100/mcp-savings.json
+    - http://tony-omen.taila0626a.ts.net:9100/mcp-savings.json
   avoid:
     - http://tony-omen.local:9100/mcp-savings.json
 
@@ -35,13 +35,13 @@ proxy:
   savings:
     path: /api/mcp-savings.php
     source: chaba-h3/public/api/mcp-savings.php
-    upstream: https://tony-dell.taila0626a.ts.net/mcp-savings.json
+    upstream: https://tony-omen.taila0626a.ts.net/mcp-savings.json
     timeout: 5
     fallback: public/apps/docs/mcp_debug/data/mcp-savings.json
   table:
     path: /api/mcp-table.php
     source: chaba-h3/public/api/mcp-table.php
-    upstream: https://tony-dell.taila0626a.ts.net/mcp-table.json
+    upstream: https://tony-omen.taila0626a.ts.net/mcp-table.json
     timeout: 8
 
 resource_policy:
