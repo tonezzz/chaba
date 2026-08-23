@@ -122,6 +122,8 @@ services:
     restart: unless-stopped
     ports:
       - "3003:3000"
+    volumes:
+      - helm_data:/app/data
     extra_hosts:
       - "host.docker.internal:host-gateway"
     networks:
@@ -130,6 +132,7 @@ services:
 volumes:
   caddy_data:
   caddy_config:
+  helm_data:
 
 networks:
   frigate_default:
