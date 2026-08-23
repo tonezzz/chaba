@@ -40,6 +40,7 @@ def main():
     rc |= run(["scripts/focus-dispatcher.py", "--sub-agent"])
     rc |= run(["scripts/focus-dispatcher.py", "--advance"])
     rc |= run(["node", "scripts/ssot-optimize.mjs"])
+    rc |= run(["node", "scripts/ssot-optimize-to-inbox.mjs"])
     rc |= run(["scripts/process-remaining-focuses.py"])
     if rc:
         print("[overnight] completed with errors")

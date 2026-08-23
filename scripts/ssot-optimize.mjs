@@ -15,6 +15,7 @@ const REPO = join(__dirname, '..');
 const REPORTS_DIR = join(REPO, 'reports');
 const SUGGESTIONS = join(REPORTS_DIR, 'SSOT_OPTIMIZATION_SUGGESTIONS.md');
 const METRICS = join(REPORTS_DIR, 'SSOT_OPTIMIZATION_METRICS.json');
+const WARNINGS = join(REPORTS_DIR, 'SSOT_OPTIMIZATION_WARNINGS.json');
 
 function main() {
   const start = Date.now();
@@ -94,9 +95,16 @@ function main() {
     other: otherWarnings.length,
     files: 104,
   }, null, 2), 'utf8');
+  writeFileSync(WARNINGS, JSON.stringify({
+    generated: new Date().toISOString(),
+    bloat: bloatWarnings,
+    data_isolation: dataWarnings,
+    other: otherWarnings,
+  }, null, 2), 'utf8');
 
   console.log(`Wrote ${SUGGESTIONS}`);
   console.log(`Wrote ${METRICS}`);
+  console.log(`Wrote ${WARNINGS}`);
 }
 
 main();
