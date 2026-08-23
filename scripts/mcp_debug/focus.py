@@ -66,6 +66,48 @@ def _load_focus():
     return load_yaml(FOCUS)
 
 
+def _active_file_state(active_doc):
+    """Return a structured summary of everything in the active focus file."""
+    state = {}
+    for sec in active_doc.get("sections", []):
+        title = sec.get("title", "")
+        if title in ("Active Shared Focus", "Active Branch Focus"):
+            key = title.lower().replace(" ", "_")
+            state[key] = [
+                {
+                    "label": i.get("label"),
+                    "status": i.get("status"),
+                    "priority": i.get("priority"),
+                    "started": i.get("started"),
+                    "closed": i.get("closed"),
+                    "parked": i.get("parked"),
+                    "subtasks": len(i.get("subtasks", [])),
+                }
+                for i in sec.get("items", [])
+                if i
+            ]
+    return state
+
+
+def _stale_warning(active_doc):
+    """Detect stale active/parked mismatches."""
+    warnings = []
+    for sec in active_doc.get("sections", []):
+        if sec.get("title") in ("Active Shared Focus", "Active Branch Focus"):
+            for item in sec.get("items", []):
+                if not item:
+                    continue
+                status = item.get("status", "")
+                subtasks = item.get("subtasks", [])
+                if status in ("active", "parked") and not subtasks:
+                    warnings.append(f"{item.get('label')} has no subtasks; consider decomposing or closing")
+                completed = [s for s in subtasks if s.get("status") == "completed"]
+                total = len(subtasks)
+                if total and len(completed) == total and status not in ("closed", "completed"):
+                    warnings.append(f"{item.get('label')} has all {total} subtasks completed but status is '{status}'")
+    return warnings
+
+
 def _active_items(active_doc, backlog_doc=None):
     return active_items(active_doc, backlog_doc)
 
@@ -729,15 +771,30 @@ def mcp_focus(request=None, mode="recommend", decision=None, summary=None, resum
     inbox = _inbox_items()
     ready_safe = _ready_safe_items(active, backlog, inbox)
 
-    if mode == "status":
-        return {
+    if mode == "status" or mode == "reload":
+        if mode == "reload":
+            active_doc = _load_active()
+            backlog_doc = _load_backlog()
+            active, quick_wins, hand_off_queue, _ = _active_items(active_doc, backlog_doc)
+            backlog = _backlog_items()
+            inbox = _inbox_items()
+            ready_safe = _ready_safe_items(active, backlog, inbox)
+        active_file_state = _active_file_state(active_doc)
+        stale = _stale_warning(active_doc)
+        result = {
             "ok": True,
             "active": active,
+            "active_file_state": active_file_state,
             "quick_wins": quick_wins,
             "hand_off_queue": hand_off_queue,
             "ready_safe": ready_safe,
             "session_groups": _session_groups(active, backlog, inbox, active_doc),
+            "stale_warning": stale,
+            "checked_at": datetime.now().isoformat(),
         }
+        if mode == "reload":
+            result["reloaded"] = True
+        return result
 
     if mode == "safe_next":
         best = _best_safe_focus(active, backlog=backlog, inbox=inbox)
@@ -907,6 +964,8 @@ def mcp_focus(request=None, mode="recommend", decision=None, summary=None, resum
         }
 
     preprocessed = _preprocess_request(request or "")
+    if not request:
+        preprocessed = {"ok": True, "canonical_request": "", "request": ""}
     if preprocessed and preprocessed.get("ok") and preprocessed.get("confidence", 0) > 0.8 and preprocessed.get("canonical_request"):
         lookup_request = preprocessed["canonical_request"]
     else:
