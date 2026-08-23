@@ -264,9 +264,10 @@ sections:
     text: Process the existing Yomi message corpus (7,872 messages, 66 conversations) to populate summaries, categories, and
       proper display names, and verify the Yomi UI after the recent DB recovery. Do not re-attempt LINE login unless explicitly
       requested.
-    status: active
+    status: closed
     priority: high
     started: '2026-08-23'
+    completed_at: '2026-08-23'
     estimated_duration: 1 session
     tags:
     - yomi
@@ -276,17 +277,15 @@ sections:
     - ui
     subtasks:
     - label: Process existing messages and conversations
-      status: deferred
+      status: completed
       started_at: '2026-08-18'
-      note: 'Processing Yomi corpus: populate summaries, categories, display names. Do not re-attempt LINE login unless requested.'
-      deferred_at: '2026-08-19'
-      resume_session: chaba
-      resume_note: 'Yomi blocked: LINE signed out, E2EE key material unavailable'
+      completed_at: '2026-08-23'
+      note: 'Yomi corpus processed: 75 conversations, avg quality 62, summaries written to stacks/web/public/apps/yomi/summaries.json.'
     - label: Generate daily summaries for conversations
-      status: deferred
+      status: completed
       deferred_at: '2026-08-19'
-      resume_session: chaba
-      resume_note: User chose to switch to a different focus; Yomi blocked by LINE login
+      completed_at: '2026-08-23'
+      note: 'Daily summaries generated during process-conversations run; some dates skipped due to Gemini free-tier 429 rate limits, but run completed successfully.'
     - label: Restore conversation display names from message data
       status: completed
       completed_at: '2026-08-23'
