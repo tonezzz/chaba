@@ -206,6 +206,15 @@
         ]);
         if (!convRes.ok) throw new Error('HTTP ' + convRes.status);
         const { generatedAt, conversations } = await convRes.json();
+        const namesRes = await fetch('/apps/yomi/conversations-names.json', { credentials: 'include' });
+        const displayNames = namesRes.ok ? await namesRes.json() : {};
+        if (conversations) {
+          for (const c of conversations) {
+            if (displayNames[c.id] && /^[uc][0-9a-f]{32}$/.test(c.name)) {
+              c.name = displayNames[c.id];
+            }
+          }
+        }
         if (timeRes.ok) {
           const { lastUpdated } = await timeRes.json();
           lastServerUpdated = lastUpdated;
