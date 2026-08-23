@@ -302,3 +302,37 @@ implementation_notes:
   - mcp_focus mode=technical_decision appends to docs/ssot/decisions/ssot.technical-decisions.yml.
   - mcp_focus mode=session_summary appends to docs/ssot/ssot.focus.sessions.yml.
   - The assistant uses the returned action as the first disposition and only deviates for special cases (live_bug_report, auto_generated_alert, requires_mcp_data).
+
+improvements:
+  - id: mcp-focus-2026-08-23
+    title: Streamline mcp_focus behavior and observability
+    status: in_progress
+    items:
+      - label: Stop automatic decision logging on every recommend
+        text: "Make recommend read-only by default; only log decisions when mode=technical_decision or an explicit confirm flag is passed."
+        status: not_started
+        priority: high
+      - label: Make mcp_focus_status a cheap read-only call
+        text: "Ensure status and reload modes never write to ssot.focus.decisions.yml."
+        status: not_started
+        priority: high
+      - label: Cache SSOT reads with mtime invalidation
+        text: "Keep parsed YAML in memory; trust mtime for staleness; use reload to force re-read."
+        status: not_started
+        priority: medium
+      - label: Improve empty/no-match triage
+        text: "Use priority and triage_score for parked/deferred items, not just backlog keyword matches."
+        status: not_started
+        priority: medium
+      - label: Add cross-worktree context
+        text: "Read ssot.workspaces.yml / ssot.host-roles.yml to include worktree/branch state in recommendations."
+        status: not_started
+        priority: medium
+      - label: Add next preview and confirm gate
+        text: "Return the candidate before activating; only write SSOT on confirm=true."
+        status: not_started
+        priority: low
+      - label: Expand stale warnings
+        text: "Detect completed without completed_at, long-parked foci, active with no recent session, and invalid status values."
+        status: not_started
+        priority: low
