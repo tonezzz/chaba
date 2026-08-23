@@ -983,10 +983,11 @@ def mcp_focus(request=None, mode="recommend", decision=None, summary=None, resum
         return {"ok": True, "ready_safe": ready_safe}
 
     if mode == "defer":
-        item, subtask = _defer_active_focus(active_doc, resume_session or request or "", reason or request or "")
-        if not item:
+        res = _defer_active_focus(active_doc, resume_session or request or "", reason or request or "")
+        if not res:
             return {"ok": False, "error": "no active focus to defer"}
-        _save_active(doc)
+        item, subtask = res
+        _save_active(active_doc)
         focus_label = item.get("label", "")
         subtask_label = subtask.get("label", "") if subtask else ""
         log_session_summary({
