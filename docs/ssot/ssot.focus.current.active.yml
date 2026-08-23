@@ -264,9 +264,10 @@ sections:
     source: /home/tony/CascadeProjects/chaba/docs/ssot/infrastructure/ssot.mcp-debug.yml
   - label: Add authentication to Helm
     text: Protect Helm demo pages and API routes behind a shared secret or session token so they cannot be used by anyone with the public URL.
-    status: active
+    status: closed
     priority: high
     started: '2026-08-23'
+    closed: '2026-08-23'
     estimated_duration: 1 session
     tags:
     - helm
@@ -274,11 +275,14 @@ sections:
     - auth
     subtasks:
     - label: Add HELM_TOKEN middleware to API and demo routes
-      status: in_progress
+      status: completed
+      completed_at: '2026-08-23'
     - label: Update Caddy/Compose to inject token
-      status: not_started
+      status: completed
+      completed_at: '2026-08-23'
     - label: Verify protected endpoints return 401 without token
-      status: not_started
+      status: completed
+      completed_at: '2026-08-23'
     request_log: []
     ownership:
       owner: tony
@@ -288,10 +292,9 @@ sections:
     source: /home/tony/CascadeProjects/chaba/docs/ssot/ssot.focus.current.active.yml
   - label: Add sandboxing to Helm execute
     text: Run generated commands and code in a restricted environment so the execute demo cannot be used for remote code execution.
-    status: parked
+    status: active
     priority: high
     started: '2026-08-23'
-    parked: '2026-08-23'
     estimated_duration: 1 session
     tags:
     - helm
@@ -299,7 +302,7 @@ sections:
     - sandbox
     subtasks:
     - label: Audit code-generator and execute demo for dangerous calls
-      status: not_started
+      status: in_progress
     - label: Replace direct exec with a sandboxed runner
       status: not_started
     - label: Verify safe commands still work and unsafe commands are rejected
