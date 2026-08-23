@@ -120,6 +120,8 @@ services:
     restart: unless-stopped
     ports:
       - "3003:3000"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     networks:
       - default
 
