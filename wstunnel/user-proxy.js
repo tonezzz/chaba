@@ -2,7 +2,7 @@ const net = require('net');
 const WebSocket = require('ws');
 
 const LOCAL_PORT = parseInt(process.env.LOCAL_PORT || '2222', 10);
-const SERVER = process.env.TUNNEL_SERVER || 'wss://chaba.h3.gizmo-thailand.com/connect/tony-dell';
+const SERVER = process.env.TUNNEL_SERVER || 'wss://tony-omen.taila0626a.ts.net:3009/connect/tony-dell';
 
 const server = net.createServer((socket) => {
   console.log('user connected to local proxy');

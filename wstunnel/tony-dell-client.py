@@ -9,7 +9,7 @@ except ImportError:
     print("Run: pip3 install --user websockets")
     sys.exit(1)
 
-SERVER = os.environ.get('TUNNEL_SERVER', 'wss://chaba.h3.gizmo-thailand.com/tunnel/tony-dell')
+SERVER = os.environ.get('TUNNEL_SERVER', 'wss://tony-omen.taila0626a.ts.net:3009/tunnel/tony-dell')
 LOCAL_HOST = os.environ.get('LOCAL_HOST', '127.0.0.1')
 LOCAL_PORT = int(os.environ.get('LOCAL_PORT', '22'))
 

@@ -1,9 +1,13 @@
 const http = require('http');
+const https = require('https');
+const fs = require('fs');
 const WebSocket = require('ws');
 const url = require('url');
 
 const PORT = process.env.PORT || 3000;
 const TOKEN = process.env.TUNNEL_TOKEN || null;
+const TLS_CERT = process.env.TLS_CERT || null;
+const TLS_KEY = process.env.TLS_KEY || null;
 
 function hasToken(request) {
   if (!TOKEN) return true;
@@ -11,21 +15,29 @@ function hasToken(request) {
   return q.token === TOKEN;
 }
 
-const server = http.createServer((req, res) => {
-  res.writeHead(200);
-  res.end('tony-dell / kk-macbook ws tunnel\n');
-});
+function getTarget(pathname) {
+  const match = pathname.match(/^\/(?:tunnel|connect)\/(.+)$/);
+  return match ? match[1] : null;
+}
+
+const server = TLS_CERT && TLS_KEY
+  ? https.createServer({
+      cert: fs.readFileSync(TLS_CERT),
+      key: fs.readFileSync(TLS_KEY),
+    }, (req, res) => {
+      res.writeHead(200);
+      res.end('tony-dell / kk-macbook wss tunnel\n');
+    })
+  : http.createServer((req, res) => {
+      res.writeHead(200);
+      res.end('tony-dell / kk-macbook ws tunnel\n');
+    });
 
 const wssClient = new WebSocket.Server({ noServer: true });
 const wssUser = new WebSocket.Server({ noServer: true });
 
 const clients = new Map();
 const users = new Map();
-
-function getTarget(pathname) {
-  const match = pathname.match(/^\/(?:tunnel|connect)\/(.+)$/);
-  return match ? match[1] : null;
-}
 
 wssClient.on('connection', (ws, req) => {
   const target = getTarget(url.parse(req.url).pathname) || 'tony-dell';
@@ -103,6 +115,6 @@ server.on('upgrade', (request, socket, head) => {
   }
 });
 
-server.listen(PORT, () => {
-  console.log(`tunnel server listening on port ${PORT}`);
+server.listen(PORT, '127.0.0.1', () => {
+  console.log(`wstunnel server listening on port ${PORT} (${TLS_CERT ? 'wss' : 'ws'})`);
 });

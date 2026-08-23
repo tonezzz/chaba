@@ -1,7 +1,7 @@
 const WebSocket = require('ws');
 const net = require('net');
 
-const SERVER = process.env.TUNNEL_SERVER || 'wss://chaba.h3.gizmo-thailand.com/tunnel/tony-dell';
+const SERVER = process.env.TUNNEL_SERVER || 'wss://tony-omen.taila0626a.ts.net:3009/tunnel/tony-dell';
 const LOCAL_HOST = process.env.LOCAL_HOST || '127.0.0.1';
 const LOCAL_PORT = parseInt(process.env.LOCAL_PORT || '22', 10);
 
