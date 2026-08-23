@@ -111,6 +111,18 @@ services:
                 - gpu
     networks:
       - default
+
+  helm:
+    container_name: helm
+    build:
+      context: /home/tony/CascadeProjects/helm
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "3003:3000"
+    networks:
+      - default
+
 volumes:
   caddy_data:
   caddy_config:
