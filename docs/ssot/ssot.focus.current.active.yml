@@ -324,9 +324,10 @@ sections:
     source: /home/tony/CascadeProjects/chaba/docs/ssot/ssot.focus.current.active.yml
   - label: Make Helm conversation memory persistent
     text: Move conversation memory from /tmp/helm-memory/memory.json to a persisted volume so it survives container recreates and restarts.
-    status: active
+    status: closed
     priority: medium
     started: '2026-08-23'
+    closed: '2026-08-23'
     estimated_duration: 1 session
     tags:
     - helm
@@ -334,7 +335,14 @@ sections:
     - persistence
     subtasks:
     - label: Add a persisted data directory in the container
-      status: in_progress
+      status: completed
+      completed_at: '2026-08-23'
+    - label: Update conversation-memory.ts to use the persisted path
+      status: completed
+      completed_at: '2026-08-23'
+    - label: Verify memory survives a container recreate
+      status: completed
+      completed_at: '2026-08-23'
     - label: Update conversation-memory.ts to use the persisted path
       status: not_started
     - label: Verify memory survives a container recreate
@@ -348,10 +356,9 @@ sections:
     source: /home/tony/CascadeProjects/chaba/docs/ssot/ssot.focus.current.active.yml
   - label: Add health checks to Helm Compose service
     text: Add a Docker health check and a Caddy fail-over route so the Caddy reverse proxy stops sending traffic to an unhealthy Helm container.
-    status: parked
+    status: active
     priority: medium
     started: '2026-08-23'
-    parked: '2026-08-23'
     estimated_duration: 1 session
     tags:
     - helm
@@ -359,7 +366,7 @@ sections:
     - caddy
     subtasks:
     - label: Add /api/health route and Docker healthcheck
-      status: not_started
+      status: in_progress
     - label: Update Caddy to use active health checking or lb retries
       status: not_started
     - label: Verify container unhealthy state is detected
