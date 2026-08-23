@@ -67,6 +67,8 @@ audits:
     schedule: weekly
     severity_on_fail: warning
     description: KB coverage, freshness, and section quality
+    last_run:
+    last_result:
 
   - name: ssot
     script: scripts/ssot-validate-all.mjs
@@ -75,6 +77,8 @@ audits:
     schedule: weekly
     severity_on_fail: error
     description: SSOT YAML syntax and cross-reference validation
+    last_run:
+    last_result:
 
   - name: kb-modularity
     script: scripts/audits/kb-modularity-audit.mjs
@@ -83,6 +87,8 @@ audits:
     schedule: weekly
     severity_on_fail: warning
     description: KB entry focus, size, and duplicate detection
+    last_run:
+    last_result:
     thresholds:
       max_words: 1500
       max_headings: 25
@@ -102,6 +108,8 @@ audits:
     schedule: weekly
     severity_on_fail: warning
     description: SSOT file scope, nesting, and title uniqueness
+    last_run:
+    last_result:
     thresholds:
       max_words: 3000
       max_top_level_keys: 16
@@ -128,6 +136,8 @@ audits:
     schedule: weekly
     severity_on_fail: error
     description: Credential and secret scan across the repo
+    last_run:
+    last_result:
 
   - name: security-audit
     script: scripts/security-audit.sh
@@ -136,6 +146,8 @@ audits:
     schedule: monthly
     severity_on_fail: error
     description: System-level security review; run only with --full because it may need privileges
+    last_run:
+    last_result:
 
   - name: auto-kb-quality
     script: scripts/auto-kb-quality-audit.mjs
@@ -145,6 +157,8 @@ audits:
     schedule: weekly
     severity_on_fail: warning
     description: Scan auto-*.md KB entries and report/archive low-value candidates
+    last_run:
+    last_result:
 
   - name: kb-categorize
     script: scripts/kb-categorize-audit.mjs
@@ -153,6 +167,8 @@ audits:
     schedule: weekly
     severity_on_fail: warning
     description: Audit KB category tags and propose core-category mapping
+    last_run:
+    last_result:
 
   - name: caddy
     script: scripts/audits/caddy-audit.mjs
@@ -161,6 +177,8 @@ audits:
     schedule: weekly
     severity_on_fail: error
     description: Caddyfile format and syntax validation
+    last_run:
+    last_result:
 
   - name: standardization
     script: scripts/audits/standardization-audit.mjs
@@ -169,6 +187,8 @@ audits:
     schedule: weekly
     severity_on_fail: error
     description: Cross-reference integrity for audits, systemd units, and MCP tool registration
+    last_run:
+    last_result:
 
   - name: infrastructure
     script: scripts/audits/infrastructure-audit.mjs
@@ -176,7 +196,9 @@ audits:
     args: []
     schedule: weekly
     severity_on_fail: warning
-    description: Health SSOT config completeness and consistency
+    description: Health SSOT config completeness, consistency, and optional live checks against mcp-health and local state
+    last_run:
+    last_result:
 
   - name: mddb
     script: scripts/audits/mddb-audit.mjs
@@ -185,6 +207,8 @@ audits:
     schedule: weekly
     severity_on_fail: warning
     description: MDDB health, embedding proxy, stats, and DB size
+    last_run:
+    last_result:
 
 groups:
   - name: kb-suite
@@ -230,46 +254,9 @@ plan:
     - monitor first weekly and monthly runs
 
 baseline:
-  note: These root containers and public endpoints are accepted for the home/mobile network; any new entry should be reviewed before adding.
-  accepted_root_containers:
-    - gpu-queue
-    - gpu-queue-processor
-    - web
-    - ollama
-    - sensor-reader
-    - gemini-ollama-proxy
-    - imagen2-inference
-  accepted_public_endpoints:
-    - 0.0.0.0:11434
-    - 0.0.0.0:11435
-    - 0.0.0.0:18080
-    - 0.0.0.0:18081
-    - 0.0.0.0:22
-    - 0.0.0.0:24800
-    - 0.0.0.0:3000
-    - 0.0.0.0:3001
-    - 0.0.0.0:33450
-    - 0.0.0.0:35640
-    - 0.0.0.0:36246
-    - 0.0.0.0:37634
-    - 0.0.0.0:40479
-    - 0.0.0.0:41563
-    - 0.0.0.0:41641
-    - 0.0.0.0:43108
-    - 0.0.0.0:51755
-    - 0.0.0.0:51770
-    - 0.0.0.0:52241
-    - 0.0.0.0:52320
-    - 0.0.0.0:5353
-    - 0.0.0.0:55489
-    - 0.0.0.0:8000
-    - 0.0.0.0:8001
-    - 0.0.0.0:8080
-    - 0.0.0.0:8081
-    - 0.0.0.0:9010
-    - 0.0.0.0:48503
-    - 0.0.0.0%lxcbr0:67
-    - 0.0.0.0%virbr0:67
+  note: Accepted root containers and public endpoints have moved to docs/ssot/infrastructure/ssot.audit.baseline.yml.
+  related_ssot:
+    - docs/ssot/infrastructure/ssot.audit.baseline.yml
 
 related_files:
   - scripts/audits/run.mjs
