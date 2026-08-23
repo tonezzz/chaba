@@ -223,6 +223,32 @@ sections:
       locked: true
       lock_reason: Activated as active focus
     source: /home/tony/CascadeProjects/chaba/docs/ssot/infrastructure/ssot.gemini-models.yml
+  - label: mcp-debug Helm proxy POC
+    text: 'Add a Helm App Router proxy at /api/debug/[host]/[command] that calls the mcp-debug CORS endpoint /mcp-table.json on the target host and returns the compact table JSON.'
+    status: active
+    priority: medium
+    started: '2026-08-23'
+    estimated_duration: 1 session
+    tags:
+    - mcp-debug
+    - helm
+    - proxy
+    - api
+    subtasks:
+    - label: Add host map and proxy route
+      status: completed
+      completed_at: '2026-08-23'
+    - label: Verify route with a live mcp-debug command
+      status: not_started
+    - label: Update SSOT and close focus
+      status: not_started
+    request_log: []
+    ownership:
+      owner: tony
+      session: ''
+      locked: true
+      lock_reason: Activated as active focus
+    source: /home/tony/CascadeProjects/chaba/docs/ssot/infrastructure/ssot.mcp-debug.yml
 - title: Active Branch Focus
   icon: branch
   layout: list
