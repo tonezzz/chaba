@@ -7,6 +7,19 @@ sys.path.insert(0, str(__import__("pathlib").Path(__file__).resolve().parent.par
 from mcp_debug.focus import mcp_focus
 
 
+MODE_DESCRIPTION = (
+    "recommend: return next focus; "
+    "status: return current foci; "
+    "reload: re-read SSOT then status; "
+    "safe_next: highest safe-to-parallel focus; "
+    "defer: park active focus; "
+    "resume: suggest a deferred focus; "
+    "sweep: list all candidates and optionally bulk-defer; "
+    "next: activate highest-priority parked/deferred focus; "
+    "preview: show next candidate without activating"
+)
+
+
 def _send(message):
     print(json.dumps(message), flush=True)
 
@@ -31,17 +44,57 @@ def handle_tools_list(id_):
             "tools": [
                 {
                     "name": "mcp_focus",
-                    "description": "Focus intake and status: classify a request, get active foci, or run pre_action summary. Modes: recommend (default), status, pre_action, safe_next, ready_queue, defer, resume, sweep.",
+                    "description": "Focus intake and status router.",
                     "inputSchema": {
                         "type": "object",
                         "properties": {
-                            "request": {"type": "string", "description": "User request or defer reason"},
-                            "mode": {"type": "string", "enum": ["recommend", "status", "reload", "pre_action", "safe_next", "ready_queue", "defer", "resume", "sweep", "next"], "default": "recommend", "description": "recommend returns the next focus recommendation; status returns current foci; reload explicitly re-reads files and returns current foci; safe_next returns the highest safe-to-parallel focus; defer parks the active focus and marks a resume note; resume suggests a focus to reactivate; sweep returns all parked/backlog/inbox candidates and optionally bulk-defers them to a named session; next activates the highest-priority parked/deferred focus"},
-                            "resume_session": {"type": "string", "description": "Target session identifier for defer, or filter for resume"},
-                            "reason": {"type": "string", "description": "Reason for deferring"},
-                            "hold": {"type": "string", "description": "Label of the focus to hold while sweeping the rest"},
-                            "bulk_session": {"type": "string", "description": "If provided in sweep mode, non-hold candidates without a session_map match are bulk-deferred to this session"},
-                            "session_map": {"type": "object", "description": "Optional mapping of label/branch/default to session for sweep bulk-defer"},
+                            "request": {
+                                "type": "string",
+                                "description": "User request or defer reason",
+                            },
+                            "mode": {
+                                "type": "string",
+                                "enum": [
+                                    "recommend",
+                                    "status",
+                                    "reload",
+                                    "pre_action",
+                                    "safe_next",
+                                    "ready_queue",
+                                    "defer",
+                                    "resume",
+                                    "sweep",
+                                    "next",
+                                    "preview",
+                                ],
+                                "default": "recommend",
+                                "description": MODE_DESCRIPTION,
+                            },
+                            "resume_session": {
+                                "type": "string",
+                                "description": "Target session for defer or resume filter",
+                            },
+                            "reason": {
+                                "type": "string",
+                                "description": "Reason for deferring",
+                            },
+                            "hold": {
+                                "type": "string",
+                                "description": "Label to hold during sweep",
+                            },
+                            "bulk_session": {
+                                "type": "string",
+                                "description": "Session for bulk-deferred sweep candidates",
+                            },
+                            "session_map": {
+                                "type": "object",
+                                "description": "Mapping of label/branch/default to session",
+                            },
+                            "confirm": {
+                                "type": "boolean",
+                                "default": False,
+                                "description": "Confirm activation for mode=next",
+                            },
                         },
                         "required": [],
                     },
@@ -70,11 +123,12 @@ def handle_tools_call(id_, params):
             hold=arguments.get("hold"),
             bulk_session=arguments.get("bulk_session"),
             session_map=arguments.get("session_map"),
+            confirm=arguments.get("confirm", False),
         )
         _send({"jsonrpc": "2.0", "id": id_, "result": {"content": [{"type": "text", "text": json.dumps(result, default=str)}]}})
         return
     if name == "mcp_focus_status":
-        result = mcp_focus("", "status")
+        result = mcp_focus("", "status", no_log=True)
         _send({"jsonrpc": "2.0", "id": id_, "result": {"content": [{"type": "text", "text": json.dumps(result, default=str)}]}})
         return
     _send({"jsonrpc": "2.0", "id": id_, "error": {"code": -32602, "message": f"unknown tool: {name}"}})

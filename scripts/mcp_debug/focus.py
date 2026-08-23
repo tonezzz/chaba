@@ -1,6 +1,7 @@
 """MCP Focus session-start router."""
 from datetime import datetime
 from pathlib import Path
+import os
 import sys
 import yaml
 from .config import REPO_DIR
@@ -20,50 +21,94 @@ CURRENT = REPO / "docs" / "ssot" / "ssot.focus.current.yml"
 ACTIVE = REPO / "docs" / "ssot" / "ssot.focus.current.active.yml"
 BACKLOG = REPO / "docs" / "ssot" / "ssot.focus.current.backlog.yml"
 FOCUS = REPO / "docs" / "ssot" / "ssot.focus.yml"
+WORKSPACES = REPO / "docs" / "ssot" / "infrastructure" / "ssot.workspaces.yml"
 INBOX_DIR = REPO / "docs" / "ssot" / "focus-inbox"
 DECISIONS = REPO / "docs" / "ssot" / "ssot.focus.decisions.yml"
 TECHNICAL = REPO / "docs" / "ssot" / "decisions" / "ssot.technical-decisions.yml"
 SESSIONS = REPO / "docs" / "ssot" / "ssot.focus.sessions.yml"
+
+# File-read cache: path -> {"mtime": ..., "doc": ...}
+_FILE_CACHE = {}
+
+
+def _cached_load(path, force=False):
+    """Load a YAML file, using an mtime cache unless force=True."""
+    global _FILE_CACHE
+    try:
+        mtime = os.path.getmtime(path)
+    except OSError:
+        mtime = None
+    if not force:
+        cached = _FILE_CACHE.get(str(path))
+        if cached and cached.get("mtime") == mtime:
+            return cached["doc"]
+    doc = load_yaml(path)
+    _FILE_CACHE[str(path)] = {"mtime": mtime, "doc": doc}
+    return doc
 
 
 def _find_section(sections, title):
     return find_section(sections, title)
 
 
-def _load_current():
-    return load_yaml(CURRENT)
+def _load_current(force=False):
+    return _cached_load(CURRENT, force=force)
 
 
 def _save_current(doc):
     with open(CURRENT, "w") as f:
         yaml.safe_dump(doc, f, sort_keys=False, allow_unicode=True, width=120, default_flow_style=False)
+    _FILE_CACHE.pop(str(CURRENT), None)
 
 
-def _load_active():
-    return load_yaml(ACTIVE)
+def _load_active(force=False):
+    return _cached_load(ACTIVE, force=force)
 
 
 def _save_active(doc):
     with open(ACTIVE, "w") as f:
         yaml.safe_dump(doc, f, sort_keys=False, allow_unicode=True, width=120, default_flow_style=False)
+    _FILE_CACHE.pop(str(ACTIVE), None)
 
 
-def _load_backlog():
-    return load_yaml(BACKLOG)
+def _load_backlog(force=False):
+    return _cached_load(BACKLOG, force=force)
 
 
 def _save_backlog(doc):
     with open(BACKLOG, "w") as f:
         yaml.safe_dump(doc, f, sort_keys=False, allow_unicode=True, width=120, default_flow_style=False)
+    _FILE_CACHE.pop(str(BACKLOG), None)
 
 
 def _save_focus(doc):
     with open(FOCUS, "w") as f:
         yaml.safe_dump(doc, f, sort_keys=False, allow_unicode=True, width=120, default_flow_style=False)
+    _FILE_CACHE.pop(str(FOCUS), None)
 
 
-def _load_focus():
-    return load_yaml(FOCUS)
+def _load_focus(force=False):
+    return _cached_load(FOCUS, force=force)
+
+
+def _load_workspaces(force=False):
+    return _cached_load(WORKSPACES, force=force)
+
+
+def _worktree_context():
+    """Return a lightweight summary of declared worktrees from SSOT."""
+    doc = _load_workspaces()
+    result = []
+    for classification in doc.get("classifications", {}).values():
+        for wt in classification.get("worktrees", []):
+            if not wt or wt.get("removed"):
+                continue
+            result.append({
+                "path": wt.get("path"),
+                "branch": wt.get("branch"),
+                "purpose": wt.get("purpose"),
+            })
+    return result
 
 
 def _active_file_state(active_doc):
@@ -92,6 +137,7 @@ def _active_file_state(active_doc):
 def _stale_warning(active_doc):
     """Detect stale active/parked mismatches."""
     warnings = []
+    allowed_statuses = {"active", "parked", "closed", "completed", "deferred", "draft"}
     for sec in active_doc.get("sections", []):
         if sec.get("title") in ("Active Shared Focus", "Active Branch Focus"):
             for item in sec.get("items", []):
@@ -99,12 +145,24 @@ def _stale_warning(active_doc):
                     continue
                 status = item.get("status", "")
                 subtasks = item.get("subtasks", [])
+                if status not in allowed_statuses:
+                    warnings.append(f"{item.get('label')} has invalid status '{status}'")
                 if status in ("active", "parked") and not subtasks:
                     warnings.append(f"{item.get('label')} has no subtasks; consider decomposing or closing")
+                if status == "completed" and not item.get("completed_at"):
+                    warnings.append(f"{item.get('label')} is 'completed' but has no completed_at")
                 completed = [s for s in subtasks if s.get("status") == "completed"]
                 total = len(subtasks)
                 if total and len(completed) == total and status not in ("closed", "completed"):
-                    warnings.append(f"{item.get('label')} has all {total} subtasks completed but status is '{status}'")
+                    warnings.append(f"{item.get('label')} has all {subtasks} subtasks completed but status is '{status}'")
+                if status == "parked" and item.get("parked"):
+                    try:
+                        parked = item.get("parked")
+                        days = (datetime.now() - datetime.strptime(parked, "%Y-%m-%d")).days
+                        if days > 14:
+                            warnings.append(f"{item.get('label')} has been parked for {days} days")
+                    except (ValueError, TypeError):
+                        pass
     return warnings
 
 
@@ -386,6 +444,22 @@ def _best_backlog(backlog):
     return max(backlog, key=lambda i: (triage_score(i), priority_value(i), i.get("started", "")))
 
 
+def _best_parked_or_deferred(active_doc, backlog_doc):
+    """Return the highest-priority parked or deferred focus across active and backlog."""
+    candidates = []
+    for sec in active_doc.get("sections", []):
+        if sec.get("title") in ("Active Shared Focus", "Active Branch Focus"):
+            for item in sec.get("items", []):
+                if item and item.get("status") in ("parked", "deferred"):
+                    candidates.append(item)
+    for item in backlog_items(backlog_doc):
+        if item and item.get("status") in ("parked", "deferred"):
+            candidates.append(item)
+    if not candidates:
+        return None
+    return max(candidates, key=lambda i: (priority_value(i), triage_score(i), i.get("started", "") or "", i.get("label", "")))
+
+
 def _best_inbox(inbox):
     if not inbox:
         return None
@@ -631,7 +705,18 @@ def _make_recommendation(request, active, quick_wins):
             "next_prompt": "Add a new Quick Win and complete immediately.",
         }
 
-    # Step 4 & 5: backlog
+    # Step 4 & 5: parked/deferred, then backlog
+    active_doc = _load_active()
+    backlog_doc = _load_backlog()
+    parked = _best_parked_or_deferred(active_doc, backlog_doc)
+    if parked:
+        return {
+            "action": "triage_backlog",
+            "target": parked.get("label", ""),
+            "confidence": "high" if parked.get("priority") == "high" else "medium",
+            "reasoning": f"No active or quick-win match; the highest-priority parked/deferred focus is '{parked.get('label', '')}'.",
+            "next_prompt": f"Consider activating parked/deferred focus '{parked.get('label', '')}'.",
+        }
     backlog = _backlog_items()
     match = _match_backlog(req, backlog)
     if match:
@@ -748,7 +833,7 @@ def _load_sessions():
         return {}
 
 
-def mcp_focus(request=None, mode="recommend", decision=None, summary=None, resume_session=None, reason=None, hold=None, bulk_session=None, session_map=None):
+def mcp_focus(request=None, mode="recommend", decision=None, summary=None, resume_session=None, reason=None, hold=None, bulk_session=None, session_map=None, no_log=True, confirm=False):
     if mode == "technical_decision":
         if not decision:
             return {"ok": False, "error": "decision is required for technical_decision mode"}
@@ -773,8 +858,8 @@ def mcp_focus(request=None, mode="recommend", decision=None, summary=None, resum
 
     if mode == "status" or mode == "reload":
         if mode == "reload":
-            active_doc = _load_active()
-            backlog_doc = _load_backlog()
+            active_doc = _load_active(force=True)
+            backlog_doc = _load_backlog(force=True)
             active, quick_wins, hand_off_queue, _ = _active_items(active_doc, backlog_doc)
             backlog = _backlog_items()
             inbox = _inbox_items()
@@ -789,6 +874,7 @@ def mcp_focus(request=None, mode="recommend", decision=None, summary=None, resum
             "hand_off_queue": hand_off_queue,
             "ready_safe": ready_safe,
             "session_groups": _session_groups(active, backlog, inbox, active_doc),
+            "worktrees": _worktree_context(),
             "stale_warning": stale,
             "checked_at": datetime.now().isoformat(),
         }
@@ -840,7 +926,7 @@ def mcp_focus(request=None, mode="recommend", decision=None, summary=None, resum
             "reason": reason or request or "",
         }
 
-    if mode == "next":
+    if mode == "next" or mode == "preview":
         for key in ("branch", "shared"):
             it = active.get(key)
             if it and it.get("status") != "completed":
@@ -861,6 +947,20 @@ def mcp_focus(request=None, mode="recommend", decision=None, summary=None, resum
             confidence_level = "medium"
         else:
             confidence_level = "low"
+        if mode == "preview" or not confirm:
+            return {
+                "ok": True,
+                "preview": chosen,
+                "activated": False,
+                "recommendation": {
+                    "action": "next",
+                    "target": chosen.get("label"),
+                    "confidence": confidence_level,
+                    "confidence_score": chosen["confidence_score"],
+                    "reasoning": f"Preview of highest-priority parked/deferred focus: {chosen.get('label')}.",
+                    "next_prompt": f"Confirm to activate {chosen.get('label')} or choose a different focus.",
+                },
+            }
         activated = _activate_candidate(chosen)
         if not activated:
             return {"ok": False, "error": f"Could not activate {chosen.get('label')} because another focus is active", "next": chosen}
@@ -981,7 +1081,7 @@ def mcp_focus(request=None, mode="recommend", decision=None, summary=None, resum
         recommendation["canonical_request"] = preprocessed["canonical_request"]
 
     matched_to = recommendation.get("target", "")
-    log_decision(request or "", recommendation["action"], matched_to, recommendation["reasoning"], recommendation["confidence"], "mcp_focus", matched_to)
+    log_decision(request or "", recommendation["action"], matched_to, recommendation["reasoning"], recommendation["confidence"], "mcp_focus", matched_to, dry_run=no_log)
 
     return {
         "ok": True,
