@@ -28,7 +28,7 @@ overview:
     request, it recommends the next action without modifying any focus state.
   inputs:
     - request: optional free-text user request
-    - mode: optional "recommend" (default), "status", "pre_action", "safe_next", "ready_queue", "defer", "resume", "sweep", "next", "technical_decision", or "session_summary"
+    - mode: optional "recommend" (default), "status", "reload", "pre_action", "safe_next", "ready_queue", "defer", "resume", "sweep", "next", "technical_decision", or "session_summary"
     - resume_session: target session identifier for defer mode
     - reason: reason for deferring
     - hold: label of the focus to hold while sweeping the rest
@@ -45,7 +45,14 @@ output_schema:
   active:
     shared: active shared focus or null
     branch: active branch focus or null
+  active_file_state:
+    active_shared_focus: list of all shared focus entries with status, priority, and subtask count
+    active_branch_focus: list of all branch focus entries with status, priority, and subtask count
+  stale_warning: list of detected inconsistencies, e.g. all subtasks completed but focus not closed
   quick_wins: list of completed quick wins
+  hand_off_queue: list of hand-off items
+  ready_safe: list of safe-to-parallel items
+  checked_at: ISO timestamp of the read
   recommendation:
     action: one of [continue, quick_win, decompose, triage_backlog, triage_inbox, draft_inbox]
     target: label of the focus, quick win, or inbox item
@@ -65,6 +72,14 @@ output_schema:
     similar_items: top similar focus/backlog/job items
 
 actions:
+  reload:
+    when: |
+      User explicitly asks to refresh, reload, or re-read the focus SSOT files.
+    output:
+      - Re-read docs/ssot/ssot.focus.current.active.yml and backlog.
+      - Return the same payload as status with reloaded: true and checked_at timestamp.
+    confidence: high
+
   continue:
     when: |
       A request is empty, is "continue", or matches an active shared or branch focus label or subtask label.
