@@ -32,6 +32,7 @@ def main():
     if os.environ.get("SKIP_HEALTH") != "1":
         rc |= run(["scripts/mcp-health-to-inbox.py"])
     rc |= run(["scripts/registry-drafts.py"])
+    rc |= run(["scripts/improvements-triage.py"])
     rc |= run(["node", "scripts/ssot-validate-all.mjs"])
     if rc:
         print("[overnight] aborting: SSOT validation failed", file=sys.stderr)
