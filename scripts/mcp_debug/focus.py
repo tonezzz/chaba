@@ -1,6 +1,7 @@
 """MCP Focus session-start router."""
 from datetime import datetime
 from pathlib import Path
+import concurrent.futures
 import os
 import subprocess
 import sys
@@ -99,18 +100,21 @@ def _load_workspaces(force=False):
 def _worktree_context():
     """Return a lightweight summary of declared worktrees from SSOT, with dirty state."""
     doc = _load_workspaces()
-    result = []
+    wts = []
     for classification in doc.get("classifications", {}).values():
         for wt in classification.get("worktrees", []):
             if not wt or wt.get("removed"):
                 continue
-            path = wt.get("path")
-            dirty = _is_worktree_dirty(path)
+            wts.append(wt)
+    with concurrent.futures.ThreadPoolExecutor(max_workers=8) as pool:
+        dirty_futures = {wt.get("path"): pool.submit(_is_worktree_dirty, wt.get("path")) for wt in wts}
+        result = []
+        for wt in wts:
             result.append({
-                "path": path,
+                "path": wt.get("path"),
                 "branch": wt.get("branch"),
                 "purpose": wt.get("purpose"),
-                "dirty": dirty,
+                "dirty": dirty_futures[wt.get("path")].result(timeout=5),
             })
     return result
 
@@ -121,14 +125,15 @@ def _is_worktree_dirty(path):
         return None
     try:
         result = subprocess.run(
-            ["git", "-C", path, "status", "--short"],
+            ["git", "-C", path, "diff", "--quiet"],
             capture_output=True,
-            text=True,
-            timeout=2,
+            timeout=1,
         )
-        if result.returncode != 0:
-            return None
-        return bool(result.stdout.strip())
+        if result.returncode == 0:
+            return False
+        if result.returncode == 1:
+            return True
+        return None
     except (subprocess.TimeoutExpired, OSError):
         return None
 

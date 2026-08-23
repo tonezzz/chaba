@@ -162,7 +162,8 @@ sections:
     - label: Update README and deployment docs
       status: completed
       completed_at: '2026-08-23'
-      note: 'Implemented in /home/tony/CascadeProjects/tony-dell-wstunnel. Deploy server to chaba.h3 and start clients on tony-dell and kk-macbook.'
+      note: Implemented in /home/tony/CascadeProjects/tony-dell-wstunnel. Deploy server to chaba.h3 and start clients on tony-dell
+        and kk-macbook.
     request_log: []
     ownership:
       owner: tony
@@ -290,7 +291,8 @@ sections:
       status: completed
       deferred_at: '2026-08-19'
       completed_at: '2026-08-23'
-      note: 'Daily summaries generated during process-conversations run; some dates skipped due to Gemini free-tier 429 rate limits, but run completed successfully.'
+      note: Daily summaries generated during process-conversations run; some dates skipped due to Gemini free-tier 429 rate
+        limits, but run completed successfully.
     - label: Restore conversation display names from message data
       status: completed
       completed_at: '2026-08-23'
@@ -418,3 +420,43 @@ sections:
       locked: true
       lock_reason: Activated after rview-improvements closure
     branch: tony-dell
+  - label: Tony-Dell cannot see iPhone Personal Hotspot SSID
+    text: 'tony-dell''s Wi-Fi interface (wlx00761100125e) does not show the iPhone Personal Hotspot in scans.
+
+      Initial check: the adapter is a Ralink MT7601U (148f:7601) which is 2.4 GHz only.
+
+      iPhone Personal Hotspot on newer iOS defaults to 5 GHz when "Maximize Compatibility" is off,
+
+      so the most likely fix is enabling "Maximize Compatibility" on the iPhone, forcing 2.4 GHz.
+
+      If that is not enough, investigate driver/regulatory region, power-saving, and whether the
+
+      hotspot is using a hidden SSID.
+
+      '
+    branch: tony-dell
+    status: active
+    priority: medium
+    started: '2026-08-23'
+    blocker:
+      reason: Requires manual iPhone setting change; user will handle in another session
+    estimated_duration: 1 session
+    tags:
+    - tony-dell
+    - wifi
+    - iphone
+    - hotspot
+    - network
+    - mt7601u
+    subtasks:
+    - label: Enable "Maximize Compatibility" on iPhone Personal Hotspot and rescan on tony-dell
+      status: deferred
+      deferred_at: '2026-08-19'
+      resume_session: chaba
+      resume_note: iPhone manual step; will be handled in another session
+    - label: If still invisible, verify driver/firmware and regulatory domain for MT7601U
+      status: completed
+      completed: '2026-08-18'
+      note: MT7601U (148f:7601) is present and the driver mt7601u is loaded. The adapter is 2.4 GHz only (channels 1-14, 2412-2484
+        MHz). This confirms the iPhone hotspot must be forced to 2.4 GHz via Maximize Compatibility.
+    previous_status: active
