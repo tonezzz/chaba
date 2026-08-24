@@ -1,0 +1,25 @@
+title: Night Jobs — tony_omen
+subtitle: Overnight and scheduled jobs running on tony_omen
+icon: moon
+host: tony_omen
+jobs:
+- id: chaba-health-monitor
+  name: Chaba Health Monitor
+  host: tony_omen
+  type: systemd-user-timer
+  unit: chaba-health-monitor.timer
+  schedule: every 15 minutes
+  enabled: true
+  status: active
+  description: Collect tony-omen health snapshots.
+  note: Independent of tony-dell.
+- id: chaba-funnel-docs-sync
+  name: Sync docs to tony-dell chaba-funnel
+  host: tony_omen
+  type: shell
+  schedule: daily
+  command: rsync -avP --delete --checksum /home/tony/CascadeProjects/chaba-h3/public/apps/docs/ tony@tony-dell:/home/tony/chaba-funnel/public/apps/docs/
+  enabled: true
+  status: planned
+  note: Keeps the Tailscale Funnel docs on tony-dell in sync with the chaba-h3 docs source. --checksum verifies content, not
+    just timestamp/size; --delete removes stale files on the target.

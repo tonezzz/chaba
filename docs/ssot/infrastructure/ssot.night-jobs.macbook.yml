@@ -1,0 +1,15 @@
+title: Night Jobs — macbook
+subtitle: Overnight and scheduled jobs running on macbook
+icon: moon
+host: macbook
+jobs:
+- id: macbook-health
+  name: MacBook Health Snapshot
+  host: macbook
+  type: launchd
+  unit: com.chaba.macbook-health
+  schedule: every 15 minutes
+  enabled: true
+  status: active
+  output: /Users/kkkakk/var/chaba/health/macbook-snapshot.json
+  note: Captures lan_ip, tailscale_ip, wifi_ssid, memory pressure, process counts, disk hogs, and ports.

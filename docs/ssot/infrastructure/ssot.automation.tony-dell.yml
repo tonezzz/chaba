@@ -1,0 +1,21 @@
+title: Chaba System Automation — Tony-Dell
+subtitle: Host-specific automation schedule and overrides for tony-dell
+icon: robot
+host: tony_dell
+version: 1
+
+# The authoritative automation definitions remain in ssot.automation.yml.
+# This file captures the subset of schedules and overrides that run on tony-dell.
+
+automation:
+  overnight_assessment:
+    status: active
+    note: The main overnight assessment is configured to run on tony-dell.
+
+  backup_system:
+    status: active
+    note: Primary backup host for PostgreSQL, Docker volumes, and SSOT.
+
+  backup_monitor:
+    status: active
+    note: Backup integrity monitoring runs on tony-dell.
