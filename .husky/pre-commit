@@ -43,7 +43,7 @@ if [ -n "$WHITESPACE_FILES" ]; then
     echo -e "${YELLOW}⚠️  Warning: Trailing whitespace found in SSOT files${NC}"
     echo "Files with trailing whitespace:"
     echo "$WHITESPACE_FILES"
-    echo "Consider running: git diff --cached --name-only | xargs sed -i 's/[[:space:]]*$//'
+    echo "Consider running: git diff --cached --name-only | xargs sed -i 's/[[:space:]]*$//'"
 fi
 
 # Check for IP addresses (hostname compliance)
