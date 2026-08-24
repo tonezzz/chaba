@@ -17,7 +17,6 @@ import yaml
 
 REPO = Path(__file__).resolve().parent.parent
 IMPROVEMENTS = REPO / "docs" / "ssot" / "ssot.improvements.yml"
-ARCHIVE = REPO / "docs" / "ssot" / "ssot.improvements.archive.2026-H2.yml"
 DATE_SUFFIX_RE = re.compile(r"\s*\(\d{4}-\d{2}-\d{2}\)\s*$")
 ARCHIVE_AFTER_DAYS = 14
 
@@ -40,6 +39,16 @@ def is_promotable(item):
         for k in ("business_impact", "technical_impact", "user_experience_impact", "cost_savings_impact")
     )
     return has_score
+
+
+def archive_path_for(item):
+    completed = item.get("completed") or item.get("completed_at") or item.get("accepted") or ""
+    year = str(completed)[:4] if len(str(completed)) >= 4 else str(datetime.now().year)
+    if not year.isdigit():
+        year = str(datetime.now().year)
+    month = int(str(completed)[5:7]) if len(str(completed)) >= 7 and str(completed)[5:7].isdigit() else datetime.now().month
+    half = "H2" if month >= 7 else "H1"
+    return REPO / "docs" / "ssot" / f"ssot.improvements.archive.{year}-{half}.yml"
 
 
 def should_archive(item):
@@ -133,21 +142,28 @@ def triage():
         sec["items"] = kept
 
     if archived_items:
-        archive_doc = {"items": []}
-        if ARCHIVE.exists():
-            with open(ARCHIVE) as f:
-                archive_doc = yaml.safe_load(f) or {}
-        archive_doc.setdefault("items", []).extend(archived_items)
-        archive_doc["archived_at"] = datetime.now().date().isoformat()
-        with open(ARCHIVE, "w") as f:
-            yaml.safe_dump(
-                archive_doc,
-                f,
-                sort_keys=False,
-                allow_unicode=True,
-                width=120,
-                default_flow_style=False,
-            )
+        archives = {}
+        for item in archived_items:
+            ap = archive_path_for(item)
+            archives.setdefault(ap, []).append(item)
+        for ap, items in archives.items():
+            archive_doc = {"items": []}
+            if ap.exists():
+                with open(ap) as f:
+                    archive_doc = yaml.safe_load(f) or {}
+            archive_doc.setdefault("items", []).extend(items)
+            archive_doc["archived_at"] = datetime.now().date().isoformat()
+            ap.parent.mkdir(parents=True, exist_ok=True)
+            with open(ap, "w") as f:
+                yaml.safe_dump(
+                    archive_doc,
+                    f,
+                    sort_keys=False,
+                    allow_unicode=True,
+                    width=120,
+                    default_flow_style=False,
+                )
+            changes.append(f"wrote {len(items)} items to {ap.name}")
 
     if not changes:
         print("[improvements-triage] no changes")
