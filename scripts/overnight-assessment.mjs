@@ -520,10 +520,13 @@ function getGitInfo() {
 
 function improvementExists(label) {
   if (!existsSync(ssotImprovementsPath)) return false;
-  
+
   try {
     const ssotContent = readFileSync(ssotImprovementsPath, 'utf8');
-    return ssotContent.includes(`label: ${label}`);
+    const baseLabel = label.replace(/\s*\(\d{4}-\d{2}-\d{2}\)\s*$/, '').trim();
+    const escaped = baseLabel.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const regex = new RegExp(`label: ${escaped}(\\s*\\(\\d{4}-\\d{2}-\\d{2}\\))?$`, 'm');
+    return regex.test(ssotContent);
   } catch (e) {
     return false;
   }
