@@ -6,13 +6,14 @@
  * and writes a non-destructive suggestions report.
  */
 import { execSync } from 'child_process';
-import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
+import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync, watch } from 'fs';
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const REPO = join(__dirname, '..');
 const REPORTS_DIR = join(REPO, 'reports');
+const SSOT_DIR = join(REPO, 'docs', 'ssot');
 const SUGGESTIONS = join(REPORTS_DIR, 'SSOT_OPTIMIZATION_SUGGESTIONS.md');
 const METRICS = join(REPORTS_DIR, 'SSOT_OPTIMIZATION_METRICS.json');
 const WARNINGS = join(REPORTS_DIR, 'SSOT_OPTIMIZATION_WARNINGS.json');
@@ -40,7 +41,7 @@ function pruneHistory() {
 
 function main() {
   const start = Date.now();
-  const args = process.argv.slice(2).join(' ');
+  const args = process.argv.slice(2).filter(a => a !== '--watch').join(' ');
   const report = execSync(`${process.execPath} scripts/ssot-validate-all.mjs ${args}`, {
     cwd: REPO,
     encoding: 'utf8',
@@ -139,4 +140,22 @@ function main() {
   console.log(`Wrote ${WARNINGS}`);
 }
 
-main();
+function watchMode() {
+  console.log(`👀 Watching ${SSOT_DIR} for SSOT changes...`);
+  let timer = null;
+  watch(SSOT_DIR, { recursive: true }, (event, filename) => {
+    if (!filename || !filename.endsWith('.yml')) return;
+    if (timer) clearTimeout(timer);
+    timer = setTimeout(() => {
+      console.log(`\n📝 Change detected: ${filename}`);
+      main();
+    }, 500);
+  });
+}
+
+const args = process.argv.slice(2);
+if (args.includes('--watch')) {
+  watchMode();
+} else {
+  main();
+}
