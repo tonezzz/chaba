@@ -64,6 +64,52 @@ def should_archive(item):
     return (datetime.now().date() - completed_date).days >= ARCHIVE_AFTER_DAYS
 
 
+def derive_effort(priority, category):
+    if priority == "high":
+        return "1 session"
+    if priority == "medium":
+        return "2-4 hours"
+    if category in ("documentation", "cleanup"):
+        return "30 minutes"
+    return "1 hour"
+
+
+def derive_impact(item):
+    category = item.get("category", "")
+    priority = item.get("priority", "medium")
+    base = 5
+    if priority == "high":
+        base = 8
+    elif priority == "low":
+        base = 3
+    if category in ("performance", "security"):
+        business = base + 2
+        technical = base + 3
+        cost = base + 1
+        ux = base
+    elif category in ("monitoring", "infrastructure"):
+        business = base + 1
+        technical = base + 2
+        cost = base + 1
+        ux = base
+    elif category == "documentation":
+        business = base - 2
+        technical = base - 1
+        cost = base
+        ux = base - 1
+    else:
+        business = base
+        technical = base
+        cost = base
+        ux = base
+    return {
+        "business_impact": min(10, business),
+        "technical_impact": min(10, technical),
+        "user_experience_impact": min(10, ux),
+        "cost_savings_impact": min(10, cost),
+    }
+
+
 def merge_item(existing, new):
     """Update existing item with newer discovery info; keep oldest discovered date."""
     existing.setdefault("discovered", new.get("discovered"))
@@ -107,6 +153,14 @@ def triage():
             label = item.get("label", "")
             b = base_label(label)
             if item.get("auto_generated") and item.get("status") == "pending":
+                if item.get("effort") in (None, "", "TBD"):
+                    item["effort"] = derive_effort(item.get("priority"), item.get("category"))
+                if not item.get("impact_summary"):
+                    scores = derive_impact(item)
+                    for k, v in scores.items():
+                        if not item.get(k):
+                            item[k] = v
+                    item["impact_summary"] = f"Auto-scored {item.get('priority')} priority {item.get('category')} improvement"
                 if not is_promotable(item):
                     triage_notes = item.setdefault("triage_notes", [])
                     note = f"Held at {item.get('status')} on {datetime.now().date().isoformat()}: requires effort and impact before acceptance"
