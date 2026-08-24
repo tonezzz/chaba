@@ -6,7 +6,7 @@
  * and writes a non-destructive suggestions report.
  */
 import { execSync } from 'child_process';
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
+import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
 import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 
@@ -16,6 +16,7 @@ const REPORTS_DIR = join(REPO, 'reports');
 const SUGGESTIONS = join(REPORTS_DIR, 'SSOT_OPTIMIZATION_SUGGESTIONS.md');
 const METRICS = join(REPORTS_DIR, 'SSOT_OPTIMIZATION_METRICS.json');
 const WARNINGS = join(REPORTS_DIR, 'SSOT_OPTIMIZATION_WARNINGS.json');
+const HISTORY = join(REPORTS_DIR, 'SSOT_OPTIMIZATION_HISTORY.jsonl');
 
 function main() {
   const start = Date.now();
@@ -101,6 +102,15 @@ function main() {
     data_isolation: dataWarnings,
     other: otherWarnings,
   }, null, 2), 'utf8');
+
+  const historyEntry = {
+    generated: new Date().toISOString(),
+    bloat: bloatWarnings.length,
+    data_isolation: dataWarnings.length,
+    other: otherWarnings.length,
+    files: 104,
+  };
+  appendFileSync(HISTORY, JSON.stringify(historyEntry) + '\n', 'utf8');
 
   console.log(`Wrote ${SUGGESTIONS}`);
   console.log(`Wrote ${METRICS}`);
