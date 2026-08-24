@@ -40,7 +40,8 @@ function pruneHistory() {
 
 function main() {
   const start = Date.now();
-  const report = execSync(`${process.execPath} scripts/ssot-validate-all.mjs`, {
+  const args = process.argv.slice(2).join(' ');
+  const report = execSync(`${process.execPath} scripts/ssot-validate-all.mjs ${args}`, {
     cwd: REPO,
     encoding: 'utf8',
     stdio: ['ignore', 'pipe', 'pipe'],

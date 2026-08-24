@@ -85,7 +85,7 @@ echo -e "${GREEN}✅ Required fields present${NC}"
 # Run full SSOT validation suite
 # This catches bloat, data-isolation, and structure warnings beyond basic YAML syntax.
 echo "🔍 Running full SSOT validation..."
-if ! node scripts/ssot-validate-all.mjs > /tmp/ssot-precommit.log 2>&1; then
+if ! node scripts/ssot-validate-all.mjs --staged > /tmp/ssot-precommit.log 2>&1; then
     echo -e "${RED}❌ SSOT validation failed. See /tmp/ssot-precommit.log or run 'node scripts/ssot-validate-all.mjs'.${NC}"
     tail -n 30 /tmp/ssot-precommit.log
     exit 1
@@ -95,7 +95,7 @@ echo -e "${GREEN}✅ SSOT validation passed${NC}"
 
 # Preventive optimization: fail the commit if bloat/data-isolation/other warnings exist
 echo "🎯 Running SSOT optimization check..."
-if ! node scripts/ssot-optimize.mjs > /tmp/ssot-optimize-precommit.log 2>&1; then
+if ! node scripts/ssot-optimize.mjs --staged > /tmp/ssot-optimize-precommit.log 2>&1; then
     echo -e "${RED}❌ SSOT optimization run failed. See /tmp/ssot-optimize-precommit.log.${NC}"
     tail -n 20 /tmp/ssot-optimize-precommit.log
     exit 1

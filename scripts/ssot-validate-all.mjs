@@ -13,6 +13,7 @@ import { fileURLToPath } from 'url';
 import { execSync } from 'child_process';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
+const REPO = join(__dirname, '..');
 const SSOT_DIR = join(__dirname, '..', 'docs', 'ssot');
 const TEMP_PY = '/tmp/ssot-validate-batch.py';
 
@@ -194,13 +195,47 @@ if __name__ == '__main__':
 `;
 }
 
+function resolveInputs(args) {
+  if (args.length === 0) return null;
+  const mode = args.find(a => a.startsWith('--'));
+  const resolved = [];
+  for (const a of args) {
+    if (a === '--staged') {
+      try {
+        const staged = execSync('git diff --cached --name-only', { encoding: 'utf8', cwd: REPO }).trim().split('\n').filter(Boolean);
+        resolved.push(...staged.map(p => join(REPO, p)));
+      } catch { /* ignore */ }
+    } else if (a === '--changed') {
+      try {
+        const changed = execSync('git diff --name-only', { encoding: 'utf8', cwd: REPO }).trim().split('\n').filter(Boolean);
+        resolved.push(...changed.map(p => join(REPO, p)));
+      } catch { /* ignore */ }
+    } else if (a === '--uncommitted') {
+      try {
+        const staged = execSync('git diff --cached --name-only', { encoding: 'utf8', cwd: REPO }).trim().split('\n').filter(Boolean);
+        const changed = execSync('git diff --name-only', { encoding: 'utf8', cwd: REPO }).trim().split('\n').filter(Boolean);
+        const all = new Set([...staged, ...changed]);
+        resolved.push(...[...all].map(p => join(REPO, p)));
+      } catch { /* ignore */ }
+    } else {
+      resolved.push(join(REPO, a));
+    }
+  }
+  const filtered = resolved.filter(p => p.endsWith('.yml') && p.includes('docs/ssot'));
+  return mode ? { files: filtered, mode } : { files: filtered, mode: null };
+}
+
 function main() {
   if (!existsSync(SSOT_DIR)) {
     console.log('SSOT directory not found');
     return;
   }
 
-  const files = findYAMLFiles(SSOT_DIR);
+  const args = process.argv.slice(2);
+  const resolved = resolveInputs(args);
+  const files = resolved.mode && resolved.files.length === 0
+    ? []
+    : (resolved.files.length > 0 ? resolved.files : findYAMLFiles(SSOT_DIR));
   console.log('=== SSOT Validation Report ===\n');
   console.log(`Found ${files.length} SSOT YAML files\n`);
 
