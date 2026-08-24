@@ -41,7 +41,7 @@ function pruneHistory() {
 
 function main() {
   const start = Date.now();
-  const args = process.argv.slice(2).filter(a => a !== '--watch').join(' ');
+  const args = process.argv.slice(2).filter(a => a !== '--watch' && a !== '--fix').join(' ');
   const report = execSync(`${process.execPath} scripts/ssot-validate-all.mjs ${args}`, {
     cwd: REPO,
     encoding: 'utf8',
@@ -153,9 +153,24 @@ function watchMode() {
   });
 }
 
+function runFix() {
+  try {
+    execSync(`${process.execPath} scripts/ssot-optimize-to-inbox.mjs`, {
+      cwd: REPO,
+      encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
+  } catch (err) {
+    console.error(`[fix] inbox bridge failed: ${err.stderr || err.message}`);
+  }
+}
+
 const args = process.argv.slice(2);
 if (args.includes('--watch')) {
   watchMode();
 } else {
   main();
+  if (args.includes('--fix')) {
+    runFix();
+  }
 }
