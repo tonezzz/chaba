@@ -18,7 +18,8 @@
     "check-links": "find . -name '*.md' -not -path './node_modules/*' -not -path './.git/*' -not -path './scripts/*/node_modules/*' -print0 | xargs -0 -n1 npx markdown-link-check --verbose -c .markdown-link-check.json",
     "fix:md": "markdownlint-cli2 --fix \"**/*.md\"",
     "spell-check": "cspell \"**/*.md\"",
-    "lint:all": "npm run format:check && npm run fix:md && npm run spell-check"
+    "lint:all": "npm run format:check && npm run fix:md && npm run spell-check",
+    "prepare": "husky"
   },
   "lint-staged": {
     "*.{js,json,md,yml,yaml,mjs}": "prettier --write",

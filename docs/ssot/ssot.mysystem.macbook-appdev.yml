@@ -18,13 +18,17 @@ sections:
       - label: Command Line Tools
         text: Installed at /Library/Developer/CommandLineTools
       - label: Full Xcode
-        text: Not installed — xcodebuild refuses to run because the active developer directory is a CLT instance
+        text: Not installed — `xcodebuild -version` fails with 'active developer directory /Library/Developer/CommandLineTools is a command line tools instance'
+      - label: Active Developer Directory
+        text: /Library/Developer/CommandLineTools
       - label: Swift
-        text: Apple Swift 5.8.1 available via CLT
+        text: Apple Swift 5.8.1 (swiftlang-5.8.0.124.5 clang-1403.0.22.11.100), Target x86_64-apple-darwin22.6.0
       - label: Node.js
-        text: v20.17.0 and npm 10.8.2 installed at /Users/kkkakk/.local/node; PATH set in ~/.zshenv
+        text: v20.17.0 installed; npm 10.8.2 installed at /Users/kkkakk/.local/node; PATH set in ~/.zshenv
+      - label: Homebrew
+        text: 6.0.17 installed at /Users/kkkakk/.homebrew
       - label: Code Signing
-        text: 0 valid Apple Developer code signing identities
+        text: 0 valid Apple Developer code signing identities (security find-identity -v -p codesigning)
       - label: Package Managers
         text: Node PATH configured; Homebrew installed at ~/.homebrew; CocoaPods and Ruby gemsets not installed
 
@@ -56,7 +60,7 @@ sections:
     items:
       - label: Phase 1 — Install Xcode
         text: Download and install Xcode 15.x from the App Store or Apple developer portal; accept license with xcodebuild -license accept
-        status: pending
+        status: in_progress
       - label: Phase 2 — Verify Developer Tools
         text: Set xcode-select to Xcode and confirm xcodebuild, xcrun, and swift report the new toolchain
         status: pending
