@@ -28,6 +28,7 @@ INBOX_DIR = REPO / "docs" / "ssot" / "focus-inbox"
 DECISIONS = REPO / "docs" / "ssot" / "ssot.focus.decisions.yml"
 TECHNICAL = REPO / "docs" / "ssot" / "decisions" / "ssot.technical-decisions.yml"
 SESSIONS = REPO / "docs" / "ssot" / "ssot.focus.sessions.yml"
+IMPROVEMENTS = REPO / "docs" / "ssot" / "ssot.improvements.yml"
 
 # File-read cache: path -> {"mtime": ..., "doc": ...}
 _FILE_CACHE = {}
@@ -509,6 +510,23 @@ def _best_backlog(backlog):
     return max(backlog, key=lambda i: (triage_score(i), priority_value(i), i.get("started", "")))
 
 
+def _improvement_items():
+    """Return pending/accepted improvement items from ssot.improvements.yml."""
+    doc = _cached_load(IMPROVEMENTS)
+    items = []
+    for sec in doc.get("sections", []):
+        for item in sec.get("items", []):
+            if item and item.get("status") in ("pending", "accepted", "planned"):
+                items.append(item)
+    return items
+
+
+def _best_improvement(items):
+    if not items:
+        return None
+    return max(items, key=lambda i: (priority_value(i), i.get("discovered", "")))
+
+
 def _best_parked_or_deferred(active_doc, backlog_doc):
     """Return the highest-priority parked or deferred focus across active and backlog."""
     candidates = []
@@ -800,6 +818,18 @@ def _make_recommendation(request, active, quick_wins):
             "confidence": "medium",
             "reasoning": "No active or quick-win match; the highest-scoring backlog item is the best next focus.",
             "next_prompt": f"Consider activating backlog item '{best.get('label', '')}'.",
+        }
+
+    # Step 5b: improvements
+    improvements = _improvement_items()
+    best_improvement = _best_improvement(improvements)
+    if best_improvement:
+        return {
+            "action": "triage_improvement",
+            "target": best_improvement.get("label", ""),
+            "confidence": "medium",
+            "reasoning": "No active, quick-win, or backlog match; the highest-priority pending improvement is available.",
+            "next_prompt": f"Consider activating improvement '{best_improvement.get('label', '')}'.",
         }
 
     # Step 6: inbox
