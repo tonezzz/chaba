@@ -7,15 +7,37 @@
  * batched Python invocation with parallel file processing.
  */
 
-import { readFileSync, readdirSync, existsSync, writeFileSync, statSync, unlinkSync } from 'fs';
+import { readFileSync, readdirSync, existsSync, writeFileSync, statSync, unlinkSync, mkdirSync } from 'fs';
 import { dirname, join, relative } from 'path';
 import { fileURLToPath } from 'url';
 import { execSync } from 'child_process';
+import { createHash } from 'crypto';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const REPO = join(__dirname, '..');
 const SSOT_DIR = join(__dirname, '..', 'docs', 'ssot');
+const CACHE_DIR = join(REPO, '.cache');
+const CACHE_FILE = join(CACHE_DIR, 'ssot-validate.json');
 const TEMP_PY = '/tmp/ssot-validate-batch.py';
+
+function sha256(filePath) {
+  const content = readFileSync(filePath);
+  return createHash('sha256').update(content).digest('hex');
+}
+
+function loadCache() {
+  if (!existsSync(CACHE_FILE)) return {};
+  try {
+    return JSON.parse(readFileSync(CACHE_FILE, 'utf8'));
+  } catch {
+    return {};
+  }
+}
+
+function saveCache(cache) {
+  if (!existsSync(CACHE_DIR)) mkdirSync(CACHE_DIR, { recursive: true });
+  writeFileSync(CACHE_FILE, JSON.stringify(cache, null, 2), 'utf8');
+}
 
 function findYAMLFiles(dir, files = []) {
   const items = readdirSync(dir);
@@ -196,7 +218,7 @@ if __name__ == '__main__':
 }
 
 function resolveInputs(args) {
-  if (args.length === 0) return null;
+  if (args.length === 0) return { files: [], mode: null };
   const mode = args.find(a => a.startsWith('--'));
   const resolved = [];
   for (const a of args) {
@@ -233,30 +255,68 @@ function main() {
 
   const args = process.argv.slice(2);
   const resolved = resolveInputs(args);
-  const files = resolved.mode && resolved.files.length === 0
+  const allFiles = resolved.mode && resolved.files.length === 0
     ? []
     : (resolved.files.length > 0 ? resolved.files : findYAMLFiles(SSOT_DIR));
-  console.log('=== SSOT Validation Report ===\n');
-  console.log(`Found ${files.length} SSOT YAML files\n`);
-
-  const pythonScript = buildPythonScript(files);
-  writeFileSync(TEMP_PY, pythonScript, 'utf8');
-
-  const start = Date.now();
-  let results = [];
-  try {
-    const output = execSync(`python3 ${TEMP_PY}`, {
-      encoding: 'utf8',
-      stdio: ['ignore', 'pipe', 'pipe'],
-    });
-    results = JSON.parse(output);
-  } catch (error) {
-    console.error('Python execution error:', error.message);
-    process.exit(1);
-  } finally {
-    // Debug: keep temp file
-    console.log(TEMP_PY);
+  if (allFiles.length === 0) {
+    console.log('=== SSOT Validation Report ===\n');
+    console.log('Found 0 SSOT YAML files\n');
+    console.log('=== Summary ===');
+    console.log('Total files checked: 0');
+    console.log('Valid files: 0');
+    console.log('Total errors: 0');
+    console.log('Total warnings: 0');
+    console.log('Validation time: 0ms');
+    console.log('\n✅ All SSOT files are valid');
+    return;
   }
+
+  const cache = loadCache();
+  const toValidate = [];
+  const cachedResults = [];
+  const start = Date.now();
+  for (const file of allFiles) {
+    const hash = sha256(file);
+    if (cache[file] && cache[file].hash === hash) {
+      cachedResults.push(cache[file].result);
+    } else {
+      toValidate.push(file);
+    }
+  }
+
+  let pyResults = [];
+  if (toValidate.length > 0) {
+    console.log('=== SSOT Validation Report ===\n');
+    console.log(`Found ${allFiles.length} SSOT YAML files (${toValidate.length} to validate, ${cachedResults.length} from cache)\n`);
+
+    const pythonScript = buildPythonScript(toValidate);
+    writeFileSync(TEMP_PY, pythonScript, 'utf8');
+
+    try {
+      const output = execSync(`python3 ${TEMP_PY}`, {
+        encoding: 'utf8',
+        stdio: ['ignore', 'pipe', 'pipe'],
+      });
+      pyResults = JSON.parse(output);
+    } catch (error) {
+      console.error('Python execution error:', error.message);
+      process.exit(1);
+    } finally {
+      // Debug: keep temp file
+      console.log(TEMP_PY);
+    }
+
+    for (const r of pyResults) {
+      const fullPath = join(SSOT_DIR, r.path);
+      cache[fullPath] = { hash: sha256(fullPath), result: r };
+    }
+    saveCache(cache);
+  } else {
+    console.log('=== SSOT Validation Report ===\n');
+    console.log(`Found ${allFiles.length} SSOT YAML files (all ${cachedResults.length} from cache)\n`);
+  }
+
+  const results = [...cachedResults, ...pyResults].sort((a, b) => a.path.localeCompare(b.path));
   const elapsed = Date.now() - start;
 
   let totalErrors = 0;
@@ -283,7 +343,7 @@ function main() {
   }
 
   console.log('=== Summary ===');
-  console.log(`Total files checked: ${files.length}`);
+  console.log(`Total files checked: ${allFiles.length}`);
   console.log(`Valid files: ${validFiles}`);
   console.log(`Total errors: ${totalErrors}`);
   console.log(`Total warnings: ${totalWarnings}`);
