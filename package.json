@@ -19,6 +19,9 @@
     "fix:md": "markdownlint-cli2 --fix \"**/*.md\"",
     "spell-check": "cspell \"**/*.md\"",
     "lint:all": "npm run format:check && npm run fix:md && npm run spell-check",
+    "check:ssot": "node scripts/ssot-validate-all.mjs",
+    "check:optimize": "node scripts/ssot-optimize.mjs",
+    "check:all": "npm run check:ssot && npm run check:optimize",
     "prepare": "husky"
   },
   "lint-staged": {
