@@ -12,5 +12,6 @@ EXPOSE 3007
 
 ENV RVIEW_API_PORT=3007
 ENV RVIEW_STATE_FILE=/data/state.json
+ENV RVIEW_USAGE_LOG=/data/usage.log
 
 CMD ["node", "rview-api.mjs"]

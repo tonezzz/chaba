@@ -225,7 +225,8 @@ tony-dell:
     caddy_upstream: tony-dell:3007
     public_funnel: 'tony-dell.taila0626a.ts.net:3007'
     tailscale_funnel: '--tcp=3007 --bg 3007'
-    health_check: curl -sf http://127.0.0.1:3007/state?action=list >/dev/null
+    health_check: curl -sf http://127.0.0.1:3007/health >/dev/null
+    usage_log: /home/tony/.local/share/rview-api/usage.log
     status: implemented (2026-08-20)
     note: 'Migrated from tony-omen; state persisted to ~/.local/share/rview-api. Caddy /apps/rview/api/* reverse proxy updated to tony-dell:3007. Image is built by the rview-api-image.build Quadlet unit. Public access is also available via Tailscale Funnel TCP (tony-dell.taila0626a.ts.net:3007) for the chaba.h3 proxy.'
   gemini-live:

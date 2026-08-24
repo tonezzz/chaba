@@ -92,8 +92,8 @@ sections:
     icon: ⚠️
     layout: list
     items:
-      - label: State file
-        text: The default state file is inside the container. Mount rview_api_state volume or set RVIEW_STATE_FILE to a persistent host path.
+      - label: State and usage logs
+        text: State and usage logs are written to /data. The Quadlet container mounts /home/tony/.local/share/rview-api:/data so data survives container recreation.
       - label: Media playback state
         text: The API tracks requested state; actual playback timing (currentTime, buffering) is not synchronized for live streams.
 

@@ -2,18 +2,20 @@
 "use strict";
 
 import { createServer } from "http";
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
+import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "fs";
 import { dirname, join } from "path";
 import { fileURLToPath } from "url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PORT = parseInt(process.env.RVIEW_API_PORT || "3007", 10);
-const STATE_FILE = process.env.RVIEW_STATE_FILE || join(__dirname, "state.json");
+const STATE_FILE = process.env.RVIEW_STATE_FILE || "/data/state.json";
+const USAGE_LOG = process.env.RVIEW_USAGE_LOG || "/data/usage.log";
+const startTime = Date.now();
 
 let state = { views: {}, next_view_number: 1 };
 
-function ensureStateDir() {
-  const dir = dirname(STATE_FILE);
+function ensureDir(filePath) {
+  const dir = dirname(filePath);
   if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
 }
 
@@ -38,10 +40,20 @@ function loadState() {
 
 function saveState() {
   try {
-    ensureStateDir();
+    ensureDir(STATE_FILE);
     writeFileSync(STATE_FILE, JSON.stringify(state, null, 2));
   } catch (e) {
     console.error("rview save error:", e.message);
+  }
+}
+
+function logUsage(record) {
+  try {
+    ensureDir(USAGE_LOG);
+    const line = JSON.stringify({ ...record, ts: now() }) + "\n";
+    appendFileSync(USAGE_LOG, line);
+  } catch (e) {
+    console.error("rview usage log error:", e.message);
   }
 }
 
@@ -123,6 +135,7 @@ function createView(viewId, displayName) {
   if (displayName) view.display_name = displayName;
   view.updated_at = now();
   saveState();
+  logUsage({ action: "create", view_id: viewId, display_name: displayName });
   return { ok: true, view: fullView(view) };
 }
 
@@ -149,6 +162,7 @@ function show(viewId, url, title, mediaType, enqueue, content) {
     view.state = "playing";
   }
   saveState();
+  logUsage({ action: "show", view_id: viewId, url, media_type: mt, title, enqueue });
   return { ok: true, view: fullView(view) };
 }
 
@@ -174,6 +188,7 @@ function queueView(viewId, items, mode) {
     view.state = view.current_item ? "playing" : "stopped";
   }
   saveState();
+  logUsage({ action: "queue", view_id: viewId, mode, item_count: parsed.length });
   return { ok: true, view: fullView(view) };
 }
 
@@ -257,6 +272,7 @@ function control(viewId, action, value) {
   }
   view.updated_at = now();
   saveState();
+  logUsage({ action: "control", view_id: viewId, command: action, value });
   return { ok: true, view: fullView(view) };
 }
 
@@ -271,9 +287,23 @@ function statusView(viewId) {
 
 function deleteView(viewId) {
   if (!state.views[viewId]) return { ok: false, error: "view not found" };
+  logUsage({ action: "delete", view_id: viewId });
   delete state.views[viewId];
   saveState();
   return { ok: true };
+}
+
+function health() {
+  return {
+    ok: true,
+    status: "ok",
+    service: "rview-api",
+    uptime: Math.floor((Date.now() - startTime) / 1000),
+    views: Object.keys(state.views).length,
+    state_file: STATE_FILE,
+    usage_log: USAGE_LOG,
+    version: "1",
+  };
 }
 
 function readBody(req) {
@@ -304,6 +334,12 @@ const server = createServer(async (req, res) => {
   }
 
   const url = new URL(req.url, `http://localhost:${PORT}`);
+
+  if (url.pathname === "/health") {
+    sendJson(res, 200, health());
+    return;
+  }
+
   if (!["/state.php", "/state"].includes(url.pathname)) {
     sendJson(res, 404, { ok: false, error: "not found" });
     return;
@@ -370,5 +406,5 @@ const server = createServer(async (req, res) => {
 
 loadState();
 server.listen(PORT, "0.0.0.0", () => {
-  console.log(`rview-api listening on port ${PORT}, state file ${STATE_FILE}`);
+  console.log(`rview-api listening on port ${PORT}, state file ${STATE_FILE}, usage log ${USAGE_LOG}`);
 });
