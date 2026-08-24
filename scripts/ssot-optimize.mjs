@@ -17,6 +17,26 @@ const SUGGESTIONS = join(REPORTS_DIR, 'SSOT_OPTIMIZATION_SUGGESTIONS.md');
 const METRICS = join(REPORTS_DIR, 'SSOT_OPTIMIZATION_METRICS.json');
 const WARNINGS = join(REPORTS_DIR, 'SSOT_OPTIMIZATION_WARNINGS.json');
 const HISTORY = join(REPORTS_DIR, 'SSOT_OPTIMIZATION_HISTORY.jsonl');
+const HISTORY_DAYS = 90;
+
+function pruneHistory() {
+  if (!existsSync(HISTORY)) return;
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - HISTORY_DAYS);
+  const lines = readFileSync(HISTORY, 'utf8').split('\n').filter(Boolean);
+  const kept = [];
+  for (const line of lines) {
+    try {
+      const entry = JSON.parse(line);
+      if (new Date(entry.generated) >= cutoff) {
+        kept.push(line);
+      }
+    } catch {
+      // drop malformed lines
+    }
+  }
+  writeFileSync(HISTORY, kept.join('\n') + (kept.length ? '\n' : ''), 'utf8');
+}
 
 function main() {
   const start = Date.now();
@@ -110,6 +130,7 @@ function main() {
     other: otherWarnings.length,
     files: 104,
   };
+  pruneHistory();
   appendFileSync(HISTORY, JSON.stringify(historyEntry) + '\n', 'utf8');
 
   console.log(`Wrote ${SUGGESTIONS}`);
