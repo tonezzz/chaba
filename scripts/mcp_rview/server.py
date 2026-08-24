@@ -143,6 +143,14 @@ def handle_tools_list(id_):
             },
         ),
         _tool(
+            "rview_health",
+            "Check rview-api readiness. Returns the service health status before calling state-changing tools.",
+            {
+                "type": "object",
+                "properties": {},
+            },
+        ),
+        _tool(
             "fetch_page",
             "Fetch a web page and return its title, description, and extracted text. Use this before generating an HTML summary for RView. After fetching, call rview_show with media_type 'html' and the generated HTML in the 'content' field (pass the source URL as 'url').",
             {
@@ -203,6 +211,8 @@ def handle_tools_call(id_, params):
                 view_id=arguments.get("view_id"),
                 view_number=arguments.get("view_number"),
             )
+        elif name == "rview_health":
+            result = views.health()
         elif name == "fetch_page":
             result = fetch.fetch_page(
                 arguments["url"],

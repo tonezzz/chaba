@@ -6,6 +6,7 @@ defaulting to the local chaba-h3 Caddy endpoint.
 """
 import json
 import os
+import re
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -16,6 +17,11 @@ def _api_url():
         "RVIEW_API_URL",
         "http://localhost:8080/apps/rview/api/state",
     )
+
+
+def _health_url():
+    url = _api_url()
+    return re.sub(r"/(state\.php|state)(\?.*)?$", "/health", url)
 
 
 def _request(action, view_id=None, view_number=None, payload=None):
@@ -108,3 +114,18 @@ def status(view_id=None, view_number=None):
 
 def delete_view(view_id=None, view_number=None):
     return _request("delete", view_id=view_id, view_number=view_number)
+
+
+def health():
+    url = _health_url()
+    req = urllib.request.Request(url, method="GET")
+    try:
+        with urllib.request.urlopen(req, timeout=5) as resp:
+            return json.loads(resp.read().decode("utf-8"))
+    except urllib.error.HTTPError as e:
+        try:
+            return json.loads(e.read().decode("utf-8"))
+        except Exception:
+            return {"ok": False, "error": f"{e.code} {e.reason}"}
+    except Exception as e:
+        return {"ok": False, "error": str(e)}
