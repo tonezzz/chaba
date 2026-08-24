@@ -17,7 +17,9 @@ import yaml
 
 REPO = Path(__file__).resolve().parent.parent
 IMPROVEMENTS = REPO / "docs" / "ssot" / "ssot.improvements.yml"
+ARCHIVE = REPO / "docs" / "ssot" / "ssot.improvements.archive.2026-H2.yml"
 DATE_SUFFIX_RE = re.compile(r"\s*\(\d{4}-\d{2}-\d{2}\)\s*$")
+ARCHIVE_AFTER_DAYS = 14
 
 
 def base_label(label):
@@ -38,6 +40,19 @@ def is_promotable(item):
         for k in ("business_impact", "technical_impact", "user_experience_impact", "cost_savings_impact")
     )
     return has_score
+
+
+def should_archive(item):
+    if item.get("status") not in ("completed", "archived"):
+        return False
+    completed = item.get("completed") or item.get("completed_at") or item.get("accepted")
+    if not completed:
+        return False
+    try:
+        completed_date = datetime.strptime(str(completed)[:10], "%Y-%m-%d").date()
+    except ValueError:
+        return False
+    return (datetime.now().date() - completed_date).days >= ARCHIVE_AFTER_DAYS
 
 
 def merge_item(existing, new):
@@ -102,6 +117,37 @@ def triage():
                 item.setdefault("first_seen", DATE_SUFFIX_RE.search(label).group(0).strip(" ()"))
                 changes.append(f"normalized label {label} -> {b}")
         sec["items"] = kept
+
+    # archive completed/archived items older than threshold
+    archived_items = []
+    for sec in sections:
+        kept = []
+        for item in sec.get("items", []):
+            if not item:
+                continue
+            if should_archive(item):
+                archived_items.append(item)
+                changes.append(f"archived {item.get('label', '')}")
+                continue
+            kept.append(item)
+        sec["items"] = kept
+
+    if archived_items:
+        archive_doc = {"items": []}
+        if ARCHIVE.exists():
+            with open(ARCHIVE) as f:
+                archive_doc = yaml.safe_load(f) or {}
+        archive_doc.setdefault("items", []).extend(archived_items)
+        archive_doc["archived_at"] = datetime.now().date().isoformat()
+        with open(ARCHIVE, "w") as f:
+            yaml.safe_dump(
+                archive_doc,
+                f,
+                sort_keys=False,
+                allow_unicode=True,
+                width=120,
+                default_flow_style=False,
+            )
 
     if not changes:
         print("[improvements-triage] no changes")
