@@ -92,4 +92,26 @@ if ! node scripts/ssot-validate-all.mjs > /tmp/ssot-precommit.log 2>&1; then
 fi
 
 echo -e "${GREEN}✅ SSOT validation passed${NC}"
+
+# Preventive optimization: fail the commit if bloat/data-isolation/other warnings exist
+echo "🎯 Running SSOT optimization check..."
+if ! node scripts/ssot-optimize.mjs > /tmp/ssot-optimize-precommit.log 2>&1; then
+    echo -e "${RED}❌ SSOT optimization run failed. See /tmp/ssot-optimize-precommit.log.${NC}"
+    tail -n 20 /tmp/ssot-optimize-precommit.log
+    exit 1
+fi
+
+METRICS_FILE="reports/SSOT_OPTIMIZATION_METRICS.json"
+if [ -f "$METRICS_FILE" ]; then
+    BLOAT=$(python3 -c "import json; print(json.load(open('$METRICS_FILE')).get('bloat', 0))")
+    DATA_ISOLATION=$(python3 -c "import json; print(json.load(open('$METRICS_FILE')).get('data_isolation', 0))")
+    OTHER=$(python3 -c "import json; print(json.load(open('$METRICS_FILE')).get('other', 0))")
+    if [ "$BLOAT" -gt 0 ] || [ "$DATA_ISOLATION" -gt 0 ] || [ "$OTHER" -gt 0 ]; then
+        echo -e "${RED}❌ SSOT optimization warnings found (bloat: $BLOAT, data_isolation: $DATA_ISOLATION, other: $OTHER).${NC}"
+        echo "Run 'node scripts/ssot-optimize.mjs' and fix the warnings before committing."
+        exit 1
+    fi
+fi
+
+echo -e "${GREEN}✅ SSOT optimization check passed${NC}"
 exit 0
