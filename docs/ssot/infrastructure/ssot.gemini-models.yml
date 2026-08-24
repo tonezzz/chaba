@@ -58,9 +58,9 @@ models:
       rpm: 60
       tpm: 100000
       rpd: 100
-    status: not_used
+    status: available
     notes: 'Managed agent via the Gemini Interactions API. Not a text-only generateContent model; requires environment_config and interaction lifecycle. Do not use as a direct LLM provider in Helm.'
-    last_verified: '2026-08-23'
+    last_verified: '2026-08-24'
   gemini-robotics-er-2-preview:
     display_name: Gemini Robotics ER 2 Preview
     api_name: gemini-robotics-er-2-preview
@@ -134,8 +134,15 @@ models:
     category: Agents
     free_tier:
       status: unverified
-    status: not_used
+    status: available
     notes: 'Antigravity managed-agent preview identifier. Requires the Gemini Interactions API (interactions.create/run) and an environment, not the standard generateContent endpoint. Not a Helm LLM provider.'
+    last_verified: '2026-08-24'
+    smoke_test:
+      status: passed
+      ran_at: '2026-08-24T02:25:00Z'
+      environment: remote
+      response: 'Hello! I am Gemini Agent. I am here and ready to help you...'
+      usage: { total_tokens: 4075, input_tokens: 3635, output_tokens: 38 }
   gemini-embedding-1:
     display_name: Gemini Embedding 1
     api_name: gemini-embedding-001
