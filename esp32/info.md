@@ -10,7 +10,7 @@
 ## Network
 
 - **Hostname:** `esp32test`
-- **IP Address:** `192.168.2.86` (manual/static)
+- **IP Address:** `192.168.2.86` (DHCP — may change on other networks)
 - **Subnet:** `255.255.255.0`
 - **Gateway:** `192.168.2.1`
 - **DNS:** `192.168.2.1`
