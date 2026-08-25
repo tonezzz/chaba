@@ -15,11 +15,11 @@ services:
   - id: tailscale-funnel
     name: Tailscale Funnel
     type: http
-    url: https://tony-dell.taila0626a.ts.net/apps/tailscale-funnel/
+    url: https://tony-dell.taila0626a.ts.net:8444/apps/tailscale-funnel/
     expected_status: 200
     timeout: 15
     category: optional
-    note: Public internet access via Tailscale Funnel on tony-dell
+    note: 'Public internet access via Tailscale Funnel on tony-dell, port 8444. Port 443 is the mcp-rview-oauth-proxy.'
 
   - id: status-api
     name: Status API (External)
@@ -141,9 +141,9 @@ recovery_actions:
 
   funnel_unreachable:
     - Check `tailscale funnel status` on tony-dell
-    - Restart Funnel with `sudo tailscale funnel --bg --yes 8082`
+    - Restart Funnel with `sudo tailscale funnel --bg --yes --https=8444 8082`
     - Verify Funnel is enabled in the Tailscale admin console
-    - Test direct URL: https://tony-dell.taila0626a.ts.net/apps/tailscale-funnel/
+    - Test direct URL: https://tony-dell.taila0626a.ts.net:8444/apps/tailscale-funnel/
 
 # Testing and debugging guidance (mobile-specific)
 debugging_guidance:
