@@ -74,13 +74,13 @@ sections:
       - label: Model availability
         text: text-embedding-004 is not available in this project. The Google API model names are gemini-embedding-001 and gemini-embedding-2 (not gemini-embedding-002). The proxy maps nomic-embed-text requests to gemini-embedding-2 by default and text-embedding-004 to gemini-embedding-001.
       - label: Proxy
-        text: scripts/mddb/gemini-ollama-proxy.mjs deployed as a Docker service on tony-omen port 11435 (healthy). It uses batchEmbedContents with a 100 RPM token-bucket limiter, 429 exponential backoff, and now automatically falls back from gemini-embedding-2 to gemini-embedding-001 on 429 rate-limit.
+        text: scripts/mddb/gemini-ollama-proxy.mjs migrated to a rootless Podman Quadlet on tony-dell port 11435 (healthy). It uses batchEmbedContents with a 100 RPM token-bucket limiter, 429 exponential backoff, and now automatically falls back from gemini-embedding-2 to gemini-embedding-001 on 429 rate-limit. GEMINI_API_KEY is injected from the podman secret gemini-api-key.
       - label: Comparison
         text: Side-by-side test collections in MDDB/Weaviate were not created because neither service is running on tony-omen. An embedding-API comparison was run instead; see reports/gemini-embedding-comparison.md.
       - label: Latency
         text: Gemini round-trip via the proxy is ~472 ms per embedding for gemini-embedding-001 and ~720 ms for gemini-embedding-2, versus ~127 ms for Ollama on the same host. batchEmbedContents reduces the effective request-per-text overhead, so bulk re-indexing is more efficient.
       - label: Switch decision
-        text: Did not switch MDDB_EMBEDDING_API_URL from Ollama; Ollama remains the query-time provider and the live MDDB collections are fully indexed. The proxy is ready for a future cutover or batch/off-peak re-indexing.
+        text: Cut over MDDB_EMBEDDING_API_URL to http://100.68.142.13:11435 on tony-dell. The proxy is now the live embedding provider for MDDB. Ollama remains available as a fallback if needed.
 
   - title: Next Steps
     icon: "\ud83d\ude80"

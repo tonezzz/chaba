@@ -149,3 +149,21 @@ services:
   - 'Start container: cd /home/tony/CascadeProjects/chaba-kbman/stacks/web/mddb && docker compose up -d mddb'
   - 'Check container logs: cd /home/tony/CascadeProjects/chaba-kbman/stacks/web/mddb && docker compose logs mddb'
   - 'Verify docker compose config: cd /home/tony/CascadeProjects/chaba-kbman/stacks/web/mddb && docker compose config'
+- id: gemini-ollama-proxy
+  name: Gemini-Ollama Embedding Proxy
+  type: http
+  url: http://tony-dell:11435/health
+  expected_status: 200
+  timeout: 10
+  category: datastore
+  profiles:
+  - home
+  - mobile
+  note: 'Gemini-to-Ollama embedding proxy on tony-dell. MDDB uses this for embeddings. Migrated from tony-omen docker compose.'
+  verification:
+  - 'Check podman: ssh tony-dell podman ps | grep gemini-ollama-proxy'
+  - 'Test health: curl -s http://tony-dell:11435/health'
+  - 'Check logs: ssh tony-dell podman logs gemini-ollama-proxy --tail 20'
+  recovery_actions:
+  - 'Restart: ssh tony-dell systemctl --user restart gemini-ollama-proxy'
+  - 'Verify GEMINI_API_KEY podman secret: ssh tony-dell podman secret ls'

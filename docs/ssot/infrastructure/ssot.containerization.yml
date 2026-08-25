@@ -212,12 +212,18 @@ sections:
         completed: 2026-08-20
         tags: ['tony-dell', 'podman', 'rview-live', 'host-network', 'migration', 'quadlet-build']
 
+      - label: gemini-ollama-proxy
+        text: 'Migrated to tony-dell rootless podman with --network host. Uses docker.io/library/node:22-alpine, mounts /home/tony/CascadeProjects/chaba-tony-dell/scripts/mddb:/app, and injects GEMINI_API_KEY from the podman secret gemini-api-key. MDDB now connects to http://100.68.142.13:11435 for embeddings. Removed from stacks/web/mddb/docker-compose.yml.'
+        status: completed
+        completed: 2026-08-25
+        tags: ['tony-dell', 'podman', 'gemini', 'ollama-proxy', 'host-network', 'migration']
+
 config:
   version: 3
-  last_updated: 2026-08-20
+  last_updated: 2026-08-25
   status: completed
   maintainer: tony
-  summary: Successfully containerized 3 high-value services (Yomi API, GPU Queue services), migrated rview-api and rview-live to tony-dell rootless podman, and appropriately retained 4 complex/low-benefit services on host (Playlived, Clip Sync, Barriers, Rclone)
+  summary: Successfully containerized 3 high-value services (Yomi API, GPU Queue services), migrated rview-api, rview-live, and gemini-ollama-proxy to tony-dell rootless podman, and appropriately retained 4 complex/low-benefit services on host (Playlived, Clip Sync, Barriers, Rclone)
   related_files:
     - docs/ssot/ssot.improvements.yml
     - docs/ssot/infrastructure/ssot.services.yml
