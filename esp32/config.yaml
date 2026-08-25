@@ -92,6 +92,13 @@ display:
         lambda: |-
           it.fill(Color(0, 0, 0));
           it.print(0, 0, id(font1), Color(255, 255, 255), "Hello CYD");
+      - id: page_weather
+        lambda: |-
+          it.fill(Color(0, 0, 0));
+          it.filled_rectangle(0, 0, 240, 26, Color(0, 128, 128));
+          it.print(4, 2, id(font1), Color(255, 255, 255), "Weather");
+          it.printf(0, 30, id(font_small), Color(255, 255, 255), "VTBS %.0fC %dkt", id(vtbs_temp), id(vtbs_wspd));
+          it.printf(0, 46, id(font_small), Color(255, 255, 255), "VTBU %.0fC %dkt", id(vtbu_temp), id(vtbu_wspd));
       - id: page_status
         lambda: |-
           it.fill(Color(0, 0, 0));
@@ -181,12 +188,37 @@ interval:
                     }
                     return true;
                   });
+  - interval: 60s
+    then:
+      - http_request.get:
+          url: https://aviationweather.gov/api/data/metar?ids=VTBS,VTBU&format=json
+          capture_response: true
+          on_response:
+            then:
+              - lambda: |-
+                  JsonDocument doc(2048);
+                  DeserializationError err = deserializeJson(doc, body);
+                  if (!err) {
+                    JsonArray data = doc.as<JsonArray>();
+                    for (JsonObject station : data) {
+                      const char* icao = station["icaoId"];
+                      if (icao && strcmp(icao, "VTBS") == 0) {
+                        id(vtbs_temp) = station["temp"].as<float>();
+                        id(vtbs_wspd) = station["wspd"].as<int>();
+                      } else if (icao && strcmp(icao, "VTBU") == 0) {
+                        id(vtbu_temp) = station["temp"].as<float>();
+                        id(vtbu_wspd) = station["wspd"].as<int>();
+                      }
+                    }
+                  }
 
 json:
 
 http_request:
   useragent: esphome
-  timeout: 5s
+  timeout: 10s
+  verify_ssl: false
+  rx_buffer_size: 2048
   id: http_client
 
 globals:
@@ -207,6 +239,22 @@ globals:
     restore_value: no
     initial_value: "0"
   - id: gpu_cancelled
+    type: int
+    restore_value: no
+    initial_value: "0"
+  - id: vtbs_temp
+    type: float
+    restore_value: no
+    initial_value: "0.0"
+  - id: vtbs_wspd
+    type: int
+    restore_value: no
+    initial_value: "0"
+  - id: vtbu_temp
+    type: float
+    restore_value: no
+    initial_value: "0.0"
+  - id: vtbu_wspd
     type: int
     restore_value: no
     initial_value: "0"
