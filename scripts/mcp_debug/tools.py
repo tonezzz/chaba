@@ -10,7 +10,7 @@ import shlex
 import time
 import yaml
 from datetime import datetime
-from .config import HOSTS, FILE_LIMITS, DEBUG_COMMANDS, RAW_PREFIXES, RAW_CATEGORIES, PRESETS, SSOT, BASELINES, logger
+from .config import HOSTS, FILE_LIMITS, DEBUG_COMMANDS, RAW_PREFIXES, RAW_CATEGORIES, PRESETS, LOG_UNITS, SSOT, BASELINES, logger
 from .hosts import run_on_host
 
 
@@ -226,6 +226,27 @@ def mcp_vet(command, add=False):
 
     return result
 
+def mcp_logs_savings(host, unit, lines=50):
+    """Compare raw journalctl output vs mcp_logs compact output for a single unit."""
+    raw_cmd = f"journalctl -u {shlex.quote(unit)} -n {int(lines)} --no-pager"
+    raw = run_on_host(host, raw_cmd, compact=False)
+    compact = mcp_logs(host, unit=unit, lines=lines)
+    raw_chars = len(raw.get("out", ""))
+    compact_chars = len(compact.get("out", ""))
+    saved = raw_chars - compact_chars
+    return {
+        "ok": raw.get("ok", False) or compact.get("ok", False),
+        "host": host,
+        "unit": unit,
+        "raw_chars": raw_chars,
+        "compact_chars": compact_chars,
+        "saved_chars": saved,
+        "savings_pct_chars": round(saved / raw_chars * 100, 1) if raw_chars > 0 else 0.0,
+        "raw_error": raw.get("error") if not raw.get("ok") else None,
+        "compact_error": compact.get("error") if not compact.get("ok") else None,
+    }
+
+
 def mcp_savings(hosts):
     if not hosts:
         hosts = list(HOSTS.keys())
@@ -239,7 +260,7 @@ def mcp_savings(hosts):
             continue
         if not HOSTS[host].get("compact", True):
             continue
-        per_host[host] = {"commands": {}, "raw_chars": 0, "compact_chars": 0, "saved_chars": 0}
+        per_host[host] = {"commands": {}, "log_commands": {}, "raw_chars": 0, "compact_chars": 0, "saved_chars": 0}
         for command in commands:
             s = mcp_stats(host, command)
             per_host[host]["commands"][command] = s
@@ -249,6 +270,12 @@ def mcp_savings(hosts):
                 per_host[host]["saved_chars"] += s["saved_chars"]
                 total_raw += s["raw_chars"]
                 total_compact += s["compact_chars"]
+        for unit in LOG_UNITS:
+            if unit.get("host") != host:
+                continue
+            ls = mcp_logs_savings(host, unit["service"], lines=50)
+            if ls.get("ok"):
+                per_host[host]["log_commands"][unit["service"]] = ls
     saved = total_raw - total_compact
     pct = round(saved / total_raw * 100, 1) if total_raw > 0 else 0.0
     ended = time.time()

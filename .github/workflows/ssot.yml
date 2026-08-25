@@ -33,7 +33,8 @@ jobs:
           BLOAT=$(node -e "console.log(JSON.parse(require('fs').readFileSync('reports/SSOT_OPTIMIZATION_METRICS.json')).bloat)")
           DATA_ISOLATION=$(node -e "console.log(JSON.parse(require('fs').readFileSync('reports/SSOT_OPTIMIZATION_METRICS.json')).data_isolation)")
           OTHER=$(node -e "console.log(JSON.parse(require('fs').readFileSync('reports/SSOT_OPTIMIZATION_METRICS.json')).other)")
-          if [ "$BLOAT" -gt 0 ] || [ "$DATA_ISOLATION" -gt 0 ] || [ "$OTHER" -gt 0 ]; then
-            echo "SSOT optimization warnings found: bloat=$BLOAT data_isolation=$DATA_ISOLATION other=$OTHER"
+          LOGS=$(node -e "console.log(JSON.parse(require('fs').readFileSync('reports/SSOT_OPTIMIZATION_METRICS.json')).logs.issues)")
+          if [ "$BLOAT" -gt 0 ] || [ "$DATA_ISOLATION" -gt 0 ] || [ "$OTHER" -gt 0 ] || [ "$LOGS" -gt 0 ]; then
+            echo "SSOT optimization warnings found: bloat=$BLOAT data_isolation=$DATA_ISOLATION other=$OTHER logs=$LOGS"
             exit 1
           fi

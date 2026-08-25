@@ -12,6 +12,7 @@ from .tools import (
     mcp_savings,
     mcp_diff,
     mcp_logs,
+    mcp_logs_savings,
     mcp_net,
     mcp_env,
     mcp_gpu,
@@ -153,6 +154,19 @@ def handle_tools_list(id_):
                     "lines": {"type": "integer", "description": "Number of lines", "default": 50},
                 },
                 "required": ["host"],
+            },
+        },
+        {
+            "name": "mcp_logs_savings",
+            "description": "Compare raw journalctl output vs mcp_logs compact output for a systemd unit.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "host": {"type": "string", "enum": list(HOSTS.keys()), "description": "Target host"},
+                    "unit": {"type": "string", "description": "systemd unit for journalctl"},
+                    "lines": {"type": "integer", "description": "Number of lines", "default": 50},
+                },
+                "required": ["host", "unit"],
             },
         },
         {
@@ -569,6 +583,13 @@ def handle_tools_call(id_, params):
         if not h:
             return {"jsonrpc": "2.0", "id": id_, "error": {"code": -32602, "message": "host is required"}}
         result = mcp_logs(h, unit=arguments.get("unit"), file=arguments.get("file"), lines=arguments.get("lines", 50))
+        output = json.dumps(result, separators=(",", ":"))
+    elif name == "mcp_logs_savings":
+        h = arguments.get("host")
+        unit = arguments.get("unit")
+        if not h or not unit:
+            return {"jsonrpc": "2.0", "id": id_, "error": {"code": -32602, "message": "host and unit are required"}}
+        result = mcp_logs_savings(h, unit, lines=arguments.get("lines", 50))
         output = json.dumps(result, separators=(",", ":"))
     elif name == "mcp_net":
         h = arguments.get("host")

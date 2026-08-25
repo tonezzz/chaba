@@ -6,8 +6,9 @@
 set -e
 START_TIME=$(date +%s)
 TIMESTAMP=$(date +%Y%m%d-%H%M%S)
-REPORT_DIR="/home/tony/CascadeProjects/chaba/reports"
-LOG_DIR="/home/tony/CascadeProjects/chaba/logs"
+REPO_DIR="/home/tony/CascadeProjects/chaba"
+REPORT_DIR="$REPO_DIR/reports"
+LOG_DIR="$REPO_DIR/logs"
 mkdir -p "$REPORT_DIR" "$LOG_DIR"
 
 LOG_FILE="$LOG_DIR/overnight-$TIMESTAMP.log"
@@ -121,6 +122,22 @@ echo "**Common Error Patterns (across all containers):**" >> "$REPORT_FILE"
 docker ps --format "{{.Names}}" | while read container; do
     docker logs --since 168h "$container" 2>&1 | grep -i "error" | sort | uniq -c | sort -rn | head -5
 done | sort | uniq -c | sort -rn | head -10 >> "$REPORT_FILE" 2>&1 || echo "No common patterns identified" >> "$REPORT_FILE"
+
+echo "" >> "$REPORT_FILE"
+
+# Service log sweep via mcp_logs (all SSOT systemd services)
+echo "[2b/13] Running mcp_logs service sweep..." | tee -a "$LOG_FILE"
+python3 "$REPO_DIR/scripts/overnight/service-logs-sweep.py" | tee -a "$LOG_FILE" || echo "Service log sweep failed" | tee -a "$LOG_FILE"
+cat >> "$REPORT_FILE" << EOF
+
+### Service Log Sweep (mcp_logs)
+- JSON report: reports/SERVICE_ERRORS.json
+- Markdown report: reports/SERVICE_ERRORS.md
+- Run at: $(date)
+EOF
+if [ -f reports/SERVICE_ERRORS.md ]; then
+    cat reports/SERVICE_ERRORS.md >> "$REPORT_FILE"
+fi
 
 echo "" >> "$REPORT_FILE"
 

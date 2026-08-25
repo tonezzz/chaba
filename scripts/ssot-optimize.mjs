@@ -20,6 +20,23 @@ const WARNINGS = join(REPORTS_DIR, 'SSOT_OPTIMIZATION_WARNINGS.json');
 const HISTORY = join(REPORTS_DIR, 'SSOT_OPTIMIZATION_HISTORY.jsonl');
 const HISTORY_DAYS = 90;
 
+function runLogCheck() {
+  const logJson = join(REPORTS_DIR, 'LOG_CHECK.json');
+  try {
+    execSync('python3 scripts/ci-check-logs.py --check-only', {
+      cwd: REPO,
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
+    if (existsSync(logJson)) {
+      return JSON.parse(readFileSync(logJson, 'utf8'));
+    }
+  } catch (e) {
+    // Log check is optional in CI environments without python/pyyaml
+    console.warn('Log check optional, skipped:', e.message);
+  }
+  return { ok: true, issues: [], units: [], log_files: [] };
+}
+
 function pruneHistory() {
   if (!existsSync(HISTORY)) return;
   const cutoff = new Date();
@@ -51,6 +68,7 @@ function main() {
   const bloatWarnings = [];
   const dataWarnings = [];
   const otherWarnings = [];
+  const logCheck = runLogCheck();
   let currentFile = null;
 
   for (const line of report.split('\n')) {
@@ -76,7 +94,8 @@ function main() {
   summary += `Generated: ${new Date().toISOString()}\n`;
   summary += `Bloat warnings: ${bloatWarnings.length}\n`;
   summary += `Data-isolation warnings: ${dataWarnings.length}\n`;
-  summary += `Other warnings: ${otherWarnings.length}\n\n`;
+  summary += `Other warnings: ${otherWarnings.length}\n`;
+  summary += `Log reference issues: ${(logCheck.issues || []).length}\n\n`;
 
   summary += `## Bloat candidates (highest priority)\n\n`;
   if (bloatWarnings.length === 0) {
@@ -105,6 +124,16 @@ function main() {
     }
   }
 
+  summary += `\n## Log reference issues\n\n`;
+  const logIssues = logCheck.issues || [];
+  if (logIssues.length === 0) {
+    summary += 'No log reference issues.\n';
+  } else {
+    for (const i of logIssues) {
+      summary += `- ${i.type}: ${JSON.stringify(i)}\n`;
+    }
+  }
+
   summary += `\n---\n_Report produced by scripts/ssot-optimize.mjs in ${Date.now() - start}ms_\n`;
 
   if (!existsSync(REPORTS_DIR)) {
@@ -116,6 +145,11 @@ function main() {
     bloat: bloatWarnings.length,
     data_isolation: dataWarnings.length,
     other: otherWarnings.length,
+    logs: {
+      issues: (logCheck.issues || []).length,
+      units: (logCheck.units || []).length,
+      log_files: (logCheck.log_files || []).length,
+    },
     files: 104,
   }, null, 2), 'utf8');
   writeFileSync(WARNINGS, JSON.stringify({
