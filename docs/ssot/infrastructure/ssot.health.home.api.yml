@@ -60,10 +60,10 @@ services:
   - 'Rebuild image: ssh tony-dell systemctl --user start rview-api-image.service && ssh tony-dell systemctl --user restart rview-api'
   - 'Check state directory: ssh tony-dell ls -la /home/tony/.local/share/rview-api'
   - Verify Caddy proxy configuration in stacks/web/Caddyfile
-- id: gemini-live
+- id: rview-live
   name: Gemini Live API
   type: http
-  url: '{profile}/api/gemini-live/health'
+  url: '{profile}/api/rview-live/health'
   expected_status: 200
   timeout: 5
   category: api
@@ -73,15 +73,15 @@ services:
   host: tony_dell
   verification:
   - 'Test direct: curl -s http://tony-dell:3008/health'
-  - 'Test Caddy proxy: curl -s {profile}/api/gemini-live/health'
-  - 'Check podman container: ssh tony-dell podman ps | grep gemini-live'
-  - 'Check podman logs: ssh tony-dell podman logs gemini-live --tail 20'
-  - 'Verify GEMINI_API_KEY env: ssh tony-dell podman exec gemini-live env | grep GEMINI_API_KEY'
-  - 'Check build unit: ssh tony-dell systemctl --user status gemini-live-image.service'
+  - 'Test Caddy proxy: curl -s {profile}/api/rview-live/health'
+  - 'Check podman container: ssh tony-dell podman ps | grep rview-live'
+  - 'Check podman logs: ssh tony-dell podman logs rview-live --tail 20'
+  - 'Verify GEMINI_API_KEY env: ssh tony-dell podman exec rview-live env | grep GEMINI_API_KEY'
+  - 'Check build unit: ssh tony-dell systemctl --user status rview-live-image.service'
   recovery_actions:
-  - 'Restart container: ssh tony-dell systemctl --user restart gemini-live'
+  - 'Restart container: ssh tony-dell systemctl --user restart rview-live'
   - 'Check podman secret: ssh tony-dell podman secret inspect gemini-api-key'
-  - 'Rebuild image: ssh tony-dell systemctl --user start gemini-live-image.service && ssh tony-dell systemctl --user restart gemini-live'
+  - 'Rebuild image: ssh tony-dell systemctl --user start rview-live-image.service && ssh tony-dell systemctl --user restart rview-live'
   - Verify Caddy proxy configuration in stacks/web/Caddyfile
 - id: yomi-api
   name: Yomi API

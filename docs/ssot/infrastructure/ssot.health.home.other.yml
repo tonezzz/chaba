@@ -251,7 +251,7 @@ services:
   - 'Test SSE endpoint: curl -sfI -H "Accept: text/event-stream" http://127.0.0.1:9003/sse'
   - 'Check service: ssh tony-dell systemctl --user status mcp-rview'
   - 'Check proxy log: ssh tony-dell journalctl --user -u mcp-rview --tail 20'
-  - 'Check tool list: ssh tony-dell podman exec gemini-live python3 /scripts/mcp_rview/server.py and send {"jsonrpc":"2.0","id":1,"method":"tools/list"}'
+  - 'Check tool list: ssh tony-dell podman exec rview-live python3 /scripts/mcp_rview/server.py and send {"jsonrpc":"2.0","id":1,"method":"tools/list"}'
   recovery_actions:
   - 'Restart service: ssh tony-dell systemctl --user restart mcp-rview'
   - 'Verify rview-api is reachable from mcp-rview: ssh tony-dell curl -sf http://127.0.0.1:3007/state?action=list'

@@ -18,9 +18,9 @@ sections:
     icon: "⚙️"
     layout: list
     items:
-      - label: stacks/web/gemini-live/server.mjs
+      - label: stacks/web/rview-live/server.mjs
         text: Express + ws backend. Spawns scripts/mcp_rview/server.py over stdio, maps toolCall to JSON-RPC, and forwards toolResponse to Gemini.
-      - label: stacks/web/public/apps/gemini-live/index.html
+      - label: stacks/web/public/apps/rview-live/index.html
         text: Static frontend with WebSocket, Web Audio capture/playback, transcript log, and embedded RView iframe.
       - label: mcp_rview stdio bridge
         text: Reuses the existing mcp_rview MCP server to call the rview-api state endpoints.
@@ -28,34 +28,34 @@ sections:
     icon: "📁"
     layout: list
     items:
-      - label: stacks/web/gemini-live/server.mjs
+      - label: stacks/web/rview-live/server.mjs
         text: Main Node entrypoint handling client WS, Gemini Live WSS, MCP stdio, and tool calls.
-      - label: stacks/web/gemini-live/search.mjs
+      - label: stacks/web/rview-live/search.mjs
         text: Free web search (web/images/videos) and fetch_page URL extraction.
-      - label: stacks/web/gemini-live/Dockerfile
+      - label: stacks/web/rview-live/Dockerfile
         text: Container image for deployment behind Caddy.
-      - label: stacks/web/public/apps/gemini-live/index.html
+      - label: stacks/web/public/apps/rview-live/index.html
         text: Browser UI for voice/text sessions.
   - title: Deployment
     icon: "🚀"
     layout: list
     items:
       - label: Location
-        text: stacks/web/gemini-live/ and stacks/web/public/apps/gemini-live/
+        text: stacks/web/rview-live/ and stacks/web/public/apps/rview-live/
       - label: URLs
-        text: 'https://tony-dell.taila0626a.ts.net:8443/apps/gemini-live/ and http://tony-dell:8080/apps/gemini-live/ (https://chaba.h3.gizmo-thailand.com/apps/gemini-live/ proxies to tony-dell.taila0626a.ts.net:3008 via Tailscale Funnel TCP)'
+        text: 'https://tony-dell.taila0626a.ts.net:8443/apps/rview-live/ and http://tony-dell:8080/apps/rview-live/ (https://chaba.h3.gizmo-thailand.com/apps/rview-live/ proxies to tony-dell.taila0626a.ts.net:3008 via Tailscale Funnel TCP)'
       - label: Registry
         text: Listed in stacks/web/public/apps/apps.yml and docs/ssot/apps/ssot.apps.yml
       - label: Branch
-        text: devin/gemini-live-20260820
+        text: devin/rview-live-20260820
   - title: Testing
     icon: "🧪"
     layout: list
     items:
       - label: syntax check
-        text: node --check stacks/web/gemini-live/server.mjs
+        text: node --check stacks/web/rview-live/server.mjs
       - label: end-to-end
-        text: Start rview-api, start gemini-live with GEMINI_API_KEY, open /apps/gemini-live/, and trigger a rview_show tool call via voice/text.
+        text: Start rview-api, start rview-live with GEMINI_API_KEY, open /apps/rview-live/, and trigger a rview_show tool call via voice/text.
   - title: Integration
     icon: "🔗"
     layout: list

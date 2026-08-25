@@ -206,18 +206,18 @@ sections:
         status: completed
         completed: 2026-08-20
         tags: ['tony-dell', 'podman', 'rview-api', 'host-network', 'migration', 'quadlet-build']
-      - label: gemini-live
-        text: 'Migrated to tony-dell rootless podman with --network host on port 3008 to avoid conflict with mddb-panel on 3002. Image built by the gemini-live-image.build Quadlet unit from stacks/web/gemini-live/Dockerfile (repo-root context) and includes scripts/mcp_rview. Quadlet units at ~/.config/containers/systemd/gemini-live.container and ~/.config/systemd/user/gemini-live.service. GEMINI_API_KEY injected from the podman secret gemini-api-key. Depends on rview-api, includes a curl-based health check, and AutoUpdate=local. Caddy /api/gemini-live/* reverse proxy updated to tony-dell:3008; removed from stacks/web/docker-compose.yml.'
+      - label: rview-live
+        text: 'Migrated to tony-dell rootless podman with --network host on port 3008 to avoid conflict with mddb-panel on 3002. Image built by the rview-live-image.build Quadlet unit from stacks/web/rview-live/Dockerfile (repo-root context) and includes scripts/mcp_rview. Quadlet units at ~/.config/containers/systemd/rview-live.container and ~/.config/systemd/user/rview-live.service. GEMINI_API_KEY injected from the podman secret gemini-api-key. Depends on rview-api, includes a curl-based health check, and AutoUpdate=local. Caddy /api/rview-live/* reverse proxy updated to tony-dell:3008; removed from stacks/web/docker-compose.yml.'
         status: completed
         completed: 2026-08-20
-        tags: ['tony-dell', 'podman', 'gemini-live', 'host-network', 'migration', 'quadlet-build']
+        tags: ['tony-dell', 'podman', 'rview-live', 'host-network', 'migration', 'quadlet-build']
 
 config:
   version: 3
   last_updated: 2026-08-20
   status: completed
   maintainer: tony
-  summary: Successfully containerized 3 high-value services (Yomi API, GPU Queue services), migrated rview-api and gemini-live to tony-dell rootless podman, and appropriately retained 4 complex/low-benefit services on host (Playlived, Clip Sync, Barriers, Rclone)
+  summary: Successfully containerized 3 high-value services (Yomi API, GPU Queue services), migrated rview-api and rview-live to tony-dell rootless podman, and appropriately retained 4 complex/low-benefit services on host (Playlived, Clip Sync, Barriers, Rclone)
   related_files:
     - docs/ssot/ssot.improvements.yml
     - docs/ssot/infrastructure/ssot.services.yml

@@ -1,11 +1,11 @@
 [Unit]
 Description=Gemini Live API (rootless podman)
-Requires=gemini-live-image-build.service rview-api.service
-After=gemini-live-image-build.service rview-api.service
+Requires=rview-live-image-build.service rview-api.service
+After=rview-live-image-build.service rview-api.service
 
 [Container]
-Image=localhost/gemini-live:latest
-ContainerName=gemini-live
+Image=localhost/rview-live:latest
+ContainerName=rview-live
 Network=host
 Environment=GEMINI_LIVE_PORT=3008
 Environment=GEMINI_LIVE_MODEL=gemini-3.1-flash-live-preview

@@ -4,15 +4,15 @@ FROM node:22-alpine
 RUN apk add --no-cache python3 curl
 
 # Build this image from the repo root so the COPY paths below resolve:
-#   podman build -f stacks/web/gemini-live/Dockerfile -t gemini-live:latest .
+#   podman build -f stacks/web/rview-live/Dockerfile -t rview-live:latest .
 # Override the listen port when building for tony-dell:
-#   podman build --build-arg GEMINI_LIVE_PORT=3008 -f stacks/web/gemini-live/Dockerfile -t gemini-live:latest .
+#   podman build --build-arg GEMINI_LIVE_PORT=3008 -f stacks/web/rview-live/Dockerfile -t rview-live:latest .
 ARG GEMINI_LIVE_PORT=3002
 WORKDIR /app
-COPY stacks/web/gemini-live/package*.json ./
+COPY stacks/web/rview-live/package*.json ./
 RUN npm ci --omit=dev
-COPY stacks/web/gemini-live/server.mjs ./
-COPY stacks/web/gemini-live/search.mjs ./
+COPY stacks/web/rview-live/server.mjs ./
+COPY stacks/web/rview-live/search.mjs ./
 COPY scripts/mcp_rview /scripts/mcp_rview
 
 EXPOSE ${GEMINI_LIVE_PORT}

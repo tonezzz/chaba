@@ -17,7 +17,7 @@ const RVIEW_API_URL = process.env.RVIEW_API_URL || "http://localhost:8080/apps/r
 const GEMINI_WS_URL = `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent?key=${GEMINI_API_KEY}`;
 
 function log(...args) {
-  console.log("[gemini-live]", ...args);
+  console.log("[rview-live]", ...args);
 }
 
 const FUNCTION_DECLARATIONS = [

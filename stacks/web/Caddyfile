@@ -76,16 +76,16 @@
 		file_server
 	}
 
-	handle /apps/gemini-live {
-		redir /apps/gemini-live/ 308
+	handle /apps/rview-live {
+		redir /apps/rview-live/ 308
 	}
 
-	handle_path /apps/gemini-live/* {
-		root * /srv/public/apps/gemini-live
+	handle_path /apps/rview-live/* {
+		root * /srv/public/apps/rview-live
 		file_server
 	}
 
-	handle_path /api/gemini-live/* {
+	handle_path /api/rview-live/* {
 		reverse_proxy 100.68.142.13:3008
 	}
 
