@@ -130,6 +130,24 @@ display:
           draw_arrow(205, 192, id(vtbu_wdir), vtbu_c);
           it.printf(0, 204, id(font_small), Color(255, 255, 255), "Q%d %s %s%dm", id(vtbu_altim), id(vtbu_visib).c_str(), id(vtbu_cloud).c_str(), id(vtbu_cloud_base));
           it.print(0, 232, id(font_small), Color(255, 255, 0), id(vtbu_wx).c_str());
+          auto draw_graph = [&](int x, int y, int w, int h, std::array<float, 60>& hist, Color col) {
+            float hmin = hist[0];
+            float hmax = hist[0];
+            for (int i = 1; i < 60; i++) {
+              if (hist[i] < hmin) hmin = hist[i];
+              if (hist[i] > hmax) hmax = hist[i];
+            }
+            if (hmax == hmin) hmax = hmin + 1;
+            it.rectangle(x, y, w, h, Color(128, 128, 128));
+            for (int i = 0; i < 59; i++) {
+              int x1 = x + i * w / 59;
+              int y1 = y + h - (int)((hist[i] - hmin) * (h - 1) / (hmax - hmin));
+              int x2 = x + (i + 1) * w / 59;
+              int y2 = y + h - (int)((hist[i + 1] - hmin) * (h - 1) / (hmax - hmin));
+              it.line(x1, y1, x2, y2, col);
+            }
+          };
+          draw_graph(4, 258, 232, 54, id(vtbu_temp_hist), vtbu_c);
       - id: page_status
         lambda: |-
           it.fill(Color(0, 0, 0));
@@ -153,6 +171,25 @@ display:
           it.printf(0, 56, id(font_small), Color(255, 255, 255), "Gold: %.0f THB/oz", id(gold_thb_oz));
           it.printf(0, 86, id(font_small), Color(255, 255, 255), "Spot: %.2f USD/oz", id(gold_usd_oz));
           it.printf(0, 116, id(font_small), Color(255, 255, 255), "USD/THB: %.2f", id(usd_thb_rate));
+          auto draw_graph = [&](int x, int y, int w, int h, std::array<float, 60>& hist, Color col) {
+            float hmin = hist[0];
+            float hmax = hist[0];
+            for (int i = 1; i < 60; i++) {
+              if (hist[i] < hmin) hmin = hist[i];
+              if (hist[i] > hmax) hmax = hist[i];
+            }
+            if (hmax == hmin) hmax = hmin + 1;
+            it.rectangle(x, y, w, h, Color(128, 128, 128));
+            for (int i = 0; i < 59; i++) {
+              int x1 = x + i * w / 59;
+              int y1 = y + h - (int)((hist[i] - hmin) * (h - 1) / (hmax - hmin));
+              int x2 = x + (i + 1) * w / 59;
+              int y2 = y + h - (int)((hist[i + 1] - hmin) * (h - 1) / (hmax - hmin));
+              it.line(x1, y1, x2, y2, col);
+            }
+          };
+          draw_graph(4, 150, 232, 80, id(gold_thb_hist), Color(255, 215, 0));
+          draw_graph(4, 245, 232, 50, id(usd_thb_hist), Color(0, 255, 0));
 
 touchscreen:
   - platform: xpt2046
@@ -237,6 +274,8 @@ interval:
                         }
                       } else if (icao && strcmp(icao, "VTBU") == 0) {
                         id(vtbu_temp) = station["temp"].as<float>();
+                        for (int i = 59; i > 0; i--) id(vtbu_temp_hist)[i] = id(vtbu_temp_hist)[i - 1];
+                        id(vtbu_temp_hist)[0] = id(vtbu_temp);
                         id(vtbu_dewp) = station["dewp"].as<float>();
                         id(vtbu_wdir) = station["wdir"].as<int>();
                         id(vtbu_wspd) = station["wspd"].as<int>();
@@ -275,6 +314,10 @@ interval:
                     }
                     id(gold_usd_oz) = root["spot_usd_oz"].as<float>();
                     id(usd_thb_rate) = root["fx_rate"].as<float>();
+                    for (int i = 59; i > 0; i--) id(gold_thb_hist)[i] = id(gold_thb_hist)[i - 1];
+                    id(gold_thb_hist)[0] = id(gold_thb_oz);
+                    for (int i = 59; i > 0; i--) id(usd_thb_hist)[i] = id(usd_thb_hist)[i - 1];
+                    id(usd_thb_hist)[0] = id(usd_thb_rate);
                   }
 
 json:
@@ -387,6 +430,18 @@ globals:
     type: std::string
     restore_value: no
     initial_value: '""'
+  - id: vtbu_temp_hist
+    type: std::array<float, 60>
+    restore_value: no
+    initial_value: "std::array<float, 60>()"
+  - id: gold_thb_hist
+    type: std::array<float, 60>
+    restore_value: no
+    initial_value: "std::array<float, 60>()"
+  - id: usd_thb_hist
+    type: std::array<float, 60>
+    restore_value: no
+    initial_value: "std::array<float, 60>()"
   - id: gold_thb_oz
     type: float
     restore_value: no
