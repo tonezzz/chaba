@@ -1,0 +1,24 @@
+esphome:
+  name: esp32_test
+  friendly_name: "ESP32 Test"
+
+esp32:
+  board: esp32dev
+  framework:
+    type: arduino
+
+logger:
+
+api:
+
+ota:
+  - platform: esphome
+
+wifi:
+  ssid: "CHANGEME"
+  password: "CHANGEME"
+  ap:
+    ssid: "ESP32-Test-Fallback"
+    password: "12345678"
+
+captive_portal:
