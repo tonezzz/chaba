@@ -18,10 +18,12 @@ category: operations
 | Home LAN | `192.168.1.0/24` |
 | `tony-omen` LAN mDNS | `tony-omen.local` |
 | `tony-dell` LAN mDNS | `tony-dell.local` |
-| Public Funnel URL | `https://tony-dell.taila0626a.ts.net/` |
+| Public Funnel URL | `https://tony-dell.taila0626a.ts.net:8444/` |
+| OAuth proxy (port 443) | `https://tony-dell.taila0626a.ts.net/` → `127.0.0.1:9004` |
+| Caddy / rview (port 8443) | `https://tony-dell.taila0626a.ts.net:8443/` → `127.0.0.1:8080` |
 | Funnel server listen port | `8082` |
 | Funnel proxy target | `http://127.0.0.1:8082` |
-| Active connections API | `https://tony-dell.taila0626a.ts.net/api/tailscale/connections` |
+| Active connections API | `https://tony-dell.taila0626a.ts.net:8444/api/tailscale/connections` |
 | API backend | `~/chaba-funnel/funnel-server.py` on `0.0.0.0:8082` |
 | Systemd user service | `~/.config/systemd/user/chaba-funnel.service` |
 | Health check file | `stacks/web/public/ssot.health.mobile.yml` |
