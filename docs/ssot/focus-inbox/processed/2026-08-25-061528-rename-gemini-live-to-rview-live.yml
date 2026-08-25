@@ -1,0 +1,58 @@
+title: Rename gemini-live back to rview-live
+subtitle: Rebrand the Gemini Live voice/controller service as rview-live across repos, containers, and SSOT
+icon: inbox
+
+focus:
+  label: Rename gemini-live to rview-live
+  text: |
+    The voice + Gemini function-calling bridge that controls RView is currently
+    called `gemini-live` everywhere (stacks, docs, SSOT, Caddy, chaba-h3 proxy).
+    Rename it back to `rview-live` to match its actual purpose and the original
+    naming the user expects.
+
+    Work is needed in `chaba` (master) and `chaba-h3` (chaba.h3 branch) because
+    both repos contain UI, proxy, and deployment references.
+  branch: master
+  priority: medium
+  status: draft
+  tags: [rview, rview-live, gemini-live, rename, tony-dell, chaba-h3]
+  missing_info:
+    - Confirm whether to keep `gemini-live` as a temporary alias/redirect.
+    - Decide if the rename should be one `chaba` commit plus one `chaba-h3` commit, or split by repo.
+    - Confirm the tony-dell podman Quadlet units can be safely renamed without data loss.
+  safe_to_parallel:
+    value: false
+    reason: Cross-repo and cross-service rename; chaba, chaba-h3, and the live tony-dell podman containers must stay in sync to avoid breaking the UI and MCP path.
+  subtasks:
+    - label: Inventory every gemini-live reference in chaba and chaba-h3
+      status: not_started
+    - label: Rename stacks/web/gemini-live/ to stacks/web/rview-live/ and update package names
+      status: not_started
+    - label: Rename stacks/web/public/apps/gemini-live/ to stacks/web/public/apps/rview-live/ and update index.html asset paths
+      status: not_started
+    - label: Rename stacks/tony-dell/gemini-live/ to stacks/tony-dell/rview-live/ and update Quadlet .build/.container units
+      status: not_started
+    - label: Update stacks/web/Caddyfile and docker-compose routes from /api/gemini-live to /api/rview-live
+      status: not_started
+    - label: Rename and update docs/ssot/apps/ssot.apps.gemini-live.yml to ssot.apps.rview-live.yml
+      status: not_started
+    - label: Update chaba-h3 public/apps/apps.yml and proxy-server.mjs to rview-live
+      status: not_started
+    - label: Update any docs/kb and chaba-h3 references that mention gemini-live
+      status: not_started
+    - label: Stop/rename/restart the tony-dell podman units for rview-live
+      status: not_started
+    - label: Verify https://tony-dell.taila0626a.ts.net:8443/apps/rview-live/ and wss://tony-dell.taila0626a.ts.net:8443/api/rview-live/ respond
+      status: not_started
+    - label: Commit and push both chaba and chaba-h3
+      status: not_started
+
+ownership:
+  owner: tony
+  session: ""
+  locked: false
+  lock_reason: ""
+
+source:
+  session: ""
+  date: 2026-08-25
