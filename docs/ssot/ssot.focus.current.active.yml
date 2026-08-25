@@ -7,7 +7,7 @@ sections:
   layout: list
   items:
   - label: MacBook macOS App Development
-    text: 'Continue macOS and iOS workstation setup after Tailscale install; full Xcode 15.x is next.'
+    text: Continue macOS and iOS workstation setup after Tailscale install; full Xcode 15.x is next.
     branch: macbook
     status: active
     priority: medium
@@ -23,10 +23,14 @@ sections:
     - label: Bring MacBook online (Tailscale/SSH or Chrome DevTools)
       status: completed
       completed_at: '2026-08-24'
-      note: 'SSH via mcp-debug succeeded. Baseline verified: CLT active, Swift 5.8.1, Node v20.17.0, Homebrew 6.0.17, 0 signing identities.'
+      note: 'SSH via mcp-debug succeeded. Baseline verified: CLT active, Swift 5.8.1, Node v20.17.0, Homebrew 6.0.17, 0 signing
+        identities.'
     - label: Install or update Xcode 15.x command line tools
-      status: in_progress
-      note: 'Tried `brew install xcodes` and direct GitHub download; both interrupted by intermittent SSH timeouts. Host connectivity unstable.'
+      status: deferred
+      note: Tried `brew install xcodes` and direct GitHub download; both interrupted by intermittent SSH timeouts. Host connectivity
+        unstable.
+      deferred_at: '2026-08-25'
+      resume_note: MacBook offline (last seen 17h); cannot install Xcode until host is reachable
     - label: Verify macOS app build toolchain
       status: not_started
   - label: Tony-Dell cannot see iPhone Personal Hotspot SSID
