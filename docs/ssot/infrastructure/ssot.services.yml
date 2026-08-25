@@ -209,6 +209,22 @@ tony-dell:
     ollama_compatible: true
     status: migrated to tony-dell (2026-08-25)
     note: 'Migrated from tony-omen docker compose to tony-dell rootless podman. MDDB now connects to http://100.68.142.13:11435 for embeddings. Maps text-embedding-004, nomic-embed-text, and gemini-embedding-* aliases to gemini-embedding-001/002.'
+  home-assistant:
+    container: home-assistant
+    image: docker.io/homeassistant/home-assistant:stable
+    runtime: rootless podman
+    host: tony_dell
+    network: host
+    port: 8123
+    host_port: 0.0.0.0:8123
+    quadlet:
+      container_unit: ~/.config/containers/systemd/home-assistant.container
+      service_unit: ~/.config/systemd/user/home-assistant.service
+    config: /home/tony/.config/home-assistant
+    custom_components:
+      - ha_mcp_tools
+    status: deployed (2026-08-25)
+    note: 'Container rootless podman on tony-dell. HA-MCP custom component installed; onboarding and integration setup pending.'
   gpu-queue:
     container: gpu-queue
     image: docker.io/library/node:22-alpine
