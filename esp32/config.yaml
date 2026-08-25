@@ -162,6 +162,25 @@ interval:
   - interval: 5s
     then:
       - display.page.show_next: cyd_display
+  - interval: 30s
+    then:
+      - http_request.get:
+          url: http://192.168.2.67:3001/health
+          headers:
+            Content-Type: application/json
+          on_response:
+            then:
+              - lambda: |-
+                  StaticJsonDocument<512> doc;
+                  DeserializationError err = deserializeJson(doc, body);
+                  if (!err) {
+                    JsonObject status = doc["status"];
+                    id(gpu_pending) = status["pending"].as<int>();
+                    id(gpu_running) = status["running"].as<int>();
+                    id(gpu_completed) = status["completed"].as<int>();
+                    id(gpu_failed) = status["failed"].as<int>();
+                    id(gpu_cancelled) = status["cancelled"].as<int>();
+                  }
 
 json:
 
@@ -191,26 +210,5 @@ globals:
     type: int
     restore_value: no
     initial_value: "0"
-
-interval:
-  - interval: 30s
-    then:
-      - http_request.get:
-          url: http://192.168.2.67:3001/health
-          headers:
-            Content-Type: application/json
-          on_response:
-            then:
-              - lambda: |-
-                  StaticJsonDocument<512> doc;
-                  DeserializationError err = deserializeJson(doc, body);
-                  if (!err) {
-                    JsonObject status = doc["status"];
-                    id(gpu_pending) = status["pending"].as<int>();
-                    id(gpu_running) = status["running"].as<int>();
-                    id(gpu_completed) = status["completed"].as<int>();
-                    id(gpu_failed) = status["failed"].as<int>();
-                    id(gpu_cancelled) = status["cancelled"].as<int>();
-                  }
 
 captive_portal:
