@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# tony-dell multi-WAN active-backup: wired (enp0s31f6) primary, Naris WiFi backup.
-# Runs as root. Switches default-route metric to WiFi if wired internet fails.
+# tony-dell multi-WAN active-backup: wired (enp0s31f6) primary, iPhone (TONY-IP) Wi-Fi backup.
+# Runs as root. Switches default-route metric to Wi-Fi if wired internet fails.
 
 set -uo pipefail
 
 WIRED_CON="Wired connection 1"
 WIRED_DEV="enp0s31f6"
-WIFI_CON="Naris"
+WIFI_CON="TONY-IP"
 WIFI_DEV="wlx00761100125e"
 GATEWAY_IP="8.8.8.8"
 PING_COUNT=2
