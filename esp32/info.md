@@ -35,6 +35,15 @@
   - `page_status`: IP, SSID, MAC, Wi-Fi signal, uptime, free heap
   - Auto-cycles every 5 seconds
 
+## Remote access
+
+- `tony-dell` advertises `192.168.2.0/24` as a Tailscale subnet route.
+- IP forwarding is enabled (`net.ipv4.ip_forward=1`).
+- Any Tailscale peer can now reach:
+  - **API:** `192.168.2.86:6053`
+  - **OTA:** `192.168.2.86:3232`
+- Verified from `tony-omen`: `ping 192.168.2.86` and `nc -z 192.168.2.86 6053` succeed.
+
 ## Build / flash
 
 - **ESPHome version:** 2026.8.1
