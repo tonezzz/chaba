@@ -486,20 +486,20 @@ services:
 - id: chaba-funnel
   name: Chaba Funnel landing page
   type: http
-  url: https://tony-dell.taila0626a.ts.net/health
+  url: http://tony-dell:8082/health
   expected_status: 200
   timeout: 5
   category: tailscale
   profiles:
   - home
   - mobile
-  note: Funnel landing page, /health endpoint, and /apps/docs/ on tony-dell, proxied by tailscale serve to 127.0.0.1:8082.
+  note: Funnel landing page, /health endpoint, and /apps/docs/ on tony-dell, running on 127.0.0.1:8082. The public https://tony-dell.taila0626a.ts.net/ root is currently served by the mcp-rview-oauth-proxy on 9004; the funnel paths are not yet re-exposed through tailscale serve.
   verification:
   - 'Check systemd: systemctl --user status chaba-funnel.service'
   - 'Check port: ss -tlnp | grep 8082'
-  - 'Test root: curl -s -o /dev/null -w ''%{http_code}'' https://tony-dell.taila0626a.ts.net/'
-  - 'Test health: curl -s https://tony-dell.taila0626a.ts.net/health'
-  - 'Test docs: curl -s -o /dev/null -w ''%{http_code}'' https://tony-dell.taila0626a.ts.net/apps/docs/index.html'
+  - 'Test direct: curl -s -o /dev/null -w ''%{http_code}'' http://tony-dell:8082/'
+  - 'Test health: curl -s http://tony-dell:8082/health'
+  - 'Test docs: curl -s -o /dev/null -w ''%{http_code}'' http://tony-dell:8082/apps/docs/index.html'
   recovery_actions:
   - 'Restart: systemctl --user restart chaba-funnel.service'
   - 'Check tailscale serve: tailscale serve status'
