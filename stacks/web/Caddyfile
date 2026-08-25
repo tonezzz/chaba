@@ -97,6 +97,10 @@
 		reverse_proxy 100.68.142.13:8084
 	}
 
+	handle /api/gpu-queue/* {
+		reverse_proxy 100.68.142.13:3001
+	}
+
 	handle /api/* {
 		reverse_proxy 100.68.142.13:8000
 	}
