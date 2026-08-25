@@ -219,8 +219,9 @@ async function loadHealthConfig() {
     console.error(`Detected profile: ${profile}, base URL: ${baseUrl}`);
 
     // Try to load profile-specific config first
+    let profileConfigPath = configPath;
     try {
-      const profileConfigPath = configPath.replace('ssot.health.yml', `ssot.health.${profile}.yml`);
+      profileConfigPath = configPath.replace('ssot.health.yml', `ssot.health.${profile}.yml`);
       file = readFileSync(profileConfigPath, 'utf8');
       console.error(`Using profile-specific config: ${profileConfigPath}`);
     } catch {
@@ -234,6 +235,30 @@ async function loadHealthConfig() {
     config = { ...config, ...profileConfig };
     if (profileConfig.services) {
       config.services = profileConfig.services;
+    }
+
+    // Load split category files referenced in the profile registry
+    if (profileConfig.categories && profileConfig.categories.length > 0) {
+      const projectRoot = join(dirname(profileConfigPath), '..', '..', '..');
+      const categoryServices = [];
+      for (const category of profileConfig.categories) {
+        if (category.file) {
+          const categoryFile = join(projectRoot, category.file);
+          try {
+            const categoryContent = readFileSync(categoryFile, 'utf8');
+            const categoryConfig = yaml.parse(categoryContent);
+            if (categoryConfig.services) {
+              categoryServices.push(...categoryConfig.services);
+            }
+            console.error(`Loaded ${categoryConfig.services?.length || 0} services from category '${category.category}' (${categoryFile})`);
+          } catch (err) {
+            console.error(`Failed to load category file ${categoryFile}:`, err.message);
+          }
+        }
+      }
+      if (categoryServices.length > 0) {
+        config.services = categoryServices;
+      }
     }
 
     // Substitute {profile} placeholders in service URLs
@@ -1343,6 +1368,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         
         for (const service of config.services || []) {
           const serviceName = service.name || service.id;
+          const serviceId = service.id || service.name;
           
           // Profile filtering
           if (service.profiles && !service.profiles.includes(detectedProfile)) {
@@ -1350,7 +1376,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           }
           
           // Specific service filtering
-          if (args.service && serviceName !== args.service) continue;
+          if (args.service && serviceId !== args.service) continue;
           
           const startTime = Date.now();
           let checkResult;
@@ -2060,10 +2086,11 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         
         for (const service of config.services || []) {
           const serviceName = service.name || service.id;
+          const serviceId = service.id || service.name;
           
           // Only check critical services unless specific service requested
-          if (args.service && serviceName !== args.service) continue;
-          if (!args.service && !criticalServices.includes(serviceName)) continue;
+          if (args.service && serviceId !== args.service) continue;
+          if (!args.service && !criticalServices.includes(serviceId)) continue;
           
           // Profile filtering
           if (service.profiles && !service.profiles.includes(detectedProfile)) {
