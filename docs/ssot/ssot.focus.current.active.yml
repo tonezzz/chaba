@@ -9,9 +9,11 @@ sections:
   - label: MacBook macOS App Development
     text: Continue macOS and iOS workstation setup after Tailscale install; full Xcode 15.x is next.
     branch: macbook
-    status: active
+    status: parked
+    previous_status: active
     priority: medium
     started: '2026-08-24'
+    parked: '2026-08-25'
     tags:
     - macbook
     - appdev
@@ -32,7 +34,9 @@ sections:
       deferred_at: '2026-08-25'
       resume_note: MacBook offline (last seen 17h); cannot install Xcode until host is reachable
     - label: Verify macOS app build toolchain
-      status: not_started
+      status: deferred
+      deferred_at: '2026-08-25'
+      resume_note: MacBook offline; park focus until host is reachable
   - label: Tony-Dell cannot see iPhone Personal Hotspot SSID
     text: 'tony-dell''s Wi-Fi interface (wlx00761100125e) does not show the iPhone Personal Hotspot in scans.
 
@@ -48,10 +52,9 @@ sections:
 
       '
     branch: tony-dell
-    status: parked
+    status: active
     priority: medium
     started: '2026-08-24'
-    previous_status: active
     blocker:
       reason: Requires manual iPhone setting change; user will handle in another session
     estimated_duration: 1 session
@@ -64,8 +67,7 @@ sections:
     - mt7601u
     subtasks:
     - label: Enable "Maximize Compatibility" on iPhone Personal Hotspot and rescan on tony-dell
-      status: deferred
-      deferred_at: '2026-08-19'
+      status: in_progress
       resume_session: chaba
       resume_note: iPhone manual step; will be handled in another session
     - label: If still invisible, verify driver/firmware and regulatory domain for MT7601U
@@ -73,7 +75,6 @@ sections:
       completed: '2026-08-18'
       note: MT7601U (148f:7601) is present and the driver mt7601u is loaded. The adapter is 2.4 GHz only (channels 1-14, 2412-2484
         MHz). This confirms the iPhone hotspot must be forced to 2.4 GHz via Maximize Compatibility.
-    parked: '2026-08-24'
     deferred:
       to_session: tony-dell
       reason: Bulk defer via mcp_focus sweep
