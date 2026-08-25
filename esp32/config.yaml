@@ -107,17 +107,12 @@ display:
         lambda: |-
           it.fill(Color(0, 0, 0));
           it.filled_rectangle(0, 0, 240, 26, Color(0, 128, 0));
-          it.print(4, 2, id(font1), Color(255, 255, 255), "Home");
-          if (id(ha_sun_state).has_state()) {
-            it.printf(0, 30, id(font_small), Color(255, 255, 255), "Sun: %s", id(ha_sun_state).state.c_str());
-          } else {
-            it.print(0, 30, id(font_small), Color(255, 0, 0), "Sun: no data");
-          }
-          if (id(ha_sun_elev).has_state()) {
-            it.printf(0, 46, id(font_small), Color(255, 255, 255), "Elevation: %.1f", id(ha_sun_elev).state);
-          } else {
-            it.print(0, 46, id(font_small), Color(255, 0, 0), "Elevation: no data");
-          }
+          it.print(4, 2, id(font1), Color(255, 255, 255), "GPU Queue");
+          it.printf(0, 30, id(font_small), Color(255, 255, 255), "Pending: %d", id(gpu_pending));
+          it.printf(0, 46, id(font_small), Color(255, 255, 255), "Running: %d", id(gpu_running));
+          it.printf(0, 62, id(font_small), Color(255, 255, 255), "Completed: %d", id(gpu_completed));
+          it.printf(0, 78, id(font_small), Color(255, 255, 255), "Failed: %d", id(gpu_failed));
+          it.printf(0, 94, id(font_small), Color(255, 255, 255), "Cancelled: %d", id(gpu_cancelled));
 
 touchscreen:
   - platform: xpt2046
@@ -140,10 +135,6 @@ text_sensor:
     ssid:
       name: "Connected SSID"
       id: wifi_ssid_text
-  - platform: homeassistant
-    id: ha_sun_state
-    entity_id: sun.sun
-    name: "Sun State"
 
 sensor:
   - platform: uptime
@@ -161,11 +152,6 @@ sensor:
     update_interval: 5s
     lambda: |-
       return (float) ESP.getFreeHeap();
-  - platform: homeassistant
-    id: ha_sun_elev
-    entity_id: sun.sun
-    attribute: "elevation"
-    name: "Sun Elevation"
 
 binary_sensor:
   - platform: status
@@ -176,5 +162,55 @@ interval:
   - interval: 5s
     then:
       - display.page.show_next: cyd_display
+
+json:
+
+http_request:
+  useragent: esphome
+  timeout: 5s
+  id: http_client
+
+globals:
+  - id: gpu_pending
+    type: int
+    restore_value: no
+    initial_value: "0"
+  - id: gpu_running
+    type: int
+    restore_value: no
+    initial_value: "0"
+  - id: gpu_completed
+    type: int
+    restore_value: no
+    initial_value: "0"
+  - id: gpu_failed
+    type: int
+    restore_value: no
+    initial_value: "0"
+  - id: gpu_cancelled
+    type: int
+    restore_value: no
+    initial_value: "0"
+
+interval:
+  - interval: 30s
+    then:
+      - http_request.get:
+          url: http://192.168.2.67:3001/health
+          headers:
+            Content-Type: application/json
+          on_response:
+            then:
+              - lambda: |-
+                  StaticJsonDocument<512> doc;
+                  DeserializationError err = deserializeJson(doc, body);
+                  if (!err) {
+                    JsonObject status = doc["status"];
+                    id(gpu_pending) = status["pending"].as<int>();
+                    id(gpu_running) = status["running"].as<int>();
+                    id(gpu_completed) = status["completed"].as<int>();
+                    id(gpu_failed) = status["failed"].as<int>();
+                    id(gpu_cancelled) = status["cancelled"].as<int>();
+                  }
 
 captive_portal:
