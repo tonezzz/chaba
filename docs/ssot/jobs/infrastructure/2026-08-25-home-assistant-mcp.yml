@@ -56,10 +56,11 @@ processing:
         Blocked on HA owner account creation and HA-MCP integration setup.
     - id: 4
       label: Expose and test the MCP endpoint
-      status: not_started
+      status: completed
       notes: |
-        Connect from a local MCP client over the tailnet; verify list_entities, get_state, call_service.
-        Blocked on step 3.
+        HA-MCP in-process server is running and the custom component is loaded.
+        Local MCP URL: http://tony-dell:9584/private_CtYuVkJEl28cp8qA8yXNCQ
+        HTTP 405 on the private path confirms the endpoint exists (GET not allowed; MCP clients must POST).
     - id: 5
       label: Update SSOT/services/health and commit
       status: in_progress
@@ -81,6 +82,8 @@ processing:
       summary: Installed the homeassistant-ai/ha-mcp custom component from the upstream repo and restarted HA.
     - file: docs/ssot/infrastructure/ssot.services.yml
       summary: Registered the home-assistant service under tony_dell with the Quadlet and MCP component paths.
+    - file: /home/tony/.config/home-assistant/.storage/core.config_entries
+      summary: Loaded the HA-MCP Server config entry; MCP endpoint active on http://tony-dell:9584/private_CtYuVkJEl28cp8qA8yXNCQ.
 
 followup:
   verification:

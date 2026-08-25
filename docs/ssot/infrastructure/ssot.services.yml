@@ -223,8 +223,12 @@ tony-dell:
     config: /home/tony/.config/home-assistant
     custom_components:
       - ha_mcp_tools
-    status: deployed (2026-08-25)
-    note: 'Container rootless podman on tony-dell. HA-MCP custom component installed; onboarding and integration setup pending.'
+    mcp_server:
+      type: ha_mcp_tools in-process
+      local_url: http://tony-dell:9584/private_CtYuVkJEl28cp8qA8yXNCQ
+      webhook: http://tony-dell:8123/api/webhook/mcp_d5528537d57627164033dc5e3e5e5aa6
+    status: 'mcp server active (2026-08-25)'
+    note: 'Container rootless podman on tony-dell. HA-MCP custom component installed, onboarded, and active. Device integrations (Tuya, etc.) pending.'
   gpu-queue:
     container: gpu-queue
     image: docker.io/library/node:22-alpine
