@@ -1,13 +1,13 @@
 title: Tony-Omen Multi-WAN ECMP
-subtitle: Combine wired Gigabit Ethernet (eno1) and iPhone USB tether (enx) for maximum bandwidth, with 5 GHz Wi-Fi (wlo1) as fallback
+subtitle: Use 5 GHz Wi-Fi (wlo1) as primary, wired Ethernet (eno1) as secondary, and iPhone USB tether (enx) as fallback
 icon: network
 
 ideas:
-  - Use Linux ECMP to balance parallel TCP/UDP streams across eno1 and enx7ed2da73308a when the iPhone is connected.
-  - Keep wlo1 as a higher-metric fallback if the wired link or iPhone tether drops.
-  - Persist L4-port ECMP hashing so multiple parallel streams to the same destination can use both paths.
-  - Use a NetworkManager dispatcher to rebuild the default route automatically whenever eno1, wlo1, or enx changes state.
-  - Document driver and link settings so the NIC auto-negotiates 1 Gbps without forced 100/full settings.
+  - Make wlo1 (fast 5 GHz home Wi-Fi) the primary default route on tony-omen.
+  - Use eno1 wired as a secondary path when wlo1 is down.
+  - Use the iPhone USB tether (enx7ed2da73308a) only as a fallback, with a much higher route metric.
+  - Use an iOS Shortcut to turn on the iPhone Personal Hotspot automatically when tony-omen connects.
+  - Keep the NetworkManager dispatcher that rebuilds default routes whenever eno1, wlo1, or enx changes state.
 
 sections:
   - title: Active Connections
@@ -21,18 +21,18 @@ sections:
       - label: wlo1 5 GHz Wi-Fi fallback
         text: Connection "TONY-WIFI_5G" on wlo1, Intel Wireless-AC 7265, iwlwifi driver, 866.7 Mb/s link, gateway 192.168.2.1, DHCP source 192.168.2.83/24.
 
-  - title: ECMP Policy
+  - title: Fallback Policy
     icon: workflow
     layout: list
     items:
-      - label: Multipath default route
-        text: default metric 40 with two equal-weight nexthops via 192.168.2.1 dev eno1 and <IPHONE_USB_GATEWAY> dev enx7ed2da73308a.
-      - label: Wi-Fi fallback
-        text: default via 192.168.2.1 dev wlo1 metric 50.
+      - label: wlo1 primary
+        text: default via 192.168.2.1 dev wlo1 metric 10.
+      - label: eno1 secondary
+        text: default via 192.168.2.1 dev eno1 metric 20.
+      - label: enx iPhone USB fallback
+        text: default via <IPHONE_USB_GATEWAY> dev enx7ed2da73308a metric 100; only used when wlo1 and eno1 are down.
       - label: Hash policy
-        text: net.ipv4.fib_multipath_hash_policy=1 for L4 (sport/dport) load balancing so parallel streams to the same server use different links.
-      - label: iPhone unlimited data
-        text: iPhone data plan is unlimited, so using enx for ECMP does not risk overage.
+        text: net.ipv4.fib_multipath_hash_policy=1 remains enabled for any equal-cost paths that may exist.
 
   - title: Implementation Files
     icon: files
@@ -49,12 +49,10 @@ sections:
     icon: check
     layout: list
     items:
-      - label: Multipath route present
-        text: ip route show default reports "default metric 40" with nexthop entries for eno1 and enx.
-      - label: Parallel streams split
-        text: 6 parallel 5 MB Cloudflare downloads used both 192.168.2.84 and <IPHONE_USB_DHCP_ADDRESS> source addresses and reached ~70 MB/s aggregate.
-      - label: Fallback
-        text: wlo1 remains active at metric 50 if eno1 or enx drops.
+      - label: Primary/secondary/fallback routes present
+        text: ip -4 -o route show default reports wlo1 metric 10, eno1 metric 20, and enx metric 100.
+      - label: iPhone fallback works
+        text: With wlo1 and eno1 disconnected, traffic flows through enx and the iPhone hotspot.
 
   - title: Notes
     icon: note
