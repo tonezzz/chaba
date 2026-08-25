@@ -95,13 +95,29 @@ display:
       - id: page_status
         lambda: |-
           it.fill(Color(0, 0, 0));
-          it.print(0, 0, id(font1), Color(0, 255, 0), "Status");
+          it.filled_rectangle(0, 0, 240, 26, Color(0, 0, 128));
+          it.print(4, 2, id(font1), Color(255, 255, 255), "Status");
           it.printf(0, 30, id(font_small), Color(255, 255, 255), "IP: %s", id(ip_addr).state.c_str());
           it.printf(0, 46, id(font_small), Color(255, 255, 255), "SSID: %s", id(wifi_ssid_text).state.c_str());
           it.printf(0, 62, id(font_small), Color(255, 255, 255), "MAC: C0:CD:D6:85:A8:38");
           it.printf(0, 78, id(font_small), Color(255, 255, 255), "Signal: %.0f dBm", id(wifi_signal_db).state);
           it.printf(0, 94, id(font_small), Color(255, 255, 255), "Uptime: %.0f s", id(uptime_s).state);
           it.printf(0, 110, id(font_small), Color(255, 255, 255), "Free heap: %.0f B", id(free_heap).state);
+      - id: page_ha
+        lambda: |-
+          it.fill(Color(0, 0, 0));
+          it.filled_rectangle(0, 0, 240, 26, Color(0, 128, 0));
+          it.print(4, 2, id(font1), Color(255, 255, 255), "Home");
+          if (id(ha_sun_state).has_state()) {
+            it.printf(0, 30, id(font_small), Color(255, 255, 255), "Sun: %s", id(ha_sun_state).state.c_str());
+          } else {
+            it.print(0, 30, id(font_small), Color(255, 0, 0), "Sun: no data");
+          }
+          if (id(ha_sun_elev).has_state()) {
+            it.printf(0, 46, id(font_small), Color(255, 255, 255), "Elevation: %.1f", id(ha_sun_elev).state);
+          } else {
+            it.print(0, 46, id(font_small), Color(255, 0, 0), "Elevation: no data");
+          }
 
 touchscreen:
   - platform: xpt2046
@@ -124,6 +140,10 @@ text_sensor:
     ssid:
       name: "Connected SSID"
       id: wifi_ssid_text
+  - platform: homeassistant
+    id: ha_sun_state
+    entity_id: sun.sun
+    name: "Sun State"
 
 sensor:
   - platform: uptime
@@ -141,6 +161,11 @@ sensor:
     update_interval: 5s
     lambda: |-
       return (float) ESP.getFreeHeap();
+  - platform: homeassistant
+    id: ha_sun_elev
+    entity_id: sun.sun
+    attribute: "elevation"
+    name: "Sun Elevation"
 
 binary_sensor:
   - platform: status

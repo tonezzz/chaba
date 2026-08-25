@@ -37,45 +37,43 @@ sections:
       status: deferred
       deferred_at: '2026-08-25'
       resume_note: MacBook offline; park focus until host is reachable
-  - label: Tony-Dell cannot see iPhone Personal Hotspot SSID
-    text: 'tony-dell''s Wi-Fi interface (wlx00761100125e) does not show the iPhone Personal Hotspot in scans.
+  - label: Trade SSOT modularization cleanup
+    text: 'The trade project SSOT shows good domain separation but has critical duplication,
 
-      Initial check: the adapter is a Ralink MT7601U (148f:7601) which is 2.4 GHz only.
+      stale files, and bloat. This focus collects the cleanup actions identified in the
 
-      iPhone Personal Hotspot on newer iOS defaults to 5 GHz when "Maximize Compatibility" is off,
-
-      so the most likely fix is enabling "Maximize Compatibility" on the iPhone, forcing 2.4 GHz.
-
-      If that is not enough, investigate driver/regulatory region, power-saving, and whether the
-
-      hotspot is using a hidden SSID.
+      modularization assessment so they can be scheduled later.
 
       '
-    branch: tony-dell
-    status: completed
-    priority: medium
-    started: '2026-08-24'
-    completed_at: '2026-08-25'
-    outcome: 'Enabled Maximize Compatibility on iPhone and rescanned tony-dell. The iPhone hotspot SSID "TONY-IP" is now visible on
-      2.4 GHz channel 6. The MT7601U driver is 2.4 GHz-only and working correctly.'
+    status: active
+    priority: high
+    started: '2026-08-25'
     estimated_duration: 1 session
     tags:
-    - tony-dell
-    - wifi
-    - iphone
-    - hotspot
-    - network
-    - mt7601u
+    - trade
+    - ssot
+    - modularization
+    - cleanup
     subtasks:
-    - label: Enable "Maximize Compatibility" on iPhone Personal Hotspot and rescan on tony-dell
-      status: completed
-      completed_at: '2026-08-25'
-      note: iPhone hotspot "TONY-IP" now visible on tony-dell after enabling Maximize Compatibility (2.4 GHz).
-    - label: If still invisible, verify driver/firmware and regulatory domain for MT7601U
-      status: completed
-      completed: '2026-08-18'
-      note: MT7601U (148f:7601) is present and the driver mt7601u is loaded. The adapter is 2.4 GHz only (channels 1-14, 2412-2484
-        MHz). This confirms the iPhone hotspot must be forced to 2.4 GHz via Maximize Compatibility.
-    deferred:
-      to_session: tony-dell
-      reason: Bulk defer via mcp_focus sweep
+    - label: Eliminate duplicated SSOT files from trade/tradecanvas-ui/
+      status: not_started
+    - label: Update outdated IP in ssot.health.playlive-tests.yml (both copies)
+      status: not_started
+    - label: Archive completed ssot.tony-dell-migration.yml
+      status: not_started
+    - label: Archive resolved entries from ssot.ui.bugs.yml
+      status: not_started
+    - label: Consolidate 5 playlive-test files into a single catalog
+      status: not_started
+    - label: Move runtime values from ssot.data-verification.yml into a runtime data file
+      status: not_started
+    - label: Add ssot.file-control.yml with size thresholds and split datasource-catalog
+      status: not_started
+    request_log: []
+    ownership:
+      owner: tony
+      session: ''
+      locked: true
+      lock_reason: Activated as active focus
+    branch: trade
+    source: /home/tony/CascadeProjects/chaba/docs/ssot/focus-inbox/2026-08-25-trade-ssot-modularization-cleanup.yml
