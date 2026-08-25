@@ -26,4 +26,65 @@ wifi:
     subnet: 255.255.255.0
     dns1: 192.168.2.1
 
+spi:
+  - id: tft
+    clk_pin: GPIO14
+    mosi_pin: GPIO13
+    miso_pin:
+      number: GPIO12
+      ignore_strapping_warning: true
+
+output:
+  - platform: ledc
+    id: backlight
+    pin:
+      number: GPIO21
+      ignore_strapping_warning: true
+    frequency: 1000Hz
+
+light:
+  - platform: monochromatic
+    id: display_backlight
+    name: "Display Backlight"
+    output: backlight
+    default_transition_length: 0s
+
+font:
+  - file: "gfonts://Roboto"
+    id: font1
+    size: 24
+
+display:
+  - platform: mipi_spi
+    id: cyd_display
+    model: ILI9341
+    spi_id: tft
+    cs_pin:
+      number: GPIO15
+      ignore_strapping_warning: true
+    dc_pin:
+      number: GPIO2
+      ignore_strapping_warning: true
+    invert_colors: false
+    auto_clear_enabled: true
+    dimensions:
+      width: 240
+      height: 320
+    lambda: |-
+      it.fill(COLOR_BLACK);
+      it.print(0, 0, id(font1), "Hello CYD");
+
+touchscreen:
+  - platform: xpt2046
+    id: cyd_touch
+    spi_id: tft
+    cs_pin: GPIO33
+    interrupt_pin: GPIO36
+    threshold: 400
+    calibration:
+      x_min: 300
+      x_max: 3800
+      y_min: 300
+      y_max: 3800
+
 captive_portal:
