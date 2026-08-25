@@ -66,10 +66,10 @@ light:
 font:
   - file: "gfonts://Roboto"
     id: font1
-    size: 24
+    size: 48
   - file: "gfonts://Roboto"
     id: font_small
-    size: 12
+    size: 20
 
 display:
   - platform: mipi_spi
@@ -88,16 +88,12 @@ display:
       width: 240
       height: 320
     pages:
-      - id: page_main
-        lambda: |-
-          it.fill(Color(0, 0, 0));
-          it.print(0, 0, id(font1), Color(255, 255, 255), "Hello CYD");
       - id: page_weather
         lambda: |-
           it.fill(Color(0, 0, 0));
-          it.filled_rectangle(0, 0, 240, 26, Color(0, 128, 128));
+          it.filled_rectangle(0, 0, 240, 48, Color(0, 128, 128));
           it.print(4, 2, id(font1), Color(255, 255, 255), "Weather");
-          it.filled_rectangle(0, 26, 240, 2, Color(0, 100, 100));
+          it.filled_rectangle(0, 48, 240, 2, Color(0, 100, 100));
           Color vtbs_c = Color(255, 255, 255);
           if (id(vtbs_fltcat) == "VFR") vtbs_c = Color(0, 255, 0);
           if (id(vtbs_fltcat) == "MVFR") vtbs_c = Color(0, 0, 255);
@@ -110,47 +106,37 @@ display:
           if (id(vtbu_fltcat) == "LIFR") vtbu_c = Color(255, 0, 255);
           auto draw_arrow = [&](int cx, int cy, int wdir, Color col) {
             float a = (wdir - 90) * 3.14159 / 180.0;
-            int dx = cx + (int)(18.0 * cos(a));
-            int dy = cy + (int)(18.0 * sin(a));
+            int dx = cx + (int)(36.0 * cos(a));
+            int dy = cy + (int)(36.0 * sin(a));
             it.line(cx, cy, dx, dy, col);
-            int ax1 = dx - (int)(6.0 * cos(a - 0.5));
-            int ay1 = dy - (int)(6.0 * sin(a - 0.5));
-            int ax2 = dx - (int)(6.0 * cos(a + 0.5));
-            int ay2 = dy - (int)(6.0 * sin(a + 0.5));
+            int ax1 = dx - (int)(12.0 * cos(a - 0.5));
+            int ay1 = dy - (int)(12.0 * sin(a - 0.5));
+            int ax2 = dx - (int)(12.0 * cos(a + 0.5));
+            int ay2 = dy - (int)(12.0 * sin(a + 0.5));
             it.line(dx, dy, ax1, ay1, col);
             it.line(dx, dy, ax2, ay2, col);
           };
-          it.print(0, 34, id(font_small), vtbs_c, "VTBS");
-          it.printf(42, 34, id(font_small), Color(255, 255, 255), "%.0f/%.0fC %d@%dkt", id(vtbs_temp), id(vtbs_dewp), id(vtbs_wdir), id(vtbs_wspd));
-          draw_arrow(205, 40, id(vtbs_wdir), vtbs_c);
-          it.printf(0, 48, id(font_small), Color(255, 255, 255), "Q%d %s %s%dm", id(vtbs_altim), id(vtbs_visib).c_str(), id(vtbs_cloud).c_str(), id(vtbs_cloud_base));
-          it.print(0, 62, id(font_small), Color(255, 255, 0), id(vtbs_wx).c_str());
-          it.print(0, 96, id(font_small), vtbu_c, "VTBU");
-          it.printf(42, 96, id(font_small), Color(255, 255, 255), "%.0f/%.0fC %d@%dkt", id(vtbu_temp), id(vtbu_dewp), id(vtbu_wdir), id(vtbu_wspd));
-          draw_arrow(205, 102, id(vtbu_wdir), vtbu_c);
-          it.printf(0, 110, id(font_small), Color(255, 255, 255), "Q%d %s %s%dm", id(vtbu_altim), id(vtbu_visib).c_str(), id(vtbu_cloud).c_str(), id(vtbu_cloud_base));
-          it.print(0, 124, id(font_small), Color(255, 255, 0), id(vtbu_wx).c_str());
+          it.print(0, 58, id(font_small), vtbs_c, "VTBS");
+          it.printf(46, 58, id(font_small), Color(255, 255, 255), "%.0f/%.0fC %d@%dkt", id(vtbs_temp), id(vtbs_dewp), id(vtbs_wdir), id(vtbs_wspd));
+          draw_arrow(205, 74, id(vtbs_wdir), vtbs_c);
+          it.printf(0, 86, id(font_small), Color(255, 255, 255), "Q%d %s %s%dm", id(vtbs_altim), id(vtbs_visib).c_str(), id(vtbs_cloud).c_str(), id(vtbs_cloud_base));
+          it.print(0, 114, id(font_small), Color(255, 255, 0), id(vtbs_wx).c_str());
+          it.print(0, 176, id(font_small), vtbu_c, "VTBU");
+          it.printf(46, 176, id(font_small), Color(255, 255, 255), "%.0f/%.0fC %d@%dkt", id(vtbu_temp), id(vtbu_dewp), id(vtbu_wdir), id(vtbu_wspd));
+          draw_arrow(205, 192, id(vtbu_wdir), vtbu_c);
+          it.printf(0, 204, id(font_small), Color(255, 255, 255), "Q%d %s %s%dm", id(vtbu_altim), id(vtbu_visib).c_str(), id(vtbu_cloud).c_str(), id(vtbu_cloud_base));
+          it.print(0, 232, id(font_small), Color(255, 255, 0), id(vtbu_wx).c_str());
       - id: page_status
         lambda: |-
           it.fill(Color(0, 0, 0));
-          it.filled_rectangle(0, 0, 240, 26, Color(0, 0, 128));
+          it.filled_rectangle(0, 0, 240, 48, Color(0, 0, 128));
           it.print(4, 2, id(font1), Color(255, 255, 255), "Status");
-          it.printf(0, 30, id(font_small), Color(255, 255, 255), "IP: %s", id(ip_addr).state.c_str());
-          it.printf(0, 46, id(font_small), Color(255, 255, 255), "SSID: %s", id(wifi_ssid_text).state.c_str());
-          it.printf(0, 62, id(font_small), Color(255, 255, 255), "MAC: C0:CD:D6:85:A8:38");
-          it.printf(0, 78, id(font_small), Color(255, 255, 255), "Signal: %.0f dBm", id(wifi_signal_db).state);
-          it.printf(0, 94, id(font_small), Color(255, 255, 255), "Uptime: %.0f s", id(uptime_s).state);
-          it.printf(0, 110, id(font_small), Color(255, 255, 255), "Free heap: %.0f B", id(free_heap).state);
-      - id: page_ha
-        lambda: |-
-          it.fill(Color(0, 0, 0));
-          it.filled_rectangle(0, 0, 240, 26, Color(0, 128, 0));
-          it.print(4, 2, id(font1), Color(255, 255, 255), "GPU Queue");
-          it.printf(0, 30, id(font_small), Color(255, 255, 255), "Pending: %d", id(gpu_pending));
-          it.printf(0, 46, id(font_small), Color(255, 255, 255), "Running: %d", id(gpu_running));
-          it.printf(0, 62, id(font_small), Color(255, 255, 255), "Completed: %d", id(gpu_completed));
-          it.printf(0, 78, id(font_small), Color(255, 255, 255), "Failed: %d", id(gpu_failed));
-          it.printf(0, 94, id(font_small), Color(255, 255, 255), "Cancelled: %d", id(gpu_cancelled));
+          it.printf(0, 56, id(font_small), Color(255, 255, 255), "IP: %s", id(ip_addr).state.c_str());
+          it.printf(0, 82, id(font_small), Color(255, 255, 255), "SSID: %s", id(wifi_ssid_text).state.c_str());
+          it.printf(0, 108, id(font_small), Color(255, 255, 255), "MAC: C0:CD:D6:85:A8:38");
+          it.printf(0, 134, id(font_small), Color(255, 255, 255), "Signal: %.0f dBm", id(wifi_signal_db).state);
+          it.printf(0, 160, id(font_small), Color(255, 255, 255), "Uptime: %.0f s", id(uptime_s).state);
+          it.printf(0, 186, id(font_small), Color(255, 255, 255), "Free heap: %.0f B", id(free_heap).state);
 
 touchscreen:
   - platform: xpt2046
@@ -200,25 +186,6 @@ interval:
   - interval: 5s
     then:
       - display.page.show_next: cyd_display
-  - interval: 30s
-    then:
-      - http_request.get:
-          url: http://192.168.2.67:3001/health
-          capture_response: true
-          on_response:
-            then:
-              - lambda: |-
-                  json::parse_json(body, [](JsonObject root) -> bool {
-                    JsonObject status = root["status"];
-                    if (!status.isNull()) {
-                      id(gpu_pending) = status["pending"].as<int>();
-                      id(gpu_running) = status["running"].as<int>();
-                      id(gpu_completed) = status["completed"].as<int>();
-                      id(gpu_failed) = status["failed"].as<int>();
-                      id(gpu_cancelled) = status["cancelled"].as<int>();
-                    }
-                    return true;
-                  });
   - interval: 60s
     then:
       - http_request.get:
