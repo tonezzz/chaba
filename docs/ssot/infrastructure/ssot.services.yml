@@ -160,10 +160,12 @@ tony-dell:
     service: chaba-funnel.service
     host: tony_dell
     port: 8082
+    host_port: 0.0.0.0:8082
     purpose: Tailscale Funnel landing page, docs, and health endpoint
-    tailscale_funnel: https://tony-dell.taila0626a.ts.net
+    tailscale_funnel: 'https://tony-dell.taila0626a.ts.net:8444'
     source: stacks/tony-dell/chaba-funnel/funnel-server.py
     status: implemented (2026-08-17)
+    note: 'Migrated from port 443 root to 8444 to avoid conflict with the mcp-rview-oauth-proxy on 9004. Caddy/rview remain on 8443; OAuth stays on 443. Set up: tailscale funnel --bg --https=8444 8082 on tony-dell.'
   playlived-dell:
     service: playlived-dell.service
     host: tony_dell

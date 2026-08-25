@@ -129,10 +129,10 @@ sections:
       - label: chaba-funnel
         text: Restart the tony-dell Tailscale Funnel landing page and docs server.
         host: tony_dell
-        trigger: 2 consecutive failures of https://tony-dell.taila0626a.ts.net/health
+        trigger: 2 consecutive failures of https://tony-dell.taila0626a.ts.net:8444/health
         precheck: systemctl --user is-active chaba-funnel.service
         command: systemctl --user restart chaba-funnel.service
-        verify: curl -s -o /dev/null -w '%{http_code}' https://tony-dell.taila0626a.ts.net/health
+        verify: curl -s -o /dev/null -w '%{http_code}' https://tony-dell.taila0626a.ts.net:8444/health
 
   - title: Files & Paths
     icon: 📁
