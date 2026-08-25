@@ -380,6 +380,30 @@ def mcp_gpu(host):
             return r
     return {"ok": False, "error": "no supported GPU tool found (nvidia-smi or rocm-smi)", "host": host}
 
+
+REMEDIATION_ACTIONS = {"restart", "status", "logs"}
+
+
+def mcp_remediate(host, unit, action="restart", dry_run=True):
+    if action not in REMEDIATION_ACTIONS:
+        return {"ok": False, "error": f"unknown action: {action}", "allowed": sorted(REMEDIATION_ACTIONS)}
+    if not unit.endswith(".service") and not unit.endswith(".timer"):
+        return {"ok": False, "error": "unit must end in .service or .timer"}
+    scope = "--user " if not unit.startswith("chaba-") and not unit.endswith(".timer") else ""
+    if action == "restart":
+        cmd = f"systemctl {scope}restart {shlex.quote(unit)}"
+    elif action == "status":
+        cmd = f"systemctl {scope}status {shlex.quote(unit)} --no-pager"
+    elif action == "logs":
+        cmd = f"journalctl {scope}-u {shlex.quote(unit)} -n 50 --no-pager"
+    if dry_run:
+        return {"ok": True, "dry_run": True, "host": host, "unit": unit, "action": action, "cmd": cmd}
+    result = run_on_host(host, cmd, compact=False)
+    result["host"] = host
+    result["unit"] = unit
+    result["action"] = action
+    return result
+
 def mcp_health(host):
     if host not in HOSTS:
         return {"ok": False, "error": f"unknown host: {host}", "available_hosts": list(HOSTS.keys())}

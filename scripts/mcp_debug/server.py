@@ -13,6 +13,7 @@ from .tools import (
     mcp_diff,
     mcp_logs,
     mcp_logs_savings,
+    mcp_remediate,
     mcp_net,
     mcp_env,
     mcp_gpu,
@@ -202,6 +203,20 @@ def handle_tools_list(id_):
                     "host": {"type": "string", "enum": list(HOSTS.keys()), "description": "Target host"},
                 },
                 "required": ["host"],
+            },
+        },
+        {
+            "name": "mcp_remediate",
+            "description": "Restart a systemd service or fetch its status/logs. Always set dry_run=true first.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "host": {"type": "string", "enum": list(HOSTS.keys()), "description": "Target host"},
+                    "unit": {"type": "string", "description": "systemd unit, e.g. yomi-api.service"},
+                    "action": {"type": "string", "enum": ["restart", "status", "logs"], "default": "restart"},
+                    "dry_run": {"type": "boolean", "default": True, "description": "When true, returns the command that would be run"},
+                },
+                "required": ["host", "unit"],
             },
         },
         {
@@ -608,6 +623,13 @@ def handle_tools_call(id_, params):
         if not h:
             return {"jsonrpc": "2.0", "id": id_, "error": {"code": -32602, "message": "host is required"}}
         result = mcp_gpu(h)
+        output = json.dumps(result, separators=(",", ":"))
+    elif name == "mcp_remediate":
+        h = arguments.get("host")
+        unit = arguments.get("unit")
+        if not h or not unit:
+            return {"jsonrpc": "2.0", "id": id_, "error": {"code": -32602, "message": "host and unit are required"}}
+        result = mcp_remediate(h, unit, action=arguments.get("action", "restart"), dry_run=arguments.get("dry_run", True))
         output = json.dumps(result, separators=(",", ":"))
     elif name == "mcp_health":
         h = arguments.get("host")

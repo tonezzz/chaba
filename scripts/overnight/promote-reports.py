@@ -11,6 +11,9 @@ REPO = Path(__file__).resolve().parent.parent.parent
 INBOX_DIR = REPO / "docs" / "ssot" / "focus-inbox"
 REPORTS_DIR = REPO / "reports"
 
+sys.path.insert(0, str(REPO / "scripts"))
+import events
+
 
 def slugify(text):
     return re.sub(r"[^a-z0-9_-]", "", text.lower().replace(" ", "-").replace("/", "-"))[:40]
@@ -21,7 +24,7 @@ def make_inbox_path(prefix):
     return INBOX_DIR / f"{ts}-{prefix}.yml"
 
 
-def write_draft(path, label, text, subtasks, tags, source_file):
+def write_draft(path, label, text, subtasks, tags, source_file, triage_score=0.5):
     INBOX_DIR.mkdir(exist_ok=True)
     body = f"""title: Focus Inbox Item
 subtitle: Auto-drafted from {source_file}
@@ -34,6 +37,7 @@ focus:
   branch: chaba
   priority: medium
   status: draft
+  triage_score: {triage_score}
   tags: {json.dumps(tags)}
   safe_to_parallel:
     value: true
@@ -77,7 +81,7 @@ def promote_service_errors():
         f"Schedule fixes or restarts",
     ]
     out = make_inbox_path("service-log-errors")
-    write_draft(out, "Service log errors from overnight sweep", text, subtasks, ["overnight", "logs", "errors"], "reports/SERVICE_ERRORS.json")
+    write_draft(out, "Service log errors from overnight sweep", text, subtasks, ["overnight", "logs", "errors"], "reports/SERVICE_ERRORS.json", triage_score=0.8)
 
 
 def promote_dev_system():
@@ -98,7 +102,7 @@ def promote_dev_system():
         f"Update docs/ssot/ssot.dev-system.assessment.yml when resolved",
     ]
     out = make_inbox_path("dev-system-regression")
-    write_draft(out, "Dev-system regression", text, subtasks, ["dev-system", "assessment"], "reports/DEV_SYSTEM_ASSESSMENT.json")
+    write_draft(out, "Dev-system regression", text, subtasks, ["dev-system", "assessment"], "reports/DEV_SYSTEM_ASSESSMENT.json", triage_score=0.6)
 
 
 def promote_ssot_optimization():
@@ -119,12 +123,30 @@ def promote_ssot_optimization():
     text += "\nSource: reports/SSOT_OPTIMIZATION_METRICS.json\n"
     subtasks = ["Open reports/SSOT_OPTIMIZATION_SUGGESTIONS.md", "Fix highest priority warning", "Re-run ssot-validate-all"]
     out = make_inbox_path("ssot-optimization-issues")
-    write_draft(out, "SSOT optimization warnings", text, subtasks, ["ssot", "optimization"], "reports/SSOT_OPTIMIZATION_METRICS.json")
+    write_draft(out, "SSOT optimization warnings", text, subtasks, ["ssot", "optimization"], "reports/SSOT_OPTIMIZATION_METRICS.json", triage_score=0.4)
+
+
+def promote_events():
+    evs = events.get_events(limit=50, severity="error")
+    if not evs:
+        return
+    by_type = {}
+    for e in evs:
+        by_type.setdefault(e["type"], 0)
+        by_type[e["type"]] += 1
+    text = "Orchestration events with error severity:\n"
+    for t, c in by_type.items():
+        text += f"- {c}x {t}\n"
+    text += "Source: reports/EVENTS.jsonl\n"
+    subtasks = ["Open reports/EVENTS.jsonl", "Identify repeating failure source", "Run or schedule remediation"]
+    out = make_inbox_path("orchestration-errors")
+    write_draft(out, "Orchestration errors", text, subtasks, ["orchestration", "events"], "reports/EVENTS.jsonl", triage_score=0.7)
 
 
 def main():
     promote_service_errors()
     promote_dev_system()
+    promote_events()
     promote_ssot_optimization()
 
 

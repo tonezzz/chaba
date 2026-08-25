@@ -1,0 +1,58 @@
+title: Overnight Orchestration
+subtitle: DAG-driven overnight workflow for the chaba system
+icon: workflow
+version: 1
+
+workflow:
+  name: overnight
+  description: |
+    Replaces the linear overnight-jobs-expanded.sh with a directed acyclic graph.
+    Each step declares its dependencies and on_fail policy. The orchestrator
+    writes ORCHESTRATION.json and ORCHESTRATION_STATE.json for checkpointing.
+
+config:
+  state_file: reports/ORCHESTRATION_STATE.json
+  report_file: reports/ORCHESTRATION.json
+  default_on_fail: abort
+
+steps:
+  - id: ssot_validate
+    name: SSOT Validation
+    run: node scripts/ssot-validate-all.mjs
+    on_fail: abort
+    timeout: 120
+
+  - id: health_snapshot
+    name: Health Snapshot
+    run: node scripts/health-snapshot.mjs
+    on_fail: continue
+    timeout: 300
+    depends_on: [ssot_validate]
+
+  - id: service_log_sweep
+    name: Service Log Error Sweep
+    run: python3 scripts/overnight/service-logs-sweep.py
+    on_fail: continue
+    timeout: 600
+    depends_on: [ssot_validate]
+
+  - id: dev_system_assess
+    name: Development System Assessment
+    run: python3 scripts/dev-system-assess.py
+    on_fail: continue
+    timeout: 120
+    depends_on: [service_log_sweep]
+
+  - id: ssot_optimize
+    name: SSOT Optimization
+    run: node scripts/ssot-optimize.mjs
+    on_fail: continue
+    timeout: 300
+    depends_on: [dev_system_assess]
+
+  - id: promote_reports
+    name: Promote Reports to Focus
+    run: python3 scripts/overnight/promote-reports.py
+    on_fail: continue
+    timeout: 120
+    depends_on: [ssot_optimize]

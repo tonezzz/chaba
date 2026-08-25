@@ -1,0 +1,22 @@
+title: Worktree Synchronization
+subtitle: Detect drift between master and active worktrees
+icon: git-branch
+version: 1
+
+workflow:
+  name: worktrees
+  description: |
+    Scans all git worktrees, compares each branch to master, and creates
+    focus-inbox drafts for branches that are ahead or behind.
+
+config:
+  state_file: reports/WORKTREE_SYNC_STATE.json
+  report_file: reports/WORKTREE_SYNC.json
+  default_on_fail: continue
+
+steps:
+  - id: worktree_scan
+    name: Scan Worktree Drift
+    run: python3 scripts/worktree-sync.py
+    on_fail: continue
+    timeout: 120
