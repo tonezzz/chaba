@@ -143,6 +143,16 @@ display:
           it.printf(0, 134, id(font_small), Color(255, 255, 255), "Signal: %.0f dBm", id(wifi_signal_db).state);
           it.printf(0, 160, id(font_small), Color(255, 255, 255), "Uptime: %.0f s", id(uptime_s).state);
           it.printf(0, 186, id(font_small), Color(255, 255, 255), "Free heap: %.0f B", id(free_heap).state);
+      - id: page_gold
+        lambda: |-
+          it.fill(Color(0, 0, 0));
+          it.rectangle(0, 0, 240, 320, Color(255, 215, 0));
+          it.filled_rectangle(0, 0, 240, 48, Color(128, 100, 0));
+          it.print(4, 2, id(font1), Color(255, 255, 255), "Gold");
+          it.rectangle(2, 50, 236, 270, Color(128, 100, 0));
+          it.printf(0, 56, id(font_small), Color(255, 255, 255), "Gold: %.0f THB/oz", id(gold_thb_oz));
+          it.printf(0, 86, id(font_small), Color(255, 255, 255), "Spot: %.2f USD/oz", id(gold_usd_oz));
+          it.printf(0, 116, id(font_small), Color(255, 255, 255), "USD/THB: %.2f", id(usd_thb_rate));
 
 touchscreen:
   - platform: xpt2046
@@ -247,6 +257,25 @@ interval:
                       }
                     }
                   }
+  - interval: 300s
+    then:
+      - http_request.get:
+          url: https://xaus.com/api/v1/spot?currency=THB
+          capture_response: true
+          on_response:
+            then:
+              - lambda: |-
+                  JsonDocument doc;
+                  DeserializationError err = deserializeJson(doc, body);
+                  if (!err) {
+                    JsonObject root = doc.as<JsonObject>();
+                    JsonObject xau = root["xau"];
+                    if (!xau.isNull()) {
+                      id(gold_thb_oz) = xau["price"].as<float>();
+                    }
+                    id(gold_usd_oz) = root["spot_usd_oz"].as<float>();
+                    id(usd_thb_rate) = root["fx_rate"].as<float>();
+                  }
 
 json:
 
@@ -254,7 +283,7 @@ http_request:
   useragent: esphome
   timeout: 10s
   verify_ssl: false
-  buffer_size_rx: 2048
+  buffer_size_rx: 4096
   id: http_client
 
 globals:
@@ -358,5 +387,17 @@ globals:
     type: std::string
     restore_value: no
     initial_value: '""'
+  - id: gold_thb_oz
+    type: float
+    restore_value: no
+    initial_value: "0.0"
+  - id: gold_usd_oz
+    type: float
+    restore_value: no
+    initial_value: "0.0"
+  - id: usd_thb_rate
+    type: float
+    restore_value: no
+    initial_value: "0.0"
 
 captive_portal:
