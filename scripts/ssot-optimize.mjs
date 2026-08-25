@@ -37,6 +37,23 @@ function runLogCheck() {
   return { ok: true, issues: [], units: [], log_files: [] };
 }
 
+function runDevSystemCheck() {
+  const devJson = join(REPORTS_DIR, 'DEV_SYSTEM_ASSESSMENT.json');
+  try {
+    execSync('python3 scripts/dev-system-assess.py --metrics-only', {
+      cwd: REPO,
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
+    if (existsSync(devJson)) {
+      const data = JSON.parse(readFileSync(devJson, 'utf8'));
+      return { score: data.score || {}, cons: data.cons || [], trend: data.trend || 'stable' };
+    }
+  } catch (e) {
+    console.warn('Dev-system check optional, skipped:', e.message);
+  }
+  return { score: {}, cons: [], trend: 'unknown' };
+}
+
 function pruneHistory() {
   if (!existsSync(HISTORY)) return;
   const cutoff = new Date();
@@ -69,6 +86,7 @@ function main() {
   const dataWarnings = [];
   const otherWarnings = [];
   const logCheck = runLogCheck();
+  const devSystemCheck = runDevSystemCheck();
   let currentFile = null;
 
   for (const line of report.split('\n')) {
@@ -95,7 +113,8 @@ function main() {
   summary += `Bloat warnings: ${bloatWarnings.length}\n`;
   summary += `Data-isolation warnings: ${dataWarnings.length}\n`;
   summary += `Other warnings: ${otherWarnings.length}\n`;
-  summary += `Log reference issues: ${(logCheck.issues || []).length}\n\n`;
+  summary += `Log reference issues: ${(logCheck.issues || []).length}\n`;
+  summary += `Dev-system cons: ${(devSystemCheck.cons || []).length} (${devSystemCheck.trend})\n\n`;
 
   summary += `## Bloat candidates (highest priority)\n\n`;
   if (bloatWarnings.length === 0) {
@@ -134,6 +153,16 @@ function main() {
     }
   }
 
+  summary += `\n## Dev-system cons\n\n`;
+  const cons = devSystemCheck.cons || [];
+  if (cons.length === 0) {
+    summary += 'No dev-system cons.\n';
+  } else {
+    for (const c of cons) {
+      summary += `- ${c.label || 'unknown'} (${c.severity || 'none'}): ${c.evidence || ''}\n`;
+    }
+  }
+
   summary += `\n---\n_Report produced by scripts/ssot-optimize.mjs in ${Date.now() - start}ms_\n`;
 
   if (!existsSync(REPORTS_DIR)) {
@@ -151,6 +180,11 @@ function main() {
       log_files: (logCheck.log_files || []).length,
     },
     files: 104,
+    dev_system: {
+      score: devSystemCheck.score,
+      cons: (devSystemCheck.cons || []).length,
+      trend: devSystemCheck.trend,
+    },
   }, null, 2), 'utf8');
   writeFileSync(WARNINGS, JSON.stringify({
     generated: new Date().toISOString(),

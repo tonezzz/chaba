@@ -44,6 +44,7 @@ schedule:
       - infrastructure-suite
       - standardization-suite
       - code-suite
+      - dev-system
     note: groups are expanded to individual audits by the runner
   full:
     frequency: monthly
@@ -58,6 +59,7 @@ schedule:
       - security-suite
       - standardization-suite
       - code-suite
+      - dev-system
     note: installed and enabled on tony-dell; security-audit may need privileges
 
 audits:
@@ -219,6 +221,17 @@ audits:
     schedule: weekly
     severity_on_fail: warning
     description: Formatting, spell check, and npm audit
+    last_run:
+    last_result:
+
+  - name: dev-system
+    script: scripts/dev-system-assess.py
+    command: python3
+    args:
+      - --check
+    schedule: weekly
+    severity_on_fail: warning
+    description: Development system assessment; metrics, branch/worktree sprawl, and review cadence
     last_run:
     last_result:
 

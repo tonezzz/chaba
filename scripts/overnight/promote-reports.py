@@ -80,6 +80,27 @@ def promote_service_errors():
     write_draft(out, "Service log errors from overnight sweep", text, subtasks, ["overnight", "logs", "errors"], "reports/SERVICE_ERRORS.json")
 
 
+def promote_dev_system():
+    path = REPORTS_DIR / "DEV_SYSTEM_ASSESSMENT.json"
+    if not path.exists():
+        return
+    data = json.loads(path.read_text())
+    open_cons = [c for c in data.get("cons", []) if c.get("status") == "open" and c.get("severity") in ("high", "medium")]
+    if not open_cons:
+        return
+    text = f"Dev-system trend is {data.get('trend', 'unknown')}. Open cons:\n"
+    for c in open_cons:
+        text += f"- {c['label']} ({c['severity']}): {c['evidence']}\n"
+    text += "Source: reports/DEV_SYSTEM_ASSESSMENT.json\n"
+    subtasks = [
+        f"Review reports/DEV_SYSTEM_ASSESSMENT.md",
+        f"Address highest severity con: {open_cons[0]['label']}",
+        f"Update docs/ssot/ssot.dev-system.assessment.yml when resolved",
+    ]
+    out = make_inbox_path("dev-system-regression")
+    write_draft(out, "Dev-system regression", text, subtasks, ["dev-system", "assessment"], "reports/DEV_SYSTEM_ASSESSMENT.json")
+
+
 def promote_ssot_optimization():
     path = REPORTS_DIR / "SSOT_OPTIMIZATION_METRICS.json"
     if not path.exists():
@@ -103,6 +124,7 @@ def promote_ssot_optimization():
 
 def main():
     promote_service_errors()
+    promote_dev_system()
     promote_ssot_optimization()
 
 

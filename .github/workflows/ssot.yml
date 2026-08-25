@@ -27,7 +27,11 @@ jobs:
       - name: Validate all SSOT files
         run: node scripts/ssot-validate-all.mjs
       - name: Smoke test mcp-debug server wiring
-        run: python3 scripts/mcp-debug-server-smoke.py
+        run: |
+          pip install pyyaml
+          python3 scripts/mcp-debug-server-smoke.py
+      - name: Development system assessment
+        run: python3 scripts/dev-system-assess.py --check
       - name: Check SSOT optimization warnings
         run: node scripts/ssot-optimize.mjs
       - name: Verify no warnings
@@ -36,7 +40,8 @@ jobs:
           DATA_ISOLATION=$(node -e "console.log(JSON.parse(require('fs').readFileSync('reports/SSOT_OPTIMIZATION_METRICS.json')).data_isolation)")
           OTHER=$(node -e "console.log(JSON.parse(require('fs').readFileSync('reports/SSOT_OPTIMIZATION_METRICS.json')).other)")
           LOGS=$(node -e "console.log(JSON.parse(require('fs').readFileSync('reports/SSOT_OPTIMIZATION_METRICS.json')).logs.issues)")
-          if [ "$BLOAT" -gt 0 ] || [ "$DATA_ISOLATION" -gt 0 ] || [ "$OTHER" -gt 0 ] || [ "$LOGS" -gt 0 ]; then
-            echo "SSOT optimization warnings found: bloat=$BLOAT data_isolation=$DATA_ISOLATION other=$OTHER logs=$LOGS"
+          DEV=$(node -e "console.log(JSON.parse(require('fs').readFileSync('reports/SSOT_OPTIMIZATION_METRICS.json')).dev_system.cons)")
+          if [ "$BLOAT" -gt 0 ] || [ "$DATA_ISOLATION" -gt 0 ] || [ "$OTHER" -gt 0 ] || [ "$LOGS" -gt 0 ] || [ "$DEV" -gt 0 ]; then
+            echo "SSOT optimization warnings found: bloat=$BLOAT data_isolation=$DATA_ISOLATION other=$OTHER logs=$LOGS dev_system=$DEV"
             exit 1
           fi
