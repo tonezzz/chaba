@@ -1,0 +1,121 @@
+title: Task Completion Workflow
+subtitle: Standard steps to close out a task and keep SSOT, config, health, and monitoring in sync
+icon: clipboard-check
+version: 1
+
+purpose: |
+  When a task or job finishes, update the canonical records and verify the
+  system is healthy before moving on. This file is the checklist and
+  reference for that hand-off.
+
+scope:
+  - Any focus, inbox item, job, or ad-hoc task that changes code, config,
+    deployment, or infrastructure in the chaba ecosystem.
+  - Applies across chaba, chaba-h3, and tony-dell deploy worktrees.
+
+triggers:
+  - User explicitly says the task is done.
+  - Focus-dispatcher detects an active focus with all subtasks completed.
+  - A sub-agent reports completion and the user or dispatcher confirms it.
+
+phases:
+  - id: ssot
+    name: SSOT update
+    order: 1
+    must: true
+    steps:
+      - label: Log session
+        action: Append an entry to docs/ssot/ssot.focus.sessions.yml
+        fields:
+          - date
+          - session
+          - focus
+          - source
+          - plan
+          - done
+          - follow_up
+          - next_action
+          - decisions
+          - kb_items
+      - label: Update focus status
+        action: |
+          Move the inbox file to docs/ssot/focus-inbox/processed/ or archive
+          the completed focus in docs/ssot/ssot.focus.yml history.
+      - label: Capture improvements
+        action: |
+          If the work revealed a follow-up improvement, add it to
+          docs/ssot/ssot.improvements.yml or run scripts/improvements-triage.py.
+      - label: Update SSOT index
+        action: Register any new canonical SSOT files in docs/ssot/ssot.index.yml.
+      - label: Validate
+        action: node scripts/ssot-validate-all.mjs
+
+  - id: config
+    name: Configuration sync
+    order: 2
+    must: false
+    when: The task changes any runtime config
+    steps:
+      - label: Caddy
+        action: Update stacks/web/Caddyfile or chaba-tony-dell/stacks/web/Caddyfile and reload caddy.
+      - label: Docker / Podman Quadlet
+        action: |
+          Update .container, .build, docker-compose.yml, or build.sh files and
+          run systemctl --user daemon-reload where units are affected.
+      - label: Environment
+        action: |
+          Update .env, environment variables, or secrets and note the change in
+          ssot.values.yml or ssot.health.yml.
+      - label: chaba-h3 proxy
+        action: Update proxy-server.mjs or public/apps/apps.yml if the app slug or API changed.
+
+  - id: health
+    name: Health check
+    order: 3
+    must: true
+    steps:
+      - label: SSOT validation
+        action: node scripts/ssot-validate-all.mjs
+      - label: Syntax / build checks
+        action: node --check changed .mjs files; npm run check:ssot if available.
+      - label: Service health endpoints
+        action: curl -s http(s)://<host>/<service>/health
+      - label: mcp-health snapshot
+        action: Run a targeted mcp-health check for the affected host and service.
+
+  - id: monitoring
+    name: Monitoring and logging
+    order: 4
+    must: false
+    when: The task touches a service or host
+    steps:
+      - label: systemd status
+        action: systemctl --user status <service>
+      - label: Logs
+        action: journalctl --user -u <service> -n 50
+      - label: Metrics
+        action: Verify the service appears in the next overnight-assessment report.
+      - label: Alerts
+        action: Check ssot.improvements.yml for any new high-priority auto-generated items.
+
+exit_criteria:
+  - All changed SSOT files validate.
+  - The repo worktree is clean or the remaining changes are intentionally uncommitted.
+  - Health endpoint for the changed service returns ok.
+  - A session entry exists unless the task was trivial and already captured.
+
+tools:
+  - scripts/ssot-validate-all.mjs
+  - scripts/ssot-optimize.mjs
+  - scripts/improvements-triage.py
+  - scripts/mcp-health/run-check.mjs
+  - docs/ssot/infrastructure/ssot.health.yml
+
+related_files:
+  - docs/ssot/ssot.focus.sessions.yml
+  - docs/ssot/ssot.focus.yml
+  - docs/ssot/ssot.improvements.yml
+  - docs/ssot/ssot.index.yml
+  - docs/ssot/infrastructure/ssot.health.yml
+  - docs/ssot/infrastructure/ssot.automation.yml
+  - docs/ssot/infrastructure/ssot.night-jobs.yml
