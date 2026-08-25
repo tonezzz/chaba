@@ -61,6 +61,9 @@ font:
   - file: "gfonts://Roboto"
     id: font1
     size: 24
+  - file: "gfonts://Roboto"
+    id: font_small
+    size: 12
 
 display:
   - platform: mipi_spi
@@ -87,11 +90,12 @@ display:
         lambda: |-
           it.fill(Color(0, 0, 0));
           it.print(0, 0, id(font1), Color(0, 255, 0), "Status");
-          it.printf(0, 30, id(font1), Color(255, 255, 255), "IP: %s", id(ip_addr).state.c_str());
-          it.printf(0, 60, id(font1), Color(255, 255, 255), "SSID: %s", id(wifi_ssid_text).state.c_str());
-          it.printf(0, 90, id(font1), Color(255, 255, 255), "Sig: %.0f dBm", id(wifi_signal_db).state);
-          it.printf(0, 120, id(font1), Color(255, 255, 255), "Up: %.0f s", id(uptime_s).state);
-          it.printf(0, 150, id(font1), Color(255, 255, 255), "Heap: %.0f", id(free_heap).state);
+          it.printf(0, 30, id(font_small), Color(255, 255, 255), "IP: %s", id(ip_addr).state.c_str());
+          it.printf(0, 46, id(font_small), Color(255, 255, 255), "SSID: %s", id(wifi_ssid_text).state.c_str());
+          it.printf(0, 62, id(font_small), Color(255, 255, 255), "MAC: C0:CD:D6:85:A8:38");
+          it.printf(0, 78, id(font_small), Color(255, 255, 255), "Signal: %.0f dBm", id(wifi_signal_db).state);
+          it.printf(0, 94, id(font_small), Color(255, 255, 255), "Uptime: %.0f s", id(uptime_s).state);
+          it.printf(0, 110, id(font_small), Color(255, 255, 255), "Free heap: %.0f B", id(free_heap).state);
 
 touchscreen:
   - platform: xpt2046
