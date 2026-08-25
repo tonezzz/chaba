@@ -33,7 +33,7 @@
 - **Pages:**
   - `page_main`: "Hello CYD"
   - `page_status`: IP, SSID, MAC, Wi-Fi signal, uptime, free heap
-  - `page_ha`: Home Assistant `sun.sun` state and `elevation` attribute
+  - `page_gpu_queue`: GPU Queue stats from `http://192.168.2.67:3001/health` (pending, running, completed, failed, cancelled)
   - Auto-cycles every 5 seconds
 
 ## Remote access
