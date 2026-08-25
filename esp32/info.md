@@ -9,7 +9,7 @@
 
 ## Network
 
-- **Hostname:** `esp32_test`
+- **Hostname:** `esp32test`
 - **IP Address:** `192.168.2.86` (manual/static)
 - **Subnet:** `255.255.255.0`
 - **Gateway:** `192.168.2.1`
@@ -23,7 +23,17 @@
 
 - **ESPHome API:** `192.168.2.86:6053`
 - **OTA:** `192.168.2.86:3232`
-- **mDNS:** `esp32_test.local`
+- **mDNS:** `esp32test.local`
+
+## Display
+
+- **Panel:** 2.8" ILI9341 240×320 TFT
+- **Touch:** XPT2046 resistive, dedicated SPI bus (CLK=GPIO25, MOSI=GPIO32, MISO=GPIO39)
+- **Backlight:** `Display Backlight` entity (PWM on GPIO21)
+- **Pages:**
+  - `page_main`: "Hello CYD"
+  - `page_status`: IP, SSID, MAC, Wi-Fi signal, uptime, free heap
+  - Auto-cycles every 5 seconds
 
 ## Build / flash
 
