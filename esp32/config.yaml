@@ -196,12 +196,12 @@ interval:
           on_response:
             then:
               - lambda: |-
-                  JsonDocument doc(2048);
+                  JsonDocument doc;
                   DeserializationError err = deserializeJson(doc, body);
                   if (!err) {
                     JsonArray data = doc.as<JsonArray>();
                     for (JsonObject station : data) {
-                      const char* icao = station["icaoId"];
+                      const char* icao = station["icaoId"].as<const char*>();
                       if (icao && strcmp(icao, "VTBS") == 0) {
                         id(vtbs_temp) = station["temp"].as<float>();
                         id(vtbs_wspd) = station["wspd"].as<int>();
