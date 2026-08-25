@@ -5,35 +5,33 @@ icon: inbox
 focus:
   label: Trade SSOT modularization cleanup
   text: |
-    The trade project SSOT shows good domain separation but has critical duplication,
-    stale files, and bloat. This focus collects the cleanup actions identified in the
-    modularization assessment so they can be scheduled later.
+    The trade project SSOT cleanup is complete. Duplicated UI SSOTs were removed,
+    stale files archived, playlive tests consolidated, runtime data moved out of SSOT,
+    datasource catalog split, and the four-layer UI contract (defaults, state, family,
+    page, feature) is now in place.
   branch: trade
   priority: high
-  status: draft
+  status: completed
   tags: [trade, ssot, modularization, cleanup]
-  missing_info:
-    - Confirm whether tradecanvas-ui SSOT mirrors can be removed in favor of symlinks/build-time copies
-    - Decide the canonical archive directory under trade/config/ssot/
-    - Verify current rview-api/live health endpoints before updating playlive IP addresses
+  missing_info: []
   safe_to_parallel:
     value: false
     reason: File moves, deletions, and renames in trade/config/ssot and trade/tradecanvas-ui can break the sync script and UI references
   subtasks:
     - label: Eliminate duplicated SSOT files from trade/tradecanvas-ui/
-      status: not_started
+      status: completed
     - label: Update outdated IP in ssot.health.playlive-tests.yml (both copies)
-      status: not_started
+      status: completed
     - label: Archive completed ssot.tony-dell-migration.yml
-      status: not_started
+      status: completed
     - label: Archive resolved entries from ssot.ui.bugs.yml
-      status: not_started
+      status: completed
     - label: Consolidate 5 playlive-test files into a single catalog
-      status: not_started
+      status: completed
     - label: Move runtime values from ssot.data-verification.yml into a runtime data file
-      status: not_started
+      status: completed
     - label: Add ssot.file-control.yml with size thresholds and split datasource-catalog
-      status: not_started
+      status: completed
 
 ownership:
   owner: tony
