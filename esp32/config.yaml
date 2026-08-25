@@ -126,7 +126,7 @@ sensor:
     unit_of_measurement: "B"
     update_interval: 5s
     lambda: |-
-      return (float) App.get_free_heap();
+      return (float) ESP.getFreeHeap();
 
 binary_sensor:
   - platform: status
