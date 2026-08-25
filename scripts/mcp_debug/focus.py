@@ -549,6 +549,78 @@ def _best_inbox(inbox):
     return max(inbox, key=lambda i: (priority_value(i), i.get("__file", Path("")).stem))
 
 
+def _best_triage(request):
+    """Return the highest-priority pending focus item from any source."""
+    req = str(request).lower()
+    active_doc = _load_active()
+    backlog_doc = _load_backlog()
+
+    # parked / deferred
+    parked = _best_parked_or_deferred(active_doc, backlog_doc)
+    if parked:
+        return {
+            "action": "triage",
+            "triage_type": "parked",
+            "target": parked.get("label", ""),
+            "confidence": "high" if parked.get("priority") == "high" else "medium",
+            "reasoning": f"No active or quick-win match; the highest-priority parked/deferred focus is '{parked.get('label', '')}'.",
+            "next_prompt": f"Consider activating parked/deferred focus '{parked.get('label', '')}'.",
+        }
+
+    # backlog match
+    backlog = _backlog_items()
+    match = _match_backlog(req, backlog)
+    if match:
+        return {
+            "action": "triage",
+            "triage_type": "backlog",
+            "target": match.get("label", ""),
+            "confidence": "high",
+            "reasoning": "Request matches an existing backlog item.",
+            "next_prompt": f"Activate backlog item '{match.get('label', '')}' or add it to the current focus.",
+        }
+
+    # best backlog
+    best = _best_backlog(backlog)
+    if best:
+        return {
+            "action": "triage",
+            "triage_type": "backlog",
+            "target": best.get("label", ""),
+            "confidence": "medium",
+            "reasoning": "No active or quick-win match; the highest-scoring backlog item is the best next focus.",
+            "next_prompt": f"Consider activating backlog item '{best.get('label', '')}'.",
+        }
+
+    # improvement
+    improvements = _improvement_items()
+    best_improvement = _best_improvement(improvements)
+    if best_improvement:
+        return {
+            "action": "triage",
+            "triage_type": "improvement",
+            "target": best_improvement.get("label", ""),
+            "confidence": "medium",
+            "reasoning": "No active, quick-win, or backlog match; the highest-priority pending improvement is available.",
+            "next_prompt": f"Consider activating improvement '{best_improvement.get('label', '')}'.",
+        }
+
+    # inbox
+    inbox = _inbox_items()
+    best_inbox = _best_inbox(inbox)
+    if best_inbox:
+        return {
+            "action": "triage",
+            "triage_type": "inbox",
+            "target": best_inbox.get("label", ""),
+            "confidence": "medium",
+            "reasoning": "No active, quick-win, or backlog match; an unprocessed inbox item is available.",
+            "next_prompt": f"Review and potentially activate inbox item '{best_inbox.get('label', '')}'.",
+        }
+
+    return None
+
+
 def _active_branches(active):
     return active_branch_set(active)
 
@@ -752,7 +824,7 @@ def _pre_action_summary(request):
 def _make_recommendation(request, active, quick_wins):
     req = str(request).lower()
 
-    # Step 1: active focus match / continue
+    # Path 1: active focus match / continue
     key, it, subtask = _match_active(req, active)
     continue_cues = ("continue", "next", "proceed", "go on")
     if it or not req or any(c in req for c in continue_cues):
@@ -769,7 +841,7 @@ def _make_recommendation(request, active, quick_wins):
                 "next_prompt": f"Continue working on '{target}'.",
             }
 
-    # Step 2 & 3: quick win
+    # Path 2: quick win
     q = _match_quick_win(req, quick_wins)
     if q:
         return {
@@ -788,63 +860,12 @@ def _make_recommendation(request, active, quick_wins):
             "next_prompt": "Add a new Quick Win and complete immediately.",
         }
 
-    # Step 4 & 5: parked/deferred, then backlog
-    active_doc = _load_active()
-    backlog_doc = _load_backlog()
-    parked = _best_parked_or_deferred(active_doc, backlog_doc)
-    if parked:
-        return {
-            "action": "triage_backlog",
-            "target": parked.get("label", ""),
-            "confidence": "high" if parked.get("priority") == "high" else "medium",
-            "reasoning": f"No active or quick-win match; the highest-priority parked/deferred focus is '{parked.get('label', '')}'.",
-            "next_prompt": f"Consider activating parked/deferred focus '{parked.get('label', '')}'.",
-        }
-    backlog = _backlog_items()
-    match = _match_backlog(req, backlog)
-    if match:
-        return {
-            "action": "triage_backlog",
-            "target": match.get("label", ""),
-            "confidence": "high",
-            "reasoning": "Request matches an existing backlog item.",
-            "next_prompt": f"Activate backlog item '{match.get('label', '')}' or add it to the current focus.",
-        }
-    best = _best_backlog(backlog)
-    if best:
-        return {
-            "action": "triage_backlog",
-            "target": best.get("label", ""),
-            "confidence": "medium",
-            "reasoning": "No active or quick-win match; the highest-scoring backlog item is the best next focus.",
-            "next_prompt": f"Consider activating backlog item '{best.get('label', '')}'.",
-        }
+    # Step 3: triage any pending candidate (parked, backlog, improvement, inbox)
+    triage = _best_triage(request)
+    if triage:
+        return triage
 
-    # Step 5b: improvements
-    improvements = _improvement_items()
-    best_improvement = _best_improvement(improvements)
-    if best_improvement:
-        return {
-            "action": "triage_improvement",
-            "target": best_improvement.get("label", ""),
-            "confidence": "medium",
-            "reasoning": "No active, quick-win, or backlog match; the highest-priority pending improvement is available.",
-            "next_prompt": f"Consider activating improvement '{best_improvement.get('label', '')}'.",
-        }
-
-    # Step 6: inbox
-    inbox = _inbox_items()
-    best_inbox = _best_inbox(inbox)
-    if best_inbox:
-        return {
-            "action": "triage_inbox",
-            "target": best_inbox.get("label", ""),
-            "confidence": "medium",
-            "reasoning": "No active, quick-win, or backlog match; an unprocessed inbox item is available.",
-            "next_prompt": f"Review and potentially activate inbox item '{best_inbox.get('label', '')}'.",
-        }
-
-    # Step 7: draft inbox
+    # Step 4: draft inbox
     draft = _draft_inbox(request)
     return {
         "action": "draft_inbox",

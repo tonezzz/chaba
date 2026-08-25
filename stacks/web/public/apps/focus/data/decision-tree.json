@@ -1,38 +1,25 @@
 [
   {
     "step": 1,
-    "check": "Is there an active shared or branch focus?",
+    "check": "Is there an active shared or branch focus, or is the request empty / a continuation cue?",
     "yes": "continue",
     "no": "go to 2"
   },
   {
     "step": 2,
-    "check": "Does the request match a quick win label or a cue word?",
+    "check": "Is the request small, concrete, a quick-win cue, or an existing Quick Win label?",
     "yes": "quick_win",
     "no": "go to 3"
   },
   {
     "step": 3,
-    "check": "Is the request a small, concrete, single-step fix?",
-    "yes": "quick_win",
+    "check": "Is there a matching parked/deferred, backlog, improvement, or inbox item to triage?",
+    "yes": "triage",
     "no": "go to 4"
   },
   {
     "step": 4,
-    "check": "Does the request match a backlog item label or keyword?",
-    "yes": "triage_backlog",
-    "no": "go to 5"
-  },
-  {
-    "step": 5,
-    "check": "Is there a higher-scoring backlog item than the default?",
-    "yes": "triage_backlog",
-    "no": "go to 6"
-  },
-  {
-    "step": 6,
-    "check": "Is there an unprocessed focus-inbox item?",
-    "yes": "triage_inbox",
-    "no": "draft_inbox"
+    "check": "No existing match",
+    "yes": "draft_inbox"
   }
 ]

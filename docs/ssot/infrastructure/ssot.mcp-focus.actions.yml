@@ -41,20 +41,17 @@ actions:
     - Otherwise return the subtask list under suggestion for review.
     output_target: focus label or inbox path
     confidence: medium
-  triage_backlog:
-    when: 'The request is strategic, multi-step, design, implementation, or does not match any active or quick win.
+  triage:
+    when: 'The request does not match an active focus or quick win, but an existing parked, backlog, improvement, or inbox item
+      is the best next candidate.
 
       '
-    source: docs/ssot/ssot.focus.yml backlog, scored by docs/ssot/infrastructure/ssot.focus.triage.yml
-    output_target: highest-scoring backlog label
-    confidence: medium
-  triage_inbox:
-    when: 'No active focus matches, no quick win matches, and the backlog has no strong candidate,
-
-      but docs/ssot/focus-inbox/ contains unprocessed draft items.
-
-      '
-    output_target: highest-priority unprocessed inbox item
+    source: 'docs/ssot/ssot.focus.yml backlog, docs/ssot/ssot.improvements.yml, docs/ssot/focus-inbox/*.yml, scored by
+      docs/ssot/infrastructure/ssot.focus.triage.yml'
+    output_target: highest-scoring candidate label
+    output:
+    - action is always triage
+    - triage_type indicates parked, backlog, improvement, or inbox
     confidence: medium
   draft_inbox:
     when: 'The request does not match any existing active focus, quick win, backlog item, or inbox item.

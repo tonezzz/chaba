@@ -55,7 +55,8 @@ output_schema:
   ready_safe: list of safe-to-parallel items
   checked_at: ISO timestamp of the read
   recommendation:
-    action: one of [continue, quick_win, decompose, triage_backlog, triage_inbox, draft_inbox]
+    action: one of [continue, quick_win, triage, draft_inbox]
+    triage_type: parked | backlog | improvement | inbox (only when action == triage)
     target: label of the focus, quick win, or inbox item
     confidence: high | medium | low
     reasoning: short human-readable explanation
@@ -73,29 +74,20 @@ output_schema:
     similar_items: top similar focus/backlog/job items
 decision_tree:
 - step: 1
-  check: Is there an active shared or branch focus?
+  check: Is there an active shared or branch focus, or is the request empty / a continuation cue?
   true: continue
   false: go to 2
 - step: 2
-  check: Does the request match a quick win label or a cue word?
+  check: Is the request small, concrete, a quick-win cue, or an existing Quick Win label?
   true: quick_win
   false: go to 3
 - step: 3
-  check: Is the request a small, concrete, single-step fix?
-  true: quick_win
+  check: Is there a matching parked/deferred, backlog, improvement, or inbox item to triage?
+  true: triage
   false: go to 4
 - step: 4
-  check: Does the request match a backlog item label or keyword?
-  true: triage_backlog
-  false: go to 5
-- step: 5
-  check: Is there a higher-scoring backlog item than the default?
-  true: triage_backlog
-  false: go to 6
-- step: 6
-  check: Is there an unprocessed focus-inbox item?
-  true: triage_inbox
-  false: draft_inbox
+  check: No existing match
+  true: draft_inbox
 confidence_rules:
   high: direct label match or exact keyword hit
   medium: cue word, partial match, or triage score ordering

@@ -66,7 +66,7 @@ decision_tree:
     examples:
     - mcp_debug H3 page mixed-content (HTTP/HTTPS) error
   - case: new_strategic_work
-    mcp_focus_action: triage_backlog
+    mcp_focus_action: triage
     condition: Multi-step or multi-session work that requires planning and tracking
     action: Add to Backlog in ssot.focus.yml with priority; do not start until user activates
     examples:
@@ -87,7 +87,7 @@ decision_tree:
     - Service Failures Detected from overnight assessment
     - Security Vulnerabilities Found from overnight assessment
   - case: auto_generated_alert
-    mcp_focus_action: n/a
+    mcp_focus_action: triage
     condition: Auto-generated item from overnight assessment with missing details
     action: Gather facts with allowed MCP tools, classify as hard or transient, then fix or document accepted state
     examples:
