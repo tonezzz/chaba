@@ -1,0 +1,129 @@
+title: Trade
+subtitle: Dollar Price Database — trading analytics, backtesting, and strategy comparison UIs
+icon: 📈
+
+sections:
+  - title: Core Features
+    icon: ✅
+    layout: list
+    items:
+      - label: Multi-asset data tracking
+        text: Track USD exchange rates, Dollar Index (DXY), and commodity prices (gold, silver, oil, copper, natural gas, agricultural) with OHLCV support.
+      - label: Data import and scheduling
+        text: CLI-driven download and CSV import with automated scheduling for historical and incremental data refresh.
+      - label: FastAPI backend
+        text: REST API with 20+ endpoints, OpenAPI/Swagger docs, health checks, and WebSocket streaming.
+      - label: Trading signals and backtesting
+        text: RSI, SMA/EMA crossover, MACD, Bollinger, and hindsight strategies with portfolio backtesting.
+      - label: Interactive visualizations
+        text: Plotly-based candlestick charts, strategy comparison, and real-time WebSocket updates.
+
+  - title: UIs
+    icon: 🖥️
+    layout: list
+    items:
+      - label: TradeCanvas UI
+        text: Main trading dashboard at /apps/trade/tradecanvas-ui/ with charting, indicators, and strategy controls.
+      - label: Wick UI
+        text: Lightweight candlestick/wick-focused interface for quick price inspection.
+      - label: Compare pages
+        text: compare.html, compare2.html, and test-chart.html for side-by-side strategy and symbol comparison.
+
+  - title: Technical Architecture
+    icon: ⚙️
+    layout: list
+    items:
+      - label: Python backend
+        text: FastAPI + SQLAlchemy + asyncpg with PostgreSQL, managed via docker-compose in chaba/stacks/web.
+      - label: Modular Python packages
+        text: src/api, src/models, src/services, src/repositories, src/data_sources, plus standalone modules for signals, backtesting, and health.
+      - label: Static frontend
+        text: Vanilla JavaScript frontend with modular files for chart data providers, renderers, loaders, and UI components.
+      - label: Data sources
+        text: Configurable YAML data sources in trade/config/ with Alpha Vantage MCP integration and MetalPrices fallback for precious metals.
+      - label: Containerized deployment
+        text: trade-api Docker container behind Caddy reverse proxy; static UI files served by Caddy at /apps/trade/.
+
+  - title: Files & Modules
+    icon: 📁
+    layout: list
+    items:
+      - label: cli.py
+        text: Main CLI for setup, download, import, query, and scheduler management.
+      - label: src/api/
+        text: FastAPI route handlers and WebSocket endpoints.
+      - label: src/models.py
+        text: SQLAlchemy ORM models for currency pairs, commodities, indices, and signals.
+      - label: src/services/
+        text: Business logic for data import, backtesting, signal generation, and health monitoring.
+      - label: src/repositories/
+        text: Database access layer and query helpers.
+      - label: src/data_sources/
+        text: Pluggable data source adapters and Alpha Vantage MCP integration.
+      - label: tradecanvas-ui/
+        text: Main web UI source files (HTML, JS, CSS) and trade UI SSOT files.
+      - label: wick-ui/
+        text: Wick-focused UI source files.
+      - label: config/
+        text: SSOT data-source and UI configuration; symlinked to trade/config/ssot.
+      - label: tests/
+        text: pytest-based unit tests for core modules.
+
+  - title: Deployment
+    icon: 🚀
+    layout: list
+    items:
+      - label: API container
+        text: trade-api service deployed from chaba/stacks/web/docker-compose.yml at /apps/trade/api on tony-omen.
+      - label: Static UI (tony-omen)
+        text: chaba/stacks/web/public/apps/trade/tradecanvas-ui/ served by Caddy via /apps/trade/* routes.
+      - label: Static UI (chaba.h3)
+        text: chaba-h3/public/apps/trade/tradecanvas-ui/ deployed from trade/tradecanvas-ui/ for chaba.h3.
+      - label: Sync script
+        text: trade/sync-tradecanvas-ui.sh copies UI files from trade/tradecanvas-ui/ to chaba/stacks/web/public/apps/trade/tradecanvas-ui/.
+      - label: Registry
+        text: Listed in docs/ssot/apps/ssot.apps.yml, stacks/web/public/apps/apps.yml, and chaba-h3/public/apps/apps.yml.
+
+  - title: Testing
+    icon: 🧪
+    layout: list
+    items:
+      - label: Unit tests
+        text: pytest tests for validation, repositories, and service logic.
+      - label: API health
+        text: curl http://tony-omen.local:8080/apps/trade/api/api/health
+      - label: UI smoke
+        text: test-chart.html and test.html manual checks after sync.
+
+  - title: Integration
+    icon: 🔗
+    layout: list
+    items:
+      - label: Alpha Vantage MCP
+        text: Commodity and FX data validation via the alphavantage MCP server.
+      - label: MetalPrices fallback
+        text: Precious metals (XAU, XAG) fallback when Alpha Vantage does not provide them.
+      - label: Chaba health checks
+        text: ssot.health.home.api.yml registers trade-api and trade UI health probes.
+
+  - title: Known Issues
+    icon: ⚠️
+    layout: list
+    items:
+      - label: No authentication
+        text: API and UIs currently run without auth/authorization.
+      - label: Manual database setup
+        text: First-time users must run python3 cli.py setup.
+      - label: Limited real-time data
+        text: Real-time feeds are not yet integrated; data is refreshed via scheduled downloads.
+
+config:
+  version: 1
+  created: '2026-08-25'
+  maintainer: tony
+  status: active
+  deployment: tony-omen (trade-api + chaba stacks/web UI), chaba.h3 (H3 UI)
+  related_files:
+    - docs/ssot/apps/ssot.apps.h3.yml
+    - docs/ssot/infrastructure/ssot.health.home.api.yml
+    - docs/ssot/infrastructure/ssot.services.yml
