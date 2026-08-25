@@ -209,6 +209,62 @@ tony-dell:
     ollama_compatible: true
     status: migrated to tony-dell (2026-08-25)
     note: 'Migrated from tony-omen docker compose to tony-dell rootless podman. MDDB now connects to http://100.68.142.13:11435 for embeddings. Maps text-embedding-004, nomic-embed-text, and gemini-embedding-* aliases to gemini-embedding-001/002.'
+  gpu-queue:
+    container: gpu-queue
+    image: docker.io/library/node:22-alpine
+    runtime: rootless podman
+    host: tony_dell
+    port: 3001
+    host_port: 0.0.0.0:3001
+    network: host
+    quadlet:
+      container_unit: ~/.config/containers/systemd/gpu-queue.container
+      service_unit: ~/.config/systemd/user/gpu-queue.service
+    source: /home/tony/CascadeProjects/chaba-tony-dell/scripts/gpu-queue
+    database: postgres (chaba database on tony-dell)
+    environment:
+      - DATABASE_URL=postgres://chaba:chabapass@100.68.142.13:5432/chaba
+      - GPU_QUEUE_PORT=3001
+      - GPU_QUEUE_HOST=0.0.0.0
+      - GPU_LLAMA_URL=http://100.75.102.88:8008
+      - GPU_IMAGEN2_URL=http://100.75.102.88:8000
+      - GPU_TXT2VID_URL=http://100.75.102.88:8002
+    worker_llama_url: http://100.75.102.88:8008/v1/chat/completions
+    worker_imagen2_url: http://100.75.102.88:8000/generate
+    worker_txt2vid_url: http://100.75.102.88:8002/generate
+    scheduling: memory_aware (GPU memory-aware scheduling)
+    features:
+      - Intelligent scheduling with memory-aware and predictive features
+      - Dynamic priority adjustment based on system state
+      - Job duration prediction using historical data
+      - Multi-layer caching with Redis integration
+      - Comprehensive monitoring and metrics
+    job_types:
+      - embedding (priority 4)
+      - txt2vid, cogvideo (priority 3)
+      - imagen2, yomi_summary, yomi_daily, yomi_daily_batch (priority 2)
+      - llama (priority 1)
+    status: migrated to tony-dell (2026-08-25)
+    note: 'Migrated from tony-omen docker compose to tony-dell rootless podman with --network host. GPU workers (llama, imagen2, txt2vid) remain on tony-omen and are reached via 100.75.102.88. Removed from stacks/web/docker-compose.yml.'
+
+  gpu-queue-processor:
+    container: gpu-queue-processor
+    image: docker.io/library/node:22-alpine
+    runtime: rootless podman
+    host: tony_dell
+    network: host
+    quadlet:
+      container_unit: ~/.config/containers/systemd/gpu-queue-processor.container
+      service_unit: ~/.config/systemd/user/gpu-queue-processor.service
+    source: /home/tony/CascadeProjects/chaba-tony-dell/scripts/gpu-queue
+    environment:
+      - DATABASE_URL=postgres://chaba:chabapass@100.68.142.13:5432/chaba
+      - GPU_LLAMA_URL=http://100.75.102.88:8008
+      - GPU_IMAGEN2_URL=http://100.75.102.88:8000
+      - GPU_TXT2VID_URL=http://100.75.102.88:8002
+    status: migrated to tony-dell (2026-08-25)
+    note: 'Migrated from tony-omen docker compose to tony-dell rootless podman. Polls the tony-dell gpu-queue database and dispatches jobs to tony-omen GPU workers at 100.75.102.88.'
+
   multi-wan:
     ssot: docs/ssot/infrastructure/ssot.tony-dell-multi-wan.yml
     host: tony_dell
@@ -409,35 +465,7 @@ tony-omen:
     notes:
       - See docs/ssot/infrastructure/ssot.gemini-models.yml for canonical model names and free-tier rate limits
 
-  gpu-queue:
-    container: gpu-queue
-    image: node:22-alpine
-    port: 3001 (host), 3001 (internal)
-    networks: web_default, ai_default (external)
-    database: postgres (chaba database)
-    scheduling: memory_aware (GPU memory-aware scheduling)
-    features:
-      - Intelligent scheduling with memory-aware and predictive features
-      - Dynamic priority adjustment based on system state
-      - Job duration prediction using historical data
-      - Multi-layer caching with Redis integration
-      - Comprehensive monitoring and metrics
-    job_types:
-      - embedding (priority 4)
-      - txt2vid, cogvideo (priority 3)
-      - imagen2, yomi_summary, yomi_daily, yomi_daily_batch (priority 2)
-      - llama (priority 1)
-    llama_integration:
-      - URL: http://ai-llama-server-1:8008/v1/chat/completions
-      - Network: ai_default external network
-      - Status: Fixed (2026-08-13) - corrected from incorrect IP/port
-    prediction_model:
-      - Current model: weighted (recent jobs weighted more)
-      - Accuracy: 12.20% (improving from 0%)
-      - Training data: 41 total jobs, 22 completed
-      - Average execution time: 871ms
-      - Average queue wait: 3.6s
-    status: implemented (2026-08-13), fully operational with improved prediction accuracy
+
 
   sensor-reader:
     container: sensor-reader

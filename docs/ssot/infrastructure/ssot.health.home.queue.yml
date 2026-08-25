@@ -5,9 +5,17 @@ services:
 - id: gpu-queue
   name: GPU Queue
   type: http
-  url: http://tony-omen:3001/health
+  url: http://tony-dell:3001/health
   expected_status: 200
   timeout: 5
   category: queue
   profiles:
   - home
+  note: Migrated to tony-dell rootless podman on port 3001. GPU workers remain on tony-omen.
+  verification:
+  - 'Test direct: curl -s http://tony-dell:3001/health'
+  - 'Check podman: ssh tony-dell podman ps | grep gpu-queue'
+  - 'Check logs: ssh tony-dell podman logs gpu-queue --tail 20'
+  recovery_actions:
+  - 'Restart service: ssh tony-dell systemctl --user restart gpu-queue'
+  - 'Check GPU worker reachability: curl -s http://100.75.102.88:8008/health'

@@ -94,10 +94,11 @@ services:
   - id: gpu-queue
     name: GPU Queue (External)
     type: http
-    url: http://tony-omen:3001/health
+    url: http://tony-dell:3001/health
     expected_status: 200
     timeout: 10
     category: queue
+    note: Migrated to tony-dell rootless podman (2026-08-25). GPU workers remain on tony-omen.
 
   # Optional Services
   - id: frigate

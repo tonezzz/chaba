@@ -218,12 +218,23 @@ sections:
         completed: 2026-08-25
         tags: ['tony-dell', 'podman', 'gemini', 'ollama-proxy', 'host-network', 'migration']
 
+      - label: gpu-queue
+        text: 'Migrated to tony-dell rootless podman with --network host on port 3001. Uses docker.io/library/node:22-alpine, mounts /home/tony/CascadeProjects/chaba-tony-dell/scripts/gpu-queue:/app, and connects to tony-dell postgres. GPU workers remain on tony-omen and are reached via 100.75.102.88 (llama 8008, imagen2 8000, txt2vid 8002). Removed from stacks/web/docker-compose.yml.'
+        status: completed
+        completed: 2026-08-25
+        tags: ['tony-dell', 'podman', 'gpu-queue', 'host-network', 'migration']
+      - label: gpu-queue-processor
+        text: 'Migrated to tony-dell rootless podman alongside gpu-queue. Polls the tony-dell postgres and dispatches jobs to tony-omen GPU workers via 100.75.102.88. No public port; it is a background processor.'
+        status: completed
+        completed: 2026-08-25
+        tags: ['tony-dell', 'podman', 'gpu-queue', 'processor', 'host-network', 'migration']
+
 config:
   version: 3
   last_updated: 2026-08-25
   status: completed
   maintainer: tony
-  summary: Successfully containerized 3 high-value services (Yomi API, GPU Queue services), migrated rview-api, rview-live, and gemini-ollama-proxy to tony-dell rootless podman, and appropriately retained 4 complex/low-benefit services on host (Playlived, Clip Sync, Barriers, Rclone)
+  summary: Successfully containerized 3 high-value services (Yomi API, GPU Queue services), migrated rview-api, rview-live, gemini-ollama-proxy, gpu-queue, and gpu-queue-processor to tony-dell rootless podman, and appropriately retained 4 complex/low-benefit services on host (Playlived, Clip Sync, Barriers, Rclone)
   related_files:
     - docs/ssot/ssot.improvements.yml
     - docs/ssot/infrastructure/ssot.services.yml

@@ -30,17 +30,22 @@ export const MAX_RETRIES = 3;
 export const RETRY_DELAY = 5000; // 5 seconds
 
 // Service health check configuration
+// GPU workers remain on tony-omen; queue manager migrated to tony-dell rootless podman
+const GPU_IMAGEN2_URL = process.env.GPU_IMAGEN2_URL || 'http://tony-omen:8000';
+const GPU_TXT2VID_URL = process.env.GPU_TXT2VID_URL || 'http://tony-omen:8002';
+const GPU_EMBEDDING_URL = process.env.GPU_EMBEDDING_URL || 'http://localhost:5000';
+
 export const SERVICE_HEALTH_CHECKS = {
   embedding: {
-    url: 'http://localhost:5000/health',
+    url: `${GPU_EMBEDDING_URL}/health`,
     timeout: 5000
   },
   imagen2: {
-    url: 'http://localhost:8000/health',
+    url: `${GPU_IMAGEN2_URL}/health`,
     timeout: 5000
   },
   txt2vid: {
-    url: 'http://localhost:8002/health',
+    url: `${GPU_TXT2VID_URL}/health`,
     timeout: 5000
   }
 };

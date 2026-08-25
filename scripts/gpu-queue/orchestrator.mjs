@@ -5,9 +5,10 @@ import * as db from './db.mjs';
 // This script processes jobs from the queue using MCP tools
 // Run this from Cascade or a cron job
 
-// Llama server URL - using container name to follow hostname standards
-// Container: ai-llama-server-1 in ai_default network (external network connection)
-const LLAMA_URL = 'http://ai-llama-server-1:8008/v1/chat/completions';
+// Llama server URL - migrated to tony-dell rootless podman, GPU workers remain on tony-omen
+const LLAMA_URL = process.env.GPU_LLAMA_URL || 'http://tony-omen:8008/v1/chat/completions';
+const IMAGEN2_URL = process.env.GPU_IMAGEN2_URL || 'http://tony-omen:8000';
+const TXT2VID_URL = process.env.GPU_TXT2VID_URL || 'http://tony-omen:8002';
 
 async function processNextJob() {
   // Get next pending job
@@ -44,7 +45,7 @@ async function getQueueStatus() {
 
 // Call imagen2-inference API directly
 async function callImagen2Inference(params) {
-  const response = await fetch('http://localhost:8000/generate', {
+  const response = await fetch(`${IMAGEN2_URL}/generate`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -68,7 +69,7 @@ async function callImagen2Inference(params) {
 
 // Call txt2vid-inference API directly
 async function callTxt2vidInference(params) {
-  const response = await fetch('http://localhost:8002/generate', {
+  const response = await fetch(`${TXT2VID_URL}/generate`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -154,7 +155,7 @@ async function processEmbeddingJob(job) {
 
   try {
     const params = job.params;
-    const embeddingServiceUrl = params.embedding_service_url || 'http://localhost:5000';
+    const embeddingServiceUrl = params.embedding_service_url || process.env.GPU_EMBEDDING_URL || 'http://localhost:5000';
     const useGpu = params.use_gpu !== false; // default to GPU
 
     // Determine endpoint based on single or batch
