@@ -1,0 +1,46 @@
+title: Focus Inbox — Trade SSOT Modularization
+subtitle: Triage of trade project SSOT modularity issues
+icon: inbox
+
+focus:
+  label: Trade SSOT modularization cleanup
+  text: |
+    The trade project SSOT shows good domain separation but has critical duplication,
+    stale files, and bloat. This focus collects the cleanup actions identified in the
+    modularization assessment so they can be scheduled later.
+  branch: trade
+  priority: high
+  status: draft
+  tags: [trade, ssot, modularization, cleanup]
+  missing_info:
+    - Confirm whether tradecanvas-ui SSOT mirrors can be removed in favor of symlinks/build-time copies
+    - Decide the canonical archive directory under trade/config/ssot/
+    - Verify current rview-api/live health endpoints before updating playlive IP addresses
+  safe_to_parallel:
+    value: false
+    reason: File moves, deletions, and renames in trade/config/ssot and trade/tradecanvas-ui can break the sync script and UI references
+  subtasks:
+    - label: Eliminate duplicated SSOT files from trade/tradecanvas-ui/
+      status: not_started
+    - label: Update outdated IP in ssot.health.playlive-tests.yml (both copies)
+      status: not_started
+    - label: Archive completed ssot.tony-dell-migration.yml
+      status: not_started
+    - label: Archive resolved entries from ssot.ui.bugs.yml
+      status: not_started
+    - label: Consolidate 5 playlive-test files into a single catalog
+      status: not_started
+    - label: Move runtime values from ssot.data-verification.yml into a runtime data file
+      status: not_started
+    - label: Add ssot.file-control.yml with size thresholds and split datasource-catalog
+      status: not_started
+
+ownership:
+  owner: tony
+  session: ""
+  locked: false
+  lock_reason: ""
+
+source:
+  session: ""
+  date: '2026-08-25'
