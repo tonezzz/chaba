@@ -98,12 +98,38 @@ display:
           it.filled_rectangle(0, 0, 240, 26, Color(0, 128, 128));
           it.print(4, 2, id(font1), Color(255, 255, 255), "Weather");
           it.filled_rectangle(0, 26, 240, 2, Color(0, 100, 100));
-          it.print(0, 34, id(font_small), Color(255, 255, 0), "VTBS");
+          Color vtbs_c = Color(255, 255, 255);
+          if (id(vtbs_fltcat) == "VFR") vtbs_c = Color(0, 255, 0);
+          if (id(vtbs_fltcat) == "MVFR") vtbs_c = Color(0, 0, 255);
+          if (id(vtbs_fltcat) == "IFR") vtbs_c = Color(255, 0, 0);
+          if (id(vtbs_fltcat) == "LIFR") vtbs_c = Color(255, 0, 255);
+          Color vtbu_c = Color(255, 255, 255);
+          if (id(vtbu_fltcat) == "VFR") vtbu_c = Color(0, 255, 0);
+          if (id(vtbu_fltcat) == "MVFR") vtbu_c = Color(0, 0, 255);
+          if (id(vtbu_fltcat) == "IFR") vtbu_c = Color(255, 0, 0);
+          if (id(vtbu_fltcat) == "LIFR") vtbu_c = Color(255, 0, 255);
+          auto draw_arrow = [&](int cx, int cy, int wdir, Color col) {
+            float a = (wdir - 90) * 3.14159 / 180.0;
+            int dx = cx + (int)(18.0 * cos(a));
+            int dy = cy + (int)(18.0 * sin(a));
+            it.line(cx, cy, dx, dy, col);
+            int ax1 = dx - (int)(6.0 * cos(a - 0.5));
+            int ay1 = dy - (int)(6.0 * sin(a - 0.5));
+            int ax2 = dx - (int)(6.0 * cos(a + 0.5));
+            int ay2 = dy - (int)(6.0 * sin(a + 0.5));
+            it.line(dx, dy, ax1, ay1, col);
+            it.line(dx, dy, ax2, ay2, col);
+          };
+          it.print(0, 34, id(font_small), vtbs_c, "VTBS");
           it.printf(42, 34, id(font_small), Color(255, 255, 255), "%.0f/%.0fC %d@%dkt", id(vtbs_temp), id(vtbs_dewp), id(vtbs_wdir), id(vtbs_wspd));
+          draw_arrow(205, 40, id(vtbs_wdir), vtbs_c);
           it.printf(0, 48, id(font_small), Color(255, 255, 255), "Q%d %s %s%dm", id(vtbs_altim), id(vtbs_visib).c_str(), id(vtbs_cloud).c_str(), id(vtbs_cloud_base));
-          it.print(0, 70, id(font_small), Color(0, 255, 255), "VTBU");
-          it.printf(42, 70, id(font_small), Color(255, 255, 255), "%.0f/%.0fC %d@%dkt", id(vtbu_temp), id(vtbu_dewp), id(vtbu_wdir), id(vtbu_wspd));
-          it.printf(0, 84, id(font_small), Color(255, 255, 255), "Q%d %s %s%dm", id(vtbu_altim), id(vtbu_visib).c_str(), id(vtbu_cloud).c_str(), id(vtbu_cloud_base));
+          it.print(0, 62, id(font_small), Color(255, 255, 0), id(vtbs_wx).c_str());
+          it.print(0, 96, id(font_small), vtbu_c, "VTBU");
+          it.printf(42, 96, id(font_small), Color(255, 255, 255), "%.0f/%.0fC %d@%dkt", id(vtbu_temp), id(vtbu_dewp), id(vtbu_wdir), id(vtbu_wspd));
+          draw_arrow(205, 102, id(vtbu_wdir), vtbu_c);
+          it.printf(0, 110, id(font_small), Color(255, 255, 255), "Q%d %s %s%dm", id(vtbu_altim), id(vtbu_visib).c_str(), id(vtbu_cloud).c_str(), id(vtbu_cloud_base));
+          it.print(0, 124, id(font_small), Color(255, 255, 0), id(vtbu_wx).c_str());
       - id: page_status
         lambda: |-
           it.fill(Color(0, 0, 0));
@@ -215,6 +241,10 @@ interval:
                         id(vtbs_altim) = station["altim"].as<int>();
                         const char* vis = station["visib"].as<const char*>();
                         if (vis) id(vtbs_visib) = vis;
+                        const char* flt = station["fltCat"].as<const char*>();
+                        if (flt) id(vtbs_fltcat) = flt;
+                        const char* wx = station["wxString"].as<const char*>();
+                        if (wx) id(vtbs_wx) = wx;
                         JsonArray clouds = station["clouds"].as<JsonArray>();
                         if (!clouds.isNull() && clouds.size() > 0) {
                           JsonObject c = clouds[0];
@@ -230,6 +260,10 @@ interval:
                         id(vtbu_altim) = station["altim"].as<int>();
                         const char* vis = station["visib"].as<const char*>();
                         if (vis) id(vtbu_visib) = vis;
+                        const char* flt = station["fltCat"].as<const char*>();
+                        if (flt) id(vtbu_fltcat) = flt;
+                        const char* wx = station["wxString"].as<const char*>();
+                        if (wx) id(vtbu_wx) = wx;
                         JsonArray clouds = station["clouds"].as<JsonArray>();
                         if (!clouds.isNull() && clouds.size() > 0) {
                           JsonObject c = clouds[0];
@@ -335,5 +369,21 @@ globals:
     type: int
     restore_value: no
     initial_value: "0"
+  - id: vtbs_fltcat
+    type: std::string
+    restore_value: no
+    initial_value: '"-"'
+  - id: vtbu_fltcat
+    type: std::string
+    restore_value: no
+    initial_value: '"-"'
+  - id: vtbs_wx
+    type: std::string
+    restore_value: no
+    initial_value: '""'
+  - id: vtbu_wx
+    type: std::string
+    restore_value: no
+    initial_value: '""'
 
 captive_portal:
