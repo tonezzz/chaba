@@ -91,9 +91,11 @@ display:
       - id: page_weather
         lambda: |-
           it.fill(Color(0, 0, 0));
+          it.rectangle(0, 0, 240, 320, Color(0, 255, 255));
           it.filled_rectangle(0, 0, 240, 48, Color(0, 128, 128));
           it.print(4, 2, id(font1), Color(255, 255, 255), "Weather");
           it.filled_rectangle(0, 48, 240, 2, Color(0, 100, 100));
+          it.filled_rectangle(0, 150, 240, 2, Color(0, 255, 255));
           Color vtbs_c = Color(255, 255, 255);
           if (id(vtbs_fltcat) == "VFR") vtbs_c = Color(0, 255, 0);
           if (id(vtbs_fltcat) == "MVFR") vtbs_c = Color(0, 0, 255);
@@ -104,6 +106,8 @@ display:
           if (id(vtbu_fltcat) == "MVFR") vtbu_c = Color(0, 0, 255);
           if (id(vtbu_fltcat) == "IFR") vtbu_c = Color(255, 0, 0);
           if (id(vtbu_fltcat) == "LIFR") vtbu_c = Color(255, 0, 255);
+          it.rectangle(2, 50, 236, 100, vtbs_c);
+          it.rectangle(2, 160, 236, 158, vtbu_c);
           auto draw_arrow = [&](int cx, int cy, int wdir, Color col) {
             float a = (wdir - 90) * 3.14159 / 180.0;
             int dx = cx + (int)(36.0 * cos(a));
@@ -129,8 +133,10 @@ display:
       - id: page_status
         lambda: |-
           it.fill(Color(0, 0, 0));
+          it.rectangle(0, 0, 240, 320, Color(0, 0, 255));
           it.filled_rectangle(0, 0, 240, 48, Color(0, 0, 128));
           it.print(4, 2, id(font1), Color(255, 255, 255), "Status");
+          it.rectangle(2, 50, 236, 270, Color(0, 0, 128));
           it.printf(0, 56, id(font_small), Color(255, 255, 255), "IP: %s", id(ip_addr).state.c_str());
           it.printf(0, 82, id(font_small), Color(255, 255, 255), "SSID: %s", id(wifi_ssid_text).state.c_str());
           it.printf(0, 108, id(font_small), Color(255, 255, 255), "MAC: C0:CD:D6:85:A8:38");
