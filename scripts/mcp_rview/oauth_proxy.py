@@ -23,7 +23,7 @@ UP = (
     os.environ.get('OAUTH_PROXY_UPSTREAM_ADDR', '127.0.0.1'),
     int(os.environ.get('OAUTH_PROXY_UPSTREAM_PORT', '9003')),
 )
-P = os.environ.get('OAUTH_PROXY_MCP_PATH', '/mcp')
+P = os.environ.get('OAUTH_PROXY_MCP_PATH', '/sse')
 ISS = os.environ.get('OAUTH_PROXY_ISSUER', 'https://tony-dell.taila0626a.ts.net')
 TOK = ISS + '/oauth2/token'
 AUTH = ISS + '/oauth2/token'
