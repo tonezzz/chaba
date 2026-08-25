@@ -97,8 +97,13 @@ display:
           it.fill(Color(0, 0, 0));
           it.filled_rectangle(0, 0, 240, 26, Color(0, 128, 128));
           it.print(4, 2, id(font1), Color(255, 255, 255), "Weather");
-          it.printf(0, 30, id(font_small), Color(255, 255, 255), "VTBS %.0fC %dkt", id(vtbs_temp), id(vtbs_wspd));
-          it.printf(0, 46, id(font_small), Color(255, 255, 255), "VTBU %.0fC %dkt", id(vtbu_temp), id(vtbu_wspd));
+          it.filled_rectangle(0, 26, 240, 2, Color(0, 100, 100));
+          it.print(0, 34, id(font_small), Color(255, 255, 0), "VTBS");
+          it.printf(42, 34, id(font_small), Color(255, 255, 255), "%.0f/%.0fC %d@%dkt", id(vtbs_temp), id(vtbs_dewp), id(vtbs_wdir), id(vtbs_wspd));
+          it.printf(0, 48, id(font_small), Color(255, 255, 255), "Q%d %s %s%dm", id(vtbs_altim), id(vtbs_visib).c_str(), id(vtbs_cloud).c_str(), id(vtbs_cloud_base));
+          it.print(0, 70, id(font_small), Color(0, 255, 255), "VTBU");
+          it.printf(42, 70, id(font_small), Color(255, 255, 255), "%.0f/%.0fC %d@%dkt", id(vtbu_temp), id(vtbu_dewp), id(vtbu_wdir), id(vtbu_wspd));
+          it.printf(0, 84, id(font_small), Color(255, 255, 255), "Q%d %s %s%dm", id(vtbu_altim), id(vtbu_visib).c_str(), id(vtbu_cloud).c_str(), id(vtbu_cloud_base));
       - id: page_status
         lambda: |-
           it.fill(Color(0, 0, 0));
@@ -204,10 +209,34 @@ interval:
                       const char* icao = station["icaoId"].as<const char*>();
                       if (icao && strcmp(icao, "VTBS") == 0) {
                         id(vtbs_temp) = station["temp"].as<float>();
+                        id(vtbs_dewp) = station["dewp"].as<float>();
+                        id(vtbs_wdir) = station["wdir"].as<int>();
                         id(vtbs_wspd) = station["wspd"].as<int>();
+                        id(vtbs_altim) = station["altim"].as<int>();
+                        const char* vis = station["visib"].as<const char*>();
+                        if (vis) id(vtbs_visib) = vis;
+                        JsonArray clouds = station["clouds"].as<JsonArray>();
+                        if (!clouds.isNull() && clouds.size() > 0) {
+                          JsonObject c = clouds[0];
+                          const char* cover = c["cover"].as<const char*>();
+                          if (cover) id(vtbs_cloud) = cover;
+                          id(vtbs_cloud_base) = c["base"].as<int>();
+                        }
                       } else if (icao && strcmp(icao, "VTBU") == 0) {
                         id(vtbu_temp) = station["temp"].as<float>();
+                        id(vtbu_dewp) = station["dewp"].as<float>();
+                        id(vtbu_wdir) = station["wdir"].as<int>();
                         id(vtbu_wspd) = station["wspd"].as<int>();
+                        id(vtbu_altim) = station["altim"].as<int>();
+                        const char* vis = station["visib"].as<const char*>();
+                        if (vis) id(vtbu_visib) = vis;
+                        JsonArray clouds = station["clouds"].as<JsonArray>();
+                        if (!clouds.isNull() && clouds.size() > 0) {
+                          JsonObject c = clouds[0];
+                          const char* cover = c["cover"].as<const char*>();
+                          if (cover) id(vtbu_cloud) = cover;
+                          id(vtbu_cloud_base) = c["base"].as<int>();
+                        }
                       }
                     }
                   }
@@ -255,6 +284,54 @@ globals:
     restore_value: no
     initial_value: "0.0"
   - id: vtbu_wspd
+    type: int
+    restore_value: no
+    initial_value: "0"
+  - id: vtbs_wdir
+    type: int
+    restore_value: no
+    initial_value: "0"
+  - id: vtbs_dewp
+    type: float
+    restore_value: no
+    initial_value: "0.0"
+  - id: vtbs_altim
+    type: int
+    restore_value: no
+    initial_value: "0"
+  - id: vtbs_visib
+    type: std::string
+    restore_value: no
+    initial_value: '"-"'
+  - id: vtbs_cloud
+    type: std::string
+    restore_value: no
+    initial_value: '"-"'
+  - id: vtbs_cloud_base
+    type: int
+    restore_value: no
+    initial_value: "0"
+  - id: vtbu_wdir
+    type: int
+    restore_value: no
+    initial_value: "0"
+  - id: vtbu_dewp
+    type: float
+    restore_value: no
+    initial_value: "0.0"
+  - id: vtbu_altim
+    type: int
+    restore_value: no
+    initial_value: "0"
+  - id: vtbu_visib
+    type: std::string
+    restore_value: no
+    initial_value: '"-"'
+  - id: vtbu_cloud
+    type: std::string
+    restore_value: no
+    initial_value: '"-"'
+  - id: vtbu_cloud_base
     type: int
     restore_value: no
     initial_value: "0"
