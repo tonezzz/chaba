@@ -14,38 +14,35 @@ focus:
     both repos contain UI, proxy, and deployment references.
   branch: master
   priority: medium
-  status: draft
+  status: completed
   tags: [rview, rview-live, gemini-live, rename, tony-dell, chaba-h3]
-  missing_info:
-    - Confirm whether to keep `gemini-live` as a temporary alias/redirect.
-    - Decide if the rename should be one `chaba` commit plus one `chaba-h3` commit, or split by repo.
-    - Confirm the tony-dell podman Quadlet units can be safely renamed without data loss.
+  missing_info: []
   safe_to_parallel:
     value: false
     reason: Cross-repo and cross-service rename; chaba, chaba-h3, and the live tony-dell podman containers must stay in sync to avoid breaking the UI and MCP path.
   subtasks:
     - label: Inventory every gemini-live reference in chaba and chaba-h3
-      status: not_started
+      status: completed
     - label: Rename stacks/web/gemini-live/ to stacks/web/rview-live/ and update package names
-      status: not_started
+      status: completed
     - label: Rename stacks/web/public/apps/gemini-live/ to stacks/web/public/apps/rview-live/ and update index.html asset paths
-      status: not_started
+      status: completed
     - label: Rename stacks/tony-dell/gemini-live/ to stacks/tony-dell/rview-live/ and update Quadlet .build/.container units
-      status: not_started
+      status: completed
     - label: Update stacks/web/Caddyfile and docker-compose routes from /api/gemini-live to /api/rview-live
-      status: not_started
+      status: completed
     - label: Rename and update docs/ssot/apps/ssot.apps.gemini-live.yml to ssot.apps.rview-live.yml
-      status: not_started
+      status: completed
     - label: Update chaba-h3 public/apps/apps.yml and proxy-server.mjs to rview-live
-      status: not_started
+      status: completed
     - label: Update any docs/kb and chaba-h3 references that mention gemini-live
-      status: not_started
+      status: completed
     - label: Stop/rename/restart the tony-dell podman units for rview-live
-      status: not_started
+      status: completed
     - label: Verify https://tony-dell.taila0626a.ts.net:8443/apps/rview-live/ and wss://tony-dell.taila0626a.ts.net:8443/api/rview-live/ respond
-      status: not_started
+      status: completed
     - label: Commit and push both chaba and chaba-h3
-      status: not_started
+      status: completed
 
 ownership:
   owner: tony
