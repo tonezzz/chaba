@@ -7,6 +7,7 @@ on:
       - 'docs/ssot/**'
       - 'scripts/ssot-*.mjs'
       - 'scripts/ssot-*.py'
+      - 'scripts/ssot-validate-refs.py'
       - 'reports/SSOT_OPTIMIZATION_*.json'
   pull_request:
     branches: [master, main]
@@ -14,6 +15,7 @@ on:
       - 'docs/ssot/**'
       - 'scripts/ssot-*.mjs'
       - 'scripts/ssot-*.py'
+      - 'scripts/ssot-validate-refs.py'
 
 jobs:
   validate:
@@ -26,6 +28,8 @@ jobs:
           node-version: '20'
       - name: Validate all SSOT files
         run: node scripts/ssot-validate-all.mjs
+      - name: Validate SSOT cross-references
+        run: python3 scripts/ssot-validate-refs.py
       - name: Smoke test mcp-debug server wiring
         run: |
           pip install pyyaml

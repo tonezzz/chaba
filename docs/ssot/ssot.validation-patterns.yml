@@ -294,4 +294,37 @@ config:
     - scripts/validate-configs.sh
     - scripts/generate-mcp-configs.py
     - scripts/validate-focus.mjs
+    - scripts/ssot-validate-refs.py
     - docs/ssot/template.yml
+
+# Cross-reference (ref) contract
+ref_contract:
+  purpose: |
+    Define how SSOT files reference each other so that a CI validator can
+    resolve the pointers and fail on broken links.
+  recognized_keys:
+    - ref
+    - source_ref
+    - allowed_values_ref
+    - default_ref
+    - defaults_ref
+    - state_ref
+    - currencies_ref
+    - selected_currency_ref
+    - timeframe_ref
+    - chart_type_ref
+    - features_ref
+    - scripts_ref
+    - "*_ref" # any key ending in _ref is considered a reference
+  syntax:
+    cross_file: "ssot.file.yml#dotted.key.path"
+    same_file: "dotted.key.path"
+    external: "/absolute/path.yml#key" # not validated by the SSOT ref checker
+    placeholder: "... or <...>" # ignored by the validator
+  conventions:
+    - A reference without a .yml, /, #, or dot is treated as an ID and not validated.
+    - References to docs/ssot/ files may omit the docs/ssot/ prefix.
+    - References to external repo files (e.g., docs/kb/...) are validated for existence when the path starts with docs/, reports/, scripts/.
+  ci:
+    command: "python3 scripts/ssot-validate-refs.py"
+    workflow: ".github/workflows/ssot.yml"
