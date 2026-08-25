@@ -139,6 +139,9 @@ if [ -f reports/SERVICE_ERRORS.md ]; then
     cat reports/SERVICE_ERRORS.md >> "$REPORT_FILE"
 fi
 
+# Promote actionable report findings into focus-inbox drafts
+python3 "$REPO_DIR/scripts/overnight/promote-reports.py" | tee -a "$LOG_FILE" || echo "Report promotion failed" | tee -a "$LOG_FILE"
+
 echo "" >> "$REPORT_FILE"
 
 # ============================================

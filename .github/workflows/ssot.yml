@@ -26,6 +26,8 @@ jobs:
           node-version: '20'
       - name: Validate all SSOT files
         run: node scripts/ssot-validate-all.mjs
+      - name: Smoke test mcp-debug server wiring
+        run: python3 scripts/mcp-debug-server-smoke.py
       - name: Check SSOT optimization warnings
         run: node scripts/ssot-optimize.mjs
       - name: Verify no warnings
