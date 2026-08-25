@@ -33,6 +33,7 @@
 - **Pages:**
   - `page_main`: "Hello CYD"
   - `page_status`: IP, SSID, MAC, Wi-Fi signal, uptime, free heap
+  - `page_ha`: Home Assistant `sun.sun` state and `elevation` attribute
   - Auto-cycles every 5 seconds
 
 ## Remote access
