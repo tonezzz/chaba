@@ -49,6 +49,9 @@
     .tab { background: #f8fafc; border: 1px solid #e2e8f0; border-bottom: none; color: #4b5563; }
     .tab.active { background: #fff; color: #0a84ff; border-bottom: 2px solid #0a84ff; }
     .tab:hover { background: #eff6ff; }
+    .host-tab { background: #f8fafc; border: 1px solid #e2e8f0; border-bottom: none; color: #4b5563; border-radius: 0.5rem 0.5rem 0 0; }
+    .host-tab.active { background: #fff; color: #0a84ff; border-bottom: 2px solid #0a84ff; }
+    .host-tab:hover { background: #eff6ff; }
     @media (max-width: 768px) { .modal-grid { grid-template-columns: 1fr; } }
   </style>
 </head>
@@ -124,6 +127,7 @@
           <option value="command">Sort by: command name</option>
         </select>
       </div>
+      <nav id="host-tabs" class="flex flex-wrap gap-2 border-b border-gray-300 mb-4" role="tablist"></nav>
       <div id="search-meta" class="text-sm text-gray-500 mb-2 hidden"></div>
       <div id="report"></div>
     </section>

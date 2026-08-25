@@ -8,6 +8,7 @@ let currentReportData = null;
 let previousReportData = null;
 let autoRefreshId = null;
 let refreshPollId = null;
+let currentCommandHost = 'all';
 
 function formatNumber(n) {
   if (n == null) return '-';
@@ -354,12 +355,23 @@ function renderWhatsNew(current, previous) {
   el.innerHTML = html;
 }
 
+function renderHostTabs(hosts) {
+  const el = document.getElementById('host-tabs');
+  if (!el) return;
+  let html = `<button class="host-tab px-3 py-1.5 text-sm font-medium ${currentCommandHost === 'all' ? 'active' : ''}" data-host="all" role="tab" aria-selected="${currentCommandHost === 'all'}">All hosts</button>`;
+  for (const [host] of hosts) {
+    html += `<button class="host-tab px-3 py-1.5 text-sm font-medium ${currentCommandHost === host ? 'active' : ''}" data-host="${escapeHtml(host)}" role="tab" aria-selected="${currentCommandHost === host}">${escapeHtml(host)}</button>`;
+  }
+  el.innerHTML = html;
+}
+
 function renderCommandTables(data, { filter = '', sortKey = 'savings_pct_chars' } = {}) {
   const report = document.getElementById('report');
   const searchMeta = document.getElementById('search-meta');
   if (!data || !data.hosts) { report.innerHTML = ''; return; }
   const lower = filter.toLowerCase();
   const hosts = Object.entries(data.hosts).sort(([a], [b]) => a.localeCompare(b));
+  renderHostTabs(hosts);
   const sortDirections = {
     savings_pct_chars: -1,
     saved_chars: -1,
@@ -376,6 +388,7 @@ function renderCommandTables(data, { filter = '', sortKey = 'savings_pct_chars' 
   let html = '';
   let total = 0, shown = 0;
   for (const [host, hdata] of hosts) {
+    if (currentCommandHost !== 'all' && currentCommandHost !== host) continue;
     const allCommands = Object.values(hdata.commands || {});
     const commands = allCommands
       .filter(c => !lower || (c.command || '').toLowerCase().includes(lower))
@@ -383,9 +396,11 @@ function renderCommandTables(data, { filter = '', sortKey = 'savings_pct_chars' 
     total += allCommands.length;
     shown += commands.length;
     if (filter && !commands.length) continue;
-    html += `<h2 class="text-xl font-semibold mt-8 mb-2 flex items-center gap-2">
-      <span class="w-3 h-3 rounded-full" style="background:#22c55e"></span>${host}
-    </h2>`;
+    if (currentCommandHost === 'all') {
+      html += `<h2 class="text-xl font-semibold mt-8 mb-2 flex items-center gap-2">
+        <span class="w-3 h-3 rounded-full" style="background:#22c55e"></span>${host}
+      </h2>`;
+    }
     html += '<table><thead><tr>';
     html += '<th>#</th><th>Command</th><th>Status</th><th>Raw chars</th><th>Compact chars</th><th>Saved chars</th><th>Tokens saved</th><th style="min-width:160px">Savings</th><th>Word %</th><th>Action</th>';
     html += '</tr></thead><tbody>';
@@ -547,6 +562,13 @@ function setupEventListeners() {
   document.getElementById('tabs').addEventListener('click', (e) => {
     const tab = e.target.closest('.tab')?.dataset.tab;
     if (tab) showTab(tab);
+  });
+  document.getElementById('host-tabs').addEventListener('click', (e) => {
+    const host = e.target.closest('.host-tab')?.dataset.host;
+    if (host && currentReportData) {
+      currentCommandHost = host;
+      renderCommandTables(currentReportData, { filter: document.getElementById('command-search').value, sortKey: document.getElementById('command-sort').value });
+    }
   });
   const helpToggle = document.getElementById('help-toggle');
   const helpClose = document.getElementById('help-close');
