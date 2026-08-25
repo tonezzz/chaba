@@ -21,16 +21,22 @@ ota:
   - platform: esphome
 
 wifi:
-  ssid: !secret wifi_ssid
-  password: !secret wifi_password
+  networks:
+    - ssid: !secret wifi_ssid_tony24
+      password: !secret wifi_password_tony24
+    - ssid: !secret wifi_ssid_tony5
+      password: !secret wifi_password_tony5
+    - ssid: !secret wifi_ssid_albatros24
+      password: !secret wifi_password_albatros24
+    - ssid: !secret wifi_ssid_albatros5
+      password: !secret wifi_password_albatros5
+    - ssid: !secret wifi_ssid_maesang
+      password: !secret wifi_password_maesang
+    - ssid: !secret wifi_ssid_tonyip
+      password: !secret wifi_password_tonyip
   ap:
     ssid: "ESP32-Test-Fallback"
     password: "12345678"
-  manual_ip:
-    static_ip: 192.168.2.86
-    gateway: 192.168.2.1
-    subnet: 255.255.255.0
-    dns1: 192.168.2.1
 
 spi:
   - id: tft
