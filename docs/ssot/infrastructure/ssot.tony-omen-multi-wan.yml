@@ -1,0 +1,70 @@
+title: Tony-Omen Multi-WAN ECMP
+subtitle: Combine wired Gigabit Ethernet (eno1) and iPhone USB tether (enx) for maximum bandwidth, with 5 GHz Wi-Fi (wlo1) as fallback
+icon: network
+
+ideas:
+  - Use Linux ECMP to balance parallel TCP/UDP streams across eno1 and enx7ed2da73308a when the iPhone is connected.
+  - Keep wlo1 as a higher-metric fallback if the wired link or iPhone tether drops.
+  - Persist L4-port ECMP hashing so multiple parallel streams to the same destination can use both paths.
+  - Use a NetworkManager dispatcher to rebuild the default route automatically whenever eno1, wlo1, or enx changes state.
+  - Document driver and link settings so the NIC auto-negotiates 1 Gbps without forced 100/full settings.
+
+sections:
+  - title: Active Connections
+    icon: map
+    layout: list
+    items:
+      - label: eno1 wired primary
+        text: Connection "netplan-eno1" on eno1, Realtek RTL8111/8168/8211/8411, r8169 driver, auto-negotiation on, link 1000 Mb/s Full, gateway 192.168.2.1, DHCP source 192.168.2.84/24.
+      - label: enx iPhone USB tether primary
+        text: Connection "Wired connection 1" on enx7ed2da73308a, auto-negotiate no (USB Ethernet), gateway 172.20.10.1, DHCP source 172.20.10.12/28.
+      - label: wlo1 5 GHz Wi-Fi fallback
+        text: Connection "TONY-WIFI_5G" on wlo1, Intel Wireless-AC 7265, iwlwifi driver, 866.7 Mb/s link, gateway 192.168.2.1, DHCP source 192.168.2.83/24.
+
+  - title: ECMP Policy
+    icon: workflow
+    layout: list
+    items:
+      - label: Multipath default route
+        text: default metric 40 with two equal-weight nexthops via 192.168.2.1 dev eno1 and 172.20.10.1 dev enx7ed2da73308a.
+      - label: Wi-Fi fallback
+        text: default via 192.168.2.1 dev wlo1 metric 50.
+      - label: Hash policy
+        text: net.ipv4.fib_multipath_hash_policy=1 for L4 (sport/dport) load balancing so parallel streams to the same server use different links.
+      - label: iPhone unlimited data
+        text: iPhone data plan is unlimited, so using enx for ECMP does not risk overage.
+
+  - title: Implementation Files
+    icon: files
+    layout: list
+    items:
+      - label: ECMP rebuild script
+        text: /usr/local/bin/ecmp-up rebuilds the default route from the active interfaces.
+      - label: NetworkManager dispatcher
+        text: /etc/NetworkManager/dispatcher.d/99-enx-ecmp calls /usr/local/bin/ecmp-up on up/down/dhcp4-change/dhcp6-change.
+      - label: Sysctl tuning
+        text: /etc/sysctl.d/99-multipath.conf sets net.ipv4.fib_multipath_hash_policy=1.
+
+  - title: Verification
+    icon: check
+    layout: list
+    items:
+      - label: Multipath route present
+        text: ip route show default reports "default metric 40" with nexthop entries for eno1 and enx.
+      - label: Parallel streams split
+        text: 6 parallel 5 MB Cloudflare downloads used both 192.168.2.84 and 172.20.10.12 source addresses and reached ~70 MB/s aggregate.
+      - label: Fallback
+        text: wlo1 remains active at metric 50 if eno1 or enx drops.
+
+  - title: Notes
+    icon: note
+    layout: list
+    items:
+      - label: Single stream limit
+        text: One TCP flow still uses one path; parallel connections or a multi-threaded download manager (aria2, etc.) is needed to combine the links.
+      - label: Driver
+        text: eno1 uses the kernel r8169 driver and reaches 1 Gbps; no need for r8168-dkms.
+      - label: enx variability
+        text: iPhone tether throughput depends on iPhone Wi-Fi/cellular state; typical observed per-stream 5-32 MB/s.
+      - label: Source IP changes
+        text: New outbound connections may use either 192.168.2.x or 172.20.10.12; applications sensitive to source IP may see occasional re-authentication.
