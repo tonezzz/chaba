@@ -74,9 +74,20 @@ display:
     dimensions:
       width: 240
       height: 320
-    lambda: |-
-      it.fill(Color(0, 0, 0));
-      it.print(0, 0, id(font1), Color(255, 255, 255), "Hello CYD");
+    pages:
+      - id: page_main
+        lambda: |-
+          it.fill(Color(0, 0, 0));
+          it.print(0, 0, id(font1), Color(255, 255, 255), "Hello CYD");
+      - id: page_status
+        lambda: |-
+          it.fill(Color(0, 0, 0));
+          it.print(0, 0, id(font1), Color(0, 255, 0), "Status");
+          it.printf(0, 30, id(font1), Color(255, 255, 255), "IP: %s", id(ip_addr).state.c_str());
+          it.printf(0, 60, id(font1), Color(255, 255, 255), "SSID: %s", id(wifi_ssid_text).state.c_str());
+          it.printf(0, 90, id(font1), Color(255, 255, 255), "Sig: %.0f dBm", id(wifi_signal_db).state);
+          it.printf(0, 120, id(font1), Color(255, 255, 255), "Up: %.0f s", id(uptime_s).state);
+          it.printf(0, 150, id(font1), Color(255, 255, 255), "Heap: %.0f", id(free_heap).state);
 
 touchscreen:
   - platform: xpt2046
@@ -90,5 +101,41 @@ touchscreen:
       x_max: 3800
       y_min: 300
       y_max: 3800
+
+text_sensor:
+  - platform: wifi_info
+    ip_address:
+      name: "IP Address"
+      id: ip_addr
+    ssid:
+      name: "Connected SSID"
+      id: wifi_ssid_text
+
+sensor:
+  - platform: uptime
+    name: "Uptime"
+    id: uptime_s
+    type: seconds
+  - platform: wifi_signal
+    name: "WiFi Signal"
+    id: wifi_signal_db
+    update_interval: 60s
+  - platform: template
+    name: "Free Heap"
+    id: free_heap
+    unit_of_measurement: "B"
+    update_interval: 5s
+    lambda: |-
+      return (float) App.get_free_heap();
+
+binary_sensor:
+  - platform: status
+    name: "Node Status"
+    id: system_status
+
+interval:
+  - interval: 5s
+    then:
+      - display.page.show_next: cyd_display
 
 captive_portal:
