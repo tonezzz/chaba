@@ -72,3 +72,20 @@ services:
   profiles:
   - home
   - mobile
+- id: home-assistant
+  name: Home Assistant
+  type: http
+  url: http://tony-dell:8080/apps/home-assistant/
+  expected_status: 200
+  timeout: 10
+  category: web
+  profiles:
+  - home
+  verification:
+  - 'Check container: ssh tony-dell podman ps | grep home-assistant'
+  - 'Check logs: ssh tony-dell podman logs home-assistant --tail 20'
+  - 'Test direct: curl -s http://tony-dell:8123/'
+  - 'Test Caddy proxy: curl -s http://tony-dell:8080/apps/home-assistant/'
+  recovery_actions:
+  - 'Restart service: ssh tony-dell systemctl --user restart home-assistant'
+  - 'Restart Caddy: ssh tony-dell podman exec web caddy reload --config /etc/caddy/Caddyfile --adapter caddyfile'

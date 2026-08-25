@@ -227,8 +227,15 @@ tony-dell:
       type: ha_mcp_tools in-process
       local_url: http://tony-dell:9584/private_CtYuVkJEl28cp8qA8yXNCQ
       webhook: http://tony-dell:8123/api/webhook/mcp_d5528537d57627164033dc5e3e5e5aa6
+    caddy:
+      host_path: /apps/home-assistant/
+      mcp_path: /api/ha-mcp/
+      backend: 100.68.142.13
+      caddyfile: /home/tony/CascadeProjects/chaba-tony-dell/stacks/web/Caddyfile
+    health_check: ssh tony-dell curl -sf http://127.0.0.1:8123/ >/dev/null
+    autostart: loginctl enable-linger tony is yes; Quadlet WantedBy=default.target
     status: 'mcp server active (2026-08-25)'
-    note: 'Container rootless podman on tony-dell. HA-MCP custom component installed, onboarded, and active. Device integrations (Tuya, etc.) pending.'
+    note: 'Container rootless podman on tony-dell. HA-MCP active. Caddy reverse proxy, health check, and autostart configured. Device integrations pending.'
   gpu-queue:
     container: gpu-queue
     image: docker.io/library/node:22-alpine

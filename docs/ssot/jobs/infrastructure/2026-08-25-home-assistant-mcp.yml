@@ -63,9 +63,10 @@ processing:
         HTTP 405 on the private path confirms the endpoint exists (GET not allowed; MCP clients must POST).
     - id: 5
       label: Update SSOT/services/health and commit
-      status: in_progress
+      status: completed
       notes: |
-        Added home-assistant entry to ssot.services.yml. This file is being updated as the deployment progresses.
+        Added home-assistant to ssot.services.yml with Caddy, health check, and autostart.
+        Added the home-assistant health check to ssot.health.home.web.yml. Core config and Caddy are configured.
   decisions:
     - label: Home Assistant MCP server
       rationale: |
@@ -84,6 +85,16 @@ processing:
       summary: Registered the home-assistant service under tony_dell with the Quadlet and MCP component paths.
     - file: /home/tony/.config/home-assistant/.storage/core.config_entries
       summary: Loaded the HA-MCP Server config entry; MCP endpoint active on http://tony-dell:9584/private_CtYuVkJEl28cp8qA8yXNCQ.
+    - file: /home/tony/.config/home-assistant/configuration.yaml
+      summary: Added http reverse-proxy settings (use_x_forwarded_for and trusted_proxies) for Caddy.
+    - file: /home/tony/.config/home-assistant/.storage/http
+      summary: Set use_x_forwarded_for and trusted_proxies in the http storage to stop the 400 Bad Request from Caddy.
+    - file: /home/tony/CascadeProjects/chaba-tony-dell/stacks/web/Caddyfile
+      summary: Added Caddy reverse proxy routes for /apps/home-assistant/ and /api/ha-mcp/.
+    - file: docs/ssot/infrastructure/ssot.health.home.web.yml
+      summary: Added home-assistant health check entry.
+    - file: docs/ssot/infrastructure/ssot.services.yml
+      summary: Updated the home-assistant service with Caddy, health check, and autostart notes.
 
 followup:
   verification:
