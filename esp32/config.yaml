@@ -120,24 +120,34 @@ display:
             it.line(dx, dy, ax1, ay1, col);
             it.line(dx, dy, ax2, ay2, col);
           };
-          it.print(0, 58, id(font_small), vtbs_c, "VTBS");
+          it.print(4, 58, id(font_small), vtbs_c, "VTBS");
           it.printf(46, 58, id(font_small), Color(255, 255, 255), "%.0f/%.0fC %d@%dkt", id(vtbs_temp), id(vtbs_dewp), id(vtbs_wdir), id(vtbs_wspd));
           draw_arrow(205, 74, id(vtbs_wdir), vtbs_c);
-          it.printf(0, 86, id(font_small), Color(255, 255, 255), "Q%d %s %s%dm", id(vtbs_altim), id(vtbs_visib).c_str(), id(vtbs_cloud).c_str(), id(vtbs_cloud_base));
-          it.print(0, 114, id(font_small), Color(255, 255, 0), id(vtbs_wx).c_str());
-          it.print(0, 176, id(font_small), vtbu_c, "VTBU");
+          it.printf(4, 86, id(font_small), Color(255, 255, 255), "Q%d %s %s%dm", id(vtbs_altim), id(vtbs_visib).c_str(), id(vtbs_cloud).c_str(), id(vtbs_cloud_base));
+          it.print(4, 114, id(font_small), Color(255, 255, 0), id(vtbs_wx).c_str());
+          it.print(4, 176, id(font_small), vtbu_c, "VTBU");
           it.printf(46, 176, id(font_small), Color(255, 255, 255), "%.0f/%.0fC %d@%dkt", id(vtbu_temp), id(vtbu_dewp), id(vtbu_wdir), id(vtbu_wspd));
           draw_arrow(205, 192, id(vtbu_wdir), vtbu_c);
-          it.printf(0, 204, id(font_small), Color(255, 255, 255), "Q%d %s %s%dm", id(vtbu_altim), id(vtbu_visib).c_str(), id(vtbu_cloud).c_str(), id(vtbu_cloud_base));
-          it.print(0, 232, id(font_small), Color(255, 255, 0), id(vtbu_wx).c_str());
+          it.printf(4, 204, id(font_small), Color(255, 255, 255), "Q%d %s %s%dm", id(vtbu_altim), id(vtbu_visib).c_str(), id(vtbu_cloud).c_str(), id(vtbu_cloud_base));
+          it.print(4, 232, id(font_small), Color(255, 255, 0), id(vtbu_wx).c_str());
           auto draw_graph = [&](int x, int y, int w, int h, std::array<float, 60>& hist, Color col) {
-            float hmin = hist[0];
-            float hmax = hist[0];
-            for (int i = 1; i < 60; i++) {
-              if (hist[i] < hmin) hmin = hist[i];
-              if (hist[i] > hmax) hmax = hist[i];
+            bool first = true;
+            float hmin = 0;
+            float hmax = 0;
+            for (int i = 0; i < 60; i++) {
+              if (hist[i] > 0) {
+                if (first) {
+                  hmin = hist[i];
+                  hmax = hist[i];
+                  first = false;
+                } else {
+                  if (hist[i] < hmin) hmin = hist[i];
+                  if (hist[i] > hmax) hmax = hist[i];
+                }
+              }
             }
-            if (hmax == hmin) hmax = hmin + 1;
+            if (first) { hmin = 0; hmax = 1; }
+            else if (hmax == hmin) { hmax = hmin + 1; }
             it.rectangle(x, y, w, h, Color(128, 128, 128));
             for (int i = 0; i < 59; i++) {
               int x1 = x + i * w / 59;
@@ -147,7 +157,7 @@ display:
               it.line(x1, y1, x2, y2, col);
             }
           };
-          draw_graph(4, 258, 232, 54, id(vtbu_temp_hist), vtbu_c);
+          draw_graph(4, 254, 232, 60, id(vtbu_temp_hist), Color(0, 255, 255));
       - id: page_status
         lambda: |-
           it.fill(Color(0, 0, 0));
@@ -172,13 +182,23 @@ display:
           it.printf(0, 86, id(font_small), Color(255, 255, 255), "Spot: %.2f USD/oz", id(gold_usd_oz));
           it.printf(0, 116, id(font_small), Color(255, 255, 255), "USD/THB: %.2f", id(usd_thb_rate));
           auto draw_graph = [&](int x, int y, int w, int h, std::array<float, 60>& hist, Color col) {
-            float hmin = hist[0];
-            float hmax = hist[0];
-            for (int i = 1; i < 60; i++) {
-              if (hist[i] < hmin) hmin = hist[i];
-              if (hist[i] > hmax) hmax = hist[i];
+            bool first = true;
+            float hmin = 0;
+            float hmax = 0;
+            for (int i = 0; i < 60; i++) {
+              if (hist[i] > 0) {
+                if (first) {
+                  hmin = hist[i];
+                  hmax = hist[i];
+                  first = false;
+                } else {
+                  if (hist[i] < hmin) hmin = hist[i];
+                  if (hist[i] > hmax) hmax = hist[i];
+                }
+              }
             }
-            if (hmax == hmin) hmax = hmin + 1;
+            if (first) { hmin = 0; hmax = 1; }
+            else if (hmax == hmin) { hmax = hmin + 1; }
             it.rectangle(x, y, w, h, Color(128, 128, 128));
             for (int i = 0; i < 59; i++) {
               int x1 = x + i * w / 59;
