@@ -56,16 +56,6 @@ example:
   - Monitor whether 60s is too long for live CORS data
   next_action: Continue with mcp_focus implementation or activate next backlog item
 sessions:
-- focus: mcp-debug-overhead
-  source: mcp_focus next
-  plan:
-  - Activate mcp-debug-overhead
-  done: []
-  follow_up:
-  - Complete the focus or defer it
-  next_action:
-  - Work on mcp-debug-overhead
-  date: '2026-08-23'
 - focus: yomi-llm-rate-limits
   source: mcp_focus next
   plan:
@@ -157,6 +147,29 @@ sessions:
   next_action:
   - Continue MacBook macOS App Development
   date: '2026-08-24'
+- date: '2026-08-25'
+  session: chaba-2026-08-25-rview-rename
+  focus: Rename gemini-live to rview-live
+  source: continue
+  plan:
+  - Rename gemini-live to rview-live in chaba and chaba-h3 repos
+  - Deploy the new rview-live podman unit on tony-dell
+  done:
+  - Renamed directories and references across chaba and chaba-h3
+  - Updated Caddy, proxy, SSOT index, and apps.yml
+  - Deployed and started rview-live Quadlet on tony-dell
+  - Verified health on 127.0.0.1:3008, 100.68.142.13:3008, and Caddy /api/rview-live
+  follow_up:
+  - Resolve Misdirected Request on https://tony-dell.taila0626a.ts.net:8443/api/rview-live/health
+  - Clean up old gemini-live images on tony-dell when convenient
+  next_action: Optionally fix the 8443 Funnel/Caddy host matching or move to next focus
+  decisions:
+  - id: rview-live-port
+    title: Keep rview-live on port 3008
+    chosen_option: Yes, retain the existing gemini-live port to avoid changing Caddy/Tailscale funnel setup beyond the rename
+  - id: live-deploy-copy
+    title: Use chaba-deploy worktree on tony-dell
+    chosen_option: Copy updated rview-live files from chaba and rebuild the podman image; no git operations on tony-dell
 related_files:
 - docs/ssot/ssot.focus.current.yml
 - docs/ssot/ssot.focus.yml
