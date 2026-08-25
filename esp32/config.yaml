@@ -39,6 +39,10 @@ spi:
     miso_pin:
       number: GPIO12
       ignore_strapping_warning: true
+  - id: touch
+    clk_pin: GPIO25
+    mosi_pin: GPIO32
+    miso_pin: GPIO39
 
 output:
   - platform: ledc
@@ -92,7 +96,7 @@ display:
 touchscreen:
   - platform: xpt2046
     id: cyd_touch
-    spi_id: tft
+    spi_id: touch
     cs_pin: GPIO33
     interrupt_pin: GPIO36
     threshold: 400
