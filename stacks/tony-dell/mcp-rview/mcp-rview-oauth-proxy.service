@@ -1,0 +1,15 @@
+[Unit]
+Description=MCP RView OAuth2 proxy
+After=mcp-rview.service network-online.target
+Wants=mcp-rview.service
+
+[Service]
+Type=simple
+EnvironmentFile=/home/tony/.config/mcp-rview-oauth-proxy.env
+ExecStart=/usr/bin/python3 /home/tony/CascadeProjects/chaba-tony-dell/scripts/mcp_rview/oauth_proxy.py
+WorkingDirectory=/home/tony
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target

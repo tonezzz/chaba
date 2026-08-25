@@ -380,6 +380,18 @@ tony-dell:
     status: implemented (2026-08-21)
     note: stdio MCP proxy that exposes rview_* tools and fetch_page to external MCP clients (e.g., Claude Desktop via the mcp-rview-oauth-proxy on 9004). Spawns /home/tony/CascadeProjects/chaba-tony-dell/scripts/mcp_rview/server.py and proxies to http://127.0.0.1:3007/state.
 
+  mcp-rview-oauth-proxy:
+    service: mcp-rview-oauth-proxy
+    host: tony_dell
+    port: 9004
+    host_port: '127.0.0.1:9004'
+    service_unit: ~/.config/systemd/user/mcp-rview-oauth-proxy.service
+    source: stacks/tony-dell/mcp-rview/mcp-rview-oauth-proxy.service
+    depends_on: mcp-rview
+    health_check: 'curl -sf http://127.0.0.1:9004/.well-known/oauth-authorization-server >/dev/null'
+    status: implemented (2026-08-25)
+    note: 'OAuth2 proxy for mcp-rview. Listens on 127.0.0.1:9004. Tailscale serve on tony-dell:443 proxies https://tony-dell.taila0626a.ts.net/ to 127.0.0.1:9004. Client credentials are in /home/tony/.config/mcp-rview-oauth-proxy.env (not in git).'
+
 tony-omen:
   ollama:
     container: ollama

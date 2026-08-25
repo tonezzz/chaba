@@ -495,7 +495,7 @@ services:
   profiles:
   - home
   - mobile
-  note: 'Tailscale Funnel landing page, /health endpoint, and /apps/docs/ on tony-dell:8444, proxied by tailscale serve to 127.0.0.1:8082. Port 443 remains the mcp-rview-oauth-proxy on 9004; 8443 is Caddy/rview.'
+  note: 'Tailscale Funnel landing page, /health endpoint, and /apps/docs/ on tony-dell:8444, proxied by tailscale serve to 127.0.0.1:8082. Port 443 on tony-dell remains the mcp-rview-oauth-proxy on 9004; 8443 is Caddy/rview.'
   verification:
   - 'Check systemd: systemctl --user status chaba-funnel.service'
   - 'Check port: ss -tlnp | grep 8082'
