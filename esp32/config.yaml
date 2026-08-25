@@ -1,6 +1,10 @@
 esphome:
   name: esp32_test
   friendly_name: "ESP32 Test"
+  on_boot:
+    - light.turn_on:
+        id: display_backlight
+        brightness: 100%
 
 esp32:
   board: esp32dev
