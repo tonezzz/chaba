@@ -37,3 +37,39 @@ sections:
       status: deferred
       deferred_at: '2026-08-25'
       resume_note: MacBook offline; park focus until host is reachable
+  - label: SSOT desync for mcp-rview-oauth-proxy
+    text: "A scan of tony-dell found the mcp-rview-oauth-proxy is already running:\n  - 127.0.0.1:9004 is listening on tony-dell\n\
+      \  - tailscale serve on tony-dell serves https://tony-dell.taila0626a.ts.net/ proxying to 127.0.0.1:9004\n  - the mcp-rview\
+      \ stdio/SSE server is also on tony-dell at 127.0.0.1:9003\nHowever, ssot.services.yml and ssot.health still describe\
+      \ the proxy as a tony-omen service on 9004/443,\nand the tony-omen tailscale serve status does not show a /mcp-rview\
+      \ or 9004 handler.\nThe whole RView MCP stack is already co-located on tony-dell; the migration is effectively done\
+      \ but not recorded.\n"
+    status: active
+    priority: medium
+    started: '2026-08-25'
+    estimated_duration: 1 session
+    tags:
+    - mcp-rview
+    - oauth
+    - ssot
+    - tony-dell
+    - sync
+    subtasks:
+    - label: Verify tony-omen has no active mcp-rview-oauth-proxy listener or tailscale serve mapping
+      status: not_started
+    - label: Update docs/ssot/infrastructure/ssot.services.yml to register mcp-rview-oauth-proxy under tony_dell
+      status: not_started
+    - label: Update affected health files (ssot.health.home.web.yml, ssot.health.mobile.yml, public/ssot.health.mobile.yml)
+      status: not_started
+    - label: Update ssot.containerization.yml and the active migration job to reflect reality
+      status: not_started
+    - label: Commit the SSOT sync
+      status: not_started
+    request_log: []
+    ownership:
+      owner: tony
+      session: ''
+      locked: true
+      lock_reason: Activated as active focus
+    branch: feature/home-assistant-mcp
+    source: /home/tony/CascadeProjects/chaba/docs/ssot/focus-inbox/2026-08-25-132325-mcp-rview-oauth-proxy-ssot-desync.yml
