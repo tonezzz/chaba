@@ -41,7 +41,7 @@ services:
 - id: rview-api
   name: RView API
   type: http
-  url: '{profile}/apps/rview/api/state?action=list'
+  url: http://tony-dell:3007/state?action=list
   expected_status: 200
   timeout: 5
   category: api
@@ -51,7 +51,7 @@ services:
   host: tony_dell
   verification:
   - 'Test direct: curl -s http://tony-dell:3007/state?action=list'
-  - 'Test Caddy proxy: curl -s {profile}/apps/rview/api/state?action=list'
+  - 'Test Caddy proxy: curl -s http://tony-dell:8080/apps/rview/api/state?action=list'
   - 'Check podman container: ssh tony-dell podman ps | grep rview-api'
   - 'Check podman logs: ssh tony-dell podman logs rview-api --tail 20'
   - 'Check build unit: ssh tony-dell systemctl --user status rview-api-image.service'
@@ -63,7 +63,7 @@ services:
 - id: rview-live
   name: RView Live API
   type: http
-  url: '{profile}/api/rview-live/health'
+  url: http://tony-dell:3008/health
   expected_status: 200
   timeout: 5
   category: api
@@ -73,7 +73,7 @@ services:
   host: tony_dell
   verification:
   - 'Test direct: curl -s http://tony-dell:3008/health'
-  - 'Test Caddy proxy: curl -s {profile}/api/rview-live/health'
+  - 'Test Caddy proxy: curl -s http://tony-dell:8080/api/rview-live/health'
   - 'Check podman container: ssh tony-dell podman ps | grep rview-live'
   - 'Check podman logs: ssh tony-dell podman logs rview-live --tail 20'
   - 'Verify GEMINI_API_KEY env: ssh tony-dell podman exec rview-live env | grep GEMINI_API_KEY'
