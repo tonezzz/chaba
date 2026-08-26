@@ -20,10 +20,10 @@ The MCP Health Server follows a hybrid orchestrator model:
 
 ## Installation
 
-The server is installed at `/home/tony/CascadeProjects/chaba/mcp/mcp-health/`
+The server is installed at `/home/tony/CascadeProjects/chaba/mcp-servers/mcp-health/`
 
 ```bash
-cd /home/tony/CascadeProjects/chaba/mcp/mcp-health
+cd /home/tony/CascadeProjects/chaba/mcp-servers/mcp-health
 npm install
 ```
 
@@ -34,7 +34,7 @@ The server is configured in `/home/tony/.config/devin/mcp_config.json`:
 ```json
 {
   "mcp-health": {
-    "args": ["/home/tony/CascadeProjects/chaba/mcp/mcp-health/server.js"],
+    "args": ["/home/tony/CascadeProjects/chaba/mcp-servers/mcp-health/server.js"],
     "command": "/usr/bin/node",
     "env": {
       "HEALTH_CONFIG": "/home/tony/CascadeProjects/chaba/docs/ssot/infrastructure/ssot.health.yml",
@@ -272,7 +272,7 @@ The server automatically detects the network profile:
 
 ## Database
 
-Health check results are stored in SQLite database at `mcp/mcp-health/health-history.db`:
+Health check results are stored in SQLite database at `mcp-servers/mcp-health/health-history.db`:
 
 ```sql
 CREATE TABLE health_checks (

@@ -144,7 +144,7 @@ pipx inject workflows-mcp "mcp<2.0.0" --force  # MCP 2.0 compatibility
 
 **Purpose**: Centralized health monitoring and telemetry orchestrator for Chaba infrastructure
 
-**Location**: `/home/tony/CascadeProjects/chaba/mcp/mcp-health/`
+**Location**: `/home/tony/CascadeProjects/chaba/mcp-servers/mcp-health/`
 
 **Configuration**:
 ```json
@@ -152,7 +152,7 @@ pipx inject workflows-mcp "mcp<2.0.0" --force  # MCP 2.0 compatibility
   "mcpServers": {
     "mcp-health": {
       "command": "/usr/bin/node",
-      "args": ["/home/tony/CascadeProjects/chaba/mcp/mcp-health/server.js"],
+      "args": ["/home/tony/CascadeProjects/chaba/mcp-servers/mcp-health/server.js"],
       "env": {
         "HEALTH_CONFIG": "/home/tony/CascadeProjects/chaba/docs/ssot/infrastructure/ssot.health.yml",
         "HEALTH_SKILL": "/home/tony/CascadeProjects/chaba/.agents/skills/health-check/SKILL.md"
@@ -217,7 +217,7 @@ CREATE TABLE health_checks (
 
 **Critical Gap Fixed**: Implemented expected_status and expected_state validation from SSOT configuration. Previously hardcoded expectations (200 for HTTP, "running" for containers, "active" for systemd) now use config-specified values for accurate health determination across 15 HTTP services and 11 container/systemd services.
 
-**Documentation**: See `mcp/mcp-health/README.md` for detailed usage and troubleshooting
+**Documentation**: See `mcp-servers/mcp-health/README.md` for detailed usage and troubleshooting
 
 **YAML Syntax Note**: URL placeholders in SSOT health config must be quoted to avoid parsing errors:
 ```yaml

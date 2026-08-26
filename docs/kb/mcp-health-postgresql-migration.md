@@ -10,7 +10,7 @@ The MCP health server was originally using SQLite for health check history stora
 ## Migration Details
 
 ### Database Schema Changes
-- **Source:** SQLite (`mcp/mcp-health/health-history.db`)
+- **Source:** SQLite (`mcp-servers/mcp-health/health-history.db`)
 - **Destination:** PostgreSQL `chaba` database
 - **Tables:** `health_checks` and `alerts`
 - **Data Migrated:** 143 health checks, 13 alerts
@@ -92,7 +92,7 @@ The MCP health server was originally using SQLite for health check history stora
 
 ### mcp-health server fails with `connect ECONNREFUSED 127.0.0.1:5432`
 
-**Cause:** `mcp/mcp-health/server.js` defaults `POSTGRES_HOST` to `localhost`.
+**Cause:** `mcp-servers/mcp-health/server.js` defaults `POSTGRES_HOST` to `localhost`.
 
 **Fix:** The `mcp-health-client.py` caller must export `POSTGRES_HOST` pointing to the host that actually runs PostgreSQL. For the `tony-dell-mcp-health` timer, Postgres lives on `tony-dell`, so `mcp-health-client.py` sets:
 
@@ -184,12 +184,12 @@ async function initializeDatabase() {
 
 If PostgreSQL migration fails, SQLite can be used as fallback:
 1. Keep `health-history.db` as backup
-2. Revert `mcp/mcp-health/server.js` to use `better-sqlite3`
+2. Revert `mcp-servers/mcp-health/server.js` to use `better-sqlite3`
 3. Update overnight assessment script to use SQLite queries
 4. PostgreSQL and SQLite can coexist during transition period
 
 ## Related Documentation
-- `mcp/mcp-health/server.js` - MCP health server implementation
+- `mcp-servers/mcp-health/server.js` - MCP health server implementation
 - `scripts/overnight-jobs-expanded.sh` - Overnight assessment with PostgreSQL integration
 - `docs/ssot/infrastructure/ssot.automation.yml` - Automation configuration
 - `docs/ssot/ssot.improvements.yml` - Migration improvement entry

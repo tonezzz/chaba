@@ -55,7 +55,7 @@ The overnight assessment automatically:
 - `scripts/collect-performance-baselines.mjs` - Baseline collection script
 - `scripts/overnight-assessment.mjs` - Assessment integration
 - `docs/ssot/infrastructure/performance-baselines.yml` - Baseline data
-- `mcp/mcp-health/server.js` - MCP health server
+- `mcp-servers/mcp-health/server.js` - MCP health server
 - `docs/ssot/ssot.improvements.yml` - Improvement tracking
 
 ## Dependencies

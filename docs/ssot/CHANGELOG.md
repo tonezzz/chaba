@@ -69,7 +69,7 @@ This file tracks significant changes to SSOT files for audit trail and rollback 
 - **Impact**: SSOT now documents mddb MCP server configuration and mcp-health Phase 4 enhancements
 - **Rollback**: Remove mddb entry and revert mcp-health notes
 
-- **File**: mcp/mcp-health/server.js
+- **File**: mcp-servers/mcp-health/server.js
 - **Change Type**: major
 - **Description**: Added 8 new MCP health server tools for streamlined health monitoring: quick_health (pass/fail for critical services), check_group (group-based checks), reload_config (YAML config reload), get_health_score (overall system metric 0-100), batch_check (parallel service checks), set_auto_recovery (automated recovery policies), get_service_template (service templates), sync_to_mddb (health history integration)
 - **Impact**: Health monitoring now provides quick status checks, group-based operations, config reload without restart, health scoring, parallel processing, auto-recovery, service templates, and mddb integration

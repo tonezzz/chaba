@@ -12,7 +12,7 @@ planning:
     - docs/ssot/infrastructure/ssot.health.home.yml
     - docs/ssot/infrastructure/ssot.health.mobile.yml
     - docs/ssot/infrastructure/ssot.health.yml
-    - mcp/mcp-health/server.js
+    - mcp-servers/mcp-health/server.js
     - scripts/audits/run.mjs
     - docs/ssot/infrastructure/ssot.audit.yml
   out_of_scope:
@@ -40,7 +40,7 @@ processing:
     - file: docs/ssot/infrastructure/ssot.health.home.yml
       issue: 18 of 45 services are currently unknown in mcp-health, many on tony-omen.local or local ports
       severity: medium
-    - file: mcp/mcp-health/server.js
+    - file: mcp-servers/mcp-health/server.js
       issue: mcp-health is an stdio MCP server; the consolidated runner cannot call it directly
       severity: high
   steps:

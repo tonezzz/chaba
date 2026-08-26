@@ -10,8 +10,8 @@ import { createRequire } from 'module';
 
 const require = createRequire(import.meta.url);
 const yaml = require('js-yaml');
-const { Client } = require('/home/tony/CascadeProjects/chaba/mcp/mcp-health/node_modules/@modelcontextprotocol/sdk/dist/cjs/client/index.js');
-const { StdioClientTransport } = require('/home/tony/CascadeProjects/chaba/mcp/mcp-health/node_modules/@modelcontextprotocol/sdk/dist/cjs/client/stdio.js');
+const { Client } = require('/home/tony/CascadeProjects/chaba/mcp-servers/mcp-health/node_modules/@modelcontextprotocol/sdk/dist/cjs/client/index.js');
+const { StdioClientTransport } = require('/home/tony/CascadeProjects/chaba/mcp-servers/mcp-health/node_modules/@modelcontextprotocol/sdk/dist/cjs/client/stdio.js');
 
 const REPORT_DIR = '/home/tony/CascadeProjects/chaba/reports';
 const REPORT_ARCHIVE_DIR = join(REPORT_DIR, 'archive');
@@ -55,7 +55,7 @@ async function createMCPClient() {
 
     const transport = new StdioClientTransport({
       command: '/usr/bin/node',
-      args: ['/home/tony/CascadeProjects/chaba/mcp/mcp-health/server.js'],
+      args: ['/home/tony/CascadeProjects/chaba/mcp-servers/mcp-health/server.js'],
       env: {
         HEALTH_CONFIG: '/home/tony/CascadeProjects/chaba/docs/ssot/infrastructure/ssot.health.yml',
         HEALTH_SKILL: '/home/tony/CascadeProjects/chaba/.agents/skills/health-check/SKILL.md'

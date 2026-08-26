@@ -8,7 +8,7 @@ import sys
 import threading
 import time
 
-SERVER = "/home/tony/CascadeProjects/chaba/mcp/mcp-health/server.js"
+SERVER = "/home/tony/CascadeProjects/chaba/mcp-servers/mcp-health/server.js"
 CWD = "/home/tony/CascadeProjects/chaba"
 NODE = os.environ.get("NODE_BIN") or shutil.which("node") or "/home/tony/.n/bin/node"
 INIT_TIMEOUT = 15

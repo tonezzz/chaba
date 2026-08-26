@@ -152,6 +152,23 @@ sections:
         text: Core desktop functionality stays on host for proper integration (GNOME, PipeWire, D-Bus, etc.)
         tags: ['host-services', 'desktop', 'system']
 
+  - title: Container Runtime Policy
+    icon: 🐳
+    layout: list
+    items:
+      - label: Podman for tony-dell
+        text: 'Use rootless Podman + Quadlet for headless, non-GPU services on tony-dell. Pros: rootless by default, no daemon, systemd-friendly, better security. Cons: weaker compose support, manual secret handling, GPU passthrough is awkward.'
+        tags: ['tony-dell', 'podman', 'quadlet', 'policy']
+      - label: Docker for tony-omen
+        text: 'Use Docker + docker compose for GPU/ML services on tony-omen. Pros: mature GPU support, better compose features, nvidia-container-toolkit. Cons: requires docker daemon and group membership.'
+        tags: ['tony-omen', 'docker', 'gpu', 'policy']
+      - label: Symlink docker-compose to podman-compose on tony-dell
+        text: 'Keep the same docker-compose.yml files on tony-dell by symlinking docker-compose to podman-compose, but watch for profiles and depends_on conditions that podman-compose does not fully support.'
+        tags: ['tony-dell', 'podman-compose', 'compatibility']
+      - label: Keep low-latency MCP tools as host processes
+        text: 'Do not containerize mcp-debug, mcp-health, or mcp-focus. These need fast local file access and a persistent stdio/SSE connection to the IDE client.'
+        tags: ['mcp', 'host-process', 'low-latency']
+
   - title: "Tony-Dell podman migration (in progress)"
     icon: "🔄"
     layout: list

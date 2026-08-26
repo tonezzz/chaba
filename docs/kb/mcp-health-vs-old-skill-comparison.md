@@ -134,4 +134,4 @@ The MCP health server provides:
 
 ## Created: 2026-08-12
 ## Context: MCP Health Server Phase 3 Enhanced Monitoring completion
-## Related: docs/ssot/ssot.improvements.yml, mcp/mcp-health/README.md
+## Related: docs/ssot/ssot.improvements.yml, mcp-servers/mcp-health/README.md
