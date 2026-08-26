@@ -73,7 +73,7 @@ def create_app():
         debug=True,
         routes=[
             Mount("/sse", app=sse_app),
-            Mount("/messages", app=transport.handle_post_message),
+            Mount("/sse/messages", app=transport.handle_post_message),
         ],
     )
 
