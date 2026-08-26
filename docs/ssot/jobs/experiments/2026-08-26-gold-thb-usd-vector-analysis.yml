@@ -184,6 +184,15 @@ processing:
         This becomes the new best in the branch. Silver is closely related to
         gold and provides an additional cross-asset signal that the k-NN can
         exploit. app/vector-analysis-ideas.js is updated to show the new curve.
+
+        Follow-up: test multiscale k-NN history in
+        trended_graph_knn_multiscale.py. Instead of one flat window of daily
+        returns, use M blocks of N consecutive daily returns (M*N total lookback).
+        Results:
+        - M=2, N=2: Sharpe 2.96, ann ret 28.5%, vol 9.6%, max DD -3.9%
+        - M=3, N=2: Sharpe 2.86, ann ret 28.0%, vol 9.8%, max DD -6.5%
+        The block structure improves max drawdown but does not beat the flat
+        silver feature vector on Sharpe. The app is left on the silver curve.
     - id: 6
       label: Wavelet coherence
       status: completed
@@ -242,6 +251,8 @@ processing:
       summary: k-NN with alternative distance metrics (correlation, cosine, manhattan).
     - file: experiments/gold-thb-usd-causality/trended_graph_knn_silver.py
       summary: k-NN pattern matcher with silver (XAG) returns in the feature vector.
+    - file: experiments/gold-thb-usd-causality/trended_graph_knn_multiscale.py
+      summary: k-NN with M blocks of N-day history (M*N total lookback).
     - file: experiments/gold-thb-usd-causality/tune_graph_knn.py
       summary: Grid search for WINDOW, K, P_THRESHOLD and EDGE_LOOKBACK.
     - file: experiments/gold-thb-usd-causality/trended_wavelet.py
