@@ -66,10 +66,19 @@ processing:
         XAU/THB 38615.90 ... 153017.21.
     - id: 2
       label: Implement settle-to-THB variant
-      status: pending
+      status: completed
+      completed_at: '2026-08-26'
       notes: |
-        Run the same THB->XAU graph+k-NN signal, but trade XAU/THB. The daily
-        position is +1, -1, or 0, and the return is log(XAU/THB) t+1 - log(XAU/THB) t.
+        Implemented trended_graph_knn_thb.py. It keeps the same THB->XAU/USD
+        Granger edge and k-NN feature vector (USD/THB and XAU/USD returns), but
+        the traded and forecasted return is XAU/THB. Walk-forward OOS 2014-2026:
+        - Sharpe: 2.37
+        - Annual return: 24.2%
+        - Annual vol: 10.2%
+        - Max drawdown: -8.4%
+        - Win rate: 13.2%
+        This does not beat the XAU/USD baseline (Sharpe 2.77, vol 8.0%). The
+        USD/THB leg adds volatility without improving the risk-adjusted return.
     - id: 3
       label: Implement hold-USD variant
       status: pending
