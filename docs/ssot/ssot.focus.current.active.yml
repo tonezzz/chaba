@@ -2,112 +2,97 @@ title: Current Focus — Active
 subtitle: Active shared and branch focuses
 icon: target
 sections:
-- title: Active Branch Focus
-  icon: branch
+- title: Active Shared Focus
+  icon: active
   layout: list
   items:
-  - label: MacBook macOS App Development
-    text: Continue macOS and iOS workstation setup after Tailscale install; full Xcode 15.x is next.
-    branch: macbook
-    status: parked
-    previous_status: active
-    priority: medium
-    started: '2026-08-24'
-    parked: '2026-08-25'
-    tags:
-    - macbook
-    - appdev
-    - xcode
-    estimated_duration: 1 session
-    blocker:
-      reason: MacBook (100.124.59.112) became unreachable again before Xcode install could start
-    subtasks:
-    - label: Bring MacBook online (Tailscale/SSH or Chrome DevTools)
-      status: completed
-      completed_at: '2026-08-24'
-      note: 'SSH via mcp-debug succeeded. Baseline verified: CLT active, Swift 5.8.1, Node v20.17.0, Homebrew 6.0.17, 0 signing
-        identities.'
-    - label: Install or update Xcode 15.x command line tools
-      status: deferred
-      note: Tried `brew install xcodes` and direct GitHub download; both interrupted by intermittent SSH timeouts. Host connectivity
-        unstable.
-      deferred_at: '2026-08-25'
-      resume_note: MacBook offline (last seen 17h); cannot install Xcode until host is reachable
-    - label: Verify macOS app build toolchain
-      status: deferred
-      deferred_at: '2026-08-25'
-      resume_note: MacBook offline; park focus until host is reachable
-  - label: SSOT desync for mcp-rview-oauth-proxy
-    text: "A scan of tony-dell found the mcp-rview-oauth-proxy is already running:\n  - 127.0.0.1:9004 is listening on tony-dell\n\
-      \  - tailscale serve on tony-dell serves https://tony-dell.taila0626a.ts.net/ proxying to 127.0.0.1:9004\n  - the mcp-rview\
-      \ stdio/SSE server is also on tony-dell at 127.0.0.1:9003\nHowever, ssot.services.yml and ssot.health still describe\
-      \ the proxy as a tony-omen service on 9004/443,\nand the tony-omen tailscale serve status does not show a /mcp-rview\
-      \ or 9004 handler.\nThe whole RView MCP stack is already co-located on tony-dell; the migration is effectively done\
-      \ but not recorded.\n"
+  - label: Stabilize tony-dell as the headless primary host
+    text: Move persistent services and headless automation to tony-dell while keeping tony-omen available for interactive work and GPU/ML tasks.
     status: active
-    priority: medium
-    started: '2026-08-25'
-    estimated_duration: 1 session
+    priority: high
+    started: '2026-08-26'
+    estimated_duration: 3 sessions
     tags:
-    - mcp-rview
-    - oauth
-    - ssot
     - tony-dell
-    - sync
+    - headless
+    - failover
+    - mcp
+    - infrastructure
     subtasks:
-    - label: Verify tony-omen has no active mcp-rview-oauth-proxy listener or tailscale serve mapping
+    - label: Audit current tony-dell services and identify missing persistent units
       status: not_started
-    - label: Update docs/ssot/infrastructure/ssot.services.yml to register mcp-rview-oauth-proxy under tony_dell
+    - label: Move low-latency MCP servers (mcp-debug SSE, mcp-health, mcp-focus) to tony-dell
       status: not_started
-    - label: Update affected health files (ssot.health.home.web.yml, ssot.health.mobile.yml, public/ssot.health.mobile.yml)
+    - label: Add tony-dell health checks to SSOT and verify Tailscale reachability
       status: not_started
-    - label: Update ssot.containerization.yml and the active migration job to reflect reality
-      status: not_started
-    - label: Commit the SSOT sync
+    - label: Document tony-omen-to-tony-dell failover procedure
       status: not_started
     request_log: []
     ownership:
       owner: tony
       session: ''
-      locked: true
-      lock_reason: Activated as active focus
-    branch: feature/home-assistant-mcp
-    source: /home/tony/CascadeProjects/chaba/docs/ssot/focus-inbox/2026-08-25-132325-mcp-rview-oauth-proxy-ssot-desync.yml
-- label: Gold/THB/USD Causality Exploration
-  text: |
-    Investigate directional and temporal relationships between gold (XAU/USD),
-    the Thai Baht (USD/THB), and the US Dollar index using Granger causality
-    and other time-series methods.
-  branch: experiment/gold-thb-usd-causality
-  status: active
-  priority: medium
-  started: '2026-08-26'
-  estimated_duration: 2 sessions
-  tags:
-  - gold
-  - thb
-  - usd
-  - causality
-  - experiment
-  subtasks:
-  - label: Define hypotheses and variable set
+      locked: false
+      lock_reason: ''
+- title: Active Branch Focus
+  icon: branch
+  layout: list
+  items:
+  - label: Gold/THB/USD Causality Exploration
+    text: |
+      Investigate directional and temporal relationships between gold (XAU/USD),
+      the Thai Baht (USD/THB), and the US Dollar index using Granger causality
+      and other time-series methods.
+    branch: experiment/gold-thb-usd-causality
+    status: active
+    priority: medium
+    started: '2026-08-26'
+    estimated_duration: 2 sessions
+    tags:
+    - gold
+    - thb
+    - usd
+    - causality
+    - experiment
+    subtasks:
+    - label: Define hypotheses and variable set
+      status: completed
+      completed_at: '2026-08-26'
+    - label: Fetch and cache daily time series
+      status: completed
+      completed_at: '2026-08-26'
+    - label: Clean, align, and stationarize
+      status: not_started
+    - label: Exploratory analysis and visualizations
+      status: not_started
+    - label: Causality and lead-lag tests
+      status: not_started
+    - label: Report and archive
+      status: not_started
+    request_log: []
+    ownership:
+      owner: tony
+      session: ''
+      locked: false
+      lock_reason: ''
+    source: docs/ssot/jobs/experiments/2026-08-26-gold-thb-usd-causality.yml
+- title: Quick Wins
+  icon: quick
+  layout: list
+  items:
+  - label: Log quick wins in this section
+    text: Any task under 15 minutes (e.g. config fix, one-line health check, URL update) goes here. Complete immediately and keep the list trimmed.
     status: completed
-    completed_at: '2026-08-26'
-  - label: Fetch and cache daily time series
-    status: completed
-    completed_at: '2026-08-26'
-  - label: Clean, align, and stationarize
-    status: not_started
-  - label: Exploratory analysis and visualizations
-    status: not_started
-  - label: Causality and lead-lag tests
-    status: not_started
-  - label: Report and archive
-    status: not_started
+    completed: '2026-08-26'
+    priority: low
+    tags:
+    - workflow
+    - quick-wins
   request_log: []
-  ownership:
-    owner: tony
-    session: ''
-    locked: false
-    lock_reason: ''
-  source: docs/ssot/jobs/experiments/2026-08-26-gold-thb-usd-causality.yml
+- title: Hand-Off Queue
+  icon: hand
+  layout: list
+  items: []
+- title: Ready-Safe Queue
+  icon: safe
+  layout: list
+  items: []
