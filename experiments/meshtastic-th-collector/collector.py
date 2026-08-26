@@ -3,6 +3,7 @@
 
 import json
 import os
+import ssl
 import sys
 from datetime import datetime, timezone
 
@@ -14,13 +15,25 @@ TOPIC = os.getenv("MQTT_TOPIC", "msh/TH/#")
 OUTPUT = os.getenv("OUTPUT", "nodes.jsonl")
 RECORD_POSITIONS = os.getenv("RECORD_POSITIONS", "false").lower() in ("1", "true", "yes")
 
+USE_TLS = os.getenv("MQTT_TLS", "false").lower() in ("1", "true", "yes")
+TLS_INSECURE = os.getenv("MQTT_TLS_INSECURE", "false").lower() in ("1", "true", "yes")
+MQTT_USER = os.getenv("MQTT_USER", "")
+MQTT_PASS = os.getenv("MQTT_PASS", "")
+
 
 def on_connect(client, userdata, flags, rc):
     if rc == 0:
         print(f"connected to {BROKER}:{PORT}, subscribing to {TOPIC}")
         client.subscribe(TOPIC)
     else:
-        print(f"connection failed, code {rc}", file=sys.stderr)
+        msg = {
+            1: "unacceptable protocol version",
+            2: "identifier rejected",
+            3: "server unavailable",
+            4: "bad username or password",
+            5: "not authorized",
+        }.get(rc, f"unknown ({rc})")
+        print(f"connection failed: {msg}", file=sys.stderr)
 
 
 def on_message(client, userdata, msg):
@@ -51,6 +64,17 @@ def main():
     client = mqtt.Client()
     client.on_connect = on_connect
     client.on_message = on_message
+
+    if USE_TLS:
+        if TLS_INSECURE:
+            client.tls_set(cert_reqs=ssl.CERT_NONE)
+            client.tls_insecure_set(True)
+        else:
+            client.tls_set()
+
+    if MQTT_USER:
+        client.username_pw_set(MQTT_USER, MQTT_PASS)
+
     client.connect(BROKER, PORT, 60)
     client.loop_forever()
 
