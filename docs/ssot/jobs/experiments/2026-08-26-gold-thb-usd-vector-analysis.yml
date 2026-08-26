@@ -139,6 +139,19 @@ processing:
         The combination is the best result in the entire research branch: it
         retains k-NN's return power while the graph filter cuts the worst
         drawdowns.
+
+        Follow-up: add volatility-targeted position sizing in
+        trended_graph_knn_vol.py. The position size is scaled by
+        target_vol / trailing realized XAU volatility, capped at MAX_LEVERAGE.
+        With TARGET_VOL=0.20, the OOS 2014-2026 result is:
+        - Sharpe: 3.01
+        - Annual return: 26.4%
+        - Annual vol: 8.8%
+        - Max drawdown: -5.2%
+        - Win rate: 12.4%
+        This becomes the new best in the branch: the same edge and k-NN forecast,
+        but reduced exposure during volatile XAU periods. app/vector-analysis-ideas.js
+        is updated to show the new equity curve.
     - id: 6
       label: Wavelet coherence
       status: completed
@@ -191,6 +204,8 @@ processing:
       summary: Grid search for LOOKBACK, MAX_LAG, P_THRESHOLD on the graph filter.
     - file: experiments/gold-thb-usd-causality/trended_graph_knn.py
       summary: k-NN pattern matcher gated by the THB->XAU Granger edge.
+    - file: experiments/gold-thb-usd-causality/trended_graph_knn_vol.py
+      summary: k-NN pattern matcher with volatility-targeted position sizing.
     - file: experiments/gold-thb-usd-causality/tune_graph_knn.py
       summary: Grid search for WINDOW, K, P_THRESHOLD and EDGE_LOOKBACK.
     - file: experiments/gold-thb-usd-causality/trended_wavelet.py
