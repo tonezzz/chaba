@@ -1,0 +1,10 @@
+version: "3.8"
+
+services:
+  mqtt-broker:
+    image: docker.io/eclipse-mosquitto:2
+    container_name: meshtastic-th-mqtt
+    ports:
+      - "1883:1883"
+    volumes:
+      - ./config/mosquitto.conf:/mosquitto/config/mosquitto.conf:ro
