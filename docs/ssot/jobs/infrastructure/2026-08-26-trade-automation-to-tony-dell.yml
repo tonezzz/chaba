@@ -1,0 +1,119 @@
+title: Migrate trade-automation from tony-omen to tony-dell
+subtitle: Move the background trade automation worker to the headless primary host
+icon: container
+id: 2026-08-26-trade-automation-to-tony-dell
+status: draft
+owner: tony
+project: chaba
+started: '2026-08-26'
+estimated_duration: 1 session
+
+planning:
+  goal: |
+    Run the trade-automation container on tony-dell instead of tony-omen, leaving
+    only GPU-bound and hardware-bound services on the interactive workstation.
+  rationale: |
+    - trade-api is already healthy on tony-dell (podman, 100.68.142.13:9002).
+    - trade-automation uses the same image and only talks to trade-api and the
+      trade postgres instance; no GPU or special hardware access is required.
+    - tony-omen still has legacy docker copies of trade-api, status-api and helm
+      that were just cleaned up; trade-automation is the next logical move.
+  scope:
+    In scope:
+    - Create a rootless podman Quadlet for trade-automation on tony-dell.
+    - Copy/sync the trade project .env and data/config/logs paths.
+    - Update the Caddy /apps/trade reverse proxy if needed.
+    - Update SSOT: ssot.services.yml, ssot.health.home.other.yml.
+    Out of scope:
+    - Migrating the trade postgres DB (already on tony-omen as the local primary
+      for the trade project; use existing connection string or decide later).
+    - GPU workloads (imagen2, ollama) remain on tony-omen.
+  prerequisites:
+    - trade-api is stable on tony-dell.
+    - The trade project checkout on tony-dell is at /home/tony/CascadeProjects/trade
+      or can be rsynced from tony-omen.
+    - podman and quadlet are available on tony-dell (already used for trade-api).
+  risks:
+    - trade-automation depends on the trade postgres container on tony-omen
+      (DB_HOST=postgres in docker-compose); moving it to tony-dell means it must
+      reach postgres over the tailnet. Use the tony-omen Tailscale IP
+      (100.75.102.88:5432) or create a local tony-dell postgres mirror.
+    - Scheduled jobs may be missed during the switch. A short maintenance window
+      is acceptable.
+
+implementation:
+  steps:
+    - id: 1
+      label: Inspect existing trade-api podman setup on tony-dell
+      status: pending
+      notes: |
+        Find the Quadlet files in ~/.config/containers/systemd on tony-dell and
+        the image name (trade-trade-api). Confirm the trade project path used.
+    - id: 2
+      label: Create trade-automation Quadlet on tony-dell
+      status: pending
+      notes: |
+        ~/.config/containers/systemd/trade-automation.container:
+          [Container]
+          Image=trade-trade-api
+          ContainerName=trade-automation
+          Environment=DB_TYPE=postgresql DB_HOST=100.75.102.88 DB_PORT=5432
+            DB_NAME=trade DB_USER=chaba DATA_QUALITY_ENABLED=true
+            AUTOMATION_ENABLED=true
+          Exec=python /app/scripts/auto_update.py --scheduled
+          Volume=/home/tony/CascadeProjects/trade/data:/app/data
+          Volume=/home/tony/CascadeProjects/trade/config:/app/config
+          Volume=/home/tony/CascadeProjects/trade/logs:/app/logs
+          Volume=/home/tony/.config/secrets/trade.env:/.env:ro
+          Network=host
+
+          [Service]
+          Restart=always
+
+          [Install]
+          WantedBy=default.target
+    - id: 3
+      label: Sync trade project data/config to tony-dell
+      status: pending
+      notes: |
+        rsync -avz --delete /home/tony/CascadeProjects/trade tony-dell:/home/tony/CascadeProjects/
+        Copy /home/tony/CascadeProjects/trade/.env or the relevant .env file to tony-dell.
+    - id: 4
+      label: Start and verify trade-automation on tony-dell
+      status: pending
+      notes: |
+        systemctl --user daemon-reload
+        systemctl --user start trade-automation
+        podman logs --follow trade-automation
+        Confirm no DB connection or trade-api errors.
+    - id: 5
+      label: Stop and remove tony-omen trade-automation docker container
+      status: pending
+      notes: |
+        docker stop trade-automation && docker rm trade-automation
+        The tony-omen trade project docker compose will no longer need this
+        service if it is removed from the compose or replaced by a tony-dell host.
+    - id: 6
+      label: Update health checks
+      status: pending
+      notes: |
+        docs/ssot/infrastructure/ssot.health.home.other.yml:
+          trade-automation: change host to tony_dell, verification/recovery to podman
+        docs/ssot/infrastructure/ssot.services.yml tony-dell section:
+          add trade-automation container, move note from tony-omen if any.
+  verification:
+    - ssh tony-dell podman ps | grep trade-automation
+    - ssh tony-dell podman logs trade-automation --tail 20
+    - mcp-health check_health trade-automation
+    - mcp-health get_health_status automation
+  rollback:
+    - Stop and disable trade-automation Quadlet on tony-dell.
+    - Restart the docker trade-automation container on tony-omen from the trade
+      docker-compose.yml.
+    - Revert SSOT health check back to tony_omen / docker.
+
+notes:
+  - The trade postgres DB is intentionally left on tony-omen for now. The
+    migration uses the tailnet IP 100.75.102.88 to reach it.
+  - This follows the same pattern as trade-api, raceman-php, raceman-web,
+    mddb, and weaviate migrations already completed on tony-dell.
