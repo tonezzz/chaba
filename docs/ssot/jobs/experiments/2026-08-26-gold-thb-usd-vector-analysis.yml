@@ -1,0 +1,129 @@
+title: Gold/THB/USD Advanced Vector Analysis
+subtitle: Explore alternative vector-analysis methods for THB-driven XAU/USD dynamics
+icon: target
+
+planning:
+  goal: |
+    Evaluate a second wave of vector and latent-space methods for describing and
+    predicting the THB->XAU relationship, beyond the initial vector-search ideas.
+  scope: |
+    - Dynamic Time Warping (DTW) for elastic pattern matching of THB and XAU series.
+    - Delay-embedding / Takens-style k-NN on USD/THB returns.
+    - Singular Spectrum Analysis (SSA) as a time-aware signal decomposition.
+    - Time-varying / Markov-switching VAR and impulse responses.
+    - Graph/network view of rolling cross-correlation and transfer entropy.
+    - Wavelet coherence to find time-frequency lead-lag bands.
+    - A companion app page to inspect each idea and later its live backtest results.
+  out_of_scope: |
+    - Real-time trading system implementation.
+    - External deep-learning model training beyond scikit-learn/statsmodels.
+    - Live deployment to the trade-api stack.
+  success_criteria:
+    - A reproducible prototype for at least one of the six methods.
+    - A comparison table or chart against the 2-day THB trend and the best k-NN variant.
+    - An app page with an explanation card for each method and a live results section.
+  risks:
+    - Each method adds hyper-parameters; mitigate with walk-forward calibration on historical data only.
+    - Some methods need longer series or more compute; mitigate by scoping one method per session.
+    - Risk of overfitting in high-dimensional embeddings; mitigate by keeping windows short and out-of-sample.
+  resources:
+    - experiments/gold-thb-usd-causality/data/aligned.csv
+    - experiments/gold-thb-usd-causality/data/returns.csv
+    - python3 with pandas, numpy, scikit-learn, scipy, and statsmodels.
+  owner: tony
+  estimated_duration: 3 sessions
+
+processing:
+  status: not_started
+  started_at: '2026-08-26'
+  steps:
+    - id: 1
+      label: Dynamic Time Warping (DTW) similarity
+      status: not_started
+      notes: |
+        Align THB and XAU return windows elastically before scoring similarity.
+        Use the DTW distance as a feature for a nearest-neighbor forecast or as a
+        threshold for regime classification.
+    - id: 2
+      label: Delay-embedding k-NN (Takens-style)
+      status: not_started
+      notes: |
+        Build a reconstructed phase-space vector from delayed copies of USD/THB
+        returns. Search historical points in that space to forecast the next XAU move.
+    - id: 3
+      label: Singular Spectrum Analysis (SSA)
+      status: not_started
+      notes: |
+        Decompose THB and/or XAU returns into trend, oscillatory, and noise
+        components. Use the reconstructed signal as a cleaner input to the existing
+        threshold or k-NN rules.
+    - id: 4
+      label: Time-varying / Markov-switching VAR
+      status: not_started
+      notes: |
+        Extend the existing VAR by allowing the THB->XAU impulse response to vary
+        across regimes. Estimate a simple Markov-switching or time-varying VAR and
+        compare out-of-sample impulse responses.
+    - id: 5
+      label: Graph / network view
+      status: not_started
+      notes: |
+        Treat XAU, THB, and USD/EUR as nodes. Build a rolling directed graph from
+        cross-correlation, Granger-causality p-values, or transfer entropy. Use graph
+        clusters as regime signals.
+    - id: 6
+      label: Wavelet coherence
+      status: not_started
+      notes: |
+        Run continuous wavelet transforms on THB and XAU. Identify time-frequency
+        bands with high coherence and non-zero phase, indicating lead-lag behavior.
+    - id: 7
+      label: App page to inspect ideas
+      status: not_started
+      notes: |
+        Create vector-analysis-ideas.html and vector-analysis-ideas.js with an
+        explanation card for each method and a placeholder for live backtest curves
+        as methods are implemented.
+  decisions:
+    - label: Keep variants research-only
+      rationale: |
+        These are exploratory latent-space and frequency-domain alternatives. No live
+        trading integration without a separate prototype and validation focus.
+  changes:
+    - file: experiments/gold-thb-usd-causality/app/vector-analysis-ideas.html
+      summary: Exploratory app page for the 6 advanced vector-analysis ideas.
+    - file: experiments/gold-thb-usd-causality/app/vector-analysis-ideas.js
+      summary: Client-side rendering for the vector-analysis ideas page.
+    - file: docs/ssot/jobs/experiments/2026-08-26-gold-thb-usd-vector-analysis.yml
+      summary: SSOT job defining the advanced vector-analysis exploration.
+
+followup:
+  verification:
+    - Open the app page and confirm all 6 idea cards render.
+  rollback_plan:
+    - Delete the new SSOT file and the app/vector-analysis-ideas.* files.
+  handoff:
+    - tony for promotion to a prototype if any variant beats the 2-day trend baseline.
+  deferred:
+    - Live data ingestion.
+    - Trade-api integration.
+
+report:
+  status: not_started
+  summary: |
+    Placeholder. This SSOT will be updated as each of the 6 methods is prototyped
+    and backtested.
+  links:
+    - experiments/gold-thb-usd-causality/app/vector-analysis-ideas.html
+    - docs/ssot/jobs/experiments/2026-08-26-gold-thb-usd-vector-analysis.yml
+  lessons_learned: []
+
+config:
+  version: 1
+  created_at: '2026-08-26'
+  last_updated: '2026-08-26'
+  maintainer: tony
+  related_files:
+    - docs/ssot/templates/job.yml
+    - experiments/gold-thb-usd-causality/analyze.py
+    - experiments/gold-thb-usd-causality/trended.py
