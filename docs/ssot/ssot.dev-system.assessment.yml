@@ -23,13 +23,17 @@ pros:
 - label: Stable master
   evidence: SSOT validation passes, ssot_warnings = 0, and service_errors = 0
   trend: stable
+- label: Clean working tree
+  evidence: 0 untracked or modified file(s) on the canonical worktree
+  trend: stable
+
 cons:
-- label: Uncommitted working tree
+- label: Real CI smoke tests not started
   severity: medium
-  evidence: 0 untracked or modified file(s)
+  evidence: live_mcp_smoke_ci is still false; the improvement was added but not started
   owner: tony
-  status: resolved
-  improvement: Commit or .gitignore outstanding changes before the next session
+  status: open
+  improvement: Add CI smoke tests to .github/workflows and at least one live MCP call per commit
 improvements:
 - label: Merge one long-tail branch per session
   source: ssot.focus.yml
