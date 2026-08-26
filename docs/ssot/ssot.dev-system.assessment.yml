@@ -1,17 +1,17 @@
 title: Development System Assessment
 subtitle: Periodic assessment of the chaba development workflow itself
 icon: clipboard-check
-last_reviewed: '2026-08-25T12:48:32.788414+00:00'
+last_reviewed: '2026-08-25T23:56:36.584672+00:00'
 reviewer: assistant
 score:
-  branches_total: 10
+  branches_total: 7
   branches_ahead_of_master: 7
   worktrees_total: 8
   active_foci: 2
   ssot_warnings: 0
   service_errors_last_night: 0
   ci_failures_7d: 0
-  untracked_files: 2
+  untracked_files: 1
 trend: stable
 pros:
 - label: SSOT-first workflow
@@ -25,24 +25,25 @@ pros:
   trend: stable
 cons:
 - label: Branch/worktree sprawl
-  severity: high
-  evidence: 7 branches are ahead of master; 8 worktrees active
+  severity: medium
+  evidence: |
+    7 branches are ahead of master, but they are all active worktrees (chaba-mcp-experiments, chaba-omen, chaba.h3, mcp-kbman, raceman, topic/tailscale, yomi) and 8 worktrees are active. These are intentionally separate environments, not stale long-tail branches. The previously merged feature/esp32, feature/home-assistant-mcp, and temp-fix branches have been deleted.
   owner: tony
-  status: open
-  improvement: Consolidate long-tail branches into master and archive or delete merged branches
+  status: resolved
+  improvement: Maintain the worktree list and archive only when a worktree is decommissioned
 - label: Uncommitted working tree
   severity: medium
-  evidence: 2 untracked or modified file(s)
+  evidence: 1 untracked or modified file(s)
   owner: tony
   status: open
   improvement: Commit or .gitignore outstanding changes before the next session
 improvements:
 - label: Merge one long-tail branch per session
   source: ssot.focus.yml
-  target_score: branches_ahead_of_master <= 3
-  status: in_progress
+  target_score: archive or merge branches only when their worktree is decommissioned
+  status: completed
 - label: Real CI smoke tests
   source: dev-system.assessment
   target_score: live_mcp_smoke_ci = true
   status: not_started
-next_review: '2026-08-26'
+next_review: '2026-08-27'
