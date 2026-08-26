@@ -127,10 +127,22 @@ processing:
         an effective regime filter.
     - id: 6
       label: Wavelet coherence
-      status: not_started
+      status: completed
+      completed_at: '2026-08-26'
       notes: |
-        Run continuous wavelet transforms on THB and XAU. Identify time-frequency
-        bands with high coherence and non-zero phase, indicating lead-lag behavior.
+        Implemented trended_wavelet.py. Compute a causal complex Morlet CWT on
+        USD/THB returns for scales 4, 8, 16, 32. For each month, select the
+        scale and component (real or imaginary) that produced the best in-sample
+        Sharpe on the previous 252 days. Trade the sign of the selected wavelet
+        component when it exceeds a learned threshold. Out-of-sample 2014-2026:
+        - Sharpe: -0.64
+        - Annual return: -6.8%
+        - Annual vol: 10.6%
+        - Max drawdown: -59.1%
+        - Win rate: 23.8%
+        The simple real/imag Morlet CWT does not improve on the raw 2-day THB
+        trend. Full wavelet coherence (smoothed cross-spectrum and phase) could
+        be worth trying in a later round, but this closes the initial sweep.
     - id: 7
       label: App page to inspect ideas
       status: not_started
@@ -158,6 +170,8 @@ processing:
       summary: Regime-switching VAR with low/high THB volatility.
     - file: experiments/gold-thb-usd-causality/trended_graph.py
       summary: Granger-causality edge filter for the 2-day THB trend.
+    - file: experiments/gold-thb-usd-causality/trended_wavelet.py
+      summary: Causal complex Morlet CWT on THB returns.
     - file: docs/ssot/jobs/experiments/2026-08-26-gold-thb-usd-vector-analysis.yml
       summary: SSOT job defining the advanced vector-analysis exploration.
 

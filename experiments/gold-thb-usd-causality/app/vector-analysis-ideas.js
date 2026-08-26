@@ -135,7 +135,7 @@ async function fetchCSV(path, column = 'equity') {
 async function renderEquity() {
   const container = document.getElementById('equity-curves');
   try {
-    const [trended, knn, dtw, delay, ssa, rvar, graph] = await Promise.all([
+    const [trended, knn, dtw, delay, ssa, rvar, graph, wavelet] = await Promise.all([
       fetchCSV('data/trended_equity.csv', 'equity').catch(() => null),
       fetchCSV('data/trended_knn_equity.csv', 'equity').catch(() => null),
       fetchCSV('data/trended_dtw_equity.csv', 'equity').catch(() => null),
@@ -143,12 +143,13 @@ async function renderEquity() {
       fetchCSV('data/trended_ssa_equity.csv', 'equity').catch(() => null),
       fetchCSV('data/trended_regime_var_equity.csv', 'equity').catch(() => null),
       fetchCSV('data/trended_graph_equity.csv', 'equity').catch(() => null),
+      fetchCSV('data/trended_wavelet_equity.csv', 'equity').catch(() => null),
     ]);
-    if (!graph) {
+    if (!wavelet) {
       container.innerHTML = '<p class="muted">Vector-analysis equity data not yet available. Run the backtests first.</p>';
       return;
     }
-    const dates = graph.map(r => r.date);
+    const dates = wavelet.map(r => r.date);
     const traces = [];
     if (trended) {
       traces.push({ x: dates, y: trended.map(r => r.equity), mode: 'lines', name: '2-day THB trend', line: { color: '#0d6efd' } });
@@ -168,7 +169,10 @@ async function renderEquity() {
     if (rvar) {
       traces.push({ x: dates, y: rvar.map(r => r.equity), mode: 'lines', name: 'Regime VAR (l=2, vol=10)', line: { color: '#e83e8c' } });
     }
-    traces.push({ x: dates, y: graph.map(r => r.equity), mode: 'lines', name: 'Graph edge filter', line: { color: '#6610f2' } });
+    if (graph) {
+      traces.push({ x: dates, y: graph.map(r => r.equity), mode: 'lines', name: 'Graph edge filter', line: { color: '#6610f2' } });
+    }
+    traces.push({ x: dates, y: wavelet.map(r => r.equity), mode: 'lines', name: 'Wavelet (scales 4,8,16,32)', line: { color: '#0dcaf0' } });
     plot('equity-curves', traces, {
       title: 'Vector-analysis results vs baselines (log scale)',
       xaxis: { title: 'Date' },
