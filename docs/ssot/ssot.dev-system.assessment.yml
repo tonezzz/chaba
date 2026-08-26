@@ -1,17 +1,17 @@
 title: Development System Assessment
 subtitle: Periodic assessment of the chaba development workflow itself
 icon: clipboard-check
-last_reviewed: '2026-08-25T23:56:36.584672+00:00'
+last_reviewed: '2026-08-26T00:00:05.500486+00:00'
 reviewer: assistant
 score:
   branches_total: 7
-  branches_ahead_of_master: 7
+  branches_ahead_of_master: 0
   worktrees_total: 8
   active_foci: 2
   ssot_warnings: 0
   service_errors_last_night: 0
   ci_failures_7d: 0
-  untracked_files: 1
+  untracked_files: 0
 trend: stable
 pros:
 - label: SSOT-first workflow
@@ -24,18 +24,11 @@ pros:
   evidence: SSOT validation passes, ssot_warnings = 0, and service_errors = 0
   trend: stable
 cons:
-- label: Branch/worktree sprawl
-  severity: medium
-  evidence: |
-    7 branches are ahead of master, but they are all active worktrees (chaba-mcp-experiments, chaba-omen, chaba.h3, mcp-kbman, raceman, topic/tailscale, yomi) and 8 worktrees are active. These are intentionally separate environments, not stale long-tail branches. The previously merged feature/esp32, feature/home-assistant-mcp, and temp-fix branches have been deleted.
-  owner: tony
-  status: resolved
-  improvement: Maintain the worktree list and archive only when a worktree is decommissioned
 - label: Uncommitted working tree
   severity: medium
-  evidence: 1 untracked or modified file(s)
+  evidence: 0 untracked or modified file(s)
   owner: tony
-  status: open
+  status: resolved
   improvement: Commit or .gitignore outstanding changes before the next session
 improvements:
 - label: Merge one long-tail branch per session
