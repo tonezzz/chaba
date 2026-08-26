@@ -1,0 +1,106 @@
+title: Gold/THB/USD Causality Exploration
+subtitle: Investigate directional and temporal relationships between gold (XAU/USD), the Thai Baht (USD/THB), and the US Dollar index
+icon: target
+
+planning:
+  goal: |
+    Determine whether movements in gold (XAU/USD), USD/THB, and broader USD strength
+    lead, lag, or co-move with each other, and document any statistically robust
+    causal links suitable for later forecasting or hedging experiments.
+  scope: |
+    - Collect and align daily close prices for XAU/USD and USD/THB.
+    - Optionally include a USD proxy such as DXY or a trade-weighted USD basket.
+    - Clean, normalize, and stationarize the series where needed.
+    - Run exploratory correlation, Granger-causality, and transfer-entropy tests.
+    - Produce a short report with findings and code artifacts.
+  out_of_scope: |
+    - Real-time trading system implementation.
+    - Options, derivatives, or position sizing.
+    - Live deployment to the trade-api stack.
+  success_criteria:
+    - Daily aligned time series spanning at least 6 months available in the repo.
+    - At least one reproducible causality/lead-lag test with results and p-values.
+    - A documented conclusion on whether any pair reliably leads the others.
+  risks:
+    - Alpha Vantage rate limits or data gaps; mitigate with MetalPrices fallback and local caching.
+    - Spurious regression due to non-stationary series; mitigate with differencing and unit-root tests.
+    - Correlation does not imply causation; mitigate with multiple tests and out-of-sample checks.
+  resources:
+    - docs/ssot/infrastructure/ssot.mcp.yml for the alphavantage MCP endpoint.
+    - docs/ssot/apps/ssot.apps.trade.yml for existing commodity/FX data conventions.
+    - python3 with pandas, statsmodels, numpy, and scipy.
+  owner: tony
+  estimated_duration: 2 sessions
+
+processing:
+  status: not_started
+  started_at: null
+  steps:
+    - id: 1
+      label: Define hypotheses and variable set
+      status: not_started
+      notes: |
+        Hypotheses to test: gold changes lead USD/THB; USD/THB leads gold;
+        both respond contemporaneously to external USD shocks.
+    - id: 2
+      label: Fetch and cache daily time series
+      status: not_started
+      notes: |
+        Use alphavantage MCP (or curl fallback) to get XAU/USD and USD/THB daily closes.
+        Store raw CSVs under experiments/gold-thb-usd-causality/data/.
+    - id: 3
+      label: Clean, align, and stationarize
+      status: not_started
+      notes: |
+        Handle missing dates, merge on common trading days, apply log returns or first differences.
+    - id: 4
+      label: Exploratory analysis and visualizations
+      status: not_started
+      notes: |
+        Rolling correlations, cross-correlograms, and cointegration tests.
+    - id: 5
+      label: Causality and lead-lag tests
+      status: not_started
+      notes: |
+        Granger causality (both directions), transfer entropy, and impulse-response from a simple VAR.
+    - id: 6
+      label: Report and archive
+      status: not_started
+      notes: |
+        Update this SSOT report section, store notebook/script, and decide whether to promote to a focus.
+  decisions: []
+  changes: []
+
+followup:
+  verification:
+    - Re-run the analysis script end-to-end in a fresh checkout.
+    - Inspect output CSV and plots manually for obvious data errors.
+  rollback_plan:
+    - Delete experiments/gold-thb-usd-causality/ and this SSOT file.
+  handoff:
+    - tony for promotion to a focus or trade-api prototype.
+  deferred:
+    - Integration with trade-api or scheduled ingestion.
+    - Live dashboard or alerting.
+
+report:
+  status: not_started
+  completed_at: null
+  summary: ''
+  metrics:
+    - observations: 0
+    - test_pairs: 0
+    - significant_leads: 0
+  links: []
+  kb_review: []
+  lessons_learned: []
+
+config:
+  version: 1
+  created_at: '2026-08-26'
+  last_updated: '2026-08-26'
+  maintainer: tony
+  related_files:
+    - docs/ssot/templates/job.yml
+    - docs/ssot/infrastructure/ssot.mcp.yml
+    - docs/ssot/apps/ssot.apps.trade.yml
