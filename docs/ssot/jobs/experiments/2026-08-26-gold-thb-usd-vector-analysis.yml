@@ -152,6 +152,15 @@ processing:
         This becomes the new best in the branch: the same edge and k-NN forecast,
         but reduced exposure during volatile XAU periods. app/vector-analysis-ideas.js
         is updated to show the new equity curve.
+
+        Follow-up: test alternative k-NN distance metrics in
+        trended_graph_knn_dist.py (correlation, cosine, manhattan). Results:
+        - Euclidean (baseline): Sharpe 2.77, ann ret 22.1%, vol 8.0%, max DD -7.5%
+        - Manhattan: Sharpe 2.51, ann ret 24.7%, vol 9.9%, max DD -7.2%
+        - Cosine: Sharpe 2.28, ann ret 16.8%, vol 7.4%, max DD -6.9%
+        - Correlation: Sharpe 1.63, ann ret 12.3%, vol 7.6%, max DD -10.7%
+        Euclidean remains the best. The app is left highlighting the vol-sized
+        equity curve as the new best.
     - id: 6
       label: Wavelet coherence
       status: completed
@@ -206,6 +215,8 @@ processing:
       summary: k-NN pattern matcher gated by the THB->XAU Granger edge.
     - file: experiments/gold-thb-usd-causality/trended_graph_knn_vol.py
       summary: k-NN pattern matcher with volatility-targeted position sizing.
+    - file: experiments/gold-thb-usd-causality/trended_graph_knn_dist.py
+      summary: k-NN with alternative distance metrics (correlation, cosine, manhattan).
     - file: experiments/gold-thb-usd-causality/tune_graph_knn.py
       summary: Grid search for WINDOW, K, P_THRESHOLD and EDGE_LOOKBACK.
     - file: experiments/gold-thb-usd-causality/trended_wavelet.py
