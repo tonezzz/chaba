@@ -1,148 +1,85 @@
-title: Gold/THB/USD Settlement Choice
-subtitle: Explore whether to settle gold proceeds in USD or THB after a THB-driven XAU/USD signal
-icon: target
+title: Gold/THB/USD THB Settlement Choice
+subtitle: Compare holding USD vs settling immediately to THB for gold P/L
+icon: scale
 
 planning:
   goal: |
-    Determine whether a THB-base view changes the gold-trading result. When the
-    existing signal says "sell gold for USD" or "buy gold with USD", the app can
-    also choose the settlement currency: hold USD or convert to THB. This SSOT
-    compares the two settlement choices over the same 2014-2026 walk-forward
-    out-of-sample period.
+    Determine whether converting XAU/USD trade proceeds to THB immediately
+    (XAU/THB return) changes the risk-adjusted performance of the best
+    silver graph+k-NN signal.
   scope: |
-    - Build THB-base data: XAU/THB = XAU/USD * USD/THB and USD/THB from the
-      existing daily close series.
-    - Implement a "settle to THB" variant where the gold position is measured in
-      XAU/THB returns and the final P/L is in THB.
-    - Implement a "hold USD" variant where the gold position is measured in
-      XAU/USD returns and the USD/THB mark-to-market is added to the daily P/L.
-    - Implement a "smart settle" variant that chooses the currency with the
-      better expected next-day return based on the k-NN pattern.
-    - Build a web page (app/thb-settlement.html) to compare the equity curves.
-    - Compare all THB-base variants to the existing XAU/USD graph+k-NN baseline.
+    - Build an aligned THB-base CSV from XAU/USD and USD/THB.
+    - Run the same graph+k-NN method on XAU/THB using THB and XAU/USD
+      returns as features.
+    - Compare the XAU/USD and XAU/THB equity curves in the app.
   out_of_scope: |
-    - Real-time trade execution or trade-api integration.
-    - FX transaction costs beyond a fixed USD/THB spread.
-    - Thai tax, regulatory, or custody considerations.
-    - Optimising the gold-forecasting signal itself; use the existing THB->XAU
-      graph+k-NN signal unchanged.
+    - Live trading implementation.
+    - Transaction costs for the USD/THB conversion leg.
+    - Tax or custody considerations.
   success_criteria:
-    - XAU/THB and USD/THB data aligned to the 2014-2026 XAU/USD/THB calendar.
-    - At least two settlement variants run through the walk-forward OOS protocol.
-    - A metrics table comparing THB-base variants to the XAU/USD baseline.
-    - A web page that lets the user toggle between settlement curves.
-    - A commit on a new research/thb-base-settlement branch.
-  risks:
-    - XAU/THB is just XAU/USD plus USD/THB, so the THB-base result may be a
-      leveraged or sign-flipped version of the existing signal rather than a new
-      alpha source.
-    - USD/THB can be strongly correlated with XAU/USD, making the "hold USD"
-      return highly correlated with the gold return; the settlement choice may
-      not diversify meaningfully.
-    - Switching settlement currency daily could incur realistic FX costs not
-      captured in the backtest; mitigate by adding a per-switch transaction cost.
-  resources:
-    - experiments/gold-thb-usd-causality/data/aligned.csv
-    - experiments/gold-thb-usd-causality/data/xau_usd.csv
-    - experiments/gold-thb-usd-causality/data/usd_thb.csv
-    - experiments/gold-thb-usd-causality/trended_graph_knn.py
-    - python3 with pandas, numpy, scikit-learn, statsmodels.
-  owner: tony
-  estimated_duration: 1-2 sessions
+    - Both equity curves are generated and plotted side-by-side.
+    - A results table quantifies the difference in Sharpe, return, vol, and max DD.
 
 processing:
   status: in_progress
+  current_step: 0
   started_at: '2026-08-26'
-  steps:
-    - id: 1
-      label: Prepare THB-base data
-      status: completed
-      completed_at: '2026-08-26'
-      notes: |
-        Computed XAU/THB = XAU/USD * USD/THB from data/aligned.csv.
-        Saved data/aligned_thb_base.csv with 3,076 observations from
-        2014-11-07 to 2026-08-25. Columns: date, xau_usd, usd_thb, xau_thb.
-        Sample: XAU/USD 1178.03 ... 4683.72; USD/THB 32.78 ... 32.67;
-        XAU/THB 38615.90 ... 153017.21.
-    - id: 2
-      label: Implement settle-to-THB variant
-      status: completed
-      completed_at: '2026-08-26'
-      notes: |
-        Implemented trended_graph_knn_thb.py. It keeps the same THB->XAU/USD
-        Granger edge and k-NN feature vector (USD/THB and XAU/USD returns), but
-        the traded and forecasted return is XAU/THB. Walk-forward OOS 2014-2026:
-        - Sharpe: 2.37
-        - Annual return: 24.2%
-        - Annual vol: 10.2%
-        - Max drawdown: -8.4%
-        - Win rate: 13.2%
-        This does not beat the XAU/USD baseline (Sharpe 2.77, vol 8.0%). The
-        USD/THB leg adds volatility without improving the risk-adjusted return.
-    - id: 3
-      label: Implement hold-USD variant
-      status: pending
-      notes: |
-        Trade XAU/USD as before. On days when the position is flat in gold,
-        convert the cash position to/from THB based on the USD/THB trend, or hold
-        USD and add mark-to-market P/L from USD/THB movement.
-    - id: 4
-      label: Implement smart settle variant
-      status: pending
-      notes: |
-        Add a k-NN or threshold rule that decides whether to keep proceeds in USD
-        or THB after a gold trade, based on the next-day USD/THB expectation.
-    - id: 5
-      label: Run OOS and compare to baseline
-      status: pending
-      notes: |
-        Walk-forward 2014-2026. Compare Sharpe, return, volatility, max drawdown,
-        and win rate against the XAU/USD graph+k-NN baseline.
-    - id: 6
-      label: Build app/thb-settlement.html
-      status: pending
-      notes: |
-        A companion page with equity curves for settle-to-THB, hold-USD, and the
-        existing XAU/USD baseline.
-    - id: 7
-      label: Commit and push
-      status: pending
-      notes: |
-        Commit the SSOT, data prep scripts, backtests, and web page on the new
-        branch. Create a milestone only if a THB-base variant beats the baseline.
-  decisions: []
-  changes: []
-
-report:
-  status: pending
-  summary: |
-    Pending. The goal is to quantify whether the settlement currency choice adds
-    meaningful OOS value to the existing gold signal.
-  metrics: []
-  links: []
-  lessons_learned: []
-
-followup:
-  verification:
-    - Confirm XAU/THB and USD/THB series have no missing values.
-    - Re-run the XAU/USD baseline to confirm the comparison point.
-  rollback_plan:
-    - Remove data/aligned_thb_base.csv.
-    - Remove the THB-base variant .py files if they are created.
-    - Revert app changes if they do not improve the comparison.
-  handoff:
-    - tony for integration into the causality explorer or app.
-  deferred:
-    - Live FX execution.
-    - Multi-asset portfolio with both XAU and USD as independent positions.
-    - Dynamic leverage on the currency leg.
-
-config:
-  version: 1
-  created_at: '2026-08-26'
   last_updated: '2026-08-26'
-  maintainer: tony
-  related_files:
-    - docs/ssot/jobs/experiments/2026-08-26-gold-thb-usd-causality.yml
-    - docs/ssot/jobs/experiments/2026-08-26-gold-thb-usd-vector-analysis.yml
-    - experiments/gold-thb-usd-causality/app/vector-analysis-ideas.js
+  notes: |
+    Initial run of trended_graph_knn_thb.py (W=2, K=30, P_THRESHOLD=0.01,
+    EDGE_LOOKBACK=504) on the THB-base data:
+    - Sharpe: 2.37
+    - Annual return: 24.2%
+    - Annual vol: 10.2%
+    - Max drawdown: -8.4%
+    - Win rate: 13.2%
+    For comparison, the current XAU/USD silver graph+k-NN (W=2, K=10):
+    - Sharpe: 3.43
+    - Annual return: 34.0%
+    - Annual vol: 9.9%
+    - Max drawdown: -6.7%
+    - Win rate: 15.1%
+    Holding USD and converting only when needed (XAU/USD) is currently better
+    on a risk-adjusted basis. The XAU/THB settlement underperforms mainly
+    because the USD/THB carry is volatile and slightly detracts from the
+    concentrated XAU/USD signal.
+
+steps:
+  - id: 1
+    label: Build THB-base data
+    status: completed
+    completed_at: '2026-08-26'
+    notes: prepare_thb_base.py writes data/aligned_thb_base.csv with date, xau_usd, usd_thb, xau_thb.
+  - id: 2
+    label: Run graph+k-NN on XAU/THB
+    status: completed
+    completed_at: '2026-08-26'
+    notes: trended_graph_knn_thb.py generated data/trended_graph_knn_thb_equity.csv and results JSON.
+  - id: 3
+    label: App page for THB settlement comparison
+    status: completed
+    completed_at: '2026-08-26'
+    notes: app/thb-settlement.html + app/thb-settlement.js plot XAU/USD silver vs XAU/THB curves.
+  - id: 4
+    label: Tune THB-base variant
+    status: pending
+    notes: Grid search WINDOW and K for trended_graph_knn_thb.py to verify the underperformance is robust.
+  - id: 5
+    label: Document conclusion
+    status: pending
+    notes: Update this SSOT with the final tuned result and a recommendation.
+
+changes:
+  - file: experiments/gold-thb-usd-causality/prepare_thb_base.py
+    summary: Build XAU/THB aligned data from XAU/USD and USD/THB.
+  - file: experiments/gold-thb-usd-causality/trended_graph_knn_thb.py
+    summary: Graph+k-NN on XAU/THB settlement.
+  - file: experiments/gold-thb-usd-causality/app/thb-settlement.html
+    summary: HTML page comparing XAU/USD vs XAU/THB settlement.
+  - file: experiments/gold-thb-usd-causality/app/thb-settlement.js
+    summary: Plot the two settlement equity curves.
+
+references:
+  - experiments/gold-thb-usd-causality/data/aligned_thb_base.csv
+  - experiments/gold-thb-usd-causality/data/trended_graph_knn_thb_equity.csv
+  - experiments/gold-thb-usd-causality/data/trended_graph_knn_silver_equity.csv
