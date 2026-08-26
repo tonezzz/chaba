@@ -124,6 +124,17 @@ processing:
         The stricter p=0.01 and longer 504-day lookback make the edge filter more
         conservative, cutting more false-positive trades and reducing drawdown. This
         is the best result in the entire research branch.
+
+        Follow-up: combine the graph edge filter with the k-NN pattern matcher.
+        trended_graph_knn.py runs the k-NN forecast only when the THB -> XAU edge
+        is active. Out-of-sample 2014-2026:
+        - Sharpe: 2.59
+        - Annual return: 23.1%
+        - Annual vol: 8.9%
+        - Max drawdown: -5.7%
+        - Win rate: 12.7%
+        The combination is the best result so far: it retains k-NN's return power
+        while the graph filter eliminates the largest drawdowns.
     - id: 6
       label: Wavelet coherence
       status: completed
@@ -174,6 +185,8 @@ processing:
       summary: Granger-causality edge filter for the 2-day THB trend.
     - file: experiments/gold-thb-usd-causality/tune_graph.py
       summary: Grid search for LOOKBACK, MAX_LAG, P_THRESHOLD on the graph filter.
+    - file: experiments/gold-thb-usd-causality/trended_graph_knn.py
+      summary: k-NN pattern matcher gated by the THB->XAU Granger edge.
     - file: experiments/gold-thb-usd-causality/trended_wavelet.py
       summary: Causal complex Morlet CWT on THB returns.
     - file: docs/ssot/jobs/experiments/2026-08-26-gold-thb-usd-vector-analysis.yml
