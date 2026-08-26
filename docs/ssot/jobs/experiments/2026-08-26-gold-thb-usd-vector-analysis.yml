@@ -57,10 +57,22 @@ processing:
         A multivariate DTW (THB + XAU) could be tried next.
     - id: 2
       label: Delay-embedding k-NN (Takens-style)
-      status: not_started
+      status: completed
+      completed_at: '2026-08-26'
       notes: |
-        Build a reconstructed phase-space vector from delayed copies of USD/THB
-        returns. Search historical points in that space to forecast the next XAU move.
+        Implemented trended_delay.py. Build a WINDOW=6 vector from delayed copies
+        of USD/THB log returns. Use k-NN in that phase-space and the weighted
+        average of neighbor XAU t+1 returns as the forecast. Out-of-sample
+        2014-2026 with K=20:
+        - Sharpe: 0.86
+        - Annual return: 12.4%
+        - Annual vol: 14.4%
+        - Max drawdown: -80.2%
+        - Win rate: 37.6%
+        The drawdown is much larger than the 2-day THB trend, k-NN, or DTW. The
+        univariate delay-embedding alone does not capture the XAU lead-lag well;
+        adding a second observable (XAU or USD/EUR) to the phase-space vector may
+        help.
     - id: 3
       label: Singular Spectrum Analysis (SSA)
       status: not_started
@@ -107,6 +119,8 @@ processing:
       summary: Client-side rendering for the vector-analysis ideas page.
     - file: experiments/gold-thb-usd-causality/trended_dtw.py
       summary: Walk-forward DTW nearest-neighbor strategy on THB return windows.
+    - file: experiments/gold-thb-usd-causality/trended_delay.py
+      summary: Takens-style delay-embedding k-NN on THB log returns.
     - file: docs/ssot/jobs/experiments/2026-08-26-gold-thb-usd-vector-analysis.yml
       summary: SSOT job defining the advanced vector-analysis exploration.
 

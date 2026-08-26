@@ -135,16 +135,17 @@ async function fetchCSV(path, column = 'equity') {
 async function renderEquity() {
   const container = document.getElementById('equity-curves');
   try {
-    const [trended, knn, dtw] = await Promise.all([
+    const [trended, knn, dtw, delay] = await Promise.all([
       fetchCSV('data/trended_equity.csv', 'equity').catch(() => null),
       fetchCSV('data/trended_knn_equity.csv', 'equity').catch(() => null),
       fetchCSV('data/trended_dtw_equity.csv', 'equity').catch(() => null),
+      fetchCSV('data/trended_delay_equity.csv', 'equity').catch(() => null),
     ]);
-    if (!dtw) {
-      container.innerHTML = '<p class="muted">DTW equity data not yet available. Run the backtests first.</p>';
+    if (!delay) {
+      container.innerHTML = '<p class="muted">Vector-analysis equity data not yet available. Run the backtests first.</p>';
       return;
     }
-    const dates = dtw.map(r => r.date);
+    const dates = delay.map(r => r.date);
     const traces = [];
     if (trended) {
       traces.push({ x: dates, y: trended.map(r => r.equity), mode: 'lines', name: '2-day THB trend', line: { color: '#0d6efd' } });
@@ -152,9 +153,12 @@ async function renderEquity() {
     if (knn) {
       traces.push({ x: dates, y: knn.map(r => r.equity), mode: 'lines', name: 'k-NN (K=20)', line: { color: '#198754' } });
     }
-    traces.push({ x: dates, y: dtw.map(r => r.equity), mode: 'lines', name: 'DTW (W=10, K=20)', line: { color: '#fd7e14' } });
+    if (dtw) {
+      traces.push({ x: dates, y: dtw.map(r => r.equity), mode: 'lines', name: 'DTW (W=10, K=20)', line: { color: '#fd7e14' } });
+    }
+    traces.push({ x: dates, y: delay.map(r => r.equity), mode: 'lines', name: 'Delay k-NN (W=6, K=20)', line: { color: '#6f42c1' } });
     plot('equity-curves', traces, {
-      title: 'DTW results vs baselines (log scale)',
+      title: 'Vector-analysis results vs baselines (log scale)',
       xaxis: { title: 'Date' },
       yaxis: { title: 'Cumulative return', type: 'log' },
       height: 420,
