@@ -43,13 +43,15 @@ processing:
       completed_at: '2026-08-26'
       notes: |
         Implemented trended_knn.py with a 5-day window of THB and XAU log returns,
-        k=50 neighbors, and distance-weighted forecasts. Out-of-sample 2014-2026:
-        - Sharpe: 1.47
-        - Annual return: 16.0%
-        - Max drawdown: -37.1%
-        - Win rate: 26.7%
-        Beats buy-and-hold (Sharpe 0.70) but has a deeper drawdown than the 2-day
-        THB trend baseline (max DD -20.9%).
+        k=50 neighbors, and distance-weighted forecasts. Tuned WINDOW, K, and
+        WEIGHTED; best OOS parameters are WINDOW=3, K=20, WEIGHTED=1. Out-of-sample
+        2014-2026 with best tune:
+        - Sharpe: 1.78
+        - Annual return: 20.7%
+        - Max drawdown: -41.4%
+        - Win rate: 29.7%
+        Beats buy-and-hold (Sharpe 0.71) and the 2-day THB trend baseline (Sharpe 1.46,
+        max DD -20.9%), though at the cost of a deeper drawdown.
     - id: 2
       label: Regime-embedding with PCA
       status: not_started

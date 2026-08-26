@@ -23,8 +23,8 @@ from sklearn.preprocessing import StandardScaler
 ROOT = Path(__file__).parent
 DATA = ROOT / "data"
 LOOKBACK = int(os.environ.get("LOOKBACK", "252"))
-WINDOW = int(os.environ.get("WINDOW", "5"))
-K = int(os.environ.get("K", "50"))
+WINDOW = int(os.environ.get("WINDOW", "3"))
+K = int(os.environ.get("K", "20"))
 WEIGHTED = os.environ.get("WEIGHTED", "1") in ("1", "true", "True", "yes")
 TC = float(os.environ.get("TC", "0.0005"))
 
