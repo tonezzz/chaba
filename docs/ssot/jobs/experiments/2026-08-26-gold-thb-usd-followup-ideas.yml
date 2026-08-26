@@ -76,13 +76,19 @@ steps:
       is updated to show the combined equity curve.
   - id: 2
     label: Volatility/trend regime gate
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-08-26'
+    completed_at: '2026-08-26'
     notes: |
-      Add a monthly gate based on realized XAU volatility or trend strength. Only
-      allow trades when the regime is favourable. Compare to the pure edge filter.
-      Deliverable: trended_graph_knn_silver_regime.py.
+      Implemented trended_graph_knn_silver_regime.py. The THB->XAU edge gate is
+      combined with a realized XAU volatility gate: the month is skipped if the
+      trailing XAU return volatility exceeds VOL_THRESHOLD.
+      - VOL_THRESHOLD=0.015: Sharpe 2.90, ret 24.0%, vol 8.3%, max DD -6.7%
+      - VOL_THRESHOLD=0.025: Sharpe 3.43, ret 34.0%, vol 9.9%, max DD -6.7%
+      The 0.025 result is identical to the no-gate silver baseline, meaning the
+      gate does not filter anything meaningful at that level. A stricter 0.015
+      threshold cuts too much activity. The regime gate does not improve the
+      current best.
   - id: 3
     label: Feature ablation
     status: pending
@@ -132,6 +138,8 @@ changes:
     summary: Final vol-sized silver graph+k-NN (W=2, K=30, TARGET_VOL=0.20).
   - file: experiments/gold-thb-usd-causality/tune_graph_knn_vol_silver.py
     summary: Grid search for vol-sized silver (W, K).
+  - file: experiments/gold-thb-usd-causality/trended_graph_knn_silver_regime.py
+    summary: Silver graph+k-NN with a trailing XAU volatility regime gate.
 
 references:
   - /home/tony/CascadeProjects/chaba/experiments/gold-thb-usd-causality/trended_graph_knn_silver.py
