@@ -66,10 +66,17 @@ processing:
         full feature vector is already low-dimensional and meaningful.
     - id: 3
       label: Similarity-weighted forecast
-      status: not_started
+      status: completed
+      completed_at: '2026-08-26'
       notes: |
-        Weighted average of neighbor XAU returns, with weights decaying by distance.
-        Position is the sign of the weighted forecast.
+        Implemented trended_weighted.py: a Nadaraya-Watson kernel smoother over all training
+        windows. Best setting was RBF with GAMMA=0.5:
+        - Sharpe: 1.23
+        - Annual return: 16.0%
+        - Max drawdown: -50.8%
+        - Win rate: 30.3%
+        Higher GAMMA (more local) lowered performance; the soft, globally-weighted forecast
+        is noisier than the hard K=20 cutoff in trended_knn.py. k-NN remains the best.
     - id: 4
       label: Anomaly / change-point filter
       status: not_started
