@@ -54,11 +54,16 @@ processing:
         max DD -20.9%), though at the cost of a deeper drawdown.
     - id: 2
       label: Regime-embedding with PCA
-      status: not_started
+      status: completed
+      completed_at: '2026-08-26'
       notes: |
-        Reduce the multi-day window to a small number of principal components. Search
-        the projected training set for nearest neighbors and use their XAU outcomes as
-        the forecast.
+        Implemented trended_pca.py. PCA on a 3-day THB/XAU window before k-NN
+        degrades performance for any N_COMPONENTS < 6:
+        - N=2: Sharpe -0.11, max DD -41.9%
+        - N=4: Sharpe 1.22, max DD -58.4%
+        - N=6: Sharpe 1.78 (identical to raw k-NN)
+        Dimensionality reduction loses the signal in this 6-dimensional space; the
+        full feature vector is already low-dimensional and meaningful.
     - id: 3
       label: Similarity-weighted forecast
       status: not_started
