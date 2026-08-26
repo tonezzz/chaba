@@ -126,15 +126,18 @@ processing:
         is the best result in the entire research branch.
 
         Follow-up: combine the graph edge filter with the k-NN pattern matcher.
-        trended_graph_knn.py runs the k-NN forecast only when the THB -> XAU edge
-        is active. Out-of-sample 2014-2026:
-        - Sharpe: 2.59
-        - Annual return: 23.1%
-        - Annual vol: 8.9%
-        - Max drawdown: -5.7%
-        - Win rate: 12.7%
-        The combination is the best result so far: it retains k-NN's return power
-        while the graph filter eliminates the largest drawdowns.
+        tune_graph_knn.py searched WINDOW (2-5), K (10-50), P_THRESHOLD (0.01, 0.05)
+        and EDGE_LOOKBACK (252, 504). The best settings are WINDOW=2, K=30,
+        P_THRESHOLD=0.01, EDGE_LOOKBACK=504. trended_graph_knn.py now uses these
+        defaults. Tuned out-of-sample 2014-2026:
+        - Sharpe: 2.77
+        - Annual return: 22.1%
+        - Annual vol: 8.0%
+        - Max drawdown: -7.5%
+        - Win rate: 12.4%
+        The combination is the best result in the entire research branch: it
+        retains k-NN's return power while the graph filter cuts the worst
+        drawdowns.
     - id: 6
       label: Wavelet coherence
       status: completed
@@ -187,6 +190,8 @@ processing:
       summary: Grid search for LOOKBACK, MAX_LAG, P_THRESHOLD on the graph filter.
     - file: experiments/gold-thb-usd-causality/trended_graph_knn.py
       summary: k-NN pattern matcher gated by the THB->XAU Granger edge.
+    - file: experiments/gold-thb-usd-causality/tune_graph_knn.py
+      summary: Grid search for WINDOW, K, P_THRESHOLD and EDGE_LOOKBACK.
     - file: experiments/gold-thb-usd-causality/trended_wavelet.py
       summary: Causal complex Morlet CWT on THB returns.
     - file: docs/ssot/jobs/experiments/2026-08-26-gold-thb-usd-vector-analysis.yml
