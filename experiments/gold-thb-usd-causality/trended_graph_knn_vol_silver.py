@@ -1,11 +1,10 @@
-"""Graph edge filter + k-NN combination with silver in the feature vector.
+"""Graph edge filter + k-NN with silver (XAG) and volatility targeting.
 
-Run the same k-NN pattern matcher as trended_graph_knn.py, but the k-NN
-feature vector also includes silver (XAG/USD) returns. The graph edge is still
-the THB -> XAU Granger-causality filter. Research only.
+Same as trended_graph_knn_silver.py, but the position is scaled by
+TARGET_VOL / trailing realized XAU volatility. Research only.
 
 Usage:
-    WINDOW=3 K=20 LOOKBACK=252 P_THRESHOLD=0.01 .venv/bin/python trended_graph_knn_silver.py
+    WINDOW=2 K=30 TARGET_VOL=0.20 .venv/bin/python trended_graph_knn_vol_silver.py
 """
 import json
 import os
@@ -31,6 +30,8 @@ P_THRESHOLD = float(os.environ.get("P_THRESHOLD", "0.01"))
 MAX_LAG = int(os.environ.get("MAX_LAG", "2"))
 EDGE_LOOKBACK = int(os.environ.get("EDGE_LOOKBACK", "504"))
 TC = float(os.environ.get("TC", "0.0005"))
+TARGET_VOL = float(os.environ.get("TARGET_VOL", "0.10"))
+MAX_LEVERAGE = float(os.environ.get("MAX_LEVERAGE", "2.0"))
 
 
 def load():
@@ -178,6 +179,14 @@ def main():
         train_pred = predict(X_train_s, y_train, X_train_s, K, WEIGHTED)
         threshold = search_threshold(train_pred, y_train)
 
+        # Volatility-targeted position size for this month
+        daily_target = TARGET_VOL / np.sqrt(252)
+        realized_vol = y_train.std()
+        if realized_vol > 0 and not np.isnan(realized_vol):
+            vol_size = min(MAX_LEVERAGE, daily_target / realized_vol)
+        else:
+            vol_size = 0.0
+
         test_idx = np.where(month_mask)[0]
         X_test = X_all[test_idx]
         X_test_s = scaler.transform(X_test)
@@ -187,9 +196,9 @@ def main():
         for d, yp, y in zip(month_dates, y_pred, y_test):
             pos = 0.0
             if yp > threshold:
-                pos = 1.0
+                pos = vol_size
             elif yp < -threshold:
-                pos = -1.0
+                pos = -vol_size
             ret = pos * y - TC * abs(pos - prev_pos)
             prev_pos = pos
             equity *= np.exp(ret)
@@ -217,12 +226,12 @@ def main():
     strat_perf = performance(result["strategy_ret"], result["equity"])
     bh_perf = performance(result["xau_t1"], buyhold)
 
-    print(f"Graph+k-NN+silver: WINDOW={WINDOW}, K={K}, WEIGHTED={WEIGHTED}, P_THRESHOLD={P_THRESHOLD}, MAX_LAG={MAX_LAG}, EDGE_LB={EDGE_LOOKBACK}, TC={TC*100:.4f}%")
+    print(f"Graph+k-NN+silver vol-sized: WINDOW={WINDOW}, K={K}, TARGET_VOL={TARGET_VOL}, MAX_LEV={MAX_LEVERAGE}, P_THRESHOLD={P_THRESHOLD}, EDGE_LB={EDGE_LOOKBACK}, TC={TC*100:.4f}%")
     print(f"Total OOS days: {len(result)}")
     print(f"Date range: {result.index.min().date()} to {result.index.max().date()}")
     print()
 
-    print("=== Graph+k-NN+silver (walk-forward OOS) ===")
+    print("=== Graph+k-NN+silver vol-sized (walk-forward OOS) ===")
     for k, v in strat_perf.items():
         print(f"  {k}: {v:.4f}")
     print()
@@ -232,7 +241,7 @@ def main():
         print(f"  {k}: {v:.4f}")
     print()
 
-    result.to_csv(DATA / "trended_graph_knn_silver_equity.csv")
+    result.to_csv(DATA / "trended_graph_knn_vol_silver_equity.csv")
     summary = {
         "window": WINDOW,
         "k": K,
@@ -241,16 +250,18 @@ def main():
         "max_lag": MAX_LAG,
         "edge_lookback": EDGE_LOOKBACK,
         "lookback_days": LOOKBACK,
+        "target_vol": TARGET_VOL,
+        "max_leverage": MAX_LEVERAGE,
         "tc_per_trade": TC,
         "n_months": len(month_records),
         "n_days": int(len(result)),
         "strategy_metrics": strat_perf,
         "buyhold_metrics": bh_perf,
         "monthly_thresholds": month_records,
-        "note": "k-NN pattern matcher with silver returns, gated by THB->XAU Granger edge. Research only.",
+        "note": "k-NN with THB, XAU, and XAG/silver features, with volatility sizing. Research only.",
     }
-    (DATA / "trended_graph_knn_silver_results.json").write_text(json.dumps(summary, indent=2))
-    print("Saved: data/trended_graph_knn_silver_equity.csv, data/trended_graph_knn_silver_results.json")
+    (DATA / "trended_graph_knn_vol_silver_results.json").write_text(json.dumps(summary, indent=2))
+    print("Saved: data/trended_graph_knn_vol_silver_equity.csv, data/trended_graph_knn_vol_silver_results.json")
 
 
 if __name__ == "__main__":
