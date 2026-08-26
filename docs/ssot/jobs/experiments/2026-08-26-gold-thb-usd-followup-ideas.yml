@@ -91,14 +91,19 @@ steps:
       current best.
   - id: 3
     label: Feature ablation
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-08-26'
+    completed_at: '2026-08-26'
     notes: |
-      Run silver graph+k-NN with (thb,xau), (thb,xag), (xau,xag), and xag-only
-      feature sets. Identify whether the signal is dominated by one variable or if
-      the combination is essential. Deliverable: tune_graph_knn_silver.py variant
-      or a dedicated ablation script.
+      Implemented tune_graph_knn_silver_ablate.py. Tested feature subsets
+      (thb_xau_xag, thb_xau, thb_xag, xau_xag, xag) with K=10,30,50,
+      P=0.01, edge=504. Top results:
+      - thb_xag, K=50: Sharpe 3.53, ann ret 36.9%, vol 10.5%, max DD -7.3%
+      - thb_xag, K=30: Sharpe 3.43, ann ret 35.7%, vol 10.4%, max DD -7.3%
+      - thb_xau_xag, K=10: Sharpe 3.43, ann ret 34.0%, vol 9.9%, max DD -6.7%
+      - xag, K=50: Sharpe 3.18, ann ret 32.4%, vol 10.2%, max DD -6.7%
+      The XAU (own-return) feature is not needed: THB + XAG alone is stronger.
+      This is the most important ablation finding.
   - id: 4
     label: Transaction-cost stress test
     status: pending
@@ -140,6 +145,8 @@ changes:
     summary: Grid search for vol-sized silver (W, K).
   - file: experiments/gold-thb-usd-causality/trended_graph_knn_silver_regime.py
     summary: Silver graph+k-NN with a trailing XAU volatility regime gate.
+  - file: experiments/gold-thb-usd-causality/tune_graph_knn_silver_ablate.py
+    summary: Feature ablation grid over THB/XAU/XAG feature subsets.
 
 references:
   - /home/tony/CascadeProjects/chaba/experiments/gold-thb-usd-causality/trended_graph_knn_silver.py
