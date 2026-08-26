@@ -63,6 +63,19 @@ prefix: short description
 
 Allowed prefixes: feat, fix, tweak, style, refactor, perf, test, docs, chore, ci, build, revert, hotfix, init, merge, wip, release
 
+## Session Boundaries and Auto-Commit
+
+Each conversation/session owns **one active focus** from `ssot.focus.current.active.yml`. The assistant must not drift into another session's branch or worktree unless the user explicitly asks.
+
+- **In-scope work**: the active focus, its subtasks, and quick wins that take under 5 minutes.
+- **Out-of-scope work**: anything on another branch or in another worktree. Log it as a hand-off or ready-safe item instead of working on it.
+- **When a task is done**: the assistant must run `scripts/focus-complete.sh` to:
+  1. Mark the active focus/subtasks as completed in `ssot.focus.current.active.yml`.
+  2. Run SSOT validation.
+  3. Stage and commit all related changes with a single commit.
+  4. Push only if the user has asked for it.
+- **Do not start the next task** until the current one is committed or explicitly parked.
+
 ## Git Worktrees and Feature Branches
 
 When the working tree is dirty and the user wants to test, spike, or experiment without disturbing in-flight work, prefer a git worktree over creating a branch in the main working tree.

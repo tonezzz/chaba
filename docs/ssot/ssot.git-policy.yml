@@ -69,6 +69,31 @@ hooks:
       - Run SSOT validation
       - Run SSOT ref validation
 
+session_boundary_policy:
+  - id: one-focus-per-session
+    name: One active focus per session
+    rule: |
+      Each assistant session owns exactly one active focus.  The assistant
+      must not start work on another focus or branch unless the user explicitly
+      asks for it.
+    how_to: |
+      - Read ssot.focus.current.active.yml at the start of every session.
+      - Log quick wins (<5 min) inside the current session.
+      - Park anything that would require switching branches.
+  - id: auto-commit-on-done
+    name: Auto-commit when a focus is done
+    rule: |
+      When a focus or subtask is completed, the assistant must run
+      `scripts/focus-complete.sh` to validate, stage, and commit the related
+      changes immediately.
+    how_to: |
+      scripts/focus-complete.sh "prefix: short description"
+    what_it_does:
+      - Runs SSOT ref validation
+      - Stages all tracked files (excluding data and generated files)
+      - Creates a single commit with the provided message
+      - Does not push unless the user asks
+
 worktree_policy:
   - Clean worktrees should be removed after the branch is merged.
   - Dirty worktrees must be committed or stashed before the worktree is removed.
