@@ -106,13 +106,18 @@ steps:
       This is the most important ablation finding.
   - id: 4
     label: Transaction-cost stress test
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-08-26'
+    completed_at: '2026-08-26'
     notes: |
-      Run the tuned silver graph+k-NN with TC=0.10%, 0.20%, and 0.50% per trade
-      to understand how sensitive the 3.43 Sharpe is to execution assumptions.
-      Deliverable: a one-off sweep in trended_graph_knn_silver.py with env TC.
+      Implemented trended_graph_knn_thb_xag.py (THB + XAG, K=50) and ran the
+      transaction-cost sweep on the new best feature subset:
+      - TC=0.05%: Sharpe 3.52, ann ret 36.8%, vol 10.4%, max DD -7.3%
+      - TC=0.10%: Sharpe 3.26, ann ret 33.7%, vol 10.4%, max DD -7.5%
+      - TC=0.20%: Sharpe 2.69, ann ret 27.5%, vol 10.2%, max DD -8.8%
+      - TC=0.50%: Sharpe 0.86, ann ret 8.9%, vol 10.4%, max DD -31.8%
+      The strategy is robust up to ~0.10% TC but breaks by 0.50%. The baseline
+      0.05% remains the best for research.
   - id: 5
     label: Gold/silver spread feature
     status: pending
@@ -147,6 +152,8 @@ changes:
     summary: Silver graph+k-NN with a trailing XAU volatility regime gate.
   - file: experiments/gold-thb-usd-causality/tune_graph_knn_silver_ablate.py
     summary: Feature ablation grid over THB/XAU/XAG feature subsets.
+  - file: experiments/gold-thb-usd-causality/trended_graph_knn_thb_xag.py
+    summary: Final THB+XAG graph+k-NN (W=2, K=50), the new best subset.
 
 references:
   - /home/tony/CascadeProjects/chaba/experiments/gold-thb-usd-causality/trended_graph_knn_silver.py
