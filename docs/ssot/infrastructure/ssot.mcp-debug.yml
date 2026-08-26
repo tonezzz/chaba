@@ -512,9 +512,9 @@ server:
   wrapper: /home/tony/.config/devin/mcp-scripts/mcp-debug.sh
   log_level: INFO
   health:
-    - command: "curl -sf --max-time 3 http://127.0.0.1:9101/sse/"
+    - command: "curl -sf --max-time 3 https://tony-dell.taila0626a.ts.net:8446/sse/"
       expected_status: 0
-      note: Verifies the local mcp-debug SSE server is listening.
+      note: Verifies the mcp-debug SSE server is reachable on tony-dell.
     - command: "ssh -o BatchMode=yes tony-dell /home/tony/.local/bin/mcp-debug --version"
       expected_status: 0
       note: Verifies the mcp-debug binary is reachable on tony-dell.
