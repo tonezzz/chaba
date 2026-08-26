@@ -31,6 +31,7 @@ P_THRESHOLD = float(os.environ.get("P_THRESHOLD", "0.01"))
 MAX_LAG = int(os.environ.get("MAX_LAG", "2"))
 EDGE_LOOKBACK = int(os.environ.get("EDGE_LOOKBACK", "504"))
 TC = float(os.environ.get("TC", "0.0005"))
+OIL_COL = os.environ.get("OIL_COL", "oil")
 
 
 def load():
@@ -48,7 +49,7 @@ def load():
 
 
 def build_features(df, window):
-    cols = ["thb_ret", "xau_ret", "oil_ret"]
+    cols = ["thb_ret", "xau_ret", f"{OIL_COL}_ret"]
     rets = df[cols].values
     n = len(rets)
     X = []

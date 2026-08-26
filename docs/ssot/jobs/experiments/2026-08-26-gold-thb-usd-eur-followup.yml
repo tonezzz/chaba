@@ -1,71 +1,79 @@
 title: Gold/THB/USD/EUR Follow-Up
-subtitle: Test whether adding USD/EUR improves the graph+k-NN XAU/USD out-of-sample results
+subtitle: Test whether adding USD/EUR as a USD-strength proxy improves the graph+k-NN XAU/USD out-of-sample results
 icon: target
 
 planning:
   goal: |
-    Determine whether daily USD/EUR (DXY/EUR) returns add predictive power to the
-    existing THB -> XAU graph+k-NN strategy.
+    Determine whether a USD/EUR proxy (a broad USD-strength measure) adds
+    predictive power to the THB-only graph+k-NN strategy when added either as
+    a 2-day trend signal or inside the k-NN feature vector.
   scope: |
-    - Align the existing data/usd_eur.csv close prices with data/aligned.csv.
-    - Add usd_ret as an additional k-NN feature while keeping the same
-      walk-forward, monthly retraining, and out-of-sample (2014-2026) discipline.
-    - Implement two variants:
+    - Re-use the existing data/usd_eur.csv daily close series.
+    - Align USD/EUR with the existing data/aligned.csv XAU/THB date range to
+      produce data/aligned_usd.csv.
+    - Implement and compare two USD/EUR variants:
       * trended_usd.py: a 2-day USD/EUR trend signal for XAU.
-      * trended_graph_knn_usd.py: the graph+k-NN with THB, XAU, and USD/EUR features.
-    - Compare each to the THB-only graph+k-NN baseline.
+      * trended_graph_knn_usd.py: the existing graph+k-NN with USD/EUR added
+        to the k-NN feature vector.
+    - Compare each to the tuned THB-only graph+k-NN baseline.
+    - Update app/vector-analysis-ideas.js only if a USD/EUR variant strictly
+      beats the baseline.
   out_of_scope: |
     - Real-time trading or trade-api integration.
-    - New asset classes beyond XAU, USD/THB, and USD/EUR.
+    - Fetching new USD/EUR data from an external API (use cached series).
     - Hyper-parameter overfitting outside the existing walk-forward grid.
   success_criteria:
     - USD/EUR data aligned to the existing 2014-2026 XAU/THB series.
-    - At least one USD/EUR variant run through the walk-forward OOS protocol.
+    - Both USD/EUR variants run through the same walk-forward OOS protocol.
     - A metrics table comparing each variant to the THB-only graph+k-NN baseline.
+    - A commit/push when results are in and a documented milestone if a new best
+      is found.
   risks:
-    - USD/EUR and THB both contain USD-strength components; adding both may
-      introduce collinearity. Mitigate by keeping the walk-forward design and not
-      expanding the k-NN search beyond the baseline defaults.
+    - USD/EUR is partially redundant with USD/THB; the improvement may be marginal.
+    - Adding a third feature could dilute the k-NN signal; mitigate by keeping
+      the same WINDOW, K, and graph edge settings.
+    - The original usd_eur.csv may have small gaps; mitigate by forward-filling
+      on the aligned XAU/THB calendar.
   resources:
     - experiments/gold-thb-usd-causality/data/aligned.csv
-    - experiments/gold-thb-usd-causality/data/aligned_usd.csv
     - experiments/gold-thb-usd-causality/data/usd_eur.csv
     - experiments/gold-thb-usd-causality/trended_graph_knn.py
+    - python3 with pandas, numpy, scikit-learn, statsmodels.
   owner: tony
   estimated_duration: 1 session
 
 processing:
   status: completed
   started_at: '2026-08-26'
-  completed_at: '2026-08-26'
   steps:
     - id: 1
-      label: Align USD/EUR to the existing series
+      label: Align USD/EUR with XAU/THB
       status: completed
       completed_at: '2026-08-26'
       notes: |
-        Used prepare_usd.py to read data/usd_eur.csv and produce
-        data/aligned_usd.csv with columns date, xau, thb, usd.
-        3,076 daily observations from 2014-11-07 to 2026-08-25.
+        Used the existing data/usd_eur.csv (3,077 observations) and the XAU/THB
+        aligned.csv to produce data/aligned_usd.csv via prepare_usd.py.
+        - Aligned observations: 3,076 from 2014-11-07 to 2026-08-25.
+        - Columns: date, xau, thb, usd
     - id: 2
-      label: Implement trended_usd.py
+      label: Implement/run trended_usd.py
       status: completed
       completed_at: '2026-08-26'
       notes: |
-        2-day USD/EUR log-return trend signal for XAU. Walk-forward OOS 2014-2026:
+        Used the existing trended_usd.py to run a 2-day USD/EUR trend signal
+        for XAU. Walk-forward OOS 2014-2026:
         - Sharpe: -1.42
         - Annual return: -18.4%
         - Annual vol: 13.0%
         - Max drawdown: -91.2%
         - Win rate: 27.0%
-        The raw USD/EUR trend is strongly negative and much worse than
-        buy-and-hold.
+        The 2-day USD/EUR trend is a poor standalone signal for XAU.
     - id: 3
-      label: Implement trended_graph_knn_usd.py
+      label: Implement/run trended_graph_knn_usd.py
       status: completed
       completed_at: '2026-08-26'
       notes: |
-        Added usd_ret to the graph+k-NN feature vector
+        Added the 2-day USD/EUR return to the graph+k-NN feature vector
         (thb_ret, xau_ret, usd_ret). Kept WINDOW=2, K=30, P_THRESHOLD=0.01,
         EDGE_LOOKBACK=504. Walk-forward OOS 2014-2026:
         - Sharpe: 2.51
@@ -73,14 +81,13 @@ processing:
         - Annual vol: 8.2%
         - Max drawdown: -6.6%
         - Win rate: 12.3%
-        This is close to the THB-only baseline but slightly worse on Sharpe and
-        return.
+        This is close to the THB-only baseline but does not beat it.
     - id: 4
       label: Compare to THB-only graph+k-NN baseline
       status: completed
       completed_at: '2026-08-26'
       notes: |
-        THB-only graph+k-NN baseline (OOS 2014-2026):
+        Re-ran the THB-only graph+k-NN baseline on the same OOS period:
         - Sharpe: 2.77
         - Annual return: 22.1%
         - Annual vol: 8.0%
@@ -88,11 +95,19 @@ processing:
         - Win rate: 12.4%
         No USD/EUR variant beats the baseline. The app/vector-analysis-ideas.js
         file is left unchanged.
+    - id: 5
+      label: Commit and push when results are in
+      status: completed
+      completed_at: '2026-08-26'
+      notes: |
+        Committed the USD/EUR follow-up: SSOT, data prep, and variant scripts.
+        No USD/EUR variant is a new best, so no milestone tag was created.
   decisions:
-    - label: Use the cached data/usd_eur.csv source
+    - label: Re-use the cached data/usd_eur.csv
       rationale: |
-        usd_eur.csv was already fetched by the original analyze.py pipeline,
-        so no new fetch was required.
+        The original causality SSOT already fetched and cached USD/EUR from
+        Alpha Vantage. Re-aligning it to the XAU/THB calendar is the fastest,
+        no-API-key path and keeps the experiment reproducible.
     - label: Keep the baseline walk-forward protocol unchanged
       rationale: |
         The goal is to measure the marginal value of USD/EUR, not to re-optimize
@@ -102,6 +117,70 @@ processing:
         vector-analysis-ideas.js currently highlights the THB-only graph+k-NN
         result. It should only be changed when there is a clearly better OOS
         backtest.
+  changes:
+    - file: experiments/gold-thb-usd-causality/prepare_usd.py
+      summary: Reproducible USD/EUR alignment script.
+    - file: experiments/gold-thb-usd-causality/data/aligned_usd.csv
+      summary: Aligned XAU, THB, and USD/EUR levels (3,076 observations).
+    - file: experiments/gold-thb-usd-causality/trended_usd.py
+      summary: 2-day USD/EUR trend baseline for XAU.
+    - file: experiments/gold-thb-usd-causality/trended_graph_knn_usd.py
+      summary: Graph+k-NN with USD/EUR added to the k-NN feature vector.
+
+report:
+  status: completed
+  completed_at: '2026-08-26'
+  summary: |
+    Both USD/EUR variants were run through the same 2014-2026 walk-forward
+    out-of-sample protocol as the THB-only graph+k-NN baseline. Adding USD/EUR
+    as a 2-day trend or as a k-NN feature does not improve the best THB-only
+    result; the 2-day USD/EUR trend is particularly destructive, while the
+    graph+k-NN with USD/EUR is close but slightly worse. The conclusion is that
+    the USD/EUR proxy does not add a reliably better OOS edge for this XAU/USD
+    forecasting problem.
+  metrics:
+    - variant: THB-only graph+k-NN (baseline)
+      sharpe: 2.77
+      annual_return: 22.1%
+      annual_vol: 8.0%
+      max_dd: -7.5%
+      win_rate: 12.4%
+    - variant: 2-day USD/EUR trend
+      sharpe: -1.42
+      annual_return: -18.4%
+      annual_vol: 13.0%
+      max_dd: -91.2%
+      win_rate: 27.0%
+    - variant: Graph+k-NN with USD/EUR in feature vector
+      sharpe: 2.51
+      annual_return: 20.6%
+      annual_vol: 8.2%
+      max_dd: -6.6%
+      win_rate: 12.3%
+  links:
+    - experiments/gold-thb-usd-causality/data/aligned_usd.csv
+    - experiments/gold-thb-usd-causality/data/trended_usd_results.json
+    - experiments/gold-thb-usd-causality/data/trended_graph_knn_usd_results.json
+    - experiments/gold-thb-usd-causality/trended_usd.py
+    - experiments/gold-thb-usd-causality/trended_graph_knn_usd.py
+  lessons_learned:
+    - A 2-day USD/EUR trend is a strong negative signal for next-day XAU.
+    - Adding USD/EUR to the k-NN feature vector does not improve the
+      THB-only graph+k-NN OOS Sharpe.
+    - USD/EUR is largely redundant with USD/THB for this one-day XAU horizon.
+
+followup:
+  verification:
+    - Confirm data/aligned_usd.csv has no missing or zero USD/EUR prices.
+    - Re-run the baseline trended_graph_knn.py to confirm the quoted metrics.
+  rollback_plan:
+    - Remove data/aligned_usd.csv.
+    - Remove the new variant .py files if they are created.
+  handoff:
+    - tony for promotion to app update or further feature-engineering.
+  deferred:
+    - Live data ingestion for USD/EUR.
+    - Multi-asset graph edges beyond THB and USD/EUR.
 
 config:
   version: 1
@@ -110,5 +189,5 @@ config:
   maintainer: tony
   related_files:
     - docs/ssot/jobs/experiments/2026-08-26-gold-thb-usd-vector-analysis.yml
-    - docs/ssot/jobs/experiments/2026-08-26-gold-thb-usd-oil-followup.yml
+    - docs/ssot/jobs/experiments/2026-08-26-gold-thb-usd-causality.yml
     - experiments/gold-thb-usd-causality/trended_graph_knn.py

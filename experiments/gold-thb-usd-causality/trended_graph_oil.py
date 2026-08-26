@@ -27,6 +27,7 @@ TREND_WINDOW = int(os.environ.get("TREND_WINDOW", "2"))
 P_THRESHOLD = float(os.environ.get("P_THRESHOLD", "0.01"))
 MAX_LAG = int(os.environ.get("MAX_LAG", "2"))
 TC = float(os.environ.get("TC", "0.0005"))
+OIL_COL = os.environ.get("OIL_COL", "oil")
 
 
 def load():
@@ -39,7 +40,7 @@ def load():
     logdf = np.log(df)
     df["xau_ret"] = logdf["xau"].diff()
     df["thb_ret"] = logdf["thb"].diff()
-    df["oil_ret"] = logdf["oil"].diff()
+    df[f"{OIL_COL}_ret"] = logdf[OIL_COL].diff()
     df["thb_trend"] = df["thb_ret"].rolling(TREND_WINDOW).sum()
     df["xau_t1"] = logdf["xau"].shift(-1) - logdf["xau"]
     return df.dropna()
@@ -117,7 +118,7 @@ def main():
             continue
 
         thb_data = train[["xau_ret", "thb_ret"]].dropna().values
-        oil_data = train[["xau_ret", "oil_ret"]].dropna().values
+        oil_data = train[["xau_ret", f"{OIL_COL}_ret"]].dropna().values
         p_thb = granger_p(thb_data)
         p_oil = granger_p(oil_data)
         edge_active = (p_thb <= P_THRESHOLD) and (p_oil <= P_THRESHOLD)
