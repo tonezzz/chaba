@@ -19,7 +19,7 @@ import pandas as pd
 ROOT = Path(__file__).parent
 DATA = ROOT / "data"
 LOOKBACK = int(os.environ.get("LOOKBACK", "252"))
-TREND_WINDOW = int(os.environ.get("TREND_WINDOW", "3"))
+TREND_WINDOW = int(os.environ.get("TREND_WINDOW", "2"))
 XAU_HORIZON = int(os.environ.get("XAU_HORIZON", "1"))
 TC = float(os.environ.get("TC", "0.0005"))
 
