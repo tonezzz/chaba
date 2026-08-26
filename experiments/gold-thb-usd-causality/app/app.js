@@ -66,6 +66,25 @@ function renderReturns(rets) {
   });
 }
 
+function renderStrategyEquity(equity) {
+  if (!equity || equity.length === 0) {
+    document.getElementById('strategy-equity').innerHTML = '<p class="muted">No equity data. Run <code>trended.py</code> or <code>walkforward.py</code> first.</p>';
+    return;
+  }
+  const dates = equity.map(r => r.date);
+  const data = [
+    trace('Strategy equity', dates, equity.map(r => r.strategy_equity), '#0d6efd'),
+    trace('Buy-and-hold XAU', dates, equity.map(r => r.buyhold_equity), '#d4af37'),
+  ];
+  plot('strategy-equity', data, {
+    title: 'Cumulative equity (log scale)',
+    xaxis: { title: 'Date' },
+    yaxis: { title: 'Cumulative return', type: 'log' },
+    height: 400,
+    hovermode: 'x unified',
+  });
+}
+
 function renderCrossCorr(results) {
   if (!results || !results.cross_correlation_peak || !results.cross_correlation_peak.all_lags) {
     document.getElementById('cross-corr').innerHTML = '<p class="muted">No cross-correlation data. Run <code>analyze.py</code>.</p>';
@@ -119,6 +138,7 @@ function populateText(results, aligned) {
 async function init() {
   const status = document.getElementById('status');
   try {
+    let equity = await fetchCSV('/data/trended_equity.csv').catch(async () => await fetchCSV('/data/walkforward_equity.csv').catch(() => null));
     const [aligned, rets, results] = await Promise.all([
       fetchCSV('/data/aligned.csv').catch(() => null),
       fetchCSV('/data/returns.csv').catch(() => null),
@@ -134,6 +154,7 @@ async function init() {
 
     if (aligned) renderPriceLevels(aligned);
     if (rets) renderReturns(rets);
+    renderStrategyEquity(equity);
     renderCrossCorr(results);
     renderIRF(results);
     populateText(results, aligned);

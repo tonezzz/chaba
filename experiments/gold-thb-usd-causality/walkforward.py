@@ -17,6 +17,7 @@ import pandas as pd
 ROOT = Path(__file__).parent
 DATA = ROOT / "data"
 LOOKBACK = int(os.environ.get("LOOKBACK", "252"))
+TREND_WINDOW = int(os.environ.get("TREND_WINDOW", "1"))
 TC = float(os.environ.get("TC", "0.0005"))
 
 
@@ -28,6 +29,7 @@ def load():
     df = df.sort_values("date").dropna()
     df.set_index("date", inplace=True)
     df["xau_t1"] = df["xau_ret"].shift(-1)
+    df["thb_trend"] = df["thb_ret"].rolling(TREND_WINDOW).sum()
     return df.dropna()
 
 
@@ -36,7 +38,7 @@ def daily_returns(signal, y, tc=TC):
     return signal * y - tc * delta
 
 
-def search_threshold(train, signal_col="thb_ret", target_col="xau_t1"):
+def search_threshold(train, signal_col="thb_trend", target_col="xau_t1"):
     best = {"sharpe": -np.inf, "threshold": 0.0}
     upper = train[signal_col].abs().quantile(0.75)
     if upper == 0:
@@ -54,7 +56,7 @@ def search_threshold(train, signal_col="thb_ret", target_col="xau_t1"):
     return best["threshold"]
 
 
-def rule(df, threshold, signal_col="thb_ret"):
+def rule(df, threshold, signal_col="thb_trend"):
     signal = pd.Series(0, index=df.index, dtype=float)
     signal[df[signal_col] > threshold] = -1.0
     signal[df[signal_col] < -threshold] = 1.0
@@ -113,7 +115,7 @@ def main():
     strat_rets = daily_returns(full_signal, y)
     buyhold_rets = y
 
-    print(f"Walk-forward: {LOOKBACK}-day lookback, monthly recalibration, TC={TC*100:.4f}%")
+    print(f"Walk-forward: TREND_WINDOW={TREND_WINDOW}, {LOOKBACK}-day lookback, monthly recalibration, TC={TC*100:.4f}%")
     print(f"Total OOS days: {len(strat_rets)}")
     print(f"Date range: {strat_rets.index.min().date()} to {strat_rets.index.max().date()}")
     print()
@@ -141,6 +143,7 @@ def main():
     equity.to_csv(DATA / "walkforward_equity.csv")
 
     summary = {
+        "trend_window": TREND_WINDOW,
         "lookback_days": LOOKBACK,
         "tc_per_trade": TC,
         "n_months": len(month_records),
