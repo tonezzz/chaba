@@ -7,7 +7,8 @@ sections:
   layout: list
   items:
   - label: Stabilize tony-dell as the headless primary host
-    text: Move persistent services and headless automation to tony-dell while keeping tony-omen available for interactive work and GPU/ML tasks.
+    text: Move persistent services and headless automation to tony-dell while keeping tony-omen available for interactive
+      work and GPU/ML tasks.
     status: active
     priority: high
     started: '2026-08-26'
@@ -40,10 +41,13 @@ sections:
   layout: list
   items:
   - label: Gold/THB/USD Causality Exploration
-    text: |
-      Investigate directional and temporal relationships between gold (XAU/USD),
+    text: 'Investigate directional and temporal relationships between gold (XAU/USD),
+
       the Thai Baht (USD/THB), and the US Dollar index using Granger causality
+
       and other time-series methods.
+
+      '
     branch: experiment/gold-thb-usd-causality
     status: active
     priority: medium
@@ -108,55 +112,13 @@ sections:
       status: deferred
       deferred_at: '2026-08-25'
       resume_note: MacBook offline; park focus until host is reachable
-  - label: SSOT desync for mcp-rview-oauth-proxy
-    text: "A scan of tony-dell found the mcp-rview-oauth-proxy is already running:\n  - 127.0.0.1:9004 is listening on tony-dell\n\
-      \  - tailscale serve on tony-dell serves https://tony-dell.taila0626a.ts.net/ proxying to 127.0.0.1:9004\n  - the mcp-rview\
-      \ stdio/SSE server is also on tony-dell at 127.0.0.1:9003\nHowever, ssot.services.yml and ssot.health still describe\
-      \ the proxy as a tony-omen service on 9004/443,\nand the tony-omen tailscale serve status does not show a /mcp-rview\
-      \ or 9004 handler.\nThe whole RView MCP stack is already co-located on tony-dell; the migration is effectively done\
-      \ but not recorded.\n"
-    status: completed
-    priority: medium
-    started: '2026-08-25'
-    completed: '2026-08-26'
-    completed_at: '2026-08-26'
-    estimated_duration: 1 session
-    tags:
-    - mcp-rview
-    - oauth
-       - ssot
-    - tony-dell
-    - sync
-    subtasks:
-    - label: Verify tony-omen has no active mcp-rview-oauth-proxy listener or tailscale serve mapping
-      status: completed
-      completed_at: '2026-08-26'
-    - label: Update docs/ssot/infrastructure/ssot.services.yml to register mcp-rview-oauth-proxy under tony_dell
-      status: completed
-      completed_at: '2026-08-26'
-    - label: Update affected health files (ssot.health.home.web.yml, ssot.health.mobile.yml, public/ssot.health.mobile.yml)
-      status: completed
-      completed_at: '2026-08-26'
-    - label: Update ssot.containerization.yml and the active migration job to reflect reality
-      status: completed
-      completed_at: '2026-08-26'
-    - label: Commit the SSOT sync
-      status: completed
-      completed_at: '2026-08-26'
-    request_log: []
-    ownership:
-      owner: tony
-      session: ''
-      locked: false
-      lock_reason: ''
-    branch: feature/home-assistant-mcp
-    source: /home/tony/CascadeProjects/chaba/docs/ssot/focus-inbox/2026-08-25-132325-mcp-rview-oauth-proxy-ssot-desync.yml
 - title: Quick Wins
   icon: quick
   layout: list
   items:
   - label: Log quick wins in this section
-    text: Any task under 15 minutes (e.g. config fix, one-line health check, URL update) goes here. Complete immediately and keep the list trimmed.
+    text: Any task under 15 minutes (e.g. config fix, one-line health check, URL update) goes here. Complete immediately and
+      keep the list trimmed.
     status: completed
     completed: '2026-08-26'
     priority: low
