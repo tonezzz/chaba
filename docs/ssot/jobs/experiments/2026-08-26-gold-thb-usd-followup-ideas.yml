@@ -1,0 +1,115 @@
+title: Gold/THB/USD Follow-up Research Ideas
+subtitle: Post-tuning follow-ups for the silver graph+k-NN and related variants
+icon: target
+
+planning:
+  goal: |
+    After tuning the silver graph+k-NN to W=2, K=10, p=0.01, edge=504 (Sharpe 3.43),
+    explore a set of logical next ideas that either improve risk-adjusted return,
+    reduce drawdown, or validate the robustness of the current best configuration.
+  scope: |
+    - Volatility-targeted position sizing applied to the tuned silver graph+k-NN.
+    - A volatility or trend-strength regime gate on top of the existing edge filter.
+    - Feature ablation: THB-only, XAU-only, XAG-only, and paired combinations.
+    - Transaction-cost sensitivity: 0.10%, 0.20%, 0.50% per trade.
+    - Gold/silver log-spread as an additional or replacement feature.
+    - A graph filter that also requires XAG->XAU Granger significance.
+  out_of_scope: |
+    - Real-time trading system implementation.
+    - New asset classes beyond THB, XAU, and XAG.
+    - Deep-learning model training.
+    - Live deployment to the trade-api stack.
+  success_criteria:
+    - Each idea is implemented as a reproducible walk-forward script.
+    - A results table compares each variant against the W=2, K=10 silver baseline.
+    - The app is updated only if a variant strictly beats the current best.
+  risks:
+    - Combining too many ideas at once can hide which one matters; scope one per script.
+    - Volatility sizing and regime filters add hyper-parameters; tune on training data only.
+    - Feature ablation may show that XAG alone is fragile; cross-check with longer OOS subperiods.
+  resources:
+    - experiments/gold-thb-usd-causality/data/aligned_silver.csv
+    - experiments/gold-thb-usd-causality/trended_graph_knn_silver.py
+    - experiments/gold-thb-usd-causality/tune_graph_knn_silver.py
+    - experiments/gold-thb-usd-causality/trended_graph_knn_vol.py
+
+processing:
+  status: in_progress
+  current_step: 0
+  started_at: '2026-08-26'
+  last_updated: '2026-08-26'
+  notes: |
+    The tuned silver graph+k-NN (W=2, K=10, p=0.01, EDGE_LOOKBACK=504) is the
+    current best: Sharpe 3.43, annual return 34.0%, annual vol 9.9%, max DD -6.7%,
+    win rate 15.1%. This SSOT tracks the follow-up experiments to beat or
+    validate that result.
+
+steps:
+  - id: 1
+    label: Vol-sized silver graph+k-NN
+    status: pending
+    started_at: null
+    completed_at: null
+    notes: |
+      Combine the tuned silver graph+k-NN with volatility-targeted position sizing
+      from trended_graph_knn_vol.py. Target: higher Sharpe or lower drawdown while
+      preserving return. Deliverable: trended_graph_knn_vol_silver.py.
+  - id: 2
+    label: Volatility/trend regime gate
+    status: pending
+    started_at: null
+    completed_at: null
+    notes: |
+      Add a monthly gate based on realized XAU volatility or trend strength. Only
+      allow trades when the regime is favourable. Compare to the pure edge filter.
+      Deliverable: trended_graph_knn_silver_regime.py.
+  - id: 3
+    label: Feature ablation
+    status: pending
+    started_at: null
+    completed_at: null
+    notes: |
+      Run silver graph+k-NN with (thb,xau), (thb,xag), (xau,xag), and xag-only
+      feature sets. Identify whether the signal is dominated by one variable or if
+      the combination is essential. Deliverable: tune_graph_knn_silver.py variant
+      or a dedicated ablation script.
+  - id: 4
+    label: Transaction-cost stress test
+    status: pending
+    started_at: null
+    completed_at: null
+    notes: |
+      Run the tuned silver graph+k-NN with TC=0.10%, 0.20%, and 0.50% per trade
+      to understand how sensitive the 3.43 Sharpe is to execution assumptions.
+      Deliverable: a one-off sweep in trended_graph_knn_silver.py with env TC.
+  - id: 5
+    label: Gold/silver spread feature
+    status: pending
+    started_at: null
+    completed_at: null
+    notes: |
+      Replace raw xag_ret with the xau-xag log spread or add it as a fourth
+      feature. Test whether the relative gold/silver ratio is more predictive.
+      Deliverable: trended_graph_knn_silver_spread.py.
+  - id: 6
+    label: XAG->XAU Granger edge filter
+    status: pending
+    started_at: null
+    completed_at: null
+    notes: |
+      Require both THB->XAU and XAG->XAU Granger edges to be significant before
+      allowing trades. Compare to the THB-only gate. Deliverable:
+      trended_graph_knn_silver_dual.py.
+
+changes:
+  - file: docs/ssot/jobs/experiments/2026-08-26-gold-thb-usd-followup-ideas.yml
+    summary: New SSOT tracking the follow-up experiments for the tuned silver graph+k-NN.
+  - file: experiments/gold-thb-usd-causality/trended_graph_knn_silver.py
+    summary: Tuned silver graph+k-NN baseline (W=2, K=10).
+  - file: experiments/gold-thb-usd-causality/trended_graph_knn_vol.py
+    summary: Volatility-targeted position sizing reference.
+
+references:
+  - /home/tony/CascadeProjects/chaba/experiments/gold-thb-usd-causality/trended_graph_knn_silver.py
+  - /home/tony/CascadeProjects/chaba/experiments/gold-thb-usd-causality/tune_graph_knn_silver.py
+  - /home/tony/CascadeProjects/chaba/experiments/gold-thb-usd-causality/trended_graph_knn_vol.py
