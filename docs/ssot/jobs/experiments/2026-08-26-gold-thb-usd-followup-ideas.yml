@@ -34,18 +34,15 @@ planning:
     - experiments/gold-thb-usd-causality/trended_graph_knn_vol.py
 
 processing:
-  status: in_progress
-  current_step: 0
+  status: completed
+  current_step: 6
   started_at: '2026-08-26'
   last_updated: '2026-08-26'
   notes: |
-    The tuned silver graph+k-NN (W=2, K=10, p=0.01, EDGE_LOOKBACK=504) was the
-    initial best: Sharpe 3.43, annual return 34.0%, annual vol 9.9%, max DD -6.7%,
-    win rate 15.1%.
-
-    Step 1 completed: vol-sized silver graph+k-NN (W=2, K=30, TARGET_VOL=0.20)
-    becomes the new best:
-    - Sharpe: 3.46
+    All six follow-up ideas completed. The branch best is THB + XAG (W=2, K=50,
+    p=0.01, EDGE_LOOKBACK=504, TC=0.05%): Sharpe 3.52, ann ret 36.8%, vol 10.4%,
+    max DD -7.3%, win rate 17.5%. Feature ablation was the most impactful: the
+    XAU own-return feature is redundant, and THB + XAG alone is strongest.
     - Annual return: 39.5%
     - Annual vol: 11.4%
     - Max drawdown: -5.4%
@@ -136,13 +133,20 @@ steps:
       max drawdown is also larger (-11.0% vs -7.3%).
   - id: 6
     label: XAG->XAU Granger edge filter
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-08-26'
+    completed_at: '2026-08-26'
     notes: |
-      Require both THB->XAU and XAG->XAU Granger edges to be significant before
-      allowing trades. Compare to the THB-only gate. Deliverable:
-      trended_graph_knn_silver_dual.py.
+      Implemented trended_graph_knn_thb_xag_dual.py. The trade gate now requires
+      both THB->XAU and XAG->XAU Granger edges to be significant (P <= 0.01).
+      Result (W=2, K=50, TC=0.05%):
+      - Sharpe: 3.48
+      - Annual return: 36.2%
+      - Annual vol: 10.4%
+      - Max drawdown: -7.3%
+      - Win rate: 16.4%
+      The dual filter is very close to the THB-only filter but slightly lower
+      (3.48 vs 3.52). The extra XAG->XAU gate filters out some good trades.
 
 changes:
   - file: docs/ssot/jobs/experiments/2026-08-26-gold-thb-usd-followup-ideas.yml
@@ -163,6 +167,8 @@ changes:
     summary: Final THB+XAG graph+k-NN (W=2, K=50), the new best subset.
   - file: experiments/gold-thb-usd-causality/trended_graph_knn_thb_spread.py
     summary: THB + XAU/XAG log-spread variant.
+  - file: experiments/gold-thb-usd-causality/trended_graph_knn_thb_xag_dual.py
+    summary: THB+XAG with dual THB->XAU and XAG->XAU Granger edge.
 
 references:
   - /home/tony/CascadeProjects/chaba/experiments/gold-thb-usd-causality/trended_graph_knn_silver.py
