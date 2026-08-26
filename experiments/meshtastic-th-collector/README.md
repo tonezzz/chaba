@@ -41,6 +41,36 @@ This is an isolated branch to test collecting and parsing Meshtastic MQTT JSON t
    tail -f nodes.jsonl
    ```
 
+## Configuration
+
+All settings are passed as environment variables:
+
+| Variable | Default | Meaning |
+|---|---|---|
+| `MQTT_BROKER` | `localhost` | MQTT broker host |
+| `MQTT_PORT` | `1883` | MQTT broker port |
+| `MQTT_TOPIC` | `msh/TH/#` | Topic to subscribe to |
+| `OUTPUT` | `nodes.jsonl` | Output JSONL file |
+| `RECORD_POSITIONS` | `false` | Store `position` packets (set `true` to keep) |
+| `MQTT_TLS` | `false` | Use TLS (needed for port 8883) |
+| `MQTT_TLS_INSECURE` | `false` | Skip TLS cert verification (for self-signed brokers) |
+| `MQTT_USER` | — | Username if broker requires auth |
+| `MQTT_PASS` | — | Password if broker requires auth |
+
+### Example: connect to the meshtastic-th public broker
+
+```bash
+MQTT_BROKER=mqtt.meshgw.com \
+MQTT_PORT=8883 \
+MQTT_TLS=true \
+MQTT_TLS_INSECURE=true \
+MQTT_USER=your_user \
+MQTT_PASS=your_pass \
+python3 collector.py
+```
+
+> Note: `mqtt.meshgw.com:8883` is reachable but requires authentication. Contact the Meshtastic Thailand community for credentials.
+
 ## Thai legal settings (NBTC)
 
 For any real RF test in Thailand, configure devices with:
