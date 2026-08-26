@@ -119,33 +119,42 @@ function renderWavelet() {
   });
 }
 
-async function fetchCSV(path) {
+async function fetchCSV(path, column = 'equity') {
   const res = await fetch(path);
   if (!res.ok) return null;
-  const text = await res.text();
-  return text.trim().split('\n').slice(1).map(line => {
-    const [date, , eq] = line.split(',');
-    return { date, equity: parseFloat(eq) };
+  const lines = (await res.text()).trim().split('\n');
+  const headers = lines[0].split(',');
+  const idx = headers.indexOf(column);
+  const colIdx = idx >= 0 ? idx : headers.length - 1;
+  return lines.slice(1).map(line => {
+    const parts = line.split(',');
+    return { date: parts[0], equity: parseFloat(parts[colIdx]) };
   }).filter(r => !isNaN(r.equity));
 }
 
 async function renderEquity() {
   const container = document.getElementById('equity-curves');
   try {
-    const [trended, knn] = await Promise.all([
-      fetchCSV('data/trended_equity.csv').catch(() => null),
-      fetchCSV('data/trended_knn_equity.csv').catch(() => null),
+    const [trended, knn, dtw] = await Promise.all([
+      fetchCSV('data/trended_equity.csv', 'equity').catch(() => null),
+      fetchCSV('data/trended_knn_equity.csv', 'equity').catch(() => null),
+      fetchCSV('data/trended_dtw_equity.csv', 'equity').catch(() => null),
     ]);
-    if (!trended || !knn) {
-      container.innerHTML = '<p class="muted">Baseline equity data not yet available. Run the backtests first.</p>';
+    if (!dtw) {
+      container.innerHTML = '<p class="muted">DTW equity data not yet available. Run the backtests first.</p>';
       return;
     }
-    const dates = trended.map(r => r.date);
-    plot('equity-curves', [
-      { x: dates, y: trended.map(r => r.equity), mode: 'lines', name: '2-day THB trend', line: { color: '#0d6efd' } },
-      { x: dates, y: knn.map(r => r.equity), mode: 'lines', name: 'k-NN (K=20)', line: { color: '#198754' } },
-    ], {
-      title: 'Baselines to beat (log scale)',
+    const dates = dtw.map(r => r.date);
+    const traces = [];
+    if (trended) {
+      traces.push({ x: dates, y: trended.map(r => r.equity), mode: 'lines', name: '2-day THB trend', line: { color: '#0d6efd' } });
+    }
+    if (knn) {
+      traces.push({ x: dates, y: knn.map(r => r.equity), mode: 'lines', name: 'k-NN (K=20)', line: { color: '#198754' } });
+    }
+    traces.push({ x: dates, y: dtw.map(r => r.equity), mode: 'lines', name: 'DTW (W=10, K=20)', line: { color: '#fd7e14' } });
+    plot('equity-curves', traces, {
+      title: 'DTW results vs baselines (log scale)',
       xaxis: { title: 'Date' },
       yaxis: { title: 'Cumulative return', type: 'log' },
       height: 420,

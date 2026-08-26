@@ -39,11 +39,22 @@ processing:
   steps:
     - id: 1
       label: Dynamic Time Warping (DTW) similarity
-      status: not_started
+      status: completed
+      completed_at: '2026-08-26'
       notes: |
-        Align THB and XAU return windows elastically before scoring similarity.
-        Use the DTW distance as a feature for a nearest-neighbor forecast or as a
-        threshold for regime classification.
+        Implemented trended_dtw.py. For each day, build a WINDOW of USD/THB log
+        returns. Find the K training windows with the smallest DTW distance and
+        use their future XAU returns as a weighted forecast. Out-of-sample
+        2014-2026 with WINDOW=10, K=20:
+        - Sharpe: 0.89
+        - Annual return: 10.3%
+        - Annual vol: 11.6%
+        - Max drawdown: -45.0%
+        - Win rate: 25.8%
+        This beats buy-and-hold (Sharpe 0.69) but is well behind the Euclidean
+        k-NN (Sharpe 1.78) and the 2-day THB trend (Sharpe 1.46). DTW's added
+        flexibility may be introducing noise or overfitting in the short windows.
+        A multivariate DTW (THB + XAU) could be tried next.
     - id: 2
       label: Delay-embedding k-NN (Takens-style)
       status: not_started
@@ -94,6 +105,8 @@ processing:
       summary: Exploratory app page for the 6 advanced vector-analysis ideas.
     - file: experiments/gold-thb-usd-causality/app/vector-analysis-ideas.js
       summary: Client-side rendering for the vector-analysis ideas page.
+    - file: experiments/gold-thb-usd-causality/trended_dtw.py
+      summary: Walk-forward DTW nearest-neighbor strategy on THB return windows.
     - file: docs/ssot/jobs/experiments/2026-08-26-gold-thb-usd-vector-analysis.yml
       summary: SSOT job defining the advanced vector-analysis exploration.
 
