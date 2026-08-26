@@ -120,13 +120,20 @@ steps:
       0.05% remains the best for research.
   - id: 5
     label: Gold/silver spread feature
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-08-26'
+    completed_at: '2026-08-26'
     notes: |
-      Replace raw xag_ret with the xau-xag log spread or add it as a fourth
-      feature. Test whether the relative gold/silver ratio is more predictive.
-      Deliverable: trended_graph_knn_silver_spread.py.
+      Implemented trended_graph_knn_thb_spread.py. Uses THB return and the
+      XAU/XAG log-spread return instead of raw XAG return. Result (W=2, K=50,
+      P=0.01, edge=504, TC=0.05%):
+      - Sharpe: 3.38
+      - Annual return: 34.2%
+      - Annual vol: 10.1%
+      - Max drawdown: -11.0%
+      - Win rate: 15.8%
+      The spread representation is close but not better than raw XAG. The
+      max drawdown is also larger (-11.0% vs -7.3%).
   - id: 6
     label: XAG->XAU Granger edge filter
     status: pending
@@ -154,6 +161,8 @@ changes:
     summary: Feature ablation grid over THB/XAU/XAG feature subsets.
   - file: experiments/gold-thb-usd-causality/trended_graph_knn_thb_xag.py
     summary: Final THB+XAG graph+k-NN (W=2, K=50), the new best subset.
+  - file: experiments/gold-thb-usd-causality/trended_graph_knn_thb_spread.py
+    summary: THB + XAU/XAG log-spread variant.
 
 references:
   - /home/tony/CascadeProjects/chaba/experiments/gold-thb-usd-causality/trended_graph_knn_silver.py
