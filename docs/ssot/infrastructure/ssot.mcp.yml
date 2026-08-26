@@ -151,7 +151,7 @@ servers:
   mcp-debug:
     name: MCP Debug
     description: Multi-host compact debug and remote execution via SSE on tony-dell
-    url: https://tony-dell.taila0626a.ts.net:8446/sse/
+    url: http://tony-dell.taila0626a.ts.net:8446/sse/
     wrapper: none
     filter: none
     single_instance: false
@@ -160,7 +160,7 @@ servers:
       - devin: true
       - windsurf: true
     notes: |
-      SSE server runs on tony-dell. Replaces remote-exec-tony-dell. Supports mcp_debug and mcp_raw.
+      SSE server runs on tony-dell over plain HTTP to avoid Devin HTTPS cert issues. Replaces remote-exec-tony-dell.
 
   alphavantage:
     name: Alpha Vantage Financial Data
