@@ -40,4 +40,7 @@ git commit -m "$MESSAGE" || {
 # 5. Mark active focus completed in ssot.focus.current.active.yml
 #    (simplified: the assistant or focus-sweep will update it)
 
+# 6. Reload mcp-focus cache so the server sees the new SSOT state
+PYTHONPATH="$REPO/scripts" python3 -c 'from mcp_debug.focus import mcp_focus; mcp_focus("", "reload")' 2>/dev/null || true
+
 echo "Task committed: $MESSAGE"

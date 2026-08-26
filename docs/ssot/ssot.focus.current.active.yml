@@ -4,16 +4,6 @@ icon: target
 sections:
 - title: Active Shared Focus
   icon: active
-<<<<<<< HEAD
-  layout: list
-  items:
-  - label: Stabilize tony-dell as the headless primary host
-    text: Move persistent services and headless automation to tony-dell while keeping tony-omen available for interactive work and GPU/ML tasks.
-    status: active
-    priority: high
-    started: '2026-08-26'
-    estimated_duration: 3 sessions
-=======
   layout: list
   items:
   - label: Stabilize tony-dell as the headless primary host
@@ -129,24 +119,13 @@ sections:
     completed: '2026-08-26'
     completed_at: '2026-08-26'
     estimated_duration: 1 session
->>>>>>> 5fa899b (focus: sync active foci after rview completion and gold experiment start)
     tags:
+    - mcp-rview
+    - oauth
+       - ssot
     - tony-dell
-    - headless
-    - failover
-    - mcp
-    - infrastructure
+    - sync
     subtasks:
-<<<<<<< HEAD
-    - label: Audit current tony-dell services and identify missing persistent units
-      status: not_started
-    - label: Move low-latency MCP servers (mcp-debug SSE, mcp-health, mcp-focus) to tony-dell
-      status: not_started
-    - label: Add tony-dell health checks to SSOT and verify Tailscale reachability
-      status: not_started
-    - label: Document tony-omen-to-tony-dell failover procedure
-      status: not_started
-=======
     - label: Verify tony-omen has no active mcp-rview-oauth-proxy listener or tailscale serve mapping
       status: completed
       completed_at: '2026-08-26'
@@ -162,60 +141,14 @@ sections:
     - label: Commit the SSOT sync
       status: completed
       completed_at: '2026-08-26'
->>>>>>> 5fa899b (focus: sync active foci after rview completion and gold experiment start)
     request_log: []
     ownership:
       owner: tony
       session: ''
       locked: false
       lock_reason: ''
-<<<<<<< HEAD
-- title: Active Branch Focus
-  icon: branch
-  layout: list
-  items:
-  - label: Gold/THB/USD Causality Exploration
-    text: |
-      Investigate directional and temporal relationships between gold (XAU/USD),
-      the Thai Baht (USD/THB), and the US Dollar index using Granger causality
-      and other time-series methods.
-    branch: experiment/gold-thb-usd-causality
-    status: active
-    priority: medium
-    started: '2026-08-26'
-    estimated_duration: 2 sessions
-    tags:
-    - gold
-    - thb
-    - usd
-    - causality
-    - experiment
-    subtasks:
-    - label: Define hypotheses and variable set
-      status: completed
-      completed_at: '2026-08-26'
-    - label: Fetch and cache daily time series
-      status: completed
-      completed_at: '2026-08-26'
-    - label: Clean, align, and stationarize
-      status: not_started
-    - label: Exploratory analysis and visualizations
-      status: not_started
-    - label: Causality and lead-lag tests
-      status: not_started
-    - label: Report and archive
-      status: not_started
-    request_log: []
-    ownership:
-      owner: tony
-      session: ''
-      locked: false
-      lock_reason: ''
-    source: docs/ssot/jobs/experiments/2026-08-26-gold-thb-usd-causality.yml
-=======
     branch: feature/home-assistant-mcp
     source: /home/tony/CascadeProjects/chaba/docs/ssot/focus-inbox/2026-08-25-132325-mcp-rview-oauth-proxy-ssot-desync.yml
->>>>>>> 5fa899b (focus: sync active foci after rview completion and gold experiment start)
 - title: Quick Wins
   icon: quick
   layout: list
@@ -236,4 +169,13 @@ sections:
 - title: Ready-Safe Queue
   icon: safe
   layout: list
-  items: []
+  items:
+  - label: Add real CI smoke tests
+    text: Add a GitHub Actions job that runs a live MCP call (mcp_debug, mcp_health, or mcp-focus) on every push to master.
+    status: not_started
+    priority: medium
+    tags:
+    - ci
+    - mcp
+    - smoke-test
+    - master

@@ -26,6 +26,16 @@ validation:
   require_tags: true
   require_request_log: true
   archive_completed_after_days: 14
+  completed_at_required: true
+  completed_at_note: '`completed_at` (ISO 8601 date) is required on completed focus items and
+
+    completed subtasks.  The mcp-focus server uses it to avoid stale warnings.
+
+    Top-level foci also keep `completed` for human readability; subtasks use
+
+    `completed_at`.
+
+    '
 sections:
 - title: Active Shared Focus
   icon: active
@@ -354,6 +364,26 @@ sections:
     - hotspot
     - network
     - mt7601u
+    - completed
+  - label: SSOT desync for mcp-rview-oauth-proxy
+    text: "A scan of tony-dell found the mcp-rview-oauth-proxy is already running:\n  - 127.0.0.1:9004 is listening on tony-dell\n\
+      \  - tailscale serve on tony-dell serves https://tony-dell.taila0626a.ts.net/ proxying to 127.0.0.1:9004\n  - the mcp-rview\
+      \ stdio/SSE server is also on tony-dell at 127.0.0.1:9003\nHowever, ssot.services.yml and ssot.health still describe\
+      \ the proxy as a tony-omen service on 9004/443,\nand the tony-omen tailscale serve status does not show a /mcp-rview\
+      \ or 9004 handler.\nThe whole RView MCP stack is already co-located on tony-dell; the migration is effectively done\
+      \ but not recorded.\n"
+    date: '2026-08-26'
+    duration: 1 session
+    outcome: 'Completed subtasks: Verify tony-omen has no active mcp-rview-oauth-proxy listener or tailscale serve mapping,
+      Update docs/ssot/infrastructure/ssot.services.yml to register mcp-rview-oauth-proxy under tony_dell, Update affected
+      health files (ssot.health.home.web.yml, ssot.health.mobile.yml, public/ssot.health.mobile.yml), Update ssot.containerization.yml
+      and the active migration job to reflect reality, Commit the SSOT sync'
+    tags:
+    - mcp-rview
+    - oauth
+    - ssot
+    - tony-dell
+    - sync
     - completed
   note: Recent 10 focus records. 10 older records archived to /home/tony/CascadeProjects/chaba/docs/ssot/ssot.focus.history.archive.2026.yml
   archive_count: 10
