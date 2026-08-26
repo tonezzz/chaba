@@ -1,0 +1,120 @@
+title: Gold/THB/USD Vector-Search Trend Detection
+subtitle: Explore vector-search and latent-space methods for detecting THB-driven XAU/USD trends
+icon: target
+
+planning:
+  goal: |
+    Evaluate whether vector search, nearest-neighbor pattern matching, and latent-space
+    clustering on multi-day THB/USD/XAU windows can improve the THB->XAU predictive
+    signal beyond the existing threshold and trend-sum rules.
+  scope: |
+    - Build a reusable multi-day window vector from XAU, THB, and USD/EUR log returns.
+    - Implement a k-NN pattern matcher and compare it to the 2-day trend baseline.
+    - Test PCA/UMAP regime embeddings and similarity-weighted forecasts.
+    - Add an anomaly/change-point filter based on distance to the k-th nearest neighbor.
+    - Document findings with a companion app page of charts and explanations.
+  out_of_scope: |
+    - Real-time trading system implementation.
+    - External embedding models (e.g., LLM, image embeddings).
+    - Live deployment to the trade-api stack.
+  success_criteria:
+    - A reproducible backtest for at least one vector-search variant.
+    - A comparison table against the 2-day trend baseline.
+    - An app page with a chart and explanation for each of the 5 explored ideas.
+  risks:
+    - Spurious fits from high-dimensional windows; mitigate with cross-validation and walk-forward testing.
+    - Look-ahead bias when building the neighbor index; mitigate by using only past data in each window.
+    - Overfitting from too many hyper-parameters; mitigate by fixing k and window length from a small, pre-registered grid.
+  resources:
+    - experiments/gold-thb-usd-causality/data/returns.csv
+    - experiments/gold-thb-usd-causality/walkforward.py
+    - experiments/gold-thb-usd-causality/trended.py
+    - python3 with pandas, numpy, scikit-learn, and optional umap-learn.
+  owner: tony
+  estimated_duration: 2 sessions
+
+processing:
+  status: not_started
+  started_at: '2026-08-26'
+  steps:
+    - id: 1
+      label: k-NN pattern matcher on return windows
+      status: not_started
+      notes: |
+        Build a fixed-width window vector for each day from THB, XAU, and USD/EUR log
+        returns. At day t, search the previous training set for the k most similar
+        windows and use the distribution of subsequent XAU returns as the signal.
+    - id: 2
+      label: Regime-embedding with PCA
+      status: not_started
+      notes: |
+        Reduce the multi-day window to a small number of principal components. Search
+        the projected training set for nearest neighbors and use their XAU outcomes as
+        the forecast.
+    - id: 3
+      label: Similarity-weighted forecast
+      status: not_started
+      notes: |
+        Weighted average of neighbor XAU returns, with weights decaying by distance.
+        Position is the sign of the weighted forecast.
+    - id: 4
+      label: Anomaly / change-point filter
+      status: not_started
+      notes: |
+        Compute the distance from the current window to its k-th nearest historical
+        neighbor. If the distance is above a percentile threshold, treat the regime as
+        unfamiliar and go flat.
+    - id: 5
+      label: SSOT / documentation vector search with MDDB
+      status: not_started
+      notes: |
+        Demonstrate using the repo's MDDB documentation vector search to find related
+        causality, time-series, and backtesting notes. Not for trading, but for
+        research hygiene and linking related work.
+    - id: 6
+      label: App page with charts and explanations
+      status: not_started
+      notes: |
+        Create experiments/gold-thb-usd-causality/app/vector-search-ideas.html with
+        a chart and explanation for each idea. Link from the main app index.
+  decisions:
+    - label: Keep variants research-only
+      rationale: |
+        These are exploratory non-parametric alternatives to the existing trend rule.
+        No live trading integration without a separate prototype and validation focus.
+  changes:
+    - file: experiments/gold-thb-usd-causality/app/vector-search-ideas.html
+      summary: Exploratory app page for the 5 vector-search ideas.
+    - file: docs/ssot/jobs/experiments/2026-08-26-gold-thb-usd-vector-search.yml
+      summary: SSOT job defining the vector-search exploration.
+
+followup:
+  verification:
+    - Re-run the new scripts in a fresh checkout and confirm the app page loads.
+  rollback_plan:
+    - Delete the new SSOT file and the app/vector-search-ideas.* files.
+  handoff:
+    - tony for promotion to a prototype if any variant beats the 2-day trend baseline.
+  deferred:
+    - Live data ingestion.
+    - Trade-api integration.
+
+report:
+  status: not_started
+  summary: |
+    Placeholder. This SSOT will be updated after each of the 5 ideas is implemented and
+    backtested.
+  links:
+    - experiments/gold-thb-usd-causality/app/vector-search-ideas.html
+    - docs/ssot/jobs/experiments/2026-08-26-gold-thb-usd-vector-search.yml
+  lessons_learned: []
+
+config:
+  version: 1
+  created_at: '2026-08-26'
+  last_updated: '2026-08-26'
+  maintainer: tony
+  related_files:
+    - docs/ssot/templates/job.yml
+    - experiments/gold-thb-usd-causality/walkforward.py
+    - experiments/gold-thb-usd-causality/trended.py
