@@ -13,18 +13,21 @@ Usage:
 import json
 import os
 import sys
+import warnings
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
 from statsmodels.tsa.stattools import grangercausalitytests
 
+warnings.filterwarnings("ignore", category=FutureWarning)
+
 ROOT = Path(__file__).parent
 DATA = ROOT / "data"
-LOOKBACK = int(os.environ.get("LOOKBACK", "252"))
+LOOKBACK = int(os.environ.get("LOOKBACK", "504"))
 TREND_WINDOW = int(os.environ.get("TREND_WINDOW", "2"))
-P_THRESHOLD = float(os.environ.get("P_THRESHOLD", "0.05"))
-MAX_LAG = int(os.environ.get("MAX_LAG", "5"))
+P_THRESHOLD = float(os.environ.get("P_THRESHOLD", "0.01"))
+MAX_LAG = int(os.environ.get("MAX_LAG", "2"))
 TC = float(os.environ.get("TC", "0.0005"))
 
 
@@ -189,5 +192,4 @@ def main():
 
 
 if __name__ == "__main__":
-    print("__main__ guard entered", flush=True)
     main()

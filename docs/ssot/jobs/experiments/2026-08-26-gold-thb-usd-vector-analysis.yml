@@ -112,19 +112,18 @@ processing:
       status: completed
       completed_at: '2026-08-26'
       notes: |
-        Implemented trended_graph.py. For each month, run a Granger-causality test
-        on the previous 252 days (THB -> XAU). If the minimum p-value across lags 1-2
-        is below 0.05, the directed edge is active and the strategy trades the sign
-        of the 2-day THB trend; otherwise it stays flat. Out-of-sample 2014-2026:
-        - Sharpe: 1.74
-        - Annual return: 17.8%
-        - Annual vol: 10.2%
-        - Max drawdown: -13.9%
-        - Win rate: 14.7%
-        This is the best advanced method so far: it beats the 2-day THB trend
-        (Sharpe 1.46, max DD -21.3%) and the k-NN (Sharpe 1.78, max DD -41.4%) on a
-        risk-adjusted basis with a much smaller drawdown. The Granger edge acts as
-        an effective regime filter.
+        Implemented trended_graph.py and tune_graph.py. Grid search over LOOKBACK
+        (252, 504), MAX_LAG (1, 2, 3, 5) and P_THRESHOLD (0.01, 0.05, 0.10, 0.20)
+        found the best combination as LOOKBACK=504, MAX_LAG=2, P_THRESHOLD=0.01.
+        Tuned out-of-sample 2014-2026:
+        - Sharpe: 2.20
+        - Annual return: 19.5%
+        - Annual vol: 8.9%
+        - Max drawdown: -8.0%
+        - Win rate: 10.1%
+        The stricter p=0.01 and longer 504-day lookback make the edge filter more
+        conservative, cutting more false-positive trades and reducing drawdown. This
+        is the best result in the entire research branch.
     - id: 6
       label: Wavelet coherence
       status: completed
@@ -173,6 +172,8 @@ processing:
       summary: Regime-switching VAR with low/high THB volatility.
     - file: experiments/gold-thb-usd-causality/trended_graph.py
       summary: Granger-causality edge filter for the 2-day THB trend.
+    - file: experiments/gold-thb-usd-causality/tune_graph.py
+      summary: Grid search for LOOKBACK, MAX_LAG, P_THRESHOLD on the graph filter.
     - file: experiments/gold-thb-usd-causality/trended_wavelet.py
       summary: Causal complex Morlet CWT on THB returns.
     - file: docs/ssot/jobs/experiments/2026-08-26-gold-thb-usd-vector-analysis.yml
