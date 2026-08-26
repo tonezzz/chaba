@@ -1,0 +1,114 @@
+title: Gold/THB/USD/EUR Follow-Up
+subtitle: Test whether adding USD/EUR improves the graph+k-NN XAU/USD out-of-sample results
+icon: target
+
+planning:
+  goal: |
+    Determine whether daily USD/EUR (DXY/EUR) returns add predictive power to the
+    existing THB -> XAU graph+k-NN strategy.
+  scope: |
+    - Align the existing data/usd_eur.csv close prices with data/aligned.csv.
+    - Add usd_ret as an additional k-NN feature while keeping the same
+      walk-forward, monthly retraining, and out-of-sample (2014-2026) discipline.
+    - Implement two variants:
+      * trended_usd.py: a 2-day USD/EUR trend signal for XAU.
+      * trended_graph_knn_usd.py: the graph+k-NN with THB, XAU, and USD/EUR features.
+    - Compare each to the THB-only graph+k-NN baseline.
+  out_of_scope: |
+    - Real-time trading or trade-api integration.
+    - New asset classes beyond XAU, USD/THB, and USD/EUR.
+    - Hyper-parameter overfitting outside the existing walk-forward grid.
+  success_criteria:
+    - USD/EUR data aligned to the existing 2014-2026 XAU/THB series.
+    - At least one USD/EUR variant run through the walk-forward OOS protocol.
+    - A metrics table comparing each variant to the THB-only graph+k-NN baseline.
+  risks:
+    - USD/EUR and THB both contain USD-strength components; adding both may
+      introduce collinearity. Mitigate by keeping the walk-forward design and not
+      expanding the k-NN search beyond the baseline defaults.
+  resources:
+    - experiments/gold-thb-usd-causality/data/aligned.csv
+    - experiments/gold-thb-usd-causality/data/aligned_usd.csv
+    - experiments/gold-thb-usd-causality/data/usd_eur.csv
+    - experiments/gold-thb-usd-causality/trended_graph_knn.py
+  owner: tony
+  estimated_duration: 1 session
+
+processing:
+  status: completed
+  started_at: '2026-08-26'
+  completed_at: '2026-08-26'
+  steps:
+    - id: 1
+      label: Align USD/EUR to the existing series
+      status: completed
+      completed_at: '2026-08-26'
+      notes: |
+        Used prepare_usd.py to read data/usd_eur.csv and produce
+        data/aligned_usd.csv with columns date, xau, thb, usd.
+        3,076 daily observations from 2014-11-07 to 2026-08-25.
+    - id: 2
+      label: Implement trended_usd.py
+      status: completed
+      completed_at: '2026-08-26'
+      notes: |
+        2-day USD/EUR log-return trend signal for XAU. Walk-forward OOS 2014-2026:
+        - Sharpe: -1.42
+        - Annual return: -18.4%
+        - Annual vol: 13.0%
+        - Max drawdown: -91.2%
+        - Win rate: 27.0%
+        The raw USD/EUR trend is strongly negative and much worse than
+        buy-and-hold.
+    - id: 3
+      label: Implement trended_graph_knn_usd.py
+      status: completed
+      completed_at: '2026-08-26'
+      notes: |
+        Added usd_ret to the graph+k-NN feature vector
+        (thb_ret, xau_ret, usd_ret). Kept WINDOW=2, K=30, P_THRESHOLD=0.01,
+        EDGE_LOOKBACK=504. Walk-forward OOS 2014-2026:
+        - Sharpe: 2.51
+        - Annual return: 20.6%
+        - Annual vol: 8.2%
+        - Max drawdown: -6.6%
+        - Win rate: 12.3%
+        This is close to the THB-only baseline but slightly worse on Sharpe and
+        return.
+    - id: 4
+      label: Compare to THB-only graph+k-NN baseline
+      status: completed
+      completed_at: '2026-08-26'
+      notes: |
+        THB-only graph+k-NN baseline (OOS 2014-2026):
+        - Sharpe: 2.77
+        - Annual return: 22.1%
+        - Annual vol: 8.0%
+        - Max drawdown: -7.5%
+        - Win rate: 12.4%
+        No USD/EUR variant beats the baseline. The app/vector-analysis-ideas.js
+        file is left unchanged.
+  decisions:
+    - label: Use the cached data/usd_eur.csv source
+      rationale: |
+        usd_eur.csv was already fetched by the original analyze.py pipeline,
+        so no new fetch was required.
+    - label: Keep the baseline walk-forward protocol unchanged
+      rationale: |
+        The goal is to measure the marginal value of USD/EUR, not to re-optimize
+        the calendar or hold-out period.
+    - label: Only update the app if a USD/EUR variant beats the baseline
+      rationale: |
+        vector-analysis-ideas.js currently highlights the THB-only graph+k-NN
+        result. It should only be changed when there is a clearly better OOS
+        backtest.
+
+config:
+  version: 1
+  created_at: '2026-08-26'
+  last_updated: '2026-08-26'
+  maintainer: tony
+  related_files:
+    - docs/ssot/jobs/experiments/2026-08-26-gold-thb-usd-vector-analysis.yml
+    - docs/ssot/jobs/experiments/2026-08-26-gold-thb-usd-oil-followup.yml
+    - experiments/gold-thb-usd-causality/trended_graph_knn.py
