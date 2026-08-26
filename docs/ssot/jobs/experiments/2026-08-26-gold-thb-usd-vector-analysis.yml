@@ -75,11 +75,21 @@ processing:
         help.
     - id: 3
       label: Singular Spectrum Analysis (SSA)
-      status: not_started
+      status: completed
+      completed_at: '2026-08-26'
       notes: |
-        Decompose THB and/or XAU returns into trend, oscillatory, and noise
-        components. Use the reconstructed signal as a cleaner input to the existing
-        threshold or k-NN rules.
+        Implemented trended_ssa.py. For each month, fit SSA on the previous 252
+        USD/THB returns with embedding L=20 and R=2 components. Reconstruct a
+        denoised THB return and trade the sign of the R=2 rolling THB trend.
+        Out-of-sample 2014-2026:
+        - Sharpe: -0.14
+        - Annual return: -1.6%
+        - Annual vol: 11.4%
+        - Max drawdown: -56.8%
+        - Win rate: 24.6%
+        The R=2 reconstruction appears to over-smooth or invert the useful signal.
+        Tuning L, R, or using the oscillatory/noise components instead of the
+        leading trend components may help.
     - id: 4
       label: Time-varying / Markov-switching VAR
       status: not_started
@@ -121,6 +131,8 @@ processing:
       summary: Walk-forward DTW nearest-neighbor strategy on THB return windows.
     - file: experiments/gold-thb-usd-causality/trended_delay.py
       summary: Takens-style delay-embedding k-NN on THB log returns.
+    - file: experiments/gold-thb-usd-causality/trended_ssa.py
+      summary: SSA-denoised THB trend strategy with walk-forward calibration.
     - file: docs/ssot/jobs/experiments/2026-08-26-gold-thb-usd-vector-analysis.yml
       summary: SSOT job defining the advanced vector-analysis exploration.
 

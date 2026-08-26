@@ -135,17 +135,18 @@ async function fetchCSV(path, column = 'equity') {
 async function renderEquity() {
   const container = document.getElementById('equity-curves');
   try {
-    const [trended, knn, dtw, delay] = await Promise.all([
+    const [trended, knn, dtw, delay, ssa] = await Promise.all([
       fetchCSV('data/trended_equity.csv', 'equity').catch(() => null),
       fetchCSV('data/trended_knn_equity.csv', 'equity').catch(() => null),
       fetchCSV('data/trended_dtw_equity.csv', 'equity').catch(() => null),
       fetchCSV('data/trended_delay_equity.csv', 'equity').catch(() => null),
+      fetchCSV('data/trended_ssa_equity.csv', 'equity').catch(() => null),
     ]);
-    if (!delay) {
+    if (!ssa) {
       container.innerHTML = '<p class="muted">Vector-analysis equity data not yet available. Run the backtests first.</p>';
       return;
     }
-    const dates = delay.map(r => r.date);
+    const dates = ssa.map(r => r.date);
     const traces = [];
     if (trended) {
       traces.push({ x: dates, y: trended.map(r => r.equity), mode: 'lines', name: '2-day THB trend', line: { color: '#0d6efd' } });
@@ -156,7 +157,10 @@ async function renderEquity() {
     if (dtw) {
       traces.push({ x: dates, y: dtw.map(r => r.equity), mode: 'lines', name: 'DTW (W=10, K=20)', line: { color: '#fd7e14' } });
     }
-    traces.push({ x: dates, y: delay.map(r => r.equity), mode: 'lines', name: 'Delay k-NN (W=6, K=20)', line: { color: '#6f42c1' } });
+    if (delay) {
+      traces.push({ x: dates, y: delay.map(r => r.equity), mode: 'lines', name: 'Delay k-NN (W=6, K=20)', line: { color: '#6f42c1' } });
+    }
+    traces.push({ x: dates, y: ssa.map(r => r.equity), mode: 'lines', name: 'SSA (L=20, R=2)', line: { color: '#20c997' } });
     plot('equity-curves', traces, {
       title: 'Vector-analysis results vs baselines (log scale)',
       xaxis: { title: 'Date' },
