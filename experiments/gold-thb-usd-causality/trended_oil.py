@@ -29,7 +29,7 @@ def load():
     df = df.sort_values("date").dropna()
     df.set_index("date", inplace=True)
     logdf = np.log(df)
-    col = os.environ.get("OIL_COL", "wti")
+    col = os.environ.get("OIL_COL", "oil")
     df["oil_ret"] = logdf[col].diff()
     df["xau_t1"] = logdf["xau"].shift(-1) - logdf["xau"]
     df["oil_trend"] = df["oil_ret"].rolling(TREND_WINDOW).sum()
