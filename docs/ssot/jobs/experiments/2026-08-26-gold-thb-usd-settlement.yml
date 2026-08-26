@@ -51,14 +51,19 @@ planning:
   estimated_duration: 1-2 sessions
 
 processing:
-  status: pending
+  status: in_progress
+  started_at: '2026-08-26'
   steps:
     - id: 1
       label: Prepare THB-base data
-      status: pending
+      status: completed
+      completed_at: '2026-08-26'
       notes: |
-        Compute XAU/THB = XAU/USD * USD/THB and align to the existing calendar.
-        Save data/aligned_thb_base.csv with columns date, xau_usd, thb, xau_thb, usd_thb.
+        Computed XAU/THB = XAU/USD * USD/THB from data/aligned.csv.
+        Saved data/aligned_thb_base.csv with 3,076 observations from
+        2014-11-07 to 2026-08-25. Columns: date, xau_usd, usd_thb, xau_thb.
+        Sample: XAU/USD 1178.03 ... 4683.72; USD/THB 32.78 ... 32.67;
+        XAU/THB 38615.90 ... 153017.21.
     - id: 2
       label: Implement settle-to-THB variant
       status: pending
