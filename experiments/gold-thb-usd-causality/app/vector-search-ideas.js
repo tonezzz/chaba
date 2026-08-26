@@ -180,23 +180,43 @@ function renderAnomaly() {
   });
 }
 
-function renderMDDB() {
-  const ideas = [
-    { text: 'Granger causality on financial time series', score: 0.91 },
-    { text: 'Out-of-sample backtesting best practices', score: 0.88 },
-    { text: 'Vector search for pattern matching in price data', score: 0.85 },
-    { text: 'PCA and UMAP for market regimes', score: 0.79 },
-    { text: 'Alpha Vantage and FX data conventions', score: 0.72 },
-  ];
+async function renderMDDB() {
   const container = document.getElementById('idea-mddb');
   if (!container) return;
-  const ul = document.createElement('ul');
-  ideas.forEach(d => {
-    const li = document.createElement('li');
-    li.innerHTML = `<code style="color:${COLORS.grey}">${d.score.toFixed(2)}</code> — ${d.text}`;
-    ul.appendChild(li);
-  });
-  container.appendChild(ul);
+  container.innerHTML = '<p class="muted">Loading MDDB search results…</p>';
+  try {
+    const results = await fetch('data/mddb_results.json').then(r => r.json()).catch(() => null);
+    if (!results) {
+      container.innerHTML = '<p class="muted">MDDB results not available on this host.</p>';
+      return;
+    }
+    const list = document.createElement('div');
+    results.forEach(group => {
+      const card = document.createElement('div');
+      card.style.marginBottom = '1rem';
+      const title = document.createElement('strong');
+      title.textContent = group.idea;
+      const details = document.createElement('span');
+      details.className = 'muted';
+      details.style.fontSize = '0.85rem';
+      details.textContent = ` — ${group.collection}@${group.mddb_host}`;
+      const ul = document.createElement('ul');
+      group.results.forEach(r => {
+        const li = document.createElement('li');
+        li.innerHTML = `<code style="color:${COLORS.grey}">${r.score.toFixed(3)}</code> — ${r.title} <span class="muted">(${r.rel_path})</span>`;
+        ul.appendChild(li);
+      });
+      card.appendChild(title);
+      card.appendChild(details);
+      card.appendChild(ul);
+      list.appendChild(card);
+    });
+    container.innerHTML = '';
+    container.appendChild(list);
+  } catch (err) {
+    container.innerHTML = `<p class="error">${err.message}</p>`;
+    console.error(err);
+  }
 }
 
 async function fetchCSV(path) {

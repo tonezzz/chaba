@@ -97,11 +97,16 @@ processing:
         returns and reduces false trades in unfamiliar regimes.
     - id: 5
       label: SSOT / documentation vector search with MDDB
-      status: not_started
+      status: completed
+      completed_at: '2026-08-26'
       notes: |
-        Demonstrate using the repo's MDDB documentation vector search to find related
-        causality, time-series, and backtesting notes. Not for trading, but for
-        research hygiene and linking related work.
+        Implemented mddb_search.py and wired the results into the vector-search app.
+        For each of the five ideas, the script queries MDDB's /v1/vector-search
+        endpoint on tony-dell:11023 and stores the top-3 ranked results in
+        data/mddb_results.json. The app fetches this JSON and renders the query,
+        collection, score, and document title for each idea. This is not a trading
+        signal; it demonstrates the same vector-search concept applied to the
+        repository's knowledge base for research hygiene.
     - id: 6
       label: App page with charts and explanations
       status: completed
@@ -124,6 +129,8 @@ processing:
       summary: Loads live equity curves for the implemented variants.
     - file: experiments/gold-thb-usd-causality/trended_anomaly.py
       summary: k-NN pattern matcher with a distance-to-kth-neighbor anomaly flat-filter.
+    - file: experiments/gold-thb-usd-causality/mddb_search.py
+      summary: MDDB semantic search generator for the documentation vector-search demo.
     - file: docs/ssot/jobs/experiments/2026-08-26-gold-thb-usd-vector-search.yml
       summary: SSOT job defining the vector-search exploration.
 
