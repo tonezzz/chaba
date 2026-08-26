@@ -33,32 +33,6 @@ services:
     - frigate_default
     profiles:
     - production
-  status-api:
-    container_name: status-api
-    build:
-      context: /home/tony/CascadeProjects/chaba-omen/stacks/web/status-api
-      dockerfile: Dockerfile
-    restart: unless-stopped
-    env_file:
-    - /home/tony/CascadeProjects/helm/.env.local
-    environment:
-    - REPO_PATH=/repo
-    - FRIGATE_URL=http://frigate:5000
-    volumes:
-    - ../..:/repo
-    - /var/run/docker.sock:/var/run/docker.sock:rw
-    - /sys/class/thermal:/sys/class/thermal:ro
-    - /sys/class/hwmon:/sys/class/hwmon:ro
-    - /sys/devices/platform/hp-wmi:/sys/devices/platform/hp-wmi:rw
-    - /sys/devices/system/cpu/intel_pstate:/sys/devices/system/cpu/intel_pstate:rw
-    - /home/tony/CascadeProjects/chaba-omen/stacks/web/status-api/main.py:/app/main.py:ro
-    privileged: true
-    networks:
-    - default
-    - frigate_default
-    external_links:
-    - web:web
-    - web_default
   imagen2-inference:
     container_name: imagen2-inference
     build:
@@ -89,71 +63,87 @@ services:
           memory: 8G
     networks:
     - default
-
-  status-api:
-    container_name: status-api
-    build:
-      context: ./status-api
-      dockerfile: Dockerfile
-    restart: unless-stopped
-    expose:
-      - "8000"
-    environment:
-      - REPO_PATH=/repo
-    volumes:
-      - ../..:/repo
-    networks:
-      - default
-
   netdata:
     container_name: netdata
     image: netdata/netdata:stable
     restart: unless-stopped
     pid: host
     ports:
-      - 19999:19999
+    - 19999:19999
     environment:
-      - NETDATA_DISABLE=ebpf,nfacct,perf
+    - NETDATA_DISABLE=ebpf,nfacct,perf
     volumes:
-      - /proc:/host/proc:ro
-      - /sys:/host/sys:ro
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-      - /etc/os-release:/host/etc/os-release:ro
+    - /proc:/host/proc:ro
+    - /sys:/host/sys:ro
+    - /var/run/docker.sock:/var/run/docker.sock:ro
+    - /etc/os-release:/host/etc/os-release:ro
     cap_add:
-      - SYS_PTRACE
-      - SYS_ADMIN
+    - SYS_PTRACE
+    - SYS_ADMIN
     security_opt:
-      - apparmor=unconfined
+    - apparmor=unconfined
     deploy:
       resources:
         reservations:
           devices:
-            - driver: nvidia
-              count: 1
-              capabilities:
-                - gpu
+          - driver: nvidia
+            count: 1
+            capabilities:
+            - gpu
     networks:
-      - default
-
+    - default
   helm:
     container_name: helm
     build:
       context: /home/tony/CascadeProjects/helm
       dockerfile: Dockerfile
     env_file:
-      - /home/tony/CascadeProjects/helm/.env.local
+    - /home/tony/CascadeProjects/helm/.env.local
     restart: unless-stopped
     ports:
-      - "3003:3000"
+    - 3003:3000
     extra_hosts:
-      - "host.docker.internal:host-gateway"
+    - host.docker.internal:host-gateway
     networks:
-      - default
-
+    - default
+    healthcheck:
+      test:
+      - CMD-SHELL
+      - node -e "fetch('http://localhost:3000/apps/helm/api/health').then(r=>{if(!r.ok)
+        process.exit(1)}).catch(()=>process.exit(1))"
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    volumes:
+    - helm_data:/app/data
+  sensor-reader:
+    container_name: sensor-reader
+    build:
+      context: ./sensor-reader
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+    - 8001:8001
+    environment:
+    - REPO_PATH=/repo
+    volumes:
+    - ../..:/repo
+    - /var/run/docker.sock:/var/run/docker.sock:ro
+    - /sys/class/thermal:/sys/class/thermal:ro
+    - /sys/class/hwmon:/sys/class/hwmon:ro
+    - /sys/devices/platform/hp-wmi:/sys/devices/platform/hp-wmi:rw
+    - /sys/devices/system/cpu/intel_pstate:/sys/devices/system/cpu/intel_pstate:rw
+    - ./sensor-reader/main.py:/app/main.py:ro
+    privileged: true
+    networks:
+    - default
+    - frigate_default
 volumes:
   caddy_data: null
   caddy_config: null
   rview_api_state: null
+  helm_data:
 networks:
   frigate_default:
     external: true

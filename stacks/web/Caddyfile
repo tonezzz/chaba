@@ -1,3 +1,7 @@
+{
+	admin localhost:2018
+}
+
 :8080 {
 	root * /srv/public
 	file_server
@@ -103,6 +107,17 @@
 
 	handle /api/* {
 		reverse_proxy 100.68.142.13:8000
+	}
+
+	# Helm proxy - /apps/helm/* to helm container (basePath configured, preserve full path)
+	@apps_helm path /apps/helm /apps/helm/*
+	handle @apps_helm {
+		reverse_proxy helm:3000 {
+			header_up Host localhost
+			health_uri /apps/helm/api/health
+			health_interval 30s
+			health_timeout 5s
+		}
 	}
 
 	handle /frigate/* {
