@@ -39,21 +39,41 @@ processing:
   started_at: '2026-08-26'
   last_updated: '2026-08-26'
   notes: |
-    The tuned silver graph+k-NN (W=2, K=10, p=0.01, EDGE_LOOKBACK=504) is the
-    current best: Sharpe 3.43, annual return 34.0%, annual vol 9.9%, max DD -6.7%,
-    win rate 15.1%. This SSOT tracks the follow-up experiments to beat or
-    validate that result.
+    The tuned silver graph+k-NN (W=2, K=10, p=0.01, EDGE_LOOKBACK=504) was the
+    initial best: Sharpe 3.43, annual return 34.0%, annual vol 9.9%, max DD -6.7%,
+    win rate 15.1%.
+
+    Step 1 completed: vol-sized silver graph+k-NN (W=2, K=30, TARGET_VOL=0.20)
+    becomes the new best:
+    - Sharpe: 3.46
+    - Annual return: 39.5%
+    - Annual vol: 11.4%
+    - Max drawdown: -5.4%
+    - Win rate: 15.6%
+    The higher target-vol version retains the silver signal and scales positions
+    by XAU realized volatility with MAX_LEVERAGE=2.0. The app/vector-analysis-ideas.js
+    is updated to show the combined vol-sized curve.
 
 steps:
   - id: 1
     label: Vol-sized silver graph+k-NN
-    status: pending
-    started_at: null
-    completed_at: null
+    status: completed
+    started_at: '2026-08-26'
+    completed_at: '2026-08-26'
     notes: |
       Combine the tuned silver graph+k-NN with volatility-targeted position sizing
       from trended_graph_knn_vol.py. Target: higher Sharpe or lower drawdown while
       preserving return. Deliverable: trended_graph_knn_vol_silver.py.
+
+      Result: W=2, K=30, TARGET_VOL=0.20, P_THRESHOLD=0.01, EDGE_LOOKBACK=504.
+      OOS 2014-2026:
+      - Sharpe: 3.46
+      - Annual return: 39.5%
+      - Annual vol: 11.4%
+      - Max drawdown: -5.4%
+      - Win rate: 15.6%
+      This is the new best in the branch. app/vector-analysis-ideas.js
+      is updated to show the combined equity curve.
   - id: 2
     label: Volatility/trend regime gate
     status: pending
