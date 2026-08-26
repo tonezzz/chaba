@@ -1,0 +1,175 @@
+title: Gold/THB/USD Causality Exploration
+subtitle: Investigate directional and temporal relationships between gold (XAU/USD), the Thai Baht (USD/THB), and the US Dollar index
+icon: target
+
+planning:
+  goal: |
+    Determine whether movements in gold (XAU/USD), USD/THB, and broader USD strength
+    lead, lag, or co-move with each other, and document any statistically robust
+    causal links suitable for later forecasting or hedging experiments.
+  scope: |
+    - Collect and align daily close prices for XAU/USD and USD/THB.
+    - Optionally include a USD proxy such as DXY or a trade-weighted USD basket.
+    - Clean, normalize, and stationarize the series where needed.
+    - Run exploratory correlation, Granger-causality, and transfer-entropy tests.
+    - Produce a short report with findings and code artifacts.
+  out_of_scope: |
+    - Real-time trading system implementation.
+    - Options, derivatives, or position sizing.
+    - Live deployment to the trade-api stack.
+  success_criteria:
+    - Daily aligned time series spanning at least 6 months available in the repo.
+    - At least one reproducible causality/lead-lag test with results and p-values.
+    - A documented conclusion on whether any pair reliably leads the others.
+  risks:
+    - Alpha Vantage rate limits or data gaps; mitigate with MetalPrices fallback and local caching.
+    - Spurious regression due to non-stationary series; mitigate with differencing and unit-root tests.
+    - Correlation does not imply causation; mitigate with multiple tests and out-of-sample checks.
+  resources:
+    - docs/ssot/infrastructure/ssot.mcp.yml for the alphavantage MCP endpoint.
+    - docs/ssot/apps/ssot.apps.trade.yml for existing commodity/FX data conventions.
+    - python3 with pandas, statsmodels, numpy, and scipy.
+  owner: tony
+  estimated_duration: 2 sessions
+
+processing:
+  status: in_progress
+  started_at: '2026-08-26'
+  steps:
+    - id: 1
+      label: Define hypotheses and variable set
+      status: completed
+      completed_at: '2026-08-26'
+      notes: |
+        Hypotheses: gold changes lead USD/THB; USD/THB leads gold;
+        both respond contemporaneously to external USD shocks.
+    - id: 2
+      label: Fetch and cache daily time series
+      status: completed
+      completed_at: '2026-08-26'
+      notes: |
+        Fetched XAU/USD (5,375 rows) and USD/THB (3,076 rows) from Alpha Vantage
+        and stored as CSVs under experiments/gold-thb-usd-causality/data/.
+    - id: 3
+      label: Clean, align, and stationarize
+      status: completed
+      completed_at: '2026-08-26'
+      notes: |
+        Inner join on common trading days gives 3,076 aligned daily observations
+        from 2014-11-07 to 2026-08-25. Log levels are non-stationary (ADF p > 0.05),
+        but daily log returns are stationary (ADF p ~ 0.0).
+    - id: 4
+      label: Exploratory analysis and visualizations
+      status: completed
+      completed_at: '2026-08-26'
+      notes: |
+        Cross-correlation of returns is strongest at lag 0 (r = -0.2205). There is
+        a contemporaneous negative relationship between gold and USD/THB returns.
+    - id: 5
+      label: Causality and lead-lag tests
+      status: completed
+      completed_at: '2026-08-26'
+      notes: |
+        Granger causality on log returns:
+        - XAU returns do NOT Granger-cause USD/THB returns (p > 0.5 for lags 1-5).
+        - USD/THB returns DO Granger-cause XAU returns (p = 0.0 for lags 1-5).
+    - id: 6
+      label: Report and archive
+      status: completed
+      completed_at: '2026-08-26'
+      notes: |
+        Reproducible analysis verified end-to-end. Results saved to data/results.json.
+        Report section of this SSOT completed and committed.
+    - id: 7
+      label: Add USD/EUR proxy and trivariate VAR robustness
+      status: completed
+      completed_at: '2026-08-26'
+      notes: |
+        Fetched USD/EUR (3,077 rows) as a USD-strength proxy, extended the analysis
+        to a 3-variable VAR (lag 4 selected by AIC), and re-ran Granger causality.
+        Adding the USD proxy slightly strengthens the finding that THB leads XAU
+        and confirms USD-strength itself also Granger-causes XAU (p = 0.0149).
+  decisions:
+    - label: Use log returns for testing
+      rationale: |
+        Both log XAU/USD and log USD/THB levels are non-stationary. First-differenced
+        log returns are stationary (ADF p ~ 0), which is required for valid
+        Granger causality and cross-correlation inference.
+    - label: Test USD/THB -> XAU direction as the leading hypothesis
+      rationale: |
+        FX is quoted in USD terms for both series, so a USD-strength shock is a
+        plausible common driver. The data supports it strongly (p = 0.0 at all
+        tested lags), while the reverse is not significant.
+  changes:
+    - file: experiments/gold-thb-usd-causality/analyze.py
+      summary: Reproducible analysis script with ADF, cross-correlation, and Granger tests.
+    - file: experiments/gold-thb-usd-causality/data/aligned.csv
+      summary: Aligned daily close levels (3,076 observations).
+    - file: experiments/gold-thb-usd-causality/data/returns.csv
+      summary: Aligned daily log returns.
+    - file: experiments/gold-thb-usd-causality/data/results.json
+      summary: Machine-readable stationarity, cross-correlation, and Granger-causality results.
+    - file: experiments/gold-thb-usd-causality/data/usd_eur.csv
+      summary: Daily USD/EUR close prices from Alpha Vantage (3,077 rows).
+    - file: experiments/gold-thb-usd-causality/analyze.py
+      summary: Extended to 3-variable VAR, cointegration, and impulse-response with USD/EUR proxy.
+
+followup:
+  verification:
+    - Re-run the analysis script end-to-end in a fresh checkout.
+    - Inspect output CSV and plots manually for obvious data errors.
+  rollback_plan:
+    - Delete experiments/gold-thb-usd-causality/ and this SSOT file.
+  handoff:
+    - tony for promotion to a focus or trade-api prototype.
+  deferred:
+    - Integration with trade-api or scheduled ingestion.
+    - Live dashboard or alerting.
+
+report:
+  status: completed
+  completed_at: '2026-08-26'
+  summary: |
+    Daily log returns of XAU/USD, USD/THB, and USD/EUR from 2014-11-07 to 2026-08-25
+    (3,076 aligned observations) are stationary, while the gold and THB log levels
+    are non-stationary. USD/EUR log levels are marginally stationary (ADF p = 0.0189).
+    No pair of log levels is cointegrated. The contemporaneous cross-correlation
+    between XAU/USD and USD/THB returns is negative and strongest at lag 0
+    (r = -0.2205). Bivariate Granger-causality confirms no evidence that XAU/USD
+    returns lead USD/THB returns (p > 0.5 for lags 1-5), while USD/THB returns
+    strongly Granger-cause XAU/USD returns (p = 0.0). A 3-variable VAR (lag 4,
+    AIC-selected) with USD/EUR as a USD-strength proxy confirms both USD/THB
+    (p = 0.0) and USD/EUR (p = 0.0149) Granger-cause XAU/USD returns, while
+    XAU/USD does not Granger-cause USD/THB (p = 0.8862). Impulse responses show
+    a one-unit THB-return shock lowers XAU/USD on the next day (-0.558) and the
+    effect decays within a week.
+  metrics:
+    - observations: 3076
+    - test_pairs: 3
+    - significant_leads: 2
+    - var_lag: 4
+    - irf_thb_to_xau_lag1: -0.558
+  links:
+    - experiments/gold-thb-usd-causality/analyze.py
+    - experiments/gold-thb-usd-causality/data/results.json
+    - experiments/gold-thb-usd-causality/data/aligned.csv
+    - experiments/gold-thb-usd-causality/data/returns.csv
+    - experiments/gold-thb-usd-causality/data/usd_eur.csv
+  kb_review:
+    - docs/ssot/jobs/experiments/2026-08-26-gold-thb-usd-causality.yml
+    - experiments/gold-thb-usd-causality/analyze.py
+  lessons_learned:
+    - Log returns are required for valid Granger-causality inference; levels are non-stationary.
+    - Alpha Vantage provides sufficient historical daily data for XAU/USD, USD/THB, and USD/EUR.
+    - Adding a USD/EUR proxy in a trivariate VAR does not eliminate the THB->XAU lead; it confirms it.
+    - FX appears to lead gold in this pair, not the reverse; any predictive use should include out-of-sample validation.
+
+config:
+  version: 1
+  created_at: '2026-08-26'
+  last_updated: '2026-08-26'
+  maintainer: tony
+  related_files:
+    - docs/ssot/templates/job.yml
+    - docs/ssot/infrastructure/ssot.mcp.yml
+    - docs/ssot/apps/ssot.apps.trade.yml

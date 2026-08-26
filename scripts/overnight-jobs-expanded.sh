@@ -148,6 +148,17 @@ fi
 # Promote actionable report findings into focus-inbox drafts
 python3 "$REPO_DIR/scripts/overnight/promote-reports.py" | tee -a "$LOG_FILE" || echo "Report promotion failed" | tee -a "$LOG_FILE"
 
+# ============================================
+# 2b. FOCUS STATE SWEEP
+# ============================================
+echo "[2b/14] Running focus-state sweep..." | tee -a "$LOG_FILE"
+cat >> "$REPORT_FILE" << EOF
+
+## 2b. Focus State Sweep
+
+EOF
+python3 "$REPO_DIR/scripts/overnight/focus-sweep.py" | tee -a "$LOG_FILE" >> "$REPORT_FILE" || echo "Focus sweep failed" | tee -a "$LOG_FILE"
+
 echo "" >> "$REPORT_FILE"
 
 # ============================================
