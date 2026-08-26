@@ -150,8 +150,8 @@ servers:
 
   mcp-debug:
     name: MCP Debug
-    description: Multi-host compact debug and remote execution via SSE on tony-dell
-    url: http://tony-dell.taila0626a.ts.net:8446/sse/
+    description: Multi-host compact debug and remote execution via stdio on tony-dell
+    implementation: bash /home/tony/.config/devin/mcp-scripts/mcp-debug-ssh.sh
     wrapper: none
     filter: none
     single_instance: false
@@ -160,7 +160,7 @@ servers:
       - devin: true
       - windsurf: true
     notes: |
-      SSE server runs on tony-dell over plain HTTP to avoid Devin HTTPS cert issues. Replaces remote-exec-tony-dell.
+      Stdio MCP server runs on tony-dell over SSH. Keeps low-latency debug commands on the headless primary host.
 
   alphavantage:
     name: Alpha Vantage Financial Data
