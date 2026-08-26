@@ -39,11 +39,17 @@ processing:
   steps:
     - id: 1
       label: k-NN pattern matcher on return windows
-      status: not_started
+      status: completed
+      completed_at: '2026-08-26'
       notes: |
-        Build a fixed-width window vector for each day from THB, XAU, and USD/EUR log
-        returns. At day t, search the previous training set for the k most similar
-        windows and use the distribution of subsequent XAU returns as the signal.
+        Implemented trended_knn.py with a 5-day window of THB and XAU log returns,
+        k=50 neighbors, and distance-weighted forecasts. Out-of-sample 2014-2026:
+        - Sharpe: 1.47
+        - Annual return: 16.0%
+        - Max drawdown: -37.1%
+        - Win rate: 26.7%
+        Beats buy-and-hold (Sharpe 0.70) but has a deeper drawdown than the 2-day
+        THB trend baseline (max DD -20.9%).
     - id: 2
       label: Regime-embedding with PCA
       status: not_started
