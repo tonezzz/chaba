@@ -1,0 +1,64 @@
+id: ssot.devin-modes
+title: Devin Session Modes
+subtitle: Operational modes that shape how the assistant behaves in a session
+category: infrastructure
+status: operational
+source_of_truth: true
+
+modes:
+  - id: normal
+    name: Normal
+    description: |
+      Default session behavior. Plan when needed, then execute.
+    behavior: |
+      - Load the active focus and applicable rules.
+      - Use the todo tool for multi-step work.
+      - Implement, edit, and run commands when the request is clear.
+      - Validate and commit completed work.
+
+  - id: plan
+    name: Plan
+    description: |
+      Plan only. Do not write files, run commands, or make commits.
+    behavior: |
+      - Ask clarifying questions until the task is well-defined.
+      - Produce a step-by-step plan with estimates and risks.
+      - Do not perform any file edits, shell commands, or git operations.
+      - End by summarizing the plan and recommend switching to build mode for execution.
+
+  - id: build
+    name: Build
+    description: |
+      Execute an existing plan or approved task. Ask before destructive operations.
+    behavior: |
+      - Implement the approved plan or active focus.
+      - Use the todo tool to track progress.
+      - Ask for confirmation before destructive operations (rm, force pushes, etc.).
+      - Validate and commit completed work.
+
+  - id: review
+    name: Review
+    description: |
+      Inspect and comment on code, diffs, or SSOT. Do not modify unless asked.
+    behavior: |
+      - Read the relevant files or git diff.
+      - Provide concise, objective feedback.
+      - Do not modify files unless the user explicitly asks for a change.
+
+config:
+  locations:
+    - ~/.config/devin/config.json
+    - .devin/config.local.json
+    - .devin/config.json
+  key: mode.current
+  override_env: DEVIN_MODE
+  default: normal
+  notes: |
+    Devin Desktop does not expose session modes natively, so the active mode is
+    read from the session configuration. `DEVIN_MODE` overrides any file value
+    for ad-hoc sessions (e.g. `DEVIN_MODE=plan devin`).
+
+rules:
+  - At the start of every session, read the active mode from the configuration.
+  - If the mode is plan, build, or review, follow the behavior above.
+  - If the mode is missing or unknown, default to normal and note it.
