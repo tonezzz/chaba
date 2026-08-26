@@ -75,7 +75,7 @@ def main():
     if MQTT_USER:
         client.username_pw_set(MQTT_USER, MQTT_PASS)
 
-    client.connect(BROKER, PORT, 60)
+    client.connect_async(BROKER, PORT, 60)
     client.loop_forever()
 
 

@@ -57,19 +57,20 @@ All settings are passed as environment variables:
 | `MQTT_USER` | — | Username if broker requires auth |
 | `MQTT_PASS` | — | Password if broker requires auth |
 
-### Example: connect to the meshtastic-th public broker
+### Example: connect to the public Meshtastic broker
+
+The Meshtastic project runs a public broker for testing. The Thailand community uses the `msh/TH` root topic.
 
 ```bash
-MQTT_BROKER=mqtt.meshgw.com \
-MQTT_PORT=8883 \
-MQTT_TLS=true \
-MQTT_TLS_INSECURE=true \
-MQTT_USER=your_user \
-MQTT_PASS=your_pass \
+MQTT_BROKER=mqtt.meshtastic.org \
+MQTT_PORT=1883 \
+MQTT_USER=meshdev \
+MQTT_PASS=large4cats \
+MQTT_TOPIC=msh/TH/# \
 python3 collector.py
 ```
 
-> Note: `mqtt.meshgw.com:8883` is reachable but requires authentication. Contact the Meshtastic Thailand community for credentials.
+> Note: The default public credentials are published by Meshtastic. Do not use them for private or sensitive channels. Messages on `msh/TH/#` are encrypted (`.../2/e/...`) unless a gateway publishes JSON on `msh/TH/2/json/#`; this collector stores only the encrypted payloads it receives.
 
 ## Thai legal settings (NBTC)
 
