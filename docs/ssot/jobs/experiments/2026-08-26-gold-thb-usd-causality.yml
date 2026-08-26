@@ -33,43 +33,72 @@ planning:
   estimated_duration: 2 sessions
 
 processing:
-  status: not_started
-  started_at: null
+  status: in_progress
+  started_at: '2026-08-26'
   steps:
     - id: 1
       label: Define hypotheses and variable set
-      status: not_started
+      status: completed
+      completed_at: '2026-08-26'
       notes: |
-        Hypotheses to test: gold changes lead USD/THB; USD/THB leads gold;
+        Hypotheses: gold changes lead USD/THB; USD/THB leads gold;
         both respond contemporaneously to external USD shocks.
     - id: 2
       label: Fetch and cache daily time series
-      status: not_started
+      status: completed
+      completed_at: '2026-08-26'
       notes: |
-        Use alphavantage MCP (or curl fallback) to get XAU/USD and USD/THB daily closes.
-        Store raw CSVs under experiments/gold-thb-usd-causality/data/.
+        Fetched XAU/USD (5,375 rows) and USD/THB (3,076 rows) from Alpha Vantage
+        and stored as CSVs under experiments/gold-thb-usd-causality/data/.
     - id: 3
       label: Clean, align, and stationarize
-      status: not_started
+      status: completed
+      completed_at: '2026-08-26'
       notes: |
-        Handle missing dates, merge on common trading days, apply log returns or first differences.
+        Inner join on common trading days gives 3,076 aligned daily observations
+        from 2014-11-07 to 2026-08-25. Log levels are non-stationary (ADF p > 0.05),
+        but daily log returns are stationary (ADF p ~ 0.0).
     - id: 4
       label: Exploratory analysis and visualizations
-      status: not_started
+      status: completed
+      completed_at: '2026-08-26'
       notes: |
-        Rolling correlations, cross-correlograms, and cointegration tests.
+        Cross-correlation of returns is strongest at lag 0 (r = -0.2205). There is
+        a contemporaneous negative relationship between gold and USD/THB returns.
     - id: 5
       label: Causality and lead-lag tests
-      status: not_started
+      status: completed
+      completed_at: '2026-08-26'
       notes: |
-        Granger causality (both directions), transfer entropy, and impulse-response from a simple VAR.
+        Granger causality on log returns:
+        - XAU returns do NOT Granger-cause USD/THB returns (p > 0.5 for lags 1-5).
+        - USD/THB returns DO Granger-cause XAU returns (p = 0.0 for lags 1-5).
     - id: 6
       label: Report and archive
-      status: not_started
+      status: in_progress
       notes: |
-        Update this SSOT report section, store notebook/script, and decide whether to promote to a focus.
-  decisions: []
-  changes: []
+        Initial results saved to data/results.json. This SSOT and analyze.py
+        need to be committed to close the job.
+  decisions:
+    - label: Use log returns for testing
+      rationale: |
+        Both log XAU/USD and log USD/THB levels are non-stationary. First-differenced
+        log returns are stationary (ADF p ~ 0), which is required for valid
+        Granger causality and cross-correlation inference.
+    - label: Test USD/THB -> XAU direction as the leading hypothesis
+      rationale: |
+        FX is quoted in USD terms for both series, so a USD-strength shock is a
+        plausible common driver. The data supports it strongly (p = 0.0 at all
+        tested lags), while the reverse is not significant.
+  changes:
+    - file: experiments/gold-thb-usd-causality/analyze.py
+      summary: Reproducible analysis script with ADF, cross-correlation, and Granger tests.
+    - file: experiments/gold-thb-usd-causality/data/aligned.csv
+      summary: Aligned daily close levels (3,076 observations).
+    - file: experiments/gold-thb-usd-causality/data/returns.csv
+      summary: Aligned daily log returns.
+    - file: experiments/gold-thb-usd-causality/data/results.json
+      summary: Machine-readable stationarity, cross-correlation, and Granger-causality results.
 
 followup:
   verification:
