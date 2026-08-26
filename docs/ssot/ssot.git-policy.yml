@@ -1,0 +1,75 @@
+title: Git Workflow Policy
+subtitle: Rules and hooks to keep master history clean and avoid accidental mega-merges
+icon: git-branch
+
+policy:
+  - id: no-merge-commits-on-master
+    name: No non-fast-forward merges into master
+    applies_to:
+      - master
+    rule: |
+      Pushes to master must be fast-forward merges.  Non-fast-forward merges
+      (i.e. merge commits) are blocked by the pre-push hook.
+    how_to: |
+      Before merging a feature/experiment branch into master:
+        git checkout <branch>
+        git rebase master
+        git checkout master
+        git merge --ff-only <branch>
+      If ff-only fails, rebase again.
+    exception: |
+      Only the release-train branch may produce a true merge commit, and it
+      must be reviewed first.
+
+  - id: rebase-experiment-branches
+    name: Rebase experiment branches before landing
+    applies_to:
+      - experiment/*
+    rule: |
+      An experiment branch must be rebased onto the current master before it
+      is merged or pushed to master.  This keeps master linear and makes the
+      merge commit small.
+    how_to: |
+      git fetch origin
+      git rebase origin/master
+      # resolve conflicts, then run the full SSOT/validation suite
+
+  - id: large-file-gate
+    name: Large data files must not enter the repo
+    applies_to:
+      - all branches
+    rule: |
+      CSV, Parquet, JSON data dumps, images, and model weights should not be
+      committed directly.  The pre-push hook rejects new files larger than
+      1 MB and all CSV files unless explicitly allow-listed.
+    how_to: |
+      - Keep raw data under /data, S3, or a git-ignored local mirror.
+      - If a small CSV must be committed, add it to the pre-push allow-list.
+
+  - id: master-is-healthy
+    name: master must pass CI before any push
+    applies_to:
+      - master
+    rule: |
+      The pre-push hook runs SSOT validation, ref validation, and the YAML
+      syntax check.  A push is rejected if any check fails.
+
+hooks:
+  pre_push:
+    script: scripts/git/hooks/pre-push
+    path: .git/hooks/pre-push
+    install: |
+      git config --local core.hooksPath scripts/git/hooks
+      chmod +x scripts/git/hooks/pre-push
+      touch scripts/git/hooks/csv-allow-list.txt
+    checks:
+      - Block non-fast-forward pushes to master
+      - Block new files > 1 MB
+      - Block CSV files not in the allow-list
+      - Run SSOT validation
+      - Run SSOT ref validation
+
+worktree_policy:
+  - Clean worktrees should be removed after the branch is merged.
+  - Dirty worktrees must be committed or stashed before the worktree is removed.
+  - Each worktree must map to one branch; do not create multiple worktrees for the same branch.

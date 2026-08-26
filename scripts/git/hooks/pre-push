@@ -1,0 +1,97 @@
+#!/bin/bash
+# pre-push hook: keep master fast-forward and avoid big data files
+# Install: cp scripts/git/hooks/pre-push .git/hooks/pre-push && chmod +x .git/hooks/pre-push
+
+set -euo pipefail
+
+remote="$1"
+url="$2"
+
+Z40=0000000000000000000000000000000000000000
+REPO="/home/tony/CascadeProjects/chaba"
+
+# ---------------------------------------------------------------------------
+# 1. Block non-fast-forward pushes to master
+# ---------------------------------------------------------------------------
+while read -r local_ref local_sha remote_ref remote_sha; do
+    if [[ "$remote_ref" == "refs/heads/master" ]]; then
+        if [[ "$local_sha" == "$Z40" ]]; then
+            # deleting master is never ok
+            echo "ERROR: deleting master is not allowed" >&2
+            exit 1
+        fi
+
+        if [[ "$remote_sha" == "$Z40" ]]; then
+            # new master branch
+            echo "WARNING: pushing a new master branch; skipping ff check" >&2
+            continue
+        fi
+
+        # Count non-first-parent commits between remote and local on master.
+        # If any commit has more than one parent, it is a merge commit.
+        merge_commits=$(git rev-list --merges --first-parent "${remote_sha}..${local_sha}" -- 2>/dev/null | wc -l)
+        if [[ "$merge_commits" -gt 0 ]]; then
+            echo "ERROR: push to master contains $merge_commits merge commit(s)." >&2
+            echo "Rebase your branch first, then push a fast-forward merge." >&2
+            echo "See docs/ssot/ssot.git-policy.yml" >&2
+            exit 1
+        fi
+    fi
+done
+
+# ---------------------------------------------------------------------------
+# 2. Block new files > 1 MB and CSV files in this push
+# ---------------------------------------------------------------------------
+# Collect all object names being introduced by this push
+new_objects=""
+while read -r local_ref local_sha remote_ref remote_sha; do
+    if [[ "$local_sha" == "$Z40" ]]; then
+        continue
+    fi
+    if [[ "$remote_sha" == "$Z40" ]]; then
+        range="${local_sha}"
+    else
+        range="${remote_sha}..${local_sha}"
+    fi
+    new_objects+=$(git rev-list --objects "$range" -- 2>/dev/null | awk '{print $1}' | sort -u)
+    new_objects+=$'\n'
+done <<< "$(cat)"
+
+# Filter out objects already on the remote
+new_and_local=$(echo "$new_objects" | sort -u | grep -v '^$')
+
+for obj in $new_and_local; do
+    # Get object type/size
+    info=$(git cat-file -t "$obj" 2>/dev/null || true)
+    if [[ "$info" != "blob" ]]; then
+        continue
+    fi
+    size=$(git cat-file -s "$obj" 2>/dev/null || echo 0)
+    if [[ "$size" -gt 1048576 ]]; then
+        # Find a path that references this blob
+        path=$(git rev-list --objects --all | awk -v obj="$obj" '$1==obj {print $2; exit}')
+        echo "ERROR: object $obj ($size bytes) exceeds 1 MB limit." >&2
+        echo "Large files must be kept out of the repo.  Path: ${path:-unknown}" >&2
+        exit 1
+    fi
+    # Reject CSV blobs unless explicitly allowed
+    path=$(git rev-list --objects --all | awk -v obj="$obj" '$1==obj {print $2; exit}')
+    if [[ -n "$path" && "$path" =~ \.csv$ ]]; then
+        if ! grep -Fxq "$path" "${REPO}/scripts/git/hooks/csv-allow-list.txt" 2>/dev/null; then
+            echo "ERROR: CSV file '$path' is not in the pre-push allow-list." >&2
+            echo "Add it to scripts/git/hooks/csv-allow-list.txt if this CSV must be committed." >&2
+            exit 1
+        fi
+    fi
+done
+
+# ---------------------------------------------------------------------------
+# 3. Run SSOT validation
+# ---------------------------------------------------------------------------
+cd "$REPO"
+if ! python3 scripts/ssot-validate-refs.py >/dev/null 2>&1; then
+    echo "ERROR: SSOT ref validation failed.  Run 'python3 scripts/ssot-validate-refs.py'" >&2
+    exit 1
+fi
+
+exit 0
