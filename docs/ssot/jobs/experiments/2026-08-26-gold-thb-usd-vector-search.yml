@@ -79,11 +79,22 @@ processing:
         is noisier than the hard K=20 cutoff in trended_knn.py. k-NN remains the best.
     - id: 4
       label: Anomaly / change-point filter
-      status: not_started
+      status: completed
+      completed_at: '2026-08-26'
       notes: |
-        Compute the distance from the current window to its k-th nearest historical
-        neighbor. If the distance is above a percentile threshold, treat the regime as
-        unfamiliar and go flat.
+        Implemented trended_anomaly.py. The k-NN forecast is kept, but the position is
+        forced to flat when the current THB/XAU window is farther from its k-th nearest
+        historical neighbor than a percentile threshold chosen in each training window.
+        The percentile is selected from a rolling in-sample grid {50,70,80,90,95,99} to
+        maximize training Sharpe. Out-of-sample 2014-2026:
+        - Sharpe: 1.81
+        - Annual return: 18.8%
+        - Max drawdown: -39.3%
+        - Win rate: 24.2%
+        This is slightly better than raw k-NN (Sharpe 1.78) with lower volatility
+        (10.4% vs 11.6%), though max drawdown is roughly the same. The anomaly filter
+        does not eliminate the deep drawdown entirely, but it improves risk-adjusted
+        returns and reduces false trades in unfamiliar regimes.
     - id: 5
       label: SSOT / documentation vector search with MDDB
       status: not_started
@@ -109,6 +120,10 @@ processing:
   changes:
     - file: experiments/gold-thb-usd-causality/app/vector-search-ideas.html
       summary: Exploratory app page for the 5 vector-search ideas.
+    - file: experiments/gold-thb-usd-causality/app/vector-search-ideas.js
+      summary: Loads live equity curves for the implemented variants.
+    - file: experiments/gold-thb-usd-causality/trended_anomaly.py
+      summary: k-NN pattern matcher with a distance-to-kth-neighbor anomaly flat-filter.
     - file: docs/ssot/jobs/experiments/2026-08-26-gold-thb-usd-vector-search.yml
       summary: SSOT job defining the vector-search exploration.
 

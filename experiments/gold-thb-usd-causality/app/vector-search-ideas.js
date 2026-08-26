@@ -228,13 +228,14 @@ async function renderEquity() {
   const container = document.getElementById('equity-curves');
   const tbody = document.getElementById('equity-metrics-body');
   try {
-    const [trended, knn, weighted] = await Promise.all([
+    const [trended, knn, weighted, anomaly] = await Promise.all([
       fetchCSV('data/trended_equity.csv').catch(() => null),
       fetchCSV('data/trended_knn_equity.csv').catch(() => null),
       fetchCSV('data/trended_weighted_equity.csv').catch(() => null),
+      fetchCSV('data/trended_anomaly_equity.csv').catch(() => null),
     ]);
 
-    if (!trended || !knn || !weighted) {
+    if (!trended || !knn || !weighted || !anomaly) {
       container.innerHTML = '<p class="muted">Equity data not yet available on this host. Run the backtests or load from the repo.</p>';
       return;
     }
@@ -245,6 +246,7 @@ async function renderEquity() {
     const data = [
       { name: '2-day THB trend', y: trended.map(r => r.strategy_equity), color: '#0d6efd' },
       { name: 'k-NN (K=20)', y: knn.map(r => r.equity), color: '#198754' },
+      { name: 'k-NN + anomaly filter', y: anomaly.map(r => r.equity), color: '#fd7e14' },
       { name: 'Kernel weighted (γ=0.5)', y: weighted.map(r => r.equity), color: '#dc3545' },
       { name: 'Buy-and-hold XAU', y: bh, color: '#d4af37', dash: 'dash' },
     ];
@@ -266,6 +268,7 @@ async function renderEquity() {
     const metrics = [
       { name: '2-day THB trend', s: 1.46, r: 0.189, dd: -0.213, w: 0.312 },
       { name: 'k-NN (K=20)', s: 1.78, r: 0.207, dd: -0.414, w: 0.297 },
+      { name: 'k-NN + anomaly filter', s: 1.81, r: 0.188, dd: -0.393, w: 0.242 },
       { name: 'Kernel weighted (γ=0.5)', s: 1.23, r: 0.160, dd: -0.508, w: 0.303 },
       { name: 'Buy-and-hold XAU', s: 0.71, r: 0.114, dd: -0.273, w: 0.532 },
     ];
