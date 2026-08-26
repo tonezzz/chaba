@@ -352,7 +352,7 @@ function main() {
   if (totalErrors === 0) {
     console.log(`\n✅ All SSOT files are valid`);
   } else {
-    console.log(`\n❌ ${files.length - validFiles} SSOT files have validation issues`);
+    console.log(`\n❌ ${allFiles.length - validFiles} SSOT files have validation issues`);
   }
 }
 
