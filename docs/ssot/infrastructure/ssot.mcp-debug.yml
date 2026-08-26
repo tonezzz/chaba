@@ -511,6 +511,13 @@ server:
   script: /home/tony/CascadeProjects/chaba/scripts/mcp_debug/server.py
   wrapper: /home/tony/.config/devin/mcp-scripts/mcp-debug.sh
   log_level: INFO
+  health:
+    - command: "python3 -c 'import mcp_debug.server; print(\"ok\")'"
+      expected: "ok"
+      note: Quick import/startup sanity check for the local mcp-debug Python server.
+    - command: "ssh -o BatchMode=yes tony-dell /home/tony/.local/bin/mcp-debug --version"
+      expected_status: 0
+      note: Verifies the mcp-debug binary is reachable on tony-dell.
   tools:
   - mcp_debug
   - mcp_raw
@@ -551,6 +558,25 @@ server:
   - mcp_context
   - mcp_session_summary
   - mcp_preprocess
+tool_examples:
+  - tool: mcp_debug
+    description: Run a compact debug command on a host
+    example: '{"host": "tony_dell", "command": "services"}'
+    note: The compact command is one of the keys in DEBUG_COMMANDS (df -h, ps, services, sockets, gpu, containers, etc.).
+  - tool: mcp_logs
+    description: Fetch journalctl logs for a systemd unit
+    example: '{"host": "tony_dell", "unit": "yomi-api.service", "lines": 20}'
+  - tool: mcp_system
+    description: Run an exact systemctl command
+    example: '{"host": "tony_dell", "command": "systemctl --user status mcp-debug-cors.service"}'
+  - tool: mcp_remediate
+    description: Restart a user service safely
+    example: '{"host": "tony_dell", "unit": "yomi-api.service", "action": "restart", "dry_run": true}'
+    note: Always use dry_run=true first.
+  - tool: mcp_raw
+    description: Run a raw allowed command on a host
+    example: '{"host": "tony_dell", "command": "ss -tlnp | grep 8080"}'
+    note: The command must start with an allowed base from RAW_PREFIXES.
 tool_selection:
   description: 'The SSOT query and context tools are arranged from the most precise to the
 
