@@ -150,8 +150,8 @@ servers:
 
   mcp-debug:
     name: MCP Debug
-    description: Multi-host compact debug and remote execution
-    implementation: bash /home/tony/.config/devin/mcp-scripts/mcp-debug.sh
+    description: Multi-host compact debug and remote execution via SSE on tony-dell
+    url: https://tony-dell.taila0626a.ts.net:8446/sse/
     wrapper: none
     filter: none
     single_instance: false
@@ -160,8 +160,7 @@ servers:
       - devin: true
       - windsurf: true
     notes: |
-      Replaces remote-exec-tony-dell. Supports mcp_debug and mcp_raw for tony_omen and tony_dell.
-      SSOT: docs/ssot/infrastructure/ssot.mcp-debug.yml
+      SSE server runs on tony-dell. Replaces remote-exec-tony-dell. Supports mcp_debug and mcp_raw.
 
   alphavantage:
     name: Alpha Vantage Financial Data
@@ -275,14 +274,10 @@ servers:
 
   mcp-health:
     name: Health Monitoring
-    description: Centralized health check and telemetry orchestrator
-    implementation: node /home/tony/CascadeProjects/chaba/mcp-servers/mcp-health/server.js
+    description: Centralized health check and telemetry orchestrator on tony-dell
+    implementation: bash /home/tony/.config/devin/mcp-scripts/mcp-health-ssh.sh
     wrapper: none
     filter: none
-    env:
-      HEALTH_CONFIG: infrastructure/ssot.health.yml
-      HEALTH_SKILL: .agents/skills/health-check/SKILL.md
-      POSTGRES_HOST: tony-dell
     single_instance: true
     status: operational
     config_files:
@@ -297,6 +292,20 @@ servers:
       Phase 4 Tools: quick_health (pass/fail for critical services), check_group (group-based checks), reload_config (YAML reload), get_health_score (system metric 0-100), batch_check (parallel checks), set_auto_recovery (automated policies), get_service_template (service templates), sync_to_mddb (health history integration)
       Phase 4 Future: ML-based failure prediction and webhook notifications documented in ssot.improvements.yml
       See ssot.improvements.yml for detailed implementation plan
+
+  mcp-focus:
+    name: Focus Manager
+    description: Session focus intake, status, and dispatch on tony-dell
+    implementation: bash /home/tony/.config/devin/mcp-scripts/mcp-focus-ssh.sh
+    wrapper: none
+    filter: none
+    single_instance: true
+    status: operational
+    config_files:
+      - devin: true
+      - windsurf: false
+    notes: |
+      Runs on tony-dell so the canonical SSOT on tony-dell is used for focus queries.
 
 # Script locations (centralized)
 scripts:
