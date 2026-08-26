@@ -75,10 +75,11 @@ processing:
         - USD/THB returns DO Granger-cause XAU returns (p = 0.0 for lags 1-5).
     - id: 6
       label: Report and archive
-      status: in_progress
+      status: completed
+      completed_at: '2026-08-26'
       notes: |
-        Initial results saved to data/results.json. This SSOT and analyze.py
-        need to be committed to close the job.
+        Reproducible analysis verified end-to-end. Results saved to data/results.json.
+        Report section of this SSOT completed and committed.
   decisions:
     - label: Use log returns for testing
       rationale: |
@@ -113,16 +114,35 @@ followup:
     - Live dashboard or alerting.
 
 report:
-  status: not_started
-  completed_at: null
-  summary: ''
+  status: completed
+  completed_at: '2026-08-26'
+  summary: |
+    Daily log returns of XAU/USD and USD/THB from 2014-11-07 to 2026-08-25
+    (3,076 aligned observations) are stationary, while log levels are non-stationary.
+    The contemporaneous cross-correlation of returns is negative and strongest at
+    lag 0 (r = -0.2205), indicating gold and the Thai Baht tend to move in opposite
+    directions on the same day. Granger-causality tests show no evidence that XAU/USD
+    returns lead USD/THB returns (p > 0.5 for lags 1-5). In contrast, USD/THB returns
+    strongly Granger-cause XAU/USD returns at all tested lags (p = 0.0). This is
+    consistent with a USD-strength shock being a common driver: a stronger USD both
+    raises USD/THB and lowers XAU/USD, and the FX movement in this sample precedes
+    the gold move.
   metrics:
-    - observations: 0
-    - test_pairs: 0
-    - significant_leads: 0
-  links: []
-  kb_review: []
-  lessons_learned: []
+    - observations: 3076
+    - test_pairs: 2
+    - significant_leads: 1
+  links:
+    - experiments/gold-thb-usd-causality/analyze.py
+    - experiments/gold-thb-usd-causality/data/results.json
+    - experiments/gold-thb-usd-causality/data/aligned.csv
+    - experiments/gold-thb-usd-causality/data/returns.csv
+  kb_review:
+    - docs/ssot/jobs/experiments/2026-08-26-gold-thb-usd-causality.yml
+    - experiments/gold-thb-usd-causality/analyze.py
+  lessons_learned:
+    - Log returns are required for valid Granger-causality inference; levels are non-stationary.
+    - Alpha Vantage provides sufficient historical daily data for XAU/USD and USD/THB.
+    - FX appears to lead gold in this pair, not the reverse; any predictive use should include out-of-sample validation.
 
 config:
   version: 1
