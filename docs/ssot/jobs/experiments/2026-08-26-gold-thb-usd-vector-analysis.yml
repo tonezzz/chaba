@@ -92,11 +92,21 @@ processing:
         leading trend components may help.
     - id: 4
       label: Time-varying / Markov-switching VAR
-      status: not_started
+      status: completed
+      completed_at: '2026-08-26'
       notes: |
-        Extend the existing VAR by allowing the THB->XAU impulse response to vary
-        across regimes. Estimate a simple Markov-switching or time-varying VAR and
-        compare out-of-sample impulse responses.
+        Implemented trended_regime_var.py. For each month, split the previous 252
+        days into low- and high-THB-volatility regimes at the median. Fit a separate
+        VAR(2) on the training days in each regime. For each test day, pick the VAR
+        matching the current 10-day THB volatility and use its one-step-ahead XAU
+        forecast as the signal. Out-of-sample 2014-2026:
+        - Sharpe: -0.70
+        - Annual return: -8.5%
+        - Annual vol: 12.1%
+        - Max drawdown: -72.2%
+        - Win rate: 21.2%
+        The regime split on THB volatility does not capture useful time-variation.
+        The VAR may also be too noisy with only ~125 observations per regime.
     - id: 5
       label: Graph / network view
       status: not_started
@@ -133,6 +143,8 @@ processing:
       summary: Takens-style delay-embedding k-NN on THB log returns.
     - file: experiments/gold-thb-usd-causality/trended_ssa.py
       summary: SSA-denoised THB trend strategy with walk-forward calibration.
+    - file: experiments/gold-thb-usd-causality/trended_regime_var.py
+      summary: Regime-switching VAR with low/high THB volatility.
     - file: docs/ssot/jobs/experiments/2026-08-26-gold-thb-usd-vector-analysis.yml
       summary: SSOT job defining the advanced vector-analysis exploration.
 
