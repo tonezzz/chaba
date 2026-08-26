@@ -1,0 +1,50 @@
+title: Chaba Health Checks (Home Profile) — Tony-Dell
+subtitle: Persistent services on the tony-dell headless host, checked over the tailnet
+icon: heart-pulse
+services:
+- id: mcp-debug-sse
+  name: MCP Debug SSE Service (tony-dell)
+  type: systemd
+  service: mcp-debug-sse.service
+  expected_state: active
+  timeout: 10
+  category: tony-dell
+  host: tony_dell
+  profiles:
+  - home
+  - mobile
+  note: |
+    Persistent SSE server for mcp-debug on tony-dell. Runs on 127.0.0.1:9101
+    and is exposed over the tailnet via Tailscale Serve on port 8446 (plain HTTP).
+    This check uses SSH over the tailnet to verify the systemd unit, which also
+    proves Tailscale/SSH reachability from tony-omen.
+  verification:
+  - 'Check service: ssh tony-dell systemctl --user status mcp-debug-sse'
+  - 'Tailscale serve status: ssh tony-dell tailscale serve status'
+  - 'Local SSE endpoint: ssh tony-dell curl -sf --max-time 5 http://127.0.0.1:9101/sse/'
+  - 'Tailnet HTTP endpoint: curl -sfI --max-time 5 http://tony-dell.taila0626a.ts.net:8446/sse/'
+  recovery_actions:
+  - 'Restart service: ssh tony-dell systemctl --user restart mcp-debug-sse'
+  - 'Check tailscale serve: ssh tony-dell tailscale serve status'
+  - 'Check local port: ssh tony-dell ss -tlnp | grep 9101'
+- id: tony-dell-tailscale
+  name: Tony-Dell Tailscale Reachability
+  type: http
+  url: http://tony-dell:3001/health
+  expected_status: 200
+  timeout: 5
+  category: tony-dell
+  profiles:
+  - home
+  - mobile
+  note: |
+    Quick reachability check over the tailnet short hostname. This relies on
+    Tailscale DNS/IPs and confirms tony-dell is reachable from the health
+    monitoring host (tony-omen) without using a static LAN address.
+  verification:
+  - 'Resolve and ping: ping -c 2 tony-dell'
+  - 'Tailscale ping: tailscale ping tony-dell'
+  - 'GPU queue health (also on tony-dell): curl -s http://tony-dell:3001/health'
+  recovery_actions:
+  - 'Check tony-dell is online: tailscale status | grep tony-dell'
+  - 'Check Tailscale on tony-dell: ssh tony-dell tailscale status'
