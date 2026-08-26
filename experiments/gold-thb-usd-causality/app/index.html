@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Gold / THB / USD Causality Explorer</title>
+  <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+  <script src="app.js" defer></script>
+  <style>
+    body { font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif; margin: 2rem; background: #f8f9fa; color: #212529; }
+    h1, h2 { font-weight: 600; }
+    .card { background: #fff; border-radius: 8px; padding: 1.25rem; margin: 1rem 0; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1rem; }
+    .metric { font-size: 1.5rem; font-weight: 700; color: #0d6efd; }
+    .muted { color: #6c757d; }
+    .loading { font-style: italic; color: #6c757d; }
+    .error { color: #dc3545; }
+    pre { white-space: pre-wrap; font-size: 0.85rem; background: #f1f3f5; padding: 1rem; border-radius: 6px; }
+    a { color: #0d6efd; }
+  </style>
+</head>
+<body>
+  <h1>Gold / THB / USD Causality Explorer</h1>
+  <p class="muted">
+    Interactive look at the relationship between gold (XAU/USD), the Thai Baht (USD/THB),
+    and a USD-strength proxy (USD/EUR) from 2014-2026.
+  </p>
+
+  <div id="status" class="loading">Loading data...</div>
+
+  <div class="grid">
+    <div class="card"><div class="metric" id="n-obs">-</div><div class="muted">aligned observations</div></div>
+    <div class="card"><div class="metric" id="range-dates">-</div><div class="muted">date range</div></div>
+    <div class="card"><div class="metric" id="lead-pair">THB &rarr; XAU</div><div class="muted">strongest Granger-cause (p = 0.0)</div></div>
+  </div>
+
+  <div class="card">
+    <h2>1. Price levels</h2>
+    <p>Gold and the two USD-cross rates on their natural scales. A stronger USD (higher USD/THB, higher USD/EUR) generally corresponds to lower gold prices.</p>
+    <div id="price-levels"></div>
+  </div>
+
+  <div class="card">
+    <h2>2. Daily log returns</h2>
+    <p>First differences of log prices. These are the stationary series used for the causality tests.</p>
+    <div id="returns"></div>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <h2>3. Cross-correlation</h2>
+      <p>XAU/USD vs USD/THB returns at lags -10 to +10. The strongest link is contemporaneous (lag 0, r &approx; -0.22).</p>
+      <div id="cross-corr"></div>
+    </div>
+
+    <div class="card">
+      <h2>4. Impulse response</h2>
+      <p>Response of XAU/USD return to a one-unit shock in THB and USD/EUR returns from the VAR(4).</p>
+      <div id="irf"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>5. Key findings</h2>
+    <ul>
+      <li>Log levels for gold and THB are non-stationary; all log returns are stationary.</li>
+      <li>USD/THB returns <strong>strongly Granger-cause</strong> XAU/USD returns (p = 0.0).</li>
+      <li>USD/EUR returns also Granger-cause XAU/USD returns (p = 0.0149).</li>
+      <li>No evidence that XAU/USD returns lead USD/THB returns (p = 0.8862).</li>
+      <li>IRF: a THB shock lowers XAU by ~0.56 the next day, then the effect decays.</li>
+    </ul>
+    <p class="muted">
+      Note: These are exploratory, in-sample research results. Correlation/Granger causality
+      does not prove economic causation or predictability out-of-sample.
+    </p>
+    <p class="muted">See the SSOT job definition at <code>docs/ssot/jobs/experiments/2026-08-26-gold-thb-usd-causality.yml</code>.</p>
+  </div>
+
+  <div class="card">
+    <h2>6. Results JSON</h2>
+    <pre id="results-pre">Loading...</pre>
+  </div>
+</body>
+</html>
