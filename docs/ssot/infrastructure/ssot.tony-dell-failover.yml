@@ -1,0 +1,134 @@
+title: Tony-Dell / Tony-Omen Failover Plan
+subtitle: Manual host-level failover for the headless-primary / interactive-primary pair
+version: 1
+
+host_roles:
+  tony_omen:
+    name: tony-omen
+    tailnet: tony-omen
+    tailscale_ip: 100.75.102.88
+    role: interactive primary and GPU host
+    cannot_failover_to: |
+      GPU, display, and interactive Devin sessions cannot move to tony-dell or macbook.
+      If tony-omen is down, use MacBook for light interactive work and rely on tony-dell
+      for persistent services.
+    services_primary:
+    - llama-router
+    - ollama
+    - imagen2
+    - playlive
+    - playlived
+    - gpu-queue
+    - barrier-server
+    - caddy web (tony-omen:8080)
+    - bserver
+    - mcp-gpu
+    - mcp-llama
+    - mcp-debug-cors (port 9100)
+    - mcp-debug-audit (port 9100)
+    services_backup:
+    - yomi-api (see ssot.yomi-failover.yml)
+    - postgres (see ssot.yomi-failover.yml)
+
+  tony_dell:
+    name: tony-dell
+    tailnet: tony-dell
+    tailscale_ip: 100.68.142.13
+    role: headless primary and persistent service host
+    cannot_failover_to: |
+      Podman rootless containers and systemd --user units cannot move to tony-omen without
+      equivalent local units. Some services (weaviate, redis, raceman, postgres, yomi)
+      already run on both hosts but are active on tony-dell.
+    services_primary:
+    - mcp-debug-sse (127.0.0.1:9101, Tailscale Serve 8446)
+    - mcp-health execution (mcp-health-ssh wrapper target)
+    - mcp-focus execution (mcp-focus-ssh wrapper target)
+    - yomi-api
+    - postgres
+    - redis
+    - weaviate
+    - raceman
+    - home-assistant
+    - helm
+    - chaba-funnel (Tailscale Serve 8444)
+    - mcp-rview
+    - mcp-rview-oauth-proxy
+    - gpu-queue (tony-dell:3001)
+    services_backup:
+    - mcp-debug local stdio on tony-omen (mcp-debug.sh)
+
+failover_scenarios:
+  - name: tony-omen down, tony-dell up
+    trigger: tony-omen is unreachable or needs maintenance; Devin Desktop is unavailable
+    user_impact: |
+      Interactive/GPU work stops. Persistent services on tony-dell continue.
+      Use MacBook or another tailnet host for SSH and web access.
+    steps: |
+      1. Confirm tony-dell is healthy: ssh tony-dell tailscale status
+      2. Access apps via tony-dell Tailscale Funnel: https://tony-dell.taila0626a.ts.net:8444
+      3. Access Yomi API directly: curl -s http://tony-dell:3000/api/yomi/health
+      4. PostgreSQL remains available on tony-dell: postgresql://tony-dell:5432
+      5. Wait for tony-omen to recover before resuming interactive/GPU work.
+
+  - name: tony-dell down, tony-omen up
+    trigger: tony-dell is unreachable or the persistent services fail
+    user_impact: |
+      mcp-debug, mcp-health, and mcp-focus over SSH stop. Devin Desktop on tony-omen
+      can still run. Yomi/Postgres can be failed back to tony-omen per ssot.yomi-failover.yml.
+    steps: |
+      1. Confirm tony-omen is healthy: ssh tony-omen tailscale status
+      2. Switch mcp-debug to the local stdio wrapper:
+         - Edit docs/ssot/infrastructure/ssot.mcp.yml mcp-debug implementation to bash /home/tony/.config/devin/mcp-scripts/mcp-debug.sh
+         - Regenerate configs: python3 scripts/generate-mcp-config.py --profile home
+         - Restart Devin Desktop
+      3. Run mcp-health and mcp-focus locally if needed:
+         - Edit ssot.mcp.yml mcp-health and mcp-focus implementation to local paths
+         - Regenerate and restart
+      4. For Yomi/Postgres, follow docs/ssot/infrastructure/ssot.yomi-failover.yml
+      5. After tony-dell recovers, revert ssot.mcp.yml to the SSH wrappers, regenerate, and restart
+
+  - name: both hosts down
+    trigger: power outage, network loss, or maintenance
+    user_impact: Full home stack unavailable
+    steps: |
+      1. Use MacBook or mobile network to reach any host that comes back first
+      2. Start tony-dell first for persistent services, then tony-omen for interactive work
+      3. Verify Tailscale: tailscale status on the recovered host
+
+mcp_client_switch:
+  description: |
+    The canonical MCP config is generated from ssot.mcp.yml. To move the three
+    low-latency MCP servers off or back onto tony-dell, edit the implementation
+    field and regenerate.
+  devin_config: /home/tony/.config/devin/mcp_config.json
+  windsurf_config: /home/tony/.config/windsurf/mcp_config.json
+  wrapper_dir: /home/tony/.config/devin/mcp-scripts
+  tony_dell_wrappers:
+  - mcp-debug-ssh.sh
+  - mcp-health-ssh.sh
+  - mcp-focus-ssh.sh
+  tony_omen_wrappers:
+  - mcp-debug.sh
+
+health_checks:
+  - name: tony-dell reachability
+    command: ping -c 2 tony-dell
+    expect: 2 received
+  - name: tony-dell gpu queue
+    command: curl -s http://tony-dell:3001/health
+    expect: ok=true
+  - name: tony-dell mcp-debug-sse
+    command: ssh tony-dell systemctl --user status mcp-debug-sse
+    expect: active (running)
+  - name: tony-omen reachability
+    command: ping -c 2 tony-omen
+    expect: 2 received
+  - name: tony-omen Caddy
+    command: curl -s -o /dev/null -w '%{http_code}' http://tony-omen:8080/api/status
+    expect: '200'
+
+notes:
+- Always use tailnet hostnames (tony-omen, tony-dell) or Tailscale IPs in failover commands. .local can fail across interfaces.
+- The mcp-health server runs over SSH on tony-dell; if tony-dell is down, mcp-health tool calls will fail until local execution is configured.
+- Failover is intentionally manual for DNS/Caddy/MCP client changes to avoid split-brain.
+- See also docs/ssot/infrastructure/ssot.yomi-failover.yml for Yomi/PostgreSQL-specific steps.
