@@ -21,28 +21,19 @@ planning:
     - A results table quantifies the difference in Sharpe, return, vol, and max DD.
 
 processing:
-  status: in_progress
-  current_step: 0
+  status: completed
+  current_step: 5
   started_at: '2026-08-26'
   last_updated: '2026-08-26'
+  completed_at: '2026-08-26'
   notes: |
-    Initial run of trended_graph_knn_thb.py (W=2, K=30, P_THRESHOLD=0.01,
-    EDGE_LOOKBACK=504) on the THB-base data:
-    - Sharpe: 2.37
-    - Annual return: 24.2%
-    - Annual vol: 10.2%
-    - Max drawdown: -8.4%
-    - Win rate: 13.2%
-    For comparison, the current XAU/USD silver graph+k-NN (W=2, K=10):
-    - Sharpe: 3.43
-    - Annual return: 34.0%
-    - Annual vol: 9.9%
-    - Max drawdown: -6.7%
-    - Win rate: 15.1%
-    Holding USD and converting only when needed (XAU/USD) is currently better
-    on a risk-adjusted basis. The XAU/THB settlement underperforms mainly
-    because the USD/THB carry is volatile and slightly detracts from the
-    concentrated XAU/USD signal.
+    Final conclusion: converting XAU/USD trade proceeds immediately to THB
+    (XAU/THB) does not improve the risk-adjusted performance of the best
+    silver graph+k-NN signal. The best THB settlement setting (W=3, K=20)
+    reaches Sharpe 2.73, while the XAU/USD silver signal reaches Sharpe 3.43.
+    Holding USD and converting only when needed (XAU/USD) remains the better
+    settlement choice for this strategy. The vol-sized THB+XAG variants are a
+    separate, higher-return concept and are tracked in the follow-up-ideas SSOT.
 
 steps:
   - id: 1
@@ -72,14 +63,20 @@ steps:
       silver graph+k-NN (Sharpe 3.43). The underperformance is robust.
   - id: 5
     label: Document conclusion
-    status: pending
-    notes: Update this SSOT with the final tuned result and a recommendation.
+    status: completed
+    completed_at: '2026-08-26'
+    notes: |
+      Conclusion documented. Recommendation: continue settling gold P/L in
+      USD (XAU/USD) for this signal. THB settlement adds volatility and
+      drawdown without improving Sharpe.
 
 changes:
   - file: experiments/gold-thb-usd-causality/prepare_thb_base.py
     summary: Build XAU/THB aligned data from XAU/USD and USD/THB.
   - file: experiments/gold-thb-usd-causality/trended_graph_knn_thb.py
     summary: Graph+k-NN on XAU/THB settlement.
+  - file: experiments/gold-thb-usd-causality/tune_graph_knn_thb.py
+    summary: Grid search over WINDOW x K for the THB-base variant.
   - file: experiments/gold-thb-usd-causality/app/thb-settlement.html
     summary: HTML page comparing XAU/USD vs XAU/THB settlement.
   - file: experiments/gold-thb-usd-causality/app/thb-settlement.js
@@ -89,3 +86,72 @@ references:
   - experiments/gold-thb-usd-causality/data/aligned_thb_base.csv
   - experiments/gold-thb-usd-causality/data/trended_graph_knn_thb_equity.csv
   - experiments/gold-thb-usd-causality/data/trended_graph_knn_silver_equity.csv
+  - experiments/gold-thb-usd-causality/data/graph_knn_thb_tune_grid.csv
+  - experiments/gold-thb-usd-causality/data/graph_knn_thb_tune_results.json
+
+report:
+  status: completed
+  completed_at: '2026-08-26'
+  summary: |
+    Converting XAU/USD trade proceeds to THB immediately (XAU/THB) does not
+    improve the best silver graph+k-NN signal. The best THB settlement setting
+    (W=3, K=20) reaches Sharpe 2.73, while the same graph+k-NN on XAU/USD
+    (silver, W=2, K=10) reaches Sharpe 3.43. Holding USD and converting only
+    when needed remains the better settlement choice for this signal. The
+    additional USD/THB carry adds volatility and, in the hold-USD reference
+    variant (Sharpe 2.19), a daily THB mark-to-market drag. This is research-only
+    and does not guarantee future performance.
+  metrics:
+    - variant: XAU/USD silver graph+k-NN (baseline)
+      sharpe: 3.43
+      annual_return: 34.0%
+      annual_vol: 9.9%
+      max_dd: -6.7%
+      win_rate: 15.1%
+    - variant: XAU/THB settle (W=2, K=30)
+      sharpe: 2.37
+      annual_return: 24.2%
+      annual_vol: 10.2%
+      max_dd: -8.4%
+      win_rate: 13.2%
+    - variant: XAU/THB settle (tuned, W=3, K=20)
+      sharpe: 2.73
+      annual_return: 23.8%
+      annual_vol: 8.7%
+      max_dd: -6.5%
+      win_rate: 11.8%
+    - variant: Hold-USD mark-to-THB (reference)
+      sharpe: 2.19
+      annual_return: 22.1%
+      annual_vol: 10.1%
+      max_dd: -7.2%
+      win_rate: 51.5%
+  links:
+    - experiments/gold-thb-usd-causality/trended_graph_knn_thb.py
+    - experiments/gold-thb-usd-causality/tune_graph_knn_thb.py
+    - experiments/gold-thb-usd-causality/trended_graph_knn_hold_usd.py
+    - experiments/gold-thb-usd-causality/prepare_thb_base.py
+    - experiments/gold-thb-usd-causality/app/thb-settlement.html
+    - experiments/gold-thb-usd-causality/app/thb-settlement.js
+  lessons_learned:
+    - XAU/THB is not an improvement over XAU/USD for this one-day graph+k-NN
+      signal when the settlement conversion is immediate.
+    - The USD/THB carry is volatile and adds an FX noise layer that the k-NN
+      signal does not reliably time.
+    - THB-base multi-asset variants (e.g. THB+XAG) are tracked separately and
+      may still be useful; the settlement-currency question is different from
+      the feature-engineering question.
+
+followup:
+  verification:
+    - Confirm data/aligned_thb_base.csv aligns with the latest XAU/USD and
+      USD/THB data.
+    - Re-run the tuned THB variant if the XAU/USD silver feature set changes.
+  rollback_plan:
+    - Remove app/thb-settlement.html and app/thb-settlement.js.
+    - Delete trended_graph_knn_thb.py and tune_graph_knn_thb.py.
+  handoff:
+    - tony for any app UI polish or live-trading integration.
+  deferred:
+    - Real USD/THB transaction-cost and slippage modeling.
+    - Intra-day conversion timing (arrive in THB at close vs next open).
