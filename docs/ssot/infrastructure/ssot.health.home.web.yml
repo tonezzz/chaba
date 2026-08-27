@@ -34,7 +34,7 @@ services:
 - id: helm
   name: Helm Dashboard
   type: http
-  url: http://tony-omen:8080/apps/helm
+  url: http://100.68.142.13:3003/apps/helm
   expected_status: 200
   timeout: 5
   category: web
@@ -44,8 +44,8 @@ services:
   verification:
   - 'Check podman container: ssh tony-dell podman ps | grep helm'
   - 'Check podman logs: ssh tony-dell podman logs helm --tail 20'
-  - 'Test direct podman container: curl -s http://tony-dell:3003/apps/helm/'
-  - 'Test Caddy proxy: curl -s http://tony-omen:8080/apps/helm/'
+  - 'Test direct podman container: curl -s http://100.68.142.13:3003/apps/helm/'
+  - 'Test Caddy proxy: curl -s http://100.68.142.13:3003/apps/helm/'
   recovery_actions:
   - 'Restart service: ssh tony-dell systemctl --user restart helm'
   - 'Rebuild: ssh tony-dell "cd /home/tony/CascadeProjects/chaba-tony-dell/tony-dell/chaba-funnel && ./deploy.sh"'
@@ -65,7 +65,7 @@ services:
 - id: mddb-panel
   name: MDDB Panel
   type: http
-  url: '{profile}/apps/mddb/'
+  url: http://100.68.142.13:3002/
   expected_status: 200
   timeout: 5
   category: web

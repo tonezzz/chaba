@@ -26,7 +26,7 @@ services:
 - id: helm
   name: Helm Dashboard
   type: http
-  url: http://tony-omen:8080/apps/helm
+  url: http://100.68.142.13:3003/apps/helm
   expected_status: 200
   timeout: 5
   category: web
@@ -36,8 +36,8 @@ services:
   verification:
   - 'Check podman container: ssh tony-dell podman ps | grep helm'
   - 'Check podman logs: ssh tony-dell podman logs helm --tail 20'
-  - 'Test direct podman container: curl -s http://tony-dell:3003/apps/helm/'
-  - 'Test Caddy proxy: curl -s http://tony-omen:8080/apps/helm/'
+  - 'Test direct podman container: curl -s http://100.68.142.13:3003/apps/helm/'
+  - 'Test Caddy proxy: curl -s http://100.68.142.13:3003/apps/helm/'
   recovery_actions:
   - 'Restart service: ssh tony-dell systemctl --user restart helm'
   - 'Rebuild: ssh tony-dell "cd /home/tony/CascadeProjects/chaba-tony-dell/tony-dell/chaba-funnel && ./deploy.sh"'
@@ -53,17 +53,18 @@ services:
   profiles:
   - home
   - mobile
+  disabled: true
+  note: Runs only on tony-omen; not reachable from tony-dell health monitor.
   verification:
-  - 'Test container: docker ps | grep sensor-reader'
-  - 'Test direct container: curl -s http://tony-omen:8001/health'
-  - 'Check container logs: docker logs sensor-reader --tail 20'
+  - 'Test container: ssh tony-omen docker ps | grep sensor-reader'
+  - 'Test direct container: ssh tony-omen curl -s http://tony-omen:8001/health'
+  - 'Check container logs: ssh tony-omen docker logs sensor-reader --tail 20'
   recovery_actions:
-  - 'Restart container: docker compose -f stacks/web/docker-compose.yml restart sensor-reader'
-  - 'Check Caddy /api/* proxy to tony-dell:8000'
+  - 'Restart container: ssh tony-omen docker compose -f stacks/web/docker-compose.yml restart sensor-reader'
 - id: status-data-api
   name: Status Data API
   type: http
-  url: '{profile}/api/health'
+  url: http://100.68.142.13:8000/health
   expected_status: 200
   timeout: 5
   category: api
@@ -72,17 +73,16 @@ services:
   - mobile
   verification:
   - 'Test service: ssh tony-dell systemctl --user status status-data-api'
-  - 'Test direct container: curl -s http://tony-dell:8000/health'
-  - 'Test Caddy proxy: curl -s {profile}/api/health'
+  - 'Test direct container: curl -s http://100.68.142.13:8000/health'
   - 'Check podman logs: ssh tony-dell podman logs status-data-api --tail 20'
   recovery_actions:
   - 'Restart service: ssh tony-dell systemctl --user restart status-data-api'
-  - 'Verify status-data-api can reach http://tony-omen:8001/health'
+  - 'Verify status-data-api can reach http://100.68.142.13:8000/health'
   - Verify Caddy proxy configuration in stacks/web/Caddyfile
 - id: yomi-api
   name: Yomi API
   type: http
-  url: '{profile}/api/yomi/health'
+  url: http://100.68.142.13:3000/api/yomi/health
   expected_status: 200
   timeout: 5
   category: api
@@ -92,9 +92,8 @@ services:
   recommendation: If yomi-api is down and tony-dell cannot be recovered, run /home/tony/.local/bin/yomi-failover-to-omen.sh
     on tony-omen. See docs/ssot/infrastructure/ssot.yomi-failover.yml.
   verification:
-  - 'Test direct Yomi API on tony-dell: curl -s http://tony-dell:3000/api/yomi/health'
-  - 'Test Caddy proxy on tony-omen: curl -s {profile}/api/yomi/health'
-  - 'Test chat page: curl -s {profile}/apps/yomi/chat.html?chat=test'
+  - 'Test direct Yomi API on tony-dell: curl -s http://100.68.142.13:3000/api/yomi/health'
+  - 'Test chat page: curl -s http://100.68.142.13:3000/apps/yomi/chat.html?chat=test'
 - id: yomi-summarization
   name: Yomi Summarization
   type: http
@@ -286,7 +285,7 @@ services:
 - id: mddb-panel
   name: MDDB Panel
   type: http
-  url: '{profile}/apps/mddb/'
+  url: http://100.68.142.13:3002/
   expected_status: 200
   timeout: 5
   category: web
@@ -431,7 +430,8 @@ services:
   profiles:
   - home
   - mobile
-  note: Ensures CPU frequency limit is applied at boot (cpufreq-limit.service)
+  disabled: true
+  note: tony-omen only. Disabled from tony-dell health monitor.
   verification:
   - 'Check service: systemctl status cpufreq-limit.service'
   - 'Check current CPU frequency: cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq'
@@ -449,7 +449,8 @@ services:
   profiles:
   - home
   - mobile
-  note: Runs health-monitor.sh every 10 minutes (CPU frequency, temperature, memory, disk, services)
+  disabled: true
+  note: tony-omen only. Disabled from tony-dell health monitor.
   verification:
   - 'Check timer status: systemctl --user status chaba-health-monitor.timer'
   - 'Check monitor log: tail -f /home/tony/CascadeProjects/chaba/logs/health-monitor.log'
@@ -472,8 +473,8 @@ services:
   profiles:
   - home
   - mobile
-  note: Barrier KVM server on tony-omen; auto-restarts on failure. Client on tony-dell connects to 100.75.102.88:24800 over
-    Tailscale.
+  disabled: true
+  note: tony-omen only. Disabled from tony-dell health monitor.
   verification:
   - 'Check service: systemctl --user status barriers.service'
   - 'Check port: ss -tlnp | grep 24800'
@@ -516,12 +517,9 @@ services:
   profiles:
   - home
   - mobile
-  note: CORS endpoint on tony-omen for mcp-savings.json and mcp-table.json, served by http_server.py.
+  disabled: true
+  note: Legacy tony-omen CORS endpoint. Deprecated in favour of the MCP Debug SSE server on tony-dell.
   verification:
-  - 'Check systemd: systemctl --user status mcp-debug-cors.service'
-  - 'Check port: ss -tlnp | grep 9100'
-  - 'Test tailnet: curl -s http://tony-omen:9100/health'
-  - 'Test Funnel: curl -s https://tony-omen.taila0626a.ts.net/mcp-savings.json'
+  - 'Disabled; see mcp-debug-sse'
   recovery_actions:
-  - 'Restart: systemctl --user restart mcp-debug-cors.service'
-  - 'Check syntax: python3 -m py_compile /home/tony/CascadeProjects/chaba/scripts/mcp_debug/http_server.py'
+  - 'No action: legacy endpoint, disabled'

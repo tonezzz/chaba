@@ -176,7 +176,8 @@ services:
   profiles:
   - home
   - mobile
-  note: Ensures CPU frequency limit is applied at boot (cpufreq-limit.service)
+  disabled: true
+  note: tony-omen only. Disabled from tony-dell health monitor.
   verification:
   - 'Check service: systemctl status cpufreq-limit.service'
   - 'Check current CPU frequency: cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq'
@@ -194,7 +195,8 @@ services:
   profiles:
   - home
   - mobile
-  note: Runs health-monitor.sh every 10 minutes (CPU frequency, temperature, memory, disk, services)
+  disabled: true
+  note: tony-omen only. Disabled from tony-dell health monitor.
   verification:
   - 'Check timer status: systemctl --user status chaba-health-monitor.timer'
   - 'Check monitor log: tail -f /home/tony/CascadeProjects/chaba/logs/health-monitor.log'
@@ -217,7 +219,8 @@ services:
   profiles:
   - home
   - mobile
-  note: Barrier KVM server on tony-omen; auto-restarts on failure. Client on tony-dell connects to 100.75.102.88:24800 over Tailscale.
+  disabled: true
+  note: tony-omen only. Disabled from tony-dell health monitor.
   verification:
   - 'Check service: systemctl --user status barriers.service'
   - 'Check port: ss -tlnp | grep 24800'
