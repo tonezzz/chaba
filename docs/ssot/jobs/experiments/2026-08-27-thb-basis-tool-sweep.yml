@@ -26,13 +26,14 @@ planning:
 
 processing:
   status: in_progress
-  current_step: 0
+  current_step: 2
   started_at: '2026-08-27'
   last_updated: '2026-08-27'
   notes: |
-    Starting a structured sweep of basic technical tools. The baseline is the
-    THB->XAU graph+k-NN (W=2, K=30, Sharpe 2.77). The THB+XAG variant
-    (Sharpe 3.52) is the branch best and will be used as a high-water mark.
+    Tools 1 and 2 (SMA and EMA overlays) are complete. Both filters reduce
+    volatility and drawdown but also cut return, ending below the THB+XAG
+    baseline. None of the simple moving-average overlays improve the branch
+    best. Next: RSI and MACD filters.
 
 steps:
   - id: 1
@@ -53,10 +54,20 @@ steps:
       win rate, ending below the THB+XAG baseline (Sharpe 3.52).
   - id: 2
     label: EMA overlay on THB signal
-    status: pending
+    status: completed
+    started_at: '2026-08-27'
+    completed_at: '2026-08-27'
     notes: |
-      Same as SMA, using exponential moving averages. Deliverable:
-      trended_ema_overlay.py.
+      Implemented trended_ema_overlay.py. It only takes long positions when the
+      5-day THB EMA is above the 20-day EMA, and short positions when below.
+      Result (W=2, K=50, SHORT=5, LONG=20):
+      - Sharpe: 2.77
+      - Annual return: 19.7%
+      - Annual vol: 7.1%
+      - Max drawdown: -5.1%
+      - Win rate: 9.3%
+      Very similar to the SMA overlay. The EMA is slightly more reactive but
+      does not improve the baseline.
   - id: 3
     label: RSI filter
     status: pending
