@@ -1,12 +1,12 @@
 const tools = [
-  { id: 'thb_xag', label: 'Baseline THB+XAG', file: 'data/trended_graph_knn_thb_xag_equity.csv', results: 'data/trended_graph_knn_thb_xag_results.json', best: true, status: 'completed' },
-  { id: 'sma_overlay', label: 'SMA overlay', file: 'data/trended_sma_overlay_equity.csv', results: 'data/trended_sma_overlay_results.json', status: 'pending' },
-  { id: 'ema_overlay', label: 'EMA overlay', file: 'data/trended_ema_overlay_equity.csv', results: 'data/trended_ema_overlay_results.json', status: 'pending' },
-  { id: 'rsi_filter', label: 'RSI filter', file: 'data/trended_rsi_filter_equity.csv', results: 'data/trended_rsi_filter_results.json', status: 'pending' },
-  { id: 'macd_filter', label: 'MACD filter', file: 'data/trended_macd_filter_equity.csv', results: 'data/trended_macd_filter_results.json', status: 'pending' },
-  { id: 'bollinger', label: 'Bollinger Band mean-reversion', file: 'data/trended_bollinger_equity.csv', results: 'data/trended_bollinger_results.json', status: 'pending' },
-  { id: 'atr_sizing', label: 'ATR-based sizing', file: 'data/trended_atr_sizing_equity.csv', results: 'data/trended_atr_sizing_results.json', status: 'pending' },
-  { id: 'combined', label: 'Combined best', file: 'data/trended_thb_basis_best_equity.csv', results: 'data/trended_thb_basis_best_results.json', status: 'pending' },
+  { id: 'thb_xag', label: 'Baseline THB+XAG', file: 'data/trended_graph_knn_thb_xag_equity.csv', results: 'data/trended_graph_knn_thb_xag_results.json', status: 'completed' },
+  { id: 'sma_overlay', label: 'SMA overlay', file: 'data/trended_sma_overlay_equity.csv', results: 'data/trended_sma_overlay_results.json', status: 'completed' },
+  { id: 'ema_overlay', label: 'EMA overlay', file: 'data/trended_ema_overlay_equity.csv', results: 'data/trended_ema_overlay_results.json', status: 'completed' },
+  { id: 'rsi_filter', label: 'RSI filter', file: 'data/trended_rsi_filter_equity.csv', results: 'data/trended_rsi_filter_results.json', status: 'completed' },
+  { id: 'macd_filter', label: 'MACD filter', file: 'data/trended_macd_filter_equity.csv', results: 'data/trended_macd_filter_results.json', status: 'completed' },
+  { id: 'bollinger', label: 'Bollinger Band mean-reversion', file: 'data/trended_bollinger_equity.csv', results: 'data/trended_bollinger_results.json', status: 'completed' },
+  { id: 'atr_sizing', label: 'ATR-based sizing', file: 'data/trended_atr_sizing_equity.csv', results: 'data/trended_atr_sizing_results.json', best: true, status: 'completed' },
+  { id: 'combined', label: 'Combined best', file: 'data/trended_thb_basis_best_equity.csv', results: 'data/trended_thb_basis_best_results.json', status: 'completed' },
 ];
 
 async function fetchJSON(path) {
