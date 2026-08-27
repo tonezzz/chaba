@@ -33,7 +33,9 @@ processing:
   last_updated: '2026-08-27'
   notes: |
     The tool sweep is complete. ATR-based position sizing is the best
-    standalone tool (Sharpe 3.62). The final app and SSOT are updated.
+    standalone tool. A wider grid confirmed ATR_WINDOW=7, TARGET_VOL=0.15,
+    P_THRESHOLD=0.005 as the tuned best (Sharpe 3.84, 44.7% ret, 11.6% vol,
+    -6.9% dd). Stress test shows it is robust to 0.10% TC but breaks at 0.50%.
 
 steps:
   - id: 1
