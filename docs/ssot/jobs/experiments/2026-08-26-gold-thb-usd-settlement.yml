@@ -21,19 +21,27 @@ planning:
     - A results table quantifies the difference in Sharpe, return, vol, and max DD.
 
 processing:
-  status: completed
+  status: in_progress
   current_step: 5
   started_at: '2026-08-26'
   last_updated: '2026-08-26'
-  completed_at: '2026-08-26'
+  completed_at: null
   notes: |
-    Final conclusion: converting XAU/USD trade proceeds immediately to THB
-    (XAU/THB) does not improve the risk-adjusted performance of the best
-    silver graph+k-NN signal. The best THB settlement setting (W=3, K=20)
-    reaches Sharpe 2.73, while the XAU/USD silver signal reaches Sharpe 3.43.
-    Holding USD and converting only when needed (XAU/USD) remains the better
-    settlement choice for this strategy. The vol-sized THB+XAG variants are a
-    separate, higher-return concept and are tracked in the follow-up-ideas SSOT.
+    Final comparison of THB settlement choices (default W=2, K=30,
+    P_THRESHOLD=0.01, EDGE_LOOKBACK=504):
+    - XAU/USD silver (reference): Sharpe 3.43, ann ret 34.0%, vol 9.9%,
+      max DD -6.7%, win rate 15.1%
+    - XAU/USD position, USD marked to THB daily (hold USD): Sharpe 2.19,
+      ann ret 22.1%, vol 10.1%, max DD -7.2%, win rate 51.5%
+    - XAU/THB position (settle THB): Sharpe 2.37, ann ret 24.2%, vol 10.2%,
+      max DD -8.4%, win rate 13.2%
+
+    The pure XAU/USD silver signal is still the best on a risk-adjusted basis.
+    Holding the XAU/USD position and marking USD to THB each day gives a higher
+    win rate (51.5%) because the long USD/THB cash position earns the currency
+    carry, but the lower Sharpe means the THB volatility is still a drag.
+    Settling fully to THB removes the USD carry and produces a lower win rate
+    but a slightly higher Sharpe than the hold-USD variant.
 
 steps:
   - id: 1
@@ -62,13 +70,25 @@ steps:
       max DD=-6.5%. This is the best THB result but still below the XAU/USD
       silver graph+k-NN (Sharpe 3.43). The underperformance is robust.
   - id: 5
+    label: Hold-USD settlement variant
+    status: completed
+    completed_at: '2026-08-26'
+    notes: |
+      trended_graph_knn_hold_usd.py generated data/trended_graph_knn_hold_usd_equity.csv.
+      W=2, K=30: Sharpe 2.19, ann ret 22.1%, vol 10.1%, max DD -7.2%, win rate 51.5%.
+      The high win rate reflects the USD/THB carry, but the Sharpe is still below
+      the XAU/USD silver reference.
+  - id: 6
     label: Document conclusion
     status: completed
     completed_at: '2026-08-26'
     notes: |
-      Conclusion documented. Recommendation: continue settling gold P/L in
-      USD (XAU/USD) for this signal. THB settlement adds volatility and
-      drawdown without improving Sharpe.
+      Conclusion: holding gold P/L in USD (XAU/USD silver) remains best on a
+      risk-adjusted basis (Sharpe 3.43). Among THB-settlement choices, the
+      full XAU/THB settlement (W=3, K=20, Sharpe 2.73) slightly outperforms the
+      hold-USD daily-marked variant (W=2, K=30, Sharpe 2.19) on Sharpe, while
+      the hold-USD variant earns a higher win rate (51.5%) from the USD/THB
+      carry. For this signal, settling in USD is preferred.
 
 changes:
   - file: experiments/gold-thb-usd-causality/prepare_thb_base.py

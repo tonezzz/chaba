@@ -39,8 +39,9 @@
       therefore the gold return plus the USD/THB carry.
     </p>
     <ul>
-      <li><strong>Hold USD:</strong> track XAU/USD only; convert to THB later.</li>
-      <li><strong>Settle to THB:</strong> track XAU/THB; the currency leg is marked daily.</li>
+      <li><strong>XAU/USD silver (ref):</strong> the current best XAU/USD silver graph+k-NN curve.</li>
+      <li><strong>Hold USD, mark THB:</strong> XAU/USD position, but USD cash is revalued daily using USD/THB. The P/L is <code>pos * xau_usd_next + usd_thb_next</code>.</li>
+      <li><strong>Settle to THB:</strong> XAU/THB position; the currency leg is marked daily. The P/L is <code>pos * xau_thb_next</code>.</li>
     </ul>
   </div>
 
