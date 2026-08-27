@@ -1,0 +1,34 @@
+title: Focus Inbox Item
+subtitle: Auto-drafted from reports/DEV_SYSTEM_ASSESSMENT.json
+icon: inbox
+
+focus:
+  label: Dev-system regression
+  text: |
+    Dev-system trend is declining. Open cons:
+- Branch/worktree sprawl (medium): 3 branches are ahead of master; 6 worktrees active
+- Uncommitted working tree (medium): 1 untracked or modified file(s)
+Source: reports/DEV_SYSTEM_ASSESSMENT.json
+
+  branch: chaba
+  priority: medium
+  status: draft
+  triage_score: 0.6
+  tags: ["dev-system", "assessment"]
+  safe_to_parallel:
+    value: true
+    reason: Report-generated item; can be triaged independently.
+  subtasks:
+    - label: Review reports/DEV_SYSTEM_ASSESSMENT.md
+    - label: Address highest severity con: Branch/worktree sprawl
+    - label: Update docs/ssot/ssot.dev-system.assessment.yml when resolved
+
+ownership:
+  owner: tony
+  session: ""
+  locked: false
+  lock_reason: ""
+
+source:
+  session: ""
+  date: '2026-08-26'

@@ -322,17 +322,55 @@ branches:
       - 45ba526 experiment: add oil to graph+k-NN research branch
       - e86efe9 experiment: add USD/EUR to graph+k-NN research branch
 
+app_consolidation:
+  research_site: https://tony-dell.taila0626a.ts.net:8444/apps/gold/
+  pages:
+    - path: index.html
+      label: Gold/THB/USD Hub
+      note: Landing page with links to all research sub-pages.
+    - path: vector-search-ideas.html
+      label: Vector-search ideas
+    - path: vector-analysis-ideas.html
+      label: Vector-analysis ideas
+    - path: thb-settlement.html
+      label: THB settlement comparison
+    - path: conclusion.html
+      label: Research conclusion
+      note: Final results table and best equity curve.
+  shared_component: app/nav.js
+  shared_component_note: Injected navigation across all research pages for easy cross-linking.
+  trade_dashboard_link: /apps/tradecanvas-ui/index.html
+  trade_dashboard_note: "TradeCanvas production UI; added a 'Gold/THB Research' nav link to the conclusion page."
+  promoted_data:
+    - source: experiments/gold-thb-usd-causality/data/trended_graph_knn_thb_xag_equity.csv
+      target: trade/tradecanvas-ui/data/trended_graph_knn_thb_xag_equity.csv
+      note: Best branch equity curve made available to the production dashboard.
+    - source: experiments/gold-thb-usd-causality/data/trended_graph_knn_thb_xag_results.json
+      target: trade/tradecanvas-ui/data/trended_graph_knn_thb_xag_results.json
+      note: Best branch results metadata made available to the production dashboard.
+  consolidation_recommendation: |
+    Keep the research app (chaba-funnel/public/apps/gold/) as the canonical
+    research micro-site and TradeCanvas (trade/tradecanvas-ui/) as the production
+    trading UI. The two share a data directory for the best result, and the
+    research site is reachable from the production nav. This keeps research
+    tooling (Plotly, large CSVs) out of the trading dashboard while making
+    results easy to review.
+
 changes:
   - file: docs/ssot/jobs/experiments/2026-08-26-gold-thb-usd-conclusion.yml
-    summary: This milestone SSOT.
-  - file: docs/ssot/jobs/experiments/2026-08-26-gold-thb-usd-followup-ideas.yml
-    summary: Follow-up research SSOT with all individual idea results.
-  - file: docs/ssot/jobs/experiments/2026-08-26-gold-thb-usd-settlement.yml
-    summary: THB settlement SSOT.
-  - file: docs/ssot/jobs/experiments/2026-08-26-gold-thb-usd-vector-analysis.yml
-    summary: Initial vector-analysis sweep SSOT.
-  - file: experiments/gold-thb-usd-causality/trended_graph_knn_thb_xag.py
-    summary: Final branch best script (THB+XAG).
+    summary: This milestone SSOT, including app consolidation notes.
+  - file: experiments/gold-thb-usd-causality/app/nav.js
+    summary: Shared navigation script for all research app pages.
+  - file: experiments/gold-thb-usd-causality/app/conclusion.html
+    summary: Research conclusion app page.
+  - file: experiments/gold-thb-usd-causality/app/conclusion.js
+    summary: Research conclusion app logic.
+  - file: trade/tradecanvas-ui/index.html
+    summary: TradeCanvas dashboard with new Gold/THB Research nav link.
+  - file: trade/tradecanvas-ui/data/trended_graph_knn_thb_xag_equity.csv
+    summary: Promoted best equity curve for the production dashboard.
+  - file: trade/tradecanvas-ui/data/trended_graph_knn_thb_xag_results.json
+    summary: Promoted best results metadata for the production dashboard.
 
 references:
   - experiments/gold-thb-usd-causality/data/trended_graph_knn_thb_xag_equity.csv
