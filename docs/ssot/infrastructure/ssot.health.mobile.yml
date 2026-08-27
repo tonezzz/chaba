@@ -56,9 +56,9 @@ services:
   disabled: true
   note: Runs only on tony-omen; not reachable from tony-dell health monitor.
   verification:
-  - 'Test container: ssh tony-omen docker ps | grep sensor-reader'
+  - 'Test container: ssh tony-omen docker ps | grep chaba-omen-sensor-reader'
   - 'Test direct container: ssh tony-omen curl -s http://tony-omen:8001/health'
-  - 'Check container logs: ssh tony-omen docker logs sensor-reader --tail 20'
+  - 'Check container logs: ssh tony-omen docker logs chaba-omen-sensor-reader --tail 20'
   recovery_actions:
   - 'Restart container: ssh tony-omen docker compose -f stacks/web/docker-compose.yml restart sensor-reader'
 - id: status-data-api
