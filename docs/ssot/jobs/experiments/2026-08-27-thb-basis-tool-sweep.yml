@@ -26,7 +26,7 @@ planning:
 
 processing:
   status: in_progress
-  current_step: 5
+  current_step: 6
   started_at: '2026-08-27'
   last_updated: '2026-08-27'
   notes: |
@@ -117,10 +117,19 @@ steps:
       The Bollinger mean-reversion signal is not profitable in this form.
   - id: 6
     label: ATR-based position sizing
-    status: pending
+    status: completed
+    started_at: '2026-08-27'
+    completed_at: '2026-08-27'
     notes: |
-      Scale the k-NN position by recent ATR instead of the existing realized
-      vol target. Deliverable: trended_atr_sizing.py.
+      Implemented trended_atr_sizing.py. The k-NN signal is scaled by the
+      14-day XAU ATR to target 20% annual volatility, capped at 2x leverage.
+      Result (W=2, K=50, ATR_WINDOW=14, TARGET_VOL=0.20, MAX_LEVERAGE=2.0):
+      - Sharpe: 3.62
+      - Annual return: 54.3%
+      - Annual vol: 15.0%
+      - Max drawdown: -8.7%
+      - Win rate: 17.5%
+      This is the first tool to beat the THB+XAG baseline (Sharpe 3.52).
   - id: 7
     label: Combined filter + sizing
     status: pending
