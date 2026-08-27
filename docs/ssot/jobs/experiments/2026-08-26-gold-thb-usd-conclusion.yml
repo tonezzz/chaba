@@ -298,6 +298,30 @@ report:
       did not improve the final THB+XAG baseline.
     - "Transaction costs are the biggest practical risk: the strategy is robust to ~0.10% TC but breaks by 0.50%."
 
+branches:
+  - name: research/thb-base-settlement
+    current: true
+    tag: milestone-gold-thb-usd-vector-analysis
+    note: Final best THB+XAG and THB settlement/Fx-overlay follow-ups.
+    key_commits:
+      - d538df2 app: add THB+XAG equity curve to vector-analysis page
+      - eacacf3 experiment: dual THB->XAU and XAG->XAU Granger edge (idea 6)
+      - 6d78458 experiment: gold/silver spread feature (idea 5)
+      - 4a8103b experiment: transaction-cost stress and THB+XAG best subset (idea 4)
+      - ecb6633 experiment: feature ablation for silver graph+k-NN (idea 3)
+      - 28e37b9 experiment: volatility regime gate for silver graph+k-NN (idea 2)
+      - 0020c7c experiment: vol-sized silver graph+k-NN (idea 1)
+  - name: research/gold-silver-causality
+    current: false
+    tag: milestone-gold-thb-usd-vector-analysis (older)
+    note: Earlier vector-analysis, oil, USD/EUR, and silver additions.
+    key_commits:
+      - 3ce1745 experiment: tune silver graph+k-NN parameters
+      - f908592 experiment: add silver (XAG) to graph+k-NN feature vector
+      - e27927d experiment: volatility-targeted position sizing for graph+k-NN
+      - 45ba526 experiment: add oil to graph+k-NN research branch
+      - e86efe9 experiment: add USD/EUR to graph+k-NN research branch
+
 changes:
   - file: docs/ssot/jobs/experiments/2026-08-26-gold-thb-usd-conclusion.yml
     summary: This milestone SSOT.
