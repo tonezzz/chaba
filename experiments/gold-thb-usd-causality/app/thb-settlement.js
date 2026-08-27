@@ -20,18 +20,20 @@ function plot(id, traces, layout) {
 async function renderEquity() {
   const container = document.getElementById('equity-curves');
   try {
-    const [xau_usd, xau_thb] = await Promise.all([
+    const [xau_usd, xau_thb, hold_usd] = await Promise.all([
       fetchCSV('data/trended_graph_knn_silver_equity.csv', 'equity').catch(() => null),
       fetchCSV('data/trended_graph_knn_thb_equity.csv', 'equity').catch(() => null),
+      fetchCSV('data/trended_graph_knn_hold_usd_equity.csv', 'equity').catch(() => null),
     ]);
-    if (!xau_usd || !xau_thb) {
-      container.innerHTML = '<p class="muted">Equity data not yet available. Run trended_graph_knn_silver.py and trended_graph_knn_thb.py first.</p>';
+    if (!xau_usd || !xau_thb || !hold_usd) {
+      container.innerHTML = '<p class="muted">Equity data not yet available. Run trended_graph_knn_silver.py, trended_graph_knn_thb.py, and trended_graph_knn_hold_usd.py first.</p>';
       return;
     }
     const dates = xau_usd.map(r => r.date);
     const traces = [
-      { x: dates, y: xau_usd.map(r => r.equity), mode: 'lines', name: 'XAU/USD (hold USD)', line: { color: '#C0C0C0' } },
-      { x: dates, y: xau_thb.map(r => r.equity), mode: 'lines', name: 'XAU/THB (settle THB)', line: { color: '#FFD700' } },
+      { x: dates, y: xau_usd.map(r => r.equity), mode: 'lines', name: 'XAU/USD silver (ref)', line: { color: '#C0C0C0' } },
+      { x: dates, y: hold_usd.map(r => r.equity), mode: 'lines', name: 'XAU/USD position, USD marked to THB', line: { color: '#0d6efd' } },
+      { x: dates, y: xau_thb.map(r => r.equity), mode: 'lines', name: 'XAU/THB position (settle THB)', line: { color: '#FFD700' } },
     ];
     plot('equity-curves', traces, {
       title: 'XAU/USD vs XAU/THB settlement (log scale)',
