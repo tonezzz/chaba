@@ -41,40 +41,60 @@ planning:
   estimated_duration: 1-2 sessions
 
 processing:
-  status: pending
-  current_step: 0
+  status: in_progress
+  current_step: 3
+  started_at: '2026-08-26'
+  last_updated: '2026-08-26'
+  notes: |
+    First FX overlay prototype (trended_graph_knn_fx_overlay.py) on the
+    XAU/USD graph+k-NN signal with a separate USD/THB predictor for idle cash.
+    Settings: W=2, K=30, KFX=30, P=0.01, edge=504, TC=0.05%, TC_FX=0.05%.
+    OOS 2014-2026 result:
+    - Sharpe: 2.49
+    - Annual return: 21.4%
+    - Annual vol: 8.6%
+    - Max drawdown: -7.3%
+    - Win rate: 13.7%
+    It beats the hold-USD reference (Sharpe 2.19) and the THB settle variant
+    (2.37) but not the XAU/USD baseline (2.77) or the THB+XAG branch best
+    (3.43). The FX timing filters some THB-carry noise but the 0.05% FX
+    transaction cost and the one-day horizon limit the gain.
   steps:
     - id: 1
       label: Build FX overlay data
-      status: pending
+      status: completed
+      completed_at: '2026-08-26'
       notes: |
-        Confirm data/aligned_thb_base.csv exists and contains xau_usd, usd_thb,
-        xau_thb. Derive one-day USD/THB return target and the aligned calendar.
+        data/aligned.csv (xau, thb) is used directly; one-day USD/THB and
+        XAU/USD returns are derived inside the script.
     - id: 2
       label: Implement USD pre-positioning overlay
-      status: pending
+      status: completed
+      completed_at: '2026-08-26'
       notes: |
-        Create trended_graph_knn_thb_xag_fx_overlay.py. It first predicts
-        next-day USD/THB return (or uses a simple trend signal), decides
-        currency=USD/THB, and then trades the gold signal in that currency.
+        Implemented trended_graph_knn_fx_overlay.py. It keeps the same gold
+        k-NN and adds a second k-NN that predicts next-day USD/THB return. The
+        cash is pre-positioned in USD when the predicted FX return is positive,
+        otherwise THB. Gold positions are always funded in USD.
     - id: 3
       label: Run OOS and compare
-      status: pending
+      status: completed
+      completed_at: '2026-08-26'
       notes: |
-        Walk-forward 2014-2026. Compare Sharpe, return, volatility, max
-        drawdown, and win rate to the XAU/USD, XAU/THB, and THB+XAG baselines.
+        OOS 2014-2026 completed. The overlay is better than hold-USD but not
+        the XAU/USD baseline. A TC_FX stress test or KFX tuning may be useful.
     - id: 4
       label: Update app if better
       status: pending
       notes: |
-        Add the FX overlay equity curve to app/thb-settlement.html and
-        app/thb-settlement.js only if it clearly beats a baseline.
+        The overlay does not beat the XAU/USD silver baseline, so the app is
+        not updated. It can still be added as an optional reference curve.
     - id: 5
       label: Document conclusion
       status: pending
       notes: |
-        Update this SSOT with the final result and a clear recommendation on
-        whether to pre-position USD.
+        Update this SSOT with the final tuned/sweep result and a clear
+        recommendation on whether to pre-position USD.
 
 report:
   status: pending
@@ -99,11 +119,16 @@ followup:
     - Separate machine-learning model for USD/THB prediction.
     - FX transaction-cost and slippage stress test.
 
-changes: []
+changes:
+  - file: experiments/gold-thb-usd-causality/trended_graph_knn_fx_overlay.py
+    summary: XAU/USD graph+k-NN with USD/THB pre-positioning overlay.
 
 references:
   - docs/ssot/jobs/experiments/2026-08-26-gold-thb-usd-settlement.yml
-  - experiments/gold-thb-usd-causality/trended_graph_knn_thb.py
+  - docs/ssot/jobs/experiments/2026-08-26-gold-thb-usd-conclusion.yml
+  - experiments/gold-thb-usd-causality/trended_graph_knn_fx_overlay.py
+  - experiments/gold-thb-usd-causality/data/trended_graph_knn_fx_overlay_equity.csv
+  - experiments/gold-thb-usd-causality/data/trended_graph_knn_fx_overlay_results.json
 
 config:
   version: 1
