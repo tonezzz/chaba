@@ -49,6 +49,12 @@ report:
     EDGE_LOOKBACK=504, and TC=0.05%. It produced a 3.53 Sharpe, 36.9% annual
     return, 10.5% annual vol, -7.3% max drawdown, and 17.5% win rate.
 
+    A follow-up THB basis tool sweep (2026-08-27) found that ATR-based
+    position sizing further improves the THB+XAG k-NN result. The tuned
+    variant (ATR_WINDOW=7, TARGET_VOL=0.15, MAX_LEVERAGE=2.0) delivered a
+    3.82 Sharpe, 44.7% annual return, 11.7% annual vol, -6.9% max drawdown,
+    and 17.5% win rate.
+
     Key findings:
     - The THB->XAU Granger edge is the central gate that cuts the worst losses.
     - Adding XAG/silver to the k-NN feature vector improved returns over the
@@ -64,6 +70,14 @@ report:
     - THB settlement (XAU/THB target) underperformed the XAU/USD signal, mainly
       because the USD/THB carry added volatility without improving Sharpe.
   metrics:
+    - variant: THB+XAG ATR-sized (tuned)
+      file: trended_atr_sizing.py
+      params: W=2 K=50 ATR_WINDOW=7 TARGET_VOL=0.15 MAX_LEVERAGE=2.0
+      sharpe: 3.82
+      annual_return: 44.7%
+      annual_vol: 11.7%
+      max_dd: -6.9%
+      win_rate: 17.5%
     - variant: THB+XAG graph+k-NN (branch best)
       file: trended_graph_knn_thb_xag.py
       sharpe: 3.53

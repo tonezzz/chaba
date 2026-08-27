@@ -29,6 +29,7 @@ K = int(os.environ.get("K", "50"))
 ATR_WINDOW = int(os.environ.get("ATR_WINDOW", "14"))
 TARGET_VOL = float(os.environ.get("TARGET_VOL", "0.20"))
 MAX_LEVERAGE = float(os.environ.get("MAX_LEVERAGE", "2.0"))
+OUTPUT_SUFFIX = os.environ.get("OUTPUT_SUFFIX", "")
 WEIGHTED = os.environ.get("WEIGHTED", "1") in ("1", "true", "True", "yes")
 P_THRESHOLD = float(os.environ.get("P_THRESHOLD", "0.01"))
 MAX_LAG = int(os.environ.get("MAX_LAG", "2"))
@@ -244,7 +245,9 @@ def main():
         print(f"  {k}: {v:.4f}")
     print()
 
-    result.to_csv(DATA / "trended_atr_sizing_equity.csv")
+    eq_name = f"trended_atr_sizing{OUTPUT_SUFFIX}_equity.csv"
+    res_name = f"trended_atr_sizing{OUTPUT_SUFFIX}_results.json"
+    result.to_csv(DATA / eq_name)
     summary = {
         "window": WINDOW,
         "k": K,
@@ -253,6 +256,9 @@ def main():
         "max_lag": MAX_LAG,
         "edge_lookback": EDGE_LOOKBACK,
         "lookback_days": LOOKBACK,
+        "atr_window": ATR_WINDOW,
+        "target_vol": TARGET_VOL,
+        "max_leverage": MAX_LEVERAGE,
         "tc_per_trade": TC,
         "n_months": len(month_records),
         "n_days": int(len(result)),
@@ -261,8 +267,8 @@ def main():
         "monthly_thresholds": month_records,
         "note": "k-NN pattern matcher with THB and XAG returns plus ATR-based sizing, gated by THB->XAU Granger edge. Research only.",
     }
-    (DATA / "trended_atr_sizing_results.json").write_text(json.dumps(summary, indent=2))
-    print("Saved: data/trended_atr_sizing_equity.csv, data/trended_atr_sizing_results.json")
+    (DATA / res_name).write_text(json.dumps(summary, indent=2))
+    print(f"Saved: data/{eq_name}, data/{res_name}")
 
 
 if __name__ == "__main__":
