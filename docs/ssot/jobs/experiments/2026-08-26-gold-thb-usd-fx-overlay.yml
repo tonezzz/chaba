@@ -1,0 +1,112 @@
+title: Gold/THB/USD FX Pre-Positioning
+subtitle: Explore buying USD in advance to time the FX leg before gold settlement
+icon: target
+
+planning:
+  goal: |
+    Determine whether pre-converting THB to USD one day before the gold trade
+    improves the THB-denominated risk-adjusted return. The overlay decides the
+    currency (USD or THB) based on the next-day USD/THB outlook, then runs the
+    chosen gold signal in that currency.
+  scope: |
+    - Use the existing data/aligned_thb_base.csv (XAU/USD, USD/THB, XAU/THB).
+    - Implement a first FX overlay: hold USD when the next-day USD/THB return
+      is predicted positive, otherwise hold THB, then execute the XAU signal in
+      the chosen currency.
+    - Run a walk-forward OOS backtest from 2014-2026.
+    - Compare to the XAU/USD (hold USD), XAU/THB (settle THB), and THB+XAG
+      graph+k-NN baselines.
+    - If results are stable, update app/thb-settlement.html to show the new curve.
+  out_of_scope: |
+    - Live trading or trade-api integration.
+    - Multi-day FX carry beyond one-day pre-positioning.
+    - Thai tax, custody, or FX conversion timing finer than daily close.
+  success_criteria:
+    - A reproducible backtest of the USD pre-positioning overlay.
+    - A metrics table comparing the overlay to the no-overlay baselines.
+    - A committed SSOT and script.
+    - An app update only if the overlay strictly beats a baseline.
+  risks:
+    - USD/THB is noisy at the one-day horizon; the overlay may add transaction
+      costs without reliable prediction.
+    - The FX timing and the gold timing may be collinear, so the combined signal
+      could double-count the same edge.
+    - Adding THB/USD conversion costs could erase small marginal gains.
+  resources:
+    - experiments/gold-thb-usd-causality/data/aligned_thb_base.csv
+    - experiments/gold-thb-usd-causality/trended_graph_knn_thb.py
+    - experiments/gold-thb-usd-causality/tune_graph_knn_thb.py
+    - python3 with pandas, numpy, scikit-learn, statsmodels.
+  owner: tony
+  estimated_duration: 1-2 sessions
+
+processing:
+  status: pending
+  current_step: 0
+  steps:
+    - id: 1
+      label: Build FX overlay data
+      status: pending
+      notes: |
+        Confirm data/aligned_thb_base.csv exists and contains xau_usd, usd_thb,
+        xau_thb. Derive one-day USD/THB return target and the aligned calendar.
+    - id: 2
+      label: Implement USD pre-positioning overlay
+      status: pending
+      notes: |
+        Create trended_graph_knn_thb_xag_fx_overlay.py. It first predicts
+        next-day USD/THB return (or uses a simple trend signal), decides
+        currency=USD/THB, and then trades the gold signal in that currency.
+    - id: 3
+      label: Run OOS and compare
+      status: pending
+      notes: |
+        Walk-forward 2014-2026. Compare Sharpe, return, volatility, max
+        drawdown, and win rate to the XAU/USD, XAU/THB, and THB+XAG baselines.
+    - id: 4
+      label: Update app if better
+      status: pending
+      notes: |
+        Add the FX overlay equity curve to app/thb-settlement.html and
+        app/thb-settlement.js only if it clearly beats a baseline.
+    - id: 5
+      label: Document conclusion
+      status: pending
+      notes: |
+        Update this SSOT with the final result and a clear recommendation on
+        whether to pre-position USD.
+
+report:
+  status: pending
+  summary: |
+    Pending. The goal is to measure whether timing the USD/THB conversion one
+    day ahead adds value on top of the existing gold signal.
+  metrics: []
+  links: []
+  lessons_learned: []
+
+followup:
+  verification:
+    - Confirm aligned_thb_base.csv has no missing USD/THB or XAU/USD prices.
+    - Re-run the THB+XAG baseline on the same OOS days.
+  rollback_plan:
+    - Remove the overlay script and any app references.
+    - Revert this SSOT to pending status.
+  handoff:
+    - tony for further feature engineering or integration.
+  deferred:
+    - Multi-day FX carry or trend-following overlay.
+    - Separate machine-learning model for USD/THB prediction.
+    - FX transaction-cost and slippage stress test.
+
+changes: []
+
+references:
+  - docs/ssot/jobs/experiments/2026-08-26-gold-thb-usd-settlement.yml
+  - experiments/gold-thb-usd-causality/trended_graph_knn_thb.py
+
+config:
+  version: 1
+  created_at: '2026-08-26'
+  last_updated: '2026-08-26'
+  maintainer: tony
