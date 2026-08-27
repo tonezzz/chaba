@@ -1,0 +1,126 @@
+title: THB Basis Tool Sweep
+subtitle: Test basic technical tools on THB as the funding basis for XAU/USD and USD/THB trades
+icon: experiment
+
+planning:
+  goal: |
+    Systematically test a basket of basic technical and risk-management tools
+    (moving averages, RSI, MACD, Bollinger, ATR, volatility targeting, etc.) on
+    the THB-basis gold/USD research branch. The aim is to find whether any of
+    these simple tools improve the existing THB->XAU graph+k-NN strategy or can
+    be combined with it.
+  scope: |
+    - Implement each tool as a standalone or overlay signal on top of the THB
+      and XAU/USD aligned series.
+    - Walk-forward OOS 2014-2026 for every variant.
+    - Compare Sharpe, annual return, vol, max drawdown, win rate.
+    - Build an app page that tracks progress and shows the best equity curve.
+  out_of_scope: |
+    - Live trading or production deployment.
+    - Complex deep-learning models.
+    - New data sources beyond the existing aligned THB/XAU/XAG data.
+  success_criteria:
+    - Each tested tool is recorded in this SSOT with its result.
+    - The app page updates automatically as new tool results are added.
+    - The best tool or combination is clearly identified at the end.
+
+processing:
+  status: in_progress
+  current_step: 0
+  started_at: '2026-08-27'
+  last_updated: '2026-08-27'
+  notes: |
+    Starting a structured sweep of basic technical tools. The baseline is the
+    THB->XAU graph+k-NN (W=2, K=30, Sharpe 2.77). The THB+XAG variant
+    (Sharpe 3.52) is the branch best and will be used as a high-water mark.
+
+steps:
+  - id: 1
+    label: SMA overlay on THB signal
+    status: completed
+    started_at: '2026-08-27'
+    completed_at: '2026-08-27'
+    notes: |
+      Implemented trended_sma_overlay.py. It only takes long positions when the
+      5-day THB SMA is above the 20-day SMA, and short positions when below.
+      Result (W=2, K=50, SHORT=5, LONG=20):
+      - Sharpe: 2.78
+      - Annual return: 19.3%
+      - Annual vol: 6.9%
+      - Max drawdown: -6.2%
+      - Win rate: 9.3%
+      The SMA filter cuts volatility and drawdown but also reduces return and
+      win rate, ending below the THB+XAG baseline (Sharpe 3.52).
+  - id: 2
+    label: EMA overlay on THB signal
+    status: pending
+    notes: |
+      Same as SMA, using exponential moving averages. Deliverable:
+      trended_ema_overlay.py.
+  - id: 3
+    label: RSI filter
+    status: pending
+    notes: |
+      Use RSI of XAU (or THB) to avoid taking long/short signals during
+      overbought/oversold extremes. Deliverable: trended_rsi_filter.py.
+  - id: 4
+    label: MACD filter
+    status: pending
+    notes: |
+      Use MACD of XAU or THB to confirm momentum direction before allowing
+      the graph+k-NN signal to fire. Deliverable: trended_macd_filter.py.
+  - id: 5
+    label: Bollinger Band mean-reversion overlay
+    status: pending
+    notes: |
+      Test a Bollinger Band z-score as a separate signal: fade extreme moves
+      in XAU when the band is hit. Deliverable: trended_bollinger.py.
+  - id: 6
+    label: ATR-based position sizing
+    status: pending
+    notes: |
+      Scale the k-NN position by recent ATR instead of the existing realized
+      vol target. Deliverable: trended_atr_sizing.py.
+  - id: 7
+    label: Combined filter + sizing
+    status: pending
+    notes: |
+      Combine the best standalone tool with the best sizing rule and test the
+      final variant. Deliverable: trended_thb_basis_best.py.
+  - id: 8
+    label: Update app and SSOT
+    status: pending
+    notes: |
+      Update the THB-basis tool-sweep app page with the latest results and
+      final recommendation.
+
+report:
+  status: pending
+  summary: |
+    This SSOT tracks a clean, reproducible sweep of basic technical tools on
+    the THB-basis gold/USD strategy. Results will be added under each step.
+  metrics: []
+  lessons_learned: []
+
+app:
+  page: app/thb-basis-tool-sweep.html
+  source_js: app/thb-basis-tool-sweep.js
+  note: |
+    Live progress tracker showing the baseline, each tested tool's equity curve,
+    and the current best result.
+
+changes:
+  - file: docs/ssot/jobs/experiments/2026-08-27-thb-basis-tool-sweep.yml
+    summary: This SSOT.
+  - file: experiments/gold-thb-usd-causality/app/thb-basis-tool-sweep.html
+    summary: Tool-sweep progress app page.
+  - file: experiments/gold-thb-usd-causality/app/thb-basis-tool-sweep.js
+    summary: Tool-sweep progress app logic.
+
+references:
+  - docs/ssot/jobs/experiments/2026-08-26-gold-thb-usd-conclusion.yml
+  - experiments/gold-thb-usd-causality/trended_graph_knn.py
+  - experiments/gold-thb-usd-causality/trended_graph_knn_thb_xag.py
+
+config:
+  version: 1

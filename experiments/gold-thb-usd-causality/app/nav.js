@@ -4,6 +4,7 @@ document.addEventListener('DOMContentLoaded', () => {
     { href: 'vector-search-ideas.html', label: 'Vector-search ideas' },
     { href: 'vector-analysis-ideas.html', label: 'Vector-analysis ideas' },
     { href: 'thb-settlement.html', label: 'THB settlement' },
+    { href: 'thb-basis-tool-sweep.html', label: 'THB tool sweep' },
     { href: 'conclusion.html', label: 'Conclusion' },
   ];
   const current = window.location.pathname.split('/').pop() || 'index.html';
