@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Gold/THB/USD Research Conclusion</title>
+  <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+  <script src="conclusion.js" defer></script>
+  <style>
+    body { font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif; margin: 2rem; background: #f8f9fa; color: #212529; }
+    h1, h2 { font-weight: 600; }
+    .card { background: #fff; border-radius: 8px; padding: 1.25rem; margin: 1rem 0; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+    .metric { font-size: 1.5rem; font-weight: 700; color: #0d6efd; }
+    .muted { color: #6c757d; }
+    table { border-collapse: collapse; width: 100%; font-size: 0.9rem; }
+    th, td { border: 1px solid #dee2e6; padding: 0.5rem; text-align: right; }
+    th { background: #e9ecef; text-align: left; }
+    td:first-child, th:first-child { text-align: left; }
+    .best { background: #d1e7dd; font-weight: 700; }
+    a { color: #0d6efd; }
+  </style>
+</head>
+<body>
+  <h1>Gold/THB/USD Research Conclusion</h1>
+  <p class="muted">
+    Final record of the walk-forward causality and vector-analysis research.
+    Best result: THB + XAG graph+k-NN (W=2, K=50).
+  </p>
+
+  <p>
+    <a href="index.html">&larr; Causality Explorer</a> |
+    <a href="vector-analysis-ideas.html">Vector-analysis ideas</a> |
+    <a href="thb-settlement.html">THB settlement comparison</a>
+  </p>
+
+  <div class="card">
+    <h2>Best branch result</h2>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 1rem; margin-bottom: 1rem;">
+      <div><div class="metric">3.52</div><div class="muted">Sharpe</div></div>
+      <div><div class="metric">36.8%</div><div class="muted">Ann return</div></div>
+      <div><div class="metric">10.4%</div><div class="muted">Ann vol</div></div>
+      <div><div class="metric">-7.3%</div><div class="muted">Max DD</div></div>
+      <div><div class="metric">17.5%</div><div class="muted">Win rate</div></div>
+    </div>
+    <p>
+      Script: <code>trended_graph_knn_thb_xag.py</code><br>
+      Settings: <code>W=2, K=50, P_THRESHOLD=0.01, EDGE_LOOKBACK=504, TC=0.05%</code>
+    </p>
+  </div>
+
+  <div class="card">
+    <h2>Final results table</h2>
+    <table id="results-table">
+      <thead>
+        <tr>
+          <th>Variant</th>
+          <th>Sharpe</th>
+          <th>Ann ret</th>
+          <th>Ann vol</th>
+          <th>Max DD</th>
+          <th>Win rate</th>
+        </tr>
+      </thead>
+      <tbody id="results-body"></tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h2>Best equity curve</h2>
+    <p>THB + XAG graph+k-NN cumulative return vs buy-and-hold gold (same days).</p>
+    <div id="equity-curve"></div>
+  </div>
+</body>
+</html>
