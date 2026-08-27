@@ -62,8 +62,14 @@ steps:
     notes: app/thb-settlement.html + app/thb-settlement.js plot XAU/USD silver vs XAU/THB curves.
   - id: 4
     label: Tune THB-base variant
-    status: pending
-    notes: Grid search WINDOW and K for trended_graph_knn_thb.py to verify the underperformance is robust.
+    status: completed
+    completed_at: '2026-08-26'
+    notes: |
+      tune_graph_knn_thb.py searched WINDOW {2,3,4,5} x K {10,20,30,50} with
+      P_THRESHOLD=0.01 and EDGE_LOOKBACK=504. The best THB-base setting is
+      W=3, K=20, Sharpe=2.73, annual return=23.8%, annual vol=8.7%,
+      max DD=-6.5%. This is the best THB result but still below the XAU/USD
+      silver graph+k-NN (Sharpe 3.43). The underperformance is robust.
   - id: 5
     label: Document conclusion
     status: pending
