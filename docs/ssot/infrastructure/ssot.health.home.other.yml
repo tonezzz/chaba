@@ -25,20 +25,23 @@ services:
   - 'Check syntax: python3 -m py_compile /home/tony/chaba-funnel/funnel-server.py'
 - id: trade-automation
   name: Trade Automation
-  type: container
-  container: trade-automation
-  expected_state: running
+  type: systemd
+  service: trade-automation.service
+  scope: user
+  host: tony_dell
+  expected_state: active
   timeout: 5
   category: automation
   profiles:
   - home
-  note: Background trade automation worker (same image as trade-api, no exposed host port)
+  note: Background trade automation worker on tony-dell rootless podman (same image as trade-api, no exposed host port)
   verification:
-  - 'Check container: docker ps | grep trade-automation'
-  - 'Check container logs: docker logs trade-automation'
+  - 'Check service: ssh tony-dell systemctl --user status trade-automation.service'
+  - 'Check container: ssh tony-dell podman ps | grep trade-automation'
+  - 'Check logs: ssh tony-dell podman logs trade-automation'
   recovery_actions:
-  - 'Restart container: docker restart trade-automation'
-  - 'Check status: docker inspect trade-automation'
+  - 'Restart service: ssh tony-dell systemctl --user restart trade-automation.service'
+  - 'Check container: ssh tony-dell podman ps | grep trade-automation'
 - id: mcp-debug-cors
   name: MCP Debug CORS endpoint
   type: http

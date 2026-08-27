@@ -410,6 +410,10 @@ tony-omen:
     container: postgres
     image: postgres:16-alpine
     port: 5432
+    status: decommissioned (2026-08-27)
+    routing:
+      - trade data → 100.68.142.13:5432 (tony-dell, chaba-postgres-16)
+    notes: Container stopped and removed; trade database migrated to tony-dell chaba-postgres-16. Yomi data was already on tony-dell.
   mddb:
     container: mddb
     image: tradik/mddb:latest
