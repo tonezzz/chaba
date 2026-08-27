@@ -98,6 +98,7 @@ services:
   name: Playlived (tony-omen)
   type: systemd
   service: playlived.service
+  host: tony_omen
   expected_state: active
   timeout: 5
   category: system
@@ -213,6 +214,7 @@ services:
   name: Barrier KVM Server
   type: systemd
   service: barriers.service
+  host: tony_omen
   expected_state: active
   timeout: 5
   category: system
@@ -291,3 +293,41 @@ services:
   recovery_actions:
   - 'Restart service: ssh tony-dell systemctl --user restart mcp-rview-oauth-proxy'
   - 'Check env file: ssh tony-dell cat /home/tony/.config/mcp-rview-oauth-proxy.env'
+- id: tony-omen-host
+  name: tony-omen host reachability
+  type: http
+  url: http://tony-omen:9100/health
+  expected_status: 200
+  timeout: 5
+  category: system
+  profiles:
+  - home
+  - mobile
+  host: tony_omen
+  note: 'Canary for tony-omen host and tailnet connectivity. Depends on mcp-debug-cors being up; if it is down but the host is up, the SSH verification can isolate the failure.'
+  verification:
+  - 'Check host: ssh tony-omen uptime'
+  - 'Check tailnet: ping -c 1 tony-omen'
+  - 'Check mcp-debug: curl -s http://tony-omen:9100/health'
+  recovery_actions:
+  - 'Check power/network on tony-omen'
+  - 'Restart mcp-debug-cors: ssh tony-omen systemctl --user restart mcp-debug-cors.service'
+- id: tony-omen-sensor-reader
+  name: tony-omen sensor-reader
+  type: http
+  url: http://tony-omen:8001/
+  expected_status: 200
+  timeout: 5
+  category: other
+  profiles:
+  - home
+  - mobile
+  host: tony_omen
+  note: 'Hardware sensor / Docker container data API on tony-omen. Container is currently stopped (Exited 127); this check will fail until it is restarted.'
+  verification:
+  - 'Check container: ssh tony-omen docker ps -a | grep sensor-reader'
+  - 'Check logs: ssh tony-omen docker logs chaba-omen-sensor-reader --tail 20'
+  - 'Test endpoint: curl -s http://tony-omen:8001/'
+  recovery_actions:
+  - 'Start container: ssh tony-omen "cd /home/tony/CascadeProjects/chaba-omen/stacks/web && docker compose up -d sensor-reader"'
+  - 'Check main.py: ssh tony-omen ls -la /home/tony/CascadeProjects/chaba-omen/stacks/web/sensor-reader/main.py'
