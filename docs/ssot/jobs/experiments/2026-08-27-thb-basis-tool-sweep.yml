@@ -26,14 +26,14 @@ planning:
 
 processing:
   status: in_progress
-  current_step: 6
+  status: completed
+  current_step: 8
   started_at: '2026-08-27'
+  completed_at: '2026-08-27'
   last_updated: '2026-08-27'
   notes: |
-    Tools 1 and 2 (SMA and EMA overlays) are complete. Both filters reduce
-    volatility and drawdown but also cut return, ending below the THB+XAG
-    baseline. None of the simple moving-average overlays improve the branch
-    best. Next: RSI and MACD filters.
+    The tool sweep is complete. ATR-based position sizing is the best
+    standalone tool (Sharpe 3.62). The final app and SSOT are updated.
 
 steps:
   - id: 1
@@ -132,24 +132,84 @@ steps:
       This is the first tool to beat the THB+XAG baseline (Sharpe 3.52).
   - id: 7
     label: Combined filter + sizing
-    status: pending
+    status: completed
+    started_at: '2026-08-27'
+    completed_at: '2026-08-27'
     notes: |
-      Combine the best standalone tool with the best sizing rule and test the
-      final variant. Deliverable: trended_thb_basis_best.py.
+      Implemented trended_thb_basis_best.py, combining the best filter (RSI)
+      with the best sizing rule (ATR).
+      Result (W=2, K=50, RSI_WINDOW=14, OVERSOLD=30, OVERBOUGHT=70,
+              ATR_WINDOW=14, TARGET_VOL=0.20, MAX_LEVERAGE=2.0):
+      - Sharpe: 3.12
+      - Annual return: 42.6%
+      - Annual vol: 13.7%
+      - Max drawdown: -8.7%
+      - Win rate: 14.3%
+      The combination underperforms the ATR-only variant. The RSI filter
+      removes too many good trades when the ATR sizing is active.
   - id: 8
     label: Update app and SSOT
-    status: pending
+    status: completed
+    completed_at: '2026-08-27'
     notes: |
-      Update the THB-basis tool-sweep app page with the latest results and
-      final recommendation.
+      The thb-basis-tool-sweep.html app page is already wired to load all
+      data/trended_*_equity.csv and results files. All seven CSV/JSON pairs are
+      generated and synced to the funnel. The SSOT contains the final report.
 
 report:
-  status: pending
+  status: completed
   summary: |
-    This SSOT tracks a clean, reproducible sweep of basic technical tools on
-    the THB-basis gold/USD strategy. Results will be added under each step.
-  metrics: []
-  lessons_learned: []
+    The THB-basis tool sweep is complete. Of the seven tested ideas, the
+    ATR-based position sizing (14-day XAU ATR targeting 20% annual vol) is the
+    clear winner, producing a Sharpe of 3.62 and 54.3% annual return. The
+    RSI filter was the best standalone filter (Sharpe 3.06), but combining it
+    with the ATR sizing reduced performance to 3.12.
+  metrics:
+    - tool: Baseline THB+XAG
+      sharpe: 3.52
+      annual_return: 36.8%
+      annual_vol: 10.4%
+      max_dd: -7.3%
+    - tool: ATR sizing
+      sharpe: 3.62
+      annual_return: 54.3%
+      annual_vol: 15.0%
+      max_dd: -8.7%
+    - tool: RSI filter
+      sharpe: 3.06
+      annual_return: 29.4%
+      annual_vol: 9.6%
+      max_dd: -7.3%
+    - tool: EMA overlay
+      sharpe: 2.77
+      annual_return: 19.7%
+      annual_vol: 7.1%
+      max_dd: -5.1%
+    - tool: SMA overlay
+      sharpe: 2.78
+      annual_return: 19.3%
+      annual_vol: 6.9%
+      max_dd: -6.2%
+    - tool: MACD filter
+      sharpe: 2.25
+      annual_return: 17.3%
+      annual_vol: 7.7%
+      max_dd: -6.2%
+    - tool: Bollinger mean-reversion
+      sharpe: 0.18
+      annual_return: 1.2%
+      annual_vol: 6.5%
+      max_dd: -23.5%
+  lessons_learned:
+    - Trend overlays (SMA/EMA/MACD) reduce volatility and drawdown but also
+      reduce returns, ending below the baseline.
+    - The RSI filter is the only momentum/risk filter that preserves most of
+      the k-NN performance.
+    - Bollinger mean-reversion on XAU returns is not profitable.
+    - ATR-based volatility targeting is the most effective simple tool tested,
+      improving both Sharpe and annual return over the baseline.
+    - Combining the RSI filter with ATR sizing underperforms the ATR-only
+      variant, suggesting the filters are not additive.
 
 app:
   page: app/thb-basis-tool-sweep.html
