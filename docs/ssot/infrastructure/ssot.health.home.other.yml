@@ -42,6 +42,26 @@ services:
   recovery_actions:
   - 'Restart service: ssh tony-dell systemctl --user restart trade-automation.service'
   - 'Check container: ssh tony-dell podman ps | grep trade-automation'
+- id: mcp-debug-sse
+  name: MCP Debug SSE server
+  type: systemd
+  service: mcp-debug-sse.service
+  scope: user
+  host: tony_dell
+  expected_state: active
+  timeout: 5
+  category: mcp-debug
+  profiles:
+  - home
+  - mobile
+  note: MCP Debug SSE server on tony-dell. Clients connect via stdio-to-SSH wrapper (mcp-debug-ssh.sh) or directly to http://tony-dell.taila0626a.ts.net:8446/sse/.
+  verification:
+  - 'Check systemd: ssh tony-dell systemctl --user status mcp-debug-sse.service'
+  - 'Check tailscale serve: ssh tony-dell tailscale serve status | grep 8446'
+  - 'Test endpoint: curl -s -o /dev/null -w ''%{http_code}'' --max-time 2 http://tony-dell:8446/sse/'
+  recovery_actions:
+  - 'Restart service: ssh tony-dell systemctl --user restart mcp-debug-sse.service'
+  - 'Check tailscale serve: ssh tony-dell tailscale serve status'
 - id: mcp-debug-cors
   name: MCP Debug CORS endpoint
   type: http
@@ -52,15 +72,12 @@ services:
   profiles:
   - home
   - mobile
-  note: CORS endpoint on tony-omen for mcp-savings.json and mcp-table.json, served by http_server.py.
+  disabled: true
+  note: Legacy tony-omen CORS endpoint. Deprecated in favour of the MCP Debug SSE server on tony-dell.
   verification:
-  - 'Check systemd: systemctl --user status mcp-debug-cors.service'
-  - 'Check port: ss -tlnp | grep 9100'
-  - 'Test tailnet: curl -s http://tony-omen:9100/health'
-  - 'Test Funnel: curl -s https://tony-omen.taila0626a.ts.net/mcp-savings.json'
+  - 'Disabled; see mcp-debug-sse'
   recovery_actions:
-  - 'Restart: systemctl --user restart mcp-debug-cors.service'
-  - 'Check syntax: python3 -m py_compile /home/tony/CascadeProjects/chaba/scripts/mcp_debug/http_server.py'
+  - 'No action: legacy endpoint, disabled'
 - id: mcp-debug-audit
   name: MCP Debug Audit Health
   type: http
@@ -71,18 +88,12 @@ services:
   profiles:
   - home
   - mobile
-  note: 'Returns the latest consolidated audit suite status from
-
-    reports/audits/summary.json on tony-omen.
-
-    '
+  disabled: true
+  note: Legacy tony-omen audit endpoint. Deprecated in favour of the MCP Debug SSE server on tony-dell.
   verification:
-  - 'Check systemd: systemctl --user status mcp-debug-cors.service'
-  - 'Test endpoint: curl -s http://tony-omen:9100/audit-health'
-  - 'Tailnet test: curl -s https://tony-omen.taila0626a.ts.net/audit-health'
+  - 'Disabled; see mcp-debug-sse'
   recovery_actions:
-  - 'Restart: systemctl --user restart mcp-debug-cors.service'
-  - 'Run audit manually: cd /home/tony/CascadeProjects/chaba && node scripts/audits/run.mjs'
+  - 'No action: legacy endpoint, disabled'
 - id: playlived-omen
   name: Playlived (tony-omen)
   type: systemd
