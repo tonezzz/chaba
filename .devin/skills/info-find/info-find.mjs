@@ -21,11 +21,12 @@ function parseArgs() {
   const mIdx = args.indexOf('--max-results');
   const rIdx = args.indexOf('--record-result');
   const quick = args.includes('--quick');
+  const forceWeb = args.includes('--web');
   const query = qIdx >= 0 ? args[qIdx + 1] : undefined;
   const session = sIdx >= 0 ? args[sIdx + 1] : (process.env.DEVIN_SESSION_ID || process.pid.toString());
   const max = mIdx >= 0 ? (parseInt(args[mIdx + 1], 10) || 5) : 5;
   const result = rIdx >= 0 ? args[rIdx + 1] : undefined;
-  return { query, session, quick, max, result };
+  return { query, session, quick, forceWeb, max, result };
 }
 
 function classify(query) {
@@ -34,16 +35,18 @@ function classify(query) {
   if (/(\b|^)(service|down|restart|status|health|container|podman|docker|systemctl|logs)(\b|$)/.test(q)) return 'service-health';
   if (/(\b|^)(ssot|focus|jobs|infrastructure|services|terminology|night-jobs|improvements)(\b|$)/.test(q)) return 'ssot';
   if (/(\b|^)(file|function|class|script|code|where|grep|search.*code|implementation|bug)(\b|$)/.test(q)) return 'code';
+  if (/(\b|^)(stock|swap|restructuring|corporate action|dividend|split|amalgamation|banpu|settrade|price jump|jump|news|current event|google|web search|web|external)(\b|$)/.test(q)) return 'web';
   return 'general-doc';
 }
 
-function buildPlan({ query, session, quick, max }) {
-  const intent = classify(query);
+function buildPlan({ query, session, quick, forceWeb, max }) {
+  const intent = forceWeb ? 'web' : classify(query);
   const useMddb = !quick && ['ssot','general-doc','code'].includes(intent);
   const useSsot = ['ssot','general-doc','service-health','code'].includes(intent);
   const useGrep = ['code','general-doc','service-health'].includes(intent);
   const useHealth = ['service-health'].includes(intent);
   const useMcp = ['mcp'].includes(intent);
+  const useWeb = intent === 'web';
   return {
     query,
     session,
@@ -53,6 +56,8 @@ function buildPlan({ query, session, quick, max }) {
     use_grep: useGrep,
     use_health: useHealth,
     use_mcp: useMcp,
+    use_web: useWeb,
+    web_query: query,
     quick,
     max_results: max,
     cache_dir: path.join(CACHE_BASE, 'sessions', session),
@@ -79,16 +84,16 @@ function recordResult({ session, result }) {
 }
 
 function main() {
-  const { query, session, quick, max, result } = parseArgs();
+  const { query, session, quick, forceWeb, max, result } = parseArgs();
   if (result) {
     recordResult({ session, result });
     return;
   }
   if (!query) {
-    console.error('Usage: info-find.mjs --query "<query>" [--session <id>] [--quick] [--max-results N] [--record-result <json>]');
+    console.error('Usage: info-find.mjs --query "<query>" [--session <id>] [--quick] [--web] [--max-results N] [--record-result <json>]');
     process.exit(1);
   }
-  const plan = buildPlan({ query, session, quick, max });
+  const plan = buildPlan({ query, session, quick, forceWeb, max });
   writeCacheAndAudit(plan);
   console.log(JSON.stringify(plan, null, 2));
 }
