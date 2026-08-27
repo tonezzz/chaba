@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>THB Basis Tool Sweep</title>
+  <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+  <script src="nav.js" defer></script>
+  <script src="thb-basis-tool-sweep.js" defer></script>
+  <style>
+    body { font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif; margin: 2rem; background: #f8f9fa; color: #212529; }
+    h1, h2 { font-weight: 600; }
+    .card { background: #fff; border-radius: 8px; padding: 1.25rem; margin: 1rem 0; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+    .muted { color: #6c757d; }
+    table { border-collapse: collapse; width: 100%; font-size: 0.9rem; }
+    th, td { border: 1px solid #dee2e6; padding: 0.5rem; text-align: right; }
+    th { background: #e9ecef; text-align: left; }
+    td:first-child, th:first-child { text-align: left; }
+    .best { background: #d1e7dd; font-weight: 700; }
+    a { color: #0d6efd; }
+  </style>
+</head>
+<body>
+  <h1>THB Basis Tool Sweep</h1>
+  <p class="muted">
+    Live tracker for testing basic technical tools on the THB-basis gold/USD
+    strategy. Baseline: THB + XAG graph+k-NN (Sharpe 3.52).
+  </p>
+
+  <div class="card">
+    <h2>Tool results</h2>
+    <table id="results-table">
+      <thead>
+        <tr>
+          <th>Tool</th>
+          <th>Sharpe</th>
+          <th>Ann ret</th>
+          <th>Ann vol</th>
+          <th>Max DD</th>
+          <th>Win rate</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody id="results-body"></tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h2>Equity curves</h2>
+    <p>Baseline THB+XAG vs currently completed tool variants.</p>
+    <div id="equity-curves"></div>
+  </div>
+</body>
+</html>
