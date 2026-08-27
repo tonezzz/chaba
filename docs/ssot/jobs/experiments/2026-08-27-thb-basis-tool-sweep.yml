@@ -26,7 +26,7 @@ planning:
 
 processing:
   status: in_progress
-  current_step: 2
+  current_step: 3
   started_at: '2026-08-27'
   last_updated: '2026-08-27'
   notes: |
@@ -70,10 +70,20 @@ steps:
       does not improve the baseline.
   - id: 3
     label: RSI filter
-    status: pending
+    status: completed
+    started_at: '2026-08-27'
+    completed_at: '2026-08-27'
     notes: |
-      Use RSI of XAU (or THB) to avoid taking long/short signals during
-      overbought/oversold extremes. Deliverable: trended_rsi_filter.py.
+      Implemented trended_rsi_filter.py. Uses 14-day XAU RSI to block long
+      signals when RSI > 70 and short signals when RSI < 30.
+      Result (W=2, K=50, RSI_WINDOW=14, OVERSOLD=30, OVERBOUGHT=70):
+      - Sharpe: 3.06
+      - Annual return: 29.4%
+      - Annual vol: 9.6%
+      - Max drawdown: -7.3%
+      - Win rate: 14.3%
+      The RSI filter improves on the SMA/EMA overlays and gets closer to the
+      baseline, but still trails the unfiltered THB+XAG branch best.
   - id: 4
     label: MACD filter
     status: pending
