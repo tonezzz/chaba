@@ -4,7 +4,8 @@ import crypto from 'crypto';
 import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const CACHE_BASE = path.join(__dirname, 'cache');
+const PROJECT = path.basename(process.cwd()) || 'unknown';
+const CACHE_BASE = path.join(process.env.HOME || '', '.cache', 'devin', 'info-find', PROJECT);
 
 function ensureDir(p) {
   if (!fs.existsSync(p)) fs.mkdirSync(p, { recursive: true });
@@ -33,9 +34,9 @@ function classify(query) {
   const q = query.toLowerCase();
   if (/(\b|^)(mcp|mcp-call|mcp-tool|mcp server)(\b|$)/.test(q)) return 'mcp';
   if (/(\b|^)(service|down|restart|status|health|container|podman|docker|systemctl|logs)(\b|$)/.test(q)) return 'service-health';
-  if (/(\b|^)(ssot|focus|jobs|infrastructure|services|terminology|night-jobs|improvements)(\b|$)/.test(q)) return 'ssot';
+  if (/(\b|^)(ssot|config\/ssot|docs\/ssot|focus|jobs|infrastructure|services|terminology|health|improvements|playlive|preset)(\b|$)/.test(q)) return 'ssot';
   if (/(\b|^)(file|function|class|script|code|where|grep|search.*code|implementation|bug)(\b|$)/.test(q)) return 'code';
-  if (/(\b|^)(stock|swap|restructuring|corporate action|dividend|split|amalgamation|banpu|settrade|price jump|jump|news|current event|google|web search|web|external)(\b|$)/.test(q)) return 'web';
+  if (/(\b|^)(stock|swap|restructuring|corporate action|dividend|split|amalgamation|banpu|settrade|ptt|price jump|jump|news|current event|google|web search|web|external)(\b|$)/.test(q)) return 'web';
   return 'general-doc';
 }
 
@@ -50,6 +51,7 @@ function buildPlan({ query, session, quick, forceWeb, max }) {
   return {
     query,
     session,
+    project: PROJECT,
     intent,
     use_mddb: useMddb,
     use_ssot: useSsot,
@@ -62,9 +64,10 @@ function buildPlan({ query, session, quick, forceWeb, max }) {
     max_results: max,
     cache_dir: path.join(CACHE_BASE, 'sessions', session),
     audit_path: path.join(CACHE_BASE, 'sessions', session, 'audit.ndjson'),
-    ssot_glob: 'docs/ssot/**/*.yml',
+    ssot_glob: '**/ssot/**/*.yml',
     code_glob: '**/*.{mjs,js,ts,py,sh,yml}',
-    health_glob: 'docs/ssot/infrastructure/ssot.health*.yml',
+    health_glob: '**/ssot*health*.yml',
+    mcp_policy_glob: '**/ssot.mcp-tools.yml',
     mddb_health_url: 'http://127.0.0.1:11023/health'
   };
 }
@@ -91,6 +94,7 @@ function main() {
   }
   if (!query) {
     console.error('Usage: info-find.mjs --query "<query>" [--session <id>] [--quick] [--web] [--max-results N] [--record-result <json>]');
+    console.error(`Run this from a project root; detected project: ${PROJECT}`);
     process.exit(1);
   }
   const plan = buildPlan({ query, session, quick, forceWeb, max });
