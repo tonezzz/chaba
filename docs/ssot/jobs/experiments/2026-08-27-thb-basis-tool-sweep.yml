@@ -26,7 +26,7 @@ planning:
 
 processing:
   status: in_progress
-  current_step: 3
+  current_step: 4
   started_at: '2026-08-27'
   last_updated: '2026-08-27'
   notes: |
@@ -86,10 +86,19 @@ steps:
       baseline, but still trails the unfiltered THB+XAG branch best.
   - id: 4
     label: MACD filter
-    status: pending
+    status: completed
+    started_at: '2026-08-27'
+    completed_at: '2026-08-27'
     notes: |
-      Use MACD of XAU or THB to confirm momentum direction before allowing
-      the graph+k-NN signal to fire. Deliverable: trended_macd_filter.py.
+      Implemented trended_macd_filter.py. Allows longs only when XAU MACD line
+      is above its signal line (12/26/9 EMAs), and shorts when below.
+      Result (W=2, K=50, MACD_FAST=12, MACD_SLOW=26, MACD_SIGNAL=9):
+      - Sharpe: 2.25
+      - Annual return: 17.3%
+      - Annual vol: 7.7%
+      - Max drawdown: -6.2%
+      - Win rate: 9.3%
+      The MACD filter is the weakest of the momentum filters tested so far.
   - id: 5
     label: Bollinger Band mean-reversion overlay
     status: pending
