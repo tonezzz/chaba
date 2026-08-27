@@ -26,7 +26,7 @@ planning:
 
 processing:
   status: in_progress
-  current_step: 4
+  current_step: 5
   started_at: '2026-08-27'
   last_updated: '2026-08-27'
   notes: |
@@ -101,10 +101,20 @@ steps:
       The MACD filter is the weakest of the momentum filters tested so far.
   - id: 5
     label: Bollinger Band mean-reversion overlay
-    status: pending
+    status: completed
+    started_at: '2026-08-27'
+    completed_at: '2026-08-27'
     notes: |
-      Test a Bollinger Band z-score as a separate signal: fade extreme moves
-      in XAU when the band is hit. Deliverable: trended_bollinger.py.
+      Implemented trended_bollinger.py as a standalone XAU mean-reversion
+      strategy. It goes short when the 20-day XAU return z-score is above 2
+      and long when below -2, sizing -1/+1.
+      Result (BB_WINDOW=20, BB_STD=2.0):
+      - Sharpe: 0.18
+      - Annual return: 1.2%
+      - Annual vol: 6.5%
+      - Max drawdown: -23.5%
+      - Win rate: 49.7%
+      The Bollinger mean-reversion signal is not profitable in this form.
   - id: 6
     label: ATR-based position sizing
     status: pending
