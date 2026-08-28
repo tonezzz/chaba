@@ -5,7 +5,30 @@ sections:
 - title: Active Shared Focus
   icon: active
   layout: list
-  items: []
+  items:
+  - label: Yomi API health
+    text: 'mcp-health reported status ''unknown'' for Yomi API at 2026-08-27T03:00:15. Error: Command failed: curl -s -o /dev/null
+      -w "%{http_code}" --max-time 5 "http://tony-omen:8080/api/yomi/health"'
+    status: completed
+    priority: medium
+    started: '2026-08-28'
+    completed_at: '2026-08-28'
+    estimated_duration: 1 session
+    tags:
+    - health
+    - inbox
+    - important
+    subtasks: []
+    request_log:
+    - 'mcp-health get_health_status: Yomi API is healthy (response_time 58ms)'
+    - 'mcp-health get_alerts: 0 alerts for Yomi API'
+    - 'Stuck health check (tony-omen:8080) was from stale focus-inbox; current service is healthy'
+    ownership:
+      owner: tony
+      session: ''
+      locked: true
+      lock_reason: Activated as active focus
+    source: /home/tony/CascadeProjects/chaba/docs/ssot/focus-inbox/2026-08-27-030015-yomi-api-health.yml
 - title: Active Branch Focus
   icon: branch
   layout: list
@@ -41,43 +64,6 @@ sections:
       status: deferred
       deferred_at: '2026-08-25'
       resume_note: MacBook offline; park focus until host is reachable
-  - label: Sync worktree chaba-mcp-experiments with master
-    text: 'Worktree chaba-mcp-experiments is 0 commit(s) ahead and 1616 commit(s) behind master.
-
-      Decide whether to merge, rebase, or archive the branch.
-
-      '
-    status: completed
-    priority: medium
-    started: '2026-08-28'
-    completed_at: '2026-08-28'
-    estimated_duration: 1 session
-    tags:
-    - worktree
-    - sync
-    - branches
-    subtasks:
-    - label: Review chaba-mcp-experiments changes
-      status: completed
-      completed_at: '2026-08-28'
-    - label: Merge or rebase to master
-      status: completed
-      completed_at: '2026-08-28'
-    - label: Delete worktree if merged
-      status: completed
-      completed_at: '2026-08-28'
-    request_log:
-    - 'Committed playlived.service and package-lock.json changes'
-    - 'Merged master into chaba-mcp-experiments (b6bf45d)'
-    - 'Resolved playlived.service modify/delete by keeping master deletion'
-    - 'Pushed chaba-mcp-experiments branch to origin'
-    ownership:
-      owner: tony
-      session: ''
-      locked: true
-      lock_reason: Activated as active focus
-    branch: chaba
-    source: /home/tony/CascadeProjects/chaba/docs/ssot/focus-inbox/2026-08-28-055058-worktree-drift-chaba-mcp-experiments.yml
 - title: Quick Wins
   icon: quick
   layout: list
