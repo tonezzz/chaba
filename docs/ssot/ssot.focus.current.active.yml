@@ -41,46 +41,32 @@ sections:
       status: deferred
       deferred_at: '2026-08-25'
       resume_note: MacBook offline; park focus until host is reachable
-  - label: Dev-system regression
-    text: 'Dev-system trend is declining. Open cons:
+  - label: Sync worktree michael with master
+    text: 'Worktree michael is 2 commit(s) ahead and 4 commit(s) behind master.
 
-      - Branch/worktree sprawl (medium): 3 branches are ahead of master; 6 worktrees active
-
-      - SSOT quality regression (high): 2 SSOT optimization warning(s)
-
-      - Uncommitted working tree (medium): 6 untracked or modified file(s)
-
-      Source: reports/DEV_SYSTEM_ASSESSMENT.json
+      Decide whether to merge, rebase, or archive the branch.
 
       '
-    status: completed
+    status: active
     priority: medium
     started: '2026-08-28'
-    completed_at: '2026-08-28'
     estimated_duration: 1 session
     tags:
-    - dev-system
-    - assessment
+    - worktree
+    - sync
+    - branches
     subtasks:
-    - label: Review reports/DEV_SYSTEM_ASSESSMENT.md
-      status: completed
-      completed_at: '2026-08-28'
-    - label: 'Address highest severity con: Branch/worktree sprawl'
-      status: completed
-      completed_at: '2026-08-28'
-    - label: Update docs/ssot/ssot.dev-system.assessment.yml when resolved
-      status: completed
-      completed_at: '2026-08-28'
-    request_log:
-    - 'Pushed master to origin (e88df73)'
-    - 'Deleted merged topic/tony-dell-audit branch (local + remote)'
+    - label: Review michael changes
+    - label: Merge or rebase to master
+    - label: Delete worktree if merged
+    request_log: []
     ownership:
       owner: tony
       session: ''
       locked: true
       lock_reason: Activated as active focus
     branch: chaba
-    source: /home/tony/CascadeProjects/chaba/docs/ssot/focus-inbox/2026-08-27-190227-dev-system-regression.yml
+    source: /home/tony/CascadeProjects/chaba/docs/ssot/focus-inbox/2026-08-28-055058-worktree-drift-michael.yml
 - title: Quick Wins
   icon: quick
   layout: list
