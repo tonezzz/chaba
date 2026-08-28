@@ -101,7 +101,7 @@ services:
 - id: yomi-summarization
   name: Yomi Summarization
   type: http
-  url: '{profile}/api/yomi/summarization-status'
+  url: http://100.68.142.13:3000/api/yomi/summarization-status
   expected_status: 200
   timeout: 5
   category: api
@@ -109,14 +109,14 @@ services:
   - home
   - mobile
   verification:
-  - 'Test API endpoint: curl -s {profile}/api/yomi/summarization-status'
-  - 'Test chat page with valid chat ID: curl -s {profile}/apps/yomi/chat.html?chat=valid_chat_id'
+  - 'Test API endpoint: curl -s http://100.68.142.13:3000/api/yomi/summarization-status'
+  - 'Test chat page with valid chat ID: curl -s http://100.68.142.13:3000/apps/yomi/chat.html?chat=valid_chat_id'
   - Verify API returns JSON response with status information
   - Check browser console for API errors when loading chat page
 - id: yomi-rate-limiter
   name: Yomi Rate Limiter
   type: http
-  url: '{profile}/api/yomi/rate-limiter-status'
+  url: http://100.68.142.13:3000/api/yomi/rate-limiter-status
   expected_status: 200
   timeout: 5
   category: api
@@ -126,7 +126,7 @@ services:
 - id: yomi-activity-status
   name: Yomi Activity Status
   type: http
-  url: '{profile}/api/yomi/activity-status'
+  url: http://100.68.142.13:3000/api/yomi/activity-status
   expected_status: 200
   timeout: 5
   category: api
