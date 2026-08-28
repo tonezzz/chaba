@@ -419,6 +419,53 @@ sections:
     - causality
     - experiment
     - completed
+  - label: Trade Automation health
+    text: 'mcp-health reported status ''error'' for Trade Automation at 2026-08-28T03:00:11. Error: Container trade-automation
+      not found. Check:  docker ps -a | grep trade-automation'
+    date: '2026-08-28'
+    duration: 1 session
+    outcome: Completed
+    tags:
+    - health
+    - inbox
+    - optional
+    - completed
+  - label: 'SSOT optimize: jobs/experiments/2026-08-26-gold-thb-usd-conclusion.yml'
+    text: 'SSOT optimization detected issues in `jobs/experiments/2026-08-26-gold-thb-usd-conclusion.yml`:
+
+
+      - bloat: Bloat: 394 lines exceeds review threshold of 350
+
+
+      Review for bloat, data isolation, or obsolescence and either split/archive the file or resolve the warnings.'
+    date: '2026-08-28'
+    duration: 1 session
+    outcome: Completed
+    tags:
+    - ssot
+    - optimization
+    - bloat
+    - data-isolation
+    - completed
+  - label: 'SSOT optimize: focus-inbox/2026-08-27-190227-ssot-optimization-issues.yml'
+    text: 'SSOT optimization detected issues in `focus-inbox/2026-08-27-190227-ssot-optimization-issues.yml`:
+
+
+      - other: YAML syntax error: while parsing a block mapping
+
+      - other: other: 2
+
+
+      Review for bloat, data isolation, or obsolescence and either split/archive the file or resolve the warnings.'
+    date: '2026-08-28'
+    duration: 1 session
+    outcome: Completed
+    tags:
+    - ssot
+    - optimization
+    - bloat
+    - data-isolation
+    - completed
   note: Recent 10 focus records. 10 older records archived to /home/tony/CascadeProjects/chaba/docs/ssot/ssot.focus.history.archive.2026.yml
   archive_count: 10
 config:

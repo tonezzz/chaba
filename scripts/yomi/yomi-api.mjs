@@ -735,6 +735,24 @@ async function handleMedia(chatId, messageId, res) {
 
 
 
+function serveSharedStatic(pathname, res) {
+  const relative = pathname.replace(/^\/apps\/shared\/js\/?/, '');
+  let filePath = path.join(SHARED_JS_DIR, relative || 'index.html');
+  if (relative.endsWith('/') || !path.extname(filePath)) {
+    filePath = path.join(filePath, 'index.html');
+  }
+  const resolved = path.resolve(filePath);
+  if (!resolved.startsWith(SHARED_JS_DIR)) {
+    return sendJson(res, 403, { ok: false, error: 'forbidden' });
+  }
+  if (!existsSync(resolved)) {
+    return sendJson(res, 404, { ok: false, error: 'not found' });
+  }
+  const ext = path.extname(resolved).slice(1);
+  res.writeHead(200, { 'Content-Type': mimeFromExt(ext) });
+  createReadStream(resolved).pipe(res);
+}
+
 const server = createServer(async (req, res) => {
   const url = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
 
