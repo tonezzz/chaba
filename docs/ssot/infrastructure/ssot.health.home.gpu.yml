@@ -16,7 +16,7 @@ services:
 - id: ollama
   name: Ollama Server
   type: http
-  url: http://tony-omen:11434/api/tags
+  url: http://100.75.102.88:11434/api/tags
   expected_status: 200
   timeout: 10
   category: gpu
@@ -27,8 +27,8 @@ services:
   - 'Check container: docker ps | grep ollama'
   - 'Start container: cd /home/tony/CascadeProjects/chaba/stacks/web/mddb && docker compose up -d ollama'
   - 'Check container logs: cd /home/tony/CascadeProjects/chaba/stacks/web/mddb && docker compose logs ollama'
-  - 'Verify port 11434: curl -s http://tony-omen:11434/api/tags'
-  - 'Check models: curl -s http://tony-omen:11434/api/tags | grep phi3-gguf'
+  - 'Verify port 11434: curl -s http://100.75.102.88:11434/api/tags'
+  - 'Check models: curl -s http://100.75.102.88:11434/api/tags | grep phi3-gguf'
 - id: imagen2
   name: Imagen2
   disabled: true
