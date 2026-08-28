@@ -5,32 +5,7 @@ sections:
 - title: Active Shared Focus
   icon: active
   layout: list
-  items:
-  - label: 'SSOT optimize: focus-inbox/2026-08-26-190228-dev-system-regression.yml'
-    text: "SSOT optimization detected issues in `focus-inbox/2026-08-26-190228-dev-system-regression.yml`:\n\n- other: YAML\
-      \ syntax error: while parsing a block mapping\n- other: Branch/worktree sprawl (medium ... \n\nReview for bloat, data\
-      \ isolation, or obsolescence and either split/archive the file or resolve the warnings."
-    status: completed
-    priority: medium
-    started: '2026-08-28'
-    completed_at: '2026-08-28'
-    estimated_duration: 1 session
-    tags:
-    - ssot
-    - optimization
-    - bloat
-    - data-isolation
-    subtasks: []
-    request_log:
-    - 'Updated ssot.dev-system.assessment.yml'
-    - 'branches_ahead_of_master: now 1 (research/thb-base-settlement)'
-    - 'trend: stable -> improving'
-    ownership:
-      owner: tony
-      session: ''
-      locked: true
-      lock_reason: Activated as active focus
-    source: /home/tony/CascadeProjects/chaba/docs/ssot/focus-inbox/2026-08-26-2000-focus-inbox-2026-08-26-190228-dev-system-regression-ssot-optimization.yml
+  items: []
 - title: Active Branch Focus
   icon: branch
   layout: list
@@ -66,6 +41,44 @@ sections:
       status: deferred
       deferred_at: '2026-08-25'
       resume_note: MacBook offline; park focus until host is reachable
+  - label: Dev-system regression
+    text: 'Dev-system trend is declining. Open cons:
+
+      - Branch/worktree sprawl (medium): 3 branches are ahead of master; 6 worktrees active
+
+      - Uncommitted working tree (medium): 1 untracked or modified file(s)
+
+      Source: reports/DEV_SYSTEM_ASSESSMENT.json
+
+      '
+    status: completed
+    priority: medium
+    started: '2026-08-28'
+    completed_at: '2026-08-28'
+    estimated_duration: 1 session
+    tags:
+    - dev-system
+    - assessment
+    subtasks:
+    - label: Review reports/DEV_SYSTEM_ASSESSMENT.md
+      status: completed
+      completed_at: '2026-08-28'
+    - label: 'Address highest severity con: Branch/worktree sprawl'
+      status: completed
+      completed_at: '2026-08-28'
+    - label: Update docs/ssot/ssot.dev-system.assessment.yml when resolved
+      status: completed
+      completed_at: '2026-08-28'
+    request_log:
+    - 'Updated ssot.dev-system.assessment.yml: 12 branches, 1 ahead, 7 worktrees, 0 untracked'
+    - 'Remaining ahead branch is research/thb-base-settlement (long-running THB tool sweep)'
+    ownership:
+      owner: tony
+      session: ''
+      locked: true
+      lock_reason: Activated as active focus
+    branch: chaba
+    source: /home/tony/CascadeProjects/chaba/docs/ssot/focus-inbox/2026-08-26-190228-dev-system-regression.yml
 - title: Quick Wins
   icon: quick
   layout: list
