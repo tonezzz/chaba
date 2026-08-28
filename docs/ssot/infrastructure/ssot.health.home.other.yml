@@ -315,7 +315,7 @@ services:
 - id: tony-omen-sensor-reader
   name: tony-omen sensor-reader
   type: http
-  url: http://tony-omen:8001/
+  url: http://tony-omen:8001/health
   expected_status: 200
   timeout: 5
   category: other
@@ -327,7 +327,7 @@ services:
   verification:
   - 'Check container: ssh tony-omen docker ps -a | grep sensor-reader'
   - 'Check logs: ssh tony-omen docker logs chaba-omen-sensor-reader --tail 20'
-  - 'Test endpoint: curl -s http://tony-omen:8001/'
+  - 'Test endpoint: curl -s http://tony-omen:8001/health'
   recovery_actions:
   - 'Start container: ssh tony-omen "cd /home/tony/CascadeProjects/chaba-omen/stacks/web && docker compose up -d sensor-reader"'
   - 'Check main.py: ssh tony-omen ls -la /home/tony/CascadeProjects/chaba-omen/stacks/web/sensor-reader/main.py'
