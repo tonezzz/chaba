@@ -1163,6 +1163,20 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
         }
       },
       {
+        name: 'resolve_alert',
+        description: 'Resolve an alert manually',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            alert_id: {
+              type: 'number',
+              description: 'Alert ID to resolve'
+            }
+          },
+          required: ['alert_id']
+        }
+      },
+      {
         name: 'get_alert_config',
         description: 'Get current alert configuration from SSOT',
         inputSchema: {
@@ -1822,6 +1836,30 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         };
       }
 
+      case 'resolve_alert': {
+        const stmt = db.prepare(`
+          UPDATE alerts 
+          SET resolved = 1, resolved_at = CURRENT_TIMESTAMP 
+          WHERE id = ?
+        `);
+        const result = await stmt.run(args.alert_id);
+        
+        if (result.rowCount === 0) {
+          throw new Error(`Alert ${args.alert_id} not found`);
+        }
+        
+        return {
+          content: [{
+            type: 'text',
+            text: JSON.stringify({
+              success: true,
+              message: `Alert ${args.alert_id} resolved`,
+              alert_id: args.alert_id
+            }, null, 2)
+          }]
+        };
+      }
+
       case 'get_alert_config': {
         const config = await loadHealthConfig();
         
@@ -2234,6 +2272,29 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       case 'reload_config': {
         try {
           const config = await loadHealthConfig();
+
+          // Auto-resolve service_failure alerts for services no longer in the loaded config
+          const serviceNames = new Set((config.services || [])
+            .map(s => s.name || s.id)
+            .filter(Boolean));
+          const staleStmt = db.prepare(`
+            SELECT id, service_name FROM alerts
+            WHERE resolved = FALSE AND alert_type = 'service_failure'
+          `);
+          const staleAlerts = await staleStmt.all();
+          let resolvedCount = 0;
+          for (const alert of (staleAlerts || [])) {
+            if (!serviceNames.has(alert.service_name)) {
+              const rs = db.prepare(`
+                UPDATE alerts
+                SET resolved = TRUE, resolved_at = CURRENT_TIMESTAMP
+                WHERE id = ?
+              `);
+              await rs.run(alert.id);
+              resolvedCount++;
+            }
+          }
+
           return {
             content: [{
               type: 'text',
@@ -2243,6 +2304,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
                 profile: config.detectedProfile,
                 services_loaded: config.services?.length || 0,
                 groups_loaded: Object.keys(config.groups || {}).length,
+                stale_alerts_resolved: resolvedCount,
                 message: 'Configuration reloaded successfully'
               }, null, 2)
             }]
