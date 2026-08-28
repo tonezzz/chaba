@@ -1,0 +1,131 @@
+title: Focus Triage
+subtitle: Scoring rubric and selection formula for choosing the next backlog item
+icon: triage
+version: 1
+
+purpose:
+- Replace the simple priority-based fallback with a numeric triage score.
+- Align with the existing impact scoring in docs/ssot/ssot.improvements.yml and service criticality in docs/ssot/infrastructure/ssot.health.yml.
+- Let the focus dispatcher rank backlog items by urgency, importance, and complication.
+
+scoring:
+  dimensions:
+  - name: urgency
+    description: Time pressure to act before damage spreads
+    scale: 1-10
+    rubric:
+      9-10: already broken and actively affecting other people or systems
+      6-8: will break or seriously degrade in the current cycle if not addressed
+      3-5: could break soon or under load/edge cases; not failing yet
+      1-2: stable and safe to defer; no known trigger
+  - name: importance
+    description: Downstream dependence of other systems on this focus
+    scale: 1-10
+    rubric:
+      9-10: multiple critical systems depend on it
+      6-8: important or several secondary systems depend on it
+      3-5: a few minor systems depend on it
+      1-2: isolated; little or no downstream impact
+  - name: complication
+    description: Friction and uncertainty to complete the work safely
+    scale: 1-10
+    rubric:
+      8-10: wide blast radius, scheduling/coordination needed, missing info or unknowns
+      4-7: touches a few related systems, possible short downtime, small info gaps
+      1-3: single file or component, no downtime, all info in hand
+
+  formula: |
+    triage_score = urgency * 0.4 + importance * 0.35 + (10 - complication) * 0.25
+
+  notes:
+  - complication is inverted so simpler work scores higher.
+  - Tie-breakers: triage_score, then priority, then started date.
+  - For auto-generated health alerts, urgency and importance can be seeded from ssot.health.yml severity and service_criticality.
+
+safe_to_parallel:
+  description: A focus is safe to run in a parallel lane while another active focus remains in progress.
+  enabled: true
+  criteria:
+  - id: branch_isolation
+    label: No branch conflict
+    rule: The focus branch must differ from both the active shared focus and active branch focus branches, or it is repo-neutral (chaba meta/docs only with no code changes on an active branch).
+    weight: required
+  - id: no_user_approval
+    label: No real-time approval required
+    rule: subagent.requires_approval must be false or missing; no step requires a user prompt mid-flight.
+    weight: required
+  - id: low_blast_radius
+    label: Low blast radius
+    rule: triage.complication must be 4 or lower, or the work is read-only (explore/research/validate only).
+    weight: required
+  - id: complete_info
+    label: No missing info
+    rule: missing_info must be empty or all items resolved before the safe focus runs.
+    weight: required
+  - id: active_focus_untouched
+    label: Active focus state untouched
+    rule: The safe focus must not modify ssot.focus.current.yml, ssot.focus.yml active section, or the active focus job_lifecycle.
+    weight: required
+  - id: session_lock
+    label: Lock available
+    rule: The focus must not already be owned by another session (owner or session fields empty or match the current session).
+    weight: required
+  score:
+    description: |
+      safe_score = number of required criteria met (0-6). A focus is safe_to_parallel only if all required criteria are met.
+    safe_threshold: 6
+
+  parallel_rules:
+  - A safe focus may be activated in Ready (Safe) without parking the active branch focus.
+  - Only one safe focus may be active per session to avoid write races.
+  - Safe foci must still be committed and validated before claiming completion.
+
+mapping_to_health:
+  urgency:
+    from: docs/ssot/infrastructure/ssot.health.yml alerts.severity
+    critical: 9-10
+    error: 6-8
+    degraded: 3-5
+  importance:
+    from: docs/ssot/infrastructure/ssot.health.yml service_criticality
+    critical: 9-10
+    important: 5-8
+    optional: 1-3
+  complication:
+    from: docs/ssot/infrastructure/ssot.health.yml dependencies and groups
+    many dependencies or multiple groups: 8-10
+    some dependencies or one group: 4-7
+    no known dependencies: 1-3
+
+usage:
+- Each Backlog - Triage Queue item in docs/ssot/ssot.focus.yml may include a triage block.
+- focus-dispatcher.py computes triage_score for each pending item and sorts by it.
+- For mcp_focus and subagent_focus_triage, the triage block can be returned as extra context.
+
+subagent_dispatch:
+  description: Backlog and active items may be delegated to sub-agents when they are self-contained,
+    low-interaction, and do not require real-time user approval.
+  enabled: true
+  item_fields:
+  - subagent
+  - safe_to_parallel
+  subagent_schema:
+    runnable: boolean
+    profile: string
+    parallel: boolean
+    requires_approval: boolean
+    can_change_host: boolean
+    notes: string
+    safe_to_parallel: boolean
+  dispatch_rules:
+  - Only one foreground sub-agent may run at a time.
+  - Background sub-agents may run in parallel if they touch different branches/hosts and no write conflicts.
+  - Sub-agents must read the focus SSOTs and append a subagent_summary field to each subtask/focus they touch.
+  - Sub-agents must not activate new foci or park existing ones without main-agent confirmation.
+  - A focus with subagent.runnable false is foreground-only.
+
+validation:
+- triage is optional for backlog items; missing triage falls back to priority-based sorting.
+- When present, all three scores must be integers from 1 to 10.
+- subagent is optional; when present, runnable and parallel default to false.
+- safe_to_parallel is optional; when present, it must be a boolean or an object with criteria; if absent, it defaults to false.

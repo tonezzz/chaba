@@ -1,0 +1,109 @@
+title: Test PWA
+subtitle: Progressive Web App demo for iPad testing with full-screen support, interactive features, and status detection.
+icon: 📱
+sections:
+  - title: Core Features
+    icon: ✅
+    layout: list
+    items:
+      - label: Full-screen support
+        text: 'display: standalone mode for native app-like experience when launched from iPad home screen'
+      - label: Interactive demo
+        text: 'Counter, theme switcher (5 color themes), local storage persistence for state'
+      - label: Status detection
+        text: 'Detects PWA installation status, display mode (standalone/browser), and online/offline status'
+      - label: iPad optimization
+        text: 'Safe area insets, touch-friendly controls, viewport-fit=cover for edge-to-edge display'
+
+  - title: Technical Implementation
+    icon: ⚙️
+    layout: list
+    items:
+      - label: Manifest configuration
+        text: 'manifest.json with standalone display mode, SVG icons (192x192, 512x512), theme colors, and scope'
+      - label: Apple-specific meta tags
+        text: 'apple-mobile-web-app-capable, apple-mobile-web-app-status-bar-style for iOS integration'
+      - label: Local storage
+        text: 'Persists counter value and selected theme across sessions'
+      - label: Responsive design
+        text: 'Mobile-first CSS with theme variables, gradient backgrounds, card-based layout'
+
+  - title: Deployment
+    icon: 🚀
+    layout: list
+    items:
+      - label: Location
+        text: 'chaba-h3/public/apps/test-pwa/'
+      - label: URL
+        text: 'https://chaba.h3.gizmo-thailand.com/apps/test-pwa/'
+      - label: Registry
+        text: 'Listed in apps.yml with 📱 icon and PWA description'
+      - label: Branch
+        text: 'chaba.h3 branch (Plesk static site)'
+
+  - title: Testing Procedures
+    icon: 🧪
+    layout: list
+    items:
+      - label: Installation test
+        text: 'Open in Safari → Share → Add to Home Screen → Launch from home screen'
+      - label: Full-screen verification
+        text: 'Compare browser view vs home screen launch to confirm standalone mode'
+      - label: Theme testing
+        text: 'Test all 5 themes (default, dark, green, purple, orange) for visual consistency'
+      - label: Persistence testing
+        text: 'Close and reopen app - counter and theme should persist via local storage'
+      - label: Status detection
+        text: 'Verify PWA status, display mode, and online status display correctly'
+
+  - title: Files
+    icon: 📁
+    layout: list
+    items:
+      - label: index.html
+        text: 'Main HTML structure with meta tags, manifest link, and app container'
+      - label: manifest.json
+        text: 'PWA manifest with display mode, icons, theme colors, and scope'
+      - label: app.css
+        text: 'Responsive CSS with theme variables, card layouts, and touch-friendly controls'
+      - label: app.js
+        text: 'Interactive logic for counter, themes, status detection, and local storage'
+      - label: icon-192.svg / icon-512.svg
+        text: 'SVG icons for home screen and app launcher'
+
+  - title: Use Cases
+    icon: 🎯
+    layout: list
+    items:
+      - label: PWA development reference
+        text: 'Template for building PWAs with full-screen iPad support'
+      - label: Display mode testing
+        text: 'Compare standalone vs browser vs minimal-ui display modes'
+      - label: Installation workflow
+        text: 'Test home screen installation and launch behavior'
+      - label: Feature demonstration
+        text: 'Showcase PWA capabilities like local storage and status detection'
+
+  - title: Limitations
+    icon: ⚠️
+    layout: list
+    items:
+      - label: No service worker
+        text: 'Currently no offline support - requires network connection'
+      - label: No push notifications
+        text: 'Push notification support not implemented'
+      - label: Limited hardware access
+        text: 'Standard PWA limitations on sensors and hardware APIs'
+      - label: Status bar visibility
+        text: 'iOS system requirement keeps status bar visible (cannot hide completely)'
+
+config:
+  version: 1
+  created: 2026-08-06
+  maintainer: tony
+  status: active
+  deployment: chaba-h3
+  related_files:
+    - docs/kb/test-pwa.md
+    - docs/kb/h3-pages.md
+    - docs/kb/app-ssot-standards.md

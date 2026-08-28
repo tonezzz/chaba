@@ -32,28 +32,28 @@ run_and_time() {
 echo "method,time_seconds" > "$OUTPUT_BASE/benchmark_times.csv"
 
 run_and_time "3dgs" \
-    docker compose -f stacks/ai/docker-compose.yml run 3dgs train \
+    docker compose run 3dgs train \
         -s "$SCENE_PATH" \
         -m "$OUTPUT_BASE/3dgs" \
         --iterations "$ITERATIONS" \
         --eval
 
 run_and_time "mip-splatting" \
-    docker compose -f stacks/ai/docker-compose.yml run -e VARIANT=mip variants train \
+    docker compose run -e VARIANT=mip variants train \
         -s "$SCENE_PATH" \
         -m "$OUTPUT_BASE/mip" \
         --iterations "$ITERATIONS" \
         --eval
 
 run_and_time "2dgs" \
-    docker compose -f stacks/ai/docker-compose.yml run -e VARIANT=2dgs variants train \
+    docker compose run -e VARIANT=2dgs variants train \
         -s "$SCENE_PATH" \
         -m "$OUTPUT_BASE/2dgs" \
         --iterations "$ITERATIONS" \
         --eval
 
 run_and_time "nerfstudio-splatfacto" \
-    docker compose -f stacks/ai/docker-compose.yml run -e METHOD=splatfacto nerfstudio train \
+    docker compose run -e METHOD=splatfacto nerfstudio train \
         --data "$SCENE_PATH" \
         --output-dir "$OUTPUT_BASE/nerfstudio"
 

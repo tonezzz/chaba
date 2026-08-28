@@ -1,0 +1,170 @@
+title: Registry — Script Mcp Debug
+subtitle: Catalog of 14 script-mcp-debug assets
+icon: 🗃️
+version: 1
+source: ssot.registry.script.yml
+assets:
+- id: init
+  name: __init__.py
+  type: script
+  path: scripts/mcp_debug/__init__.py
+  project: chaba
+  purpose: script asset at scripts/mcp_debug/__init__.py; purpose to be documented.
+  status: draft
+- id: capture
+  name: capture.py
+  type: script
+  path: scripts/mcp_debug/capture.py
+  project: chaba
+  purpose: script asset at scripts/mcp_debug/capture.py; purpose to be documented.
+  status: draft
+- id: config
+  name: config.py
+  type: script
+  path: scripts/mcp_debug/config.py
+  project: chaba
+  purpose: script asset at scripts/mcp_debug/config.py; purpose to be documented.
+  status: draft
+- id: context
+  name: context.py
+  type: script
+  path: scripts/mcp_debug/context.py
+  project: chaba
+  purpose: script asset at scripts/mcp_debug/context.py; purpose to be documented.
+  status: draft
+- id: mcp-debug-focus
+  name: mcp_debug.focus
+  type: script
+  path: scripts/mcp_debug/focus.py
+  project: chaba
+  purpose: MCP focus session router, recommendation engine, and decision/session logger.
+  status: active
+  tags:
+  - mcp
+  - focus
+  - python
+  related:
+  - mcp-debug-server
+  - ssot-mcp-focus
+  - ssot-focus-decisions
+  added: '2026-08-17'
+- id: formatters
+  name: formatters.py
+  type: script
+  path: scripts/mcp_debug/formatters.py
+  project: chaba
+  purpose: script asset at scripts/mcp_debug/formatters.py; purpose to be documented.
+  status: draft
+- id: hosts
+  name: hosts.py
+  type: script
+  path: scripts/mcp_debug/hosts.py
+  project: chaba
+  purpose: script asset at scripts/mcp_debug/hosts.py; purpose to be documented.
+  status: draft
+- id: mcp-debug-http-server
+  name: mcp_debug.http_server
+  type: script
+  path: scripts/mcp_debug/http_server.py
+  project: chaba
+  purpose: CORS HTTP endpoint that serves cached mcp-savings.json to the chaba.h3 report page.
+  status: active
+  environment: tony-omen
+  tags:
+  - mcp
+  - debug
+  - http
+  - cors
+  related:
+  - ssot-mcp-debug-cors
+  - mcp-debug-cors-service
+  - mcp-debug-reports
+  added: '2026-08-16'
+- id: preprocess
+  name: preprocess.py
+  type: script
+  path: scripts/mcp_debug/preprocess.py
+  project: chaba
+  purpose: script asset at scripts/mcp_debug/preprocess.py; purpose to be documented.
+  status: draft
+- id: mcp-debug-reports
+  name: mcp_debug.reports
+  type: script
+  path: scripts/mcp_debug/reports.py
+  project: chaba
+  purpose: JSON, CSV, and HTML report generation for mcp_debug savings and sessions.
+  status: active
+  tags:
+  - mcp
+  - debug
+  - reports
+  - python
+  related:
+  - mcp-debug-server
+  - mcp-debug-http-server
+  added: '2026-08-16'
+- id: mcp-debug-server
+  name: mcp_debug.server
+  type: script
+  path: scripts/mcp_debug/server.py
+  project: chaba
+  purpose: MCP server wiring and tool dispatch for mcp_debug, mcp_focus, mcp_read_ssot, and mcp_search_ssot.
+  status: active
+  environment: tony-omen
+  tags:
+  - mcp
+  - debug
+  - server
+  - python
+  related:
+  - mcp-debug-tools
+  - mcp-debug-reports
+  - mcp-debug-http-server
+  - ssot-mcp-debug
+  added: '2026-08-16'
+- id: mcp-debug-ssot
+  name: mcp_debug.ssot
+  type: script
+  path: scripts/mcp_debug/ssot.py
+  project: chaba
+  purpose: MCP read/search SSOT helpers for mcp_read_ssot and mcp_search_ssot.
+  status: active
+  tags:
+  - mcp
+  - ssot
+  - python
+  related:
+  - mcp-debug-server
+  - ssot-mcp-tools
+  added: '2026-08-17'
+- id: mcp-debug-ssot-edit
+  name: mcp_debug.ssot_edit
+  type: script
+  path: scripts/mcp_debug/ssot_edit.py
+  project: chaba
+  purpose: Append-only SSOT editor for whitelisted list sections via mcp_ssot_append.
+  status: active
+  tags:
+  - mcp
+  - ssot
+  - python
+  related:
+  - mcp-debug-server
+  - ssot-mcp-tools
+  added: '2026-08-17'
+- id: mcp-debug-tools
+  name: mcp_debug.tools
+  type: script
+  path: scripts/mcp_debug/tools.py
+  project: chaba
+  purpose: MCP debug command vetting and compact output for tony_omen, tony_dell, and macbook.
+  status: stable
+  tags:
+  - mcp
+  - debug
+  - tools
+  - python
+  related:
+  - mcp-debug-server
+  - ssot-mcp-debug
+  added: '2026-08-16'

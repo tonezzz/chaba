@@ -1,0 +1,261 @@
+title: GPU Workload Policy
+subtitle: Rules and reservations for GPU workloads across hosts
+icon: gpu
+
+policy:
+  rule: Only one GPU workload at a time
+  reason: Combined usage (~3.7GB) exceeds available VRAM when multiple workloads run simultaneously
+
+  workload_vram:
+    llama: ~0.4GB
+    imagen2: ~0.6GB
+    txt2vid: ~2.7GB
+
+  automated_queue:
+    - When receive a new workload, check if there is already a GPU workload running
+    - If there is, queue the new workload
+    - If there is not, run the new workload
+    - Llama switches to GPU when available, preserves context
+    - When image generation starts, hold llama on CPU (mcp2_hold_llama)
+    - After image generation completes, resume llama on GPU (mcp2_resume_llama)
+
+  caveats:
+    llama_switch:
+      - mcp2_hold_llama waits up to 60s for /health to become reachable
+      - mcp2_resume_llama waits up to 120s for /health to become reachable
+      - CPU-only llama is significantly slower (10-100x latency increase)
+      - Chat requests during CPU mode will be slow
+      - Context preserved during switch (same container)
+
+  chosen_approach:
+    model_state: single_container_router
+    reason: Single llama.cpp router serves multiple models with ~70MB overhead
+    tools: mcp2_hold_llama, mcp2_resume_llama (for CPU fallback during GPU contention)
+    models:
+      - Phi-3-mini-4k-instruct-q4.gguf (2.3GB, MCP/chatllama, active)
+      - thai-legal-gemma-4b-cpt.Q4_K_M.gguf (5GB, offline - GPU memory constraints)
+    implemented: 2026-07-31, thai-legal offline (2026-08-06)
+
+  implementation:
+    queue_manager:
+      status: not_implemented
+      choice: Create new gpu-queue service
+      persistence: Postgres (existing postgres container)
+      queue_strategy: Let LLM job finish first, don't interrupt mid-job
+      priority: txt2vid > imagen2 > llama (sorted, non-preemptive)
+      monitoring: Queue status UI + log events to journald
+
+    api_contract:
+      submit_job: POST /api/gpu-queue/jobs {type, params}
+      list_jobs: GET /api/gpu-queue/jobs
+      job_status: GET /api/gpu-queue/jobs/{id}
+      cancel_job: DELETE /api/gpu-queue/jobs/{id}
+      queue_status: GET /api/gpu-queue/status
+
+    database:
+      table: gpu_queue_jobs
+      columns: id, type, params, status, priority, created_at, started_at, completed_at, error
+
+    testing_strategy:
+      unit_tests:
+        - Mock mcp-gpu/mcp-llama tools
+        - Test queue logic without real GPU
+        - Test Postgres operations with test DB
+      integration_tests:
+        - Test with real llama-server (CPU-only mode)
+        - Test hold/resume workflow
+        - Test priority ordering
+      e2e_tests:
+        - Submit imagen2 job, verify llama hold/resume
+        - Submit concurrent jobs, verify queue behavior
+        - Test job cancellation
+
+    current_status:
+      phase: operational
+      completed:
+        - Created gpu-queue service directory structure (scripts/gpu-queue/)
+        - Created Postgres schema (gpu_queue_jobs table with indexes)
+        - Implemented db.mjs (Postgres operations: createJob, getJob, listJobs, getNextPendingJob, updateJobStatus, getQueueStatus, getRunningJob, cancelJob, cleanupOldJobs)
+        - Implemented queue.mjs (queue logic: processJob, startQueueProcessor, submitJob, cancelJob)
+        - Implemented index.mjs (HTTP API: POST/GET/DELETE /api/gpu-queue/jobs, GET /api/gpu-queue/status, GET /health)
+        - Created package.json with pg dependency
+        - Added gpu-queue service to docker-compose.yml (node:20-alpine, depends on postgres)
+        - Created systemd service file (~/.config/systemd/user/gpu-queue.service)
+        - Added Caddy routing for /api/gpu-queue/* to host.docker.internal:3001
+        - Installed dependencies (npm install)
+        - Started gpu-queue service (systemctl --user start gpu-queue)
+        - Tested API endpoints (health, status, submit job, list jobs)
+        - Created orchestrator.mjs for external MCP tool integration
+        - Updated orchestrator.mjs with imagen2, llama, and txt2vid job processing
+        - Tested full workflow with MCP hold/resume (mcp1_hold_llama, orchestrator process, mcp1_resume_llama)
+        - Exposed imagen2-inference on port 8000 for orchestrator access
+        - Created process-job.mjs automated workflow script with interactive MCP hold/resume prompts
+        - Created queue status UI at /apps/gpu-queue/ with auto-refresh
+        - Added Caddy routing for /apps/gpu-queue/* and /api/gpu-queue/*
+        - Enhanced queue status UI with job submission form and cancellation controls
+        - Wrote unit tests for db.mjs (7 tests passing)
+        - Added embedding job support with GPU queue integration
+        - Enhanced error handling with retry logic and exponential backoff
+        - Implemented comprehensive monitoring system (health checks, performance metrics, error tracking)
+        - Added monitoring API endpoints (/api/gpu-queue/monitoring/*)
+        - Created automatic queue processor (auto-processor.mjs) with error handling
+        - Set up systemd services for auto-processor and daily Weaviate indexing
+        - Implemented performance benchmarking system (benchmark.mjs)
+        - Enhanced database schema with job statistics and cancellation rate tracking
+      next_steps:
+
+    deployment:
+      directory: scripts/gpu-queue/
+      files:
+        - index.mjs: Main queue service with monitoring endpoints
+        - queue.mjs: Queue logic with timeout and retry handling
+        - db.mjs: Postgres operations with statistics functions
+        - orchestrator.mjs: Job processing functions (imagen2, llama, txt2vid, embedding)
+        - monitoring.mjs: Health checks and performance metrics
+        - benchmark.mjs: Performance benchmarking system
+        - auto-processor.mjs: Automatic queue processor
+        - package.json: Dependencies
+      docker_compose:
+        service: gpu-queue
+        image: node:20-alpine
+        working_dir: /app/gpu-queue
+        volumes:
+          - ./scripts/gpu-queue:/app/gpu-queue
+        environment:
+          - DATABASE_URL=postgres://chaba:chabapass@postgres:5432/chaba
+          - GPU_QUEUE_PORT=3001
+        ports:
+          - "3001:3001"
+        networks:
+          - default
+        restart: unless-stopped
+      systemd:
+        gpu-queue:
+          file: ~/.config/systemd/user/gpu-queue.service
+          exec_start: /usr/bin/node /home/tony/CascadeProjects/chaba/scripts/gpu-queue/index.mjs
+          working_dir: /home/tony/CascadeProjects/chaba
+          restart: on-failure
+          environment:
+            - GPU_QUEUE_PORT=3001
+        gpu-queue-processor:
+          file: ~/.config/systemd/user/gpu-queue-processor.service
+          exec_start: /usr/bin/node /home/tony/CascadeProjects/chaba/scripts/gpu-queue/auto-processor.mjs
+          working_dir: /home/tony/CascadeProjects/chaba
+          restart: on-failure
+          environment:
+            - NODE_ENV=production
+        weaviate-index:
+          file: ~/.config/systemd/user/weaviate-index.service
+          exec_start: /usr/bin/node /home/tony/CascadeProjects/chaba/scripts/weaviate/auto-index.mjs
+          working_dir: /home/tony/CascadeProjects/chaba
+          environment:
+            - NODE_ENV=production
+        weaviate-index-timer:
+          file: ~/.config/systemd/user/weaviate-index.timer
+          description: Run Weaviate indexing daily at 2 AM
+          onCalendar: "*-*-* 02:00:00"
+      caddy_routing:
+        - reverse_proxy /api/gpu-queue/* host.docker.internal:3001
+
+hardware:
+  gpu: NVIDIA GeForce GTX 1650
+  vram_total_mb: 4096
+  host: tony-omen (tony-omen.local)
+
+tools:
+  mcp-gpu:
+    - mcp1_gpu_status: Check VRAM and compute process summary
+    - mcp1_hold_llama: Move llama-server to CPU (n_gpu_layers=0)
+    - mcp1_resume_llama: Restore llama-server to original n_gpu_layers
+    - mcp1_generate_image: Hold llama, run imagen2 generation, save PNG, resume llama
+  mcp-llama:
+    - mcp2_status: Check llama-server health
+    - mcp2_chat: Chat with loaded model
+    - mcp2_complete: Raw text completion
+    - mcp2_tokenize: Get token IDs for text
+    - mcp2_models: List available .gguf model files
+  playlive:
+    - mcp3_playlive_create_chrome_live: Create CDP-attached live Chrome session
+    - mcp3_playlive_create_playwright: Create Playwright headless browser session
+    - mcp3_playlive_navigate: Navigate to URL
+    - mcp3_playlive_click: Click element by CSS selector
+    - mcp3_playlive_fill: Fill input by CSS selector
+    - mcp3_playlive_screenshot: Take screenshot
+    - mcp3_playlive_eval: Run JavaScript in page
+    - mcp3_playlive_state: Get current page URL and title
+    - mcp3_playlive_close_session: Close session
+  postgres:
+    - mcp5_query: Run read-only SQL query
+    - mcp5_execute: Execute SQL statement (INSERT, UPDATE, DELETE)
+    - mcp5_insert: Insert record into table
+    - mcp5_update: Update records in table
+    - mcp5_delete: Delete records from table
+    - mcp5_createTable: Create new table
+    - mcp5_createIndex: Create index on table
+    - mcp5_createFunction: Create PostgreSQL function
+    - mcp5_createTrigger: Create trigger on table
+    - mcp5_alterTable: Alter table structure
+  yomi:
+    - mcp6_list_conversations: List LINE conversations
+    - mcp6_get_chat_messages: Fetch messages from conversation
+    - mcp6_send_message: Send text message
+    - mcp6_search_messages: Search across messages
+    - mcp6_get_insight: Context network over conversations
+    - mcp6_get_message_media: Download media (image/video/audio/file)
+
+current_state:
+  last_checked: 2026-08-18
+  vram_used_mb: 2616
+  vram_free_mb: 1101
+  running_processes:
+    - /app/llama-server (2442 MB)
+    - /opt/conda/bin/python3.11 (58 MB)
+    - /opt/conda/bin/python (58 MB)
+  note: Llama router on port 8001, models loaded on-demand, thai-legal CPU-only
+
+embedding_offload:
+  status: not_switched
+  reason: Gemini round-trip latency is ~3.7x higher than local Ollama (see reports/gemini-embedding-comparison.md)
+  ollama_service: still running on tony-omen port 11434 for query-time MDDB embeddings
+  gemini_proxy: available on tony-omen port 11435 for batch/off-peak re-indexing
+  gpu_usage_ollama: ~388 MB reported by nomic-embed-text
+
+monitoring:
+  netdata:
+    status: deployed
+    version: v2.11.0
+    container: chaba-omen-netdata
+    host: tony-omen
+    access_points:
+      - http://tony-omen.local:8080/apps/netdata/
+      - http://tony-omen.local:8081/apps/netdata/
+      - http://localhost:19999
+    gpu_metrics_available:
+      - GPU utilization percentage
+      - VRAM usage (used/free/total)
+      - GPU temperature
+      - GPU power consumption
+      - GPU clock frequencies
+      - GPU processes and memory usage
+      - Historical GPU performance data
+    integration: Auto-discovers NVIDIA GPU via nvidia-smi using the go.d nvidia_smi collector; requires --gpus all and a container restart after creation for the first GPU chart discovery
+    retention: Default Netdata retention (1 hour detail, 1 day reduced resolution)
+    alerts: Configurable alerts for GPU temperature, VRAM usage, utilization
+    notes:
+      - NETDATA_DISABLE=ebpf,nfacct,perf to avoid ENOBUFS errors
+      - Caddy /apps/netdata/ reverse proxy added to chaba-omen/stacks/web/Caddyfile
+      - Netdata compose service added to chaba-omen/stacks/web/docker-compose.yml
+
+  mcp_gpu:
+    tool: mcp1_gpu_status
+    output: JSON with VRAM usage, process list, memory per process
+    use_case: On-demand GPU status checks, programmatic access
+    realtime: No (snapshot only)
+
+  health_checks:
+    gpu_services:
+      - thai-legal (http://tony-omen.local:8001/health)
+      - imagen2 (http://tony-omen.local:8000/health)
+      - txt2vid (container state: txt2vid-inference)
+    use_case: Service availability monitoring
+    gpu_metrics: No (service health only)

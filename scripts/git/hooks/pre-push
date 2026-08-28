@@ -1,0 +1,47 @@
+#!/bin/bash
+# pre-push hook: keep master fast-forward and validate SSOT
+# Install: cp scripts/git/hooks/pre-push .git/hooks/pre-push && chmod +x .git/hooks/pre-push
+
+set -euo pipefail
+
+remote="$1"
+url="$2"
+
+Z40=0000000000000000000000000000000000000000
+REPO="/home/tony/CascadeProjects/chaba"
+
+# ---------------------------------------------------------------------------
+# 1. Block non-fast-forward pushes to master
+# ---------------------------------------------------------------------------
+while read -r local_ref local_sha remote_ref remote_sha; do
+    if [[ "$remote_ref" == "refs/heads/master" ]]; then
+        if [[ "$local_sha" == "$Z40" ]]; then
+            echo "ERROR: deleting master is not allowed" >&2
+            exit 1
+        fi
+
+        if [[ "$remote_sha" == "$Z40" ]]; then
+            echo "WARNING: pushing a new master branch; skipping ff check" >&2
+            continue
+        fi
+
+        merge_commits=$(git rev-list --merges --first-parent "${remote_sha}..${local_sha}" -- 2>/dev/null | wc -l)
+        if [[ "$merge_commits" -gt 0 ]]; then
+            echo "ERROR: push to master contains $merge_commits merge commit(s)." >&2
+            echo "Rebase your branch first, then push a fast-forward merge." >&2
+            echo "See docs/ssot/ssot.git-policy.yml" >&2
+            exit 1
+        fi
+    fi
+done
+
+# ---------------------------------------------------------------------------
+# 2. Run SSOT validation
+# ---------------------------------------------------------------------------
+cd "$REPO"
+if ! python3 scripts/ssot-validate-refs.py >/dev/null 2>&1; then
+    echo "ERROR: SSOT ref validation failed.  Run 'python3 scripts/ssot-validate-refs.py'" >&2
+    exit 1
+fi
+
+exit 0

@@ -1,0 +1,14 @@
+[Unit]
+Description=MCP RView stdio proxy
+After=rview-api.service
+
+[Service]
+Type=simple
+Environment="RVIEW_API_URL=http://127.0.0.1:3007/state"
+Environment="PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+ExecStart=/usr/bin/python3 -m mcp_proxy --port 9003 --host 127.0.0.1 --pass-environment /usr/bin/python3 /home/tony/CascadeProjects/chaba-tony-dell/scripts/mcp_rview/server.py
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target

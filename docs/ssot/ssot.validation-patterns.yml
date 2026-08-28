@@ -1,0 +1,330 @@
+title: SSOT Validation Patterns and Standards
+subtitle: Validation rules, patterns, and best practices for SSOT YAML files
+icon: ✅
+
+# Purpose: Define validation patterns and standards for SSOT YAML files
+# This SSOT file serves as the central repository for validation rules
+ideas:
+  - Ensure consistency across all SSOT YAML files
+  - Provide clear validation rules for different SSOT file types
+  - Document best practices for SSOT file structure and content
+  - Enable automated validation with clear error messages
+  - Support hostname compliance enforcement
+  - Maintain cross-file consistency validation
+
+# Validation rule categories
+validation_categories:
+  - title: Required Fields
+    icon: 📋
+    description: Fields that must be present in SSOT files
+    rules:
+      - label: Standard SSOT Files
+        text: All standard SSOT files must have a title field
+        applies_to: [standard-ssot]
+        exceptions: [config-type, apps-subdirectory]
+
+      - label: Section Structure
+        text: Files with sections must have title, icon, and layout fields
+        applies_to: [standard-ssot]
+        exceptions: [config-type]
+
+      - label: Item Structure
+        text: Section items must have label and text fields
+        applies_to: [standard-ssot]
+        exceptions: []
+
+  - title: YAML Syntax
+    icon: 🔧
+    description: YAML syntax and structure validation
+    rules:
+      - label: Valid YAML
+        text: All SSOT files must be valid YAML syntax
+        applies_to: [all]
+        exceptions: []
+
+      - label: No Trailing Whitespace
+        text: Lines should not have trailing whitespace
+        applies_to: [all]
+        exceptions: []
+
+      - label: Consistent Indentation
+        text: Use consistent 2-space indentation for YAML
+        applies_to: [all]
+        exceptions: []
+
+  - title: Content Consistency
+    icon: 🔗
+    description: Cross-file and internal consistency validation
+    rules:
+      - label: No Duplicate Section Titles
+        text: Section titles within a file must be unique
+        applies_to: [standard-ssot]
+        exceptions: []
+
+      - label: No Duplicate Item Labels
+        text: Item labels within a section must be unique
+        applies_to: [standard-ssot]
+        exceptions: []
+
+      - label: Cross-Reference Consistency
+        text: References to other SSOT files must be valid
+        applies_to: [all]
+        exceptions: []
+
+  - title: Hostname Compliance
+    icon: 🌐
+    description: Network hostname standards enforcement
+    rules:
+      - label: Use .local Hostnames
+        text: Use .local hostnames instead of IP addresses
+        applies_to: [all]
+        exceptions: [health-check, network-documentation]
+
+      - label: Standard Hostname Format
+        text: Use format hostname.local (e.g. tony-omen.local)
+        applies_to: [all]
+        exceptions: []
+
+      - label: No IP Addresses
+        text: Avoid hardcoded IP addresses (use ranges in documentation only)
+        applies_to: [all]
+        exceptions: [health-check, subnet-documentation]
+
+  - title: File Naming
+    icon: 📁
+    description: SSOT file naming conventions
+    rules:
+      - label: SSOT Prefix
+        text: SSOT files must start with 'ssot.' prefix
+        applies_to: [all]
+        exceptions: [template]
+
+      - label: Descriptive Names
+        text: File names should be descriptive and follow kebab-case
+        applies_to: [all]
+        exceptions: []
+
+      - label: Category Organization
+        text: Files should be organized in appropriate subdirectories
+        applies_to: [all]
+        exceptions: []
+
+# File type classifications
+file_types:
+  - title: Standard SSOT Files
+    icon: 📄
+    pattern: ssot.*.yml
+    validation: strict
+    required_fields: [title, sections]
+    optional_fields: [subtitle, icon, ideas, config]
+
+  - title: Configuration-Type Files
+    icon: ⚙️
+    pattern: ssot.(health|gpu|services|apps).yml
+    validation: flexible
+    required_fields: []
+    optional_fields: [all]
+
+  - title: Apps Subdirectory Files
+    icon: 📱
+    pattern: apps/ssot.apps.*.yml
+    validation: data-only
+    required_fields: []
+    optional_fields: [all]
+
+  - title: Template Files
+    icon: 📋
+    pattern: template.yml
+    validation: none
+    required_fields: []
+    optional_fields: [all]
+
+# Validation patterns
+validation_patterns:
+  - title: Standard SSOT Structure
+    icon: 🏗️
+    pattern: |
+      title: Required
+      subtitle: Optional
+      icon: Optional emoji
+      ideas: Optional list of ideas/notes
+      sections:
+        - title: Required
+          icon: Required emoji
+          layout: list|grid|timeline
+          items:
+            - label: Required
+              text: Required
+              status: Optional (active|completed|pending)
+              priority: Optional (high|medium|low)
+              tags: Optional array
+              dependencies: Optional array
+    applies_to: [standard-ssot]
+
+  - title: Configuration Structure
+    icon: ⚙️
+    pattern: |
+      # Flexible structure for config-type files
+      # Can include any fields relevant to the configuration
+      key: value
+      nested:
+        key: value
+    applies_to: [config-type]
+
+  - title: Apps Data Structure
+    icon: 📱
+    pattern: |
+      # Simple data structure for application configurations
+      app_name:
+        url: string
+        description: string
+        status: string
+    applies_to: [apps-subdirectory]
+
+# Error messages and resolutions
+error_patterns:
+  - title: Missing Required Field
+    error: "Missing required field: {field}"
+    resolution: "Add the missing field to the SSOT file"
+    severity: error
+
+  - title: Invalid YAML Syntax
+    error: "Invalid YAML syntax: {details}"
+    resolution: "Fix YAML syntax errors (indentation, quotes, colons)"
+    severity: error
+
+  - title: Duplicate Entry
+    error: "Duplicate {entry_type}: {value}"
+    resolution: "Remove or rename the duplicate entry"
+    severity: error
+
+  - title: Hostname Violation
+    error: "IP address found: {ip} (should use .local hostname)"
+    resolution: "Replace IP address with .local hostname"
+    severity: warning
+
+  - title: Cross-Reference Error
+    error: "Invalid reference: {reference}"
+    resolution: "Ensure the referenced file or section exists"
+    severity: error
+
+# Validation workflow
+validation_workflow:
+  - title: Pre-Validation
+    icon: 🔍
+    steps:
+      - Check file exists and is readable
+      - Verify file naming conventions
+      - Determine file type classification
+      - Load appropriate validation rules
+
+  - title: Syntax Validation
+    icon: 🔧
+    steps:
+      - Parse YAML syntax
+      - Check for structural errors
+      - Validate indentation consistency
+      - Check for trailing whitespace
+
+  - title: Content Validation
+    icon: 📋
+    steps:
+      - Validate required fields present
+      - Check field data types
+      - Validate enum values (status, priority, layout)
+      - Check for duplicate entries
+
+  - title: Consistency Validation
+    icon: 🔗
+    steps:
+      - Check internal consistency (duplicates, references)
+      - Validate cross-file references
+      - Check hostname compliance
+      - Compare with served/public copies
+
+  - title: Post-Validation
+    icon: ✅
+    steps:
+      - Generate validation report
+      - Categorize issues by severity
+      - Provide resolution suggestions
+      - Return exit code based on results
+
+# Best practices
+best_practices:
+  - title: File Organization
+    icon: 📁
+    practices:
+      - Keep related SSOT files in the same directory
+      - Use subdirectories for logical grouping (infrastructure, apps, etc.)
+      - Maintain template.yml for new file creation
+      - Archive old versions rather than deleting
+
+  - title: Content Structure
+    icon: 📝
+    practices:
+      - Use clear, descriptive titles
+      - Include helpful subtitles for context
+      - Use relevant emojis for visual organization
+      - Document ideas and future plans in ideas section
+
+  - title: Maintenance
+    icon: 🔄
+    practices:
+      - Run validation before committing changes
+      - Update related files when making changes
+      - Keep validation patterns up to date
+      - Review and archive outdated entries
+
+  - title: Collaboration
+    icon: 👥
+    practices:
+      - Use clear field names and values
+      - Include comments for complex logic
+      - Document exceptions to validation rules
+      - Maintain change history in config section
+
+# Configuration and metadata
+config:
+  version: 1
+  last_updated: 2026-08-05
+  maintainer: tony
+  validation_enabled: true
+  related_files:
+    - scripts/validate-configs.sh
+    - scripts/generate-mcp-configs.py
+    - scripts/validate-focus.mjs
+    - scripts/ssot-validate-refs.py
+    - docs/ssot/template.yml
+
+# Cross-reference (ref) contract
+ref_contract:
+  purpose: |
+    Define how SSOT files reference each other so that a CI validator can
+    resolve the pointers and fail on broken links.
+  recognized_keys:
+    - ref
+    - source_ref
+    - allowed_values_ref
+    - default_ref
+    - defaults_ref
+    - state_ref
+    - currencies_ref
+    - selected_currency_ref
+    - timeframe_ref
+    - chart_type_ref
+    - features_ref
+    - scripts_ref
+    - "*_ref" # any key ending in _ref is considered a reference
+  syntax:
+    cross_file: "ssot.file.yml#dotted.key.path"
+    same_file: "dotted.key.path"
+    external: "/absolute/path.yml#key" # not validated by the SSOT ref checker
+    placeholder: "... or <...>" # ignored by the validator
+  conventions:
+    - A reference without a .yml, /, #, or dot is treated as an ID and not validated.
+    - References to docs/ssot/ files may omit the docs/ssot/ prefix.
+    - References to external repo files (e.g., docs/kb/...) are validated for existence when the path starts with docs/, reports/, scripts/.
+  ci:
+    command: "python3 scripts/ssot-validate-refs.py"
+    workflow: ".github/workflows/ssot.yml"

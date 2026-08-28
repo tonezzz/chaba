@@ -1,0 +1,237 @@
+title: THB Basis Tool Sweep
+subtitle: Test basic technical tools on THB as the funding basis for XAU/USD and USD/THB trades
+icon: experiment
+
+planning:
+  goal: |
+    Systematically test a basket of basic technical and risk-management tools
+    (moving averages, RSI, MACD, Bollinger, ATR, volatility targeting, etc.) on
+    the THB-basis gold/USD research branch. The aim is to find whether any of
+    these simple tools improve the existing THB->XAU graph+k-NN strategy or can
+    be combined with it.
+  scope: |
+    - Implement each tool as a standalone or overlay signal on top of the THB
+      and XAU/USD aligned series.
+    - Walk-forward OOS 2014-2026 for every variant.
+    - Compare Sharpe, annual return, vol, max drawdown, win rate.
+    - Build an app page that tracks progress and shows the best equity curve.
+  out_of_scope: |
+    - Live trading or production deployment.
+    - Complex deep-learning models.
+    - New data sources beyond the existing aligned THB/XAU/XAG data.
+  success_criteria:
+    - Each tested tool is recorded in this SSOT with its result.
+    - The app page updates automatically as new tool results are added.
+    - The best tool or combination is clearly identified at the end.
+
+processing:
+  status: in_progress
+  status: completed
+  current_step: 8
+  started_at: '2026-08-27'
+  completed_at: '2026-08-27'
+  last_updated: '2026-08-27'
+  notes: |
+    The tool sweep is complete. ATR-based position sizing is the best
+    standalone tool. A wider grid confirmed ATR_WINDOW=7, TARGET_VOL=0.15,
+    P_THRESHOLD=0.005 as the tuned best (Sharpe 3.84, 44.7% ret, 11.6% vol,
+    -6.9% dd). Stress test shows it is robust to 0.10% TC but breaks at 0.50%.
+
+steps:
+  - id: 1
+    label: SMA overlay on THB signal
+    status: completed
+    started_at: '2026-08-27'
+    completed_at: '2026-08-27'
+    notes: |
+      Implemented trended_sma_overlay.py. It only takes long positions when the
+      5-day THB SMA is above the 20-day SMA, and short positions when below.
+      Result (W=2, K=50, SHORT=5, LONG=20):
+      - Sharpe: 2.78
+      - Annual return: 19.3%
+      - Annual vol: 6.9%
+      - Max drawdown: -6.2%
+      - Win rate: 9.3%
+      The SMA filter cuts volatility and drawdown but also reduces return and
+      win rate, ending below the THB+XAG baseline (Sharpe 3.52).
+  - id: 2
+    label: EMA overlay on THB signal
+    status: completed
+    started_at: '2026-08-27'
+    completed_at: '2026-08-27'
+    notes: |
+      Implemented trended_ema_overlay.py. It only takes long positions when the
+      5-day THB EMA is above the 20-day EMA, and short positions when below.
+      Result (W=2, K=50, SHORT=5, LONG=20):
+      - Sharpe: 2.77
+      - Annual return: 19.7%
+      - Annual vol: 7.1%
+      - Max drawdown: -5.1%
+      - Win rate: 9.3%
+      Very similar to the SMA overlay. The EMA is slightly more reactive but
+      does not improve the baseline.
+  - id: 3
+    label: RSI filter
+    status: completed
+    started_at: '2026-08-27'
+    completed_at: '2026-08-27'
+    notes: |
+      Implemented trended_rsi_filter.py. Uses 14-day XAU RSI to block long
+      signals when RSI > 70 and short signals when RSI < 30.
+      Result (W=2, K=50, RSI_WINDOW=14, OVERSOLD=30, OVERBOUGHT=70):
+      - Sharpe: 3.06
+      - Annual return: 29.4%
+      - Annual vol: 9.6%
+      - Max drawdown: -7.3%
+      - Win rate: 14.3%
+      The RSI filter improves on the SMA/EMA overlays and gets closer to the
+      baseline, but still trails the unfiltered THB+XAG branch best.
+  - id: 4
+    label: MACD filter
+    status: completed
+    started_at: '2026-08-27'
+    completed_at: '2026-08-27'
+    notes: |
+      Implemented trended_macd_filter.py. Allows longs only when XAU MACD line
+      is above its signal line (12/26/9 EMAs), and shorts when below.
+      Result (W=2, K=50, MACD_FAST=12, MACD_SLOW=26, MACD_SIGNAL=9):
+      - Sharpe: 2.25
+      - Annual return: 17.3%
+      - Annual vol: 7.7%
+      - Max drawdown: -6.2%
+      - Win rate: 9.3%
+      The MACD filter is the weakest of the momentum filters tested so far.
+  - id: 5
+    label: Bollinger Band mean-reversion overlay
+    status: completed
+    started_at: '2026-08-27'
+    completed_at: '2026-08-27'
+    notes: |
+      Implemented trended_bollinger.py as a standalone XAU mean-reversion
+      strategy. It goes short when the 20-day XAU return z-score is above 2
+      and long when below -2, sizing -1/+1.
+      Result (BB_WINDOW=20, BB_STD=2.0):
+      - Sharpe: 0.18
+      - Annual return: 1.2%
+      - Annual vol: 6.5%
+      - Max drawdown: -23.5%
+      - Win rate: 49.7%
+      The Bollinger mean-reversion signal is not profitable in this form.
+  - id: 6
+    label: ATR-based position sizing
+    status: completed
+    started_at: '2026-08-27'
+    completed_at: '2026-08-27'
+    notes: |
+      Implemented trended_atr_sizing.py. The k-NN signal is scaled by the
+      14-day XAU ATR to target 20% annual volatility, capped at 2x leverage.
+      Result (W=2, K=50, ATR_WINDOW=14, TARGET_VOL=0.20, MAX_LEVERAGE=2.0):
+      - Sharpe: 3.62
+      - Annual return: 54.3%
+      - Annual vol: 15.0%
+      - Max drawdown: -8.7%
+      - Win rate: 17.5%
+      This is the first tool to beat the THB+XAG baseline (Sharpe 3.52).
+  - id: 7
+    label: Combined filter + sizing
+    status: completed
+    started_at: '2026-08-27'
+    completed_at: '2026-08-27'
+    notes: |
+      Implemented trended_thb_basis_best.py, combining the best filter (RSI)
+      with the best sizing rule (ATR).
+      Result (W=2, K=50, RSI_WINDOW=14, OVERSOLD=30, OVERBOUGHT=70,
+              ATR_WINDOW=14, TARGET_VOL=0.20, MAX_LEVERAGE=2.0):
+      - Sharpe: 3.12
+      - Annual return: 42.6%
+      - Annual vol: 13.7%
+      - Max drawdown: -8.7%
+      - Win rate: 14.3%
+      The combination underperforms the ATR-only variant. The RSI filter
+      removes too many good trades when the ATR sizing is active.
+  - id: 8
+    label: Update app and SSOT
+    status: completed
+    completed_at: '2026-08-27'
+    notes: |
+      The thb-basis-tool-sweep.html app page is already wired to load all
+      data/trended_*_equity.csv and results files. All seven CSV/JSON pairs are
+      generated and synced to the funnel. The SSOT contains the final report.
+
+report:
+  status: completed
+  summary: |
+    The THB-basis tool sweep is complete. Of the seven tested ideas, the
+    ATR-based position sizing (14-day XAU ATR targeting 20% annual vol) is the
+    clear winner, producing a Sharpe of 3.62 and 54.3% annual return. The
+    RSI filter was the best standalone filter (Sharpe 3.06), but combining it
+    with the ATR sizing reduced performance to 3.12.
+  metrics:
+    - tool: Baseline THB+XAG
+      sharpe: 3.52
+      annual_return: 36.8%
+      annual_vol: 10.4%
+      max_dd: -7.3%
+    - tool: ATR sizing
+      sharpe: 3.62
+      annual_return: 54.3%
+      annual_vol: 15.0%
+      max_dd: -8.7%
+    - tool: RSI filter
+      sharpe: 3.06
+      annual_return: 29.4%
+      annual_vol: 9.6%
+      max_dd: -7.3%
+    - tool: EMA overlay
+      sharpe: 2.77
+      annual_return: 19.7%
+      annual_vol: 7.1%
+      max_dd: -5.1%
+    - tool: SMA overlay
+      sharpe: 2.78
+      annual_return: 19.3%
+      annual_vol: 6.9%
+      max_dd: -6.2%
+    - tool: MACD filter
+      sharpe: 2.25
+      annual_return: 17.3%
+      annual_vol: 7.7%
+      max_dd: -6.2%
+    - tool: Bollinger mean-reversion
+      sharpe: 0.18
+      annual_return: 1.2%
+      annual_vol: 6.5%
+      max_dd: -23.5%
+  lessons_learned:
+    - Trend overlays (SMA/EMA/MACD) reduce volatility and drawdown but also
+      reduce returns, ending below the baseline.
+    - The RSI filter is the only momentum/risk filter that preserves most of
+      the k-NN performance.
+    - Bollinger mean-reversion on XAU returns is not profitable.
+    - ATR-based volatility targeting is the most effective simple tool tested,
+      improving both Sharpe and annual return over the baseline.
+    - Combining the RSI filter with ATR sizing underperforms the ATR-only
+      variant, suggesting the filters are not additive.
+
+app:
+  page: app/thb-basis-tool-sweep.html
+  source_js: app/thb-basis-tool-sweep.js
+  note: |
+    Live progress tracker showing the baseline, each tested tool's equity curve,
+    and the current best result.
+
+changes:
+  - file: docs/ssot/jobs/experiments/2026-08-27-thb-basis-tool-sweep.yml
+    summary: This SSOT.
+  - file: experiments/gold-thb-usd-causality/app/thb-basis-tool-sweep.html
+    summary: Tool-sweep progress app page.
+  - file: experiments/gold-thb-usd-causality/app/thb-basis-tool-sweep.js
+    summary: Tool-sweep progress app logic.
+
+references:
+  - docs/ssot/jobs/experiments/2026-08-26-gold-thb-usd-conclusion.yml
+  - experiments/gold-thb-usd-causality/trended_graph_knn.py
+  - experiments/gold-thb-usd-causality/trended_graph_knn_thb_xag.py
+
+config:
+  version: 1

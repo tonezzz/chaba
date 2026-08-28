@@ -1,0 +1,37 @@
+name: Logs Check
+
+on:
+  push:
+    branches: [master, main]
+    paths:
+      - 'docs/ssot/infrastructure/ssot.health*.yml'
+      - 'docs/ssot/infrastructure/ssot.automation.yml'
+      - 'scripts/ci-check-logs.py'
+  pull_request:
+    branches: [master, main]
+    paths:
+      - 'docs/ssot/infrastructure/ssot.health*.yml'
+      - 'docs/ssot/infrastructure/ssot.automation.yml'
+      - 'scripts/ci-check-logs.py'
+  schedule:
+    - cron: '0 2 * * *'
+
+jobs:
+  validate-log-references:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: pip install pyyaml
+      - name: Validate log and service references
+        run: python3 scripts/ci-check-logs.py --check-only
+      - name: Upload log check report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: log-check
+          path: reports/LOG_CHECK.json

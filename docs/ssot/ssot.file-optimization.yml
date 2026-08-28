@@ -1,0 +1,212 @@
+title: SSOT File Optimization Plan
+subtitle: Roadmap for reducing bloat, redundancy, obsolescence, data-isolation violations, and inconsistency in SSOT YAML files
+icon: 🎯
+
+ideas:
+  - SSOT files are growing; the largest is over 1,200 lines and several exceed the 95th-percentile hard threshold.
+  - Bloat is the most urgent dimension because it directly affects token cost, search quality, and merge safety.
+  - 'Data isolation is a cross-cutting concern: it prevents secrets, host-specific values, and runtime-generated data from leaking into canonical SSOTs.'
+  - Redundancy and obsolescence are the next-largest sources of noise and drift.
+  - Optimization should be incremental, measured, and automated where possible.
+
+sections:
+  - title: Current Snapshot
+    icon: 📊
+    layout: list
+    items:
+      - label: Corpus size
+        text: 63 controlled SSOT files under docs/ssot/ (excluding templates and focus-inbox drafts)
+      - label: Line distribution
+        text: 'p50 = 133, p75 = 262, p90 = 354, p95 = 737, max = 1,216 lines'
+      - label: Section and item distribution
+        text: 'p50 = 1 section / 8 items; p95 = 11 sections / 60 items; max = 12 sections / 68 items'
+      - label: Top oversized files
+        text: ssot.improvements.yml (1,216), ssot.focus.yml (770), ssot.health.yml (768), ssot.mcp-debug.yml (739), ssot.gemini-models.yml (727)
+      - label: Active thresholds
+        text: Bloat thresholds are now in ssot.file-control.yml — review at 350 lines/10 sections/45 items, hard split at 750/12/60
+      - label: Existing archive pattern
+        text: ssot.improvements.archive.yml is the only period-style archive; bloat controls are otherwise not yet enforced
+
+  - title: Optimization Tasks
+    icon: 🧹
+    layout: list
+    items:
+      - label: Bloat
+        text: Enforce size thresholds, split files that exceed them, use period-suffixed archives (e.g. ssot.<topic>.archive.2026.yml), and keep large generated lists in separate data files
+        priority: high
+      - label: Data isolation
+        text: Keep canonical SSOT policy separate from generated runtime data, per-host values, secrets, and large indexes. Move health snapshots, mcp-savings caches, conversation indexes, and build artifacts to runtime data directories or per-host SSOTs such as ssot.mysystem.home.yml and ssot.mysystem.mobile.yml
+        priority: high
+      - label: Redundancy
+        text: Identify duplicate or overlapping topics across SSOTs (e.g. ssot.libs.yml vs ssot.ui.yml, multiple mcp-debug policy files, focus vs session vs decisions), then merge or cross-reference instead of duplicating
+        priority: medium
+      - label: Obsolescence
+        text: Archive completed improvement items, remove stale ideas, mark deprecated runbooks, and review focus-inbox/processed/ and apps/template.app.yml for stale entries
+        priority: medium
+      - label: Consistency
+        text: Standardize icon usage, layout values, status enums, and optional fields such as last_updated; ensure every new SSOT is registered in ssot.index.yml
+        priority: medium
+      - label: Conflict
+        text: Detect contradictory statuses, mixed addressing values, and overlapping active/completed items across SSOTs
+        priority: medium
+      - label: Orchestration
+        text: |
+          Coordinate the SSOT file optimization phases through a repeatable
+          workflow (workflows-mcp or scheduled script). The workflow should run
+          bloat, data-isolation, obsolescence, redundancy, and consistency
+          checks in sequence, emit a delta report, and queue archive/split
+          actions without writing runtime metrics into canonical SSOT files.
+        priority: medium
+      - label: Token and structure efficiency
+        text: Replace verbose inline text with action_items, move long prose to docs/kb/ or ssot-summaries, and compress auto-generated fields that are no longer useful
+        priority: low
+      - label: Cross-reference accuracy
+        text: Validate that related_files, path, and related_ssot entries point to existing files; keep ssot.index.yml in sync with the actual docs/ssot/ tree
+        priority: medium
+
+  - title: Phasing and Priorities
+    icon: 🗓️
+    layout: timeline
+    items:
+      - label: Phase 1 — Bloat and data isolation
+        text: Implement ssot-validate bloat checks and scan for data-isolation violations before splitting the five oversized files
+        status: completed
+        completed: '2026-08-19'
+      - label: Phase 2 — Obsolescence cleanup
+        text: Archive completed items, prune stale ideas, and retire deprecated files
+        status: completed
+        completed: '2026-08-19'
+      - label: Phase 3 — Redundancy merge/split
+        text: Resolve overlapping topics and consolidate or split accordingly
+        status: completed
+        completed: '2026-08-19'
+      - label: Phase 4 — Consistency and token pass
+        text: Standardize structure and compress verbose prose
+        status: completed
+        completed: '2026-08-19'
+      - label: Phase 5 — Automation
+        text: Add weekly optimization report to ssot-validate and MDDB index sync
+        status: completed
+        completed: '2026-08-19'
+
+  - title: Tooling and Automation
+    icon: 🛠️
+    layout: list
+    items:
+      - label: Validation
+        text: Use the ssot-validate skill for syntax, structure, duplicates, and bloat thresholds
+      - label: Data isolation checks
+        text: Add ssot-validate rules to flag hardcoded IPs, secrets, and generated or timestamp fields in canonical SSOT files
+      - label: Search
+        text: Use ssot-search for exact YAML patterns and MDDB semantic search for conceptual overlap
+      - label: Metrics
+        text: Track line, section, and item counts via scripts/ssot-validate-all.mjs and store per-run snapshots
+      - label: Archiving
+        text: Use ssot.<topic>.archive.<period>.yml for large historical datasets, following ssot.file-control.yml
+
+  - title: Metrics and Success Criteria
+    icon: ✅
+    layout: list
+    items:
+      - label: Bloat
+        text: Zero files above the 750-line/12-section/60-item hard threshold; fewer than 5 above the 350-line review threshold
+      - label: Data isolation
+        text: No standard SSOT contains runtime-generated values, hardcoded IPs, secrets, or large raw indexes; per-host and generated data lives in ssot.mysystem.*.yml or runtime data directories
+      - label: Redundancy
+        text: No pair of SSOTs with >50% overlapping labels or verbatim text
+      - label: Obsolescence
+        text: All completed improvement items moved to archive; no focus-inbox item older than 30 days left unprocessed
+      - label: Consistency
+        text: All standard SSOTs pass ssot-validate and have a matching ssot.index.yml entry
+      - label: Conflict
+        text: No item is both active and completed; no hardcoded IP appears alongside a hostname for the same endpoint
+
+  - title: Continuous Optimization Run
+    icon: ♻
+    layout: list
+    items:
+      - label: Goal
+        text: Run optimization checks continuously without manual activation so bloat, drift, and isolation violations are caught before they become cleanup projects.
+      - label: Trigger
+        text: Daily as part of the overnight jobs and on every ssot-validate run.
+      - label: Optimizer script
+        text: scripts/ssot-optimize.mjs reads every SSOT YAML, computes line/section/item counts, flags bloat, data-isolation, obsolescence, redundancy, and conflict candidates, then writes a report.
+      - label: Report outputs
+        text: reports/SSOT_OPTIMIZATION_METRICS.json (per-file metrics) and reports/SSOT_OPTIMIZATION_SUGGESTIONS.md (top candidates for the day)
+      - label: Non-destructive rule
+        text: The optimizer never edits SSOTs. It only writes reports. The focus-dispatcher-overnight may create focus-inbox drafts from the highest-priority suggestions if no active focus conflicts.
+      - label: Delta tracking
+        text: Each run compares to reports/SSOT_OPTIMIZATION_METRICS.previous.json; the suggestions report highlights new regressions and confirms previous ones.
+      - label: Weekly review gate
+        text: On Sunday, the overnight run also emits a weekly aggregate and archives the daily metrics to data/ssot-optimization/<week>.json.
+      - label: Manual override
+        text: A user can run `node scripts/ssot-optimize.mjs --suggest` to see the report without committing; run `--apply` only after review and only on a small set of files.
+
+  - title: Immediate Next Actions
+    icon: 🚀
+    layout: list
+    items:
+      - label: Data isolation audit
+        text: Search SSOT files for embedded runtime values, hardcoded IPs, secrets, large raw indexes, and timestamp/last_run fields that should move to runtime data or per-host SSOTs
+      - label: Implement bloat check
+        text: Add line/section/item counts to scripts/ssot-validate-all.mjs and emit warnings/errors per ssot.file-control.yml
+        related_improvement: docs/ssot/ssot.improvements.yml — SSOT file optimization
+      - label: Split ssot.improvements.yml
+        text: Move completed items to ssot.improvements.archive.2026.yml and keep active items under the hard threshold
+      - label: Split ssot.focus.yml
+        text: Archive history and parked focuses to reduce active file size
+      - label: Redundancy scan
+        text: Run ssot-search across ssot.*.yml for repeated labels, topics, and boilerplate text
+      - label: Conflict sweep
+        text: Fix contradictory focus statuses and mixed hostname/IP health-check URLs
+        status: in_progress
+        started: '2026-08-17'
+
+config:
+  version: 2
+  created: 2026-08-16
+  last_updated: 2026-08-19
+  maintainer: tony
+  status: active
+  bloat_exemptions:
+    # Grandfathered until next scheduled split. Review quarterly.
+    hard_threshold:
+      - ssot.index.yml
+      - apps/ssot.apps.helm.yml
+      - apps/ssot.apps.track4.yml
+      - ssot.mysystem.macbook.yml
+      - ssot.focus.history.archive.2026.yml
+      - ssot.focus.backlog.archive.2026.yml
+      - ssot.focus.inactive.archive.2026.yml
+      - ssot.focus.sessions.archive.2026.yml
+      - ssot.improvements.archive.2026-H1.yml
+      - ssot.improvements.archive.2026-H2.yml
+    review_threshold:
+      - ssot.focus.yml
+      - ssot.focus.decisions.yml
+      - apps/ssot.apps.helm.yml
+      - apps/ssot.apps.map3d.yml
+      - apps/ssot.apps.raceman.yml
+      - apps/ssot.apps.track4.yml
+      - apps/ssot.apps.yomi.yml
+      - infrastructure/performance-baselines.yml
+      - infrastructure/ssot.gemini-models.yml
+      - infrastructure/ssot.health.home.yml
+      - infrastructure/ssot.health.mobile.yml
+      - infrastructure/ssot.mcp-debug.yml
+      - infrastructure/ssot.mcp.yml
+      - infrastructure/ssot.services.yml
+      - ssot.focus.sessions.yml
+      - ssot.improvements.yml
+      - ssot.mysystem.home.yml
+      - ssot.mysystem.macbook.yml
+      - ssot.registry.yml
+  related_files:
+    - docs/ssot/ssot.file-control.yml
+    - docs/ssot/ssot.validation-patterns.yml
+    - docs/ssot/ssot.maintenance.yml
+    - docs/ssot/ssot.improvements.yml
+    - docs/ssot/ssot.index.yml
+    - docs/ssot/infrastructure/ssot.night-jobs.yml
+    - scripts/ssot-validate-all.mjs
+    - scripts/ssot-optimize.mjs

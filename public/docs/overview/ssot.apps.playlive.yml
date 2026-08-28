@@ -1,0 +1,84 @@
+title: Playlive
+subtitle: Shared browser session automation
+icon: 🎭
+sections:
+  - title: Purpose
+    icon: 🎯
+    layout: list
+    items:
+      - label: What it is
+        text: A remote browser-control facility that lets multiple AI clients drive Chrome/Playwright sessions through a shared daemon.
+      - label: Primary uses
+        text: E2E verification, UI testing, screenshots, page navigation, form interaction, and live remote debugging.
+
+  - title: Architecture
+    icon: 🏗️
+    layout: list
+    items:
+      - label: Daemon
+        text: playlived (chaba-omen/mcp/mcp-playlive/playlived.mjs) runs on the browser host (tony-dell) and owns all session state.
+      - label: MCP client
+        text: mcp-playlive (chaba-omen/mcp/mcp-playlive/playlive-server.py) forwards tool calls from Windsurf to the daemon.
+      - label: CDP target
+        text: Real Chrome is chrome-monitor.service on tony-dell at 127.0.0.1:9223.
+      - label: Playwright relationship
+        text: PlayLive is built on Playwright - see docs/kb/playwright-vs-playlive.md for detailed comparison.
+
+  - title: Hosts & endpoints
+    icon: 🌐
+    layout: table
+    headers: [Name, Host, Endpoint, Purpose]
+    rows:
+      - [playlived, tony-dell, http://tony-dell.local:9230, Session daemon]
+      - [chrome-monitor, tony-dell, http://127.0.0.1:9223, Real Chrome CDP endpoint]
+      - [cdp-controller, tony-dell, http://tony-dell.local:9224, Legacy Node CDP controller]
+
+  - title: Authentication
+    icon: 🔐
+    layout: list
+    items:
+      - label: Basic auth support
+        text: PlayLive sessions can be configured with basic authentication credentials for accessing protected pages.
+      - label: Credential configuration
+        text: Credentials passed via playlived configuration or session creation parameters (username/password).
+      - label: Use case
+        text: Enables verification of Caddy-protected pages like /apps/yomi/* which require basic auth.
+
+  - title: Tools
+    icon: 🛠️
+    layout: list
+    items:
+      - label: Session lifecycle
+        text: playlive_create_chrome_live, playlive_create_playwright_chrome, playlive_create_playwright, playlive_list_sessions, playlive_close_session
+      - label: Page interaction
+        text: playlive_navigate, playlive_click, playlive_fill, playlive_select, playlive_eval, playlive_state
+      - label: Capture
+        text: playlive_screenshot, playlive_screenshot_image
+
+  - title: Verified workflow
+    icon: ✅
+    layout: list
+    items:
+      - label: Start daemon
+        text: Start playlived on tony-dell.
+      - label: Create session
+        text: playlive_create_chrome_live creates a remote CDP session.
+      - label: Navigate
+        text: playlive_navigate to the target URL (default page.goto timeout 15s).
+      - label: Authenticated access
+        text: For protected pages, configure basic auth credentials before navigation to bypass Caddy basic auth prompts.
+      - label: Verify
+        text: playlive_state returns url and title.
+
+  - title: Limitations & cautions
+    icon: ⚠️
+    layout: list
+    items:
+      - label: Security
+        text: CDP and playlived are unauthenticated on the LAN; basic auth is for target page access only, not daemon security. Do not expose to untrusted networks.
+      - label: Resource contention
+        text: Browser automation shares tony-dell with GPU/interactive workloads.
+      - label: Windsurf reload
+        text: Reload Windsurf after mcp_config.json changes for tools to appear.
+      - label: Screen power management
+        text: DPMS screen off causes browser session closure. Screen timeout scheduler configured: 15 min (7am-10pm) for PlayLive compatibility, 1 min otherwise.

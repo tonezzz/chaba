@@ -1,0 +1,453 @@
+title: Chaba System Improvements Archive 2026 H2
+subtitle: Completed improvements H2 archived from ssot.improvements.yml
+icon: archive
+source: docs/ssot/ssot.improvements.yml
+archived_at: '2026-08-20'
+layout: list
+items:
+- label: Memory Usage Optimization
+  text: Address high memory usage (22GB/30GB, 73% used) and swap usage (39GB/47GB) - identify memory-intensive processes and
+    implement optimization
+  status: completed
+  priority: medium
+  effort: 2-3 hours
+  category: performance
+  discovered: 2026-08-04
+  assessment_ref: overnight-assessment-2026-08-04
+  dependency_reason: Memory analysis should follow GPU queue monitoring completion
+  blocks: System Load Analysis, GPU Process Management
+  blocking_reason: Memory optimization baseline needed for load and GPU analysis
+  business_impact: 6
+  technical_impact: 8
+  user_experience_impact: 7
+  cost_savings_impact: 5
+  impact_summary: Reduces infrastructure costs and improves system performance through memory optimization
+  action_items:
+  - Identify top memory-consuming processes
+  - Review container memory limits
+  - Analyze swap usage patterns
+  - Implement memory optimization policies
+  related_files:
+  - docker-compose.yml
+  tags:
+  - memory
+  - performance
+  - optimization
+  completed: '2026-08-05'
+  completion_note: 'Root cause found: 14 orphaned Yomi MCP instances (8GB RAM leak). Killed orphans → freed 2GB RAM + 10GB
+    swap. See docs/kb/yomi-mcp-process-leak.md for mitigation.'
+- label: System Load Analysis
+  text: Investigate elevated system load (8.13, 10.62, 12.63) - identify contributing processes and review background job
+    scheduling
+  status: completed
+  priority: medium
+  effort: 2-3 hours
+  category: performance
+  discovered: 2026-08-04
+  assessment_ref: overnight-assessment-2026-08-04
+  depends_on: Memory Usage Optimization
+  dependency_reason: Load analysis requires memory optimization baseline
+  action_items:
+  - Identify processes causing high load
+  - Review background job scheduling
+  - Consider load balancing strategies
+  - Optimize resource-intensive tasks
+  related_files:
+  - docs/ssot/services.yml
+  tags:
+  - performance
+  - load
+  - optimization
+  completed: '2026-08-05'
+  completion_note: Load driven by llama-server (expected, 2+ cores) + swap thrashing from Yomi leak. Resolved with memory
+    cleanup. All containers have unlimited memory limits — low risk given current usage.
+- label: GPU Process Management
+  text: Investigate PID 143 holding 2466MB VRAM continuously - implement GPU memory cleanup policies and workload scheduling
+  status: completed
+  priority: medium
+  effort: 1-2 hours
+  category: gpu
+  discovered: 2026-08-04
+  assessment_ref: overnight-assessment-2026-08-04
+  depends_on: Memory Usage Optimization
+  dependency_reason: GPU process analysis requires memory optimization baseline
+  action_items:
+  - Identify what process PID 143 is
+  - Implement GPU memory cleanup policies
+  - Consider GPU workload scheduling
+  - Add GPU process monitoring
+  related_files:
+  - docs/ssot/gpu.yml
+  tags:
+  - gpu
+  - memory
+  - processes
+  completed: '2026-08-05'
+  completion_note: 'PID 143 no longer exists. Current VRAM: llama-server 2350MB (expected), embedding-service 182MB (expected),
+    status-api 116MB (expected). Added CPU temperature check + unexpected-VRAM-holder detection to overnight-assessment.mjs.'
+- label: Assessment Enhancements
+  text: Add historical trend analysis, performance baseline tracking, automated notifications, and dashboard integration to
+    overnight assessment system
+  status: completed
+  priority: medium
+  effort: 4-6 hours
+  category: monitoring
+  discovered: 2026-08-04
+  assessment_ref: overnight-assessment-2026-08-04
+  completed: '2026-08-12'
+  completion_note: Integrated overnight assessment with MCP health server historical data and alerts. Added historical trend
+    analysis section to assessment reports using MCP health server database. Assessment now reads 7-day health history and
+    alert data from MCP health server for comprehensive trend analysis. Graceful fallback if MCP database unavailable.
+  action_items:
+  - Implement historical trend analysis
+  - Add performance baseline tracking
+  - Create notification system for critical issues
+  - Integrate with health check dashboard
+  related_files:
+  - scripts/overnight-assessment.mjs
+  - docs/kb/overnight-assessment.md
+  - mcp-servers/mcp-health/server.js
+  - mcp-servers/mcp-health/health-history.db
+  tags:
+  - monitoring
+  - assessment
+  - enhancements
+  - mcp-integration
+  business_impact: 7
+  technical_impact: 6
+  user_experience_impact: 5
+  cost_savings_impact: 3
+  impact_summary: Enhanced monitoring and trend analysis enables data-driven decisions and proactive issue detection
+- label: Documentation Cleanup
+  text: Add explanatory comments for IP addresses in documentation files to clarify why they exist vs active configurations
+  status: completed
+  priority: low
+  effort: 30 minutes
+  category: documentation
+  discovered: 2026-08-04
+  assessment_ref: overnight-assessment-2026-08-04
+  business_impact: 2
+  technical_impact: 3
+  user_experience_impact: 1
+  cost_savings_impact: 1
+  impact_summary: Improves documentation clarity with minimal operational impact
+  action_items:
+  - Add comments explaining IP addresses in docs
+  - Document when IPs are appropriate in documentation
+  - Update hostname enforcement strategy
+  related_files:
+  - docs/overview/hostname-enforcement-strategy.md
+  - docs/overview/hosts.tony-omen.yml
+  - docs/overview/hosts.tony-dell.yml
+  tags:
+  - documentation
+  - cleanup
+  completed: '2026-08-05'
+  completion_note: Fixed stale workaround note in hosts.tony-omen.yml (tony-omen.local now resolves correctly). Updated hostname-enforcement-strategy.md
+    with resolved status. Remaining IPs in docs are network-reference context — appropriate per workspace rules.
+- label: Report Archival Strategy
+  text: Implement report archival/deletion policy for overnight assessment reports (e.g., keep last 30 days)
+  status: completed
+  priority: medium
+  effort: 1 hour
+  category: maintenance
+  discovered: 2026-08-04
+  assessment_ref: overnight-assessment-2026-08-04
+  action_items:
+  - Define retention policy for reports
+  - Implement automatic archival script
+  - Add cleanup to systemd timer
+  - Test archival process
+  related_files:
+  - scripts/overnight-assessment.mjs
+  - docs/kb/overnight-assessment.md
+  tags:
+  - maintenance
+  - archival
+  - cleanup
+  completed: '2026-08-05'
+  completion_note: '30-day retention policy implemented in overnight-assessment.mjs (archiveOldReports). Archive dir: reports/archive/.
+    Dependency graph artefacts moved to archive. Triggered automatically at end of each assessment run.'
+- label: Monitoring & Alerting System
+  text: Implement proactive alerting for critical issues - email/Slack notifications for GPU temperature, disk usage, service
+    failures
+  status: completed
+  priority: medium
+  effort: 4-8 hours
+  category: monitoring
+  discovered: 2026-08-04
+  assessment_ref: overnight-assessment-2026-08-04
+  depends_on: Assessment Enhancements
+  dependency_reason: Alerting system requires enhanced assessment data for accurate alerts
+  blocks: Performance Baselines
+  blocking_reason: Alerting infrastructure needed before performance baseline tracking
+  business_impact: 8
+  technical_impact: 7
+  user_experience_impact: 6
+  cost_savings_impact: 4
+  impact_summary: Proactive issue detection reduces downtime and operational costs through faster response
+  action_items:
+  - Design alerting architecture
+  - Implement notification service
+  - Define alert thresholds and rules
+  - Test alert delivery
+  - Document alert response procedures
+  related_files:
+  - scripts/overnight-assessment.mjs
+  - docs/ssot/health.home.yml
+  tags:
+  - monitoring
+  - alerting
+  - notifications
+  completed: '2026-08-05'
+  completion_note: Implemented scripts/health-monitor.sh (checks memory, swap, disk, CPU/GPU temp, Yomi process leak, 3 key
+    services). Installed as systemd user timer (every 10 min). Sends notify-send desktop alerts + logs to logs/health-monitor.log.
+    No external API keys required.
+- label: Performance Baselines
+  text: Establish baseline metrics for all services and implement trend analysis with anomaly detection
+  status: completed
+  priority: medium
+  effort: 6-8 hours
+  category: monitoring
+  discovered: 2026-08-04
+  assessment_ref: overnight-assessment-2026-08-04
+  depends_on: Monitoring & Alerting System
+  dependency_reason: Performance baselines require monitoring infrastructure for data collection
+  completed: '2026-08-12'
+  completion_note: Implemented performance baseline collection script (scripts/collect-performance-baselines.mjs) using MCP
+    health server. Established baselines for 18 services with response time statistics (mean, median, p95, p99, std_dev).
+    Added baseline analysis to overnight assessment with anomaly detection (>50% deviation triggers alerts). Baselines saved
+    to docs/ssot/infrastructure/performance-baselines.yml. Low confidence baselines marked for future improvement with more
+    data.
+  action_items:
+  - Collect baseline metrics for all services
+  - Implement trend analysis algorithms
+  - Add anomaly detection
+  - Create performance dashboards
+  - Define performance SLOs
+  related_files:
+  - scripts/collect-performance-baselines.mjs
+  - scripts/overnight-assessment.mjs
+  - docs/ssot/infrastructure/performance-baselines.yml
+  - mcp-servers/mcp-health/server.js
+  tags:
+  - monitoring
+  - performance
+  - baselines
+  - anomaly-detection
+  - completed
+  business_impact: 8
+  technical_impact: 7
+  user_experience_impact: 6
+  cost_savings_impact: 4
+  impact_summary: Proactive performance monitoring enables early detection of degradation and optimization opportunities
+- label: CPU Frequency Monitoring
+  text: Add CPU frequency monitoring and throttling detection to health monitoring system
+  status: completed
+  priority: medium
+  effort: 1-2 hours
+  category: monitoring
+  discovered: 2026-08-12
+  completed: '2026-08-12'
+  completion_note: Enhanced health-monitor.sh with CPU frequency and throttling detection. Added checks for current vs max
+    frequency, thermal throttling under load, CPU governor state, and minimum frequency detection. Documented CPU specifications
+    in ssot.mysystem.home.yml (Intel i7-9750H @ 2.60GHz max, 800MHz min). Enhanced chaba-health-monitor-timer in ssot.health.yml
+    with CPU frequency verification and recovery actions. System now detects when CPU is throttled or stuck at low frequency
+    under load.
+  action_items:
+  - Add CPU frequency monitoring to health-monitor.sh
+  - Implement throttling detection (frequency drops under load)
+  - Check CPU governor state
+  - Document CPU specifications in SSOT
+  - Add verification and recovery actions to health check config
+  related_files:
+  - scripts/health-monitor.sh
+  - docs/ssot/ssot.mysystem.home.yml
+  - docs/ssot/infrastructure/ssot.health.yml
+  tags:
+  - monitoring
+  - cpu
+  - performance
+  - throttling
+  - completed
+  business_impact: 6
+  technical_impact: 7
+  user_experience_impact: 5
+  cost_savings_impact: 3
+  impact_summary: CPU throttling detection prevents performance degradation and identifies thermal/cooling issues early
+- label: Security & Dependency Checking
+  text: Add security vulnerability scanning, dependency update checking, and container image age monitoring to assessment
+    system
+  status: completed
+  priority: high
+  effort: 4-6 hours
+  category: security
+  discovered: 2026-08-04
+  assessment_ref: overnight-assessment-2026-08-04
+  depends_on: Docker Compose Configuration Fix
+  dependency_reason: Security scanning requires stable Docker configuration
+  business_impact: 9
+  technical_impact: 9
+  user_experience_impact: 7
+  cost_savings_impact: 7
+  impact_summary: Prevents security vulnerabilities and reduces technical debt through proactive dependency management
+  action_items:
+  - Integrate security vulnerability scanner
+  - Add dependency update checking
+  - Monitor container image ages
+  - Implement security reporting
+  - Define security remediation procedures
+  related_files:
+  - scripts/overnight-assessment.mjs
+  - docker-compose.yml
+  tags:
+  - security
+  - dependencies
+  - scanning
+  completed: '2026-08-05'
+  completion_note: 'npm: 0 vulns across all 4 packages. starlette 0.40.0 CVEs (CVE-2026-48710, CVE-2026-54282, GHSA-7f5h-v6xp-fcq8)
+    fixed — upgraded thai-legal-inference to fastapi 0.141.1 + starlette 1.3.x. Docker images mostly recent. NVIDIA 595.71.05
+    already patches all driver CVEs (595.84 is bugs-only).'
+- label: LINE API Rate Limit Mitigation
+  text: 'Resolve LINE API authentication rate limit (code 103) preventing Yomi message downloads and implement retry logic
+    to prevent future rate limit issues
+
+
+    **Root Cause**: Previous LINE session was rate-limited (code 103) due to too many login attempts, blocking message downloads.
+
+
+    **Resolution** (2026-08-12):
+
+    - Backed up old credentials and re-authenticated with `npx @rikaidev/yomi login`
+
+    - Session restored successfully (mid: ufdd2c3dfe084d111ed702c9c76bf6a21, displayName: Tonezzz)
+
+    - Verified message fetching works (66/67 conversations fetched successfully)
+
+
+    **Implemented Mitigations** in `fetch-conversations.mjs`:
+
+    - **Exponential backoff retry logic**: 1min, 5min, 15min, 1hr, 4hr delays for rate limit errors
+
+    - **Rate limit detection**: Parses error codes (103, "rate limit", "temporarily restricted", Japanese error message)
+
+    - **Login attempt throttling**: Maximum 1 login attempt per hour tracked in `login-attempts.json`
+
+    - **Retry on both list and single fetch**: Protects against rate limits at any API call point
+
+
+    **Benefits**: Prevents future rate limit disruptions, automatic recovery from temporary restrictions, reduced manual intervention
+
+    '
+  status: completed
+  priority: high
+  effort: 2-4 hours
+  category: yomi
+  discovered: 2026-08-06
+  completed: 2026-08-12
+  assessment_ref: yomi-gemini-migration
+  business_impact: 8
+  technical_impact: 7
+  user_experience_impact: 9
+  cost_savings_impact: 5
+  impact_summary: Restores Yomi message download capability and prevents future rate limit disruptions
+  related_files:
+  - scripts/yomi/fetch-conversations.mjs
+  - /etc/systemd/system/yomi-fetch.service
+  - /etc/systemd/system/yomi-fetch.timer
+  - docs/ssot/infrastructure/ssot.services.yml
+  tags:
+  - yomi
+  - rate-limit
+  - retry-logic
+  - completed
+  action_items:
+  - Wait for LINE API rate limit to lift (code 103 restriction)
+  - Re-login with `npx @rikaidev/yomi login` when restriction clears
+  - Implement exponential backoff for login retries
+  - Add rate limit detection and automatic retry logic
+  - Monitor login attempt frequency to prevent future rate limits
+  - Document LINE API rate limit policies and best practices
+  blocks:
+  - Yomi Gemini Migration Completion
+  blocking_reason: Cannot download new messages or process updates until LINE session restored
+- label: Service Failures Detected (2026-08-18)
+  text: Multiple services failed health checks - investigation required (Auto-generated by overnight assessment on 2026-08-18T02:01:41+07:00)
+  status: completed
+  completed: '2026-08-18'
+  triage_date: '2026-08-18'
+  triage_notes: 'Investigation: Caddy is healthy on tony-omen:8080/api/health. Redis and Raceman PHP are running on tony-dell
+    rootless podman; the failures were due to health checks still looking for `docker ps` on tony-omen. Yomi-api is healthy
+    on tony-dell:3000/api/yomi/health. Yomi update timers are intentionally disabled because of LINE rate limit (see ssot.yomi-failover.yml).
+    Health checks in ssot.health.home.yml were corrected to point at tony_dell for redis and raceman-php.'
+  priority: high
+  effort: TBD
+  category: service-health
+  discovered: 2026-08-18
+  assessment_ref: overnight-assessment-20260818
+  auto_generated: true
+  git_commit: d36126f
+  git_branch: master
+  tags:
+  - auto-generated
+  - service-health
+- label: Redis Container Down
+  text: Redis container is not running - needs investigation and restart (Auto-generated by overnight assessment on 2026-08-17T19:00:02.258Z)
+  status: completed
+  completed: '2026-08-18'
+  triage_date: '2026-08-18'
+  triage_notes: 'Evidence: Redis is running on tony-dell rootless podman (podman ps shows redis Up). The overnight report
+    looked for `docker ps` on tony-omen and found none because Redis migrated to tony-dell. Health check in ssot.health.home.yml
+    updated to `host: tony_dell`.'
+  priority: high
+  effort: TBD
+  category: service-health
+  discovered: 2026-08-17
+  assessment_ref: overnight-assessment-2026-08-17
+  auto_generated: true
+  git_commit: d36126f01a7da597540e0bd8febdcdec504c224e
+  git_branch: master
+  git_short_commit: d36126f0
+  related_files:
+  - docs/ssot/infrastructure/ssot.health.home.yml
+  tags:
+  - auto-generated
+  - service-health
+- label: Raceman PHP Container Down
+  text: Raceman PHP container is not running - needs investigation and restart (Auto-generated by overnight assessment on
+    2026-08-17T19:00:02.159Z)
+  status: completed
+  completed: '2026-08-18'
+  triage_date: '2026-08-18'
+  triage_notes: 'Evidence: raceman-php is running on tony-dell rootless podman (podman ps shows raceman-php Up). The overnight
+    report looked for `docker ps` on tony-omen and found none because raceman-php migrated to tony-dell. Health check in ssot.health.home.yml
+    updated to `host: tony_dell`.'
+  priority: high
+  effort: TBD
+  category: service-health
+  discovered: 2026-08-17
+  assessment_ref: overnight-assessment-2026-08-17
+  auto_generated: true
+  git_commit: d36126f01a7da597540e0bd8febdcdec504c224e
+  git_branch: master
+  git_short_commit: d36126f0
+  related_files:
+  - docs/ssot/infrastructure/ssot.health.home.yml
+  tags:
+  - auto-generated
+  - service-health
+- label: Completed Work (August 2026)
+  text: MCP health server implementation, overnight assessment integration, performance baseline system, infrastructure containerization
+  timeframe: August 2026
+  priority: completed
+  status: completed
+  items:
+  - MCP Health Server Implementation
+  - MCP Health Server Streamlining
+  - Overnight Assessment MCP Integration
+  - Performance Baselines
+  - CPU Frequency Monitoring
+  - Infrastructure Containerization Complete
+  - Monitoring & Alerting System
+  - Security & Dependency Checking
+  - LINE API Rate Limit Mitigation

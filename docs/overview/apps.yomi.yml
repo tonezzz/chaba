@@ -1,0 +1,99 @@
+title: Yomi
+subtitle: LINE conversation archive, search, and viewer with two-stage fetch/process pipeline and PostgreSQL backend.
+icon: 💬
+sections:
+  - title: App
+    icon: 🗨️
+    layout: list
+    items:
+      - label: URL
+        text: http://tony-omen:8080/apps/yomi/ (basic-auth, tailscale MagicDNS) or http://tony-omen.local:8080/apps/yomi/ (mDNS)
+      - label: Purpose
+        text: Archive, search, and browse LINE 1:1 and group chats with AI summaries, daily summaries, and media.
+      - label: Storage
+        text: PostgreSQL (pgvector/pgvector:pg16) for conversations, messages, daily_summaries, overrides tables.
+      - label: SSOT
+        text: docs/ssot/apps/ssot.apps.yomi.yml is the authoritative app SSOT. This file is a public overview.
+
+  - title: Pipeline
+    icon: ⚙️
+    layout: list
+    items:
+      - label: Stage 1 — Fetch
+        text: fetch-conversations.mjs calls list_conversations (limit 200) then paginates get_chat_messages. Stores to PostgreSQL. Runs every 30min via yomi-fetch.timer with skip logic and boot service.
+      - label: Stage 2 — Process
+        text: process-conversations.mjs generates AI summaries (Gemini gemma-4-31b-it), daily summaries (events/actions/topics), and categories. Runs via yomi-process.timer with flexible scheduling.
+      - label: Categorize
+        text: categorize-conversations.mjs assigns Personal, Work, Family, Group, Official, Promo, or Other from name/keywords/summary. Categories preserved across exports.
+      - label: Legacy
+        text: update-conversations.mjs is the legacy single-stage script, superseded by the two-stage pipeline.
+
+  - title: Refresh and media
+    icon: 🔄
+    layout: list
+    items:
+      - label: Refetch one chat
+        text: chat.html has a Refetch button that POSTs /api/yomi/fetch?chat=<id> to trigger the fetch stage for a single conversation.
+      - label: On-demand media
+        text: /api/yomi/media/<chatId>/<messageId> downloads and serves video, audio, or file content on first view and caches it.
+      - label: Pre-downloaded images
+        text: Images are downloaded during export and rendered inline with a lightbox.
+
+  - title: Scripts
+    icon: 📝
+    layout: list
+    items:
+      - label: fetch-conversations.mjs
+        text: Stage 1 fetch from LINE API with retry/backoff. Updates PostgreSQL.
+      - label: process-conversations.mjs
+        text: Stage 2 AI summarization, daily summaries, and categorization.
+      - label: yomi-api.mjs
+        text: Node.js HTTP API server on port 3000, reverse-proxied from /api/yomi/*. Managed by systemd user service yomi-api.service.
+      - label: categorize-conversations.mjs
+        text: Keyword/brand-based categorizer for conversations.
+      - label: llama-rate-limiter.mjs
+        text: Rate limiter and circuit breaker classes for managing Llama/Gemini API load.
+      - label: db.mjs
+        text: PostgreSQL connection module. Reads credentials from stacks/web/.env.
+
+  - title: Systemd Services
+    icon: 🔧
+    layout: list
+    items:
+      - label: yomi-api.service
+        text: API server on port 3000, auto-restart enabled.
+      - label: yomi-fetch.timer
+        text: Every 30 minutes with skip logic (YOMI_FETCH_SKIP_MINUTES). Boot service runs forced fetch if needed.
+      - label: yomi-process.timer
+        text: Hourly overnight (00-07) plus 12PM, 6PM, 8PM. Skip logic (YOMI_PROCESS_SKIP_HOURS=12). Boot service for catch-up.
+
+  - title: Status
+    icon: ✅
+    layout: list
+    items:
+      - label: Done
+        text: Two-stage pipeline, PostgreSQL backend, Gemini summarization, language detection, daily summaries, rate limiting, circuit breakers, session management, failover plan, Weaviate semantic search.
+      - label: Todo
+        text: GPU queue integration wiring, image captioning, audio transcription (faster-whisper), video frame captioning.
+
+  - title: Failover
+    icon: 🔄
+    layout: list
+    items:
+      - label: Primary
+        text: tony-dell (yomi-api.service, PostgreSQL, timers). See infrastructure/ssot.yomi-failover.yml.
+      - label: Backup
+        text: tony-omen with daily pg_dump + rsync. Manual failover script at /home/tony/.local/bin/yomi-failover-to-omen.sh.
+
+  - title: Media Analysis Configuration
+    icon: 🔧
+    layout: list
+    items:
+      - label: Primary Model
+        text: gemma-4-31b-it (default, can be overridden via GEMINI_VISION_MODEL_PRIMARY env var)
+      - label: Fallback Model
+        text: gemma-4-26b-a4b-it (default, can be overridden via GEMINI_VISION_MODEL_FALLBACK env var)
+      - label: Context Window
+        text: 3 messages before and after (configurable via CONTEXT_MESSAGES_BEFORE/AFTER env vars)
+      - label: Environment Variables
+        text: GEMINI_API_KEY, GEMINI_VISION_MODEL_PRIMARY, GEMINI_VISION_MODEL_FALLBACK, CONTEXT_MESSAGES_BEFORE, CONTEXT_MESSAGES_AFTER

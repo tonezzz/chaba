@@ -1,0 +1,79 @@
+# SSOT Job Lifecycle Template
+# Copy this file to docs/ssot/jobs/<type>/<YYYY-MM-DD-short-name>.yml
+# and fill in all four lifecycle sections before starting the job.
+
+title: Job Title
+subtitle: One-line description of the critical or optimization job
+icon: target
+
+# Planning: define the job before any processing starts.
+planning:
+  goal: What we want to achieve
+  scope: What is in scope and what is explicitly out of scope
+  success_criteria:
+    - Measurable outcome 1
+    - Measurable outcome 2
+  risks:
+    - Risk and mitigation 1
+    - Risk and mitigation 2
+  resources:
+    - Host/tool/data dependency 1
+  owner: tony
+  estimated_duration: 1 session
+  related_focus:
+    - label: Focus label
+      file: docs/ssot/ssot.focus.current.yml
+
+# Processing: append steps, decisions, and changes as work happens.
+processing:
+  status: not_started
+  started_at: null
+  steps:
+    - id: 1
+      label: Step one
+      status: not_started
+      notes: Details or commands
+  decisions:
+    - label: Decision one
+      rationale: Why this choice was made
+      alternatives_considered: What was rejected and why
+  changes:
+    - file: path/to/changed.file
+      summary: What changed
+
+# Followup: verify, rollback, handoff.
+followup:
+  verification:
+    - Command or check that proves success
+    - Manual review step
+  rollback_plan:
+    - Command or procedure to undo the change if needed
+  handoff:
+    - Next owner or system that takes over
+  deferred:
+    - Items intentionally left for later
+
+# Report: close the job and feed the KB.
+report:
+  status: not_started
+  completed_at: null
+  summary: What was done and why
+  metrics:
+    - metric: value
+  links:
+    - title: Commit/PR/artifact
+      url: /path/or/url
+    - title: Related focus
+      file: docs/ssot/ssot.focus.current.yml
+  kb_review:
+    - Decision or discovery worth KB
+  lessons_learned:
+    - What to do differently next time
+
+config:
+  version: 1
+  created_at: 2026-08-18
+  last_updated: 2026-08-18
+  maintainer: tony
+  related_files:
+    - docs/ssot/templates/job.yml

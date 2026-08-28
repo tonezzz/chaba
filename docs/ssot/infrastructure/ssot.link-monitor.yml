@@ -1,0 +1,119 @@
+title: TCP/IP Link Monitor
+subtitle: Reachability watchdog with cheap probes, escalated scans, and safe fix attempts
+icon: 🛜
+version: 1
+
+overview:
+  purpose: Watch reachability to headless hosts and macOS/iOS verify hosts, run targeted scans when a link degrades, attempt safe fixes, and create focus-inbox alerts if unresolved.
+  scope:
+    - tony_omen
+    - tony_dell
+    - macbook
+  mode: continuous background systemd user service on tony_dell
+  service: ~/.config/systemd/user/mcp-link-monitor.service
+
+principles:
+  - Cheap first: use ping or TCP connect for periodic probes, not mcp_debug.
+  - Threshold before scan: require N consecutive misses before escalating.
+  - Back-off on failure: increase probe interval while a host is down to avoid hammering.
+  - Safe fixes only by default: restart services, run tailscale ping, rebind DHCP only if explicitly enabled.
+  - No automatic SSOT rewrites: IP drift creates an inbox alert for human confirmation.
+  - Human escalation: if safe fixes fail, create a focus-inbox item with scan output.
+
+checks:
+  default_interval: 30
+  down_backoff:
+    - misses: 3
+      interval: 10
+    - misses: 6
+      interval: 30
+    - misses: 12
+      interval: 120
+  probe_methods:
+    icmp:
+      command: "ping -c 1 -W 2 {{address}}"
+      expected_rc: 0
+    tcp:
+      command: "python3 -c \"import socket; socket.create_connection(('{{address}}', {{port}}), timeout=5)\""
+      expected_rc: 0
+      ports:
+        tony_omen: 9100
+        tony_dell: 22
+        macbook: 22
+  address_preference:
+    - tailscale_ip
+    - magic_dns
+    - local_hostname
+
+state_machine:
+  - name: healthy
+    next: missing
+    on: probe fails
+  - name: missing
+    next: scanning
+    on: misses >= threshold
+  - name: scanning
+    action: run scan commands and classify failure
+    next:
+      - fixed: healthy
+      - not_fixed: fixing
+  - name: fixing
+    action: apply safe fix actions
+    next:
+      - fixed: healthy
+      - not_fixed: alert
+  - name: alert
+    action: create focus-inbox item and stop active fixes
+    next: healthy
+    on: probe succeeds
+
+scan_on_failure:
+  commands:
+    - "tailscale status --json"
+    - "ip -4 route"
+    - "ip -4 -br addr show"
+    - "ss -tlnp"
+    - "tailscale ping {{name}} -c 3"
+
+fix_actions:
+  safe:
+    - label: restart mcp-debug-cors
+      command: "systemctl --user restart mcp-debug-cors.service"
+      hosts:
+        - tony_dell
+    - label: tailscale ping
+      command: "tailscale ping {{name}} -c 5"
+      hosts:
+        - tony_omen
+        - tony_dell
+        - macbook
+  risky:
+    - label: release and renew DHCP
+      command: "sudo dhclient -r {{iface}} && sudo dhclient {{iface}}"
+      require_env: LINK_MONITOR_RISKY=1
+    - label: cycle interface
+      command: "sudo ip link set {{iface}} down && sleep 1 && sudo ip link set {{iface}} up"
+      require_env: LINK_MONITOR_RISKY=1
+
+ip_drift:
+  detection: compare current local IP and Tailscale IP against docs/ssot/ssot.mysystem.home.yml
+  on_drift:
+    action: create focus-inbox item
+    allow_auto: false
+
+resource_policy:
+  - Probes are stateless and run without mcp_debug; each probe is one ping or one TCP connect.
+  - Scans and fixes are triggered only after threshold misses, not on every tick.
+  - Back-off while down prevents busy-looping on a failed link.
+  - Logs are rotated; no per-probe history kept beyond the last 100 entries.
+
+mcp_integration:
+  - Use mcp-health for baseline service health, but the link monitor is independent.
+  - On alert, write docs/ssot/focus-inbox/<target>-link-down-YYYY-MM-DD.yml using the focus dispatcher contract.
+
+related_files:
+  - docs/ssot/infrastructure/ssot.health.yml
+  - docs/ssot/infrastructure/ssot.mcp-debug.cors.yml
+  - docs/ssot/ssot.mysystem.home.yml
+  - docs/ssot/ssot.mysystem.macbook.yml
+  - scripts/mcp-link-monitor.py

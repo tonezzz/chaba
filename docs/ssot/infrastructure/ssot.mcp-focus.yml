@@ -1,0 +1,245 @@
+title: MCP Focus
+subtitle: Session-start router and focus recommendation policy for the mcp_focus tool
+icon: 🎯
+version: 2
+config:
+  version: 2
+  last_updated: '2026-08-19'
+  maintainer: tony
+  status: active
+  canonical_implementation: scripts/mcp_debug/focus.py
+  related_files:
+  - scripts/mcp_debug/focus.py
+  - scripts/mcp_focus/server.py
+  - scripts/focus_common.py
+  - scripts/focus_dispatcher/triage.py
+  - scripts/prompt_preprocessor.py
+  - docs/ssot/ssot.focus.current.yml
+  - docs/ssot/ssot.focus.current.active.yml
+  - docs/ssot/ssot.focus.current.backlog.yml
+  - docs/ssot/ssot.focus.yml
+  - docs/ssot/ssot.focus.sessions.yml
+  - docs/ssot/infrastructure/ssot.mcp-focus.actions.yml
+  - docs/ssot/infrastructure/ssot.focus.triage.yml
+overview:
+  purpose: 'mcp_focus is the first MCP tool called when a session starts. Given an optional
+
+    request, it recommends the next action without modifying any focus state.
+
+    '
+  inputs:
+  - request: optional free-text user request
+  - mode: optional "recommend" (default), "status", "reload", "pre_action", "safe_next", "ready_queue", "defer", "resume",
+      "sweep", "next", "technical_decision", or "session_summary"
+  - resume_session: target session identifier for defer mode
+  - reason: reason for deferring
+  - hold: label of the focus to hold while sweeping the rest
+  - bulk_session: fallback session for any non-hold candidate not matched by session_map
+  - session_map: mapping of focus label, branch, or 'default' to a session name for per-item routing
+  guarantees:
+  - Read-only. It never writes to ssot.focus.current.yml, ssot.focus.yml, or the focus-inbox/ directory.
+  - If no request is provided, it always returns the current active foci and quick wins.
+  - If a request is provided, it returns a single recommended action and the supporting reasoning.
+  - technical_decision and session_summary modes append only to their respective SSOTs and never modify focus state.
+output_schema:
+  ok: boolean
+  active:
+    shared: active shared focus or null
+    branch: active branch focus or null
+  active_file_state:
+    active_shared_focus: list of all shared focus entries with status, priority, and subtask count
+    active_branch_focus: list of all branch focus entries with status, priority, and subtask count
+  stale_warning: list of detected inconsistencies, e.g. all subtasks completed but focus not closed
+  quick_wins: list of completed quick wins
+  hand_off_queue: list of hand-off items
+  ready_safe: list of safe-to-parallel items
+  checked_at: ISO timestamp of the read
+  recommendation:
+    action: one of [continue, quick_win, triage, draft_inbox]
+    triage_type: parked | backlog | improvement | inbox (only when action == triage)
+    target: label of the focus, quick win, or inbox item
+    confidence: high | medium | low
+    reasoning: short human-readable explanation
+    next_prompt: what to tell the user or assistant next
+    canonical_request: preprocessed canonical request when a command or alias was expanded
+    command: detected command metadata for direct dispatch
+  preprocessed:
+    ok: boolean
+    request: original request
+    canonical_request: expanded/grounded request string
+    confidence: match score 0-1
+    suggested_action: continue_focus, quick_win, backlog, inbox, continue_job, or direct
+    grounding: source label, file, status, priority, branch
+    command: detected command metadata
+    similar_items: top similar focus/backlog/job items
+decision_tree:
+- step: 1
+  check: Is there an active shared or branch focus, or is the request empty / a continuation cue?
+  true: continue
+  false: go to 2
+- step: 2
+  check: Is the request small, concrete, a quick-win cue, or an existing Quick Win label?
+  true: quick_win
+  false: go to 3
+- step: 3
+  check: Is there a matching parked/deferred, backlog, improvement, or inbox item to triage?
+  true: triage
+  false: go to 4
+- step: 4
+  check: No existing match
+  true: draft_inbox
+confidence_rules:
+  high: direct label match or exact keyword hit
+  medium: cue word, partial match, or triage score ordering
+  low: no match; a draft inbox must be created
+safety:
+- mcp_focus must not call focus-dispatcher.py or commit.
+- mcp_focus may append a decision record to docs/ssot/ssot.focus.decisions.yml when a request is provided.
+- mcp_focus may append a technical decision record to docs/ssot/decisions/ssot.technical-decisions.yml in technical_decision
+  mode.
+- mcp_focus may append a session summary to docs/ssot/ssot.focus.sessions.yml in session_summary mode.
+- If an active focus exists, the default recommendation is "continue" unless the user explicitly asks to switch.
+- The tool may expose a "status" mode that only returns active foci and quick wins.
+- Any drafted inbox YAML returned to the assistant must be reviewed by the user before activation.
+modes:
+- name: recommend
+  description: Default. Classify the request and return a recommendation.
+  read_only: true
+  request_optional: true
+- name: status
+  description: Return active foci, quick wins, hand-off queue, ready safe, and session groups.
+  read_only: true
+  request_optional: true
+- name: pre_action
+  description: Summarize the active focus state before an action is taken.
+  read_only: true
+  request_optional: true
+- name: safe_next
+  description: Return the highest-scoring focus that is safe to run in parallel.
+  read_only: true
+  request_optional: true
+- name: ready_queue
+  description: Return the Ready (Safe) queue.
+  read_only: true
+  request_optional: true
+- name: defer
+  description: Defer the active focus subtask or the focus itself.
+  read_only: false
+  request_optional: true
+  extra_inputs:
+  - resume_session
+  - reason
+- name: resume
+  description: Suggest a previously deferred focus to resume.
+  read_only: true
+  request_optional: true
+  extra_inputs:
+  - resume_session
+- name: sweep
+  description: Review all parked/backlog/inbox foci and optionally bulk-defer.
+  read_only: false
+  request_optional: true
+  extra_inputs:
+  - hold
+  - bulk_session
+  - session_map
+- name: next
+  description: Activate the highest-priority parked or deferred focus.
+  read_only: false
+  request_optional: true
+  extra_inputs:
+  - resume_session
+- name: preview
+  description: Show the highest-priority parked or deferred focus without activating.
+  read_only: true
+  request_optional: true
+  extra_inputs:
+  - resume_session
+- name: done
+  description: Check whether all open foci are closed and suggest whether to stop.
+  read_only: true
+  request_optional: true
+- name: technical_decision
+  description: Append a structured technical decision.
+  read_only: false
+  request_optional: false
+- name: session_summary
+  description: Append a session summary.
+  read_only: false
+  request_optional: false
+tools:
+- name: mcp_focus
+  description: Main focus router; see modes above.
+  server: mcp-focus
+- name: mcp_focus_status
+  description: Lightweight status endpoint, equivalent to mcp_focus mode=status with no request.
+  server: mcp-focus
+related_files:
+- docs/ssot/ssot.focus.current.yml
+- docs/ssot/ssot.focus.yml
+- docs/ssot/infrastructure/ssot.focus.triage.yml
+- docs/ssot/infrastructure/ssot.focus-dispatcher.yml
+- scripts/mcp_debug/focus.py
+- scripts/mcp_debug/server.py
+- scripts/focus_common.py
+- scripts/focus_dispatcher/triage.py
+- scripts/prompt_preprocessor.py
+implementation_notes:
+- Implemented in scripts/mcp_debug/focus.py and scripts/mcp_debug/server.py.
+- Shared focus model helpers (triage scoring, safe-to-parallel/ownership/lock checks, active/backlog/inbox extraction, sweep)
+  live in scripts/focus_common.py and are imported by scripts/mcp_debug/focus.py, scripts/focus_dispatcher/triage.py, and
+  scripts/prompt_preprocessor.py.
+- mcp_focus supports mode=status (read-only active/Quick Wins listing), mode=recommend (decision tree), mode=technical_decision,
+  and mode=session_summary.
+- The recommend decision tree maps directly to the assistant-level cases in docs/ssot/ssot.focus.current.yml#decision_tree.
+- mcp_focus appends a decision record to docs/ssot/ssot.focus.decisions.yml whenever a request is provided.
+- mcp_focus mode=technical_decision appends to docs/ssot/decisions/ssot.technical-decisions.yml.
+- mcp_focus mode=session_summary appends to docs/ssot/ssot.focus.sessions.yml.
+- The assistant uses the returned action as the first disposition and only deviates for special cases (live_bug_report, auto_generated_alert,
+  requires_mcp_data).
+improvements:
+- id: mcp-focus-2026-08-23
+  title: Streamline mcp_focus behavior and observability
+  status: in_progress
+  items:
+  - label: Stop automatic decision logging on every recommend
+    text: Make recommend read-only by default; only log decisions when mode=technical_decision or an explicit confirm flag
+      is passed.
+    status: completed
+    priority: high
+  - label: Make mcp_focus_status a cheap read-only call
+    text: Ensure status and reload modes never write to ssot.focus.decisions.yml.
+    status: completed
+    priority: high
+  - label: Cache SSOT reads with mtime invalidation
+    text: Keep parsed YAML in memory; trust mtime for staleness; use reload to force re-read.
+    status: completed
+    priority: medium
+  - label: Improve empty/no-match triage
+    text: Use priority and triage_score for parked/deferred items, not just backlog keyword matches.
+    status: completed
+    priority: medium
+  - label: Add cross-worktree context
+    text: Read ssot.workspaces.yml / ssot.host-roles.yml to include worktree/branch state in recommendations.
+    status: completed
+    priority: medium
+  - label: Add next preview and confirm gate
+    text: Return the candidate before activating; only write SSOT on confirm=true.
+    status: completed
+    priority: low
+  - label: Expand stale warnings
+    text: Detect completed without completed_at, long-parked foci, active with no recent session, and invalid status values.
+    status: completed
+    priority: low
+  - label: Compact active_file_state output
+    text: Only include non-closed foci in active_file_state to reduce payload size.
+    status: completed
+    priority: low
+  - label: Add done-for-the-day mode
+    text: Provide a mode that tells the user whether all open foci are closed.
+    status: completed
+    priority: low
+  - label: Add live worktree dirty state
+    text: Check git status --short for each declared worktree and include dirty boolean in status output.
+    status: completed
+    priority: low

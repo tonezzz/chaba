@@ -1,0 +1,68 @@
+title: SSOT Value Registry
+subtitle: Canonical values for ports, hosts, schedules, and thresholds used across the project
+icon: registry
+version: 1
+
+overview:
+  purpose: |
+    Centralize canonical configuration values so scripts, systemd units, health
+    checks, and web endpoints can reference them by key instead of hard-coding.
+
+config:
+  version: 1
+  last_updated: '2026-08-19'
+  maintainer: tony
+  status: active
+
+hosts:
+  tony_omen:
+    name: tony-omen
+    local: tony-omen.local
+    tailscale: tony-omen
+    tailscale_ip: '100.68.142.13'
+  tony_dell:
+    name: tony-dell
+    local: tony-dell.local
+    tailscale: tony-dell
+    tailscale_ip: '100.68.142.42'
+    funnel: 'https://tony-dell.taila0626a.ts.net'
+
+ports:
+  mcp_debug_cors: 9100
+  mcp_debug_server: 9200
+  mddb: 11023
+  yomi_api: 3000
+  trade_api: 9000
+  playlived: 9230
+  playlived_omen: 9231
+  weaviate: 8084
+  chaba_funnel: 8082
+  chaba_funnel_public: 8444
+
+schedules:
+  audit_suite: '0 2 * * 0'
+  audit_full: 'Sun *-*-1..7 03:00:00'
+  kb_audit: '0 4 * * 0'
+  overnight_assessment: '0 2 * * *'
+  system_maintenance: '0 3 * * *'
+  gpu_monitor: '*/5 * * * *'
+
+thresholds:
+  audit:
+    retention: 90
+    full_run_month: first Sunday 03:00
+  reports:
+    retention_days: 30
+  health:
+    timeout: 5
+    tailscale_timeout: 10
+
+paths:
+  repo: /home/tony/CascadeProjects/chaba
+  kb_dir: docs/kb
+  ssot_dir: docs/ssot
+  reports_dir: reports
+  logs_dir: logs
+  systemd_user: /home/tony/.config/systemd/user
+
+

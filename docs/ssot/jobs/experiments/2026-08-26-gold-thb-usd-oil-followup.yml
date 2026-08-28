@@ -1,0 +1,244 @@
+title: Gold/THB/USD/Oil Follow-Up
+subtitle: Test whether adding crude oil (Brent or WTI) improves the graph+k-NN XAU/USD out-of-sample results
+icon: target
+
+planning:
+  goal: |
+    Determine whether daily crude-oil returns add predictive power to the existing
+    THB -> XAU graph+k-NN strategy, and whether an oil -> XAU Granger-causality
+    edge can act as a second regime filter.
+  scope: |
+    - Fetch and align daily Brent (BZ=F) and WTI (CL=F) close prices with the
+      existing experiments/gold-thb-usd-causality/data/aligned.csv date range.
+    - Add oil returns (and optionally a short-term oil volatility) as features
+      while keeping the same walk-forward, monthly retraining, and
+      out-of-sample (2014-2026) discipline.
+    - Implement and compare three oil variants:
+      * trended_oil.py: a 2-day oil trend signal for XAU.
+      * trended_graph_knn_oil.py: the existing graph+k-NN with oil added to
+        the k-NN feature vector.
+      * trended_graph_oil.py: the graph edge filter using THB->XAU and
+        oil->XAU Granger p-values.
+    - Compare each to the tuned THB-only graph+k-NN baseline.
+    - Update app/vector-analysis-ideas.js only if an oil variant strictly beats
+      the baseline.
+  out_of_scope: |
+    - Real-time trading or trade-api integration.
+    - New asset classes beyond XAU, USD/THB, and crude oil.
+    - Hyper-parameter overfitting outside the existing walk-forward grid.
+  success_criteria:
+    - Oil data aligned to the existing 2014-2026 XAU/THB series.
+    - At least one of the three oil variants run through the same walk-forward
+      OOS protocol as the baseline.
+    - A metrics table comparing each variant to the THB-only graph+k-NN baseline.
+    - A commit/push only when results are in and a documented milestone if a
+      new best is found.
+  risks:
+    - Oil futures (BZ=F, CL=F) include roll/gap noise and non-trading days;
+      mitigate by forward-filling missing values and using log returns.
+    - Adding oil could introduce overfitting; mitigate by keeping the identical
+      train/test calendar and not expanding the parameter search beyond the
+      baseline defaults.
+    - Yahoo Finance availability is not guaranteed; mitigate by keeping the
+      cached data/aligned_oil.csv under version control for reproducibility.
+  resources:
+    - experiments/gold-thb-usd-causality/data/aligned.csv
+    - experiments/gold-thb-usd-causality/data/aligned_oil.csv
+    - experiments/gold-thb-usd-causality/trended_graph_knn.py
+    - python3 with pandas, numpy, scikit-learn, statsmodels, and yfinance.
+  owner: tony
+  estimated_duration: 1-2 sessions
+
+processing:
+  status: completed
+  started_at: '2026-08-26'
+  steps:
+    - id: 1
+      label: Source and align daily oil data
+      status: completed
+      completed_at: '2026-08-26'
+      notes: |
+        Fetched Brent (BZ=F) and WTI (CL=F) daily close prices from Yahoo
+        Finance, a public, no-API-key source. Cached in
+        data/oil_raw.csv and forward-filled/inner-joined with the existing
+        XAU/THB aligned.csv to produce data/aligned_oil.csv.
+        - Brent: 2014-11-03 to 2026-08-25
+        - WTI: 2014-11-03 to 2026-08-25
+        - Aligned to XAU/THB: 3,076 daily observations from 2014-11-07 to
+          2026-08-25.
+        - Columns in data/aligned_oil.csv: date, xau, thb, oil, brent
+          (oil is WTI; Brent is kept as a cross-check)
+    - id: 2
+      label: Implement trended_oil.py
+      status: completed
+      completed_at: '2026-08-26'
+      notes: |
+        Used the existing trended_oil.py draft with the 2-day WTI oil trend
+        signal for XAU. Walk-forward OOS 2014-2026:
+        - Sharpe: -0.76
+        - Annual return: -10.5%
+        - Annual vol: 13.7%
+        - Max drawdown: -78.4%
+        - Win rate: 33.4%
+        The simple 2-day oil trend does not improve on buy-and-hold or the
+        THB-only baseline.
+    - id: 3
+      label: Implement trended_graph_knn_oil.py
+      status: completed
+      completed_at: '2026-08-26'
+      notes: |
+        Added the 2-day WTI return to the graph+k-NN feature vector
+        (thb_ret, xau_ret, oil_ret). Kept WINDOW=2, K=30, P_THRESHOLD=0.01,
+        EDGE_LOOKBACK=504. Walk-forward OOS 2014-2026:
+        - Sharpe: 2.55
+        - Annual return: 21.2%
+        - Annual vol: 8.3%
+        - Max drawdown: -10.8%
+        - Win rate: 13.2%
+        This is close to the THB-only baseline but slightly worse on Sharpe and
+        drawdown.
+    - id: 4
+      label: Implement trended_graph_oil.py
+      status: completed
+      completed_at: '2026-08-26'
+      notes: |
+        Built a graph edge filter requiring both THB->XAU and oil->XAU
+        Granger-causality edges to be significant (p < 0.01) before allowing
+        a THB-trend position. Walk-forward OOS 2014-2026:
+        - Sharpe: 1.48
+        - Annual return: 10.3%
+        - Annual vol: 7.0%
+        - Max drawdown: -8.0%
+        - Win rate: 4.1%
+        The oil edge is often not significant, reducing both trades and
+        returns compared with the THB-only graph edge.
+    - id: 5
+      label: Compare to THB-only graph+k-NN baseline
+      status: completed
+      completed_at: '2026-08-26'
+      notes: |
+        Re-ran the THB-only graph+k-NN baseline on the same OOS period:
+        - Sharpe: 2.77
+        - Annual return: 22.1%
+        - Annual vol: 8.0%
+        - Max drawdown: -7.5%
+        - Win rate: 12.4%
+        No oil variant beats the baseline. The app/vector-analysis-ideas.js
+        file is left unchanged.
+    - id: 6
+      label: Commit and push when results are in
+      status: completed
+      completed_at: '2026-08-26'
+      notes: |
+        Committed the oil follow-up: SSOT, data files, and variant scripts.
+        No oil variant beat the THB-only graph+k-NN baseline, so no milestone
+        tag was created.
+  decisions:
+    - label: Use Yahoo Finance BZ=F and CL=F as the oil source
+      rationale: |
+        No API key is required, the series cover the full XAU/THB date range,
+        and the data can be cached locally for reproducibility. WTI (CL=F) is
+        used as the primary `oil` column because the existing trended_oil.py
+        draft was built around WTI; Brent (BZ=F) is kept as a cross-check.
+    - label: Keep the baseline walk-forward protocol unchanged
+      rationale: |
+        The goal is to measure the marginal value of oil, not to re-optimize
+        the calendar or the hold-out period. Any improvement must be OOS on
+        2014-2026 with monthly retraining.
+    - label: Only update the app if an oil variant beats the baseline
+      rationale: |
+        vector-analysis-ideas.js currently highlights the graph+k-NN result. It
+        should only be changed when there is a clearly better OOS backtest.
+  changes:
+    - file: experiments/gold-thb-usd-causality/data/oil_raw.csv
+      summary: Raw daily Brent and WTI close prices from Yahoo Finance.
+    - file: experiments/gold-thb-usd-causality/data/wti.csv
+      summary: WTI daily close prices (timestamp, value) aligned with XAU/THB.
+    - file: experiments/gold-thb-usd-causality/data/brent.csv
+      summary: Brent daily close prices (timestamp, value) aligned with XAU/THB.
+    - file: experiments/gold-thb-usd-causality/data/aligned_oil.csv
+      summary: Aligned XAU, THB, WTI (oil), and Brent levels (3,076 observations).
+    - file: experiments/gold-thb-usd-causality/prepare_oil.py
+      summary: Reproducible WTI/Brent alignment script.
+    - file: experiments/gold-thb-usd-causality/trended_oil.py
+      summary: 2-day WTI oil trend baseline for XAU.
+    - file: experiments/gold-thb-usd-causality/trended_graph_knn_oil.py
+      summary: Graph+k-NN with oil added to the k-NN feature vector.
+    - file: experiments/gold-thb-usd-causality/trended_graph_oil.py
+      summary: Graph edge filter using THB and oil p-values.
+
+report:
+  status: completed
+  completed_at: '2026-08-26'
+  summary: |
+    All three oil variants were run through the same 2014-2026 walk-forward
+    out-of-sample protocol as the THB-only graph+k-NN baseline. Adding WTI oil
+    returns to the k-NN feature vector slightly degrades the best THB-only
+    result, and neither a 2-day oil trend signal nor an oil-augmented graph
+    edge filter beats the baseline. The conclusion is that oil does not add
+    a reliably better OOS edge for this XAU/USD forecasting problem at the
+    tested horizons.
+  metrics:
+    - variant: THB-only graph+k-NN (baseline)
+      sharpe: 2.77
+      annual_return: 22.1%
+      annual_vol: 8.0%
+      max_dd: -7.5%
+      win_rate: 12.4%
+    - variant: 2-day WTI oil trend
+      sharpe: -0.76
+      annual_return: -10.5%
+      annual_vol: 13.7%
+      max_dd: -78.4%
+      win_rate: 33.4%
+    - variant: Graph+k-NN with oil in feature vector
+      sharpe: 2.55
+      annual_return: 21.2%
+      annual_vol: 8.3%
+      max_dd: -10.8%
+      win_rate: 13.2%
+    - variant: THB+oil graph edge filter
+      sharpe: 1.48
+      annual_return: 10.3%
+      annual_vol: 7.0%
+      max_dd: -8.0%
+      win_rate: 4.1%
+  links:
+    - experiments/gold-thb-usd-causality/data/aligned_oil.csv
+    - experiments/gold-thb-usd-causality/data/trended_oil_results.json
+    - experiments/gold-thb-usd-causality/data/trended_graph_knn_oil_results.json
+    - experiments/gold-thb-usd-causality/data/trended_graph_oil_results.json
+    - experiments/gold-thb-usd-causality/trended_oil.py
+    - experiments/gold-thb-usd-causality/trended_graph_knn_oil.py
+    - experiments/gold-thb-usd-causality/trended_graph_oil.py
+  lessons_learned:
+    - A 2-day WTI trend is a poor standalone predictor of next-day XAU returns.
+    - Adding oil returns to the k-NN feature vector does not improve the
+      THB-only graph+k-NN OOS Sharpe.
+    - Requiring both a THB->XAU and an oil->XAU Granger edge to be significant
+      makes the graph filter more conservative and lowers both volatility and
+      returns.
+
+followup:
+  verification:
+    - Confirm data/aligned_oil.csv has no missing or zero oil prices in the
+      OOS period.
+    - Re-run the baseline trended_graph_knn.py to confirm the quoted metrics.
+  rollback_plan:
+    - Remove data/oil_raw.csv and data/aligned_oil.csv.
+    - Remove the new variant .py files if they are created.
+  handoff:
+    - tony for promotion to app update or further feature-engineering.
+  deferred:
+    - Live data ingestion for oil.
+    - Multi-asset graph edges beyond THB and oil.
+
+config:
+  version: 1
+  created_at: '2026-08-26'
+  last_updated: '2026-08-26'
+  maintainer: tony
+  related_files:
+    - docs/ssot/jobs/experiments/2026-08-26-gold-thb-usd-vector-analysis.yml
+    - docs/ssot/jobs/experiments/2026-08-26-gold-thb-usd-causality.yml
+    - experiments/gold-thb-usd-causality/trended_graph_knn.py

@@ -1,0 +1,74 @@
+ideas:
+- Prompt-first, one-click preset generation for imagen2's backend.
+- Compact UI: only prompt and preset visible by default; advanced parameters in a collapsible panel.
+- Use LLM for prompt generation/improvement (dialog with slides/dials for prompt generation).
+host:
+  tony-omen:
+    host: http://tony-omen.local:8080
+    path: /apps/imagen3
+requirements:
+  history-reuse: Change parameters of history items and re-generate.
+  quick-preset:
+    - 'Quality tags: append "masterpiece, best quality, highly detailed, photorealistic, sharp focus" when missing.'
+    - 'Negative presets: append "worst quality, bad anatomy, deformed, extra limbs, missing fingers, mutated hands, watermark, signature, text, logo" when missing.'
+  preset-and-forget:
+    - Selecting a preset auto-sets every generation parameter.
+    - The user only enters a prompt and clicks Generate.
+    - Each preset documents the exact parameters it applies.
+    - Missing quality/negative tags are appended automatically.
+specs:
+  presets:
+    - name: Quick
+      mode: txt2img
+      description: Quickly test an idea.
+      params:
+        width: 512
+        height: 512
+        steps: 4
+        guidance_scale: 1.0
+        guidance_rescale: 0.0
+        seed: -1
+    - name: Improve
+      mode: txt2img
+      description: Higher quality while still fast.
+      params:
+        width: 768
+        height: 768
+        steps: 4
+        guidance_scale: 1.0
+        guidance_rescale: 0.0
+        seed: -1
+    - name: Best
+      mode: txt2img
+      description: Best quality.
+      params:
+        width: 1024
+        height: 1024
+        steps: 4
+        guidance_scale: 1.0
+        guidance_rescale: 0.0
+        seed: -1
+    - name: ChangeClothes
+      mode: img2img
+      description: Change clothes, keep the rest.
+      prompt_prefix: "change the clothes to "
+      params:
+        width: 1024
+        height: 1024
+        strength: 0.65
+        steps: 12
+        guidance_scale: 8.5
+        guidance_rescale: 0.7
+        seed: -1
+    - name: BlueSkyScene
+      mode: img2img
+      description: Change to a blue sky scene.
+      prompt_prefix: "blue sky, clear sky, "
+      params:
+        width: 1024
+        height: 1024
+        strength: 0.50
+        steps: 12
+        guidance_scale: 8.5
+        guidance_rescale: 0.7
+        seed: -1

@@ -1,0 +1,478 @@
+esphome:
+  name: esp32test
+  friendly_name: "ESP32 Test"
+  on_boot:
+    - priority: -100
+      then:
+        - light.turn_on:
+            id: display_backlight
+            brightness: 100%
+
+esp32:
+  board: esp32dev
+  framework:
+    type: arduino
+
+logger:
+
+api:
+
+ota:
+  - platform: esphome
+
+wifi:
+  networks:
+    - ssid: !secret wifi_ssid_tony24
+      password: !secret wifi_password_tony24
+    - ssid: !secret wifi_ssid_tony5
+      password: !secret wifi_password_tony5
+    - ssid: !secret wifi_ssid_albatros24
+      password: !secret wifi_password_albatros24
+    - ssid: !secret wifi_ssid_albatros5
+      password: !secret wifi_password_albatros5
+    - ssid: !secret wifi_ssid_maesang
+      password: !secret wifi_password_maesang
+    - ssid: !secret wifi_ssid_tonyip
+      password: !secret wifi_password_tonyip
+  ap:
+    ssid: "ESP32-Test-Fallback"
+    password: "12345678"
+
+spi:
+  - id: tft
+    clk_pin: GPIO14
+    mosi_pin: GPIO13
+    miso_pin:
+      number: GPIO12
+      ignore_strapping_warning: true
+  - id: touch
+    clk_pin: GPIO25
+    mosi_pin: GPIO32
+    miso_pin: GPIO39
+
+output:
+  - platform: ledc
+    id: backlight
+    pin: GPIO21
+    frequency: 1000Hz
+
+light:
+  - platform: monochromatic
+    id: display_backlight
+    name: "Display Backlight"
+    output: backlight
+    default_transition_length: 0s
+
+font:
+  - file: "gfonts://Roboto"
+    id: font1
+    size: 48
+  - file: "gfonts://Roboto"
+    id: font_small
+    size: 20
+
+display:
+  - platform: mipi_spi
+    id: cyd_display
+    model: ILI9341
+    spi_id: tft
+    cs_pin:
+      number: GPIO15
+      ignore_strapping_warning: true
+    dc_pin:
+      number: GPIO2
+      ignore_strapping_warning: true
+    invert_colors: false
+    auto_clear_enabled: true
+    dimensions:
+      width: 240
+      height: 320
+    pages:
+      - id: page_weather
+        lambda: |-
+          it.fill(Color(0, 0, 0));
+          it.rectangle(0, 0, 240, 320, Color(0, 255, 255));
+          it.filled_rectangle(0, 0, 240, 48, Color(0, 128, 128));
+          it.print(4, 2, id(font1), Color(255, 255, 255), "Weather");
+          it.filled_rectangle(0, 48, 240, 2, Color(0, 100, 100));
+          it.filled_rectangle(0, 150, 240, 2, Color(0, 255, 255));
+          Color vtbs_c = Color(255, 255, 255);
+          if (id(vtbs_fltcat) == "VFR") vtbs_c = Color(0, 255, 0);
+          if (id(vtbs_fltcat) == "MVFR") vtbs_c = Color(0, 0, 255);
+          if (id(vtbs_fltcat) == "IFR") vtbs_c = Color(255, 0, 0);
+          if (id(vtbs_fltcat) == "LIFR") vtbs_c = Color(255, 0, 255);
+          Color vtbu_c = Color(255, 255, 255);
+          if (id(vtbu_fltcat) == "VFR") vtbu_c = Color(0, 255, 0);
+          if (id(vtbu_fltcat) == "MVFR") vtbu_c = Color(0, 0, 255);
+          if (id(vtbu_fltcat) == "IFR") vtbu_c = Color(255, 0, 0);
+          if (id(vtbu_fltcat) == "LIFR") vtbu_c = Color(255, 0, 255);
+          it.rectangle(2, 50, 236, 100, vtbs_c);
+          it.rectangle(2, 160, 236, 158, vtbu_c);
+          auto draw_arrow = [&](int cx, int cy, int wdir, Color col) {
+            float a = (wdir - 90) * 3.14159 / 180.0;
+            int dx = cx + (int)(36.0 * cos(a));
+            int dy = cy + (int)(36.0 * sin(a));
+            it.line(cx, cy, dx, dy, col);
+            int ax1 = dx - (int)(12.0 * cos(a - 0.5));
+            int ay1 = dy - (int)(12.0 * sin(a - 0.5));
+            int ax2 = dx - (int)(12.0 * cos(a + 0.5));
+            int ay2 = dy - (int)(12.0 * sin(a + 0.5));
+            it.line(dx, dy, ax1, ay1, col);
+            it.line(dx, dy, ax2, ay2, col);
+          };
+          it.print(4, 58, id(font_small), vtbs_c, "VTBS");
+          it.printf(46, 58, id(font_small), Color(255, 255, 255), "%.0f/%.0fC %d@%dkt", id(vtbs_temp), id(vtbs_dewp), id(vtbs_wdir), id(vtbs_wspd));
+          draw_arrow(205, 74, id(vtbs_wdir), vtbs_c);
+          it.printf(4, 86, id(font_small), Color(255, 255, 255), "Q%d %s %s%dm", id(vtbs_altim), id(vtbs_visib).c_str(), id(vtbs_cloud).c_str(), id(vtbs_cloud_base));
+          it.print(4, 114, id(font_small), Color(255, 255, 0), id(vtbs_wx).c_str());
+          it.print(4, 176, id(font_small), vtbu_c, "VTBU");
+          it.printf(46, 176, id(font_small), Color(255, 255, 255), "%.0f/%.0fC %d@%dkt", id(vtbu_temp), id(vtbu_dewp), id(vtbu_wdir), id(vtbu_wspd));
+          draw_arrow(205, 192, id(vtbu_wdir), vtbu_c);
+          it.printf(4, 204, id(font_small), Color(255, 255, 255), "Q%d %s %s%dm", id(vtbu_altim), id(vtbu_visib).c_str(), id(vtbu_cloud).c_str(), id(vtbu_cloud_base));
+          it.print(4, 232, id(font_small), Color(255, 255, 0), id(vtbu_wx).c_str());
+          auto draw_graph = [&](int x, int y, int w, int h, std::array<float, 60>& hist, Color col) {
+            bool first = true;
+            float hmin = 0;
+            float hmax = 0;
+            for (int i = 0; i < 60; i++) {
+              if (hist[i] > 0) {
+                if (first) {
+                  hmin = hist[i];
+                  hmax = hist[i];
+                  first = false;
+                } else {
+                  if (hist[i] < hmin) hmin = hist[i];
+                  if (hist[i] > hmax) hmax = hist[i];
+                }
+              }
+            }
+            if (first) { hmin = 0; hmax = 1; }
+            else if (hmax == hmin) { hmax = hmin + 1; }
+            it.rectangle(x, y, w, h, Color(128, 128, 128));
+            for (int i = 0; i < 59; i++) {
+              int x1 = x + i * w / 59;
+              int y1 = y + h - (int)((hist[i] - hmin) * (h - 1) / (hmax - hmin));
+              int x2 = x + (i + 1) * w / 59;
+              int y2 = y + h - (int)((hist[i + 1] - hmin) * (h - 1) / (hmax - hmin));
+              it.line(x1, y1, x2, y2, col);
+            }
+          };
+          draw_graph(4, 254, 232, 60, id(vtbu_temp_hist), Color(0, 255, 255));
+      - id: page_status
+        lambda: |-
+          it.fill(Color(0, 0, 0));
+          it.rectangle(0, 0, 240, 320, Color(0, 0, 255));
+          it.filled_rectangle(0, 0, 240, 48, Color(0, 0, 128));
+          it.print(4, 2, id(font1), Color(255, 255, 255), "Status");
+          it.rectangle(2, 50, 236, 270, Color(0, 0, 128));
+          it.printf(0, 56, id(font_small), Color(255, 255, 255), "IP: %s", id(ip_addr).state.c_str());
+          it.printf(0, 82, id(font_small), Color(255, 255, 255), "SSID: %s", id(wifi_ssid_text).state.c_str());
+          it.printf(0, 108, id(font_small), Color(255, 255, 255), "MAC: C0:CD:D6:85:A8:38");
+          it.printf(0, 134, id(font_small), Color(255, 255, 255), "Signal: %.0f dBm", id(wifi_signal_db).state);
+          it.printf(0, 160, id(font_small), Color(255, 255, 255), "Uptime: %.0f s", id(uptime_s).state);
+          it.printf(0, 186, id(font_small), Color(255, 255, 255), "Free heap: %.0f B", id(free_heap).state);
+      - id: page_gold
+        lambda: |-
+          it.fill(Color(0, 0, 0));
+          it.rectangle(0, 0, 240, 320, Color(255, 215, 0));
+          it.filled_rectangle(0, 0, 240, 48, Color(128, 100, 0));
+          it.print(4, 2, id(font1), Color(255, 255, 255), "Gold");
+          it.rectangle(2, 50, 236, 270, Color(128, 100, 0));
+          it.printf(0, 56, id(font_small), Color(255, 255, 255), "Gold: %.0f THB/oz", id(gold_thb_oz));
+          it.printf(0, 86, id(font_small), Color(255, 255, 255), "Spot: %.2f USD/oz", id(gold_usd_oz));
+          it.printf(0, 116, id(font_small), Color(255, 255, 255), "USD/THB: %.2f", id(usd_thb_rate));
+          auto draw_graph = [&](int x, int y, int w, int h, std::array<float, 60>& hist, Color col) {
+            bool first = true;
+            float hmin = 0;
+            float hmax = 0;
+            for (int i = 0; i < 60; i++) {
+              if (hist[i] > 0) {
+                if (first) {
+                  hmin = hist[i];
+                  hmax = hist[i];
+                  first = false;
+                } else {
+                  if (hist[i] < hmin) hmin = hist[i];
+                  if (hist[i] > hmax) hmax = hist[i];
+                }
+              }
+            }
+            if (first) { hmin = 0; hmax = 1; }
+            else if (hmax == hmin) { hmax = hmin + 1; }
+            it.rectangle(x, y, w, h, Color(128, 128, 128));
+            for (int i = 0; i < 59; i++) {
+              int x1 = x + i * w / 59;
+              int y1 = y + h - (int)((hist[i] - hmin) * (h - 1) / (hmax - hmin));
+              int x2 = x + (i + 1) * w / 59;
+              int y2 = y + h - (int)((hist[i + 1] - hmin) * (h - 1) / (hmax - hmin));
+              it.line(x1, y1, x2, y2, col);
+            }
+          };
+          draw_graph(4, 150, 232, 80, id(gold_thb_hist), Color(255, 215, 0));
+          draw_graph(4, 245, 232, 50, id(usd_thb_hist), Color(0, 255, 0));
+
+touchscreen:
+  - platform: xpt2046
+    id: cyd_touch
+    spi_id: touch
+    cs_pin: GPIO33
+    interrupt_pin: GPIO36
+    threshold: 400
+    calibration:
+      x_min: 300
+      x_max: 3800
+      y_min: 300
+      y_max: 3800
+
+text_sensor:
+  - platform: wifi_info
+    ip_address:
+      name: "IP Address"
+      id: ip_addr
+    ssid:
+      name: "Connected SSID"
+      id: wifi_ssid_text
+
+sensor:
+  - platform: uptime
+    name: "Uptime"
+    id: uptime_s
+    type: seconds
+  - platform: wifi_signal
+    name: "WiFi Signal"
+    id: wifi_signal_db
+    update_interval: 60s
+  - platform: template
+    name: "Free Heap"
+    id: free_heap
+    unit_of_measurement: "B"
+    update_interval: 5s
+    lambda: |-
+      return (float) ESP.getFreeHeap();
+
+binary_sensor:
+  - platform: status
+    name: "Node Status"
+    id: system_status
+
+interval:
+  - interval: 5s
+    then:
+      - display.page.show_next: cyd_display
+  - interval: 60s
+    then:
+      - http_request.get:
+          url: https://aviationweather.gov/api/data/metar?ids=VTBS,VTBU&format=json
+          capture_response: true
+          on_response:
+            then:
+              - lambda: |-
+                  JsonDocument doc;
+                  DeserializationError err = deserializeJson(doc, body);
+                  if (!err) {
+                    JsonArray data = doc.as<JsonArray>();
+                    for (JsonObject station : data) {
+                      const char* icao = station["icaoId"].as<const char*>();
+                      if (icao && strcmp(icao, "VTBS") == 0) {
+                        id(vtbs_temp) = station["temp"].as<float>();
+                        id(vtbs_dewp) = station["dewp"].as<float>();
+                        id(vtbs_wdir) = station["wdir"].as<int>();
+                        id(vtbs_wspd) = station["wspd"].as<int>();
+                        id(vtbs_altim) = station["altim"].as<int>();
+                        const char* vis = station["visib"].as<const char*>();
+                        if (vis) id(vtbs_visib) = vis;
+                        const char* flt = station["fltCat"].as<const char*>();
+                        if (flt) id(vtbs_fltcat) = flt;
+                        const char* wx = station["wxString"].as<const char*>();
+                        if (wx) id(vtbs_wx) = wx;
+                        JsonArray clouds = station["clouds"].as<JsonArray>();
+                        if (!clouds.isNull() && clouds.size() > 0) {
+                          JsonObject c = clouds[0];
+                          const char* cover = c["cover"].as<const char*>();
+                          if (cover) id(vtbs_cloud) = cover;
+                          id(vtbs_cloud_base) = c["base"].as<int>();
+                        }
+                      } else if (icao && strcmp(icao, "VTBU") == 0) {
+                        id(vtbu_temp) = station["temp"].as<float>();
+                        for (int i = 59; i > 0; i--) id(vtbu_temp_hist)[i] = id(vtbu_temp_hist)[i - 1];
+                        id(vtbu_temp_hist)[0] = id(vtbu_temp);
+                        id(vtbu_dewp) = station["dewp"].as<float>();
+                        id(vtbu_wdir) = station["wdir"].as<int>();
+                        id(vtbu_wspd) = station["wspd"].as<int>();
+                        id(vtbu_altim) = station["altim"].as<int>();
+                        const char* vis = station["visib"].as<const char*>();
+                        if (vis) id(vtbu_visib) = vis;
+                        const char* flt = station["fltCat"].as<const char*>();
+                        if (flt) id(vtbu_fltcat) = flt;
+                        const char* wx = station["wxString"].as<const char*>();
+                        if (wx) id(vtbu_wx) = wx;
+                        JsonArray clouds = station["clouds"].as<JsonArray>();
+                        if (!clouds.isNull() && clouds.size() > 0) {
+                          JsonObject c = clouds[0];
+                          const char* cover = c["cover"].as<const char*>();
+                          if (cover) id(vtbu_cloud) = cover;
+                          id(vtbu_cloud_base) = c["base"].as<int>();
+                        }
+                      }
+                    }
+                  }
+  - interval: 300s
+    then:
+      - http_request.get:
+          url: https://xaus.com/api/v1/spot?currency=THB
+          capture_response: true
+          on_response:
+            then:
+              - lambda: |-
+                  JsonDocument doc;
+                  DeserializationError err = deserializeJson(doc, body);
+                  if (!err) {
+                    JsonObject root = doc.as<JsonObject>();
+                    JsonObject xau = root["xau"];
+                    if (!xau.isNull()) {
+                      id(gold_thb_oz) = xau["price"].as<float>();
+                    }
+                    id(gold_usd_oz) = root["spot_usd_oz"].as<float>();
+                    id(usd_thb_rate) = root["fx_rate"].as<float>();
+                    for (int i = 59; i > 0; i--) id(gold_thb_hist)[i] = id(gold_thb_hist)[i - 1];
+                    id(gold_thb_hist)[0] = id(gold_thb_oz);
+                    for (int i = 59; i > 0; i--) id(usd_thb_hist)[i] = id(usd_thb_hist)[i - 1];
+                    id(usd_thb_hist)[0] = id(usd_thb_rate);
+                  }
+
+json:
+
+http_request:
+  useragent: esphome
+  timeout: 10s
+  verify_ssl: false
+  buffer_size_rx: 4096
+  id: http_client
+
+globals:
+  - id: gpu_pending
+    type: int
+    restore_value: no
+    initial_value: "0"
+  - id: gpu_running
+    type: int
+    restore_value: no
+    initial_value: "0"
+  - id: gpu_completed
+    type: int
+    restore_value: no
+    initial_value: "0"
+  - id: gpu_failed
+    type: int
+    restore_value: no
+    initial_value: "0"
+  - id: gpu_cancelled
+    type: int
+    restore_value: no
+    initial_value: "0"
+  - id: vtbs_temp
+    type: float
+    restore_value: no
+    initial_value: "0.0"
+  - id: vtbs_wspd
+    type: int
+    restore_value: no
+    initial_value: "0"
+  - id: vtbu_temp
+    type: float
+    restore_value: no
+    initial_value: "0.0"
+  - id: vtbu_wspd
+    type: int
+    restore_value: no
+    initial_value: "0"
+  - id: vtbs_wdir
+    type: int
+    restore_value: no
+    initial_value: "0"
+  - id: vtbs_dewp
+    type: float
+    restore_value: no
+    initial_value: "0.0"
+  - id: vtbs_altim
+    type: int
+    restore_value: no
+    initial_value: "0"
+  - id: vtbs_visib
+    type: std::string
+    restore_value: no
+    initial_value: '"-"'
+  - id: vtbs_cloud
+    type: std::string
+    restore_value: no
+    initial_value: '"-"'
+  - id: vtbs_cloud_base
+    type: int
+    restore_value: no
+    initial_value: "0"
+  - id: vtbu_wdir
+    type: int
+    restore_value: no
+    initial_value: "0"
+  - id: vtbu_dewp
+    type: float
+    restore_value: no
+    initial_value: "0.0"
+  - id: vtbu_altim
+    type: int
+    restore_value: no
+    initial_value: "0"
+  - id: vtbu_visib
+    type: std::string
+    restore_value: no
+    initial_value: '"-"'
+  - id: vtbu_cloud
+    type: std::string
+    restore_value: no
+    initial_value: '"-"'
+  - id: vtbu_cloud_base
+    type: int
+    restore_value: no
+    initial_value: "0"
+  - id: vtbs_fltcat
+    type: std::string
+    restore_value: no
+    initial_value: '"-"'
+  - id: vtbu_fltcat
+    type: std::string
+    restore_value: no
+    initial_value: '"-"'
+  - id: vtbs_wx
+    type: std::string
+    restore_value: no
+    initial_value: '""'
+  - id: vtbu_wx
+    type: std::string
+    restore_value: no
+    initial_value: '""'
+  - id: vtbu_temp_hist
+    type: std::array<float, 60>
+    restore_value: no
+    initial_value: "std::array<float, 60>()"
+  - id: gold_thb_hist
+    type: std::array<float, 60>
+    restore_value: no
+    initial_value: "std::array<float, 60>()"
+  - id: usd_thb_hist
+    type: std::array<float, 60>
+    restore_value: no
+    initial_value: "std::array<float, 60>()"
+  - id: gold_thb_oz
+    type: float
+    restore_value: no
+    initial_value: "0.0"
+  - id: gold_usd_oz
+    type: float
+    restore_value: no
+    initial_value: "0.0"
+  - id: usd_thb_rate
+    type: float
+    restore_value: no
+    initial_value: "0.0"
+
+captive_portal:

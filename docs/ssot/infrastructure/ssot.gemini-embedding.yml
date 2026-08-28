@@ -1,0 +1,96 @@
+title: Gemini Embedding GPU Offload
+subtitle: Side-by-side experiment to use Google Gemini for text embeddings and free tony-omen GPU
+icon: "\u26a1"
+config:
+  version: 1
+  created: '2026-08-17'
+  updated: '2026-08-19'
+  maintainer: tony
+  status: validated
+  branch: chaba
+
+sections:
+  - title: Goal
+    icon: "\ud83c\udfaf"
+    layout: list
+    items:
+      - label: Free tony-omen GPU
+        text: Move embedding generation from local Ollama and the all-MiniLM-L6-v2 service to Google Gemini text-embedding-004 so GPU VRAM can be used for other workloads.
+      - label: Side-by-side validation
+        text: Keep current local embeddings running until a new Gemini-backed collection has been indexed and search quality is verified.
+
+  - title: Current State
+    icon: "\ud83d\udcca"
+    layout: list
+    items:
+      - label: Ollama nomic-embed-text
+        text: MDDB uses Ollama on tony-omen at port 11434 with nomic-embed-text (768 dims) for MDDB semantic search. GPU usage is ~388 MB and the container is currently running.
+      - label: all-MiniLM-L6-v2 service
+        text: Weaviate/Yomi originally used the local port-5000 all-MiniLM-L6-v2 service (384 dims). This service is not currently responding and likely needs to be repaired or retired.
+      - label: Existing Gemini helper
+        text: scripts/yomi/yomi-api.mjs now defaults getGeminiEmbedding to gemini-embedding-001 (was text-embedding-004), so the direct API call pattern is already proven.
+
+  - title: Proposed Approach
+    icon: "\u2699\ufe0f"
+    layout: list
+    items:
+      - label: Gemini-Ollama proxy for MDDB
+        text: Build a small adapter that exposes Ollama-compatible /api/embed endpoints and calls the Gemini API. MDDB can then switch by changing MDDB_EMBEDDING_API_URL without code changes.
+      - label: New test collections
+        text: Create new 768-dim test collections in both MDDB and Weaviate, re-index a representative subset, and compare search relevance and latency against the Ollama baseline.
+      - label: Re-index before switching
+        text: Do not mix embeddings from different models in the same collection. After validation, delete or archive the old collection and make the Gemini collection the default.
+
+  - title: Gemini Model
+    icon: "\ud83e\udde0"
+    layout: list
+    items:
+      - label: gemini-embedding-001
+        text: Default output is 768 dimensions. outputDimensionality can be set to 1-768 for truncation to match other vector schemas.
+      - label: gemini-embedding-002
+        text: Same 768-dim default, same free-tier limits as gemini-embedding-001, but currently lower project usage. Available as an alternate when Gemini Embedding 1 is under pressure.
+      - label: Free-tier limits
+        text: Observed project quota from AI Studio on 2026-08-18 is 100 RPM, 30,000 TPM, and 1,000 RPD for both gemini-embedding-001 and gemini-embedding-002. This is far below the public 1,500 RPM figure and is the effective operational ceiling.
+      - label: API endpoint
+        text: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-embedding-001:batchEmbedContents with a GEMINI_API_KEY to batch many inputs in a single request.
+
+  - title: Known Risks
+    icon: "\u26a0\ufe0f"
+    layout: list
+    items:
+      - label: Dimension mismatch
+        text: Yomi may already have a 384 vs 768 dimension mismatch between index-yomi-weaviate.mjs and yomi-api.mjs. This must be resolved before any switch.
+      - label: Quota surprises
+        text: Some free-tier accounts have reported embed_content quota set to 0. Confirm the quota before investing in a full re-index.
+      - label: Higher latency
+        text: Network round-trips to Gemini are much slower than the local 32ms GPU embedding. This is fine for batch indexing but may affect query responsiveness.
+
+  - title: Results
+    icon: "\ud83d\udcca"
+    layout: list
+    items:
+      - label: Credentials
+        text: Valid API key found in /etc/systemd/system/yomi-process.service.d/override.conf. The yomi-api.service key returned 401 and should be rotated.
+      - label: Model availability
+        text: text-embedding-004 is not available in this project. The Google API model names are gemini-embedding-001 and gemini-embedding-2 (not gemini-embedding-002). The proxy maps nomic-embed-text requests to gemini-embedding-2 by default and text-embedding-004 to gemini-embedding-001.
+      - label: Proxy
+        text: scripts/mddb/gemini-ollama-proxy.mjs migrated to a rootless Podman Quadlet on tony-dell port 11435 (healthy). It uses batchEmbedContents with a 100 RPM token-bucket limiter, 429 exponential backoff, and now automatically falls back from gemini-embedding-2 to gemini-embedding-001 on 429 rate-limit. GEMINI_API_KEY is injected from the podman secret gemini-api-key.
+      - label: Comparison
+        text: Side-by-side test collections in MDDB/Weaviate were not created because neither service is running on tony-omen. An embedding-API comparison was run instead; see reports/gemini-embedding-comparison.md.
+      - label: Latency
+        text: Gemini round-trip via the proxy is ~472 ms per embedding for gemini-embedding-001 and ~720 ms for gemini-embedding-2, versus ~127 ms for Ollama on the same host. batchEmbedContents reduces the effective request-per-text overhead, so bulk re-indexing is more efficient.
+      - label: Switch decision
+        text: Cut over MDDB_EMBEDDING_API_URL to http://100.68.142.13:11435 on tony-dell. The proxy is now the live embedding provider for MDDB. Ollama remains available as a fallback if needed.
+
+  - title: Next Steps
+    icon: "\ud83d\ude80"
+    layout: list
+    items:
+      - label: Validate at scale
+        text: Re-run the comparison with full MDDB and Weaviate test collections once those services are back on tony-omen or a test host.
+      - label: Rotate yomi-api key
+        text: The GEMINI_API_KEY in /home/tony/.config/systemd/user/yomi-api.service returned 401; replace it with the working key from yomi-process.service.d/override.conf or a new Google AI Studio key.
+      - label: Rate-limit verification
+        text: Confirm that the new proxy token-bucket and batchEmbedContents keep 429s under control during the next batch re-index.
+      - label: Revisit switch
+        text: Switch MDDB to the Gemini proxy only if batch latency and the 1,000 RPD per model cap (2,000 RPD combined if both gemini-embedding-2 and gemini-embedding-001 are used with fallback) are acceptable for the target workload.

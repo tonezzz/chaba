@@ -1,0 +1,883 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Yomi — LINE Conversations</title>
+  <style>
+    :root { --bg: #f8fafc; --card: #fff; --text: #0f172a; --muted: #64748b; --accent: #06b6d4; --danger: #ef4444; }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); }
+    header { background: #0f172a; color: #fff; padding: .65rem 1rem; display: flex; justify-content: space-between; align-items: center; }
+    h1 { margin: 0; font-size: 1rem; }
+    main { max-width: 1100px; margin: .75rem auto; padding: 0 .75rem; }
+    .chat { background: var(--card); border-radius: .375rem; padding: .45rem .75rem; margin-bottom: .35rem; box-shadow: 0 1px 1px rgba(15,23,42,.05); }
+    .chat-header { display: flex; align-items: center; gap: .35rem; }
+    .name { font-size: .9rem; font-weight: 600; cursor: pointer; color: var(--accent); }
+    .name:hover { text-decoration: underline; }
+    .open { color: #94a3b8; font-size: .75rem; text-decoration: none; }
+    .open:hover { color: var(--accent); }
+    .conv-setup { background: transparent; border: none; color: #94a3b8; cursor: pointer; font-size: .75rem; padding: 0; margin-left: .15rem; }
+    .conv-setup:hover { color: var(--accent); }
+    .daily-link { background: transparent; border: none; color: #94a3b8; cursor: pointer; font-size: .75rem; padding: 0; margin-left: .15rem; text-decoration: none; }
+    .daily-link:hover { color: var(--accent); }
+    .unread { background: var(--danger); color: #fff; border-radius: 999px; padding: .05rem .4rem; font-size: .7rem; font-weight: 600; min-width: 1.4rem; text-align: center; margin-left: auto; }
+    .unread-0 { background: #94a3b8; }
+    .category { display: inline-block; font-size: .65rem; font-weight: 600; text-transform: uppercase; letter-spacing: .02em; padding: .05rem .35rem; border-radius: .25rem; color: #fff; margin-left: .35rem; }
+    .category-Family { background: #f59e0b; }
+    .category-Work { background: #3b82f6; }
+    .category-Promo { background: #ec4899; }
+    .category-Official { background: #6366f1; }
+    .category-Group { background: #8b5cf6; }
+    .category-Personal { background: #10b981; }
+    .category-Other { background: #94a3b8; }
+    .group { margin-left: .15rem; font-size: .8rem; }
+    .controls label { display: inline-flex; align-items: center; gap: .25rem; font-size: .9rem; color: var(--text); }
+    .preview { color: var(--muted); font-size: .82rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .preview-null { color: #94a3b8; font-style: italic; }
+    .summary { color: #0f172a; font-weight: 500; font-size: .82rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .messages { margin-top: .45rem; padding-top: .45rem; border-top: 1px solid #e2e8f0; }
+    .message {
+      padding: 0.6rem 0.75rem;
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-left: 3px solid var(--accent);
+      border-radius: 0 0.5rem 0.5rem 0;
+      margin-bottom: 0.5rem;
+      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+    }
+    .message:hover {
+      border-color: #cbd5e1;
+      box-shadow: 0 2px 5px rgba(15, 23, 42, 0.06);
+    }
+    .meta { color: #94a3b8; font-size: .7rem; margin-bottom: .05rem; }
+    .text { white-space: pre-wrap; word-break: break-word; font-size: .85rem; color: var(--text); }
+    .text-null { color: #94a3b8; font-style: italic; }
+    .media-img { max-width: 100%; max-height: 220px; border-radius: .375rem; margin-top: .2rem; display: block; cursor: pointer; }
+    .media-video { max-width: 100%; max-height: 220px; border-radius: .375rem; margin-top: .2rem; display: block; background: #0f172a; }
+    .media-audio { width: 100%; margin-top: .2rem; }
+    .media-file { display: inline-flex; align-items: center; gap: .35rem; margin-top: .2rem; padding: .3rem .55rem; background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: .375rem; color: var(--accent); text-decoration: none; font-size: .82rem; }
+    .media-file:hover { background: #e2e8f0; }
+    .media-placeholder { color: #64748b; font-style: italic; font-size: .82rem; }
+    .error { color: #ef4444; }
+    #status { padding: 1rem; color: var(--muted); }
+    .updated { font-size: .75rem; color: #94a3b8; }
+    .updated.refreshing { color: var(--accent); }
+    .refresh-indicator { display: inline-block; width: 10px; height: 10px; border: 2px solid #94a3b8; border-top-color: transparent; border-radius: 50%; animation: spin 1s linear infinite; margin-left: .25rem; vertical-align: middle; }
+    .refresh-indicator.active { border-color: var(--accent); border-top-color: transparent; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .controls { max-width: 1100px; margin: .75rem auto 0; padding: 0 .75rem; display: flex; gap: .5rem; align-items: center; flex-wrap: wrap; }
+    #search { flex: 1; min-width: 200px; padding: .5rem .75rem; border: 1px solid #cbd5e1; border-radius: .375rem; font-size: .9rem; }
+    #search:focus { outline: 2px solid var(--accent); border-color: var(--accent); }
+    #refresh { padding: .5rem .75rem; border: 1px solid #cbd5e1; border-radius: .375rem; background: #fff; cursor: pointer; font-size: .9rem; }
+    #refresh:hover { border-color: var(--accent); color: var(--accent); }
+    #refresh:disabled { background: #f1f5f9; color: #94a3b8; cursor: not-allowed; }
+    #refresh-all { padding: .5rem .75rem; border: 1px solid #cbd5e1; border-radius: .375rem; background: #fff; cursor: pointer; font-size: .9rem; }
+    #refresh-all:hover { border-color: var(--accent); color: var(--accent); }
+    #refresh-all:disabled { background: #f1f5f9; color: #94a3b8; cursor: not-allowed; }
+    .refresh-status { font-size: .85rem; color: var(--accent); margin-left: .5rem; }
+    .sem-search-bar { max-width: 1100px; margin: .5rem auto 0; padding: 0 .75rem; display: flex; gap: .5rem; align-items: center; }
+    #sem-search-input { flex: 1; padding: .5rem .75rem; border: 1px solid #a5b4fc; border-radius: .375rem; font-size: .9rem; background: #faf5ff; }
+    #sem-search-input:focus { outline: 2px solid #7c3aed; border-color: #7c3aed; }
+    #sem-search-btn { padding: .5rem .9rem; background: #7c3aed; color: #fff; border: none; border-radius: .375rem; cursor: pointer; font-size: .9rem; white-space: nowrap; }
+    #sem-search-btn:hover { background: #6d28d9; }
+    #sem-search-btn:disabled { background: #a78bfa; cursor: not-allowed; }
+    #sem-results-panel { max-width: 1100px; margin: .5rem auto; padding: 0 .75rem; display: none; }
+    #sem-results-panel.open { display: block; }
+    .sem-result { background: #fff; border: 1px solid #e2e8f0; border-radius: .5rem; padding: .75rem 1rem; margin-bottom: .5rem; cursor: pointer; transition: border-color .15s; }
+    .sem-result:hover { border-color: #7c3aed; }
+    .sem-result-meta { font-size: .8rem; color: #64748b; margin-bottom: .25rem; display: flex; gap: .75rem; flex-wrap: wrap; }
+    .sem-result-text { font-size: .9rem; color: #1e293b; }
+    .sem-result-score { margin-left: auto; font-weight: 600; color: #7c3aed; }
+    #sort { padding: .5rem .75rem; border: 1px solid #cbd5e1; border-radius: .375rem; background: #fff; font-size: .9rem; }
+    .last-active { color: #64748b; font-size: .8rem; font-weight: 500; margin-left: .5rem; }
+    .chat.hidden { display: none; }
+    .help-btn { background: transparent; border: none; color: #94a3b8; cursor: pointer; font-size: 1.1rem; padding: 0 .5rem; margin-left: .5rem; }
+    .help-btn:hover { color: var(--accent); }
+    .help-dialog { max-width: 420px; }
+    .help-content { padding: 1.25rem; line-height: 1.6; }
+    .help-content h3 { margin-top: 0; margin-bottom: .75rem; font-size: 1.1rem; color: var(--text); }
+    .help-content p { margin: .5rem 0; color: #475569; font-size: .9rem; }
+    .help-content ul { margin: .5rem 0; padding-left: 1.25rem; color: #475569; font-size: .9rem; }
+    .help-content li { margin: .25rem 0; }
+    .help-content strong { color: var(--text); }
+    #lightbox {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.92);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 2000;
+      cursor: zoom-out;
+    }
+    #lightbox.active { display: flex; }
+    #lightbox img {
+      max-width: 95vw;
+      max-height: 95vh;
+      border-radius: .5rem;
+      box-shadow: 0 25px 50px rgba(0,0,0,.5);
+      cursor: default;
+    }
+    #lightbox .close {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      background: rgba(15, 23, 42, 0.9);
+      color: #f8fafc;
+      border: none;
+      border-radius: .35rem;
+      width: 2rem;
+      height: 2rem;
+      font-size: 1.25rem;
+      cursor: pointer;
+    }
+    #lightbox .close:hover { background: #334155; }
+    .chip-row { display: flex; gap: .35rem; flex-wrap: wrap; align-items: center; }
+    .chip { display: inline-flex; align-items: center; gap: .25rem; padding: .25rem .55rem; border-radius: 999px; font-size: .8rem; font-weight: 600; cursor: pointer; border: 1px solid #cbd5e1; background: #f1f5f9; color: #475569; user-select: none; transition: all .15s ease; }
+    .chip input { display: none; }
+    .chip:hover { border-color: #94a3b8; }
+    .chip.active { color: #fff; border-color: transparent; }
+    .chip[data-cat="Family"].active { background: #f59e0b; }
+    .chip[data-cat="Work"].active { background: #3b82f6; }
+    .chip[data-cat="Promo"].active { background: #ec4899; }
+    .chip[data-cat="Official"].active { background: #6366f1; }
+    .chip[data-cat="Group"].active { background: #8b5cf6; }
+    .chip[data-cat="Personal"].active { background: #10b981; }
+    .chip[data-cat="Other"].active { background: #94a3b8; }
+    .group-chip.active { background: #475569; color: #fff; border-color: #475569; }
+    .count { font-size: .85rem; color: var(--muted); white-space: nowrap; }
+    dialog { border: none; border-radius: .5rem; padding: 0; box-shadow: 0 10px 25px rgba(15,23,42,.2); max-width: 320px; width: 90%; }
+    dialog::backdrop { background: rgba(15,23,42,.5); }
+    .config-content { padding: 1rem; }
+    .config-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: .75rem; }
+    .config-title { margin: 0; font-size: 1rem; }
+    .config-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .5rem; margin: .5rem 0; }
+    .config-row { display: flex; align-items: center; gap: .35rem; font-size: .9rem; cursor: pointer; }
+    .config-row input[type="checkbox"] { margin: 0; }
+    .config-close { background: #f1f5f9; border: none; border-radius: .25rem; padding: .25rem .5rem; cursor: pointer; font-size: .85rem; }
+    .config-close:hover { background: #e2e8f0; }
+    .config-section { margin-top: .75rem; }
+    .session-status { font-size: .8rem; font-weight: 600; padding: .25rem .5rem; border-radius: .25rem; margin-left: .5rem; }
+    .session-status.valid { background: #dcfce7; color: #166534; }
+    .session-status.invalid { background: #fee2e2; color: #991b1b; }
+    .session-status.checking { background: #fef3c7; color: #92400e; }
+    #login-btn { padding: .5rem .75rem; border: 1px solid #cbd5e1; border-radius: .375rem; background: #fff; cursor: pointer; font-size: .9rem; }
+    #login-btn:hover { border-color: var(--accent); color: var(--accent); }
+    #login-btn:disabled { background: #f1f5f9; color: #94a3b8; cursor: not-allowed; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>LINE Conversations</h1>
+    <span class="updated" id="updated"></span>
+    <span class="refresh-indicator" id="refresh-indicator" style="display:none"></span>
+    <span class="session-status checking" id="session-status">Checking…</span>
+    <button id="login-btn" type="button" style="display:none">Login</button>
+    <button class="help-btn" id="help-btn" type="button" aria-label="Help">❓</button>
+  </header>
+  <div class="controls">
+    <input type="search" id="search" placeholder="Search conversations…" autocomplete="off">
+    <select id="sort" title="Sort by" aria-label="Sort conversations">
+      <option value="unread" selected>Unread</option>
+      <option value="lastActive">Last active</option>
+      <option value="name">Name</option>
+    </select>
+    <div class="chip-row" id="chips">
+      <label class="chip" data-cat="Family"><input type="checkbox" class="config-cat" value="Family" checked> Family</label>
+      <label class="chip" data-cat="Work"><input type="checkbox" class="config-cat" value="Work" checked> Work</label>
+      <label class="chip" data-cat="Promo"><input type="checkbox" class="config-cat" value="Promo" checked> Promo</label>
+      <label class="chip" data-cat="Official"><input type="checkbox" class="config-cat" value="Official" checked> Official</label>
+      <label class="chip" data-cat="Group"><input type="checkbox" class="config-cat" value="Group" checked> Group</label>
+      <label class="chip" data-cat="Personal"><input type="checkbox" class="config-cat" value="Personal" checked> Personal</label>
+      <label class="chip" data-cat="Other"><input type="checkbox" class="config-cat" value="Other" checked> Other</label>
+      <label class="chip group-chip"><input type="checkbox" id="config-group-only"> Groups only</label>
+    </div>
+    <span id="count" class="count">Loading…</span>
+    <button id="refresh-all" type="button" title="Refresh all conversations from LINE">Refresh All</button>
+    <button id="refresh" type="button" title="Reload page">↻</button>
+    <span id="refresh-status" class="refresh-status"></span>
+  </div>
+  <div class="sem-search-bar">
+    <input type="search" id="sem-search-input" placeholder="🔍 Semantic search messages (AI)…" autocomplete="off">
+    <button id="sem-search-btn" type="button">Search</button>
+  </div>
+  <div id="sem-results-panel">
+    <div id="sem-results-list"></div>
+  </div>
+  <dialog id="edit-dialog">
+    <div class="config-content">
+      <div class="config-header">
+        <h2 class="config-title">Edit conversation</h2>
+        <button id="edit-close" class="config-close" type="button">Close</button>
+      </div>
+      <label class="config-row" style="margin-top:.5rem;display:block">Category
+        <select id="edit-category" style="margin-left:.35rem;padding:.25rem .5rem;border:1px solid #cbd5e1;border-radius:.25rem"></select>
+      </label>
+      <div class="config-section">
+        <label class="config-row"><input type="checkbox" id="edit-isGroup"> Group / room chat</label>
+      </div>
+      <div class="config-section" style="display:flex;gap:.5rem;margin-top:.75rem">
+        <button id="edit-save" type="button" style="padding:.4rem .75rem;border:1px solid #cbd5e1;border-radius:.25rem;background:var(--accent);color:#fff;cursor:pointer">Save</button>
+        <button id="edit-reset" type="button" style="padding:.4rem .75rem;border:1px solid #cbd5e1;border-radius:.25rem;background:#f1f5f9;cursor:pointer">Reset</button>
+      </div>
+    </div>
+  </dialog>
+  <dialog id="help-dialog" class="help-dialog">
+    <div class="help-content">
+      <div class="config-header">
+        <h2 class="config-title">Help</h2>
+        <button id="help-close" class="config-close" type="button">Close</button>
+      </div>
+      <h3>Conversation List</h3>
+      <p>This page shows all your LINE conversations with unread counts, categories, and last message times.</p>
+      <ul>
+        <li><strong>Click a name</strong> to expand and show recent messages inline</li>
+        <li><strong>↗ button</strong> opens the full chat in a new tab</li>
+        <li><strong>⚙️ button</strong> lets you edit the category or mark as group/room chat</li>
+        <li><strong>📅 button</strong> opens daily summaries for that conversation</li>
+        <li><strong>Last active</strong> shows when the last message was sent (e.g., "2h ago")</li>
+      </ul>
+      <h3>Categories</h3>
+      <p>Conversations are auto-categorized by the Yomi backend. Use the chips to filter by category:</p>
+      <ul>
+        <li><strong>Family</strong> - Personal family conversations</li>
+        <li><strong>Work</strong> - Work-related chats</li>
+        <li><strong>Promo</strong> - Promotional messages and offers</li>
+        <li><strong>Official</strong> - Official brand accounts</li>
+        <li><strong>Group</strong> - Group chats and rooms</li>
+        <li><strong>Personal</strong> - Personal 1:1 conversations</li>
+        <li><strong>Other</strong> - Uncategorized conversations</li>
+      </ul>
+      <h3>Sorting</h3>
+      <p>Sort conversations by:</p>
+      <ul>
+        <li><strong>Unread</strong> - Most unread messages first (default)</li>
+        <li><strong>Last active</strong> - Most recently active first</li>
+        <li><strong>Name</strong> - Alphabetical by name</li>
+      </ul>
+      <h3>Semantic Search</h3>
+      <p>Use the purple search bar to find messages by meaning, not just exact words. Results show the conversation, sender, date, and similarity score.</p>
+    </div>
+  </dialog>
+  <main id="app"><p id="status">Loading…</p></main>
+  <div id="lightbox" role="dialog" aria-modal="true" aria-label="Full-size image">
+    <button id="lightbox-close" class="close" type="button" aria-label="Close">×</button>
+    <img id="lightbox-img" src="" alt="Full-size image">
+  </div>
+  
+  <!-- Load shared utilities -->
+  <script src="/apps/shared/js/date-utils.js?v=1"></script>
+  <script src="/apps/shared/js/date-utils-thailand.js?v=1"></script>
+  <script src="/apps/shared/js/api-utils.js?v=1"></script>
+  <script src="/apps/shared/js/api-yomi.js?v=1"></script>
+  <script src="/apps/shared/js/ui-utils.js?v=1"></script>
+  
+  <script>
+    let allConversations = [];
+    let lastServerUpdated = null;
+    let refreshInterval = null;
+    let timeUpdateInterval = null;
+
+    async function checkSessionStatus() {
+      const statusEl = document.getElementById('session-status');
+      const loginBtn = document.getElementById('login-btn');
+      
+      try {
+        const res = await fetch('/api/yomi/session-status');
+        const data = await res.json();
+        
+        if (data.valid) {
+          statusEl.className = 'session-status valid';
+          statusEl.textContent = '✓ Connected';
+          loginBtn.style.display = 'none';
+        } else {
+          statusEl.className = 'session-status invalid';
+          statusEl.textContent = '✗ Session expired';
+          loginBtn.style.display = 'inline-block';
+          loginBtn.disabled = !data.canAttemptLogin;
+          if (!data.canAttemptLogin) {
+            loginBtn.textContent = `Login blocked (${data.recentLoginAttempts}/${data.maxLoginAttemptsPerHour}/hr)`;
+          } else {
+            loginBtn.textContent = 'Login';
+          }
+        }
+      } catch (err) {
+        statusEl.className = 'session-status checking';
+        statusEl.textContent = '? Unknown';
+        loginBtn.style.display = 'inline-block';
+        loginBtn.textContent = 'Login';
+      }
+    }
+
+    async function handleLogin() {
+      const loginBtn = document.getElementById('login-btn');
+      const statusEl = document.getElementById('session-status');
+      
+      loginBtn.disabled = true;
+      loginBtn.textContent = 'Starting...';
+      statusEl.textContent = 'Starting login...';
+      
+      try {
+        const res = await fetch('/api/yomi/login', { method: 'POST' });
+        const data = await res.json();
+        
+        if (data.ok) {
+          statusEl.textContent = 'Check your phone for PIN';
+          loginBtn.textContent = 'Waiting for PIN...';
+          
+          // Poll for session status
+          const pollInterval = setInterval(async () => {
+            try {
+              const statusRes = await fetch('/api/yomi/session-status');
+              const statusData = await statusRes.json();
+              
+              if (statusData.valid) {
+                clearInterval(pollInterval);
+                statusEl.className = 'session-status valid';
+                statusEl.textContent = '✓ Connected';
+                loginBtn.style.display = 'none';
+                location.reload();
+              }
+            } catch (err) {
+              console.error('Session status check failed:', err);
+            }
+          }, 3000);
+          
+          // Stop polling after 3 minutes
+          setTimeout(() => clearInterval(pollInterval), 180000);
+        } else {
+          statusEl.className = 'session-status invalid';
+          statusEl.textContent = '✗ Login failed';
+          loginBtn.disabled = false;
+          loginBtn.textContent = 'Retry';
+        }
+      } catch (err) {
+        statusEl.className = 'session-status invalid';
+        statusEl.textContent = '✗ Error: ' + err.message;
+        loginBtn.disabled = false;
+        loginBtn.textContent = 'Retry';
+      }
+    }
+
+    async function load() {
+      const app = document.getElementById('app');
+      const updated = document.getElementById('updated');
+      try {
+        const conversations = await YomiApi.loadConversations();
+        const lastUpdatedData = await YomiApi.getLastUpdated().catch(() => null);
+        
+        if (lastUpdatedData && lastUpdatedData.lastUpdated) {
+          lastServerUpdated = lastUpdatedData.lastUpdated;
+          updateUpdatedDisplay(lastUpdatedData.lastUpdated);
+        } else {
+          updateUpdatedDisplay(new Date().toISOString());
+        }
+        app.innerHTML = '';
+        if (!conversations || !conversations.length) {
+          app.innerHTML = '<p id="status">No conversations.</p>';
+          return;
+        }
+        allConversations = conversations || [];
+        applyConfig();
+        renderConversations();
+        const chatParam = new URLSearchParams(location.search).get('chat');
+        if (chatParam) openChat(chatParam);
+        startAutoRefresh();
+        startTimeUpdate();
+      } catch (e) {
+        app.innerHTML = `<p id="status">Error loading conversations: ${escapeHtml(e.message)}</p>`;
+      }
+    }
+
+    async function checkForUpdates() {
+      const indicator = document.getElementById('refresh-indicator');
+      const updated = document.getElementById('updated');
+      try {
+        indicator.style.display = 'inline-block';
+        indicator.classList.add('active');
+        updated.classList.add('refreshing');
+        const res = await YomiApi.getLastUpdated();
+        if (!res.ok) {
+          console.warn('Auto-refresh check returned', res.status);
+          return;
+        }
+        const { lastUpdated } = await res.json();
+        console.log('Auto-refresh check:', { lastUpdated, lastServerUpdated });
+        if (lastUpdated && lastServerUpdated && new Date(lastUpdated) > new Date(lastServerUpdated)) {
+          console.log('New data detected, reloading...');
+          location.reload();
+        }
+      } catch (err) {
+        console.error('Auto-refresh check failed:', err);
+      } finally {
+        indicator.style.display = 'none';
+        indicator.classList.remove('active');
+        updated.classList.remove('refreshing');
+      }
+    }
+
+    function startAutoRefresh() {
+      if (refreshInterval) clearInterval(refreshInterval);
+      refreshInterval = setInterval(checkForUpdates, 30000);
+    }
+
+    function updateUpdatedDisplay(timestamp) {
+      const updated = document.getElementById('updated');
+      if (!timestamp) {
+        updated.textContent = '';
+        return;
+      }
+      const date = new Date(timestamp);
+      updated.textContent = 'Updated ' + timeAgo(date) + ' ago';
+      updated.title = date.toLocaleString();
+    }
+
+    function startTimeUpdate() {
+      if (timeUpdateInterval) clearInterval(timeUpdateInterval);
+      timeUpdateInterval = setInterval(() => {
+        if (lastServerUpdated) updateUpdatedDisplay(lastServerUpdated);
+      }, 60000);
+    }
+    async function openChat(id) {
+      const p = new URLSearchParams(location.search);
+      p.set('chat', id);
+      history.replaceState(null, '', `${location.pathname}?${p.toString()}`);
+      writeUrlState();
+      const panel = document.getElementById('msg-' + id);
+      if (!panel) return;
+      panel.hidden = false;
+      if (panel.dataset.loaded !== '1') await loadMessages(id, panel);
+      const nameEl = document.querySelector('.name[data-id="' + id + '"]');
+      if (nameEl) nameEl.scrollIntoView({ behavior: 'instant', block: 'start' });
+    }
+
+    async function toggleMessages(e) {
+      const id = e.target.dataset.id;
+      const panel = document.getElementById('msg-' + id);
+      if (!panel) return;
+      panel.hidden = !panel.hidden;
+      if (!panel.hidden && panel.dataset.loaded !== '1') {
+        await loadMessages(id, panel);
+      }
+    }
+
+    function mediaSrc(m, chatId) {
+      if (m.mediaFile) return `media/${chatId}/${m.mediaFile}`;
+      if (m.id) return `/api/yomi/media/${chatId}/${m.id}`;
+      return null;
+    }
+
+    async function loadMessages(id, panel) {
+      panel.innerHTML = '<p class="text-null">Loading messages…</p>';
+      try {
+        const response = await YomiApi.loadMessagesPaginated(id, 20);
+        const messages = response;
+        panel.innerHTML = '';
+        if (!messages || !messages.length) {
+          panel.innerHTML = '<p class="text-null">No messages.</p>';
+        } else {
+          const sorted = [...messages].sort((a, b) => a.deliveredTime - b.deliveredTime);
+          for (const m of sorted) {
+            const bubble = document.createElement('div');
+            bubble.className = 'message';
+            if (m.id) bubble.dataset.id = m.id;
+            const time = new Date(m.deliveredTime).toLocaleString();
+            bubble.innerHTML = `
+              <div class="meta">${escapeHtml(m.fromName || m.from || 'Unknown')} · ${time}</div>
+              ${renderContent(m, id)}
+            `;
+            panel.appendChild(bubble);
+          }
+        }
+        panel.dataset.loaded = '1';
+      } catch (err) {
+        panel.innerHTML = `<p class="error">Could not load messages: ${escapeHtml(err.message)}</p>`;
+      }
+    }
+
+    function renderConversations() {
+      const app = document.getElementById('app');
+      app.innerHTML = '';
+      const sortValue = document.getElementById('sort').value;
+      const sorted = [...allConversations].sort((a, b) => {
+        if (sortValue === 'name') return a.name.localeCompare(b.name);
+        if (sortValue === 'lastActive') return (b.lastMessageTime || 0) - (a.lastMessageTime || 0) || b.unread - a.unread;
+        return b.unread - a.unread;
+      });
+      const overrides = loadOverrides();
+      for (const c of sorted) {
+        const div = document.createElement('div');
+        const override = overrides[c.id] || {};
+        const category = override.category ?? c.category ?? 'Other';
+        const isGroup = override.isGroup ?? c.isGroup ?? false;
+        div.className = 'chat';
+        div.dataset.category = category;
+        div.dataset.isGroup = String(isGroup);
+        const hasSummary = Boolean(c.summary);
+        const displayPreview = c.summary || c.lastPreview || c.preview || null;
+        const previewClass = hasSummary ? 'summary' : 'preview';
+        const preview = displayPreview == null
+          ? '<div class="preview preview-null">No preview</div>'
+          : `<div class="${previewClass}" title="${escapeHtml(displayPreview)}">${linkify(truncate(displayPreview, 90))}</div>`;
+        const lastActive = c.lastMessageTime && c.lastMessageTime > 1000000000
+          ? `<span class="last-active" title="${new Date(c.lastMessageTime).toLocaleString()}">🕐 ${timeAgo(new Date(c.lastMessageTime))} ago</span>`
+          : '';
+        div.innerHTML = `
+          <div class="chat-header">
+            <span class="name" data-id="${c.id}" role="button" tabindex="0">${escapeHtml(c.name)}</span>
+            ${isGroup ? '<span class="group" title="Group/room chat">👥</span>' : ''}
+            <a class="open" href="chat.html?chat=${c.id}" target="_blank" rel="noopener" aria-label="Open in new tab">↗</a>
+            <button class="conv-setup" data-id="${c.id}" type="button" title="Edit category/group">⚙️</button>
+            <a class="daily-link" href="daily/index.html?chat=${c.id}" title="View daily summaries" aria-label="View daily summaries">📅</a>
+            <span class="category category-${escapeHtml(category)}">${escapeHtml(category)}</span>
+            ${lastActive}
+            <span class="unread ${c.unread ? '' : 'unread-0'}">${c.unread}</span>
+          </div>
+          ${preview}
+          <div class="messages" id="msg-${c.id}" hidden>
+            <p class="text-null">Loading messages…</p>
+          </div>
+        `;
+        app.appendChild(div);
+      }
+      filterChats();
+      writeUrlState();
+    }
+
+    document.getElementById('app').addEventListener('click', handleNameInteraction);
+    document.getElementById('app').addEventListener('keydown', handleNameInteraction);
+
+    function handleNameInteraction(e) {
+      if (!e.target.classList.contains('name')) return;
+      if (e.type === 'keydown' && e.key !== 'Enter' && e.key !== ' ') return;
+      if (e.type === 'keydown') e.preventDefault();
+      toggleMessages(e);
+    }
+
+    function truncate(s, n) {
+      return s.length > n ? s.slice(0, n) + '…' : s;
+    }
+    function timeAgo(date) {
+      const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
+      const units = [
+        [31536000, 'y'], [2592000, 'mo'], [86400, 'd'], [3600, 'h'], [60, 'm'], [1, 's']
+      ];
+      for (const [secs, label] of units) {
+        const count = Math.floor(seconds / secs);
+        if (count > 0) return `${count}${label}`;
+      }
+      return '0s';
+    }
+    function filterChats() {
+      const term = document.getElementById('search').value.trim().toLowerCase();
+      const groupOnly = document.getElementById('config-group-only').checked;
+      const enabledCats = [...document.querySelectorAll('.config-cat:checked')].map(cb => cb.value);
+      document.querySelectorAll('.chat').forEach(card => {
+        const text = card.textContent.toLowerCase();
+        const matchesText = term.length === 0 || text.includes(term);
+        const matchesCat = enabledCats.includes(card.dataset.category);
+        const matchesGroup = !groupOnly || card.dataset.isGroup === 'true';
+        card.classList.toggle('hidden', !(matchesText && matchesCat && matchesGroup));
+      });
+      updateCount();
+      writeUrlState();
+    }
+    function updateChipStyles() {
+      document.querySelectorAll('.chip').forEach(chip => {
+        const input = chip.querySelector('input[type="checkbox"]');
+        if (!input) return;
+        chip.classList.toggle('active', input.checked);
+      });
+    }
+    function updateCount() {
+      const total = document.querySelectorAll('.chat').length;
+      const visible = total - document.querySelectorAll('.chat.hidden').length;
+      const el = document.getElementById('count');
+      if (el) el.textContent = `${visible} of ${total}`;
+    }
+    function loadConfig() {
+      try {
+        const raw = localStorage.getItem('yomi_config');
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed && Array.isArray(parsed.categories)) return parsed;
+        }
+      } catch {}
+      return { categories: ['Family','Work','Promo','Official','Group','Personal','Other'], groupOnly: false };
+    }
+    function saveConfig() {
+      const categories = [...document.querySelectorAll('.config-cat:checked')].map(cb => cb.value);
+      localStorage.setItem('yomi_config', JSON.stringify({ categories, groupOnly: document.getElementById('config-group-only').checked }));
+    }
+    function readUrlConfig() {
+      const p = new URLSearchParams(location.search);
+      const q = p.get('q');
+      const sort = p.get('sort');
+      const cats = p.get('cats');
+      const group = p.get('group');
+      const chat = p.get('chat');
+      if (!q && !sort && !cats && !group && !chat) return null;
+      const base = loadConfig();
+      const categories = cats ? cats.split(',').filter(Boolean) : base.categories;
+      return { q: q || '', sort: sort || base.sort || 'unread', categories, groupOnly: group === '1', chat };
+    }
+    function writeUrlState() {
+      const p = new URLSearchParams();
+      const q = document.getElementById('search').value.trim();
+      const sort = document.getElementById('sort').value;
+      const cats = [...document.querySelectorAll('.config-cat:checked')].map(cb => cb.value).join(',');
+      const group = document.getElementById('config-group-only').checked ? '1' : '0';
+      const chat = new URLSearchParams(location.search).get('chat');
+      if (q) p.set('q', q);
+      if (sort !== 'unread') p.set('sort', sort);
+      if (cats !== 'Family,Work,Promo,Official,Group,Personal,Other') p.set('cats', cats);
+      if (group === '1') p.set('group', '1');
+      if (chat) p.set('chat', chat);
+      const qs = p.toString();
+      const newUrl = qs ? `${location.pathname}?${qs}` : location.pathname;
+      history.replaceState(null, '', newUrl);
+    }
+    function applyConfig() {
+      const cfg = readUrlConfig() || loadConfig();
+      document.getElementById('search').value = cfg.q || '';
+      document.getElementById('sort').value = cfg.sort || 'unread';
+      document.querySelectorAll('.config-cat').forEach(cb => cb.checked = cfg.categories.includes(cb.value));
+      document.getElementById('config-group-only').checked = cfg.groupOnly;
+      updateChipStyles();
+      filterChats();
+    }
+    function loadOverrides() {
+      try {
+        const raw = localStorage.getItem('yomi_overrides');
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed && typeof parsed === 'object') return parsed;
+        }
+      } catch {}
+      return {};
+    }
+    function saveOverrides(overrides) { localStorage.setItem('yomi_overrides', JSON.stringify(overrides)); }
+    function openEditDialog(id) {
+      const c = allConversations.find(c => c.id === id);
+      if (!c) return;
+      const overrides = loadOverrides();
+      const override = overrides[id] || {};
+      document.getElementById('edit-category').value = override.category ?? c.category ?? 'Other';
+      document.getElementById('edit-isGroup').checked = override.isGroup ?? c.isGroup ?? false;
+      document.getElementById('edit-dialog').dataset.id = id;
+      document.getElementById('edit-dialog').showModal();
+    }
+    ['Family','Work','Promo','Official','Group','Personal','Other'].forEach(cat => {
+      const opt = document.createElement('option');
+      opt.value = cat;
+      opt.textContent = cat;
+      document.getElementById('edit-category').appendChild(opt);
+    });
+    document.getElementById('edit-close').addEventListener('click', () => document.getElementById('edit-dialog').close());
+    document.getElementById('help-close').addEventListener('click', () => document.getElementById('help-dialog').close());
+    document.getElementById('help-btn').addEventListener('click', () => document.getElementById('help-dialog').showModal());
+    document.getElementById('edit-save').addEventListener('click', () => {
+      const id = document.getElementById('edit-dialog').dataset.id;
+      if (!id) return;
+      const overrides = loadOverrides();
+      overrides[id] = { category: document.getElementById('edit-category').value, isGroup: document.getElementById('edit-isGroup').checked };
+      saveOverrides(overrides);
+      renderConversations();
+      document.getElementById('edit-dialog').close();
+    });
+    document.getElementById('edit-reset').addEventListener('click', () => {
+      const id = document.getElementById('edit-dialog').dataset.id;
+      if (!id) return;
+      const overrides = loadOverrides();
+      delete overrides[id];
+      saveOverrides(overrides);
+      renderConversations();
+      document.getElementById('edit-dialog').close();
+    });
+    document.getElementById('app').addEventListener('click', e => {
+      if (e.target.classList.contains('conv-setup')) {
+        e.stopPropagation();
+        openEditDialog(e.target.dataset.id);
+      }
+    });
+    function handleChipClick(e) {
+      const chip = e.target.closest('.chip');
+      if (!chip) return;
+      const input = chip.querySelector('input[type="checkbox"]');
+      if (!input) return;
+      e.preventDefault();
+      const all = [...document.querySelectorAll('.config-cat')];
+      if (chip.classList.contains('group-chip')) {
+        input.checked = !input.checked;
+      } else {
+        const allChecked = all.every(cb => cb.checked);
+        const onlyThisChecked = all.filter(cb => cb.checked).length === 1 && input.checked;
+        if (allChecked) {
+          all.forEach(cb => cb.checked = false);
+          input.checked = true;
+        } else if (onlyThisChecked) {
+          all.forEach(cb => cb.checked = true);
+        } else {
+          input.checked = !input.checked;
+        }
+      }
+      saveConfig();
+      filterChats();
+      updateChipStyles();
+    }
+    document.getElementById('search').addEventListener('input', filterChats);
+
+    // Semantic search
+    const semInput = document.getElementById('sem-search-input');
+    const semBtn = document.getElementById('sem-search-btn');
+    const semPanel = document.getElementById('sem-results-panel');
+    const semList = document.getElementById('sem-results-list');
+    async function doSemanticSearch() {
+      const q = semInput.value.trim();
+      if (!q) { semPanel.classList.remove('open'); semList.innerHTML = ''; return; }
+      semBtn.disabled = true;
+      semBtn.textContent = '…';
+      try {
+        const data = await YomiApi.searchMessages(q, 20);
+        const results = data.results || [];
+        if (results.length === 0) {
+          semList.innerHTML = '<p style="color:#64748b;padding:.5rem 0">No results found.</p>';
+        } else {
+          semList.innerHTML = results.map(r => `
+            <div class="sem-result" data-chat="${r.chatId}">
+              <div class="sem-result-meta">
+                <span>💬 ${escHtml(r.chatName || r.chatId)}</span>
+                <span>👤 ${escHtml(r.fromName || '')}</span>
+                <span>${r.deliveredTime ? new Date(r.deliveredTime).toLocaleDateString() : ''}</span>
+                <span class="sem-result-score">${r.similarity}</span>
+              </div>
+              <div class="sem-result-text">${escHtml((r.text || '').slice(0, 200))}</div>
+            </div>`).join('');
+        }
+        semPanel.classList.add('open');
+      } catch (e) {
+        semList.innerHTML = `<p style="color:#ef4444">Error: ${escHtml(e.message)}</p>`;
+        semPanel.classList.add('open');
+      } finally {
+        semBtn.disabled = false;
+        semBtn.textContent = 'Search';
+      }
+    }
+    function escHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+    semBtn.addEventListener('click', doSemanticSearch);
+    semInput.addEventListener('keydown', e => { if (e.key === 'Enter') doSemanticSearch(); });
+    semList.addEventListener('click', e => {
+      const card = e.target.closest('.sem-result');
+      if (card && card.dataset.chat) window.location.href = `chat.html?id=${encodeURIComponent(card.dataset.chat)}`;
+    });
+    document.getElementById('chips').addEventListener('click', handleChipClick);
+    document.getElementById('sort').addEventListener('change', renderConversations);
+    document.getElementById('refresh').addEventListener('click', () => location.reload());
+    document.getElementById('login-btn').addEventListener('click', handleLogin);
+    
+    // Check session status on load
+    checkSessionStatus();
+    
+    // Refresh all conversations from LINE
+    const refreshAllBtn = document.getElementById('refresh-all');
+    if (refreshAllBtn) {
+      refreshAllBtn.addEventListener('click', async () => {
+        if (refreshAllBtn.disabled) return;
+        
+        const statusEl = document.getElementById('refresh-status');
+        refreshAllBtn.disabled = true;
+        refreshAllBtn.textContent = 'Fetching...';
+        if (statusEl) statusEl.textContent = 'Fetching conversations from LINE...';
+        
+        try {
+          // Step 1: Fetch from LINE
+          const fetchData = await YomiApi.fetchAllConversations();
+          if (!fetchData.ok) {
+            throw new Error(fetchData.error || 'Fetch failed');
+          }
+          
+          refreshAllBtn.textContent = 'Processing...';
+          if (statusEl) statusEl.textContent = 'Processing and summarizing...';
+          
+          // Step 2: Process and summarize
+          const processData = await YomiApi.processAllConversations();
+          if (!processData.ok) {
+            throw new Error(processData.error || 'Process failed');
+          }
+          
+          if (statusEl) statusEl.textContent = 'Updated! Reloading...';
+          setTimeout(() => location.reload(), 1000);
+        } catch (err) {
+          if (statusEl) statusEl.textContent = 'Failed: ' + err.message;
+          refreshAllBtn.disabled = false;
+          refreshAllBtn.textContent = 'Refresh All';
+          setTimeout(() => { if (statusEl) statusEl.textContent = ''; }, 5000);
+        }
+      });
+    }
+
+    function renderContent(m, chatId) {
+      const type = String(m.mediaType || '').toLowerCase();
+      if (type === 'image') {
+        const src = mediaSrc(m, chatId);
+        if (!src) return '';
+        return `<img class="media-img" src="${encodeURI(src)}" alt="image" loading="lazy" onclick="openLightbox(this.src)" onerror="this.style.display='none'">`;
+      }
+      if (type === 'video') {
+        const src = mediaSrc(m, chatId);
+        if (!src) return '';
+        return `<video class="media-video" src="${encodeURI(src)}" controls preload="metadata" onerror="this.style.display='none'"></video>`;
+      }
+      if (type === 'audio') {
+        const src = mediaSrc(m, chatId);
+        if (!src) return '';
+        return `<audio class="media-audio" src="${encodeURI(src)}" controls preload="metadata" onerror="this.style.display='none'"></audio>`;
+      }
+      if (type === 'file') {
+        const src = mediaSrc(m, chatId);
+        if (src) {
+          const name = m.mediaFile ? m.mediaFile.split('/').pop() : 'download';
+          return `<a class="media-file" href="${encodeURI(src)}" download="${escapeHtml(name)}" target="_blank" rel="noopener">⬇ ${escapeHtml(name)}</a>`;
+        }
+        return '';
+      }
+      if (type) {
+        if (type === 'unavailable' && (m.e2eeDecrypted === false || m.e2eeIntegrityVerified === false)) {
+          return '<span class="media-placeholder">[E2EE locked]</span>';
+        }
+        return `<span class="media-placeholder">[${escapeHtml(type)}]</span>`;
+      }
+      if (m.text == null) {
+        if (m.e2eeDecrypted === false || m.e2eeIntegrityVerified === false) {
+          return '<span class="media-placeholder">[E2EE locked]</span>';
+        }
+        return '<span class="text-null">(no text)</span>';
+      }
+      return `<div class="text">${linkify(m.text)}</div>`;
+    }
+    function escapeHtml(s) {
+      return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+    }
+    function linkify(s) {
+      return String(s).replace(/\\n/g, '\n').split(/(https?:\/\/[^\s<>"'{}|\\^`\[\]]+)/gi).map(part =>
+        /^https?:\/\//i.test(part)
+          ? `<a href="${escapeHtml(part)}" target="_blank" rel="noopener">${escapeHtml(part)}</a>`
+          : escapeHtml(part)
+      ).join('');
+    }
+
+    const lightbox = document.getElementById('lightbox');
+    const lightboxImg = document.getElementById('lightbox-img');
+    const lightboxClose = document.getElementById('lightbox-close');
+    function openLightbox(src) { if (!src) return; lightboxImg.src = src; lightbox.classList.add('active'); }
+    function closeLightbox() { lightboxImg.src = ''; lightbox.classList.remove('active'); }
+    lightboxClose.addEventListener('click', closeLightbox);
+    lightbox.addEventListener('click', (e) => { if (e.target !== lightboxImg && e.target !== lightboxClose) closeLightbox(); });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeLightbox(); });
+
+    load();
+  </script>
+</body>
+</html>

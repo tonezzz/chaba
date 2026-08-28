@@ -1,0 +1,45 @@
+title: Trade UI candlestick bars not rendering
+subtitle: Visible candles missing in TradeCanvas after data-source/migration changes
+icon: inbox
+
+focus:
+  label: Fix missing candle bars in TradeCanvas UI
+  text: |
+    TradeCanvas UI (compare2.html / index.html) no longer draws visible candlestick bars.
+    Initial assessment on tony-dell shows the chart-data API is returning 735 points for THB,
+    but each point has flat OHLC values, e.g. open=high=low=close=33.125, and volume is null.
+    LightweightCharts treats flat OHLC as an invisible or near-invisible candle, so the chart
+    appears to have no candle bars. The flat values are produced because the new data sources
+    (FRED, open.er, etc.) only provide a daily rate/close; src/legacy_api.py falls back to close
+    for missing open/high/low. This likely surfaced after the OHLC filtering / data-source migration.
+  branch: trade
+  priority: high
+  status: draft
+  tags:
+    - trade
+    - ui
+    - chart
+    - candle
+    - ohlc
+    - data-sources
+    - migration
+  missing_info:
+    - Confirm which exact page(s) are affected (compare2.html, compare.html, index.html)
+    - Confirm whether other symbols (GOLD, OIL, DXY) show the same flat-OHLC symptom
+  subtasks:
+    - label: Reproduce and capture exact browser console + API output
+      status: not_started
+    - label: Decide fix approach (synthetic OHLC variation vs line/area fallback)
+      status: not_started
+    - label: Update backend to generate/return non-flat OHLC or expose is_ohlc flag
+      status: not_started
+    - label: Update chart-renderer.js to handle flat candles and optional fallback
+      status: not_started
+    - label: Backfill / regenerate CSVs and run sync-tradecanvas-ui.sh
+      status: not_started
+    - label: Verify candlesticks render for THB, GOLD, OIL, DXY
+      status: not_started
+
+source:
+  session: current
+  date: 2026-08-17

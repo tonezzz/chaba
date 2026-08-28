@@ -1,0 +1,223 @@
+title: Tony-Omen 8080 Stack
+description: Live topology and health for chaba 8080 Docker services
+refresh: 30
+layout:
+  auto: true
+  width: 1400
+  height: 600
+
+components:
+  - id: caddy
+    label: Caddy
+    type: proxy
+    x: 500
+    y: 80
+    status: healthy
+    url: http://tony-omen.local:8080/apps/
+    detail: Reverse proxy and static file server on :8080/:8081
+
+  - id: bserver
+    label: BServer
+    type: service
+    x: 220
+    y: 200
+    status: healthy
+    url: http://tony-omen.local:8080/
+    detail: Go web server for dashboard, decisions, infrastructure pages
+
+  - id: status-api
+    label: Status API
+    type: service
+    x: 500
+    y: 200
+    status: healthy
+    url: http://tony-omen.local:8080/api/status
+    detail: Python FastAPI — system metrics, Docker status, host sensors
+
+  - id: frigate
+    label: Frigate NVR
+    type: service
+    x: 780
+    y: 200
+    status: healthy
+    url: http://tony-omen.local:8080/frigate/api/version
+    detail: Camera recording and object detection on frigate_default network
+
+  - id: redis
+    label: Redis
+    type: datastore
+    x: 100
+    y: 360
+    status: healthy
+    url: http://tony-omen.local:8080/api/container/redis
+    detail: Redis 7.4-alpine, AOF, 512MB maxmemory, allkeys-lru
+
+  - id: postgres
+    label: Postgres
+    type: datastore
+    x: 350
+    y: 360
+    status: healthy
+    url: http://tony-omen.local:8080/api/container/postgres
+    detail: PostgreSQL 16-alpine, persistent volume, chaba + activepieces DBs
+
+  - id: weaviate
+    label: Weaviate
+    type: datastore
+    x: 600
+    y: 360
+    status: healthy
+    url: http://tony-omen.local:8080/api/weaviate/v1/nodes
+    detail: Vector database v1.38.8, semantic search, RAG pipelines
+
+  - id: weaviate-search
+    label: Weaviate Search
+    type: service
+    x: 850
+    y: 360
+    status: healthy
+    url: http://tony-omen.local:8080/api/weaviate-search/health
+    detail: Search API for SSOT documents, OpenAI embeddings
+
+  - id: activepieces
+    label: Activepieces
+    type: service
+    x: 1100
+    y: 360
+    status: unknown
+    url: http://tony-omen.local:8080/api/container/activepieces
+    detail: Automation platform, depends on Postgres + Redis
+
+  - id: thai-legal
+    label: Llama Router (Phi-3 only)
+    type: gpu
+    x: 150
+    y: 500
+    status: healthy
+    url: http://tony-omen.local:8001/health
+    detail: llama.cpp server-cuda, Phi-3-mini active (Thai-legal offline 2026-08-06)
+
+  - id: imagen2
+    label: Imagen2
+    type: gpu
+    x: 400
+    y: 500
+    status: unknown
+    url: http://tony-omen.local:8000/health
+    detail: SDXL-Lightning image generation on GPU
+
+  - id: cogvideo
+    label: CogVideo
+    type: gpu
+    x: 650
+    y: 500
+    status: unknown
+    url: http://tony-omen.local:8080/api/container/cogvideo-inference
+    detail: LTX-Video text-to-video generation on GPU
+
+  - id: yomi-api
+    label: Yomi API
+    type: service
+    x: 60
+    y: 200
+    status: unknown
+    url: http://tony-omen.local:8080/api/yomi/conversations
+    detail: LINE conversation viewer API on host:3000
+
+  - id: gpu-queue
+    label: GPU Queue
+    type: service
+    x: 60
+    y: 360
+    status: unknown
+    url: http://tony-omen:3001/health
+    detail: Node.js GPU job queue on host:3001
+
+connections:
+  - id: caddy-bserver
+    from: caddy
+    to: bserver
+    label: / /new /decisions
+
+  - id: caddy-status
+    from: caddy
+    to: status-api
+    label: /api/*
+
+  - id: caddy-frigate
+    from: caddy
+    to: frigate
+    label: /frigate/*
+
+  - id: caddy-yomi
+    from: caddy
+    to: yomi-api
+    label: /api/yomi/*
+
+  - id: caddy-gpuq
+    from: caddy
+    to: gpu-queue
+    label: /api/gpu-queue/*
+
+  - id: caddy-weaviate
+    from: caddy
+    to: weaviate
+    label: /api/weaviate/*
+
+  - id: caddy-weaviate-search
+    from: caddy
+    to: weaviate-search
+    label: /api/weaviate-search/*
+
+  - id: weaviate-search-weaviate
+    from: weaviate-search
+    to: weaviate
+    label: embeddings
+
+  - id: caddy-thai-legal
+    from: caddy
+    to: thai-legal
+    label: /v1/* /apps/chatllama (Thai-legal API offline)
+
+  - id: caddy-imagen2
+    from: caddy
+    to: imagen2
+    label: /apps/imagen2/api
+
+  - id: caddy-cogvideo
+    from: caddy
+    to: cogvideo
+    label: /apps/txt2vid/api
+
+  - id: caddy-activepieces
+    from: caddy
+    to: activepieces
+    label: /apps/activepieces
+
+  - id: activepieces-redis
+    from: activepieces
+    to: redis
+    label: queue
+
+  - id: activepieces-pg
+    from: activepieces
+    to: postgres
+    label: persistence
+
+  - id: gpuq-pg
+    from: gpu-queue
+    to: postgres
+    label: jobs
+
+  - id: status-frigate
+    from: status-api
+    to: frigate
+    label: container stats
+
+events:
+  - { time: '2026-08-06 08:40:00', component: thai-legal, level: info, message: 'Thai-legal model taken offline due to GPU memory constraints (5GB vs 4GB available)' }
+  - { time: '2026-08-03 02:50:00', component: weaviate-search, level: info, message: 'Weaviate Search API deployed as Docker container' }
+  - { time: '2026-08-02 13:16:00', component: weaviate, level: info, message: 'Weaviate v1.38.8 deployed for semantic search and RAG' }
+  - { time: '2026-07-31 16:40:00', component: caddy, level: info, message: 'Container recreated for sysdiag deployment' }
+  - { time: '2026-07-31 16:35:00', component: caddy, level: info, message: 'sysdiag app added to apps.yml' }
+  - { time: '2026-07-31 14:00:00', component: thai-legal, level: info, message: 'llama.cpp router consolidated' }

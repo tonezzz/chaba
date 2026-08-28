@@ -1,0 +1,48 @@
+name: gpu-health-check
+description: Monitor GPU health with VRAM usage, temperature, and historical statistics
+version: "1.0"
+author: Chaba Team
+tags: [gpu, monitoring, health]
+inputs:
+  vram_warning:
+    type: num
+    description: VRAM usage warning threshold (percentage)
+    default: 80
+    required: false
+  vram_critical:
+    type: num
+    description: VRAM usage critical threshold (percentage)
+    default: 90
+    required: false
+  temp_warning:
+    type: num
+    description: Temperature warning threshold (Celsius)
+    default: 75
+    required: false
+  temp_critical:
+    type: num
+    description: Temperature critical threshold (Celsius)
+    default: 85
+    required: false
+  historical_hours:
+    type: num
+    description: Hours of historical data to analyze
+    default: 24
+    required: false
+blocks:
+  - id: run_gpu_monitor
+    type: Shell
+    description: "Run existing GPU monitoring script"
+    inputs:
+      command: node /home/tony/CascadeProjects/chaba/scripts/gpu-monitor.mjs --export 2>&1
+      timeout: 30
+  - id: summary
+    type: Shell
+    description: "Log GPU health check summary"
+    inputs:
+      command: echo "GPU health check completed via workflows-mcp"
+    depends_on:
+      - run_gpu_monitor
+outputs:
+  gpu_status:
+    value: "{{blocks.run_gpu_monitor.outputs.stdout}}"

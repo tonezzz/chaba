@@ -3,21 +3,120 @@ services:
     container_name: web
     image: caddy:latest
     restart: unless-stopped
+    env_file:
+    - .env
     ports:
-      - "8080:8080"
-      - "8081:8081"
+    - 8080:8080
+    - 8081:8081
     volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile
-      - ./public:/srv/public
-      - /home/tony/CascadeProjects/chaba-h3/public/apps/imagen:/srv/public/tony-omen/apps/imagen
-      - /home/tony/CascadeProjects/chaba-h3/public:/srv/public/chaba-h3
-      - caddy_data:/data
-      - caddy_config:/config
+    - ./Caddyfile:/etc/caddy/Caddyfile
+    - ./public:/srv/public
+    - /home/tony/CascadeProjects/chaba-omen/stacks/web/public/tony-omen:/srv/public/tony-omen
+    - /home/tony/CascadeProjects/chaba-h3/public:/srv/public/chaba-h3
+    - /home/tony/CascadeProjects/chaba/docs:/srv/docs
+    - caddy_data:/data
+    - caddy_config:/config
+    extra_hosts:
+    - host.docker.internal:host-gateway
+    healthcheck:
+      test:
+      - CMD
+      - curl
+      - -f
+      - http://localhost:8080
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
     networks:
-      - default
-      - frigate_default
-      - chaba-h3_default
-
+    - default
+    - frigate_default
+    profiles:
+    - production
+  imagen2-inference:
+    container_name: imagen2-inference
+    build:
+      context: /home/tony/CascadeProjects/chaba-h3/inference2
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file:
+    - /home/tony/CascadeProjects/helm/.env.local
+    environment:
+    - MODEL_ID=stabilityai/stable-diffusion-xl-base-1.0
+    - VAE_ID=madebyollin/sdxl-vae-fp16-fix
+    volumes:
+    - /home/tony/.cache/huggingface:/root/.cache/huggingface
+    - /home/tony/CascadeProjects/chaba-h3/inference2/main.py:/app/main.py:ro
+    - /home/tony/CascadeProjects/chaba-h3/inference2/data:/app/data
+    ports:
+    - 8000:8000
+    deploy:
+      resources:
+        reservations:
+          devices:
+          - driver: nvidia
+            count: 1
+            capabilities:
+            - gpu
+        limits:
+          cpus: '4'
+          memory: 8G
+    networks:
+    - default
+  netdata:
+    container_name: netdata
+    image: netdata/netdata:stable
+    restart: unless-stopped
+    pid: host
+    ports:
+    - 19999:19999
+    environment:
+    - NETDATA_DISABLE=ebpf,nfacct,perf
+    volumes:
+    - /proc:/host/proc:ro
+    - /sys:/host/sys:ro
+    - /var/run/docker.sock:/var/run/docker.sock:ro
+    - /etc/os-release:/host/etc/os-release:ro
+    cap_add:
+    - SYS_PTRACE
+    - SYS_ADMIN
+    security_opt:
+    - apparmor=unconfined
+    deploy:
+      resources:
+        reservations:
+          devices:
+          - driver: nvidia
+            count: 1
+            capabilities:
+            - gpu
+    networks:
+    - default
+  helm:
+    container_name: helm
+    build:
+      context: /home/tony/CascadeProjects/helm
+      dockerfile: Dockerfile
+    env_file:
+    - /home/tony/CascadeProjects/helm/.env.local
+    restart: unless-stopped
+    ports:
+    - 3003:3000
+    extra_hosts:
+    - host.docker.internal:host-gateway
+    networks:
+    - default
+    healthcheck:
+      test:
+      - CMD-SHELL
+      - node -e "fetch('http://localhost:3000/apps/helm/api/health').then(r=>{if(!r.ok)
+        process.exit(1)}).catch(()=>process.exit(1))"
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    volumes:
+    - helm_data:/app/data
   sensor-reader:
     container_name: sensor-reader
     build:
@@ -25,98 +124,28 @@ services:
       dockerfile: Dockerfile
     restart: unless-stopped
     ports:
-      - "8001:8001"
+    - 8001:8001
     environment:
-      - REPO_PATH=/repo
+    - REPO_PATH=/repo
     volumes:
-      - ../..:/repo
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-      - /sys/class/thermal:/sys/class/thermal:ro
-      - /sys/class/hwmon:/sys/class/hwmon:ro
-      - /sys/devices/platform/hp-wmi:/sys/devices/platform/hp-wmi:rw
-      - /sys/devices/system/cpu/intel_pstate:/sys/devices/system/cpu/intel_pstate:rw
-      - ./sensor-reader/main.py:/app/main.py:ro
+    - ../..:/repo
+    - /var/run/docker.sock:/var/run/docker.sock:ro
+    - /sys/class/thermal:/sys/class/thermal:ro
+    - /sys/class/hwmon:/sys/class/hwmon:ro
+    - /sys/devices/platform/hp-wmi:/sys/devices/platform/hp-wmi:rw
+    - /sys/devices/system/cpu/intel_pstate:/sys/devices/system/cpu/intel_pstate:rw
+    - ./sensor-reader/main.py:/app/main.py:ro
     privileged: true
     networks:
-      - default
-      - frigate_default
-
-  camera-control:
-    container_name: camera-control
-    build:
-      context: ./camera-control
-      dockerfile: Dockerfile
-    restart: unless-stopped
-    ports:
-      - "8090:8090"
-    volumes:
-      - ../..:/repo
-    networks:
-      - default
-
-  bserver:
-    container_name: bserver
-    build:
-      context: ./bserver
-      dockerfile: Dockerfile
-      network: host
-    restart: unless-stopped
-    volumes:
-      - ./bserver-www/_config.yaml:/srv/www/_config.yaml:ro
-      - ./bserver-www/default:/srv/www/default
-    networks:
-      - default
-
-  status-api:
-    container_name: status-api
-    build:
-      context: ./status-api
-      dockerfile: Dockerfile
-    restart: unless-stopped
-    expose:
-      - "8000"
-    environment:
-      - REPO_PATH=/repo
-    volumes:
-      - ../..:/repo
-    networks:
-      - default
-
-  netdata:
-    container_name: netdata
-    image: netdata/netdata:stable
-    restart: unless-stopped
-    pid: host
-    ports:
-      - 19999:19999
-    environment:
-      - NETDATA_DISABLE=ebpf,nfacct,perf
-    volumes:
-      - /proc:/host/proc:ro
-      - /sys:/host/sys:ro
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-      - /etc/os-release:/host/etc/os-release:ro
-    cap_add:
-      - SYS_PTRACE
-      - SYS_ADMIN
-    security_opt:
-      - apparmor=unconfined
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: 1
-              capabilities:
-                - gpu
-    networks:
-      - default
+    - default
+    - frigate_default
 volumes:
-  caddy_data:
-  caddy_config:
-
+  caddy_data: null
+  caddy_config: null
+  rview_api_state: null
+  helm_data:
 networks:
   frigate_default:
     external: true
-  chaba-h3_default:
+  ai_default:
     external: true

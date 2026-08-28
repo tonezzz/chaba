@@ -1,0 +1,58 @@
+title: Yomi
+subtitle: LINE conversation archive and viewer for the chaba lab.
+icon: 💬
+sections:
+  - title: App
+    icon: 🗨️
+    layout: list
+    items:
+      - label: URL
+        text: /apps/yomi/ (basic-auth protected)
+      - label: Purpose
+        text: Archive, search, and browse LINE 1:1 and group chats with text summaries and media.
+      - label: Files
+        text: conversations.json, messages/{chatId}.json, media/{chatId}/{messageId}.{ext}
+
+  - title: Pipeline
+    icon: ⚙️
+    layout: list
+    items:
+      - label: Export
+        text: update-conversations.mjs calls list_conversations (limit 200) then paginates get_chat_messages and downloads images in small batches.
+      - label: Summaries
+        text: Conversation summaries are generated with mcp-llama /v1/chat/completions.
+      - label: Categorize
+        text: categorize-conversations.mjs assigns Personal, Work, Family, Group, Official, Promo, or Other from name/keywords/summary. Run after every full export.
+
+  - title: Refresh and media
+    icon: 🔄
+    layout: list
+    items:
+      - label: Refetch one chat
+        text: chat.html has a Refetch button that POSTs /api/yomi/refresh?chat=<id> to run update-conversations.mjs --chat <id>.
+      - label: On-demand media
+        text: /api/yomi/media/<chatId>/<messageId> downloads and serves video, audio, or file content on first view and caches it in media/.
+      - label: Pre-downloaded images
+        text: Images are downloaded during export and rendered inline with a lightbox.
+
+  - title: Scripts
+    icon: 📝
+    layout: list
+    items:
+      - label: update-conversations.mjs
+        text: Full or per-chat export from the Yomi MCP server. Now preserves existing category metadata across full exports.
+      - label: categorize-conversations.mjs
+        text: Keyword/brand-based categorizer for conversations.json.
+      - label: download-media.mjs
+        text: Generic Yomi media downloader used by the on-demand API.
+      - label: yomi-api.mjs
+        text: Host Node backend on port 3000, reverse-proxied from /api/yomi/*. Started with nohup node scripts/yomi/yomi-api.mjs.
+
+  - title: Status
+    icon: ✅
+    layout: list
+    items:
+      - label: Done
+        text: Category filter chips, per-chat refetch, on-demand non-image media, category preservation across exports.
+      - label: Todo
+        text: Image captioning, audio transcription (faster-whisper), and video frame captioning.

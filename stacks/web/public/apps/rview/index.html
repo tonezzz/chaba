@@ -4,39 +4,261 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="theme-color" content="#0b0b0b">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#000000">
+  <link rel="manifest" href="/apps/rview/manifest.json">
+  <link rel="icon" type="image/png" sizes="192x192" href="/apps/rview/icon-192.png">
+  <link rel="apple-touch-icon" sizes="192x192" href="/apps/rview/icon-192.png">
   <title>RView</title>
-  <link rel="manifest" href="manifest.json">
-  <link rel="apple-touch-icon" href="icon-192.svg">
-  <link rel="icon" type="image/svg+xml" href="icon-192.svg">
-  <link rel="stylesheet" href="app.css">
+  <style>
+    :root { --bg: #000; --text: #f8fafc; --muted: #94a3b8; --danger: #ef4444; }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; margin: 0; background: var(--bg); color: var(--text); overflow: hidden; font-family: system-ui, -apple-system, sans-serif; }
+    #stage { width: 100vw; width: 100dvw; height: 100vh; height: 100dvh; display: flex; align-items: center; justify-content: center; overflow: hidden; position: relative; background: #000; }
+    #stage > *:first-child { max-width: 100%; max-height: 100%; border: none; }
+    #stage img, #stage video { width: 100%; height: 100%; object-fit: cover; }
+    #stage iframe, #stage embed, #stage .html-content { width: 100%; height: 100%; }
+    #stage .html-content { overflow: auto; background: #fff; color: #000; }
+    #stage .error { color: var(--danger); padding: 1rem; text-align: center; }
+    #stage .muted { color: var(--muted); }
+    #overlay { position: absolute; top: 0.5rem; left: 0.5rem; right: 0.5rem; display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; font-size: 0.75rem; color: var(--muted); pointer-events: none; opacity: 0; transition: opacity 0.3s; z-index: 10; }
+    #stage:hover #overlay, #overlay.active { opacity: 1; }
+    #overlay span { background: rgba(0,0,0,0.6); padding: 0.25rem 0.5rem; border-radius: 4px; }
+  </style>
 </head>
 <body>
-  <div id="setup" class="active">
-    <h1>RView</h1>
-    <p>Enter a view ID to join</p>
-    <input id="view-id-input" type="text" placeholder="e.g. living-room" autocomplete="off">
-    <button id="join-btn">Join View</button>
-    <a href="control.html" class="btn" style="background:#334155;">Open Controller</a>
+  <div id="stage">
+    <div class="muted">Nothing playing</div>
+    <div id="overlay"><span id="status"></span><span id="view-number"></span></div>
   </div>
 
-  <div id="media">
-    <div id="info">
-      <span id="view-label">view: <b id="view-id"></b></span>
-      <span id="status-label">waiting</span>
-    </div>
-    <div id="media-display">
-      <div id="idle">No media loaded</div>
-    </div>
-    <div id="controls">
-      <button id="btn-prev" title="Previous">Prev</button>
-      <button id="btn-play" title="Play/Pause">Play</button>
-      <button id="btn-next" title="Next">Next</button>
-      <button id="btn-full" title="Fullscreen">Full</button>
-    </div>
-  </div>
+<script>
+  const params = new URLSearchParams(window.location.search);
+  const API = params.get('api') || '/apps/rview/api/state';
+  const VIEW_ID = params.get('view') || 'default';
+  const VIEW_KEY = /^\d+$/.test(VIEW_ID) ? 'view_number' : 'view_id';
+  let slideshowTimer = null;
+  let slideshowItemUrl = null;
+  let slideshowState = false;
+  let lastItemJson = '';
 
-  <script src="app.js"></script>
+  function status(text) {
+    const el = document.getElementById('status');
+    if (el) el.textContent = text;
+  }
+
+  function reportError(e, src) {
+    console.error('media load error', e?.type, src);
+  }
+
+  function fallbackMedia(el, url, message) {
+    if (!el || el.dataset.fallback) return;
+    el.dataset.fallback = 'true';
+    console.warn('media fallback to iframe', url, message);
+    const fallback = document.createElement('iframe');
+    fallback.src = url;
+    fallback.allow = 'autoplay; fullscreen';
+    fallback.style.width = '100%';
+    fallback.style.height = '100%';
+    fallback.style.border = 'none';
+    if (el.parentNode) {
+      el.parentNode.replaceChild(fallback, el);
+    } else {
+      const stage = document.getElementById('stage');
+      stage.innerHTML = '<div id="overlay"><span id="status"></span><span id="view-number"></span></div>';
+      stage.appendChild(fallback);
+    }
+    status('fallback: ' + url);
+  }
+
+  async function api(action, body = {}) {
+    const payload = { action };
+    payload[VIEW_KEY] = VIEW_ID;
+    const res = await fetch(API, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...body, ...payload })
+    });
+    return res.json();
+  }
+
+  async function pollStatus() {
+    try {
+      const res = await fetch(`${API}?action=status&${VIEW_KEY}=${encodeURIComponent(VIEW_ID)}`);
+      const data = await res.json();
+      if (data.ok) render(data.view);
+    } catch (e) {
+      status('polling error');
+      console.error(e);
+    }
+  }
+
+  function stopSlideshow() {
+    if (slideshowTimer) clearTimeout(slideshowTimer);
+    slideshowTimer = null;
+    slideshowItemUrl = null;
+    slideshowState = false;
+  }
+
+  function startSlideshow(view, item) {
+    stopSlideshow();
+    const sec = Math.max(1, Number(view.slideshow_interval) || 5);
+    slideshowTimer = setTimeout(() => {
+      const body = { command: 'next' };
+      body[VIEW_KEY] = VIEW_ID;
+      api('control', body).then(pollStatus);
+    }, sec * 1000);
+    slideshowItemUrl = item.url;
+    slideshowState = view.slideshow;
+  }
+
+  function mediaSelector(mt) {
+    if (mt === 'image') return 'img';
+    if (mt === 'video') return 'video';
+    if (mt === 'audio') return 'audio';
+    if (mt === 'pdf') return 'embed';
+    if (mt === 'html') return 'div.html-content';
+    return 'iframe';
+  }
+
+  function createMedia(item) {
+    const url = item.url || '';
+    const title = item.title || '';
+    switch (item.media_type) {
+      case 'image': {
+        const el = document.createElement('img');
+        el.src = url;
+        el.alt = title;
+        el.onerror = (e) => { reportError(e, url); fallbackMedia(el, url, e?.type); };
+        return el;
+      }
+      case 'video': {
+        const el = document.createElement('video');
+        el.src = url;
+        el.autoplay = true;
+        el.playsInline = true;
+        el.muted = false;
+        el.onerror = (e) => { reportError(e, url); fallbackMedia(el, url, e?.type); };
+        el.addEventListener('stalled', (e) => { reportError(e, url); fallbackMedia(el, url, 'stalled'); });
+        return el;
+      }
+      case 'audio': {
+        const el = document.createElement('audio');
+        el.src = url;
+        el.autoplay = true;
+        el.onerror = (e) => { reportError(e, url); fallbackMedia(el, url, e?.type); };
+        el.addEventListener('stalled', (e) => { reportError(e, url); fallbackMedia(el, url, 'stalled'); });
+        return el;
+      }
+      case 'pdf': {
+        const el = document.createElement('embed');
+        el.src = url;
+        el.type = 'application/pdf';
+        el.onerror = (e) => { reportError(e, url); fallbackMedia(el, url, e?.type); };
+        return el;
+      }
+      case 'html': {
+        const el = document.createElement('div');
+        el.className = 'html-content';
+        el.innerHTML = item.content || item.url || '';
+        return el;
+      }
+      default: {
+        const el = document.createElement('iframe');
+        el.src = url;
+        el.allow = 'autoplay; fullscreen';
+        return el;
+      }
+    }
+  }
+
+  function applyMediaState(el, view) {
+    if (!el) return;
+    try {
+      if (view.volume !== undefined && el.volume !== undefined) el.volume = view.volume;
+      if (view.position !== undefined && !isNaN(view.position) && el.currentTime !== undefined) {
+        const t = Number(view.position);
+        if (Math.abs(el.currentTime - t) > 1) el.currentTime = t;
+      }
+      if (view.state === 'playing') {
+        if (el.play) {
+          const p = el.play();
+          if (p && p.catch) p.catch(() => {});
+        }
+      } else if (view.state === 'paused') {
+        if (el.pause) el.pause();
+      } else if (view.state === 'stopped') {
+        if (el.pause) el.pause();
+        if (el.currentTime !== undefined) el.currentTime = 0;
+      }
+    } catch (e) {
+      console.error('media state error', e);
+    }
+  }
+
+  function render(view) {
+    const stage = document.getElementById('stage');
+    const item = view.current_item;
+
+    if (!item) {
+      stage.innerHTML = '<div class="muted">Nothing playing</div><div id="overlay"><span id="status"></span><span id="view-number"></span></div>';
+      lastItemJson = '';
+      stopSlideshow();
+      return;
+    }
+
+    const itemJson = JSON.stringify(item);
+    let mediaEl = stage.children[0];
+    if (!mediaEl || mediaEl.id === 'overlay' || mediaEl.className === 'muted' || itemJson !== lastItemJson) {
+      lastItemJson = itemJson;
+      stage.innerHTML = '';
+      mediaEl = createMedia(item);
+      stage.appendChild(mediaEl);
+      const overlay = document.createElement('div');
+      overlay.id = 'overlay';
+      overlay.innerHTML = '<span id="status"></span><span id="view-number"></span>';
+      stage.appendChild(overlay);
+    }
+
+    applyMediaState(mediaEl, view);
+
+    if (view.slideshow) {
+      if (!slideshowTimer || slideshowItemUrl !== item.url || slideshowState !== view.slideshow) {
+        startSlideshow(view, item);
+      }
+    } else {
+      stopSlideshow();
+    }
+
+    status(`${view.state || 'stopped'} | ${item.media_type || '-'} | ${item.title || item.url || ''}`);
+    const numEl = document.getElementById('view-number');
+    if (numEl) numEl.textContent = view.view_number ? `#${view.view_number}` : '';
+  }
+
+  function enterFullscreen() {
+    const doc = document.documentElement;
+    try {
+      if (doc.requestFullscreen) {
+        if (!document.fullscreenElement) doc.requestFullscreen().catch(() => {});
+      } else if (doc.webkitRequestFullscreen) {
+        if (!document.webkitFullscreenElement) doc.webkitRequestFullscreen().catch(() => {});
+      }
+    } catch (e) { /* ignore */ }
+  }
+
+  function onFirstInteraction() {
+    enterFullscreen();
+    window.removeEventListener('click', onFirstInteraction);
+    window.removeEventListener('touchstart', onFirstInteraction);
+    window.removeEventListener('keydown', onFirstInteraction);
+  }
+
+  window.addEventListener('click', onFirstInteraction, { once: true });
+  window.addEventListener('touchstart', onFirstInteraction, { once: true });
+  window.addEventListener('keydown', onFirstInteraction, { once: true });
+
+  pollStatus();
+  setInterval(pollStatus, 2000);
+</script>
 </body>
 </html>

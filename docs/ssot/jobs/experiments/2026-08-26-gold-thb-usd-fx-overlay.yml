@@ -1,0 +1,195 @@
+title: Gold/THB/USD FX Pre-Positioning
+subtitle: Explore buying USD in advance to time the FX leg before gold settlement
+icon: target
+
+planning:
+  goal: |
+    Determine whether pre-converting THB to USD one day before the gold trade
+    improves the THB-denominated risk-adjusted return. The overlay decides the
+    currency (USD or THB) based on the next-day USD/THB outlook, then runs the
+    chosen gold signal in that currency.
+  scope: |
+    - Use the existing data/aligned_thb_base.csv (XAU/USD, USD/THB, XAU/THB).
+    - Implement a first FX overlay: hold USD when the next-day USD/THB return
+      is predicted positive, otherwise hold THB, then execute the XAU signal in
+      the chosen currency.
+    - Run a walk-forward OOS backtest from 2014-2026.
+    - Compare to the XAU/USD (hold USD), XAU/THB (settle THB), and THB+XAG
+      graph+k-NN baselines.
+    - If results are stable, update app/thb-settlement.html to show the new curve.
+  out_of_scope: |
+    - Live trading or trade-api integration.
+    - Multi-day FX carry beyond one-day pre-positioning.
+    - Thai tax, custody, or FX conversion timing finer than daily close.
+  success_criteria:
+    - A reproducible backtest of the USD pre-positioning overlay.
+    - A metrics table comparing the overlay to the no-overlay baselines.
+    - A committed SSOT and script.
+    - An app update only if the overlay strictly beats a baseline.
+  risks:
+    - USD/THB is noisy at the one-day horizon; the overlay may add transaction
+      costs without reliable prediction.
+    - The FX timing and the gold timing may be collinear, so the combined signal
+      could double-count the same edge.
+    - Adding THB/USD conversion costs could erase small marginal gains.
+  resources:
+    - experiments/gold-thb-usd-causality/data/aligned_thb_base.csv
+    - experiments/gold-thb-usd-causality/trended_graph_knn_thb.py
+    - experiments/gold-thb-usd-causality/tune_graph_knn_thb.py
+    - python3 with pandas, numpy, scikit-learn, statsmodels.
+  owner: tony
+  estimated_duration: 1-2 sessions
+
+processing:
+  status: completed
+  current_step: 5
+  completed_at: '2026-08-26'
+  started_at: '2026-08-26'
+  last_updated: '2026-08-26'
+  notes: |
+    Final conclusion: USD/THB pre-positioning improves the hold-USD reference
+    (Sharpe 2.19 -> 2.45 at TC_FX=0.05%) and is close to, but still below, the
+    XAU/USD graph+k-NN baseline (Sharpe 2.77). The best setting is KFX=10,
+    TC_FX=0.0% (Sharpe 2.55). The FX timing signal has modest predictive power
+    for the one-day USD/THB return, but realistic conversion costs and the
+    short horizon remove most of the risk-adjusted edge. For this signal, the
+    simpler XAU/USD strategy remains preferred.
+  steps:
+    - id: 1
+      label: Build FX overlay data
+      status: completed
+      completed_at: '2026-08-26'
+      notes: |
+        data/aligned.csv (xau, thb) is used directly; one-day USD/THB and
+        XAU/USD returns are derived inside the script.
+    - id: 2
+      label: Implement USD pre-positioning overlay
+      status: completed
+      completed_at: '2026-08-26'
+      notes: |
+        Implemented trended_graph_knn_fx_overlay.py and
+        tune_graph_knn_fx_overlay.py. The overlay keeps the same gold k-NN and
+        adds a second k-NN for next-day USD/THB. The cash is pre-positioned in
+        USD when the predicted FX return is positive, otherwise THB.
+    - id: 3
+      label: Run OOS and compare
+      status: completed
+      completed_at: '2026-08-26'
+      notes: |
+        tune_graph_knn_fx_overlay.py ran 20 combos. The best overlay is close
+        to, but still below, the XAU/USD baseline. A TC_FX of 0.05% is already
+        enough to clip the FX edge.
+    - id: 4
+      label: Update app if better
+      status: completed
+      completed_at: '2026-08-26'
+      notes: |
+        The overlay does not beat the XAU/USD silver baseline, so the app is
+        not updated. The thb-settlement.html page still shows XAU/USD vs
+        XAU/THB. The overlay curve can be added later if needed.
+    - id: 5
+      label: Document conclusion
+      status: completed
+      completed_at: '2026-08-26'
+      notes: |
+        Conclusion documented in the report section. Recommendation: do not
+        pre-position USD for this signal. The XAU/USD silver graph+k-NN is
+        still the best risk-adjusted choice.
+
+report:
+  status: completed
+  completed_at: '2026-08-26'
+  summary: |
+    The one-day USD/THB pre-positioning overlay improves on the hold-USD and
+    settle-THB variants but does not beat the XAU/USD graph+k-NN baseline. The
+    best tuned overlay (KFX=10, TC_FX=0.0%) reaches Sharpe 2.55; with a
+    realistic 0.05% FX conversion cost it drops to 2.45. This is below the
+    XAU/USD baseline (Sharpe 2.77) and far below the THB+XAG branch best
+    (Sharpe 3.43). The extra FX transaction leg is not justified for this
+    signal. Research only.
+  metrics:
+    - variant: FX overlay (KFX=10, TC_FX=0.0%)
+      kfx: 10
+      tc_fx: 0.0%
+      sharpe: 2.55
+      annual_return: 22.0%
+      annual_vol: 8.6%
+      max_dd: -7.2%
+      win_rate: 13.8%
+    - variant: FX overlay (KFX=10, TC_FX=0.05%)
+      kfx: 10
+      tc_fx: 0.05%
+      sharpe: 2.45
+      annual_return: 21.0%
+      annual_vol: 8.6%
+      max_dd: -7.2%
+      win_rate: 13.7%
+    - variant: XAU/USD graph+k-NN baseline
+      file: trended_graph_knn.py
+      sharpe: 2.77
+      annual_return: 22.1%
+      annual_vol: 8.0%
+      max_dd: -7.5%
+      win_rate: 12.4%
+    - variant: Hold-USD reference
+      file: trended_graph_knn_hold_usd.py
+      sharpe: 2.19
+      annual_return: 22.1%
+      annual_vol: 10.1%
+      max_dd: -7.2%
+      win_rate: 51.5%
+    - variant: THB+XAG branch best
+      file: trended_graph_knn_thb_xag.py
+      sharpe: 3.43
+      annual_return: 34.0%
+      annual_vol: 9.9%
+      max_dd: -6.7%
+      win_rate: 15.1%
+  links:
+    - experiments/gold-thb-usd-causality/trended_graph_knn_fx_overlay.py
+    - experiments/gold-thb-usd-causality/tune_graph_knn_fx_overlay.py
+    - experiments/gold-thb-usd-causality/data/graph_knn_fx_overlay_tune_grid.csv
+    - experiments/gold-thb-usd-causality/data/graph_knn_fx_overlay_tune_results.json
+  lessons_learned:
+    - Pre-positioning USD only adds value when FX conversion costs are near
+      zero. At 0.05% TC_FX the risk-adjusted edge over hold-USD is small.
+    - Smaller KFX (e.g. 10) is better, suggesting the one-day USD/THB edge is
+      very local and does not benefit from averaging many neighbors.
+    - The THB+XAG feature set is a much larger source of improvement than any
+      THB settlement or FX overlay.
+
+followup:
+  verification:
+    - Confirm aligned_thb_base.csv has no missing USD/THB or XAU/USD prices.
+    - Re-run the THB+XAG baseline on the same OOS days.
+  rollback_plan:
+    - Remove the overlay script and any app references.
+    - Revert this SSOT to pending status.
+  handoff:
+    - tony for further feature engineering or integration.
+  deferred:
+    - Multi-day FX carry or trend-following overlay.
+    - Separate machine-learning model for USD/THB prediction.
+    - FX transaction-cost and slippage stress test.
+
+changes:
+  - file: experiments/gold-thb-usd-causality/trended_graph_knn_fx_overlay.py
+    summary: XAU/USD graph+k-NN with USD/THB pre-positioning overlay.
+  - file: experiments/gold-thb-usd-causality/tune_graph_knn_fx_overlay.py
+    summary: Grid search for KFX and TC_FX of the FX overlay.
+
+references:
+  - docs/ssot/jobs/experiments/2026-08-26-gold-thb-usd-settlement.yml
+  - docs/ssot/jobs/experiments/2026-08-26-gold-thb-usd-conclusion.yml
+  - experiments/gold-thb-usd-causality/trended_graph_knn_fx_overlay.py
+  - experiments/gold-thb-usd-causality/tune_graph_knn_fx_overlay.py
+  - experiments/gold-thb-usd-causality/data/trended_graph_knn_fx_overlay_equity.csv
+  - experiments/gold-thb-usd-causality/data/trended_graph_knn_fx_overlay_results.json
+  - experiments/gold-thb-usd-causality/data/graph_knn_fx_overlay_tune_grid.csv
+  - experiments/gold-thb-usd-causality/data/graph_knn_fx_overlay_tune_results.json
+
+config:
+  version: 1
+  created_at: '2026-08-26'
+  last_updated: '2026-08-26'
+  maintainer: tony

@@ -1,0 +1,610 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Network View Design</title>
+  <style>
+    :root {
+      --bg: #f8fafc;
+      --card: #fff;
+      --text: #0f172a;
+      --muted: #64748b;
+      --accent: #06b6d4;
+      --accent-dark: #0891b2;
+      --border: #e2e8f0;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+    }
+    
+    * { box-sizing: border-box; }
+    body { 
+      font-family: system-ui, -apple-system, sans-serif; 
+      background: var(--bg); 
+      color: var(--text); 
+      margin: 0; 
+      padding: 2rem;
+    }
+    
+    .design-header {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+    
+    .design-header h1 {
+      margin: 0;
+      color: var(--text);
+    }
+    
+    .design-header p {
+      color: var(--muted);
+      margin-top: 0.5rem;
+    }
+    
+    .design-section {
+      margin-bottom: 3rem;
+    }
+    
+    .design-section h2 {
+      color: var(--text);
+      border-bottom: 2px solid var(--border);
+      padding-bottom: 0.5rem;
+      margin-bottom: 1rem;
+    }
+    
+    .mockup {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 0.5rem;
+      padding: 1.5rem;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    
+    .network-layout {
+      display: grid;
+      grid-template-columns: 280px 1fr 320px;
+      gap: 1rem;
+      min-height: 600px;
+    }
+    
+    /* Network Controls Panel */
+    .network-controls {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 0.375rem;
+      padding: 1rem;
+    }
+    
+    .control-section {
+      margin-bottom: 1.5rem;
+    }
+    
+    .control-section h3 {
+      margin: 0 0 0.75rem 0;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    
+    .slider-control {
+      margin-bottom: 1rem;
+    }
+    
+    .slider-control label {
+      display: block;
+      font-size: 0.85rem;
+      margin-bottom: 0.5rem;
+    }
+    
+    .slider-control input[type="range"] {
+      width: 100%;
+    }
+    
+    .slider-value {
+      font-size: 0.8rem;
+      color: var(--muted);
+      text-align: right;
+    }
+    
+    .checkbox-group {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    
+    .checkbox-item {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.85rem;
+    }
+    
+    .legend {
+      background: var(--bg);
+      border-radius: 0.375rem;
+      padding: 1rem;
+    }
+    
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 0.5rem;
+      font-size: 0.85rem;
+    }
+    
+    .legend-color {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+    }
+    
+    /* Network Visualization Panel */
+    .network-viz {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 0.375rem;
+      padding: 1rem;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .network-canvas {
+      width: 100%;
+      height: 500px;
+      background: #f8fafc;
+      border-radius: 0.25rem;
+      position: relative;
+    }
+    
+    .network-toolbar {
+      display: flex;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+    }
+    
+    .network-btn {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 0.25rem;
+      padding: 0.5rem 1rem;
+      font-size: 0.85rem;
+      cursor: pointer;
+    }
+    
+    .network-btn:hover {
+      background: var(--border);
+    }
+    
+    .network-btn.active {
+      background: var(--accent);
+      color: white;
+      border-color: var(--accent);
+    }
+    
+    /* Node styles */
+    .node {
+      position: absolute;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: white;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    
+    .node:hover {
+      transform: scale(1.1);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    }
+    
+    .node.family { background: var(--success); }
+    .node.work { background: var(--accent); }
+    .node.personal { background: var(--warning); }
+    .node.promo { background: var(--danger); }
+    .node.official { background: #8b5cf6; }
+    .node.group { background: #f97316; }
+    
+    .node-label {
+      position: absolute;
+      bottom: -20px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 0.7rem;
+      color: var(--text);
+      white-space: nowrap;
+      background: rgba(255,255,255,0.9);
+      padding: 2px 6px;
+      border-radius: 0.25rem;
+    }
+    
+    /* Edge styles */
+    .edge {
+      position: absolute;
+      height: 2px;
+      background: var(--border);
+      transform-origin: left center;
+    }
+    
+    .edge.strong {
+      height: 3px;
+      background: var(--accent);
+    }
+    
+    .edge.medium {
+      height: 2px;
+      background: var(--muted);
+    }
+    
+    .edge.weak {
+      height: 1px;
+      background: var(--border);
+    }
+    
+    /* Network Details Panel */
+    .network-details {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 0.375rem;
+      padding: 1rem;
+      overflow-y: auto;
+    }
+    
+    .detail-card {
+      background: var(--bg);
+      border-radius: 0.375rem;
+      padding: 1rem;
+      margin-bottom: 1rem;
+    }
+    
+    .detail-card h3 {
+      margin: 0 0 0.5rem 0;
+      font-size: 0.9rem;
+      color: var(--text);
+    }
+    
+    .detail-content {
+      font-size: 0.85rem;
+      color: var(--text);
+      line-height: 1.4;
+    }
+    
+    .connection-list {
+      margin-top: 0.5rem;
+    }
+    
+    .connection-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.5rem 0;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.8rem;
+    }
+    
+    .connection-item:last-child {
+      border-bottom: none;
+    }
+    
+    .connection-strength {
+      font-weight: 600;
+      color: var(--accent);
+    }
+    
+    .design-notes {
+      background: #fef3c7;
+      border: 1px solid #f59e0b;
+      border-radius: 0.375rem;
+      padding: 1rem;
+      margin-top: 1rem;
+    }
+    
+    .design-notes h3 {
+      margin: 0 0 0.5rem 0;
+      color: #92400e;
+      font-size: 0.9rem;
+    }
+    
+    .design-notes ul {
+      margin: 0;
+      padding-left: 1.25rem;
+      font-size: 0.85rem;
+      color: #92400e;
+    }
+    
+    .design-notes li {
+      margin-bottom: 0.25rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="design-header">
+    <h1>Network View Design</h1>
+    <p>Conversation relationship visualization and exploration</p>
+  </div>
+
+  <div class="design-section">
+    <h2>Main Layout</h2>
+    <div class="mockup">
+      <div class="network-layout">
+        <!-- Left Panel: Network Controls -->
+        <div class="network-controls">
+          <div class="control-section">
+            <h3>Relationship Strength</h3>
+            <div class="slider-control">
+              <label>Minimum Edge Weight</label>
+              <input type="range" min="0" max="100" value="30">
+              <div class="slider-value">30%</div>
+            </div>
+          </div>
+          
+          <div class="control-section">
+            <h3>Node Size</h3>
+            <div class="slider-control">
+              <label>Size By</label>
+              <select style="width: 100%; padding: 0.5rem; border: 1px solid var(--border); border-radius: 0.25rem;">
+                <option>Memory Count</option>
+                <option>Message Count</option>
+                <option>Connection Count</option>
+              </select>
+            </div>
+          </div>
+          
+          <div class="control-section">
+            <h3>Relationship Types</h3>
+            <div class="checkbox-group">
+              <label class="checkbox-item">
+                <input type="checkbox" checked> Topic Overlap
+              </label>
+              <label class="checkbox-item">
+                <input type="checkbox" checked> Time Proximity
+              </label>
+              <label class="checkbox-item">
+                <input type="checkbox" checked> Participant Overlap
+              </label>
+              <label class="checkbox-item">
+                <input type="checkbox> Message References
+              </label>
+            </div>
+          </div>
+          
+          <div class="control-section">
+            <h3>Legend</h3>
+            <div class="legend">
+              <div class="legend-item">
+                <div class="legend-color" style="background: var(--success);"></div>
+                <span>Family</span>
+              </div>
+              <div class="legend-item">
+                <div class="legend-color" style="background: var(--accent);"></div>
+                <span>Work</span>
+              </div>
+              <div class="legend-item">
+                <div class="legend-color" style="background: var(--warning);"></div>
+                <span>Personal</span>
+              </div>
+              <div class="legend-item">
+                <div class="legend-color" style="background: var(--danger);"></div>
+                <span>Promo</span>
+              </div>
+              <div class="legend-item">
+                <div class="legend-color" style="background: #8b5cf6;"></div>
+                <span>Official</span>
+              </div>
+              <div class="legend-item">
+                <div class="legend-color" style="background: #f97316;"></div>
+                <span>Group</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Center Panel: Network Visualization -->
+        <div class="network-viz">
+          <div class="network-toolbar">
+            <button class="network-btn active">Force Layout</button>
+            <button class="network-btn">Circular Layout</button>
+            <button class="network-btn">Hierarchical</button>
+            <button class="network-btn">Reset View</button>
+          </div>
+          
+          <div class="network-canvas" id="network-canvas">
+            <!-- Sample nodes and edges -->
+            <div class="node family" style="width: 60px; height: 60px; left: 200px; top: 150px;">
+              Family
+              <div class="node-label">Family Group</div>
+            </div>
+            
+            <div class="node work" style="width: 50px; height: 50px; left: 350px; top: 100px;">
+              Work
+              <div class="node-label">Work Chat</div>
+            </div>
+            
+            <div class="node personal" style="width: 40px; height: 40px; left: 450px; top: 200px;">
+              Personal
+              <div class="node-label">Personal</div>
+            </div>
+            
+            <div class="node promo" style="width: 35px; height: 35px; left: 300px; top: 300px;">
+              Promo
+              <div class="node-label">Promo</div>
+            </div>
+            
+            <div class="node official" style="width: 45px; height: 45px; left: 150px; top: 250px;">
+              Official
+              <div class="node-label">Official</div>
+            </div>
+            
+            <!-- Sample edges -->
+            <div class="edge strong" style="width: 150px; left: 260px; top: 175px; transform: rotate(25deg);"></div>
+            <div class="edge medium" style="width: 120px; left: 400px; top: 150px; transform: rotate(45deg);"></div>
+            <div class="edge weak" style="width: 100px; left: 350px; top: 250px; transform: rotate(-30deg);"></div>
+          </div>
+        </div>
+        
+        <!-- Right Panel: Network Details -->
+        <div class="network-details">
+          <div class="detail-card">
+            <h3>Selected Node</h3>
+            <div class="detail-content">
+              <strong>Family Group</strong><br>
+              <span style="color: var(--muted);">12 memories • 5 connections</span>
+            </div>
+          </div>
+          
+          <div class="detail-card">
+            <h3>Connections</h3>
+            <div class="connection-list">
+              <div class="connection-item">
+                <span>Work Chat</span>
+                <span class="connection-strength">85%</span>
+              </div>
+              <div class="connection-item">
+                <span>Personal</span>
+                <span class="connection-strength">60%</span>
+              </div>
+              <div class="connection-item">
+                <span>Official</span>
+                <span class="connection-strength">45%</span>
+              </div>
+              <div class="connection-item">
+                <span>Promo</span>
+                <span class="connection-strength">30%</span>
+              </div>
+              <div class="connection-item">
+                <span>Group</span>
+                <span class="connection-strength">25%</span>
+              </div>
+            </div>
+          </div>
+          
+          <div class="detail-card">
+            <h3>Shared Topics</h3>
+            <div class="detail-content">
+              <div style="display: flex; flex-wrap: wrap; gap: 0.35rem;">
+                <span class="topic-tag">Health</span>
+                <span class="topic-tag">Finance</span>
+                <span class="topic-tag">Planning</span>
+              </div>
+            </div>
+          </div>
+          
+          <div class="detail-card">
+            <h3>Network Statistics</h3>
+            <div class="detail-content">
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
+                <div style="text-align: center; background: var(--bg); padding: 0.5rem; border-radius: 0.25rem;">
+                  <div style="font-size: 1.25rem; font-weight: 600; color: var(--accent);">70</div>
+                  <div style="font-size: 0.7rem; color: var(--muted);">Nodes</div>
+                </div>
+                <div style="text-align: center; background: var(--bg); padding: 0.5rem; border-radius: 0.25rem;">
+                  <div style="font-size: 1.25rem; font-weight: 600; color: var(--success);">156</div>
+                  <div style="font-size: 0.7rem; color: var(--muted);">Edges</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="design-notes">
+        <h3>🎨 Design Notes</h3>
+        <ul>
+          <li><strong>Force-directed layout:</strong> Conversations positioned based on relationship strength</li>
+          <li><strong>Node size:</strong> Based on memory count, message count, or connection count</li>
+          <li><strong>Node color:</strong> Based on conversation category (family, work, personal, etc.)</li>
+          <li><strong>Edge thickness:</strong> Based on relationship strength (topic overlap, time proximity)</li>
+          <li><strong>Interactive controls:</strong> Filter by relationship type, adjust minimum edge weight</li>
+          <li><strong>Multiple layouts:</strong> Force, circular, hierarchical for different perspectives</li>
+          <li><strong>Details panel:</strong> Shows selected node info, connections, and shared topics</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="design-section">
+    <h2>Data Structure</h2>
+    <div class="mockup" style="background: var(--bg);">
+      <div style="padding: 1.5rem;">
+        <h3 style="margin-top: 0;">Network Graph Data Structure</h3>
+        
+        <div style="background: var(--card); padding: 1rem; border-radius: 0.375rem; margin-bottom: 1rem;">
+          <pre style="margin: 0; font-size: 0.85rem; overflow-x: auto;">
+{
+  "nodes": [
+    {
+      "id": "cc8589a45e890e38942825d3c13ec3439",
+      "name": "Family Group",
+      "category": "Family",
+      "memoryCount": 12,
+      "messageCount": 156,
+      "topics": ["Health", "Finance", "Planning"],
+      "position": { "x": 200, "y": 150 },
+      "size": 60
+    }
+  ],
+  "edges": [
+    {
+      "source": "cc8589a45e890e38942825d3c13ec3439",
+      "target": "c6d74470bfea6c4739b64b19ee6b45b5d",
+      "weight": 0.85,
+      "type": "topic_overlap",
+      "sharedTopics": ["Health", "Planning"]
+    }
+  ]
+}
+          </pre>
+        </div>
+        
+        <h3>Relationship Calculation Methods</h3>
+        <ul style="font-size: 0.9rem; line-height: 1.6;">
+          <li><strong>Topic Overlap:</strong> Jaccard similarity of topic sets between conversations</li>
+          <li><strong>Time Proximity:</strong> Temporal distance between recent messages</li>
+          <li><strong>Participant Overlap:</strong> Shared participants between conversations</li>
+          <li><strong>Message References:</strong> Cross-conversation message references</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="design-section">
+    <h2>Implementation Priority</h2>
+    <div class="mockup" style="background: var(--bg);">
+      <div style="padding: 1.5rem;">
+        <h3 style="margin-top: 0;">Phase 1: Basic Network View</h3>
+        <ul style="font-size: 0.9rem; line-height: 1.6;">
+          <li>Simple force-directed layout using canvas</li>
+          <li>Basic node rendering with category colors</li>
+          <li>Topic overlap relationship calculation</li>
+          <li>Interactive node selection</li>
+          <li>Details panel with connection info</li>
+        </ul>
+        
+        <h3 style="margin-top: 1.5rem;">Phase 2: Enhanced Features</h3>
+        <ul style="font-size: 0.9rem; line-height: 1.6;">
+          <li>Multiple relationship types (time, participants)</li>
+          <li>Advanced layout algorithms (circular, hierarchical)</li>
+          <li>Interactive controls (zoom, pan, filters)</li>
+          <li>Edge thickness based on relationship strength</li>
+          <li>Node size options (memory count, message count)</li>
+        </ul>
+        
+        <h3 style="margin-top: 1.5rem;">Phase 3: Advanced Features</h3>
+        <ul style="font-size: 0.9rem; line-height: 1.6;">
+          <li>Real-time network updates</li>
+          <li>Path finding between conversations</li>
+          <li>Community detection algorithms</li>
+          <li>Network statistics and metrics</li>
+          <li>Export network data</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,530 @@
+title: Chaba System Improvements & Action Plans
+subtitle: Tracking system improvements, optimization opportunities, and action plans
+icon: 🚀
+ideas:
+- Central repository for all system improvements and action plans
+- Track priority, status, effort, and dependencies for each improvement
+- Link improvements to assessment reports and KB entries
+- Maintain historical record of completed improvements
+- Use for sprint planning and resource allocation
+- Dependency management prevents blocking issues and enables critical path analysis
+- Git integration provides traceability from issues to code changes
+- Automated verification ensures improvements actually resolve issues
+sections:
+- title: Dependency Management Guide
+  icon: 🔗
+  layout: list
+  items:
+  - label: Dependency Fields
+    text: 'Use these fields to manage improvement dependencies:
+
+
+      **depends_on:** List of improvements that must be completed first
+
+
+      - Example: depends_on: [Docker Compose Configuration Fix]
+
+
+      - Purpose: Prevents starting work before prerequisites are ready
+
+
+      - Format: Array of strings or single string
+
+
+
+      **dependency_reason:** Explanation of why dependency exists
+
+
+      - Example: dependency_reason: Yomi services depend on Docker compose configuration
+
+
+      - Purpose: Documents the relationship for future reference
+
+
+
+      **blocks:** List of improvements that cannot start until this one completes
+
+
+      - Example: blocks: [System Load Analysis, GPU Process Management]
+
+
+      - Purpose: Identifies downstream impact of this improvement
+
+
+      - Format: Array of strings or single string
+
+
+
+      **blocking_reason:** Explanation of why this improvement blocks others
+
+
+      - Example: blocking_reason: Memory optimization baseline needed for load analysis
+
+
+      - Purpose: Documents the impact for planning and prioritization
+
+
+
+      **Comprehensive Documentation:** See docs/kb/dependency-management.md for detailed dependency management guide, workflow
+      examples, and troubleshooting.
+
+
+      ''
+
+      '
+    tags:
+    - dependencies
+    - guide
+  - label: Dependency Validation Rules
+    text: '**Circular Dependencies:** Not allowed - will be flagged during validation
+
+
+      **Missing Dependencies:** Referenced improvements must exist in SSOT
+
+
+      **Self Dependencies:** An improvement cannot depend on itself
+
+
+      **Status Validation:** Cannot depend on improvements with same or lower priority
+
+
+      **Completion Status:** Dependencies should be in "completed" status before starting work
+
+      '
+    tags:
+    - dependencies
+    - validation
+  - label: Dependency Best Practices
+    text: '**Be Specific:** Use exact improvement labels for dependencies
+
+
+      **Document Reasons:** Always explain why dependencies exist
+
+
+      **Keep It Minimal:** Only add necessary dependencies to avoid over-constraining
+
+
+      **Review Regularly:** Remove dependencies that are no longer needed
+
+
+      **Test Independence:** Ensure improvements can be verified independently
+
+
+      **Plan Critical Path:** Identify dependencies that form the critical path for delivery
+
+      '
+    tags:
+    - dependencies
+    - best-practices
+  - label: Impact Scoring Guide
+    text: 'Use impact scoring to prioritize improvements based on their expected value:
+
+
+      **business_impact:** Business value (1-10 scale)
+
+
+      - Revenue impact, customer satisfaction, competitive advantage
+
+
+      - 10: Critical business impact, revenue-generating
+
+
+      - 7-9: Significant business value, strategic importance
+
+
+      - 4-6: Moderate business value, operational improvement
+
+
+      - 1-3: Low business value, nice to have
+
+
+      **technical_impact:** Technical improvement (1-10 scale)
+
+
+      - Code quality, architecture, performance, security
+
+
+      - 10: Critical technical debt, security vulnerability
+
+
+      - 7-9: Significant technical improvement, performance gain
+
+
+      - 4-6: Moderate technical improvement, code quality
+
+
+      - 1-3: Low technical impact, minor cleanup
+
+
+      **user_experience_impact:** User experience value (1-10 scale)
+
+
+      - Usability, performance, reliability, features
+
+
+      - 10: Critical UX issue, user-facing outage
+
+
+      - 7-9: Significant UX improvement, major feature
+
+
+      - 4-6: Moderate UX improvement, minor feature
+
+
+      - 1-3: Low UX impact, polish
+
+
+      **cost_savings_impact:** Cost reduction value (1-10 scale)
+
+
+      - Infrastructure costs, operational efficiency, time savings
+
+
+      - 10: Major cost reduction, significant savings
+
+
+      - 7-9: Moderate cost reduction, measurable savings
+
+
+      - 4-6: Minor cost reduction, some efficiency gains
+
+
+      - 1-3: Minimal cost impact, negligible savings
+
+
+      **impact_summary:** Brief description of expected impact
+
+
+      - Example: "Reduces infrastructure costs by 20% through GPU optimization"
+
+
+      - Purpose: Quick understanding of improvement value
+
+
+      **Priority Calculation:** Weighted average of impact scores
+
+
+      - Formula: (business * 0.3) + (technical * 0.3) + (user_experience * 0.2) + (cost_savings * 0.2)
+
+
+      - Result: Used for automatic prioritization alongside manual priority
+
+      '
+    tags:
+    - impact
+    - scoring
+    - guide
+- title: High Priority Improvements
+  icon: 🔴
+  layout: list
+  items:
+  - label: Service Failures Detected
+    text: Multiple services failed health checks - investigation required (Auto-generated by overnight assessment on 2026-08-28T02:35:41+07:00)
+    status: accepted
+    priority: high
+    effort: 1 session
+    category: service-health
+    discovered: 2026-08-28
+    assessment_ref: overnight-assessment-20260828
+    auto_generated: true
+    git_commit: 50cb956
+    git_branch: master
+    tags:
+    - auto-generated
+    - service-health
+    business_impact: 8
+    technical_impact: 8
+    user_experience_impact: 8
+    cost_savings_impact: 8
+    impact_summary: Auto-scored high priority service-health improvement
+    accepted: '2026-08-28'
+  - label: Security Vulnerabilities Found
+    text: Security scan found vulnerabilities requiring immediate attention (Auto-generated by overnight assessment on 2026-08-28T02:35:41+07:00)
+    status: accepted
+    priority: high
+    effort: 1 session
+    category: security
+    discovered: 2026-08-28
+    assessment_ref: overnight-assessment-20260828
+    auto_generated: true
+    git_commit: 50cb956
+    git_branch: master
+    tags:
+    - auto-generated
+    - security
+    business_impact: 10
+    technical_impact: 10
+    user_experience_impact: 8
+    cost_savings_impact: 9
+    impact_summary: Auto-scored high priority security improvement
+    accepted: '2026-08-28'
+  - label: Network Connectivity Issues
+    text: Network connectivity checks failed for critical endpoints (Auto-generated by overnight assessment on 2026-08-28T02:35:41+07:00)
+    status: planned
+    priority: medium
+    effort: 2-4 hours
+    category: network
+    discovered: 2026-08-28
+    assessment_ref: overnight-assessment-20260828
+    auto_generated: true
+    git_commit: 50cb956
+    git_branch: master
+    tags:
+    - auto-generated
+    - network
+    business_impact: 5
+    technical_impact: 5
+    user_experience_impact: 5
+    cost_savings_impact: 5
+    impact_summary: Auto-scored medium priority network improvement
+    accepted: '2026-08-28'
+  - label: Database Performance Issues
+    text: Database performance issues detected - optimization required (Auto-generated by overnight assessment on 2026-08-27T02:27:22+07:00)
+    status: planned
+    priority: medium
+    effort: 2-4 hours
+    category: database
+    discovered: 2026-08-27
+    assessment_ref: overnight-assessment-20260827
+    auto_generated: true
+    git_commit: e845173
+    git_branch: research/thb-base-settlement
+    tags:
+    - auto-generated
+    - database
+    business_impact: 5
+    technical_impact: 5
+    user_experience_impact: 5
+    cost_savings_impact: 5
+    impact_summary: Auto-scored medium priority database improvement
+    accepted: '2026-08-27'
+  - label: Helm Dashboard Service Failure
+    text: Helm Dashboard returned status 404 (expected 200) - service is unhealthy and needs investigation (Auto-generated
+      by overnight assessment on 2026-08-18T19:00:03.827Z)
+    status: completed
+    completed_at: '2026-08-19'
+    note: Caddy web container was using chaba-omen Caddyfile without /apps/helm route. Restored by copying chaba/stacks/web/Caddyfile
+      and restarting web container. Now returns 200.
+    priority: high
+    effort: TBD
+    category: service-health
+    discovered: 2026-08-18
+    assessment_ref: overnight-assessment-2026-08-18
+    auto_generated: true
+    git_commit: 0e59f4e801af5d61cca06ad82689a63b03f1aa1a
+    git_branch: master
+    git_short_commit: 0e59f4e8
+    related_files:
+    - docs/ssot/infrastructure/ssot.health.home.yml
+    tags:
+    - auto-generated
+    - service-health
+  - label: Docker Container Security Vulnerabilities
+    text: Docker containers have 5 security vulnerabilities - update images to patch HIGH/CRITICAL issues (Auto-generated
+      by overnight assessment on 2026-08-17T19:00:56.031Z)
+    status: in_progress
+    triage_date: '2026-08-18'
+    triage_notes: 'Evidence: 2026-08-18 Trivy section 8 supersedes the prior ''5 vulnerabilities'' count. Scans show HIGH/CRITICAL
+      issues in imagen2-inference (365 HIGH/21 CRITICAL), status-api (46 HIGH/17 CRITICAL), ollama (39 HIGH), web (14 HIGH),
+      gemini-ollama-proxy/gpu-queue-processor/gpu-queue (each 17 HIGH/1 CRITICAL). Progress (2026-08-18): first pass updated
+      base images for ollama (ollama/ollama:latest), gemini-ollama-proxy (node:22-alpine), web (caddy:latest), gpu-queue (node:22-alpine),
+      gpu-queue-processor (node:22-alpine), and removed the stale web-status-api image. Health checks confirmed for all restarted
+      containers. Outstanding: imagen2-inference (custom build not touched) and status-api (custom build not rebuilt). Decision:
+      in_progress. imagen2-inference parked by user; status-api now has active job docs/ssot/jobs/security/2026-08-23-status-api-vulnerability-rebuild.yml.'
+    priority: high
+    effort: TBD
+    category: security
+    discovered: 2026-08-17
+    assessment_ref: overnight-assessment-2026-08-17
+    auto_generated: true
+    git_commit: d36126f01a7da597540e0bd8febdcdec504c224e
+    git_branch: master
+    git_short_commit: d36126f0
+    related_files:
+    - docker-compose.yml
+    - scripts/security-scan.mjs
+    - docs/ssot/jobs/security/2026-08-23-status-api-vulnerability-rebuild.yml
+    note: 'status-api (web-status-api) image rebuilt, rescanned, and the running container was recreated with the new image:
+      8 HIGH / 0 CRITICAL (was 46/17). imagen2-inference remains parked.'
+    tags:
+    - auto-generated
+    - security
+- title: Medium Priority Improvements
+  icon: 🟡
+  layout: list
+  items:
+  - label: Context and Knowledge Management Improvement Plan
+    text: Implement the six-phase plan from reports/CONTEXT_IMPROVEMENT_PLAN.md and docs/kb/context-knowledge-improvement-plan.md.
+      Includes Auto-KB quality filter, hand-off contract standardization, mcp_context retrieval, KB categorization, focus
+      decision tree simplification, and session summary automation.
+    status: completed
+    completed_at: '2026-08-19'
+    note: All six phases implemented and committed. See git history for phase 1-6 commits and docs/kb/context-knowledge-improvement-plan.md.
+    triage_date: '2026-08-18'
+    triage_notes: The plan already exists as a subagent-produced report but was not tracked in SSOT or KB. This item closes
+      that gap. Phase 1 (Auto-KB quality filter) is the highest value / lowest risk next step.
+    priority: medium
+    effort: 6-12 sessions
+    category: architecture
+    discovered: 2026-08-18
+    target_date: 2026-08-30
+    kb_ref: docs/kb/context-knowledge-improvement-plan.md
+    plan_ref: reports/CONTEXT_IMPROVEMENT_PLAN.md
+    action_items:
+    - Phase 1: Auto-KB quality filter
+    - Phase 2: Hand-off contract standardization
+    - Phase 3: mcp_context retrieval
+    - Phase 4: KB categorization standardization
+    - Phase 5: Focus decision tree simplification
+    - Phase 6: Session summary automation
+    tags:
+    - kb
+    - context
+    - focus
+    - ssot
+    - improvement-plan
+  - label: SSOT file optimization
+    text: Implement the SSOT file optimization plan (docs/ssot/ssot.file-optimization.yml). Enforce bloat thresholds, scan
+      for data-isolation violations, remove redundant and obsolete entries, standardize consistency, and wire all checks into
+      ssot-validate and .githooks/pre-commit. Bloat is included as Phase 1 of the plan.
+    status: completed
+    completed_at: '2026-08-19'
+    note: Split ssot.registry.yml and script registry into per-type partitions; moved mcp-debug baselines to data; split mcp-debug
+      presets. ssot-validate now reports 0 errors and 1 review warning (ssot.focus.current.yml 392).
+    triage_date: '2026-08-18'
+    triage_notes: No direct evidence in the 2026-08-18 overnight report; this is a pre-existing planned improvement (discovered
+      2026-08-16). Leaving as pending until it becomes the active focus.
+    priority: medium
+    effort: 2-4 hours
+    category: ssot
+    discovered: 2026-08-16
+    target_date: 2026-08-23
+    action_items:
+    - Read thresholds from ssot.file-control.yml
+    - Add bloat, data-isolation, and consistency checks to ssot-validate output
+    - Add grandfather exemptions for the five current oversized files
+    - Wire the checks into .githooks/pre-commit
+    - Update ssot.index.yml and ssot.file-optimization.yml as work proceeds
+    - Add focus-workload awareness to scripts/ssot-optimize.mjs (read ssot.focus.current.yml, cap suggestions, scope by active
+      branch, skip focus-inbox queueing under load)
+    - Update ssot.file-optimization.yml with a workload policy (severity gates, suggestion budget per active focus, branch
+      path scopes)
+    - Enable ssot-optimization-snapshot in ssot.night-jobs.yml after a dry run proves the workload logic is safe
+    related_files:
+    - scripts/ssot-validate-all.mjs
+    - docs/ssot/ssot.file-control.yml
+    - docs/ssot/ssot.file-optimization.yml
+    - .githooks/pre-commit
+    tags:
+    - ssot
+    - validation
+    - bloat
+    - data-isolation
+    - optimization
+    - tooling
+  - label: SSOT optimization orchestration
+    text: 'Implement scripts/ssot-optimize.mjs and the ssot-optimization-snapshot night job.
+
+      The script should run bloat, data-isolation, obsolescence, redundancy, consistency, and conflict checks in order, produce
+      a delta report, and queue resulting actions into focus-inbox or overnight review, keeping generated metrics out of canonical
+      SSOTs.
+
+      '
+    status: completed
+    completed: '2026-08-19'
+    priority: medium
+    effort: small
+    category: automation
+    discovered: '2026-08-16'
+    target_date: '2026-08-30'
+    depends_on:
+    - SSOT file optimization
+    dependency_reason: 'Bloat and data-isolation checks must be implemented before they can
+
+      be orchestrated.
+
+      '
+    action_items:
+    - Add an orchestration step to scripts/ssot-validate-all.mjs or create workflows/ssot-optimization.yml
+    - Define per-phase checks (bloat, data-isolation, obsolescence, redundancy, consistency)
+    - Wire output into focus-inbox or overnight-focus-review
+    - Store generated reports under data/ or runtime SSOTs, not docs/ssot/
+    related_files:
+    - docs/ssot/ssot.file-optimization.yml
+    - docs/ssot/ssot.file-control.yml
+    - scripts/ssot-validate-all.mjs
+    - docs/ssot/ssot.focus.current.yml
+    tags:
+    - orchestration
+    - ssot
+    - automation
+    - workflows
+    - optimization
+- title: Low Priority Improvements
+  icon: 🟢
+  layout: list
+  items:
+  - label: SSOT and docs currency check after changes
+    text: After every code or focus change, run ssot-validate-all and verify that all SSOTs and docs directly affected by
+      the change are updated. Add a lightweight checklist or pre-commit hook that flags when a commit touches scripts/ but
+      does not touch the matching ssot/ docs.
+    status: completed
+    completed_at: '2026-08-19'
+    note: 'Ran ssot-validate, ssot-optimize, registry-drafts, and ssot.index.yml check after the registry refactor. 0 errors.
+      Remaining warning: ssot.focus.current.yml bloat (372). Data isolation IPs in tony-omen-internet-impact job anonymized.'
+    triage_date: '2026-08-18'
+    triage_notes: No direct evidence in the 2026-08-18 overnight report; this is a pre-existing process-improvement item.
+      Continue to track as pending until it can be worked into tooling/focus workflow.
+    priority: low
+    effort: small
+    category: ssot
+    discovered: '2026-08-17'
+    target_date: '2026-08-30'
+    action_items:
+    - Document the currency checklist in docs/kb/change-tracking.md
+    - Add a pre-commit or CI step that runs ssot-validate-all
+    - Track cases where script changes do not have matching SSOT updates
+    related_files:
+    - scripts/ssot-validate-all.mjs
+    - .githooks/pre-commit
+    - docs/ssot/ssot.index.yml
+    tags:
+    - ssot
+    - validation
+    - documentation
+    - change-tracking
+- title: System Architecture Improvements
+  icon: 🔵
+  layout: list
+  items: []
+- title: Action Plan Timeline
+  icon: 📅
+  layout: timeline
+  items:
+  - label: Future Improvements (Q4 2026)
+    text: Enhanced monitoring, dashboard integration, automated alerting, performance optimization
+    timeframe: Q4 2026
+    priority: medium
+    status: planned
+    items:
+    - Real-time performance monitoring dashboard
+    - Automated alerting via email/Slack
+    - Enhanced baseline confidence with more data
+    - Predictive performance modeling
+    - Service dependency visualization
+    - Automated service recovery
+    - Enhanced error context and troubleshooting
+config:
+  version: 1
+  last_updated: 2026-08-12
+  maintainer: tony
+  update_frequency: weekly
+  related_files:
+  - ssot.improvements.archive.yml
+  - docs/ssot/infrastructure/ssot.health.yml
+  - docs/ssot/infrastructure/ssot.services.yml
+  - docs/kb/overnight-assessment.md
+  - docs/kb/health-check.md
+  - docs/kb/performance-baselines.md
+  - docs/kb/mcp-health-vs-old-skill-comparison.md
+  next_review: 2026-08-19

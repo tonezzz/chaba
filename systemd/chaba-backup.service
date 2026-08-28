@@ -1,0 +1,11 @@
+[Unit]
+Description=Chaba Infrastructure Backup System
+After=network.target docker.service
+
+[Service]
+Type=oneshot
+User=tony
+WorkingDirectory=/home/tony/CascadeProjects/chaba
+ExecStart=/home/tony/CascadeProjects/chaba/scripts/backup-manager.sh
+StandardOutput=append:/var/log/chaba-backup.log
+StandardError=append:/var/log/chaba-backup.log

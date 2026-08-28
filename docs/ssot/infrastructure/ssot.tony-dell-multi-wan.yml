@@ -1,0 +1,96 @@
+title: Tony-Dell Multi-WAN Active-Backup
+subtitle: Wired ADSL primary with Naris Wi-Fi ADSL backup on tony-dell
+icon: network
+
+ideas:
+  - Use the wired connection on tony-dell as the primary default route with a low metric.
+  - Keep the iPhone Personal Hotspot (TONY-IP) Wi-Fi connection active with a high metric as a hot backup.
+  - Monitor internet reachability through the wired device and switch the default route to Wi-Fi after repeated failures.
+  - Restore the wired default route automatically when the wired internet comes back.
+  - Run the check as a root systemd service triggered by a timer so the switch is reliable and auditable.
+
+sections:
+  - title: Active Connections
+    icon: map
+    layout: list
+    items:
+      - label: Wired primary
+        text: Connection "Wired connection 1" on enp0s31f6, gateway 192.168.2.1, DHCP source 192.168.2.67/24, default route metric 100.
+      - label: iPhone Wi-Fi backup
+        text: Connection "TONY-IP" on wlx00761100125e, gateway <IPHONE_USB_GATEWAY>, DHCP source <IPHONE_USB_DHCP_ADDRESS>/28, default route metric 600.
+
+  - title: Failover Mechanism
+    icon: workflow
+    layout: list
+    items:
+      - label: Script
+        text: scripts/tony-dell-wan-failover.sh runs as root and pings 8.8.8.8 through the wired device. After 3 consecutive failures it rewrites the default routes so the TONY-IP Wi-Fi connection becomes metric 100 and wired becomes metric 2000.
+      - label: Restoration
+        text: When the wired ping succeeds again the script restores wired as metric 100 and demotes TONY-IP back to metric 2000.
+      - label: Scheduler
+        text: systemd unit /etc/systemd/system/tony-dell-wan-failover.service is triggered by /etc/systemd/system/tony-dell-wan-failover.timer.
+
+  - title: Verification
+    icon: check
+    layout: list
+    items:
+      - label: Wired disabled
+        text: After "nmcli con down 'Wired connection 1'" the default route became "default via <IPHONE_USB_GATEWAY> dev wlx00761100125e proto dhcp src <IPHONE_USB_DHCP_ADDRESS> metric 100".
+      - label: Wired restored
+        text: After "nmcli con up 'Wired connection 1'" the primary route became "default via 192.168.2.1 dev enp0s31f6 proto dhcp src 192.168.2.67 metric 100" while the TONY-IP route returned to a higher-metric backup.
+
+  - title: Hostname / mDNS / Tailnet Reference
+    icon: dns
+    layout: table
+    items:
+      - label: tony-omen
+        local_ip: 192.168.2.68
+        local_dns: tony-omen.local
+        tailnet_name: tony-omen
+        tailnet_ip: 100.75.102.88
+        when_local: Use tony-omen.local or 192.168.2.68 only on the home LAN; mDNS can be slow or fail across interfaces.
+        when_remote: Always use tony-omen or 100.75.102.88 over Tailscale.
+        used_by: mcp-health base_url, MDDB, Yomi, Caddy, GPU queue
+      - label: tony-dell
+        local_ip: 192.168.2.67
+        local_dns: tony-dell.local
+        tailnet_name: tony-dell
+        tailnet_ip: 100.68.142.13
+        when_local: Use tony-dell.local or 192.168.2.67 on the home LAN.
+        when_remote: Always use tony-dell or 100.68.142.13 over Tailscale.
+        used_by: MDDB, trade-api, postgres, redis, weaviate
+      - label: kk-macbook
+        local_ip: n/a
+        local_dns: n/a
+        tailnet_name: kk-macbook
+        tailnet_ip: 100.124.59.112
+        when_local: No wired/LAN interface; rely on Tailscale.
+        when_remote: Always use kk-macbook or 100.124.59.112 over Tailscale.
+        used_by: mcp-debug host
+    note: mcp-health has been switched to use tailnet short names (tony-omen, tony-dell) for all health-check reachability. .local/mDNS is intentionally not used by mcp-health because it is unreliable across the iPhone hotspot path and when mDNS caches fail.
+
+  - title: iPhone Personal Hotspot Backup
+    icon: hotspot
+    layout: list
+    items:
+      - label: Status
+        text: Configured and active. tony-dell Wi-Fi interface wlx00761100125e is connected to "TONY-IP" as the backup default route.
+      - label: Enabler
+        text: Ralink MT7601U (148f:7601) is 2.4 GHz only. iPhone Personal Hotspot "Maximize Compatibility" is enabled, forcing 2.4 GHz.
+      - label: Connection details
+        text: Connection "TONY-IP" on wlx00761100125e, gateway <IPHONE_USB_GATEWAY>, source <IPHONE_USB_DHCP_ADDRESS>/28, metric 600 (backup).
+      - label: Failover script
+        text: scripts/tony-dell-wan-failover.sh swaps default-route metrics so TONY-IP becomes metric 100 when wired internet fails 3 times in a row.
+      - label: Verification command
+        text: 'ip -4 route show default && ping -c 3 -I wlx00761100125e <CLOUDFLARE_DNS_IP>'
+
+  - title: Service Files
+    icon: files
+    layout: list
+    items:
+      - label: Failover script
+        text: chaba/scripts/tony-dell-wan-failover.sh deployed to tony-dell:/usr/local/bin/tony-dell-wan-failover.sh
+      - label: systemd service
+        text: tony-dell:/etc/systemd/system/tony-dell-wan-failover.service
+      - label: systemd timer
+        text: tony-dell:/etc/systemd/system/tony-dell-wan-failover.timer

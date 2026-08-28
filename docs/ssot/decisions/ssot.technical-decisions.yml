@@ -1,0 +1,287 @@
+title: Technical Decisions
+subtitle: Record of significant design trade-offs and the reasoning behind them
+icon: ⚖️
+version: 1
+
+overview:
+  purpose: |
+    Keep a durable, searchable record of why a particular design or implementation
+    choice was made, what options were considered, and what the consequences were.
+    This is not a discussion log; it is a concise decision record that other SSOTs
+    can reference.
+  scope:
+    - Cross-cutting architecture choices
+    - Security and deployment trade-offs
+    - Tooling and host selection decisions
+    - Focus and workflow policy changes
+  out_of_scope:
+    - Routine bug fixes with no design options
+    - Focus history (see ssot.focus.yml)
+    - Session notes (see ssot.focus.sessions.yml)
+
+decision_schema:
+  required:
+    - id
+    - date
+    - title
+    - context
+    - options
+    - chosen
+    - reasoning
+    - consequences
+  optional:
+    - status
+    - participants
+    - related
+    - owner
+    - review_date
+
+decision:
+  id: kebab-case unique id
+  date: YYYY-MM-DD
+  title: short summary
+  status: proposed | accepted | deprecated | superseded
+  context: why the decision was needed
+  options:
+    - label: short name
+      pros: [list]
+      cons: [list]
+  chosen: the chosen option label
+  reasoning: why the chosen option won
+  consequences:
+    - immediate effects
+    - future work or follow-up
+  related:
+    - ssot or script ids
+
+decisions:
+  - id: mcp-debug-unified-commands
+    date: '2026-08-17'
+    title: Add unified cross-platform commands to mcp-debug
+    status: accepted
+    context: |
+      The mcp-debug command list has grown and now includes multiple tools that
+      have equivalent implementations on Linux, macOS, or different runtimes
+      (e.g., podman vs docker, systemctl vs launchctl, ss vs netstat, nvidia-smi
+      vs rocm-smi). We want fewer command variants and more host-agnostic
+      diagnostics without losing the ability to tell which backend answered.
+    options:
+      - label: Keep every runtime-specific command separate
+        pros: [exact output per tool, no parser abstraction, simple wrappers]
+        cons: [long allowlists, presets must branch per host, harder for sub-agents]
+      - label: Add one abstract command per concept with backend auto-detection
+        pros: [shorter allowlists, host-agnostic presets, consistent compact JSON]
+        cons: [more complex wrappers, parsers may differ, can mask runtime details]
+    chosen: Add one abstract command per concept with backend auto-detection
+    reasoning: |
+      The compact layer already normalizes raw text into JSON. Auto-detecting a
+      backend inside a single `containers`, `services`, `sockets`, or `gpu` command
+      keeps the user-facing command list small while still exposing the actual
+      backend in a `runtime` key. Commands will be vetted with `mcp_stats` before
+      promotion to `recommended: true`.
+    consequences:
+      immediate:
+        - New `containers`, `services`, `sockets`, and `gpu` commands in mcp-debug
+        - Backend runtime recorded in compact JSON output
+        - New suggested extensions and active focus created
+      future:
+        - May add `memory` and `block_devices` abstractions if these prove useful
+        - Raw allowlist can shrink as abstract commands replace duplicates
+    related:
+      - docs/ssot/infrastructure/ssot.mcp-debug.yml
+      - docs/ssot/infrastructure/ssot.mcp-tools.yml
+      - scripts/mcp_debug/mcp-debug-macos
+      - ~/.local/bin/mcp-debug
+  - id: mcp-debug-cors-proxy
+    date: '2026-08-16'
+    title: How to serve live mcp-savings.json to the HTTPS chaba.h3 page
+    status: accepted
+    context: |
+      The chaba.h3 page is served over HTTPS. Browsers block the public page from
+      fetching the tony-omen/tony-dell CORS HTTP endpoint (mixed-content and .local
+      mDNS resolution issues). The report must still refresh without a full page
+      reload.
+    options:
+      - label: HTTPS CORS endpoint on tony-dell
+        pros: [simple fetch from the page, no server-side proxy]
+        cons: [requires TLS termination and certificate on tony-dell, opens tony-dell port to HTTPS]
+      - label: Same-origin PHP proxy on chaba.h3
+        pros: [avoids mixed-content, hides upstream HTTP URL from browser, fast to deploy, falls back to cached snapshot]
+        cons: [adds PHP dependency, one more network hop, proxy must be maintained]
+      - label: Disable live URL until a secure endpoint is available
+        pros: [no mixed-content risk, no extra code]
+        cons: [page never shows live data, must regenerate and commit snapshot manually]
+    chosen: Same-origin PHP proxy on chaba.h3
+    reasoning: |
+      The PHP proxy gives the page live data without waiting for TLS infrastructure
+      on tony-dell. It keeps the upstream HTTP endpoint inside the server network
+      and lets the browser make a same-origin HTTPS request. A cached snapshot
+      fallback means the page still renders if tony-dell is unreachable. The proxy
+      can be replaced by a direct HTTPS endpoint later without changing the public
+      contract because callers use /api/mcp-savings.php.
+    consequences:
+      - chaba-h3/public/api/mcp-savings.php fetches http://100.68.142.13:9100/mcp-savings.json
+      - app.js sets LIVE_DATA_URL to "/api/mcp-savings.php"
+      - CORS server remains on tony-dell for now
+      - Future option to add TLS to tony-dell and switch the proxy upstream
+    related:
+      - docs/ssot/infrastructure/ssot.mcp-debug.cors.yml
+      - chaba-h3/public/api/mcp-savings.php
+      - chaba-h3/public/apps/docs/mcp_debug/app.js
+
+  - id: mcp-debug-file-clipboard-bridge
+    date: '2026-08-17'
+    title: How to add auditable remote file get/put to mcp-debug
+    status: accepted
+    context: |
+      The assistant frequently needs to fetch remote logs/configs and push small scripts
+      to tony-omen and tony-dell without leaving the MCP workflow. Existing `mcp_raw` is
+      too permissive and does not enforce path allowlists, size caps, or base64 transport.
+    options:
+      - label: Extend mcp_raw with allowlist and size arguments
+        pros: [reuses the existing raw-command path, minimal new code]
+        cons: [blurs the line between raw and auditable commands, harder to log, harder to vet]
+      - label: Add dedicated mcp_get_file and mcp_put_file tools
+        pros: [clear contract, path-allowlist per host, hard size cap, base64 payload, overwrite control, detailed logging]
+        cons: [new tool schemas, new SSOT file, more code in tools.py]
+      - label: Use a separate file-transfer MCP server
+        pros: [isolated security surface, could reuse scp/sftp]
+        cons: [extra process, extra configuration, tailnet auth complexity]
+    chosen: Add dedicated mcp_get_file and mcp_put_file tools
+    reasoning: |
+      A dedicated tool gives a precise contract and security defaults: per-host
+      allowed_path_prefixes, 1 MiB hard cap, overwrite=false by default, and base64
+      transport so binary content is safe over JSON. It lives in the same mcp-debug
+      server, reusing existing `run_on_host` SSH transport, but is auditable and
+      user-confirmable. Clipboard support is kept as an experimental, disabled-by-default
+      add-on after file transfer is stable.
+    consequences:
+      - docs/ssot/infrastructure/ssot.mcp-debug.files.yml added with tool contract, allowlists, and limits
+      - tools.py already contains mcp_get_file, mcp_put_file, mcp_clipboard_get, mcp_clipboard_set
+      - server.py already exposes the tool schemas and dispatch
+      - Round-trip smoke tests succeeded on tony-omen and tony-dell
+    related:
+      - docs/ssot/infrastructure/ssot.mcp-debug.files.yml
+      - docs/ssot/infrastructure/ssot.mcp-debug.yml
+      - scripts/mcp_debug/tools.py
+      - scripts/mcp_debug/server.py
+
+  - id: migrate-core-services-to-tony-dell-podman
+    date: '2026-08-17'
+    title: Migrate core chaba services from tony-omen Docker to tony-dell rootless Podman with Quadlet
+    status: accepted
+    context: |
+      Several long-running chaba services (mddb, mddb-panel, redis, yomi-api, weaviate, raceman, postgres)
+      had been running on tony-omen under Docker. To consolidate hosting, improve startup reliability,
+      and run containers as an unprivileged user, we moved the workload to tony-dell using rootless Podman
+      with Quadlet systemd units.
+    options:
+      - label: Keep Docker on tony-omen
+        pros: [no migration work, existing volumes and compose files keep working]
+        cons: [continues to rely on tony-omen for critical data services, no rootless isolation]
+      - label: Move to tony-dell Docker with compose
+        pros: [familiar docker compose tooling, direct volume migration]
+        cons: [still requires rootful Docker or complex rootless setup, no native systemd integration]
+      - label: Move to tony-dell rootless Podman with Quadlet
+        pros: [systemd user units auto-start on boot, no root privileges, host-network simplifies known ports, aligns with existing Quadlet work]
+        cons: [new Quadlet units to write, image imports via docker save | podman load, port conflicts must be resolved per service]
+    chosen: Move to tony-dell rootless Podman with Quadlet
+    reasoning: |
+      Rootless Podman with Quadlet gives native systemd user integration, starts containers at boot without
+      root, and keeps the network model simple by using --network host for most services. The migration
+      reused already-built Docker images where possible (docker save | podman load) and copied data volumes
+      to per-service paths under ~/.config/containers on tony-dell. Known port conflicts were resolved by
+      explicit port assignments: mddb API 11023, mddb MCP 9000, raceman-php 9001, mddb-panel 3002,
+      weaviate 8084 (because chaba-funnel uses 8082), and raceman-web 8083. Caddy on tony-omen now
+      reverse-proxies these services from 100.68.142.13. Client MCP configs were repointed from
+      localhost:9001 to 100.68.142.13:9000.
+    consequences:
+      - Quadlet units created at ~/.config/containers/systemd/ and enabled user services
+      - Service data copied to tony-dell under /home/tony/.config/containers/<service>
+      - Caddy /mddb/*, /apps/raceman/*, /apps/weaviate, and other routes now proxy to 100.68.142.13
+      - mddb decommissioned on tony-omen; mddb-mcp health check now targets 100.68.142.13:9000
+      - Local client configs updated: ~/.config/devin/mcp_config.json, ~/.config/windsurf/mcp_config.json, and ~/.config/Claude/mddb-bridge.py
+      - Recovery actions in ssot.health.*.yml still reference old docker compose paths and should be updated
+    related:
+      - docs/ssot/infrastructure/ssot.services.yml
+      - docs/ssot/infrastructure/ssot.containerization.yml
+      - docs/ssot/infrastructure/ssot.health.home.yml
+      - docs/ssot/infrastructure/ssot.mcp.yml
+      - ~/.config/devin/mcp_config.json
+      - ~/.config/Claude/mddb-bridge.py
+      - stacks/web/Caddyfile
+
+  - id: mcp-focus-decision-logging
+    date: '2026-08-17'
+    title: How to record focus intake, technical, and session decisions through mcp_focus
+    status: accepted
+    context: |
+      The focus system needs continuous decision capture: intake dispositions,
+      design trade-offs, and per-session choices. These should be durable,
+      searchable, and append-only without allowing arbitrary SSOT edits.
+    options:
+      - label: Separate tools for each log type
+        pros: [clear contract per destination, easy to permission independently]
+        cons: [more MCP tools, more server wiring, more to remember]
+      - label: Single mcp_focus with modes
+        pros: [reuses existing session-start tool, keeps decision writing next to focus router, fewer tools]
+        cons: [larger tool schema, mode dispatch adds complexity]
+    chosen: Single mcp_focus with modes
+    reasoning: |
+      mcp_focus is already the session router. Adding technical_decision and
+      session_summary modes keeps the decision capture surface small. The tools
+      append only to whitelisted SSOTs and do not modify focus state. Intake
+      decisions continue to be logged automatically in recommend mode.
+    consequences:
+      - scripts/mcp_debug/focus.py now supports mode=technical_decision and mode=session_summary
+      - scripts/mcp_debug/server.py exposes the new modes in the mcp_focus tool schema
+      - docs/ssot/infrastructure/ssot.mcp-focus.yml documents the new modes
+      - docs/ssot/ssot.focus.sessions.yml entry_schema now includes a decisions list
+    related:
+      - docs/ssot/infrastructure/ssot.mcp-focus.yml
+      - scripts/mcp_debug/focus.py
+      - scripts/mcp_debug/server.py
+      - docs/ssot/ssot.focus.sessions.yml
+
+  - id: rview-view-number-and-media-fallback
+    date: '2026-08-22'
+    title: Auto-number RView views and fall back to iframe on media load failure
+    status: accepted
+    context: |
+      RView views were referenced only by opaque view_id. Users wanted to open
+      any view by a stable number and have a fallback when remote images/videos
+      failed to load.
+    options:
+      - label: Keep view_id only and expose a separate number mapping
+        pros: [no schema change, simple lookup table]
+        cons: [extra API surface, number can drift when views are deleted]
+      - label: Add view_number to each view and resolve numeric view_id as view_number
+        pros: [stable auto-number, backward-compatible view_id support, easy URL sharing]
+        cons: [requires migration for persisted views without view_number]
+      - label: Fail visibly and require the user to pick a different URL
+        pros: [no UI complexity]
+        cons: [poor UX for Gemini-generated or third-party media]
+      - label: Replace failed media with an iframe fallback
+        pros: [handles broken images/videos/PDFs gracefully, keeps viewer visible]
+        cons: [iframing some URLs may still fail or show mixed-content errors]
+    chosen: Add view_number and use iframe fallback
+    reasoning: |
+      Auto-numbering gives every view a stable, shareable `?view=<number>` URL
+      while preserving `view_id` compatibility. Interpreting a numeric `view_id`
+      as `view_number` is intuitive and matches the URL parameter. Falling back
+      to an iframe lets Gemini-supplied or third-party URLs still render even
+      when the browser cannot decode them natively.
+    consequences:
+      - rview-api.mjs assigns view_number on creation and migrates existing state
+      - RView UI uses VIEW_KEY ('view_number' for numeric, 'view_id' otherwise)
+      - Failed image/video/audio/PDF elements are replaced by an iframe with the same URL
+      - SSOT and MCP tool schemas updated to expose view_number
+    related:
+      - docs/kb/rview-tony-dell-operations.md
+      - stacks/web/rview-api/rview-api.mjs
+      - stacks/web/public/apps/rview/index.html
+
+related_files:
+  - docs/ssot/ssot.focus.decisions.yml
+  - docs/ssot/ssot.focus.sessions.yml
+  - docs/ssot/infrastructure/ssot.mcp-focus.yml

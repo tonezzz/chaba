@@ -1,0 +1,39 @@
+title: mcp-debug SSOT Overnight Cleanup
+subtitle: Reduce bloat in the mcp-debug SSOT and re-baseline efficiency numbers
+icon: broom
+
+focus:
+  label: mcp-debug SSOT Bloat Cleanup
+  text: |
+    The ssot.mcp-debug.yml file has become bloated after several mcp_vet runs and manual
+    additions: "Vetted ..." descriptions, redundant efficiency entries, and commands that
+    show negative char savings. Clean and compact the SSOT automatically overnight, then
+    re-run mcp_savings and ssot-validate to verify.
+  branch: chaba
+  priority: high
+  status: draft
+  tags: [mcp-debug, ssot, cleanup, bloat, overnight]
+  missing_info: []
+  subtasks:
+    - label: Audit bloat sources
+      status: not_started
+    - label: Normalize command descriptions and remove "Vetted ..." prefixes
+      status: not_started
+    - label: Drop or mark not-recommended commands with persistent negative char savings
+      status: not_started
+    - label: Re-run mcp_savings and update efficiency baselines
+      status: not_started
+    - label: Validate SSOT with ssot-validate
+      status: not_started
+    - label: Commit cleaned SSOT
+      status: not_started
+
+run:
+  trigger: activate
+  execution: background sub-agent
+  when: tonight
+  artifact: docs/ssot/infrastructure/ssot.mcp-debug.yml
+
+source:
+  session: current
+  date: 2026-08-15

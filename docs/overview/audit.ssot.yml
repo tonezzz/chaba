@@ -1,0 +1,95 @@
+title: Audit & SSOT
+subtitle: How the overview YAML files are validated, kept in sync, and used as the single source of truth.
+icon: 🧪
+sections:
+  - title: What is SSOT here
+    icon: 🎯
+    layout: list
+    items:
+      - label: Definition
+        text: chaba/docs/overview/*.yml is the single source of truth for the system overview app and related documentation. SSOT files are now in docs/ssot/ for better organization.
+      - label: Source of truth for
+        text: Hosts, apps, infrastructure, lab plan, UI conventions, and audit rules.
+      - label: Not a source of truth for
+        text: Live runtime values (CPU, network, camera streams); those are in cameras.json, compose files, or status APIs.
+      - label: Goal
+        text: Every fact documented here is the canonical copy; other pages/tools generate from these files, not duplicate them.
+
+  - title: Audit levels
+    icon: 🧪
+    layout: list
+    items:
+      - label: 1. YAML syntax
+        text: Each file must parse as valid YAML; structural errors are caught first.
+      - label: 2. Schema
+        text: 'Required top-level keys: title, subtitle, icon, sections. Each section needs title, icon, layout, items/headers/rows/dataUrl.'
+      - label: 3. Layout validity
+        text: 'Allowed layouts: list, table, tree, stats, panels, link-grid, dynamic-panels. Unknown layouts break overview.js.'
+      - label: 4. Naming convention
+        text: 'Preferred: group.subgroup.name.yml so sync-docs-overview.mjs can group panels. Flat names fall back to Ungrouped.'
+      - label: 5. Uniqueness
+        text: No duplicate titles across all *.yml files; each file covers one distinct topic.
+      - label: 6. Sync drift
+        text: After sync, public/data/docs-overview.json and public/docs/overview/ must mirror the source directory exactly.
+      - label: 7. Consumer check
+        text: Overview app renders only from the generated manifest; no hard-coded lists in app pages.
+
+  - title: What the audit script checks
+    icon: 🔍
+    layout: list
+    items:
+      - label: Parses
+        text: Every *.yml in docs/overview/ and docs/ssot/ loads without YAML errors.
+      - label: Required keys
+        text: Top-level and section keys are present and non-empty.
+      - label: Layout correctness
+        text: table has headers/rows, list/stats/panels/link-grid/tree have items, dynamic-panels has dataUrl.
+      - label: Cross-file duplicates
+        text: Warns if two files share the same title.
+      - label: Naming hint
+        text: Warns when a file does not follow group.subgroup.name.yml.
+      - label: Output
+        text: Human-readable report; exit non-zero on errors for pre-commit/CI blocking.
+
+  - title: Overview app flow
+    icon: 🌊
+    layout: list
+    items:
+      - label: Source
+        text: chaba/docs/overview/*.yml
+      - label: Sync
+        text: chaba-h3/scripts/sync-docs-overview.mjs copies YAML files to chaba-h3/public/docs/overview/ and writes public/data/docs-overview.json.
+      - label: Manifest
+        text: docs-overview.json contains group, subgroup, name, title, and href for each file.
+      - label: Render
+        text: chaba-h3/public/apps/overview/overview.js reads the manifest and renders index.html using the requested layout handlers.
+      - label: Edit tool
+        text: public/apps/shared/yml-edit.js lets users copy, download, or server-save per-page YAML sources from the browser.
+      - label: Preview
+        text: ':8081 via Caddy full parity; :8123 php -S for local Plesk-style tests.'
+
+  - title: Maintenance workflow
+    icon: 🛠️
+    layout: list
+    items:
+      - label: 1. Edit
+        text: Modify a YAML file under chaba/docs/overview/.
+      - label: 2. Audit
+        text: Run just audit-docs or node scripts/audit-docs-overview.mjs in chaba.
+      - label: 3. Sync
+        text: Run just sync-docs to update chaba-h3/public/.
+      - label: 4. Verify
+        text: Check the overview page renders correctly at /apps/overview/.
+      - label: 5. Commit
+        text: Pre-commit hook runs the audit automatically on staged docs/overview/*.yml files.
+
+  - title: Constraints
+    icon: ⚠️
+    layout: list
+    items:
+      - label: Static-only
+        text: 'These YAML files are static data. chaba.h3 on Plesk has no Node/Docker/WebSocket/LAN APIs.'
+      - label: External SSOTs
+        text: 'Some values (camera URLs, ports) are mastered in cameras.json, compose files, or env files. Overview YAML links to them, does not duplicate them.'
+      - label: Live drift
+        text: 'Runtime state changes are not auto-reflected here. Manual or periodic audits are needed to keep docs current.'

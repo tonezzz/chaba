@@ -1,0 +1,72 @@
+title: iPhone Claude MDDB OAuth Test on kk-macbook
+subtitle: Deploy a minimal Python client-credentials OAuth proxy in front of MDDB and expose it via Tailscale Funnel for iPhone testing
+icon: target
+
+planning:
+  goal: Determine if Claude iOS Remote MCP can connect to MDDB through a self-hosted OAuth 2.0 client-credentials proxy
+  scope: |
+    In scope: deploy a Python stdlib-only proxy on kk-macbook, expose via the existing Tailscale Funnel on https://kk-macbook.taila0626a.ts.net, provide URL and Client ID/Secret, verify with curl.
+    Out of scope: production IdP, 2024-11-05 SSE protocol support, Dex/Authentik.
+  success_criteria:
+    - Proxy is reachable at https://kk-macbook.taila0626a.ts.net/mcp
+    - Bearer token obtained via /oauth2/token with client_credentials
+    - GET /mcp with token returns HTTP 400 (MDDB healthy)
+    - iPhone form can attempt registration with the credentials
+  risks:
+    - iPhone Claude may require an authorization_code or 2024-11-05 SSE flow instead of client_credentials
+    - kk-macbook may sleep, breaking reachability
+    - Python 3.9 stdlib may be too limited for a robust streaming MCP proxy
+  resources:
+    - kk-macbook host via mcp-debug (Tailscale CLI in app bundle, podman, python3)
+    - tony-dell MDDB at http://100.68.142.13:9000/mcp
+    - Tailscale Funnel https://kk-macbook.taila0626a.ts.net
+  owner: tony
+  estimated_duration: 1 session
+  related_focus: []
+
+processing:
+  status: completed
+  started_at: '2026-08-19T09:09:00Z'
+  steps:
+    - created /Users/kkkakk/.config and wrote mcp-oauth-proxy.py
+    - started proxy on 127.0.0.1:9002
+    - read credentials from /tmp/mcp-oauth-creds.json
+    - added /mcp, /oauth2/token, and /.well-known/oauth-authorization-server to existing Tailscale Funnel
+    - verified with curl (401, 400, token JSON)
+  decisions:
+    - used gzip-compressed base64 one-shot delivery to avoid mcp_raw command length limits
+    - kept existing root / on 8082 and added path mappings
+  changes:
+    - /Users/kkkakk/.config/mcp-oauth-proxy.py (new)
+    - /tmp/mcp-oauth-creds.json (generated)
+    - Tailscale Funnel paths configured
+
+followup:
+  verification: []
+  rollback_plan: []
+  handoff: []
+  deferred: []
+
+report:
+  status: completed
+  completed_at: '2026-08-19T09:12:00Z'
+  summary: Minimal Python stdlib OAuth client-credentials proxy deployed on kk-macbook, exposed via Tailscale Funnel at https://kk-macbook.taila0626a.ts.net/mcp, and verified with curl.
+  metrics:
+    - verification_401: true
+    - verification_400: true
+    - token_endpoint_responds: true
+  links:
+    - https://kk-macbook.taila0626a.ts.net/mcp
+    - https://kk-macbook.taila0626a.ts.net/oauth2/token
+    - https://kk-macbook.taila0626a.ts.net/.well-known/oauth-authorization-server
+  kb_review: []
+  lessons_learned:
+    - Tailscale 'serve' disables Funnel; re-run 'tailscale funnel' to expose existing serve paths to the internet
+
+config:
+  version: 1
+  created_at: '2026-08-19'
+  last_updated: '2026-08-19'
+  maintainer: tony
+  related_files:
+    - docs/ssot/templates/job.yml

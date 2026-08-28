@@ -1,0 +1,259 @@
+title: Service Containerization Strategy
+subtitle: Migration plan for host services to Docker containers for better resource management and deployment consistency
+icon: 🐳
+
+ideas:
+  - Central tracking of containerization progress for host services
+  - Resource management and deployment consistency improvements
+  - Dependency management between containerized services
+  - Integration with existing Docker Compose stacks
+  - Systemd service replacement with containerized equivalents
+
+sections:
+  - title: Current Service Distribution
+    icon: 📊
+    layout: list
+    items:
+      - label: Host System Services (systemd --user)
+        text: 'Total: 30 running services (after containerization)
+
+          **Containerized (3):**
+          - yomi-api.service → yomi-api container
+          - gpu-queue.service → gpu-queue container
+          - gpu-queue-processor.service → gpu-queue-processor container
+
+          **Retained on host (4):**
+          - playlived - Shared browser session daemon (Playwright complexity, systemd service for reliability)
+          - barriers.service - Barrier KVM server (input device access)
+          - clip-sync-dell.service - Clipboard sync (X11 dependencies)
+          - rclone-gdrive.service - Google Drive mount (FUSE requirements)
+
+          **System/Desktop services (23):**
+          - GNOME/XFCE desktop services, PipeWire audio, D-Bus services, etc.'
+        status: current_state
+        tags: ['systemd', 'host-services', 'post-containerization']
+
+      - label: Docker Containers
+        text: 'Total: 18 running containers (after containerization)
+
+          **Chaba web stack (12):**
+          - web (caddy) - Reverse proxy
+          - bserver - Backend server
+          - sensor-reader - Hardware sensor / GPU / Docker reader on tony-omen
+          - camera-control - Camera control service
+          - redis - Cache/queue
+          - postgres - Database with pgvector
+          - weaviate - Vector database
+          - netdata - Monitoring (deployed 2026-08-19, netdata/netdata:stable v2.11.0, nvidia_smi GPU charts active)
+          - trading-terminal - Trading interface
+          - yomi-api - Yomi API server (NEWLY CONTAINERIZED)
+          - gpu-queue - GPU Queue Manager (NEWLY CONTAINERIZED)
+          - gpu-queue-processor - GPU Queue Processor (NEWLY CONTAINERIZED)
+
+          **Chaba raceman stack (2):**
+          - raceman-web (nginx)
+          - raceman-php (PHP-FPM)
+
+          **Other services (4):**
+          - frigate - NVR/camera system
+          - imagen2-inference - Image generation (GPU)
+          - txt2vid-inference - Video generation (GPU)
+          - thai-legal-inference - LLM inference (GPU)'
+        status: current_state
+        tags: ['docker', 'containers', 'post-containerization']
+
+  - title: "Phase 1: Easy Wins (Completed)"
+    icon: ✅
+    layout: list
+    items:
+      - label: Clean up GitHub MCP containers
+        text: Removed 8 duplicate GitHub MCP server containers that accumulated due to docker run -i --rm not cleaning up properly.
+        status: completed
+        priority: high
+        effort: low
+        completed: 2026-08-09
+        tags: ['cleanup', 'mcp', 'docker', 'completed']
+
+      - label: Containerize Yomi API
+        text: Successfully containerized Yomi API with host networking for LINE integration, health checks, and proper environment configuration.
+        status: completed
+        priority: high
+        effort: medium
+        completed: 2026-08-09
+        tags: ['containerization', 'yomi', 'nodejs', 'completed']
+
+      - label: Containerize GPU Queue services
+        text: Successfully containerized both gpu-queue and gpu-queue-processor with host networking for GPU monitoring and proper service dependencies.
+        status: completed
+        priority: high
+        effort: medium
+        completed: 2026-08-09
+        tags: ['containerization', 'gpu', 'queue', 'completed']
+
+  - title: "Phase 2: Moderate Effort (Completed)"
+    icon: ✅
+    layout: list
+    items:
+      - label: Production Deployment Configuration
+        text: Implemented comprehensive production deployment system with environment separation, Docker secrets management, and production-specific configurations. Created production profile system, environment templates, and deployment documentation.
+        status: completed
+        priority: high
+        effort: medium
+        completed: 2026-08-13
+        related_files:
+          - stacks/web/.env.production
+          - stacks/web/docker-compose.prod.yml
+          - stacks/web/docker-compose.secrets.yml
+          - stacks/web/scripts/generate-secrets.sh
+          - docs/runbooks/production-deployment-operations.md
+        tags: ['production', 'deployment', 'security', 'docker', 'completed']
+
+      - label: Evaluate Playlived containerization
+        text: NOT RECOMMENDED - Playwright complexity, CDP networking, display access requirements outweigh benefits.
+        status: completed
+        priority: medium
+        effort: high
+        completed: 2026-08-09
+        tags: ['containerization', 'playlive', 'mcp', 'not-recommended', 'completed']
+
+      - label: Consider Clip Sync containerization
+        text: NOT RECOMMENDED - X11 dependencies, SSH key management, and low benefit make containerization unnecessary.
+        status: completed
+        priority: medium
+        effort: low
+        completed: 2026-08-09
+        tags: ['containerization', 'sync', 'network', 'not-recommended', 'completed']
+
+  - title: "Phase 3: Advanced (Completed)"
+    icon: ✅
+    layout: list
+    items:
+      - label: Evaluate Barriers containerization
+        text: NOT RECOMMENDED - Input device access, X11 dependencies, sudo requirements make containerization impractical.
+        status: completed
+        priority: low
+        effort: very_high
+        completed: 2026-08-09
+        tags: ['containerization', 'kvm', 'input', 'not-recommended', 'completed']
+
+      - label: Keep Rclone on host
+        text: NOT RECOMMENDED - FUSE requirements, privileged containers, and security implications make containerization impractical.
+        status: completed
+        priority: low
+        effort: very_high
+        completed: 2026-08-09
+        tags: ['host-service', 'fuse', 'mount', 'not-recommended', 'completed']
+
+  - title: Services to Keep on Host
+    icon: 🖥️
+    layout: list
+    items:
+      - label: Desktop/System Services
+        text: Core desktop functionality stays on host for proper integration (GNOME, PipeWire, D-Bus, etc.)
+        tags: ['host-services', 'desktop', 'system']
+
+  - title: Container Runtime Policy
+    icon: 🐳
+    layout: list
+    items:
+      - label: Podman for tony-dell
+        text: 'Use rootless Podman + Quadlet for headless, non-GPU services on tony-dell. Pros: rootless by default, no daemon, systemd-friendly, better security. Cons: weaker compose support, manual secret handling, GPU passthrough is awkward.'
+        tags: ['tony-dell', 'podman', 'quadlet', 'policy']
+      - label: Docker for tony-omen
+        text: 'Use Docker + docker compose for GPU/ML services on tony-omen. Pros: mature GPU support, better compose features, nvidia-container-toolkit. Cons: requires docker daemon and group membership.'
+        tags: ['tony-omen', 'docker', 'gpu', 'policy']
+      - label: Symlink docker-compose to podman-compose on tony-dell
+        text: 'Keep the same docker-compose.yml files on tony-dell by symlinking docker-compose to podman-compose, but watch for profiles and depends_on conditions that podman-compose does not fully support.'
+        tags: ['tony-dell', 'podman-compose', 'compatibility']
+      - label: Keep low-latency MCP tools as host processes
+        text: 'Do not containerize mcp-debug, mcp-health, or mcp-focus. These need fast local file access and a persistent stdio/SSE connection to the IDE client.'
+        tags: ['mcp', 'host-process', 'low-latency']
+
+  - title: "Tony-Dell podman migration (in progress)"
+    icon: "🔄"
+    layout: list
+    items:
+      - label: chaba-postgres-16
+        text: 'Migrated to tony-dell rootless podman. Quadlet units at ~/.config/containers/systemd/chaba-postgres-16.container and ~/.config/systemd/user/chaba-postgres-16.service. Auto-starts on boot.'
+        status: completed
+        completed: 2026-08-17
+        tags: ['tony-dell', 'podman', 'postgres', 'quadlet']
+      - label: yomi-api
+        text: 'Migrated to tony-dell rootless podman. Quadlet units at ~/.config/containers/systemd/yomi-api.container and ~/.config/systemd/user/yomi-api.service. Tailscale TCP 3000 served locally.'
+        status: completed
+        completed: 2026-08-17
+        tags: ['tony-dell', 'podman', 'yomi-api', 'quadlet']
+      - label: redis
+        text: 'Migrated to tony-dell rootless podman. Quadlet units at ~/.config/containers/systemd/redis.container and ~/.config/systemd/user/redis.service. Runs with --network host; yomi-api REDIS_URL=redis://100.68.142.13:6379.'
+        status: completed
+        completed: 2026-08-17
+        tags: ['tony-dell', 'podman', 'redis', 'quadlet', 'host-network']
+      - label: mddb
+        text: 'Migrated to tony-dell rootless podman with --network host. Quadlet units at ~/.config/containers/systemd/mddb.container and ~/.config/systemd/user/mddb.service. Data copied from /data/docker/volumes/mddb_mddb-data/_data and vaults to ~/.config/containers/mddb/.'
+        status: completed
+        completed: 2026-08-17
+        tags: ['tony-dell', 'podman', 'mddb', 'quadlet', 'host-network']
+      - label: mddb-panel
+        text: 'Migrated to tony-dell rootless podman with --network host and PORT=3002. Quadlet unit at ~/.config/systemd/user/mddb-panel.service. Caddy /mddb/* reverse proxy updated to 100.68.142.13:3002.'
+        status: completed
+        completed: 2026-08-17
+        tags: ['tony-dell', 'podman', 'mddb', 'panel', 'host-network']
+      - label: raceman-php
+        text: 'Migrated to tony-dell rootless podman with --network host. Image imported via docker save | podman load. php-fpm listens on 0.0.0.0:9001. Project source at /home/tony/CascadeProjects/chaba-raceman.'
+        status: completed
+        completed: 2026-08-17
+        tags: ['tony-dell', 'podman', 'raceman', 'php', 'host-network']
+      - label: raceman-web
+        text: 'Migrated to tony-dell rootless podman with --network host. Nginx on port 8083 with custom nginx.conf. Caddy /apps/raceman/*, /apps/common.css, and /apps/nav.js now proxy to 100.68.142.13:8083.'
+        status: completed
+        completed: 2026-08-17
+        tags: ['tony-dell', 'podman', 'raceman', 'nginx', 'host-network']
+      - label: weaviate
+        text: 'Migrated to tony-dell rootless podman with -p 0.0.0.0:8084:8080 because chaba-funnel already binds 0.0.0.0:8082. Data (~40MB) copied from tony-omen. Quadlet units at ~/.config/containers/systemd/weaviate.container and ~/.config/systemd/user/weaviate.service. yomi-api WEAVIATE_URL updated to http://100.68.142.13:8084.'
+        status: completed
+        completed: 2026-08-17
+        tags: ['tony-dell', 'podman', 'weaviate', 'quadlet', 'completed']
+      - label: helm
+        text: 'Migrated to tony-dell rootless podman. Image docker saved/loaded. Running as systemd user service on 0.0.0.0:3003. Caddy /apps/helm reverse_proxy updated to 100.68.142.13:3003. tony-omen container and image removed.'
+        status: completed
+        completed: 2026-08-17
+        tags: ['tony-dell', 'podman', 'helm', 'migration']
+      - label: rview-api
+        text: 'Migrated to tony-dell rootless podman with --network host. Image built by the rview-api-image.build Quadlet unit from stacks/web/rview-api/Dockerfile (repo-root context) and pulled in by the rview-api.container unit. Listens on 0.0.0.0:3007; state persisted to /home/tony/.local/share/rview-api. Includes a curl-based health check and AutoUpdate=local. Caddy /apps/rview/api/* reverse proxy updated to tony-dell:3007; removed from stacks/web/docker-compose.yml.'
+        status: completed
+        completed: 2026-08-20
+        tags: ['tony-dell', 'podman', 'rview-api', 'host-network', 'migration', 'quadlet-build']
+      - label: rview-live
+        text: 'Migrated to tony-dell rootless podman with --network host on port 3008 to avoid conflict with mddb-panel on 3002. Image built by the rview-live-image.build Quadlet unit from stacks/web/rview-live/Dockerfile (repo-root context) and includes scripts/mcp_rview. Quadlet units at ~/.config/containers/systemd/rview-live.container and ~/.config/systemd/user/rview-live.service. GEMINI_API_KEY injected from the podman secret gemini-api-key. Depends on rview-api, includes a curl-based health check, and AutoUpdate=local. Caddy /api/rview-live/* reverse proxy updated to tony-dell:3008; removed from stacks/web/docker-compose.yml.'
+        status: completed
+        completed: 2026-08-20
+        tags: ['tony-dell', 'podman', 'rview-live', 'host-network', 'migration', 'quadlet-build']
+
+      - label: gemini-ollama-proxy
+        text: 'Migrated to tony-dell rootless podman with --network host. Uses docker.io/library/node:22-alpine, mounts /home/tony/CascadeProjects/chaba-tony-dell/scripts/mddb:/app, and injects GEMINI_API_KEY from the podman secret gemini-api-key. MDDB now connects to http://100.68.142.13:11435 for embeddings. Removed from stacks/web/mddb/docker-compose.yml.'
+        status: completed
+        completed: 2026-08-25
+        tags: ['tony-dell', 'podman', 'gemini', 'ollama-proxy', 'host-network', 'migration']
+
+      - label: gpu-queue
+        text: 'Migrated to tony-dell rootless podman with --network host on port 3001. Uses docker.io/library/node:22-alpine, mounts /home/tony/CascadeProjects/chaba-tony-dell/scripts/gpu-queue:/app, and connects to tony-dell postgres. GPU workers remain on tony-omen and are reached via 100.75.102.88 (llama 8008, imagen2 8000, txt2vid 8002). Removed from stacks/web/docker-compose.yml.'
+        status: completed
+        completed: 2026-08-25
+        tags: ['tony-dell', 'podman', 'gpu-queue', 'host-network', 'migration']
+      - label: gpu-queue-processor
+        text: 'Migrated to tony-dell rootless podman alongside gpu-queue. Polls the tony-dell postgres and dispatches jobs to tony-omen GPU workers via 100.75.102.88. No public port; it is a background processor.'
+        status: completed
+        completed: 2026-08-25
+        tags: ['tony-dell', 'podman', 'gpu-queue', 'processor', 'host-network', 'migration']
+
+config:
+  version: 3
+  last_updated: 2026-08-25
+  status: completed
+  maintainer: tony
+  summary: Successfully containerized 3 high-value services (Yomi API, GPU Queue services), migrated rview-api, rview-live, gemini-ollama-proxy, gpu-queue, and gpu-queue-processor to tony-dell rootless podman, and appropriately retained 4 complex/low-benefit services on host (Playlived, Clip Sync, Barriers, Rclone)
+  related_files:
+    - docs/ssot/ssot.improvements.yml
+    - docs/ssot/infrastructure/ssot.services.yml
+    - docs/ssot/infrastructure/ssot.health.home.yml
+    - /home/tony/CascadeProjects/chaba/stacks/web/docker-compose.yml

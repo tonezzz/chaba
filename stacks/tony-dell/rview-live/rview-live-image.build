@@ -1,0 +1,10 @@
+[Build]
+ImageTag=localhost/rview-live:latest
+File=/home/tony/CascadeProjects/chaba/stacks/web/rview-live/Dockerfile
+SetWorkingDirectory=/home/tony/CascadeProjects/chaba
+Pull=newer
+PodmanArgs=--build-arg GEMINI_LIVE_PORT=3008
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes

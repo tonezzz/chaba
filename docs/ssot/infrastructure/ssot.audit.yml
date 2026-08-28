@@ -1,0 +1,307 @@
+title: Audit Framework
+subtitle: Consolidated testing, validation, and security audit suite
+icon: 🕵️
+version: 1
+
+overview:
+  purpose: |
+    Centralize all project audits (KB, SSOT, security) under one runner and one
+    normalized report format. The framework is SSOT-driven: this file defines
+    which audits exist, how to run them, and where they are scheduled.
+
+config:
+  version: 1
+  last_updated: '2026-08-19'
+  maintainer: tony
+  status: active
+
+runner:
+  script: scripts/audits/run.mjs
+  command: node
+  default_args: []
+  full_args:
+    - --full
+  report_dir: reports/audits
+  outputs:
+    - reports/audits/summary.json
+    - reports/audits/summary.md
+    - reports/audits/history/history.json
+
+ci:
+  pipeline_stage: audits
+  pipeline_script: scripts/ci-pipeline.sh
+
+schedule:
+  default:
+    frequency: weekly
+    timer: systemd/chaba-audit.timer
+    service: systemd/chaba-audit.service
+    args: default_args
+    runs:
+      - kb-suite
+      - ssot-suite
+      - caddy
+      - infrastructure-suite
+      - standardization-suite
+      - code-suite
+      - dev-system
+    note: groups are expanded to individual audits by the runner
+  full:
+    frequency: monthly
+    timer: systemd/chaba-audit-full.timer
+    service: systemd/chaba-audit-full.service
+    args: full_args
+    runs:
+      - kb-suite
+      - ssot-suite
+      - caddy
+      - infrastructure-suite
+      - security-suite
+      - standardization-suite
+      - code-suite
+      - dev-system
+    note: installed and enabled on tony-dell; security-audit may need privileges
+
+audits:
+  - name: kb
+    script: scripts/kb-audit.mjs
+    command: node
+    args:
+      - --json
+    schedule: weekly
+    severity_on_fail: warning
+    description: KB coverage, freshness, and section quality
+    last_run:
+    last_result:
+
+  - name: ssot
+    script: scripts/ssot-validate-all.mjs
+    command: node
+    args: []
+    schedule: weekly
+    severity_on_fail: error
+    description: SSOT YAML syntax and cross-reference validation
+    last_run:
+    last_result:
+
+  - name: kb-modularity
+    script: scripts/audits/kb-modularity-audit.mjs
+    command: node
+    args: []
+    schedule: weekly
+    severity_on_fail: warning
+    description: KB entry focus, size, and duplicate detection
+    last_run:
+    last_result:
+    thresholds:
+      max_words: 1500
+      max_headings: 25
+      min_links: 0
+      max_similarity: 0.85
+      excluded_files:
+        - docs/kb/.template.md
+        - docs/kb/README.md
+      excluded_patterns:
+        - '^docs/kb/auto-.*\.md$'
+        - '^docs/kb/task-.*\.md$'
+
+  - name: ssot-modularity
+    script: scripts/audits/ssot-modularity-audit.mjs
+    command: node
+    args: []
+    schedule: weekly
+    severity_on_fail: warning
+    description: SSOT file scope, nesting, and title uniqueness
+    last_run:
+    last_result:
+    thresholds:
+      max_words: 3000
+      max_top_level_keys: 16
+      max_nesting_depth: 8
+      max_duplicate_titles: 1
+      excluded_titles:
+        - Focus Inbox Item
+      excluded_paths:
+        - docs/ssot/focus-inbox/archived/
+        - docs/ssot/focus-inbox/processed/
+        - docs/ssot/focus-inbox/TEMPLATE.yml
+        - docs/ssot/ssot.focus.sessions.archive.2026.yml
+        - docs/ssot/ssot.focus.history.archive.2026.yml
+        - docs/ssot/ssot.focus.backlog.archive.2026.yml
+        - docs/ssot/ssot.focus.inactive.archive.2026.yml
+        - docs/ssot/ssot.improvements.archive.2026-H1.yml
+        - docs/ssot/ssot.improvements.archive.2026-H2.yml
+
+  - name: security-scan
+    script: scripts/security-scan.mjs
+    command: node
+    args:
+      - --json
+    schedule: weekly
+    severity_on_fail: error
+    description: Credential and secret scan across the repo
+    last_run:
+    last_result:
+
+  - name: security-audit
+    script: scripts/security-audit.sh
+    command: bash
+    args: []
+    schedule: monthly
+    severity_on_fail: error
+    description: System-level security review; run only with --full because it may need privileges
+    last_run:
+    last_result:
+
+  - name: auto-kb-quality
+    script: scripts/auto-kb-quality-audit.mjs
+    command: node
+    args:
+      - --json
+    schedule: weekly
+    severity_on_fail: warning
+    description: Scan auto-*.md KB entries and report/archive low-value candidates
+    last_run:
+    last_result:
+
+  - name: kb-categorize
+    script: scripts/kb-categorize-audit.mjs
+    command: node
+    args: []
+    schedule: weekly
+    severity_on_fail: warning
+    description: Audit KB category tags and propose core-category mapping
+    last_run:
+    last_result:
+
+  - name: caddy
+    script: scripts/audits/caddy-audit.mjs
+    command: node
+    args: []
+    schedule: weekly
+    severity_on_fail: error
+    description: Caddyfile format and syntax validation
+    last_run:
+    last_result:
+
+  - name: standardization
+    script: scripts/audits/standardization-audit.mjs
+    command: node
+    args: []
+    schedule: weekly
+    severity_on_fail: error
+    description: Cross-reference integrity for audits, systemd units, and MCP tool registration
+    last_run:
+    last_result:
+
+  - name: infrastructure
+    script: scripts/audits/infrastructure-audit.mjs
+    command: node
+    args: []
+    schedule: weekly
+    severity_on_fail: warning
+    description: Health SSOT config completeness, consistency, and optional live checks against mcp-health and local state
+    last_run:
+    last_result:
+
+  - name: mddb
+    script: scripts/audits/mddb-audit.mjs
+    command: node
+    args: []
+    schedule: weekly
+    severity_on_fail: warning
+    description: MDDB health, embedding proxy, stats, and DB size
+    last_run:
+    last_result:
+
+  - name: code-quality
+    script: scripts/audits/code-quality-audit.mjs
+    command: node
+    args: []
+    schedule: weekly
+    severity_on_fail: warning
+    description: Formatting, spell check, and npm audit
+    last_run:
+    last_result:
+
+  - name: dev-system
+    script: scripts/dev-system-assess.py
+    command: python3
+    args:
+      - --check
+    schedule: weekly
+    severity_on_fail: warning
+    description: Development system assessment; metrics, branch/worktree sprawl, and review cadence
+    last_run:
+    last_result:
+
+groups:
+  - name: kb-suite
+    description: All KB health, quality, categorization, and modularity audits
+    children:
+      - kb
+      - auto-kb-quality
+      - kb-categorize
+      - kb-modularity
+  - name: ssot-suite
+    description: All SSOT validation and modularity audits
+    children:
+      - ssot
+      - ssot-modularity
+  - name: caddy
+    description: Caddy reverse proxy checks
+    children:
+      - caddy
+  - name: security-suite
+    description: Secret scan and system-level security review
+    children:
+      - security-scan
+      - security-audit
+  - name: infrastructure-suite
+    description: Health SSOT and infrastructure configuration consistency
+    children:
+      - infrastructure
+      - mddb
+  - name: code-suite
+    description: Code formatting, spell, and dependency security
+    children:
+      - code-quality
+  - name: standardization-suite
+    description: Cross-reference and naming consistency checks
+    children:
+      - standardization
+
+plan:
+  current_state:
+    - scripts/audits/run.mjs now uses js-yaml and supports --full for the monthly security-audit
+    - weekly chaba-audit.timer/service runs the default set (kb, ssot, security-scan)
+    - monthly chaba-audit-full.timer/service runs the full set including security-audit
+    - timers are installed and enabled on tony-dell
+    - default audit suite tested and passed on 2026-08-19
+    - KB entry added at docs/kb/audit-framework.md
+  next_steps:
+    - monitor first weekly and monthly runs
+
+baseline:
+  note: Accepted root containers and public endpoints have moved to docs/ssot/infrastructure/ssot.audit.baseline.yml.
+  related_ssot:
+    - docs/ssot/infrastructure/ssot.audit.baseline.yml
+
+related_files:
+  - scripts/audits/run.mjs
+  - scripts/kb-audit.mjs
+  - scripts/ssot-validate-all.mjs
+  - scripts/security-scan.mjs
+  - scripts/security-audit.sh
+  - scripts/ci-pipeline.sh
+  - systemd/chaba-audit.service
+  - systemd/chaba-audit.timer
+
+related_ssot:
+  - docs/ssot/ssot.index.yml
+  - docs/ssot/infrastructure/ssot.automation.yml
+  - docs/ssot/infrastructure/ssot.health.yml
+  - docs/ssot/infrastructure/ssot.mcp-tools.yml
+
+related_kb:
+  - docs/kb/audit-framework.md

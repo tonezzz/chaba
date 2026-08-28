@@ -1,0 +1,92 @@
+title: Docs
+subtitle: SSOT and KB reference pages for chaba.h3
+icon: 📚
+config:
+  version: 1
+  last_updated: 2026-08-15
+  maintainer: tony
+  status: active
+source_of_truth:
+  path: docs/ssot/apps/ssot.apps.docs.yml
+  repo: chaba
+  branch: master
+h3:
+  worktree: /home/tony/CascadeProjects/chaba-h3
+  public_path: public/apps/docs
+  branch: chaba.h3
+  routing: explicit /foo/index.html URLs unless proxy-server.mjs has a special case
+sections:
+  - title: Overview
+    icon: 📖
+    layout: list
+    items:
+      - label: Purpose
+        text: Single source of truth for the chaba.h3 docs site and all reference pages.
+      - label: Deployment
+        text: Generated artifacts are written to chaba-h3/public/apps/docs/ and pushed to the chaba.h3 branch.
+      - label: How to add a page
+        text: Edit this SSOT, add a page entry, then run scripts/generate-h3-docs.py and commit both repos.
+      - label: References
+        text: See docs/kb/h3-pages.md and .windsurf/workflows/add-h3-page.md for deployment and routing details.
+  - title: App registration
+    icon: 🧩
+    layout: list
+    items:
+      - label: App id
+        text: docs
+      - label: Href
+        text: /apps/docs/
+      - label: Icon
+        text: 📚
+      - label: Description
+        text: SSOT and KB reference pages
+  - title: Pages
+    icon: 📄
+    layout: list
+    items:
+      - label: gemini-models
+        text: Gemini Models — free-tier rate limits and fallback matrix, generated from ssot.gemini-models.yml
+app:
+  id: docs
+  title: Docs
+  description: SSOT and KB reference pages
+  icon: 📚
+  href: /apps/docs/
+  h3_public_dir: public/apps/docs
+pages:
+  - id: gemini-models
+    title: Gemini Models
+    subtitle: Free-tier rate limits and fallback matrix
+    description: Canonical Gemini/Gemma model registry with free-tier limits and task fallbacks.
+    icon: 🧠
+    href: /apps/docs/gemini-models/index.html
+    routing: explicit_index_html
+    source_ssot: docs/ssot/infrastructure/ssot.gemini-models.yml
+    generator: scripts/generate-gemini-h3-docs.py
+    generated_outputs:
+      - chaba-h3/public/apps/docs/gemini-models/gemini-models.yml
+    html_source: chaba-h3/public/apps/docs/gemini-models/index.html
+    uses_tailwind: true
+  - id: home-network
+    title: Home Network
+    subtitle: Current home network hosts, interfaces, and IPs
+    description: Routers, interfaces, Tailscale addresses, and recent verification status.
+    icon: 🌐
+    href: /apps/docs/home-network/index.html
+    routing: explicit_index_html
+    source_ssot: docs/ssot/ssot.mysystem.home.yml
+    html_source: chaba-h3/public/apps/docs/home-network/index.html
+    uses_tailwind: true
+nav:
+  - label: Apps
+    href: /apps/
+  - label: Gemini Models
+    href: /apps/docs/gemini-models/index.html
+  - label: Home Network
+    href: /apps/docs/home-network/index.html
+related_files:
+  - docs/kb/h3-pages.md
+  - .windsurf/workflows/add-h3-page.md
+  - docs/ssot/infrastructure/ssot.gemini-models.yml
+  - scripts/generate-gemini-h3-docs.py
+  - scripts/generate-h3-docs.py

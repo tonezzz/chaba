@@ -1,0 +1,131 @@
+# SSOT Job Lifecycle: Home Assistant MCP on tony-dell
+# Deploy Home Assistant with the HA-MCP custom component to control smart home devices.
+
+title: Home Assistant MCP on tony-dell
+subtitle: Deploy Home Assistant with the HA-MCP custom component to expose smart-home device control to MCP clients
+icon: home
+
+planning:
+  goal: Provide a local MCP-accessible smart home controller on tony-dell so AI clients can query and control devices.
+  scope: |
+    In scope: Home Assistant container on tony-dell; install the homeassistant-ai/ha-mcp custom component;
+    configure one or more device integrations (Tuya, etc.); expose the MCP endpoint to trusted clients on the tailnet.
+    Out of scope: Google Cloud Smart Home project setup; full Home Assistant OS install; non-ESP32 device firmware changes.
+  success_criteria:
+    - Home Assistant container is running on tony-dell and reachable on a known port.
+    - The homeassistant-ai/ha-mcp custom component is installed and starts without errors.
+    - At least one real device can be listed and its state read/written through an MCP tool.
+    - SSOT and registry are updated and committed on the feature branch.
+  risks:
+    - Tuya local keys are still unavailable; mitigation: use the Tuya cloud integration with the existing credentials or fall back to other devices.
+    - Port 8123 or another chosen port may already be in use on tony-dell; mitigation: check ports before binding and allow a configurable port.
+    - HA container may need persistent config volume and correct permissions for rootless podman; mitigation: follow existing chaba container patterns in ssot.services.yml.
+  resources:
+    - tony-dell rootless podman host
+    - Tuya credentials from /home/tony/.local/share/tuya/credentials.json
+    - Existing chaba docker/podman patterns from docs/ssot/infrastructure/ssot.services.yml
+  owner: tony
+  estimated_duration: 2-3 sessions
+  related_focus:
+    - label: Home Assistant MCP on tony-dell
+      file: docs/ssot/ssot.focus.current.yml
+
+processing:
+  status: in_progress
+  started_at: '2026-08-25'
+  steps:
+    - id: 1
+      label: Choose and pull Home Assistant container image and Quadlet/compose definition
+      status: completed
+      notes: |
+        Home Assistant container deployed as a rootless podman Quadlet on tony-dell.
+        Image is docker.io/homeassistant/home-assistant:stable, network=host, /config volume at /home/tony/.config/home-assistant.
+        Service is active and responding on 127.0.0.1:8123 (HTTP 302 during onboarding).
+    - id: 2
+      label: Install the homeassistant-ai/ha-mcp custom component
+      status: completed
+      notes: |
+        The ha_mcp_tools custom component was copied from the homeassistant-ai/ha-mcp repository
+        into /home/tony/.config/home-assistant/custom_components/ha_mcp_tools and the container was restarted.
+        Home Assistant logs recognize the custom component. The integration must still be added after onboarding.
+    - id: 3
+      label: Configure the Tuya integration and/or other device integrations
+      status: not_started
+      notes: |
+        Use the existing Tuya credentials or the official Tuya Cloud integration. Document any local-key blockers.
+        Blocked on HA owner account creation and HA-MCP integration setup.
+    - id: 4
+      label: Expose and test the MCP endpoint
+      status: completed
+      notes: |
+        HA-MCP in-process server is running and the custom component is loaded.
+        Local MCP URL: http://tony-dell:9584/private_CtYuVkJEl28cp8qA8yXNCQ
+        HTTP 405 on the private path confirms the endpoint exists (GET not allowed; MCP clients must POST).
+    - id: 5
+      label: Update SSOT/services/health and commit
+      status: completed
+      notes: |
+        Added home-assistant to ssot.services.yml with Caddy, health check, and autostart.
+        Added the home-assistant health check to ssot.health.home.web.yml. Core config and Caddy are configured.
+  decisions:
+    - label: Home Assistant MCP server
+      rationale: |
+        homeassistant-ai/ha-mcp runs as a custom component inside HA, requires no long-lived access token,
+        and is actively maintained. It keeps the MCP server co-located with the HA instance on tony-dell.
+      alternatives_considered: |
+        roandegraaf/ha-mcp (add-on; better for Home Assistant OS/Supervised) and
+        oleander/home-assistant-mcp-server (pip/stdio; needs a separate process).
+        Both are kept as alternatives if the custom component does not fit the rootless container setup.
+  changes:
+    - file: ~/.config/containers/systemd/home-assistant.container
+      summary: Added rootless podman Quadlet for Home Assistant on tony-dell with network=host and persistent /config volume.
+    - file: /home/tony/.config/home-assistant/custom_components/ha_mcp_tools
+      summary: Installed the homeassistant-ai/ha-mcp custom component from the upstream repo and restarted HA.
+    - file: docs/ssot/infrastructure/ssot.services.yml
+      summary: Registered the home-assistant service under tony_dell with the Quadlet and MCP component paths.
+    - file: /home/tony/.config/home-assistant/.storage/core.config_entries
+      summary: Loaded the HA-MCP Server config entry; MCP endpoint active on http://tony-dell:9584/private_CtYuVkJEl28cp8qA8yXNCQ.
+    - file: /home/tony/.config/home-assistant/configuration.yaml
+      summary: Added http reverse-proxy settings (use_x_forwarded_for and trusted_proxies) for Caddy.
+    - file: /home/tony/.config/home-assistant/.storage/http
+      summary: Set use_x_forwarded_for and trusted_proxies in the http storage to stop the 400 Bad Request from Caddy.
+    - file: /home/tony/CascadeProjects/chaba-tony-dell/stacks/web/Caddyfile
+      summary: Added Caddy reverse proxy routes for /apps/home-assistant/ and /api/ha-mcp/.
+    - file: docs/ssot/infrastructure/ssot.health.home.web.yml
+      summary: Added home-assistant health check entry.
+    - file: docs/ssot/infrastructure/ssot.services.yml
+      summary: Updated the home-assistant service with Caddy, health check, and autostart notes.
+
+followup:
+  verification:
+    - curl to the HA host:port returns 200 or 401
+    - MCP client tool list_entities returns at least the configured devices
+    - scripts/ssot-validate-all.mjs passes for all modified SSOT files
+  rollback_plan:
+    - Stop and remove the Home Assistant container or Quadlet
+    - Delete custom_components/ha_mcp and the HA config directory
+    - Revert ssot.services.yml and ssot.health.home.yml if changed
+  handoff:
+    - tony for ongoing device onboarding and automation
+  deferred:
+    - Evaluate roandegraaf/ha-mcp as a Home Assistant OS/Supervised alternative
+    - Evaluate oleander/home-assistant-mcp-server for an external stdio/SSE deployment
+    - Add Caddy reverse proxy path for the HA MCP endpoint once the base install is verified
+
+report:
+  status: not_started
+  completed_at: null
+  summary: ""
+  metrics: []
+  links: []
+  kb_review: []
+  lessons_learned: []
+
+config:
+  version: 1
+  created_at: 2026-08-25
+  last_updated: 2026-08-25
+  maintainer: tony
+  related_files:
+    - docs/ssot/templates/job.yml
+    - docs/ssot/jobs/infrastructure/2026-08-25-home-assistant-mcp.yml

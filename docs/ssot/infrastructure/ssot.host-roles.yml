@@ -1,0 +1,100 @@
+title: Host Roles
+subtitle: Canonical roles, headless priority, and web preview targets for chaba hosts
+icon: server
+version: 1
+
+hosts:
+  tony-omen:
+    description: Primary dev workstation and main web server
+    tailnet: tony-omen
+    tailscale_ip: 100.75.102.88
+    tags:
+    - primary
+    - server
+    - web-server
+    - barrier-server
+    headless_browser:
+      enabled: true
+      role: fallback
+      playlive_port: 9231
+      playlive_url: http://tony-omen:9231/sessions
+    web_preview:
+      enabled: true
+      chaba_h3:
+        url: http://tony-omen:8081
+        description: Pre-deploy parity preview before pushing to the chaba.h3 branch
+      caddy:
+        url: http://tony-omen:8080
+    mcp_debug_name: tony_omen
+
+  tony-dell:
+    description: Secondary workstation and primary headless browser target
+    tailnet: tony-dell
+    tailscale_ip: 100.68.142.13
+    tags:
+    - secondary
+    - testing
+    - barrier-client
+    - headless-primary
+    headless_browser:
+      enabled: true
+      role: primary
+      playlive_port: 9230
+      playlive_url: http://tony-dell:9230/sessions
+    web_preview:
+      enabled: false
+      note: Use only when tony-omen is unavailable for remote browser preview
+    mcp_debug_name: tony_dell
+
+  kk-macbook:
+    description: macOS / iOS verification workstation
+    tailnet: kk-macbook
+    tailscale_ip: 100.124.59.112
+    local_hostname: KKs-MacBook-Pro.local
+    tags:
+    - macos
+    - ios
+    - laptop
+    - verify
+    - xcode
+    headless_browser:
+      enabled: false
+      note: mcp_debug compact is not yet ported to macOS; use mcp_raw with macOS-compatible commands
+    web_preview:
+      enabled: false
+      note: Manual Safari and native app verification only
+    mcp_debug_name: macbook
+
+policies:
+  headless_browser_priority:
+  - tony-dell
+  - tony-omen
+  mac_ios_verify: kk-macbook
+
+  web_preview:
+    default: use-direct-hostname
+    when_to_use_browser_preview: only in isolated environments or when direct access is unavailable
+    decisions:
+    - source: docs/ssot/infrastructure/ssot.health.yml
+      note: Avoid browser preview for local testing; use a regular browser with direct hostnames
+    - source: docs/ssot/ssot.mysystem.home.yml
+      note: chaba-h3 preview on tony-omen port 8081 is for pre-deploy parity, not default local browsing
+
+dns_aliases:
+  postgre:
+    target: 100.68.142.13
+    current_host: tony_dell
+    dns_server: 100.68.142.13:5353
+    managed_by: user systemd dnsmasq on tony_dell
+    notes:
+      - If PostgreSQL moves to another host, update /home/tony/.config/dnsmasq/postgre.conf on tony_dell and restart dnsmasq-postgre.service.
+      - tony_omen resolves postgre via tailscale0 DNS 100.68.142.13:5353.
+      - tony_dell resolves postgre via loopback 127.0.0.1:5353; use resolvectl with sudo to set it.
+      - Backup/failover plan is in docs/ssot/infrastructure/ssot.yomi-failover.yml.
+
+related_files:
+- docs/ssot/infrastructure/ssot.mcp-debug.yml
+- docs/ssot/infrastructure/ssot.health.yml
+- docs/ssot/apps/ssot.apps.playlive.yml
+- docs/ssot/ssot.mysystem.home.yml
+- docs/ssot/ssot.mysystem.macbook.yml

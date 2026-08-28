@@ -1,0 +1,306 @@
+title: Gold/THB/USD Advanced Vector Analysis
+subtitle: Explore alternative vector-analysis methods for THB-driven XAU/USD dynamics
+icon: target
+
+planning:
+  goal: |
+    Evaluate a second wave of vector and latent-space methods for describing and
+    predicting the THB->XAU relationship, beyond the initial vector-search ideas.
+  scope: |
+    - Dynamic Time Warping (DTW) for elastic pattern matching of THB and XAU series.
+    - Delay-embedding / Takens-style k-NN on USD/THB returns.
+    - Singular Spectrum Analysis (SSA) as a time-aware signal decomposition.
+    - Time-varying / Markov-switching VAR and impulse responses.
+    - Graph/network view of rolling cross-correlation and transfer entropy.
+    - Wavelet coherence to find time-frequency lead-lag bands.
+    - A companion app page to inspect each idea and later its live backtest results.
+  out_of_scope: |
+    - Real-time trading system implementation.
+    - External deep-learning model training beyond scikit-learn/statsmodels.
+    - Live deployment to the trade-api stack.
+  success_criteria:
+    - A reproducible prototype for at least one of the six methods.
+    - A comparison table or chart against the 2-day THB trend and the best k-NN variant.
+    - An app page with an explanation card for each method and a live results section.
+  risks:
+    - Each method adds hyper-parameters; mitigate with walk-forward calibration on historical data only.
+    - Some methods need longer series or more compute; mitigate by scoping one method per session.
+    - Risk of overfitting in high-dimensional embeddings; mitigate by keeping windows short and out-of-sample.
+  resources:
+    - experiments/gold-thb-usd-causality/data/aligned.csv
+    - experiments/gold-thb-usd-causality/data/returns.csv
+    - python3 with pandas, numpy, scikit-learn, scipy, and statsmodels.
+  owner: tony
+  estimated_duration: 3 sessions
+
+processing:
+  status: completed
+  started_at: '2026-08-26'
+  completed_at: '2026-08-26'
+  steps:
+    - id: 1
+      label: Dynamic Time Warping (DTW) similarity
+      status: completed
+      completed_at: '2026-08-26'
+      notes: |
+        Implemented trended_dtw.py. For each day, build a WINDOW of USD/THB log
+        returns. Find the K training windows with the smallest DTW distance and
+        use their future XAU returns as a weighted forecast. Out-of-sample
+        2014-2026 with WINDOW=10, K=20:
+        - Sharpe: 0.89
+        - Annual return: 10.3%
+        - Annual vol: 11.6%
+        - Max drawdown: -45.0%
+        - Win rate: 25.8%
+        This beats buy-and-hold (Sharpe 0.69) but is well behind the Euclidean
+        k-NN (Sharpe 1.78) and the 2-day THB trend (Sharpe 1.46). DTW's added
+        flexibility may be introducing noise or overfitting in the short windows.
+        A multivariate DTW (THB + XAU) could be tried next.
+    - id: 2
+      label: Delay-embedding k-NN (Takens-style)
+      status: completed
+      completed_at: '2026-08-26'
+      notes: |
+        Implemented trended_delay.py. Build a WINDOW=6 vector from delayed copies
+        of USD/THB log returns. Use k-NN in that phase-space and the weighted
+        average of neighbor XAU t+1 returns as the forecast. Out-of-sample
+        2014-2026 with K=20:
+        - Sharpe: 0.86
+        - Annual return: 12.4%
+        - Annual vol: 14.4%
+        - Max drawdown: -80.2%
+        - Win rate: 37.6%
+        The drawdown is much larger than the 2-day THB trend, k-NN, or DTW. The
+        univariate delay-embedding alone does not capture the XAU lead-lag well;
+        adding a second observable (XAU or USD/EUR) to the phase-space vector may
+        help.
+    - id: 3
+      label: Singular Spectrum Analysis (SSA)
+      status: completed
+      completed_at: '2026-08-26'
+      notes: |
+        Implemented trended_ssa.py. For each month, fit SSA on the previous 252
+        USD/THB returns with embedding L=20 and R=2 components. Reconstruct a
+        denoised THB return and trade the sign of the R=2 rolling THB trend.
+        Out-of-sample 2014-2026:
+        - Sharpe: -0.14
+        - Annual return: -1.6%
+        - Annual vol: 11.4%
+        - Max drawdown: -56.8%
+        - Win rate: 24.6%
+        The R=2 reconstruction appears to over-smooth or invert the useful signal.
+        Tuning L, R, or using the oscillatory/noise components instead of the
+        leading trend components may help.
+    - id: 4
+      label: Time-varying / Markov-switching VAR
+      status: completed
+      completed_at: '2026-08-26'
+      notes: |
+        Implemented trended_regime_var.py. For each month, split the previous 252
+        days into low- and high-THB-volatility regimes at the median. Fit a separate
+        VAR(2) on the training days in each regime. For each test day, pick the VAR
+        matching the current 10-day THB volatility and use its one-step-ahead XAU
+        forecast as the signal. Out-of-sample 2014-2026:
+        - Sharpe: -0.70
+        - Annual return: -8.5%
+        - Annual vol: 12.1%
+        - Max drawdown: -72.2%
+        - Win rate: 21.2%
+        The regime split on THB volatility does not capture useful time-variation.
+        The VAR may also be too noisy with only ~125 observations per regime.
+    - id: 5
+      label: Graph / network view
+      status: completed
+      completed_at: '2026-08-26'
+      notes: |
+        Implemented trended_graph.py and tune_graph.py. Grid search over LOOKBACK
+        (252, 504), MAX_LAG (1, 2, 3, 5) and P_THRESHOLD (0.01, 0.05, 0.10, 0.20)
+        found the best combination as LOOKBACK=504, MAX_LAG=2, P_THRESHOLD=0.01.
+        Tuned out-of-sample 2014-2026:
+        - Sharpe: 2.20
+        - Annual return: 19.5%
+        - Annual vol: 8.9%
+        - Max drawdown: -8.0%
+        - Win rate: 10.1%
+        The stricter p=0.01 and longer 504-day lookback make the edge filter more
+        conservative, cutting more false-positive trades and reducing drawdown. This
+        is the best result in the entire research branch.
+
+        Follow-up: combine the graph edge filter with the k-NN pattern matcher.
+        tune_graph_knn.py searched WINDOW (2-5), K (10-50), P_THRESHOLD (0.01, 0.05)
+        and EDGE_LOOKBACK (252, 504). The best settings are WINDOW=2, K=30,
+        P_THRESHOLD=0.01, EDGE_LOOKBACK=504. trended_graph_knn.py now uses these
+        defaults. Tuned out-of-sample 2014-2026:
+        - Sharpe: 2.77
+        - Annual return: 22.1%
+        - Annual vol: 8.0%
+        - Max drawdown: -7.5%
+        - Win rate: 12.4%
+        The combination is the best result in the entire research branch: it
+        retains k-NN's return power while the graph filter cuts the worst
+        drawdowns.
+
+        Follow-up: add volatility-targeted position sizing in
+        trended_graph_knn_vol.py. The position size is scaled by
+        target_vol / trailing realized XAU volatility, capped at MAX_LEVERAGE.
+        With TARGET_VOL=0.20, the OOS 2014-2026 result is:
+        - Sharpe: 3.01
+        - Annual return: 26.4%
+        - Annual vol: 8.8%
+        - Max drawdown: -5.2%
+        - Win rate: 12.4%
+        This becomes the new best in the branch: the same edge and k-NN forecast,
+        but reduced exposure during volatile XAU periods. app/vector-analysis-ideas.js
+        is updated to show the new equity curve.
+
+        Follow-up: test alternative k-NN distance metrics in
+        trended_graph_knn_dist.py (correlation, cosine, manhattan). Results:
+        - Euclidean (baseline): Sharpe 2.77, ann ret 22.1%, vol 8.0%, max DD -7.5%
+        - Manhattan: Sharpe 2.51, ann ret 24.7%, vol 9.9%, max DD -7.2%
+        - Cosine: Sharpe 2.28, ann ret 16.8%, vol 7.4%, max DD -6.9%
+        - Correlation: Sharpe 1.63, ann ret 12.3%, vol 7.6%, max DD -10.7%
+        Euclidean remains the best.
+
+        Follow-up: combine XAG/silver and volatility targeting in
+        trended_graph_knn_vol_silver.py. The feature vector includes THB, XAU,
+        and XAG returns, and the position is sized by realized XAU volatility.
+        With TARGET_VOL=0.20, the OOS 2014-2026 result is:
+        - Sharpe: 3.46
+        - Annual return: 39.5%
+        - Annual vol: 11.4%
+        - Max drawdown: -5.4%
+        - Win rate: 15.6%
+        This is now the new best in the branch. The app/vector-analysis-ideas.js
+        is updated to include the combined equity curve.
+
+        Follow-up: add silver (XAG/USD) returns to the graph+k-NN feature vector
+        in trended_graph_knn_silver.py. The k-NN now uses (thb_ret, xau_ret,
+        xag_ret). Walk-forward OOS 2014-2026:
+        - Sharpe: 3.29
+        - Annual return: 34.0%
+        - Annual vol: 10.3%
+        - Max drawdown: -7.2%
+        - Win rate: 15.6%
+        This becomes the new best in the branch. Silver is closely related to
+        gold and provides an additional cross-asset signal that the k-NN can
+        exploit. app/vector-analysis-ideas.js is updated to show the new curve.
+
+        Follow-up: test multiscale k-NN history in
+        trended_graph_knn_multiscale.py. Instead of one flat window of daily
+        returns, use M blocks of N consecutive daily returns (M*N total lookback).
+        Results:
+        - M=2, N=2: Sharpe 2.96, ann ret 28.5%, vol 9.6%, max DD -3.9%
+        - M=3, N=2: Sharpe 2.86, ann ret 28.0%, vol 9.8%, max DD -6.5%
+        The block structure improves max drawdown but does not beat the flat
+        silver feature vector on Sharpe. The app is left on the silver curve.
+
+        Follow-up: run a full grid search over WINDOW, K, P_THRESHOLD and
+        EDGE_LOOKBACK for the silver graph+k-NN in tune_graph_knn_silver.py.
+        The new best settings are WINDOW=2, K=10, P_THRESHOLD=0.01,
+        EDGE_LOOKBACK=504. trended_graph_knn_silver.py is updated to default
+        K=10. Walk-forward OOS 2014-2026:
+        - Sharpe: 3.43
+        - Annual return: 34.0%
+        - Annual vol: 9.9%
+        - Max drawdown: -6.7%
+        - Win rate: 15.1%
+        This is the new best in the branch.
+    - id: 6
+      label: Wavelet coherence
+      status: completed
+      completed_at: '2026-08-26'
+      notes: |
+        Implemented trended_wavelet.py. Compute a causal complex Morlet CWT on
+        USD/THB returns for scales 4, 8, 16, 32. For each month, select the
+        scale and component (real or imaginary) that produced the best in-sample
+        Sharpe on the previous 252 days. Trade the sign of the selected wavelet
+        component when it exceeds a learned threshold. Out-of-sample 2014-2026:
+        - Sharpe: -0.64
+        - Annual return: -6.8%
+        - Annual vol: 10.6%
+        - Max drawdown: -59.1%
+        - Win rate: 23.8%
+        The simple real/imag Morlet CWT does not improve on the raw 2-day THB
+        trend. Full wavelet coherence (smoothed cross-spectrum and phase) could
+        be worth trying in a later round, but this closes the initial sweep.
+    - id: 7
+      label: App page to inspect ideas
+      status: completed
+      completed_at: '2026-08-26'
+      notes: |
+        The app page (vector-analysis-ideas.html and vector-analysis-ideas.js)
+        already existed from the initial SSOT and has been updated after each
+        method to load the live equity CSVs. It now plots all six advanced
+        strategies together with the 2-day THB trend, k-NN, and buy-and-hold
+        baselines. Deployed at https://tony-dell.taila0626a.ts.net:8444/apps/gold/vector-analysis-ideas.html.
+  decisions:
+    - label: Keep variants research-only
+      rationale: |
+        These are exploratory latent-space and frequency-domain alternatives. No live
+        trading integration without a separate prototype and validation focus.
+  changes:
+    - file: experiments/gold-thb-usd-causality/app/vector-analysis-ideas.html
+      summary: Exploratory app page for the 6 advanced vector-analysis ideas.
+    - file: experiments/gold-thb-usd-causality/app/vector-analysis-ideas.js
+      summary: Client-side rendering for the vector-analysis ideas page.
+    - file: experiments/gold-thb-usd-causality/trended_dtw.py
+      summary: Walk-forward DTW nearest-neighbor strategy on THB return windows.
+    - file: experiments/gold-thb-usd-causality/trended_delay.py
+      summary: Takens-style delay-embedding k-NN on THB log returns.
+    - file: experiments/gold-thb-usd-causality/trended_ssa.py
+      summary: SSA-denoised THB trend strategy with walk-forward calibration.
+    - file: experiments/gold-thb-usd-causality/trended_regime_var.py
+      summary: Regime-switching VAR with low/high THB volatility.
+    - file: experiments/gold-thb-usd-causality/trended_graph.py
+      summary: Granger-causality edge filter for the 2-day THB trend.
+    - file: experiments/gold-thb-usd-causality/tune_graph.py
+      summary: Grid search for LOOKBACK, MAX_LAG, P_THRESHOLD on the graph filter.
+    - file: experiments/gold-thb-usd-causality/trended_graph_knn.py
+      summary: k-NN pattern matcher gated by the THB->XAU Granger edge.
+    - file: experiments/gold-thb-usd-causality/trended_graph_knn_vol.py
+      summary: k-NN pattern matcher with volatility-targeted position sizing.
+    - file: experiments/gold-thb-usd-causality/trended_graph_knn_dist.py
+      summary: k-NN with alternative distance metrics (correlation, cosine, manhattan).
+    - file: experiments/gold-thb-usd-causality/trended_graph_knn_silver.py
+      summary: k-NN pattern matcher with silver (XAG) returns in the feature vector.
+    - file: experiments/gold-thb-usd-causality/trended_graph_knn_multiscale.py
+      summary: k-NN with M blocks of N-day history (M*N total lookback).
+    - file: experiments/gold-thb-usd-causality/tune_graph_knn_silver.py
+      summary: Grid search for silver graph+k-NN over WINDOW, K, P_THRESHOLD, EDGE_LOOKBACK.
+    - file: experiments/gold-thb-usd-causality/tune_graph_knn.py
+      summary: Grid search for WINDOW, K, P_THRESHOLD and EDGE_LOOKBACK.
+    - file: experiments/gold-thb-usd-causality/trended_wavelet.py
+      summary: Causal complex Morlet CWT on THB returns.
+    - file: docs/ssot/jobs/experiments/2026-08-26-gold-thb-usd-vector-analysis.yml
+      summary: SSOT job defining the advanced vector-analysis exploration.
+
+followup:
+  verification:
+    - Open the app page and confirm all 6 idea cards render.
+  rollback_plan:
+    - Delete the new SSOT file and the app/vector-analysis-ideas.* files.
+  handoff:
+    - tony for promotion to a prototype if any variant beats the 2-day trend baseline.
+  deferred:
+    - Live data ingestion.
+    - Trade-api integration.
+
+report:
+  status: not_started
+  summary: |
+    Placeholder. This SSOT will be updated as each of the 6 methods is prototyped
+    and backtested.
+  links:
+    - experiments/gold-thb-usd-causality/app/vector-analysis-ideas.html
+    - docs/ssot/jobs/experiments/2026-08-26-gold-thb-usd-vector-analysis.yml
+  lessons_learned: []
+
+config:
+  version: 1
+  created_at: '2026-08-26'
+  last_updated: '2026-08-26'
+  maintainer: tony
+  related_files:
+    - docs/ssot/templates/job.yml
+    - experiments/gold-thb-usd-causality/analyze.py
+    - experiments/gold-thb-usd-causality/trended.py

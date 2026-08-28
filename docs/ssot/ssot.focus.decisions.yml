@@ -1,0 +1,398 @@
+title: Focus Intake Decision Log
+subtitle: Canonical record of request intake decisions for review and reuse
+icon: history
+version: 1
+schema:
+  required:
+  - date
+  - request
+  - action
+  - reason
+  optional:
+  - target
+  - confidence
+  - source
+  - matched_to
+notes:
+- This log is append-only; never delete or rewrite history.
+- Use it to audit the decision_tree and retrain intake heuristics.
+- Cross-reference with Focus History in docs/ssot/ssot.focus.yml.
+sections:
+- title: Decisions
+  icon: log
+  layout: timeline
+  items:
+  - date: '2026-08-16'
+    request: Add a focus to design decision trees for each case, suggest from our
+      history data, and assess the focus list to select the next high-value one.
+    action: active
+    target: Focus Intake Decision Tree Design
+    reason: Request matched the active focus and requested design work.
+    confidence: high
+    source: direct
+    matched_to: Focus Intake Decision Tree Design
+    label: 'active: Focus Intake Decision Tree Design (2026-08-16-Add_a_focus_to_desig)'
+  - date: '2026-08-16'
+    request: next?
+    action: active
+    target: Focus Intake Decision Tree Design
+    reason: Continuation request; keep processing the active focus.
+    confidence: high
+    source: direct
+    matched_to: Focus Intake Decision Tree Design
+    label: 'active: Focus Intake Decision Tree Design (2026-08-16-next?)'
+  - date: '2026-08-16'
+    request: continue
+    action: active
+    target: Focus Intake Decision Tree Design
+    reason: Continuation cue matched the active focus.
+    confidence: high
+    source: direct
+    matched_to: Focus Intake Decision Tree Design
+    label: 'active: Focus Intake Decision Tree Design (2026-08-16-continue)'
+  - date: '2026-08-16'
+    request: Please add into focus, this page shows error mixing http/https.
+    action: active
+    target: Fix mcp_debug H3 page mixed-content (HTTP/HTTPS) error
+    reason: User reported a deployed H3 page mixed-content bug and asked to track
+      it. The fix required disabling the HTTP live endpoint and adding skeleton/timeout
+      UI, so it became the active branch focus.
+    confidence: high
+    source: direct
+    matched_to: Fix mcp_debug H3 page mixed-content (HTTP/HTTPS) error
+    label: 'active: Fix mcp_debug H3 page mixed-content (HTTP/HTTPS) error'
+  - date: '2026-08-16'
+    request: focus back to focus system
+    action: active
+    target: ''
+    reason: Request is about the focus system; continue active focus
+    confidence: medium
+    source: mcp_focus
+    matched_to: ''
+    label: 'active: focus back to focus system'
+  - date: '2026-08-16'
+    request: what is next?
+    action: triage_backlog
+    target: Tony-Dell Phase 3 Safe Auto-Recovery
+    reason: No active or quick-win match; the highest-scoring backlog item is the
+      best next focus.
+    confidence: medium
+    source: mcp_focus
+    matched_to: Tony-Dell Phase 3 Safe Auto-Recovery
+    label: 'triage_backlog: Tony-Dell Phase 3 Safe Auto-Recovery (2026-08-16-what_is_next?)'
+  - date: '2026-08-16'
+    request: ''
+    action: continue
+    target: Implement mcp_focus session router per ssot.mcp-focus.yml
+    reason: Request matches the active branch focus 'Implement mcp_focus session router
+      per ssot.mcp-focus.yml'.
+    confidence: high
+    source: mcp_focus
+    matched_to: Implement mcp_focus session router per ssot.mcp-focus.yml
+    label: 'continue: Implement mcp_focus session router per ssot.mcp-focus.yml'
+  - date: '2026-08-16'
+    request: continue
+    action: triage_backlog
+    target: MacBook macOS App Development
+    reason: Request matches an existing backlog item.
+    confidence: high
+    source: mcp_focus
+    matched_to: MacBook macOS App Development
+    label: 'triage_backlog: MacBook macOS App Development'
+  - date: '2026-08-16'
+    request: next?
+    action: triage_backlog
+    target: Tony-Dell Phase 3 Safe Auto-Recovery
+    reason: No active or quick-win match; the highest-scoring backlog item is the
+      best next focus.
+    confidence: medium
+    source: mcp_focus
+    matched_to: Tony-Dell Phase 3 Safe Auto-Recovery
+    label: 'triage_backlog: Tony-Dell Phase 3 Safe Auto-Recovery (2026-08-16-next?)'
+  - date: '2026-08-16'
+    request: status of the decision tree improvement
+    action: triage_backlog
+    target: Tony-Dell Phase 3 Safe Auto-Recovery
+    reason: No active or quick-win match; the highest-scoring backlog item is the
+      best next focus.
+    confidence: medium
+    source: mcp_focus
+    matched_to: Tony-Dell Phase 3 Safe Auto-Recovery
+    label: 'triage_backlog: Tony-Dell Phase 3 Safe Auto-Recovery (2026-08-16-status_of_the_decisi)'
+  - date: '2026-08-17'
+    request: Service Failures Detected from overnight assessment 2026-08-17
+    action: triage_backlog
+    target: Tony-Dell Phase 3 Safe Auto-Recovery
+    reason: No active or quick-win match; the highest-scoring backlog item is the
+      best next focus.
+    confidence: medium
+    source: mcp_focus
+    matched_to: Tony-Dell Phase 3 Safe Auto-Recovery
+    label: 'triage_backlog: Tony-Dell Phase 3 Safe Auto-Recovery (2026-08-17-Service_Failures_Det)'
+  - date: '2026-08-17'
+    request: ''
+    action: continue
+    target: Tony-Dell Phase 3 Safe Auto-Recovery
+    reason: Request matches the active branch focus 'Tony-Dell Phase 3 Safe Auto-Recovery'.
+    confidence: high
+    source: mcp_focus
+    matched_to: Tony-Dell Phase 3 Safe Auto-Recovery
+    label: 'continue: Tony-Dell Phase 3 Safe Auto-Recovery (2026-08-17-)'
+  - date: '2026-08-17'
+    request: next?
+    action: triage_backlog
+    target: Tony-Dell Phase 3 Safe Auto-Recovery
+    reason: No active or quick-win match; the highest-scoring backlog item is the
+      best next focus.
+    confidence: medium
+    source: mcp_focus
+    matched_to: Tony-Dell Phase 3 Safe Auto-Recovery
+    label: 'triage_backlog: Tony-Dell Phase 3 Safe Auto-Recovery (2026-08-17-next?)'
+  - date: '2026-08-17'
+    request: next?
+    action: triage_backlog
+    target: Tony-Dell Phase 3 Safe Auto-Recovery
+    reason: No active or quick-win match; the highest-scoring backlog item is the
+      best next focus.
+    confidence: medium
+    source: mcp_focus
+    matched_to: Tony-Dell Phase 3 Safe Auto-Recovery
+    label: 'triage_backlog: Tony-Dell Phase 3 Safe Auto-Recovery (#2)'
+  - date: '2026-08-17'
+    request: next?
+    action: triage_backlog
+    target: Tony-Dell Phase 3 Safe Auto-Recovery
+    reason: No active or quick-win match; the highest-scoring backlog item is the
+      best next focus.
+    confidence: medium
+    source: mcp_focus
+    matched_to: Tony-Dell Phase 3 Safe Auto-Recovery
+    label: 'triage_backlog: Tony-Dell Phase 3 Safe Auto-Recovery (#3)'
+  - date: '2026-08-17'
+    request: next?
+    action: continue
+    target: Tony-Dell Phase 3 Safe Auto-Recovery
+    reason: Continuing the active focus.
+    confidence: medium
+    source: mcp_focus
+    matched_to: Tony-Dell Phase 3 Safe Auto-Recovery
+    label: 'continue: Tony-Dell Phase 3 Safe Auto-Recovery (2026-08-17-next?)'
+  - date: '2026-08-17'
+    request: next?
+    action: continue
+    target: Tony-Dell Phase 3 Safe Auto-Recovery
+    reason: Continuing the active focus.
+    confidence: medium
+    source: mcp_focus
+    matched_to: Tony-Dell Phase 3 Safe Auto-Recovery
+    label: 'continue: Tony-Dell Phase 3 Safe Auto-Recovery (#2)'
+  - date: '2026-08-17'
+    request: next?
+    action: triage_backlog
+    target: Re-assess mcp-debug SSOT editing tools
+    reason: No active or quick-win match; the highest-scoring backlog item is the
+      best next focus.
+    confidence: medium
+    source: mcp_focus
+    matched_to: Re-assess mcp-debug SSOT editing tools
+    label: 'triage_backlog: Re-assess mcp-debug SSOT editing tools (2026-08-17-next?)'
+  - date: '2026-08-17'
+    request: assess the SSOT file optimization plan for any improvement we could add
+      then update the plan and suggest how we do incremental but continuous optimization
+      run
+    action: triage_backlog
+    target: Re-assess mcp-debug SSOT editing tools
+    reason: No active or quick-win match; the highest-scoring backlog item is the
+      best next focus.
+    confidence: medium
+    source: mcp_focus
+    matched_to: Re-assess mcp-debug SSOT editing tools
+    label: 'triage_backlog: Re-assess mcp-debug SSOT editing tools (2026-08-17-assess_the_SSOT_file)'
+  - date: '2026-08-17'
+    request: suggest next long action to do while I'm away
+    action: continue
+    target: mcp-debug visual capture bridge
+    reason: Continuing the active focus.
+    confidence: medium
+    source: mcp_focus
+    matched_to: mcp-debug visual capture bridge
+    label: 'continue: mcp-debug visual capture bridge (2026-08-17-suggest_next_long_ac)'
+  - date: '2026-08-17'
+    request: next?
+    action: continue
+    target: mcp-debug visual capture bridge
+    reason: Continuing the active focus.
+    confidence: medium
+    source: mcp_focus
+    matched_to: mcp-debug visual capture bridge
+    label: 'continue: mcp-debug visual capture bridge (2026-08-17-next?)'
+  - date: '2026-08-17'
+    request: next?
+    action: continue
+    target: Continuous decision capture for focus and technical choices
+    reason: Continuing the active focus.
+    confidence: medium
+    source: mcp_focus
+    matched_to: Continuous decision capture for focus and technical choices
+    label: 'continue: Continuous decision capture for focus and technical choices'
+  - date: '2026-08-17'
+    request: next in this session
+    action: continue
+    target: PlayLive Host-Prefixed Session IDs
+    reason: Continuing the active focus.
+    confidence: medium
+    source: mcp_focus
+    matched_to: PlayLive Host-Prefixed Session IDs
+    label: 'continue: PlayLive Host-Prefixed Session IDs'
+  - date: '2026-08-18'
+    request: MCP Debug advanced tools wrap-up
+    action: continue
+    target: focus
+    reason: Request matches the active branch focus 'MCP Debug advanced tools wrap-up'.
+    confidence: high
+    source: mcp_focus
+    matched_to: focus
+    label: 'continue: MCP Debug advanced tools wrap-up (2026-08-18)'
+  - label: 'continue: Tony-Dell sync, rsync, and mcp-focus hardening (2026-08-18 16:38:41)'
+    date: '2026-08-18'
+    request: proceed
+    action: continue
+    target: Tony-Dell sync, rsync, and mcp-focus hardening
+    reason: Continuing the active focus.
+    confidence: medium
+    source: mcp_focus
+    matched_to: Tony-Dell sync, rsync, and mcp-focus hardening
+  - label: 'continue: Gemini key rotation and validation (2026-08-18 18:07:16)'
+    date: '2026-08-18'
+    request: next
+    action: continue
+    target: Gemini key rotation and validation
+    reason: Continuing the active focus.
+    confidence: medium
+    source: mcp_focus
+    matched_to: Gemini key rotation and validation
+  - label: 'continue: Gemini key rotation and validation (2026-08-18 18:50:18)'
+    date: '2026-08-18'
+    request: next
+    action: continue
+    target: Gemini key rotation and validation
+    reason: Continuing the active focus.
+    confidence: medium
+    source: mcp_focus
+    matched_to: Gemini key rotation and validation
+  - label: 'triage_backlog: Safe focus continuous processing (2026-08-18 18:59:35)'
+    date: '2026-08-18'
+    request: pickup yomi focus to process
+    action: triage_backlog
+    target: Safe focus continuous processing
+    reason: No active or quick-win match; the highest-scoring backlog item is the
+      best next focus.
+    confidence: medium
+    source: mcp_focus
+    matched_to: Safe focus continuous processing
+  - label: 'continue: Yomi conversation processing and UI recovery (2026-08-18 19:13:47)'
+    date: '2026-08-18'
+    request: next
+    action: continue
+    target: Yomi conversation processing and UI recovery
+    reason: Continuing the active focus.
+    confidence: medium
+    source: mcp_focus
+    matched_to: Yomi conversation processing and UI recovery
+  - label: 'triage_backlog: Safe focus continuous processing (2026-08-18 19:15:10)'
+    date: '2026-08-18'
+    request: process all the gemini focus here
+    action: triage_backlog
+    target: Safe focus continuous processing
+    reason: No active or quick-win match; the highest-scoring backlog item is the
+      best next focus.
+    confidence: medium
+    source: mcp_focus
+    matched_to: Safe focus continuous processing
+  - label: 'triage_backlog: Safe focus continuous processing (2026-08-18 19:16:07)'
+    date: '2026-08-18'
+    request: resume gemini
+    action: triage_backlog
+    target: Safe focus continuous processing
+    reason: No active or quick-win match; the highest-scoring backlog item is the
+      best next focus.
+    confidence: medium
+    source: mcp_focus
+    matched_to: Safe focus continuous processing
+  - label: 'draft_inbox: Continue work on ''Prompt / command preprocessor for context
+      and precision'' (job) (2026-08-19 18:33:10)'
+    date: '2026-08-19'
+    request: promt preprocessor
+    action: draft_inbox
+    target: Continue work on 'Prompt / command preprocessor for context and precision'
+      (job)
+    reason: No existing match; a new inbox draft should be reviewed.
+    confidence: low
+    source: mcp_focus
+    matched_to: Continue work on 'Prompt / command preprocessor for context and precision'
+      (job)
+  - label: 'draft_inbox: mcp_raw tony-omen systemctl status web (2026-08-19 18:33:17)'
+    date: '2026-08-19'
+    request: mcp_raw tony-omen systemctl status web
+    action: draft_inbox
+    target: mcp_raw tony-omen systemctl status web
+    reason: No existing match; a new inbox draft should be reviewed.
+    confidence: low
+    source: mcp_focus
+    matched_to: mcp_raw tony-omen systemctl status web
+  - label: 'continue: Yomi conversation processing and UI recovery (2026-08-19 19:55:50)'
+    date: '2026-08-19'
+    request: ''
+    action: continue
+    target: Yomi conversation processing and UI recovery
+    reason: Request matches the active branch focus 'Yomi conversation processing
+      and UI recovery'.
+    confidence: high
+    source: mcp_focus
+    matched_to: Yomi conversation processing and UI recovery
+  - label: 'continue: Yomi conversation processing and UI recovery (2026-08-20 10:00:45)'
+    date: '2026-08-20'
+    request: ''
+    action: continue
+    target: Yomi conversation processing and UI recovery
+    reason: Request matches the active branch focus 'Yomi conversation processing
+      and UI recovery'.
+    confidence: high
+    source: mcp_focus
+    matched_to: Yomi conversation processing and UI recovery
+  - label: 'triage_backlog: Tony-Dell cannot see iPhone Personal Hotspot SSID (2026-08-23
+      11:16:50)'
+    date: '2026-08-23'
+    request: ''
+    action: triage_backlog
+    target: Tony-Dell cannot see iPhone Personal Hotspot SSID
+    reason: Request matches an existing backlog item.
+    confidence: high
+    source: mcp_focus
+    matched_to: Tony-Dell cannot see iPhone Personal Hotspot SSID
+  - label: 'triage_backlog: Tony-Dell cannot see iPhone Personal Hotspot SSID (2026-08-23
+      11:25:04)'
+    date: '2026-08-23'
+    request: ''
+    action: triage_backlog
+    target: Tony-Dell cannot see iPhone Personal Hotspot SSID
+    reason: Request matches an existing backlog item.
+    confidence: high
+    source: mcp_focus
+    matched_to: Tony-Dell cannot see iPhone Personal Hotspot SSID
+  - label: 'triage_backlog: Tony-Dell cannot see iPhone Personal Hotspot SSID (2026-08-23
+      12:47:11)'
+    date: '2026-08-23'
+    request: ''
+    action: triage_backlog
+    target: Tony-Dell cannot see iPhone Personal Hotspot SSID
+    reason: Request matches an existing backlog item.
+    confidence: high
+    source: mcp_focus
+    matched_to: Tony-Dell cannot see iPhone Personal Hotspot SSID
+config:
+  related_files:
+  - docs/ssot/ssot.focus.current.yml
+  - docs/ssot/ssot.focus.yml
+  - docs/ssot/infrastructure/ssot.subagent-focus-triage.yml
+  - docs/ssot/infrastructure/ssot.focus-dispatcher.yml

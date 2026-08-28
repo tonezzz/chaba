@@ -1,0 +1,51 @@
+title: Wind Forecast
+subtitle: Minimal wind forecast page with map and hourly table for a Track4 course location.
+icon: 💨
+sections:
+  - title: Location
+    icon: 📍
+    layout: list
+    items:
+      - label: Course
+        text: 'tabsai-ws8-track3 (Track4)'
+      - label: Forecast point
+        text: 'In-buoy mark at lat 13.24413075920102, lon 100.92940092086792'
+      - label: Source
+        text: 'Open-Meteo forecast API (no API key required)'
+
+  - title: Features
+    icon: 🌬️
+    layout: list
+    items:
+      - label: Map
+        text: 'Leaflet map centered on the Track4 course with a marker at the forecast point.'
+      - label: Table
+        text: 'Hourly wind speed (km/h) and direction for the next 24 hours.'
+      - label: Minimal
+        text: 'Static page in chaba-h3/public/apps/wind/. No backend required.'
+
+  - title: Methodology
+    icon: 🧪
+    layout: list
+    items:
+      - label: Data source
+        text: 'Open-Meteo forecast API combines global NWP models (ECMWF, GFS, etc.) into an interpolated point forecast for the selected GPS coordinate.'
+      - label: Forecast point
+        text: 'Wind, gust, direction and temperature values are requested at 13.24413075920102, 100.92940092086792 for 10 m above ground.'
+      - label: Time window
+        text: 'The table shows the next 24 hourly values from the current time in Asia/Bangkok timezone.'
+      - label: Wind direction convention
+        text: 'Direction is the bearing from which the wind is blowing (0° = North, 90° = East). The arrow icon points in the same direction.'
+      - label: Limitations
+        text: 'This is a raw global model point forecast. It does not downscale for local shoreline geometry, sea-breeze effects, or obstacles near the race course.'
+
+  - title: Files
+    icon: 📁
+    layout: list
+    items:
+      - label: SSOT
+        text: 'chaba/docs/ssot/apps/ssot.apps.wind.yml'
+      - label: Page
+        text: 'chaba-h3/public/apps/wind/index.html'
+      - label: Registry
+        text: 'chaba-h3/public/apps/apps.yml (id: wind)'

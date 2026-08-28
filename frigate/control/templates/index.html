@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Camera Control Panel</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin: 20px; background: #f5f6f7; color: #222; }
+    h1 { margin-top: 0; font-size: 1.5em; }
+    h2 { font-size: 1.2em; margin-top: 24px; }
+    .controls button { margin: 0 6px 8px 0; padding: 6px 12px; cursor: pointer; }
+    table { width: 100%; border-collapse: collapse; background: #fff; font-size: 13px; }
+    th, td { border: 1px solid #ddd; padding: 6px; text-align: left; vertical-align: top; }
+    th { background: #eef0f2; position: sticky; top: 0; }
+    td.url { max-width: 260px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    select { max-width: 160px; }
+    .status-live { color: #1e7e34; font-weight: bold; }
+    .status-error, .status-http_404 { color: #d32f2f; }
+    .status-empty { color: #f57c00; }
+    #log { width: 100%; height: 220px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; }
+    #jobs { margin: 8px 0; font-weight: 500; }
+    .tabs { border-bottom: 2px solid #ccc; margin: 16px 0 0; }
+    .tab-button { background: #eef0f2; border: none; padding: 8px 16px; cursor: pointer; font-size: 14px; }
+    .tab-button.active { background: #fff; border-bottom: 2px solid #007bff; margin-bottom: -2px; }
+    .tab-content { display: none; padding: 8px 0; }
+    .tab-content.active { display: block; }
+  </style>
+</head>
+<body>
+  <h1>Camera Control Panel</h1>
+
+  <div class="controls">
+    <button onclick="run('discover')">Discover</button>
+    <button onclick="run('rtsp')">Scan Local RTSP</button>
+    <button onclick="run('enixma')">Scan Enixma</button>
+    <button onclick="run('itic')">Scan iTIC</button>
+    <button onclick="run('check')">Check Streams</button>
+    <button onclick="run('generate')">Generate Config</button>
+    <button onclick="run('sync')">Sync Web Map</button>
+  </div>
+
+  <div class='tabs'>
+    <button class='tab-button active' data-tab='cameras' onclick='showTab("cameras")'>Cameras</button>
+    <button class='tab-button' data-tab='jobs' onclick='showTab("jobs")'>Jobs</button>
+    <button class='tab-button' data-tab='map' onclick='showTab("map")'>Map</button>
+  </div>
+
+  <div id='tab-cameras' class='tab-content active'>
+  <div id='summary' style='margin:8px 0;font-size:14px;'></div>
+  <div style='margin:8px 0;'>
+    <input type='text' id='filter' placeholder='Filter name / title / source / group' style='padding:4px;width:280px;'>
+    <select id='perPage' style='padding:4px;'>
+      <option value='25'>25 / page</option>
+      <option value='50'>50 / page</option>
+      <option value='100'>100 / page</option>
+      <option value='9999'>All</option>
+    </select>
+  </div>
+  <table>
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Title</th>
+        <th>Group</th>
+        <th>Source</th>
+        <th>Lat</th>
+        <th>Lon</th>
+        <th>HLS URL</th>
+        <th>Status</th>
+        <th>Enabled</th>
+      </tr>
+    </thead>
+    <tbody id="cameras"></tbody>
+  </table>
+    <div id='pagination' style='margin:8px 0;'></div>
+
+  </div>
+
+  <div id='tab-jobs' class='tab-content'>
+    <div id='jobs'>Idle</div>
+    <textarea id='log' readonly></textarea>
+  </div>
+
+  <div id='tab-map' class='tab-content'>
+    <iframe id='map-frame' src='/map' style='width:100%; height:70vh; border:none; display:block;'></iframe>
+  </div>
+
+  <script>
+    async function api(url, opts = {}) {
+      const r = await fetch(url, { method: 'GET', headers: { 'Accept': 'application/json' }, ...opts });
+      if (!r.ok) throw new Error(`${r.status} ${r.statusText}`);
+      return r.json();
+    }
+
+    function escapeHtml(s) {
+      return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    }
+
+    const state = { filter: '', perPage: 25, page: 1, data: null };
+
+    function matches(cam, q) {
+      if (!q) return true;
+      const text = [cam.name, cam.title, cam.source, cam.group, cam.hls_url, cam.stream_status].join(' ').toLowerCase();
+      return text.includes(q.toLowerCase());
+    }
+
+    function renderSummary() {
+      const cams = state.data.cameras;
+      const total = cams.length;
+      const enabled = cams.filter(c => c.enabled).length;
+      const bySource = {};
+      cams.forEach(c => { const s = c.source || 'unknown'; bySource[s] = (bySource[s] || 0) + 1; });
+      const src = Object.entries(bySource).sort().map(([k, v]) => k + ': ' + v).join(', ');
+      document.getElementById('summary').textContent = 'Cameras: ' + total + ' total, ' + enabled + ' enabled, ' + (total - enabled) + ' disabled | Source: ' + src;
+    }
+
+    function renderPagination(total) {
+      const pages = Math.ceil(total / state.perPage) || 1;
+      state.page = Math.min(state.page, pages);
+      const html = `<button onclick='changePage(-1)' ${state.page === 1 ? 'disabled' : ''}>&lt;</button> <span>Page ${state.page} of ${pages} (${total} cameras)</span> <button onclick='changePage(1)' ${state.page === pages ? 'disabled' : ''}>&gt;</button>`;
+      document.getElementById('pagination').innerHTML = html;
+    }
+
+    function changePage(delta) {
+      state.page = Math.max(1, state.page + delta);
+      renderTable();
+    }
+
+    function renderTable() {
+      const q = state.filter.trim();
+      const filtered = state.data.cameras.filter(c => matches(c, q));
+      renderSummary();
+      renderPagination(filtered.length);
+      const start = (state.page - 1) * state.perPage;
+      const pageCams = filtered.slice(start, start + state.perPage);
+      const groupKeys = Object.keys(state.data.groups).sort((a, b) => state.data.groups[a].order - state.data.groups[b].order);
+      groupKeys.unshift('');
+      const tbody = document.getElementById('cameras');
+      tbody.innerHTML = '';
+      for (const cam of pageCams) {
+        const status = (cam.stream_status || 'unknown').toLowerCase().replace(/[^a-z0-9]/g, '-');
+        const groupOptions = groupKeys.map(g => `<option value='${escapeHtml(g)}' ${(cam.group || '') === g ? 'selected' : ''}>${escapeHtml(g || '(none)')}</option>`).join('');
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${escapeHtml(cam.name)}</td>
+          <td>${escapeHtml(cam.title || '')}</td>
+          <td><select class='group-sel'>${groupOptions}</select></td>
+          <td>${escapeHtml(cam.source || '')}</td>
+          <td>${cam.lat !== null && cam.lat !== undefined ? cam.lat.toFixed(4) : ''}</td>
+          <td>${cam.lon !== null && cam.lon !== undefined ? cam.lon.toFixed(4) : ''}</td>
+          <td class='url' title='${escapeHtml(cam.hls_url || '')}'>${escapeHtml(cam.hls_url || '')}</td>
+          <td class='status-${status}'>${escapeHtml(cam.stream_status || '')}</td>
+          <td><input type='checkbox' class='enabler' ${cam.enabled ? 'checked' : ''}></td>
+        `;
+        const sel = tr.querySelector('.group-sel');
+        if (sel) sel.addEventListener('change', e => setGroup(cam.name, e.target.value));
+        const cb = tr.querySelector('.enabler');
+        if (cb) cb.addEventListener('change', () => toggle(cam.name));
+        tbody.appendChild(tr);
+      }
+    }
+
+    async function load() {
+      state.data = await api('/api/registry');
+      state.page = 1;
+      renderTable();
+      return;
+      const groupKeys = Object.keys(data.groups).sort((a, b) => data.groups[a].order - data.groups[b].order);
+      groupKeys.unshift('');
+      const tbody = document.getElementById('cameras');
+      tbody.innerHTML = '';
+      for (const cam of data.cameras) {
+        const status = (cam.stream_status || 'unknown').toLowerCase().replace(/[^a-z0-9]/g, '-');
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${escapeHtml(cam.name)}</td>
+          <td>${escapeHtml(cam.title || '')}</td>
+          <td><select onchange="setGroup('${escapeHtml(cam.name)}', this.value)">${groupKeys.map(g => `<option value="${escapeHtml(g)}" ${(cam.group || '') === g ? 'selected' : ''}>${escapeHtml(g || '(none)')}</option>`).join('')}</select></td>
+          <td>${escapeHtml(cam.source || '')}</td>
+          <td>${cam.lat !== null && cam.lat !== undefined ? cam.lat.toFixed(4) : ''}</td>
+          <td>${cam.lon !== null && cam.lon !== undefined ? cam.lon.toFixed(4) : ''}</td>
+          <td class="url" title="${escapeHtml(cam.hls_url || '')}">${escapeHtml(cam.hls_url || '')}</td>
+          <td class="status-${status}">${escapeHtml(cam.stream_status || '')}</td>
+          <td><input type="checkbox" ${cam.enabled ? 'checked' : ''} onchange="toggle('${escapeHtml(cam.name)}')"></td>
+        `;
+        tbody.appendChild(tr);
+      }
+    }
+
+    async function toggle(name) {
+      await api('/api/toggle', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name }) });
+      await load();
+    }
+
+    async function setGroup(name, group) {
+      await api('/api/group', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, group }) });
+      await load();
+    }
+
+    async function run(action) {
+      const jobBox = document.getElementById('jobs');
+      jobBox.textContent = `${action}: starting...`;
+      try {
+        const data = await api('/api/' + action, { method: 'POST' });
+        if (data.job_id) {
+          await pollJob(action, data.job_id);
+        } else {
+          jobBox.textContent = `${action}: ${JSON.stringify(data)}`;
+          await load();
+        }
+      } catch (e) {
+        jobBox.textContent = `${action}: error: ${e.message}`;
+      }
+    }
+
+    async function pollJob(action, jobId) {
+      const jobBox = document.getElementById('jobs');
+      const logBox = document.getElementById('log');
+      let status = 'running';
+      while (status === 'running') {
+        await new Promise(r => setTimeout(r, 1500));
+        const job = await api('/api/jobs/' + jobId);
+        status = job.status;
+        jobBox.textContent = `${action}: ${status}`;
+        logBox.value = job.output;
+      }
+      await load();
+    }
+
+    function showTab(tabId) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.tab-button').forEach(el => el.classList.remove('active'));
+      document.getElementById('tab-' + tabId).classList.add('active');
+      document.querySelector('button[data-tab=' + tabId + ']').classList.add('active');
+    }
+
+    document.getElementById('filter').addEventListener('input', () => { state.filter = document.getElementById('filter').value; state.page = 1; renderTable(); });
+    document.getElementById('perPage').addEventListener('change', () => { state.perPage = parseInt(document.getElementById('perPage').value, 10); state.page = 1; renderTable(); });
+    load();
+    setInterval(load, 30000);
+  </script>
+</body>
+</html>

@@ -1,0 +1,318 @@
+title: Google Generative Models
+subtitle: Canonical model registry with free-tier rate limits for all Chaba Google API usage (largest families split into ssot.gemini-models.<family>.yml)
+icon: 🧠
+config:
+  version: 1
+  last_updated: 2026-08-15
+  maintainer: tony
+  status: active
+source:
+  url: https://aistudio.google.com/app/apikey
+  last_verified: '2026-08-15'
+  input_file: /tmp/rate-limits.txt
+  note: Free-tier limits captured from the Google AI Studio rate-limits dashboard
+sections:
+- title: Registry Overview
+  icon: 📋
+  layout: list
+  items:
+  - label: Canonical source
+    text: Google AI Studio free-tier rate-limits dashboard
+  - label: Active assignments
+    text: gemma-4-31b-it for Yomi summarization; gemini-2.5-flash for Helm
+  - label: Ingest script
+    text: scripts/ingest-gemini-rate-limits.py updates this file from JSON/YAML input
+  - label: Consumers
+    text: Referenced by docs/kb/gemini-integration.md and docs/ssot/infrastructure/ssot.services.yml
+- title: Model Status Legend
+  icon: 🏷️
+  layout: list
+  items:
+  - label: active
+    text: Currently used in production (has verified free-tier limits)
+  - label: available
+    text: Available but not currently wired to a service
+  - label: deprecated
+    text: Legacy; do not use for new work
+  - label: not_used
+    text: Not relevant to Chaba workload
+models:
+  gemini-1.5-flash:
+    display_name: Gemini 1.5 Flash
+    api_name: gemini-1.5-flash
+    family: Gemini 1.5
+    category: Text-out models
+    free_tier:
+      rpm: null
+      tpm: null
+      rpd: null
+      status: unverified
+    status: deprecated
+    notes: Deprecated. No longer a recommended fallback. Consumers should use gemini-2.5-flash / gemini-2.5-flash-lite or gemini-3.5-flash-lite.
+  antigravity:
+    display_name: Antigravity
+    api_name: antigravity
+    family: Antigravity
+    category: Agents
+    free_tier:
+      rpm: 60
+      tpm: 100000
+      rpd: 100
+    status: available
+    notes: 'Managed agent via the Gemini Interactions API. Not a text-only generateContent model; requires environment_config and interaction lifecycle. Do not use as a direct LLM provider in Helm.'
+    last_verified: '2026-08-24'
+  gemini-robotics-er-2-preview:
+    display_name: Gemini Robotics ER 2 Preview
+    api_name: gemini-robotics-er-2-preview
+    family: Robotics
+    category: Other models
+    free_tier:
+      rpm: 5
+      tpm: 250000
+      rpd: 20
+    status: available
+    notes: Limits from AI Studio rate-limits dashboard on 2026-08-15
+    last_verified: '2026-08-15'
+  gemini-robotics-er-1.6-preview:
+    display_name: Gemini Robotics ER 1.6 Preview
+    api_name: gemini-robotics-er-1.6-preview
+    family: Robotics
+    category: Other models
+    free_tier:
+      rpm: 5
+      tpm: 250000
+      rpd: 20
+    status: available
+    notes: Limits from AI Studio rate-limits dashboard on 2026-08-15
+    last_verified: '2026-08-15'
+  gemini-robotics-er-1.5-preview:
+    display_name: Gemini Robotics ER 1.5 Preview
+    api_name: gemini-robotics-er-1.5-preview
+    family: Robotics
+    category: Other models
+    free_tier:
+      rpm: 10
+      tpm: 250000
+      rpd: 20
+    status: available
+    notes: Limits from AI Studio rate-limits dashboard on 2026-08-15
+    last_verified: '2026-08-15'
+  deep-research-pro-preview-12-2025:
+    display_name: Deep Research Pro Preview
+    api_name: deep-research-pro-preview-12-2025
+    family: Deep Research
+    category: Agents
+    free_tier:
+      rpm: 0
+      tpm: 0
+      rpd: 0
+    status: available
+    notes: Limits from AI Studio rate-limits dashboard on 2026-08-15
+    last_verified: '2026-08-15'
+  deep-research-preview-04-2026:
+    display_name: Deep Research Preview 04 2026
+    api_name: deep-research-preview-04-2026
+    family: Deep Research
+    category: Default
+    free_tier:
+      status: unverified
+    status: available
+    notes: Add free-tier RPM/TPM/RPD from AI Studio. Group Default.
+  deep-research-max-preview-04-2026:
+    display_name: Deep Research Max Preview 04 2026
+    api_name: deep-research-max-preview-04-2026
+    family: Deep Research
+    category: Default
+    free_tier:
+      status: unverified
+    status: available
+    notes: Add free-tier RPM/TPM/RPD from AI Studio. Group Default.
+  antigravity-preview-05-2026:
+    display_name: Antigravity Preview 05 2026
+    api_name: antigravity-preview-05-2026
+    family: Antigravity
+    category: Agents
+    free_tier:
+      status: unverified
+    status: available
+    notes: 'Antigravity managed-agent preview identifier. Requires the Gemini Interactions API (interactions.create/run) and an environment, not the standard generateContent endpoint. Not a Helm LLM provider.'
+    last_verified: '2026-08-24'
+    smoke_test:
+      status: passed
+      ran_at: '2026-08-24T02:25:00Z'
+      environment: remote
+      response: 'Hello! I am Gemini Agent. I am here and ready to help you...'
+      usage: { total_tokens: 4075, input_tokens: 3635, output_tokens: 38 }
+  gemini-embedding-1:
+    display_name: Gemini Embedding 1
+    api_name: gemini-embedding-001
+    family: Embedding
+    category: Other models
+    free_tier:
+      rpm: 100
+      tpm: 30000
+      rpd: 1000
+    status: available
+    fallback_for:
+    - mddb-embedding
+    notes: Confirmed in AI Studio rate-limits dashboard on 2026-08-18. Actual API model name is gemini-embedding-001. Now used as fallback for mddb-embedding after gemini-embedding-002.
+    last_verified: '2026-08-18'
+  gemini-embedding-2:
+    display_name: Gemini Embedding 2
+    api_name: gemini-embedding-2
+    family: Embedding
+    category: Other models
+    free_tier:
+      rpm: 100
+      tpm: 30000
+      rpd: 1000
+    status: active
+    primary_for:
+    - mddb-embedding
+    notes: Confirmed in AI Studio rate-limits dashboard on 2026-08-18. Actual API model name is gemini-embedding-002. Lower project usage; promoted to primary for mddb-embedding. gemini-embedding-001 is fallback.
+    last_verified: '2026-08-18'
+  gemini-omni-flash:
+    display_name: Gemini Omni Flash
+    family: Omni
+    category: Multi-modal generative models
+    free_tier:
+      rpm: 0
+      tpm: 0
+      rpd: 0
+    status: available
+    notes: Limits from AI Studio rate-limits dashboard on 2026-08-15
+    last_verified: '2026-08-15'
+  imagen-4-fast-generate:
+    display_name: Imagen 4 Fast Generate
+    family: Imagen
+    category: Multi-modal generative models
+    free_tier:
+      rpm: null
+      tpm: null
+      rpd: 25
+    status: available
+    notes: Limits from AI Studio rate-limits dashboard on 2026-08-15
+    last_verified: '2026-08-15'
+  imagen-4-generate:
+    display_name: Imagen 4 Generate
+    family: Imagen
+    category: Multi-modal generative models
+    free_tier:
+      rpm: null
+      tpm: null
+      rpd: 25
+    status: available
+    notes: Limits from AI Studio rate-limits dashboard on 2026-08-15
+    last_verified: '2026-08-15'
+  imagen-4-ultra-generate:
+    display_name: Imagen 4 Ultra Generate
+    family: Imagen
+    category: Multi-modal generative models
+    free_tier:
+      rpm: null
+      tpm: null
+      rpd: 25
+    status: available
+    notes: Limits from AI Studio rate-limits dashboard on 2026-08-15
+    last_verified: '2026-08-15'
+  lyria-3-clip:
+    display_name: Lyria 3 Clip
+    family: Lyria
+    category: Multi-modal generative models
+    free_tier:
+      rpm: 0
+      tpm: 0
+      rpd: 0
+    status: available
+    notes: Limits from AI Studio rate-limits dashboard on 2026-08-15
+    last_verified: '2026-08-15'
+  lyria-3-pro:
+    display_name: Lyria 3 Pro
+    family: Lyria
+    category: Multi-modal generative models
+    free_tier:
+      rpm: 0
+      tpm: 0
+      rpd: 0
+    status: available
+    notes: Limits from AI Studio rate-limits dashboard on 2026-08-15
+    last_verified: '2026-08-15'
+  veo-3-fast-generate:
+    display_name: Veo 3 Fast Generate
+    family: Veo
+    category: Multi-modal generative models
+    free_tier:
+      rpm: 0
+      tpm: null
+      rpd: 0
+    status: available
+    notes: Limits from AI Studio rate-limits dashboard on 2026-08-15
+    last_verified: '2026-08-15'
+  veo-3-generate:
+    display_name: Veo 3 Generate
+    family: Veo
+    category: Multi-modal generative models
+    free_tier:
+      rpm: 0
+      tpm: null
+      rpd: 0
+    status: available
+    notes: Limits from AI Studio rate-limits dashboard on 2026-08-15
+    last_verified: '2026-08-15'
+  veo-3-lite-generate:
+    display_name: Veo 3 Lite Generate
+    family: Veo
+    category: Multi-modal generative models
+    free_tier:
+      rpm: 0
+      tpm: null
+      rpd: 0
+    status: available
+    notes: Limits from AI Studio rate-limits dashboard on 2026-08-15
+    last_verified: '2026-08-15'
+fallbacks:
+  helm-llm:
+    primary: gemini-3.1-flash-lite
+    chain:
+    - model: gemini-3.5-flash-lite
+      expected_quality: high
+      reason: 3x RPM and 25x RPD vs Gemini 2.5 Flash; identical limits to gemini-3.1-flash-lite
+    - model: gemini-3.7-flash
+      expected_quality: medium-high
+      reason: Newest Flash family with low observed usage; 5 RPM / 20 RPD, adequate for code
+    - model: gemini-3.5-flash
+      expected_quality: medium
+      reason: Same 5 RPM / 20 RPD as 3.7; useful when 3.1/3.5-lite quotas are exhausted
+    - model: gemini-2.5-flash-lite
+      expected_quality: medium
+      reason: Higher RPM (10) but observed over RPD on 2026-08-18; use after daily reset
+    - model: gemini-2.5-flash
+      expected_quality: medium
+      reason: Previously primary; 5 RPM / 20 RPD and observed over RPD on 2026-08-18
+    - model: gemini-3.6-flash
+      expected_quality: medium
+      reason: 5 RPM / 20 RPD; observed over RPD on 2026-08-18; fall back to this after reset
+  yomi-summarization:
+    primary: gemma-4-31b-it
+    chain:
+    - model: gemma-4-26b-a4b-it
+      expected_quality: high
+      reason: Same Gemma 4 family; MoE variant with identical limits
+    - model: gemini-2.5-flash-lite
+      expected_quality: medium-high
+      reason: 2x RPM and large context; good for long Thai/English summaries
+    - model: gemini-2.5-flash
+      expected_quality: medium
+      reason: Large context and TPM; lower RPM and different style
+  media-analysis:
+    primary: gemma-4-31b-it
+    chain:
+    - model: gemma-4-26b-a4b-it
+      expected_quality: high
+      reason: Same Gemma 4 family; MoE variant with identical limits
+    - model: gemini-2.5-flash
+      expected_quality: medium-high
+      reason: Strong multimodal/text reasoning; lower RPM
+    - model: gemini-2.5-flash-lite
+      expected_quality: medium
+      reason: Higher RPM for batched media jobs; slightly lighter model

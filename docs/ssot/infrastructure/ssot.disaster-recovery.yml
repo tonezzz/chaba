@@ -1,0 +1,196 @@
+title: Disaster Recovery Infrastructure
+subtitle: Backup and recovery configuration for documentation infrastructure, MCP servers, and critical system configurations
+icon: 💾
+
+ideas:
+  - Single source of truth for disaster recovery procedures and backup configuration
+  - Critical for recovering documentation search capabilities after system failures
+  - Documents automated backup scripts, verification procedures, and recovery processes
+  - Includes retention policies, automation schedules, and contact information
+
+sections:
+  - title: Backup Configuration
+    icon: 🔄
+    layout: list
+    items:
+      - label: Backup Scripts Location
+        text: All backup and recovery scripts in scripts/ directory
+        path: /home/tony/CascadeProjects/chaba/scripts
+        scripts:
+          - backup-configs.sh - Daily automated backup
+          - recover-configs.sh - Recovery from backup
+          - verify-docs.sh - Documentation verification
+          - test-dr-backup.sh - Dry-run testing without restore
+          - setup-automation-cron.sh - Cron job automation setup
+
+      - label: Backup Storage Location
+        text: Local backup storage with 30-day retention policy
+        path: /home/tony/CascadeProjects/chaba/docs/backups/configs
+        retention: 30 days
+        current_size: 128K
+        backup_frequency: Daily at 3 AM
+
+      - label: Backup Components
+        text: Critical configuration files backed up daily
+        components:
+          - MCP configuration (mcp_config.json) - 2.9K
+          - Windsurf MCP configuration - 1.3K
+          - Devin skills directory - 4.0K
+          - Global rules (global_rules.md) - 5.8K
+          - Project rules (.windsurfrules) - 7.8K
+          - Backup manifest - 482 bytes
+
+      - label: Git Version Control
+        text: Primary backup for all documentation files
+        repository: https://github.com/tonezzz/chaba.git
+        scope: All files in docs/ directory
+        frequency: Automatic on commit
+        retention: Permanent history
+
+  - title: Automation Schedule
+    icon: ⏰
+    layout: list
+    items:
+      - label: Daily Backup
+        text: Automated backup of MCP configs and skills
+        schedule: 0 3 * * * (3 AM daily)
+        script: scripts/backup-configs.sh
+        log: docs/backups/backup.log
+        status: Active
+
+      - label: Weekly Verification
+        text: Documentation integrity and functionality verification
+        schedule: 0 2 * * 0 (2 AM Sunday)
+        script: scripts/verify-docs.sh
+        log: docs/backups/verify.log
+        status: Active
+
+      - label: Monthly Testing
+        text: Dry-run testing and backup validation
+        schedule: Manual (first Sunday of month)
+        script: scripts/test-dr-backup.sh
+        status: Pending test facility
+
+  - title: Recovery Procedures
+    icon: 🚑
+    layout: list
+    items:
+      - label: Configuration Recovery
+        text: Restore MCP configs and skills from backup
+        command: ./scripts/recover-configs.sh
+        recovery_time: 5-10 minutes
+        data_loss: Minimal (daily backups)
+        restore_point: Auto-created before recovery
+
+      - label: Documentation Recovery
+        text: Restore documentation files from Git repository
+        command: git clone https://github.com/tonezzz/chaba.git
+        recovery_time: 5-10 minutes
+        data_loss: Minimal (git history)
+        verification: ./scripts/verify-docs.sh
+
+      - label: Complete System Recovery
+        text: Full system restore from Timeshift snapshot
+        steps:
+          - 1. Restore system from Timeshift snapshot
+          - 2. Clone chaba repository from GitHub
+          - 3. Restore MCP configs: ./scripts/recover-configs.sh
+          - 4. Restart Devin Desktop
+          - 5. Verify MCP servers: mcp_list_servers
+          - 6. Test search functionality
+        recovery_time: 30-60 minutes
+        data_loss: Minimal (daily backups + git history)
+
+  - title: Verification Status
+    icon: ✅
+    layout: list
+    items:
+      - label: Last Backup
+        text: 2026-08-06 15:03:13
+        size: 128K
+        status: Success
+        components: 6 files backed up
+
+      - label: Last Verification
+        text: 2026-08-06 15:03:25
+        status: Success
+        results:
+          - Documentation files: 133 (79 MD + 54 YAML)
+          - Critical directories: 5
+          - SSOT summaries: 3
+          - MCP configuration: Valid
+          - Backup status: OK
+          - Empty files: 0
+
+      - label: Dry-Run Test
+        text: 2026-08-06 15:03:10
+        status: Success
+        tests_passed: 10/10
+        tests:
+          - Script validation: Pass
+          - Directory structure: Pass
+          - Critical files: Pass
+          - Recovery script: Pass
+          - Verification script: Pass
+          - Documentation integrity: Pass
+          - Git repository: Pass
+          - MCP configuration: Pass
+          - Backup manifest: Pass
+          - Disk space: Pass
+
+  - title: System Requirements
+    icon: ⚙️
+    layout: list
+    items:
+      - label: Disk Space
+        text: Minimum 1GB free for backup retention
+        current_available: 12G
+        current_usage: 88%
+        backup_growth: ~128K per day
+        retention_impact: ~3.8MB maximum (30 days)
+
+      - label: Script Dependencies
+        text: Required system tools and permissions
+        dependencies:
+          - bash: Shell script execution
+          - python3: JSON validation
+          - git: Version control operations
+          - cron: Job scheduling
+          - File permissions: Read/write access to configs
+
+      - label: MCP Server Requirements
+        text: Devin Desktop with MCP server support
+        required_servers:
+          - docs: Documentation search (critical)
+          - github: GitHub integration (high)
+          - yomi: Yomi integration (high)
+          - postgres: Database access (medium)
+          - mcp-gpu: GPU operations (medium)
+          - mcp-llama: LLM inference (medium)
+
+  - title: Documentation References
+    icon: 📚
+    layout: list
+    items:
+      - label: Disaster Recovery Guide
+        text: Comprehensive disaster recovery documentation
+        path: docs/kb/documentation-disaster-recovery.md
+        sections: Recovery procedures, troubleshooting, maintenance
+
+      - label: Documentation Infrastructure SSOT
+        text: Complete SSOT configuration for disaster recovery
+        path: docs/ssot/ssot.documentation-infrastructure.yml
+        sections: Components, backup strategy, scenarios
+
+      - label: Maintenance Standards
+        text: Documentation maintenance procedures and standards
+        path: docs/kb/documentation-maintenance-standards.md
+        sections: Templates, MCP optimization, backup procedures
+
+config:
+  version: 1
+  last_updated: 2026-08-06
+  maintainer: tony
+  backup_status: operational
+  recovery_priority: high
+  test_status: dry-run_validated

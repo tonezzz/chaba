@@ -1,0 +1,172 @@
+title: Chaba Health Check Configuration (Mobile)
+description: Health check endpoints for external/mobile access (Tailscale)
+version: 1
+
+services:
+  # Web Stack Services (External access only)
+  - id: caddy
+    name: Caddy (External)
+    type: http
+    url: http://tony-omen:8080/apps/
+    expected_status: 200
+    timeout: 10
+    category: web
+
+  - id: tailscale-funnel
+    name: Tailscale Funnel
+    type: http
+    url: https://tony-dell.taila0626a.ts.net:8444/apps/tailscale-funnel/
+    expected_status: 200
+    timeout: 15
+    category: optional
+    note: 'Public internet access via Tailscale Funnel on tony-dell, port 8444. Port 443 is the mcp-rview-oauth-proxy.'
+
+  - id: status-api
+    name: Status API (External)
+    type: http
+    url: http://tony-omen:8080/api/health
+    expected_status: 200
+    timeout: 10
+    category: api
+
+  - id: yomi-api
+    name: Yomi API (External)
+    type: http
+    url: http://tony-omen:8080/api/yomi/health
+    expected_status: 200
+    timeout: 10
+    category: api
+
+  - id: yomi-summarization
+    name: Yomi Summarization (External)
+    type: http
+    url: http://tony-omen:8080/api/yomi/summarization-status
+    expected_status: 200
+    timeout: 10
+    category: api
+
+  - id: yomi-rate-limiter
+    name: Yomi Rate Limiter (External)
+    type: http
+    url: http://tony-omen:8080/api/yomi/rate-limiter-status
+    expected_status: 200
+    timeout: 10
+    category: api
+
+  # Data Services (via external API)
+  - id: weaviate
+    name: Weaviate (External)
+    type: http
+    url: http://tony-omen:8080/api/weaviate/v1/nodes
+    expected_status: 200
+    timeout: 10
+    category: datastore
+
+  # GPU Services (All offline due to GTX 1650 4GB VRAM constraints)
+  - id: thai-legal
+    name: Llama Router (Phi-3 only, External)
+    type: http
+    url: http://tony-omen:8001/health
+    expected_status: 200
+    timeout: 15
+    category: gpu
+    note: Offline (2026-08-09) - GTX 1650 4GB cannot run multiple GPU services concurrently. Use mcp1_hold_llama and run one GPU workload at a time.
+
+  - id: imagen2
+    name: Imagen2 (External)
+    type: http
+    url: http://tony-omen:8000/health
+    expected_status: 200
+    timeout: 15
+    category: gpu
+    note: Offline (2026-08-09) - GPU memory constraints. Start manually when needed.
+
+  - id: txt2vid
+    name: Txt2Vid (External)
+    type: http
+    url: http://tony-omen:8002/health
+    expected_status: 200
+    timeout: 15
+    category: gpu
+    note: Offline (2026-08-09) - GPU memory constraints. Start manually when needed.
+
+  # Queue Services
+  - id: gpu-queue
+    name: GPU Queue (External)
+    type: http
+    url: http://tony-dell:3001/health
+    expected_status: 200
+    timeout: 10
+    category: queue
+    note: Migrated to tony-dell rootless podman (2026-08-25). GPU workers remain on tony-omen.
+
+  # Optional Services
+  - id: frigate
+    name: Frigate NVR (External)
+    type: http
+    url: http://tony-omen:8080/frigate/api/version
+    expected_status: 200
+    timeout: 15
+    category: optional
+
+# Recovery suggestions for common failure modes (mobile-specific)
+recovery_actions:
+  network_unreachable:
+    - Check if Tailscale is connected
+    - Verify tony-omen is reachable over the tailnet
+    - Check mobile data connection
+    - Try switching between WiFi and mobile data
+
+  timeout:
+    - External access may be slower than local
+    - Check if home network has bandwidth issues
+    - Tailscale connection may be slow
+    - Consider using local network when at home
+
+  service_unavailable:
+    - Some services may not be exposed externally
+    - Check if service requires local network access
+    - Container checks may not work externally
+    - Use Status API for container status when available
+
+  vpn_required:
+    - Some services require Tailscale for external access
+    - Connect to Tailscale first
+    - Verify Tailscale is active on the device
+    - Check tony-omen status with `tailscale status`
+
+  hostname_resolution:
+    - tony-omen.local does not resolve across the tailnet on mobile
+    - Use tony-omen (Tailscale) for remote access
+    - Verify with `tailscale status` and `tailscale ping tony-omen`
+
+  funnel_unreachable:
+    - Check `tailscale funnel status` on tony-dell
+    - Restart Funnel with `sudo tailscale funnel --bg --yes --https=8444 8082`
+    - Verify Funnel is enabled in the Tailscale admin console
+    - Test direct URL: https://tony-dell.taila0626a.ts.net:8444/apps/tailscale-funnel/
+
+# Testing and debugging guidance (mobile-specific)
+debugging_guidance:
+  web_testing:
+    - Use localhost for testing on the same machine: http://localhost:8080/apps/health-check/
+    - Avoid browser preview for local testing - use regular browser instead
+    - Browser preview is only for isolated environments or when direct access unavailable
+    - Test mobile viewport responsiveness using browser dev tools
+
+  location_testing:
+    - On Mobile: Use localhost if testing on the same machine
+    - External: Use Tailscale (tony-omen) when away from home network
+    - At Home: Switch to tony-omen.local for better performance
+
+  network_testing:
+    - Test Tailscale connectivity before accessing services
+    - Check mobile signal strength and data connection
+    - Test both WiFi and mobile data for comparison
+    - Use browser dev tools network throttling to simulate poor connections
+
+  service_testing:
+    - External access has longer timeouts - be patient
+    - Some services may be limited or unavailable externally
+    - Use Status API for container status when direct checks fail
+    - Test critical services first when connection is unstable

@@ -1,0 +1,10 @@
+[Unit]
+Description=Run tony-dell cross-host monitor every 2 minutes
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=2min
+Unit=tony-dell-monitor.service
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SSOT Semantic Search</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      overflow: hidden;
+    }
+
+    .header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 30px;
+      text-align: center;
+    }
+
+    .header h1 {
+      font-size: 28px;
+      margin-bottom: 10px;
+    }
+
+    .header p {
+      opacity: 0.9;
+      font-size: 14px;
+    }
+
+    .search-section {
+      padding: 30px;
+    }
+
+    .search-box {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .search-box input {
+      flex: 1;
+      padding: 15px 20px;
+      border: 2px solid #e0e0e0;
+      border-radius: 8px;
+      font-size: 16px;
+      transition: border-color 0.3s;
+    }
+
+    .search-box input:focus {
+      outline: none;
+      border-color: #667eea;
+    }
+
+    .search-box button {
+      padding: 15px 30px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+
+    .search-box button:hover {
+      transform: translateY(-2px);
+    }
+
+    .search-box button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .filters {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+
+    .filter-chip {
+      padding: 8px 16px;
+      background: #f0f0f0;
+      border-radius: 20px;
+      font-size: 14px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .filter-chip:hover {
+      background: #e0e0e0;
+    }
+
+    .filter-chip.active {
+      background: #667eea;
+      color: white;
+    }
+
+    .results {
+      padding: 0 30px 30px;
+    }
+
+    .result-item {
+      padding: 20px;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      margin-bottom: 15px;
+      transition: all 0.2s;
+    }
+
+    .result-item:hover {
+      border-color: #667eea;
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.1);
+    }
+
+    .result-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .result-title {
+      font-weight: 600;
+      font-size: 18px;
+      color: #333;
+    }
+
+    .result-score {
+      background: #667eea;
+      color: white;
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+
+    .result-meta {
+      display: flex;
+      gap: 15px;
+      font-size: 13px;
+      color: #666;
+      margin-bottom: 10px;
+    }
+
+    .result-meta span {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .result-path {
+      font-family: monospace;
+      background: #f5f5f5;
+      padding: 8px 12px;
+      border-radius: 4px;
+      font-size: 12px;
+      color: #666;
+      word-break: break-all;
+    }
+
+    .result-tags {
+      display: flex;
+      gap: 8px;
+      margin-top: 10px;
+      flex-wrap: wrap;
+    }
+
+    .tag {
+      background: #f0f0f0;
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 11px;
+      color: #666;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: #666;
+    }
+
+    .no-results {
+      text-align: center;
+      padding: 40px;
+      color: #666;
+    }
+
+    .stats {
+      padding: 20px 30px;
+      background: #f9f9f9;
+      border-top: 1px solid #e0e0e0;
+      font-size: 13px;
+      color: #666;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>SSOT Semantic Search</h1>
+      <p>Search across SSOT documents, session archives, and documentation using AI-powered semantic search</p>
+    </div>
+
+    <div class="search-section">
+      <div class="search-box">
+        <input type="text" id="searchInput" placeholder="Search for documents (e.g., 'GPU queue', 'Track4 windsurfing', 'Docker configuration')">
+        <button id="searchBtn" onclick="performSearch()">Search</button>
+      </div>
+
+      <div class="filters">
+        <div class="filter-chip active" data-type="all" onclick="filterByType('all')">All</div>
+        <div class="filter-chip" data-type="ssot" onclick="filterByType('ssot')">SSOT</div>
+        <div class="filter-chip" data-type="session" onclick="filterByType('session')">Sessions</div>
+        <div class="filter-chip" data-type="docs" onclick="filterByType('docs')">Docs</div>
+      </div>
+    </div>
+
+    <div class="results" id="results">
+      <div class="no-results">
+        Enter a search query to find documents
+      </div>
+    </div>
+
+    <div class="stats" id="stats">
+      Ready to search
+    </div>
+  </div>
+
+  <script>
+    let currentFilter = 'all';
+    let lastResults = [];
+
+    function filterByType(type) {
+      currentFilter = type;
+      document.querySelectorAll('.filter-chip').forEach(chip => {
+        chip.classList.toggle('active', chip.dataset.type === type);
+      });
+      
+      if (lastResults.length > 0) {
+        displayResults(lastResults);
+      }
+    }
+
+    async function performSearch() {
+      const query = document.getElementById('searchInput').value.trim();
+      if (!query) return;
+
+      const searchBtn = document.getElementById('searchBtn');
+      const resultsDiv = document.getElementById('results');
+      const statsDiv = document.getElementById('stats');
+
+      searchBtn.disabled = true;
+      resultsDiv.innerHTML = '<div class="loading">Searching...</div>';
+      statsDiv.textContent = 'Searching...';
+
+      try {
+        const response = await fetch('/api/weaviate-search/search', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ query, limit: 20 })
+        });
+
+        if (!response.ok) throw new Error('Search failed');
+
+        const data = await response.json();
+        lastResults = data.results || [];
+        
+        displayResults(lastResults);
+        statsDiv.textContent = `Found ${lastResults.length} results for "${query}"`;
+
+      } catch (error) {
+        resultsDiv.innerHTML = '<div class="no-results">Search failed. Please try again.</div>';
+        statsDiv.textContent = 'Error: ' + error.message;
+      } finally {
+        searchBtn.disabled = false;
+      }
+    }
+
+    function displayResults(results) {
+      const resultsDiv = document.getElementById('results');
+      
+      const filtered = currentFilter === 'all' 
+        ? results 
+        : results.filter(r => r.type === currentFilter);
+
+      if (filtered.length === 0) {
+        resultsDiv.innerHTML = '<div class="no-results">No results found</div>';
+        return;
+      }
+
+      resultsDiv.innerHTML = filtered.map(result => `
+        <div class="result-item">
+          <div class="result-header">
+            <div class="result-title">${escapeHtml(result.title)}</div>
+            <div class="result-score">${(result.similarity * 100).toFixed(1)}%</div>
+          </div>
+          <div class="result-meta">
+            <span>📄 ${result.type}</span>
+            <span>📁 ${result.category}</span>
+            <span>🌐 ${result.language}</span>
+          </div>
+          <div class="result-path">${escapeHtml(result.path)}</div>
+          <div class="result-tags">
+            ${result.tags.map(tag => `<span class="tag">${escapeHtml(tag)}</span>`).join('')}
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    // Enable Enter key search
+    document.getElementById('searchInput').addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') performSearch();
+    });
+  </script>
+</body>
+</html>

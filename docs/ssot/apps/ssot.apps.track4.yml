@@ -1,0 +1,195 @@
+title: Track4 Modularization
+subtitle: Complete modularization of Track4 course simulator with 5 independent modules, testing, and replay features.
+icon: 🏁
+sections:
+  - title: Completed Modules
+    icon: ✅
+    layout: list
+    items:
+      - label: 2026-08-02 - Course Loading & Wind Enhancements
+        text: 'Fixed course loading with static YAML fallback (no PHP required), enhanced wind simulation with configurable direction/speed/gusts, added wind configuration UI'
+      - label: 2026-08-01 - Complete Modularization
+        text: 'Completed 5-module extraction, 40 tests, simulation replay, performance optimizations, comprehensive documentation'
+      - label: RacerIconRenderer
+        text: 'Extracted racer icon/label rendering logic. File: racer-icons.js. Methods: boatIcon, flagIcon, sailLabel. CSS: racer-icons.css.'
+      - label: SimulationEngine
+        text: 'Physics and simulation loop separated from UI logic. File: simulation-engine.js. Methods: start, stop, update, initRacers, updateRacer, resolveCollisions, simWindFactor, startPenalty, findSegment, random, resetRandom, startRecording, stopRecording, getRecording, loadRecording, startPlayback, stopPlayback, updatePlayback. Features: seeded random (LCG) for deterministic replay, recording/playback support, binary search optimization.'
+      - label: UIController
+        text: 'Manages UI updates and event handling. File: ui-controller.js. Methods: updateStandings, updateRacerList, updateElapsedTime, toggleSimulationControls.'
+      - label: MapLayerManager
+        text: 'Manages base maps and overlays. File: map-layers.js. Methods: addBaseLayer, addOverlay, setActiveBase, toggleOverlay, createLayerControl, removeLayerControl, getState.'
+      - label: StateManager
+        text: 'Centralized state management with reactivity. File: state-manager.js. Methods: setState, getState, subscribe, reset, getCourseState, setCourseState, getSimulationState, setSimulationState, getUIState, setUIState, getListenerCount, getSubscribedPaths.'
+
+  - title: Testing
+    icon: 🧪
+    layout: list
+    items:
+      - label: Integration tests
+        text: 'test.html with 10 automated tests covering module loading, course loading, racer rendering, simulation, layers, leader focus, ribbon caps, sections, interaction, UI controls. All passing.'
+      - label: Unit tests
+        text: 'tests/simulation-engine.test.js (10 tests), tests/state-manager.test.js (20 tests). Custom test runner. All passing. Total: 40 tests.'
+      - label: Test skill
+        text: 'track4-smoke-test skill for reusable smoke testing.'
+
+  - title: Documentation
+    icon: 📚
+    layout: list
+    items:
+      - label: ARCHITECTURE.md
+        text: 'Comprehensive architecture documentation with module descriptions, data flow, usage examples, migration notes.'
+      - label: COURSE_LOADING_ISSUE.md
+        text: 'Documents PHP backend 502 Bad Gateway issue (server infrastructure, not Track4 code).'
+
+  - title: Performance
+    icon: ⚡
+    layout: list
+    items:
+      - label: Binary search
+        text: 'findSegment optimized from O(n) to O(log n) using binary search on cumulative distances.'
+      - label: Collision detection
+        text: 'Early return for <2 racers. O(n²) acceptable for 2-10 racers.'
+      - label: Path caching
+        text: 'Cached path data in updateRacer to avoid repeated property access.'
+
+  - title: CSS Organization
+    icon: 🎨
+    layout: list
+    items:
+      - label: base.css
+        text: 'Base styles, variables, reset.'
+      - label: components.css
+        text: 'Component-specific styles (buttons, inputs, cards).'
+      - label: layout.css
+        text: 'Layout-specific styles (grid, flex, positioning).'
+      - label: racer-icons.css
+        text: 'Racer icon and animation styles.'
+      - label: track.css
+        text: 'Streamlined for course-specific styles.'
+
+  - title: Known Issues
+    icon: ⚠️
+    layout: list
+    items:
+      - label: 3D Gaussian Splat
+        text: 'Library compatibility issues with all tested approaches (@mkkellogg/gaussian-splats-3d, @antimatter15/splat, react-three-fiber). Currently disabled.'
+
+  - title: Sessions
+    icon: 📜
+    layout: list
+    items:
+      - label: Session history
+        text: 'Session archives stored in docs/sessions/{date}.yml'
+
+  - title: Engine split
+    icon: ⚙️
+    layout: list
+    items:
+      - label: CourseRenderer
+        text: 'Builds drawable geometry and delegates all drawing to the active theme.'
+      - label: DefaultTheme
+        text: 'Holds all marker, line, section, arrow and wind rendering primitives.'
+      - label: RacerIconRenderer
+        text: 'Module for racer icon/label rendering logic. Extracted from themes for reusability and testability. File: racer-icons.js. Methods: boatIcon, flagIcon, sailLabel.'
+      - label: SimulationEngine
+        text: 'Physics and simulation loop separated from UI logic. Testable racer movement, collision detection, and state management. File: simulation-engine.js. Methods: start, stop, update, initRacers, updateRacer, resolveCollisions, simWindFactor, startPenalty, findSegment. Features: seeded random for deterministic replay, recording/playback support.'
+      - label: UIController
+        text: 'Manages UI updates and event handling for simulation controls. File: ui-controller.js. Methods: updateStandings, updateRacerList, updateElapsedTime, toggleSimulationControls.'
+      - label: MapLayerManager
+        text: 'Manages base maps and overlays independently of app logic. Easier layer switching and configuration. File: map-layers.js. Methods: addBaseLayer, addOverlay, setActiveBase, toggleOverlay, createLayerControl.'
+      - label: StateManager
+        text: 'Centralized state management with reactivity and easier debugging. File: state-manager.js. Methods: setState, getState, subscribe, reset, getCourseState, setCourseState, getSimulationState, setSimulationState, getUIState, setUIState.'
+      - label: Override points
+        text: 'Currently overridden in racing: markerIcon, markerLabelIcon, lineLabelIcon, arrowIcon, windIcon (minimal racing arrow), boatIcon (racer arrow, hinge link and upright flag/number pill), drawLine, drawOne (start/finish gates, leg/round callouts, solid sections) and renderStandings (race dashboard).'
+      - label: CSS organization
+        text: 'CSS organized into base.css (base styles, variables), components.css (component-specific), layout.css (layout-specific), racer-icons.css (racer icon animations). Track.css streamlined for course-specific styles.'
+      - label: Testing
+        text: 'Integration test suite at test.html with 10 automated tests. Unit tests in tests/ directory: simulation-engine.test.js (10 tests), state-manager.test.js (20 tests). Total: 40 tests passing.'
+      - label: Performance
+        text: 'Optimized findSegment with binary search (O(n) → O(log n)). Early return in collision detection for <2 racers. Cached path data in updateRacer.'
+
+  - title: Wind Simulation Enhancements
+    icon: 💨
+    layout: list
+    items:
+      - label: Enhanced wind model
+        text: 'Configurable wind direction (0-360°), speed (5-30 kts), gust factor (0-0.5), and direction variability. Replaces hardcoded NE wind assumption.'
+      - label: Point of sail physics
+        text: 'Wind factor now based on angle between boat heading and wind direction. Upwind (close-hauled) slower, downwind (reaching/running) faster.'
+      - label: Gust effects
+        text: 'Random gust variations affect boat speed realistically. Stronger wind = faster boats with diminishing returns above 20 kts.'
+      - label: Wind configuration UI
+        text: 'New wind controls in SIM tab: direction slider with compass display, speed slider, gust factor slider, Apply Wind button.'
+      - label: Course YAML integration
+        text: 'Wind configuration loaded from course YAML (wind.direction, wind.speed_kts, wind.gust_factor, wind.variability).'
+      - label: Real-time updates
+        text: 'Wind changes apply immediately to simulation. "Apply Wind" button restarts simulation with new wind parameters.'
+
+  - title: Course Loading Improvements
+    icon: 📂
+    layout: list
+    items:
+      - label: Static YAML fallback
+        text: 'Course loading now works without PHP backend. Tries PHP API first, falls back to static course list if server unavailable.'
+      - label: getStaticCourseList()
+        text: 'New function checks if default course file is accessible, returns known course names without requiring PHP.'
+      - label: Enhanced populateCourseList()
+        text: 'Modified to try PHP API first, then static fallback. Course dropdown now populates even without backend.'
+      - label: Direct YAML loading
+        text: 'loadCourseYaml() always worked via direct fetch - no PHP required for individual course files.'
+      - label: Course loading resolved
+        text: 'Previous 502 Bad Gateway issue resolved. Course loading now functional regardless of PHP backend status.'
+
+  - title: Leader Focus Feature
+    icon: 🎯
+    layout: list
+    items:
+      - label: Purpose
+        text: 'Highlight the race leader by focusing on their current section and dimming other sections and racers for visual clarity during simulation.'
+      - label: Toggle control
+        text: 'Add "Focus Leader" checkbox in SIM tab. When enabled, auto-follows the leader through the course. Press L to toggle.'
+      - label: Manual override
+        text: 'Click any section in the SECTIONS list to manually focus that section instead of auto-following the leader.'
+      - label: Visual hierarchy
+        text: 'Leader section: 100% opacity with glow. Other sections: 30% opacity. Racers in leader section: 100% opacity, slightly larger. Racers elsewhere: 50% opacity.'
+      - label: Smooth transitions
+        text: 'CSS opacity transitions (0.3s ease) to avoid jarring jumps when focus changes.'
+      - label: Status indicator
+        text: 'Show "Following: [Section Name]" indicator when auto-focus is active, or "Focused: [Section Name]" for manual override.'
+      - label: Edge case handling
+        text: 'If leader is between sections, highlight the section they are approaching based on course direction.'
+      - label: CSS classes
+        text: '.leader-focus-active on body when feature enabled. .leader-section on focused section polyline. .leader-racer on boats in focused section. .dimmed-section and .dimmed-racer for non-focused elements.'
+      - label: Implementation files
+        text: 'track.js: track leader section in simulation loop, handle toggle and manual override. renderer.js: apply CSS classes when drawing sections and boat markers. track.css: opacity transitions and glow effects.'
+
+  - title: 3D Gaussian Splat Integration
+    icon: 🎥
+    layout: list
+    items:
+      - label: Current implementation
+        text: 'Custom Leaflet layer (SplatLayer) wrapping Gaussian splat viewer libraries. File: public/apps/track4/splat-layer.js. Currently disabled due to library compatibility issues.'
+      - label: Library compatibility issues
+        text: 'All tested approaches fail with parsing errors: @mkkellogg/gaussian-splats-3D (v0.4.0, v0.3.0) fails with "Offset is outside the bounds of the DataView" in PlyParser.js; three-gaussian-splats (v0.0.7) fails with same error; iframe with esm.sh CDN fails with "Invalid typed array length: 4" in parseStandardSplatToUncompressedSplatArray. Tried official room.splat from graphdeco-inria/gaussian-splatting repo - all fail. Issue appears fundamental to browser environment or file format compatibility.'
+      - label: CORS configuration
+        text: 'Caddy configured with Access-Control-Allow-Origin: * for splat files. File serving confirmed working via curl.'
+      - label: Iframe approach
+        text: 'Tried iframe-based viewer with esm.sh CDN to isolate library context. Still fails with parsing errors. The issue is not specific to direct library integration.'
+      - label: Point cloud fallback
+        text: 'Implementing Three.js point cloud renderer as reliable fallback. Uses standard .ply point cloud format (positions + colors) with PointsMaterial. Estimated 2-4 hours implementation. Lower visual quality than Gaussian splats but reliable rendering. Leverages existing SplatLayer GPS mapping and camera sync logic.'
+      - label: Course YAML splat section
+        text: 'Add optional splat metadata to course YAML: splat.file (path to .ply/.splat), splat.bounds ([[south,west],[north,east]]), splat.center ([lat,lon]). Toggled via MAP tab checkbox.'
+      - label: Training workflow
+        text: 'Train splats in docker/3dgs container, export .ply, determine GPS bounds, place in public/apps/track4/splats/, add metadata to course YAML.'
+      - label: Future options
+        text: 'Wait for library updates, use official desktop viewer (not web-based), implement point cloud fallback with Three.js (in progress), or generate custom splat files with specific format requirements (days to weeks).'
+
+config:
+  version: 1
+  last_updated: 2026-08-06
+  maintainer: tony
+  status: active
+  deployment: chaba-h3, chaba-raceman
+  related_files:
+    - docs/kb/app-ssot-standards.md
+    - docs/ssot/apps/ssot.apps.yml

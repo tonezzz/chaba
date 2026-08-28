@@ -1,0 +1,47 @@
+title: mcp-debug File & Clipboard Bridge
+subtitle: Add safe small-file transfer and optional clipboard tools to mcp-debug
+icon: inbox
+
+focus:
+  label: mcp-debug file & clipboard bridge
+  text: |
+    Extend mcp-debug with small, auditable file-transfer tools so the assistant can
+    fetch remote logs/configs and push small scripts without leaving the MCP workflow.
+    Clipboard support is out-of-scope for the first pass and should be added as a
+    separate, experimental tool after file transfer is stable.
+
+    Proposed design for the complicated bits (so this session does not need to solve them again):
+    - `mcp_get_file(host, path, max_bytes=65536)` returns `{ok, encoding, content_base64, size, truncated}`.
+      Transport: existing SSH exec with `cat` or `head -c`, base64-encode the payload.
+    - `mcp_put_file(host, path, content_base64, mode="644", overwrite=false)` returns `{ok, path, bytes_written}`.
+      Transport: existing SSH exec with a heredoc after path-allowlist vetting.
+    - `mcp_clipboard_get(host)` / `mcp_clipboard_set(host, text)` are macOS `pbpaste`/`pbcopy`
+      or Linux `xclip`/`xsel`/`wl-clipboard`. Disabled by default; per-host opt-in only.
+
+    Security defaults:
+    - Per-host `allowed_path_prefixes` (e.g. `~/.local`, `/tmp`, `~/.config`, project dirs).
+    - Hard `max_bytes` cap and a `truncated` flag.
+    - `overwrite=false` by default; confirmation required for writes outside the allow-list.
+    - All get/put calls logged with host, path, size, and result.
+  branch: chaba
+  priority: medium
+  status: draft
+  tags: [mcp, mcp-debug, file-transfer, remote-ops, security]
+  missing_info: []
+  subtasks:
+    - label: Promote this design to a dedicated SSOT (docs/ssot/infrastructure/ssot.mcp-debug.files.yml)
+      status: not_started
+    - label: Add mcp_get_file and mcp_put_file to the mcp-debug server
+      status: not_started
+    - label: Implement path-allowlist and size-limit vetting
+      status: not_started
+    - label: Update ssot.mcp-debug.yml with new tools, limits, and host allowlists
+      status: not_started
+    - label: Add smoke tests for get/put round-trip on tony-omen and tony-dell
+      status: not_started
+    - label: Design and optionally add mcp_clipboard_get/set as experimental
+      status: not_started
+
+source:
+  session: mcp-debug-file-bridge
+  date: 2026-08-16

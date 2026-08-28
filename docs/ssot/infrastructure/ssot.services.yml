@@ -1,0 +1,542 @@
+title: Chaba Services Configuration
+subtitle: Service definitions and configurations for Chaba infrastructure
+version: 3
+
+production_deployment:
+  profiles:
+    - production (--profile production flag)
+  environment_separation:
+    - development: NODE_ENV=development, placeholder API keys, direct project mounts
+    - production: NODE_ENV=production, real API keys, static asset mounts only
+  secrets_management:
+    - docker-compose.secrets.yml for Docker secrets
+    - generate-secrets.sh script for secret generation
+    - chmod 600 permissions for secret files
+  configuration_files:
+    - .env.production for production environment variables
+    - docker-compose.prod.yml for production overrides
+    - .env.example for environment template
+  deployment_commands:
+    - development: docker compose up -d
+    - production: docker compose -f docker-compose.yml -f docker-compose.prod.yml --profile production up -d --build
+    - production with secrets: docker compose -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.secrets.yml --profile production up -d --build
+  status: implemented (2026-08-13)
+  notes: Production deployment system with environment separation, secrets management, and comprehensive documentation in production-deployment-operations.md
+
+tony-dell:
+  postgres:
+    container: chaba-postgres-16
+    image: docker.io/pgvector/pgvector:pg16
+    runtime: rootless podman
+    data_volume: /home/tony/.config/containers/postgres/data
+    port: 5432
+    host_port: 127.0.0.1:5432
+    tailscale_serve: --bg --tcp 5432 127.0.0.1:5432
+    dns_alias: postgre
+    dns_target: 100.68.142.13
+    quadlet:
+      container_unit: ~/.config/containers/systemd/chaba-postgres-16.container
+      service_unit: ~/.config/systemd/user/chaba-postgres-16.service
+    status: implemented (2026-08-16)
+  yomi-api:
+    container: yomi-api
+    image: docker.io/library/node:22-slim
+    runtime: rootless podman
+    port: 3000
+    host_port: 127.0.0.1:3000
+    tailscale_serve: --bg --tcp 3000 127.0.0.1:3000
+    caddy_upstream: tony-dell:3000
+    data_volume: /home/tony/.local/share/yomi
+    quadlet:
+      container_unit: ~/.config/containers/systemd/yomi-api.container
+      service_unit: ~/.config/systemd/user/yomi-api.service
+    related_units:
+      - yomi-api.service
+      - yomi-update-all.timer
+      - yomi-update-active.timer
+      - yomi-backup.timer
+    status: implemented (2026-08-16)
+    failover_plan: docs/ssot/infrastructure/ssot.yomi-failover.yml
+  redis:
+    container: redis
+    image: docker.io/library/redis:7.4-alpine
+    runtime: rootless podman
+    network: host
+    port: 6379
+    host_port: 100.68.142.13:6379
+    data_volume: none (in-memory only)
+    quadlet:
+      container_unit: ~/.config/containers/systemd/redis.container
+      service_unit: ~/.config/systemd/user/redis.service
+    related_units:
+      - yomi-api.service
+    status: implemented (2026-08-17)
+    note: Migrated from tony-omen; yomi-api REDIS_URL now points to tony-dell tailnet IP 100.68.142.13:6379.
+  mddb:
+    container: mddb
+    image: docker.io/chaba/mddb-page-tools:latest
+    runtime: rootless podman
+    network: host
+    port: 11023 (API), 11024 (gRPC), 9000 (MCP)
+    host_port: 100.68.142.13:11023
+    data_volume: /home/tony/.config/containers/mddb/data
+    quadlet:
+      container_unit: ~/.config/containers/systemd/mddb.container
+      service_unit: ~/.config/systemd/user/mddb.service
+    related_units:
+      - mddb.service
+    status: implemented (2026-08-17)
+    note: Migrated from tony-omen; copied mddb.db (~101MB) and vaults to tony-dell; Caddy reverse proxy updated to 100.68.142.13:11023.
+  mddb-panel:
+    container: mddb-panel
+    image: docker.io/tradik/mddb:panel-latest
+    runtime: rootless podman
+    network: host
+    port: 3002
+    host_port: 100.68.142.13:3002
+    quadlet:
+      container_unit: ~/.config/containers/systemd/mddb-panel.container
+      service_unit: ~/.config/systemd/user/mddb-panel.service
+    related_units:
+      - mddb-panel.service
+    status: implemented (2026-08-17)
+    note: Caddy /mddb/* reverse proxy updated to 100.68.142.13:3002.
+  raceman-php:
+    container: raceman-php
+    image: docker.io/library/chaba-raceman-raceman-php:latest
+    runtime: rootless podman
+    network: host
+    port: 9001
+    host_port: 100.68.142.13:9001
+    data_volume: /home/tony/CascadeProjects/chaba-raceman
+    quadlet:
+      container_unit: ~/.config/containers/systemd/raceman-php.container
+      service_unit: ~/.config/systemd/user/raceman-php.service
+    status: implemented (2026-08-17)
+    note: Migrated from tony-omen; php-fpm listens on 0.0.0.0:9001 to avoid conflict with mddb :9000.
+  raceman-web:
+    container: raceman-web
+    image: docker.io/library/nginx:alpine
+    runtime: rootless podman
+    network: host
+    port: 8083
+    host_port: 100.68.142.13:8083
+    data_volume: /home/tony/CascadeProjects/chaba-raceman
+    quadlet:
+      container_unit: ~/.config/containers/systemd/raceman-web.container
+      service_unit: ~/.config/systemd/user/raceman-web.service
+    status: implemented (2026-08-17)
+    note: Nginx listens on 8083; Caddy /apps/raceman/* and /apps/common.css and /apps/nav.js now proxy to 100.68.142.13:8083.
+  weaviate:
+    container: weaviate
+    image: docker.io/semitechnologies/weaviate:latest
+    runtime: rootless podman
+    port: 8080
+    host_port: 0.0.0.0:8084
+    tailscale_serve: --bg --tcp 8084 127.0.0.1:8084
+    caddy_upstream: 100.68.142.13:8084
+    data_volume: /home/tony/.config/containers/weaviate/data
+    quadlet:
+      container_unit: ~/.config/containers/systemd/weaviate.container
+      service_unit: ~/.config/systemd/user/weaviate.service
+    depends_on: chaba-postgres-16
+    status: implemented (2026-08-17)
+    note: Migrated from tony-omen; data (~40MB) copied to tony-dell. Port 8084 used because chaba-funnel already binds 0.0.0.0:8082 on tony-dell. yomi-api WEAVIATE_URL updated to http://100.68.142.13:8084.
+  mcp-debug-cors:
+    service: mcp-debug-cors.service
+    host: tony_dell
+    port: 9100
+    upstream_files:
+      - /mcp-savings.json
+      - /mcp-table.json
+    tailscale_funnel: https://tony-dell.taila0626a.ts.net
+    status: implemented (2026-08-13)
+  mcp-link-monitor:
+    service: mcp-link-monitor.service
+    host: tony_dell
+    purpose: TCP/IP reachability watchdog for tony-omen, tony-dell, macbook
+    status: implemented (2026-08-13)
+  chaba-funnel:
+    service: chaba-funnel.service
+    host: tony_dell
+    port: 8082
+    host_port: 0.0.0.0:8082
+    purpose: Tailscale Funnel landing page, docs, and health endpoint
+    tailscale_funnel: 'https://tony-dell.taila0626a.ts.net:8444'
+    source: stacks/tony-dell/chaba-funnel/funnel-server.py
+    status: implemented (2026-08-17)
+    note: 'Migrated from port 443 root to 8444 to avoid conflict with the mcp-rview-oauth-proxy on 9004. Caddy/rview remain on 8443; OAuth stays on 443. Set up: tailscale funnel --bg --https=8444 8082 on tony-dell.'
+  playlived-dell:
+    service: playlived-dell.service
+    host: tony_dell
+    purpose: PlayLive browser automation on tony-dell
+    status: implemented (2026-08-13)
+  focus-dispatcher-overnight:
+    timer: focus-dispatcher-overnight.timer
+    host: tony_dell
+    purpose: Nightly focus/dispatch run
+    status: enabled (2026-08-18)
+    last_run: '2026-08-18T02:00:00+07:00'
+    next_run: '2026-08-19T03:00:00+07:00'
+    verification:
+    - systemctl --user is-active focus-dispatcher-overnight.timer
+    - systemctl --user is-enabled focus-dispatcher-overnight.timer
+  dnsmasq-postgre:
+    service: dnsmasq-postgre.service
+    host: tony_dell
+    port: 5353
+    purpose: User dnsmasq resolver for the postgre DNS alias
+    status: implemented (2026-08-13)
+  gemini-ollama-proxy:
+    service: Gemini-Ollama embedding proxy
+    provider: Chaba (Google Gemini API backend)
+    runtime: rootless podman
+    host: tony_dell
+    port: 11435
+    host_port: 0.0.0.0:11435
+    quadlet:
+      container_unit: ~/.config/containers/systemd/gemini-ollama-proxy.container
+      service_unit: ~/.config/systemd/user/gemini-ollama-proxy.service
+    source: /home/tony/CascadeProjects/chaba-tony-dell/scripts/mddb/gemini-ollama-proxy.mjs
+    secrets:
+      - gemini-api-key
+    environment:
+      - GEMINI_EMBEDDING_MODEL=gemini-embedding-2
+      - GEMINI_EMBEDDING_FALLBACK_MODEL=gemini-embedding-001
+    upstream_model: gemini-embedding-001
+    requested_model_alias: text-embedding-004
+    dimensions: 768
+    ollama_compatible: true
+    status: migrated to tony-dell (2026-08-25)
+    note: 'Migrated from tony-omen docker compose to tony-dell rootless podman. MDDB now connects to http://100.68.142.13:11435 for embeddings. Maps text-embedding-004, nomic-embed-text, and gemini-embedding-* aliases to gemini-embedding-001/002.'
+  home-assistant:
+    container: home-assistant
+    image: docker.io/homeassistant/home-assistant:stable
+    runtime: rootless podman
+    host: tony_dell
+    network: host
+    port: 8123
+    host_port: 0.0.0.0:8123
+    quadlet:
+      container_unit: ~/.config/containers/systemd/home-assistant.container
+      service_unit: ~/.config/systemd/user/home-assistant.service
+    config: /home/tony/.config/home-assistant
+    custom_components:
+      - ha_mcp_tools
+    mcp_server:
+      type: ha_mcp_tools in-process
+      local_url: http://tony-dell:9584/private_CtYuVkJEl28cp8qA8yXNCQ
+      webhook: http://tony-dell:8123/api/webhook/mcp_d5528537d57627164033dc5e3e5e5aa6
+    caddy:
+      host_path: /apps/home-assistant/
+      mcp_path: /api/ha-mcp/
+      backend: 100.68.142.13
+      caddyfile: /home/tony/CascadeProjects/chaba-tony-dell/stacks/web/Caddyfile
+    health_check: ssh tony-dell curl -sf http://127.0.0.1:8123/ >/dev/null
+    autostart: loginctl enable-linger tony is yes; Quadlet WantedBy=default.target
+    status: 'mcp server active (2026-08-25)'
+    note: 'Container rootless podman on tony-dell. HA-MCP active. Caddy reverse proxy, health check, and autostart configured. Device integrations pending.'
+  gpu-queue:
+    container: gpu-queue
+    image: docker.io/library/node:22-alpine
+    runtime: rootless podman
+    host: tony_dell
+    port: 3001
+    host_port: 0.0.0.0:3001
+    network: host
+    quadlet:
+      container_unit: ~/.config/containers/systemd/gpu-queue.container
+      service_unit: ~/.config/systemd/user/gpu-queue.service
+    source: /home/tony/CascadeProjects/chaba-tony-dell/scripts/gpu-queue
+    database: postgres (chaba database on tony-dell)
+    environment:
+      - DATABASE_URL=postgres://chaba:chabapass@100.68.142.13:5432/chaba
+      - GPU_QUEUE_PORT=3001
+      - GPU_QUEUE_HOST=0.0.0.0
+      - GPU_LLAMA_URL=http://100.75.102.88:8008
+      - GPU_IMAGEN2_URL=http://100.75.102.88:8000
+      - GPU_TXT2VID_URL=http://100.75.102.88:8002
+    worker_llama_url: http://100.75.102.88:8008/v1/chat/completions
+    worker_imagen2_url: http://100.75.102.88:8000/generate
+    worker_txt2vid_url: http://100.75.102.88:8002/generate
+    scheduling: memory_aware (GPU memory-aware scheduling)
+    features:
+      - Intelligent scheduling with memory-aware and predictive features
+      - Dynamic priority adjustment based on system state
+      - Job duration prediction using historical data
+      - Multi-layer caching with Redis integration
+      - Comprehensive monitoring and metrics
+    job_types:
+      - embedding (priority 4)
+      - txt2vid, cogvideo (priority 3)
+      - imagen2, yomi_summary, yomi_daily, yomi_daily_batch (priority 2)
+      - llama (priority 1)
+    status: migrated to tony-dell (2026-08-25)
+    note: 'Migrated from tony-omen docker compose to tony-dell rootless podman with --network host. GPU workers (llama, imagen2, txt2vid) remain on tony-omen and are reached via 100.75.102.88. Removed from stacks/web/docker-compose.yml.'
+
+  gpu-queue-processor:
+    container: gpu-queue-processor
+    image: docker.io/library/node:22-alpine
+    runtime: rootless podman
+    host: tony_dell
+    network: host
+    quadlet:
+      container_unit: ~/.config/containers/systemd/gpu-queue-processor.container
+      service_unit: ~/.config/systemd/user/gpu-queue-processor.service
+    source: /home/tony/CascadeProjects/chaba-tony-dell/scripts/gpu-queue
+    environment:
+      - DATABASE_URL=postgres://chaba:chabapass@100.68.142.13:5432/chaba
+      - GPU_LLAMA_URL=http://100.75.102.88:8008
+      - GPU_IMAGEN2_URL=http://100.75.102.88:8000
+      - GPU_TXT2VID_URL=http://100.75.102.88:8002
+    status: migrated to tony-dell (2026-08-25)
+    note: 'Migrated from tony-omen docker compose to tony-dell rootless podman. Polls the tony-dell gpu-queue database and dispatches jobs to tony-omen GPU workers at 100.75.102.88.'
+
+  multi-wan:
+    ssot: docs/ssot/infrastructure/ssot.tony-dell-multi-wan.yml
+    host: tony_dell
+    purpose: Wired ADSL primary with Naris Wi-Fi ADSL backup
+    status: implemented (2026-08-13)
+  multi-wan-tony-omen:
+    ssot: docs/ssot/infrastructure/ssot.tony-omen-multi-wan.yml
+    host: tony_omen
+    purpose: Wired 1 Gbps + iPhone USB tether ECMP with 5 GHz Wi-Fi fallback
+    status: implemented (2026-08-25)
+  status-data-api:
+    container: status-data-api
+    image: docker.io/library/chaba-tony-dell-status-data-api:latest
+    runtime: rootless podman
+    host: tony_dell
+    port: 8000
+    host_port: 0.0.0.0:8000
+    source: tony-dell/status-data-api
+    quadlet:
+      container_unit: ~/.config/containers/systemd/status-data-api.container
+      service_unit: ~/.config/systemd/user/status-data-api.service
+    upstream: 100.68.142.13:8000
+    caddy_upstream: 100.68.142.13:8000
+    depends_on:
+      - sensor-reader
+    status: implemented (2026-08-18)
+    note: Aggregates git, Frigate, camera summary, and sensor payloads from tony-omen:8001; Caddy /api/* now proxies to tony-dell.
+  rview-api:
+    container: rview-api
+    image: localhost/rview-api:latest
+    runtime: rootless podman
+    network: host
+    host: tony_dell
+    port: 3007
+    host_port: '100.68.142.13:3007'
+    data_volume: /home/tony/.local/share/rview-api
+    build_unit: ~/.config/containers/systemd/rview-api-image.build
+    quadlet:
+      container_unit: ~/.config/containers/systemd/rview-api.container
+      service_unit: ~/.config/systemd/user/rview-api.service
+      build_unit: ~/.config/systemd/user/rview-api-image.service
+    source: stacks/tony-dell/rview-api
+    caddy_upstream: tony-dell:3007
+    public_funnel: 'tony-dell.taila0626a.ts.net:3007'
+    tailscale_funnel: '--tcp=3007 --bg 3007'
+    health_check: curl -sf http://127.0.0.1:3007/health >/dev/null
+    usage_log: /home/tony/.local/share/rview-api/usage.log
+    status: implemented (2026-08-20)
+    note: 'Migrated from tony-omen; state persisted to ~/.local/share/rview-api. Caddy /apps/rview/api/* reverse proxy updated to tony-dell:3007. Image is built by the rview-api-image.build Quadlet unit. Public access is also available via Tailscale Funnel TCP (tony-dell.taila0626a.ts.net:3007) for the chaba.h3 proxy.'
+  rview-live:
+    container: rview-live
+    image: localhost/rview-live:latest
+    runtime: rootless podman
+    network: host
+    host: tony_dell
+    port: 3008
+    host_port: '100.68.142.13:3008'
+    build_unit: ~/.config/containers/systemd/rview-live-image.build
+    quadlet:
+      container_unit: ~/.config/containers/systemd/rview-live.container
+      service_unit: ~/.config/systemd/user/rview-live.service
+      build_unit: ~/.config/systemd/user/rview-live-image.service
+    source: stacks/tony-dell/rview-live
+    depends_on: rview-api
+    caddy_upstream: tony-dell:3008
+    public_funnel: 'tony-dell.taila0626a.ts.net:3008'
+    tailscale_funnel: '--tcp=3008 --bg 3008'
+    health_check: curl -sf http://127.0.0.1:3008/health >/dev/null
+    secrets:
+      - gemini-api-key
+    environment:
+      - GEMINI_LIVE_PORT=3008
+    status: implemented (2026-08-20)
+    note: 'Migrated from tony-omen to avoid conflict with mddb-panel on port 3002. Caddy /api/rview-live/* reverse proxy updated to tony-dell:3008. GEMINI_API_KEY is injected from the podman secret `gemini-api-key` as an env variable. Image is built by the rview-live-image.build Quadlet unit and depends on rview-api. The bundled scripts/mcp_rview/server.py now also exposes fetch_page for reading web pages. Public access is also available via Tailscale Funnel TCP (tony-dell.taila0626a.ts.net:3008) for the chaba.h3 proxy.'
+  mcp-rview:
+    service: mcp-rview
+    host: tony_dell
+    port: 9003
+    host_port: '127.0.0.1:9003'
+    service_unit: ~/.config/systemd/user/mcp-rview.service
+    source: stacks/tony-dell/mcp-rview/mcp-rview.service
+    depends_on: rview-api
+    health_check: 'curl -sfI -H "Accept: text/event-stream" http://127.0.0.1:9003/sse >/dev/null'
+    environment:
+      - 'RVIEW_API_URL=http://127.0.0.1:3007/state'
+    status: implemented (2026-08-21)
+    note: stdio MCP proxy that exposes rview_* tools and fetch_page to external MCP clients (e.g., Claude Desktop via the mcp-rview-oauth-proxy on 9004). Spawns /home/tony/CascadeProjects/chaba-tony-dell/scripts/mcp_rview/server.py and proxies to http://127.0.0.1:3007/state.
+
+  mcp-rview-oauth-proxy:
+    service: mcp-rview-oauth-proxy
+    host: tony_dell
+    port: 9004
+    host_port: '127.0.0.1:9004'
+    service_unit: ~/.config/systemd/user/mcp-rview-oauth-proxy.service
+    source: stacks/tony-dell/mcp-rview/mcp-rview-oauth-proxy.service
+    depends_on: mcp-rview
+    health_check: 'curl -sf http://127.0.0.1:9004/.well-known/oauth-authorization-server >/dev/null'
+    status: implemented (2026-08-25)
+    note: 'OAuth2 proxy for mcp-rview. Listens on 127.0.0.1:9004. Tailscale serve on tony-dell:443 proxies https://tony-dell.taila0626a.ts.net/ to 127.0.0.1:9004. Client credentials are in /home/tony/.config/mcp-rview-oauth-proxy.env (not in git).'
+
+tony-omen:
+  ollama:
+    container: ollama
+    image: ollama/ollama:latest
+    mode: server
+    models:
+      - nomic-embed-text:latest
+      - phi3-gguf:latest (imported from Phi-3-mini-4k-instruct-Q4_K_M.gguf)
+    port: 11434 (host), 11434 (internal)
+    network: web_default
+    routing:
+      - /v1/chat/completions → phi3-gguf
+      - mcp-llama → http://tony-omen:11434
+    status: migrated to Ollama (2026-08-18); ghcr.io/ggml-org/llama.cpp retired
+  postgres:
+    container: postgres
+    image: postgres:16-alpine
+    port: 5432
+    status: decommissioned (2026-08-27)
+    routing:
+      - trade data → 100.68.142.13:5432 (tony-dell, chaba-postgres-16)
+    notes: Container stopped and removed; trade database migrated to tony-dell chaba-postgres-16. Yomi data was already on tony-dell.
+  mddb:
+    container: mddb
+    image: tradik/mddb:latest
+    port: 11023 (API), 9000 (web)
+    status: decommissioned (2026-08-17)
+    routing:
+      - /api/mddb/* → 100.68.142.13:11023 (tony-dell, Caddy reverse proxy)
+    notes: Container stopped and removed; data migrated to tony-dell; Caddy now routes to tony-dell.
+  mddb-panel:
+    container: mddb-panel
+    image: tradik/mddb:panel-latest
+    port: 3002 (host), 3000 (internal)
+    status: decommissioned (2026-08-17)
+    routing:
+      - /mddb/* → 100.68.142.13:3002 (tony-dell, Caddy reverse proxy)
+    notes: Container stopped and removed; panel migrated to tony-dell on port 3002.
+  gemini-api:
+    service: Google Gemini API
+    provider: Google Cloud
+    model_registry: docs/ssot/infrastructure/ssot.gemini-models.yml
+    default_model: gemma-4-31b-it
+    fallback_model: gemma-4-26b-a4b-it
+    api_key: GEMINI_API_KEY environment variable
+    current_key: [Set via GEMINI_API_KEY environment variable - do not commit real keys]
+    usage: Yomi summarization (conversation and daily summaries)
+    integration: gemini-integration.mjs
+    status: implemented (2026-08-06), enabled via USE_GEMINI environment variable
+    functions:
+      - geminiConversationSummary() - Generate conversation summaries
+      - geminiDailySummary() - Generate daily summaries
+      - geminiBatchDailySummary() - Generate batch daily summaries
+      - testGeminiConnection() - Test API connectivity
+    language_support:
+      - Thai system prompts for Thai/mixed content
+      - English system prompts for English content
+      - Language detection via detectLanguage() function
+    priority_system:
+      - "GEMINI_MAX_DATES: Maximum dates per run (default: 10)"
+      - "GEMINI_PRIORITY_MODE: recent, high-activity, all (default: recent)"
+      - "prioritizeDates() function for selective re-summarization"
+    migration_status:
+      phase: Phase 1 - High-activity chats
+      progress: Processing top 5 high-activity chats
+      test_chat_1: u494a728e423a3d45182ad44bd1003cf6 (KKGT @DAY) - 20 daily summaries completed
+      test_chat_2: cc8589a45e890e38942825d3c13ec3439 (🅱️🅱️🅱️งานส่วนกลาง โนเบิลพาร์ค) - 5/24 dates processed (high-activity mode)
+      test_chat_3: cf367cfd41323eca3742ee007932ccfcd (Windsurf ผีทะเล) - 10/23 dates completed
+      test_chat_4: c2fa250d3ff0564bce19c5942295140b1 (ผีวิ่ง..เอามันส์) - 10/23 dates completed
+      test_chat_5: ccf38efbf85344dc14edcdcacd7c43e9b (Windsurf Private room) - 10/23 dates completed
+      total_chats: 70 conversations in database
+      chats_with_summaries: 56 chats have daily summaries
+      total_summaries: 438 daily summaries in database
+      high_activity_chats:
+        - cc8589a45e890e38942825d3c13ec3439 (2202 messages) - 🅱️🅱️🅱️งานส่วนกลาง โนเบิลพาร์ค
+        - cf367cfd41323eca3742ee007932ccfcd (1245 messages) - Windsurf ผีทะเล
+        - c2fa250d3ff0564bce19c5942295140b1 (615 messages) - ผีวิ่ง..เอามันส์
+        - u494a728e423a3d45182ad44bd1003cf6 (471 messages) - KKGT @DAY
+        - ccf38efbf85344dc14edcdcacd7c43e9b (461 messages) - Windsurf Private room
+      completed: 55 daily summaries with Thai language output (5 chats)
+      timezone_fix: Thailand calendar dates stored as UTC 17:00 (midnight Thailand time)
+      keymaterial_filtering: Working correctly
+      priority_system: Working (high-activity mode with GEMINI_MAX_DATES=10)
+      batch_efficiency: 4 dates per API call (75% reduction)
+      production_enabled: true (systemd service updated with Gemini environment variables)
+      line_session_status: RATE_LIMITED (code 103 - temporary authentication restriction)
+      line_session_action: Wait for restriction to lift, then run `npx @rikaidev/yomi login`
+      systemd_config:
+        - yomi-process.service updated with USE_GEMINI=true
+        - GEMINI_MAX_DATES=10, GEMINI_PRIORITY_MODE=high-activity
+        - Override file: /etc/systemd/system/yomi-process.service.d/override.conf
+        - Timer: yomi-process.timer (midnight-7AM hourly)
+      next_steps:
+        - Wait for LINE rate limit to lift (code 103) - BLOCKING
+        - Re-login with `npx @rikaidev/yomi login` when restriction clears
+        - Verify yomi-fetch.timer starts downloading messages
+        - Monitor yomi-process.timer for Gemini summarization at midnight
+        - Process remaining 65 chats with high-activity mode (after session restored)
+        - Switch to recent mode for broader coverage (after high-activity complete)
+      adjusted_plan:
+        phase_1_blocked: LINE API rate limit (code 103) preventing message downloads
+        current_action: Monitoring for rate limit to lift (typically 1-24 hours)
+        contingency_plan:
+          - Manual login attempt every 2 hours until restriction lifts
+          - Process existing database data while waiting (no new messages)
+          - Continue testing Gemini with existing data
+          - Document rate limit duration for future reference
+        post_restoration_actions:
+          - Re-login immediately when restriction lifts
+          - Verify yomi-fetch.timer downloads new messages
+          - Run full sync for all 70 conversations
+          - Resume high-activity chat processing with Gemini
+          - Monitor quota and quality during full sync
+    notes:
+      - See docs/ssot/infrastructure/ssot.gemini-models.yml for canonical model names and free-tier rate limits
+
+
+
+  sensor-reader:
+    container: sensor-reader
+    image: docker.io/library/chaba-omen-sensor-reader:latest
+    runtime: docker
+    host: tony_omen
+    port: 8001
+    host_port: 0.0.0.0:8001
+    compose_file: stacks/web/docker-compose.yml
+    source: stacks/web/sensor-reader
+    privileged: true
+    volumes:
+      - /var/run/docker.sock
+      - /sys/class/thermal
+      - /sys/class/hwmon
+      - /sys/devices/platform/hp-wmi
+      - /sys/devices/system/cpu/intel_pstate
+    health_check: 'ssh tony-omen curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:8001/health'
+    status: 'health check added; container currently stopped (2026-08-27)'
+    note: Extracted from the old status-api; provides hardware sensors, GPU, and Docker container data to the data API.
+
+michael:
+  home-assistant:
+    name: Home Assistant (Michael)
+    type: nabu_casa
+    url: https://nupo4ndqdqydt78zmpq0z5wzp1bdrqgs.ui.nabu.casa/
+    runtime: cloud
+    auth: web_login
+    credentials_file: /home/tony/.local/share/home-assistant-michael/credentials.json
+    status: active
+    note: 'Nabu Casa remote Home Assistant instance for michael.'

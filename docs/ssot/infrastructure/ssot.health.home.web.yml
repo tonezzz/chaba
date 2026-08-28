@@ -1,0 +1,101 @@
+title: Chaba Health Checks (Home Profile) — Web
+subtitle: Home network health checks for the web category
+icon: heart-pulse
+services:
+- id: caddy
+  name: Caddy
+  type: http
+  url: '{profile}/apps/map/'
+  expected_status: 200
+  timeout: 5
+  category: web
+  profiles:
+  - home
+  - mobile
+- id: bserver
+  name: BServer
+  type: http
+  url: '{profile}/'
+  expected_status: 200
+  timeout: 5
+  category: web
+  profiles:
+  - home
+  - mobile
+- id: raceman-web
+  name: Raceman Web
+  type: http
+  url: http://tony-dell:8083/apps/raceman/
+  expected_status: 200
+  timeout: 5
+  category: web
+  profiles:
+  - home
+- id: helm
+  name: Helm Dashboard
+  type: http
+  url: http://100.68.142.13:3003/apps/helm
+  expected_status: 200
+  timeout: 5
+  category: web
+  profiles:
+  - home
+  - mobile
+  verification:
+  - 'Check podman container: ssh tony-dell podman ps | grep helm'
+  - 'Check podman logs: ssh tony-dell podman logs helm --tail 20'
+  - 'Test direct podman container: curl -s http://100.68.142.13:3003/apps/helm/'
+  - 'Test Caddy proxy: curl -s http://100.68.142.13:3003/apps/helm/'
+  recovery_actions:
+  - 'Restart service: ssh tony-dell systemctl --user restart helm'
+  - 'Rebuild: ssh tony-dell "cd /home/tony/CascadeProjects/chaba-tony-dell/tony-dell/chaba-funnel && ./deploy.sh"'
+  - Check Caddy proxy configuration in stacks/web/Caddyfile
+  - 'Verify env: ssh tony-dell podman exec helm env | grep LLM'
+- id: raceman-php
+  name: Raceman PHP
+  type: container
+  container: raceman-php
+  host: tony_dell
+  expected_state: running
+  timeout: 5
+  category: web
+  profiles:
+  - home
+  note: Migrated to tony_dell rootless podman.
+- id: mddb-panel
+  name: MDDB Panel
+  type: http
+  url: http://100.68.142.13:3002/
+  expected_status: 200
+  timeout: 5
+  category: web
+  profiles:
+  - home
+  - mobile
+- id: home-assistant
+  name: Home Assistant
+  type: http
+  url: http://tony-dell:8080/apps/home-assistant/
+  expected_status: 200
+  timeout: 10
+  category: web
+  profiles:
+  - home
+  verification:
+  - 'Check container: ssh tony-dell podman ps | grep home-assistant'
+  - 'Check logs: ssh tony-dell podman logs home-assistant --tail 20'
+  - 'Test direct: curl -s http://tony-dell:8123/'
+  - 'Test Caddy proxy: curl -s http://tony-dell:8080/apps/home-assistant/'
+  recovery_actions:
+  - 'Restart service: ssh tony-dell systemctl --user restart home-assistant'
+  - 'Restart Caddy: ssh tony-dell podman exec web caddy reload --config /etc/caddy/Caddyfile --adapter caddyfile'
+- id: home-assistant-michael
+  name: Home Assistant (Michael)
+  type: http
+  url: https://nupo4ndqdqydt78zmpq0z5wzp1bdrqgs.ui.nabu.casa/
+  expected_status: 200
+  timeout: 15
+  category: web
+  profiles:
+  - home
+  - mobile

@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>GPU Monitor</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="./gpu-monitor.css">
+</head>
+<body>
+  <nav class="gpu-topnav">
+    <a href="/apps/" class="gpu-topnav-link">← Apps</a>
+    <span class="gpu-topnav-sep">|</span>
+    <span class="gpu-topnav-title">GPU Monitor</span>
+  </nav>
+  <main class="gpu-app">
+    <header class="gpu-header">
+      <div class="gpu-header-main">
+        <h1 class="gpu-title">GPU Monitor</h1>
+        <p class="gpu-desc">Real-time GPU status and monitoring</p>
+      </div>
+      <div class="gpu-toolbar">
+        <label class="gpu-check">
+          <input id="auto-refresh" type="checkbox" checked>
+          <span>Auto-refresh (5s)</span>
+        </label>
+        <button id="btn-refresh" type="button">Refresh Now</button>
+        <a href="http://tony-omen.local:8080/apps/netdata/" target="_blank" class="gpu-btn-netdata">Netdata Dashboard →</a>
+      </div>
+    </header>
+
+    <div class="gpu-content">
+      <!-- GPU Overview Card -->
+      <div class="gpu-card gpu-card-overview">
+        <h2 class="gpu-card-title">GPU Overview</h2>
+        <div id="gpu-overview" class="gpu-overview">
+          <div class="gpu-loading">Loading GPU status...</div>
+        </div>
+      </div>
+
+      <!-- VRAM Usage Card -->
+      <div class="gpu-card gpu-card-vram">
+        <h2 class="gpu-card-title">VRAM Usage</h2>
+        <div id="vram-usage" class="gpu-vram">
+          <div class="gpu-loading">Loading VRAM data...</div>
+        </div>
+      </div>
+
+      <!-- GPU Processes Card -->
+      <div class="gpu-card gpu-card-processes">
+        <h2 class="gpu-card-title">GPU Processes</h2>
+        <div id="gpu-processes" class="gpu-processes">
+          <div class="gpu-loading">Loading process data...</div>
+        </div>
+      </div>
+
+      <!-- GPU Queue Status Card -->
+      <div class="gpu-card gpu-card-queue">
+        <h2 class="gpu-card-title">GPU Queue Status</h2>
+        <div id="gpu-queue" class="gpu-queue">
+          <div class="gpu-loading">Loading queue data...</div>
+        </div>
+      </div>
+
+      <!-- Background Processing Card -->
+      <div class="gpu-card gpu-card-processing">
+        <h2 class="gpu-card-title">Background Processing</h2>
+        <div id="background-processing" class="gpu-processing">
+          <div class="gpu-loading">Loading processing status...</div>
+        </div>
+      </div>
+
+      <!-- Quick Actions Card -->
+      <div class="gpu-card gpu-card-actions">
+        <h2 class="gpu-card-title">Quick Actions</h2>
+        <div class="gpu-actions">
+          <button id="btn-hold-llama" class="gpu-btn gpu-btn-warning">Hold Llama (CPU)</button>
+          <button id="btn-resume-llama" class="gpu-btn gpu-btn-success">Resume Llama (GPU)</button>
+          <div id="action-status" class="gpu-action-status"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Last Updated -->
+    <div class="gpu-footer">
+      <span id="last-updated">Last updated: Never</span>
+      <span id="refresh-status" class="gpu-refresh-status"></span>
+    </div>
+  </main>
+  <script src="./gpu-monitor.js"></script>
+</body>
+</html>

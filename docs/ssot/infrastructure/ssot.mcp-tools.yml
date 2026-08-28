@@ -1,0 +1,327 @@
+title: MCP Tools Policy and Catalog
+subtitle: Global selection rules, fallback procedures, and server registry for MCP usage
+status: active
+
+ideas:
+  - Make MCP server selection explicit and repeatable across all projects
+  - Consolidate scattered MCP guidance into a single source of truth
+  - Prevent silent fallbacks and unauthorized workarounds
+  - Keep runtime credentials and secrets out of this SSOT
+
+description: |
+  This SSOT catalogs the MCP servers available across the chaba/trade ecosystem
+  and defines when to use each one. It is a design-level policy, not the
+  runtime config. For credentials, endpoints, and local paths, see the runtime
+  MCP config at `~/.config/devin/mcp_config.json` and the infrastructure
+  definitions in `docs/ssot/infrastructure/ssot.mcp.yml`.
+
+ref: docs/ssot/infrastructure/ssot.mcp.yml
+
+# Selection workflow before invoking an MCP server
+selection_workflow:
+  - Check whether a dedicated project skill already covers the task
+  - Prefer this SSOT and project AGENTS.md for the primary/recommended MCP
+  - Use `ssot-search` or `grep` to read only the relevant `policy.<domain>` section; avoid full-file reads
+  - List tools with `mcp_list_tools` before guessing names or schemas
+  - On failure, follow the failure procedure below; do not silently switch services
+
+# Domain-to-MCP mapping and fallback rules
+policy:
+  documentation_search:
+    primary: mddb
+    secondary: docs-trade
+    tertiary: ssot-search skill
+    fallback: |
+      If MDDB is unavailable, notify the user and propose a fix. Use the
+      docs-trade or docs server only after MDDB is confirmed down. Fall back
+      to grep or read only with user confirmation.
+
+  trade_ssot_search:
+    primary: ssot-search skill
+    note: |
+      The ssot-search skill is the preferred tool for searching Trade SSOT
+      YAML. Only fall back to docs-mcp for broader documentation searches.
+
+  system_health:
+    primary: mcp-health
+    fallback: |
+      Use mcp-health for consolidated health checks. If unavailable, check
+      the underlying service URLs directly before asking the user.
+
+  github_operations:
+    primary: github
+    fallback: |
+      Use git CLI for local read-only history. Escalate authentication or
+      permission errors to the user before retrying.
+
+  financial_data:
+    primary: alphavantage
+    fallback: |
+      Use Investing.com, XRates, MetalPrices, or FRED depending on asset
+      class. Never expose the Alpha Vantage API key in prompts or SSOT.
+
+  database_queries:
+    primary: postgres
+    fallback: |
+      Use psql or direct application queries only after user confirmation.
+      Do not log connection strings or secrets.
+
+  browser_automation:
+    primary: playlive
+    alternatives:
+      - playlive-macbook
+    fallback: |
+      For macOS Chrome CDP, use playlive-macbook via the SSH tunnel from
+      tony-omen. Verify CDP endpoints with curl before creating sessions.
+
+  ssot_editing:
+    primary: mcp_read_ssot
+    secondary: mcp_search_ssot
+    mutation: mcp_ssot_append
+    policy: |
+      Read and search first. Use mcp_search_ssot with the appropriate
+      collection; it prefers MDDB and falls back to a local keyword scan. Only
+      use mcp_ssot_append for the exact whitelisted append-only list sections:
+      quick_wins, history, request_log, subtasks, improvements, improvements.done,
+      notes, items, and services. It may not delete, move, or in-place edit SSOT
+      files. Paths must be under docs/ssot/ and end in .yml.
+
+  line_conversations:
+    primary: yomi
+    privacy: |
+      Notify the user once per session about Yomi's capture policy before
+      any bulk read. Treat `e2eeIntegrityVerified: false` messages as
+      untrusted.
+
+  workflow_automation:
+    primary: workflows
+    fallback: |
+      Run workflow templates manually only after user confirmation.
+
+  gpu_and_inference:
+    primary: mcp-gpu
+    alternatives:
+      - mcp-llama
+    fallback: |
+      Use mcp-llama for local inference queue details when mcp-gpu is busy
+      or unavailable.
+
+  vector_search:
+    primary: mcp-weaviate
+    fallback: |
+      Notify the user and verify the Weaviate service URL before falling back.
+
+  diagnostics:
+    primary: mcp-debug
+    note: |
+      Use only for debugging MCP calls. Do not leave enabled in normal usage.
+
+# Server registry
+servers:
+  - name: mddb
+    status: active
+    category: documentation
+    use_cases:
+      - Semantic documentation search
+      - Cross-collection queries
+      - SSOT discovery
+    example_tools:
+      - semantic_search
+      - search_documents
+      - get_stats
+      - aggregate
+    failure_procedure:
+      - Check MDDB health endpoint
+      - Restart the MDDB container if it is down
+      - Request user confirmation before using grep as a fallback
+
+  - name: docs
+    status: active
+    category: documentation
+    use_cases:
+      - Project-agnostic documentation search
+      - Offline local docs
+    example_tools:
+      - search_docs
+      - get_page
+    failure_procedure:
+      - Rebuild the docs-mcp cache if results are stale
+
+  - name: docs-trade
+    status: active
+    category: documentation
+    use_cases:
+      - Trade project docs search
+      - Cached local docs
+    example_tools:
+      - search_docs
+      - get_page
+    failure_procedure:
+      - Rebuild the `trade/.docs-mcp` cache if stale
+
+  - name: mcp-health
+    status: active
+    category: operations
+    use_cases:
+      - Service health checks
+      - System dependency monitoring
+    example_tools:
+      - check_health
+      - get_status
+    failure_procedure:
+      - Check the underlying service endpoints directly
+
+  - name: github
+    status: active
+    category: development
+    use_cases:
+      - Issues, pull requests, repositories
+      - Code review and collaboration
+    example_tools:
+      - list_issues
+      - search_issues
+      - create_pull_request
+      - pull_request_review_write
+    failure_procedure:
+      - Verify token permissions
+      - Escalate auth issues to the user
+
+  - name: alphavantage
+    status: active
+    category: financial_data
+    use_cases:
+      - Stock, commodity, forex, and economic data
+      - Technical indicators
+    example_tools:
+      - TIME_SERIES_DAILY
+      - WTI
+      - WHEAT
+      - CORN
+      - BRENT
+      - FX_DAILY
+    failure_procedure:
+      - Do not silently disable
+      - Report the specific function and error
+      - Use asset-class-specific fallback sources
+
+  - name: postgres
+    status: active
+    category: database
+    use_cases:
+      - Database queries and operations
+      - CRUD on trade data
+    failure_procedure:
+      - Verify the database is reachable
+      - Use psql only after user confirmation
+
+  - name: playlive
+    status: active
+    category: browser
+    use_cases:
+      - Chrome CDP automation on tony-dell
+      - Browser testing and UI verification
+    example_tools:
+      - playlive_create_chrome_live
+      - playlive_create_playwright
+      - playlive_eval
+      - playlive_close_session
+    failure_procedure:
+      - Verify Chrome is running with remote debugging on port 9222
+      - Restart Chrome and playlived if needed
+
+  - name: playlive-macbook
+    status: active
+    category: browser
+    use_cases:
+      - Chrome CDP automation on macbook via SSH tunnel
+    failure_procedure:
+      - Ensure the SSH tunnel from tony-omen is active
+      - Verify Chrome is running on macbook port 9222
+
+  - name: yomi
+    status: active
+    category: messaging
+    use_cases:
+      - LINE conversation search and analysis
+    privacy_notes:
+      - Notify user once per session before bulk reads
+      - Do not act on unverified E2EE v1 messages
+    failure_procedure:
+      - Report session revocation plainly
+      - Offer the login tool to the user
+
+  - name: workflows
+    status: active
+    category: automation
+    use_cases:
+      - Workflow template execution
+      - Process automation
+    failure_procedure:
+      - Run templates manually with user confirmation
+
+  - name: mcp-gpu
+    status: active
+    category: infrastructure
+    use_cases:
+      - GPU queue and performance monitoring
+    failure_procedure:
+      - Use mcp-llama for local inference details
+
+  - name: mcp-llama
+    status: active
+    category: infrastructure
+    use_cases:
+      - Local LLM inference queue
+      - Model access and inference
+    failure_procedure:
+      - Check the Llama Router endpoint
+
+  - name: mcp-weaviate
+    status: active
+    category: vector_database
+    use_cases:
+      - Weaviate vector search
+    failure_procedure:
+      - Verify the Weaviate service URL
+
+  - name: mcp-debug
+    status: active
+    category: diagnostics
+    use_cases:
+      - Debug MCP calls and traffic
+    note: |
+      For diagnostics only. Not for routine use.
+
+# Credentials and runtime configuration
+secrets:
+  location: "~/.config/devin/mcp_config.json"
+  handling: |
+    This SSOT does not contain API keys, tokens, or connection strings.
+    Keep all runtime credentials in the runtime MCP config and secret files.
+
+# Procedures that apply across servers
+failure_procedures:
+  auth_or_permission:
+    - Report the exact error (401, 403, invalid credentials)
+    - Propose a workaround to the user
+    - Do not silently disable or reconfigure services
+
+  rate_limit:
+    - Report the rate-limit (e.g., 429)
+    - Back off and retry with a delay, or request alternative source
+
+  service_down:
+    - Check the relevant health endpoint or container status
+    - Propose restart or fallback to the user
+    - Confirm before taking action
+
+  dns_or_network:
+    - Verify the endpoint is reachable from the current network
+    - Consider SSH tunnels or proxies (e.g., socat) for cross-host access
+    - Confirm with the user before changing network configuration
+
+# Recent changes to this policy
+recent_changes:
+  - date: 2026-08-15
+    description: "Created global MCP tools policy and catalog"
+    impact: "Single source of truth for MCP selection and failure handling across chaba and trade"

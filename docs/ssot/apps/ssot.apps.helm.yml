@@ -1,0 +1,214 @@
+title: Helm
+subtitle: Project management dashboard with conversational AI interface for managing multiple projects and subprojects.
+icon: 🎯
+sections:
+  - title: Core Features
+    icon: ✅
+    layout: list
+    items:
+      - label: Project discovery
+        text: 'Automatic discovery of projects and nested subprojects from /home/tony/CascadeProjects/'
+      - label: Real-time status tracking
+        text: 'Goals, progress, completed work, remaining work, current work, next steps, Git status, running services'
+      - label: Conversational AI interface
+        text: 'Natural language processing for project management questions and commands'
+      - label: Safe command execution
+        text: 'Git operations, Docker management, service management with permission checking'
+      - label: Project ordering
+        text: 'Helm first, Trade second, remaining projects alphabetically'
+
+  - title: AI Pipeline Architecture
+    icon: 🤖
+    layout: list
+    items:
+      - label: Intent understanding
+        text: 'LLM-powered intent parsing with rule-based fallback for high-confidence requests'
+      - label: Task planning
+        text: 'Multi-step task planning with dependency and risk awareness'
+      - label: Code generation
+        text: 'AI-enhanced code generation with project context and template fallback'
+      - label: Safe execution
+        text: 'Pre-flight validation, file operations, backups, and safe command execution'
+      - label: Context and memory
+        text: 'Project structure analysis, conversation history, preference learning'
+      - label: LLM integration
+        text: 'Multi-provider support (Gemini API, Llama Router, OpenAI) with automatic fallback'
+
+  - title: Technical Architecture
+    icon: ⚙️
+    layout: list
+    items:
+      - label: Next.js 16.3.0
+        text: 'React framework with Turbopack development server and App Router'
+      - label: PostgreSQL integration
+        text: 'Using chaba''s existing database with pgvector extension'
+      - label: Docker deployment
+        text: 'Containerized deployment alongside shared PostgreSQL service'
+      - label: Caddy routing
+        text: 'Path-based routing with /apps/helm prefix and basePath configuration'
+      - label: TypeScript
+        text: 'Type-safe development with strict type checking'
+      - label: Tailwind CSS
+        text: 'Utility-first CSS framework for responsive design'
+
+  - title: LLM Integration
+    icon: 🧠
+    layout: list
+    items:
+      - label: Primary provider
+        text: 'Gemini API (model: gemini-2.5-flash) for complex reasoning and code generation — see docs/ssot/infrastructure/ssot.gemini-models.yml'
+      - label: Fallback provider
+        text: 'Llama Router (llama3.2) for local processing when Gemini unavailable'
+      - label: Service abstraction
+        text: 'Unified LLMService interface supporting multiple providers with automatic fallback'
+      - label: Configuration
+        text: 'Environment-based configuration with GEMINI_API_KEY, GEMINI_MODEL, LLM_PROVIDER'
+      - label: Token tracking
+        text: 'Usage monitoring with promptTokens, completionTokens, totalTokens metrics'
+      - label: Demo interface
+        text: 'Interactive LLM testing at /demo/llm with provider selection and parameter tuning'
+
+  - title: Files & Modules
+    icon: 📁
+    layout: list
+    items:
+      - label: src/app/page.tsx
+        text: 'Main dashboard with project cards and conversational interface'
+      - label: src/lib/ai/llm-service.ts
+        text: 'LLM service abstraction layer with multi-provider support'
+      - label: src/lib/ai/intent-parser.ts
+        text: 'Intent understanding with LLM-powered and rule-based parsing'
+      - label: src/lib/ai/task-planner.ts
+        text: 'Multi-step task planning with dependency awareness'
+      - label: src/lib/ai/code-generator.ts
+        text: 'AI-enhanced code generation with project context'
+      - label: src/lib/ai/safe-executor.ts
+        text: 'Safe command execution with validation and rollback'
+      - label: src/lib/ai/context-analyzer.ts
+        text: 'Project structure analysis and pattern detection'
+      - label: src/lib/ai/conversation-memory.ts
+        text: 'Conversation history and preference learning'
+      - label: src/lib/mcp/ai-processor.ts
+        text: 'MCP conversational processor for GitHub, PostgreSQL, and project questions'
+      - label: src/app/api/projects/[id]/converse/route.ts
+        text: 'Conversational API endpoint with context and memory integration'
+
+  - title: Demo Pages
+    icon: 🎮
+    layout: list
+    items:
+      - label: /demo/intent
+        text: 'Intent parsing demo with real-time parsing and confidence scoring'
+      - label: /demo/plan
+        text: 'Task planning demo with multi-step task breakdown'
+      - label: /demo/generate
+        text: 'Code generation demo with AI-powered component creation'
+      - label: /demo/execute
+        text: 'Safe execution demo with command validation and execution'
+      - label: /demo/context
+        text: 'Context analyzer demo with project structure analysis'
+      - label: /demo/memory
+        text: 'Conversation memory demo with history and preference learning'
+      - label: /demo/llm
+        text: 'LLM integration demo with provider testing and parameter tuning'
+
+  - title: Deployment
+    icon: 🚀
+    layout: list
+    items:
+      - label: Location
+        text: '/home/tony/CascadeProjects/helm/ built and deployed to tony-dell rootless podman via chaba-tony-dell/tony-dell/chaba-funnel/deploy.sh'
+      - label: URLs
+        text: 'http://tony-omen:8080/apps/helm/ (Caddy edge), http://tony-dell:3003/apps/helm/ (direct podman)'
+      - label: Container
+        text: 'web-helm:latest rootless podman container on tony-dell with Node.js 20 Alpine'
+      - label: Database
+        text: 'Shared PostgreSQL service on tony-dell (chaba database) with projects, project_status, conversations tables'
+      - label: Environment
+        text: '.env.local with DATABASE_URL, LLM_PROVIDER, GEMINI_API_KEY, GEMINI_MODEL'
+      - label: Caddy routing
+        text: 'Path-based routing preserving /apps/helm prefix with reverse_proxy to 100.68.142.13:3003'
+
+  - title: Database Schema
+    icon: 🗄️
+    layout: list
+    items:
+      - label: projects table
+        text: 'id, name, path, description, created_at, updated_at'
+      - label: project_status table
+        text: 'id, project_id, working_on, done[], remaining[], next_steps[], progress, goals[], updated_at'
+      - label: conversations table
+        text: 'id, project_id, user_input, ai_response, status_updates, created_at'
+
+  - title: Testing
+    icon: 🧪
+    layout: list
+    items:
+      - label: LLM integration testing
+        text: 'Gemini API integration with token usage tracking and response validation'
+      - label: Intent parsing testing
+        text: 'Pattern-based and LLM-powered intent parsing with fallback testing'
+      - label: Code generation testing
+        text: 'AI-enhanced component generation with project context injection'
+      - label: Context analyzer testing
+        text: 'Project structure analysis with component, API, and dependency detection'
+      - label: Memory integration testing
+        text: 'Conversation history storage and retrieval with preference learning'
+
+  - title: Integration
+    icon: 🔗
+    layout: list
+    items:
+      - label: Chaba infrastructure
+        text: 'Reuses PostgreSQL, Docker, Caddy, Git, MCP services, filesystem discovery, health monitoring'
+      - label: MCP services
+        text: 'GitHub and PostgreSQL conversational support with fallback behavior'
+      - label: Project discovery
+        text: 'Automatic filesystem discovery with nested subproject support'
+      - label: Git integration
+        text: 'Git status, commit, push, pull operations with safe execution'
+      - label: Docker integration
+        text: 'Container management with start, stop, restart operations'
+      - label: Service integration
+        text: 'Systemd service management with health monitoring'
+
+  - title: Known Issues
+    icon: ⚠️
+    layout: list
+    items:
+      - label: Funnel access
+        text: 'Use direct URLs (Funnel on tony-dell only)'
+      - label: Llama fallback
+        text: 'Not tested (requires local Llama instance)'
+      - label: Auth
+        text: 'Not implemented'
+      - label: Production
+        text: 'Security hardening needed'
+
+  - title: Access URLs
+    icon: 🌐
+    layout: list
+    items:
+      - label: Home LAN
+        text: 'http://tony-omen.local:8080/apps/helm/'
+      - label: Tailscale via Caddy
+        text: 'http://tony-omen:8080/apps/helm/'
+      - label: Direct podman
+        text: 'http://tony-dell:3003/apps/helm/'
+      - label: Funnel
+        text: 'Not available (Funnel on tony-dell only)'
+      - label: Demos
+        text: '/apps/helm/demo/{llm,intent,generate,execute,context,memory}'
+
+config:
+  version: 1
+  created: 2026-08-14
+  maintainer: tony
+  status: active
+  deployment: chaba/stacks/web (docker-compose)
+  related_files:
+    - /home/tony/CascadeProjects/helm/SPECS.md
+    - /home/tony/CascadeProjects/helm/AGENTS.md
+    - /home/tony/CascadeProjects/chaba/docs/kb/app-ssot-standards.md
+    - /home/tony/CascadeProjects/chaba/docs/ssot/infrastructure/ssot.health.yml
+    - /home/tony/CascadeProjects/chaba/docs/ssot/infrastructure/ssot.mcp.yml

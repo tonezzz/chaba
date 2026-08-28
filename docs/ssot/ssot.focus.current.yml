@@ -1,0 +1,156 @@
+title: Current Focus
+subtitle: Common workflow for session start and focus disposition
+icon: target
+workflow:
+- Assistant must read this SSOT at the start of each session - Read the most recent entry in docs/ssot/ssot.focus.sessions.yml
+  to pick up pending follow-ups
+- Before any docs/ or SSOT read/grep, run `mcp_call_tool mddb semantic_search` on the request topic and record the query in
+  the active focus's request_log
+- List docs/ssot/focus-inbox/*.yml at session start and summarize any pending items for triage
+- Match the user request against active shared and branch focuses first
+- If it matches, append it to that item's request_log and do the work inside that focus
+- If it is a small standalone action, add it to quick_wins and complete it immediately
+- If it is new strategic work, add it to the backlog in ssot.focus.yml with priority and ask the user to activate it
+- If it is a new focus item from another session, add it as an inbox file in docs/ssot/focus-inbox/ for triage
+- For backlog review, archived focuses, or focus history, read the full ssot.focus.yml
+- At session end, update subtask status and append a session summary to ssot.focus.sessions.yml
+- When an inbox item is activated, merge it into this file and git mv the source file to docs/ssot/focus-inbox/processed/
+- If the request can be decomposed into subtasks, use the decompose action to create or update a focus with subtasks before
+  starting
+- If the disposition is unclear, call mcp_focus(request, mode=recommend) and follow the returned action (continue, quick_win,
+  decompose, triage_backlog, triage_inbox, draft_inbox); see ssot.mcp-focus.yml for the machine-readable tree
+mcp_focus:
+  tool: mcp_focus
+  source: docs/ssot/infrastructure/ssot.mcp-focus.yml
+  use_when: 'At session start or when the user request is ambiguous. Call mcp_focus with the user
+
+    request and mode=recommend; use the returned action as the first disposition.
+
+    mode=status is a read-only way to list active foci and quick wins.
+
+    '
+  actions:
+    continue: The request matches an active focus or no request was given; keep working on the active focus.
+    quick_win: The request is small and concrete; add to Quick Wins and complete immediately.
+    decompose: The request is too large for a quick win but can be split into subtasks; decompose it into a focus and start
+      the first subtask.
+    triage_backlog: The request matches or should go to ssot.focus.yml Backlog; ask the user to activate.
+    triage_inbox: The request matches an unprocessed focus-inbox draft; review/activate it.
+    draft_inbox: No match; return an in-memory draft inbox YAML for the user to review before saving.
+decision_tree:
+  question: How should this user request be disposed?
+  note: 'The canonical machine-readable tree is in docs/ssot/infrastructure/ssot.mcp-focus.yml.
+
+    This tree is the assistant-level guide; each case maps to the mcp_focus action listed below.
+
+    '
+  cases:
+  - case: matches_active
+    mcp_focus_action: continue
+    condition: Request matches an active shared/branch focus label, subtask, or quick win
+    action: Append to the item's request_log and do the work inside that focus
+    examples:
+    - let's process focus matched to Service Failures Detected and then Security Vulnerabilities Found
+    - do all the streamlining suggestions matched to Streamline focus-driven workflow
+  - case: quick_win
+    mcp_focus_action: quick_win
+    condition: Meets all quick_win_criteria below
+    action: Add to Quick Wins, complete immediately, and append to Focus History at session end
+    examples:
+    - Reduce focus.current bloat
+    - Tony-Dell wired DHCP release and renew
+  - case: live_bug_report
+    mcp_focus_action: continue
+    condition: User reports an error in a deployed page or app and asks to add it to focus
+    action: Activate as a high-priority branch focus; record the exact URL/error and the chosen fix. Do not default to inbox.
+    examples:
+    - mcp_debug H3 page mixed-content (HTTP/HTTPS) error
+  - case: new_strategic_work
+    mcp_focus_action: triage
+    condition: Multi-step or multi-session work that requires planning and tracking
+    action: Add to Backlog in ssot.focus.yml with priority; do not start until user activates
+    examples:
+    - Streamline focus-driven workflow
+    - Request-to-Focus Workflow redesign
+  - case: decompose
+    mcp_focus_action: decompose
+    condition: Request is too large for a quick win but can be broken into smaller, trackable subtasks
+    action: Decompose into subtasks, add to the active focus or an inbox item, and start the first subtask
+    examples:
+    - Decompose the podman migration into Quadlet, container move, and SSOT update tasks
+    - Break the visual-capture workflow into capture, triage, and annotate steps
+  - case: side_session_or_ambiguous
+    mcp_focus_action: draft_inbox
+    condition: New idea from another session or request is vague and needs triage
+    action: Save as docs/ssot/focus-inbox/<session>.yml with status draft and missing_info
+    examples:
+    - Service Failures Detected from overnight assessment
+    - Security Vulnerabilities Found from overnight assessment
+  - case: auto_generated_alert
+    mcp_focus_action: triage
+    condition: Auto-generated item from overnight assessment with missing details
+    action: Gather facts with allowed MCP tools, classify as hard or transient, then fix or document accepted state
+    examples:
+    - Service Failures Detected investigated with mcp-health; .local health-check timeouts, not hard failures
+    - Security Vulnerabilities Found had no actionable scan output; documented no immediate patches required
+  - case: interrupt
+    mcp_focus_action: continue
+    condition: New strategic work that must start now while an active shared focus is still incomplete
+    action: Park the active shared focus, activate the new work as a branch focus, and return to the parked focus when the
+      branch is completed
+    examples:
+    - Reviewing and implementing focus validation/parking while the mcp-debug shared focus stays parked
+  - case: no_active_or_inbox
+    mcp_focus_action: triage_backlog or triage_inbox
+    condition: No active focus and no inbox items
+    action: Suggest the highest triage_score backlog item in reports/NEXT_FOCUS.md; do not auto-activate unless requested
+    examples:
+    - Dispatcher suggests MacBook macOS App Development when the queue is empty
+  - case: requires_mcp_data
+    mcp_focus_action: n/a
+    condition: Decision needs health, system, or infrastructure data
+    action: Use the relevant MCP server per policy, document source, and do not take destructive actions without user confirmation
+    examples:
+    - mcp-health used for Service Failures investigation
+  - case: pre_action_summary
+    mcp_focus_action: pre_action
+    condition: Before beginning any non-trivial work, or when the user asks for the current focus landscape
+    action: Call mcp_focus with mode pre_action to get active foci, duplicate/historical matches, and related decision-tree
+      entries, then present a concise summary and ask for confirmation before proceeding
+    examples:
+    - User asks 'what is our focus?' or 'let's plan to finish all backlog'
+    - Assistant is about to start a multi-step focus after a request
+quick_win_criteria:
+- Single file or single small edit set
+- No new dependencies, installs, or infrastructure changes
+- No deploy, restart, or destructive operation required
+- Can be verified by a single command or small test
+- Completable in under 5 minutes of assistant time
+- User has not asked for a decision tree or design review
+validation:
+  max_active_shared_focus: 1
+  max_active_branch_focus: 1
+  require_priority: true
+  require_tags: true
+  require_request_log: true
+config:
+  version: 2
+  last_updated: '2026-08-19'
+  maintainer: tony
+  full_focus_file: docs/ssot/ssot.focus.yml
+  inbox_dir: docs/ssot/focus-inbox
+  inbox_processed_dir: docs/ssot/focus-inbox/processed
+  validation_enabled: true
+  related_files:
+  - docs/ssot/ssot.focus.yml
+  - docs/ssot/ssot.focus.decisions.yml
+  - docs/ssot/infrastructure/ssot.focus.triage.yml
+  - docs/ssot/ssot.index.yml
+  - docs/ssot/focus-inbox
+  - docs/ssot/infrastructure/ssot.subagent-focus-triage.yml
+  - docs/ssot/infrastructure/ssot.focus-dispatcher.yml
+sources:
+- label: Active focuses
+  file: docs/ssot/ssot.focus.current.active.yml
+- label: Backlog and quick wins
+  file: docs/ssot/ssot.focus.current.backlog.yml

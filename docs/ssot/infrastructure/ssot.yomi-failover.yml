@@ -1,0 +1,79 @@
+title: Yomi and PostgreSQL Failover Plan
+subtitle: Primary/backup disposition and manual failover steps for the Yomi stack
+version: 1
+
+primary:
+  host: tony_dell
+  postgres:
+    container: chaba-postgres-16
+    image: docker.io/pgvector/pgvector:pg16
+    data_volume: /home/tony/.config/containers/postgres/data
+    port: 5432
+    port_mapping: 127.0.0.1:5432:5432
+    port_mapping_note: 0.0.0.0:5432 conflicts with tailscale serve for 5432
+    exposed_by: tailscale serve --bg --tcp 5432 127.0.0.1:5432
+    dns_alias: postgre
+    dns_target: 100.68.142.13
+  yomi_api:
+    container_runtime: podman
+    image: docker.io/library/node:22-slim
+    tailscale_serve: --bg --tcp 3000 127.0.0.1:3000
+    caddy_upstream: tony-dell:3000
+    data_volume: /home/tony/.local/share/yomi
+    env:
+      POSTGRES_HOST: postgre
+      POSTGRES_PORT: 5432
+      REDIS_URL: redis://100.68.142.13:6379
+  services:
+    - yomi-api.service
+    - yomi-update-all.timer
+    - yomi-update-active.timer
+    - yomi-backup.timer
+
+backup:
+  host: tony_omen
+  timer: yomi-backup.timer
+  schedule: daily
+  retention: one latest copy
+  pg_dump:
+    source: chaba database on tony-dell
+    target: tony_omen:/home/tony/backups/yomi/chaba-latest.dump
+  yomi_data:
+    source: tony-dell:/home/tony/.local/share/yomi/
+    target: tony_omen:/home/tony/backups/yomi-data/
+  credentials:
+    ssh_key: tony-dell to tony-omen (tony@100.75.102.88)
+    rsync_options: -avz --delete
+
+failover:
+  trigger: tony-dell is unreachable or the Yomi stack fails on tony-dell
+  script: tony_omen:/home/tony/.local/bin/yomi-failover-to-omen.sh
+  steps:
+    - Stop or disable the tony-dell services if tony-dell is still partially reachable.
+    - On tony-omen, restore the latest chaba DB dump into the local PostgreSQL.
+    - Sync /home/tony/backups/yomi-data/ to /home/tony/.local/share/yomi/.
+    - Update yomi-api.service to use POSTGRES_HOST=127.0.0.1 and daemon-reload.
+    - Start yomi-api.service and yomi-update-all / yomi-update-active timers.
+    - Update /home/tony/CascadeProjects/chaba/stacks/web/Caddyfile to reverse_proxy tony-omen:3000.
+    - Reload Caddy in the web container with docker exec web caddy reload --config /etc/caddy/Caddyfile --force.
+    - Optionally start a local dnsmasq or use /etc/hosts so postgre resolves to 100.75.102.88.
+  dns_fallback:
+    note: The postgre alias is served by dnsmasq on tony-dell. If tony-dell is down, the alias will not resolve; use POSTGRES_HOST=127.0.0.1 in the tony-omen units or run a local dnsmasq.
+
+health_checks:
+  - name: yomi-api on tony-dell
+    command: curl -s http://tony-dell:3000/api/yomi/health
+    expect: ok=true
+  - name: postgre resolves to tony-dell
+    command: resolvectl query postgre
+    expect: 100.68.142.13
+  - name: caddy proxy
+    command: curl -s http://100.75.102.88:8080/api/yomi/health
+    expect: ok=true
+
+notes:
+  - Backup is not streaming replication; RPO is up to 24 hours.
+  - The failover script is intentionally manual because DNS/ Caddy changes require a decision.
+  - The GEMINI_API_KEY is stored only in /home/tony/.config/systemd/user/yomi-api.service on tony-dell and tony-omen and is not committed.
+  - mcp-health and Yomi GPU dependencies remain on tony_omen; Redis, Weaviate, MDDB, Raceman, and PostgreSQL are now on tony_dell and reachable over the tailnet.
+  - resolvectl query postgre requires systemd-resolved to use the tony-dell dnsmasq for the postgre alias.

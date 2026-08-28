@@ -1,0 +1,78 @@
+title: RView Live
+subtitle: Real-time voice + Gemini function-calling bridge that controls the remote media view (RView).
+icon: "🎙️"
+sections:
+  - title: Core Features
+    icon: "✅"
+    layout: list
+    items:
+      - label: Real-time voice
+        text: Captures 16-bit PCM 16 kHz microphone input and streams it to the Gemini Live API.
+      - label: Gemini Live bridge
+        text: Node WebSocket server proxies browser audio to the Gemini Live WebSocket and streams the 24 kHz audio response back.
+      - label: Function calling
+        text: Exposes rview_* tools and web_search/fetch_page so Gemini can search the web, read pages, and render HTML summaries in RView. rview tools accept either a view_id or the numeric view_number displayed in the UI.
+      - label: Manual text chat
+        text: Users can also type messages to trigger Gemini function-calling without voice.
+  - title: Technical Architecture
+    icon: "⚙️"
+    layout: list
+    items:
+      - label: stacks/web/rview-live/server.mjs
+        text: Express + ws backend. Spawns scripts/mcp_rview/server.py over stdio, maps toolCall to JSON-RPC, and forwards toolResponse to Gemini.
+      - label: stacks/web/public/apps/rview-live/index.html
+        text: Static frontend with WebSocket, Web Audio capture/playback, transcript log, and embedded RView iframe.
+      - label: mcp_rview stdio bridge
+        text: Reuses the existing mcp_rview MCP server to call the rview-api state endpoints.
+  - title: Files & Modules
+    icon: "📁"
+    layout: list
+    items:
+      - label: stacks/web/rview-live/server.mjs
+        text: Main Node entrypoint handling client WS, Gemini Live WSS, MCP stdio, and tool calls.
+      - label: stacks/web/rview-live/search.mjs
+        text: Free web search (web/images/videos) and fetch_page URL extraction.
+      - label: stacks/web/rview-live/Dockerfile
+        text: Container image for deployment behind Caddy.
+      - label: stacks/web/public/apps/rview-live/index.html
+        text: Browser UI for voice/text sessions.
+  - title: Deployment
+    icon: "🚀"
+    layout: list
+    items:
+      - label: Location
+        text: stacks/web/rview-live/ and stacks/web/public/apps/rview-live/
+      - label: URLs
+        text: 'https://tony-dell.taila0626a.ts.net:8443/apps/rview-live/ and http://tony-dell:8080/apps/rview-live/ (https://chaba.h3.gizmo-thailand.com/apps/rview-live/ proxies to tony-dell.taila0626a.ts.net:3008 via Tailscale Funnel TCP)'
+      - label: Registry
+        text: Listed in stacks/web/public/apps/apps.yml and docs/ssot/apps/ssot.apps.yml
+      - label: Branch
+        text: 'master + chaba.h3'
+  - title: Testing
+    icon: "🧪"
+    layout: list
+    items:
+      - label: syntax check
+        text: node --check stacks/web/rview-live/server.mjs
+      - label: end-to-end
+        text: Start rview-api, start rview-live with GEMINI_API_KEY, open /apps/rview-live/, and trigger a rview_show tool call via voice/text.
+  - title: Integration
+    icon: "🔗"
+    layout: list
+    items:
+      - label: Gemini Live API
+        text: Connects to wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent using GEMINI_API_KEY.
+      - label: RView
+        text: Uses mcp_rview to proxy tool calls to rview-api state endpoints.
+  - title: Known Issues
+    icon: "⚠️"
+    layout: list
+    items:
+      - label: No WebRTC
+        text: Uses raw PCM audio via ScriptProcessorNode, which may be deprecated. Consider AudioWorklet for production.
+config:
+  version: 1
+  created: '2026-08-20'
+  maintainer: tony
+  status: active
+  deployment: tony-dell, chaba.h3

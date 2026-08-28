@@ -1,0 +1,211 @@
+title: Chaba Health Check Configuration (Home)
+description: Health check endpoints for local/home network access
+version: 2
+
+services:
+  # Web Stack Services (8080/8081)
+  - id: caddy
+    name: Caddy
+    type: http
+    url: http://192.168.1.52:8080/apps/
+    expected_status: 200
+    timeout: 5
+    category: web
+
+  - id: bserver
+    name: BServer
+    type: http
+    url: http://192.168.1.52:8080/
+    expected_status: 200
+    timeout: 5
+    category: web
+
+  - id: status-api
+    name: Status API
+    type: http
+    url: http://192.168.1.52:8080/api/health
+    expected_status: 200
+    timeout: 5
+    category: api
+
+  - id: yomi-api
+    name: Yomi API
+    type: http
+    url: http://192.168.1.52:8080/api/yomi/health
+    expected_status: 200
+    timeout: 5
+    category: api
+
+  - id: yomi-summarization
+    name: Yomi Summarization
+    type: http
+    url: http://192.168.1.52:8080/api/yomi/summarization-status
+    expected_status: 200
+    timeout: 5
+    category: api
+
+  - id: yomi-rate-limiter
+    name: Yomi Rate Limiter
+    type: http
+    url: http://192.168.1.52:8080/api/yomi/rate-limiter-status
+    expected_status: 200
+    timeout: 5
+    category: api
+
+  # Trading Services
+  - id: trade-api
+    name: Trade API
+    type: container
+    container: trade-api
+    expected_state: running
+    timeout: 5
+    category: api
+
+  - id: trading-terminal
+    name: Trading Terminal
+    type: container
+    container: trading-terminal
+    expected_state: running
+    timeout: 5
+    category: api
+
+  # Data Services
+  - id: redis
+    name: Redis
+    type: container
+    container: redis
+    expected_state: running
+    timeout: 5
+    category: datastore
+
+  - id: postgres
+    name: Postgres
+    type: container
+    container: postgres
+    expected_state: running
+    timeout: 5
+    category: datastore
+
+  - id: weaviate
+    name: Weaviate
+    type: http
+    url: http://192.168.1.52:8080/api/weaviate/v1/nodes
+    expected_status: 200
+    timeout: 5
+    category: datastore
+
+  # GPU Services (All offline due to GTX 1650 4GB VRAM constraints)
+  - id: thai-legal
+    name: Llama Router (Phi-3 only)
+    type: http
+    url: http://192.168.1.52:8001/health
+    expected_status: 200
+    timeout: 10
+    category: gpu
+    note: Offline (2026-08-09) - GTX 1650 4GB cannot run multiple GPU services concurrently. Use mcp1_hold_llama and run one GPU workload at a time.
+
+  - id: imagen2
+    name: Imagen2
+    type: http
+    url: http://192.168.1.52:8000/health
+    expected_status: 200
+    timeout: 10
+    category: gpu
+    note: Offline (2026-08-09) - GPU memory constraints. Start manually when needed: docker compose -f stacks/gpu/docker-compose.yml up imagen2-inference
+
+  - id: txt2vid
+    name: Txt2Vid
+    type: http
+    url: http://192.168.1.52:8002/health
+    expected_status: 200
+    timeout: 10
+    category: gpu
+    note: Offline (2026-08-09) - GPU memory constraints. Start manually when needed: docker compose -f stacks/gpu/docker-compose.yml up txt2vid-inference
+
+  # Queue Services
+  - id: gpu-queue
+    name: GPU Queue
+    type: http
+    url: http://192.168.1.52:3001/health
+    expected_status: 200
+    timeout: 5
+    category: queue
+
+  # Optional Services
+  - id: activepieces
+    name: Activepieces
+    type: container
+    container: activepieces
+    expected_state: running
+    timeout: 5
+    category: optional
+    note: Container not running - start with: docker compose -f stacks/activepieces/docker-compose.yml up -d
+
+  - id: frigate
+    name: Frigate NVR
+    type: http
+    url: http://192.168.1.52:8080/frigate/api/version
+    expected_status: 200
+    timeout: 10
+    category: optional
+
+  - id: camera-control
+    name: Camera Control
+    type: http
+    url: http://192.168.1.52:8090/
+    expected_status: 200
+    timeout: 5
+    category: optional
+
+# Recovery suggestions for common failure modes
+recovery_actions:
+  container_down: "Check docker compose status: docker compose ps, Restart container: docker compose restart <container>, Check logs: docker compose logs <container>"
+  http_error: "Check if service is running: docker compose ps, Check service logs for errors, Verify port is accessible: curl -v <url>, Restart service if needed"
+  timeout: "Check if service is overloaded, Check system resources: htop or docker stats, Consider restarting the service"
+
+  gpu_service_down:
+    - Check GPU status with mcp1_gpu_status
+    - Check if llama is holding GPU: mcp2_status
+    - Hold llama if needed: mcp1_hold_llama
+    - Restart GPU service
+
+  gpu_vram_high:
+    - Check Netdata GPU dashboard: http://192.168.1.52:8080/apps/netdata/
+    - Identify processes using GPU memory
+    - Hold llama if needed: mcp1_hold_llama
+    - Check for stuck jobs in GPU queue
+
+  gpu_overheating:
+    - Check GPU temperature in Netdata dashboard
+    - Check system cooling and airflow
+    - Reduce GPU workload if needed
+    - Monitor for thermal throttling
+
+# Testing and debugging guidance
+debugging_guidance:
+  web_testing:
+    - Use direct IP URLs (e.g., http://192.168.1.52:8080/apps/health-check/) for reliability
+    - Hostname tony-omen.local resolves to 192.168.1.52 (fixed in /etc/hosts)
+    - Avoid browser preview for local testing - use regular browser instead
+    - Browser preview is only for isolated environments or when direct access unavailable
+    - Test in multiple browsers for compatibility issues
+
+  location_testing:
+    - At Home: Use 192.168.1.52 or tony-omen.local for direct local network access
+    - On Mobile: Use localhost if testing on the same machine
+    - External: Use VPN or external domain when away from home network
+
+  service_testing:
+    - Use curl for quick endpoint checks: curl -v <url>
+    - Check service logs: docker compose logs <service>
+    - Verify port accessibility: netstat -tlnp | grep <port>
+    - Test API endpoints with proper HTTP methods
+
+  network_troubleshooting:
+    - Check current IPs: ip addr show
+    - Check routing: ip route show
+    - Renew DHCP: sudo dhclient -r eno1 && sudo dhclient eno1
+    - Verify hostname: nslookup tony-omen.local
+    - Check /etc/hosts if hostname resolution fails
+    - Verify port accessibility: netstat -tlnp | grep <port>
+    - Test API endpoints with proper HTTP methods

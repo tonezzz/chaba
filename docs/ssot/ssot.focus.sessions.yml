@@ -1,0 +1,201 @@
+title: Focus Sessions
+subtitle: Lightweight per-session plan and follow-up log
+icon: 📒
+version: 1
+overview:
+  purpose: 'Keep a chronological, low-noise record of what was planned, what was done, and what
+
+    needs follow-up for each focus session. This is not a duplicate of ssot.focus.yml
+
+    history; it is a short-term working memory for the assistant and the user.
+
+    '
+  scope: active and recently completed focuses only
+  max_in_memory: 10
+  archive_to: docs/ssot/ssot.focus.yml history section when a focus is archived
+principles:
+- Append-only. Never rewrite past entries; create a new entry each session.
+- One entry per session, tied to one focus by label.
+- Skip empty fields. If there is no follow-up, omit it.
+- No full duplication of ssot.focus.current.yml or ssot.focus.yml.
+- Keep text terse; long artifacts belong in reports/ or KB.
+entry_schema:
+  date: ISO date of the session
+  session: optional session id
+  focus: label of the active focus being worked on
+  source: how the session started (e.g., user request, continue, dispatcher)
+  plan:
+  - concise bullet of what was planned to do
+  done:
+  - concise bullet of what was actually completed
+  follow_up:
+  - next step, unresolved question, or deferred work
+  next_action: one-line recommendation for the next session
+  decisions:
+  - optional list of key technical or focus decisions made during the session
+  - each decision should include id, title, and chosen option
+  kb_items:
+  - optional list of KB entries created or updated
+workflow:
+- At session start, read the most recent session entry for the active focus to pick up follow_ups.
+- If the user asks for a plan, create a new entry with plan filled in and done/follow_up empty.
+- At session end, update done and follow_up in a new entry (do not edit the plan entry).
+- The mcp_focus tool may read the latest follow_up when there is no explicit user request.
+- The focus-dispatcher may append a summary entry after auto-activation.
+example:
+- date: '2026-08-16'
+  focus: TCP/IP link monitoring with auto-scan and safe fix
+  source: continue
+  plan:
+  - Add 60s cache to mcp_debug/http_server.py
+  - Update ssot.index.yml
+  done:
+  - Added cache and background refresh
+  - Added ssot.index.yml entries
+  follow_up:
+  - Monitor whether 60s is too long for live CORS data
+  next_action: Continue with mcp_focus implementation or activate next backlog item
+sessions:
+- focus: yomi-llm-rate-limits
+  source: mcp_focus next
+  plan:
+  - Activate yomi-llm-rate-limits
+  done: []
+  follow_up:
+  - Complete the focus or defer it
+  next_action:
+  - Work on yomi-llm-rate-limits
+  date: '2026-08-23'
+- focus: Yomi conversation processing and UI recovery
+  source: mcp_focus next
+  plan:
+  - Activate Yomi conversation processing and UI recovery
+  done: []
+  follow_up:
+  - Complete the focus or defer it
+  next_action:
+  - Work on Yomi conversation processing and UI recovery
+  date: '2026-08-23'
+- focus: Tony-Dell cannot see iPhone Personal Hotspot SSID
+  source: mcp_focus next
+  plan:
+  - Activate Tony-Dell cannot see iPhone Personal Hotspot SSID
+  done: []
+  follow_up:
+  - Complete the focus or defer it
+  next_action:
+  - Work on Tony-Dell cannot see iPhone Personal Hotspot SSID
+  date: '2026-08-23'
+- focus: Tony-Dell cannot see iPhone Personal Hotspot SSID
+  source: mcp_focus next
+  plan:
+  - Activate Tony-Dell cannot see iPhone Personal Hotspot SSID
+  done: []
+  follow_up:
+  - Complete the focus or defer it
+  next_action:
+  - Work on Tony-Dell cannot see iPhone Personal Hotspot SSID
+  date: '2026-08-24'
+- focus: MacBook macOS App Development
+  source: mcp_focus sweep bulk defer
+  plan:
+  - Hold MacBook macOS App Development
+  - Defer Tony-Dell cannot see iPhone Personal Hotspot SSID to tony-dell
+  done: []
+  follow_up:
+  - Re-assess process queue after bulk defer
+  next_action:
+  - Continue MacBook macOS App Development
+  date: '2026-08-24'
+- focus: Tony-Dell cannot see iPhone Personal Hotspot SSID
+  source: mcp_focus next
+  plan:
+  - Activate Tony-Dell cannot see iPhone Personal Hotspot SSID
+  done: []
+  follow_up:
+  - Complete the focus or defer it
+  next_action:
+  - Work on Tony-Dell cannot see iPhone Personal Hotspot SSID
+  date: '2026-08-24'
+- focus: Tony-Dell cannot see iPhone Personal Hotspot SSID
+  source: mcp_focus defer
+  plan:
+  - Defer Tony-Dell cannot see iPhone Personal Hotspot SSID
+  done: []
+  follow_up: []
+  next_action:
+  - Resume Tony-Dell cannot see iPhone Personal Hotspot SSID
+  date: '2026-08-24'
+- focus: Tony-Dell cannot see iPhone Personal Hotspot SSID
+  source: mcp_focus next
+  plan:
+  - Activate Tony-Dell cannot see iPhone Personal Hotspot SSID
+  done: []
+  follow_up:
+  - Complete the focus or defer it
+  next_action:
+  - Work on Tony-Dell cannot see iPhone Personal Hotspot SSID
+  date: '2026-08-24'
+- focus: MacBook macOS App Development
+  source: mcp_focus sweep bulk defer
+  plan:
+  - Hold MacBook macOS App Development
+  - Defer Tony-Dell cannot see iPhone Personal Hotspot SSID to tony-dell
+  done: []
+  follow_up:
+  - Re-assess process queue after bulk defer
+  next_action:
+  - Continue MacBook macOS App Development
+  date: '2026-08-24'
+- date: '2026-08-25'
+  session: chaba-2026-08-25-rview-rename
+  focus: Rename gemini-live to rview-live
+  source: continue
+  plan:
+  - Rename gemini-live to rview-live in chaba and chaba-h3 repos
+  - Deploy the new rview-live podman unit on tony-dell
+  done:
+  - Renamed directories and references across chaba and chaba-h3
+  - Updated Caddy, proxy, SSOT index, and apps.yml
+  - Deployed and started rview-live Quadlet on tony-dell
+  - Verified health on 127.0.0.1:3008, 100.68.142.13:3008, and Caddy /api/rview-live
+  follow_up:
+  - Resolve Misdirected Request on https://tony-dell.taila0626a.ts.net:8443/api/rview-live/health
+  - Clean up old gemini-live images on tony-dell when convenient
+  next_action: Optionally fix the 8443 Funnel/Caddy host matching or move to next focus
+  decisions:
+  - id: rview-live-port
+    title: Keep rview-live on port 3008
+    chosen_option: Yes, retain the existing gemini-live port to avoid changing Caddy/Tailscale funnel setup beyond the rename
+  - id: live-deploy-copy
+    title: Use chaba-deploy worktree on tony-dell
+    chosen_option: Copy updated rview-live files from chaba and rebuild the podman image; no git operations on tony-dell
+- focus: MacBook macOS App Development
+  source: mcp_focus defer
+  plan:
+  - Defer Install or update Xcode 15.x command line tools
+  done: []
+  follow_up: []
+  next_action:
+  - Resume MacBook macOS App Development
+  date: '2026-08-25'
+- focus: MacBook macOS App Development
+  source: mcp_focus defer
+  plan:
+  - Defer Verify macOS app build toolchain
+  done: []
+  follow_up: []
+  next_action:
+  - Resume MacBook macOS App Development
+  date: '2026-08-25'
+related_files:
+- docs/ssot/ssot.focus.current.yml
+- docs/ssot/ssot.focus.yml
+- docs/ssot/infrastructure/ssot.focus-dispatcher.yml
+- docs/ssot/infrastructure/ssot.mcp-focus.yml
+- docs/kb/
+config:
+  last_archived: '2026-08-20'
+  total_archived: 35
+  archive_file: /home/tony/CascadeProjects/chaba/docs/ssot/ssot.focus.sessions.archive.2026.yml
+archived_to: ssot.focus.sessions.archive.2026.yml

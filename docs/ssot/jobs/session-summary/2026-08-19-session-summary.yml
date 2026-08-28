@@ -1,0 +1,81 @@
+title: Session Summary Automation
+subtitle: Phase 6 of the Context Improvement Plan — create an mcp_session_summary tool
+icon: target
+
+planning:
+  goal: |
+    Create an mcp_session_summary tool that reads the current focus, session log, and decisions,
+    then emits a structured session summary with KB items and decisions.
+  scope: |
+    - Design the session summary output schema.
+    - Implement scripts/mcp_session_summary.py.
+    - Add template SSOT for session summary reports.
+  success_criteria:
+    - mcp_session_summary returns a JSON summary with focus, subtasks, decisions, and KB candidates.
+    - Summary can be used as input to auto-kb.
+    - SSOT validation passes.
+  risks:
+    - Summaries become too noisy; mitigate with filters.
+    - Missing sessions data; mitigate by graceful fallbacks.
+  resources:
+    - docs/ssot/ssot.focus.current.yml
+    - docs/ssot/ssot.focus.sessions.yml
+    - docs/ssot/ssot.focus.decisions.yml
+    - .agents/skills/auto-kb/auto-kb.mjs
+  owner: tony
+  estimated_duration: 1 session
+  related_focus:
+    - label: Context improvement and optimization
+      file: docs/ssot/ssot.focus.current.yml
+
+processing:
+  status: in_progress
+  started_at: '2026-08-19'
+  steps:
+    - id: 1
+      label: Design session summary output schema
+      status: completed
+      completed_at: '2026-08-19'
+    - id: 2
+      label: Implement mcp_session_summary.py
+      status: completed
+      completed_at: '2026-08-19'
+    - id: 3
+      label: Add SSOT template for session summary
+      status: completed
+      completed_at: '2026-08-19'
+  decisions: []
+  changes: []
+
+followup:
+  verification:
+    - Run mcp_session_summary and verify output.
+    - Validate SSOT.
+  rollback_plan:
+    - Remove mcp_session_summary.py and template.
+  handoff:
+    - chaba overnight review
+  deferred:
+    - Full integration into session-end workflow.
+
+report:
+  status: not_started
+  completed_at: null
+  summary: ''
+  metrics:
+    - summaries_generated: 0
+  links:
+    - title: Session summary script
+      file: scripts/mcp_session_summary.py
+    - title: Session log
+      file: docs/ssot/ssot.focus.sessions.yml
+  kb_review: []
+  lessons_learned: []
+
+config:
+  version: 1
+  created_at: '2026-08-19'
+  last_updated: '2026-08-19'
+  maintainer: tony
+  related_files:
+    - docs/ssot/templates/job.yml

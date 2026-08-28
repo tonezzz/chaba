@@ -1,0 +1,48 @@
+title: Trade Canvas Continuation
+subtitle: Remaining UI fixes, modularization, data source validation, and strategy benchmarking
+icon: inbox
+
+focus:
+  label: Trade Canvas UI fixes and modularization
+  text: |
+    Continue the work from the 2026-08-15 trade session. Two high-priority
+    UI bugs (initial "Disconnected" status and selection state persistence)
+    were resolved. The remaining in-progress items need triage and
+    activation:
+      - Fix the 1 Week timeframe chart rendering for GOLD and other symbols.
+      - Continue the compare/compare2 SSOT-driven modularization.
+      - Validate and extend the data source reliability catalog.
+      - Complete the Perfect strategy benchmarking with full historical data.
+  branch: trade
+  priority: high
+  status: draft
+  tags:
+    - trade
+    - ui
+    - compare
+    - ssot
+    - data-sources
+    - strategies
+  missing_info:
+    - Which of the remaining in-progress items should become the active branch focus first?
+    - Does the user want the GOLD 1W chart fix prioritized over compare modularization?
+  subtasks:
+    - label: Reproduce the GOLD 1W empty chart and inspect data / renderer logic
+      status: not_started
+    - label: Add short-timeframe fallback zoom / density handling in chart-renderer.js
+      status: not_started
+    - label: Continue compare/compare2 modularization (promote-feature.sh, generic SSOT patterns)
+      status: not_started
+    - label: Integrate Frankfurter / exchangerate.dev and validate THB/commodity data paths
+      status: not_started
+    - label: Run Perfect strategy auto-detect and benchmark against existing strategies
+      status: not_started
+
+completed_this_session:
+  - UI selection state now survives page refresh (ui-bug-002)
+  - Compare2 initial status now shows "Loading" instead of "Disconnected" (ui-bug-001)
+  - Cache versions for chart-loader and ui-components bumped on compare pages
+
+source:
+  session: trade-mcp-policy-and-ui-2026-08-15
+  date: 2026-08-15

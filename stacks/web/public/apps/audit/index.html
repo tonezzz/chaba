@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Chaba Audit Report</title>
+  <style>
+    :root { --bg: #0f172a; --card: #1e293b; --text: #e2e8f0; --muted: #94a3b8; --ok: #22c55e; --fail: #ef4444; }
+    body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 2rem; }
+    h1 { margin-top: 0; }
+    .summary { display: flex; gap: 1rem; flex-wrap: wrap; margin: 1rem 0; }
+    .card { background: var(--card); border-radius: 0.5rem; padding: 1rem; min-width: 120px; }
+    .card .value { font-size: 1.5rem; font-weight: bold; }
+    .card .label { color: var(--muted); font-size: 0.875rem; }
+    .pass { color: var(--ok); }
+    .fail { color: var(--fail); }
+    table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+    th, td { text-align: left; padding: 0.5rem; border-bottom: 1px solid #334155; }
+    th { color: var(--muted); }
+    pre { white-space: pre-wrap; background: #020617; padding: 1rem; border-radius: 0.5rem; }
+    .error { color: var(--fail); }
+  </style>
+</head>
+<body>
+  <h1>Chaba Audit Report</h1>
+  <div id="summary"></div>
+  <table id="results">
+    <thead>
+      <tr><th>Audit</th><th>Status</th><th>Duration (ms)</th><th>Exit</th></tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+  <pre id="detail">Click a status to see details.</pre>
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,58 @@
+title: mcp-debug Visual Capture Bridge
+subtitle: Add screenshot, window list, and clipboard-image capture to mcp-debug
+icon: inbox
+
+focus:
+  label: mcp-debug visual capture bridge
+  text: |
+    Extend mcp-debug with lightweight, opt-in visual capture tools so the assistant
+    can see remote host state without switching to PlayLive or another MCP server.
+    Start with non-interactive capture tools; avoid duplicating PlayLive's browser
+    automation and click/keyboard control.
+
+    Proposed design for the complicated bits (so this session does not need to solve them again):
+    - `mcp_screenshot(host, region, format=png)` returns `{ok, content_base64, width, height, bytes, error}`.
+      Transport: macOS `screencapture -x -`; Linux `gnome-screenshot -f -`, `grim`, or `import`;
+      always base64-encode and cap at 2 MB (resize/compress if larger).
+    - `mcp_window_list(host)` returns `{ok, windows: [{id, app, title, pid, focused}]}`.
+      Transport: macOS `lsappinfo`/`osascript`; X11 `xwininfo -root -tree`; Wayland `swaymsg -t get_tree`.
+    - `mcp_clipboard_image_get(host)` returns `{ok, content_base64, format, bytes, error}`.
+      Transport: macOS `pbpaste -Prefer rtf` image path/NSPasteboard read; Linux `xclip -selection clipboard -t image/png -o`.
+    - `mcp_a11y_tree(host, app)` returns a JSON UI element tree of a given app/window.
+      Transport: macOS AppleScript accessibility APIs; optional for later.
+
+    Security defaults:
+    - Per-host `capture: true` opt-in; default false on all hosts.
+    - `mcp_screenshot` must support `region` cropping to avoid leaking full displays.
+    - Hard cap on image size (2 MB default, 4 MB hard) with downscale for oversize.
+    - All capture calls logged with host, type, region, and size.
+    - clipboard-image is opt-in alongside clipboard text; never called automatically.
+
+    Implementation order:
+    1. macbook first (pbcopy/pbpaste + screencapture are safest and well documented).
+    2. Add Linux screenshot fallbacks only after macOS path is stable.
+    3. Do not add click/drag/keyboard automation; that stays in PlayLive.
+  branch: chaba
+  priority: medium
+  status: draft
+  tags: [mcp, mcp-debug, capture, screenshot, macos, visual, clipboard]
+  missing_info:
+    - Confirm whether headless Linux hosts (tony-omen, tony-dell) need screenshot support at all.
+    - Decide region format (x,y,w,h object vs percentage vs monitor index).
+  subtasks:
+    - label: Promote this design to a dedicated SSOT (docs/ssot/infrastructure/ssot.mcp-debug.capture.yml)
+      status: not_started
+    - label: Add mcp_screenshot with macOS transport and size cap
+      status: not_started
+    - label: Add mcp_window_list for macOS and Linux
+      status: not_started
+    - label: Add mcp_clipboard_image_get for macOS
+      status: not_started
+    - label: Update ssot.mcp-debug.yml with capture tools, per-host flags, and limits
+      status: not_started
+    - label: Add smoke tests on macbook and one Linux host
+      status: not_started
+
+source:
+  session: mcp-debug-visual-capture
+  date: 2026-08-17

@@ -1,0 +1,27 @@
+title: Chaba H3
+subtitle: Deployment and runtime notes for the chaba.h3 branch and environment
+
+ideas:
+  - The chaba.h3 branch lives in the chaba-h3 project, not the main chaba project.
+  - UI deployments for chaba.h3 go to chaba-h3/public/, not chaba/stacks/web/public/.
+  - The chaba.h3 environment has its own build and deployment pipeline; do not test against the main chaba web server.
+
+deployment:
+  repo: /home/tony/CascadeProjects/chaba-h3
+  branch: chaba.h3
+  target_dir: /home/tony/CascadeProjects/chaba-h3/public/apps/trade/tradecanvas-ui
+  source_dir: /home/tony/CascadeProjects/trade/tradecanvas-ui
+  ssot_source_dir: /home/tony/CascadeProjects/trade/config/ssot
+  build_or_deploy: |
+    Push the chaba-h3/chaba.h3 branch and wait for the deployment pipeline.
+    Do not start the main chaba web stack to test chaba.h3 content.
+  test_url: https://chaba.h3.gizmo-thailand.com/apps/trade/tradecanvas-ui/test-chart.html
+
+notes:
+  - The main chaba deployment path is /home/tony/CascadeProjects/chaba/stacks/web/public/.
+  - The chaba.h3 deployment path is /home/tony/CascadeProjects/chaba-h3/public/.
+  - Confusing these two is a common cause of "server not reachable" test failures.
+
+related_files:
+  - /home/tony/CascadeProjects/chaba-h3/.windsurfrules
+  - /home/tony/CascadeProjects/chaba-h3/public/ssot.focus.yml

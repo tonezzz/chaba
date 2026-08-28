@@ -1,0 +1,36 @@
+title: Focus Inbox Item
+subtitle: tony-dell cannot see the iPhone Personal Hotspot SSID
+icon: inbox
+
+focus:
+  label: Tony-Dell cannot see iPhone Personal Hotspot SSID
+  text: |
+    tony-dell's Wi-Fi interface (wlx00761100125e) does not show the iPhone Personal Hotspot in scans.
+    Initial check: the adapter is a Ralink MT7601U (148f:7601) which is 2.4 GHz only.
+    iPhone Personal Hotspot on newer iOS defaults to 5 GHz when "Maximize Compatibility" is off,
+    so the most likely fix is enabling "Maximize Compatibility" on the iPhone, forcing 2.4 GHz.
+    If that is not enough, investigate driver/regulatory region, power-saving, and whether the
+    hotspot is using a hidden SSID.
+  branch: tony-dell
+  priority: medium
+  status: draft
+  tags:
+    - tony-dell
+    - wifi
+    - iphone
+    - hotspot
+    - network
+    - mt7601u
+  missing_info:
+    - iPhone model and iOS version
+    - Whether "Maximize Compatibility" is enabled in Settings > Personal Hotspot
+    - Whether other 2.4 GHz devices can see the hotspot
+  subtasks:
+    - label: Enable "Maximize Compatibility" on iPhone Personal Hotspot and rescan on tony-dell
+      status: not_started
+    - label: If still invisible, verify driver/firmware and regulatory domain for MT7601U
+      status: not_started
+
+source:
+  session: 2026-08-18-014542
+  date: 2026-08-18

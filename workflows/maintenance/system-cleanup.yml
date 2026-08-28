@@ -1,0 +1,183 @@
+name: system-cleanup
+description: Automated system cleanup and health checks including Docker, journal, logs, disk space, and GPU monitoring
+version: "1.0"
+author: Chaba Team
+tags: [maintenance, cleanup, docker, system]
+
+inputs:
+  docker_prune:
+    type: bool
+    description: Enable Docker system cleanup
+    default: true
+    required: false
+  journal_cleanup:
+    type: bool
+    description: Enable journal log cleanup
+    default: true
+    required: false
+  log_cleanup:
+    type: bool
+    description: Enable system log cleanup
+    default: true
+    required: false
+  disk_threshold:
+    type: num
+    description: Disk usage warning threshold percentage
+    default: 80
+    required: false
+  gpu_check:
+    type: bool
+    description: Enable GPU monitoring check
+    default: true
+    required: false
+
+blocks:
+  - id: setup_logging
+    type: Shell
+    description: "Setup logging directory and initialize log file"
+    inputs:
+      command: |
+        #!/bin/bash
+        LOG_DIR="/home/tony/CascadeProjects/chaba/logs/maintenance"
+        LOG_FILE="$LOG_DIR/maintenance.log"
+        mkdir -p "$LOG_DIR"
+        echo "[$(date -Iseconds)] === Starting System Maintenance ===" >> "$LOG_FILE"
+        echo "LOG_FILE=$LOG_FILE"
+      timeout: 10
+
+  - id: disk_check
+    type: Shell
+    description: "Disk space monitoring with threshold alerts"
+    inputs:
+      command: |
+        #!/bin/bash
+        eval "$(echo "{{blocks.setup_logging.outputs.stdout}}")"
+        echo "[$(date -Iseconds)] === Disk Space Check ===" >> "$LOG_FILE"
+        echo "[$(date -Iseconds)] Starting: Check disk usage" >> "$LOG_FILE"
+        result=$(df -h / 2>&1)
+        exit_code=$?
+        if [ $exit_code -eq 0 ]; then
+          echo "[$(date -Iseconds)] Success: Disk usage check" >> "$LOG_FILE"
+          usage=$(echo "$result" | awk 'NR==2 {print $5}' | sed 's/%//')
+          echo "[$(date -Iseconds)] Disk usage: ${usage}%" >> "$LOG_FILE"
+          threshold="{{inputs.disk_threshold}}"
+          if [ "$usage" -gt 90 ]; then
+            echo "[$(date -Iseconds)] CRITICAL: Disk usage above 90%" >> "$LOG_FILE"
+            echo "DISK_STATUS=critical"
+          elif [ "$usage" -gt "$threshold" ]; then
+            echo "[$(date -Iseconds)] WARNING: Disk usage above ${threshold}%" >> "$LOG_FILE"
+            echo "DISK_STATUS=warning"
+          else
+            echo "[$(date -Iseconds)] Disk usage within normal limits" >> "$LOG_FILE"
+            echo "DISK_STATUS=normal"
+          fi
+          echo "DISK_USAGE=$usage"
+          echo "DISK_CHECK=true"
+        else
+          echo "[$(date -Iseconds)] Failed: Disk usage check - $result" >> "$LOG_FILE"
+          echo "DISK_CHECK=false"
+          echo "DISK_ERROR=$result"
+        fi
+      timeout: 10
+    depends_on:
+      - setup_logging
+
+  - id: docker_health_check
+    type: Shell
+    description: "Docker container health check"
+    inputs:
+      command: |
+        #!/bin/bash
+        eval "$(echo "{{blocks.setup_logging.outputs.stdout}}")"
+        echo "[$(date -Iseconds)] === Docker Health Check ===" >> "$LOG_FILE"
+        echo "[$(date -Iseconds)] Starting: Check running containers" >> "$LOG_FILE"
+        result=$(docker ps --format "{{.Names}}: {{.Status}}" 2>&1)
+        exit_code=$?
+        if [ $exit_code -eq 0 ]; then
+          echo "[$(date -Iseconds)] Success: Container health check" >> "$LOG_FILE"
+          container_count=$(echo "$result" | wc -l)
+          echo "[$(date -Iseconds)] Running containers: $container_count" >> "$LOG_FILE"
+          unhealthy=$(echo "$result" | grep -i "unhealthy\|exited" || echo "")
+          unhealthy_count=$(echo "$unhealthy" | wc -l)
+          if [ "$unhealthy_count" -gt 0 ]; then
+            echo "[$(date -Iseconds)] WARNING: Unhealthy containers: $unhealthy_count" >> "$LOG_FILE"
+            echo "DOCKER_HEALTH=unhealthy"
+          else
+            echo "[$(date -Iseconds)] All containers healthy" >> "$LOG_FILE"
+            echo "DOCKER_HEALTH=healthy"
+          fi
+          echo "DOCKER_CONTAINERS=$container_count"
+          echo "DOCKER_CHECK=true"
+        else
+          echo "[$(date -Iseconds)] Failed: Container health check - $result" >> "$LOG_FILE"
+          echo "DOCKER_CHECK=false"
+          echo "DOCKER_ERROR=$result"
+        fi
+      timeout: 15
+    depends_on:
+      - setup_logging
+
+  - id: gpu_monitor_check
+    type: Shell
+    description: "GPU monitoring integration"
+    inputs:
+      command: |
+        #!/bin/bash
+        eval "$(echo "{{blocks.setup_logging.outputs.stdout}}")"
+        if [ "{{inputs.gpu_check}}" = "true" ]; then
+          echo "[$(date -Iseconds)] === GPU Monitor Check ===" >> "$LOG_FILE"
+          echo "[$(date -Iseconds)] Starting: GPU monitoring check" >> "$LOG_FILE"
+          result=$(node /home/tony/CascadeProjects/chaba/scripts/gpu-monitor.mjs --export 2>&1)
+          exit_code=$?
+          if [ $exit_code -eq 0 ]; then
+            echo "[$(date -Iseconds)] Success: GPU monitoring check" >> "$LOG_FILE"
+            echo "GPU_CHECK=true"
+            echo "GPU_STATUS=$result"
+          else
+            echo "[$(date -Iseconds)] Failed: GPU monitoring check - $result" >> "$LOG_FILE"
+            echo "GPU_CHECK=false"
+            echo "GPU_ERROR=$result"
+          fi
+        else
+          echo "[$(date -Iseconds)] GPU check skipped" >> "$LOG_FILE"
+          echo "GPU_CHECK=skipped"
+        fi
+      timeout: 30
+    depends_on:
+      - setup_logging
+
+  - id: generate_report
+    type: Shell
+    description: "Generate maintenance summary report"
+    inputs:
+      command: |
+        #!/bin/bash
+        eval "$(echo "{{blocks.setup_logging.outputs.stdout}}")"
+        eval "$(echo "{{blocks.disk_check.outputs.stdout}}")"
+        eval "$(echo "{{blocks.docker_health_check.outputs.stdout}}")"
+        eval "$(echo "{{blocks.gpu_monitor_check.outputs.stdout}}")"
+        echo "[$(date -Iseconds)] === Maintenance Report ===" >> "$LOG_FILE"
+        total=3
+        successful=0
+        failed=0
+        [ "$DISK_CHECK" = "true" ] && successful=$((successful + 1)) || failed=$((failed + 1))
+        [ "$DOCKER_CHECK" = "true" ] && successful=$((successful + 1)) || failed=$((failed + 1))
+        [ "$GPU_CHECK" = "true" ] && successful=$((successful + 1)) || failed=$((failed + 1))
+        echo "[$(date -Iseconds)] Summary: $successful/$total tasks successful" >> "$LOG_FILE"
+        echo "[$(date -Iseconds)] === System Maintenance Complete ===" >> "$LOG_FILE"
+        echo '{"timestamp":"'"$(date -Iseconds)"'","results":{"diskCheck":"'"$DISK_CHECK"'","dockerHealthCheck":"'"$DOCKER_CHECK"'","gpuMonitorCheck":"'"$GPU_CHECK"'"},"details":{"diskUsage":"'"$DISK_USAGE"'","diskStatus":"'"$DISK_STATUS"'","dockerContainers":"'"$DOCKER_CONTAINERS"'","dockerHealth":"'"$DOCKER_HEALTH"'"},"summary":{"total":'"$total"',"successful":'"$successful"',"failed":'"$failed"'}}'
+      timeout: 10
+    depends_on:
+      - disk_check
+      - docker_health_check
+      - gpu_monitor_check
+
+outputs:
+  log_file:
+    value: "{{blocks.setup_logging.outputs.stdout}}"
+  disk_status:
+    value: "{{blocks.disk_check.outputs.stdout}}"
+  docker_health:
+    value: "{{blocks.docker_health_check.outputs.stdout}}"
+  maintenance_report:
+    value: "{{blocks.generate_report.outputs.stdout}}"

@@ -1,0 +1,273 @@
+title: MacBook Pro Workstation
+subtitle: MacBook Pro system configuration, remote access, and macOS/iOS verification
+icon: 💻
+related_files:
+- docs/ssot/infrastructure/ssot.host-roles.yml
+- docs/ssot/ssot.mysystem.home.yml
+- docs/ssot/infrastructure/ssot.mcp-debug.yml
+
+ideas:
+  - MacBook Pro as additional workstation in home network
+  - Remote access via Chrome Remote Desktop and SSH
+  - Cross-platform development and testing capabilities
+  - macOS-specific tools and environments
+  - Integration with existing home network infrastructure
+
+sections:
+  - title: System Information
+    icon: 🖥️
+    layout: list
+    items:
+      - label: Model
+        text: MacBook Pro (Quad-Core Intel Core i7, 2.6 GHz)
+      - label: Memory
+        text: 16 GB RAM
+      - label: Operating System
+        text: macOS 13.7.8 (Ventura) - Updated 2026-08-10
+      - label: Serial Number
+        text: C02T902XH03M
+      - label: Hostname
+        text: KKs-MacBook-Pro.local
+      - label: Username
+        text: kkkakk
+      - label: Storage
+        text: 233GB total, 10GB used (8%), 127GB available - Cleaned 2026-08-10
+
+  - title: Network Configuration
+    icon: 🌐
+    layout: list
+    items:
+      - label: IP Address
+        text: 192.168.1.39 (DHCP assigned, home WiFi)
+      - label: Tailnet IPv4
+        text: 100.124.59.112 (machine name 'kk-macbook')
+      - label: Network
+        text: 192.168.1.0/24 subnet (home WiFi)
+      - label: Hostname Resolution
+        text: .local hostname resolution available; reachable over Tailscale as 100.124.59.112
+      - label: Network Status
+        text: Connected to home network
+        status: active
+
+  - title: Remote Access Methods
+    icon: 🔐
+    layout: list
+    items:
+      - label: Chrome Remote Desktop
+        text: Full GUI remote access via Chrome Remote Desktop (dedicated profile for remote access only)
+        url: https://remotedesktop.google.com/access
+        status: active
+        tags: [gui, remote-desktop, cross-platform, dedicated-profile]
+      - label: Chrome Profile Strategy
+        text: Current Chrome profile dedicated to Chrome Remote Desktop only - not used for regular browsing on MacBook
+        status: active
+        tags: [profile-management, access-control, separation]
+      - label: Multi-User Access
+        text: Other users can use different Chrome profiles or macOS accounts without affecting remote access setup
+        status: active
+        tags: [multi-user, concurrent-access, isolation]
+      - label: SSH Access
+        text: Command-line access via SSH with key authentication
+        status: active
+        tags: [ssh, command-line, key-auth]
+      - label: SSH Configuration
+        text: "Host: macbook 192.168.1.39 100.124.59.112, HostName: 100.124.59.112, User: kkkakk, IdentityFile: ~/.ssh/id_ed25519_macbook"
+        url: file:///home/tony/.ssh/config
+      - label: SSH Connection
+        text: ssh macbook (configured in ~/.ssh/config)
+        status: active
+      - label: Tailscale Funnel
+        text: Public landing page and active-connections API on https://kk-macbook.taila0626a.ts.net/
+        url: https://kk-macbook.taila0626a.ts.net/
+        status: active
+        tags: [tailscale, funnel, public, landing-page]
+
+  - title: SSH Setup Details
+    icon: 🔑
+    layout: list
+    items:
+      - label: SSH Server
+        text: macOS Remote Login enabled in System Settings → Sharing
+      - label: Authentication
+        text: SSH key-based authentication (no password required)
+      - label: SSH Key Path
+        text: ~/.ssh/id_ed25519_macbook (Linux PC)
+      - label: Authorized Keys
+        text: ~/.ssh/authorized_keys (MacBook)
+      - label: SSH Config
+        text: ~/.ssh/config (Linux PC) with 'macbook' host entry
+      - label: Connection Test
+        text: "ssh macbook 'whoami && hostname' (key auth verified 2026-08-15)"
+
+  - title: Chrome Profile Management
+    icon: 👤
+    layout: list
+    items:
+      - label: Remote-Only Profile
+        text: Current Chrome profile dedicated exclusively to Chrome Remote Desktop access
+        status: active
+        tags: [dedicated-profile, remote-access, separation]
+      - label: Profile Strategy
+        text: Keep remote access profile separate from regular browsing profiles to avoid conflicts
+      - label: Multi-User Access
+        text: Other users can use different Chrome profiles without affecting remote access setup
+        status: active
+      - label: Concurrent Access
+        text: Multiple users can access simultaneously via different Chrome profiles or macOS accounts
+        status: supported
+      - label: Access Control
+        text: Chrome Remote Desktop tied to Google account, not local Chrome profiles
+      - label: Security Consideration
+        text: Avoid setting up Chrome Remote Desktop in multiple profiles for same macOS user
+      - label: Detailed Documentation
+        text: Complete profile management strategy and troubleshooting guide
+        url: file:///home/tony/CascadeProjects/chaba/docs/kb/chrome-remote-desktop-profile-management.md
+
+  - title: System Capabilities
+    icon: ⚡
+    layout: list
+    items:
+      - label: Development Environment
+        text: Command Line Tools installed; full Xcode not installed. Target state tracked in ssot.mysystem.macbook-appdev.yml.
+        url: file:///home/tony/CascadeProjects/chaba/docs/ssot/ssot.mysystem.macbook-appdev.yml
+        tags: [development, macos, xcode, clt]
+      - label: Cross-Platform Testing
+        text: Test web apps and services on macOS/Safari
+        tags: [testing, cross-platform, safari]
+      - label: File Transfer
+        text: scp/rsync for file transfer between machines
+        tags: [file-transfer, scp, rsync]
+      - label: Service Management
+        text: launchctl for macOS service management
+        tags: [services, launchctl, macos]
+      - label: Health Snapshot Agent
+        text: Periodic macOS health snapshots collected by com.chaba.macbook-health launchd job and stored at ~/var/chaba/health/macbook-snapshot.json. Each snapshot includes lan_ip, tailscale_ip, wifi_ssid, memory pressure, top CPU/memory, Adobe/CRD/PlayLive process counts, disk hogs, and 9222/9231 ports. Run python3 /Users/kkkakk/chaba-health/collect-macbook-snapshot.py --fix to auto-kill Adobe CC, duplicate PlayLive Chrome, and orphaned /tmp/playlive-chrome-mac.
+        status: active
+        tags: [health, monitoring, snapshot]
+      - label: PlayLive / CDP Node
+        text: Playwright+CDP browser automation daemon (playlived) on port 9231, exposed via playlive-macbook MCP, backed by headless Google Chrome with remote-debugging-port=9222
+        status: active
+        tags: [playlive, cdp, browser, playwright, automation]
+      - label: Node.js
+        text: Node.js v20.17.0 and npm 10.8.2 installed at ~/.local/node; available on the shell PATH via ~/.zshenv
+        status: active
+        tags: [node, npm, development, javascript]
+      - label: Homebrew
+        text: Homebrew installed at ~/.homebrew and available on the shell PATH via ~/.zshenv
+        status: active
+        tags: [homebrew, package-manager, macos]
+      - label: Podman
+        text: Podman v5.8.5 for Intel Mac installed at ~/.local/podman with helper binaries and containers.conf in ~/.config/containers. Machine 'podman-machine-default' runs a rootless VM via vfkit. PATH set in ~/.zshenv.
+        status: active
+        tags: [podman, containers, virtualization]
+      - label: Redis
+        text: Redis 7 Alpine running in a rootless Podman container 'redis-macbook' on port 16379 with persistent volume 'redis-data'. Started with --appendonly yes. Tested with PONG from the host.
+        status: active
+        tags: [redis, podman, cache]
+      - label: Terminal Access
+        text: Full terminal access via SSH for command-line operations
+        tags: [terminal, ssh, command-line]
+
+  - title: Integration with Home Network
+    icon: 🏠
+    layout: list
+    items:
+      - label: Network Integration
+        text: Part of 192.168.1.0/24 home network
+      - label: Service Access
+        text: Can access tony-omen and tony-dell services
+      - label: Shared Resources
+        text: Access to shared network resources and services
+      - label: DNS Resolution
+        text: .local hostname resolution for network devices
+      - label: Profile Compatibility
+        text: Compatible with home network profile configuration
+
+  - title: Maintenance & Troubleshooting
+    icon: 🔧
+    layout: list
+    items:
+      - label: System Updates
+        text: macOS Software Update via System Settings - Last updated 2026-08-10 (13.6.3 → 13.7.8)
+      - label: SSH Troubleshooting
+        text: Check Remote Login in System Settings → Sharing
+      - label: Network Troubleshooting
+        text: Check WiFi connection and IP assignment
+      - label: Chrome Remote Desktop
+        text: Verify Chrome Remote Desktop service is running
+      - label: Key Regeneration
+        text: "Regenerate SSH keys if authentication fails: ssh-keygen -t ed25519"
+
+  - title: Security Status
+    icon: 🔒
+    layout: list
+    items:
+      - label: OS Updates
+        text: macOS 13.7.8 installed (2026-08-10) - Safari 18.6 installed
+        status: updated
+        tags: [security, updates, completed]
+      - label: FileVault
+        text: Full disk encryption - PENDING (requires manual enablement)
+        status: pending
+        tags: [security, encryption, pending]
+      - label: Firewall
+        text: macOS Firewall with stealth mode - PENDING (requires manual enablement)
+        status: pending
+        tags: [security, firewall, pending]
+      - label: System Integrity Protection
+        text: Disabled - Evaluate necessity (OpenCore-Patcher may require disabled SIP)
+        status: review-needed
+        tags: [security, sip, review]
+      - label: Sharing Preferences
+        text: Guest sharing review - PENDING (requires manual review)
+        status: pending
+        tags: [security, sharing, pending]
+      - label: Security Score
+        text: 4/10 (improved from 2/10 after OS updates)
+        status: partial
+
+  - title: Storage Management
+    icon: 💾
+    layout: list
+    items:
+      - label: Storage Status
+        text: 233GB total, 10GB used (8%), 127GB available
+        status: healthy
+      - label: Cleanup Performed (2026-08-10)
+        text: Adobe cache (23GB), Chrome cache (1.8GB), Safari cache, system caches, Downloads DMG files
+        status: completed
+      - label: Space Recovered
+        text: ~27GB recovered during cleanup
+        status: completed
+      - label: Remaining Large Files
+        text: "Desktop: 6.1GB (PSD work files), Downloads: 2.1GB (manual review recommended)"
+        status: review-needed
+
+  - title: Future Enhancements
+    icon: 🚀
+    layout: list
+    items:
+      - label: Service Deployment
+        text: Consider deploying specific services to MacBook
+        status: planned
+      - label: Development Environment
+        text: Set up consistent development environment across machines
+        status: planned
+      - label: Automation Scripts
+        text: Create automation scripts for common tasks
+        status: planned
+      - label: Monitoring Integration
+        text: Integrate with home network monitoring systems
+        status: planned
+
+config:
+  version: 3
+  last_updated: 2026-08-10
+  maintainer: tony
+  related_files:
+    - ssot.mysystem.home.yml (home environment overview)
+    - ssot.mysystem.mobile.yml (mobile environment)
+    - infrastructure/ssot.health.home.yml (home health checks)
+    - ssot.index.yml (SSOT master index)
+    - kb/chrome-remote-desktop-profile-management.md (Chrome profile management strategy)
+    - reports/macbook-assessment-2026-08-10.md (comprehensive security assessment)

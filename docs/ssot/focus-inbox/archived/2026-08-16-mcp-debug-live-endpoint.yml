@@ -1,0 +1,34 @@
+title: Focus Inbox Item
+subtitle: Live CORS endpoint for h3 mcp debug report
+icon: inbox
+
+focus:
+  label: Live CORS endpoint for h3 mcp debug report
+  text: Expose tony-omen data so the chaba.h3 MCP Debug report page can refresh live results instead of relying on pushed snapshots.
+  priority: medium
+  status: draft
+  tags:
+    - mcp
+    - h3
+    - web
+    - cors
+    - tony-omen
+    - live-data
+  missing_info:
+    - Which port/path should the endpoint use?
+    - Should it use a small Python HTTP server, Caddy, or an existing stack?
+    - Authentication and CORS headers needed?
+    - How is the endpoint kept up to date with the latest mcp-savings.json?
+  subtasks:
+    - label: Choose endpoint implementation
+      status: not_started
+    - label: Add CORS headers to serve mcp-savings.json
+      status: not_started
+    - label: Update h3 app.js LIVE_DATA_URL
+      status: not_started
+    - label: Test live refresh from tony-omen
+      status: not_started
+
+source:
+  session: 2026-08-16
+  date: 2026-08-16

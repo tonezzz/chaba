@@ -1,0 +1,45 @@
+title: Development System Assessment
+subtitle: Periodic assessment of the chaba development workflow itself
+icon: clipboard-check
+last_reviewed: '2026-08-28T05:56:00.000000+00:00'
+reviewer: assistant
+score:
+  branches_total: 11
+  branches_ahead_of_master: 3
+  worktrees_total: 7
+  active_foci: 1
+  ssot_warnings: 0
+  service_errors_last_night: 0
+  ci_failures_7d: 0
+  untracked_files: 0
+trend: stable
+pros:
+- label: SSOT-first workflow
+  evidence: 197 SSOT files validated on every commit; master now current with HA-MCP, log CI, and merge cadence policy
+  trend: improving
+- label: Health-aware automation
+  evidence: mcp_health, mcp_logs, overnight service log sweep, and mcp_logs_savings are active
+  trend: improving
+- label: Stable master
+  evidence: SSOT validation passes, ssot_warnings = 0, and service_errors = 0
+  trend: stable
+- label: Clean working tree
+  evidence: 0 untracked or modified file(s) on the canonical worktree
+  trend: stable
+cons:
+- label: Branch/worktree sprawl
+  severity: medium
+  evidence: 4 branches are ahead of master; 7 worktrees active
+  owner: tony
+  status: open
+  improvement: Consolidate long-tail branches into master and archive or delete merged branches
+improvements:
+- label: Merge one long-tail branch per session
+  source: ssot.focus.yml
+  target_score: archive or merge branches only when their worktree is decommissioned
+  status: completed
+- label: Real CI smoke tests
+  source: dev-system.assessment
+  target_score: live_mcp_smoke_ci = true
+  status: not_started
+next_review: '2026-08-29'

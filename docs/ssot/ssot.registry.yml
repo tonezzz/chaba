@@ -1,0 +1,230 @@
+title: Registry
+subtitle: Master catalog of project assets — scripts, SSOTs, services, apps, and related artifacts
+icon: 🗃️
+version: 1
+overview:
+  purpose: 'One place to answer: "What things do we have, where do they live, what are they for,
+
+    and what is their current status?" It does not replace per-file documentation; it
+
+    provides a lightweight index and a status-aware map.
+
+    '
+  scope:
+  - SSOTs and docs that are part of an active workflow
+  - Scripts and daemons we maintain
+  - Systemd user services and timers
+  - h3 app pages under chaba-h3
+  - Repos and stacks with active configuration
+  out_of_scope:
+  - Every line of source code
+  - Generated build artifacts
+  - Transient logs
+schema:
+  required:
+  - id
+  - name
+  - type
+  - path
+  - purpose
+  - status
+  optional:
+  - project
+  - environment
+  - owner
+  - tags
+  - related
+  - added
+  - last_verified
+  - notes
+types:
+- ssot
+- script
+- service
+- timer
+- h3-app
+- kb
+- repo
+- stack
+- config
+statuses:
+- draft
+- active
+- stable
+- experimental
+- parked
+- deprecated
+- unknown
+rules:
+- One entry per top-level asset; do not list every module inside a package.
+- The canonical id is kebab-case and stable.
+- The path should be the primary human-findable location.
+- 'For user-config files outside the repo, set project: chaba and location: user.'
+- Use related to link to SSOTs, services, scripts, or parent repos.
+- Keep purpose to one or two short sentences.
+- When a status changes to deprecated, add a deprecation note and keep the entry for 90 days.
+- Run scripts/registry-drafts.py periodically to find missing assets.
+related_files:
+- docs/ssot/ssot.index.yml
+- docs/ssot/ssot.file-control.yml
+- scripts/registry-drafts.py
+- scripts/registry-apply.py
+assets:
+- id: ssot-registry-h3-app-yml
+  name: ssot.registry.h3-app.yml
+  type: ssot
+  path: docs/ssot/ssot.registry.h3-app.yml
+  project: chaba
+  purpose: Registry partition for ssot.registry.h3-app.yml
+  status: active
+  tags:
+  - ssot
+  - registry
+  added: '2026-08-19'
+- id: ssot-registry-infrastructure-yml
+  name: ssot.registry.infrastructure.yml
+  type: ssot
+  path: docs/ssot/ssot.registry.infrastructure.yml
+  project: chaba
+  purpose: Registry partition for ssot.registry.infrastructure.yml
+  status: active
+  tags:
+  - ssot
+  - registry
+  added: '2026-08-19'
+- id: ssot-registry-script-core-yml
+  name: ssot.registry.script-core.yml
+  type: ssot
+  path: docs/ssot/ssot.registry.script-core.yml
+  project: chaba
+  purpose: Registry partition for ssot.registry.script-core.yml
+  status: active
+  tags:
+  - ssot
+  - registry
+  added: '2026-08-19'
+- id: ssot-registry-script-focus-yml
+  name: ssot.registry.script-focus.yml
+  type: ssot
+  path: docs/ssot/ssot.registry.script-focus.yml
+  project: chaba
+  purpose: Registry partition for ssot.registry.script-focus.yml
+  status: active
+  tags:
+  - ssot
+  - registry
+  added: '2026-08-19'
+- id: ssot-registry-script-mcp-debug-yml
+  name: ssot.registry.script-mcp-debug.yml
+  type: ssot
+  path: docs/ssot/ssot.registry.script-mcp-debug.yml
+  project: chaba
+  purpose: Registry partition for ssot.registry.script-mcp-debug.yml
+  status: active
+  tags:
+  - ssot
+  - registry
+  added: '2026-08-19'
+- id: ssot-registry-script-yml
+  name: ssot.registry.script.yml
+  type: ssot
+  path: docs/ssot/ssot.registry.script.yml
+  project: chaba
+  purpose: Registry partition for ssot.registry.script.yml
+  status: active
+  tags:
+  - ssot
+  - registry
+  added: '2026-08-19'
+- id: ssot-registry-ssot-apps-yml
+  name: ssot.registry.ssot-apps.yml
+  type: ssot
+  path: docs/ssot/ssot.registry.ssot-apps.yml
+  project: chaba
+  purpose: Registry partition for ssot.registry.ssot-apps.yml
+  status: active
+  tags:
+  - ssot
+  - registry
+  added: '2026-08-19'
+- id: ssot-registry-ssot-core-yml
+  name: ssot.registry.ssot-core.yml
+  type: ssot
+  path: docs/ssot/ssot.registry.ssot-core.yml
+  project: chaba
+  purpose: Registry partition for ssot.registry.ssot-core.yml
+  status: active
+  tags:
+  - ssot
+  - registry
+  added: '2026-08-19'
+- id: ssot-registry-ssot-extra-yml
+  name: ssot.registry.ssot-extra.yml
+  type: ssot
+  path: docs/ssot/ssot.registry.ssot-extra.yml
+  project: chaba
+  purpose: Registry partition for ssot.registry.ssot-extra.yml
+  status: active
+  tags:
+  - ssot
+  - registry
+  added: '2026-08-19'
+- id: ssot-registry-ssot-infrastructure-yml
+  name: ssot.registry.ssot-infrastructure.yml
+  type: ssot
+  path: docs/ssot/ssot.registry.ssot-infrastructure.yml
+  project: chaba
+  purpose: Registry partition for ssot.registry.ssot-infrastructure.yml
+  status: active
+  tags:
+  - ssot
+  - registry
+  added: '2026-08-19'
+- id: ssot-registry-ssot-jobs-yml
+  name: ssot.registry.ssot-jobs.yml
+  type: ssot
+  path: docs/ssot/ssot.registry.ssot-jobs.yml
+  project: chaba
+  purpose: Registry partition for ssot.registry.ssot-jobs.yml
+  status: active
+  tags:
+  - ssot
+  - registry
+  added: '2026-08-19'
+- id: ssot-registry-ssot-template-yml
+  name: ssot.registry.ssot-template.yml
+  type: ssot
+  path: docs/ssot/ssot.registry.ssot-template.yml
+  project: chaba
+  purpose: Registry partition for ssot.registry.ssot-template.yml
+  status: active
+  tags:
+  - ssot
+  - registry
+  added: '2026-08-19'
+parts:
+- file: docs/ssot/ssot.registry.h3-app.yml
+  count: 0
+- file: docs/ssot/ssot.registry.infrastructure.yml
+  count: 0
+- file: docs/ssot/ssot.registry.script-core.yml
+  count: 0
+- file: docs/ssot/ssot.registry.script-focus.yml
+  count: 0
+- file: docs/ssot/ssot.registry.script-mcp-debug.yml
+  count: 0
+- file: docs/ssot/ssot.registry.script.yml
+  count: 0
+- file: docs/ssot/ssot.registry.ssot-apps.yml
+  count: 0
+- file: docs/ssot/ssot.registry.ssot-core.yml
+  count: 0
+- file: docs/ssot/ssot.registry.ssot-extra.yml
+  count: 0
+- file: docs/ssot/ssot.registry.ssot-infrastructure.yml
+  count: 0
+- file: docs/ssot/ssot.registry.ssot-jobs.yml
+  count: 0
+- file: docs/ssot/ssot.registry.ssot-template.yml
+  count: 0
+last_updated: '2026-08-19'

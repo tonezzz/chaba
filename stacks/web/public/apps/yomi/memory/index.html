@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Yomi Collective Memory</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="styles/memory.css">
+</head>
+<body>
+  <header>
+    <a class="back" href="/apps/yomi/">&larr; Back</a>
+    <h1>Collective Memory</h1>
+  </header>
+  <div id="app">
+    <div class="memory-layout">
+      <!-- Left Panel: Filters -->
+      <div class="filters-panel">
+        <div class="filter-section">
+          <h3>Search</h3>
+          <input type="text" id="search-input" class="search-box" placeholder="Search memories...">
+        </div>
+        
+        <div class="filter-section">
+          <h3>Date Range</h3>
+          <div class="date-range">
+            <input type="date" id="start-date" placeholder="Start date">
+            <input type="date" id="end-date" placeholder="End date">
+          </div>
+        </div>
+        
+        <div class="filter-section">
+          <h3>Conversations</h3>
+          <div class="filter-group" id="conversation-filters">
+            <!-- Populated dynamically -->
+          </div>
+        </div>
+        
+        <div class="filter-section">
+          <h3>Topics</h3>
+          <div class="filter-group" id="topic-filters">
+            <!-- Populated dynamically -->
+          </div>
+        </div>
+        
+        <div class="filter-section">
+          <h3>Memory Types</h3>
+          <div class="filter-group">
+            <label class="filter-checkbox">
+              <input type="checkbox" checked value="events"> Events
+            </label>
+            <label class="filter-checkbox">
+              <input type="checkbox" checked value="decisions"> Decisions
+            </label>
+            <label class="filter-checkbox">
+              <input type="checkbox" checked value="patterns"> Patterns
+            </label>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Center Panel: Timeline -->
+      <div class="timeline-panel">
+        <div class="timeline-header">
+          <div class="timeline-title">Memory Timeline</div>
+          <div class="timeline-controls">
+            <button class="timeline-btn active" data-view="timeline">Timeline</button>
+            <button class="timeline-btn" data-view="clusters">Clusters</button>
+            <button class="timeline-btn" data-view="network">Network</button>
+          </div>
+        </div>
+        
+        <div class="timeline-content" id="timeline-content">
+          <div class="loading">Loading memories...</div>
+        </div>
+      </div>
+      
+      <!-- Center Panel: Network View (hidden by default) -->
+      <div class="network-viz" id="network-panel" style="display: none;">
+        <div class="network-canvas" id="network-canvas" style="min-height: 500px;">
+        </div>
+      </div>
+      
+      <!-- Right Panel: Insights -->
+      <div class="insights-panel" id="insights-panel">
+        <div class="stat-grid">
+          <div class="stat-item">
+            <div class="stat-value" id="total-memories">0</div>
+            <div class="stat-label">Total Memories</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-value" id="total-conversations">0</div>
+            <div class="stat-label">Conversations</div>
+          </div>
+        </div>
+        
+        <div class="insight-card highlight" id="key-insight-card">
+          <h3>🔥 Key Insight</h3>
+          <div class="insight-card-content" id="key-insight-content">
+            Loading insights...
+          </div>
+        </div>
+        
+        <div class="insight-card pattern" id="pattern-card">
+          <h3>📊 Pattern Detected</h3>
+          <div class="insight-card-content" id="pattern-content">
+            Loading patterns...
+          </div>
+        </div>
+        
+        <div class="insight-card">
+          <h3>🏷️ Trending Topics</h3>
+          <div class="insight-card-content" id="trending-topics">
+            Loading topics...
+          </div>
+        </div>
+        
+        <div class="insight-card">
+          <h3>📅 Recent Activity</h3>
+          <div class="insight-card-content" id="recent-activity">
+            Loading activity...
+          </div>
+        </div>
+        
+        <div class="insight-card">
+          <h3>📤 Export</h3>
+          <div class="insight-card-content">
+            <button class="export-btn" onclick="exportFilteredMemories('json')">JSON</button>
+            <button class="export-btn" onclick="exportFilteredMemories('csv')">CSV</button>
+            <button class="export-btn" onclick="exportFilteredMemories('markdown')">Markdown</button>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Right Panel: Network Controls (hidden by default) -->
+      <div class="network-controls" id="network-controls-panel" style="display: none;">
+        <div class="control-section">
+          <h3>Relationship Strength</h3>
+          <div class="slider-control">
+            <label>Minimum Edge Weight</label>
+            <input type="range" id="min-edge-weight" min="0" max="100" value="30">
+            <div class="slider-value" id="min-edge-value">30%</div>
+          </div>
+        </div>
+        
+        <div class="control-section">
+          <h3>Node Size</h3>
+          <div class="slider-control">
+            <label>Size By</label>
+            <select id="node-size-by" style="width: 100%; padding: 0.5rem; border: 1px solid var(--border); border-radius: 0.25rem;">
+              <option value="memory">Memory Count</option>
+              <option value="message">Message Count</option>
+              <option value="connection">Connection Count</option>
+            </select>
+          </div>
+        </div>
+        
+        <div class="control-section">
+          <h3>Relationship Types</h3>
+          <div class="checkbox-group">
+            <label class="checkbox-item">
+              <input type="checkbox" checked id="rel-topic"> Topic Overlap
+            </label>
+            <label class="checkbox-item">
+              <input type="checkbox" checked id="rel-time"> Time Proximity
+            </label>
+            <label class="checkbox-item">
+              <input type="checkbox" id="rel-participant"> Participant Overlap
+            </label>
+          </div>
+        </div>
+        
+        <div class="control-section">
+          <h3>Legend</h3>
+          <div class="legend">
+            <div class="legend-item">
+              <div class="legend-color" style="background: var(--success);"></div>
+              <span>Family</span>
+            </div>
+            <div class="legend-item">
+              <div class="legend-color" style="background: var(--accent);"></div>
+              <span>Work</span>
+            </div>
+            <div class="legend-item">
+              <div class="legend-color" style="background: var(--warning);"></div>
+              <span>Personal</span>
+            </div>
+            <div class="legend-item">
+              <div class="legend-color" style="background: var(--danger);"></div>
+              <span>Promo</span>
+            </div>
+            <div class="legend-item">
+              <div class="legend-color" style="background: #8b5cf6;"></div>
+              <span>Official</span>
+            </div>
+            <div class="legend-item">
+              <div class="legend-color" style="background: #f97316;"></div>
+              <span>Group</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Right Panel: Network Details (hidden by default) -->
+      <div class="network-details" id="network-details-panel" style="display: none;">
+        <div class="detail-card">
+          <h3>Selected Node</h3>
+          <div class="detail-content">
+            <div class="loading">Select a node to view details</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Load shared utilities in dependency order -->
+  <script src="/apps/shared/js/date-utils.js?v=1"></script>
+  <script src="/apps/shared/js/date-utils-thailand.js?v=1"></script>
+  <script src="/apps/shared/js/api-utils.js?v=1"></script>
+  <script src="/apps/shared/js/api-yomi.js?v=1"></script>
+  <script src="/apps/shared/js/ui-utils.js?v=1"></script>
+  
+  <!-- Load app modules in dependency order -->
+  <script src="js/init.js?v=8"></script>
+  <script src="js/timeline.js?v=8"></script>
+  <script src="js/filters.js?v=8"></script>
+  <script src="js/insights.js?v=8"></script>
+  <script src="js/network.js?v=8"></script>
+  <script src="js/export.js?v=8"></script>
+  <script src="js/app.js?v=8"></script>
+</body>
+</html>

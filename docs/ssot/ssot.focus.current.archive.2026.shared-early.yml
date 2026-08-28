@@ -1,0 +1,75 @@
+title: Archived Shared Focuses (2026 early)
+subtitle: Closed/shared focuses from 2026 early August
+icon: archive
+sections:
+- title: Active Shared Focus
+  icon: active
+  layout: list
+  items:
+  - label: GPU Queue health
+    text: mcp-health reported status 'unknown' for GPU Queue at 2026-08-20T03:00:18. The health check used http://tony-omen.local:3001/health,
+      which does not resolve. A direct test of http://tony-omen:3001/health from tony-omen returned HTTP 200 and the docker
+      container ``gpu-queue' is Up 46h (healthy).
+    status: closed
+    priority: high
+    started: '2026-08-20'
+    closed: '2026-08-20'
+    estimated_duration: 1 session
+    tags:
+    - health
+    - inbox
+    - critical
+    - false-positive
+    subtasks: []
+    request_log: []
+    ownership:
+      owner: tony
+      session: ''
+      locked: true
+      lock_reason: Activated as active focus
+    source: /home/tony/CascadeProjects/chaba/docs/ssot/focus-inbox/2026-08-20-030018-gpu-queue-health.yml
+  - label: Status Data API health
+    text: 'mcp-health reported status ''unknown'' for Status Data API at 2026-08-20T03:00:18. Root cause: the Caddy reverse
+      proxy in the tony-omen web container was trying to resolve ``status-api:8000`` but the ``status-api`` service was not
+      defined in stacks/web/docker-compose.yml. Added the missing status-api service with build context ./status-api and exposed
+      port 8000 on the docker network. Caddy now returns HTTP 200 for /api/health.'
+    status: closed
+    priority: medium
+    started: '2026-08-20'
+    closed: '2026-08-20'
+    estimated_duration: 1 session
+    tags:
+    - health
+    - inbox
+    - important
+    - resolved
+    subtasks: []
+    request_log: []
+    ownership:
+      owner: tony
+      session: ''
+      locked: true
+      lock_reason: Activated as active focus
+    source: /home/tony/CascadeProjects/chaba/docs/ssot/focus-inbox/2026-08-20-030018-status-data-api-health.yml
+  - label: Sensor Reader health
+    text: mcp-health reported status 'unknown' for Sensor Reader at 2026-08-20T03:00:18. A direct test of http://tony-omen:8001/health
+      from tony-omen returned HTTP 200 and the docker container ``sensor-reader'' is Up 2 days. The 'unknown' result was a
+      transient or hostname-resolution false positive.
+    status: closed
+    priority: medium
+    started: '2026-08-20'
+    closed: '2026-08-20'
+    estimated_duration: 1 session
+    tags:
+    - health
+    - inbox
+    - important
+    - false-positive
+    subtasks: []
+    request_log: []
+    ownership:
+      owner: tony
+      session: ''
+      locked: true
+      lock_reason: Activated as active focus
+    source: /home/tony/CascadeProjects/chaba/docs/ssot/focus-inbox/2026-08-20-030018-sensor-reader-health.yml

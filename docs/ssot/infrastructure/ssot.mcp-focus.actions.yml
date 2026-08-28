@@ -1,0 +1,113 @@
+title: MCP Focus Actions
+subtitle: Per-action routing table for the mcp_focus tool
+icon: target
+version: 2
+actions:
+  reload:
+    when: 'User explicitly asks to refresh, reload, or re-read the focus SSOT files.
+
+      '
+    output:
+    - Re-read docs/ssot/ssot.focus.current.active.yml and backlog.
+    - Return the same payload as status with reloaded: true and checked_at timestamp.
+    confidence: high
+  continue:
+    when: 'A request is empty, is "continue", or matches an active shared or branch focus label or subtask label.
+
+      '
+    order:
+    - Prefer the active branch focus if the request mentions it.
+    - Prefer the active shared focus if the request matches it.
+    - If neither matches and one is active, continue the active shared focus.
+    - If both active and neither matches, ask the user which to continue.
+    output_target: active focus label
+    confidence: high when matched, medium otherwise
+  quick_win:
+    when: 'The request is small, concrete, and already represented in the Quick Wins section, or uses cue words
+
+      such as "fix", "tweak", "small", "quick", "minor".
+
+      '
+    output_target: matching quick-win label
+    confidence: high when label matches, medium for cues
+  decompose:
+    when: 'The request is too large for a quick win but can be split into a small number of concrete subtasks that can each
+      be completed in one session.
+
+      '
+    output:
+    - Create or update a focus with the subtasks listed.
+    - Start the first subtask immediately if the user has already approved.
+    - Otherwise return the subtask list under suggestion for review.
+    output_target: focus label or inbox path
+    confidence: medium
+  triage:
+    when: 'The request does not match an active focus or quick win, but an existing parked, backlog, improvement, or inbox item
+      is the best next candidate.
+
+      '
+    source: 'docs/ssot/ssot.focus.yml backlog, docs/ssot/ssot.improvements.yml, docs/ssot/focus-inbox/*.yml, scored by
+      docs/ssot/infrastructure/ssot.focus.triage.yml'
+    output_target: highest-scoring candidate label
+    output:
+    - action is always triage
+    - triage_type indicates parked, backlog, improvement, or inbox
+    confidence: medium
+  draft_inbox:
+    when: 'The request does not match any existing active focus, quick win, backlog item, or inbox item.
+
+      '
+    output:
+    - Create an in-memory draft inbox YAML for review.
+    - Do not write the file to disk.
+  defer:
+    when: 'The user wants to pause the active focus or its current subtask and resume it in a later session.
+
+      '
+    output:
+    - Mark the in_progress subtask (or the whole focus if none) as deferred with resume_session and resume_note.
+    - Append a session summary with next_action set to resume the focus.
+  resume:
+    when: 'The user wants to pick up a previously deferred focus, or no active focus exists and a session has a pending resume
+      next_action.
+
+      '
+    output:
+    - Return the latest candidate focus from ssot.focus.sessions.yml with a resume/continue next_action.
+    - If resume_session is provided, only return candidates whose next_action contains that session.
+  sweep:
+    when: 'The user wants to review all remaining parked/backlog/inbox foci and choose one to hold while the rest are queued
+      for processing.
+
+      '
+    output:
+    - Return a hold candidate and a sorted process queue of all other parked, backlog, inbox, active, and deferred subtask
+      candidates.
+    - Default hold is the active branch focus if no hold is specified.
+    - If bulk_session or session_map is provided, bulk-defer the process queue to the matched sessions and write the changes.
+  next:
+    when: 'The user wants to activate the highest-priority parked or deferred focus and start processing it.
+
+      '
+    output:
+    - Find the highest-priority parked/deferred focus (optionally filtered by resume_session).
+    - Activate it in ssot.focus.current.yml, ssot.focus.yml, or the focus-inbox file.
+    - Return the activated focus and a recommendation.
+    - Return the draft content under suggestion.
+    confidence: low
+  technical_decision:
+    when: 'The assistant needs to record a design trade-off or architecture decision.
+
+      '
+    output:
+    - Append a structured decision to docs/ssot/decisions/ssot.technical-decisions.yml.
+    mode: technical_decision
+    input: decision object with id, title, context, options, chosen, reasoning, consequences
+  session_summary:
+    when: 'The assistant wants to close a session and record what was decided, planned, and deferred.
+
+      '
+    output:
+    - Append a summary entry to docs/ssot/ssot.focus.sessions.yml.
+    mode: session_summary
+    input: summary object with focus, source, plan, done, follow_up, next_action, decisions

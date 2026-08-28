@@ -1,0 +1,108 @@
+title: Test CarPlay
+subtitle: CarPlay-style simulation interface for iPad testing with GPS tracking, route planning, and navigation simulation
+icon: 🚗
+sections:
+  - title: Core Features
+    icon: ✅
+    layout: list
+    items:
+      - label: GPS Location Tracking
+        text: Real-time GPS simulation with predefined locations (Tony Omen, Tony Dell, Home, Chaba H3) and current location support
+      - label: Route Planning
+        text: Google Maps-style route input interface with start/destination fields, location suggestions, and route calculation
+      - label: Navigation Simulation
+        text: Simulated navigation with turn-by-turn directions, route visualization, and progress tracking
+      - label: Location Suggestions
+        text: Auto-complete location suggestions with debounced search and predefined location database
+      - label: Current Location
+        text: GPS-based current location detection with "My location" button for quick route starting
+
+  - title: Technical Architecture
+    icon: ⚙️
+    layout: list
+    items:
+      - label: Modular Design
+        text: Separated into gps-module.js (location data), route-input-module.js (route planning), and main app logic
+      - label: Location Database
+        text: Centralized LOCATIONS object with GPS coordinates, addresses, and location types (workstation, home)
+      - label: Debounced Search
+        text: 300ms debounce on location input to reduce API calls and improve performance
+      - label: CSS-based UI
+        text: CarPlay-inspired dark theme with iOS-style controls, animations, and responsive design
+      - label: State Management
+        text: Route input state object tracking start/destination locations, search status, and results
+
+  - title: Files & Modules
+    icon: 📁
+    layout: list
+    items:
+      - label: index.html
+        text: Main app shell with CarPlay-style layout, map container, and route input panel
+      - label: carplay.css
+        text: iOS-inspired styling with dark theme, animations, route suggestions panel (400px max height)
+      - label: gps-module.js
+        text: GPS location data and tracking with predefined locations (Tony Omen, Tony Dell, Home, Chaba H3)
+      - label: route-input-module.js
+        text: Route planning interface with Google Maps-style input, suggestions, and route calculation
+      - label: main.js
+        text: Main app logic integrating GPS and route modules with map rendering
+
+  - title: Deployment
+    icon: 🚀
+    layout: list
+    items:
+      - label: Location
+        text: chaba-h3/public/apps/test-carplay/
+      - label: URLs
+        text: https://chaba.h3.gizmo-thailand.com/apps/test-carplay/
+      - label: Registry
+        text: Listed in chaba-h3/public/apps/apps.yml as test-carplay
+      - label: Branch
+        text: chaba-h3 branch
+
+  - title: Testing
+    icon: 🧪
+    layout: list
+    items:
+      - label: iPad Testing
+        text: Primary use case for CarPlay interface testing on iPad devices
+      - label: GPS Simulation
+        text: Simulated GPS coordinates for Bangkok area locations
+      - label: Route Planning
+        text: Manual testing of route input, suggestions, and calculation workflows
+      - label: UI Responsiveness
+        text: Testing of iOS-style animations, touch interactions, and responsive design
+
+  - title: Integration
+    icon: 🔗
+    layout: list
+    items:
+      - label: Location Database
+        text: Uses SSOT-inspired location data from GPS module
+      - label: Map Integration
+        text: Designed for integration with map rendering (Leaflet or similar)
+      - label: Apps Registry
+        text: Integrated into chaba-h3 apps.yml for unified app management
+
+  - title: Known Issues
+    icon: ⚠️
+    layout: list
+    items:
+      - label: GPS Coordinates
+        text: Current coordinates are approximate Bangkok area values, not real GPS data
+      - label: Route Calculation
+        text: Route calculation logic is simulated, not connected to real routing API
+      - label: Map Rendering
+        text: Map integration not yet implemented - currently UI-only simulation
+      - label: Location Services
+        text: Current location detection requires browser geolocation API support
+
+config:
+  version: 1
+  created: 2026-08-06
+  maintainer: tony
+  status: experimental
+  deployment: chaba-h3
+  related_files:
+    - docs/kb/app-ssot-standards.md
+    - docs/ssot/apps/ssot.apps.yml

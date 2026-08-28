@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Thai-Legal-Gemma-4B-CPT</title>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 720px; margin: 2rem auto; padding: 0 1rem; background: #1a1a2e; color: #e5e7eb; }
+  h1 { color: #0a84ff; }
+  label { display: block; margin-top: 1rem; }
+  textarea { width: 100%; height: 120px; background: #16213e; color: #e5e7eb; border: 1px solid #0a84ff; border-radius: 6px; padding: 0.5rem; box-sizing: border-box; }
+  input[type="number"] { background: #16213e; color: #e5e7eb; border: 1px solid #0a84ff; border-radius: 4px; padding: 0.25rem; }
+  button { margin-top: 1rem; padding: 0.5rem 1rem; background: #0a84ff; color: #fff; border: none; border-radius: 6px; cursor: pointer; }
+  #response { white-space: pre-wrap; margin-top: 1rem; padding: 1rem; background: #16213e; border-radius: 6px; min-height: 3rem; }
+  #status { color: #6b7280; margin-top: 0.5rem; }
+</style>
+</head>
+<body>
+<h1>Thai-Legal-Gemma-4B-CPT</h1>
+
+<label for="prompt">Prompt</label>
+<textarea id="prompt" placeholder="ใส่คำถามกฎหมายภาษาไทย..."></textarea>
+
+<label for="max_new_tokens">Max new tokens (1–1024)</label>
+<input type="number" id="max_new_tokens" value="300" min="1" max="1024">
+
+<label for="temperature">Temperature</label>
+<input type="number" id="temperature" value="0.3" step="0.1" min="0" max="2">
+
+<label for="top_p">Top-p</label>
+<input type="number" id="top_p" value="0.9" step="0.1" min="0" max="1">
+
+<button id="submit">Generate</button>
+<div id="status"></div>
+<pre id="response"></pre>
+
+<script>
+const $ = id => document.getElementById(id);
+$('submit').onclick = async () => {
+  $('status').textContent = 'Generating...';
+  $('response').textContent = '';
+  try {
+    const res = await fetch('/apps/thai-legal/api/completion', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        prompt: $('prompt').value,
+        n_predict: parseInt($('max_new_tokens').value, 10),
+        temperature: parseFloat($('temperature').value),
+        top_p: parseFloat($('top_p').value),
+        repeat_penalty: 1.1,
+        stream: false,
+      }),
+    });
+    const data = await res.json();
+    $('response').textContent = data.content ?? data.response ?? JSON.stringify(data, null, 2);
+    $('status').textContent = 'Done';
+  } catch (e) {
+    $('status').textContent = 'Error: ' + e.message;
+  }
+};
+</script>
+</body>
+</html>

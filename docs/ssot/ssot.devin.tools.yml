@@ -1,0 +1,94 @@
+# Config-type SSOT: MCP server configuration and tool reference for Devin/Windsurf
+title: Devin MCP Tools Configuration
+subtitle: MCP server definitions, tool inventory, and launch configuration
+
+# Notes
+# - Consolidated configuration: SSOT-based generation with profile switching (2026-08-07)
+# - SSOT file: docs/ssot/infrastructure/ssot.mcp.yml (single source of truth)
+# - Generation script: scripts/generate-mcp-config.py
+# - Devin config: ~/.config/devin/mcp_config.json (generated from SSOT)
+# - Windsurf config: ~/.config/windsurf/mcp_config.json (can be generated from SSOT)
+# - Wrapper scripts: Centralized in ~/.config/devin/mcp-scripts/
+# - Filtering: mcp-filter for token optimization (Yomi, GitHub, PostgreSQL)
+# - Virtual environment: /tmp/mcp-filter-venv/ for mcp-filter dependencies
+# - Profile switching: home (tony-omen) vs mobile (dynamic IP)
+
+# Configuration Generation
+# Usage:
+#   python3 scripts/generate-mcp-config.py --profile home
+#   python3 scripts/generate-mcp-config.py --profile mobile --current-ip 192.168.1.100
+#   python3 scripts/generate-mcp-config.py --auto-detect
+
+# Consolidation Status
+# - ✅ Wrapper scripts centralized to ~/.config/devin/mcp-scripts/
+# - ✅ SSOT configuration created (infrastructure/ssot.mcp.yml)
+# - ✅ Profile switching implemented (home/mobile)
+# - ✅ Configuration generation script functional
+# - ✅ Environment URL standardization
+# - ✅ Testing completed (GitHub, docs MCP servers verified)
+
+mcp:
+ github: GitHub integration (filtered via mcp-filter for token optimization).
+ mcp-gpu: Local GPU control (imagen2, llama queue).
+ mcp-llama: Local Llama.cpp server.
+ mcp-weaviate: Weaviate vector database integration.
+ playlive: Playlive browser automation (consolidated local & remote).
+ postgres: PostgreSQL database operations (filtered via mcp-filter for CRUD only).
+ yomi: LINE conversation viewer (filtered via mcp-filter for essential tools).
+ alphavantage: Alpha Vantage financial data API.
+ docs: Documentation search server (chaba project docs).
+ docs-trade: Documentation search server (trade project docs).
+
+# Consolidated Structure
+consolidated_structure:
+  ssot_source: docs/ssot/infrastructure/ssot.mcp.yml
+  generation_script: scripts/generate-mcp-config.py
+  wrapper_scripts: ~/.config/devin/mcp-scripts/
+  backup_dir: ~/.config/devin/mcp-backups/
+  profiles:
+    home: .local hostnames, port 8008 for llama
+    mobile: dynamic IP placeholders, port 8001 for llama
+
+# Centralized Wrapper Scripts
+wrappers:
+  base_dir: ~/.config/devin/mcp-scripts/
+  scripts:
+    - mcp-single-instance.sh (single-instance manager)
+    - run-github-filtered-mcp.sh (GitHub with filtering)
+    - run-github-mcp.sh (GitHub base wrapper)
+    - run-postgres-filtered-mcp.sh (PostgreSQL with filtering)
+    - run-postgres-crud-mcp.sh (PostgreSQL CRUD wrapper)
+    - run-yomi-filtered-mcp.sh (Yomi with filtering)
+    - run-llama-mcp.sh (Llama server wrapper)
+
+# Profile Configuration
+profiles:
+  home:
+    network: 192.168.1.0/24
+    hostname_pattern: .local
+    llama_url: http://tony-omen:11434
+    imagen_url: http://tony-omen:8080/apps/imagen2/api
+    playlive_url: http://tony-omen:9230
+    weaviate_url: http://tony-omen:8082
+    postgres_url: postgresql://tony-omen:5432
+
+  mobile:
+    network: dynamic
+    hostname_pattern: tony-omen
+    llama_url: http://tony-omen:11434
+    imagen_url: http://tony-omen:8080/apps/imagen2/api
+    playlive_url: http://tony-dell:9230
+    weaviate_url: http://tony-dell:8084
+    postgres_url: postgresql://tony-dell:5432
+
+# MCP filter virtual environment
+mcp-filter-venv: /tmp/mcp-filter-venv/ (installed 2026-08-07 for GitHub MCP fix)
+
+# Related SSOT Files
+related_files:
+  - infrastructure/ssot.mcp.yml (SSOT for MCP configuration)
+  - ssot.mysystem.home.yml (home environment profile)
+  - ssot.mysystem.mobile.yml (mobile environment profile)
+  - infrastructure/ssot.health.home.yml (home health checks)
+  - infrastructure/ssot.health.mobile.yml (mobile health checks)
+  - ssot.token-optimization.yml (token optimization strategy)

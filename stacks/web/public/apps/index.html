@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Apps</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: { bg: '#1a1a2e', card: '#16213e', accent: '#0a84ff' }
+        }
+      }
+    };
+  </script>
+  <style>
+    body { font-family: system-ui, sans-serif; }
+    .app-card { display: block; background: #16213e; border: 1px solid #1f2937; border-radius: 0.5rem; padding: 1rem; transition: all 0.15s; }
+    .app-card:hover { border-color: #0a84ff; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.3); transform: translateY(-2px); }
+    .line-clamp-2 { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden; }
+  </style>
+</head>
+<body class="bg-bg text-gray-200 min-h-screen">
+  <nav class="bg-card border-b border-gray-800">
+    <div class="max-w-6xl mx-auto px-4 h-12 flex items-center gap-6" id="nav"></div>
+  </nav>
+  <main id="apps" class="max-w-7xl mx-auto px-4 py-6"></main>
+  <script src="https://cdn.jsdelivr.net/npm/js-yaml@4.1.0/dist/js-yaml.min.js"></script>
+  <script>
+    fetch('apps.yml').then(r => r.text()).then(text => {
+      const data = jsyaml.load(text);
+      document.title = data.title || 'Apps';
+      document.getElementById('nav').innerHTML = (data.nav || []).map(n =>
+        `<a href="${n.href}" class="text-sm text-gray-300 hover:text-accent">${n.label}</a>`
+      ).join('');
+      document.getElementById('apps').innerHTML = `
+        <h1 class="text-2xl font-bold mb-1">${data.title}</h1>
+        <p class="text-gray-400 text-sm mb-6">Local apps and tools on tony-omen.</p>
+        <div class="bg-card border border-gray-700 rounded p-4 mb-6 text-sm text-gray-300">
+          <p class="mb-2"><strong>Network options:</strong> choose the URL that matches where you are.</p>
+          <ul class="list-disc list-inside space-y-1">
+            <li><strong>Home LAN:</strong> <code>http://tony-omen.local:8080/apps</code></li>
+            <li><strong>Tailscale tailnet:</strong> <code>http://tony-omen:8080/apps</code></li>
+            <li><strong>Public internet (Funnel):</strong> <code>https://tony-dell.taila0626a.ts.net:8444/</code> — <a href="https://tony-dell.taila0626a.ts.net:8444/" class="text-accent hover:underline">learn more</a></li>
+          </ul>
+        </div>
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+          ${data.apps.map(a => `
+            <a href="${a.href}" class="app-card">
+              <h2 class="text-lg font-semibold text-white">${a.icon ? a.icon + ' ' : ''}${a.title}</h2>
+              <p class="text-gray-400 text-xs mt-1 line-clamp-2">${a.description}</p>
+            </a>
+          `).join('')}
+        </div>
+      `;
+    });
+  </script>
+</body>
+</html>

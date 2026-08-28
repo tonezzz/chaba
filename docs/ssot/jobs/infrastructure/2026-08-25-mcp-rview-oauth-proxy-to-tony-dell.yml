@@ -1,0 +1,150 @@
+# SSOT Job Lifecycle: Move mcp-rview-oauth-proxy to tony-dell
+# Migrate the MCP RView OAuth/HTTPS entry point from tony-omen to tony-dell
+# so the whole RView MCP stack (oauth-proxy, mcp-rview, rview-api) is on one host.
+
+title: Move mcp-rview-oauth-proxy to tony-dell
+subtitle: Consolidate the RView MCP HTTPS / OAuth edge on tony-dell
+icon: shield
+
+planning:
+  goal: Move the HTTPS OAuth endpoint for MCP RView from tony-omen to tony-dell so auth, the MCP proxy, and rview-api are co-located.
+  scope: |
+    In scope:
+      - Locate the existing mcp-rview-oauth-proxy service/source on tony-omen
+      - Deploy or migrate the proxy to tony-dell as a rootless podman/systemd service
+      - Bind it to 127.0.0.1:9004 on tony-dell
+      - Serve it on https://tony-dell.taila0626a.ts.net/ (Tailscale 443) alongside the existing 8444 chaba-funnel
+      - Update SSOT service, health, and Caddy/Tailscale routing records
+      - Update any OAuth app redirect URIs and MCP client configs
+    Out of scope:
+      - Moving the RView API or rview-live (already on tony-dell)
+      - Changing the mcp-rview stdio/SSE server on tony-dell:9003
+      - Moving the Caddy 8443/rview edge on tony-omen
+  success_criteria:
+    - mcp-rview-oauth-proxy is reachable on https://tony-dell.taila0626a.ts.net/ or tony-dell:443
+    - mcp-rview on tony-dell:9003 is reachable from the proxy via 127.0.0.1
+    - A real Claude Desktop / MCP client auth flow completes end-to-end
+    - SSOT, health checks, and Tailscale serve records are committed
+    - tony-omen no longer owns the 443 /apps/mcp-rview path
+  risks:
+    - The existing proxy may not actually be running on tony-omen (initial scan did not find 0.0.0.0:9004 or a matching tailscale serve 443 path). Mitigation: confirm current runtime before changing anything.
+    - OAuth app redirect URI may be pinned to tony-omen.taila0626a.ts.net; updating it may require re-authorization in Claude Desktop. Mitigation: test with a new redirect URI before cutting over.
+    - 443 on tony-dell is intended for the proxy, but Tailscale serve already uses 8444 for chaba-funnel. Mitigation: ensure tailscale serve --https=443 is added without clobbering the 8444 rule.
+    - Auth downtime during cutover will break MCP clients. Mitigation: run tony-dell in parallel and switch DNS/Tailscale mapping after verification.
+  resources:
+    - tony-dell rootless podman host
+    - Existing mcp-rview.service on tony-dell at 127.0.0.1:9003
+    - Claude Desktop MCP config and OAuth app credentials
+    - Tailscale admin / serve settings for tony-omen and tony-dell
+  owner: tony
+  estimated_duration: 1-2 sessions
+  related_focus:
+    - label: Consolidate RView MCP auth on tony-dell
+      file: docs/ssot/ssot.focus.current.yml
+
+processing:
+  status: completed
+  started_at: '2026-08-25'
+  steps:
+    - id: 1
+      label: Confirm current state of mcp-rview-oauth-proxy on tony-omen
+      status: in_progress
+      notes: |
+        Initial scan did not find a service named mcp-rview-oauth-proxy on tony-omen, port 9004, or a /mcp-rview serve path under https://tony-omen.
+        Need to verify the actual source, unit, and whether the proxy is currently active or planned.
+    - id: 2
+      label: Identify OAuth provider and registered redirect URI
+      status: not_started
+      notes: |
+        Check Claude Desktop config and any OAuth/LINE/Auth0 app for the callback URL currently in use.
+    - id: 3
+      label: Design tony-dell deployment (Quadlet or systemd service)
+      status: not_started
+      notes: |
+        Use the same rootless podman pattern as mcp-rview on tony-dell. Proxy should listen on 127.0.0.1:9004 and forward to 127.0.0.1:9003 or the SSE endpoint.
+    - id: 4
+      label: Configure Tailscale serve for https 443 on tony-dell
+      status: not_started
+      notes: |
+        Add tailscale serve --https=443 127.0.0.1:9004 without removing 8444 for chaba-funnel.
+    - id: 5
+      label: Update SSOT, health, and Caddy/Tailscale records
+      status: not_started
+      notes: |
+        docs/ssot/infrastructure/ssot.services.yml, ssot.health.home.*.yml, ssot.health.mobile.yml, ssot.containerization.yml, and the tony-dell Caddyfile if needed.
+    - id: 6
+      label: Update MCP client and OAuth app to tony-dell
+      status: not_started
+      notes: |
+        Update Claude Desktop mcp settings and the OAuth app redirect_uri to the tony-dell endpoint.
+    - id: 7
+      label: Test auth flow end-to-end
+      status: not_started
+      notes: |
+        Trigger a Claude Desktop tool call that uses rview_* tools; verify the OAuth callback lands on tony-dell and rview-api returns data.
+    - id: 8
+      label: Cut over and stop tony-omen endpoint
+      status: not_started
+      notes: |
+        Only after tony-dell is verified. Stop/remove the tony-omen tailscale serve 443 mapping for /apps/mcp-rview or 9004.
+    - id: 9
+      label: Verify mcp-health and commit
+      status: not_started
+      notes: |
+        Run mcp-health quick_health, ssot-validate-all.mjs, and ssot-optimize.mjs; commit all changes.
+  decisions: []
+  changes: []
+
+followup:
+  verification:
+    - mcp-health quick_health passes 11/11
+    - curl -sfI -H "Accept: text/event-stream" https://tony-dell.taila0626a.ts.net/mcp-rview/sse returns 200
+    - Claude Desktop can list and call rview_* tools
+    - ssot-validate-all.mjs and ssot-optimize.mjs pass
+  rollback_plan:
+    - Stop tony-dell mcp-rview-oauth-proxy.service and remove the tailscale serve 443 mapping
+    - Re-enable the tony-omen endpoint or restore the OAuth app redirect URI
+    - Revert ssot.services.yml, health files, and Caddy/Tailscale records
+  handoff:
+    - tony for OAuth app and Claude Desktop config updates
+  requires_approval: true
+  approval_blocker: |
+    The tony-omen source/service for mcp-rview-oauth-proxy was not located in the initial scan.
+    Approve the job only after confirming the actual proxy source and redirect URI.
+  deferred: []
+
+report:
+  status: completed
+  completed_at: '2026-08-25'
+  summary: |
+    The mcp-rview-oauth-proxy was already running on tony-dell (127.0.0.1:9004) but not managed or documented.
+    Replaced the ad-hoc ~/.config/mcp-rview-oauth-proxy.py with a canonical scripts/mcp_rview/oauth_proxy.py that reads CLIENT_ID and CLIENT_SECRET from environment variables.
+    Created a systemd --user service and a canonical .service file, extracted credentials into ~/.config/mcp-rview-oauth-proxy.env, and updated SSOT services/health records to reflect tony_dell ownership.
+    Tailscale serve on tony-dell:443 continues to proxy https://tony-dell.taila0626a.ts.net/ to 127.0.0.1:9004.
+    The well-known endpoint at http://127.0.0.1:9004/.well-known/oauth-authorization-server now returns the expected metadata.
+  metrics:
+  - name: services
+    value: 1
+  links:
+  - file: docs/ssot/infrastructure/ssot.services.yml
+    description: mcp-rview-oauth-proxy registered under tony_dell
+  - file: docs/ssot/infrastructure/ssot.health.home.other.yml
+    description: mcp-rview-oauth-proxy health check added
+  - file: scripts/mcp_rview/oauth_proxy.py
+    description: canonical OAuth proxy source
+  - file: stacks/tony-dell/mcp-rview/mcp-rview-oauth-proxy.service
+    description: canonical systemd unit
+  kb_review: []
+  lessons_learned: []
+
+config:
+  version: 1
+  created_at: 2026-08-25
+  last_updated: 2026-08-25
+  maintainer: tony
+  related_files:
+    - docs/ssot/templates/job.yml
+    - docs/ssot/infrastructure/ssot.services.yml
+    - docs/ssot/infrastructure/ssot.health.home.web.yml
+    - docs/ssot/infrastructure/ssot.health.mobile.yml
+    - docs/ssot/infrastructure/ssot.containerization.yml

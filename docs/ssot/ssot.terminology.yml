@@ -1,0 +1,134 @@
+title: Project Terminology
+subtitle: Canonical definitions for the Chaba assistant context, SSOT, and focus-decision vocabulary
+icon: "\ud83d\udcd6"
+
+ideas:
+  - text: Reduce ambiguity between rules, memories, SSOT, KB, context, and focus/decision terms.
+  - text: Provide a shared vocabulary for assistants, sub-agents, and users.
+  - text: Feed the decision-tree optimization by making request-disposition terms explicit.
+
+sections:
+  - title: Core Concepts
+    icon: "\ud83e\udde9"
+    layout: list
+    items:
+      - label: Context
+        text: The combined procedural and factual information an assistant uses in a session. Includes rules, memories, SSOT, and the KB.
+      - label: Knowledge Base (KB)
+        text: The markdown corpus in docs/kb/ plus the session memories tracked in docs/overview/ssot.kb.yml. Searched via MDDB.
+      - label: Rules
+        text: Always-on behavior instructions. Per-repo rules live in .windsurfrules; global/user-level rules live in ~/.codeium/windsurf/memories/global_rules.md and ~/.config/devin/ rules.
+      - label: Memories
+        text: Session-specific or user-specific learnings persisted for future sessions, including focus sessions, KB entries, and ai-context-*.md files.
+      - label: SSOT
+        text: Single Source of Truth. Authoritative, structured YAML files in docs/ssot/ that describe infrastructure, focus, apps, and policies.
+      - label: MDDB
+        text: Local semantic-search database that indexes the KB, SSOT, and other documentation for AI retrieval.
+      - label: MCP
+        text: Model Context Protocol. The server/tool layer that exposes services (mddb, github, health, etc.) to the assistant.
+
+  - title: Focus and Decision Vocabulary
+    icon: "\ud83c\udfaf"
+    layout: list
+    items:
+      - label: Focus
+        text: A tracked unit of multi-step work. A shared focus is not tied to a branch; a branch focus is.
+      - label: Shared Focus
+        text: A focus that is not tied to a specific branch or host.
+      - label: Branch Focus
+        text: A focus that is tied to a specific branch or host, such as tony-dell or macbook.
+      - label: Parked
+        text: A focus that was active but set aside, usually with the intent to return when the active work is completed.
+      - label: Quick Win
+        text: A small, concrete action completable in under ~5 minutes with no deploy, install, or destructive operation. Captured in ssot.focus.current.yml quick_wins.
+      - label: Backlog
+        text: Pending strategic work in ssot.focus.yml waiting for activation.
+      - label: Inbox
+        text: Draft focus items in docs/ssot/focus-inbox/ awaiting triage.
+      - label: Triage
+        text: Classifying an incoming request and recommending the correct focus action.
+      - label: Disposition
+        text: The outcome of triage, mapping to a canonical mcp_focus action.
+      - label: Decision Tree
+        text: The set of cases and conditions in ssot.focus.current.yml and docs/ssot/infrastructure/ssot.mcp-focus.yml that map a user request to a disposition.
+      - label: mcp_focus actions
+        text: Canonical actions returned by the focus tool — continue, quick_win, decompose, triage_backlog, triage_inbox, draft_inbox.
+      - label: Subtask
+        text: A smaller step within a focus.
+      - label: Request Log
+        text: A per-item record of user requests that map to a focus or quick win.
+      - label: Session
+        text: A single assistant-user interaction. Decisions, discoveries, and request logs are recorded per session.
+
+  - title: Common Terminology Ambiguities
+    icon: "\u26a0\ufe0f"
+    layout: list
+    items:
+      - label: momeries
+        text: Misspelling of memories.
+        recommendation: Use memories or session memories.
+      - label: rules/momeries
+        text: Ambiguous slash.
+        recommendation: Use rules and memories or Devin/Windsurf rules and session memories.
+      - label: both area
+        text: Area should be plural or replaced with a single noun.
+        recommendation: Prefer both areas or the combined space.
+      - label: correct word to call both area
+        text: Vague phrasing that conflates singular and plural.
+        recommendation: Rephrase to What is the umbrella term for ...? or What should we call the combined ...?
+      - label: decission
+        text: Misspelling of decision.
+        recommendation: Use decision.
+      - label: adn
+        text: Misspelling of and.
+        recommendation: Use and.
+      - label: ssot (lowercase)
+        text: SSOT is an acronym.
+        recommendation: Use SSOT when referring to the Single Source of Truth system or docs/ssot/.
+
+  - title: Recommendations for Clearer Terminology
+    icon: "\ud83d\udca1"
+    layout: list
+    items:
+      - label: Use the umbrella term context
+        text: When you mean rules + memories + SSOT + KB together, say AI/project context or simply context.
+      - label: Keep SSOT for structured YAML state
+        text: Do not call the rules or the KB SSOT. SSOT is the docs/ssot/ YAML corpus.
+      - label: Distinguish rules from memories
+        text: Rules are static instructions; memories are session-generated learnings saved to the KB or ssot.kb.yml.
+      - label: Use disposition for triage outcomes
+        text: In decision-tree work, call the result of classifying a request its disposition, not answer or choice.
+      - label: Prefer canonical action names
+        text: When discussing the decision tree, use the exact mcp_focus action names — continue, quick_win, decompose, triage_backlog, triage_inbox, draft_inbox — to avoid misalignment.
+
+  - title: Canonical Sources
+    icon: "\ud83d\udccc"
+    layout: list
+    items:
+      - label: docs/overview/ssot.kb.yml
+        text: Chaba Knowledge Base & Session Memories — session learnings and corpus structure.
+      - label: docs/kb/ai-context-*.md
+        text: Personal context and preferences (general knowledge, tech stack, preferences).
+      - label: docs/ssot/ssot.focus.current.yml
+        text: Active focuses, quick wins, and the assistant-level decision tree cases.
+      - label: docs/ssot/infrastructure/ssot.mcp-focus.yml
+        text: Machine-readable mcp_focus policy and canonical action definitions.
+      - label: docs/ssot/infrastructure/ssot.focus-dispatcher.yml
+        text: Focus-dispatcher runner, sub-agent contracts, and focus selection rules.
+      - label: docs/ssot/ssot.file-control.yml
+        text: SSOT file governance, naming, validation, and change workflow.
+      - label: docs/ssot/ssot.validation-patterns.yml
+        text: Validation rules and standard SSOT structure.
+
+config:
+  version: 1
+  status: active
+  created: 2026-08-18
+  last_updated: 2026-08-18
+  maintainer: tony
+  related_files:
+    - docs/overview/ssot.kb.yml
+    - docs/kb/ai-context-general-knowledge.md
+    - docs/ssot/ssot.focus.current.yml
+    - docs/ssot/infrastructure/ssot.mcp-focus.yml
+    - docs/ssot/infrastructure/ssot.focus-dispatcher.yml

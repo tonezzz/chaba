@@ -1,0 +1,28 @@
+{
+  "ignorePatterns": [
+    {
+      "pattern": "^http://localhost",
+      "comment": "Ignore localhost links"
+    },
+    {
+      "pattern": "^http://192\\.168\\.",
+      "comment": "Ignore local network IP links"
+    },
+    {
+      "pattern": "^http://tony-",
+      "comment": "Ignore local hostname links"
+    },
+    {
+      "pattern": "^https?://.*\\.local",
+      "comment": "Ignore .local hostname links"
+    }
+  ],
+  "replacementPatterns": [
+    {
+      "pattern": "^/",
+      "replacement": "https://github.com/detailobsessed/awesome-devin/blob/main/"
+    }
+  ],
+  "aliveStatusCodes": [200, 206, 301, 302, 303, 307, 308],
+  "timeout": "10s"
+}

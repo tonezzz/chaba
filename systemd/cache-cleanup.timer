@@ -1,0 +1,11 @@
+[Unit]
+Description=Cache Cleanup Timer
+Requires=cache-cleanup.service
+
+[Timer]
+OnCalendar=daily
+OnCalendar=hourly
+Persistent=true
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,24 @@
+name: mcp-debug-refresh-baselines
+description: Refresh mcp-debug efficiency baselines by running mcp_stats for known commands on tony_omen and tony_dell.
+version: "1.0"
+author: Chaba Team
+tags: [maintenance, mcp-debug, ssot, baseline]
+
+inputs:
+  update_ssot:
+    type: bool
+    description: If true, update docs/ssot/infrastructure/ssot.mcp-debug.yml with the new tony_omen baselines and recommendation lists.
+    default: false
+    required: false
+
+blocks:
+  - id: refresh_baselines
+    type: Shell
+    description: "Run mcp_stats for each known debug command on both hosts"
+    inputs:
+      command: python3 /home/tony/CascadeProjects/chaba/scripts/mcp-debug-refresh-baselines.py --update-ssot {{inputs.update_ssot}}
+      timeout: 120
+
+outputs:
+  report:
+    value: "{{blocks.refresh_baselines.outputs.stdout}}"

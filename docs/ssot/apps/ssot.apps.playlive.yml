@@ -1,0 +1,114 @@
+title: Playlive
+subtitle: Shared browser session automation
+icon: 🎭
+sections:
+  - title: Purpose
+    icon: 🎯
+    layout: list
+    items:
+      - label: What it is
+        text: A remote browser-control facility that lets multiple AI clients drive Chrome/Playwright sessions through a shared daemon.
+      - label: Primary uses
+        text: E2E verification, UI testing, screenshots, page navigation, form interaction, and live remote debugging.
+
+  - title: Architecture
+    icon: 🏗️
+    layout: list
+    items:
+      - label: Daemon (consolidated 2026-08-10)
+        text: playlived runs on tony-dell:9230 (primary headless target) and tony-omen:9231 (fallback). See docs/ssot/infrastructure/ssot.host-roles.yml for the canonical host priorities.
+      - label: MCP client
+        text: mcp-playlive (chaba-omen/mcp/mcp-playlive/playlive-server.py) forwards tool calls from Windsurf to the daemon via single "playlive" MCP server.
+      - label: Target flexibility
+        text: Single daemon supports local headless Playwright (default) and remote CDP-attached Chrome sessions via target parameter.
+      - label: Playwright relationship
+        text: PlayLive is built on Playwright - see docs/kb/playwright-vs-playlive.md for detailed comparison.
+      - label: Default mode
+        text: Defaults to headless Playwright (local) for better performance (~50-100MB RAM savings, faster startup). Use chrome-live/playwright-chrome for visual debugging.
+
+  - title: Hosts & endpoints
+    icon: 🌐
+    layout: table
+    headers: [Name, Host, Endpoint, Purpose]
+    rows:
+      - [playlived, tony-omen, http://tony-omen:9231, Consolidated session daemon]
+      - [playlived, tony-dell, http://tony-dell:9230, UI verification daemon]
+      - [chrome-remote, tony-dell, http://127.0.0.1:9222, Real Chrome CDP for live debugging]
+
+  - title: Authentication
+    icon: 🔐
+    layout: list
+    items:
+      - label: Basic auth support
+        text: PlayLive sessions can be configured with basic authentication credentials for accessing protected pages.
+      - label: Credential configuration
+        text: Credentials passed via playlived configuration or session creation parameters (username/password).
+      - label: Use case
+        text: Enables verification of Caddy-protected pages like /apps/yomi/* which require basic auth.
+
+  - title: Tools
+    icon: 🛠️
+    layout: list
+    items:
+      - label: Session lifecycle
+        text: playlive_create_chrome_live, playlive_create_playwright_chrome, playlive_create_playwright, playlive_list_sessions, playlive_close_session
+      - label: Page interaction
+        text: playlive_navigate, playlive_click, playlive_fill, playlive_select, playlive_eval, playlive_state
+      - label: Capture
+        text: playlive_screenshot, playlive_screenshot_image
+
+  - title: Verified workflow
+    icon: ✅
+    layout: list
+    items:
+      - label: Start daemon
+        text: tony-omen runs playlived as a systemd service on port 9231. On tony-dell, start playlived on port 9230 with `cd /home/tony/.local/playlive && setsid -f sh -c 'exec node playlived.mjs > playlived.log 2>&1'`.
+      - label: Create session (default)
+        text: playlive_create_playwright defaults to headless local mode for better performance.
+      - label: Create session (live)
+        text: Use playlive_create_chrome_live or playlive_create_playwright_chrome with target="remote" for visual debugging with remote CDP.
+      - label: Navigate
+        text: playlive_navigate to the target URL (default page.goto timeout 15s).
+      - label: Authenticated access
+        text: For protected pages, configure basic auth credentials before navigation to bypass Caddy basic auth prompts.
+      - label: Verify
+        text: playlive_state returns url and title.
+
+  - title: Maintenance
+    icon: 🔧
+    layout: list
+    items:
+      - label: Pinned Playwright version
+        text: playwright is pinned to 1.62.0 in /home/tony/.local/playlive/package.json on both tony-omen and tony-dell to avoid package/browser binary mismatches.
+      - label: Browser install
+        text: Run 'npx playwright install chromium' from /home/tony/.local/playlive after any Playwright version change.
+      - label: Package-lock
+        text: Use 'npm install' or 'npm ci' from /home/tony/.local/playlive to keep package-lock.json in sync.
+      - label: Remote CDP override
+        text: playlived's default remote CDP is 127.0.0.1:9223. The Chrome instance on tony-dell is on 9222, so pass `remote_url` `http://127.0.0.1:9222` when creating chrome-live or playwright-chrome sessions on tony-dell.
+      - label: Daemon restart
+        text: Restart playlived.service after browser or package updates.
+
+  - title: Limitations & cautions
+    icon: ⚠️
+    layout: list
+    items:
+      - label: Security
+        text: CDP and playlived are unauthenticated on the LAN; basic auth is for target page access only, not daemon security. Do not expose to untrusted networks.
+      - label: Resource contention
+        text: Browser automation on tony-omen shares resources with GPU/interactive workloads; use the tony-dell daemon to offload UI verification.
+      - label: Windsurf reload
+        text: Reload Windsurf after mcp_config.json changes for tools to appear.
+      - label: Remote Chrome availability
+        text: chrome-live/playwright-chrome require remote Chrome CDP (tony-dell:9222) which may not be available if Chrome is not running with remote debugging enabled.
+      - label: Consolidated architecture
+        text: playlive MCP server is configured for tony-omen by default; playlive.tony-dell exists in mcp_config.json but is disabled to avoid tool name collisions.
+config:
+  version: 2
+  maintainer: tony
+  status: active
+  related_files:
+    - docs/kb/app-ssot-standards.md
+    - docs/kb/playlive-authentication.md
+    - docs/kb/playwright-vs-playlive.md
+    - docs/ssot/apps/ssot.apps.yml

@@ -1,0 +1,73 @@
+{
+  "class": "SSOTDocument",
+  "description": "Single Source of Truth documents for chaba project - includes SSOT YAML files, session archives, and documentation",
+  "vectorizer": "none",
+  "vectorIndexConfig": {
+    "distance": "cosine",
+    "m": 16,
+    "efConstruction": 128
+  },
+  "properties": [
+    {
+      "name": "title",
+      "dataType": ["text"],
+      "description": "Document title or filename"
+    },
+    {
+      "name": "content",
+      "dataType": ["text"],
+      "description": "Full document content for semantic search"
+    },
+    {
+      "name": "path",
+      "dataType": ["text"],
+      "description": "File path in the repository"
+    },
+    {
+      "name": "type",
+      "dataType": ["text"],
+      "description": "Document type: ssot, session, kb, docs"
+    },
+    {
+      "name": "category",
+      "dataType": ["text"],
+      "description": "Document category (e.g., apps, infrastructure, sessions)"
+    },
+    {
+      "name": "tags",
+      "dataType": ["text[]"],
+      "description": "Array of tags for filtering"
+    },
+    {
+      "name": "language",
+      "dataType": ["text"],
+      "description": "Primary language: en, th, mixed"
+    },
+    {
+      "name": "lastModified",
+      "dataType": ["date"],
+      "description": "Last modification timestamp"
+    },
+    {
+      "name": "size",
+      "dataType": ["int"],
+      "description": "File size in bytes"
+    },
+    {
+      "name": "chunkIndex",
+      "dataType": ["int"],
+      "description": "Chunk index for multi-chunk documents (null for single chunk)"
+    },
+    {
+      "name": "totalChunks",
+      "dataType": ["int"],
+      "description": "Total number of chunks for this document (null for single chunk)"
+    }
+  ],
+  "vectorIndexType": "hnsw",
+  "vectorIndexConfig": {
+    "distance": "cosine",
+    "m": 16,
+    "efConstruction": 128
+  }
+}

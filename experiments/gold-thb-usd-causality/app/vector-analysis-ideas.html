@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Advanced Vector Analysis Ideas | Gold/THB/USD</title>
+  <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+  <script src="nav.js" defer></script>
+  <script src="vector-analysis-ideas.js" defer></script>
+  <style>
+    body { font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif; margin: 2rem; background: #f8f9fa; color: #212529; }
+    h1, h2 { font-weight: 600; }
+    .card { background: #fff; border-radius: 8px; padding: 1.25rem; margin: 1rem 0; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+    .muted { color: #6c757d; }
+    a { color: #0d6efd; }
+    a.back { display: inline-block; margin-bottom: 1rem; }
+    .plot { min-height: 350px; }
+  </style>
+</head>
+<body>
+  <a class="back" href="index.html">&larr; Back to causality explorer</a>
+  <a class="back" href="vector-search-ideas.html" style="margin-left:1rem;">&larr; Vector-search ideas</a>
+  <h1>Advanced Vector-Analysis Ideas</h1>
+  <p class="muted">
+    Six alternative ways to apply vector analysis to the THB&rarr;XAU signal. Each
+    card explains the concept; the companion Python scripts will be added one by one.
+    Research only, not a trading system.
+  </p>
+  <p class="muted">
+    SSOT: <code>docs/ssot/jobs/experiments/2026-08-26-gold-thb-usd-vector-analysis.yml</code>
+  </p>
+
+  <div class="card">
+    <h2>1. Dynamic Time Warping (DTW) similarity</h2>
+    <p>
+      Align two return windows elastically before measuring their distance. This is
+      useful when the THB lead onto XAU can shift by a day or two within the window.
+      A small DTW distance means the current THB path resembles a historical one.
+    </p>
+    <div id="idea-dtw" class="plot"></div>
+  </div>
+
+  <div class="card">
+    <h2>2. Delay-embedding k-NN (Takens-style)</h2>
+    <p>
+      Build a vector from delayed copies of USD/THB returns:
+      <code>[thb_t, thb_{t-1}, thb_{t-2}, ...]</code>. This reconstructs the
+      unobserved phase space of the THB process. k-NN in that space forecasts the
+      next XAU move.
+    </p>
+    <div id="idea-delay" class="plot"></div>
+  </div>
+
+  <div class="card">
+    <h2>3. Singular Spectrum Analysis (SSA)</h2>
+    <p>
+      Decompose a return series into trend, oscillatory, and noise components by
+      diagonalizing a trajectory matrix. The filtered signal can then feed the
+      existing threshold or k-NN rules.
+    </p>
+    <div id="idea-ssa" class="plot"></div>
+  </div>
+
+  <div class="card">
+    <h2>4. Time-varying / Markov-switching VAR</h2>
+    <p>
+      The static VAR showed a THB shock lowers XAU. A Markov-switching VAR lets
+      that impulse response depend on the current regime (e.g., USD-strength vs
+      USD-weakness), so the forecast adapts to market conditions.
+    </p>
+    <div id="idea-var" class="plot"></div>
+  </div>
+
+  <div class="card">
+    <h2>5. Graph / network view</h2>
+    <p>
+      Treat XAU, USD/THB, and USD/EUR as nodes. Build a rolling directed graph from
+      Granger-causality p-values or transfer entropy. Regime shifts appear as
+      clusters or changes in the dominant edge.
+    </p>
+    <div id="idea-graph" class="plot"></div>
+  </div>
+
+  <div class="card">
+    <h2>6. Wavelet coherence</h2>
+    <p>
+      Run a continuous wavelet transform on THB and XAU. Look for time-frequency
+      bands where the two series are coherent and have a non-zero phase, revealing
+      lead-lag behavior at different horizons.
+    </p>
+    <div id="idea-wavelet" class="plot"></div>
+  </div>
+
+  <div class="card">
+    <h2>7. Live results (as methods are implemented)</h2>
+    <p>
+      Out-of-sample equity curves and comparison tables for each method as they are
+      built and backtested. Until then, this section shows the placeholder baseline
+      (2-day THB trend, k-NN, and buy-and-hold).
+    </p>
+    <div id="equity-curves" class="plot"></div>
+  </div>
+</body>
+</html>

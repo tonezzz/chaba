@@ -1,0 +1,40 @@
+title: Security Vulnerabilities Found
+subtitle: Trivy scans found HIGH/CRITICAL vulnerabilities in multiple containers
+icon: shield
+focus:
+  label: Security Vulnerabilities Found
+  text: Address HIGH/CRITICAL findings in imagen2-inference, status-api, ollama, web, gemini-ollama-proxy, gpu-queue-processor,
+    and gpu-queue containers.
+  branch: chaba
+  priority: high
+  status: active
+  tags:
+  - security
+  - trivy
+  - containers
+  - vulnerabilities
+  - high-priority
+  missing_info:
+  - Which containers have already been rebuilt with updated base images
+  - Which custom builds (imagen2-inference, status-api) still need work
+  safe_to_parallel:
+    value: false
+    reason: Security updates can affect running services and require verification
+  subtasks:
+  - label: Review Trivy scan results and confirm HIGH/CRITICAL findings
+    status: not_started
+  - label: Update base images for remaining affected containers
+    status: not_started
+  - label: Rebuild and verify custom builds imagen2-inference and status-api
+    status: not_started
+  - label: Re-run security scan and validate results
+    status: not_started
+  started: '2026-08-19'
+ownership:
+  owner: tony
+  session: '2026-08-19'
+  locked: false
+  lock_reason: ''
+source:
+  session: overnight-assessment-20260819
+  date: '2026-08-19'

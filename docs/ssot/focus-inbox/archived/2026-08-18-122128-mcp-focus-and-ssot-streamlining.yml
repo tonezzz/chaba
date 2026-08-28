@@ -1,0 +1,58 @@
+title: Focus Inbox Item
+subtitle: Streamline mcp-focus and SSOT focus system
+icon: inbox
+focus:
+  label: Streamline mcp-focus and SSOT focus system
+  text: 'The SSOT focus system and mcp-focus have drifted. mcp-focus now supports
+
+    defer/resume, but the SSOT policy, related files, and implementation are not
+
+    fully aligned. Consolidate duplicated triage/safe-to-parallel logic between
+
+    mcp_debug/focus.py and focus_dispatcher/triage.py, update ssot.mcp-focus.yml
+
+    to v2, and wire Ready (Safe) dispatch.
+
+    '
+  branch: chaba
+  priority: high
+  status: active
+  tags:
+  - mcp-focus
+  - ssot
+  - focus
+  - streamlining
+  - job-lifecycle
+  missing_info: []
+  safe_to_parallel:
+    value: false
+    reason: Modifies the active focus router, focus-dispatcher, and SSOT; must be the active branch or shared focus.
+  subtasks:
+  - label: Centralize focus model (triage scoring, priority, safe-to-parallel, branch detection)
+    status: not_started
+  - label: Update ssot.mcp-focus.yml to match standalone server (v2, related_files, mode docs)
+    status: not_started
+  - label: Add Ready (Safe) population and ownership/lock checks
+    status: not_started
+  - label: Improve error handling and make request optional for read-only modes
+    status: not_started
+  started: '2026-08-19'
+ownership:
+  owner: tony
+  session: ''
+  locked: false
+  lock_reason: ''
+notes:
+- Assistant observations from 2026-08-18 status check
+- Two mcp_focus implementations drift: mcp_debug/focus.py has 9 modes; standalone mcp_focus/server.py has 2; ssot.mcp-focus.yml
+    still points to mcp_debug.
+- mcp_focus requires 'request' even for read-only status/safe_next/ready_queue/pre_action modes.
+- mcp_debug/server.py has 31+ tools but ssot.mcp-debug.yml server.tools list is missing mcp_system, mcp_transform, mcp_mddb_doc.
+- mcp_debug has no mcp_reload_config tool; config changes need service restart.
+- mcp-health quick_health returned 0 services checked; get_health_status data is stale (2026-08-15) and still points some
+  checks at tony-omen after tony-dell migration.
+- mcp-debug-cors and mcp-focus systemd services are not health-checked.
+- raw-allowed prefixes (find, grep, lsof, etc.) have no example commands and no savings tracking for option variants.
+source:
+  session: chaba-2026-08-18
+  date: '2026-08-18'

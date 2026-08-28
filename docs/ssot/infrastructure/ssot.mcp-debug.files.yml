@@ -1,0 +1,120 @@
+title: MCP-Debug File and Clipboard Bridge
+subtitle: Design and policy for remote file get/put and optional clipboard tools
+version: 1
+
+purpose:
+  - Extend mcp-debug with small, auditable file-transfer tools.
+  - Allow the assistant to fetch remote logs/configs and push small scripts without leaving the MCP workflow.
+  - Keep clipboard support experimental and disabled by default.
+
+tools:
+  mcp_get_file:
+    description: Fetch a remote file as base64 with a hard size cap.
+    input:
+      host: target host (must be in allowed host list)
+      path: absolute or home-prefixed file path
+      max_bytes: optional, default 65536, hard cap 1048576
+    output:
+      ok: true | false
+      path: resolved path
+      encoding: base64
+      content_base64: base64-encoded bytes
+      size: bytes read
+      truncated: true if file was larger than max_bytes
+      error: error message if ok is false
+    transport: |
+      SSH exec with `cat` or `head -c <max_bytes>` depending on size, then base64-encode the payload.
+    security:
+      - path must match one allowed_path_prefix for the host
+      - max_bytes cannot exceed hard cap
+      - all calls logged with host, path, size, truncated flag
+      - reads outside allowlist are rejected
+
+  mcp_put_file:
+    description: Write a small script or config to a remote host as base64.
+    input:
+      host: target host (must be in allowed host list)
+      path: absolute or home-prefixed file path
+      content_base64: base64-encoded file content
+      mode: optional file mode, default "644" (octal string)
+      overwrite: optional, default false
+    output:
+      ok: true | false
+      path: resolved path
+      bytes_written: number of bytes written
+      error: error message if ok is false
+    transport: |
+      SSH exec with a heredoc after path-allowlist vetting. File is written to a temp path and atomically moved.
+    security:
+      - path must match one allowed_path_prefix for the host
+      - size cannot exceed hard cap (1 MiB)
+      - overwrite=false by default; confirmation required for writes outside allowlist
+      - all calls logged with host, path, size, mode, overwrite
+      - writes to paths outside allowlist are rejected
+
+  mcp_clipboard_get:
+    description: Read the target host's clipboard as text.
+    status: experimental
+    default: enabled
+    transport: macOS `pbpaste`; Linux `xclip -selection clipboard -o` or `wl-paste`
+    security:
+      - per-host opt-in only
+      - host must have clipboard: true in ssot.mcp-debug.capture.yml
+      - all calls logged
+
+  mcp_clipboard_set:
+    description: Write text to the target host's clipboard.
+    status: experimental
+    default: enabled
+    transport: macOS `pbpaste`; Linux `xclip -selection clipboard -i` or `wl-copy`
+    security:
+      - per-host opt-in only
+      - host must have clipboard: true in ssot.mcp-debug.capture.yml
+      - all calls logged
+
+limits:
+  max_bytes:
+    hard: 1048576
+    default: 65536
+  default_get_bytes: 65536
+  max_path_length: 1024
+  allowed_modes: ["400", "600", "644", "664", "755"]
+  allowed_path_prefixes:
+    tony_omen:
+      - /tmp
+      - /home/tony/.local
+      - /home/tony/.config
+      - /home/tony/CascadeProjects/chaba
+      - /home/tony/CascadeProjects/chaba-omen
+      - /home/tony/CascadeProjects/chaba-h3
+      - /home/tony/CascadeProjects/chaba-kbman
+      - /var/log
+    tony_dell:
+      - /tmp
+      - /home/tony/.local
+      - /home/tony/.config
+      - /home/tony/CascadeProjects/chaba
+      - /home/tony/CascadeProjects/chaba-omen
+      - /home/tony/CascadeProjects/chaba-h3
+      - /home/tony/CascadeProjects/chaba-kbman
+      - /var/log
+    macbook:
+      - /tmp
+      - /Users/tony
+      - /var/log
+
+logging:
+  level: info
+  fields:
+    - timestamp
+    - tool
+    - host
+    - path
+    - size
+    - truncated
+    - overwrite
+    - ok
+
+status: active
+last_updated: '2026-08-22'
+maintainer: tony

@@ -1,0 +1,78 @@
+NAMES              IMAGE                                               STATUS         PORTS                                 SIZE
+chaba-postgres-16  docker.io/pgvector/pgvector:pg16                    Up 20 hours    127.0.0.1:5432->5432/tcp              
+redis              docker.io/library/redis:7.4-alpine                  Up 33 minutes  6379/tcp                              
+mddb-panel         docker.io/tradik/mddb:panel-latest                  Up 23 minutes  3000/tcp                              
+mddb               docker.io/tradik/mddb:latest                        Up 22 minutes  9000/tcp, 11023-11024/tcp, 11443/tcp  
+raceman-php        docker.io/library/chaba-raceman-raceman-php:latest  Up 13 minutes  9000/tcp                              
+raceman-web        docker.io/library/nginx:alpine                      Up 13 minutes  80/tcp                                
+weaviate           docker.io/semitechnologies/weaviate:latest          Up 4 minutes   0.0.0.0:8084->8080/tcp                
+yomi-api           docker.io/library/node:22-slim                      Up 3 minutes   127.0.0.1:3000->3000/tcp              
+REPOSITORY                                   TAG           IMAGE ID      SIZE
+localhost/chaba-node-python                  latest        3e517537bf87  286 MB
+docker.io/pgvector/pgvector                  pg16          9b05db12a354  446 MB
+docker.io/library/postgres                   16            19d88319bea9  458 MB
+docker.io/library/chaba-raceman-raceman-php  latest        20b01f81c6e4  521 MB
+docker.io/semitechnologies/weaviate          latest        464178d07e89  197 MB
+docker.io/library/node                       22-slim       fc8cd9deea73  233 MB
+docker.io/tradik/mddb                        latest        6c796b5143e5  88.5 MB
+docker.io/tradik/mddb                        panel-latest  3b7a93318f51  286 MB
+docker.io/library/redis                      7.4-alpine    2a51817f7925  39.9 MB
+docker.io/library/nginx                      alpine        f0ba77f796e5  63.7 MB
+--- df -h ---
+Filesystem      Size  Used Avail Use% Mounted on
+tmpfs           3.0G  2.8M  3.0G   1% /run
+/dev/sda5       118G   47G   65G  42% /
+tmpfs           7.5G   16M  7.5G   1% /dev/shm
+efivarfs        256K  138K  114K  55% /sys/firmware/efi/efivars
+none            1.0M     0  1.0M   0% /run/credentials/systemd-journald.service
+none            1.0M     0  1.0M   0% /run/credentials/systemd-resolved.service
+tmpfs           7.5G  358M  7.2G   5% /tmp
+/dev/sda1        96M   49M   48M  51% /boot/efi
+tmpfs           1.5G  576K  1.5G   1% /run/user/1000
+--- listening ports ---
+State  Recv-Q Send-Q               Local Address:Port  Peer Address:PortProcess                                                                                       
+LISTEN 0      4096                     127.0.0.1:631        0.0.0.0:*                                                                                                 
+LISTEN 0      4096                       0.0.0.0:22         0.0.0.0:*                                                                                                 
+LISTEN 0      4096                 100.68.142.13:3000       0.0.0.0:*                                                                                                 
+LISTEN 0      4096                       0.0.0.0:9001       0.0.0.0:*    users:(("php-fpm",pid=633946,fd=12),("php-fpm",pid=633945,fd=11),("php-fpm",pid=633898,fd=9))
+LISTEN 0      5                          0.0.0.0:9100       0.0.0.0:*    users:(("python3",pid=441257,fd=3))                                                          
+LISTEN 0      10                       127.0.0.1:9222       0.0.0.0:*    users:(("chrome",pid=2304,fd=90))                                                            
+LISTEN 0      128                      127.0.0.1:3000       0.0.0.0:*    users:(("pasta.avx2",pid=640168,fd=74))                                                      
+LISTEN 0      4096                 127.0.0.53%lo:53         0.0.0.0:*                                                                                                 
+LISTEN 0      4096                 100.68.142.13:443        0.0.0.0:*                                                                                                 
+LISTEN 0      511                        0.0.0.0:3002       0.0.0.0:*                                                                                                 
+LISTEN 0      128                      127.0.0.1:5432       0.0.0.0:*    users:(("pasta.avx2",pid=14454,fd=74))                                                       
+LISTEN 0      4096                    127.0.0.54:53         0.0.0.0:*                                                                                                 
+LISTEN 0      511                        0.0.0.0:6379       0.0.0.0:*                                                                                                 
+LISTEN 0      4096                 100.68.142.13:46454      0.0.0.0:*                                                                                                 
+LISTEN 0      128                        0.0.0.0:8090       0.0.0.0:*    users:(("python3",pid=2288,fd=3))                                                            
+LISTEN 0      4096                 100.68.142.13:5432       0.0.0.0:*                                                                                                 
+LISTEN 0      511                        0.0.0.0:8083       0.0.0.0:*    users:(("nginx",pid=633894,fd=6))                                                            
+LISTEN 0      5                          0.0.0.0:8082       0.0.0.0:*    users:(("python3",pid=475044,fd=3))                                                          
+LISTEN 0      4096                          [::]:22            [::]:*                                                                                                 
+LISTEN 0      4096                             *:9000             *:*                                                                                                 
+LISTEN 0      4096   [fd7a:115c:a1e0::c701:8ec5]:3000          [::]:*                                                                                                 
+LISTEN 0      4096                             *:11023            *:*                                                                                                 
+LISTEN 0      4096                             *:11024            *:*                                                                                                 
+LISTEN 0      2                                *:3389             *:*                                                                                                 
+LISTEN 0      4096   [fd7a:115c:a1e0::c701:8ec5]:443           [::]:*                                                                                                 
+LISTEN 0      4096                         [::1]:631           [::]:*                                                                                                 
+LISTEN 0      511                           [::]:6379          [::]:*                                                                                                 
+LISTEN 0      4096   [fd7a:115c:a1e0::c701:8ec5]:5432          [::]:*                                                                                                 
+LISTEN 0      4096   [fd7a:115c:a1e0::c701:8ec5]:45279         [::]:*                                                                                                 
+LISTEN 0      128                              *:8084             *:*    users:(("pasta.avx2",pid=639687,fd=74))                                                      
+--- systemd user units ---
+  UNIT                 LOAD   ACTIVE SUB     DESCRIPTION
+  chaba-funnel.service loaded active running Chaba Funnel landing page and Tailscale connections API on tony-dell
+  mddb-panel.service   loaded active running Podman container-mddb-panel.service
+  mddb.service         loaded active running Podman container-mddb.service
+  raceman-php.service  loaded active running Podman container-raceman-php.service
+  raceman-web.service  loaded active running Podman container-raceman-web.service
+  redis.service        loaded active running Podman container-redis.service
+  yomi-api.service     loaded active running Yomi API server (Podman on tony-dell)
+
+Legend: LOAD   → Reflects whether the unit definition was properly loaded.
+        ACTIVE → The high-level unit activation state, i.e. generalization of SUB.
+        SUB    → The low-level unit activation state, values depend on unit type.
+
+7 loaded units listed.

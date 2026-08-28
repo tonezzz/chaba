@@ -1,0 +1,109 @@
+title: Current Focus — Active
+subtitle: Active shared and branch focuses
+icon: target
+sections:
+- title: Active Shared Focus
+  icon: active
+  layout: list
+  items: []
+- title: Active Branch Focus
+  icon: branch
+  layout: list
+  items:
+  - label: MacBook macOS App Development
+    text: Continue macOS and iOS workstation setup after Tailscale install; full Xcode 15.x is next.
+    branch: macbook
+    status: parked
+    previous_status: active
+    priority: medium
+    started: '2026-08-24'
+    parked: '2026-08-25'
+    tags:
+    - macbook
+    - appdev
+    - xcode
+    estimated_duration: 1 session
+    blocker:
+      reason: MacBook (100.124.59.112) became unreachable again before Xcode install could start
+    subtasks:
+    - label: Bring MacBook online (Tailscale/SSH or Chrome DevTools)
+      status: completed
+      completed_at: '2026-08-24'
+      note: 'SSH via mcp-debug succeeded. Baseline verified: CLT active, Swift 5.8.1, Node v20.17.0, Homebrew 6.0.17, 0 signing
+        identities.'
+    - label: Install or update Xcode 15.x command line tools
+      status: deferred
+      note: Tried `brew install xcodes` and direct GitHub download; both interrupted by intermittent SSH timeouts. Host connectivity
+        unstable.
+      deferred_at: '2026-08-25'
+      resume_note: MacBook offline (last seen 17h); cannot install Xcode until host is reachable
+    - label: Verify macOS app build toolchain
+      status: deferred
+      deferred_at: '2026-08-25'
+      resume_note: MacBook offline; park focus until host is reachable
+  - label: Sync worktree chaba.h3 with master
+    text: 'Worktree chaba.h3 is 0 commit(s) ahead and 1330 commit(s) behind master.
+
+      Decide whether to merge, rebase, or archive the branch.
+
+      '
+    status: completed
+    priority: medium
+    started: '2026-08-28'
+    completed_at: '2026-08-28'
+    estimated_duration: 1 session
+    tags:
+    - worktree
+    - sync
+    - branches
+    subtasks:
+    - label: Review chaba.h3 changes
+      status: completed
+      completed_at: '2026-08-28'
+    - label: Merge or rebase to master
+      status: completed
+      completed_at: '2026-08-28'
+    - label: Delete worktree if merged
+      status: completed
+      completed_at: '2026-08-28'
+    request_log:
+    - 'Fast-forward merged master into chaba.h3 worktree'
+    - 'Pushed chaba.h3 branch to origin (619ab63..57f05e4)'
+    ownership:
+      owner: tony
+      session: ''
+      locked: true
+      lock_reason: Activated as active focus
+    branch: chaba
+    source: /home/tony/CascadeProjects/chaba/docs/ssot/focus-inbox/2026-08-28-055058-worktree-drift-chabah3.yml
+- title: Quick Wins
+  icon: quick
+  layout: list
+  items:
+  - label: Log quick wins in this section
+    text: Any task under 15 minutes (e.g. config fix, one-line health check, URL update) goes here. Complete immediately and
+      keep the list trimmed.
+    status: completed
+    completed: '2026-08-26'
+    priority: low
+    tags:
+    - workflow
+    - quick-wins
+  request_log: []
+- title: Hand-Off Queue
+  icon: hand
+  layout: list
+  items: []
+- title: Ready-Safe Queue
+  icon: safe
+  layout: list
+  items:
+  - label: Add real CI smoke tests
+    text: Add a GitHub Actions job that runs a live MCP call (mcp_debug, mcp_health, or mcp-focus) on every push to master.
+    status: not_started
+    priority: medium
+    tags:
+    - ci
+    - mcp
+    - smoke-test
+    - master

@@ -1,0 +1,45 @@
+title: Focus Inbox Item
+subtitle: One new focus, task, or idea to triage
+icon: inbox
+
+focus:
+  label: Delegate tony-omen services and timers to tony-dell
+  text: |
+    tony-omen is carrying the primary dev/web/DB/GPU load and is lagging.
+    Assess and move lightweight, non-GPU services to tony-dell.
+    Quick wins: mcp-debug-cors.service, mcp-link-monitor.service, and
+    focus-dispatcher-overnight.timer are already documented or fit tony-dell
+    but are currently on tony-omen per ssot.registry.yml.
+    Short term: Yomi update timers, backup timers, and mcp-health server authority.
+    Keep on tony-omen: PostgreSQL, Weaviate, Redis, MDDB, llama-router, imagen,
+    GPU queue, Caddy, Barrier.
+    Verify tony-dell storage, Tailscale reachability, and sudo before moving
+    stateful or Dockerized services.
+  branch: tony-dell
+  priority: high
+  status: draft
+  tags:
+  - tony-omen
+  - tony-dell
+  - delegation
+  - monitoring
+  - performance
+  missing_info:
+  - Current CPU/RAM/disk metrics for tony-omen and tony-dell
+  - Confirmation of which services the user wants to move first
+  - Whether tony-dell storage can hold Docker/build caches
+  subtasks:
+  - label: Move mcp-debug-cors.service to tony-dell and update H3 proxy
+    status: not_started
+  - label: Move mcp-link-monitor.service to tony-dell
+    status: not_started
+  - label: Move focus-dispatcher-overnight.timer to tony-dell
+    status: not_started
+  - label: Redelegate Yomi/backup timers after verifying PG and storage
+    status: not_started
+  - label: Move central mcp-health server to tony-dell (Phase 3/4)
+    status: not_started
+
+source:
+  session: tony-omen-delegation-assessment
+  date: '2026-08-16'

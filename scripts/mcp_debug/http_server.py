@@ -1,0 +1,187 @@
+"""CORS HTTP endpoint for live mcp_debug savings JSON with cached refresh."""
+import threading
+import time
+import json
+from datetime import datetime
+from http.server import HTTPServer, BaseHTTPRequestHandler
+from pathlib import Path
+from urllib.parse import urlparse, parse_qs
+
+from .config import HOSTS
+from .reports import mcp_report
+from .formatters import mcp_table
+
+REFRESH_INTERVAL = 60
+
+_cache = {
+    "report": None,
+    "generated": 0.0,
+    "collected_at": None,
+    "duration_ms": 0.0,
+    "refreshing": False,
+}
+_cache_lock = threading.Lock()
+
+
+def _regenerate_cache():
+    with _cache_lock:
+        if _cache["refreshing"]:
+            return
+        _cache["refreshing"] = True
+    try:
+        start = time.perf_counter()
+        result = mcp_report(hosts=[], save=False, format="json")
+        duration_ms = (time.perf_counter() - start) * 1000
+        with _cache_lock:
+            _cache["report"] = result.get("report") if result.get("ok") else None
+            _cache["generated"] = time.time()
+            _cache["collected_at"] = datetime.now().isoformat()
+            _cache["duration_ms"] = round(duration_ms, 2)
+    finally:
+        with _cache_lock:
+            _cache["refreshing"] = False
+
+
+def _get_report(force=False):
+    with _cache_lock:
+        now = time.time()
+        is_fresh = _cache["report"] is not None and (now - _cache["generated"]) < REFRESH_INTERVAL
+    # If a forced refresh is requested and none is in progress, trigger a background re-generation
+    # and return the current cache immediately so the client does not wait ~5 minutes.
+    if force or not is_fresh:
+        with _cache_lock:
+            already_refreshing = _cache["refreshing"]
+        if not already_refreshing:
+            threading.Thread(target=_regenerate_cache, daemon=True).start()
+    with _cache_lock:
+        return _cache["report"]
+
+
+def _background_refresh():
+    _regenerate_cache()
+    threading.Timer(REFRESH_INTERVAL, _background_refresh).start()
+
+
+class CORSHandler(BaseHTTPRequestHandler):
+    def _send_cors(self):
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Access-Control-Allow-Methods", "GET, OPTIONS")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type")
+
+    def do_OPTIONS(self):
+        self.send_response(204)
+        self._send_cors()
+        self.end_headers()
+
+    def do_GET(self):
+        parsed = urlparse(self.path)
+        if parsed.path == "/mcp-table.json":
+            self._handle_table(parsed)
+            return
+        if parsed.path == "/mcp-savings.json":
+            self._handle_savings(parsed)
+            return
+        if parsed.path == "/health":
+            self._send_json(200, {"ok": True})
+            return
+        if parsed.path == "/audit-health":
+            self._handle_audit_health()
+            return
+
+        self.send_response(404)
+        self.send_header("Content-Type", "application/json")
+        self._send_cors()
+        self.end_headers()
+        self.wfile.write(b'{"ok":false,"error":"not found"}')
+
+    def _handle_audit_health(self):
+        summary_path = Path("/home/tony/CascadeProjects/chaba/reports/audits/summary.json")
+        if not summary_path.exists():
+            self._send_json(503, {"ok": False, "error": "no audit summary available"})
+            return
+        try:
+            with open(summary_path) as f:
+                summary = json.load(f)
+            status = 200 if summary.get("ok") else 503
+            self._send_json(status, {
+                "ok": summary.get("ok", False),
+                "timestamp": summary.get("generated"),
+                "total": summary.get("summary", {}).get("total"),
+                "passed": summary.get("summary", {}).get("passed"),
+                "failed": summary.get("summary", {}).get("failed"),
+            })
+        except Exception as e:
+            self._send_json(503, {"ok": False, "error": str(e)})
+
+    def _handle_table(self, parsed):
+        query = parse_qs(parsed.query)
+        host = query.get("host", [""])[0]
+        command = query.get("command", [""])[0]
+
+        if not host or not command:
+            self._send_json(400, {"ok": False, "error": "host and command query params required"})
+            return
+
+        if host not in HOSTS:
+            self._send_json(404, {"ok": False, "error": f"unknown host: {host}"})
+            return
+
+        result = mcp_table(host, command)
+        status = 200 if result.get("ok") else 500
+        self._send_json(status, result)
+
+    def _handle_savings(self, parsed):
+        query = parse_qs(parsed.query)
+        force = query.get("refresh", ["0"])[0] in ("1", "true", "yes")
+        report = _get_report(force=force)
+
+        with _cache_lock:
+            is_refreshing = _cache["refreshing"]
+
+        if report is None:
+            status = 202
+            payload = {"ok": False, "refreshing": True, "error": "report is being generated"}
+        else:
+            status = 202 if (force and is_refreshing) else 200
+            payload = json.loads(report)
+            payload["freshness"] = {
+                "collected_at": _cache.get("collected_at"),
+                "cache_age_ms": round((time.time() - _cache["generated"]) * 1000, 1),
+                "duration_ms": _cache.get("duration_ms", 0.0),
+            }
+            payload["refreshing"] = is_refreshing
+        self._send_json(status, payload)
+
+    def _send_json(self, status, payload):
+        body = json.dumps(payload, separators=(",", ":")).encode()
+        self.send_response(status)
+        self.send_header("Content-Type", "application/json")
+        self.send_header("Cache-Control", "public, max-age=60")
+        self._send_cors()
+        self.end_headers()
+        self.wfile.write(body)
+
+    def log_message(self, *args):
+        pass
+
+
+def main(port=9100):
+    server = HTTPServer(("0.0.0.0", port), CORSHandler)
+    serve_thread = threading.Thread(target=server.serve_forever, daemon=True)
+    serve_thread.start()
+    print(f"Listening on http://0.0.0.0:{port}/mcp-savings.json")
+    # Start warming the cache in the background so the server can respond immediately.
+    refresh_thread = threading.Thread(target=_background_refresh, daemon=True)
+    refresh_thread.start()
+    try:
+        while serve_thread.is_alive():
+            serve_thread.join(1)
+    except KeyboardInterrupt:
+        server.shutdown()
+        serve_thread.join()
+
+
+if __name__ == "__main__":
+    import sys
+    port = int(sys.argv[1]) if len(sys.argv) > 1 else 9100
+    main(port)

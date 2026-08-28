@@ -1,0 +1,10 @@
+[Unit]
+Description=Query tony-omen mcp-health critical score every 5 minutes
+
+[Timer]
+OnBootSec=3min
+OnUnitActiveSec=5min
+Unit=tony-dell-mcp-health.service
+
+[Install]
+WantedBy=timers.target

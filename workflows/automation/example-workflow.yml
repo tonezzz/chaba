@@ -1,0 +1,40 @@
+name: example-health-check
+description: Example workflow to test workflows-mcp integration
+version: "1.0"
+author: Chaba Team
+tags: [health, monitoring, test]
+inputs:
+  target_url:
+    type: str
+    description: URL to check health
+    default: "http://localhost:8080"
+    required: false
+blocks:
+  - id: check_health
+    type: Http
+    description: "Check health endpoint"
+    inputs:
+      url: "{{inputs.target_url}}/api/health"
+      method: GET
+      timeout: 10
+    outputs:
+      status:
+        type: str
+        description: "HTTP status code"
+        path: "$STATUS_CODE"
+      response_time:
+        type: str
+        description: "Response time in seconds"
+        path: "$RESPONSE_TIME"
+  - id: log_result
+    type: Log
+    description: "Log health check result"
+    inputs:
+      message: "Health check completed for {{inputs.target_url}} - Status: {{blocks.check_health.outputs.status}}"
+    depends_on:
+      - check_health
+outputs:
+  health_status:
+    value: "{{blocks.check_health.outputs.status}}"
+  response_time:
+    value: "{{blocks.check_health.outputs.response_time}}"

@@ -1,0 +1,166 @@
+title: MCP Tool Improvements
+subtitle: Implement mcp_query_ssot, web audit report, and expose mcp_context / mcp_session_summary
+icon: tools
+
+planning:
+  goal: |
+    Record the top implementation ideas from the 2026-08-19 session and implement
+    the top three in order: mcp_query_ssot, a web audit report, and MCP exposure
+    for mcp_context and mcp_session_summary.
+  scope:
+    - mcp_query_ssot MCP tool in mcp_debug
+    - A lightweight H3 or local web report for audit summaries
+    - mcp_context and mcp_session_summary wired into the mcp_debug server
+  out_of_scope:
+    - Full H3 deployment or Caddy changes
+    - Auto-KB quality scoring job
+    - Focus decision tree web page
+  success_criteria:
+    - mcp_query_ssot returns a specific SSOT value or list by dotted path
+    - The audit report page renders reports/audits/summary.json
+    - mcp_context and mcp_session_summary are callable via the MCP server
+    - All SSOT files validate and the server still starts
+  risks:
+    - Adding new MCP tools requires allowlist updates; risk of missing one
+    - mcp_context may return large payloads; set a sensible limit
+  resources:
+    - mcp_debug Python package
+    - reports/audits/summary.json
+    - chaba-h3 public directory for the web report
+  owner: tony
+  estimated_duration: 2 sessions
+  related_focus:
+    - label: MCP Tool Improvements
+      file: docs/ssot/ssot.focus.current.yml
+
+processing:
+  status: completed
+  started_at: '2026-08-19'
+  steps:
+    - id: 1
+      label: Implement mcp_query_ssot
+      status: completed
+      completed_at: '2026-08-19'
+      notes: Added to scripts/mcp_debug/ssot.py, wired in server.py, and registered in ssot.mcp-debug.yml
+    - id: 2
+      label: Implement web audit report
+      status: completed
+      completed_at: '2026-08-19'
+      notes: Created stacks/web/public/apps/audit/index.html + app.js; run.mjs copies summary.json to data/
+    - id: 3
+      label: Expose mcp_context and mcp_session_summary as MCP tools
+      status: completed
+      completed_at: '2026-08-19'
+      notes: Added scripts/mcp_debug/context.py wrapper, server.py wiring, and ssot.mcp-debug.yml registration
+  decisions:
+    - label: Web report data location
+      rationale: stacks/web/public/apps/audit/data/ is ignored and populated by run.mjs so the report stays live
+      alternatives_considered: chaba-h3 public dir; rejected to avoid cross-repo deployment for now
+  changes:
+    - file: scripts/mcp_debug/ssot.py
+      summary: add mcp_query_ssot and dotted-path navigation
+    - file: scripts/mcp_debug/server.py
+      summary: register and dispatch mcp_query_ssot, mcp_context, mcp_session_summary
+    - file: docs/ssot/infrastructure/ssot.mcp-debug.yml
+      summary: add three new tools to registered_mcp_tools
+    - file: scripts/audits/run.mjs
+      summary: copy summary.json/summary.md to audit web report data dir
+    - file: stacks/web/public/apps/audit/index.html
+      summary: new audit report page
+    - file: stacks/web/public/apps/audit/app.js
+      summary: audit report renderer
+    - file: scripts/mcp_debug/context.py
+      summary: wrapper exposing mcp_context and mcp_session_summary
+
+followup:
+  verification:
+    - node scripts/audits/run.mjs still passes
+    - SSOT validation passes
+    - MCP server initializes without errors
+  rollback_plan:
+    - Revert the three changed files
+    - Remove new H3 files if deployed
+  handoff:
+    - tony for monitoring
+  completed_outside_initial_three:
+    - label: Audit trend history
+      completed_at: '2026-08-19'
+      notes: |
+        scripts/audits/run.mjs now archives a timestamped summary to
+        reports/audits/history/ and maintains a compact history.json with the
+        last 90 runs (timestamp, ok, passed, failed, total, duration_ms).
+    - label: Auto-KB quality scoring as a scheduled job
+      completed_at: '2026-08-19'
+      notes: |
+        auto-kb-quality-audit.mjs now defaults to report-only with --apply and
+        --json flags. A weekly systemd timer/service runs the quality and
+        categorization audits and writes reports.
+    - label: Web focus decision tree
+      completed_at: '2026-08-19'
+      notes: |
+        Added stacks/web/public/apps/focus/decision.html + decision-app.js and
+        scripts/generate-focus-tree.mjs which writes data/decision-tree.json
+        from ssot.mcp-focus.yml.
+    - label: Prompt preprocessor as MCP tool
+      completed_at: '2026-08-19'
+      notes: |
+        Added scripts/mcp_debug/preprocess.py wrapper and registered mcp_preprocess
+        in mcp_debug server and ssot.mcp-debug.yml.
+    - label: mcp-health for the audit suite
+      completed_at: '2026-08-19'
+      notes: |
+        Added /audit-health endpoint to scripts/mcp_debug/http_server.py,
+        registered it in ssot.mcp-debug.cors.yml, and added an mcp-debug-audit
+        health check to ssot.health.home.yml.
+    - label: SSOT value registry
+      completed_at: '2026-08-19'
+      notes: |
+        Added docs/ssot/infrastructure/ssot.values.yml with canonical hosts,
+        ports, schedules, thresholds, and paths. Indexed in ssot.index.yml and
+        queryable via mcp_query_ssot.
+    - label: mcp_context consolidation
+      completed_at: '2026-08-19'
+      notes: |
+        Added a tool_selection hierarchy to ssot.mcp-debug.yml documenting when
+        to use mcp_query_ssot, mcp_mddb_doc, mcp_read_ssot, mcp_search_ssot,
+        mcp_context, and mcp_preprocess.
+  deferred: []
+
+report:
+  status: completed
+  completed_at: '2026-08-19'
+  summary: |
+    All three MCP tool improvements were implemented and verified. mcp_query_ssot
+    resolves SSOT documents by query or path and returns dotted/integer-key values.
+    A lightweight web audit report under stacks/web/public/apps/audit/ renders
+    reports/audits/summary.json. mcp_context and mcp_session_summary are exposed
+    through the mcp_debug server. The default audit suite, SSOT validation, and
+    server initialization all pass.
+  metrics:
+    audits_passed: 3
+    ssot_files_validated: 117
+    mcp_tools_exposed: 34
+    audit_total_duration_ms: 63069
+  links:
+    - file: scripts/mcp_debug/ssot.py
+    - file: scripts/mcp_debug/server.py
+    - file: scripts/mcp_debug/context.py
+    - file: docs/ssot/infrastructure/ssot.mcp-debug.yml
+    - file: scripts/audits/run.mjs
+    - file: stacks/web/public/apps/audit/index.html
+    - file: docs/kb/audit-framework.md
+  kb_review:
+    - mcp_query_ssot, mcp_context, and mcp_session_summary are now registered tools in mcp_debug.
+    - Audit summaries are copied to stacks/web/public/apps/audit/data/ for a lightweight web report.
+    - SSOT validation passed all 117 files with 0 errors.
+  lessons_learned:
+    - The mcp_query_ssot dotted-path navigator (scripts/mcp_debug/ssot.py _navigate) is reusable for future SSOT value lookups.
+    - Keeping the web report data in an ignored runtime directory avoids committing generated audit reports.
+
+config:
+  version: 1
+  created_at: '2026-08-19'
+  last_updated: '2026-08-19'
+  maintainer: tony
+  related_files:
+    - docs/ssot/templates/job.yml

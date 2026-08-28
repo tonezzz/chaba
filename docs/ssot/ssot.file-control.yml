@@ -1,0 +1,105 @@
+title: SSOT File Control
+subtitle: Governance and workflow for creating, updating, and validating SSOT YAML files
+icon: 🗂️
+
+ideas:
+  - Define a lightweight, repeatable lifecycle for SSOT files so contributors spend less time deciding where or how to edit.
+  - Keep naming, placement, validation, search, and indexing conventions in one canonical place.
+  - Prefer automated checks (ssot-validate, MDDB sync) over manual review.
+
+sections:
+  - title: Scope and Ownership
+    icon: 📁
+    layout: list
+    items:
+      - label: Scope
+        text: All canonical SSOT YAML files under docs/ssot/ and docs/ssot/*/
+      - label: Owner
+        text: Project maintainer (tony); day-to-day updates by an assistant or contributor with repository write access
+      - label: Exclusions
+        text: template.yml and apps/template.app.yml are boilerplate for new files and are not controlled SSOT records
+      - label: Prohibited content
+        text: Do not store runtime or generated data, secrets, or non-canonical copies in SSOT files
+
+  - title: Naming and Placement
+    icon: 🏷️
+    layout: list
+    items:
+      - label: Prefix
+        text: All SSOT files must start with ssot. (except templates)
+      - label: kebab-case
+        text: Use lowercase words separated by hyphens, e.g. ssot.file-control.yml
+      - label: Core directory
+        text: docs/ssot/ — core/cross-project policy and tooling
+      - label: Infrastructure directory
+        text: docs/ssot/infrastructure/ — hosts, services, containers, networking
+      - label: Apps directory
+        text: docs/ssot/apps/ — application-specific data
+      - label: New directory threshold
+        text: Create a new subdirectory only when at least 3 related files exist
+      - label: One file per topic
+        text: A topic must have exactly one SSOT file. Older versions are archived to ssot.<topic>.archive.yml, e.g. ssot.file-control.yml → ssot.file-control.archive.yml
+
+  - title: Bloat and Archiving
+    icon: 📦
+    layout: list
+    items:
+      - label: Size review threshold
+        text: Review a file for splitting when it exceeds 350 lines, 10 sections, or 45 items (approximately the 90th percentile of the current SSOT corpus)
+      - label: Hard split threshold
+        text: Archive or split a file before the next commit if it exceeds 750 lines, 12 sections, or 60 items (approximately the 95th percentile / current maximum)
+      - label: Archive pattern
+        text: Archive a completed topic to ssot.<topic>.archive.yml. If the archive itself exceeds the hard split threshold, split it by period, e.g. ssot.<topic>.archive.2026.yml or ssot.<topic>.archive.2026-Q3.yml
+      - label: Avoid duplicating sections
+        text: When a file grows, create new focused SSOT files rather than duplicating or copy-pasting sections into other files
+
+  - title: Change Workflow
+    icon: 🔄
+    layout: timeline
+    items:
+      - label: Draft
+        text: Copy docs/ssot/template.yml, fill title, sections, and config, then delete the placeholder comments
+      - label: Validate
+        text: Run the ssot-validate skill before committing; fix syntax and structural errors
+      - label: Register
+        text: Add the file to docs/ssot/ssot.index.yml under the correct category
+      - label: Log significant changes
+        text: For policy or structural changes, append a concise entry to docs/ssot/CHANGELOG.md
+      - label: Commit
+        text: Use a short commit with an allowed prefix from .windsurfrules and reference the SSOT file
+
+  - title: Search and Discovery
+    icon: 🔍
+    layout: list
+    items:
+      - label: Primary search
+        text: Use MDDB semantic search for conceptual SSOT and documentation queries
+      - label: Exact SSOT search
+        text: Use the ssot-search skill for exact YAML pattern matching; fall back to grep docs/ssot/**/*.yml only if the skill is unavailable
+      - label: Master index
+        text: Consult docs/ssot/ssot.index.yml for the authoritative list of SSOT files
+
+  - title: Validation and Quality
+    icon: ✅
+    layout: list
+    items:
+      - label: Tool
+        text: Use the ssot-validate skill to check YAML syntax and SSOT structure
+      - label: Rules
+        text: Follow the conventions in docs/ssot/ssot.validation-patterns.yml
+      - label: Pre-commit
+        text: Always validate before committing; invalid SSOT files break the MDDB sync and search index
+
+config:
+  version: 2
+  created: 2026-08-15
+  last_updated: 2026-08-19
+  maintainer: tony
+  status: active
+  related_files:
+    - docs/ssot/ssot.index.yml
+    - docs/ssot/ssot.validation-patterns.yml
+    - docs/ssot/ssot.maintenance.yml
+    - docs/ssot/CHANGELOG.md
+    - .windsurfrules
+    - docs/kb/documentation-search.md

@@ -1,0 +1,584 @@
+title: Request-Driven Focus & Task Tracking
+subtitle: Every assistant request is checked against active tasks and assigned or queued
+icon: target
+ideas:
+- Capture every user request as a tracked item instead of letting it float between sessions
+- Match each request to an active task, subtask, quick win, or backlog item before acting
+- Limit active work to one shared focus and one branch focus to prevent fragmentation
+- Archive completed or parked strategic focuses while keeping them searchable
+- Review focus at the start and end of every assistant session
+workflow:
+- For routine session starts, read ssot.focus.current.yml for workflow/decision tree, then ssot.focus.current.active.yml for
+  active foci and ssot.focus.current.backlog.yml for quick wins
+- Use this file (ssot.focus.yml) for backlog, archived focuses, and focus history
+- For each user request, first match it against active tasks and their subtasks in ssot.focus.current.active.yml
+- If it matches, append it to that item's request_log in ssot.focus.current.active.yml and do the work inside that focus
+- If it is a small standalone action, add it to quick_wins in ssot.focus.current.backlog.yml and complete it immediately
+- If it is new strategic work, add it to backlog in this file with priority and ask the user to activate it
+- Keep at most one active shared focus and one active branch focus at a time
+- Merge completed branch work into master at the end of the session; do not let feature branches diverge more than one session
+- Delete or archive feature branches after merging to keep the branch list short
+- Update subtask status and append completed quick wins to focus history in this file at session end
+validation:
+  max_active_shared_focus: 1
+  max_active_branch_focus: 1
+  require_priority: true
+  require_tags: true
+  require_request_log: true
+  archive_completed_after_days: 14
+  completed_at_required: true
+  completed_at_note: '`completed_at` (ISO 8601 date) is required on completed focus items and
+
+    completed subtasks.  The mcp-focus server uses it to avoid stale warnings.
+
+    Top-level foci also keep `completed` for human readability; subtasks use
+
+    `completed_at`.
+
+    '
+sections:
+- title: Active Shared Focus
+  icon: active
+  layout: list
+  items: []
+- title: Active Branch Focus
+  icon: branch
+  layout: list
+  items: []
+- title: Backlog - Triage Queue
+  icon: backlog
+  layout: list
+  items:
+  - label: MacBook macOS App Development
+    text: Continue macOS and iOS workstation setup after Tailscale install; full Xcode 15.x is next.
+    branch: macbook
+    status: parked
+    priority: medium
+    tags:
+    - macbook
+    - appdev
+    - xcode
+    triage:
+      urgency: 4
+      importance: 2
+      complication: 5
+    subagent:
+      runnable: true
+      profile: subagent_general
+      parallel: false
+      requires_approval: true
+      can_change_host: true
+      notes: Needs macOS GUI / App Store / Xcode install; subagent can prepare install steps and verify.
+    blocker: Direct IP addresses (192.168.1.39, 100.124.59.112) still reject auth, but `ssh macbook` over Tailscale now works.
+      Next step needs user approval for App Store login and Xcode install.
+    previous_status: active
+    started: '2026-08-19'
+  note: Active/pending backlog. 17 completed items archived to ssot.focus.backlog.archive.2026.yml
+  archive_count: 17
+- title: Quick Wins
+  icon: quick
+  layout: list
+  items:
+  - label: Reduce focus.current bloat
+    text: Trimmed completed active focus items from this SSOT; full history remains in ssot.focus.yml.
+    status: completed
+    completed: '2026-08-17'
+    priority: high
+    tags:
+    - ssot
+    - focus
+    - bloat
+    - token-optimization
+  - label: Add json and csv output formats to mcp_report
+    text: mcp_report now supports json and csv; markdown remains default. Future formats (sjson, ssot, totals_only) recorded
+      in ssot.mcp-debug.reports.yml.
+    status: completed
+    completed: '2026-08-17'
+    priority: high
+    tags:
+    - mcp
+    - report
+    - json
+    - csv
+    - quick-win
+  - label: Add html output format to mcp_report
+    text: mcp_report now supports html with styled per-host tables and negative savings highlighted in red.
+    status: completed
+    completed: '2026-08-17'
+    priority: high
+    tags:
+    - mcp
+    - report
+    - html
+    - quick-win
+  - label: Commit MDDB semantic search fix
+    text: Committed MDDB tooling fixes (chaba-* collections, 127.0.0.1 health checks, curl timeouts) and focus quick win.
+    status: completed
+    completed: '2026-08-17'
+    priority: high
+    tags:
+    - mcp
+    - mddb
+    - commit
+    - quick-win
+  - label: Migrate helm to tony-dell podman
+    text: Moved the web-helm service from tony-omen docker to tony-dell rootless podman, updated Caddy /apps/helm proxy, and
+      retired the tony-omen container.
+    status: completed
+    completed: '2026-08-17'
+    started: '2026-08-17'
+    priority: high
+    tags:
+    - tony-dell
+    - podman
+    - helm
+    - migration
+    - quick-win
+- title: Inactive Strategic Focus Archive
+  icon: archive
+  layout: list
+  items: []
+  note: 9 inactive foci archived to ssot.focus.inactive.archive.2026.yml
+- title: Focus History
+  icon: history
+  layout: timeline
+  items:
+  - label: Streamline mcp-focus and SSOT focus system
+    text: 'The SSOT focus system and mcp-focus have drifted. mcp-focus now supports
+
+      defer/resume, but the SSOT policy, related files, and implementation are not
+
+      fully aligned. Consolidate duplicated triage/safe-to-parallel logic between
+
+      mcp_debug/focus.py and focus_dispatcher/triage.py, update ssot.mcp-focus.yml
+
+      to v2, and wire Ready (Safe) dispatch.
+
+      '
+    date: '2026-08-19'
+    duration: 1 session
+    outcome: 'Completed subtasks: Centralize focus model (triage scoring, priority, safe-to-parallel, branch detection), Update
+      ssot.mcp-focus.yml to match standalone server (v2, related_files, mode docs), Add Ready (Safe) population and ownership/lock
+      checks, Improve error handling and make request optional for read-only modes'
+    tags:
+    - mcp-focus
+    - ssot
+    - focus
+    - streamlining
+    - job-lifecycle
+    - completed
+  - label: Prompt / command preprocessor for context and precision
+    text: 'Build a preprocessing layer that runs before assistant interpretation of user requests and commands.
+
+      It should:
+
+      - Resolve ambiguity by fetching relevant project KB, SSOT, and active focus context.
+
+      - Expand shorthand, aliases, and cues (e.g., "next", "do this", "optimize that") into explicit, actionable requests.
+
+      - Link the user''s goal to the active focus, quick wins, backlog, and decision-tree cases.
+
+      - Emit a structured, unambiguous prompt with: user request, inferred goal, active focus relevance, relevant SSOT/docs,
+      expected tool(s), and any missing info.
+
+      - Reduce misunderstandings, false assumptions, and misinformation by grounding the prompt in the project KB before any
+      tool is called.
+
+      - Optionally rewrite a bare shell command to a canonical, allowed, and compact form before dispatch to mcp_debug/mcp_raw.
+
+      '
+    date: '2026-08-19'
+    duration: 1 session
+    outcome: 'Completed subtasks: Survey current mcp_focus, mcp_debug, and subagent-focus-triage to find existing disambiguation
+      logic, Design the preprocessor schema and output contract, Implement a read-only prototype that grounds a user request
+      in active focus and KB, Add command canonicalization for mcp_debug/mcp_raw, Validate with real ambiguous requests and
+      measure precision improvement'
+    tags:
+    - mcp
+    - prompt
+    - preprocessor
+    - context
+    - kb
+    - focus
+    - workflow
+    - completed
+  - label: Context improvement and optimization
+    text: 'Invest in self-improvement by making the assistant''s context more useful: better KB auto-update, structured project
+      state, contextual relevance ranking, and periodic reflection. Run incrementally so it does not block product work.'
+    date: '2026-08-19'
+    duration: 1 session
+    outcome: Completed
+    tags:
+    - context
+    - optimization
+    - self-improvement
+    - kb
+    - completed
+  - label: Helm Dashboard Service Failure
+    text: Investigate why Helm Dashboard returns 404 (expected 200) and restore it.
+    date: '2026-08-19'
+    duration: 1 session
+    outcome: 'Completed subtasks: Check helm container status and Caddy /apps/helm route, Fix the 404 cause (container, proxy,
+      or path), Re-run health check and verify 200 response'
+    tags:
+    - helm
+    - dashboard
+    - 404
+    - service-health
+    - high-priority
+    - completed
+  - label: SSOT file optimization
+    text: Implement the SSOT file optimization plan. Enforce bloat thresholds, scan for data-isolation violations, remove
+      redundant and obsolete entries, standardize consistency, and wire all checks into ssot-validate and .githooks/pre-commit.
+    date: '2026-08-19'
+    duration: 1 session
+    outcome: 'Completed subtasks: Review ssot.file-optimization.yml and current bloat scan results, Identify files exceeding
+      thresholds and bloat causes, Apply cleanups or splits to reduce bloat, Wire bloat and isolation checks into ssot-validate
+      or pre-commit'
+    tags:
+    - ssot
+    - optimization
+    - bloat
+    - validation
+    - cleanup
+    - completed
+  - label: SSOT and docs currency check after changes
+    text: Run ssot-validate, ssot-optimize, and registry scans to ensure all new SSOT files are registered, no stale docs
+      remain, and all cross-references are accurate after the registry and mcp-debug splits.
+    date: '2026-08-19'
+    duration: 1 session
+    outcome: 'Completed subtasks: Run ssot-validate and verify 0 errors, Run ssot-optimize and review remaining suggestions,
+      Run registry-drafts and import any missing assets, Verify ssot.index.yml reflects all docs/ssot files, Update ssot.improvements.yml
+      status and commit'
+    tags:
+    - completed
+  - label: Add SSOT registry reading support to mcp-debug
+    text: Extend the mcp-debug MCP server with lightweight SSOT read/query tools. This lets remote hosts and MCP consumers
+      look up registry assets (apps, scripts, services, SSOTs) by id, name, type, or keyword, and fetch small SSOT files on
+      demand without pulling the full registry into the prompt.
+    date: '2026-08-19'
+    duration: 1 session
+    outcome: 'Completed subtasks: Survey current mcp-debug file/SSOT capabilities and decide tool shape, Design mcp_registry
+      tool input/output contract, Implement mcp_registry_lookup and mcp_registry_get in scripts/mcp_debug/registry.py, Register
+      new tools in mcp-debug-server.py and MCP config, Test lookup for a registry asset and a small SSOT file'
+    tags:
+    - focus
+    - completed
+  - label: Migrate helm to tony-dell podman
+    text: Move the web-helm service from tony-omen docker to tony-dell rootless podman, update Caddy /apps/helm proxy, and
+      retire the tony-omen container.
+    date: '2026-08-17'
+    duration: 1 session
+    outcome: Move the web-helm service from tony-omen docker to tony-dell rootless podman, update Caddy /apps/helm proxy,
+      and retire the tony-omen container.
+    tags:
+    - tony-dell
+    - podman
+    - helm
+    - migration
+    - quick-win
+    - quick-win
+    - completed
+  - label: Re-enable overnight focus review timer and sync SSOT
+    text: Re-enable the systemd focus-dispatcher-overnight timer and update the SSOT records for services, night jobs, and
+      quick wins.
+    date: '2026-08-18'
+    duration: 1 session
+    outcome: Re-enable the systemd focus-dispatcher-overnight timer and update the SSOT records for services, night jobs,
+      and quick wins.
+    tags:
+    - systemd
+    - focus
+    - ssot
+    - quick-win
+    - quick-win
+    - completed
+  - label: Switch MDDB embedding provider from Ollama to Gemini proxy
+    text: Apply the validated Gemini proxy to the live MDDB on tony-dell. Update the MDDB container/Quadlet config to use
+      http://gemini:11435, reindex all collections, then stop Ollama and reclaim tony-omen GPU.
+    status: completed
+    completed_at: '2026-08-19'
+    tags:
+    - mddb
+    - gemini
+    - gpu-offload
+    - tony-dell
+    - ollama
+    - completed
+    date: '2026-08-19'
+    duration: 1 session
+    outcome: Reindexed all MDDB collections via the Gemini-Ollama proxy and validated vector search. Ollama container already
+      stopped.
+  - label: Network Connectivity Issues (2026-08-20)
+    text: Network connectivity checks failed for critical endpoints (auto-generated by overnight assessment on 2026-08-20T02:13:14+07:00).
+      Verify home network connectivity between tony-dell, tony-omen, and the macbook; reconcile mDNS/hostname profiles; ensure
+      health-critical internal hosts resolve and respond on both home and mobile profiles.
+    date: '2026-08-20'
+    duration: 1 session
+    outcome: 'Completed subtasks: Run current mcp-health and identify every failed/misconfigured check, Reconcile .local vs
+      tailnet hostname usage in ssot.health.*.yml, Verify tony-dell iPhone hotspot fallback path, Document mDNS vs tailnet
+      behavior per host'
+    tags:
+    - network
+    - mcp-health
+    - m-dns
+    - health
+    - completed
+  - label: Security Vulnerabilities Found (2026-08-20)
+    text: Security scan found vulnerabilities requiring immediate attention (auto-generated by overnight assessment on 2026-08-20T02:13:14+07:00).
+      Run the security scan suite and triage any findings. Ensure each finding has a job or risk-accepted note; identify container
+      images with critical vulnerabilities for rebuild; verify no uncommitted secrets in the working tree.
+    date: '2026-08-20'
+    duration: 1 session
+    outcome: 'Completed subtasks: Run security-audit.mjs and collect scan output, Triage critical/high findings and assign
+      owners or risk-acceptance, Identify container images that need rebuild and create follow-up jobs, Scan working tree
+      for uncommitted secrets and credentials'
+    tags:
+    - security
+    - trivy
+    - containers
+    - vulnerabilities
+    - completed
+  - label: Tony-Dell cannot see iPhone Personal Hotspot SSID
+    text: 'tony-dell''s Wi-Fi interface (wlx00761100125e) does not show the iPhone Personal Hotspot in scans.
+
+      Initial check: the adapter is a Ralink MT7601U (148f:7601) which is 2.4 GHz only.
+
+      iPhone Personal Hotspot on newer iOS defaults to 5 GHz when "Maximize Compatibility" is off,
+
+      so the most likely fix is enabling "Maximize Compatibility" on the iPhone, forcing 2.4 GHz.
+
+      If that is not enough, investigate driver/regulatory region, power-saving, and whether the
+
+      hotspot is using a hidden SSID.
+
+      '
+    date: '2026-08-25'
+    duration: 1 session
+    outcome: 'Completed subtasks: Enable "Maximize Compatibility" on iPhone Personal Hotspot and rescan on tony-dell, If still
+      invisible, verify driver/firmware and regulatory domain for MT7601U'
+    tags:
+    - tony-dell
+    - wifi
+    - iphone
+    - hotspot
+    - network
+    - mt7601u
+    - completed
+  - label: SSOT desync for mcp-rview-oauth-proxy
+    text: "A scan of tony-dell found the mcp-rview-oauth-proxy is already running:\n  - 127.0.0.1:9004 is listening on tony-dell\n\
+      \  - tailscale serve on tony-dell serves https://tony-dell.taila0626a.ts.net/ proxying to 127.0.0.1:9004\n  - the mcp-rview\
+      \ stdio/SSE server is also on tony-dell at 127.0.0.1:9003\nHowever, ssot.services.yml and ssot.health still describe\
+      \ the proxy as a tony-omen service on 9004/443,\nand the tony-omen tailscale serve status does not show a /mcp-rview\
+      \ or 9004 handler.\nThe whole RView MCP stack is already co-located on tony-dell; the migration is effectively done\
+      \ but not recorded.\n"
+    date: '2026-08-26'
+    duration: 1 session
+    outcome: 'Completed subtasks: Verify tony-omen has no active mcp-rview-oauth-proxy listener or tailscale serve mapping,
+      Update docs/ssot/infrastructure/ssot.services.yml to register mcp-rview-oauth-proxy under tony_dell, Update affected
+      health files (ssot.health.home.web.yml, ssot.health.mobile.yml, public/ssot.health.mobile.yml), Update ssot.containerization.yml
+      and the active migration job to reflect reality, Commit the SSOT sync'
+    tags:
+    - mcp-rview
+    - oauth
+    - ssot
+    - tony-dell
+    - sync
+    - completed
+  - label: Stabilize tony-dell as the headless primary host
+    text: Move persistent services and headless automation to tony-dell while keeping tony-omen available for interactive
+      work and GPU/ML tasks.
+    date: '2026-08-26'
+    duration: 3 sessions
+    outcome: 'Completed subtasks: Audit current tony-dell services and identify missing persistent units, Move low-latency
+      MCP servers (mcp-debug SSE, mcp-health, mcp-focus) to tony-dell, Add tony-dell health checks to SSOT and verify Tailscale
+      reachability, Document tony-omen-to-tony-dell failover procedure'
+    tags:
+    - tony-dell
+    - headless
+    - failover
+    - mcp
+    - infrastructure
+    - completed
+  - label: Gold/THB/USD Causality Exploration
+    text: 'Investigate directional and temporal relationships between gold (XAU/USD),
+
+      the Thai Baht (USD/THB), and the US Dollar index using Granger causality
+
+      and other time-series methods.
+
+      '
+    date: '2026-08-28'
+    duration: 2 sessions
+    outcome: 'Completed subtasks: Define hypotheses and variable set, Fetch and cache daily time series, Clean, align, and
+      stationarize, Exploratory analysis and visualizations, Causality and lead-lag tests, Report and archive'
+    tags:
+    - gold
+    - thb
+    - usd
+    - causality
+    - experiment
+    - completed
+  - label: Trade Automation health
+    text: 'mcp-health reported status ''error'' for Trade Automation at 2026-08-28T03:00:11. Error: Container trade-automation
+      not found. Check:  docker ps -a | grep trade-automation'
+    date: '2026-08-28'
+    duration: 1 session
+    outcome: Completed
+    tags:
+    - health
+    - inbox
+    - optional
+    - completed
+  - label: 'SSOT optimize: jobs/experiments/2026-08-26-gold-thb-usd-conclusion.yml'
+    text: 'SSOT optimization detected issues in `jobs/experiments/2026-08-26-gold-thb-usd-conclusion.yml`:
+
+
+      - bloat: Bloat: 394 lines exceeds review threshold of 350
+
+
+      Review for bloat, data isolation, or obsolescence and either split/archive the file or resolve the warnings.'
+    date: '2026-08-28'
+    duration: 1 session
+    outcome: Completed
+    tags:
+    - ssot
+    - optimization
+    - bloat
+    - data-isolation
+    - completed
+  - label: 'SSOT optimize: focus-inbox/2026-08-27-190227-ssot-optimization-issues.yml'
+    text: 'SSOT optimization detected issues in `focus-inbox/2026-08-27-190227-ssot-optimization-issues.yml`:
+
+
+      - other: YAML syntax error: while parsing a block mapping
+
+      - other: other: 2
+
+
+      Review for bloat, data isolation, or obsolescence and either split/archive the file or resolve the warnings.'
+    date: '2026-08-28'
+    duration: 1 session
+    outcome: Completed
+    tags:
+    - ssot
+    - optimization
+    - bloat
+    - data-isolation
+    - completed
+  - label: 'SSOT optimize: focus-inbox/2026-08-27-190227-dev-system-regression.yml'
+    text: "SSOT optimization detected issues in `focus-inbox/2026-08-27-190227-dev-system-regression.yml`:\n\n- other: YAML\
+      \ syntax error: while parsing a block mapping\n- other: Branch/worktree sprawl (medium ... \n\nReview for bloat, data\
+      \ isolation, or obsolescence and either split/archive the file or resolve the warnings."
+    date: '2026-08-28'
+    duration: 1 session
+    outcome: Completed
+    tags:
+    - ssot
+    - optimization
+    - bloat
+    - data-isolation
+    - completed
+  - label: SSOT optimization warnings
+    text: 'SSOT optimization detected issues:
+
+      - other: 2
+
+      Source: reports/SSOT_OPTIMIZATION_METRICS.json
+
+      '
+    date: '2026-08-28'
+    duration: 1 session
+    outcome: 'Completed subtasks: Open reports/SSOT_OPTIMIZATION_SUGGESTIONS.md, Fix highest priority warning, Re-run ssot-validate-all'
+    tags:
+    - ssot
+    - optimization
+    - completed
+  - label: Dev-system regression
+    text: 'Dev-system trend is declining. Open cons:
+
+      - Branch/worktree sprawl (medium): 3 branches are ahead of master; 6 worktrees active
+
+      - SSOT quality regression (high): 2 SSOT optimization warning(s)
+
+      - Uncommitted working tree (medium): 6 untracked or modified file(s)
+
+      Source: reports/DEV_SYSTEM_ASSESSMENT.json
+
+      '
+    date: '2026-08-28'
+    duration: 1 session
+    outcome: 'Completed subtasks: Review reports/DEV_SYSTEM_ASSESSMENT.md, Address highest severity con: Branch/worktree sprawl,
+      Update docs/ssot/ssot.dev-system.assessment.yml when resolved'
+    tags:
+    - dev-system
+    - assessment
+    - completed
+  - label: Sync worktree yomi with master
+    text: 'Worktree yomi is 0 commit(s) ahead and 1546 commit(s) behind master.
+
+      Decide whether to merge, rebase, or archive the branch.
+
+      '
+    date: '2026-08-28'
+    duration: 1 session
+    outcome: 'Completed subtasks: Review yomi changes, Merge or rebase to master, Delete worktree if merged'
+    tags:
+    - worktree
+    - sync
+    - branches
+    - completed
+  - label: Sync worktree raceman with master
+    text: 'Worktree raceman is 0 commit(s) ahead and 1530 commit(s) behind master.
+
+      Decide whether to merge, rebase, or archive the branch.
+
+      '
+    date: '2026-08-28'
+    duration: 1 session
+    outcome: 'Completed subtasks: Review raceman changes, Merge or rebase to master, Delete worktree if merged'
+    tags:
+    - worktree
+    - sync
+    - branches
+    - completed
+  - label: Sync worktree michael with master
+    text: 'Worktree michael is 2 commit(s) ahead and 4 commit(s) behind master.
+
+      Decide whether to merge, rebase, or archive the branch.
+
+      '
+    date: '2026-08-28'
+    duration: 1 session
+    outcome: 'Completed subtasks: Review michael changes, Merge or rebase to master, Delete worktree if merged'
+    tags:
+    - worktree
+    - sync
+    - branches
+    - completed
+  - label: Sync worktree mcp-kbman with master
+    text: 'Worktree mcp-kbman is 0 commit(s) ahead and 1397 commit(s) behind master.
+
+      Decide whether to merge, rebase, or archive the branch.
+
+      '
+    date: '2026-08-28'
+    duration: 1 session
+    outcome: 'Completed subtasks: Review mcp-kbman changes, Merge or rebase to master, Delete worktree if merged'
+    tags:
+    - worktree
+    - sync
+    - branches
+    - completed
+  note: Recent 10 focus records. 10 older records archived to /home/tony/CascadeProjects/chaba/docs/ssot/ssot.focus.history.archive.2026.yml
+  archive_count: 10
+config:
+  version: 2
+  last_updated: '2026-08-19'
+  maintainer: tony
+  validation_enabled: true
+  related_files:
+  - docs/ssot/ssot.focus.current.yml
+  - docs/ssot/ssot.improvements.yml
+  - docs/ssot/ssot.index.yml
+  - .devin/agents/AGENTS.md

@@ -1,0 +1,181 @@
+title: Tony-Dell 24/7 Monitoring & Recovery
+subtitle: Run tony-dell as a persistent, independent monitor for the Chaba home infrastructure
+icon: 🛰️
+
+ideas:
+  - tony-dell is always on and has a stable Tailscale identity; use it as a second vantage point
+  - Monitor both tony-dell local health and tony-omen critical services over the tailnet
+  - Record health snapshots and a monitor log on tony-dell so failures can be correlated
+  - Start in observe-only mode; enable safe auto-recovery after the baseline is trusted
+  - Keep recovery actions narrow and well-audited; never restart critical DBs or the Caddy host blindly
+
+sections:
+  - title: Current Baseline
+    icon: 📍
+    layout: list
+    items:
+      - label: tony-dell snapshot
+        text: health-snapshot.sh runs every 5 minutes and writes /home/tony/var/chaba/health/tony-dell-snapshot.json
+      - label: mcp-debug host
+        text: tony_dell is reachable over ssh tony@tony-dell (Tailnet)
+      - label: mcp-health
+        text: central mcp-health server runs on tony-omen; tony-dell now queries it via SSH and stores the score at tony-dell-mcp-health.json
+
+  - title: Target State
+    icon: 🎯
+    layout: list
+    items:
+      - label: Persistent monitor agent
+        text: tony-dell runs tony-dell-monitor.sh as a systemd user timer every 2 minutes
+      - label: mcp-health schedule group
+        text: tony-dell-mcp-health.sh runs every 5 minutes; queries mcp-health critical-only services and caches the score
+      - label: Cross-host checks
+        text: polls tony-omen HTTP endpoints (caddy, yomi-api, mddb-api, status-api, gpu-queue, playlived, llama-server) and tony-dell local services (barrier-client, Funnel port 8082)
+      - label: Recovery policy
+        text: observe-only for 1 week, then allow safe restarts (barrierc, playlived, yomi timers, caddy only after confirmation)
+      - label: Notifications
+        text: failures and recoveries are appended to /home/tony/var/chaba/health/tony-dell-monitor.log; optional yomi/api push
+      - label: Log retention
+        text: keep 7 days of monitor log, rotate with tail -n 10000
+
+  - title: Services to Monitor
+    icon: 🩺
+    layout: list
+    items:
+      - label: tony-omen web
+        text: http://tony-omen:8080/, http://tony-omen:8080/api/yomi/health, http://tony-omen:8080/api/health
+      - label: tony-omen AI/data
+        text: http://tony-omen:11023/health (MDDB), http://tony-omen:8008/health (llama), http://tony-omen:8000/health (imagen2)
+      - label: tony-omen GPU queue
+        text: http://tony-omen:3001/health
+      - label: tony-omen playlive
+        text: http://tony-omen:9230/sessions
+      - label: tony-dell local
+        text: barrier-client process, Funnel port 8082; disk and memory are already covered by health-snapshot.sh
+
+  - title: Phased Plan
+    icon: 🗓️
+    layout: timeline
+    items:
+      - label: Phase 1 — Deploy observe-only monitor
+        text: Create scripts/tony-dell-monitor.sh, systemd user timer, run every 2 minutes, log only
+        status: completed
+      - label: Phase 2 — Add mcp-health integration
+        text: Have tony-dell periodically query mcp-health critical services and store the result; do not run the full mcp-health server yet
+        status: completed
+      - label: Phase 3 — Safe auto-recovery
+        text: Enable restart commands for services with a known-good restart path and require two consecutive failures
+        status: in_progress
+      - label: Phase 4 — Alerting & correlation
+        text: Send notifications to yomi/api and add tony-dell monitor log to mcp-debug snapshots
+        status: pending
+
+  - title: Recovery Policy
+    icon: 🚑
+    layout: list
+    items:
+      - label: Allowed manual/semi-auto restarts
+        text: barrierc, playlived, yomi-update timers, caddy only after operator confirmation, llama-server only if GPU queue is idle
+      - label: Never auto-restart
+        text: postgres, weaviate, redis, mddb container, caddy (unless an explicit human confirms)
+      - label: Escalation
+        text: after 3 failed recovery attempts, stop auto-retry and send critical alert
+
+  - title: Recovery Commands
+    icon: 🛠
+    layout: list
+    items:
+      - label: barrier-client
+        text: Restart the Barrier KVM client on tony-dell. Safe because it is non-critical and reconnects automatically.
+        host: tony_dell
+        trigger: 2 consecutive failures of the barrier-client process check
+        precheck: pgrep -a barrierc || echo missing
+        command: pkill -x barrierc 2>/dev/null; nohup /home/tony/.local/bin/barrierc --no-daemon --disable-crypto --name tony-dell --log /tmp/barrier-client.log tony-omen >/dev/null 2>&1 &
+        verify: pgrep -a barrierc
+
+      - label: playlived
+        text: Restart the PlayLive daemon on tony-dell. Safe because it is stateless and re-scans sessions on start.
+        host: tony_dell
+        trigger: 2 consecutive failures of http://tony-dell:9230/sessions
+        precheck: systemctl --user is-active playlived.service
+        command: systemctl --user restart playlived.service
+        verify: curl -s http://tony-dell:9230/sessions
+
+      - label: yomi-update-timers
+        text: Reset the Yomi fetch/update timers on tony-dell. Safe when yomi-api itself is healthy but the timers have failed.
+        host: tony_dell
+        trigger: 2 consecutive failures of the yomi-update-active or yomi-update-all timer unit
+        precheck: systemctl --user is-active yomi-update-active.timer yomi-update-all.timer
+        command: systemctl --user restart yomi-update-active.timer yomi-update-all.timer
+        verify: systemctl --user is-active yomi-update-active.timer yomi-update-all.timer
+
+      - label: llama-server
+        text: Restart the Llama router on tony-omen only when the GPU queue is idle and tony-dell is not actively routing.
+        host: tony_omen
+        trigger: 3 consecutive failures of http://tony-omen:8008/health with GPU queue idle
+        precheck: curl -s http://tony-omen:3001/health | grep -q idle
+        command: systemctl --user restart thai-legal-inference.service
+        verify: curl -s http://tony-omen:8008/health
+
+      - label: caddy
+        text: Reload Caddy on tony-omen. Requires operator confirmation because it affects all web endpoints.
+        host: tony_omen
+        trigger: Caddy returns 5xx or is unresponsive on 3 consecutive checks
+        confirmation: true
+        precheck: systemctl --user is-active caddy.service
+        command: systemctl --user reload caddy.service
+        verify: curl -s -o /dev/null -w '%{http_code}' http://tony-omen:8080/
+
+      - label: chaba-funnel
+        text: Restart the tony-dell Tailscale Funnel landing page and docs server.
+        host: tony_dell
+        trigger: 2 consecutive failures of https://tony-dell.taila0626a.ts.net:8444/health
+        precheck: systemctl --user is-active chaba-funnel.service
+        command: systemctl --user restart chaba-funnel.service
+        verify: curl -s -o /dev/null -w '%{http_code}' https://tony-dell.taila0626a.ts.net:8444/health
+
+  - title: Files & Paths
+    icon: 📁
+    layout: list
+    items:
+      - label: Monitor script
+        text: /home/tony/CascadeProjects/chaba/scripts/tony-dell-monitor.sh (source); deployed to /home/tony/.local/bin/tony-dell-monitor.sh
+      - label: systemd user units
+        text: /home/tony/.config/systemd/user/tony-dell-monitor.service and tony-dell-monitor.timer
+      - label: mcp-health query script
+        text: /home/tony/CascadeProjects/chaba/scripts/tony-dell-mcp-health.sh (source); deployed to /home/tony/.local/bin/tony-dell-mcp-health.sh
+      - label: mcp-health systemd user units
+        text: /home/tony/.config/systemd/user/tony-dell-mcp-health.service and tony-dell-mcp-health.timer
+      - label: Monitor log
+        text: /home/tony/var/chaba/health/tony-dell-monitor.log
+      - label: mcp-health score cache
+        text: /home/tony/var/chaba/health/tony-dell-mcp-health.json
+      - label: mcp-health client
+        text: /home/tony/CascadeProjects/chaba/scripts/mcp-health-client.py (runs on tony-omen, invoked by tony-dell over SSH)
+      - label: Snapshot
+        text: /home/tony/var/chaba/health/tony-dell-snapshot.json (already deployed)
+
+  - title: Verification
+    icon: 🧪
+    layout: list
+    items:
+      - label: Timer status
+        text: systemctl --user list-timers --all
+        tags: [mcp-debug]
+      - label: Latest log
+        text: tail -n 50 /home/tony/var/chaba/health/tony-dell-monitor.log
+        tags: [mcp-debug]
+      - label: Cross-host endpoint
+        text: curl -s -o /dev/null -w '%{http_code}' http://tony-omen:8080/health
+        tags: [mcp-debug]
+
+config:
+  version: 1
+  created: 2026-08-15
+  maintainer: tony
+  status: draft
+  related_files:
+    - docs/overview/hosts.tony-dell.yml
+    - docs/ssot/infrastructure/ssot.health.yml
+    - docs/ssot/infrastructure/ssot.mcp-debug.yml
+    - scripts/health-snapshot.sh

@@ -1,0 +1,131 @@
+title: Audit Baseline
+subtitle: Accepted root containers and public endpoints for security-audit
+icon: shield
+version: 1
+last_updated: '2026-08-23'
+maintainer: tony
+
+overview:
+  purpose: |
+    Maintain a time-stamped, reasoned exception list for the security-audit.
+    Each accepted container or endpoint must have a last_verified date and a
+    justification so stale exceptions can be reviewed and removed.
+
+accepted_root_containers:
+  - value: gpu-queue
+    last_verified: '2026-08-25'
+    reason: Migrated to tony-dell rootless podman; manages GPU job queue and connects to tony-omen GPU workers
+  - value: gpu-queue-processor
+    last_verified: '2026-08-25'
+    reason: Migrated to tony-dell rootless podman; polls the gpu-queue and dispatches jobs to tony-omen GPU workers
+  - value: web
+    last_verified: '2026-08-19'
+    reason: Main web compose stack
+  - value: ollama
+    last_verified: '2026-08-19'
+    reason: Local LLM inference service
+  - value: sensor-reader
+    last_verified: '2026-08-19'
+    reason: Reads home sensor data
+  - value: gemini-ollama-proxy
+    last_verified: '2026-08-25'
+    reason: Proxies Gemini-compatible embedding requests to Google Gemini API, migrated to tony-dell rootless podman
+  - value: imagen2-inference
+    last_verified: '2026-08-19'
+    reason: Image generation inference container
+
+accepted_public_endpoints:
+  - value: '0.0.0.0:11434'
+    last_verified: '2026-08-19'
+    reason: Ollama API
+  - value: '0.0.0.0:11435'
+    last_verified: '2026-08-19'
+    reason: Ollama secondary API
+  - value: '0.0.0.0:18080'
+    last_verified: '2026-08-19'
+    reason: Imagen2 web UI
+  - value: '0.0.0.0:18081'
+    last_verified: '2026-08-19'
+    reason: Imagen2 inference API
+  - value: '0.0.0.0:22'
+    last_verified: '2026-08-19'
+    reason: SSH on local trusted network
+  - value: '0.0.0.0:24800'
+    last_verified: '2026-08-19'
+    reason: Tailscale serve port
+  - value: '0.0.0.0:3000'
+    last_verified: '2026-08-19'
+    reason: Yomi API
+  - value: '0.0.0.0:3001'
+    last_verified: '2026-08-19'
+    reason: Internal API service
+  - value: '0.0.0.0:33450'
+    last_verified: '2026-08-19'
+    reason: mcp-rview service
+  - value: '0.0.0.0:35640'
+    last_verified: '2026-08-19'
+    reason: mcp-weaviate service
+  - value: '0.0.0.0:36246'
+    last_verified: '2026-08-19'
+    reason: mcp-gpu service
+  - value: '0.0.0.0:37634'
+    last_verified: '2026-08-19'
+    reason: mcp-llama service
+  - value: '0.0.0.0:40479'
+    last_verified: '2026-08-19'
+    reason: mcp-health service
+  - value: '0.0.0.0:41563'
+    last_verified: '2026-08-19'
+    reason: Local service port
+  - value: '0.0.0.0:41641'
+    last_verified: '2026-08-19'
+    reason: Local service port
+  - value: '0.0.0.0:43108'
+    last_verified: '2026-08-19'
+    reason: mcp-debug service
+  - value: '0.0.0.0:51755'
+    last_verified: '2026-08-19'
+    reason: Local service port
+  - value: '0.0.0.0:51770'
+    last_verified: '2026-08-19'
+    reason: Local service port
+  - value: '0.0.0.0:52241'
+    last_verified: '2026-08-19'
+    reason: Local service port
+  - value: '0.0.0.0:52320'
+    last_verified: '2026-08-19'
+    reason: Local service port
+  - value: '0.0.0.0:5353'
+    last_verified: '2026-08-19'
+    reason: Multicast DNS (mDNS)
+  - value: '0.0.0.0:55489'
+    last_verified: '2026-08-19'
+    reason: Local service port
+  - value: '0.0.0.0:8000'
+    last_verified: '2026-08-19'
+    reason: status-api service
+  - value: '0.0.0.0:8001'
+    last_verified: '2026-08-19'
+    reason: Llama Router API
+  - value: '0.0.0.0:8080'
+    last_verified: '2026-08-19'
+    reason: Caddy admin/alt HTTP
+  - value: '0.0.0.0:8081'
+    last_verified: '2026-08-19'
+    reason: mcp-yomi or local proxy
+  - value: '0.0.0.0:9010'
+    last_verified: '2026-08-19'
+    reason: Caddy metrics/admin
+  - value: '0.0.0.0:48503'
+    last_verified: '2026-08-19'
+    reason: Local service port
+  - value: '0.0.0.0%lxcbr0:67'
+    last_verified: '2026-08-19'
+    reason: LXC bridge bootp/IPv6
+  - value: '0.0.0.0%virbr0:67'
+    last_verified: '2026-08-19'
+    reason: libvirt bridge bootp/IPv6
+
+related_files:
+  - docs/ssot/infrastructure/ssot.audit.yml
+  - scripts/security-audit.sh

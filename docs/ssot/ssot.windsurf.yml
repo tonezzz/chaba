@@ -1,0 +1,55 @@
+title: Windsurf Workspace Rules SSOT
+subtitle: Single source of truth for shared .windsurfrules sections across chaba workspaces
+icon: 🌪️
+
+ideas:
+  - .windsurfrules files are per-workspace but should share common sections such as Documentation Search Standards.
+  - This SSOT defines the canonical source and the validator that keeps other workspaces aligned.
+  - Future common sections (e.g., Auto KB Processing, Hostname Usage Standards) can be added here.
+
+sections:
+  - title: Canonical Source
+    icon: source
+    layout: list
+    items:
+      - label: Common rules
+        text: docs/ssot/ssot.windsurf.common.md is the source of truth for rules shared across all branches
+      - label: Branch-specific overlays
+        text: docs/ssot/ssot.windsurf.<branch>.md (master, chaba.h3, raceman) contain branch-specific rules
+      - label: Workspace pointers
+        text: Each workspace .windsurfrules is a thin pointer that loads the common SSOT plus the current branch overlay
+
+  - title: Target Workspaces
+    icon: 🗂️
+    layout: list
+    items:
+      - label: chaba-h3
+        text: /home/tony/CascadeProjects/chaba-h3/.windsurfrules
+      - label: chaba-kbman
+        text: /home/tony/CascadeProjects/chaba-kbman/.windsurfrules
+      - label: chaba-omen
+        text: /home/tony/CascadeProjects/chaba-omen/.windsurfrules
+      - label: chaba-raceman
+        text: /home/tony/CascadeProjects/chaba-raceman/.windsurfrules
+      - label: chaba-yomi
+        text: /home/tony/CascadeProjects/chaba-yomi/.windsurfrules
+
+  - title: Health Check and Fix
+    icon: 🩺
+    layout: list
+    items:
+      - label: Validator
+        text: scripts/windsurfrules-check.py should be updated to verify each workspace .windsurfrules points to the correct SSOT files
+      - label: Fix mode
+        text: scripts/windsurfrules-check.py --fix should re-point .windsurfrules to docs/ssot/ssot.windsurf.common.md and the branch overlay
+      - label: Manual fallback
+        text: If the validator fails, follow the procedure in docs/kb/documentation-search.md
+
+config:
+  version: 1
+  created: 2026-08-15
+  maintainer: tony
+  status: active
+  related_files:
+    - docs/kb/documentation-search.md
+    - .windsurfrules

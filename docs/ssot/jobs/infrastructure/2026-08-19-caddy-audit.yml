@@ -1,0 +1,121 @@
+title: Caddy configuration audit and CI
+subtitle: Reconcile the canonical and deployed Caddyfiles, fix routing bugs, and add a Caddy stage to the audit pipeline
+icon: routes
+version: 1
+
+planning:
+  goal: |
+    Audit the current Caddy reverse-proxy configuration, eliminate drift between
+    the canonical repo file and the running tony-omen worktree, fix discovered
+    routing bugs, and add a lightweight Caddy check to the consolidated CI/audit
+    pipeline.
+  scope:
+    - stacks/web/Caddyfile in the main repo
+    - /home/tony/CascadeProjects/chaba-omen/stacks/web/Caddyfile on tony-omen
+    - docs/ssot/infrastructure/ssot.health.home.yml / ssot.health.mobile.yml
+    - docs/ssot/infrastructure/ssot.values.yml
+  out_of_scope:
+    - Moving services between hosts
+    - Replacing Caddy with another reverse proxy
+    - HTTPS/Tailscale Funnel changes
+  success_criteria:
+    - Both Caddyfiles are syntax-valid and formatted
+    - No unreachable route blocks due to catch-all ordering
+    - Reverse-proxy targets are consistent with ssot.values.yml and current host roles
+    - Caddy audit is a scheduled or CI step in ssot.audit.yml
+    - Running tony-omen Caddy is reloaded from the canonical or reconciled file
+  risks:
+    - The chaba-omen worktree is divergent; reconciling it may overwrite local emergency edits
+    - Route ordering fixes can break existing clients if not tested
+    - Caddy reload without validation can drop active routes
+  resources:
+    - caddy binary on tony-omen and tony-dell
+    - scripts/audits/run.mjs
+    - chaba-omen worktree and the web Docker container
+  owner: tony
+  estimated_duration: 1-2 sessions
+  related_focus:
+    - label: Caddy configuration audit and CI
+      file: docs/ssot/ssot.focus.current.yml
+
+processing:
+  status: completed
+  started_at: '2026-08-19'
+  completed_at: '2026-08-19'
+  findings:
+    - file: stacks/web/Caddyfile
+      issue: The @api_cache /api/* block at line 93 appears before more specific /api/yomi, /api/tailscale, /api/ws, /api/focus, and status_api routes, which may prevent them from matching.
+      severity: high
+    - file: stacks/web/Caddyfile
+      issue: "The redir for /apps/tony-omen-temp is missing the space before the status code, so it redirects to the path '/apps/tony-omen-temp/308' instead of '/apps/tony-omen-temp/' with a 308 code."
+      severity: medium
+    - file: chaba-omen/stacks/web/Caddyfile
+      issue: "The /api/yomi/* route proxies to 100.68.142.13:3000 (tony-omen) while SSOT says yomi runs on tony-dell."
+      severity: high
+    - file: chaba-omen/stacks/web/Caddyfile
+      issue: File is not caddy-fmt formatted and is divergent from the canonical Caddyfile.
+      severity: medium
+    - file: both Caddyfiles
+      issue: Many reverse_proxy targets use hardcoded Tailscale IPs (100.68.142.13, 100.68.142.42) instead of the hostnames in ssot.values.yml.
+      severity: low
+    - file: both Caddyfiles
+      issue: No /health endpoint for the Caddy container itself and no per-route logging configured.
+      severity: low
+  steps:
+    - id: 1
+      label: Validate and format both Caddyfiles
+      status: completed
+    - id: 2
+      label: Reconcile or merge chaba-omen Caddyfile into canonical
+      status: completed
+    - id: 3
+      label: Fix @api_cache ordering and redir typo
+      status: completed
+    - id: 4
+      label: Add Caddy syntax/format check to CI/audit
+      status: completed
+    - id: 5
+      label: Add Caddy /health endpoint and reload the web container
+      status: completed
+  decisions: []
+  changes:
+    - file: stacks/web/Caddyfile
+      summary: removed shadowing @api_cache and duplicate weaviate; fixed redir typo; added /health; caddy fmt'd
+    - file: chaba-omen/stacks/web/Caddyfile
+      summary: /api/yomi/* now proxies to tony-dell:3000; caddy fmt'd
+    - file: scripts/audits/caddy-audit.mjs
+      summary: new Caddyfile format and syntax audit script
+    - file: docs/ssot/infrastructure/ssot.audit.yml
+      summary: added caddy audit to default weekly runs
+
+followup:
+  verification:
+    - caddy fmt --overwrite on both Caddyfiles and re-run caddy adapt
+    - curl smoke tests for /api/weaviate, /api/yomi, /api/*, /apps/trade, /apps/raceman
+    - systemctl --user reload or docker restart web
+  rollback_plan:
+    - Revert the canonical Caddyfile and the chaba-omen worktree to the pre-audit commit
+    - docker restart web with the previous Caddyfile if stored
+  handoff:
+    - tony for smoke test and monitoring
+  deferred:
+    - Add per-route access logs and structured logging
+    - HTTPS redirects or automatic HTTP->HTTPS upgrade
+    - Caddy performance/load metrics
+
+report:
+  status: completed
+  completed_at: '2026-08-19'
+  summary: 'Caddy routing fixes, Caddyfile formatting, and CI audit implemented and tested'
+  metrics: {}
+  links: []
+  kb_review: []
+  lessons_learned: []
+
+config:
+  version: 1
+  created_at: '2026-08-19'
+  last_updated: '2026-08-19'
+  maintainer: tony
+  related_files:
+    - docs/ssot/templates/job.yml

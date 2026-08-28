@@ -1,0 +1,142 @@
+title: AI Hub
+subtitle: Remote multi-AI browser automation via playlive to control Claude, ChatGPT, and Gemini tabs simultaneously.
+icon: AI
+sections:
+  - title: Overview
+    icon: '*'
+    layout: list
+    items:
+      - label: Goal
+        text: Control multiple AI web UIs on tony-dell from tony-omen by uploading images and sending prompts in parallel.
+      - label: Scope
+        text: Supports Chrome CDP remote control, in-memory file upload, DOM evaluation, and screenshot capture.
+
+  - title: Architecture
+    icon: '*'
+    layout: list
+    items:
+      - label: playlived
+        text: Node.js HTTP daemon on tony-dell that owns Playwright sessions over a Chrome CDP endpoint.
+      - label: playlive-server.py
+        text: MCP server on tony-omen that bridges Windsurf/tool calls to the playlived HTTP API.
+      - label: Chrome CDP
+        text: Chrome on tony-dell must be launched with --remote-debugging-port=<port> using the same user-data-dir/profile as the logged-in tabs.
+      - label: MCP tools
+        text: playlive_create_chrome_live, playlive_upload_file, playlive_eval, playlive_screenshot, playlive_fill, playlive_click, playlive_state. A Windsurf reload is required after tool changes.
+
+  - title: Files
+    icon: '*'
+    layout: list
+    items:
+      - label: Daemon source
+        text: chaba-omen/mcp/mcp-playlive/playlived.mjs
+      - label: MCP server
+        text: chaba-omen/mcp/mcp-playlive/playlive-server.py
+      - label: Deploy target
+        text: /home/tony/.local/playlive/playlived.mjs on tony-dell
+      - label: Log
+        text: /home/tony/.local/playlive/playlived.log on tony-dell
+      - label: This SSOT
+        text: chaba/docs/ssot/apps/ssot.apps.aihub.yml
+
+  - title: Deployment
+    icon: '*'
+    layout: list
+    items:
+      - label: Start daemon
+        text: >
+          cd /home/tony/.local/playlive &&
+          PLAYLIVED_REMOTE_CDP=http://127.0.0.1:9223
+          setsid -f sh -c 'exec /home/tony/.local/node/bin/node playlived.mjs >> playlived.log 2>&1' ;
+          then curl -s http://127.0.0.1:9230/sessions
+      - label: Sync source
+        text: >
+          scp chaba-omen/mcp/mcp-playlive/playlived.mjs
+          tony@tony-dell.local:/home/tony/.local/playlive/playlived.mjs
+      - label: Safe restart
+        text: >
+          ssh tony@tony-dell.local 'lsof -ti:9230 | xargs -r kill -9 ; sleep 2 ;
+          cd /home/tony/.local/playlive && > playlived.log &&
+          PLAYLIVED_REMOTE_CDP=http://127.0.0.1:9223
+          setsid -f sh -c "exec /home/tony/.local/node/bin/node playlived.mjs >> playlived.log 2>&1" ;
+          sleep 3 ; curl -s http://127.0.0.1:9230/sessions'
+      - label: Node path
+        text: /home/tony/.local/node/bin/node is not in the default ssh PATH; always use the full path.
+
+  - title: API Endpoints
+    icon: '*'
+    layout: list
+    items:
+      - label: Create session
+        text: "POST /sessions {type:'chrome-live', target:'remote', attach_url:'chatgpt.com'} -> {session_id, attached}"
+      - label: Navigate
+        text: "POST /sessions/{id}/navigate {url:'https://chatgpt.com'}"
+      - label: Upload
+        text: "POST /sessions/{id}/upload {selector:'#upload-files', base64:'...', filename:'track4.png', mimeType:'image/png'}"
+      - label: Eval
+        text: "POST /sessions/{id}/eval {script:'document.querySelector(...).click()'}"
+      - label: Screenshot
+        text: "POST /sessions/{id}/screenshot {fullPage:false} -> {base64:'...', mimeType:'image/png'}"
+
+  - title: Service Selectors
+    icon: '*'
+    layout: list
+    items:
+      - label: ChatGPT file input
+        text: "#upload-files or #upload-photos (input[type='file'] accepting image/*)"
+      - label: ChatGPT prompt
+        text: "contenteditable div#prompt-textarea; fill with document.execCommand('insertText', false, prompt)"
+      - label: ChatGPT send
+        text: "button[data-testid='send-button']"
+      - label: Gemini file input
+        text: "No reliably hidden input; first click the attach/plus button, then find input[type='file']"
+      - label: Gemini prompt
+        text: "textarea or div[contenteditable='true']; fill with document.execCommand('insertText', false, prompt)"
+      - label: Gemini send
+        text: "button[aria-label='Send message'] or first button whose ariaLabel/title matches send"
+
+  - title: Recipe
+    icon: '*'
+    layout: list
+    items:
+      - label: Image
+        text: Base64-encode the local screenshot (e.g. /tmp/Screenshot_*.png).
+      - label: Sessions
+        text: Create one session per AI using attach_url substrings (chatgpt.com, gemini.google.com, claude.ai).
+      - label: Upload
+        text: Find or reveal the hidden file input, then POST /upload with the base64 payload.
+      - label: Prompt
+        text: Use eval to focus the prompt element, document.execCommand('insertText', ...), then click the send button.
+      - label: Capture
+        text: Wait for the response, POST /screenshot, save the base64 to a PNG file.
+
+  - title: Verification
+    icon: '*'
+    layout: list
+    items:
+      - label: List CDP targets
+        text: "curl -s http://127.0.0.1:9223/json/list | jq '.[] | {id:.id, url:.url, title:.title}'"
+      - label: Health check
+        text: "curl -s http://tony-dell.local:9230/sessions should return 200 with a JSON sessions list"
+      - label: Confirm login
+        text: The CDP target's tab URLs/titles must show the logged-in AI UIs, not login pages.
+
+  - title: Caveats
+    icon: '*'
+    layout: list
+    items:
+      - label: Login state
+        text: The CDP Chrome must be the same profile and instance where the user is logged in; sign in on the actual tabs first.
+      - label: Base64 inflation
+        text: Embedding images in JSON base64 inflates size by about 33%; add a /stash endpoint for very large files if needed.
+      - label: MCP reload
+        text: New tools or parameters in playlive-server.py require a Windsurf reload to appear in the IDE tool list.
+      - label: Selector drift
+        text: AI web UIs change frequently; the selectors above may need updating.
+
+  - title: History
+    icon: '*'
+    layout: list
+    items:
+      - label: '2026-07-31'
+        text: Successfully uploaded Track4 screenshot and sent the Thai prompt to ChatGPT and Gemini simultaneously. Final screenshots saved to /tmp/chatgpt_v3_final.png and /tmp/gemini_v3_final.png. The Claude tab remained on the login page.

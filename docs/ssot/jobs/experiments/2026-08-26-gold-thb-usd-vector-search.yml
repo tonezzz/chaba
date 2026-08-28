@@ -1,0 +1,166 @@
+title: Gold/THB/USD Vector-Search Trend Detection
+subtitle: Explore vector-search and latent-space methods for detecting THB-driven XAU/USD trends
+icon: target
+
+planning:
+  goal: |
+    Evaluate whether vector search, nearest-neighbor pattern matching, and latent-space
+    clustering on multi-day THB/USD/XAU windows can improve the THB->XAU predictive
+    signal beyond the existing threshold and trend-sum rules.
+  scope: |
+    - Build a reusable multi-day window vector from XAU, THB, and USD/EUR log returns.
+    - Implement a k-NN pattern matcher and compare it to the 2-day trend baseline.
+    - Test PCA/UMAP regime embeddings and similarity-weighted forecasts.
+    - Add an anomaly/change-point filter based on distance to the k-th nearest neighbor.
+    - Document findings with a companion app page of charts and explanations.
+  out_of_scope: |
+    - Real-time trading system implementation.
+    - External embedding models (e.g., LLM, image embeddings).
+    - Live deployment to the trade-api stack.
+  success_criteria:
+    - A reproducible backtest for at least one vector-search variant.
+    - A comparison table against the 2-day trend baseline.
+    - An app page with a chart and explanation for each of the 5 explored ideas.
+  risks:
+    - Spurious fits from high-dimensional windows; mitigate with cross-validation and walk-forward testing.
+    - Look-ahead bias when building the neighbor index; mitigate by using only past data in each window.
+    - Overfitting from too many hyper-parameters; mitigate by fixing k and window length from a small, pre-registered grid.
+  resources:
+    - experiments/gold-thb-usd-causality/data/returns.csv
+    - experiments/gold-thb-usd-causality/walkforward.py
+    - experiments/gold-thb-usd-causality/trended.py
+    - python3 with pandas, numpy, scikit-learn, and optional umap-learn.
+  owner: tony
+  estimated_duration: 2 sessions
+
+processing:
+  status: not_started
+  started_at: '2026-08-26'
+  steps:
+    - id: 1
+      label: k-NN pattern matcher on return windows
+      status: completed
+      completed_at: '2026-08-26'
+      notes: |
+        Implemented trended_knn.py with a 5-day window of THB and XAU log returns,
+        k=50 neighbors, and distance-weighted forecasts. Tuned WINDOW, K, and
+        WEIGHTED; best OOS parameters are WINDOW=3, K=20, WEIGHTED=1. Out-of-sample
+        2014-2026 with best tune:
+        - Sharpe: 1.78
+        - Annual return: 20.7%
+        - Max drawdown: -41.4%
+        - Win rate: 29.7%
+        Beats buy-and-hold (Sharpe 0.71) and the 2-day THB trend baseline (Sharpe 1.46,
+        max DD -20.9%), though at the cost of a deeper drawdown.
+    - id: 2
+      label: Regime-embedding with PCA
+      status: completed
+      completed_at: '2026-08-26'
+      notes: |
+        Implemented trended_pca.py. PCA on a 3-day THB/XAU window before k-NN
+        degrades performance for any N_COMPONENTS < 6:
+        - N=2: Sharpe -0.11, max DD -41.9%
+        - N=4: Sharpe 1.22, max DD -58.4%
+        - N=6: Sharpe 1.78 (identical to raw k-NN)
+        Dimensionality reduction loses the signal in this 6-dimensional space; the
+        full feature vector is already low-dimensional and meaningful.
+    - id: 3
+      label: Similarity-weighted forecast
+      status: completed
+      completed_at: '2026-08-26'
+      notes: |
+        Implemented trended_weighted.py: a Nadaraya-Watson kernel smoother over all training
+        windows. Best setting was RBF with GAMMA=0.5:
+        - Sharpe: 1.23
+        - Annual return: 16.0%
+        - Max drawdown: -50.8%
+        - Win rate: 30.3%
+        Higher GAMMA (more local) lowered performance; the soft, globally-weighted forecast
+        is noisier than the hard K=20 cutoff in trended_knn.py. k-NN remains the best.
+    - id: 4
+      label: Anomaly / change-point filter
+      status: completed
+      completed_at: '2026-08-26'
+      notes: |
+        Implemented trended_anomaly.py. The k-NN forecast is kept, but the position is
+        forced to flat when the current THB/XAU window is farther from its k-th nearest
+        historical neighbor than a percentile threshold chosen in each training window.
+        The percentile is selected from a rolling in-sample grid {50,70,80,90,95,99} to
+        maximize training Sharpe. Out-of-sample 2014-2026:
+        - Sharpe: 1.81
+        - Annual return: 18.8%
+        - Max drawdown: -39.3%
+        - Win rate: 24.2%
+        This is slightly better than raw k-NN (Sharpe 1.78) with lower volatility
+        (10.4% vs 11.6%), though max drawdown is roughly the same. The anomaly filter
+        does not eliminate the deep drawdown entirely, but it improves risk-adjusted
+        returns and reduces false trades in unfamiliar regimes.
+    - id: 5
+      label: SSOT / documentation vector search with MDDB
+      status: completed
+      completed_at: '2026-08-26'
+      notes: |
+        Implemented mddb_search.py and wired the results into the vector-search app.
+        For each of the five ideas, the script queries MDDB's /v1/vector-search
+        endpoint on tony-dell:11023 and stores the top-3 ranked results in
+        data/mddb_results.json. The app fetches this JSON and renders the query,
+        collection, score, and document title for each idea. This is not a trading
+        signal; it demonstrates the same vector-search concept applied to the
+        repository's knowledge base for research hygiene.
+    - id: 6
+      label: App page with charts and explanations
+      status: completed
+      completed_at: '2026-08-26'
+      notes: |
+        Created and deployed vector-search-ideas.html with synthetic charts for the
+        5 ideas plus live out-of-sample equity curves for the 2-day THB trend,
+        k-NN, and kernel-weighted strategies versus buy-and-hold. Deployed on
+        tony-dell funnel at
+        https://tony-dell.taila0626a.ts.net:8444/apps/gold/vector-search-ideas.html
+  decisions:
+    - label: Keep variants research-only
+      rationale: |
+        These are exploratory non-parametric alternatives to the existing trend rule.
+        No live trading integration without a separate prototype and validation focus.
+  changes:
+    - file: experiments/gold-thb-usd-causality/app/vector-search-ideas.html
+      summary: Exploratory app page for the 5 vector-search ideas.
+    - file: experiments/gold-thb-usd-causality/app/vector-search-ideas.js
+      summary: Loads live equity curves for the implemented variants.
+    - file: experiments/gold-thb-usd-causality/trended_anomaly.py
+      summary: k-NN pattern matcher with a distance-to-kth-neighbor anomaly flat-filter.
+    - file: experiments/gold-thb-usd-causality/mddb_search.py
+      summary: MDDB semantic search generator for the documentation vector-search demo.
+    - file: docs/ssot/jobs/experiments/2026-08-26-gold-thb-usd-vector-search.yml
+      summary: SSOT job defining the vector-search exploration.
+
+followup:
+  verification:
+    - Re-run the new scripts in a fresh checkout and confirm the app page loads.
+  rollback_plan:
+    - Delete the new SSOT file and the app/vector-search-ideas.* files.
+  handoff:
+    - tony for promotion to a prototype if any variant beats the 2-day trend baseline.
+  deferred:
+    - Live data ingestion.
+    - Trade-api integration.
+
+report:
+  status: not_started
+  summary: |
+    Placeholder. This SSOT will be updated after each of the 5 ideas is implemented and
+    backtested.
+  links:
+    - experiments/gold-thb-usd-causality/app/vector-search-ideas.html
+    - docs/ssot/jobs/experiments/2026-08-26-gold-thb-usd-vector-search.yml
+  lessons_learned: []
+
+config:
+  version: 1
+  created_at: '2026-08-26'
+  last_updated: '2026-08-26'
+  maintainer: tony
+  related_files:
+    - docs/ssot/templates/job.yml
+    - experiments/gold-thb-usd-causality/walkforward.py
+    - experiments/gold-thb-usd-causality/trended.py

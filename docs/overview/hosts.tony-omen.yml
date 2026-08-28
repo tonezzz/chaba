@@ -1,0 +1,76 @@
+title: tony-omen
+subtitle: Docker host, GPU/NVR/web server
+icon: 🖥️
+sections:
+  - title: Overview
+    icon: 🖥️
+    layout: list
+    items:
+      - label: Hostname
+        text: tony-omen
+      - label: IP
+        text: 192.168.1.48
+      - label: Role
+        text: Docker host, GPU/NVR/web server
+      - label: OS
+        text: Linux (Ubuntu/Debian)
+      - label: GPU
+        text: NVIDIA (CUDA 11.8+)
+      - label: Docker
+        text: 24+ with NVIDIA Container Toolkit
+
+  - title: Ports
+    icon: 🔌
+    layout: table
+    headers: [Port, Service, Stack, Notes]
+    rows:
+      - ['5000', frigate, Frigate, 'NVR Web UI']
+      - ['8554', 'RTSP restream', Frigate, '—']
+      - ['8555', WebRTC, Frigate, 'TCP + UDP']
+      - ['7007', nerfstudio, Main, 'Web viewer']
+      - ['8888', jupyter, Main, JupyterLab]
+      - ['8080', 'web (Caddy)', Web, 'Static files + reverse proxy']
+      - ['8081', 'Caddy (parity)', Web, 'chaba.h3 root preview']
+      - ['8000', status-api, Web, 'FastAPI status backend (internal)']
+      - ['8090', camera-control, Web, 'Flask camera registry panel']
+      - ['3000', yomi-api, Host, 'On-demand Yomi media and refresh']
+
+  - title: LAN Devices
+    icon: 🌐
+    layout: table
+    headers: [Device, IP, Notes]
+    rows:
+      - [tony-omen, 192.168.1.48, 'Docker host']
+      - [tony-dell, 192.168.1.42, 'Secondary workstation']
+      - [VSTARCAM, 192.168.1.41, 'RTSP port 10554']
+
+  - title: Docker Networks
+    icon: 🐳
+    layout: list
+    items:
+      - label: web_default
+        text: Caddy + status-api + camera-control
+      - label: frigate_default
+        text: Frigate NVR network (external to web stack)
+      - label: main_default
+        text: Default bridge for GPU/3DGS services
+
+  - title: External Streams
+    icon: 📡
+    layout: list
+    items:
+      - label: DOH Wowza 1
+        text: '180.180.242.207 (streaming1.highwaytraffic.go.th) — direct IP works, domain fails'
+      - label: DOH Wowza 2
+        text: '180.180.242.208 (streaming2.highwaytraffic.go.th) — direct IP works, domain fails'
+
+  - title: Notes
+    icon: 📝
+    layout: list
+    items:
+      - label: Local domain
+        text: "tony-omen.local resolves to 192.168.1.48 (fixed 2026-08-05: Avahi restricted to wlo1 via allow-interfaces=wlo1 in /etc/avahi/avahi-daemon.conf)."
+      - label: HTTPS
+        text: No HTTPS yet — Caddy is ready for auto-certs when a domain is configured.
+      - label: GPU stack
+        text: NVIDIA Container Toolkit required for 3DGS/nerfstudio/imagen services.

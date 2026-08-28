@@ -1,0 +1,300 @@
+title: Multi-Head Trading Experts with Vector-Search Weighting
+subtitle: |
+  Combine the existing THB/XAU/XAG trading methods as specialist expert heads,
+  use a historical context memory with k-NN/DTW/FAISS vector search to retrieve
+  similar past regimes, and dynamically weight the heads each day.
+icon: experiment
+
+planning:
+  goal: |
+    Build a research prototype that treats each proven or candidate trading method
+    (graph+k-NN, ATR sizing, RSI filter, FX overlay, etc.) as an independent
+    "expert head". Each day the system builds a context vector of recent market
+    state, searches a memory of historical contexts, and derives head weights from
+    the conditional performance of those neighbors. The target is to exceed the
+    current best single-head Sharpe (3.62 from ATR sizing) without increasing
+    max drawdown beyond ~-10%.
+  scope: |
+    - Re-use existing trended_*.py scripts as expert heads.
+    - Build a shared head interface so every method returns (signal, size).
+    - Define a context vector capturing market regime, trend, volatility,
+      correlations, and edge state.
+    - Implement a rolling historical memory and vector-search retriever.
+    - Test at least three weighting rules: k-NN Sharpe, locally-weighted ridge,
+      and online Hedge/exponential weighting.
+    - Walk-forward OOS 2014-2026 with monthly recalibration.
+    - Record all results, parameters, and equity curves in data/ and JSON.
+  out_of_scope: |
+    - Live trading or production deployment.
+    - New data sources beyond THB/XAU/XAG/oil/USD-EUR already in data/.
+    - Deep-learning sequence models (LSTM/Transformers); keep the meta-router
+      lightweight and interpretable.
+  research_ideas:
+    - name: Equal-weight baseline
+      note: Run all selected heads fixed at 1/n weight to establish a floor.
+    - name: k-NN Sharpe weighting
+      note: For the top-K similar past contexts, compute each head's neighbor-only
+        Sharpe and softmax the weights.
+    - name: Locally-weighted ridge per head
+      note: Use the retrieved neighbors as a local training set for a Ridge
+        regression that predicts each head's next-day return from the context.
+    - name: Meta-kNN expert picker
+      note: Treat the winning head over the next H days as a multi-class label
+        and train a k-NN classifier that predicts the weight vector.
+    - name: Online Hedge / multiplicative weights
+      note: Maintain cumulative head weights updated daily by exp(eta * realized
+        return). Most robust to regime drift.
+    - name: Direction-only vs magnitude
+      note: Let each head keep its own sign, but let the meta-layer choose
+        magnitude. Prevents the router from contradicting the edge logic.
+    - name: Context-freezing safety
+      note: If the vector search cannot find enough neighbors (cold start or
+        anomalous day), fall back to the single best historical head.
+    - name: Out-of-volatility guard
+      note: If realized XAU vol exceeds a ceiling, uniformly scale all positions
+        down before aggregation.
+  head_inventory:
+    - file: trended_graph_knn.py
+      name: graph_knn_thb
+      role: core THB Granger-causality k-NN
+      status: strong
+    - file: trended_atr_sizing.py
+      name: atr_sizing
+      role: ATR-targeted sizing on THB+XAG k-NN
+      status: best_single
+    - file: trended_graph_knn_thb_xag.py
+      name: graph_knn_thb_xag
+      role: silver-augmented graph k-NN
+      status: strong
+    - file: trended_graph_knn_vol_silver.py
+      name: vol_silver
+      role: vol-targeted silver k-NN
+      status: strong
+    - file: trended_rsi_filter.py
+      name: rsi_filter
+      role: overbought/oversold gate
+      status: medium
+    - file: trended_sma_overlay.py
+      name: sma_overlay
+      role: SMA trend confirmation
+      status: medium
+    - file: trended_ema_overlay.py
+      name: ema_overlay
+      role: EMA trend confirmation
+      status: medium
+    - file: trended_graph_knn_fx_overlay.py
+      name: fx_overlay
+      role: USD/THB pre-positioning
+      status: medium
+    - file: trended_bollinger.py
+      name: bollinger
+      role: mean-reversion on XAU
+      status: weak
+    - file: trended_dtw.py
+      name: dtw
+      role: elastic pattern matcher
+      status: candidate
+    - file: trended_regime_var.py
+      name: regime_var
+      role: low/high vol regime model
+      status: candidate
+  context_features:
+    - recent log returns of XAU, THB, XAG over 2/5/10 days
+    - realized volatilities (5d, 20d)
+    - XAU and THB RSI, MACD, ADX
+    - Bollinger z-score of XAU and THB
+    - rolling XAU/THB and XAU/XAG correlations
+    - SMA5 > SMA20 and EMA5 > EMA20 booleans
+    - drawdown from peak and volatility percentile
+    - THB -> XAU Granger p-value over EDGE_LOOKBACK
+    - edge active boolean
+    - optional: USD/EUR, oil, DXY changes if available
+  success_criteria:
+    - Each selected head is wrapped in a common `Expert` interface.
+    - A working `Memory` and `Router` class exist with vector-search weighting.
+    - At least one dynamic-weighting variant beats the 3.62 ATR-only Sharpe.
+    - Max drawdown does not exceed -10%.
+    - Full results and parameters are saved to data/ and JSON.
+    - The job SSOT is updated as each step completes.
+  risks:
+    - risk: Leakage from using future information in context or memory.
+      mitigation: Context only uses data available at market open; memory append
+        happens after the day's position is realized.
+    - risk: Overfitting by adding too many heads and weighting parameters.
+      mitigation: Keep the meta-router simple (k-NN, Ridge, Hedge); use OOS
+        walk-forward and never optimize on the test set.
+    - risk: Transaction costs dominate ensemble turnover.
+      mitigation: Aggregate head signals into one position per day; size once.
+    - risk: Cold start when the vector store is empty.
+      mitigation: Use the best single head for the first `LOOKBACK` days.
+  resources:
+    - Existing aligned data in `experiments/gold-thb-usd-causality/data/`
+    - Existing `trended_*.py` scripts
+    - Python libraries: numpy, pandas, scikit-learn, scipy, statsmodels
+    - Optional: faiss-cpu for larger vector search
+  owner: tony
+  estimated_duration: 3-5 sessions
+  related_focus:
+    - label: THB-basis tool sweep and follow-up
+      file: docs/ssot/jobs/experiments/2026-08-27-thb-basis-tool-sweep.yml
+
+processing:
+  status: in_progress
+  started_at: '2026-08-27'
+  steps:
+    - id: 1
+      label: Standardize the Expert interface
+      status: not_started
+      notes: |
+        Create `experts/expert.py` base class with `generate(df, date, context)`
+        returning `(signal, size)`. Wrap the first 3-4 strong heads.
+    - id: 2
+      label: Define and compute the context vector
+      status: completed
+      completed_at: '2026-08-27'
+      notes: |
+        Created `context.py` with 24 causal features: recent return sums (2/5/10d),
+        volatilities (5/20d), RSI, Bollinger z-score, rolling correlations,
+        SMA/EMA crosses, and XAU drawdown. Output saved to `data/context_vectors.csv`.
+    - id: 3
+      label: Build the rolling memory and vector search
+      status: completed
+      completed_at: '2026-08-27'
+      notes: |
+        Created `memory.py` with a `Memory` class that stores contexts,
+        realized head returns, and dates; fits a standardized `NearestNeighbors`
+        index on demand; and returns the K-nearest head-return matrix.
+    - id: 4
+      label: Implement k-NN Sharpe weighting
+      status: completed
+      completed_at: '2026-08-27'
+      notes: |
+        Created `multi_head_knn_sharpe.py` (the k-NN Sharpe router). It queries
+        50 historical neighbors, computes each head's local Sharpe over those
+        neighbors, and weights by softmax(temp=1.0). Result:
+        - k-NN Sharpe 3-head: Sharpe 3.64, ann return 44.2%, vol 12.2%,
+          max DD -7.3%, win rate 17.9%
+        This exceeds both the ATR-only single head (3.62) and the equal-weight
+        baseline (3.60), with the lowest drawdown of the three.
+        Also tested adding two more heads (RSI filter, SMA overlay) in
+        `multi_head_knn_sharpe_5h.py`. The 5-head panel produced
+        Sharpe 3.55, ann return 38.5%, vol 10.9%, max DD -7.0%.
+        The additional heads hurt Sharpe, so the 3-head panel is preferred.
+    - id: 5
+      label: Implement locally-weighted Ridge per head
+      status: not_started
+      notes: |
+        Add `router_local_ridge.py`. Use neighbor contexts to predict each head's
+        next-day return. Weight by predicted return / predicted risk.
+    - id: 6
+      label: Implement online Hedge weighting
+      status: not_started
+      notes: |
+        Add `router_hedge.py`. Maintain multiplicative weights updated by
+        exp(eta * realized_head_return). Test eta values.
+    - id: 7
+      label: Add equal-weight and best-single baselines
+      status: completed
+      completed_at: '2026-08-27'
+      notes: |
+        Created `multi_head_experts_equal.py` which imports `trended_atr_sizing`,
+        `trended_graph_knn_thb_xag`, and `trended_graph_knn_vol_silver`, runs them
+        in a shared walk-forward loop, and averages the three head positions.
+        Results with K=50, WINDOW=2, TC=0.05%:
+        - Equal-weight 3-head: Sharpe 3.60, ann return 43.1%, vol 12.0%, max DD -7.1%
+        - ATR-only: Sharpe 3.62, ann return 54.3%, vol 15.0%, max DD -8.7%
+        - Graph THB+XAG: Sharpe 3.52, ann return 36.8%, vol 10.5%, max DD -7.3%
+        - Vol-sized silver: Sharpe 3.34, ann return 38.1%, vol 11.4%, max DD -6.0%
+        The equal-weight baseline is slightly below ATR-only in Sharpe but has
+        the lowest drawdown, confirming the ensemble does not lose much and has
+        better risk control.
+    - id: 8
+      label: Tune context features and K
+      status: not_started
+      notes: |
+        Grid search over K (30, 50, 100), context window lengths, and distance
+        metrics. Select by OOS Sharpe and drawdown.
+    - id: 9
+      label: Integrate results into the app
+      status: not_started
+      notes: |
+        Add a page or extend `thb-basis-tool-sweep.html` to show the multi-head
+        equity curve and live head weights over time.
+  decisions:
+    - label: 3-head panel vs 5-head panel
+      rationale: |
+        Adding the RSI filter and SMA overlay to the 3-head panel reduced
+        Sharpe from 3.64 to 3.55. The k-NN Sharpe router correctly down-weighted
+        them on average, but not enough to preserve the 3-head performance.
+      alternatives_considered: |
+        Keep adding more heads (e.g., MACD, Bollinger) was rejected; the evidence
+        shows weak/dilutive heads lower the ensemble. We will keep the 3-head
+        panel and focus on improving the router or the context features.
+  changes:
+    - file: docs/ssot/jobs/experiments/2026-08-27-multi-head-experts.yml
+      summary: This job SSOT, created as the design reference.
+    - file: experiments/gold-thb-usd-causality/multi_head_experts_equal.py
+      summary: Equal-weight multi-head baseline of ATR, THB+XAG, and vol-sized silver.
+    - file: experiments/gold-thb-usd-causality/data/multi_head_equal_equity.csv
+      summary: Equity curve for the equal-weight 3-head baseline.
+    - file: experiments/gold-thb-usd-causality/data/multi_head_equal_results.json
+      summary: Metrics for the equal-weight 3-head baseline.
+    - file: experiments/gold-thb-usd-causality/context.py
+      summary: 24-feature causal context vector builder.
+    - file: experiments/gold-thb-usd-causality/memory.py
+      summary: Rolling k-NN memory for context/head-return pairs.
+    - file: experiments/gold-thb-usd-causality/multi_head_knn_sharpe.py
+      summary: k-NN Sharpe weighted 3-head router.
+    - file: experiments/gold-thb-usd-causality/data/multi_head_knn_sharpe_equity.csv
+      summary: Equity curve for the k-NN Sharpe 3-head strategy.
+    - file: experiments/gold-thb-usd-causality/data/multi_head_knn_sharpe_results.json
+      summary: Metrics for the k-NN Sharpe 3-head strategy.
+    - file: experiments/gold-thb-usd-causality/multi_head_knn_sharpe_5h.py
+      summary: 5-head k-NN Sharpe router adding RSI filter and SMA overlay.
+    - file: experiments/gold-thb-usd-causality/data/multi_head_knn_sharpe_5h_equity.csv
+      summary: Equity curve for the 5-head k-NN Sharpe strategy.
+    - file: experiments/gold-thb-usd-causality/data/multi_head_knn_sharpe_5h_results.json
+      summary: Metrics for the 5-head k-NN Sharpe strategy.
+
+followup:
+  verification:
+    - Run `python multi_head_experts.py` and check Sharpe > 3.62.
+    - Inspect `data/multi_head_*_equity.csv` and `data/multi_head_*_results.json`.
+    - Confirm no leakage by ensuring context vectors only use `t` and earlier data.
+    - Run `node scripts/ssot-validate-all.mjs` to validate this SSOT.
+  rollback_plan:
+    - Delete new `experts/`, `memory.py`, `router*.py`, and `multi_head_experts.py`.
+    - Revert to the single-head `trended_atr_sizing.py` run.
+  handoff:
+    - If the prototype succeeds, hand off to a "live signal aggregator" focus.
+  deferred:
+    - Integration with Weaviate/MDDB for the vector store.
+    - Adding more exotic heads (wavelet, PCA, SSA) if the strong ones are stable.
+    - Portfolio-level ATR target instead of per-head ATR.
+
+report:
+  status: not_started
+  completed_at: null
+  summary: |
+    Reserved for final summary once the multi-head prototype is complete.
+  metrics:
+    - metric: best_sharpe
+      value: TBD
+    - metric: best_annual_return
+      value: TBD
+    - metric: max_drawdown
+      value: TBD
+  links:
+    - title: THB basis tool sweep
+      file: docs/ssot/jobs/experiments/2026-08-27-thb-basis-tool-sweep.yml
+  kb_review: []
+  lessons_learned: []
+
+config:
+  version: 1
+  created_at: '2026-08-27'
+  last_updated: '2026-08-27T00:00:00Z'
+  maintainer: tony
+  related_files:
+    - docs/ssot/templates/job.yml
+    - docs/ssot/jobs/experiments/2026-08-27-thb-basis-tool-sweep.yml

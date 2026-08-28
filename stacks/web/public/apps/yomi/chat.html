@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Yomi — Conversation</title>
+  <style>
+    :root { --bg: #f8fafc; --card: #fff; --text: #0f172a; --muted: #64748b; --accent: #06b6d4; --danger: #ef4444; }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; margin: 0; overflow: hidden; }
+    body { font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); display: flex; flex-direction: column; }
+    header { background: #0f172a; color: #fff; padding: 0.5rem 1rem; display: flex; justify-content: space-between; align-items: center; gap: 0.75rem; flex-shrink: 0; }
+    h1 { margin: 0; font-size: 1rem; font-weight: 600; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    main { max-width: 700px; width: 100%; margin: 0 auto; padding: 0 1rem; flex: 1; overflow: hidden; display: flex; flex-direction: column; }
+    .back { color: #fff; text-decoration: none; font-size: .85rem; white-space: nowrap; }
+    .back:hover { text-decoration: underline; }
+    .icon-btn { background: transparent; border: none; color: #fff; cursor: pointer; font-size: 1.1rem; padding: 0.4rem 0.6rem; border-radius: 6px; transition: background 0.15s; }
+    .icon-btn:hover { background: rgba(255,255,255,0.1); }
+    .icon-btn:disabled { color: #64748b; cursor: not-allowed; }
+    .refetch-btn { background: #0ea5e9; color: #0f172a; border: none; border-radius: 6px; padding: 4px 10px; cursor: pointer; font-weight: 600; font-size: 0.85rem; }
+    .refetch-btn:disabled { background: #334155; color: #94a3b8; cursor: not-allowed; }
+    .refetch-force { background: #f59e0b; color: #0f172a; border: none; border-radius: 6px; padding: 4px 10px; cursor: pointer; font-weight: 600; font-size: 0.85rem; margin-left: 0.5rem; }
+    .refetch-force:disabled { background: #334155; color: #94a3b8; cursor: not-allowed; }
+    .msg-search { padding: 4px 8px; border: 1px solid #334155; border-radius: 6px; background: #0f172a; color: #fff; font-size: 0.85rem; min-width: 120px; max-width: 180px; display: none; }
+    .msg-search::placeholder { color: #94a3b8; }
+    .msg-search.active { display: block; }
+    .search-wrapper { position: relative; display: none; }
+    .search-wrapper.active { display: block; }
+    .search-clear { position: absolute; right: 0.5rem; top: 50%; transform: translateY(-50%); background: transparent; border: none; color: #94a3b8; cursor: pointer; font-size: 1rem; padding: 0.25rem; }
+    .search-clear:hover { color: #fff; }
+    .search-count { color: #94a3b8; font-size: 0.75rem; margin-left: 0.5rem; }
+    .message-match { background: #fef9c3 !important; border-color: #f59e0b !important; }
+    .chat { background: var(--card); border-radius: .5rem; padding: 0.75rem; box-shadow: 0 1px 2px rgba(15,23,42,.05); flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+    .day-header {
+      text-align: center;
+      color: #94a3b8;
+      font-size: .75rem;
+      font-weight: 600;
+      margin: .75rem 0 .5rem;
+      position: relative;
+    }
+    .day-header::before, .day-header::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      width: calc(50% - 3.5rem);
+      height: 1px;
+      background: #e2e8f0;
+    }
+    .day-header::before { left: 0; }
+    .day-header::after { right: 0; }
+    .message {
+      padding: 0.5rem 0.625rem;
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-left: 3px solid var(--accent);
+      border-radius: 0 0.5rem 0.5rem 0;
+      margin-bottom: 0.4rem;
+      box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+      transition: border-color 0.15s ease, box-shadow 0.15s ease;
+      position: relative;
+    }
+    .message:hover {
+      border-color: #cbd5e1;
+      box-shadow: 0 2px 5px rgba(15, 23, 42, 0.06);
+    }
+    .message:hover .quick-actions { opacity: 1; }
+    .meta { color: #94a3b8; font-size: .75rem; margin-bottom: .1rem; display: flex; justify-content: space-between; align-items: center; }
+    .time-short { color: #94a3b8; font-size: .7rem; font-weight: 500; }
+    .quick-actions { opacity: 0; transition: opacity 0.15s; display: flex; gap: 0.25rem; margin-top: 0.25rem; }
+    .quick-actions button { background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 0.25rem; padding: 0.2rem 0.5rem; font-size: 0.75rem; cursor: pointer; color: #64748b; }
+    .quick-actions button:hover { background: #e2e8f0; color: #0f172a; }
+    .unread-dot { width: 8px; height: 8px; background: #3b82f6; border-radius: 50%; display: inline-block; margin-right: 0.5rem; }
+    .text { white-space: pre-wrap; word-break: break-word; font-size: .9rem; color: var(--text); }
+    .text-null { color: #94a3b8; font-style: italic; }
+    .media-img { max-width: 100%; max-height: 300px; border-radius: .5rem; margin-top: .25rem; display: block; cursor: pointer; }
+    .media-video { max-width: 100%; max-height: 300px; border-radius: .5rem; margin-top: .25rem; display: block; background: #0f172a; }
+    .media-audio { width: 100%; margin-top: .25rem; }
+    .media-file { display: inline-flex; align-items: center; gap: .35rem; margin-top: .25rem; padding: .35rem .6rem; background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: .375rem; color: var(--accent); text-decoration: none; font-size: .85rem; }
+    .media-file:hover { background: #e2e8f0; }
+    .media-placeholder { color: #64748b; font-style: italic; font-size: .85rem; }
+    .error { color: #ef4444; }
+    #status { color: var(--muted); padding: 1rem; }
+    #loader { color: var(--muted); padding: .5rem; text-align: center; font-size: .85rem; flex-shrink: 0; }
+    #messages { flex: 1; overflow-y: auto; }
+    #lightbox {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.92);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 2000;
+      cursor: zoom-out;
+    }
+    #lightbox.active { display: flex; }
+    #lightbox img {
+      max-width: 95vw;
+      max-height: 95vh;
+      border-radius: .5rem;
+      box-shadow: 0 25px 50px rgba(0,0,0,.5);
+      cursor: default;
+    }
+    #lightbox .close {
+      position: absolute;
+      top: 1rem;
+      right: 1rem;
+      background: rgba(15, 23, 42, 0.9);
+      color: #f8fafc;
+      border: none;
+      border-radius: .35rem;
+      width: 2.5rem;
+      height: 2.5rem;
+      font-size: 1.5rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    #lightbox .close:hover { background: #334155; }
+    #lightbox .lightbox-actions { position: absolute; bottom: 1rem; left: 50%; transform: translateX(-50%); display: flex; gap: 0.5rem; }
+    #lightbox .lightbox-actions button { background: rgba(15, 23, 42, 0.9); color: #f8fafc; border: none; border-radius: .35rem; width: 2.5rem; height: 2.5rem; font-size: 1.25rem; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+    #lightbox .lightbox-actions button:hover { background: #334155; }
+    #scroll-ctrls { position: fixed; right: 1rem; bottom: 5rem; display: flex; flex-direction: column; gap: 0.35rem; z-index: 1000; }
+    #scroll-ctrls button { padding: 0.5rem 0.75rem; border: none; border-radius: 0.375rem; background: #0f172a; color: #fff; font-size: 0.85rem; cursor: pointer; box-shadow: 0 2px 6px rgba(0,0,0,.2); opacity: 0.75; transition: opacity .15s; }
+    #scroll-ctrls button:hover { opacity: 1; }
+    #status-bar { display: none; background: #0f172a; color: #fff; padding: .25rem .75rem; text-align: center; font-size: .8rem; flex-shrink: 0; }
+    #status-bar.active { display: block; }
+    #reply-form { display: flex; gap: 0.5rem; padding: 0.75rem; background: #f8fafc; border-top: 1px solid #e2e8f0; position: sticky; bottom: 0; }
+    #reply-input { flex: 1; padding: 0.5rem 0.75rem; border: 1px solid #cbd5e1; border-radius: 0.375rem; font-size: 0.9rem; resize: none; min-height: 2.5rem; max-height: 8rem; }
+    #reply-input:focus { outline: 2px solid var(--accent); border-color: var(--accent); }
+    #reply-send { padding: 0.5rem 0.75rem; border: none; border-radius: 0.375rem; background: var(--accent); color: #fff; font-size: 1.1rem; cursor: pointer; white-space: nowrap; display: flex; align-items: center; justify-content: center; }
+    #reply-send:hover { opacity: 0.9; }
+    #reply-send:disabled { opacity: 0.5; cursor: not-allowed; }
+  </style>
+</head>
+<body>
+  <header>
+    <a class="back" href="/apps/yomi/">&larr; Back</a>
+    <h1 id="chat-name">LINE Conversation</h1>
+    <button id="search-toggle" class="icon-btn" title="Search in chat" aria-label="Search">🔍</button>
+    <div class="search-wrapper" id="search-wrapper">
+      <input type="search" id="msg-search" class="msg-search" placeholder="Find in chat…" autocomplete="off">
+      <button id="search-clear" class="search-clear" aria-label="Clear search">×</button>
+    </div>
+    <span id="search-count" class="search-count"></span>
+    <button id="refetch" class="refetch-btn" title="Refresh this conversation from LINE">🔄</button>
+    <button id="refetch-force" class="refetch-force" title="Force refresh (bypass cache)">⚡</button>
+  </header>
+  <div id="status-bar"></div>
+  <main id="app"><p id="status">Loading…</p></main>
+  <form id="reply-form">
+    <textarea id="reply-input" placeholder="Type a message…" rows="1"></textarea>
+    <button type="submit" id="reply-send">➤</button>
+  </form>
+  <div id="lightbox" role="dialog" aria-modal="true" aria-label="Full-size image">
+    <button id="lightbox-close" class="close" type="button" aria-label="Close">✕</button>
+    <button id="lightbox-prev" class="close" type="button" aria-label="Previous image" style="right:auto;left:1rem">←</button>
+    <button id="lightbox-next" class="close" type="button" aria-label="Next image">→</button>
+    <img id="lightbox-img" src="" alt="Full-size image">
+    <div class="lightbox-actions">
+      <button id="lightbox-zoom-out" type="button" aria-label="Zoom out">−</button>
+      <button id="lightbox-download" type="button" aria-label="Download">⬇</button>
+      <button id="lightbox-zoom-in" type="button" aria-label="Zoom in">+</button>
+    </div>
+  </div>
+  <div id="scroll-ctrls" aria-label="Message scroll controls">
+    <button type="button" data-dir="top" aria-label="Oldest messages">⬆️</button>
+    <button type="button" data-dir="up" aria-label="Page up">⬇️</button>
+    <button type="button" data-dir="down" aria-label="Page down">⬇️</button>
+    <button type="button" data-dir="last" aria-label="Jump to newest">⬇️</button>
+  </div>
+  
+  <!-- Load shared utilities -->
+  <script src="/apps/shared/js/date-utils.js?v=1"></script>
+  <script src="/apps/shared/js/date-utils-thailand.js?v=1"></script>
+  <script src="/apps/shared/js/api-utils.js?v=1"></script>
+  <script src="/apps/shared/js/api-yomi.js?v=1"></script>
+  <script src="/apps/shared/js/ui-utils.js?v=1"></script>
+  
+  <script>
+    const PAGE_LIMIT = 50;
+    let allMessages = [];
+    let oldestCursor = null;
+    let newestCursor = null;
+    let loading = false;
+    let exhausted = false;
+
+    function mediaSrc(m, chatId) {
+      if (m.mediaFile) return `media/${chatId}/${m.mediaFile}`;
+      if (m.id) return `/api/yomi/media/${chatId}/${m.id}`;
+      return null;
+    }
+
+    function escapeHtml(s) {
+      return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+    }
+    function linkify(s) {
+      return String(s).replace(/\\n/g, '\n').split(/(https?:\/\/[^\s<>"'{}|\\^`\[\]]+)/gi).map(part =>
+        /^https?:\/\//i.test(part)
+          ? `<a href="${escapeHtml(part)}" target="_blank" rel="noopener">${escapeHtml(part)}</a>`
+          : escapeHtml(part)
+      ).join('');
+    }
+
+    function dayLabel(ts) {
+      const d = new Date(ts);
+      return d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric', weekday: 'short' });
+    }
+
+    function renderContent(m, chatId) {
+      const type = String(m.mediaType || '').toLowerCase();
+      if (type === 'image') {
+        const src = mediaSrc(m, chatId);
+        if (!src) return '';
+        return `<img class="media-img" src="${encodeURI(src)}" alt="image" loading="lazy" onclick="openLightbox(this.src)" onerror="this.style.display='none'">`;
+      }
+      if (type === 'video') {
+        const src = mediaSrc(m, chatId);
+        if (!src) return '';
+        return `<video class="media-video" src="${encodeURI(src)}" controls preload="metadata" onerror="this.style.display='none'"></video>`;
+      }
+      if (type === 'audio') {
+        const src = mediaSrc(m, chatId);
+        if (!src) return '';
+        return `<audio class="media-audio" src="${encodeURI(src)}" controls preload="metadata" onerror="this.style.display='none'"></audio>`;
+      }
+      if (type === 'file') {
+        const src = mediaSrc(m, chatId);
+        if (src) {
+          const name = m.mediaFile ? m.mediaFile.split('/').pop() : 'download';
+          return `<a class="media-file" href="${encodeURI(src)}" download="${escapeHtml(name)}" target="_blank" rel="noopener">⬇ ${escapeHtml(name)}</a>`;
+        }
+        return '';
+      }
+      if (type) {
+        if (type === 'unavailable' && (m.e2eeDecrypted === false || m.e2eeIntegrityVerified === false)) {
+          return '<span class="media-placeholder">[E2EE locked]</span>';
+        }
+        return `<span class="media-placeholder">[${escapeHtml(type)}]</span>`;
+      }
+      if (m.text == null) {
+        if (m.e2eeDecrypted === false || m.e2eeIntegrityVerified === false) {
+          return '<span class="media-placeholder">[E2EE locked]</span>';
+        }
+        return '<span class="text-null">(no text)</span>';
+      }
+      return `<div class="text">${linkify(m.text)}</div>`;
+    }
+
+    function createMessageEl(m, chatId) {
+      const bubble = document.createElement('div');
+      bubble.className = 'message';
+      if (m.id) bubble.dataset.id = m.id;
+      const time = m.deliveredTime ? ' · ' + new Date(m.deliveredTime).toLocaleString() : '';
+      const timeShort = m.deliveredTime ? new Date(m.deliveredTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+      // Mark as unread if message is from last 24 hours
+      const isUnread = m.deliveredTime && (Date.now() - m.deliveredTime) < 86400000;
+      const unreadHtml = isUnread ? '<span class="unread-dot"></span>' : '';
+      bubble.innerHTML = `
+        <div class="meta">
+          <span>${unreadHtml}${escapeHtml(m.fromName || m.from || 'Unknown')}${time}</span>
+          <span class="time-short">${timeShort}</span>
+        </div>
+        ${renderContent(m, chatId)}
+        <div class="quick-actions">
+          <button data-action="reply" title="Reply">↩</button>
+          <button data-action="copy" title="Copy text">📋</button>
+        </div>
+      `;
+      return bubble;
+    }
+
+    async function fetchMessages(chatId, before) {
+      return await YomiApi.loadMessagesPaginated(chatId, PAGE_LIMIT, before);
+    }
+
+    function appendMessages(messages, chatId, toStart) {
+      const panel = document.getElementById('messages');
+      if (!panel) return;
+      const sorted = [...messages].sort((a, b) => a.deliveredTime - b.deliveredTime);
+      let currentDay = null;
+      const frag = document.createDocumentFragment();
+      for (const m of sorted) {
+        const day = m.deliveredTime ? dayLabel(m.deliveredTime) : null;
+        if (day && day !== currentDay) {
+          const h = document.createElement('div');
+          h.className = 'day-header';
+          h.textContent = day;
+          h.dataset.day = day;
+          frag.appendChild(h);
+          currentDay = day;
+        }
+        frag.appendChild(createMessageEl(m, chatId));
+      }
+      if (toStart) {
+        const first = panel.firstChild;
+        panel.insertBefore(frag, first);
+      } else {
+        panel.appendChild(frag);
+      }
+      // dedupe by message id
+      const seen = new Set();
+      panel.querySelectorAll('.message').forEach(el => {
+        const id = el.dataset.id;
+        if (id && seen.has(id)) el.remove();
+        if (id) seen.add(id);
+      });
+    }
+
+    async function loadInitial(chatId) {
+      const app = document.getElementById('app');
+      app.innerHTML = `<div class="chat"><div id="loader">Loading…</div><div id="messages"></div></div>`;
+      try {
+        const messages = await fetchMessages(chatId);
+        const panel = document.getElementById('messages');
+        const loader = document.getElementById('loader');
+        if (!messages.length) {
+          panel.innerHTML = '<p class="text-null">No messages.</p>';
+          loader.textContent = 'No messages.';
+          exhausted = true;
+        } else {
+          messages.forEach(m => allMessages.push(m));
+          newestCursor = messages[0].deliveredTime;
+          oldestCursor = messages[messages.length - 1].deliveredTime;
+          appendMessages(messages, chatId, false);
+          // scroll to bottom to show newest
+          panel.scrollTop = panel.scrollHeight;
+          panel.addEventListener('scroll', () => {
+            if (panel.scrollTop < 150 && panel.scrollHeight > panel.clientHeight && !loading && !exhausted) {
+              loadOlder(chatId);
+            }
+          });
+        }
+        if (messages.length < PAGE_LIMIT) {
+          exhausted = true;
+          loader.textContent = 'Reached the beginning.';
+        } else {
+          loader.style.display = 'none';
+        }
+      } catch (e) {
+        app.innerHTML = `<p id="status" class="error">${escapeHtml(e.message)}</p>`;
+      }
+    }
+
+    async function loadOlder(chatId) {
+      if (loading || exhausted || !oldestCursor) return;
+      loading = true;
+      const panel = document.getElementById('messages');
+      const loader = document.getElementById('loader');
+      if (loader) { loader.textContent = 'Loading older…'; loader.style.display = ''; }
+      try {
+        const messages = await fetchMessages(chatId, oldestCursor);
+        if (!messages.length) {
+          exhausted = true;
+          if (loader) loader.textContent = 'Reached the beginning.';
+          return;
+        }
+        messages.forEach(m => allMessages.push(m));
+        oldestCursor = messages[messages.length - 1].deliveredTime;
+        const oldHeight = panel.scrollHeight;
+        appendMessages(messages, chatId, true);
+        const newHeight = panel.scrollHeight;
+        panel.scrollTop += (newHeight - oldHeight);
+        if (messages.length < PAGE_LIMIT) {
+          exhausted = true;
+          if (loader) loader.textContent = 'Reached the beginning.';
+        } else {
+          if (loader) loader.style.display = 'none';
+        }
+      } catch (e) {
+        if (loader) loader.textContent = 'Error loading older: ' + e.message;
+      } finally {
+        loading = false;
+      }
+    }
+
+    async function load() {
+      const params = new URLSearchParams(location.search);
+      const id = params.get('chat');
+      const app = document.getElementById('app');
+      if (!id) {
+        app.innerHTML = '<p id="status" class="error">No conversation selected.</p>';
+        return;
+      }
+      try {
+        const conversations = await YomiApi.loadConversations();
+        const conv = conversations.find(c => c.id === id);
+        const title = conv?.name || id;
+        document.title = `Yomi — ${title}`;
+        const chatName = document.getElementById('chat-name');
+        if (chatName) chatName.textContent = title;
+        await loadInitial(id);
+      } catch (e) {
+        app.innerHTML = `<p id="status" class="error">${escapeHtml(e.message)}</p>`;
+      }
+    }
+
+
+    const lightbox = document.getElementById('lightbox');
+    const lightboxImg = document.getElementById('lightbox-img');
+    const lightboxClose = document.getElementById('lightbox-close');
+    const lightboxPrev = document.getElementById('lightbox-prev');
+    const lightboxNext = document.getElementById('lightbox-next');
+    const lightboxZoomIn = document.getElementById('lightbox-zoom-in');
+    const lightboxZoomOut = document.getElementById('lightbox-zoom-out');
+    const lightboxDownload = document.getElementById('lightbox-download');
+    let gallery = [];
+    let galleryIndex = -1;
+    let currentZoom = 1;
+
+    function refreshGallery() {
+      gallery = [...document.querySelectorAll('.media-img')].map(img => img.src);
+    }
+    function showLightboxAt(i) {
+      if (i < 0 || i >= gallery.length) return;
+      galleryIndex = i;
+      lightboxImg.src = gallery[i];
+      lightboxImg.style.transform = `scale(${currentZoom})`;
+      lightboxPrev.hidden = i === 0;
+      lightboxNext.hidden = i === gallery.length - 1;
+      lightbox.classList.add('active');
+    }
+    function openLightbox(src) {
+      refreshGallery();
+      currentZoom = 1;
+      const i = gallery.indexOf(src);
+      showLightboxAt(i >= 0 ? i : 0);
+    }
+    function closeLightbox() { lightboxImg.src = ''; lightboxImg.style.transform = 'scale(1)'; currentZoom = 1; lightbox.classList.remove('active'); }
+    lightboxClose.addEventListener('click', closeLightbox);
+    lightboxPrev.addEventListener('click', (e) => { e.stopPropagation(); showLightboxAt(galleryIndex - 1); });
+    lightboxNext.addEventListener('click', (e) => { e.stopPropagation(); showLightboxAt(galleryIndex + 1); });
+    if (lightboxZoomIn) {
+      lightboxZoomIn.addEventListener('click', (e) => { e.stopPropagation(); currentZoom = Math.min(currentZoom + 0.25, 3); lightboxImg.style.transform = `scale(${currentZoom})`; });
+    }
+    if (lightboxZoomOut) {
+      lightboxZoomOut.addEventListener('click', (e) => { e.stopPropagation(); currentZoom = Math.max(currentZoom - 0.25, 0.5); lightboxImg.style.transform = `scale(${currentZoom})`; });
+    }
+    if (lightboxDownload) {
+      lightboxDownload.addEventListener('click', (e) => { e.stopPropagation(); const a = document.createElement('a'); a.href = lightboxImg.src; a.download = ''; a.click(); });
+    }
+    lightbox.addEventListener('click', (e) => { if (e.target !== lightboxImg && e.target !== lightboxClose && e.target !== lightboxPrev && e.target !== lightboxNext && e.target !== lightboxZoomIn && e.target !== lightboxZoomOut && e.target !== lightboxDownload) closeLightbox(); });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeLightbox();
+      if (e.key === 'ArrowLeft' && !lightboxPrev.hidden) showLightboxAt(galleryIndex - 1);
+      if (e.key === 'ArrowRight' && !lightboxNext.hidden) showLightboxAt(galleryIndex + 1);
+      if (e.key === '+' || e.key === '=') { currentZoom = Math.min(currentZoom + 0.25, 3); lightboxImg.style.transform = `scale(${currentZoom})`; }
+      if (e.key === '-') { currentZoom = Math.max(currentZoom - 0.25, 0.5); lightboxImg.style.transform = `scale(${currentZoom})`; }
+    });
+
+    const msgSearch = document.getElementById('msg-search');
+    const searchToggle = document.getElementById('search-toggle');
+    const searchWrapper = document.getElementById('search-wrapper');
+    const searchClear = document.getElementById('search-clear');
+    const searchCount = document.getElementById('search-count');
+    if (searchToggle && searchWrapper) {
+      searchToggle.addEventListener('click', () => {
+        searchWrapper.classList.toggle('active');
+        if (searchWrapper.classList.contains('active')) {
+          msgSearch.focus();
+        }
+      });
+    }
+    if (searchClear && msgSearch) {
+      searchClear.addEventListener('click', () => {
+        msgSearch.value = '';
+        msgSearch.dispatchEvent(new Event('input'));
+        msgSearch.focus();
+      });
+    }
+    if (msgSearch) {
+      msgSearch.addEventListener('input', () => {
+        const term = msgSearch.value.trim().toLowerCase();
+        document.querySelectorAll('.message').forEach(el => {
+          el.classList.toggle('message-match', term.length > 0 && el.textContent.toLowerCase().includes(term));
+        });
+        const matches = document.querySelectorAll('.message-match');
+        if (searchCount) {
+          searchCount.textContent = term ? `${matches.length} match${matches.length !== 1 ? 'es' : ''}` : '';
+        }
+        if (term && matches.length > 0) {
+          matches[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      });
+    }
+
+    // Quick actions (Reply, Copy)
+    document.addEventListener('click', (e) => {
+      const btn = e.target.closest('.quick-actions button');
+      if (!btn) return;
+      const action = btn.dataset.action;
+      const message = btn.closest('.message');
+      if (!message) return;
+      const textEl = message.querySelector('.text');
+      const text = textEl ? textEl.textContent : '';
+      
+      if (action === 'copy') {
+        navigator.clipboard.writeText(text).then(() => {
+          btn.textContent = '✓';
+          setTimeout(() => btn.textContent = '📋', 1000);
+        });
+      }
+      if (action === 'reply') {
+        const replyInput = document.getElementById('reply-input');
+        if (replyInput) {
+          replyInput.value = `> ${text.split('\n').join('\n> ')}\n\n`;
+          replyInput.focus();
+        }
+      }
+    });
+
+    const refetch = document.getElementById('refetch');
+    const chatId = new URLSearchParams(location.search).get('chat');
+    const statusBar = document.getElementById('status-bar');
+    let lastServerUpdated = null;
+    let refreshInterval = null;
+
+    async function checkForUpdates() {
+      if (!chatId) return;
+      try {
+        const lastUpdatedData = await YomiApi.getLastUpdated();
+        if (!lastUpdatedData) return;
+        const { lastUpdated } = lastUpdatedData;
+        if (lastUpdated && lastServerUpdated && new Date(lastUpdated) > new Date(lastServerUpdated)) {
+          location.reload();
+        }
+      } catch (err) {
+        console.error('Auto-refresh check failed:', err);
+      }
+    }
+
+    function startAutoRefresh() {
+      if (refreshInterval) clearInterval(refreshInterval);
+      refreshInterval = setInterval(checkForUpdates, 30000);
+    }
+
+    async function doRefresh(force = false) {
+      if (!chatId) return;
+      if (refetch) { refetch.disabled = true; refetch.textContent = 'Fetching...'; }
+      const forceBtn = document.getElementById('refetch-force');
+      if (forceBtn) { forceBtn.disabled = true; }
+      if (statusBar) { statusBar.textContent = 'Fetching from LINE…'; statusBar.classList.add('active'); }
+      
+      try {
+        // Step 1: Fetch from LINE
+        const fetchData = await YomiApi.fetchFromLine(chatId);
+        if (!fetchData.ok) throw new Error(fetchData.error || 'Fetch failed');
+        
+        if (statusBar) statusBar.textContent = 'Processing...';
+        if (refetch) refetch.textContent = 'Processing...';
+        
+        // Step 2: Process and summarize
+        const processData = await YomiApi.processMessages(chatId, force);
+        if (!processData.ok) throw new Error(processData.error || 'Process failed');
+        
+        if (statusBar) statusBar.textContent = 'Updated. Reloading…';
+        location.reload();
+      } catch (err) {
+        if (statusBar) statusBar.textContent = 'Refresh failed: ' + err.message;
+        if (refetch) { refetch.disabled = false; refetch.textContent = 'Refresh'; }
+        if (forceBtn) { forceBtn.disabled = false; }
+      }
+    }
+    if (refetch && chatId) {
+      refetch.addEventListener('click', () => doRefresh(false));
+    } else if (refetch) {
+      refetch.style.display = 'none';
+    }
+    
+    const forceBtn = document.getElementById('refetch-force');
+    if (forceBtn && chatId) {
+      forceBtn.addEventListener('click', () => doRefresh(true));
+    } else if (forceBtn) {
+      forceBtn.style.display = 'none';
+    }
+
+    async function initAutoRefresh() {
+      if (!chatId) return;
+      try {
+        const lastUpdatedData = await YomiApi.getLastUpdated();
+        if (lastUpdatedData) {
+          const { lastUpdated } = lastUpdatedData;
+          lastServerUpdated = lastUpdated;
+          startAutoRefresh();
+        }
+      } catch (err) {
+        console.error('Failed to init auto-refresh:', err);
+      }
+    }
+    initAutoRefresh();
+
+    const replyForm = document.getElementById('reply-form');
+    const replyInput = document.getElementById('reply-input');
+    const replySend = document.getElementById('reply-send');
+
+    if (replyForm && chatId) {
+      replyForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const text = replyInput.value.trim();
+        if (!text) return;
+        replySend.disabled = true;
+        replySend.textContent = 'Sending...';
+        try {
+          const data = await YomiApi.sendMessage(chatId, text);
+          if (!data.ok) {
+            throw new Error(data.error || 'Send failed');
+          }
+          replyInput.value = '';
+          if (statusBar) {
+            statusBar.textContent = 'Message sent. Refreshing…';
+            statusBar.classList.add('active');
+          }
+          setTimeout(() => location.reload(), 500);
+        } catch (err) {
+          if (statusBar) {
+            statusBar.textContent = 'Send failed: ' + err.message;
+            statusBar.classList.add('active');
+          }
+          replySend.disabled = false;
+          replySend.textContent = 'Send';
+        }
+      });
+
+      replyInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault();
+          replyForm.dispatchEvent(new Event('submit'));
+        }
+      });
+    } else if (replyForm) {
+      replyForm.style.display = 'none';
+    }
+
+    const scrollCtrls = document.getElementById('scroll-ctrls');
+    if (scrollCtrls) {
+      scrollCtrls.addEventListener('click', (e) => {
+        const btn = e.target.closest('#scroll-ctrls button');
+        if (!btn) return;
+        const panel = document.getElementById('messages');
+        if (!panel) return;
+        const dir = btn.dataset.dir;
+        const page = panel.clientHeight * 0.85;
+        if (dir === 'top') panel.scrollTo({ top: 0, behavior: 'smooth' });
+        if (dir === 'up') panel.scrollBy({ top: -page, behavior: 'smooth' });
+        if (dir === 'down') panel.scrollBy({ top: page, behavior: 'smooth' });
+        if (dir === 'last') doRefresh();
+      });
+    }
+
+    load();
+  </script>
+</body>
+</html>
