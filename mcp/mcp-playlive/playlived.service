@@ -1,12 +1,14 @@
 [Unit]
-Description=Playlive Daemon - Browser Automation Session Manager
+Description=Playlive Daemon - Browser Automation Session Manager (tony-omen)
 After=network.target
 
 [Service]
 Type=simple
 User=tony
-WorkingDirectory=/home/tony/CascadeProjects/chaba-omen/mcp/mcp-playlive
+WorkingDirectory=/home/tony/CascadeProjects/chaba-mcp-experiments/mcp/mcp-playlive
 Environment="PATH=/home/tony/.local/node/bin:/usr/local/bin:/usr/bin:/bin"
+Environment="PLAYLIVED_PORT=9231"
+ExecStartPre=-/usr/bin/npm install
 ExecStart=/usr/bin/node playlived.mjs
 Restart=always
 RestartSec=10
@@ -14,4 +16,4 @@ StandardOutput=journal
 StandardError=journal
 
 [Install]
-WantedBy=multi-user.target
+WantedBy=default.target
