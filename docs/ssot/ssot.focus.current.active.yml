@@ -6,9 +6,9 @@ sections:
   icon: active
   layout: list
   items:
-  - label: Yomi API health
-    text: 'mcp-health reported status ''unknown'' for Yomi API at 2026-08-27T03:00:15. Error: Command failed: curl -s -o /dev/null
-      -w "%{http_code}" --max-time 5 "http://tony-omen:8080/api/yomi/health"'
+  - label: Status Data API health
+    text: 'mcp-health reported status ''unknown'' for Status Data API at 2026-08-27T03:00:15. Error: Command failed: curl
+      -s -o /dev/null -w "%{http_code}" --max-time 5 "http://tony-omen:8080/api/health"'
     status: completed
     priority: medium
     started: '2026-08-28'
@@ -20,15 +20,15 @@ sections:
     - important
     subtasks: []
     request_log:
-    - 'mcp-health get_health_status: Yomi API is healthy (response_time 58ms)'
-    - 'mcp-health get_alerts: 0 alerts for Yomi API'
-    - 'Stuck health check (tony-omen:8080) was from stale focus-inbox; current service is healthy'
+    - 'mcp-health get_health_status: Status Data API is healthy (response_time 58ms)'
+    - 'mcp-health get_alerts: 0 alerts for Status Data API'
+    - 'Stale focus-inbox error from old tony-omen:8080 endpoint; live service is healthy'
     ownership:
       owner: tony
       session: ''
       locked: true
       lock_reason: Activated as active focus
-    source: /home/tony/CascadeProjects/chaba/docs/ssot/focus-inbox/2026-08-27-030015-yomi-api-health.yml
+    source: /home/tony/CascadeProjects/chaba/docs/ssot/focus-inbox/2026-08-27-030015-status-data-api-health.yml
 - title: Active Branch Focus
   icon: branch
   layout: list
