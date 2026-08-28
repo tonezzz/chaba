@@ -1,0 +1,240 @@
+title: Gold/THB/USD Research Conclusion — Full Metrics Table
+subtitle: Variant-level performance metrics referenced from the main conclusion
+icon: table
+
+report:
+  status: completed
+  summary: Full results table for all tested Gold/THB/USD research variants.
+  metrics:
+    - variant: THB+XAG ATR-sized (tuned)
+      file: trended_atr_sizing.py
+      params: W=2 K=50 ATR_WINDOW=7 TARGET_VOL=0.15 MAX_LEVERAGE=2.0
+      sharpe: 3.82
+      annual_return: 44.7%
+      annual_vol: 11.7%
+      max_dd: -6.9%
+      win_rate: 17.5%
+    - variant: THB+XAG graph+k-NN (branch best)
+      file: trended_graph_knn_thb_xag.py
+      sharpe: 3.53
+      annual_return: 36.9%
+      annual_vol: 10.5%
+      max_dd: -7.3%
+      win_rate: 17.5%
+    - variant: THB+XAG dual edge
+      file: trended_graph_knn_thb_xag_dual.py
+      sharpe: 3.48
+      annual_return: 36.2%
+      annual_vol: 10.4%
+      max_dd: -7.3%
+      win_rate: 16.4%
+    - variant: THB+XAG XAU/XAG spread
+      file: trended_graph_knn_thb_spread.py
+      sharpe: 3.38
+      annual_return: 34.2%
+      annual_vol: 10.1%
+      max_dd: -11.0%
+      win_rate: 15.8%
+    - variant: Vol-sized THB+XAU+XAG
+      file: trended_graph_knn_vol_silver.py
+      params: W=2 K=30 TARGET_VOL=0.20
+      sharpe: 3.46
+      annual_return: 39.5%
+      annual_vol: 11.4%
+      max_dd: -5.4%
+      win_rate: 15.6%
+    - variant: Vol-sized silver + WTI oil
+      file: trended_graph_knn_vol_silver_extras.py
+      params: EXTRA_COL=oil
+      sharpe: 3.25
+      annual_return: 36.3%
+      annual_vol: 11.1%
+      max_dd: -8.2%
+      win_rate: 15.5%
+    - variant: Vol-sized silver + USD/EUR
+      file: trended_graph_knn_vol_silver_extras.py
+      params: EXTRA_COL=usd
+      sharpe: 3.44
+      annual_return: 40.3%
+      annual_vol: 11.7%
+      max_dd: -9.4%
+      win_rate: 17.2%
+    - variant: Vol-sized silver + high-vol regime
+      file: trended_graph_knn_vol_silver_regime.py
+      params: REGIME=high
+      sharpe: 2.58
+      annual_return: 22.2%
+      annual_vol: 8.6%
+      max_dd: -5.4%
+      win_rate: 9.3%
+    - variant: Vol-sized silver + low-vol regime
+      file: trended_graph_knn_vol_silver_regime.py
+      params: REGIME=low
+      sharpe: 2.24
+      annual_return: 17.3%
+      annual_vol: 7.7%
+      max_dd: -4.7%
+      win_rate: 6.3%
+    - variant: THB-base XAU/THB vol-sized
+      file: trended_graph_knn_vol_thb_base.py
+      params: W=2 K=30 TARGET_VOL=0.20
+      sharpe: 2.86
+      annual_return: 27.8%
+      annual_vol: 9.7%
+      max_dd: -6.0%
+      win_rate: 11.3%
+    - variant: Graph+k-NN (THB+XAU)
+      file: trended_graph_knn.py
+      params: W=2 K=30
+      sharpe: 2.77
+      annual_return: 22.1%
+      annual_vol: 8.0%
+      max_dd: -7.5%
+      win_rate: 12.4%
+    - variant: 2-day THB trend
+      file: trended.py
+      sharpe: -0.68
+      annual_return: -12.9%
+      annual_vol: 18.9%
+      max_dd: -76.8%
+      win_rate: 29.7%
+    - variant: k-NN K=20
+      file: trended_knn.py
+      sharpe: 2.28
+      annual_return: 16.8%
+      annual_vol: 7.4%
+      max_dd: -6.9%
+      win_rate: 11.1%
+    - variant: DTW
+      file: trended_dtw.py
+      sharpe: 0.89
+      annual_return: 10.3%
+      annual_vol: 11.6%
+      max_dd: -19.7%
+      win_rate: 40.5%
+    - variant: Delay k-NN
+      file: trended_delay.py
+      sharpe: 0.41
+      annual_return: 3.5%
+      annual_vol: 8.5%
+      max_dd: -13.4%
+      win_rate: 30.5%
+    - variant: SSA
+      file: trended_ssa.py
+      sharpe: 0.96
+      annual_return: 11.2%
+      annual_vol: 11.7%
+      max_dd: -16.9%
+      win_rate: 41.2%
+    - variant: Regime VAR
+      file: trended_regime_var.py
+      sharpe: -0.40
+      annual_return: -5.9%
+      annual_vol: 14.8%
+      max_dd: -45.6%
+      win_rate: 31.0%
+    - variant: Graph edge THB->XAU
+      file: trended_graph.py
+      sharpe: 1.27
+      annual_return: 13.8%
+      annual_vol: 10.9%
+      max_dd: -17.3%
+      win_rate: 11.0%
+    - variant: Wavelet
+      file: trended_wavelet.py
+      sharpe: -0.64
+      annual_return: -6.8%
+      annual_vol: 10.6%
+      max_dd: -59.1%
+      win_rate: 23.8%
+    - variant: Graph+k-NN + WTI oil
+      file: trended_graph_knn_oil.py
+      sharpe: 2.55
+      annual_return: 21.2%
+      annual_vol: 8.3%
+      max_dd: -10.8%
+      win_rate: 13.2%
+    - variant: Graph+k-NN + Brent
+      file: trended_graph_oil.py
+      sharpe: 2.53
+      annual_return: 20.4%
+      annual_vol: 8.1%
+      max_dd: -9.5%
+      win_rate: 12.8%
+    - variant: Graph+k-NN + USD/EUR
+      file: trended_graph_knn_usd.py
+      sharpe: 2.51
+      annual_return: 20.6%
+      annual_vol: 8.2%
+      max_dd: -6.6%
+      win_rate: 12.3%
+    - variant: Multi-day horizon H=2
+      file: trended_graph_knn_h.py
+      sharpe: 2.54
+      annual_return: 40.2%
+      annual_vol: 15.8%
+      max_dd: -12.0%
+      win_rate: 43.6%
+    - variant: Multi-day horizon H=3
+      file: trended_graph_knn_h.py
+      sharpe: 2.42
+      annual_return: 34.2%
+      annual_vol: 14.2%
+      max_dd: -11.9%
+      win_rate: 46.8%
+    - variant: Multi-day horizon H=5
+      file: trended_graph_knn_h.py
+      sharpe: 1.47
+      annual_return: 23.4%
+      annual_vol: 16.0%
+      max_dd: -18.9%
+      win_rate: 50.2%
+    - variant: Dynamic K/WINDOW (per-month)
+      file: trended_graph_knn_dynamic.py
+      sharpe: 5.23
+      annual_return: 80.6%
+      annual_vol: 15.4%
+      max_dd: -7.5%
+      win_rate: 44.7%
+    - variant: Selected K/WINDOW (hold-out 2014-2016)
+      file: trended_graph_knn_selected.py
+      sharpe: 2.62
+      annual_return: 23.3%
+      annual_vol: 8.9%
+      max_dd: -10.1%
+      win_rate: 13.4%
+    - variant: Correlation distance
+      file: trended_graph_knn_dist.py
+      sharpe: 1.63
+      annual_return: 12.4%
+      annual_vol: 7.6%
+      max_dd: -10.7%
+      win_rate: 10.5%
+    - variant: Cosine distance
+      file: trended_graph_knn_dist.py
+      sharpe: 2.28
+      annual_return: 16.8%
+      annual_vol: 7.4%
+      max_dd: -6.9%
+      win_rate: 11.1%
+    - variant: THB+XAG TC=0.10%
+      file: trended_graph_knn_thb_xag.py
+      sharpe: 3.26
+      annual_return: 33.7%
+      annual_vol: 10.4%
+      max_dd: -7.5%
+      win_rate: 16.8%
+    - variant: THB+XAG TC=0.20%
+      file: trended_graph_knn_thb_xag.py
+      sharpe: 2.69
+      annual_return: 27.5%
+      annual_vol: 10.2%
+      max_dd: -8.8%
+      win_rate: 15.5%
+    - variant: THB+XAG TC=0.50%
+      file: trended_graph_knn_thb_xag.py
+      sharpe: 0.86
+      annual_return: 8.9%
+      annual_vol: 10.4%
+      max_dd: -31.8%
+      win_rate: 13.0%
