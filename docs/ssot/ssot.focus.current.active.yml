@@ -5,29 +5,7 @@ sections:
 - title: Active Shared Focus
   icon: active
   layout: list
-  items:
-  - label: Trade Automation health
-    text: 'mcp-health reported status ''error'' for Trade Automation at 2026-08-28T03:00:11. Error: Container trade-automation
-      not found. Check:  docker ps -a | grep trade-automation'
-    status: completed
-    priority: high
-    started: '2026-08-28'
-    completed_at: '2026-08-28'
-    estimated_duration: 1 session
-    tags:
-    - health
-    - inbox
-    - optional
-    subtasks: []
-    request_log:
-      - resolved: acknowledged and resolved alert 24
-      - verified: ssh tony-dell systemctl --user status trade-automation.service is active
-    ownership:
-      owner: tony
-      session: ''
-      locked: true
-      lock_reason: Activated as active focus
-    source: /home/tony/CascadeProjects/chaba/docs/ssot/focus-inbox/2026-08-28-030011-trade-automation-health.yml
+  items: []
 - title: Active Branch Focus
   icon: branch
   layout: list
@@ -63,6 +41,37 @@ sections:
       status: deferred
       deferred_at: '2026-08-25'
       resume_note: MacBook offline; park focus until host is reachable
+  - label: Dev-system regression
+    text: 'Dev-system trend is declining. Open cons:
+
+      - Branch/worktree sprawl (medium): 3 branches are ahead of master; 6 worktrees active
+
+      - SSOT quality regression (high): 2 SSOT optimization warning(s)
+
+      - Uncommitted working tree (medium): 6 untracked or modified file(s)
+
+      Source: reports/DEV_SYSTEM_ASSESSMENT.json
+
+      '
+    status: active
+    priority: medium
+    started: '2026-08-28'
+    estimated_duration: 1 session
+    tags:
+    - dev-system
+    - assessment
+    subtasks:
+    - label: Review reports/DEV_SYSTEM_ASSESSMENT.md
+    - label: 'Address highest severity con: Branch/worktree sprawl'
+    - label: Update docs/ssot/ssot.dev-system.assessment.yml when resolved
+    request_log: []
+    ownership:
+      owner: tony
+      session: ''
+      locked: true
+      lock_reason: Activated as active focus
+    branch: chaba
+    source: /home/tony/CascadeProjects/chaba/docs/ssot/focus-inbox/2026-08-27-190227-dev-system-regression.yml
 - title: Quick Wins
   icon: quick
   layout: list
