@@ -9,16 +9,19 @@ sections:
   - label: Trade Automation health
     text: 'mcp-health reported status ''error'' for Trade Automation at 2026-08-28T03:00:11. Error: Container trade-automation
       not found. Check:  docker ps -a | grep trade-automation'
-    status: active
+    status: completed
     priority: high
     started: '2026-08-28'
+    completed_at: '2026-08-28'
     estimated_duration: 1 session
     tags:
     - health
     - inbox
     - optional
     subtasks: []
-    request_log: []
+    request_log:
+      - resolved: acknowledged and resolved alert 24
+      - verified: ssh tony-dell systemctl --user status trade-automation.service is active
     ownership:
       owner: tony
       session: ''
