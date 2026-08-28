@@ -6,29 +6,31 @@ sections:
   icon: active
   layout: list
   items:
-  - label: Status Data API health
-    text: 'mcp-health reported status ''unknown'' for Status Data API at 2026-08-27T03:00:15. Error: Command failed: curl
-      -s -o /dev/null -w "%{http_code}" --max-time 5 "http://tony-omen:8080/api/health"'
+  - label: 'SSOT optimize: focus-inbox/2026-08-26-190228-dev-system-regression.yml'
+    text: "SSOT optimization detected issues in `focus-inbox/2026-08-26-190228-dev-system-regression.yml`:\n\n- other: YAML\
+      \ syntax error: while parsing a block mapping\n- other: Branch/worktree sprawl (medium ... \n\nReview for bloat, data\
+      \ isolation, or obsolescence and either split/archive the file or resolve the warnings."
     status: completed
     priority: medium
     started: '2026-08-28'
     completed_at: '2026-08-28'
     estimated_duration: 1 session
     tags:
-    - health
-    - inbox
-    - important
+    - ssot
+    - optimization
+    - bloat
+    - data-isolation
     subtasks: []
     request_log:
-    - 'mcp-health get_health_status: Status Data API is healthy (response_time 58ms)'
-    - 'mcp-health get_alerts: 0 alerts for Status Data API'
-    - 'Stale focus-inbox error from old tony-omen:8080 endpoint; live service is healthy'
+    - 'Updated ssot.dev-system.assessment.yml'
+    - 'branches_ahead_of_master: now 1 (research/thb-base-settlement)'
+    - 'trend: stable -> improving'
     ownership:
       owner: tony
       session: ''
       locked: true
       lock_reason: Activated as active focus
-    source: /home/tony/CascadeProjects/chaba/docs/ssot/focus-inbox/2026-08-27-030015-status-data-api-health.yml
+    source: /home/tony/CascadeProjects/chaba/docs/ssot/focus-inbox/2026-08-26-2000-focus-inbox-2026-08-26-190228-dev-system-regression-ssot-optimization.yml
 - title: Active Branch Focus
   icon: branch
   layout: list
