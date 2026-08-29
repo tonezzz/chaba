@@ -50,7 +50,7 @@ host_roles:
     - raceman
     - home-assistant
     - helm
-    - chaba-funnel (Tailscale Serve 8444)
+    - ha-live (Tailscale Serve 8444)
     - mcp-rview
     - mcp-rview-oauth-proxy
     - gpu-queue (tony-dell:3001)
@@ -65,7 +65,7 @@ failover_scenarios:
       Use MacBook or another tailnet host for SSH and web access.
     steps: |
       1. Confirm tony-dell is healthy: ssh tony-dell tailscale status
-      2. Access apps via tony-dell Tailscale Funnel: https://tony-dell.taila0626a.ts.net:8444
+      2. Access Home Assistant Live bridge (Gemini Live) via tony-dell Tailscale Funnel: https://tony-dell.taila0626a.ts.net:8444
       3. Access Yomi API directly: curl -s http://tony-dell:3000/api/yomi/health
       4. PostgreSQL remains available on tony-dell: postgresql://tony-dell:5432
       5. Wait for tony-omen to recover before resuming interactive/GPU work.

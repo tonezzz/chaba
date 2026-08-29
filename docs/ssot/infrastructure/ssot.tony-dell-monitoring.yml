@@ -126,13 +126,13 @@ sections:
         command: systemctl --user reload caddy.service
         verify: curl -s -o /dev/null -w '%{http_code}' http://tony-omen:8080/
 
-      - label: chaba-funnel
-        text: Restart the tony-dell Tailscale Funnel landing page and docs server.
+      - label: ha-live
+        text: Restart the tony-dell Home Assistant Live bridge (Gemini Live).
         host: tony_dell
-        trigger: 2 consecutive failures of https://tony-dell.taila0626a.ts.net:8444/health
-        precheck: systemctl --user is-active chaba-funnel.service
-        command: systemctl --user restart chaba-funnel.service
-        verify: curl -s -o /dev/null -w '%{http_code}' https://tony-dell.taila0626a.ts.net:8444/health
+        trigger: 2 consecutive failures of https://tony-dell.taila0626a.ts.net:8444/
+        precheck: systemctl --user is-active home-assistant.service
+        command: systemctl --user restart home-assistant.service
+        verify: curl -s -o /dev/null -w '%{http_code}' https://tony-dell.taila0626a.ts.net:8444/
 
   - title: Files & Paths
     icon: 📁

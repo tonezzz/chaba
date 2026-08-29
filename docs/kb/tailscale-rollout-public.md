@@ -4,11 +4,13 @@ category: operations
 
 # Phase 8 — Public Funnel Access and Active Connections (Delivered)
 
+> **Update (2026-08-28):** Port 8444 has been reassigned to `ha-live` (Home Assistant Gemini Live bridge). The original chaba-funnel landing page on 8444/8082 is decommissioned. The public Tailscale Funnel is now `https://tony-dell.taila0626a.ts.net:8444/`, proxied to `127.0.0.1:9005`.
+
 Tailscale Funnel is now hosted on `tony-dell` so the public landing page remains reachable even when `tony-omen` is offline.
 
-- **Public URL (Funnel)**: `https://tony-dell.taila0626a.ts.net:8444/`
-- **Magic DNS (tailnet)**: `http://tony-dell:8082`
-- **Home LAN**: `http://tony-dell.local:8082`
+- **Public URL (Home Assistant Live / Gemini bridge)**: `https://tony-dell.taila0626a.ts.net:8444/`
+- **Magic DNS (tailnet)**: `http://tony-dell:8082` (legacy chaba-funnel; no longer active)
+- **Home LAN**: `http://tony-dell.local:8082` (legacy chaba-funnel; no longer active)
 - **OAuth proxy**: `https://tony-dell.taila0626a.ts.net/` (port 443, `127.0.0.1:9004`)
 
 ### Delivered components
