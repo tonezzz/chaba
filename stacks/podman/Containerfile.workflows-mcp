@@ -1,0 +1,12 @@
+FROM docker.io/library/python:3.12-slim
+
+ENV PYTHONUNBUFFERED=1 \
+    WORKFLOWS_TEMPLATE_PATHS=/workflows \
+    WORKFLOWS_LOG_LEVEL=INFO
+
+# Pin the same versions used for the current image
+RUN pip install --no-cache-dir "mcp<2" workflows-mcp==6.5.0
+
+WORKDIR /workflows
+
+CMD ["workflows-mcp"]

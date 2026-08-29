@@ -43,3 +43,22 @@ services:
   recovery_actions:
   - 'Restart service: ssh tony-dell systemctl --user restart mcp-rview-oauth-proxy'
   - 'Check env file: ssh tony-dell cat /home/tony/.config/mcp-rview-oauth-proxy.env'
+- id: workflows-mcp
+  name: Workflows MCP
+  type: systemd
+  service: workflows-mcp.service
+  scope: user
+  host: tony_dell
+  expected_state: active
+  timeout: 5
+  category: mcp
+  profiles:
+  - home
+  - mobile
+  verification:
+  - 'Check service: ssh tony-dell systemctl --user status workflows-mcp.service'
+  - 'Check container: ssh tony-dell podman ps | grep workflows-mcp'
+  - 'Test server: ssh tony-dell podman exec -i workflows-mcp workflows-mcp < /dev/null'
+  recovery_actions:
+  - 'Restart service: ssh tony-dell systemctl --user restart workflows-mcp.service'
+  - 'Check logs: ssh tony-dell journalctl --user -u workflows-mcp.service --tail 20'

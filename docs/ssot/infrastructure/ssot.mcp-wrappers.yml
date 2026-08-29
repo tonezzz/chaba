@@ -43,10 +43,10 @@ wrappers:
   file: ~/.config/devin/mcp-scripts/mcp-workflows-podman-ssh.sh
   type: stdio
   target_host: tony_dell
-  description: SSH bridge to workflows MCP server running in Podman on tony-dell
-  env:
-    WORKFLOWS_TEMPLATE_PATHS: /home/tony/CascadeProjects/chaba/workflows
-    WORKFLOWS_LOG_LEVEL: INFO
+  persistent: true
+  container: workflows-mcp
+  podman_service: workflows-mcp.service
+  description: SSH bridge to the persistent workflows-mcp container on tony-dell; connects via podman exec
   status: active
   server: workflows
 - name: mcp-single-instance
