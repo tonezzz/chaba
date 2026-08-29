@@ -183,7 +183,7 @@ services:
 - id: tony-omen-host
   name: tony-omen host reachability
   type: http
-  url: http://tony-omen:9100/health
+  url: http://100.75.102.88:9100/health
   expected_status: 200
   timeout: 5
   category: system
@@ -191,20 +191,19 @@ services:
   - home
   - mobile
   host: tony_omen
-  note: Canary for tony-omen host and tailnet connectivity. Depends on mcp-debug-cors
-    being up; if it is down but the host is up, the SSH verification can isolate the
-    failure.
+  note: Canary for tony-omen host and tailnet connectivity. Uses the direct Tailscale
+    IP because mcp-health cannot resolve the tony-omen hostname from tony-dell.
   verification:
   - 'Check host: ssh tony-omen uptime'
-  - 'Check tailnet: ping -c 1 tony-omen'
-  - 'Check mcp-debug: curl -s http://tony-omen:9100/health'
+  - 'Check tailnet: ping -c 1 100.75.102.88'
+  - 'Check mcp-debug: curl -s http://100.75.102.88:9100/health'
   recovery_actions:
   - Check power/network on tony-omen
   - 'Restart mcp-debug-cors: ssh tony-omen systemctl --user restart mcp-debug-cors.service'
 - id: tony-omen-sensor-reader
   name: tony-omen sensor-reader
   type: http
-  url: http://tony-omen:8001/health
+  url: http://100.75.102.88:8001/health
   expected_status: 200
   timeout: 5
   category: system
@@ -212,8 +211,9 @@ services:
   - home
   - mobile
   host: tony_omen
-  note: Hardware sensor / Docker container data API on tony-omen. Container is currently
-    stopped (Exited 127); this check will fail until it is restarted.
+  disabled: true
+  note: 'Hardware sensor / Docker container data API on tony-omen. Container is currently
+    stopped (Exited 127); disabled until it is restarted.'
   verification:
   - 'Check container: ssh tony-omen docker ps -a | grep sensor-reader'
   - 'Check logs: ssh tony-omen docker logs chaba-omen-sensor-reader --tail 20'

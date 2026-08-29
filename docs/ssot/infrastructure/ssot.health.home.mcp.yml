@@ -4,7 +4,7 @@ icon: server
 services:
 - id: mcp-rview
   name: MCP RView Proxy
-  type: sse
+  type: http
   url: http://127.0.0.1:9003/sse
   expected_status: 200
   timeout: 5
@@ -13,6 +13,8 @@ services:
   - home
   - mobile
   host: tony_dell
+  disabled: true
+  note: 'SSE endpoint; disabled from automated HTTP health checks because curl times out on streaming. Verify manually with curl -sfI -H Accept: text/event-stream http://127.0.0.1:9003/sse'
   verification:
   - 'Test SSE endpoint: curl -sfI -H "Accept: text/event-stream" http://127.0.0.1:9003/sse'
   - 'Check service: ssh tony-dell systemctl --user status mcp-rview'
