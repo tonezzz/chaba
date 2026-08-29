@@ -17,10 +17,13 @@ services:
   verification:
   - 'Test container: ssh tony-omen docker ps | grep chaba-omen-sensor-reader'
   - 'Test direct container: ssh tony-omen curl -s http://tony-omen:8001/health'
-  - 'Check container logs: ssh tony-omen docker logs chaba-omen-sensor-reader --tail 20'
+  - 'Check container logs: ssh tony-omen docker logs chaba-omen-sensor-reader --tail
+    20'
   recovery_actions:
-  - 'Restart container: ssh tony-omen docker compose -f stacks/web/docker-compose.yml restart sensor-reader'
+  - 'Restart container: ssh tony-omen docker compose -f stacks/web/docker-compose.yml
+    restart sensor-reader'
   - Check Caddy /api/* proxy to tony-dell:8000
+  host: tony_omen
 - id: status-data-api
   name: Status Data API
   type: http
@@ -39,6 +42,7 @@ services:
   - 'Restart service: ssh tony-dell systemctl --user restart status-data-api'
   - Verify status-data-api can reach http://100.68.142.13:8000/health
   - Verify Caddy proxy configuration in stacks/web/Caddyfile
+  host: tony_dell
 - id: rview-api
   name: RView API
   type: http
@@ -58,7 +62,8 @@ services:
   - 'Check build unit: ssh tony-dell systemctl --user status rview-api-image.service'
   recovery_actions:
   - 'Restart container: ssh tony-dell systemctl --user restart rview-api'
-  - 'Rebuild image: ssh tony-dell systemctl --user start rview-api-image.service && ssh tony-dell systemctl --user restart rview-api'
+  - 'Rebuild image: ssh tony-dell systemctl --user start rview-api-image.service &&
+    ssh tony-dell systemctl --user restart rview-api'
   - 'Check state directory: ssh tony-dell ls -la /home/tony/.local/share/rview-api'
   - Verify Caddy proxy configuration in stacks/web/Caddyfile
 - id: rview-live
@@ -82,7 +87,8 @@ services:
   recovery_actions:
   - 'Restart container: ssh tony-dell systemctl --user restart rview-live'
   - 'Check podman secret: ssh tony-dell podman secret inspect gemini-api-key'
-  - 'Rebuild image: ssh tony-dell systemctl --user start rview-live-image.service && ssh tony-dell systemctl --user restart rview-live'
+  - 'Rebuild image: ssh tony-dell systemctl --user start rview-live-image.service
+    && ssh tony-dell systemctl --user restart rview-live'
   - Verify Caddy proxy configuration in stacks/web/Caddyfile
 - id: yomi-api
   name: Yomi API
@@ -94,10 +100,12 @@ services:
   profiles:
   - home
   - mobile
-  recommendation: If yomi-api is down and tony-dell cannot be recovered, run /home/tony/.local/bin/yomi-failover-to-omen.sh on tony-omen. See docs/ssot/infrastructure/ssot.yomi-failover.yml.
+  recommendation: If yomi-api is down and tony-dell cannot be recovered, run /home/tony/.local/bin/yomi-failover-to-omen.sh
+    on tony-omen. See docs/ssot/infrastructure/ssot.yomi-failover.yml.
   verification:
   - 'Test direct Yomi API on tony-dell: curl -s http://100.68.142.13:3000/api/yomi/health'
   - 'Test chat page: curl -s http://100.68.142.13:3000/apps/yomi/chat.html?chat=test'
+  host: tony_dell
 - id: yomi-summarization
   name: Yomi Summarization
   type: http
@@ -113,6 +121,7 @@ services:
   - 'Test chat page with valid chat ID: curl -s http://100.68.142.13:3000/apps/yomi/chat.html?chat=valid_chat_id'
   - Verify API returns JSON response with status information
   - Check browser console for API errors when loading chat page
+  host: tony_dell
 - id: yomi-rate-limiter
   name: Yomi Rate Limiter
   type: http
@@ -123,6 +132,7 @@ services:
   profiles:
   - home
   - mobile
+  host: tony_dell
 - id: yomi-activity-status
   name: Yomi Activity Status
   type: http
@@ -133,6 +143,7 @@ services:
   profiles:
   - home
   - mobile
+  host: tony_dell
 - id: playlived-dell
   name: Playlived (tony-dell)
   type: http
@@ -148,9 +159,11 @@ services:
   - 'Check browsers: npx playwright install --dry-run'
   - 'Check service: ssh tony-dell systemctl --user status playlived.service'
   recovery_actions:
-  - 'Reinstall exact version: cd /home/tony/.local/playlive && npm ci && npx playwright install chromium'
+  - 'Reinstall exact version: cd /home/tony/.local/playlive && npm ci && npx playwright
+    install chromium'
   - 'Restart service: ssh tony-dell systemctl --user restart playlived.service'
   - 'Fix port: ssh tony-dell ss -tulpn | grep 9230 && kill conflicting process'
+  host: tony_dell
 - id: trade-api
   name: Trade API
   type: http
@@ -171,4 +184,3 @@ services:
   - 'Restart container: ssh tony-dell podman restart trade-api'
   - 'Check container networking: ssh tony-dell podman inspect trade-api'
   - 'Verify port mapping: ssh tony-dell podman port trade-api'
-

@@ -12,6 +12,7 @@ services:
   profiles:
   - home
   - mobile
+  host: tony_dell
 - id: bserver
   name: BServer
   type: http
@@ -22,6 +23,7 @@ services:
   profiles:
   - home
   - mobile
+  host: tony_dell
 - id: raceman-web
   name: Raceman Web
   type: http
@@ -31,6 +33,7 @@ services:
   category: web
   profiles:
   - home
+  host: tony_dell
 - id: helm
   name: Helm Dashboard
   type: http
@@ -48,9 +51,11 @@ services:
   - 'Test Caddy proxy: curl -s http://100.68.142.13:3003/apps/helm/'
   recovery_actions:
   - 'Restart service: ssh tony-dell systemctl --user restart helm'
-  - 'Rebuild: ssh tony-dell "cd /home/tony/CascadeProjects/chaba-tony-dell/tony-dell/chaba-funnel && ./deploy.sh"'
+  - 'Rebuild: ssh tony-dell "cd /home/tony/CascadeProjects/chaba-tony-dell/tony-dell/chaba-funnel
+    && ./deploy.sh"'
   - Check Caddy proxy configuration in stacks/web/Caddyfile
   - 'Verify env: ssh tony-dell podman exec helm env | grep LLM'
+  host: tony_dell
 - id: raceman-php
   name: Raceman PHP
   type: container
@@ -72,6 +77,7 @@ services:
   profiles:
   - home
   - mobile
+  host: tony_dell
 - id: home-assistant
   name: Home Assistant
   type: http
@@ -88,7 +94,9 @@ services:
   - 'Test Caddy proxy: curl -s http://tony-dell:8080/apps/home-assistant/'
   recovery_actions:
   - 'Restart service: ssh tony-dell systemctl --user restart home-assistant'
-  - 'Restart Caddy: ssh tony-dell podman exec web caddy reload --config /etc/caddy/Caddyfile --adapter caddyfile'
+  - 'Restart Caddy: ssh tony-dell podman exec web caddy reload --config /etc/caddy/Caddyfile
+    --adapter caddyfile'
+  host: tony_dell
 - id: home-assistant-michael
   name: Home Assistant (Michael)
   type: http
@@ -99,3 +107,4 @@ services:
   profiles:
   - home
   - mobile
+  host: cloud

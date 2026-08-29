@@ -1,5 +1,5 @@
 title: Chaba Health Check Configuration
-description: Common health check configuration — profiles, alerts, groups, and recovery actions. Home profile services are split by category into ssot.health.home.<category>.yml; mobile profile services remain in ssot.health.mobile.yml.
+description: Common health check configuration — profiles, alerts, groups, and recovery actions. Home profile services are split by category into ssot.health.home.<category>.yml; mobile profile services remain in ssot.health.mobile.yml. The `host:` field is supported for `http`, `systemd`, `container`, and `mount` checks; non-local `systemd` units (e.g. `tony_omen`) are verified via `ssh -o BatchMode=yes <host>`, with underscores in the `host` value mapped to dash hostnames.
 version: 9
 profiles:
   default: auto-detect

@@ -162,6 +162,42 @@ servers:
     notes: |
       Stdio MCP server runs on tony-dell over SSH. Keeps low-latency debug commands on the headless primary host.
 
+  mcp-health:
+    name: MCP Health Monitor
+    description: Chaba health check aggregator and alert manager running on tony-dell
+    implementation: bash /home/tony/.config/devin/mcp-scripts/mcp-health-ssh.sh
+    wrapper: mcp-health-ssh
+    filter: none
+    single_instance: false
+    status: operational
+    config_files:
+      - devin: true
+      - windsurf: true
+
+  mcp-focus:
+    name: MCP Focus Inbox
+    description: Focus task inbox managed on tony-dell
+    implementation: bash /home/tony/.config/devin/mcp-scripts/mcp-focus-ssh.sh
+    wrapper: mcp-focus-ssh
+    filter: none
+    single_instance: false
+    status: operational
+    config_files:
+      - devin: true
+      - windsurf: false
+
+  workflows:
+    name: Workflows
+    description: Workflow automation MCP running in Podman on tony-dell
+    implementation: bash /home/tony/.config/devin/mcp-scripts/mcp-workflows-podman-ssh.sh
+    wrapper: mcp-workflows-podman-ssh
+    filter: none
+    single_instance: false
+    status: operational
+    config_files:
+      - devin: true
+      - windsurf: false
+
   alphavantage:
     name: Alpha Vantage Financial Data
     description: Financial market data API integration

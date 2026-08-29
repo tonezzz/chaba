@@ -1,0 +1,96 @@
+title: MCP Wrapper Scripts
+subtitle: Devin MCP launcher wrappers in ~/.config/devin/mcp-scripts
+icon: script
+version: 1
+notes: |
+  These scripts are the SSOT for how Devin Desktop connects to MCP servers that
+  run on other hosts or inside Podman. Keep this file in sync with the actual
+  scripts and with the `mcpServers` block in ~/.config/devin/mcp_config.json.
+wrappers:
+- name: mcp-health-ssh
+  file: ~/.config/devin/mcp-scripts/mcp-health-ssh.sh
+  type: stdio
+  target_host: tony_dell
+  description: SSH bridge to mcp-health server on tony-dell
+  env:
+    HEALTH_PROFILE: home
+    HEALTH_CONFIG: /home/tony/CascadeProjects/chaba-tony-dell/docs/ssot/infrastructure/ssot.health.yml
+    POSTGRES_HOST: localhost
+    POSTGRES_PORT: "5432"
+  status: active
+  server: mcp-health
+- name: mcp-debug-ssh
+  file: ~/.config/devin/mcp-scripts/mcp-debug-ssh.sh
+  type: stdio
+  target_host: tony_dell
+  description: SSH bridge to mcp-debug stdio server on tony-dell
+  status: active
+  server: mcp-debug
+- name: mcp-debug
+  file: ~/.config/devin/mcp-scripts/mcp-debug.sh
+  type: stdio
+  target_host: tony_dell
+  description: Local mcp-debug stdio wrapper (legacy, kept for direct use)
+  status: legacy
+- name: mcp-focus-ssh
+  file: ~/.config/devin/mcp-scripts/mcp-focus-ssh.sh
+  type: stdio
+  target_host: tony_dell
+  description: SSH bridge to mcp-focus server on tony-dell
+  status: active
+  server: mcp-focus
+- name: mcp-workflows-podman-ssh
+  file: ~/.config/devin/mcp-scripts/mcp-workflows-podman-ssh.sh
+  type: stdio
+  target_host: tony_dell
+  description: SSH bridge to workflows MCP server running in Podman on tony-dell
+  env:
+    WORKFLOWS_TEMPLATE_PATHS: /home/tony/CascadeProjects/chaba/workflows
+    WORKFLOWS_LOG_LEVEL: INFO
+  status: active
+  server: workflows
+- name: mcp-single-instance
+  file: ~/.config/devin/mcp-scripts/mcp-single-instance.sh
+  type: supervisor
+  target_host: tony_omen
+  description: Ensures only one MCP server instance runs per server key
+  status: active
+- name: mcp-rview
+  file: ~/.config/devin/mcp-scripts/mcp-rview.sh
+  type: stdio
+  target_host: tony_dell
+  description: RView MCP server via Podman on tony-dell
+  status: active
+- name: run-llama-mcp
+  file: ~/.config/devin/mcp-scripts/run-llama-mcp.sh
+  type: stdio
+  target_host: tony_omen
+  description: Launches llama.cpp MCP server on tony-omen
+  env:
+    LLAMA_URL: http://tony-omen:11434
+  status: active
+  server: mcp-llama
+- name: run-github-mcp
+  file: ~/.config/devin/mcp-scripts/run-github-mcp.sh
+  type: stdio
+  target_host: local
+  description: Launches GitHub MCP server locally
+  env:
+    GITHUB_PERSONAL_ACCESS_TOKEN: ~/.config/secrets/github-mcp.env
+  status: active
+  server: github
+- name: run-postgres-crud-mcp
+  file: ~/.config/devin/mcp-scripts/run-postgres-crud-mcp.sh
+  type: stdio
+  target_host: tony_dell
+  description: Launches postgres MCP server on tony-dell
+  env:
+    DATABASE_URL: postgresql://tony-dell:5432
+  status: active
+  server: postgres
+- name: switch-profile
+  file: ~/.config/devin/mcp-scripts/switch-profile.sh
+  type: utility
+  target_host: local
+  description: Switches Devin MCP profile between home and mobile
+  status: active
