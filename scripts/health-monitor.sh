@@ -133,9 +133,9 @@ fi
 
 # ── Key service health ───────────────────────────────────────────────────────
 declare -A SERVICE_URLS=(
-    [status-api]="http://tony-omen:8080/health"
-    [yomi-api]="http://tony-omen:8080/api/yomi/health"
-    [caddy]="http://tony-omen:8080/"
+    [status-api]="http://100.68.142.13:8000/health"
+    [yomi-api]="http://100.68.142.13:3000/api/yomi/health"
+    [caddy]="http://tony-dell:8080/"
 )
 for name in "${!SERVICE_URLS[@]}"; do
     url="${SERVICE_URLS[$name]}"
