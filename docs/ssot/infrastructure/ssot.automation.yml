@@ -144,6 +144,17 @@ automation:
       - reports/kb-modularity.md
     status: active (2026-08-19)
 
+  mcp-health-snapshot:
+    script: scripts/mcp-health-snapshot.mjs
+    runner: /usr/bin/node
+    schedule: "*/10 * * * *"
+    frequency: every 10 minutes
+    timer: systemd/mcp-health-snapshot.timer
+    service: systemd/mcp-health-snapshot.service
+    log_file: logs/mcp-health-snapshot.log
+    alert_dir: docs/ssot/focus-inbox
+    status: active (2026-08-29)
+
 monitoring:
   gpu:
     metrics:
