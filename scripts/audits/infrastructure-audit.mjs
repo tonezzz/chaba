@@ -22,7 +22,7 @@ function load(p) {
 
 function resolveHomeUrl(template) {
   // Use the home profile base_url from the main health SSOT
-  return template.replace(/\{profile\}/g, 'http://tony-omen:8080');
+  return template.replace(/\{profile\}/g, 'http://tony-dell:8080');
 }
 
 function runSync(cmd, timeoutMs = 120000) {

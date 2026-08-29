@@ -207,7 +207,7 @@ recovery_actions:
   - 'Restart docker if needed: systemctl restart docker'
   network_connectivity_home:
   - 'Check if tony-omen is reachable: ping -c 2 tony-omen'
-  - 'Test HTTP connectivity: curl -s -o /dev/null -w ''%{http_code}'' http://tony-omen:8080/'
+  - 'Test HTTP connectivity: curl -s -o /dev/null -w ''%{http_code}'' http://tony-dell:8080/'
   - 'Test localhost access: curl -s -o /dev/null -w ''%{http_code}'' http://localhost:8080/'
   - 'Check network interface status: ip addr show'
   - 'Verify DNS resolution: nslookup tony-omen'
@@ -218,7 +218,7 @@ recovery_actions:
   - 'Check resolved IP vs local IP: nslookup tony-omen and compare with ip addr show'
   - 'Get reliable local IP: ip route get 1.1.1.1 | awk ''{print $7}'''
   - 'Fix incorrect /etc/hosts: sudo sed -i ''s/OLD_IP/NEW_IP/'' /etc/hosts'
-  - 'Verify hostname-based HTTP: curl -s http://tony-omen:8080/'
+  - 'Verify hostname-based HTTP: curl -s http://tony-dell:8080/'
   - Universal health check now includes hostname resolution verification
   - Health workflows use hostname-based checks instead of hardcoded IPs
 debugging_guidance:
@@ -240,8 +240,8 @@ debugging_guidance:
   - 'Verify port accessibility: ss -tlnp | grep <port>'
   - Test API endpoints with proper HTTP methods
   yomi_chat_testing:
-  - 'Test health endpoint: curl -s http://tony-omen:8080/api/yomi/health'
-  - 'Test chat page load: curl -s http://tony-omen:8080/apps/yomi/chat.html?chat=test_id'
+  - 'Test health endpoint: curl -s http://tony-dell:3000/api/yomi/health'
+  - 'Test chat page load: curl -s http://tony-dell:8080/apps/yomi/chat.html?chat=test_id'
   - Verify Caddy proxy uses handle_path not handle for /api/yomi/* routes
   - 'Check container networking: docker exec web ping -c 2 host.docker.internal'
   - 'Test direct container access: docker exec web wget -qO- http://host.docker.internal:3000/api/yomi/health'

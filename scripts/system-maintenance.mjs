@@ -163,12 +163,12 @@ function hostnameResolutionCheck() {
   }
   
   // Test HTTP connectivity
-  const httpResult = execCommand('curl -s -o /dev/null -w "%{http_code}" --max-time 3 http://tony-omen.local:8080/', 'Test HTTP connectivity');
-  
+  const httpResult = execCommand('curl -s -o /dev/null -w "%{http_code}" --max-time 3 http://tony-dell:8080/', 'Test HTTP connectivity');
+
   if (httpResult.success) {
     const statusCode = httpResult.output.trim();
     if (statusCode === '200') {
-      log('✅ HTTP connectivity to tony-omen.local:8080 successful');
+      log('✅ HTTP connectivity to tony-dell:8080 successful');
     } else {
       log(`⚠️  HTTP connectivity returned status ${statusCode}`);
     }

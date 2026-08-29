@@ -34,6 +34,8 @@ jobs:
         run: |
           pip install pyyaml
           python3 scripts/mcp-debug-server-smoke.py
+      - name: Check for stale tony-omen:8080 URLs
+        run: bash scripts/ssot-check-stale-urls.sh
       - name: Development system assessment
         run: python3 scripts/dev-system-assess.py --check
       - name: Check SSOT optimization warnings

@@ -36,10 +36,10 @@ let dashboardState = {
 
 // Service health check endpoints
 const SERVICE_ENDPOINTS = {
-    'status-api': 'http://tony-omen.local:8080/api/health',
-    'yomi-api': 'http://tony-omen.local:8080/api/yomi/health',
-    'caddy': 'http://tony-omen.local:8080/',
-    'trade-api': 'http://tony-omen.local:8080/api/trade/health'
+    'status-api': 'http://tony-dell:8000/health',
+    'yomi-api': 'http://tony-dell:3000/api/yomi/health',
+    'caddy': 'http://tony-dell:8080/',
+    'trade-api': 'http://tony-dell:3001/api/trade/health'
 };
 
 // Check service health

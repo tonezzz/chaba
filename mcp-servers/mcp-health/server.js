@@ -167,7 +167,7 @@ async function loadHealthConfig() {
 
     // Auto-detect network profile
     let profile = 'home';
-    let baseUrl = config.profiles?.home?.base_url || 'http://tony-omen:8080';
+    let baseUrl = config.profiles?.home?.base_url || 'http://tony-dell:8080';
 
     // 1. Optional explicit override
     if (process.env.HEALTH_PROFILE) {
@@ -196,7 +196,7 @@ async function loadHealthConfig() {
           baseUrl = config.profiles?.home?.base_url || baseUrl;
         } else if (mobileSsids.includes(ssid)) {
           profile = 'mobile';
-          baseUrl = config.profiles?.mobile?.base_url || 'http://tony-omen:8080';
+          baseUrl = config.profiles?.mobile?.base_url || 'http://tony-dell:8080';
         }
       }
 
@@ -2092,7 +2092,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         
         // If URL still contains placeholder, resolve it manually
         if (serviceUrl.includes('{profile}')) {
-          const baseUrl = config.detectedBaseUrl || 'http://tony-omen:8080';
+          const baseUrl = config.detectedBaseUrl || 'http://tony-dell:8080';
           serviceUrl = serviceUrl.replace('{profile}', baseUrl);
         }
         

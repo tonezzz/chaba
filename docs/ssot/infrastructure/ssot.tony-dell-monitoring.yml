@@ -43,7 +43,7 @@ sections:
     layout: list
     items:
       - label: tony-omen web
-        text: http://tony-omen:8080/, http://tony-omen:8080/api/yomi/health, http://tony-omen:8080/api/health
+        text: http://tony-dell:8080/, http://tony-dell:3000/api/yomi/health, http://tony-dell:8080/api/health
       - label: tony-omen AI/data
         text: http://tony-omen:11023/health (MDDB), http://tony-omen:8008/health (llama), http://tony-omen:8000/health (imagen2)
       - label: tony-omen GPU queue
@@ -124,7 +124,7 @@ sections:
         confirmation: true
         precheck: systemctl --user is-active caddy.service
         command: systemctl --user reload caddy.service
-        verify: curl -s -o /dev/null -w '%{http_code}' http://tony-omen:8080/
+        verify: curl -s -o /dev/null -w '%{http_code}' http://tony-dell:8080/
 
       - label: ha-live
         text: Restart the tony-dell Home Assistant Live bridge (Gemini Live).
@@ -166,7 +166,7 @@ sections:
         text: tail -n 50 /home/tony/var/chaba/health/tony-dell-monitor.log
         tags: [mcp-debug]
       - label: Cross-host endpoint
-        text: curl -s -o /dev/null -w '%{http_code}' http://tony-omen:8080/health
+        text: curl -s -o /dev/null -w '%{http_code}' http://tony-dell:8080/health
         tags: [mcp-debug]
 
 config:

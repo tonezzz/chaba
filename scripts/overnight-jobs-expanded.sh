@@ -41,7 +41,7 @@ cat >> "$REPORT_FILE" << EOF
 EOF
 
 # Call health check API
-curl -s http://tony-omen.local:8080/api/health | tee -a "$LOG_FILE" >> "$REPORT_FILE" || echo "Health check API failed" | tee -a "$LOG_FILE"
+curl -s http://tony-dell:8080/api/health | tee -a "$LOG_FILE" >> "$REPORT_FILE" || echo "Health check API failed" | tee -a "$LOG_FILE"
 
 # Add service-specific health checks
 cat >> "$REPORT_FILE" << EOF
@@ -215,7 +215,7 @@ cat >> "$REPORT_FILE" << EOF
 
 ### Weaviate Node Status with Historical Analysis
 EOF
-curl -s http://tony-omen.local:8080/api/weaviate/v1/nodes >> "$REPORT_FILE" || echo "Weaviate API failed" >> "$REPORT_FILE"
+curl -s http://tony-dell:8080/api/weaviate/v1/nodes >> "$REPORT_FILE" || echo "Weaviate API failed" >> "$REPORT_FILE"
 
 cat >> "$REPORT_FILE" << EOF
 
@@ -243,7 +243,7 @@ cat >> "$REPORT_FILE" << EOF
 
 ### GPU Status
 EOF
-curl -s http://tony-omen.local:8080/api/gpu/status >> "$REPORT_FILE" || echo "GPU status API failed" >> "$REPORT_FILE"
+curl -s http://tony-dell:8080/api/gpu/status >> "$REPORT_FILE" || echo "GPU status API failed" >> "$REPORT_FILE"
 
 cat >> "$REPORT_FILE" << EOF
 
@@ -268,19 +268,19 @@ cat >> "$REPORT_FILE" << EOF
 
 ### Yomi Health Status
 EOF
-curl -s http://tony-omen.local:8080/api/yomi/health >> "$REPORT_FILE" || echo "Yomi health API failed" >> "$REPORT_FILE"
+curl -s http://tony-dell:3000/api/yomi/health >> "$REPORT_FILE" || echo "Yomi health API failed" >> "$REPORT_FILE"
 
 cat >> "$REPORT_FILE" << EOF
 
 ### Rate Limiter Status
 EOF
-curl -s http://tony-omen.local:8080/api/yomi/rate-limiter-status >> "$REPORT_FILE" || echo "Rate limiter API failed" >> "$REPORT_FILE"
+curl -s http://tony-dell:3000/api/yomi/rate-limiter-status >> "$REPORT_FILE" || echo "Rate limiter API failed" >> "$REPORT_FILE"
 
 cat >> "$REPORT_FILE" << EOF
 
 ### Summarization Status
 EOF
-curl -s http://tony-omen.local:8080/api/yomi/summarization-status >> "$REPORT_FILE" || echo "Summarization API failed" >> "$REPORT_FILE"
+curl -s http://tony-dell:3000/api/yomi/summarization-status >> "$REPORT_FILE" || echo "Summarization API failed" >> "$REPORT_FILE"
 
 cat >> "$REPORT_FILE" << EOF
 

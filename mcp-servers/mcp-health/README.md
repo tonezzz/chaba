@@ -62,7 +62,7 @@ Run health checks for all services defined in SSOT health configuration.
     "error": 13,
     "unknown": 8,
     "profile": "home",
-    "base_url": "http://tony-omen.local:8080"
+    "base_url": "http://tony-dell:8080"
   },
   "services_by_category": {
     "web": [...],

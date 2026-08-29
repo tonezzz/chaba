@@ -176,7 +176,7 @@ function verifyYomiImprovement(improvement) {
   
   try {
     // Check Yomi API health
-    const yomiHealth = httpGet('http://tony-omen.local:8080/api/yomi/health');
+    const yomiHealth = httpGet('http://tony-dell:3000/api/yomi/health');
     
     if (yomiHealth.status !== 200) {
       return {
@@ -187,7 +187,7 @@ function verifyYomiImprovement(improvement) {
     
     // Check specific Yomi components based on improvement
     if (improvement.label.includes('Summarization')) {
-      const summaryStatus = httpGet('http://tony-omen.local:8080/api/yomi/summarization-status');
+      const summaryStatus = httpGet('http://tony-dell:3000/api/yomi/summarization-status');
       
       if (summaryStatus.status !== 200) {
         return {
@@ -207,7 +207,7 @@ function verifyYomiImprovement(improvement) {
     }
     
     if (improvement.label.includes('Rate Limiter')) {
-      const rateLimiterStatus = httpGet('http://tony-omen.local:8080/api/yomi/rate-limiter-status');
+      const rateLimiterStatus = httpGet('http://tony-dell:3000/api/yomi/rate-limiter-status');
       
       if (rateLimiterStatus.status !== 200) {
         return {
@@ -267,7 +267,7 @@ function verifyServiceHealthImprovement(improvement) {
     
     let result;
     if (typeof endpoint === 'string') {
-      result = httpGet(`http://tony-omen.local:8080${endpoint}`);
+      result = httpGet(`http://tony-dell:8080${endpoint}`);
     } else {
       result = httpGetCustom(endpoint.host, endpoint.port, endpoint.path);
     }

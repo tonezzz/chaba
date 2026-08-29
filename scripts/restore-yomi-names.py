@@ -6,7 +6,7 @@ import time
 import urllib.request
 import urllib.error
 
-API_BASE = "http://tony-omen.local:8080/api/yomi"
+API_BASE = "http://tony-dell:3000/api/yomi"
 NAMES_FILE = "/home/tony/CascadeProjects/chaba-yomi/stacks/web/public/apps/yomi/conversations-names.json"
 
 ID_RE = re.compile(r"^[uc][0-9a-f]{32}$")

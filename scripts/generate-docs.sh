@@ -103,7 +103,7 @@ for path in glob.glob('$SSOT_DIR/infrastructure/ssot.health*.yml'):
         echo ""
         echo "```bash"
         echo "# Test all health endpoints"
-        echo "curl -s http://tony-omen.local:8080/api/health | jq ."
+        echo "curl -s http://tony-dell:8080/api/health | jq ."
         echo "```"
         echo ""
         echo "## Related Documentation"

@@ -40,7 +40,7 @@ notify_yomi() {
     local message="🔔 [${severity^^}] ${title}: ${body}"
     
     if [[ -n "${YOMI_CHAT_ID:-}" ]]; then
-        curl -s -X POST "${YOMI_API_URL:-http://tony-omen.local:8080/api/yomi/send}" \
+        curl -s -X POST "${YOMI_API_URL:-http://tony-dell:3000/api/yomi/send}" \
             -H "Content-Type: application/json" \
             -d "{\"chatId\":\"$YOMI_CHAT_ID\",\"message\":\"$message\"}" 2>/dev/null || true
     fi

@@ -20,7 +20,7 @@ host_roles:
     - playlived
     - gpu-queue
     - barrier-server
-    - caddy web (tony-omen:8080)
+    - caddy web (tony-dell:8080)
     - bserver
     - mcp-gpu
     - mcp-llama
@@ -123,8 +123,8 @@ health_checks:
   - name: tony-omen reachability
     command: ping -c 2 tony-omen
     expect: 2 received
-  - name: tony-omen Caddy
-    command: curl -s -o /dev/null -w '%{http_code}' http://tony-omen:8080/api/status
+  - name: tony-dell Caddy
+    command: curl -s -o /dev/null -w '%{http_code}' http://tony-dell:8080/api/status
     expect: '200'
 
 notes:
