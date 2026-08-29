@@ -162,10 +162,18 @@ tony-dell:
     port: 8082
     host_port: 0.0.0.0:8082
     purpose: Tailscale Funnel landing page, docs, and health endpoint
-    tailscale_funnel: 'https://tony-dell.taila0626a.ts.net:8444'
     source: stacks/tony-dell/chaba-funnel/funnel-server.py
-    status: implemented (2026-08-17)
-    note: 'Migrated from port 443 root to 8444 to avoid conflict with the mcp-rview-oauth-proxy on 9004. Caddy/rview remain on 8443; OAuth stays on 443. Set up: tailscale funnel --bg --https=8444 8082 on tony-dell.'
+    status: decommissioned (2026-08-28)
+    note: 'Port 8444 reassigned to ha-live. Service may be retired or moved to a different port.'
+  ha-live:
+    service: none (podman exec from home-assistant)
+    host: tony_dell
+    port: 9005
+    host_port: 127.0.0.1:9005
+    purpose: Push-to-talk Gemini Live bridge for Home Assistant
+    tailscale_funnel: 'https://tony-dell.taila0626a.ts.net:8444'
+    source: /home/tony/.config/home-assistant/ha-live/bridge.py
+    status: experimental (2026-08-28)
   playlived-dell:
     service: playlived-dell.service
     host: tony_dell
