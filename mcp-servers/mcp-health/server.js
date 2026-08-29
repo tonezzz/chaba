@@ -921,25 +921,31 @@ async function checkSystemService(service) {
   const startTime = Date.now();
   const expectedState = service.expected_state || 'active';
   const systemctlCmd = service.scope === 'system' ? 'systemctl' : 'systemctl --user';
-  
+
+  // Run remote systemctl via SSH for non-local hosts
+  const localHosts = ['tony_dell', 'tony-dell', 'localhost'];
+  const sshPrefix = (service.host && !localHosts.includes(service.host))
+    ? `ssh -o BatchMode=yes ${service.host.replace(/_/g, '-')} `
+    : '';
+
   try {
-    const output = execSync(`${systemctlCmd} show ${service.service} --property=ActiveState --property=SubState`, { 
+    const output = execSync(`${sshPrefix}${systemctlCmd} show ${service.service} --property=ActiveState --property=SubState`, {
       encoding: 'utf8',
       stdio: 'pipe'
     });
     const responseTime = Date.now() - startTime;
-    
+
     // Parse systemd output
     const lines = output.trim().split('\n');
     const activeState = lines.find(l => l.startsWith('ActiveState='))?.split('=')[1] || 'unknown';
     const subState = lines.find(l => l.startsWith('SubState='))?.split('=')[1] || 'unknown';
-    
+
     // Check if this is a timer service
     let isTimer = false;
     try {
-      const serviceType = execSync(`${systemctlCmd} show ${service.service} --property=Type --value`, { encoding: 'utf8' });
+      const serviceType = execSync(`${sshPrefix}${systemctlCmd} show ${service.service} --property=Type --value`, { encoding: 'utf8' });
       isTimer = serviceType.trim() === 'oneshot' || serviceType.trim() === 'simple';
-      const unitFile = execSync(`${systemctlCmd} show ${service.service} --property=Id --value`, { encoding: 'utf8' });
+      const unitFile = execSync(`${sshPrefix}${systemctlCmd} show ${service.service} --property=Id --value`, { encoding: 'utf8' });
       isTimer = isTimer || unitFile.trim().includes('.timer');
     } catch {
       // Assume not a timer if we can't check

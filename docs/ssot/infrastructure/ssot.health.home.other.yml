@@ -142,8 +142,9 @@ services:
   profiles:
   - home
   - mobile
+  host: tony_omen
   disabled: true
-  note: 'The weaviate container and its index timer now run on tony-dell as Podman user units. Check with tony_dell: systemctl --user status weaviate-index.timer'
+  note: 'Indexing runs on tony-omen to use the GPU embedding service. It writes to the Weaviate container on tony-dell:8084 via WEAVIATE_URL=http://tony-dell:8084. Check: systemctl --user status weaviate-index.timer'
 - id: chaba-audit-timer
   name: Chaba Audit Timer
   type: systemd
