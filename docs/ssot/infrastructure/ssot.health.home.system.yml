@@ -216,7 +216,7 @@ services:
     stopped (Exited 127); disabled until it is restarted.'
   verification:
   - 'Check container: ssh tony-omen docker ps -a | grep sensor-reader'
-  - 'Check logs: ssh tony-omen docker logs chaba-omen-sensor-reader --tail 20'
+  - 'Check logs: ssh tony-omen docker logs sensor-reader --tail 20'
   - 'Test endpoint: curl -s http://tony-omen:8001/health'
   recovery_actions:
   - 'Start container: ssh tony-omen "cd /home/tony/CascadeProjects/chaba-omen/stacks/web
