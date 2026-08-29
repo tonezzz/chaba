@@ -415,7 +415,7 @@ function getEnhancedErrorContext(serviceName, status, error, serviceType, servic
   // Service-specific troubleshooting
   if (serviceType === 'container') {
     troubleshootingSteps.push(
-      `Check container status: docker ps -a | grep ${serviceName}`,
+      `Check container status: podman ps -a | grep ${serviceName}`,
       `View container logs: docker logs ${serviceName}`,
       `Restart container: docker restart ${serviceName}`,
       `Inspect container: docker inspect ${serviceName}`
@@ -779,13 +779,13 @@ async function checkContainerService(service) {
     // Try docker ps first (does not depend on a compose project)
     let output = '';
     try {
-      if (remoteHost) {
+      if (remoteHost && !["tony_dell", "tony-dell", "localhost"].includes(remoteHost)) {
         output = execSync(`ssh -o ConnectTimeout=5 ${remoteHost} podman ps -a --filter "name=${service.container}" --format "table {{.Names}}\\t{{.Status}}"`, {
           encoding: 'utf8',
           stdio: 'pipe'
         });
       } else {
-        output = execSync(`docker ps -a --filter "name=${service.container}" --format "table {{.Names}}\\t{{.Status}}"`, {
+        output = execSync(`podman ps -a --filter "name=${service.container}" --format "table {{.Names}}\\t{{.Status}}"`, {
           encoding: 'utf8',
           stdio: 'pipe'
         });
@@ -795,13 +795,13 @@ async function checkContainerService(service) {
     // Fallback to docker compose ps if docker ps found nothing
     if (!output.trim() || !output.includes('Up')) {
       try {
-        if (remoteHost) {
+        if (remoteHost && !["tony_dell", "tony-dell", "localhost"].includes(remoteHost)) {
           output = execSync(`ssh -o ConnectTimeout=5 ${remoteHost} podman ps -a | grep ${service.container}`, {
             encoding: 'utf8',
             stdio: 'pipe'
           });
         } else {
-          output = execSync(`docker compose ps -a ${service.container}`, {
+          output = execSync(`podman ps -a | grep ${service.container}`, {
             encoding: 'utf8',
             stdio: 'pipe'
           });
@@ -834,7 +834,7 @@ async function checkContainerService(service) {
         response_time: responseTime,
         container_state: 'not found',
         expected_state: expectedState,
-        error: `Container ${service.container} not found. Check: ${remoteHost ? 'ssh ' + remoteHost : ''} docker ps -a | grep ${service.container}`
+        error: `Container ${service.container} not found. Check: ${remoteHost ? 'ssh ' + remoteHost : ''} podman ps -a | grep ${service.container}`
       };
     } else {
       // Parse docker ps format output
