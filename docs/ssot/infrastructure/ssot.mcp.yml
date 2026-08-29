@@ -214,13 +214,10 @@ servers:
   docs:
     name: Documentation Search (Chaba)
     description: Full-text search across chaba project documentation
-    implementation: npx @devista/docs-mcp
-    wrapper: none
+    implementation: /home/tony/.config/devin/mcp-scripts/mcp-docs-ssh.sh
+    wrapper: ssh
     filter: none
-    args:
-      - -y
-      - --docs
-      - /home/tony/CascadeProjects/chaba/docs
+    args: []
     single_instance: false
     status: operational
     config_files:
