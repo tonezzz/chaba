@@ -1,0 +1,204 @@
+title: Storage Policy
+subtitle: Canonical data storage locations, retention, and cleanup status for chaba
+icon: database
+version: 1
+last_reviewed: '2026-08-30T07:29:46+07:00'
+reviewer: assistant
+owner: tony
+trend: stable
+
+summary:
+  total_estimated: 63G
+  categories: 7
+  critical: 1
+  warning: 2
+  stable: 4
+  biggest_consumer: devin-cli
+  note: Devin sessions.db (45G) dominates local disk usage.
+
+policy:
+  purpose: Track where files and data are stored, set retention and cleanup rules, and monitor status.
+  review_frequency: weekly
+  data_classification:
+    - 'git-managed: project source and SSOT in chaba/'
+    - 'non-git user data: ~/.local/share/, ~/.config/, ~/.cache/'
+    - 'secrets: ~/.config/secrets/ and other mode-0600 files'
+    - 'remote: Google Drive backups via rclone'
+
+categories:
+  - id: devin-cli
+    label: Devin CLI session state
+    paths:
+      - '~/.local/share/devin/cli'
+    current_size: 46G
+    breakdown:
+      sessions.db: 45G
+      sessions.db-wal: 697M
+      logs/: 360M
+      summaries/: 132M
+    table_sizes:
+      message_nodes: 431914
+      tool_call_state: 66636
+      sessions: 662
+    threshold:
+      warning: 30G
+      critical: 50G
+    status: critical
+    retention: Sessions kept indefinitely; logs and summaries retained until manually pruned.
+    cleanup:
+      - VACUUM sessions.db (45G after WAL checkpoint)
+      - Prune old message_nodes and tool_call_state rows
+      - Archive or delete ~/.local/share/devin/cli/logs files > 90 days
+    note: WAL mode active; the 45G DB is 99% of this bucket.
+
+  - id: containers
+    label: Podman/Docker container storage
+    paths:
+      - '~/.local/share/containers/storage'
+    current_size: 9.1G
+    breakdown:
+      localhost/imagen2-inference: 6.36G
+      docker.io/pytorch/pytorch:2.6.0-cuda12.4-cudnn9-runtime: 6.11G
+      localhost/status-api: 1.66G
+      registry.access.redhat.com/ubi9/python-311: ~1.1G
+      localhost/status-data-api: 281M
+      docker.io/library/python:3.11-slim: 129M
+    threshold:
+      warning: 8G
+      critical: 12G
+    status: warning
+    retention: Images kept until removed; stopped containers retained with 0B runtime state.
+    cleanup:
+      - podman image prune
+      - Remove dangling <none> images
+      - Re-evaluate need for 6.36G imagen2-inference and 6.11G pytorch images
+    note: Dangling layers pruned 2026-08-30 (saved ~0.7G).
+
+  - id: cache
+    label: User cache
+    paths:
+      - '~/.cache'
+    current_size: 7.2G
+    breakdown:
+      rclone/vfs: 4.4G
+      google-chrome: 932M
+      puccinialin: 871M
+    threshold:
+      warning: 6G
+      critical: 10G
+    status: warning
+    retention: Caches are disposable; rclone VFS re-hydrates from Google Drive.
+    cleanup:
+      - Clear ~/.cache/rclone/vfs (4.4G) after unmounting
+      - '~/.cache/trivy cleared 2026-08-30; will re-fetch on next scan'
+      - Clear Chrome cache if not actively needed
+    note: Trivy DB cleared 2026-08-30 (saved ~1.3G); rclone VFS still active and not cleared.
+
+  - id: claude
+    label: Claude Desktop data
+    paths:
+      - '~/.config/Claude'
+    current_size: 318M
+    breakdown:
+      'Claude Extensions/local.unpacked.rikaidev.yomi/node_modules': 174M
+      Cache: 87M
+      'Code Cache': 32M
+    threshold:
+      warning: 200M
+      critical: 500M
+    status: stable
+    retention: Installed extension and model cache persist until updated or uninstalled.
+    cleanup:
+      - Remove ~/.config/Claude/Claude Extensions/local.unpacked.rikaidev.yomi if Yomi extension not used
+      - Clear Cache and Code Cache periodically
+
+  - id: reports
+    label: Generated chaba reports
+    paths:
+      - reports/
+    current_size: 273M
+    breakdown:
+      overnight-assessment-20260813-112426.md: 39M
+      overnight-assessment-20260813-125755.md: 34M
+      overnight-assessment-20260814-020000.md: 32M
+      archive/: 7.6M
+      audits/: 4.3M
+    threshold:
+      warning: 300M
+      critical: 1G
+    status: stable
+    retention: 30 days for overnight reports per ssot.automation.yml.
+    cleanup:
+      - Compress or delete old overnight-assessment-20260813-*.md files
+      - Move reports > 30 days to archive or remote
+
+  - id: app-data
+    label: Application data
+    paths:
+      - '~/.local/share/yomi'
+      - '~/.local/share/tuya'
+      - '~/.local/share/home-assistant-michael'
+      - '~/.local/share/wifi'
+    current_size: 68.5M
+    breakdown:
+      'yomi/search-index.db': 24M
+      'yomi/search-index.db-wal': 4.9M
+      tuya: 36M
+      home-assistant-michael: 3.5M
+      wifi: 8K
+    threshold:
+      warning: 100M
+      critical: 500M
+    status: stable
+    retention: App data retained per app policy; Yomi search index is precious.
+    cleanup:
+      - Keep yomi/search-index.db and WAL; do not delete
+      - Remove tuya/venv if no longer needed
+      - Prune home-assistant-michael/hacs-repositories.json if stale
+
+  - id: project-data
+    label: chaba project runtime data
+    paths:
+      - data/
+      - logs/
+      - outputs/
+    current_size: 3M
+    breakdown:
+      data/: 640K
+      logs/: 2.4M
+      outputs/: 4K
+    threshold:
+      warning: 50M
+      critical: 100M
+    status: stable
+    retention: GPU monitor data in data/gpu-monitor/; logs rotate per automation.
+    cleanup:
+      - Archive > 30 day logs
+      - Clear data/ssot-optimization temp files
+
+improvements:
+  - label: VACUUM Devin sessions DB
+    source: ssot.storage.yml
+    target_score: devin-cli < 20G
+    status: not_started
+    owner: tony
+  - label: Prune container images
+    source: ssot.storage.yml
+    target_score: containers < 5G
+    status: in_progress
+    owner: tony
+  - label: Clear rclone VFS cache
+    source: ssot.storage.yml
+    target_score: cache < 4G
+    status: not_started
+    owner: tony
+  - label: Clear Trivy DB cache
+    source: ssot.storage.yml
+    target_score: trivy cache removed
+    status: completed
+    owner: tony
+
+review_schedule:
+  frequency: weekly
+  next_review: '2026-08-31'
+  alert_dir: docs/ssot/focus-inbox
