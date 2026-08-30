@@ -1,0 +1,9 @@
+[Unit]
+Description=Periodic mcp-health snapshot (no desktop notifications)
+After=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/node /home/tony/CascadeProjects/chaba/scripts/mcp-health-snapshot.mjs
+WorkingDirectory=/home/tony/CascadeProjects/chaba
+# Script logs directly to /home/tony/CascadeProjects/chaba/logs/mcp-health-snapshot.log
