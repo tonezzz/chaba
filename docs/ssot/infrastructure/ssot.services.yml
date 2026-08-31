@@ -173,7 +173,8 @@ tony-dell:
     purpose: Push-to-talk Gemini Live bridge for Home Assistant
     tailscale_funnel: 'https://tony-dell.taila0626a.ts.net:8444'
     source: /home/tony/.config/home-assistant/ha-live/bridge.py
-    status: experimental (2026-08-28)
+    status: 'running (2026-08-31)'
+    note: 'Started as podman exec from home-assistant. WebSocket at wss://tony-dell.taila0626a.ts.net:8444/ws. Tested /ws handshake and received status=connected.'
   playlived-dell:
     service: playlived-dell.service
     host: tony_dell
@@ -258,6 +259,8 @@ tony-dell:
     binary: /home/tony/.local/bin/go2rtc
     autostart: systemctl --user enable go2rtc
     health_check: systemctl --user is-active go2rtc
+    hls_url: 'https://tony-dell.taila0626a.ts.net:8448/api/stream.m3u8?src=ip_cam_65_hd'
+    tailscale_funnel: 'https://tony-dell.taila0626a.ts.net:8448'
     status: implemented (2026-08-31)
   gpu-queue:
     container: gpu-queue
