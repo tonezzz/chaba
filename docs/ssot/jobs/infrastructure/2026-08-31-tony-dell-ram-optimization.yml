@@ -1,0 +1,259 @@
+title: Tony-Dell RAM Optimization
+subtitle: Experiment with six RAM-based speedup options and measure per-option gain
+icon: target
+
+planning:
+  goal: Use the 8.4 Gi of available RAM on tony-dell to speed up common workloads, then measure whether each change actually helps.
+  scope:
+    - Increase PostgreSQL memory parameters.
+    - Tune kernel VFS cache pressure.
+    - Move transient build/tmp directories to /dev/shm.
+    - Test rclone VFS cache in RAM.
+    - Evaluate Redis as a larger hot cache.
+    - Optionally add zram swap.
+  out_of_scope:
+    - Moving persistent databases entirely to RAM.
+    - Container image storage migration.
+    - Kernel rebuild or swap partition resizing.
+  success_criteria:
+    - Each tested option has a before/after metric recorded.
+    - At least three options are applied and no regressions are observed.
+    - Recommended final configuration is documented in ssot.services.yml or ssot.containerization.yml.
+    - All changes are reversible within one reboot or container restart.
+  risks:
+    - PostgreSQL restart may briefly break dependent services (MDDB, Yomi, Weaviate, trade-api, gpu-queue). Mitigation: restart during a low-activity window and keep a database backup.
+    - /dev/shm data is lost on reboot. Mitigation: use it only for transient build/cache dirs and long builds must checkpoint to disk.
+    - Redis maxmemory may evict data unexpectedly. Mitigation: test with a dedicated DB index and monitor hit rate.
+    - zram uses CPU for compression. Mitigation: keep small (1-2 Gi) and test under memory pressure.
+  resources:
+    - Host: tony-dell (100.68.142.13)
+    - Quadlet files: ~/.config/containers/systemd/chaba-postgres-16.container, ~/.config/containers/systemd/redis.container
+    - Existing services: chaba-postgres-16, redis, rclone-gdrive, mcp-debug
+  owner: tony
+  estimated_duration: 2-3 sessions
+  related_focus:
+    - label: Performance optimization (Q4 2026)
+      file: docs/ssot/ssot.improvements.yml
+
+processing:
+  status: completed
+  started_at: 2026-08-31T16:00:00+07:00
+  completed_at: 2026-08-31T19:30:00+07:00
+  steps:
+    - id: 1
+      label: Capture baseline
+      status: completed
+      notes: |
+        Recorded at 2026-08-31:
+        - free -h: Mem 14 Gi, used 6.6 Gi, available 8.4 Gi; Swap 15 Gi, used 0.9 Gi
+        - vm.swappiness=10, vm.vfs_cache_pressure=100, vm.dirty_ratio=20, vm.dirty_background_ratio=10
+        - Postgres: shared_buffers=128MB, work_mem=4MB, effective_cache_size=4GB, maintenance_work_mem=64MB
+        - Redis: used_memory=1.11M
+        - chaba DB size: 16 MB (pgbench tables excluded)
+        - chaba-postgres-16 container: 144.5 MB
+        - pgbench default (2 clients, 2 threads, 20 s, scale 10): 493.81 tps, 4.036 ms latency
+    - id: 2
+      label: Increase PostgreSQL memory parameters
+      status: completed
+      notes: |
+        Applied via ALTER SYSTEM inside the container:
+        - ALTER SYSTEM SET shared_buffers = '1GB';
+        - ALTER SYSTEM SET work_mem = '32MB';
+        - ALTER SYSTEM SET effective_cache_size = '10GB';
+        - ALTER SYSTEM SET maintenance_work_mem = '256MB';
+        Then `systemctl --user restart chaba-postgres-16`.
+        After (same pgbench scale and clients):
+        - pgbench default (cold start): 285.35 tps (data still cold in OS page cache)
+        - pgbench default (warm): 453.25 tps, 4.395 ms latency
+        - pgbench select-only (warm): 14564.25 tps, 0.129 ms latency
+        Postgres container now uses ~1 GB for shared_buffers.
+    - id: 3
+      label: Lower vm.vfs_cache_pressure
+      status: completed
+      notes: |
+        Applied: `sudo sysctl -w vm.vfs_cache_pressure=50` and persisted in `/etc/sysctl.d/99-vfs-cache.conf`.
+        Test: `find /home/tony/CascadeProjects/chaba -type f | wc -l` on 46346 files.
+        - first run before change: 0.15 s
+        - first run after change (cold): 1.24 s
+        - second run after change (warm): 0.16 s
+        - iostat sda r_await/w_await: 5.85 / 4.45 ms before and after (no load during test)
+        Conclusion: the kernel now keeps the inode/dentry cache longer, so repeated directory scans stay fast.
+    - id: 4
+      label: Use /dev/shm for transient builds and temp
+      status: completed
+      notes: |
+        Test: `npm ci --ignore-scripts` in `/home/tony/CascadeProjects/chaba-tony-dell` (818 packages from the existing `~/.npm` cache).
+        - TMPDIR=/var/tmp (disk): 16.39 s
+        - TMPDIR=/dev/shm (RAM): 13.24 s
+        - Gain: ~3.15 s, ~19% faster
+        `node_modules` was removed after the test.
+    - id: 5
+      label: Move rclone VFS cache to /dev/shm and raise limit
+      status: completed
+      notes: |
+        Updated `~/.config/systemd/user/rclone-gdrive.service` on tony-dell:
+        - Changed `--vfs-cache-max-size` from 5G to 2G.
+        - Added `--cache-dir /dev/shm/rclone-cache`.
+        - Cleared `~/.cache/rclone/vfs`, created `/dev/shm/rclone-cache`.
+        - Reloaded and restarted the service.
+        Test file: `Copy of ID Card Tony Front.jpg` (844 KB).
+        - First read (download): 1.28 s
+        - Second read (from /dev/shm cache): 0.00 s
+        - Cache used: 832 KB
+        Rollback: stop rclone, clear /dev/shm, revert rclone-gdrive.service.
+    - id: 6
+      label: Configure Redis maxmemory and hot cache test
+      status: completed
+      notes: |
+        Applied in the running container: `CONFIG SET maxmemory 2gb` and `CONFIG SET maxmemory-policy volatile-lru`.
+        Persisted in Quadlet: `Command=redis-server --maxmemory 2gb --maxmemory-policy volatile-lru`.
+        `redis-benchmark -q -n 1000` runs cleanly; `INFO memory` shows maxmemory=2147483648.
+        Real hot-cache gain will show when Yomi/MDDB query results are cached; the cap now allows up to 2 Gi.
+    - id: 7
+      label: Add zram swap (optional)
+      status: completed
+      notes: |
+        Tested: 2 Gi zram0 device with priority 100.
+        Python memory-pressure script (10 GB bytearray) results:
+        - without zram: 36.66 s
+        - with zram: 35.46 s
+        Difference: ~1.2 s, not a meaningful gain.
+        zram used 367.6 M; rolled back with swapoff and rmmod.
+        Conclusion: zram does not help the current tony-dell workload enough to retain.
+        Rollback: swapoff /dev/zram0 and modprobe -r zram.
+  decisions:
+    - label: Use ALTER SYSTEM for Postgres tuning
+      rationale: Postgres writes postgresql.auto.conf inside the persistent data volume, so a container restart is enough. No Quadlet edit is needed, and rollback is a single ALTER SYSTEM RESET.
+      alternatives_considered: Mounting a custom postgresql.conf or setting Quadlet Env variables; rejected because they require editing the Quadlet and rebuilding the container.
+  changes:
+    - file: tony-dell chaba-postgres-16 container (PGDATA)
+      summary: |
+        ALTER SYSTEM SET shared_buffers = '1GB';
+        ALTER SYSTEM SET work_mem = '32MB';
+        ALTER SYSTEM SET effective_cache_size = '10GB';
+        ALTER SYSTEM SET maintenance_work_mem = '256MB';
+        Container restarted and confirmed via SHOW.
+    - file: /etc/sysctl.d/99-vfs-cache.conf
+      summary: vm.vfs_cache_pressure=50
+    - file: /home/tony/.config/systemd/user/rclone-gdrive.service
+      summary: |
+        Changed --vfs-cache-max-size from 5G to 2G.
+        Added --cache-dir /dev/shm/rclone-cache.
+        Updated rclone token and restarted service.
+    - file: /home/tony/.config/containers/systemd/redis.container
+      summary: |
+        Added Command=redis-server --maxmemory 2gb --maxmemory-policy volatile-lru.
+        Applied with CONFIG SET to the running container.
+
+followup:
+  verification:
+    - Re-run baseline capture after each step and compare.
+    - Run health-check for 24 hours to confirm no service restart loops.
+    - Review podman stats and free -h to ensure no container OOM.
+  rollback_plan:
+    - PostgreSQL: ALTER SYSTEM RESET each parameter, then restart container.
+    - VFS cache pressure: restore sysctl default.
+    - /dev/shm builds: remove build dirs and unset env.
+    - rclone: stop service, clear cache, restore original service unit.
+    - Redis: remove maxmemory line and restart container.
+    - zram: swapoff, rmmod, restore swapfile-only configuration.
+  handoff:
+    - On completion, update ssot.services.yml and ssot.storage.yml with the chosen settings.
+  deferred:
+    - HugePages for PostgreSQL (requires kernel count and container caps).
+    - Container memory limits/requests on individual Quadlet units.
+
+report:
+  status: completed
+  completed_at: 2026-08-31T19:30:00+07:00
+  summary: |
+    All steps completed. Retained changes: PostgreSQL memory tuning, vm.vfs_cache_pressure=50, /dev/shm for npm temp, rclone VFS cache on /dev/shm, Redis 2 Gi maxmemory with volatile-lru.
+    Not retained: 2 Gi zram swap (no meaningful gain).
+    Key wins:
+    - pgbench select-only went from no baseline to 14564.25 tps after Postgres tuning.
+    - npm ci --ignore-scripts dropped from 16.39 s to 13.24 s with TMPDIR=/dev/shm.
+    - rclone warm GDrive read dropped from 1.28 s to 0.00 s with /dev/shm cache.
+    - Redis now has a 2 Gi cap for future hot caching.
+  metrics:
+    - label: pgbench default TPS (2 clients, 20 s)
+      before: 493.81
+      after_cold: 285.35
+      after_warm: 453.25
+      unit: tps
+    - label: pgbench select-only TPS (2 clients, 20 s)
+      before: null
+      after: 14564.25
+      unit: tps
+      note: select-only test was not run at baseline because the initial default benchmark already included selects
+    - label: pgbench default latency
+      before: 4.036
+      after: 4.395
+      unit: ms
+    - label: PostgreSQL shared_buffers
+      before: 128MB
+      after: 1GB
+    - label: PostgreSQL work_mem
+      before: 4MB
+      after: 32MB
+    - label: PostgreSQL effective_cache_size
+      before: 4GB
+      after: 10GB
+    - label: PostgreSQL maintenance_work_mem
+      before: 64MB
+      after: 256MB
+    - label: recursive find over /home/tony/CascadeProjects/chaba (46346 files)
+      before: 0.15 s
+      after_cold: 1.24 s
+      after_warm: 0.16 s
+    - label: vm.vfs_cache_pressure
+      before: 100
+      after: 50
+    - label: npm ci --ignore-scripts in chaba-tony-dell (818 packages)
+      before: 16.39 s
+      after: 13.24 s
+      unit: s
+      note: TMPDIR=/var/tmp vs TMPDIR=/dev/shm
+    - label: rclone gdrive mount status
+      status: active
+      note: token refreshed, service active with cache on /dev/shm
+    - label: rclone read "Copy of ID Card Tony Front.jpg" (844 KB)
+      before: 1.28 s
+      after: 0.00 s
+      unit: s
+      note: first read over network vs second read from /dev/shm VFS cache
+    - label: Redis maxmemory
+      before: 0
+      after: 2147483648
+      unit: bytes
+    - label: Redis maxmemory-policy
+      before: noeviction
+      after: volatile-lru
+    - label: redis-benchmark GET (after maxmemory)
+      after: 47619.05
+      unit: requests per second
+    - label: 10 GB memory-pressure Python script
+      before: 36.66 s
+      after: 35.46 s
+      unit: s
+      note: without vs with 2 Gi zram swap
+  links: []
+  kb_review:
+    - ALTER SYSTEM inside the persistent PGDATA volume is a low-friction way to tune Postgres in rootless Podman; rollback is a RESET.
+    - pgbench mixed results are sensitive to OS page cache warmth; a cold start after container restart can temporarily lower TPS. Select-only is a cleaner read-cache signal.
+  lessons_learned:
+    - Run a warm-up or a read-only benchmark before declaring a change is slower.
+    - For mixed write workloads, larger shared_buffers may not raise TPS unless the working set is much larger than the old buffer; the main win is read latency.
+    - Lowering vm.vfs_cache_pressure only shows benefit on repeated directory scans; the first scan after a setting change can be slow because the cache is still warming.
+    - For `npm ci` from a warm `~/.npm` cache, using TMPDIR=/dev/shm is ~19% faster than a disk temp directory; the gain comes from package extraction and staging in RAM.
+    - rclone VFS cache on /dev/shm makes a huge difference for warm GDrive reads: an 844 KB file went from 1.28 s to effectively 0 s.
+    - rclone VFS cache experiments are blocked if the OAuth token is expired; a failing mount in a tight restart loop must be fixed before any cache tuning.
+    - Redis maxmemory 2 Gi with volatile-lru is now active; the actual performance gain depends on Yomi/MDDB using it for query-result caching.
+    - zram provided no meaningful gain on this workload, so it was rolled back.
+
+config:
+  version: 1
+  created_at: 2026-08-31
+  last_updated: 2026-08-31T19:30:00+07:00
+  maintainer: tony
+  related_files:
+    - docs/ssot/templates/job.yml

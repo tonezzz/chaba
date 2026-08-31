@@ -1,0 +1,137 @@
+title: Tony-Omen RAM Optimization
+subtitle: Experiment with RAM-based speedup options on tony-omen and measure per-option gain
+icon: target
+
+planning:
+  goal: Use the 8.7 Gi of available RAM on tony-omen to speed up GPU/ML and Docker workloads, then measure whether each change actually helps.
+  scope:
+    - Capture baseline memory, swap, GPU, and Docker usage.
+    - Tune kernel VFS cache pressure.
+    - Use /dev/shm for transient builds and tmp directories.
+    - Move Docker build cache or layer storage to a tmpfs location if it helps.
+    - Evaluate Ollama/LLM model cache in RAM.
+    - Optionally add zram swap.
+  out_of_scope:
+    - Moving persistent databases entirely to RAM.
+    - Kernel rebuild or swap partition resizing.
+    - Changes to the Ollama active model working set.
+  success_criteria:
+    - Each tested option has a before/after metric recorded.
+    - At least three options are applied and no regressions are observed.
+    - Recommended final configuration is documented in ssot.services.yml or ssot.containerization.yml.
+    - All changes are reversible within one reboot or container restart.
+  risks:
+    - Docker restart may briefly break dependent GPU/ML services. Mitigation: restart during low-activity and keep compose backups.
+    - /dev/shm data is lost on reboot. Mitigation: use it only for transient build/cache dirs.
+    - GPU memory is separate from system RAM. Mitigation: focus on host and Docker caches, not VRAM.
+    - zram uses CPU for compression. Mitigation: keep small (2-4 Gi) and test under memory pressure.
+  resources:
+    - Host: tony-omen
+    - Docker: Docker + Compose for GPU/ML services
+    - GPU: 4 Gi VRAM, ~55 MiB used
+    - Existing services: ollama, gemini-ollama-proxy, GPU queue, Docker buildx
+  owner: tony
+  estimated_duration: 1-2 sessions
+  related_focus:
+    - label: Performance optimization (Q4 2026)
+      file: docs/ssot/ssot.improvements.yml
+
+processing:
+  status: in_progress
+  started_at: 2026-08-31T19:45:00+07:00
+  steps:
+    - id: 1
+      label: Capture baseline
+      status: completed
+      notes: |
+        Recorded:
+        - free -h: Mem 30 Gi, used 21 Gi, available 8.6 Gi, buff/cache 8.3 Gi
+        - swapon --show: /swapfile 16G, /data/hibernate.swap 32G, /dev/zram0 12G (4.8G used)
+        - docker system df: images 10.05G, containers 1.479G, build cache 0B
+        - docker buildx ls: default driver, v0.32.0
+        - nvidia-smi: GTX 1650, 4G VRAM, 55M used
+        - vm.vfs_cache_pressure = 100
+        - /dev/shm: 16G total, 756M used; /tmp: 16G total, 392M used
+        Note: zram is already active (12G), so the optional zram step is likely already covered.
+    - id: 2
+      label: Lower vm.vfs_cache_pressure
+      status: completed
+      notes: |
+        Applied: `sudo sysctl -w vm.vfs_cache_pressure=50` and persisted in `/etc/sysctl.d/99-vfs-cache.conf`.
+        Test: `find /home/tony/CascadeProjects/chaba -type f | wc -l` on 98364 files.
+        - before change: 1.43 s
+        - after change (first run): 0.30 s
+        - after change (second run): 0.32 s
+        Conclusion: the directory cache is now kept longer, so repeated scans are much faster.
+    - id: 3
+      label: Use /dev/shm for Docker build and temp
+      status: not_started
+      notes: |
+        Deferred: the default `docker` buildx driver does not expose a direct way to place buildkit
+        cache/worker root on /dev/shm without a `docker-container` builder. That builder's container
+        /dev/shm is only 64M by default, which is too small for multi-GB builds.
+        A real test would require a custom buildx builder with a bind-mounted /dev/shm volume.
+        For now, skip and move to the next applicable step.
+        Rollback: unset DOCKER_TMPDIR and clean /dev/shm build dirs.
+    - id: 4
+      label: Move Ollama model cache to RAM-backed tmpfs
+      status: not_started
+      notes: |
+        Target: symlink or bind-mount ~/.ollama/models to /dev/shm/ollama-models.
+        Measure: first/second model load time for a small model.
+        Rollback: remove bind-mount and restore disk cache.
+    - id: 5
+      label: Add zram swap (optional)
+      status: not_started
+      notes: |
+        Target: 4 Gi zram0 device.
+        Measure: swap I/O and response under a controlled memory pressure test.
+        Rollback: swapoff /dev/zram0 and modprobe -r zram.
+  decisions: []
+  changes:
+    - file: /etc/sysctl.d/99-vfs-cache.conf
+      summary: vm.vfs_cache_pressure=50
+
+followup:
+  verification:
+    - Re-run baseline capture after each step and compare.
+    - Run health-check for 24 hours to confirm no service restart loops.
+    - Review docker stats and free -h to ensure no container OOM.
+  rollback_plan:
+    - VFS cache pressure: restore sysctl default.
+    - /dev/shm builds: remove build dirs and unset env.
+    - Ollama cache: unmount /dev/shm/ollama-models and restore disk cache.
+    - zram: swapoff, rmmod, restore swapfile-only configuration.
+  handoff:
+    - On completion, update ssot.services.yml and ssot.containerization.yml with the chosen settings.
+  deferred:
+    - Docker container memory limits/requests on individual compose services.
+
+report:
+  status: not_started
+  completed_at: null
+  summary: |
+    Baseline and step 2 (vfs_cache_pressure) completed.
+    Lowering vm.vfs_cache_pressure to 50 cut a recursive find over 98,364 files from 1.43 s to ~0.31 s.
+  metrics:
+    - label: recursive find over /home/tony/CascadeProjects/chaba (98364 files)
+      before: 1.43 s
+      after: 0.31 s
+      unit: s
+      note: average of two warm runs
+    - label: vm.vfs_cache_pressure
+      before: 100
+      after: 50
+  links: []
+  kb_review: []
+  lessons_learned: []
+
+config:
+  version: 1
+  created_at: 2026-08-31
+  last_updated: 2026-08-31
+  maintainer: tony
+  related_files:
+    - docs/ssot/templates/job.yml
+    - docs/ssot/infrastructure/ssot.containerization.yml
+    - docs/ssot/infrastructure/ssot.services.yml
