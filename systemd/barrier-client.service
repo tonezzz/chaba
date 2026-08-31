@@ -1,0 +1,12 @@
+[Unit]
+Description=Barrier KVM client for tony-dell
+After=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/home/tony/.local/bin/barrierc --no-daemon --disable-crypto --name tony-dell --log /tmp/barrier-client.log tony-omen
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target

@@ -27,3 +27,25 @@ services:
   - 'Check tony-dell is online: tailscale status | grep tony-dell'
   - 'Check Tailscale on tony-dell: ssh tony-dell tailscale status'
   host: tony_dell
+
+- id: barrier-client
+  name: Barrier KVM Client
+  type: systemd
+  service: barrier-client.service
+  scope: user
+  host: tony_dell
+  expected_state: active
+  timeout: 5
+  category: tony-dell
+  profiles:
+  - home
+  - mobile
+  note: Barrier KVM client on tony-dell; connects to the barriers.service on tony-omen.
+  verification:
+  - 'Check service: ssh tony-dell systemctl --user status barrier-client.service'
+  - 'Check process: ssh tony-dell pgrep -a barrierc'
+  - 'Check log: ssh tony-dell tail -n 20 /tmp/barrier-client.log'
+  recovery_actions:
+  - 'Restart service: ssh tony-dell systemctl --user restart barrier-client.service'
+  - 'Verify tony-omen barriers.service is active: ssh tony-omen systemctl --user is-active barriers.service'
+  host: tony_dell

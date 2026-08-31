@@ -1,0 +1,12 @@
+[Unit]
+Description=go2rtc H.264 camera proxy
+After=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/home/tony/.local/bin/go2rtc -c /home/tony/.config/go2rtc/go2rtc.yaml
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target
