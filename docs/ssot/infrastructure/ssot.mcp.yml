@@ -78,10 +78,11 @@ servers:
       IMAGEN_URL: profile.service_urls.imagen_url
       LLAMA_URL: profile.service_urls.llama_url
     single_instance: true
-    status: operational
+    status: disabled
+    note: 'Server source files are missing from both chaba-omen/mcp and chaba-mcp-experiments/mcp. Re-implement or migrate before re-enabling.'
     config_files:
-      - devin: true
-      - windsurf: true
+      - devin: false
+      - windsurf: false
 
   mcp-llama:
     name: Llama.cpp Server
@@ -92,10 +93,11 @@ servers:
     env:
       LLAMA_URL: profile.service_urls.llama_url
     single_instance: true
-    status: operational
+    status: disabled
+    note: 'Server source files are missing from both chaba-omen/mcp and chaba-mcp-experiments/mcp. Re-implement or migrate before re-enabling.'
     config_files:
-      - devin: true
-      - windsurf: true
+      - devin: false
+      - windsurf: false
 
   postgres:
     name: PostgreSQL Database
@@ -143,9 +145,10 @@ servers:
     env:
       PLAYLIVE_URL: profile.service_urls.playlive_url
     single_instance: false
-    status: operational
+    status: disabled
+    note: 'Server source files are missing from both chaba-omen/mcp and chaba-mcp-experiments/mcp. Re-implement or migrate before re-enabling.'
     config_files:
-      - devin: true
+      - devin: false
       - windsurf: false
 
   mcp-debug:
@@ -253,10 +256,11 @@ servers:
     env:
       WEAVIATE_SEARCH_URL: profile.service_urls.weaviate_url
     single_instance: false
-    status: operational
+    status: disabled
+    note: 'Server source files are missing from both chaba-omen/mcp and chaba-mcp-experiments/mcp. Re-implement or migrate before re-enabling.'
     config_files:
       - devin: false
-      - windsurf: true
+      - windsurf: false
 
   workflows:
     name: Workflows Automation
