@@ -89,12 +89,29 @@ categories:
     retention: Caches are disposable; rclone VFS re-hydrates from Google Drive.
     cleanup:
       - rclone VFS cache is on /dev/shm/rclone-cache (max-size 2G)
+      - ms-playwright cache is on /dev/shm/ms-playwright (symlinked from ~/.cache; 656M; ~0.18 s disk cold -> ~0.00 s)
+      - ms-playwright-mcp cache is on /dev/shm/ms-playwright-mcp (symlinked from ~/.cache; 29M)
+      - puccinialin cache is on /dev/shm/puccinialin on tony-omen (symlinked from ~/.cache; 871M; ~0.09 s -> ~0.00 s)
       - '~/.cache/trivy cleared 2026-08-30; will re-fetch on next scan'
       - Clear Chrome cache if not actively needed
     note: |
       Rclone VFS cache moved to /dev/shm/rclone-cache and max-size raised to 2G 2026-08-31.
+      Playwright caches moved to /dev/shm via symlinks 2026-08-31:
+      - tony-dell: ms-playwright (656M) and ms-playwright-mcp (29M)
+      - tony-omen: ms-playwright (656M) and puccinialin (871M)
+      Each has a systemd user unit (e.g. ms-playwright-ram-cache.service) that copies the cache from disk to /dev/shm on login and syncs it back on logout.
       Old ~/.cache/rclone/vfs cleared 2026-08-30.
       ~/.cache/huggingface is a symlink to /data/cache/huggingface (75G) and not counted here.
+    reboot:
+      - systemd user units restore the /dev/shm symlinks on login.
+      - Clean shutdown also runs ExecStop and syncs /dev/shm back to disk.
+      - Hard power off or crash can lose changes made since the last successful ExecStop.
+      - Pre-shutdown safety: systemctl --user stop ms-playwright-ram-cache.service
+    repair:
+      - Check: systemctl --user status ms-playwright-ram-cache.service
+      - Check: ls -l ~/.cache/ms-playwright
+      - Restore disk copy: rm -f ~/.cache/ms-playwright && mv ~/.cache/ms-playwright.disk ~/.cache/ms-playwright
+      - Force resync: systemctl --user restart ms-playwright-ram-cache.service
 
   - id: claude
     label: Claude Desktop data

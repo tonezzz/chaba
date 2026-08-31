@@ -37,8 +37,9 @@ planning:
       file: docs/ssot/ssot.improvements.yml
 
 processing:
-  status: in_progress
+  status: completed
   started_at: 2026-08-31T19:45:00+07:00
+  completed_at: 2026-08-31T20:30:00+07:00
   steps:
     - id: 1
       label: Capture baseline
@@ -81,11 +82,15 @@ processing:
         Measure: first/second model load time for a small model.
         Rollback: remove bind-mount and restore disk cache.
     - id: 5
-      label: Add zram swap (optional)
-      status: not_started
+      label: Verify existing zram swap under memory pressure
+      status: completed
       notes: |
-        Target: 4 Gi zram0 device.
-        Measure: swap I/O and response under a controlled memory pressure test.
+        zram0 is already active as the highest-priority swap on tony-omen (12 Gi).
+        Test: 10 Gi bytearray memory pressure.
+        - wall time: 19.43 s
+        - /dev/zram0 used: 11.2 Gi
+        - /sys/block/zram0/mm_stat: ~10.6 Gi original, ~4.3 Gi compressed (~60% compression)
+        Conclusion: existing zram is working well and is already providing value; no further swap tuning needed.
         Rollback: swapoff /dev/zram0 and modprobe -r zram.
   decisions: []
   changes:
@@ -108,11 +113,12 @@ followup:
     - Docker container memory limits/requests on individual compose services.
 
 report:
-  status: not_started
-  completed_at: null
+  status: completed
+  completed_at: 2026-08-31T20:30:00+07:00
   summary: |
-    Baseline and step 2 (vfs_cache_pressure) completed.
-    Lowering vm.vfs_cache_pressure to 50 cut a recursive find over 98,364 files from 1.43 s to ~0.31 s.
+    Tony-omen RAM optimization completed.
+    Step 2 (vfs_cache_pressure) delivered a clear win; step 5 (zram) confirmed the existing 12 Gi zram is already helping.
+    Steps 3 (Docker build temp) and 4 (Ollama model cache in /dev/shm) were not tested because the default Docker buildx driver does not expose a safe way to place build cache in /dev/shm, and Ollama's model cache is in a persistent Docker volume that should not be placed on tmpfs.
   metrics:
     - label: recursive find over /home/tony/CascadeProjects/chaba (98364 files)
       before: 1.43 s
@@ -122,9 +128,17 @@ report:
     - label: vm.vfs_cache_pressure
       before: 100
       after: 50
+    - label: 10 GB memory-pressure script (with existing zram)
+      after: 19.43 s
+      unit: s
+      note: /dev/zram0 used 11.2 Gi; 10.6 Gi original compressed to 4.3 Gi
   links: []
   kb_review: []
-  lessons_learned: []
+  lessons_learned:
+    - Lowering vm.vfs_cache_pressure to 50 gave a large repeated-scan speedup on tony-omen: 1.43 s to ~0.31 s.
+    - tony-omen already has 12 Gi of zram, and it compresses well under pressure (~60% compression).
+    - Default Docker buildx does not make it easy or safe to use /dev/shm for build cache.
+    - Ollama on tony-omen uses a persistent Docker volume; moving it to tmpfs would lose models on reboot.
 
 config:
   version: 1
