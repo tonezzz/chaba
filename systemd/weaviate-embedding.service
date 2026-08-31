@@ -1,0 +1,14 @@
+[Unit]
+Description=Weaviate embedding service (all-MiniLM-L6-v2)
+After=network.target
+
+[Service]
+Type=simple
+Environment="CUDA_VISIBLE_DEVICES="
+Environment="EMBEDDING_MODEL=all-MiniLM-L6-v2"
+ExecStart=/home/tony/venv-embeddings/bin/python /home/tony/CascadeProjects/chaba/scripts/embeddings/embedding-service-gpu.py
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=default.target
