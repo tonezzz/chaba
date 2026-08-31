@@ -1,0 +1,26 @@
+title: Health Snapshot Alert
+subtitle: 3 services not healthy
+icon: heart-pulse
+focus:
+  label: 'mcp-health: 3 failing'
+  text: |
+    All three originally failing services have been triaged and resolved:
+    - web / BServer: disabled in health checks; the bserver backend is not running and Caddy returns 502 at root.
+    - system / Playlived (tony-omen): disabled in health checks; playlived is now hosted on tony-dell.
+    - tailscale / Home Assistant Live (Gemini Live bridge): healthy; the 502/port-conflict output was from a stale chaba-tony-dell worktree and cleared after syncing to origin/master.
+  status: resolved
+  priority: high
+  tags:
+  - health
+  - monitoring
+  - snapshot
+  subtasks:
+  - label: Investigate BServer
+    status: completed
+  - label: Investigate Playlived (tony-omen)
+    status: completed
+  - label: Investigate Home Assistant Live (Gemini Live bridge)
+    status: completed
+source:
+  session: mcp-health-snapshot
+  date: 2026-08-31
