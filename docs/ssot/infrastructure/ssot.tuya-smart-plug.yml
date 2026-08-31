@@ -1,7 +1,7 @@
 title: Tuya WiFi Smart Plugs
 subtitle: Local TinyTuya control for two Tuye-10A sockets on tony-dell
 version: 2
-last_updated: '2026-08-29'
+last_updated: '2026-08-31'
 
 sections:
   - title: Devices
@@ -40,6 +40,8 @@ sections:
         text: 'Configured in /home/tony/.config/home-assistant/configuration.yaml with two local switches: ปลั๊กกาแฟ Local (switch.plakkaaaef_local) and ปลัฦหัวเตียง Local (switch.plalhawetiiyng_local)'
       - label: Polling
         text: 'scan_interval: 5 seconds; command_timeout: 15 seconds'
+      - label: Runtime
+        text: 'A dedicated TinyTuya venv is installed at /config/tuya/venv inside the Home Assistant container. The control script uses a file lock (/.tuya.lock) and a last-state cache (/last-state.json) to serialize concurrent calls and avoid brief OFF mis-reads.'
 
   - title: Current Status
     icon: activity
@@ -56,8 +58,6 @@ sections:
     icon: arrow-right
     layout: list
     items:
-      - label: Stabilize state polling
-        text: 'Consider adding retry/timeout hardening to tuya-control.py to avoid brief OFF mis-reads when another command is active.'
       - label: Dashboard
         text: 'Replace stale cloud switch cards with the new local entities in Home Assistant dashboards.'
       - label: HA-MCP exposure
@@ -65,7 +65,7 @@ sections:
 
 config:
   version: 2
-  last_updated: '2026-08-29'
+  last_updated: '2026-08-31'
   maintainer: tony
   related_files:
     - /home/tony/.config/home-assistant/configuration.yaml
