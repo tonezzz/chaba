@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""mcp-llama — FastMCP wrapper for llama.cpp server.
+"""mcp-llama — FastMCP wrapper for local LLM inference.
 
-Runs over stdio by default for local IDE integration (e.g. Windsurf/Cascade).
-It calls the OpenAI-compatible HTTP API exposed by llama-server.
+Supports both the llama.cpp server OpenAI-compatible API and the Ollama API,
+auto-detecting which one is running at LLAMA_URL.
 """
 import json
 import os
@@ -15,7 +15,7 @@ from mcp.server.fastmcp import FastMCP
 
 mcp = FastMCP("mcp-llama")
 
-LLAMA_URL = os.environ.get("LLAMA_URL", "http://localhost:8008")
+LLAMA_URL = os.environ.get("LLAMA_URL", "http://localhost:8008").rstrip("/")
 MODEL_DIR = Path(
     os.environ.get(
         "LLAMA_MODEL_DIR",
@@ -23,24 +23,54 @@ MODEL_DIR = Path(
     )
 ).expanduser()
 
+DEFAULT_OLLAMA_MODEL = os.environ.get("LLAMA_OLLAMA_MODEL", "phi3-gguf:latest")
 
-def _post(path: str, payload: dict[str, Any]) -> dict[str, Any]:
-    url = f"{LLAMA_URL.rstrip('/')}{path}"
-    data = json.dumps(payload).encode("utf-8")
+
+def _request(path: str, method: str = "GET", payload: dict[str, Any] | None = None, timeout: int = 120) -> tuple[int, dict[str, Any] | str]:
+    """Make an HTTP request and return (status, parsed_body_or_text)."""
+    url = f"{LLAMA_URL}{path}"
+    data = None
+    if payload is not None:
+        data = json.dumps(payload).encode("utf-8")
     req = urllib.request.Request(
         url,
         data=data,
         headers={"Content-Type": "application/json"},
-        method="POST",
+        method=method,
     )
-    with urllib.request.urlopen(req, timeout=120) as resp:
-        return json.loads(resp.read().decode("utf-8"))
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            return resp.status, json.loads(resp.read().decode("utf-8"))
+    except urllib.error.HTTPError as exc:
+        body = exc.read().decode("utf-8", errors="replace")[:500]
+        try:
+            return exc.code, json.loads(body)
+        except json.JSONDecodeError:
+            return exc.code, body
+    except Exception as exc:
+        return 0, str(exc)
 
 
-def _get(path: str) -> dict[str, Any]:
-    url = f"{LLAMA_URL.rstrip('/')}{path}"
-    with urllib.request.urlopen(url, timeout=10) as resp:
-        return json.loads(resp.read().decode("utf-8"))
+def _is_ollama() -> bool:
+    """Probe Ollama's tags endpoint to decide whether to use the Ollama API."""
+    status, body = _request("/api/tags", timeout=5)
+    if status == 200 and isinstance(body, dict) and "models" in body:
+        return True
+    return False
+
+
+OLLAMA_MODE = _is_ollama()
+
+
+def _ollama_model(model: str | None) -> str:
+    if model:
+        return model
+    status, body = _request("/api/tags", timeout=5)
+    if status == 200 and isinstance(body, dict) and body.get("models"):
+        names = [m["name"] for m in body["models"] if "embed" not in m.get("name", "")]
+        if names:
+            return names[0]
+    return DEFAULT_OLLAMA_MODEL
 
 
 @mcp.tool()
@@ -49,22 +79,45 @@ def chat(
     system: str | None = None,
     max_tokens: int = 512,
     temperature: float = 0.7,
+    model: str | None = None,
 ) -> str:
     """Chat with the loaded model."""
-    messages: list[dict[str, str]] = []
+    if OLLAMA_MODE:
+        messages: list[dict[str, str]] = []
+        if system:
+            messages.append({"role": "system", "content": system})
+        messages.append({"role": "user", "content": prompt})
+        payload = {
+            "model": _ollama_model(model),
+            "messages": messages,
+            "stream": False,
+            "options": {
+                "num_predict": max_tokens,
+                "temperature": temperature,
+            },
+        }
+        status, body = _request("/api/chat", method="POST", payload=payload)
+        if status != 200:
+            return json.dumps({"error": f"Ollama chat failed (HTTP {status})", "body": body, "llama_url": LLAMA_URL})
+        return body["message"]["content"]
+
+    # llama.cpp server (OpenAI-compatible)
+    messages = []
     if system:
         messages.append({"role": "system", "content": system})
     messages.append({"role": "user", "content": prompt})
-
-    resp = _post(
+    status, body = _request(
         "/v1/chat/completions",
-        {
+        method="POST",
+        payload={
             "messages": messages,
             "max_tokens": max_tokens,
             "temperature": temperature,
         },
     )
-    return resp["choices"][0]["message"]["content"]
+    if status != 200:
+        return json.dumps({"error": f"llama.cpp chat failed (HTTP {status})", "body": body, "llama_url": LLAMA_URL})
+    return body["choices"][0]["message"]["content"]
 
 
 @mcp.tool()
@@ -72,31 +125,69 @@ def complete(
     prompt: str,
     max_tokens: int = 256,
     temperature: float = 0.7,
+    model: str | None = None,
 ) -> str:
     """Run a raw text completion with the loaded model."""
-    resp = _post(
+    if OLLAMA_MODE:
+        payload = {
+            "model": _ollama_model(model),
+            "prompt": prompt,
+            "stream": False,
+            "options": {
+                "num_predict": max_tokens,
+                "temperature": temperature,
+            },
+        }
+        status, body = _request("/api/generate", method="POST", payload=payload)
+        if status != 200:
+            return json.dumps({"error": f"Ollama generate failed (HTTP {status})", "body": body, "llama_url": LLAMA_URL})
+        return body["response"]
+
+    status, body = _request(
         "/v1/completions",
-        {
+        method="POST",
+        payload={
             "prompt": prompt,
             "max_tokens": max_tokens,
             "temperature": temperature,
             "n": 1,
         },
     )
-    return resp["choices"][0]["text"]
+    if status != 200:
+        return json.dumps({"error": f"llama.cpp completion failed (HTTP {status})", "body": body, "llama_url": LLAMA_URL})
+    return body["choices"][0]["text"]
 
 
 @mcp.tool()
 def tokenize(text: str) -> str:
-    """Return token IDs for the given text."""
-    resp = _post("/tokenize", {"content": text})
-    tokens = resp.get("tokens", [])
+    """Return tokenization info for the given text."""
+    if OLLAMA_MODE:
+        return json.dumps({
+            "note": "Ollama does not expose a tokenize endpoint",
+            "text_characters": len(text),
+            "llama_url": LLAMA_URL,
+        })
+
+    status, body = _request("/tokenize", method="POST", payload={"content": text})
+    if status != 200:
+        return json.dumps({"error": f"tokenize failed (HTTP {status})", "body": body, "llama_url": LLAMA_URL})
+    tokens = body.get("tokens", [])
     return json.dumps({"count": len(tokens), "tokens": tokens})
 
 
 @mcp.tool()
 def models() -> str:
-    """List available .gguf model files in the model directory."""
+    """List available .gguf model files or Ollama models."""
+    if OLLAMA_MODE:
+        status, body = _request("/api/tags", timeout=10)
+        if status != 200:
+            return json.dumps({"error": f"Ollama /api/tags failed (HTTP {status})", "body": body, "llama_url": LLAMA_URL})
+        return json.dumps({
+            "source": "ollama",
+            "llama_url": LLAMA_URL,
+            "models": [m["name"] for m in body.get("models", [])],
+        })
+
     if not MODEL_DIR.exists():
         return json.dumps(
             {"error": "model directory not found", "path": str(MODEL_DIR)}
@@ -107,11 +198,22 @@ def models() -> str:
 
 @mcp.tool()
 def status() -> str:
-    """Return llama-server /health or an error if unreachable."""
-    try:
-        return json.dumps(_get("/health"))
-    except Exception as exc:
-        return json.dumps({"error": str(exc), "llama_url": LLAMA_URL})
+    """Return LLM server health/status."""
+    if OLLAMA_MODE:
+        status, body = _request("/api/tags", timeout=10)
+        if status != 200:
+            return json.dumps({"error": f"Ollama /api/tags returned HTTP {status}", "body": body, "llama_url": LLAMA_URL})
+        return json.dumps({
+            "ok": True,
+            "mode": "ollama",
+            "llama_url": LLAMA_URL,
+            "models": [m["name"] for m in body.get("models", [])],
+        })
+
+    status, body = _request("/health", timeout=10)
+    if status != 200:
+        return json.dumps({"error": f"llama.cpp /health returned HTTP {status}", "body": body, "llama_url": LLAMA_URL})
+    return json.dumps({"ok": True, "mode": "llama.cpp", "llama_url": LLAMA_URL, "health": body})
 
 
 if __name__ == "__main__":
