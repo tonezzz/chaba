@@ -2,19 +2,19 @@ title: Storage Policy
 subtitle: Canonical data storage locations, retention, and cleanup status for chaba
 icon: database
 version: 1
-last_reviewed: '2026-08-31T13:45:00+07:00'
+last_reviewed: '2026-08-31T14:00:00+07:00'
 reviewer: assistant
 owner: tony
-trend: increasing
+trend: decreasing
 
 summary:
-  total_estimated: 104G
+  total_estimated: 49G
   categories: 7
-  critical: 1
-  warning: 0
+  critical: 0
+  warning: 1
   stable: 6
   biggest_consumer: devin-cli
-  note: Devin CLI bucket is 97G (sessions.db 41G + backups 96G) after 7-day prune+VACUUM.
+  note: Devin CLI 42G (sessions.db 41G) after prune and backup removal.
 
 policy:
   purpose: Track where files and data are stored, set retention and cleanup rules, and monitor status.
@@ -30,9 +30,8 @@ categories:
     label: Devin CLI session state
     paths:
       - '~/.local/share/devin/cli'
-    current_size: 97G
+    current_size: 42G
     breakdown:
-      backups/: 96G
       sessions.db: 41G
       sessions.db-wal: 729M
       logs/: 236M
@@ -44,13 +43,12 @@ categories:
     threshold:
       warning: 30G
       critical: 50G
-    status: critical
+    status: warning
     retention: Sessions kept for 7 days; logs and summaries retained until manually pruned.
     cleanup:
       - 'Prune old sessions: scripts/prune-devin-sessions.sh [retention-days]'
-      - Archive or delete old session backups
       - Archive or delete ~/.local/share/devin/cli/logs files > 90 days
-    note: Prune+VACUUM completed 2026-08-31 with 7-day retention. sessions.db down from 50G to 41G. Backups at 96G are now the biggest sub-bucket.
+    note: Prune+VACUUM completed 2026-08-31 with 7-day retention. sessions.db 41G. Old backups removed.
 
   - id: containers
     label: Podman/Docker container storage
