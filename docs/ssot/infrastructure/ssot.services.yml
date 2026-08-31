@@ -243,7 +243,22 @@ tony-dell:
     health_check: ssh tony-dell curl -sf http://127.0.0.1:8123/ >/dev/null
     autostart: loginctl enable-linger tony is yes; Quadlet WantedBy=default.target
     status: 'mcp server active (2026-08-25)'
-    note: 'Container rootless podman on tony-dell. HA-MCP active. Caddy reverse proxy, health check, and autostart configured. Device integrations pending.'
+    note: 'Container rootless podman on tony-dell. HA-MCP active. Caddy reverse proxy, health check, and autostart configured. Two Tuya smart plugs under local TinyTuya command_line control (switch.plakkaaaef_local, switch.plalhawetiiyng_local). Camera ip_cam_65 now uses local go2rtc H.264 proxy for high-res stream. Official cloud Tuya integration still present but stale for the bedside plug.'
+  go2rtc:
+    service: go2rtc.service
+    host: tony_dell
+    port: 1984
+    host_port: 127.0.0.1:1984
+    rtsp_port: 8554
+    rtsp_host_port: 127.0.0.1:8554
+    webrtc_port: 8555
+    webrtc_host_port: 127.0.0.1:8555
+    purpose: H.264 transcoding proxy for the IP camera so Home Assistant can display the high-res stream in browsers
+    config: /home/tony/.config/go2rtc/go2rtc.yaml
+    binary: /home/tony/.local/bin/go2rtc
+    autostart: systemctl --user enable go2rtc
+    health_check: systemctl --user is-active go2rtc
+    status: implemented (2026-08-31)
   gpu-queue:
     container: gpu-queue
     image: docker.io/library/node:22-alpine

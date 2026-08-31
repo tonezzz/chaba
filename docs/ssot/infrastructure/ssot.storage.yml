@@ -2,19 +2,19 @@ title: Storage Policy
 subtitle: Canonical data storage locations, retention, and cleanup status for chaba
 icon: database
 version: 1
-last_reviewed: '2026-08-30T07:29:46+07:00'
+last_reviewed: '2026-08-31T13:45:00+07:00'
 reviewer: assistant
 owner: tony
-trend: stable
+trend: increasing
 
 summary:
-  total_estimated: 63G
+  total_estimated: 104G
   categories: 7
   critical: 1
-  warning: 2
-  stable: 4
+  warning: 0
+  stable: 6
   biggest_consumer: devin-cli
-  note: Devin sessions.db (45G) dominates local disk usage.
+  note: Devin CLI bucket is 97G (sessions.db 41G + backups 96G) after 7-day prune+VACUUM.
 
 policy:
   purpose: Track where files and data are stored, set retention and cleanup rules, and monitor status.
@@ -30,69 +30,70 @@ categories:
     label: Devin CLI session state
     paths:
       - '~/.local/share/devin/cli'
-    current_size: 46G
+    current_size: 97G
     breakdown:
-      sessions.db: 45G
-      sessions.db-wal: 697M
-      logs/: 360M
-      summaries/: 132M
+      backups/: 96G
+      sessions.db: 41G
+      sessions.db-wal: 729M
+      logs/: 236M
+      summaries/: 136M
     table_sizes:
-      message_nodes: 431914
-      tool_call_state: 66636
-      sessions: 662
+      message_nodes: 128791
+      tool_call_state: 16490
+      sessions: 104
     threshold:
       warning: 30G
       critical: 50G
     status: critical
-    retention: Sessions kept indefinitely; logs and summaries retained until manually pruned.
+    retention: Sessions kept for 7 days; logs and summaries retained until manually pruned.
     cleanup:
-      - VACUUM sessions.db (45G after WAL checkpoint)
-      - Prune old message_nodes and tool_call_state rows
+      - 'Prune old sessions: scripts/prune-devin-sessions.sh [retention-days]'
+      - Archive or delete old session backups
       - Archive or delete ~/.local/share/devin/cli/logs files > 90 days
-    note: WAL mode active; the 45G DB is 99% of this bucket.
+    note: Prune+VACUUM completed 2026-08-31 with 7-day retention. sessions.db down from 50G to 41G. Backups at 96G are now the biggest sub-bucket.
 
   - id: containers
     label: Podman/Docker container storage
     paths:
       - '~/.local/share/containers/storage'
-    current_size: 9.1G
+    current_size: 3.1G
     breakdown:
-      localhost/imagen2-inference: 6.36G
-      docker.io/pytorch/pytorch:2.6.0-cuda12.4-cudnn9-runtime: 6.11G
       localhost/status-api: 1.66G
       registry.access.redhat.com/ubi9/python-311: ~1.1G
       localhost/status-data-api: 281M
       docker.io/library/python:3.11-slim: 129M
+      docker.io/library/eclipse-mosquitto:2: 23.2M
     threshold:
       warning: 8G
       critical: 12G
-    status: warning
+    status: stable
     retention: Images kept until removed; stopped containers retained with 0B runtime state.
     cleanup:
       - podman image prune
       - Remove dangling <none> images
-      - Re-evaluate need for 6.36G imagen2-inference and 6.11G pytorch images
-    note: Dangling layers pruned 2026-08-30 (saved ~0.7G).
+      - Removed imagen2-inference and pytorch 2.6.0-cuda12.4-cudnn9-runtime 2026-08-30
+    note: Removed imagen2-inference and pytorch images 2026-08-30 (freed ~6G).
 
   - id: cache
     label: User cache
     paths:
       - '~/.cache'
-    current_size: 7.2G
+    current_size: 2.8G
     breakdown:
-      rclone/vfs: 4.4G
-      google-chrome: 932M
+      google-chrome: 1G
       puccinialin: 871M
+      ms-playwright: 656M
+      rclone: 708K
     threshold:
       warning: 6G
       critical: 10G
-    status: warning
+    status: stable
     retention: Caches are disposable; rclone VFS re-hydrates from Google Drive.
     cleanup:
-      - Clear ~/.cache/rclone/vfs (4.4G) after unmounting
+      - Clear ~/.cache/rclone/vfs (cleared 2026-08-30; max-size 1G)
       - '~/.cache/trivy cleared 2026-08-30; will re-fetch on next scan'
       - Clear Chrome cache if not actively needed
-    note: Trivy DB cleared 2026-08-30 (saved ~1.3G); rclone VFS still active and not cleared.
+    note: Rclone VFS cache cleared and max-size reduced from 5G to 1G 2026-08-30. ~/.cache/huggingface is a symlink to /data/cache/huggingface (75G) and not counted here.
 
   - id: claude
     label: Claude Desktop data
@@ -139,6 +140,7 @@ categories:
       - '~/.local/share/tuya'
       - '~/.local/share/home-assistant-michael'
       - '~/.local/share/wifi'
+      - '~/.config/go2rtc'
     current_size: 68.5M
     breakdown:
       'yomi/search-index.db': 24M
@@ -153,7 +155,7 @@ categories:
     retention: App data retained per app policy; Yomi search index is precious.
     cleanup:
       - Keep yomi/search-index.db and WAL; do not delete
-      - Remove tuya/venv if no longer needed
+      - Keep tuya/venv for Home Assistant command_line local control
       - Prune home-assistant-michael/hacs-repositories.json if stale
 
   - id: project-data
@@ -177,20 +179,22 @@ categories:
       - Clear data/ssot-optimization temp files
 
 improvements:
-  - label: VACUUM Devin sessions DB
+  - label: Prune and VACUUM Devin sessions DB
     source: ssot.storage.yml
     target_score: devin-cli < 20G
-    status: not_started
+    status: completed
     owner: tony
+    script: scripts/prune-devin-sessions.sh
+    result: '7-day prune completed 2026-08-31: sessions.db 50G -> 41G; rows removed: 560 sessions, 303123 message_nodes, 50146 tool_call_state'
   - label: Prune container images
     source: ssot.storage.yml
     target_score: containers < 5G
-    status: in_progress
+    status: completed
     owner: tony
   - label: Clear rclone VFS cache
     source: ssot.storage.yml
     target_score: cache < 4G
-    status: not_started
+    status: completed
     owner: tony
   - label: Clear Trivy DB cache
     source: ssot.storage.yml
@@ -200,5 +204,5 @@ improvements:
 
 review_schedule:
   frequency: weekly
-  next_review: '2026-08-31'
+  next_review: '2026-09-07'
   alert_dir: docs/ssot/focus-inbox
