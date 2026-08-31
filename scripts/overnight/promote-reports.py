@@ -26,14 +26,16 @@ def make_inbox_path(prefix):
 
 def write_draft(path, label, text, subtasks, tags, source_file, triage_score=0.5):
     INBOX_DIR.mkdir(exist_ok=True)
+    indented_text = text.replace("\n", "\n    ")
+    subtask_lines = "\n".join(f"    - label: {json.dumps(s)}" for s in subtasks)
     body = f"""title: Focus Inbox Item
 subtitle: Auto-drafted from {source_file}
 icon: inbox
 
 focus:
-  label: {label}
+  label: {json.dumps(label)}
   text: |
-    {text}
+    {indented_text}
   branch: chaba
   priority: medium
   status: draft
@@ -43,7 +45,7 @@ focus:
     value: true
     reason: Report-generated item; can be triaged independently.
   subtasks:
-{chr(10).join("    - label: " + s for s in subtasks)}
+{subtask_lines}
 
 ownership:
   owner: tony
