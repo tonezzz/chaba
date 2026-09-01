@@ -54,7 +54,7 @@ class TonyFamilyApp {
     }
 
     async fetchYaml(file) {
-        const res = await fetch(file + '?v=1');
+        const res = await fetch(file + '?v=2');
         if (!res.ok) throw new Error(`${file}: ${res.status}`);
         return jsyaml.load(await res.text()) || {};
     }
