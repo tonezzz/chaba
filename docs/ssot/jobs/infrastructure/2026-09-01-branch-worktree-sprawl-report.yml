@@ -13,8 +13,8 @@ planning:
   - Job report section is completed on the experiment branch
   - All output is committed and pushed to experiment/tony-dell-task-runner
   risks:
-  - 'Risk: running on the wrong host. Mitigation: script checks hostname and refuses unless it matches tony-dell (or --force is passed)'
-  - 'Risk: touching unrelated repos. Mitigation: only scans directories whose names start with chaba and contain a .git directory'
+  - Risk: running on the wrong host. Mitigation: script checks hostname and refuses unless it matches tony-dell (or --force is passed)
+  - Risk: touching unrelated repos. Mitigation: only scans directories whose names start with 'chaba' and contain a .git directory
   resources:
   - tony-dell worktree /home/tony/CascadeProjects/chaba-tony-dell-experiment
   - Python 3 and git on tony-dell
@@ -25,40 +25,31 @@ planning:
     file: docs/ssot/ssot.focus.current.active.yml
 
 processing:
-  status: completed
-  started_at: '2026-09-01T17:18:25'
-  completed_at: '2026-09-01T17:19:23'
+  status: not_started
+  started_at: null
   steps:
   - id: 1
     label: Discover chaba* repos
-    status: completed
-    notes: Found 3 repos on tony-dell (chaba-h3-tony-dell, chaba-tony-dell, chaba-tony-dell-experiment)
+    status: not_started
+    notes: Find all /home/tony/CascadeProjects/chaba* directories with .git
   - id: 2
     label: Collect branches
-    status: completed
-    notes: Captured local and remote branch lists with git branch -vv and git branch -r -vv
+    status: not_started
+    notes: Run git branch -vv and git branch -r -vv in each repo
   - id: 3
     label: Collect worktrees
-    status: completed
-    notes: Captured git worktree list for each repo
+    status: not_started
+    notes: Run git worktree list in each repo
   - id: 4
     label: Summarize
-    status: completed
-    notes: Generated reports/2026-09-01-branch-worktree-sprawl.{json,md}
+    status: not_started
+    notes: Generate JSON and Markdown reports using scripts/focus_dispatcher/tony_dell_phase1.py
   - id: 5
     label: Commit and push
-    status: completed
-    notes: tony-dell generated the reports; git add failed because reports/ is in .gitignore, so files were scp'd to the local worktree and pushed from there
-  decisions:
-  - label: Use git add -f for reports
-    rationale: The reports/ directory is gitignored, but these artifacts need to be committed for review
-  - label: Push from local worktree after scp
-    rationale: The tony-dell worktree's origin was a stale https token; SSH also failed host-key verification, so the generated files were transferred to the orchestrating host and pushed from the same experiment branch
-  changes:
-  - file: reports/2026-09-01-branch-worktree-sprawl.json
-    summary: Raw JSON inventory of branches and worktrees from tony-dell
-  - file: reports/2026-09-01-branch-worktree-sprawl.md
-    summary: Human-readable summary of the same data
+    status: not_started
+    notes: Commit reports to experiment branch and push to origin
+  decisions: []
+  changes: []
 
 followup:
   verification:
@@ -72,32 +63,13 @@ followup:
   - Actual branch/worktree pruning requires user approval and is out of scope for this Phase 1 job
 
 report:
-  status: completed
-  completed_at: '2026-09-01T17:19:23'
-  summary: tony-dell successfully generated a read-only inventory of all chaba* repos on that host. The report revealed 3 repos, 9 local branches, 90 remote branch refs, and 9 linked worktrees. The chaba.h3 branch is the most diverged (ahead 1015, behind 1338 vs origin/chaba.h3). No destructive actions were taken.
-  metrics:
-  - metric: repos_scanned
-    value: 3
-  - metric: local_branches
-    value: 9
-  - metric: remote_branch_refs
-    value: 90
-  - metric: worktrees
-    value: 9
-  - metric: most_diverged_branch
-    value: chaba.h3 (ahead 1015, behind 1338)
-  links:
-  - title: Markdown report
-    url: https://github.com/tonezzz/chaba/blob/experiment/tony-dell-task-runner/reports/2026-09-01-branch-worktree-sprawl.md
-  - title: JSON report
-    url: https://github.com/tonezzz/chaba/blob/experiment/tony-dell-task-runner/reports/2026-09-01-branch-worktree-sprawl.json
-  - title: Related focus
-    file: docs/ssot/ssot.focus.current.active.yml
-  kb_review:
-  - tony-dell can generate and store read-only inventories safely, but needs a working git push configuration to close the loop autonomously
-  lessons_learned:
-  - Generated report files in a gitignored directory (reports/) require git add -f or should be written to a tracked docs/ path
-  - The tony-dell worktree remote was a stale HTTPS token; for autonomous remote dispatch, tony-dell needs a valid SSH or refreshed token
+  status: not_started
+  completed_at: null
+  summary: ''
+  metrics: []
+  links: []
+  kb_review: []
+  lessons_learned: []
 
 config:
   version: 1
