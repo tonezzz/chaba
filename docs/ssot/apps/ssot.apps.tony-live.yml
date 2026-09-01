@@ -1,0 +1,54 @@
+title: Tony Live
+subtitle: Tony-dell Home Assistant live dashboard and camera
+icon: "🏠"
+sections:
+  - title: Core Features
+    icon: "✅"
+    layout: list
+    items:
+      - label: Live HA bridge
+        text: WebSocket client that connects to the ha-live Gemini Live bridge at wss://tony-dell.taila0626a.ts.net:8444/ws and logs status and messages.
+      - label: Camera
+        text: Shows the ip_cam_65 still frame thumbnail with a tap-through to the go2rtc HD stream player.
+      - label: SSOT-driven UI
+        text: Family/page SSOT pattern shared with michael-live.
+  - title: Files & Modules
+    icon: "📁"
+    layout: list
+    items:
+      - label: stacks/web/public/apps/tony-live/index.html
+        text: Main page shell.
+      - label: stacks/web/public/apps/tony-live/tony-family.js
+        text: Shared family layer that loads SSOT, renders panels, and manages the WebSocket.
+      - label: stacks/web/public/apps/tony-live/tony-live.js
+        text: Page bootstrap that extends TonyFamilyApp.
+      - label: stacks/web/public/apps/tony-live/ssot.ui.tony-family.yml
+        text: Family SSOT with websocket endpoint and camera configuration.
+      - label: stacks/web/public/apps/tony-live/ssot.ui.tony-live.yml
+        text: Page SSOT for the full tony-live layout.
+  - title: Deployment
+    icon: "🚀"
+    layout: list
+    items:
+      - label: Location
+        text: stacks/web/public/apps/tony-live/
+      - label: URLs
+        text: /apps/tony-live/ on the web stack, with camera and bridge reachable via tony-dell Tailscale endpoints.
+      - label: Registry
+        text: Listed in stacks/web/public/apps/apps.yml and docs/ssot/apps/ssot.apps.yml
+      - label: Branch
+        text: tony-live off tony-ha off ha
+  - title: Testing
+    icon: "🧪"
+    layout: list
+    items:
+      - label: syntax check
+        text: node --check stacks/web/public/apps/tony-live/tony-family.js
+      - label: health check
+        text: "curl -s -o /dev/null -w '%{http_code}' https://tony-dell.taila0626a.ts.net:8444/"
+config:
+  version: 1
+  created: '2026-09-01'
+  maintainer: tony
+  status: active
+  deployment: tony-dell

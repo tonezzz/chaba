@@ -1,0 +1,102 @@
+:root {
+    --bg: #0b1020;
+    --card: #141c33;
+    --text: #e8eef8;
+    --muted: #8a9ab0;
+    --accent: #4fc3f7;
+    --live: #00c853;
+    --warn: #ffca28;
+    --error: #ff5252;
+}
+
+* { box-sizing: border-box; }
+body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+}
+
+.tony-live {
+    min-height: 100vh;
+    display: grid;
+    grid-template-rows: auto 1fr auto;
+}
+
+.tony-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.5rem;
+    background: var(--card);
+    border-bottom: 1px solid #1f2d4d;
+}
+
+.tony-header h1 { margin: 0; font-size: 1.25rem; }
+
+.status {
+    padding: 0.25rem 0.75rem;
+    border-radius: 999px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+.status.disconnected { background: #37474f; color: var(--muted); }
+.status.live { background: rgba(0, 200, 83, 0.2); color: var(--live); }
+.status.error { background: rgba(255, 82, 82, 0.2); color: var(--error); }
+
+.tony-grid {
+    padding: 1.5rem;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 1.5rem;
+    align-content: start;
+}
+
+.panel {
+    background: var(--card);
+    border-radius: 12px;
+    padding: 1rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+
+.panel h2 {
+    margin: 0 0 0.75rem;
+    font-size: 1rem;
+    color: var(--accent);
+    text-transform: capitalize;
+}
+
+.panel-content {
+    font-size: 0.95rem;
+    line-height: 1.4;
+    color: var(--text);
+    max-height: 320px;
+    overflow: auto;
+}
+
+.panel-content div { margin-bottom: 0.35rem; }
+
+.cam-thumb {
+    width: 100%;
+    border-radius: 8px;
+    margin-bottom: 0.75rem;
+    background: #000;
+}
+
+.cam-link {
+    color: var(--accent);
+    text-decoration: none;
+    font-weight: 600;
+}
+.cam-link:hover { text-decoration: underline; }
+
+.tony-footer {
+    padding: 0.75rem 1.5rem;
+    background: var(--card);
+    color: var(--muted);
+    font-size: 0.85rem;
+    border-top: 1px solid #1f2d4d;
+}
+
+.error { color: var(--error); padding: 1rem; }
