@@ -1,0 +1,33 @@
+title: Focus Inbox Item
+subtitle: Auto-drafted from reports/SSOT_OPTIMIZATION_METRICS.json
+icon: inbox
+
+focus:
+  label: "SSOT optimization warnings"
+  text: |
+    SSOT optimization detected issues:
+    - other: 2
+    Source: reports/SSOT_OPTIMIZATION_METRICS.json
+    
+  branch: chaba
+  priority: medium
+  status: draft
+  triage_score: 0.4
+  tags: ["ssot", "optimization"]
+  safe_to_parallel:
+    value: true
+    reason: Report-generated item; can be triaged independently.
+  subtasks:
+    - label: "Open reports/SSOT_OPTIMIZATION_SUGGESTIONS.md"
+    - label: "Fix highest priority warning"
+    - label: "Re-run ssot-validate-all"
+
+ownership:
+  owner: tony
+  session: ""
+  locked: false
+  lock_reason: ""
+
+source:
+  session: ""
+  date: '2026-08-31'

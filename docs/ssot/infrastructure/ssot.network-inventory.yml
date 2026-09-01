@@ -1,0 +1,270 @@
+title: Network Inventory
+subtitle: Central MAC registry and per-network IP allocations
+icon: 🌐
+version: 1
+last_updated: '2026-09-01'
+
+ideas:
+  - One central SSOT for every network interface (MAC) and where it lives
+  - Per-network IP allocation registry, starting with the home networks
+  - Track cheap/Chinese devices that ship with duplicate or randomized MACs
+  - Link every IP allocation back to a stable device_id, not a MAC
+
+sections:
+  - title: Why not use MAC as the primary key?
+    icon: 🔑
+    layout: list
+    items:
+      - label: MAC is an attribute, not an ID
+        text: 'Some low-cost devices (Tuya, ESP, off-brand IoT) reuse or randomize MACs. Using mac as the primary key breaks as soon as two devices collide.'
+      - label: device_id is the stable key
+        text: 'Every device gets a slug like tuya-plug-coffee, ip-cam-65, google-tv-livingroom. It survives IP and MAC changes.'
+      - label: A device can have many interfaces
+        text: 'A workstation may have wired + Wi-Fi + Tailscale. Each interface is a child of the same device_id.'
+
+  - title: MAC Registry Schema
+    icon: 🔗
+    layout: list
+    items:
+      - label: device_id
+        text: 'Required. Stable unique slug (e.g. tuya-plug-coffee, hp-deskjet-2700).'
+      - label: label
+        text: 'Required. Human-readable name.'
+      - label: interfaces
+        text: 'List of interface records. Each has mac, oui, vendor, type, source, first_seen, status.'
+      - label: local_ids
+        text: 'Device-native IDs used to disambiguate duplicates: tuya_id, serial, hostname, bluetooth_addr.'
+      - label: mac_conflict
+        text: 'true when this device''s MAC is also claimed by another device_id.'
+      - label: duplicate_resolution
+        text: 'Strategy: network_observed, vendor_verified, local_id_tiebreaker.'
+
+  - title: Duplicate MAC Handling
+    icon: ⚠️
+    layout: list
+    items:
+      - label: Detect
+        text: 'ARP scan or mDNS shows the same MAC in two places, or two device records share a MAC.'
+      - label: Triage
+        text: 'Compare vendor (OUI), device label/sticker, local control ID, and the network it was observed on. Chinese/white-label gear is the usual culprit.'
+      - label: Resolve
+        text: 'Keep both device records. Add a mac_conflict flag and a conflict_group (hash of the colliding MAC). Use device_id in IP and automation references. Treat MAC as a soft lookup key.'
+      - label: Example
+        text: 'If two smart plugs both report 2c:b4:71:e8:aa:06, keep tuya-plug-coffee and tuya-plug-bedside as separate records, mark mac_conflict=true, and resolve via Tuya device ID and observed IP.'
+
+  - title: IP Registry Schema (per network)
+    icon: 🗺️
+    layout: list
+    items:
+      - label: network_id
+        text: 'Stable slug (e.g. home-192.168.2.0-24, mountain-view-192.168.1.0-24).'
+      - label: cidr
+        text: 'CIDR notation of the subnet.'
+      - label: gateway
+        text: 'Router IP for that subnet.'
+      - label: ssid / vlan
+        text: 'Wi-Fi SSID or VLAN name the subnet is served on.'
+      - label: allocations
+        text: 'List of ip_record entries. Each links ip, device_id, interface_id, kind (static/reservation/dhcp/discovered), status, first_seen, last_seen, source.'
+
+  - title: Home Network 192.168.2.0/24
+    icon: 🏠
+    layout: list
+    items:
+      - label: Gateway
+        text: '192.168.2.1 (MAC 98:00:6a:68:f7:c6) — active on both eno1 and wlo1'
+      - label: Active on this host
+        text: 'eno1 192.168.2.84, wlo1 192.168.2.83 (default route)'
+      - label: Known devices
+        text: 'Tuya coffee plug 192.168.2.80, Tuya bedside plug 192.168.2.68, IP camera 192.168.2.66, HP DeskJet 192.168.2.69, plus .65, .67, .73, .78, .80, .81 discovered in 2026-09-01 scan.'
+      - label: Notes
+        text: 'Current active network (TONY-WIFI_2.4G and netplan-eno1). Tuya plugs and camera are already documented in their own SSOT files.'
+
+  - title: Legacy Network 192.168.1.0/24
+    icon: 🏠
+    layout: list
+    items:
+      - label: Gateway
+        text: 'Unknown/assumed 192.168.1.1 — not reachable from 192.168.2.x'
+      - label: SSID
+        text: 'Mountain View 5G / Mountain View 2.4G (saved NM profiles)'
+      - label: Known devices
+        text: 'macbook at 192.168.1.39, Google TV at 192.168.1.50 (from earlier sessions). TV is currently unreachable from the 192.168.2.x network.'
+      - label: Status
+        text: 'Stale — need to reconnect to Mountain View SSID to rescan and populate.'
+
+  - title: Draft Data Samples
+    icon: 🧾
+    layout: list
+    items:
+      - label: MAC sample
+        text: 'tuya-plug-coffee: MAC 2c:b4:71:e8:aa:06, OUI 2c:b4:71, Tuya ID a33be68c03a6886d7f21zf, active.'
+      - label: IP sample
+        text: '192.168.2.80 -> tuya-plug-coffee (wlo1/eth), kind: static/dhcp, status: active, source: arp+ssot.tuya-smart-plug.yml.'
+      - label: Duplicate sample
+        text: 'If a new plug also shows 2c:b4:71:e8:aa:06, set mac_conflict=true, create device_id tuya-plug-duplicate-01, and tie it to its Tuya ID and observed network.'
+
+  - title: Next Steps
+    icon: ➡️
+    layout: list
+    items:
+      - label: Populate
+        text: 'Add every device from ARP scans, device stickers, and vendor apps. Start with the 192.168.2.0/24 scan we just ran.'
+      - label: Split (optional)
+        text: 'If this file grows, split into ssot.mac-address-registry.yml and ssot.ip-address-registry.yml.'
+      - label: Automate
+        text: 'Nightly ARP scan can append discovered entries and flag new/duplicate MACs to the focus inbox.'
+      - label: Index
+        text: 'Add to docs/ssot/ssot.index.yml once approved.'
+
+config:
+  version: 1
+  last_updated: '2026-09-01'
+  maintainer: tony
+  status: draft
+  related_files:
+    - docs/ssot/infrastructure/ssot.tuya-smart-plug.yml
+    - docs/ssot/infrastructure/ssot.ip-camera.yml
+    - docs/ssot/ssot.mysystem.home.yml
+    - docs/ssot/infrastructure/ssot.link-monitor.yml
+  schema:
+    mac_record:
+      required: [device_id, label]
+      fields:
+        device_id: stable unique slug for the device (primary key)
+        label: human name
+        local_ids:
+          tuya_id: Tuya device ID
+          serial: manufacturer serial number
+          hostname: configured hostname
+        interfaces:
+          - interface_id: eth0/wlan0 etc.
+            mac: IEEE 48-bit address (may be null or duplicate)
+            oui: first 24 bits / vendor prefix
+            vendor: resolved vendor name
+            type: ethernet/wifi/tailscale/bluetooth
+            source: sticker/arp/mdns/dhcp
+            first_seen: ISO-8601 date
+            status: active/stale/unknown
+        mac_conflict: boolean
+        conflict_group: hash of the duplicated MAC (links duplicates)
+        duplicate_resolution: network_observed/vendor_verified/local_id_tiebreaker
+        status: active/stale/unknown
+    network_record:
+      required: [network_id, cidr]
+      fields:
+        network_id: stable slug
+        cidr: CIDR notation
+        ssid: Wi-Fi SSID or VLAN name
+        gateway: router IP
+        dhcp_range: [start_ip, end_ip]
+        allocations:
+          - ip: IPv4 address
+            device_id: link to mac_registry
+            interface_id: which interface of the device
+            kind: static/reservation/dhcp/discovered
+            status: active/stale/reserved
+            first_seen: ISO-8601 date
+            last_seen: ISO-8601 date
+            source: arp/dhcp/sticker/manual
+  sample_mac_registry:
+    - device_id: tuya-plug-coffee
+      label: ปลั๊กกาแฟ
+      local_ids:
+        tuya_id: a33be68c03a6886d7f21zf
+      interfaces:
+        - interface_id: wlan0
+          mac: 2c:b4:71:e8:aa:06
+          oui: 2c:b4:71
+          type: wifi
+          source: arp
+          status: active
+      mac_conflict: false
+      status: active
+    - device_id: tuya-plug-bedside
+      label: ปลัฦหัวเตียง
+      local_ids:
+        tuya_id: a319217035be6c2d60opfg
+      interfaces:
+        - interface_id: wlan0
+          mac: 2c:b4:71:e8:a8:e8
+          oui: 2c:b4:71
+          type: wifi
+          source: arp
+          status: active
+      mac_conflict: false
+      status: active
+    - device_id: ip-cam-65
+      label: VStarcam C7824WIP
+      local_ids:
+        serial: null
+      interfaces:
+        - interface_id: wlan0
+          mac: d4:9e:3b:6a:94:90
+          oui: d4:9e:3b
+          type: wifi
+          source: arp
+          status: active
+      mac_conflict: false
+      status: active
+    - device_id: hp-deskjet-2700
+      label: HP DeskJet 2700 series
+      local_ids:
+        serial: CN33BDZ0KS
+      interfaces:
+        - interface_id: wlan0
+          mac: e0:73:e7:05:c5:16
+          oui: e0:73:e7
+          type: wifi
+          source: arp
+          status: active
+      mac_conflict: false
+      status: active
+  sample_networks:
+    - network_id: home-192.168.2.0-24
+      cidr: 192.168.2.0/24
+      ssid: TONY-WIFI_2.4G / netplan-eno1
+      gateway: 192.168.2.1
+      allocations:
+        - ip: 192.168.2.80
+          device_id: tuya-plug-coffee
+          interface_id: wlan0
+          kind: discovered
+          status: active
+          source: arp
+        - ip: 192.168.2.68
+          device_id: tuya-plug-bedside
+          interface_id: wlan0
+          kind: discovered
+          status: active
+          source: arp
+        - ip: 192.168.2.66
+          device_id: ip-cam-65
+          interface_id: wlan0
+          kind: discovered
+          status: active
+          source: arp
+        - ip: 192.168.2.69
+          device_id: hp-deskjet-2700
+          interface_id: wlan0
+          kind: discovered
+          status: active
+          source: arp
+    - network_id: legacy-192.168.1.0-24
+      cidr: 192.168.1.0/24
+      ssid: Mountain View 5G / Mountain View 2.4G
+      gateway: 192.168.1.1
+      status: stale
+      allocations:
+        - ip: 192.168.1.39
+          device_id: macbook
+          interface_id: wlan0
+          kind: manual
+          status: active
+          source: mysystem.macbook.yml
+        - ip: 192.168.1.50
+          device_id: google-tv
+          interface_id: wlan0
+          kind: manual
+          status: unknown
+          source: earlier-scan

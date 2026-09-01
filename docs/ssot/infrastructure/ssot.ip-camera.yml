@@ -1,0 +1,169 @@
+title: IP Camera (VStarcam C7824WIP / ip_cam_65)
+subtitle: Local RTSP H.265 camera proxied through go2rtc on tony-dell
+version: 1
+last_updated: '2026-09-01'
+
+sections:
+  - title: Hardware
+    icon: video
+    layout: list
+    items:
+      - label: Model
+        text: VStarcam C7824WIP (ip_cam_65)
+      - label: Network
+        text: '192.168.2.66 / Wi-Fi (192.168.2.0/24)'
+      - label: Credentials
+        text: 'admin / tonytony'
+      - label: RTSP URL base
+        text: 'rtsp://admin:tonytony@192.168.2.66:10554/tcp/av0_{0,1,3}'
+
+  - title: Source Streams
+    icon: layers
+    layout: list
+    items:
+      - label: av0_0 (HD)
+        text: 'H.265 HEVC, 2304x1296, 15 fps, no audio'
+      - label: av0_1 (low)
+        text: 'H.265 HEVC, 640x360, 20 fps, pcm_alaw 8000 Hz mono audio'
+      - label: av0_3
+        text: 'H.265 HEVC, 640x360, 20 fps, with audio'
+
+  - title: go2rtc Proxy
+    icon: server
+    layout: list
+    items:
+      - label: Config
+        text: /home/tony/.config/go2rtc/go2rtc.yaml
+      - label: Listen
+        text: 'API: 127.0.0.1:1984, RTSP: 127.0.0.1:8554, WebRTC: 127.0.0.1:8555'
+      - label: ip_cam_65 (auto)
+        text: 'Adaptive: starts at 2304x1296 HD; if the HD source is unreachable it falls back to 640x360 low. Executes /home/tony/.config/go2rtc/ip_cam_65_auto.sh.'
+      - label: ip_cam_65_hd
+        text: 'Dedicated H.264 2304x1296 15 fps stream for when you always want HD.'
+      - label: ip_cam_65_low
+        text: 'Dedicated H.264 640x360 20 fps stream for thumbnails and low-bandwidth viewing.'
+      - label: Auto script
+        text: /home/tony/.config/go2rtc/ip_cam_65_auto.sh probes av0_0 then execs either the HD or low ffmpeg pipeline.
+      - label: FFmpeg flags
+        text: '-fflags +genpts+discardcorrupt -err_detect ignore_err -rtsp_transport tcp -c:v libx264 -pix_fmt yuv420p -an -f mpegts'
+
+  - title: Monitoring and Auto-Fix
+    icon: refresh-cw
+    layout: list
+    items:
+      - label: Monitor script
+        text: /home/tony/.config/home-assistant/ha-live/camera-monitor.py
+      - label: What it does
+        text: 'ffprobes rtsp://127.0.0.1:8554/ip_cam_65 and rtsp://127.0.0.1:8554/ip_cam_65_hd every 30 seconds. After 3 consecutive failures it runs systemctl --user restart go2rtc.'
+      - label: systemd service
+        text: 'camera-monitor.service (user unit) is enabled and running. Logs to /home/tony/.config/home-assistant/ha-live/camera-monitor.log.'
+
+  - title: Home Assistant
+    icon: home-assistant
+    layout: list
+    items:
+      - label: Entity
+        text: camera.ip_cam_65
+      - label: Config
+        text: /home/tony/.config/home-assistant/configuration.yaml (ffmpeg platform)
+      - label: Input
+        text: '-rtsp_transport tcp -i rtsp://127.0.0.1:8554/ip_cam_65 (now adaptive)'
+
+  - title: Access URLs
+    icon: link
+    layout: list
+    items:
+      - label: HLS adaptive
+        text: 'https://tony-dell.taila0626a.ts.net:8448/api/stream.m3u8?src=ip_cam_65'
+      - label: HLS low
+        text: 'https://tony-dell.taila0626a.ts.net:8448/api/stream.m3u8?src=ip_cam_65_low'
+      - label: HLS HD
+        text: 'https://tony-dell.taila0626a.ts.net:8448/api/stream.m3u8?src=ip_cam_65_hd'
+      - label: Local snapshot
+        text: 'http://127.0.0.1:1984/api/frame.jpeg?src=ip_cam_65'
+      - label: Local RTSP
+        text: 'rtsp://127.0.0.1:8554/ip_cam_65, rtsp://127.0.0.1:8554/ip_cam_65_low, rtsp://127.0.0.1:8554/ip_cam_65_hd'
+
+  - title: Last Frame Freeze
+    icon: image
+    layout: list
+    items:
+      - label: Purpose
+        text: 'Show the most recent successful camera frame when the live stream is unavailable.'
+      - label: Update script
+        text: /home/tony/.config/home-assistant/update-cam-frame.sh
+      - label: How it works
+        text: 'Every 5 seconds it saves a frame from the IP camera (go2rtc /api/frame.jpeg?src=ip_cam_65, falling back to ip_cam_65_low) and the USB camera (ffmpeg -f v4l2 -i /dev/video0). It only overwrites /config/www/cam/last-cam-frame.jpg and /config/www/cam/last-usb-frame.jpg on success, so if a camera drops the previous frame stays.'
+      - label: systemd timer
+        text: 'update-cam-frame.timer (user unit) runs the script every 5 seconds.'
+      - label: IP camera still
+        text: /local/cam/last-cam-frame.jpg (use when camera.ip_cam_65 is unavailable)
+      - label: USB camera still
+        text: /local/cam/last-usb-frame.jpg (use when camera.tony_dell_usb is unavailable)
+      - label: Dashboard use
+        text: 'Add picture-entity or image cards pointing to the /local/cam/ URLs above. Use conditional visibility to show the still image only when the matching live camera is unavailable, or show both with a timestamp overlay.'
+
+  - title: Pros and Cons
+    icon: scale
+    layout: list
+    items:
+      - label: Pros
+        text: |
+          - Entirely local; no cloud or vendor app required.
+          - go2rtc converts H.265 to H.264, so HA and browsers can play it directly.
+          - Adaptive ip_cam_65 stream picks HD when healthy and falls back to low if the HD source drops.
+          - Dedicated low and HD streams let dashboards/players choose the right quality.
+          - Health monitor auto-restarts go2rtc after repeated failures.
+          - Tailscale HTTPS exposes all HLS feeds remotely.
+      - label: Cons
+        text: |
+          - Camera outputs H.265; CPU transcoding on tony-dell is required for H.264 compatibility.
+          - HD 2304x1296 is CPU-heavy and may drop if the host is busy.
+          - Wi-Fi connection can be intermittent; thumbnails sometimes fail if the stream drops.
+          - No usable ONVIF backchannel; camera speaker and pan/tilt are not controllable over local RTSP.
+          - Auto-failover only happens when go2rtc starts/restarts the ip_cam_65 process, not mid-stream.
+
+  - title: Current Status
+    icon: activity
+    layout: list
+    items:
+      - label: Adaptive stream
+        text: 'ip_cam_65 currently serving H.264 2304x1296 at 15 fps (HD source is healthy).'
+      - label: Low stream
+        text: 'ip_cam_65_low stable H.264 640x360; available for thumbnails.'
+      - label: HD stream
+        text: 'ip_cam_65_hd stable H.264 2304x1296 at 15 fps.'
+      - label: Audio
+        text: 'Intentionally dropped from H.264 proxy streams; pcm_alaw audio remains available on raw av0_1.'
+      - label: Two-way audio / PTZ
+        text: 'Not functional locally. ONVIF attempt on port 443 reset the connection; camera likely requires vendor P2P/app.'
+      - label: Monitor
+        text: 'camera-monitor.service is active and will restart go2rtc if streams fail 3 times in a row.'
+
+  - title: Next Steps
+    icon: arrow-right
+    layout: list
+    items:
+      - label: HD quality trade-off
+        text: 'If 2304x1296 uses too much CPU or causes drops, add -vf scale=1920:-2 or scale=1280:-2 to ip_cam_65_hd.'
+      - label: Thumbnail reliability
+        text: 'Use go2rtc snapshot endpoint with src=ip_cam_65_low for dashboard cards instead of the ffmpeg camera frame.'
+      - label: PTZ and speaker
+        text: 'Investigate vendor-specific CGI/HTTP API or replace with an ONVIF/RTSP controllable camera if needed.'
+      - label: Future hardware
+        text: 'Consider a H.264-native or ONVIF-compliant camera to eliminate H.265 transcoding and enable PTZ/speaker control.'
+
+config:
+  version: 1
+  last_updated: '2026-09-01'
+  maintainer: tony
+  related_files:
+    - /home/tony/.config/go2rtc/go2rtc.yaml
+    - /home/tony/.config/go2rtc/ip_cam_65_auto.sh
+    - /home/tony/.config/home-assistant/ha-live/camera-monitor.py
+    - /home/tony/.config/home-assistant/ha-live/camera-monitor.log
+    - /home/tony/.config/home-assistant/update-cam-frame.sh
+    - /home/tony/.config/home-assistant/www/cam/last-cam-frame.jpg
+    - /home/tony/.config/home-assistant/www/cam/last-usb-frame.jpg
+    - /home/tony/.config/home-assistant/configuration.yaml
+    - /home/tony/CascadeProjects/chaba/docs/ssot/infrastructure/ssot.services.yml

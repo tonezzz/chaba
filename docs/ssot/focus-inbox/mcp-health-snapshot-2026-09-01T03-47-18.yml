@@ -1,0 +1,52 @@
+title: Health Snapshot Alert
+subtitle: 12 services not healthy
+icon: heart-pulse
+focus:
+  label: 'mcp-health: 12 failing'
+  text: |
+    - web / BServer: error - Port 8080 is in use by users:(("caddy",pid=2897595,fd=11)). This may indicate a port conflict preventing service startup.
+    - web / MDDB Panel: degraded
+    - api / Sensor Reader: unknown - Command failed: curl -s -o /dev/null -w "%{http_code}" --max-time 5 "http://tony-omen:8001/health"
+    - gpu / Llama Router (Phi-3 only): unknown - Command failed: curl -s -o /dev/null -w "%{http_code}" --max-time 10 "http://tony-omen:8001/health"
+    - gpu / Imagen2: unknown - Command failed: curl -s -o /dev/null -w "%{http_code}" --max-time 10 "http://tony-omen:8000/health"
+    - gpu / Txt2Vid: unknown - Command failed: curl -s -o /dev/null -w "%{http_code}" --max-time 10 "http://tony-omen:8002/health"
+    - optional / Activepieces: unknown
+    - optional / Frigate NVR: error - Port 8080 is in use by users:(("caddy",pid=2897595,fd=11)). This may indicate a port conflict preventing service startup.
+    - optional / Camera Control: unknown - Command failed: curl -s -o /dev/null -w "%{http_code}" --max-time 5 "http://tony-omen:8090/"
+    - mcp / MCP RView Proxy: unknown - Command failed: curl -s -o /dev/null -w "%{http_code}" --max-time 5 "http://127.0.0.1:9003/sse"
+    - mcp-debug / MCP Debug CORS endpoint: unknown - Command failed: curl -s -o /dev/null -w "%{http_code}" --max-time 5 "http://tony-omen:9100/health"
+    - mcp-debug / MCP Debug Audit Health: unknown - Command failed: curl -s -o /dev/null -w "%{http_code}" --max-time 10 "http://tony-omen:9100/audit-health"
+  status: draft
+  priority: high
+  tags:
+  - health
+  - monitoring
+  - snapshot
+  subtasks:
+  - label: Investigate BServer
+    status: not_started
+  - label: Investigate MDDB Panel
+    status: not_started
+  - label: Investigate Sensor Reader
+    status: not_started
+  - label: Investigate Llama Router (Phi-3 only)
+    status: not_started
+  - label: Investigate Imagen2
+    status: not_started
+  - label: Investigate Txt2Vid
+    status: not_started
+  - label: Investigate Activepieces
+    status: not_started
+  - label: Investigate Frigate NVR
+    status: not_started
+  - label: Investigate Camera Control
+    status: not_started
+  - label: Investigate MCP RView Proxy
+    status: not_started
+  - label: Investigate MCP Debug CORS endpoint
+    status: not_started
+  - label: Investigate MCP Debug Audit Health
+    status: not_started
+source:
+  session: mcp-health-snapshot
+  date: 2026-09-01

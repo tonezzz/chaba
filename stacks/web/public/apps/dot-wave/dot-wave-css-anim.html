@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Dot Wave — Pure CSS Animation</title>
+  <style>
+    @property --time {
+      syntax: '<number>';
+      inherits: true;
+      initial-value: 0;
+    }
+
+    :root {
+      --dx: 20px;
+      --dy: 20px;
+      --d: 6px;
+      --waveAmp: 24px;
+      --yFactor: 0.208333;
+      --iFactor: 0.55;
+      --jFactor: 0.25;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #000;
+    }
+
+    body {
+      --time: 0;
+      animation: wave 4s linear infinite;
+    }
+
+    @keyframes wave {
+      from { --time: 0; }
+      to   { --time: 6.283185307; }
+    }
+
+    .dot {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: var(--d);
+      height: var(--d);
+      margin-left: calc(var(--d) / -2);
+      margin-top: calc(var(--d) / -2);
+      border-radius: 50%;
+      background-color: var(--c);
+      mix-blend-mode: screen;
+      transform: translate3d(
+        calc(
+          var(--col) * var(--dx) +
+          var(--waveAmp) * sin((var(--row) * var(--yFactor) + var(--time) * 0.4) * 1rad)
+        ),
+        calc(var(--row) * var(--dy)),
+        0px
+      ) scale(
+        calc(0.5 + 0.75 * (sin((var(--col) * var(--iFactor) + var(--row) * var(--jFactor) + var(--time)) * 1rad) + 1))
+      );
+      opacity: calc(0.35 + 0.325 * (sin((var(--col) * var(--iFactor) + var(--row) * var(--jFactor) + var(--time)) * 1rad) + 1));
+      transform-origin: center;
+      will-change: transform, opacity;
+      pointer-events: none;
+    }
+
+    .c0 { --c: #ff1e1e; }
+    .c1 { --c: #1eff1e; }
+    .c2 { --c: #1e50ff; }
+  </style>
+</head>
+<body>
+<script>
+  const width = window.innerWidth;
+  const height = window.innerHeight;
+  const dx = 20;
+  const dy = 20;
+  const xCount = Math.ceil(width / dx) + 6;
+  const yCount = Math.ceil(height / dy) + 6;
+
+  const fragment = document.createDocumentFragment();
+  for (let j = -3; j < yCount; j++) {
+    for (let i = -3; i < xCount; i++) {
+      const el = document.createElement('div');
+      el.className = `dot c${((i % 3) + 3) % 3}`;
+      el.style.setProperty('--col', i);
+      el.style.setProperty('--row', j);
+      fragment.appendChild(el);
+    }
+  }
+  document.body.appendChild(fragment);
+</script>
+</body>
+</html>

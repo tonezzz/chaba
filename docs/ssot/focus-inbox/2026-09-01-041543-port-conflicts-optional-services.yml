@@ -1,0 +1,44 @@
+title: Resolve health-check conflicts and optional service failures
+subtitle: mcp-health reports errors/unknowns after MCP fix pass
+icon: inbox
+
+focus:
+  label: "Port conflicts and optional services"
+  text: |
+    Full mcp-health snapshot after fixing MCP servers showed:
+    - BServer (web): error — port 8080 in use by caddy
+    - Frigate NVR (optional): error — port 8080 in use by caddy
+    - Sensor Reader (api): unknown — http://tony-omen:8001/health unreachable
+    - Llama Router (gpu): unknown — http://tony-omen:8001/health unreachable
+    - Imagen2 (gpu): unknown — http://tony-omen:8000/health unreachable
+    - Txt2Vid (gpu): unknown — http://tony-omen:8002/health unreachable
+    - Activepieces (optional): unknown
+    - Camera Control (optional): unknown — http://tony-omen:8090/ unreachable
+
+    Most are on tony-omen and may simply not be running after the last reboot,
+    or they may have duplicated port/endpoint configuration. Resolve by checking
+    which are intentionally disabled, which are missing after reboot, and fix the
+    8080 conflict between Caddy, BServer, and Frigate.
+  branch: chaba
+  priority: medium
+  status: draft
+  triage_score: 0.5
+  tags: ["health", "mcp-health", "tony-omen", "tony-dell", "port-conflict"]
+  safe_to_parallel:
+    value: true
+    reason: These services are independent of the MCP fixes.
+  subtasks:
+    - label: "Identify which optional services should be intentionally disabled"
+    - label: "Resolve port 8080 conflict (Caddy/BServer/Frigate)"
+    - label: "Restart or re-enable tony-omen services with missing health endpoints"
+    - label: "Re-run mcp-health and confirm 0 error/0 unknown for critical services"
+
+ownership:
+  owner: tony
+  session: ""
+  locked: false
+  lock_reason: ""
+
+source:
+  session: ""
+  date: '2026-09-01'
