@@ -33,7 +33,24 @@ class TonyFamilyApp {
             this.fetchYaml('ssot.ui.tony-family.yml'),
             this.fetchYaml(this.options.pageConfig || 'ssot.ui.tony-live.yml')
         ]);
-        this.config = { ...base, ...page };
+        this.config = this.mergeDeep(base, page);
+    }
+
+    mergeDeep(target, source) {
+        const output = { ...target };
+        if (!this.isObject(target) || !this.isObject(source)) return source;
+        for (const key of Object.keys(source)) {
+            if (this.isObject(source[key])) {
+                output[key] = this.isObject(target[key]) ? this.mergeDeep(target[key], source[key]) : source[key];
+            } else {
+                output[key] = source[key];
+            }
+        }
+        return output;
+    }
+
+    isObject(item) {
+        return item && typeof item === 'object' && !Array.isArray(item) && !(item instanceof Date);
     }
 
     async fetchYaml(file) {
