@@ -16,11 +16,11 @@ services:
     by tailscale serve to 127.0.0.1:9005. The old chaba-funnel landing page on 8447
     is decommissioned.
   verification:
-  - 'Check bridge: tailscale ssh tony-dell ps -ef | grep ha-live/bridge.py'
+  - 'Check bridge: tailscale ssh tony-dell systemctl --user is-active ha-live'
   - 'Check port: ss -tlnp | grep 9005'
   - 'Test root: curl -s -o /dev/null -w ''%{http_code}'' https://tony-dell.taila0626a.ts.net:8444/'
   - 'Check tailscale serve: tailscale serve status'
   recovery_actions:
-  - 'Restart: cd /home/tony/.config/home-assistant/ha-live && ./restart.sh'
+  - 'Restart: tailscale ssh tony-dell systemctl --user restart ha-live'
   - 'Check tailscale serve: tailscale serve status'
   host: tony_dell

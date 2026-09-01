@@ -1,0 +1,15 @@
+[Unit]
+Description=Home Assistant Gemini Live bridge
+After=home-assistant.service
+Requires=home-assistant.service
+
+[Service]
+Type=simple
+Restart=always
+RestartSec=5
+ExecStartPre=-/usr/bin/podman exec home-assistant pkill -9 -f "python3 /config/ha-live/bridge.py"
+ExecStart=/usr/bin/podman exec -i home-assistant python3 /config/ha-live/bridge.py
+ExecStopPost=-/usr/bin/podman exec home-assistant pkill -9 -f "python3 /config/ha-live/bridge.py"
+
+[Install]
+WantedBy=default.target

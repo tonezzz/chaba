@@ -176,15 +176,16 @@ tony-dell:
     status: decommissioned (2026-08-28)
     note: 'Port 8444 reassigned to ha-live. Service may be retired or moved to a different port.'
   ha-live:
-    service: none (podman exec from home-assistant)
+    service: ha-live.service
     host: tony_dell
     port: 9005
     host_port: 127.0.0.1:9005
     purpose: Push-to-talk Gemini Live bridge for Home Assistant
     tailscale_funnel: 'https://tony-dell.taila0626a.ts.net:8444'
     source: /home/tony/.config/home-assistant/ha-live/bridge.py
+    systemd: systemd/ha-live.service
     status: 'running (2026-08-31)'
-    note: 'Started as podman exec from home-assistant. WebSocket at wss://tony-dell.taila0626a.ts.net:8444/ws. Tested /ws handshake and received status=connected.'
+    note: 'Started as podman exec from home-assistant. Managed by user systemd unit ha-live.service. WebSocket at wss://tony-dell.taila0626a.ts.net:8444/ws. Tested /ws handshake and received status=connected.'
   playlived-dell:
     service: playlived-dell.service
     host: tony_dell
