@@ -25,6 +25,27 @@ SSOT_FILE = REPO_ROOT / "docs" / "ssot" / "infrastructure" / "ssot.mcp.yml"
 OUTPUT_FILE = Path("/home/tony/.config/devin/mcp_config.json")
 BACKUP_DIR = Path("/home/tony/.config/devin/mcp-backups")
 MCP_SCRIPTS_DIR = Path("/home/tony/.config/devin/mcp-scripts")
+MCP_SCRIPTS_SRC = REPO_ROOT / "scripts" / "mcp-scripts"
+
+
+class UniqueLoader(yaml.SafeLoader):
+    """YAML loader that rejects duplicate mapping keys."""
+
+
+def _require_unique_keys(loader: yaml.Loader, node: yaml.MappingNode) -> dict[str, Any]:
+    mapping: dict[str, Any] = {}
+    for key_node, value_node in node.value:
+        key = loader.construct_object(key_node)
+        if key in mapping:
+            raise yaml.YAMLError(f"duplicate key {key!r} in {node.start_mark}")
+        mapping[key] = loader.construct_object(value_node)
+    return mapping
+
+
+UniqueLoader.add_constructor(
+    yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG,
+    _require_unique_keys,
+)
 
 RUNNER_MAP = {
     "python3": "/usr/bin/python3",
@@ -214,6 +235,42 @@ def looks_like_executable_path(arg: str) -> bool:
     )
 
 
+def install_wrappers() -> int:
+    """Sync wrapper scripts from the repo to the runtime mcp-scripts directory."""
+    if not MCP_SCRIPTS_SRC.exists():
+        error(f"wrapper source not found: {MCP_SCRIPTS_SRC}")
+        return 1
+    MCP_SCRIPTS_DIR.mkdir(parents=True, exist_ok=True)
+    for src in MCP_SCRIPTS_SRC.iterdir():
+        if not src.is_file() or src.name.startswith("."):
+            continue
+        dst = MCP_SCRIPTS_DIR / src.name
+        if not dst.exists() or src.read_bytes() != dst.read_bytes():
+            shutil.copy2(src, dst)
+            print(f"installed {dst}")
+    return 0
+
+
+def validate_per_host_keys(ssot: dict[str, Any]) -> bool:
+    """Check that every per_host key is a known host id."""
+    valid: set[str] = set()
+    for profile_data in ssot.get("profiles", {}).values():
+        if isinstance(profile_data, dict) and isinstance(profile_data.get("base_urls"), dict):
+            valid.update(profile_data["base_urls"].keys())
+    valid.update(ssot.get("hosts", {}).keys())
+
+    ok = True
+    for name, cfg in ssot.get("servers", {}).items():
+        per_host = cfg.get("per_host", {})
+        if not isinstance(per_host, dict):
+            continue
+        for key in per_host.keys():
+            if key not in valid:
+                error(f"server {name}: unknown per_host host {key!r}; expected one of {sorted(valid)}")
+                ok = False
+    return ok
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Generate MCP config from ssot.mcp.yml")
     parser.add_argument("--host", default=None, help="Target host (default: this hostname)")
@@ -222,6 +279,8 @@ def main() -> int:
                         help="MCP client to generate for")
     parser.add_argument("--output", type=Path, default=None, help="Output file path")
     parser.add_argument("--ssot", type=Path, default=SSOT_FILE, help="SSOT YAML file")
+    parser.add_argument("--install-wrappers", action="store_true",
+                        help="Sync wrapper scripts from the repo to ~/.config/devin/mcp-scripts")
     args = parser.parse_args()
 
     if not args.ssot.exists():
@@ -229,7 +288,7 @@ def main() -> int:
         return 1
 
     with open(args.ssot, "r", encoding="utf-8") as f:
-        ssot = yaml.safe_load(f) or {}
+        ssot = yaml.load(f, Loader=UniqueLoader) or {}
 
     generation = ssot.get("generation", {})
     profile = args.profile or os.environ.get("DEVIN_MCP_PROFILE") or generation.get("default_profile", "home")
@@ -239,6 +298,14 @@ def main() -> int:
     if profile not in ssot.get("profiles", {}):
         error(f"profile {profile!r} not defined in {args.ssot}")
         return 1
+
+    if not validate_per_host_keys(ssot):
+        return 1
+
+    if args.install_wrappers:
+        rc = install_wrappers()
+        if rc != 0:
+            return rc
 
     output_file = args.output or OUTPUT_FILE
     mcp_servers: dict[str, Any] = {}
