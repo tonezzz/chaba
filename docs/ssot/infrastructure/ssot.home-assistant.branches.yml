@@ -1,0 +1,55 @@
+title: Home Assistant Branch Model
+subtitle: Git branch and worktree design for the Home Assistant family
+
+branches:
+  family:
+    id: ha
+    repo: chaba
+    base: master
+    purpose: Shared Home Assistant platform, SSOT, and bridges
+    contents:
+      - docs/ssot/infrastructure/ssot.home-assistant.yml
+      - docs/ssot/infrastructure/ssot.home-assistant.live.yml
+      - scripts/home-assistant/
+      - systemd/ha-*.service
+    description: The family branch holds everything that is common to all HA instances.
+
+  instances:
+    - id: tony-ha
+      repo: chaba
+      base: ha
+      purpose: tony-dell runtime customizations
+      contents:
+        - tony-dell/home-assistant/
+        - scripts/home-assistant/ha-live/
+      description: Adds tony-dell specific devices, go2rtc, camera scripts, and the HA-MCP integration.
+
+    - id: michael-ha
+      repo: chaba-michael
+      base: ha
+      upstream_remote: chaba
+      upstream_branch: ha
+      purpose: Michael cloud instance customizations
+      contents:
+        - docs/home-assistant/
+        - stacks/web/public/apps/michael-live/
+      description: Michael-specific dashboard packages and live UI pages, rebased onto chaba/ha for shared updates.
+
+  live_features:
+    - id: tony-live
+      base: tony-ha
+      purpose: Live bridge or UI for the tony-dell instance
+
+    - id: michael-live
+      base: michael-ha
+      purpose: Michael live dashboard page
+
+worktree_rules:
+  - Each branch should live in its own worktree to avoid dirty working tree conflicts.
+  - Rebase instance branches onto ha before merging to master.
+  - Use chaba as an upstream remote in chaba-michael to pull the ha family layer.
+
+recent_changes:
+  - date: 2026-09-01
+    description: "Create ha, tony-ha, michael-ha, and michael-live branches"
+    impact: "Central family branch with per-instance sub-dev branches"
