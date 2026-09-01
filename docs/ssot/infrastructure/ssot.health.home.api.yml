@@ -2,28 +2,6 @@ title: Chaba Health Checks (Home Profile) — Api
 subtitle: Home network health checks for the api category
 icon: heart-pulse
 services:
-- id: sensor-reader
-  name: Sensor Reader
-  type: http
-  url: http://tony-omen:8001/health
-  expected_status: 200
-  timeout: 5
-  category: api
-  profiles:
-  - home
-  - mobile
-  disabled: true
-  note: Runs only on tony-omen; not reachable from tony-dell health monitor.
-  verification:
-  - 'Test container: ssh tony-omen docker ps | grep sensor-reader'
-  - 'Test direct container: ssh tony-omen curl -s http://tony-omen:8001/health'
-  - 'Check container logs: ssh tony-omen docker logs sensor-reader --tail
-    20'
-  recovery_actions:
-  - 'Restart container: ssh tony-omen docker compose -f stacks/web/docker-compose.yml
-    restart sensor-reader'
-  - Check Caddy /api/* proxy to tony-dell:8000
-  host: tony_omen
 - id: status-data-api
   name: Status Data API
   type: http

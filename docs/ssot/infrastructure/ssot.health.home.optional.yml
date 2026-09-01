@@ -32,14 +32,12 @@ services:
   host: tony_dell
 - id: camera-control
   name: Camera Control
-  disabled: true
   type: http
-  url: http://tony-omen:8090/
+  url: http://tony-dell:8090/
   expected_status: 200
   timeout: 5
   category: optional
   profiles:
   - home
-  note: Offline (2026-08-14) - intentionally stopped; start manually when needed (currently
-    runs on tony-dell)
-  host: tony_omen
+  note: 'Camera control frontend on tony-dell:8090.'
+  host: tony_dell
