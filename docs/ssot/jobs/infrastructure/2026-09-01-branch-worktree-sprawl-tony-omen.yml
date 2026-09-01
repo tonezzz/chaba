@@ -1,0 +1,84 @@
+title: Branch/Worktree Sprawl Report — Phase 1b (tony-omen via tony-dell)
+subtitle: Collect a read-only inventory of branches and worktrees for the chaba* repo family on tony-omen, dispatched through the tony-dell worker
+icon: target
+
+planning:
+  goal: Extend the Phase 1 branch/worktree sprawl inventory to tony-omen by dispatching the read-only collection script from tony-dell.
+  scope:
+    Data collection only. No deletion, pruning, or modification of branches/worktrees on tony-omen.
+    Covers /home/tony/CascadeProjects/chaba* directories on tony-omen that contain a git repository.
+  success_criteria:
+  - JSON report at reports/2026-09-01-branch-worktree-sprawl-tony-omen.json with per-repo branch and worktree lists
+  - Markdown summary at reports/2026-09-01-branch-worktree-sprawl-tony-omen.md with counts and stale-branch candidates
+  - Job report section is completed on the experiment branch
+  - All output is committed and pushed to experiment/tony-dell-task-runner from tony-dell
+  risks:
+  - Risk: tony-dell cannot reach tony-omen via SSH. Mitigation: the job requires a pre-flight SSH check; abort if unreachable.
+  - Risk: the remote git commands take too long. Mitigation: each SSH call has a 5-second connect timeout and BatchMode=yes.
+  - Risk: touching unrelated repos. Mitigation: only scans directories whose names start with 'chaba' and contain a .git directory.
+  resources:
+  - tony-dell worktree /home/tony/CascadeProjects/chaba-tony-dell-experiment
+  - tony-dell SSH access to tony-omen
+  - Python 3 and git on tony-dell and tony-omen
+  owner: tony
+  estimated_duration: 1 session
+  related_focus:
+  - label: Dev-system regression
+    file: docs/ssot/ssot.focus.current.active.yml
+  - label: Phase 1 tony-dell report
+    file: docs/ssot/jobs/infrastructure/2026-09-01-branch-worktree-sprawl-report.yml
+
+processing:
+  status: not_started
+  started_at: null
+  steps:
+  - id: 1
+    label: Preflight SSH to tony-omen
+    status: not_started
+    notes: ssh -o BatchMode=yes -o ConnectTimeout=5 tony-omen hostname
+  - id: 2
+    label: Discover chaba* repos on tony-omen
+    status: not_started
+    notes: scripts/focus_dispatcher/tony_dell_phase1.py --target-host tony-omen
+  - id: 3
+    label: Collect branches and worktrees
+    status: not_started
+    notes: The script runs git branch -vv, git branch -r -vv, and git worktree list over SSH
+  - id: 4
+    label: Summarize
+    status: not_started
+    notes: Generate JSON and Markdown reports locally on tony-dell
+  - id: 5
+    label: Commit and push from tony-dell
+    status: not_started
+    notes: git add -f reports/2026-09-01-branch-worktree-sprawl-tony-omen.*, then commit and push
+  decisions: []
+  changes: []
+
+followup:
+  verification:
+  - Check that the JSON and MD files exist on the experiment branch
+  - Verify tony-omen branch/worktree state was not modified
+  rollback_plan:
+  - Remove the generated report files if stale or no longer needed
+  handoff:
+  - Next owner: tony. Combine Phase 1 and Phase 1b reports, then approve Phase 2 pruning.
+  deferred:
+  - Actual branch/worktree pruning requires user approval and is out of scope for this Phase 1b job
+
+report:
+  status: not_started
+  completed_at: null
+  summary: ''
+  metrics: []
+  links: []
+  kb_review: []
+  lessons_learned: []
+
+config:
+  version: 1
+  created_at: '2026-09-01'
+  last_updated: '2026-09-01'
+  maintainer: tony
+  related_files:
+  - docs/ssot/templates/job.yml
