@@ -1,11 +1,11 @@
 title: Development System Assessment
 subtitle: Periodic assessment of the chaba development workflow itself
 icon: clipboard-check
-last_reviewed: '2026-09-01T12:54:45.267292+00:00'
+last_reviewed: '2026-09-01T13:10:55.928182+00:00'
 reviewer: assistant
 score:
-  branches_total: 19
-  branches_ahead_of_master: 15
+  branches_total: 15
+  branches_ahead_of_master: 12
   worktrees_total: 8
   active_foci: 2
   ssot_warnings: 2
@@ -29,19 +29,15 @@ pros:
 cons:
 - label: Branch/worktree sprawl
   severity: high
-  evidence: 19 local branches; 15 not merged into origin/master (excluding master); 8 active worktrees
+  evidence: 15 local branches; 12 not merged into origin/master (excluding master); 8 active worktrees
   owner: tony
   status: in_progress
   improvement: Consolidate long-tail branches into master and archive or delete merged branches
   audit:
-    date: '2026-09-01T12:54:45.267292+00:00'
-    branches_total: 19
+    date: '2026-09-01T13:10:55.928182+00:00'
+    branches_total: 15
     branches_merged_into_origin_master:
-    - chaba-omen
     - chaba.h3
-    - explore/visualization-dotwave
-    - research/thb-base-settlement
-    - topic/tailscale
     - yomi
     branches_not_merged_into_origin_master:
     - chaba-mcp-experiments
@@ -73,30 +69,21 @@ cons:
       branch: experiment/tony-dell-task-runner
     - path: /home/tony/CascadeProjects/chaba-yomi
       branch: yomi
-    tracking_missing:
-    - branch: chaba-mcp-experiments
-      remote: origin/chaba-mcp-experiments
-    - branch: ha
-      remote: origin/ha
-    - branch: mcp-kbman
-      remote: origin/mcp-kbman
-    - branch: michael-ha
-      remote: origin/michael-ha
-    - branch: michael-live
-      remote: origin/michael-live
-    - branch: tony-ha
-      remote: origin/tony-ha
+    tracking_missing: []
     action_plan:
     - label: Pull/merge origin/master
-      reason: Local master is 1 ahead and 3 behind origin/master; align before any merges.
+      reason: Local master is now aligned with origin/master.
       risk: low
+      status: completed
     - label: Delete stale merged branches
-      reason: chaba-omen, explore/visualization-dotwave, topic/tailscale are already in origin/master and have no worktree.
+      reason: Deleted local chaba-omen, explore/visualization-dotwave, topic/tailscale, research/thb-base-settlement; deleted remote chaba-omen and explore/visualization-dotwave. research/thb-base-settlement remote left for review (52 ahead / 51 behind).
       risk: medium
       destructive: true
+      status: completed
     - label: Fix missing upstream tracking
-      reason: chaba-mcp-experiments, ha, mcp-kbman, michael-ha, michael-live, tony-ha have matching origin branches but no local tracking.
+      reason: Set upstream tracking for chaba-mcp-experiments, ha, mcp-kbman, michael-ha, michael-live, tony-ha.
       risk: low
+      status: completed
     - label: Decide on long-tail research/experiment branches
       reason: research/gold-silver-causality, chaba-mcp-experiments, experiment/tony-dell-task-runner, feature/home-assistant-mcp need merge/close decision.
       risk: medium
