@@ -1,0 +1,80 @@
+title: Branch/Worktree Sprawl Report — Phase 1 (tony-dell)
+subtitle: Collect a read-only inventory of branches and worktrees across the chaba* repo family on tony-dell
+icon: target
+
+planning:
+  goal: Produce a complete, read-only inventory of git branches and worktrees for the chaba project family on tony-dell.
+  scope:
+    Data collection only. No deletion, pruning, or modification of branches/worktrees.
+    Covers /home/tony/CascadeProjects/chaba* directories on tony-dell that contain a git repository.
+  success_criteria:
+  - JSON report at reports/2026-09-01-branch-worktree-sprawl.json with per-repo branch and worktree lists
+  - Markdown summary at reports/2026-09-01-branch-worktree-sprawl.md with counts and stale-branch candidates
+  - Job report section is completed on the experiment branch
+  - All output is committed and pushed to experiment/tony-dell-task-runner
+  risks:
+  - Risk: running on the wrong host. Mitigation: script checks hostname and refuses unless it matches tony-dell (or --force is passed)
+  - Risk: touching unrelated repos. Mitigation: only scans directories whose names start with 'chaba' and contain a .git directory
+  resources:
+  - tony-dell worktree /home/tony/CascadeProjects/chaba-tony-dell-experiment
+  - Python 3 and git on tony-dell
+  owner: tony
+  estimated_duration: 1 session
+  related_focus:
+  - label: Dev-system regression
+    file: docs/ssot/ssot.focus.current.active.yml
+
+processing:
+  status: not_started
+  started_at: null
+  steps:
+  - id: 1
+    label: Discover chaba* repos
+    status: not_started
+    notes: Find all /home/tony/CascadeProjects/chaba* directories with .git
+  - id: 2
+    label: Collect branches
+    status: not_started
+    notes: Run git branch -vv and git branch -r -vv in each repo
+  - id: 3
+    label: Collect worktrees
+    status: not_started
+    notes: Run git worktree list in each repo
+  - id: 4
+    label: Summarize
+    status: not_started
+    notes: Generate JSON and Markdown reports using scripts/focus_dispatcher/tony_dell_phase1.py
+  - id: 5
+    label: Commit and push
+    status: not_started
+    notes: Commit reports to experiment branch and push to origin
+  decisions: []
+  changes: []
+
+followup:
+  verification:
+  - Check that the JSON and MD files exist on the experiment branch
+  - Verify the report is read-only (no branch/worktree state changed)
+  rollback_plan:
+  - Remove the generated report files if stale or no longer needed
+  handoff:
+  - Next owner: tony. After reviewing the report, approve Phase 2 (prune stale branches/worktrees).
+  deferred:
+  - Actual branch/worktree pruning requires user approval and is out of scope for this Phase 1 job
+
+report:
+  status: not_started
+  completed_at: null
+  summary: ''
+  metrics: []
+  links: []
+  kb_review: []
+  lessons_learned: []
+
+config:
+  version: 1
+  created_at: '2026-09-01'
+  last_updated: '2026-09-01'
+  maintainer: tony
+  related_files:
+  - docs/ssot/templates/job.yml
