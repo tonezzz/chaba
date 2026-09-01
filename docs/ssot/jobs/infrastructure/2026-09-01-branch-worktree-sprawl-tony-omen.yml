@@ -13,9 +13,9 @@ planning:
   - Job report section is completed on the experiment branch
   - All output is committed and pushed to experiment/tony-dell-task-runner from tony-dell
   risks:
-  - 'Risk: tony-dell cannot reach tony-omen via SSH. Mitigation: the job requires a pre-flight SSH check; abort if unreachable.'
-  - 'Risk: the remote git commands take too long. Mitigation: each SSH call has a 5-second connect timeout and BatchMode=yes.'
-  - 'Risk: touching unrelated repos. Mitigation: only scans directories whose names start with chaba and contain a .git directory.'
+  - Risk: tony-dell cannot reach tony-omen via SSH. Mitigation: the job requires a pre-flight SSH check; abort if unreachable.
+  - Risk: the remote git commands take too long. Mitigation: each SSH call has a 5-second connect timeout and BatchMode=yes.
+  - Risk: touching unrelated repos. Mitigation: only scans directories whose names start with 'chaba' and contain a .git directory.
   resources:
   - tony-dell worktree /home/tony/CascadeProjects/chaba-tony-dell-experiment
   - tony-dell SSH access to tony-omen
@@ -29,40 +29,31 @@ planning:
     file: docs/ssot/jobs/infrastructure/2026-09-01-branch-worktree-sprawl-report.yml
 
 processing:
-  status: completed
-  started_at: '2026-09-01T19:37:00'
-  completed_at: '2026-09-01T19:38:20'
+  status: not_started
+  started_at: null
   steps:
   - id: 1
     label: Preflight SSH to tony-omen
-    status: completed
-    notes: ssh -o BatchMode=yes -o ConnectTimeout=5 tony-omen hostname returned tony-omen
+    status: not_started
+    notes: ssh -o BatchMode=yes -o ConnectTimeout=5 tony-omen hostname
   - id: 2
     label: Discover chaba* repos on tony-omen
-    status: completed
-    notes: Found one chaba repo on tony-omen (/home/tony/CascadeProjects/chaba)
+    status: not_started
+    notes: scripts/focus_dispatcher/tony_dell_phase1.py --target-host tony-omen
   - id: 3
     label: Collect branches and worktrees
-    status: completed
-    notes: tony-dell script collected git branch -vv, git branch -r -vv, and git worktree list over SSH
+    status: not_started
+    notes: The script runs git branch -vv, git branch -r -vv, and git worktree list over SSH
   - id: 4
     label: Summarize
-    status: completed
-    notes: Generated reports/2026-09-01-branch-worktree-sprawl-tony-omen.{json,md}
+    status: not_started
+    notes: Generate JSON and Markdown reports locally on tony-dell
   - id: 5
     label: Commit and push from tony-dell
-    status: completed
-    notes: tony-dell committed the reports and pushed to origin experiment/tony-dell-task-runner
-  decisions:
-  - label: Use --target-host for remote inventory
-    rationale: Extending the phase1 script with --target-host lets tony-dell SSH into other hosts without copying the script, keeping a single worker host.
-  - label: Keep reports in gitignored reports/ and use git add -f
-    rationale: Reports are generated artifacts; forcing them into the bundle avoids mixing volatile output into tracked docs/. Fine for the pilot; revisit if we make the runner permanent.
-  changes:
-  - file: reports/2026-09-01-branch-worktree-sprawl-tony-omen.json
-    summary: Raw JSON inventory of tony-omen branches and worktrees
-  - file: reports/2026-09-01-branch-worktree-sprawl-tony-omen.md
-    summary: Human-readable summary of tony-omen branches and worktrees
+    status: not_started
+    notes: git add -f reports/2026-09-01-branch-worktree-sprawl-tony-omen.*, then commit and push
+  decisions: []
+  changes: []
 
 followup:
   verification:
@@ -76,34 +67,13 @@ followup:
   - Actual branch/worktree pruning requires user approval and is out of scope for this Phase 1b job
 
 report:
-  status: completed
-  completed_at: '2026-09-01T19:38:20'
-  summary: tony-dell successfully collected a read-only inventory of the chaba repo on tony-omen. The repo has 19 local branches, 46 remote branch refs, and 8 linked worktrees. Notable divergences are research/thb-base-settlement (ahead 52, behind 51) and michael (ahead 30). master is ahead 1 and behind 3. No destructive actions were taken on tony-omen.
-  metrics:
-  - metric: repos_scanned
-    value: 1
-  - metric: local_branches
-    value: 19
-  - metric: remote_branch_refs
-    value: 46
-  - metric: worktrees
-    value: 8
-  - metric: most_diverged_branch
-    value: research/thb-base-settlement (ahead 52, behind 51)
-  links:
-  - title: Markdown report
-    url: https://github.com/tonezzz/chaba/blob/experiment/tony-dell-task-runner/reports/2026-09-01-branch-worktree-sprawl-tony-omen.md
-  - title: JSON report
-    url: https://github.com/tonezzz/chaba/blob/experiment/tony-dell-task-runner/reports/2026-09-01-branch-worktree-sprawl-tony-omen.json
-  - title: Related focus
-    file: docs/ssot/ssot.focus.current.active.yml
-  - title: Phase 1 report
-    file: docs/ssot/jobs/infrastructure/2026-09-01-branch-worktree-sprawl-report.yml
-  kb_review:
-  - tony-dell can dispatch SSH-based read-only git inventories to other hosts and push the results to origin autonomously
-  lessons_learned:
-  - Generated report files in a gitignored directory need git add -f; consider a tracked output directory for permanent runners
-  - SSH BatchMode and ConnectTimeout keep remote git commands from hanging the worker
+  status: not_started
+  completed_at: null
+  summary: ''
+  metrics: []
+  links: []
+  kb_review: []
+  lessons_learned: []
 
 config:
   version: 1
