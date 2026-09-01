@@ -3,7 +3,7 @@ subtitle: Worktree drift detected
 icon: inbox
 focus:
   label: Sync worktree raceman with master
-  text: 'Worktree raceman is 2 commit(s) ahead and 72 commit(s) behind master.
+  text: 'Worktree raceman is 2 commit(s) ahead and 74 commit(s) behind master.
 
     Decide whether to merge, rebase, or archive the branch.
 
@@ -19,8 +19,15 @@ focus:
   safe_to_parallel: true
   subtasks:
   - label: Review raceman changes
+    status: completed
+    completed_at: '2026-09-01'
+    note: "2 ahead / 74 behind master; ahead commits 7fc9dacc and 3b1140c5; no active git worktree"
   - label: Merge or rebase to master
+    status: pending
+    note: "merge-tree --write-tree returns same tree as master; clean no-op merge; rebase not recommended"
   - label: Delete worktree if merged
+    status: pending
+    note: "remote branch only; orphan directory /home/tony/CascadeProjects/chaba-raceman remains and needs review"
   triage:
     complication: 2
     urgency: 3

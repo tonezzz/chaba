@@ -135,7 +135,7 @@ async function fetchCSV(path, column = 'equity') {
 async function renderEquity() {
   const container = document.getElementById('equity-curves');
   try {
-    const [trended, knn, dtw, delay, ssa, rvar, graph, wavelet, graph_knn, graph_knn_vol, graph_knn_silver, graph_knn_vol_silver, graph_knn_thb_xag] = await Promise.all([
+    const [trended, knn, dtw, delay, ssa, rvar, graph, wavelet, graph_knn, graph_knn_vol, graph_knn_silver, graph_knn_vol_silver] = await Promise.all([
       fetchCSV('data/trended_equity.csv', 'equity').catch(() => null),
       fetchCSV('data/trended_knn_equity.csv', 'equity').catch(() => null),
       fetchCSV('data/trended_dtw_equity.csv', 'equity').catch(() => null),
@@ -148,7 +148,6 @@ async function renderEquity() {
       fetchCSV('data/trended_graph_knn_vol_equity.csv', 'equity').catch(() => null),
       fetchCSV('data/trended_graph_knn_silver_equity.csv', 'equity').catch(() => null),
       fetchCSV('data/trended_graph_knn_vol_silver_equity.csv', 'equity').catch(() => null),
-      fetchCSV('data/trended_graph_knn_thb_xag_equity.csv', 'equity').catch(() => null),
     ]);
     if (!graph_knn) {
       container.innerHTML = '<p class="muted">Vector-analysis equity data not yet available. Run the backtests first.</p>';
@@ -189,9 +188,6 @@ async function renderEquity() {
     }
     if (graph_knn_vol_silver) {
       traces.push({ x: dates, y: graph_knn_vol_silver.map(r => r.equity), mode: 'lines', name: 'Graph + k-NN + XAG/silver vol-sized', line: { color: '#FFD700' } });
-    }
-    if (graph_knn_thb_xag) {
-      traces.push({ x: dates, y: graph_knn_thb_xag.map(r => r.equity), mode: 'lines', name: 'Graph + k-NN THB+XAG (best)', line: { color: '#FF0000' } });
     }
     plot('equity-curves', traces, {
       title: 'Vector-analysis results vs baselines (log scale)',

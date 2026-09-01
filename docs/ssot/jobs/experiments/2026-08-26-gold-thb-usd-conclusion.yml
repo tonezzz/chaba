@@ -4,21 +4,15 @@ icon: milestone
 
 planning:
   goal: |
-    Capture the final results of the Gold/THB/USD causality research thread.
-    Document every strategy tested, the best configuration, and why it emerged
-    as the branch winner. Keep it research-only and avoid any live-trading
-    implications.
+    Capture the final results of the Gold/THB/USD causality research thread on
+    the gold-silver-causality branch. Document the tested strategies, the best
+    configuration, and key findings. Research-only.
   scope: |
-    - List all tested strategies with their out-of-sample 2014-2026 metrics.
-    - Identify the branch best and key findings.
-    - Reference the scripts and data files used for each family of experiments.
+    - List the main strategies and their OOS 2014-2026 metrics.
+    - Identify the branch best and key takeaways.
   out_of_scope: |
     - Real-time execution or trade-api integration.
     - Any claim that the backtest is a live-trading guarantee.
-  success_criteria:
-    - A single readable SSOT file that contains the final results table.
-    - The best configuration is clearly identified.
-    - All files are committed to the repository for future reference.
 
 processing:
   status: completed
@@ -27,151 +21,136 @@ processing:
   last_updated: '2026-08-26'
   completed_at: '2026-08-26'
   notes: |
-    All major research branches were completed. The best result came from the
-    THB+XAG graph+k-NN feature ablation, not from the originally dominant
-    XAU/USD vol+silver variant. Adding the XAU own-return feature was not
-    necessary; THB and XAG alone produced the highest Sharpe. This SSOT
-    preserves the full results table as a milestone.
-
-steps:
-  - id: 1
-    label: Document final results
-    status: completed
-    completed_at: '2026-08-26'
-    notes: Results table written to this SSOT and committed.
+    Research finished. The best configuration on this branch is the vol-sized
+    silver graph+k-NN: W=2, K=30, TARGET_VOL=0.20, P_THRESHOLD=0.01,
+    EDGE_LOOKBACK=504, TC=0.05%. The overall best (THB+XAG, W=2, K=50,
+    Sharpe 3.53) is recorded on research/thb-base-settlement.
 
 report:
   status: completed
   completed_at: '2026-08-26'
   summary: |
-    After exploring ~30 distinct strategies, the branch best is the THB+XAG
-    graph+k-NN (trended_graph_knn_thb_xag.py) with W=2, K=50, P_THRESHOLD=0.01,
-    EDGE_LOOKBACK=504, and TC=0.05%. It produced a 3.53 Sharpe, 36.9% annual
-    return, 10.5% annual vol, -7.3% max drawdown, and 17.5% win rate.
-
-    A follow-up THB basis tool sweep (2026-08-27) found that ATR-based
-    position sizing further improves the THB+XAG k-NN result. The tuned
-    variant (ATR_WINDOW=7, TARGET_VOL=0.15, MAX_LEVERAGE=2.0) delivered a
-    3.82 Sharpe, 44.7% annual return, 11.7% annual vol, -6.9% max drawdown,
-    and 17.5% win rate.
-
-    Key findings:
-    - The THB->XAU Granger edge is the central gate that cuts the worst losses.
-    - Adding XAG/silver to the k-NN feature vector improved returns over the
-      THB+XAU baseline.
-    - Removing the XAU own-return feature (THB+XAG only) further improved
-      performance, demonstrating that XAU's own past return is redundant.
-    - Volatility targeting (TARGET_VOL=0.20) raised the XAU/USD silver variant
-      to a 3.46 Sharpe, but the THB+XAG non-vol variant remains the best on
-      risk-adjusted return.
-    - Oil, USD/EUR, multi-day horizons, dynamic K/WINDOW, alternative distance
-      metrics, and volatility/trend regime gates did not beat the selected
-      THB+XAG baseline.
-    - THB settlement (XAU/THB target) underperformed the XAU/USD signal, mainly
-      because the USD/THB carry added volatility without improving Sharpe.
-  metrics_ref: docs/ssot/jobs/experiments/2026-08-26-gold-thb-usd-conclusion-metrics.yml
-  top_metrics:
-    - variant: THB+XAG ATR-sized (tuned)
-      file: trended_atr_sizing.py
-      params: W=2 K=50 ATR_WINDOW=7 TARGET_VOL=0.15 MAX_LEVERAGE=2.0
-      sharpe: 3.82
-      annual_return: 44.7%
-      annual_vol: 11.7%
-      max_dd: -6.9%
-      win_rate: 17.5%
-    - variant: THB+XAG graph+k-NN (branch best)
-      file: trended_graph_knn_thb_xag.py
-      sharpe: 3.53
-      annual_return: 36.9%
-      annual_vol: 10.5%
+    The central finding is that a THB->XAU Granger-causality edge, combined
+    with a k-NN pattern matcher on THB, XAU, and XAG/silver returns, produces
+    a strong walk-forward result. Volatility targeting (TARGET_VOL=0.20) and
+    silver (XAG) both improve the baseline. Oil, USD/EUR, multi-day horizons,
+    dynamic K/WINDOW, alternative distance metrics, and volatility-regime gates
+    did not improve the selected configuration.
+  metrics:
+    - variant: Vol-sized silver graph+k-NN (branch best)
+      file: trended_graph_knn_vol_silver.py
+      params: W=2 K=30 TARGET_VOL=0.20
+      sharpe: 3.46
+      annual_return: 39.5%
+      annual_vol: 11.4%
+      max_dd: -5.4%
+      win_rate: 15.6%
+    - variant: Silver graph+k-NN (no vol)
+      file: trended_graph_knn_silver.py
+      params: W=2 K=10
+      sharpe: 3.29
+      annual_return: 34.0%
+      annual_vol: 10.3%
       max_dd: -7.3%
-      win_rate: 17.5%
+      win_rate: 15.6%
+    - variant: Vol-sized silver + WTI oil
+      file: trended_graph_knn_vol_silver_extras.py
+      params: EXTRA_COL=oil
+      sharpe: 3.25
+      annual_return: 36.3%
+      annual_vol: 11.1%
+      max_dd: -8.2%
+      win_rate: 15.5%
+    - variant: Vol-sized silver + Brent
+      file: trended_graph_knn_vol_silver_extras.py
+      params: EXTRA_COL=brent
+      sharpe: 3.17
+      annual_return: 35.9%
+      annual_vol: 11.3%
+      max_dd: -17.4%
+      win_rate: 15.7%
+    - variant: Vol-sized silver + USD/EUR
+      file: trended_graph_knn_vol_silver_extras.py
+      params: EXTRA_COL=usd
+      sharpe: 3.44
+      annual_return: 40.3%
+      annual_vol: 11.7%
+      max_dd: -9.4%
+      win_rate: 17.2%
+    - variant: Vol-sized silver high-vol regime
+      file: trended_graph_knn_vol_silver_regime.py
+      params: REGIME=high
+      sharpe: 2.58
+      annual_return: 22.2%
+      annual_vol: 8.6%
+      max_dd: -5.4%
+      win_rate: 9.3%
+    - variant: Vol-sized silver low-vol regime
+      file: trended_graph_knn_vol_silver_regime.py
+      params: REGIME=low
+      sharpe: 2.24
+      annual_return: 17.3%
+      annual_vol: 7.7%
+      max_dd: -4.7%
+      win_rate: 6.3%
+    - variant: THB-base XAU/THB vol-sized
+      file: trended_graph_knn_vol_thb_base.py
+      params: W=2 K=30 TARGET_VOL=0.20
+      sharpe: 2.86
+      annual_return: 27.8%
+      annual_vol: 9.7%
+      max_dd: -6.0%
+      win_rate: 11.3%
+    - variant: Graph+k-NN THB+XAU
+      file: trended_graph_knn.py
+      params: W=2 K=30
+      sharpe: 2.77
+      annual_return: 22.1%
+      annual_vol: 8.0%
+      max_dd: -7.5%
+      win_rate: 12.4%
+    - variant: Graph+k-NN + WTI oil
+      file: trended_graph_knn_oil.py
+      sharpe: 2.55
+      annual_return: 21.2%
+      annual_vol: 8.3%
+      max_dd: -10.8%
+      win_rate: 13.2%
+    - variant: Graph+k-NN + Brent
+      file: trended_graph_oil.py
+      sharpe: 2.53
+      annual_return: 20.4%
+      annual_vol: 8.1%
+      max_dd: -9.5%
+      win_rate: 12.8%
+    - variant: Graph+k-NN + USD/EUR
+      file: trended_graph_knn_usd.py
+      sharpe: 2.51
+      annual_return: 20.6%
+      annual_vol: 8.2%
+      max_dd: -6.6%
+      win_rate: 12.3%
+    - variant: 2-day THB trend
+      file: trended.py
+      sharpe: -0.68
+      annual_return: -12.9%
+      annual_vol: 18.9%
+      max_dd: -76.8%
+      win_rate: 29.7%
   lessons_learned:
     - The THB->XAU Granger edge is the main protective filter.
-    - XAG/silver provides genuine incremental signal beyond THB and XAU.
-    - XAU's own past return is redundant once THB and XAG are included.
-    - Volatility targeting improves risk-adjusted return and drawdown, but not as much
-      as switching to the optimal THB+XAG feature subset.
-    - Oil, USD/EUR, multi-day horizons, dynamic parameter selection, and regime gates
-      did not improve the final THB+XAG baseline.
-    - "Transaction costs are the biggest practical risk: the strategy is robust to ~0.10% TC but breaks by 0.50%."
-
-branches:
-  - name: research/thb-base-settlement
-    current: true
-    tag: milestone-gold-thb-usd-vector-analysis
-    note: Final best THB+XAG and THB settlement/Fx-overlay follow-ups.
-    key_commits:
-      - d538df2 app: add THB+XAG equity curve to vector-analysis page
-      - eacacf3 experiment: dual THB->XAU and XAG->XAU Granger edge (idea 6)
-      - 6d78458 experiment: gold/silver spread feature (idea 5)
-      - 4a8103b experiment: transaction-cost stress and THB+XAG best subset (idea 4)
-      - ecb6633 experiment: feature ablation for silver graph+k-NN (idea 3)
-      - 28e37b9 experiment: volatility regime gate for silver graph+k-NN (idea 2)
-      - 0020c7c experiment: vol-sized silver graph+k-NN (idea 1)
-  - name: research/gold-silver-causality
-    current: false
-    tag: milestone-gold-thb-usd-vector-analysis (older)
-    note: Earlier vector-analysis, oil, USD/EUR, and silver additions.
-    key_commits:
-      - 3ce1745 experiment: tune silver graph+k-NN parameters
-      - f908592 experiment: add silver (XAG) to graph+k-NN feature vector
-      - e27927d experiment: volatility-targeted position sizing for graph+k-NN
-      - 45ba526 experiment: add oil to graph+k-NN research branch
-      - e86efe9 experiment: add USD/EUR to graph+k-NN research branch
-
-app_consolidation:
-  research_site: https://tony-dell.taila0626a.ts.net:8444/apps/gold/
-  pages:
-    - path: index.html
-      label: Gold/THB/USD Hub
-      note: Landing page with links to all research sub-pages.
-    - path: vector-search-ideas.html
-      label: Vector-search ideas
-    - path: vector-analysis-ideas.html
-      label: Vector-analysis ideas
-    - path: thb-settlement.html
-      label: THB settlement comparison
-    - path: conclusion.html
-      label: Research conclusion
-      note: Final results table and best equity curve.
-  shared_component: app/nav.js
-  shared_component_note: Injected navigation across all research pages for easy cross-linking.
-  trade_dashboard_link: /apps/tradecanvas-ui/index.html
-  trade_dashboard_note: "TradeCanvas production UI; added a 'Gold/THB Research' nav link to the conclusion page."
-  promoted_data:
-    - source: experiments/gold-thb-usd-causality/data/trended_graph_knn_thb_xag_equity.csv
-      target: trade/tradecanvas-ui/data/trended_graph_knn_thb_xag_equity.csv
-      note: Best branch equity curve made available to the production dashboard.
-    - source: experiments/gold-thb-usd-causality/data/trended_graph_knn_thb_xag_results.json
-      target: trade/tradecanvas-ui/data/trended_graph_knn_thb_xag_results.json
-      note: Best branch results metadata made available to the production dashboard.
-  consolidation_recommendation: |
-    Keep the research app (chaba-funnel/public/apps/gold/) as the canonical
-    research micro-site and TradeCanvas (trade/tradecanvas-ui/) as the production
-    trading UI. The two share a data directory for the best result, and the
-    research site is reachable from the production nav. This keeps research
-    tooling (Plotly, large CSVs) out of the trading dashboard while making
-    results easy to review.
+    - XAG/silver provides incremental signal.
+    - Volatility targeting with TARGET_VOL=0.20 improves the silver k-NN.
+    - Oil, USD/EUR, multi-day horizons, dynamic K/WINDOW, and regime gates
+      did not improve the final THB+XAU+XAG baseline.
+    - "Transaction costs are the biggest practical risk: robust to ~0.10% TC, breaks by 0.50%."
 
 changes:
   - file: docs/ssot/jobs/experiments/2026-08-26-gold-thb-usd-conclusion.yml
-    summary: This milestone SSOT, including app consolidation notes.
-  - file: experiments/gold-thb-usd-causality/app/nav.js
-    summary: Shared navigation script for all research app pages.
-  - file: experiments/gold-thb-usd-causality/app/conclusion.html
-    summary: Research conclusion app page.
-  - file: experiments/gold-thb-usd-causality/app/conclusion.js
-    summary: Research conclusion app logic.
-  - file: trade/tradecanvas-ui/index.html
-    summary: TradeCanvas dashboard with new Gold/THB Research nav link.
-  - file: trade/tradecanvas-ui/data/trended_graph_knn_thb_xag_equity.csv
-    summary: Promoted best equity curve for the production dashboard.
-  - file: trade/tradecanvas-ui/data/trended_graph_knn_thb_xag_results.json
-    summary: Promoted best results metadata for the production dashboard.
+    summary: This milestone SSOT.
+  - file: experiments/gold-thb-usd-causality/trended_graph_knn_vol_silver.py
+    summary: Branch best script.
 
 references:
-  - experiments/gold-thb-usd-causality/data/trended_graph_knn_thb_xag_equity.csv
-  - experiments/gold-thb-usd-causality/data/trended_graph_knn_thb_xag_results.json
-  - experiments/gold-thb-usd-causality/tune_graph_knn_silver_ablate.py
-  - experiments/gold-thb-usd-causality/tune_graph_knn_vol_silver.py
+  - experiments/gold-thb-usd-causality/data/trended_graph_knn_vol_silver_equity.csv
+  - experiments/gold-thb-usd-causality/data/trended_graph_knn_vol_silver_results.json

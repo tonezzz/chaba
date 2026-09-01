@@ -1,8 +1,7 @@
-"""Graph edge filter + k-NN with silver and volatility targeting.
+"""Graph edge filter + k-NN with silver (XAG) and volatility targeting.
 
-Run the same k-NN pattern matcher as trended_graph_knn_silver.py, but the
-position size is scaled by target annual vol / trailing realized XAU vol, capped
-at MAX_LEVERAGE. Research only.
+Same as trended_graph_knn_silver.py, but the position is scaled by
+TARGET_VOL / trailing realized XAU volatility. Research only.
 
 Usage:
     WINDOW=2 K=30 TARGET_VOL=0.20 .venv/bin/python trended_graph_knn_vol_silver.py
@@ -31,7 +30,7 @@ P_THRESHOLD = float(os.environ.get("P_THRESHOLD", "0.01"))
 MAX_LAG = int(os.environ.get("MAX_LAG", "2"))
 EDGE_LOOKBACK = int(os.environ.get("EDGE_LOOKBACK", "504"))
 TC = float(os.environ.get("TC", "0.0005"))
-TARGET_VOL = float(os.environ.get("TARGET_VOL", "0.20"))
+TARGET_VOL = float(os.environ.get("TARGET_VOL", "0.10"))
 MAX_LEVERAGE = float(os.environ.get("MAX_LEVERAGE", "2.0"))
 
 
@@ -180,7 +179,7 @@ def main():
         train_pred = predict(X_train_s, y_train, X_train_s, K, WEIGHTED)
         threshold = search_threshold(train_pred, y_train)
 
-        # Volatility-targeted size for this month
+        # Volatility-targeted position size for this month
         daily_target = TARGET_VOL / np.sqrt(252)
         realized_vol = y_train.std()
         if realized_vol > 0 and not np.isnan(realized_vol):
@@ -259,7 +258,7 @@ def main():
         "strategy_metrics": strat_perf,
         "buyhold_metrics": bh_perf,
         "monthly_thresholds": month_records,
-        "note": "k-NN pattern matcher with silver and volatility targeting, gated by THB->XAU Granger edge. Research only.",
+        "note": "k-NN with THB, XAU, and XAG/silver features, with volatility sizing. Research only.",
     }
     (DATA / "trended_graph_knn_vol_silver_results.json").write_text(json.dumps(summary, indent=2))
     print("Saved: data/trended_graph_knn_vol_silver_equity.csv, data/trended_graph_knn_vol_silver_results.json")

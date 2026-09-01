@@ -1,17 +1,17 @@
 title: Development System Assessment
 subtitle: Periodic assessment of the chaba development workflow itself
 icon: clipboard-check
-last_reviewed: '2026-09-01T13:10:55.928182+00:00'
+last_reviewed: '2026-09-01T16:25:00.000000+00:00'
 reviewer: assistant
 score:
-  branches_total: 15
-  branches_ahead_of_master: 12
-  worktrees_total: 8
+  branches_total: 11
+  branches_ahead_of_master: 8
+  worktrees_total: 7
   active_foci: 2
   ssot_warnings: 2
   service_errors_last_night: 0
   ci_failures_7d: 0
-  untracked_files: 3
+  untracked_files: 6
 trend: declining
 pros:
 - label: SSOT-first workflow
@@ -29,27 +29,27 @@ pros:
 cons:
 - label: Branch/worktree sprawl
   severity: high
-  evidence: 15 local branches; 12 not merged into origin/master (excluding master); 8 active worktrees
+  evidence: 11 local branches; 8 not merged into master (excluding master); 7 active worktrees
   owner: tony
   status: in_progress
   improvement: Consolidate long-tail branches into master and archive or delete merged branches
   audit:
-    date: '2026-09-01T13:10:55.928182+00:00'
-    branches_total: 15
-    branches_merged_into_origin_master:
+    date: '2026-09-01T16:25:00.000000+00:00'
+    branches_total: 11
+    branches_merged_into_master:
     - chaba.h3
     - yomi
-    branches_not_merged_into_origin_master:
     - chaba-mcp-experiments
     - experiment/tony-dell-task-runner
     - feature/home-assistant-mcp
+    - research/gold-silver-causality
+    branches_not_merged_into_master:
     - ha
     - mcp-kbman
     - michael
     - michael-ha
     - michael-live
     - raceman
-    - research/gold-silver-causality
     - tony-ha
     - tony-live
     worktrees:
@@ -59,16 +59,14 @@ cons:
       branch: chaba.h3
     - path: /home/tony/CascadeProjects/chaba-kbman
       branch: mcp-kbman
-    - path: /home/tony/CascadeProjects/chaba-mcp-experiments
-      branch: chaba-mcp-experiments
     - path: /home/tony/CascadeProjects/chaba-michael
       branch: michael-ha
     - path: /home/tony/CascadeProjects/chaba-raceman
       branch: raceman
-    - path: /home/tony/CascadeProjects/chaba-tony-dell-local
-      branch: experiment/tony-dell-task-runner
     - path: /home/tony/CascadeProjects/chaba-yomi
       branch: yomi
+    - path: /tmp/chaba-tony-live-RHu3jI
+      branch: tony-live
     tracking_missing: []
     action_plan:
     - label: Pull/merge origin/master
@@ -85,16 +83,18 @@ cons:
       risk: low
       status: completed
     - label: Decide on long-tail research/experiment branches
-      reason: research/gold-silver-causality, chaba-mcp-experiments, experiment/tony-dell-task-runner, feature/home-assistant-mcp need merge/close decision.
+      reason: Merged research/gold-silver-causality, chaba-mcp-experiments, experiment/tony-dell-task-runner, feature/home-assistant-mcp into master and deleted local/remote branches.
       risk: medium
+      status: completed
     - label: Review diverged origin/research/thb-base-settlement
       reason: Local tip is merged into origin/master, but the remote branch is 52 ahead / 51 behind; likely stale/forked.
       risk: medium
       destructive: true
     - label: Decommission unused worktrees
-      reason: chaba-mcp-experiments and chaba-tony-dell-local are experiment worktrees; close when the experiment is merged or abandoned.
+      reason: Removed chaba-mcp-experiments and chaba-tony-dell-local worktrees after their branches were merged.
       risk: low
       destructive: true
+      status: completed
 - label: SSOT quality regression
   severity: high
   evidence: 2 SSOT optimization warning(s)
@@ -103,7 +103,7 @@ cons:
   improvement: Fix SSOT bloat, data-isolation, or log-reference warnings
 - label: Uncommitted working tree
   severity: medium
-  evidence: 3 untracked or modified file(s) on the canonical worktree
+  evidence: 10 outstanding files on the canonical worktree (4 tracked modified/deleted, 6 untracked) after stash was restored
   owner: tony
   status: open
   improvement: Commit or .gitignore outstanding changes before the next session
