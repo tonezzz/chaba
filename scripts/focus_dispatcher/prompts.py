@@ -87,7 +87,7 @@ def generate_suggestion_prompt(item):
     return "\n".join(lines)
 
 
-def generate_subagent_contract(title, item, source):
+def generate_subagent_contract(title, item, source, target_host=None):
     prompt = generate_prompt(title, item, source)
     subagent = item.get("subagent", {})
     ownership = item.get("ownership") or {}
@@ -117,6 +117,13 @@ def generate_subagent_contract(title, item, source):
             f"- Requires approval before destructive changes: {requires_approval}",
             f"- Can change host: {can_change_host}",
         ])
+        if target_host:
+            contract.append(f"- Target host: `{target_host}`")
+            if can_change_host:
+                contract.extend([
+                    f"- Use `mcp_debug` tools with `host: \"{target_host}\"` to execute on that host.",
+                    f"- For `mcp_raw` / `mcp_system` / `mcp_screenshot`, always set `host: \"{target_host}\"`.",
+                ])
         if notes:
             contract.extend([f"- Notes: {notes}", ""])
         contract.extend([

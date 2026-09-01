@@ -8,6 +8,8 @@ import yaml
 from mcp_debug.focus import log_decision, mcp_focus
 
 from .git import git_mv_inbox
+from .prompts import generate_subagent_contract
+
 from .state import (
     ACTIVE,
     BACKLOG,
@@ -15,6 +17,7 @@ from .state import (
     DECISIONS,
     FOCUS,
     INBOX_DIR,
+    REPORTS_DIR,
     find_section,
     is_active,
     load_active,
@@ -72,6 +75,7 @@ def make_ready_safe_item(item, session=None):
         "safe_to_parallel": item.get("safe_to_parallel", True),
         "subtasks": item.get("subtasks", []),
         "source": source,
+        "subagent": item.get("subagent", {}),
         "owner": item.get("owner", "focus-dispatcher"),
         "session": session or item.get("session", ""),
         "locked": False,
@@ -291,3 +295,59 @@ def handle_intake(request, dry_run=False):
         changed = list(set(changed + [DECISIONS]))
 
     return result, changed
+
+
+def process_ready_safe(host="tony_dell", session=None, dry_run=False):
+    """Pick the next unlocked Ready (Safe) item, generate a tony-dell subagent contract, and lock it."""
+    doc = load_backlog()
+    section = find_section(doc.get("sections", []), "Ready (Safe)")
+    if section is None:
+        raise RuntimeError(f"Ready (Safe) section not found in {BACKLOG}")
+    items = section.get("items", [])
+    if not items:
+        return None
+
+    selected = None
+    for it in items:
+        if it.get("locked"):
+            continue
+        subagent = it.get("subagent") or {}
+        target = subagent.get("host", it.get("target_host"))
+        if not target or target == host:
+            selected = it
+            break
+    if not selected:
+        selected = items[0]
+
+    label = selected.get("label", "unknown").replace(" ", "_").replace("/", "_")[:40]
+    source = f"Ready (Safe) / {selected.get('source', '')}"
+    contract_path = REPORTS_DIR / f"SUBAGENT_CONTRACT_{label}.md"
+
+    if not dry_run:
+        subagent = selected.setdefault("subagent", {})
+        subagent.setdefault("runnable", True)
+        subagent.setdefault("profile", "subagent_general")
+        subagent.setdefault("parallel", selected.get("safe_to_parallel", True))
+        subagent.setdefault("requires_approval", False)
+        subagent.setdefault("can_change_host", True)
+        subagent["host"] = host
+        subagent["notes"] = f"Dispatched to {host} via focus-dispatcher --process-ready"
+
+        selected["locked"] = True
+        selected["owner"] = "focus-dispatcher"
+        selected["session"] = session or f"dispatch-{host}"
+        selected["lock_reason"] = f"Dispatched to subagent on {host}"
+
+        save_backlog(doc)
+        REPORTS_DIR.mkdir(parents=True, exist_ok=True)
+        contract = generate_subagent_contract("Ready (Safe)", selected, source, target_host=host)
+        contract_path.write_text(contract)
+
+    return {
+        "ok": True,
+        "label": selected.get("label"),
+        "host": host,
+        "path": str(contract_path),
+        "dry_run": dry_run,
+        "item": selected,
+    }
