@@ -1,16 +1,18 @@
 #!/usr/bin/env python3
-"""Generate ~/.config/devin/mcp_config.json from ssot.mcp.yml.
+"""Generate MCP configuration from ssot.mcp.yml.
 
-This keeps the runtime Devin MCP configuration in sync with the SSOT
+Keeps the runtime Devin/Windsurf MCP configuration in sync with the SSOT
 single source of truth and validates that referenced source files exist
 before generating.
 """
 
+import argparse
 import json
 import os
 import re
 import shlex
 import shutil
+import socket
 import sys
 from datetime import datetime, timezone
 from pathlib import Path
@@ -18,7 +20,8 @@ from typing import Any
 
 import yaml
 
-SSOT_FILE = Path("/home/tony/CascadeProjects/chaba/docs/ssot/infrastructure/ssot.mcp.yml")
+REPO_ROOT = Path(__file__).resolve().parents[1]
+SSOT_FILE = REPO_ROOT / "docs" / "ssot" / "infrastructure" / "ssot.mcp.yml"
 OUTPUT_FILE = Path("/home/tony/.config/devin/mcp_config.json")
 BACKUP_DIR = Path("/home/tony/.config/devin/mcp-backups")
 MCP_SCRIPTS_DIR = Path("/home/tony/.config/devin/mcp-scripts")
@@ -33,7 +36,19 @@ RUNNER_MAP = {
 
 
 def error(msg: str) -> None:
-    print(f"ERROR: {msg}")
+    print(f"ERROR: {msg}", file=sys.stderr)
+
+
+def warn(msg: str) -> None:
+    print(f"WARN: {msg}", file=sys.stderr)
+
+
+def normalize_host(host: str) -> str:
+    return re.sub(r"[-.]+", "_", host).strip("_").lower()
+
+
+def current_host() -> str:
+    return normalize_host(socket.gethostname())
 
 
 def resolve_value(value: Any, ssot: dict[str, Any], profile: str) -> Any:
@@ -110,6 +125,29 @@ def wrapper_path(wrapper: str) -> str:
     return wrapper
 
 
+def merge_host_overrides(cfg: dict[str, Any], host: str) -> dict[str, Any]:
+    """Return a server config merged with the per_host block for `host`."""
+    merged = dict(cfg)
+    per_host = merged.pop("per_host", None)
+    if not isinstance(per_host, dict):
+        return merged
+
+    for key in (host, host.replace("_", "-")):
+        overrides = per_host.get(key)
+        if not isinstance(overrides, dict):
+            continue
+        for k, v in overrides.items():
+            if k == "env" and isinstance(v, dict) and "env" in merged:
+                env = dict(merged["env"])
+                env.update(v)
+                merged["env"] = env
+            else:
+                merged[k] = v
+        break
+
+    return merged
+
+
 def build_server_config(name: str, cfg: dict[str, Any], ssot: dict[str, Any], profile: str) -> dict[str, Any]:
     """Convert one ssot.mcp.yml server entry into an mcp_config.json server entry."""
     if "url" in cfg:
@@ -126,9 +164,7 @@ def build_server_config(name: str, cfg: dict[str, Any], ssot: dict[str, Any], pr
         if len(tokens) < 2:
             raise ValueError(f"{name}: mcp-single-instance.sh wrapper needs runner + path in implementation")
         runner = tokens[0]
-        inner_path = tokens[1]
-        if len(tokens) > 2:
-            inner_path = shlex.join(tokens[1:])  # keep the rest as one arg if needed
+        inner_path = shlex.join(tokens[1:])
         resolved_path = resolve_value(inner_path, ssot, profile)
         command = wrapper_path(wrapper)
         pat = pattern or derive_pattern(implementation)
@@ -163,37 +199,59 @@ def build_server_config(name: str, cfg: dict[str, Any], ssot: dict[str, Any], pr
     return server
 
 
-def should_include_for_devin(cfg: dict[str, Any]) -> bool:
+def should_include_for_target(cfg: dict[str, Any], target: str) -> bool:
     for item in cfg.get("config_files", []):
-        if isinstance(item, dict) and item.get("devin"):
-            return bool(item["devin"])
+        if isinstance(item, dict) and item.get(target):
+            return bool(item[target])
     return False
 
 
+def looks_like_executable_path(arg: str) -> bool:
+    return (
+        arg.endswith((".py", ".js", ".mjs", ".sh"))
+        or "/node_modules/" in arg
+        or "server.py" in arg
+    )
+
+
 def main() -> int:
-    if not SSOT_FILE.exists():
-        error(f"SSOT file not found: {SSOT_FILE}")
+    parser = argparse.ArgumentParser(description="Generate MCP config from ssot.mcp.yml")
+    parser.add_argument("--host", default=None, help="Target host (default: this hostname)")
+    parser.add_argument("--profile", default=None, help="Network profile (default: SSOT default)")
+    parser.add_argument("--target", choices=["devin", "windsurf"], default="devin",
+                        help="MCP client to generate for")
+    parser.add_argument("--output", type=Path, default=None, help="Output file path")
+    parser.add_argument("--ssot", type=Path, default=SSOT_FILE, help="SSOT YAML file")
+    args = parser.parse_args()
+
+    if not args.ssot.exists():
+        error(f"SSOT file not found: {args.ssot}")
         return 1
 
-    with open(SSOT_FILE, "r", encoding="utf-8") as f:
+    with open(args.ssot, "r", encoding="utf-8") as f:
         ssot = yaml.safe_load(f) or {}
 
     generation = ssot.get("generation", {})
-    profile = os.environ.get("DEVIN_MCP_PROFILE", generation.get("default_profile", "home"))
+    profile = args.profile or os.environ.get("DEVIN_MCP_PROFILE") or generation.get("default_profile", "home")
+    host = normalize_host(args.host or os.environ.get("DEVIN_MCP_HOST") or socket.gethostname())
+    this_host = current_host()
 
     if profile not in ssot.get("profiles", {}):
-        error(f"profile {profile!r} not defined in {SSOT_FILE}")
+        error(f"profile {profile!r} not defined in {args.ssot}")
         return 1
 
+    output_file = args.output or OUTPUT_FILE
     mcp_servers: dict[str, Any] = {}
     missing: list[str] = []
     skipped: list[str] = []
 
-    for name, cfg in ssot.get("servers", {}).items():
+    for name, raw_cfg in ssot.get("servers", {}).items():
+        cfg = merge_host_overrides(raw_cfg, host)
+
         if cfg.get("status") != "operational":
             skipped.append(name)
             continue
-        if not should_include_for_devin(cfg):
+        if not should_include_for_target(cfg, args.target):
             skipped.append(name)
             continue
 
@@ -205,9 +263,13 @@ def main() -> int:
 
         # Validate that any local implementation paths exist
         for arg in server.get("args", []):
-            if isinstance(arg, str) and arg.startswith("/"):
-                if (Path(arg).is_file() and not Path(arg).exists()) or ("server.py" in arg and not Path(arg).exists()):
-                    missing.append(f"{name}: {arg}")
+            if isinstance(arg, str) and arg.startswith("/") and looks_like_executable_path(arg):
+                if not Path(arg).exists():
+                    msg = f"{name}: {arg}"
+                    if host == this_host:
+                        missing.append(msg)
+                    else:
+                        warn(f"expected remote file not present here: {msg}")
 
         mcp_servers[name] = server
 
@@ -220,20 +282,21 @@ def main() -> int:
     config = {"mcpServers": mcp_servers}
 
     # Backup existing config
-    if OUTPUT_FILE.exists():
+    if output_file.exists():
         BACKUP_DIR.mkdir(parents=True, exist_ok=True)
         ts = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%S")
         backup = BACKUP_DIR / f"mcp_config.json.{ts}"
-        shutil.copy2(OUTPUT_FILE, backup)
+        shutil.copy2(output_file, backup)
         print(f"Backed up existing config to {backup}")
 
-    OUTPUT_FILE.parent.mkdir(parents=True, exist_ok=True)
-    with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
+    output_file.parent.mkdir(parents=True, exist_ok=True)
+    with open(output_file, "w", encoding="utf-8") as f:
         json.dump(config, f, indent=2)
         f.write("\n")
 
-    print(f"Generated {OUTPUT_FILE} with {len(mcp_servers)} Devin MCP servers")
+    print(f"Generated {output_file} with {len(mcp_servers)} {args.target} MCP servers")
     print(f"Profile: {profile}")
+    print(f"Host: {host}")
     print(f"Skipped: {', '.join(skipped) if skipped else 'none'}")
     return 0
 

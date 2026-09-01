@@ -77,6 +77,9 @@ servers:
       LLAMA_URL: profile.service_urls.llama_url
     single_instance: true
     status: operational
+    per_host:
+      tony_dell:
+        implementation: python3 /home/tony/CascadeProjects/chaba-tony-dell/mcp-servers/mcp-gpu/server.py
     config_files:
       - devin: true
       - windsurf: true
@@ -85,12 +88,16 @@ servers:
     name: Llama.cpp Server
     description: LLM inference server interface
     implementation: python3 /home/tony/CascadeProjects/chaba/mcp-servers/mcp-llama/server.py
-    wrapper: run-llama-mcp.sh
+    wrapper: mcp-single-instance.sh
+    pattern: mcp-llama/server.py
     filter: none
     env:
       LLAMA_URL: profile.service_urls.llama_url
     single_instance: true
     status: operational
+    per_host:
+      tony_dell:
+        implementation: python3 /home/tony/CascadeProjects/chaba-tony-dell/mcp-servers/mcp-llama/server.py
     config_files:
       - devin: true
       - windsurf: true
@@ -143,6 +150,9 @@ servers:
       PLAYLIVE_URL: profile.service_urls.playlive_url
     single_instance: true
     status: operational
+    per_host:
+      tony_dell:
+        implementation: python3 /home/tony/CascadeProjects/chaba-tony-dell/mcp-servers/mcp-playlive/playlive-server.py
     config_files:
       - devin: true
       - windsurf: false
@@ -255,6 +265,9 @@ servers:
       WEAVIATE_URL: profile.service_urls.weaviate_url
     single_instance: true
     status: operational
+    per_host:
+      tony_dell:
+        implementation: python3 /home/tony/CascadeProjects/chaba-tony-dell/mcp-servers/mcp-weaviate/server.py
     config_files:
       - devin: true
       - windsurf: true
