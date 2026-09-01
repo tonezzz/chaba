@@ -190,7 +190,18 @@ tony-dell:
     service: playlived-dell.service
     host: tony_dell
     purpose: PlayLive browser automation on tony-dell
+    systemd: mcp-servers/mcp-playlive/playlived-dell.service
+    patch: mcp-servers/mcp-playlive/patch-playwright.sh
     status: implemented (2026-08-13)
+    note: 'ExecStartPre applies patch-playwright.sh to remove Playwright default --disable-dev-shm-usage on tony-dell (7.5G /dev/shm available).'
+  google-chrome:
+    launcher: scripts/mcp-scripts/google-chrome-launcher.sh
+    local_path: ~/.local/bin/google-chrome-launcher.sh
+    desktop_file: ~/.local/share/applications/google-chrome.desktop
+    host: tony_dell
+    purpose: Desktop Chrome with disk and media cache on tmpfs
+    status: implemented (2026-09-01)
+    note: 'Cache lives on /tmp (tmpfs). Profile remains in ~/.config/google-chrome.'
   focus-dispatcher-overnight:
     timer: focus-dispatcher-overnight.timer
     host: tony_dell
