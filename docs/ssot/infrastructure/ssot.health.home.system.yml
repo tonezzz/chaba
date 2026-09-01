@@ -13,8 +13,7 @@ services:
   profiles:
   - home
   - mobile
-  disabled: true
-  note: playlived is now hosted on tony-dell; tony-omen no longer runs this service.
+  note: 'Playlived is also still active on tony-omen; tony-dell is the primary.'
   verification:
   - 'Check service: systemctl --user status playlived.service'
   - 'Check logs: journalctl --user -u playlived.service -n 20'
@@ -30,9 +29,6 @@ services:
   profiles:
   - home
   - mobile
-  disabled: true
-  note: 'Timer now runs on tony_dell as a Podman user unit. Check with tony_dell:
-    systemctl --user status yomi-update-all.timer.'
   host: tony_dell
 - id: yomi-update-active-timer
   name: Yomi Update Active Timer
@@ -44,9 +40,6 @@ services:
   profiles:
   - home
   - mobile
-  disabled: true
-  note: 'Timer now runs on tony_dell as a Podman user unit. Check with tony_dell:
-    systemctl --user status yomi-update-active.timer.'
   host: tony_dell
 - id: weaviate-index-timer
   name: Weaviate Index Timer
@@ -59,7 +52,6 @@ services:
   - home
   - mobile
   host: tony_omen
-  disabled: true
   note: 'Indexing runs on tony-omen to use the GPU embedding service. It writes to
     the Weaviate container on tony-dell:8084 via WEAVIATE_URL=http://tony-dell:8084.
     Check: systemctl --user status weaviate-index.timer'
@@ -96,8 +88,7 @@ services:
   profiles:
   - home
   - mobile
-  disabled: true
-  note: tony-omen only. Disabled from tony-dell health monitor.
+  note: tony-omen only.
   verification:
   - 'Check service: systemctl status cpufreq-limit.service'
   - 'Check current CPU frequency: cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_cur_freq'
@@ -117,7 +108,7 @@ services:
   - home
   - mobile
   disabled: true
-  note: tony-omen only. Disabled from tony-dell health monitor.
+  note: 'tony-omen only. Currently inactive; disabled until it is enabled.'
   verification:
   - 'Check timer status: systemctl --user status chaba-health-monitor.timer'
   - 'Check monitor log: tail -f /home/tony/CascadeProjects/chaba/logs/health-monitor.log'
@@ -142,8 +133,7 @@ services:
   profiles:
   - home
   - mobile
-  disabled: true
-  note: tony-omen only. Disabled from tony-dell health monitor.
+  note: tony-omen only; currently active.
   verification:
   - 'Check service: systemctl --user status barriers.service'
   - 'Check port: ss -tlnp | grep 24800'
@@ -213,9 +203,7 @@ services:
   - home
   - mobile
   host: tony_omen
-  disabled: true
-  note: 'Hardware sensor / Docker container data API on tony-omen. Container is currently
-    stopped (Exited 127); disabled until it is restarted.'
+  note: 'Hardware sensor container data API on tony-omen. Reached via Tailscale IP.'
   verification:
   - 'Check container: ssh tony-omen docker ps -a | grep sensor-reader'
   - 'Check logs: ssh tony-omen docker logs sensor-reader --tail 20'
