@@ -105,18 +105,21 @@ servers:
   postgres:
     name: PostgreSQL Database
     description: Database operations and management
-    implementation: local /home/tony/.local/postgres-mcp/node_modules/.bin/enhanced-postgres-mcp
-    wrapper: run-postgres-crud-mcp.sh
+    implementation: node /home/tony/.local/mcp-postgres-itunified/node_modules/@itunified.io/mcp-postgres/dist/index.js
+    wrapper: run-postgres-mcp.sh
     filter: none
     filtered_tools:
-      - query
-      - execute
-      - insert
-      - update
-      - delete
+      - pg_query
+      - pg_query_explain
+      - pg_insert
+      - pg_update
+      - pg_delete
+      - pg_upsert
+      - pg_schema_list
+      - pg_table_list
+      - pg_table_describe
     env:
-      DATABASE_URL: profile.service_urls.postgres_url
-      DATABASE_URL_FILE: ~/.config/secrets/postgres-mcp.env
+      POSTGRES_CONNECTION_STRING: profile.service_urls.postgres_url
     single_instance: true
     status: operational
     config_files:
@@ -360,7 +363,7 @@ scripts:
   wrappers:
     mcp-single-instance: mcp-single-instance.sh
     run-github: run-github-mcp.sh
-    run-postgres-crud: run-postgres-crud-mcp.sh
+    run-postgres: run-postgres-mcp.sh
     run-llama: run-llama-mcp.sh
   utilities:
     switch-profile: switch-profile.sh

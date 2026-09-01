@@ -76,16 +76,17 @@ wrappers:
   target_host: local
   description: Launches GitHub MCP server locally
   env:
+    GITHUB_ACCESS_TOKEN: ~/.config/secrets/github-mcp.env
     GITHUB_PERSONAL_ACCESS_TOKEN: ~/.config/secrets/github-mcp.env
   status: active
   server: github
-- name: run-postgres-crud-mcp
-  file: ~/.config/devin/mcp-scripts/run-postgres-crud-mcp.sh
+- name: run-postgres-mcp
+  file: ~/.config/devin/mcp-scripts/run-postgres-mcp.sh
   type: stdio
-  target_host: tony_dell
-  description: Launches postgres MCP server on tony-dell
+  target_host: tony_omen
+  description: Launches @itunified.io/mcp-postgres via mcp-single-instance.sh
   env:
-    DATABASE_URL: postgresql://tony-dell:5432
+    POSTGRES_CONNECTION_STRING: postgresql://tony-dell:5432
   status: active
   server: postgres
 - name: switch-profile
