@@ -1,0 +1,113 @@
+# Package: batteries_sankey
+# Add this under the existing `homeassistant:` -> `packages:` block in configuration.yaml.
+# If you don't have a `homeassistant:` block, create one at the top of configuration.yaml:
+#
+#   homeassistant:
+#     packages:
+#       batteries_sankey: !include packages/batteries_sankey.yaml
+#
+# After saving, run `ha core check` and then `ha core restart` (or use Developer tools > YAML > Reload all YAML).
+
+batteries_sankey:
+  template:
+    - sensor:
+        - name: "Battery 1 Charge Power"
+          unique_id: batteries_1_charge_power
+          unit_of_measurement: "W"
+          device_class: power
+          state_class: measurement
+          state: "{{ max(0, states('sensor.batteries_1_power')|float(0)) }}"
+        - name: "Battery 1 Discharge Power"
+          unique_id: batteries_1_discharge_power
+          unit_of_measurement: "W"
+          device_class: power
+          state_class: measurement
+          state: "{{ max(0, -states('sensor.batteries_1_power')|float(0)) }}"
+        - name: "Battery 2 Charge Power"
+          unique_id: batteries_2_charge_power
+          unit_of_measurement: "W"
+          device_class: power
+          state_class: measurement
+          state: "{{ max(0, states('sensor.batteries_2_power')|float(0)) }}"
+        - name: "Battery 2 Discharge Power"
+          unique_id: batteries_2_discharge_power
+          unit_of_measurement: "W"
+          device_class: power
+          state_class: measurement
+          state: "{{ max(0, -states('sensor.batteries_2_power')|float(0)) }}"
+        - name: "Battery 3 Charge Power"
+          unique_id: batteries_3_charge_power
+          unit_of_measurement: "W"
+          device_class: power
+          state_class: measurement
+          state: "{{ max(0, states('sensor.batteries_3_power')|float(0)) }}"
+        - name: "Battery 3 Discharge Power"
+          unique_id: batteries_3_discharge_power
+          unit_of_measurement: "W"
+          device_class: power
+          state_class: measurement
+          state: "{{ max(0, -states('sensor.batteries_3_power')|float(0)) }}"
+
+  sensor:
+    - platform: integration
+      source: sensor.battery_1_charge_power
+      name: "Battery 1 Charge Energy"
+      unique_id: battery_1_charge_energy
+      unit_prefix: k
+      round: 2
+      method: left
+    - platform: integration
+      source: sensor.battery_1_discharge_power
+      name: "Battery 1 Discharge Energy"
+      unique_id: battery_1_discharge_energy
+      unit_prefix: k
+      round: 2
+      method: left
+    - platform: integration
+      source: sensor.battery_2_charge_power
+      name: "Battery 2 Charge Energy"
+      unique_id: battery_2_charge_energy
+      unit_prefix: k
+      round: 2
+      method: left
+    - platform: integration
+      source: sensor.battery_2_discharge_power
+      name: "Battery 2 Discharge Energy"
+      unique_id: battery_2_discharge_energy
+      unit_prefix: k
+      round: 2
+      method: left
+    - platform: integration
+      source: sensor.battery_3_charge_power
+      name: "Battery 3 Charge Energy"
+      unique_id: battery_3_charge_energy
+      unit_prefix: k
+      round: 2
+      method: left
+    - platform: integration
+      source: sensor.battery_3_discharge_power
+      name: "Battery 3 Discharge Energy"
+      unique_id: battery_3_discharge_energy
+      unit_prefix: k
+      round: 2
+      method: left
+
+  utility_meter:
+    battery_1_charge_energy_daily:
+      source: sensor.battery_1_charge_energy
+      cycle: daily
+    battery_1_discharge_energy_daily:
+      source: sensor.battery_1_discharge_energy
+      cycle: daily
+    battery_2_charge_energy_daily:
+      source: sensor.battery_2_charge_energy
+      cycle: daily
+    battery_2_discharge_energy_daily:
+      source: sensor.battery_2_discharge_energy
+      cycle: daily
+    battery_3_charge_energy_daily:
+      source: sensor.battery_3_charge_energy
+      cycle: daily
+    battery_3_discharge_energy_daily:
+      source: sensor.battery_3_discharge_energy
+      cycle: daily

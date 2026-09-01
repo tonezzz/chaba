@@ -1,0 +1,79 @@
+title: Michael Home Assistant Instance
+subtitle: Michael cloud instance configuration for the Home Assistant family
+
+instance:
+  id: michael-ha
+  base: michael
+  upstream_remote: chaba
+  upstream_branch: ha
+  host: nabu_casa
+  type: cloud
+
+tailscale:
+  hostname: michael-ha
+  fqdn: michael-ha.taila0626a.ts.net
+  ip: 100.80.105.88
+  status: active
+  derp_relay: sin
+  direct_connection: false
+  ha_url: http://michael-ha:8123/
+  note: Reachable via the Tailscale app on Home Assistant OS
+
+services:
+  home-assistant-michael:
+    url: https://nupo4ndqdqydt78zmpq0z5wzp1bdrqgs.ui.nabu.casa/
+    note: Cloud-hosted Home Assistant for Michael (Nabu Casa remote access)
+    status: active
+
+deploy:
+  script: scripts/home-assistant/deploy-michael.sh
+  remote:
+    host: michael-ha
+    user: root
+    port: 22
+    config_path: /config
+    status: pending
+    note: Requires the SSH & Web Terminal add-on and an SSH key
+  token_file: /home/tony/.local/share/home-assistant-michael/ha-token
+  reload_url: http://michael-ha:8123/api/services/homeassistant/reload_core_config
+  dashboards:
+    source: docs/home-assistant/dashboards/
+    destination: /config/lovelace/
+    optional: true
+    note: Only enable if dashboards are managed as YAML files
+
+addons:
+  - id: a0d7b954_ssh
+    name: SSH & Web Terminal
+    status: pending
+    note: Install via HA UI; needed for deploy script and remote shell
+
+mcp:
+  custom_component: ha_mcp_tools
+  status: pending
+  note: Install on michael-ha to expose HA entities to Devin via MCP
+
+packages:
+  - docs/home-assistant/configuration/packages/batteries_sankey.yaml
+  - docs/home-assistant/configuration/packages/pool_sankey.yaml
+
+dashboards:
+  - docs/home-assistant/dashboards/tony-test-current.json
+  - docs/home-assistant/dashboards/tony-test-original.json
+
+live_features:
+  michael-live:
+    path: stacks/web/public/apps/michael-live/
+    description: Modular live dashboard using the family/page pattern from TradeCanvas compare.
+    family: michael-family
+    pages:
+      - michael-live
+      - michael-live2
+    endpoint: /apps/michael-live/
+
+sync_rules:
+  - "git -C chaba-michael fetch chaba ha"
+  - "git -C chaba-michael rebase chaba/ha michael-ha"
+  - "git -C chaba-michael push origin michael-ha"
+  - "git -C chaba-michael rebase michael-ha michael-live"
+  - "git -C chaba-michael push origin michael-live"

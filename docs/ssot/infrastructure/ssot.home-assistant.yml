@@ -1,0 +1,58 @@
+title: Home Assistant Platform
+subtitle: Shared Home Assistant infrastructure, bridge, and services
+
+platform:
+  name: Home Assistant
+  container: home-assistant
+  image: docker.io/homeassistant/home-assistant:stable
+  runtime: rootless podman
+  network: host
+  host: tony_dell
+  port: 8123
+  host_port: 0.0.0.0:8123
+  config: /home/tony/.config/home-assistant
+  quadlet:
+    container_unit: ~/.config/containers/systemd/home-assistant.container
+    service_unit: ~/.config/systemd/user/home-assistant.service
+  autostart: loginctl enable-linger tony is yes; Quadlet WantedBy=default.target
+  status: mcp server active
+
+mcp:
+  server: ha_mcp_tools in-process
+  local_url: http://tony-dell:9584/private_CtYuVkJEl28cp8qA8yXNCQ
+  webhook: http://tony-dell:8123/api/webhook/mcp_d5528537d57627164033dc5e3e5e5aa6
+  caddy:
+    host_path: /apps/home-assistant/
+    mcp_path: /api/ha-mcp/
+    backend: 100.68.142.13
+    caddyfile: /home/tony/CascadeProjects/chaba-tony-dell/stacks/web/Caddyfile
+
+custom_components:
+  - ha_mcp_tools
+
+go2rtc:
+  purpose: H.264 proxy for ip_cam_65
+  port: 1984
+  rtsp: 8554
+  webrtc: 8555
+  config: /home/tony/.config/go2rtc/go2rtc.yaml
+
+ha_live:
+  name: Home Assistant Live (Gemini Live bridge)
+  source: /home/tony/.config/home-assistant/ha-live/bridge.py
+  host: tony_dell
+  local_port: 127.0.0.1:9005
+  tailscale_funnel: 'https://tony-dell.taila0626a.ts.net:8444'
+  websocket: 'wss://tony-dell.taila0626a.ts.net:8444/ws'
+  expected_status: 200
+  health_checks:
+    - 'tailscale ssh tony-dell ps -ef | grep ha-live/bridge.py'
+    - 'ss -tlnp | grep 9005'
+    - "curl -s -o /dev/null -w '%{http_code}' https://tony-dell.taila0626a.ts.net:8444/"
+  recovery:
+    - 'cd /home/tony/.config/home-assistant/ha-live && ./restart.sh'
+    - 'tailscale serve status'
+
+health:
+  home_assistant: ssh tony-dell curl -sf http://127.0.0.1:8123/ >/dev/null
+  note: Container rootless podman on tony-dell. HA-MCP active. Caddy reverse proxy, health check, and autostart configured.

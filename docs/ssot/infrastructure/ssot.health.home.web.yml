@@ -97,3 +97,17 @@ services:
   - home
   - mobile
   host: cloud
+
+- id: home-assistant-michael-tailscale
+  name: Home Assistant (Michael) Tailscale
+  type: http
+  url: http://michael-ha:8123/
+  expected_status: 200
+  timeout: 15
+  category: web
+  profiles:
+  - home
+  - mobile
+  host: michael_ha
+  verification:
+  - 'tailscale ping michael-ha'

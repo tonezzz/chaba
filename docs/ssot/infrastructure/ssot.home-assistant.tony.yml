@@ -1,0 +1,52 @@
+title: Tony Home Assistant Instance
+subtitle: tony-dell runtime configuration for the Home Assistant family
+
+instance:
+  id: tony-ha
+  base: ha
+  host: tony_dell
+  runtime: rootless podman
+  network: host
+
+services:
+  home-assistant:
+    container: home-assistant
+    image: docker.io/homeassistant/home-assistant:stable
+    port: 8123
+    host_port: 0.0.0.0:8123
+    config: /home/tony/.config/home-assistant
+    status: mcp server active
+  go2rtc:
+    port: 1984
+    rtsp: 8554
+    webrtc: 8555
+    config: /home/tony/.config/go2rtc/go2rtc.yaml
+    purpose: H.264 proxy for ip_cam_65
+  ha-live:
+    tailscale_funnel: 'https://tony-dell.taila0626a.ts.net:8444'
+    local_port: 127.0.0.1:9005
+    source: /home/tony/.config/home-assistant/ha-live/bridge.py
+    purpose: Push-to-talk Gemini Live bridge for Home Assistant
+
+config:
+  - /home/tony/.config/home-assistant/configuration.yaml
+  - /home/tony/.config/home-assistant/ha-live/bridge.py
+  - /home/tony/.config/home-assistant/update-cam-frame.sh
+  - /home/tony/.config/home-assistant/www/cam/last-cam-frame.jpg
+  - /home/tony/.config/home-assistant/www/cam/last-usb-frame.jpg
+
+bridges:
+  - id: ha-live
+    source: ~/.config/home-assistant/ha-live/bridge.py
+    purpose: Push-to-talk Gemini Live bridge for Home Assistant
+    endpoint: wss://tony-dell.taila0626a.ts.net:8444/ws
+    restart: /home/tony/.config/home-assistant/ha-live/restart.sh
+
+health_checks:
+  - "tailscale ssh tony-dell ps -ef | grep 'ha-live/bridge.py'"
+  - "tailscale ssh tony-dell ss -tlnp | grep 9005"
+  - "curl -s -o /dev/null -w '%{http_code}' https://tony-dell.taila0626a.ts.net:8444/"
+
+recovery:
+  - "cd /home/tony/.config/home-assistant/ha-live && ./restart.sh"
+  - "tailscale serve status"

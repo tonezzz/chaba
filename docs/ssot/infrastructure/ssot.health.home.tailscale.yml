@@ -24,3 +24,18 @@ services:
   - 'Restart: tailscale ssh tony-dell systemctl --user restart ha-live'
   - 'Check tailscale serve: tailscale serve status'
   host: tony_dell
+
+- id: michael-ha-tailscale
+  name: michael-ha via Tailscale
+  type: http
+  url: http://michael-ha:8123/
+  expected_status: 200
+  timeout: 15
+  category: tailscale
+  profiles:
+  - home
+  - mobile
+  note: Direct tailnet reachability to michael-ha Home Assistant
+  verification:
+  - 'tailscale ping -c 3 michael-ha'
+  host: michael_ha

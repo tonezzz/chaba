@@ -1,0 +1,77 @@
+title: Home Assistant Branch Model
+subtitle: Git branch and worktree design for the Home Assistant family
+
+branches:
+  family:
+    id: ha
+    repo: chaba
+    base: master
+    purpose: Shared Home Assistant platform, SSOT, and bridges
+    contents:
+      - docs/ssot/infrastructure/ssot.home-assistant.yml
+      - docs/ssot/infrastructure/ssot.home-assistant.live.yml
+      - docs/ssot/infrastructure/ssot.home-assistant.branches.yml
+      - scripts/home-assistant/
+      - systemd/ha-*.service
+      - stacks/tony-dell/home-assistant/
+    description: The family branch holds everything that is common to all HA instances.
+
+  instances:
+    - id: tony-ha
+      repo: chaba
+      base: ha
+      purpose: tony-dell runtime customizations
+      contents:
+        - docs/ssot/infrastructure/ssot.home-assistant.tony.yml
+        - tony-dell/home-assistant/
+        - scripts/home-assistant/ha-live/
+      description: Adds tony-dell specific devices, go2rtc, camera scripts, and the HA-MCP integration.
+
+    - id: michael-ha
+      repo: chaba-michael
+      base: ha
+      upstream_remote: chaba
+      upstream_branch: ha
+      purpose: Michael cloud instance customizations
+      contents:
+        - docs/ssot/infrastructure/ssot.home-assistant.michael.yml
+        - docs/home-assistant/
+        - stacks/web/public/apps/michael-live/
+      description: Michael-specific dashboard packages and live UI pages, rebased onto chaba/ha for shared updates.
+
+  live_features:
+    - id: tony-live
+      base: tony-ha
+      purpose: Live bridge or UI for the tony-dell instance
+
+    - id: michael-live
+      base: michael-ha
+      purpose: Michael live dashboard page
+
+worktree_setup:
+  chaba:
+    - "mkdir -p /home/tony/.local/share/worktrees/chaba"
+    - "git -C /home/tony/CascadeProjects/chaba worktree add /home/tony/.local/share/worktrees/chaba/ha ha"
+    - "git -C /home/tony/CascadeProjects/chaba worktree add /home/tony/.local/share/worktrees/chaba/tony-ha tony-ha"
+  chaba-michael:
+    - "mkdir -p /home/tony/.local/share/worktrees/chaba-michael"
+    - "git -C /home/tony/CascadeProjects/chaba-michael worktree add /home/tony/.local/share/worktrees/chaba-michael/michael-ha michael-ha"
+    - "git -C /home/tony/CascadeProjects/chaba-michael worktree add /home/tony/.local/share/worktrees/chaba-michael/michael-live michael-live"
+
+sync_rules:
+  tony-ha:
+    - "git -C /home/tony/CascadeProjects/chaba fetch origin"
+    - "git -C /home/tony/.local/share/worktrees/chaba/tony-ha rebase origin/ha"
+    - "git -C /home/tony/.local/share/worktrees/chaba/tony-ha push origin tony-ha"
+  michael-ha:
+    - "git -C /home/tony/CascadeProjects/chaba-michael fetch chaba ha"
+    - "git -C /home/tony/.local/share/worktrees/chaba-michael/michael-ha rebase chaba/ha"
+    - "git -C /home/tony/.local/share/worktrees/chaba-michael/michael-ha push origin michael-ha"
+  michael-live:
+    - "git -C /home/tony/.local/share/worktrees/chaba-michael/michael-live rebase michael-ha"
+    - "git -C /home/tony/.local/share/worktrees/chaba-michael/michael-live push origin michael-live"
+
+recent_changes:
+  - date: 2026-09-01
+    description: "Create ha, tony-ha, michael-ha, and michael-live branches"
+    impact: "Central family branch with per-instance sub-dev branches"
