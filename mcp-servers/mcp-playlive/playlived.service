@@ -1,0 +1,13 @@
+[Unit]
+Description=Playlive multi-AI browser session daemon
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/tony/CascadeProjects/chaba/mcp-servers/mcp-playlive
+ExecStart=/usr/bin/node /home/tony/CascadeProjects/chaba/mcp-servers/mcp-playlive/playlived.mjs
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=default.target
