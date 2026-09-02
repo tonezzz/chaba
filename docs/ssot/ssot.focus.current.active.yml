@@ -7,10 +7,10 @@ sections:
   layout: list
   items:
   - label: 'mcp-health: 1 failing'
-    text: 'Re-checked Helm Dashboard: direct curl to http://100.68.142.13:3003/apps/helm returns 200 and mcp-health reports
-      Helm Dashboard healthy (response ~400ms). The snapshot failure was transient/stale. Focus resolved.'
-    status: completed
-    completed_at: '2026-09-02'
+    text: '- web / Helm Dashboard: unknown - Command failed: curl -s -o /dev/null -w "%{http_code}" --max-time 5 "http://100.68.142.13:3003/apps/helm"
+
+      '
+    status: active
     priority: high
     started: '2026-09-02'
     estimated_duration: 1 session
@@ -20,16 +20,14 @@ sections:
     - snapshot
     subtasks:
     - label: Investigate Helm Dashboard
-      status: completed
-      completed_at: '2026-09-02'
-      note: Direct curl returns HTTP 200; mcp-health get_health_status reports Helm Dashboard healthy.
+      status: not_started
     request_log: []
     ownership:
       owner: tony
       session: ''
-      locked: false
-      lock_reason: Resolved
-    source: /home/tony/CascadeProjects/chaba/docs/ssot/focus-inbox/mcp-health-snapshot-2026-09-02T13-53-31.yml
+      locked: true
+      lock_reason: Activated as active focus
+    source: /home/tony/CascadeProjects/chaba/docs/ssot/focus-inbox/mcp-health-snapshot-2026-09-02T13-38-30.yml
 - title: Active Branch Focus
   icon: branch
   layout: list
@@ -65,64 +63,6 @@ sections:
       status: deferred
       deferred_at: '2026-08-25'
       resume_note: MacBook offline; park focus until host is reachable
-  - label: 'SSOT optimize: focus-inbox/2026-08-31-015934-dev-system-regression.yml'
-    text: The dev-system regression inbox item was stale. The branch/worktree sprawl it reported (6 branches ahead, 7 worktrees)
-      has been resolved (now 1 branch, 0 ahead, 1 worktree). Moved the stale focus-inbox/2026-08-31-190008-dev-system-regression.yml
-      to archived/ and updated ssot.dev-system.assessment.yml. The referenced 015934 file no longer exists.
-    status: completed
-    completed_at: '2026-09-02'
-    priority: medium
-    tags:
-    - ssot
-    - optimization
-    - bloat
-    - data-isolation
-    subtasks:
-    - label: Verify dev-system regression is resolved
-      status: completed
-      completed_at: '2026-09-02'
-      note: ssot.dev-system.assessment.yml shows branches_total=1, branches_ahead_of_master=0, worktrees_total=1.
-    - label: Archive stale focus inbox item
-      status: completed
-      completed_at: '2026-09-02'
-      note: Moved docs/ssot/focus-inbox/2026-08-31-190008-dev-system-regression.yml to archived/.
-    request_log: []
-    ownership:
-      owner: tony
-      session: ''
-      locked: false
-      lock_reason: Resolved
-    source: /home/tony/CascadeProjects/chaba/docs/ssot/focus-inbox/processed/2026-08-31-0159-focus-inbox-2026-08-31-015934-dev-system-regression-ssot-optimization.yml
-  - label: SSOT optimization warnings
-    text: 'Resolved the two SSOT optimization warnings: ssot.home-assistant.michael.yml no longer contains a hardcoded the hassio container IP
-      (replaced with the Docker hostname homeassistant for the HA core container), and ssot.focus.yml was reduced from 790 to
-      under 750 lines by archiving the 10 oldest Focus History records to ssot.focus.history.archive.2026.yml.'
-    branch: chaba
-    priority: medium
-    status: completed
-    completed_at: '2026-09-02'
-    triage_score: 0.4
-    tags:
-    - ssot
-    - optimization
-    safe_to_parallel:
-      value: true
-      reason: Report-generated item; can be triaged independently.
-    subtasks:
-    - label: Open reports/SSOT_OPTIMIZATION_SUGGESTIONS.md
-      status: completed
-      completed_at: '2026-09-02'
-      note: Report showed 2 warnings (data isolation and bloat).
-    - label: Fix highest priority warning
-      status: completed
-      completed_at: '2026-09-02'
-      note: Replaced hardcoded the hassio container IP with homeassistant hostname and archived 10 oldest focus history records.
-    - label: Re-run ssot-validate-all
-      status: completed
-      completed_at: '2026-09-02'
-      note: Validation now passes with 0 errors and 0 warnings.
-    started: '2026-09-02'
-    source: /home/tony/CascadeProjects/chaba/docs/ssot/focus-inbox/processed/2026-08-29-190014-ssot-optimization-issues.yml
 - title: Quick Wins
   icon: quick
   layout: list
