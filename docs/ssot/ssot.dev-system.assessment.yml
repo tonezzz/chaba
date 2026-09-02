@@ -4,14 +4,14 @@ icon: clipboard-check
 last_reviewed: '2026-09-01T20:00:17.749909+00:00'
 reviewer: assistant
 score:
-  branches_total: 5
-  branches_ahead_of_master: 3
+  branches_total: 4
+  branches_ahead_of_master: 1
   worktrees_total: 4
-  active_foci: 2
+  active_foci: 1
   ssot_warnings: 0
   service_errors_last_night: 0
   ci_failures_7d: 0
-  untracked_files: 7
+  untracked_files: 0
 trend: stable
 pros:
 - label: SSOT-first workflow
@@ -29,17 +29,17 @@ pros:
   trend: declining
 cons:
 - label: Branch/worktree sprawl
-  severity: medium
-  evidence: 3 branches are ahead of master; 4 worktrees active
+  severity: low
+  evidence: 1 branch (ha) is not merged; it has an open /tmp worktree for active ha-live editing
   owner: tony
   status: open
-  improvement: Consolidate long-tail branches into master and archive or delete merged branches
+  improvement: Merge or delete the ha branch once the /tmp/chaba-ha-b7YHej worktree is closed
 - label: Uncommitted working tree
-  severity: medium
-  evidence: 7 untracked or modified file(s)
+  severity: none
+  evidence: 0 untracked or modified file(s) on the canonical worktree
   owner: tony
-  status: open
-  improvement: Commit or .gitignore outstanding changes before the next session
+  status: closed
+  improvement: Maintain git hygiene; the mcp-health-snapshot files are now .gitignored
 improvements:
 - label: Merge one long-tail branch per session
   source: ssot.focus.yml
@@ -48,9 +48,9 @@ improvements:
 - label: Real CI smoke tests
   source: dev-system.assessment
   target_score: live_mcp_smoke_ci = true
-  status: not_started
+  status: completed
 - label: Branch/worktree sprawl cleanup
   source: dev-system.assessment
   target_score: branches_ahead_of_master <= 5 and worktrees_total <= 6
-  status: in_progress
+  status: completed
 next_review: '2026-09-03'
