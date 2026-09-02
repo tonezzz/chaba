@@ -14,9 +14,12 @@ import { randomBytes } from 'crypto';
 const PORT = process.env.PLAYLIVED_PORT || 9230;
 const DEFAULT_REMOTE_CDP = process.env.PLAYLIVED_REMOTE_CDP || 'http://127.0.0.1:9223';
 const DEFAULT_LOCAL_CDP = process.env.PLAYLIVED_LOCAL_CDP || 'http://localhost:9222';
+const MAX_BODY_SIZE = 16 * 1024 * 1024; // 16 MB
+const IDLE_TIMEOUT_MS = parseInt(process.env.PLAYLIVED_IDLE_TIMEOUT_MS || '900000', 10); // default 15m
 
 const sessions = new Map();
 const stash = new Map();
+const startedAt = Date.now();
 
 function fail(res, code, msg) {
   if (res.headersSent) return;
@@ -33,15 +36,27 @@ function success(res, data) {
 function parseBody(req) {
   return new Promise((resolve, reject) => {
     let body = '';
-    req.on('data', d => { body += d; });
+    let rejected = false;
+    req.on('data', d => {
+      if (rejected) return;
+      if (body.length + d.length > MAX_BODY_SIZE) {
+        rejected = true;
+        req.destroy();
+        return reject(new Error('request body too large'));
+      }
+      body += d;
+    });
     req.on('end', () => {
+      if (rejected) return;
       if (!body) return resolve(null);
       try { resolve(JSON.parse(body)); } catch { reject(new Error('invalid JSON')); }
     });
+    req.on('error', reject);
   });
 }
 
 function sessionSummary(s) {
+  const now = Date.now();
   return {
     id: s.id,
     type: s.type,
@@ -49,6 +64,8 @@ function sessionSummary(s) {
     cdpUrl: s.cdpUrl,
     url: s.page && s.page.url ? s.page.url() : null,
     createdAt: s.createdAt,
+    lastActivityAt: s.lastActivityAt,
+    idleFor: now - s.lastActivityAt,
   };
 }
 
@@ -66,7 +83,7 @@ async function createSession(type, target, remote_url, reuse_context = false, at
     if (target === 'remote') {
       throw new Error('playwright-headless cannot be remote');
     }
-    browser = await chromium.launch({ headless: true });
+    browser = await chromium.launch({ headless: true, channel: 'chrome' });
     context = await browser.newContext({ viewport: { width: 1280, height: 720 } });
     page = await context.newPage();
   } else {
@@ -85,13 +102,15 @@ async function createSession(type, target, remote_url, reuse_context = false, at
         if (!context) context = await browser.newContext({ viewport: null });
       } else {
         context = await browser.newContext({ viewport: null });
+        try { await context.grantPermissions(['clipboard-read', 'clipboard-write']); } catch {}
+        page = await context.newPage();
       }
-      page = await context.newPage();
     }
   }
 
   const id = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-  const session = { id, type, target, cdpUrl, browser, context, page, createdAt: Date.now(), reuse_context, attached };
+  const now = Date.now();
+  const session = { id, type, target, cdpUrl, browser, context, page, createdAt: now, lastActivityAt: now, reuse_context, attached, httpCredentials: null };
   sessions.set(id, session);
   return { session_id: id, type, target, cdpUrl, reuse_context, attached };
 }
@@ -113,9 +132,29 @@ async function closeSession(id) {
   return { closed: true, id };
 }
 
+function touchSession(id) {
+  const s = sessions.get(id);
+  if (s) s.lastActivityAt = Date.now();
+}
+
+async function closeIdleSessions() {
+  const now = Date.now();
+  const idle = [];
+  for (const [id, s] of sessions) {
+    if (now - s.lastActivityAt > IDLE_TIMEOUT_MS) {
+      idle.push(id);
+    }
+  }
+  for (const id of idle) {
+    console.log(`closing idle session ${id}`);
+    await closeSession(id);
+  }
+}
+
 async function doAction(id, action, body) {
   const s = sessions.get(id);
   if (!s) throw new Error('session not found');
+  touchSession(id);
   const page = s.page;
 
   switch (action) {
@@ -145,22 +184,22 @@ async function doAction(id, action, body) {
     case 'upload': {
       const { selector, base64: b64, filename, mimeType, stash_id } = body || {};
       if (!selector || typeof selector !== 'string') throw new Error('upload requires a string selector');
-      
       let buf;
+      let uploadFilename, uploadMimeType;
       if (stash_id) {
         const entry = stash.get(stash_id);
         if (!entry) throw new Error(`stash_id ${stash_id} not found`);
         buf = Buffer.from(entry.base64, 'base64');
+        uploadFilename = filename || entry.filename;
+        uploadMimeType = mimeType || entry.mimeType;
       } else if (b64) {
         if (typeof b64 !== 'string') throw new Error('upload requires a base64 string');
         buf = Buffer.from(b64, 'base64');
+        uploadFilename = filename || 'upload.bin';
+        uploadMimeType = mimeType || 'application/octet-stream';
       } else {
         throw new Error('upload requires either base64 or stash_id');
       }
-      
-      const uploadFilename = filename || (stash_id ? stash.get(stash_id).filename : 'upload.bin');
-      const uploadMimeType = mimeType || (stash_id ? stash.get(stash_id).mimeType : 'application/octet-stream');
-      
       await page.locator(selector).setInputFiles([{ name: uploadFilename, mimeType: uploadMimeType, buffer: buf }]);
       return { uploaded: selector, filename: uploadFilename, mimeType: uploadMimeType, size: buf.length };
     }
@@ -182,17 +221,20 @@ async function doAction(id, action, body) {
 
       const dropFilename = filename || (stash_id ? stash.get(stash_id).filename : 'drop.bin');
       const dropMimeType = mimeType || (stash_id ? stash.get(stash_id).mimeType : 'application/octet-stream');
-      const dataUrl = `data:${dropMimeType};base64,${buf.toString('base64')}`;
+      const b64Str = buf.toString('base64');
 
       const script = `
         (async () => {
           const sel = ${JSON.stringify(selector)};
-          const url = ${JSON.stringify(dataUrl)};
+          const b64 = ${JSON.stringify(b64Str)};
           const fname = ${JSON.stringify(dropFilename)};
           const mtype = ${JSON.stringify(dropMimeType)};
           const el = document.querySelector(sel);
           if (!el) throw new Error('drop target not found: ' + sel);
-          const blob = await (await fetch(url)).blob();
+          const bin = atob(b64);
+          const arr = new Uint8Array(bin.length);
+          for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+          const blob = new Blob([arr], { type: mtype });
           const file = new File([blob], fname, { type: mtype });
           const dt = new DataTransfer();
           dt.items.add(file);
@@ -205,6 +247,35 @@ async function doAction(id, action, body) {
       `;
       const result = await page.evaluate(script);
       return result;
+    }
+    case 'set_clipboard': {
+      if (typeof body.text !== 'string') throw new Error('text required');
+      await page.evaluate(async (t) => {
+        if (!navigator.clipboard || !navigator.clipboard.writeText) throw new Error('clipboard API not available');
+        await navigator.clipboard.writeText(t);
+      }, body.text);
+      return { set: true };
+    }
+    case 'get_clipboard': {
+      const cbText = await page.evaluate(async () => {
+        if (!navigator.clipboard || !navigator.clipboard.readText) throw new Error('clipboard API not available');
+        return await navigator.clipboard.readText();
+      });
+      return { text: cbText };
+    }
+    case 'set_auth': {
+      const { username, password } = body || {};
+      if (!username || typeof username !== 'string') throw new Error('username required');
+      if (!password || typeof password !== 'string') throw new Error('password required');
+      s.httpCredentials = { username, password };
+      // Set credentials on the context for all future requests
+      await s.context.setHTTPCredentials({ username, password });
+      return { set: true, username };
+    }
+    case 'clear_auth': {
+      s.httpCredentials = null;
+      await s.context.setHTTPCredentials(null);
+      return { cleared: true };
     }
     default:
       throw new Error(`unknown action: ${action}`);
@@ -269,6 +340,16 @@ const server = http.createServer(async (req, res) => {
       return success(res, { deleted, stash_id: id });
     }
 
+    if (req.method === 'GET' && url.pathname === '/health') {
+      return success(res, {
+        status: 'ok',
+        uptime: Date.now() - startedAt,
+        sessions: sessions.size,
+        port: PORT,
+        version: '2.0.0',
+      });
+    }
+
     return fail(res, 404, 'not found');
   } catch (e) { fail(res, 500, e.message); }
 });
@@ -283,6 +364,7 @@ function closeAll() {
 
 server.listen(PORT, () => {
   console.log(`playlived listening on http://0.0.0.0:${PORT}`);
+  setInterval(() => closeIdleSessions().catch(err => console.error('idle cleanup error', err)), 60000);
 });
 
 ['SIGTERM', 'SIGINT'].forEach(sig => process.on(sig, () => {
