@@ -72,6 +72,40 @@ sections:
       status: deferred
       deferred_at: '2026-08-25'
       resume_note: MacBook offline; park focus until host is reachable
+  - label: Sync worktree yomi with master
+    text: 'Worktree yomi was 0 commit(s) ahead and 72 commit(s) behind master. The only local change was an untracked yomi-login.mjs,
+      which I copied to scripts/yomi/yomi-login.mjs on master. The chaba-yomi worktree and local yomi branch have been removed.
+      '
+    branch: chaba
+    priority: medium
+    status: completed
+    completed_at: '2026-09-02'
+    triage_score: 0.55
+    tags:
+    - worktree
+    - sync
+    - branches
+    safe_to_parallel: true
+    subtasks:
+    - label: Review yomi changes
+      status: completed
+      completed_at: '2026-09-02'
+      note: Only untracked file was yomi-login.mjs.
+    - label: Merge or rebase to master
+      status: completed
+      completed_at: '2026-09-02'
+      note: Branch was 0 ahead; copied the one untracked script to master.
+    - label: Delete worktree if merged
+      status: completed
+      completed_at: '2026-09-02'
+      note: Removed /home/tony/CascadeProjects/chaba-yomi worktree and deleted local yomi branch.
+    triage:
+      complication: 2
+      urgency: 3
+      importance: 3
+      score: 0.6
+    started: '2026-09-02'
+    source: /home/tony/CascadeProjects/chaba/docs/ssot/focus-inbox/processed/2026-09-01-125844-worktree-drift-yomi.yml
 - title: Quick Wins
   icon: quick
   layout: list
