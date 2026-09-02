@@ -1,4 +1,4 @@
-import asyncio, base64, datetime, json, os, re, sys, traceback
+import asyncio, base64, datetime, json, os, re, sys, traceback, urllib.request
 import websockets
 from websockets.http11 import Response
 from websockets.datastructures import Headers
@@ -65,6 +65,7 @@ async def get_state_text(mcp):
     return 'Current states: ' + '; '.join(states)
 
 
+HA_URL = 'http://127.0.0.1:8123'
 SNAPSHOT_EIDS = [
     'sensor.batteries_1_state_of_charge',
     'sensor.batteries_1_power',
@@ -76,21 +77,32 @@ SNAPSHOT_EIDS = [
 ]
 
 
-async def get_snapshot(mcp):
+def fetch_ha_states(token):
+    req = urllib.request.Request(
+        f'{HA_URL}/api/states',
+        headers={'Authorization': f'Bearer {token}', 'Content-Type': 'application/json'}
+    )
+    with urllib.request.urlopen(req, timeout=10) as r:
+        return json.loads(r.read().decode())
+
+
+def build_snapshot(token):
+    states = {s['entity_id']: s for s in fetch_ha_states(token)}
     entities = []
     for eid in SNAPSHOT_EIDS:
-        try:
-            r = await mcp.call_tool('ha_call_read_tool', {'name': 'ha_get_state', 'arguments': {'entity_id': eid}})
-            payload = json.loads(r.content[0].text)['data']
-            entities.append({'entity_id': eid, 'state': payload.get('state'), 'attributes': payload.get('attributes', {}), 'unit': payload.get('attributes', {}).get('unit_of_measurement', '')})
-        except Exception as e:
-            entities.append({'entity_id': eid, 'state': f'unknown ({e})', 'attributes': {}})
+        s = states.get(eid)
+        if s:
+            unit = (s.get('attributes') or {}).get('unit_of_measurement', '')
+            entities.append({'entity_id': eid, 'state': s['state'], 'attributes': s.get('attributes', {}), 'unit': unit})
+        else:
+            entities.append({'entity_id': eid, 'state': 'unavailable', 'attributes': {}})
     by_id = {e['entity_id']: e for e in entities}
     def val(eid):
-        if eid in by_id:
-            return f'{by_id[eid]["state"]}{by_id[eid]["unit"]}'.strip()
-        return '—'
-    snapshot = {
+        e = by_id.get(eid)
+        if not e:
+            return '—'
+        return f'{e["state"]}{e["unit"]}'.strip()
+    return {
         'updated': datetime.datetime.now().isoformat(),
         'entities': entities,
         'panels': {
@@ -99,7 +111,6 @@ async def get_snapshot(mcp):
             'power': f'Load {val("sensor.inverters_1_load_power")}  Grid {val("sensor.inverters_1_grid_power")}  {val("sensor.inverters_1_grid_voltage")}',
         }
     }
-    return snapshot
 
 
 async def process_request(connection, request):
@@ -110,21 +121,21 @@ async def process_request(connection, request):
             body = f.read()
         return Response(200, 'OK', Headers({'Content-Type': 'text/html', 'Connection': 'close', 'Cache-Control': 'no-store, no-cache, must-revalidate'}), body)
     if request.path in ('/snapshot', '/snapshot.json'):
+        token = os.environ.get('HA_LONG_LIVED_TOKEN')
+        if not token:
+            body = json.dumps({'error': 'HA_LONG_LIVED_TOKEN not set'}).encode()
+            return Response(500, 'Internal Server Error', Headers({'Content-Type': 'application/json', 'Connection': 'close'}), body)
         try:
-            _, mcp_url = load_creds()
-            async with streamable_http_client(mcp_url) as (read_stream, write_stream, _):
-                async with ClientSession(read_stream, write_stream) as mcp:
-                    await mcp.initialize()
-                    snapshot = await get_snapshot(mcp)
-                    body = json.dumps(snapshot).encode()
-                    return Response(200, 'OK', Headers({
-                        'Content-Type': 'application/json',
-                        'Access-Control-Allow-Origin': '*',
-                        'Access-Control-Allow-Methods': 'GET, OPTIONS',
-                        'Access-Control-Allow-Headers': 'Content-Type',
-                        'Cache-Control': 'no-store, no-cache, must-revalidate',
-                        'Connection': 'close',
-                    }), body)
+            snapshot = await asyncio.to_thread(build_snapshot, token)
+            body = json.dumps(snapshot).encode()
+            return Response(200, 'OK', Headers({
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*',
+                'Access-Control-Allow-Methods': 'GET, OPTIONS',
+                'Access-Control-Allow-Headers': 'Content-Type',
+                'Cache-Control': 'no-store, no-cache, must-revalidate',
+                'Connection': 'close',
+            }), body)
         except Exception as e:
             log(f'snapshot error: {e}')
             body = json.dumps({'error': str(e)}).encode()
