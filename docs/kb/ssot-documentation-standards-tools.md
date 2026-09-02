@@ -8,6 +8,7 @@ category: operations
 - **SSOT Validation**: `bash scripts/validate-configs.sh`
 - **Focus Validation**: `node scripts/validate-focus.mjs`
 - **MCP Config Generation**: `python3 scripts/generate-mcp-configs.py`
+- **MCP Source Validation**: `python3 scripts/ssot-validate-mcp-sources.py` — validates that every `operational` MCP server's implementation file exists on disk. It reads the repo-local `docs/ssot/infrastructure/ssot.mcp.yml` and resolves `per_host` overrides for the current host, so it no longer fails on stale cross-repo paths. (2026-09-02)
 
 ### Documentation Search Standards
 **IMPORTANT: Assistant workflow for documentation searches**
