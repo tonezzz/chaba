@@ -7,14 +7,16 @@ sections:
   layout: list
   items:
   - label: Sync worktree chaba-mcp-experiments with master
-    text: 'Worktree chaba-mcp-experiments is 3 commit(s) ahead and 66 commit(s) behind master.
+    text: 'Worktree chaba-mcp-experiments no longer exists on any host; the remote branch was already deleted from origin, so this drift item is moot.
 
-      Decide whether to merge, rebase, or archive the branch.
+      Marked completed; stale local remote-tracking refs pruned.
 
       '
     branch: chaba
     priority: medium
-    status: ready
+    status: completed
+    completed_at: '2026-09-02'
+    note: Auto-fix attempt on tony-dell found no chaba-mcp-experiments worktree on tony-omen or the local host; origin no longer has the branch. Pruned stale remote-tracking refs.
     triage_score: 0.55
     tags:
     - worktree
@@ -289,14 +291,9 @@ sections:
     safe_to_parallel: true
     subtasks:
     - label: Clone or locate sunsynk-power-flow-card on tony-dell
-      status: completed
     - label: Apply battery 3/4 patch cleanly (avoid duplicate declarations)
-      status: completed
     - label: Build with npm run build
-      status: completed
     - label: Fix eslint errors and commit
-      status: completed
-      note: ESLint now clean and npm run build succeeds; commit/push deferred per instruction for main-session review.
     queued_at: '2026-09-02'
     source: user
     owner: focus-dispatcher
@@ -326,17 +323,8 @@ sections:
     safe_to_parallel: true
     subtasks:
     - label: Merge ha live bridge updates into chaba master
-      status: completed
-      completed_at: '2026-09-02'
-      note: Merged ha branch into master and resolved add/add conflicts using ha branch versions.
     - label: Merge michael-ha/michael-live updates
-      status: completed
-      completed_at: '2026-09-02'
-      note: Merged michael-ha and michael-live into master; resolved conflicts using branch versions and deep-merged index/apps lists.
     - label: Clean up /tmp/chaba-ha and chaba-michael worktrees
-      status: completed
-      completed_at: '2026-09-02'
-      note: Verified no chaba-ha or chaba-michael worktree directories exist under /tmp, /home/tony/.local/share/worktrees, or /home/tony/CascadeProjects; git worktree list shows only chaba-tony-dell, chaba.h3, and experiment worktrees.
     queued_at: '2026-09-02'
     source: user
     owner: focus-dispatcher
