@@ -1,0 +1,259 @@
+title: Tony MAC Address Registry
+subtitle: MAC registry for Tony's 192.168.2.0/24 home network and Tailscale interfaces
+icon: 🔗
+config:
+  version: 1
+  last_updated: '2026-09-02'
+  maintainer: tony
+  status: active
+  related_files:
+    - docs/ssot/infrastructure/ssot.mac-address-registry.yml
+    - docs/ssot/infrastructure/ssot.ip-address-registry.yml
+  mac_registry:
+    - device_id: tony-omen
+      label: tony-omen primary workstation
+      local_ids:
+        hostname: tony-omen
+      interfaces:
+        - interface_id: eno1
+          mac: b0:22:7a:f0:73:cd
+          oui: b0:22:7a
+          type: ethernet
+          source: manual
+          first_seen: '2026-09-01'
+          status: active
+        - interface_id: wlo1
+          mac: d0:57:7b:ea:6a:3c
+          oui: d0:57:7b
+          type: wifi
+          source: manual
+          first_seen: '2026-09-01'
+          status: active
+      mac_conflict: false
+      status: active
+    - device_id: home-router
+      label: Home router (192.168.2.1)
+      local_ids: {}
+      interfaces:
+        - interface_id: lan
+          mac: 98:00:6a:68:f7:c6
+          oui: 98:00:6a
+          type: ethernet
+          source: arp
+          first_seen: '2026-09-01'
+          status: active
+      mac_conflict: false
+      status: active
+    - device_id: tuya-plug-coffee
+      label: ปลั๊กกาแฟ
+      local_ids:
+        tuya_id: a33be68c03a6886d7f21zf
+      interfaces:
+        - interface_id: wlan0
+          mac: 2c:b4:71:e8:aa:06
+          oui: 2c:b4:71
+          type: wifi
+          source: arp
+          first_seen: '2026-09-01'
+          status: active
+      mac_conflict: false
+      status: active
+    - device_id: tuya-plug-bedside
+      label: ปลัฦหัวเตียง
+      local_ids:
+        tuya_id: a319217035be6c2d60opfg
+      interfaces:
+        - interface_id: wlan0
+          mac: 2c:b4:71:e8:a8:e8
+          oui: 2c:b4:71
+          type: wifi
+          source: arp
+          first_seen: '2026-09-01'
+          status: active
+      mac_conflict: false
+      status: active
+    - device_id: ip-cam-65
+      label: VStarcam C7824WIP
+      local_ids:
+        serial: null
+      interfaces:
+        - interface_id: wlan0
+          mac: d4:9e:3b:6a:94:90
+          oui: d4:9e:3b
+          type: wifi
+          source: arp
+          first_seen: '2026-09-01'
+          status: active
+      mac_conflict: false
+      status: active
+    - device_id: hp-deskjet-2700
+      label: HP DeskJet 2700 series
+      local_ids:
+        serial: CN33BDZ0KS
+      interfaces:
+        - interface_id: wlan0
+          mac: e0:73:e7:05:c5:16
+          oui: e0:73:e7
+          type: wifi
+          source: arp
+          first_seen: '2026-09-01'
+          status: active
+      mac_conflict: false
+      status: active
+    - device_id: discovered-cc50e319a02f
+      label: Unknown host 192.168.2.65
+      local_ids: {}
+      interfaces:
+        - interface_id: primary
+          mac: cc:50:e3:19:a0:2f
+          oui: cc:50:e3
+          type: unknown
+          source: arp
+          first_seen: '2026-09-01'
+          status: active
+      mac_conflict: false
+      status: active
+    - device_id: discovered-484d7ee43ac7
+      label: Unknown host 192.168.2.67
+      local_ids: {}
+      interfaces:
+        - interface_id: primary
+          mac: 48:4d:7e:e4:3a:c7
+          oui: 48:4d:7e
+          type: unknown
+          source: arp
+          first_seen: '2026-09-01'
+          status: active
+      mac_conflict: false
+      status: active
+    - device_id: discovered-062858264b2c
+      label: Unknown host 192.168.2.73
+      local_ids: {}
+      interfaces:
+        - interface_id: primary
+          mac: 06:28:58:26:4b:2c
+          oui: 06:28:58
+          type: unknown
+          source: arp
+          first_seen: '2026-09-01'
+          status: active
+      mac_conflict: false
+      status: active
+    - device_id: discovered-ea9b8fd280f0
+      label: Unknown host 192.168.2.78
+      local_ids: {}
+      interfaces:
+        - interface_id: primary
+          mac: ea:9b:8f:d2:80:f0
+          oui: ea:9b:8f
+          type: unknown
+          source: arp
+          first_seen: '2026-09-01'
+          status: active
+      mac_conflict: false
+      status: active
+    - device_id: discovered-c0cdd685a838
+      label: Unknown host 192.168.2.81
+      local_ids: {}
+      interfaces:
+        - interface_id: primary
+          mac: c0:cd:d6:85:a8:38
+          oui: c0:cd:d6
+          type: unknown
+          source: arp
+          first_seen: '2026-09-01'
+          status: active
+      mac_conflict: false
+      status: active
+    - device_id: macbook
+      label: KKs MacBook Pro
+      local_ids:
+        hostname: KKs-MacBook-Pro.local
+      interfaces:
+        - interface_id: wlan0
+          mac: null
+          oui: null
+          type: wifi
+          source: manual
+          first_seen: '2026-09-01'
+          status: stale
+      mac_conflict: false
+      status: stale
+    - device_id: google-tv
+      label: Google TV / Smart TV
+      local_ids: {}
+      interfaces:
+        - interface_id: wlan0
+          mac: null
+          oui: null
+          type: wifi
+          source: manual
+          first_seen: '2026-09-01'
+          status: unknown
+      mac_conflict: false
+      status: unknown
+    - device_id: discovered-7cd2da73308a
+      label: Unknown host 192.168.2.76
+      local_ids: {}
+      interfaces:
+        - interface_id: primary
+          mac: 7c:d2:da:73:30:8a
+          oui: 7c:d2:da
+          type: unknown
+          source: arp
+          first_seen: '2026-09-01'
+          status: active
+      mac_conflict: false
+      status: active
+    - device_id: discovered-1c1dd3e80a4f
+      label: Unknown host 192.168.2.71
+      local_ids: {}
+      interfaces:
+        - interface_id: primary
+          mac: 1c:1d:d3:e8:0a:4f
+          oui: 1c:1d:d3
+          type: unknown
+          source: arp
+          first_seen: '2026-09-01'
+          status: active
+      mac_conflict: false
+      status: active
+    - device_id: discovered-227311ed1353
+      label: Unknown host 192.168.2.75
+      local_ids: {}
+      interfaces:
+        - interface_id: primary
+          mac: 22:73:11:ed:13:53
+          oui: 22:73:11
+          type: unknown
+          source: arp
+          first_seen: '2026-09-01'
+          status: active
+      mac_conflict: false
+      status: active
+    - device_id: discovered-caf042320432
+      label: Unknown host 192.168.2.82
+      local_ids: {}
+      interfaces:
+        - interface_id: primary
+          mac: ca:f0:42:32:04:32
+          oui: ca:f0:42
+          type: unknown
+          source: arp
+          first_seen: '2026-09-01'
+          status: active
+      mac_conflict: false
+      status: active
+    - device_id: discovered-f2eda0d45fdb
+      label: Unknown host 192.168.2.72
+      local_ids: {}
+      interfaces:
+        - interface_id: primary
+          mac: f2:ed:a0:d4:5f:db
+          oui: f2:ed:a0
+          type: unknown
+          source: arp
+          first_seen: '2026-09-01'
+          status: active
+      mac_conflict: false
+      status: active
