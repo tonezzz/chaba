@@ -17,6 +17,31 @@ mcp = FastMCP("mcp-playlive")
 
 DAEMON_URL = os.environ.get("PLAYLIVE_URL", "http://192.168.1.42:9230")
 
+_PLAYLIVE_HOSTS_RAW = os.environ.get("PLAYLIVE_HOSTS", "{}")
+try:
+    PLAYLIVE_HOSTS = json.loads(_PLAYLIVE_HOSTS_RAW)
+except json.JSONDecodeError:
+    PLAYLIVE_HOSTS = {}
+
+_DEFAULT_CDP_PORT = 9223
+
+
+def _resolve_remote_url(host: str | None, remote_url: str | None) -> str | None:
+    """Resolve a host alias or bare hostname into a CDP remote_url.
+
+    Explicit remote_url always wins. A host value that is already a full
+    URL is used as-is. Bare hostnames are mapped to http://<host>:<port>.
+    """
+    if remote_url:
+        return remote_url
+    if not host:
+        return None
+    if host in PLAYLIVE_HOSTS:
+        return PLAYLIVE_HOSTS[host]
+    if host.startswith("http://") or host.startswith("https://"):
+        return host
+    return f"http://{host}:{_DEFAULT_CDP_PORT}"
+
 
 def _request(method, path, payload=None):
     url = DAEMON_URL.rstrip("/") + path
@@ -40,11 +65,12 @@ def _request(method, path, payload=None):
 
 
 @mcp.tool()
-def playlive_create_chrome_live(target: str = "remote", remote_url: str | None = None, reuse_context: bool = False, attach_url: str | None = None) -> str:
-    """Create a CDP-attached live Chrome session."""
+def playlive_create_chrome_live(target: str = "remote", host: str | None = None, remote_url: str | None = None, reuse_context: bool = False, attach_url: str | None = None) -> str:
+    """Create a CDP-attached live Chrome session. Use `host` (a PLAYLIVE_HOSTS alias, bare hostname, or full URL) or `remote_url` for a different CDP endpoint per session."""
     body = {"type": "chrome-live", "target": target}
-    if remote_url:
-        body["remote_url"] = remote_url
+    resolved = _resolve_remote_url(host, remote_url)
+    if resolved:
+        body["remote_url"] = resolved
     if reuse_context:
         body["reuse_context"] = True
     if attach_url:
@@ -53,11 +79,12 @@ def playlive_create_chrome_live(target: str = "remote", remote_url: str | None =
 
 
 @mcp.tool()
-def playlive_create_playwright_chrome(target: str = "remote", remote_url: str | None = None, reuse_context: bool = False, attach_url: str | None = None) -> str:
-    """Create a Playwright session attached to an existing Chrome over CDP."""
+def playlive_create_playwright_chrome(target: str = "remote", host: str | None = None, remote_url: str | None = None, reuse_context: bool = False, attach_url: str | None = None) -> str:
+    """Create a Playwright session attached to an existing Chrome over CDP. Use `host` (a PLAYLIVE_HOSTS alias, bare hostname, or full URL) or `remote_url` for a different CDP endpoint per session."""
     body = {"type": "playwright-chrome", "target": target}
-    if remote_url:
-        body["remote_url"] = remote_url
+    resolved = _resolve_remote_url(host, remote_url)
+    if resolved:
+        body["remote_url"] = resolved
     if reuse_context:
         body["reuse_context"] = True
     if attach_url:
@@ -80,6 +107,12 @@ def playlive_create_playwright(target: str = "local", remote_url: str | None = N
 def playlive_list_sessions() -> str:
     """List active sessions managed by the daemon."""
     return json.dumps(_request("GET", "/sessions"), indent=2)
+
+
+@mcp.tool()
+def playlive_status() -> str:
+    """Return the playlived daemon health and active session count."""
+    return json.dumps(_request("GET", "/health"), indent=2)
 
 
 @mcp.tool()

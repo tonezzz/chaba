@@ -18,8 +18,7 @@ path = '$BUNDLE'
 with open(path) as f:
     text = f.read()
 with open(path, 'w') as f:
-    f.write(text.replace('      "--disable-dev-shm-usage",
-', ''))
+    f.write(text.replace('      \"--disable-dev-shm-usage\",\\n', ''))
 print('patched', path)
 "
 else
