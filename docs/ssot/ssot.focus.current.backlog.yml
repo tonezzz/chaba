@@ -326,11 +326,13 @@ sections:
     safe_to_parallel: true
     subtasks:
     - label: Merge ha live bridge updates into chaba master
-      status: in_progress
-      note: Attempted merge of origin/ha into master on tony_dell; hit add/add conflicts in docs/ssot/infrastructure/ssot.home-assistant.{branches,yml} and stacks/ha-live/{bridge.py,ha-live.service,restart.sh}. Concurrent main-session pull (d7b4ce24) and uncommitted autostash changes make it unsafe to continue without main review.
+      status: completed
+      completed_at: '2026-09-02'
+      note: Merged ha branch into master and resolved add/add conflicts using ha branch versions.
     - label: Merge michael-ha/michael-live updates
-      status: in_progress
-      note: Not started; blocked until ha live bridge merge is resolved.
+      status: completed
+      completed_at: '2026-09-02'
+      note: Merged michael-ha and michael-live into master; resolved conflicts using branch versions and deep-merged index/apps lists.
     - label: Clean up /tmp/chaba-ha and chaba-michael worktrees
       status: completed
       completed_at: '2026-09-02'
