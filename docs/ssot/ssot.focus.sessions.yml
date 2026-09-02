@@ -209,15 +209,17 @@ sessions:
   - Work on Sync worktree raceman with master
   date: '2026-09-02'
 - focus: Sync worktree michael-ha with master
-  source: mcp_focus next
+  source: re-assess
   plan:
-  - Activate Sync worktree michael-ha with master
-  done: []
+  - Re-assess michael-ha branch state and update SSOT
+  done:
+  - Confirmed local michael-ha worktree is gone; remote chaba/michael-ha is 72 ahead / 51 behind master.
+  - Updated ssot.focus.current.active.yml and ssot.dev-system.assessment.yml with current counts.
+  - Committed and pushed SSOT/focus updates to master.
   follow_up:
-  - Complete the focus or defer it
+  - Decide whether to merge, rebase, or archive chaba/michael-ha (large shared sunsynk history).
   next_action:
-  - Work on Sync worktree michael-ha with master
-  date: '2026-09-02'
+  - Start merge review of chaba/michael-ha or archive the branch if its unique work is already in master.
 related_files:
 - docs/ssot/ssot.focus.current.yml
 - docs/ssot/ssot.focus.yml

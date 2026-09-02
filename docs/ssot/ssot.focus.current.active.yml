@@ -42,11 +42,9 @@ sections:
       deferred_at: '2026-08-25'
       resume_note: MacBook offline; park focus until host is reachable
   - label: Sync worktree michael-ha with master
-    text: 'Worktree michael-ha is 64 commit(s) ahead and 3 commit(s) behind master.
-
-      Decide whether to merge, rebase, or archive the branch.
-
-      '
+    text: 'Remote chaba/michael-ha is 72 commit(s) ahead and 51 commit(s) behind master. The local michael-ha worktree no longer
+      exists. The branch contains the michael-ha deploy/SSH/Tailscale/ha_mcp_tools work plus shared sunsynk-power-flow-card changes;
+      merging into master will likely require conflict resolution.'
     branch: chaba
     priority: medium
     status: active
@@ -58,6 +56,8 @@ sections:
     safe_to_parallel: true
     subtasks:
     - label: Review michael-ha changes
+      status: in_progress
+      note: Branch is 72 ahead / 51 behind master; shared sunsynk commits may duplicate master content.
     - label: Merge or rebase to master
     - label: Delete worktree if merged
     triage:
