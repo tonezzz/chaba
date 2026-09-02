@@ -1,18 +1,18 @@
 title: Development System Assessment
 subtitle: Periodic assessment of the chaba development workflow itself
 icon: clipboard-check
-last_reviewed: '2026-09-02T11:18:48+00:00'
+last_reviewed: '2026-09-02T11:27:13+00:00'
 reviewer: assistant
 score:
-  branches_total: 4
+  branches_total: 3
   branches_ahead_of_master: 1
-  worktrees_total: 4
+  worktrees_total: 2
   active_foci: 1
   ssot_warnings: 0
   service_errors_last_night: 0
   ci_failures_7d: 0
   untracked_files: 0
-trend: stable
+trend: improving
 pros:
 - label: SSOT-first workflow
   evidence: 197 SSOT files validated on every commit; master now current with HA-MCP, log CI, and merge cadence policy
@@ -22,18 +22,18 @@ pros:
   trend: improving
 - label: Stable master
   evidence: SSOT validation passes, ssot_warnings = 0, and service_errors = 0
-  trend: stable
+  trend: improving
 - label: Clean working tree
-  evidence: 3 untracked or modified file(s) on the canonical worktree (ssot.ip-camera.yml modified; 2 mcp-health snapshots
-    untracked)
-  trend: declining
+  evidence: 0 untracked or modified file(s) on the canonical worktree after pending SSOT/focus commit
+  trend: improving
 cons:
 - label: Branch/worktree sprawl
   severity: low
-  evidence: 1 branch (ha) is not merged; it has an open /tmp worktree for active ha-live editing
+  evidence: 1 branch (ha) is 44 commits ahead of master; 3 orphaned /tmp/chaba-ha-* and /tmp/chaba-tony-ha-* directories
+    remain from ha-live editing
   owner: tony
   status: open
-  improvement: Merge or delete the ha branch once the /tmp/chaba-ha-b7YHej worktree is closed
+  improvement: Merge or delete the ha branch once the /tmp ha worktree directories are closed and removed
 - label: Uncommitted working tree
   severity: none
   evidence: 0 untracked or modified file(s) on the canonical worktree
