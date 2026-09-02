@@ -272,6 +272,71 @@ sections:
       can_change_host: true
       host: tony_dell
       notes: Dispatched to tony_dell via focus-dispatcher --process-ready
+  - label: Finish sunsynk battery 3/4 feature on tony-dell
+    text: In /home/tony/CascadeProjects/sunsynk-power-flow-card (or clone tonezzz/sunsynk-power-flow-card on tony-dell), finish
+      adding battery 3 and 4 support. The /tmp/patch_batteries.py and /tmp/patch2.py scripts on the local macbook can be copied
+      to tony-dell and adapted. Build with npm run build, resolve eslint errors, and commit/push only the source changes (do
+      not commit raw dist unless it is the project convention). Report back the final commit hash.
+    branch: sunsynk
+    priority: medium
+    status: ready
+    triage_score: 0.55
+    tags:
+    - sunsynk
+    - tony-dell
+    - battery
+    - remote
+    safe_to_parallel: true
+    subtasks:
+    - label: Clone or locate sunsynk-power-flow-card on tony-dell
+    - label: Apply battery 3/4 patch cleanly (avoid duplicate declarations)
+    - label: Build with npm run build
+    - label: Fix eslint errors and commit
+    queued_at: '2026-09-02'
+    source: user
+    owner: focus-dispatcher
+    session: dispatch-tony_dell
+    locked: true
+    subagent:
+      runnable: true
+      profile: subagent_general
+      parallel: true
+      requires_approval: false
+      can_change_host: true
+      host: tony_dell
+      notes: Dispatched to tony_dell via focus-dispatcher --process-ready
+    lock_reason: Dispatched to subagent on tony_dell
+  - label: Finish chaba ha/michael branch worktree sync on tony-dell
+    text: On tony-dell, merge the latest ha, michael-ha, and michael-live commits into chaba master, resolve any remaining
+      SSOT/home-assistant conflicts, and clean up the /tmp and chaba-michael worktrees if safe. Do not push without approval.
+    branch: chaba
+    priority: medium
+    status: ready
+    triage_score: 0.55
+    tags:
+    - chaba
+    - tony-dell
+    - worktree
+    - branches
+    safe_to_parallel: true
+    subtasks:
+    - label: Merge ha live bridge updates into chaba master
+    - label: Merge michael-ha/michael-live updates
+    - label: Clean up /tmp/chaba-ha and chaba-michael worktrees
+    queued_at: '2026-09-02'
+    source: user
+    owner: focus-dispatcher
+    session: dispatch-tony_dell
+    locked: true
+    subagent:
+      runnable: true
+      profile: subagent_general
+      parallel: true
+      requires_approval: false
+      can_change_host: true
+      host: tony_dell
+      notes: Dispatched to tony_dell via focus-dispatcher --process-ready
+    lock_reason: Dispatched to subagent on tony_dell
 - title: Hand-off Queue
   icon: handoff
   layout: list
