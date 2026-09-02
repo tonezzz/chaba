@@ -1,12 +1,12 @@
 title: Development System Assessment
 subtitle: Periodic assessment of the chaba development workflow itself
 icon: clipboard-check
-last_reviewed: '2026-09-02T11:27:13+00:00'
+last_reviewed: '2026-09-02T13:37:20+00:00'
 reviewer: assistant
 score:
-  branches_total: 3
-  branches_ahead_of_master: 1
-  worktrees_total: 2
+  branches_total: 1
+  branches_ahead_of_master: 0
+  worktrees_total: 1
   active_foci: 1
   ssot_warnings: 0
   service_errors_last_night: 0
@@ -28,12 +28,12 @@ pros:
   trend: improving
 cons:
 - label: Branch/worktree sprawl
-  severity: low
-  evidence: 1 branch (ha) is 44 commits ahead of master; 3 orphaned /tmp/chaba-ha-* and /tmp/chaba-tony-ha-* directories
-    remain from ha-live editing
+  severity: none
+  evidence: ha branch merged into master and deleted; orphaned /tmp/chaba-ha-* and /tmp/chaba-tony-ha-* directories
+    removed; only the canonical chaba worktree remains
   owner: tony
-  status: open
-  improvement: Merge or delete the ha branch once the /tmp ha worktree directories are closed and removed
+  status: resolved
+  improvement: Maintain branch hygiene; the last remaining active focus is SSOT mac-address-registry bloat optimization
 - label: Uncommitted working tree
   severity: none
   evidence: 0 untracked or modified file(s) on the canonical worktree

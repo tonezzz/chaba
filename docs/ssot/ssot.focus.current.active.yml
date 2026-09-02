@@ -7,14 +7,11 @@ sections:
   layout: list
   items:
   - label: 'SSOT optimize: infrastructure/ssot.mac-address-registry.yml'
-    text: 'SSOT optimization detected issues in `infrastructure/ssot.mac-address-registry.yml`:
-
-
-      - bloat: Bloat: 360 lines exceeds review threshold of 350
-
-
-      Review for bloat, data isolation, or obsolescence and either split/archive the file or resolve the warnings.'
-    status: active
+    text: 'Split the central MAC registry: moved 18 local (Tony) devices into the new `ssot.mac-address-registry.local.yml` file,
+      kept Michael devices in `ssot.mac-address-registry.michael.yml`, and reduced the central `ssot.mac-address-registry.yml` to
+      the schema and cross-references. Bloat warning resolved (central file now 122 lines, local 258, michael 317).'
+    status: completed
+    completed_at: '2026-09-02'
     priority: medium
     started: '2026-09-02'
     estimated_duration: 1 session
