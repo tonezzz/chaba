@@ -140,7 +140,12 @@ async def process_request(connection, request):
         except Exception as e:
             log(f'snapshot error: {e}')
             body = json.dumps({'error': str(e)}).encode()
-            return Response(500, 'Internal Server Error', Headers({'Content-Type': 'application/json', 'Connection': 'close'}), body)
+            return Response(500, 'Internal Server Error', Headers({
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*',
+                'Access-Control-Allow-Methods': 'GET, OPTIONS',
+                'Connection': 'close',
+            }), body)
     return None
 
 
