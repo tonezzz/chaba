@@ -66,15 +66,35 @@ async def get_state_text(mcp):
 
 
 HA_URL = 'http://127.0.0.1:8123'
-SNAPSHOT_EIDS = [
-    'sensor.batteries_1_state_of_charge',
-    'sensor.batteries_1_power',
-    'sensor.batteries_1_voltage',
-    'sensor.inverters_1_pv_power',
-    'sensor.inverters_1_load_power',
-    'sensor.inverters_1_grid_power',
-    'sensor.inverters_1_grid_voltage',
-]
+
+# Ordered search patterns for each snapshot panel. Earlier patterns win.
+# These support both Sunsynk-style IDs (sensor.sunsynk_*, sensor.batteries_1_*,
+# sensor.inverters_1_*) and the current tony-dell test sensors.
+PANEL_PATTERNS = {
+    'battery': [
+        r'battery.*(soc|state_of_charge|level)',
+        r'batteries.*state_of_charge',
+        r'battery.*power',
+        r'batteries.*power',
+    ],
+    'solar': [
+        r'pv.*power',
+        r'solar.*power',
+        r'inverters.*pv_power',
+    ],
+    'power': [
+        r'load.*power',
+        r'inverters.*load_power',
+        r'grid.*power',
+        r'inverters.*grid_power',
+        r'.*_power',
+    ],
+    'grid_voltage': [
+        r'grid.*voltage',
+        r'inverters.*grid_voltage',
+        r'.*_voltage',
+    ],
+}
 
 
 def fetch_ha_states(token):
@@ -86,30 +106,65 @@ def fetch_ha_states(token):
         return json.loads(r.read().decode())
 
 
+def find_first(states, patterns, exclude=None):
+    exclude = set(exclude or [])
+    for eid, s in states.items():
+        if eid in exclude:
+            continue
+        for pat in patterns:
+            if re.search(pat, eid):
+                return eid, s
+    return None, None
+
+
+def fmt(s):
+    if not s:
+        return '—'
+    unit = (s.get('attributes') or {}).get('unit_of_measurement', '')
+    return f'{s["state"]}{unit}'.strip()
+
+
 def build_snapshot(token):
     states = {s['entity_id']: s for s in fetch_ha_states(token)}
+
+    used = set()
+    battery_soc_eid, battery_soc = find_first(states, PANEL_PATTERNS['battery'], exclude=used)
+    if battery_soc_eid:
+        used.add(battery_soc_eid)
+
+    battery_power_eid, battery_power = find_first(states, PANEL_PATTERNS['battery'], exclude=used)
+    if battery_power_eid:
+        used.add(battery_power_eid)
+
+    pv_eid, pv = find_first(states, PANEL_PATTERNS['solar'], exclude=used)
+    if pv_eid:
+        used.add(pv_eid)
+
+    load_eid, load = find_first(states, PANEL_PATTERNS['power'], exclude=used)
+    if load_eid:
+        used.add(load_eid)
+
+    grid_eid, grid = find_first(states, PANEL_PATTERNS['power'], exclude=used)
+    if grid_eid:
+        used.add(grid_eid)
+
+    grid_volt_eid, grid_volt = find_first(states, PANEL_PATTERNS['grid_voltage'], exclude=used)
+    if grid_volt_eid:
+        used.add(grid_volt_eid)
+
     entities = []
-    for eid in SNAPSHOT_EIDS:
-        s = states.get(eid)
-        if s:
+    for eid, s in states.items():
+        if eid in used:
             unit = (s.get('attributes') or {}).get('unit_of_measurement', '')
             entities.append({'entity_id': eid, 'state': s['state'], 'attributes': s.get('attributes', {}), 'unit': unit})
-        else:
-            entities.append({'entity_id': eid, 'state': 'unavailable', 'attributes': {}})
-    by_id = {e['entity_id']: e for e in entities}
-    def val(eid):
-        e = by_id.get(eid)
-        if not e:
-            return '—'
-        unit = e.get('unit') or ''
-        return f'{e["state"]}{unit}'.strip()
+
     return {
         'updated': datetime.datetime.now().isoformat(),
         'entities': entities,
         'panels': {
-            'battery': f'Battery {val("sensor.batteries_1_state_of_charge")}  {val("sensor.batteries_1_power")}',
-            'solar': f'Solar {val("sensor.inverters_1_pv_power")}',
-            'power': f'Load {val("sensor.inverters_1_load_power")}  Grid {val("sensor.inverters_1_grid_power")}  {val("sensor.inverters_1_grid_voltage")}',
+            'battery': f'Battery {fmt(battery_soc)}  {fmt(battery_power)}',
+            'solar': f'Solar {fmt(pv)}',
+            'power': f'Load {fmt(load)}  Grid {fmt(grid)}  {fmt(grid_volt)}',
         }
     }
 
