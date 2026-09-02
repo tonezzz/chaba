@@ -6,28 +6,30 @@ sections:
   icon: active
   layout: list
   items:
-  - label: 'SSOT optimize: infrastructure/ssot.mac-address-registry.yml'
-    text: 'Split the central MAC registry: moved 18 local (Tony) devices into the new `ssot.mac-address-registry.tony.yml` file,
-      kept Michael devices in `ssot.mac-address-registry.michael.yml`, and reduced the central `ssot.mac-address-registry.yml` to
-      the schema and cross-references. Bloat warning resolved (central file now 122 lines, tony 258, michael 317).'
+  - label: 'mcp-health: 1 failing'
+    text: 'Re-checked Helm Dashboard: direct curl to http://100.68.142.13:3003/apps/helm returns 200 and mcp-health reports Helm
+      Dashboard healthy (response ~400ms). The snapshot failure was transient/stale. Focus resolved.'
     status: completed
     completed_at: '2026-09-02'
-    priority: medium
+    priority: high
     started: '2026-09-02'
     estimated_duration: 1 session
     tags:
-    - ssot
-    - optimization
-    - bloat
-    - data-isolation
-    subtasks: []
+    - health
+    - monitoring
+    - snapshot
+    subtasks:
+    - label: Investigate Helm Dashboard
+      status: completed
+      completed_at: '2026-09-02'
+      note: Direct curl returns HTTP 200; mcp-health get_health_status reports Helm Dashboard healthy.
     request_log: []
     ownership:
       owner: tony
       session: ''
-      locked: true
-      lock_reason: Activated as active focus
-    source: /home/tony/CascadeProjects/chaba/docs/ssot/focus-inbox/2026-09-01-2000-infrastructure-ssot.mac-address-registry-ssot-optimization.yml
+      locked: false
+      lock_reason: Resolved
+    source: /home/tony/CascadeProjects/chaba/docs/ssot/focus-inbox/mcp-health-snapshot-2026-09-02T13-53-31.yml
 - title: Active Branch Focus
   icon: branch
   layout: list

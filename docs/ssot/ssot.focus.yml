@@ -763,6 +763,19 @@ sections:
     - sync
     - branches
     - completed
+  - label: 'SSOT optimize: infrastructure/ssot.mac-address-registry.yml'
+    text: 'Split the central MAC registry: moved 18 local (Tony) devices into the new `ssot.mac-address-registry.tony.yml`
+      file, kept Michael devices in `ssot.mac-address-registry.michael.yml`, and reduced the central `ssot.mac-address-registry.yml`
+      to the schema and cross-references. Bloat warning resolved (central file now 122 lines, tony 258, michael 317).'
+    date: '2026-09-02'
+    duration: 1 session
+    outcome: 'Completed subtasks: Split Tony MAC registry into separate data file'
+    tags:
+    - ssot
+    - optimization
+    - bloat
+    - data-isolation
+    - completed
   note: Recent 10 focus records. 10 older records archived to /home/tony/CascadeProjects/chaba/docs/ssot/ssot.focus.history.archive.2026.yml
   archive_count: 10
 config:
