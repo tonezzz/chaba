@@ -78,20 +78,26 @@ PANEL_PATTERNS = {
         r'batteries.*power',
     ],
     'solar': [
+        r'sensor\..*pv.*power',
         r'pv.*power',
         r'solar.*power',
         r'inverters.*pv_power',
     ],
     'power': [
+        r'sensor\..*load.*power',
         r'load.*power',
         r'inverters.*load_power',
+        r'sensor\..*grid.*power',
         r'grid.*power',
         r'inverters.*grid_power',
+        r'sensor\..*_power',
         r'.*_power',
     ],
     'grid_voltage': [
+        r'sensor\..*grid.*voltage',
         r'grid.*voltage',
         r'inverters.*grid_voltage',
+        r'sensor\..*_voltage',
         r'.*_voltage',
     ],
 }
@@ -110,6 +116,8 @@ def find_first(states, patterns, exclude=None):
     exclude = set(exclude or [])
     for eid, s in states.items():
         if eid in exclude:
+            continue
+        if not eid.startswith('sensor.'):
             continue
         for pat in patterns:
             if re.search(pat, eid):
