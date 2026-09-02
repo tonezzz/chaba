@@ -94,16 +94,13 @@ sections:
       lock_reason: Resolved
     source: /home/tony/CascadeProjects/chaba/docs/ssot/focus-inbox/processed/2026-08-31-0159-focus-inbox-2026-08-31-015934-dev-system-regression-ssot-optimization.yml
   - label: SSOT optimization warnings
-    text: 'SSOT optimization detected issues:
-
-      - other: 2
-
-      Source: reports/SSOT_OPTIMIZATION_METRICS.json
-
-      '
+    text: 'Resolved the two SSOT optimization warnings: ssot.home-assistant.michael.yml no longer contains a hardcoded the hassio container IP
+      (replaced with the Docker hostname homeassistant for the HA core container), and ssot.focus.yml was reduced from 790 to
+      under 750 lines by archiving the 10 oldest Focus History records to ssot.focus.history.archive.2026.yml.'
     branch: chaba
     priority: medium
-    status: active
+    status: completed
+    completed_at: '2026-09-02'
     triage_score: 0.4
     tags:
     - ssot
@@ -113,8 +110,17 @@ sections:
       reason: Report-generated item; can be triaged independently.
     subtasks:
     - label: Open reports/SSOT_OPTIMIZATION_SUGGESTIONS.md
+      status: completed
+      completed_at: '2026-09-02'
+      note: Report showed 2 warnings (data isolation and bloat).
     - label: Fix highest priority warning
+      status: completed
+      completed_at: '2026-09-02'
+      note: Replaced hardcoded the hassio container IP with homeassistant hostname and archived 10 oldest focus history records.
     - label: Re-run ssot-validate-all
+      status: completed
+      completed_at: '2026-09-02'
+      note: Validation now passes with 0 errors and 0 warnings.
     started: '2026-09-02'
     source: /home/tony/CascadeProjects/chaba/docs/ssot/focus-inbox/processed/2026-08-29-190014-ssot-optimization-issues.yml
 - title: Quick Wins
