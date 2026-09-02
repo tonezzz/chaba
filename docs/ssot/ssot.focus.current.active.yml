@@ -74,8 +74,7 @@ sections:
       resume_note: MacBook offline; park focus until host is reachable
   - label: Sync worktree yomi with master
     text: 'Worktree yomi was 0 commit(s) ahead and 72 commit(s) behind master. The only local change was an untracked yomi-login.mjs,
-      which I copied to scripts/yomi/yomi-login.mjs on master. The chaba-yomi worktree and local yomi branch have been removed.
-      '
+      which I copied to scripts/yomi/yomi-login.mjs on master. The chaba-yomi worktree and local yomi branch have been removed. '
     branch: chaba
     priority: medium
     status: completed
@@ -106,6 +105,40 @@ sections:
       score: 0.6
     started: '2026-09-02'
     source: /home/tony/CascadeProjects/chaba/docs/ssot/focus-inbox/processed/2026-09-01-125844-worktree-drift-yomi.yml
+  - label: Sync worktree raceman with master
+    text: 'Worktree raceman and its branch no longer exist locally. The prior review found the 2 ahead commits produced the same
+      tree as master, so no merge was needed. Confirmed orphan directory is gone and no raceman branch remains.
+      '
+    branch: chaba
+    priority: medium
+    status: completed
+    completed_at: '2026-09-02'
+    triage_score: 0.55
+    tags:
+    - worktree
+    - sync
+    - branches
+    safe_to_parallel: true
+    subtasks:
+    - label: Review raceman changes
+      status: completed
+      completed_at: '2026-09-02'
+      note: 2 ahead / 74 behind master; ahead commits 7fc9dacc and 3b1140c5; no active git worktree
+    - label: Merge or rebase to master
+      status: completed
+      completed_at: '2026-09-02'
+      note: merge-tree returned same tree as master; clean no-op merge.
+    - label: Delete worktree if merged
+      status: completed
+      completed_at: '2026-09-02'
+      note: No local raceman worktree or branch found; nothing to delete.
+    triage:
+      complication: 2
+      urgency: 3
+      importance: 3
+      score: 0.6
+    started: '2026-09-02'
+    source: /home/tony/CascadeProjects/chaba/docs/ssot/focus-inbox/processed/2026-09-01-125844-worktree-drift-raceman.yml
 - title: Quick Wins
   icon: quick
   layout: list
