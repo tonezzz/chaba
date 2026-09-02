@@ -6,7 +6,10 @@ family:
   - michael-live2
 live:
   refresh_interval: 5000
-  endpoint_snapshot: ./demo-snapshot.json
+  endpoint_snapshot: /snapshot
+  external_snapshot: https://tony-dell.taila0626a.ts.net:8444/snapshot
+  fallback_snapshot: ./demo-snapshot.json
+  source: stacks/ha-live/bridge.py
   features:
     - battery
     - solar

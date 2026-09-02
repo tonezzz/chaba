@@ -289,9 +289,14 @@ sections:
     safe_to_parallel: true
     subtasks:
     - label: Clone or locate sunsynk-power-flow-card on tony-dell
+      status: completed
     - label: Apply battery 3/4 patch cleanly (avoid duplicate declarations)
+      status: completed
     - label: Build with npm run build
+      status: completed
     - label: Fix eslint errors and commit
+      status: completed
+      note: ESLint now clean and npm run build succeeds; commit/push deferred per instruction for main-session review.
     queued_at: '2026-09-02'
     source: user
     owner: focus-dispatcher
@@ -321,8 +326,15 @@ sections:
     safe_to_parallel: true
     subtasks:
     - label: Merge ha live bridge updates into chaba master
+      status: in_progress
+      note: Attempted merge of origin/ha into master on tony_dell; hit add/add conflicts in docs/ssot/infrastructure/ssot.home-assistant.{branches,yml} and stacks/ha-live/{bridge.py,ha-live.service,restart.sh}. Concurrent main-session pull (d7b4ce24) and uncommitted autostash changes make it unsafe to continue without main review.
     - label: Merge michael-ha/michael-live updates
+      status: in_progress
+      note: Not started; blocked until ha live bridge merge is resolved.
     - label: Clean up /tmp/chaba-ha and chaba-michael worktrees
+      status: completed
+      completed_at: '2026-09-02'
+      note: Verified no chaba-ha or chaba-michael worktree directories exist under /tmp, /home/tony/.local/share/worktrees, or /home/tony/CascadeProjects; git worktree list shows only chaba-tony-dell, chaba.h3, and experiment worktrees.
     queued_at: '2026-09-02'
     source: user
     owner: focus-dispatcher

@@ -1,4 +1,4 @@
-import asyncio, base64, datetime, json, os, re, sys, traceback
+import asyncio, base64, json, os, re, sys, traceback
 import websockets
 from websockets.http11 import Response
 from websockets.datastructures import Headers
@@ -65,43 +65,6 @@ async def get_state_text(mcp):
     return 'Current states: ' + '; '.join(states)
 
 
-SNAPSHOT_EIDS = [
-    'sensor.batteries_1_state_of_charge',
-    'sensor.batteries_1_power',
-    'sensor.batteries_1_voltage',
-    'sensor.inverters_1_pv_power',
-    'sensor.inverters_1_load_power',
-    'sensor.inverters_1_grid_power',
-    'sensor.inverters_1_grid_voltage',
-]
-
-
-async def get_snapshot(mcp):
-    entities = []
-    for eid in SNAPSHOT_EIDS:
-        try:
-            r = await mcp.call_tool('ha_call_read_tool', {'name': 'ha_get_state', 'arguments': {'entity_id': eid}})
-            payload = json.loads(r.content[0].text)['data']
-            entities.append({'entity_id': eid, 'state': payload.get('state'), 'attributes': payload.get('attributes', {}), 'unit': payload.get('attributes', {}).get('unit_of_measurement', '')})
-        except Exception as e:
-            entities.append({'entity_id': eid, 'state': f'unknown ({e})', 'attributes': {}})
-    by_id = {e['entity_id']: e for e in entities}
-    def val(eid):
-        if eid in by_id:
-            return f'{by_id[eid]["state"]}{by_id[eid]["unit"]}'.strip()
-        return '—'
-    snapshot = {
-        'updated': datetime.datetime.now().isoformat(),
-        'entities': entities,
-        'panels': {
-            'battery': f'Battery {val("sensor.batteries_1_state_of_charge")}  {val("sensor.batteries_1_power")}',
-            'solar': f'Solar {val("sensor.inverters_1_pv_power")}',
-            'power': f'Load {val("sensor.inverters_1_load_power")}  Grid {val("sensor.inverters_1_grid_power")}  {val("sensor.inverters_1_grid_voltage")}',
-        }
-    }
-    return snapshot
-
-
 async def process_request(connection, request):
     if request.headers.get('Upgrade', '').lower() == 'websocket':
         return None
@@ -109,26 +72,6 @@ async def process_request(connection, request):
         with open(os.path.join(WWW, 'index.html'), 'rb') as f:
             body = f.read()
         return Response(200, 'OK', Headers({'Content-Type': 'text/html', 'Connection': 'close', 'Cache-Control': 'no-store, no-cache, must-revalidate'}), body)
-    if request.path in ('/snapshot', '/snapshot.json'):
-        try:
-            _, mcp_url = load_creds()
-            async with streamable_http_client(mcp_url) as (read_stream, write_stream, _):
-                async with ClientSession(read_stream, write_stream) as mcp:
-                    await mcp.initialize()
-                    snapshot = await get_snapshot(mcp)
-                    body = json.dumps(snapshot).encode()
-                    return Response(200, 'OK', Headers({
-                        'Content-Type': 'application/json',
-                        'Access-Control-Allow-Origin': '*',
-                        'Access-Control-Allow-Methods': 'GET, OPTIONS',
-                        'Access-Control-Allow-Headers': 'Content-Type',
-                        'Cache-Control': 'no-store, no-cache, must-revalidate',
-                        'Connection': 'close',
-                    }), body)
-        except Exception as e:
-            log(f'snapshot error: {e}')
-            body = json.dumps({'error': str(e)}).encode()
-            return Response(500, 'Internal Server Error', Headers({'Content-Type': 'application/json', 'Connection': 'close'}), body)
     return None
 
 

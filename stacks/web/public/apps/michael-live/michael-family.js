@@ -33,24 +33,49 @@ class MichaelFamilyApp {
     }
 
     async fetchYaml(file) {
-        const res = await fetch(file + '?v=1');
+        const res = await fetch(file + '?v=2');
         if (!res.ok) throw new Error(`${file}: ${res.status}`);
         return jsyaml.load(await res.text()) || {};
     }
 
     mergeDeep(base, page) {
-        return { ...base, ...page };
+        if (!this.isObject(base) || !this.isObject(page)) return page;
+        const output = { ...base };
+        for (const key of Object.keys(page)) {
+            if (this.isObject(page[key])) {
+                output[key] = this.isObject(base[key]) ? this.mergeDeep(base[key], page[key]) : page[key];
+            } else {
+                output[key] = page[key];
+            }
+        }
+        return output;
+    }
+
+    isObject(item) {
+        return item && typeof item === 'object' && !Array.isArray(item) && !(item instanceof Date);
     }
 
     async loadData() {
         const endpoint = this.config?.live?.endpoint_snapshot || './demo-snapshot.json';
+        const status = document.getElementById('connection-status');
+        if (status) {
+            status.textContent = 'Loading';
+            status.classList.remove('live', 'error');
+            status.classList.add('loading');
+        }
         try {
             const res = await fetch(endpoint);
             if (!res.ok) throw new Error(`${res.status}`);
             this.data = await res.json();
+            if (this.data.error) throw new Error(this.data.error);
             this.updateValues();
         } catch (err) {
             console.error('loadData failed:', err);
+            if (status) {
+                status.textContent = 'Error: ' + err.message;
+                status.classList.remove('live', 'loading');
+                status.classList.add('error');
+            }
         }
     }
 
@@ -86,8 +111,8 @@ class MichaelFamilyApp {
     updateValues() {
         const status = document.getElementById('connection-status');
         if (status) {
-            status.textContent = 'Live';
-            status.classList.remove('loading');
+            status.textContent = 'Live' + (this.data?.updated ? ` · ${new Date(this.data.updated).toLocaleTimeString()}` : '');
+            status.classList.remove('loading', 'error');
             status.classList.add('live');
         }
         const panels = this.data?.panels || {};
