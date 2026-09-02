@@ -1,40 +1,66 @@
 #!/usr/bin/env python3
 """Validate that operational MCP server implementations exist on disk.
 
-Reads docs/ssot/infrastructure/ssot.mcp.yml, finds every server marked
-status: operational, and confirms that the referenced implementation file
-or script exists. This guard prevents source files from being deleted or
-moved without updating the SSOT.
+Reads the repository's own docs/ssot/infrastructure/ssot.mcp.yml, resolves any
+per_host override for this machine, and confirms that the referenced
+implementation file or script exists.
 """
 
 import os
-import re
+import socket
 import sys
 from pathlib import Path
 
 import yaml
 
-SSOT_FILE = Path("/home/tony/CascadeProjects/chaba/docs/ssot/infrastructure/ssot.mcp.yml")
-SKIP_RUNNERS = {"npx", "node", "docker"}  # paths after these runners are package/image names, not filesystem files
+REPO_ROOT = Path(__file__).resolve().parents[1]
+SSOT_FILE = REPO_ROOT / "docs" / "ssot" / "infrastructure" / "ssot.mcp.yml"
+SKIP_RUNNERS = {"npx", "node", "docker"}
 
 
-def expand_user(path: str) -> str:
-    return os.path.expanduser(path).replace("$HOME", os.environ.get("HOME", "/home/tony"))
+def expand_path(token: str) -> str:
+    return os.path.expandvars(os.path.expanduser(token))
 
 
-def path_to_check(implementation: str) -> str | None:
+def is_path(token: str) -> bool:
+    token = expand_path(token)
+    return token.startswith("/") or token.startswith("~")
+
+
+def normalize_host(name: str) -> str:
+    return name.lower().replace("-", "_")
+
+
+def current_host() -> str:
+    return normalize_host(socket.gethostname())
+
+
+def get_path_to_check(implementation: str) -> str | None:
     """Extract the first absolute or ~/ path from an implementation string."""
     if not implementation or implementation.startswith(("http://", "https://")):
         return None
 
-    # Try to find the first token that looks like a filesystem path.
     for token in implementation.split():
-        token = expand_user(token)
-        if token.startswith("/") or token.startswith("~"):
-            return token
-        # npx package names sometimes have a leading @ or contain a slash but
-        # are not filesystem paths; we skip npx lines entirely.
+        if is_path(token):
+            return expand_path(token)
     return None
+
+
+def merge_host_overrides(cfg: dict, host: str) -> dict:
+    """Return a server config merged with the per_host block for `host`."""
+    merged = dict(cfg)
+    per_host = merged.pop("per_host", None)
+    if isinstance(per_host, dict):
+        for key in (host, host.replace("_", "-")):
+            overrides = per_host.get(key)
+            if isinstance(overrides, dict):
+                for k, v in overrides.items():
+                    if k == "env" and isinstance(v, dict) and isinstance(merged.get("env"), dict):
+                        merged["env"] = {**merged["env"], **v}
+                    else:
+                        merged[k] = v
+                break
+    return merged
 
 
 def main() -> int:
@@ -50,18 +76,23 @@ def main() -> int:
         print(f"ERROR: No 'servers' section in {SSOT_FILE}")
         return 1
 
+    host = current_host()
     missing: list[str] = []
+    checked = 0
+
     for name, config in servers.items():
         if config.get("status") != "operational":
             continue
 
-        impl = config.get("implementation", "")
+        resolved = merge_host_overrides(config, host)
+        impl = resolved.get("implementation", "")
         runner = impl.split(None, 1)[0] if impl else ""
 
         if runner in SKIP_RUNNERS or impl.startswith(("http://", "https://")):
             continue
 
-        path = path_to_check(impl)
+        checked += 1
+        path = get_path_to_check(impl)
         if not path:
             missing.append(f"{name}: no filesystem path found in implementation: {impl}")
             continue
@@ -76,12 +107,7 @@ def main() -> int:
             print(f"  - {item}")
         return 1
 
-    checked = sum(
-        1
-        for c in servers.values()
-        if c.get("status") == "operational" and not c.get("implementation", "").startswith(("http://", "https://"))
-    )
-    print(f"OK: all {checked} operational MCP implementations are present on disk.")
+    print(f"OK: all {checked} operational MCP implementations are present on disk for host {host}.")
     return 0
 
 
