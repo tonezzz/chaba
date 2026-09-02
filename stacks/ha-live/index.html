@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>HA Voice</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { background: #0f1a2e; color: #e0e6ed; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; margin: 0; padding: 1rem; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
+    #wrap { width: 100%; max-width: 420px; text-align: center; }
+    h1 { margin-bottom: 0.5rem; font-size: 1.2rem; color: #7fb3ff; }
+    #ptt { width: 120px; height: 120px; border-radius: 50%; border: none; background: linear-gradient(145deg, #1c3a6e, #15294f); color: #fff; font-size: 1.1rem; box-shadow: 0 4px 15px rgba(0,0,0,0.4); margin: 1.5rem 0; touch-action: none; user-select: none; }
+    #ptt.recording { background: linear-gradient(145deg, #c0392b, #962d22); }
+    #play { width: 160px; padding: 0.6rem; border: none; border-radius: 8px; background: #1c3a6e; color: #fff; font-size: 1rem; }
+    #play:disabled { background: #555; }
+    #status { font-size: 0.9rem; color: #9ab; min-height: 1.4em; }
+    #text { padding: 0.8rem; background: #16213e; border-radius: 8px; margin-top: 0.8rem; white-space: pre-wrap; word-wrap: break-word; min-height: 3rem; font-size: 1.1rem; }
+    #log { margin-top: 1rem; padding: 0.5rem; background: #0b1322; border-radius: 6px; font-size: 0.75rem; color: #8a9bb8; max-height: 8rem; overflow-y: auto; text-align: left; white-space: pre-wrap; }
+  </style>
+</head>
+<body>
+  <div id="wrap">
+    <h1>Home Assistant Voice</h1>
+    <button id="ptt" disabled>Hold to talk</button>
+    <div id="status"></div>
+    <div id="text"></div>
+    <div id="log"></div>
+    <button id="play" disabled>Play response</button>
+  </div>
+  <audio id="audio" style="display:none"></audio>
+  <script>
+    const ptt = document.getElementById('ptt');
+    const playBtn = document.getElementById('play');
+    const statusDiv = document.getElementById('status');
+    const textDiv = document.getElementById('text');
+    const logDiv = document.getElementById('log');
+    const audioEl = document.getElementById('audio');
+    const log = (m) => { logDiv.textContent += m + '\n'; logDiv.scrollTop = logDiv.scrollHeight; console.log(m); };
+    const setStatus = (s) => statusDiv.textContent = s;
+    const WS_URL = 'wss://' + location.hostname + ':8449/ws';
+
+    let ws = null;
+    let micStream = null;
+    let micCtx = null;
+    let processor = null;
+    let recordedChunks = [];
+    let isRecording = false;
+    let lastText = '';
+    let thaiVoice = null;
+    let audioCtx = null;
+    let mediaSource = null;
+    let sourceBuffer = null;
+    let audioPlayTime = 0;
+    let audioPlayed = false;
+
+    function populateVoice() {
+      const voices = window.speechSynthesis.getVoices();
+      thaiVoice = voices.find(v => v.lang.includes('th')) || null;
+    }
+    if (window.speechSynthesis.onvoiceschanged !== undefined) {
+      window.speechSynthesis.onvoiceschanged = populateVoice;
+    }
+    populateVoice();
+
+    function speak(text) {
+      if (!text) return;
+      if (window.speechSynthesis.speaking) window.speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = 'th-TH';
+      u.voice = thaiVoice;
+      window.speechSynthesis.speak(u);
+    }
+
+    function ensureWs() {
+      if (ws && ws.readyState === WebSocket.OPEN) return;
+      setStatus('Connecting...');
+      ws = new WebSocket(WS_URL);
+      ws.binaryType = 'arraybuffer';
+      ws.onopen = () => setStatus('WebSocket open');
+      ws.onclose = () => { setStatus('WebSocket closed'); ws = null; };
+      ws.onmessage = async (e) => {
+        try {
+          let obj;
+          if (typeof e.data === 'string') {
+            obj = JSON.parse(e.data);
+          } else {
+            log('binary audio not used');
+            return;
+          }
+          if (obj.type === 'text') {
+            textDiv.textContent = obj.text;
+            if (obj.text) lastText = obj.text;
+          } else if (obj.type === 'done') {
+            playBtn.disabled = false;
+            log('Response: ' + obj.text);
+            if (obj.text) { lastText = obj.text; speak(obj.text); }
+          } else if (obj.type === 'status') {
+            setStatus(obj.message);
+            if (obj.message === 'connected') ptt.disabled = false;
+          } else if (obj.type === 'error') {
+            playBtn.disabled = false;
+            ptt.disabled = false;
+            log('Error: ' + obj.message);
+          } else if (obj.type === 'audio') {
+            playAudio(obj);
+          }
+        } catch (_) {
+          log(e.data);
+        }
+      };
+    }
+
+    function parsePcmRate(mime) {
+      if (!mime) return 16000;
+      const m = mime.match(/rate=(\d+)/);
+      return m ? parseInt(m[1]) : 16000;
+    }
+
+    async function playAudio(obj) {
+      audioPlayed = true;
+      if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if (audioCtx.state === 'suspended') await audioCtx.resume();
+      const bytes = new Uint8Array(atob(obj.data).split('').map(c => c.charCodeAt(0)));
+      if (obj.mime_type && obj.mime_type.includes('audio/mpeg')) {
+        ensureMediaSource();
+        if (sourceBuffer && !sourceBuffer.updating) sourceBuffer.appendBuffer(bytes);
+        if (audioEl.paused) audioEl.play().catch(e => log('audio play: ' + e));
+        return;
+      }
+      const rate = parsePcmRate(obj.mime_type);
+      const pcm16 = new Int16Array(bytes.buffer);
+      const floats = new Float32Array(pcm16.length);
+      for (let i = 0; i < pcm16.length; i++) {
+        const s = pcm16[i];
+        floats[i] = s < 0 ? s / 0x8000 : s / 0x7FFF;
+      }
+      const buf = audioCtx.createBuffer(1, floats.length, rate);
+      buf.copyToChannel(floats, 0);
+      const src = audioCtx.createBufferSource();
+      src.buffer = buf;
+      src.connect(audioCtx.destination);
+      audioPlayTime = Math.max(audioCtx.currentTime, audioPlayTime);
+      src.start(audioPlayTime);
+      audioPlayTime += buf.duration;
+    }
+
+    function ensureMediaSource() {
+      if (mediaSource) return;
+      mediaSource = new MediaSource();
+      audioEl.src = URL.createObjectURL(mediaSource);
+      mediaSource.addEventListener('sourceopen', () => {
+        if (MediaSource.isTypeSupported('audio/mpeg')) {
+          try { sourceBuffer = mediaSource.addSourceBuffer('audio/mpeg'); } catch (e) { log('MSE sourceopen error: ' + e); }
+        } else {
+          log('audio/mpeg not supported in MSE');
+        }
+      });
+    }
+
+    function startRecording() {
+      audioPlayed = false;
+      ptt.classList.add('recording');
+      ptt.textContent = 'Release to send';
+      recordedChunks = [];
+      isRecording = true;
+      setStatus('Recording...');
+      ensureWs();
+      if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+      if (audioCtx) audioPlayTime = audioCtx.currentTime;
+      if (window.speechSynthesis.speaking) window.speechSynthesis.cancel();
+      initMic().then(() => {
+        if (micCtx) micCtx.resume();
+      });
+    }
+
+    function floatToInt16(input) {
+      const out = new Int16Array(input.length);
+      for (let i = 0; i < input.length; i++) {
+        const s = Math.max(-1, Math.min(1, input[i]));
+        out[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+      }
+      return out;
+    }
+
+    function sendRecording() {
+      if (!micCtx || !recordedChunks.length) return;
+      const n = recordedChunks.reduce((a, b) => a + b.length, 0);
+      const all = new Float32Array(n);
+      let o = 0;
+      for (const c of recordedChunks) { all.set(c, o); o += c.length; }
+      const pcm = floatToInt16(all);
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(pcm.buffer);
+        ws.send(JSON.stringify({"type": "end"}));
+        setStatus('Processing...');
+      }
+    }
+
+    async function stopRecording() {
+      if (!isRecording) return;
+      isRecording = false;
+      ptt.classList.remove('recording');
+      ptt.textContent = 'Hold to talk';
+      if (micCtx) micCtx.suspend();
+      setTimeout(sendRecording, 100);
+    }
+
+    async function initMic() {
+      if (micCtx) return;
+      try {
+        micStream = await navigator.mediaDevices.getUserMedia({ audio: { sampleRate: 16000 } });
+        micCtx = new (window.AudioContext || window.webkitAudioContext)({ sampleRate: 16000 });
+        const src = micCtx.createMediaStreamSource(micStream);
+        const gain = micCtx.createGain();
+        gain.gain.value = 0;
+        processor = micCtx.createScriptProcessor(4096, 1, 1);
+        processor.onaudioprocess = (ev) => {
+          if (isRecording) {
+            recordedChunks.push(new Float32Array(ev.inputBuffer.getChannelData(0)));
+          }
+        };
+        src.connect(gain);
+        gain.connect(processor);
+        processor.connect(micCtx.destination);
+      } catch (e) {
+        log('mic: ' + e);
+      }
+    }
+
+    ptt.addEventListener('pointerdown', startRecording);
+    ptt.addEventListener('pointerup', stopRecording);
+    ptt.addEventListener('pointerleave', stopRecording);
+    ptt.addEventListener('touchstart', (e) => { e.preventDefault(); });
+    playBtn.addEventListener('click', () => { if (lastText) speak(lastText); });
+    initMic();
+    ensureWs();
+  </script>
+</body>
+</html>
