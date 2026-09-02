@@ -42,10 +42,10 @@ sections:
       deferred_at: '2026-08-25'
       resume_note: MacBook offline; park focus until host is reachable
   - label: Sync worktree michael-ha with master
-    text: 'Archived the stale chaba/michael-ha branch. It was 72 commits ahead and 51 behind master; a trial merge showed conflicts
-      in shared Home Assistant SSOT/dashboard files where master already had the newer, more complete versions. The branch tip is
-      preserved via the tag archive/michael-ha so nothing is lost, and the chaba/michael-ha remote-tracking ref was removed.
-      '
+    text: 'Archived the stale chaba/michael-ha branch. It was 72 commits ahead and 51 behind master; a trial merge showed
+      conflicts in shared Home Assistant SSOT/dashboard files where master already had the newer, more complete versions.
+      The branch tip is preserved via the tag archive/michael-ha so nothing is lost, and the chaba/michael-ha remote-tracking
+      ref was removed. '
     branch: chaba
     priority: medium
     status: completed
@@ -60,11 +60,13 @@ sections:
     - label: Review michael-ha changes
       status: completed
       completed_at: '2026-09-02'
-      note: 72 ahead / 51 behind master; trial merge-tree showed conflicts in tony-test-current.json and three home-assistant SSOT files.
+      note: 72 ahead / 51 behind master; trial merge-tree showed conflicts in tony-test-current.json and three home-assistant
+        SSOT files.
     - label: Merge or rebase to master
       status: completed
       completed_at: '2026-09-02'
-      note: Not merged into master; instead archived as tag archive/michael-ha to avoid polluting master with divergent deployment commits.
+      note: Not merged into master; instead archived as tag archive/michael-ha to avoid polluting master with divergent deployment
+        commits.
     - label: Delete worktree if merged
       status: completed
       completed_at: '2026-09-02'
@@ -76,6 +78,39 @@ sections:
       score: 0.6
     started: '2026-09-02'
     source: /home/tony/CascadeProjects/chaba/docs/ssot/focus-inbox/processed/2026-09-01-125844-worktree-drift-michael-ha.yml
+  - label: Sync worktree mcp-kbman with master
+    text: 'No local mcp-kbman worktree or branch exists. The focus was stale; nothing to merge, rebase, or archive. Marked completed.
+      '
+    branch: chaba
+    priority: medium
+    status: completed
+    completed_at: '2026-09-02'
+    triage_score: 0.55
+    tags:
+    - worktree
+    - sync
+    - branches
+    safe_to_parallel: true
+    subtasks:
+    - label: Review mcp-kbman changes
+      status: completed
+      completed_at: '2026-09-02'
+      note: No local worktree or branch found; focus was stale.
+    - label: Merge or rebase to master
+      status: completed
+      completed_at: '2026-09-02'
+      note: Nothing to merge; no branch exists.
+    - label: Delete worktree if merged
+      status: completed
+      completed_at: '2026-09-02'
+      note: No worktree existed.
+    triage:
+      complication: 2
+      urgency: 3
+      importance: 3
+      score: 0.6
+    started: '2026-09-02'
+    source: /home/tony/CascadeProjects/chaba/docs/ssot/focus-inbox/processed/2026-09-01-125844-worktree-drift-mcp-kbman.yml
 - title: Quick Wins
   icon: quick
   layout: list
