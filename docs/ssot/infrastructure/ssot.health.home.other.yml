@@ -1,25 +1,4 @@
 title: Chaba Health Checks (Home Profile) — Other
 subtitle: Home network health checks that do not fit other categories
 icon: heart-pulse
-services:
-- id: chaba-funnel
-  name: Chaba Funnel landing page
-  type: http
-  url: https://tony-dell.taila0626a.ts.net:8444/health
-  expected_status: 200
-  timeout: 5
-  category: tailscale
-  profiles:
-  - home
-  - mobile
-  note: 'Tailscale Funnel landing page, /health endpoint, and /apps/docs/ on tony-dell:8444, proxied by tailscale serve to 127.0.0.1:8082. Port 443 remains the mcp-rview-oauth-proxy on 9004; 8443 is Caddy/rview.'
-  verification:
-  - 'Check systemd: systemctl --user status chaba-funnel.service'
-  - 'Check port: ss -tlnp | grep 8082'
-  - 'Test root: curl -s -o /dev/null -w ''%{http_code}'' https://tony-dell.taila0626a.ts.net:8444/'
-  - 'Test health: curl -s https://tony-dell.taila0626a.ts.net:8444/health'
-  - 'Test docs: curl -s -o /dev/null -w ''%{http_code}'' https://tony-dell.taila0626a.ts.net:8444/apps/docs/index.html'
-  recovery_actions:
-  - 'Restart: systemctl --user restart chaba-funnel.service'
-  - 'Check tailscale serve: tailscale serve status'
-  - 'Check syntax: python3 -m py_compile /home/tony/chaba-funnel/funnel-server.py'
+services: []

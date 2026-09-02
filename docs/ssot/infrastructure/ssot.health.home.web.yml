@@ -5,7 +5,7 @@ services:
 - id: caddy
   name: Caddy
   type: http
-  url: '{profile}/apps/map/'
+  url: '{profile}/apps/tony-live/'
   expected_status: 200
   timeout: 5
   category: web
@@ -13,6 +13,7 @@ services:
   - home
   - mobile
   host: tony_dell
+  note: Tests Caddy itself using a known deployed app; the /apps/map/ route is no longer built on tony-dell.
 - id: raceman-web
   name: Raceman Web
   type: http
@@ -70,7 +71,7 @@ services:
 - id: home-assistant
   name: Home Assistant
   type: http
-  url: http://tony-dell:8080/apps/home-assistant/
+  url: http://tony-dell:8123/
   expected_status: 200
   timeout: 10
   category: web
@@ -80,11 +81,8 @@ services:
   - 'Check container: ssh tony-dell podman ps | grep home-assistant'
   - 'Check logs: ssh tony-dell podman logs home-assistant --tail 20'
   - 'Test direct: curl -s http://tony-dell:8123/'
-  - 'Test Caddy proxy: curl -s http://tony-dell:8080/apps/home-assistant/'
   recovery_actions:
   - 'Restart service: ssh tony-dell systemctl --user restart home-assistant'
-  - 'Restart Caddy: ssh tony-dell podman exec web caddy reload --config /etc/caddy/Caddyfile
-    --adapter caddyfile'
   host: tony_dell
 - id: home-assistant-michael
   name: Home Assistant (Michael)

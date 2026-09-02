@@ -553,42 +553,38 @@ function getCommonSolutions(status, error) {
 async function checkPortAvailability(port, serviceProcessName = null) {
   try {
     const { execSync } = await import('child_process');
-    const result = execSync(`ss -tulpn | grep :${port} || true`, { encoding: 'utf8' });
-    
+    const result = execSync(`ss -tulpnH | grep :${port} || true`, { encoding: 'utf8' });
+
     if (result.trim() === '') {
-      return { available: true, process: null };
+      return { available: true, processes: [] };
     }
-    
-    // Parse the process information
-    const lines = result.trim().split('\n');
+
+    const procRegex = /users:\(\("([^"]+)"(?:,pid=(\d+),fd=\d+)?\)/;
     const processes = [];
-    
-    for (const line of lines) {
-      const parts = line.trim().split(/\s+/);
-      if (parts.length >= 7) {
-        const processName = parts[6];
-        const pid = parts[1].split('/')[0];
-        processes.push({ name: processName, pid: pid });
+
+    for (const line of result.trim().split('\n')) {
+      const match = line.match(procRegex);
+      if (match) {
+        processes.push({ name: match[1], pid: match[2] || null });
       }
     }
-    
-    // If service process name is provided, check if it's the expected process
+
     if (serviceProcessName) {
-      const isExpectedProcess = processes.some(p => 
-        p.name.toLowerCase().includes(serviceProcessName.toLowerCase()) ||
-        p.name.includes('node') || p.name.includes('docker')
+      const serviceLower = serviceProcessName.toLowerCase();
+      const isExpectedProcess = processes.some(p =>
+        p.name.toLowerCase().includes(serviceLower) ||
+        ['node', 'docker', 'podman', 'caddy'].some(n => p.name.toLowerCase().includes(n))
       );
-      
+
       return {
         available: !isExpectedProcess,
         processes: processes,
         isExpectedService: isExpectedProcess
       };
     }
-    
+
     return { available: false, processes: processes };
   } catch (error) {
-    // If command fails, assume port is unavailable for safety
     return { available: false, error: error.message };
   }
 }
@@ -706,26 +702,15 @@ async function checkHTTPService(service) {
   const { execSync } = await import('child_process');
   const startTime = Date.now();
   const expectedStatus = service.expected_status || 200;
-  
-  // Extract port for conflict detection
-  const port = extractPortFromUrl(service.url);
-  let portConflictInfo = null;
-  
-  if (port) {
-    const portCheck = await checkPortAvailability(port);
-    if (!portCheck.available && !portCheck.isExpectedService) {
-      portConflictInfo = `Port ${port} is in use by ${portCheck.processes?.map(p => p.name).join(', ') || 'another process'}`;
-    }
-  }
-  
+
   try {
-    const response = execSync(`curl -s -o /dev/null -w "%{http_code}" --max-time ${service.timeout || 5} "${service.url}"`, { 
+    const response = execSync(`curl -s -o /dev/null -w "%{http_code}" --max-time ${service.timeout || 5} "${service.url}"`, {
       encoding: 'utf8',
       stdio: 'pipe'
     });
     const responseTime = Date.now() - startTime;
     const statusCode = parseInt(response.trim());
-    
+
     // Status categorization based on expected status
     let status = 'healthy';
     if (statusCode === expectedStatus) {
@@ -738,16 +723,15 @@ async function checkHTTPService(service) {
       status = 'error';
     } else if (statusCode >= 500) {
       status = 'error';
-      } else {
+    } else {
       status = 'unknown';
     }
-    
-    // Enhanced error context for port conflicts
+
     let error = null;
-    if (status === 'error' && portConflictInfo) {
-      error = `${portConflictInfo}. This may indicate a port conflict preventing service startup.`;
+    if (status === 'error') {
+      error = `HTTP ${statusCode} (expected ${expectedStatus})`;
     }
-    
+
     return {
       status,
       response_time: responseTime,
@@ -780,7 +764,7 @@ async function checkContainerService(service) {
     let output = '';
     try {
       if (remoteHost && !["tony_dell", "tony-dell", "localhost"].includes(remoteHost)) {
-        output = execSync(`ssh -o ConnectTimeout=5 ${remoteHost} podman ps -a --filter "name=${service.container}" --format "table {{.Names}}\\t{{.Status}}"`, {
+        output = execSync(`ssh -o StrictHostKeyChecking=no -o BatchMode=yes -o ConnectTimeout=5 ${remoteHost} podman ps -a --filter "name=${service.container}" --format "table {{.Names}}\\t{{.Status}}"`, {
           encoding: 'utf8',
           stdio: 'pipe'
         });
@@ -796,7 +780,7 @@ async function checkContainerService(service) {
     if (!output.trim() || !output.includes('Up')) {
       try {
         if (remoteHost && !["tony_dell", "tony-dell", "localhost"].includes(remoteHost)) {
-          output = execSync(`ssh -o ConnectTimeout=5 ${remoteHost} podman ps -a | grep ${service.container}`, {
+          output = execSync(`ssh -o StrictHostKeyChecking=no -o BatchMode=yes -o ConnectTimeout=5 ${remoteHost} podman ps -a | grep ${service.container}`, {
             encoding: 'utf8',
             stdio: 'pipe'
           });
@@ -925,7 +909,7 @@ async function checkSystemService(service) {
   // Run remote systemctl via SSH for non-local hosts
   const localHosts = ['tony_dell', 'tony-dell', 'localhost'];
   const sshPrefix = (service.host && !localHosts.includes(service.host))
-    ? `ssh -o BatchMode=yes ${service.host.replace(/_/g, '-')} `
+    ? `ssh -o StrictHostKeyChecking=no -o BatchMode=yes ${service.host.replace(/_/g, '-')} `
     : '';
 
   try {

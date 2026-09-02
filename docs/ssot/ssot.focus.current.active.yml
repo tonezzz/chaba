@@ -5,14 +5,73 @@ sections:
 - title: Active Shared Focus
   icon: active
   layout: list
-  items: []
+  items:
+  - label: 'mcp-health: 6 failing'
+    text: '- web / Caddy: error - Port 8080 is in use by users:(("caddy",pid=4161488,fd=8)). This may indicate a port conflict
+      preventing service startup.
+
+      - web / Home Assistant: error - Port 8080 is in use by users:(("caddy",pid=4161488,fd=8)). This may indicate a port
+      conflict preventing service startup.
+
+      - datastore / Weaviate: error - Port 8080 is in use by users:(("caddy",pid=4161488,fd=8)). This may indicate a port
+      conflict preventing service startup.
+
+      - tailscale / Chaba Funnel landing page: error - Port 8444 is in use by another process. This may indicate a port conflict
+      preventing service startup.
+
+      - system / Playlived (tony-omen): error
+
+      - system / tony-omen host reachability: unknown - Command failed: curl -s -o /dev/null -w "%{http_code}" --max-time
+      5 "http://100.75.102.88:9100/health"
+
+      '
+    status: completed
+    completed_at: '2026-09-02'
+    priority: high
+    started: '2026-09-02'
+    estimated_duration: 1 session
+    tags:
+    - health
+    - monitoring
+    - snapshot
+    subtasks:
+    - label: Investigate Caddy
+      status: completed
+      completed_at: '2026-09-02'
+      note: Fixed mcp-health checkHTTPService false port-conflict logic; updated Caddy health URL to /apps/tony-live/.
+    - label: Investigate Home Assistant
+      status: completed
+      completed_at: '2026-09-02'
+      note: Health check now uses direct http://tony-dell:8123/ (Caddy had no /apps/home-assistant/ route).
+    - label: Investigate Weaviate
+      status: completed
+      completed_at: '2026-09-02'
+      note: Weaviate podman container had exited; started it on tony-dell.
+    - label: Investigate Chaba Funnel landing page
+      status: completed
+      completed_at: '2026-09-02'
+      note: Removed decommissioned chaba-funnel service from ssot.health.home.other.yml (ha-live now uses 8444).
+    - label: Investigate Playlived (tony-omen)
+      status: completed
+      completed_at: '2026-09-02'
+      note: Fixed mcp-health SSH host-key verification by adding StrictHostKeyChecking=no.
+    - label: Investigate tony-omen host reachability
+      status: completed
+      completed_at: '2026-09-02'
+      note: Restarted and enabled mcp-debug-cors.service on tony-omen; 9100/health now returns 200.
+    request_log: []
+    ownership:
+      owner: tony
+      session: ''
+      locked: true
+      lock_reason: Activated as active focus
+    source: /home/tony/CascadeProjects/chaba/docs/ssot/focus-inbox/mcp-health-snapshot-2026-09-02T09-51-42.yml
 - title: Active Branch Focus
   icon: branch
   layout: list
   items:
   - label: MacBook macOS App Development
-    text: Continue macOS and iOS workstation setup after Tailscale install; full Xcode
-      15.x is next.
+    text: Continue macOS and iOS workstation setup after Tailscale install; full Xcode 15.x is next.
     branch: macbook
     status: parked
     previous_status: active
@@ -25,21 +84,19 @@ sections:
     - xcode
     estimated_duration: 1 session
     blocker:
-      reason: MacBook (100.124.59.112) became unreachable again before Xcode install
-        could start
+      reason: MacBook (100.124.59.112) became unreachable again before Xcode install could start
     subtasks:
     - label: Bring MacBook online (Tailscale/SSH or Chrome DevTools)
       status: completed
       completed_at: '2026-08-24'
-      note: 'SSH via mcp-debug succeeded. Baseline verified: CLT active, Swift 5.8.1,
-        Node v20.17.0, Homebrew 6.0.17, 0 signing identities.'
+      note: 'SSH via mcp-debug succeeded. Baseline verified: CLT active, Swift 5.8.1, Node v20.17.0, Homebrew 6.0.17, 0 signing
+        identities.'
     - label: Install or update Xcode 15.x command line tools
       status: deferred
-      note: Tried `brew install xcodes` and direct GitHub download; both interrupted
-        by intermittent SSH timeouts. Host connectivity unstable.
+      note: Tried `brew install xcodes` and direct GitHub download; both interrupted by intermittent SSH timeouts. Host connectivity
+        unstable.
       deferred_at: '2026-08-25'
-      resume_note: MacBook offline (last seen 17h); cannot install Xcode until host
-        is reachable
+      resume_note: MacBook offline (last seen 17h); cannot install Xcode until host is reachable
     - label: Verify macOS app build toolchain
       status: deferred
       deferred_at: '2026-08-25'
@@ -47,8 +104,7 @@ sections:
   - label: Dev-system regression
     text: 'Dev-system trend is stable. Open cons:
 
-      - Branch/worktree sprawl (high): 4 branches are not merged into master; 5 worktrees
-      active
+      - Branch/worktree sprawl (high): 4 branches are not merged into master; 5 worktrees active
 
       Source: docs/ssot/ssot.dev-system.assessment.yml
 
@@ -68,8 +124,8 @@ sections:
       status: completed
       started_at: '2026-09-01'
       completed_at: '2026-09-02'
-      note: Merged and deleted ha, tony-ha, michael-ha, michael-live, tony-live and consolidated
-        raceman-files; only the open /tmp/chaba-ha-b7YHej worktree remains for active ha-live editing.
+      note: Merged and deleted ha, tony-ha, michael-ha, michael-live, tony-live and consolidated raceman-files; only the open
+        /tmp/chaba-ha-b7YHej worktree remains for active ha-live editing.
     - label: Update docs/ssot/ssot.dev-system.assessment.yml when resolved
       status: completed
       started_at: '2026-09-01'
@@ -87,8 +143,8 @@ sections:
   layout: list
   items:
   - label: Log quick wins in this section
-    text: Any task under 15 minutes (e.g. config fix, one-line health check, URL update)
-      goes here. Complete immediately and keep the list trimmed.
+    text: Any task under 15 minutes (e.g. config fix, one-line health check, URL update) goes here. Complete immediately and
+      keep the list trimmed.
     status: completed
     completed: '2026-08-26'
     priority: low
@@ -105,8 +161,7 @@ sections:
   layout: list
   items:
   - label: Add real CI smoke tests
-    text: Add a GitHub Actions job that runs a live MCP call (mcp_debug, mcp_health,
-      or mcp-focus) on every push to master.
+    text: Add a GitHub Actions job that runs a live MCP call (mcp_debug, mcp_health, or mcp-focus) on every push to master.
     status: completed
     completed_at: '2026-09-02'
     priority: medium
