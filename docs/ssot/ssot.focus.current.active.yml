@@ -42,12 +42,14 @@ sections:
       deferred_at: '2026-08-25'
       resume_note: MacBook offline; park focus until host is reachable
   - label: Sync worktree michael-ha with master
-    text: 'Remote chaba/michael-ha is 72 commit(s) ahead and 51 commit(s) behind master. The local michael-ha worktree no longer
-      exists. The branch contains the michael-ha deploy/SSH/Tailscale/ha_mcp_tools work plus shared sunsynk-power-flow-card changes;
-      merging into master will likely require conflict resolution.'
+    text: 'Archived the stale chaba/michael-ha branch. It was 72 commits ahead and 51 behind master; a trial merge showed conflicts
+      in shared Home Assistant SSOT/dashboard files where master already had the newer, more complete versions. The branch tip is
+      preserved via the tag archive/michael-ha so nothing is lost, and the chaba/michael-ha remote-tracking ref was removed.
+      '
     branch: chaba
     priority: medium
-    status: active
+    status: completed
+    completed_at: '2026-09-02'
     triage_score: 0.55
     tags:
     - worktree
@@ -56,10 +58,17 @@ sections:
     safe_to_parallel: true
     subtasks:
     - label: Review michael-ha changes
-      status: in_progress
-      note: Branch is 72 ahead / 51 behind master; shared sunsynk commits may duplicate master content.
+      status: completed
+      completed_at: '2026-09-02'
+      note: 72 ahead / 51 behind master; trial merge-tree showed conflicts in tony-test-current.json and three home-assistant SSOT files.
     - label: Merge or rebase to master
+      status: completed
+      completed_at: '2026-09-02'
+      note: Not merged into master; instead archived as tag archive/michael-ha to avoid polluting master with divergent deployment commits.
     - label: Delete worktree if merged
+      status: completed
+      completed_at: '2026-09-02'
+      note: No local michael-ha worktree existed.
     triage:
       complication: 2
       urgency: 3
