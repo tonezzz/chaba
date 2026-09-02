@@ -5,38 +5,7 @@ sections:
 - title: Active Shared Focus
   icon: active
   layout: list
-  items:
-  - label: 'mcp-health: 2 failing'
-    text: '- web / Home Assistant (Michael) Tailscale: unknown
-
-      - tailscale / michael-ha via Tailscale: unknown
-
-      '
-    status: completed
-    priority: high
-    started: '2026-09-02'
-    completed_at: '2026-09-02'
-    estimated_duration: 1 session
-    tags:
-    - health
-    - monitoring
-    - snapshot
-    subtasks:
-    - label: Investigate Home Assistant (Michael) Tailscale
-      status: completed
-      completed_at: '2026-09-02'
-      note: Re-checked with mcp-health get_health_status; service is healthy (response_time ~40ms).
-    - label: Investigate michael-ha via Tailscale
-      status: completed
-      completed_at: '2026-09-02'
-      note: Re-checked with mcp-health get_health_status; service is healthy (response_time ~40ms).
-    request_log: []
-    ownership:
-      owner: tony
-      session: ''
-      locked: false
-      lock_reason: Resolved
-    source: docs/ssot/focus-inbox/2026-09-02-014711-tailscale-health.yml
+  items: []
 - title: Active Branch Focus
   icon: branch
   layout: list
@@ -72,47 +41,15 @@ sections:
       status: deferred
       deferred_at: '2026-08-25'
       resume_note: MacBook offline; park focus until host is reachable
-  - label: Sync worktree yomi with master
-    text: 'Worktree yomi was 0 commit(s) ahead and 72 commit(s) behind master. The only local change was an untracked yomi-login.mjs,
-      which I copied to scripts/yomi/yomi-login.mjs on master. The chaba-yomi worktree and local yomi branch have been removed. '
-    branch: chaba
-    priority: medium
-    status: completed
-    completed_at: '2026-09-02'
-    triage_score: 0.55
-    tags:
-    - worktree
-    - sync
-    - branches
-    safe_to_parallel: true
-    subtasks:
-    - label: Review yomi changes
-      status: completed
-      completed_at: '2026-09-02'
-      note: Only untracked file was yomi-login.mjs.
-    - label: Merge or rebase to master
-      status: completed
-      completed_at: '2026-09-02'
-      note: Branch was 0 ahead; copied the one untracked script to master.
-    - label: Delete worktree if merged
-      status: completed
-      completed_at: '2026-09-02'
-      note: Removed /home/tony/CascadeProjects/chaba-yomi worktree and deleted local yomi branch.
-    triage:
-      complication: 2
-      urgency: 3
-      importance: 3
-      score: 0.6
-    started: '2026-09-02'
-    source: /home/tony/CascadeProjects/chaba/docs/ssot/focus-inbox/processed/2026-09-01-125844-worktree-drift-yomi.yml
-  - label: Sync worktree raceman with master
-    text: 'Worktree raceman and its branch no longer exist locally. The prior review found the 2 ahead commits produced the same
-      tree as master, so no merge was needed. Confirmed orphan directory is gone and no raceman branch remains.
+  - label: Sync worktree michael-ha with master
+    text: 'Worktree michael-ha is 64 commit(s) ahead and 3 commit(s) behind master.
+
+      Decide whether to merge, rebase, or archive the branch.
+
       '
     branch: chaba
     priority: medium
-    status: completed
-    completed_at: '2026-09-02'
+    status: active
     triage_score: 0.55
     tags:
     - worktree
@@ -120,25 +57,16 @@ sections:
     - branches
     safe_to_parallel: true
     subtasks:
-    - label: Review raceman changes
-      status: completed
-      completed_at: '2026-09-02'
-      note: 2 ahead / 74 behind master; ahead commits 7fc9dacc and 3b1140c5; no active git worktree
+    - label: Review michael-ha changes
     - label: Merge or rebase to master
-      status: completed
-      completed_at: '2026-09-02'
-      note: merge-tree returned same tree as master; clean no-op merge.
     - label: Delete worktree if merged
-      status: completed
-      completed_at: '2026-09-02'
-      note: No local raceman worktree or branch found; nothing to delete.
     triage:
       complication: 2
       urgency: 3
       importance: 3
       score: 0.6
     started: '2026-09-02'
-    source: /home/tony/CascadeProjects/chaba/docs/ssot/focus-inbox/processed/2026-09-01-125844-worktree-drift-raceman.yml
+    source: /home/tony/CascadeProjects/chaba/docs/ssot/focus-inbox/processed/2026-09-01-125844-worktree-drift-michael-ha.yml
 - title: Quick Wins
   icon: quick
   layout: list
