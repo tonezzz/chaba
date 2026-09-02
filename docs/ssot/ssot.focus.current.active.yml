@@ -66,9 +66,9 @@ sections:
       deferred_at: '2026-08-25'
       resume_note: MacBook offline; park focus until host is reachable
   - label: 'SSOT optimize: focus-inbox/2026-08-31-015934-dev-system-regression.yml'
-    text: 'The dev-system regression inbox item was stale. The branch/worktree sprawl it reported (6 branches ahead, 7 worktrees)
+    text: The dev-system regression inbox item was stale. The branch/worktree sprawl it reported (6 branches ahead, 7 worktrees)
       has been resolved (now 1 branch, 0 ahead, 1 worktree). Moved the stale focus-inbox/2026-08-31-190008-dev-system-regression.yml
-      to archived/ and updated ssot.dev-system.assessment.yml. The referenced 015934 file no longer exists.'
+      to archived/ and updated ssot.dev-system.assessment.yml. The referenced 015934 file no longer exists.
     status: completed
     completed_at: '2026-09-02'
     priority: medium
@@ -93,6 +93,30 @@ sections:
       locked: false
       lock_reason: Resolved
     source: /home/tony/CascadeProjects/chaba/docs/ssot/focus-inbox/processed/2026-08-31-0159-focus-inbox-2026-08-31-015934-dev-system-regression-ssot-optimization.yml
+  - label: SSOT optimization warnings
+    text: 'SSOT optimization detected issues:
+
+      - other: 2
+
+      Source: reports/SSOT_OPTIMIZATION_METRICS.json
+
+      '
+    branch: chaba
+    priority: medium
+    status: active
+    triage_score: 0.4
+    tags:
+    - ssot
+    - optimization
+    safe_to_parallel:
+      value: true
+      reason: Report-generated item; can be triaged independently.
+    subtasks:
+    - label: Open reports/SSOT_OPTIMIZATION_SUGGESTIONS.md
+    - label: Fix highest priority warning
+    - label: Re-run ssot-validate-all
+    started: '2026-09-02'
+    source: /home/tony/CascadeProjects/chaba/docs/ssot/focus-inbox/processed/2026-08-29-190014-ssot-optimization-issues.yml
 - title: Quick Wins
   icon: quick
   layout: list
