@@ -1,0 +1,104 @@
+:root {
+    --bg: #0d1117;
+    --surface: #161b22;
+    --border: #30363d;
+    --text: #c9d1d9;
+    --muted: #8b949e;
+    --accent: #58a6ff;
+    --ok: #238636;
+    --warn: #d29922;
+    --error: #da3633;
+}
+
+* { box-sizing: border-box; }
+
+body {
+    margin: 0;
+    padding: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+}
+
+.michael-live {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.michael-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.5rem;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+}
+
+.michael-header h1 {
+    margin: 0;
+    font-size: 1.25rem;
+}
+
+.status {
+    padding: 0.25rem 0.6rem;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    background: var(--warn);
+    color: #000;
+}
+
+.status.loading { background: var(--warn); }
+.status.live { background: var(--ok); }
+.status.error { background: var(--error); }
+
+.michael-grid {
+    flex: 1;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1rem;
+    padding: 1rem;
+}
+
+.michael-live.compact .michael-grid {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+    padding: 0.5rem;
+}
+
+.panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1rem;
+}
+
+.panel h2 {
+    margin: 0 0 0.5rem;
+    font-size: 0.9rem;
+    color: var(--muted);
+    text-transform: capitalize;
+}
+
+.panel-content {
+    font-size: 1.5rem;
+    font-weight: 600;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.michael-footer {
+    padding: 0.75rem 1.5rem;
+    text-align: right;
+    color: var(--muted);
+    font-size: 0.75rem;
+    border-top: 1px solid var(--border);
+}
+
+.error {
+    padding: 2rem;
+    color: var(--error);
+    text-align: center;
+}

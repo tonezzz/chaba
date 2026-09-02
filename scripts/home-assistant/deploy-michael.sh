@@ -10,7 +10,10 @@ REMOTE_USER="${MICHAEL_REMOTE_USER:-root}"
 REMOTE_PORT="${MICHAEL_REMOTE_PORT:-22}"
 REMOTE_CONFIG="${MICHAEL_REMOTE_CONFIG:-/config}"
 TOKEN_FILE="${MICHAEL_HA_TOKEN:-$HOME/.local/share/home-assistant-michael/ha-token}"
+SSH_KEY="${MICHAEL_SSH_KEY:-$HOME/.ssh/michael-ha}"
 DEPLOY_DASHBOARDS="${MICHAEL_DEPLOY_DASHBOARDS:-0}"
+
+SSH_OPTS="-o ConnectTimeout=5 -o IdentitiesOnly=yes -i $SSH_KEY -p $REMOTE_PORT"
 
 log() { echo "[deploy-michael] $*"; }
 
@@ -23,17 +26,17 @@ log "Checking tailnet reachability to $REMOTE_HOST"
 tailscale ping -c 1 "$REMOTE_HOST"
 
 log "Checking SSH to $REMOTE_USER@$REMOTE_HOST:$REMOTE_PORT"
-if ! ssh -o ConnectTimeout=5 -p "$REMOTE_PORT" "$REMOTE_USER@$REMOTE_HOST" true 2>/dev/null; then
+if ! ssh $SSH_OPTS "$REMOTE_USER@$REMOTE_HOST" true 2>/dev/null; then
   log "SSH not available. Install the SSH & Web Terminal add-on on $REMOTE_HOST and configure an SSH key."
   exit 1
 fi
 
 log "Deploying packages and helpers to $REMOTE_USER@$REMOTE_HOST:$REMOTE_CONFIG"
-rsync -avz "$HA_DIR/configuration/" "$REMOTE_USER@$REMOTE_HOST:$REMOTE_CONFIG/"
+rsync -avz -e "ssh $SSH_OPTS" "$HA_DIR/configuration/" "$REMOTE_USER@$REMOTE_HOST:$REMOTE_CONFIG/"
 
 if [ "$DEPLOY_DASHBOARDS" -eq 1 ] && [ -d "$HA_DIR/dashboards" ]; then
   log "Deploying dashboard files to $REMOTE_USER@$REMOTE_HOST:$REMOTE_CONFIG/lovelace/"
-  rsync -avz "$HA_DIR/dashboards/" "$REMOTE_USER@$REMOTE_HOST:$REMOTE_CONFIG/lovelace/"
+  rsync -avz -e "ssh $SSH_OPTS" "$HA_DIR/dashboards/" "$REMOTE_USER@$REMOTE_HOST:$REMOTE_CONFIG/lovelace/"
 else
   log "Skipping dashboards. Set MICHAEL_DEPLOY_DASHBOARDS=1 to rsync dashboards/ to $REMOTE_CONFIG/lovelace/"
 fi

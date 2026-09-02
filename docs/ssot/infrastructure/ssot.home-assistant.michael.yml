@@ -32,8 +32,9 @@ deploy:
     user: root
     port: 22
     config_path: /config
-    status: pending
-    note: Requires the SSH & Web Terminal add-on and an SSH key
+    ssh_key: /home/tony/.ssh/michael-ha
+    status: active
+    note: SSH key deployed and tested; rsync over Tailscale
   token_file: /home/tony/.local/share/home-assistant-michael/ha-token
   reload_url: http://michael-ha:8123/api/services/homeassistant/reload_core_config
   dashboards:
@@ -43,10 +44,14 @@ deploy:
     note: Only enable if dashboards are managed as YAML files
 
 addons:
+  - id: core_ssh
+    name: Terminal & SSH
+    status: active
+    note: Pre-installed official SSH add-on; configured with ed25519 deploy key and restarted
   - id: a0d7b954_ssh
     name: SSH & Web Terminal
     status: pending
-    note: Install via HA UI; needed for deploy script and remote shell
+    note: Community alternative; not needed while core_ssh is active
 
 mcp:
   custom_component: ha_mcp_tools
