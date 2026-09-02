@@ -6,15 +6,13 @@ sections:
   icon: active
   layout: list
   items:
-  - label: 'mcp-health: resolved (0 failing)'
-    text: 'The 14 failures shown in the 10:38 snapshot were stale false positives from a local run before reconciliation.
-      Reconciled chaba-tony-dell with origin/master, fixed mcp-health port-conflict/SSH logic, started Weaviate, restarted
-      mcp-debug-cors on tony-omen, and corrected Caddy/Home Assistant/Weaviate health URLs. Verified remote mcp-health
-      check_health and get_health_status: 54 total, 47 healthy, 0 error, 0 unknown.
+  - label: 'mcp-health: 2 failing'
+    text: '- web / Home Assistant (Michael) Tailscale: unknown
+
+      - tailscale / michael-ha via Tailscale: unknown
 
       '
-    status: completed
-    completed_at: '2026-09-02'
+    status: active
     priority: high
     started: '2026-09-02'
     estimated_duration: 1 session
@@ -23,21 +21,17 @@ sections:
     - monitoring
     - snapshot
     subtasks:
-    - label: Reconcile chaba-tony-dell worktree with origin/master
-      status: completed
-      completed_at: '2026-09-02'
-      note: Reset master to origin/master, cherry-picked bcc21d8d (playlive multi-host support + health fixes), committed playlived.mjs, pushed c3459c12.
-    - label: Verify mcp-health remote status after reconciliation
-      status: completed
-      completed_at: '2026-09-02'
-      note: Remote check_health and get_health_status report 0 error and 0 unknown; all 15 MCP servers verify.
+    - label: Investigate Home Assistant (Michael) Tailscale
+      status: not_started
+    - label: Investigate michael-ha via Tailscale
+      status: not_started
     request_log: []
     ownership:
       owner: tony
       session: ''
       locked: true
       lock_reason: Activated as active focus
-    source: /home/tony/CascadeProjects/chaba/docs/ssot/focus-inbox/mcp-health-snapshot-2026-09-02T10-38-05.yml
+    source: docs/ssot/focus-inbox/2026-09-02-014711-tailscale-health.yml
 - title: Active Branch Focus
   icon: branch
   layout: list
@@ -73,43 +67,6 @@ sections:
       status: deferred
       deferred_at: '2026-08-25'
       resume_note: MacBook offline; park focus until host is reachable
-  - label: Dev-system regression
-    text: 'Dev-system trend is stable. Open cons:
-
-      - Branch/worktree sprawl (high): 4 branches are not merged into master; 5 worktrees active
-
-      Source: docs/ssot/ssot.dev-system.assessment.yml
-
-      '
-    status: completed
-    completed_at: '2026-09-02'
-    priority: medium
-    started: '2026-08-31'
-    estimated_duration: 1 session
-    tags:
-    - dev-system
-    - assessment
-    subtasks:
-    - label: Review reports/DEV_SYSTEM_ASSESSMENT.md
-      status: completed
-      completed_at: '2026-09-01'
-    - label: 'Address highest severity con: Branch/worktree sprawl'
-      status: completed
-      started_at: '2026-09-01'
-      completed_at: '2026-09-02'
-      note: Merged and deleted ha, tony-ha, michael-ha, michael-live, tony-live and consolidated raceman-files; reconciled chaba-tony-dell with origin/master.
-    - label: Update docs/ssot/ssot.dev-system.assessment.yml when resolved
-      status: completed
-      started_at: '2026-09-01'
-      completed_at: '2026-09-01'
-    request_log: []
-    ownership:
-      owner: tony
-      session: ''
-      locked: true
-      lock_reason: Activated as active focus
-    branch: chaba
-    source: /home/tony/CascadeProjects/chaba/docs/ssot/focus-inbox/2026-08-31-015934-dev-system-regression.yml
 - title: Quick Wins
   icon: quick
   layout: list
