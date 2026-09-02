@@ -33,8 +33,8 @@ planning:
     file: docs/ssot/focus-inbox/2026-09-01-125844-worktree-drift-chaba-mcp-experiments.yml
 
 processing:
-  status: not_started
-  started_at: null
+  status: completed
+  started_at: '2026-09-02'
   steps:
   - id: 1
     label: Pre-flight checks on tony-omen
@@ -77,11 +77,19 @@ followup:
   - Deleting the remote chaba-mcp-experiments branch is deferred to user decision
 
 report:
-  status: not_started
-  completed_at: null
-  summary: ''
-  metrics: []
-  links: []
+  status: completed
+  completed_at: '2026-09-02'
+  summary: 'Target chaba-mcp-experiments worktree/branch no longer exists; pruned 11 stale remote-tracking refs on tony-dell.'
+  metrics:
+  - label: stale_remote_refs_pruned
+    value: 11
+  - label: worktrees_removed
+    value: 0
+  - label: branches_deleted
+    value: 0
+  links:
+  - text: Auto-fix report
+    url: reports/2026-09-01-chaba-mcp-experiments-auto-fix.md
   kb_review: []
   lessons_learned: []
 
