@@ -73,7 +73,7 @@ sections:
       - label: hp-deskjet-2700
         text: 'HP DeskJet 2700 series — MAC e0:73:e7:05:c5:16, serial CN33BDZ0KS.'
       - label: Unknown hosts
-        text: '192.168.2.65, .67, .73, .78, .81 discovered in the 2026-09-01 scan. MACs recorded as discovered-* device_ids.'
+        text: '192.168.2.65, .67, .71, .72, .73, .75, .76, .78, .81, .82 discovered in the 2026-09-01 scan. MACs recorded as discovered-* device_ids.'
       - label: Legacy network
         text: 'macbook on 192.168.1.39 and google-tv on 192.168.1.50; MACs unknown/stale.'
 
@@ -82,7 +82,7 @@ sections:
     layout: list
     items:
       - label: Resolve unknown hosts
-        text: 'Identify 192.168.2.65, .67, .73, .78, .81 by checking router DHCP leases, device labels, or HTTP/HTTPS fingerprints.'
+        text: 'Identify 192.168.2.65, .67, .71, .72, .73, .75, .76, .78, .81, .82 by checking router DHCP leases, device labels, or HTTP/HTTPS fingerprints.'
       - label: Populate legacy network
         text: 'Reconnect to Mountain View 5G/2.4G to scan 192.168.1.0/24 and capture macbook / Google TV MACs.'
       - label: Watch duplicates
@@ -351,6 +351,19 @@ config:
         - interface_id: primary
           mac: ca:f0:42:32:04:32
           oui: ca:f0:42
+          type: unknown
+          source: arp
+          first_seen: '2026-09-01'
+          status: active
+      mac_conflict: false
+      status: active
+    - device_id: discovered-f2eda0d45fdb
+      label: Unknown host 192.168.2.72
+      local_ids: {}
+      interfaces:
+        - interface_id: primary
+          mac: f2:ed:a0:d4:5f:db
+          oui: f2:ed:a0
           type: unknown
           source: arp
           first_seen: '2026-09-01'
