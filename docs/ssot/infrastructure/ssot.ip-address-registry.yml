@@ -1,0 +1,242 @@
+title: IP Address Registry
+subtitle: Per-network IP allocations linked to the MAC address registry
+icon: 🗺️
+version: 1
+last_updated: '2026-09-01'
+
+ideas:
+  - Every IP allocation links back to a stable device_id in ssot.mac-address-registry.yml
+  - One network_record per subnet, with an allocations list
+  - Track static reservations, DHCP leases, and discovered hosts
+  - Starting with home networks; expand to Tailscale, Docker, etc. later
+
+sections:
+  - title: IP Registry Schema
+    icon: 🧩
+    layout: list
+    items:
+      - label: network_id
+        text: 'Stable slug (e.g. home-192.168.2.0-24, legacy-192.168.1.0-24).'
+      - label: cidr
+        text: 'CIDR notation of the subnet.'
+      - label: ssid / vlan
+        text: 'Wi-Fi SSID, VLAN name, or link type.'
+      - label: gateway
+        text: 'Router IP for that subnet.'
+      - label: dhcp_range
+        text: 'DHCP pool as [start, end] (null if unknown).'
+      - label: allocations
+        text: 'List of ip_record: ip, device_id, interface_id, kind (static/reservation/dhcp/discovered), status, first_seen, last_seen, source.'
+
+  - title: Home Network 192.168.2.0/24
+    icon: 🏠
+    layout: list
+    items:
+      - label: Active connection
+        text: 'TONY-WIFI_2.4G (wlo1) and netplan-eno1 (eno1). Default gateway 192.168.2.1.'
+      - label: Known hosts
+        text: 'Router, tony-omen, Tuya coffee/bedside plugs, IP camera, HP DeskJet, and five unknown devices from the 2026-09-01 scan.'
+      - label: Note
+        text: 'This is the current active network. The detailed allocations are in config.networks below.'
+
+  - title: Legacy Network 192.168.1.0/24
+    icon: 🏠
+    layout: list
+    items:
+      - label: SSID
+        text: 'Mountain View 5G / Mountain View 2.4G (saved NetworkManager profiles).'
+      - label: Known hosts
+        text: 'macbook at 192.168.1.39, Google TV at 192.168.1.50, and tony-omen had 192.168.1.54 in earlier sessions.'
+      - label: Status
+        text: 'Stale — not reachable from the current 192.168.2.0/24 network. Needs a reconnect to rescan.'
+
+  - title: Next Steps
+    icon: ➡️
+    layout: list
+    items:
+      - label: Identify unknown hosts
+        text: 'Map 192.168.2.65, .67, .73, .78, .81 to real devices via router DHCP logs or port probes.'
+      - label: Reconnect 192.168.1.0/24
+        text: 'Switch to Mountain View 5G to capture current IPs and MACs for macbook and Google TV.'
+      - label: Expand
+        text: 'Add Tailscale, Docker, LXC, and USB-tether networks once home networks are complete.'
+      - label: Automation
+        text: 'Nightly ARP scan compares against this registry; new/duplicate IPs or MACs create focus-inbox alerts.'
+
+config:
+  version: 1
+  last_updated: '2026-09-01'
+  maintainer: tony
+  status: active
+  related_files:
+    - docs/ssot/infrastructure/ssot.mac-address-registry.yml
+    - docs/ssot/infrastructure/ssot.tuya-smart-plug.yml
+    - docs/ssot/infrastructure/ssot.ip-camera.yml
+    - docs/ssot/ssot.mysystem.home.yml
+  schema:
+    network_record:
+      required: [network_id, cidr]
+      fields:
+        network_id: stable slug
+        cidr: CIDR notation
+        ssid: Wi-Fi SSID or VLAN name
+        gateway: router IP
+        dhcp_range: [start_ip, end_ip]
+        status: active/stale/unknown
+        allocations:
+          - ip: IPv4 address
+            device_id: link to mac-address-registry
+            interface_id: which interface of the device
+            kind: static/reservation/dhcp/discovered
+            status: active/stale/reserved
+            first_seen: ISO-8601 date
+            last_seen: ISO-8601 date
+            source: arp/dhcp/sticker/manual
+  networks:
+    - network_id: home-192.168.2.0-24
+      cidr: 192.168.2.0/24
+      ssid: TONY-WIFI_2.4G / netplan-eno1
+      gateway: 192.168.2.1
+      dhcp_range: null
+      status: active
+      allocations:
+        - ip: 192.168.2.1
+          device_id: home-router
+          interface_id: lan
+          kind: static
+          status: active
+          first_seen: '2026-09-01'
+          source: arp
+        - ip: 192.168.2.65
+          device_id: discovered-cc50e319a02f
+          interface_id: primary
+          kind: discovered
+          status: active
+          first_seen: '2026-09-01'
+          source: arp
+        - ip: 192.168.2.66
+          device_id: ip-cam-65
+          interface_id: wlan0
+          kind: discovered
+          status: active
+          first_seen: '2026-09-01'
+          source: arp
+        - ip: 192.168.2.67
+          device_id: discovered-484d7ee43ac7
+          interface_id: primary
+          kind: discovered
+          status: active
+          first_seen: '2026-09-01'
+          source: arp
+        - ip: 192.168.2.68
+          device_id: tuya-plug-bedside
+          interface_id: wlan0
+          kind: discovered
+          status: active
+          first_seen: '2026-09-01'
+          source: arp
+        - ip: 192.168.2.69
+          device_id: hp-deskjet-2700
+          interface_id: wlan0
+          kind: discovered
+          status: active
+          first_seen: '2026-09-01'
+          source: arp
+        - ip: 192.168.2.73
+          device_id: discovered-062858264b2c
+          interface_id: primary
+          kind: discovered
+          status: active
+          first_seen: '2026-09-01'
+          source: arp
+        - ip: 192.168.2.78
+          device_id: discovered-ea9b8fd280f0
+          interface_id: primary
+          kind: discovered
+          status: active
+          first_seen: '2026-09-01'
+          source: arp
+        - ip: 192.168.2.80
+          device_id: tuya-plug-coffee
+          interface_id: wlan0
+          kind: discovered
+          status: active
+          first_seen: '2026-09-01'
+          source: arp
+        - ip: 192.168.2.81
+          device_id: discovered-c0cdd685a838
+          interface_id: primary
+          kind: discovered
+          status: active
+          first_seen: '2026-09-01'
+          source: arp
+        - ip: 192.168.2.83
+          device_id: tony-omen
+          interface_id: wlo1
+          kind: dhcp
+          status: active
+          first_seen: '2026-09-01'
+          source: manual
+        - ip: 192.168.2.84
+          device_id: tony-omen
+          interface_id: eno1
+          kind: dhcp
+          status: active
+          first_seen: '2026-09-01'
+          source: manual
+        - ip: 192.168.2.71
+          device_id: discovered-1c1dd3e80a4f
+          interface_id: primary
+          kind: discovered
+          status: active
+          first_seen: '2026-09-01'
+          source: arp
+        - ip: 192.168.2.75
+          device_id: discovered-227311ed1353
+          interface_id: primary
+          kind: discovered
+          status: active
+          first_seen: '2026-09-01'
+          source: arp
+        - ip: 192.168.2.76
+          device_id: discovered-7cd2da73308a
+          interface_id: primary
+          kind: discovered
+          status: active
+          first_seen: '2026-09-01'
+          source: arp
+        - ip: 192.168.2.82
+          device_id: discovered-caf042320432
+          interface_id: primary
+          kind: discovered
+          status: active
+          first_seen: '2026-09-01'
+          source: arp
+    - network_id: legacy-192.168.1.0-24
+      cidr: 192.168.1.0/24
+      ssid: Mountain View 5G / Mountain View 2.4G
+      gateway: 192.168.1.1
+      dhcp_range: null
+      status: stale
+      allocations:
+        - ip: 192.168.1.39
+          device_id: macbook
+          interface_id: wlan0
+          kind: manual
+          status: stale
+          first_seen: '2026-09-01'
+          source: mysystem.macbook.yml
+        - ip: 192.168.1.50
+          device_id: google-tv
+          interface_id: wlan0
+          kind: manual
+          status: unknown
+          first_seen: '2026-09-01'
+          source: earlier-scan
+        - ip: 192.168.1.54
+          device_id: tony-omen
+          interface_id: wlo1
+          kind: dhcp
+          status: stale
+          first_seen: '2026-09-01'
+          source: earlier-scan

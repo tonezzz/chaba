@@ -101,7 +101,7 @@ sections:
       - label: USB camera still
         text: /local/cam/last-usb-frame.jpg (use when camera.tony_dell_usb is unavailable)
       - label: Dashboard use
-        text: 'Add picture-entity or image cards pointing to the /local/cam/ URLs above. Use conditional visibility to show the still image only when the matching live camera is unavailable, or show both with a timestamp overlay.'
+        text: 'Smart Home dashboard (lovelace-smart-home.yaml) uses picture for ip_cam_65 with the /local/cam/last-cam-frame.jpg thumbnail and a tap_action URL to the go2rtc web player (stream.html?src=ip_cam_65_hd). tony_dell_usb uses picture-entity for its fast camera_proxy. This avoids the slow ffmpeg camera_proxy for the IP camera thumbnail.'
 
   - title: Pros and Cons
     icon: scale
@@ -166,4 +166,6 @@ config:
     - /home/tony/.config/home-assistant/www/cam/last-cam-frame.jpg
     - /home/tony/.config/home-assistant/www/cam/last-usb-frame.jpg
     - /home/tony/.config/home-assistant/configuration.yaml
+    - /home/tony/.config/home-assistant/lovelace-smart-home.yaml
+    - /home/tony/.config/secrets/home-assistant-token.env
     - /home/tony/CascadeProjects/chaba/docs/ssot/infrastructure/ssot.services.yml

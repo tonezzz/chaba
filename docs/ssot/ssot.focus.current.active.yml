@@ -11,7 +11,8 @@ sections:
   layout: list
   items:
   - label: MacBook macOS App Development
-    text: Continue macOS and iOS workstation setup after Tailscale install; full Xcode 15.x is next.
+    text: Continue macOS and iOS workstation setup after Tailscale install; full Xcode
+      15.x is next.
     branch: macbook
     status: parked
     previous_status: active
@@ -24,19 +25,21 @@ sections:
     - xcode
     estimated_duration: 1 session
     blocker:
-      reason: MacBook (100.124.59.112) became unreachable again before Xcode install could start
+      reason: MacBook (100.124.59.112) became unreachable again before Xcode install
+        could start
     subtasks:
     - label: Bring MacBook online (Tailscale/SSH or Chrome DevTools)
       status: completed
       completed_at: '2026-08-24'
-      note: 'SSH via mcp-debug succeeded. Baseline verified: CLT active, Swift 5.8.1, Node v20.17.0, Homebrew 6.0.17, 0 signing
-        identities.'
+      note: 'SSH via mcp-debug succeeded. Baseline verified: CLT active, Swift 5.8.1,
+        Node v20.17.0, Homebrew 6.0.17, 0 signing identities.'
     - label: Install or update Xcode 15.x command line tools
       status: deferred
-      note: Tried `brew install xcodes` and direct GitHub download; both interrupted by intermittent SSH timeouts. Host connectivity
-        unstable.
+      note: Tried `brew install xcodes` and direct GitHub download; both interrupted
+        by intermittent SSH timeouts. Host connectivity unstable.
       deferred_at: '2026-08-25'
-      resume_note: MacBook offline (last seen 17h); cannot install Xcode until host is reachable
+      resume_note: MacBook offline (last seen 17h); cannot install Xcode until host
+        is reachable
     - label: Verify macOS app build toolchain
       status: deferred
       deferred_at: '2026-08-25'
@@ -44,7 +47,8 @@ sections:
   - label: Dev-system regression
     text: 'Dev-system trend is stable. Open cons:
 
-      - Branch/worktree sprawl (high): 4 branches are not merged into master; 5 worktrees active
+      - Branch/worktree sprawl (high): 4 branches are not merged into master; 5 worktrees
+      active
 
       Source: docs/ssot/ssot.dev-system.assessment.yml
 
@@ -63,7 +67,10 @@ sections:
     - label: 'Address highest severity con: Branch/worktree sprawl'
       status: in_progress
       started_at: '2026-09-01'
-      note: Merged and deleted 9 long-tail branches (feature/home-assistant-mcp, research/gold-silver-causality, chaba-mcp-experiments, experiment/tony-dell-task-runner, ha, tony-ha, michael, raceman-files); michael-ha has new unmerged commits; michael-ha, michael-live, raceman-files and tony-live remain to merge; 5 worktrees active.
+      note: Merged and deleted 9 long-tail branches (feature/home-assistant-mcp, research/gold-silver-causality,
+        chaba-mcp-experiments, experiment/tony-dell-task-runner, ha, tony-ha, michael,
+        raceman-files); michael-ha has new unmerged commits; michael-ha, michael-live,
+        raceman-files and tony-live remain to merge; 5 worktrees active.
     - label: Update docs/ssot/ssot.dev-system.assessment.yml when resolved
       status: completed
       started_at: '2026-09-01'
@@ -81,8 +88,8 @@ sections:
   layout: list
   items:
   - label: Log quick wins in this section
-    text: Any task under 15 minutes (e.g. config fix, one-line health check, URL update) goes here. Complete immediately and
-      keep the list trimmed.
+    text: Any task under 15 minutes (e.g. config fix, one-line health check, URL update)
+      goes here. Complete immediately and keep the list trimmed.
     status: completed
     completed: '2026-08-26'
     priority: low
@@ -99,7 +106,8 @@ sections:
   layout: list
   items:
   - label: Add real CI smoke tests
-    text: Add a GitHub Actions job that runs a live MCP call (mcp_debug, mcp_health, or mcp-focus) on every push to master.
+    text: Add a GitHub Actions job that runs a live MCP call (mcp_debug, mcp_health,
+      or mcp-focus) on every push to master.
     status: not_started
     priority: medium
     tags:

@@ -23,3 +23,18 @@ jobs:
   status: planned
   note: Keeps the Tailscale Funnel docs on tony-dell in sync with the chaba-h3 docs source. --checksum verifies content, not
     just timestamp/size; --delete removes stale files on the target.
+- id: arp-inventory-scan
+  name: ARP inventory scan
+  host: tony_omen
+  type: systemd-user-timer
+  unit: arp-inventory-scan.timer
+  schedule: '*-*-* 04:00:00'
+  enabled: true
+  status: active
+  description: >
+    Run scripts/arp-inventory-scan.py on the current default subnet, compare results
+    with ssot.mac-address-registry.yml and ssot.ip-address-registry.yml, update
+    reports/network-inventory-last-seen.json, and create a focus-inbox alert if
+    new or duplicate MACs are detected.
+  note: Never rewrites the canonical SSOT files automatically. New/duplicate MACs
+    are surfaced as draft focus-inbox items for human review.
