@@ -46,6 +46,7 @@ ha_live:
   local_port: 127.0.0.1:9005
   tailscale_funnel: 'https://tony-dell.taila0626a.ts.net:8444'
   websocket: 'wss://tony-dell.taila0626a.ts.net:8444/ws'
+  snapshot: 'https://tony-dell.taila0626a.ts.net:8444/snapshot'
   expected_status: 200
   files:
     - stacks/ha-live/bridge.py
@@ -53,6 +54,9 @@ ha_live:
     - stacks/ha-live/restart.sh
     - stacks/ha-live/ha-live.service
     - stacks/ha-live/README.md
+  live_pages:
+    tony_live: 'http://tony-dell.taila0626a.ts.net:8080/apps/tony-live/'
+    michael_live: 'http://tony-dell.taila0626a.ts.net:8080/apps/michael-live/'
   health_checks:
     - 'tailscale ssh tony-dell ps -ef | grep ha-live/bridge.py'
     - 'ss -tlnp | grep 9005'

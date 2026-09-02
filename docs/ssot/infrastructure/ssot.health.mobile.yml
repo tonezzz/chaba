@@ -140,23 +140,6 @@ services:
   - 'Restart service: ssh tony-dell systemctl --user restart gpu-queue'
   - 'Check GPU queue health: curl -s http://tony-dell:3001/health'
   - 'Check GPU worker reachability: curl -s http://100.75.102.88:8008/health'
-- id: playlived-omen
-  name: Playlived (tony-omen)
-  type: systemd
-  service: playlived.service
-  expected_state: active
-  timeout: 5
-  category: system
-  profiles:
-  - home
-  - mobile
-  disabled: true
-  note: playlived is now hosted on tony-dell; tony-omen no longer runs this service.
-  verification:
-  - 'Check service: systemctl --user status playlived.service'
-  - 'Check logs: journalctl --user -u playlived.service -n 20'
-  recovery_actions:
-  - 'Restart service: systemctl --user restart playlived.service'
 - id: playlived-dell
   name: Playlived (tony-dell)
   type: http
