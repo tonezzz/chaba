@@ -12,9 +12,10 @@ sections:
       - tailscale / michael-ha via Tailscale: unknown
 
       '
-    status: active
+    status: completed
     priority: high
     started: '2026-09-02'
+    completed_at: '2026-09-02'
     estimated_duration: 1 session
     tags:
     - health
@@ -22,15 +23,19 @@ sections:
     - snapshot
     subtasks:
     - label: Investigate Home Assistant (Michael) Tailscale
-      status: not_started
+      status: completed
+      completed_at: '2026-09-02'
+      note: Re-checked with mcp-health get_health_status; service is healthy (response_time ~40ms).
     - label: Investigate michael-ha via Tailscale
-      status: not_started
+      status: completed
+      completed_at: '2026-09-02'
+      note: Re-checked with mcp-health get_health_status; service is healthy (response_time ~40ms).
     request_log: []
     ownership:
       owner: tony
       session: ''
-      locked: true
-      lock_reason: Activated as active focus
+      locked: false
+      lock_reason: Resolved
     source: docs/ssot/focus-inbox/2026-09-02-014711-tailscale-health.yml
 - title: Active Branch Focus
   icon: branch
