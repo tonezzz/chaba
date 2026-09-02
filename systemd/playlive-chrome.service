@@ -1,0 +1,14 @@
+[Unit]
+Description=PlayLive dedicated Chrome with remote debugging on 127.0.0.1:9223
+After=network.target
+
+[Service]
+Type=simple
+Environment="CACHE_DIR=/tmp/playlive-chrome-cache" "MEDIA_DIR=/tmp/playlive-chrome-media"
+ExecStartPre=/bin/bash -c 'mkdir -p /tmp/playlive-chrome-cache /tmp/playlive-chrome-media /home/tony/.config/playlive-chrome'
+ExecStart=/usr/bin/google-chrome-stable --headless=new --disable-gpu --remote-debugging-port=9223 --remote-debugging-address=127.0.0.1 --user-data-dir=/home/tony/.config/playlive-chrome --disk-cache-dir=/tmp/playlive-chrome-cache --media-cache-dir=/tmp/playlive-chrome-media --no-first-run --no-default-browser-check --disable-default-apps --disable-sync --password-store=basic about:blank
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=default.target

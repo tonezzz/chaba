@@ -1,0 +1,12 @@
+[Unit]
+Description=SSH tunnel for PlayLive tony-omen Chrome CDP (local 9228 -> tony-omen 9222)
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/ssh -N -o ServerAliveInterval=30 -o ServerAliveCountMax=3 -o ExitOnForwardFailure=yes -o BatchMode=yes -L 127.0.0.1:9228:127.0.0.1:9222 tony-omen
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=default.target

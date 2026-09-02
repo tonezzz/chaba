@@ -12,15 +12,15 @@ profiles:
     hostname_pattern: .local
     description: Home network with stable .local hostname resolution
     base_urls:
-      tony_omen: tony-omen
-      tony_dell: tony-dell
+      tony_omen: tony-omen.taila0626a.ts.net
+      tony_dell: tony-dell.taila0626a.ts.net
     service_urls:
-      llama_url: http://tony-omen:11434
-      imagen_url: http://tony-dell:8080/apps/imagen2/api
-      playlive_url: http://tony-omen:9230
-      weaviate_url: http://tony-dell:8084
-      postgres_url: postgresql://tony-dell:5432
-      helm_url: http://tony-dell:3003/apps/helm
+      llama_url: http://tony-omen.taila0626a.ts.net:11434
+      imagen_url: http://tony-dell.taila0626a.ts.net:8080/apps/imagen2/api
+      playlive_url: http://tony-dell.taila0626a.ts.net:9230
+      weaviate_url: http://tony-dell.taila0626a.ts.net:8084
+      postgres_url: postgresql://tony-dell.taila0626a.ts.net:5432
+      helm_url: http://tony-dell.taila0626a.ts.net:3003/apps/helm
     health_config: infrastructure/ssot.health.home.yml
     system_config: ssot.mysystem.home.yml
 
@@ -30,15 +30,15 @@ profiles:
     hostname_pattern: tony-omen
     description: Mobile/external network via Tailscale
     base_urls:
-      tony_omen: tony-omen
-      tony_dell: tony-dell
+      tony_omen: tony-omen.taila0626a.ts.net
+      tony_dell: tony-dell.taila0626a.ts.net
     service_urls:
-      llama_url: http://tony-omen:11434
-      imagen_url: http://tony-dell:8080/apps/imagen2/api
-      playlive_url: http://tony-dell:9230
-      weaviate_url: http://tony-dell:8084
-      postgres_url: postgresql://tony-dell:5432
-      helm_url: http://tony-dell:3003/apps/helm
+      llama_url: http://tony-omen.taila0626a.ts.net:11434
+      imagen_url: http://tony-dell.taila0626a.ts.net:8080/apps/imagen2/api
+      playlive_url: http://tony-dell.taila0626a.ts.net:9230
+      weaviate_url: http://tony-dell.taila0626a.ts.net:8084
+      postgres_url: postgresql://tony-dell.taila0626a.ts.net:5432
+      helm_url: http://tony-dell.taila0626a.ts.net:3003/apps/helm
     health_config: infrastructure/ssot.health.mobile.yml
     system_config: ssot.mysystem.mobile.yml
 
@@ -79,7 +79,8 @@ servers:
     status: operational
     per_host:
       tony_dell:
-        implementation: python3 /home/tony/CascadeProjects/chaba-tony-dell/mcp-servers/mcp-gpu/server.py
+        implementation: bash /home/tony/.config/devin/mcp-scripts/mcp-gpu-ssh.sh
+        pattern: mcp-gpu
     config_files:
       - devin: true
       - windsurf: true
@@ -151,7 +152,7 @@ servers:
     filter: none
     env:
       PLAYLIVE_URL: profile.service_urls.playlive_url
-      PLAYLIVE_HOSTS: '{"tony-dell":"http://tony-dell:9223","tony-omen":"http://192.168.2.84:9228","kk-macbook":"http://kk-macbook:9223"}'
+      PLAYLIVE_HOSTS: '{"tony-dell":"http://127.0.0.1:9223","tony-omen":"http://127.0.0.1:9228","kk-macbook":"http://100.124.59.112:9223"}'
     single_instance: true
     status: operational
     per_host:
@@ -229,7 +230,7 @@ servers:
     pattern: mcp-weaviate/server.py
     filter: none
     env:
-      WEAVIATE_SEARCH_URL: http://localhost:3002
+      WEAVIATE_SEARCH_URL: http://tony-omen.taila0626a.ts.net:3002
       WEAVIATE_URL: profile.service_urls.weaviate_url
     single_instance: true
     status: operational
