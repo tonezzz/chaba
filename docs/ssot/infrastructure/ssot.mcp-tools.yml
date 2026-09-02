@@ -140,12 +140,24 @@ servers:
     category: documentation
     use_cases:
       - Project-agnostic documentation search
+      - Scrape and index library documentation
       - Offline local docs
     example_tools:
       - search_docs
-      - get_page
+      - fetch_url
+      - list_libraries
+      - find_version
+      - scrape_docs
+      - refresh_version
+      - list_jobs
+      - get_job_info
+      - cancel_job
+      - remove_docs
     failure_procedure:
+      - Ensure a Chromium/Chrome executable is available (set PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH to a system Chrome like /usr/bin/google-chrome)
       - Rebuild the docs-mcp cache if results are stale
+    note: |
+      The @arabold/docs-mcp-server startup blocks if no Playwright Chromium is installed. Use the system Chrome fallback or run `npx playwright install chromium`.
 
   - name: docs-trade
     status: active
