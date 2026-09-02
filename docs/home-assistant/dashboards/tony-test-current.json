@@ -7,7 +7,7 @@
       "cards": [
         {
           "type": "custom:sunsynk-power-flow-card",
-          "cardstyle": "lite",
+          "cardstyle": "full",
           "view_layout": {
             "grid-area": "flow"
           },
@@ -36,7 +36,7 @@
             "colour": "#ffc0cb",
             "animation_speed": 6,
             "max_power": 10000,
-            "count": 1,
+            "count": 3,
             "invert_power": true,
             "show_absolute": true
           },
@@ -87,10 +87,41 @@
             "pv_total": "sensor.inverters_1_pv_power",
             "grid_voltage": "sensor.inverters_1_grid_voltage",
             "inverter_status_59": "sensor.inverters_1_inverter_mode",
-            "remaining_solar": "none"
+            "remaining_solar": "none",
+            "battery1_voltage_183": "sensor.batteries_1_voltage",
+            "battery1_soc_184": "sensor.batteries_1_state_of_charge",
+            "battery1_power_190": "sensor.batteries_1_power",
+            "battery1_current_191": "sensor.batteries_1_current",
+            "battery2_voltage_183": "sensor.batteries_2_voltage",
+            "battery2_soc_184": "sensor.batteries_2_state_of_charge",
+            "battery2_power_190": "sensor.batteries_2_power",
+            "battery2_current_191": "sensor.batteries_2_current",
+            "battery3_voltage_183": "sensor.batteries_3_voltage",
+            "battery3_soc_184": "sensor.batteries_3_state_of_charge",
+            "battery3_power_190": "sensor.batteries_3_power",
+            "battery3_current_191": "sensor.batteries_3_current"
           },
           "card_mod": {
             "style": "ha-card { --card-background-color: #102040 !important; background-color: #102040 !important; --primary-text-color: #ffffff !important; --secondary-text-color: #cccccc !important; color: #ffffff !important; }"
+          },
+          "wide": true,
+          "battery2": {
+            "energy": 14280,
+            "shutdown_soc": 20,
+            "show_daily": false,
+            "show_remaining_energy": false,
+            "colour": "#ffc0cb",
+            "invert_power": true,
+            "show_absolute": true
+          },
+          "battery3": {
+            "energy": 14280,
+            "shutdown_soc": 20,
+            "show_daily": false,
+            "show_remaining_energy": false,
+            "colour": "#ffc0cb",
+            "invert_power": true,
+            "show_absolute": true
           }
         }
       ],
