@@ -101,7 +101,8 @@ def build_snapshot(token):
         e = by_id.get(eid)
         if not e:
             return '—'
-        return f'{e["state"]}{e["unit"]}'.strip()
+        unit = e.get('unit') or ''
+        return f'{e["state"]}{unit}'.strip()
     return {
         'updated': datetime.datetime.now().isoformat(),
         'entities': entities,
