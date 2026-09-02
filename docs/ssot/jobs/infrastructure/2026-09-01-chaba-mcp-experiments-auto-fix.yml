@@ -16,10 +16,10 @@ planning:
   - A report is written to reports/2026-09-01-chaba-mcp-experiments-auto-fix.{json,md} and pushed to the experiment branch
   - If any step is unsafe, the script aborts and reports the reason
   risks:
-  - Risk: rebase conflicts. Mitigation: abort immediately and report; do not continue.
-  - Risk: uncommitted changes in the worktree. Mitigation: abort immediately and report.
-  - Risk: force-push overwrites newer commits on origin. Mitigation: use --force-with-lease.
-  - Risk: branch is valuable and should not be rebased. Mitigation: this job was approved as "auto-fix" from the Ready (Safe) queue; the script only proceeds if the 3 ahead commits rebase cleanly.
+  - 'Risk: rebase conflicts. Mitigation: abort immediately and report; do not continue.'
+  - 'Risk: uncommitted changes in the worktree. Mitigation: abort immediately and report.'
+  - 'Risk: force-push overwrites newer commits on origin. Mitigation: use --force-with-lease.'
+  - 'Risk: branch is valuable and should not be rebased. Mitigation: this job was approved as "auto-fix" from the Ready (Safe) queue; the script only proceeds if the 3 ahead commits rebase cleanly.'
   resources:
   - tony-dell worktree /home/tony/CascadeProjects/chaba-tony-dell-experiments
   - tony-dell SSH access to tony-omen

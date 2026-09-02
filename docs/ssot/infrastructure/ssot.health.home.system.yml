@@ -2,23 +2,6 @@ title: System timer & host health checks
 subtitle: System timer & host health checks
 icon: timer
 services:
-- id: playlived-omen
-  name: Playlived (tony-omen)
-  type: systemd
-  service: playlived.service
-  host: tony_omen
-  expected_state: active
-  timeout: 5
-  category: system
-  profiles:
-  - home
-  - mobile
-  note: 'Playlived is also still active on tony-omen; tony-dell is the primary.'
-  verification:
-  - 'Check service: systemctl --user status playlived.service'
-  - 'Check logs: journalctl --user -u playlived.service -n 20'
-  recovery_actions:
-  - 'Restart service: systemctl --user restart playlived.service'
 - id: yomi-update-all-timer
   name: Yomi Update All Timer
   type: systemd
