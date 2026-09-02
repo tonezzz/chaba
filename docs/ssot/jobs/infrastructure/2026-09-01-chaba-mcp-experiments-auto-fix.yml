@@ -1,0 +1,94 @@
+title: Auto-Fix chaba-mcp-experiments Worktree Drift (tony-omen via tony-dell)
+subtitle: Rebase the 3-ahead/66-behind chaba-mcp-experiments branch onto master, force-push, and remove the local worktree if the rebase is clean
+icon: target
+
+planning:
+  goal: Reduce branch/worktree sprawl by rebasing chaba-mcp-experiments onto origin/master and removing its local worktree, but only if the rebase is clean and the worktree has no uncommitted changes.
+  scope:
+    Operate on tony-omen /home/tony/CascadeProjects/chaba and /home/tony/CascadeProjects/chaba-mcp-experiments.
+    Abort if the worktree is dirty or the rebase has conflicts.
+    Do not push to master; only the chaba-mcp-experiments branch is rewritten.
+  success_criteria:
+  - chaba-mcp-experiments is rebased onto origin/master with no conflicts
+  - The rebased branch is force-pushed to origin
+  - The local chaba-mcp-experiments worktree is removed
+  - The local chaba-mcp-experiments branch is deleted
+  - A report is written to reports/2026-09-01-chaba-mcp-experiments-auto-fix.{json,md} and pushed to the experiment branch
+  - If any step is unsafe, the script aborts and reports the reason
+  risks:
+  - Risk: rebase conflicts. Mitigation: abort immediately and report; do not continue.
+  - Risk: uncommitted changes in the worktree. Mitigation: abort immediately and report.
+  - Risk: force-push overwrites newer commits on origin. Mitigation: use --force-with-lease.
+  - Risk: branch is valuable and should not be rebased. Mitigation: this job was approved as "auto-fix" from the Ready (Safe) queue; the script only proceeds if the 3 ahead commits rebase cleanly.
+  resources:
+  - tony-dell worktree /home/tony/CascadeProjects/chaba-tony-dell-experiments
+  - tony-dell SSH access to tony-omen
+  - Python 3 and git on tony-omen
+  owner: tony
+  estimated_duration: 1 session
+  related_focus:
+  - label: Dev-system regression
+    file: docs/ssot/ssot.focus.current.active.yml
+  - label: Sync worktree chaba-mcp-experiments with master
+    file: docs/ssot/focus-inbox/2026-09-01-125844-worktree-drift-chaba-mcp-experiments.yml
+
+processing:
+  status: not_started
+  started_at: null
+  steps:
+  - id: 1
+    label: Pre-flight checks on tony-omen
+    status: not_started
+    notes: Check SSH and worktree cleanliness
+  - id: 2
+    label: Fetch origin
+    status: not_started
+    notes: Ensure origin/master is up to date in the chaba-mcp-experiments worktree
+  - id: 3
+    label: Rebase onto origin/master
+    status: not_started
+    notes: git rebase origin/master in the chaba-mcp-experiments worktree
+  - id: 4
+    label: Force-push rebased branch
+    status: not_started
+    notes: git push --force-with-lease
+  - id: 5
+    label: Remove worktree and local branch
+    status: not_started
+    notes: git worktree remove chaba-mcp-experiments and git branch -d chaba-mcp-experiments
+  - id: 6
+    label: Commit and push report from tony-dell
+    status: not_started
+    notes: Add reports/2026-09-01-chaba-mcp-experiments-auto-fix.* and push to experiment branch
+  decisions: []
+  changes: []
+
+followup:
+  verification:
+  - tony-omen no longer has a chaba-mcp-experiments worktree
+  - origin/chaba-mcp-experiments has the rebased history
+  - The experiment branch contains the auto-fix report
+  rollback_plan:
+  - If the worktree was removed but should not have been, recreate it from origin/chaba-mcp-experiments
+  - If the rebase was bad, the original commits can be recovered from origin's reflog for 90 days
+  handoff:
+  - Next owner: tony. Review the report, then decide whether to delete the origin branch or open a PR from it.
+  deferred:
+  - Deleting the remote chaba-mcp-experiments branch is deferred to user decision
+
+report:
+  status: not_started
+  completed_at: null
+  summary: ''
+  metrics: []
+  links: []
+  kb_review: []
+  lessons_learned: []
+
+config:
+  version: 1
+  created_at: '2026-09-01'
+  last_updated: '2026-09-01'
+  maintainer: tony
+  related_files:
+  - docs/ssot/templates/job.yml
