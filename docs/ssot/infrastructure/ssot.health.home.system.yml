@@ -155,26 +155,6 @@ services:
   - 'Check backup service: systemctl status chaba-backup.timer'
   - 'Check backup logs for errors: tail -100 /var/log/chaba-backup.log'
   host: tony_omen
-- id: tony-omen-host
-  name: tony-omen host reachability
-  type: http
-  url: http://100.75.102.88:9100/health
-  expected_status: 200
-  timeout: 5
-  category: system
-  profiles:
-  - home
-  - mobile
-  host: tony_omen
-  note: Canary for tony-omen host and tailnet connectivity. Uses the direct Tailscale
-    IP because mcp-health cannot resolve the tony-omen hostname from tony-dell.
-  verification:
-  - 'Check host: ssh tony-omen uptime'
-  - 'Check tailnet: ping -c 1 100.75.102.88'
-  - 'Check mcp-debug: curl -s http://100.75.102.88:9100/health'
-  recovery_actions:
-  - Check power/network on tony-omen
-  - 'Restart mcp-debug-cors: ssh tony-omen systemctl --user restart mcp-debug-cors.service'
 - id: tony-omen-sensor-reader
   name: tony-omen sensor-reader
   type: http
