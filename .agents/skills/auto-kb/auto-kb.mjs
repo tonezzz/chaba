@@ -25,7 +25,7 @@ import { readFileSync, writeFileSync, readdirSync, existsSync, unlinkSync } from
 import { join } from 'path';
 
 const KB_DIR = process.env.KB_DIR || '/home/tony/CascadeProjects/chaba/docs/kb';
-const LOCK_FILE = '/tmp/auto-kb.lock';
+const LOCK_FILE = process.env.AUTO_KB_LOCK_FILE || '/home/tony/.cache/auto-kb.lock';
 
 // KB-worthy triggers
 const KB_WORTHY_TRIGGERS = [
