@@ -112,13 +112,13 @@ Standardizes GPU resource management with:
 - **Purpose**: GPU status and operations via MCP
 - **Tools**: GPU status, process listing, VRAM monitoring
 - **Integration**: Status API, health check dashboard
-- **Location**: `chaba-omen/mcp/mcp-gpu/server.py`
+- **Location**: `chaba/mcp-servers/mcp-gpu/server.py`
 
 ### MCP-Llama Server
 - **Purpose**: LLM inference via MCP
 - **Tools**: Model loading, text generation, queue management
 - **Integration**: GPU queue, Yomi summarization
-- **Location**: `chaba-omen/mcp/mcp-llama/server.py`
+- **Location**: `chaba/mcp-servers/mcp-llama/server.py`
 
 ## Monitoring Integration
 

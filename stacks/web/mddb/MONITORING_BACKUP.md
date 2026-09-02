@@ -74,7 +74,7 @@ mddb_container:
 ```
 
 ### 2. Status API Integration
-**Add to existing status-api** (`/home/tony/CascadeProjects/chaba-omen/stacks/web/status-api/main.py`):
+**Add to existing status-api** (`/home/tony/CascadeProjects/chaba/stacks/web/status-api/main.py`):
 
 ```python
 # Add MDDB health check

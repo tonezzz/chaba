@@ -39,18 +39,17 @@ category: operations
 - Wind forecasting integration
 - Race management system features
 
-### chaba-omen (Host-Specific)
-**Purpose**: Tony Omen host configuration and tools
+### chaba-omen (Stale/Broken Overlay)
+**Purpose**: Was intended as a Tony Omen host-specific overlay, but the `.git` worktree pointer is broken and the directory now contains stale copies plus independent `chat-uis` sub-repos.
 
 **Includes**:
-- Host-specific configurations
-- MCP servers (playlive, mcp-llama, mcp-gpu)
-- Host monitoring and control
+- Independent git repos `chat-uis/neo-chat` and `chat-uis/ChatLocal`
+- Stale copies of `chaba` stacks (e.g., `stacks/web/sensor-reader`)
 
 **Use Cases**:
-- Host-specific development
-- MCP server management
-- GPU resource management
+- Do **not** use `chaba-omen` paths in canonical SSOT or scripts.
+- For Tony Omen services, use the canonical `/home/tony/CascadeProjects/chaba` worktree.
+- For Tony Dell services, use `/home/tony/CascadeProjects/chaba-tony-dell`.
 
 ### chaba-yomi (Application-Specific)
 **Purpose**: Yomi LINE conversation viewer development
@@ -87,7 +86,7 @@ Related functionality is grouped logically, improving code discoverability.
 
 ## Worktree vs Feature Branch
 
-Use a worktree when the main worktree is dirty and you need a quick, isolated place to test or spike without committing half-finished work first. This matches the existing `chaba-h3`, `chaba-raceman`, and `chaba-omen` overlay pattern.
+Use a worktree when the main worktree is dirty and you need a quick, isolated place to test or spike without committing half-finished work first. This matches the existing `chaba-h3` and `chaba-raceman` worktree pattern.
 
 - `git worktree add -b <branch> <path>`: dirty working tree, prototype, cross-repo/infra spike.
 - `git checkout -b <branch>` or `git switch -c <branch>`: clean working tree, or an experiment already planned to become a production feature.

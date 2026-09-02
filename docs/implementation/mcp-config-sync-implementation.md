@@ -82,10 +82,10 @@ mcp-conf:
 - name: mcp-gpu
   command: /usr/bin/python3
   args:
-  - /home/tony/CascadeProjects/chaba-omen/mcp/mcp-gpu/server.py
+  - /home/tony/CascadeProjects/chaba/mcp-servers/mcp-gpu/server.py
   env:
     IMAGEN_URL: http://localhost:8080/apps/imagen2/api
-    LLAMA_URL: http://localhost:8008
+    LLAMA_URL: http://tony-omen.taila0626a.ts.net:8001
   disabled: false  # Optional, defaults to false
 ```
 

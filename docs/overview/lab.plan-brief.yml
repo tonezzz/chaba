@@ -9,7 +9,7 @@ sections:
       - label: Scope
         text: Build and maintain a self-hosted lab on tony-omen that covers 3D Gaussian Splatting research, AI-powered IP-camera surveillance, a static Plesk web presence (chaba.h3), local LLM/AI endpoints, and a LINE conversation archive.
       - label: Worktree split
-        text: Keep responsibilities split between chaba/master (generic baseline), chaba-omen (host infrastructure), and chaba.h3 (static-only Plesk site).
+        text: Keep responsibilities split between chaba/master (generic baseline), chaba on tony-omen (host infrastructure), and chaba.h3 (static-only Plesk site).
 
   - title: Worktrees
     icon: 🌳
@@ -17,7 +17,7 @@ sections:
     headers: [Worktree, Branch, Purpose]
     rows:
       - [/home/tony/CascadeProjects/chaba, master, 'Generic baseline + Frigate registry + shared docs']
-      - [/home/tony/CascadeProjects/chaba-omen, chaba-omen, 'Host infrastructure: Caddy, APIs, NVR, MCP, AI']
+      - [/home/tony/CascadeProjects/chaba, master, 'Tony Omen host infrastructure: Caddy, APIs, NVR, MCP, AI']
       - [/home/tony/CascadeProjects/chaba-h3, chaba.h3, Static-only Plesk site]
 
   - title: Infrastructure
@@ -65,7 +65,7 @@ sections:
     items:
       - label: chaba.h3
         text: /apps/track3/, /apps/track4/, /apps/imagen2/, /apps/reefriders/, /apps/reefriders-01/, /apps/docs/, /apps/overview/.
-      - label: chaba-omen / 8080
+      - label: chaba (tony-omen) / 8080
         text: /apps/yomi/, /apps/camera-map.html, /apps/chatllama/, /apps/chatlocal/, /apps/neo-chat/.
       - label: Done
         text: nav.js shared navigation; Tailwind bright/dark themes; apps.yml data-driven landing page.
@@ -114,11 +114,11 @@ sections:
       - label: '1'
         text: Commit and push chaba.h3 WIP in logical chunks (imagen2, track3/4, reef riders, docs relocation).
       - label: '2'
-        text: Add inference/ and inference2/ to chaba-h3/.gitignore or move them to chaba-omen.
+        text: Add inference/ and inference2/ to chaba-h3/.gitignore or move them to chaba (tony-omen).
       - label: '3'
         text: Delete merged remote branches docs/readme-update and sync-master-workspace.
       - label: '4'
-        text: Fix chaba-omen submodule pointers for chat-uis/ChatLocal and chat-uis/neo-chat.
+        text: Fix submodule pointers for chat-uis/ChatLocal and chat-uis/neo-chat (currently under the stale chaba-omen directory).
       - label: '5'
         text: Install/switch Frigate to an accelerated detector.
       - label: '6'

@@ -17,9 +17,11 @@ Created 2026-08-05 as part of Chaba infrastructure documentation.
 The chaba project uses Git worktrees to separate concerns:
 - **chaba-h3**: Main worktree with full application ecosystem
 - **chaba-raceman**: Race management tools (Track2/3/4, Raceman, Wind, Map3D)
-- **chaba-omen**: Tony Omen host-specific configuration
+- **chaba**: Tony Omen canonical worktree
+- **chaba-tony-dell**: Tony Dell worktree
 - **chaba-yomi**: Yomi LINE conversation viewer
 - **master**: Main development branch
+- **chaba-omen**: stale/broken overlay; do not use for canonical paths
 
 ## Related Documentation
 

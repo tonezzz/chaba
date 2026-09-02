@@ -147,7 +147,7 @@ The tab follows the same pattern as the Yomi tab with:
 
 ## GPU Status Integration (August 2026)
 
-**File modified:** `chaba-omen/stacks/web/status-api/main.py`
+**File modified:** `chaba/stacks/web/status-api/main.py`
 
 The GPU status endpoint `/api/gpu/status` was integrated into the main `/api/status` endpoint to provide a unified system status response.
 

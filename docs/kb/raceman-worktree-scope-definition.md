@@ -65,7 +65,9 @@ The raceman worktree runs isolated containers:
 ## Related Worktrees
 
 - **chaba-h3**: Main worktree with full application ecosystem
-- **chaba-omen**: Tony Omen host-specific worktree
+- **chaba**: Tony Omen canonical worktree
+- **chaba-tony-dell**: Tony Dell worktree
 - **chaba-yomi**: Yomi LINE conversation viewer worktree
 - **master**: Main development branch
+- **chaba-omen**: stale/broken overlay; do not use for canonical paths
 

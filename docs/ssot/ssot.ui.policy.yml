@@ -7,7 +7,7 @@ overview:
   purpose: |
     Capture guardrails that shape UI implementation decisions. This SSOT is the
     authority for "what is allowed" and "what is preferred" so that design
-    choices are consistent across chaba.h3, chaba-omen 8080 apps, and trade
+    choices are consistent across chaba.h3, chaba (tony-omen) 8080 apps, and trade
     canvas pages. It does not describe tokens or components; see ssot.libs.yml
     for the component reference.
   scope:
@@ -35,7 +35,7 @@ policies:
       runtimes. PHP same-origin proxies are acceptable if they only fetch
       public/cached data and do not shell out.
     consequences:
-      - All dynamic APIs live in chaba-omen stacks or the 8080 Caddy stack
+      - All dynamic APIs live in chaba (tony-omen) stacks or the 8080 Caddy stack
       - PHP proxies must keep upstream URLs server-side (e.g., mcp-savings.php)
 
   - id: explicit-index-paths

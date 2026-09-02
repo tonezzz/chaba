@@ -32,8 +32,8 @@ PlayLive is a custom layer built on top of Playwright that adds session manageme
 
 - `docs/kb/playlive-authentication.md` - PlayLive authentication implementation
 - `docs/ssot/apps/ssot.apps.playlive.yml` - PlayLive SSOT documentation
-- `chaba-omen/mcp/mcp-playlive/playlived.mjs` - PlayLive daemon implementation
-- `chaba-omen/mcp/mcp-playlive/playlive-server.py` - PlayLive MCP client
+- `chaba-tony-dell/mcp-servers/mcp-playlive/playlived.mjs` - PlayLive daemon implementation
+- `chaba-tony-dell/mcp-servers/mcp-playlive/playlive-server.py` - PlayLive MCP client
 
 ## Tags
 

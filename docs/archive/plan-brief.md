@@ -1,6 +1,6 @@
 # chaba Lab Plan Brief
 
-> **Note**: This is a historical planning document from 2026-08-05. Some information may be outdated, including TODO items, branch references, and infrastructure details. Current status should be verified in SSOT files and recent documentation.
+> **Note**: This is a historical planning document from 2026-08-05. Some information may be outdated, including TODO items, branch references, and infrastructure details. Current status should be verified in SSOT files and recent documentation. `chaba-omen` is now a stale/broken overlay; use `chaba` for Tony Omen host infrastructure.
 
 ## 1. Goal
 Build and maintain a self-hosted lab on `tony-omen` that covers 3D Gaussian Splatting research, AI-powered IP-camera surveillance, a static Plesk web presence (`chaba.h3`), local LLM/AI endpoints, and a LINE conversation archive.

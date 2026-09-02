@@ -8,7 +8,7 @@ from pathlib import Path
 
 BASE = Path('/home/tony/CascadeProjects')
 CANONICAL_WS = 'chaba'
-TARGETS = ['chaba-h3', 'chaba-kbman', 'chaba-omen', 'chaba-raceman', 'chaba-yomi']
+TARGETS = ['chaba-h3', 'chaba-kbman', 'chaba-raceman', 'chaba-yomi']
 SECTION = 'Documentation Search Standards'
 
 

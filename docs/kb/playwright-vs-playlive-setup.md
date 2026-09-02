@@ -18,8 +18,8 @@ npx playwright test
 
 ### PlayLive Setup
 ```bash
-# Located in chaba-omen project
-cd /home/tony/CascadeProjects/chaba-omen/mcp/mcp-playlive
+# Located in chaba-tony-dell project
+cd /home/tony/CascadeProjects/chaba-tony-dell/mcp-servers/mcp-playlive
 
 # Start daemon
 node playlived.mjs

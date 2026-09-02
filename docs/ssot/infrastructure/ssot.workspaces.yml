@@ -2,7 +2,7 @@ title: CascadeProjects Workspace Inventory
 subtitle: Classification of all directories under /home/tony/CascadeProjects
 icon: folder
 version: 1
-last_updated: '2026-08-20'
+last_updated: '2026-09-02'
 maintainer: tony
 
 classifications:
@@ -25,15 +25,20 @@ classifications:
     - path: /home/tony/CascadeProjects/chaba-kbman
       branch: mcp-kbman
       purpose: kbman / auto-kb branch
-    - path: /home/tony/CascadeProjects/chaba-omen
-      branch: chaba-omen
-      purpose: omen branch
     - path: /home/tony/CascadeProjects/chaba-tony-dell
       branch: topic/tailscale
       purpose: tony-dell / tailscale branch
     - path: /home/tony/CascadeProjects/chaba-yomi
       branch: yomi
       purpose: yomi branch
+
+  stale_or_broken_worktree:
+    description: Directory has a broken .git worktree pointer or is an abandoned overlay; not a current source of truth.
+    worktrees:
+    - path: /home/tony/CascadeProjects/chaba-omen
+      branch: null
+      purpose: stale tony-omen overlay with chat-uis subprojects and copied stacks
+      note: .git worktree pointer is missing in chaba/.git/worktrees; contains chat-uis/neo-chat and chat-uis/ChatLocal as independent git repos. Do not use chaba-omen paths in canonical SSOT or scripts.
 
   external_project:
     description: Independent Git repositories; not chaba branches.

@@ -12,8 +12,9 @@ Group related applications by function:
 
 ### Host Domain
 Group by deployment target:
-- chaba-omen: Tony Omen specific tools
-- chaba-dell: Tony Dell specific tools
+- chaba (tony-omen): Tony Omen canonical worktree
+- chaba-omen: stale/broken overlay; do not use for canonical paths
+- chaba-tony-dell: Tony Dell specific worktree
 
 ### Application Domain
 Group by specific application:
@@ -82,5 +83,5 @@ git commit -m "Merge origin/chaba.h3 into raceman"
 Different worktrees may use the same ports. Configure different ports in docker-compose.yml:
 - chaba-h3: 8080, 8081
 - chaba-raceman: 8083
-- chaba-omen: varies by service
+- chaba (tony-omen): varies by service
 

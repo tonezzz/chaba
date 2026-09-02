@@ -8,7 +8,7 @@ category: operations
 - **origin/master**: Main development branch
 - **origin/chaba.h3**: Main worktree branch
 - **origin/raceman**: Race management worktree branch
-- **origin/chaba-omen**: Host-specific worktree branch
+- **origin/chaba-omen**: stale/broken; no current branch (directory exists but .git worktree pointer is missing)
 - **origin/yomi**: Yomi worktree branch
 
 ### Local Branches

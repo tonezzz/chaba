@@ -4,7 +4,8 @@ A multi-purpose homelab stack: 3D Gaussian Splatting research, Frigate NVR traff
 
 - **master** branch (this repo) — 3DGS research stack, Frigate NVR, and web/Caddy stack
 - **chaba.h3** branch — Plesk static site served at https://chaba.h3.gizmo-thailand.com/
-- **chaba-omen** branch — omen host infrastructure (mcp-llama, ChatLocal/Neo Chat, NVR extras)
+- **topic/tailscale** branch — tony-dell host configuration
+- **chaba-omen** worktree — stale/broken overlay; do not use for canonical paths
 
 ## Included Implementations
 
@@ -55,9 +56,9 @@ docker run --rm --gpus all nvidia/cuda:11.8.0-base-ubuntu22.04 nvidia-smi
 | 3DGS / Research | `docker-compose.yml` | 7007 (nerfstudio), 8888 (jupyter) |
 | Frigate NVR | `frigate/docker-compose.yml` | 5000, 8554, 8555 |
 | Web (Caddy) | `stacks/web/docker-compose.yml` | 8080, 8081 |
-| AI (llama-server) | `chaba-omen/stacks/ai/docker-compose.yml` | 8008 |
-| ChatLocal | `chaba-omen/chat-uis/ChatLocal` | 3000 |
-| Neo Chat | `chaba-omen/chat-uis/neo-chat` | 3001 |
+| AI (llama-server) | `stacks/ai/docker-compose.yml` (on tony-omen `chaba` worktree) | 8008 |
+| ChatLocal | `chat-uis/ChatLocal` (currently only in stale chaba-omen directory) | 3000 |
+| Neo Chat | `chat-uis/neo-chat` (currently only in stale chaba-omen directory) | 3001 |
 
 ### Web Apps (chaba.h3)
 
@@ -245,7 +246,7 @@ chaba/
 
 Related worktrees:
 - ../chaba-h3/   — chaba.h3 branch (Plesk static site)
-- ../chaba-omen/ — chaba-omen branch (host infrastructure: mcp-llama, chat UIs)
+- ../chaba-omen/ — stale/broken overlay (do not use for canonical paths)
 ```
 
 ---
