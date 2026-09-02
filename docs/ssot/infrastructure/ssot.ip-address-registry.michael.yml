@@ -1,0 +1,140 @@
+title: Michael IP Address Registry
+subtitle: Per-network IP allocations for Michael's home network
+icon: 🗺️
+ideas:
+  - Every allocation links back to a stable device_id in ssot.mac-address-registry.michael.yml
+  - Tracks static, DHCP, and discovered allocations
+sections:
+  - title: Network
+    icon: 🏠
+    layout: list
+    items:
+      - label: Michael home
+        text: '192.168.1.0/24, gateway 192.168.1.1, SSID unknown. Active hosts discovered by ping sweep from michael-ha.'
+  - title: Known allocations
+    icon: 📋
+    layout: list
+    items:
+      - label: Count
+        text: '15 known allocations; unknown active hosts are in the matching michael-home-scan report'
+
+config:
+  version: 1
+  last_updated: '2026-09-02'
+  maintainer: tony
+  status: active
+  related_files:
+  - docs/ssot/infrastructure/ssot.ip-address-registry.yml
+  networks:
+  - network_id: michael-home-192.168.1.0-24
+    cidr: 192.168.1.0/24
+    ssid: michael-home
+    gateway: 192.168.1.1
+    dhcp_range: null
+    status: active
+    allocations:
+    - ip: 192.168.1.1
+      device_id: michael-home-router
+      interface_id: lan
+      kind: static
+      status: active
+      first_seen: '2026-09-02'
+      source: ha-config-upnp
+    - ip: 192.168.1.160
+      device_id: michael-ha
+      interface_id: end0
+      kind: manual
+      status: active
+      first_seen: '2026-09-02'
+      source: ha-network-info
+    - ip: 192.168.1.120
+      device_id: michael-solar-assistant
+      interface_id: primary
+      kind: manual
+      status: active
+      first_seen: '2026-09-02'
+      source: ha-config-solar-assistant
+    - ip: 192.168.1.121
+      device_id: michael-solis-inverter-121
+      interface_id: primary
+      kind: manual
+      status: active
+      first_seen: '2026-09-02'
+      source: ha-config-solis-modbus
+    - ip: 192.168.1.153
+      device_id: michael-solis-inverter-153
+      interface_id: primary
+      kind: discovered
+      status: active
+      first_seen: '2026-09-02'
+      source: ping
+    - ip: 192.168.1.117
+      device_id: michael-iammeter-main
+      interface_id: primary
+      kind: manual
+      status: active
+      first_seen: '2026-09-02'
+      source: ha-config-iammeter
+    - ip: 192.168.1.178
+      device_id: michael-iammeter-1c3bea19
+      interface_id: primary
+      kind: manual
+      status: active
+      first_seen: '2026-09-02'
+      source: ha-config-iammeter
+    - ip: 192.168.1.183
+      device_id: michael-broadlink-rm4
+      interface_id: wlan0
+      kind: manual
+      status: active
+      first_seen: '2026-09-02'
+      source: ha-config-broadlink
+    - ip: 192.168.1.105
+      device_id: michael-ieast-denon
+      interface_id: wlan0
+      kind: discovered
+      status: active
+      first_seen: '2026-09-02'
+      source: ha-config-linkplay
+    - ip: 192.168.1.104
+      device_id: michael-ieast-sony
+      interface_id: wlan0
+      kind: discovered
+      status: active
+      first_seen: '2026-09-02'
+      source: ha-config-linkplay
+    - ip: 192.168.1.106
+      device_id: michael-ieast-1dd8
+      interface_id: wlan0
+      kind: discovered
+      status: active
+      first_seen: '2026-09-02'
+      source: ha-config-linkplay
+    - ip: 192.168.1.129
+      device_id: michael-lg-webos-tv
+      interface_id: wlan0
+      kind: manual
+      status: active
+      first_seen: '2026-09-02'
+      source: ha-config-webostv
+    - ip: 192.168.1.124
+      device_id: michael-huawei-igd-secondary
+      interface_id: lan
+      kind: manual
+      status: active
+      first_seen: '2026-09-02'
+      source: ha-config-upnp
+    - ip: 192.168.1.150
+      device_id: michael-somfy-overkiz
+      interface_id: primary
+      kind: discovered
+      status: active
+      first_seen: '2026-09-02'
+      source: mdns
+    - ip: 192.168.1.101
+      device_id: michael-huawei-igd-secondary
+      interface_id: lan
+      kind: discovered
+      status: stale
+      first_seen: '2026-09-02'
+      source: ha-config-upnp

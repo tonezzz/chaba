@@ -1,0 +1,317 @@
+title: Michael MAC Address Registry
+subtitle: MAC registry for Michael's home network devices
+icon: 🔗
+ideas:
+  - Treat MAC as an attribute, not a primary key
+  - Devices with duplicate or unknown MACs are kept separate and linked by device_id
+sections:
+  - title: Network
+    icon: 🏠
+    layout: list
+    items:
+      - label: Michael home network
+        text: '192.168.1.0/24, gateway 192.168.1.1, scanned via michael-ha (192.168.1.160) over Tailscale SSH'
+  - title: Duplicate MAC handling
+    icon: ⚠️
+    layout: list
+    items:
+      - label: Device_id is the primary key
+        text: 'MAC is a soft attribute. If two devices collide, set mac_conflict=true and a shared conflict_group, then resolve with local_ids, observed network, and vendor verification.'
+  - title: Known devices
+    icon: 📋
+    layout: list
+    items:
+      - label: Count
+        text: '18 devices with known MAC or local ID from HA config and device registry'
+
+config:
+  version: 1
+  last_updated: '2026-09-02'
+  maintainer: tony
+  status: active
+  related_files:
+  - docs/ssot/infrastructure/ssot.mac-address-registry.yml
+  mac_registry:
+  - device_id: michael-ha
+    label: michael-ha Home Assistant host
+    local_ids:
+      hostname: michael-ha
+    interfaces:
+    - interface_id: end0
+      mac: 2c:cf:67:36:c3:fb
+      oui: 2c:cf:67
+      vendor: null
+      type: ethernet
+      source: ha-network-info
+      first_seen: '2026-09-02'
+      status: active
+    - interface_id: wlan0
+      mac: 2c:cf:67:36:c3:fc
+      oui: 2c:cf:67
+      vendor: null
+      type: wifi
+      source: ha-network-info
+      first_seen: '2026-09-02'
+      status: stale
+    - interface_id: bluetooth0
+      mac: 2c:cf:67:36:c3:fd
+      oui: 2c:cf:67
+      vendor: null
+      type: bluetooth
+      source: ha-device-registry
+      first_seen: '2026-09-02'
+      status: active
+    mac_conflict: false
+    status: active
+  - device_id: michael-home-router
+    label: Huawei IGD (michael home router)
+    local_ids:
+      upnp_uuid: uuid:00e0fc37-2525-2828-2500-D44F67A43453
+    interfaces:
+    - interface_id: lan
+      mac: d4:4f:67:a4:34:53
+      oui: d4:4f:67
+      vendor: Huawei
+      type: ethernet
+      source: ha-config-upnp
+      first_seen: '2026-09-02'
+      status: active
+    mac_conflict: false
+    status: active
+  - device_id: michael-huawei-igd-secondary
+    label: Huawei IGD secondary / AP
+    local_ids:
+      upnp_uuid: uuid:00e0fc37-2525-2828-2500-d44f67a3b270
+    interfaces:
+    - interface_id: lan
+      mac: d4:4f:67:a3:b2:70
+      oui: d4:4f:67
+      vendor: Huawei
+      type: ethernet
+      source: ha-config-upnp
+      first_seen: '2026-09-02'
+      status: active
+    mac_conflict: false
+    status: active
+  - device_id: michael-broadlink-rm4
+    label: Broadlink RM4 pro (michael)
+    local_ids: {}
+    interfaces:
+    - interface_id: wlan0
+      mac: a0:43:b0:54:70:2a
+      oui: a0:43:b0
+      vendor: Broadlink
+      type: wifi
+      source: ha-config-broadlink
+      first_seen: '2026-09-02'
+      status: active
+    mac_conflict: false
+    status: active
+  - device_id: michael-ieast-denon
+    label: IEAST oliostream Denon (michael)
+    local_ids:
+      linkplay_id: FF970015DA1E07D643EB8A9B
+    interfaces:
+    - interface_id: wlan0
+      mac: 08:e9:f6:10:cf:94
+      oui: 08:e9:f6
+      vendor: IEAST
+      type: wifi
+      source: ha-device-registry
+      first_seen: '2026-09-02'
+      status: active
+    mac_conflict: false
+    status: active
+  - device_id: michael-ieast-sony
+    label: IEAST oliostream Sony (michael)
+    local_ids:
+      linkplay_id: FF9700152D3ED9D2039639AF
+    interfaces:
+    - interface_id: wlan0
+      mac: 08:e9:f6:12:0e:20
+      oui: 08:e9:f6
+      vendor: IEAST
+      type: wifi
+      source: ha-device-registry
+      first_seen: '2026-09-02'
+      status: active
+    mac_conflict: false
+    status: active
+  - device_id: michael-ieast-1dd8
+    label: IEAST oliostream 1DD8 (michael)
+    local_ids:
+      linkplay_id: FF97001550E43889CBBD099A
+    interfaces:
+    - interface_id: wlan0
+      mac: 08:e9:f6:12:1d:d8
+      oui: 08:e9:f6
+      vendor: IEAST
+      type: wifi
+      source: ha-device-registry
+      first_seen: '2026-09-02'
+      status: active
+    mac_conflict: false
+    status: active
+  - device_id: michael-sonoff-thr316d
+    label: Sonoff THR316D (michael)
+    local_ids:
+      sonoff_id: 1001dbc90b
+    interfaces:
+    - interface_id: wlan0
+      mac: c8:f0:9e:e7:55:20
+      oui: c8:f0:9e
+      vendor: Sonoff/Espressif
+      type: wifi
+      source: sonoff-config
+      first_seen: '2026-09-02'
+      status: active
+    mac_conflict: false
+    status: active
+  - device_id: michael-sonoff-front-gate
+    label: Sonoff Front Gate (michael)
+    local_ids:
+      sonoff_id: 10010b42b6
+    interfaces:
+    - interface_id: wlan0
+      mac: c4:dd:57:0d:d1:a8
+      oui: c4:dd:57
+      vendor: Sonoff/Espressif
+      type: wifi
+      source: sonoff-config
+      first_seen: '2026-09-02'
+      status: active
+    mac_conflict: false
+    status: active
+  - device_id: michael-sonoff-pool-pump
+    label: Sonoff Pool pump (michael)
+    local_ids:
+      sonoff_id: 10010b4ac9
+    interfaces:
+    - interface_id: wlan0
+      mac: c4:dd:57:0d:b4:a0
+      oui: c4:dd:57
+      vendor: Sonoff/Espressif
+      type: wifi
+      source: sonoff-config
+      first_seen: '2026-09-02'
+      status: active
+    mac_conflict: false
+    status: active
+  - device_id: michael-sonoff-garden-lights
+    label: Sonoff Garden lights (michael)
+    local_ids:
+      sonoff_id: 1001232de3
+    interfaces:
+    - interface_id: wlan0
+      mac: 8c:ce:4e:0c:cf:2b
+      oui: 8c:ce:4e
+      vendor: Sonoff/Espressif
+      type: wifi
+      source: sonoff-config
+      first_seen: '2026-09-02'
+      status: active
+    mac_conflict: false
+    status: active
+  - device_id: michael-iammeter-main
+    label: iMeter main (michael)
+    local_ids:
+      iammeter_id: IamMeter_MB
+    interfaces:
+    - interface_id: primary
+      mac: null
+      oui: null
+      vendor: null
+      type: unknown
+      source: ha-config-iammeter
+      first_seen: '2026-09-02'
+      status: active
+    mac_conflict: false
+    status: active
+  - device_id: michael-iammeter-1c3bea19
+    label: iMeter 1C3BEA19 (michael)
+    local_ids:
+      iammeter_id: 1C3BEA19_MB
+    interfaces:
+    - interface_id: primary
+      mac: null
+      oui: null
+      vendor: null
+      type: unknown
+      source: ha-config-iammeter
+      first_seen: '2026-09-02'
+      status: active
+    mac_conflict: false
+    status: active
+  - device_id: michael-solis-inverter-121
+    label: Solis S6-EH3P10K-H-ZP (michael)
+    local_ids:
+      serial: '1033300249120103'
+    interfaces:
+    - interface_id: primary
+      mac: null
+      oui: null
+      vendor: Solis
+      type: unknown
+      source: ha-config-solis-modbus
+      first_seen: '2026-09-02'
+      status: active
+    mac_conflict: false
+    status: active
+  - device_id: michael-solis-inverter-153
+    label: Solis inverter 192.168.1.153 (discovered)
+    local_ids: {}
+    interfaces:
+    - interface_id: primary
+      mac: null
+      oui: null
+      vendor: null
+      type: unknown
+      source: ping
+      first_seen: '2026-09-02'
+      status: active
+    mac_conflict: false
+    status: active
+  - device_id: michael-solar-assistant
+    label: SolarAssistant monitor (michael)
+    local_ids: {}
+    interfaces:
+    - interface_id: primary
+      mac: null
+      oui: null
+      vendor: SolarAssistant
+      type: unknown
+      source: ha-config-solar-assistant
+      first_seen: '2026-09-02'
+      status: active
+    mac_conflict: false
+    status: active
+  - device_id: michael-lg-webos-tv
+    label: LG webOS TV NANO81TSA (michael)
+    local_ids:
+      serial: 30d85ae1-a334-a6f8-e89e-2a00d91a6c48
+    interfaces:
+    - interface_id: wlan0
+      mac: null
+      oui: null
+      vendor: LG
+      type: wifi
+      source: ha-config-webostv
+      first_seen: '2026-09-02'
+      status: active
+    mac_conflict: false
+    status: active
+  - device_id: michael-somfy-overkiz
+    label: Somfy Overkiz gateway (michael)
+    local_ids:
+      overkiz_id: 0402-5394-5231
+    interfaces:
+    - interface_id: primary
+      mac: null
+      oui: null
+      vendor: Somfy
+      type: unknown
+      source: ha-config-overkiz
+      first_seen: '2026-09-02'
+      status: active
+    mac_conflict: false
+    status: active
