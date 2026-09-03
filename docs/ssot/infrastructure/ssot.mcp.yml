@@ -150,17 +150,16 @@ servers:
     description: Consolidated browser automation for local and remote testing
     implementation: python3 /home/tony/.config/devin/mcp-scripts/playlive-hosts-loader.py
     wrapper: mcp-single-instance.sh
-    pattern: playlive-hosts-loader.py
+    pattern: playlive
     filter: none
     env:
-      PLAYLIVE_URL: http://tony-dell:9230
       PLAYLIVE_HOSTS_FILE: /home/tony/CascadeProjects/chaba-tony-dell/docs/ssot/infrastructure/playlive-hosts.yml
     single_instance: true
     status: operational
     notes: |
       Host registry is now in docs/ssot/infrastructure/playlive-hosts.yml.
-      The playlive-hosts-loader.py wrapper reads that YAML, sets PLAYLIVE_HOSTS,
-      and then execs the real playlive-server.py.
+      The playlive-hosts-loader.py wrapper reads that YAML, picks the per-host
+      playlive_url, sets PLAYLIVE_HOSTS, and then execs the real playlive-server.py.
     per_host:
       tony_dell:
         implementation: python3 /home/tony/.config/devin/mcp-scripts/playlive-hosts-loader.py

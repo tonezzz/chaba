@@ -19,3 +19,28 @@ hosts:
     cdp: http://100.124.59.112:9223
     description: Chrome CDP on kk-macbook (Tailscale) - secondary fallback
     available: false
+
+per_host:
+  tony_dell:
+    playlive_url: http://127.0.0.1:9230
+  tony_omen:
+    playlive_url: http://tony-dell:9230
+
+self_heal:
+  enabled: true
+  retry_delay: 5
+  commands:
+    tony_dell:
+      - systemctl
+      - --user
+      - restart
+      - playlived.service
+    tony_omen:
+      - systemctl
+      - --user
+      - restart
+      - playlived.service
+
+focus:
+  enabled: true
+  inbox_dir: /home/tony/CascadeProjects/chaba-tony-dell/docs/ssot/focus-inbox

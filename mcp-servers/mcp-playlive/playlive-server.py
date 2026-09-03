@@ -5,8 +5,12 @@ A single MCP server that can create chrome-live, playwright-chrome, and
 playwright-headless sessions, local or remote.  Session state lives in the
 long-running playlived daemon, so many AI clients can use it at once.
 """
+import datetime
 import json
 import os
+import socket
+import subprocess
+import time
 import urllib.error
 import urllib.request
 
@@ -301,6 +305,152 @@ def playlive_discover_hosts() -> str:
     results = {name: _cdp_version(cdp) for name, cdp in PLAYLIVE_HOSTS.items()}
     all_ok = all(v.get("ok") for v in results.values())
     return json.dumps({"ok": all_ok, "hosts": results}, indent=2)
+
+
+def _current_host() -> str:
+    return socket.gethostname().lower().replace("-", "_").split(".")[0]
+
+
+def _load_playlive_hosts_data() -> dict:
+    hosts_file = os.environ.get("PLAYLIVE_HOSTS_FILE", _DEFAULT_HOSTS_FILE)
+    try:
+        with open(hosts_file) as f:
+            return yaml.safe_load(f)
+    except Exception as exc:
+        return {"_error": str(exc)}
+
+
+def _focus_lock_path() -> str:
+    return "/home/tony/.cache/playlive-focus-flag"
+
+
+def _focus_already_flagged(window: int = 3600) -> bool:
+    try:
+        with open(_focus_lock_path()) as f:
+            last = float(f.read().strip())
+        return (time.time() - last) < window
+    except (FileNotFoundError, ValueError):
+        return False
+
+
+def _update_focus_lock():
+    try:
+        with open(_focus_lock_path(), "w") as f:
+            f.write(str(time.time()))
+    except OSError:
+        pass
+
+
+def _write_focus_item(inbox_dir: str, host: str, playlive_url: str, error: str):
+    if _focus_already_flagged():
+        return
+    try:
+        os.makedirs(inbox_dir, exist_ok=True)
+    except OSError:
+        return
+    ts = datetime.datetime.utcnow().strftime("%Y-%m-%d-%H%M%S")
+    filename = f"{ts}-playlive-self-heal-failed.yml"
+    path = os.path.join(inbox_dir, filename)
+    payload = {
+        "title": "PlayLive daemon not reachable after self-heal",
+        "subtitle": f"playlived at {playlive_url} is unreachable on {host}",
+        "icon": "inbox",
+        "focus": {
+            "label": "playlive self-heal failure",
+            "text": f"The PlayLive daemon at {playlive_url} was not reachable. Self-heal was attempted but failed. Last error: {error}",
+            "branch": "topic/tailscale",
+            "priority": "high",
+            "status": "draft",
+            "tags": ["playlive", "infrastructure", "self-heal"],
+            "missing_info": [],
+            "safe_to_parallel": {"value": False, "reason": "Requires manual triage of the playlived daemon."},
+            "subtasks": [
+                {
+                    "label": "Check playlived and Chrome CDP on the target host",
+                    "status": "not_started",
+                }
+            ],
+        },
+        "ownership": {
+            "owner": "tony",
+            "session": "",
+            "locked": False,
+            "lock_reason": "",
+        },
+        "source": {
+            "session": "",
+            "date": datetime.datetime.utcnow().strftime("%Y-%m-%d"),
+        },
+    }
+    try:
+        with open(path, "w") as f:
+            yaml.safe_dump(payload, f, sort_keys=False, default_flow_style=False, allow_unicode=True)
+        _update_focus_lock()
+    except OSError:
+        pass
+
+
+def _daemon_health(url: str) -> dict:
+    try:
+        with urllib.request.urlopen(f"{url.rstrip('/')}/health", timeout=3) as resp:
+            return json.loads(resp.read().decode("utf-8"))
+    except Exception as exc:
+        return {"ok": False, "error": str(exc)}
+
+
+@mcp.tool()
+def playlive_self_heal(dry_run: bool = False) -> str:
+    """Attempt to restart the local playlived daemon and flag focus if it remains unhealthy.
+
+    Uses the playlive-hosts.yml self_heal/focus sections for the current host.
+    """
+    data = _load_playlive_hosts_data()
+    if "_error" in data:
+        return json.dumps({"ok": False, "error": data["_error"]}, indent=2)
+
+    host = _current_host()
+    playlive_url = (
+        data.get("per_host", {}).get(host, {}).get("playlive_url")
+        or data.get("playlive_url")
+        or DAEMON_URL
+    )
+    self_heal_cfg = data.get("self_heal", {})
+    focus_cfg = data.get("focus", {})
+    command = self_heal_cfg.get("commands", {}).get(host)
+
+    before = _daemon_health(playlive_url)
+    if before.get("ok"):
+        return json.dumps({"ok": True, "playlive_url": playlive_url, "message": "playlived already healthy", "health": before}, indent=2)
+
+    if dry_run:
+        return json.dumps({"ok": True, "dry_run": True, "playlive_url": playlive_url, "would_run": command}, indent=2)
+
+    result = {"ok": False, "playlive_url": playlive_url, "self_heal_attempted": False}
+    if self_heal_cfg.get("enabled") and command:
+        try:
+            proc = subprocess.run(command, capture_output=True, text=True)
+            result["self_heal_attempted"] = True
+            result["restart_rc"] = proc.returncode
+            result["restart_stderr"] = proc.stderr.strip() if proc.stderr else ""
+        except (OSError, FileNotFoundError) as exc:
+            result["restart_error"] = str(exc)
+        time.sleep(self_heal_cfg.get("retry_delay", 5))
+
+    after = _daemon_health(playlive_url)
+    if after.get("ok"):
+        result["ok"] = True
+        result["health"] = after
+        result["message"] = "playlived recovered after restart"
+        return json.dumps(result, indent=2)
+
+    result["health"] = after
+    result["message"] = "playlived still unhealthy after restart"
+    if focus_cfg.get("enabled"):
+        _write_focus_item(focus_cfg.get("inbox_dir", ""), host, playlive_url, str(after.get("error", "unknown")))
+        result["focus_flagged"] = True
+    else:
+        result["focus_flagged"] = False
+    return json.dumps(result, indent=2)
 
 
 if __name__ == "__main__":

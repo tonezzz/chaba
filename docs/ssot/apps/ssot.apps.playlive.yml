@@ -26,6 +26,17 @@ sections:
       - label: Default mode
         text: Defaults to headless Playwright (local) for better performance (~50-100MB RAM savings, faster startup). Use chrome-live/playwright-chrome for visual debugging.
 
+  - title: Per-host configuration
+    icon: 🖥️
+    layout: list
+    items:
+      - label: Preferred daemon
+        text: docs/ssot/infrastructure/playlive-hosts.yml has a per_host section. tony-dell prefers 127.0.0.1:9230 (itself) and tony-omen prefers tony-dell:9230.
+      - label: Self-heal
+        text: playlive-hosts-loader.py checks daemon health on startup and, if unhealthy, runs the host-specific systemd restart command from playlive-hosts.yml. playlive_self_heal provides the same on demand.
+      - label: Focus escalation
+        text: If self-heal fails and focus is enabled in playlive-hosts.yml, a focus-inbox item is written so the outage is triaged manually.
+
   - title: Hosts & endpoints
     icon: 🌐
     layout: table
@@ -57,6 +68,8 @@ sections:
         text: playlive_navigate, playlive_click, playlive_fill, playlive_select, playlive_eval, playlive_state
       - label: Capture
         text: playlive_screenshot, playlive_screenshot_image
+      - label: Hosts & self-heal
+        text: playlive_verify_host, playlive_discover_hosts, playlive_reload_hosts, playlive_self_heal
 
   - title: Verified workflow
     icon: ✅
