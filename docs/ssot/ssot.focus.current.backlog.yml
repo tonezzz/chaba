@@ -6,8 +6,44 @@ sections:
   icon: safe
   layout: list
   items:
+  - label: Deploy Michael HA MCP tunnel on tony-dell
+    text: Install and enable the systemd user service `stacks/tony-dell/home-assistant-michael-dev/home-assistant-michael-mcp-tunnel.service`
+      on tony-dell. Verify the live tailnet MCP endpoint `http://tony-dell:19584/private_oBVC604-FnxgBDP00t1L9g` responds
+      with HTTP 200. Do not commit; report back status and any required SSOT updates.
+    branch: chaba
+    priority: medium
+    status: ready
+    triage_score: 0.6
+    tags:
+    - michael-ha
+    - mcp
+    - tony-dell
+    - tunnel
+    safe_to_parallel: true
+    subtasks:
+    - label: Copy service file to tony-dell ~/.config/systemd/user/
+      status: not_started
+    - label: Reload systemd and enable/start the tunnel
+      status: not_started
+    - label: Verify HTTP 200 from tony-dell:19584 MCP endpoint
+      status: not_started
+    queued_at: '2026-09-03'
+    source: user
+    owner: focus-dispatcher
+    session: dispatch-tony_dell
+    locked: true
+    lock_reason: Dispatched to subagent on tony_dell
+    subagent:
+      runnable: true
+      profile: subagent_general
+      parallel: true
+      requires_approval: false
+      can_change_host: false
+      host: tony_dell
+      notes: Dispatched to tony_dell via focus-dispatcher --process-ready
   - label: Sync worktree chaba-mcp-experiments with master
-    text: 'Worktree chaba-mcp-experiments no longer exists on any host; the remote branch was already deleted from origin, so this drift item is moot.
+    text: 'Worktree chaba-mcp-experiments no longer exists on any host; the remote branch was already deleted from origin,
+      so this drift item is moot.
 
       Marked completed; stale local remote-tracking refs pruned.
 
@@ -16,7 +52,8 @@ sections:
     priority: medium
     status: completed
     completed_at: '2026-09-02'
-    note: Auto-fix attempt on tony-dell found no chaba-mcp-experiments worktree on tony-omen or the local host; origin no longer has the branch. Pruned stale remote-tracking refs.
+    note: Auto-fix attempt on tony-dell found no chaba-mcp-experiments worktree on tony-omen or the local host; origin no
+      longer has the branch. Pruned stale remote-tracking refs.
     triage_score: 0.55
     tags:
     - worktree
