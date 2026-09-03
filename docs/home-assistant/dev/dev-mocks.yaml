@@ -368,16 +368,15 @@ template:
         - action: homeassistant.update_entity
           target:
             entity_id: switch.terrace_switch_switch_2
-  # weather mock is configured below
-
-weather:
-  - platform: template
-    name: forecast_home
-    condition_template: "sunny"
-    temperature_template: "{{ 25 }}"
-    temperature_unit: "°C"
-    humidity_template: "{{ 50 }}"
-    pressure_template: "{{ 1013 }}"
-    wind_speed_template: "{{ 10 }}"
-    wind_bearing_template: "{{ 0 }}"
-    visibility_template: "{{ 10 }}"
+  - weather:
+    - name: forecast_home
+      unique_id: forecast_home_mock
+      condition_template: "{{ 'sunny' }}"
+      temperature_template: "{{ 25 }}"
+      temperature_unit: "°C"
+      humidity_template: "{{ 50 }}"
+      pressure_template: "{{ 1013 }}"
+      wind_speed_template: "{{ 10 }}"
+      wind_bearing_template: "{{ 0 }}"
+      visibility_template: "{{ 10 }}"
+      forecast_daily_template: "{{ [] }}"
