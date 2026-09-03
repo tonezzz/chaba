@@ -262,7 +262,7 @@ servers:
     name: MDDB Knowledge Base
     description: Personal Knowledge Base system with document management and semantic search
     implementation: docker chaba/mddb-page-tools:latest (container mddb)
-    wrapper: /home/tony/.config/Claude/mddb-bridge.py
+    wrapper: /home/tony/.config/devin/mcp-scripts/mddb-bridge.py
     filter: bridge
     filtered_tools:
       - add_document
@@ -271,20 +271,17 @@ servers:
       - get_stats
       - aggregate
       - semantic_search
-      - get_page
-      - list_sections
-      - read_tree
-    url: http://localhost:9001/mcp
+    url: http://localhost:9000/mcp
     single_instance: false
     status: operational
     config_files:
       - devin: true
       - windsurf: false
     notes: |
-      MCP endpoint requires /mcp path suffix (http://localhost:9001/mcp)
-      Docker container maps internal port 9000 to host port 9001
-      Claude Desktop uses the stdio bridge at /home/tony/.config/Claude/mddb-bridge.py
-      The bridge wraps mcp-proxy via /home/tony/.config/Claude/mcp-proxy-lenient.py to skip 2025 output-schema validation
+      MCP endpoint requires /mcp path suffix (http://localhost:9000/mcp)
+      Docker MCP daemon listens on host port 9000
+      Devin uses the stdio bridge at /home/tony/.config/devin/mcp-scripts/mddb-bridge.py
+      The bridge preserves the 2025-11-25 protocolVersion returned by mddbd
       Allowed tools for Claude: add_document, search_documents, delete_document, get_stats, aggregate, semantic_search
       Optional local HTTPS endpoint: https://tony-omen:9443/mcp (see docs/kb/mddb-local-https.md)
       mcp-health "MDDB MCP Server" check: GET http://tony-omen:9001/mcp returns 400; only POST is valid, so 400 is the healthy HTTP status
