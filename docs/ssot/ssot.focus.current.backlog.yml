@@ -12,7 +12,9 @@ sections:
       with HTTP 200. Do not commit; report back status and any required SSOT updates.
     branch: chaba
     priority: medium
-    status: ready
+    status: completed
+    completed_at: '2026-09-03'
+    note: systemd user service installed and running on tony-dell; tailnet MCP endpoint reachable via POST/200.
     triage_score: 0.6
     tags:
     - michael-ha
@@ -22,17 +24,19 @@ sections:
     safe_to_parallel: true
     subtasks:
     - label: Copy service file to tony-dell ~/.config/systemd/user/
-      status: not_started
+      status: completed
     - label: Reload systemd and enable/start the tunnel
-      status: not_started
+      status: completed
     - label: Verify HTTP 200 from tony-dell:19584 MCP endpoint
-      status: not_started
+      status: completed
+      completed_at: '2026-09-03'
+      note: Tunnel is live. A raw GET returns 405 Method Not Allowed; a valid MCP POST (Accept application/json, text/event-stream) returns 200. ss -tlnp shows 0.0.0.0:19584 listening on tony-dell.
     queued_at: '2026-09-03'
     source: user
-    owner: focus-dispatcher
-    session: dispatch-tony_dell
-    locked: true
-    lock_reason: Dispatched to subagent on tony_dell
+    owner: tony
+    session: ''
+    locked: false
+    lock_reason: Resolved
     subagent:
       runnable: true
       profile: subagent_general
