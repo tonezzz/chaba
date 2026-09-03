@@ -25,7 +25,7 @@ environments:
     quadlet:
       container_unit: ~/.config/containers/systemd/michael-dev.container
       service_unit: ~/.config/systemd/user/michael-dev.service
-    config: /home/tony/.config/home-assistant-michael-dev
+    config: /home/tony/.config/michael-dev
     repo_config: /home/tony/CascadeProjects/chaba/docs/home-assistant/configuration
     repo_dashboards: /home/tony/CascadeProjects/chaba/docs/home-assistant/dashboards
     caddy:
@@ -74,7 +74,7 @@ config_source:
   custom_cards:
     - stacks/web/public/apps/michael-live/
     - docs/home-assistant/www/
-  caddy_snippet: stacks/tony-dell/home-assistant-michael-dev/caddy-snippet
+  caddy_snippet: stacks/tony-dell/michael-dev/caddy-snippet
 
 full_flow:
   - step: 1
@@ -83,7 +83,7 @@ full_flow:
   - step: 2
     label: Deploy to dev
     action: Run scripts/home-assistant/deploy-michael-dev.sh
-    result: Repo config is rsynced to ~/.config/home-assistant-michael-dev/ and the michael-dev container is restarted.
+    result: Repo config is rsynced to ~/.config/michael-dev/ and the michael-dev container is restarted.
   - step: 2.5
     label: Sync live dashboards to dev .storage
     action: Copy live michael-ha:/config/.storage/lovelace_dashboards and lovelace.tony_test to the dev .storage directory.
@@ -105,7 +105,7 @@ scripts:
     description: Rsync repo config to the tony-dell dev instance and restart it.
     env:
       - name: MICHAEL_DEV_CONFIG
-        default: ~/.config/home-assistant-michael-dev
+        default: ~/.config/michael-dev
       - name: MICHAEL_DEV_SERVICE
         default: michael-dev.service
       - name: MICHAEL_DEPLOY_DASHBOARDS
@@ -122,7 +122,7 @@ custom_components:
 entity_mocks:
   purpose: Real devices (Sunsynk, Tuya, Zigbee) do not exist on tony-dell. Use dev-only mocks to test automation logic.
   repo_source: /home/tony/CascadeProjects/chaba/docs/home-assistant/dev/dev-mocks.yaml
-  deployed_to: /home/tony/.config/home-assistant-michael-dev/packages/a_dev_mocks.yaml
+  deployed_to: /home/tony/.config/michael-dev/packages/a_dev_mocks.yaml
   note: Deployed as packages/a_dev_mocks.yaml by deploy-michael-dev.sh. Keep out of deploy-michael.sh path so it is never sent to live.
 
 verification:
@@ -140,7 +140,7 @@ verification:
 rollback:
   dev:
     - systemctl --user stop michael-dev.service
-    - rm -rf /home/tony/.config/home-assistant-michael-dev (or restore from backup)
+    - rm -rf /home/tony/.config/michael-dev (or restore from backup)
   live:
     - Revert the last git commit in chaba and re-run scripts/home-assistant/deploy-michael.sh.
     - Restore michael-ha:/config from a snapshot if available.
