@@ -16,15 +16,15 @@ overview:
 environments:
   dev:
     host: tony_dell
-    container: home-assistant-michael-dev
+    container: michael-dev
     image: docker.io/homeassistant/home-assistant:2026.9.0
     runtime: rootless podman
-    network: slirp4netns
-    port: 8123
-    host_port: 127.0.0.1:8124
+    network: host
+    port: 8124
+    host_port: 0.0.0.0:8124
     quadlet:
-      container_unit: /home/tony/CascadeProjects/chaba/stacks/tony-dell/home-assistant-michael-dev/home-assistant-michael-dev.container
-      service_unit: ~/.config/systemd/user/home-assistant-michael-dev.service
+      container_unit: ~/.config/containers/systemd/michael-dev.container
+      service_unit: ~/.config/systemd/user/michael-dev.service
     config: /home/tony/.config/home-assistant-michael-dev
     repo_config: /home/tony/CascadeProjects/chaba/docs/home-assistant/configuration
     repo_dashboards: /home/tony/CascadeProjects/chaba/docs/home-assistant/dashboards
@@ -83,7 +83,7 @@ full_flow:
   - step: 2
     label: Deploy to dev
     action: Run scripts/home-assistant/deploy-michael-dev.sh
-    result: Repo config is rsynced to ~/.config/home-assistant-michael-dev/ and the dev container is restarted.
+    result: Repo config is rsynced to ~/.config/home-assistant-michael-dev/ and the michael-dev container is restarted.
   - step: 2.5
     label: Sync live dashboards to dev .storage
     action: Copy live michael-ha:/config/.storage/lovelace_dashboards and lovelace.tony_test to the dev .storage directory.
@@ -107,7 +107,7 @@ scripts:
       - name: MICHAEL_DEV_CONFIG
         default: ~/.config/home-assistant-michael-dev
       - name: MICHAEL_DEV_SERVICE
-        default: home-assistant-michael-dev.service
+        default: michael-dev.service
       - name: MICHAEL_DEPLOY_DASHBOARDS
         default: "0"
   deploy_live:
@@ -127,7 +127,7 @@ entity_mocks:
 
 verification:
   dev:
-    - systemctl --user status home-assistant-michael-dev.service
+    - systemctl --user status michael-dev.service
     - curl -sf http://127.0.0.1:8124/
     - ss -tlnp | grep 8124
     - ss -tlnp | grep 9585
@@ -139,7 +139,7 @@ verification:
 
 rollback:
   dev:
-    - systemctl --user stop home-assistant-michael-dev.service
+    - systemctl --user stop michael-dev.service
     - rm -rf /home/tony/.config/home-assistant-michael-dev (or restore from backup)
   live:
     - Revert the last git commit in chaba and re-run scripts/home-assistant/deploy-michael.sh.

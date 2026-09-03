@@ -3,7 +3,7 @@ subtitle: Shared Home Assistant infrastructure, bridge, and services
 
 platform:
   name: Home Assistant
-  container: home-assistant
+  container: tony-ha
   image: docker.io/homeassistant/home-assistant:stable
   runtime: rootless podman
   network: host
@@ -12,8 +12,8 @@ platform:
   host_port: 0.0.0.0:8123
   config: /home/tony/.config/home-assistant
   quadlet:
-    container_unit: ~/.config/containers/systemd/home-assistant.container
-    service_unit: ~/.config/systemd/user/home-assistant.service
+    container_unit: ~/.config/containers/systemd/tony-ha.container
+    service_unit: ~/.config/systemd/user/tony-ha.service
   autostart: loginctl enable-linger tony is yes; Quadlet WantedBy=default.target
   status: mcp server active
 

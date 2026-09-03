@@ -130,8 +130,8 @@ sections:
         text: Restart the tony-dell Home Assistant Live bridge (Gemini Live).
         host: tony_dell
         trigger: 2 consecutive failures of https://tony-dell.taila0626a.ts.net:8444/
-        precheck: systemctl --user is-active home-assistant.service
-        command: systemctl --user restart home-assistant.service
+        precheck: systemctl --user is-active tony-ha.service
+        command: systemctl --user restart tony-ha.service
         verify: curl -s -o /dev/null -w '%{http_code}' https://tony-dell.taila0626a.ts.net:8444/
 
   - title: Files & Paths
