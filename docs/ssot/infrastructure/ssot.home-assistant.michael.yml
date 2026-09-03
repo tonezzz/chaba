@@ -57,16 +57,16 @@ mcp:
   custom_component: ha_mcp_tools
   status: active
   local_url: http://127.0.0.1:9584/private_oBVC604-FnxgBDP00t1L9g
-  tailnet_url: http://tony-omen:19584/private_oBVC604-FnxgBDP00t1L9g
+  tailnet_url: http://tony-dell:19584/private_oBVC604-FnxgBDP00t1L9g
   mcp_path: /private_oBVC604-FnxgBDP00t1L9g
   tunnel:
     type: ssh
-    host: tony-omen
+    host: tony-dell
     local_port: 19584
     remote: homeassistant:9584
     via: root@michael-ha
     note: TCP forward via core_ssh (tcp_forwarding enabled). 'homeassistant' is the Docker network hostname for the HA core container on the hassio network.
-  note: ha_mcp_tools loaded; MCP endpoint reachable over the tailnet via tony-omen
+  note: ha_mcp_tools loaded; MCP endpoint reachable over the tailnet via tony-dell
 
 packages:
   - docs/home-assistant/configuration/packages/batteries_sankey.yaml
