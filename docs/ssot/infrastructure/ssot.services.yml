@@ -256,7 +256,15 @@ tony-dell:
       - ha_mcp_tools
     mcp_server:
       type: ha_mcp_tools in-process
+      status: active
+      entry_id: 01M0WCBKSZBCPES52XGQMT4JRS
+      server_user_id: 4f49ee3b95e54bada6d3c767236b5ab0
+      server_port: 9584
+      bind_host: 0.0.0.0
+      secret_path: /private_CtYuVkJEl28cp8qA8yXNCQ
+      webhook_id: mcp_d5528537d57627164033dc5e3e5e5aa6
       local_url: http://tony-dell:9584/private_CtYuVkJEl28cp8qA8yXNCQ
+      tailnet_url: http://tony-dell:9584/private_CtYuVkJEl28cp8qA8yXNCQ
       webhook: http://tony-dell:8123/api/webhook/mcp_d5528537d57627164033dc5e3e5e5aa6
     caddy:
       host_path: /apps/home-assistant/
@@ -278,6 +286,19 @@ tony-dell:
       container_unit: /home/tony/CascadeProjects/chaba/stacks/tony-dell/home-assistant-michael-dev/home-assistant-michael-dev.container
       service_unit: ~/.config/systemd/user/home-assistant-michael-dev.service
     config: /home/tony/.config/home-assistant-michael-dev
+    custom_components:
+      - ha_mcp_tools
+    mcp_server:
+      type: ha_mcp_tools in-process
+      status: active
+      entry_id: 01M22027A3F326A34C31498D0F3
+      server_user_id: 9b6eb3a940c44994834b36a6d64de13a
+      server_port: 9585
+      bind_host: 0.0.0.0
+      secret_path: /private_B3WMIAChoseTpDS7fwgwRw
+      webhook_id: mcp_ed77567866f1ebbb6fb091dc816cb550
+      local_url: http://127.0.0.1:9585/private_B3WMIAChoseTpDS7fwgwRw
+      tailnet_url: http://tony-dell:9585/private_B3WMIAChoseTpDS7fwgwRw
     caddy:
       note: Not used — HA UI uses absolute redirects that break a path-prefixed reverse proxy. Direct port 8124 is used.
     health_check: ssh tony-dell curl -sf http://127.0.0.1:8124/ >/dev/null

@@ -33,9 +33,15 @@ environments:
     health_check: ssh tony-dell curl -sf http://127.0.0.1:8124/ >/dev/null
     mcp:
       server: ha_mcp_tools in-process
+      status: active
+      entry_id: 01M22027A3F326A34C31498D0F3
+      server_user_id: 9b6eb3a940c44994834b36a6d64de13a
+      server_port: 9585
+      bind_host: 0.0.0.0
+      secret_path: /private_B3WMIAChoseTpDS7fwgwRw
+      webhook_id: mcp_ed77567866f1ebbb6fb091dc816cb550
       local_url: http://127.0.0.1:9585/private_B3WMIAChoseTpDS7fwgwRw
       tailnet_url: http://tony-dell:9585/private_B3WMIAChoseTpDS7fwgwRw
-      secret_path: /private_B3WMIAChoseTpDS7fwgwRw
       note: HA-MCP Server runs inside the dev container, exposed on host port 9585.
     autostart: loginctl enable-linger tony is yes; Quadlet WantedBy=default.target
     status: enabled
@@ -100,8 +106,9 @@ custom_components:
 
 entity_mocks:
   purpose: Real devices (Sunsynk, Tuya, Zigbee) do not exist on tony-dell. Use dev-only mocks to test automation logic.
-  file: /home/tony/.config/home-assistant-michael-dev/packages/dev-mocks.yaml
-  note: Keep dev-mocks.yaml out of the repo or in a path ignored by deploy-michael.sh so it is never sent to live.
+  repo_source: /home/tony/CascadeProjects/chaba/docs/home-assistant/dev/dev-mocks.yaml
+  deployed_to: /home/tony/.config/home-assistant-michael-dev/packages/a_dev_mocks.yaml
+  note: Deployed as packages/a_dev_mocks.yaml by deploy-michael-dev.sh. Keep out of deploy-michael.sh path so it is never sent to live.
 
 verification:
   dev:
