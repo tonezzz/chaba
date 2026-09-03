@@ -11,7 +11,8 @@ sections:
   layout: list
   items:
   - label: MacBook macOS App Development
-    text: Continue macOS and iOS workstation setup after Tailscale install; full Xcode 15.x is next.
+    text: Continue macOS and iOS workstation setup after Tailscale install; full Xcode
+      15.x is next.
     branch: macbook
     status: parked
     previous_status: active
@@ -24,57 +25,71 @@ sections:
     - xcode
     estimated_duration: 1 session
     blocker:
-      reason: MacBook (100.124.59.112) became unreachable again before Xcode install could start
+      reason: MacBook (100.124.59.112) became unreachable again before Xcode install
+        could start
     subtasks:
     - label: Bring MacBook online (Tailscale/SSH or Chrome DevTools)
       status: completed
       completed_at: '2026-08-24'
-      note: 'SSH via mcp-debug succeeded. Baseline verified: CLT active, Swift 5.8.1, Node v20.17.0, Homebrew 6.0.17, 0 signing
-        identities.'
+      note: 'SSH via mcp-debug succeeded. Baseline verified: CLT active, Swift 5.8.1,
+        Node v20.17.0, Homebrew 6.0.17, 0 signing identities.'
     - label: Install or update Xcode 15.x command line tools
       status: deferred
-      note: Tried `brew install xcodes` and direct GitHub download; both interrupted by intermittent SSH timeouts. Host connectivity
-        unstable.
+      note: Tried `brew install xcodes` and direct GitHub download; both interrupted
+        by intermittent SSH timeouts. Host connectivity unstable.
       deferred_at: '2026-08-25'
-      resume_note: MacBook offline (last seen 17h); cannot install Xcode until host is reachable
+      resume_note: MacBook offline (last seen 17h); cannot install Xcode until host
+        is reachable
     - label: Verify macOS app build toolchain
       status: deferred
       deferred_at: '2026-08-25'
       resume_note: MacBook offline; park focus until host is reachable
   - label: Dev-system regression
-    text: 'Dev-system trend is stable. Open cons:
+    text: 'Dev-system trend is improving. Open cons:
 
-      - Branch/worktree sprawl (high): 6 branches are ahead of master; 7 worktrees active
+      - Branch/worktree sprawl (medium): 3 branches are ahead of master; 4 worktrees
+      active
+
+      - Uncommitted working tree (medium): 6 untracked or modified file(s)
 
       Source: reports/DEV_SYSTEM_ASSESSMENT.json
 
       '
     status: active
     priority: medium
-    started: '2026-08-31'
+    started: '2026-09-02'
     estimated_duration: 1 session
     tags:
     - dev-system
     - assessment
     subtasks:
     - label: Review reports/DEV_SYSTEM_ASSESSMENT.md
+      status: completed
+      completed_at: '2026-09-02'
     - label: 'Address highest severity con: Branch/worktree sprawl'
+      status: in_progress
+      started_at: '2026-09-02'
+      note: 'chaba-mcp-experiments resolved; 11 stale remote-tracking refs pruned; remaining drift items in Ready (Safe) queue'
     - label: Update docs/ssot/ssot.dev-system.assessment.yml when resolved
-    request_log: []
+      status: not_started
+    request_log:
+    - timestamp: '2026-09-03'
+      action: continue
+      note: 'User asked to update plan after chaba-mcp-experiments auto-fix; updated NEXT_FOCUS.md and active focus'
     ownership:
       owner: tony
       session: ''
       locked: true
       lock_reason: Activated as active focus
     branch: chaba
-    source: /home/tony/CascadeProjects/chaba/docs/ssot/focus-inbox/2026-08-31-015934-dev-system-regression.yml
+    source: /home/tony/CascadeProjects/chaba/docs/ssot/focus-inbox/2026-09-01-190010-dev-system-regression.yml
 - title: Quick Wins
   icon: quick
   layout: list
   items:
   - label: Log quick wins in this section
-    text: Any task under 15 minutes (e.g. config fix, one-line health check, URL update) goes here. Complete immediately and
-      keep the list trimmed.
+    text: Any task under 15 minutes (e.g. config fix, one-line health check, URL update)
+      goes here. Complete immediately and keep the list trimmed.
     status: completed
     completed: '2026-08-26'
     priority: low
@@ -91,8 +106,10 @@ sections:
   layout: list
   items:
   - label: Add real CI smoke tests
-    text: Add a GitHub Actions job that runs a live MCP call (mcp_debug, mcp_health, or mcp-focus) on every push to master.
-    status: not_started
+    text: Add a GitHub Actions job that runs a live MCP call (mcp_debug, mcp_health,
+      or mcp-focus) on every push to master.
+    status: completed
+    completed_at: '2026-09-02'
     priority: medium
     tags:
     - ci
