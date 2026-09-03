@@ -1,0 +1,19 @@
+---
+# Playlive Chrome CDP host registry.
+# This file is the SSOT for which Chrome CDP endpoints the local playlive MCP
+# client can attach to.  The playlive-hosts-loader.py wrapper reads it, sets
+# PLAYLIVE_HOSTS as JSON, and then execs playlive-server.py.
+playlive_url: http://tony-dell:9230
+hosts:
+  tony-dell:
+    cdp: http://127.0.0.1:9223
+    description: Local headless Chrome on tony-dell
+    available: true
+  tony-omen:
+    cdp: http://192.168.2.84:9228
+    description: Chrome CDP on tony_omen via socat forwarder
+    available: true
+  kk-macbook:
+    cdp: http://100.124.59.112:9223
+    description: Chrome CDP on kk-macbook (Tailscale)
+    available: false

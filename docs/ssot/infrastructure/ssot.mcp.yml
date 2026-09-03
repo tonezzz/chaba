@@ -148,18 +148,21 @@ servers:
   playlive:
     name: Playlive Browser Automation
     description: Consolidated browser automation for local and remote testing
-    implementation: python3 /home/tony/CascadeProjects/chaba/mcp-servers/mcp-playlive/playlive-server.py
+    implementation: python3 /home/tony/.config/devin/mcp-scripts/playlive-hosts-loader.py
     wrapper: mcp-single-instance.sh
-    pattern: mcp-playlive/playlive-server.py
+    pattern: playlive-hosts-loader.py
     filter: none
     env:
-      PLAYLIVE_URL: profile.service_urls.playlive_url
-      PLAYLIVE_HOSTS: '{"tony-dell":"http://127.0.0.1:9223","tony-omen":"http://127.0.0.1:9228","kk-macbook":"http://100.124.59.112:9223"}'
+      PLAYLIVE_URL: http://tony-dell:9230
     single_instance: true
     status: operational
+    notes: |
+      Host registry is now in docs/ssot/infrastructure/playlive-hosts.yml.
+      The playlive-hosts-loader.py wrapper reads that YAML, sets PLAYLIVE_HOSTS,
+      and then execs the real playlive-server.py.
     per_host:
       tony_dell:
-        implementation: python3 /home/tony/CascadeProjects/chaba-tony-dell/mcp-servers/mcp-playlive/playlive-server.py
+        implementation: python3 /home/tony/.config/devin/mcp-scripts/playlive-hosts-loader.py
     config_files:
       - devin: true
       - windsurf: false

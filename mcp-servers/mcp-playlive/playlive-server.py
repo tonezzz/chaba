@@ -241,5 +241,39 @@ def playlive_delete_stash(stash_id: str) -> str:
     return json.dumps(_request("DELETE", f"/stash/{stash_id}"), indent=2)
 
 
+def _cdp_version(remote_url: str) -> dict:
+    """Probe a Chrome CDP endpoint and return its /json/version data."""
+    url = remote_url.rstrip("/") + "/json/version"
+    req = urllib.request.Request(url, method="GET")
+    try:
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            return {"ok": True, "cdp_url": remote_url, **json.loads(resp.read().decode("utf-8"))}
+    except urllib.error.HTTPError as exc:
+        return {"ok": False, "cdp_url": remote_url, "http_code": exc.code, "error": exc.read().decode("utf-8", errors="replace")}
+    except Exception as exc:
+        return {"ok": False, "cdp_url": remote_url, "error": str(exc)}
+
+
+@mcp.tool()
+def playlive_verify_host(host: str | None = None, remote_url: str | None = None) -> str:
+    """Verify that a Chrome CDP endpoint is reachable.
+
+    Resolves `host` against PLAYLIVE_HOSTS (or uses an explicit `remote_url`) and
+    hits the CDP /json/version endpoint.
+    """
+    resolved = _resolve_remote_url(host, remote_url)
+    if not resolved:
+        return json.dumps({"ok": False, "error": "No host or remote_url provided"}, indent=2)
+    return json.dumps(_cdp_version(resolved), indent=2)
+
+
+@mcp.tool()
+def playlive_discover_hosts() -> str:
+    """Probe every host in PLAYLIVE_HOSTS and report which CDP endpoints are reachable."""
+    results = {name: _cdp_version(cdp) for name, cdp in PLAYLIVE_HOSTS.items()}
+    all_ok = all(v.get("ok") for v in results.values())
+    return json.dumps({"ok": all_ok, "hosts": results}, indent=2)
+
+
 if __name__ == "__main__":
     mcp.run(transport="stdio")
