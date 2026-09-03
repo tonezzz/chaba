@@ -5,7 +5,7 @@ SCRIPT_DIR=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" &>/dev/null && pwd)
 REPO_ROOT=$(cd "$SCRIPT_DIR/../.." &>/dev/null && pwd)
 HA_DIR="$REPO_ROOT/docs/home-assistant"
 
-DEV_CONFIG="${MICHAEL_DEV_CONFIG:-$HOME/.config/home-assistant-michael-dev}"
+DEV_CONFIG="${MICHAEL_DEV_CONFIG:-$HOME/.config/michael-dev}"
 DEV_SERVICE="${MICHAEL_DEV_SERVICE:-michael-dev.service}"
 DEV_PORT="${MICHAEL_DEV_PORT:-8124}"
 DEPLOY_DASHBOARDS="${MICHAEL_DEPLOY_DASHBOARDS:-0}"
