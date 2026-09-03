@@ -1,0 +1,60 @@
+title: ARP inventory alert
+subtitle: Network scan changes detected at 2026-09-02-210500
+icon: inbox
+focus:
+  label: Review ARP inventory scan results
+  text: 'ARP inventory scan found changes compared to the MAC/IP registries.
+
+
+    - New devices: 2
+
+    - New IP for known device: 0
+
+    - MAC changed: 8
+
+    - Conflicts: 0
+
+    - Duplicate MACs in scan: 0
+
+
+    Report: reports/network-inventory-scan-2026-09-02-210500.json'
+  branch: chaba
+  priority: low
+  status: draft
+  tags:
+  - network
+  - arp
+  - inventory
+  - mac-registry
+  safe_to_parallel:
+    value: true
+    reason: Registry review only; does not change live services.
+  subtasks:
+  - label: Identify new device 192.168.2.77 (d8:3a:36:7d:10:0d)
+    status: not_started
+  - label: Identify new device 192.168.2.70 (e0:73:e7:05:c5:16)
+    status: not_started
+  - label: Check MAC change for 192.168.2.76 (was discovered-7cd2da73308a, now f2:ed:a0:d4:5f:db)
+    status: not_started
+  - label: Check MAC change for 192.168.2.69 (was hp-deskjet-2700, now d4:9e:3b:6a:94:90)
+    status: not_started
+  - label: Check MAC change for 192.168.2.73 (was discovered-062858264b2c, now 06:28:58:26:4b:2c)
+    status: not_started
+  - label: Check MAC change for 192.168.2.71 (was discovered-1c1dd3e80a4f, now c0:cd:d6:85:a8:38)
+    status: not_started
+  - label: Check MAC change for 192.168.2.66 (was ip-cam-65, now 2c:b4:71:e8:a8:e8)
+    status: not_started
+  - label: Check MAC change for 192.168.2.1 (was home-router, now 98:00:6a:68:f7:c6)
+    status: not_started
+  - label: Check MAC change for 192.168.2.67 (was discovered-484d7ee43ac7, now 48:4d:7e:e4:3a:c7)
+    status: not_started
+  - label: Check MAC change for 192.168.2.72 (was discovered-f2eda0d45fdb, now ea:9b:8f:d2:80:f0)
+    status: not_started
+ownership:
+  owner: tony
+  session: ''
+  locked: false
+  lock_reason: ''
+source:
+  session: ''
+  date: '2026-09-03'
