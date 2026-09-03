@@ -6,15 +6,58 @@ sections:
   icon: safe
   layout: list
   items:
+  - label: Deploy Michael HA MCP tunnel on tony-dell
+    text: Install and enable the systemd user service `stacks/tony-dell/home-assistant-michael-dev/home-assistant-michael-mcp-tunnel.service`
+      on tony-dell. Verify the live tailnet MCP endpoint `http://tony-dell:19584/private_oBVC604-FnxgBDP00t1L9g` responds
+      with HTTP 200. Do not commit; report back status and any required SSOT updates.
+    branch: chaba
+    priority: medium
+    status: completed
+    completed_at: '2026-09-03'
+    note: systemd user service installed and running on tony-dell; tailnet MCP endpoint reachable via POST/200.
+    triage_score: 0.6
+    tags:
+    - michael-ha
+    - mcp
+    - tony-dell
+    - tunnel
+    safe_to_parallel: true
+    subtasks:
+    - label: Copy service file to tony-dell ~/.config/systemd/user/
+      status: completed
+    - label: Reload systemd and enable/start the tunnel
+      status: completed
+    - label: Verify HTTP 200 from tony-dell:19584 MCP endpoint
+      status: completed
+      completed_at: '2026-09-03'
+      note: Tunnel is live. A raw GET returns 405 Method Not Allowed; a valid MCP POST (Accept application/json, text/event-stream) returns 200. ss -tlnp shows 0.0.0.0:19584 listening on tony-dell.
+    queued_at: '2026-09-03'
+    source: user
+    owner: tony
+    session: ''
+    locked: false
+    lock_reason: Resolved
+    subagent:
+      runnable: true
+      profile: subagent_general
+      parallel: true
+      requires_approval: false
+      can_change_host: false
+      host: tony_dell
+      notes: Dispatched to tony_dell via focus-dispatcher --process-ready
   - label: Sync worktree chaba-mcp-experiments with master
-    text: 'Worktree chaba-mcp-experiments is 3 commit(s) ahead and 66 commit(s) behind master.
+    text: 'Worktree chaba-mcp-experiments no longer exists on any host; the remote branch was already deleted from origin,
+      so this drift item is moot.
 
-      Decide whether to merge, rebase, or archive the branch.
+      Marked completed; stale local remote-tracking refs pruned.
 
       '
     branch: chaba
     priority: medium
-    status: ready
+    status: completed
+    completed_at: '2026-09-02'
+    note: Auto-fix attempt on tony-dell found no chaba-mcp-experiments worktree on tony-omen or the local host; origin no
+      longer has the branch. Pruned stale remote-tracking refs.
     triage_score: 0.55
     tags:
     - worktree
@@ -289,14 +332,9 @@ sections:
     safe_to_parallel: true
     subtasks:
     - label: Clone or locate sunsynk-power-flow-card on tony-dell
-      status: completed
     - label: Apply battery 3/4 patch cleanly (avoid duplicate declarations)
-      status: completed
     - label: Build with npm run build
-      status: completed
     - label: Fix eslint errors and commit
-      status: completed
-      note: ESLint now clean and npm run build succeeds; commit/push deferred per instruction for main-session review.
     queued_at: '2026-09-02'
     source: user
     owner: focus-dispatcher
@@ -326,17 +364,8 @@ sections:
     safe_to_parallel: true
     subtasks:
     - label: Merge ha live bridge updates into chaba master
-      status: completed
-      completed_at: '2026-09-02'
-      note: Merged ha branch into master and resolved add/add conflicts using ha branch versions.
     - label: Merge michael-ha/michael-live updates
-      status: completed
-      completed_at: '2026-09-02'
-      note: Merged michael-ha and michael-live into master; resolved conflicts using branch versions and deep-merged index/apps lists.
     - label: Clean up /tmp/chaba-ha and chaba-michael worktrees
-      status: completed
-      completed_at: '2026-09-02'
-      note: Verified no chaba-ha or chaba-michael worktree directories exist under /tmp, /home/tony/.local/share/worktrees, or /home/tony/CascadeProjects; git worktree list shows only chaba-tony-dell, chaba.h3, and experiment worktrees.
     queued_at: '2026-09-02'
     source: user
     owner: focus-dispatcher

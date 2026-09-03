@@ -5,67 +5,7 @@ sections:
 - title: Active Shared Focus
   icon: active
   layout: list
-  items:
-  - label: 'mcp-health: 6 failing'
-    text: '- web / Caddy: error - Port 8080 is in use by users:(("caddy",pid=4161488,fd=8)). This may indicate a port conflict
-      preventing service startup.
-
-      - web / Home Assistant: error - Port 8080 is in use by users:(("caddy",pid=4161488,fd=8)). This may indicate a port
-      conflict preventing service startup.
-
-      - datastore / Weaviate: error - Port 8080 is in use by users:(("caddy",pid=4161488,fd=8)). This may indicate a port
-      conflict preventing service startup.
-
-      - tailscale / Chaba Funnel landing page: error - Port 8444 is in use by another process. This may indicate a port conflict
-      preventing service startup.
-
-      - system / Playlived (tony-omen): error
-
-      - system / tony-omen host reachability: unknown - Command failed: curl -s -o /dev/null -w "%{http_code}" --max-time
-      5 "http://100.75.102.88:9100/health"
-
-      '
-    status: completed
-    completed_at: '2026-09-02'
-    priority: high
-    started: '2026-09-02'
-    estimated_duration: 1 session
-    tags:
-    - health
-    - monitoring
-    - snapshot
-    subtasks:
-    - label: Investigate Caddy
-      status: completed
-      completed_at: '2026-09-02'
-      note: Fixed mcp-health checkHTTPService false port-conflict logic; updated Caddy health URL to /apps/tony-live/.
-    - label: Investigate Home Assistant
-      status: completed
-      completed_at: '2026-09-02'
-      note: Health check now uses direct http://tony-dell:8123/ (Caddy had no /apps/home-assistant/ route).
-    - label: Investigate Weaviate
-      status: completed
-      completed_at: '2026-09-02'
-      note: Weaviate podman container had exited; started it on tony-dell.
-    - label: Investigate Chaba Funnel landing page
-      status: completed
-      completed_at: '2026-09-02'
-      note: Removed decommissioned chaba-funnel service from ssot.health.home.other.yml (ha-live now uses 8444).
-    - label: Investigate Playlived (tony-omen)
-      status: completed
-      completed_at: '2026-09-02'
-      note: Fixed mcp-health SSH host-key verification by adding StrictHostKeyChecking=no.
-    - label: Investigate tony-omen host reachability
-      status: completed
-      completed_at: '2026-09-02'
-      note: Restarted and enabled mcp-debug-cors.service on tony-omen; 9100/health now returns 200.
-    request_log: []
-    ownership:
-      owner: tony
-      session: ''
-      locked: true
-      lock_reason: Activated as active focus
-    source: /home/tony/CascadeProjects/chaba/docs/ssot/focus-inbox/mcp-health-snapshot-2026-09-02T09-51-42.yml
+  items: []
 - title: Active Branch Focus
   icon: branch
   layout: list
@@ -101,35 +41,52 @@ sections:
       status: deferred
       deferred_at: '2026-08-25'
       resume_note: MacBook offline; park focus until host is reachable
-  - label: Dev-system regression
-    text: 'Dev-system trend is stable. Open cons:
+  - label: Review ARP inventory scan results
+    text: 'ARP inventory scan found changes compared to the MAC/IP registries.
 
-      - Branch/worktree sprawl (high): 4 branches are not merged into master; 5 worktrees active
 
-      Source: docs/ssot/ssot.dev-system.assessment.yml
+      - New devices: 2
 
-      '
-    status: parked
-    priority: medium
-    started: '2026-08-31'
+      - New IP for known device: 0
+
+      - MAC changed: 8
+
+      - Conflicts: 0
+
+      - Duplicate MACs in scan: 0
+
+
+      Report: reports/network-inventory-scan-2026-09-02-210500.json'
+    status: active
+    priority: low
+    started: '2026-09-03'
     estimated_duration: 1 session
     tags:
-    - dev-system
-    - assessment
+    - network
+    - arp
+    - inventory
+    - mac-registry
     subtasks:
-    - label: Review reports/DEV_SYSTEM_ASSESSMENT.md
-      status: completed
-      completed_at: '2026-09-01'
-    - label: 'Address highest severity con: Branch/worktree sprawl'
-      status: completed
-      started_at: '2026-09-01'
-      completed_at: '2026-09-02'
-      note: Merged and deleted ha, tony-ha, michael-ha, michael-live, tony-live and consolidated raceman-files; only the open
-        /tmp/chaba-ha-b7YHej worktree remains for active ha-live editing.
-    - label: Update docs/ssot/ssot.dev-system.assessment.yml when resolved
-      status: completed
-      started_at: '2026-09-01'
-      completed_at: '2026-09-01'
+    - label: Identify new device 192.168.2.77 (d8:3a:36:7d:10:0d)
+      status: not_started
+    - label: Identify new device 192.168.2.70 (e0:73:e7:05:c5:16)
+      status: not_started
+    - label: Check MAC change for 192.168.2.76 (was discovered-7cd2da73308a, now f2:ed:a0:d4:5f:db)
+      status: not_started
+    - label: Check MAC change for 192.168.2.69 (was hp-deskjet-2700, now d4:9e:3b:6a:94:90)
+      status: not_started
+    - label: Check MAC change for 192.168.2.73 (was discovered-062858264b2c, now 06:28:58:26:4b:2c)
+      status: not_started
+    - label: Check MAC change for 192.168.2.71 (was discovered-1c1dd3e80a4f, now c0:cd:d6:85:a8:38)
+      status: not_started
+    - label: Check MAC change for 192.168.2.66 (was ip-cam-65, now 2c:b4:71:e8:a8:e8)
+      status: not_started
+    - label: Check MAC change for 192.168.2.1 (was home-router, now 98:00:6a:68:f7:c6)
+      status: not_started
+    - label: Check MAC change for 192.168.2.67 (was discovered-484d7ee43ac7, now 48:4d:7e:e4:3a:c7)
+      status: not_started
+    - label: Check MAC change for 192.168.2.72 (was discovered-f2eda0d45fdb, now ea:9b:8f:d2:80:f0)
+      status: not_started
     request_log: []
     ownership:
       owner: tony
@@ -137,11 +94,7 @@ sections:
       locked: true
       lock_reason: Activated as active focus
     branch: chaba
-    source: /home/tony/CascadeProjects/chaba/docs/ssot/focus-inbox/2026-08-31-015934-dev-system-regression.yml
-    parked: '2026-09-02'
-    deferred:
-      to_session: subtasks completed; pivot to MCP/SSOT infrastructure cleanup
-      reason: All Dev-system regression subtasks are done; focus is stale. Deferring to continue MCP/PlayLive/Yomi SSOT cleanup.
+    source: /home/tony/CascadeProjects/chaba/docs/ssot/focus-inbox/2026-09-02-210500-arp-inventory-alert.yml
 - title: Quick Wins
   icon: quick
   layout: list

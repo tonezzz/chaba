@@ -358,17 +358,118 @@ function validateBacklog(data) {
   return { errors, warnings: [] };
 }
 
+function validateSubagent(data, rules, context = 'item') {
+  const errors = [];
+  const warnings = [];
+  if (!data || !data.sections) return { errors, warnings };
+
+  const allowed = rules.allowed_subagent_hosts || ['tony_dell', 'local', 'macbook'];
+  const requireSubagent = rules.require_subagent_dispatchable;
+
+  for (const section of data.sections) {
+    const isReadySafe = section.title === 'Ready (Safe)';
+    for (const item of section.items || []) {
+      if (!item) continue;
+      if (['completed', 'archived'].includes(item.status)) continue;
+
+      const subagent = item.subagent || {};
+      const safe = item.safe_to_parallel === true || isReadySafe;
+
+      if (!subagent.host) {
+        if (safe) {
+          errors.push(`[${context}] "${item.label}" is safe-to-parallel/Ready (Safe) but has no subagent.host`);
+        } else if (requireSubagent) {
+          warnings.push(`[${context}] "${item.label}" has no subagent block; tony-dell dispatch cannot be verified`);
+        }
+        continue;
+      }
+
+      if (!allowed.includes(subagent.host)) {
+        const msg = `[${context}] "${item.label}" has disallowed subagent.host "${subagent.host}"`;
+        if (safe) errors.push(msg);
+        else warnings.push(msg);
+      }
+
+      if (safe) {
+        if (subagent.runnable !== true) {
+          errors.push(`[${context}] "${item.label}" safe-to-parallel item must have subagent.runnable: true`);
+        }
+        if (subagent.requires_approval !== false) {
+          errors.push(`[${context}] "${item.label}" safe-to-parallel item must have subagent.requires_approval: false`);
+        }
+        if (subagent.host !== 'tony_dell') {
+          errors.push(`[${context}] "${item.label}" safe-to-parallel item must dispatch to tony_dell (got ${subagent.host})`);
+        }
+      }
+
+      if (subagent.runnable === true && subagent.requires_approval === false && !allowed.includes(subagent.host)) {
+        warnings.push(`[${context}] "${item.label}" runnable subagent uses host "${subagent.host}" not in allowed list`);
+      }
+    }
+  }
+
+  return { errors, warnings };
+}
+
+function validateTriage(data, rules, context = 'item') {
+  const errors = [];
+  const warnings = [];
+  if (!data || !data.sections) return { errors, warnings };
+
+  for (const section of data.sections) {
+    for (const item of section.items || []) {
+      if (!item) continue;
+      if (['completed', 'archived'].includes(item.status)) continue;
+
+      const triage = item.triage || {};
+      const safe = item.safe_to_parallel === true || section.title === 'Ready (Safe)';
+
+      if (safe && !triage.complication && !(item.subtasks || []).length) {
+        warnings.push(`[${context}] "${item.label}" is safe-to-parallel but has no triage or subtasks`);
+      }
+
+      if (triage.complication !== undefined) {
+        const c = Number(triage.complication);
+        if (Number.isNaN(c) || c < 1 || c > 10) {
+          errors.push(`[${context}] "${item.label}" triage.complication must be an integer 1-10 (got ${triage.complication})`);
+        } else if (c > 4 && safe) {
+          errors.push(`[${context}] "${item.label}" has triage.complication ${c} but is marked safe_to_parallel; must be <= 4`);
+        }
+      }
+    }
+  }
+
+  return { errors, warnings };
+}
+
 function main() {
   console.log('🎯 Validating Strategic Focus Management\n');
   
   const data = loadFocusData();
   let { errors, warnings } = validateFocusRules(data);
-  
+  const rules = data.validation || {};
+
+  const subagentActive = validateSubagent(data, rules, 'active');
+  errors = errors.concat(subagentActive.errors);
+  warnings = warnings.concat(subagentActive.warnings);
+
+  const triageActive = validateTriage(data, rules, 'active');
+  errors = errors.concat(triageActive.errors);
+  warnings = warnings.concat(triageActive.warnings);
+
   if (existsSync(BACKLOG_FILE)) {
     const backlog = loadYAML(BACKLOG_FILE);
     const backlogResult = validateBacklog(backlog);
     errors = errors.concat(backlogResult.errors);
     warnings = warnings.concat(backlogResult.warnings);
+
+    const subagentBacklog = validateSubagent(backlog, rules, 'backlog');
+    errors = errors.concat(subagentBacklog.errors);
+    warnings = warnings.concat(subagentBacklog.warnings);
+
+    const triageBacklog = validateTriage(backlog, rules, 'backlog');
+    errors = errors.concat(triageBacklog.errors);
+    warnings = warnings.concat(triageBacklog.warnings);
   }
   
   if (errors.length === 0 && warnings.length === 0) {

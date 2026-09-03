@@ -2,19 +2,14 @@ title: Focus History Archive 2026
 subtitle: Completed focus records archived from ssot.focus.yml
 icon: archive
 archived_from: /home/tony/CascadeProjects/chaba/docs/ssot/ssot.focus.yml
-archived_at: '2026-08-20'
+archived_at: '2026-09-02'
 layout: list
 items:
 - label: Modularize mcp-debug-server.py and large files
-  text: mcp-debug-server.py has grown to 863 lines and is mixing host operations, tool logic, report generation, focus integration,
-    and MCP server wiring. Propose to split it into a small package and apply the same pattern to other large files. The next
-    large file is focus-dispatcher.py (663 lines), which is the focus system itself.
+  text: mcp-debug-server.py has grown to 863 lines and is mixing host operations, tool logic, report generation, focus integration, and MCP server wiring. Propose to split it into a small package and apply the same pattern to other large files. The next large file is focus-dispatcher.py (663 lines), which is the focus system itself.
   date: '2026-08-16'
   duration: 1 session
-  outcome: 'Completed subtasks: Scan and rank the largest Python and SSOT files by line count, Define module boundaries for
-    focus-dispatcher.py, Create or update the relevant SSOT for module conventions, Move host operations, tools, reports,
-    focus, and server into modules, Split the next highest-priority file (focus-dispatcher.py at 663 lines), Run py_compile
-    and mcp smoke tests after modularization'
+  outcome: 'Completed subtasks: Scan and rank the largest Python and SSOT files by line count, Define module boundaries for focus-dispatcher.py, Create or update the relevant SSOT for module conventions, Move host operations, tools, reports, focus, and server into modules, Split the next highest-priority file (focus-dispatcher.py at 663 lines), Run py_compile and mcp smoke tests after modularization'
   tags:
   - refactor
   - mcp
@@ -36,9 +31,7 @@ items:
     '
   date: '2026-08-16'
   duration: 1 session
-  outcome: 'Completed subtasks: Add status mode to mcp_focus that only returns active foci and quick wins, Implement the decision_tree
-    for recommend mode, Update the return schema to match ssot.mcp-focus.yml output_schema, Update mcp_debug/server.py tool
-    registration for mode and recommendation, Add smoke tests for status and recommend modes'
+  outcome: 'Completed subtasks: Add status mode to mcp_focus that only returns active foci and quick wins, Implement the decision_tree for recommend mode, Update the return schema to match ssot.mcp-focus.yml output_schema, Update mcp_debug/server.py tool registration for mode and recommendation, Add smoke tests for status and recommend modes'
   tags:
   - mcp
   - mcp-focus
@@ -47,14 +40,10 @@ items:
   - session-router
   - completed
 - label: Tailscale Funnel 404 and healthcheck
-  text: User reports https://tony-dell.taila0626a.ts.net/ returns 404. Curl from tony-omen returns 200 for the same URL, /apps/tailscale-funnel/,
-    and /mcp-savings.json, so the failure may be client-specific or cache-related. Investigate root path handling, verify
-    expected landing/health endpoint, and add a health check for the Funnel root and mcp endpoints in SSOT health definitions.
+  text: User reports https://tony-dell.taila0626a.ts.net/ returns 404. Curl from tony-omen returns 200 for the same URL, /apps/tailscale-funnel/, and /mcp-savings.json, so the failure may be client-specific or cache-related. Investigate root path handling, verify expected landing/health endpoint, and add a health check for the Funnel root and mcp endpoints in SSOT health definitions.
   date: '2026-08-16'
   duration: 1 session
-  outcome: 'Completed subtasks: Reproduce the 404 from different clients and caches, Verify tailscale serve / Funnel root
-    path configuration on tony-dell, Add a landing/health endpoint for the Funnel root, Add SSOT health checks for Funnel
-    root and mcp endpoints'
+  outcome: 'Completed subtasks: Reproduce the 404 from different clients and caches, Verify tailscale serve / Funnel root path configuration on tony-dell, Add a landing/health endpoint for the Funnel root, Add SSOT health checks for Funnel root and mcp endpoints'
   tags:
   - tailscale
   - funnel
@@ -64,28 +53,10 @@ items:
   - mcp-debug
   - completed
 - label: mcp-debug visual capture bridge
-  text: "Extend mcp-debug with lightweight, opt-in visual capture tools so the assistant\ncan see remote host state without\
-    \ switching to PlayLive or another MCP server.\nStart with non-interactive capture tools; avoid duplicating PlayLive's\
-    \ browser\nautomation and click/keyboard control.\n\nProposed design for the complicated bits (so this session does not\
-    \ need to solve them again):\n- `mcp_screenshot(host, region, format=png)` returns `{ok, content_base64, width, height,\
-    \ bytes, error}`.\n  Transport: macOS `screencapture -x -`; Linux `gnome-screenshot -f -`, `grim`, or `import`;\n  always\
-    \ base64-encode and cap at 2 MB (resize/compress if larger).\n- `mcp_window_list(host)` returns `{ok, windows: [{id, app,\
-    \ title, pid, focused}]}`.\n  Transport: macOS `lsappinfo`/`osascript`; X11 `xwininfo -root -tree`; Wayland `swaymsg -t\
-    \ get_tree`.\n- `mcp_clipboard_image_get(host)` returns `{ok, content_base64, format, bytes, error}`.\n  Transport: macOS\
-    \ `pbpaste -Prefer rtf` image path/NSPasteboard read; Linux `xclip -selection clipboard -t image/png -o`.\n- `mcp_a11y_tree(host,\
-    \ app)` returns a JSON UI element tree of a given app/window.\n  Transport: macOS AppleScript accessibility APIs; optional\
-    \ for later.\n\nSecurity defaults:\n- Per-host `capture: true` opt-in; default false on all hosts.\n- `mcp_screenshot`\
-    \ must support `region` cropping to avoid leaking full displays.\n- Hard cap on image size (2 MB default, 4 MB hard) with\
-    \ downscale for oversize.\n- All capture calls logged with host, type, region, and size.\n- clipboard-image is opt-in\
-    \ alongside clipboard text; never called automatically.\n\nImplementation order:\n1. macbook first (pbcopy/pbpaste + screencapture\
-    \ are safest and well documented).\n2. Add Linux screenshot fallbacks only after macOS path is stable.\n3. Do not add\
-    \ click/drag/keyboard automation; that stays in PlayLive.\n"
+  text: "Extend mcp-debug with lightweight, opt-in visual capture tools so the assistant\ncan see remote host state without switching to PlayLive or another MCP server.\nStart with non-interactive capture tools; avoid duplicating PlayLive's browser\nautomation and click/keyboard control.\n\nProposed design for the complicated bits (so this session does not need to solve them again):\n- `mcp_screenshot(host, region, format=png)` returns `{ok, content_base64, width, height, bytes, error}`.\n  Transport: macOS `screencapture -x -`; Linux `gnome-screenshot -f -`, `grim`, or `import`;\n  always base64-encode and cap at 2 MB (resize/compress if larger).\n- `mcp_window_list(host)` returns `{ok, windows: [{id, app, title, pid, focused}]}`.\n  Transport: macOS `lsappinfo`/`osascript`; X11 `xwininfo -root -tree`; Wayland `swaymsg -t get_tree`.\n- `mcp_clipboard_image_get(host)` returns `{ok, content_base64, format, bytes, error}`.\n  Transport: macOS `pbpaste -Prefer rtf` image path/NSPasteboard read; Linux `xclip -selection clipboard -t image/png -o`.\n- `mcp_a11y_tree(host, app)` returns a JSON UI element tree of a given app/window.\n  Transport: macOS AppleScript accessibility APIs; optional for later.\n\nSecurity defaults:\n- Per-host `capture: true` opt-in; default false on all hosts.\n- `mcp_screenshot` must support `region` cropping to avoid leaking full displays.\n- Hard cap on image size (2 MB default, 4 MB hard) with downscale for oversize.\n- All capture calls logged with host, type, region, and size.\n- clipboard-image is opt-in alongside clipboard text; never called automatically.\n\nImplementation order:\n1. macbook first (pbcopy/pbpaste + screencapture are safest and well documented).\n2. Add Linux screenshot fallbacks only after macOS path is stable.\n3. Do not add click/drag/keyboard automation; that stays in PlayLive.\n"
   date: '2026-08-17'
   duration: 1 session
-  outcome: 'Completed subtasks: Promote this design to a dedicated SSOT (docs/ssot/infrastructure/ssot.mcp-debug.capture.yml),
-    Add mcp_screenshot with macOS transport and size cap, Add mcp_window_list for macOS and Linux, Add mcp_clipboard_image_get
-    for macOS, Update ssot.mcp-debug.yml with capture tools, per-host flags, and limits, Add smoke tests on macbook and one
-    Linux host'
+  outcome: 'Completed subtasks: Promote this design to a dedicated SSOT (docs/ssot/infrastructure/ssot.mcp-debug.capture.yml), Add mcp_screenshot with macOS transport and size cap, Add mcp_window_list for macOS and Linux, Add mcp_clipboard_image_get for macOS, Update ssot.mcp-debug.yml with capture tools, per-host flags, and limits, Add smoke tests on macbook and one Linux host'
   tags:
   - mcp
   - mcp-debug
@@ -121,10 +92,7 @@ items:
     '
   date: '2026-08-17'
   duration: 2 sessions
-  outcome: 'Completed subtasks: Harden existing tony-dell podman containers with Quadlet units, Decommission tony-omen duplicate
-    postgres container, Remove six duplicate github-mcp-server containers on tony-omen, Migrate redis to tony-dell podman,
-    Migrate mddb + mddb-panel to tony-dell podman, Migrate raceman stack to tony-dell podman, Assess weaviate migration to
-    tony-dell, Update ssot.services.yml and ssot.containerization.yml with new disposition'
+  outcome: 'Completed subtasks: Harden existing tony-dell podman containers with Quadlet units, Decommission tony-omen duplicate postgres container, Remove six duplicate github-mcp-server containers on tony-omen, Migrate redis to tony-dell podman, Migrate mddb + mddb-panel to tony-dell podman, Migrate raceman stack to tony-dell podman, Assess weaviate migration to tony-dell, Update ssot.services.yml and ssot.containerization.yml with new disposition'
   tags:
   - tony-dell
   - podman
@@ -133,13 +101,10 @@ items:
   - disk-pressure
   - completed
 - label: UI policy SSOT
-  text: Create a dedicated UI policy SSOT that captures decision rules and guardrails. Audit ssot.libs.yml, ssot.ui.yml, and
-    trade-specific ssot.ui.* configs for redundant policy-like content; migrate it into the policy SSOT and leave ssot.libs.yml
-    as the component reference. Update ssot.index.yml and cross-references.
+  text: Create a dedicated UI policy SSOT that captures decision rules and guardrails. Audit ssot.libs.yml, ssot.ui.yml, and trade-specific ssot.ui.* configs for redundant policy-like content; migrate it into the policy SSOT and leave ssot.libs.yml as the component reference. Update ssot.index.yml and cross-references.
   date: '2026-08-17'
   duration: 1 session
-  outcome: 'Completed subtasks: Audit ssot.libs.yml and ssot.ui.yml for policy-like content, Create docs/ssot/ssot.ui.policy.yml
-    with extracted guardrails, Migrate redundant policy content into the new SSOT, Update ssot.index.yml and cross-references'
+  outcome: 'Completed subtasks: Audit ssot.libs.yml and ssot.ui.yml for policy-like content, Create docs/ssot/ssot.ui.policy.yml with extracted guardrails, Migrate redundant policy content into the new SSOT, Update ssot.index.yml and cross-references'
   tags:
   - ui
   - ssot
@@ -150,22 +115,16 @@ items:
   text: Implement host-prefixed session IDs in playlive-server.py per previous discussion.
   date: '2026-08-17'
   duration: 1 session
-  outcome: 'Completed subtasks: Inspect playlive-server.py session ID logic, Add hostname prefix to session IDs, Smoke test
-    with playlive client'
+  outcome: 'Completed subtasks: Inspect playlive-server.py session ID logic, Add hostname prefix to session IDs, Smoke test with playlive client'
   tags:
   - playlive
   - testing
   - completed
 - label: SSOT branch/worktree registry
-  text: Create a canonical SSOT that maps each SSOT focus branch to a git branch, local worktree path, deploy host, and the
-    systemd services it owns. Derive git worktree creation, deployment rsync, and health-check verification from this file
-    instead of ad-hoc scp/sed. Start by moving funnel-server.py and the tony-dell deployment directory onto a tracked topic
-    branch and worktree.
+  text: Create a canonical SSOT that maps each SSOT focus branch to a git branch, local worktree path, deploy host, and the systemd services it owns. Derive git worktree creation, deployment rsync, and health-check verification from this file instead of ad-hoc scp/sed. Start by moving funnel-server.py and the tony-dell deployment directory onto a tracked topic branch and worktree.
   date: '2026-08-17'
   duration: 1 session
-  outcome: 'Completed subtasks: Create or update the SSOT registry file, Add mcp_debug policy entries for any new deploy/restart
-    commands, Convert tony-dell deployment copy into a chaba-tony-dell worktree, Track funnel-server.py in the repo on a topic/tailscale
-    branch'
+  outcome: 'Completed subtasks: Create or update the SSOT registry file, Add mcp_debug policy entries for any new deploy/restart commands, Convert tony-dell deployment copy into a chaba-tony-dell worktree, Track funnel-server.py in the repo on a topic/tailscale branch'
   tags:
   - ssot
   - git
@@ -174,13 +133,10 @@ items:
   - workflow
   - completed
 - label: Safe focus continuous processing
-  text: Add a parallel safe-focus lane to the focus dispatcher so the main session can continuously pick up safe-to-run foci
-    while side sessions prepare the inbox, without parking the active shared/branch focus.
+  text: Add a parallel safe-focus lane to the focus dispatcher so the main session can continuously pick up safe-to-run foci while side sessions prepare the inbox, without parking the active shared/branch focus.
   date: '2026-08-18'
   duration: 2-3 sessions
-  outcome: 'Completed subtasks: Add safe_to_parallel schema and triage criteria, Add Ready (Safe) section to ssot.focus.current.yml,
-    Extend mcp_focus with safe_next / ready_queue mode, Update focus-dispatcher to auto-dispatch safe foci, Add session ownership/lock
-    fields to active foci, Update subagent-focus-triage and contracts, Validate and test the workflow'
+  outcome: 'Completed subtasks: Add safe_to_parallel schema and triage criteria, Add Ready (Safe) section to ssot.focus.current.yml, Extend mcp_focus with safe_next / ready_queue mode, Update focus-dispatcher to auto-dispatch safe foci, Add session ownership/lock fields to active foci, Update subagent-focus-triage and contracts, Validate and test the workflow'
   tags:
   - focus
   - workflow
@@ -189,12 +145,10 @@ items:
   - concurrency
   - completed
 - label: Gemini key rotation and validation
-  text: The yomi-api GEMINI_API_KEY was rotated in a side session. Complete the remaining Gemini embedding GPU offload work
-    - validate proxy rate limits, create side-by-side test collections, and revisit the MDDB switch.
+  text: The yomi-api GEMINI_API_KEY was rotated in a side session. Complete the remaining Gemini embedding GPU offload work - validate proxy rate limits, create side-by-side test collections, and revisit the MDDB switch.
   date: '2026-08-18'
   duration: 2 sessions
-  outcome: 'Completed subtasks: Rotate yomi-api GEMINI_API_KEY and restart service, Validate proxy rate limits and batchEmbedContents
-    during bulk indexing, Create MDDB/Weaviate side-by-side test collections, Revisit MDDB switch from Ollama to Gemini proxy'
+  outcome: 'Completed subtasks: Rotate yomi-api GEMINI_API_KEY and restart service, Validate proxy rate limits and batchEmbedContents during bulk indexing, Create MDDB/Weaviate side-by-side test collections, Revisit MDDB switch from Ollama to Gemini proxy'
   tags:
   - gemini
   - embedding
@@ -203,14 +157,10 @@ items:
   - validation
   - completed
 - label: Extend MCP Debug savings report page
-  text: Add separate sections to the public/live MCP Debug savings report for raw-allowed prefixes (e.g., python3, find, grep)
-    and registered MCP tools/presets (e.g., mcp_debug_audit, mcp_preset_savings, mcp-savings-audit). The current page only
-    lists DEBUG_COMMANDS with raw/compact savings. Update mcp_savings/mcp_report output, chaba-h3 public report HTML/JS, and
-    the live CORS fallback.
+  text: Add separate sections to the public/live MCP Debug savings report for raw-allowed prefixes (e.g., python3, find, grep) and registered MCP tools/presets (e.g., mcp_debug_audit, mcp_preset_savings, mcp-savings-audit). The current page only lists DEBUG_COMMANDS with raw/compact savings. Update mcp_savings/mcp_report output, chaba-h3 public report HTML/JS, and the live CORS fallback.
   date: '2026-08-18'
   duration: 1 session
-  outcome: mcp_savings now returns timeframe, raw_allowed, and presets; reports.py renders them; app.js updated; H3 fallback
-    refreshed; tony-dell CORS service restarted.
+  outcome: mcp_savings now returns timeframe, raw_allowed, and presets; reports.py renders them; app.js updated; H3 fallback refreshed; tony-dell CORS service restarted.
   tags:
   - completed
   - focus
@@ -218,13 +168,10 @@ items:
   - report
   - chaba-h3
 - label: Tony-Dell sync, rsync, and mcp-focus hardening
-  text: 'Harden the overnight repo-sync and start building mcp-focus on tony-dell. First steps: disable stale tony-omen overnight
-    timer and update chaba-funnel docs-sync to use rsync --delete --checksum. Then add SSOT validation before tony-dell commit,
-    re-enable mcp-health-to-inbox, make yomi-backup host-agnostic, and scaffold mcp-focus.'
+  text: 'Harden the overnight repo-sync and start building mcp-focus on tony-dell. First steps: disable stale tony-omen overnight timer and update chaba-funnel docs-sync to use rsync --delete --checksum. Then add SSOT validation before tony-dell commit, re-enable mcp-health-to-inbox, make yomi-backup host-agnostic, and scaffold mcp-focus.'
   date: '2026-08-18'
   duration: 1 session
-  outcome: Disabled tony-omen timer, updated docs-sync, added SSOT validation to overnight, re-enabled health, made yomi-backup
-    host-agnostic, and scaffolded mcp-focus package and tony-dell service.
+  outcome: Disabled tony-omen timer, updated docs-sync, added SSOT validation to overnight, re-enabled health, made yomi-backup host-agnostic, and scaffolded mcp-focus package and tony-dell service.
   tags:
   - completed
   - tony-dell
@@ -234,12 +181,10 @@ items:
   - systemd
   - ssot
 - label: Streamline focus processing and hand-off
-  text: Improve the request-to-focus workflow so the assistant classifies, parks, dispatches, and hands off work more efficiently.
-    Includes faster mcp_focus, subagent auto-dispatch, and clearer hand-off contracts.
+  text: Improve the request-to-focus workflow so the assistant classifies, parks, dispatches, and hands off work more efficiently. Includes faster mcp_focus, subagent auto-dispatch, and clearer hand-off contracts.
   date: '2026-08-18'
   duration: 1 session
-  outcome: Added Hand-off Queue section, updated mcp_focus, improved generate_subagent_contract, added --auto-dispatch, and
-    verified decision_tree.
+  outcome: Added Hand-off Queue section, updated mcp_focus, improved generate_subagent_contract, added --auto-dispatch, and verified decision_tree.
   tags:
   - completed
   - focus
@@ -247,12 +192,10 @@ items:
   - subagent
   - hand-off
 - label: MCP Debug advanced tools wrap-up
-  text: Complete the mcp_debug_audit, mcp_preset_savings, and mcp_mddb_doc work. Resolve the MDDB REST endpoint timeout so
-    the new wrapper can use semantic ranking. Decide how to add systemctl/system raw commands if needed.
+  text: Complete the mcp_debug_audit, mcp_preset_savings, and mcp_mddb_doc work. Resolve the MDDB REST endpoint timeout so the new wrapper can use semantic ranking. Decide how to add systemctl/system raw commands if needed.
   date: '2026-08-18'
   duration: 1 session
-  outcome: Restored MDDB REST endpoint mapping in mcp_mddb_doc, added mcp_system and mcp_transform tools, and verified both
-    with live calls.
+  outcome: Restored MDDB REST endpoint mapping in mcp_mddb_doc, added mcp_system and mcp_transform tools, and verified both with live calls.
   tags:
   - completed
   - mcp-debug
@@ -261,13 +204,10 @@ items:
   - systemctl
   - presets
 - label: Focus pre-action summary gate
-  text: Added a pre_action mode to mcp_focus that checks for duplicate active focuses, similar historical focuses, and related
-    decision-tree entries, then emits a concise summary before work begins. Also added the pre_action_summary case to the
-    focus decision tree.
+  text: Added a pre_action mode to mcp_focus that checks for duplicate active focuses, similar historical focuses, and related decision-tree entries, then emits a concise summary before work begins. Also added the pre_action_summary case to the focus decision tree.
   date: '2026-08-18'
   duration: 1 session
-  outcome: mcp_focus now supports mode pre_action and returns active foci, duplicate/historical matches, and related decision
-    cases. Validated with a test request.
+  outcome: mcp_focus now supports mode pre_action and returns active foci, duplicate/historical matches, and related decision cases. Validated with a test request.
   tags:
   - completed
   - focus
@@ -276,12 +216,10 @@ items:
   - workflow
   - duplication
 - label: Enable tony-dell overnight git push
-  text: Cloned chaba to the tony-dell worktree, configured the systemd overnight timer to pull --ff-only before review, set
-    up GitHub credentials, enabled FOCUS_DISPATCHER_PUSH, and verified the focus dispatcher dry-run and test push.
+  text: Cloned chaba to the tony-dell worktree, configured the systemd overnight timer to pull --ff-only before review, set up GitHub credentials, enabled FOCUS_DISPATCHER_PUSH, and verified the focus dispatcher dry-run and test push.
   date: '2026-08-18'
   duration: 1 session
-  outcome: tony-dell systemd timer now runs from /home/tony/CascadeProjects/chaba-tony-dell, pulls before processing, and
-    can push unattended. Test git push succeeded.
+  outcome: tony-dell systemd timer now runs from /home/tony/CascadeProjects/chaba-tony-dell, pulls before processing, and can push unattended. Test git push succeeded.
   tags:
   - completed
   - tony-dell
@@ -289,13 +227,10 @@ items:
   - focus-dispatcher
   - automation
 - label: Add get_page/list_sections/read_tree to MDDB
-  text: Patched the upstream tradik/mddb Go server to expose three path-aware MCP tools (get_page, list_sections, read_tree),
-    built a custom chaba/mddb-page-tools image, deployed it to tony-dell, and updated ssot.mcp.yml and the Claude mddb-bridge
-    filtered tools list.
+  text: Patched the upstream tradik/mddb Go server to expose three path-aware MCP tools (get_page, list_sections, read_tree), built a custom chaba/mddb-page-tools image, deployed it to tony-dell, and updated ssot.mcp.yml and the Claude mddb-bridge filtered tools list.
   date: '2026-08-18'
   duration: 1 session
-  outcome: Custom mddb image built from feature/mddb-page-tools, deployed on tony-dell, and all three tools verified via mcp_call_tool
-    against chaba-system collection.
+  outcome: Custom mddb image built from feature/mddb-page-tools, deployed on tony-dell, and all three tools verified via mcp_call_tool against chaba-system collection.
   tags:
   - completed
   - mddb
@@ -304,9 +239,7 @@ items:
   - search
   - chaba
 - label: Split status-api into sensor reader and data API
-  text: Extracted hardware sensor / GPU / Docker reading into sensor-reader running on tony-omen at port 8001; created status-data-api
-    on tony-dell at port 8000 to aggregate git, Frigate, cameras, and sensor payloads; updated Caddy /api/* proxy to 100.68.142.13:8000
-    and refreshed SSOT services/health checks.
+  text: Extracted hardware sensor / GPU / Docker reading into sensor-reader running on tony-omen at port 8001; created status-data-api on tony-dell at port 8000 to aggregate git, Frigate, cameras, and sensor payloads; updated Caddy /api/* proxy to 100.68.142.13:8000 and refreshed SSOT services/health checks.
   date: '2026-08-18'
   duration: 1 session
   outcome: Sensor-reader and status-data-api deployed and responding; old status-api container removed from tony-omen.
@@ -317,12 +250,10 @@ items:
   - tony-dell
   - refactor
 - label: Gemini embedding GPU offload
-  text: Built an Ollama-compatible Gemini embedding proxy, compared latency vs Ollama nomic-embed-text. Gemini ~3.7x slower;
-    did not switch.
+  text: Built an Ollama-compatible Gemini embedding proxy, compared latency vs Ollama nomic-embed-text. Gemini ~3.7x slower; did not switch.
   date: '2026-08-17'
   duration: 1 session
-  outcome: Proxy running on tony-omen:11435. MDDB/Weaviate side-by-side blocked because neither runs on tony-omen. Latency
-    comparison saved.
+  outcome: Proxy running on tony-omen:11435. MDDB/Weaviate side-by-side blocked because neither runs on tony-omen. Latency comparison saved.
   tags:
   - completed
   - gemini
@@ -330,12 +261,10 @@ items:
   - gpu
   - tony-omen
 - label: Trade Canvas remaining subtasks
-  text: Reproduce and fix missing candle bars in TradeCanvas, modularize compare/compare2 pages with SSOT-driven page loader,
-    integrate Frankfurter/THB data, and run Perfect strategy benchmark.
+  text: Reproduce and fix missing candle bars in TradeCanvas, modularize compare/compare2 pages with SSOT-driven page loader, integrate Frankfurter/THB data, and run Perfect strategy benchmark.
   date: '2026-08-17'
   duration: 1 session
-  outcome: Fixed flat-OHLC candle rendering, committed compare modularization (chaba-h3 08c072c), Frankfurter integration
-    (chaba-h3 c0e64f1), flat-candle fix (chaba-h3 ec694c5), recorded Perfect benchmark. All four subtasks completed.
+  outcome: Fixed flat-OHLC candle rendering, committed compare modularization (chaba-h3 08c072c), Frankfurter integration (chaba-h3 c0e64f1), flat-candle fix (chaba-h3 ec694c5), recorded Perfect benchmark. All four subtasks completed.
   tags:
   - completed
   - trade
@@ -344,12 +273,10 @@ items:
   - data-sources
   - strategies
 - label: mcp-debug file & clipboard bridge
-  text: Add mcp_get_file and mcp_put_file to mcp-debug with path-allowlist and size limits; clipboard support documented as
-    experimental.
+  text: Add mcp_get_file and mcp_put_file to mcp-debug with path-allowlist and size limits; clipboard support documented as experimental.
   date: '2026-08-17'
   duration: 1 session
-  outcome: mcp_get_file and mcp_put_file implemented and tested on tony-omen and tony-dell; mcp_clipboard_get/set kept experimental/disabled
-    by default.
+  outcome: mcp_get_file and mcp_put_file implemented and tested on tony-omen and tony-dell; mcp_clipboard_get/set kept experimental/disabled by default.
   tags:
   - completed
   - mcp
@@ -357,13 +284,10 @@ items:
   - file-transfer
   - security
 - label: mcp-debug unified cross-platform commands
-  text: 'Implement host-agnostic compact commands in mcp-debug that auto-detect the appropriate backend. Initial set: containers
-    (podman/docker), services (systemctl/launchctl), sockets (ss/netstat/lsof), and gpu (nvidia-smi/rocm-smi).'
+  text: 'Implement host-agnostic compact commands in mcp-debug that auto-detect the appropriate backend. Initial set: containers (podman/docker), services (systemctl/launchctl), sockets (ss/netstat/lsof), and gpu (nvidia-smi/rocm-smi).'
   date: '2026-08-17'
   duration: 1 session
-  outcome: Implemented containers, services, sockets, and gpu in both the Linux mcp-debug wrapper and scripts/mcp_debug/mcp-debug-macos.
-    Tested on tony-omen, tony-dell, and macbook. The backend runtime is included in the compact JSON output for transparency.
-    gpu is not available on macOS because neither nvidia-smi nor rocm-smi is installed.
+  outcome: Implemented containers, services, sockets, and gpu in both the Linux mcp-debug wrapper and scripts/mcp_debug/mcp-debug-macos. Tested on tony-omen, tony-dell, and macbook. The backend runtime is included in the compact JSON output for transparency. gpu is not available on macOS because neither nvidia-smi nor rocm-smi is installed.
   tags:
   - completed
   - mcp
@@ -375,9 +299,7 @@ items:
   text: After mcp_read_ssot and mcp_search_ssot are in use, measure whether sub-agents or scripts need mutation tools.
   date: '2026-08-17'
   duration: 1 session
-  outcome: mcp_ssot_append is already implemented and scoped narrowly in scripts/mcp_debug/ssot_edit.py; allowed sections
-    are quick_wins, history, request_log, subtasks, improvements, improvements.done, notes, items, and services. Updated ssot.mcp-tools.yml
-    ssot_editing policy to list the exact whitelisted sections.
+  outcome: mcp_ssot_append is already implemented and scoped narrowly in scripts/mcp_debug/ssot_edit.py; allowed sections are quick_wins, history, request_log, subtasks, improvements, improvements.done, notes, items, and services. Updated ssot.mcp-tools.yml ssot_editing policy to list the exact whitelisted sections.
   tags:
   - completed
   - mcp
@@ -408,8 +330,7 @@ items:
   text: Implemented safe auto-restart commands for tony-dell monitoring after the observe phase.
   date: '2026-08-17'
   duration: 1 session
-  outcome: Added Recovery Commands to ssot.tony-dell-monitoring.yml, updated mcp-debug policy, and wired mcp_focus into the
-    Devin mcp-debug server.
+  outcome: Added Recovery Commands to ssot.tony-dell-monitoring.yml, updated mcp-debug policy, and wired mcp_focus into the Devin mcp-debug server.
   tags:
   - completed
   - tony-dell
@@ -445,12 +366,10 @@ items:
   - raceman
   - documentation
 - label: Raceman Course Editor Visualization
-  text: Enhanced course editor visualization with improved section highlighting, wind visualization, marker rendering, performance
-    optimization, and responsive design
+  text: Enhanced course editor visualization with improved section highlighting, wind visualization, marker rendering, performance optimization, and responsive design
   date: 2026-08-05
   duration: 1 session
-  outcome: Enhanced section highlighting with glow effects, improved wind visualization with color-coded indicators, enhanced
-    marker rendering, optimized rendering performance, responsive design for all screen sizes
+  outcome: Enhanced section highlighting with glow effects, improved wind visualization with color-coded indicators, enhanced marker rendering, optimized rendering performance, responsive design for all screen sizes
   tags:
   - completed
   - visualization
@@ -461,8 +380,7 @@ items:
   text: Implemented enhanced drag-and-drop functionality for course markers with visual feedback and performance optimization
   date: 2026-08-05
   duration: 1 session
-  outcome: Enhanced drag handling with dragstart/drag/dragend events, visual feedback during drag operations, real-time position
-    updates, drag completion notifications, cursor feedback, original position storage for undo
+  outcome: Enhanced drag handling with dragstart/drag/dragend events, visual feedback during drag operations, real-time position updates, drag completion notifications, cursor feedback, original position storage for undo
   tags:
   - completed
   - drag-and-drop
@@ -473,8 +391,7 @@ items:
   text: Refactored drag-and-drop and notification functionality into dedicated modules for better code organization and maintainability
   date: 2026-08-05
   duration: 1 session
-  outcome: Created DragManager class for centralized drag handling, created NotificationManager class for user feedback, extracted
-    logic from renderer.js and themes/default.js, enhanced default theme with improved icons, foundation for undo/redo functionality
+  outcome: Created DragManager class for centralized drag handling, created NotificationManager class for user feedback, extracted logic from renderer.js and themes/default.js, enhanced default theme with improved icons, foundation for undo/redo functionality
   tags:
   - completed
   - refactoring
@@ -485,8 +402,7 @@ items:
   text: Expanded E2E test coverage for raceman course editor enhancements with 38 new tests across 5 test suites
   date: 2026-08-05
   duration: 1 session
-  outcome: Created drag-drop.spec.js (5 tests), notifications.spec.js (6 tests), responsive-design.spec.js (8 tests), wind-visualization.spec.js
-    (9 tests), section-highlighting.spec.js (10 tests). All 40 tests passing with proper handling of course-specific features
+  outcome: Created drag-drop.spec.js (5 tests), notifications.spec.js (6 tests), responsive-design.spec.js (8 tests), wind-visualization.spec.js (9 tests), section-highlighting.spec.js (10 tests). All 40 tests passing with proper handling of course-specific features
   tags:
   - completed
   - testing
@@ -494,12 +410,10 @@ items:
   - e2e
   - quality-assurance
 - label: Raceman Performance Testing
-  text: Added comprehensive performance regression tests for raceman course editor with 7 tests covering load performance,
-    rendering, memory usage, animations, and network requests
+  text: Added comprehensive performance regression tests for raceman course editor with 7 tests covering load performance, rendering, memory usage, animations, and network requests
   date: 2026-08-05
   duration: 1 session
-  outcome: Created performance.spec.js with 7 tests all passing. Excellent performance metrics - page load ~247ms, course
-    rendering ~36ms, mobile load ~252ms, desktop load ~189ms, memory usage 0.27 percent, animation 60fps, 48 network requests
+  outcome: Created performance.spec.js with 7 tests all passing. Excellent performance metrics - page load ~247ms, course rendering ~36ms, mobile load ~252ms, desktop load ~189ms, memory usage 0.27 percent, animation 60fps, 48 network requests
   tags:
   - completed
   - performance
@@ -507,13 +421,10 @@ items:
   - testing
   - optimization
 - label: Raceman Advanced Editing Features
-  text: Implemented comprehensive editing capabilities including marker management, section editing, course validation, and
-    undo/redo functionality
+  text: Implemented comprehensive editing capabilities including marker management, section editing, course validation, and undo/redo functionality
   date: 2026-08-05
   duration: 1 session
-  outcome: Marker creation/deletion UI with interactive selection, section editing interface with inline editor, comprehensive
-    course validation system, undo/redo with 50-state history, keyboard shortcuts (Ctrl+Z, Ctrl+Y), notification feedback
-    system, integrated with existing DragManager and NotificationManager
+  outcome: Marker creation/deletion UI with interactive selection, section editing interface with inline editor, comprehensive course validation system, undo/redo with 50-state history, keyboard shortcuts (Ctrl+Z, Ctrl+Y), notification feedback system, integrated with existing DragManager and NotificationManager
   tags:
   - completed
   - raceman
@@ -521,13 +432,10 @@ items:
   - ui-ux
   - validation
 - label: Raceman UX Enhancements
-  text: Added comprehensive user experience improvements including help system, guided tour, export/import functionality,
-    and collaboration features
+  text: Added comprehensive user experience improvements including help system, guided tour, export/import functionality, and collaboration features
   date: 2026-08-05
   duration: 1 session
-  outcome: Help modal with comprehensive documentation, 9-step interactive guided tour with visual highlighting, CSS-based
-    tooltips for all controls, YAML export/import with validation, marker comment system for collaboration, keyboard shortcuts
-    (F1 for help, Escape to close), professional UI styling and animations
+  outcome: Help modal with comprehensive documentation, 9-step interactive guided tour with visual highlighting, CSS-based tooltips for all controls, YAML export/import with validation, marker comment system for collaboration, keyboard shortcuts (F1 for help, Escape to close), professional UI styling and animations
   tags:
   - completed
   - raceman
@@ -535,13 +443,10 @@ items:
   - help-system
   - collaboration
 - label: SSOT System Health Pass
-  text: Comprehensive SSOT quality improvements - fixed parse errors, added write-path enforcement, archived stale data, created
-    index
+  text: Comprehensive SSOT quality improvements - fixed parse errors, added write-path enforcement, archived stale data, created index
   date: 2026-08-05
   duration: 1 session
-  outcome: Fixed 5 YAML parse errors (indentation bug, unquoted colons/asterisks), added SSOT validation to pre-commit hook,
-    archived 10 completed improvements (28KB to 17KB), restructured 3 stub files, added metadata to 6 files, created ssot.index.yml
-    master index. All 30 files parse clean.
+  outcome: Fixed 5 YAML parse errors (indentation bug, unquoted colons/asterisks), added SSOT validation to pre-commit hook, archived 10 completed improvements (28KB to 17KB), restructured 3 stub files, added metadata to 6 files, created ssot.index.yml master index. All 30 files parse clean.
   tags:
   - completed
   - ssot
@@ -551,8 +456,7 @@ items:
   text: Overhauled the focus SSOT so every assistant request is captured, assigned, and tracked to completion.
   date: 2026-08-15
   duration: 1 session
-  outcome: Redesigned ssot.focus.yml schema, moved old strategic focuses to archive, defined intake workflow with activation
-    gate and focus-dispatcher runner, created ssot.focus.current.yml, and supported background sub-agents.
+  outcome: Redesigned ssot.focus.yml schema, moved old strategic focuses to archive, defined intake workflow with activation gate and focus-dispatcher runner, created ssot.focus.current.yml, and supported background sub-agents.
   tags:
   - completed
   - focus
@@ -560,12 +464,10 @@ items:
   - tracking
   - dispatcher
 - label: mcp-debug SSOT Bloat Cleanup
-  text: Cleaned and compacted ssot.mcp-debug.yml, normalized command descriptions, removed redundant baselines, refreshed
-    per-host efficiency numbers via mcp_savings, and added the focus-dispatcher runner.
+  text: Cleaned and compacted ssot.mcp-debug.yml, normalized command descriptions, removed redundant baselines, refreshed per-host efficiency numbers via mcp_savings, and added the focus-dispatcher runner.
   date: '2026-08-15'
   duration: 1 session
-  outcome: Normalized 'Vetted ...' descriptions, re-baselined 13 commands for tony_omen and tony_dell, added per-host efficiency
-    blocks, and created scripts/focus-dispatcher.py with ssot.focus-dispatcher.yml.
+  outcome: Normalized 'Vetted ...' descriptions, re-baselined 13 commands for tony_omen and tony_dell, added per-host efficiency blocks, and created scripts/focus-dispatcher.py with ssot.focus-dispatcher.yml.
   tags:
   - completed
   - mcp-debug
@@ -573,8 +475,7 @@ items:
   - cleanup
   - dispatcher
 - label: Reduce focus.current bloat
-  text: Trimmed completed active focus details from ssot.focus.current.yml, keeping only active items and quick wins while
-    full history remains in ssot.focus.yml.
+  text: Trimmed completed active focus details from ssot.focus.current.yml, keeping only active items and quick wins while full history remains in ssot.focus.yml.
   date: '2026-08-16'
   duration: 1 session
   outcome: Reduced ssot.focus.current.yml from ~212 lines to ~50 lines.
@@ -588,9 +489,7 @@ items:
   text: Close out the dangling chaba infrastructure work before picking up new strategic focuses.
   date: '2026-08-15'
   duration: 2-3 sessions
-  outcome: 'Completed subtasks: Commit and push uncommitted SSOT and scripts (MCP tools policy, tony-dell monitoring), Apply
-    tony-dell mcp-health critical-only resource optimization, Release and renew tony-dell wired DHCP after router renumbering,
-    Deploy tony-dell monitor as a systemd user timer'
+  outcome: 'Completed subtasks: Commit and push uncommitted SSOT and scripts (MCP tools policy, tony-dell monitoring), Apply tony-dell mcp-health critical-only resource optimization, Release and renew tony-dell wired DHCP after router renumbering, Deploy tony-dell monitor as a systemd user timer'
   tags:
   - infrastructure
   - chaba
@@ -598,14 +497,10 @@ items:
   - cleanup
   - completed
 - label: Streamline focus-driven workflow
-  text: Improve the focus dispatcher, archive completed active items, auto-commit/push safe changes, suggest backlog when
-    empty, and document MCP/sub-agent/mcp-debug integration.
+  text: Improve the focus dispatcher, archive completed active items, auto-commit/push safe changes, suggest backlog when empty, and document MCP/sub-agent/mcp-debug integration.
   date: '2026-08-16'
   duration: 1 session
-  outcome: 'Completed subtasks: Archive completed active items from ssot.focus.yml and ssot.focus.current.yml, Add auto-commit
-    and optional push for safe focus-dispatcher changes, Suggest the highest-priority backlog item when no active or inbox
-    focus, Document MCP tool integration for focus intake and monitoring, Design sub-agent execution from reports/NEXT_FOCUS.md,
-    Extend mcp-debug with an mcp_focus tool'
+  outcome: 'Completed subtasks: Archive completed active items from ssot.focus.yml and ssot.focus.current.yml, Add auto-commit and optional push for safe focus-dispatcher changes, Suggest the highest-priority backlog item when no active or inbox focus, Document MCP tool integration for focus intake and monitoring, Design sub-agent execution from reports/NEXT_FOCUS.md, Extend mcp-debug with an mcp_focus tool'
   tags:
   - focus
   - workflow
@@ -614,14 +509,10 @@ items:
   - subagents
   - completed
 - label: Service Failures Detected
-  text: Multiple services failed health checks during the overnight assessment. mcp-health get_health_status shows 10 services
-    as unknown because curl health checks to tony-omen.local endpoints timed out. 23 services are healthy and 0 are error
-    or degraded, so these are not hard failures. The issue is likely mDNS/.local resolution or the configured health-check
-    endpoints.
+  text: Multiple services failed health checks during the overnight assessment. mcp-health get_health_status shows 10 services as unknown because curl health checks to tony-omen.local endpoints timed out. 23 services are healthy and 0 are error or degraded, so these are not hard failures. The issue is likely mDNS/.local resolution or the configured health-check endpoints.
   date: '2026-08-16'
   duration: 1 session
-  outcome: 'Completed subtasks: Identify failing services from overnight assessment, Determine root cause and severity, Apply
-    fixes or document acceptable state'
+  outcome: 'Completed subtasks: Identify failing services from overnight assessment, Determine root cause and severity, Apply fixes or document acceptable state'
   tags:
   - auto-generated
   - service-health
@@ -629,13 +520,10 @@ items:
   - chaba
   - completed
 - label: Security Vulnerabilities Found
-  text: Overnight security scan found vulnerabilities requiring immediate attention. Reviewed the latest overnight assessment
-    report (overnight-assessment-20260816-020001.md); no security, CVE, HIGH, or CRITICAL findings were found. The auto-generated
-    alert has no actionable scan output, so the accepted state is no immediate patches required.
+  text: Overnight security scan found vulnerabilities requiring immediate attention. Reviewed the latest overnight assessment report (overnight-assessment-20260816-020001.md); no security, CVE, HIGH, or CRITICAL findings were found. The auto-generated alert has no actionable scan output, so the accepted state is no immediate patches required.
   date: '2026-08-16'
   duration: 1 session
-  outcome: 'Completed subtasks: Locate and review overnight security scan output, Triage and score vulnerabilities, Apply
-    patches or document accepted risk'
+  outcome: 'Completed subtasks: Locate and review overnight security scan output, Triage and score vulnerabilities, Apply patches or document accepted risk'
   tags:
   - auto-generated
   - security
@@ -646,9 +534,7 @@ items:
   text: Design explicit, history-driven decision rules for how the assistant disposes of every user request.
   date: '2026-08-16'
   duration: 1 session
-  outcome: 'Completed subtasks: Add decision_tree section to ssot.focus.current.yml, Define quick_win criteria, Extend mcp_focus
-    to return intake action, Add focus-dispatcher --intake flag, Create subagent_focus_triage profile, Create ssot.focus.decisions.yml
-    log'
+  outcome: 'Completed subtasks: Add decision_tree section to ssot.focus.current.yml, Define quick_win criteria, Extend mcp_focus to return intake action, Add focus-dispatcher --intake flag, Create subagent_focus_triage profile, Create ssot.focus.decisions.yml log'
   tags:
   - focus
   - workflow
@@ -659,8 +545,7 @@ items:
   text: Harden the active focus limits by adding explicit validation, a parked status, and a safe branch-focus interrupt path.
   date: '2026-08-16'
   duration: 1 session
-  outcome: 'Completed subtasks: Add validate_current() to focus-dispatcher.py, Add parked status and --park flag, Update decision_tree
-    with parked case, Update ssot.focus-dispatcher.yml docs'
+  outcome: 'Completed subtasks: Add validate_current() to focus-dispatcher.py, Add parked status and --park flag, Update decision_tree with parked case, Update ssot.focus-dispatcher.yml docs'
   tags:
   - focus
   - validation
@@ -668,12 +553,10 @@ items:
   - parking
   - completed
 - label: Hands-Off Focus Dispatch
-  text: Reduce manual steps by wiring auto-commit, auto-inbox, sub-agents, and scheduled reviews. mcp-debug JSON/CSV report
-    work is in another session and will not be touched here.
+  text: Reduce manual steps by wiring auto-commit, auto-inbox, sub-agents, and scheduled reviews. mcp-debug JSON/CSV report work is in another session and will not be touched here.
   date: '2026-08-16'
   duration: 2-3 sessions
-  outcome: 'Completed subtasks: Verify systemd auto-commit/push is enabled, Add mcp-health auto-inbox draft creation, Add
-    focus-dispatcher --sub-agent flag, Schedule overnight focus review'
+  outcome: 'Completed subtasks: Verify systemd auto-commit/push is enabled, Add mcp-health auto-inbox draft creation, Add focus-dispatcher --sub-agent flag, Schedule overnight focus review'
   tags:
   - focus
   - automation
@@ -682,8 +565,7 @@ items:
   - hands-off
   - completed
 - label: mcp-debug SSOT read and search tools
-  text: Build mcp_read_ssot and mcp_search_ssot in scripts/mcp-debug-server.py. mcp_search_ssot should use mddb semantic search
-    first and fall back to a local YAML keyword scan when mddb is unavailable or stale.
+  text: Build mcp_read_ssot and mcp_search_ssot in scripts/mcp-debug-server.py. mcp_search_ssot should use mddb semantic search first and fall back to a local YAML keyword scan when mddb is unavailable or stale.
   date: '2026-08-16'
   duration: 2-3 sessions
   outcome: 'Completed subtasks: Add mcp_read_ssot tool, Add mcp_search_ssot tool with mddb fallback'
@@ -695,8 +577,7 @@ items:
   - mddb
   - completed
 - label: Uncommitted Working Tree Changes
-  text: Several files are modified or untracked in the working tree. Decide which to commit, which to discard, and which to
-    move to project-specific focus.
+  text: Several files are modified or untracked in the working tree. Decide which to commit, which to discard, and which to move to project-specific focus.
   date: '2026-08-16'
   duration: 1 session
   outcome: Completed
@@ -707,13 +588,10 @@ items:
   - chaba
   - completed
 - label: Host Roles SSOT Restructuring
-  text: Create a canonical host-roles SSOT that defines tony-dell as headless primary, tony-omen as headless fallback, and
-    kk-macbook as mac/ios verifier. Update related SSOT files to reference it.
+  text: Create a canonical host-roles SSOT that defines tony-dell as headless primary, tony-omen as headless fallback, and kk-macbook as mac/ios verifier. Update related SSOT files to reference it.
   date: '2026-08-16'
   duration: 1-2 sessions
-  outcome: 'Completed subtasks: Create ssot.host-roles.yml, Update ssot.mcp-debug.yml with role tags, Update ssot.apps.playlive.yml
-    to reference role ports, Update ssot.health.yml with headless failover checks, Update ssot.mysystem.home.yml and ssot.mysystem.macbook.yml
-    references, Validate all changed YAML and commit'
+  outcome: 'Completed subtasks: Create ssot.host-roles.yml, Update ssot.mcp-debug.yml with role tags, Update ssot.apps.playlive.yml to reference role ports, Update ssot.health.yml with headless failover checks, Update ssot.mysystem.home.yml and ssot.mysystem.macbook.yml references, Validate all changed YAML and commit'
   tags:
   - ssot
   - hosts
@@ -722,8 +600,7 @@ items:
   - web-preview
   - completed
 - label: Live CORS endpoint for h3 mcp debug report
-  text: Expose tony-omen data so the chaba.h3 MCP Debug report page can refresh live results instead of relying on pushed
-    snapshots.
+  text: Expose tony-omen data so the chaba.h3 MCP Debug report page can refresh live results instead of relying on pushed snapshots.
   date: '2026-08-16'
   duration: 1 session
   outcome: Completed
@@ -736,14 +613,10 @@ items:
   - live-data
   - completed
 - label: TCP/IP link monitoring with auto-scan and safe fix
-  text: Watch reachability to tony_omen, tony_dell, and macbook. On consecutive misses, scan and apply safe fixes, escalate
-    to a focus-inbox alert if unresolved.
+  text: Watch reachability to tony_omen, tony_dell, and macbook. On consecutive misses, scan and apply safe fixes, escalate to a focus-inbox alert if unresolved.
   date: '2026-08-16'
   duration: 1 session
-  outcome: 'Completed subtasks: Create ssot.link-monitor.yml schema, Create ssot.mcp-debug.cors.yml policy, Implement scripts/mcp-link-monitor.py,
-    Add systemd service/timer for periodic checks, Wire scan/fix output into focus-inbox creation, Add IP-drift detection
-    and safe SSOT update path, Update ssot.index.yml to list new SSOTs, Add 60s cache to scripts/mcp_debug/http_server.py
-    per ssot.mcp-debug.cors.yml'
+  outcome: 'Completed subtasks: Create ssot.link-monitor.yml schema, Create ssot.mcp-debug.cors.yml policy, Implement scripts/mcp-link-monitor.py, Add systemd service/timer for periodic checks, Wire scan/fix output into focus-inbox creation, Add IP-drift detection and safe SSOT update path, Update ssot.index.yml to list new SSOTs, Add 60s cache to scripts/mcp_debug/http_server.py per ssot.mcp-debug.cors.yml'
   tags:
   - monitoring
   - network
@@ -752,20 +625,12 @@ items:
   - focus
   - completed
 - label: Fix mcp_debug H3 page mixed-content (HTTP/HTTPS) error
-  text: 'The H3 page at https://chaba.h3.gizmo-thailand.com/apps/docs/mcp_debug/index.html fails to load live data because
-    app.js fetches http://tony-omen.local:9100/mcp-savings.json, which is blocked by browsers when the page is served over
-    HTTPS (mixed-content error). The page currently falls back to the cached data/mcp-savings.json snapshot, so the report
-    still renders, but the live tony-omen connection is unavailable and an error is logged. Decide whether to (a) serve the
-    tony-omen mcp-savings endpoint over HTTPS and update the CORS allowlist, (b) add an HTTPS CORS endpoint in the h3/proxy
-    layer, (c) use a relative/proxied path such as /api/mcp-savings.json inside app.js, or (d) remove the live URL until a
-    secure endpoint is available.
+  text: 'The H3 page at https://chaba.h3.gizmo-thailand.com/apps/docs/mcp_debug/index.html fails to load live data because app.js fetches http://tony-omen.local:9100/mcp-savings.json, which is blocked by browsers when the page is served over HTTPS (mixed-content error). The page currently falls back to the cached data/mcp-savings.json snapshot, so the report still renders, but the live tony-omen connection is unavailable and an error is logged. Decide whether to (a) serve the tony-omen mcp-savings endpoint over HTTPS and update the CORS allowlist, (b) add an HTTPS CORS endpoint in the h3/proxy layer, (c) use a relative/proxied path such as /api/mcp-savings.json inside app.js, or (d) remove the live URL until a secure endpoint is available.
 
     '
   date: '2026-08-16'
   duration: 1 session
-  outcome: 'Completed subtasks: Reproduce and confirm the mixed-content error in browser dev tools, Choose and implement the
-    fix (HTTPS endpoint, proxy path, or disable live), Verify the page loads without mixed-content warnings and shows live
-    or cached data'
+  outcome: 'Completed subtasks: Reproduce and confirm the mixed-content error in browser dev tools, Choose and implement the fix (HTTPS endpoint, proxy path, or disable live), Verify the page loads without mixed-content warnings and shows live or cached data'
   tags:
   - h3
   - mcp-debug
@@ -775,16 +640,12 @@ items:
   - tony-omen
   - completed
 - label: Continuous decision capture for focus and technical choices
-  text: 'Design and implement a continuous decision-capture system. Extend mcp_focus and focus-dispatcher --intake to log
-    intake decisions to ssot.focus.decisions.yml, add a dedicated technical-decision SSOT for design trade-offs, and record
-    per-session decisions in ssot.focus.sessions.yml so the decision_tree and triage improve over time.
+  text: 'Design and implement a continuous decision-capture system. Extend mcp_focus and focus-dispatcher --intake to log intake decisions to ssot.focus.decisions.yml, add a dedicated technical-decision SSOT for design trade-offs, and record per-session decisions in ssot.focus.sessions.yml so the decision_tree and triage improve over time.
 
     '
   date: '2026-08-16'
   duration: 2 sessions
-  outcome: 'Completed subtasks: Define the decision-capture schema and file layout, Add automatic decision logging to mcp_focus,
-    Add automatic decision logging to focus-dispatcher --intake, Create a dedicated technical-decision SSOT for the mcp_debug
-    CORS proxy example, Validate the updated decision_tree and triage heuristics'
+  outcome: 'Completed subtasks: Define the decision-capture schema and file layout, Add automatic decision logging to mcp_focus, Add automatic decision logging to focus-dispatcher --intake, Create a dedicated technical-decision SSOT for the mcp_debug CORS proxy example, Validate the updated decision_tree and triage heuristics'
   tags:
   - ssot
   - decisions
@@ -792,4 +653,146 @@ items:
   - focus-dispatcher
   - automation
   - completed
+- label: Streamline mcp-focus and SSOT focus system
+  text: 'The SSOT focus system and mcp-focus have drifted. mcp-focus now supports
+
+    defer/resume, but the SSOT policy, related files, and implementation are not
+
+    fully aligned. Consolidate duplicated triage/safe-to-parallel logic between
+
+    mcp_debug/focus.py and focus_dispatcher/triage.py, update ssot.mcp-focus.yml
+
+    to v2, and wire Ready (Safe) dispatch.
+
+    '
+  date: '2026-08-19'
+  duration: 1 session
+  outcome: 'Completed subtasks: Centralize focus model (triage scoring, priority, safe-to-parallel, branch detection), Update ssot.mcp-focus.yml to match standalone server (v2, related_files, mode docs), Add Ready (Safe) population and ownership/lock checks, Improve error handling and make request optional for read-only modes'
+  tags:
+  - mcp-focus
+  - ssot
+  - focus
+  - streamlining
+  - job-lifecycle
+  - completed
+- label: Prompt / command preprocessor for context and precision
+  text: 'Build a preprocessing layer that runs before assistant interpretation of user requests and commands.
+
+    It should:
+
+    - Resolve ambiguity by fetching relevant project KB, SSOT, and active focus context.
+
+    - Expand shorthand, aliases, and cues (e.g., "next", "do this", "optimize that") into explicit, actionable requests.
+
+    - Link the user''s goal to the active focus, quick wins, backlog, and decision-tree cases.
+
+    - Emit a structured, unambiguous prompt with: user request, inferred goal, active focus relevance, relevant SSOT/docs, expected tool(s), and any missing info.
+
+    - Reduce misunderstandings, false assumptions, and misinformation by grounding the prompt in the project KB before any tool is called.
+
+    - Optionally rewrite a bare shell command to a canonical, allowed, and compact form before dispatch to mcp_debug/mcp_raw.
+
+    '
+  date: '2026-08-19'
+  duration: 1 session
+  outcome: 'Completed subtasks: Survey current mcp_focus, mcp_debug, and subagent-focus-triage to find existing disambiguation logic, Design the preprocessor schema and output contract, Implement a read-only prototype that grounds a user request in active focus and KB, Add command canonicalization for mcp_debug/mcp_raw, Validate with real ambiguous requests and measure precision improvement'
+  tags:
+  - mcp
+  - prompt
+  - preprocessor
+  - context
+  - kb
+  - focus
+  - workflow
+  - completed
+- label: Context improvement and optimization
+  text: 'Invest in self-improvement by making the assistant''s context more useful: better KB auto-update, structured project state, contextual relevance ranking, and periodic reflection. Run incrementally so it does not block product work.'
+  date: '2026-08-19'
+  duration: 1 session
+  outcome: Completed
+  tags:
+  - context
+  - optimization
+  - self-improvement
+  - kb
+  - completed
+- label: Helm Dashboard Service Failure
+  text: Investigate why Helm Dashboard returns 404 (expected 200) and restore it.
+  date: '2026-08-19'
+  duration: 1 session
+  outcome: 'Completed subtasks: Check helm container status and Caddy /apps/helm route, Fix the 404 cause (container, proxy, or path), Re-run health check and verify 200 response'
+  tags:
+  - helm
+  - dashboard
+  - 404
+  - service-health
+  - high-priority
+  - completed
+- label: SSOT file optimization
+  text: Implement the SSOT file optimization plan. Enforce bloat thresholds, scan for data-isolation violations, remove redundant and obsolete entries, standardize consistency, and wire all checks into ssot-validate and .githooks/pre-commit.
+  date: '2026-08-19'
+  duration: 1 session
+  outcome: 'Completed subtasks: Review ssot.file-optimization.yml and current bloat scan results, Identify files exceeding thresholds and bloat causes, Apply cleanups or splits to reduce bloat, Wire bloat and isolation checks into ssot-validate or pre-commit'
+  tags:
+  - ssot
+  - optimization
+  - bloat
+  - validation
+  - cleanup
+  - completed
+- label: SSOT and docs currency check after changes
+  text: Run ssot-validate, ssot-optimize, and registry scans to ensure all new SSOT files are registered, no stale docs remain, and all cross-references are accurate after the registry and mcp-debug splits.
+  date: '2026-08-19'
+  duration: 1 session
+  outcome: 'Completed subtasks: Run ssot-validate and verify 0 errors, Run ssot-optimize and review remaining suggestions, Run registry-drafts and import any missing assets, Verify ssot.index.yml reflects all docs/ssot files, Update ssot.improvements.yml status and commit'
+  tags:
+  - completed
+- label: Add SSOT registry reading support to mcp-debug
+  text: Extend the mcp-debug MCP server with lightweight SSOT read/query tools. This lets remote hosts and MCP consumers look up registry assets (apps, scripts, services, SSOTs) by id, name, type, or keyword, and fetch small SSOT files on demand without pulling the full registry into the prompt.
+  date: '2026-08-19'
+  duration: 1 session
+  outcome: 'Completed subtasks: Survey current mcp-debug file/SSOT capabilities and decide tool shape, Design mcp_registry tool input/output contract, Implement mcp_registry_lookup and mcp_registry_get in scripts/mcp_debug/registry.py, Register new tools in mcp-debug-server.py and MCP config, Test lookup for a registry asset and a small SSOT file'
+  tags:
+  - focus
+  - completed
+- label: Migrate helm to tony-dell podman
+  text: Move the web-helm service from tony-omen docker to tony-dell rootless podman, update Caddy /apps/helm proxy, and retire the tony-omen container.
+  date: '2026-08-17'
+  duration: 1 session
+  outcome: Move the web-helm service from tony-omen docker to tony-dell rootless podman, update Caddy /apps/helm proxy, and retire the tony-omen container.
+  tags:
+  - tony-dell
+  - podman
+  - helm
+  - migration
+  - quick-win
+  - quick-win
+  - completed
+- label: Re-enable overnight focus review timer and sync SSOT
+  text: Re-enable the systemd focus-dispatcher-overnight timer and update the SSOT records for services, night jobs, and quick wins.
+  date: '2026-08-18'
+  duration: 1 session
+  outcome: Re-enable the systemd focus-dispatcher-overnight timer and update the SSOT records for services, night jobs, and quick wins.
+  tags:
+  - systemd
+  - focus
+  - ssot
+  - quick-win
+  - quick-win
+  - completed
+- label: Switch MDDB embedding provider from Ollama to Gemini proxy
+  text: Apply the validated Gemini proxy to the live MDDB on tony-dell. Update the MDDB container/Quadlet config to use http://gemini:11435, reindex all collections, then stop Ollama and reclaim tony-omen GPU.
+  status: completed
+  completed_at: '2026-08-19'
+  tags:
+  - mddb
+  - gemini
+  - gpu-offload
+  - tony-dell
+  - ollama
+  - completed
+  date: '2026-08-19'
+  duration: 1 session
+  outcome: Reindexed all MDDB collections via the Gemini-Ollama proxy and validated vector search. Ollama container already stopped.
 note: Older focus history records archived from ssot.focus.yml
+last_updated: '2026-09-02'

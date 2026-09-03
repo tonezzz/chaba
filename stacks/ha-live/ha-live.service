@@ -4,9 +4,10 @@ After=home-assistant.service
 Requires=home-assistant.service
 
 [Service]
+EnvironmentFile=/home/tony/.config/secrets/home-assistant-token.env
 ExecStartPre=-/usr/bin/podman exec home-assistant mkdir -p /config/ha-live
 ExecStartPre=-/usr/bin/podman exec home-assistant pkill -f 'python3 /config/ha-live/bridge.py'
-ExecStart=/usr/bin/podman exec -i home-assistant python3 /config/ha-live/bridge.py
+ExecStart=/usr/bin/podman exec -e HA_LONG_LIVED_TOKEN home-assistant python3 /config/ha-live/bridge.py
 ExecStop=-/usr/bin/podman exec home-assistant pkill -f 'python3 /config/ha-live/bridge.py'
 Restart=always
 RestartSec=5

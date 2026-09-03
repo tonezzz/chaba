@@ -35,7 +35,7 @@ sections:
       - label: Active connection
         text: 'TONY-WIFI_2.4G (wlo1) and netplan-eno1 (eno1). Default gateway 192.168.2.1.'
       - label: Known hosts
-        text: 'Router, tony-omen, Tuya coffee/bedside plugs, IP camera, HP DeskJet, and five unknown devices from the 2026-09-01 scan.'
+        text: 'Router, tony-omen, Tuya coffee/bedside plugs, IP camera, HP DeskJet, and ten unknown devices from the 2026-09-01 scan.'
       - label: Note
         text: 'This is the current active network. The detailed allocations are in config.networks below.'
 
@@ -55,7 +55,7 @@ sections:
     layout: list
     items:
       - label: Identify unknown hosts
-        text: 'Map 192.168.2.65, .67, .73, .78, .81 to real devices via router DHCP logs or port probes.'
+        text: 'Map 192.168.2.65, .67, .71, .72, .73, .75, .76, .78, .81, .82 to real devices via router DHCP logs or port probes.'
       - label: Reconnect 192.168.1.0/24
         text: 'Switch to Mountain View 5G to capture current IPs and MACs for macbook and Google TV.'
       - label: Expand
@@ -207,6 +207,13 @@ config:
           source: arp
         - ip: 192.168.2.82
           device_id: discovered-caf042320432
+          interface_id: primary
+          kind: discovered
+          status: active
+          first_seen: '2026-09-01'
+          source: arp
+        - ip: 192.168.2.72
+          device_id: discovered-f2eda0d45fdb
           interface_id: primary
           kind: discovered
           status: active

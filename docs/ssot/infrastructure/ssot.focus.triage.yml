@@ -117,6 +117,7 @@ subagent_dispatch:
     can_change_host: boolean
     notes: string
     safe_to_parallel: boolean
+    host: string
   dispatch_rules:
   - Only one foreground sub-agent may run at a time.
   - Background sub-agents may run in parallel if they touch different branches/hosts and no write conflicts.
@@ -124,8 +125,141 @@ subagent_dispatch:
   - Sub-agents must not activate new foci or park existing ones without main-agent confirmation.
   - A focus with subagent.runnable false is foreground-only.
 
-validation:
+subagent_defaults:
+  description: Default dispatch configuration for safe-to-parallel foci.
+  host: tony_dell
+  profile: subagent_general
+  parallel: true
+  requires_approval: false
+  can_change_host: false
+  notes: |
+    The default execution host for safe foci is tony-dell. This keeps
+    CPU/memory-heavy or multi-host work off the main workstation and lets
+    background subagents run independently.
+  exceptions:
+  - host: local
+    reason: Tasks that require the IDE, physical hardware, or user UI on tony-omen.
+    requires_approval: true
+  - host: macbook
+    reason: Tasks that can only run on the macOS device.
+    requires_approval: true
+
+dispatch_host_policy:
+  description: Where a focus or subtask must run.
+  default: tony_dell
+  rule: |
+    Every focus, backlog item, inbox draft, and Ready (Safe) item must declare
+    a subagent host. If the host is omitted, it is treated as tony_dell. The
+    focus dispatcher will not process a Ready (Safe) item unless its
+    subagent.host is tony_dell or an explicit local/macbook exception.
+
+safe_to_parallel:
+  description: A focus is safe to run in a parallel lane while another active focus remains in progress.
+  enabled: true
+  criteria:
+  - id: branch_isolation
+    label: No branch conflict
+    rule: The focus branch must differ from both the active shared focus and active branch focus branches, or it is repo-neutral (chaba meta/docs only with no code changes on an active branch).
+    weight: required
+  - id: no_user_approval
+    label: No real-time approval required
+    rule: subagent.requires_approval must be false or missing; no step requires a user prompt mid-flight.
+    weight: required
+  - id: low_blast_radius
+    label: Low blast radius
+    rule: triage.complication must be 4 or lower, or the work is read-only (explore/research/validate only).
+    weight: required
+  - id: complete_info
+    label: No missing info
+    rule: missing_info must be empty or all items resolved before the safe focus runs.
+    weight: required
+  - id: active_focus_untouched
+    label: Active focus state untouched
+    rule: The safe focus must not modify ssot.focus.current.yml, ssot.focus.yml active section, or the active focus job_lifecycle.
+    weight: required
+  - id: session_lock
+    label: Lock available
+    rule: The focus must not already be owned by another session (owner or session fields empty or match the current session).
+    weight: required
+  - id: tony_dell_dispatch
+    label: Dispatchable to tony-dell
+    rule: |
+      subagent must be present, subagent.runnable must be true,
+      subagent.requires_approval must be false, and subagent.host must be
+      tony_dell (or an explicit local/macbook exception).
+    weight: required
+  score:
+    description: |
+      safe_score = number of required criteria met (0-7). A focus is safe_to_parallel only if all required criteria are met.
+    safe_threshold: 7
+
+  parallel_rules:
+  - A safe focus may be activated in Ready (Safe) without parking the active branch focus.
+  - Only one safe focus may be active per session to avoid write races.
+  - Safe foci must still be committed and validated before claiming completion.
+
+dispatch_host_check:
+  description: |
+    Before any focus is added to Ready (Safe) or dispatched, the dispatcher
+    must verify that subagent.host is either tony_dell or an approved
+    exception. Any other value causes the focus to be treated as unsafe and
+    requires decomposition.
+  default_host: tony_dell
+  allowed:
+  - tony_dell
+  - local
+  - macbook
+  fallback_action: Decompose the focus into smaller items with subagent.host tony_dell.
+
+dynamic_decomposition:
+  description: |
+    When a focus is too large, unsafe, or not dispatchable to tony-dell, the
+    focus system must break it into smaller, concrete, tony-dell-runnable
+    sub-foci instead of activating it as a single large focus.
+  trigger:
+    any_of:
+    - triage.complication > 4
+    - missing_info is not empty
+    - subagent is missing
+    - subagent.runnable is not true
+    - subagent.requires_approval is true
+    - subagent.host is not in the allowed dispatch host list
+    - any subtask lacks subagent.host tony_dell (or an explicit exception)
+  action:
+    - Do not activate the focus as a single active/branch focus.
+    - Generate one or more focus-inbox/*.yml drafts, each with complication <= 4,
+      subagent.runnable true, subagent.requires_approval false, and
+      subagent.host tony_dell.
+    - Add those drafts to the Ready (Safe) queue or leave them in the inbox for review.
+  exceptions:
+    - A user may override with an explicit local/macbook subagent block and
+      requires_approval true, but that focus stays in the main active lane
+      (not Ready (Safe)) and cannot be auto-dispatched.
+
+mapping_to_health:
+  urgency:
+    from: docs/ssot/infrastructure/ssot.health.yml alerts.severity
+    critical: 9-10
+    error: 6-8
+    degraded: 3-5
+  importance:
+    from: docs/ssot/infrastructure/ssot.health.yml service_criticality
+    critical: 9-10
+    important: 5-8
+    optional: 1-3
+  complication:
+    from: docs/ssot/infrastructure/ssot.health.yml dependencies and groups
+    many dependencies or multiple groups: 8-10
+    some dependencies or one group: 4-7
+    no known dependencies: 1-3
+
+usage:
+- Each Backlog - Triage Queue item in docs/ssot/ssot.focus.yml may include a triage block.
+- focus-dispatcher.py computes triage_score for each pending item and sorts by it.
+- For mcp_focus and subagent_focus_triage, the triage block can be returned as extra context.validation:
 - triage is optional for backlog items; missing triage falls back to priority-based sorting.
 - When present, all three scores must be integers from 1 to 10.
-- subagent is optional; when present, runnable and parallel default to false.
+- subagent is required for any focus that is safe_to_parallel or intended for auto-dispatch.
+- When subagent is present, subagent.host is required and defaults to tony_dell.
+- subagent.runnable must be true and subagent.requires_approval false for tony-dell auto-dispatch.
 - safe_to_parallel is optional; when present, it must be a boolean or an object with criteria; if absent, it defaults to false.

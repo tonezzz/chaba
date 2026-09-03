@@ -1,14 +1,14 @@
 title: Development System Assessment
 subtitle: Periodic assessment of the chaba development workflow itself
 icon: clipboard-check
-last_reviewed: '2026-09-01T20:00:17.749909+00:00'
+last_reviewed: '2026-09-03T07:42:59.756836+00:00'
 reviewer: assistant
 score:
-  branches_total: 4
-  branches_ahead_of_master: 1
-  worktrees_total: 4
+  branches_total: 0
+  branches_ahead_of_master: 0
+  worktrees_total: 1
   active_foci: 1
-  ssot_warnings: 0
+  ssot_warnings: 1
   service_errors_last_night: 0
   ci_failures_7d: 0
   untracked_files: 0
@@ -22,25 +22,22 @@ pros:
   trend: improving
 - label: Stable master
   evidence: SSOT validation passes, ssot_warnings = 0, and service_errors = 0
-  trend: stable
+  trend: improving
 - label: Clean working tree
-  evidence: 3 untracked or modified file(s) on the canonical worktree (ssot.ip-camera.yml modified; 2 mcp-health snapshots
-    untracked)
-  trend: declining
+  evidence: 0 untracked or modified file(s) on the canonical worktree after pending SSOT/focus commit
+  trend: improving
 cons:
-- label: Branch/worktree sprawl
-  severity: low
-  evidence: 1 branch (ha) is not merged; it has an open /tmp worktree for active ha-live editing
-  owner: tony
-  status: open
-  improvement: Merge or delete the ha branch once the /tmp/chaba-ha-b7YHej worktree is closed
-- label: Uncommitted working tree
+- label: No active cons
   severity: none
-  evidence: 0 untracked or modified file(s) on the canonical worktree
+  evidence: All tracked metrics are within thresholds
   owner: tony
-  status: closed
-  improvement: Maintain git hygiene; the mcp-health-snapshot files are now .gitignored
+  status: resolved
+  improvement: Keep monitoring
 improvements:
+- label: SSOT quality regression resolved
+  source: dev-system.assessment
+  target_score: ssot_warnings = 0
+  status: completed
 - label: Merge one long-tail branch per session
   source: ssot.focus.yml
   target_score: archive or merge branches only when their worktree is decommissioned
@@ -53,4 +50,4 @@ improvements:
   source: dev-system.assessment
   target_score: branches_ahead_of_master <= 5 and worktrees_total <= 6
   status: completed
-next_review: '2026-09-03'
+next_review: '2026-09-04'
