@@ -31,6 +31,12 @@ environments:
     caddy:
       note: Not used — HA UI returns absolute redirects that break a path-prefixed reverse proxy. Use port 8124 directly.
     health_check: ssh tony-dell curl -sf http://127.0.0.1:8124/ >/dev/null
+    mcp:
+      server: ha_mcp_tools in-process
+      local_url: http://127.0.0.1:9585/private_B3WMIAChoseTpDS7fwgwRw
+      tailnet_url: http://tony-dell:9585/private_B3WMIAChoseTpDS7fwgwRw
+      secret_path: /private_B3WMIAChoseTpDS7fwgwRw
+      note: HA-MCP Server runs inside the dev container, exposed on host port 9585.
     autostart: loginctl enable-linger tony is yes; Quadlet WantedBy=default.target
     status: enabled
     access:
@@ -89,7 +95,7 @@ scripts:
 
 custom_components:
   dev_parity:
-    - ha_mcp_tools (only if MCP parity is required)
+    - ha_mcp_tools (port 9585; secret path /private_B3WMIAChoseTpDS7fwgwRw)
     - sunsynk-power-flow-card fork deployed to /config/www/ for dev testing
 
 entity_mocks:
@@ -102,6 +108,8 @@ verification:
     - systemctl --user status home-assistant-michael-dev.service
     - curl -sf http://127.0.0.1:8124/
     - ss -tlnp | grep 8124
+    - ss -tlnp | grep 9585
+    - curl -s -o /dev/null -w "%{http_code}" http://tony-dell:9585/private_B3WMIAChoseTpDS7fwgwRw
   live:
     - tailscale ping michael-ha
     - curl -sf http://michael-ha:8123/
