@@ -10,6 +10,7 @@ import os
 import urllib.error
 import urllib.request
 
+import yaml
 from mcp.server.fastmcp import FastMCP
 import mcp.types as mcp_types
 
@@ -23,7 +24,23 @@ try:
 except json.JSONDecodeError:
     PLAYLIVE_HOSTS = {}
 
+_DEFAULT_HOSTS_FILE = "/home/tony/CascadeProjects/chaba-tony-dell/docs/ssot/infrastructure/playlive-hosts.yml"
 _DEFAULT_CDP_PORT = 9223
+
+
+def _load_hosts_from_yaml() -> dict:
+    """Reload the YAML host registry into a {name: cdp_url} dict."""
+    hosts_file = os.environ.get("PLAYLIVE_HOSTS_FILE", _DEFAULT_HOSTS_FILE)
+    try:
+        with open(hosts_file) as f:
+            data = yaml.safe_load(f)
+        return {
+            name: info["cdp"]
+            for name, info in data.get("hosts", {}).items()
+            if info.get("cdp")
+        }
+    except Exception as exc:
+        return {"_error": str(exc)}
 
 
 def _resolve_remote_url(host: str | None, remote_url: str | None) -> str | None:
@@ -239,6 +256,17 @@ def playlive_get_stash(stash_id: str) -> str:
 def playlive_delete_stash(stash_id: str) -> str:
     """Delete a stashed file by its stash_id."""
     return json.dumps(_request("DELETE", f"/stash/{stash_id}"), indent=2)
+
+
+@mcp.tool()
+def playlive_reload_hosts() -> str:
+    """Reload the playlive host registry from the YAML file without restarting the server."""
+    global PLAYLIVE_HOSTS
+    try:
+        PLAYLIVE_HOSTS = _load_hosts_from_yaml()
+        return json.dumps({"ok": True, "hosts": PLAYLIVE_HOSTS}, indent=2)
+    except Exception as exc:
+        return json.dumps({"ok": False, "error": str(exc)}, indent=2)
 
 
 def _cdp_version(remote_url: str) -> dict:
