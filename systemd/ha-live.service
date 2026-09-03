@@ -1,15 +1,16 @@
 [Unit]
-Description=Home Assistant Gemini Live bridge
+Description=Home Assistant Live (Gemini Live bridge)
 After=tony-ha.service
 Requires=tony-ha.service
 
 [Service]
-Type=simple
+EnvironmentFile=/home/tony/.config/secrets/home-assistant-token.env
+ExecStartPre=-/usr/bin/podman exec tony-ha mkdir -p /config/ha-live
+ExecStartPre=-/usr/bin/podman exec tony-ha pkill -f 'python3 /config/ha-live/bridge.py'
+ExecStart=/usr/bin/podman exec -e HA_LONG_LIVED_TOKEN tony-ha python3 /config/ha-live/bridge.py
+ExecStop=-/usr/bin/podman exec tony-ha pkill -f 'python3 /config/ha-live/bridge.py'
 Restart=always
 RestartSec=5
-ExecStartPre=-/usr/bin/podman exec tony-ha pkill -9 -f "python3 /config/ha-live/bridge.py"
-ExecStart=/usr/bin/podman exec -i tony-ha python3 /config/ha-live/bridge.py
-ExecStopPost=-/usr/bin/podman exec tony-ha pkill -9 -f "python3 /config/ha-live/bridge.py"
 
 [Install]
 WantedBy=default.target

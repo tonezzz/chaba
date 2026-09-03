@@ -1,0 +1,37 @@
+[Unit]
+Description=Home Assistant (rootless podman)
+After=network-online.target
+Wants=network-online.target
+
+[Container]
+Image=docker.io/homeassistant/home-assistant:stable
+ContainerName=tony-ha
+AddCapability=NET_ADMIN NET_RAW
+AddDevice=/dev/video0:/dev/video0
+AddDevice=/dev/video1:/dev/video1
+PodmanArgs=--group-add keep-groups
+User=root
+Network=host
+Volume=/home/tony/.config/home-assistant:/config:Z
+Volume=/home/tony/.config/home-assistant/patches/ffmpeg_camera.py:/usr/src/homeassistant/homeassistant/components/ffmpeg/camera.py:Z,ro
+Volume=/home/tony/.config/home-assistant/patches/ha-map-tiles.js:/usr/local/lib/python3.14/site-packages/hass_frontend/frontend_latest/52451.365da2725a9cb09b.js:Z,ro
+Volume=/home/tony/.config/home-assistant/patches/ha-map-tiles-es5.js:/usr/local/lib/python3.14/site-packages/hass_frontend/frontend_es5/52451.8ad144bf4ea33cb8.js:Z,ro
+Volume=/home/tony/.config/home-assistant/patches/ha-map-tiles-es5.js.br:/usr/local/lib/python3.14/site-packages/hass_frontend/frontend_es5/52451.8ad144bf4ea33cb8.js.br:Z,ro
+Volume=/home/tony/.config/home-assistant/patches/ha-map-tiles-es5.js.gz:/usr/local/lib/python3.14/site-packages/hass_frontend/frontend_es5/52451.8ad144bf4ea33cb8.js.gz:Z,ro
+Volume=/home/tony/.config/home-assistant/patches/ha-map-tiles.js.br:/usr/local/lib/python3.14/site-packages/hass_frontend/frontend_latest/52451.365da2725a9cb09b.js.br:Z,ro
+Volume=/home/tony/.config/home-assistant/patches/ha-map-tiles.js.gz:/usr/local/lib/python3.14/site-packages/hass_frontend/frontend_latest/52451.365da2725a9cb09b.js.gz:Z,ro
+Volume=/home/tony/.config/home-assistant/patches/ha-frontend-no-cache.py:/usr/src/homeassistant/homeassistant/components/frontend/__init__.py:Z,ro
+Volume=/home/tony/.config/home-assistant/patches/ha-http-server-no-cache.py:/usr/src/homeassistant/homeassistant/components/http/server.py:Z,ro
+Environment=TZ=Asia/Bangkok
+HealthCmd=/bin/sh -c 'curl -sf http://127.0.0.1:8123 >/dev/null'
+HealthInterval=30s
+HealthTimeout=10s
+HealthRetries=5
+HealthStartPeriod=120s
+
+[Service]
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=default.target
