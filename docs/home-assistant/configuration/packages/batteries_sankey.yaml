@@ -16,7 +16,7 @@ template:
         unit_of_measurement: "W"
         device_class: power
         state_class: measurement
-        state: "{{ max(0, -states('sensor.batteries_1_power')|float(0)) }}"
+        state: "{{ max(0, -(states('sensor.batteries_1_power')|float(0))) }}"
       - name: "Battery 2 Charge Power"
         unique_id: batteries_2_charge_power
         unit_of_measurement: "W"
@@ -28,7 +28,7 @@ template:
         unit_of_measurement: "W"
         device_class: power
         state_class: measurement
-        state: "{{ max(0, -states('sensor.batteries_2_power')|float(0)) }}"
+        state: "{{ max(0, -(states('sensor.batteries_2_power')|float(0))) }}"
       - name: "Battery 3 Charge Power"
         unique_id: batteries_3_charge_power
         unit_of_measurement: "W"
@@ -40,7 +40,7 @@ template:
         unit_of_measurement: "W"
         device_class: power
         state_class: measurement
-        state: "{{ max(0, -states('sensor.batteries_3_power')|float(0)) }}"
+        state: "{{ max(0, -(states('sensor.batteries_3_power')|float(0))) }}"
 
 sensor:
   - platform: integration

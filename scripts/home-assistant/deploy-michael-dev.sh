@@ -23,6 +23,13 @@ mkdir -p "$DEV_CONFIG"
 log "Deploying packages and helpers to $DEV_CONFIG"
 rsync -avz "$HA_DIR/configuration/" "$DEV_CONFIG/"
 
+DEV_MOCKS="$HA_DIR/dev/dev-mocks.yaml"
+if [ -f "$DEV_MOCKS" ]; then
+  log "Deploying dev mock entities to $DEV_CONFIG/packages/a_dev_mocks.yaml"
+  mkdir -p "$DEV_CONFIG/packages"
+  cp "$DEV_MOCKS" "$DEV_CONFIG/packages/a_dev_mocks.yaml"
+fi
+
 if [ "$DEPLOY_DASHBOARDS" -eq 1 ] && [ -d "$HA_DIR/dashboards" ]; then
   log "Deploying dashboard files to $DEV_CONFIG/lovelace/"
   mkdir -p "$DEV_CONFIG/lovelace"
