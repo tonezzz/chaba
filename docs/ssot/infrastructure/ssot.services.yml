@@ -267,6 +267,23 @@ tony-dell:
     autostart: loginctl enable-linger tony is yes; Quadlet WantedBy=default.target
     status: 'mcp server active (2026-08-25)'
     note: 'Container rootless podman on tony-dell. HA-MCP active. Caddy reverse proxy, health check, and autostart configured. Two Tuya smart plugs under local TinyTuya command_line control (switch.plakkaaaef_local, switch.plalhawetiiyng_local). Camera ip_cam_65 now uses local go2rtc H.264 proxy for high-res stream. Official cloud Tuya integration still present but stale for the bedside plug.'
+  home-assistant-michael-dev:
+    container: home-assistant-michael-dev
+    image: docker.io/homeassistant/home-assistant:stable
+    runtime: rootless podman
+    network: slirp4netns
+    port: 8123
+    host_port: 127.0.0.1:8124
+    quadlet:
+      container_unit: /home/tony/CascadeProjects/chaba/stacks/tony-dell/home-assistant-michael-dev/home-assistant-michael-dev.container
+      service_unit: ~/.config/systemd/user/home-assistant-michael-dev.service
+    config: /home/tony/.config/home-assistant-michael-dev
+    caddy:
+      note: Not used — HA UI uses absolute redirects that break a path-prefixed reverse proxy. Direct port 8124 is used.
+    health_check: ssh tony-dell curl -sf http://127.0.0.1:8124/ >/dev/null
+    autostart: loginctl enable-linger tony is yes; Quadlet WantedBy=default.target
+    status: enabled
+    note: 'Dev staging container for michael-ha. Publishes HA container port 8123 to host port 8124 to avoid conflict with the tony-dell home-assistant instance on 8123.'
   go2rtc:
     service: go2rtc.service
     host: tony_dell

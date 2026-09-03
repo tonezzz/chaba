@@ -1,0 +1,130 @@
+title: Michael Home Assistant Dev Staging Flow
+subtitle: Local development and test flow on tony-dell before deploying to the live michael-ha instance
+icon: beaker
+
+overview:
+  purpose: Provide a safe, reproducible dev/test Home Assistant instance on tony-dell for editing packages, dashboards, and automations before applying them to the live michael-ha Nabu Casa instance.
+  live_instance: docs/ssot/infrastructure/ssot.home-assistant.michael.yml
+  target_use_cases:
+    - UI/card development and review
+    - automation and package logic validation
+    - custom frontend card testing (e.g., sunsynk-power-flow-card fork)
+  out_of_scope:
+    - Add-on testing (HA OS add-ons do not run in HA Container)
+    - Zigbee/Z-Wave/Modbus hardware discovery (real devices are on michael's network)
+
+environments:
+  dev:
+    host: tony_dell
+    container: home-assistant-michael-dev
+    image: docker.io/homeassistant/home-assistant:stable
+    runtime: rootless podman
+    network: slirp4netns
+    port: 8123
+    host_port: 127.0.0.1:8124
+    quadlet:
+      container_unit: /home/tony/CascadeProjects/chaba/stacks/tony-dell/home-assistant-michael-dev/home-assistant-michael-dev.container
+      service_unit: ~/.config/systemd/user/home-assistant-michael-dev.service
+    config: /home/tony/.config/home-assistant-michael-dev
+    repo_config: /home/tony/CascadeProjects/chaba/docs/home-assistant/configuration
+    repo_dashboards: /home/tony/CascadeProjects/chaba/docs/home-assistant/dashboards
+    caddy:
+      note: Not used — HA UI returns absolute redirects that break a path-prefixed reverse proxy. Use port 8124 directly.
+    health_check: ssh tony-dell curl -sf http://127.0.0.1:8124/ >/dev/null
+    autostart: loginctl enable-linger tony is yes; Quadlet WantedBy=default.target
+    status: enabled
+    access:
+      local: http://127.0.0.1:8124
+      tailscale: http://tony-dell:8124
+  live:
+    host: michael-ha
+    type: nabu_casa
+    deploy_script: scripts/home-assistant/deploy-michael.sh
+    remote_config: /config
+    tailnet_url: http://michael-ha:8123/
+    cloud_url: https://nupo4ndqdqydt78zmpq0z5wzp1bdrqgs.ui.nabu.casa/
+
+config_source:
+  packages: docs/home-assistant/configuration/packages/
+  helpers: docs/home-assistant/configuration/*.yaml
+  dashboards: docs/home-assistant/dashboards/
+  custom_cards:
+    - stacks/web/public/apps/michael-live/
+    - docs/home-assistant/www/
+  caddy_snippet: stacks/tony-dell/home-assistant-michael-dev/caddy-snippet
+
+full_flow:
+  - step: 1
+    label: Edit in chaba
+    action: Modify packages, dashboards, helpers, or custom cards in the repo and commit/push to the working branch.
+  - step: 2
+    label: Deploy to dev
+    action: Run scripts/home-assistant/deploy-michael-dev.sh
+    result: Repo config is rsynced to ~/.config/home-assistant-michael-dev/ and the dev container is restarted.
+  - step: 3
+    label: Test on tony-dell
+    action: Open http://tony-dell:8124 or https://tony-dell.taila0626a.ts.net/apps/michael-ha-dev/ and verify UI, cards, and automation traces.
+  - step: 4
+    label: Deploy to live
+    action: Run scripts/home-assistant/deploy-michael.sh
+    result: Repo config is rsynced to michael-ha:/config and the live core config is reloaded.
+  - step: 5
+    label: Verify live
+    action: Check the Nabu Casa URL or http://michael-ha:8123/ and confirm no errors.
+
+scripts:
+  deploy_dev:
+    path: scripts/home-assistant/deploy-michael-dev.sh
+    description: Rsync repo config to the tony-dell dev instance and restart it.
+    env:
+      - name: MICHAEL_DEV_CONFIG
+        default: ~/.config/home-assistant-michael-dev
+      - name: MICHAEL_DEV_SERVICE
+        default: home-assistant-michael-dev.service
+      - name: MICHAEL_DEPLOY_DASHBOARDS
+        default: "0"
+  deploy_live:
+    path: scripts/home-assistant/deploy-michael.sh
+    description: Rsync repo config to the live michael-ha instance and reload core config.
+
+custom_components:
+  dev_parity:
+    - ha_mcp_tools (only if MCP parity is required)
+    - sunsynk-power-flow-card fork deployed to /config/www/ for dev testing
+
+entity_mocks:
+  purpose: Real devices (Sunsynk, Tuya, Zigbee) do not exist on tony-dell. Use dev-only mocks to test automation logic.
+  file: /home/tony/.config/home-assistant-michael-dev/packages/dev-mocks.yaml
+  note: Keep dev-mocks.yaml out of the repo or in a path ignored by deploy-michael.sh so it is never sent to live.
+
+verification:
+  dev:
+    - systemctl --user status home-assistant-michael-dev.service
+    - curl -sf http://127.0.0.1:8124/
+    - ss -tlnp | grep 8124
+  live:
+    - tailscale ping michael-ha
+    - curl -sf http://michael-ha:8123/
+    - confirm dashboard shows expected updates
+
+rollback:
+  dev:
+    - systemctl --user stop home-assistant-michael-dev.service
+    - rm -rf /home/tony/.config/home-assistant-michael-dev (or restore from backup)
+  live:
+    - Revert the last git commit in chaba and re-run scripts/home-assistant/deploy-michael.sh.
+    - Restore michael-ha:/config from a snapshot if available.
+
+related_files:
+  - docs/ssot/infrastructure/ssot.home-assistant.michael.yml
+  - scripts/home-assistant/deploy-michael.sh
+  - docs/home-assistant/configuration/packages/batteries_sankey.yaml
+  - docs/home-assistant/configuration/packages/pool_sankey.yaml
+  - docs/home-assistant/dashboards/tony-test-current.json
+
+config:
+  version: 1
+  created_at: 2026-09-03
+  last_updated: 2026-09-03
+  maintainer: tony
+  status: enabled
