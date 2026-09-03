@@ -16,7 +16,7 @@ sections:
     layout: list
     items:
       - label: Daemon (consolidated 2026-08-10)
-        text: playlived runs on tony-dell:9230 (primary headless target) and tony-omen:9231 (fallback). See docs/ssot/infrastructure/ssot.host-roles.yml for the canonical host priorities.
+        text: playlived runs on tony-dell:9230 (primary) and tony-omen:9230 (fallback). See docs/ssot/infrastructure/ssot.host-roles.yml for the canonical host priorities.
       - label: MCP client
         text: mcp-playlive (chaba-tony-dell/mcp-servers/mcp-playlive/playlive-server.py) forwards tool calls from Windsurf to the daemon via single "playlive" MCP server.
       - label: Target flexibility
@@ -31,9 +31,10 @@ sections:
     layout: table
     headers: [Name, Host, Endpoint, Purpose]
     rows:
-      - [playlived, tony-omen, http://tony-omen:9231, Consolidated session daemon]
-      - [playlived, tony-dell, http://tony-dell:9230, UI verification daemon]
-      - [chrome-remote, tony-dell, http://127.0.0.1:9222, Real Chrome CDP for live debugging]
+      - [playlived, tony-dell, http://tony-dell:9230, Primary session daemon]
+      - [playlived, tony-omen, http://tony-omen:9230, Fallback session daemon]
+      - [chrome-remote, tony-dell, http://127.0.0.1:9222, Real Chrome CDP for live debugging on tony-dell]
+      - [chrome-remote, tony-omen, http://127.0.0.1:9228, Real Chrome CDP on tony-omen, forwarded to tony-dell via 127.0.0.1:9228 (SSH tunnel)]
 
   - title: Authentication
     icon: 🔐
@@ -62,7 +63,7 @@ sections:
     layout: list
     items:
       - label: Start daemon
-        text: tony-omen runs playlived as a systemd service on port 9231. On tony-dell, start playlived on port 9230 with `cd /home/tony/.local/playlive && setsid -f sh -c 'exec node playlived.mjs > playlived.log 2>&1'`.
+        text: tony-omen runs playlived as a systemd service on port 9230. On tony-dell, the playlived systemd service also runs on port 9230.
       - label: Create session (default)
         text: playlive_create_playwright defaults to headless local mode for better performance.
       - label: Create session (live)
@@ -85,7 +86,7 @@ sections:
       - label: Package-lock
         text: Use 'npm install' or 'npm ci' from /home/tony/.local/playlive to keep package-lock.json in sync.
       - label: Remote CDP override
-        text: playlived's default remote CDP is 127.0.0.1:9223. The Chrome instance on tony-dell is on 9222, so pass `remote_url` `http://127.0.0.1:9222` when creating chrome-live or playwright-chrome sessions on tony-dell.
+        text: playlived's default remote CDP is 127.0.0.1:9223, but the visible Chrome CDP on tony-dell is on 127.0.0.1:9222. When using the tony-dell daemon, create chrome-live or playwright-chrome sessions with `remote_url` `http://127.0.0.1:9222` (or use the `tony-dell` host from `playlive-hosts.yml`). For tony-omen Chrome, use the `tony-omen` host from `playlive-hosts.yml` which maps to the `127.0.0.1:9228` SSH tunnel.
       - label: Daemon restart
         text: Restart playlived.service after browser or package updates.
 
@@ -102,7 +103,7 @@ sections:
       - label: Remote Chrome availability
         text: chrome-live/playwright-chrome require remote Chrome CDP (tony-dell:9222) which may not be available if Chrome is not running with remote debugging enabled.
       - label: Consolidated architecture
-        text: playlive MCP server is configured for tony-omen by default; playlive.tony-dell exists in mcp_config.json but is disabled to avoid tool name collisions.
+        text: playlive MCP server is configured for tony-dell by default. playlive.tony-omen can be enabled as a fallback if needed.
 config:
   version: 2
   maintainer: tony
