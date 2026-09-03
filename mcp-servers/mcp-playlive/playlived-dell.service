@@ -4,6 +4,7 @@ After=network-online.target
 Wants=network-online.target
 
 [Service]
+Environment=PLAYLIVED_REMOTE_CDP=http://127.0.0.1:9222
 Type=simple
 WorkingDirectory=/home/tony/.local/playlive
 ExecStartPre=/home/tony/CascadeProjects/chaba-tony-dell/mcp-servers/mcp-playlive/patch-playwright.sh

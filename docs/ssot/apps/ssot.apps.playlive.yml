@@ -44,7 +44,7 @@ sections:
     rows:
       - [playlived, tony-dell, http://tony-dell:9230, Primary session daemon]
       - [playlived, tony-omen, http://tony-omen:9230, Fallback session daemon]
-      - [chrome-remote, tony-dell, http://127.0.0.1:9222, Real Chrome CDP for live debugging on tony-dell]
+      - [chrome-remote, tony-dell, http://127.0.0.1:9222, Headless Chrome CDP for live debugging on tony-dell]
       - [chrome-remote, tony-omen, http://127.0.0.1:9228, Real Chrome CDP on tony-omen, forwarded to tony-dell via 127.0.0.1:9228 (SSH tunnel)]
 
   - title: Authentication
@@ -99,7 +99,7 @@ sections:
       - label: Package-lock
         text: Use 'npm install' or 'npm ci' from /home/tony/.local/playlive to keep package-lock.json in sync.
       - label: Remote CDP override
-        text: playlived's default remote CDP is 127.0.0.1:9223, but the visible Chrome CDP on tony-dell is on 127.0.0.1:9222. When using the tony-dell daemon, create chrome-live or playwright-chrome sessions with `remote_url` `http://127.0.0.1:9222` (or use the `tony-dell` host from `playlive-hosts.yml`). For tony-omen Chrome, use the `tony-omen` host from `playlive-hosts.yml` which maps to the `127.0.0.1:9228` SSH tunnel.
+        text: playlived's default remote CDP is 127.0.0.1:9223, but the headless Chrome CDP on tony-dell is on 127.0.0.1:9222. When using the tony-dell daemon, create chrome-live or playwright-chrome sessions with `remote_url` `http://127.0.0.1:9222` (or use the `tony-dell` host from `playlive-hosts.yml`). For tony-omen Chrome, use the `tony-omen` host from `playlive-hosts.yml` which maps to the `127.0.0.1:9228` SSH tunnel.
       - label: Daemon restart
         text: Restart playlived.service after browser or package updates.
 
