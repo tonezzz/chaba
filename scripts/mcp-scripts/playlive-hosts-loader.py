@@ -27,11 +27,22 @@ import subprocess
 import sys
 import time
 import urllib.request
+from pathlib import Path
 
 import yaml
 
-DEFAULT_HOSTS_FILE = "/home/tony/CascadeProjects/chaba-tony-dell/docs/ssot/infrastructure/playlive-hosts.yml"
-SERVER = "/home/tony/CascadeProjects/chaba-tony-dell/mcp-servers/mcp-playlive/playlive-server.py"
+# For the repo copy of this script, derive defaults from the script's location.
+# When installed to ~/.config/devin/mcp-scripts, PLAYLIVE_HOSTS_FILE is set
+# and the server path is computed from that file, so these fallbacks are not used.
+_DEFAULT_REPO = Path(__file__).resolve().parents[2]
+DEFAULT_HOSTS_FILE = str(_DEFAULT_REPO / "docs" / "ssot" / "infrastructure" / "playlive-hosts.yml")
+
+
+def server_path(hosts_file: str) -> str:
+    """Derive the path to playlive-server.py from the host registry YAML path."""
+    # hosts_file: .../<repo>/docs/ssot/infrastructure/playlive-hosts.yml
+    repo = Path(hosts_file).resolve().parents[3]
+    return str(repo / "mcp-servers" / "mcp-playlive" / "playlive-server.py")
 
 
 def current_host() -> str:
@@ -192,7 +203,8 @@ def main() -> None:
                 labels=["failover"],
             )
 
-    os.execv(sys.executable, [sys.executable, SERVER])
+    server = server_path(hosts_file)
+    os.execv(sys.executable, [sys.executable, server])
 
 
 if __name__ == "__main__":
