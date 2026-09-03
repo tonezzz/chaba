@@ -69,9 +69,9 @@ mcp:
     type: ssh
     host: tony-dell
     local_port: 19584
-    remote: homeassistant:9584
+    remote: 172.30.32.1:9584
     via: root@michael-ha
-    note: TCP forward via core_ssh (tcp_forwarding enabled). 'homeassistant' is the Docker network hostname for the HA core container on the hassio network.
+    note: TCP forward via core_ssh (tcp_forwarding enabled). 172.30.32.1 is the HA core container IP on the hassio network; matches the ExecStart in the tony-dell tunnel service.
   note: ha_mcp_tools loaded; MCP endpoint reachable over the tailnet via tony-dell
 
 packages:
