@@ -1,0 +1,45 @@
+title: Resolve health-check conflicts and optional service failures
+subtitle: mcp-health reports errors/unknowns after MCP fix pass
+icon: inbox
+
+focus:
+  label: "Port conflicts and optional services"
+  text: |
+    Resolved. The 22 previously-disabled health checks were enabled and verified;
+    10 are now healthy and the remaining failing/obsolete services are intentionally
+    disabled again:
+    - BServer and Frigate NVR 8080 issues are intentional (services not running).
+    - GPU/optional tony-omen services are intentionally offline.
+    - Sensor Reader is redundant with tony-omen sensor-reader; kept disabled.
+    - mcp-debug-cors/audit are deprecated tony-omen endpoints; kept disabled.
+    - MCP RView Proxy uses a streaming SSE endpoint unsuitable for automated curl checks.
+    - chaba-health-monitor.timer is inactive on tony-omen.
+
+    Final full health result: 44/56 healthy, 0 error, 0 degraded, 0 unknown.
+  branch: chaba
+  priority: medium
+  status: resolved
+  triage_score: 0.5
+  tags: ["health", "mcp-health", "tony-omen", "tony-dell", "port-conflict"]
+  safe_to_parallel:
+    value: true
+    reason: These services are independent of the MCP fixes.
+  subtasks:
+    - label: Identify which optional services should be intentionally disabled
+      status: completed
+    - label: Resolve port 8080 conflict (Caddy/BServer/Frigate)
+      status: completed
+    - label: Restart or re-enable tony-omen services with missing health endpoints
+      status: completed
+    - label: Re-run mcp-health and confirm 0 error/0 unknown for critical services
+      status: completed
+
+ownership:
+  owner: tony
+  session: ""
+  locked: false
+  lock_reason: ""
+
+source:
+  session: ""
+  date: '2026-09-01'
