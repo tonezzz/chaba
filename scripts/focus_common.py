@@ -127,15 +127,30 @@ def _session_matches(item, session):
     return True
 
 
+def _subagent_dispatchable(subagent, require_tony_dell=True):
+    """Return True if a subagent block is runnable on its declared host."""
+    if not subagent:
+        return False
+    if not subagent.get("runnable"):
+        return False
+    if subagent.get("requires_approval"):
+        return False
+    host = subagent.get("host", "tony_dell")
+    if host not in ("tony_dell", "local", "macbook"):
+        return False
+    if require_tony_dell and host != "tony_dell":
+        return False
+    return True
+
+
 def meets_safe_criteria(item, active_branch_set, session=None):
     safe = item.get("safe_to_parallel")
     if safe is False:
         return False
-    if safe is True:
-        return True
     if item.get("missing_info"):
         return False
-    if item.get("subagent", {}).get("requires_approval"):
+    subagent = item.get("subagent") or {}
+    if not _subagent_dispatchable(subagent, require_tony_dell=True):
         return False
     triage = item.get("triage") or {}
     try:
@@ -158,12 +173,20 @@ def safe_to_parallel_reason(item, active_branch_set, session=None):
     safe = item.get("safe_to_parallel")
     if safe is False:
         return False, "explicitly marked not safe"
-    if safe is True:
-        return True, "explicitly marked safe"
     if item.get("missing_info"):
         return False, "missing_info not empty"
-    if item.get("subagent", {}).get("requires_approval"):
+    subagent = item.get("subagent") or {}
+    if not subagent:
+        return False, "missing subagent block for tony-dell dispatch"
+    if not subagent.get("runnable"):
+        return False, "subagent.runnable is not true"
+    if subagent.get("requires_approval"):
         return False, "requires user approval"
+    host = subagent.get("host", "tony_dell")
+    if host not in ("tony_dell", "local", "macbook"):
+        return False, f"subagent.host {host} is not an allowed dispatch host"
+    if host != "tony_dell":
+        return False, "safe-to-parallel items must dispatch to tony-dell"
     triage = item.get("triage") or {}
     try:
         complication = float(triage.get("complication", 10))

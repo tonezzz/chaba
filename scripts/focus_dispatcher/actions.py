@@ -63,6 +63,13 @@ def make_ready_safe_item(item, session=None):
     source = item.pop("__source", item.get("source", item.get("__file", "")))
     for key in ("__triage_score", "__file"):
         item.pop(key, None)
+    subagent = item.get("subagent") or {}
+    subagent.setdefault("runnable", True)
+    subagent.setdefault("profile", "subagent_general")
+    subagent.setdefault("parallel", True)
+    subagent.setdefault("requires_approval", False)
+    subagent.setdefault("can_change_host", False)
+    subagent.setdefault("host", "tony_dell")
     ready = {
         "label": item.get("label"),
         "text": item.get("text", ""),
@@ -75,7 +82,7 @@ def make_ready_safe_item(item, session=None):
         "safe_to_parallel": item.get("safe_to_parallel", True),
         "subtasks": item.get("subtasks", []),
         "source": source,
-        "subagent": item.get("subagent", {}),
+        "subagent": subagent,
         "owner": item.get("owner", "focus-dispatcher"),
         "session": session or item.get("session", ""),
         "locked": False,

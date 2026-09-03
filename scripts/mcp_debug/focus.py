@@ -660,7 +660,23 @@ def _draft_inbox(request):
             "status": "draft",
             "priority": "medium",
             "tags": ["intake"],
-            "missing_info": ["What is the desired outcome?"],
+            "triage": {
+                "urgency": 3,
+                "importance": 3,
+                "complication": 5,
+            },
+            "subagent": {
+                "runnable": False,
+                "profile": "subagent_general",
+                "parallel": False,
+                "requires_approval": True,
+                "can_change_host": False,
+                "host": "tony_dell",
+            },
+            "missing_info": [
+                "What is the desired outcome?",
+                "Break this into safe-to-parallel subtasks with subagent.host tony_dell.",
+            ],
         },
     }
 

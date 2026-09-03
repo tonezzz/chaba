@@ -53,7 +53,8 @@ def main():
     parser.add_argument("--auto-dispatch", action="store_true", help="Scan backlog and write subagent contracts for eligible items without activating them")
     parser.add_argument("--safe-dispatch", action="store_true", help="Find the highest-scoring safe-to-parallel focus and add it to the Ready (Safe) section")
     parser.add_argument("--process-ready", action="store_true", help="Pick the next unlocked Ready (Safe) item and write a SUBAGENT_CONTRACT for remote execution")
-    parser.add_argument("--host", default="tony_dell", help="Target host for --process-ready (default: tony_dell)")
+    parser.add_argument("--auto-process", action="store_true", help="Find the highest safe-to-parallel focus, promote it to Ready (Safe), and write a SUBAGENT_CONTRACT for tony-dell")
+    parser.add_argument("--host", default="tony_dell", help="Target host for --process-ready and --auto-process (default: tony_dell)")
     parser.add_argument("--session", default="", help="Session ID to attach to a safe-dispatched focus for ownership/locking")
     parser.add_argument("--dry-run", action="store_true", help="Show selection without modifying files")
     parser.add_argument("--next", action="store_true", help="Activate the next highest-priority parked/deferred focus")
@@ -137,6 +138,35 @@ def main():
         }, indent=2))
         if os.environ.get("FOCUS_DISPATCHER_COMMIT") == "1":
             git_commit([BACKLOG], f"tweak: process-ready {result['label'][:50]}")
+        sys.exit(0)
+
+    if args.auto_process:
+        result = process_ready_safe(host=args.host, session=args.session, dry_run=args.dry_run)
+        if not result:
+            candidate = safe_to_dispatch(session=args.session)
+            if not candidate:
+                print("No safe-to-parallel focus found.")
+                sys.exit(0)
+            if args.dry_run:
+                print(f"Would auto-process on {args.host}: {candidate['label']} -> {args.host}")
+                sys.exit(0)
+            new_item = add_ready_safe(candidate, session=args.session)
+            result = process_ready_safe(host=args.host, session=args.session, dry_run=args.dry_run)
+        if not result:
+            print("No Ready (Safe) item to process.")
+            sys.exit(0)
+        print(f"Auto-processed to {result['host']}: {result['label']}")
+        print(f"Contract: {result['path']}")
+        print("To invoke the subagent:")
+        print(json.dumps({
+            "tool": "run_subagent",
+            "title": f"Ready (Safe) — {result['label']}",
+            "profile": result['item'].get('subagent', {}).get('profile', 'subagent_general'),
+            "task": f"Read and execute the subagent contract at {result['path']}. Work on host `{result['host']}` using mcp_debug with `host: {result['host']}`. Update the Ready (Safe) item subtask status in docs/ssot/ssot.focus.current.backlog.yml when done. Do not commit; the main session will review.",
+            "is_background": True,
+        }, indent=2))
+        if os.environ.get("FOCUS_DISPATCHER_COMMIT") == "1":
+            git_commit([BACKLOG], f"tweak: auto-process {result['label'][:50]}")
         sys.exit(0)
 
     changed = []

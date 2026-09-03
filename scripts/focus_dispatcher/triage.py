@@ -106,16 +106,21 @@ def next_from_backlog():
 
 
 def dispatchable_backlog():
-    """Return backlog items with subagent.runnable == true and requires_approval == false."""
+    """Return backlog items that are runnable, approval-free, and dispatchable to tony-dell."""
     doc = load_focus()
     section = find_section(doc.get("sections", []), "Backlog - Triage Queue")
     if not section:
         return []
     eligible = []
+    allowed_hosts = ("tony_dell",)
     for item in section.get("items", []):
         if item.get("status") not in ("pending", "not_started"):
             continue
         subagent = item.get("subagent", {})
-        if subagent.get("runnable") and not subagent.get("requires_approval"):
+        if (
+            subagent.get("runnable")
+            and not subagent.get("requires_approval")
+            and subagent.get("host", "tony_dell") in allowed_hosts
+        ):
             eligible.append(item)
     return eligible
