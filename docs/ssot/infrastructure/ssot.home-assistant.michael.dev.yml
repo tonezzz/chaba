@@ -45,6 +45,15 @@ environments:
       note: HA-MCP Server runs inside the dev container, exposed on host port 9585.
     autostart: loginctl enable-linger tony is yes; Quadlet WantedBy=default.target
     status: enabled
+    core_config:
+      internal_url: http://tony-dell:8124
+      note: Required so the frontend OAuth client_id matches Home Assistant's canonical URL.
+    auth:
+      provider: homeassistant
+      username: nakva
+      display_user: nakvac@gmail.com
+      source: saved live michael-ha credentials file
+      note: Same password as live michael-ha; auth_provider.homeassistant user and credentials copied manually.
     access:
       local: http://127.0.0.1:8124
       tailscale: http://tony-dell:8124
@@ -59,7 +68,9 @@ environments:
 config_source:
   packages: docs/home-assistant/configuration/packages/
   helpers: docs/home-assistant/configuration/*.yaml
-  dashboards: docs/home-assistant/dashboards/
+  dashboards:
+    repo_path: docs/home-assistant/dashboards/
+    note: Not the active source for tony-test. For live parity, copy michael-ha .storage/lovelace* files to the dev .storage directory instead.
   custom_cards:
     - stacks/web/public/apps/michael-live/
     - docs/home-assistant/www/
@@ -73,6 +84,10 @@ full_flow:
     label: Deploy to dev
     action: Run scripts/home-assistant/deploy-michael-dev.sh
     result: Repo config is rsynced to ~/.config/home-assistant-michael-dev/ and the dev container is restarted.
+  - step: 2.5
+    label: Sync live dashboards to dev .storage
+    action: Copy live michael-ha:/config/.storage/lovelace_dashboards and lovelace.tony_test to the dev .storage directory.
+    note: The dev configuration.yaml must not contain a lovelace: block. If present after deploy, remove it so the copied .storage dashboards are used.
   - step: 3
     label: Test on tony-dell
     action: Open http://tony-dell:8124 or https://tony-dell.taila0626a.ts.net/apps/michael-ha-dev/ and verify UI, cards, and automation traces.
