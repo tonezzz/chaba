@@ -1,13 +1,13 @@
 title: Development System Assessment
 subtitle: Periodic assessment of the chaba development workflow itself
 icon: clipboard-check
-last_reviewed: '2026-09-02T14:35:09+00:00'
+last_reviewed: '2026-09-03T00:00:00+00:00'
 reviewer: assistant
 score:
-  branches_total: 1
+  branches_total: 0
   branches_ahead_of_master: 0
   worktrees_total: 1
-  active_foci: 0
+  active_foci: 2
   ssot_warnings: 0
   service_errors_last_night: 0
   ci_failures_7d: 0
@@ -26,21 +26,12 @@ pros:
 - label: Clean working tree
   evidence: 0 untracked or modified file(s) on the canonical worktree after pending SSOT/focus commit
   trend: improving
-cons:
-- label: Branch/worktree sprawl
-  severity: none
-  evidence: ha branch merged into master and deleted; orphaned /tmp/chaba-ha-* and /tmp/chaba-tony-ha-* directories
-    removed; only the canonical chaba worktree remains
-  owner: tony
-  status: resolved
-  improvement: Maintain branch hygiene; the last remaining active focus is SSOT mac-address-registry bloat optimization
-- label: Uncommitted working tree
-  severity: none
-  evidence: 0 untracked or modified file(s) on the canonical worktree
-  owner: tony
-  status: closed
-  improvement: Maintain git hygiene; the mcp-health-snapshot files are now .gitignored
+cons: []
 improvements:
+- label: SSOT quality regression resolved
+  source: dev-system.assessment
+  target_score: ssot_warnings = 0
+  status: completed
 - label: Merge one long-tail branch per session
   source: ssot.focus.yml
   target_score: archive or merge branches only when their worktree is decommissioned
@@ -53,4 +44,4 @@ improvements:
   source: dev-system.assessment
   target_score: branches_ahead_of_master <= 5 and worktrees_total <= 6
   status: completed
-next_review: '2026-09-03'
+next_review: '2026-09-04'
