@@ -8,12 +8,16 @@ It converts the YAML host registry into the JSON PLAYLIVE_HOSTS env var that
 playlive-server.py expects, then os.execv's the real server.
 
 Per-host behaviour:
-  - On tony-dell, prefer the local playlived (127.0.0.1:9230).
-  - On tony-omen, prefer the tony-dell playlived (tony-dell:9230).
+  - On tony-dell, prefer the local playlived (127.0.0.1:9230), with tony-omen
+    as the failover.
+  - On tony-omen, prefer the tony-dell playlived (tony-dell:9230), falling back
+    to the local tony-omen playlived (127.0.0.1:9230).
 
 If the chosen playlived is not reachable and self_heal is enabled in the YAML,
-the loader attempts a host-specific systemd restart.  If that still fails and
-focus is enabled, it drops a focus-inbox item and continues to start the server.
+the loader attempts a host-specific systemd restart.  If the primary cannot be
+recovered, the loader tries the failover URL.  If neither the primary nor the
+failover is reachable and focus is enabled, it drops a focus-inbox item and
+continues to start the server.
 """
 import datetime
 import json
@@ -39,7 +43,7 @@ def load_hosts_data(hosts_file: str) -> dict:
         return yaml.safe_load(f)
 
 
-def focus_already_flagged(inbox_dir: str, window: int = 3600) -> bool:
+def focus_already_flagged(window: int = 3600) -> bool:
     """Return True if a playlive self-heal focus item was already written recently."""
     lock_path = "/home/tony/.cache/playlive-focus-flag"
     try:
@@ -59,32 +63,35 @@ def update_focus_lock():
         pass
 
 
-def write_focus_item(inbox_dir: str, host: str, playlive_url: str, error: str):
-    if focus_already_flagged(inbox_dir):
+def write_focus_item(inbox_dir: str, host: str, playlive_url: str, error: str, labels: list[str] | None = None):
+    if focus_already_flagged():
         return
     try:
         os.makedirs(inbox_dir, exist_ok=True)
     except OSError:
         return
+    tags = ["playlive", "infrastructure", "self-heal"]
+    if labels:
+        tags.extend(labels)
     ts = datetime.datetime.utcnow().strftime("%Y-%m-%d-%H%M%S")
-    filename = f"{ts}-playlive-self-heal-failed.yml"
+    filename = f"{ts}-playlive-failover-unreachable.yml"
     path = os.path.join(inbox_dir, filename)
     payload = {
-        "title": "PlayLive daemon not reachable after self-heal",
+        "title": "PlayLive daemon not reachable after self-heal and failover",
         "subtitle": f"playlived at {playlive_url} is unreachable on {host}",
         "icon": "inbox",
         "focus": {
-            "label": "playlive self-heal failure",
-            "text": f"The PlayLive daemon at {playlive_url} was not reachable. Self-heal was attempted but failed. Last error: {error}",
+            "label": "playlive failover failure",
+            "text": f"The PlayLive daemon at {playlive_url} was not reachable. Self-heal and failover were attempted but both failed. Last error: {error}",
             "branch": "topic/tailscale",
             "priority": "high",
             "status": "draft",
-            "tags": ["playlive", "infrastructure", "self-heal"],
+            "tags": tags,
             "missing_info": [],
-            "safe_to_parallel": {"value": False, "reason": "Requires manual triage of the playlived daemon."},
+            "safe_to_parallel": {"value": False, "reason": "Requires manual triage of the playlived daemon and failover path."},
             "subtasks": [
                 {
-                    "label": "Check playlived and Chrome CDP on the target host",
+                    "label": "Check playlived and Chrome CDP on the primary and failover hosts",
                     "status": "not_started",
                 }
             ],
@@ -128,36 +135,62 @@ def self_heal(command: list[str], retry_delay: int) -> bool:
     return False
 
 
+def resolve_playlive_url(data: dict, host: str) -> tuple[str, bool]:
+    """Pick the healthiest playlive_url for this host.
+
+    Returns (url, reachable).  Tries primary, self-heals, then failover and
+    self-heals if the failover is local.
+    """
+    self_heal_cfg = data.get("self_heal", {})
+    retry_delay = self_heal_cfg.get("retry_delay", 5)
+    command = self_heal_cfg.get("commands", {}).get(host) if self_heal_cfg.get("enabled") else None
+
+    # 1. Primary URL for this host.
+    primary = (
+        data.get("per_host", {}).get(host, {}).get("playlive_url")
+        or data.get("playlive_url")
+        or "http://tony-dell:9230"
+    )
+    if daemon_healthy(primary):
+        return primary, True
+    if command and self_heal(command, retry_delay) and daemon_healthy(primary):
+        return primary, True
+
+    # 2. Failover URL.
+    failover = data.get("failover", {}).get(host, {}).get("playlive_url")
+    if failover:
+        if daemon_healthy(failover):
+            return failover, True
+        # If the failover is the local daemon, try the same self-heal command.
+        if command and "127.0.0.1" in failover and self_heal(command, retry_delay) and daemon_healthy(failover):
+            return failover, True
+
+    # 3. Nothing is reachable; fall back to the primary so the server can report its own errors.
+    return primary, False
+
+
 def main() -> None:
     hosts_file = os.environ.get("PLAYLIVE_HOSTS_FILE", DEFAULT_HOSTS_FILE)
     data = load_hosts_data(hosts_file)
     host = current_host()
 
-    # Per-host playlive_url, with tony-dell defaulting to the local daemon.
-    playlive_url = (
-        data.get("per_host", {}).get(host, {}).get("playlive_url")
-        or data.get("playlive_url")
-        or "http://tony-dell:9230"
-    )
+    playlive_url, reachable = resolve_playlive_url(data, host)
     os.environ["PLAYLIVE_URL"] = playlive_url
 
     hosts = data.get("hosts", {})
     hosts_map = {name: info["cdp"] for name, info in hosts.items() if info.get("cdp")}
     os.environ["PLAYLIVE_HOSTS"] = json.dumps(hosts_map)
 
-    # Optionally attempt self-heal when the daemon is not reachable.
-    self_heal_cfg = data.get("self_heal", {})
-    focus_cfg = data.get("focus", {})
-    if self_heal_cfg.get("enabled"):
-        if not daemon_healthy(playlive_url):
-            command = self_heal_cfg.get("commands", {}).get(host)
-            retry_delay = self_heal_cfg.get("retry_delay", 5)
-            if command and self_heal(command, retry_delay):
-                pass  # healthy after restart
-            else:
-                # Still not healthy. Flag focus if configured, then continue.
-                if focus_cfg.get("enabled"):
-                    write_focus_item(focus_cfg.get("inbox_dir", ""), host, playlive_url, "daemon unreachable after self-heal")
+    if not reachable:
+        focus_cfg = data.get("focus", {})
+        if focus_cfg.get("enabled"):
+            write_focus_item(
+                focus_cfg.get("inbox_dir", ""),
+                host,
+                playlive_url,
+                "primary and failover daemons unreachable after self-heal",
+                labels=["failover"],
+            )
 
     os.execv(sys.executable, [sys.executable, SERVER])
 

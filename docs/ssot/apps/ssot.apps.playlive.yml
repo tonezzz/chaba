@@ -32,10 +32,12 @@ sections:
     items:
       - label: Preferred daemon
         text: docs/ssot/infrastructure/playlive-hosts.yml has a per_host section. tony-dell prefers 127.0.0.1:9230 (itself) and tony-omen prefers tony-dell:9230.
+      - label: Failover
+        text: playlive-hosts.yml has a failover section. tony-dell falls back to tony-omen:9230; tony-omen falls back to 127.0.0.1:9230 (itself). The loader switches PLAYLIVE_URL automatically.
       - label: Self-heal
         text: playlive-hosts-loader.py checks daemon health on startup and, if unhealthy, runs the host-specific systemd restart command from playlive-hosts.yml. playlive_self_heal provides the same on demand.
       - label: Focus escalation
-        text: If self-heal fails and focus is enabled in playlive-hosts.yml, a focus-inbox item is written so the outage is triaged manually.
+        text: If both the primary and the failover are unreachable after self-heal and focus is enabled in playlive-hosts.yml, a focus-inbox item is written so the outage is triaged manually.
 
   - title: Hosts & endpoints
     icon: 🌐
