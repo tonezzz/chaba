@@ -3,7 +3,8 @@ subtitle: Canonical entity IDs and dummy data used by the tony-test PF3 sunsynk 
 
 source:
   dashboard_ssot: docs/ssot/infrastructure/ssot.home-assistant.dashboards.yml
-  live_config_path: /home/tony/.config/michael-dev/.storage/lovelace.tony_test
+  live_config_path: /config/.storage/lovelace.tony_test
+  live_instance: michael-ha
   repo_snapshot: docs/home-assistant/dashboards/tony-test-current.json
 
 instances:
@@ -79,19 +80,12 @@ entity_groups:
     battery4_power_190: sensor.batteries_3_power
     battery4_current_191: sensor.batteries_3_current
 
-  unused:
-    note: The card does not use battery1_* entities. battery1 slot is the main battery group above.
-    battery1_voltage_183: none
-    battery1_soc_184: none
-    battery1_power_190: none
-    battery1_current_191: none
-
 battery_settings_pf3:
   battery:
     energy: 14280
     shutdown_soc: 20
     show_daily: true
-    colour: '#ffc0cb'
+    colour: '#00E676'
     animation_speed: 6
     max_power: 10000
     count: 4
@@ -117,13 +111,18 @@ battery_settings_pf3:
     energy: 14280
     shutdown_soc: 20
     show_daily: false
-    show_remaining_energy: true
+    show_remaining_energy: false
     colour: '#00E676'
     invert_power: true
     show_absolute: true
 
 unused:
+  note: Entities not used by the PF3 card.
   remaining_solar: none
+  battery1_voltage_183: none
+  battery1_soc_184: none
+  battery1_power_190: none
+  battery1_current_191: none
 
 status:
   last_updated: '2026-09-04'

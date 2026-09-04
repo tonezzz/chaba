@@ -57,7 +57,7 @@ runbooks:
       - ssh tony-dell
       - systemctl --user restart michael-dev.service
       - Wait for the service to be active and http://127.0.0.1:8124 to respond
-    service_ref: ssot.services.yml::tony-dell.michael-dev.service
+    service_ref: infrastructure/ssot.services.yml::tony-dell.michael-dev.service
 
   add_battery_status_line:
     purpose: Add or modify a combined battery status line in the sunsynk card.
@@ -80,6 +80,31 @@ runbooks:
       - Identify duplicate or redundant branches in src/components/compact/bat/bat-elements.ts
       - Adjust display conditions to keep only the intended text visible
       - Rebuild and verify
+
+  edit_live_dashboard_no_restart:
+    purpose: Modify a Lovelace dashboard on a live HA instance without restarting.
+    prerequisites:
+      - A long-lived access token for the target HA instance
+      - The websockets Python package
+    steps:
+      - Connect to ws://<host>:8123/api/websocket
+      - Authenticate with {"type":"auth","access_token":TOKEN}
+      - Fetch config with {"id":1,"type":"lovelace/config","url_path":"tony-test"}
+      - Modify the JSON in memory (e.g. add/remove/reorder views, update card config)
+      - Save with {"id":2,"type":"lovelace/config/save","url_path":"tony-test","config":<config>}
+      - The HA frontend will receive lovelace_updated and refresh automatically
+    note: Always back up .storage/lovelace.tony_test before bulk edits.
+
+  rewire_pf3_battery_entities:
+    purpose: Keep the PF3 sunsynk card entity mapping correct for total + 3 packs.
+    ssot: ssot.home-assistant.entities.yml
+    steps:
+      - Set main battery (battery_*) to sensor.totals_battery_*
+      - Map battery2_* to sensor.batteries_1_*
+      - Map battery3_* to sensor.batteries_2_*
+      - Map battery4_* to sensor.batteries_3_*
+      - Set battery.count to 4 and remove/ignore battery1_* entities
+      - Apply via edit_live_dashboard_no_restart or by editing .storage/lovelace.tony_test and restarting
 
 status:
   last_updated: '2026-09-04'
