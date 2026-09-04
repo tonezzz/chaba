@@ -9,20 +9,20 @@ jobs:
   type: systemd-user-timer
   unit: chaba-health-monitor.timer
   schedule: every 15 minutes
-  enabled: true
-  status: active
+  enabled: false
+  status: decommissioned
   description: Collect tony-omen health snapshots.
-  note: Independent of tony-dell.
+  note: Superseded by chaba-dell-health-agent.timer and tony-dell-mcp-health.timer on tony-dell. Retained for reference.
 - id: chaba-funnel-docs-sync
   name: Sync docs to tony-dell chaba-funnel
   host: tony_omen
   type: shell
   schedule: daily
   command: rsync -avP --delete --checksum /home/tony/CascadeProjects/chaba-h3/public/apps/docs/ tony@tony-dell:/home/tony/chaba-funnel/public/apps/docs/
-  enabled: true
-  status: planned
-  note: Keeps the Tailscale Funnel docs on tony-dell in sync with the chaba-h3 docs source. --checksum verifies content, not
-    just timestamp/size; --delete removes stale files on the target.
+  enabled: false
+  status: decommissioned
+  note: chaba-funnel was decommissioned on 2026-08-28 and port 8444 was reassigned to ha-live. This job is disabled and
+    retained only for reference.
 - id: arp-inventory-scan
   name: ARP inventory scan
   host: tony_omen

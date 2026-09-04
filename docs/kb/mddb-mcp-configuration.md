@@ -6,23 +6,17 @@ category: operations
 
 ## Context
 
-The mddb MCP server requires specific URL configuration including both the correct port and the `/mcp` path suffix. Misconfiguration leads to connection failures when trying to use MCP tools.
+The mddb MCP server requires the correct URL and the `/mcp` path suffix. Misconfiguration leads to connection failures when trying to use MCP tools.
 
-## Issue
+## Current Runtime (tony-dell)
 
-Initial MCP configuration pointed to `http://localhost:9000` which failed because:
-1. Wrong port (9000 vs 9001)
-2. Missing `/mcp` path suffix
+The migrated `mddb` Quadlet/systemd service on `tony-dell` uses host networking and exposes the MCP endpoint directly on port `9000`:
 
-## Root Cause
+- **MCP URL**: `http://tony-dell:9000/mcp` (Tailscale IP `100.68.142.13`)
+- **HTTP API**: `http://tony-dell:11023`
+- **gRPC**: `http://tony-dell:11024`
 
-**Docker Port Mapping**: The mddb docker container maps internal port 9000 to host port 9001:
-```yaml
-ports:
-  - "9001:9000"  # host:container
-```
-
-**MCP Endpoint Path**: The mddb MCP server serves the MCP protocol at `/mcp` path, not the root URL.
+The legacy `docker-compose.yml` in `stacks/web/mddb/docker-compose.yml` still maps `9001:9000`; that mapping applies only to the old Compose stack on `tony-omen` and is no longer used for the live MCP endpoint.
 
 ## Correct Configuration
 
@@ -30,7 +24,7 @@ ports:
 ```json
 {
   "mddb": {
-    "url": "http://localhost:9001/mcp"
+    "url": "http://100.68.142.13:9000/mcp"
   }
 }
 ```
@@ -38,14 +32,14 @@ ports:
 **Verification**:
 ```bash
 # Test MCP endpoint (should return "MCP-Session-Id required")
-curl -s http://localhost:9001/mcp
+curl -s http://tony-dell:9000/mcp
 # Expected: {"error":"MCP-Session-Id required"}
 
 # Check container status
-docker ps | grep mddb
+ssh tony-dell 'podman ps | grep mddb'
 
 # View MCP server logs
-docker logs mddb | grep MCP
+ssh tony-dell 'podman logs mddb | grep MCP'
 ```
 
 ## Available MCP Tools
@@ -81,7 +75,8 @@ After successful configuration, mddb provides these MCP tools:
 
 The mddb-mcp endpoint is monitored by the health check system:
 - **Service ID**: `mddb-mcp`
-- **URL**: `http://tony-omen.local:9001/mcp`
+- **URL**: `http://tony-dell:9000/mcp`
+- **Expected status**: `400` (`{"error":"MCP-Session-Id required"}`)
 - **Service Group**: `ssot-sync`
 - **Recovery Actions**: Include MCP config verification and container restart
 

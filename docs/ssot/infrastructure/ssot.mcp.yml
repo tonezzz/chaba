@@ -191,12 +191,14 @@ servers:
     implementation: https://mcp.alphavantage.co/mcp
     wrapper: none
     filter: none
-    url: https://mcp.alphavantage.co/mcp?apikey=KUTH6I3J1OORWZI8
+    url: https://mcp.alphavantage.co/mcp?apikey=<PRIVATE_API_KEY>
     single_instance: false
     status: operational
     config_files:
       - devin: true
       - windsurf: false
+    notes: |
+      API key is configured in ~/.config/devin/mcp_config.json.
 
   docs:
     name: Documentation Search (Chaba)
@@ -278,7 +280,7 @@ servers:
       - get_stats
       - aggregate
       - semantic_search
-    url: http://localhost:9000/mcp
+    url: http://100.68.142.13:9000/mcp
     single_instance: false
     status: operational
     config_files:
@@ -286,12 +288,11 @@ servers:
       - windsurf: false
     notes: |
       MCP endpoint requires /mcp path suffix (http://localhost:9000/mcp)
-      Docker MCP daemon listens on host port 9000
+      Container on tony-dell uses host networking and listens on port 9000
       Devin uses the stdio bridge at /home/tony/.config/devin/mcp-scripts/mddb-bridge.py
       The bridge preserves the 2025-11-25 protocolVersion returned by mddbd
       Allowed tools for Claude: add_document, search_documents, delete_document, get_stats, aggregate, semantic_search
-      Optional local HTTPS endpoint: https://tony-omen:9443/mcp (see docs/kb/mddb-local-https.md)
-      mcp-health "MDDB MCP Server" check: GET http://tony-omen:9001/mcp returns 400; only POST is valid, so 400 is the healthy HTTP status
+      mcp-health "MDDB MCP Server" check: GET http://tony-dell:9000/mcp returns 400; only POST is valid, so 400 is the healthy HTTP status
       See docs/kb/mddb-claude-bridge.md for Claude-specific configuration details
 
   mcp-health:
@@ -328,6 +329,51 @@ servers:
       - windsurf: false
     notes: |
       Runs on tony-dell so the canonical SSOT on tony-dell is used for focus queries.
+
+  home-assistant:
+    name: Home Assistant Main
+    description: Main Home Assistant MCP bridge on tony-dell
+    implementation: http://tony-dell:9584/<PRIVATE_TOKEN>
+    wrapper: none
+    filter: none
+    url: http://tony-dell:9584/<PRIVATE_TOKEN>
+    single_instance: false
+    status: operational
+    config_files:
+      - devin: true
+      - windsurf: false
+    notes: |
+      Private token is configured in ~/.config/devin/mcp_config.json.
+
+  michael-dev:
+    name: Michael Dev Home Assistant
+    description: Development Home Assistant instance MCP bridge
+    implementation: http://tony-dell:9585/<PRIVATE_TOKEN>
+    wrapper: none
+    filter: none
+    url: http://tony-dell:9585/<PRIVATE_TOKEN>
+    single_instance: false
+    status: operational
+    config_files:
+      - devin: true
+      - windsurf: false
+    notes: |
+      Private token is configured in ~/.config/devin/mcp_config.json.
+
+  michael-ha:
+    name: Michael Home Assistant
+    description: Michael production Home Assistant MCP bridge
+    implementation: http://tony-dell:19584/<PRIVATE_TOKEN>
+    wrapper: none
+    filter: none
+    url: http://tony-dell:19584/<PRIVATE_TOKEN>
+    single_instance: false
+    status: operational
+    config_files:
+      - devin: true
+      - windsurf: false
+    notes: |
+      Private token is configured in ~/.config/devin/mcp_config.json.
 
 # Script locations (centralized)
 scripts:
