@@ -127,8 +127,8 @@ def _session_matches(item, session):
     return True
 
 
-def _subagent_dispatchable(subagent, require_tony_dell=True):
-    """Return True if a subagent block is runnable on its declared host."""
+def _subagent_dispatchable(subagent, allowed_hosts=("tony_dell", "local", "macbook")):
+    """Return True if a subagent block is runnable on one of the allowed hosts."""
     if not subagent:
         return False
     if not subagent.get("runnable"):
@@ -136,11 +136,7 @@ def _subagent_dispatchable(subagent, require_tony_dell=True):
     if subagent.get("requires_approval"):
         return False
     host = subagent.get("host", "tony_dell")
-    if host not in ("tony_dell", "local", "macbook"):
-        return False
-    if require_tony_dell and host != "tony_dell":
-        return False
-    return True
+    return host in allowed_hosts
 
 
 def meets_safe_criteria(item, active_branch_set, session=None):
@@ -150,7 +146,7 @@ def meets_safe_criteria(item, active_branch_set, session=None):
     if item.get("missing_info"):
         return False
     subagent = item.get("subagent") or {}
-    if not _subagent_dispatchable(subagent, require_tony_dell=True):
+    if not _subagent_dispatchable(subagent):
         return False
     triage = item.get("triage") or {}
     try:
@@ -177,7 +173,7 @@ def safe_to_parallel_reason(item, active_branch_set, session=None):
         return False, "missing_info not empty"
     subagent = item.get("subagent") or {}
     if not subagent:
-        return False, "missing subagent block for tony-dell dispatch"
+        return False, "missing subagent block for dispatch"
     if not subagent.get("runnable"):
         return False, "subagent.runnable is not true"
     if subagent.get("requires_approval"):
@@ -185,8 +181,6 @@ def safe_to_parallel_reason(item, active_branch_set, session=None):
     host = subagent.get("host", "tony_dell")
     if host not in ("tony_dell", "local", "macbook"):
         return False, f"subagent.host {host} is not an allowed dispatch host"
-    if host != "tony_dell":
-        return False, "safe-to-parallel items must dispatch to tony-dell"
     triage = item.get("triage") or {}
     try:
         complication = float(triage.get("complication", 10))

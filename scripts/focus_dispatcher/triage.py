@@ -105,14 +105,13 @@ def next_from_backlog():
     return items[0]
 
 
-def dispatchable_backlog():
-    """Return backlog items that are runnable, approval-free, and dispatchable to tony-dell."""
+def dispatchable_backlog(allowed_hosts=("tony_dell", "local", "macbook")):
+    """Return backlog items that are runnable, approval-free, and dispatchable to an allowed host."""
     doc = load_focus()
     section = find_section(doc.get("sections", []), "Backlog - Triage Queue")
     if not section:
         return []
     eligible = []
-    allowed_hosts = ("tony_dell",)
     for item in section.get("items", []):
         if item.get("status") not in ("pending", "not_started"):
             continue
