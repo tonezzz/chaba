@@ -5,52 +5,7 @@ sections:
 - title: Active Shared Focus
   icon: active
   layout: list
-  items:
-  - label: 'SSOT optimize: infrastructure/ssot.home-assistant.michael.yml'
-    text: |
-      Resolved the data-isolation warning in `ssot.home-assistant.michael.yml`
-      by replacing the hardcoded HA core container IP with the Docker network
-      hostname `homeassistant` and centralizing the canonical value in
-      `ssot.values.yml` (hosts.michael_ha.hassio_network_host). The same change
-      was applied to `ssot.home-assistant.mcp.yml` and the tony-dell
-      `michael-ha-mcp-tunnel.service`, which was reloaded and is active. Also
-      tightened `ssot-validate-all.mjs` so placeholder values (e.g. `<TOKEN>`)
-      and multi-line key/value pairs no longer trigger false secret-value
-      warnings, clearing the remaining howto/michael.dev alerts.
-    status: completed
-    priority: medium
-    started: '2026-09-04'
-    completed: '2026-09-04'
-    estimated_duration: 1 session
-    tags:
-    - ssot
-    - optimization
-    - bloat
-    - data-isolation
-    subtasks:
-    - label: Replace hardcoded HA core container IP with homeassistant
-      status: completed
-      completed_at: '2026-09-04'
-      note: Centralized in ssot.values.yml and applied to mcp.yml and the tony-dell tunnel service.
-    - label: Reload michael-ha-mcp-tunnel.service
-      status: completed
-      completed_at: '2026-09-04'
-      note: Tunnel service reloaded and active; MCP endpoint reachable.
-    - label: Tighten SSOT validator secret-value heuristics
-      status: completed
-      completed_at: '2026-09-04'
-      note: SECRETS_RE no longer matches multi-line key/value pairs; placeholder values like <TOKEN> are skipped; howto.yml token example fixed.
-    - label: Re-run ssot-validate-all
-      status: completed
-      completed_at: '2026-09-04'
-      note: ssot-validate-all and ssot-optimize now report 0 errors and 0 warnings.
-    request_log: []
-    ownership:
-      owner: tony
-      session: ''
-      locked: false
-      lock_reason: ''
-    source: /home/tony/CascadeProjects/chaba-tony-dell/docs/ssot/focus-inbox/2026-09-03-2000-infrastructure-ssot.home-assistant.michael-ssot-optimization.yml
+  items: []
 - title: Active Branch Focus
   icon: branch
   layout: list
@@ -74,8 +29,7 @@ sections:
     - label: Bring MacBook online (Tailscale/SSH or Chrome DevTools)
       status: completed
       completed_at: '2026-08-24'
-      note: 'SSH via mcp-debug succeeded. Baseline verified: CLT active, Swift 5.8.1, Homebrew 6.0.17, 0 signing
-        identities.'
+      note: 'SSH via mcp-debug succeeded. Baseline verified: CLT active, Swift 5.8.1, Homebrew 6.0.17, 0 signing identities.'
     - label: Install or update Xcode 15.x command line tools
       status: deferred
       note: Tried `brew install xcodes` and direct GitHub download; both interrupted by intermittent SSH timeouts. Host connectivity
