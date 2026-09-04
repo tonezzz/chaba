@@ -69,9 +69,7 @@ sections:
       requires_approval: true
       can_change_host: true
       notes: Needs macOS GUI / App Store / Xcode install; subagent can prepare install steps and verify.
-    blocker: Direct IP addresses (192.168.1.39, 100.124.59.112) still reject auth, but `ssh macbook` over Tailscale now works.
-      Next step needs user approval for App Store login and Xcode install.
-    previous_status: active
+    blocker: SSH auth now works with `id_cascade` for both `ssh macbook` and `ssh kkkakk@100.124.59.112` (Tailscale). Next step needs user approval for App Store login and Xcode install.
     started: '2026-08-19'
   note: Active/pending backlog. 17 completed items archived to ssot.focus.backlog.archive.2026.yml
   archive_count: 17
@@ -79,48 +77,6 @@ sections:
   icon: quick
   layout: list
   items:
-  - label: Reduce focus.current bloat
-    text: Trimmed completed active focus items from this SSOT; full history remains in ssot.focus.yml.
-    status: completed
-    completed: '2026-08-17'
-    priority: high
-    tags:
-    - ssot
-    - focus
-    - bloat
-    - token-optimization
-  - label: Add json and csv output formats to mcp_report
-    text: mcp_report now supports json and csv; markdown remains default. Future formats (sjson, ssot, totals_only) recorded
-      in ssot.mcp-debug.reports.yml.
-    status: completed
-    completed: '2026-08-17'
-    priority: high
-    tags:
-    - mcp
-    - report
-    - json
-    - csv
-    - quick-win
-  - label: Add html output format to mcp_report
-    text: mcp_report now supports html with styled per-host tables and negative savings highlighted in red.
-    status: completed
-    completed: '2026-08-17'
-    priority: high
-    tags:
-    - mcp
-    - report
-    - html
-    - quick-win
-  - label: Commit MDDB semantic search fix
-    text: Committed MDDB tooling fixes (chaba-* collections, 127.0.0.1 health checks, curl timeouts) and focus quick win.
-    status: completed
-    completed: '2026-08-17'
-    priority: high
-    tags:
-    - mcp
-    - mddb
-    - commit
-    - quick-win
   - label: Migrate helm to tony-dell podman
     text: Moved the web-helm service from tony-omen docker to tony-dell rootless podman, updated Caddy /apps/helm proxy, and
       retired the tony-omen container.
@@ -134,6 +90,11 @@ sections:
     - helm
     - migration
     - quick-win
+  - label: Enable kk-macbook as a subagent and PlayLive node
+    text: Verified SSH from tony-dell to kk-macbook, fixed .ssh/config for direct-IP key auth, enabled mcp_debug and mcp_screenshot on macbook, added playlive-macbook-tunnel.service, forwarded tony-dell 127.0.0.1:9229 to macbook [::1]:9222, and allowed macbook as a focus-dispatcher safe-to-parallel host.
+    status: completed
+    completed: '2026-09-04'
+    tags: [macbook, delegation, subagent, playlive, quick-win]
 - title: Inactive Strategic Focus Archive
   icon: archive
   layout: list
@@ -725,7 +686,6 @@ sections:
       same change was applied to `ssot.home-assistant.mcp.yml` and the tony-dell
       `michael-ha-mcp-tunnel.service`, which was reloaded and verified active.
     date: '2026-09-04'
-    duration: 1 session
     outcome: 'Completed subtasks: Open reports, replace hardcoded IP, re-run ssot-validate-all'
     tags:
     - ssot
