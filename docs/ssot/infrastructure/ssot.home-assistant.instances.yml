@@ -42,8 +42,8 @@ instances:
     dashboards:
       tony-test:
         ssot: docs/ssot/infrastructure/ssot.home-assistant.dashboards.yml
-        active_view: PF3
-        test_url: https://tony-dell.taila0626a.ts.net:8124/tony-test/pf3
+        active_view: PF4
+        test_url: https://tony-dell.taila0626a.ts.net:8124/tony-test/pf4
     service_unit: infrastructure/ssot.services.yml#tony-dell.michael-dev.quadlet.service_unit
     status: active
 
@@ -72,9 +72,7 @@ instances:
 status:
   last_updated: '2026-09-04'
   last_verified: '2026-09-04'
-  health: degraded
+  health: active
   notes: |
-    tony-ha HA core container is healthy and reachable on port 8123, but the
-    ha_mcp_tools MCP server on port 9584 is failing to start (watchdog timeout
-    while importing). tony-dell load average is ~5-7 and may be starving the
-    startup thread.
+    tony-ha HA core container is healthy on port 8123 and the ha_mcp_tools
+    MCP server on port 9584 is now responding after a service restart.
