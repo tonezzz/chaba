@@ -5,9 +5,9 @@ repositories:
   sunsynk-power-flow-card-fork:
     path: /home/tony/CascadeProjects/sunsynk-power-flow-card
     fork_of: slhub/sunsynk-power-flow-card
-    current_commit: 9d0ddbd
+    current_commit: 2b1271c
     package_version: 7.3.3
-    bundle_version: 29
+    bundle_version: 24
     build:
       command: npm run build
       tool: rollup -c --bundleConfigAsCjs
@@ -15,17 +15,17 @@ repositories:
     deploy:
       michael-dev:
         target_host: ssot.values.yml::hosts.tony_dell
-        target_path: /home/tony/.config/michael-dev/www/sunsynk-power-flow-card-fork-v29.js
+        target_path: /home/tony/.config/michael-dev/www/sunsynk-power-flow-card-fork-v24.js
         lovelace_resources: /home/tony/.config/michael-dev/.storage/lovelace_resources
-        resource_path: /local/sunsynk-power-flow-card-fork-v29.js
+        resource_path: /local/sunsynk-power-flow-card-fork-v24.js
         restart: systemctl --user restart michael-dev.service
         service_ref: infrastructure/ssot.services.yml#tony-dell.michael-dev.quadlet.service_unit
         test_url: https://tony-dell.taila0626a.ts.net:8124/tony-test/pf3
       michael-ha:
         target_host: ssot.values.yml::hosts.michael_ha
-        target_path: /config/www/sunsynk-power-flow-card-fork-v29.js
+        target_path: /config/www/sunsynk-power-flow-card-fork-v24.js
         lovelace_resources: /config/.storage/lovelace_resources
-        resource_path: /local/sunsynk-power-flow-card-fork-v29.js
+        resource_path: /local/sunsynk-power-flow-card-fork-v24.js
         restart: ha core restart
         test_url: http://michael-ha:8123/tony-test/pf3
     source_files:
@@ -80,8 +80,8 @@ cards:
   - id: sunsynk-power-flow-card
     name: Sunsynk Power Flow Card (fork)
     repo_ref: repositories.sunsynk-power-flow-card-fork
-    bundle_version: 29
-    deployed_as: /local/sunsynk-power-flow-card-fork-v29.js
+    bundle_version: 24
+    deployed_as: /local/sunsynk-power-flow-card-fork-v24.js
     dashboard:
       id: tony-test/pf3
       tab: PF3
@@ -95,4 +95,4 @@ cards:
 status:
   last_build: '2026-09-04'
   last_verified: '2026-09-04'
-  health: active with uncommitted source modifications; rebuild and deploy required before live parity
+  health: committed; v24 built, deployed to michael-ha; visual verification pending
