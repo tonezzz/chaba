@@ -1,0 +1,112 @@
+title: Home Assistant Card Design Conventions
+subtitle: SVG layout, text rendering, and alignment rules for the forked sunsynk-power-flow-card
+
+cards:
+  sunsynk-power-flow-card:
+    repo: ssot.home-assistant.cards.yml::repositories.sunsynk-power-flow-card-fork
+    modes:
+      - lite
+      - compact
+      - wide
+      - full
+      - ss4
+    active_mode: lite
+
+helpers:
+  renderText:
+    purpose: Create a direct SVG <text> node
+    args: id, x, y, displayCondition, class, fill, text
+  createTextWithPopup:
+    purpose: Create an SVG <a> wrapping a <text> node for popups
+    args: id, x, y, displayCondition, class, fill, text, popupCallback, hideOnCondition
+
+svg_text_rendering:
+  note: |
+    Visibility is controlled both by the <svg> parent display style and the helper's display attribute.
+    With hideOnCondition=true, display is "none" when the condition is true and empty when false.
+    Duplicate IDs such as battery_soc_184 and duration_text are intentional across branches and do not alone indicate an overlay.
+
+battery_status_line:
+  format: '{target}% | {current}%'
+  anchor:
+    x: 290
+    y: 358
+    align: left-align
+    class: st13 st8
+  text_source:
+    plain:
+      id: Battery*_SOC
+      text: '{current}%'
+    shutdown:
+      id: Battery*_SOC_Shutdown
+      text: '{shutdown_soc}% | {current}%'
+    program_capacity:
+      id: Battery*_SOC_Program_Capacity
+      text: '{capacity}% | {current}%'
+  exclusion_logic: |
+    The plain Battery*__SOC <svg> is hidden when either the shutdown or program capacity branch
+    is visible. This prevents the underlying {current}% from drawing over the digit in the combined
+    status text. The display ternary includes:
+      data.inverterProg.show || (config.battery*?.shutdown_soc && !config.battery*?.shutdown_soc_offgrid)
+
+battery_state_message:
+  anchor:
+    x: 169
+    y: 311
+  examples:
+    - '2 hrs, 51 min TO FULL @16:37'
+    - '5 hrs, 34 min TO EMPTY @22:20'
+
+battery_runtime_line:
+  anchor:
+    x: 290
+    y: 393.7
+    class: st3 left-align
+  branches:
+    discharge:
+      id: duration_text
+      example: 'RUNTIME TO 20% @22:20'
+    charge:
+      id: duration_text_charging
+      example: 'TO 20% CHARGE @22:20'
+  note: |
+    Both text nodes can be present at the same coordinates. The inactive branch is rendered with
+    fill: transparent, so only the active direction text is visually visible. For robust hiding,
+    prefer display: none on the inactive parent <svg> group.
+
+multi_battery_layout:
+  note: |
+    Compact/lite cards can render up to four batteries. Batteries are laid out left/right.
+    The combined status line for all batteries is left-aligned at x=290, y=358.
+    Battery 4 currently uses dummy entities (duplicated from battery 1) for layout inspection.
+
+classes:
+  st13:
+    usage: Battery combined status text
+  st8:
+    usage: Font-weight/style modifier
+  left-align:
+    usage: Left-aligned text anchor
+  st3:
+    usage: Runtime / duration text
+  st14:
+    usage: Offgrid / secondary percentage labels
+
+coordinate_system:
+  note: |
+    SVG coordinates are internal to the card SVG. Screen-space bounding boxes depend on the card
+    scale and parent element transforms. Use Playlive or browser dev tools for pixel-level overlay
+    verification.
+
+known_patterns:
+  - id: duplicate_battery_soc_184
+    note: The same id is reused in plain, shutdown, program capacity, and offgrid branches. Use parent <svg> id and display state to distinguish branches.
+  - id: parent_svg_display
+    note: A <text> node may report a visible display attribute while its parent <svg> is display none.
+  - id: transparent_runtime_overlay
+    note: The charge/discharge runtime pair uses fill transparency, not display none, for the inactive branch.
+
+status:
+  last_updated: '2026-09-04'
+  last_verified: '2026-09-04'
+  health: active

@@ -151,7 +151,7 @@ tony-dell:
       service_unit: ~/.config/systemd/user/weaviate.service
     depends_on: chaba-postgres-16
     status: implemented (2026-08-17)
-    note: Migrated from tony-omen; data (~40MB) copied to tony-dell. Port 8084 used because chaba-funnel already binds 0.0.0.0:8082 on tony-dell. yomi-api WEAVIATE_URL updated to http://100.68.142.13:8084.
+    note: Migrated from tony-omen; data (~40MB) copied to tony-dell. Port 8084 was chosen to avoid the legacy chaba-funnel service on 8082 (chaba-funnel is now decommissioned). yomi-api WEAVIATE_URL updated to http://100.68.142.13:8084.
   mcp-debug-cors:
     service: mcp-debug-cors.service
     host: tony_dell

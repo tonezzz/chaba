@@ -300,6 +300,25 @@ sessions:
   next_action:
   - Work on SSOT optimization warnings
   date: '2026-09-02'
+- focus: MCP and health infrastructure verification
+  source: continue
+  plan:
+  - Verify all configured MCP servers and fix connection/configuration drift
+  - Reconcile mcp-health SSOT with live services
+  - Resolve Chaba Funnel port documentation and gemini-ollama-proxy healthcheck
+  done:
+  - Restored mcp-debug on tony-dell and verified capture tool schemas
+  - Fixed mcp-health Caddyfile path, alert SQL boolean literals, and validate_proxy_config false positives
+  - Restored MDDB MCP at tony-dell:9000/mcp; updated KB and ssot.mcp.yml
+  - Fixed gemini-ollama-proxy health-check.mjs and container is healthy
+  - Reconciled health SSOT timers and service names; health score is 100
+  - Resolved Chaba Funnel/8444 documentation drift and disabled obsolete night job
+  - Added home-assistant, michael-dev, michael-ha to ssot.mcp.yml with token placeholders
+  follow_up:
+  - Monitor mcp-health and mcp-debug stability over next day
+  - Complete any remaining GPU/inference diagnostics with user approval before restart
+  next_action: Continue with infrastructure hardening or next focus item
+  date: '2026-09-04'
 related_files:
 - docs/ssot/ssot.focus.current.yml
 - docs/ssot/ssot.focus.yml

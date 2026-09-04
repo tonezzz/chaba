@@ -29,8 +29,13 @@ environments:
     repo_config: /home/tony/CascadeProjects/chaba/docs/home-assistant/configuration
     repo_dashboards: /home/tony/CascadeProjects/chaba/docs/home-assistant/dashboards
     caddy:
-      note: Not used — HA UI returns absolute redirects that break a path-prefixed reverse proxy. Use port 8124 directly.
-    health_check: ssh tony-dell curl -sf http://127.0.0.1:8124/ >/dev/null
+      note: Not used — Tailscale serve provides HTTPS on port 8124. HA UI absolute redirects require internal_url to match the Tailnet HTTPS URL.
+    https:
+      provider: tailscale_serve
+      tailnet_url: https://tony-dell.taila0626a.ts.net:8124
+      proxy_target: http://127.0.0.1:8124
+      note: tailscale serve --https=8124 http://127.0.0.1:8124 (must run as root or via sudo).
+    health_check: ssh tony-dell curl -sf https://tony-dell.taila0626a.ts.net:8124/ >/dev/null
     mcp:
       server: ha_mcp_tools in-process
       status: active
@@ -46,17 +51,29 @@ environments:
     autostart: loginctl enable-linger tony is yes; Quadlet WantedBy=default.target
     status: enabled
     core_config:
-      internal_url: http://tony-dell:8124
-      note: Required so the frontend OAuth client_id matches Home Assistant's canonical URL.
+      internal_url: https://tony-dell.taila0626a.ts.net:8124
+      note: Required so the frontend OAuth client_id and absolute redirects match the Tailnet HTTPS URL.
     auth:
       provider: homeassistant
       username: nakva
       display_user: nakvac@gmail.com
       source: saved live michael-ha credentials file
-      note: Same password as live michael-ha; auth_provider.homeassistant user and credentials copied manually.
+      token:
+        file: /home/tony/.config/secrets/ha-michael-dev.env
+        env: HASS_TOKEN
+        created: 2026-09-04
+        note: Long-lived access token for automated Playlive / REST access. Do not commit the token file.
+      manual_steps:
+        - Log in to the michael-dev Home Assistant web UI at https://tony-dell.taila0626a.ts.net:8124
+        - Navigate to your user profile (left sidebar bottom user icon) and switch to the Security tab
+        - Under Long-Lived Access Tokens, click CREATE TOKEN
+        - Name the token, e.g. devin-playlive, and copy the token string
+        - Save it to /home/tony/.config/secrets/ha-michael-dev.env as HASS_TOKEN=<token> with chmod 600
+        - For Playlive auto-login, append ?auth_token=<token> to HA dashboard URLs
+      note: Same password as live michael-ha; auth_provider.homeassistant user and credentials copied manually. Token is now the preferred automated credential.
     access:
       local: http://127.0.0.1:8124
-      tailscale: http://tony-dell:8124
+      tailscale: https://tony-dell.taila0626a.ts.net:8124
   live:
     host: michael-ha
     type: nabu_casa
@@ -64,17 +81,45 @@ environments:
     remote_config: /config
     tailnet_url: http://michael-ha:8123/
     cloud_url: https://nupo4ndqdqydt78zmpq0z5wzp1bdrqgs.ui.nabu.casa/
+    auth:
+      token:
+        file: /home/tony/.config/secrets/ha-michael-live.env
+        env: HASS_TOKEN
+        note: Awaiting valid token. The previous token was invalid and the file was removed.
+      manual_steps:
+        - Log in to the live Home Assistant instance via the Nabu Casa URL
+        - Navigate to your user profile and open the Security tab
+        - Under Long-Lived Access Tokens, click CREATE TOKEN
+        - Name the token, e.g. devin-playlive, and copy the token string
+        - Save it to /home/tony/.config/secrets/ha-michael-live.env as HASS_TOKEN=<token> with chmod 600
 
 config_source:
   packages: docs/home-assistant/configuration/packages/
   helpers: docs/home-assistant/configuration/*.yaml
   dashboards:
     repo_path: docs/home-assistant/dashboards/
+    ssot: docs/ssot/infrastructure/ssot.home-assistant.dashboards.yml
     note: Not the active source for tony-test. For live parity, copy michael-ha .storage/lovelace* files to the dev .storage directory instead.
   custom_cards:
     - stacks/web/public/apps/michael-live/
     - docs/home-assistant/www/
+
+cards:
+  ssot: docs/ssot/infrastructure/ssot.home-assistant.cards.yml
+  note: Build, deploy, source, and design context for the forked sunsynk-power-flow-card and related custom cards.
   caddy_snippet: stacks/tony-dell/michael-dev/caddy-snippet
+
+howto:
+  ssot: docs/ssot/infrastructure/ssot.home-assistant.howto.yml
+  note: Runbooks for tabs, cards, build/deploy, tokens, and SVG overlay fixes.
+
+entities:
+  ssot: docs/ssot/infrastructure/ssot.home-assistant.entities.yml
+  note: Entity IDs and dummy battery data used by the tony-test PF3 sunsynk card.
+
+design:
+  ssot: docs/ssot/infrastructure/ssot.home-assistant.design.yml
+  note: SVG layout, text rendering, alignment, and overlay conventions for custom cards.
 
 full_flow:
   - step: 1
@@ -90,7 +135,7 @@ full_flow:
     note: "The dev configuration.yaml must not contain a lovelace: block. If present after deploy, remove it so the copied .storage dashboards are used."
   - step: 3
     label: Test on tony-dell
-    action: Open http://tony-dell:8124 or https://tony-dell.taila0626a.ts.net/apps/michael-ha-dev/ and verify UI, cards, and automation traces.
+    action: Open https://tony-dell.taila0626a.ts.net:8124 or http://127.0.0.1:8124 locally and verify UI, cards, and automation traces.
   - step: 4
     label: Deploy to live
     action: Run scripts/home-assistant/deploy-michael.sh
@@ -129,9 +174,11 @@ verification:
   dev:
     - systemctl --user status michael-dev.service
     - curl -sf http://127.0.0.1:8124/
+    - curl -sf https://tony-dell.taila0626a.ts.net:8124/
     - ss -tlnp | grep 8124
     - ss -tlnp | grep 9585
     - curl -s -o /dev/null -w "%{http_code}" http://tony-dell:9585/private_B3WMIAChoseTpDS7fwgwRw
+    - tailscale serve status | grep 8124
   live:
     - tailscale ping michael-ha
     - curl -sf http://michael-ha:8123/
