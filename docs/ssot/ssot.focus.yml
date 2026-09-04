@@ -717,6 +717,31 @@ sections:
     - bloat
     - data-isolation
     - completed
+  - label: 'SSOT optimize: infrastructure/ssot.home-assistant.michael.yml'
+    text: 'Resolved the data-isolation warning in `ssot.home-assistant.michael.yml`
+
+      by replacing the hardcoded HA core container IP `172.30.32.1` with the
+
+      Docker network hostname `homeassistant` and centralizing the canonical
+
+      value in `ssot.values.yml` (hosts.michael_ha.hassio_network_host). The
+
+      same change was applied to `ssot.home-assistant.mcp.yml` and the
+
+      tony-dell `michael-ha-mcp-tunnel.service`, which was reloaded and is
+
+      active.
+
+      '
+    date: '2026-09-04'
+    duration: 1 session
+    outcome: 'Completed subtasks: Open reports/SSOT_OPTIMIZATION_SUGGESTIONS.md, Fix highest priority warning, Re-run ssot-validate-all'
+    tags:
+    - ssot
+    - optimization
+    - bloat
+    - data-isolation
+    - completed
   note: 30 recent records. Oldest records archived to docs/ssot/ssot.focus.history.archive.2026.yml.
   archive_count: 10
 config:

@@ -98,10 +98,9 @@ def _data_isolation_scan(rel, content, warnings):
     if any(skip in rel for skip in ('ssot.mysystem.', 'ssot.health.', 'performance-baselines')):
         return
     for match in IP4_RE.finditer(content):
-        # Skip loopback, Tailscale, wildcard bind, documented home subnets, and
-        # well-known Home Assistant OS supervisor gateway address
+        # Skip loopback, Tailscale, wildcard bind, and documented home subnets
         ip = match.group(0)
-        if ip.startswith(('127.', '100.', '0.0.0.0', '192.168.', '8.8.8.8', '8.8.4.4', '172.30.32.1')):
+        if ip.startswith(('127.', '100.', '0.0.0.0', '192.168.', '8.8.8.8', '8.8.4.4')):
             continue
         warnings.append(f'Data isolation: hardcoded IPv4 address {ip}')
         break
