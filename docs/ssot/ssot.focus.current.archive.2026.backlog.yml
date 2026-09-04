@@ -1,0 +1,93 @@
+title: Archived Backlog Items (2026)
+subtitle: Completed ready-safe, hand-off, and quick-win backlog items from 2026
+icon: archive
+sections:
+- title: Ready (Safe)
+  icon: safe
+  layout: list
+  items:
+  - label: Deploy Michael HA MCP tunnel on tony-dell
+    text: Install and enable the systemd user service `stacks/tony-dell/michael-dev/michael-ha-mcp-tunnel.service` on tony-dell. Verify the live tailnet MCP endpoint `http://tony-dell:19584/private_oBVC604-FnxgBDP00t1L9g` responds with HTTP 200. Do not commit; report back status and any required SSOT updates.
+    branch: chaba
+    priority: medium
+    status: completed
+    completed_at: '2026-09-03'
+    note: systemd user service installed and running on tony-dell; tailnet MCP endpoint reachable via POST/200.
+    triage_score: 0.6
+    tags:
+    - michael-ha
+    - mcp
+    - tony-dell
+    - tunnel
+    safe_to_parallel: true
+    subtasks:
+    - label: Copy service file to tony-dell ~/.config/systemd/user/
+      status: completed
+    - label: Reload systemd and enable/start the tunnel
+      status: completed
+    - label: Verify HTTP 200 from tony-dell:19584 MCP endpoint
+      status: completed
+      completed_at: '2026-09-03'
+      note: Tunnel is live. A raw GET returns 405 Method Not Allowed; a valid MCP POST (Accept application/json, text/event-stream) returns 200. ss -tlnp shows 0.0.0.0:19584 listening on tony-dell.
+    queued_at: '2026-09-03'
+    source: user
+    owner: tony
+    session: ''
+    locked: false
+    lock_reason: Resolved
+    subagent:
+      runnable: true
+      profile: subagent_general
+      parallel: true
+      requires_approval: false
+      can_change_host: false
+      host: tony_dell
+      notes: Dispatched to tony_dell via focus-dispatcher --process-ready
+  - label: Sync worktree chaba-mcp-experiments with master
+    text: 'Worktree chaba-mcp-experiments no longer exists on any host; the remote branch was already deleted from origin, so this drift item is moot.
+
+      Marked completed; stale local remote-tracking refs pruned.
+
+      '
+    branch: chaba
+    priority: medium
+    status: completed
+    completed_at: '2026-09-02'
+    note: Auto-fix attempt on tony-dell found no chaba-mcp-experiments worktree on tony-omen or the local host; origin no longer has the branch. Pruned stale remote-tracking refs.
+    triage_score: 0.55
+    tags:
+    - worktree
+    - sync
+    - branches
+    safe_to_parallel: true
+    subtasks:
+    - label: Review chaba-mcp-experiments changes
+    - label: Merge or rebase to master
+    - label: Delete worktree if merged
+    triage:
+      complication: 2
+      urgency: 3
+      importance: 3
+      score: 0.6
+    queued_at: '2026-09-01'
+    source: docs/ssot/focus-inbox/2026-09-01-125844-worktree-drift-chaba-mcp-experiments.yml
+    owner: focus-dispatcher
+    session: dispatch-tony_dell
+    locked: true
+    lock_reason: Dispatched to subagent on tony_dell
+    subagent:
+      runnable: true
+      profile: subagent_general
+      parallel: true
+      requires_approval: false
+      can_change_host: true
+      host: tony_dell
+      notes: Dispatched to tony_dell via focus-dispatcher --process-ready
+- title: Hand-off Queue
+  icon: handoff
+  layout: list
+  items: []
+- title: Quick Wins
+  icon: quick
+  layout: list
+  items: []
