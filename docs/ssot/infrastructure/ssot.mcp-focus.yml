@@ -183,7 +183,12 @@ related_files:
 - scripts/mcp_debug/server.py
 - scripts/focus_common.py
 - scripts/focus_dispatcher/triage.py
+- scripts/focus_dispatcher/cli.py
+- scripts/focus_dispatcher/actions.py
 - scripts/prompt_preprocessor.py
+- scripts/overnight-focus-review.py
+- scripts/overnight-status.py
+- scripts/test-focus-smoke.py
 implementation_notes:
 - Implemented in scripts/mcp_debug/focus.py and scripts/mcp_debug/server.py.
 - Shared focus model helpers (triage scoring, safe-to-parallel/ownership/lock checks, active/backlog/inbox extraction, sweep)
@@ -243,3 +248,45 @@ improvements:
     text: Check git status --short for each declared worktree and include dirty boolean in status output.
     status: completed
     priority: low
+end_to_end_flow:
+  sources:
+  - label: Active focuses
+    file: docs/ssot/ssot.focus.current.active.yml
+  - label: Backlog, quick wins, and Ready (Safe)
+    file: docs/ssot/ssot.focus.current.backlog.yml
+  - label: Full backlog and focus history
+    file: docs/ssot/ssot.focus.yml
+  - label: Unprocessed ideas
+    dir: docs/ssot/focus-inbox
+  runtime:
+  - component: mcp_focus MCP server
+    file: scripts/mcp_focus/server.py
+    reads: [docs/ssot/ssot.focus.current.active.yml, docs/ssot/ssot.focus.current.backlog.yml,
+            docs/ssot/ssot.focus.yml, docs/ssot/focus-inbox]
+    writes: []
+    notes: Read-only recommendation router (except defer/sweep/next/technical_decision/session_summary).
+  - component: focus-dispatcher CLI
+    file: scripts/focus-dispatcher.py
+    reads: [docs/ssot/ssot.focus.current.active.yml, docs/ssot/ssot.focus.current.backlog.yml,
+            docs/ssot/ssot.focus.yml, docs/ssot/focus-inbox]
+    writes: [docs/ssot/ssot.focus.current.active.yml, docs/ssot/ssot.focus.current.backlog.yml,
+             docs/ssot/ssot.focus.yml, reports/NEXT_FOCUS.md, reports/SUBAGENT_CONTRACT.md]
+    notes: Mutation path for activation, safe-dispatch, and Ready (Safe) processing.
+  - component: overnight review
+    file: scripts/overnight-focus-review.py
+    triggered_by: focus-dispatcher-overnight.timer
+    status_file: /home/tony/var/chaba/overnight-status.json
+    notes: Runs daily at 03:00, writes a JSON status summary, and can optionally process Ready (Safe) contracts when OVERNIGHT_PROCESS_READY=1.
+  - component: overnight status reader
+    file: scripts/overnight-status.py
+    reads: [/home/tony/var/chaba/overnight-status.json]
+  - component: smoke tests
+    file: scripts/test-focus-smoke.py
+    notes: Read-only smoke tests for mcp_focus and focus-dispatcher.
+  ready_safe_handoff:
+    step_1: focus-dispatcher --safe-dispatch (or --auto-process) promotes a safe-to-parallel item into the Ready (Safe) section.
+    step_2: focus-dispatcher --process-ready or --process-all-ready locks the item, sets owner=focus-dispatcher, session=dispatch-<host>, and writes a SUBAGENT_CONTRACT.md.
+    step_3: The assistant/user manually invokes the printed run_subagent JSON.
+    step_4: The subagent executes the contract and updates subtask status in docs/ssot/ssot.focus.current.backlog.yml.
+    step_5: The main session reviews the subagent result and commits/pushes when satisfied.
+    note: Contracts generated during the overnight run are written with FOCUS_DISPATCHER_COMMIT=0 / FOCUS_DISPATCHER_PUSH=0 so they are not pushed before the subagent completes.
