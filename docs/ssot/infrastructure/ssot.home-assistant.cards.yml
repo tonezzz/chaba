@@ -7,7 +7,7 @@ repositories:
     fork_of: slhub/sunsynk-power-flow-card
     current_commit: 43b8c6c
     package_version: 7.3.3
-    bundle_version: 25
+    bundle_version: 26
     build:
       command: npm run build
       tool: rollup -c --bundleConfigAsCjs
@@ -15,25 +15,26 @@ repositories:
     deploy:
       michael-dev:
         target_host: ssot.values.yml::hosts.tony_dell
-        target_path: /home/tony/.config/michael-dev/www/sunsynk-power-flow-card-fork-v25.js
+        target_path: /home/tony/.config/michael-dev/www/sunsynk-power-flow-card-fork-v26.js
         lovelace_resources: /home/tony/.config/michael-dev/.storage/lovelace_resources
-        resource_path: /local/sunsynk-power-flow-card-fork-v25.js
+        resource_path: /local/sunsynk-power-flow-card-fork-v26.js
         restart: systemctl --user restart michael-dev.service
         service_ref: infrastructure/ssot.services.yml#tony-dell.michael-dev.quadlet.service_unit
-        test_url: https://tony-dell.taila0626a.ts.net:8124/tony-test/pf3
+        test_url: https://tony-dell.taila0626a.ts.net:8124/tony-test/pf4
       michael-ha:
         target_host: ssot.values.yml::hosts.michael_ha
-        target_path: /config/www/sunsynk-power-flow-card-fork-v25.js
+        target_path: /config/www/sunsynk-power-flow-card-fork-v26.js
         lovelace_resources: /config/.storage/lovelace_resources
-        resource_path: /local/sunsynk-power-flow-card-fork-v25.js
+        resource_path: /local/sunsynk-power-flow-card-fork-v26.js
         restart: ha core restart
         test_url: http://michael-ha:8123/tony-test/pf3
     source_files:
       primary_modifications:
         - src/components/compact/bat/bat-elements.ts
+        - src/index.ts
+        - src/inverters/dto/custom-entity.ts
       other_modified:
         - src/cards/compact-card.ts
-        - src/index.ts
         - src/types.ts
         - dist/sunsynk-power-flow-card.js
       new_untracked:
@@ -80,12 +81,12 @@ cards:
   - id: sunsynk-power-flow-card
     name: Sunsynk Power Flow Card (fork)
     repo_ref: repositories.sunsynk-power-flow-card-fork
-    bundle_version: 25
-    deployed_as: /local/sunsynk-power-flow-card-fork-v25.js
+    bundle_version: 26
+    deployed_as: /local/sunsynk-power-flow-card-fork-v26.js
     dashboard:
-      id: tony-test/pf3
-      tab: PF3
-      test_url: https://tony-dell.taila0626a.ts.net:8124/tony-test/pf3
+      id: tony-test/pf4
+      tab: PF4
+      test_url: https://tony-dell.taila0626a.ts.net:8124/tony-test/pf4
       instance: ssot.home-assistant.michael.dev.yml::environments.dev
   - id: michael-live
     name: Michael Live (ha-live bridge front-end)
@@ -95,4 +96,4 @@ cards:
 status:
   last_build: '2026-09-04'
   last_verified: '2026-09-04'
-  health: committed; v25 built; deployed to michael-dev and michael-ha; PF3 live visual verified on michael-ha; PF4 copied to michael-dev tony-test
+  health: committed; v26 built; deployed to michael-dev (PF4) and michael-ha (PF3); runtime-text, battery direction, and signed-current fixes applied; visual verification blocked by missing UI auth tokens

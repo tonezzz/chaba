@@ -18,6 +18,8 @@ This runbook covers the PF3 dashboard, the forked `sunsynk-power-flow-card`, and
 
 The `tony-test` dashboard is stored in `.storage` on `michael-dev`, not in the repo YAML snapshot. The repo snapshot is at `docs/home-assistant/dashboards/tony-test-current.json` and is updated by `scripts/home-assistant/sync-ssot-from-live.sh`.
 
+A new `PFG` (full-card) view at path `pfg` has been added for testing the `cardstyle: full` layout. It is also stored in `.storage` and snapshotted to the same JSON.
+
 Tab order (PF3 is first):
 
 | Order | Title |
