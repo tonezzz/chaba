@@ -57,9 +57,10 @@ sections:
 
 
       Report: reports/network-inventory-scan-2026-09-02-210500.json'
-    status: active
+    status: completed
     priority: low
     started: '2026-09-03'
+    completed_at: '2026-09-04'
     estimated_duration: 1 session
     tags:
     - network
@@ -68,31 +69,54 @@ sections:
     - mac-registry
     subtasks:
     - label: Identify new device 192.168.2.77 (d8:3a:36:7d:10:0d)
-      status: not_started
+      status: completed
+      completed_at: '2026-09-04'
+      note: 'Vendor: AltoBeam Inc. (Beijing). Likely Wi-Fi/IoT module; device name unknown.'
     - label: Identify new device 192.168.2.70 (e0:73:e7:05:c5:16)
-      status: not_started
+      status: completed
+      completed_at: '2026-09-04'
+      note: 'HP DeskJet 2700 — printer moved from .69 to .70.'
     - label: Check MAC change for 192.168.2.76 (was discovered-7cd2da73308a, now f2:ed:a0:d4:5f:db)
-      status: not_started
+      status: completed
+      completed_at: '2026-09-04'
+      note: 'New MAC is locally administered (random). Same host or privacy-randomized device.'
     - label: Check MAC change for 192.168.2.69 (was hp-deskjet-2700, now d4:9e:3b:6a:94:90)
-      status: not_started
+      status: completed
+      completed_at: '2026-09-04'
+      note: 'VStarcam ip-cam-65 (Guangzhou Shiyuan) now at .69; printer left .69.'
     - label: Check MAC change for 192.168.2.73 (was discovered-062858264b2c, now 06:28:58:26:4b:2c)
-      status: not_started
+      status: completed
+      completed_at: '2026-09-04'
+      note: 'New MAC is locally administered; no public OUI.'
     - label: Check MAC change for 192.168.2.71 (was discovered-1c1dd3e80a4f, now c0:cd:d6:85:a8:38)
-      status: not_started
+      status: completed
+      completed_at: '2026-09-04'
+      note: 'Espressif Inc. chip — ESP-based IoT device.'
     - label: Check MAC change for 192.168.2.66 (was ip-cam-65, now 2c:b4:71:e8:a8:e8)
-      status: not_started
+      status: completed
+      completed_at: '2026-09-04'
+      note: 'Tuya Smart device (tuya-plug-bedside) now at .66.'
     - label: Check MAC change for 192.168.2.1 (was home-router, now 98:00:6a:68:f7:c6)
-      status: not_started
+      status: completed
+      completed_at: '2026-09-04'
+      note: 'No actual change; 98:00:6a:68:f7:c6 is the known home-router MAC.'
     - label: Check MAC change for 192.168.2.67 (was discovered-484d7ee43ac7, now 48:4d:7e:e4:3a:c7)
-      status: not_started
+      status: completed
+      completed_at: '2026-09-04'
+      note: 'Dell Inc. device; MAC matches the existing discovered-484d7ee43ac7 record.'
     - label: Check MAC change for 192.168.2.72 (was discovered-f2eda0d45fdb, now ea:9b:8f:d2:80:f0)
-      status: not_started
-    request_log: []
+      status: completed
+      completed_at: '2026-09-04'
+      note: 'New MAC is locally administered; likely privacy/randomized.'
+    request_log:
+    - date: '2026-09-04'
+      request: continue
+      matched_to: Review ARP inventory scan results
     ownership:
       owner: tony
       session: ''
-      locked: true
-      lock_reason: Activated as active focus
+      locked: false
+      lock_reason: Closed after review
     branch: chaba
     source: /home/tony/CascadeProjects/chaba/docs/ssot/focus-inbox/2026-09-02-210500-arp-inventory-alert.yml
 - title: Quick Wins
