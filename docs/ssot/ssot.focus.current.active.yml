@@ -7,29 +7,43 @@ sections:
   layout: list
   items:
   - label: 'SSOT optimize: infrastructure/ssot.home-assistant.michael.yml'
-    text: 'SSOT optimization detected issues in `infrastructure/ssot.home-assistant.michael.yml`:
-
-
-      - data_isolation: Data isolation: hardcoded IPv4 address 172.30.32.1
-
-
-      Review for bloat, data isolation, or obsolescence and either split/archive the file or resolve the warnings.'
-    status: active
+    text: |
+      Resolved the data-isolation warning in `ssot.home-assistant.michael.yml`
+      by replacing the hardcoded HA core container IP `172.30.32.1` with the
+      Docker network hostname `homeassistant` and centralizing the canonical
+      value in `ssot.values.yml` (hosts.michael_ha.hassio_network_host). The
+      same change was applied to `ssot.home-assistant.mcp.yml` and the
+      tony-dell `michael-ha-mcp-tunnel.service`, which was reloaded and is
+      active.
+    status: completed
     priority: medium
     started: '2026-09-04'
+    completed: '2026-09-04'
     estimated_duration: 1 session
     tags:
     - ssot
     - optimization
     - bloat
     - data-isolation
-    subtasks: []
+    subtasks:
+    - label: Open reports/SSOT_OPTIMIZATION_SUGGESTIONS.md
+      status: completed
+      completed_at: '2026-09-04'
+      note: No active bloat/data-isolation warnings for the target file after changes.
+    - label: Fix highest priority warning
+      status: completed
+      completed_at: '2026-09-04'
+      note: Replaced hardcoded 172.30.32.1 with homeassistant; verified tony-dell tunnel still active.
+    - label: Re-run ssot-validate-all
+      status: completed
+      completed_at: '2026-09-04'
+      note: 'ssot-validate-all: 0 errors; 2 remaining warnings in unrelated howto/michael.dev files due to secret-value heuristics.'
     request_log: []
     ownership:
       owner: tony
       session: ''
-      locked: true
-      lock_reason: Activated as active focus
+      locked: false
+      lock_reason: ''
     source: /home/tony/CascadeProjects/chaba/docs/ssot/focus-inbox/2026-09-03-2000-infrastructure-ssot.home-assistant.michael-ssot-optimization.yml
 - title: Active Branch Focus
   icon: branch
