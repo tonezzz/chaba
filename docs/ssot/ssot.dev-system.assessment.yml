@@ -1,18 +1,18 @@
 title: Development System Assessment
 subtitle: Periodic assessment of the chaba development workflow itself
 icon: clipboard-check
-last_reviewed: '2026-09-04T11:27:20.179491+00:00'
+last_reviewed: '2026-09-04T11:33:23.436462+00:00'
 reviewer: assistant
 score:
   branches_total: 2
   branches_ahead_of_master: 2
   worktrees_total: 2
-  active_foci: 2
-  ssot_warnings: 0
+  active_foci: 1
+  ssot_warnings: 1
   service_errors_last_night: 0
   ci_failures_7d: 0
-  untracked_files: 0
-trend: stable
+  untracked_files: 1
+trend: declining
 pros:
 - label: SSOT-first workflow
   evidence: 197 SSOT files validated on every commit; master now current with HA-MCP, log CI, and merge cadence policy
@@ -27,12 +27,18 @@ pros:
   evidence: 0 untracked or modified file(s) on the canonical worktree after pending SSOT/focus commit
   trend: improving
 cons:
-- label: No active cons
-  severity: none
-  evidence: All tracked metrics are within thresholds
+- label: SSOT quality regression
+  severity: high
+  evidence: 1 SSOT optimization warning(s)
   owner: tony
-  status: resolved
-  improvement: Keep monitoring
+  status: open
+  improvement: Fix SSOT bloat, data-isolation, or log-reference warnings
+- label: Uncommitted working tree
+  severity: medium
+  evidence: 1 untracked or modified file(s)
+  owner: tony
+  status: open
+  improvement: Commit or .gitignore outstanding changes before the next session
 improvements:
 - label: SSOT quality regression resolved
   source: dev-system.assessment
