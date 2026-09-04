@@ -16,11 +16,10 @@ services:
     host_port: 0.0.0.0:8123
     config: /home/tony/.config/home-assistant
     status: healthy
-    mcp_status: degraded
+    mcp_status: active
     mcp_status_notes: |
-      HA core UI returns HTTP 200, but the ha_mcp_tools MCP server on port 9584
-      is failing to start because its worker thread makes no observable progress
-      for 90s. tony-dell CPU load average is ~5-7, likely starving the import.
+      HA core UI returns HTTP 200 and the ha_mcp_tools MCP server on port 9584
+      is responding after a service restart.
   go2rtc:
     port: 1984
     rtsp: 8554

@@ -3,12 +3,25 @@
 import os
 import json
 import requests
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 import yaml
 from pathlib import Path
 from datetime import datetime
 
 SSOT_DIR = "/home/tony/CascadeProjects/chaba/docs/ssot"
 MDBB_SERVER = "http://tony-dell.taila0626a.ts.net:11023/v1"
+
+# Reusable session with retries to survive transient connection drops
+_mddb_session = requests.Session()
+retry_strategy = Retry(
+    total=5,
+    backoff_factor=0.5,
+    status_forcelist=[429, 500, 502, 503, 504],
+    allowed_methods=["HEAD", "GET", "POST", "PUT", "DELETE", "OPTIONS", "TRACE"]
+)
+_mddb_session.mount("http://", HTTPAdapter(max_retries=retry_strategy))
+_mddb_session.mount("https://", HTTPAdapter(max_retries=retry_strategy))
 
 def get_ssot_collection(rel_path):
     """Determine MDDB collection based on SSOT file path"""
@@ -74,7 +87,7 @@ def sync_file(yaml_path, rel_path):
     try:
         # MDDB expects meta values to be string arrays
         meta_arrays = {k: [v] if isinstance(v, str) else v for k, v in args["meta"].items()}
-        response = requests.post(
+        response = _mddb_session.post(
             f"{MDBB_SERVER}/add",
             json={
                 "collection": args["collection"],
