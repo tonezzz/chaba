@@ -72,4 +72,9 @@ instances:
 status:
   last_updated: '2026-09-04'
   last_verified: '2026-09-04'
-  health: active
+  health: degraded
+  notes: |
+    tony-ha HA core container is healthy and reachable on port 8123, but the
+    ha_mcp_tools MCP server on port 9584 is failing to start (watchdog timeout
+    while importing). tony-dell load average is ~5-7 and may be starving the
+    startup thread.

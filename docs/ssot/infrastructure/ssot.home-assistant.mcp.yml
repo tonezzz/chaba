@@ -11,7 +11,14 @@ servers:
     tailnet_url: http://tony-dell:9584/private_CtYuVkJEl28cp8qA8yXNCQ
     webhook_id: mcp_d5528537d57627164033dc5e3e5e5aa6
     custom_component: ha_mcp_tools
-    status: active
+    status: degraded
+    notes: |
+      HA core container is healthy and the UI returns HTTP 200, but the
+      ha_mcp_tools in-process MCP server is failing to start. The worker
+      thread makes no observable progress for 90s and the watchdog tears it
+      down; the failure correlates with very high CPU load on tony-dell
+      (load average ~5-7). A container restart may clear transient state;
+      if the load stays high the startup watchdog may time out again.
 
   michael_dev:
     name: michael-dev
