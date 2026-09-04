@@ -7,8 +7,8 @@ from pathlib import Path
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 
-SSOT_DIR = "/home/tony/CascadeProjects/chaba-kbman/docs/ssot"
-SYNC_SCRIPT = "/home/tony/CascadeProjects/chaba-kbman/scripts/sync-ssot-to-mddb.py"
+SSOT_DIR = "/home/tony/CascadeProjects/chaba/docs/ssot"
+SYNC_SCRIPT = "/home/tony/CascadeProjects/chaba/scripts/sync-ssot-to-mddb.py"
 
 class SSOTFileHandler(FileSystemEventHandler):
     def __init__(self):

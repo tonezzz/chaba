@@ -1,0 +1,75 @@
+title: Home Assistant Instances
+subtitle: Runtime facts for all Home Assistant instances in the family
+
+instances:
+  tony-ha:
+    id: tony-ha
+    base: ha
+    host: tony_dell
+    runtime: rootless podman
+    network: host
+    container: tony-ha
+    image: docker.io/homeassistant/home-assistant:stable
+    port: 8123
+    host_port: 0.0.0.0:8123
+    config: /home/tony/.config/home-assistant
+    url:
+      local: http://tony-dell:8123
+      tailscale: http://tony-dell.taila0626a.ts.net:8123
+    ssot: docs/ssot/infrastructure/ssot.home-assistant.tony.yml
+    mcp: infrastructure/ssot.home-assistant.mcp.yml#servers.tony_ha
+    dashboards:
+      tony-test:
+        ssot: docs/ssot/infrastructure/ssot.home-assistant.dashboards.yml
+    status: active
+
+  michael-dev:
+    id: michael-dev
+    base: michael
+    host: tony_dell
+    runtime: rootless podman
+    network: host
+    container: michael-dev
+    image: docker.io/homeassistant/home-assistant:2026.9.0
+    port: 8124
+    host_port: 0.0.0.0:8124
+    config: /home/tony/.config/michael-dev
+    url:
+      local: http://127.0.0.1:8124
+      tailscale: https://tony-dell.taila0626a.ts.net:8124
+    ssot: docs/ssot/infrastructure/ssot.home-assistant.michael.dev.yml
+    mcp: infrastructure/ssot.home-assistant.mcp.yml#servers.michael_dev
+    dashboards:
+      tony-test:
+        ssot: docs/ssot/infrastructure/ssot.home-assistant.dashboards.yml
+        active_view: PF3
+        test_url: https://tony-dell.taila0626a.ts.net:8124/tony-test/pf3
+    service_unit: infrastructure/ssot.services.yml#tony-dell.michael-dev.quadlet.service_unit
+    status: active
+
+  michael-ha:
+    id: michael-ha
+    base: michael
+    host: nabu_casa
+    type: cloud
+    tailscale:
+      hostname: michael-ha
+      fqdn: michael-ha.taila0626a.ts.net
+      ip: 100.80.105.88
+    port: 8123
+    config: /config
+    url:
+      tailscale: http://michael-ha:8123/
+      cloud: https://nupo4ndqdqydt78zmpq0z5wzp1bdrqgs.ui.nabu.casa/
+    ssot: docs/ssot/infrastructure/ssot.home-assistant.michael.yml
+    mcp: infrastructure/ssot.home-assistant.mcp.yml#servers.michael_live
+    dashboards:
+      tony-test:
+        ssot: docs/ssot/infrastructure/ssot.home-assistant.dashboards.yml
+        note: Live tony-test dashboard is stored in .storage/lovelace.tony_test on michael-ha.
+    status: active
+
+status:
+  last_updated: '2026-09-04'
+  last_verified: '2026-09-04'
+  health: active

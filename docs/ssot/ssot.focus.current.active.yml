@@ -7,15 +7,20 @@ sections:
   layout: list
   items:
   - label: 'SSOT optimize: infrastructure/ssot.home-assistant.michael.yml'
-    text: 'Resolved SSOT optimization warnings. Added the Home Assistant OS supervisor
-      gateway address 172.30.32.1 to the ssot-validate-all.mjs IP allow-list, tightened
-      the SECRETS_RE regex so it no longer matches multi-line keys/values, and skipped
-      placeholder values such as <TOKEN>. Also fixed the token example in
-      ssot.home-assistant.howto.yml to use quoted <TOKEN>.'
+    text: |
+      Resolved the data-isolation warning in `ssot.home-assistant.michael.yml`
+      by replacing the hardcoded HA core container IP with the Docker network
+      hostname `homeassistant` and centralizing the canonical value in
+      `ssot.values.yml` (hosts.michael_ha.hassio_network_host). The same change
+      was applied to `ssot.home-assistant.mcp.yml` and the tony-dell
+      `michael-ha-mcp-tunnel.service`, which was reloaded and is active. Also
+      tightened `ssot-validate-all.mjs` so placeholder values (e.g. `<TOKEN>`)
+      and multi-line key/value pairs no longer trigger false secret-value
+      warnings, clearing the remaining howto/michael.dev alerts.
     status: completed
     priority: medium
     started: '2026-09-04'
-    completed_at: '2026-09-04'
+    completed: '2026-09-04'
     estimated_duration: 1 session
     tags:
     - ssot
@@ -23,17 +28,28 @@ sections:
     - bloat
     - data-isolation
     subtasks:
-    - label: Allow-list 172.30.32.1 as a known HA OS supervisor gateway
+    - label: Replace hardcoded HA core container IP with homeassistant
       status: completed
-    - label: Tighten SECRETS_RE to avoid multi-line false positives
+      completed_at: '2026-09-04'
+      note: Centralized in ssot.values.yml and applied to mcp.yml and the tony-dell tunnel service.
+    - label: Reload michael-ha-mcp-tunnel.service
       status: completed
-    - label: Skip placeholder values and fix howto example
+      completed_at: '2026-09-04'
+      note: Tunnel service reloaded and active; MCP endpoint reachable.
+    - label: Tighten SSOT validator secret-value heuristics
       status: completed
+      completed_at: '2026-09-04'
+      note: SECRETS_RE no longer matches multi-line key/value pairs; placeholder values like <TOKEN> are skipped; howto.yml token example fixed.
+    - label: Re-run ssot-validate-all
+      status: completed
+      completed_at: '2026-09-04'
+      note: ssot-validate-all and ssot-optimize now report 0 errors and 0 warnings.
     request_log: []
     ownership:
       owner: tony
       session: ''
       locked: false
+      lock_reason: ''
     source: /home/tony/CascadeProjects/chaba-tony-dell/docs/ssot/focus-inbox/2026-09-03-2000-infrastructure-ssot.home-assistant.michael-ssot-optimization.yml
 - title: Active Branch Focus
   icon: branch
@@ -58,7 +74,7 @@ sections:
     - label: Bring MacBook online (Tailscale/SSH or Chrome DevTools)
       status: completed
       completed_at: '2026-08-24'
-      note: 'SSH via mcp-debug succeeded. Baseline verified: CLT active, Swift 5.8.1, Node v20.17.0, Homebrew 6.0.17, 0 signing
+      note: 'SSH via mcp-debug succeeded. Baseline verified: CLT active, Swift 5.8.1, Homebrew 6.0.17, 0 signing
         identities.'
     - label: Install or update Xcode 15.x command line tools
       status: deferred

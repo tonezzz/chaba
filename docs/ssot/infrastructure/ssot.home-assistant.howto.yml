@@ -100,11 +100,28 @@ runbooks:
     ssot: ssot.home-assistant.entities.yml
     steps:
       - Set main battery (battery_*) to sensor.totals_battery_*
-      - Map battery2_* to sensor.batteries_1_*
+      - Map battery2_* to pack 1 (sensor.battery_1_calculated_power/current; sensor.batteries_1_voltage/soc)
       - Map battery3_* to sensor.batteries_2_*
       - Map battery4_* to sensor.batteries_3_*
       - Set battery.count to 4 and remove/ignore battery1_* entities
       - Apply via edit_live_dashboard_no_restart or by editing .storage/lovelace.tony_test and restarting
+
+  deploy_package_michael_ha:
+    purpose: Deploy a new or updated Home Assistant package to michael-ha.
+    steps:
+      - Add the package file to docs/home-assistant/configuration/packages/
+      - Add the package include to /config/configuration.yaml on michael-ha if needed
+      - Run scripts/home-assistant/deploy-michael.sh
+      - If new templates are not visible, call the template/reload service or restart HA core
+
+  deploy_custom_card_michael_ha:
+    purpose: Build and deploy the forked sunsynk-power-flow-card to michael-ha.
+    steps:
+      - Edit source in /home/tony/CascadeProjects/sunsynk-power-flow-card/src/
+      - Run npm run build in the repo root
+      - Copy dist/sunsynk-power-flow-card.js to root@michael-ha:/config/www/sunsynk-power-flow-card-fork-v{version}.js
+      - Update the URL in /config/.storage/lovelace_resources on michael-ha
+      - Hard-refresh the browser to load the new bundle
 
 status:
   last_updated: '2026-09-04'

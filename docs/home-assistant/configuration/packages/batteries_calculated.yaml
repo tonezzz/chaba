@@ -1,0 +1,30 @@
+# Package body for `batteries_calculated`.
+# Provides sensors calculated from the aggregate battery values.
+# Use with: under `homeassistant: packages:` add:
+#   batteries_calculated: !include packages/batteries_calculated.yaml
+# Do NOT put the package name (`batteries_calculated:`) at the top of this file.
+
+template:
+  - sensor:
+      - name: "Battery 1 Calculated Power"
+        unique_id: battery_1_calculated_power
+        unit_of_measurement: "W"
+        device_class: power
+        state_class: measurement
+        state: >
+          {{
+            states('sensor.totals_battery_power')|float(0)
+            - states('sensor.batteries_2_power')|float(0)
+            - states('sensor.batteries_3_power')|float(0)
+          }}
+      - name: "Battery 1 Calculated Current"
+        unique_id: battery_1_calculated_current
+        unit_of_measurement: "A"
+        device_class: current
+        state_class: measurement
+        state: >
+          {{
+            states('sensor.totals_battery_current')|float(0)
+            - states('sensor.batteries_2_current')|float(0)
+            - states('sensor.batteries_3_current')|float(0)
+          }}

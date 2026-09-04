@@ -51,6 +51,12 @@ entity_groups:
     day_grid_export_77: none
     day_pv_energy_108: none
 
+  calculated_sensors:
+    note: Pack 1 power/current derived from total minus packs 2 and 3.
+    battery_1_calculated_power: sensor.battery_1_calculated_power
+    battery_1_calculated_current: sensor.battery_1_calculated_current
+    package: docs/home-assistant/configuration/packages/batteries_calculated.yaml
+
   main_battery:
     note: Total/aggregate battery bank (card slot "battery").
     battery_voltage_183: sensor.totals_battery_voltage
@@ -60,11 +66,11 @@ entity_groups:
     battery_current_direction: none
 
   battery_2:
-    note: Card slot "battery2" - physical pack 1.
+    note: Card slot "battery2" - physical pack 1 (power/current calculated from total).
     battery2_voltage_183: sensor.batteries_1_voltage
     battery2_soc_184: sensor.batteries_1_state_of_charge
-    battery2_power_190: sensor.batteries_1_power
-    battery2_current_191: sensor.batteries_1_current
+    battery2_power_190: sensor.battery_1_calculated_power
+    battery2_current_191: sensor.battery_1_calculated_current
 
   battery_3:
     note: Card slot "battery3" - physical pack 2.
