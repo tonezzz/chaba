@@ -604,7 +604,7 @@ async function validateCaddyProxyConfig() {
   try {
     const { readFileSync } = await import('fs');
     const { join } = await import('path');
-    const caddyfilePath = join(process.cwd(), 'stacks/web/Caddyfile');
+    const caddyfilePath = join(__dirname, '..', '..', 'stacks/web/Caddyfile');
     
     const caddyfileContent = readFileSync(caddyfilePath, 'utf8');
     const issues = [];
@@ -2135,6 +2135,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
               checkResult = await checkContainerService(service);
             } else if (service.type === 'systemd') {
               checkResult = await checkSystemService(service);
+            } else if (service.type === 'mount') {
+              checkResult = await checkMountService(service);
             } else {
               checkResult = {
                 status: 'unknown',
@@ -2207,17 +2209,29 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             });
             continue;
           }
-          
+
+          // Disabled/intentional services
+          if (service.disabled) {
+            results.push({
+              service: serviceName,
+              status: 'intentional',
+              response_time: 0
+            });
+            continue;
+          }
+
           try {
             const startTime = Date.now();
             let checkResult;
-            
+
             if (service.type === 'http') {
               checkResult = await checkHTTPService(service);
             } else if (service.type === 'container') {
               checkResult = await checkContainerService(service);
             } else if (service.type === 'systemd') {
               checkResult = await checkSystemService(service);
+            } else if (service.type === 'mount') {
+              checkResult = await checkMountService(service);
             } else {
               checkResult = {
                 status: 'unknown',

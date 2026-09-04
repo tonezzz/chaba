@@ -29,8 +29,13 @@ environments:
     repo_config: /home/tony/CascadeProjects/chaba/docs/home-assistant/configuration
     repo_dashboards: /home/tony/CascadeProjects/chaba/docs/home-assistant/dashboards
     caddy:
-      note: Not used — HA UI returns absolute redirects that break a path-prefixed reverse proxy. Use port 8124 directly.
-    health_check: ssh tony-dell curl -sf http://127.0.0.1:8124/ >/dev/null
+      note: Not used — Tailscale serve provides HTTPS on port 8124. HA UI absolute redirects require internal_url to match the Tailnet HTTPS URL.
+    https:
+      provider: tailscale_serve
+      tailnet_url: https://tony-dell.taila0626a.ts.net:8124
+      proxy_target: http://127.0.0.1:8124
+      note: tailscale serve --https=8124 http://127.0.0.1:8124 (must run as root or via sudo).
+    health_check: ssh tony-dell curl -sf https://tony-dell.taila0626a.ts.net:8124/ >/dev/null
     mcp:
       server: ha_mcp_tools in-process
       status: active
@@ -46,8 +51,8 @@ environments:
     autostart: loginctl enable-linger tony is yes; Quadlet WantedBy=default.target
     status: enabled
     core_config:
-      internal_url: http://tony-dell:8124
-      note: Required so the frontend OAuth client_id matches Home Assistant's canonical URL.
+      internal_url: https://tony-dell.taila0626a.ts.net:8124
+      note: Required so the frontend OAuth client_id and absolute redirects match the Tailnet HTTPS URL.
     auth:
       provider: homeassistant
       username: nakva
@@ -56,7 +61,7 @@ environments:
       note: Same password as live michael-ha; auth_provider.homeassistant user and credentials copied manually.
     access:
       local: http://127.0.0.1:8124
-      tailscale: http://tony-dell:8124
+      tailscale: https://tony-dell.taila0626a.ts.net:8124
   live:
     host: michael-ha
     type: nabu_casa
@@ -90,7 +95,7 @@ full_flow:
     note: "The dev configuration.yaml must not contain a lovelace: block. If present after deploy, remove it so the copied .storage dashboards are used."
   - step: 3
     label: Test on tony-dell
-    action: Open http://tony-dell:8124 or https://tony-dell.taila0626a.ts.net/apps/michael-ha-dev/ and verify UI, cards, and automation traces.
+    action: Open https://tony-dell.taila0626a.ts.net:8124 or http://127.0.0.1:8124 locally and verify UI, cards, and automation traces.
   - step: 4
     label: Deploy to live
     action: Run scripts/home-assistant/deploy-michael.sh
@@ -129,9 +134,11 @@ verification:
   dev:
     - systemctl --user status michael-dev.service
     - curl -sf http://127.0.0.1:8124/
+    - curl -sf https://tony-dell.taila0626a.ts.net:8124/
     - ss -tlnp | grep 8124
     - ss -tlnp | grep 9585
     - curl -s -o /dev/null -w "%{http_code}" http://tony-dell:9585/private_B3WMIAChoseTpDS7fwgwRw
+    - tailscale serve status | grep 8124
   live:
     - tailscale ping michael-ha
     - curl -sf http://michael-ha:8123/
