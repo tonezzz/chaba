@@ -77,12 +77,13 @@ Inverter, solar, grid, and daily aggregate entities are in `docs/ssot/infrastruc
 
 1. Edit source in `/home/tony/CascadeProjects/sunsynk-power-flow-card/src/`.
 2. Run `npm run build` in the repo root.
-3. Note the new bundle version (e.g. `v29`).
+3. Note the new bundle version (e.g. `v25`).
 4. Copy `dist/sunsynk-power-flow-card.js` to `tony-dell:/home/tony/.config/michael-dev/www/sunsynk-power-flow-card-fork-v{version}.js`.
 5. Update the Lovelace resource in `/home/tony/.config/michael-dev/.storage/lovelace_resources` to `/local/sunsynk-power-flow-card-fork-v{version}.js`.
 6. Restart the dev container: `systemctl --user restart michael-dev.service`.
-7. Verify at `https://tony-dell.taila0626a.ts.net:8124/tony-test/pf3`.
+7. Verify at `https://tony-dell.taila0626a.ts.net:8124/tony-test/pf3` (and `.../pfg` for the full-card test view).
 8. Run `scripts/home-assistant/sync-ssot-from-live.sh` to snapshot `.storage/lovelace.tony_test` and update bundle version in `ssot.home-assistant.cards.yml`.
+9. Copy the bundle and update `lovelace_resources` on `michael-ha` when the dev instance is verified, then `ha core restart`.
 
 ## Battery status text and overlay avoidance
 
@@ -117,12 +118,14 @@ The inactive branch is rendered with `fill: transparent`. For robust hiding, pre
 
 ## Visual verification with Playlive
 
-1. Open the PF3 URL in Playlive or browser.
+1. Open the PF3 URL in a browser or Playlive Chrome session that is already logged into `michael-dev`.
 2. Inspect the `sunsynk-power-flow-card` shadow root.
 3. Search for `<text>` elements containing the suspect string.
 4. Compare IDs, `x`/`y`, classes, `display`, and `fill`.
 5. Look for duplicate `battery_soc_184` or `duration_text` IDs across different parent `<svg>` groups; this is expected and is not the overlay itself.
 6. Confirm the parent `<svg>` group `display` is `none` for the inactive branch.
+
+**Auth note:** Long-lived `HASS_TOKEN` values are for REST/websocket API calls, not for dashboard URL auto-login. The `michael-dev` token in `~/.config/secrets/ha-michael-dev.env` was found to be invalid during recent verification; regenerate it from the HA profile → Security → Long-Lived Access Tokens if REST or automated Playlive login is needed.
 
 ## Common failure modes
 
@@ -150,6 +153,8 @@ This script:
 - Reads the active card bundle version from `michael-dev:/home/tony/.config/michael-dev/www/` and updates `ssot.home-assistant.cards.yml`.
 - Bumps `last_verified` dates in the relevant SSOT files.
 - Runs `ssot-validate` and `ssot-validate-refs`.
+
+**Bundle-version drift guard:** The script currently picks the newest `sunsynk-power-flow-card-fork-v*.js` by filename version. If old bundles with higher version numbers are left in `www/`, the script will report the wrong active version. Always clean up obsolete bundles or verify the value against `/config/.storage/lovelace_resources` before committing.
 
 After review, commit the changes. The script never pushes; commit and push are manual.
 

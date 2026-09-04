@@ -31,12 +31,14 @@ Valid modes: `normal`, `plan`, `build`, `review`.
 - michael-dev: `http://127.0.0.1:8124` / `https://tony-dell.taila0626a.ts.net:8124`
 - michael-ha: `http://michael-ha:8123` / `https://nupo4ndqdqydt78zmpq0z5wzp1bdrqgs.ui.nabu.casa/`
 - PF3 test view: `https://tony-dell.taila0626a.ts.net:8124/tony-test/pf3`
+- PFG (full-card) test view: `https://tony-dell.taila0626a.ts.net:8124/tony-test/pfg`
 
 ## Token files
 
 - michael-dev: `~/.config/secrets/ha-michael-dev.env` (`HASS_TOKEN`)
 - michael-live: `~/.config/secrets/ha-michael-live.env` (`HASS_TOKEN`)
 - Never paste tokens into chat or commit them.
+- Note: the `michael-dev` token is currently invalid and should be regenerated from the HA profile → Security → Long-Lived Access Tokens if REST/Playlive access is needed.
 
 ## Build / deploy commands
 
@@ -50,4 +52,12 @@ Valid modes: `normal`, `plan`, `build`, `review`.
 - Reorder or add a tab: edit `michael-dev:/config/.storage/lovelace.tony_test`, then snapshot with `sync-ssot-from-live.sh`.
 - Update the forked card: build, copy `dist/sunsynk-power-flow-card.js` to `michael-dev:/home/tony/.config/michael-dev/www/sunsynk-power-flow-card-fork-v{N}.js`, update `.storage/lovelace_resources`, restart `michael-dev`.
 - Fix SVG text overlay: check `Battery*_SOC` `<svg>` display condition in `src/components/compact/bat/bat-elements.ts` so plain text hides when combined `{target}% | {current}%` is visible.
-- Verify visually: use Playlive or browser dev tools on the PF3 shadow root.
+- Verify visually: use a logged-in Chrome profile or browser dev tools on the PF3/PFG shadow root.
+- Guard against bundle drift: `sync-ssot-from-live.sh` picks the newest `www/` bundle by version. Remove obsolete `sunsynk-power-flow-card-fork-v*.js` bundles or cross-check `lovelace_resources` before committing.
+
+## Current state (2026-09-04)
+
+- Active card bundle: `v25` (`sunsynk-power-flow-card-fork-v25.js`), source commit `43b8c6c`.
+- Deployed to `michael-dev` and `michael-ha`; PF3 visually verified on `michael-ha`.
+- New `PFG` full-card view at `/tony-test/pfg` is being tested on `michael-dev`.
+- Dashboard snapshot is `docs/home-assistant/dashboards/tony-test-current.json`.

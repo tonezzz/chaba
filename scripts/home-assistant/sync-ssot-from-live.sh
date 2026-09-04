@@ -21,10 +21,39 @@ ssh "${HOST}" "cat ${STORAGE_REMOTE}" > "${DASHBOARD_LOCAL}"
 echo " -> ${DASHBOARD_LOCAL}"
 
 echo "Determining active card bundle version..."
+RESOURCES_REMOTE=${DEV_CONFIG}/.storage/lovelace_resources
+
+ACTIVE_URL=$(ssh "${HOST}" "cat ${RESOURCES_REMOTE}" | python3 -c "import sys,json; d=json.load(sys.stdin); items=[i for i in d.get('data',{}).get('items',[]) if 'sunsynk-power-flow-card-fork' in i.get('url','')]; print(items[0]['url'] if items else '')" || true)
+ACTIVE_VERSION=""
+if [[ -n "${ACTIVE_URL}" ]]; then
+    ACTIVE_VERSION=$(python3 -c "import re,sys; m=re.search(r'sunsynk-power-flow-card-fork-v(\d+)\.js', sys.argv[1]); print(m.group(1) if m else '')" "${ACTIVE_URL}")
+fi
+
 LATEST_BUNDLE=$(ssh "${HOST}" "ls -1 ${WWW_REMOTE}/sunsynk-power-flow-card-fork-v*.js 2>/dev/null | sort -V | tail -n1" || true)
+LATEST_VERSION=""
 if [[ -n "${LATEST_BUNDLE}" ]]; then
-    VERSION=$(basename "${LATEST_BUNDLE}" .js | sed 's/sunsynk-power-flow-card-fork-v//')
+    LATEST_VERSION=$(basename "${LATEST_BUNDLE}" .js | sed 's/sunsynk-power-flow-card-fork-v//')
+fi
+
+if [[ -n "${ACTIVE_VERSION}" ]]; then
+    VERSION="${ACTIVE_VERSION}"
+    if [[ -n "${LATEST_VERSION}" && "${ACTIVE_VERSION}" != "${LATEST_VERSION}" ]]; then
+        echo " -> warning: active resource v${ACTIVE_VERSION} differs from newest www bundle v${LATEST_VERSION}"
+        echo "              (check lovelace_resources and www/ for drift)"
+    fi
+    if ! ssh "${HOST}" "test -f ${WWW_REMOTE}/sunsynk-power-flow-card-fork-v${VERSION}.js"; then
+        echo " -> error: active resource points to missing bundle v${VERSION} in ${WWW_REMOTE}"
+        exit 1
+    fi
     echo " -> active bundle version: ${VERSION}"
+elif [[ -n "${LATEST_VERSION}" ]]; then
+    VERSION="${LATEST_VERSION}"
+    echo " -> warning: no active sunsynk resource found; falling back to newest www bundle v${VERSION}"
+else
+    VERSION=""
+fi
+
+if [[ -n "${VERSION}" ]]; then
     python3 - <<PY
 import re
 with open("${CARDS_SSOT}", "r") as f:
