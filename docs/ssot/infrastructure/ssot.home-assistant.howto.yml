@@ -1,0 +1,87 @@
+title: Home Assistant How-To Runbooks
+subtitle: Step-by-step procedures for the tony-test / michael-dev HA environment
+
+prerequisites:
+  - ssot: ssot.values.yml
+  - instances: ssot.home-assistant.michael.dev.yml
+  - cards: ssot.home-assistant.cards.yml
+  - mcp: ssot.home-assistant.mcp.yml
+  - dashboards: ssot.home-assistant.dashboards.yml
+
+runbooks:
+  add_dashboard_tab:
+    purpose: Add a new tab to the tony-test Lovelace dashboard and make it the first tab.
+    steps:
+      - Edit the live Lovelace config in /home/tony/.config/michael-dev/.storage/lovelace.tony_test
+      - Insert a new view object with title and path in the desired order
+      - Set the new tab at index 0 if it should be the first tab
+      - Restart Home Assistant or reload Lovelace if needed
+      - Verify at https://tony-dell.taila0626a.ts.net:8124/tony-test/<path>
+    snapshot_when_done: copy the updated .storage file to docs/home-assistant/dashboards/tony-test-current.json
+
+  copy_card_to_tab:
+    purpose: Copy an existing card configuration into another tab.
+    steps:
+      - Locate the source card config in .storage/lovelace.tony_test
+      - Copy the card JSON object
+      - Paste it into the target view's cards array
+      - Adjust view_layout / grid-area and card-specific IDs if needed
+      - Save and verify the tab renders correctly
+
+  build_deploy_custom_card:
+    purpose: Rebuild the forked sunsynk-power-flow-card and deploy it to michael-dev.
+    steps:
+      - Edit source in /home/tony/CascadeProjects/sunsynk-power-flow-card/src/
+      - Run npm run build in the repo root
+      - Note the output bundle dist/sunsynk-power-flow-card.js
+      - Bump the bundle version (e.g. v29 -> v30)
+      - Copy the bundle to tony-dell:/home/tony/.config/michael-dev/www/sunsynk-power-flow-card-fork-v{version}.js
+      - Update the Lovelace resource in /home/tony/.config/michael-dev/.storage/lovelace_resources to the new /local/...v{version}.js
+      - Restart michael-dev.service with systemctl --user restart michael-dev.service
+      - Verify the dashboard at the test URL
+    ssot: ssot.home-assistant.cards.yml
+
+  create_long_lived_token:
+    purpose: Create a reusable Home Assistant access token for API/Playlive use.
+    steps:
+      - Log in to the target HA instance web UI
+      - Navigate to Profile -> Security -> Long-Lived Access Tokens
+      - Click CREATE TOKEN, name it e.g. devin-playlive, and copy the token
+      - Save it to ~/.config/secrets/ha-{instance}.env as HASS_TOKEN=<PASTE_YOUR_TOKEN> with chmod 600
+      - Do not commit the token file or paste it into chat
+    ssot: ssot.home-assistant.mcp.yml
+
+  restart_ha_instance:
+    purpose: Restart the michael-dev Home Assistant instance.
+    steps:
+      - ssh tony-dell
+      - systemctl --user restart michael-dev.service
+      - Wait for the service to be active and http://127.0.0.1:8124 to respond
+    service_ref: ssot.services.yml::tony-dell.michael-dev.service
+
+  add_battery_status_line:
+    purpose: Add or modify a combined battery status line in the sunsynk card.
+    steps:
+      - Open src/components/compact/bat/bat-elements.ts
+      - Locate the Battery*_SOC / Battery*_SOC_Shutdown / Battery*_SOC_Program_Capacity SVG groups
+      - Use createTextWithPopup with id battery_soc_184, x=290, y=358, class st13 st8 left-align
+      - Format the text as {target}% | {current}%
+      - Hide the plain Battery*__SOC SVG when the combined text is visible
+      - Build and deploy the card
+    ssot: ssot.home-assistant.cards.yml
+
+  fix_svg_text_overlay:
+    purpose: Investigate and remove duplicate SVG text that appears to overlay other text.
+    steps:
+      - Open the dashboard in Playlive or browser dev tools
+      - Locate the relevant <sunsynk-power-flow-card> shadow root
+      - Find all <text> elements containing the suspect string
+      - Compare IDs, x/y, classes, display, and fill
+      - Identify duplicate or redundant branches in src/components/compact/bat/bat-elements.ts
+      - Adjust display conditions to keep only the intended text visible
+      - Rebuild and verify
+
+status:
+  last_updated: '2026-09-04'
+  last_verified: '2026-09-04'
+  health: active
