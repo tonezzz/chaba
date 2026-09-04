@@ -44,45 +44,83 @@ sections:
       status: deferred
       deferred_at: '2026-08-25'
       resume_note: MacBook offline; park focus until host is reachable
-  - label: Dev-system regression
-    text: 'Dev-system trend is improving. Open cons:
+  - label: Review ARP inventory scan results
+    text: 'ARP inventory scan found changes compared to the MAC/IP registries.
 
-      - Branch/worktree sprawl (medium): 3 branches are ahead of master; 4 worktrees
-      active
 
-      - Uncommitted working tree (medium): 6 untracked or modified file(s)
+      - New devices: 2
 
-      Source: reports/DEV_SYSTEM_ASSESSMENT.json
+      - New IP for known device: 0
 
-      '
+      - MAC changed: 8
+
+      - Conflicts: 0
+
+      - Duplicate MACs in scan: 0
+
+
+      Report: reports/network-inventory-scan-2026-09-02-210500.json'
     status: active
-    priority: medium
-    started: '2026-09-02'
+    priority: low
+    started: '2026-09-03'
     estimated_duration: 1 session
     tags:
-    - dev-system
-    - assessment
+    - network
+    - arp
+    - inventory
+    - mac-registry
     subtasks:
-    - label: Review reports/DEV_SYSTEM_ASSESSMENT.md
+    - label: Identify new device 192.168.2.77 (d8:3a:36:7d:10:0d)
       status: completed
-      completed_at: '2026-09-02'
-    - label: 'Address highest severity con: Branch/worktree sprawl'
-      status: in_progress
-      started_at: '2026-09-02'
-      note: 'chaba-mcp-experiments resolved; 11 stale remote-tracking refs pruned; remaining drift items in Ready (Safe) queue'
-    - label: Update docs/ssot/ssot.dev-system.assessment.yml when resolved
-      status: not_started
+      completed_at: '2026-09-03'
+      note: 'AltoBeam Inc. OUI — likely a new Wi-Fi/IoT device; needs registry entry'
+    - label: Identify new device 192.168.2.70 (e0:73:e7:05:c5:16)
+      status: completed
+      completed_at: '2026-09-03'
+      note: 'HP DeskJet 2700 series (CN33BDZ0KS) — known device that changed IP to .70'
+    - label: Check MAC change for 192.168.2.76 (was discovered-7cd2da73308a, now f2:ed:a0:d4:5f:db)
+      status: completed
+      completed_at: '2026-09-03'
+      note: 'Now matches discovered-f2eda0d45fdb (previously at .72)'
+    - label: Check MAC change for 192.168.2.69 (was hp-deskjet-2700, now d4:9e:3b:6a:94:90)
+      status: completed
+      completed_at: '2026-09-03'
+      note: 'Now matches ip-cam-65 VStarcam C7824WIP (previously at .66)'
+    - label: Check MAC change for 192.168.2.73 (was discovered-062858264b2c, now 06:28:58:26:4b:2c)
+      status: completed
+      completed_at: '2026-09-03'
+      note: 'Consistent with registry: discovered-062858264b2c remains at .73'
+    - label: Check MAC change for 192.168.2.71 (was discovered-1c1dd3e80a4f, now c0:cd:d6:85:a8:38)
+      status: completed
+      completed_at: '2026-09-03'
+      note: 'Now matches discovered-c0cdd685a838 (previously at .81)'
+    - label: Check MAC change for 192.168.2.66 (was ip-cam-65, now 2c:b4:71:e8:a8:e8)
+      status: completed
+      completed_at: '2026-09-03'
+      note: 'Now matches tuya-plug-bedside (previously at .68)'
+    - label: Check MAC change for 192.168.2.1 (was home-router, now 98:00:6a:68:f7:c6)
+      status: completed
+      completed_at: '2026-09-03'
+      note: 'Unchanged: home-router at .1'
+    - label: Check MAC change for 192.168.2.67 (was discovered-484d7ee43ac7, now 48:4d:7e:e4:3a:c7)
+      status: completed
+      completed_at: '2026-09-03'
+      note: 'Consistent with registry: discovered-484d7ee43ac7 remains at .67'
+    - label: Check MAC change for 192.168.2.72 (was discovered-f2eda0d45fdb, now ea:9b:8f:d2:80:f0)
+      status: completed
+      completed_at: '2026-09-03'
+      note: 'Now matches discovered-ea9b8fd280f0 (previously at .78)'
     request_log:
     - timestamp: '2026-09-03'
       action: continue
-      note: 'User asked to update plan after chaba-mcp-experiments auto-fix; updated NEXT_FOCUS.md and active focus'
+      note: 'User selected option 1 to process the active ARP focus; identified all 10 new/changed devices against the MAC registry'
     ownership:
       owner: tony
       session: ''
       locked: true
       lock_reason: Activated as active focus
     branch: chaba
-    source: /home/tony/CascadeProjects/chaba/docs/ssot/focus-inbox/2026-09-01-190010-dev-system-regression.yml
+    source: /home/tony/CascadeProjects/chaba/docs/ssot/focus-inbox/2026-09-02-210500-arp-inventory-alert.yml
 - title: Quick Wins
   icon: quick
   layout: list
