@@ -7,7 +7,7 @@ import { join } from 'path';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
 
-const SSOT_PATH = '/home/tony/CascadeProjects/chaba/docs/ssot/ssot.improvements.yml';
+const SSOT_PATH = '/home/tony/CascadeProjects/chaba-tony-dell/docs/ssot/ssot.improvements.yml';
 
 // Parse command line arguments
 const args = process.argv.slice(2);
@@ -337,7 +337,7 @@ function verifyConfigurationImprovement(improvement) {
     // Check for specific configuration issues based on improvement label
     if (improvement.label.includes('Docker Compose')) {
       // Check for version attribute in docker-compose.yml
-      const dockerComposePath = '/home/tony/CascadeProjects/chaba/docker-compose.yml';
+      const dockerComposePath = '/home/tony/CascadeProjects/chaba-tony-dell/docker-compose.yml';
       if (!existsSync(dockerComposePath)) {
         return {
           success: false,
@@ -357,7 +357,7 @@ function verifyConfigurationImprovement(improvement) {
     }
     
     // Default configuration check - check for IP addresses in config files
-    const ipCheck = execSync('grep -r "192\\.168\\." /home/tony/CascadeProjects/chaba/docs/overview/ 2>/dev/null || true', { encoding: 'utf8' });
+    const ipCheck = execSync('grep -r "192\\.168\\." /home/tony/CascadeProjects/chaba-tony-dell/docs/overview/ 2>/dev/null || true', { encoding: 'utf8' });
     
     const ipCount = (ipCheck.match(/192\.168\./g) || []).length;
     console.log(`Found ${ipCount} IP addresses in config files`);

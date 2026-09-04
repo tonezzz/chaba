@@ -7,9 +7,9 @@
 set -eo pipefail
 
 # Configuration
-PROJECT_ROOT="/home/tony/CascadeProjects/chaba"
-CI_LOG="/home/tony/CascadeProjects/chaba/logs/ci-pipeline.log"
-TEST_RESULTS_DIR="/home/tony/CascadeProjects/chaba/tests/results"
+PROJECT_ROOT="/home/tony/CascadeProjects/chaba-tony-dell"
+CI_LOG="/home/tony/CascadeProjects/chaba-tony-dell/logs/ci-pipeline.log"
+TEST_RESULTS_DIR="/home/tony/CascadeProjects/chaba-tony-dell/tests/results"
 
 # Create directories
 mkdir -p "$(dirname "$CI_LOG")"

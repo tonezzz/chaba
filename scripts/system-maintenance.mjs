@@ -4,7 +4,7 @@ import { execSync } from 'child_process';
 import { writeFileSync, existsSync, mkdirSync, readFileSync } from 'fs';
 import { join } from 'path';
 
-const LOG_DIR = '/home/tony/CascadeProjects/chaba/logs/maintenance';
+const LOG_DIR = '/home/tony/CascadeProjects/chaba-tony-dell/logs/maintenance';
 const LOG_FILE = join(LOG_DIR, 'maintenance.log');
 
 // Ensure log directory exists
@@ -119,7 +119,7 @@ function dockerHealthCheck() {
 function gpuMonitorCheck() {
   log('=== GPU Monitor Check ===');
   
-  const result = execCommand('node /home/tony/CascadeProjects/chaba/scripts/gpu-monitor.mjs', 'GPU monitoring check');
+  const result = execCommand('node /home/tony/CascadeProjects/chaba-tony-dell/scripts/gpu-monitor.mjs', 'GPU monitoring check');
   
   return result.success;
 }

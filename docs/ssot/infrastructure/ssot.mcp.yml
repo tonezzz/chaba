@@ -70,7 +70,7 @@ servers:
   mcp-gpu:
     name: GPU Management
     description: GPU control and queue management
-    implementation: python3 /home/tony/CascadeProjects/chaba/mcp-servers/mcp-gpu/server.py
+    implementation: python3 /home/tony/CascadeProjects/chaba-tony-dell/mcp-servers/mcp-gpu/server.py
     wrapper: mcp-single-instance.sh
     pattern: mcp-gpu/server.py
     filter: none
@@ -90,7 +90,7 @@ servers:
   mcp-llama:
     name: Llama.cpp Server
     description: LLM inference server interface
-    implementation: python3 /home/tony/CascadeProjects/chaba/mcp-servers/mcp-llama/server.py
+    implementation: python3 /home/tony/CascadeProjects/chaba-tony-dell/mcp-servers/mcp-llama/server.py
     wrapper: mcp-single-instance.sh
     pattern: mcp-llama/server.py
     filter: none
@@ -166,7 +166,7 @@ servers:
       tony_omen:
         implementation: python3 /home/tony/.config/devin/mcp-scripts/playlive-hosts-loader.py
         env:
-          PLAYLIVE_HOSTS_FILE: /home/tony/CascadeProjects/chaba/docs/ssot/infrastructure/playlive-hosts.yml
+          PLAYLIVE_HOSTS_FILE: /home/tony/CascadeProjects/chaba-tony-dell/docs/ssot/infrastructure/playlive-hosts.yml
     config_files:
       - devin: true
       - windsurf: false
@@ -236,7 +236,7 @@ servers:
   mcp-weaviate:
     name: Weaviate Vector Database
     description: Vector database integration for embeddings
-    implementation: python3 /home/tony/CascadeProjects/chaba/mcp-servers/mcp-weaviate/server.py
+    implementation: python3 /home/tony/CascadeProjects/chaba-tony-dell/mcp-servers/mcp-weaviate/server.py
     wrapper: mcp-single-instance.sh
     pattern: mcp-weaviate/server.py
     filter: none
@@ -259,7 +259,7 @@ servers:
     wrapper: podman-ssh
     filter: none
     env:
-      WORKFLOWS_TEMPLATE_PATHS: /home/tony/CascadeProjects/chaba/workflows
+      WORKFLOWS_TEMPLATE_PATHS: /home/tony/CascadeProjects/chaba-tony-dell/workflows
       WORKFLOWS_LOG_LEVEL: INFO
     single_instance: false
     status: operational

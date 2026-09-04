@@ -4,7 +4,7 @@ import { execSync } from 'child_process';
 import { writeFileSync, existsSync, mkdirSync, readFileSync } from 'fs';
 import { join } from 'path';
 
-const DATA_DIR = '/home/tony/CascadeProjects/chaba/data/gpu-monitor';
+const DATA_DIR = '/home/tony/CascadeProjects/chaba-tony-dell/data/gpu-monitor';
 const LOG_FILE = join(DATA_DIR, 'gpu-usage.log');
 const ALERT_FILE = join(DATA_DIR, 'gpu-alerts.log');
 const THRESHOLDS = {

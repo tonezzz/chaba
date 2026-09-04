@@ -15,10 +15,10 @@ from typing import Dict, List, Any
 import subprocess
 
 # Paths
-SSOT_DIR = Path("/home/tony/CascadeProjects/chaba/docs/ssot")
+SSOT_DIR = Path("/home/tony/CascadeProjects/chaba-tony-dell/docs/ssot")
 DEVIN_TOOLS_SSOT = SSOT_DIR / "ssot.devin.tools.yml"
 GPU_SSOT = SSOT_DIR / "infrastructure" / "ssot.gpu.yml"
-OUTPUT_DIR = Path("/home/tony/CascadeProjects/chaba/.windsurf")
+OUTPUT_DIR = Path("/home/tony/CascadeProjects/chaba-tony-dell/.windsurf")
 MCP_CONFIG_OUTPUT = Path("/home/tony/.config/windsurf/mcp_config.json")
 
 def load_yaml_file(filepath: Path) -> Dict[str, Any]:

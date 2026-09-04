@@ -492,7 +492,7 @@ raw_commands:
     text: mcp_debug commands carry SSH setup overhead and are not cancellable mid-flight; they can appear to hang and be canceled by the user. For fast, read-only, or API-probe steps (e.g. listing Gemini models, local file checks), prefer local bash/ssh on the control host. Reserve mcp_debug for compact, multi-host snapshots or when its compact-output wrappers are specifically needed.
 
 server:
-  script: /home/tony/CascadeProjects/chaba/scripts/mcp_debug/server.py
+  script: /home/tony/CascadeProjects/chaba-tony-dell/scripts/mcp_debug/server.py
   wrapper: /home/tony/.config/devin/mcp-scripts/mcp-debug.sh
   log_level: INFO
   health:
@@ -598,7 +598,7 @@ phases:
 - id: 3
   name: Build host-aware mcp-debug-server
   status: completed
-  notes: /home/tony/CascadeProjects/chaba/scripts/mcp-debug-server.py with mcp_debug and mcp_raw
+  notes: /home/tony/CascadeProjects/chaba-tony-dell/scripts/mcp-debug-server.py with mcp_debug and mcp_raw
 - id: 4
   name: Register in Devin/Windsurf MCP
   status: completed

@@ -11,12 +11,12 @@ echo "=========================================="
 
 # Backup cron job (daily at 3 AM)
 echo "Adding daily backup cron job (3 AM)..."
-(crontab -l 2>/dev/null | grep -v "backup-configs.sh"; echo "0 3 * * * /home/tony/CascadeProjects/chaba/scripts/backup-configs.sh >> /home/tony/CascadeProjects/chaba/docs/backups/backup.log 2>&1") | crontab -
+(crontab -l 2>/dev/null | grep -v "backup-configs.sh"; echo "0 3 * * * /home/tony/CascadeProjects/chaba-tony-dell/scripts/backup-configs.sh >> /home/tony/CascadeProjects/chaba-tony-dell/docs/backups/backup.log 2>&1") | crontab -
 echo "✓ Daily backup scheduled: 0 3 * * *"
 
 # Verification cron job (weekly on Sunday at 2 AM)
 echo "Adding weekly verification cron job (Sunday 2 AM)..."
-(crontab -l 2>/dev/null | grep -v "verify-docs.sh"; echo "0 2 * * 0 /home/tony/CascadeProjects/chaba/scripts/verify-docs.sh >> /home/tony/CascadeProjects/chaba/docs/backups/verify.log 2>&1") | crontab -
+(crontab -l 2>/dev/null | grep -v "verify-docs.sh"; echo "0 2 * * 0 /home/tony/CascadeProjects/chaba-tony-dell/scripts/verify-docs.sh >> /home/tony/CascadeProjects/chaba-tony-dell/docs/backups/verify.log 2>&1") | crontab -
 echo "✓ Weekly verification scheduled: 0 2 * * 0"
 
 echo "=========================================="

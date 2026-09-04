@@ -4,10 +4,10 @@
 echo "Setting up Yomi Weaviate message indexing systemd service..."
 
 # Copy service file
-sudo cp /home/tony/CascadeProjects/chaba/scripts/yomi/yomi-index-weaviate.service /etc/systemd/system/
+sudo cp /home/tony/CascadeProjects/chaba-tony-dell/scripts/yomi/yomi-index-weaviate.service /etc/systemd/system/
 
 # Copy timer file  
-sudo cp /home/tony/CascadeProjects/chaba/scripts/yomi/yomi-index-weaviate.timer /etc/systemd/system/
+sudo cp /home/tony/CascadeProjects/chaba-tony-dell/scripts/yomi/yomi-index-weaviate.timer /etc/systemd/system/
 
 # Reload systemd
 sudo systemctl daemon-reload

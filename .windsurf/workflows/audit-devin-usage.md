@@ -2,7 +2,7 @@
 description: Audit my Devin/Windsurf usage and suggest improvements
 ---
 1. Gather evidence:
-   - `git status` in `/home/tony/CascadeProjects/chaba` and `/home/tony/CascadeProjects/chaba-h3`.
+   - `git status` in `/home/tony/CascadeProjects/chaba-tony-dell` and `/home/tony/CascadeProjects/chaba-h3`.
    - `docker ps --format "table {{.Names}}\t{{.Status}}"` for active containers.
    - `du -sh` on large caches: `~/.cache/huggingface`, `~/.cache/ms-playwright`, `~/.cache/llama.cpp` (or equivalent).
    - Recent commits: `git log --oneline -20` in each worktree.

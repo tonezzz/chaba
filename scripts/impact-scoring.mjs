@@ -2,7 +2,7 @@
 
 import { readFileSync, existsSync } from 'fs';
 
-const SSOT_PATH = '/home/tony/CascadeProjects/chaba/docs/ssot/ssot.improvements.yml';
+const SSOT_PATH = '/home/tony/CascadeProjects/chaba-tony-dell/docs/ssot/ssot.improvements.yml';
 
 // Impact weights
 const WEIGHTS = {

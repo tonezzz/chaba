@@ -59,7 +59,7 @@ The KB review section should be a concise summary of decisions, discoveries, or 
    - Tags
 
 4. **Places entries** in the correct location:
-   - `/home/tony/CascadeProjects/chaba/docs/kb/` (local file) or `KB_DIR` if overridden
+   - `/home/tony/CascadeProjects/chaba-tony-dell/docs/kb/` (local file) or `KB_DIR` if overridden
 
 5. **Indexes in MDDB** for future semantic search:
    - The assistant calls `mcp_call_tool mddb add_document` with the collection, filename, and metadata

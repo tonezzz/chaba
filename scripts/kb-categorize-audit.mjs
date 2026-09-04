@@ -6,7 +6,7 @@
 import { readFileSync, readdirSync, writeFileSync } from 'fs';
 import { join } from 'path';
 
-const KB_DIR = '/home/tony/CascadeProjects/chaba/docs/kb';
+const KB_DIR = '/home/tony/CascadeProjects/chaba-tony-dell/docs/kb';
 const CORE_CATEGORIES = ['operations', 'development', 'architecture', 'troubleshooting', 'implementation', 'features', 'system'];
 
 const SUGGESTED_MAP = {
@@ -61,7 +61,7 @@ function main() {
   }
 
   const output = `# KB Categorization Audit\n\nGenerated: ${new Date().toISOString().split('T')[0]}\n\nCore categories: ${CORE_CATEGORIES.join(', ')}\n\nNon-standard or missing categories: ${nonStandard}\n\n${report.join('\n') || 'All KB entries use core categories.'}\n`;
-  writeFileSync('/home/tony/CascadeProjects/chaba/reports/KB_CATEGORIZATION_REPORT.md', output, 'utf8');
+  writeFileSync('/home/tony/CascadeProjects/chaba-tony-dell/reports/KB_CATEGORIZATION_REPORT.md', output, 'utf8');
   console.log(`Non-standard/missing: ${nonStandard}`);
   console.log('Wrote reports/KB_CATEGORIZATION_REPORT.md');
 }

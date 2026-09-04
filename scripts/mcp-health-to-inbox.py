@@ -9,7 +9,7 @@ import yaml
 from datetime import datetime
 from pathlib import Path
 
-REPO = Path("/home/tony/CascadeProjects/chaba")
+REPO = Path("/home/tony/CascadeProjects/chaba-tony-dell")
 CLIENT = REPO / "scripts" / "mcp-health-client.py"
 INBOX_DIR = REPO / "docs" / "ssot" / "focus-inbox"
 HEALTH_SSOT = REPO / "docs" / "ssot" / "infrastructure" / "ssot.health.yml"

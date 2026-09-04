@@ -10,12 +10,12 @@ import { createRequire } from 'module';
 
 const require = createRequire(import.meta.url);
 const yaml = require('js-yaml');
-const { Client } = require('/home/tony/CascadeProjects/chaba/mcp-servers/mcp-health/node_modules/@modelcontextprotocol/sdk/dist/cjs/client/index.js');
-const { StdioClientTransport } = require('/home/tony/CascadeProjects/chaba/mcp-servers/mcp-health/node_modules/@modelcontextprotocol/sdk/dist/cjs/client/stdio.js');
+const { Client } = require('/home/tony/CascadeProjects/chaba-tony-dell/mcp-servers/mcp-health/node_modules/@modelcontextprotocol/sdk/dist/cjs/client/index.js');
+const { StdioClientTransport } = require('/home/tony/CascadeProjects/chaba-tony-dell/mcp-servers/mcp-health/node_modules/@modelcontextprotocol/sdk/dist/cjs/client/stdio.js');
 
-const REPORT_DIR = '/home/tony/CascadeProjects/chaba/reports';
+const REPORT_DIR = '/home/tony/CascadeProjects/chaba-tony-dell/reports';
 const REPORT_ARCHIVE_DIR = join(REPORT_DIR, 'archive');
-const LOG_DIR = '/home/tony/CascadeProjects/chaba/logs';
+const LOG_DIR = '/home/tony/CascadeProjects/chaba-tony-dell/logs';
 const KB_DIR = '/home/tony/CascadeProjects/chaba-yomi/docs/kb';
 const REPORT_RETENTION_DAYS = 30;
 
@@ -30,7 +30,7 @@ const now = new Date();
 const reportDate = now.toISOString().split('T')[0];
 const reportTime = now.toTimeString().split(' ')[0].replace(/:/g, '-');
 const reportPath = join(REPORT_DIR, `overnight-assessment-${reportDate}-${reportTime}.md`);
-const ssotImprovementsPath = '/home/tony/CascadeProjects/chaba/docs/ssot/ssot.improvements.yml';
+const ssotImprovementsPath = '/home/tony/CascadeProjects/chaba-tony-dell/docs/ssot/ssot.improvements.yml';
 
 let report = `# Overnight System Assessment Report - ${reportDate} ${reportTime}\n\n`;
 let criticalIssues = [];
@@ -55,10 +55,10 @@ async function createMCPClient() {
 
     const transport = new StdioClientTransport({
       command: '/usr/bin/node',
-      args: ['/home/tony/CascadeProjects/chaba/mcp-servers/mcp-health/server.js'],
+      args: ['/home/tony/CascadeProjects/chaba-tony-dell/mcp-servers/mcp-health/server.js'],
       env: {
-        HEALTH_CONFIG: '/home/tony/CascadeProjects/chaba/docs/ssot/infrastructure/ssot.health.yml',
-        HEALTH_SKILL: '/home/tony/CascadeProjects/chaba/.agents/skills/health-check/SKILL.md'
+        HEALTH_CONFIG: '/home/tony/CascadeProjects/chaba-tony-dell/docs/ssot/infrastructure/ssot.health.yml',
+        HEALTH_SKILL: '/home/tony/CascadeProjects/chaba-tony-dell/.agents/skills/health-check/SKILL.md'
       }
     });
 
@@ -84,7 +84,7 @@ async function closeMCPClient(client) {
 
 // Performance Baseline Analysis Functions
 function loadPerformanceBaselines() {
-  const baselinePath = '/home/tony/CascadeProjects/chaba/docs/ssot/infrastructure/performance-baselines.yml';
+  const baselinePath = '/home/tony/CascadeProjects/chaba-tony-dell/docs/ssot/infrastructure/performance-baselines.yml';
   
   if (!existsSync(baselinePath)) {
     console.log('Performance baselines file not found, skipping baseline analysis');
@@ -816,7 +816,7 @@ async function checkHealthServices() {
   content += '|---------|--------|---------------|-------|\n';
 
   // Read SSOT health configuration
-  const ssotHealthPath = '/home/tony/CascadeProjects/chaba/docs/ssot/infrastructure/ssot.health.home.yml';
+  const ssotHealthPath = '/home/tony/CascadeProjects/chaba-tony-dell/docs/ssot/infrastructure/ssot.health.home.yml';
   let services = [];
   
   if (existsSync(ssotHealthPath)) {
@@ -1262,8 +1262,8 @@ function checkConfiguration() {
 
   // Check SSOT files
   const ssotFiles = [
-    '/home/tony/CascadeProjects/chaba/docs/ssot/infrastructure/ssot.health.home.yml',
-    '/home/tony/CascadeProjects/chaba/docs/ssot/infrastructure/ssot.health.yml',
+    '/home/tony/CascadeProjects/chaba-tony-dell/docs/ssot/infrastructure/ssot.health.home.yml',
+    '/home/tony/CascadeProjects/chaba-tony-dell/docs/ssot/infrastructure/ssot.health.yml',
   ];
 
   content += '**SSOT Configuration Files:**\n\n';
@@ -1277,7 +1277,7 @@ function checkConfiguration() {
   }
 
   // Check for IP addresses in config files (should use .local hostnames)
-  const ipCheck = execCommand('grep -r "192\\.168\\." /home/tony/CascadeProjects/chaba/docs/overview/ 2>/dev/null || true');
+  const ipCheck = execCommand('grep -r "192\\.168\\." /home/tony/CascadeProjects/chaba-tony-dell/docs/overview/ 2>/dev/null || true');
   if (ipCheck.success && ipCheck.output) {
     content += '\n**IP Addresses Found in Config:**\n```\n' + ipCheck.output + '\n```\n';
     if (ipCheck.output.trim()) {
@@ -1293,14 +1293,14 @@ async function checkSecurityStatus() {
   let content = '';
 
   try {
-    const securityCheck = execCommand('node /home/tony/CascadeProjects/chaba/scripts/security-scan.mjs', 300000); // 5 minute timeout
+    const securityCheck = execCommand('node /home/tony/CascadeProjects/chaba-tony-dell/scripts/security-scan.mjs', 300000); // 5 minute timeout
     
     if (securityCheck.success) {
       content += '**Security Scan Results:**\n\n';
       
       // Try to parse the security results
       try {
-        const securityResultsPath = '/home/tony/CascadeProjects/chaba/security-results.json';
+        const securityResultsPath = '/home/tony/CascadeProjects/chaba-tony-dell/security-results.json';
         if (existsSync(securityResultsPath)) {
           const securityData = JSON.parse(readFileSync(securityResultsPath, 'utf8'));
           const summary = securityData.summary || {};
@@ -1427,7 +1427,7 @@ function checkImprovementsSSOT() {
   console.log('Checking improvements SSOT...');
   let content = '';
 
-  const ssotPath = '/home/tony/CascadeProjects/chaba/docs/ssot/ssot.improvements.yml';
+  const ssotPath = '/home/tony/CascadeProjects/chaba-tony-dell/docs/ssot/ssot.improvements.yml';
   if (existsSync(ssotPath)) {
     content += '**Improvements SSOT:** ✅ Found at ' + ssotPath + '\n\n';
     

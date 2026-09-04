@@ -3,8 +3,8 @@
 # System Automation Setup Script
 # Sets up cron jobs for GPU monitoring and system maintenance
 
-SCRIPT_DIR="/home/tony/CascadeProjects/chaba/scripts"
-LOG_DIR="/home/tony/CascadeProjects/chaba/logs/automation"
+SCRIPT_DIR="/home/tony/CascadeProjects/chaba-tony-dell/scripts"
+LOG_DIR="/home/tony/CascadeProjects/chaba-tony-dell/logs/automation"
 
 # Create log directory
 mkdir -p "$LOG_DIR"

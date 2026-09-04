@@ -8,7 +8,7 @@ import { existsSync, readdirSync, readFileSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import yaml from 'js-yaml';
 
-const PROJECT_ROOT = '/home/tony/CascadeProjects/chaba';
+const PROJECT_ROOT = '/home/tony/CascadeProjects/chaba-tony-dell';
 const REPORTS_DIR = join(PROJECT_ROOT, 'reports');
 const WARNINGS_FILE = join(REPORTS_DIR, 'SSOT_OPTIMIZATION_WARNINGS.json');
 const INBOX_DIR = join(PROJECT_ROOT, 'docs', 'ssot', 'focus-inbox');

@@ -88,7 +88,7 @@ runbooks:
       - The websockets Python package
     steps:
       - Connect to ws://<host>:8123/api/websocket
-      - Authenticate with {"type":"auth","access_token":TOKEN}
+      - Authenticate with {"type":"auth","access_token":"<TOKEN>"}
       - Fetch config with {"id":1,"type":"lovelace/config","url_path":"tony-test"}
       - Modify the JSON in memory (e.g. add/remove/reorder views, update card config)
       - Save with {"id":2,"type":"lovelace/config/save","url_path":"tony-test","config":<config>}

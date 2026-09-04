@@ -9,7 +9,7 @@
 import { readFileSync, writeFileSync, readdirSync, existsSync, statSync } from 'fs';
 import { join } from 'path';
 
-const KB_DIR = '/home/tony/CascadeProjects/chaba/docs/kb';
+const KB_DIR = '/home/tony/CascadeProjects/chaba-tony-dell/docs/kb';
 
 /**
  * Extract title from KB entry

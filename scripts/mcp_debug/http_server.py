@@ -95,7 +95,7 @@ class CORSHandler(BaseHTTPRequestHandler):
         self.wfile.write(b'{"ok":false,"error":"not found"}')
 
     def _handle_audit_health(self):
-        summary_path = Path("/home/tony/CascadeProjects/chaba/reports/audits/summary.json")
+        summary_path = Path("/home/tony/CascadeProjects/chaba-tony-dell/reports/audits/summary.json")
         if not summary_path.exists():
             self._send_json(503, {"ok": False, "error": "no audit summary available"})
             return

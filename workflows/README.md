@@ -199,7 +199,7 @@ mcp_call_tool server_name=workflows tool_name=execute_workflow \
     "workflows": {
       "command": "workflows-mcp",
       "env": {
-        "WORKFLOWS_TEMPLATE_PATHS": "/home/tony/CascadeProjects/chaba/workflows",
+        "WORKFLOWS_TEMPLATE_PATHS": "/home/tony/CascadeProjects/chaba-tony-dell/workflows",
         "WORKFLOWS_LOG_LEVEL": "INFO"
       }
     }

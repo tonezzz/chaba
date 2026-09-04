@@ -38,7 +38,7 @@ blocks:
     inputs:
       command: |
         #!/bin/bash
-        LOG_DIR="/home/tony/CascadeProjects/chaba/logs/maintenance"
+        LOG_DIR="/home/tony/CascadeProjects/chaba-tony-dell/logs/maintenance"
         LOG_FILE="$LOG_DIR/maintenance.log"
         mkdir -p "$LOG_DIR"
         echo "[$(date -Iseconds)] === Starting System Maintenance ===" >> "$LOG_FILE"
@@ -127,7 +127,7 @@ blocks:
         if [ "{{inputs.gpu_check}}" = "true" ]; then
           echo "[$(date -Iseconds)] === GPU Monitor Check ===" >> "$LOG_FILE"
           echo "[$(date -Iseconds)] Starting: GPU monitoring check" >> "$LOG_FILE"
-          result=$(node /home/tony/CascadeProjects/chaba/scripts/gpu-monitor.mjs --export 2>&1)
+          result=$(node /home/tony/CascadeProjects/chaba-tony-dell/scripts/gpu-monitor.mjs --export 2>&1)
           exit_code=$?
           if [ $exit_code -eq 0 ]; then
             echo "[$(date -Iseconds)] Success: GPU monitoring check" >> "$LOG_FILE"

@@ -11,8 +11,8 @@ import { readFileSync, writeFileSync, readdirSync, existsSync, statSync } from '
 import { join } from 'path';
 import { execSync } from 'child_process';
 
-const KB_DIR = '/home/tony/CascadeProjects/chaba/docs/kb';
-const PROJECT_DIR = '/home/tony/CascadeProjects/chaba';
+const KB_DIR = '/home/tony/CascadeProjects/chaba-tony-dell/docs/kb';
+const PROJECT_DIR = '/home/tony/CascadeProjects/chaba-tony-dell';
 
 /**
  * Get all KB entries with metadata

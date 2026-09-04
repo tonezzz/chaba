@@ -2,7 +2,7 @@ import { Client } from '/home/tony/.yomi/mcpb/node_modules/@modelcontextprotocol
 import { StdioClientTransport } from '/home/tony/.yomi/mcpb/node_modules/@modelcontextprotocol/sdk/dist/esm/client/stdio.js';
 import { writeFileSync, mkdirSync, existsSync, readdirSync } from 'node:fs';
 
-const MEDIA_DIR = process.env.MEDIA_DIR || '/home/tony/CascadeProjects/chaba/stacks/web/public/apps/yomi/media';
+const MEDIA_DIR = process.env.MEDIA_DIR || '/home/tony/CascadeProjects/chaba-tony-dell/stacks/web/public/apps/yomi/media';
 const YOMI_MCP_PATH = process.env.YOMI_MCP_PATH || '/home/tony/.yomi/mcpb/run.mjs';
 
 const nodePath = process.env.NODE_BINARY_PATH || '/usr/local/bin/node';

@@ -7,7 +7,7 @@
 set -e
 
 # Configuration
-DOCS_DIR="/home/tony/CascadeProjects/chaba/docs"
+DOCS_DIR="/home/tony/CascadeProjects/chaba-tony-dell/docs"
 EXPECTED_MIN_FILES=100
 EXPECTED_MCP_SERVERS="docs github yomi postgres mcp-gpu mcp-llama"
 
@@ -95,7 +95,7 @@ else
 fi
 
 # Check backup directory exists
-BACKUP_DIR="/home/tony/CascadeProjects/chaba/docs/backups/configs"
+BACKUP_DIR="/home/tony/CascadeProjects/chaba-tony-dell/docs/backups/configs"
 if [ -d "$BACKUP_DIR" ]; then
     BACKUP_COUNT=$(ls -1 "$BACKUP_DIR"/*_latest* 2>/dev/null | wc -l)
     echo "✓ Backup directory exists ($BACKUP_COUNT latest backups)"

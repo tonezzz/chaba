@@ -1,7 +1,7 @@
 import { Pool } from 'pg';
 import { existsSync, readFileSync } from 'node:fs';
 
-const ENV_PATH = '/home/tony/CascadeProjects/chaba/stacks/web/.env';
+const ENV_PATH = '/home/tony/CascadeProjects/chaba-tony-dell/stacks/web/.env';
 
 function loadEnv(path) {
   if (!existsSync(path)) return;

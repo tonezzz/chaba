@@ -7,7 +7,7 @@ import { readFileSync, readdirSync, writeFileSync, mkdirSync, existsSync } from 
 import { join, relative } from 'path';
 import yaml from 'js-yaml';
 
-const PROJECT_ROOT = '/home/tony/CascadeProjects/chaba';
+const PROJECT_ROOT = '/home/tony/CascadeProjects/chaba-tony-dell';
 const SSOT_DIR = join(PROJECT_ROOT, 'docs', 'ssot');
 const REPORTS_DIR = join(PROJECT_ROOT, 'reports', 'audits');
 const SSOT_FILE = join(PROJECT_ROOT, 'docs', 'ssot', 'infrastructure', 'ssot.audit.yml');

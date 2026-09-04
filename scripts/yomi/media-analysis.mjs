@@ -7,7 +7,7 @@
 import { spawn } from 'node:child_process';
 import pool from './db.mjs';
 
-const SCRIPT_DIR = process.env.SCRIPT_DIR || '/home/tony/CascadeProjects/chaba/scripts/yomi';
+const SCRIPT_DIR = process.env.SCRIPT_DIR || '/home/tony/CascadeProjects/chaba-tony-dell/scripts/yomi';
 
 /**
  * Spawn a Node.js script with the given arguments and environment

@@ -151,7 +151,7 @@ backup_configurations() {
     mkdir -p "$final_backup_dir"
     
     # Docker Compose files
-    local compose_dirs=("/home/tony/CascadeProjects/chaba/stacks/web")
+    local compose_dirs=("/home/tony/CascadeProjects/chaba-tony-dell/stacks/web")
     for dir in "${compose_dirs[@]}"; do
         if [ -d "$dir" ]; then
             local dir_name=$(basename "$dir")
@@ -162,8 +162,8 @@ backup_configurations() {
 
     # Environment files
     local env_files=(
-        "/home/tony/CascadeProjects/chaba/stacks/web/.env"
-        "/home/tony/CascadeProjects/chaba/stacks/web/.env.production"
+        "/home/tony/CascadeProjects/chaba-tony-dell/stacks/web/.env"
+        "/home/tony/CascadeProjects/chaba-tony-dell/stacks/web/.env.production"
     )
 
     for env_file in "${env_files[@]}"; do
@@ -174,14 +174,14 @@ backup_configurations() {
     done
 
     # SSOT files
-    local ssot_dir="/home/tony/CascadeProjects/chaba/docs/ssot"
+    local ssot_dir="/home/tony/CascadeProjects/chaba-tony-dell/docs/ssot"
     if [ -d "$ssot_dir" ]; then
         tar czf "$local_backup_dir/ssot.tar.gz" -C "$(dirname "$ssot_dir")" "ssot"
         log "INFO" "Backed up: SSOT files"
     fi
 
     # System configuration
-    local systemd_dir="/home/tony/CascadeProjects/chaba/systemd"
+    local systemd_dir="/home/tony/CascadeProjects/chaba-tony-dell/systemd"
     if [ -d "$systemd_dir" ]; then
         tar czf "$local_backup_dir/systemd.tar.gz" -C "$(dirname "$systemd_dir")" "systemd"
         log "INFO" "Backed up: Systemd files"
@@ -208,7 +208,7 @@ backup_documentation() {
     mkdir -p "$local_backup_dir"
     mkdir -p "$final_backup_dir"
 
-    local docs_dir="/home/tony/CascadeProjects/chaba/docs"
+    local docs_dir="/home/tony/CascadeProjects/chaba-tony-dell/docs"
     if [ -d "$docs_dir" ]; then
         tar czf "$local_backup_dir/docs.tar.gz" -C "$(dirname "$docs_dir")" "docs"
         local backup_size=$(du -h "$local_backup_dir/docs.tar.gz" | cut -f1)

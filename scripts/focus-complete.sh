@@ -5,7 +5,7 @@
 
 set -euo pipefail
 
-REPO="/home/tony/CascadeProjects/chaba"
+REPO="/home/tony/CascadeProjects/chaba-tony-dell"
 cd "$REPO"
 
 if [ $# -lt 1 ]; then

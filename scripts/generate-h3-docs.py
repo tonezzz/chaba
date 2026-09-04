@@ -7,7 +7,7 @@ from pathlib import Path
 
 import yaml
 
-REPO = Path('/home/tony/CascadeProjects/chaba')
+REPO = Path('/home/tony/CascadeProjects/chaba-tony-dell')
 H3 = Path('/home/tony/CascadeProjects/chaba-h3')
 SSOT = REPO / 'docs' / 'ssot' / 'apps' / 'ssot.apps.docs.yml'
 DOCS_YML = H3 / 'public' / 'apps' / 'docs' / 'docs.yml'

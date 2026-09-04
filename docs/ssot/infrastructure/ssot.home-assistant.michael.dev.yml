@@ -26,8 +26,8 @@ environments:
       container_unit: ~/.config/containers/systemd/michael-dev.container
       service_unit: ~/.config/systemd/user/michael-dev.service
     config: /home/tony/.config/michael-dev
-    repo_config: /home/tony/CascadeProjects/chaba/docs/home-assistant/configuration
-    repo_dashboards: /home/tony/CascadeProjects/chaba/docs/home-assistant/dashboards
+    repo_config: /home/tony/CascadeProjects/chaba-tony-dell/docs/home-assistant/configuration
+    repo_dashboards: /home/tony/CascadeProjects/chaba-tony-dell/docs/home-assistant/dashboards
     caddy:
       note: Not used — Tailscale serve provides HTTPS on port 8124. HA UI absolute redirects require internal_url to match the Tailnet HTTPS URL.
     https:
@@ -166,7 +166,7 @@ custom_components:
 
 entity_mocks:
   purpose: Real devices (Sunsynk, Tuya, Zigbee) do not exist on tony-dell. Use dev-only mocks to test automation logic.
-  repo_source: /home/tony/CascadeProjects/chaba/docs/home-assistant/dev/dev-mocks.yaml
+  repo_source: /home/tony/CascadeProjects/chaba-tony-dell/docs/home-assistant/dev/dev-mocks.yaml
   deployed_to: /home/tony/.config/michael-dev/packages/a_dev_mocks.yaml
   note: Deployed as packages/a_dev_mocks.yaml by deploy-michael-dev.sh. Keep out of deploy-michael.sh path so it is never sent to live.
 

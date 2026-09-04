@@ -20,10 +20,10 @@ The MCP Health Server follows a hybrid orchestrator model:
 
 ## Installation
 
-The server is installed at `/home/tony/CascadeProjects/chaba/mcp-servers/mcp-health/`
+The server is installed at `/home/tony/CascadeProjects/chaba-tony-dell/mcp-servers/mcp-health/`
 
 ```bash
-cd /home/tony/CascadeProjects/chaba/mcp-servers/mcp-health
+cd /home/tony/CascadeProjects/chaba-tony-dell/mcp-servers/mcp-health
 npm install
 ```
 
@@ -34,11 +34,11 @@ The server is configured in `/home/tony/.config/devin/mcp_config.json`:
 ```json
 {
   "mcp-health": {
-    "args": ["/home/tony/CascadeProjects/chaba/mcp-servers/mcp-health/server.js"],
+    "args": ["/home/tony/CascadeProjects/chaba-tony-dell/mcp-servers/mcp-health/server.js"],
     "command": "/usr/bin/node",
     "env": {
-      "HEALTH_CONFIG": "/home/tony/CascadeProjects/chaba/docs/ssot/infrastructure/ssot.health.yml",
-      "HEALTH_SKILL": "/home/tony/CascadeProjects/chaba/.agents/skills/health-check/SKILL.md"
+      "HEALTH_CONFIG": "/home/tony/CascadeProjects/chaba-tony-dell/docs/ssot/infrastructure/ssot.health.yml",
+      "HEALTH_SKILL": "/home/tony/CascadeProjects/chaba-tony-dell/.agents/skills/health-check/SKILL.md"
     }
   }
 }

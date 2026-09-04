@@ -4,7 +4,7 @@
 
 set -euo pipefail
 
-ALERT_LOG="/home/tony/CascadeProjects/chaba/logs/health-monitor.log"
+ALERT_LOG="/home/tony/CascadeProjects/chaba-tony-dell/logs/health-monitor.log"
 mkdir -p "$(dirname "$ALERT_LOG")"
 
 # Source notification plugins

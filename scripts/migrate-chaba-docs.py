@@ -6,7 +6,7 @@ import requests
 from pathlib import Path
 from datetime import datetime
 
-CHABA_DOCS_DIR = "/home/tony/CascadeProjects/chaba/docs"
+CHABA_DOCS_DIR = "/home/tony/CascadeProjects/chaba-tony-dell/docs"
 MDBB_SERVER = "http://localhost:9001"
 
 def get_collection(rel_path):

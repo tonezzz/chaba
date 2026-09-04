@@ -37,7 +37,7 @@ async function processNextJob() {
   // Process job via orchestrator
   console.log('Running orchestrator...');
   try {
-    await execAsync('node /home/tony/CascadeProjects/chaba/scripts/gpu-queue/orchestrator.mjs process');
+    await execAsync('node /home/tony/CascadeProjects/chaba-tony-dell/scripts/gpu-queue/orchestrator.mjs process');
   } catch (error) {
     console.error('Orchestrator failed:', error);
     throw error;

@@ -8,9 +8,9 @@ import { dirname, join } from 'path';
 import { fileURLToPath } from 'url';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const LOG_DIR = '/home/tony/CascadeProjects/chaba/logs';
+const LOG_DIR = '/home/tony/CascadeProjects/chaba-tony-dell/logs';
 const LOG_FILE = join(LOG_DIR, 'mcp-health-snapshot.log');
-const INBOX_DIR = '/home/tony/CascadeProjects/chaba/docs/ssot/focus-inbox';
+const INBOX_DIR = '/home/tony/CascadeProjects/chaba-tony-dell/docs/ssot/focus-inbox';
 const WRAPPER = '/home/tony/.config/devin/mcp-scripts/mcp-health-ssh.sh';
 
 mkdirSync(LOG_DIR, { recursive: true });

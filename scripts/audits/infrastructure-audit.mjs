@@ -9,7 +9,7 @@ import { join, basename } from 'path';
 import yaml from 'js-yaml';
 import { spawn } from 'child_process';
 
-const PROJECT_ROOT = '/home/tony/CascadeProjects/chaba';
+const PROJECT_ROOT = '/home/tony/CascadeProjects/chaba-tony-dell';
 const HEALTH_DIR = 'docs/ssot/infrastructure';
 const VALID_TYPES = new Set(['http', 'systemd', 'container', 'mount', 'sse']);
 const LIVE = process.argv.includes('--live');

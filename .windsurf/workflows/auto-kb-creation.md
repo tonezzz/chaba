@@ -97,7 +97,7 @@ If new entry is warranted:
 5. Add relevant tags for discoverability
 
 ### Step 4: Entry Location
-Place KB entries in: `/home/tony/CascadeProjects/chaba/docs/kb/`
+Place KB entries in: `/home/tony/CascadeProjects/chaba-tony-dell/docs/kb/`
 
 **Note**: Corrected from previous incorrect path `/home/tony/CascadeProjects/chaba-yomi/docs/kb/`
 
@@ -162,7 +162,7 @@ For major new topics during work (not end-of-session):
 - **Skill Location**: `.agents/skills/auto-kb/SKILL.md`
 - **Implementation**: `.agents/skills/auto-kb/auto-kb.mjs`
 - **Automatic Invocation**: MANDATORY per `.windsurfrules` 
-- **Path Configuration**: `/home/tony/CascadeProjects/chaba/docs/kb/`
+- **Path Configuration**: `/home/tony/CascadeProjects/chaba-tony-dell/docs/kb/`
 - **Redundancy Checking**: MDDB semantic search with fallback to local file-based check
 - **MDDB Integration**: Automatic indexing in appropriate KB collections
 - **Quality Criteria**: Enforced per skill documentation
@@ -211,11 +211,11 @@ Created 2026-08-04 to provide alternative interface for daily summaries with cal
 ## Key Details
 
 ### Technical Details
-- **Location**: `/home/tony/CascadeProjects/chaba/stacks/web/public/apps/yomi/daily2/index.html`
+- **Location**: `/home/tony/CascadeProjects/chaba-tony-dell/stacks/web/public/apps/yomi/daily2/index.html`
 - **Access**: `http://tony-omen.local:8080/apps/yomi/daily2/index.html`
 - **Auth**: Basic auth (same as other Yomi pages)
 - **Layout**: Two-panel design (calendar left, summary right)
-- **KB Path**: `/home/tony/CascadeProjects/chaba/docs/kb/` (corrected from chaba-yomi)
+- **KB Path**: `/home/tony/CascadeProjects/chaba-tony-dell/docs/kb/` (corrected from chaba-yomi)
 
 ### Implementation
 - Left panel: Monthly calendar with navigation, date selection, visual indicators for dates with summaries
@@ -235,7 +235,7 @@ Created 2026-08-04 to provide alternative interface for daily summaries with cal
 http://tony-omen.local:8080/apps/yomi/daily2/index.html?chat=<chatId>
 
 # Restart web stack if new files not picked up
-just -f /home/tony/CascadeProjects/chaba/Justfile restart-web
+just -f /home/tony/CascadeProjects/chaba-tony-dell/Justfile restart-web
 ```
 
 ## Troubleshooting

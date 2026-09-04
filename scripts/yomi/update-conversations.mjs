@@ -109,10 +109,10 @@ function getLanguageSpecificPrompt(language, name, lines) {
   }
 }
 
-const OUT = '/home/tony/CascadeProjects/chaba/stacks/web/public/apps/yomi/conversations.json';
-const MESSAGES_DIR = '/home/tony/CascadeProjects/chaba/stacks/web/public/apps/yomi/messages';
-const MEDIA_DIR = '/home/tony/CascadeProjects/chaba/stacks/web/public/apps/yomi/media';
-const SUMMARY_CACHE = process.env.SUMMARY_CACHE || '/home/tony/CascadeProjects/chaba/stacks/web/public/apps/yomi/summaries.json';
+const OUT = '/home/tony/CascadeProjects/chaba-tony-dell/stacks/web/public/apps/yomi/conversations.json';
+const MESSAGES_DIR = '/home/tony/CascadeProjects/chaba-tony-dell/stacks/web/public/apps/yomi/messages';
+const MEDIA_DIR = '/home/tony/CascadeProjects/chaba-tony-dell/stacks/web/public/apps/yomi/media';
+const SUMMARY_CACHE = process.env.SUMMARY_CACHE || '/home/tony/CascadeProjects/chaba-tony-dell/stacks/web/public/apps/yomi/summaries.json';
 const LLAMA_URL = process.env.LLAMA_URL || 'http://localhost:8001/v1/chat/completions';
 const YOMI_MCP_PATH = process.env.YOMI_MCP_PATH || '/home/tony/.yomi/mcpb/run.mjs';
 

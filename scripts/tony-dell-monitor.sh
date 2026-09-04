@@ -145,7 +145,7 @@ PY
 
 # ── Phase 2: query tony-omen mcp-health and store the result on tony-dell ──
 MCP_HEALTH_OUT="$LOG_DIR/tony-dell-mcp-health.json"
-MCP_HEALTH_QUERY="python3 /home/tony/CascadeProjects/chaba/scripts/mcp-health-client.py get_health_score '{\"include_optional\":true}'"
+MCP_HEALTH_QUERY="python3 /home/tony/CascadeProjects/chaba-tony-dell/scripts/mcp-health-client.py get_health_score '{\"include_optional\":true}'"
 if ssh -o BatchMode=yes -o ConnectTimeout=5 -o StrictHostKeyChecking=no "tony@${TONY_OMEN_IP}" "$MCP_HEALTH_QUERY" > "${MCP_HEALTH_OUT}.tmp" 2>/dev/null; then
     mv "${MCP_HEALTH_OUT}.tmp" "$MCP_HEALTH_OUT"
     printf '%s\n' "{\"timestamp\":\"$TS\",\"mcp-health\":\"queried\",\"file\":\"$MCP_HEALTH_OUT\"}"

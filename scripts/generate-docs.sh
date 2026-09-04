@@ -5,10 +5,10 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(dirname "$0")"
-DOCS_DIR="/home/tony/CascadeProjects/chaba/docs"
-SSOT_DIR="/home/tony/CascadeProjects/chaba/docs/ssot"
-KB_DIR="/home/tony/CascadeProjects/chaba/docs/kb"
-LOG_FILE="/home/tony/CascadeProjects/chaba/logs/doc-generation.log"
+DOCS_DIR="/home/tony/CascadeProjects/chaba-tony-dell/docs"
+SSOT_DIR="/home/tony/CascadeProjects/chaba-tony-dell/docs/ssot"
+KB_DIR="/home/tony/CascadeProjects/chaba-tony-dell/docs/kb"
+LOG_FILE="/home/tony/CascadeProjects/chaba-tony-dell/logs/doc-generation.log"
 mkdir -p "$(dirname "$LOG_FILE")"
 
 # Color codes

@@ -3,7 +3,7 @@ import { appendFile, readFile, writeFile, mkdir } from 'fs/promises';
 import { join } from 'path';
 import { existsSync } from 'fs';
 
-const ANALYTICS_DIR = '/home/tony/CascadeProjects/chaba/scripts/weaviate/analytics';
+const ANALYTICS_DIR = '/home/tony/CascadeProjects/chaba-tony-dell/scripts/weaviate/analytics';
 const SEARCH_LOG_FILE = join(ANALYTICS_DIR, 'search-logs.jsonl');
 const METRICS_FILE = join(ANALYTICS_DIR, 'metrics.json');
 

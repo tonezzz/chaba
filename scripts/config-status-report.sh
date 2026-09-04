@@ -3,7 +3,7 @@
 
 set -e
 
-SSOT_DIR="/home/tony/CascadeProjects/chaba/docs/ssot"
+SSOT_DIR="/home/tony/CascadeProjects/chaba-tony-dell/docs/ssot"
 REPORT_FILE="/tmp/ssot-config-status-report.txt"
 TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S')
 
@@ -24,8 +24,8 @@ DRIFT_COUNT=0
 check_drift() {
     local source_file="$1"
     local filename=$(basename "$source_file")
-    local served_file="/home/tony/CascadeProjects/chaba/stacks/web/public/$filename"
-    local public_file="/home/tony/CascadeProjects/chaba/public/docs/overview/$filename"
+    local served_file="/home/tony/CascadeProjects/chaba-tony-dell/stacks/web/public/$filename"
+    local public_file="/home/tony/CascadeProjects/chaba-tony-dell/public/docs/overview/$filename"
     
     local has_drift=false
     
@@ -109,7 +109,7 @@ wrapper_count=0
 missing_count=0
 not_executable_count=0
 
-for script in /home/tony/CascadeProjects/chaba/.windsurf/run-*.sh; do
+for script in /home/tony/CascadeProjects/chaba-tony-dell/.windsurf/run-*.sh; do
     if [ -f "$script" ]; then
         wrapper_count=$((wrapper_count + 1))
         script_name=$(basename "$script")
@@ -161,7 +161,7 @@ fi
 
 if [ $not_executable_count -gt 0 ]; then
     echo "⚠️  Make wrapper scripts executable:"
-    echo "   Run: chmod +x /home/tony/CascadeProjects/chaba/.windsurf/run-*.sh"
+    echo "   Run: chmod +x /home/tony/CascadeProjects/chaba-tony-dell/.windsurf/run-*.sh"
 fi
 
 if [ $DRIFT_COUNT -gt 0 ]; then

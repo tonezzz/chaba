@@ -5,9 +5,9 @@ import { summaryRateLimiter, dailyRateLimiter, summaryCircuitBreaker, dailyCircu
 import { geminiConversationSummary, geminiDailySummary, geminiBatchDailySummary, testGeminiConnection } from './gemini-integration.mjs';
 import pool from './db.mjs';
 
-const FETCH_DIR = '/home/tony/CascadeProjects/chaba/stacks/web/public/apps/yomi/fetch-data';
-const SUMMARY_CACHE = '/home/tony/CascadeProjects/chaba/stacks/web/public/apps/yomi/summaries.json';
-const STATUS_FILE = '/home/tony/CascadeProjects/chaba/stacks/web/public/apps/yomi/process-status.json';
+const FETCH_DIR = '/home/tony/CascadeProjects/chaba-tony-dell/stacks/web/public/apps/yomi/fetch-data';
+const SUMMARY_CACHE = '/home/tony/CascadeProjects/chaba-tony-dell/stacks/web/public/apps/yomi/summaries.json';
+const STATUS_FILE = '/home/tony/CascadeProjects/chaba-tony-dell/stacks/web/public/apps/yomi/process-status.json';
 const LLAMA_URL = process.env.LLAMA_URL || 'http://localhost:8001/v1/chat/completions';
 const BATCH_SIZE = parseInt(process.env.YOMI_BATCH_SIZE || '10', 10);
 const USE_GEMINI = process.env.USE_GEMINI !== 'false' && process.env.USE_GEMINI !== '0'; // Default to true (use Gemini)

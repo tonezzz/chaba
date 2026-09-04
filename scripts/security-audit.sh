@@ -7,9 +7,9 @@
 set -eo pipefail
 
 # Configuration
-SECURITY_LOG="/home/tony/CascadeProjects/chaba/logs/security-audit.log"
-REPORT_FILE="/home/tony/CascadeProjects/chaba/reports/security-audit-$(date +%Y%m%d_%H%M%S).txt"
-PROJECT_ROOT="/home/tony/CascadeProjects/chaba"
+SECURITY_LOG="/home/tony/CascadeProjects/chaba-tony-dell/logs/security-audit.log"
+REPORT_FILE="/home/tony/CascadeProjects/chaba-tony-dell/reports/security-audit-$(date +%Y%m%d_%H%M%S).txt"
+PROJECT_ROOT="/home/tony/CascadeProjects/chaba-tony-dell"
 
 # Load accepted baseline from ssot.audit.yml
 ACCEPTED_ROOT_CONTAINERS=""
@@ -244,7 +244,7 @@ check_backup_security() {
     fi
     
     # Check backup log permissions
-    local backup_logs=("/home/tony/CascadeProjects/chaba/logs/chaba-backup.log" "/home/tony/CascadeProjects/chaba/logs/chaba-backup-monitor.log" "/var/log/chaba-backup.log" "/var/log/chaba-backup-monitor.log")
+    local backup_logs=("/home/tony/CascadeProjects/chaba-tony-dell/logs/chaba-backup.log" "/home/tony/CascadeProjects/chaba-tony-dell/logs/chaba-backup-monitor.log" "/var/log/chaba-backup.log" "/var/log/chaba-backup-monitor.log")
     for log_file in "${backup_logs[@]}"; do
         if [ -f "$log_file" ]; then
             local log_perms=$(stat -c "%a" "$log_file")

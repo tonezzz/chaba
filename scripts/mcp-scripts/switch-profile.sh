@@ -3,7 +3,7 @@
 # Switches between home and mobile network profiles
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-CHABA_DIR="/home/tony/CascadeProjects/chaba"
+CHABA_DIR="/home/tony/CascadeProjects/chaba-tony-dell"
 GENERATOR="$CHABA_DIR/scripts/generate-mcp-config.py"
 
 # Default to home profile

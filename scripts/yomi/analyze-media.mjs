@@ -25,7 +25,7 @@ function detectLanguage(text) {
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const GEMINI_VISION_MODEL_PRIMARY = process.env.GEMINI_VISION_MODEL_PRIMARY || 'gemma-4-31b-it';
 const GEMINI_VISION_MODEL_FALLBACK = process.env.GEMINI_VISION_MODEL_FALLBACK || 'gemma-4-26b-a4b-it';
-const MEDIA_DIR = '/home/tony/CascadeProjects/chaba/stacks/web/public/apps/yomi/media';
+const MEDIA_DIR = '/home/tony/CascadeProjects/chaba-tony-dell/stacks/web/public/apps/yomi/media';
 const JOB_ID = process.env.JOB_ID;
 const CONTEXT_MESSAGES_BEFORE = parseInt(process.env.CONTEXT_MESSAGES_BEFORE || '3', 10);
 const CONTEXT_MESSAGES_AFTER = parseInt(process.env.CONTEXT_MESSAGES_AFTER || '3', 10);

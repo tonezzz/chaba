@@ -5,7 +5,7 @@ After=network.target
 [Service]
 Type=oneshot
 User=tony
-ExecStart=/bin/bash -c 'cd /home/tony/CascadeProjects/chaba && node scripts/auto-kb-quality-audit.mjs --json && node scripts/kb-categorize-audit.mjs && node scripts/audits/kb-modularity-audit.mjs'
-WorkingDirectory=/home/tony/CascadeProjects/chaba
-StandardOutput=append:/home/tony/CascadeProjects/chaba/logs/kb-audit.log
-StandardError=append:/home/tony/CascadeProjects/chaba/logs/kb-audit.log
+ExecStart=/bin/bash -c 'cd /home/tony/CascadeProjects/chaba-tony-dell && node scripts/auto-kb-quality-audit.mjs --json && node scripts/kb-categorize-audit.mjs && node scripts/audits/kb-modularity-audit.mjs'
+WorkingDirectory=/home/tony/CascadeProjects/chaba-tony-dell
+StandardOutput=append:/home/tony/CascadeProjects/chaba-tony-dell/logs/kb-audit.log
+StandardError=append:/home/tony/CascadeProjects/chaba-tony-dell/logs/kb-audit.log

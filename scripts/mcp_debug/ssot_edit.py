@@ -10,7 +10,7 @@ import yaml
 
 logger = logging.getLogger(__name__)
 
-REPO_ROOT = Path("/home/tony/CascadeProjects/chaba")
+REPO_ROOT = Path("/home/tony/CascadeProjects/chaba-tony-dell")
 SSOT_ROOT = REPO_ROOT / "docs" / "ssot"
 
 # Top-level list sections this tool is allowed to append to.

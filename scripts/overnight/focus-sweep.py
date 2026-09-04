@@ -19,7 +19,7 @@ from pathlib import Path
 
 import yaml
 
-REPO = Path("/home/tony/CascadeProjects/chaba")
+REPO = Path("/home/tony/CascadeProjects/chaba-tony-dell")
 ACTIVE_FILE = REPO / "docs/ssot/ssot.focus.current.active.yml"
 
 DAYS_TO_PARK = 7

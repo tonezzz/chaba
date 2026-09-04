@@ -14,7 +14,7 @@ const execAsync = promisify(exec);
 
 // Configuration
 const WEAVIATE_URL = process.env.WEAVIATE_URL || 'http://localhost:8082';
-const CHABA_ROOT = '/home/tony/CascadeProjects/chaba';
+const CHABA_ROOT = '/home/tony/CascadeProjects/chaba-tony-dell';
 
 // Document patterns to index
 const DOCUMENT_PATTERNS = [

@@ -9,7 +9,7 @@ echo "Logs will be saved to logs/overnight-manual-$TIMESTAMP.log"
 echo "Report will be saved to reports/overnight-assessment-$TIMESTAMP.md"
 echo ""
 
-cd /home/tony/CascadeProjects/chaba
+cd /home/tony/CascadeProjects/chaba-tony-dell
 nohup ./scripts/overnight-jobs-expanded.sh > logs/overnight-manual-$TIMESTAMP.log 2>&1 &
 
 echo "Overnight assessment started in background."

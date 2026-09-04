@@ -51,7 +51,7 @@ The system includes automatic queue processing via systemd services and schedule
   try {
     // Test chunking
     const { stdout } = await execAsync(
-      `/home/tony/venv-embeddings/bin/python /home/tony/CascadeProjects/chaba/scripts/chunk-text.py "${tempFile}" ${chunkSize} 50`,
+      `/home/tony/venv-embeddings/bin/python /home/tony/CascadeProjects/chaba-tony-dell/scripts/chunk-text.py "${tempFile}" ${chunkSize} 50`,
       { timeout: 30000 }
     );
     

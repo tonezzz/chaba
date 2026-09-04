@@ -7,8 +7,8 @@ import { readFileSync, writeFileSync, existsSync } from 'fs';
 import { join } from 'path';
 import yaml from 'yaml';
 
-const FOCUS = '/home/tony/CascadeProjects/chaba/docs/ssot/ssot.focus.current.yml';
-const REPORT = '/home/tony/CascadeProjects/chaba/reports/HANDOFF_CONTRACT.md';
+const FOCUS = '/home/tony/CascadeProjects/chaba-tony-dell/docs/ssot/ssot.focus.current.yml';
+const REPORT = '/home/tony/CascadeProjects/chaba-tony-dell/reports/HANDOFF_CONTRACT.md';
 
 function loadFocus() {
   return yaml.parse(readFileSync(FOCUS, 'utf8'));
@@ -39,7 +39,7 @@ function generateContract(items) {
     const completed = item.completed || null;
     const plan = item.plan || '';
     const summary = item.summary || '';
-    const contractPath = item.contract_path || join('/home/tony/CascadeProjects/chaba/docs/ssot/infrastructure', `ssot.handoff.${label.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}.yml`);
+    const contractPath = item.contract_path || join('/home/tony/CascadeProjects/chaba-tony-dell/docs/ssot/infrastructure', `ssot.handoff.${label.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')}.yml`);
     const completionCriteria = item.completion_criteria || [
       'Sub-agent completed all assigned subtasks',
       'Changes are validated or reported',

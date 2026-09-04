@@ -10,9 +10,9 @@
 import { readFileSync, readdirSync, renameSync, existsSync, mkdirSync, writeFileSync } from 'fs';
 import { join, basename } from 'path';
 
-const KB_DIR = '/home/tony/CascadeProjects/chaba/docs/kb';
+const KB_DIR = '/home/tony/CascadeProjects/chaba-tony-dell/docs/kb';
 const ARCHIVE_DIR = join(KB_DIR, 'archive');
-const REPORTS_DIR = '/home/tony/CascadeProjects/chaba/reports';
+const REPORTS_DIR = '/home/tony/CascadeProjects/chaba-tony-dell/reports';
 
 const KB_WORTHY_TRIGGERS = [
   'bug fix', 'corruption', 'security', 'vulnerability',

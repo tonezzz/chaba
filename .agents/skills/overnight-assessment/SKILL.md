@@ -66,4 +66,4 @@ Generate comprehensive markdown report with:
 - Prioritized improvement recommendations
 - Historical comparison if data available
 
-Save to: /home/tony/CascadeProjects/chaba/reports/overnight-assessment-YYYY-MM-DD.md
+Save to: /home/tony/CascadeProjects/chaba-tony-dell/reports/overnight-assessment-YYYY-MM-DD.md

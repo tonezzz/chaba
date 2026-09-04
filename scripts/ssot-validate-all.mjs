@@ -81,7 +81,7 @@ HARD_SECTIONS = 12
 HARD_ITEMS = 60
 
 IP4_RE = re.compile(r'''(?<!\\d)(?:25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]?\\d)\\.(?:25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]?\\d)\\.(?:25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]?\\d)\\.(?:25[0-5]|2[0-4]\\d|1\\d\\d|[1-9]?\\d)(?!\\d)''')
-SECRETS_RE = re.compile(r'''(password|secret|token|api_key|private_key|access_key)["']?\\s*[:=]\\s*["']?([^\\s\\n"']+)''', re.IGNORECASE)
+SECRETS_RE = re.compile(r'''(password|secret|token|api_key|private_key|access_key)["']?[ \\t]*[:=][ \\t]*["']?([^\\s\\n"']+)''', re.IGNORECASE)
 RUNTIME_RE = re.compile(r'''(last_seen|last_login|generated_at|timestamp|updated_at):\\s+["']?\\d{4}-\\d{2}-\\d{2}''', re.IGNORECASE)
 
 
@@ -98,9 +98,10 @@ def _data_isolation_scan(rel, content, warnings):
     if any(skip in rel for skip in ('ssot.mysystem.', 'ssot.health.', 'performance-baselines')):
         return
     for match in IP4_RE.finditer(content):
-        # Skip loopback, Tailscale, wildcard bind, and documented home subnets
+        # Skip loopback, Tailscale, wildcard bind, documented home subnets, and
+        # well-known Home Assistant OS supervisor gateway address
         ip = match.group(0)
-        if ip.startswith(('127.', '100.', '0.0.0.0', '192.168.', '8.8.8.8', '8.8.4.4')):
+        if ip.startswith(('127.', '100.', '0.0.0.0', '192.168.', '8.8.8.8', '8.8.4.4', '172.30.32.1')):
             continue
         warnings.append(f'Data isolation: hardcoded IPv4 address {ip}')
         break
@@ -112,6 +113,8 @@ def _data_isolation_scan(rel, content, warnings):
         if re.match(r'^[~/.]', value):
             continue
         if 'environment variable' in value.lower() or 'do not commit' in value.lower():
+            continue
+        if re.match(r'^(<.*>|\$\{[^}]+\}|example|placeholder)$', value, re.IGNORECASE):
             continue
         warnings.append(f'Data isolation: possible secret value embedded in YAML: {value[:40]}')
         break

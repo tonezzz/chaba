@@ -3,7 +3,7 @@
 # Provides multi-channel alerting capabilities
 
 # Alert log path (must match health-monitor.sh)
-ALERT_LOG="/home/tony/CascadeProjects/chaba/logs/health-monitor.log"
+ALERT_LOG="/home/tony/CascadeProjects/chaba-tony-dell/logs/health-monitor.log"
 
 # Source configuration (use SCRIPT_DIR from caller if set, otherwise determine)
 if [[ -z "${SCRIPT_DIR:-}" ]]; then

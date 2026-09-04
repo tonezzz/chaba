@@ -54,8 +54,8 @@ branches:
 worktree_setup:
   chaba:
     - "mkdir -p /home/tony/.local/share/worktrees/chaba"
-    - "git -C /home/tony/CascadeProjects/chaba worktree add /home/tony/.local/share/worktrees/chaba/ha ha"
-    - "git -C /home/tony/CascadeProjects/chaba worktree add /home/tony/.local/share/worktrees/chaba/tony-ha tony-ha"
+    - "git -C /home/tony/CascadeProjects/chaba-tony-dell worktree add /home/tony/.local/share/worktrees/chaba/ha ha"
+    - "git -C /home/tony/CascadeProjects/chaba-tony-dell worktree add /home/tony/.local/share/worktrees/chaba/tony-ha tony-ha"
   chaba-michael:
     - "mkdir -p /home/tony/.local/share/worktrees/chaba-michael"
     - "git -C /home/tony/CascadeProjects/chaba-michael worktree add /home/tony/.local/share/worktrees/chaba-michael/michael-ha michael-ha"
@@ -63,7 +63,7 @@ worktree_setup:
 
 sync_rules:
   tony-ha:
-    - "git -C /home/tony/CascadeProjects/chaba fetch origin"
+    - "git -C /home/tony/CascadeProjects/chaba-tony-dell fetch origin"
     - "git -C /home/tony/.local/share/worktrees/chaba/tony-ha rebase origin/ha"
     - "git -C /home/tony/.local/share/worktrees/chaba/tony-ha push origin tony-ha"
   michael-ha:

@@ -5,11 +5,11 @@ Requires=weaviate-embedding.service
 
 [Service]
 Type=simple
-WorkingDirectory=/home/tony/CascadeProjects/chaba
+WorkingDirectory=/home/tony/CascadeProjects/chaba-tony-dell
 Environment="WEAVIATE_URL=http://tony-dell:8084"
 Environment="EMBEDDING_SERVICE_URL=http://localhost:5000"
 Environment="PORT=3002"
-ExecStart=/usr/bin/node /home/tony/CascadeProjects/chaba/scripts/weaviate/api.mjs
+ExecStart=/usr/bin/node /home/tony/CascadeProjects/chaba-tony-dell/scripts/weaviate/api.mjs
 Restart=on-failure
 RestartSec=10
 

@@ -1,7 +1,7 @@
 import { readdirSync, readFileSync, existsSync } from 'node:fs';
 import pool from './db.mjs';
 
-const JSON_DIR = '/home/tony/CascadeProjects/chaba/stacks/web/public/apps/yomi';
+const JSON_DIR = '/home/tony/CascadeProjects/chaba-tony-dell/stacks/web/public/apps/yomi';
 
 async function saveMessages(chatId, messages) {
   if (!messages.length) return;

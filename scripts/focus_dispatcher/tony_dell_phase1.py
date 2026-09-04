@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Phase 1 of the Dev-system regression focus: collect a read-only inventory
-of branches and worktrees for all /home/tony/CascadeProjects/chaba* repos.
+of branches and worktrees for all /home/tony/CascadeProjects/chaba-tony-dell* repos.
 
 This script is intended to run on tony-dell. It can inventory the local
 host or any reachable remote host via SSH (e.g. --target-host tony-omen).

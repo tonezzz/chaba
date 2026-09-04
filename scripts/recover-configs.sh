@@ -7,7 +7,7 @@
 set -e
 
 # Configuration
-BACKUP_DIR="/home/tony/CascadeProjects/chaba/docs/backups/configs"
+BACKUP_DIR="/home/tony/CascadeProjects/chaba-tony-dell/docs/backups/configs"
 TIMESTAMP=${1:-latest}
 
 echo "Starting documentation infrastructure recovery: $TIMESTAMP"
@@ -108,7 +108,7 @@ fi
 # Restore project rules if exists
 PROJECT_RULES="$BACKUP_DIR/project_rules_$TIMESTAMP.md"
 if [ -f "$PROJECT_RULES" ]; then
-    cp "$PROJECT_RULES" /home/tony/CascadeProjects/chaba/.windsurfrules
+    cp "$PROJECT_RULES" /home/tony/CascadeProjects/chaba-tony-dell/.windsurfrules
     echo "✓ Project rules restored"
 else
     echo "⚠ Project rules backup not found (skipping)"

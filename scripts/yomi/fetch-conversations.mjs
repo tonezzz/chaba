@@ -21,7 +21,7 @@ function normalizeTimestamp(deliveredTime) {
   }
 }
 
-const FETCH_DIR = '/home/tony/CascadeProjects/chaba/stacks/web/public/apps/yomi/fetch-data';
+const FETCH_DIR = '/home/tony/CascadeProjects/chaba-tony-dell/stacks/web/public/apps/yomi/fetch-data';
 const BATCH_SIZE = 10;
 const BATCH_DELAY_MS = 2000;
 const YOMI_MCP_PATH = process.env.YOMI_MCP_PATH || '/home/tony/.yomi/mcpb/run.mjs';

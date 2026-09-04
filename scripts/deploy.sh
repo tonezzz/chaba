@@ -7,10 +7,10 @@
 set -eo pipefail
 
 # Configuration
-PROJECT_ROOT="/home/tony/CascadeProjects/chaba"
-DEPLOYMENT_LOG="/home/tony/CascadeProjects/chaba/logs/deployment.log"
-BACKUP_DIR="/home/tony/CascadeProjects/chaba/deployments/backups"
-ROLLBACK_DIR="/home/tony/CascadeProjects/chaba/deployments/rollbacks"
+PROJECT_ROOT="/home/tony/CascadeProjects/chaba-tony-dell"
+DEPLOYMENT_LOG="/home/tony/CascadeProjects/chaba-tony-dell/logs/deployment.log"
+BACKUP_DIR="/home/tony/CascadeProjects/chaba-tony-dell/deployments/backups"
+ROLLBACK_DIR="/home/tony/CascadeProjects/chaba-tony-dell/deployments/rollbacks"
 
 # Create directories
 mkdir -p "$(dirname "$DEPLOYMENT_LOG")"

@@ -9,7 +9,7 @@ set -eo pipefail
 echo "Testing Chaba Monitoring Dashboard..."
 
 # Test 1: Check if script exists and is executable
-if [ ! -x "/home/tony/CascadeProjects/chaba/scripts/monitoring-dashboard.mjs" ]; then
+if [ ! -x "/home/tony/CascadeProjects/chaba-tony-dell/scripts/monitoring-dashboard.mjs" ]; then
     echo "❌ Dashboard script not found or not executable"
     exit 1
 fi
@@ -23,7 +23,7 @@ fi
 echo "✅ Node.js is available"
 
 # Test 3: Check systemd service file
-if [ ! -f "/home/tony/CascadeProjects/chaba/systemd/chaba-monitoring-dashboard.service" ]; then
+if [ ! -f "/home/tony/CascadeProjects/chaba-tony-dell/systemd/chaba-monitoring-dashboard.service" ]; then
     echo "❌ Systemd service file not found"
     exit 1
 fi
@@ -33,7 +33,7 @@ echo "✅ Systemd service file exists"
 echo "Starting dashboard in background on test port..."
 # Use a different port for testing to avoid conflicts
 TEST_PORT=3003
-sed "s/const PORT = 3002/const PORT = $TEST_PORT/" /home/tony/CascadeProjects/chaba/scripts/monitoring-dashboard.mjs > /tmp/test-dashboard.mjs
+sed "s/const PORT = 3002/const PORT = $TEST_PORT/" /home/tony/CascadeProjects/chaba-tony-dell/scripts/monitoring-dashboard.mjs > /tmp/test-dashboard.mjs
 timeout 5 node /tmp/test-dashboard.mjs &
 DASHBOARD_PID=$!
 sleep 3

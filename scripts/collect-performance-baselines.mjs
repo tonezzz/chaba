@@ -3,8 +3,8 @@
 import { createRequire } from 'module';
 
 const require = createRequire(import.meta.url);
-const { Client } = require('/home/tony/CascadeProjects/chaba/mcp-servers/mcp-health/node_modules/@modelcontextprotocol/sdk/dist/cjs/client/index.js');
-const { StdioClientTransport } = require('/home/tony/CascadeProjects/chaba/mcp-servers/mcp-health/node_modules/@modelcontextprotocol/sdk/dist/cjs/client/stdio.js');
+const { Client } = require('/home/tony/CascadeProjects/chaba-tony-dell/mcp-servers/mcp-health/node_modules/@modelcontextprotocol/sdk/dist/cjs/client/index.js');
+const { StdioClientTransport } = require('/home/tony/CascadeProjects/chaba-tony-dell/mcp-servers/mcp-health/node_modules/@modelcontextprotocol/sdk/dist/cjs/client/stdio.js');
 import { writeFileSync } from 'fs';
 
 async function createMCPClient() {
@@ -18,10 +18,10 @@ async function createMCPClient() {
 
     const transport = new StdioClientTransport({
       command: '/usr/bin/node',
-      args: ['/home/tony/CascadeProjects/chaba/mcp-servers/mcp-health/server.js'],
+      args: ['/home/tony/CascadeProjects/chaba-tony-dell/mcp-servers/mcp-health/server.js'],
       env: {
-        HEALTH_CONFIG: '/home/tony/CascadeProjects/chaba/docs/ssot/infrastructure/ssot.health.yml',
-        HEALTH_SKILL: '/home/tony/CascadeProjects/chaba/.agents/skills/health-check/SKILL.md'
+        HEALTH_CONFIG: '/home/tony/CascadeProjects/chaba-tony-dell/docs/ssot/infrastructure/ssot.health.yml',
+        HEALTH_SKILL: '/home/tony/CascadeProjects/chaba-tony-dell/.agents/skills/health-check/SKILL.md'
       }
     });
 
@@ -186,7 +186,7 @@ async function main() {
     console.log(`Established baselines for ${Object.keys(baselines).length} services`);
     
     // Save baselines to file
-    const baselineFile = '/home/tony/CascadeProjects/chaba/docs/ssot/infrastructure/performance-baselines.yml';
+    const baselineFile = '/home/tony/CascadeProjects/chaba-tony-dell/docs/ssot/infrastructure/performance-baselines.yml';
     const yaml = require('js-yaml');
     writeFileSync(baselineFile, yaml.dump({ baselines }), 'utf8');
     

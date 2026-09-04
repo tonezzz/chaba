@@ -12,8 +12,8 @@ import { invalidateConversationsCache, invalidateMessagesCache, invalidateDailyC
 
 const PORT = parseInt(process.env.YOMI_API_PORT || '3000', 10);
 const HOST = process.env.YOMI_API_HOST || '0.0.0.0';
-const SCRIPT_DIR = process.env.SCRIPT_DIR || '/home/tony/CascadeProjects/chaba/scripts/yomi';
-const MEDIA_DIR = '/home/tony/CascadeProjects/chaba/stacks/web/public/apps/yomi/media';
+const SCRIPT_DIR = process.env.SCRIPT_DIR || '/home/tony/CascadeProjects/chaba-tony-dell/scripts/yomi';
+const MEDIA_DIR = '/home/tony/CascadeProjects/chaba-tony-dell/stacks/web/public/apps/yomi/media';
 const WEAVIATE_SEARCH_URL = process.env.WEAVIATE_SEARCH_URL || 'http://localhost:3002';
 const WEAVIATE_URL = process.env.WEAVIATE_URL || 'http://localhost:8082';
 const EMBEDDING_URL = process.env.EMBEDDING_SERVICE_URL || 'http://localhost:5000';
@@ -353,7 +353,7 @@ async function handleSessionStatus(res) {
     
     // Check login attempts file
     let loginAttempts = [];
-    const LOGIN_ATTEMPT_FILE = '/home/tony/CascadeProjects/chaba/stacks/web/public/apps/yomi/fetch-data/login-attempts.json';
+    const LOGIN_ATTEMPT_FILE = '/home/tony/CascadeProjects/chaba-tony-dell/stacks/web/public/apps/yomi/fetch-data/login-attempts.json';
     try {
       const { existsSync, readFileSync } = await import('node:fs');
       if (existsSync(LOGIN_ATTEMPT_FILE)) {
@@ -434,7 +434,7 @@ async function handleActivityStatus(res) {
     // Get process status from file
     let processStatus = null;
     try {
-      const STATUS_FILE = '/home/tony/CascadeProjects/chaba/stacks/web/public/apps/yomi/process-status.json';
+      const STATUS_FILE = '/home/tony/CascadeProjects/chaba-tony-dell/stacks/web/public/apps/yomi/process-status.json';
       const { existsSync, readFileSync } = await import('node:fs');
       if (existsSync(STATUS_FILE)) {
         processStatus = JSON.parse(readFileSync(STATUS_FILE, 'utf-8'));

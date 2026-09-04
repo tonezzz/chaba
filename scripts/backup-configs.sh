@@ -7,7 +7,7 @@
 set -e
 
 # Configuration
-BACKUP_DIR="/home/tony/CascadeProjects/chaba/docs/backups/configs"
+BACKUP_DIR="/home/tony/CascadeProjects/chaba-tony-dell/docs/backups/configs"
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 RETENTION_DAYS=30
 
@@ -56,8 +56,8 @@ if [ -f "/home/tony/.codeium/windsurf/memories/global_rules.md" ]; then
 fi
 
 # Backup project-specific rules
-if [ -f "/home/tony/CascadeProjects/chaba/.windsurfrules" ]; then
-    cp /home/tony/CascadeProjects/chaba/.windsurfrules "$BACKUP_DIR/project_rules_$TIMESTAMP.md"
+if [ -f "/home/tony/CascadeProjects/chaba-tony-dell/.windsurfrules" ]; then
+    cp /home/tony/CascadeProjects/chaba-tony-dell/.windsurfrules "$BACKUP_DIR/project_rules_$TIMESTAMP.md"
     echo "✓ Project rules backed up"
 fi
 

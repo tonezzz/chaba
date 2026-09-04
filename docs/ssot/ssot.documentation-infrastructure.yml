@@ -15,7 +15,7 @@ sections:
     items:
       - label: Documentation Files
         text: docs/ directory with KB entries, SSOT files, architecture docs, assessments
-        path: /home/tony/CascadeProjects/chaba/docs
+        path: /home/tony/CascadeProjects/chaba-tony-dell/docs
         backup_priority: critical
         recovery_priority: critical
 
@@ -33,14 +33,14 @@ sections:
 
       - label: SSOT YAML Files
         text: All SSOT configuration files in docs/ssot/ directory
-        path: /home/tony/CascadeProjects/chaba/docs/ssot
+        path: /home/tony/CascadeProjects/chaba-tony-dell/docs/ssot
         backup_priority: critical
         recovery_priority: critical
         note: Direct YAML editing preserved, auto-synced to MDDB for search
 
       - label: Documentation Templates
         text: KB template, SSOT summary templates, maintenance standards
-        path: /home/tony/CascadeProjects/chaba/docs/kb/.template.md
+        path: /home/tony/CascadeProjects/chaba-tony-dell/docs/kb/.template.md
         backup_priority: high
         recovery_priority: high
 
@@ -143,13 +143,13 @@ sections:
     items:
       - label: Daily Configuration Backup
         text: Script to backup MCP configs and skills to chaba repository
-        script_path: /home/tony/CascadeProjects/chaba/scripts/backup-configs.sh
+        script_path: /home/tony/CascadeProjects/chaba-tony-dell/scripts/backup-configs.sh
         schedule: daily at 3 AM via cron
         backup_location: chaba/docs/backups/configs/
 
       - label: Weekly Documentation Verification
         text: Script to verify documentation integrity and search functionality
-        script_path: /home/tony/CascadeProjects/chaba/scripts/verify-docs.sh
+        script_path: /home/tony/CascadeProjects/chaba-tony-dell/scripts/verify-docs.sh
         schedule: weekly on Sunday at 2 AM via cron
         verification_checks: file count, MCP server status, search functionality
 
@@ -251,7 +251,7 @@ sections:
 
       - label: Backup Storage
         text: Secondary backup location for critical configurations
-        location: /home/tony/CascadeProjects/chaba/docs/backups/
+        location: /home/tony/CascadeProjects/chaba-tony-dell/docs/backups/
         retention_policy: 30 days
 
 config:

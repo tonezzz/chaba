@@ -132,21 +132,21 @@ restore_configurations() {
     local compose_backup="$backup_dir/web.tar.gz"
     if [ -f "$compose_backup" ]; then
         log "INFO" "Restoring Docker Compose configuration"
-        tar xzf "$compose_backup" -C "/home/tony/CascadeProjects/chaba/stacks"
+        tar xzf "$compose_backup" -C "/home/tony/CascadeProjects/chaba-tony-dell/stacks"
     fi
     
     # Environment files
     local env_backup="$backup_dir/.env"
     if [ -f "$env_backup" ]; then
         log "INFO" "Restoring environment file"
-        cp "$env_backup" "/home/tony/CascadeProjects/chaba/stacks/web/.env"
+        cp "$env_backup" "/home/tony/CascadeProjects/chaba-tony-dell/stacks/web/.env"
     fi
     
     # SSOT files
     local ssot_backup="$backup_dir/ssot.tar.gz"
     if [ -f "$ssot_backup" ]; then
         log "INFO" "Restoring SSOT files"
-        tar xzf "$ssot_backup" -C "/home/tony/CascadeProjects/chaba/docs"
+        tar xzf "$ssot_backup" -C "/home/tony/CascadeProjects/chaba-tony-dell/docs"
     fi
     
     log "INFO" "Configuration restoration completed"

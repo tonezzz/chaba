@@ -7,7 +7,7 @@ import { readFileSync } from 'node:fs';
 import { detectConversationLanguage, getLanguageSpecificPrompt, getLanguageSpecificDailyPrompt } from './language-detection.mjs';
 import { groupMessagesByDate } from './daily-summary.mjs';
 
-const FETCH_DIR = '/home/tony/CascadeProjects/chaba/stacks/web/public/apps/yomi/fetch-data';
+const FETCH_DIR = '/home/tony/CascadeProjects/chaba-tony-dell/stacks/web/public/apps/yomi/fetch-data';
 const THAI_CHAT_ID = 'u494a728e423a3d45182ad44bd1003cf6'; // KKGT @DAY (Thai conversation)
 const ENGLISH_CHAT_ID = 'c0a1db88d5fece94cb7e53de66ea2d8c6'; // English conversation (better test data)
 

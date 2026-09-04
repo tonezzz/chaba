@@ -15,9 +15,9 @@ echo ""
 # Test 1: Backup Script Validation
 echo "Test 1: Backup Script Validation"
 echo "--------------------------------"
-if [ -f "/home/tony/CascadeProjects/chaba/scripts/backup-configs.sh" ]; then
+if [ -f "/home/tony/CascadeProjects/chaba-tony-dell/scripts/backup-configs.sh" ]; then
     echo "✓ Backup script exists"
-    if [ -x "/home/tony/CascadeProjects/chaba/scripts/backup-configs.sh" ]; then
+    if [ -x "/home/tony/CascadeProjects/chaba-tony-dell/scripts/backup-configs.sh" ]; then
         echo "✓ Backup script is executable"
     else
         echo "✗ Backup script is not executable"
@@ -32,7 +32,7 @@ fi
 echo ""
 echo "Test 2: Backup Directory Structure"
 echo "--------------------------------"
-BACKUP_DIR="/home/tony/CascadeProjects/chaba/docs/backups/configs"
+BACKUP_DIR="/home/tony/CascadeProjects/chaba-tony-dell/docs/backups/configs"
 if [ -d "$BACKUP_DIR" ]; then
     echo "✓ Backup directory exists: $BACKUP_DIR"
     BACKUP_COUNT=$(ls -1 "$BACKUP_DIR"/*.json 2>/dev/null | wc -l)
@@ -61,7 +61,7 @@ CRITICAL_FILES=(
     "/home/tony/.config/devin/mcp_config.json"
     "/home/tony/.config/devin/skills"
     "/home/tony/.codeium/windsurf/memories/global_rules.md"
-    "/home/tony/CascadeProjects/chaba/.windsurfrules"
+    "/home/tony/CascadeProjects/chaba-tony-dell/.windsurfrules"
 )
 
 for file in "${CRITICAL_FILES[@]}"; do
@@ -76,9 +76,9 @@ done
 echo ""
 echo "Test 4: Recovery Script Validation"
 echo "--------------------------------"
-if [ -f "/home/tony/CascadeProjects/chaba/scripts/recover-configs.sh" ]; then
+if [ -f "/home/tony/CascadeProjects/chaba-tony-dell/scripts/recover-configs.sh" ]; then
     echo "✓ Recovery script exists"
-    if [ -x "/home/tony/CascadeProjects/chaba/scripts/recover-configs.sh" ]; then
+    if [ -x "/home/tony/CascadeProjects/chaba-tony-dell/scripts/recover-configs.sh" ]; then
         echo "✓ Recovery script is executable"
     else
         echo "✗ Recovery script is not executable"
@@ -93,9 +93,9 @@ fi
 echo ""
 echo "Test 5: Verification Script Validation"
 echo "--------------------------------"
-if [ -f "/home/tony/CascadeProjects/chaba/scripts/verify-docs.sh" ]; then
+if [ -f "/home/tony/CascadeProjects/chaba-tony-dell/scripts/verify-docs.sh" ]; then
     echo "✓ Verification script exists"
-    if [ -x "/home/tony/CascadeProjects/chaba/scripts/verify-docs.sh" ]; then
+    if [ -x "/home/tony/CascadeProjects/chaba-tony-dell/scripts/verify-docs.sh" ]; then
         echo "✓ Verification script is executable"
     else
         echo "✗ Verification script is not executable"
@@ -110,7 +110,7 @@ fi
 echo ""
 echo "Test 6: Documentation Integrity"
 echo "--------------------------------"
-DOCS_DIR="/home/tony/CascadeProjects/chaba/docs"
+DOCS_DIR="/home/tony/CascadeProjects/chaba-tony-dell/docs"
 if [ -d "$DOCS_DIR" ]; then
     echo "✓ Documentation directory exists"
     MD_COUNT=$(find "$DOCS_DIR" -type f -name "*.md" | wc -l)

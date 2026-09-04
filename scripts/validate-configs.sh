@@ -3,9 +3,9 @@
 
 set -e
 
-SSOT_DIR="/home/tony/CascadeProjects/chaba/docs/ssot"
-SERVED_DIR="/home/tony/CascadeProjects/chaba/stacks/web/public"
-PUBLIC_DIR="/home/tony/CascadeProjects/chaba/public/docs/overview"
+SSOT_DIR="/home/tony/CascadeProjects/chaba-tony-dell/docs/ssot"
+SERVED_DIR="/home/tony/CascadeProjects/chaba-tony-dell/stacks/web/public"
+PUBLIC_DIR="/home/tony/CascadeProjects/chaba-tony-dell/public/docs/overview"
 
 echo "=========================================="
 echo "SSOT Configuration Validation"

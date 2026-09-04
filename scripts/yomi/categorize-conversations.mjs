@@ -1,6 +1,6 @@
 import { readFileSync, writeFileSync, renameSync } from 'node:fs';
 
-const CONV = '/home/tony/CascadeProjects/chaba/stacks/web/public/apps/yomi/conversations.json';
+const CONV = '/home/tony/CascadeProjects/chaba-tony-dell/stacks/web/public/apps/yomi/conversations.json';
 
 const CATEGORIES = [
   { id: 'Family', keywords: ['ครอบครัว','บ้าน','พ่อ','แม่','ลูก','ปู่','ย่า','ตา','ยาย','น้อง','พี่','ที่บ้าน','แฟน','สามี','ภรรยา','family','dad','mom','parent','home'] },

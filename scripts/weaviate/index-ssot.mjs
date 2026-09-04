@@ -21,7 +21,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 // Configuration
 const WEAVIATE_URL = process.env.WEAVIATE_URL || 'http://localhost:8082';
 const EMBEDDING_DIM = 384; // all-MiniLM-L6-v2 (GPU-accelerated via embedding service)
-const CHABA_ROOT = '/home/tony/CascadeProjects/chaba';
+const CHABA_ROOT = '/home/tony/CascadeProjects/chaba-tony-dell';
 
 // Document patterns to index
 const DOCUMENT_PATTERNS = [
@@ -145,7 +145,7 @@ async function chunkText(content, chunkSize = 512, chunkOverlap = 50) {
     await writeFile(tempFile, content, 'utf-8');
     
     const { stdout } = await execAsync(
-      `/home/tony/venv-embeddings/bin/python /home/tony/CascadeProjects/chaba/scripts/chunk-text.py "${tempFile}" ${chunkSize} ${chunkOverlap}`,
+      `/home/tony/venv-embeddings/bin/python /home/tony/CascadeProjects/chaba-tony-dell/scripts/chunk-text.py "${tempFile}" ${chunkSize} ${chunkOverlap}`,
       { timeout: 30000 }
     );
     

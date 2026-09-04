@@ -14,7 +14,7 @@ from mcp.server.fastmcp import FastMCP
 mcp = FastMCP("mcp-gpu")
 
 LLAMA_COMPOSE = os.environ.get(
-    "LLAMA_COMPOSE", "/home/tony/CascadeProjects/chaba/stacks/web/docker-compose.yml"
+    "LLAMA_COMPOSE", "/home/tony/CascadeProjects/chaba-tony-dell/stacks/web/docker-compose.yml"
 )
 LLAMA_URL = os.environ.get("LLAMA_URL", "http://localhost:8001")
 if LLAMA_URL == "http://localhost:8008":

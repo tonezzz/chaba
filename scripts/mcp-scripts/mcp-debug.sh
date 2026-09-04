@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-REPO=/home/tony/CascadeProjects/chaba
+REPO=/home/tony/CascadeProjects/chaba-tony-dell
 PIDFILE="${XDG_RUNTIME_DIR:-/run/user/$(id - u)}/mcp-debug.pid"
 
 # Reuse a healthy existing mcp_debug server instead of killing it.
@@ -21,4 +21,4 @@ cd "$REPO"
 export PYTHONPATH="$REPO/scripts${PYTHONPATH:+:$PYTHONPATH}"
 
 echo $$ > "$PIDFILE"
-exec /home/tony/CascadeProjects/chaba/venv/bin/python -m mcp_debug.server
+exec /home/tony/CascadeProjects/chaba-tony-dell/venv/bin/python -m mcp_debug.server

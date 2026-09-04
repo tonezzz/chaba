@@ -8,4 +8,4 @@ IMAGEN_URL="${IMAGEN_URL:-http://tony-omen.taila0626a.ts.net:8080/apps/imagen2/a
 LLAMA_URL="${LLAMA_URL:-http://tony-omen.taila0626a.ts.net:8001}"
 
 exec /usr/bin/ssh -o BatchMode=yes tony-omen \
-  "IMAGEN_URL='${IMAGEN_URL}' LLAMA_URL='${LLAMA_URL}' exec /usr/bin/python3 /home/tony/CascadeProjects/chaba/mcp-servers/mcp-gpu/server.py"
+  "IMAGEN_URL='${IMAGEN_URL}' LLAMA_URL='${LLAMA_URL}' exec /usr/bin/python3 /home/tony/CascadeProjects/chaba-tony-dell/mcp-servers/mcp-gpu/server.py"

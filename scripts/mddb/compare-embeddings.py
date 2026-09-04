@@ -7,7 +7,7 @@ from pathlib import Path
 
 OLLAMA_URL = 'http://localhost:11434/api/embed'
 GEMINI_PROXY_URL = 'http://localhost:11435/api/embed'
-REPORT_PATH = Path('/home/tony/CascadeProjects/chaba/reports/gemini-embedding-comparison.md')
+REPORT_PATH = Path('/home/tony/CascadeProjects/chaba-tony-dell/reports/gemini-embedding-comparison.md')
 
 SAMPLES = [
     'Free tony-omen GPU by moving embedding generation from local Ollama to Google Gemini.',

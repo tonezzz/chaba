@@ -19,7 +19,7 @@ const __dirname = path.dirname(__filename);
 // Configuration
 const PORT = 3002;
 const UPDATE_INTERVAL = 30000; // 30 seconds
-const LOG_FILE = '/home/tony/CascadeProjects/chaba/logs/health-monitor.log';
+const LOG_FILE = '/home/tony/CascadeProjects/chaba-tony-dell/logs/health-monitor.log';
 const BACKUP_LOG = '/var/log/chaba-backup.log';
 const BACKUP_MONITOR_LOG = '/var/log/chaba-backup-monitor.log';
 

@@ -6,7 +6,7 @@
 set -e
 START_TIME=$(date +%s)
 TIMESTAMP=$(date +%Y%m%d-%H%M%S)
-REPO_DIR="/home/tony/CascadeProjects/chaba"
+REPO_DIR="/home/tony/CascadeProjects/chaba-tony-dell"
 REPORT_DIR="$REPO_DIR/reports"
 LOG_DIR="$REPO_DIR/logs"
 mkdir -p "$REPORT_DIR" "$LOG_DIR"
@@ -428,13 +428,13 @@ cat >> "$REPORT_FILE" << EOF
 EOF
 
 # Check for outdated npm packages if package.json exists
-if [ -f "/home/tony/CascadeProjects/chaba/package.json" ]; then
-    cd /home/tony/CascadeProjects/chaba
+if [ -f "/home/tony/CascadeProjects/chaba-tony-dell/package.json" ]; then
+    cd /home/tony/CascadeProjects/chaba-tony-dell
     npm outdated 2>&1 | head -20 >> "$REPORT_FILE" || echo "No outdated packages or npm not available" >> "$REPORT_FILE"
 fi
 
 # Check for outdated Python packages if requirements.txt exists
-if [ -f "/home/tony/CascadeProjects/chaba/requirements.txt" ]; then
+if [ -f "/home/tony/CascadeProjects/chaba-tony-dell/requirements.txt" ]; then
     pip list --outdated 2>&1 | head -20 >> "$REPORT_FILE" || echo "No outdated packages or pip not available" >> "$REPORT_FILE"
 fi
 
@@ -444,7 +444,7 @@ cat >> "$REPORT_FILE" << EOF
 EOF
 # Run basic security checks
 echo "Checking for common security issues..." >> "$REPORT_FILE"
-find /home/tony/CascadeProjects/chaba -name "*.env" -o -name "*secret*" -o -name "*password*" 2>/dev/null | head -10 >> "$REPORT_FILE" || echo "No obvious security files found" >> "$REPORT_FILE"
+find /home/tony/CascadeProjects/chaba-tony-dell -name "*.env" -o -name "*secret*" -o -name "*password*" 2>/dev/null | head -10 >> "$REPORT_FILE" || echo "No obvious security files found" >> "$REPORT_FILE"
 
 # ============================================
 # 10. SYSTEM RESOURCE DEEP DIVE (Enhanced)
@@ -488,8 +488,8 @@ cat >> "$REPORT_FILE" << EOF
 #### Memory Growth Analysis (disk usage proxy)
 EOF
 # Track disk usage growth as memory/storage pressure indicator
-df -h /home/tony/CascadeProjects/chaba >> "$REPORT_FILE" 2>&1
-du -sh /home/tony/CascadeProjects/chaba/* | sort -rh | head -10 >> "$REPORT_FILE" 2>&1
+df -h /home/tony/CascadeProjects/chaba-tony-dell >> "$REPORT_FILE" 2>&1
+du -sh /home/tony/CascadeProjects/chaba-tony-dell/* | sort -rh | head -10 >> "$REPORT_FILE" 2>&1
 
 cat >> "$REPORT_FILE" << EOF
 
@@ -502,7 +502,7 @@ cat >> "$REPORT_FILE" << EOF
 ### Capacity Planning Analysis
 EOF
 # Project disk usage growth
-current_usage=$(df /home/tony/CascadeProjects/chaba | tail -1 | awk '{print $5}' | sed 's/%//')
+current_usage=$(df /home/tony/CascadeProjects/chaba-tony-dell | tail -1 | awk '{print $5}' | sed 's/%//')
 echo "**Current Disk Usage:** $current_usage%" >> "$REPORT_FILE"
 
 if [ "$current_usage" -gt 80 ]; then
@@ -525,7 +525,7 @@ cat >> "$REPORT_FILE" << EOF
 EOF
 
 # Run SSOT validation
-cd /home/tony/CascadeProjects/chaba
+cd /home/tony/CascadeProjects/chaba-tony-dell
 if command -v devin &> /dev/null; then
     devin skill ssot-validate invoke >> "$REPORT_FILE" 2>&1 || echo "SSOT validation failed" >> "$REPORT_FILE"
 else
@@ -551,7 +551,7 @@ cat >> "$REPORT_FILE" << EOF
 EOF
 
 # Check key configuration files
-for config_file in /home/tony/CascadeProjects/chaba/docs/ssot/infrastructure/ssot.health.yml; do
+for config_file in /home/tony/CascadeProjects/chaba-tony-dell/docs/ssot/infrastructure/ssot.health.yml; do
     if [ -f "$config_file" ]; then
         echo "### Validating: $config_file" >> "$REPORT_FILE"
         python3 -c "import yaml; yaml.safe_load(open('$config_file'))" 2>&1 && echo "✓ Valid YAML" || echo "✗ Invalid YAML" >> "$REPORT_FILE"
@@ -765,7 +765,7 @@ echo "Total runtime: $DURATION seconds" | tee -a "$LOG_FILE"
 # ============================================
 echo "Creating auto-improvement entries for critical findings..." | tee -a "$LOG_FILE"
 
-IMPROVEMENTS_FILE="/home/tony/CascadeProjects/chaba/docs/ssot/ssot.improvements.yml"
+IMPROVEMENTS_FILE="/home/tony/CascadeProjects/chaba-tony-dell/docs/ssot/ssot.improvements.yml"
 CRITICAL_FINDINGS=()
 
 # Function to create improvement entry

@@ -5,8 +5,8 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(dirname "$0")"
-SSOT_DIR="/home/tony/CascadeProjects/chaba/docs/ssot"
-LOG_FILE="/home/tony/CascadeProjects/chaba/logs/ssot-validation.log"
+SSOT_DIR="/home/tony/CascadeProjects/chaba-tony-dell/docs/ssot"
+LOG_FILE="/home/tony/CascadeProjects/chaba-tony-dell/logs/ssot-validation.log"
 mkdir -p "$(dirname "$LOG_FILE")"
 
 # Color codes for output

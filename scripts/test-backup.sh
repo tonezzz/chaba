@@ -32,7 +32,7 @@ test_backup_manager() {
     log "INFO" "Testing backup manager..."
     
     # Check if script exists and is executable
-    if [ ! -x "/home/tony/CascadeProjects/chaba/scripts/backup-manager.sh" ]; then
+    if [ ! -x "/home/tony/CascadeProjects/chaba-tony-dell/scripts/backup-manager.sh" ]; then
         log "ERROR" "backup-manager.sh not found or not executable"
         return 1
     fi
@@ -46,7 +46,7 @@ test_restore_manager() {
     log "INFO" "Testing restore manager..."
     
     # Check if script exists and is executable
-    if [ ! -x "/home/tony/CascadeProjects/chaba/scripts/restore-manager.sh" ]; then
+    if [ ! -x "/home/tony/CascadeProjects/chaba-tony-dell/scripts/restore-manager.sh" ]; then
         log "ERROR" "restore-manager.sh not found or not executable"
         return 1
     fi
@@ -60,7 +60,7 @@ test_backup_monitor() {
     log "INFO" "Testing backup monitor..."
     
     # Check if script exists and is executable
-    if [ ! -x "/home/tony/CascadeProjects/chaba/scripts/backup-monitor.sh" ]; then
+    if [ ! -x "/home/tony/CascadeProjects/chaba-tony-dell/scripts/backup-monitor.sh" ]; then
         log "ERROR" "backup-monitor.sh not found or not executable"
         return 1
     fi
@@ -73,7 +73,7 @@ test_backup_monitor() {
 test_systemd_files() {
     log "INFO" "Testing systemd service files..."
     
-    local service_dir="/home/tony/CascadeProjects/chaba/systemd"
+    local service_dir="/home/tony/CascadeProjects/chaba-tony-dell/systemd"
     
     # Check if service files exist
     if [ ! -f "$service_dir/chaba-backup.service" ]; then
@@ -105,9 +105,9 @@ test_permissions() {
     log "INFO" "Testing script permissions..."
     
     local scripts=(
-        "/home/tony/CascadeProjects/chaba/scripts/backup-manager.sh"
-        "/home/tony/CascadeProjects/chaba/scripts/restore-manager.sh"
-        "/home/tony/CascadeProjects/chaba/scripts/backup-monitor.sh"
+        "/home/tony/CascadeProjects/chaba-tony-dell/scripts/backup-manager.sh"
+        "/home/tony/CascadeProjects/chaba-tony-dell/scripts/restore-manager.sh"
+        "/home/tony/CascadeProjects/chaba-tony-dell/scripts/backup-monitor.sh"
     )
     
     for script in "${scripts[@]}"; do

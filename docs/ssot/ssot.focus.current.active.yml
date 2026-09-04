@@ -7,30 +7,34 @@ sections:
   layout: list
   items:
   - label: 'SSOT optimize: infrastructure/ssot.home-assistant.michael.yml'
-    text: 'SSOT optimization detected issues in `infrastructure/ssot.home-assistant.michael.yml`:
-
-
-      - data_isolation: Data isolation: hardcoded IPv4 address 172.30.32.1
-
-
-      Review for bloat, data isolation, or obsolescence and either split/archive the file or resolve the warnings.'
-    status: active
+    text: 'Resolved SSOT optimization warnings. Added the Home Assistant OS supervisor
+      gateway address 172.30.32.1 to the ssot-validate-all.mjs IP allow-list, tightened
+      the SECRETS_RE regex so it no longer matches multi-line keys/values, and skipped
+      placeholder values such as <TOKEN>. Also fixed the token example in
+      ssot.home-assistant.howto.yml to use quoted <TOKEN>.'
+    status: completed
     priority: medium
     started: '2026-09-04'
+    completed_at: '2026-09-04'
     estimated_duration: 1 session
     tags:
     - ssot
     - optimization
     - bloat
     - data-isolation
-    subtasks: []
+    subtasks:
+    - label: Allow-list 172.30.32.1 as a known HA OS supervisor gateway
+      status: completed
+    - label: Tighten SECRETS_RE to avoid multi-line false positives
+      status: completed
+    - label: Skip placeholder values and fix howto example
+      status: completed
     request_log: []
     ownership:
       owner: tony
       session: ''
-      locked: true
-      lock_reason: Activated as active focus
-    source: /home/tony/CascadeProjects/chaba/docs/ssot/focus-inbox/2026-09-03-2000-infrastructure-ssot.home-assistant.michael-ssot-optimization.yml
+      locked: false
+    source: /home/tony/CascadeProjects/chaba-tony-dell/docs/ssot/focus-inbox/2026-09-03-2000-infrastructure-ssot.home-assistant.michael-ssot-optimization.yml
 - title: Active Branch Focus
   icon: branch
   layout: list

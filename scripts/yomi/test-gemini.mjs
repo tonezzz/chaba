@@ -10,7 +10,7 @@ import { geminiConversationSummary, geminiDailySummary, testGeminiConnection as 
 import { detectConversationLanguage } from './language-detection.mjs';
 
 const TEST_CHAT_ID = 'u494a728e423a3d45182ad44bd1003cf6';
-const FETCH_DIR = '/home/tony/CascadeProjects/chaba/stacks/web/public/apps/yomi/fetch-data';
+const FETCH_DIR = '/home/tony/CascadeProjects/chaba-tony-dell/stacks/web/public/apps/yomi/fetch-data';
 
 async function loadTestData(chatId) {
   const filePath = `${FETCH_DIR}/${chatId}.json`;

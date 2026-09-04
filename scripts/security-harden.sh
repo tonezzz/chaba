@@ -7,8 +7,8 @@
 set -eo pipefail
 
 # Configuration
-SECURITY_LOG="/home/tony/CascadeProjects/chaba/logs/security-harden.log"
-PROJECT_ROOT="/home/tony/CascadeProjects/chaba"
+SECURITY_LOG="/home/tony/CascadeProjects/chaba-tony-dell/logs/security-harden.log"
+PROJECT_ROOT="/home/tony/CascadeProjects/chaba-tony-dell"
 
 # Create directories
 mkdir -p "$(dirname "$SECURITY_LOG")"
