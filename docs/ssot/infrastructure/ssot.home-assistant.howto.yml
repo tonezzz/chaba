@@ -57,7 +57,7 @@ runbooks:
       - ssh tony-dell
       - systemctl --user restart michael-dev.service
       - Wait for the service to be active and http://127.0.0.1:8124 to respond
-    service_ref: infrastructure/ssot.services.yml::tony-dell.michael-dev.service
+    service_ref: infrastructure/ssot.services.yml#tony-dell.michael-dev.quadlet.service_unit
 
   add_battery_status_line:
     purpose: Add or modify a combined battery status line in the sunsynk card.
