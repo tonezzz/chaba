@@ -8,7 +8,7 @@ remote="$1"
 url="$2"
 
 Z40=0000000000000000000000000000000000000000
-REPO="/home/tony/CascadeProjects/chaba-tony-dell"
+REPO=$(git rev-parse --show-toplevel 2>/dev/null || echo "/home/tony/CascadeProjects/chaba-tony-dell")
 
 # ---------------------------------------------------------------------------
 # 1. Block non-fast-forward pushes to master
