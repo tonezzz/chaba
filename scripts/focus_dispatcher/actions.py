@@ -304,8 +304,22 @@ def handle_intake(request, dry_run=False):
     return result, changed
 
 
-def process_ready_safe(host="tony_dell", session=None, dry_run=False):
-    """Pick the next unlocked Ready (Safe) item, generate a tony-dell subagent contract, and lock it."""
+def process_ready_safe(host="tony_dell", session=None, dry_run=False, skip_labels=None):
+    """Pick the next unlocked Ready (Safe) item, generate a subagent contract, and lock it.
+
+    Ownership semantics:
+    - locked=True prevents the item from being selected again by safe-to-parallel scans.
+    - owner="focus-dispatcher" marks the item as handed off to the dispatcher workflow.
+    - session is set to "dispatch-<host>" (or the caller-supplied session) so that the
+      subagent can identify which contract it is fulfilling.
+    - The actual run_subagent invocation is still manual: this function only prepares the
+      contract and updates the backlog; the assistant/user must start the subagent and
+      then review its updates before committing/pushing.
+
+    skip_labels is an optional set of item labels to ignore in this pass (useful for
+    dry-run passes over the Ready (Safe) queue without actually locking items).
+    """
+    skip_labels = skip_labels or set()
     doc = load_backlog()
     section = find_section(doc.get("sections", []), "Ready (Safe)")
     if section is None:
@@ -318,13 +332,15 @@ def process_ready_safe(host="tony_dell", session=None, dry_run=False):
     for it in items:
         if it.get("locked"):
             continue
+        if it.get("label") in skip_labels:
+            continue
         subagent = it.get("subagent") or {}
         target = subagent.get("host", it.get("target_host"))
         if not target or target == host:
             selected = it
             break
     if not selected:
-        selected = items[0]
+        return None
 
     label = selected.get("label", "unknown").replace(" ", "_").replace("/", "_")[:40]
     source = f"Ready (Safe) / {selected.get('source', '')}"
