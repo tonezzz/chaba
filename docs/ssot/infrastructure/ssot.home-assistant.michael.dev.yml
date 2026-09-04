@@ -58,7 +58,19 @@ environments:
       username: nakva
       display_user: nakvac@gmail.com
       source: saved live michael-ha credentials file
-      note: Same password as live michael-ha; auth_provider.homeassistant user and credentials copied manually.
+      token:
+        file: /home/tony/.config/secrets/ha-michael-dev.env
+        env: HASS_TOKEN
+        created: 2026-09-04
+        note: Long-lived access token for automated Playlive / REST access. Do not commit the token file.
+      manual_steps:
+        - Log in to the michael-dev Home Assistant web UI at https://tony-dell.taila0626a.ts.net:8124
+        - Navigate to your user profile (left sidebar bottom user icon) and switch to the Security tab
+        - Under Long-Lived Access Tokens, click CREATE TOKEN
+        - Name the token, e.g. devin-playlive, and copy the token string
+        - Save it to /home/tony/.config/secrets/ha-michael-dev.env as HASS_TOKEN=<token> with chmod 600
+        - For Playlive auto-login, append ?auth_token=<token> to HA dashboard URLs
+      note: Same password as live michael-ha; auth_provider.homeassistant user and credentials copied manually. Token is now the preferred automated credential.
     access:
       local: http://127.0.0.1:8124
       tailscale: https://tony-dell.taila0626a.ts.net:8124
@@ -69,16 +81,32 @@ environments:
     remote_config: /config
     tailnet_url: http://michael-ha:8123/
     cloud_url: https://nupo4ndqdqydt78zmpq0z5wzp1bdrqgs.ui.nabu.casa/
+    auth:
+      token:
+        file: /home/tony/.config/secrets/ha-michael-live.env
+        env: HASS_TOKEN
+        note: Awaiting valid token. The previous token was invalid and the file was removed.
+      manual_steps:
+        - Log in to the live Home Assistant instance via the Nabu Casa URL
+        - Navigate to your user profile and open the Security tab
+        - Under Long-Lived Access Tokens, click CREATE TOKEN
+        - Name the token, e.g. devin-playlive, and copy the token string
+        - Save it to /home/tony/.config/secrets/ha-michael-live.env as HASS_TOKEN=<token> with chmod 600
 
 config_source:
   packages: docs/home-assistant/configuration/packages/
   helpers: docs/home-assistant/configuration/*.yaml
   dashboards:
     repo_path: docs/home-assistant/dashboards/
+    ssot: docs/ssot/infrastructure/ssot.home-assistant.dashboards.yml
     note: Not the active source for tony-test. For live parity, copy michael-ha .storage/lovelace* files to the dev .storage directory instead.
   custom_cards:
     - stacks/web/public/apps/michael-live/
     - docs/home-assistant/www/
+
+cards:
+  ssot: docs/ssot/infrastructure/ssot.home-assistant.cards.yml
+  note: Build, deploy, source, and design context for the forked sunsynk-power-flow-card and related custom cards.
   caddy_snippet: stacks/tony-dell/michael-dev/caddy-snippet
 
 full_flow:

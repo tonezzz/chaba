@@ -1,0 +1,90 @@
+title: Home Assistant Custom Cards
+subtitle: Build, deploy, source, and design context for the forked sunsynk-power-flow-card and related custom cards
+
+repositories:
+  sunsynk-power-flow-card-fork:
+    path: /home/tony/CascadeProjects/sunsynk-power-flow-card
+    fork_of: slhub/sunsynk-power-flow-card
+    current_commit: 9d0ddbd
+    package_version: 7.3.3
+    bundle_version: 29
+    build:
+      command: npm run build
+      tool: rollup -c --bundleConfigAsCjs
+      output: dist/sunsynk-power-flow-card.js
+    deploy:
+      target_host: ssot.values.yml::hosts.tony_dell
+      target_path: /home/tony/.config/michael-dev/www/sunsynk-power-flow-card-fork-v29.js
+      lovelace_resources: /home/tony/.config/michael-dev/.storage/lovelace_resources
+      resource_path: /local/sunsynk-power-flow-card-fork-v29.js
+      restart: systemctl --user restart michael-dev.service
+      service_ref: ssot.services.yml::tony-dell.michael-dev.service
+      test_url: https://tony-dell.taila0626a.ts.net:8124/tony-test/pf3
+    source_files:
+      primary_modifications:
+        - src/components/compact/bat/bat-elements.ts
+      other_modified:
+        - src/cards/compact-card.ts
+        - src/index.ts
+        - src/types.ts
+        - dist/sunsynk-power-flow-card.js
+      new_untracked:
+        - src/cards/ss2-card.ts
+        - src/cards/ss3-card.ts
+        - src/cards/ss4-card.ts
+        - src/cards/test2-card.ts
+      removed:
+        - rollup.config-1754858379256.cjs
+    design_notes:
+      battery_status_format: '{target}% | {current}%'
+      render_anchor:
+        x: 290
+        y: 358
+        align: left-align
+        class: st13 st8
+      battery_svg_groups:
+        plain:
+          - Battery1_SOC
+          - Battery2_SOC
+          - Battery3_SOC
+          - Battery4_SOC
+        combined:
+          - Battery1_SOC_Shutdown
+          - Battery1_SOC_Program_Capacity
+          - Battery2_SOC_Shutdown
+          - Battery2_SOC_Program_Capacity
+          - Battery3_SOC_Shutdown
+          - Battery3_SOC_Program_Capacity
+          - Battery4_SOC_Shutdown
+          - Battery4_SOC_Program_Capacity
+      overlay_fix_2026_09_04:
+        summary: Hide the plain Battery*_SOC <svg> display when the combined '{target}% | {current}%' or '{current}% | {current}%' text is shown.
+        logic: >
+          Add `data.inverterProg.show || (config.battery*?.shutdown_soc && !config.battery*?.shutdown_soc_offgrid)`
+          to the `display:` ternary on the plain `Battery*_SOC` `<svg>` element so it becomes `none` when the
+          combined shutdown / program capacity overlay is visible.
+      layout: compact-card
+      note: |
+        The plain SOC group and the combined groups are mutually exclusive.  The combined text uses the
+        same battery entity and `left-align st13 st8` style anchored near x=290, y=358 in compact mode.
+
+cards:
+  - id: sunsynk-power-flow-card
+    name: Sunsynk Power Flow Card (fork)
+    repo_ref: repositories.sunsynk-power-flow-card-fork
+    bundle_version: 29
+    deployed_as: /local/sunsynk-power-flow-card-fork-v29.js
+    dashboard:
+      id: tony-test/pf3
+      tab: PF3
+      test_url: https://tony-dell.taila0626a.ts.net:8124/tony-test/pf3
+      instance: ssot.home-assistant.michael.dev.yml::environments.dev
+  - id: michael-live
+    name: Michael Live (ha-live bridge front-end)
+    source: stacks/web/public/apps/michael-live/
+    instance: ssot.home-assistant.michael.dev.yml::environments.dev
+
+status:
+  last_build: '2026-09-04'
+  last_verified: '2026-09-04'
+  health: active with uncommitted source modifications; rebuild and deploy required before live parity

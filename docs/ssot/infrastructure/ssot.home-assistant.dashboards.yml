@@ -1,0 +1,69 @@
+title: Home Assistant Dashboards
+subtitle: Tony-test dashboard layout, tabs, and active test views
+
+instances:
+  dev:
+    name: tony-test
+    instance_ssot: ssot.home-assistant.michael.dev.yml
+    base_url: https://tony-dell.taila0626a.ts.net:8124/tony-test
+    active_view: PF3
+    storage_path: /home/tony/.config/michael-dev/.storage/lovelace.tony_test
+    repo_snapshot: docs/home-assistant/dashboards/tony-test-current.json
+    note: The live Lovelace layout is stored in .storage/lovelace.tony_test. The repo JSON is an archival snapshot.
+
+tabs:
+  - order: 0
+    title: PF3
+    path: pf3
+    note: First tab. Holds the forked sunsynk-power-flow-card with 4-battery layout and transparent background.
+    test_url: https://tony-dell.taila0626a.ts.net:8124/tony-test/pf3
+  - order: 1
+    title: SS4
+    path: ss4
+  - order: 2
+    title: Sankey
+    path: solis-daily-energy-sankey
+  - order: 3
+    title: juWorkshop
+    path: juworkshop
+  - order: 4
+    title: Sunsynk
+    path: tab2
+  - order: 5
+    title: SS2
+    path: ss2
+  - order: 6
+    title: Solar Assistant
+    path: ~
+  - order: 7
+    title: flow1
+    path: ~
+  - order: 8
+    title: glass
+    path: ~
+  - order: 9
+    title: Weather
+    path: weather
+  - order: 10
+    title: Test2
+    path: test2
+  - order: 11
+    title: SS3
+    path: ~
+  - order: 12
+    title: Solar Assistant Power Flow
+    path: ~
+  - order: 13
+    title: Solis Daily Energy Sankey
+    path: ~
+
+manual_steps:
+  - Edit the live Lovelace dashboard through the HA UI; the canonical source is .storage/lovelace.tony_test
+  - To snapshot, copy the .storage file to docs/home-assistant/dashboards/tony-test-current.json
+  - Tab order, titles, and paths are managed in the same .storage file
+  - To add a new tab, edit the .storage file or use the HA UI, then snapshot
+
+status:
+  last_updated: '2026-09-04'
+  last_verified: '2026-09-04'
+  health: active

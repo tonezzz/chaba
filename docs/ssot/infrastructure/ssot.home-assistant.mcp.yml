@@ -1,0 +1,65 @@
+title: Home Assistant MCP Endpoints
+subtitle: MCP server URLs, auth token files, and connection notes for the HA family
+
+servers:
+  tony_ha:
+    name: tony-ha
+    instance_ssot: ssot.home-assistant.yml
+    endpoint: http://tony-dell:9584/private_CtYuVkJEl28cp8qA8yXNCQ
+    server_port: 9584
+    local_url: http://tony-dell:9584/private_CtYuVkJEl28cp8qA8yXNCQ
+    tailnet_url: http://tony-dell:9584/private_CtYuVkJEl28cp8qA8yXNCQ
+    webhook_id: mcp_d5528537d57627164033dc5e3e5e5aa6
+    custom_component: ha_mcp_tools
+    status: active
+
+  michael_dev:
+    name: michael-dev
+    instance_ssot: ssot.home-assistant.michael.dev.yml
+    endpoint: http://tony-dell:9585/private_B3WMIAChoseTpDS7fwgwRw
+    server_port: 9585
+    local_url: http://127.0.0.1:9585/private_B3WMIAChoseTpDS7fwgwRw
+    tailnet_url: http://tony-dell:9585/private_B3WMIAChoseTpDS7fwgwRw
+    webhook_id: mcp_ed77567866f1ebbb6fb091dc816cb550
+    custom_component: ha_mcp_tools
+    status: active
+
+  michael_live:
+    name: michael-ha (live)
+    instance_ssot: ssot.home-assistant.michael.yml
+    endpoint: http://tony-dell:19584/private_oBVC604-FnxgBDP00t1L9g
+    server_port: 9584
+    local_url: http://127.0.0.1:9584/private_oBVC604-FnxgBDP00t1L9g
+    tailnet_url: http://tony-dell:19584/private_oBVC604-FnxgBDP00t1L9g
+    mcp_path: /private_oBVC604-FnxgBDP00t1L9g
+    tunnel:
+      type: ssh
+      host: tony-dell
+      remote: 172.30.32.1:9584
+      via: root@michael-ha
+      note: TCP forward via core_ssh on michael-ha. 172.30.32.1 is the HA core container IP on the hassio network.
+    status: active
+
+auth:
+  token_files:
+    michael_dev:
+      file: /home/tony/.config/secrets/ha-michael-dev.env
+      env: HASS_TOKEN
+      instance_ssot: ssot.home-assistant.michael.dev.yml::auth.token
+      status: valid
+    michael_live:
+      file: /home/tony/.config/secrets/ha-michael-live.env
+      env: HASS_TOKEN
+      instance_ssot: ssot.home-assistant.michael.dev.yml::live.auth.token
+      status: awaiting valid token
+  manual_steps:
+    - Log in to the target HA instance web UI
+    - Navigate to your user profile and open the Security tab
+    - Under Long-Lived Access Tokens, click CREATE TOKEN
+    - Name it e.g. devin-playlive and copy the token string
+    - Save it to the corresponding ~/.config/secrets/ha-*.env file as HASS_TOKEN=PASTE_YOUR_TOKEN with chmod 600
+
+notes:
+  - These are HA-MCP webhook endpoints served by the ha_mcp_tools custom component.
+  - A HASS_TOKEN is used for REST / Playlive / external API automation; the MCP path is for MCP client connections.
+  - The michael-live endpoint is reached through an SSH tunnel from tony-dell to the michael-ha HA core container.
