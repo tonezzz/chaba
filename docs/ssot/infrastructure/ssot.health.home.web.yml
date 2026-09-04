@@ -41,8 +41,8 @@ services:
   - 'Test Caddy proxy: curl -s http://100.68.142.13:3003/apps/helm/'
   recovery_actions:
   - 'Restart service: ssh tony-dell systemctl --user restart helm'
-  - 'Rebuild: ssh tony-dell "cd /home/tony/CascadeProjects/chaba-tony-dell/tony-dell/chaba-funnel
-    && ./deploy.sh"'
+  - 'Rebuild helm: ssh tony-dell "cd /home/tony/CascadeProjects/chaba-tony-dell/stacks/web
+    && docker compose up -d --build helm"'
   - Check Caddy proxy configuration in stacks/web/Caddyfile
   - 'Verify env: ssh tony-dell podman exec helm env | grep LLM'
   host: tony_dell

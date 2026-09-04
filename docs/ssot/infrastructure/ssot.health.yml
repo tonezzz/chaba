@@ -76,7 +76,7 @@ groups:
   - yomi-rate-limiter
   - yomi-activity-status
   - yomi-summarization
-  - status-api
+  - status-data-api
   - trade-api
   yomi:
   - yomi-api
@@ -89,10 +89,7 @@ groups:
   - raceman-web
   - raceman-php
   gpu-stack:
-  - imagen2
-  - txt2vid
-  - thai-legal
-  - llama-server
+  - ollama
   datastore:
   - postgres
   - weaviate
@@ -101,11 +98,9 @@ groups:
   trading:
   - trade-api
   optional:
-  - activepieces
-  - frigate
   - camera-control
   automation:
-  - playlived
+  - playlived-dell
   - trade-automation
   ssot-sync:
   - mddb-api
@@ -116,7 +111,6 @@ groups:
   - mddb-container
   system:
   - cpu-frequency-monitor
-  - chaba-health-monitor-timer
   - gdrive-backup
   - yomi-update-all-timer
   - yomi-update-active-timer
@@ -130,7 +124,7 @@ dependencies:
   - postgres
   activepieces:
   - postgres
-  playlived: []
+  playlived-dell: []
 recovery_actions:
   container_down: 'Check docker compose status: docker compose ps, Restart container: docker compose restart <container>,
     Check logs: docker compose logs <container>'

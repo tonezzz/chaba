@@ -205,23 +205,7 @@ hosts:
     - ios
     - verify
     - xcode
-    note: Maps to kk-macbook. mcp-debug-macos is installed for df -h, ps, uptime, and mount.
-  kk-macbook:
-    name: KK MacBook Pro
-    description: Secondary macOS / iOS verification workstation
-    role: mac_ios_verify
-    hostname: 100.124.59.112
-    ssh_user: kkkakk
-    mcp_debug_path: /Users/kkkakk/.local/bin/mcp-debug
-    compact: false
-    clipboard: true
-    capture: false
-    tags:
-    - macos
-    - ios
-    - verify
-    - xcode
-    note: Alias for the same macOS host; capture tools use the same screencapture/osascript path as macbook.
+    note: mcp-debug-macos is installed for df -h, ps, uptime, and mount.
 debug_commands:
   systemctl list-units:
     description: Running systemd services

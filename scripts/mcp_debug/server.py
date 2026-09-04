@@ -294,6 +294,41 @@ def handle_tools_list(id_):
             },
         },
         {
+            "name": "mcp_screenshot",
+            "description": "Capture a screenshot on an allowed host and return it as base64 PNG.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "host": {"type": "string", "enum": list(HOSTS.keys()), "description": "Target host"},
+                    "region": {"type": "object", "description": "Optional crop"},
+                    "format": {"type": "string", "enum": ["png"], "default": "png"},
+                },
+                "required": ["host"],
+            },
+        },
+        {
+            "name": "mcp_window_list",
+            "description": "Return a list of visible windows/apps on an allowed host.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "host": {"type": "string", "enum": list(HOSTS.keys()), "description": "Target host"},
+                },
+                "required": ["host"],
+            },
+        },
+        {
+            "name": "mcp_clipboard_image_get",
+            "description": "Return the image on an allowed host clipboard as base64 PNG.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "host": {"type": "string", "enum": list(HOSTS.keys()), "description": "Target host"},
+                },
+                "required": ["host"],
+            },
+        },
+        {
             "name": "mcp_preset_list",
             "description": "List available multi-host diagnostic presets.",
             "inputSchema": {
@@ -484,41 +519,6 @@ def handle_tools_list(id_):
                     "request": {"type": "string", "description": "The user request to preprocess"},
                 },
                 "required": ["request"],
-            },
-        },
-        {
-            "name": "mcp_screenshot",
-            "description": "Capture a screenshot on an allowed host and return it as base64 PNG.",
-            "inputSchema": {
-                "type": "object",
-                "properties": {
-                    "host": {"type": "string", "enum": ["macbook", "kk-macbook", "tony_dell", "tony_omen"], "description": "Target host"},
-                    "region": {"type": "object", "description": "Optional {x, y, width, height} crop"},
-                    "format": {"type": "string", "enum": ["png"], "default": "png", "description": "Output format"},
-                },
-                "required": ["host"],
-            },
-        },
-        {
-            "name": "mcp_window_list",
-            "description": "Return a list of visible windows/apps on an allowed host.",
-            "inputSchema": {
-                "type": "object",
-                "properties": {
-                    "host": {"type": "string", "enum": ["macbook", "kk-macbook", "tony_dell", "tony_omen"], "description": "Target host"},
-                },
-                "required": ["host"],
-            },
-        },
-        {
-            "name": "mcp_clipboard_image_get",
-            "description": "Return the image on an allowed host clipboard as base64 PNG.",
-            "inputSchema": {
-                "type": "object",
-                "properties": {
-                    "host": {"type": "string", "enum": ["macbook", "kk-macbook", "tony_dell", "tony_omen"], "description": "Target host"},
-                },
-                "required": ["host"],
             },
         },
         {

@@ -604,7 +604,7 @@ async function validateCaddyProxyConfig() {
   try {
     const { readFileSync } = await import('fs');
     const { join } = await import('path');
-    const caddyfilePath = join(process.cwd(), 'stacks/web/Caddyfile');
+    const caddyfilePath = join(__dirname, '..', '..', 'stacks/web/Caddyfile');
     
     const caddyfileContent = readFileSync(caddyfilePath, 'utf8');
     const issues = [];
@@ -634,6 +634,7 @@ async function validateCaddyProxyConfig() {
           if (blockContent.includes('reverse_proxy') && !blockContent.includes('file_server')) {
             issues.push({
               type: 'potential_proxy_misconfig',
+              severity: 'warning',
               line: blockStart + 1,
               block: currentBlock,
               message: 'Using "handle" instead of "handle_path" may cause path stripping issues with reverse_proxy',
@@ -671,6 +672,7 @@ async function validateCaddyProxyConfig() {
           if (route1.pattern.startsWith(route2.pattern) || route2.pattern.startsWith(route1.pattern)) {
             issues.push({
               type: 'potential_route_conflict',
+              severity: 'warning',
               routes: [route1, route2],
               message: `Route overlap detected between "${route1.pattern}" and "${route2.pattern}"`,
               recommendation: 'Review route order and specificity to ensure proper routing'
@@ -681,7 +683,7 @@ async function validateCaddyProxyConfig() {
     }
     
     return {
-      valid: issues.length === 0,
+      valid: issues.filter(i => i.severity === 'error').length === 0,
       issues: issues,
       caddyfile: caddyfilePath
     };
@@ -1805,7 +1807,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       case 'acknowledge_alert': {
         const stmt = db.prepare(`
           UPDATE alerts 
-          SET acknowledged = 1, acknowledged_at = CURRENT_TIMESTAMP 
+          SET acknowledged = true, acknowledged_at = CURRENT_TIMESTAMP 
           WHERE id = ?
         `);
         const result = await stmt.run(args.alert_id);
@@ -1829,7 +1831,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       case 'resolve_alert': {
         const stmt = db.prepare(`
           UPDATE alerts 
-          SET resolved = 1, resolved_at = CURRENT_TIMESTAMP 
+          SET resolved = true, resolved_at = CURRENT_TIMESTAMP 
           WHERE id = ?
         `);
         const result = await stmt.run(args.alert_id);
@@ -2135,6 +2137,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
               checkResult = await checkContainerService(service);
             } else if (service.type === 'systemd') {
               checkResult = await checkSystemService(service);
+            } else if (service.type === 'mount') {
+              checkResult = await checkMountService(service);
             } else {
               checkResult = {
                 status: 'unknown',
@@ -2207,17 +2211,29 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             });
             continue;
           }
-          
+
+          // Disabled/intentional services
+          if (service.disabled) {
+            results.push({
+              service: serviceName,
+              status: 'intentional',
+              response_time: 0
+            });
+            continue;
+          }
+
           try {
             const startTime = Date.now();
             let checkResult;
-            
+
             if (service.type === 'http') {
               checkResult = await checkHTTPService(service);
             } else if (service.type === 'container') {
               checkResult = await checkContainerService(service);
             } else if (service.type === 'systemd') {
               checkResult = await checkSystemService(service);
+            } else if (service.type === 'mount') {
+              checkResult = await checkMountService(service);
             } else {
               checkResult = {
                 status: 'unknown',
