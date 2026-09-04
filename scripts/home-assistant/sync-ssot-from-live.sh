@@ -25,8 +25,15 @@ LATEST_BUNDLE=$(ssh "${HOST}" "ls -1 ${WWW_REMOTE}/sunsynk-power-flow-card-fork-
 if [[ -n "${LATEST_BUNDLE}" ]]; then
     VERSION=$(basename "${LATEST_BUNDLE}" .js | sed 's/sunsynk-power-flow-card-fork-v//')
     echo " -> active bundle version: ${VERSION}"
-    sed -i "s/^  bundle_version: .*/  bundle_version: ${VERSION}/" "${CARDS_SSOT}"
-    sed -i "s|^    deployed_as: .*|    deployed_as: /local/sunsynk-power-flow-card-fork-v${VERSION}.js|" "${CARDS_SSOT}"
+    python3 - <<PY
+import re
+with open("${CARDS_SSOT}", "r") as f:
+    text = f.read()
+text = re.sub(r"^((?:[ \t]*).bundle_version:)[ \t]*\d+.*$", r"\1 ${VERSION}", text, flags=re.MULTILINE)
+text = re.sub(r"(sunsynk-power-flow-card-fork-)v\d+(\.js)", r"\1v${VERSION}\2", text)
+with open("${CARDS_SSOT}", "w") as f:
+    f.write(text)
+PY
 else
     echo " -> no bundle found on remote; leaving version unchanged"
 fi

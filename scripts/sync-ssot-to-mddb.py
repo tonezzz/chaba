@@ -7,8 +7,8 @@ import yaml
 from pathlib import Path
 from datetime import datetime
 
-SSOT_DIR = "/home/tony/CascadeProjects/chaba-kbman/docs/ssot"
-MDBB_SERVER = "http://tony-omen.local:11023/v1"
+SSOT_DIR = "/home/tony/CascadeProjects/chaba/docs/ssot"
+MDBB_SERVER = "http://tony-dell.taila0626a.ts.net:11023/v1"
 
 def get_ssot_collection(rel_path):
     """Determine MDDB collection based on SSOT file path"""
@@ -72,13 +72,16 @@ def sync_file(yaml_path, rel_path):
     args = payload["arguments"]
 
     try:
+        # MDDB expects meta values to be string arrays
+        meta_arrays = {k: [v] if isinstance(v, str) else v for k, v in args["meta"].items()}
         response = requests.post(
-            f"{MDBB_SERVER}/collections/{args['collection']}/documents",
+            f"{MDBB_SERVER}/add",
             json={
+                "collection": args["collection"],
                 "key": args["key"],
                 "lang": args["lang"],
-                "content_md": args["content_md"],
-                "meta": args["meta"]
+                "contentMd": args["content_md"],
+                "meta": meta_arrays
             }
         )
         response.raise_for_status()
