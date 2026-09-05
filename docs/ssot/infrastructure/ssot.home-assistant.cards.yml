@@ -7,7 +7,7 @@ repositories:
     fork_of: slhub/sunsynk-power-flow-card
     current_commit: 95ddb0c
     package_version: 7.3.3
-    bundle_version: 52
+    bundle_version: 53
     build:
       command: npm run build
       tool: rollup -c --bundleConfigAsCjs
@@ -15,17 +15,17 @@ repositories:
     deploy:
       michael-dev:
         target_host: ssot.values.yml::hosts.tony_dell
-        target_path: /home/tony/.config/michael-dev/www/sunsynk-power-flow-card-fork-v52.js
+        target_path: /home/tony/.config/michael-dev/www/sunsynk-power-flow-card-fork-v53.js
         lovelace_resources: /home/tony/.config/michael-dev/.storage/lovelace_resources
-        resource_path: /local/sunsynk-power-flow-card-fork-v52.js
+        resource_path: /local/sunsynk-power-flow-card-fork-v53.js
         restart: systemctl --user restart michael-dev.service
         service_ref: infrastructure/ssot.services.yml#tony-dell.michael-dev.quadlet.service_unit
         test_url: https://tony-dell.taila0626a.ts.net:8124/tony-test/pf4
       michael-ha:
         target_host: ssot.values.yml::hosts.michael_ha
-        target_path: /config/www/sunsynk-power-flow-card-fork-v52.js
+        target_path: /config/www/sunsynk-power-flow-card-fork-v53.js
         lovelace_resources: /config/.storage/lovelace_resources
-        resource_path: /local/sunsynk-power-flow-card-fork-v52.js
+        resource_path: /local/sunsynk-power-flow-card-fork-v53.js
         restart: ha core restart
         test_url: http://michael-ha:8123/tony-test/pf3
     source_files:
@@ -83,8 +83,8 @@ cards:
   - id: sunsynk-power-flow-card
     name: Sunsynk Power Flow Card (fork)
     repo_ref: repositories.sunsynk-power-flow-card-fork
-    bundle_version: 52
-    deployed_as: /local/sunsynk-power-flow-card-fork-v52.js
+    bundle_version: 53
+    deployed_as: /local/sunsynk-power-flow-card-fork-v53.js
     dashboards:
       - id: tony-test/pf4
         tab: PF4
@@ -110,4 +110,4 @@ cards:
 status:
   last_build: '2026-09-04'
   last_verified: '2026-09-05'
-  health: active; v52 deployed; bundle deployed to michael-dev (PF3/PF4/PFG/PFG1/PFG2) and michael-ha (PF3); signed current, direction override, runtime-text, PFG/PFG1/PFG2 layouts documented; pfg2 adds pfg_icons (mdi per tile); .storage changes require HA core restart
+  health: active; v53 deployed; bundle deployed to michael-dev (PF3/PF4/PFG/PFG1/PFG2) and michael-ha (PF3); signed current, direction override, runtime-text, PFG/PFG1/PFG2 layouts documented; pfg2 adds pfg_icons (mdi per tile); .storage changes require HA core restart
