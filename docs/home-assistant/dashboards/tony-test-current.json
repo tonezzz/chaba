@@ -921,8 +921,8 @@
           ]
         },
         {
-          "title": "PV",
-          "path": "pv",
+          "title": "TPL",
+          "path": "tpl",
           "type": "panel",
           "badges": [],
           "cards": [
@@ -930,7 +930,7 @@
               "type": "custom:sunsynk-power-flow-card",
               "cardstyle": "pfg",
               "view_layout": {
-                "grid-area": "tpl"
+                "grid-area": "pv"
               },
               "large_font": true,
               "show_solar": true,
@@ -938,7 +938,7 @@
               "show_grid": true,
               "center_no_grid": false,
               "card_height": "360px",
-              "card_width": "360px",
+              "card_width": "100%",
               "max_line_width": 4,
               "min_line_width": 1,
               "inverter": {
@@ -1134,15 +1134,7 @@
               },
               "pfg_image_zoom": 1,
               "pfg_grid_width": "100%"
-            }
-          ]
-        },
-        {
-          "title": "Grid",
-          "path": "grid",
-          "type": "panel",
-          "badges": [],
-          "cards": [
+            },
             {
               "type": "custom:sunsynk-power-flow-card",
               "cardstyle": "pfg",
@@ -1155,7 +1147,7 @@
               "show_grid": true,
               "center_no_grid": false,
               "card_height": "360px",
-              "card_width": "360px",
+              "card_width": "100%",
               "max_line_width": 4,
               "min_line_width": 1,
               "inverter": {
@@ -1361,7 +1353,12 @@
               "pfg_image_zoom": 1,
               "pfg_grid_width": "100%"
             }
-          ]
+          ],
+          "layout": {
+            "grid-template-columns": "50% 50%",
+            "grid-template-rows": "auto",
+            "grid-template-areas": "\"pv grid\""
+          }
         },
         {
           "title": "Data",
