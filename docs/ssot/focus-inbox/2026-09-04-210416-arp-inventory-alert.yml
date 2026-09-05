@@ -1,0 +1,56 @@
+title: ARP inventory alert
+subtitle: Network scan changes detected at 2026-09-04-210416
+icon: inbox
+focus:
+  label: Review ARP inventory scan results
+  text: 'ARP inventory scan found changes compared to the MAC/IP registries.
+
+
+    - New devices: 5
+
+    - New IP for known device: 0
+
+    - MAC changed: 0
+
+    - Conflicts: 0
+
+    - Duplicate MACs in scan: 0
+
+
+    Report: reports/network-inventory-scan-2026-09-04-210416.json'
+  branch: chaba
+  priority: low
+  status: flagged
+  tags:
+  - network
+  - arp
+  - inventory
+  - mac-registry
+  - randomized-mac
+  safe_to_parallel:
+    value: true
+    reason: Registry review only; does not change live services.
+  note: >
+    Triaged 2026-09-04: the 5 'new' devices use IPs/MACs that match the previous
+    scan's randomized/privacy MAC pool (e.g. f2:ed:a0:d4:5f:db, b8:59:ce:74:75:28,
+    48:4d:7e:e4:3a:c7). No MAC changes this time, only IP churn. Keep flagged
+    until device names are confirmed; do not update registry with privacy MACs.
+  subtasks:
+  - label: Identify new device 192.168.2.76 (f2:ed:a0:d4:5f:db)
+    status: flagged
+  - label: Identify new device 192.168.2.78 (b8:59:ce:74:75:28)
+    status: flagged
+  - label: Identify new device 192.168.2.87 (2c:b4:71:e8:aa:06)
+    status: flagged
+  - label: Identify new device 192.168.2.67 (48:4d:7e:e4:3a:c7)
+    status: flagged
+  - label: Identify new device 192.168.2.88 (24:94:94:b0:f2:df)
+    status: flagged
+ownership:
+  owner: tony
+  session: ''
+  locked: false
+  lock_reason: ''
+source:
+  session: ''
+  date: '2026-09-05'
