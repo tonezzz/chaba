@@ -1001,12 +1001,82 @@
               "pfg_image_zoom": 1,
               "pfg_grid_width": "100%",
               "preset": "pfg"
+            },
+            {
+              "type": "custom:sunsynk-power-flow-card",
+              "cardstyle": "pfg",
+              "view_layout": {
+                "grid-area": "battery"
+              },
+              "card_height": "360px",
+              "card_width": "100%",
+              "title": "Battery",
+              "pfg_grid_size": 2,
+              "pfg_labels": {},
+              "pfg_charts": {
+                "1,1": [
+                  {
+                    "type": "gauge",
+                    "entity": "sensor.totals_battery_power",
+                    "min": -10000,
+                    "max": 10000,
+                    "scale": 0.001,
+                    "needle": true,
+                    "segments": [
+                      {
+                        "from": -10000,
+                        "color": "#ff0000"
+                      },
+                      {
+                        "from": -1000,
+                        "color": "#ffff00"
+                      },
+                      {
+                        "from": 0,
+                        "color": "#00ff00"
+                      },
+                      {
+                        "from": 1000,
+                        "color": "#ffff00"
+                      },
+                      {
+                        "from": 8000,
+                        "color": "#ff0000"
+                      }
+                    ],
+                    "decimals": 2,
+                    "label": "Battery",
+                    "unit": "kW",
+                    "position": "center"
+                  },
+                  {
+                    "type": "history",
+                    "entity": "sensor.totals_battery_power",
+                    "hours": 24,
+                    "min": -10000,
+                    "max": 10000,
+                    "scale": 0.001,
+                    "decimals": 2,
+                    "unit": "kW",
+                    "position": "bottom"
+                  }
+                ]
+              },
+              "pfg_spans": {
+                "1,1": 2
+              },
+              "pfg_images": {
+                "1,1": "/local/battery-bank.jpg"
+              },
+              "pfg_image_zoom": 1,
+              "pfg_grid_width": "100%",
+              "preset": "pfg"
             }
           ],
           "layout": {
-            "grid-template-columns": "50% 50%",
+            "grid-template-columns": "33% 34% 33%",
             "grid-template-rows": "auto",
-            "grid-template-areas": "\"pv grid\""
+            "grid-template-areas": "\"pv grid battery\""
           }
         },
         {
