@@ -9,8 +9,15 @@ DEV_CONFIG="${MICHAEL_DEV_CONFIG:-$HOME/.config/michael-dev}"
 DEV_SERVICE="${MICHAEL_DEV_SERVICE:-michael-dev.service}"
 DEV_PORT="${MICHAEL_DEV_PORT:-8124}"
 DEPLOY_DASHBOARDS="${MICHAEL_DEPLOY_DASHBOARDS:-0}"
+MCP_URL="${MICHAEL_DEV_MCP_URL:-http://127.0.0.1:9585/private_B3WMIAChoseTpDS7fwgwRw}"
 
 log() { echo "[deploy-michael-dev] $*"; }
+
+HA_MCP_CALL="$REPO_ROOT/scripts/home-assistant/ha-mcp-call.py"
+if [ ! -f "$HA_MCP_CALL" ]; then
+  log "HA-MCP helper not found: $HA_MCP_CALL"
+  exit 1
+fi
 
 if [ ! -d "$HA_DIR/configuration" ]; then
   log "Repo HA config not found: $HA_DIR/configuration"
@@ -38,9 +45,9 @@ else
   log "Skipping dashboards. Set MICHAEL_DEPLOY_DASHBOARDS=1 to rsync dashboards/ to $DEV_CONFIG/lovelace/"
 fi
 
-log "Restarting dev Home Assistant container ($DEV_SERVICE)"
 if systemctl --user is-active "$DEV_SERVICE" >/dev/null 2>&1; then
-  systemctl --user restart "$DEV_SERVICE"
+  log "Reloading core config via HA-MCP ($MCP_URL)"
+  python3 "$HA_MCP_CALL" --url "$MCP_URL" --tool ha_reload_core
 else
   log "Service $DEV_SERVICE not active; loading and starting it"
   systemctl --user daemon-reload

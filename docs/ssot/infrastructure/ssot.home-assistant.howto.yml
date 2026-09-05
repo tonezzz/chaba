@@ -64,7 +64,12 @@ runbooks:
       - Wait for http://127.0.0.1:8124/ to respond with HTTP 200
       - Verify the target view (e.g. /tony-test/pf3) renders the updated cards
     service_ref: infrastructure/ssot.services.yml#tony-dell.michael-dev.quadlet.service_unit
-    note: This avoids a full podman container restart and is the default after deploy-michael-dev.sh.
+    note: |
+      This avoids a full podman container restart and is the default after deploy-michael-dev.sh.
+      Tested 2026-09-04: reloaded 15 components, API stayed at HTTP 200, and the `groups` warning
+      ("API error 400 - 400: Bad Request") is benign. This reloads core components; it does not
+      reload `.storage` Lovelace dashboards. For `.storage` changes a full `ha core restart` or
+      Lovelace edit via the UI is still required.
 
   restart_ha_instance:
     purpose: Restart the michael-dev Home Assistant instance. Use only when HA-MCP reload is not sufficient (e.g. container upgrades or integration installs).
