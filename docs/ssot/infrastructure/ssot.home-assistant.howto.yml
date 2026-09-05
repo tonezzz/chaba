@@ -37,7 +37,7 @@ runbooks:
       - Bump the bundle version (e.g. v30 -> v31)
       - Copy the bundle to tony-dell:/home/tony/.config/michael-dev/www/sunsynk-power-flow-card-fork-v{version}.js
       - Update the Lovelace resource in /home/tony/.config/michael-dev/.storage/lovelace_resources to the new /local/...v{version}.js
-      - Restart michael-dev.service with systemctl --user restart michael-dev.service
+      - Reload core config via HA-MCP with scripts/home-assistant/ha-mcp-call.py --url http://127.0.0.1:9585/private_B3WMIAChoseTpDS7fwgwRw --tool ha_reload_core
       - Verify the dashboard at /tony-test/pf4 and /tony-test/pfg
       - Run scripts/home-assistant/sync-ssot-from-live.sh to snapshot the dashboard and bundle version
     ssot: ssot.home-assistant.cards.yml
@@ -51,14 +51,23 @@ runbooks:
       - Save it to ~/.config/secrets/ha-{instance}.env as HASS_TOKEN=<PASTE_YOUR_TOKEN> with chmod 600
       - Do not commit the token file or paste it into chat
     note: |
-      The michael-dev token in ~/.config/secrets/ha-michael-dev.env is currently invalid. Regenerate it
-      from the michael-dev profile before any REST or Playlive verification on michael-dev. The
-      michael-ha token in ~/.local/share/home-assistant-michael/ha-token is valid and can be used for
-      live REST/Playlive checks.
+      The michael-dev token in ~/.config/secrets/ha-michael-dev.env and the michael-ha token in
+      ~/.local/share/home-assistant-michael/ha-token are both valid for REST and Playlive use.
+      Do not commit the token files or paste them into chat.
     ssot: ssot.home-assistant.mcp.yml
 
+  reload_core_config:
+    purpose: Reload michael-dev core config via HA-MCP without a full container restart.
+    steps:
+      - Ensure michael-dev.service is active on tony-dell
+      - Run scripts/home-assistant/ha-mcp-call.py --url http://127.0.0.1:9585/private_B3WMIAChoseTpDS7fwgwRw --tool ha_reload_core
+      - Wait for http://127.0.0.1:8124/ to respond with HTTP 200
+      - Verify the target view (e.g. /tony-test/pf3) renders the updated cards
+    service_ref: infrastructure/ssot.services.yml#tony-dell.michael-dev.quadlet.service_unit
+    note: This avoids a full podman container restart and is the default after deploy-michael-dev.sh.
+
   restart_ha_instance:
-    purpose: Restart the michael-dev Home Assistant instance.
+    purpose: Restart the michael-dev Home Assistant instance. Use only when HA-MCP reload is not sufficient (e.g. container upgrades or integration installs).
     steps:
       - ssh tony-dell
       - systemctl --user restart michael-dev.service

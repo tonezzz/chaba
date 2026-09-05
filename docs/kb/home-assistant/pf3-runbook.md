@@ -135,7 +135,7 @@ The overall battery box now renders a signed current on the first line, e.g. `53
 5. Look for duplicate `battery_soc_184` or `duration_text` IDs across different parent `<svg>` groups; this is expected and is not the overlay itself.
 6. Confirm the parent `<svg>` group `display` is `none` for the inactive branch.
 
-**Auth note:** Long-lived `HASS_TOKEN` values are for REST/websocket API calls, not for dashboard URL auto-login. The `michael-dev` token in `~/.config/secrets/ha-michael-dev.env` was found to be invalid during recent verification; regenerate it from the HA profile → Security → Long-Lived Access Tokens if REST or automated Playlive login is needed.
+**Auth note:** Long-lived `HASS_TOKEN` values are for REST/websocket API calls, not for dashboard URL auto-login. The `michael-dev` token in `~/.config/secrets/ha-michael-dev.env` is valid and works for REST/Playlive; the `michael-ha` token is in `~/.local/share/home-assistant-michael/ha-token`.
 
 ## Common failure modes
 

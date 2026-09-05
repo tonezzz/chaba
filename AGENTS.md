@@ -38,7 +38,7 @@ Valid modes: `normal`, `plan`, `build`, `review`.
 - michael-dev: `~/.config/secrets/ha-michael-dev.env` (`HASS_TOKEN`)
 - michael-live: `~/.config/secrets/ha-michael-live.env` (`HASS_TOKEN`)
 - Never paste tokens into chat or commit them.
-- Note: the `michael-dev` token is currently invalid and should be regenerated from the HA profile → Security → Long-Lived Access Tokens if REST/Playlive access is needed.
+- The `michael-dev` token in `~/.config/secrets/ha-michael-dev.env` is valid and works for REST (verified 2026-09-04).
 
 ## Build / deploy commands
 
