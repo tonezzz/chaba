@@ -10,7 +10,8 @@ cards:
       - wide
       - full
       - ss4
-    active_mode: lite
+      - pfg
+    active_mode: pfg
 
 helpers:
   renderText:
@@ -74,18 +75,56 @@ battery_runtime_line:
     fill: transparent, so only the active direction text is visually visible. For robust hiding,
     prefer display: none on the inactive parent <svg> group.
 
+battery_direction:
+  source_entity: entities.battery_current_direction
+  default: sensor.inverters_1_battery_direction
+  logic: |
+    The card normalizes battery power to a signed value where + means discharging
+    and - means charging. This is done in src/index.ts:
+      1. Read the main battery direction entity (e.g. sensor.inverters_1_battery_direction).
+      2. Convert its state to +1 for discharging, -1 for charging, or null for unknown.
+      3. Apply battery.invert_power to the raw power value.
+      4. Multiply by the resolved direction: batteryPower = Math.abs(batteryPower) * direction.
+    The same resolved direction is used for runtime text, capacity target, colour, and connector animation.
+    Pack directions are only overridden when their battery*_current_direction entity is configured; otherwise the raw sign/invert_power is used.
+
+signed_current_in_overall_box:
+  note: |
+    The aggregate battery box now renders voltage and current on the first line,
+    e.g. "53.0 V -34.2 A". The current is always shown with its sign from the
+    entities.battery_current_191 entity, regardless of the main battery.show_absolute setting.
+    `show_absolute` still controls the power display (absolute kW) and pack power/current display,
+    but the overall current intentionally keeps the sign so charge/discharge can be read directly.
+
+pfg_card:
+  cardstyle: pfg
+  repo_source: src/cards/pfg-card.ts
+  test_url: https://tony-dell.taila0626a.ts.net:8124/tony-test/pfg
+  config:
+    card_height: 520px
+    view_layout: { grid-area: pfg }
+    wide: true
+  note: |
+    The PFG card is a new test layout, not the full card. It uses the same entity
+    mapping as PF3/PF4 and the same four-battery aggregate/pack model. It is useful
+    for verifying a larger canvas and the pfg render branch without disturbing the
+    stable PF3/PF4 lite views.
+
 multi_battery_layout:
   note: |
-    Compact/lite cards can render up to four batteries. In the PF3 layout (batteryCount === 4):
+    Compact/lite cards can render up to four batteries. The PF3/PF4 layout (batteryCount === 4):
     - The main battery (aggregate) icon is hidden; its status is shown in the top box.
-    - battery2 moves to top-left, battery3 to top-right, battery4 to bottom-left.
-    - battery2 maps to pack 1 (calculated), battery3 to pack 2, battery4 to pack 3.
-    Pack 1 power/current is calculated from sensor.totals_battery_* minus packs 2 and 3.
+    - battery2 is top-left, battery3 is top-right, battery4 is bottom-left.
+    - battery2 maps to pack 1 (calculated from total minus packs 2 and 3).
+    - battery3 maps to pack 2, battery4 maps to pack 3.
+    - PFG (cardstyle: pfg, card_height: 520px) uses the same entity mapping on a larger canvas;
+      it is not the same as cardstyle: full or ss4.
   battery_total_power_box:
-    purpose: Display overall battery status above the left column.
+    purpose: Display overall battery status above the centre/battery column.
     location: x=190, y=285, width=100, height=45
-    contents: voltage, current, power, SOC on two lines
+    contents: voltage and signed current on the first line, power and SOC on the second line
     fill: rgba(16,32,64,0.85)
+    example: '53.0 V -34.2 A / 1.83 kW 77 %'
 
 classes:
   st13:
@@ -112,8 +151,13 @@ known_patterns:
     note: A <text> node may report a visible display attribute while its parent <svg> is display none.
   - id: transparent_runtime_overlay
     note: The charge/discharge runtime pair uses fill transparency, not display none, for the inactive branch.
+  - id: pfg_not_full
+    note: |
+      PFG (cardstyle: pfg) is a separate render branch in src/cards/pfg-card.ts and is not the
+      same as cardstyle: full or ss4. Use /tony-test/pfg to test it and do not confuse it with the
+      SS4 or full-card tabs.
 
 status:
   last_updated: '2026-09-04'
   last_verified: '2026-09-04'
-  health: active; v25 verified on michael-ha PF3
+  health: active; v31 signed-current, direction override, and PFG layout documented; PF3 visually verified on michael-ha after HA core restart

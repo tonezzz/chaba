@@ -31,7 +31,7 @@ Valid modes: `normal`, `plan`, `build`, `review`.
 - michael-dev: `http://127.0.0.1:8124` / `https://tony-dell.taila0626a.ts.net:8124`
 - michael-ha: `http://michael-ha:8123` / `https://nupo4ndqdqydt78zmpq0z5wzp1bdrqgs.ui.nabu.casa/`
 - PF3 test view: `https://tony-dell.taila0626a.ts.net:8124/tony-test/pf3`
-- PFG (full-card) test view: `https://tony-dell.taila0626a.ts.net:8124/tony-test/pfg`
+- PFG (cardstyle: pfg) test view: `https://tony-dell.taila0626a.ts.net:8124/tony-test/pfg`
 
 ## Token files
 
@@ -57,7 +57,8 @@ Valid modes: `normal`, `plan`, `build`, `review`.
 
 ## Current state (2026-09-04)
 
-- Active card bundle: `v25` (`sunsynk-power-flow-card-fork-v25.js`), source commit `43b8c6c`.
-- Deployed to `michael-dev` and `michael-ha`; PF3 visually verified on `michael-ha`.
-- New `PFG` full-card view at `/tony-test/pfg` is being tested on `michael-dev`.
+- Active card bundle: `v31` (`sunsynk-power-flow-card-fork-v31.js`), source commit `95ddb0c`.
+- Deployed to `michael-dev` (PF4 + PFG) and `michael-ha` (PF3); PF3 visually verified on `michael-ha` via long-lived token.
+- `PF4` is the dev mirror of `PF3`; `PFG` is a new `cardstyle: pfg` test view at `/tony-test/pfg` (not `cardstyle: full`).
 - Dashboard snapshot is `docs/home-assistant/dashboards/tony-test-current.json`.
+- `michael-dev` long-lived token in `~/.config/secrets/ha-michael-dev.env` is still invalid and must be regenerated for Playlive/REST access.

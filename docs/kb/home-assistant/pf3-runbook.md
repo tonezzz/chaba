@@ -18,28 +18,28 @@ This runbook covers the PF3 dashboard, the forked `sunsynk-power-flow-card`, and
 
 The `tony-test` dashboard is stored in `.storage` on `michael-dev`, not in the repo YAML snapshot. The repo snapshot is at `docs/home-assistant/dashboards/tony-test-current.json` and is updated by `scripts/home-assistant/sync-ssot-from-live.sh`.
 
-A new `PFG` (full-card) view at path `pfg` has been added for testing the `cardstyle: full` layout. It is also stored in `.storage` and snapshotted to the same JSON.
+New test views have been added:
+
+- `PF4` (`cardstyle: lite`, `/tony-test/pf4`) is a copy of PF3 used for dev verification.
+- `PFG` (`cardstyle: pfg`, `/tony-test/pfg`) is a new experimental pfg layout, **not** `cardstyle: full`.
+
+All views are stored in `.storage` on `michael-dev` and snapshotted to the same JSON.
 
 Tab order (PF3 is first):
 
 | Order | Title |
 |-------|-------|
 | 0 | PF3 |
-| 1 | SS4 |
-| 2 | Sankey |
-| 3 | juWorkshop |
-| 4 | Sunsynk |
-| 5 | SS2 |
+| 1 | PF4 |
+| 2 | PFG |
+| 3 | SS4 |
+| 4 | Sankey |
+| 5 | juWorkshop |
 | 6 | Solar Assistant |
-| 7 | flow1 |
-| 8 | glass |
-| 9 | Weather |
-| 10 | Test2 |
-| 11 | SS3 |
-| 12 | Solar Assistant Power Flow |
-| 13 | Solis Daily Energy Sankey |
+| 7 | glass |
+| 8 | Weather |
 
-PF3 contains a single `custom:sunsynk-power-flow-card` in `cardstyle: lite` mode with a transparent background and the four-battery layout.
+PF3 and PF4 contain a single `custom:sunsynk-power-flow-card` in `cardstyle: lite` mode with a transparent background and the four-battery layout. PFG uses `cardstyle: pfg` and the same entity mapping on a larger canvas.
 
 ## Entity mapping
 
@@ -77,13 +77,13 @@ Inverter, solar, grid, and daily aggregate entities are in `docs/ssot/infrastruc
 
 1. Edit source in `/home/tony/CascadeProjects/sunsynk-power-flow-card/src/`.
 2. Run `npm run build` in the repo root.
-3. Note the new bundle version (e.g. `v25`).
-4. Copy `dist/sunsynk-power-flow-card.js` to `tony-dell:/home/tony/.config/michael-dev/www/sunsynk-power-flow-card-fork-v{version}.js`.
-5. Update the Lovelace resource in `/home/tony/.config/michael-dev/.storage/lovelace_resources` to `/local/sunsynk-power-flow-card-fork-v{version}.js`.
-6. Restart the dev container: `systemctl --user restart michael-dev.service`.
-7. Verify at `https://tony-dell.taila0626a.ts.net:8124/tony-test/pf3` (and `.../pfg` for the full-card test view).
-8. Run `scripts/home-assistant/sync-ssot-from-live.sh` to snapshot `.storage/lovelace.tony_test` and update bundle version in `ssot.home-assistant.cards.yml`.
-9. Copy the bundle and update `lovelace_resources` on `michael-ha` when the dev instance is verified, then `ha core restart`.
+3. Bump the bundle version (e.g. `v26` -> `v31`) and copy `dist/sunsynk-power-flow-card.js` to `tony-dell:/home/tony/.config/michael-dev/www/sunsynk-power-flow-card-fork-v{version}.js`.
+4. Update the Lovelace resource in `/home/tony/.config/michael-dev/.storage/lovelace_resources` to `/local/sunsynk-power-flow-card-fork-v{version}.js`.
+5. Restart the dev container: `systemctl --user restart michael-dev.service`.
+6. Verify at `https://tony-dell.taila0626a.ts.net:8124/tony-test/pf4` and `.../pfg`.
+7. Run `scripts/home-assistant/sync-ssot-from-live.sh` to snapshot `.storage/lovelace.tony_test` and update bundle version in `ssot.home-assistant.cards.yml`.
+8. Copy the bundle and update `lovelace_resources` on `michael-ha` when the dev instance is verified.
+9. Restart `michael-ha` with `ha core restart` or the REST service `homeassistant/restart`; `.storage` changes are only reflected after a restart.
 
 ## Battery status text and overlay avoidance
 
@@ -116,9 +116,19 @@ The charge/discharge runtime line is anchored at `x=290, y=393.7` with class `st
 
 The inactive branch is rendered with `fill: transparent`. For robust hiding, prefer `display: none` on the inactive parent `<svg>` group.
 
+## Signed current and direction override
+
+For a Solis inverter the raw battery power is negative during discharge. The PF3/PF4 cards set:
+
+- `battery.invert_power: true` so the displayed power is positive while discharging.
+- `entities.battery_current_direction` to `sensor.inverters_1_battery_direction` so the card explicitly resolves charge vs discharge.
+- The resolved direction (`+1` for discharge, `-1` for charge) is then applied to the main battery power, runtime target, colour, and connector animation.
+
+The overall battery box now renders a signed current on the first line, e.g. `53.0 V -34.2 A`, while pack currents keep their `show_absolute` display. If the direction entity is missing or `none`, the packs fall back to the raw sign from `invert_power` and the pack power entity.
+
 ## Visual verification with Playlive
 
-1. Open the PF3 URL in a browser or Playlive Chrome session that is already logged into `michael-dev`.
+1. Open the PF3/PF4/PFG URL in a browser or Playlive Chrome session that is already logged into the target HA instance (long-lived token in localStorage, or a logged-in Chrome profile).
 2. Inspect the `sunsynk-power-flow-card` shadow root.
 3. Search for `<text>` elements containing the suspect string.
 4. Compare IDs, `x`/`y`, classes, `display`, and `fill`.

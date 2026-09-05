@@ -7,7 +7,7 @@ repositories:
     fork_of: slhub/sunsynk-power-flow-card
     current_commit: 95ddb0c
     package_version: 7.3.3
-    bundle_version: 26
+    bundle_version: 31
     build:
       command: npm run build
       tool: rollup -c --bundleConfigAsCjs
@@ -15,17 +15,17 @@ repositories:
     deploy:
       michael-dev:
         target_host: ssot.values.yml::hosts.tony_dell
-        target_path: /home/tony/.config/michael-dev/www/sunsynk-power-flow-card-fork-v26.js
+        target_path: /home/tony/.config/michael-dev/www/sunsynk-power-flow-card-fork-v31.js
         lovelace_resources: /home/tony/.config/michael-dev/.storage/lovelace_resources
-        resource_path: /local/sunsynk-power-flow-card-fork-v26.js
+        resource_path: /local/sunsynk-power-flow-card-fork-v31.js
         restart: systemctl --user restart michael-dev.service
         service_ref: infrastructure/ssot.services.yml#tony-dell.michael-dev.quadlet.service_unit
         test_url: https://tony-dell.taila0626a.ts.net:8124/tony-test/pf4
       michael-ha:
         target_host: ssot.values.yml::hosts.michael_ha
-        target_path: /config/www/sunsynk-power-flow-card-fork-v26.js
+        target_path: /config/www/sunsynk-power-flow-card-fork-v31.js
         lovelace_resources: /config/.storage/lovelace_resources
-        resource_path: /local/sunsynk-power-flow-card-fork-v26.js
+        resource_path: /local/sunsynk-power-flow-card-fork-v31.js
         restart: ha core restart
         test_url: http://michael-ha:8123/tony-test/pf3
     source_files:
@@ -41,6 +41,7 @@ repositories:
         - src/cards/ss2-card.ts
         - src/cards/ss3-card.ts
         - src/cards/ss4-card.ts
+        - src/cards/pfg-card.ts
         - src/cards/test2-card.ts
       removed:
         - rollup.config-1754858379256.cjs
@@ -81,8 +82,8 @@ cards:
   - id: sunsynk-power-flow-card
     name: Sunsynk Power Flow Card (fork)
     repo_ref: repositories.sunsynk-power-flow-card-fork
-    bundle_version: 26
-    deployed_as: /local/sunsynk-power-flow-card-fork-v26.js
+    bundle_version: 31
+    deployed_as: /local/sunsynk-power-flow-card-fork-v31.js
     dashboard:
       id: tony-test/pf4
       tab: PF4
@@ -96,4 +97,4 @@ cards:
 status:
   last_build: '2026-09-04'
   last_verified: '2026-09-04'
-  health: committed; v26 built; deployed to michael-dev (PF4) and michael-ha (PF3); runtime-text, battery direction, and signed-current fixes applied; visual verification blocked by missing UI auth tokens
+  health: active; v31 committed; bundle deployed to michael-dev (PF4 + PFG) and michael-ha (PF3); signed current, direction override, runtime-text and PFG layout documented; live HA core restart loaded updated .storage and verified PF3 visually via long-lived token

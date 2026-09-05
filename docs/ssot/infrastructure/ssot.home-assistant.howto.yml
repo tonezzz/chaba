@@ -34,11 +34,12 @@ runbooks:
       - Edit source in /home/tony/CascadeProjects/sunsynk-power-flow-card/src/
       - Run npm run build in the repo root
       - Note the output bundle dist/sunsynk-power-flow-card.js
-      - Bump the bundle version (e.g. v29 -> v30)
+      - Bump the bundle version (e.g. v30 -> v31)
       - Copy the bundle to tony-dell:/home/tony/.config/michael-dev/www/sunsynk-power-flow-card-fork-v{version}.js
       - Update the Lovelace resource in /home/tony/.config/michael-dev/.storage/lovelace_resources to the new /local/...v{version}.js
       - Restart michael-dev.service with systemctl --user restart michael-dev.service
-      - Verify the dashboard at the test URL
+      - Verify the dashboard at /tony-test/pf4 and /tony-test/pfg
+      - Run scripts/home-assistant/sync-ssot-from-live.sh to snapshot the dashboard and bundle version
     ssot: ssot.home-assistant.cards.yml
 
   create_long_lived_token:
@@ -49,6 +50,11 @@ runbooks:
       - Click CREATE TOKEN, name it e.g. devin-playlive, and copy the token
       - Save it to ~/.config/secrets/ha-{instance}.env as HASS_TOKEN=<PASTE_YOUR_TOKEN> with chmod 600
       - Do not commit the token file or paste it into chat
+    note: |
+      The michael-dev token in ~/.config/secrets/ha-michael-dev.env is currently invalid. Regenerate it
+      from the michael-dev profile before any REST or Playlive verification on michael-dev. The
+      michael-ha token in ~/.local/share/home-assistant-michael/ha-token is valid and can be used for
+      live REST/Playlive checks.
     ssot: ssot.home-assistant.mcp.yml
 
   restart_ha_instance:
@@ -121,7 +127,8 @@ runbooks:
       - Run npm run build in the repo root
       - Copy dist/sunsynk-power-flow-card.js to root@michael-ha:/config/www/sunsynk-power-flow-card-fork-v{version}.js
       - Update the URL in /config/.storage/lovelace_resources on michael-ha
-      - Hard-refresh the browser to load the new bundle
+      - Restart michael-ha core with `ha core restart` or the REST service `homeassistant/restart`
+      - Verify at http://michael-ha:8123/tony-test/pf3 using a logged-in browser or a valid long-lived token
 
 status:
   last_updated: '2026-09-04'
