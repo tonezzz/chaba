@@ -1,0 +1,93 @@
+title: Michael-HA Topology
+subtitle: Network, service, and device topology for the michael-ha Home Assistant instance
+
+instance: michael-ha
+
+topology:
+  host:
+    name: nabu_casa
+    type: cloud-hosted Home Assistant
+    role: michael live instance
+    access:
+      - type: tailscale
+        hostname: michael-ha
+        fqdn: michael-ha.taila0626a.ts.net
+        ip: '100.80.105.88'
+        ssh_user: root
+        ssh_key: /home/tony/.ssh/michael-ha
+        status: active
+      - type: cloud
+        url: https://nupo4ndqdqydt78zmpq0z5wzp1bdrqgs.ui.nabu.casa/
+        status: active
+
+  services:
+    home_assistant_core:
+      container: homeassistant
+      runtime: hassio Docker network
+      port: 8123
+      url:
+        tailscale: http://michael-ha:8123/
+        cloud: https://nupo4ndqdqydt78zmpq0z5wzp1bdrqgs.ui.nabu.casa/
+      status: active
+
+    mcp_server:
+      component: ha_mcp_tools
+      port: 9584
+      bind_host: 0.0.0.0
+      secret_path: /private_oBVC604-FnxgBDP00t1L9g
+      local_url: http://127.0.0.1:9584/private_oBVC604-FnxgBDP00t1L9g
+      tunnel:
+        type: ssh
+        host: tony-dell
+        local_port: 19584
+        remote: homeassistant:9584
+        via: root@michael-ha
+        status: active
+
+  addons:
+    core_ssh:
+      name: Terminal & SSH
+      status: active
+      note: Pre-installed official SSH add-on; configured with ed25519 deploy key
+    a0d7b954_ssh:
+      name: SSH & Web Terminal
+      status: pending
+      note: Community alternative; not needed while core_ssh is active
+
+  network:
+    tailscale:
+      derp_relay: sin
+      direct_connection: false
+      ip: '100.80.105.88'
+      dns: michael-ha.taila0626a.ts.net
+    hassio_network_host: homeassistant
+
+  storage:
+    config_path: /config
+    dashboard_storage: /config/.storage/lovelace.tony_test
+    resources_storage: /config/.storage/lovelace_resources
+    custom_cards_path: /config/www
+
+  upstream:
+    repository: chaba
+    branch: ha
+    remote: origin
+
+sync_paths:
+  dashboards:
+    source: docs/home-assistant/dashboards/
+    destination: /config/lovelace/
+    note: Repo dashboard files are archival snapshots; live dashboard is in .storage/lovelace.tony_test
+  packages:
+    - docs/home-assistant/configuration/packages/batteries_sankey.yaml
+    - docs/home-assistant/configuration/packages/pool_sankey.yaml
+
+tests:
+  tailscale_ping: ping michael-ha.taila0626a.ts.net
+  ssh_test: ssh michael-ha 'echo ok'
+  ha_ping: curl -sf http://michael-ha:8123/
+
+status:
+  last_updated: '2026-09-05'
+  last_verified: '2026-09-05'
+  health: active

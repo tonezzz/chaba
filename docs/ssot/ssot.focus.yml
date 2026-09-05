@@ -714,6 +714,22 @@ sections:
     - bloat
     - data-isolation
     - completed
+  - label: Update SSOT to use ha-mcp and avoid restarts
+    text: Rework the michael-dev deployment and Home Assistant SSOT runbooks to use the in-process ha_mcp_tools MCP server
+      for live reload and state inspection, avoiding full container restarts. Also resolve the Michael SSOT hardcoded-IPv4
+      warning, process the ARP inventory alert, and deploy/test the updated michael-dev flow on tony-dell.
+    date: '2026-09-05'
+    duration: 1 session
+    outcome: 'Completed subtasks: Add ha-mcp reload helper and update deploy-michael-dev.sh, Update SSOT runbooks (howto)
+      to use ha-mcp and avoid restarts, Update michael-dev SSOT (full_flow, verification, mcp sections), Resolve Michael SSOT
+      hardcoded-IP warning and close related focus-inbox, Process ARP inventory alert and update MAC registries, Test michael-dev
+      deploy on tony-dell without restart'
+    tags:
+    - ha-mcp
+    - michael-dev
+    - ssot
+    - no-restart
+    - completed
   note: 30 recent records. Oldest records archived to docs/ssot/ssot.focus.history.archive.2026.yml.
   archive_count: 10
 config:
