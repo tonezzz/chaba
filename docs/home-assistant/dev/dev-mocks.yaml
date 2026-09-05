@@ -84,6 +84,62 @@ input_number:
     initial: -48.1
     unit_of_measurement: "A"
     icon: mdi:current-dc
+  dev_battery2_voltage:
+    min: 40
+    max: 60
+    step: 0.1
+    initial: 52.05
+    unit_of_measurement: "V"
+    icon: mdi:battery
+  dev_battery2_soc:
+    min: 0
+    max: 100
+    step: 1
+    initial: 77
+    unit_of_measurement: "%"
+    icon: mdi:battery
+  dev_battery2_power:
+    min: -10000
+    max: 10000
+    step: 10
+    initial: -600
+    unit_of_measurement: "W"
+    icon: mdi:battery
+  dev_battery2_current:
+    min: -200
+    max: 200
+    step: 0.1
+    initial: -12.0
+    unit_of_measurement: "A"
+    icon: mdi:current-dc
+  dev_battery3_voltage:
+    min: 40
+    max: 60
+    step: 0.1
+    initial: 51.95
+    unit_of_measurement: "V"
+    icon: mdi:battery
+  dev_battery3_soc:
+    min: 0
+    max: 100
+    step: 1
+    initial: 79
+    unit_of_measurement: "%"
+    icon: mdi:battery
+  dev_battery3_power:
+    min: -10000
+    max: 10000
+    step: 10
+    initial: -600
+    unit_of_measurement: "W"
+    icon: mdi:battery
+  dev_battery3_current:
+    min: -200
+    max: 200
+    step: 0.1
+    initial: -12.0
+    unit_of_measurement: "A"
+    icon: mdi:current-dc
   dev_grid_power:
     min: -10000
     max: 10000
@@ -203,7 +259,7 @@ template:
       state: "{{ states('input_number.dev_battery_current') | float(-48.1) }}"
       unit_of_measurement: "A"
 
-    # Pack 1
+    # Pack 1 (calculated = totals - pack2 - pack3)
     - name: batteries_1_voltage
       state: "{{ states('input_number.dev_battery_voltage') | float(52) }}"
       unit_of_measurement: "V"
@@ -211,46 +267,46 @@ template:
       state: "{{ states('input_number.dev_battery_soc') | float(78) }}"
       unit_of_measurement: "%"
     - name: batteries_1_power
-      state: "{{ (states('input_number.dev_battery_power') | float(-2500) / 4) | round(0) }}"
+      state: "{{ (states('input_number.dev_battery_power') | float(-2500) - states('input_number.dev_battery2_power') | float(-600) - states('input_number.dev_battery3_power') | float(-600)) | round(0) }}"
       unit_of_measurement: "W"
     - name: batteries_1_current
-      state: "{{ (states('input_number.dev_battery_current') | float(-48.1) / 4) | round(2) }}"
+      state: "{{ (states('input_number.dev_battery_current') | float(-48.1) - states('input_number.dev_battery2_current') | float(-12.0) - states('input_number.dev_battery3_current') | float(-12.0)) | round(2) }}"
       unit_of_measurement: "A"
 
-    # Pack 2 (calculated from pack 1)
+    # Pack 1 calculated (used for battery2 card slot)
     - name: battery_1_calculated_power
-      state: "{{ (states('input_number.dev_battery_power') | float(-2500) / 4) | round(0) }}"
+      state: "{{ (states('input_number.dev_battery_power') | float(-2500) - states('input_number.dev_battery2_power') | float(-600) - states('input_number.dev_battery3_power') | float(-600)) | round(0) }}"
       unit_of_measurement: "W"
     - name: battery_1_calculated_current
-      state: "{{ (states('input_number.dev_battery_current') | float(-48.1) / 4) | round(2) }}"
+      state: "{{ (states('input_number.dev_battery_current') | float(-48.1) - states('input_number.dev_battery2_current') | float(-12.0) - states('input_number.dev_battery3_current') | float(-12.0)) | round(2) }}"
       unit_of_measurement: "A"
 
-    # Pack 3
+    # Pack 2 (battery3 card slot)
     - name: batteries_2_voltage
-      state: "{{ (states('input_number.dev_battery_voltage') | float(52) + 0.05) | round(2) }}"
+      state: "{{ states('input_number.dev_battery2_voltage') | float(52.05) }}"
       unit_of_measurement: "V"
     - name: batteries_2_state_of_charge
-      state: "{{ (states('input_number.dev_battery_soc') | float(78) - 1) | round(0) }}"
+      state: "{{ states('input_number.dev_battery2_soc') | float(77) }}"
       unit_of_measurement: "%"
     - name: batteries_2_power
-      state: "{{ (states('input_number.dev_battery_power') | float(-2500) / 4) | round(0) }}"
+      state: "{{ states('input_number.dev_battery2_power') | float(-600) }}"
       unit_of_measurement: "W"
     - name: batteries_2_current
-      state: "{{ (states('input_number.dev_battery_current') | float(-48.1) / 4) | round(2) }}"
+      state: "{{ states('input_number.dev_battery2_current') | float(-12.0) }}"
       unit_of_measurement: "A"
 
-    # Pack 4
+    # Pack 3 (battery4 card slot)
     - name: batteries_3_voltage
-      state: "{{ (states('input_number.dev_battery_voltage') | float(52) - 0.05) | round(2) }}"
+      state: "{{ states('input_number.dev_battery3_voltage') | float(51.95) }}"
       unit_of_measurement: "V"
     - name: batteries_3_state_of_charge
-      state: "{{ (states('input_number.dev_battery_soc') | float(78) + 1) | round(0) }}"
+      state: "{{ states('input_number.dev_battery3_soc') | float(79) }}"
       unit_of_measurement: "%"
     - name: batteries_3_power
-      state: "{{ (states('input_number.dev_battery_power') | float(-2500) / 4) | round(0) }}"
+      state: "{{ states('input_number.dev_battery3_power') | float(-600) }}"
       unit_of_measurement: "W"
     - name: batteries_3_current
-      state: "{{ (states('input_number.dev_battery_current') | float(-48.1) / 4) | round(2) }}"
+      state: "{{ states('input_number.dev_battery3_current') | float(-12.0) }}"
       unit_of_measurement: "A"
 
     # Daily energy
