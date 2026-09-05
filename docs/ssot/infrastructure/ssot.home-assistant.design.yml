@@ -126,8 +126,51 @@ pfg2_card:
   note: |
     The PFG2 card is a copy of the PFG grid card with a 15x15 grid by default
     (pfg_grid_size still overrides). It shares the same pfg_* config keys and
-    entity/status tile mapping as pfg, plus `pfg_icons` (r,c -> mdi icon) which
-    pfg does not have. Deployed to michael-dev in bundle v33.
+    entity/status tile mapping as pfg. First deployed to michael-dev in bundle v33;
+    corner anchors and span-aware lines landed in v51, per-line speed scaling in v56.
+
+pfg_feature_keys:
+  applies_to: [pfg, pfg2]
+  grid:
+    pfg_grid_size: 'N (default 10 for pfg, 15 for pfg2); 1-indexed r,c tile keys'
+    pfg_grid_width: 'CSS width of the square grid, e.g. "25%" or "360px"'
+    pfg_radius: 'map r,c -> CSS border-radius for that tile'
+  tiles:
+    note: 'Render priority per tile: label > icon > image > sum/value > r,c coordinate text.'
+    pfg_labels: 'map "r,c" -> text label'
+    pfg_icons: 'map "r,c" -> mdi icon name (e.g. mdi:solar-power)'
+    pfg_images: 'map "r,c" -> image URL served from /local/'
+    pfg_image_zoom: 'number; object-fit:cover plus transform:scale(zoom), applied to all image tiles'
+    pfg_values: 'map "r,c" -> {entity, scale?, decimals?, unit?} live sensor value tile'
+    pfg_sums: 'map "r,c" -> {entities[], scale?, decimals?, unit?} summed entity tile'
+    pfg_spans: 'map "r,c" -> N making that tile N x N cells; covered cells are skipped'
+  lines:
+    key: pfg_lines
+    fields:
+      from: 'anchor, required'
+      to: 'anchor, required'
+      via: 'anchor, optional intermediate point'
+      elbow: '"h" horizontal-first or "v" vertical-first route between from and to'
+      entity: 'numeric sensor driving direction, color, live state, and speed'
+      color: 'hex override; default is the entity status color, else #FF9100'
+      speed: 'seconds per dash cycle at max_power (default 0.8)'
+      max_power: 'watts counted as full speed (default 1000)'
+    anchor_syntax: |
+      "r,c" = tile centre. Edge/corner suffix after @:
+      top | bottom | left | right | topleft | topright | bottomleft | bottomright.
+      Anchors are span-aware: an edge/corner of an N x N tile uses the outer boundary.
+      Endpoints are raw anchor coordinates (no inset); an earlier cellEdge() inset was
+      removed in v50 because it shifted endpoints into neighbouring cells.
+    behavior: |
+      Lines are an SVG polyline with a stroke-dashoffset animation (pfg-flow keyframes).
+      entity state sign picks animation-direction (>=0 flows from->to, <0 reversed).
+      Duration = speed / clamp(|value|/max_power, min 0.15, max 1) so higher power runs
+      faster. Zero/unavailable pauses the animation and dims the line to 60%.
+      Lines use vector-effect="non-scaling-stroke" with stroke-width 2px.
+  deployment_note: |
+    pfg_* config lives entirely in the Lovelace card config. Once the bundle supports a
+    key, iterate it live with scripts/home-assistant/push-dashboard.py (websocket save,
+    no restart). Only new card code requires a bundle rebuild + version bump + restart.
 
 multi_battery_layout:
   note: |
@@ -177,6 +220,6 @@ known_patterns:
       SS4 or full-card tabs.
 
 status:
-  last_updated: '2026-09-04'
-  last_verified: '2026-09-04'
-  health: active; v31 signed-current, direction override, and PFG layout documented; PF3 visually verified on michael-ha after HA core restart
+  last_updated: '2026-09-05'
+  last_verified: '2026-09-05'
+  health: active; v56 deployed; pfg/pfg2 feature keys, anchor syntax, and speed-scaled flow lines documented; signed-current and direction override documented for compact/lite cards

@@ -28,18 +28,43 @@ runbooks:
       - Adjust view_layout / grid-area and card-specific IDs if needed
       - Save and verify the tab renders correctly
 
+  decide_config_vs_code:
+    purpose: Decision tree — do you need a bundle rebuild or just a dashboard push?
+    steps:
+      - If the change only adjusts existing pfg_* / card config keys (tile positions, line anchors, speed, max_power, images, entities): use push_dashboard_via_websocket — no rebuild, no restart
+      - If the change needs new rendering, new config keys, or a bugfix in card code: use build_deploy_custom_card — rebuild, bump bundle version, restart michael-dev
+      - If unsure whether a key exists, grep the card source (src/cards/pfg-card.ts, pfg2-card.ts) for the key name
+    note: Config pushes apply instantly; bundle deploys need a service restart and a fresh resource filename to beat browser cache.
+
+  push_dashboard_via_websocket:
+    purpose: Save tony-test dashboard config changes live without a restart (preferred over .storage edits).
+    steps:
+      - 'Export the token into the environment first: `source ~/.config/secrets/ha-michael-dev.env` (the file exports HASS_TOKEN)'
+      - Write a small mutate script defining mutate(config) that edits the views/cards dict in place
+      - Run python3 scripts/home-assistant/push-dashboard.py https://tony-dell.taila0626a.ts.net:8124 tony-test --mutate /tmp/mutate.py
+      - The script fetches lovelace/config, applies mutate(), and calls lovelace/config/save; the frontend refreshes automatically
+      - Snapshot the result with scripts/home-assistant/sync-ssot-from-live.sh
+    note: |
+      Verified workflow for PFG2 line/image/layout iteration (v51-v56 era). This edits the live
+      config, so always re-read the target view first and keep mutate() changes minimal to avoid
+      clobbering concurrent edits. Direct .storage edits require an HA core restart and are slower.
+
   build_deploy_custom_card:
     purpose: Rebuild the forked sunsynk-power-flow-card and deploy it to michael-dev.
     steps:
       - Edit source in /home/tony/CascadeProjects/sunsynk-power-flow-card/src/
-      - Run npm run build in the repo root
+      - Run npm run build in the repo root (about 20s; rollup -c --bundleConfigAsCjs)
       - Note the output bundle dist/sunsynk-power-flow-card.js
-      - Bump the bundle version (e.g. v30 -> v31)
-      - Copy the bundle to tony-dell:/home/tony/.config/michael-dev/www/sunsynk-power-flow-card-fork-v{version}.js
-      - Update the Lovelace resource in /home/tony/.config/michael-dev/.storage/lovelace_resources to the new /local/...v{version}.js
-      - Reload core config via HA-MCP with scripts/home-assistant/ha-mcp-call.py --url http://127.0.0.1:9585/private_B3WMIAChoseTpDS7fwgwRw --tool ha_reload_core
-      - Verify the dashboard at /tony-test/pf4 and /tony-test/pfg
+      - Bump the bundle version (check latest in ssot.home-assistant.cards.yml)
+      - scp the bundle to tony-dell:/home/tony/.config/michael-dev/www/sunsynk-power-flow-card-fork-v{version}.js
+      - sed the old version to the new one in /home/tony/.config/michael-dev/.storage/lovelace_resources
+      - Restart the service: ssh tony-dell 'systemctl --user restart michael-dev.service'
+      - Verify the bundle URL returns 200: curl -sk https://tony-dell.taila0626a.ts.net:8124/local/sunsynk-power-flow-card-fork-v{version}.js
+      - Verify the dashboard at /tony-test/pf4, /tony-test/pfg, /tony-test/pfg2
       - Run scripts/home-assistant/sync-ssot-from-live.sh to snapshot the dashboard and bundle version
+    note: |
+      A new filename (v{N}.js) is mandatory — it beats browser/module cache. ha_reload_core is NOT
+      sufficient: .storage/lovelace_resources is only re-read on a full service restart.
     ssot: ssot.home-assistant.cards.yml
 
   create_long_lived_token:
@@ -159,6 +184,6 @@ runbooks:
       - Verify at http://michael-ha:8123/tony-test/pf3 using a logged-in browser or a valid long-lived token
 
 status:
-  last_updated: '2026-09-04'
-  last_verified: '2026-09-04'
-  health: active
+  last_updated: '2026-09-05'
+  last_verified: '2026-09-05'
+  health: active; websocket push-dashboard workflow verified; deploy runbook corrected (.storage resource changes need service restart, not ha_reload_core)

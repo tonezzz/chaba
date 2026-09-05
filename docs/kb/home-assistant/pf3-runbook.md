@@ -21,9 +21,11 @@ The `tony-test` dashboard is stored in `.storage` on `michael-dev`, not in the r
 New test views have been added:
 
 - `PF4` (`cardstyle: lite`, `/tony-test/pf4`) is a copy of PF3 used for dev verification.
-- `PFG1` (`cardstyle: pfg`, `/tony-test/pfg1`) is a new experimental pfg grid layout.
+- `PFG1` (`cardstyle: pfg`, `/tony-test/pfg1`) is an experimental pfg grid layout.
 - `PFG` (`cardstyle: pfg`, `/tony-test/pfg`) is the original pfg test view, **not** `cardstyle: full`.
-- `PFG2` (`cardstyle: pfg2`, `/tony-test/pfg2`) is a copy of PFG rendering a 15x15 grid.
+- `PFG2` (`cardstyle: pfg2`, `/tony-test/pfg2`) renders a 15x15 grid (default `pfg_grid_size` 15).
+- `TPL` (`cardstyle: pfg`, `/tony-test/tpl`) is a small 2x2-grid `pfg` experiment (`pfg_grid_size: 2`, `pfg_grid_width: 25%`).
+- `Data` (`/tony-test/data`) holds mock `input_number`/`input_select` helpers used to drive test scenarios.
 
 All views are stored in `.storage` on `michael-dev` and snapshotted to the same JSON.
 
@@ -36,15 +38,16 @@ Tab order (PF3 is first):
 | 2 | PFG1 |
 | 3 | PFG |
 | 4 | PFG2 |
-| 5 | SS4 |
-| 6 | Sankey |
-| 7 | juWorkshop |
-| 8 | Solar Assistant |
-| 9 | glass |
-| 10 | Weather |
-| 11 | Solis Daily Energy Sankey |
+| 5 | TPL |
+| 6 | Data |
+| 7 | Sankey |
+| 8 | juWorkshop |
+| 9 | Solar Assistant |
+| 10 | glass |
+| 11 | Weather |
+| 12 | Solis Daily Energy Sankey |
 
-PF3 and PF4 contain a single `custom:sunsynk-power-flow-card` in `cardstyle: lite` mode with a transparent background and the four-battery layout. PFG1 and PFG use `cardstyle: pfg` with `wide: true` and `card_height: 520px` on a larger canvas.
+PF3 and PF4 contain a single `custom:sunsynk-power-flow-card` in `cardstyle: lite` mode with a transparent background and the four-battery layout. PFG1, PFG, and TPL use `cardstyle: pfg`; PFG2 uses `cardstyle: pfg2`.
 
 ## Entity mapping
 
@@ -78,17 +81,76 @@ Inverter, solar, grid, and daily aggregate entities are in `docs/ssot/infrastruc
 - `battery.count` is 4.
 - `show_remaining_energy` is `false` for battery2/battery4 and `true` for battery3.
 
-## Card build and deploy workflow
+## Which workflow? (decision tree)
+
+- **Config-only change** (tile positions, `pfg_lines` anchors, images, entities, speed/max_power — anything the current bundle already supports): push live over websocket, no rebuild, no restart.
+- **Code change** (new `pfg_*` key, new rendering, bugfix): rebuild, bump bundle version, deploy, restart `michael-dev`.
+- **When unsure**, grep `src/cards/pfg-card.ts` / `src/cards/pfg2-card.ts` for the config key.
+
+## Dashboard config workflow (no rebuild)
+
+```bash
+cat > /tmp/mutate.py <<'EOF'
+def mutate(config):
+    v = next(x for x in config["views"] if x.get("path") == "pfg2")
+    c = v["cards"][0]
+    c["pfg_lines"][0]["to"] = "6,3@bottom"   # example
+EOF
+set -a && source ~/.config/secrets/ha-michael-dev.env && set +a
+python3 scripts/home-assistant/push-dashboard.py \
+  "https://tony-dell.taila0626a.ts.net:8124" "tony-test" --mutate /tmp/mutate.py
+./scripts/home-assistant/sync-ssot-from-live.sh
+```
+
+`push-dashboard.py` fetches `lovelace/config`, applies `mutate()`, and calls `lovelace/config/save`; the frontend refreshes automatically. Keep `mutate()` minimal — it edits the live config, so re-read the target view first and don't clobber concurrent edits.
+
+## Card build and deploy workflow (new code)
 
 1. Edit source in `/home/tony/CascadeProjects/sunsynk-power-flow-card/src/`.
-2. Run `npm run build` in the repo root.
-3. Bump the bundle version (e.g. `v26` -> `v31`) and copy `dist/sunsynk-power-flow-card.js` to `tony-dell:/home/tony/.config/michael-dev/www/sunsynk-power-flow-card-fork-v{version}.js`.
-4. Update the Lovelace resource in `/home/tony/.config/michael-dev/.storage/lovelace_resources` to `/local/sunsynk-power-flow-card-fork-v{version}.js`.
-5. Restart the dev container: `systemctl --user restart michael-dev.service`.
-6. Verify at `https://tony-dell.taila0626a.ts.net:8124/tony-test/pf4` and `.../pfg`.
-7. Run `scripts/home-assistant/sync-ssot-from-live.sh` to snapshot `.storage/lovelace.tony_test` and update bundle version in `ssot.home-assistant.cards.yml`.
-8. Copy the bundle and update `lovelace_resources` on `michael-ha` when the dev instance is verified.
-9. Restart `michael-ha` with `ha core restart` or the REST service `homeassistant/restart`; `.storage` changes are only reflected after a restart.
+2. Run `npm run build` in the repo root (~20s).
+3. Bump the bundle version (see `ssot.home-assistant.cards.yml` for the latest) and `scp` `dist/sunsynk-power-flow-card.js` to `tony-dell:/home/tony/.config/michael-dev/www/sunsynk-power-flow-card-fork-v{version}.js`.
+4. `sed` the old version to the new one in `/home/tony/.config/michael-dev/.storage/lovelace_resources`. A new filename is mandatory to beat browser/module cache.
+5. Restart the dev container: `ssh tony-dell 'systemctl --user restart michael-dev.service'`. (`ha_reload_core` is **not** sufficient — `.storage` resources are only read on restart.)
+6. Verify the bundle URL returns 200: `curl -sk https://tony-dell.taila0626a.ts.net:8124/local/sunsynk-power-flow-card-fork-v{version}.js`.
+7. Verify at `https://tony-dell.taila0626a.ts.net:8124/tony-test/pf4`, `.../pfg`, `.../pfg2`.
+8. Run `scripts/home-assistant/sync-ssot-from-live.sh` to snapshot `.storage/lovelace.tony_test` and update bundle version in `ssot.home-assistant.cards.yml`.
+9. Copy the bundle and update `lovelace_resources` on `michael-ha` when the dev instance is verified.
+10. Restart `michael-ha` with `ha core restart` or the REST service `homeassistant/restart`; `.storage` changes are only reflected after a restart.
+
+## PFG / PFG2 grid cards
+
+`cardstyle: pfg` and `pfg2` render an N x N tile grid (default 10 / 15; `pfg_grid_size` overrides). Tiles are addressed by 1-indexed `"r,c"` keys.
+
+Tile config keys (all maps keyed by `"r,c"`):
+
+| Key | Value | Notes |
+|-----|-------|-------|
+| `pfg_labels` | string | text label |
+| `pfg_icons` | `mdi:*` name | per-tile icon |
+| `pfg_images` | `/local/...` URL | `object-fit: cover`; tile clips overflow |
+| `pfg_image_zoom` | number | `transform: scale(zoom)` on all image tiles |
+| `pfg_values` | `{entity, scale?, decimals?, unit?}` | live sensor value |
+| `pfg_sums` | `{entities[], scale?, decimals?, unit?}` | summed entities (e.g. PV1+PV2 in kW) |
+| `pfg_spans` | number N | tile becomes N x N; covered cells skipped |
+| `pfg_radius` | CSS radius | per-tile border-radius |
+| `pfg_grid_width` | CSS width | e.g. `"25%"`, `"360px"` |
+
+Render priority per tile: label > icon > image > sum/value > `r,c` coordinate text.
+
+`pfg_lines` entries draw animated SVG flow lines between anchors:
+
+```json
+{ "from": "4,7@topright", "to": "6,7@bottomright", "entity": "sensor.inverters_1_grid_power", "speed": 0.8, "max_power": 6000 }
+```
+
+- Anchors: `"r,c"` (centre) plus `@top|bottom|left|right|topleft|topright|bottomleft|bottomright`. Anchors are span-aware — an edge/corner of an N x N tile uses the outer boundary.
+- Optional `via` (intermediate anchor) or `elbow: "h"|"v"` for routed lines.
+- `entity` sign sets direction (`>=0` flows from→to, `<0` reversed); `0`/unavailable pauses the dash animation and dims the line to 60%.
+- Animation duration = `speed` / `clamp(|value| / max_power, 0.15, 1)` — more power, faster flow. `speed` default 0.8s, `max_power` default 1000 W.
+- `color` overrides the entity status color (default `#FF9100`).
+- Endpoints are raw anchor coordinates — an earlier `cellEdge()` inset was removed in v50 because it pushed endpoints into neighbouring cells.
+
+Current PFG2 layout: PV images `2,2`/`2,4` (2x2 spans, `pv-tiles.jpg`), grid image `2,7` (2x2, `power-grid.jpg`), PV sum box `7,3` (2x2), inverter image centred at `8,8`, four animated lines bound to PV1/PV2/grid/PV-total entities.
 
 ## Battery status text and overlay avoidance
 

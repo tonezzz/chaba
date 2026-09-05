@@ -35,38 +35,44 @@ tabs:
   - order: 4
     title: PFG2
     path: pfg2
-    note: Copy of PFG view using cardstyle pfg2 (15x15 grid, default pfg_grid_size 15).
+    note: cardstyle pfg2, 15x15 grid; image tiles, pfg_sums PV box, and speed-scaled pfg_lines.
     test_url: https://tony-dell.taila0626a.ts.net:8124/tony-test/pfg2
   - order: 5
+    title: TPL
+    path: tpl
+    note: cardstyle pfg experiment; 2x2 grid with a spanned PV image tile (pfg_grid_size 2, pfg_grid_width 25%).
+    test_url: https://tony-dell.taila0626a.ts.net:8124/tony-test/tpl
+  - order: 6
     title: Data
     path: data
     note: Mock data controls — input_number/input_select helpers for testing scenarios.
-  - order: 6
+  - order: 7
     title: Sankey
     path: solis-daily-energy-sankey
-  - order: 7
+  - order: 8
     title: juWorkshop
     path: juworkshop
-  - order: 8
+  - order: 9
     title: Solar Assistant
     path: ~
-  - order: 9
+  - order: 10
     title: glass
     path: ~
-  - order: 10
+  - order: 11
     title: Weather
     path: weather
-  - order: 11
+  - order: 12
     title: Solis Daily Energy Sankey
     path: ~
 
 manual_steps:
-  - Edit the live Lovelace dashboard through the HA UI; the canonical source is .storage/lovelace.tony_test
-  - To snapshot, copy the .storage file to docs/home-assistant/dashboards/tony-test-current.json
-  - Tab order, titles, and paths are managed in the same .storage file
-  - To add a new tab, edit the .storage file or use the HA UI, then snapshot
+  - Preferred: mutate the live dashboard via scripts/home-assistant/push-dashboard.py (websocket lovelace/config/save; applies immediately, no restart)
+  - Direct .storage/lovelace.tony_test edits only take effect after an HA core restart
+  - To snapshot, run scripts/home-assistant/sync-ssot-from-live.sh (copies .storage to docs/home-assistant/dashboards/tony-test-current.json and refreshes bundle version)
+  - Tab order, titles, and paths live in the same .storage file / saved config
+  - To add a new tab, push via websocket mutate or use the HA UI, then snapshot
 
 status:
-  last_updated: '2026-09-04'
+  last_updated: '2026-09-05'
   last_verified: '2026-09-05'
   health: active

@@ -30,8 +30,7 @@ Valid modes: `normal`, `plan`, `build`, `review`.
 - tony-ha: `http://tony-dell:8123`
 - michael-dev: `http://127.0.0.1:8124` / `https://tony-dell.taila0626a.ts.net:8124`
 - michael-ha: `http://michael-ha:8123` / `https://nupo4ndqdqydt78zmpq0z5wzp1bdrqgs.ui.nabu.casa/`
-- PF3 test view: `https://tony-dell.taila0626a.ts.net:8124/tony-test/pf3`
-- PFG (cardstyle: pfg) test view: `https://tony-dell.taila0626a.ts.net:8124/tony-test/pfg`
+- tony-test views: `https://tony-dell.taila0626a.ts.net:8124/tony-test/{pf3,pf4,pfg,pfg1,pfg2,tpl,data}`
 
 ## Token files
 
@@ -44,21 +43,25 @@ Valid modes: `normal`, `plan`, `build`, `review`.
 
 - Build card: `cd /home/tony/CascadeProjects/sunsynk-power-flow-card && npm run build`
 - Restart michael-dev: `ssh tony-dell 'systemctl --user restart michael-dev.service'`
+- Push dashboard config live (no restart): `python3 scripts/home-assistant/push-dashboard.py https://tony-dell.taila0626a.ts.net:8124 tony-test --mutate /tmp/mutate.py` (requires `source ~/.config/secrets/ha-michael-dev.env`)
 - Sync live dashboard into repo: `./scripts/home-assistant/sync-ssot-from-live.sh`
 - Sync SSOT to MDDB: `python3 scripts/sync-ssot-to-mddb.py`
+- Validate all SSOT: `node scripts/ssot-validate-all.mjs`
 
 ## Common tasks
 
-- Reorder or add a tab: edit `michael-dev:/config/.storage/lovelace.tony_test`, then snapshot with `sync-ssot-from-live.sh`.
-- Update the forked card: build, copy `dist/sunsynk-power-flow-card.js` to `michael-dev:/home/tony/.config/michael-dev/www/sunsynk-power-flow-card-fork-v{N}.js`, update `.storage/lovelace_resources`, restart `michael-dev`.
+- Dashboard config changes (card layout, lines, images — anything already supported by the bundle): mutate live via `push-dashboard.py` over websocket, then `sync-ssot-from-live.sh`. No rebuild or restart needed; HA refreshes Lovelace automatically.
+- New card features (new `pfg_*` keys, rendering changes): build, copy `dist/sunsynk-power-flow-card.js` to `michael-dev:/home/tony/.config/michael-dev/www/sunsynk-power-flow-card-fork-v{N}.js`, `sed` the version in `.storage/lovelace_resources`, restart `michael-dev`, verify the `/local/...v{N}.js` URL returns 200.
+- Reorder or add a tab: prefer `push-dashboard.py` websocket mutate; `.storage` edits directly require an HA restart to take effect.
 - Fix SVG text overlay: check `Battery*_SOC` `<svg>` display condition in `src/components/compact/bat/bat-elements.ts` so plain text hides when combined `{target}% | {current}%` is visible.
-- Verify visually: use a logged-in Chrome profile or browser dev tools on the PF3/PFG shadow root.
+- Verify visually: use a logged-in Chrome profile or browser dev tools on the card shadow root.
 - Guard against bundle drift: `sync-ssot-from-live.sh` picks the newest `www/` bundle by version. Remove obsolete `sunsynk-power-flow-card-fork-v*.js` bundles or cross-check `lovelace_resources` before committing.
 
-## Current state (2026-09-04)
+## Current state (2026-09-05)
 
-- Active card bundle: `v31` (`sunsynk-power-flow-card-fork-v31.js`), source commit `95ddb0c`.
-- Deployed to `michael-dev` (PF4 + PFG) and `michael-ha` (PF3); PF3 visually verified on `michael-ha` via long-lived token.
-- `PF4` is the dev mirror of `PF3`; `PFG` is a new `cardstyle: pfg` test view at `/tony-test/pfg` (not `cardstyle: full`).
+- Active card bundle: `v56` (`sunsynk-power-flow-card-fork-v56.js`), source commit `95ddb0c`.
+- Deployed to `michael-dev` (PF3/PF4/PFG/PFG1/PFG2/TPL) and `michael-ha` (PF3).
+- `cardstyle` branches: `lite` (PF3/PF4), `pfg` (PFG/PFG1/TPL), `pfg2` (PFG2, 15×15 grid default).
+- `pfg`/`pfg2` support `pfg_images`, `pfg_labels`, `pfg_icons`, `pfg_values`, `pfg_image_zoom`, `pfg_lines`, `pfg_spans`, `pfg_radius`, `pfg_sums`, `pfg_grid_size`, `pfg_grid_width` — see `ssot.home-assistant.design.yml` for anchor syntax and line semantics.
+- The `michael-dev` token in `~/.config/secrets/ha-michael-dev.env` is valid and works for REST and websocket.
 - Dashboard snapshot is `docs/home-assistant/dashboards/tony-test-current.json`.
-- `michael-dev` long-lived token in `~/.config/secrets/ha-michael-dev.env` is still invalid and must be regenerated for Playlive/REST access.
