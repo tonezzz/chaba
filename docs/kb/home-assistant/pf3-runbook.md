@@ -128,14 +128,32 @@ The overall battery box now renders a signed current on the first line, e.g. `53
 
 ## Visual verification with Playlive
 
-1. Open the PF3/PF4/PFG URL in a browser or Playlive Chrome session that is already logged into the target HA instance (long-lived token in localStorage, or a logged-in Chrome profile).
-2. Inspect the `sunsynk-power-flow-card` shadow root.
-3. Search for `<text>` elements containing the suspect string.
-4. Compare IDs, `x`/`y`, classes, `display`, and `fill`.
-5. Look for duplicate `battery_soc_184` or `duration_text` IDs across different parent `<svg>` groups; this is expected and is not the overlay itself.
-6. Confirm the parent `<svg>` group `display` is `none` for the inactive branch.
+The most reliable approach is a Playlive session attached to a Chrome profile that is already logged into the target HA instance (`playlive_create_playwright_chrome` or `playlive_create_chrome_live` against an existing CDP endpoint).
 
-**Auth note:** Long-lived `HASS_TOKEN` values are for REST/websocket API calls, not for dashboard URL auto-login. The `michael-dev` token in `~/.config/secrets/ha-michael-dev.env` is valid and works for REST/Playlive; the `michael-ha` token is in `~/.local/share/home-assistant-michael/ha-token`.
+To use a headless Playwright session with a long-lived token:
+
+1. Navigate to the instance origin, e.g. `https://tony-dell.taila0626a.ts.net:8124/`.
+2. Store the token in `localStorage` as `hassTokens` using the format Home Assistant expects for `createLongLivedTokenAuth`:
+   ```ts
+   {
+     access_token: '<TOKEN>',
+     expires_in: 315360000,
+     expires: Date.now() + 315360000000,
+     hassUrl: 'https://tony-dell.taila0626a.ts.net:8124',
+     clientId: null,
+     refresh_token: ''
+   }
+   ```
+3. Navigate to the view, e.g. `https://tony-dell.taila0626a.ts.net:8124/tony-test/pf4`.
+4. Wait for the dashboard shell to load (`document.title` should show `Tony test – Home Assistant`).
+5. Inspect the `sunsynk-power-flow-card` shadow root.
+6. Search for `<text>` elements containing the suspect string and compare IDs, `x`/`y`, classes, `display`, and `fill`.
+7. Look for duplicate `battery_soc_184` or `duration_text` IDs across different parent `<svg>` groups; this is expected and is not the overlay itself.
+8. Confirm the parent `<svg>` group `display` is `none` for the inactive branch.
+
+**Auth note:** Long-lived `HASS_TOKEN` values are for REST/websocket API calls and for the HA-MCP server. They can be used to authenticate the Home Assistant WebSocket (verified with `wss://tony-dell.taila0626a.ts.net:8124/api/websocket`), but a headless Playwright browser may not fully render the Lovelace UI because the `<home-assistant>` custom element is not upgraded in that environment. Use a real logged-in Chrome profile when full visual inspection is required.
+
+The `michael-dev` token is in `~/.config/secrets/ha-michael-dev.env`; the `michael-ha` token is in `~/.local/share/home-assistant-michael/ha-token`.
 
 ## Common failure modes
 
