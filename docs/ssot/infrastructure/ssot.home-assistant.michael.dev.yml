@@ -63,7 +63,7 @@ environments:
         file: /home/tony/.config/secrets/ha-michael-dev.env
         env: HASS_TOKEN
         created: 2026-09-04
-        status: invalid - requires regeneration
+        status: valid
         note: Long-lived access token for automated Playlive / REST access. Do not commit the token file.
       manual_steps:
         - Log in to the michael-dev Home Assistant web UI at https://tony-dell.taila0626a.ts.net:8124
@@ -130,7 +130,7 @@ full_flow:
   - step: 2
     label: Deploy to dev
     action: Run scripts/home-assistant/deploy-michael-dev.sh
-    result: Repo config is rsynced to ~/.config/michael-dev/ and the michael-dev container is restarted.
+    result: Repo config is rsynced to ~/.config/michael-dev/ and core config is reloaded via the HA-MCP ha_reload_core tool without a full container restart.
   - step: 2.5
     label: Sync live dashboards to dev .storage
     action: Copy live michael-ha:/config/.storage/lovelace_dashboards and lovelace.tony_test to the dev .storage directory.
@@ -177,9 +177,9 @@ verification:
     - systemctl --user status michael-dev.service
     - curl -sf http://127.0.0.1:8124/
     - curl -sf https://tony-dell.taila0626a.ts.net:8124/
+    - python3 scripts/home-assistant/ha-mcp-call.py --url http://127.0.0.1:9585/private_B3WMIAChoseTpDS7fwgwRw --tool ha_reload_core
     - ss -tlnp | grep 8124
     - ss -tlnp | grep 9585
-    - curl -s -o /dev/null -w "%{http_code}" http://tony-dell:9585/private_B3WMIAChoseTpDS7fwgwRw
     - tailscale serve status | grep 8124
   live:
     - tailscale ping michael-ha
@@ -204,6 +204,7 @@ related_files:
 config:
   version: 1
   created_at: 2026-09-03
-  last_updated: 2026-09-03
+  last_updated: 2026-09-05
   maintainer: tony
   status: enabled
+  note: HA-MCP reload verified 2026-09-04; .storage Lovelace changes still require a full container restart.
