@@ -66,13 +66,12 @@ environments:
         status: valid
         note: Long-lived access token for automated Playlive / REST access. Do not commit the token file.
       manual_steps:
-        - Log in to the michael-dev Home Assistant web UI at https://tony-dell.taila0626a.ts.net:8124
-        - Navigate to your user profile (left sidebar bottom user icon) and switch to the Security tab
-        - Under Long-Lived Access Tokens, click CREATE TOKEN
-        - Name the token, e.g. devin-playlive, and copy the token string
-        - Save it to /home/tony/.config/secrets/ha-michael-dev.env as HASS_TOKEN=<token> with chmod 600
-        - For Playlive auto-login, append ?auth_token=<token> to HA dashboard URLs
-      note: Same password as live michael-ha; auth_provider.homeassistant user and credentials copied manually. Token is now the preferred automated credential.
+        - Long-lived token: navigate to your user profile → Security → Long-Lived Access Tokens, create a token, and save it to /home/tony/.config/secrets/ha-michael-dev.env as HASS_TOKEN=<token> with chmod 600.
+        - Browser login is not recommended: entering username/password in the HA web UI currently fails with 'Invalid redirect URI' because the Tailscale HTTPS URL does not pass HA's OAuth redirect validation.
+      note: |
+        Same password as live michael-ha; auth_provider.homeassistant user and credentials copied manually.
+        The long-lived HASS_TOKEN is the preferred automated credential. It works for REST, WebSocket,
+        and HA-MCP, but not for browser OAuth login due to the redirect-URI issue.
     access:
       local: http://127.0.0.1:8124
       tailscale: https://tony-dell.taila0626a.ts.net:8124

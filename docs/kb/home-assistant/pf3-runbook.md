@@ -21,7 +21,8 @@ The `tony-test` dashboard is stored in `.storage` on `michael-dev`, not in the r
 New test views have been added:
 
 - `PF4` (`cardstyle: lite`, `/tony-test/pf4`) is a copy of PF3 used for dev verification.
-- `PFG` (`cardstyle: pfg`, `/tony-test/pfg`) is a new experimental pfg layout, **not** `cardstyle: full`.
+- `PFG1` (`cardstyle: pfg`, `/tony-test/pfg1`) is a new experimental pfg grid layout.
+- `PFG` (`cardstyle: pfg`, `/tony-test/pfg`) is the original pfg test view, **not** `cardstyle: full`.
 
 All views are stored in `.storage` on `michael-dev` and snapshotted to the same JSON.
 
@@ -31,15 +32,17 @@ Tab order (PF3 is first):
 |-------|-------|
 | 0 | PF3 |
 | 1 | PF4 |
-| 2 | PFG |
-| 3 | SS4 |
-| 4 | Sankey |
-| 5 | juWorkshop |
-| 6 | Solar Assistant |
-| 7 | glass |
-| 8 | Weather |
+| 2 | PFG1 |
+| 3 | PFG |
+| 4 | SS4 |
+| 5 | Sankey |
+| 6 | juWorkshop |
+| 7 | Solar Assistant |
+| 8 | glass |
+| 9 | Weather |
+| 10 | Solis Daily Energy Sankey |
 
-PF3 and PF4 contain a single `custom:sunsynk-power-flow-card` in `cardstyle: lite` mode with a transparent background and the four-battery layout. PFG uses `cardstyle: pfg` and the same entity mapping on a larger canvas.
+PF3 and PF4 contain a single `custom:sunsynk-power-flow-card` in `cardstyle: lite` mode with a transparent background and the four-battery layout. PFG1 and PFG use `cardstyle: pfg` with `wide: true` and `card_height: 520px` on a larger canvas.
 
 ## Entity mapping
 
@@ -151,7 +154,9 @@ To use a headless Playwright session with a long-lived token:
 7. Look for duplicate `battery_soc_184` or `duration_text` IDs across different parent `<svg>` groups; this is expected and is not the overlay itself.
 8. Confirm the parent `<svg>` group `display` is `none` for the inactive branch.
 
-**Auth note:** Long-lived `HASS_TOKEN` values are for REST/websocket API calls and for the HA-MCP server. They can be used to authenticate the Home Assistant WebSocket (verified with `wss://tony-dell.taila0626a.ts.net:8124/api/websocket`), but a headless Playwright browser may not fully render the Lovelace UI because the `<home-assistant>` custom element is not upgraded in that environment. Use a real logged-in Chrome profile when full visual inspection is required.
+**Auth note:** Long-lived `HASS_TOKEN` values are for REST/websocket API calls and for the HA-MCP server. They can be used to authenticate the Home Assistant WebSocket (verified with `wss://tony-dell.taila0626a.ts.net:8124/api/websocket`), but they cannot bypass the browser OAuth redirect-URI check.
+
+Browser login with username/password on `https://tony-dell.taila0626a.ts.net:8124` currently fails with `Invalid redirect URI`, so a headless Playwright browser may not fully render the Lovelace UI. Use a real logged-in Chrome profile when full visual inspection is required.
 
 The `michael-dev` token is in `~/.config/secrets/ha-michael-dev.env`; the `michael-ha` token is in `~/.local/share/home-assistant-michael/ha-token`.
 

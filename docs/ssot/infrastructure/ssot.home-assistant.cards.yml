@@ -7,7 +7,7 @@ repositories:
     fork_of: slhub/sunsynk-power-flow-card
     current_commit: 95ddb0c
     package_version: 7.3.3
-    bundle_version: 31
+    bundle_version: 32
     build:
       command: npm run build
       tool: rollup -c --bundleConfigAsCjs
@@ -15,17 +15,17 @@ repositories:
     deploy:
       michael-dev:
         target_host: ssot.values.yml::hosts.tony_dell
-        target_path: /home/tony/.config/michael-dev/www/sunsynk-power-flow-card-fork-v31.js
+        target_path: /home/tony/.config/michael-dev/www/sunsynk-power-flow-card-fork-v32.js
         lovelace_resources: /home/tony/.config/michael-dev/.storage/lovelace_resources
-        resource_path: /local/sunsynk-power-flow-card-fork-v31.js
+        resource_path: /local/sunsynk-power-flow-card-fork-v32.js
         restart: systemctl --user restart michael-dev.service
         service_ref: infrastructure/ssot.services.yml#tony-dell.michael-dev.quadlet.service_unit
         test_url: https://tony-dell.taila0626a.ts.net:8124/tony-test/pf4
       michael-ha:
         target_host: ssot.values.yml::hosts.michael_ha
-        target_path: /config/www/sunsynk-power-flow-card-fork-v31.js
+        target_path: /config/www/sunsynk-power-flow-card-fork-v32.js
         lovelace_resources: /config/.storage/lovelace_resources
-        resource_path: /local/sunsynk-power-flow-card-fork-v31.js
+        resource_path: /local/sunsynk-power-flow-card-fork-v32.js
         restart: ha core restart
         test_url: http://michael-ha:8123/tony-test/pf3
     source_files:
@@ -82,13 +82,22 @@ cards:
   - id: sunsynk-power-flow-card
     name: Sunsynk Power Flow Card (fork)
     repo_ref: repositories.sunsynk-power-flow-card-fork
-    bundle_version: 31
-    deployed_as: /local/sunsynk-power-flow-card-fork-v31.js
-    dashboard:
-      id: tony-test/pf4
-      tab: PF4
-      test_url: https://tony-dell.taila0626a.ts.net:8124/tony-test/pf4
-      instance: ssot.home-assistant.michael.dev.yml::environments.dev
+    bundle_version: 32
+    deployed_as: /local/sunsynk-power-flow-card-fork-v32.js
+    dashboards:
+      - id: tony-test/pf4
+        tab: PF4
+        test_url: https://tony-dell.taila0626a.ts.net:8124/tony-test/pf4
+      - id: tony-test/pfg1
+        tab: PFG1
+        test_url: https://tony-dell.taila0626a.ts.net:8124/tony-test/pfg1
+      - id: tony-test/pfg
+        tab: PFG
+        test_url: https://tony-dell.taila0626a.ts.net:8124/tony-test/pfg
+      - id: tony-test/pf3
+        tab: PF3
+        test_url: https://nupo4ndqdqydt78zmpq0z5wzp1bdrqgs.ui.nabu.casa/tony-test/pf3
+    instance: ssot.home-assistant.michael.dev.yml::environments.dev
   - id: michael-live
     name: Michael Live (ha-live bridge front-end)
     source: stacks/web/public/apps/michael-live/
@@ -97,4 +106,4 @@ cards:
 status:
   last_build: '2026-09-04'
   last_verified: '2026-09-05'
-  health: active; v31 committed; bundle deployed to michael-dev (PF4 + PFG) and michael-ha (PF3); signed current, direction override, runtime-text and PFG layout documented; live HA core restart loaded updated .storage and verified PF3 visually via long-lived token
+  health: active; v31 committed; bundle deployed to michael-dev (PF3/PF4/PFG/PFG1) and michael-ha (PF3); signed current, direction override, runtime-text, PFG and PFG1 layout documented; .storage changes require HA core restart
