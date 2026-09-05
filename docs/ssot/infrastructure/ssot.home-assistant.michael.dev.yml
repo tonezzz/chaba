@@ -66,7 +66,7 @@ environments:
         status: valid
         note: Long-lived access token for automated Playlive / REST access. Do not commit the token file.
       manual_steps:
-        - Long-lived token: navigate to your user profile → Security → Long-Lived Access Tokens, create a token, and save it to /home/tony/.config/secrets/ha-michael-dev.env as HASS_TOKEN=<token> with chmod 600.
+        - Long-lived token — open your user profile → Security → Long-Lived Access Tokens, create a token, and save it to /home/tony/.config/secrets/ha-michael-dev.env as HASS_TOKEN=<token> with chmod 600.
         - Browser login is not recommended: entering username/password in the HA web UI currently fails with 'Invalid redirect URI' because the Tailscale HTTPS URL does not pass HA's OAuth redirect validation.
       note: |
         Same password as live michael-ha; auth_provider.homeassistant user and credentials copied manually.
