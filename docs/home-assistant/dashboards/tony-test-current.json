@@ -758,11 +758,24 @@
               "pfg_images": {
                 "2,2": "/local/pv-tiles.jpg",
                 "2,4": "/local/pv-tiles.jpg",
-                "2,7": "/local/power-grid.jpg"
+                "2,7": "/local/power-grid.jpg",
+                "10,3": "/local/battery-bank.jpg"
               },
               "pfg_image_zoom": 2,
               "pfg_values": {
-                "3,1": "sensor.inverters_1_grid_power"
+                "3,1": "sensor.inverters_1_grid_power",
+                "12,3": {
+                  "entity": "sensor.totals_battery_state_of_charge",
+                  "decimals": 0,
+                  "unit": "%",
+                  "label": "SOC"
+                },
+                "12,4": {
+                  "entity": "sensor.totals_battery_power",
+                  "scale": 0.001,
+                  "decimals": 2,
+                  "unit": "kW"
+                }
               },
               "pfg_lines": [
                 {
@@ -793,13 +806,22 @@
                   "entity": "sensor.inverters_1_pv_power",
                   "speed": 0.8,
                   "max_power": 8000
+                },
+                {
+                  "from": "10,3@right",
+                  "to": "8,8@left",
+                  "entity": "sensor.totals_battery_power",
+                  "invert": true,
+                  "speed": 0.8,
+                  "max_power": 10000
                 }
               ],
               "pfg_spans": {
                 "2,2": 2,
                 "7,3": 2,
                 "2,4": 2,
-                "2,7": 2
+                "2,7": 2,
+                "10,3": 2
               },
               "pfg_sums": {
                 "7,3": {
@@ -990,6 +1012,7 @@
                   "entity": "sensor.inverters_1_pv_power",
                   "min": 0,
                   "max": 10000,
+                  "scale": 0.001,
                   "needle": true,
                   "segments": [
                     {
@@ -1005,9 +1028,9 @@
                       "color": "#00ff00"
                     }
                   ],
-                  "decimals": 0,
+                  "decimals": 2,
                   "label": "PV",
-                  "unit": "W"
+                  "unit": "kW"
                 }
               },
               "pfg_spans": {

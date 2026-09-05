@@ -59,7 +59,7 @@ Valid modes: `normal`, `plan`, `build`, `review`.
 
 ## Current state (2026-09-05)
 
-- Active card bundle: `v56` (`sunsynk-power-flow-card-fork-v56.js`), source commit `95ddb0c`.
+- Active card bundle: `v62` (`sunsynk-power-flow-card-fork-v62.js`), source commit `95ddb0c`.
 - Deployed to `michael-dev` (PF3/PF4/PFG/PFG1/PFG2/TPL) and `michael-ha` (PF3).
 - `cardstyle` branches: `lite` (PF3/PF4), `pfg` (PFG/PFG1/TPL), `pfg2` (PFG2, 15×15 grid default).
 - `pfg`/`pfg2` support `pfg_images`, `pfg_labels`, `pfg_icons`, `pfg_values`, `pfg_image_zoom`, `pfg_lines`, `pfg_spans`, `pfg_radius`, `pfg_sums`, `pfg_grid_size`, `pfg_grid_width` — see `ssot.home-assistant.design.yml` for anchor syntax and line semantics.
