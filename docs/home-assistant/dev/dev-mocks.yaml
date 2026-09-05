@@ -1,382 +1,266 @@
 # Dev-only mock entities for michael-dev
+# Use the Data tab on the tony-test dashboard to adjust these live.
+
+input_select:
+  dev_inverter_mode:
+    options:
+      - Normal
+      - Standby
+      - Self-test
+      - Fault
+      - Off
+    initial: Normal
+    icon: mdi:solar-power
+  dev_battery_direction:
+    options:
+      - charge
+      - discharge
+      - idle
+      - unknown
+    initial: discharge
+    icon: mdi:battery
+
+input_number:
+  dev_inverter_temperature:
+    min: 0
+    max: 100
+    step: 1
+    initial: 35
+    unit_of_measurement: "°C"
+    icon: mdi:thermometer
+  dev_ac_voltage:
+    min: 0
+    max: 300
+    step: 1
+    initial: 235
+    unit_of_measurement: "V"
+    icon: mdi:flash
+  dev_grid_frequency:
+    min: 45
+    max: 65
+    step: 0.1
+    initial: 50.0
+    unit_of_measurement: "Hz"
+    icon: mdi:sine-wave
+  dev_pv1_power:
+    min: 0
+    max: 10000
+    step: 10
+    initial: 4500
+    unit_of_measurement: "W"
+    icon: mdi:solar-panel
+  dev_pv2_power:
+    min: 0
+    max: 10000
+    step: 10
+    initial: 3200
+    unit_of_measurement: "W"
+    icon: mdi:solar-panel
+  dev_battery_voltage:
+    min: 40
+    max: 60
+    step: 0.1
+    initial: 52.0
+    unit_of_measurement: "V"
+    icon: mdi:battery
+  dev_battery_soc:
+    min: 0
+    max: 100
+    step: 1
+    initial: 78
+    unit_of_measurement: "%"
+    icon: mdi:battery
+  dev_battery_power:
+    min: -10000
+    max: 10000
+    step: 10
+    initial: -2500
+    unit_of_measurement: "W"
+    icon: mdi:battery
+  dev_battery_current:
+    min: -200
+    max: 200
+    step: 0.1
+    initial: -48.1
+    unit_of_measurement: "A"
+    icon: mdi:current-dc
+  dev_grid_power:
+    min: -10000
+    max: 10000
+    step: 10
+    initial: 0
+    unit_of_measurement: "W"
+    icon: mdi:transmission-tower
+  dev_grid_voltage:
+    min: 0
+    max: 300
+    step: 1
+    initial: 235
+    unit_of_measurement: "V"
+    icon: mdi:transmission-tower
+  dev_load_power:
+    min: 0
+    max: 15000
+    step: 10
+    initial: 4300
+    unit_of_measurement: "W"
+    icon: mdi:home-lightning-bolt
+  dev_essential_power:
+    min: 0
+    max: 15000
+    step: 10
+    initial: 1800
+    unit_of_measurement: "W"
+    icon: mdi:home-lightning-bolt
+  dev_today_battery_charge:
+    min: 0
+    max: 100
+    step: 0.1
+    initial: 12.5
+    unit_of_measurement: "kWh"
+    icon: mdi:battery-plus
+  dev_today_battery_discharge:
+    min: 0
+    max: 100
+    step: 0.1
+    initial: 4.2
+    unit_of_measurement: "kWh"
+    icon: mdi:battery-minus
+  dev_today_load_energy:
+    min: 0
+    max: 100
+    step: 0.1
+    initial: 18.7
+    unit_of_measurement: "kWh"
+    icon: mdi:home-lightning-bolt
 
 template:
   - sensor:
-    - name: batteries_1_cell_voltage_average
-      state: "{{ 51.2 | float }}"
-      unit_of_measurement: "V"
-    - name: batteries_1_cell_voltage_highest
-      state: "{{ 51.2 | float }}"
-      unit_of_measurement: "V"
-    - name: batteries_1_cell_voltage_imbalance
-      state: "{{ 80 | float }}"
-      unit_of_measurement: "%"
-    - name: batteries_1_cell_voltage_lowest
-      state: "{{ 51.2 | float }}"
-      unit_of_measurement: "V"
-    - name: batteries_1_current
-      state: "{{ 5.0 | float }}"
-      unit_of_measurement: "A"
-    - name: batteries_1_cycles
-      state: "{{ 100 | float }}"
-    - name: batteries_1_power
-      state: "{{ 1000 | float }}"
-      unit_of_measurement: "W"
-    - name: batteries_1_state_of_charge
-      state: "{{ 80 | float }}"
-      unit_of_measurement: "%"
-    - name: batteries_1_state_of_health
-      state: "{{ 80 | float }}"
-      unit_of_measurement: "%"
-    - name: batteries_1_temperature
-      state: "{{ 25 | float }}"
+    - name: inverters_1_temperature
+      state: "{{ states('input_number.dev_inverter_temperature') | float(35) }}"
       unit_of_measurement: "°C"
-    - name: batteries_1_temperature_1
-      state: "{{ 25 | float }}"
-      unit_of_measurement: "°C"
-    - name: batteries_1_temperature_2
-      state: "{{ 25 | float }}"
-      unit_of_measurement: "°C"
-    - name: batteries_1_temperature_mos
-      state: "{{ 25 | float }}"
-      unit_of_measurement: "°C"
-    - name: batteries_1_voltage
-      state: "{{ 51.2 | float }}"
-      unit_of_measurement: "V"
-    - name: batteries_2_cell_voltage_average
-      state: "{{ 51.2 | float }}"
-      unit_of_measurement: "V"
-    - name: batteries_2_cell_voltage_highest
-      state: "{{ 51.2 | float }}"
-      unit_of_measurement: "V"
-    - name: batteries_2_cell_voltage_imbalance
-      state: "{{ 80 | float }}"
-      unit_of_measurement: "%"
-    - name: batteries_2_cell_voltage_lowest
-      state: "{{ 51.2 | float }}"
-      unit_of_measurement: "V"
-    - name: batteries_2_current
-      state: "{{ 5.0 | float }}"
-      unit_of_measurement: "A"
-    - name: batteries_2_cycles
-      state: "{{ 100 | float }}"
-    - name: batteries_2_power
-      state: "{{ 1000 | float }}"
-      unit_of_measurement: "W"
-    - name: batteries_2_state_of_charge
-      state: "{{ 80 | float }}"
-      unit_of_measurement: "%"
-    - name: batteries_2_state_of_health
-      state: "{{ 80 | float }}"
-      unit_of_measurement: "%"
-    - name: batteries_2_temperature
-      state: "{{ 25 | float }}"
-      unit_of_measurement: "°C"
-    - name: batteries_2_temperature_1
-      state: "{{ 25 | float }}"
-      unit_of_measurement: "°C"
-    - name: batteries_2_temperature_2
-      state: "{{ 25 | float }}"
-      unit_of_measurement: "°C"
-    - name: batteries_2_temperature_mos
-      state: "{{ 25 | float }}"
-      unit_of_measurement: "°C"
-    - name: batteries_2_voltage
-      state: "{{ 51.2 | float }}"
-      unit_of_measurement: "V"
-    - name: batteries_3_cell_voltage_average
-      state: "{{ 51.2 | float }}"
-      unit_of_measurement: "V"
-    - name: batteries_3_cell_voltage_highest
-      state: "{{ 51.2 | float }}"
-      unit_of_measurement: "V"
-    - name: batteries_3_cell_voltage_imbalance
-      state: "{{ 80 | float }}"
-      unit_of_measurement: "%"
-    - name: batteries_3_cell_voltage_lowest
-      state: "{{ 51.2 | float }}"
-      unit_of_measurement: "V"
-    - name: batteries_3_current
-      state: "{{ 5.0 | float }}"
-      unit_of_measurement: "A"
-    - name: batteries_3_cycles
-      state: "{{ 100 | float }}"
-    - name: batteries_3_power
-      state: "{{ 1000 | float }}"
-      unit_of_measurement: "W"
-    - name: batteries_3_state_of_charge
-      state: "{{ 80 | float }}"
-      unit_of_measurement: "%"
-    - name: batteries_3_state_of_health
-      state: "{{ 80 | float }}"
-      unit_of_measurement: "%"
-    - name: batteries_3_temperature
-      state: "{{ 25 | float }}"
-      unit_of_measurement: "°C"
-    - name: batteries_3_temperature_1
-      state: "{{ 25 | float }}"
-      unit_of_measurement: "°C"
-    - name: batteries_3_temperature_2
-      state: "{{ 25 | float }}"
-      unit_of_measurement: "°C"
-    - name: batteries_3_temperature_mos
-      state: "{{ 25 | float }}"
-      unit_of_measurement: "°C"
-    - name: batteries_3_voltage
-      state: "{{ 51.2 | float }}"
-      unit_of_measurement: "V"
-    - name: inverters_1_battery_current
-      state: "{{ 5.0 | float }}"
-      unit_of_measurement: "A"
-    - name: inverters_1_battery_power
-      state: "{{ 1000 | float }}"
-      unit_of_measurement: "W"
-    - name: inverters_1_battery_state_of_charge
-      state: "{{ 80 | float }}"
-      unit_of_measurement: "%"
-    - name: inverters_1_battery_state_of_health
-      state: "{{ 80 | float }}"
-      unit_of_measurement: "%"
-    - name: inverters_1_battery_voltage
-      state: "{{ 51.2 | float }}"
+    - name: inverters_1_ac_output_voltage
+      state: "{{ states('input_number.dev_ac_voltage') | float(235) }}"
       unit_of_measurement: "V"
     - name: inverters_1_grid_frequency
-      state: "{{ 50 | float }}"
+      state: "{{ states('input_number.dev_grid_frequency') | float(50) }}"
       unit_of_measurement: "Hz"
-    - name: inverters_1_grid_power
-      state: "{{ 1000 | float }}"
-      unit_of_measurement: "W"
-    - name: inverters_1_grid_voltage
-      state: "{{ 51.2 | float }}"
-      unit_of_measurement: "V"
-    - name: inverters_1_inverter_mode
-      state: "{{ 0 | float }}"
+    - name: inverters_1_load_current_essential_1
+      state: "{{ (states('input_number.dev_load_power') | float(4300) / states('input_number.dev_ac_voltage') | float(235)) | round(2) }}"
+      unit_of_measurement: "A"
     - name: inverters_1_load_power
-      state: "{{ 1000 | float }}"
+      state: "{{ states('input_number.dev_load_power') | float(4300) }}"
       unit_of_measurement: "W"
     - name: inverters_1_load_power_essential
-      state: "{{ 1000 | float }}"
+      state: "{{ states('input_number.dev_essential_power') | float(1800) }}"
       unit_of_measurement: "W"
-    - name: inverters_1_pv_current_1
-      state: "{{ 5.0 | float }}"
-      unit_of_measurement: "A"
-    - name: inverters_1_pv_current_2
-      state: "{{ 5.0 | float }}"
-      unit_of_measurement: "A"
-    - name: inverters_1_pv_power
-      state: "{{ 1000 | float }}"
+    - name: inverters_1_grid_power
+      state: "{{ states('input_number.dev_grid_power') | float(0) }}"
       unit_of_measurement: "W"
-    - name: inverters_1_pv_power_1
-      state: "{{ 1000 | float }}"
+    - name: inverters_1_grid_power_ld
+      state: "{{ states('input_number.dev_grid_power') | float(0) }}"
       unit_of_measurement: "W"
-    - name: inverters_1_pv_power_2
-      state: "{{ 1000 | float }}"
-      unit_of_measurement: "W"
+    - name: inverters_1_grid_voltage
+      state: "{{ states('input_number.dev_grid_voltage') | float(235) }}"
+      unit_of_measurement: "V"
     - name: inverters_1_pv_voltage_1
-      state: "{{ 51.2 | float }}"
+      state: "{{ 315 | float }}"
       unit_of_measurement: "V"
-    - name: inverters_1_pv_voltage_2
-      state: "{{ 51.2 | float }}"
-      unit_of_measurement: "V"
-    - name: inverters_1_temperature
-      state: "{{ 25 | float }}"
-      unit_of_measurement: "°C"
-    - name: solis_s6_eh3p10k_h_zp_ac_coupling_today_power_generation
-      state: "{{ 0.0 | float }}"
-      unit_of_measurement: "kWh"
-    - name: solis_s6_eh3p10k_h_zp_battery_current_bms
-      state: "{{ 5.0 | float }}"
+    - name: inverters_1_pv_current_1
+      state: "{{ (states('input_number.dev_pv1_power') | float(4500) / 315) | round(2) }}"
       unit_of_measurement: "A"
-    - name: solis_s6_eh3p10k_h_zp_battery_fault_status_1_bms
-      state: "{{ 0 | float }}"
-    - name: solis_s6_eh3p10k_h_zp_battery_fault_status_2_bms
-      state: "{{ 0 | float }}"
-    - name: solis_s6_eh3p10k_h_zp_battery_soh
-      state: "{{ 0 | float }}"
-    - name: solis_s6_eh3p10k_h_zp_battery_temperature_bms
-      state: "{{ 25 | float }}"
-      unit_of_measurement: "°C"
-    - name: solis_s6_eh3p10k_h_zp_battery_voltage_bms
-      state: "{{ 51.2 | float }}"
+    - name: inverters_1_pv_power_1
+      state: "{{ states('input_number.dev_pv1_power') | float(4500) }}"
+      unit_of_measurement: "W"
+    - name: inverters_1_pv_voltage_2
+      state: "{{ 320 | float }}"
       unit_of_measurement: "V"
+    - name: inverters_1_pv_current_2
+      state: "{{ (states('input_number.dev_pv2_power') | float(3200) / 320) | round(2) }}"
+      unit_of_measurement: "A"
+    - name: inverters_1_pv_power_2
+      state: "{{ states('input_number.dev_pv2_power') | float(3200) }}"
+      unit_of_measurement: "W"
+    - name: inverters_1_pv_power
+      state: "{{ (states('input_number.dev_pv1_power') | float(4500) + states('input_number.dev_pv2_power') | float(3200)) }}"
+      unit_of_measurement: "W"
+    - name: inverters_1_inverter_mode
+      state: "{{ states('input_select.dev_inverter_mode') }}"
+    - name: inverters_1_battery_direction
+      state: "{{ states('input_select.dev_battery_direction') }}"
+
+    # Main battery totals
+    - name: totals_battery_voltage
+      state: "{{ states('input_number.dev_battery_voltage') | float(52) }}"
+      unit_of_measurement: "V"
+    - name: totals_battery_state_of_charge
+      state: "{{ states('input_number.dev_battery_soc') | float(78) }}"
+      unit_of_measurement: "%"
+    - name: totals_battery_power
+      state: "{{ states('input_number.dev_battery_power') | float(-2500) }}"
+      unit_of_measurement: "W"
+    - name: totals_battery_current
+      state: "{{ states('input_number.dev_battery_current') | float(-48.1) }}"
+      unit_of_measurement: "A"
+
+    # Pack 1
+    - name: batteries_1_voltage
+      state: "{{ states('input_number.dev_battery_voltage') | float(52) }}"
+      unit_of_measurement: "V"
+    - name: batteries_1_state_of_charge
+      state: "{{ states('input_number.dev_battery_soc') | float(78) }}"
+      unit_of_measurement: "%"
+    - name: batteries_1_power
+      state: "{{ (states('input_number.dev_battery_power') | float(-2500) / 4) | round(0) }}"
+      unit_of_measurement: "W"
+    - name: batteries_1_current
+      state: "{{ (states('input_number.dev_battery_current') | float(-48.1) / 4) | round(2) }}"
+      unit_of_measurement: "A"
+
+    # Pack 2 (calculated from pack 1)
+    - name: battery_1_calculated_power
+      state: "{{ (states('input_number.dev_battery_power') | float(-2500) / 4) | round(0) }}"
+      unit_of_measurement: "W"
+    - name: battery_1_calculated_current
+      state: "{{ (states('input_number.dev_battery_current') | float(-48.1) / 4) | round(2) }}"
+      unit_of_measurement: "A"
+
+    # Pack 3
+    - name: batteries_2_voltage
+      state: "{{ (states('input_number.dev_battery_voltage') | float(52) + 0.05) | round(2) }}"
+      unit_of_measurement: "V"
+    - name: batteries_2_state_of_charge
+      state: "{{ (states('input_number.dev_battery_soc') | float(78) - 1) | round(0) }}"
+      unit_of_measurement: "%"
+    - name: batteries_2_power
+      state: "{{ (states('input_number.dev_battery_power') | float(-2500) / 4) | round(0) }}"
+      unit_of_measurement: "W"
+    - name: batteries_2_current
+      state: "{{ (states('input_number.dev_battery_current') | float(-48.1) / 4) | round(2) }}"
+      unit_of_measurement: "A"
+
+    # Pack 4
+    - name: batteries_3_voltage
+      state: "{{ (states('input_number.dev_battery_voltage') | float(52) - 0.05) | round(2) }}"
+      unit_of_measurement: "V"
+    - name: batteries_3_state_of_charge
+      state: "{{ (states('input_number.dev_battery_soc') | float(78) + 1) | round(0) }}"
+      unit_of_measurement: "%"
+    - name: batteries_3_power
+      state: "{{ (states('input_number.dev_battery_power') | float(-2500) / 4) | round(0) }}"
+      unit_of_measurement: "W"
+    - name: batteries_3_current
+      state: "{{ (states('input_number.dev_battery_current') | float(-48.1) / 4) | round(2) }}"
+      unit_of_measurement: "A"
+
+    # Daily energy
     - name: solis_s6_eh3p10k_h_zp_today_battery_charge_energy
-      state: "{{ 0.0 | float }}"
+      state: "{{ states('input_number.dev_today_battery_charge') | float(12.5) }}"
       unit_of_measurement: "kWh"
     - name: solis_s6_eh3p10k_h_zp_today_battery_discharge_energy
-      state: "{{ 0.0 | float }}"
+      state: "{{ states('input_number.dev_today_battery_discharge') | float(4.2) }}"
       unit_of_measurement: "kWh"
     - name: solis_s6_eh3p10k_h_zp_today_energy_consumption
-      state: "{{ 0.0 | float }}"
+      state: "{{ states('input_number.dev_today_load_energy') | float(18.7) }}"
       unit_of_measurement: "kWh"
-    - name: solis_s6_eh3p10k_h_zp_today_energy_fed_into_grid
-      state: "{{ 0.0 | float }}"
-      unit_of_measurement: "kWh"
-    - name: solis_s6_eh3p10k_h_zp_today_energy_imported_from_grid
-      state: "{{ 0.0 | float }}"
-      unit_of_measurement: "kWh"
-    - name: weather_cloud_cover
-      state: "{{ 20 | float }}"
-      unit_of_measurement: "%"
-    - name: weather_global_tilted_irradiance
-      state: "{{ 200 | float }}"
-      unit_of_measurement: "W/m²"
-    - name: weather_is_day
-      state: "{{ 0 | float }}"
-    - name: weather_outside_temperature
-      state: "{{ 25 | float }}"
-      unit_of_measurement: "°C"
-    - name: weather_pv_energy_generated
-      state: "{{ 0.0 | float }}"
-      unit_of_measurement: "kWh"
-    - name: weather_pv_power_predicted
-      state: "{{ 1000 | float }}"
-      unit_of_measurement: "W"
-    - name: weather_weather_code
-      state: "{{ 0 | float }}"
-    - name: weather_wind_speed
-      state: "{{ 10 | float }}"
-      unit_of_measurement: "km/h"
-    - name: batteries_1_capacity
-      state: "{{ 200 | float }}"
-      unit_of_measurement: "Ah"
-    - name: batteries_1_charge_capacity
-      state: "{{ 100 | float }}"
-      unit_of_measurement: "Ah"
-    - name: batteries_2_capacity
-      state: "{{ 200 | float }}"
-      unit_of_measurement: "Ah"
-    - name: batteries_2_charge_capacity
-      state: "{{ 100 | float }}"
-      unit_of_measurement: "Ah"
-    - name: batteries_3_capacity
-      state: "{{ 200 | float }}"
-      unit_of_measurement: "Ah"
-    - name: batteries_3_charge_capacity
-      state: "{{ 100 | float }}"
-      unit_of_measurement: "Ah"
-    - name: inverters_1_ac_output_voltage
-      state: "{{ 230 | float }}"
-      unit_of_measurement: "V"
-    - name: inverters_1_battery_direction
-      state: "{{ 1 | float }}"
-    - name: inverters_1_grid_power_ld
-      state: "{{ 500 | float }}"
-      unit_of_measurement: "W"
-    - name: inverters_1_load_current_essential_1
-      state: "{{ 5 | float }}"
-      unit_of_measurement: "A"
-    - name: inverters_1_load_power_non_essential
-      state: "{{ 500 | float }}"
-      unit_of_measurement: "W"
-    - name: solis_s6_eh3p10k_h_zp_backup_load_today_energy
-      state: "{{ 0.5 | float }}"
-      unit_of_measurement: "kWh"
-    - name: solis_s6_eh3p10k_h_zp_household_load_today_energy
-      state: "{{ 1.0 | float }}"
-      unit_of_measurement: "kWh"
-    - name: pool_energy
-      state: "{{ 1000 | float }}"
-      unit_of_measurement: "W"
-  - switch:
-    - name: basement_4_gang_switch_switch_1
-      state: "off"
-      turn_on:
-        - action: homeassistant.update_entity
-          target:
-            entity_id: switch.basement_4_gang_switch_switch_1
-      turn_off:
-        - action: homeassistant.update_entity
-          target:
-            entity_id: switch.basement_4_gang_switch_switch_1
-    - name: basement_4_gang_switch_switch_2
-      state: "off"
-      turn_on:
-        - action: homeassistant.update_entity
-          target:
-            entity_id: switch.basement_4_gang_switch_switch_2
-      turn_off:
-        - action: homeassistant.update_entity
-          target:
-            entity_id: switch.basement_4_gang_switch_switch_2
-    - name: basement_4_gang_switch_switch_3
-      state: "off"
-      turn_on:
-        - action: homeassistant.update_entity
-          target:
-            entity_id: switch.basement_4_gang_switch_switch_3
-      turn_off:
-        - action: homeassistant.update_entity
-          target:
-            entity_id: switch.basement_4_gang_switch_switch_3
-    - name: basement_4_gang_switch_switch_4
-      state: "off"
-      turn_on:
-        - action: homeassistant.update_entity
-          target:
-            entity_id: switch.basement_4_gang_switch_switch_4
-      turn_off:
-        - action: homeassistant.update_entity
-          target:
-            entity_id: switch.basement_4_gang_switch_switch_4
-    - name: kitchen_table_switch_1
-      state: "off"
-      turn_on:
-        - action: homeassistant.update_entity
-          target:
-            entity_id: switch.kitchen_table_switch_1
-      turn_off:
-        - action: homeassistant.update_entity
-          target:
-            entity_id: switch.kitchen_table_switch_1
-    - name: pool_wifi_smart_meter_switch_switch
-      state: "off"
-      turn_on:
-        - action: homeassistant.update_entity
-          target:
-            entity_id: switch.pool_wifi_smart_meter_switch_switch
-      turn_off:
-        - action: homeassistant.update_entity
-          target:
-            entity_id: switch.pool_wifi_smart_meter_switch_switch
-    - name: smart_plug_socket_1_2
-      state: "off"
-      turn_on:
-        - action: homeassistant.update_entity
-          target:
-            entity_id: switch.smart_plug_socket_1_2
-      turn_off:
-        - action: homeassistant.update_entity
-          target:
-            entity_id: switch.smart_plug_socket_1_2
-    - name: terrace_switch_switch_1
-      state: "off"
-      turn_on:
-        - action: homeassistant.update_entity
-          target:
-            entity_id: switch.terrace_switch_switch_1
-      turn_off:
-        - action: homeassistant.update_entity
-          target:
-            entity_id: switch.terrace_switch_switch_1
-    - name: terrace_switch_switch_2
-      state: "off"
-      turn_on:
-        - action: homeassistant.update_entity
-          target:
-            entity_id: switch.terrace_switch_switch_2
-      turn_off:
-        - action: homeassistant.update_entity
-          target:
-            entity_id: switch.terrace_switch_switch_2
-  - weather:
-    - name: forecast_home
-      unique_id: forecast_home_mock
-      condition_template: "{{ 'sunny' }}"
-      temperature_template: "{{ 25 }}"
-      temperature_unit: "°C"
-      humidity_template: "{{ 50 }}"
-      pressure_template: "{{ 1013 }}"
-      wind_speed_template: "{{ 10 }}"
-      wind_bearing_template: "{{ 0 }}"
-      visibility_template: "{{ 10 }}"
-      forecast_daily_template: "{{ [] }}"
+

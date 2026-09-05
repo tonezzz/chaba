@@ -11,6 +11,7 @@ cards:
       - full
       - ss4
       - pfg
+      - pfg2
     active_mode: pfg
 
 helpers:
@@ -112,6 +113,21 @@ pfg_card:
     for verifying a larger canvas and the pfg render branch without disturbing the
     stable PF3/PF4 lite views. Two pfg test views exist: pfg (original) and pfg1
     (new grid layout with labels).
+
+pfg2_card:
+  cardstyle: pfg2
+  repo_source: src/cards/pfg2-card.ts
+  test_url:
+    - https://tony-dell.taila0626a.ts.net:8124/tony-test/pfg2
+  config:
+    card_height: 520px
+    view_layout: { grid-area: pfg }
+    wide: true
+  note: |
+    The PFG2 card is a copy of the PFG grid card with a 15x15 grid by default
+    (pfg_grid_size still overrides). It shares the same pfg_* config keys and
+    entity/status tile mapping as pfg, plus `pfg_icons` (r,c -> mdi icon) which
+    pfg does not have. Deployed to michael-dev in bundle v33.
 
 multi_battery_layout:
   note: |

@@ -23,6 +23,7 @@ New test views have been added:
 - `PF4` (`cardstyle: lite`, `/tony-test/pf4`) is a copy of PF3 used for dev verification.
 - `PFG1` (`cardstyle: pfg`, `/tony-test/pfg1`) is a new experimental pfg grid layout.
 - `PFG` (`cardstyle: pfg`, `/tony-test/pfg`) is the original pfg test view, **not** `cardstyle: full`.
+- `PFG2` (`cardstyle: pfg2`, `/tony-test/pfg2`) is a copy of PFG rendering a 15x15 grid.
 
 All views are stored in `.storage` on `michael-dev` and snapshotted to the same JSON.
 
@@ -34,13 +35,14 @@ Tab order (PF3 is first):
 | 1 | PF4 |
 | 2 | PFG1 |
 | 3 | PFG |
-| 4 | SS4 |
-| 5 | Sankey |
-| 6 | juWorkshop |
-| 7 | Solar Assistant |
-| 8 | glass |
-| 9 | Weather |
-| 10 | Solis Daily Energy Sankey |
+| 4 | PFG2 |
+| 5 | SS4 |
+| 6 | Sankey |
+| 7 | juWorkshop |
+| 8 | Solar Assistant |
+| 9 | glass |
+| 10 | Weather |
+| 11 | Solis Daily Energy Sankey |
 
 PF3 and PF4 contain a single `custom:sunsynk-power-flow-card` in `cardstyle: lite` mode with a transparent background and the four-battery layout. PFG1 and PFG use `cardstyle: pfg` with `wide: true` and `card_height: 520px` on a larger canvas.
 
