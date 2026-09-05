@@ -1004,49 +1004,52 @@
                 "load_frequency_192": "sensor.inverters_1_grid_frequency"
               },
               "title": "TPL",
-              "pfg_grid_size": 3,
+              "pfg_grid_size": 2,
               "pfg_labels": {},
               "pfg_charts": {
-                "1,1": {
-                  "type": "gauge",
-                  "entity": "sensor.inverters_1_pv_power",
-                  "min": 0,
-                  "max": 10000,
-                  "scale": 0.001,
-                  "needle": true,
-                  "segments": [
-                    {
-                      "from": 0,
-                      "color": "#ff0000"
-                    },
-                    {
-                      "from": 5000,
-                      "color": "#ffff00"
-                    },
-                    {
-                      "from": 8000,
-                      "color": "#00ff00"
-                    }
-                  ],
-                  "decimals": 2,
-                  "label": "PV",
-                  "unit": "kW"
-                },
-                "3,1": {
-                  "type": "history",
-                  "entity": "sensor.inverters_1_pv_power",
-                  "hours": 24,
-                  "min": 0,
-                  "max": 10000,
-                  "scale": 0.001,
-                  "decimals": 2,
-                  "unit": "kW",
-                  "label": "PV history"
-                }
+                "1,1": [
+                  {
+                    "type": "gauge",
+                    "entity": "sensor.inverters_1_pv_power",
+                    "min": 0,
+                    "max": 10000,
+                    "scale": 0.001,
+                    "needle": true,
+                    "segments": [
+                      {
+                        "from": 0,
+                        "color": "#ff0000"
+                      },
+                      {
+                        "from": 5000,
+                        "color": "#ffff00"
+                      },
+                      {
+                        "from": 8000,
+                        "color": "#00ff00"
+                      }
+                    ],
+                    "decimals": 2,
+                    "label": "PV",
+                    "unit": "kW",
+                    "position": "center"
+                  },
+                  {
+                    "type": "history",
+                    "entity": "sensor.inverters_1_pv_power",
+                    "hours": 24,
+                    "min": 0,
+                    "max": 10000,
+                    "scale": 0.001,
+                    "decimals": 2,
+                    "unit": "kW",
+                    "label": "PV history",
+                    "position": "bottom"
+                  }
+                ]
               },
               "pfg_spans": {
-                "1,1": 2,
-                "3,1": 2
+                "1,1": 2
               },
               "pfg_images": {
                 "1,1": "/local/pv-tiles.jpg"
