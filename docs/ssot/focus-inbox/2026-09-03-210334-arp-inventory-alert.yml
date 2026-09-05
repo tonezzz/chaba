@@ -20,40 +20,46 @@ focus:
     Report: reports/network-inventory-scan-2026-09-03-210334.json'
   branch: chaba
   priority: low
-  status: draft
+  status: flagged
   tags:
   - network
   - arp
   - inventory
   - mac-registry
+  - randomized-mac
   safe_to_parallel:
     value: true
     reason: Registry review only; does not change live services.
+  note: |
+    Triaged 2026-09-04: several changed MACs have the locally-administered bit
+    set (privacy/randomized MACs) and some IPs appear to have swapped between
+    known hosts. No registry updates committed. Keep flagged for manual
+    investigation with device names before updating the MAC registry.
   subtasks:
   - label: Identify new device 192.168.2.77 (d8:3a:36:7d:10:0d)
-    status: not_started
+    status: flagged
   - label: Identify new device 192.168.2.70 (e0:73:e7:05:c5:16)
-    status: not_started
+    status: flagged
   - label: Check MAC change for 192.168.2.76 (was discovered-7cd2da73308a, now f2:ed:a0:d4:5f:db)
-    status: not_started
+    status: flagged
   - label: Check MAC change for 192.168.2.69 (was hp-deskjet-2700, now d4:9e:3b:6a:94:90)
-    status: not_started
+    status: flagged
   - label: Check MAC change for 192.168.2.73 (was discovered-062858264b2c, now 06:28:58:26:4b:2c)
-    status: not_started
+    status: flagged
   - label: Check MAC change for 192.168.2.66 (was ip-cam-65, now 2c:b4:71:e8:a8:e8)
-    status: not_started
+    status: flagged
   - label: Check MAC change for 192.168.2.78 (was discovered-ea9b8fd280f0, now b8:59:ce:74:75:28)
-    status: not_started
+    status: flagged
   - label: Check MAC change for 192.168.2.71 (was discovered-1c1dd3e80a4f, now c0:cd:d6:85:a8:38)
-    status: not_started
+    status: flagged
   - label: Check MAC change for 192.168.2.1 (was home-router, now 98:00:6a:68:f7:c6)
-    status: not_started
+    status: flagged
   - label: Check MAC change for 192.168.2.68 (was tuya-plug-bedside, now cc:50:e3:19:a0:2f)
-    status: not_started
+    status: flagged
   - label: Check MAC change for 192.168.2.72 (was discovered-f2eda0d45fdb, now ea:9b:8f:d2:80:f0)
-    status: not_started
+    status: flagged
   - label: Check MAC change for 192.168.2.67 (was discovered-484d7ee43ac7, now 48:4d:7e:e4:3a:c7)
-    status: not_started
+    status: flagged
 ownership:
   owner: tony
   session: ''
