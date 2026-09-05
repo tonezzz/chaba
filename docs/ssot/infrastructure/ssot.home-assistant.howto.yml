@@ -53,13 +53,7 @@ runbooks:
     purpose: Rebuild the forked sunsynk-power-flow-card and deploy it to michael-dev.
     steps:
       - Edit source in /home/tony/CascadeProjects/sunsynk-power-flow-card/src/
-      - Run npm run build in the repo root (about 20s; rollup -c --bundleConfigAsCjs)
-      - Note the output bundle dist/sunsynk-power-flow-card.js
-      - Bump the bundle version (check latest in ssot.home-assistant.cards.yml)
-      - scp the bundle to tony-dell:/home/tony/.config/michael-dev/www/sunsynk-power-flow-card-fork-v{version}.js
-      - sed the old version to the new one in /home/tony/.config/michael-dev/.storage/lovelace_resources
-      - Restart the service: ssh tony-dell 'systemctl --user restart michael-dev.service'
-      - Verify the bundle URL returns 200: curl -sk https://tony-dell.taila0626a.ts.net:8124/local/sunsynk-power-flow-card-fork-v{version}.js
+      - Run scripts/home-assistant/deploy-card.sh — it builds, reads the current version from remote lovelace_resources (single source of truth, race-safe), scp's the new versioned bundle, restarts michael-dev, and waits for HTTP 200
       - Verify the dashboard at /tony-test/pf4, /tony-test/pfg, /tony-test/pfg2
       - Run scripts/home-assistant/sync-ssot-from-live.sh to snapshot the dashboard and bundle version
     note: |

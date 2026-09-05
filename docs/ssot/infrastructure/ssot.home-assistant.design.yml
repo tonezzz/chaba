@@ -128,6 +128,8 @@ pfg2_card:
     (pfg_grid_size still overrides). It shares the same pfg_* config keys and
     entity/status tile mapping as pfg. First deployed to michael-dev in bundle v33;
     corner anchors and span-aware lines landed in v51, per-line speed scaling in v56.
+    As of v71 pfg2-card.ts is removed: cardstyle pfg2 renders via pfgCard with a
+    15x15 default grid — one renderer, no drift.
 
 pfg_feature_keys:
   applies_to: [pfg, pfg2]
@@ -144,6 +146,15 @@ pfg_feature_keys:
     pfg_values: 'map "r,c" -> {entity, scale?, decimals?, unit?} live sensor value tile'
     pfg_sums: 'map "r,c" -> {entities[], scale?, decimals?, unit?} summed entity tile'
     pfg_spans: 'map "r,c" -> N making that tile N x N cells; covered cells are skipped'
+  charts:
+    key: pfg_charts
+    note: 'r,c -> chart def or array of defs; types: gauge, bar, history. position: center|bottom overlays the tile (works over images). history uses recorder history_during_period with 5min cache; fields: entity, hours, min/max, scale, decimals, unit, label, stroke, fill, needle, segments, gradient.'
+  values:
+    key: pfg_values
+    note: 'r,c -> entity id string or {entity, scale, decimals, unit, label}'
+  preset:
+    key: preset
+    note: '"pfg" merges standard entity/section defaults (src/cards/pfg-presets.ts) before validation; per-section card config keys override the preset.'
   lines:
     key: pfg_lines
     fields:
