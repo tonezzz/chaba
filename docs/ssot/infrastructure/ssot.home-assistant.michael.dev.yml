@@ -48,7 +48,7 @@ environments:
       webhook_id: mcp_ed77567866f1ebbb6fb091dc816cb550
       local_url: http://127.0.0.1:9585/private_B3WMIAChoseTpDS7fwgwRw
       tailnet_url: http://tony-dell:9585/private_B3WMIAChoseTpDS7fwgwRw
-      note: HA-MCP Server runs inside the dev container, exposed on host port 9585.
+      note: HA-MCP Server runs inside the dev container, exposed on host port 9585. Use the ha_reload_core tool to reload packages/helpers without a full container restart.
     autostart: loginctl enable-linger tony is yes; Quadlet WantedBy=default.target
     status: enabled
     core_config:
@@ -149,7 +149,7 @@ full_flow:
 scripts:
   deploy_dev:
     path: scripts/home-assistant/deploy-michael-dev.sh
-    description: Rsync repo config to the tony-dell dev instance and restart it.
+    description: Rsync repo config to the tony-dell dev instance and reload core config via HA-MCP without a full container restart.
     env:
       - name: MICHAEL_DEV_CONFIG
         default: ~/.config/michael-dev
