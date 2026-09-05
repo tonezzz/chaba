@@ -809,6 +809,53 @@
                     "unit": "kW",
                     "position": "bottom"
                   }
+                ],
+                "2,7": [
+                  {
+                    "type": "gauge",
+                    "entity": "sensor.inverters_1_grid_power",
+                    "min": -5000,
+                    "max": 5000,
+                    "scale": 0.001,
+                    "needle": true,
+                    "segments": [
+                      {
+                        "from": -5000,
+                        "color": "#ff0000"
+                      },
+                      {
+                        "from": -1000,
+                        "color": "#ffff00"
+                      },
+                      {
+                        "from": 0,
+                        "color": "#00ff00"
+                      },
+                      {
+                        "from": 1000,
+                        "color": "#ffff00"
+                      },
+                      {
+                        "from": 3000,
+                        "color": "#ff0000"
+                      }
+                    ],
+                    "decimals": 2,
+                    "label": "Grid",
+                    "unit": "kW",
+                    "position": "center"
+                  },
+                  {
+                    "type": "history",
+                    "entity": "sensor.inverters_1_grid_power",
+                    "hours": 24,
+                    "min": -5000,
+                    "max": 5000,
+                    "scale": 0.001,
+                    "decimals": 2,
+                    "unit": "kW",
+                    "position": "bottom"
+                  }
                 ]
               },
               "preset": "pfg",
