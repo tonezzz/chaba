@@ -142,7 +142,10 @@ pfg_feature_keys:
   tiles:
     note: 'Render priority per tile: icon > image > sum/value > r,c coordinate text. pfg_labels render as a positioned overlay on top of any tile content (v81+).'
     pfg_labels: 'map "r,c" -> text label overlay; centred horizontally, default top:55% plus a fixed -10px nudge; bold white with text-shadow'
-    pfg_label_pos: 'map "r,c" -> CSS top value for the label overlay (v81+), e.g. "calc(55% - 14px)"'
+    pfg_label_pos: 'map "r,c" -> CSS top value for the label overlay (v81+), e.g. "calc(55% - 14px)"; includes a -26px nudge (v88), so "12%" aligns the tile label to the top'
+    pfg_value_labels: 'map "r,c" -> static value label rendered at the tile''s old label spot (v89+) — use for non-cycle charts'
+    pfg_value_label_pos: 'map "r,c" -> CSS top override for the value-label overlay (v89+); default "calc(55% - 14px)"'
+    cycle_labels: 'cycle step chart defs may carry `label` (v89+): the active step''s label renders at the tile''s old label spot and rotates with the gauge; in-svg label text is suppressed inside cycle steps'
     pfg_icons: 'map "r,c" -> mdi icon name (e.g. mdi:solar-power)'
     pfg_images: 'map "r,c" -> image URL served from /local/, or the sentinel "inverter" (v80+) to place the configured model inverter image (contain fit) on that tile'
     pfg_image_zoom: 'number; object-fit:cover plus transform:scale(zoom), applied to all image tiles'
@@ -205,8 +208,10 @@ tpl_design:
       pfg_images {"1,1": "/local/<image>.jpg"} (or "inverter" for the model image),
       pfg_charts {"1,1": [gauge (position:center) + history (position:bottom)]} or a
       cycle chart; pfg_labels {"1,1": "<Title>"} renders the tile label as an overlay
-      (under the curve, above the value); pfg_label_pos {"1,1": "calc(55% - 14px)"}
-      raises it one line. Chart defs carry no `label` — labels come from pfg_labels.
+      aligned to the top via pfg_label_pos {"1,1": "12%"}. The old label position
+      ("calc(55% - 14px)") now names the displayed value: non-cycle cards use
+      pfg_value_labels {"1,1": "<text>"} (Power/Load/Energy), while cycle cards set
+      `label` on each step's chart def so it rotates with the gauge.
       Gauge arcs, needle and text have drop shadows (v81-v83).
     cards:
       pv: {image: /local/pv-tiles.jpg, charts: 'PV power gauge + 24h history'}
