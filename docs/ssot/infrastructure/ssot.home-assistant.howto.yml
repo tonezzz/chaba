@@ -177,7 +177,41 @@ runbooks:
       - Restart michael-ha core with `ha core restart` or the REST service `homeassistant/restart`
       - Verify at http://michael-ha:8123/tony-test/pf3 using a logged-in browser or a valid long-lived token
 
+  headless_visual_verification:
+    purpose: Verify Lovelace pages visually without a logged-in browser (playlive headless Chrome on tony-dell).
+    steps:
+      - 'Create a session: playlive_create_chrome_live or playlive_create_playwright_chrome with host=tony-dell (CDP http://127.0.0.1:9222, headless Chrome, no saved HA session)'
+      - 'Inject the long-lived token into localStorage WITHOUT echoing it: use the daemon REST API directly — POST http://tony-dell.taila0626a.ts.net:9230/sessions/<session_id>/eval with {"script": "localStorage.setItem(''hassTokens'', JSON.stringify({hassUrl: location.origin, clientId: location.origin + ''/'', access_token: ''<TOKEN>'', token_type: ''Bearer'', expires_in: 86400, expires: Date.now() + 86400000})); ''set''"} — build the payload from ~/.config/secrets/ha-michael-dev.env in a shell step, do NOT inline the token in MCP tool args or stdout'
+      - 'Navigate: playlive_navigate to the dashboard URL, then playlive_eval to scroll (window.scrollTo) and playlive_screenshot_image to capture'
+      - 'DOM checks (shadow DOM): walk el.shadowRoot recursively to find SUNSYNK-POWER-FLOW-CARD elements; history charts render async inside until() — re-check polylines after a few seconds'
+    note: |
+      The headless profile does NOT persist hassTokens reliably across sessions/restarts —
+      re-inject after each michael-dev restart. Never paste tokens into chat; the
+      /sessions/<id>/eval REST endpoint is the clean channel.
+      Example DOM walk: root.querySelectorAll('*').forEach(el => { ...; if (el.shadowRoot) walk(el.shadowRoot); })
+
+  parallel_session_collisions:
+    purpose: Guard against two agent sessions editing the same card repo / dashboard concurrently.
+    symptoms:
+      - 'Multi-line edits silently overwritten: only the smallest diff lands in the commit (observed 2026-09-06: v89 commit had 3 one-line changes instead of the intended multi-line patch)'
+      - 'Bundle version drift: deploy-card.sh derives v{N+1} from remote lovelace_resources — a parallel session can bump versions mid-deploy (v89/v90 were incomplete builds; the complete build shipped as v91/v95)'
+      - 'ha_config_set_dashboard config_hash conflicts: ANY dashboard write (including resource URL updates) invalidates the hash — re-fetch with ha_config_get_dashboard immediately before mutating'
+    steps:
+      - 'After editing card source, grep the working tree for your identifiers before building (git status, grep -n <symbol>)'
+      - 'After deploying a bundle, verify content: curl -s <bundle_url> | grep -c <expected_symbol> — a version bump alone does not prove your code shipped'
+      - 'For ha_config_set_dashboard: fetch config_hash in the same breath as the python_transform call'
+      - 'If a parallel session lands a similar feature, reconcile to a single approach (done 2026-09-06: static pfg_value_labels for non-cycle charts + cycle step labels for rotating charts)'
+    note: 'Reconciled model — non-cycle value labels come from pfg_value_labels map; cycle charts get per-step chartDef.label rendered by the pfg-cycle overlay.'
+
+  ha_mcp_python_transform_sandbox:
+    purpose: Constraints of ha_config_set_dashboard python_transform (michael-ha MCP).
+    notes:
+      - 'No next() builtin in the sandbox — use [v for v in config[''views''] if ...][0] instead'
+      - 'config_hash must be fresh (see parallel_session_collisions)'
+      - 'BPS acknowledgment: pass BestPracticeKey = "I-HAVE-READ-THE-BEST-PRACTICES-GUIDE-<digits>" (rotating key; read the skill first if a new key is demanded)'
+      - 'python_transform mutates the full config dict in place; validate targeting with .get() guards'
+
 status:
-  last_updated: '2026-09-05'
-  last_verified: '2026-09-05'
-  health: active; websocket push-dashboard workflow verified; deploy runbook corrected (.storage resource changes need service restart, not ha_reload_core)
+  last_updated: '2026-09-06'
+  last_verified: '2026-09-06'
+  health: 'active; websocket push-dashboard workflow verified; headless playlive verification runbook added (daemon REST eval avoids token echo); parallel-session collision guards documented; python_transform sandbox notes added (no next(), fresh config_hash, BPS key)'

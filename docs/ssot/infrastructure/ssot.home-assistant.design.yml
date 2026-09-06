@@ -157,7 +157,7 @@ pfg_feature_keys:
     pfg_border: 'map "r,c" -> CSS border override for that tile (v78+)'
   charts:
     key: pfg_charts
-    note: 'r,c -> chart def or array of defs; types: gauge, bar, history, cycle (v74+; {type:cycle, interval:sec, position:cycle, steps:[[chartdefs],...]}). position: center|bottom overlays the tile (works over images). history uses recorder history_during_period with 5min cache; fields: entity OR entities[] (v86+, summed pointwise for gauge/bar value and history series), hours, min/max, scale, decimals, unit, label, stroke, fill, needle, segments, gradient.'
+    note: 'r,c -> chart def or array of defs; types: gauge, bar, history, cycle (v74+; {type:cycle, interval:sec, position:cycle, steps:[[chartdefs],...]}). position: center|bottom overlays the tile (works over images). history uses recorder history_during_period with 5min cache; fields: entity OR entities[] (v86+, summed pointwise for gauge/bar value and history series), hours, min/max, scale, decimals, unit, label, stroke, fill, needle, segments, gradient; bar charts take orientation: vertical|horizontal (v95+, horizontal = left-to-right fill).'
     shadows: 'v81-v83: drop-shadow(0 1px 2px rgba(0,0,0,0.85)) on gauge arcs (needle + donut), needle, and all chart <text>; value texts are nudged translateY(-10px) in CSS px.'
   values:
     key: pfg_values
