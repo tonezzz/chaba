@@ -22,18 +22,16 @@
                 "style": "ha-card { --card-background-color: rgba(16,32,64,0.85) !important; background-color: rgba(16,32,64,0.85) !important; --primary-text-color: #ffffff !important; --secondary-text-color: #cccccc !important; color: #ffffff !important; }"
               },
               "wide": true,
-              "title": "PFG",
               "pfg_images": {
                 "1,1": "/local/pv-tiles.jpg",
                 "1,4": "/local/pv-tiles.jpg",
                 "3,4": "/local/inverter.webp",
                 "1,7": "/local/power-grid.jpg",
                 "3,7": "/local/home-house.jpg",
-                "5,4": "/local/battery-bank.jpg",
                 "3,1": "/local/sum.jpg",
-                "5,7": "/local/living.jpg",
-                "7,7": "/local/laundry.jpg",
-                "9,7": "/local/pool.jpg"
+                "5,1": "/local/battery-bank.jpg",
+                "5,4": "/local/living.jpg",
+                "5,7": "/local/pool.jpg"
               },
               "pfg_image_zoom": 1,
               "pfg_values": {
@@ -47,10 +45,9 @@
                 "3,1": "2x3",
                 "1,7": "2x3",
                 "3,7": "2x3",
+                "5,1": "2x3",
                 "5,4": "2x3",
-                "5,7": "2x3",
-                "7,7": "2x3",
-                "9,7": "2x3"
+                "5,7": "2x3"
               },
               "pfg_sums": {
                 "3,1": {
@@ -535,7 +532,37 @@
                     ]
                   ]
                 },
-                "5,4": {
+                "3,1": [
+                  {
+                    "type": "gauge",
+                    "entities": [
+                      "sensor.inverters_1_pv_power_1",
+                      "sensor.inverters_1_pv_power_2"
+                    ],
+                    "min": 0,
+                    "max": 10000,
+                    "scale": 0.001,
+                    "needle": true,
+                    "decimals": 2,
+                    "unit": "kW",
+                    "position": "center"
+                  },
+                  {
+                    "type": "history",
+                    "entities": [
+                      "sensor.inverters_1_pv_power_1",
+                      "sensor.inverters_1_pv_power_2"
+                    ],
+                    "hours": 24,
+                    "min": 0,
+                    "max": 10000,
+                    "scale": 0.001,
+                    "decimals": 2,
+                    "unit": "kW",
+                    "position": "bottom"
+                  }
+                ],
+                "5,1": {
                   "type": "cycle",
                   "interval": 3,
                   "position": "cycle",
@@ -680,37 +707,7 @@
                     ]
                   ]
                 },
-                "3,1": [
-                  {
-                    "type": "gauge",
-                    "entities": [
-                      "sensor.inverters_1_pv_power_1",
-                      "sensor.inverters_1_pv_power_2"
-                    ],
-                    "min": 0,
-                    "max": 10000,
-                    "scale": 0.001,
-                    "needle": true,
-                    "decimals": 2,
-                    "unit": "kW",
-                    "position": "center"
-                  },
-                  {
-                    "type": "history",
-                    "entities": [
-                      "sensor.inverters_1_pv_power_1",
-                      "sensor.inverters_1_pv_power_2"
-                    ],
-                    "hours": 24,
-                    "min": 0,
-                    "max": 10000,
-                    "scale": 0.001,
-                    "decimals": 2,
-                    "unit": "kW",
-                    "position": "bottom"
-                  }
-                ],
-                "9,7": {
+                "5,7": {
                   "type": "gauge",
                   "entity": "sensor.pool_energy_daily",
                   "min": 0,
@@ -738,78 +735,19 @@
               },
               "preset": "pfg",
               "pfg_icons": {},
-              "pfg_grid_size": 12,
               "card_width": "100%",
               "pfg_grid_width": "100%",
               "pfg_inverter_at": "3,4",
               "pfg_labels": {
-                "7,3": " ",
-                "7,4": " ",
-                "8,3": " ",
-                "8,4": " ",
-                "4,10": " ",
-                "4,11": " ",
-                "4,12": " ",
-                "8,2": " ",
-                "9,1": " ",
-                "9,2": " ",
-                "9,3": " ",
-                "9,4": " ",
-                "9,5": " ",
-                "9,6": " ",
-                "9,10": " ",
-                "9,11": " ",
-                "9,12": " ",
-                "10,1": " ",
-                "10,2": " ",
-                "10,3": " ",
-                "10,4": " ",
-                "10,5": " ",
-                "10,6": " ",
-                "10,10": " ",
-                "10,11": " ",
-                "10,12": " ",
-                "11,1": " ",
-                "11,2": " ",
-                "11,3": " ",
-                "11,4": " ",
-                "11,5": " ",
-                "11,6": " ",
-                "11,7": " ",
-                "11,8": " ",
-                "11,9": " ",
-                "11,10": " ",
-                "11,11": " ",
-                "11,12": " ",
-                "12,1": " ",
-                "12,2": " ",
-                "12,3": " ",
-                "12,4": " ",
-                "12,5": " ",
-                "12,6": " ",
-                "12,7": " ",
-                "12,8": " ",
-                "12,9": " ",
-                "12,10": " ",
-                "12,11": " ",
-                "12,12": " ",
-                "3,10": " ",
-                "3,11": " ",
-                "3,12": " ",
                 "1,1": "PV1",
                 "1,4": "PV2",
                 "1,7": "Grid power",
                 "3,1": "PV Total",
                 "3,4": "Inverter",
                 "3,7": "Home Total",
-                "5,4": "Batt Total",
-                "5,7": "Living",
-                "5,10": " ",
-                "5,11": " ",
-                "5,12": " ",
-                "6,10": " ",
-                "6,11": " ",
-                "6,12": " "
+                "5,1": "Batt Total",
+                "5,4": "Living",
+                "5,7": "Pool"
               },
               "pfg_border": {
                 "3,1": "4px solid #ffffff"
@@ -817,7 +755,9 @@
               "pfg_hide_grid": true,
               "pfg_image_fit": {
                 "3,4": "contain"
-              }
+              },
+              "pfg_grid_cols": 9,
+              "pfg_grid_rows": 6
             }
           ]
         },
@@ -1476,8 +1416,7 @@
                     ],
                     "decimals": 2,
                     "unit": "kW",
-                    "position": "center",
-                    "label": "Power"
+                    "position": "center"
                   },
                   {
                     "type": "history",
@@ -1501,7 +1440,10 @@
               "pfg_grid_width": "100%",
               "preset": "pfg",
               "pfg_label_pos": {
-                "1,1": "8%"
+                "1,1": "12%"
+              },
+              "pfg_value_labels": {
+                "1,1": "Power"
               }
             },
             {
@@ -1630,7 +1572,7 @@
               "pfg_grid_width": "100%",
               "preset": "pfg",
               "pfg_label_pos": {
-                "1,1": "8%"
+                "1,1": "12%"
               }
             },
             {
@@ -1806,7 +1748,7 @@
               "pfg_grid_width": "100%",
               "preset": "pfg",
               "pfg_label_pos": {
-                "1,1": "8%"
+                "1,1": "12%"
               }
             },
             {
@@ -2073,7 +2015,7 @@
                 "grid-area": "home"
               },
               "pfg_label_pos": {
-                "1,1": "8%"
+                "1,1": "12%"
               }
             },
             {
@@ -2112,8 +2054,7 @@
                   ],
                   "decimals": 2,
                   "unit": "kWh",
-                  "position": "center",
-                  "label": "Energy"
+                  "position": "center"
                 }
               },
               "preset": "pfg",
@@ -2124,7 +2065,10 @@
                 "1,1": "Pool"
               },
               "pfg_label_pos": {
-                "1,1": "8%"
+                "1,1": "12%"
+              },
+              "pfg_value_labels": {
+                "1,1": "Energy"
               }
             },
             {
@@ -2212,7 +2156,7 @@
                 "1,1": "Inverter"
               },
               "pfg_label_pos": {
-                "1,1": "8%"
+                "1,1": "12%"
               },
               "pfg_image_fit": {
                 "1,1": "contain"
@@ -2232,7 +2176,7 @@
                 "1,1": "Sum"
               },
               "pfg_label_pos": {
-                "1,1": "8%"
+                "1,1": "12%"
               },
               "pfg_charts": {
                 "1,1": [
@@ -2248,8 +2192,7 @@
                     "needle": true,
                     "decimals": 2,
                     "unit": "kW",
-                    "position": "center",
-                    "label": "Power"
+                    "position": "center"
                   },
                   {
                     "type": "history",
@@ -2273,6 +2216,9 @@
               "card_width": "100%",
               "pfg_images": {
                 "1,1": "/local/sum.jpg"
+              },
+              "pfg_value_labels": {
+                "1,1": "Power"
               }
             },
             {
@@ -2292,7 +2238,7 @@
                 "1,1": "Kitchen"
               },
               "pfg_label_pos": {
-                "1,1": "8%"
+                "1,1": "12%"
               },
               "pfg_charts": {
                 "1,1": [
@@ -2305,8 +2251,7 @@
                     "needle": true,
                     "decimals": 2,
                     "unit": "kW",
-                    "position": "center",
-                    "label": "Load"
+                    "position": "center"
                   },
                   {
                     "type": "history",
@@ -2324,7 +2269,10 @@
               "view_layout": {
                 "grid-area": "kitchen"
               },
-              "card_width": "100%"
+              "card_width": "100%",
+              "pfg_value_labels": {
+                "1,1": "Load"
+              }
             },
             {
               "type": "custom:sunsynk-power-flow-card",
@@ -2343,7 +2291,7 @@
                 "1,1": "Living"
               },
               "pfg_label_pos": {
-                "1,1": "8%"
+                "1,1": "12%"
               },
               "view_layout": {
                 "grid-area": "living"
@@ -2443,7 +2391,7 @@
                 "1,1": "Laundry"
               },
               "pfg_label_pos": {
-                "1,1": "8%"
+                "1,1": "12%"
               },
               "view_layout": {
                 "grid-area": "laundry"
@@ -2459,8 +2407,7 @@
                     "needle": true,
                     "decimals": 0,
                     "unit": "W",
-                    "position": "center",
-                    "label": "Power"
+                    "position": "center"
                   },
                   {
                     "type": "history",
@@ -2471,6 +2418,9 @@
                     "position": "bottom"
                   }
                 ]
+              },
+              "pfg_value_labels": {
+                "1,1": "Power"
               }
             },
             {
@@ -2490,7 +2440,7 @@
                 "1,1": "Bedroom"
               },
               "pfg_label_pos": {
-                "1,1": "8%"
+                "1,1": "12%"
               },
               "view_layout": {
                 "grid-area": "bedroom"
@@ -2514,7 +2464,7 @@
                 "1,1": "Terrace"
               },
               "pfg_label_pos": {
-                "1,1": "8%"
+                "1,1": "12%"
               },
               "view_layout": {
                 "grid-area": "terrace"
