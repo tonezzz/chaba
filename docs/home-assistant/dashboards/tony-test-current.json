@@ -2478,12 +2478,213 @@
                 "grid-area": "terrace"
               },
               "card_width": "100%"
+            },
+            {
+              "type": "custom:sunsynk-power-flow-card",
+              "cardstyle": "pfg",
+              "view_layout": {
+                "grid-area": "temp"
+              },
+              "card_height": "360px",
+              "card_width": "100%",
+              "title": "Temp",
+              "pfg_grid_size": 2,
+              "pfg_labels": {
+                "1,1": "Temp"
+              },
+              "pfg_spans": {
+                "1,1": 2
+              },
+              "pfg_image_zoom": 1,
+              "pfg_grid_width": "100%",
+              "preset": "pfg",
+              "pfg_label_pos": {
+                "1,1": "12%"
+              },
+              "pfg_value_labels": {
+                "1,1": "Temp"
+              },
+              "pfg_charts": {
+                "1,1": [
+                  {
+                    "type": "gauge",
+                    "entity": "sensor.inverters_1_temperature",
+                    "min": 0,
+                    "max": 80,
+                    "scale": 1,
+                    "needle": true,
+                    "segments": [
+                      {
+                        "from": 0,
+                        "color": "#00ff00"
+                      },
+                      {
+                        "from": 45,
+                        "color": "#ffff00"
+                      },
+                      {
+                        "from": 60,
+                        "color": "#ff0000"
+                      }
+                    ],
+                    "decimals": 1,
+                    "label": "Temp",
+                    "unit": "°C",
+                    "position": "center"
+                  },
+                  {
+                    "type": "history",
+                    "entity": "sensor.inverters_1_temperature",
+                    "hours": 24,
+                    "min": 0,
+                    "max": 80,
+                    "scale": 1,
+                    "decimals": 1,
+                    "unit": "°C",
+                    "position": "bottom"
+                  }
+                ]
+              }
+            },
+            {
+              "type": "custom:sunsynk-power-flow-card",
+              "cardstyle": "pfg",
+              "view_layout": {
+                "grid-area": "freq"
+              },
+              "card_height": "360px",
+              "card_width": "100%",
+              "title": "Freq",
+              "pfg_grid_size": 2,
+              "pfg_labels": {
+                "1,1": "Freq"
+              },
+              "pfg_spans": {
+                "1,1": 2
+              },
+              "pfg_image_zoom": 1,
+              "pfg_grid_width": "100%",
+              "preset": "pfg",
+              "pfg_label_pos": {
+                "1,1": "12%"
+              },
+              "pfg_value_labels": {
+                "1,1": "Freq"
+              },
+              "pfg_charts": {
+                "1,1": [
+                  {
+                    "type": "gauge",
+                    "entity": "sensor.inverters_1_grid_frequency",
+                    "min": 49,
+                    "max": 51,
+                    "scale": 1,
+                    "needle": true,
+                    "segments": [
+                      {
+                        "from": 49,
+                        "color": "#ff0000"
+                      },
+                      {
+                        "from": 49.8,
+                        "color": "#00ff00"
+                      },
+                      {
+                        "from": 50.2,
+                        "color": "#ff0000"
+                      }
+                    ],
+                    "decimals": 2,
+                    "label": "Freq",
+                    "unit": "Hz",
+                    "position": "center"
+                  },
+                  {
+                    "type": "history",
+                    "entity": "sensor.inverters_1_grid_frequency",
+                    "hours": 24,
+                    "min": 49,
+                    "max": 51,
+                    "scale": 1,
+                    "decimals": 2,
+                    "unit": "Hz",
+                    "position": "bottom"
+                  }
+                ]
+              }
+            },
+            {
+              "type": "custom:sunsynk-power-flow-card",
+              "cardstyle": "pfg",
+              "view_layout": {
+                "grid-area": "daily"
+              },
+              "card_height": "360px",
+              "card_width": "100%",
+              "title": "Daily",
+              "pfg_grid_size": 2,
+              "pfg_labels": {
+                "1,1": "Daily"
+              },
+              "pfg_spans": {
+                "1,1": 2
+              },
+              "pfg_image_zoom": 1,
+              "pfg_grid_width": "100%",
+              "preset": "pfg",
+              "pfg_label_pos": {
+                "1,1": "12%"
+              },
+              "pfg_value_labels": {
+                "1,1": "Today"
+              },
+              "pfg_charts": {
+                "1,1": [
+                  {
+                    "type": "gauge",
+                    "entity": "sensor.solis_s6_eh3p10k_h_zp_today_energy_consumption",
+                    "min": 0,
+                    "max": 30,
+                    "scale": 1,
+                    "needle": true,
+                    "segments": [
+                      {
+                        "from": 0,
+                        "color": "#00ff00"
+                      },
+                      {
+                        "from": 15,
+                        "color": "#ffff00"
+                      },
+                      {
+                        "from": 25,
+                        "color": "#ff0000"
+                      }
+                    ],
+                    "decimals": 1,
+                    "label": "Today",
+                    "unit": "kWh",
+                    "position": "center"
+                  },
+                  {
+                    "type": "history",
+                    "entity": "sensor.solis_s6_eh3p10k_h_zp_today_energy_consumption",
+                    "hours": 24,
+                    "min": 0,
+                    "max": 30,
+                    "scale": 1,
+                    "decimals": 1,
+                    "unit": "kWh",
+                    "position": "bottom"
+                  }
+                ]
+              }
             }
           ],
           "layout": {
             "grid-template-columns": "repeat(4, 1fr)",
             "grid-template-rows": "repeat(5, auto)",
-            "grid-template-areas": "\"pv grid battery inverter\" \"pool sum kitchen .\" \"home bedroom terrace .\" \"living . . .\" \"laundry . . .\""
+            "grid-template-areas": "\"pv grid battery inverter\" \"pool sum kitchen .\" \"home bedroom terrace .\" \"living . . .\" \"laundry temp freq daily\""
           }
         },
         {

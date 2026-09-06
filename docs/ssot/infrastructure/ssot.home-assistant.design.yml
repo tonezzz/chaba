@@ -136,21 +136,32 @@ pfg_feature_keys:
   applies_to: [pfg, pfg2]
   grid:
     pfg_grid_size: 'N (default 10 for pfg, 15 for pfg2); 1-indexed r,c tile keys'
-    pfg_grid_width: 'CSS width of the square grid, e.g. "25%" or "360px"'
+    pfg_grid_cols: 'N (v92+); override cols for non-square grids'
+    pfg_grid_rows: 'N (v92+); override rows for non-square grids; anchors use cols for x, rows for y'
+    pfg_grid_width: 'CSS width of the grid, e.g. "25%" or "360px"'
     pfg_radius: 'map r,c -> CSS border-radius for that tile'
-    pfg_hide_grid: 'boolean (v79+); hides tile borders, tile labels, the r,c fallback text, and all pfg_lines connectors. Images/icons/values/status colors still render.'
+    pfg_border: 'map r,c -> CSS border override for that tile (v78+), e.g. "4px solid #ffffff"'
+    pfg_hide_grid: 'boolean (v79+); hides tile borders, the r,c fallback text, and all pfg_lines connectors. Explicit pfg_labels still render (v87+). Images/icons/values/status colors still render.'
+    pfg_transparent: 'boolean (v93+); removes ha-card background/border/shadow and the theme card-mod frosted-glass ::before/::after layer (v94+)'
+    pfg_inverter_at: '"r,c" (v77+); places the built-in inverter image tile at that cell'
   tiles:
     note: 'Render priority per tile: label > icon > image > sum/value > r,c coordinate text.'
-    pfg_labels: 'map "r,c" -> text label'
+    pfg_labels: 'map "r,c" -> text label; " " blanks a cell; rendered even under pfg_hide_grid'
+    pfg_label_pos: 'map "r,c" -> CSS top for the label overlay (default 55% - 26px)'
     pfg_icons: 'map "r,c" -> mdi icon name (e.g. mdi:solar-power)'
     pfg_images: 'map "r,c" -> image URL served from /local/'
     pfg_image_zoom: 'number; object-fit:cover plus transform:scale(zoom), applied to all image tiles'
+    pfg_image_fit: 'map "r,c" -> contain|cover|fill per tile (default cover; inverter tiles default contain)'
     pfg_values: 'map "r,c" -> {entity, scale?, decimals?, unit?} live sensor value tile'
+    pfg_value_labels: 'map "r,c" -> small caption rendered above the tile value (v88+)'
+    pfg_value_label_pos: 'map "r,c" -> CSS top for the value label (default calc(55% - 14px))'
     pfg_sums: 'map "r,c" -> {entities[], scale?, decimals?, unit?} summed entity tile'
-    pfg_spans: 'map "r,c" -> N making that tile N x N cells; covered cells are skipped'
+    pfg_spans: 'map "r,c" -> N (square) or "RxC" (rectangular, e.g. "2x3" = 2 rows x 3 cols); covered cells are skipped; anchors are span-aware'
   charts:
     key: pfg_charts
-    note: 'r,c -> chart def or array of defs; types: gauge, bar, history. position: center|bottom overlays the tile (works over images). history uses recorder history_during_period with 5min cache; fields: entity, hours, min/max, scale, decimals, unit, label, stroke, fill, needle, segments, gradient.'
+    note: 'r,c -> chart def or array of defs; types: gauge, bar, history, cycle. position: center|bottom|cycle overlays the tile (works over images). cycle rotates through step groups at interval seconds; entities[] sums multiple sensors in one def. history uses recorder history_during_period with 5min cache; fields: entity/entities, hours, min/max, scale, decimals, unit, label, stroke, fill, needle, segments, gradient, interval, steps.'
+  view_copy:
+    note: 'scripts/home-assistant/apply-tpl.py copies TPL-tab card templates (title -> r,c) onto any view: apply-tpl.py <ha_url> <dashboard> <src_view> <dst_view> --map "Title:r,c;..."'
   values:
     key: pfg_values
     note: 'r,c -> entity id string or {entity, scale, decimals, unit, label}'
@@ -185,6 +196,8 @@ pfg_feature_keys:
     pfg_* config lives entirely in the Lovelace card config. Once the bundle supports a
     key, iterate it live with scripts/home-assistant/push-dashboard.py (websocket save,
     no restart). Only new card code requires a bundle rebuild + version bump + restart.
+    Deploy: scripts/home-assistant/deploy-card.sh [--host michael-dev|michael-ha|all]
+    (flock-locked, version derived from remote lovelace_resources).
 
 multi_battery_layout:
   note: |
