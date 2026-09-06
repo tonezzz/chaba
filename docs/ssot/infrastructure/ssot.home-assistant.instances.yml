@@ -52,6 +52,8 @@ instances:
     base: michael
     host: nabu_casa
     type: cloud
+    role: live
+    write_policy: 'DEPLOYMENT TARGET ONLY (2026-09-06 directive): no mid-design writes. All dashboard/card iteration happens on michael-dev; michael-ha receives only the finished, user-approved result in one promotion step (see howto.yml runbook dev_to_live_promotion).'
     tailscale:
       hostname: michael-ha
       fqdn: michael-ha.taila0626a.ts.net

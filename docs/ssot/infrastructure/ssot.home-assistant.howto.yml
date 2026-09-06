@@ -159,6 +159,20 @@ runbooks:
       - Set battery.count to 4 and remove/ignore battery1_* entities
       - Apply via edit_live_dashboard_no_restart or by editing .storage/lovelace.tony_test and restarting
 
+  dev_to_live_promotion:
+    purpose: Promotion policy — ALL dashboard/card design work happens on michael-dev first; michael-ha only receives finished, user-approved results.
+    policy: |
+      2026-09-06 (user directive): iterate on michael-dev until the work is
+      finished. Do NOT deploy to michael-ha mid-design. michael-ha gets only
+      the final approved state — bundle + dashboard config + images in one go.
+      Exception: the mirrored rest: sensors on michael-dev read FROM michael-ha
+      (read-only, no writes to michael-ha for that).
+    steps:
+      - 'Design/iterate on michael-dev only: push-dashboard.py + deploy-card.sh + playlive verification'
+      - 'When the user approves the finished result: deploy the final bundle to michael-ha (deploy_custom_card_michael_ha), copy any new /local images, then apply the dashboard changes in one mutation'
+      - 'Snapshot + SSOT update after promotion'
+    note: 'Intermediate deploys to michael-ha (e.g. bundle v89/v91, TPL view) during the 2026-09-06 session predate this directive — future work must not repeat that pattern.'
+
   deploy_package_michael_ha:
     purpose: Deploy a new or updated Home Assistant package to michael-ha.
     steps:

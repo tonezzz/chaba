@@ -56,6 +56,7 @@ Valid modes: `normal`, `plan`, `build`, `review`.
 - Fix SVG text overlay: check `Battery*_SOC` `<svg>` display condition in `src/components/compact/bat/bat-elements.ts` so plain text hides when combined `{target}% | {current}%` is visible.
 - Verify visually: use a logged-in Chrome profile or browser dev tools on the card shadow root.
 - Guard against bundle drift: `sync-ssot-from-live.sh` picks the newest `www/` bundle by version. Remove obsolete `sunsynk-power-flow-card-fork-v*.js` bundles or cross-check `lovelace_resources` before committing.
+- **DEV-FIRST RULE (2026-09-06)**: iterate ALL dashboard/card design work on `michael-dev` only. Do NOT write to `michael-ha` (bundle deploys, dashboard mutations, resources) until the work is finished AND the user has approved it — then promote in one step (bundle + images + dashboard). See `ssot.home-assistant.howto.yml` → `dev_to_live_promotion`.
 
 ## Current state (2026-09-05)
 
