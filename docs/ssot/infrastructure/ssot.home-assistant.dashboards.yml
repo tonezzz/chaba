@@ -10,6 +10,20 @@ instances:
     storage_path: /home/tony/.config/michael-dev/.storage/lovelace.tony_test
     repo_snapshot: docs/home-assistant/dashboards/tony-test-current.json
     note: The live Lovelace layout is stored in .storage/lovelace.tony_test. The repo JSON is an archival snapshot.
+  michael-ha:
+    name: tony-test
+    base_url: https://nupo4ndqdqydt78zmpq0z5wzp1bdrqgs.ui.nabu.casa/tony-test
+    views: [pf3, solis-daily-energy-sankey, juworkshop, weather, pfg2, tpl]
+    note: >-
+      2026-09-06: added a TPL view (custom:grid-layout, 4 cols x 1 row:
+      living laundry bedroom terrace) with single-tile PFG cards and
+      /local/*.jpg images copied to /config/www. Living cycles CO2 sensor
+      gauges (temp/humidity/CO2/VOC/HCHO); Laundry gauges
+      sensor.laundry_room_washing_machine_power + 24h history; Bedroom and
+      Terrace are image-only (no sensor entities in those areas; Kitchen has
+      none either). Bundle v86 deployed to /config/www and resource updated
+      via ha_config_set_dashboard_resource; layout-card.js added as a
+      dashboard resource the same day.
 
 tabs:
   - order: 0
@@ -40,7 +54,7 @@ tabs:
   - order: 5
     title: TPL
     path: tpl
-    note: cardstyle pfg experiment; 2x2 grid with a spanned PV image tile (pfg_grid_size 2, pfg_grid_width 25%).
+    note: 'Design sandbox (custom:grid-layout, 4x2): pv grid battery inverter / home pool sum kitchen — single-tile pfg cards with image+chart overlays. See ssot.home-assistant.design.yml tpl_design. A separate TPL view also exists on michael-ha (living laundry bedroom terrace).'
     test_url: https://tony-dell.taila0626a.ts.net:8124/tony-test/tpl
   - order: 6
     title: Data
