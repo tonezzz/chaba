@@ -2112,12 +2112,68 @@
               "pfg_image_fit": {
                 "1,1": "contain"
               }
+            },
+            {
+              "type": "custom:sunsynk-power-flow-card",
+              "cardstyle": "pfg",
+              "preset": "pfg",
+              "title": "Sum",
+              "pfg_grid_size": 1,
+              "pfg_grid_width": "100%",
+              "pfg_border": {
+                "1,1": "2px solid #555"
+              },
+              "pfg_labels": {
+                "1,1": "Sum"
+              },
+              "pfg_label_pos": {
+                "1,1": "calc(55% - 14px)"
+              },
+              "pfg_charts": {
+                "1,1": [
+                  {
+                    "type": "gauge",
+                    "entities": [
+                      "sensor.inverters_1_pv_power_1",
+                      "sensor.inverters_1_pv_power_2"
+                    ],
+                    "min": 0,
+                    "max": 10000,
+                    "scale": 0.001,
+                    "needle": true,
+                    "decimals": 2,
+                    "unit": "kW",
+                    "position": "center"
+                  },
+                  {
+                    "type": "history",
+                    "entities": [
+                      "sensor.inverters_1_pv_power_1",
+                      "sensor.inverters_1_pv_power_2"
+                    ],
+                    "hours": 24,
+                    "min": 0,
+                    "max": 10000,
+                    "scale": 0.001,
+                    "decimals": 2,
+                    "unit": "kW",
+                    "position": "bottom"
+                  }
+                ]
+              },
+              "view_layout": {
+                "grid-area": "sum"
+              },
+              "card_width": "100%",
+              "pfg_images": {
+                "1,1": "/local/sum.jpg"
+              }
             }
           ],
           "layout": {
             "grid-template-columns": "repeat(4, 1fr)",
             "grid-template-rows": "auto auto",
-            "grid-template-areas": "\"pv grid battery inverter\" \"home pool . .\""
+            "grid-template-areas": "\"pv grid battery inverter\" \"home pool sum .\""
           }
         },
         {
