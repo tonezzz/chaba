@@ -194,40 +194,55 @@ pfg_feature_keys:
     key, iterate it live with scripts/home-assistant/push-dashboard.py (websocket save,
     no restart). Only new card code requires a bundle rebuild + version bump + restart.
 
+pfg2_design:
+  view: tony-test/pfg2
+  url: https://tony-dell.taila0626a.ts.net:8124/tony-test/pfg2
+  note: |
+    2026-09-06: the design sandbox moved from TPL to PFG2. PFG2 is a `panel`
+    view hosting ONE pfg2 card; each "card" is a tile inside the card's own
+    grid, positioned by "r,c" keys and pfg_spans (tiles are 2 rows x 3 cols).
+    TPL was reverted to its original single-card pfg experiment.
+    Tile map (2x3 spans):
+      row1: PV1 1,1 | PV2 1,4 | Grid 1,7
+      row3: Sum 3,1 | Inverter 3,4 | Home 3,7
+      row5: Battery 5,1 | . | Living 5,7
+      row7: . | Kitchen 7,4 | .
+      row9: . | Laundry 9,4 | Pool 9,7
+  tiles:
+    pattern: |
+      pfg_images {"r,c": "/local/<image>.jpg"} (or "inverter" for the model image),
+      pfg_charts {"r,c": [gauge + history] or cycle}, pfg_labels {"r,c": "<Title>"},
+      pfg_spans {"r,c": "2x3"}. Value labels at the tile's old label spot come from
+      pfg_value_labels (static) or cycle step `label`s (rotating). Gauges/needles/
+      text have drop shadows (v81-v83+).
+    tiles:
+      '1,1': {name: PV1, image: /local/pv-tiles.jpg, charts: 'pv_power_1 gauge + history'}
+      '1,4': {name: PV2, image: /local/pv-tiles.jpg, charts: 'pv_power_2 gauge + history'}
+      '1,7': {name: Grid, image: /local/power-grid.jpg, charts: 'grid power/voltage cycle'}
+      '3,1': {name: Sum, image: /local/sum.jpg, charts: 'pfg_sums entities[] pv1+pv2 + gauge'}
+      '3,4': {name: Inverter, image: '/local/inverter.webp (pfg_image_fit contain)', charts: 'Power/Volts/Temp/Freq cycle'}
+      '3,7': {name: Home, image: /local/home-house.jpg, charts: 'Load/PV/Grid/Battery/SOC cycle'}
+      '5,1': {name: Battery, image: /local/battery-bank.jpg, charts: 'battery power/Voltage/SOC cycle'}
+      '5,7': {name: Living, image: /local/living.jpg, charts: 'temp/humidity/CO2/VOC/HCHO cycle — michael-ha entities mirrored via rest: in a_dev_mocks.yaml'}
+      '7,4': {name: Kitchen, image: /local/kitchen.jpg}
+      '9,4': {name: Laundry, image: /local/laundry.jpg, charts: 'washer power gauge + history — michael-ha mirror'}
+      '9,7': {name: Pool, image: /local/pool.jpg, charts: 'pool_energy_daily gauge'}
+  assets:
+    note: 'tile images live in michael-dev:/home/tony/.config/michael-dev/www and are served as /local/* (jpg/webp). All images are local copies — download new art with curl then scp to tony-dell.'
+
 tpl_design:
   view: tony-test/tpl
   url: https://tony-dell.taila0626a.ts.net:8124/tony-test/tpl
   note: |
-    TPL is the sandbox view for new card designs — all new design cards go here.
-    Layout is custom:grid-layout (layout-card) with 4 columns x 2 rows:
-      "pv grid battery inverter" / "pool sum kitchen ." / "home bedroom terrace ." / "living . . ." / "laundry . . ."
-    Each card is a single-tile PFG card: cardstyle pfg, preset pfg, pfg_grid_size 1,
-    pfg_grid_width 100%, view_layout {grid-area: <name>}, card_width 100%.
-  tiles:
-    pattern: |
-      pfg_images {"1,1": "/local/<image>.jpg"} (or "inverter" for the model image),
-      pfg_charts {"1,1": [gauge (position:center) + history (position:bottom)]} or a
-      cycle chart; pfg_labels {"1,1": "<Title>"} renders the tile label as an overlay
-      aligned to the top via pfg_label_pos {"1,1": "12%"}. The old label position
-      ("calc(55% - 14px)") now names the displayed value: non-cycle cards use
-      pfg_value_labels {"1,1": "<text>"} (Power/Load/Energy), while cycle cards set
-      `label` on each step's chart def so it rotates with the gauge.
-      Gauge arcs, needle and text have drop shadows (v81-v83).
-    cards:
-      pv: {image: /local/pv-tiles.jpg, charts: 'PV power gauge + 24h history'}
-      grid: {image: /local/power-grid.jpg, charts: 'grid power cycle'}
-      battery: {image: /local/battery-bank.jpg, charts: 'battery power/SOC cycle'}
-      home: {image: /local/home-house.jpg, charts: 'Load/PV/Grid/Battery/SOC cycle'}
-      pool: {image: /local/pool.jpg, charts: 'sensor.pool_energy_daily gauge (kWh, total_increasing)'}
-      inverter: {image: '/local/inverter.webp + pfg_image_fit contain', charts: 'Power/Volts/Temp/Freq cycle'}
-      sum: {image: /local/sum.jpg, charts: 'gauge + 24h history of entities[] sum: inverters_1_pv_power_1 + _2 (v86 multi-entity charts)'}
-      kitchen: {image: /local/kitchen.jpg, charts: 'gauge + 24h history — PLACEHOLDER entity sensor.inverters_1_load_power (house load); no kitchen sensor exists on michael-dev yet'}
-      living: {image: /local/living.jpg, charts: 'cycle: temp/humidity/CO2/VOC/HCHO via sensor.tze200_mja3fuja_ts0601_* — michael-ha entities mirrored into michael-dev via rest: sensors in a_dev_mocks.yaml (30s poll)'}
-      laundry: {image: /local/laundry.jpg, charts: 'gauge + 24h history of sensor.laundry_room_washing_machine_power — michael-ha entity mirrored via rest: sensor'}
-      bedroom: {image: /local/bedroom.jpg, charts: 'none — no bedroom entities on either instance'}
-      terrace: {image: /local/terrace.jpg, charts: 'none — terrace has only media players on michael-ha'}
+    SUPERSEDED 2026-09-06: the design sandbox moved to PFG2 (see pfg2_design).
+    TPL was reverted to its original single-card pfg masonry experiment
+    (PV gradient gauge, bundle v52-era config).
+    Former sandbox design (kept for reference): 4-column custom:grid-layout
+    of single-tile PFG cards (grid_size 1, preset pfg, view_layout grid-area),
+    tile labels top-aligned via pfg_label_pos "12%", value labels at the old
+    spot via pfg_value_labels / cycle step `label`s.
   assets:
-    note: 'tile images live in michael-dev:/home/tony/.config/michael-dev/www and are served as /local/* (jpg/webp). All TPL images are local copies — download new art with curl then scp to tony-dell.'
+    note: 'tile images live in michael-dev:/home/tony/.config/michael-dev/www and are served as /local/* (jpg/webp).'
 
 multi_battery_layout:
   note: |
