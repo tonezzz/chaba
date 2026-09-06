@@ -68,6 +68,10 @@ tabs:
 manual_steps:
   - Preferred: mutate the live dashboard via scripts/home-assistant/push-dashboard.py (websocket lovelace/config/save; applies immediately, no restart)
   - Direct .storage/lovelace.tony_test edits only take effect after an HA core restart
+
+  - Add a sidebar dashboard: websocket lovelace/dashboards/create (url_path must contain a hyphen, e.g. dossier-home); created 2026-09-06 as 'Dossier' (mdi:folder-file).
+  - Sidebar order is per-user in .storage/frontend.user_data_<uid> -> core.sidebar panelOrder; set via websocket frontend/set_user_data. Current order: lovelace (Overview), tony-test, dossier-home, then defaults.
+
   - To snapshot, run scripts/home-assistant/sync-ssot-from-live.sh (copies .storage to docs/home-assistant/dashboards/tony-test-current.json and refreshes bundle version)
   - Tab order, titles, and paths live in the same .storage file / saved config
   - To add a new tab, push via websocket mutate or use the HA UI, then snapshot
