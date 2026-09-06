@@ -5,9 +5,9 @@ repositories:
   sunsynk-power-flow-card-fork:
     path: /home/tony/CascadeProjects/sunsynk-power-flow-card
     fork_of: slhub/sunsynk-power-flow-card
-    current_commit: 95ddb0c
+    current_commit: bd29c44
     package_version: 7.3.3
-    bundle_version: 78
+    bundle_version: 79
     build:
       command: npm run build
       tool: rollup -c --bundleConfigAsCjs
@@ -15,19 +15,26 @@ repositories:
     deploy:
       michael-dev:
         target_host: ssot.values.yml::hosts.tony_dell
-        target_path: /home/tony/.config/michael-dev/www/sunsynk-power-flow-card-fork-v78.js
+        target_path: /home/tony/.config/michael-dev/www/sunsynk-power-flow-card-fork-v79.js
         lovelace_resources: /home/tony/.config/michael-dev/.storage/lovelace_resources
-        resource_path: /local/sunsynk-power-flow-card-fork-v78.js
+        resource_path: /local/sunsynk-power-flow-card-fork-v79.js
         restart: systemctl --user restart michael-dev.service
         service_ref: infrastructure/ssot.services.yml#tony-dell.michael-dev.quadlet.service_unit
         test_url: https://tony-dell.taila0626a.ts.net:8124/tony-test/pf4
       michael-ha:
         target_host: ssot.values.yml::hosts.michael_ha
-        target_path: /config/www/sunsynk-power-flow-card-fork-v78.js
+        target_path: /config/www/sunsynk-power-flow-card-fork-v79.js
         lovelace_resources: /config/.storage/lovelace_resources
-        resource_path: /local/sunsynk-power-flow-card-fork-v78.js
+        resource_path: https://cdn.jsdelivr.net/gh/tonezzz/sunsynk-power-flow-card@bd29c44/dist/sunsynk-power-flow-card.js
         restart: ha core restart
-        test_url: http://michael-ha:8123/tony-test/pf3
+        test_url: https://nupo4ndqdqydt78zmpq0z5wzp1bdrqgs.ui.nabu.casa/tony-test/pf3
+        note: >-
+          2026-09-06: michael-ha Tailscale was offline (SSH unreachable), so the
+          bundle is served from the public GitHub repo via cdn.jsdelivr.net
+          (CORS-enabled, application/javascript) and lovelace_resources was
+          updated over the websocket API. Tile images for pfg2 are also served
+          from img/ in the same repo commit. When SSH is restored, copy the
+          bundle to /config/www/ and repoint resource_path to /local/.
     source_files:
       primary_modifications:
         - src/components/compact/bat/bat-elements.ts
@@ -84,8 +91,8 @@ cards:
   - id: sunsynk-power-flow-card
     name: Sunsynk Power Flow Card (fork)
     repo_ref: repositories.sunsynk-power-flow-card-fork
-    bundle_version: 78
-    deployed_as: /local/sunsynk-power-flow-card-fork-v78.js
+    bundle_version: 79
+    deployed_as: /local/sunsynk-power-flow-card-fork-v79.js
     dashboards:
       - id: tony-test/pf4
         tab: PF4
@@ -102,6 +109,10 @@ cards:
       - id: tony-test/pf3
         tab: PF3
         test_url: https://nupo4ndqdqydt78zmpq0z5wzp1bdrqgs.ui.nabu.casa/tony-test/pf3
+      - id: michael-ha tony-test/pfg2
+        tab: PFG2 (after SK)
+        test_url: https://nupo4ndqdqydt78zmpq0z5wzp1bdrqgs.ui.nabu.casa/tony-test/pfg2
+        note: Deployed 2026-09-06 with pfg_hide_grid=true (grid lines, tile labels, and connectors hidden); tile images served from jsdelivr img/.
     instance: ssot.home-assistant.michael.dev.yml::environments.dev
   - id: michael-live
     name: Michael Live (ha-live bridge front-end)
@@ -111,4 +122,4 @@ cards:
 status:
   last_build: '2026-09-05'
   last_verified: '2026-09-06'
-  health: active; v72 deployed; bundle deployed to michael-dev (PF3/PF4/PFG/PFG1/PFG2/TPL) and michael-ha (PF3); pfg/pfg2 support images, icons, labels, values, sums, spans, radius, zoom, and speed-scaled anchored flow lines (see ssot.home-assistant.design.yml); .storage resource changes require HA core restart
+  health: active; v79 deployed; bundle deployed to michael-dev (PF3/PF4/PFG/PFG1/PFG2/TPL) and michael-ha (PF3/PFG2 via jsdelivr @bd29c44); pfg/pfg2 support images, icons, labels, values, sums, spans, radius, zoom, speed-scaled anchored flow lines, and pfg_hide_grid (see ssot.home-assistant.design.yml); .storage resource changes require HA core restart; on michael-ha the lovelace resource URL was updated over websocket and is served from cdn.jsdelivr.net until SSH/Tailscale is restored

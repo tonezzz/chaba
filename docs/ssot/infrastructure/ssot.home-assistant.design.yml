@@ -127,7 +127,8 @@ pfg2_card:
     The PFG2 card is a copy of the PFG grid card with a 15x15 grid by default
     (pfg_grid_size still overrides). It shares the same pfg_* config keys and
     entity/status tile mapping as pfg. First deployed to michael-dev in bundle v33;
-    corner anchors and span-aware lines landed in v51, per-line speed scaling in v56.
+    corner anchors and span-aware lines landed in v51, per-line speed scaling in v56,
+    pfg_hide_grid in v79.
     As of v71 pfg2-card.ts is removed: cardstyle pfg2 renders via pfgCard with a
     15x15 default grid — one renderer, no drift.
 
@@ -137,6 +138,7 @@ pfg_feature_keys:
     pfg_grid_size: 'N (default 10 for pfg, 15 for pfg2); 1-indexed r,c tile keys'
     pfg_grid_width: 'CSS width of the square grid, e.g. "25%" or "360px"'
     pfg_radius: 'map r,c -> CSS border-radius for that tile'
+    pfg_hide_grid: 'boolean (v79+); hides tile borders, tile labels, the r,c fallback text, and all pfg_lines connectors. Images/icons/values/status colors still render.'
   tiles:
     note: 'Render priority per tile: label > icon > image > sum/value > r,c coordinate text.'
     pfg_labels: 'map "r,c" -> text label'
@@ -234,4 +236,4 @@ known_patterns:
 status:
   last_updated: '2026-09-05'
   last_verified: '2026-09-05'
-  health: active; v56 deployed; pfg/pfg2 feature keys, anchor syntax, and speed-scaled flow lines documented; signed-current and direction override documented for compact/lite cards
+  health: active; v79 deployed; pfg/pfg2 feature keys, anchor syntax, speed-scaled flow lines, and pfg_hide_grid documented; signed-current and direction override documented for compact/lite cards; pfg2 deployed to michael-ha after SK with pfg_hide_grid=true
