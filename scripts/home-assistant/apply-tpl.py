@@ -19,8 +19,10 @@ Reads token from HASS_TOKEN env (source ~/.config/secrets/ha-michael-dev.env).
 import asyncio, copy, json, os, sys
 import websockets
 
+# pfg_spans intentionally excluded: TPL cards are single 2x2 tiles; copying the
+# span would shrink the target tile.
 MAP_KEYS = ("pfg_charts", "pfg_images", "pfg_labels", "pfg_value_labels",
-            "pfg_spans", "pfg_radius", "pfg_border", "pfg_image_fit",
+            "pfg_radius", "pfg_border", "pfg_image_fit",
             "pfg_label_pos")
 
 async def main():
