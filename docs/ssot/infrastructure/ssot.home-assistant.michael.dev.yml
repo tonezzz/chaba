@@ -170,6 +170,21 @@ entity_mocks:
   repo_source: /home/tony/CascadeProjects/chaba-tony-dell/docs/home-assistant/dev/dev-mocks.yaml
   deployed_to: /home/tony/.config/michael-dev/packages/a_dev_mocks.yaml
   note: Deployed as packages/a_dev_mocks.yaml by deploy-michael-dev.sh. Keep out of deploy-michael.sh path so it is never sent to live.
+  michael_ha_mirrors:
+    added: '2026-09-06'
+    mechanism: >-
+      `rest:` sensors in a_dev_mocks.yaml poll http://michael-ha:8123/api/states/<eid>
+      every 30s. Auth header comes from secrets.yaml `michael_ha_auth`
+      (full "Bearer <token>" value — !secret must be the whole scalar;
+      "Bearer !secret x" does NOT substitute).
+    entities:
+      - sensor.tze200_mja3fuja_ts0601_temperature  # living room °C
+      - sensor.tze200_mja3fuja_ts0601_humidity     # living room %
+      - sensor.tze200_mja3fuja_ts0601_carbon_dioxide  # ppm
+      - sensor.tze200_mja3fuja_ts0601_volatile_organic_compounds  # µg/m³
+      - sensor.tze200_mja3fuja_ts0601_formaldehyde_concentration  # mg/m³
+      - sensor.laundry_room_washing_machine_power  # W
+    token_source: /home/tony/.local/share/home-assistant-michael/ha-token (local copy; deployed into michael-dev secrets.yaml)
 
 verification:
   dev:

@@ -320,3 +320,65 @@ template:
       state: "{{ states('input_number.dev_today_load_energy') | float(18.7) }}"
       unit_of_measurement: "kWh"
 
+
+# Realtime mirrors of michael-ha room sensors (rest polling, 30s).
+# Token lives in secrets.yaml as michael_ha_token.
+rest:
+  - resource: http://michael-ha:8123/api/states/sensor.tze200_mja3fuja_ts0601_temperature
+    headers:
+      Authorization: !secret michael_ha_auth
+    scan_interval: 30
+    sensor:
+      - name: tze200_mja3fuja_ts0601_temperature
+        unique_id: mha_mirror_tze200_temperature
+        value_template: "{{ value_json.state }}"
+        unit_of_measurement: "°C"
+        device_class: temperature
+  - resource: http://michael-ha:8123/api/states/sensor.tze200_mja3fuja_ts0601_humidity
+    headers:
+      Authorization: !secret michael_ha_auth
+    scan_interval: 30
+    sensor:
+      - name: tze200_mja3fuja_ts0601_humidity
+        unique_id: mha_mirror_tze200_humidity
+        value_template: "{{ value_json.state }}"
+        unit_of_measurement: "%"
+        device_class: humidity
+  - resource: http://michael-ha:8123/api/states/sensor.tze200_mja3fuja_ts0601_carbon_dioxide
+    headers:
+      Authorization: !secret michael_ha_auth
+    scan_interval: 30
+    sensor:
+      - name: tze200_mja3fuja_ts0601_carbon_dioxide
+        unique_id: mha_mirror_tze200_co2
+        value_template: "{{ value_json.state }}"
+        unit_of_measurement: "ppm"
+        device_class: carbon_dioxide
+  - resource: http://michael-ha:8123/api/states/sensor.tze200_mja3fuja_ts0601_volatile_organic_compounds
+    headers:
+      Authorization: !secret michael_ha_auth
+    scan_interval: 30
+    sensor:
+      - name: tze200_mja3fuja_ts0601_volatile_organic_compounds
+        unique_id: mha_mirror_tze200_voc
+        value_template: "{{ value_json.state }}"
+        unit_of_measurement: "µg/m³"
+  - resource: http://michael-ha:8123/api/states/sensor.tze200_mja3fuja_ts0601_formaldehyde_concentration
+    headers:
+      Authorization: !secret michael_ha_auth
+    scan_interval: 30
+    sensor:
+      - name: tze200_mja3fuja_ts0601_formaldehyde_concentration
+        unique_id: mha_mirror_tze200_hcho
+        value_template: "{{ value_json.state }}"
+        unit_of_measurement: "mg/m³"
+  - resource: http://michael-ha:8123/api/states/sensor.laundry_room_washing_machine_power
+    headers:
+      Authorization: !secret michael_ha_auth
+    scan_interval: 30
+    sensor:
+      - name: laundry_room_washing_machine_power
+        unique_id: mha_mirror_washer_power
+        value_template: "{{ value_json.state }}"
+        unit_of_measurement: "W"
+        device_class: power
