@@ -1855,12 +1855,57 @@
               "view_layout": {
                 "grid-area": "home"
               }
+            },
+            {
+              "type": "custom:sunsynk-power-flow-card",
+              "cardstyle": "pfg",
+              "card_height": "360px",
+              "card_width": "100%",
+              "title": "Pool",
+              "pfg_grid_size": 1,
+              "pfg_grid_width": "100%",
+              "pfg_images": {
+                "1,1": "/local/pool.jpg"
+              },
+              "pfg_image_zoom": 1,
+              "pfg_charts": {
+                "1,1": {
+                  "type": "gauge",
+                  "entity": "sensor.pool_energy_daily",
+                  "min": 0,
+                  "max": 20,
+                  "scale": 1,
+                  "needle": true,
+                  "segments": [
+                    {
+                      "from": 0,
+                      "color": "#00ff00"
+                    },
+                    {
+                      "from": 10,
+                      "color": "#ffff00"
+                    },
+                    {
+                      "from": 15,
+                      "color": "#ff0000"
+                    }
+                  ],
+                  "decimals": 2,
+                  "label": "Pool",
+                  "unit": "kWh",
+                  "position": "center"
+                }
+              },
+              "preset": "pfg",
+              "view_layout": {
+                "grid-area": "pool"
+              }
             }
           ],
           "layout": {
-            "grid-template-columns": "25% 25% 25% 25%",
+            "grid-template-columns": "20% 20% 20% 20% 20%",
             "grid-template-rows": "auto",
-            "grid-template-areas": "\"pv grid battery home\""
+            "grid-template-areas": "\"pv grid battery home pool\""
           }
         },
         {
@@ -3230,56 +3275,6 @@
               "card_mod": {
                 "style": "ha-card { --card-background-color: #102040 !important; background-color: #102040 !important; --primary-text-color: #ffffff !important; --secondary-text-color: #cccccc !important; color: #ffffff !important; }"
               }
-            }
-          ]
-        },
-        {
-          "title": "Pool",
-          "path": "pool",
-          "type": "masonry",
-          "badges": [],
-          "cards": [
-            {
-              "type": "custom:sunsynk-power-flow-card",
-              "cardstyle": "pfg",
-              "card_height": "360px",
-              "card_width": "360px",
-              "title": "Pool",
-              "pfg_grid_size": 1,
-              "pfg_grid_width": "100%",
-              "pfg_images": {
-                "1,1": "/local/pool.jpg"
-              },
-              "pfg_image_zoom": 1,
-              "pfg_charts": {
-                "1,1": {
-                  "type": "gauge",
-                  "entity": "sensor.pool_energy_daily",
-                  "min": 0,
-                  "max": 20,
-                  "scale": 1,
-                  "needle": true,
-                  "segments": [
-                    {
-                      "from": 0,
-                      "color": "#00ff00"
-                    },
-                    {
-                      "from": 10,
-                      "color": "#ffff00"
-                    },
-                    {
-                      "from": 15,
-                      "color": "#ff0000"
-                    }
-                  ],
-                  "decimals": 2,
-                  "label": "Pool",
-                  "unit": "kWh",
-                  "position": "center"
-                }
-              },
-              "preset": "pfg"
             }
           ]
         }
