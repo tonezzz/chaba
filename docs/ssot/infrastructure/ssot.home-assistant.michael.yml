@@ -43,7 +43,14 @@ deploy:
     config_path: /config
     ssh_key: /home/tony/.ssh/michael-ha
     status: active
-    note: SSH key deployed and tested; rsync over Tailscale
+    note: >-
+      SSH over Tailscale via core_ssh add-on. authorized_keys contains
+      devin-deploy (this host/tony-dell key at ~/.ssh/michael-ha) and
+      tony-omen@michael-ha (~/.ssh/id_michael_ha, used via ssh_config
+      IdentityFile). Both keys are in the add-on options AND the live
+      /root/.ssh/authorized_keys. 2026-09-06: michael-ha-mcp-tunnel on
+      tony-dell failed after the OOM outage because it uses the devin-deploy
+      key, which was missing from the live authorized_keys.
   token_file: /home/tony/.local/share/home-assistant-michael/ha-token
   reload_url: http://michael-ha:8123/api/services/homeassistant/reload_core_config
   dashboards:
