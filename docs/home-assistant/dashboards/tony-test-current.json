@@ -1900,12 +1900,91 @@
               "view_layout": {
                 "grid-area": "pool"
               }
+            },
+            {
+              "type": "custom:sunsynk-power-flow-card",
+              "cardstyle": "pfg",
+              "preset": "pfg",
+              "title": "Controller",
+              "pfg_grid_size": 1,
+              "pfg_grid_width": "100%",
+              "pfg_border": {
+                "1,1": "2px solid #555"
+              },
+              "pfg_charts": {
+                "1,1": [
+                  {
+                    "type": "cycle",
+                    "interval": 4,
+                    "position": "cycle",
+                    "steps": [
+                      [
+                        {
+                          "type": "gauge",
+                          "entity": "sensor.inverters_1_load_power",
+                          "min": 0,
+                          "max": 6000,
+                          "scale": 0.001,
+                          "needle": true,
+                          "decimals": 2,
+                          "label": "Power",
+                          "unit": "kW",
+                          "position": "center"
+                        }
+                      ],
+                      [
+                        {
+                          "type": "gauge",
+                          "entity": "sensor.inverters_1_ac_output_voltage",
+                          "min": 0,
+                          "max": 300,
+                          "needle": true,
+                          "decimals": 0,
+                          "label": "Volts",
+                          "unit": "V",
+                          "position": "center"
+                        }
+                      ],
+                      [
+                        {
+                          "type": "gauge",
+                          "entity": "sensor.inverters_1_temperature",
+                          "min": 0,
+                          "max": 80,
+                          "needle": true,
+                          "decimals": 1,
+                          "label": "Temp",
+                          "unit": "°C",
+                          "position": "center"
+                        }
+                      ],
+                      [
+                        {
+                          "type": "gauge",
+                          "entity": "sensor.inverters_1_grid_frequency",
+                          "min": 49,
+                          "max": 51,
+                          "needle": true,
+                          "decimals": 2,
+                          "label": "Freq",
+                          "unit": "Hz",
+                          "position": "center"
+                        }
+                      ]
+                    ]
+                  }
+                ]
+              },
+              "view_layout": {
+                "grid-area": "controller"
+              },
+              "card_width": "100%"
             }
           ],
           "layout": {
-            "grid-template-columns": "20% 20% 20% 20% 20%",
+            "grid-template-columns": "repeat(6, 1fr)",
             "grid-template-rows": "auto",
-            "grid-template-areas": "\"pv grid battery home pool\""
+            "grid-template-areas": "\"pv grid battery home pool controller\""
           }
         },
         {
