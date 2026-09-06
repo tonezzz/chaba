@@ -1,0 +1,42 @@
+title: Assess michael-ha vs michael-dev card setup parity (pfg2/tpl)
+subtitle: Compare how the PFG2 and TPL views/cards are configured on both instances and suggest modularization for efficiency
+icon: compare
+
+focus:
+  label: HA card setup parity — michael-ha vs michael-dev (pfg2 + tpl)
+  text: >
+    Assess how the pfg2 and tpl views/cards are set up on michael-ha versus
+    michael-dev (bundle version, card config, images, resource URLs, layout
+    differences). Then suggest improvements/modularization so we can work more
+    efficiently — e.g. a single source of dashboard config promoted to
+    michael-ha, shared image asset list, and/or a sync script instead of
+    hand-duplicated views. Context: dev-first rule (2026-09-06) means
+    michael-ha is a deployment target only; michael-dev currently on bundle
+    v100, michael-ha held at v91.
+  branch: feat/tpl-design
+  priority: medium
+  status: draft
+  tags: [home-assistant, michael-ha, michael-dev, pfg2, tpl, parity, modularization]
+  missing_info:
+    - Desired end state — should michael-ha mirror michael-dev's tony-test exactly, or stay minimal?
+    - Whether to automate promotion (script) or keep it manual on approval.
+  safe_to_parallel:
+    value: true
+    reason: Read-only assessment + proposal; no writes to either instance required.
+  subtasks:
+    - label: Diff pfg2/tpl view config between the two instances (bundle version, resources, cards, images)
+      status: not_started
+    - label: List image/asset parity gaps (/local/*.jpg on both hosts)
+      status: not_started
+    - label: Propose modularization/efficiency improvements (shared config source, promote script)
+      status: not_started
+
+ownership:
+  owner: tony
+  session: ""
+  locked: false
+  lock_reason: ""
+
+source:
+  session: dev-session-tpl-modularization
+  date: 2026-09-06
