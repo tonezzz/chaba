@@ -2307,12 +2307,201 @@
                 "grid-area": "kitchen"
               },
               "card_width": "100%"
+            },
+            {
+              "type": "custom:sunsynk-power-flow-card",
+              "cardstyle": "pfg",
+              "preset": "pfg",
+              "title": "Living",
+              "pfg_grid_size": 1,
+              "pfg_grid_width": "100%",
+              "pfg_border": {
+                "1,1": "2px solid #555"
+              },
+              "pfg_images": {
+                "1,1": "/local/living.jpg"
+              },
+              "pfg_labels": {
+                "1,1": "Living"
+              },
+              "pfg_label_pos": {
+                "1,1": "calc(55% - 14px)"
+              },
+              "view_layout": {
+                "grid-area": "living"
+              },
+              "card_width": "100%",
+              "pfg_charts": {
+                "1,1": [
+                  {
+                    "type": "cycle",
+                    "interval": 4,
+                    "position": "cycle",
+                    "steps": [
+                      [
+                        {
+                          "type": "gauge",
+                          "entity": "sensor.tze200_mja3fuja_ts0601_temperature",
+                          "min": 0,
+                          "max": 45,
+                          "needle": true,
+                          "decimals": 1,
+                          "unit": "°C",
+                          "position": "center"
+                        }
+                      ],
+                      [
+                        {
+                          "type": "gauge",
+                          "entity": "sensor.tze200_mja3fuja_ts0601_humidity",
+                          "min": 0,
+                          "max": 100,
+                          "needle": true,
+                          "decimals": 0,
+                          "unit": "%",
+                          "position": "center"
+                        }
+                      ],
+                      [
+                        {
+                          "type": "gauge",
+                          "entity": "sensor.tze200_mja3fuja_ts0601_carbon_dioxide",
+                          "min": 0,
+                          "max": 2000,
+                          "needle": true,
+                          "decimals": 0,
+                          "unit": "ppm",
+                          "position": "center"
+                        }
+                      ],
+                      [
+                        {
+                          "type": "gauge",
+                          "entity": "sensor.tze200_mja3fuja_ts0601_volatile_organic_compounds",
+                          "min": 0,
+                          "max": 10,
+                          "needle": true,
+                          "decimals": 2,
+                          "unit": "VOC",
+                          "position": "center"
+                        }
+                      ],
+                      [
+                        {
+                          "type": "gauge",
+                          "entity": "sensor.tze200_mja3fuja_ts0601_formaldehyde_concentration",
+                          "min": 0,
+                          "max": 0.5,
+                          "needle": true,
+                          "decimals": 2,
+                          "unit": "HCHO",
+                          "position": "center"
+                        }
+                      ]
+                    ]
+                  }
+                ]
+              }
+            },
+            {
+              "type": "custom:sunsynk-power-flow-card",
+              "cardstyle": "pfg",
+              "preset": "pfg",
+              "title": "Laundry",
+              "pfg_grid_size": 1,
+              "pfg_grid_width": "100%",
+              "pfg_border": {
+                "1,1": "2px solid #555"
+              },
+              "pfg_images": {
+                "1,1": "/local/laundry.jpg"
+              },
+              "pfg_labels": {
+                "1,1": "Laundry"
+              },
+              "pfg_label_pos": {
+                "1,1": "calc(55% - 14px)"
+              },
+              "view_layout": {
+                "grid-area": "laundry"
+              },
+              "card_width": "100%",
+              "pfg_charts": {
+                "1,1": [
+                  {
+                    "type": "gauge",
+                    "entity": "sensor.laundry_room_washing_machine_power",
+                    "min": 0,
+                    "max": 2500,
+                    "needle": true,
+                    "decimals": 0,
+                    "unit": "W",
+                    "position": "center"
+                  },
+                  {
+                    "type": "history",
+                    "entity": "sensor.laundry_room_washing_machine_power",
+                    "hours": 24,
+                    "min": 0,
+                    "max": 2500,
+                    "position": "bottom"
+                  }
+                ]
+              }
+            },
+            {
+              "type": "custom:sunsynk-power-flow-card",
+              "cardstyle": "pfg",
+              "preset": "pfg",
+              "title": "Bedroom",
+              "pfg_grid_size": 1,
+              "pfg_grid_width": "100%",
+              "pfg_border": {
+                "1,1": "2px solid #555"
+              },
+              "pfg_images": {
+                "1,1": "/local/bedroom.jpg"
+              },
+              "pfg_labels": {
+                "1,1": "Bedroom"
+              },
+              "pfg_label_pos": {
+                "1,1": "calc(55% - 14px)"
+              },
+              "view_layout": {
+                "grid-area": "bedroom"
+              },
+              "card_width": "100%"
+            },
+            {
+              "type": "custom:sunsynk-power-flow-card",
+              "cardstyle": "pfg",
+              "preset": "pfg",
+              "title": "Terrace",
+              "pfg_grid_size": 1,
+              "pfg_grid_width": "100%",
+              "pfg_border": {
+                "1,1": "2px solid #555"
+              },
+              "pfg_images": {
+                "1,1": "/local/terrace.jpg"
+              },
+              "pfg_labels": {
+                "1,1": "Terrace"
+              },
+              "pfg_label_pos": {
+                "1,1": "calc(55% - 14px)"
+              },
+              "view_layout": {
+                "grid-area": "terrace"
+              },
+              "card_width": "100%"
             }
           ],
           "layout": {
             "grid-template-columns": "repeat(4, 1fr)",
-            "grid-template-rows": "auto auto",
-            "grid-template-areas": "\"pv grid battery inverter\" \"home pool sum kitchen\""
+            "grid-template-rows": "auto auto auto",
+            "grid-template-areas": "\"pv grid battery inverter\" \"home pool sum kitchen\" \"living laundry bedroom terrace\""
           }
         },
         {
