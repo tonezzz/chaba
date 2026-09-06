@@ -140,17 +140,21 @@ pfg_feature_keys:
     pfg_radius: 'map r,c -> CSS border-radius for that tile'
     pfg_hide_grid: 'boolean (v79+); hides tile borders, tile labels, the r,c fallback text, and all pfg_lines connectors. Images/icons/values/status colors still render.'
   tiles:
-    note: 'Render priority per tile: label > icon > image > sum/value > r,c coordinate text.'
-    pfg_labels: 'map "r,c" -> text label'
+    note: 'Render priority per tile: icon > image > sum/value > r,c coordinate text. pfg_labels render as a positioned overlay on top of any tile content (v81+).'
+    pfg_labels: 'map "r,c" -> text label overlay; centred horizontally, default top:55% plus a fixed -10px nudge; bold white with text-shadow'
+    pfg_label_pos: 'map "r,c" -> CSS top value for the label overlay (v81+), e.g. "calc(55% - 14px)"'
     pfg_icons: 'map "r,c" -> mdi icon name (e.g. mdi:solar-power)'
-    pfg_images: 'map "r,c" -> image URL served from /local/'
+    pfg_images: 'map "r,c" -> image URL served from /local/, or the sentinel "inverter" (v80+) to place the configured model inverter image (contain fit) on that tile'
     pfg_image_zoom: 'number; object-fit:cover plus transform:scale(zoom), applied to all image tiles'
     pfg_values: 'map "r,c" -> {entity, scale?, decimals?, unit?} live sensor value tile'
     pfg_sums: 'map "r,c" -> {entities[], scale?, decimals?, unit?} summed entity tile'
-    pfg_spans: 'map "r,c" -> N making that tile N x N cells; covered cells are skipped'
+    pfg_spans: 'map "r,c" -> N or "RxC" (v75+) making that tile span R rows x C cols; covered cells are skipped'
+    pfg_inverter_at: '"r,c" (v77+) relocates the default inverter-image tile'
+    pfg_border: 'map "r,c" -> CSS border override for that tile (v78+)'
   charts:
     key: pfg_charts
-    note: 'r,c -> chart def or array of defs; types: gauge, bar, history. position: center|bottom overlays the tile (works over images). history uses recorder history_during_period with 5min cache; fields: entity, hours, min/max, scale, decimals, unit, label, stroke, fill, needle, segments, gradient.'
+    note: 'r,c -> chart def or array of defs; types: gauge, bar, history, cycle (v74+; {type:cycle, interval:sec, position:cycle, steps:[[chartdefs],...]}). position: center|bottom overlays the tile (works over images). history uses recorder history_during_period with 5min cache; fields: entity, hours, min/max, scale, decimals, unit, label, stroke, fill, needle, segments, gradient.'
+    shadows: 'v81-v83: drop-shadow(0 1px 2px rgba(0,0,0,0.85)) on gauge arcs (needle + donut), needle, and all chart <text>; value texts are nudged translateY(-10px) in CSS px.'
   values:
     key: pfg_values
     note: 'r,c -> entity id string or {entity, scale, decimals, unit, label}'
@@ -185,6 +189,33 @@ pfg_feature_keys:
     pfg_* config lives entirely in the Lovelace card config. Once the bundle supports a
     key, iterate it live with scripts/home-assistant/push-dashboard.py (websocket save,
     no restart). Only new card code requires a bundle rebuild + version bump + restart.
+
+tpl_design:
+  view: tony-test/tpl
+  url: https://tony-dell.taila0626a.ts.net:8124/tony-test/tpl
+  note: |
+    TPL is the sandbox view for new card designs — all new design cards go here.
+    Layout is custom:grid-layout (layout-card) with 4 columns x 2 rows:
+      "pv grid battery inverter" / "home pool . ."
+    Each card is a single-tile PFG card: cardstyle pfg, preset pfg, pfg_grid_size 1,
+    pfg_grid_width 100%, view_layout {grid-area: <name>}, card_width 100%.
+  tiles:
+    pattern: |
+      pfg_images {"1,1": "/local/<image>.jpg"} (or "inverter" for the model image),
+      pfg_charts {"1,1": [gauge (position:center) + history (position:bottom)]} or a
+      cycle chart; pfg_labels {"1,1": "<Title>"} renders the tile label as an overlay
+      (under the curve, above the value); pfg_label_pos {"1,1": "calc(55% - 14px)"}
+      raises it one line. Chart defs carry no `label` — labels come from pfg_labels.
+      Gauge arcs, needle and text have drop shadows (v81-v83).
+    cards:
+      pv: {image: /local/pv-tiles.jpg, charts: 'PV power gauge + 24h history'}
+      grid: {image: /local/power-grid.jpg, charts: 'grid power cycle'}
+      battery: {image: /local/battery-bank.jpg, charts: 'battery power/SOC cycle'}
+      home: {image: /local/home-house.jpg, charts: 'Load/PV/Grid/Battery/SOC cycle'}
+      pool: {image: /local/pool.jpg, charts: 'sensor.pool_energy_daily gauge (kWh, total_increasing)'}
+      inverter: {image: 'inverter (solis model image)', charts: 'Power/Volts/Temp/Freq cycle'}
+  assets:
+    note: 'tile images live in michael-dev:/home/tony/.config/michael-dev/www and are served as /local/*.jpg'
 
 multi_battery_layout:
   note: |
@@ -234,6 +265,6 @@ known_patterns:
       SS4 or full-card tabs.
 
 status:
-  last_updated: '2026-09-05'
-  last_verified: '2026-09-05'
-  health: active; v79 deployed; pfg/pfg2 feature keys, anchor syntax, speed-scaled flow lines, and pfg_hide_grid documented; signed-current and direction override documented for compact/lite cards; pfg2 deployed to michael-ha after SK with pfg_hide_grid=true
+  last_updated: '2026-09-06'
+  last_verified: '2026-09-06'
+  health: active; v83 deployed; tpl_design documented (TPL sandbox, grid-layout 4x2, image tiles with chart overlays, pfg_labels overlay + pfg_label_pos, 'inverter' image sentinel, drop shadows on arcs/needle/text); pfg/pfg2 feature keys, anchor syntax, speed-scaled flow lines, and pfg_hide_grid documented; signed-current and direction override documented for compact/lite cards; pfg2 deployed to michael-ha after SK with pfg_hide_grid=true
