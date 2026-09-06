@@ -5,9 +5,9 @@ repositories:
   sunsynk-power-flow-card-fork:
     path: /home/tony/CascadeProjects/sunsynk-power-flow-card
     fork_of: slhub/sunsynk-power-flow-card
-    current_commit: bd29c44
+    current_commit: f7aa98d
     package_version: 7.3.3
-    bundle_version: 96
+    bundle_version: 100
     build:
       command: npm run build
       tool: rollup -c --bundleConfigAsCjs
@@ -15,18 +15,19 @@ repositories:
     deploy:
       michael-dev:
         target_host: ssot.values.yml::hosts.tony_dell
-        target_path: /home/tony/.config/michael-dev/www/sunsynk-power-flow-card-fork-v96.js
+        target_path: /home/tony/.config/michael-dev/www/sunsynk-power-flow-card-fork-v100.js
         lovelace_resources: /home/tony/.config/michael-dev/.storage/lovelace_resources
-        resource_path: /local/sunsynk-power-flow-card-fork-v96.js
+        resource_path: /local/sunsynk-power-flow-card-fork-v100.js
         restart: systemctl --user restart michael-dev.service
         service_ref: infrastructure/ssot.services.yml#tony-dell.michael-dev.quadlet.service_unit
         test_url: https://tony-dell.taila0626a.ts.net:8124/tony-test/pf4
       michael-ha:
         target_host: ssot.values.yml::hosts.michael_ha
-        target_path: /config/www/sunsynk-power-flow-card-fork-v96.js
+        target_path: /config/www/sunsynk-power-flow-card-fork-v91.js
         lovelace_resources: /config/.storage/lovelace_resources
-        resource_path: /local/sunsynk-power-flow-card-fork-v96.js
+        resource_path: /local/sunsynk-power-flow-card-fork-v91.js
         restart: ha core restart
+        note: held at v91 per dev-first rule (2026-09-06) — promote to latest on user approval
         test_url: https://nupo4ndqdqydt78zmpq0z5wzp1bdrqgs.ui.nabu.casa/tony-test/pf3
         note: >-
           2026-09-06: michael-ha Tailscale was offline (OOM-killed tailscaled,
@@ -52,6 +53,14 @@ repositories:
         - src/cards/pfg-presets.ts
         - src/cards/pfg-shared.ts
         - src/cards/test2-card.ts
+        - src/data/build-data.ts
+      architecture: >-
+        v100 (2026-09-06): index.ts shrunk 3745 -> ~840 lines; the ~2900-line
+        DataDto construction was extracted to src/data/build-data.ts as
+        buildData(card) returning { data, inverterImg }. render() now only
+        clears caches, calls buildData, and dispatches per cardstyle. Three
+        members went public for the call (_config, durationCur, _computed).
+        Verified on PF3 (lite/compact) and TPL (pfg).
       removed:
         - rollup.config-1754858379256.cjs
     design_notes:
@@ -91,8 +100,8 @@ cards:
   - id: sunsynk-power-flow-card
     name: Sunsynk Power Flow Card (fork)
     repo_ref: repositories.sunsynk-power-flow-card-fork
-    bundle_version: 96
-    deployed_as: /local/sunsynk-power-flow-card-fork-v96.js
+    bundle_version: 100
+    deployed_as: /local/sunsynk-power-flow-card-fork-v100.js (michael-dev); v91 on michael-ha pending promotion
     dashboards:
       - id: tony-test/pf4
         tab: PF4
