@@ -635,12 +635,13 @@
               "wide": true,
               "title": "PFG",
               "pfg_images": {
-                "8,2": "/local/battery-bank.jpg",
                 "1,1": "/local/pv-tiles.jpg",
                 "1,4": "/local/pv-tiles.jpg",
                 "3,4": "/local/inverter.webp",
                 "1,7": "/local/power-grid.jpg",
-                "3,7": "/local/home-house.jpg"
+                "3,7": "/local/home-house.jpg",
+                "5,4": "/local/battery-bank.jpg",
+                "5,7": "/local/pool.jpg"
               },
               "pfg_image_zoom": 1,
               "pfg_values": {
@@ -668,13 +669,14 @@
               "pfg_lines": [],
               "pfg_spans": {
                 "10,7": 2,
-                "8,2": "2x3",
                 "1,1": "2x3",
                 "1,4": "2x3",
-                "3,4": 2,
-                "3,1": "1x3",
+                "3,4": "2x3",
+                "3,1": "2x3",
                 "1,7": "2x3",
-                "3,7": "2x3"
+                "3,7": "2x3",
+                "5,4": "2x3",
+                "5,7": "2x3"
               },
               "pfg_sums": {
                 "3,1": {
@@ -691,151 +693,6 @@
                 "3,1": "25px"
               },
               "pfg_charts": {
-                "8,2": {
-                  "type": "cycle",
-                  "interval": 3,
-                  "position": "cycle",
-                  "steps": [
-                    [
-                      {
-                        "type": "gauge",
-                        "entity": "sensor.totals_battery_power",
-                        "min": -10000,
-                        "max": 10000,
-                        "scale": 0.001,
-                        "needle": true,
-                        "segments": [
-                          {
-                            "from": -10000,
-                            "color": "#ff0000"
-                          },
-                          {
-                            "from": -1000,
-                            "color": "#ffff00"
-                          },
-                          {
-                            "from": 0,
-                            "color": "#00ff00"
-                          },
-                          {
-                            "from": 1000,
-                            "color": "#ffff00"
-                          },
-                          {
-                            "from": 8000,
-                            "color": "#ff0000"
-                          }
-                        ],
-                        "decimals": 2,
-                        "unit": "kW",
-                        "position": "center"
-                      },
-                      {
-                        "type": "history",
-                        "entity": "sensor.totals_battery_power",
-                        "hours": 24,
-                        "min": -10000,
-                        "max": 10000,
-                        "scale": 0.001,
-                        "decimals": 2,
-                        "unit": "kW",
-                        "position": "bottom"
-                      }
-                    ],
-                    [
-                      {
-                        "type": "gauge",
-                        "entity": "sensor.totals_battery_voltage",
-                        "min": 40,
-                        "max": 60,
-                        "scale": 1,
-                        "needle": true,
-                        "segments": [
-                          {
-                            "from": 40,
-                            "color": "#ff0000"
-                          },
-                          {
-                            "from": 46,
-                            "color": "#ffff00"
-                          },
-                          {
-                            "from": 49,
-                            "color": "#00ff00"
-                          },
-                          {
-                            "from": 56,
-                            "color": "#ffff00"
-                          },
-                          {
-                            "from": 58,
-                            "color": "#ff0000"
-                          }
-                        ],
-                        "decimals": 1,
-                        "unit": "V",
-                        "position": "center"
-                      },
-                      {
-                        "type": "history",
-                        "entity": "sensor.totals_battery_voltage",
-                        "hours": 24,
-                        "min": 40,
-                        "max": 60,
-                        "scale": 1,
-                        "decimals": 1,
-                        "unit": "V",
-                        "position": "bottom"
-                      }
-                    ],
-                    [
-                      {
-                        "type": "gauge",
-                        "entity": "sensor.totals_battery_state_of_charge",
-                        "min": 0,
-                        "max": 100,
-                        "scale": 1,
-                        "needle": true,
-                        "segments": [
-                          {
-                            "from": 0,
-                            "color": "#ff0000"
-                          },
-                          {
-                            "from": 20,
-                            "color": "#ffff00"
-                          },
-                          {
-                            "from": 50,
-                            "color": "#00ff00"
-                          },
-                          {
-                            "from": 80,
-                            "color": "#ffff00"
-                          },
-                          {
-                            "from": 95,
-                            "color": "#ff0000"
-                          }
-                        ],
-                        "decimals": 0,
-                        "unit": "%",
-                        "position": "center"
-                      },
-                      {
-                        "type": "history",
-                        "entity": "sensor.totals_battery_state_of_charge",
-                        "hours": 24,
-                        "min": 0,
-                        "max": 100,
-                        "scale": 1,
-                        "decimals": 0,
-                        "unit": "%",
-                        "position": "bottom"
-                      }
-                    ]
-                  ]
-                },
                 "1,1": [
                   {
                     "type": "gauge",
@@ -1303,6 +1160,206 @@
                       }
                     ]
                   ]
+                },
+                "5,4": {
+                  "type": "cycle",
+                  "interval": 3,
+                  "position": "cycle",
+                  "steps": [
+                    [
+                      {
+                        "type": "gauge",
+                        "entity": "sensor.totals_battery_power",
+                        "min": -10000,
+                        "max": 10000,
+                        "scale": 0.001,
+                        "needle": true,
+                        "segments": [
+                          {
+                            "from": -10000,
+                            "color": "#ff0000"
+                          },
+                          {
+                            "from": -1000,
+                            "color": "#ffff00"
+                          },
+                          {
+                            "from": 0,
+                            "color": "#00ff00"
+                          },
+                          {
+                            "from": 1000,
+                            "color": "#ffff00"
+                          },
+                          {
+                            "from": 8000,
+                            "color": "#ff0000"
+                          }
+                        ],
+                        "decimals": 2,
+                        "unit": "kW",
+                        "position": "center"
+                      },
+                      {
+                        "type": "history",
+                        "entity": "sensor.totals_battery_power",
+                        "hours": 24,
+                        "min": -10000,
+                        "max": 10000,
+                        "scale": 0.001,
+                        "decimals": 2,
+                        "unit": "kW",
+                        "position": "bottom"
+                      }
+                    ],
+                    [
+                      {
+                        "type": "gauge",
+                        "entity": "sensor.totals_battery_voltage",
+                        "min": 40,
+                        "max": 60,
+                        "scale": 1,
+                        "needle": true,
+                        "segments": [
+                          {
+                            "from": 40,
+                            "color": "#ff0000"
+                          },
+                          {
+                            "from": 46,
+                            "color": "#ffff00"
+                          },
+                          {
+                            "from": 49,
+                            "color": "#00ff00"
+                          },
+                          {
+                            "from": 56,
+                            "color": "#ffff00"
+                          },
+                          {
+                            "from": 58,
+                            "color": "#ff0000"
+                          }
+                        ],
+                        "decimals": 1,
+                        "unit": "V",
+                        "position": "center"
+                      },
+                      {
+                        "type": "history",
+                        "entity": "sensor.totals_battery_voltage",
+                        "hours": 24,
+                        "min": 40,
+                        "max": 60,
+                        "scale": 1,
+                        "decimals": 1,
+                        "unit": "V",
+                        "position": "bottom"
+                      }
+                    ],
+                    [
+                      {
+                        "type": "gauge",
+                        "entity": "sensor.totals_battery_state_of_charge",
+                        "min": 0,
+                        "max": 100,
+                        "scale": 1,
+                        "needle": true,
+                        "segments": [
+                          {
+                            "from": 0,
+                            "color": "#ff0000"
+                          },
+                          {
+                            "from": 20,
+                            "color": "#ffff00"
+                          },
+                          {
+                            "from": 50,
+                            "color": "#00ff00"
+                          },
+                          {
+                            "from": 80,
+                            "color": "#ffff00"
+                          },
+                          {
+                            "from": 95,
+                            "color": "#ff0000"
+                          }
+                        ],
+                        "decimals": 0,
+                        "unit": "%",
+                        "position": "center"
+                      },
+                      {
+                        "type": "history",
+                        "entity": "sensor.totals_battery_state_of_charge",
+                        "hours": 24,
+                        "min": 0,
+                        "max": 100,
+                        "scale": 1,
+                        "decimals": 0,
+                        "unit": "%",
+                        "position": "bottom"
+                      }
+                    ]
+                  ]
+                },
+                "3,1": [
+                  {
+                    "type": "gauge",
+                    "entities": [
+                      "sensor.inverters_1_pv_power_1",
+                      "sensor.inverters_1_pv_power_2"
+                    ],
+                    "min": 0,
+                    "max": 10000,
+                    "scale": 0.001,
+                    "needle": true,
+                    "decimals": 2,
+                    "unit": "kW",
+                    "position": "center"
+                  },
+                  {
+                    "type": "history",
+                    "entities": [
+                      "sensor.inverters_1_pv_power_1",
+                      "sensor.inverters_1_pv_power_2"
+                    ],
+                    "hours": 24,
+                    "min": 0,
+                    "max": 10000,
+                    "scale": 0.001,
+                    "decimals": 2,
+                    "unit": "kW",
+                    "position": "bottom"
+                  }
+                ],
+                "5,7": {
+                  "type": "gauge",
+                  "entity": "sensor.pool_energy_daily",
+                  "min": 0,
+                  "max": 20,
+                  "scale": 1,
+                  "needle": true,
+                  "segments": [
+                    {
+                      "from": 0,
+                      "color": "#00ff00"
+                    },
+                    {
+                      "from": 10,
+                      "color": "#ffff00"
+                    },
+                    {
+                      "from": 15,
+                      "color": "#ff0000"
+                    }
+                  ],
+                  "decimals": 2,
+                  "unit": "kWh",
+                  "position": "center"
                 }
               },
               "preset": "pfg",
@@ -1323,19 +1380,16 @@
                 "7,4": " ",
                 "8,3": " ",
                 "8,4": " ",
-                "4,2": " ",
-                "4,3": " ",
-                "4,4": " ",
-                "5,6": " ",
-                "5,7": " ",
-                "6,6": " ",
-                "6,7": " ",
                 "4,10": " ",
                 "4,11": " ",
                 "4,12": " ",
                 "5,10": " ",
                 "5,11": " ",
-                "5,12": " "
+                "5,12": " ",
+                "8,2": " ",
+                "9,2": " ",
+                "9,3": " ",
+                "9,4": " "
               },
               "pfg_border": {
                 "3,1": "4px solid #ffffff"
@@ -2168,12 +2222,62 @@
               "pfg_images": {
                 "1,1": "/local/sum.jpg"
               }
+            },
+            {
+              "type": "custom:sunsynk-power-flow-card",
+              "cardstyle": "pfg",
+              "preset": "pfg",
+              "title": "Kitchen",
+              "pfg_grid_size": 1,
+              "pfg_grid_width": "100%",
+              "pfg_border": {
+                "1,1": "2px solid #555"
+              },
+              "pfg_images": {
+                "1,1": "/local/kitchen.jpg"
+              },
+              "pfg_labels": {
+                "1,1": "Kitchen"
+              },
+              "pfg_label_pos": {
+                "1,1": "calc(55% - 14px)"
+              },
+              "pfg_charts": {
+                "1,1": [
+                  {
+                    "type": "gauge",
+                    "entity": "sensor.inverters_1_load_power",
+                    "min": 0,
+                    "max": 6000,
+                    "scale": 0.001,
+                    "needle": true,
+                    "decimals": 2,
+                    "unit": "kW",
+                    "position": "center"
+                  },
+                  {
+                    "type": "history",
+                    "entity": "sensor.inverters_1_load_power",
+                    "hours": 24,
+                    "min": 0,
+                    "max": 6000,
+                    "scale": 0.001,
+                    "decimals": 2,
+                    "unit": "kW",
+                    "position": "bottom"
+                  }
+                ]
+              },
+              "view_layout": {
+                "grid-area": "kitchen"
+              },
+              "card_width": "100%"
             }
           ],
           "layout": {
             "grid-template-columns": "repeat(4, 1fr)",
             "grid-template-rows": "auto auto",
-            "grid-template-areas": "\"pv grid battery inverter\" \"home pool sum .\""
+            "grid-template-areas": "\"pv grid battery inverter\" \"home pool sum kitchen\""
           }
         },
         {

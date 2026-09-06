@@ -197,7 +197,7 @@ tpl_design:
   note: |
     TPL is the sandbox view for new card designs — all new design cards go here.
     Layout is custom:grid-layout (layout-card) with 4 columns x 2 rows:
-      "pv grid battery inverter" / "home pool sum ."
+      "pv grid battery inverter" / "home pool sum kitchen"
     Each card is a single-tile PFG card: cardstyle pfg, preset pfg, pfg_grid_size 1,
     pfg_grid_width 100%, view_layout {grid-area: <name>}, card_width 100%.
   tiles:
@@ -216,6 +216,7 @@ tpl_design:
       pool: {image: /local/pool.jpg, charts: 'sensor.pool_energy_daily gauge (kWh, total_increasing)'}
       inverter: {image: '/local/inverter.webp + pfg_image_fit contain', charts: 'Power/Volts/Temp/Freq cycle'}
       sum: {image: /local/sum.jpg, charts: 'gauge + 24h history of entities[] sum: inverters_1_pv_power_1 + _2 (v86 multi-entity charts)'}
+      kitchen: {image: /local/kitchen.jpg, charts: 'gauge + 24h history — PLACEHOLDER entity sensor.inverters_1_load_power (house load); no kitchen sensor exists on michael-dev yet'}
   assets:
     note: 'tile images live in michael-dev:/home/tony/.config/michael-dev/www and are served as /local/* (jpg/webp). All TPL images are local copies — download new art with curl then scp to tony-dell.'
 
