@@ -6,617 +6,6 @@
     "config": {
       "views": [
         {
-          "title": "PF3",
-          "path": "pf3",
-          "type": "masonry",
-          "badges": [],
-          "cards": [
-            {
-              "type": "custom:sunsynk-power-flow-card",
-              "cardstyle": "lite",
-              "view_layout": {
-                "grid-area": "ss4"
-              },
-              "large_font": true,
-              "show_solar": true,
-              "card_height": "500px",
-              "inverter": {
-                "model": "solis",
-                "modern": false,
-                "colour": "#FFFFFF",
-                "autarky": "no"
-              },
-              "solar": {
-                "mppts": 2,
-                "show_daily": false,
-                "colour": "#FFD700",
-                "animation_speed": 9,
-                "max_power": 9600,
-                "pv1_name": "West",
-                "pv2_name": "North"
-              },
-              "battery": {
-                "energy": 14280,
-                "shutdown_soc": 20,
-                "show_daily": true,
-                "colour": "#00E676",
-                "animation_speed": 6,
-                "max_power": 10000,
-                "count": 4,
-                "invert_power": true,
-                "show_absolute": true
-              },
-              "load": {
-                "show_aux": false,
-                "show_daily": true,
-                "animation_speed": 8,
-                "max_power": 6000,
-                "additional_loads": 2,
-                "load2_name": "Geyser",
-                "load2_icon": "mdi:heating-coil",
-                "load1_name": "Pool",
-                "load1_icon": "mdi:pool",
-                "colour": "#FFFFFF"
-              },
-              "grid": {
-                "show_daily_buy": true,
-                "no_grid_colour": "#FF1744",
-                "animation_speed": 8,
-                "max_power": 6000,
-                "invert_grid": true
-              },
-              "entities": {
-                "dc_transformer_temp_90": "sensor.inverters_1_temperature",
-                "day_battery_charge_70": "sensor.solis_s6_eh3p10k_h_zp_today_battery_charge_energy",
-                "day_battery_discharge_71": "sensor.solis_s6_eh3p10k_h_zp_today_battery_discharge_energy",
-                "day_load_energy_84": "sensor.solis_s6_eh3p10k_h_zp_today_energy_consumption",
-                "day_grid_import_76": "none",
-                "day_grid_export_77": "none",
-                "day_pv_energy_108": "none",
-                "inverter_voltage_154": "sensor.inverters_1_ac_output_voltage",
-                "load_frequency_192": "sensor.inverters_1_grid_frequency",
-                "inverter_current_164": "sensor.inverters_1_load_current_essential_1",
-                "inverter_power_175": "sensor.inverters_1_load_power",
-                "grid_power_169": "sensor.inverters_1_grid_power",
-                "battery_voltage_183": "sensor.totals_battery_voltage",
-                "battery_soc_184": "sensor.totals_battery_state_of_charge",
-                "battery_power_190": "sensor.totals_battery_power",
-                "battery_current_191": "sensor.totals_battery_current",
-                "battery_current_direction": "sensor.inverters_1_battery_direction",
-                "essential_power": "sensor.inverters_1_load_power_essential",
-                "grid_ct_power_172": "sensor.inverters_1_grid_power_ld",
-                "pv1_voltage_109": "sensor.inverters_1_pv_voltage_1",
-                "pv1_current_110": "sensor.inverters_1_pv_current_1",
-                "pv1_power_186": "sensor.inverters_1_pv_power_1",
-                "pv2_voltage_111": "sensor.inverters_1_pv_voltage_2",
-                "pv2_current_112": "sensor.inverters_1_pv_current_2",
-                "pv2_power_187": "sensor.inverters_1_pv_power_2",
-                "pv_total": "sensor.inverters_1_pv_power",
-                "grid_voltage": "sensor.inverters_1_grid_voltage",
-                "inverter_status_59": "sensor.inverters_1_inverter_mode",
-                "remaining_solar": "none",
-                "battery1_voltage_183": "sensor.batteries_1_voltage",
-                "battery1_soc_184": "sensor.batteries_1_state_of_charge",
-                "battery1_power_190": "sensor.batteries_1_power",
-                "battery1_current_191": "sensor.batteries_1_current",
-                "battery2_voltage_183": "sensor.batteries_1_voltage",
-                "battery2_soc_184": "sensor.batteries_1_state_of_charge",
-                "battery2_power_190": "sensor.battery_1_calculated_power",
-                "battery2_current_191": "sensor.battery_1_calculated_current",
-                "battery3_voltage_183": "sensor.batteries_2_voltage",
-                "battery3_soc_184": "sensor.batteries_2_state_of_charge",
-                "battery3_power_190": "sensor.batteries_2_power",
-                "battery3_current_191": "sensor.batteries_2_current",
-                "battery4_voltage_183": "sensor.batteries_3_voltage",
-                "battery4_soc_184": "sensor.batteries_3_state_of_charge",
-                "battery4_power_190": "sensor.batteries_3_power",
-                "battery4_current_191": "sensor.batteries_3_current"
-              },
-              "card_mod": {
-                "style": "ha-card { --card-background-color: rgba(16,32,64,0.85) !important; background-color: rgba(16,32,64,0.85) !important; --primary-text-color: #ffffff !important; --secondary-text-color: #cccccc !important; color: #ffffff !important; }"
-              },
-              "wide": true,
-              "battery2": {
-                "energy": 14280,
-                "shutdown_soc": 20,
-                "show_daily": false,
-                "show_remaining_energy": false,
-                "colour": "#00E676",
-                "invert_power": true,
-                "show_absolute": true
-              },
-              "battery3": {
-                "energy": 14280,
-                "shutdown_soc": 20,
-                "show_daily": false,
-                "show_remaining_energy": true,
-                "colour": "#00E676",
-                "invert_power": true,
-                "show_absolute": true
-              },
-              "battery4": {
-                "energy": 14280,
-                "shutdown_soc": 20,
-                "show_daily": false,
-                "show_remaining_energy": true,
-                "colour": "#00E676",
-                "invert_power": true,
-                "show_absolute": true
-              }
-            }
-          ]
-        },
-        {
-          "title": "PF4",
-          "path": "pf4",
-          "type": "masonry",
-          "badges": [],
-          "cards": [
-            {
-              "type": "custom:sunsynk-power-flow-card",
-              "cardstyle": "lite",
-              "view_layout": {
-                "grid-area": "ss4"
-              },
-              "large_font": true,
-              "show_solar": true,
-              "card_height": "500px",
-              "inverter": {
-                "model": "solis",
-                "modern": false,
-                "colour": "#FFFFFF",
-                "autarky": "no"
-              },
-              "solar": {
-                "mppts": 2,
-                "show_daily": false,
-                "colour": "#FFD700",
-                "animation_speed": 9,
-                "max_power": 9600,
-                "pv1_name": "West",
-                "pv2_name": "North"
-              },
-              "battery": {
-                "energy": 14280,
-                "shutdown_soc": 20,
-                "show_daily": true,
-                "colour": "#00E676",
-                "animation_speed": 6,
-                "max_power": 10000,
-                "count": 4,
-                "invert_power": true,
-                "show_absolute": true
-              },
-              "load": {
-                "show_aux": false,
-                "show_daily": true,
-                "animation_speed": 8,
-                "max_power": 6000,
-                "additional_loads": 2,
-                "load2_name": "Geyser",
-                "load2_icon": "mdi:heating-coil",
-                "load1_name": "Pool",
-                "load1_icon": "mdi:pool",
-                "colour": "#FFFFFF"
-              },
-              "grid": {
-                "show_daily_buy": true,
-                "no_grid_colour": "#FF1744",
-                "animation_speed": 8,
-                "max_power": 6000,
-                "invert_grid": true
-              },
-              "entities": {
-                "dc_transformer_temp_90": "sensor.inverters_1_temperature",
-                "day_battery_charge_70": "sensor.solis_s6_eh3p10k_h_zp_today_battery_charge_energy",
-                "day_battery_discharge_71": "sensor.solis_s6_eh3p10k_h_zp_today_battery_discharge_energy",
-                "day_load_energy_84": "sensor.solis_s6_eh3p10k_h_zp_today_energy_consumption",
-                "day_grid_import_76": "none",
-                "day_grid_export_77": "none",
-                "day_pv_energy_108": "none",
-                "inverter_voltage_154": "sensor.inverters_1_ac_output_voltage",
-                "load_frequency_192": "sensor.inverters_1_grid_frequency",
-                "inverter_current_164": "sensor.inverters_1_load_current_essential_1",
-                "inverter_power_175": "sensor.inverters_1_load_power",
-                "grid_power_169": "sensor.inverters_1_grid_power",
-                "battery_voltage_183": "sensor.totals_battery_voltage",
-                "battery_soc_184": "sensor.totals_battery_state_of_charge",
-                "battery_power_190": "sensor.totals_battery_power",
-                "battery_current_191": "sensor.totals_battery_current",
-                "battery_current_direction": "sensor.inverters_1_battery_direction",
-                "essential_power": "sensor.inverters_1_load_power_essential",
-                "grid_ct_power_172": "sensor.inverters_1_grid_power_ld",
-                "pv1_voltage_109": "sensor.inverters_1_pv_voltage_1",
-                "pv1_current_110": "sensor.inverters_1_pv_current_1",
-                "pv1_power_186": "sensor.inverters_1_pv_power_1",
-                "pv2_voltage_111": "sensor.inverters_1_pv_voltage_2",
-                "pv2_current_112": "sensor.inverters_1_pv_current_2",
-                "pv2_power_187": "sensor.inverters_1_pv_power_2",
-                "pv_total": "sensor.inverters_1_pv_power",
-                "grid_voltage": "sensor.inverters_1_grid_voltage",
-                "inverter_status_59": "sensor.inverters_1_inverter_mode",
-                "remaining_solar": "none",
-                "battery1_voltage_183": "sensor.batteries_1_voltage",
-                "battery1_soc_184": "sensor.batteries_1_state_of_charge",
-                "battery1_power_190": "sensor.batteries_1_power",
-                "battery1_current_191": "sensor.batteries_1_current",
-                "battery2_voltage_183": "sensor.batteries_1_voltage",
-                "battery2_soc_184": "sensor.batteries_1_state_of_charge",
-                "battery2_power_190": "sensor.battery_1_calculated_power",
-                "battery2_current_191": "sensor.battery_1_calculated_current",
-                "battery3_voltage_183": "sensor.batteries_2_voltage",
-                "battery3_soc_184": "sensor.batteries_2_state_of_charge",
-                "battery3_power_190": "sensor.batteries_2_power",
-                "battery3_current_191": "sensor.batteries_2_current",
-                "battery4_voltage_183": "sensor.batteries_3_voltage",
-                "battery4_soc_184": "sensor.batteries_3_state_of_charge",
-                "battery4_power_190": "sensor.batteries_3_power",
-                "battery4_current_191": "sensor.batteries_3_current"
-              },
-              "card_mod": {
-                "style": "ha-card { --card-background-color: rgba(16,32,64,0.85) !important; background-color: rgba(16,32,64,0.85) !important; --primary-text-color: #ffffff !important; --secondary-text-color: #cccccc !important; color: #ffffff !important; }"
-              },
-              "wide": true,
-              "battery2": {
-                "energy": 14280,
-                "shutdown_soc": 20,
-                "show_daily": false,
-                "show_remaining_energy": false,
-                "colour": "#00E676",
-                "invert_power": true,
-                "show_absolute": true
-              },
-              "battery3": {
-                "energy": 14280,
-                "shutdown_soc": 20,
-                "show_daily": false,
-                "show_remaining_energy": true,
-                "colour": "#00E676",
-                "invert_power": true,
-                "show_absolute": true
-              },
-              "battery4": {
-                "energy": 14280,
-                "shutdown_soc": 20,
-                "show_daily": false,
-                "show_remaining_energy": true,
-                "colour": "#00E676",
-                "invert_power": true,
-                "show_absolute": true
-              }
-            }
-          ]
-        },
-        {
-          "title": "PFG1",
-          "path": "pfg1",
-          "type": "masonry",
-          "badges": [],
-          "cards": [
-            {
-              "type": "custom:sunsynk-power-flow-card",
-              "cardstyle": "pfg",
-              "view_layout": {
-                "grid-area": "pfg"
-              },
-              "large_font": true,
-              "show_solar": true,
-              "card_height": "520px",
-              "inverter": {
-                "model": "solis",
-                "modern": false,
-                "colour": "#FFFFFF",
-                "autarky": "no"
-              },
-              "solar": {
-                "mppts": 2,
-                "show_daily": false,
-                "colour": "#FFD700",
-                "animation_speed": 9,
-                "max_power": 9600,
-                "pv1_name": "West",
-                "pv2_name": "North"
-              },
-              "battery": {
-                "energy": 14280,
-                "shutdown_soc": 20,
-                "show_daily": true,
-                "colour": "#00E676",
-                "animation_speed": 6,
-                "max_power": 10000,
-                "count": 4,
-                "invert_power": true,
-                "show_absolute": true
-              },
-              "load": {
-                "show_aux": false,
-                "show_daily": true,
-                "animation_speed": 8,
-                "max_power": 6000,
-                "additional_loads": 2,
-                "load2_name": "Geyser",
-                "load2_icon": "mdi:heating-coil",
-                "load1_name": "Pool",
-                "load1_icon": "mdi:pool",
-                "colour": "#FFFFFF"
-              },
-              "grid": {
-                "show_daily_buy": true,
-                "no_grid_colour": "#FF1744",
-                "animation_speed": 8,
-                "max_power": 6000,
-                "invert_grid": true
-              },
-              "entities": {
-                "dc_transformer_temp_90": "sensor.inverters_1_temperature",
-                "day_battery_charge_70": "sensor.solis_s6_eh3p10k_h_zp_today_battery_charge_energy",
-                "day_battery_discharge_71": "sensor.solis_s6_eh3p10k_h_zp_today_battery_discharge_energy",
-                "day_load_energy_84": "sensor.solis_s6_eh3p10k_h_zp_today_energy_consumption",
-                "day_grid_import_76": "none",
-                "day_grid_export_77": "none",
-                "day_pv_energy_108": "none",
-                "inverter_voltage_154": "sensor.inverters_1_ac_output_voltage",
-                "load_frequency_192": "sensor.inverters_1_grid_frequency",
-                "inverter_current_164": "sensor.inverters_1_load_current_essential_1",
-                "inverter_power_175": "sensor.inverters_1_load_power",
-                "grid_power_169": "sensor.inverters_1_grid_power",
-                "battery_voltage_183": "sensor.totals_battery_voltage",
-                "battery_soc_184": "sensor.totals_battery_state_of_charge",
-                "battery_power_190": "sensor.totals_battery_power",
-                "battery_current_191": "sensor.totals_battery_current",
-                "battery_current_direction": "sensor.inverters_1_battery_direction",
-                "essential_power": "sensor.inverters_1_load_power_essential",
-                "grid_ct_power_172": "sensor.inverters_1_grid_power_ld",
-                "pv1_voltage_109": "sensor.inverters_1_pv_voltage_1",
-                "pv1_current_110": "sensor.inverters_1_pv_current_1",
-                "pv1_power_186": "sensor.inverters_1_pv_power_1",
-                "pv2_voltage_111": "sensor.inverters_1_pv_voltage_2",
-                "pv2_current_112": "sensor.inverters_1_pv_current_2",
-                "pv2_power_187": "sensor.inverters_1_pv_power_2",
-                "pv_total": "sensor.inverters_1_pv_power",
-                "grid_voltage": "sensor.inverters_1_grid_voltage",
-                "inverter_status_59": "sensor.inverters_1_inverter_mode",
-                "remaining_solar": "none",
-                "battery1_voltage_183": "sensor.batteries_1_voltage",
-                "battery1_soc_184": "sensor.batteries_1_state_of_charge",
-                "battery1_power_190": "sensor.batteries_1_power",
-                "battery1_current_191": "sensor.batteries_1_current",
-                "battery2_voltage_183": "sensor.batteries_1_voltage",
-                "battery2_soc_184": "sensor.batteries_1_state_of_charge",
-                "battery2_power_190": "sensor.battery_1_calculated_power",
-                "battery2_current_191": "sensor.battery_1_calculated_current",
-                "battery3_voltage_183": "sensor.batteries_2_voltage",
-                "battery3_soc_184": "sensor.batteries_2_state_of_charge",
-                "battery3_power_190": "sensor.batteries_2_power",
-                "battery3_current_191": "sensor.batteries_2_current",
-                "battery4_voltage_183": "sensor.batteries_3_voltage",
-                "battery4_soc_184": "sensor.batteries_3_state_of_charge",
-                "battery4_power_190": "sensor.batteries_3_power",
-                "battery4_current_191": "sensor.batteries_3_current"
-              },
-              "card_mod": {
-                "style": "ha-card { --card-background-color: rgba(16,32,64,0.85) !important; background-color: rgba(16,32,64,0.85) !important; --primary-text-color: #ffffff !important; --secondary-text-color: #cccccc !important; color: #ffffff !important; }"
-              },
-              "wide": true,
-              "battery2": {
-                "energy": 14280,
-                "shutdown_soc": 20,
-                "show_daily": false,
-                "show_remaining_energy": false,
-                "colour": "#00E676",
-                "invert_power": true,
-                "show_absolute": true
-              },
-              "battery3": {
-                "energy": 14280,
-                "shutdown_soc": 20,
-                "show_daily": false,
-                "show_remaining_energy": true,
-                "colour": "#00E676",
-                "invert_power": true,
-                "show_absolute": true
-              },
-              "battery4": {
-                "energy": 14280,
-                "shutdown_soc": 20,
-                "show_daily": false,
-                "show_remaining_energy": true,
-                "colour": "#00E676",
-                "invert_power": true,
-                "show_absolute": true
-              },
-              "title": "PFG",
-              "pfg_grid_size": 12,
-              "pfg_labels": {
-                "6,6": "HA",
-                "3,6": "Core",
-                "6,9": "Zigbee",
-                "9,6": "SolarAs",
-                "6,3": "Mosquitto",
-                "3,3": "FileEdit",
-                "3,9": "Tailscale",
-                "9,3": "Grafana",
-                "9,9": "Spotify",
-                "1,6": "Internet",
-                "6,1": "Z-Wave",
-                "6,12": "Matter",
-                "12,6": "HACS",
-                "3,12": "SSH",
-                "1,1": "rpi5-64",
-                "1,12": "aarch64",
-                "12,1": "HAOS 18.2",
-                "12,12": "BKK"
-              },
-              "pfg_status": {
-                "6,6": "online",
-                "3,6": "online",
-                "6,9": "online",
-                "9,6": "stopped",
-                "6,3": "online",
-                "3,3": "online",
-                "3,9": "online",
-                "9,3": "online",
-                "9,9": "online",
-                "1,6": "online",
-                "6,1": "stopped",
-                "6,12": "online",
-                "12,6": "stopped",
-                "3,12": "online",
-                "1,1": "online",
-                "1,12": "online",
-                "12,1": "online",
-                "12,12": "online"
-              },
-              "pfg_entities": {
-                "6,6": "sensor.inverters_1_inverter_mode",
-                "1,6": "binary_sensor.internet_connectivity"
-              }
-            }
-          ]
-        },
-        {
-          "title": "PFG",
-          "path": "pfg",
-          "type": "masonry",
-          "badges": [],
-          "cards": [
-            {
-              "type": "custom:sunsynk-power-flow-card",
-              "cardstyle": "pfg",
-              "view_layout": {
-                "grid-area": "pfg"
-              },
-              "large_font": true,
-              "show_solar": true,
-              "card_height": "520px",
-              "inverter": {
-                "model": "solis",
-                "modern": false,
-                "colour": "#FFFFFF",
-                "autarky": "no"
-              },
-              "solar": {
-                "mppts": 2,
-                "show_daily": false,
-                "colour": "#FFD700",
-                "animation_speed": 9,
-                "max_power": 9600,
-                "pv1_name": "West",
-                "pv2_name": "North"
-              },
-              "battery": {
-                "energy": 14280,
-                "shutdown_soc": 20,
-                "show_daily": true,
-                "colour": "#00E676",
-                "animation_speed": 6,
-                "max_power": 10000,
-                "count": 4,
-                "invert_power": true,
-                "show_absolute": true
-              },
-              "load": {
-                "show_aux": false,
-                "show_daily": true,
-                "animation_speed": 8,
-                "max_power": 6000,
-                "additional_loads": 2,
-                "load2_name": "Geyser",
-                "load2_icon": "mdi:heating-coil",
-                "load1_name": "Pool",
-                "load1_icon": "mdi:pool",
-                "colour": "#FFFFFF"
-              },
-              "grid": {
-                "show_daily_buy": true,
-                "no_grid_colour": "#FF1744",
-                "animation_speed": 8,
-                "max_power": 6000,
-                "invert_grid": true
-              },
-              "entities": {
-                "dc_transformer_temp_90": "sensor.inverters_1_temperature",
-                "day_battery_charge_70": "sensor.solis_s6_eh3p10k_h_zp_today_battery_charge_energy",
-                "day_battery_discharge_71": "sensor.solis_s6_eh3p10k_h_zp_today_battery_discharge_energy",
-                "day_load_energy_84": "sensor.solis_s6_eh3p10k_h_zp_today_energy_consumption",
-                "day_grid_import_76": "none",
-                "day_grid_export_77": "none",
-                "day_pv_energy_108": "none",
-                "inverter_voltage_154": "sensor.inverters_1_ac_output_voltage",
-                "load_frequency_192": "sensor.inverters_1_grid_frequency",
-                "inverter_current_164": "sensor.inverters_1_load_current_essential_1",
-                "inverter_power_175": "sensor.inverters_1_load_power",
-                "grid_power_169": "sensor.inverters_1_grid_power",
-                "battery_voltage_183": "sensor.totals_battery_voltage",
-                "battery_soc_184": "sensor.totals_battery_state_of_charge",
-                "battery_power_190": "sensor.totals_battery_power",
-                "battery_current_191": "sensor.totals_battery_current",
-                "battery_current_direction": "sensor.inverters_1_battery_direction",
-                "essential_power": "sensor.inverters_1_load_power_essential",
-                "grid_ct_power_172": "sensor.inverters_1_grid_power_ld",
-                "pv1_voltage_109": "sensor.inverters_1_pv_voltage_1",
-                "pv1_current_110": "sensor.inverters_1_pv_current_1",
-                "pv1_power_186": "sensor.inverters_1_pv_power_1",
-                "pv2_voltage_111": "sensor.inverters_1_pv_voltage_2",
-                "pv2_current_112": "sensor.inverters_1_pv_current_2",
-                "pv2_power_187": "sensor.inverters_1_pv_power_2",
-                "pv_total": "sensor.inverters_1_pv_power",
-                "grid_voltage": "sensor.inverters_1_grid_voltage",
-                "inverter_status_59": "sensor.inverters_1_inverter_mode",
-                "remaining_solar": "none",
-                "battery1_voltage_183": "sensor.batteries_1_voltage",
-                "battery1_soc_184": "sensor.batteries_1_state_of_charge",
-                "battery1_power_190": "sensor.batteries_1_power",
-                "battery1_current_191": "sensor.batteries_1_current",
-                "battery2_voltage_183": "sensor.batteries_1_voltage",
-                "battery2_soc_184": "sensor.batteries_1_state_of_charge",
-                "battery2_power_190": "sensor.battery_1_calculated_power",
-                "battery2_current_191": "sensor.battery_1_calculated_current",
-                "battery3_voltage_183": "sensor.batteries_2_voltage",
-                "battery3_soc_184": "sensor.batteries_2_state_of_charge",
-                "battery3_power_190": "sensor.batteries_2_power",
-                "battery3_current_191": "sensor.batteries_2_current",
-                "battery4_voltage_183": "sensor.batteries_3_voltage",
-                "battery4_soc_184": "sensor.batteries_3_state_of_charge",
-                "battery4_power_190": "sensor.batteries_3_power",
-                "battery4_current_191": "sensor.batteries_3_current"
-              },
-              "card_mod": {
-                "style": "ha-card { --card-background-color: rgba(16,32,64,0.85) !important; background-color: rgba(16,32,64,0.85) !important; --primary-text-color: #ffffff !important; --secondary-text-color: #cccccc !important; color: #ffffff !important; }"
-              },
-              "wide": true,
-              "battery2": {
-                "energy": 14280,
-                "shutdown_soc": 20,
-                "show_daily": false,
-                "show_remaining_energy": false,
-                "colour": "#00E676",
-                "invert_power": true,
-                "show_absolute": true
-              },
-              "battery3": {
-                "energy": 14280,
-                "shutdown_soc": 20,
-                "show_daily": false,
-                "show_remaining_energy": true,
-                "colour": "#00E676",
-                "invert_power": true,
-                "show_absolute": true
-              },
-              "battery4": {
-                "energy": 14280,
-                "shutdown_soc": 20,
-                "show_daily": false,
-                "show_remaining_energy": true,
-                "colour": "#00E676",
-                "invert_power": true,
-                "show_absolute": true
-              },
-              "title": "PFG"
-            }
-          ]
-        },
-        {
           "title": "PFG2",
           "path": "pfg2",
           "type": "panel",
@@ -641,34 +30,16 @@
                 "1,7": "/local/power-grid.jpg",
                 "3,7": "/local/home-house.jpg",
                 "5,4": "/local/battery-bank.jpg",
-                "5,7": "/local/pool.jpg"
+                "3,1": "/local/sum.jpg",
+                "5,7": "/local/kitchen.jpg",
+                "5,10": "/local/pool.jpg"
               },
               "pfg_image_zoom": 1,
               "pfg_values": {
-                "12,3": {
-                  "entity": "sensor.totals_battery_state_of_charge",
-                  "decimals": 0,
-                  "unit": "%",
-                  "label": "SOC"
-                },
-                "12,4": {
-                  "entity": "sensor.totals_battery_power",
-                  "scale": 0.001,
-                  "decimals": 2,
-                  "unit": "kW"
-                },
-                "12,7": {
-                  "entity": "sensor.inverters_1_load_power_essential",
-                  "scale": 0.001,
-                  "decimals": 2,
-                  "unit": "kW",
-                  "label": "Load"
-                },
                 "4,1": "sensor.inverters_1_grid_power"
               },
               "pfg_lines": [],
               "pfg_spans": {
-                "10,7": 2,
                 "1,1": "2x3",
                 "1,4": "2x3",
                 "3,4": "2x3",
@@ -676,7 +47,8 @@
                 "1,7": "2x3",
                 "3,7": "2x3",
                 "5,4": "2x3",
-                "5,7": "2x3"
+                "5,7": "2x3",
+                "5,10": "2x3"
               },
               "pfg_sums": {
                 "3,1": {
@@ -1336,7 +708,7 @@
                     "position": "bottom"
                   }
                 ],
-                "5,7": {
+                "5,10": {
                   "type": "gauge",
                   "entity": "sensor.pool_energy_daily",
                   "min": 0,
@@ -1363,19 +735,12 @@
                 }
               },
               "preset": "pfg",
-              "pfg_icons": {
-                "10,7": "mdi:home-lightning-bolt"
-              },
+              "pfg_icons": {},
               "pfg_grid_size": 12,
               "card_width": "100%",
               "pfg_grid_width": "100%",
               "pfg_inverter_at": "3,4",
               "pfg_labels": {
-                "7,7": " ",
-                "10,3": " ",
-                "10,4": " ",
-                "11,3": " ",
-                "11,4": " ",
                 "7,3": " ",
                 "7,4": " ",
                 "8,3": " ",
@@ -1383,17 +748,687 @@
                 "4,10": " ",
                 "4,11": " ",
                 "4,12": " ",
-                "5,10": " ",
+                "5,10": "Pool",
                 "5,11": " ",
                 "5,12": " ",
                 "8,2": " ",
+                "9,1": " ",
                 "9,2": " ",
                 "9,3": " ",
-                "9,4": " "
+                "9,4": " ",
+                "9,5": " ",
+                "9,6": " ",
+                "9,7": " ",
+                "9,8": " ",
+                "9,9": " ",
+                "9,10": " ",
+                "9,11": " ",
+                "9,12": " ",
+                "10,1": " ",
+                "10,2": " ",
+                "10,3": " ",
+                "10,4": " ",
+                "10,5": " ",
+                "10,6": " ",
+                "10,7": " ",
+                "10,8": " ",
+                "10,9": " ",
+                "10,10": " ",
+                "10,11": " ",
+                "10,12": " ",
+                "11,1": " ",
+                "11,2": " ",
+                "11,3": " ",
+                "11,4": " ",
+                "11,5": " ",
+                "11,6": " ",
+                "11,7": " ",
+                "11,8": " ",
+                "11,9": " ",
+                "11,10": " ",
+                "11,11": " ",
+                "11,12": " ",
+                "12,1": " ",
+                "12,2": " ",
+                "12,3": " ",
+                "12,4": " ",
+                "12,5": " ",
+                "12,6": " ",
+                "12,7": " ",
+                "12,8": " ",
+                "12,9": " ",
+                "12,10": " ",
+                "12,11": " ",
+                "12,12": " ",
+                "3,10": " ",
+                "3,11": " ",
+                "3,12": " ",
+                "1,1": "PV1",
+                "1,4": "PV2",
+                "1,7": "Grid power",
+                "3,1": "PV Total",
+                "3,4": "Inverter",
+                "3,7": "Home Total",
+                "5,4": "Batt Total"
               },
               "pfg_border": {
                 "3,1": "4px solid #ffffff"
+              },
+              "pfg_hide_grid": true,
+              "pfg_image_fit": {
+                "3,4": "contain"
               }
+            }
+          ]
+        },
+        {
+          "title": "PF3",
+          "path": "pf3",
+          "type": "masonry",
+          "badges": [],
+          "cards": [
+            {
+              "type": "custom:sunsynk-power-flow-card",
+              "cardstyle": "lite",
+              "view_layout": {
+                "grid-area": "ss4"
+              },
+              "large_font": true,
+              "show_solar": true,
+              "card_height": "500px",
+              "inverter": {
+                "model": "solis",
+                "modern": false,
+                "colour": "#FFFFFF",
+                "autarky": "no"
+              },
+              "solar": {
+                "mppts": 2,
+                "show_daily": false,
+                "colour": "#FFD700",
+                "animation_speed": 9,
+                "max_power": 9600,
+                "pv1_name": "West",
+                "pv2_name": "North"
+              },
+              "battery": {
+                "energy": 14280,
+                "shutdown_soc": 20,
+                "show_daily": true,
+                "colour": "#00E676",
+                "animation_speed": 6,
+                "max_power": 10000,
+                "count": 4,
+                "invert_power": true,
+                "show_absolute": true
+              },
+              "load": {
+                "show_aux": false,
+                "show_daily": true,
+                "animation_speed": 8,
+                "max_power": 6000,
+                "additional_loads": 2,
+                "load2_name": "Geyser",
+                "load2_icon": "mdi:heating-coil",
+                "load1_name": "Pool",
+                "load1_icon": "mdi:pool",
+                "colour": "#FFFFFF"
+              },
+              "grid": {
+                "show_daily_buy": true,
+                "no_grid_colour": "#FF1744",
+                "animation_speed": 8,
+                "max_power": 6000,
+                "invert_grid": true
+              },
+              "entities": {
+                "dc_transformer_temp_90": "sensor.inverters_1_temperature",
+                "day_battery_charge_70": "sensor.solis_s6_eh3p10k_h_zp_today_battery_charge_energy",
+                "day_battery_discharge_71": "sensor.solis_s6_eh3p10k_h_zp_today_battery_discharge_energy",
+                "day_load_energy_84": "sensor.solis_s6_eh3p10k_h_zp_today_energy_consumption",
+                "day_grid_import_76": "none",
+                "day_grid_export_77": "none",
+                "day_pv_energy_108": "none",
+                "inverter_voltage_154": "sensor.inverters_1_ac_output_voltage",
+                "load_frequency_192": "sensor.inverters_1_grid_frequency",
+                "inverter_current_164": "sensor.inverters_1_load_current_essential_1",
+                "inverter_power_175": "sensor.inverters_1_load_power",
+                "grid_power_169": "sensor.inverters_1_grid_power",
+                "battery_voltage_183": "sensor.totals_battery_voltage",
+                "battery_soc_184": "sensor.totals_battery_state_of_charge",
+                "battery_power_190": "sensor.totals_battery_power",
+                "battery_current_191": "sensor.totals_battery_current",
+                "battery_current_direction": "sensor.inverters_1_battery_direction",
+                "essential_power": "sensor.inverters_1_load_power_essential",
+                "grid_ct_power_172": "sensor.inverters_1_grid_power_ld",
+                "pv1_voltage_109": "sensor.inverters_1_pv_voltage_1",
+                "pv1_current_110": "sensor.inverters_1_pv_current_1",
+                "pv1_power_186": "sensor.inverters_1_pv_power_1",
+                "pv2_voltage_111": "sensor.inverters_1_pv_voltage_2",
+                "pv2_current_112": "sensor.inverters_1_pv_current_2",
+                "pv2_power_187": "sensor.inverters_1_pv_power_2",
+                "pv_total": "sensor.inverters_1_pv_power",
+                "grid_voltage": "sensor.inverters_1_grid_voltage",
+                "inverter_status_59": "sensor.inverters_1_inverter_mode",
+                "remaining_solar": "none",
+                "battery1_voltage_183": "sensor.batteries_1_voltage",
+                "battery1_soc_184": "sensor.batteries_1_state_of_charge",
+                "battery1_power_190": "sensor.batteries_1_power",
+                "battery1_current_191": "sensor.batteries_1_current",
+                "battery2_voltage_183": "sensor.batteries_1_voltage",
+                "battery2_soc_184": "sensor.batteries_1_state_of_charge",
+                "battery2_power_190": "sensor.battery_1_calculated_power",
+                "battery2_current_191": "sensor.battery_1_calculated_current",
+                "battery3_voltage_183": "sensor.batteries_2_voltage",
+                "battery3_soc_184": "sensor.batteries_2_state_of_charge",
+                "battery3_power_190": "sensor.batteries_2_power",
+                "battery3_current_191": "sensor.batteries_2_current",
+                "battery4_voltage_183": "sensor.batteries_3_voltage",
+                "battery4_soc_184": "sensor.batteries_3_state_of_charge",
+                "battery4_power_190": "sensor.batteries_3_power",
+                "battery4_current_191": "sensor.batteries_3_current"
+              },
+              "card_mod": {
+                "style": "ha-card { --card-background-color: rgba(16,32,64,0.85) !important; background-color: rgba(16,32,64,0.85) !important; --primary-text-color: #ffffff !important; --secondary-text-color: #cccccc !important; color: #ffffff !important; }"
+              },
+              "wide": true,
+              "battery2": {
+                "energy": 14280,
+                "shutdown_soc": 20,
+                "show_daily": false,
+                "show_remaining_energy": false,
+                "colour": "#00E676",
+                "invert_power": true,
+                "show_absolute": true
+              },
+              "battery3": {
+                "energy": 14280,
+                "shutdown_soc": 20,
+                "show_daily": false,
+                "show_remaining_energy": true,
+                "colour": "#00E676",
+                "invert_power": true,
+                "show_absolute": true
+              },
+              "battery4": {
+                "energy": 14280,
+                "shutdown_soc": 20,
+                "show_daily": false,
+                "show_remaining_energy": true,
+                "colour": "#00E676",
+                "invert_power": true,
+                "show_absolute": true
+              }
+            }
+          ]
+        },
+        {
+          "title": "PF4",
+          "path": "pf4",
+          "type": "masonry",
+          "badges": [],
+          "cards": [
+            {
+              "type": "custom:sunsynk-power-flow-card",
+              "cardstyle": "lite",
+              "view_layout": {
+                "grid-area": "ss4"
+              },
+              "large_font": true,
+              "show_solar": true,
+              "card_height": "500px",
+              "inverter": {
+                "model": "solis",
+                "modern": false,
+                "colour": "#FFFFFF",
+                "autarky": "no"
+              },
+              "solar": {
+                "mppts": 2,
+                "show_daily": false,
+                "colour": "#FFD700",
+                "animation_speed": 9,
+                "max_power": 9600,
+                "pv1_name": "West",
+                "pv2_name": "North"
+              },
+              "battery": {
+                "energy": 14280,
+                "shutdown_soc": 20,
+                "show_daily": true,
+                "colour": "#00E676",
+                "animation_speed": 6,
+                "max_power": 10000,
+                "count": 4,
+                "invert_power": true,
+                "show_absolute": true
+              },
+              "load": {
+                "show_aux": false,
+                "show_daily": true,
+                "animation_speed": 8,
+                "max_power": 6000,
+                "additional_loads": 2,
+                "load2_name": "Geyser",
+                "load2_icon": "mdi:heating-coil",
+                "load1_name": "Pool",
+                "load1_icon": "mdi:pool",
+                "colour": "#FFFFFF"
+              },
+              "grid": {
+                "show_daily_buy": true,
+                "no_grid_colour": "#FF1744",
+                "animation_speed": 8,
+                "max_power": 6000,
+                "invert_grid": true
+              },
+              "entities": {
+                "dc_transformer_temp_90": "sensor.inverters_1_temperature",
+                "day_battery_charge_70": "sensor.solis_s6_eh3p10k_h_zp_today_battery_charge_energy",
+                "day_battery_discharge_71": "sensor.solis_s6_eh3p10k_h_zp_today_battery_discharge_energy",
+                "day_load_energy_84": "sensor.solis_s6_eh3p10k_h_zp_today_energy_consumption",
+                "day_grid_import_76": "none",
+                "day_grid_export_77": "none",
+                "day_pv_energy_108": "none",
+                "inverter_voltage_154": "sensor.inverters_1_ac_output_voltage",
+                "load_frequency_192": "sensor.inverters_1_grid_frequency",
+                "inverter_current_164": "sensor.inverters_1_load_current_essential_1",
+                "inverter_power_175": "sensor.inverters_1_load_power",
+                "grid_power_169": "sensor.inverters_1_grid_power",
+                "battery_voltage_183": "sensor.totals_battery_voltage",
+                "battery_soc_184": "sensor.totals_battery_state_of_charge",
+                "battery_power_190": "sensor.totals_battery_power",
+                "battery_current_191": "sensor.totals_battery_current",
+                "battery_current_direction": "sensor.inverters_1_battery_direction",
+                "essential_power": "sensor.inverters_1_load_power_essential",
+                "grid_ct_power_172": "sensor.inverters_1_grid_power_ld",
+                "pv1_voltage_109": "sensor.inverters_1_pv_voltage_1",
+                "pv1_current_110": "sensor.inverters_1_pv_current_1",
+                "pv1_power_186": "sensor.inverters_1_pv_power_1",
+                "pv2_voltage_111": "sensor.inverters_1_pv_voltage_2",
+                "pv2_current_112": "sensor.inverters_1_pv_current_2",
+                "pv2_power_187": "sensor.inverters_1_pv_power_2",
+                "pv_total": "sensor.inverters_1_pv_power",
+                "grid_voltage": "sensor.inverters_1_grid_voltage",
+                "inverter_status_59": "sensor.inverters_1_inverter_mode",
+                "remaining_solar": "none",
+                "battery1_voltage_183": "sensor.batteries_1_voltage",
+                "battery1_soc_184": "sensor.batteries_1_state_of_charge",
+                "battery1_power_190": "sensor.batteries_1_power",
+                "battery1_current_191": "sensor.batteries_1_current",
+                "battery2_voltage_183": "sensor.batteries_1_voltage",
+                "battery2_soc_184": "sensor.batteries_1_state_of_charge",
+                "battery2_power_190": "sensor.battery_1_calculated_power",
+                "battery2_current_191": "sensor.battery_1_calculated_current",
+                "battery3_voltage_183": "sensor.batteries_2_voltage",
+                "battery3_soc_184": "sensor.batteries_2_state_of_charge",
+                "battery3_power_190": "sensor.batteries_2_power",
+                "battery3_current_191": "sensor.batteries_2_current",
+                "battery4_voltage_183": "sensor.batteries_3_voltage",
+                "battery4_soc_184": "sensor.batteries_3_state_of_charge",
+                "battery4_power_190": "sensor.batteries_3_power",
+                "battery4_current_191": "sensor.batteries_3_current"
+              },
+              "card_mod": {
+                "style": "ha-card { --card-background-color: rgba(16,32,64,0.85) !important; background-color: rgba(16,32,64,0.85) !important; --primary-text-color: #ffffff !important; --secondary-text-color: #cccccc !important; color: #ffffff !important; }"
+              },
+              "wide": true,
+              "battery2": {
+                "energy": 14280,
+                "shutdown_soc": 20,
+                "show_daily": false,
+                "show_remaining_energy": false,
+                "colour": "#00E676",
+                "invert_power": true,
+                "show_absolute": true
+              },
+              "battery3": {
+                "energy": 14280,
+                "shutdown_soc": 20,
+                "show_daily": false,
+                "show_remaining_energy": true,
+                "colour": "#00E676",
+                "invert_power": true,
+                "show_absolute": true
+              },
+              "battery4": {
+                "energy": 14280,
+                "shutdown_soc": 20,
+                "show_daily": false,
+                "show_remaining_energy": true,
+                "colour": "#00E676",
+                "invert_power": true,
+                "show_absolute": true
+              }
+            }
+          ]
+        },
+        {
+          "title": "PFG1",
+          "path": "pfg1",
+          "type": "masonry",
+          "badges": [],
+          "cards": [
+            {
+              "type": "custom:sunsynk-power-flow-card",
+              "cardstyle": "pfg",
+              "view_layout": {
+                "grid-area": "pfg"
+              },
+              "large_font": true,
+              "show_solar": true,
+              "card_height": "520px",
+              "inverter": {
+                "model": "solis",
+                "modern": false,
+                "colour": "#FFFFFF",
+                "autarky": "no"
+              },
+              "solar": {
+                "mppts": 2,
+                "show_daily": false,
+                "colour": "#FFD700",
+                "animation_speed": 9,
+                "max_power": 9600,
+                "pv1_name": "West",
+                "pv2_name": "North"
+              },
+              "battery": {
+                "energy": 14280,
+                "shutdown_soc": 20,
+                "show_daily": true,
+                "colour": "#00E676",
+                "animation_speed": 6,
+                "max_power": 10000,
+                "count": 4,
+                "invert_power": true,
+                "show_absolute": true
+              },
+              "load": {
+                "show_aux": false,
+                "show_daily": true,
+                "animation_speed": 8,
+                "max_power": 6000,
+                "additional_loads": 2,
+                "load2_name": "Geyser",
+                "load2_icon": "mdi:heating-coil",
+                "load1_name": "Pool",
+                "load1_icon": "mdi:pool",
+                "colour": "#FFFFFF"
+              },
+              "grid": {
+                "show_daily_buy": true,
+                "no_grid_colour": "#FF1744",
+                "animation_speed": 8,
+                "max_power": 6000,
+                "invert_grid": true
+              },
+              "entities": {
+                "dc_transformer_temp_90": "sensor.inverters_1_temperature",
+                "day_battery_charge_70": "sensor.solis_s6_eh3p10k_h_zp_today_battery_charge_energy",
+                "day_battery_discharge_71": "sensor.solis_s6_eh3p10k_h_zp_today_battery_discharge_energy",
+                "day_load_energy_84": "sensor.solis_s6_eh3p10k_h_zp_today_energy_consumption",
+                "day_grid_import_76": "none",
+                "day_grid_export_77": "none",
+                "day_pv_energy_108": "none",
+                "inverter_voltage_154": "sensor.inverters_1_ac_output_voltage",
+                "load_frequency_192": "sensor.inverters_1_grid_frequency",
+                "inverter_current_164": "sensor.inverters_1_load_current_essential_1",
+                "inverter_power_175": "sensor.inverters_1_load_power",
+                "grid_power_169": "sensor.inverters_1_grid_power",
+                "battery_voltage_183": "sensor.totals_battery_voltage",
+                "battery_soc_184": "sensor.totals_battery_state_of_charge",
+                "battery_power_190": "sensor.totals_battery_power",
+                "battery_current_191": "sensor.totals_battery_current",
+                "battery_current_direction": "sensor.inverters_1_battery_direction",
+                "essential_power": "sensor.inverters_1_load_power_essential",
+                "grid_ct_power_172": "sensor.inverters_1_grid_power_ld",
+                "pv1_voltage_109": "sensor.inverters_1_pv_voltage_1",
+                "pv1_current_110": "sensor.inverters_1_pv_current_1",
+                "pv1_power_186": "sensor.inverters_1_pv_power_1",
+                "pv2_voltage_111": "sensor.inverters_1_pv_voltage_2",
+                "pv2_current_112": "sensor.inverters_1_pv_current_2",
+                "pv2_power_187": "sensor.inverters_1_pv_power_2",
+                "pv_total": "sensor.inverters_1_pv_power",
+                "grid_voltage": "sensor.inverters_1_grid_voltage",
+                "inverter_status_59": "sensor.inverters_1_inverter_mode",
+                "remaining_solar": "none",
+                "battery1_voltage_183": "sensor.batteries_1_voltage",
+                "battery1_soc_184": "sensor.batteries_1_state_of_charge",
+                "battery1_power_190": "sensor.batteries_1_power",
+                "battery1_current_191": "sensor.batteries_1_current",
+                "battery2_voltage_183": "sensor.batteries_1_voltage",
+                "battery2_soc_184": "sensor.batteries_1_state_of_charge",
+                "battery2_power_190": "sensor.battery_1_calculated_power",
+                "battery2_current_191": "sensor.battery_1_calculated_current",
+                "battery3_voltage_183": "sensor.batteries_2_voltage",
+                "battery3_soc_184": "sensor.batteries_2_state_of_charge",
+                "battery3_power_190": "sensor.batteries_2_power",
+                "battery3_current_191": "sensor.batteries_2_current",
+                "battery4_voltage_183": "sensor.batteries_3_voltage",
+                "battery4_soc_184": "sensor.batteries_3_state_of_charge",
+                "battery4_power_190": "sensor.batteries_3_power",
+                "battery4_current_191": "sensor.batteries_3_current"
+              },
+              "card_mod": {
+                "style": "ha-card { --card-background-color: rgba(16,32,64,0.85) !important; background-color: rgba(16,32,64,0.85) !important; --primary-text-color: #ffffff !important; --secondary-text-color: #cccccc !important; color: #ffffff !important; }"
+              },
+              "wide": true,
+              "battery2": {
+                "energy": 14280,
+                "shutdown_soc": 20,
+                "show_daily": false,
+                "show_remaining_energy": false,
+                "colour": "#00E676",
+                "invert_power": true,
+                "show_absolute": true
+              },
+              "battery3": {
+                "energy": 14280,
+                "shutdown_soc": 20,
+                "show_daily": false,
+                "show_remaining_energy": true,
+                "colour": "#00E676",
+                "invert_power": true,
+                "show_absolute": true
+              },
+              "battery4": {
+                "energy": 14280,
+                "shutdown_soc": 20,
+                "show_daily": false,
+                "show_remaining_energy": true,
+                "colour": "#00E676",
+                "invert_power": true,
+                "show_absolute": true
+              },
+              "title": "PFG",
+              "pfg_grid_size": 12,
+              "pfg_labels": {
+                "6,6": "HA",
+                "3,6": "Core",
+                "6,9": "Zigbee",
+                "9,6": "SolarAs",
+                "6,3": "Mosquitto",
+                "3,3": "FileEdit",
+                "3,9": "Tailscale",
+                "9,3": "Grafana",
+                "9,9": "Spotify",
+                "1,6": "Internet",
+                "6,1": "Z-Wave",
+                "6,12": "Matter",
+                "12,6": "HACS",
+                "3,12": "SSH",
+                "1,1": "rpi5-64",
+                "1,12": "aarch64",
+                "12,1": "HAOS 18.2",
+                "12,12": "BKK"
+              },
+              "pfg_status": {
+                "6,6": "online",
+                "3,6": "online",
+                "6,9": "online",
+                "9,6": "stopped",
+                "6,3": "online",
+                "3,3": "online",
+                "3,9": "online",
+                "9,3": "online",
+                "9,9": "online",
+                "1,6": "online",
+                "6,1": "stopped",
+                "6,12": "online",
+                "12,6": "stopped",
+                "3,12": "online",
+                "1,1": "online",
+                "1,12": "online",
+                "12,1": "online",
+                "12,12": "online"
+              },
+              "pfg_entities": {
+                "6,6": "sensor.inverters_1_inverter_mode",
+                "1,6": "binary_sensor.internet_connectivity"
+              }
+            }
+          ]
+        },
+        {
+          "title": "PFG",
+          "path": "pfg",
+          "type": "masonry",
+          "badges": [],
+          "cards": [
+            {
+              "type": "custom:sunsynk-power-flow-card",
+              "cardstyle": "pfg",
+              "view_layout": {
+                "grid-area": "pfg"
+              },
+              "large_font": true,
+              "show_solar": true,
+              "card_height": "520px",
+              "inverter": {
+                "model": "solis",
+                "modern": false,
+                "colour": "#FFFFFF",
+                "autarky": "no"
+              },
+              "solar": {
+                "mppts": 2,
+                "show_daily": false,
+                "colour": "#FFD700",
+                "animation_speed": 9,
+                "max_power": 9600,
+                "pv1_name": "West",
+                "pv2_name": "North"
+              },
+              "battery": {
+                "energy": 14280,
+                "shutdown_soc": 20,
+                "show_daily": true,
+                "colour": "#00E676",
+                "animation_speed": 6,
+                "max_power": 10000,
+                "count": 4,
+                "invert_power": true,
+                "show_absolute": true
+              },
+              "load": {
+                "show_aux": false,
+                "show_daily": true,
+                "animation_speed": 8,
+                "max_power": 6000,
+                "additional_loads": 2,
+                "load2_name": "Geyser",
+                "load2_icon": "mdi:heating-coil",
+                "load1_name": "Pool",
+                "load1_icon": "mdi:pool",
+                "colour": "#FFFFFF"
+              },
+              "grid": {
+                "show_daily_buy": true,
+                "no_grid_colour": "#FF1744",
+                "animation_speed": 8,
+                "max_power": 6000,
+                "invert_grid": true
+              },
+              "entities": {
+                "dc_transformer_temp_90": "sensor.inverters_1_temperature",
+                "day_battery_charge_70": "sensor.solis_s6_eh3p10k_h_zp_today_battery_charge_energy",
+                "day_battery_discharge_71": "sensor.solis_s6_eh3p10k_h_zp_today_battery_discharge_energy",
+                "day_load_energy_84": "sensor.solis_s6_eh3p10k_h_zp_today_energy_consumption",
+                "day_grid_import_76": "none",
+                "day_grid_export_77": "none",
+                "day_pv_energy_108": "none",
+                "inverter_voltage_154": "sensor.inverters_1_ac_output_voltage",
+                "load_frequency_192": "sensor.inverters_1_grid_frequency",
+                "inverter_current_164": "sensor.inverters_1_load_current_essential_1",
+                "inverter_power_175": "sensor.inverters_1_load_power",
+                "grid_power_169": "sensor.inverters_1_grid_power",
+                "battery_voltage_183": "sensor.totals_battery_voltage",
+                "battery_soc_184": "sensor.totals_battery_state_of_charge",
+                "battery_power_190": "sensor.totals_battery_power",
+                "battery_current_191": "sensor.totals_battery_current",
+                "battery_current_direction": "sensor.inverters_1_battery_direction",
+                "essential_power": "sensor.inverters_1_load_power_essential",
+                "grid_ct_power_172": "sensor.inverters_1_grid_power_ld",
+                "pv1_voltage_109": "sensor.inverters_1_pv_voltage_1",
+                "pv1_current_110": "sensor.inverters_1_pv_current_1",
+                "pv1_power_186": "sensor.inverters_1_pv_power_1",
+                "pv2_voltage_111": "sensor.inverters_1_pv_voltage_2",
+                "pv2_current_112": "sensor.inverters_1_pv_current_2",
+                "pv2_power_187": "sensor.inverters_1_pv_power_2",
+                "pv_total": "sensor.inverters_1_pv_power",
+                "grid_voltage": "sensor.inverters_1_grid_voltage",
+                "inverter_status_59": "sensor.inverters_1_inverter_mode",
+                "remaining_solar": "none",
+                "battery1_voltage_183": "sensor.batteries_1_voltage",
+                "battery1_soc_184": "sensor.batteries_1_state_of_charge",
+                "battery1_power_190": "sensor.batteries_1_power",
+                "battery1_current_191": "sensor.batteries_1_current",
+                "battery2_voltage_183": "sensor.batteries_1_voltage",
+                "battery2_soc_184": "sensor.batteries_1_state_of_charge",
+                "battery2_power_190": "sensor.battery_1_calculated_power",
+                "battery2_current_191": "sensor.battery_1_calculated_current",
+                "battery3_voltage_183": "sensor.batteries_2_voltage",
+                "battery3_soc_184": "sensor.batteries_2_state_of_charge",
+                "battery3_power_190": "sensor.batteries_2_power",
+                "battery3_current_191": "sensor.batteries_2_current",
+                "battery4_voltage_183": "sensor.batteries_3_voltage",
+                "battery4_soc_184": "sensor.batteries_3_state_of_charge",
+                "battery4_power_190": "sensor.batteries_3_power",
+                "battery4_current_191": "sensor.batteries_3_current"
+              },
+              "card_mod": {
+                "style": "ha-card { --card-background-color: rgba(16,32,64,0.85) !important; background-color: rgba(16,32,64,0.85) !important; --primary-text-color: #ffffff !important; --secondary-text-color: #cccccc !important; color: #ffffff !important; }"
+              },
+              "wide": true,
+              "battery2": {
+                "energy": 14280,
+                "shutdown_soc": 20,
+                "show_daily": false,
+                "show_remaining_energy": false,
+                "colour": "#00E676",
+                "invert_power": true,
+                "show_absolute": true
+              },
+              "battery3": {
+                "energy": 14280,
+                "shutdown_soc": 20,
+                "show_daily": false,
+                "show_remaining_energy": true,
+                "colour": "#00E676",
+                "invert_power": true,
+                "show_absolute": true
+              },
+              "battery4": {
+                "energy": 14280,
+                "shutdown_soc": 20,
+                "show_daily": false,
+                "show_remaining_energy": true,
+                "colour": "#00E676",
+                "invert_power": true,
+                "show_absolute": true
+              },
+              "title": "PFG"
             }
           ]
         },
@@ -2272,12 +2307,201 @@
                 "grid-area": "kitchen"
               },
               "card_width": "100%"
+            },
+            {
+              "type": "custom:sunsynk-power-flow-card",
+              "cardstyle": "pfg",
+              "preset": "pfg",
+              "title": "Living",
+              "pfg_grid_size": 1,
+              "pfg_grid_width": "100%",
+              "pfg_border": {
+                "1,1": "2px solid #555"
+              },
+              "pfg_images": {
+                "1,1": "/local/living.jpg"
+              },
+              "pfg_labels": {
+                "1,1": "Living"
+              },
+              "pfg_label_pos": {
+                "1,1": "calc(55% - 14px)"
+              },
+              "view_layout": {
+                "grid-area": "living"
+              },
+              "card_width": "100%",
+              "pfg_charts": {
+                "1,1": [
+                  {
+                    "type": "cycle",
+                    "interval": 4,
+                    "position": "cycle",
+                    "steps": [
+                      [
+                        {
+                          "type": "gauge",
+                          "entity": "sensor.tze200_mja3fuja_ts0601_temperature",
+                          "min": 0,
+                          "max": 45,
+                          "needle": true,
+                          "decimals": 1,
+                          "unit": "°C",
+                          "position": "center"
+                        }
+                      ],
+                      [
+                        {
+                          "type": "gauge",
+                          "entity": "sensor.tze200_mja3fuja_ts0601_humidity",
+                          "min": 0,
+                          "max": 100,
+                          "needle": true,
+                          "decimals": 0,
+                          "unit": "%",
+                          "position": "center"
+                        }
+                      ],
+                      [
+                        {
+                          "type": "gauge",
+                          "entity": "sensor.tze200_mja3fuja_ts0601_carbon_dioxide",
+                          "min": 0,
+                          "max": 2000,
+                          "needle": true,
+                          "decimals": 0,
+                          "unit": "ppm",
+                          "position": "center"
+                        }
+                      ],
+                      [
+                        {
+                          "type": "gauge",
+                          "entity": "sensor.tze200_mja3fuja_ts0601_volatile_organic_compounds",
+                          "min": 0,
+                          "max": 10,
+                          "needle": true,
+                          "decimals": 2,
+                          "unit": "VOC",
+                          "position": "center"
+                        }
+                      ],
+                      [
+                        {
+                          "type": "gauge",
+                          "entity": "sensor.tze200_mja3fuja_ts0601_formaldehyde_concentration",
+                          "min": 0,
+                          "max": 0.5,
+                          "needle": true,
+                          "decimals": 2,
+                          "unit": "HCHO",
+                          "position": "center"
+                        }
+                      ]
+                    ]
+                  }
+                ]
+              }
+            },
+            {
+              "type": "custom:sunsynk-power-flow-card",
+              "cardstyle": "pfg",
+              "preset": "pfg",
+              "title": "Laundry",
+              "pfg_grid_size": 1,
+              "pfg_grid_width": "100%",
+              "pfg_border": {
+                "1,1": "2px solid #555"
+              },
+              "pfg_images": {
+                "1,1": "/local/laundry.jpg"
+              },
+              "pfg_labels": {
+                "1,1": "Laundry"
+              },
+              "pfg_label_pos": {
+                "1,1": "calc(55% - 14px)"
+              },
+              "view_layout": {
+                "grid-area": "laundry"
+              },
+              "card_width": "100%",
+              "pfg_charts": {
+                "1,1": [
+                  {
+                    "type": "gauge",
+                    "entity": "sensor.laundry_room_washing_machine_power",
+                    "min": 0,
+                    "max": 2500,
+                    "needle": true,
+                    "decimals": 0,
+                    "unit": "W",
+                    "position": "center"
+                  },
+                  {
+                    "type": "history",
+                    "entity": "sensor.laundry_room_washing_machine_power",
+                    "hours": 24,
+                    "min": 0,
+                    "max": 2500,
+                    "position": "bottom"
+                  }
+                ]
+              }
+            },
+            {
+              "type": "custom:sunsynk-power-flow-card",
+              "cardstyle": "pfg",
+              "preset": "pfg",
+              "title": "Bedroom",
+              "pfg_grid_size": 1,
+              "pfg_grid_width": "100%",
+              "pfg_border": {
+                "1,1": "2px solid #555"
+              },
+              "pfg_images": {
+                "1,1": "/local/bedroom.jpg"
+              },
+              "pfg_labels": {
+                "1,1": "Bedroom"
+              },
+              "pfg_label_pos": {
+                "1,1": "calc(55% - 14px)"
+              },
+              "view_layout": {
+                "grid-area": "bedroom"
+              },
+              "card_width": "100%"
+            },
+            {
+              "type": "custom:sunsynk-power-flow-card",
+              "cardstyle": "pfg",
+              "preset": "pfg",
+              "title": "Terrace",
+              "pfg_grid_size": 1,
+              "pfg_grid_width": "100%",
+              "pfg_border": {
+                "1,1": "2px solid #555"
+              },
+              "pfg_images": {
+                "1,1": "/local/terrace.jpg"
+              },
+              "pfg_labels": {
+                "1,1": "Terrace"
+              },
+              "pfg_label_pos": {
+                "1,1": "calc(55% - 14px)"
+              },
+              "view_layout": {
+                "grid-area": "terrace"
+              },
+              "card_width": "100%"
             }
           ],
           "layout": {
             "grid-template-columns": "repeat(4, 1fr)",
-            "grid-template-rows": "auto auto",
-            "grid-template-areas": "\"pv grid battery inverter\" \"home pool sum kitchen\""
+            "grid-template-rows": "auto auto auto",
+            "grid-template-areas": "\"pv grid battery inverter\" \"home pool sum kitchen\" \"living laundry bedroom terrace\""
           }
         },
         {

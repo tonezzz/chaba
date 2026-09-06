@@ -197,7 +197,7 @@ tpl_design:
   note: |
     TPL is the sandbox view for new card designs — all new design cards go here.
     Layout is custom:grid-layout (layout-card) with 4 columns x 2 rows:
-      "pv grid battery inverter" / "home pool sum kitchen"
+      "pv grid battery inverter" / "home pool sum kitchen" / "living laundry bedroom terrace"
     Each card is a single-tile PFG card: cardstyle pfg, preset pfg, pfg_grid_size 1,
     pfg_grid_width 100%, view_layout {grid-area: <name>}, card_width 100%.
   tiles:
@@ -217,6 +217,10 @@ tpl_design:
       inverter: {image: '/local/inverter.webp + pfg_image_fit contain', charts: 'Power/Volts/Temp/Freq cycle'}
       sum: {image: /local/sum.jpg, charts: 'gauge + 24h history of entities[] sum: inverters_1_pv_power_1 + _2 (v86 multi-entity charts)'}
       kitchen: {image: /local/kitchen.jpg, charts: 'gauge + 24h history — PLACEHOLDER entity sensor.inverters_1_load_power (house load); no kitchen sensor exists on michael-dev yet'}
+      living: {image: /local/living.jpg, charts: 'cycle: temp/humidity/CO2/VOC/HCHO via sensor.tze200_mja3fuja_ts0601_* — michael-ha entities; absent on michael-dev until mirrored'}
+      laundry: {image: /local/laundry.jpg, charts: 'gauge + 24h history of sensor.laundry_room_washing_machine_power — michael-ha entity; absent on michael-dev until mirrored'}
+      bedroom: {image: /local/bedroom.jpg, charts: 'none — no bedroom entities on either instance'}
+      terrace: {image: /local/terrace.jpg, charts: 'none — terrace has only media players on michael-ha'}
   assets:
     note: 'tile images live in michael-dev:/home/tony/.config/michael-dev/www and are served as /local/* (jpg/webp). All TPL images are local copies — download new art with curl then scp to tony-dell.'
 
