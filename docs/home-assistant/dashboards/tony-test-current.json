@@ -2679,12 +2679,144 @@
                   }
                 ]
               }
+            },
+            {
+              "type": "custom:sunsynk-power-flow-card",
+              "cardstyle": "pfg",
+              "preset": "pfg",
+              "title": "PV1",
+              "pfg_grid_size": 1,
+              "pfg_grid_width": "100%",
+              "pfg_border": {
+                "1,1": "2px solid #555"
+              },
+              "pfg_images": {
+                "1,1": "/local/pv-tiles.jpg"
+              },
+              "pfg_labels": {
+                "1,1": "PV1"
+              },
+              "pfg_label_pos": {
+                "1,1": "12%"
+              },
+              "pfg_value_labels": {
+                "1,1": "Power"
+              },
+              "view_layout": {
+                "grid-area": "pvh"
+              },
+              "card_width": "100%",
+              "pfg_charts": {
+                "1,1": [
+                  {
+                    "type": "bar",
+                    "entity": "sensor.inverters_1_pv_power_1",
+                    "min": 0,
+                    "max": 5000,
+                    "scale": 0.001,
+                    "decimals": 2,
+                    "unit": "kW",
+                    "segments": [
+                      {
+                        "from": 0,
+                        "color": "#ff0000"
+                      },
+                      {
+                        "from": 2500,
+                        "color": "#ffff00"
+                      },
+                      {
+                        "from": 4000,
+                        "color": "#00ff00"
+                      }
+                    ],
+                    "orientation": "horizontal",
+                    "position": "center"
+                  },
+                  {
+                    "type": "history",
+                    "entity": "sensor.inverters_1_pv_power_1",
+                    "hours": 24,
+                    "min": 0,
+                    "max": 5000,
+                    "scale": 0.001,
+                    "decimals": 2,
+                    "position": "bottom"
+                  }
+                ]
+              }
+            },
+            {
+              "type": "custom:sunsynk-power-flow-card",
+              "cardstyle": "pfg",
+              "preset": "pfg",
+              "title": "PV2",
+              "pfg_grid_size": 1,
+              "pfg_grid_width": "100%",
+              "pfg_border": {
+                "1,1": "2px solid #555"
+              },
+              "pfg_images": {
+                "1,1": "/local/pv-tiles.jpg"
+              },
+              "pfg_labels": {
+                "1,1": "PV2"
+              },
+              "pfg_label_pos": {
+                "1,1": "12%"
+              },
+              "pfg_value_labels": {
+                "1,1": "Power"
+              },
+              "view_layout": {
+                "grid-area": "pvv"
+              },
+              "card_width": "100%",
+              "pfg_charts": {
+                "1,1": [
+                  {
+                    "type": "bar",
+                    "entity": "sensor.inverters_1_pv_power_2",
+                    "min": 0,
+                    "max": 5000,
+                    "scale": 0.001,
+                    "decimals": 2,
+                    "unit": "kW",
+                    "segments": [
+                      {
+                        "from": 0,
+                        "color": "#ff0000"
+                      },
+                      {
+                        "from": 2500,
+                        "color": "#ffff00"
+                      },
+                      {
+                        "from": 4000,
+                        "color": "#00ff00"
+                      }
+                    ],
+                    "orientation": "vertical",
+                    "position": "center"
+                  },
+                  {
+                    "type": "history",
+                    "entity": "sensor.inverters_1_pv_power_2",
+                    "hours": 24,
+                    "min": 0,
+                    "max": 5000,
+                    "scale": 0.001,
+                    "decimals": 2,
+                    "position": "bottom"
+                  }
+                ]
+              }
             }
           ],
           "layout": {
             "grid-template-columns": "repeat(4, 1fr)",
-            "grid-template-rows": "repeat(5, auto)",
-            "grid-template-areas": "\"pv grid battery inverter\" \"pool sum kitchen .\" \"home bedroom terrace .\" \"living . . .\" \"laundry temp freq daily\""
+            "grid-template-rows": "repeat(6, auto)",
+            "grid-template-areas": "\"pv grid battery inverter\" \"pool sum kitchen .\" \"home bedroom terrace .\" \"living . . .\" \"laundry . . .\" \"pvh pvv . .\""
           }
         },
         {
