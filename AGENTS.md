@@ -57,6 +57,19 @@ Valid modes: `normal`, `plan`, `build`, `review`.
 - Verify visually: use a logged-in Chrome profile or browser dev tools on the card shadow root.
 - Guard against bundle drift: `sync-ssot-from-live.sh` picks the newest `www/` bundle by version. Remove obsolete `sunsynk-power-flow-card-fork-v*.js` bundles or cross-check `lovelace_resources` before committing.
 
+## Parallel-session rules (added 2026-09-06)
+
+Parallel sessions caused real breakage: duplicated `pfg2-card.ts`, undeclared `valueLabel` render crash, version races. Follow these rules:
+
+1. **Worktree per session** for card-repo code changes — never edit `/home/tony/CascadeProjects/sunsynk-power-flow-card` directly when another session may be active:
+   ```bash
+   git -C /home/tony/CascadeProjects/sunsynk-power-flow-card worktree add \
+       /home/tony/CascadeProjects/sunsynk-wt-<feature> -b <feature>
+   ```
+   Merge to `main` only after `npm run build` passes in the worktree. Deploy from `main` only.
+2. **Deploy lock** — `deploy-card.sh` uses `flock /tmp/pfg-deploy.lock`; concurrent deploys are refused. Do not bypass it.
+3. **Dashboard pushes** — whoever runs `push-dashboard.py` must run `sync-ssot-from-live.sh` immediately after, then commit. The live dashboard is a shared resource; unsynced mutations are the main source of drift between sessions.
+
 ## Current state (2026-09-05)
 
 - Active card bundle: `v71` (`sunsynk-power-flow-card-fork-v71.js`), source commit `95ddb0c`.

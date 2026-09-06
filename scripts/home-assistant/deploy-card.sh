@@ -4,6 +4,12 @@
 # so parallel sessions cannot collide on "next version".
 set -euo pipefail
 
+# Deploy lock: only one session may build/deploy at a time (parallel sessions
+# collided on versions and pushed half-written code — see AGENTS.md worktree rules).
+LOCK=/tmp/pfg-deploy.lock
+exec 9>"$LOCK"
+flock -n 9 || { echo "ERROR: another deploy is in progress ($LOCK)"; exit 1; }
+
 CARD_REPO="${CARD_REPO:-/home/tony/CascadeProjects/sunsynk-power-flow-card}"
 HOST="${HOST:-tony-dell}"
 WWW="/home/tony/.config/michael-dev/www"
