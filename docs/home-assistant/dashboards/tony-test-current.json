@@ -640,7 +640,8 @@
                 "3,4": "/local/inverter.webp",
                 "1,7": "/local/power-grid.jpg",
                 "3,7": "/local/home-house.jpg",
-                "5,4": "/local/battery-bank.jpg"
+                "5,4": "/local/battery-bank.jpg",
+                "5,7": "/local/pool.jpg"
               },
               "pfg_image_zoom": 1,
               "pfg_values": {
@@ -674,7 +675,8 @@
                 "3,1": "2x3",
                 "1,7": "2x3",
                 "3,7": "2x3",
-                "5,4": "2x3"
+                "5,4": "2x3",
+                "5,7": "2x3"
               },
               "pfg_sums": {
                 "3,1": {
@@ -1303,6 +1305,61 @@
                       }
                     ]
                   ]
+                },
+                "3,1": [
+                  {
+                    "type": "gauge",
+                    "entities": [
+                      "sensor.inverters_1_pv_power_1",
+                      "sensor.inverters_1_pv_power_2"
+                    ],
+                    "min": 0,
+                    "max": 10000,
+                    "scale": 0.001,
+                    "needle": true,
+                    "decimals": 2,
+                    "unit": "kW",
+                    "position": "center"
+                  },
+                  {
+                    "type": "history",
+                    "entities": [
+                      "sensor.inverters_1_pv_power_1",
+                      "sensor.inverters_1_pv_power_2"
+                    ],
+                    "hours": 24,
+                    "min": 0,
+                    "max": 10000,
+                    "scale": 0.001,
+                    "decimals": 2,
+                    "unit": "kW",
+                    "position": "bottom"
+                  }
+                ],
+                "5,7": {
+                  "type": "gauge",
+                  "entity": "sensor.pool_energy_daily",
+                  "min": 0,
+                  "max": 20,
+                  "scale": 1,
+                  "needle": true,
+                  "segments": [
+                    {
+                      "from": 0,
+                      "color": "#00ff00"
+                    },
+                    {
+                      "from": 10,
+                      "color": "#ffff00"
+                    },
+                    {
+                      "from": 15,
+                      "color": "#ff0000"
+                    }
+                  ],
+                  "decimals": 2,
+                  "unit": "kWh",
+                  "position": "center"
                 }
               },
               "preset": "pfg",
