@@ -16,7 +16,16 @@ tailscale:
   derp_relay: sin
   direct_connection: false
   ha_url: http://michael-ha:8123/
-  note: Reachable via the Tailscale app on Home Assistant OS. Canonical Tailscale IP is in ssot.values.yml::hosts.michael_ha.tailscale_ip.
+  addon: a0d7b954_tailscale
+  watchdog: true
+  note: >-
+    Reachable via the Tailscale app on Home Assistant OS. Canonical Tailscale
+    IP is in ssot.values.yml::hosts.michael_ha.tailscale_ip. 2026-09-06
+    incident: tailscaled was OOM-killed by a global host OOM (grafana also
+    killed twice the same morning on this ~4GB box); the add-on watchdog was
+    off so it stayed down ~21h until restarted via supervisor/api over Nabu
+    Casa websocket. Watchdog now enabled. If tailnet is down but Nabu Casa
+    works, restart the add-on via WS supervisor/api or the HA UI add-ons page.
 
 services:
   michael-ha:

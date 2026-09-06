@@ -25,16 +25,16 @@ repositories:
         target_host: ssot.values.yml::hosts.michael_ha
         target_path: /config/www/sunsynk-power-flow-card-fork-v79.js
         lovelace_resources: /config/.storage/lovelace_resources
-        resource_path: https://cdn.jsdelivr.net/gh/tonezzz/sunsynk-power-flow-card@bd29c44/dist/sunsynk-power-flow-card.js
+        resource_path: /local/sunsynk-power-flow-card-fork-v79.js
         restart: ha core restart
         test_url: https://nupo4ndqdqydt78zmpq0z5wzp1bdrqgs.ui.nabu.casa/tony-test/pf3
         note: >-
-          2026-09-06: michael-ha Tailscale was offline (SSH unreachable), so the
-          bundle is served from the public GitHub repo via cdn.jsdelivr.net
-          (CORS-enabled, application/javascript) and lovelace_resources was
-          updated over the websocket API. Tile images for pfg2 are also served
-          from img/ in the same repo commit. When SSH is restored, copy the
-          bundle to /config/www/ and repoint resource_path to /local/.
+          2026-09-06: michael-ha Tailscale was offline (OOM-killed tailscaled,
+          watchdog was disabled), so the bundle was briefly served from
+          cdn.jsdelivr.net (@bd29c44). After the add-on restart, bundle v79 and
+          the 4 pfg tile images were copied to /config/www and the resource was
+          repointed to /local/. Tailscale watchdog is now enabled. Fallback:
+          cdn.jsdelivr.net/gh/tonezzz/sunsynk-power-flow-card@<commit>/dist/...
     source_files:
       primary_modifications:
         - src/components/compact/bat/bat-elements.ts
@@ -112,7 +112,7 @@ cards:
       - id: michael-ha tony-test/pfg2
         tab: PFG2 (after SK)
         test_url: https://nupo4ndqdqydt78zmpq0z5wzp1bdrqgs.ui.nabu.casa/tony-test/pfg2
-        note: Deployed 2026-09-06 with pfg_hide_grid=true (grid lines, tile labels, and connectors hidden); tile images served from jsdelivr img/.
+        note: Deployed 2026-09-06 with pfg_hide_grid=true (grid lines, tile labels, and connectors hidden); tile images in /config/www served via /local/.
     instance: ssot.home-assistant.michael.dev.yml::environments.dev
   - id: michael-live
     name: Michael Live (ha-live bridge front-end)
@@ -122,4 +122,4 @@ cards:
 status:
   last_build: '2026-09-05'
   last_verified: '2026-09-06'
-  health: active; v79 deployed; bundle deployed to michael-dev (PF3/PF4/PFG/PFG1/PFG2/TPL) and michael-ha (PF3/PFG2 via jsdelivr @bd29c44); pfg/pfg2 support images, icons, labels, values, sums, spans, radius, zoom, speed-scaled anchored flow lines, and pfg_hide_grid (see ssot.home-assistant.design.yml); .storage resource changes require HA core restart; on michael-ha the lovelace resource URL was updated over websocket and is served from cdn.jsdelivr.net until SSH/Tailscale is restored
+  health: active; v79 deployed; bundle deployed to michael-dev (PF3/PF4/PFG/PFG1/PFG2/TPL) and michael-ha (PF3/PFG2, /local/ v79); pfg/pfg2 support images, icons, labels, values, sums, spans, radius, zoom, speed-scaled anchored flow lines, and pfg_hide_grid (see ssot.home-assistant.design.yml); .storage resource changes require HA core restart; michael-ha lovelace resource URL can also be updated over websocket (supervisor/api + lovelace/resources) when SSH is down
