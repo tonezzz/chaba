@@ -638,9 +638,9 @@
                 "8,2": "/local/battery-bank.jpg",
                 "1,1": "/local/pv-tiles.jpg",
                 "1,4": "/local/pv-tiles.jpg",
-                "1,8": "/local/power-grid.jpg",
-                "4,10": "/local/home-house.jpg",
-                "3,4": "/local/inverter.webp"
+                "3,4": "/local/inverter.webp",
+                "1,7": "/local/power-grid.jpg",
+                "3,7": "/local/home-house.jpg"
               },
               "pfg_image_zoom": 1,
               "pfg_values": {
@@ -671,10 +671,10 @@
                 "8,2": "2x3",
                 "1,1": "2x3",
                 "1,4": "2x3",
-                "1,8": "2x3",
-                "4,10": "2x3",
                 "3,4": 2,
-                "3,1": "1x3"
+                "3,1": "1x3",
+                "1,7": "2x3",
+                "3,7": "2x3"
               },
               "pfg_sums": {
                 "3,1": {
@@ -910,7 +910,65 @@
                     "position": "bottom"
                   }
                 ],
-                "1,8": {
+                "3,4": [
+                  {
+                    "type": "cycle",
+                    "interval": 4,
+                    "position": "cycle",
+                    "steps": [
+                      [
+                        {
+                          "type": "gauge",
+                          "entity": "sensor.inverters_1_load_power",
+                          "min": 0,
+                          "max": 6000,
+                          "scale": 0.001,
+                          "needle": true,
+                          "decimals": 2,
+                          "unit": "kW",
+                          "position": "center"
+                        }
+                      ],
+                      [
+                        {
+                          "type": "gauge",
+                          "entity": "sensor.inverters_1_ac_output_voltage",
+                          "min": 0,
+                          "max": 300,
+                          "needle": true,
+                          "decimals": 0,
+                          "unit": "V",
+                          "position": "center"
+                        }
+                      ],
+                      [
+                        {
+                          "type": "gauge",
+                          "entity": "sensor.inverters_1_temperature",
+                          "min": 0,
+                          "max": 80,
+                          "needle": true,
+                          "decimals": 1,
+                          "unit": "°C",
+                          "position": "center"
+                        }
+                      ],
+                      [
+                        {
+                          "type": "gauge",
+                          "entity": "sensor.inverters_1_grid_frequency",
+                          "min": 49,
+                          "max": 51,
+                          "needle": true,
+                          "decimals": 2,
+                          "unit": "Hz",
+                          "position": "center"
+                        }
+                      ]
+                    ]
+                  }
+                ],
+                "1,7": {
                   "type": "cycle",
                   "interval": 3,
                   "position": "cycle",
@@ -1009,7 +1067,7 @@
                     ]
                   ]
                 },
-                "4,10": {
+                "3,7": {
                   "type": "cycle",
                   "interval": 3,
                   "position": "cycle",
@@ -1245,65 +1303,7 @@
                       }
                     ]
                   ]
-                },
-                "3,4": [
-                  {
-                    "type": "cycle",
-                    "interval": 4,
-                    "position": "cycle",
-                    "steps": [
-                      [
-                        {
-                          "type": "gauge",
-                          "entity": "sensor.inverters_1_load_power",
-                          "min": 0,
-                          "max": 6000,
-                          "scale": 0.001,
-                          "needle": true,
-                          "decimals": 2,
-                          "unit": "kW",
-                          "position": "center"
-                        }
-                      ],
-                      [
-                        {
-                          "type": "gauge",
-                          "entity": "sensor.inverters_1_ac_output_voltage",
-                          "min": 0,
-                          "max": 300,
-                          "needle": true,
-                          "decimals": 0,
-                          "unit": "V",
-                          "position": "center"
-                        }
-                      ],
-                      [
-                        {
-                          "type": "gauge",
-                          "entity": "sensor.inverters_1_temperature",
-                          "min": 0,
-                          "max": 80,
-                          "needle": true,
-                          "decimals": 1,
-                          "unit": "°C",
-                          "position": "center"
-                        }
-                      ],
-                      [
-                        {
-                          "type": "gauge",
-                          "entity": "sensor.inverters_1_grid_frequency",
-                          "min": 49,
-                          "max": 51,
-                          "needle": true,
-                          "decimals": 2,
-                          "unit": "Hz",
-                          "position": "center"
-                        }
-                      ]
-                    ]
-                  }
-                ]
+                }
               },
               "preset": "pfg",
               "pfg_icons": {
@@ -1329,7 +1329,13 @@
                 "5,6": " ",
                 "5,7": " ",
                 "6,6": " ",
-                "6,7": " "
+                "6,7": " ",
+                "4,10": " ",
+                "4,11": " ",
+                "4,12": " ",
+                "5,10": " ",
+                "5,11": " ",
+                "5,12": " "
               },
               "pfg_border": {
                 "3,1": "4px solid #ffffff"
