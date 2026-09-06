@@ -487,8 +487,104 @@
                   "unit": "kWh",
                   "position": "center"
                 },
-                "7,4": null,
-                "7,7": null,
+                "7,4": [
+                  {
+                    "type": "cycle",
+                    "interval": 4,
+                    "position": "cycle",
+                    "steps": [
+                      [
+                        {
+                          "type": "gauge",
+                          "entity": "sensor.tze200_mja3fuja_ts0601_temperature",
+                          "min": 0,
+                          "max": 45,
+                          "needle": true,
+                          "decimals": 1,
+                          "unit": "°C",
+                          "position": "center",
+                          "label": "Temp"
+                        }
+                      ],
+                      [
+                        {
+                          "type": "gauge",
+                          "entity": "sensor.tze200_mja3fuja_ts0601_humidity",
+                          "min": 0,
+                          "max": 100,
+                          "needle": true,
+                          "decimals": 0,
+                          "unit": "%",
+                          "position": "center",
+                          "label": "Humidity"
+                        }
+                      ],
+                      [
+                        {
+                          "type": "gauge",
+                          "entity": "sensor.tze200_mja3fuja_ts0601_carbon_dioxide",
+                          "min": 0,
+                          "max": 2000,
+                          "needle": true,
+                          "decimals": 0,
+                          "unit": "ppm",
+                          "position": "center",
+                          "label": "CO2"
+                        }
+                      ],
+                      [
+                        {
+                          "type": "gauge",
+                          "entity": "sensor.tze200_mja3fuja_ts0601_volatile_organic_compounds",
+                          "min": 0,
+                          "max": 10,
+                          "needle": true,
+                          "decimals": 2,
+                          "unit": "VOC",
+                          "position": "center",
+                          "label": "VOC"
+                        }
+                      ],
+                      [
+                        {
+                          "type": "gauge",
+                          "entity": "sensor.tze200_mja3fuja_ts0601_formaldehyde_concentration",
+                          "min": 0,
+                          "max": 0.5,
+                          "needle": true,
+                          "decimals": 2,
+                          "unit": "HCHO",
+                          "position": "center",
+                          "label": "HCHO"
+                        }
+                      ]
+                    ]
+                  }
+                ],
+                "7,7": [
+                  {
+                    "type": "gauge",
+                    "entity": "sensor.inverters_1_load_power",
+                    "min": 0,
+                    "max": 6000,
+                    "scale": 0.001,
+                    "needle": true,
+                    "decimals": 2,
+                    "unit": "kW",
+                    "position": "center"
+                  },
+                  {
+                    "type": "history",
+                    "entity": "sensor.inverters_1_load_power",
+                    "hours": 24,
+                    "min": 0,
+                    "max": 6000,
+                    "scale": 0.001,
+                    "decimals": 2,
+                    "unit": "kW",
+                    "position": "bottom"
+                  }
+                ],
                 "5,7": {
                   "type": "cycle",
                   "interval": 3,
@@ -725,7 +821,27 @@
                       }
                     ]
                   ]
-                }
+                },
+                "9,4": [
+                  {
+                    "type": "gauge",
+                    "entity": "sensor.laundry_room_washing_machine_power",
+                    "min": 0,
+                    "max": 2500,
+                    "needle": true,
+                    "decimals": 0,
+                    "unit": "W",
+                    "position": "center"
+                  },
+                  {
+                    "type": "history",
+                    "entity": "sensor.laundry_room_washing_machine_power",
+                    "hours": 24,
+                    "min": 0,
+                    "max": 2500,
+                    "position": "bottom"
+                  }
+                ]
               },
               "preset": "pfg",
               "pfg_icons": {},
@@ -747,7 +863,10 @@
                 "5,4": " "
               },
               "pfg_border": {
-                "3,1": "4px solid #ffffff"
+                "3,1": "4px solid #ffffff",
+                "7,7": "2px solid #555",
+                "7,4": "2px solid #555",
+                "9,4": "2px solid #555"
               },
               "pfg_hide_grid": true,
               "pfg_image_fit": {
@@ -756,7 +875,16 @@
               "pfg_grid_cols": 9,
               "pfg_grid_rows": 10,
               "pfg_transparent": true,
-              "pfg_fit_screen": true
+              "pfg_fit_screen": true,
+              "pfg_value_labels": {
+                "7,7": "Load",
+                "9,4": "Power"
+              },
+              "pfg_label_pos": {
+                "7,7": "12%",
+                "7,4": "12%",
+                "9,4": "12%"
+              }
             }
           ]
         },
@@ -2700,9 +2828,6 @@
               "pfg_label_pos": {
                 "1,1": "12%"
               },
-              "pfg_value_labels": {
-                "1,1": "Power"
-              },
               "view_layout": {
                 "grid-area": "pvh"
               },
@@ -2710,29 +2835,81 @@
               "pfg_charts": {
                 "1,1": [
                   {
-                    "type": "bar",
-                    "entity": "sensor.inverters_1_pv_power_1",
-                    "min": 0,
-                    "max": 5000,
-                    "scale": 0.001,
-                    "decimals": 2,
-                    "unit": "kW",
-                    "segments": [
+                    "type": "bars",
+                    "position": "top",
+                    "series": [
                       {
-                        "from": 0,
-                        "color": "#ff0000"
+                        "label": "Power",
+                        "entity": "sensor.inverters_1_pv_power_1",
+                        "min": 0,
+                        "max": 5000,
+                        "scale": 0.001,
+                        "decimals": 2,
+                        "unit": "kW",
+                        "segments": [
+                          {
+                            "from": 0,
+                            "color": "#ff5252"
+                          },
+                          {
+                            "from": 1000,
+                            "color": "#ffb300"
+                          },
+                          {
+                            "from": 3000,
+                            "color": "#00E676"
+                          }
+                        ]
                       },
                       {
-                        "from": 2500,
-                        "color": "#ffff00"
+                        "label": "Voltage",
+                        "entity": "sensor.inverters_1_pv_voltage_1",
+                        "min": 0,
+                        "max": 600,
+                        "decimals": 0,
+                        "unit": "V",
+                        "segments": [
+                          {
+                            "from": 0,
+                            "color": "#ff5252"
+                          },
+                          {
+                            "from": 150,
+                            "color": "#ffb300"
+                          },
+                          {
+                            "from": 250,
+                            "color": "#00E676"
+                          },
+                          {
+                            "from": 500,
+                            "color": "#ff5252"
+                          }
+                        ]
                       },
                       {
-                        "from": 4000,
-                        "color": "#00ff00"
+                        "label": "Current",
+                        "entity": "sensor.inverters_1_pv_current_1",
+                        "min": 0,
+                        "max": 30,
+                        "decimals": 1,
+                        "unit": "A",
+                        "segments": [
+                          {
+                            "from": 0,
+                            "color": "#ffb300"
+                          },
+                          {
+                            "from": 5,
+                            "color": "#00E676"
+                          },
+                          {
+                            "from": 20,
+                            "color": "#ff5252"
+                          }
+                        ]
                       }
-                    ],
-                    "orientation": "horizontal",
-                    "position": "center"
+                    ]
                   },
                   {
                     "type": "history",
