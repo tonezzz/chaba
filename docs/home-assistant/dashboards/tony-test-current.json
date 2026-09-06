@@ -638,10 +638,11 @@
                 "8,2": "/local/battery-bank.jpg",
                 "1,1": "/local/pv-tiles.jpg",
                 "1,4": "/local/pv-tiles.jpg",
-                "1,8": "/local/power-grid.jpg",
-                "4,9": "/local/home-house.jpg"
+                "3,4": "/local/inverter.webp",
+                "1,7": "/local/power-grid.jpg",
+                "3,7": "/local/home-house.jpg"
               },
-              "pfg_image_zoom": 2,
+              "pfg_image_zoom": 1,
               "pfg_values": {
                 "12,3": {
                   "entity": "sensor.totals_battery_state_of_charge",
@@ -664,70 +665,19 @@
                 },
                 "4,1": "sensor.inverters_1_grid_power"
               },
-              "pfg_lines": [
-                {
-                  "from": "2,3@bottom",
-                  "to": "3,3@bottom",
-                  "entity": "sensor.inverters_1_pv_power_1",
-                  "speed": 0.8,
-                  "max_power": 4000,
-                  "via": null
-                },
-                {
-                  "from": "1,4@bottom",
-                  "to": "5,5@bottom",
-                  "entity": "sensor.inverters_1_pv_power_2",
-                  "speed": 0.8,
-                  "max_power": 4000,
-                  "via": null
-                },
-                {
-                  "from": "1,8@topright",
-                  "to": "5,10@bottomright",
-                  "entity": "sensor.inverters_1_grid_power",
-                  "speed": 0.8,
-                  "max_power": 6000,
-                  "via": null
-                },
-                {
-                  "from": "4,2@right",
-                  "to": "5,6@left",
-                  "elbow": "h",
-                  "entity": "sensor.inverters_1_pv_power",
-                  "speed": 0.8,
-                  "max_power": 8000,
-                  "via": null
-                },
-                {
-                  "from": "8,2@top",
-                  "to": "5,6@bottom",
-                  "entity": "sensor.totals_battery_power",
-                  "invert": true,
-                  "speed": 0.8,
-                  "max_power": 10000,
-                  "via": null
-                },
-                {
-                  "from": "5,6@bottom",
-                  "to": "10,7@top",
-                  "entity": "sensor.inverters_1_load_power_essential",
-                  "speed": 0.8,
-                  "max_power": 6000,
-                  "via": null
-                }
-              ],
+              "pfg_lines": [],
               "pfg_spans": {
                 "10,7": 2,
-                "5,6": 2,
                 "8,2": "2x3",
                 "1,1": "2x3",
                 "1,4": "2x3",
-                "1,8": "2x3",
-                "4,9": "2x3",
-                "4,2": "1x3"
+                "3,4": 2,
+                "3,1": "1x3",
+                "1,7": "2x3",
+                "3,7": "2x3"
               },
               "pfg_sums": {
-                "4,2": {
+                "3,1": {
                   "entities": [
                     "sensor.inverters_1_pv_power_1",
                     "sensor.inverters_1_pv_power_2"
@@ -738,7 +688,7 @@
                 }
               },
               "pfg_radius": {
-                "4,2": "25px"
+                "3,1": "25px"
               },
               "pfg_charts": {
                 "8,2": {
@@ -960,7 +910,65 @@
                     "position": "bottom"
                   }
                 ],
-                "1,8": {
+                "3,4": [
+                  {
+                    "type": "cycle",
+                    "interval": 4,
+                    "position": "cycle",
+                    "steps": [
+                      [
+                        {
+                          "type": "gauge",
+                          "entity": "sensor.inverters_1_load_power",
+                          "min": 0,
+                          "max": 6000,
+                          "scale": 0.001,
+                          "needle": true,
+                          "decimals": 2,
+                          "unit": "kW",
+                          "position": "center"
+                        }
+                      ],
+                      [
+                        {
+                          "type": "gauge",
+                          "entity": "sensor.inverters_1_ac_output_voltage",
+                          "min": 0,
+                          "max": 300,
+                          "needle": true,
+                          "decimals": 0,
+                          "unit": "V",
+                          "position": "center"
+                        }
+                      ],
+                      [
+                        {
+                          "type": "gauge",
+                          "entity": "sensor.inverters_1_temperature",
+                          "min": 0,
+                          "max": 80,
+                          "needle": true,
+                          "decimals": 1,
+                          "unit": "°C",
+                          "position": "center"
+                        }
+                      ],
+                      [
+                        {
+                          "type": "gauge",
+                          "entity": "sensor.inverters_1_grid_frequency",
+                          "min": 49,
+                          "max": 51,
+                          "needle": true,
+                          "decimals": 2,
+                          "unit": "Hz",
+                          "position": "center"
+                        }
+                      ]
+                    ]
+                  }
+                ],
+                "1,7": {
                   "type": "cycle",
                   "interval": 3,
                   "position": "cycle",
@@ -1059,7 +1067,7 @@
                     ]
                   ]
                 },
-                "4,9": {
+                "3,7": {
                   "type": "cycle",
                   "interval": 3,
                   "position": "cycle",
@@ -1295,65 +1303,7 @@
                       }
                     ]
                   ]
-                },
-                "5,6": [
-                  {
-                    "type": "cycle",
-                    "interval": 4,
-                    "position": "cycle",
-                    "steps": [
-                      [
-                        {
-                          "type": "gauge",
-                          "entity": "sensor.inverters_1_load_power",
-                          "min": 0,
-                          "max": 6000,
-                          "scale": 0.001,
-                          "needle": true,
-                          "decimals": 2,
-                          "unit": "kW",
-                          "position": "center"
-                        }
-                      ],
-                      [
-                        {
-                          "type": "gauge",
-                          "entity": "sensor.inverters_1_ac_output_voltage",
-                          "min": 0,
-                          "max": 300,
-                          "needle": true,
-                          "decimals": 0,
-                          "unit": "V",
-                          "position": "center"
-                        }
-                      ],
-                      [
-                        {
-                          "type": "gauge",
-                          "entity": "sensor.inverters_1_temperature",
-                          "min": 0,
-                          "max": 80,
-                          "needle": true,
-                          "decimals": 1,
-                          "unit": "°C",
-                          "position": "center"
-                        }
-                      ],
-                      [
-                        {
-                          "type": "gauge",
-                          "entity": "sensor.inverters_1_grid_frequency",
-                          "min": 49,
-                          "max": 51,
-                          "needle": true,
-                          "decimals": 2,
-                          "unit": "Hz",
-                          "position": "center"
-                        }
-                      ]
-                    ]
-                  }
-                ]
+                }
               },
               "preset": "pfg",
               "pfg_icons": {
@@ -1362,7 +1312,7 @@
               "pfg_grid_size": 12,
               "card_width": "100%",
               "pfg_grid_width": "100%",
-              "pfg_inverter_at": "5,6",
+              "pfg_inverter_at": "3,4",
               "pfg_labels": {
                 "7,7": " ",
                 "10,3": " ",
@@ -1372,10 +1322,23 @@
                 "7,3": " ",
                 "7,4": " ",
                 "8,3": " ",
-                "8,4": " "
+                "8,4": " ",
+                "4,2": " ",
+                "4,3": " ",
+                "4,4": " ",
+                "5,6": " ",
+                "5,7": " ",
+                "6,6": " ",
+                "6,7": " ",
+                "4,10": " ",
+                "4,11": " ",
+                "4,12": " ",
+                "5,10": " ",
+                "5,11": " ",
+                "5,12": " "
               },
               "pfg_border": {
-                "4,2": "4px solid #ffffff"
+                "3,1": "4px solid #ffffff"
               }
             }
           ]
@@ -2149,12 +2112,65 @@
               "pfg_image_fit": {
                 "1,1": "contain"
               }
+            },
+            {
+              "type": "custom:sunsynk-power-flow-card",
+              "cardstyle": "pfg",
+              "preset": "pfg",
+              "title": "Sum",
+              "pfg_grid_size": 1,
+              "pfg_grid_width": "100%",
+              "pfg_border": {
+                "1,1": "2px solid #555"
+              },
+              "pfg_labels": {
+                "1,1": "Sum"
+              },
+              "pfg_label_pos": {
+                "1,1": "calc(55% - 14px)"
+              },
+              "pfg_charts": {
+                "1,1": [
+                  {
+                    "type": "gauge",
+                    "entities": [
+                      "sensor.inverters_1_pv_power_1",
+                      "sensor.inverters_1_pv_power_2"
+                    ],
+                    "min": 0,
+                    "max": 10000,
+                    "scale": 0.001,
+                    "needle": true,
+                    "decimals": 2,
+                    "unit": "kW",
+                    "position": "center"
+                  },
+                  {
+                    "type": "history",
+                    "entities": [
+                      "sensor.inverters_1_pv_power_1",
+                      "sensor.inverters_1_pv_power_2"
+                    ],
+                    "hours": 24,
+                    "min": 0,
+                    "max": 10000,
+                    "scale": 0.001,
+                    "decimals": 2,
+                    "unit": "kW",
+                    "position": "bottom"
+                  }
+                ]
+              },
+              "view_layout": {
+                "grid-area": "sum"
+              },
+              "card_width": "100%"
             }
           ],
           "layout": {
             "grid-template-columns": "repeat(4, 1fr)",
             "grid-template-rows": "auto auto",
-            "grid-template-areas": "\"pv grid battery inverter\" \"home pool . .\""
+            "grid-template-areas": "\"pv grid battery inverter\" \"home pool sum .\""
           }
         },
         {

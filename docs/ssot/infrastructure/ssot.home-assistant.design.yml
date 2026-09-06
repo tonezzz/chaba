@@ -154,7 +154,7 @@ pfg_feature_keys:
     pfg_border: 'map "r,c" -> CSS border override for that tile (v78+)'
   charts:
     key: pfg_charts
-    note: 'r,c -> chart def or array of defs; types: gauge, bar, history, cycle (v74+; {type:cycle, interval:sec, position:cycle, steps:[[chartdefs],...]}). position: center|bottom overlays the tile (works over images). history uses recorder history_during_period with 5min cache; fields: entity, hours, min/max, scale, decimals, unit, label, stroke, fill, needle, segments, gradient.'
+    note: 'r,c -> chart def or array of defs; types: gauge, bar, history, cycle (v74+; {type:cycle, interval:sec, position:cycle, steps:[[chartdefs],...]}). position: center|bottom overlays the tile (works over images). history uses recorder history_during_period with 5min cache; fields: entity OR entities[] (v86+, summed pointwise for gauge/bar value and history series), hours, min/max, scale, decimals, unit, label, stroke, fill, needle, segments, gradient.'
     shadows: 'v81-v83: drop-shadow(0 1px 2px rgba(0,0,0,0.85)) on gauge arcs (needle + donut), needle, and all chart <text>; value texts are nudged translateY(-10px) in CSS px.'
   values:
     key: pfg_values
@@ -197,7 +197,7 @@ tpl_design:
   note: |
     TPL is the sandbox view for new card designs — all new design cards go here.
     Layout is custom:grid-layout (layout-card) with 4 columns x 2 rows:
-      "pv grid battery inverter" / "home pool . ."
+      "pv grid battery inverter" / "home pool sum ."
     Each card is a single-tile PFG card: cardstyle pfg, preset pfg, pfg_grid_size 1,
     pfg_grid_width 100%, view_layout {grid-area: <name>}, card_width 100%.
   tiles:
@@ -215,6 +215,7 @@ tpl_design:
       home: {image: /local/home-house.jpg, charts: 'Load/PV/Grid/Battery/SOC cycle'}
       pool: {image: /local/pool.jpg, charts: 'sensor.pool_energy_daily gauge (kWh, total_increasing)'}
       inverter: {image: '/local/inverter.webp + pfg_image_fit contain', charts: 'Power/Volts/Temp/Freq cycle'}
+      sum: {image: none, charts: 'gauge + 24h history of entities[] sum: inverters_1_pv_power_1 + _2 (v86 multi-entity charts)'}
   assets:
     note: 'tile images live in michael-dev:/home/tony/.config/michael-dev/www and are served as /local/* (jpg/webp). All TPL images are local copies — download new art with curl then scp to tony-dell.'
 
