@@ -146,6 +146,7 @@ pfg_feature_keys:
     pfg_icons: 'map "r,c" -> mdi icon name (e.g. mdi:solar-power)'
     pfg_images: 'map "r,c" -> image URL served from /local/, or the sentinel "inverter" (v80+) to place the configured model inverter image (contain fit) on that tile'
     pfg_image_zoom: 'number; object-fit:cover plus transform:scale(zoom), applied to all image tiles'
+    pfg_image_fit: 'map "r,c" -> object-fit override (v84+): contain|cover|fill. Default cover; "inverter" sentinel tiles are always contain.'
     pfg_values: 'map "r,c" -> {entity, scale?, decimals?, unit?} live sensor value tile'
     pfg_sums: 'map "r,c" -> {entities[], scale?, decimals?, unit?} summed entity tile'
     pfg_spans: 'map "r,c" -> N or "RxC" (v75+) making that tile span R rows x C cols; covered cells are skipped'
@@ -213,9 +214,9 @@ tpl_design:
       battery: {image: /local/battery-bank.jpg, charts: 'battery power/SOC cycle'}
       home: {image: /local/home-house.jpg, charts: 'Load/PV/Grid/Battery/SOC cycle'}
       pool: {image: /local/pool.jpg, charts: 'sensor.pool_energy_daily gauge (kWh, total_increasing)'}
-      inverter: {image: 'inverter (solis model image)', charts: 'Power/Volts/Temp/Freq cycle'}
+      inverter: {image: '/local/inverter.webp + pfg_image_fit contain', charts: 'Power/Volts/Temp/Freq cycle'}
   assets:
-    note: 'tile images live in michael-dev:/home/tony/.config/michael-dev/www and are served as /local/*.jpg'
+    note: 'tile images live in michael-dev:/home/tony/.config/michael-dev/www and are served as /local/* (jpg/webp). All TPL images are local copies — download new art with curl then scp to tony-dell.'
 
 multi_battery_layout:
   note: |
