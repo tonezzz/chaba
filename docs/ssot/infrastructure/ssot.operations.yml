@@ -1,0 +1,349 @@
+title: Operational Checklists
+subtitle: Canonical pre/post transition checklists for shutdown, restart, deploy, backup, and maintenance
+icon: clipboard-check
+version: 1
+overview:
+  purpose: |
+    Define the canonical "what must be true" for each operational transition so
+    scripts, focus dispatch, and human operators can verify the same conditions
+    before and after a change. Each step references the owning SSOT file instead
+    of duplicating live data.
+  source_of_truth: |
+    Checklists describe policy and topology, not live state. Live state is
+    reported by mcp-health, focus-dispatcher, and the runtime scripts referenced
+    below.
+
+scope:
+  - Applies to tony-dell, tony-omen, macbook, michael-ha, and any host or service
+    that runs a persistent or scheduled workload.
+  - Applies to host restarts, service restarts, image updates, backups, and
+    feature deployments.
+
+conventions:
+  id_format: transition.name
+  evidence: |
+    Each step should record what was verified, by whom, and the command or
+    report that proves it. Evidence is a short string, not a log dump.
+  failure_mode: If a step fails, mark it `blocked` and add a note; do not force
+    the next step unless the operator explicitly overrides.
+  safe_to_parallel: true only when the step does not change live services and can
+    be verified independently.
+
+checklists:
+  pre_shutdown:
+    id: transition.pre_shutdown
+    purpose: |
+      Verify the system is in a safe state before a planned shutdown or reboot.
+    owner: tony
+    steps:
+      - id: focus.sync
+        label: Sync focus and session state
+        action: Run focus-dispatcher and confirm the current focus is captured in ssot.focus.current.active.yml or ssot.focus.yml history.
+        ssot_ref: docs/ssot/ssot.focus.current.active.yml
+        must: true
+      - id: health.snapshot
+        label: Take a final mcp-health snapshot
+        action: Run mcp-health for the active profile and confirm the snapshot is stored.
+        ssot_ref: docs/ssot/infrastructure/ssot.health.yml
+        must: true
+      - id: git.clean
+        label: Commit or stash pending work
+        action: Ensure the canonical worktree is clean or the remaining changes are intentionally uncommitted.
+        ssot_ref: docs/ssot/ssot.dev-system.assessment.yml
+        must: true
+      - id: services.stop
+        label: Stop non-essential services
+        action: Stop optional services such as playlived, michael-dev, and experimental GPU jobs unless the operator marks them critical.
+        ssot_ref: docs/ssot/infrastructure/ssot.services.yml
+        must: false
+      - id: backups.verify
+        label: Verify last backup timestamp
+        action: Confirm the most recent backup timer completed and the archive is readable.
+        ssot_ref: docs/ssot/infrastructure/ssot.disaster-recovery.yml
+        must: false
+      - id: tailscale.up
+        label: Verify Tailscale on all reachable hosts
+        action: Check tailscale status for tony-dell, tony-omen, macbook, and michael-ha.
+        ssot_ref: docs/ssot/infrastructure/ssot.host-roles.yml
+        must: false
+
+  post_restart:
+    id: transition.post_restart
+    purpose: |
+      Verify the system is back to the intended state after a restart.
+    owner: tony
+    steps:
+      - id: health.check
+        label: Run mcp-health home profile
+        action: Run mcp-health and confirm no critical services are error/degraded.
+        ssot_ref: docs/ssot/infrastructure/ssot.health.yml
+        must: true
+      - id: services.start
+        label: Start expected services
+        action: Restart the units listed in ssot.services.yml that are marked auto-start for the current host.
+        ssot_ref: docs/ssot/infrastructure/ssot.services.yml
+        must: true
+      - id: focus.resume
+        label: Resume the previous focus
+        action: Run focus-dispatcher and confirm the active focus is the same or the next queued focus is selected.
+        ssot_ref: docs/ssot/ssot.focus.current.active.yml
+        must: true
+      - id: tailscale.verify
+        label: Verify Tailscale connectivity
+        action: Confirm the expected hosts are reachable over Tailscale.
+        ssot_ref: docs/ssot/infrastructure/ssot.host-roles.yml
+        must: true
+      - id: logs.sweep
+        label: Check recent service logs for errors
+        action: Run mcp-logs or journalctl for the services that were restarted.
+        ssot_ref: docs/ssot/infrastructure/ssot.mcp-debug.yml
+        must: false
+      - id: ssot.validate
+        label: Validate SSOT
+        action: node scripts/ssot-validate-all.mjs
+        must: true
+
+  pre_update:
+    id: transition.pre_update
+    purpose: |
+      Verify the system before applying a code, config, or dependency update.
+    owner: tony
+    steps:
+      - id: focus.capture
+        label: Capture the active focus
+        action: Ensure the current focus or job is recorded in ssot.focus.current.active.yml.
+        ssot_ref: docs/ssot/ssot.focus.current.active.yml
+        must: true
+      - id: git.baseline
+        label: Record the current git state
+        action: Note the current commit, branch, and any uncommitted files.
+        ssot_ref: docs/ssot/ssot.dev-system.assessment.yml
+        must: true
+      - id: health.baseline
+        label: Record a health baseline
+        action: Run mcp-health so the post-update comparison is meaningful.
+        ssot_ref: docs/ssot/infrastructure/ssot.health.yml
+        must: false
+      - id: deps.lock
+        label: Record dependency versions
+        action: Note the current package versions or image digests being replaced.
+        must: false
+      - id: secrets.audit
+        label: Confirm secrets are not being exposed
+        action: Verify the change does not add credentials or tokens to SSOT or logs.
+        ssot_ref: docs/ssot/infrastructure/ssot.mcp-tools.yml
+        must: true
+
+  post_update:
+    id: transition.post_update
+    purpose: |
+      Verify the system after a code, config, or dependency update.
+    owner: tony
+    steps:
+      - id: health.compare
+        label: Compare health after update
+        action: Re-run mcp-health and compare to the pre-update baseline.
+        ssot_ref: docs/ssot/infrastructure/ssot.health.yml
+        must: true
+      - id: git.verify
+        label: Verify the commit landed
+        action: Confirm the commit is present, pushed, and the working tree is clean.
+        must: true
+      - id: service.verify
+        label: Restart affected services
+        action: Restart or reload the service referenced by the update.
+        ssot_ref: docs/ssot/infrastructure/ssot.services.yml
+        must: true
+      - id: logs.watch
+        label: Watch for new errors
+        action: Check the service logs for the first 5-10 minutes after restart.
+        must: false
+      - id: focus.update
+        label: Update the focus entry
+        action: Mark the focus completed or update it with the post-update state.
+        ssot_ref: docs/ssot/ssot.focus.current.active.yml
+        must: true
+
+  pre_deploy:
+    id: transition.pre_deploy
+    purpose: |
+      Verify a deploy can happen safely.
+    owner: tony
+    steps:
+      - id: target.reachable
+        label: Target host reachable
+        action: Confirm the deploy target is reachable over SSH/Tailscale.
+        ssot_ref: docs/ssot/infrastructure/ssot.host-roles.yml
+        must: true
+      - id: backup.recent
+        label: Recent backup exists
+        action: Confirm the most recent backup is within the retention window.
+        ssot_ref: docs/ssot/infrastructure/ssot.disaster-recovery.yml
+        must: false
+      - id: ssot.clean
+        label: SSOT and repo clean
+        action: Confirm the target files are staged or the deployment will not overwrite unrelated work.
+        must: true
+      - id: config.review
+        label: Review config diff
+        action: Review the diff for the target host/service before applying.
+        must: true
+      - id: permissions.ok
+        label: Permissions verified
+        action: Confirm the deploy user has the required sudo/systemd/docker permissions.
+        must: true
+
+  post_deploy:
+    id: transition.post_deploy
+    purpose: |
+      Verify a deploy completed safely.
+    owner: tony
+    steps:
+      - id: service.active
+        label: Service active
+        action: Confirm the service or container is running and healthy.
+        ssot_ref: docs/ssot/infrastructure/ssot.services.yml
+        must: true
+      - id: endpoint.ok
+        label: Endpoint reachable
+        action: Curl the health or URL endpoint for the deployed service.
+        ssot_ref: docs/ssot/infrastructure/ssot.health.yml
+        must: true
+      - id: ssot.update
+        label: Update SSOT
+        action: Update the relevant SSOT file with the new state, timestamp, or version.
+        must: true
+      - id: focus.record
+        label: Record the deploy
+        action: Add a session note or improvement entry if the deploy changed behavior.
+        ssot_ref: docs/ssot/ssot.focus.sessions.yml
+        must: false
+
+  pre_backup:
+    id: transition.pre_backup
+    purpose: |
+      Verify the system is ready for a backup.
+    owner: tony
+    steps:
+      - id: disk.free
+        label: Disk space sufficient
+        action: Confirm the destination has enough free space for the next backup.
+        must: true
+      - id: quiesce
+        label: Quiesce writers
+        action: Pause or stop services that write to the data being backed up if the backup is not crash-consistent.
+        must: false
+      - id: verify_source
+        label: Verify source paths
+        action: Confirm the paths listed in ssot.disaster-recovery.yml exist and are readable.
+        must: true
+
+  post_backup:
+    id: transition.post_backup
+    purpose: |
+      Verify a backup completed and is restorable.
+    owner: tony
+    steps:
+      - id: backup.verify
+        label: Backup integrity check
+        action: Run the verification step listed in ssot.disaster-recovery.yml for the backup target.
+        ssot_ref: docs/ssot/infrastructure/ssot.disaster-recovery.yml
+        must: true
+      - id: resume.writers
+        label: Resume paused services
+        action: Restart any services paused for the backup window.
+        must: true
+      - id: record.backup
+        label: Record the backup
+        action: Update the backup log or improvement history with the result.
+        must: true
+
+  pre_maintenance:
+    id: transition.pre_maintenance
+    purpose: |
+      Verify the system before a longer maintenance window.
+    owner: tony
+    steps:
+      - id: freeze.changes
+        label: Freeze non-essential changes
+        action: Confirm no other sessions are actively changing config, deployments, or services.
+        must: true
+      - id: maintenance.window
+        label: Confirm maintenance window
+        action: Confirm the planned window and expected duration.
+        must: true
+      - id: monitor.link
+        label: Link to monitoring
+        action: Note the monitoring or health endpoint that should be watched during the window.
+        must: false
+
+  post_maintenance:
+    id: transition.post_maintenance
+    purpose: |
+      Verify the system after a maintenance window.
+    owner: tony
+    steps:
+      - id: services.back
+        label: Services back to expected state
+        action: Confirm the intended services are active and reachable.
+        ssot_ref: docs/ssot/infrastructure/ssot.services.yml
+        must: true
+      - id: focus.resume
+        label: Resume the previous focus
+        action: Run focus-dispatcher and confirm the next focus is selected.
+        ssot_ref: docs/ssot/ssot.focus.current.active.yml
+        must: true
+      - id: improvements.update
+        label: Update improvements if needed
+        action: Add or update ssot.improvements.yml entries if the maintenance revealed new issues.
+        must: false
+
+host_notes:
+  tony_dell:
+    reboot_role: headless primary and persistent service host
+    pre_shutdown:
+      - Confirm mcp-health/mcp-focus/mcp-debug SSH wrappers will fail while tony-dell
+        is down; interactive sessions on tony-omen should expect MCP tool errors.
+      - Verify no active Yomi/Postgres writes that must not be interrupted
+        (see ssot.yomi-failover.yml for failover to tony-omen if the window is long).
+      - Confirm ha-live / Home Assistant consumers can tolerate the gap.
+      - Take a final mcp-health snapshot; note current unknowns so post-reboot
+        comparison is meaningful.
+    post_restart:
+      - >-
+        Podman rootless containers auto-start; verify redis, postgres, weaviate,
+        raceman, mddb are running (podman ps).
+      - >-
+        systemd --user units: mcp-debug-sse, yomi timers, chaba-audit timers,
+        mcp-health timer, tony-dell-health-snapshot timer.
+      - Home Assistant + michael-dev reachable; ha-live via Tailscale Serve 8444.
+      - gpu-queue on tony-dell:3001 and Caddy on tony-dell:8080 answer.
+      - Re-run mcp-health; compare against pre_shutdown snapshot.
+    refs:
+      - docs/ssot/infrastructure/ssot.tony-dell-failover.yml
+      - docs/ssot/infrastructure/ssot.yomi-failover.yml
+      - docs/ssot/infrastructure/ssot.health.home.tony-dell.yml
+  tony_omen:
+    reboot_role: interactive primary and GPU host
+    pre_shutdown:
+      - Save interactive/Devin session state; GPU jobs cannot migrate.
+      - Barrier clients (tony-dell barrierc) will disconnect.
+      - Stop or checkpoint GPU workloads (ollama models, imagen2, txt2vid).
+    post_restart:
+      - nvidia-smi shows the GPU with only Xorg attached.
+      - tailscale status online as 100.75.102.88 with direct path to tony-dell.
+      - >-
+        systemd units: barriers.service (user), cpufreq-limit.service (system),
+        weaviate-index.timer, arp-inventory-scan.timer.
+      - sensor-reader container on :8001, Google Drive mount, Ollama, GPU Queue.
+      - Re-run mcp-health; expect intentionally-off services to stay off.
+    refs:
+      - docs/ssot/infrastructure/ssot.health.home.system.yml
+      - docs/ssot/infrastructure/ssot.gpu.yml
+      - docs/ssot/infrastructure/ssot.night-jobs.tony-omen.yml
+
+metadata:
+  created: '2026-09-07'
+  last_updated: '2026-09-07'
+  maintainer: tony
+  status: active
