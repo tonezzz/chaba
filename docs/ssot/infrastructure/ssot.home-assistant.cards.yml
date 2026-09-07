@@ -7,7 +7,7 @@ repositories:
     fork_of: slhub/sunsynk-power-flow-card
     current_commit: HEAD
     package_version: 7.3.3
-    bundle_version: 139
+    bundle_version: 140
     build:
       command: npm run build
       tool: rollup -c --bundleConfigAsCjs
@@ -15,17 +15,17 @@ repositories:
     deploy:
       michael-dev:
         target_host: ssot.values.yml::hosts.tony_dell
-        target_path: /home/tony/.config/michael-dev/www/sunsynk-power-flow-card-fork-v139.js
+        target_path: /home/tony/.config/michael-dev/www/sunsynk-power-flow-card-fork-v140.js
         lovelace_resources: /home/tony/.config/michael-dev/.storage/lovelace_resources
-        resource_path: /local/sunsynk-power-flow-card-fork-v139.js
+        resource_path: /local/sunsynk-power-flow-card-fork-v140.js
         restart: systemctl --user restart michael-dev.service
         service_ref: infrastructure/ssot.services.yml#tony-dell.michael-dev.quadlet.service_unit
         test_url: https://tony-dell.taila0626a.ts.net:8124/tony-test/pf4
       michael-ha:
         target_host: ssot.values.yml::hosts.michael_ha
-        target_path: /config/www/sunsynk-power-flow-card-fork-v139.js
+        target_path: /config/www/sunsynk-power-flow-card-fork-v140.js
         lovelace_resources: /config/.storage/lovelace_resources
-        resource_path: /local/sunsynk-power-flow-card-fork-v139.js
+        resource_path: /local/sunsynk-power-flow-card-fork-v140.js
         restart: ha core restart
         note: held at v91 per dev-first rule (2026-09-06) — promote to latest on user approval
         test_url: https://nupo4ndqdqydt78zmpq0z5wzp1bdrqgs.ui.nabu.casa/tony-test/pf3
@@ -100,8 +100,8 @@ cards:
   - id: sunsynk-power-flow-card
     name: Sunsynk Power Flow Card (fork)
     repo_ref: repositories.sunsynk-power-flow-card-fork
-    bundle_version: 139
-    deployed_as: /local/sunsynk-power-flow-card-fork-v139.js (michael-dev + michael-ha, promoted 2026-09-07 via promote-michael.sh; previous v103 kept for rollback)
+    bundle_version: 140
+    deployed_as: /local/sunsynk-power-flow-card-fork-v140.js (michael-dev + michael-ha, promoted 2026-09-07 via promote-michael.sh; previous v103 kept for rollback)
     dashboards:
       - id: tony-test/pf4
         tab: PF4
