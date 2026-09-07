@@ -5399,7 +5399,7 @@
           "layout": {
             "grid-template-columns": "repeat(12, 1fr)",
             "grid-template-rows": "repeat(12, auto)",
-            "grid-template-areas": "\"pv1 pv1 pv1 pv1 pv2 pv2 pv2 pv2 grid grid grid grid\""
+            "grid-template-areas": "\"pv1 pv1 pv1 pv1 pv2 pv2 pv2 pv2 grid grid grid grid\" \"combo combo combo combo combo combo combo combo combo combo combo combo\""
           },
           "cards": [
             {
@@ -5751,6 +5751,183 @@
                             "color": "#ff5252"
                           }
                         ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            },
+            {
+              "type": "custom:sunsynk-power-flow-card",
+              "cardstyle": "pfg",
+              "preset": "pfg",
+              "title": "PV+Grid",
+              "pfg_grid_size": 1,
+              "pfg_grid_width": "100%",
+              "pfg_border": {
+                "1,1": "2px solid #555"
+              },
+              "pfg_images": {
+                "1,1": "/local/pv-tiles.jpg"
+              },
+              "pfg_labels": {
+                "1,1": "PV1+PV2+Grid"
+              },
+              "pfg_label_pos": {
+                "1,1": "top"
+              },
+              "view_layout": {
+                "grid-area": "combo"
+              },
+              "card_width": "100%",
+              "pfg_charts": {
+                "1,1": [
+                  {
+                    "type": "history",
+                    "entity": "sensor.inverters_1_pv_power",
+                    "hours": 24,
+                    "min": 0,
+                    "max": 100,
+                    "position": "bg",
+                    "opacity": 0.8,
+                    "scrim": true
+                  },
+                  {
+                    "type": "history",
+                    "entity": "sensor.inverters_1_grid_power",
+                    "hours": 24,
+                    "min": 0,
+                    "max": 100,
+                    "position": "bg",
+                    "opacity": 0.5,
+                    "scrim": false
+                  },
+                  {
+                    "type": "bars",
+                    "orientation": "vertical",
+                    "position": "bottom",
+                    "height": "55%",
+                    "series": [
+                      {
+                        "label": "PV1",
+                        "min": 0,
+                        "max": 5000,
+                        "decimals": 2,
+                        "unit": "kW",
+                        "segments": [
+                          {
+                            "from": 0,
+                            "color": "#ff5252"
+                          },
+                          {
+                            "from": 1000,
+                            "color": "#ffb300"
+                          },
+                          {
+                            "from": 3000,
+                            "color": "#00E676"
+                          }
+                        ],
+                        "scale": 0.001,
+                        "entity": "sensor.inverters_1_pv_power_1"
+                      },
+                      {
+                        "label": "PV2",
+                        "min": 0,
+                        "max": 5000,
+                        "decimals": 2,
+                        "unit": "kW",
+                        "segments": [
+                          {
+                            "from": 0,
+                            "color": "#ff5252"
+                          },
+                          {
+                            "from": 1000,
+                            "color": "#ffb300"
+                          },
+                          {
+                            "from": 3000,
+                            "color": "#00E676"
+                          }
+                        ],
+                        "scale": 0.001,
+                        "entity": "sensor.inverters_1_pv_power_2"
+                      },
+                      {
+                        "label": "Grid",
+                        "min": -5000,
+                        "max": 5000,
+                        "decimals": 2,
+                        "unit": "kW",
+                        "segments": [
+                          {
+                            "from": -5000,
+                            "color": "#00E676"
+                          },
+                          {
+                            "from": 0,
+                            "color": "#ffb300"
+                          },
+                          {
+                            "from": 2000,
+                            "color": "#ff5252"
+                          }
+                        ],
+                        "scale": 0.001,
+                        "entity": "sensor.inverters_1_grid_power"
+                      },
+                      {
+                        "label": "Volts",
+                        "min": 0,
+                        "max": 300,
+                        "decimals": 0,
+                        "unit": "V",
+                        "segments": [
+                          {
+                            "from": 0,
+                            "color": "#ff5252"
+                          },
+                          {
+                            "from": 200,
+                            "color": "#ffb300"
+                          },
+                          {
+                            "from": 220,
+                            "color": "#00E676"
+                          },
+                          {
+                            "from": 260,
+                            "color": "#ff5252"
+                          }
+                        ],
+                        "entity": "sensor.inverters_1_grid_voltage"
+                      },
+                      {
+                        "label": "Freq",
+                        "min": 45,
+                        "max": 55,
+                        "decimals": 1,
+                        "unit": "Hz",
+                        "segments": [
+                          {
+                            "from": 45,
+                            "color": "#ff5252"
+                          },
+                          {
+                            "from": 49,
+                            "color": "#ffb300"
+                          },
+                          {
+                            "from": 49.8,
+                            "color": "#00E676"
+                          },
+                          {
+                            "from": 50.3,
+                            "color": "#ff5252"
+                          }
+                        ],
+                        "entity": "sensor.inverters_1_grid_frequency"
                       }
                     ]
                   }
