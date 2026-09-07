@@ -3152,12 +3152,254 @@
                   }
                 ]
               }
+            },
+            {
+              "type": "custom:sunsynk-power-flow-card",
+              "cardstyle": "pfg",
+              "preset": "pfg",
+              "title": "Grid.a1",
+              "pfg_grid_size": 1,
+              "pfg_grid_width": "100%",
+              "pfg_border": {
+                "1,1": "2px solid #555"
+              },
+              "pfg_images": {
+                "1,1": "/local/power-grid.jpg"
+              },
+              "pfg_labels": {
+                "1,1": "Grid"
+              },
+              "pfg_label_pos": {
+                "1,1": "top"
+              },
+              "view_layout": {
+                "grid-area": "ga"
+              },
+              "card_width": "100%",
+              "pfg_charts": {
+                "1,1": [
+                  {
+                    "type": "bars",
+                    "orientation": "vertical",
+                    "position": "bottom",
+                    "height": "55%",
+                    "series": [
+                      {
+                        "label": "Power",
+                        "entity": "sensor.inverters_1_grid_power",
+                        "min": -5000,
+                        "max": 5000,
+                        "scale": 0.001,
+                        "decimals": 2,
+                        "unit": "kW",
+                        "segments": [
+                          {
+                            "from": -5000,
+                            "color": "#00E676"
+                          },
+                          {
+                            "from": 0,
+                            "color": "#ffb300"
+                          },
+                          {
+                            "from": 2000,
+                            "color": "#ff5252"
+                          }
+                        ]
+                      },
+                      {
+                        "label": "Voltage",
+                        "entity": "sensor.inverters_1_grid_voltage",
+                        "min": 0,
+                        "max": 300,
+                        "decimals": 0,
+                        "unit": "V",
+                        "segments": [
+                          {
+                            "from": 0,
+                            "color": "#ff5252"
+                          },
+                          {
+                            "from": 200,
+                            "color": "#ffb300"
+                          },
+                          {
+                            "from": 220,
+                            "color": "#00E676"
+                          },
+                          {
+                            "from": 260,
+                            "color": "#ff5252"
+                          }
+                        ]
+                      },
+                      {
+                        "label": "Frequency",
+                        "entity": "sensor.inverters_1_grid_frequency",
+                        "min": 45,
+                        "max": 55,
+                        "decimals": 1,
+                        "unit": "Hz",
+                        "segments": [
+                          {
+                            "from": 45,
+                            "color": "#ff5252"
+                          },
+                          {
+                            "from": 49,
+                            "color": "#ffb300"
+                          },
+                          {
+                            "from": 49.8,
+                            "color": "#00E676"
+                          },
+                          {
+                            "from": 50.3,
+                            "color": "#ff5252"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "type": "history",
+                    "entity": "sensor.inverters_1_grid_power",
+                    "hours": 24,
+                    "min": -5000,
+                    "max": 5000,
+                    "scale": 0.001,
+                    "decimals": 2,
+                    "position": "top"
+                  }
+                ]
+              }
+            },
+            {
+              "type": "custom:sunsynk-power-flow-card",
+              "cardstyle": "pfg",
+              "preset": "pfg",
+              "title": "Grid.b1",
+              "pfg_grid_size": 1,
+              "pfg_grid_width": "100%",
+              "pfg_border": {
+                "1,1": "2px solid #555"
+              },
+              "pfg_images": {
+                "1,1": "/local/power-grid.jpg"
+              },
+              "pfg_labels": {
+                "1,1": "Grid"
+              },
+              "pfg_label_pos": {
+                "1,1": "top"
+              },
+              "view_layout": {
+                "grid-area": "gb"
+              },
+              "card_width": "100%",
+              "pfg_charts": {
+                "1,1": [
+                  {
+                    "type": "bars",
+                    "orientation": "horizontal",
+                    "position": "bottom",
+                    "height": "55%",
+                    "series": [
+                      {
+                        "label": "Power",
+                        "entity": "sensor.inverters_1_grid_power",
+                        "min": -5000,
+                        "max": 5000,
+                        "scale": 0.001,
+                        "decimals": 2,
+                        "unit": "kW",
+                        "segments": [
+                          {
+                            "from": -5000,
+                            "color": "#00E676"
+                          },
+                          {
+                            "from": 0,
+                            "color": "#ffb300"
+                          },
+                          {
+                            "from": 2000,
+                            "color": "#ff5252"
+                          }
+                        ]
+                      },
+                      {
+                        "label": "Voltage",
+                        "entity": "sensor.inverters_1_grid_voltage",
+                        "min": 0,
+                        "max": 300,
+                        "decimals": 0,
+                        "unit": "V",
+                        "segments": [
+                          {
+                            "from": 0,
+                            "color": "#ff5252"
+                          },
+                          {
+                            "from": 200,
+                            "color": "#ffb300"
+                          },
+                          {
+                            "from": 220,
+                            "color": "#00E676"
+                          },
+                          {
+                            "from": 260,
+                            "color": "#ff5252"
+                          }
+                        ]
+                      },
+                      {
+                        "label": "Frequency",
+                        "entity": "sensor.inverters_1_grid_frequency",
+                        "min": 45,
+                        "max": 55,
+                        "decimals": 1,
+                        "unit": "Hz",
+                        "segments": [
+                          {
+                            "from": 45,
+                            "color": "#ff5252"
+                          },
+                          {
+                            "from": 49,
+                            "color": "#ffb300"
+                          },
+                          {
+                            "from": 49.8,
+                            "color": "#00E676"
+                          },
+                          {
+                            "from": 50.3,
+                            "color": "#ff5252"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "type": "history",
+                    "entity": "sensor.inverters_1_grid_power",
+                    "hours": 24,
+                    "min": -5000,
+                    "max": 5000,
+                    "scale": 0.001,
+                    "decimals": 2,
+                    "position": "top"
+                  }
+                ]
+              }
             }
           ],
           "layout": {
             "grid-template-columns": "repeat(12, 1fr)",
             "grid-template-rows": "repeat(8, auto)",
-            "grid-template-areas": "\"pv pv pv pv pvv pvv pvv pvv pvh pvh pvh pvh\" \"grid grid grid grid . . . . . . . .\" \"battery battery battery . . . . . . . . .\" \"inverter inverter inverter . . . . . . . . .\" \"pool pool pool pool sum sum sum sum kitchen kitchen kitchen kitchen\" \"home home home home bedroom bedroom bedroom bedroom terrace terrace terrace terrace\" \"living living living . . . . . . . . .\" \"laundry laundry laundry . . . . . . . . .\""
+            "grid-template-areas": "\"pv pv pv pv pvv pvv pvv pvv pvh pvh pvh pvh\" \"grid grid grid grid ga ga ga ga gb gb gb gb\" \"battery battery battery . . . . . . . . .\" \"inverter inverter inverter . . . . . . . . .\" \"pool pool pool pool sum sum sum sum kitchen kitchen kitchen kitchen\" \"home home home home bedroom bedroom bedroom bedroom terrace terrace terrace terrace\" \"living living living . . . . . . . . .\" \"laundry laundry laundry . . . . . . . . .\""
           }
         },
         {
