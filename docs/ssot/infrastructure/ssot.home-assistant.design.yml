@@ -156,7 +156,8 @@ pfg_feature_keys:
     pfg_value_labels: 'map "r,c" -> small caption rendered above the tile value (v88+)'
     pfg_value_label_pos: 'map "r,c" -> CSS top for the value label (default calc(55% - 14px))'
     pfg_sums: 'map "r,c" -> {entities[], scale?, decimals?, unit?} summed entity tile'
-    pfg_spans: 'map "r,c" -> N (square), "RxC" (rectangular, e.g. "2x3"), or responsive {square,portrait,landscape} resolved from viewport aspect (v96+); covered cells are skipped; anchors are span-aware'
+    pfg_spans: 'map "r,c" -> N (square), "RxC" (rectangular, e.g. "2x3"), or responsive {square,portrait,landscape} resolved from viewport aspect (v96+); covered cells are skipped; anchors are span-aware. PITFALL: responsive spans must keep the same cell coverage per orientation or tiles get swallowed — a 3x3 span at 1,1 covers 3,1 and hides that tile entirely (learned 2026-09-07).'
+    pfg_fit_screen: 'boolean|"Npx" (v97/v98+); grid fills 100% width x (100vh - reserve) with free cell stretch — no aspect lock, no scrollbar. Lines stretch via preserveAspectRatio="none".'
   charts:
     key: pfg_charts
     note: 'r,c -> chart def or array of defs; types: gauge, bar, history, cycle. position: center|bottom|cycle overlays the tile (works over images). cycle rotates through step groups at interval seconds; entities[] sums multiple sensors in one def. history uses recorder history_during_period with 5min cache; fields: entity/entities, hours, min/max, scale, decimals, unit, label, stroke, fill, needle, segments, gradient, interval, steps.'

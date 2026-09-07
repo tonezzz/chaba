@@ -14,6 +14,14 @@ instances:
     card_title: Sunsynk 3-battery test
     battery_count: 4
     note: Original testbed; may differ from michael-ha until synced.
+    dev_mocks: |
+      packages/a_dev_mocks.yaml provides two kinds of dev entities:
+      - dev_* input_number/input_select helpers (inverter temp, freq, PV powers,
+        battery voltage/SOC, today's energies) adjustable on the Data tab.
+      - mha_mirror_* REST sensors that poll real michael-ha entities and reuse the
+        SAME entity_id (e.g. sensor.tze200_mja3fuja_ts0601_temperature,
+        sensor.laundry_room_washing_machine_power). Prefer mirrors over new mocks:
+        identical entity_ids keep one dashboard config working on both hosts.
   michael-ha:
     dashboard: tony-test/pf3
     cardstyle: lite
