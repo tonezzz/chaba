@@ -58,106 +58,28 @@
               "pfg_charts": {
                 "1,1": [
                   {
-                    "type": "bars",
-                    "position": "bottom",
-                    "series": [
-                      {
-                        "label": "Power",
-                        "entity": "sensor.inverters_1_pv_power_1",
-                        "min": 0,
-                        "max": 5000,
-                        "scale": 0.001,
-                        "decimals": 2,
-                        "unit": "kW",
-                        "segments": [
-                          {
-                            "from": 0,
-                            "color": "#ff5252"
-                          },
-                          {
-                            "from": 1000,
-                            "color": "#ffb300"
-                          },
-                          {
-                            "from": 3000,
-                            "color": "#00E676"
-                          }
-                        ]
-                      },
-                      {
-                        "label": "Voltage",
-                        "entity": "sensor.inverters_1_pv_voltage_1",
-                        "min": 0,
-                        "max": 600,
-                        "decimals": 0,
-                        "unit": "V",
-                        "segments": [
-                          {
-                            "from": 0,
-                            "color": "#ff5252"
-                          },
-                          {
-                            "from": 150,
-                            "color": "#ffb300"
-                          },
-                          {
-                            "from": 250,
-                            "color": "#00E676"
-                          },
-                          {
-                            "from": 500,
-                            "color": "#ff5252"
-                          }
-                        ]
-                      },
-                      {
-                        "label": "Current",
-                        "entity": "sensor.inverters_1_pv_current_1",
-                        "min": 0,
-                        "max": 30,
-                        "decimals": 1,
-                        "unit": "A",
-                        "segments": [
-                          {
-                            "from": 0,
-                            "color": "#ffb300"
-                          },
-                          {
-                            "from": 5,
-                            "color": "#00E676"
-                          },
-                          {
-                            "from": 20,
-                            "color": "#ff5252"
-                          }
-                        ]
-                      }
-                    ],
-                    "height": "55%"
-                  },
-                  {
                     "type": "history",
                     "entity": "sensor.inverters_1_pv_power_1",
                     "hours": 24,
                     "min": 0,
-                    "max": 5000,
-                    "scale": 0.001,
-                    "decimals": 2,
-                    "position": "top"
-                  }
-                ],
-                "1,4": [
+                    "max": 100,
+                    "position": "bg",
+                    "opacity": 0.8,
+                    "scrim": true
+                  },
                   {
                     "type": "bars",
+                    "orientation": "horizontal",
                     "position": "bottom",
+                    "height": "55%",
                     "series": [
                       {
                         "label": "Power",
-                        "entity": "sensor.inverters_1_pv_power_2",
                         "min": 0,
                         "max": 5000,
-                        "scale": 0.001,
                         "decimals": 2,
+                        "entity": "sensor.inverters_1_pv_power_1",
+                        "scale": 0.001,
                         "unit": "kW",
                         "segments": [
                           {
@@ -176,10 +98,10 @@
                       },
                       {
                         "label": "Voltage",
-                        "entity": "sensor.inverters_1_pv_voltage_2",
                         "min": 0,
                         "max": 600,
                         "decimals": 0,
+                        "entity": "sensor.inverters_1_pv_voltage_1",
                         "unit": "V",
                         "segments": [
                           {
@@ -202,10 +124,10 @@
                       },
                       {
                         "label": "Current",
-                        "entity": "sensor.inverters_1_pv_current_2",
                         "min": 0,
                         "max": 30,
                         "decimals": 1,
+                        "entity": "sensor.inverters_1_pv_current_1",
                         "unit": "A",
                         "segments": [
                           {
@@ -222,754 +144,769 @@
                           }
                         ]
                       }
-                    ],
-                    "height": "55%"
-                  },
+                    ]
+                  }
+                ],
+                "1,4": [
                   {
                     "type": "history",
                     "entity": "sensor.inverters_1_pv_power_2",
                     "hours": 24,
                     "min": 0,
-                    "max": 5000,
-                    "scale": 0.001,
-                    "decimals": 2,
-                    "position": "top"
+                    "max": 100,
+                    "position": "bg",
+                    "opacity": 0.8,
+                    "scrim": true
+                  },
+                  {
+                    "type": "bars",
+                    "orientation": "horizontal",
+                    "position": "bottom",
+                    "height": "55%",
+                    "series": [
+                      {
+                        "label": "Power",
+                        "min": 0,
+                        "max": 5000,
+                        "decimals": 2,
+                        "entity": "sensor.inverters_1_pv_power_2",
+                        "scale": 0.001,
+                        "unit": "kW",
+                        "segments": [
+                          {
+                            "from": 0,
+                            "color": "#ff5252"
+                          },
+                          {
+                            "from": 1000,
+                            "color": "#ffb300"
+                          },
+                          {
+                            "from": 3000,
+                            "color": "#00E676"
+                          }
+                        ]
+                      },
+                      {
+                        "label": "Voltage",
+                        "min": 0,
+                        "max": 600,
+                        "decimals": 0,
+                        "entity": "sensor.inverters_1_pv_voltage_2",
+                        "unit": "V",
+                        "segments": [
+                          {
+                            "from": 0,
+                            "color": "#ff5252"
+                          },
+                          {
+                            "from": 150,
+                            "color": "#ffb300"
+                          },
+                          {
+                            "from": 250,
+                            "color": "#00E676"
+                          },
+                          {
+                            "from": 500,
+                            "color": "#ff5252"
+                          }
+                        ]
+                      },
+                      {
+                        "label": "Current",
+                        "min": 0,
+                        "max": 30,
+                        "decimals": 1,
+                        "entity": "sensor.inverters_1_pv_current_2",
+                        "unit": "A",
+                        "segments": [
+                          {
+                            "from": 0,
+                            "color": "#ffb300"
+                          },
+                          {
+                            "from": 5,
+                            "color": "#00E676"
+                          },
+                          {
+                            "from": 20,
+                            "color": "#ff5252"
+                          }
+                        ]
+                      }
+                    ]
                   }
                 ],
                 "3,4": [
                   {
-                    "type": "cycle",
-                    "interval": 4,
-                    "position": "cycle",
-                    "steps": [
-                      [
-                        {
-                          "type": "gauge",
-                          "entity": "sensor.inverters_1_load_power",
-                          "min": 0,
-                          "max": 6000,
-                          "scale": 0.001,
-                          "needle": true,
-                          "decimals": 2,
-                          "unit": "kW",
-                          "position": "center",
-                          "label": "Load"
-                        }
-                      ],
-                      [
-                        {
-                          "type": "gauge",
-                          "entity": "sensor.inverters_1_ac_output_voltage",
-                          "min": 0,
-                          "max": 300,
-                          "needle": true,
-                          "decimals": 0,
-                          "unit": "V",
-                          "position": "center",
-                          "label": "Volts"
-                        }
-                      ],
-                      [
-                        {
-                          "type": "gauge",
-                          "entity": "sensor.inverters_1_temperature",
-                          "min": 0,
-                          "max": 80,
-                          "needle": true,
-                          "decimals": 1,
-                          "unit": "°C",
-                          "position": "center",
-                          "label": "Temp"
-                        }
-                      ],
-                      [
-                        {
-                          "type": "gauge",
-                          "entity": "sensor.inverters_1_grid_frequency",
-                          "min": 49,
-                          "max": 51,
-                          "needle": true,
-                          "decimals": 2,
-                          "unit": "Hz",
-                          "position": "center",
-                          "label": "Freq"
-                        }
-                      ]
-                    ]
-                  }
-                ],
-                "1,7": {
-                  "type": "cycle",
-                  "interval": 3,
-                  "position": "cycle",
-                  "steps": [
-                    [
-                      {
-                        "type": "gauge",
-                        "entity": "sensor.inverters_1_grid_power",
-                        "min": -5000,
-                        "max": 5000,
-                        "scale": 0.001,
-                        "needle": true,
-                        "segments": [
-                          {
-                            "from": -5000,
-                            "color": "#ff0000"
-                          },
-                          {
-                            "from": -1000,
-                            "color": "#ffff00"
-                          },
-                          {
-                            "from": 0,
-                            "color": "#00ff00"
-                          },
-                          {
-                            "from": 1000,
-                            "color": "#ffff00"
-                          },
-                          {
-                            "from": 3000,
-                            "color": "#ff0000"
-                          }
-                        ],
-                        "decimals": 2,
-                        "unit": "kW",
-                        "position": "center",
-                        "label": "Grid"
-                      },
-                      {
-                        "type": "history",
-                        "entity": "sensor.inverters_1_grid_power",
-                        "hours": 24,
-                        "min": -5000,
-                        "max": 5000,
-                        "scale": 0.001,
-                        "decimals": 2,
-                        "unit": "kW",
-                        "position": "bottom",
-                        "label": "Grid"
-                      }
-                    ],
-                    [
-                      {
-                        "type": "gauge",
-                        "entity": "sensor.inverters_1_grid_voltage",
-                        "min": 0,
-                        "max": 300,
-                        "scale": 1,
-                        "needle": true,
-                        "segments": [
-                          {
-                            "from": 0,
-                            "color": "#ff0000"
-                          },
-                          {
-                            "from": 180,
-                            "color": "#ffff00"
-                          },
-                          {
-                            "from": 200,
-                            "color": "#00ff00"
-                          },
-                          {
-                            "from": 260,
-                            "color": "#ffff00"
-                          },
-                          {
-                            "from": 270,
-                            "color": "#ff0000"
-                          }
-                        ],
-                        "decimals": 1,
-                        "unit": "V",
-                        "position": "center",
-                        "label": "Volts"
-                      },
-                      {
-                        "type": "history",
-                        "entity": "sensor.inverters_1_grid_voltage",
-                        "hours": 24,
-                        "min": 0,
-                        "max": 300,
-                        "scale": 1,
-                        "decimals": 1,
-                        "unit": "V",
-                        "position": "bottom",
-                        "label": "Volts"
-                      }
-                    ]
-                  ]
-                },
-                "3,1": [
-                  {
-                    "type": "gauge",
-                    "entities": [
-                      "sensor.inverters_1_pv_power_1",
-                      "sensor.inverters_1_pv_power_2"
-                    ],
-                    "min": 0,
-                    "max": 10000,
-                    "scale": 0.001,
-                    "needle": true,
-                    "decimals": 2,
-                    "unit": "kW",
-                    "position": "center"
-                  },
-                  {
                     "type": "history",
-                    "entities": [
-                      "sensor.inverters_1_pv_power_1",
-                      "sensor.inverters_1_pv_power_2"
-                    ],
+                    "entity": "sensor.inverters_1_load_power",
                     "hours": 24,
                     "min": 0,
-                    "max": 10000,
-                    "scale": 0.001,
-                    "decimals": 2,
-                    "unit": "kW",
-                    "position": "bottom"
-                  }
-                ],
-                "5,1": {
-                  "type": "cycle",
-                  "interval": 3,
-                  "position": "cycle",
-                  "steps": [
-                    [
+                    "max": 100,
+                    "position": "bg",
+                    "opacity": 0.8,
+                    "scrim": true
+                  },
+                  {
+                    "type": "bars",
+                    "orientation": "horizontal",
+                    "position": "bottom",
+                    "height": "55%",
+                    "series": [
                       {
-                        "type": "gauge",
-                        "entity": "sensor.totals_battery_power",
-                        "min": -10000,
+                        "label": "Power",
+                        "min": 0,
                         "max": 10000,
+                        "decimals": 2,
+                        "entity": "sensor.inverters_1_load_power",
                         "scale": 0.001,
-                        "needle": true,
+                        "unit": "kW",
                         "segments": [
                           {
-                            "from": -10000,
-                            "color": "#ff0000"
-                          },
-                          {
-                            "from": -1000,
-                            "color": "#ffff00"
-                          },
-                          {
                             "from": 0,
-                            "color": "#00ff00"
+                            "color": "#00E676"
                           },
                           {
-                            "from": 1000,
-                            "color": "#ffff00"
+                            "from": 5000,
+                            "color": "#ffb300"
                           },
                           {
                             "from": 8000,
-                            "color": "#ff0000"
+                            "color": "#ff5252"
                           }
-                        ],
-                        "decimals": 2,
-                        "unit": "kW",
-                        "position": "center",
-                        "label": "Power"
+                        ]
                       },
                       {
-                        "type": "history",
-                        "entity": "sensor.totals_battery_power",
-                        "hours": 24,
-                        "min": -10000,
-                        "max": 10000,
-                        "scale": 0.001,
-                        "decimals": 2,
-                        "unit": "kW",
-                        "position": "bottom",
-                        "label": "Power"
-                      }
-                    ],
-                    [
-                      {
-                        "type": "gauge",
-                        "entity": "sensor.totals_battery_voltage",
-                        "min": 40,
-                        "max": 60,
-                        "scale": 1,
-                        "needle": true,
-                        "segments": [
-                          {
-                            "from": 40,
-                            "color": "#ff0000"
-                          },
-                          {
-                            "from": 46,
-                            "color": "#ffff00"
-                          },
-                          {
-                            "from": 49,
-                            "color": "#00ff00"
-                          },
-                          {
-                            "from": 56,
-                            "color": "#ffff00"
-                          },
-                          {
-                            "from": 58,
-                            "color": "#ff0000"
-                          }
-                        ],
-                        "decimals": 1,
-                        "unit": "V",
-                        "position": "center",
-                        "label": "Volts"
-                      },
-                      {
-                        "type": "history",
-                        "entity": "sensor.totals_battery_voltage",
-                        "hours": 24,
-                        "min": 40,
-                        "max": 60,
-                        "scale": 1,
-                        "decimals": 1,
-                        "unit": "V",
-                        "position": "bottom",
-                        "label": "Volts"
-                      }
-                    ],
-                    [
-                      {
-                        "type": "gauge",
-                        "entity": "sensor.totals_battery_state_of_charge",
+                        "label": "Temp",
                         "min": 0,
-                        "max": 100,
-                        "scale": 1,
-                        "needle": true,
+                        "max": 80,
+                        "decimals": 0,
+                        "entity": "sensor.inverters_1_temperature",
+                        "unit": "°C",
                         "segments": [
                           {
                             "from": 0,
-                            "color": "#ff0000"
-                          },
-                          {
-                            "from": 20,
-                            "color": "#ffff00"
+                            "color": "#00E676"
                           },
                           {
                             "from": 50,
-                            "color": "#00ff00"
+                            "color": "#ffb300"
                           },
                           {
-                            "from": 80,
-                            "color": "#ffff00"
-                          },
-                          {
-                            "from": 95,
-                            "color": "#ff0000"
+                            "from": 70,
+                            "color": "#ff5252"
                           }
-                        ],
-                        "decimals": 0,
-                        "unit": "%",
-                        "position": "center",
-                        "label": "SOC"
+                        ]
                       },
                       {
-                        "type": "history",
-                        "entity": "sensor.totals_battery_state_of_charge",
-                        "hours": 24,
-                        "min": 0,
-                        "max": 100,
-                        "scale": 1,
-                        "decimals": 0,
-                        "unit": "%",
-                        "position": "bottom",
-                        "label": "SOC"
+                        "label": "Freq",
+                        "min": 45,
+                        "max": 55,
+                        "decimals": 1,
+                        "entity": "sensor.inverters_1_grid_frequency",
+                        "unit": "Hz",
+                        "segments": [
+                          {
+                            "from": 45,
+                            "color": "#ff5252"
+                          },
+                          {
+                            "from": 49,
+                            "color": "#ffb300"
+                          },
+                          {
+                            "from": 49.8,
+                            "color": "#00E676"
+                          },
+                          {
+                            "from": 50.3,
+                            "color": "#ff5252"
+                          }
+                        ]
                       }
                     ]
-                  ]
-                },
-                "9,7": {
-                  "type": "gauge",
-                  "entity": "sensor.pool_energy_daily",
-                  "min": 0,
-                  "max": 20,
-                  "scale": 1,
-                  "needle": true,
-                  "segments": [
-                    {
-                      "from": 0,
-                      "color": "#00ff00"
-                    },
-                    {
-                      "from": 10,
-                      "color": "#ffff00"
-                    },
-                    {
-                      "from": 15,
-                      "color": "#ff0000"
-                    }
-                  ],
-                  "decimals": 2,
-                  "unit": "kWh",
-                  "position": "center"
-                },
+                  }
+                ],
+                "1,7": [
+                  {
+                    "type": "history",
+                    "entity": "sensor.inverters_1_grid_power",
+                    "hours": 24,
+                    "min": 0,
+                    "max": 100,
+                    "position": "bg",
+                    "opacity": 0.8,
+                    "scrim": true
+                  },
+                  {
+                    "type": "bars",
+                    "orientation": "horizontal",
+                    "position": "bottom",
+                    "height": "55%",
+                    "series": [
+                      {
+                        "label": "Power",
+                        "min": -5000,
+                        "max": 5000,
+                        "decimals": 2,
+                        "entity": "sensor.inverters_1_grid_power",
+                        "scale": 0.001,
+                        "unit": "kW",
+                        "segments": [
+                          {
+                            "from": -5000,
+                            "color": "#00E676"
+                          },
+                          {
+                            "from": 0,
+                            "color": "#ffb300"
+                          },
+                          {
+                            "from": 2000,
+                            "color": "#ff5252"
+                          }
+                        ]
+                      },
+                      {
+                        "label": "Voltage",
+                        "min": 0,
+                        "max": 300,
+                        "decimals": 0,
+                        "entity": "sensor.inverters_1_grid_voltage",
+                        "unit": "V",
+                        "segments": [
+                          {
+                            "from": 0,
+                            "color": "#ff5252"
+                          },
+                          {
+                            "from": 200,
+                            "color": "#ffb300"
+                          },
+                          {
+                            "from": 220,
+                            "color": "#00E676"
+                          },
+                          {
+                            "from": 260,
+                            "color": "#ff5252"
+                          }
+                        ]
+                      },
+                      {
+                        "label": "Freq",
+                        "min": 45,
+                        "max": 55,
+                        "decimals": 1,
+                        "entity": "sensor.inverters_1_grid_frequency",
+                        "unit": "Hz",
+                        "segments": [
+                          {
+                            "from": 45,
+                            "color": "#ff5252"
+                          },
+                          {
+                            "from": 49,
+                            "color": "#ffb300"
+                          },
+                          {
+                            "from": 49.8,
+                            "color": "#00E676"
+                          },
+                          {
+                            "from": 50.3,
+                            "color": "#ff5252"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ],
+                "3,1": [
+                  {
+                    "type": "history",
+                    "entity": "sensor.inverters_1_pv_power",
+                    "hours": 24,
+                    "min": 0,
+                    "max": 100,
+                    "position": "bg",
+                    "opacity": 0.8,
+                    "scrim": true
+                  },
+                  {
+                    "type": "bars",
+                    "orientation": "horizontal",
+                    "position": "bottom",
+                    "height": "55%",
+                    "series": [
+                      {
+                        "label": "PV1",
+                        "min": 0,
+                        "max": 5000,
+                        "decimals": 2,
+                        "entity": "sensor.inverters_1_pv_power_1",
+                        "scale": 0.001,
+                        "unit": "kW",
+                        "segments": [
+                          {
+                            "from": 0,
+                            "color": "#ffb300"
+                          },
+                          {
+                            "from": 3000,
+                            "color": "#00E676"
+                          }
+                        ]
+                      },
+                      {
+                        "label": "PV2",
+                        "min": 0,
+                        "max": 5000,
+                        "decimals": 2,
+                        "entity": "sensor.inverters_1_pv_power_2",
+                        "scale": 0.001,
+                        "unit": "kW",
+                        "segments": [
+                          {
+                            "from": 0,
+                            "color": "#ffb300"
+                          },
+                          {
+                            "from": 3000,
+                            "color": "#00E676"
+                          }
+                        ]
+                      },
+                      {
+                        "label": "Total",
+                        "min": 0,
+                        "max": 10000,
+                        "decimals": 2,
+                        "entity": "sensor.inverters_1_pv_power",
+                        "scale": 0.001,
+                        "unit": "kW",
+                        "segments": [
+                          {
+                            "from": 0,
+                            "color": "#ffb300"
+                          },
+                          {
+                            "from": 5000,
+                            "color": "#00E676"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ],
+                "5,1": [
+                  {
+                    "type": "history",
+                    "entity": "sensor.totals_battery_power",
+                    "hours": 24,
+                    "min": 0,
+                    "max": 100,
+                    "position": "bg",
+                    "opacity": 0.8,
+                    "scrim": true
+                  },
+                  {
+                    "type": "bars",
+                    "orientation": "horizontal",
+                    "position": "bottom",
+                    "height": "55%",
+                    "series": [
+                      {
+                        "label": "Power",
+                        "min": -10000,
+                        "max": 10000,
+                        "decimals": 2,
+                        "entity": "sensor.totals_battery_power",
+                        "scale": 0.001,
+                        "unit": "kW",
+                        "segments": [
+                          {
+                            "from": -10000,
+                            "color": "#4fc3f7"
+                          },
+                          {
+                            "from": 0,
+                            "color": "#00E676"
+                          },
+                          {
+                            "from": 5000,
+                            "color": "#ff5252"
+                          }
+                        ]
+                      },
+                      {
+                        "label": "SOC",
+                        "min": 0,
+                        "max": 100,
+                        "decimals": 0,
+                        "entity": "sensor.totals_battery_state_of_charge",
+                        "unit": "%",
+                        "segments": [
+                          {
+                            "from": 0,
+                            "color": "#ff5252"
+                          },
+                          {
+                            "from": 20,
+                            "color": "#ffb300"
+                          },
+                          {
+                            "from": 50,
+                            "color": "#00E676"
+                          }
+                        ]
+                      },
+                      {
+                        "label": "Voltage",
+                        "min": 40,
+                        "max": 60,
+                        "decimals": 1,
+                        "entity": "sensor.totals_battery_voltage",
+                        "unit": "V",
+                        "segments": [
+                          {
+                            "from": 40,
+                            "color": "#ff5252"
+                          },
+                          {
+                            "from": 48,
+                            "color": "#ffb300"
+                          },
+                          {
+                            "from": 50,
+                            "color": "#00E676"
+                          },
+                          {
+                            "from": 56,
+                            "color": "#ff5252"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ],
+                "9,7": [
+                  {
+                    "type": "history",
+                    "entity": "sensor.pool_energy_daily",
+                    "hours": 24,
+                    "min": 0,
+                    "max": 100,
+                    "position": "bg",
+                    "opacity": 0.8,
+                    "scrim": true
+                  },
+                  {
+                    "type": "bars",
+                    "orientation": "horizontal",
+                    "position": "bottom",
+                    "height": "55%",
+                    "series": [
+                      {
+                        "label": "Energy",
+                        "min": 0,
+                        "max": 10,
+                        "decimals": 1,
+                        "entity": "sensor.pool_energy_daily",
+                        "unit": "kWh",
+                        "segments": [
+                          {
+                            "from": 0,
+                            "color": "#4fc3f7"
+                          },
+                          {
+                            "from": 4,
+                            "color": "#00E676"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ],
                 "7,4": [
                   {
-                    "type": "cycle",
-                    "interval": 4,
-                    "position": "cycle",
-                    "steps": [
-                      [
-                        {
-                          "type": "gauge",
-                          "entity": "sensor.tze200_mja3fuja_ts0601_temperature",
-                          "min": 0,
-                          "max": 45,
-                          "needle": true,
-                          "decimals": 1,
-                          "unit": "°C",
-                          "position": "center",
-                          "label": "Temp"
-                        }
-                      ],
-                      [
-                        {
-                          "type": "gauge",
-                          "entity": "sensor.tze200_mja3fuja_ts0601_humidity",
-                          "min": 0,
-                          "max": 100,
-                          "needle": true,
-                          "decimals": 0,
-                          "unit": "%",
-                          "position": "center",
-                          "label": "Humidity"
-                        }
-                      ],
-                      [
-                        {
-                          "type": "gauge",
-                          "entity": "sensor.tze200_mja3fuja_ts0601_carbon_dioxide",
-                          "min": 0,
-                          "max": 2000,
-                          "needle": true,
-                          "decimals": 0,
-                          "unit": "ppm",
-                          "position": "center",
-                          "label": "CO2"
-                        }
-                      ],
-                      [
-                        {
-                          "type": "gauge",
-                          "entity": "sensor.tze200_mja3fuja_ts0601_volatile_organic_compounds",
-                          "min": 0,
-                          "max": 10,
-                          "needle": true,
-                          "decimals": 2,
-                          "unit": "VOC",
-                          "position": "center",
-                          "label": "VOC"
-                        }
-                      ],
-                      [
-                        {
-                          "type": "gauge",
-                          "entity": "sensor.tze200_mja3fuja_ts0601_formaldehyde_concentration",
-                          "min": 0,
-                          "max": 0.5,
-                          "needle": true,
-                          "decimals": 2,
-                          "unit": "HCHO",
-                          "position": "center",
-                          "label": "HCHO"
-                        }
-                      ]
+                    "type": "history",
+                    "entity": "sensor.tze200_mja3fuja_ts0601_temperature",
+                    "hours": 24,
+                    "min": 0,
+                    "max": 100,
+                    "position": "bg",
+                    "opacity": 0.8,
+                    "scrim": true
+                  },
+                  {
+                    "type": "bars",
+                    "orientation": "horizontal",
+                    "position": "bottom",
+                    "height": "55%",
+                    "series": [
+                      {
+                        "label": "Temp",
+                        "min": 0,
+                        "max": 40,
+                        "decimals": 1,
+                        "entity": "sensor.tze200_mja3fuja_ts0601_temperature",
+                        "unit": "°C",
+                        "segments": [
+                          {
+                            "from": 0,
+                            "color": "#4fc3f7"
+                          },
+                          {
+                            "from": 18,
+                            "color": "#00E676"
+                          },
+                          {
+                            "from": 28,
+                            "color": "#ff5252"
+                          }
+                        ]
+                      },
+                      {
+                        "label": "Humidity",
+                        "min": 0,
+                        "max": 100,
+                        "decimals": 0,
+                        "entity": "sensor.tze200_mja3fuja_ts0601_humidity",
+                        "unit": "%",
+                        "segments": [
+                          {
+                            "from": 0,
+                            "color": "#ff5252"
+                          },
+                          {
+                            "from": 40,
+                            "color": "#00E676"
+                          },
+                          {
+                            "from": 70,
+                            "color": "#4fc3f7"
+                          }
+                        ]
+                      },
+                      {
+                        "label": "CO2",
+                        "min": 400,
+                        "max": 2000,
+                        "decimals": 0,
+                        "entity": "sensor.tze200_mja3fuja_ts0601_carbon_dioxide",
+                        "unit": "ppm",
+                        "segments": [
+                          {
+                            "from": 400,
+                            "color": "#00E676"
+                          },
+                          {
+                            "from": 1000,
+                            "color": "#ffb300"
+                          },
+                          {
+                            "from": 1500,
+                            "color": "#ff5252"
+                          }
+                        ]
+                      }
                     ]
                   }
                 ],
                 "7,7": [
                   {
-                    "type": "gauge",
+                    "type": "history",
                     "entity": "sensor.inverters_1_load_power",
+                    "hours": 24,
                     "min": 0,
-                    "max": 6000,
-                    "scale": 0.001,
-                    "needle": true,
-                    "decimals": 2,
-                    "unit": "kW",
-                    "position": "center"
+                    "max": 100,
+                    "position": "bg",
+                    "opacity": 0.8,
+                    "scrim": true
                   },
+                  {
+                    "type": "bars",
+                    "orientation": "horizontal",
+                    "position": "bottom",
+                    "height": "55%",
+                    "series": [
+                      {
+                        "label": "Load",
+                        "min": 0,
+                        "max": 5000,
+                        "decimals": 2,
+                        "entity": "sensor.inverters_1_load_power",
+                        "scale": 0.001,
+                        "unit": "kW",
+                        "segments": [
+                          {
+                            "from": 0,
+                            "color": "#00E676"
+                          },
+                          {
+                            "from": 3000,
+                            "color": "#ffb300"
+                          },
+                          {
+                            "from": 4500,
+                            "color": "#ff5252"
+                          }
+                        ]
+                      },
+                      {
+                        "label": "Essential",
+                        "min": 0,
+                        "max": 5000,
+                        "decimals": 2,
+                        "entity": "sensor.inverters_1_load_power_essential",
+                        "scale": 0.001,
+                        "unit": "kW",
+                        "segments": [
+                          {
+                            "from": 0,
+                            "color": "#00E676"
+                          },
+                          {
+                            "from": 3000,
+                            "color": "#ffb300"
+                          },
+                          {
+                            "from": 4500,
+                            "color": "#ff5252"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ],
+                "5,7": [
                   {
                     "type": "history",
                     "entity": "sensor.inverters_1_load_power",
                     "hours": 24,
                     "min": 0,
-                    "max": 6000,
-                    "scale": 0.001,
-                    "decimals": 2,
-                    "unit": "kW",
-                    "position": "bottom"
-                  }
-                ],
-                "5,7": {
-                  "type": "cycle",
-                  "interval": 3,
-                  "position": "cycle",
-                  "steps": [
-                    [
+                    "max": 100,
+                    "position": "bg",
+                    "opacity": 0.8,
+                    "scrim": true
+                  },
+                  {
+                    "type": "bars",
+                    "orientation": "horizontal",
+                    "position": "bottom",
+                    "height": "55%",
+                    "series": [
                       {
-                        "type": "gauge",
-                        "entity": "sensor.inverters_1_load_power",
+                        "label": "Load",
                         "min": 0,
-                        "max": 6000,
+                        "max": 5000,
+                        "decimals": 2,
+                        "entity": "sensor.inverters_1_load_power",
                         "scale": 0.001,
-                        "needle": true,
+                        "unit": "kW",
                         "segments": [
                           {
                             "from": 0,
-                            "color": "#ff0000"
-                          },
-                          {
-                            "from": 1000,
-                            "color": "#ffff00"
+                            "color": "#00E676"
                           },
                           {
                             "from": 3000,
-                            "color": "#00ff00"
+                            "color": "#ffb300"
                           },
                           {
-                            "from": 5000,
-                            "color": "#ffff00"
-                          },
-                          {
-                            "from": 6000,
-                            "color": "#ff0000"
+                            "from": 4500,
+                            "color": "#ff5252"
                           }
-                        ],
-                        "decimals": 2,
-                        "unit": "kW",
-                        "position": "center",
-                        "label": "Load"
+                        ]
                       },
                       {
-                        "type": "history",
-                        "entity": "sensor.inverters_1_load_power",
-                        "hours": 24,
-                        "min": 0,
-                        "max": 6000,
-                        "scale": 0.001,
-                        "decimals": 2,
-                        "unit": "kW",
-                        "position": "bottom",
-                        "label": "Load"
-                      }
-                    ],
-                    [
-                      {
-                        "type": "gauge",
-                        "entity": "sensor.inverters_1_pv_power",
-                        "min": 0,
-                        "max": 10000,
-                        "scale": 0.001,
-                        "needle": true,
-                        "segments": [
-                          {
-                            "from": 0,
-                            "color": "#ff0000"
-                          },
-                          {
-                            "from": 3000,
-                            "color": "#ffff00"
-                          },
-                          {
-                            "from": 6000,
-                            "color": "#00ff00"
-                          },
-                          {
-                            "from": 9000,
-                            "color": "#ffff00"
-                          },
-                          {
-                            "from": 10000,
-                            "color": "#ff0000"
-                          }
-                        ],
-                        "decimals": 2,
-                        "unit": "kW",
-                        "position": "center",
-                        "label": "PV"
-                      },
-                      {
-                        "type": "history",
-                        "entity": "sensor.inverters_1_pv_power",
-                        "hours": 24,
-                        "min": 0,
-                        "max": 10000,
-                        "scale": 0.001,
-                        "decimals": 2,
-                        "unit": "kW",
-                        "position": "bottom",
-                        "label": "PV"
-                      }
-                    ],
-                    [
-                      {
-                        "type": "gauge",
-                        "entity": "sensor.inverters_1_grid_power",
+                        "label": "Grid",
                         "min": -5000,
                         "max": 5000,
+                        "decimals": 2,
+                        "entity": "sensor.inverters_1_grid_power",
                         "scale": 0.001,
-                        "needle": true,
+                        "unit": "kW",
                         "segments": [
                           {
                             "from": -5000,
-                            "color": "#ff0000"
-                          },
-                          {
-                            "from": -1000,
-                            "color": "#ffff00"
+                            "color": "#00E676"
                           },
                           {
                             "from": 0,
-                            "color": "#00ff00"
+                            "color": "#ffb300"
                           },
                           {
-                            "from": 1000,
-                            "color": "#ffff00"
-                          },
-                          {
-                            "from": 3000,
-                            "color": "#ff0000"
+                            "from": 2000,
+                            "color": "#ff5252"
                           }
-                        ],
-                        "decimals": 2,
-                        "unit": "kW",
-                        "position": "center",
-                        "label": "Grid"
+                        ]
                       },
                       {
-                        "type": "history",
-                        "entity": "sensor.inverters_1_grid_power",
-                        "hours": 24,
-                        "min": -5000,
-                        "max": 5000,
-                        "scale": 0.001,
-                        "decimals": 2,
-                        "unit": "kW",
-                        "position": "bottom",
-                        "label": "Grid"
-                      }
-                    ],
-                    [
-                      {
-                        "type": "gauge",
-                        "entity": "sensor.totals_battery_power",
-                        "min": -10000,
-                        "max": 10000,
-                        "scale": 0.001,
-                        "needle": true,
-                        "segments": [
-                          {
-                            "from": -10000,
-                            "color": "#ff0000"
-                          },
-                          {
-                            "from": -1000,
-                            "color": "#ffff00"
-                          },
-                          {
-                            "from": 0,
-                            "color": "#00ff00"
-                          },
-                          {
-                            "from": 1000,
-                            "color": "#ffff00"
-                          },
-                          {
-                            "from": 8000,
-                            "color": "#ff0000"
-                          }
-                        ],
-                        "decimals": 2,
-                        "unit": "kW",
-                        "position": "center",
-                        "label": "Power"
-                      },
-                      {
-                        "type": "history",
-                        "entity": "sensor.totals_battery_power",
-                        "hours": 24,
-                        "min": -10000,
-                        "max": 10000,
-                        "scale": 0.001,
-                        "decimals": 2,
-                        "unit": "kW",
-                        "position": "bottom",
-                        "label": "Power"
-                      }
-                    ],
-                    [
-                      {
-                        "type": "gauge",
-                        "entity": "sensor.totals_battery_state_of_charge",
+                        "label": "PV",
                         "min": 0,
-                        "max": 100,
-                        "scale": 1,
-                        "needle": true,
+                        "max": 10000,
+                        "decimals": 2,
+                        "entity": "sensor.inverters_1_pv_power",
+                        "scale": 0.001,
+                        "unit": "kW",
                         "segments": [
                           {
                             "from": 0,
-                            "color": "#ff0000"
+                            "color": "#ffb300"
                           },
                           {
-                            "from": 20,
-                            "color": "#ffff00"
-                          },
-                          {
-                            "from": 50,
-                            "color": "#00ff00"
-                          },
-                          {
-                            "from": 80,
-                            "color": "#ffff00"
-                          },
-                          {
-                            "from": 95,
-                            "color": "#ff0000"
+                            "from": 5000,
+                            "color": "#00E676"
                           }
-                        ],
-                        "decimals": 0,
-                        "unit": "%",
-                        "position": "center",
-                        "label": "SOC"
-                      },
-                      {
-                        "type": "history",
-                        "entity": "sensor.totals_battery_state_of_charge",
-                        "hours": 24,
-                        "min": 0,
-                        "max": 100,
-                        "scale": 1,
-                        "decimals": 0,
-                        "unit": "%",
-                        "position": "bottom",
-                        "label": "SOC"
+                        ]
                       }
                     ]
-                  ]
-                },
+                  }
+                ],
                 "9,4": [
-                  {
-                    "type": "gauge",
-                    "entity": "sensor.laundry_room_washing_machine_power",
-                    "min": 0,
-                    "max": 2500,
-                    "needle": true,
-                    "decimals": 0,
-                    "unit": "W",
-                    "position": "center"
-                  },
                   {
                     "type": "history",
                     "entity": "sensor.laundry_room_washing_machine_power",
                     "hours": 24,
                     "min": 0,
-                    "max": 2500,
-                    "position": "bottom"
+                    "max": 100,
+                    "position": "bg",
+                    "opacity": 0.8,
+                    "scrim": true
+                  },
+                  {
+                    "type": "bars",
+                    "orientation": "horizontal",
+                    "position": "bottom",
+                    "height": "55%",
+                    "series": [
+                      {
+                        "label": "Power",
+                        "min": 0,
+                        "max": 2500,
+                        "decimals": 0,
+                        "entity": "sensor.laundry_room_washing_machine_power",
+                        "unit": "W",
+                        "segments": [
+                          {
+                            "from": 0,
+                            "color": "#00E676"
+                          },
+                          {
+                            "from": 1000,
+                            "color": "#ffb300"
+                          },
+                          {
+                            "from": 2000,
+                            "color": "#ff5252"
+                          }
+                        ]
+                      }
+                    ]
                   }
                 ]
               },
@@ -999,7 +936,11 @@
                 "9,4": "2px solid #555",
                 "1,4": "2px solid #555",
                 "1,1": "2px solid #555",
-                "3,4": "2px solid #555"
+                "3,4": "2px solid #555",
+                "1,7": "2px solid #555",
+                "5,1": "2px solid #555",
+                "5,7": "2px solid #555",
+                "9,7": "2px solid #555"
               },
               "pfg_hide_grid": true,
               "pfg_image_fit": {
@@ -1017,17 +958,17 @@
                 "9,7": "Energy"
               },
               "pfg_label_pos": {
-                "7,7": "12%",
-                "7,4": "12%",
-                "9,4": "12%",
+                "7,7": "top",
+                "7,4": "top",
+                "9,4": "top",
                 "1,1": "top",
                 "1,4": "top",
-                "1,7": "12%",
-                "3,1": "12%",
-                "3,4": "12%",
-                "5,1": "12%",
-                "5,7": "12%",
-                "9,7": "12%"
+                "1,7": "top",
+                "3,1": "top",
+                "3,4": "top",
+                "5,1": "top",
+                "5,7": "top",
+                "9,7": "top"
               }
             }
           ]
@@ -5449,6 +5390,220 @@
             "grid-template-rows": "repeat(12, auto)",
             "grid-template-areas": "\"pv pv pv pv pvv pvv pvv pvv pvh pvh pvh pvh\" \"grid grid grid grid ga ga ga ga gb gb gb gb\" \"battery battery battery battery batterya batterya batterya batterya batteryb batteryb batteryb batteryb\" \"inverter inverter inverter inverter invertera invertera invertera invertera inverterb inverterb inverterb inverterb\" \"pool pool pool pool poola poola poola poola poolb poolb poolb poolb\" \"sum sum sum sum suma suma suma suma sumb sumb sumb sumb\" \"kitchen kitchen kitchen kitchen kitchena kitchena kitchena kitchena kitchenb kitchenb kitchenb kitchenb\" \"home home home home homea homea homea homea homeb homeb homeb homeb\" \"bedroom bedroom bedroom bedroom bedrooma bedrooma bedrooma bedrooma bedroomb bedroomb bedroomb bedroomb\" \"terrace terrace terrace terrace terracea terracea terracea terracea terraceb terraceb terraceb terraceb\" \"living living living living livinga livinga livinga livinga livingb livingb livingb livingb\" \"laundry laundry laundry laundry laundrya laundrya laundrya laundrya laundryb laundryb laundryb laundryb\""
           }
+        },
+        {
+          "title": "TPL_SOLIS",
+          "cards": [
+            {
+              "type": "heading",
+              "heading": "Solar Assistant Graphical",
+              "card_mod": {
+                "style": "ha-card { --card-background-color: #102040 !important; background-color: #102040 !important; --primary-text-color: #ffffff !important; --secondary-text-color: #cccccc !important; color: #ffffff !important; }"
+              }
+            },
+            {
+              "type": "grid",
+              "columns": 3,
+              "square": false,
+              "cards": [
+                {
+                  "type": "gauge",
+                  "name": "Pack 1 SOC",
+                  "entity": "sensor.batteries_1_state_of_charge",
+                  "unit": "%",
+                  "min": 0,
+                  "max": 100,
+                  "card_mod": {
+                    "style": "ha-card { --card-background-color: #102040 !important; background-color: #102040 !important; --primary-text-color: #ffffff !important; --secondary-text-color: #cccccc !important; color: #ffffff !important; }"
+                  }
+                },
+                {
+                  "type": "gauge",
+                  "name": "Pack 2 SOC",
+                  "entity": "sensor.batteries_2_state_of_charge",
+                  "unit": "%",
+                  "min": 0,
+                  "max": 100,
+                  "card_mod": {
+                    "style": "ha-card { --card-background-color: #102040 !important; background-color: #102040 !important; --primary-text-color: #ffffff !important; --secondary-text-color: #cccccc !important; color: #ffffff !important; }"
+                  }
+                },
+                {
+                  "type": "gauge",
+                  "name": "Pack 3 SOC",
+                  "entity": "sensor.batteries_3_state_of_charge",
+                  "unit": "%",
+                  "min": 0,
+                  "max": 100,
+                  "card_mod": {
+                    "style": "ha-card { --card-background-color: #102040 !important; background-color: #102040 !important; --primary-text-color: #ffffff !important; --secondary-text-color: #cccccc !important; color: #ffffff !important; }"
+                  }
+                }
+              ],
+              "card_mod": {
+                "style": "ha-card { --card-background-color: #102040 !important; background-color: #102040 !important; --primary-text-color: #ffffff !important; --secondary-text-color: #cccccc !important; color: #ffffff !important; }"
+              }
+            },
+            {
+              "type": "history-graph",
+              "title": "Power History",
+              "hours_to_show": 24,
+              "entities": [
+                "sensor.inverters_1_pv_power",
+                "sensor.inverters_1_battery_power",
+                "sensor.inverters_1_load_power",
+                "sensor.inverters_1_grid_power",
+                "sensor.batteries_1_power",
+                "sensor.batteries_2_power",
+                "sensor.batteries_3_power"
+              ],
+              "card_mod": {
+                "style": "ha-card { --card-background-color: #102040 !important; background-color: #102040 !important; --primary-text-color: #ffffff !important; --secondary-text-color: #cccccc !important; color: #ffffff !important; }"
+              }
+            },
+            {
+              "type": "sensor",
+              "name": "Battery Power Trend",
+              "entity": "sensor.inverters_1_battery_power",
+              "graph": "line",
+              "hours_to_show": 24,
+              "card_mod": {
+                "style": "ha-card { --card-background-color: #102040 !important; background-color: #102040 !important; --primary-text-color: #ffffff !important; --secondary-text-color: #cccccc !important; color: #ffffff !important; }"
+              }
+            },
+            {
+              "type": "heading",
+              "heading": "Solar Assistant Live",
+              "card_mod": {
+                "style": "ha-card { --card-background-color: #102040 !important; background-color: #102040 !important; --primary-text-color: #ffffff !important; --secondary-text-color: #cccccc !important; color: #ffffff !important; }"
+              }
+            },
+            {
+              "type": "grid",
+              "columns": 2,
+              "square": false,
+              "cards": [
+                {
+                  "type": "entities",
+                  "title": "Inverter",
+                  "entities": [
+                    "sensor.inverters_1_pv_power",
+                    "sensor.inverters_1_pv_power_1",
+                    "sensor.inverters_1_pv_power_2",
+                    "sensor.inverters_1_pv_voltage_1",
+                    "sensor.inverters_1_pv_voltage_2",
+                    "sensor.inverters_1_pv_current_1",
+                    "sensor.inverters_1_pv_current_2",
+                    "sensor.inverters_1_battery_power",
+                    "sensor.inverters_1_battery_voltage",
+                    "sensor.inverters_1_battery_current",
+                    "sensor.inverters_1_battery_state_of_charge",
+                    "sensor.inverters_1_battery_state_of_health",
+                    "sensor.inverters_1_load_power",
+                    "sensor.inverters_1_load_power_essential",
+                    "sensor.inverters_1_grid_power",
+                    "sensor.inverters_1_grid_voltage",
+                    "sensor.inverters_1_grid_frequency",
+                    "sensor.inverters_1_inverter_mode",
+                    "sensor.inverters_1_temperature"
+                  ],
+                  "card_mod": {
+                    "style": "ha-card { --card-background-color: #102040 !important; background-color: #102040 !important; --primary-text-color: #ffffff !important; --secondary-text-color: #cccccc !important; color: #ffffff !important; }"
+                  }
+                },
+                {
+                  "type": "entities",
+                  "title": "Battery Pack 1",
+                  "entities": [
+                    "sensor.batteries_1_power",
+                    "sensor.batteries_1_state_of_charge",
+                    "sensor.batteries_1_voltage",
+                    "sensor.batteries_1_current",
+                    "sensor.batteries_1_cell_voltage_average",
+                    "sensor.batteries_1_cell_voltage_highest",
+                    "sensor.batteries_1_cell_voltage_lowest",
+                    "sensor.batteries_1_cell_voltage_imbalance",
+                    "sensor.batteries_1_temperature",
+                    "sensor.batteries_1_temperature_1",
+                    "sensor.batteries_1_temperature_2",
+                    "sensor.batteries_1_temperature_mos",
+                    "sensor.batteries_1_cycles",
+                    "sensor.batteries_1_state_of_health"
+                  ],
+                  "card_mod": {
+                    "style": "ha-card { --card-background-color: #102040 !important; background-color: #102040 !important; --primary-text-color: #ffffff !important; --secondary-text-color: #cccccc !important; color: #ffffff !important; }"
+                  }
+                },
+                {
+                  "type": "entities",
+                  "title": "Battery Pack 2",
+                  "entities": [
+                    "sensor.batteries_2_power",
+                    "sensor.batteries_2_state_of_charge",
+                    "sensor.batteries_2_voltage",
+                    "sensor.batteries_2_current",
+                    "sensor.batteries_2_cell_voltage_average",
+                    "sensor.batteries_2_cell_voltage_highest",
+                    "sensor.batteries_2_cell_voltage_lowest",
+                    "sensor.batteries_2_cell_voltage_imbalance",
+                    "sensor.batteries_2_temperature",
+                    "sensor.batteries_2_temperature_1",
+                    "sensor.batteries_2_temperature_2",
+                    "sensor.batteries_2_temperature_mos",
+                    "sensor.batteries_2_cycles",
+                    "sensor.batteries_2_state_of_health"
+                  ],
+                  "card_mod": {
+                    "style": "ha-card { --card-background-color: #102040 !important; background-color: #102040 !important; --primary-text-color: #ffffff !important; --secondary-text-color: #cccccc !important; color: #ffffff !important; }"
+                  }
+                },
+                {
+                  "type": "entities",
+                  "title": "Battery Pack 3",
+                  "entities": [
+                    "sensor.batteries_3_power",
+                    "sensor.batteries_3_state_of_charge",
+                    "sensor.batteries_3_voltage",
+                    "sensor.batteries_3_current",
+                    "sensor.batteries_3_cell_voltage_average",
+                    "sensor.batteries_3_cell_voltage_highest",
+                    "sensor.batteries_3_cell_voltage_lowest",
+                    "sensor.batteries_3_cell_voltage_imbalance",
+                    "sensor.batteries_3_temperature",
+                    "sensor.batteries_3_temperature_1",
+                    "sensor.batteries_3_temperature_2",
+                    "sensor.batteries_3_temperature_mos",
+                    "sensor.batteries_3_cycles",
+                    "sensor.batteries_3_state_of_health"
+                  ],
+                  "card_mod": {
+                    "style": "ha-card { --card-background-color: #102040 !important; background-color: #102040 !important; --primary-text-color: #ffffff !important; --secondary-text-color: #cccccc !important; color: #ffffff !important; }"
+                  }
+                }
+              ],
+              "card_mod": {
+                "style": "ha-card { --card-background-color: #102040 !important; background-color: #102040 !important; --primary-text-color: #ffffff !important; --secondary-text-color: #cccccc !important; color: #ffffff !important; }"
+              }
+            },
+            {
+              "type": "history-graph",
+              "title": "Daily Power / Energy",
+              "hours_to_show": 24,
+              "entities": [
+                "sensor.solis_s6_eh3p10k_h_zp_today_energy_consumption",
+                "sensor.solis_s6_eh3p10k_h_zp_today_energy_imported_from_grid",
+                "sensor.solis_s6_eh3p10k_h_zp_today_energy_fed_into_grid",
+                "sensor.solis_s6_eh3p10k_h_zp_today_battery_charge_energy",
+                "sensor.solis_s6_eh3p10k_h_zp_today_battery_discharge_energy",
+                "sensor.solis_s6_eh3p10k_h_zp_ac_coupling_today_power_generation"
+              ],
+              "card_mod": {
+                "style": "ha-card { --card-background-color: #102040 !important; background-color: #102040 !important; --primary-text-color: #ffffff !important; --secondary-text-color: #cccccc !important; color: #ffffff !important; }"
+              }
+            }
+          ],
+          "path": "tpl_solis",
+          "icon": "mdi:solar-power-variant"
         },
         {
           "title": "Data",
