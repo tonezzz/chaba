@@ -1930,6 +1930,58 @@
           ]
         },
         {
+          "title": "G1",
+          "path": "g1",
+          "type": "panel",
+          "badges": [],
+          "cards": [
+            {
+              "type": "custom:sunsynk-power-flow-card",
+              "cardstyle": "pfg",
+              "card_height": "100%",
+              "card_width": "100%",
+              "title": "G1",
+              "pfg_grid_size": 1,
+              "pfg_grid_width": "100%",
+              "pfg_labels": {
+                "1,1": "PV kW — hour × day"
+              },
+              "pfg_charts": {
+                "1,1": {
+                  "type": "surface3d",
+                  "entity": "sensor.inverters_1_pv_power",
+                  "days": 30,
+                  "min": 0,
+                  "max": 10,
+                  "scale": 0.001,
+                  "unit": "kW",
+                  "wireframe": true
+                }
+              },
+              "preset": "pfg",
+              "show_solar": false,
+              "inverter": {
+                "model": "solis",
+                "modern": false,
+                "autarky": "no"
+              },
+              "pfg_fit_screen": true,
+              "pfg_images": {
+                "1,1": "/local/Solar-Grid.jpg"
+              },
+              "pfg_image_fit": {
+                "1,1": "cover"
+              },
+              "pfg_label_pos": {
+                "1,1": "top"
+              },
+              "pfg_border": {
+                "1,1": "2px solid #555"
+              }
+            }
+          ]
+        },
+        {
           "title": "TPL",
           "path": "tpl",
           "type": "custom:grid-layout",
