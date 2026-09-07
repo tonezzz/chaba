@@ -3152,12 +3152,2228 @@
                   }
                 ]
               }
+            },
+            {
+              "type": "custom:sunsynk-power-flow-card",
+              "cardstyle": "pfg",
+              "preset": "pfg",
+              "title": "Grid.a1",
+              "pfg_grid_size": 1,
+              "pfg_grid_width": "100%",
+              "pfg_border": {
+                "1,1": "2px solid #555"
+              },
+              "pfg_images": {
+                "1,1": "/local/power-grid.jpg"
+              },
+              "pfg_labels": {
+                "1,1": "Grid"
+              },
+              "pfg_label_pos": {
+                "1,1": "top"
+              },
+              "view_layout": {
+                "grid-area": "ga"
+              },
+              "card_width": "100%",
+              "pfg_charts": {
+                "1,1": [
+                  {
+                    "type": "bars",
+                    "orientation": "vertical",
+                    "position": "bottom",
+                    "height": "55%",
+                    "series": [
+                      {
+                        "label": "Power",
+                        "entity": "sensor.inverters_1_grid_power",
+                        "min": -5000,
+                        "max": 5000,
+                        "scale": 0.001,
+                        "decimals": 2,
+                        "unit": "kW",
+                        "segments": [
+                          {
+                            "from": -5000,
+                            "color": "#00E676"
+                          },
+                          {
+                            "from": 0,
+                            "color": "#ffb300"
+                          },
+                          {
+                            "from": 2000,
+                            "color": "#ff5252"
+                          }
+                        ]
+                      },
+                      {
+                        "label": "Voltage",
+                        "entity": "sensor.inverters_1_grid_voltage",
+                        "min": 0,
+                        "max": 300,
+                        "decimals": 0,
+                        "unit": "V",
+                        "segments": [
+                          {
+                            "from": 0,
+                            "color": "#ff5252"
+                          },
+                          {
+                            "from": 200,
+                            "color": "#ffb300"
+                          },
+                          {
+                            "from": 220,
+                            "color": "#00E676"
+                          },
+                          {
+                            "from": 260,
+                            "color": "#ff5252"
+                          }
+                        ]
+                      },
+                      {
+                        "label": "Frequency",
+                        "entity": "sensor.inverters_1_grid_frequency",
+                        "min": 45,
+                        "max": 55,
+                        "decimals": 1,
+                        "unit": "Hz",
+                        "segments": [
+                          {
+                            "from": 45,
+                            "color": "#ff5252"
+                          },
+                          {
+                            "from": 49,
+                            "color": "#ffb300"
+                          },
+                          {
+                            "from": 49.8,
+                            "color": "#00E676"
+                          },
+                          {
+                            "from": 50.3,
+                            "color": "#ff5252"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "type": "history",
+                    "entity": "sensor.inverters_1_grid_power",
+                    "hours": 24,
+                    "min": -5000,
+                    "max": 5000,
+                    "scale": 0.001,
+                    "decimals": 2,
+                    "position": "top"
+                  }
+                ]
+              }
+            },
+            {
+              "type": "custom:sunsynk-power-flow-card",
+              "cardstyle": "pfg",
+              "preset": "pfg",
+              "title": "Grid.b1",
+              "pfg_grid_size": 1,
+              "pfg_grid_width": "100%",
+              "pfg_border": {
+                "1,1": "2px solid #555"
+              },
+              "pfg_images": {
+                "1,1": "/local/power-grid.jpg"
+              },
+              "pfg_labels": {
+                "1,1": "Grid"
+              },
+              "pfg_label_pos": {
+                "1,1": "top"
+              },
+              "view_layout": {
+                "grid-area": "gb"
+              },
+              "card_width": "100%",
+              "pfg_charts": {
+                "1,1": [
+                  {
+                    "type": "bars",
+                    "orientation": "horizontal",
+                    "position": "bottom",
+                    "height": "55%",
+                    "series": [
+                      {
+                        "label": "Power",
+                        "entity": "sensor.inverters_1_grid_power",
+                        "min": -5000,
+                        "max": 5000,
+                        "scale": 0.001,
+                        "decimals": 2,
+                        "unit": "kW",
+                        "segments": [
+                          {
+                            "from": -5000,
+                            "color": "#00E676"
+                          },
+                          {
+                            "from": 0,
+                            "color": "#ffb300"
+                          },
+                          {
+                            "from": 2000,
+                            "color": "#ff5252"
+                          }
+                        ]
+                      },
+                      {
+                        "label": "Voltage",
+                        "entity": "sensor.inverters_1_grid_voltage",
+                        "min": 0,
+                        "max": 300,
+                        "decimals": 0,
+                        "unit": "V",
+                        "segments": [
+                          {
+                            "from": 0,
+                            "color": "#ff5252"
+                          },
+                          {
+                            "from": 200,
+                            "color": "#ffb300"
+                          },
+                          {
+                            "from": 220,
+                            "color": "#00E676"
+                          },
+                          {
+                            "from": 260,
+                            "color": "#ff5252"
+                          }
+                        ]
+                      },
+                      {
+                        "label": "Frequency",
+                        "entity": "sensor.inverters_1_grid_frequency",
+                        "min": 45,
+                        "max": 55,
+                        "decimals": 1,
+                        "unit": "Hz",
+                        "segments": [
+                          {
+                            "from": 45,
+                            "color": "#ff5252"
+                          },
+                          {
+                            "from": 49,
+                            "color": "#ffb300"
+                          },
+                          {
+                            "from": 49.8,
+                            "color": "#00E676"
+                          },
+                          {
+                            "from": 50.3,
+                            "color": "#ff5252"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "type": "history",
+                    "entity": "sensor.inverters_1_grid_power",
+                    "hours": 24,
+                    "min": -5000,
+                    "max": 5000,
+                    "scale": 0.001,
+                    "decimals": 2,
+                    "position": "top"
+                  }
+                ]
+              }
+            },
+            {
+              "type": "custom:sunsynk-power-flow-card",
+              "cardstyle": "pfg",
+              "preset": "pfg",
+              "title": "Battery.a1",
+              "pfg_grid_size": 1,
+              "pfg_grid_width": "100%",
+              "pfg_border": {
+                "1,1": "2px solid #555"
+              },
+              "pfg_images": {
+                "1,1": "/local/battery-bank.jpg"
+              },
+              "pfg_labels": {
+                "1,1": "Battery"
+              },
+              "pfg_label_pos": {
+                "1,1": "top"
+              },
+              "view_layout": {
+                "grid-area": "batterya"
+              },
+              "card_width": "100%",
+              "pfg_charts": {
+                "1,1": [
+                  {
+                    "type": "bars",
+                    "orientation": "vertical",
+                    "position": "bottom",
+                    "height": "55%",
+                    "series": [
+                      {
+                        "label": "Power",
+                        "min": -10000,
+                        "max": 10000,
+                        "decimals": 2,
+                        "entity": "sensor.totals_battery_power",
+                        "scale": 0.001,
+                        "unit": "kW",
+                        "segments": [
+                          {
+                            "from": -10000,
+                            "color": "#4fc3f7"
+                          },
+                          {
+                            "from": 0,
+                            "color": "#00E676"
+                          },
+                          {
+                            "from": 5000,
+                            "color": "#ff5252"
+                          }
+                        ]
+                      },
+                      {
+                        "label": "SOC",
+                        "min": 0,
+                        "max": 100,
+                        "decimals": 0,
+                        "entity": "sensor.totals_battery_state_of_charge",
+                        "unit": "%",
+                        "segments": [
+                          {
+                            "from": 0,
+                            "color": "#ff5252"
+                          },
+                          {
+                            "from": 20,
+                            "color": "#ffb300"
+                          },
+                          {
+                            "from": 50,
+                            "color": "#00E676"
+                          }
+                        ]
+                      },
+                      {
+                        "label": "Voltage",
+                        "min": 40,
+                        "max": 60,
+                        "decimals": 1,
+                        "entity": "sensor.totals_battery_voltage",
+                        "unit": "V",
+                        "segments": [
+                          {
+                            "from": 40,
+                            "color": "#ff5252"
+                          },
+                          {
+                            "from": 48,
+                            "color": "#ffb300"
+                          },
+                          {
+                            "from": 50,
+                            "color": "#00E676"
+                          },
+                          {
+                            "from": 56,
+                            "color": "#ff5252"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "type": "history",
+                    "entity": "sensor.totals_battery_power",
+                    "hours": 24,
+                    "min": 0,
+                    "max": 100,
+                    "position": "top"
+                  }
+                ]
+              }
+            },
+            {
+              "type": "custom:sunsynk-power-flow-card",
+              "cardstyle": "pfg",
+              "preset": "pfg",
+              "title": "Battery.b1",
+              "pfg_grid_size": 1,
+              "pfg_grid_width": "100%",
+              "pfg_border": {
+                "1,1": "2px solid #555"
+              },
+              "pfg_images": {
+                "1,1": "/local/battery-bank.jpg"
+              },
+              "pfg_labels": {
+                "1,1": "Battery"
+              },
+              "pfg_label_pos": {
+                "1,1": "top"
+              },
+              "view_layout": {
+                "grid-area": "batteryb"
+              },
+              "card_width": "100%",
+              "pfg_charts": {
+                "1,1": [
+                  {
+                    "type": "bars",
+                    "orientation": "horizontal",
+                    "position": "bottom",
+                    "height": "55%",
+                    "series": [
+                      {
+                        "label": "Power",
+                        "min": -10000,
+                        "max": 10000,
+                        "decimals": 2,
+                        "entity": "sensor.totals_battery_power",
+                        "scale": 0.001,
+                        "unit": "kW",
+                        "segments": [
+                          {
+                            "from": -10000,
+                            "color": "#4fc3f7"
+                          },
+                          {
+                            "from": 0,
+                            "color": "#00E676"
+                          },
+                          {
+                            "from": 5000,
+                            "color": "#ff5252"
+                          }
+                        ]
+                      },
+                      {
+                        "label": "SOC",
+                        "min": 0,
+                        "max": 100,
+                        "decimals": 0,
+                        "entity": "sensor.totals_battery_state_of_charge",
+                        "unit": "%",
+                        "segments": [
+                          {
+                            "from": 0,
+                            "color": "#ff5252"
+                          },
+                          {
+                            "from": 20,
+                            "color": "#ffb300"
+                          },
+                          {
+                            "from": 50,
+                            "color": "#00E676"
+                          }
+                        ]
+                      },
+                      {
+                        "label": "Voltage",
+                        "min": 40,
+                        "max": 60,
+                        "decimals": 1,
+                        "entity": "sensor.totals_battery_voltage",
+                        "unit": "V",
+                        "segments": [
+                          {
+                            "from": 40,
+                            "color": "#ff5252"
+                          },
+                          {
+                            "from": 48,
+                            "color": "#ffb300"
+                          },
+                          {
+                            "from": 50,
+                            "color": "#00E676"
+                          },
+                          {
+                            "from": 56,
+                            "color": "#ff5252"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "type": "history",
+                    "entity": "sensor.totals_battery_power",
+                    "hours": 24,
+                    "min": 0,
+                    "max": 100,
+                    "position": "top"
+                  }
+                ]
+              }
+            },
+            {
+              "type": "custom:sunsynk-power-flow-card",
+              "cardstyle": "pfg",
+              "preset": "pfg",
+              "title": "Inverter.a1",
+              "pfg_grid_size": 1,
+              "pfg_grid_width": "100%",
+              "pfg_border": {
+                "1,1": "2px solid #555"
+              },
+              "pfg_images": {
+                "1,1": "/local/inverter.webp"
+              },
+              "pfg_labels": {
+                "1,1": "Inverter"
+              },
+              "pfg_label_pos": {
+                "1,1": "top"
+              },
+              "view_layout": {
+                "grid-area": "invertera"
+              },
+              "card_width": "100%",
+              "pfg_charts": {
+                "1,1": [
+                  {
+                    "type": "bars",
+                    "orientation": "vertical",
+                    "position": "bottom",
+                    "height": "55%",
+                    "series": [
+                      {
+                        "label": "Power",
+                        "min": 0,
+                        "max": 10000,
+                        "decimals": 2,
+                        "entity": "sensor.inverters_1_load_power",
+                        "scale": 0.001,
+                        "unit": "kW",
+                        "segments": [
+                          {
+                            "from": 0,
+                            "color": "#00E676"
+                          },
+                          {
+                            "from": 5000,
+                            "color": "#ffb300"
+                          },
+                          {
+                            "from": 8000,
+                            "color": "#ff5252"
+                          }
+                        ]
+                      },
+                      {
+                        "label": "Temp",
+                        "min": 0,
+                        "max": 80,
+                        "decimals": 0,
+                        "entity": "sensor.inverters_1_temperature",
+                        "unit": "°C",
+                        "segments": [
+                          {
+                            "from": 0,
+                            "color": "#00E676"
+                          },
+                          {
+                            "from": 50,
+                            "color": "#ffb300"
+                          },
+                          {
+                            "from": 70,
+                            "color": "#ff5252"
+                          }
+                        ]
+                      },
+                      {
+                        "label": "Freq",
+                        "min": 45,
+                        "max": 55,
+                        "decimals": 1,
+                        "entity": "sensor.inverters_1_grid_frequency",
+                        "unit": "Hz",
+                        "segments": [
+                          {
+                            "from": 45,
+                            "color": "#ff5252"
+                          },
+                          {
+                            "from": 49,
+                            "color": "#ffb300"
+                          },
+                          {
+                            "from": 49.8,
+                            "color": "#00E676"
+                          },
+                          {
+                            "from": 50.3,
+                            "color": "#ff5252"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "type": "history",
+                    "entity": "sensor.inverters_1_load_power",
+                    "hours": 24,
+                    "min": 0,
+                    "max": 100,
+                    "position": "top"
+                  }
+                ]
+              }
+            },
+            {
+              "type": "custom:sunsynk-power-flow-card",
+              "cardstyle": "pfg",
+              "preset": "pfg",
+              "title": "Inverter.b1",
+              "pfg_grid_size": 1,
+              "pfg_grid_width": "100%",
+              "pfg_border": {
+                "1,1": "2px solid #555"
+              },
+              "pfg_images": {
+                "1,1": "/local/inverter.webp"
+              },
+              "pfg_labels": {
+                "1,1": "Inverter"
+              },
+              "pfg_label_pos": {
+                "1,1": "top"
+              },
+              "view_layout": {
+                "grid-area": "inverterb"
+              },
+              "card_width": "100%",
+              "pfg_charts": {
+                "1,1": [
+                  {
+                    "type": "bars",
+                    "orientation": "horizontal",
+                    "position": "bottom",
+                    "height": "55%",
+                    "series": [
+                      {
+                        "label": "Power",
+                        "min": 0,
+                        "max": 10000,
+                        "decimals": 2,
+                        "entity": "sensor.inverters_1_load_power",
+                        "scale": 0.001,
+                        "unit": "kW",
+                        "segments": [
+                          {
+                            "from": 0,
+                            "color": "#00E676"
+                          },
+                          {
+                            "from": 5000,
+                            "color": "#ffb300"
+                          },
+                          {
+                            "from": 8000,
+                            "color": "#ff5252"
+                          }
+                        ]
+                      },
+                      {
+                        "label": "Temp",
+                        "min": 0,
+                        "max": 80,
+                        "decimals": 0,
+                        "entity": "sensor.inverters_1_temperature",
+                        "unit": "°C",
+                        "segments": [
+                          {
+                            "from": 0,
+                            "color": "#00E676"
+                          },
+                          {
+                            "from": 50,
+                            "color": "#ffb300"
+                          },
+                          {
+                            "from": 70,
+                            "color": "#ff5252"
+                          }
+                        ]
+                      },
+                      {
+                        "label": "Freq",
+                        "min": 45,
+                        "max": 55,
+                        "decimals": 1,
+                        "entity": "sensor.inverters_1_grid_frequency",
+                        "unit": "Hz",
+                        "segments": [
+                          {
+                            "from": 45,
+                            "color": "#ff5252"
+                          },
+                          {
+                            "from": 49,
+                            "color": "#ffb300"
+                          },
+                          {
+                            "from": 49.8,
+                            "color": "#00E676"
+                          },
+                          {
+                            "from": 50.3,
+                            "color": "#ff5252"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "type": "history",
+                    "entity": "sensor.inverters_1_load_power",
+                    "hours": 24,
+                    "min": 0,
+                    "max": 100,
+                    "position": "top"
+                  }
+                ]
+              }
+            },
+            {
+              "type": "custom:sunsynk-power-flow-card",
+              "cardstyle": "pfg",
+              "preset": "pfg",
+              "title": "Pool.a1",
+              "pfg_grid_size": 1,
+              "pfg_grid_width": "100%",
+              "pfg_border": {
+                "1,1": "2px solid #555"
+              },
+              "pfg_images": {
+                "1,1": "/local/pool.jpg"
+              },
+              "pfg_labels": {
+                "1,1": "Pool"
+              },
+              "pfg_label_pos": {
+                "1,1": "top"
+              },
+              "view_layout": {
+                "grid-area": "poola"
+              },
+              "card_width": "100%",
+              "pfg_charts": {
+                "1,1": [
+                  {
+                    "type": "bars",
+                    "orientation": "vertical",
+                    "position": "bottom",
+                    "height": "55%",
+                    "series": [
+                      {
+                        "label": "Energy",
+                        "min": 0,
+                        "max": 10,
+                        "decimals": 1,
+                        "entity": "sensor.pool_energy_daily",
+                        "unit": "kWh",
+                        "segments": [
+                          {
+                            "from": 0,
+                            "color": "#4fc3f7"
+                          },
+                          {
+                            "from": 4,
+                            "color": "#00E676"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "type": "history",
+                    "entity": "sensor.pool_energy_daily",
+                    "hours": 24,
+                    "min": 0,
+                    "max": 100,
+                    "position": "top"
+                  }
+                ]
+              }
+            },
+            {
+              "type": "custom:sunsynk-power-flow-card",
+              "cardstyle": "pfg",
+              "preset": "pfg",
+              "title": "Pool.b1",
+              "pfg_grid_size": 1,
+              "pfg_grid_width": "100%",
+              "pfg_border": {
+                "1,1": "2px solid #555"
+              },
+              "pfg_images": {
+                "1,1": "/local/pool.jpg"
+              },
+              "pfg_labels": {
+                "1,1": "Pool"
+              },
+              "pfg_label_pos": {
+                "1,1": "top"
+              },
+              "view_layout": {
+                "grid-area": "poolb"
+              },
+              "card_width": "100%",
+              "pfg_charts": {
+                "1,1": [
+                  {
+                    "type": "bars",
+                    "orientation": "horizontal",
+                    "position": "bottom",
+                    "height": "55%",
+                    "series": [
+                      {
+                        "label": "Energy",
+                        "min": 0,
+                        "max": 10,
+                        "decimals": 1,
+                        "entity": "sensor.pool_energy_daily",
+                        "unit": "kWh",
+                        "segments": [
+                          {
+                            "from": 0,
+                            "color": "#4fc3f7"
+                          },
+                          {
+                            "from": 4,
+                            "color": "#00E676"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "type": "history",
+                    "entity": "sensor.pool_energy_daily",
+                    "hours": 24,
+                    "min": 0,
+                    "max": 100,
+                    "position": "top"
+                  }
+                ]
+              }
+            },
+            {
+              "type": "custom:sunsynk-power-flow-card",
+              "cardstyle": "pfg",
+              "preset": "pfg",
+              "title": "Sum.a1",
+              "pfg_grid_size": 1,
+              "pfg_grid_width": "100%",
+              "pfg_border": {
+                "1,1": "2px solid #555"
+              },
+              "pfg_images": {
+                "1,1": "/local/sum.jpg"
+              },
+              "pfg_labels": {
+                "1,1": "Sum"
+              },
+              "pfg_label_pos": {
+                "1,1": "top"
+              },
+              "view_layout": {
+                "grid-area": "suma"
+              },
+              "card_width": "100%",
+              "pfg_charts": {
+                "1,1": [
+                  {
+                    "type": "bars",
+                    "orientation": "vertical",
+                    "position": "bottom",
+                    "height": "55%",
+                    "series": [
+                      {
+                        "label": "PV1",
+                        "min": 0,
+                        "max": 5000,
+                        "decimals": 2,
+                        "entity": "sensor.inverters_1_pv_power_1",
+                        "scale": 0.001,
+                        "unit": "kW",
+                        "segments": [
+                          {
+                            "from": 0,
+                            "color": "#ffb300"
+                          },
+                          {
+                            "from": 3000,
+                            "color": "#00E676"
+                          }
+                        ]
+                      },
+                      {
+                        "label": "PV2",
+                        "min": 0,
+                        "max": 5000,
+                        "decimals": 2,
+                        "entity": "sensor.inverters_1_pv_power_2",
+                        "scale": 0.001,
+                        "unit": "kW",
+                        "segments": [
+                          {
+                            "from": 0,
+                            "color": "#ffb300"
+                          },
+                          {
+                            "from": 3000,
+                            "color": "#00E676"
+                          }
+                        ]
+                      },
+                      {
+                        "label": "Total",
+                        "min": 0,
+                        "max": 10000,
+                        "decimals": 2,
+                        "entity": "sensor.inverters_1_pv_power",
+                        "scale": 0.001,
+                        "unit": "kW",
+                        "segments": [
+                          {
+                            "from": 0,
+                            "color": "#ffb300"
+                          },
+                          {
+                            "from": 5000,
+                            "color": "#00E676"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "type": "history",
+                    "entity": "sensor.inverters_1_pv_power",
+                    "hours": 24,
+                    "min": 0,
+                    "max": 100,
+                    "position": "top"
+                  }
+                ]
+              }
+            },
+            {
+              "type": "custom:sunsynk-power-flow-card",
+              "cardstyle": "pfg",
+              "preset": "pfg",
+              "title": "Sum.b1",
+              "pfg_grid_size": 1,
+              "pfg_grid_width": "100%",
+              "pfg_border": {
+                "1,1": "2px solid #555"
+              },
+              "pfg_images": {
+                "1,1": "/local/sum.jpg"
+              },
+              "pfg_labels": {
+                "1,1": "Sum"
+              },
+              "pfg_label_pos": {
+                "1,1": "top"
+              },
+              "view_layout": {
+                "grid-area": "sumb"
+              },
+              "card_width": "100%",
+              "pfg_charts": {
+                "1,1": [
+                  {
+                    "type": "bars",
+                    "orientation": "horizontal",
+                    "position": "bottom",
+                    "height": "55%",
+                    "series": [
+                      {
+                        "label": "PV1",
+                        "min": 0,
+                        "max": 5000,
+                        "decimals": 2,
+                        "entity": "sensor.inverters_1_pv_power_1",
+                        "scale": 0.001,
+                        "unit": "kW",
+                        "segments": [
+                          {
+                            "from": 0,
+                            "color": "#ffb300"
+                          },
+                          {
+                            "from": 3000,
+                            "color": "#00E676"
+                          }
+                        ]
+                      },
+                      {
+                        "label": "PV2",
+                        "min": 0,
+                        "max": 5000,
+                        "decimals": 2,
+                        "entity": "sensor.inverters_1_pv_power_2",
+                        "scale": 0.001,
+                        "unit": "kW",
+                        "segments": [
+                          {
+                            "from": 0,
+                            "color": "#ffb300"
+                          },
+                          {
+                            "from": 3000,
+                            "color": "#00E676"
+                          }
+                        ]
+                      },
+                      {
+                        "label": "Total",
+                        "min": 0,
+                        "max": 10000,
+                        "decimals": 2,
+                        "entity": "sensor.inverters_1_pv_power",
+                        "scale": 0.001,
+                        "unit": "kW",
+                        "segments": [
+                          {
+                            "from": 0,
+                            "color": "#ffb300"
+                          },
+                          {
+                            "from": 5000,
+                            "color": "#00E676"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "type": "history",
+                    "entity": "sensor.inverters_1_pv_power",
+                    "hours": 24,
+                    "min": 0,
+                    "max": 100,
+                    "position": "top"
+                  }
+                ]
+              }
+            },
+            {
+              "type": "custom:sunsynk-power-flow-card",
+              "cardstyle": "pfg",
+              "preset": "pfg",
+              "title": "Kitchen.a1",
+              "pfg_grid_size": 1,
+              "pfg_grid_width": "100%",
+              "pfg_border": {
+                "1,1": "2px solid #555"
+              },
+              "pfg_images": {
+                "1,1": "/local/kitchen.jpg"
+              },
+              "pfg_labels": {
+                "1,1": "Kitchen"
+              },
+              "pfg_label_pos": {
+                "1,1": "top"
+              },
+              "view_layout": {
+                "grid-area": "kitchena"
+              },
+              "card_width": "100%",
+              "pfg_charts": {
+                "1,1": [
+                  {
+                    "type": "bars",
+                    "orientation": "vertical",
+                    "position": "bottom",
+                    "height": "55%",
+                    "series": [
+                      {
+                        "label": "Load",
+                        "min": 0,
+                        "max": 5000,
+                        "decimals": 2,
+                        "entity": "sensor.inverters_1_load_power",
+                        "scale": 0.001,
+                        "unit": "kW",
+                        "segments": [
+                          {
+                            "from": 0,
+                            "color": "#00E676"
+                          },
+                          {
+                            "from": 3000,
+                            "color": "#ffb300"
+                          },
+                          {
+                            "from": 4500,
+                            "color": "#ff5252"
+                          }
+                        ]
+                      },
+                      {
+                        "label": "Essential",
+                        "min": 0,
+                        "max": 5000,
+                        "decimals": 2,
+                        "entity": "sensor.inverters_1_load_power_essential",
+                        "scale": 0.001,
+                        "unit": "kW",
+                        "segments": [
+                          {
+                            "from": 0,
+                            "color": "#00E676"
+                          },
+                          {
+                            "from": 3000,
+                            "color": "#ffb300"
+                          },
+                          {
+                            "from": 4500,
+                            "color": "#ff5252"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "type": "history",
+                    "entity": "sensor.inverters_1_load_power",
+                    "hours": 24,
+                    "min": 0,
+                    "max": 100,
+                    "position": "top"
+                  }
+                ]
+              }
+            },
+            {
+              "type": "custom:sunsynk-power-flow-card",
+              "cardstyle": "pfg",
+              "preset": "pfg",
+              "title": "Kitchen.b1",
+              "pfg_grid_size": 1,
+              "pfg_grid_width": "100%",
+              "pfg_border": {
+                "1,1": "2px solid #555"
+              },
+              "pfg_images": {
+                "1,1": "/local/kitchen.jpg"
+              },
+              "pfg_labels": {
+                "1,1": "Kitchen"
+              },
+              "pfg_label_pos": {
+                "1,1": "top"
+              },
+              "view_layout": {
+                "grid-area": "kitchenb"
+              },
+              "card_width": "100%",
+              "pfg_charts": {
+                "1,1": [
+                  {
+                    "type": "bars",
+                    "orientation": "horizontal",
+                    "position": "bottom",
+                    "height": "55%",
+                    "series": [
+                      {
+                        "label": "Load",
+                        "min": 0,
+                        "max": 5000,
+                        "decimals": 2,
+                        "entity": "sensor.inverters_1_load_power",
+                        "scale": 0.001,
+                        "unit": "kW",
+                        "segments": [
+                          {
+                            "from": 0,
+                            "color": "#00E676"
+                          },
+                          {
+                            "from": 3000,
+                            "color": "#ffb300"
+                          },
+                          {
+                            "from": 4500,
+                            "color": "#ff5252"
+                          }
+                        ]
+                      },
+                      {
+                        "label": "Essential",
+                        "min": 0,
+                        "max": 5000,
+                        "decimals": 2,
+                        "entity": "sensor.inverters_1_load_power_essential",
+                        "scale": 0.001,
+                        "unit": "kW",
+                        "segments": [
+                          {
+                            "from": 0,
+                            "color": "#00E676"
+                          },
+                          {
+                            "from": 3000,
+                            "color": "#ffb300"
+                          },
+                          {
+                            "from": 4500,
+                            "color": "#ff5252"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "type": "history",
+                    "entity": "sensor.inverters_1_load_power",
+                    "hours": 24,
+                    "min": 0,
+                    "max": 100,
+                    "position": "top"
+                  }
+                ]
+              }
+            },
+            {
+              "type": "custom:sunsynk-power-flow-card",
+              "cardstyle": "pfg",
+              "preset": "pfg",
+              "title": "Home.a1",
+              "pfg_grid_size": 1,
+              "pfg_grid_width": "100%",
+              "pfg_border": {
+                "1,1": "2px solid #555"
+              },
+              "pfg_images": {
+                "1,1": "/local/home-house.jpg"
+              },
+              "pfg_labels": {
+                "1,1": "Home"
+              },
+              "pfg_label_pos": {
+                "1,1": "top"
+              },
+              "view_layout": {
+                "grid-area": "homea"
+              },
+              "card_width": "100%",
+              "pfg_charts": {
+                "1,1": [
+                  {
+                    "type": "bars",
+                    "orientation": "vertical",
+                    "position": "bottom",
+                    "height": "55%",
+                    "series": [
+                      {
+                        "label": "Load",
+                        "min": 0,
+                        "max": 5000,
+                        "decimals": 2,
+                        "entity": "sensor.inverters_1_load_power",
+                        "scale": 0.001,
+                        "unit": "kW",
+                        "segments": [
+                          {
+                            "from": 0,
+                            "color": "#00E676"
+                          },
+                          {
+                            "from": 3000,
+                            "color": "#ffb300"
+                          },
+                          {
+                            "from": 4500,
+                            "color": "#ff5252"
+                          }
+                        ]
+                      },
+                      {
+                        "label": "Grid",
+                        "min": -5000,
+                        "max": 5000,
+                        "decimals": 2,
+                        "entity": "sensor.inverters_1_grid_power",
+                        "scale": 0.001,
+                        "unit": "kW",
+                        "segments": [
+                          {
+                            "from": -5000,
+                            "color": "#00E676"
+                          },
+                          {
+                            "from": 0,
+                            "color": "#ffb300"
+                          },
+                          {
+                            "from": 2000,
+                            "color": "#ff5252"
+                          }
+                        ]
+                      },
+                      {
+                        "label": "PV",
+                        "min": 0,
+                        "max": 10000,
+                        "decimals": 2,
+                        "entity": "sensor.inverters_1_pv_power",
+                        "scale": 0.001,
+                        "unit": "kW",
+                        "segments": [
+                          {
+                            "from": 0,
+                            "color": "#ffb300"
+                          },
+                          {
+                            "from": 5000,
+                            "color": "#00E676"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "type": "history",
+                    "entity": "sensor.inverters_1_load_power",
+                    "hours": 24,
+                    "min": 0,
+                    "max": 100,
+                    "position": "top"
+                  }
+                ]
+              }
+            },
+            {
+              "type": "custom:sunsynk-power-flow-card",
+              "cardstyle": "pfg",
+              "preset": "pfg",
+              "title": "Home.b1",
+              "pfg_grid_size": 1,
+              "pfg_grid_width": "100%",
+              "pfg_border": {
+                "1,1": "2px solid #555"
+              },
+              "pfg_images": {
+                "1,1": "/local/home-house.jpg"
+              },
+              "pfg_labels": {
+                "1,1": "Home"
+              },
+              "pfg_label_pos": {
+                "1,1": "top"
+              },
+              "view_layout": {
+                "grid-area": "homeb"
+              },
+              "card_width": "100%",
+              "pfg_charts": {
+                "1,1": [
+                  {
+                    "type": "bars",
+                    "orientation": "horizontal",
+                    "position": "bottom",
+                    "height": "55%",
+                    "series": [
+                      {
+                        "label": "Load",
+                        "min": 0,
+                        "max": 5000,
+                        "decimals": 2,
+                        "entity": "sensor.inverters_1_load_power",
+                        "scale": 0.001,
+                        "unit": "kW",
+                        "segments": [
+                          {
+                            "from": 0,
+                            "color": "#00E676"
+                          },
+                          {
+                            "from": 3000,
+                            "color": "#ffb300"
+                          },
+                          {
+                            "from": 4500,
+                            "color": "#ff5252"
+                          }
+                        ]
+                      },
+                      {
+                        "label": "Grid",
+                        "min": -5000,
+                        "max": 5000,
+                        "decimals": 2,
+                        "entity": "sensor.inverters_1_grid_power",
+                        "scale": 0.001,
+                        "unit": "kW",
+                        "segments": [
+                          {
+                            "from": -5000,
+                            "color": "#00E676"
+                          },
+                          {
+                            "from": 0,
+                            "color": "#ffb300"
+                          },
+                          {
+                            "from": 2000,
+                            "color": "#ff5252"
+                          }
+                        ]
+                      },
+                      {
+                        "label": "PV",
+                        "min": 0,
+                        "max": 10000,
+                        "decimals": 2,
+                        "entity": "sensor.inverters_1_pv_power",
+                        "scale": 0.001,
+                        "unit": "kW",
+                        "segments": [
+                          {
+                            "from": 0,
+                            "color": "#ffb300"
+                          },
+                          {
+                            "from": 5000,
+                            "color": "#00E676"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "type": "history",
+                    "entity": "sensor.inverters_1_load_power",
+                    "hours": 24,
+                    "min": 0,
+                    "max": 100,
+                    "position": "top"
+                  }
+                ]
+              }
+            },
+            {
+              "type": "custom:sunsynk-power-flow-card",
+              "cardstyle": "pfg",
+              "preset": "pfg",
+              "title": "Bedroom.a1",
+              "pfg_grid_size": 1,
+              "pfg_grid_width": "100%",
+              "pfg_border": {
+                "1,1": "2px solid #555"
+              },
+              "pfg_images": {
+                "1,1": "/local/bedroom.jpg"
+              },
+              "pfg_labels": {
+                "1,1": "Bedroom"
+              },
+              "pfg_label_pos": {
+                "1,1": "top"
+              },
+              "view_layout": {
+                "grid-area": "bedrooma"
+              },
+              "card_width": "100%",
+              "pfg_charts": {
+                "1,1": [
+                  {
+                    "type": "bars",
+                    "orientation": "vertical",
+                    "position": "bottom",
+                    "height": "55%",
+                    "series": [
+                      {
+                        "label": "Temp",
+                        "min": 0,
+                        "max": 40,
+                        "decimals": 1,
+                        "entity": "sensor.tze200_mja3fuja_ts0601_temperature",
+                        "unit": "°C",
+                        "segments": [
+                          {
+                            "from": 0,
+                            "color": "#4fc3f7"
+                          },
+                          {
+                            "from": 18,
+                            "color": "#00E676"
+                          },
+                          {
+                            "from": 28,
+                            "color": "#ff5252"
+                          }
+                        ]
+                      },
+                      {
+                        "label": "Humidity",
+                        "min": 0,
+                        "max": 100,
+                        "decimals": 0,
+                        "entity": "sensor.tze200_mja3fuja_ts0601_humidity",
+                        "unit": "%",
+                        "segments": [
+                          {
+                            "from": 0,
+                            "color": "#ff5252"
+                          },
+                          {
+                            "from": 40,
+                            "color": "#00E676"
+                          },
+                          {
+                            "from": 70,
+                            "color": "#4fc3f7"
+                          }
+                        ]
+                      },
+                      {
+                        "label": "CO2",
+                        "min": 400,
+                        "max": 2000,
+                        "decimals": 0,
+                        "entity": "sensor.tze200_mja3fuja_ts0601_carbon_dioxide",
+                        "unit": "ppm",
+                        "segments": [
+                          {
+                            "from": 400,
+                            "color": "#00E676"
+                          },
+                          {
+                            "from": 1000,
+                            "color": "#ffb300"
+                          },
+                          {
+                            "from": 1500,
+                            "color": "#ff5252"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "type": "history",
+                    "entity": "sensor.tze200_mja3fuja_ts0601_temperature",
+                    "hours": 24,
+                    "min": 0,
+                    "max": 100,
+                    "position": "top"
+                  }
+                ]
+              }
+            },
+            {
+              "type": "custom:sunsynk-power-flow-card",
+              "cardstyle": "pfg",
+              "preset": "pfg",
+              "title": "Bedroom.b1",
+              "pfg_grid_size": 1,
+              "pfg_grid_width": "100%",
+              "pfg_border": {
+                "1,1": "2px solid #555"
+              },
+              "pfg_images": {
+                "1,1": "/local/bedroom.jpg"
+              },
+              "pfg_labels": {
+                "1,1": "Bedroom"
+              },
+              "pfg_label_pos": {
+                "1,1": "top"
+              },
+              "view_layout": {
+                "grid-area": "bedroomb"
+              },
+              "card_width": "100%",
+              "pfg_charts": {
+                "1,1": [
+                  {
+                    "type": "bars",
+                    "orientation": "horizontal",
+                    "position": "bottom",
+                    "height": "55%",
+                    "series": [
+                      {
+                        "label": "Temp",
+                        "min": 0,
+                        "max": 40,
+                        "decimals": 1,
+                        "entity": "sensor.tze200_mja3fuja_ts0601_temperature",
+                        "unit": "°C",
+                        "segments": [
+                          {
+                            "from": 0,
+                            "color": "#4fc3f7"
+                          },
+                          {
+                            "from": 18,
+                            "color": "#00E676"
+                          },
+                          {
+                            "from": 28,
+                            "color": "#ff5252"
+                          }
+                        ]
+                      },
+                      {
+                        "label": "Humidity",
+                        "min": 0,
+                        "max": 100,
+                        "decimals": 0,
+                        "entity": "sensor.tze200_mja3fuja_ts0601_humidity",
+                        "unit": "%",
+                        "segments": [
+                          {
+                            "from": 0,
+                            "color": "#ff5252"
+                          },
+                          {
+                            "from": 40,
+                            "color": "#00E676"
+                          },
+                          {
+                            "from": 70,
+                            "color": "#4fc3f7"
+                          }
+                        ]
+                      },
+                      {
+                        "label": "CO2",
+                        "min": 400,
+                        "max": 2000,
+                        "decimals": 0,
+                        "entity": "sensor.tze200_mja3fuja_ts0601_carbon_dioxide",
+                        "unit": "ppm",
+                        "segments": [
+                          {
+                            "from": 400,
+                            "color": "#00E676"
+                          },
+                          {
+                            "from": 1000,
+                            "color": "#ffb300"
+                          },
+                          {
+                            "from": 1500,
+                            "color": "#ff5252"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "type": "history",
+                    "entity": "sensor.tze200_mja3fuja_ts0601_temperature",
+                    "hours": 24,
+                    "min": 0,
+                    "max": 100,
+                    "position": "top"
+                  }
+                ]
+              }
+            },
+            {
+              "type": "custom:sunsynk-power-flow-card",
+              "cardstyle": "pfg",
+              "preset": "pfg",
+              "title": "Terrace.a1",
+              "pfg_grid_size": 1,
+              "pfg_grid_width": "100%",
+              "pfg_border": {
+                "1,1": "2px solid #555"
+              },
+              "pfg_images": {
+                "1,1": "/local/terrace.jpg"
+              },
+              "pfg_labels": {
+                "1,1": "Terrace"
+              },
+              "pfg_label_pos": {
+                "1,1": "top"
+              },
+              "view_layout": {
+                "grid-area": "terracea"
+              },
+              "card_width": "100%",
+              "pfg_charts": {
+                "1,1": [
+                  {
+                    "type": "bars",
+                    "orientation": "vertical",
+                    "position": "bottom",
+                    "height": "55%",
+                    "series": [
+                      {
+                        "label": "Temp",
+                        "min": 0,
+                        "max": 40,
+                        "decimals": 1,
+                        "entity": "sensor.tze200_mja3fuja_ts0601_temperature",
+                        "unit": "°C",
+                        "segments": [
+                          {
+                            "from": 0,
+                            "color": "#4fc3f7"
+                          },
+                          {
+                            "from": 18,
+                            "color": "#00E676"
+                          },
+                          {
+                            "from": 28,
+                            "color": "#ff5252"
+                          }
+                        ]
+                      },
+                      {
+                        "label": "Humidity",
+                        "min": 0,
+                        "max": 100,
+                        "decimals": 0,
+                        "entity": "sensor.tze200_mja3fuja_ts0601_humidity",
+                        "unit": "%",
+                        "segments": [
+                          {
+                            "from": 0,
+                            "color": "#ff5252"
+                          },
+                          {
+                            "from": 40,
+                            "color": "#00E676"
+                          },
+                          {
+                            "from": 70,
+                            "color": "#4fc3f7"
+                          }
+                        ]
+                      },
+                      {
+                        "label": "VOC",
+                        "min": 0,
+                        "max": 500,
+                        "decimals": 0,
+                        "entity": "sensor.tze200_mja3fuja_ts0601_volatile_organic_compounds",
+                        "segments": [
+                          {
+                            "from": 0,
+                            "color": "#00E676"
+                          },
+                          {
+                            "from": 200,
+                            "color": "#ffb300"
+                          },
+                          {
+                            "from": 350,
+                            "color": "#ff5252"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "type": "history",
+                    "entity": "sensor.tze200_mja3fuja_ts0601_temperature",
+                    "hours": 24,
+                    "min": 0,
+                    "max": 100,
+                    "position": "top"
+                  }
+                ]
+              }
+            },
+            {
+              "type": "custom:sunsynk-power-flow-card",
+              "cardstyle": "pfg",
+              "preset": "pfg",
+              "title": "Terrace.b1",
+              "pfg_grid_size": 1,
+              "pfg_grid_width": "100%",
+              "pfg_border": {
+                "1,1": "2px solid #555"
+              },
+              "pfg_images": {
+                "1,1": "/local/terrace.jpg"
+              },
+              "pfg_labels": {
+                "1,1": "Terrace"
+              },
+              "pfg_label_pos": {
+                "1,1": "top"
+              },
+              "view_layout": {
+                "grid-area": "terraceb"
+              },
+              "card_width": "100%",
+              "pfg_charts": {
+                "1,1": [
+                  {
+                    "type": "bars",
+                    "orientation": "horizontal",
+                    "position": "bottom",
+                    "height": "55%",
+                    "series": [
+                      {
+                        "label": "Temp",
+                        "min": 0,
+                        "max": 40,
+                        "decimals": 1,
+                        "entity": "sensor.tze200_mja3fuja_ts0601_temperature",
+                        "unit": "°C",
+                        "segments": [
+                          {
+                            "from": 0,
+                            "color": "#4fc3f7"
+                          },
+                          {
+                            "from": 18,
+                            "color": "#00E676"
+                          },
+                          {
+                            "from": 28,
+                            "color": "#ff5252"
+                          }
+                        ]
+                      },
+                      {
+                        "label": "Humidity",
+                        "min": 0,
+                        "max": 100,
+                        "decimals": 0,
+                        "entity": "sensor.tze200_mja3fuja_ts0601_humidity",
+                        "unit": "%",
+                        "segments": [
+                          {
+                            "from": 0,
+                            "color": "#ff5252"
+                          },
+                          {
+                            "from": 40,
+                            "color": "#00E676"
+                          },
+                          {
+                            "from": 70,
+                            "color": "#4fc3f7"
+                          }
+                        ]
+                      },
+                      {
+                        "label": "VOC",
+                        "min": 0,
+                        "max": 500,
+                        "decimals": 0,
+                        "entity": "sensor.tze200_mja3fuja_ts0601_volatile_organic_compounds",
+                        "segments": [
+                          {
+                            "from": 0,
+                            "color": "#00E676"
+                          },
+                          {
+                            "from": 200,
+                            "color": "#ffb300"
+                          },
+                          {
+                            "from": 350,
+                            "color": "#ff5252"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "type": "history",
+                    "entity": "sensor.tze200_mja3fuja_ts0601_temperature",
+                    "hours": 24,
+                    "min": 0,
+                    "max": 100,
+                    "position": "top"
+                  }
+                ]
+              }
+            },
+            {
+              "type": "custom:sunsynk-power-flow-card",
+              "cardstyle": "pfg",
+              "preset": "pfg",
+              "title": "Living.a1",
+              "pfg_grid_size": 1,
+              "pfg_grid_width": "100%",
+              "pfg_border": {
+                "1,1": "2px solid #555"
+              },
+              "pfg_images": {
+                "1,1": "/local/living.jpg"
+              },
+              "pfg_labels": {
+                "1,1": "Living"
+              },
+              "pfg_label_pos": {
+                "1,1": "top"
+              },
+              "view_layout": {
+                "grid-area": "livinga"
+              },
+              "card_width": "100%",
+              "pfg_charts": {
+                "1,1": [
+                  {
+                    "type": "bars",
+                    "orientation": "vertical",
+                    "position": "bottom",
+                    "height": "55%",
+                    "series": [
+                      {
+                        "label": "Temp",
+                        "min": 0,
+                        "max": 40,
+                        "decimals": 1,
+                        "entity": "sensor.tze200_mja3fuja_ts0601_temperature",
+                        "unit": "°C",
+                        "segments": [
+                          {
+                            "from": 0,
+                            "color": "#4fc3f7"
+                          },
+                          {
+                            "from": 18,
+                            "color": "#00E676"
+                          },
+                          {
+                            "from": 28,
+                            "color": "#ff5252"
+                          }
+                        ]
+                      },
+                      {
+                        "label": "Humidity",
+                        "min": 0,
+                        "max": 100,
+                        "decimals": 0,
+                        "entity": "sensor.tze200_mja3fuja_ts0601_humidity",
+                        "unit": "%",
+                        "segments": [
+                          {
+                            "from": 0,
+                            "color": "#ff5252"
+                          },
+                          {
+                            "from": 40,
+                            "color": "#00E676"
+                          },
+                          {
+                            "from": 70,
+                            "color": "#4fc3f7"
+                          }
+                        ]
+                      },
+                      {
+                        "label": "CO2",
+                        "min": 400,
+                        "max": 2000,
+                        "decimals": 0,
+                        "entity": "sensor.tze200_mja3fuja_ts0601_carbon_dioxide",
+                        "unit": "ppm",
+                        "segments": [
+                          {
+                            "from": 400,
+                            "color": "#00E676"
+                          },
+                          {
+                            "from": 1000,
+                            "color": "#ffb300"
+                          },
+                          {
+                            "from": 1500,
+                            "color": "#ff5252"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "type": "history",
+                    "entity": "sensor.tze200_mja3fuja_ts0601_temperature",
+                    "hours": 24,
+                    "min": 0,
+                    "max": 100,
+                    "position": "top"
+                  }
+                ]
+              }
+            },
+            {
+              "type": "custom:sunsynk-power-flow-card",
+              "cardstyle": "pfg",
+              "preset": "pfg",
+              "title": "Living.b1",
+              "pfg_grid_size": 1,
+              "pfg_grid_width": "100%",
+              "pfg_border": {
+                "1,1": "2px solid #555"
+              },
+              "pfg_images": {
+                "1,1": "/local/living.jpg"
+              },
+              "pfg_labels": {
+                "1,1": "Living"
+              },
+              "pfg_label_pos": {
+                "1,1": "top"
+              },
+              "view_layout": {
+                "grid-area": "livingb"
+              },
+              "card_width": "100%",
+              "pfg_charts": {
+                "1,1": [
+                  {
+                    "type": "bars",
+                    "orientation": "horizontal",
+                    "position": "bottom",
+                    "height": "55%",
+                    "series": [
+                      {
+                        "label": "Temp",
+                        "min": 0,
+                        "max": 40,
+                        "decimals": 1,
+                        "entity": "sensor.tze200_mja3fuja_ts0601_temperature",
+                        "unit": "°C",
+                        "segments": [
+                          {
+                            "from": 0,
+                            "color": "#4fc3f7"
+                          },
+                          {
+                            "from": 18,
+                            "color": "#00E676"
+                          },
+                          {
+                            "from": 28,
+                            "color": "#ff5252"
+                          }
+                        ]
+                      },
+                      {
+                        "label": "Humidity",
+                        "min": 0,
+                        "max": 100,
+                        "decimals": 0,
+                        "entity": "sensor.tze200_mja3fuja_ts0601_humidity",
+                        "unit": "%",
+                        "segments": [
+                          {
+                            "from": 0,
+                            "color": "#ff5252"
+                          },
+                          {
+                            "from": 40,
+                            "color": "#00E676"
+                          },
+                          {
+                            "from": 70,
+                            "color": "#4fc3f7"
+                          }
+                        ]
+                      },
+                      {
+                        "label": "CO2",
+                        "min": 400,
+                        "max": 2000,
+                        "decimals": 0,
+                        "entity": "sensor.tze200_mja3fuja_ts0601_carbon_dioxide",
+                        "unit": "ppm",
+                        "segments": [
+                          {
+                            "from": 400,
+                            "color": "#00E676"
+                          },
+                          {
+                            "from": 1000,
+                            "color": "#ffb300"
+                          },
+                          {
+                            "from": 1500,
+                            "color": "#ff5252"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "type": "history",
+                    "entity": "sensor.tze200_mja3fuja_ts0601_temperature",
+                    "hours": 24,
+                    "min": 0,
+                    "max": 100,
+                    "position": "top"
+                  }
+                ]
+              }
+            },
+            {
+              "type": "custom:sunsynk-power-flow-card",
+              "cardstyle": "pfg",
+              "preset": "pfg",
+              "title": "Laundry.a1",
+              "pfg_grid_size": 1,
+              "pfg_grid_width": "100%",
+              "pfg_border": {
+                "1,1": "2px solid #555"
+              },
+              "pfg_images": {
+                "1,1": "/local/laundry.jpg"
+              },
+              "pfg_labels": {
+                "1,1": "Laundry"
+              },
+              "pfg_label_pos": {
+                "1,1": "top"
+              },
+              "view_layout": {
+                "grid-area": "laundrya"
+              },
+              "card_width": "100%",
+              "pfg_charts": {
+                "1,1": [
+                  {
+                    "type": "bars",
+                    "orientation": "vertical",
+                    "position": "bottom",
+                    "height": "55%",
+                    "series": [
+                      {
+                        "label": "Power",
+                        "min": 0,
+                        "max": 2500,
+                        "decimals": 0,
+                        "entity": "sensor.laundry_room_washing_machine_power",
+                        "unit": "W",
+                        "segments": [
+                          {
+                            "from": 0,
+                            "color": "#00E676"
+                          },
+                          {
+                            "from": 1000,
+                            "color": "#ffb300"
+                          },
+                          {
+                            "from": 2000,
+                            "color": "#ff5252"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "type": "history",
+                    "entity": "sensor.laundry_room_washing_machine_power",
+                    "hours": 24,
+                    "min": 0,
+                    "max": 100,
+                    "position": "top"
+                  }
+                ]
+              }
+            },
+            {
+              "type": "custom:sunsynk-power-flow-card",
+              "cardstyle": "pfg",
+              "preset": "pfg",
+              "title": "Laundry.b1",
+              "pfg_grid_size": 1,
+              "pfg_grid_width": "100%",
+              "pfg_border": {
+                "1,1": "2px solid #555"
+              },
+              "pfg_images": {
+                "1,1": "/local/laundry.jpg"
+              },
+              "pfg_labels": {
+                "1,1": "Laundry"
+              },
+              "pfg_label_pos": {
+                "1,1": "top"
+              },
+              "view_layout": {
+                "grid-area": "laundryb"
+              },
+              "card_width": "100%",
+              "pfg_charts": {
+                "1,1": [
+                  {
+                    "type": "bars",
+                    "orientation": "horizontal",
+                    "position": "bottom",
+                    "height": "55%",
+                    "series": [
+                      {
+                        "label": "Power",
+                        "min": 0,
+                        "max": 2500,
+                        "decimals": 0,
+                        "entity": "sensor.laundry_room_washing_machine_power",
+                        "unit": "W",
+                        "segments": [
+                          {
+                            "from": 0,
+                            "color": "#00E676"
+                          },
+                          {
+                            "from": 1000,
+                            "color": "#ffb300"
+                          },
+                          {
+                            "from": 2000,
+                            "color": "#ff5252"
+                          }
+                        ]
+                      }
+                    ]
+                  },
+                  {
+                    "type": "history",
+                    "entity": "sensor.laundry_room_washing_machine_power",
+                    "hours": 24,
+                    "min": 0,
+                    "max": 100,
+                    "position": "top"
+                  }
+                ]
+              }
             }
           ],
           "layout": {
             "grid-template-columns": "repeat(12, 1fr)",
-            "grid-template-rows": "repeat(8, auto)",
-            "grid-template-areas": "\"pv pv pv pv pvv pvv pvv pvv pvh pvh pvh pvh\" \"grid grid grid grid . . . . . . . .\" \"battery battery battery . . . . . . . . .\" \"inverter inverter inverter . . . . . . . . .\" \"pool pool pool pool sum sum sum sum kitchen kitchen kitchen kitchen\" \"home home home home bedroom bedroom bedroom bedroom terrace terrace terrace terrace\" \"living living living . . . . . . . . .\" \"laundry laundry laundry . . . . . . . . .\""
+            "grid-template-rows": "repeat(12, auto)",
+            "grid-template-areas": "\"pv pv pv pv pvv pvv pvv pvv pvh pvh pvh pvh\" \"grid grid grid grid ga ga ga ga gb gb gb gb\" \"battery battery battery battery batterya batterya batterya batterya batteryb batteryb batteryb batteryb\" \"inverter inverter inverter inverter invertera invertera invertera invertera inverterb inverterb inverterb inverterb\" \"pool pool pool pool poola poola poola poola poolb poolb poolb poolb\" \"sum sum sum sum suma suma suma suma sumb sumb sumb sumb\" \"kitchen kitchen kitchen kitchen kitchena kitchena kitchena kitchena kitchenb kitchenb kitchenb kitchenb\" \"home home home home homea homea homea homea homeb homeb homeb homeb\" \"bedroom bedroom bedroom bedroom bedrooma bedrooma bedrooma bedrooma bedroomb bedroomb bedroomb bedroomb\" \"terrace terrace terrace terrace terracea terracea terracea terracea terraceb terraceb terraceb terraceb\" \"living living living living livinga livinga livinga livinga livingb livingb livingb livingb\" \"laundry laundry laundry laundry laundrya laundrya laundrya laundrya laundryb laundryb laundryb laundryb\""
           }
         },
         {
