@@ -19,3 +19,19 @@ automation:
   backup_monitor:
     status: active
     note: Backup integrity monitoring runs on tony-dell.
+
+  ha_card_snapshot:
+    status: active
+    note: >-
+      systemd user timer `ha-card-snapshot.timer` (60s) →
+      `ha-card-snapshot.service` runs `scripts/home-assistant/snapshot-card.py`
+      (playlived headless Chrome screenshots the `sunsynk-power-flow-card` on
+      `http://127.0.0.1:8124/tony-test/pf3`, writes
+      `stacks/web/public/snapshots/pv1.png` for TV cast) and
+      `scripts/home-assistant/pv1-values.sh` (fetches PV1/PV2/Grid/Battery/Load
+      sensor values from michael-dev REST, writes `pv1.txt` for the ESP32).
+      Served by Caddy at `http://192.168.2.67:8080/snapshots/`. ESP32
+      (`esp32test`, 192.168.2.65) fetches `pv1.txt` once per minute via a single
+      http_request and renders a text "Power Sources" page; image-based display
+      was abandoned — the board has too little contiguous heap for PNG/BMP
+      decoding. See `esp32/info.md`.
