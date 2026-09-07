@@ -193,6 +193,10 @@ pfg_feature_keys:
       Duration = speed / clamp(|value|/max_power, min 0.15, max 1) so higher power runs
       faster. Zero/unavailable pauses the animation and dims the line to 60%.
       Lines use vector-effect="non-scaling-stroke" with stroke-width 2px.
+  pfg2_canonical_tilemap:
+    note: 'Source of truth for TPL->PFG2 tile placement; pass to apply-tpl.py --map or promote-view.sh --map'
+    map: 'Grid:1,7;Sum:3,1;Inverter:3,4;Battery:5,1;Home:5,7;Living:7,4;Kitchen:7,7;Laundry:9,4;Pool:9,7'
+    pv_override: 'PV1 1,1 and PV2 1,4 use TPL card PV.b1 (bars); PV2 entities retargeted to *_2'
   tile_workflow_decision_tree: |
     Design/iterate a tile:
       1. Build/edit the single-tile card in the TPL tab (push-dashboard.py mutate, no restart).

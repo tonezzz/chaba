@@ -188,8 +188,16 @@ runbooks:
     purpose: Copy a full view (e.g. pfg2 or tpl) from michael-dev to michael-ha for parity.
     steps:
       - "Run: SRC_TOKEN=<dev_token> DST_TOKEN=<ha_token> python3 scripts/home-assistant/copy-view.py <src_url> <dst_url> <view> [--first|--after <path>] [--dash <path>]"
+      - Default placement keeps the view's index from the source dashboard
       - The script auto re-adds the visionos card_mod glass-kill to any pfg_transparent card on the target
       - Verify bundle is served on the target (curl /local/<bundle>.js) — view copies do NOT copy the JS bundle or /local images
+
+  promote_view:
+    purpose: One-shot pipeline — apply TPL templates on dev, copy the view to michael-ha, sync SSOT, commit.
+    steps:
+      - "Run: scripts/home-assistant/promote-view.sh <view> [--map 'Title:r,c;...'] [--first|--after <p>] [--no-commit]"
+      - "Full PFG2 refresh from TPL: promote-view.sh pfg2 --first --map <pfg2_canonical_tilemap.map from design SSOT> (PV tiles use PV.b1 — apply separately: --map 'PV.b1:1,1;PV.b1:1,4')"
+      - "TPL tab itself: promote-view.sh tpl --after solis-daily-energy-sankey"
 
   deploy_custom_card_michael_ha_v2:
     purpose: Preferred deploy for both hosts (supersedes manual scp steps above).
