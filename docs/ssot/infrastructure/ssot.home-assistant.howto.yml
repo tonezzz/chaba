@@ -13,12 +13,16 @@ runbooks:
   card_data_modules:
     purpose: buildData() is modularized - src/data/* (v118).
     details: >-
-      src/data/build-data.ts (2791->~1900 lines) delegates to: entities.ts
-      (all 137 getEntity lookups via resolveEntities - note it defines its own
-      config = card._config), timer.ts (prog1-6 + inverterProg switch),
-      battery-calc.ts (calcBatteryCapacity, formatBatteryRuntime,
-      isBatteryFloating, pickBatteryColour - dedupes 4x per-battery blocks),
-      status.ts (inverter + battery status colour/message via resolveStatuses).
+      src/data/build-data.ts (2791->~1000 lines) delegates to: entities.ts
+      (all getEntity lookups via resolveEntities), defaults.ts (colour/icon/
+      inversion defaults via resolveDefaults), timer.ts (prog1-6 +
+      inverterProg), battery-calc.ts (calcBatteryCapacity, formatBatteryRuntime,
+      isBatteryFloating, pickBatteryColour), status.ts (resolveStatuses),
+      energy.ts (calcEnergyBalance: autarky/production/consumption), flow.ts
+      (resolveFlow: line widths, animation speeds, dynamic colours, PV
+      efficiency, load icon maps). The tail is the DataDto literal - leave it.
+      src/editor.ts (2407->~550): schema.ts (buildEditorSchema - the whole
+      ha-form tree), constants.ts, utils.ts.
       New entity reads go in entities.ts; new per-battery logic belongs in
       battery-calc.ts keyed by battery index, never a 5th copy-paste block.
     steps:
