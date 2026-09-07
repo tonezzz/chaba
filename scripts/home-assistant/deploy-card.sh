@@ -18,6 +18,22 @@ BASE="sunsynk-power-flow-card-fork"
 TARGET="michael-dev"
 [ "${1:-}" = "--host" ] && TARGET="$2"
 
+# --check: compare local dist md5 vs each host's ACTIVE bundle (no build/deploy)
+if [ "${1:-}" = "--check" ]; then
+  LOCAL_MD5=$(md5sum "$CARD_REPO/dist/sunsynk-power-flow-card.js" | cut -d' ' -f1)
+  for host in michael-dev michael-ha; do
+    case "$host" in
+      michael-dev) SSH=tony-dell; RES=/home/tony/.config/michael-dev/.storage/lovelace_resources; WWW=/home/tony/.config/michael-dev/www ;;
+      michael-ha)  SSH=michael-ha; RES=/config/.storage/lovelace_resources; WWW=/config/www ;;
+    esac
+    FILE=$(ssh "$SSH" "grep -o '${BASE}-v[0-9]*\.js' '$RES' | head -1" || true)
+    [ -n "$FILE" ] || { echo "$host: no active $BASE resource"; continue; }
+    REMOTE_MD5=$(ssh "$SSH" "md5sum '$WWW/$FILE'" | cut -d' ' -f1)
+    if [ "$REMOTE_MD5" = "$LOCAL_MD5" ]; then echo "$host: $FILE MATCHES dist"; else echo "$host: $FILE DRIFT (remote=$REMOTE_MD5 local=$LOCAL_MD5)"; fi
+  done
+  exit 0
+fi
+
 deploy_to() {
   local host="$1" SSH WWW RES RESTART URL_BASE
   case "$host" in
@@ -53,6 +69,10 @@ deploy_to() {
   done
   echo " ${code:-timeout}"
   [ "$code" = "200" ] || { echo "ERROR: bundle not served on $host"; return 1; }
+  local local_md5 remote_md5
+  local_md5=$(md5sum dist/sunsynk-power-flow-card.js | cut -d' ' -f1)
+  remote_md5=$(ssh "$SSH" "md5sum '$WWW/$file'" | cut -d' ' -f1)
+  [ "$remote_md5" = "$local_md5" ] && echo "[$host] md5 verified ($local_md5)" || echo "[$host] WARNING: md5 mismatch ($remote_md5 vs $local_md5)"
   echo "[$host] deployed /local/$file"
 }
 
