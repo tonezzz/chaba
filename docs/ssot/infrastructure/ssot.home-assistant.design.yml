@@ -193,6 +193,25 @@ pfg_feature_keys:
       Duration = speed / clamp(|value|/max_power, min 0.15, max 1) so higher power runs
       faster. Zero/unavailable pauses the animation and dims the line to 60%.
       Lines use vector-effect="non-scaling-stroke" with stroke-width 2px.
+  tile_workflow_decision_tree: |
+    Design/iterate a tile:
+      1. Build/edit the single-tile card in the TPL tab (push-dashboard.py mutate, no restart).
+      2. Propagate to a target view tile:
+         scripts/home-assistant/apply-tpl.py <ha_url> tony-test tpl <view> --map "Title:r,c;..."
+         (copies charts/images/labels/etc.; never pfg_spans; same title may map to several cells)
+      3. Retarget entity ids on the destination tile if the source is different
+         (e.g. PV.b1 hard-wires pv_power_1; swap _1->_2 for a second string).
+    Promote dev -> michael-ha:
+      4. scripts/home-assistant/copy-view.py dev->ha (re-adds card_mod automatically).
+      5. Bundle parity: compare md5 of dist vs each host's /local bundle; deploy-card.sh --host all if source changed.
+    New card FEATURE (not config):
+      6. Edit card source -> npm run build -> deploy-card.sh --host all -> apply on both.
+    Pitfalls:
+      - View copies do NOT carry the JS bundle or /local images — check both exist on target.
+      - Chart types must exist in the deployed bundle version (a config referencing e.g. 'bars'
+        silently renders nothing on an older bundle).
+      - Responsive pfg_spans must keep identical cell coverage per orientation or tiles overlap/hide.
+      - Tailscale SSH may need periodic browser re-auth (prints a login.tailscale.com link).
   deployment_note: |
     pfg_* config lives entirely in the Lovelace card config. Once the bundle supports a
     key, iterate it live with scripts/home-assistant/push-dashboard.py (websocket save,

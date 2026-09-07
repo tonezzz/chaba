@@ -187,10 +187,9 @@ runbooks:
   copy_view_between_instances:
     purpose: Copy a full view (e.g. pfg2 or tpl) from michael-dev to michael-ha for parity.
     steps:
-      - Open websocket to each host (tokens: see AGENTS.md Token files)
-      - 'lovelace/config on dev -> take the view object; replace/insert in ha views; lovelace/config/save on ha'
-      - "On michael-ha, re-add card_mod to the pfg2 card after the copy: card_mod: {style: 'ha-card::before { content: none !important; } ha-card { background: transparent !important; box-shadow: none !important; }'} — the visionos theme injects a frosted-glass ::before, and the copy drops the override"
-      - Reorder views so pfg2 stays first tab; verify bundle is served (curl /local/<bundle>.js)
+      - "Run: SRC_TOKEN=<dev_token> DST_TOKEN=<ha_token> python3 scripts/home-assistant/copy-view.py <src_url> <dst_url> <view> [--first|--after <path>] [--dash <path>]"
+      - The script auto re-adds the visionos card_mod glass-kill to any pfg_transparent card on the target
+      - Verify bundle is served on the target (curl /local/<bundle>.js) — view copies do NOT copy the JS bundle or /local images
 
   deploy_custom_card_michael_ha_v2:
     purpose: Preferred deploy for both hosts (supersedes manual scp steps above).
