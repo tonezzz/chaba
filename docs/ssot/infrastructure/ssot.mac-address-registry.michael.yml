@@ -23,7 +23,6 @@ sections:
     items:
       - label: Count
         text: '18 devices with known MAC or local ID from HA config and device registry'
-
 config:
   version: 1
   last_updated: '2026-09-02'
@@ -71,10 +70,10 @@ config:
     - interface_id: lan
       mac: d4:4f:67:a4:34:53
       oui: d4:4f:67
-      vendor: Huawei
+      vendor: HUAWEI TECHNOLOGIES CO.,LTD
       type: ethernet
-      source: ha-config-upnp
-      first_seen: '2026-09-02'
+      source: arp-scan
+      first_seen: '2026-09-07'
       status: active
     mac_conflict: false
     status: active
@@ -86,10 +85,10 @@ config:
     - interface_id: lan
       mac: d4:4f:67:a3:b2:70
       oui: d4:4f:67
-      vendor: Huawei
+      vendor: HUAWEI TECHNOLOGIES CO.,LTD
       type: ethernet
-      source: ha-config-upnp
-      first_seen: '2026-09-02'
+      source: arp-scan
+      first_seen: '2026-09-07'
       status: active
     mac_conflict: false
     status: active
@@ -100,10 +99,10 @@ config:
     - interface_id: wlan0
       mac: a0:43:b0:54:70:2a
       oui: a0:43:b0
-      vendor: Broadlink
+      vendor: Hangzhou BroadLink Technology Co.,Ltd
       type: wifi
-      source: ha-config-broadlink
-      first_seen: '2026-09-02'
+      source: arp-scan
+      first_seen: '2026-09-07'
       status: active
     mac_conflict: false
     status: active
@@ -115,10 +114,10 @@ config:
     - interface_id: wlan0
       mac: 08:e9:f6:10:cf:94
       oui: 08:e9:f6
-      vendor: IEAST
+      vendor: AMPAK Technology,Inc.
       type: wifi
-      source: ha-device-registry
-      first_seen: '2026-09-02'
+      source: arp-scan
+      first_seen: '2026-09-07'
       status: active
     mac_conflict: false
     status: active
@@ -130,10 +129,10 @@ config:
     - interface_id: wlan0
       mac: 08:e9:f6:12:0e:20
       oui: 08:e9:f6
-      vendor: IEAST
+      vendor: AMPAK Technology,Inc.
       type: wifi
-      source: ha-device-registry
-      first_seen: '2026-09-02'
+      source: arp-scan
+      first_seen: '2026-09-07'
       status: active
     mac_conflict: false
     status: active
@@ -145,10 +144,10 @@ config:
     - interface_id: wlan0
       mac: 08:e9:f6:12:1d:d8
       oui: 08:e9:f6
-      vendor: IEAST
+      vendor: AMPAK Technology,Inc.
       type: wifi
-      source: ha-device-registry
-      first_seen: '2026-09-02'
+      source: arp-scan
+      first_seen: '2026-09-07'
       status: active
     mac_conflict: false
     status: active
@@ -175,10 +174,10 @@ config:
     - interface_id: wlan0
       mac: c4:dd:57:0d:d1:a8
       oui: c4:dd:57
-      vendor: Sonoff/Espressif
+      vendor: Espressif Inc.
       type: wifi
-      source: sonoff-config
-      first_seen: '2026-09-02'
+      source: arp-scan
+      first_seen: '2026-09-07'
       status: active
     mac_conflict: false
     status: active
@@ -205,10 +204,10 @@ config:
     - interface_id: wlan0
       mac: 8c:ce:4e:0c:cf:2b
       oui: 8c:ce:4e
-      vendor: Sonoff/Espressif
+      vendor: Espressif Inc.
       type: wifi
-      source: sonoff-config
-      first_seen: '2026-09-02'
+      source: arp-scan
+      first_seen: '2026-09-07'
       status: active
     mac_conflict: false
     status: active
@@ -218,12 +217,12 @@ config:
       iammeter_id: IamMeter_MB
     interfaces:
     - interface_id: primary
-      mac: null
-      oui: null
-      vendor: null
+      mac: 02:00:00:0f:0d:01
+      oui: 02:00:00
+      vendor: unknown
       type: unknown
-      source: ha-config-iammeter
-      first_seen: '2026-09-02'
+      source: arp-scan
+      first_seen: '2026-09-07'
       status: active
     mac_conflict: false
     status: active
@@ -233,12 +232,12 @@ config:
       iammeter_id: 1C3BEA19_MB
     interfaces:
     - interface_id: primary
-      mac: null
-      oui: null
-      vendor: null
+      mac: b0:f8:93:3a:53:1a
+      oui: b0:f8:93
+      vendor: Shanghai MXCHIP Information Technology Co., Ltd.
       type: unknown
-      source: ha-config-iammeter
-      first_seen: '2026-09-02'
+      source: arp-scan
+      first_seen: '2026-09-07'
       status: active
     mac_conflict: false
     status: active
@@ -248,26 +247,27 @@ config:
       serial: '1033300249120103'
     interfaces:
     - interface_id: primary
-      mac: null
-      oui: null
-      vendor: Solis
+      mac: 2c:bc:bb:5d:36:2b
+      oui: 2c:bc:bb
+      vendor: unknown
       type: unknown
-      source: ha-config-solis-modbus
-      first_seen: '2026-09-02'
+      source: arp-scan
+      first_seen: '2026-09-07'
       status: active
     mac_conflict: false
     status: active
-  - device_id: michael-solis-inverter-153
-    label: Solis inverter 192.168.1.153 (discovered)
-    local_ids: {}
+  - device_id: michael-tuya-192-168-1-153
+    label: Unknown Tuya 192.168.1.153
+    local_ids:
+      observed_vendor: Tuya Smart Inc.
     interfaces:
     - interface_id: primary
-      mac: null
-      oui: null
-      vendor: null
-      type: unknown
-      source: ping
-      first_seen: '2026-09-02'
+      mac: 7c:f6:66:8a:29:c2
+      oui: 7c:f6:66
+      vendor: Tuya Smart Inc.
+      type: wifi
+      source: arp-scan
+      first_seen: '2026-09-07'
       status: active
     mac_conflict: false
     status: active
@@ -276,42 +276,52 @@ config:
     local_ids: {}
     interfaces:
     - interface_id: primary
-      mac: null
-      oui: null
-      vendor: SolarAssistant
+      mac: 02:07:56:6e:e9:9a
+      oui: 02:07:56
+      vendor: unknown
       type: unknown
-      source: ha-config-solar-assistant
-      first_seen: '2026-09-02'
+      source: arp-scan
+      first_seen: '2026-09-07'
       status: active
-    mac_conflict: false
+    mac_conflict: true
     status: active
+    conflict_group: 02-07-56-6e-e9-9a
   - device_id: michael-lg-webos-tv
     label: LG webOS TV NANO81TSA (michael)
     local_ids:
       serial: 30d85ae1-a334-a6f8-e89e-2a00d91a6c48
     interfaces:
     - interface_id: wlan0
-      mac: null
-      oui: null
-      vendor: LG
+      mac: 74:c1:7e:9c:06:e7
+      oui: 74:c1:7e
+      vendor: unknown
       type: wifi
-      source: ha-config-webostv
-      first_seen: '2026-09-02'
+      source: arp-scan
+      first_seen: '2026-09-07'
       status: active
-    mac_conflict: false
+    - interface_id: eth0
+      mac: '44:27:45:27:53:08'
+      oui: '44:27:45'
+      vendor: unknown
+      type: ethernet
+      source: arp-scan
+      first_seen: '2026-09-07'
+      status: active
+    mac_conflict: true
     status: active
+    conflict_group: 74-c1-7e-9c-06-e7
   - device_id: michael-somfy-overkiz
     label: Somfy Overkiz gateway (michael)
     local_ids:
       overkiz_id: 0402-5394-5231
     interfaces:
     - interface_id: primary
-      mac: null
-      oui: null
-      vendor: Somfy
+      mac: f8:81:1a:52:19:cd
+      oui: f8:81:1a
+      vendor: OVERKIZ
       type: unknown
-      source: ha-config-overkiz
-      first_seen: '2026-09-02'
+      source: arp-scan
+      first_seen: '2026-09-07'
       status: active
     mac_conflict: false
     status: active

@@ -66,8 +66,11 @@ addons:
     note: Pre-installed official SSH add-on; configured with ed25519 deploy key and restarted
   - id: a0d7b954_ssh
     name: SSH & Web Terminal
-    status: pending
-    note: Community alternative; not needed while core_ssh is active
+    status: active
+    port: 2222
+    packages:
+      - arp-scan
+    note: Installed and configured on host port 2222 with the devin-deploy key. Runs with host_network and privileged access for ARP/network scans. core_ssh remains active on port 22 for deploy and MCP tunnel.
 
 mcp:
   custom_component: ha_mcp_tools
