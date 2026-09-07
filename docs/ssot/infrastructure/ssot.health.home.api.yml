@@ -145,7 +145,7 @@ services:
 - id: trade-api
   name: Trade API
   type: http
-  url: http://tony-dell:9002/api/health
+  url: http://127.0.0.1:9002/api/health
   expected_status: 200
   timeout: 5
   category: api
@@ -155,8 +155,8 @@ services:
   host: tony_dell
   verification:
   - 'Test container: ssh tony-dell podman ps | grep trade-api'
-  - 'Test health endpoint: curl -s http://tony-dell:9002/api/health'
-  - 'Test root endpoint: curl -s http://tony-dell:9002/'
+  - 'Test health endpoint: ssh tony-dell curl -s http://127.0.0.1:9002/api/health'
+  - 'Test root endpoint: ssh tony-dell curl -s http://127.0.0.1:9002/'
   - 'Check container logs: ssh tony-dell podman logs trade-api'
   recovery_actions:
   - 'Restart container: ssh tony-dell podman restart trade-api'

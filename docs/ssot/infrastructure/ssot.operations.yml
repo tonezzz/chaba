@@ -323,6 +323,25 @@ host_notes:
       - docs/ssot/infrastructure/ssot.tony-dell-failover.yml
       - docs/ssot/infrastructure/ssot.yomi-failover.yml
       - docs/ssot/infrastructure/ssot.health.home.tony-dell.yml
+      - docs/kb/host-reboot-verification.md
+    known_issues:
+      - >-
+        tailscaled (serve/funnel incl. tailscale-serve-8080.service) binds
+        tailnet-IP ports at boot; any 0.0.0.0 container bind on the same port
+        gets EADDRINUSE. Policy: containers bind 127.0.0.1, serve handles
+        tailnet (decided 2026-09-07; see runbook).
+      - barrierc requires DISPLAY=:20 (CRD Xorg) in barrier-client.service.
+      - mddb takes ~4-8 min to bind ports after start; wait before restarting.
+      - >-
+        Physical monitor is on the Intel iGPU (card1-DP-2), NOT the AMD card
+        (card2). GDM autologin (Session=Lubuntu) exits immediately on the seat
+        (reason unresolved; greeter is Wayland despite WaylandEnable=false).
+        Working seat path since 2026-09-07: system unit xorg-seat.service
+        (root Xorg :1 on vt7) + user unit lxqt-seat.service (startlxqt,
+        waits for /tmp/.X11-unix/X1, chvt 7) + barrier-client.service with
+        DISPLAY=:1 (waits for X1 socket). GDM greeter remains on tty1.
+      - barrier-client.service now targets DISPLAY=:1 (physical seat), not :20.
+        The CRD session :20 no longer has barrier input by design.
   tony_omen:
     reboot_role: interactive primary and GPU host
     pre_shutdown:
