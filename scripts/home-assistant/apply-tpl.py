@@ -27,11 +27,11 @@ MAP_KEYS = ("pfg_charts", "pfg_images", "pfg_labels", "pfg_value_labels",
 
 async def main():
     url, dash, src_view, dst_view = sys.argv[1:5]
-    mapping = {}
+    mapping = []  # list, not dict — the same TPL title may map to several cells
     if "--map" in sys.argv:
         for pair in sys.argv[sys.argv.index("--map") + 1].split(";"):
             t, cell = pair.split(":", 1)
-            mapping[t.strip()] = cell.strip()
+            mapping.append((t.strip(), cell.strip()))
     dry = "--dry-run" in sys.argv
     token = os.environ["HASS_TOKEN"]
 
@@ -53,7 +53,7 @@ async def main():
         tpl = {c.get("title"): c for c in views[src_view]["cards"]}
         dst = views[dst_view]["cards"][0]
 
-        for title, cell in mapping.items():
+        for title, cell in mapping:
             t = tpl.get(title)
             if not t:
                 print(f"  !! no TPL card titled '{title}' — skipped")
