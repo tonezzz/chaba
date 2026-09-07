@@ -203,9 +203,29 @@ runbooks:
       (read-only, no writes to michael-ha for that).
     steps:
       - 'Design/iterate on michael-dev only: push-dashboard.py + deploy-card.sh + playlive verification'
-      - 'When the user approves the finished result: deploy the final bundle to michael-ha (deploy_custom_card_michael_ha), copy any new /local images, then apply the dashboard changes in one mutation'
+      - 'When the user approves the finished result: run scripts/home-assistant/promote-michael.sh — it scp''s the dev-deployed bundle, bumps the lovelace resource via websocket, merges the selected tony-test views (by path; ha-only views preserved), verifies HTTP 200, and optionally cleans stale bundles'
       - 'Snapshot + SSOT update after promotion'
     note: 'Intermediate deploys to michael-ha (e.g. bundle v89/v91, TPL view) during the 2026-09-06 session predate this directive — future work must not repeat that pattern.'
+
+  promote_michael_script:
+    purpose: One-step michael-dev -> michael-ha promotion (bundle + resource + dashboard views), added 2026-09-07.
+    usage: |
+      scripts/home-assistant/promote-michael.sh [--dry-run] [--views tpl,pfg2|all] [--cleanup] [--rollback]
+      Defaults to --views tpl. --dry-run prints versions and remote bundles only.
+      --rollback flips the resource url back to the previous bundle still on disk.
+      --cleanup removes fork bundles not referenced (keeps current + previous).
+    auth: |
+      michael-ha token: ~/.local/share/home-assistant-michael/ha-token (REST+ws).
+      michael-ha SSH: ~/.ssh/michael-ha -> root@michael-ha /config.
+      michael-dev token: ~/.config/secrets/ha-michael-dev.env.
+    details: |
+      Promotes the exact bundle file deployed on michael-dev (fetched from
+      tony-dell www, not local dist) so the artifact is the verified one.
+      Resource bump uses scripts/home-assistant/ws-resource-url.py
+      (lovelace/resources websocket update — no HA restart needed).
+      View merge generates /tmp/promote-mutate.py and calls push-dashboard.py
+      against http://michael-ha:8123 — views are replaced by path, ha-only
+      views (Weather etc.) are preserved.
 
   deploy_package_michael_ha:
     purpose: Deploy a new or updated Home Assistant package to michael-ha.
