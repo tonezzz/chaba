@@ -9,6 +9,36 @@ prerequisites:
   - dashboards: ssot.home-assistant.dashboards.yml
 
 runbooks:
+
+  card_data_modules:
+    purpose: buildData() is modularized - src/data/* (v118).
+    details: >-
+      src/data/build-data.ts (2791->~1900 lines) delegates to: entities.ts
+      (all 137 getEntity lookups via resolveEntities - note it defines its own
+      config = card._config), timer.ts (prog1-6 + inverterProg switch),
+      battery-calc.ts (calcBatteryCapacity, formatBatteryRuntime,
+      isBatteryFloating, pickBatteryColour - dedupes 4x per-battery blocks),
+      status.ts (inverter + battery status colour/message via resolveStatuses).
+      New entity reads go in entities.ts; new per-battery logic belongs in
+      battery-calc.ts keyed by battery index, never a 5th copy-paste block.
+    steps:
+      - entities: append to resolveEntities() in src/data/entities.ts, destructure in buildData
+      - per-battery: extend battery-calc.ts helpers
+      - verify: npm run build && npx tsc --noEmit | grep src/data/ must be clean
+
+  tpl_variant_generator:
+    purpose: TPL a1/b1 variant cards are generated - edit the spec, not the dashboard.
+    details: >-
+      scripts/home-assistant/tpl-variants.py is the single source of truth for
+      all *.a1/*.b1 TPL cards (series defs, colours, images, shared chrome).
+      Re-running it drops and rebuilds all variant cards + the 12-col
+      grid-template-areas idempotently. To restyle every variant at once, edit
+      make_variant() in that file.
+    steps:
+      - edit scripts/home-assistant/tpl-variants.py (SPEC / SERIES / make_variant)
+      - push: python3 scripts/home-assistant/push-dashboard.py <michael-dev-url> tony-test --mutate scripts/home-assistant/tpl-variants.py
+      - sync: ./scripts/home-assistant/sync-ssot-from-live.sh
+      - validate: node scripts/ssot-validate-all.mjs && commit+push
   add_dashboard_tab:
     purpose: Add a new tab to the tony-test Lovelace dashboard and make it the first tab.
     steps:
