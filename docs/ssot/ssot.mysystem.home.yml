@@ -64,30 +64,24 @@ sections:
     icon: 🔋
     layout: list
     items:
-      - label: Screen Timeout Schedule
-        text: Automatic screen timeout adjustment based on time of day
+      - label: Screen Timeout
+        text: Screen turns off after 5 minutes of idle time; long-running processes continue running (no system suspend)
         status: active
         tags: [power, automation, screen-timeout]
-      - label: Nighttime Hours (10pm-8am)
-        text: "Screen timeout: 1 minute (aggressive power saving)"
-        status: scheduled
-      - label: Daytime Hours (8am-10pm)
-        text: "Screen timeout: 10 minutes (normal operation)"
-        status: scheduled
-      - label: tony-omen Scripts
-        text: /home/tony/scripts/screen-timeout-night.sh, /home/tony/scripts/screen-timeout-day.sh
-      - label: tony-dell Scripts
-        text: /home/tony/scripts/screen-timeout-night.sh, /home/tony/scripts/screen-timeout-day.sh
-      - label: Cron Schedule
-        text: "0 22 * * * (nighttime), 0 8 * * * (daytime)"
+      - label: Timeout Value
+        text: "300 seconds (5 minutes) - DPMS Off: 300s"
+      - label: Service
+        text: systemd --user screen-timeout-daemon.service on tony-dell and tony-omen
+      - label: Daemon Script
+        text: /home/tony/screen-timeout-daemon.sh
       - label: Log Location
-        text: /home/tony/logs/screen-timeout.log
+        text: /home/tony/.local/share/screen-timeout-daemon.log
       - label: Current Settings (tony-omen)
-        text: "Screen timeout: 600s, DPMS: Off 900s (standby/suspend disabled)"
+        text: "Screen timeout: 600s (X screensaver, ignored), DPMS: Enabled, Off: 300s"
       - label: Current Settings (tony-dell)
-        text: "Screen timeout: 0s (disabled), DPMS: Disabled"
+        text: "Screen timeout: 600s (X screensaver, ignored), DPMS: Enabled, Off: 300s"
       - label: Implementation Date
-        text: 2026-08-11
+        text: 2026-09-07
 
   - title: Network
     icon: 🌐
