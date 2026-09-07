@@ -53,12 +53,14 @@ async def main():
 
     d["views"] = [x for x in d["views"] if x.get("path") != VIEW]
     if FIRST:
-        d["views"].insert(0, v)
+        pos = 0
     elif AFTER:
-        i = next((n for n, x in enumerate(d["views"]) if x.get("path") == AFTER), len(d["views"]) - 1)
-        d["views"].insert(i + 1, v)
+        pos = next((n for n, x in enumerate(d["views"]) if x.get("path") == AFTER), len(d["views"]) - 1) + 1
     else:
-        d["views"].append(v)
+        # keep the view's index from the source dashboard
+        pos = next((n for n, x in enumerate(s["views"]) if x.get("path") == VIEW), len(d["views"]))
+        pos = min(pos, len(d["views"]))
+    d["views"].insert(pos, v)
     out = await cmd(dst, {"type": "lovelace/config/save", "url_path": DASH, "config": d})
     print("saved:", out.get("success"), "| order:", [x.get("path") for x in d["views"]])
 
