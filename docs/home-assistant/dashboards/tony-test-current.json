@@ -59,9 +59,9 @@
                 "1,1": [
                   {
                     "type": "gauge",
-                    "entity": "sensor.inverters_1_pv_power_1",
+                    "entity": "sensor.inverters_1_pv_power",
                     "min": 0,
-                    "max": 5000,
+                    "max": 10000,
                     "scale": 0.001,
                     "needle": true,
                     "segments": [
@@ -84,10 +84,10 @@
                   },
                   {
                     "type": "history",
-                    "entity": "sensor.inverters_1_pv_power_1",
+                    "entity": "sensor.inverters_1_pv_power",
                     "hours": 24,
                     "min": 0,
-                    "max": 5000,
+                    "max": 10000,
                     "scale": 0.001,
                     "decimals": 2,
                     "position": "bottom"
@@ -849,7 +849,7 @@
               "pfg_grid_width": "100%",
               "pfg_inverter_at": "3,4",
               "pfg_labels": {
-                "1,1": "PV1",
+                "1,1": "PV",
                 "1,4": "PV2",
                 "1,7": "Grid power",
                 "3,1": "PV Total",
@@ -878,12 +878,14 @@
               "pfg_fit_screen": true,
               "pfg_value_labels": {
                 "7,7": "Load",
-                "9,4": "Power"
+                "9,4": "Power",
+                "1,1": "Power"
               },
               "pfg_label_pos": {
                 "7,7": "12%",
                 "7,4": "12%",
-                "9,4": "12%"
+                "9,4": "12%",
+                "1,1": "12%"
               }
             }
           ]
@@ -2994,7 +2996,7 @@
           "layout": {
             "grid-template-columns": "repeat(4, 1fr)",
             "grid-template-rows": "repeat(6, auto)",
-            "grid-template-areas": "\"pv grid battery inverter\" \"pool sum kitchen .\" \"home bedroom terrace .\" \"living . . .\" \"laundry . . .\" \"pvh pvv . .\""
+            "grid-template-areas": "\"pvh pvh pvv pvv\" \"pv grid battery inverter\" \"pool sum kitchen .\" \"home bedroom terrace .\" \"living . . .\" \"laundry . . .\""
           }
         },
         {
