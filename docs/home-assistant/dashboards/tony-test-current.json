@@ -5782,14 +5782,22 @@
               "pfg_charts": {
                 "1,1": [
                   {
-                    "type": "history",
-                    "entity": "sensor.inverters_1_pv_power",
-                    "hours": 24,
-                    "min": 0,
-                    "max": 100,
+                    "type": "area",
                     "position": "bg",
-                    "opacity": 0.8,
-                    "scrim": true
+                    "height": "75%",
+                    "hours": 24,
+                    "entities": [
+                      "sensor.inverters_1_pv_power_1",
+                      "sensor.inverters_1_pv_power_2"
+                    ],
+                    "scale": 0.001,
+                    "max": 10000,
+                    "colors": [
+                      "#00E676",
+                      "#4fc3f7"
+                    ],
+                    "stroke_width": 1.2,
+                    "fill_opacity": 0.6
                   },
                   {
                     "type": "group",
