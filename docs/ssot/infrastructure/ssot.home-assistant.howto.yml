@@ -180,7 +180,7 @@ runbooks:
   apply_tpl_template:
     purpose: Copy a TPL-tab card template onto a tile of another view (e.g. pfg2).
     steps:
-      - Run `python3 scripts/home-assistant/apply-tpl.py <ha_url> <dashboard> tpl <dst_view> --map "Title:r,c;Title:r,c"` (pairs separated by ';'; use --dry-run first)
+      - "Run: python3 scripts/home-assistant/apply-tpl.py <ha_url> <dashboard> tpl <dst_view> --map 'Title:r,c;Title:r,c' (pairs separated by ';'; use --dry-run first)"
       - The script copies pfg_charts/images/labels/value_labels/radius/border/image_fit/label_pos — NOT pfg_spans (TPL tiles are 2x2; target span is preserved)
       - The same TPL title may map to several cells; retarget entity ids afterward if the tile should show a different source (e.g. PV.b1 hard-wires pv_power_1)
 
@@ -188,14 +188,14 @@ runbooks:
     purpose: Copy a full view (e.g. pfg2 or tpl) from michael-dev to michael-ha for parity.
     steps:
       - Open websocket to each host (tokens: see AGENTS.md Token files)
-      - lovelace/config on dev → take the view object; replace/insert in ha's views; lovelace/config/save on ha
-      - On michael-ha, re-add `card_mod: {style: "ha-card::before { content: none !important; } ha-card { background: transparent !important; box-shadow: none !important; }}"` to the pfg2 card — the visionos theme injects a frosted-glass ::before, and the copy drops the override
+      - 'lovelace/config on dev -> take the view object; replace/insert in ha views; lovelace/config/save on ha'
+      - "On michael-ha, re-add card_mod to the pfg2 card after the copy: card_mod: {style: 'ha-card::before { content: none !important; } ha-card { background: transparent !important; box-shadow: none !important; }'} — the visionos theme injects a frosted-glass ::before, and the copy drops the override"
       - Reorder views so pfg2 stays first tab; verify bundle is served (curl /local/<bundle>.js)
 
   deploy_custom_card_michael_ha_v2:
     purpose: Preferred deploy for both hosts (supersedes manual scp steps above).
     steps:
-      - Run `scripts/home-assistant/deploy-card.sh --host michael-ha` (or `--host all`) from anywhere; it builds, derives the next version from that host's lovelace_resources, scp's, restarts, verifies HTTP 200
+      - "Run: scripts/home-assistant/deploy-card.sh --host michael-ha (or --host all); it builds, derives the next version from that host's lovelace_resources, scp's, restarts, verifies HTTP 200"
       - Version numbers are per-host counters — compare bundle md5 across hosts for parity, not the v-number
       - If Tailscale SSH prints a login.tailscale.com link, ask the user to open it, then retry
 
