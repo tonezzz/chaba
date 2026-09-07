@@ -7,7 +7,7 @@ repositories:
     fork_of: slhub/sunsynk-power-flow-card
     current_commit: HEAD
     package_version: 7.3.3
-    bundle_version: 145
+    bundle_version: 147
     build:
       command: npm run build
       tool: rollup -c --bundleConfigAsCjs
@@ -15,9 +15,9 @@ repositories:
     deploy:
       michael-dev:
         target_host: ssot.values.yml::hosts.tony_dell
-        target_path: /home/tony/.config/michael-dev/www/sunsynk-power-flow-card-fork-v145.js
+        target_path: /home/tony/.config/michael-dev/www/sunsynk-power-flow-card-fork-v147.js
         lovelace_resources: /home/tony/.config/michael-dev/.storage/lovelace_resources
-        resource_path: /local/sunsynk-power-flow-card-fork-v145.js
+        resource_path: /local/sunsynk-power-flow-card-fork-v147.js
         restart: systemctl --user restart michael-dev.service
         service_ref: infrastructure/ssot.services.yml#tony-dell.michael-dev.quadlet.service_unit
         test_url: https://tony-dell.taila0626a.ts.net:8124/tony-test/pf4
@@ -100,8 +100,8 @@ cards:
   - id: sunsynk-power-flow-card
     name: Sunsynk Power Flow Card (fork)
     repo_ref: repositories.sunsynk-power-flow-card-fork
-    bundle_version: 145
-    deployed_as: /local/sunsynk-power-flow-card-fork-v145.js (michael-dev only; michael-ha held at v144 per dev-first rule; previous v103 kept for rollback)
+    bundle_version: 147
+    deployed_as: /local/sunsynk-power-flow-card-fork-v147.js (michael-dev only; michael-ha held at v144 per dev-first rule; previous v103 kept for rollback)
     dashboards:
       - id: tony-test/pf4
         tab: PF4
