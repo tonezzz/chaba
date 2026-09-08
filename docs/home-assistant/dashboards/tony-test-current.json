@@ -1962,24 +1962,18 @@
                     -4,
                     4
                   ],
-                  "rotate_center": "front",
-                  "opacity": 0.7
+                  "rotate_center": "volume",
+                  "opacity": 1
                 }
               },
               "preset": "pfg",
               "show_solar": false,
               "inverter": {
                 "model": "solis",
-                "modern": false,
+                "modern": true,
                 "autarky": "no"
               },
               "pfg_fit_screen": true,
-              "pfg_images": {
-                "1,1": "/local/Solar-Grid.jpg"
-              },
-              "pfg_image_fit": {
-                "1,1": "cover"
-              },
               "pfg_label_pos": {
                 "1,1": "top"
               },
@@ -6803,7 +6797,7 @@
         },
         {
           "title": "Sankey",
-          "path": "solis-daily-energy-sankey",
+          "path": "sankey",
           "type": "masonry",
           "badges": [],
           "cards": [
@@ -7326,7 +7320,8 @@
                 "style": "ha-card { --card-background-color: #102040 !important; background-color: #102040 !important; --primary-text-color: #ffffff !important; --secondary-text-color: #cccccc !important; color: #ffffff !important; }"
               }
             }
-          ]
+          ],
+          "path": "solar-assistant"
         },
         {
           "title": "glass",
@@ -7779,7 +7774,8 @@
           "background": "rgba(0,0,0,0)",
           "card_mod": {
             "style": ":\n  ha-app-layout#view {\n    background: rgba(16, 32, 64, 0.35) !important;\n    backdrop-filter: blur(16px) saturate(160%) !important;\n    -webkit-backdrop-filter: blur(16px) saturate(160%) !important;\n  }"
-          }
+          },
+          "path": "glass"
         },
         {
           "title": "Weather",
@@ -8056,7 +8052,8 @@
                 "style": "ha-card { --card-background-color: #102040 !important; background-color: #102040 !important; --primary-text-color: #ffffff !important; --secondary-text-color: #cccccc !important; color: #ffffff !important; }"
               }
             }
-          ]
+          ],
+          "path": "solis-daily-energy-sankey"
         }
       ]
     }
