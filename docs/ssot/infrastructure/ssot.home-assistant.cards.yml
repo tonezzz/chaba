@@ -5,9 +5,9 @@ repositories:
   sunsynk-power-flow-card-fork:
     path: /home/tony/CascadeProjects/sunsynk-power-flow-card
     fork_of: slhub/sunsynk-power-flow-card
-    current_commit: bd29c44
+    current_commit: 6e85fe2
     package_version: 7.3.3
-    bundle_version: 146
+    bundle_version: 149
     build:
       command: npm run build
       tool: rollup -c --bundleConfigAsCjs
@@ -15,17 +15,17 @@ repositories:
     deploy:
       michael-dev:
         target_host: ssot.values.yml::hosts.tony_dell
-        target_path: /home/tony/.config/michael-dev/www/sunsynk-power-flow-card-fork-v146.js
+        target_path: /home/tony/.config/michael-dev/www/sunsynk-power-flow-card-fork-v149.js
         lovelace_resources: /home/tony/.config/michael-dev/.storage/lovelace_resources
-        resource_path: /local/sunsynk-power-flow-card-fork-v146.js
+        resource_path: /local/sunsynk-power-flow-card-fork-v149.js
         restart: systemctl --user restart michael-dev.service
         service_ref: infrastructure/ssot.services.yml#tony-dell.michael-dev.quadlet.service_unit
         test_url: https://tony-dell.taila0626a.ts.net:8124/tony-test/pf4
       michael-ha:
         target_host: ssot.values.yml::hosts.michael_ha
-        target_path: /config/www/sunsynk-power-flow-card-fork-v146.js
+        target_path: /config/www/sunsynk-power-flow-card-fork-v122.js
         lovelace_resources: /config/.storage/lovelace_resources
-        resource_path: /local/sunsynk-power-flow-card-fork-v146.js
+        resource_path: /local/sunsynk-power-flow-card-fork-v122.js
         restart: ha core restart
         test_url: https://nupo4ndqdqydt78zmpq0z5wzp1bdrqgs.ui.nabu.casa/tony-test/pf3
         note: >-
@@ -33,8 +33,9 @@ repositories:
           watchdog was disabled), so the bundle was briefly served from
           cdn.jsdelivr.net (@bd29c44). After the add-on restart, bundle v79 and
           the 4 pfg tile images were copied to /config/www and the resource was
-          repointed to /local/. Tailscale watchdog is now enabled. Fallback:
-          cdn.jsdelivr.net/gh/tonezzz/sunsynk-power-flow-card@<commit>/dist/...
+          repointed to /local/. PFG2 tab was later removed; current live bundle
+          is v122 (source commit may differ from dev). Tailscale watchdog is
+          now enabled. Fallback: cdn.jsdelivr.net/gh/tonezzz/sunsynk-power-flow-card@<commit>/dist/...
     source_files:
       primary_modifications:
         - src/components/compact/bat/bat-elements.ts
@@ -91,28 +92,33 @@ cards:
   - id: sunsynk-power-flow-card
     name: Sunsynk Power Flow Card (fork)
     repo_ref: repositories.sunsynk-power-flow-card-fork
-    bundle_version: 146
-    deployed_as: /local/sunsynk-power-flow-card-fork-v146.js
+    bundle_version: 149
+    deployed_as: /local/sunsynk-power-flow-card-fork-v149.js
     dashboards:
-      - id: tony-test/pf4
-        tab: PF4
-        test_url: https://tony-dell.taila0626a.ts.net:8124/tony-test/pf4
-      - id: tony-test/pfg1
-        tab: PFG1
-        test_url: https://tony-dell.taila0626a.ts.net:8124/tony-test/pfg1
-      - id: tony-test/pfg
-        tab: PFG
-        test_url: https://tony-dell.taila0626a.ts.net:8124/tony-test/pfg
-      - id: tony-test/pfg2
-        tab: PFG2
-        test_url: https://tony-dell.taila0626a.ts.net:8124/tony-test/pfg2
-      - id: tony-test/pf3
-        tab: PF3
-        test_url: https://nupo4ndqdqydt78zmpq0z5wzp1bdrqgs.ui.nabu.casa/tony-test/pf3
-      - id: michael-ha tony-test/pfg2
-        tab: PFG2 (first tab)
-        test_url: https://nupo4ndqdqydt78zmpq0z5wzp1bdrqgs.ui.nabu.casa/tony-test/pfg2
-        note: pfg_hide_grid + pfg_transparent + pfg_fit_screen; card_mod kills the visionos theme's frosted-glass ha-card::before — re-add it after every view copy from dev; tile images in /config/www served via /local/.
+      - id: tony-test/v0
+        tab: V0
+        test_url: https://tony-dell.taila0626a.ts.net:8124/tony-test/p0
+      - id: tony-test/v1
+        tab: V1
+        test_url: https://tony-dell.taila0626a.ts.net:8124/tony-test/p0-2
+      - id: tony-test/g1
+        tab: G1
+        test_url: https://tony-dell.taila0626a.ts.net:8124/tony-test/g1
+      - id: tony-test/tpl
+        tab: TPL
+        test_url: https://tony-dell.taila0626a.ts.net:8124/tony-test/tpl
+      - id: tony-test/tpl2
+        tab: TPL2
+        test_url: https://tony-dell.taila0626a.ts.net:8124/tony-test/tpl2
+      - id: michael-ha tony-test/v0
+        tab: V0
+        test_url: https://nupo4ndqdqydt78zmpq0z5wzp1bdrqgs.ui.nabu.casa/tony-test/p0
+      - id: michael-ha tony-test/v1
+        tab: V1
+        test_url: https://nupo4ndqdqydt78zmpq0z5wzp1bdrqgs.ui.nabu.casa/tony-test/p0-2
+      - id: michael-ha tony-test/tpl
+        tab: TPL
+        test_url: https://nupo4ndqdqydt78zmpq0z5wzp1bdrqgs.ui.nabu.casa/tony-test/tpl
     instance: ssot.home-assistant.michael.dev.yml::environments.dev
   - id: michael-live
     name: Michael Live (ha-live bridge front-end)
@@ -120,6 +126,6 @@ cards:
     instance: ssot.home-assistant.michael.dev.yml::environments.dev
 
 status:
-  last_build: '2026-09-05'
-  last_verified: '2026-09-07'
-  health: active; v108 deployed; bundle deployed to michael-dev (PF3/PF4/PFG/PFG1/PFG2/TPL/Dossier) and michael-ha (PFG2 first tab + TPL after SK); version numbers are per-host counters — verify cross-host parity by md5sum, not version; pfg/pfg2 support images, icons, labels, values, sums, spans (incl. rectangular RxC and responsive), radius, border, zoom, image_fit, transparent, fit_screen, hide_grid, non-square grids, chart overlays (gauge/bar/history/cycle/bars), and speed-scaled anchored flow lines (see ssot.home-assistant.design.yml); .storage resource changes require HA core restart; michael-ha lovelace resource URL can also be updated over websocket (supervisor/api + lovelace/resources) when SSH is down; Tailscale SSH may require periodic browser re-auth
+  last_build: '2026-09-08'
+  last_verified: '2026-09-08'
+  health: active; v149 deployed to michael-dev and v122 to michael-ha; dev tabs are V0/V1/G1/TPL/TPL2/TPL_SOLIS/Data/Sankey/juWorkshop/Solar Assistant/glass/Weather/Solis Daily Energy Sankey (sunsynk on V0/V1/G1/TPL/TPL2); michael-ha tabs are V0/V1/SK/TPL/juWorkshop/Solar Assistant/glass/Weather (sunsynk on V0/V1/TPL); pfg/pfg2 features remain available in the bundle but PFG/PFG2/PF3/PF4 tabs were removed; version numbers are per-host counters — verify cross-host parity by md5sum, not version
