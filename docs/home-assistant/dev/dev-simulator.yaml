@@ -1,0 +1,109 @@
+# Dev simulator: random-walks dev_* mocks every 30s so dashboards/history are lively.
+automation:
+  - id: dev_sim_walk
+    alias: "Dev: simulate sensor walk (michael-dev mock)"
+    triggers:
+      - trigger: time_pattern
+        seconds: "/30"
+    actions:
+      - action: input_number.set_value
+        target: {entity_id: input_number.dev_pv1_power}
+        data:
+          value: "{{ [[states('input_number.dev_pv1_power')|float(0) + range(-600,601)|random, 0]|max, 6000]|min }}"
+      - action: input_number.set_value
+        target: {entity_id: input_number.dev_pv2_power}
+        data:
+          value: "{{ [[states('input_number.dev_pv2_power')|float(0) + range(-500,501)|random, 0]|max, 5000]|min }}"
+      - action: input_number.set_value
+        target: {entity_id: input_number.dev_load_power}
+        data:
+          value: "{{ [[states('input_number.dev_load_power')|float(0) + range(-500,501)|random, 300]|max, 8000]|min }}"
+      - action: input_number.set_value
+        target: {entity_id: input_number.dev_essential_power}
+        data:
+          value: "{{ [[states('input_number.dev_essential_power')|float(0) + range(-250,251)|random, 200]|max, 4000]|min }}"
+      - action: input_number.set_value
+        target: {entity_id: input_number.dev_grid_power}
+        data:
+          value: "{{ [[states('input_number.dev_grid_power')|float(0) + range(-900,901)|random, -5000]|max, 5000]|min }}"
+      - action: input_number.set_value
+        target: {entity_id: input_number.dev_battery_power}
+        data:
+          value: "{{ [[states('input_number.dev_battery_power')|float(0) + range(-900,901)|random, -8000]|max, 8000]|min }}"
+      - action: input_number.set_value
+        target: {entity_id: input_number.dev_battery2_power}
+        data:
+          value: "{{ [[states('input_number.dev_battery2_power')|float(0) + range(-400,401)|random, -4000]|max, 4000]|min }}"
+      - action: input_number.set_value
+        target: {entity_id: input_number.dev_battery3_power}
+        data:
+          value: "{{ [[states('input_number.dev_battery3_power')|float(0) + range(-300,301)|random, -3000]|max, 3000]|min }}"
+      - action: input_number.set_value
+        target: {entity_id: input_number.dev_battery_soc}
+        data:
+          value: "{{ [[states('input_number.dev_battery_soc')|float(0) - states('input_number.dev_battery_power')|float(0) * 0.002, 15]|max, 100]|min }}"
+      - action: input_number.set_value
+        target: {entity_id: input_number.dev_battery_voltage}
+        data:
+          value: "{{ (44 + states('input_number.dev_battery_soc')|float(0) * 0.14) | round(1) }}"
+      - action: input_number.set_value
+        target: {entity_id: input_number.dev_battery_current}
+        data:
+          value: "{{ (states('input_number.dev_battery_power')|float(0) / [states('input_number.dev_battery_voltage')|float(0), 1]|max) | round(1) }}"
+      - action: input_number.set_value
+        target: {entity_id: input_number.dev_battery2_soc}
+        data:
+          value: "{{ [[states('input_number.dev_battery2_soc')|float(0) - states('input_number.dev_battery2_power')|float(0) * 0.002, 15]|max, 100]|min }}"
+      - action: input_number.set_value
+        target: {entity_id: input_number.dev_battery2_voltage}
+        data:
+          value: "{{ (44 + states('input_number.dev_battery2_soc')|float(0) * 0.14) | round(1) }}"
+      - action: input_number.set_value
+        target: {entity_id: input_number.dev_battery2_current}
+        data:
+          value: "{{ (states('input_number.dev_battery2_power')|float(0) / [states('input_number.dev_battery2_voltage')|float(0), 1]|max) | round(1) }}"
+      - action: input_number.set_value
+        target: {entity_id: input_number.dev_battery3_soc}
+        data:
+          value: "{{ [[states('input_number.dev_battery3_soc')|float(0) - states('input_number.dev_battery3_power')|float(0) * 0.002, 15]|max, 100]|min }}"
+      - action: input_number.set_value
+        target: {entity_id: input_number.dev_battery3_voltage}
+        data:
+          value: "{{ (44 + states('input_number.dev_battery3_soc')|float(0) * 0.14) | round(1) }}"
+      - action: input_number.set_value
+        target: {entity_id: input_number.dev_battery3_current}
+        data:
+          value: "{{ (states('input_number.dev_battery3_power')|float(0) / [states('input_number.dev_battery3_voltage')|float(0), 1]|max) | round(1) }}"
+      - action: input_number.set_value
+        target: {entity_id: input_number.dev_grid_voltage}
+        data:
+          value: "{{ 235 + range(-8,9)|random }}"
+      - action: input_number.set_value
+        target: {entity_id: input_number.dev_ac_voltage}
+        data:
+          value: "{{ 235 + range(-6,7)|random }}"
+      - action: input_number.set_value
+        target: {entity_id: input_number.dev_grid_frequency}
+        data:
+          value: "{{ (50 + range(-4,5)|random / 10) | round(1) }}"
+      - action: input_number.set_value
+        target: {entity_id: input_number.dev_inverter_temperature}
+        data:
+          value: "{{ [[states('input_number.dev_inverter_temperature')|float(0) + range(-2,3)|random, 28]|max, 65]|min }}"
+      - action: input_number.set_value
+        target: {entity_id: input_number.dev_today_load_energy}
+        data:
+          value: "{{ (states('input_number.dev_today_load_energy')|float(0) + states('input_number.dev_load_power')|float(0) / 120000) | round(2) }}"
+      - action: input_number.set_value
+        target: {entity_id: input_number.dev_today_battery_charge}
+        data:
+          value: "{{ (states('input_number.dev_today_battery_charge')|float(0) + [states('input_number.dev_battery_power')|float(0), 0]|max / 120000) | round(2) }}"
+      - action: input_number.set_value
+        target: {entity_id: input_number.dev_today_battery_discharge}
+        data:
+          value: "{{ (states('input_number.dev_today_battery_discharge')|float(0) + [0 - states('input_number.dev_battery_power')|float(0), 0]|max / 120000) | round(2) }}"
+      - action: input_select.select_option
+        target: {entity_id: input_select.dev_battery_direction}
+        data:
+          option: "{{ 'discharge' if states('input_number.dev_battery_power')|float(0) < -50 else ('charge' if states('input_number.dev_battery_power')|float(0) > 50 else 'idle') }}"
+    mode: single

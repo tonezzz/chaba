@@ -37,6 +37,13 @@ if [ -f "$DEV_MOCKS" ]; then
   cp "$DEV_MOCKS" "$DEV_CONFIG/packages/a_dev_mocks.yaml"
 fi
 
+DEV_SIMULATOR="$HA_DIR/dev/dev-simulator.yaml"
+if [ -f "$DEV_SIMULATOR" ]; then
+  log "Deploying dev simulator to $DEV_CONFIG/packages/z_dev_simulator.yaml"
+  mkdir -p "$DEV_CONFIG/packages"
+  cp "$DEV_SIMULATOR" "$DEV_CONFIG/packages/z_dev_simulator.yaml"
+fi
+
 if [ "$DEPLOY_DASHBOARDS" -eq 1 ] && [ -d "$HA_DIR/dashboards" ]; then
   log "Deploying dashboard files to $DEV_CONFIG/lovelace/"
   mkdir -p "$DEV_CONFIG/lovelace"

@@ -180,6 +180,15 @@ entity_mocks:
     Parity audit: systemd user timer on tony-omen
     (~/.config/systemd/user/michael-dev-parity.timer, daily 06:15) runs
     mirror-sweep.py --fail-on-missing; exit 1 + journal entries on drift.
+    2026-09-08 additions: seeded 720 synthetic hourly statistics rows for
+    sensor.inverters_1_pv_power (30 days, sqlite insert while stopped);
+    rest_command.mha_call relays dev switch toggles to live (template
+    switch turn_on/off call it — dev is read-write for those 9 ids);
+    mha-state-push.service (systemd user on tony-dell) subscribes ha
+    state_changed and POSTs the 56 mirrored ids to dev /api/states —
+    rest polling remains as fallback. dev-simulator.yaml now in repo
+    (docs/home-assistant/dev/) and deployed by deploy-michael-dev.sh;
+    all |float calls have (0) defaults.
 
 verification:
   dev:

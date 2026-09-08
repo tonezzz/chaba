@@ -27,8 +27,6 @@ input_number:
     step: 1
     initial: 35
     unit_of_measurement: "°C"
-    state_class: measurement
-    device_class: temperature
     icon: mdi:thermometer
   dev_ac_voltage:
     min: 0
@@ -36,8 +34,6 @@ input_number:
     step: 1
     initial: 235
     unit_of_measurement: "V"
-    state_class: measurement
-    device_class: voltage
     icon: mdi:flash
   dev_grid_frequency:
     min: 45
@@ -45,8 +41,6 @@ input_number:
     step: 0.1
     initial: 50.0
     unit_of_measurement: "Hz"
-    state_class: measurement
-    device_class: frequency
     icon: mdi:sine-wave
   dev_pv1_power:
     min: 0
@@ -54,8 +48,6 @@ input_number:
     step: 10
     initial: 4500
     unit_of_measurement: "W"
-    state_class: measurement
-    device_class: power
     icon: mdi:solar-panel
   dev_pv2_power:
     min: 0
@@ -63,8 +55,6 @@ input_number:
     step: 10
     initial: 3200
     unit_of_measurement: "W"
-    state_class: measurement
-    device_class: power
     icon: mdi:solar-panel
   dev_battery_voltage:
     min: 40
@@ -72,8 +62,6 @@ input_number:
     step: 0.1
     initial: 52.0
     unit_of_measurement: "V"
-    state_class: measurement
-    device_class: voltage
     icon: mdi:battery
   dev_battery_soc:
     min: 0
@@ -81,7 +69,6 @@ input_number:
     step: 1
     initial: 78
     unit_of_measurement: "%"
-    state_class: measurement
     icon: mdi:battery
   dev_battery_power:
     min: -10000
@@ -89,8 +76,6 @@ input_number:
     step: 10
     initial: -2500
     unit_of_measurement: "W"
-    state_class: measurement
-    device_class: power
     icon: mdi:battery
   dev_battery_current:
     min: -200
@@ -98,8 +83,6 @@ input_number:
     step: 0.1
     initial: -48.1
     unit_of_measurement: "A"
-    state_class: measurement
-    device_class: current
     icon: mdi:current-dc
   dev_battery2_voltage:
     min: 40
@@ -107,8 +90,6 @@ input_number:
     step: 0.1
     initial: 52.05
     unit_of_measurement: "V"
-    state_class: measurement
-    device_class: voltage
     icon: mdi:battery
   dev_battery2_soc:
     min: 0
@@ -116,7 +97,6 @@ input_number:
     step: 1
     initial: 77
     unit_of_measurement: "%"
-    state_class: measurement
     icon: mdi:battery
   dev_battery2_power:
     min: -10000
@@ -124,8 +104,6 @@ input_number:
     step: 10
     initial: -600
     unit_of_measurement: "W"
-    state_class: measurement
-    device_class: power
     icon: mdi:battery
   dev_battery2_current:
     min: -200
@@ -133,8 +111,6 @@ input_number:
     step: 0.1
     initial: -12.0
     unit_of_measurement: "A"
-    state_class: measurement
-    device_class: current
     icon: mdi:current-dc
   dev_battery3_voltage:
     min: 40
@@ -142,8 +118,6 @@ input_number:
     step: 0.1
     initial: 51.95
     unit_of_measurement: "V"
-    state_class: measurement
-    device_class: voltage
     icon: mdi:battery
   dev_battery3_soc:
     min: 0
@@ -151,7 +125,6 @@ input_number:
     step: 1
     initial: 79
     unit_of_measurement: "%"
-    state_class: measurement
     icon: mdi:battery
   dev_battery3_power:
     min: -10000
@@ -159,8 +132,6 @@ input_number:
     step: 10
     initial: -600
     unit_of_measurement: "W"
-    state_class: measurement
-    device_class: power
     icon: mdi:battery
   dev_battery3_current:
     min: -200
@@ -168,8 +139,6 @@ input_number:
     step: 0.1
     initial: -12.0
     unit_of_measurement: "A"
-    state_class: measurement
-    device_class: current
     icon: mdi:current-dc
   dev_grid_power:
     min: -10000
@@ -177,8 +146,6 @@ input_number:
     step: 10
     initial: 0
     unit_of_measurement: "W"
-    state_class: measurement
-    device_class: power
     icon: mdi:transmission-tower
   dev_grid_voltage:
     min: 0
@@ -186,8 +153,6 @@ input_number:
     step: 1
     initial: 235
     unit_of_measurement: "V"
-    state_class: measurement
-    device_class: voltage
     icon: mdi:transmission-tower
   dev_load_power:
     min: 0
@@ -195,8 +160,6 @@ input_number:
     step: 10
     initial: 4300
     unit_of_measurement: "W"
-    state_class: measurement
-    device_class: power
     icon: mdi:home-lightning-bolt
   dev_essential_power:
     min: 0
@@ -204,8 +167,6 @@ input_number:
     step: 10
     initial: 1800
     unit_of_measurement: "W"
-    state_class: measurement
-    device_class: power
     icon: mdi:home-lightning-bolt
   dev_today_battery_charge:
     min: 0
@@ -213,8 +174,6 @@ input_number:
     step: 0.1
     initial: 12.5
     unit_of_measurement: "kWh"
-    state_class: total
-    device_class: energy
     icon: mdi:battery-plus
   dev_today_battery_discharge:
     min: 0
@@ -222,8 +181,6 @@ input_number:
     step: 0.1
     initial: 4.2
     unit_of_measurement: "kWh"
-    state_class: total
-    device_class: energy
     icon: mdi:battery-minus
   dev_today_load_energy:
     min: 0
@@ -231,8 +188,6 @@ input_number:
     step: 0.1
     initial: 18.7
     unit_of_measurement: "kWh"
-    state_class: total
-    device_class: energy
     icon: mdi:home-lightning-bolt
 
 template:
@@ -443,75 +398,75 @@ template:
       - name: basement_4_gang_switch_switch_1
         state: "{{ is_state('sensor.basement_4_gang_switch_switch_1','on') }}"
         turn_on:
-          service: homeassistant.update_entity
-          data: { entity_id: sensor.basement_4_gang_switch_switch_1 }
+          service: rest_command.mha_call
+          data: { domain: switch, service: turn_on, entity_id: switch.basement_4_gang_switch_switch_1 }
         turn_off:
-          service: homeassistant.update_entity
-          data: { entity_id: sensor.basement_4_gang_switch_switch_1 }
+          service: rest_command.mha_call
+          data: { domain: switch, service: turn_off, entity_id: switch.basement_4_gang_switch_switch_1 }
       - name: basement_4_gang_switch_switch_2
         state: "{{ is_state('sensor.basement_4_gang_switch_switch_2','on') }}"
         turn_on:
-          service: homeassistant.update_entity
-          data: { entity_id: sensor.basement_4_gang_switch_switch_2 }
+          service: rest_command.mha_call
+          data: { domain: switch, service: turn_on, entity_id: switch.basement_4_gang_switch_switch_2 }
         turn_off:
-          service: homeassistant.update_entity
-          data: { entity_id: sensor.basement_4_gang_switch_switch_2 }
+          service: rest_command.mha_call
+          data: { domain: switch, service: turn_off, entity_id: switch.basement_4_gang_switch_switch_2 }
       - name: basement_4_gang_switch_switch_3
         state: "{{ is_state('sensor.basement_4_gang_switch_switch_3','on') }}"
         turn_on:
-          service: homeassistant.update_entity
-          data: { entity_id: sensor.basement_4_gang_switch_switch_3 }
+          service: rest_command.mha_call
+          data: { domain: switch, service: turn_on, entity_id: switch.basement_4_gang_switch_switch_3 }
         turn_off:
-          service: homeassistant.update_entity
-          data: { entity_id: sensor.basement_4_gang_switch_switch_3 }
+          service: rest_command.mha_call
+          data: { domain: switch, service: turn_off, entity_id: switch.basement_4_gang_switch_switch_3 }
       - name: basement_4_gang_switch_switch_4
         state: "{{ is_state('sensor.basement_4_gang_switch_switch_4','on') }}"
         turn_on:
-          service: homeassistant.update_entity
-          data: { entity_id: sensor.basement_4_gang_switch_switch_4 }
+          service: rest_command.mha_call
+          data: { domain: switch, service: turn_on, entity_id: switch.basement_4_gang_switch_switch_4 }
         turn_off:
-          service: homeassistant.update_entity
-          data: { entity_id: sensor.basement_4_gang_switch_switch_4 }
+          service: rest_command.mha_call
+          data: { domain: switch, service: turn_off, entity_id: switch.basement_4_gang_switch_switch_4 }
       - name: kitchen_table_switch_1
         state: "{{ is_state('sensor.kitchen_table_switch_1','on') }}"
         turn_on:
-          service: homeassistant.update_entity
-          data: { entity_id: sensor.kitchen_table_switch_1 }
+          service: rest_command.mha_call
+          data: { domain: switch, service: turn_on, entity_id: switch.kitchen_table_switch_1 }
         turn_off:
-          service: homeassistant.update_entity
-          data: { entity_id: sensor.kitchen_table_switch_1 }
+          service: rest_command.mha_call
+          data: { domain: switch, service: turn_off, entity_id: switch.kitchen_table_switch_1 }
       - name: pool_wifi_smart_meter_switch_switch
         state: "{{ is_state('sensor.pool_wifi_smart_meter_switch_switch','on') }}"
         turn_on:
-          service: homeassistant.update_entity
-          data: { entity_id: sensor.pool_wifi_smart_meter_switch_switch }
+          service: rest_command.mha_call
+          data: { domain: switch, service: turn_on, entity_id: switch.pool_wifi_smart_meter_switch_switch }
         turn_off:
-          service: homeassistant.update_entity
-          data: { entity_id: sensor.pool_wifi_smart_meter_switch_switch }
+          service: rest_command.mha_call
+          data: { domain: switch, service: turn_off, entity_id: switch.pool_wifi_smart_meter_switch_switch }
       - name: smart_plug_socket_1_2
         state: "{{ is_state('sensor.smart_plug_socket_1_2','on') }}"
         turn_on:
-          service: homeassistant.update_entity
-          data: { entity_id: sensor.smart_plug_socket_1_2 }
+          service: rest_command.mha_call
+          data: { domain: switch, service: turn_on, entity_id: switch.smart_plug_socket_1_2 }
         turn_off:
-          service: homeassistant.update_entity
-          data: { entity_id: sensor.smart_plug_socket_1_2 }
+          service: rest_command.mha_call
+          data: { domain: switch, service: turn_off, entity_id: switch.smart_plug_socket_1_2 }
       - name: terrace_switch_switch_1
         state: "{{ is_state('sensor.terrace_switch_switch_1','on') }}"
         turn_on:
-          service: homeassistant.update_entity
-          data: { entity_id: sensor.terrace_switch_switch_1 }
+          service: rest_command.mha_call
+          data: { domain: switch, service: turn_on, entity_id: switch.terrace_switch_switch_1 }
         turn_off:
-          service: homeassistant.update_entity
-          data: { entity_id: sensor.terrace_switch_switch_1 }
+          service: rest_command.mha_call
+          data: { domain: switch, service: turn_off, entity_id: switch.terrace_switch_switch_1 }
       - name: terrace_switch_switch_2
         state: "{{ is_state('sensor.terrace_switch_switch_2','on') }}"
         turn_on:
-          service: homeassistant.update_entity
-          data: { entity_id: sensor.terrace_switch_switch_2 }
+          service: rest_command.mha_call
+          data: { domain: switch, service: turn_on, entity_id: switch.terrace_switch_switch_2 }
         turn_off:
-          service: homeassistant.update_entity
-          data: { entity_id: sensor.terrace_switch_switch_2 }
+          service: rest_command.mha_call
+          data: { domain: switch, service: turn_off, entity_id: switch.terrace_switch_switch_2 }
 
 rest:
   - resource: http://michael-ha:8123/api/states/sensor.tze200_mja3fuja_ts0601_temperature
@@ -1145,3 +1100,14 @@ rest:
         unique_id: mha_mirror_terrace_switch_switch_2
         value_template: "{{ value_json.state }}"
 
+# Generic service relay to michael-ha — lets dev template switches
+# actually toggle the live entity. Read-only mirrors stay read-only;
+# only the 9 template switch wrappers below call this.
+rest_command:
+  mha_call:
+    url: "http://michael-ha:8123/api/services/{{ domain }}/{{ service }}"
+    method: post
+    headers:
+      Authorization: !secret michael_ha_auth
+      Content-Type: application/json
+    payload: '{"entity_id": "{{ entity_id }}"}'
