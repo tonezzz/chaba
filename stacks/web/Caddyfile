@@ -177,9 +177,7 @@
 			header_up Upgrade {>Upgrade}
 		}
 	}
-	handle /apps/node-red {
-		redir /apps/node-red/ 308
-	}
+	redir /apps/node-red /apps/node-red/ 308
 
 	handle /apps/node-red/* {
 		reverse_proxy 127.0.0.1:1880
