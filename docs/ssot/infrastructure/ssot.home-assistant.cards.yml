@@ -7,7 +7,7 @@ repositories:
     fork_of: slhub/sunsynk-power-flow-card
     current_commit: HEAD
     package_version: 7.3.3
-    bundle_version: 176
+    bundle_version: 183
     build:
       command: npm run build
       tool: rollup -c --bundleConfigAsCjs
@@ -15,19 +15,19 @@ repositories:
     deploy:
       michael-dev:
         target_host: ssot.values.yml::hosts.tony_dell
-        target_path: /home/tony/.config/michael-dev/www/sunsynk-power-flow-card-fork-v176.js
+        target_path: /home/tony/.config/michael-dev/www/sunsynk-power-flow-card-fork-v183.js
         lovelace_resources: /home/tony/.config/michael-dev/.storage/lovelace_resources
-        resource_path: /local/sunsynk-power-flow-card-fork-v176.js
+        resource_path: /local/sunsynk-power-flow-card-fork-v183.js
         restart: systemctl --user restart michael-dev.service
         service_ref: infrastructure/ssot.services.yml#tony-dell.michael-dev.quadlet.service_unit
         test_url: https://tony-dell.taila0626a.ts.net:8124/tony-test/pf4
       michael-ha:
         target_host: ssot.values.yml::hosts.michael_ha
-        target_path: /config/www/sunsynk-power-flow-card-fork-v176.js
+        target_path: /config/www/sunsynk-power-flow-card-fork-v180.js
         lovelace_resources: /config/.storage/lovelace_resources
-        resource_path: /local/sunsynk-power-flow-card-fork-v176.js
+        resource_path: /local/sunsynk-power-flow-card-fork-v180.js
         restart: ha core restart
-        note: promoted to v176 on 2026-09-08 after user approval; includes G1 surface3d view after V1; pointermove/pointerup now capture to fix rotation over walls
+        note: diagnostic v180 on 2026-09-08; michael-dev v183 has bar3d G2 — not promoted to michael-ha yet
         test_url: https://nupo4ndqdqydt78zmpq0z5wzp1bdrqgs.ui.nabu.casa/tony-test/g1
         note: >-
           2026-09-06: michael-ha Tailscale was offline (OOM-killed tailscaled,
@@ -100,8 +100,8 @@ cards:
   - id: sunsynk-power-flow-card
     name: Sunsynk Power Flow Card (fork)
     repo_ref: repositories.sunsynk-power-flow-card-fork
-    bundle_version: 176
-    deployed_as: /local/sunsynk-power-flow-card-fork-v176.js (michael-dev and michael-ha v176; G1 surface3d view after V1 on both; pointer-capture left-drag, surface opacity, cache, and corrected date axis; previous v103 kept for rollback)
+    bundle_version: 183
+    deployed_as: /local/sunsynk-power-flow-card-fork-v183.js (michael-dev v183; michael-ha v180; G1 surface3d + G2 bar3d; pointer-capture left-drag, surface opacity, cache, and corrected date axis; previous v103 kept for rollback)
     dashboards:
       - id: tony-test/pf4
         tab: PF4
@@ -138,5 +138,5 @@ cards:
 
 status:
   last_build: '2026-09-05'
-  last_verified: '2026-09-08'
-  health: active; v176 deployed; bundle deployed to michael-dev (PF3/PF4/PFG/PFG1/PFG2/TPL/G1) and michael-ha (PF3/PFG2/TPL/G1, /local/ v176 + layout-card resource); pfg/pfg2 support images, icons, labels, values, sums, spans, radius, zoom, speed-scaled anchored flow lines, pfg_hide_grid, pfg_transparent, pfg_charts surface3d with opacity, pointer-capture left-drag, corrected date axis, and pointermove/pointerup capture (see ssot.home-assistant.design.yml); .storage resource changes require HA core restart; michael-ha lovelace resource URL can also be updated over websocket (supervisor/api + lovelace/resources) when SSH is down
+  last_verified: '2026-09-09'
+  health: active; v183 on michael-dev, v180 on michael-ha; bundle deployed to michael-dev (PF3/PFG/PFG1/PFG2/TPL/G1/G2) and michael-ha (PFG2/TPL/G1, /local/ v180 + layout-card resource); pfg/pfg2 support images, icons, labels, values, sums, spans, radius, zoom, speed-scaled anchored flow lines, pfg_hide_grid, pfg_transparent, pfg_charts surface3d and bar3d with opacity, pointer-capture left-drag, corrected date axis, and pointermove/pointerup capture (see ssot.home-assistant.design.yml); .storage resource changes require HA core restart; michael-ha lovelace resource URL can also be updated over websocket (supervisor/api + lovelace/resources) when SSH is down
