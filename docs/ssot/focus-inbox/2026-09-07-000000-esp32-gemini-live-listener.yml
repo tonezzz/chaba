@@ -1,0 +1,48 @@
+title: ESP32 Gemini Live Listener
+subtitle: Use an ESP32 as a voice input device for rview-live / Gemini Live
+icon: inbox
+
+focus:
+  label: ESP32 Gemini Live listener
+  text: >-
+    Feasibility confirmed: ESP32 can act as an audio capture client to
+    rview-live (ws://tony-dell:3008/ws accepts {"type":"audio","data":base64
+    PCM 16kHz} and returns 24kHz PCM in serverContent.inlineData). Blocked on
+    hardware: CYD board has no mic/speaker. Requires external I2S microphone
+    (e.g. INMP441) + I2S DAC/amp (e.g. MAX98357A) on free GPIOs (25 is taken by
+    touch SPI; GPIO26 is the only free DAC pin). Parked until hardware is
+    available. Plan: ESP32 -> local ws -> rview-live -> Gemini Live -> mcp_rview
+    tools. Never put GEMINI_API_KEY on the device. Prefer push-to-talk over
+    always-on. ESPHome has no WS client; needs custom component or Arduino
+    firmware.
+  branch: master
+  priority: low
+  status: draft
+  tags: [esp32, rview-live, gemini, audio, hardware-blocked]
+  missing_info:
+    - I2S microphone and DAC/amp hardware not yet purchased
+    - Free GPIO pinout on the CYD board for I2S without conflicting TFT/touch
+    - Whether to use custom ESPHome component or separate Arduino firmware
+    - Device authentication scheme for the rview-live endpoint
+  safe_to_parallel:
+    value: true
+    reason: Parked/blocked on hardware purchase; no code changes required yet
+  subtasks:
+    - label: Acquire I2S mic + DAC hardware
+      status: not_started
+    - label: Prototype ws client sending PCM to rview-live
+      status: not_started
+    - label: Add authenticated /device-audio endpoint to rview-live
+      status: not_started
+    - label: Playback of 24kHz Gemini response on ESP32
+      status: not_started
+
+ownership:
+  owner: tony
+  session: b57c57d9
+  locked: false
+  lock_reason: "blocked: no audio hardware on hand"
+
+source:
+  session: b57c57d9
+  date: 2026-09-07
