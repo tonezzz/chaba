@@ -74,21 +74,134 @@ def build_context_text(token):
     return 'Current device states:\n' + '\n'.join(lines[:80])
 
 
-# TV / cast commands routed through script.tv_action on the cast-browser
-# server, matching the sentences in the "Assist: TV control" automation.
+CAST_SERVER = 'http://127.0.0.1:8799/cmd'
+
+# Local tools executed directly by the bridge — flat, enum-constrained schemas
+# so the model picks them precisely instead of nesting MCP proxy calls.
+LOCAL_TOOL_DECLS = [
+    {
+        'name': 'tv_command',
+        'description': (
+            'Control the TV cast display: navigate to a page, scroll, go back, '
+            'stop casting, or show the camera. Use this whenever the user asks '
+            'to cast, show, scroll, go back/home, stop the TV, or view the camera.'
+        ),
+        'parameters': {
+            'type': 'OBJECT',
+            'properties': {
+                'cmd': {
+                    'type': 'STRING',
+                    'enum': ['nav', 'scroll', 'back', 'stop', 'camera'],
+                    'description': 'Action to perform on the TV display.',
+                },
+                'arg': {
+                    'type': 'STRING',
+                    'description': (
+                        'Required for nav (smart-home, dossier, photos, youtube, '
+                        'map, panel, help) and scroll (up, down, left, right). '
+                        'Empty for back, stop, camera.'
+                    ),
+                },
+            },
+            'required': ['cmd'],
+        },
+    },
+    {
+        'name': 'photo_slideshow',
+        'description': (
+            'Control the photo slideshow on the TV: next or previous photo, '
+            'or pause and resume the slideshow.'
+        ),
+        'parameters': {
+            'type': 'OBJECT',
+            'properties': {
+                'action': {
+                    'type': 'STRING',
+                    'enum': ['next', 'previous', 'pause', 'resume'],
+                    'description': 'Slideshow action.',
+                },
+            },
+            'required': ['action'],
+        },
+    },
+]
+
+
+def _post_json(url, payload):
+    req = urllib.request.Request(
+        url, data=json.dumps(payload).encode(),
+        headers={'Content-Type': 'application/json'},
+    )
+    with urllib.request.urlopen(req, timeout=15) as r:
+        return r.status
+
+
+def _ha_service(token, domain, service, data):
+    req = urllib.request.Request(
+        f'{HA_URL}/api/services/{domain}/{service}',
+        data=json.dumps(data).encode(),
+        headers={'Authorization': f'Bearer {token}', 'Content-Type': 'application/json'},
+    )
+    with urllib.request.urlopen(req, timeout=15) as r:
+        return r.status
+
+
+def execute_local_tool(name, args, token):
+    """Run a bridge-local tool deterministically; returns a result dict."""
+    try:
+        if name == 'tv_command':
+            cmd = (args.get('cmd') or '').strip()
+            arg = (args.get('arg') or '').strip()
+            if cmd == 'stop':
+                status = _ha_service(token, 'media_player', 'turn_off',
+                                     {'entity_id': 'media_player.tony_tv_cast'})
+                return {'result': f'TV off (HTTP {status})'}
+            if cmd == 'camera':
+                status = _ha_service(token, 'camera', 'play_stream', {
+                    'entity_id': 'camera.ip_cam_65',
+                    'media_player': 'media_player.tony_tv_cast',
+                    'format': 'hls',
+                })
+                return {'result': f'Camera streaming (HTTP {status})'}
+            if cmd in ('nav', 'scroll', 'back'):
+                payload = {'cmd': cmd, 'text': arg, 'selector': '', 'role': ''}
+                status = _post_json(CAST_SERVER, payload)
+                return {'result': f'{cmd} {arg} sent (HTTP {status})'}
+            return {'error': f'unknown tv_command cmd: {cmd}'}
+        if name == 'photo_slideshow':
+            action = (args.get('action') or '').strip()
+            if action == 'next':
+                status = _ha_service(token, 'button', 'press',
+                                     {'entity_id': 'button.album_slideshow_google_photos_next_slide'})
+            elif action == 'previous':
+                status = _ha_service(token, 'button', 'press',
+                                     {'entity_id': 'button.album_slideshow_google_photos_previous_slide'})
+            elif action == 'pause':
+                status = _ha_service(token, 'switch', 'turn_on',
+                                     {'entity_id': 'switch.album_slideshow_google_photos_pause_slideshow'})
+            elif action == 'resume':
+                status = _ha_service(token, 'switch', 'turn_off',
+                                     {'entity_id': 'switch.album_slideshow_google_photos_pause_slideshow'})
+            else:
+                return {'error': f'unknown slideshow action: {action}'}
+            return {'result': f'slideshow {action} (HTTP {status})'}
+        return {'error': f'unknown local tool: {name}'}
+    except Exception as e:
+        return {'error': f'{name} failed: {e}'}
+
+
+# TV / cast commands handled by the dedicated tv_command / photo_slideshow tools.
 TV_INSTRUCTION = (
-    'TV control: to cast or show a page, scroll, or go back/home, call '
-    'ha_call_write_tool(name="ha_call_service", arguments={"domain": "script", '
-    '"service": "tv_action", "service_data": {"cmd": CMD, "text": ARG}}). '
-    'Valid cmd/ARG pairs: nav smart-home|dossier|photos|map|panel|help; '
-    'scroll up|down|left|right; back (no arg). If service_data is rejected, '
-    'retry with the same fields under the "data" key instead. '
-    'To stop casting: media_player.turn_off on media_player.tony_tv_cast. '
-    'To show the camera: camera.play_stream on camera.ip_cam_65 with '
-    'media_player media_player.tony_tv_cast and format hls. '
-    'Photo slideshow: button.press on button.album_slideshow_google_photos_next_slide '
-    'or button.album_slideshow_google_photos_previous_slide; pause/resume via '
-    'switch.turn_on/turn_off on switch.album_slideshow_google_photos_pause_slideshow.'
+    'TV control: ALWAYS use the tv_command tool for casting pages, scrolling, '
+    'going back, stopping the TV, or showing the camera, and the photo_slideshow '
+    'tool for next/previous/pause/resume. Never use ha_call_service for these. '
+    'Examples: "cast the photos" -> tv_command(cmd="nav", arg="photos"); '
+    '"scroll down" -> tv_command(cmd="scroll", arg="down"); '
+    '"go back" -> tv_command(cmd="back"); '
+    '"stop the tv" -> tv_command(cmd="stop"); '
+    '"cast the camera" -> tv_command(cmd="camera"); '
+    '"next photo" -> photo_slideshow(action="next"); '
+    '"pause the slideshow" -> photo_slideshow(action="pause").'
 )
 
 SYSTEM_BASE = (
@@ -283,6 +396,22 @@ async def pump_responses(session, mcp, websocket):
             if msg.tool_call:
                 for call in (msg.tool_call.function_calls or []):
                     log(f'Tool call: {call.name}({call.args})')
+                    if call.name in {d['name'] for d in LOCAL_TOOL_DECLS}:
+                        token = os.environ.get('HA_LONG_LIVED_TOKEN')
+                        resp = await asyncio.to_thread(
+                            execute_local_tool, call.name, dict(call.args or {}), token
+                        )
+                        log(f'local tool {call.name}: {resp}')
+                        if 'error' in resp:
+                            tool_texts.append(f'{call.name} failed')
+                        else:
+                            tool_texts.append(f'{call.name} OK')
+                        await session.send_tool_response(
+                            function_responses=[types.FunctionResponse(
+                                id=call.id, name=call.name, response=resp,
+                            )]
+                        )
+                        continue
                     try:
                         result = await mcp.call_tool(call.name, call.args or {})
                         result_text = result.content[0].text if result.content else 'no output'
@@ -372,7 +501,12 @@ async def client_handler(websocket):
             async with ClientSession(read_stream, write_stream) as mcp:
                 await mcp.initialize()
                 tools = [mcp_to_gemini_tool(t) for t in (await mcp.list_tools()).tools]
-                log(f'Loaded {len(tools)} HA-MCP tools')
+                # Flat, deterministic local tools — higher selection precision
+                # than nested MCP proxy calls for common TV/photo commands.
+                tools.append(types.Tool(function_declarations=[
+                    types.FunctionDeclaration(**decl) for decl in LOCAL_TOOL_DECLS
+                ]))
+                log(f'Loaded {len(tools) - len(LOCAL_TOOL_DECLS)} HA-MCP tools + {len(LOCAL_TOOL_DECLS)} local tools')
 
                 # Build the system instruction once per connection with a live
                 # snapshot of controllable devices (no hardcoded entity IDs).

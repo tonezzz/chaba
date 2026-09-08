@@ -65,10 +65,15 @@ bridge_improvements:
       plus dynamic device-state context (switch/light/media_player/input_boolean from
       /api/states) — replaces the hardcoded two-switch list.
   - tv_commands: >
-      Gemini can call the same TV/cast actions as the sentence triggers:
-      script.tv_action (nav/scroll/back), media_player.turn_off for stop,
-      camera.play_stream for the camera, and the album_slideshow button/switch
-      entities for photo controls — all via ha_call_service tool calls.
+      Dedicated flat local tools executed by the bridge (not nested MCP calls):
+      tv_command(cmd enum nav|scroll|back|stop|camera, arg) and
+      photo_slideshow(action enum next|previous|pause|resume). Verified:
+      'cast the help' -> tv_command(nav, help) -> cast-browser-server HTTP 200.
+  - tool_precision: >
+      Precision techniques applied — flat enum-constrained schemas instead of
+      nested ha_call_service proxy calls, explicit 'ALWAYS use X tool' +
+      few-shot examples in the system instruction, local deterministic execution
+      (REST to :8799/cmd and /api/services) instead of MCP round-trips.
   - continuous_pump: >
       Responses are handled by a session-lifetime pump task (pump_responses) instead
       of a per-turn receive loop — VAD-completed turns and barge-in 'interrupted'
