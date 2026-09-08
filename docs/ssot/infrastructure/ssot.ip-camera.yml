@@ -153,15 +153,17 @@ sections:
       - label: Transport
         text: 'Xiaomi P2P via go2rtc xiaomi:// source (no local RTSP on the camera). Each connect needs Internet to fetch encryption keys.'
       - label: go2rtc streams
-        text: 'xiaomi_c201 (SD HEVC 848x480+opus), xiaomi_c201_hd (subtype=3), xiaomi_c201_h264 (H.264 transcode of xiaomi_c201 for browsers without HEVC)'
+        text: 'xiaomi_c201 (SD HEVC 848x480+opus), xiaomi_c201_hd (subtype=3), xiaomi_c201_h264 (H.264 transcode of xiaomi_c201), xiaomi_c201_hd_h264 (H.264 1920x1080 transcode of the HD feed for browsers)'
       - label: Auth
         text: 'Requires Mi passToken in go2rtc.yaml: xiaomi: "6891138643": V1:***. Get it from account.xiaomi.com cookies (userId + passToken). Token historically expired ~3 days (issue #2233); the dev build re-logins automatically. v1.9.14 WebUI login is broken (cannot obtain passToken).'
       - label: HA entities
         text: 'camera.xiaomi_c201 (HD via go2rtc), camera.xiaomi_c201_sd, plus xiaomi_miot controls (switch status, motion detection, night shot, indicator light)'
       - label: Dashboard
-        text: 'lovelace-smart-home.yaml picture-entity camera.xiaomi_c201 with /local/cam/last-xiaomi-frame.jpg thumbnail; update-cam-frame.sh refreshes it every 5s'
+        text: 'lovelace-smart-home.yaml picture-entity camera.xiaomi_c201 with HD /local/cam/last-xiaomi-frame.jpg thumbnail (frame.jpeg?src=xiaomi_c201_hd); tap opens stream.html?src=xiaomi_c201_hd_h264'
       - label: Verified
         text: '2026-09-08: RTSP hevc 848x480+opus OK; browser H.264 playback 848x480 verified via PlayLive; snapshot frame endpoint working'
+      - label: Two-way audio
+        text: 'Supported by the go2rtc xiaomi module — use the mic button in stream.html (WebRTC)'
       - label: Access URLs
         text: 'https://tony-dell.taila0626a.ts.net:8448/stream.html?src=xiaomi_c201_h264 ; rtsp://127.0.0.1:8554/xiaomi_c201{,_hd,_h264} ; http://127.0.0.1:1984/api/frame.jpeg?src=xiaomi_c201'
 
