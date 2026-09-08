@@ -1,0 +1,124 @@
+# SSOT Job Lifecycle: Deploy Node-RED for tony-ha
+# Deploy a rootless podman Node-RED container on tony-dell connected to tony-ha
+# for flow-based Home Assistant automations.
+
+title: Deploy Node-RED for tony-ha
+subtitle: Run a Node-RED container on tony-dell and connect it to the tony-ha Home Assistant instance
+icon: project-diagram
+
+planning:
+  goal: |
+    Provide a web-based Node-RED flow editor on tony-dell that is connected to the tony-ha
+    Home Assistant instance, exposed through the existing Caddy web stack, and tracked in SSOT.
+  scope: |
+    In scope: Node-RED rootless podman Quadlet on tony-dell; Caddy reverse proxy route;
+    HA websocket node installation; persistent data volume and credential storage;
+    health check and SSOT registration.
+    Out of scope: Detailed flow development; Home Assistant OS add-on; Tailscale Funnel.
+  success_criteria:
+    - Node-RED container is running and reachable on /apps/node-red/ through Caddy.
+    - node-red-contrib-home-assistant-websocket is installed and can list tony-ha entities.
+    - SSOT services and health files are updated and committed.
+  risks:
+    - >
+      The nodered/node-red image runs as a non-root user; rootless podman may need UID mapping.
+      Mitigation: use a data volume owned by the same UID and the :Z flag.
+    - >
+      Existing long-lived token may not be valid for HA API. Mitigation: test the token before
+      starting the container and refresh if needed.
+    - >
+      Node-RED base path under Caddy may cause editor routing issues. Mitigation: configure
+      httpAdminRoot in settings.js and pass the full /apps/node-red/ path through.
+  resources:
+    - tony-dell rootless podman host
+    - Existing tony-ha long-lived token from ~/.config/secrets/home-assistant-token.env
+    - Caddy web stack at /home/tony/CascadeProjects/chaba-tony-dell/stacks/web/Caddyfile
+  owner: tony
+  estimated_duration: 1 session
+  related_focus: []
+
+processing:
+  status: in_progress
+  started_at: '2026-09-08'
+  steps:
+    - id: 1
+      label: Gather existing tony-dell Quadlet, Caddy, and HA patterns
+      status: completed
+      notes: |
+        Inspected tony-ha.container, rview-api.container, web.container, and the tony-dell Caddyfile.
+        Confirmed the live Caddy config lives at chaba-tony-dell/stacks/web/Caddyfile.
+        Verified ~/.config/secrets/home-assistant-token.env contains a working HA_LONG_LIVED_TOKEN
+        for tony-ha (HTTP 200 on /api/).
+    - id: 2
+      label: Create job-lifecycle SSOT and update registries
+      status: completed
+      notes: |
+        This file was created and ssot.services.yml, ssot.health.home.web.yml,
+        and ssot.home-assistant.tony.yml were extended to register Node-RED.
+    - id: 3
+      label: Deploy the Node-RED Quadlet and Caddy reverse proxy on tony-dell
+      status: completed
+      notes: |
+        Created ~/.config/containers/systemd/node-red.container, ~/.local/share/nodered/data,
+        settings.js, and ~/.config/secrets/nodered-ha.env. Patched
+        chaba-tony-dell/stacks/web/Caddyfile with /apps/node-red/ reverse-proxy routes.
+        The web service needed a stale 8080 listener to clear; after it cleared the Caddy
+        route responded with HTTP 200.
+    - id: 4
+      label: Install Home Assistant websocket nodes and verify connectivity
+      status: completed
+      notes: |
+        Installed node-red-contrib-home-assistant-websocket v0.80.3 in the data volume; logs
+        show the palette loaded. HA_URL and HASS_TOKEN are exposed via environment file.
+        The Node-RED editor is reachable through Caddy at /apps/node-red/.
+    - id: 5
+      label: Update SSOT and commit
+      status: in_progress
+      notes: |
+        SSOT files updated to running status. Validating SSOT and committing local changes.
+  decisions:
+    - label: Containerized Node-RED instead of HA OS add-on
+      rationale: |
+        The live tony-ha and michael-dev instances are rootless podman Home Assistant Container
+        deployments. The official add-on model requires Home Assistant OS/Supervised, which is not
+        available. A separate nodered/node-red podman container with the HA websocket package
+        replicates the add-on functionality on the existing tony-dell host.
+      alternatives_considered: |
+        The hassio-addons/addon-node-red add-on was considered but rejected because it cannot be
+        installed on Home Assistant Container. A standalone Node-RED container was chosen.
+  changes: []
+
+followup:
+  verification:
+    - curl -s -o /dev/null -w '%{http_code}' http://tony-dell:8080/apps/node-red/ returns 200
+    - podman ps on tony-dell shows node-red container running
+    - Node-RED can list at least one Home Assistant entity from tony-ha
+  rollback_plan:
+    - systemctl --user stop node-red.service
+    - rm ~/.config/containers/systemd/node-red.container
+    - systemctl --user daemon-reload
+    - Revert Caddyfile changes and systemctl --user reload caddy? or restart web
+  handoff:
+    - tony for flow/automation development
+  deferred:
+    - Tailscale Funnel exposure for remote Node-RED access
+    - Caddy auth or IP allow-listing if needed
+    - Node-RED Dashboard base path
+
+report:
+  status: not_started
+  completed_at: null
+  summary: ""
+  metrics: []
+  links: []
+  kb_review: []
+  lessons_learned: []
+
+config:
+  version: 1
+  created_at: '2026-09-08'
+  last_updated: '2026-09-08'
+  maintainer: tony
+  related_files:
+    - docs/ssot/templates/job.yml
+    - docs/ssot/jobs/infrastructure/2026-09-08-deploy-nodered.yml

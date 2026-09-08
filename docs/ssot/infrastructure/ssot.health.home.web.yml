@@ -109,3 +109,19 @@ services:
   host: michael_ha
   verification:
   - 'tailscale ping michael-ha'
+- id: node-red
+  name: Node-RED
+  type: http
+  url: http://tony-dell.taila0626a.ts.net:8080/apps/node-red/
+  expected_status: 200
+  timeout: 10
+  category: web
+  profiles:
+  - home
+  host: tony_dell
+  verification:
+  - 'Check container: ssh tony-dell podman ps | grep node-red'
+  - 'Check logs: ssh tony-dell podman logs node-red --tail 20'
+  - 'Test direct: curl -s http://tony-dell:1880/'
+  recovery_actions:
+  - 'Restart service: ssh tony-dell systemctl --user restart node-red'

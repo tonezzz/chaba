@@ -186,6 +186,24 @@ tony-dell:
     systemd: systemd/ha-live.service
     status: 'running (2026-08-31)'
     note: 'Started as podman exec from home-assistant. Managed by user systemd unit ha-live.service. WebSocket at wss://tony-dell.taila0626a.ts.net:8444/ws. Tested /ws handshake and received status=connected.'
+  node-red:
+    container: node-red
+    image: docker.io/nodered/node-red:latest
+    runtime: rootless podman
+    network: host
+    port: 1880
+    host_port: 127.0.0.1:1880
+    caddy_path: /apps/node-red
+    data_volume: /home/tony/.local/share/nodered
+    quadlet:
+      container_unit: ~/.config/containers/systemd/node-red.container
+      service_unit: ~/.config/systemd/user/node-red.service
+    env_file: ~/.config/secrets/nodered-ha.env
+    status: running
+    note: |
+      Containerized Node-RED connected to tony-ha via node-red-contrib-home-assistant-websocket.
+      Caddy reverse proxy at /apps/node-red/ and the HA token is in an env file outside git.
+
   playlived-dell:
     service: playlived-dell.service
     host: tony_dell
