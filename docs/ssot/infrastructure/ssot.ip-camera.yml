@@ -34,6 +34,8 @@ sections:
     items:
       - label: Config
         text: /home/tony/.config/go2rtc/go2rtc.yaml
+      - label: Binary
+        text: 'go2rtc 1.9.14+dev.c245815 (master build 2026-09-08, includes Xiaomi auto re-login on token expiry). Backup: ~/.local/bin/go2rtc.1.9.14.bak'
       - label: Listen
         text: 'API: 127.0.0.1:1984, RTSP: 127.0.0.1:8554, WebRTC: 127.0.0.1:8555'
       - label: ip_cam_65 (auto)
@@ -52,7 +54,7 @@ sections:
     layout: list
     items:
       - label: Monitor script
-        text: /home/tony/.config/home-assistant/ha-live/camera-monitor.py
+        text: /home/tony/.config/home-assistant/ha-live/camera-monitor.py (probes ip_cam_65, ip_cam_65_hd + xiaomi_c201; 25s timeout; restarts go2rtc after 3 fails)
       - label: What it does
         text: 'ffprobes rtsp://127.0.0.1:8554/ip_cam_65 and rtsp://127.0.0.1:8554/ip_cam_65_hd every 30 seconds. After 3 consecutive failures it runs systemctl --user restart go2rtc.'
       - label: systemd service
@@ -153,7 +155,7 @@ sections:
       - label: go2rtc streams
         text: 'xiaomi_c201 (SD HEVC 848x480+opus), xiaomi_c201_hd (subtype=3), xiaomi_c201_h264 (H.264 transcode of xiaomi_c201 for browsers without HEVC)'
       - label: Auth
-        text: 'Requires Mi passToken in go2rtc.yaml: xiaomi: "6891138643": V1:***. Get it from account.xiaomi.com cookies (userId + passToken). Token expires ~3 days (go2rtc issue #2233) — re-copy to refresh. v1.9.14 WebUI login is broken (cannot obtain passToken).'
+        text: 'Requires Mi passToken in go2rtc.yaml: xiaomi: "6891138643": V1:***. Get it from account.xiaomi.com cookies (userId + passToken). Token historically expired ~3 days (issue #2233); the dev build re-logins automatically. v1.9.14 WebUI login is broken (cannot obtain passToken).'
       - label: HA entities
         text: 'camera.xiaomi_c201 (HD via go2rtc), camera.xiaomi_c201_sd, plus xiaomi_miot controls (switch status, motion detection, night shot, indicator light)'
       - label: Dashboard

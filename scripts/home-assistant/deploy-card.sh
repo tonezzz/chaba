@@ -2,6 +2,8 @@
 # Build + deploy the forked sunsynk-power-flow-card.
 # Usage: deploy-card.sh [--host michael-dev|michael-ha]   (default michael-dev)
 #        deploy-card.sh --host all                        (both hosts)
+#        deploy-card.sh --check                           (md5 parity report)
+#        deploy-card.sh --prune                           (remove stale bundles, keep active + newest backup)
 # Version is derived from the remote lovelace_resources (single source of truth)
 # so parallel sessions cannot collide on "next version".
 set -euo pipefail
@@ -32,6 +34,29 @@ if [ "${1:-}" = "--check" ]; then
     if [ "$REMOTE_MD5" = "$LOCAL_MD5" ]; then echo "$host: $FILE MATCHES dist"; else echo "$host: $FILE DRIFT (remote=$REMOTE_MD5 local=$LOCAL_MD5)"; fi
   done
   exit 0
+fi
+
+# --prune: delete stale bundle copies on both hosts, keep the ACTIVE file and
+# the newest other copy as a rollback backup.
+if [ "${1:-}" = "--prune" ]; then
+  for host in michael-dev michael-ha; do
+    case "$host" in
+      michael-dev) SSH=tony-dell; RES=/home/tony/.config/michael-dev/.storage/lovelace_resources; WWW=/home/tony/.config/michael-dev/www ;;
+      michael-ha)  SSH=michael-ha; RES=/config/.storage/lovelace_resources; WWW=/config/www ;;
+    esac
+    ssh "$SSH" "cd '$WWW' && ACTIVE=\$(grep -o '${BASE}-v[0-9]*\.js' '$RES' | head -1) && KEEP=\$(ls -t ${BASE}-v*.js 2>/dev/null | grep -v \"^\$ACTIVE\$\" | head -1) && echo \"[$host] active=\$ACTIVE backup=\$KEEP\" && ls -t ${BASE}-v*.js | grep -v \"^\$ACTIVE\$\" | grep -v \"^\$KEEP\$\" | xargs -r rm -f && ls ${BASE}-v*.js"
+  done
+  exit 0
+fi
+
+# Drift guard: warn if any worktree branch has commits not on main — the live
+# bundle may be newer than the build we are about to push.
+if git -C "$CARD_REPO" rev-parse --verify main >/dev/null 2>&1; then
+  while read -r br; do
+    [ "$br" = "main" ] && continue
+    n=$(git -C "$CARD_REPO" rev-list --count "main..$br" 2>/dev/null || echo 0)
+    [ "$n" -gt 0 ] && echo "WARNING: worktree '$br' has $n unmerged commit(s) — live bundle may be newer than this build"
+  done < <(git -C "$CARD_REPO" worktree list --porcelain | sed -n 's|^branch refs/heads/||p')
 fi
 
 deploy_to() {
