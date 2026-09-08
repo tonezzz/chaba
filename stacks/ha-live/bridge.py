@@ -53,16 +53,52 @@ def load_creds():
     return api_key, f'http://127.0.0.1:9584{ha["data"]["secret_path"]}'
 
 
-async def get_state_text(mcp):
-    states = []
-    for eid in ['switch.plalhawetiiyng_local', 'switch.plakkaaaef_local']:
-        try:
-            r = await mcp.call_tool('ha_call_read_tool', {'name': 'ha_get_state', 'arguments': {'entity_id': eid}})
-            data = json.loads(r.content[0].text)['data']
-            states.append(f'{eid} is {data["state"]}')
-        except Exception as e:
-            states.append(f'{eid} unknown ({e})')
-    return 'Current states: ' + '; '.join(states)
+def build_context_text(token):
+    """Compact snapshot of controllable device states, fetched fresh each turn.
+
+    Replaces the previous hardcoded two-switch list so renamed or added
+    devices are picked up automatically.
+    """
+    try:
+        states = fetch_ha_states(token)
+    except Exception as e:
+        return f'Device states unavailable: {e}'
+    lines = []
+    for s in states:
+        eid = s['entity_id']
+        domain = eid.split('.', 1)[0]
+        if domain not in ('switch', 'light', 'media_player', 'input_boolean'):
+            continue
+        name = (s.get('attributes') or {}).get('friendly_name', eid)
+        lines.append(f'{eid} ({name}) = {s["state"]}')
+    return 'Current device states:\n' + '\n'.join(lines[:80])
+
+
+# TV / cast commands routed through script.tv_action on the cast-browser
+# server, matching the sentences in the "Assist: TV control" automation.
+TV_INSTRUCTION = (
+    'TV control: to cast or show a page, scroll, or go back/home, call '
+    'ha_call_write_tool(name="ha_call_service", arguments={"domain": "script", '
+    '"service": "tv_action", "service_data": {"cmd": CMD, "text": ARG}}). '
+    'Valid cmd/ARG pairs: nav smart-home|dossier|photos|map|panel|help; '
+    'scroll up|down|left|right; back (no arg). If service_data is rejected, '
+    'retry with the same fields under the "data" key instead. '
+    'To stop casting: media_player.turn_off on media_player.tony_tv_cast. '
+    'To show the camera: camera.play_stream on camera.ip_cam_65 with '
+    'media_player media_player.tony_tv_cast and format hls. '
+    'Photo slideshow: button.press on button.album_slideshow_google_photos_next_slide '
+    'or button.album_slideshow_google_photos_previous_slide; pause/resume via '
+    'switch.turn_on/turn_off on switch.album_slideshow_google_photos_pause_slideshow.'
+)
+
+SYSTEM_BASE = (
+    'You are a concise Home Assistant voice assistant. Keep replies short, natural '
+    'for speech; no markdown, lists, or bullet points. Answer questions from the '
+    'device states provided. For device on/off or state changes, call '
+    'ha_call_write_tool(name="ha_call_service", arguments={"domain": DOMAIN, '
+    '"service": "turn_on"/"turn_off", "service_data": {"entity_id": "..."}}). '
+    'The user may speak English or Thai; answer in the language they used.'
+)
 
 
 HA_URL = 'http://127.0.0.1:8123'
@@ -212,102 +248,118 @@ async def process_request(connection, request):
     return None
 
 
-async def handle_audio(session, mcp, pcm_bytes, websocket):
-    state_text = await get_state_text(mcp)
-    log(state_text)
-    prompt = (
-        state_text + '\n'
-        'Answer status from the current states. For on/off, call ha_call_write_tool(name="ha_call_service", arguments={"domain": "switch", "service": "turn_on" or "turn_off", "entity_id": "..."}).'
+async def end_turn(session, websocket):
+    """Inject fresh device context and close the current audio input turn."""
+    token = os.environ.get('HA_LONG_LIVED_TOKEN')
+    ctx = await asyncio.to_thread(build_context_text, token)
+    await session.send_realtime_input(
+        text=ctx + '\nUse the device states above to answer or act via tools.'
     )
-    # Audio was already streamed live via send_realtime_input in the client loop.
-    # Inject the state/context text into the same turn, then close audio input
-    # so the model can respond (explicit VAD signal for push-to-talk clients).
-    await session.send_realtime_input(text=prompt)
     await session.send_realtime_input(audio_stream_end=True)
+    log('Turn ended by client (audio_stream_end sent)')
 
+
+async def pump_responses(session, mcp, websocket):
+    """Continuously forward model output to the client and execute tool calls.
+
+    Runs for the lifetime of the session so VAD-completed turns and
+    interruptions (barge-in) are handled even while mic audio is streaming.
+    """
     texts = []
     tool_texts = []
-    audio_parts = []
-    audio_mime = None
-    log('Waiting for Gemini response...')
-    async for msg in session.receive():
-        if msg.session_resumption_update:
-            sru = msg.session_resumption_update
-            log(f'session resumable={sru.resumable}, new_handle={sru.new_handle[:20] if sru.new_handle else None}')
-            if sru.resumable:
-                save_session_handle(sru.new_handle)
-
-        if msg.go_away:
-            # Server will terminate the session soon; the saved handle keeps
-            # context alive for the next connection.
-            log(f'go_away received, time_left={msg.go_away.time_left}')
-
-        log(f'Received message: tool_call={msg.tool_call is not None}, server_content={msg.server_content is not None}')
-        if msg.tool_call:
-            for call in (msg.tool_call.function_calls or []):
-                log(f'Tool call: {call.name}({call.args})')
-                try:
-                    result = await mcp.call_tool(call.name, call.args or {})
-                    result_text = result.content[0].text if result.content else 'no output'
-                    if result.isError:
-                        tool_texts.append(f'{call.name} failed')
-                        resp = {'error': result_text}
-                    else:
-                        tool_texts.append(f'{call.name} OK')
-                        resp = {'result': result_text}
-                except Exception as e:
-                    tool_texts.append(f'{call.name} error: {e}')
-                    resp = {'error': str(e)}
-                await session.send_tool_response(
-                    function_responses=[types.FunctionResponse(
-                        id=call.id,
-                        name=call.name,
-                        response=resp,
-                    )]
-                )
-
-        if not msg.server_content:
-            continue
-
-        ot = getattr(msg.server_content, 'output_transcription', None)
-        if ot and getattr(ot, 'text', None):
-            texts.append(ot.text)
-            try:
-                await websocket.send(json.dumps({'type': 'text', 'text': ot.text}))
-            except Exception:
-                pass
-
-        for part in (msg.server_content.model_turn or []):
-            for p in (getattr(part, 'parts', []) or []):
-                if p.text is not None:
-                    texts.append(p.text)
-                    try:
-                        await websocket.send(json.dumps({'type': 'text', 'text': p.text}))
-                    except Exception:
-                        pass
-                if p.inline_data is not None and p.inline_data.data:
-                    log(f'Audio output part: {len(p.inline_data.data)} bytes, mime={p.inline_data.mime_type}')
-                    audio_parts.append(p.inline_data.data)
-                    audio_mime = p.inline_data.mime_type or audio_mime
-                    try:
-                        await websocket.send(json.dumps({
-                            'type': 'audio',
-                            'mime_type': p.inline_data.mime_type,
-                            'data': base64.b64encode(p.inline_data.data).decode(),
-                        }))
-                    except Exception:
-                        pass
-
-        if msg.server_content.turn_complete:
-            log('Turn complete')
-            break
-
-    reply = ' '.join(texts) if texts else (' '.join(tool_texts) if tool_texts else 'Done.')
     try:
-        await websocket.send(json.dumps({'type': 'done', 'text': reply}))
-    except Exception:
-        pass
-    log(f'Sent final text response: {reply[:100]}')
+        async for msg in session.receive():
+            if msg.session_resumption_update:
+                sru = msg.session_resumption_update
+                log(f'session resumable={sru.resumable}, new_handle={sru.new_handle[:20] if sru.new_handle else None}')
+                if sru.resumable:
+                    save_session_handle(sru.new_handle)
+
+            if msg.go_away:
+                # Server will terminate the session soon; the saved handle keeps
+                # context alive for the next connection.
+                log(f'go_away received, time_left={msg.go_away.time_left}')
+
+            if msg.tool_call:
+                for call in (msg.tool_call.function_calls or []):
+                    log(f'Tool call: {call.name}({call.args})')
+                    try:
+                        result = await mcp.call_tool(call.name, call.args or {})
+                        result_text = result.content[0].text if result.content else 'no output'
+                        if result.isError:
+                            tool_texts.append(f'{call.name} failed')
+                            resp = {'error': result_text}
+                        else:
+                            tool_texts.append(f'{call.name} OK')
+                            resp = {'result': result_text}
+                    except Exception as e:
+                        tool_texts.append(f'{call.name} error: {e}')
+                        resp = {'error': str(e)}
+                    await session.send_tool_response(
+                        function_responses=[types.FunctionResponse(
+                            id=call.id,
+                            name=call.name,
+                            response=resp,
+                        )]
+                    )
+
+            sc = msg.server_content
+            if not sc:
+                continue
+
+            if getattr(sc, 'interrupted', False):
+                # User barged in while the model was speaking.
+                texts = []
+                log('Model output interrupted by user')
+                try:
+                    await websocket.send(json.dumps({'type': 'interrupted'}))
+                except Exception:
+                    pass
+                continue
+
+            ot = getattr(sc, 'output_transcription', None)
+            if ot and getattr(ot, 'text', None):
+                texts.append(ot.text)
+                try:
+                    await websocket.send(json.dumps({'type': 'text', 'text': ot.text}))
+                except Exception:
+                    pass
+
+            for part in (sc.model_turn or []):
+                for p in (getattr(part, 'parts', []) or []):
+                    if p.text is not None:
+                        texts.append(p.text)
+                        try:
+                            await websocket.send(json.dumps({'type': 'text', 'text': p.text}))
+                        except Exception:
+                            pass
+                    if p.inline_data is not None and p.inline_data.data:
+                        try:
+                            await websocket.send(json.dumps({
+                                'type': 'audio',
+                                'mime_type': p.inline_data.mime_type,
+                                'data': base64.b64encode(p.inline_data.data).decode(),
+                            }))
+                        except Exception:
+                            pass
+
+            if sc.turn_complete:
+                reply = ' '.join(texts) if texts else (' '.join(tool_texts) if tool_texts else 'Done.')
+                try:
+                    await websocket.send(json.dumps({'type': 'done', 'text': reply}))
+                except Exception:
+                    pass
+                log(f'Turn complete, response: {reply[:100]}')
+                texts = []
+                tool_texts = []
+    except asyncio.CancelledError:
+        raise
+    except Exception as e:
+        log(f'response pump ended: {e}')
+        try:
+            await websocket.send(json.dumps({'type': 'error', 'message': f'session ended: {e}'}))
+        except Exception:
+            pass
 
 
 async def client_handler(websocket):
@@ -322,6 +374,12 @@ async def client_handler(websocket):
                 tools = [mcp_to_gemini_tool(t) for t in (await mcp.list_tools()).tools]
                 log(f'Loaded {len(tools)} HA-MCP tools')
 
+                # Build the system instruction once per connection with a live
+                # snapshot of controllable devices (no hardcoded entity IDs).
+                token = os.environ.get('HA_LONG_LIVED_TOKEN')
+                ctx = await asyncio.to_thread(build_context_text, token)
+                system_instruction = SYSTEM_BASE + '\n' + TV_INSTRUCTION + '\n' + ctx
+
                 config = types.LiveConnectConfig(
                     response_modalities=['AUDIO'],
                     tools=tools,
@@ -332,7 +390,7 @@ async def client_handler(websocket):
                             prebuilt_voice_config=types.PrebuiltVoiceConfig(voice_name='Puck')
                         )
                     ),
-                    system_instruction='''Concise HA voice assistant. Answer status from the current states provided in the user message. For on/off, call ha_call_write_tool(name="ha_call_service", arguments={"domain": "switch", "service": "turn_on" or "turn_off", "entity_id": "..."}). Switches: switch.plalhawetiiyng_local, switch.plakkaaaef_local. Keep replies short and natural for voice; no markdown or lists.''',
+                    system_instruction=system_instruction,
                     # Resume the previous session when possible so context survives reconnects.
                     session_resumption=types.SessionResumptionConfig(handle=load_session_handle()),
                     # Realtime streaming input: each turn covers only detected speech activity,
@@ -342,14 +400,36 @@ async def client_handler(websocket):
                     ),
                 )
 
-                async with client.aio.live.connect(
-                    model='gemini-3.1-flash-live-preview',
-                    config=config,
-                ) as session:
+                try:
+                    live_ctx = client.aio.live.connect(
+                        model='gemini-3.1-flash-live-preview',
+                        config=config,
+                    )
+                    session = await live_ctx.__aenter__()
+                except websockets.exceptions.ConnectionClosedError as e:
+                    # A stale resumption handle causes 'session not found';
+                    # drop it and reconnect fresh.
+                    if 'session not found' in str(e) and config.session_resumption:
+                        log('stale resumption handle, reconnecting fresh')
+                        save_session_handle(None)
+                        config.session_resumption = types.SessionResumptionConfig()
+                        live_ctx = client.aio.live.connect(
+                            model='gemini-3.1-flash-live-preview',
+                            config=config,
+                        )
+                        session = await live_ctx.__aenter__()
+                    else:
+                        raise
+                try:
                     log('Gemini Live session connected')
                     await websocket.send(json.dumps({'type': 'status', 'message': 'connected'}))
 
-                    audio_parts = []
+                    # Responses are pumped for the whole session so VAD-completed
+                    # turns and barge-in interruptions work even while mic audio
+                    # is still streaming in.
+                    pump = asyncio.create_task(pump_responses(session, mcp, websocket))
+
+                    audio_bytes = 0
 
                     try:
                         async for message in websocket:
@@ -357,17 +437,22 @@ async def client_handler(websocket):
                                 try:
                                     obj = json.loads(message)
                                     if obj.get('type') == 'end':
-                                        log(f'Received end from client, total audio bytes {sum(len(b) for b in audio_parts)}')
-                                        pcm = b''.join(audio_parts)
-                                        audio_parts = []
+                                        log(f'Received end from client, total audio bytes {audio_bytes}')
+                                        audio_bytes = 0
                                         try:
-                                            await asyncio.wait_for(handle_audio(session, mcp, pcm, websocket), 60)
-                                        except asyncio.TimeoutError:
-                                            log('Gemini response timeout')
-                                            await websocket.send(json.dumps({'type': 'error', 'message': 'Gemini response timeout'}))
+                                            await end_turn(session, websocket)
                                         except Exception as e:
-                                            log(f'handle_audio error: {e}')
-                                            await websocket.send(json.dumps({'type': 'error', 'message': f'server error: {e}'}))
+                                            log(f'end_turn error: {e}')
+                                            await websocket.send(json.dumps({'type': 'error', 'message': f'end turn: {e}'}))
+                                    elif obj.get('type') == 'text':
+                                        # Typed input: send as a complete user turn.
+                                        await session.send_client_content(
+                                            turns=types.Content(
+                                                role='user',
+                                                parts=[types.Part(text=obj.get('text', ''))],
+                                            ),
+                                            turn_complete=True,
+                                        )
                                     else:
                                         log(f'Text from client: {message}')
                                 except Exception:
@@ -375,7 +460,7 @@ async def client_handler(websocket):
                                 continue
                             # Stream each PCM chunk straight into the Live session
                             # (realtime input) instead of buffering the whole turn.
-                            audio_parts.append(message)  # kept for byte counting
+                            audio_bytes += len(message)
                             try:
                                 await session.send_realtime_input(
                                     audio=types.Blob(data=message, mime_type='audio/pcm;rate=16000')
@@ -384,6 +469,10 @@ async def client_handler(websocket):
                                 log(f'realtime audio send error: {e}')
                     except websockets.exceptions.ConnectionClosed:
                         pass
+                    finally:
+                        pump.cancel()
+                finally:
+                    await live_ctx.__aexit__(None, None, None)
     except Exception as e:
         log(f'client_handler setup error: {e}')
         log(traceback.format_exc())

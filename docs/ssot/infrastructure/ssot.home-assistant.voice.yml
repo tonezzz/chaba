@@ -61,7 +61,24 @@ bridge_improvements:
   - tool_response_fix: >
       send_tool_response(function_responses=[FunctionResponse(...)]) — was a single
       object, not a list (latent bug); also function_calls guarded with `or []`.
-  - system_instruction: added 'no markdown/lists, short natural voice replies'.
+  - system_instruction: bilingual EN/TH, 'no markdown/lists, short natural voice replies',
+      plus dynamic device-state context (switch/light/media_player/input_boolean from
+      /api/states) — replaces the hardcoded two-switch list.
+  - tv_commands: >
+      Gemini can call the same TV/cast actions as the sentence triggers:
+      script.tv_action (nav/scroll/back), media_player.turn_off for stop,
+      camera.play_stream for the camera, and the album_slideshow button/switch
+      entities for photo controls — all via ha_call_service tool calls.
+  - continuous_pump: >
+      Responses are handled by a session-lifetime pump task (pump_responses) instead
+      of a per-turn receive loop — VAD-completed turns and barge-in 'interrupted'
+      events are handled while mic audio is still streaming.
+  - typed_text: client can send {"type":"text","text":...} for a text-only turn.
+  - resumption_fallback: >
+      A stale resumption handle fails connect with 'session not found'; bridge now
+      drops it and reconnects fresh automatically.
+  - restart_script: restart.sh now calls systemctl --user restart ha-live.service
+      (previously used stale container name 'home-assistant').
 
 # ---------------------------------------------------------------
 # Knowledge distilled from matt123p/ha-gemini-live internals
