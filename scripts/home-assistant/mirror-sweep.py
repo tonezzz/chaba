@@ -107,6 +107,7 @@ def collect_entities(obj, out):
 def main():
     want_yaml = "--yaml" in sys.argv
     ha_only = "--ha-only" in sys.argv
+    fail_on_missing = "--fail-on-missing" in sys.argv
 
     dev_token = load_token(
         "~/.config/secrets/ha-michael-dev.env", ["DEV_TOKEN", "HASS_TOKEN"]
@@ -192,6 +193,11 @@ def main():
             except (ValueError, TypeError):
                 pass
             print()
+
+    if fail_on_missing:
+        n = len(missing_dev) if not ha_only else len(missing_ha)
+        if n:
+            sys.exit(1)
 
 
 if __name__ == "__main__":
