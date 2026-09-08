@@ -1,17 +1,18 @@
 title: Development System Assessment
 subtitle: Periodic assessment of the chaba development workflow itself
 icon: clipboard-check
-last_reviewed: '2026-09-05T07:34:18.259014+00:00'
+last_reviewed: '2026-09-07T00:00:00+00:00'
 reviewer: assistant
 score:
-  branches_total: 4
-  branches_ahead_of_master: 4
-  worktrees_total: 3
+  branches_total: 2
+  branches_ahead_of_master: 1
+  worktrees_total: 2
   active_foci: 1
   ssot_warnings: 0
   service_errors_last_night: 0
   ci_failures_7d: 0
-  untracked_files: 5
+  untracked_files: 0
+  stashes_total: 16
 trend: stable
 pros:
 - label: SSOT-first workflow
@@ -28,16 +29,22 @@ pros:
   trend: improving
 cons:
 - label: Branch/worktree sprawl
-  severity: medium
-  evidence: 4 branches are ahead of master; 3 worktrees active
+  severity: low
+  evidence: Only feat/tpl-design is ahead of master (86 ahead / 62 behind) and it lives in the active chaba-tpl worktree; 2 worktrees total
   owner: tony
   status: open
-  improvement: Consolidate long-tail branches into master and archive or delete merged branches
+  improvement: feat/tpl-design is long-running active work; merge or rebase it onto master when that session completes
+- label: Stash sprawl
+  severity: low
+  evidence: 16 stash entries accumulated, several dated before branch merges
+  owner: tony
+  status: open
+  improvement: Triage old stashes (stash@{1}-stash@{15}) and drop ones whose content is already merged
 - label: Uncommitted working tree
   severity: medium
-  evidence: 5 untracked or modified file(s)
+  evidence: 0 untracked or modified file(s) on the canonical worktree as of 2026-09-07
   owner: tony
-  status: open
+  status: resolved
   improvement: Commit or .gitignore outstanding changes before the next session
 improvements:
 - label: SSOT quality regression resolved
