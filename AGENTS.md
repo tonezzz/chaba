@@ -75,13 +75,15 @@ Parallel sessions caused real breakage: duplicated `pfg2-card.ts`, undeclared `v
 2. **Deploy lock** — `deploy-card.sh` uses `flock /tmp/pfg-deploy.lock`; concurrent deploys are refused. Do not bypass it.
 3. **Dashboard pushes** — whoever runs `push-dashboard.py` must run `sync-ssot-from-live.sh` immediately after, then commit. The live dashboard is a shared resource; unsynced mutations are the main source of drift between sessions.
 
-## Current state (2026-09-07)
+## Current state (2026-09-08)
 
-- Active card bundle: `v100` on michael-dev / `v99` on michael-ha — same md5 (`fe9942680fb5…`), source commit `f7aa98d`. Version numbers are per-host; compare content by md5.
-- Deployed: `michael-dev` (PF3/PF4/PFG/PFG1/PFG2/TPL/Dossier) and `michael-ha` (PFG2 first tab, TPL after SK).
-- `cardstyle` branches: `lite` (PF3/PF4), `pfg` (PFG/PFG1/TPL), `pfg2` (PFG2 — same renderer as `pfg`, `pfg_grid_size` default 15; `pfg2-card.ts` was removed in v71).
-- `pfg`/`pfg2` full key set — `pfg_images`, `pfg_labels`, `pfg_label_pos`, `pfg_icons`, `pfg_values`, `pfg_value_labels`, `pfg_value_label_pos`, `pfg_image_zoom`, `pfg_image_fit`, `pfg_lines`, `pfg_spans` (incl. `RxC` and responsive `{square,portrait,landscape}`), `pfg_radius`, `pfg_border`, `pfg_sums`, `pfg_grid_size`, `pfg_grid_cols`, `pfg_grid_rows`, `pfg_grid_width`, `pfg_hide_grid`, `pfg_transparent`, `pfg_fit_screen`, `pfg_inverter_at`, `pfg_charts` (gauge/bar/history/cycle/bars) — see `ssot.home-assistant.design.yml`.
-- PFG2 layout (9 cols × 10 rows, transparent, hide-grid, free-fit): PV1 `1,1`, PV2 `1,4`, Grid `1,7`, PV Total `3,1`, Inverter `3,4`, Batt `5,1`, Home `5,7`, Living `7,4`, Kitchen `7,7`, Laundry `9,4`, Pool `9,7` — all spans `2x3`. Empty band `r3–4, cols 7–9` is intentionally open.
-- TPL tab holds single-tile templates applied via `apply-tpl.py` (e.g. `PV.b1`, `Temp`, `Freq`, `Daily`).
-- The `michael-dev` token in `~/.config/secrets/ha-michael-dev.env` is valid and works for REST and websocket.
+- Active card bundle: `v174` on BOTH hosts — same md5 (`8695e7f4…`). Per-host counters; verify parity with `deploy-card.sh --check`.
+- Chart code is modularized under `src/cards/pfg/` (registry + `chartOverlayStyle` + per-type files in `charts/`). `pfg-shared.ts` is gone — update imports to `./pfg`.
+- `deploy-card.sh` gained `--prune` (keeps active + newest backup) and a worktree drift guard (warns on unmerged worktree branches).
+- echarts/echarts-gl are vendored at `/local/echarts-5.5.1.min.js` + `/local/echarts-gl-2.1.0.min.js` on both hosts; `surface3d` tries local first, CDN fallback.
+- michael-ha credentials: API/websocket token = `~/.config/secrets/ha-michael-live.env` (the `ha-token` file was refreshed to the same value 2026-09-08); UI login = `~/.local/share/home-assistant-michael/credentials.json` (`nakva`).
+- michael-ha sidebar verified visually: Overview, Dossier, Map, Tony test + built-ins (Energy/Activity/History/File editor/HA-MCP/HACS/Matter Server/Settings/Notifications).
+- michael-ha tony-test tabs: `V0 (p0) → V1 (p0-2) → G1 → SK → TPL → juWorkshop → Solar Assistant → glass → Weather`.
+- New `/local/` assets may 404 in cached browsers while curl returns 200 — bump the reference `?v=N` in the config (runbook: `stale_local_asset_404` in howto SSOT).
+- `apply-tpl.py` gained `--bg` (forces copied charts to `position: "bg"`).
 - Dashboard snapshot is `docs/home-assistant/dashboards/tony-test-current.json`.
