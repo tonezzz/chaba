@@ -23,12 +23,12 @@ repositories:
         test_url: https://tony-dell.taila0626a.ts.net:8124/tony-test/pf4
       michael-ha:
         target_host: ssot.values.yml::hosts.michael_ha
-        target_path: /config/www/sunsynk-power-flow-card-fork-v144.js
+        target_path: /config/www/sunsynk-power-flow-card-fork-v154.js
         lovelace_resources: /config/.storage/lovelace_resources
-        resource_path: /local/sunsynk-power-flow-card-fork-v144.js
+        resource_path: /local/sunsynk-power-flow-card-fork-v154.js
         restart: ha core restart
-        note: held at v144 per dev-first rule (2026-09-07) — promote to latest on user approval
-        test_url: https://nupo4ndqdqydt78zmpq0z5wzp1bdrqgs.ui.nabu.casa/tony-test/pf3
+        note: promoted to v154 on 2026-09-08 after user approval; includes G1 surface3d view
+        test_url: https://nupo4ndqdqydt78zmpq0z5wzp1bdrqgs.ui.nabu.casa/tony-test/g1
         note: >-
           2026-09-06: michael-ha Tailscale was offline (OOM-killed tailscaled,
           watchdog was disabled), so the bundle was briefly served from
@@ -101,7 +101,7 @@ cards:
     name: Sunsynk Power Flow Card (fork)
     repo_ref: repositories.sunsynk-power-flow-card-fork
     bundle_version: 154
-    deployed_as: /local/sunsynk-power-flow-card-fork-v154.js (michael-dev only; michael-ha held at v144 per dev-first rule; previous v103 kept for rollback)
+    deployed_as: /local/sunsynk-power-flow-card-fork-v154.js (michael-dev and michael-ha; G1 view promoted to michael-ha after V1 on 2026-09-08; previous v103 kept for rollback)
     dashboards:
       - id: tony-test/pf4
         tab: PF4
@@ -126,6 +126,10 @@ cards:
         tab: PFG2 (after SK)
         test_url: https://nupo4ndqdqydt78zmpq0z5wzp1bdrqgs.ui.nabu.casa/tony-test/pfg2
         note: Deployed 2026-09-06 with pfg_hide_grid=true (grid lines, tile labels, and connectors hidden); tile images in /config/www served via /local/.
+      - id: michael-ha tony-test/g1
+        tab: G1
+        test_url: https://nupo4ndqdqydt78zmpq0z5wzp1bdrqgs.ui.nabu.casa/tony-test/g1
+        note: Promoted 2026-09-08 after V1; surface3d chart with Solar-Grid.jpg background, v154.
     instance: ssot.home-assistant.michael.dev.yml::environments.dev
   - id: michael-live
     name: Michael Live (ha-live bridge front-end)
@@ -135,4 +139,4 @@ cards:
 status:
   last_build: '2026-09-05'
   last_verified: '2026-09-08'
-  health: active; v86 deployed; bundle deployed to michael-dev (PF3/PF4/PFG/PFG1/PFG2/TPL) and michael-ha (PF3/PFG2/TPL, /local/ v86 + layout-card resource); pfg/pfg2 support images, icons, labels, values, sums, spans, radius, zoom, speed-scaled anchored flow lines, and pfg_hide_grid (see ssot.home-assistant.design.yml); .storage resource changes require HA core restart; michael-ha lovelace resource URL can also be updated over websocket (supervisor/api + lovelace/resources) when SSH is down
+  health: active; v154 deployed; bundle deployed to michael-dev (PF3/PF4/PFG/PFG1/PFG2/TPL/G1) and michael-ha (PF3/PFG2/TPL/G1, /local/ v154 + layout-card resource); pfg/pfg2 support images, icons, labels, values, sums, spans, radius, zoom, speed-scaled anchored flow lines, and pfg_hide_grid (see ssot.home-assistant.design.yml); .storage resource changes require HA core restart; michael-ha lovelace resource URL can also be updated over websocket (supervisor/api + lovelace/resources) when SSH is down
