@@ -1,0 +1,128 @@
+# SSOT: Home Assistant Voice / Gemini Live Pipeline
+title: Home Assistant Voice (Gemini Live)
+subtitle: Speech-to-speech voice pipeline, ha-live bridge, and live-model integration knowledge
+version: 1
+last_updated: 2026-09-08
+
+# ---------------------------------------------------------------
+# Current state (tony-ha, container tony-ha, HA 2026.8.3)
+# ---------------------------------------------------------------
+state:
+  preferred_pipeline: Gemini            # id 01m20051yb4cb5v1b322zstg8y, language th
+  pipelines:
+    - name: Gemini
+      engine: conversation.gemini_live / stt.gemini_live / tts.gemini_live
+      language: th
+      note: Preferred. Speech-to-speech via Gemini Live API; no STT->LLM->TTS chain.
+    - name: Home Assistant
+      engine: conversation.google_ai_conversation + google_ai_stt/tts
+      language: en (voice charon)
+      note: Fallback 3-stage pipeline.
+    - name: Chaba
+      engine: conversation.google_ai_conversation + google_ai_stt/tts
+      language: th (voice zephyr)
+      note: Fallback Thai pipeline.
+  integrations:
+    gemini_live:
+      source: https://github.com/matt123p/ha-gemini-live v1.0.6
+      path: /home/tony/.config/home-assistant/custom_components/gemini_live
+      provider: gemini
+      model: gemini-3.1-flash-live-preview
+      voice: Puck
+      credentials: reuses the google_generative_ai_conversation config-entry key (no new secret stored)
+      requirement_patch: 'manifest relaxed to google-genai>=1.59.0 (container ships 1.59.0; pin ==2.21.0 would break the official google_generative_ai_conversation integration)'
+      note: Entities conversation./stt./tts.gemini_live created 2026-09-08; verified via text and Thai turns.
+  ha_live_bridge:
+    service: ha-live.service (systemd --user, podman exec tony-ha python3 /config/ha-live/bridge.py)
+    source_host: /home/tony/.config/home-assistant/ha-live/bridge.py
+    source_repo: stacks/ha-live/bridge.py   # keep in sync
+    port: 9005 (index /, /snapshot, /snapshot.json, ws /ws)
+    note: restart.sh uses stale container name 'home-assistant'; use systemctl --user restart ha-live.service instead.
+
+# ---------------------------------------------------------------
+# Improvements applied to ha-live bridge.py (2026-09-08)
+# ---------------------------------------------------------------
+bridge_improvements:
+  - streaming_input: >
+      Mic PCM chunks now forwarded per-frame via session.send_realtime_input(audio=Blob)
+      instead of buffering the whole utterance and using send_client_content.
+      Lower latency; lets server-side VAD see speech as it happens.
+  - explicit_turn_end: >
+      Client 'end' message -> send_realtime_input(text=prompt) +
+      send_realtime_input(audio_stream_end=True). audio_stream_end is the
+      explicit push-to-talk signal; the model responds without waiting for VAD silence timeout.
+  - turn_coverage: >
+      realtime_input_config.turn_coverage = TURN_INCLUDES_ONLY_ACTIVITY so each turn
+      covers only detected speech (push-to-talk friendly).
+  - session_resumption: >
+      SessionResumptionConfig(handle=load_session_handle()) — the handle was previously
+      saved on session_resumption_update but never used; reconnects now keep context.
+      go_away events are logged with time_left.
+  - tool_response_fix: >
+      send_tool_response(function_responses=[FunctionResponse(...)]) — was a single
+      object, not a list (latent bug); also function_calls guarded with `or []`.
+  - system_instruction: added 'no markdown/lists, short natural voice replies'.
+
+# ---------------------------------------------------------------
+# Knowledge distilled from matt123p/ha-gemini-live internals
+# (applies to ha-live bridge and any future custom Live client)
+# ---------------------------------------------------------------
+live_api_knowledge:
+  architecture:
+    provider_contract: >
+      live.py defines neutral LiveConfig/LiveEvent/LiveSession/LiveToolCall protocol;
+      gemini.py + openai.py are adapters. Same pattern lets a client swap
+      Gemini Live <-> OpenAI Realtime with one config field.
+    session_lifecycle: >
+      One session per conversation_id; check websocket is_open before each turn;
+      reconnect lazily; retire on conversation end (runtime.py TurnStore/Sessions).
+  audio:
+    input: 16-bit PCM mono 16kHz; optimal chunk = 100ms = 3200 bytes
+    strip_riff: strip RIFF/data WAV header if source sends WAV
+    output_rate: Gemini responds at 24kHz -> resample to 16k for HA (utils.resample_24k_to_16k)
+    streaming_wav: emit WAV header with data length 0xFFFFFFFF for endless-stream playback (utils.streaming_wav_header)
+    diagnostics: per-chunk RMS/peak logging (stt._analyse_pcm) is cheap and invaluable
+  turn_taking:
+    send_realtime_input: optimized for responsiveness (audio/text/audio_stream_end kwargs)
+    send_client_content: deterministic ordering, batch turns
+    vad_config: realtime_input_config.automatic_activity_detection can tune/disable VAD; disable -> client must send activity_start/activity_end
+  tooling:
+    prefer_llm_api_assist: >
+      llm.async_get_api(llm.LLM_API_ASSIST) returns all Assist-exposed entities/tools
+      plus the official api_prompt — do NOT reimplement tool defs or go through MCP
+      for HA device control (fewer hops, avoids ha_mcp_tools API-id mismatch).
+    pseudo_tools: add end_conversation (clean hangup) and show_text (render text) tools
+    schema_limits: >
+      Gemini function declarations accept a subset of JSON Schema only:
+      snake_case keys, enum forces STRING, OBJECT requires properties.
+      See _gemini_schema() in gemini.py — copy if handing tools to Gemini directly.
+    mcp_bridge: >
+      bridge.py uses google.genai.live.mcp_to_gemini_tool to expose all ha_mcp_tools
+      tools to the model; tool calls are dispatched back through MCP.
+  resumption:
+    handles: save session_resumption_update.new_handle; pass via SessionResumptionConfig on reconnect
+    go_away: server signals imminent termination; reconnect soon using saved handle
+  ha_specific:
+    tts_placeholder: conversation entity returns '-- gemini live --' so HA's TTS cache never replays stale audio
+    stage_decoupling: asyncio.Queue producers (AudioStream/TextStream) decouple STT->conversation->TTS stages
+  models:
+    default: gemini-3.1-flash-live-preview
+    alternate: gemini-2.5-flash-native-audio-preview-12-2025
+  sdk_version: google-genai 1.59.0 (container) already has client.aio.live, send_realtime_input, send_tool_response, SessionResumptionConfig, RealtimeInputConfig — do not upgrade pin.
+
+# ---------------------------------------------------------------
+# Comparison: our pipeline vs alternatives
+# ---------------------------------------------------------------
+comparison:
+  gemini_live_ha_integration:
+    pros: [HA-native entities, Assist tool exposure via LLM_API_ASSIST, config flow UI, pipelines selectable per-language]
+    cons: [beta third-party code, pinned to HA voice-pipeline contract, requires HA restart for updates]
+  ha_live_bridge:
+    pros: [full control of prompts/tools/VAD, works outside Assist (web page /snapshot + ws), MCP tool reuse, no HA entity model needed]
+    cons: [custom maintenance, mic streaming depends on client page, no wake-word, single shared session per client]
+  openai_realtime:
+    pros: [same live contract — adapter already exists in gemini_live codebase]
+    cons: [second API key/billing, different voice set]
+  official_3stage_pipeline:
+    pros: [stable, first-party, local intent option]
+    cons: [STT->LLM->TTS latency ~1-3s per turn, less natural]

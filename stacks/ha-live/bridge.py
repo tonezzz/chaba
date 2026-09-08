@@ -219,16 +219,11 @@ async def handle_audio(session, mcp, pcm_bytes, websocket):
         state_text + '\n'
         'Answer status from the current states. For on/off, call ha_call_write_tool(name="ha_call_service", arguments={"domain": "switch", "service": "turn_on" or "turn_off", "entity_id": "..."}).'
     )
-    log(f'Sending {len(pcm_bytes)} bytes PCM to Gemini Live')
-    await session.send_client_content(
-        turns=types.Content(
-            role='user',
-            parts=[
-                types.Part(text=prompt),
-                types.Part(inline_data=types.Blob(data=pcm_bytes, mime_type='audio/pcm;rate=16000')),
-            ],
-        ),
-    )
+    # Audio was already streamed live via send_realtime_input in the client loop.
+    # Inject the state/context text into the same turn, then close audio input
+    # so the model can respond (explicit VAD signal for push-to-talk clients).
+    await session.send_realtime_input(text=prompt)
+    await session.send_realtime_input(audio_stream_end=True)
 
     texts = []
     tool_texts = []
@@ -242,9 +237,14 @@ async def handle_audio(session, mcp, pcm_bytes, websocket):
             if sru.resumable:
                 save_session_handle(sru.new_handle)
 
+        if msg.go_away:
+            # Server will terminate the session soon; the saved handle keeps
+            # context alive for the next connection.
+            log(f'go_away received, time_left={msg.go_away.time_left}')
+
         log(f'Received message: tool_call={msg.tool_call is not None}, server_content={msg.server_content is not None}')
         if msg.tool_call:
-            for call in msg.tool_call.function_calls:
+            for call in (msg.tool_call.function_calls or []):
                 log(f'Tool call: {call.name}({call.args})')
                 try:
                     result = await mcp.call_tool(call.name, call.args or {})
@@ -259,11 +259,11 @@ async def handle_audio(session, mcp, pcm_bytes, websocket):
                     tool_texts.append(f'{call.name} error: {e}')
                     resp = {'error': str(e)}
                 await session.send_tool_response(
-                    function_responses=types.FunctionResponse(
+                    function_responses=[types.FunctionResponse(
                         id=call.id,
                         name=call.name,
                         response=resp,
-                    )
+                    )]
                 )
 
         if not msg.server_content:
@@ -332,7 +332,14 @@ async def client_handler(websocket):
                             prebuilt_voice_config=types.PrebuiltVoiceConfig(voice_name='Puck')
                         )
                     ),
-                    system_instruction='''Concise HA voice assistant. Answer status from the current states provided in the user message. For on/off, call ha_call_write_tool(name="ha_call_service", arguments={"domain": "switch", "service": "turn_on" or "turn_off", "entity_id": "..."}). Switches: switch.plalhawetiiyng_local, switch.plakkaaaef_local.''',
+                    system_instruction='''Concise HA voice assistant. Answer status from the current states provided in the user message. For on/off, call ha_call_write_tool(name="ha_call_service", arguments={"domain": "switch", "service": "turn_on" or "turn_off", "entity_id": "..."}). Switches: switch.plalhawetiiyng_local, switch.plakkaaaef_local. Keep replies short and natural for voice; no markdown or lists.''',
+                    # Resume the previous session when possible so context survives reconnects.
+                    session_resumption=types.SessionResumptionConfig(handle=load_session_handle()),
+                    # Realtime streaming input: each turn covers only detected speech activity,
+                    # which suits push-to-talk clients.
+                    realtime_input_config=types.RealtimeInputConfig(
+                        turn_coverage=types.TurnCoverage.TURN_INCLUDES_ONLY_ACTIVITY
+                    ),
                 )
 
                 async with client.aio.live.connect(
@@ -366,7 +373,15 @@ async def client_handler(websocket):
                                 except Exception:
                                     log(f'Text from client: {message}')
                                 continue
-                            audio_parts.append(message)
+                            # Stream each PCM chunk straight into the Live session
+                            # (realtime input) instead of buffering the whole turn.
+                            audio_parts.append(message)  # kept for byte counting
+                            try:
+                                await session.send_realtime_input(
+                                    audio=types.Blob(data=message, mime_type='audio/pcm;rate=16000')
+                                )
+                            except Exception as e:
+                                log(f'realtime audio send error: {e}')
                     except websockets.exceptions.ConnectionClosed:
                         pass
     except Exception as e:
