@@ -10,7 +10,7 @@ from pathlib import Path
 from datetime import datetime
 
 SSOT_DIR = "/home/tony/CascadeProjects/chaba/docs/ssot"
-MDBB_SERVER = "http://tony-dell.taila0626a.ts.net:11023/v1"
+MDBB_SERVER = "http://127.0.0.1:11023/v1"
 
 # Reusable session with retries to survive transient connection drops
 _mddb_session = requests.Session()
