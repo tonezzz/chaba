@@ -2,7 +2,7 @@ title: IP Address Registry
 subtitle: Per-network IP allocations linked to the MAC address registry
 icon: 🗺️
 version: 1
-last_updated: '2026-09-01'
+last_updated: '2026-09-08'
 ideas:
 - Every IP allocation links back to a stable device_id in ssot.mac-address-registry.yml
 - One network_record per subnet, with an allocations list
@@ -61,7 +61,7 @@ sections:
     text: Nightly ARP scan compares against this registry; new/duplicate IPs or MACs create focus-inbox alerts.
 config:
   version: 1
-  last_updated: '2026-09-04'
+  last_updated: '2026-09-08'
   maintainer: tony
   status: active
   related_files:
@@ -108,18 +108,25 @@ config:
       first_seen: '2026-09-01'
       source: arp
     - ip: 192.168.2.65
-      device_id: discovered-227311ed1353
+      device_id: discovered-c0cdd685a838
       interface_id: primary
       kind: discovered
       status: active
-      first_seen: '2026-09-01'
+      first_seen: '2026-09-07'
       source: arp
     - ip: 192.168.2.66
       device_id: ip-cam-65
       interface_id: primary
       kind: discovered
-      status: active
+      status: stale
       first_seen: '2026-09-01'
+      source: arp
+    - ip: 192.168.2.67
+      device_id: discovered-484d7ee43ac7
+      interface_id: primary
+      kind: discovered
+      status: active
+      first_seen: '2026-09-07'
       source: arp
     - ip: 192.168.2.68
       device_id: tuya-plug-bedside
@@ -132,22 +139,22 @@ config:
       device_id: hp-deskjet-2700
       interface_id: wlan0
       kind: discovered
-      status: active
+      status: stale
       first_seen: '2026-09-01'
       source: arp
     - ip: 192.168.2.70
       device_id: hp-deskjet-2700
       interface_id: eth0
       kind: discovered
-      status: active
+      status: stale
       first_seen: '2026-09-04'
       source: arp
     - ip: 192.168.2.71
-      device_id: discovered-c0cdd685a838
+      device_id: ip-cam-65
       interface_id: primary
       kind: discovered
       status: active
-      first_seen: '2026-09-01'
+      first_seen: '2026-09-07'
       source: arp
     - ip: 192.168.2.72
       device_id: discovered-ea9b8fd280f0
@@ -171,11 +178,18 @@ config:
       first_seen: '2026-09-04'
       source: arp
     - ip: 192.168.2.75
+      device_id: hp-deskjet-2700
+      interface_id: primary
+      kind: discovered
+      status: active
+      first_seen: '2026-09-07'
+      source: arp
+    - ip: 192.168.2.76
       device_id: discovered-7cd2da73308a
       interface_id: primary
       kind: discovered
       status: active
-      first_seen: '2026-09-01'
+      first_seen: '2026-09-07'
       source: arp
     - ip: 192.168.2.77
       device_id: discovered-d83a367d100d
@@ -195,7 +209,7 @@ config:
       device_id: tuya-plug-coffee
       interface_id: primary
       kind: discovered
-      status: active
+      status: stale
       first_seen: '2026-09-01'
       source: arp
     - ip: 192.168.2.83
@@ -225,6 +239,13 @@ config:
       kind: discovered
       status: active
       first_seen: '2026-09-04'
+      source: arp
+    - ip: 192.168.2.87
+      device_id: tuya-plug-coffee
+      interface_id: primary
+      kind: discovered
+      status: active
+      first_seen: '2026-09-07'
       source: arp
   - network_id: legacy-192.168.1.0-24
     cidr: 192.168.1.0/24

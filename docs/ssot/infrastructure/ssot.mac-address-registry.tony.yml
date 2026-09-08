@@ -3,7 +3,7 @@ subtitle: MAC registry for Tony's 192.168.2.0/24 home network and Tailscale inte
 icon: 🔗
 config:
   version: 1
-  last_updated: '2026-09-02'
+  last_updated: '2026-09-08'
   maintainer: tony
   status: active
   related_files:
@@ -64,12 +64,19 @@ config:
         tuya_id: a319217035be6c2d60opfg
       interfaces:
         - interface_id: wlan0
+          mac: 24:94:94:b0:f2:df
+          oui: 24:94:94
+          type: wifi
+          source: arp
+          first_seen: '2026-09-07'
+          status: active
+        - interface_id: wlan0-legacy
           mac: 2c:b4:71:e8:a8:e8
           oui: 2c:b4:71
           type: wifi
           source: arp
           first_seen: '2026-09-01'
-          status: active
+          status: stale
       mac_conflict: false
       status: active
     - device_id: ip-cam-65
@@ -153,7 +160,7 @@ config:
       mac_conflict: false
       status: active
     - device_id: discovered-c0cdd685a838
-      label: Unknown host 192.168.2.81
+      label: Unknown host 192.168.2.65
       local_ids: {}
       interfaces:
         - interface_id: primary
@@ -228,9 +235,9 @@ config:
           type: unknown
           source: arp
           first_seen: '2026-09-01'
-          status: active
+          status: stale
       mac_conflict: false
-      status: active
+      status: stale
     - device_id: discovered-caf042320432
       label: Unknown host 192.168.2.82
       local_ids: {}
