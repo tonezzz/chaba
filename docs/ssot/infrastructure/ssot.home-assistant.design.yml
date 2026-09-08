@@ -144,6 +144,8 @@ pfg_feature_keys:
     pfg_hide_grid: 'boolean (v79+); hides tile borders, the r,c fallback text, and all pfg_lines connectors. Explicit pfg_labels still render (v87+). Images/icons/values/status colors still render.'
     pfg_transparent: 'boolean (v93+); removes ha-card background/border/shadow and the theme card-mod frosted-glass ::before/::after layer (v94+)'
     pfg_inverter_at: '"r,c" (v77+); places the built-in inverter image tile at that cell'
+    pfg_debug_layers: 'boolean (v162+); outlines each render layer and tags it — cell=red, img=green, chart:<position>=cyan, label=yellow. For inspecting layer stacking.'
+    pfg_tile_style: 'map "r,c" -> {bg, border, radius, image, image_fit} (v162+); consolidated per-tile style that overrides pfg_images/pfg_border/pfg_radius/pfg_image_fit and the implicit cell tint'
   tiles:
     note: 'Render priority per tile: label > icon > image > sum/value > r,c coordinate text.'
     pfg_labels: 'map "r,c" -> text label; " " blanks a cell; rendered even under pfg_hide_grid'
@@ -160,7 +162,23 @@ pfg_feature_keys:
     pfg_fit_screen: 'boolean|"Npx" (v97/v98+); grid fills 100% width x (100vh - reserve) with free cell stretch — no aspect lock, no scrollbar. Lines stretch via preserveAspectRatio="none".'
   charts:
     key: pfg_charts
-    note: 'r,c -> chart def or array of defs; types: gauge, bar, history, cycle. position: center|bottom|cycle overlays the tile (works over images). cycle rotates through step groups at interval seconds; entities[] sums multiple sensors in one def. history uses recorder history_during_period with 5min cache; fields: entity/entities, hours, min/max, scale, decimals, unit, label, stroke, fill, needle, segments, gradient, interval, steps.'
+    note: 'r,c -> chart def or array of defs; types: gauge, bar, history, cycle, surface3d (v141+). position: center|bottom|top|fill|cycle overlays the tile (works over images). "bg" is a deprecated alias of "fill" (v162+). cycle rotates through step groups at interval seconds; entities[] sums multiple sensors in one def. history uses recorder history_during_period with 5min cache; fields: entity/entities, hours, min/max, scale, decimals, unit, label, stroke, fill, needle, segments, gradient, interval, steps. surface3d: echarts-gl surface lazy-loaded from jsDelivr CDN, hourly means from recorder/statistics_during_period (fallback raw history), days (default 30, max 90), cache minutes, wireframe, auto_rotate, opacity, bg, rotate_center, rotate_mouse_button, pan_mouse_button, rotate_sensitivity, zoom_sensitivity.'
+  layer_order: |
+    Tile render stack, bottom -> top (v162+):
+      1. ha-card background — transparent when pfg_transparent: true
+      2. .container.card div — always transparent
+      3. .pfg-cell background + border — implicit rgba(255,255,255,0.05) tint and 1px
+         grid border are SKIPPED when the tile has an image or a fill/bg chart
+         (v162+); pfg_tile_style.bg/.border overrides everything
+      4. chart overlay wrapper — placement via chartOverlayStyle(position): center |
+         bottom | top | fill(=bg) | cycle; carries opacity and optional scrim
+      5. chart content — svg charts render here; surface3d mounts a div with its own
+         bg (def.bg, default rgba(10,14,18,0.45)) + WebGL canvas (transparent)
+      6. label/value overlays — z-index:2, pfg_label_pos / pfg_value_label_pos
+      7. flow-lines SVG — pfg_lines, inset:0, pointer-events:none
+      8. ha-card ::before/::after — disabled under pfg_transparent (card-mod frosted
+         glass would otherwise sit on top)
+    Inspect with pfg_debug_layers: true.
   view_copy:
     note: 'scripts/home-assistant/apply-tpl.py copies TPL-tab card templates (title -> r,c) onto any view: apply-tpl.py <ha_url> <dashboard> <src_view> <dst_view> --map "Title:r,c;..."'
   values:
