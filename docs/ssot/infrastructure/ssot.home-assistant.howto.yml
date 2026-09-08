@@ -206,7 +206,56 @@ runbooks:
       - Version numbers are per-host counters — compare bundle md5 across hosts for parity, not the v-number
       - If Tailscale SSH prints a login.tailscale.com link, ask the user to open it, then retry
 
+  sidebar_menu_listing:
+    purpose: Enumerate the HA sidebar (menu) for an instance.
+    steps:
+      - "API 'lovelace/dashboards/list' (websocket) returns ONLY custom dashboards (e.g. Map, Overview, Tony test, Dossier)"
+      - Built-in panels (Energy, Activity, History, Logbook, Media, To-do, Settings, Notifications) and add-on ingress entries (File editor, HA-MCP, HACS, Matter Server) are NOT Lovelace dashboards and never appear in that list
+      - "Sidebar order is per-user: 'frontend/get_user_data' key 'core.sidebar' -> panelOrder (may be unset = default order)"
+      - For a visual list use playlive headless + login (see ha_ui_login_headless)
+
+  stale_local_asset_404:
+    purpose: Fix a newly added /config/www file that 404s in the browser while curl returns 200.
+    steps:
+      - Browsers (and the HA service worker) cache /local/ responses; a 404 served before the file existed persists
+      - First try a hard refresh (Ctrl+Shift+R)
+      - Reliable fix: bump the reference in the view config — change '/local/name.jpg' to '/local/name.jpg?v=2' via websocket lovelace/config/save (apply to every occurrence in the config)
+      - HA serves /local/ live from /config/www; no restart needed for new files
+
+  ha_ui_login_headless:
+    purpose: Log into an HA UI inside a playlive headless browser session.
+    steps:
+      - "michael-ha UI creds live in ~/.local/share/home-assistant-michael/credentials.json (username+password); verified login user 'nakva' 2026-09-08"
+      - playlive headless sessions have no real CDP port and cannot reach 127.0.0.1 of this host — serve creds on the LAN IP instead
+      - "Trick: write /tmp/creds.js (window.__HA_CREDS={u,p}), serve /tmp via 'python3 -m http.server 8898 --bind 0.0.0.0 --directory /tmp', then playlive_eval a script that injects <script src='http://<lan-ip>:8898/creds.js'> (script tags bypass CORS) and fills the fields"
+      - "Fill via the native setter: Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(el,v) then dispatch input+change — plain el.value= does not stick on HA's lit inputs"
+      - "The submit button is <ha-button> with text 'Log in' (inside shadow DOMs) — find via recursive shadow query and click()"
+      - ALWAYS delete /tmp/creds.js and kill the http.server afterwards (credentials were briefly served on the LAN)
+
+  tokens_and_auth:
+    purpose: Which credential files actually work for michael-ha API/websocket.
+    steps:
+      - "~/.config/secrets/ha-michael-live.env (HASS_TOKEN=...) is the WORKING long-lived token for michael-ha REST+websocket"
+      - "~/.local/share/home-assistant-michael/ha-token went stale 2026-09-08 (auth_invalid) — prefer ha-michael-live.env; regenerate if both fail"
+      - "~/.config/secrets/ha-michael-dev.env (HASS_TOKEN) works for michael-dev on https://tony-dell.taila0626a.ts.net:8124"
+
+  bundle_parity_worktrees:
+    purpose: Avoid deploying a main build that is OLDER than a host's live bundle.
+    steps:
+      - "Parallel sessions build/deploy from worktree branches; dev's live version may not be on main"
+      - "Before deploying from main, check 'git worktree list' and 'git log main..<branch>' — merge feature branches first so nothing is lost"
+      - "Fast parity: scp the exact deployed bundle file (e.g. dev's www/sunsynk-...-v144.js) to the other host and repoint lovelace_resources, then merge source to main later"
+      - Always finish with deploy-card.sh --check and compare md5
+
+  pfg_charts_modular:
+    purpose: Chart code layout after 2026-09-08 refactor.
+    steps:
+      - "src/cards/pfg/: shared.ts (status/hexToRgba/resolveChartValue), history.ts (fetch/merge/cache), place.ts (chartOverlayStyle — single placement engine: bottom|top|bg|cycle|center), index.ts (RENDERERS registry + registerChart)"
+      - "Per-type renderers in src/cards/pfg/charts/: bar.ts bars.ts gauge.ts history.ts group.ts cycle.ts surface3d.ts"
+      - "New chart type = new file + one line in RENDERERS; do NOT edit pfg-card.ts placement"
+      - "group/cycle import the registry (circular-import warnings in rollup are expected and safe)"
+
 status:
-  last_updated: '2026-09-05'
-  last_verified: '2026-09-05'
-  health: active; websocket push-dashboard workflow verified; deploy runbook corrected (.storage resource changes need service restart, not ha_reload_core)
+  last_updated: '2026-09-08'
+  last_verified: '2026-09-08'
+  health: active; websocket push-dashboard workflow verified; deploy runbook corrected (.storage resource changes need service restart, not ha_reload_core); sidebar API scope documented; stale /local 404 workaround (v-bump) documented; michael-ha working token located in ha-michael-live.env; pfg chart code modularized into src/cards/pfg/ with registry + single placement engine
