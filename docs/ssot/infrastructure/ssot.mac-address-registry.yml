@@ -76,17 +76,27 @@ sections:
   - label: tony-dell
     text: Secondary HA/go2rtc host — MAC 48:4d:7e:e4:3a:c7 (Wi-Fi).
   - label: tony-tv
-    text: Tony TV — Wi-Fi b8:59:ce:74:75:28, wired 00:e0:4c:36:12:76.
+    text: Tony TV (TrueID OTT SKWAMX3) — Wi-Fi b8:59:ce:74:75:28.
   - label: cozylife-01
     text: Cozy Life / Tuya plug — MAC 24:94:94:b0:f2:df.
   - label: tuya-plug-tv
     text: Tuya plug (TV) — MAC cc:50:e3:19:a0:2f.
   - label: esp32-test
     text: ESP32 test device — MAC c0:cd:d6:85:a8:38.
+  - label: kks-macbook-pro
+    text: KKs MacBook Pro — wired 00:e0:4c:36:12:76 (192.168.2.80) and Wi-Fi 78:4f:43:86:da:1a (192.168.2.81).
   - label: kks-mac-studio
-    text: KKs Mac Studio — MAC 1c:1d:d3:e8:0a:4f.
+    text: KKs Mac Studio — MAC 1c:1d:d3:e8:0a:4f (192.168.2.82).
+  - label: iphone-tony
+    text: Tony iPhone (hotspot name TONY-IP) — MAC 7c:d2:da:73:30:8a (192.168.2.69).
+  - label: realme-c63
+    text: realme C63 phone — MAC f2:ed:a0:d4:5f:db (192.168.2.90).
+  - label: honor-pad-9
+    text: HONOR Pad 9 tablet — MAC 94:32:c1:6e:db:08 (192.168.2.89).
   - label: Unknown / randomized hosts
-    text: '192.168.2.73 (06:28:58:26:4b:2c), .74/.78/.91 (0a:f0:bc:ad:20:8b), .76 (22:73:11:ed:13:53), .79 (ea:9b:8f:d2:80:f0), .81 (78:4f:43:86:da:1a), .86 (72:b5:f0:db:14:f3), .88 (fa:31:d9:bd:44:ff). Some are iOS/macOS private Wi-Fi addresses; identify via router hostnames or device labels.'
+    text: '192.168.2.73 (lwip 06:28:58:26:4b:2c), .74 (68:f0:bc:ad:20:8a), .76 (iPhone 22:73:11:ed:13:53), .78 (Watch b6:72:65:ca:aa:e1),
+      .79 (ea:9b:8f:d2:80:f0), .86 (Mac 72:b5:f0:db:14:f3), .88 (iPhone fa:31:d9:bd:44:ff), .91 (00:12:fb:0e:93:ed), .72 (Watch 3a:21:76:0b:08:85).
+      Some are private Wi-Fi addresses; identify by disabling private Wi-Fi on the device or matching router hostnames.'
   - label: Legacy network
     text: macbook on 192.168.1.39 and google-tv on 192.168.1.50; MACs unknown/stale.
 - title: Next Steps
@@ -94,8 +104,8 @@ sections:
   layout: list
   items:
   - label: Resolve unknown hosts
-    text: 'Identify 192.168.2.73, .74/.78/.91, .76, .79, .81, .86, .88 and .69/.72 if they reappear. Some are randomized/private
-      Wi-Fi MACs; use router DHCP hostnames or static MAC settings.'
+    text: 'Identify 192.168.2.73, .74, .76, .78, .79, .86, .88, .91 and .72. Many are private Wi-Fi addresses; disable private
+      addressing per device or use vendor/model/owner clues to assign stable device_ids.'
   - label: Populate legacy network
     text: Reconnect to Mountain View 5G/2.4G to scan 192.168.1.0/24 and capture macbook / Google TV MACs.
   - label: Watch duplicates
@@ -140,29 +150,25 @@ config:
   - docs/ssot/infrastructure/ssot.mac-address-registry.tony.yml
   - docs/ssot/infrastructure/ssot.mac-address-registry.michael.yml
   mac_registry:
-  - device_id: home-router
-    label: Home Router
+  - device_id: tony-omen
+    label: Tony Omen
     status: active
     interfaces:
-    - interface_id: primary
-      mac: 98:00:6a:68:f7:c6
-      oui: 98006A
+    - interface_id: eno1
+      mac: b0:22:7a:f0:73:cd
+      oui: B0227A
       vendor: Unknown
       type: ethernet
-      source: arp
+      source: dhcp
       first_seen: '2026-09-09'
       last_seen: '2026-09-09'
       status: active
-  - device_id: esp32-test
-    label: ESP32 Test
-    status: active
-    interfaces:
-    - interface_id: wlan0
-      mac: c0:cd:d6:85:a8:38
-      oui: C0CDD6
+    - interface_id: wlo1
+      mac: d0:57:7b:ea:6a:3c
+      oui: D0577B
       vendor: Unknown
       type: wifi
-      source: arp
+      source: dhcp
       first_seen: '2026-09-09'
       last_seen: '2026-09-09'
       status: active
@@ -175,20 +181,7 @@ config:
       oui: 2CB471
       vendor: Unknown
       type: wifi
-      source: arp
-      first_seen: '2026-09-09'
-      last_seen: '2026-09-09'
-      status: active
-  - device_id: tony-dell
-    label: Tony Dell
-    status: active
-    interfaces:
-    - interface_id: primary
-      mac: 48:4d:7e:e4:3a:c7
-      oui: 484D7E
-      vendor: Unknown
-      type: wifi
-      source: arp
+      source: dhcp
       first_seen: '2026-09-09'
       last_seen: '2026-09-09'
       status: active
@@ -201,7 +194,7 @@ config:
       oui: '249494'
       vendor: Unknown
       type: wifi
-      source: arp
+      source: dhcp
       first_seen: '2026-09-09'
       last_seen: '2026-09-09'
       status: active
@@ -214,159 +207,7 @@ config:
       oui: CC50E3
       vendor: Unknown
       type: wifi
-      source: arp
-      first_seen: '2026-09-09'
-      last_seen: '2026-09-09'
-      status: active
-  - device_id: ip-cam-65
-    label: IP Camera 65
-    status: active
-    interfaces:
-    - interface_id: wlan0
-      mac: d4:9e:3b:6a:94:90
-      oui: D49E3B
-      vendor: Unknown
-      type: wifi
-      source: arp
-      first_seen: '2026-09-09'
-      last_seen: '2026-09-09'
-      status: active
-  - device_id: discovered-062858264b2c
-    label: Discovered 06:28:58:26:4b:2c
-    status: active
-    interfaces:
-    - interface_id: primary
-      mac: 06:28:58:26:4b:2c
-      oui: 062858
-      vendor: Unknown
-      type: wifi
-      source: arp
-      first_seen: '2026-09-09'
-      last_seen: '2026-09-09'
-      status: active
-  - device_id: discovered-0af0bcad208b
-    label: Discovered 0a:f0:bc:ad:20:8b
-    status: active
-    interfaces:
-    - interface_id: primary
-      mac: 0a:f0:bc:ad:20:8b
-      oui: 0AF0BC
-      vendor: Unknown
-      type: wifi
-      source: arp
-      first_seen: '2026-09-09'
-      last_seen: '2026-09-09'
-      status: active
-  - device_id: hp-deskjet-2700
-    label: HP DeskJet 2700
-    status: active
-    interfaces:
-    - interface_id: wlan0
-      mac: e0:73:e7:05:c5:16
-      oui: E073E7
-      vendor: Unknown
-      type: wifi
-      source: arp
-      first_seen: '2026-09-09'
-      last_seen: '2026-09-09'
-      status: active
-  - device_id: discovered-227311ed1353
-    label: Discovered 22:73:11:ed:13:53
-    status: active
-    interfaces:
-    - interface_id: primary
-      mac: 22:73:11:ed:13:53
-      oui: '227311'
-      vendor: Unknown
-      type: wifi
-      source: arp
-      first_seen: '2026-09-09'
-      last_seen: '2026-09-09'
-      status: active
-  - device_id: xiaomi-c201
-    label: Xiaomi C201 Camera
-    status: active
-    interfaces:
-    - interface_id: wlan0
-      mac: d8:3a:36:7d:10:0d
-      oui: D83A36
-      vendor: Unknown
-      type: wifi
-      source: arp
-      first_seen: '2026-09-09'
-      last_seen: '2026-09-09'
-      status: active
-  - device_id: discovered-ea9b8fd280f0
-    label: Discovered ea:9b:8f:d2:80:f0
-    status: active
-    interfaces:
-    - interface_id: primary
-      mac: ea:9b:8f:d2:80:f0
-      oui: EA9B8F
-      vendor: Unknown
-      type: wifi
-      source: arp
-      first_seen: '2026-09-09'
-      last_seen: '2026-09-09'
-      status: active
-  - device_id: tony-tv
-    label: Tony TV
-    status: active
-    interfaces:
-    - interface_id: eth0
-      mac: 00:e0:4c:36:12:76
-      oui: 00E04C
-      vendor: Unknown
-      type: ethernet
-      source: arp
-      first_seen: '2026-09-09'
-      last_seen: '2026-09-09'
-      status: active
-    - interface_id: wlan0
-      mac: b8:59:ce:74:75:28
-      oui: B859CE
-      vendor: Unknown
-      type: wifi
-      source: arp
-      first_seen: '2026-09-09'
-      last_seen: '2026-09-09'
-      status: active
-  - device_id: discovered-784f4386da1a
-    label: Discovered 78:4f:43:86:da:1a
-    status: active
-    interfaces:
-    - interface_id: primary
-      mac: 78:4f:43:86:da:1a
-      oui: 784F43
-      vendor: Unknown
-      type: wifi
-      source: arp
-      first_seen: '2026-09-09'
-      last_seen: '2026-09-09'
-      status: active
-  - device_id: kks-mac-studio
-    label: KKs Mac Studio
-    status: active
-    interfaces:
-    - interface_id: wlan0
-      mac: 1c:1d:d3:e8:0a:4f
-      oui: 1C1DD3
-      vendor: Unknown
-      type: wifi
-      source: arp
-      first_seen: '2026-09-09'
-      last_seen: '2026-09-09'
-      status: active
-  - device_id: discovered-72b5f0db14f3
-    label: Discovered 72:b5:f0:db:14:f3
-    status: active
-    interfaces:
-    - interface_id: primary
-      mac: 72:b5:f0:db:14:f3
-      oui: 72B5F0
-      vendor: Unknown
-      type: wifi
-      source: arp
+      source: dhcp
       first_seen: '2026-09-09'
       last_seen: '2026-09-09'
       status: active
@@ -379,33 +220,276 @@ config:
       oui: 2CB471
       vendor: Unknown
       type: wifi
-      source: arp
+      source: dhcp
       first_seen: '2026-09-09'
       last_seen: '2026-09-09'
       status: active
-  - device_id: discovered-fa31d9bd44ff
-    label: Discovered fa:31:d9:bd:44:ff
+  - device_id: iphone-tony
+    label: Tony iPhone
     status: active
     interfaces:
-    - interface_id: primary
+    - interface_id: wlan0
+      mac: 7c:d2:da:73:30:8a
+      oui: 7CD2DA
+      vendor: Unknown
+      type: wifi
+      source: dhcp
+      first_seen: '2026-09-09'
+      last_seen: '2026-09-09'
+      status: active
+  - device_id: hp-deskjet-2700
+    label: HP DeskJet 2700
+    status: active
+    interfaces:
+    - interface_id: wlan0
+      mac: e0:73:e7:05:c5:16
+      oui: E073E7
+      vendor: Unknown
+      type: wifi
+      source: dhcp
+      first_seen: '2026-09-09'
+      last_seen: '2026-09-09'
+      status: active
+  - device_id: discovered-68f0bcad208a
+    label: Discovered 68:f0:bc:ad:20:8a
+    status: active
+    interfaces:
+    - interface_id: wlan0
+      mac: 68:f0:bc:ad:20:8a
+      oui: 68F0BC
+      vendor: Unknown
+      type: wifi
+      source: dhcp
+      first_seen: '2026-09-09'
+      last_seen: '2026-09-09'
+      status: active
+  - device_id: iphone-227311ed1353
+    label: iPhone (22:73:11:ed:13:53)
+    status: active
+    interfaces:
+    - interface_id: wlan0
+      mac: 22:73:11:ed:13:53
+      oui: '227311'
+      vendor: Unknown
+      type: wifi
+      source: dhcp
+      first_seen: '2026-09-09'
+      last_seen: '2026-09-09'
+      status: active
+  - device_id: discovered-ea9b8fd280f0
+    label: Discovered ea:9b:8f:d2:80:f0
+    status: active
+    interfaces:
+    - interface_id: wlan0
+      mac: ea:9b:8f:d2:80:f0
+      oui: EA9B8F
+      vendor: Unknown
+      type: wifi
+      source: dhcp
+      first_seen: '2026-09-09'
+      last_seen: '2026-09-09'
+      status: active
+  - device_id: kks-macbook-pro
+    label: KKs MacBook Pro
+    status: active
+    interfaces:
+    - interface_id: eth0
+      mac: 00:e0:4c:36:12:76
+      oui: 00E04C
+      vendor: Unknown
+      type: ethernet
+      source: dhcp
+      first_seen: '2026-09-09'
+      last_seen: '2026-09-09'
+      status: active
+    - interface_id: wlan0
+      mac: 78:4f:43:86:da:1a
+      oui: 784F43
+      vendor: Unknown
+      type: wifi
+      source: dhcp
+      first_seen: '2026-09-09'
+      last_seen: '2026-09-09'
+      status: active
+  - device_id: kks-mac-studio
+    label: KKs Mac Studio
+    status: active
+    interfaces:
+    - interface_id: wlan0
+      mac: 1c:1d:d3:e8:0a:4f
+      oui: 1C1DD3
+      vendor: Unknown
+      type: wifi
+      source: dhcp
+      first_seen: '2026-09-09'
+      last_seen: '2026-09-09'
+      status: active
+  - device_id: mac-72b5f0db14f3
+    label: Mac (72:b5:f0:db:14:f3)
+    status: active
+    interfaces:
+    - interface_id: wlan0
+      mac: 72:b5:f0:db:14:f3
+      oui: 72B5F0
+      vendor: Unknown
+      type: wifi
+      source: dhcp
+      first_seen: '2026-09-09'
+      last_seen: '2026-09-09'
+      status: active
+  - device_id: iphone-fa31d9bd44ff
+    label: iPhone (fa:31:d9:bd:44:ff)
+    status: active
+    interfaces:
+    - interface_id: wlan0
       mac: fa:31:d9:bd:44:ff
       oui: FA31D9
       vendor: Unknown
       type: wifi
-      source: arp
+      source: dhcp
       first_seen: '2026-09-09'
       last_seen: '2026-09-09'
       status: active
-  - device_id: tony-omen
-    label: Tony Omen
+  - device_id: honor-pad-9
+    label: HONOR Pad 9
     status: active
     interfaces:
-    - interface_id: eno1
-      mac: b0:22:7a:f0:73:cd
-      oui: B0227A
+    - interface_id: wlan0
+      mac: 94:32:c1:6e:db:08
+      oui: 9432C1
       vendor: Unknown
-      type: ethernet
-      source: arp
+      type: wifi
+      source: dhcp
+      first_seen: '2026-09-09'
+      last_seen: '2026-09-09'
+      status: active
+  - device_id: apple-watch-3a21760b0885
+    label: Apple Watch (3a:21:76:0b:08:85)
+    status: active
+    interfaces:
+    - interface_id: wlan0
+      mac: 3a:21:76:0b:08:85
+      oui: 3A2176
+      vendor: Unknown
+      type: wifi
+      source: dhcp
+      first_seen: '2026-09-09'
+      last_seen: '2026-09-09'
+      status: active
+  - device_id: apple-watch-b67265caaae1
+    label: Apple Watch (b6:72:65:ca:aa:e1)
+    status: active
+    interfaces:
+    - interface_id: wlan0
+      mac: b6:72:65:ca:aa:e1
+      oui: B67265
+      vendor: Unknown
+      type: wifi
+      source: dhcp
+      first_seen: '2026-09-09'
+      last_seen: '2026-09-09'
+      status: active
+  - device_id: realme-c63
+    label: realme C63
+    status: active
+    interfaces:
+    - interface_id: wlan0
+      mac: f2:ed:a0:d4:5f:db
+      oui: F2EDA0
+      vendor: Unknown
+      type: wifi
+      source: dhcp
+      first_seen: '2026-09-09'
+      last_seen: '2026-09-09'
+      status: active
+  - device_id: discovered-0012fb0e93ed
+    label: Discovered 00:12:fb:0e:93:ed
+    status: active
+    interfaces:
+    - interface_id: wlan0
+      mac: 00:12:fb:0e:93:ed
+      oui: 0012FB
+      vendor: Unknown
+      type: wifi
+      source: dhcp
+      first_seen: '2026-09-09'
+      last_seen: '2026-09-09'
+      status: active
+  - device_id: tony-tv
+    label: Tony TV
+    status: active
+    interfaces:
+    - interface_id: wlan0
+      mac: b8:59:ce:74:75:28
+      oui: B859CE
+      vendor: Unknown
+      type: wifi
+      source: dhcp
+      first_seen: '2026-09-09'
+      last_seen: '2026-09-09'
+      status: active
+  - device_id: lwip-062858264b2c
+    label: lwip (06:28:58:26:4b:2c)
+    status: active
+    interfaces:
+    - interface_id: wlan0
+      mac: 06:28:58:26:4b:2c
+      oui: 062858
+      vendor: Unknown
+      type: wifi
+      source: dhcp
+      first_seen: '2026-09-09'
+      last_seen: '2026-09-09'
+      status: active
+  - device_id: esp32-test
+    label: ESP32 Test
+    status: active
+    interfaces:
+    - interface_id: wlan0
+      mac: c0:cd:d6:85:a8:38
+      oui: C0CDD6
+      vendor: Unknown
+      type: wifi
+      source: dhcp
+      first_seen: '2026-09-09'
+      last_seen: '2026-09-09'
+      status: active
+  - device_id: tony-dell
+    label: Tony Dell
+    status: active
+    interfaces:
+    - interface_id: primary
+      mac: 48:4d:7e:e4:3a:c7
+      oui: 484D7E
+      vendor: Unknown
+      type: wifi
+      source: dhcp
+      first_seen: '2026-09-09'
+      last_seen: '2026-09-09'
+      status: active
+  - device_id: xiaomi-c201
+    label: Xiaomi C201 Camera
+    status: active
+    interfaces:
+    - interface_id: wlan0
+      mac: d8:3a:36:7d:10:0d
+      oui: D83A36
+      vendor: Unknown
+      type: wifi
+      source: dhcp
+      first_seen: '2026-09-09'
+      last_seen: '2026-09-09'
+      status: active
+  - device_id: ip-cam-65
+    label: IP Camera 65
+    status: active
+    interfaces:
+    - interface_id: wlan0
+      mac: d4:9e:3b:6a:94:90
+      oui: D49E3B
+      vendor: Unknown
+      type: wifi
+      source: dhcp
       first_seen: '2026-09-09'
       last_seen: '2026-09-09'
       status: active

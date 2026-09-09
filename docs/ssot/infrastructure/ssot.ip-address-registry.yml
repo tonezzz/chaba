@@ -34,7 +34,7 @@ sections:
     text: TONY-WIFI_2.4G (wlo1) and netplan-eno1 (eno1). Default gateway 192.168.2.1.
   - label: Known hosts
     text: Router, tony-omen, tony-dell, Tuya coffee/bedside/TV/Cozy Life plugs, IP camera, Xiaomi C201, HP DeskJet, Tony TV,
-      ESP32 test, KKs Mac Studio, plus transient/randomized devices.
+      ESP32 test, KKs MacBook Pro, KKs Mac Studio, Tony iPhone, realme C63, HONOR Pad 9, plus transient/randomized devices.
   - label: Note
     text: This is the current active network. The detailed allocations are in config.networks below.
 - title: Legacy Network 192.168.1.0/24
@@ -52,7 +52,8 @@ sections:
   layout: list
   items:
   - label: Identify unknown hosts
-    text: Identify 192.168.2.73, .74/.78/.91, .76, .79, .81, .86, .88 and .69/.72 if they reappear. Use router DHCP hostnames and device labels.
+    text: 'Identify 192.168.2.73, .74, .76, .78, .79, .86, .88, .91 and .72. Many are private Wi-Fi addresses; use owner/device
+      clues or disable private MAC addressing to assign stable device_ids.'
   - label: Reconnect 192.168.1.0/24
     text: Switch to Mountain View 5G to capture current IPs and MACs for macbook and Google TV.
   - label: Expand
@@ -100,198 +101,222 @@ config:
     dhcp_range: null
     status: active
     allocations:
-    - ip: 192.168.2.1
-      device_id: home-router
-      interface_id: primary
-      kind: static
-      status: active
-      first_seen: '2026-09-01'
-      last_seen: '2026-09-09'
-      source: arp
     - ip: 192.168.2.65
       device_id: esp32-test
       interface_id: wlan0
       kind: reservation
       status: active
-      first_seen: '2026-09-07'
+      first_seen: '2026-09-09'
       last_seen: '2026-09-09'
-      source: arp
+      source: dhcp
     - ip: 192.168.2.66
       device_id: tuya-plug-bedside
       interface_id: wlan0
       kind: reservation
       status: active
-      first_seen: '2026-09-01'
+      first_seen: '2026-09-09'
       last_seen: '2026-09-09'
-      source: arp
+      source: dhcp
     - ip: 192.168.2.67
       device_id: tony-dell
       interface_id: primary
       kind: reservation
       status: active
-      first_seen: '2026-09-07'
+      first_seen: '2026-09-09'
       last_seen: '2026-09-09'
-      source: arp
+      source: dhcp
     - ip: 192.168.2.68
       device_id: cozylife-01
       interface_id: wlan0
       kind: reservation
       status: active
-      first_seen: '2026-09-01'
+      first_seen: '2026-09-09'
       last_seen: '2026-09-09'
-      source: arp
+      source: dhcp
+    - ip: 192.168.2.69
+      device_id: iphone-tony
+      interface_id: wlan0
+      kind: dhcp
+      status: active
+      first_seen: '2026-09-09'
+      last_seen: '2026-09-09'
+      source: dhcp
     - ip: 192.168.2.70
       device_id: tuya-plug-tv
       interface_id: wlan0
       kind: reservation
       status: active
-      first_seen: '2026-09-08'
+      first_seen: '2026-09-09'
       last_seen: '2026-09-09'
-      source: arp
+      source: dhcp
     - ip: 192.168.2.71
       device_id: ip-cam-65
       interface_id: wlan0
       kind: reservation
       status: active
-      first_seen: '2026-09-08'
+      first_seen: '2026-09-09'
       last_seen: '2026-09-09'
-      source: arp
+      source: dhcp
+    - ip: 192.168.2.72
+      device_id: apple-watch-3a21760b0885
+      interface_id: wlan0
+      kind: dhcp
+      status: active
+      first_seen: '2026-09-09'
+      last_seen: '2026-09-09'
+      source: dhcp
     - ip: 192.168.2.73
-      device_id: discovered-062858264b2c
-      interface_id: primary
-      kind: discovered
+      device_id: lwip-062858264b2c
+      interface_id: wlan0
+      kind: dhcp
       status: active
-      first_seen: '2026-09-01'
+      first_seen: '2026-09-09'
       last_seen: '2026-09-09'
-      source: arp
+      source: dhcp
     - ip: 192.168.2.74
-      device_id: discovered-0af0bcad208b
-      interface_id: primary
-      kind: discovered
+      device_id: discovered-68f0bcad208a
+      interface_id: wlan0
+      kind: dhcp
       status: active
-      first_seen: '2026-09-04'
+      first_seen: '2026-09-09'
       last_seen: '2026-09-09'
-      source: arp
+      source: dhcp
     - ip: 192.168.2.75
       device_id: hp-deskjet-2700
       interface_id: wlan0
       kind: reservation
       status: active
-      first_seen: '2026-09-07'
+      first_seen: '2026-09-09'
       last_seen: '2026-09-09'
-      source: arp
+      source: dhcp
     - ip: 192.168.2.76
-      device_id: discovered-227311ed1353
-      interface_id: primary
-      kind: discovered
+      device_id: iphone-227311ed1353
+      interface_id: wlan0
+      kind: dhcp
       status: active
-      first_seen: '2026-09-07'
+      first_seen: '2026-09-09'
       last_seen: '2026-09-09'
-      source: arp
+      source: dhcp
     - ip: 192.168.2.77
       device_id: xiaomi-c201
       interface_id: wlan0
       kind: reservation
       status: active
-      first_seen: '2026-09-04'
+      first_seen: '2026-09-09'
       last_seen: '2026-09-09'
-      source: arp
+      source: dhcp
     - ip: 192.168.2.78
-      device_id: discovered-0af0bcad208b
-      interface_id: primary
-      kind: discovered
+      device_id: apple-watch-b67265caaae1
+      interface_id: wlan0
+      kind: dhcp
       status: active
       first_seen: '2026-09-09'
       last_seen: '2026-09-09'
-      source: arp
+      source: dhcp
     - ip: 192.168.2.79
       device_id: discovered-ea9b8fd280f0
-      interface_id: primary
-      kind: discovered
-      status: active
-      first_seen: '2026-09-08'
-      last_seen: '2026-09-09'
-      source: arp
-    - ip: 192.168.2.80
-      device_id: tony-tv
-      interface_id: eth0
-      kind: discovered
-      status: active
-      first_seen: '2026-09-01'
-      last_seen: '2026-09-09'
-      source: arp
-    - ip: 192.168.2.81
-      device_id: discovered-784f4386da1a
-      interface_id: primary
-      kind: discovered
+      interface_id: wlan0
+      kind: dhcp
       status: active
       first_seen: '2026-09-09'
       last_seen: '2026-09-09'
-      source: arp
+      source: dhcp
+    - ip: 192.168.2.80
+      device_id: kks-macbook-pro
+      interface_id: eth0
+      kind: dhcp
+      status: active
+      first_seen: '2026-09-09'
+      last_seen: '2026-09-09'
+      source: dhcp
+    - ip: 192.168.2.81
+      device_id: kks-macbook-pro
+      interface_id: wlan0
+      kind: dhcp
+      status: active
+      first_seen: '2026-09-09'
+      last_seen: '2026-09-09'
+      source: dhcp
     - ip: 192.168.2.82
       device_id: kks-mac-studio
       interface_id: wlan0
-      kind: discovered
+      kind: dhcp
       status: active
       first_seen: '2026-09-09'
       last_seen: '2026-09-09'
-      source: arp
+      source: dhcp
     - ip: 192.168.2.83
       device_id: tony-omen
       interface_id: wlo1
-      kind: discovered
+      kind: dhcp
       status: active
-      first_seen: '2026-09-01'
+      first_seen: '2026-09-09'
       last_seen: '2026-09-09'
-      source: arp
+      source: dhcp
     - ip: 192.168.2.84
       device_id: tony-omen
       interface_id: eno1
-      kind: discovered
+      kind: dhcp
       status: active
-      first_seen: '2026-09-01'
+      first_seen: '2026-09-09'
       last_seen: '2026-09-09'
-      source: arp
+      source: dhcp
     - ip: 192.168.2.85
       device_id: tony-tv
       interface_id: wlan0
       kind: reservation
       status: active
-      first_seen: '2026-09-04'
+      first_seen: '2026-09-09'
       last_seen: '2026-09-09'
-      source: arp
+      source: dhcp
     - ip: 192.168.2.86
-      device_id: discovered-72b5f0db14f3
-      interface_id: primary
-      kind: discovered
+      device_id: mac-72b5f0db14f3
+      interface_id: wlan0
+      kind: dhcp
       status: active
-      first_seen: '2026-09-04'
+      first_seen: '2026-09-09'
       last_seen: '2026-09-09'
-      source: arp
+      source: dhcp
     - ip: 192.168.2.87
       device_id: tuya-plug-coffee
       interface_id: wlan0
       kind: reservation
       status: active
-      first_seen: '2026-09-07'
+      first_seen: '2026-09-09'
       last_seen: '2026-09-09'
-      source: arp
+      source: dhcp
     - ip: 192.168.2.88
-      device_id: discovered-fa31d9bd44ff
-      interface_id: primary
-      kind: discovered
+      device_id: iphone-fa31d9bd44ff
+      interface_id: wlan0
+      kind: dhcp
       status: active
       first_seen: '2026-09-09'
       last_seen: '2026-09-09'
-      source: arp
-    - ip: 192.168.2.91
-      device_id: discovered-0af0bcad208b
-      interface_id: primary
-      kind: discovered
+      source: dhcp
+    - ip: 192.168.2.89
+      device_id: honor-pad-9
+      interface_id: wlan0
+      kind: dhcp
       status: active
-      first_seen: '2026-09-08'
+      first_seen: '2026-09-09'
       last_seen: '2026-09-09'
-      source: arp
+      source: dhcp
+    - ip: 192.168.2.90
+      device_id: realme-c63
+      interface_id: wlan0
+      kind: dhcp
+      status: active
+      first_seen: '2026-09-09'
+      last_seen: '2026-09-09'
+      source: dhcp
+    - ip: 192.168.2.91
+      device_id: discovered-0012fb0e93ed
+      interface_id: wlan0
+      kind: dhcp
+      status: active
+      first_seen: '2026-09-09'
+      last_seen: '2026-09-09'
+      source: dhcp
   - network_id: legacy-192.168.1.0-24
     cidr: 192.168.1.0/24
     ssid: Mountain View 5G / Mountain View 2.4G
