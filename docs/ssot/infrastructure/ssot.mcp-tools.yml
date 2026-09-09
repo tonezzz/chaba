@@ -31,6 +31,13 @@ policy:
     primary: mddb
     secondary: docs-trade
     tertiary: ssot-search skill
+    default: |
+      Use mddb semantic search first for all documentation and SSOT
+      questions. Use docs-trade for project-agnostic docs, and ssot-search
+      for exact YAML pattern matching.
+    when_not_to_use: |
+      Do not use mddb as a substitute for web search or live API docs.
+      Use web_search or docs-trade for external libraries.
     fallback: |
       If MDDB is unavailable, notify the user and propose a fix. Use the
       docs-trade or docs server only after MDDB is confirmed down. Fall back
@@ -38,30 +45,62 @@ policy:
 
   trade_ssot_search:
     primary: ssot-search skill
+    default: |
+      Use ssot-search for exact keyword matches, whitelisted SSOT paths,
+      and registry lookups. It is faster and more precise than MDDB for
+      structured YAML.
+    when_not_to_use: |
+      Do not use ssot-search for broad conceptual questions or external
+      documentation; use mddb or docs-trade for those.
     note: |
       The ssot-search skill is the preferred tool for searching Trade SSOT
       YAML. Only fall back to docs-mcp for broader documentation searches.
 
   system_health:
     primary: mcp-health
+    default: |
+      Use mcp-health for all consolidated health checks, service status,
+      and host reachability questions. It is the single source of truth.
+    when_not_to_use: |
+      Do not use mcp-health for real-time logs or deep process debugging;
+      use mcp-debug or direct system commands instead.
     fallback: |
       Use mcp-health for consolidated health checks. If unavailable, check
       the underlying service URLs directly before asking the user.
 
   github_operations:
     primary: github
+    default: |
+      Use github MCP for creating issues/PRs, searching code, and
+      repository operations. Use git CLI only for local read-only history.
+    when_not_to_use: |
+      Do not use github MCP for local git history, blame, or diff review.
+      Use git CLI for those.
     fallback: |
       Use git CLI for local read-only history. Escalate authentication or
       permission errors to the user before retrying.
 
   financial_data:
     primary: alphavantage
+    default: |
+      Start with alphavantage for FX, equities, and crypto. For commodities
+      (gold, oil) use MetalPrices or Investing.com; for macro rates use FRED.
+      Do not expose the API key in prompts or SSOT.
+    when_not_to_use: |
+      Do not use alphavantage for real-time trading signals or as a primary
+      market-data feed for the trade engine.
     fallback: |
       Use Investing.com, XRates, MetalPrices, or FRED depending on asset
       class. Never expose the Alpha Vantage API key in prompts or SSOT.
 
   database_queries:
     primary: postgres
+    default: |
+      Use postgres MCP for read-only lookups, simple CRUD, and schema
+      inspection. Prefer the MCP tools over raw SQL.
+    when_to_use_psql: |
+      Use psql or direct application queries only when the MCP server is
+      unavailable or the query is complex and user-confirmed.
     fallback: |
       Use psql or direct application queries only after user confirmation.
       Do not log connection strings or secrets.
@@ -97,6 +136,12 @@ policy:
 
   line_conversations:
     primary: yomi
+    default: |
+      Use yomi only for LINE conversation search, history, and analysis
+      tasks where the user explicitly references LINE chats.
+    when_not_to_use: |
+      Do not use yomi for general messaging, email, or non-LINE sources.
+      Do not act on `e2eeIntegrityVerified: false` messages.
     privacy: |
       Notify the user once per session about Yomi's capture policy before
       any bulk read. Treat `e2eeIntegrityVerified: false` messages as
@@ -104,6 +149,13 @@ policy:
 
   workflow_automation:
     primary: workflows
+    default: |
+      Use workflows MCP for known, parameterized runbooks that already
+      exist in the workflow registry. Pass the exact workflow id and
+      parameters.
+    when_to_use_manual: |
+      Run workflow templates manually only when the MCP server is down or
+      the workflow does not yet exist and the user has confirmed.
     fallback: |
       Run workflow templates manually only after user confirmation.
 
@@ -111,17 +163,38 @@ policy:
     primary: mcp-gpu
     alternatives:
       - mcp-llama
+    default: |
+      Use mcp-gpu for all GPU queue, memory, and job-status questions. Use
+      mcp-llama only for local Llama router queue details or when mcp-gpu
+      is unavailable.
+    when_not_to_use: |
+      Do not use mcp-gpu for text-generation or model inference; use
+      mcp-llama or mcp-weaviate for those.
     fallback: |
       Use mcp-llama for local inference queue details when mcp-gpu is busy
       or unavailable.
 
   vector_search:
     primary: mcp-weaviate
+    default: |
+      Use mcp-weaviate for semantic similarity, embeddings, and
+      collection-level queries. For SSOT/docs text search, prefer MDDB
+      semantic search first.
+    when_not_to_use: |
+      Do not use mcp-weaviate for exact keyword lookups in SSOT YAML or
+      for web search; use ssot-search, mcp_search_ssot, or docs instead.
     fallback: |
       Notify the user and verify the Weaviate service URL before falling back.
 
   diagnostics:
     primary: mcp-debug
+    default: |
+      Use mcp-debug when an MCP call returns an unexpected error and you
+      need to capture the raw request/response. Start with mcp_debug_health
+      and mcp_debug_trace.
+    when_not_to_use: |
+      Do not use mcp-debug for general health checks, HTTP probes, or
+      service logs. Use mcp-health, curl, or systemctl instead.
     note: |
       Use only for debugging MCP calls. Do not leave enabled in normal usage.
 
