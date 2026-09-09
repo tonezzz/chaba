@@ -119,6 +119,25 @@ sections:
       - label: Logs
         text: /tmp/barrier-client.log (client), /tmp/barrier-server.log (server)
 
+  - title: Physical Display (tony-dell)
+    icon: 🖥️
+    layout: list
+    items:
+      - label: Monitor output
+        text: DP-2 on the Intel iGPU (PCI 0:2:0, /dev/dri/card1-DP-2)
+      - label: Xorg seat
+        text: root Xorg :1 vt7 via /etc/systemd/system/xorg-seat.service
+      - label: Xorg config
+        text: /etc/X11/xorg.conf.d/20-xorg-seat.conf forces the iGPU; repo copy in systemd/xorg-seat.conf
+      - label: Black screen cause
+        text: Xorg autoconfig picks the AMD card (PCI 1:0:0, /dev/dri/card0) by default, which has no monitor
+      - label: Fix
+        text: Install / copy systemd/xorg-seat.conf to /etc/X11/xorg.conf.d/20-xorg-seat.conf, then sudo systemctl restart xorg-seat.service
+      - label: Barrier target
+        text: barrier-client.service uses DISPLAY=:1 and the gdm /run/user/1000/gdm/Xauthority after the iGPU Xorg is up
+      - label: Check
+        text: DISPLAY=:1 XAUTHORITY=/run/user/1000/gdm/Xauthority xrandr -- should show DP-2 connected and primary
+
   - title: Services (tony-omen)
     icon: ⚙️
     layout: list
