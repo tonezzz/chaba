@@ -33,8 +33,8 @@ sections:
   - label: Active connection
     text: TONY-WIFI_2.4G (wlo1) and netplan-eno1 (eno1). Default gateway 192.168.2.1.
   - label: Known hosts
-    text: Router, tony-omen, Tuya coffee/bedside plugs, IP camera, HP DeskJet, and ten unknown devices from the 2026-09-01
-      scan.
+    text: Router, tony-omen, tony-dell, Tuya coffee/bedside/TV/Cozy Life plugs, IP camera, Xiaomi C201, HP DeskJet, Tony TV,
+      ESP32 test, KKs Mac Studio, plus transient/randomized devices.
   - label: Note
     text: This is the current active network. The detailed allocations are in config.networks below.
 - title: Legacy Network 192.168.1.0/24
@@ -52,7 +52,7 @@ sections:
   layout: list
   items:
   - label: Identify unknown hosts
-    text: Map 192.168.2.65, .67, .71, .72, .73, .75, .76, .78, .81, .82 to real devices via router DHCP logs or port probes.
+    text: Identify 192.168.2.73, .74/.78/.91, .76, .79, .81, .86, .88 and .69/.72 if they reappear. Use router DHCP hostnames and device labels.
   - label: Reconnect 192.168.1.0/24
     text: Switch to Mountain View 5G to capture current IPs and MACs for macbook and Google TV.
   - label: Expand
@@ -61,7 +61,7 @@ sections:
     text: Nightly ARP scan compares against this registry; new/duplicate IPs or MACs create focus-inbox alerts.
 config:
   version: 1
-  last_updated: '2026-09-08'
+  last_updated: '2026-09-09'
   maintainer: tony
   status: active
   related_files:
@@ -106,62 +106,55 @@ config:
       kind: static
       status: active
       first_seen: '2026-09-01'
+      last_seen: '2026-09-09'
       source: arp
     - ip: 192.168.2.65
-      device_id: discovered-c0cdd685a838
-      interface_id: primary
-      kind: discovered
+      device_id: esp32-test
+      interface_id: wlan0
+      kind: reservation
       status: active
       first_seen: '2026-09-07'
+      last_seen: '2026-09-09'
       source: arp
     - ip: 192.168.2.66
-      device_id: ip-cam-65
-      interface_id: primary
-      kind: discovered
-      status: stale
+      device_id: tuya-plug-bedside
+      interface_id: wlan0
+      kind: reservation
+      status: active
       first_seen: '2026-09-01'
+      last_seen: '2026-09-09'
       source: arp
     - ip: 192.168.2.67
-      device_id: discovered-484d7ee43ac7
+      device_id: tony-dell
       interface_id: primary
-      kind: discovered
+      kind: reservation
       status: active
       first_seen: '2026-09-07'
+      last_seen: '2026-09-09'
       source: arp
     - ip: 192.168.2.68
-      device_id: tuya-plug-bedside
-      interface_id: primary
-      kind: discovered
+      device_id: cozylife-01
+      interface_id: wlan0
+      kind: reservation
       status: active
       first_seen: '2026-09-01'
-      source: arp
-    - ip: 192.168.2.69
-      device_id: hp-deskjet-2700
-      interface_id: wlan0
-      kind: discovered
-      status: stale
-      first_seen: '2026-09-01'
+      last_seen: '2026-09-09'
       source: arp
     - ip: 192.168.2.70
-      device_id: tuya-plug-bedside
-      interface_id: wlan0-legacy-2
-      kind: discovered
+      device_id: tuya-plug-tv
+      interface_id: wlan0
+      kind: reservation
       status: active
       first_seen: '2026-09-08'
+      last_seen: '2026-09-09'
       source: arp
     - ip: 192.168.2.71
-      device_id: hp-deskjet-2700
+      device_id: ip-cam-65
       interface_id: wlan0
-      kind: discovered
+      kind: reservation
       status: active
       first_seen: '2026-09-08'
-      source: arp
-    - ip: 192.168.2.72
-      device_id: discovered-ea9b8fd280f0
-      interface_id: primary
-      kind: discovered
-      status: active
-      first_seen: '2026-09-01'
+      last_seen: '2026-09-09'
       source: arp
     - ip: 192.168.2.73
       device_id: discovered-062858264b2c
@@ -169,48 +162,79 @@ config:
       kind: discovered
       status: active
       first_seen: '2026-09-01'
+      last_seen: '2026-09-09'
       source: arp
     - ip: 192.168.2.74
-      device_id: discovered-3a21760b0885
+      device_id: discovered-0af0bcad208b
       interface_id: primary
       kind: discovered
       status: active
       first_seen: '2026-09-04'
+      last_seen: '2026-09-09'
       source: arp
     - ip: 192.168.2.75
       device_id: hp-deskjet-2700
-      interface_id: primary
-      kind: discovered
+      interface_id: wlan0
+      kind: reservation
       status: active
       first_seen: '2026-09-07'
+      last_seen: '2026-09-09'
       source: arp
     - ip: 192.168.2.76
-      device_id: discovered-7cd2da73308a
-      interface_id: primary
-      kind: discovered
-      status: active
-      first_seen: '2026-09-07'
-      source: arp
-    - ip: 192.168.2.77
-      device_id: discovered-d83a367d100d
-      interface_id: primary
-      kind: discovered
-      status: active
-      first_seen: '2026-09-04'
-      source: arp
-    - ip: 192.168.2.79
       device_id: discovered-227311ed1353
       interface_id: primary
       kind: discovered
       status: active
-      first_seen: '2026-09-08'
+      first_seen: '2026-09-07'
+      last_seen: '2026-09-09'
       source: arp
-    - ip: 192.168.2.80
-      device_id: tuya-plug-coffee
+    - ip: 192.168.2.77
+      device_id: xiaomi-c201
+      interface_id: wlan0
+      kind: reservation
+      status: active
+      first_seen: '2026-09-04'
+      last_seen: '2026-09-09'
+      source: arp
+    - ip: 192.168.2.78
+      device_id: discovered-0af0bcad208b
       interface_id: primary
       kind: discovered
-      status: stale
+      status: active
+      first_seen: '2026-09-09'
+      last_seen: '2026-09-09'
+      source: arp
+    - ip: 192.168.2.79
+      device_id: discovered-ea9b8fd280f0
+      interface_id: primary
+      kind: discovered
+      status: active
+      first_seen: '2026-09-08'
+      last_seen: '2026-09-09'
+      source: arp
+    - ip: 192.168.2.80
+      device_id: tony-tv
+      interface_id: eth0
+      kind: discovered
+      status: active
       first_seen: '2026-09-01'
+      last_seen: '2026-09-09'
+      source: arp
+    - ip: 192.168.2.81
+      device_id: discovered-784f4386da1a
+      interface_id: primary
+      kind: discovered
+      status: active
+      first_seen: '2026-09-09'
+      last_seen: '2026-09-09'
+      source: arp
+    - ip: 192.168.2.82
+      device_id: kks-mac-studio
+      interface_id: wlan0
+      kind: discovered
+      status: active
+      first_seen: '2026-09-09'
+      last_seen: '2026-09-09'
       source: arp
     - ip: 192.168.2.83
       device_id: tony-omen
@@ -218,6 +242,7 @@ config:
       kind: discovered
       status: active
       first_seen: '2026-09-01'
+      last_seen: '2026-09-09'
       source: arp
     - ip: 192.168.2.84
       device_id: tony-omen
@@ -225,41 +250,47 @@ config:
       kind: discovered
       status: active
       first_seen: '2026-09-01'
+      last_seen: '2026-09-09'
       source: arp
     - ip: 192.168.2.85
-      device_id: discovered-00e04c361276
-      interface_id: primary
-      kind: discovered
+      device_id: tony-tv
+      interface_id: wlan0
+      kind: reservation
       status: active
       first_seen: '2026-09-04'
+      last_seen: '2026-09-09'
       source: arp
     - ip: 192.168.2.86
-      device_id: discovered-784f4386da1a
+      device_id: discovered-72b5f0db14f3
       interface_id: primary
       kind: discovered
       status: active
       first_seen: '2026-09-04'
+      last_seen: '2026-09-09'
       source: arp
     - ip: 192.168.2.87
       device_id: tuya-plug-coffee
+      interface_id: wlan0
+      kind: reservation
+      status: active
+      first_seen: '2026-09-07'
+      last_seen: '2026-09-09'
+      source: arp
+    - ip: 192.168.2.88
+      device_id: discovered-fa31d9bd44ff
       interface_id: primary
       kind: discovered
       status: active
-      first_seen: '2026-09-07'
-      source: arp
-    - ip: 192.168.2.89
-      device_id: discovered-784f4386da1a
-      interface_id: primary-legacy
-      kind: discovered
-      status: active
-      first_seen: '2026-09-08'
+      first_seen: '2026-09-09'
+      last_seen: '2026-09-09'
       source: arp
     - ip: 192.168.2.91
-      device_id: discovered-00e04c361276
-      interface_id: primary-legacy
+      device_id: discovered-0af0bcad208b
+      interface_id: primary
       kind: discovered
       status: active
       first_seen: '2026-09-08'
+      last_seen: '2026-09-09'
       source: arp
   - network_id: legacy-192.168.1.0-24
     cidr: 192.168.1.0/24

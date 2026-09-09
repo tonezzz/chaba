@@ -69,11 +69,24 @@ sections:
     text: ปลัฦหัวเตียง — MAC 2c:b4:71:e8:a8:e8, Tuya ID a319217035be6c2d60opfg.
   - label: ip-cam-65
     text: VStarcam C7824WIP — MAC d4:9e:3b:6a:94:90.
+  - label: xiaomi-c201
+    text: Xiaomi Smart Camera C201 — MAC d8:3a:36:7d:10:0d.
   - label: hp-deskjet-2700
     text: HP DeskJet 2700 series — MAC e0:73:e7:05:c5:16, serial CN33BDZ0KS.
-  - label: Unknown hosts
-    text: 192.168.2.65, .67, .71, .72, .73, .75, .76, .78, .81, .82 discovered in the 2026-09-01 scan. MACs recorded as discovered-*
-      device_ids.
+  - label: tony-dell
+    text: Secondary HA/go2rtc host — MAC 48:4d:7e:e4:3a:c7 (Wi-Fi).
+  - label: tony-tv
+    text: Tony TV — Wi-Fi b8:59:ce:74:75:28, wired 00:e0:4c:36:12:76.
+  - label: cozylife-01
+    text: Cozy Life / Tuya plug — MAC 24:94:94:b0:f2:df.
+  - label: tuya-plug-tv
+    text: Tuya plug (TV) — MAC cc:50:e3:19:a0:2f.
+  - label: esp32-test
+    text: ESP32 test device — MAC c0:cd:d6:85:a8:38.
+  - label: kks-mac-studio
+    text: KKs Mac Studio — MAC 1c:1d:d3:e8:0a:4f.
+  - label: Unknown / randomized hosts
+    text: '192.168.2.73 (06:28:58:26:4b:2c), .74/.78/.91 (0a:f0:bc:ad:20:8b), .76 (22:73:11:ed:13:53), .79 (ea:9b:8f:d2:80:f0), .81 (78:4f:43:86:da:1a), .86 (72:b5:f0:db:14:f3), .88 (fa:31:d9:bd:44:ff). Some are iOS/macOS private Wi-Fi addresses; identify via router hostnames or device labels.'
   - label: Legacy network
     text: macbook on 192.168.1.39 and google-tv on 192.168.1.50; MACs unknown/stale.
 - title: Next Steps
@@ -81,15 +94,15 @@ sections:
   layout: list
   items:
   - label: Resolve unknown hosts
-    text: Identify 192.168.2.65, .67, .71, .72, .73, .75, .76, .78, .81, .82 by checking router DHCP leases, device labels,
-      or HTTP/HTTPS fingerprints.
+    text: 'Identify 192.168.2.73, .74/.78/.91, .76, .79, .81, .86, .88 and .69/.72 if they reappear. Some are randomized/private
+      Wi-Fi MACs; use router DHCP hostnames or static MAC settings.'
   - label: Populate legacy network
     text: Reconnect to Mountain View 5G/2.4G to scan 192.168.1.0/24 and capture macbook / Google TV MACs.
   - label: Watch duplicates
     text: Run nightly ARP scan and compare against this registry. New or duplicate MACs create a focus-inbox alert.
 config:
   version: 1
-  last_updated: '2026-09-08'
+  last_updated: '2026-09-09'
   maintainer: tony
   status: active
   related_files:
@@ -127,26 +140,97 @@ config:
   - docs/ssot/infrastructure/ssot.mac-address-registry.tony.yml
   - docs/ssot/infrastructure/ssot.mac-address-registry.michael.yml
   mac_registry:
-  - device_id: discovered-00e04c361276
-    label: Discovered b8:59:ce:74:75:28
+  - device_id: home-router
+    label: Home Router
     status: active
     interfaces:
     - interface_id: primary
-      mac: b8:59:ce:74:75:28
-      oui: B859CE
+      mac: 98:00:6a:68:f7:c6
+      oui: 98006A
       vendor: Unknown
       type: ethernet
       source: arp
-      first_seen: '2026-09-07'
+      first_seen: '2026-09-09'
+      last_seen: '2026-09-09'
       status: active
-    - interface_id: primary-legacy
-      mac: 00:e0:4c:36:12:76
-      oui: 00E04C
-      vendor: Realtek
-      type: ethernet
+  - device_id: esp32-test
+    label: ESP32 Test
+    status: active
+    interfaces:
+    - interface_id: wlan0
+      mac: c0:cd:d6:85:a8:38
+      oui: C0CDD6
+      vendor: Unknown
+      type: wifi
       source: arp
-      first_seen: '2026-09-04'
-      status: stale
+      first_seen: '2026-09-09'
+      last_seen: '2026-09-09'
+      status: active
+  - device_id: tuya-plug-bedside
+    label: Tuya Plug Bedside
+    status: active
+    interfaces:
+    - interface_id: wlan0
+      mac: 2c:b4:71:e8:a8:e8
+      oui: 2CB471
+      vendor: Unknown
+      type: wifi
+      source: arp
+      first_seen: '2026-09-09'
+      last_seen: '2026-09-09'
+      status: active
+  - device_id: tony-dell
+    label: Tony Dell
+    status: active
+    interfaces:
+    - interface_id: primary
+      mac: 48:4d:7e:e4:3a:c7
+      oui: 484D7E
+      vendor: Unknown
+      type: wifi
+      source: arp
+      first_seen: '2026-09-09'
+      last_seen: '2026-09-09'
+      status: active
+  - device_id: cozylife-01
+    label: Cozy Life Plug 1
+    status: active
+    interfaces:
+    - interface_id: wlan0
+      mac: 24:94:94:b0:f2:df
+      oui: '249494'
+      vendor: Unknown
+      type: wifi
+      source: arp
+      first_seen: '2026-09-09'
+      last_seen: '2026-09-09'
+      status: active
+  - device_id: tuya-plug-tv
+    label: Tuya Plug TV
+    status: active
+    interfaces:
+    - interface_id: wlan0
+      mac: cc:50:e3:19:a0:2f
+      oui: CC50E3
+      vendor: Unknown
+      type: wifi
+      source: arp
+      first_seen: '2026-09-09'
+      last_seen: '2026-09-09'
+      status: active
+  - device_id: ip-cam-65
+    label: IP Camera 65
+    status: active
+    interfaces:
+    - interface_id: wlan0
+      mac: d4:9e:3b:6a:94:90
+      oui: D49E3B
+      vendor: Unknown
+      type: wifi
+      source: arp
+      first_seen: '2026-09-09'
+      last_seen: '2026-09-09'
+      status: active
   - device_id: discovered-062858264b2c
     label: Discovered 06:28:58:26:4b:2c
     status: active
@@ -155,22 +239,37 @@ config:
       mac: 06:28:58:26:4b:2c
       oui: 062858
       vendor: Unknown
-      type: ethernet
+      type: wifi
       source: arp
-      first_seen: '2026-09-04'
+      first_seen: '2026-09-09'
+      last_seen: '2026-09-09'
       status: active
-  - device_id: discovered-1c1dd3e80a4f
-    label: Discovered 1c:1d:d3:e8:0a:4f
-    status: stale
+  - device_id: discovered-0af0bcad208b
+    label: Discovered 0a:f0:bc:ad:20:8b
+    status: active
     interfaces:
     - interface_id: primary
-      mac: 1c:1d:d3:e8:0a:4f
-      oui: 1C1DD3
-      vendor: Espressif
-      type: ethernet
+      mac: 0a:f0:bc:ad:20:8b
+      oui: 0AF0BC
+      vendor: Unknown
+      type: wifi
       source: arp
-      first_seen: '2026-09-04'
-      status: stale
+      first_seen: '2026-09-09'
+      last_seen: '2026-09-09'
+      status: active
+  - device_id: hp-deskjet-2700
+    label: HP DeskJet 2700
+    status: active
+    interfaces:
+    - interface_id: wlan0
+      mac: e0:73:e7:05:c5:16
+      oui: E073E7
+      vendor: Unknown
+      type: wifi
+      source: arp
+      first_seen: '2026-09-09'
+      last_seen: '2026-09-09'
+      status: active
   - device_id: discovered-227311ed1353
     label: Discovered 22:73:11:ed:13:53
     status: active
@@ -179,77 +278,23 @@ config:
       mac: 22:73:11:ed:13:53
       oui: '227311'
       vendor: Unknown
-      type: ethernet
+      type: wifi
       source: arp
-      first_seen: '2026-09-08'
+      first_seen: '2026-09-09'
+      last_seen: '2026-09-09'
       status: active
-  - device_id: discovered-3a21760b0885
-    label: Discovered 3a:21:76:0b:08:85
+  - device_id: xiaomi-c201
+    label: Xiaomi C201 Camera
     status: active
     interfaces:
-    - interface_id: primary
-      mac: 3a:21:76:0b:08:85
-      oui: 3A2176
-      vendor: Unknown
-      type: ethernet
-      source: arp
-      first_seen: '2026-09-04'
-      status: active
-  - device_id: discovered-784f4386da1a
-    label: Discovered 0a:f0:bc:ad:20:8b
-    status: active
-    interfaces:
-    - interface_id: primary
-      mac: 0a:f0:bc:ad:20:8b
-      oui: 0AF0BC
-      vendor: Unknown
-      type: ethernet
-      source: arp
-      first_seen: '2026-09-07'
-      status: active
-    - interface_id: primary-legacy
-      mac: 78:4f:43:86:da:1a
-      oui: 784F43
-      vendor: Unknown
-      type: ethernet
-      source: arp
-      first_seen: '2026-09-04'
-      status: stale
-  - device_id: discovered-7cd2da73308a
-    label: Discovered 7c:d2:da:73:30:8a
-    status: active
-    interfaces:
-    - interface_id: primary
-      mac: 7c:d2:da:73:30:8a
-      oui: 7CD2DA
-      vendor: Espressif
-      type: ethernet
-      source: arp
-      first_seen: '2026-09-04'
-      status: active
-  - device_id: discovered-c0cdd685a838
-    label: Discovered c0:cd:d6:85:a8:38
-    status: active
-    interfaces:
-    - interface_id: primary
-      mac: c0:cd:d6:85:a8:38
-      oui: C0CDD6
-      vendor: Unknown
-      type: ethernet
-      source: arp
-      first_seen: '2026-09-04'
-      status: active
-  - device_id: discovered-d83a367d100d
-    label: Discovered d8:3a:36:7d:10:0d
-    status: active
-    interfaces:
-    - interface_id: primary
+    - interface_id: wlan0
       mac: d8:3a:36:7d:10:0d
       oui: D83A36
-      vendor: Raspberry Pi / ARM
-      type: ethernet
+      vendor: Unknown
+      type: wifi
       source: arp
-      first_seen: '2026-09-04'
+      first_seen: '2026-09-09'
+      last_seen: '2026-09-09'
       status: active
   - device_id: discovered-ea9b8fd280f0
     label: Discovered ea:9b:8f:d2:80:f0
@@ -259,114 +304,108 @@ config:
       mac: ea:9b:8f:d2:80:f0
       oui: EA9B8F
       vendor: Unknown
-      type: ethernet
+      type: wifi
       source: arp
-      first_seen: '2026-09-04'
+      first_seen: '2026-09-09'
+      last_seen: '2026-09-09'
       status: active
-  - device_id: home-router
-    label: Home Router
-    status: active
-    interfaces:
-    - interface_id: primary
-      mac: 98:00:6a:68:f7:c6
-      oui: 98006A
-      vendor: ASUSTek / router
-      type: ethernet
-      source: arp
-      first_seen: '2026-09-04'
-      status: active
-  - device_id: hp-deskjet-2700
-    label: HP DeskJet 2700
+  - device_id: tony-tv
+    label: Tony TV
     status: active
     interfaces:
     - interface_id: eth0
-      mac: e0:73:e7:05:c5:16
-      oui: E073E7
-      vendor: Hewlett Packard
+      mac: 00:e0:4c:36:12:76
+      oui: 00E04C
+      vendor: Unknown
       type: ethernet
       source: arp
-      first_seen: '2026-09-04'
+      first_seen: '2026-09-09'
+      last_seen: '2026-09-09'
       status: active
     - interface_id: wlan0
-      mac: d4:9e:3b:6a:94:90
-      oui: D49E3B
-      vendor: Hewlett Packard
+      mac: b8:59:ce:74:75:28
+      oui: B859CE
+      vendor: Unknown
       type: wifi
       source: arp
-      first_seen: '2026-09-04'
+      first_seen: '2026-09-09'
+      last_seen: '2026-09-09'
       status: active
-  - device_id: ip-cam-65
-    label: VStarcam IP Camera
+  - device_id: discovered-784f4386da1a
+    label: Discovered 78:4f:43:86:da:1a
     status: active
     interfaces:
     - interface_id: primary
-      mac: 2c:b4:71:e8:a8:e8
-      oui: 2CB471
-      vendor: Espressif / Tuya IoT
-      type: ethernet
+      mac: 78:4f:43:86:da:1a
+      oui: 784F43
+      vendor: Unknown
+      type: wifi
       source: arp
-      first_seen: '2026-09-04'
+      first_seen: '2026-09-09'
+      last_seen: '2026-09-09'
       status: active
-  - device_id: tony-omen
-    label: Tony Omen Workstation
+  - device_id: kks-mac-studio
+    label: KKs Mac Studio
     status: active
     interfaces:
-    - interface_id: wlo1
-      mac: b0:22:7a:f0:73:cd
-      oui: B0227A
-      vendor: Intel
-      type: ethernet
+    - interface_id: wlan0
+      mac: 1c:1d:d3:e8:0a:4f
+      oui: 1C1DD3
+      vendor: Unknown
+      type: wifi
       source: arp
-      first_seen: '2026-09-04'
+      first_seen: '2026-09-09'
+      last_seen: '2026-09-09'
       status: active
+  - device_id: discovered-72b5f0db14f3
+    label: Discovered 72:b5:f0:db:14:f3
+    status: active
+    interfaces:
+    - interface_id: primary
+      mac: 72:b5:f0:db:14:f3
+      oui: 72B5F0
+      vendor: Unknown
+      type: wifi
+      source: arp
+      first_seen: '2026-09-09'
+      last_seen: '2026-09-09'
+      status: active
+  - device_id: tuya-plug-coffee
+    label: Tuya Plug Coffee
+    status: active
+    interfaces:
+    - interface_id: wlan0
+      mac: 2c:b4:71:e8:aa:06
+      oui: 2CB471
+      vendor: Unknown
+      type: wifi
+      source: arp
+      first_seen: '2026-09-09'
+      last_seen: '2026-09-09'
+      status: active
+  - device_id: discovered-fa31d9bd44ff
+    label: Discovered fa:31:d9:bd:44:ff
+    status: active
+    interfaces:
+    - interface_id: primary
+      mac: fa:31:d9:bd:44:ff
+      oui: FA31D9
+      vendor: Unknown
+      type: wifi
+      source: arp
+      first_seen: '2026-09-09'
+      last_seen: '2026-09-09'
+      status: active
+  - device_id: tony-omen
+    label: Tony Omen
+    status: active
+    interfaces:
     - interface_id: eno1
       mac: b0:22:7a:f0:73:cd
       oui: B0227A
-      vendor: Intel
+      vendor: Unknown
       type: ethernet
       source: arp
-      first_seen: '2026-09-04'
+      first_seen: '2026-09-09'
+      last_seen: '2026-09-09'
       status: active
-    mac_conflict: true
-    conflict_group: b0227af073cd
-    duplicate_resolution: network_observed
-  - device_id: tuya-plug-bedside
-    label: Tuya Smart Plug (bedside)
-    status: active
-    interfaces:
-    - interface_id: primary
-      mac: 24:94:94:b0:f2:df
-      oui: 249494
-      vendor: Espressif / Tuya IoT
-      type: ethernet
-      source: arp
-      first_seen: '2026-09-08'
-      status: active
-    - interface_id: primary-legacy
-      mac: cc:50:e3:19:a0:2f
-      oui: CC50E3
-      vendor: Espressif / Tuya IoT
-      type: ethernet
-      source: arp
-      first_seen: '2026-09-04'
-      status: stale
-  - device_id: tuya-plug-coffee
-    label: Tuya Smart Plug (coffee)
-    status: active
-    interfaces:
-    - interface_id: primary
-      mac: 2c:b4:71:e8:aa:06
-      oui: 2CB471
-      vendor: Espressif / Tuya IoT
-      type: ethernet
-      source: arp
-      first_seen: '2026-09-08'
-      status: active
-    - interface_id: primary-legacy
-      mac: ca:f0:42:32:04:32
-      oui: CAF042
-      vendor: Espressif / Tuya IoT
-      type: ethernet
-      source: arp
-      first_seen: '2026-09-04'
-      status: stale

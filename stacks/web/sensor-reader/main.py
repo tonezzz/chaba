@@ -311,15 +311,13 @@ def container_info() -> list[dict[str, Any]]:
 def gpu_status() -> dict[str, Any]:
     """Get GPU status using nvidia-smi via docker python library."""
     try:
-        client = docker.DockerClient(base_url="unix://var/run/docker.sock")
-
-        # Run nvidia-smi in thai-legal-inference container
-        container = client.containers.get("thai-legal-inference")
-
-        # Get GPU info
-        exit_code, output = container.exec_run(
-            "nvidia-smi --query-gpu=name,memory.total,memory.used,memory.free,utilization.gpu,temperature.gpu --format=csv,noheader,nounits"
+        # Run nvidia-smi directly on the host (container no longer exists)
+        result = subprocess.run(
+            ["nvidia-smi", "--query-gpu=name,memory.total,memory.used,memory.free,utilization.gpu,temperature.gpu", "--format=csv,noheader,nounits"],
+            capture_output=True, text=True, check=False, timeout=10
         )
+        output = result.stdout.encode("utf-8")
+        exit_code = result.returncode
 
         stdout = output.decode("utf-8") if output else ""
         lines = stdout.strip().split("\n") if stdout else []
@@ -339,9 +337,12 @@ def gpu_status() -> dict[str, Any]:
                 })
 
         # Get running processes
-        exit_code, output = container.exec_run(
-            "nvidia-smi --query-compute-apps=pid,used_memory --format=csv,noheader,nounits"
+        result = subprocess.run(
+            ["nvidia-smi", "--query-compute-apps=pid,used_memory", "--format=csv,noheader,nounits"],
+            capture_output=True, text=True, check=False, timeout=10
         )
+        output = result.stdout.encode("utf-8")
+        exit_code = result.returncode
 
         processes = []
         if output:
