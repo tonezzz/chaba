@@ -77,7 +77,14 @@ config:
           source: arp
           first_seen: '2026-09-01'
           status: stale
-      mac_conflict: false
+        - interface_id: wlan0-legacy-2
+          mac: cc:50:e3:19:a0:2f
+          oui: cc:50:e3
+          type: wifi
+          source: arp
+          first_seen: '2026-09-08'
+          status: active
+      mac_conflict: true
       status: active
     - device_id: ip-cam-65
       label: VStarcam C7824WIP
@@ -117,9 +124,9 @@ config:
           type: unknown
           source: arp
           first_seen: '2026-09-01'
-          status: active
+          status: stale
       mac_conflict: false
-      status: active
+      status: stale
     - device_id: discovered-484d7ee43ac7
       label: Unknown host 192.168.2.67
       local_ids: {}
@@ -222,11 +229,11 @@ config:
           type: unknown
           source: arp
           first_seen: '2026-09-01'
-          status: active
+          status: stale
       mac_conflict: false
-      status: active
+      status: stale
     - device_id: discovered-227311ed1353
-      label: Unknown host 192.168.2.75
+      label: Unknown host 192.168.2.79
       local_ids: {}
       interfaces:
         - interface_id: primary
@@ -235,9 +242,9 @@ config:
           type: unknown
           source: arp
           first_seen: '2026-09-01'
-          status: stale
+          status: active
       mac_conflict: false
-      status: stale
+      status: active
     - device_id: discovered-caf042320432
       label: Unknown host 192.168.2.82
       local_ids: {}
