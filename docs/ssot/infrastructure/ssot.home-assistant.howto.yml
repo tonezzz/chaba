@@ -261,7 +261,9 @@ runbooks:
       G1 = sunsynk-power-flow-card chart 'surface3d' (echarts-gl surface), view g1.
       G2 = sunsynk-power-flow-card chart 'bar3d' (echarts-gl bar3D), view g2.
       Both use fetchHourlyDayGrid in src/cards/pfg/history.ts and render in
-      src/cards/pfg/charts/{surface3d,bar3d}.ts. Entity: sensor.inverters_1_pv_power.
+      src/cards/pfg/charts/{surface3d,bar3d}.ts. Shared axes/tooltip/viewControl
+      live in src/cards/pfg/charts/pfg3d.ts (build3dBaseOption + attach3dDrag).
+      Entity: sensor.inverters_1_pv_power.
       michael-dev uses a dev template entity (input_number.dev_pv*_power) so data is
       synthetic; michael-ha uses the real recorder entity.
     data_and_cache: |
