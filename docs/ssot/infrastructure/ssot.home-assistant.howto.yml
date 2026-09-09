@@ -248,10 +248,11 @@ runbooks:
       - Always finish with deploy-card.sh --check and compare md5
 
   pfg_charts_modular:
-    purpose: Chart code layout after 2026-09-08 refactor.
+    purpose: Chart code layout after 2026-09-09 refactor.
     steps:
       - "src/cards/pfg/: shared.ts (status/hexToRgba/resolveChartValue), history.ts (fetch/merge/cache), place.ts (chartOverlayStyle — single placement engine: bottom|top|bg|cycle|center), index.ts (RENDERERS registry + registerChart)"
       - "Per-type renderers in src/cards/pfg/charts/: bar.ts bars.ts gauge.ts history.ts group.ts cycle.ts surface3d.ts bar3d.ts"
+      - "3D shared code in src/cards/pfg/charts/pfg3d-loader.ts (ensureEchartsGl + fetchHourlyDayGrid), pfg3d.ts (axes/tooltip/viewControl), pfg3d-chart.ts (reactive <pfg-3d-chart> custom element)"
       - "New chart type = new file + one line in RENDERERS; do NOT edit pfg-card.ts placement"
       - "group/cycle import the registry (circular-import warnings in rollup are expected and safe)"
 
@@ -260,10 +261,12 @@ runbooks:
     architecture: |
       G1 = sunsynk-power-flow-card chart 'surface3d' (echarts-gl surface), view g1.
       G2 = sunsynk-power-flow-card chart 'bar3d' (echarts-gl bar3D), view g2.
-      Both use fetchHourlyDayGrid in src/cards/pfg/history.ts and render in
-      src/cards/pfg/charts/{surface3d,bar3d}.ts. Shared axes/tooltip/viewControl
-      live in src/cards/pfg/charts/pfg3d.ts (build3dBaseOption + attach3dDrag);
-      the surface3d hover-plane helper is in src/cards/pfg/charts/pfg3d-hover.ts.
+      Both are rendered by a shared reactive <pfg-3d-chart> custom element in
+      src/cards/pfg/charts/pfg3d-chart.ts. Data is loaded by fetchHourlyDayGrid in
+      src/cards/pfg/charts/pfg3d-loader.ts, axes/tooltip/viewControl by
+      src/cards/pfg/charts/pfg3d.ts, and the hover-plane helper by
+      src/cards/pfg/charts/pfg3d-hover.ts. surface3d.ts and bar3d.ts are now thin
+      wrappers that instantiate the custom element with type='surface'|'bar'.
       Entity: sensor.inverters_1_pv_power.
       michael-dev uses a dev template entity (input_number.dev_pv*_power) so data is
       synthetic; michael-ha uses the real recorder entity.
@@ -271,12 +274,17 @@ runbooks:
       - Recorder statistics are absolute timestamps; group by hass.config.time_zone,
         not the browser timezone.
       - Missing day/hour cells are zero-filled.
+      - fetchHourlyDayGrid tries hourly statistics first, then 5-minute statistics,
+        then raw state history as a last resort.
+      - Concurrent identical requests are deduplicated (in-flight promise caches for
+        both fetchHourlyDayGrid and fetchHistorySeries).
       - Persistent localStorage caches keep data across reloads; incremental fetches
         only pull the delta since lastEnd. See ssot.home-assistant.design.yml
         data_cache_policy for the shared policy.
       - Cache keys: pfg3d:<entity>:<days>:<scale> for 3D; pfgh:<entities>:<hours> for
-        history/area. cache: 0 disables; default is infinite until the browser clears
-        localStorage or the window changes.
+        history/area. cache: 0 disables; 3D defaults to infinite until the window
+        changes, history/area defaults to memory-only to avoid localStorage quota
+        blowups. Huge raw-history windows are never persisted in localStorage.
     axis_and_labels: |
       - ECharts GL xAxis3D type:'value' IGNORES 'inverse'. To control order use
         type:'category' with data: [0..23] (or reversed) — the category order is the

@@ -86,8 +86,9 @@ Parallel sessions caused real breakage: duplicated `pfg2-card.ts`, undeclared `v
 
 ## Current state (2026-09-09)
 
-- Active card bundle: `v206` on michael-dev, michael-ha, and tony-ha. Per-host counters; verify parity by md5, not version.
-- Chart code is modularized under `src/cards/pfg/` (registry + `chartOverlayStyle` + per-type files in `charts/`). `pfg-shared.ts` is gone — update imports to `./pfg`.
+- Active card bundle: `v207` on michael-dev; `v206` on michael-ha and tony-ha. Per-host counters; verify parity by md5, not version.
+- Chart code is modularized under `src/cards/pfg/` (registry + `chartOverlayStyle` + per-type files in `charts/` plus `pfg3d-loader.ts` and `pfg3d-chart.ts`). `pfg-shared.ts` is gone — update imports to `./pfg`.
+- 3D charts (`surface3d`/`bar3d`) are now rendered by a reactive `<pfg-3d-chart>` custom element: incremental hourly-statistics refresh, camera state preserved on updates, and observers/listeners cleaned up on disconnect.
 - `deploy-card.sh` is dev-only; live promotion uses `promote-michael.sh` (michael-ha) and `promote-tony.sh` (tony-ha) and requires explicit user approval.
 - echarts/echarts-gl are vendored at `/local/echarts-5.5.1.min.js` + `/local/echarts-gl-2.1.0.min.js` on both hosts; `surface3d`/`bar3d` try local first, CDN fallback.
 - 3D chart lessons (G1 surface3d / G2 bar3d): use `xAxis3D.type: 'category'` + `data` order for hour axes — `inverse` on a `value` axis is ignored by ECharts GL. See `pfg_3d_charts` runbook in `docs/ssot/infrastructure/ssot.home-assistant.howto.yml`.

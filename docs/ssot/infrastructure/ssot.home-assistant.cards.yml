@@ -5,9 +5,9 @@ repositories:
   sunsynk-power-flow-card-fork:
     path: /home/tony/CascadeProjects/sunsynk-power-flow-card
     fork_of: slhub/sunsynk-power-flow-card
-    current_commit: ee5e164
+    current_commit: 6962e63
     package_version: 7.3.3
-    bundle_version: 206
+    bundle_version: 207
     build:
       command: npm run build
       tool: rollup -c --bundleConfigAsCjs
@@ -15,9 +15,9 @@ repositories:
     deploy:
       michael-dev:
         target_host: ssot.values.yml::hosts.tony_dell
-        target_path: /home/tony/.config/michael-dev/www/sunsynk-power-flow-card-fork-v206.js
+        target_path: /home/tony/.config/michael-dev/www/sunsynk-power-flow-card-fork-v207.js
         lovelace_resources: /home/tony/.config/michael-dev/.storage/lovelace_resources
-        resource_path: /local/sunsynk-power-flow-card-fork-v206.js
+        resource_path: /local/sunsynk-power-flow-card-fork-v207.js
         restart: systemctl --user restart michael-dev.service
         service_ref: infrastructure/ssot.services.yml#tony-dell.michael-dev.quadlet.service_unit
         test_url: https://tony-dell.taila0626a.ts.net:8124/tony-test/pf4
@@ -51,6 +51,12 @@ repositories:
       other_modified:
         - src/cards/compact-card.ts
         - src/types.ts
+        - src/cards/pfg/history-cache.ts
+        - src/cards/pfg/charts/history.ts
+        - src/cards/pfg/charts/surface3d.ts
+        - src/cards/pfg/charts/bar3d.ts
+        - src/cards/pfg/charts/pfg3d-loader.ts
+        - src/cards/pfg/charts/pfg3d-chart.ts
         - dist/sunsynk-power-flow-card.js
       new_untracked:
         - src/cards/ss2-card.ts
@@ -99,8 +105,8 @@ cards:
   - id: sunsynk-power-flow-card
     name: Sunsynk Power Flow Card (fork)
     repo_ref: repositories.sunsynk-power-flow-card-fork
-    bundle_version: 206
-    deployed_as: '/local/sunsynk-power-flow-card-fork-v206.js (michael-dev, michael-ha, tony-ha) — md5 c51253bb28b0aaaa12d9fe128e8b4425'
+    bundle_version: 207
+    deployed_as: '/local/sunsynk-power-flow-card-fork-v207.js on michael-dev (md5 a41d5fd9ab4185edcfa111f1f80c597c); /local/sunsynk-power-flow-card-fork-v206.js on michael-ha and tony-ha (md5 c51253bb28b0aaaa12d9fe128e8b4425)'
     dashboards:
       - id: tony-test/v0
         tab: V0
