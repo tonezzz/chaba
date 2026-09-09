@@ -125,18 +125,22 @@ sections:
     items:
       - label: Monitor output
         text: DP-2 on the Intel iGPU (PCI 0:2:0, /dev/dri/card1-DP-2)
-      - label: Xorg seat
-        text: root Xorg :1 vt7 via /etc/systemd/system/xorg-seat.service
-      - label: Xorg config
-        text: /etc/X11/xorg.conf.d/20-xorg-seat.conf forces the iGPU; repo copy in systemd/xorg-seat.conf
       - label: Black screen cause
-        text: Xorg autoconfig picks the AMD card (PCI 1:0:0, /dev/dri/card0) by default, which has no monitor
-      - label: Fix
-        text: Install / copy systemd/xorg-seat.conf to /etc/X11/xorg.conf.d/20-xorg-seat.conf, then sudo systemctl restart xorg-seat.service
+        text: Xorg autoconfig picks the AMD card (PCI 1:0:0, /dev/dri/card0) by default, which has no monitor connected
+      - label: Xorg seat service
+        text: root Xorg :1 vt7 via /etc/systemd/system/xorg-seat.service; repo copy in systemd/xorg-seat.service
+      - label: Xorg iGPU config
+        text: /etc/X11/xorg.conf.d/20-xorg-seat.conf forces the Intel iGPU; repo copy in systemd/xorg-seat.conf
+      - label: Install / update
+        text: sudo install -m 0644 systemd/xorg-seat.conf /etc/X11/xorg.conf.d/20-xorg-seat.conf && sudo install -m 0644 systemd/xorg-seat.service /etc/systemd/system/xorg-seat.service && sudo systemctl daemon-reload && sudo systemctl restart xorg-seat.service
+      - label: LXQt desktop session
+        text: User unit lxqt-seat.service runs startlxqt on DISPLAY=:1; it needs XAUTHORITY=/run/user/1000/gdm/Xauthority to connect to the root Xorg; repo copy in systemd/lxqt-seat.service
+      - label: Install LXQt user unit
+        text: cp systemd/lxqt-seat.service ~/.config/systemd/user/lxqt-seat.service && systemctl --user daemon-reload && systemctl --user enable --now lxqt-seat.service
       - label: Barrier target
-        text: barrier-client.service uses DISPLAY=:1 and the gdm /run/user/1000/gdm/Xauthority after the iGPU Xorg is up
+        text: barrier-client.service uses DISPLAY=:1 and XAUTHORITY=/run/user/1000/gdm/Xauthority after X1 is up (both lxqt-seat and barrier share the same gdm cookie)
       - label: Check
-        text: DISPLAY=:1 XAUTHORITY=/run/user/1000/gdm/Xauthority xrandr -- should show DP-2 connected and primary
+        text: DISPLAY=:1 XAUTHORITY=/run/user/1000/gdm/Xauthority xrandr should show DP-2 connected and primary, and systemctl --user is-active lxqt-seat barrier-client should be active
 
   - title: Services (tony-omen)
     icon: ⚙️

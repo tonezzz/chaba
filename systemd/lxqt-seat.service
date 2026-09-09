@@ -1,0 +1,15 @@
+[Unit]
+Description=LXQt session on physical display :1 (xorg-seat.service provides X)
+After=xorg-seat.service
+
+[Service]
+Type=simple
+Environment="DISPLAY=:1" "XAUTHORITY=/run/user/1000/gdm/Xauthority"
+ExecStartPre=/bin/sh -c "for i in $(seq 60); do [ -S /tmp/.X11-unix/X1 ] && exit 0; sleep 2; done; exit 1"
+ExecStart=/usr/bin/startlxqt
+ExecStartPost=/bin/sh -c "sleep 3; sudo -n chvt 7 || true"
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target
