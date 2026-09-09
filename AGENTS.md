@@ -77,7 +77,7 @@ Parallel sessions caused real breakage: duplicated `pfg2-card.ts`, undeclared `v
 
 ## Current state (2026-09-09)
 
-- Active card bundle: `v200` on BOTH hosts. Per-host counters; verify parity with `deploy-card.sh --check`.
+- Active card bundle: `v201` on BOTH hosts. Per-host counters; verify parity with `deploy-card.sh --check`.
 - Chart code is modularized under `src/cards/pfg/` (registry + `chartOverlayStyle` + per-type files in `charts/`). `pfg-shared.ts` is gone — update imports to `./pfg`.
 - `deploy-card.sh` gained `--prune` (keeps active + newest backup) and a worktree drift guard (warns on unmerged worktree branches).
 - echarts/echarts-gl are vendored at `/local/echarts-5.5.1.min.js` + `/local/echarts-gl-2.1.0.min.js` on both hosts; `surface3d`/`bar3d` try local first, CDN fallback.
