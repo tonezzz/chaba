@@ -7,7 +7,6 @@ Environment="DISPLAY=:1" "XAUTHORITY=/run/user/1000/gdm/Xauthority" "LD_PRELOAD=
 Type=simple
 ExecStartPre=/bin/sh -c "for i in $(seq 60); do [ -S /tmp/.X11-unix/X1 ] && [ -r /run/user/1000/gdm/Xauthority ] && exit 0; sleep 2; done; exit 1"
 ExecStart=/home/tony/.local/bin/barrierc --no-daemon --disable-crypto --name tony-dell --log /tmp/barrier-client.log 100.75.102.88
-ExecStartPost=-/bin/sh -c "sleep 2; DISPLAY=:1 XAUTHORITY=/run/user/1000/gdm/Xauthority xset s reset; DISPLAY=:1 XAUTHORITY=/run/user/1000/gdm/Xauthority xset dpms force on"
 Nice=-5
 Restart=always
 RestartSec=5
