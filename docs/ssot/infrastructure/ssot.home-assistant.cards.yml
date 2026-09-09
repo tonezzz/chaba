@@ -7,7 +7,7 @@ repositories:
     fork_of: slhub/sunsynk-power-flow-card
     current_commit: 6e85fe2
     package_version: 7.3.3
-    bundle_version: 177
+    bundle_version: 205
     build:
       command: npm run build
       tool: rollup -c --bundleConfigAsCjs
@@ -15,17 +15,17 @@ repositories:
     deploy:
       michael-dev:
         target_host: ssot.values.yml::hosts.tony_dell
-        target_path: /home/tony/.config/michael-dev/www/sunsynk-power-flow-card-fork-v177.js
+        target_path: /home/tony/.config/michael-dev/www/sunsynk-power-flow-card-fork-v205.js
         lovelace_resources: /home/tony/.config/michael-dev/.storage/lovelace_resources
-        resource_path: /local/sunsynk-power-flow-card-fork-v177.js
+        resource_path: /local/sunsynk-power-flow-card-fork-v205.js
         restart: systemctl --user restart michael-dev.service
         service_ref: infrastructure/ssot.services.yml#tony-dell.michael-dev.quadlet.service_unit
         test_url: https://tony-dell.taila0626a.ts.net:8124/tony-test/pf4
       michael-ha:
         target_host: ssot.values.yml::hosts.michael_ha
-        target_path: /config/www/sunsynk-power-flow-card-fork-v177.js
+        target_path: /config/www/sunsynk-power-flow-card-fork-v205.js
         lovelace_resources: /config/.storage/lovelace_resources
-        resource_path: /local/sunsynk-power-flow-card-fork-v177.js
+        resource_path: /local/sunsynk-power-flow-card-fork-v205.js
         restart: ha core restart
         test_url: https://nupo4ndqdqydt78zmpq0z5wzp1bdrqgs.ui.nabu.casa/tony-test/pf3
         note: >-
@@ -92,8 +92,8 @@ cards:
   - id: sunsynk-power-flow-card
     name: Sunsynk Power Flow Card (fork)
     repo_ref: repositories.sunsynk-power-flow-card-fork
-    bundle_version: 177
-    deployed_as: '/local/sunsynk-power-flow-card-fork-v177.js (dev) / -v161.js (ha) — same md5 b404aab0'
+    bundle_version: 205
+    deployed_as: '/local/sunsynk-power-flow-card-fork-v205.js (both hosts) — md5 d70cf898848361bd4cf26cd7e451becf'
     dashboards:
       - id: tony-test/v0
         tab: V0
