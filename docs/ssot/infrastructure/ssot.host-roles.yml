@@ -47,7 +47,7 @@ hosts:
     mcp_debug_name: tony_dell
 
   kk-macbook:
-    description: macOS / iOS verification workstation
+    description: macOS / iOS verification workstation and lightweight offload node
     tailnet: kk-macbook
     tailscale_ip: 100.124.59.112
     local_hostname: KKs-MacBook-Pro.local
@@ -57,19 +57,52 @@ hosts:
     - laptop
     - verify
     - xcode
+    - offload
+    - playlive
     headless_browser:
-      enabled: false
-      note: mcp_debug compact is not yet ported to macOS; use mcp_raw with macOS-compatible commands
+      enabled: true
+      role: fallback
+      playlive_port: 9232
+      playlive_url: http://macbook:9232/sessions
+      cdp_url: http://macbook:9222
+      note: mcp_debug compact is not yet ported to macOS; use mcp_raw with macOS-compatible commands. PlayLive/CDP already works via playlive-macbook-tunnel.
     web_preview:
       enabled: false
       note: Manual Safari and native app verification only
     mcp_debug_name: macbook
+    offload:
+      eligible: true
+      kind: lightweight-macbook
+      can_run:
+      - playwright / headless Chrome automation
+      - mcp_raw macOS-compatible tasks
+      - health snapshots and monitoring
+      - subagent explore/research
+      - verification of iOS/macOS builds
+      cannot_run:
+      - Linux x86_64 Docker/Podman containers
+      - GPU/ML training workloads
+      - long-running stateful services requiring systemd
+      preferred_for:
+      - mac_ios_verify
+      - browser automation overflow when tony-dell/tony-omen are busy
+      - quick one-off macOS commands
 
 policies:
   headless_browser_priority:
   - tony-dell
   - tony-omen
+  - kk-macbook
   mac_ios_verify: kk-macbook
+  offload:
+    candidate_order:
+    - tony-dell
+    - kk-macbook
+    - tony-omen
+    when_to_use_kk-macbook:
+    - tony-dell and tony-omen are at high load or memory pressure
+    - task is macOS-specific or needs Safari/WebKit
+    - task is a lightweight subagent that does not need Linux containers
 
   web_preview:
     default: use-direct-hostname
