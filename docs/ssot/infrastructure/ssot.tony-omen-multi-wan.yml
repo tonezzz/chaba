@@ -54,6 +54,19 @@ sections:
       - label: iPhone fallback works
         text: With wlo1 and eno1 disconnected, traffic flows through enx and the iPhone hotspot.
 
+  - title: iOS Hotspot Trigger
+    icon: phone
+    layout: list
+    items:
+      - label: Pairing
+        text: iPhone is paired with tony-omen Bluetooth controller (D0:57:7B:EA:6A:40, device name TONY-IP, MAC 7C:D2:DA:73:68:3B) and trusted.
+      - label: iOS Shortcut
+        text: Shortcuts automation triggers on Bluetooth connect to tony-omen. Primary action is "Set Personal Hotspot" → On. If that action is unavailable on a specific iOS build, fall back to "Open URL" with "prefs:root=INTERNET_TETHERING" and toggle manually.
+      - label: How to use
+        text: On the iPhone, Settings → Bluetooth, tap tony-omen to reconnect. The iOS Shortcut turns Personal Hotspot On automatically. tony-omen then uses TONY-IP Wi-Fi or enx USB as the metric-100 fallback.
+      - label: Manual command
+        text: On tony-omen, "bluetoothctl connect 7C:D2:DA:73:68:3B" can also force the Bluetooth connection and trigger the shortcut.
+
   - title: Notes
     icon: note
     layout: list

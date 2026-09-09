@@ -12,7 +12,7 @@ score:
   service_errors_last_night: 0
   ci_failures_7d: 0
   untracked_files: 0
-  stashes_total: 6
+  stashes_total: 0
 trend: stable
 pros:
 - label: SSOT-first workflow
@@ -36,10 +36,10 @@ cons:
   improvement: feat/tpl-design is long-running active work; merge or rebase it onto master when that session completes
 - label: Stash sprawl
   severity: low
-  evidence: 6 stash entries remain after 2026-09-07 triage dropped 10 fully-stale entries; survivors may contain unique edits (tradecanvas-ui SSOT/JS, tony-omen SSOT, apps.yml, skills/docs)
+  evidence: 0 stashes after 2026-09-07/09 salvage — unique content was checked out from stashes 1, 2, and 5; obsolete/duplicate entries and superseded chaba.h3 work were dropped
   owner: tony
-  status: open
-  improvement: Review the 6 remaining stashes for unique work, then drop or apply each
+  status: resolved
+  improvement: Maintain zero permanent stashes; prefer branches or committed SSOT over long-lived stashes
 - label: Uncommitted working tree
   severity: medium
   evidence: 0 untracked or modified file(s) on the canonical worktree as of 2026-09-07
