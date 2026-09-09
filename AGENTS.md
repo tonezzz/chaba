@@ -40,12 +40,21 @@ Valid modes: `normal`, `plan`, `build`, `review`.
 - The `michael-dev` token in `~/.config/secrets/ha-michael-dev.env` is valid and works for REST (verified 2026-09-04).
 - Tailscale SSH (`ssh tony-dell`) periodically requires a browser auth check; it prints a `login.tailscale.com/a/...` link — ask the user to open it, then retry.
 
+## Deployment policy
+
+- **Never auto-deploy from michael-dev.** Building and previewing on `michael-dev` is fine, but deploying or promoting the bundle/dashboard to `michael-ha` or `tony-ha` requires explicit user approval in the same session.
+- `deploy-card.sh` is dev-only by default; use `promote-michael.sh` or `promote-tony.sh` for live hosts.
+- Even if `tony-ha` runs on the same machine (`tony-dell`), copying a bundle or resource to it is a deploy and must be approved.
+
 ## Build / deploy commands
 
 - Build card: `cd /home/tony/CascadeProjects/sunsynk-power-flow-card && npm run build`
+- Typecheck before trusting the bundle: `npx -p typescript tsc --noEmit` (the rollup build uses Babel and does NOT type-check)
 - Restart michael-dev: `ssh tony-dell 'systemctl --user restart michael-dev.service'`
 - Restart michael-ha: `ssh michael-ha 'ha core restart'`
-- Deploy card bundle: `./scripts/home-assistant/deploy-card.sh [--host michael-dev|michael-ha|all]` — builds, derives next version from the *target's* remote `lovelace_resources`, scp's, restarts, verifies HTTP 200. Version numbers are per-host; verify parity by `md5sum`, not version.
+- Deploy card bundle to dev: `./scripts/home-assistant/deploy-card.sh` — builds, derives the next version from michael-dev's `lovelace_resources`, scp's, restarts, verifies HTTP 200.
+- Promote dev bundle/views to michael-ha: `./scripts/home-assistant/promote-michael.sh --views g1,g2,tpl` (requires explicit user approval)
+- Promote dev bundle/views to tony-ha: `./scripts/home-assistant/promote-tony.sh --views g1,g2,tpl` (requires explicit user approval; seed the resource on first run).
 - Push dashboard config live (no restart): `python3 scripts/home-assistant/push-dashboard.py <ha_url> tony-test --mutate /tmp/mutate.py` (dev: `source ~/.config/secrets/ha-michael-dev.env`; ha: `HASS_TOKEN=$(cat ~/.local/share/home-assistant-michael/ha-token)`)
 - Apply a TPL template onto a view tile: `python3 scripts/home-assistant/apply-tpl.py <ha_url> tony-test tpl pfg2 --map "Title:r,c;..."` (does NOT copy pfg_spans; add `--dry-run` to preview)
 - Sync live dashboard into repo: `./scripts/home-assistant/sync-ssot-from-live.sh`
@@ -77,9 +86,9 @@ Parallel sessions caused real breakage: duplicated `pfg2-card.ts`, undeclared `v
 
 ## Current state (2026-09-09)
 
-- Active card bundle: `v205` on BOTH hosts. Per-host counters; verify parity with `deploy-card.sh --check`.
+- Active card bundle: `v206` on michael-dev, michael-ha, and tony-ha. Per-host counters; verify parity by md5, not version.
 - Chart code is modularized under `src/cards/pfg/` (registry + `chartOverlayStyle` + per-type files in `charts/`). `pfg-shared.ts` is gone — update imports to `./pfg`.
-- `deploy-card.sh` gained `--prune` (keeps active + newest backup) and a worktree drift guard (warns on unmerged worktree branches).
+- `deploy-card.sh` is dev-only; live promotion uses `promote-michael.sh` (michael-ha) and `promote-tony.sh` (tony-ha) and requires explicit user approval.
 - echarts/echarts-gl are vendored at `/local/echarts-5.5.1.min.js` + `/local/echarts-gl-2.1.0.min.js` on both hosts; `surface3d`/`bar3d` try local first, CDN fallback.
 - 3D chart lessons (G1 surface3d / G2 bar3d): use `xAxis3D.type: 'category'` + `data` order for hour axes — `inverse` on a `value` axis is ignored by ECharts GL. See `pfg_3d_charts` runbook in `docs/ssot/infrastructure/ssot.home-assistant.howto.yml`.
 - History/accumulating charts share the localStorage incremental cache policy (`data_cache_policy` in `ssot.home-assistant.design.yml`).

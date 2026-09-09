@@ -313,7 +313,37 @@ runbooks:
     ssot: ssot.home-assistant.design.yml
     last_updated: '2026-09-09'
 
+  deployment_policy:
+    purpose: Human approval required before any deploy from michael-dev to another host.
+    steps:
+      - Never run deploy-card.sh with a non-dev target (michael-ha, tony-ha, or --host all) without explicit user approval in the same session.
+      - Never run promote-michael.sh or promote-tony.sh without explicit user approval in the same session.
+      - Iterating and previewing on michael-dev is fine; anything that touches michael-ha or tony-ha must be approved.
+    note: tony-dell hosts both michael-dev and tony-ha, but they are separate instances; copying a bundle or resource to tony-ha is a deploy, not a local file move.
+
+  promote_tony_ha:
+    purpose: Promote the dev bundle to tony-ha on tony-dell (rootless podman, port 8123).
+    steps:
+      - Ensure tony-ha.service is active: systemctl --user is-active tony-ha.service
+      - Check for an existing sunsynk-power-flow-card-fork resource in /home/tony/.config/home-assistant/.storage/lovelace_resources
+      - 'If the resource is missing: add a new entry {id: <uuid>, url: "/local/sunsynk-power-flow-card-fork-vN.js", type: "module"} and restart tony-ha.service'
+      - Copy the exact dev bundle: cp /home/tony/.config/michael-dev/www/sunsynk-power-flow-card-fork-vN.js /home/tony/.config/home-assistant/www/
+      - Update the resource via ws-resource-url.py using HASS_TOKEN from ~/.config/secrets/home-assistant-token.env (HA_LONG_LIVED_TOKEN)
+      - If tony-test dashboard exists, merge desired views with push-dashboard.py; otherwise create the dashboard first
+      - Verify with curl -s -o /dev/null -w '%{http_code}' http://tony-dell:8123/local/sunsynk-power-flow-card-fork-vN.js
+    common_failures:
+      - 'ws-resource-url.py fails with "no lovelace resource matching": the sunsynk resource must be seeded before it can be bumped.'
+      - 'Resource updated but bundle 404s: restart tony-ha.service after editing .storage/lovelace_resources.'
+      - 'push-dashboard.py fails: tony-test dashboard does not exist on tony-ha; create it first.'
+
+  build_typecheck:
+    purpose: The rollup build does NOT type-check TypeScript.
+    steps:
+      - Run a typecheck before trusting the bundle: npx -p typescript tsc --noEmit
+      - Runtime errors like missing variables can slip through Babel preset-typescript; use tsc as the gate.
+    note: The card repo uses Babel to strip types and terser to minify; it never invokes the TypeScript compiler.
+
 status:
   last_updated: '2026-09-09'
   last_verified: '2026-09-09'
-  health: active; websocket push-dashboard workflow verified; deploy runbook corrected (.storage resource changes need service restart, not ha_reload_core); sidebar API scope documented; stale /local 404 workaround (v-bump) documented; michael-ha working token located in ha-michael-live.env; pfg chart code modularized into src/cards/pfg/ with registry + single placement engine; pfg_3d_charts runbook added (category x-axis, incremental cache, dev-vs-live data note)
+  health: active; websocket push-dashboard workflow verified; deploy runbook corrected (.storage resource changes need service restart, not ha_reload_core); sidebar API scope documented; stale /local 404 workaround (v-bump) documented; michael-ha working token located in ha-michael-live.env; pfg chart code modularized into src/cards/pfg/ with registry + single placement engine; pfg_3d_charts runbook added (category x-axis, incremental cache, dev-vs-live data note); deployment_policy, promote_tony_ha and build_typecheck runbooks added 2026-09-09
