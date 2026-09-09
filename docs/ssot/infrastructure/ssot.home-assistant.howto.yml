@@ -279,7 +279,62 @@ runbooks:
       - 'BPS acknowledgment: pass BestPracticeKey = "I-HAVE-READ-THE-BEST-PRACTICES-GUIDE-<digits>" (rotating key; read the skill first if a new key is demanded)'
       - 'python_transform mutates the full config dict in place; validate targeting with .get() guards'
 
+  pfg_3d_charts:
+    purpose: Development/debugging reference for the pfg surface3d (G1) and bar3d (G2) hourly-grid charts.
+    architecture: |
+      G1 = sunsynk-power-flow-card chart 'surface3d' (echarts-gl surface), view g1.
+      G2 = sunsynk-power-flow-card chart 'bar3d' (echarts-gl bar3D), view g2.
+      Both use fetchHourlyDayGrid in src/cards/pfg/history.ts and render in
+      src/cards/pfg/charts/{surface3d,bar3d}.ts. Entity: sensor.inverters_1_pv_power.
+      michael-dev uses a dev template entity (input_number.dev_pv*_power) so data is
+      synthetic; michael-ha uses the real recorder entity.
+    data_and_cache: |
+      - Recorder statistics are absolute timestamps; group by hass.config.time_zone,
+        not the browser timezone.
+      - Missing day/hour cells are zero-filled.
+      - Persistent localStorage caches keep data across reloads; incremental fetches
+        only pull the delta since lastEnd. See ssot.home-assistant.design.yml
+        data_cache_policy for the shared policy.
+      - Cache keys: pfg3d:<entity>:<days>:<scale> for 3D; pfgh:<entities>:<hours> for
+        history/area. cache: 0 disables; default is infinite until the browser clears
+        localStorage or the window changes.
+    axis_and_labels: |
+      - ECharts GL xAxis3D type:'value' IGNORES 'inverse'. To control order use
+        type:'category' with data: [0..23] (or reversed) — the category order is the
+        axis order.
+      - Axis labels and names: set color + fontWeight + textShadowBlur/textShadowColor
+        on axisLabel and nameTextStyle. For white labels on dark bg use
+        color '#ffffff', fontWeight 'bold', textShadowBlur 3, textShadowColor
+        'rgba(0,0,0,0.75)'.
+      - For category hour axes use axisLabel.formatter to show "HH:00".
+      - The day axis uses yAxis3D type:'value' min:0 max:days-1 inverse:true.
+    interaction: |
+      - Native echarts-gl drag/orbit was unreliable; both charts use a custom pointer
+        implementation (pointerdown/move/up + chart.dispatchAction/viewControl).
+      - Keep frontCenter/volumeCenter aligned with the axis min/max so the drag
+        pivot is correct. viewControl.distance: 300 frames the whole grid.
+    deploy_and_verify: |
+      - Build in a worktree (sunsynk-wt-*), merge to main, run deploy-card.sh.
+      - deploy-card.sh reads the current version from the target's lovelace_resources
+        (single source of truth). The dev live file must be on the same version.
+      - promote-michael.sh copies the exact dev bundle and updates the michael-ha
+        resource via websocket; its immediate post-check is race-prone — recheck
+        with ws-resource-url.py or grep lovelace_resources on michael-ha.
+      - After any axis/data change, verify the loaded bundle matches and hard-refresh
+        the browser (the module cache is keyed by the v{N} filename).
+    common_failures: |
+      - 'Axis direction not changing: you probably used inverse on a value axis; use
+        category + data order instead.'
+      - 'Data rising/falling at the wrong time: check timezone grouping in
+        fetchHourlyDayGrid — it must use hass.config.time_zone.'
+      - 'michael-dev looks synthetic: dev uses dev_pv*_power input_number template;
+        michael-ha uses real recorder data. The card code is not the cause.'
+      - 'Bundle version drift / incomplete deploys: verify by md5sum or curl the
+        bundle, not just the version number.'
+    ssot: ssot.home-assistant.design.yml
+    last_updated: '2026-09-09'
+
 status:
-  last_updated: '2026-09-06'
-  last_verified: '2026-09-06'
-  health: 'active; websocket push-dashboard workflow verified; headless playlive verification runbook added (daemon REST eval avoids token echo); parallel-session collision guards documented; python_transform sandbox notes added (no next(), fresh config_hash, BPS key)'
+  last_updated: '2026-09-09'
+  last_verified: '2026-09-09'
+  health: 'active; websocket push-dashboard workflow verified; headless playlive verification runbook added (daemon REST eval avoids token echo); parallel-session collision guards documented; python_transform sandbox notes added (no next(), fresh config_hash, BPS key); pfg_3d_charts runbook added (category x-axis, incremental cache, dev-vs-live data note)'
