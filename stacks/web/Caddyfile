@@ -109,6 +109,10 @@
 		reverse_proxy 100.68.142.13:3001
 	}
 
+	handle_path /api/input-bridge/* {
+		reverse_proxy 127.0.0.1:3010
+	}
+
 	handle /api/* {
 		reverse_proxy 100.68.142.13:8000
 	}

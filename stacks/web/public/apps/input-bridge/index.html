@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#0f172a">
+  <link rel="manifest" href="/apps/input-bridge/manifest.json">
+  <link rel="icon" type="image/png" sizes="192x192" href="/apps/input-bridge/icon-192.png">
+  <link rel="apple-touch-icon" sizes="192x192" href="/apps/input-bridge/icon-192.png">
+  <title>Input Bridge</title>
+  <style>
+    :root { --bg: #0f172a; --panel: #1e293b; --text: #f8fafc; --muted: #94a3b8; --accent: #06b6d4; --danger: #ef4444; }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; margin: 0; background: var(--bg); color: var(--text); font-family: system-ui, -apple-system, sans-serif; overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none; }
+    #capture { position: fixed; inset: 0; z-index: 1; }
+    #ui { position: fixed; top: 0.5rem; left: 0.5rem; right: 0.5rem; z-index: 10; max-width: 420px; background: rgba(15, 23, 42, 0.92); border: 1px solid #334155; border-radius: 8px; padding: 0.75rem; backdrop-filter: blur(4px); }
+    #ui.collapsed #controls { display: none; }
+    #ui.collapsed #log { display: none; }
+    #header { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem; }
+    #status { font-size: 0.75rem; padding: 0.2rem 0.5rem; border-radius: 4px; background: #334155; }
+    #status.connected { background: #166534; }
+    #status.error { background: #991b1b; }
+    button { font: inherit; font-size: 0.8rem; padding: 0.35rem 0.6rem; border-radius: 6px; border: none; background: var(--accent); color: #082f49; font-weight: 600; cursor: pointer; }
+    button.secondary { background: #334155; color: var(--text); }
+    input, select { font: inherit; font-size: 0.8rem; padding: 0.35rem; border-radius: 6px; border: 1px solid #475569; background: #0f172a; color: var(--text); width: 100%; }
+    .row { display: flex; gap: 0.5rem; align-items: center; margin-bottom: 0.5rem; }
+    .row label { font-size: 0.75rem; color: var(--muted); min-width: 4rem; }
+    .row input, .row select { flex: 1; }
+    .hint { font-size: 0.7rem; color: var(--muted); }
+    #log { height: 6rem; overflow: auto; font-size: 0.75rem; line-height: 1.4; background: #020617; border-radius: 6px; padding: 0.5rem; margin-top: 0.5rem; }
+    #log .ts { color: #64748b; margin-right: 0.4rem; }
+    #toggleUi { margin-left: auto; font-size: 0.7rem; padding: 0.2rem 0.4rem; }
+    #pointer { position: fixed; width: 20px; height: 20px; border: 2px solid var(--accent); border-radius: 50%; transform: translate(-50%, -50%); pointer-events: none; z-index: 5; display: none; }
+  </style>
+</head>
+<body>
+  <div id="capture"></div>
+  <div id="pointer"></div>
+  <div id="ui" class="collapsed">
+    <div id="header">
+      <strong>Input Bridge</strong>
+      <span id="status">disconnected</span>
+      <button id="toggleUi">Show</button>
+    </div>
+    <div id="controls">
+      <div class="row"><label>WS URL</label><input type="text" id="wsUrl" autocomplete="off" spellcheck="false"></div>
+      <div class="row"><label>Room</label><input type="text" id="room" value="default"></div>
+      <div class="row" style="justify-content: flex-end;">
+        <button id="connect" class="secondary">Connect</button>
+        <button id="clear" class="secondary">Clear</button>
+      </div>
+      <div class="hint">Open the receiver on the target display, set the same room, then connect.</div>
+    </div>
+    <pre id="log"></pre>
+  </div>
+
+<script>
+  const params = new URLSearchParams(window.location.search);
+  const STORAGE_KEY = 'inputBridgeSettings';
+  const defaultSettings = () => {
+    const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+    return {
+      wsUrl: params.get('ws') || `${proto}//${location.host}/api/input-bridge/ws`,
+      room: params.get('room') || 'default'
+    };
+  };
+
+  let settings = { ...defaultSettings() };
+  try {
+    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+    settings = { ...settings, ...saved };
+  } catch (e) {}
+
+  const wsUrlInput = document.getElementById('wsUrl');
+  const roomInput = document.getElementById('room');
+  const statusEl = document.getElementById('status');
+  const logEl = document.getElementById('log');
+  const pointerEl = document.getElementById('pointer');
+  const ui = document.getElementById('ui');
+
+  wsUrlInput.value = settings.wsUrl;
+  roomInput.value = settings.room;
+
+  let ws = null;
+  let reconnectTimer = null;
+
+  function saveSettings() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ wsUrl: wsUrlInput.value, room: roomInput.value }));
+  }
+
+  function setStatus(text, cls) {
+    statusEl.textContent = text;
+    statusEl.className = cls || '';
+  }
+
+  function log(text) {
+    const ts = new Date().toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    const line = document.createElement('div');
+    line.innerHTML = `<span class="ts">${ts}</span>${text}`;
+    logEl.appendChild(line);
+    if (logEl.children.length > 80) logEl.removeChild(logEl.firstChild);
+    logEl.scrollTop = logEl.scrollHeight;
+  }
+
+  function send(obj) {
+    if (ws && ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify(obj));
+    }
+  }
+
+  function connect() {
+    if (ws) return;
+    const url = wsUrlInput.value.trim();
+    const room = roomInput.value.trim() || 'default';
+    saveSettings();
+    setStatus('connecting…');
+    try {
+      ws = new WebSocket(url);
+    } catch (e) {
+      setStatus('bad url', 'error');
+      log('Bad WebSocket URL: ' + e.message);
+      return;
+    }
+    ws.onopen = () => {
+      setStatus('connected', 'connected');
+      log(`Joined room: ${room}`);
+      send({ type: 'join', room });
+    };
+    ws.onmessage = (e) => {
+      try {
+        const msg = JSON.parse(e.data);
+        if (msg.type === 'pong' || msg.type === 'presence') return;
+      } catch (err) {}
+    };
+    ws.onclose = () => {
+      ws = null;
+      setStatus('disconnected', 'error');
+    };
+    ws.onerror = (e) => {
+      setStatus('error', 'error');
+      log('WebSocket error');
+    };
+  }
+
+  function disconnect() {
+    if (ws) { ws.close(); ws = null; }
+    setStatus('disconnected');
+  }
+
+  document.getElementById('connect').addEventListener('click', () => {
+    if (ws) disconnect(); else connect();
+  });
+  document.getElementById('clear').addEventListener('click', () => { logEl.innerHTML = ''; });
+  document.getElementById('toggleUi').addEventListener('click', () => {
+    ui.classList.toggle('collapsed');
+    document.getElementById('toggleUi').textContent = ui.classList.contains('collapsed') ? 'Show' : 'Hide';
+  });
+
+  function isInUi(el) { return el && (el.closest && el.closest('#ui')); }
+
+  window.addEventListener('keydown', (e) => {
+    if (isInUi(e.target)) return;
+    const data = {
+      type: 'keydown', ts: Date.now(),
+      code: e.code, key: e.key, repeat: e.repeat,
+      altKey: e.altKey, ctrlKey: e.ctrlKey, metaKey: e.metaKey, shiftKey: e.shiftKey
+    };
+    send(data);
+    log(`key ${e.key} (${e.code})`);
+  }, { passive: true });
+
+  window.addEventListener('keyup', (e) => {
+    if (isInUi(e.target)) return;
+    send({
+      type: 'keyup', ts: Date.now(),
+      code: e.code, key: e.key, repeat: e.repeat,
+      altKey: e.altKey, ctrlKey: e.ctrlKey, metaKey: e.metaKey, shiftKey: e.shiftKey
+    });
+  }, { passive: true });
+
+  function pointerEvent(type, e) {
+    const data = {
+      type, ts: Date.now(),
+      x: e.clientX, y: e.clientY,
+      pointerType: e.pointerType,
+      pointerId: e.pointerId,
+      button: e.button,
+      buttons: e.buttons,
+      pressure: e.pressure || 0,
+      width: e.width || 0,
+      height: e.height || 0,
+      tiltX: e.tiltX || 0,
+      tiltY: e.tiltY || 0
+    };
+    send(data);
+    pointerEl.style.left = e.clientX + 'px';
+    pointerEl.style.top = e.clientY + 'px';
+    pointerEl.style.display = 'block';
+    if (type !== 'pointermove') log(`${type} x:${e.clientX} y:${e.clientY} btn:${e.button}`);
+  }
+
+  window.addEventListener('pointermove', (e) => { if (!isInUi(e.target)) pointerEvent('pointermove', e); });
+  window.addEventListener('pointerdown', (e) => { if (!isInUi(e.target)) pointerEvent('pointerdown', e); });
+  window.addEventListener('pointerup', (e) => { if (!isInUi(e.target)) pointerEvent('pointerup', e); });
+
+  window.addEventListener('wheel', (e) => {
+    if (isInUi(e.target)) return;
+    e.preventDefault();
+    send({ type: 'wheel', ts: Date.now(), deltaX: e.deltaX, deltaY: e.deltaY, deltaZ: e.deltaZ || 0, x: e.clientX, y: e.clientY });
+    log(`wheel Δx:${e.deltaX.toFixed(0)} Δy:${e.deltaY.toFixed(0)}`);
+  }, { passive: false });
+
+  ['touchstart', 'touchmove', 'touchend', 'touchcancel'].forEach((name) => {
+    window.addEventListener(name, (e) => {
+      if (isInUi(e.target)) return;
+      if (e.cancelable) e.preventDefault();
+      const t = e.changedTouches[0] || e.touches[0];
+      if (!t) return;
+      const subtype = name === 'touchstart' ? 'touchdown' : name === 'touchend' || name === 'touchcancel' ? 'touchup' : 'touchmove';
+      send({ type: subtype, ts: Date.now(), x: t.clientX, y: t.clientY, force: t.force || 0, identifier: t.identifier });
+    }, { passive: false });
+  });
+
+  let lastGamepadSent = 0;
+  function pollGamepads() {
+    if (typeof navigator.getGamepads !== 'function') return;
+    const now = Date.now();
+    if (now - lastGamepadSent < 50) { requestAnimationFrame(pollGamepads); return; }
+    const gamepads = navigator.getGamepads();
+    for (const gp of gamepads) {
+      if (!gp || !gp.connected) continue;
+      send({
+        type: 'gamepad', ts: now, index: gp.index, id: gp.id,
+        axes: Array.from(gp.axes),
+        buttons: gp.buttons.map(b => ({ pressed: b.pressed, value: b.value }))
+      });
+      lastGamepadSent = now;
+      break;
+    }
+    requestAnimationFrame(pollGamepads);
+  }
+  window.addEventListener('gamepadconnected', (e) => { log('gamepad connected: ' + e.gamepad.id); pollGamepads(); });
+  window.addEventListener('gamepaddisconnected', (e) => { log('gamepad disconnected: ' + e.gamepad.id); });
+  if (navigator.getGamepads) pollGamepads();
+
+  window.addEventListener('beforeunload', disconnect);
+  if (params.get('autoconnect') === '1') connect();
+
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/apps/input-bridge/sw.js', { scope: '/apps/input-bridge/' })
+      .catch(err => console.error('Service worker registration failed', err));
+  }
+</script>
+</body>
+</html>

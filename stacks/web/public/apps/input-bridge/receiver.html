@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#0f172a">
+  <link rel="manifest" href="/apps/input-bridge/manifest.json">
+  <link rel="icon" type="image/png" sizes="192x192" href="/apps/input-bridge/icon-192.png">
+  <link rel="apple-touch-icon" sizes="192x192" href="/apps/input-bridge/icon-192.png">
+  <title>Input Bridge Receiver</title>
+  <style>
+    :root { --bg: #0f172a; --panel: #1e293b; --text: #f8fafc; --muted: #94a3b8; --accent: #06b6d4; --danger: #ef4444; }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; margin: 0; background: var(--bg); color: var(--text); font-family: system-ui, -apple-system, sans-serif; overflow: hidden; }
+    #stage { position: fixed; inset: 0; z-index: 1; }
+    #cursor {
+      position: fixed; width: 28px; height: 28px; border: 3px solid var(--accent); border-radius: 50%;
+      transform: translate(-50%, -50%); pointer-events: none; z-index: 50; display: none;
+      transition: transform 0.05s linear;
+    }
+    #cursor.clicked { background: rgba(6, 182, 212, 0.4); transform: translate(-50%, -50%) scale(0.85); }
+    #cursor::after {
+      content: ''; position: absolute; top: 50%; left: 50%; width: 4px; height: 4px; background: var(--accent);
+      border-radius: 50%; transform: translate(-50%, -50%);
+    }
+    #ui {
+      position: fixed; top: 0.5rem; right: 0.5rem; z-index: 10; max-width: 420px;
+      background: rgba(15, 23, 42, 0.92); border: 1px solid #334155; border-radius: 8px;
+      padding: 0.75rem; backdrop-filter: blur(4px);
+    }
+    #ui.collapsed #controls { display: none; }
+    #ui.collapsed #log { display: none; }
+    #header { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem; }
+    #status { font-size: 0.75rem; padding: 0.2rem 0.5rem; border-radius: 4px; background: #334155; }
+    #status.connected { background: #166534; }
+    #status.error { background: #991b1b; }
+    button { font: inherit; font-size: 0.8rem; padding: 0.35rem 0.6rem; border-radius: 6px; border: none; background: var(--accent); color: #082f49; font-weight: 600; cursor: pointer; }
+    button.secondary { background: #334155; color: var(--text); }
+    input, select { font: inherit; font-size: 0.8rem; padding: 0.35rem; border-radius: 6px; border: 1px solid #475569; background: #0f172a; color: var(--text); width: 100%; }
+    .row { display: flex; gap: 0.5rem; align-items: center; margin-bottom: 0.5rem; }
+    .row label { font-size: 0.75rem; color: var(--muted); min-width: 5rem; }
+    .row input, .row select { flex: 1; }
+    .hint { font-size: 0.7rem; color: var(--muted); }
+    #log { height: 6rem; overflow: auto; font-size: 0.75rem; line-height: 1.4; background: #020617; border-radius: 6px; padding: 0.5rem; margin-top: 0.5rem; }
+    #log .ts { color: #64748b; margin-right: 0.4rem; }
+    #keyOverlay {
+      position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%);
+      padding: 0.5rem 1rem; background: rgba(0,0,0,0.6); border-radius: 8px; font-size: 1.25rem;
+      z-index: 40; display: none;
+    }
+  </style>
+</head>
+<body>
+  <div id="stage"></div>
+  <div id="cursor"></div>
+  <div id="keyOverlay"></div>
+  <div id="ui" class="collapsed">
+    <div id="header">
+      <strong>Input Bridge Receiver</strong>
+      <span id="status">disconnected</span>
+      <button id="toggleUi">Show</button>
+    </div>
+    <div id="controls">
+      <div class="row"><label>WS URL</label><input type="text" id="wsUrl" autocomplete="off" spellcheck="false"></div>
+      <div class="row"><label>Room</label><input type="text" id="room" value="default"></div>
+      <div class="row" style="justify-content: flex-end;">
+        <button id="connect" class="secondary">Connect</button>
+        <button id="clear" class="secondary">Clear</button>
+      </div>
+      <div class="row" style="justify-content: flex-start; gap: 0.5rem;">
+        <label><input type="checkbox" id="injectDom" style="width:auto;"> Inject DOM events</label>
+      </div>
+      <div class="hint">When DOM injection is on, mouse clicks and keys are dispatched to the element under the virtual cursor.</div>
+    </div>
+    <pre id="log"></pre>
+  </div>
+
+<script>
+  const params = new URLSearchParams(window.location.search);
+  const STORAGE_KEY = 'inputBridgeReceiverSettings';
+  const defaultSettings = () => {
+    const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+    return {
+      wsUrl: params.get('ws') || `${proto}//${location.host}/api/input-bridge/ws`,
+      room: params.get('room') || 'default'
+    };
+  };
+  let settings = { ...defaultSettings() };
+  try { const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}'); settings = { ...settings, ...saved }; } catch (e) {}
+
+  const wsUrlInput = document.getElementById('wsUrl');
+  const roomInput = document.getElementById('room');
+  const statusEl = document.getElementById('status');
+  const logEl = document.getElementById('log');
+  const cursor = document.getElementById('cursor');
+  const keyOverlay = document.getElementById('keyOverlay');
+  const ui = document.getElementById('ui');
+  const injectDom = document.getElementById('injectDom');
+
+  wsUrlInput.value = settings.wsUrl;
+  roomInput.value = settings.room;
+
+  let ws = null;
+
+  function saveSettings() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ wsUrl: wsUrlInput.value, room: roomInput.value }));
+  }
+
+  function setStatus(text, cls) {
+    statusEl.textContent = text;
+    statusEl.className = cls || '';
+  }
+
+  function log(text) {
+    const ts = new Date().toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    const line = document.createElement('div');
+    line.innerHTML = `<span class="ts">${ts}</span>${text}`;
+    logEl.appendChild(line);
+    if (logEl.children.length > 80) logEl.removeChild(logEl.firstChild);
+    logEl.scrollTop = logEl.scrollHeight;
+  }
+
+  function connect() {
+    if (ws) return;
+    const url = wsUrlInput.value.trim();
+    const room = roomInput.value.trim() || 'default';
+    saveSettings();
+    setStatus('connecting…');
+    try {
+      ws = new WebSocket(url);
+    } catch (e) { setStatus('bad url', 'error'); log('Bad WebSocket URL: ' + e.message); return; }
+    ws.onopen = () => { setStatus('connected', 'connected'); send({ type: 'join', room }); log(`Joined room: ${room}`); };
+    ws.onmessage = (e) => { handleMessage(e.data); };
+    ws.onclose = () => { ws = null; setStatus('disconnected', 'error'); };
+    ws.onerror = () => { setStatus('error', 'error'); log('WebSocket error'); };
+  }
+
+  function disconnect() { if (ws) { ws.close(); ws = null; } setStatus('disconnected'); }
+  function send(obj) { if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(obj)); }
+
+  function showKey(key) {
+    keyOverlay.textContent = key;
+    keyOverlay.style.display = 'block';
+    clearTimeout(keyOverlay._t);
+    keyOverlay._t = setTimeout(() => keyOverlay.style.display = 'none', 700);
+  }
+
+  function moveCursor(x, y) {
+    cursor.style.left = x + 'px';
+    cursor.style.top = y + 'px';
+    cursor.style.display = 'block';
+  }
+
+  function elAt(x, y) { return document.elementFromPoint(x, y) || document.body; }
+
+  function dispatchMouse(type, x, y, button, buttons) {
+    const el = elAt(x, y);
+    el.dispatchEvent(new MouseEvent(type, {
+      bubbles: true, cancelable: true, view: window,
+      clientX: x, clientY: y, button: button || 0, buttons: buttons || 0,
+      screenX: x, screenY: y
+    }));
+  }
+
+  function dispatchKey(type, data) {
+    const target = document.activeElement && document.activeElement !== document.body ? document.activeElement : document.body;
+    target.dispatchEvent(new KeyboardEvent(type, {
+      bubbles: true, cancelable: true, view: window,
+      code: data.code, key: data.key, repeat: data.repeat || false,
+      altKey: data.altKey || false, ctrlKey: data.ctrlKey || false,
+      metaKey: data.metaKey || false, shiftKey: data.shiftKey || false
+    }));
+  }
+
+  function handleMessage(data) {
+    let msg;
+    try { msg = JSON.parse(data); } catch (e) { return; }
+    if (!msg || msg.type === 'pong') return;
+
+    if (msg.type === 'pointermove') {
+      moveCursor(msg.x, msg.y);
+    } else if (msg.type === 'pointerdown') {
+      moveCursor(msg.x, msg.y);
+      cursor.classList.add('clicked');
+      log(`down x:${msg.x} y:${msg.y} btn:${msg.button}`);
+      if (injectDom.checked) dispatchMouse('mousedown', msg.x, msg.y, msg.button, msg.buttons);
+    } else if (msg.type === 'pointerup') {
+      moveCursor(msg.x, msg.y);
+      cursor.classList.remove('clicked');
+      if (injectDom.checked) {
+        dispatchMouse('mouseup', msg.x, msg.y, msg.button, msg.buttons);
+        dispatchMouse('click', msg.x, msg.y, msg.button, msg.buttons);
+      }
+    } else if (msg.type === 'wheel') {
+      window.scrollBy(msg.deltaX || 0, msg.deltaY || 0);
+      if (injectDom.checked) {
+        const el = elAt(msg.x, msg.y);
+        el.dispatchEvent(new WheelEvent('wheel', {
+          bubbles: true, cancelable: true, view: window,
+          deltaX: msg.deltaX || 0, deltaY: msg.deltaY || 0, deltaZ: msg.deltaZ || 0,
+          clientX: msg.x, clientY: msg.y
+        }));
+      }
+    } else if (msg.type === 'keydown') {
+      showKey(msg.key);
+      log(`key ${msg.key}`);
+      if (injectDom.checked) dispatchKey('keydown', msg);
+    } else if (msg.type === 'keyup') {
+      if (injectDom.checked) dispatchKey('keyup', msg);
+    } else if (msg.type === 'touchdown' || msg.type === 'touchup' || msg.type === 'touchmove') {
+      moveCursor(msg.x, msg.y);
+    } else if (msg.type === 'gamepad') {
+      // optional: move cursor with first stick axes
+      if (msg.axes && msg.axes.length >= 2 && Math.abs(msg.axes[0]) + Math.abs(msg.axes[1]) > 0.2) {
+        const curX = parseFloat(cursor.style.left || 0) || window.innerWidth / 2;
+        const curY = parseFloat(cursor.style.top || 0) || window.innerHeight / 2;
+        const nx = Math.max(0, Math.min(window.innerWidth, curX + msg.axes[0] * 8));
+        const ny = Math.max(0, Math.min(window.innerHeight, curY + msg.axes[1] * 8));
+        moveCursor(nx, ny);
+      }
+    } else if (msg.type === 'join' || msg.type === 'presence') {
+      // no-op
+    } else {
+      log(`recv ${msg.type}`);
+    }
+  }
+
+  document.getElementById('connect').addEventListener('click', () => { if (ws) disconnect(); else connect(); });
+  document.getElementById('clear').addEventListener('click', () => { logEl.innerHTML = ''; });
+  document.getElementById('toggleUi').addEventListener('click', () => {
+    ui.classList.toggle('collapsed');
+    document.getElementById('toggleUi').textContent = ui.classList.contains('collapsed') ? 'Show' : 'Hide';
+  });
+
+  window.addEventListener('beforeunload', disconnect);
+  if (params.get('autoconnect') === '1') connect();
+
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/apps/input-bridge/sw.js', { scope: '/apps/input-bridge/' })
+      .catch(err => console.error('Service worker registration failed', err));
+  }
+</script>
+</body>
+</html>
