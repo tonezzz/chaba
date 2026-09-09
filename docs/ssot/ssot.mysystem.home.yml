@@ -142,6 +142,31 @@ sections:
       - label: Check
         text: DISPLAY=:1 XAUTHORITY=/run/user/1000/gdm/Xauthority xrandr should show DP-2 connected and primary, and systemctl --user is-active lxqt-seat barrier-client should be active
 
+  - title: Web (tony-dell)
+    icon: 🌐
+    layout: list
+    items:
+      - label: Public HTTPS endpoint
+        text: https://tony-dell.taila0626a.ts.net:8080/ (Tailscale terminates TLS and proxies to local Caddy)
+      - label: Tailscale serve
+        text: tailscaled owns 100.68.142.13:8080 and forwards HTTP to the Caddy backend
+      - label: Tailscale serve unit
+        text: /etc/systemd/system/tailscale-serve-8080.service; repo copy in systemd/tailscale-serve-8080.service
+      - label: Install tailscale serve unit
+        text: sudo install -m 0644 systemd/tailscale-serve-8080.service /etc/systemd/system/tailscale-serve-8080.service && sudo systemctl daemon-reload && sudo systemctl enable --now tailscale-serve-8080.service
+      - label: Caddy backend
+        text: rootless podman container named web; Caddy serves http://127.0.0.1:8080 only (bind 127.0.0.1, auto_https off)
+      - label: Caddyfile
+        text: /home/tony/CascadeProjects/chaba-tony-dell/stacks/web/Caddyfile (worktree copy on tony-dell)
+      - label: Critical Caddyfile directives
+        text: "{ auto_https off } globally and http://127.0.0.1:8080 { bind 127.0.0.1 ... } to avoid colliding with tailscaled"
+      - label: Restart Caddy
+        text: /usr/bin/docker restart web
+      - label: Port conflict warning
+        text: Do not let Caddy bind 0.0.0.0:8080 or tailscale will not be able to serve; do not point tailscale-serve-8080 to 127.0.0.1:8082 (that is tailscale-connections-server.py, not Caddy)
+      - label: Check
+        text: "curl -s -o /dev/null -w %{http_code} https://tony-dell.taila0626a.ts.net:8080/apps/tony-live/ should return 200"
+
   - title: Services (tony-omen)
     icon: ⚙️
     layout: list
