@@ -296,7 +296,45 @@ known_patterns:
       same as cardstyle: full or ss4. Use /tony-test/pfg to test it and do not confuse it with the
       SS4 or full-card tabs.
 
+data_cache_policy:
+  purpose: |
+    Reusable caching and incremental-fetch policy for any card or chart that pulls history,
+    statistics, or other accumulating time-series data from Home Assistant.
+  storage:
+    location: browser localStorage
+    key_pattern: '<prefix>:<entity_or_source_id>:<days_or_window>:<scale_or_transform>'
+    example: 'pfg3d:sensor.inverters_1_pv_power:10:0.001'
+    note: |
+      The key should NOT include an end timestamp. A single key per (entity, window, transform)
+      lets the cache move forward with the data.
+  cache_duration:
+    default: indefinite until the data window shifts or localStorage is cleared
+    config_key: cache
+    config_unit: minutes
+    meaning: |
+      `cache: 0` disables the cache. `cache: N` uses the cache for up to N minutes of staleness
+      before a full refetch. When unset, the cache is kept indefinitely and only the missing
+      hours/data since `lastEnd` are fetched.
+  incremental_fetch:
+    principle: |
+      Store `grid`, `dayLabels`, `start`, and `lastEnd` in localStorage. On each load:
+      1. If the day/window has shifted, do a full fetch for the new window.
+      2. If the window is unchanged, fetch only the period from `lastEnd` to `now`.
+      3. Overlay the new values onto the cached grid and update `lastEnd`.
+    fallback: |
+      If statistics are not available for the missing period, fall back to a full raw-history fetch.
+  timezone:
+    rule: |
+      All grouping, day labels, and hour extraction must use `hass.config.time_zone` rather than
+      the browser's local time. Use `toLocaleString(..., { timeZone: tz })` to avoid shifted
+      rise/fall peaks.
+  applicable_to:
+    - surface3d
+    - bar3d
+    - history charts
+    - any accumulating / time-series card
+
 status:
-  last_updated: '2026-09-06'
-  last_verified: '2026-09-06'
-  health: active; v83 deployed; tpl_design documented (TPL sandbox, grid-layout 4x2, image tiles with chart overlays, pfg_labels overlay + pfg_label_pos, 'inverter' image sentinel, drop shadows on arcs/needle/text); pfg/pfg2 feature keys, anchor syntax, speed-scaled flow lines, and pfg_hide_grid documented; signed-current and direction override documented for compact/lite cards; pfg2 deployed to michael-ha after SK with pfg_hide_grid=true
+  last_updated: '2026-09-09'
+  last_verified: '2026-09-09'
+  health: active; v188 deployed; tpl_design documented (TPL sandbox, grid-layout 4x2, image tiles with chart overlays, pfg_labels overlay + pfg_label_pos, 'inverter' image sentinel, drop shadows on arcs/needle/text); pfg/pfg2 feature keys, anchor syntax, speed-scaled flow lines, and pfg_hide_grid documented; signed-current and direction override documented for compact/lite cards; pfg2 deployed to michael-ha after SK with pfg_hide_grid=true; data_cache_policy added for localStorage/incremental fetch and timezone grouping, applies to surface3d, bar3d, history, and any accumulative time-series card
