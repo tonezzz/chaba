@@ -7,7 +7,7 @@ repositories:
     fork_of: slhub/sunsynk-power-flow-card
     current_commit: HEAD
     package_version: 7.3.3
-    bundle_version: 193
+    bundle_version: 194
     build:
       command: npm run build
       tool: rollup -c --bundleConfigAsCjs
@@ -15,17 +15,17 @@ repositories:
     deploy:
       michael-dev:
         target_host: ssot.values.yml::hosts.tony_dell
-        target_path: /home/tony/.config/michael-dev/www/sunsynk-power-flow-card-fork-v193.js
+        target_path: /home/tony/.config/michael-dev/www/sunsynk-power-flow-card-fork-v194.js
         lovelace_resources: /home/tony/.config/michael-dev/.storage/lovelace_resources
-        resource_path: /local/sunsynk-power-flow-card-fork-v193.js
+        resource_path: /local/sunsynk-power-flow-card-fork-v194.js
         restart: systemctl --user restart michael-dev.service
         service_ref: infrastructure/ssot.services.yml#tony-dell.michael-dev.quadlet.service_unit
         test_url: https://tony-dell.taila0626a.ts.net:8124/tony-test/pf4
       michael-ha:
         target_host: ssot.values.yml::hosts.michael_ha
-        target_path: /config/www/sunsynk-power-flow-card-fork-v193.js
+        target_path: /config/www/sunsynk-power-flow-card-fork-v194.js
         lovelace_resources: /config/.storage/lovelace_resources
-        resource_path: /local/sunsynk-power-flow-card-fork-v193.js
+        resource_path: /local/sunsynk-power-flow-card-fork-v194.js
         restart: ha core restart
         note: promoted v189 to michael-ha on 2026-09-09; G1/G2 on real data
         test_url: https://nupo4ndqdqydt78zmpq0z5wzp1bdrqgs.ui.nabu.casa/tony-test/g1
@@ -100,8 +100,8 @@ cards:
   - id: sunsynk-power-flow-card
     name: Sunsynk Power Flow Card (fork)
     repo_ref: repositories.sunsynk-power-flow-card-fork
-    bundle_version: 193
-    deployed_as: /local/sunsynk-power-flow-card-fork-v193.js (michael-dev v193; michael-ha v193; G1 surface3d + G2 bar3d; pointer-capture left-drag, surface opacity, cache, and corrected date axis; previous v103 kept for rollback)
+    bundle_version: 194
+    deployed_as: /local/sunsynk-power-flow-card-fork-v194.js (michael-dev v194; michael-ha v194; G1 surface3d + G2 bar3d; pointer-capture left-drag, surface opacity, cache, and corrected date axis; previous v103 kept for rollback)
     dashboards:
       - id: tony-test/pf4
         tab: PF4
@@ -139,4 +139,4 @@ cards:
 status:
   last_build: '2026-09-05'
   last_verified: '2026-09-09'
-  health: active; v193 on michael-dev, v193 on michael-ha; bundle deployed to michael-dev (PF3/PFG/PFG1/PFG2/TPL/G1/G2) and michael-ha (PFG2/TPL/G1, /local/ v180 + layout-card resource); pfg/pfg2 support images, icons, labels, values, sums, spans, radius, zoom, speed-scaled anchored flow lines, pfg_hide_grid, pfg_transparent, pfg_charts surface3d and bar3d with opacity/silent, pointer-capture left-drag, corrected date axis, and pointermove/pointerup capture (see ssot.home-assistant.design.yml); .storage resource changes require HA core restart; michael-ha lovelace resource URL can also be updated over websocket (supervisor/api + lovelace/resources) when SSH is down
+  health: active; v194 on michael-dev, v194 on michael-ha; bundle deployed to michael-dev (PF3/PFG/PFG1/PFG2/TPL/G1/G2) and michael-ha (PFG2/TPL/G1, /local/ v180 + layout-card resource); pfg/pfg2 support images, icons, labels, values, sums, spans, radius, zoom, speed-scaled anchored flow lines, pfg_hide_grid, pfg_transparent, pfg_charts surface3d and bar3d with opacity/silent, pointer-capture left-drag, corrected date axis, and pointermove/pointerup capture (see ssot.home-assistant.design.yml); .storage resource changes require HA core restart; michael-ha lovelace resource URL can also be updated over websocket (supervisor/api + lovelace/resources) when SSH is down
