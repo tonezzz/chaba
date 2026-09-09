@@ -2,7 +2,7 @@ title: MAC Address Registry
 subtitle: Central registry of network interfaces and how to handle duplicate MACs
 icon: 🔗
 version: 1
-last_updated: '2026-09-08'
+last_updated: '2026-09-10'
 ideas:
 - One source of truth for every MAC on the home network
 - MAC is an attribute, not a primary key
@@ -112,7 +112,7 @@ sections:
     text: Run nightly ARP scan and compare against this registry. New or duplicate MACs create a focus-inbox alert.
 config:
   version: 1
-  last_updated: '2026-09-09'
+  last_updated: '2026-09-10'
   maintainer: tony
   status: active
   related_files:
@@ -150,6 +150,19 @@ config:
   - docs/ssot/infrastructure/ssot.mac-address-registry.tony.yml
   - docs/ssot/infrastructure/ssot.mac-address-registry.michael.yml
   mac_registry:
+  - device_id: home-router
+    label: Home Router
+    status: active
+    interfaces:
+    - interface_id: primary
+      mac: 98:00:6a:68:f7:c6
+      oui: '98006A'
+      vendor: Unknown
+      type: ethernet
+      source: arp
+      first_seen: '2026-09-10'
+      last_seen: '2026-09-10'
+      status: active
   - device_id: tony-omen
     label: Tony Omen
     status: active
@@ -251,17 +264,17 @@ config:
       last_seen: '2026-09-09'
       status: active
   - device_id: discovered-68f0bcad208a
-    label: Discovered 68:f0:bc:ad:20:8a
+    label: Discovered 0a:f0:bc:ad:20:8b
     status: active
     interfaces:
-    - interface_id: wlan0
-      mac: 68:f0:bc:ad:20:8a
-      oui: 68F0BC
+    - interface_id: wlan0-0af0
+      mac: 0a:f0:bc:ad:20:8b
+      oui: 0AF0BC
       vendor: Unknown
       type: wifi
-      source: dhcp
+      source: arp
       first_seen: '2026-09-09'
-      last_seen: '2026-09-09'
+      last_seen: '2026-09-10'
       status: active
   - device_id: iphone-227311ed1353
     label: iPhone (22:73:11:ed:13:53)

@@ -62,7 +62,7 @@ sections:
     text: Nightly ARP scan compares against this registry; new/duplicate IPs or MACs create focus-inbox alerts.
 config:
   version: 1
-  last_updated: '2026-09-09'
+  last_updated: '2026-09-10'
   maintainer: tony
   status: active
   related_files:
@@ -101,6 +101,14 @@ config:
     dhcp_range: null
     status: active
     allocations:
+    - ip: 192.168.2.1
+      device_id: home-router
+      interface_id: primary
+      kind: static
+      status: active
+      first_seen: '2026-09-10'
+      last_seen: '2026-09-10'
+      source: arp
     - ip: 192.168.2.65
       device_id: esp32-test
       interface_id: wlan0
@@ -175,12 +183,12 @@ config:
       source: dhcp
     - ip: 192.168.2.74
       device_id: discovered-68f0bcad208a
-      interface_id: wlan0
+      interface_id: wlan0-0af0
       kind: dhcp
       status: active
       first_seen: '2026-09-09'
-      last_seen: '2026-09-09'
-      source: dhcp
+      last_seen: '2026-09-10'
+      source: arp
     - ip: 192.168.2.75
       device_id: hp-deskjet-2700
       interface_id: wlan0
