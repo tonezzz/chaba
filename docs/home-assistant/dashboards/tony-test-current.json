@@ -1950,7 +1950,7 @@
                 "1,1": {
                   "type": "surface3d",
                   "entity": "sensor.inverters_1_pv_power",
-                  "days": 30,
+                  "days": 10,
                   "min": 0,
                   "max": 10,
                   "scale": 0.001,
@@ -1963,6 +1963,59 @@
                     4
                   ],
                   "rotate_center": "volume",
+                  "opacity": 1
+                }
+              },
+              "preset": "pfg",
+              "show_solar": false,
+              "inverter": {
+                "model": "solis",
+                "modern": true,
+                "autarky": "no"
+              },
+              "pfg_fit_screen": true,
+              "pfg_label_pos": {
+                "1,1": "top"
+              },
+              "pfg_border": {
+                "1,1": "2px solid #555"
+              },
+              "pfg_transparent": true
+            }
+          ]
+        },
+        {
+          "title": "G2",
+          "path": "g2",
+          "type": "panel",
+          "badges": [],
+          "cards": [
+            {
+              "type": "custom:sunsynk-power-flow-card",
+              "cardstyle": "pfg",
+              "card_height": "100%",
+              "card_width": "100%",
+              "title": "G2",
+              "pfg_grid_size": 1,
+              "pfg_grid_width": "100%",
+              "pfg_labels": {
+                "1,1": "PV kW — hour × day (bar3D)"
+              },
+              "pfg_charts": {
+                "1,1": {
+                  "type": "bar3d",
+                  "entity": "sensor.inverters_1_pv_power",
+                  "days": 10,
+                  "min": 0,
+                  "max": 10,
+                  "scale": 0.001,
+                  "unit": "kW",
+                  "position": "bg",
+                  "height": "100%",
+                  "rotate_sensitivity": [
+                    -4,
+                    4
+                  ],
                   "opacity": 1
                 }
               },
