@@ -70,6 +70,15 @@ policy:
     primary: playlive
     alternatives:
       - playlive-macbook
+    default: |
+      For any web interaction (click, fill, screenshot, visual verify), start
+      with playlive_create_playwright on the tony-dell daemon (headless). This
+      is the fastest path and does not require remote Chrome CDP. Only switch
+      to chrome_live if a visible browser is required, or to playlive-macbook
+      for macOS/Safari/WebKit targets.
+    when_not_to_use: |
+      Do not use PlayLive for raw HTML/JSON/HTTP status checks. Use curl or
+      mcp-debug first; it is lighter and avoids browser startup overhead.
     fallback: |
       For macOS Chrome CDP, use playlive-macbook via the SSH tunnel from
       tony-omen. Verify CDP endpoints with curl before creating sessions.

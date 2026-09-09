@@ -47,6 +47,36 @@ self_heal:
       - restart
       - playlived.service
 
+session_selection:
+  default:
+    daemon: tony-dell
+    host: tony_dell
+    session_type: playwright
+    headless: true
+    playlive_url: http://127.0.0.1:9230
+    note: Fastest default; no remote Chrome required.
+  visual_debug:
+    daemon: tony-dell
+    host: tony_dell
+    session_type: chrome_live
+    playlive_url: http://127.0.0.1:9230
+    remote_url: http://127.0.0.1:9222
+    note: Use when a visible browser window or live screenshot is needed.
+  macos:
+    daemon: kk-macbook
+    host: macbook
+    session_type: playlive_macbook
+    playlive_url: http://tony-dell.taila0626a.ts.net:9230
+    remote_url: http://127.0.0.1:9229
+    note: Use for Safari/WebKit/macOS-specific verification.
+  fallback:
+    daemon: tony-omen
+    host: tony_omen
+    session_type: playwright
+    headless: true
+    playlive_url: http://tony-omen.taila0626a.ts.net:9230
+    note: Use when tony-dell daemon is unavailable after self-heal.
+
 focus:
   enabled: true
   inbox_dir: /home/tony/CascadeProjects/chaba-tony-dell/docs/ssot/focus-inbox
