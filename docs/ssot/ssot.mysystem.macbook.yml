@@ -23,7 +23,7 @@ sections:
       - label: Memory
         text: 16 GB RAM
       - label: Operating System
-        text: macOS 13.7.8 (Ventura) - Updated 2026-08-10
+        text: macOS 13.7.8 (Ventura, build 22H730) - Verified 2026-09-09
       - label: Serial Number
         text: C02T902XH03M
       - label: Hostname
@@ -31,18 +31,18 @@ sections:
       - label: Username
         text: kkkakk
       - label: Storage
-        text: 233GB total, 10GB used (8%), 127GB available - Cleaned 2026-08-10
+        text: 233Gi total, 22Gi used, 95Gi available, 19% capacity - Verified 2026-09-09
 
   - title: Network Configuration
     icon: 🌐
     layout: list
     items:
       - label: IP Address
-        text: 192.168.1.39 (DHCP assigned, home WiFi)
+        text: 192.168.2.80 (DHCP assigned, TONY-WIFI_5G)
       - label: Tailnet IPv4
         text: 100.124.59.112 (machine name 'kk-macbook')
       - label: Network
-        text: 192.168.1.0/24 subnet (home WiFi)
+        text: 192.168.2.0/24 subnet (home WiFi)
       - label: Hostname Resolution
         text: .local hostname resolution available; reachable over Tailscale as 100.124.59.112
       - label: Network Status
@@ -71,7 +71,7 @@ sections:
         status: active
         tags: [ssh, command-line, key-auth]
       - label: SSH Configuration
-        text: "Host: macbook 192.168.1.39 100.124.59.112, HostName: 100.124.59.112, User: kkkakk, IdentityFile: per-PC key (tony-dell: ~/.ssh/id_cascade, tony-omen: ~/.ssh/id_ed25519_macbook)"
+        text: "Host: macbook 192.168.2.80 100.124.59.112, HostName: 100.124.59.112, User: kkkakk, IdentityFile: per-PC key (tony-dell: ~/.ssh/id_cascade, tony-omen: ~/.ssh/id_ed25519_macbook)"
         url: file:///home/tony/.ssh/config
       - label: SSH Connection
         text: ssh macbook (configured in ~/.ssh/config)
@@ -141,12 +141,12 @@ sections:
         text: launchctl for macOS service management
         tags: [services, launchctl, macos]
       - label: Health Snapshot Agent
-        text: Periodic macOS health snapshots collected by com.chaba.macbook-health launchd job and stored at ~/var/chaba/health/macbook-snapshot.json. Each snapshot includes lan_ip, tailscale_ip, wifi_ssid, memory pressure, top CPU/memory, Adobe/CRD/PlayLive process counts, disk hogs, and 9222/9231 ports. Run python3 /Users/kkkakk/chaba-health/collect-macbook-snapshot.py --fix to auto-kill Adobe CC, duplicate PlayLive Chrome, and orphaned /tmp/playlive-chrome-mac.
+        text: Periodic macOS health snapshots collected by com.chaba.macbook-health launchd job and stored at ~/var/chaba/health/macbook-snapshot.json. Verified fresh at 2026-09-09 18:48 local (timestamp 2026-09-09T11:48:13Z, uptime 1 day 2:16). Each snapshot includes lan_ip, tailscale_ip, wifi_ssid, memory pressure, top CPU/memory, Adobe/CRD/PlayLive process counts, disk hogs, and 9222/9231 ports. Run python3 /Users/kkkakk/chaba-health/collect-macbook-snapshot.py --fix to auto-kill Adobe CC, duplicate PlayLive Chrome, and orphaned /tmp/playlive-chrome-mac.
         status: active
         tags: [health, monitoring, snapshot]
       - label: PlayLive / CDP Node
-        text: Playwright+CDP browser automation daemon (playlived) on port 9231, exposed via playlive-macbook MCP, backed by headless Google Chrome with remote-debugging-port=9222
-        status: active
+        text: Playwright+CDP browser automation daemon (playlived) is not currently running on macbook; no listeners on ports 9222 or 9231 in the latest health snapshot. Chrome Remote Desktop headless profile is available; start the daemon manually or via launchd when needed.
+        status: inactive
         tags: [playlive, cdp, browser, playwright, automation]
       - label: Node.js
         text: Node.js v20.17.0 and npm 10.8.2 installed at ~/.local/node; available on the shell PATH via ~/.zshenv
@@ -157,23 +157,36 @@ sections:
         status: active
         tags: [homebrew, package-manager, macos]
       - label: Podman
-        text: Podman v5.8.5 for Intel Mac installed at ~/.local/podman with helper binaries and containers.conf in ~/.config/containers. Machine 'podman-machine-default' runs a rootless VM via vfkit. PATH set in ~/.zshenv.
+        text: 'Podman v5.8.5 installed at ~/.local/podman (binary at ~/.local/podman/bin/podman). The podman-machine-default VM is created but has never been started (LAST UP: Never); podman ps -a shows no containers. PATH includes ~/.local/podman/bin via ~/.zshenv.'
         status: active
         tags: [podman, containers, virtualization]
       - label: Redis
-        text: Redis 7 Alpine running in a rootless Podman container 'redis-macbook' on port 16379 with persistent volume 'redis-data'. Started with --appendonly yes. Tested with PONG from the host.
-        status: active
+        text: Redis 7 Alpine container 'redis-macbook' is not running; podman-machine-default has never been started and podman ps -a shows no containers. Persistent volume 'redis-data' may exist but cannot be verified until the VM starts.
+        status: inactive
         tags: [redis, podman, cache]
       - label: Terminal Access
         text: Full terminal access via SSH for command-line operations
         tags: [terminal, ssh, command-line]
+
+  - title: Power & Sleep
+    icon: 🔋
+    layout: list
+    items:
+      - label: Keep-Awake
+        text: "caffeinate -i -s is running (PID 4407); system sleep is prevented while display sleep remains at 30 minutes (pmset -g shows 'sleep prevented by caffeinate')"
+        status: active
+        tags: [power, sleep, caffeinate, remote]
+      - label: Power Settings
+        text: "sleep 1, displaysleep 30, disksleep 10, tcpkeepalive 1, ttyskeepawake 1, powernap 0"
+        status: active
+        tags: [power, pmset]
 
   - title: Integration with Home Network
     icon: 🏠
     layout: list
     items:
       - label: Network Integration
-        text: Part of 192.168.1.0/24 home network
+        text: Part of 192.168.2.0/24 home network
       - label: Service Access
         text: Can access tony-omen and tony-dell services
       - label: Shared Resources
@@ -188,7 +201,7 @@ sections:
     layout: list
     items:
       - label: System Updates
-        text: macOS Software Update via System Settings - Last updated 2026-08-10 (13.6.3 → 13.7.8)
+        text: macOS Software Update via System Settings - Last verified 2026-09-09 (macOS 13.7.8, build 22H730)
       - label: SSH Troubleshooting
         text: Check Remote Login in System Settings → Sharing
       - label: Network Troubleshooting
@@ -203,7 +216,7 @@ sections:
     layout: list
     items:
       - label: OS Updates
-        text: macOS 13.7.8 installed (2026-08-10) - Safari 18.6 installed
+        text: macOS 13.7.8 installed (2026-09-09, build 22H730) - Safari 18.6 installed
         status: updated
         tags: [security, updates, completed]
       - label: FileVault
@@ -231,7 +244,7 @@ sections:
     layout: list
     items:
       - label: Storage Status
-        text: 233GB total, 10GB used (8%), 127GB available
+        text: 233Gi total, 22Gi used, 95Gi available, 19% capacity (APFS shared container)
         status: healthy
       - label: Cleanup Performed (2026-08-10)
         text: Adobe cache (23GB), Chrome cache (1.8GB), Safari cache, system caches, Downloads DMG files
@@ -240,7 +253,7 @@ sections:
         text: ~27GB recovered during cleanup
         status: completed
       - label: Remaining Large Files
-        text: "Desktop: 6.1GB (PSD work files), Downloads: 2.1GB (manual review recommended)"
+        text: "Desktop: 6.1GB (PSD work files), Library: 18GB, Downloads: 817MB (manual review recommended)"
         status: review-needed
 
   - title: Future Enhancements
@@ -262,7 +275,7 @@ sections:
 
 config:
   version: 3
-  last_updated: 2026-08-10
+  last_updated: 2026-09-09
   maintainer: tony
   related_files:
     - ssot.mysystem.home.yml (home environment overview)
