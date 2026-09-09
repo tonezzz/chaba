@@ -101,15 +101,19 @@ sections:
       - label: Barrier Server
         text: Runs on tony-omen via systemd (barriers.service) on 0.0.0.0:24800, reachable at 100.75.102.88:24800 over Tailscale
       - label: Barrier Client
-        text: Runs on tony-dell and connects to 100.75.102.88:24800 (Tailscale) to avoid stale /etc/hosts
+        text: Runs on tony-dell as systemd user unit (barrier-client.service) and connects to 100.75.102.88:24800 (Tailscale) to avoid stale /etc/hosts
+      - label: Client Display
+        text: DISPLAY=:1 (physical monitor), XAUTHORITY=/run/user/1000/gdm/Xauthority, LD_PRELOAD=/home/tony/.local/lib/nodelay.so
       - label: Client Binary
         text: /home/tony/.local/bin/barrierc (actual path; /usr/bin/barrierc not installed)
       - label: Start Command
+        text: systemctl --user start barrier-client.service
+      - label: Manual Fallback
         text: nohup /home/tony/.local/bin/barrierc --no-daemon --disable-crypto --name tony-dell --log /tmp/barrier-client.log 100.75.102.88 >/dev/null 2>&1 &
       - label: Health Check
-        text: ssh -o ConnectTimeout=3 tony@tony-dell 'pgrep -a barrierc' && tail -n 5 /tmp/barrier-client.log
+        text: systemctl --user is-active barrier-client.service && ssh -o ConnectTimeout=3 tony@tony-dell 'pgrep -a barrierc' && tail -n 5 /tmp/barrier-client.log
       - label: Autofix
-        text: ssh -o ConnectTimeout=3 tony@tony-dell 'pkill -x barrierc 2>/dev/null; nohup /home/tony/.local/bin/barrierc --no-daemon --disable-crypto --name tony-dell --log /tmp/barrier-client.log 100.75.102.88 >/dev/null 2>&1 &'
+        text: ssh -o ConnectTimeout=3 tony@tony-dell 'pkill -x barrierc 2>/dev/null; systemctl --user daemon-reload && systemctl --user restart barrier-client.service'
       - label: Server Autofix
         text: systemctl --user restart barriers.service
       - label: Logs
