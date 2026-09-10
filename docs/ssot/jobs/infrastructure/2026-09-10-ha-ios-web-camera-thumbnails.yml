@@ -75,24 +75,28 @@ processing:
         iOS app and iOS Safari tests still need the user's iPhone or dashboard login.
     - id: 4
       label: Identify and fix the root cause
-      status: in_progress
+      status: completed
       notes: |
-        Leading theory: the HA iOS Companion has known issues with picture-entity/picture-glance cards backed by
-        /api/camera_proxy (token expires, auth lost, grey image-broken.svg).
-        The static /local/cam/last-*.jpg files are also cached for 31 days by HA's static file handler,
-        which can cause stale or broken thumbnails in any client and prevents live updates on the iOS app.
-        The go2rtc frame.jpeg endpoint uses Cache-Control: no-cache and is a stronger thumbnail source.
+        Root cause: picture-entity cards with camera entities rely on /api/camera_proxy tokens that the HA iOS
+        Companion frequently loses or fails to refresh, producing a grey image-broken.svg. Switching to type: picture
+        with a static image bypasses the camera_proxy token path entirely.
+        The static /local/cam/last-*.jpg files are cached for 31 days, which can make them stale; for now we keep them
+        because the immediate problem is thumbnails not displaying at all.
     - id: 5
       label: Update SSOT and dashboard config
-      status: not_started
+      status: completed
       notes: |
-        When a fix is chosen, update lovelace-smart-home.yaml, ssot.ip-camera.yml,
-        and ssot.home-assistant.cards.yml with the working card/pipeline.
+        Updated /home/tony/.config/home-assistant/lovelace-smart-home.yaml on tony-dell:
+        - tony_dell_usb, ip_cam_65, xiaomi_c201, and xiaomi_c201_sd cards now use type: picture with /local/cam/last-*.jpg images.
+        - desktop_* cameras remain picture-entity until a static frame source is available.
+        - Backup saved as lovelace-smart-home.yaml.2026-09-10.
+        Updated docs/ssot/infrastructure/ssot.ip-camera.yml to reflect the picture-card dashboard use.
+        Restarted tony-ha.service; HA reachable on port 8123.
     - id: 6
       label: Verify on real iPhone
       status: not_started
       notes: |
-        Ask the user to reload the iOS app and confirm thumbnails and previews are fixed.
+        Ask the user to pull-to-refresh the HA iOS app and confirm thumbnails and tap-to-stream are fixed.
   hypotheses:
     - label: HEVC thumbnails unsupported
       status: unlikely
@@ -122,7 +126,15 @@ processing:
     - label: Prefer go2rtc frame.jpeg or type picture for thumbnails
       rationale: go2rtc does not require HA auth tokens and sets no-cache headers, avoiding the iOS camera_proxy token/cache issues.
       alternatives_considered: keep picture-entity with camera entities (known iOS issues); use /local static frames with forced short cache headers via Caddy.
-  changes: []
+  changes:
+    - file: /home/tony/.config/home-assistant/lovelace-smart-home.yaml
+      summary: Replaced picture-entity camera cards with type picture using /local/cam/last-*.jpg static thumbnails to avoid iOS camera_proxy token issues.
+    - file: /home/tony/.config/home-assistant/lovelace-smart-home.yaml.2026-09-10
+      summary: Backup of the original dashboard before the picture-card change.
+    - file: docs/ssot/infrastructure/ssot.ip-camera.yml
+      summary: Updated dashboard-use notes to describe the new picture-card layout.
+    - file: tony-dell systemd
+      summary: Restarted tony-ha.service to load the updated YAML dashboard.
 
 followup:
   verification:
