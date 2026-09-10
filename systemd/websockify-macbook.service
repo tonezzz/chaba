@@ -1,0 +1,12 @@
+[Unit]
+Description=Websockify proxy to kk-macbook VNC (6080 -> 100.124.59.112:5900)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+ExecStart=/usr/bin/websockify 6080 100.124.59.112:5900
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target
