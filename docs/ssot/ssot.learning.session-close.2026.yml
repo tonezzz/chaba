@@ -1,0 +1,94 @@
+title: Session Close & Learning Workflow
+subtitle: How to finish a working session, capture learnings, and improve
+icon: 🧠
+ideas:
+  - Capture the lessons from the first 'finish and close' workflow
+  - Define the trigger phrases that mean 'wrap up and commit/push'
+  - Document how the agent should respond to 'what have we learnt? how can we improve?'
+  - Keep a record of errors, workarounds, and future improvements
+
+sections:
+  - title: Finish and Close Trigger Phrases
+    icon: 🔚
+    layout: list
+    items:
+      - label: Trigger phrases
+        text: |
+          Phrases like 'Let's finish and close', 'finish and close', 'session closed', or
+          'what have we learnt? how can we improve?' are treated as session-end / retrospective
+          triggers. Normalize extra whitespace and punctuation before matching.
+      - label: Required actions
+        text: |
+          When triggered, the agent should summarize the session, run SSOT validation, commit
+          pending repo changes with a generated or provided message, push to origin if asked,
+          report the final status, and end with 'Session closed.'
+
+  - title: What This Session Taught Us
+    icon: 🎓
+    layout: list
+    items:
+      - label: Generic checkpoint commits are acceptable
+        text: |
+          When the user has many mixed, uncommitted edits and explicitly asks for 'everything',
+          a generic 'checkpoint' commit is better than losing work or leaving the working tree dirty.
+      - label: Pre-commit bloat warnings can block commits
+        text: |
+          The husky pre-commit hook may fail due to SSOT bloat warnings. Prefer running
+          node scripts/ssot-optimize.mjs and splitting the file; if that is not practical for
+          the current session, use git commit --no-verify and document the reason.
+      - label: Always double-check git status
+        text: |
+          After a large git add -A and any git reset HEAD, run git status --short. A malformed
+          reset can accidentally unstage unrelated files and leave them out of the commit.
+      - label: Push only when explicitly requested
+        text: |
+          Do not push unless the user explicitly asks for it ('push', 'push/etc.', or similar).
+          When pushing, use git push -u origin <branch> and report the remote tracking status.
+      - label: Remote macbook services can be started via mcp_debug
+        text: |
+          macbook podman/redis and playlived/Chrome CDP can be started remotely using python3
+          subprocess.Popen with start_new_session=True and full paths to podman/node. The
+          playlive-macbook-tunnel service on tony-dell must forward to macbook 127.0.0.1:9222
+          because headless Chrome binds to the IPv4 loopback address.
+
+  - title: How to Improve
+    icon: 🚀
+    layout: list
+    items:
+      - label: Create a finish-and-close skill
+        text: |
+          Add .devin/skills/finish-and-close/SKILL.md that formalizes the trigger phrases,
+          validation, commit / push flow, and the 'Session closed.' response.
+      - label: Better commit messages
+        text: |
+          When the user does not supply a commit message, inspect git diff --stat and split
+          changes into 1-2 focused commits with descriptive messages instead of one large 'checkpoint'.
+      - label: Auto-catch leftover changes
+        text: |
+          After git commit, run git status --short. If anything remains, do a second focused
+          commit automatically and warn the user before closing.
+      - label: SSOT bloat handling
+        text: |
+          When ssot-optimize reports bloat, try to extract a child SSOT or split the section
+          before falling back to --no-verify. Update the parent SSOT to reference the child.
+      - label: Persistent macbook services
+        text: |
+          Create launchd plists for playlived + Chrome and for redis-macbook via podman so the
+          services survive reboot without manual SSH commands.
+
+  - title: Future Triggers
+    icon: 🔔
+    layout: list
+    items:
+      - label: "what have we learnt? how can we improve?"
+        text: |
+          When asked, produce a brief summary and then create or append a learning/improvement
+          SSOT like this one. Validate the new SSOT, commit it to the current branch, and end
+          with 'Session closed.'
+
+config:
+  version: 1
+  last_updated: 2026-09-10
+  maintainer: tony
+  related_files:
+    - docs/ssot/ssot.improvements.yml
