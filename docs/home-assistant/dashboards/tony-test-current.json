@@ -7961,15 +7961,16 @@
           "path": "wide",
           "icon": "mdi:view-column",
           "type": "sections",
-          "max_columns": 1,
+          "max_columns": 3,
           "sections": [
             {
               "type": "grid",
+              "column_span": 1,
               "cards": [
                 {
                   "type": "heading",
-                  "heading": "Casa",
-                  "sub_heading": "02 gennaio",
+                  "heading": "16:54",
+                  "sub_heading": "Home\nJanuary 02",
                   "heading_style": "title",
                   "icon": "mdi:home-outline",
                   "grid_options": {
@@ -8000,7 +8001,7 @@
                 },
                 {
                   "type": "button",
-                  "name": "Tapparelle",
+                  "name": "Shutters",
                   "icon": "mdi:window-shutter",
                   "show_name": true,
                   "show_icon": true,
@@ -8018,7 +8019,7 @@
                 },
                 {
                   "type": "button",
-                  "name": "Clima",
+                  "name": "Climate",
                   "icon": "mdi:thermostat",
                   "show_name": true,
                   "show_icon": true,
@@ -8036,7 +8037,7 @@
                 },
                 {
                   "type": "button",
-                  "name": "Elettrodom.",
+                  "name": "Appliances",
                   "icon": "mdi:washing-machine",
                   "show_name": true,
                   "show_icon": true,
@@ -8054,7 +8055,7 @@
                 },
                 {
                   "type": "button",
-                  "name": "Energia",
+                  "name": "Energy",
                   "icon": "mdi:lightning-bolt",
                   "show_name": true,
                   "show_icon": true,
@@ -8072,7 +8073,7 @@
                 },
                 {
                   "type": "button",
-                  "name": "Acqua",
+                  "name": "Water",
                   "icon": "mdi:water",
                   "show_name": true,
                   "show_icon": true,
@@ -8090,7 +8091,7 @@
                 },
                 {
                   "type": "button",
-                  "name": "Telecamere",
+                  "name": "Cameras",
                   "icon": "mdi:video",
                   "show_name": true,
                   "show_icon": true,
@@ -8108,7 +8109,7 @@
                 },
                 {
                   "type": "button",
-                  "name": "Calcio",
+                  "name": "Soccer",
                   "icon": "mdi:soccer",
                   "show_name": true,
                   "show_icon": true,
@@ -8144,7 +8145,7 @@
                 },
                 {
                   "type": "button",
-                  "name": "Profilo",
+                  "name": "Profile",
                   "icon": "mdi:account",
                   "show_name": true,
                   "show_icon": true,
@@ -8158,6 +8159,165 @@
                   },
                   "card_mod": {
                     "style": "ha-card {\n                    background: #d9f99d;\n                    border-radius: 18px;\n                    color: #000;\n                    --primary-text-color: #000;\n                    --secondary-text-color: #000;\n                    --state-icon-color: #000;\n                    padding: 4px;\n                }"
+                  }
+                }
+              ]
+            },
+            {
+              "type": "grid",
+              "column_span": 2,
+              "cards": [
+                {
+                  "type": "heading",
+                  "heading": "Rooms",
+                  "heading_style": "subtitle",
+                  "grid_options": {
+                    "columns": "full",
+                    "rows": 1
+                  },
+                  "card_mod": {
+                    "style": "ha-card {\n                                background: #0f172a;\n                                border-radius: 18px;\n                                color: #fff;\n                            }"
+                  }
+                },
+                {
+                  "type": "gauge",
+                  "entity": "sensor.batteries_1_temperature_2",
+                  "name": "Kitchen",
+                  "unit": "°C",
+                  "min": 0,
+                  "max": 40,
+                  "needle": false,
+                  "severity": {
+                    "green": 0,
+                    "yellow": 22,
+                    "red": 28
+                  },
+                  "grid_options": {
+                    "columns": 6,
+                    "rows": 4
+                  },
+                  "card_mod": {
+                    "style": "ha-card {\n                    background: #0f172a;\n                    border-radius: 18px;\n                    color: #fff;\n                    --primary-text-color: #fff;\n                }"
+                  }
+                },
+                {
+                  "type": "gauge",
+                  "entity": "sensor.batteries_1_temperature_1",
+                  "name": "Living room",
+                  "unit": "°C",
+                  "min": 0,
+                  "max": 40,
+                  "needle": false,
+                  "severity": {
+                    "green": 0,
+                    "yellow": 22,
+                    "red": 28
+                  },
+                  "grid_options": {
+                    "columns": 6,
+                    "rows": 4
+                  },
+                  "card_mod": {
+                    "style": "ha-card {\n                    background: #0f172a;\n                    border-radius: 18px;\n                    color: #fff;\n                    --primary-text-color: #fff;\n                }"
+                  }
+                },
+                {
+                  "type": "gauge",
+                  "entity": "sensor.batteries_3_temperature_2",
+                  "name": "Bedroom",
+                  "unit": "°C",
+                  "min": 0,
+                  "max": 40,
+                  "needle": false,
+                  "severity": {
+                    "green": 0,
+                    "yellow": 22,
+                    "red": 28
+                  },
+                  "grid_options": {
+                    "columns": 6,
+                    "rows": 4
+                  },
+                  "card_mod": {
+                    "style": "ha-card {\n                    background: #0f172a;\n                    border-radius: 18px;\n                    color: #fff;\n                    --primary-text-color: #fff;\n                }"
+                  }
+                },
+                {
+                  "type": "gauge",
+                  "entity": "sensor.batteries_3_temperature_1",
+                  "name": "Children's room",
+                  "unit": "°C",
+                  "min": 0,
+                  "max": 40,
+                  "needle": false,
+                  "severity": {
+                    "green": 0,
+                    "yellow": 22,
+                    "red": 28
+                  },
+                  "grid_options": {
+                    "columns": 6,
+                    "rows": 4
+                  },
+                  "card_mod": {
+                    "style": "ha-card {\n                    background: #0f172a;\n                    border-radius: 18px;\n                    color: #fff;\n                    --primary-text-color: #fff;\n                }"
+                  }
+                },
+                {
+                  "type": "gauge",
+                  "entity": "sensor.batteries_2_temperature_mos",
+                  "name": "Guest room",
+                  "unit": "°C",
+                  "min": 0,
+                  "max": 40,
+                  "needle": false,
+                  "severity": {
+                    "green": 0,
+                    "yellow": 22,
+                    "red": 28
+                  },
+                  "grid_options": {
+                    "columns": 6,
+                    "rows": 4
+                  },
+                  "card_mod": {
+                    "style": "ha-card {\n                    background: #0f172a;\n                    border-radius: 18px;\n                    color: #fff;\n                    --primary-text-color: #fff;\n                }"
+                  }
+                },
+                {
+                  "type": "gauge",
+                  "entity": "input_number.dev_inverter_temperature",
+                  "name": "Bathroom",
+                  "unit": "°C",
+                  "min": 0,
+                  "max": 40,
+                  "needle": false,
+                  "severity": {
+                    "green": 0,
+                    "yellow": 22,
+                    "red": 28
+                  },
+                  "grid_options": {
+                    "columns": 6,
+                    "rows": 4
+                  },
+                  "card_mod": {
+                    "style": "ha-card {\n                    background: #0f172a;\n                    border-radius: 18px;\n                    color: #fff;\n                    --primary-text-color: #fff;\n                }"
+                  }
+                },
+                {
+                  "type": "history-graph",
+                  "entities": [
+                    "sensor.inverters_1_temperature"
+                  ],
+                  "hours_to_show": 24,
+                  "title": "24h temperature trend",
+                  "grid_options": {
+                    "columns": "full",
+                    "rows": 3
+                  },
+                  "card_mod": {
+                    "style": "ha-card {\n                background: #0f172a;\n                border-radius: 18px;\n            }"
                   }
                 }
               ]
