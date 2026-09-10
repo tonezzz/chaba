@@ -79,7 +79,8 @@ def _table(rows: list[dict]) -> str:
         label = r.get("label") or r.get("device_id", "")
         iface = r.get("interface_id") or ""
         mac = r.get("mac") or "—"
-        ip = r.get("ip") or "—"
+        raw_ip = r.get("ip")
+        ip = f'<a href="http://{raw_ip}" target="_blank" rel="noopener">{raw_ip}</a>' if raw_ip else "—"
         typ = r.get("type") or "unknown"
         status = r.get("status") or "unknown"
         mac_source = r.get("mac_source") or ""
