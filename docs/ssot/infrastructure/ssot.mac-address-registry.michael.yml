@@ -2,30 +2,30 @@ title: Michael MAC Address Registry
 subtitle: MAC registry for Michael's home network devices
 icon: 🔗
 ideas:
-  - Treat MAC as an attribute, not a primary key
-  - Devices with duplicate or unknown MACs are kept separate and linked by device_id
+- Treat MAC as an attribute, not a primary key
+- Devices with duplicate or unknown MACs are kept separate and linked by device_id
 sections:
-  - title: Network
-    icon: 🏠
-    layout: list
-    items:
-      - label: Michael home network
-        text: '192.168.1.0/24, gateway 192.168.1.1, scanned via michael-ha (192.168.1.160) over Tailscale SSH'
-  - title: Duplicate MAC handling
-    icon: ⚠️
-    layout: list
-    items:
-      - label: Device_id is the primary key
-        text: 'MAC is a soft attribute. If two devices collide, set mac_conflict=true and a shared conflict_group, then resolve with local_ids, observed network, and vendor verification.'
-  - title: Known devices
-    icon: 📋
-    layout: list
-    items:
-      - label: Count
-        text: '18 devices with known MAC or local ID from HA config and device registry'
+- title: Network
+  icon: 🏠
+  layout: list
+  items:
+  - label: Michael home network
+    text: 192.168.1.0/24, gateway 192.168.1.1, scanned via michael-ha (192.168.1.160) over Tailscale SSH
+- title: Duplicate MAC handling
+  icon: ⚠️
+  layout: list
+  items:
+  - label: Device_id is the primary key
+    text: MAC is a soft attribute. If two devices collide, set mac_conflict=true and a shared conflict_group, then resolve with local_ids, observed network, and vendor verification.
+- title: Known devices
+  icon: 📋
+  layout: list
+  items:
+  - label: Count
+    text: 58 devices with known MAC or local ID from HA config and device registry
 config:
   version: 1
-  last_updated: '2026-09-02'
+  last_updated: '2026-09-10'
   maintainer: tony
   status: active
   related_files:
@@ -322,6 +322,583 @@ config:
       type: unknown
       source: arp-scan
       first_seen: '2026-09-07'
+      status: active
+    mac_conflict: false
+    status: active
+  - device_id: michael-zhejiang-dahua-technology-co-ltd-dup-2-192-168-1-108
+    label: Dahua camera 192.168.1.108
+    local_ids:
+      observed_vendor: 'Zhejiang Dahua Technology Co., Ltd. (DUP: 2'
+    interfaces:
+    - interface_id: primary
+      mac: f4:b1:c2:76:06:3b
+      oui: f4:b1:c2
+      vendor: 'Zhejiang Dahua Technology Co., Ltd. (DUP: 2'
+      type: camera
+      source: arp-scan
+      first_seen: '2026-09-10'
+      status: active
+    mac_conflict: false
+    status: active
+  - device_id: michael-unknown-192-168-1-118
+    label: Unknown 192.168.1.118
+    local_ids: {}
+    interfaces:
+    - interface_id: primary
+      mac: c4:82:e1:ff:ca:df
+      oui: c4:82:e1
+      vendor: null
+      type: unknown
+      source: arp-scan
+      first_seen: '2026-09-10'
+      status: active
+    mac_conflict: false
+    status: active
+  - device_id: michael-zhejiang-dahua-technology-co-ltd-192-168-1-119
+    label: Dahua camera 192.168.1.119
+    local_ids:
+      observed_vendor: Zhejiang Dahua Technology Co., Ltd.
+    interfaces:
+    - interface_id: primary
+      mac: e4:24:6c:5e:61:fb
+      oui: e4:24:6c
+      vendor: Zhejiang Dahua Technology Co., Ltd.
+      type: camera
+      source: arp-scan
+      first_seen: '2026-09-10'
+      status: active
+    mac_conflict: false
+    status: active
+  - device_id: michael-shanghai-high-flying-electronics-technology-co-ltd-dup-3-192-168-1-131
+    label: 'Shanghai High-Flying Electronics  Technology Co., Ltd (DUP: 3 192.168.1.131'
+    local_ids:
+      observed_vendor: 'Shanghai High-Flying Electronics  Technology Co., Ltd (DUP: 3'
+    interfaces:
+    - interface_id: primary
+      mac: e8:fd:f8:37:8e:40
+      oui: e8:fd:f8
+      vendor: 'Shanghai High-Flying Electronics  Technology Co., Ltd (DUP: 3'
+      type: unknown
+      source: arp-scan
+      first_seen: '2026-09-10'
+      status: active
+    mac_conflict: false
+    status: active
+  - device_id: michael-unknown-192-168-1-135
+    label: Unknown 192.168.1.135
+    local_ids: {}
+    interfaces:
+    - interface_id: primary
+      mac: 1c:4d:89:e2:98:0f
+      oui: 1c:4d:89
+      vendor: null
+      type: unknown
+      source: arp-scan
+      first_seen: '2026-09-10'
+      status: active
+    mac_conflict: false
+    status: active
+  - device_id: michael-unknown-192-168-1-137
+    label: Unknown 192.168.1.137
+    local_ids: {}
+    interfaces:
+    - interface_id: primary
+      mac: a4:a9:30:17:f2:74
+      oui: a4:a9:30
+      vendor: null
+      type: unknown
+      source: arp-scan
+      first_seen: '2026-09-10'
+      status: active
+    mac_conflict: false
+    status: active
+  - device_id: michael-zhejiang-dahua-technology-co-ltd-192-168-1-139
+    label: Dahua camera 192.168.1.139
+    local_ids:
+      observed_vendor: Zhejiang Dahua Technology Co., Ltd.
+    interfaces:
+    - interface_id: primary
+      mac: 6c:1c:71:76:5a:e1
+      oui: 6c:1c:71
+      vendor: Zhejiang Dahua Technology Co., Ltd.
+      type: camera
+      source: arp-scan
+      first_seen: '2026-09-10'
+      status: active
+    mac_conflict: false
+    status: active
+  - device_id: michael-zhejiang-dahua-technology-co-ltd-192-168-1-140
+    label: Dahua camera 192.168.1.140
+    local_ids:
+      observed_vendor: Zhejiang Dahua Technology Co., Ltd.
+    interfaces:
+    - interface_id: primary
+      mac: bc:32:5f:97:1b:be
+      oui: bc:32:5f
+      vendor: Zhejiang Dahua Technology Co., Ltd.
+      type: camera
+      source: arp-scan
+      first_seen: '2026-09-10'
+      status: active
+    mac_conflict: false
+    status: active
+  - device_id: michael-zhejiang-dahua-technology-co-ltd-192-168-1-143
+    label: Dahua camera 192.168.1.143
+    local_ids:
+      observed_vendor: Zhejiang Dahua Technology Co., Ltd.
+    interfaces:
+    - interface_id: primary
+      mac: f4:b1:c2:76:06:3b
+      oui: f4:b1:c2
+      vendor: Zhejiang Dahua Technology Co., Ltd.
+      type: camera
+      source: arp-scan
+      first_seen: '2026-09-10'
+      status: active
+    mac_conflict: false
+    status: active
+  - device_id: michael-unknown-192-168-1-144
+    label: Unknown 192.168.1.144
+    local_ids: {}
+    interfaces:
+    - interface_id: primary
+      mac: c4:82:e1:59:71:13
+      oui: c4:82:e1
+      vendor: null
+      type: unknown
+      source: arp-scan
+      first_seen: '2026-09-10'
+      status: active
+    mac_conflict: false
+    status: active
+  - device_id: michael-unknown-192-168-1-147
+    label: Unknown 192.168.1.147
+    local_ids: {}
+    interfaces:
+    - interface_id: primary
+      mac: 38:2c:e5:d1:6f:ae
+      oui: 38:2c:e5
+      vendor: null
+      type: unknown
+      source: arp-scan
+      first_seen: '2026-09-10'
+      status: active
+    mac_conflict: false
+    status: active
+  - device_id: michael-newport-media-inc-192-168-1-148
+    label: Newport Media Inc. 192.168.1.148
+    local_ids:
+      observed_vendor: Newport Media Inc.
+    interfaces:
+    - interface_id: primary
+      mac: f8:f0:05:55:02:5e
+      oui: f8:f0:05
+      vendor: Newport Media Inc.
+      type: unknown
+      source: arp-scan
+      first_seen: '2026-09-10'
+      status: active
+    mac_conflict: false
+    status: active
+  - device_id: michael-zhejiang-dahua-technology-co-ltd-192-168-1-149
+    label: Dahua camera 192.168.1.149
+    local_ids:
+      observed_vendor: Zhejiang Dahua Technology Co., Ltd.
+    interfaces:
+    - interface_id: primary
+      mac: bc:32:5f:97:1b:9f
+      oui: bc:32:5f
+      vendor: Zhejiang Dahua Technology Co., Ltd.
+      type: camera
+      source: arp-scan
+      first_seen: '2026-09-10'
+      status: active
+    mac_conflict: false
+    status: active
+  - device_id: michael-unknown-192-168-1-151
+    label: Unknown 192.168.1.151
+    local_ids: {}
+    interfaces:
+    - interface_id: primary
+      mac: a4:a9:30:18:0e:59
+      oui: a4:a9:30
+      vendor: null
+      type: unknown
+      source: arp-scan
+      first_seen: '2026-09-10'
+      status: active
+    mac_conflict: false
+    status: active
+  - device_id: michael-zhejiang-dahua-technology-co-ltd-192-168-1-152
+    label: Dahua camera 192.168.1.152
+    local_ids:
+      observed_vendor: Zhejiang Dahua Technology Co., Ltd.
+    interfaces:
+    - interface_id: primary
+      mac: e4:24:6c:a4:f4:94
+      oui: e4:24:6c
+      vendor: Zhejiang Dahua Technology Co., Ltd.
+      type: camera
+      source: arp-scan
+      first_seen: '2026-09-10'
+      status: active
+    mac_conflict: false
+    status: active
+  - device_id: michael-unknown-192-168-1-155
+    label: Unknown 192.168.1.155
+    local_ids: {}
+    interfaces:
+    - interface_id: primary
+      mac: 20:f1:b2:c2:7e:a6
+      oui: 20:f1:b2
+      vendor: null
+      type: unknown
+      source: arp-scan
+      first_seen: '2026-09-10'
+      status: active
+    mac_conflict: false
+    status: active
+  - device_id: michael-unknown-192-168-1-156
+    label: Unknown 192.168.1.156
+    local_ids: {}
+    interfaces:
+    - interface_id: primary
+      mac: 58:ea:1f:4c:2b:26
+      oui: 58:ea:1f
+      vendor: null
+      type: unknown
+      source: arp-scan
+      first_seen: '2026-09-10'
+      status: active
+    mac_conflict: false
+    status: active
+  - device_id: michael-huawei-technologies-co-ltd-192-168-1-157
+    label: HUAWEI TECHNOLOGIES CO.,LTD 192.168.1.157
+    local_ids:
+      observed_vendor: HUAWEI TECHNOLOGIES CO.,LTD
+    interfaces:
+    - interface_id: primary
+      mac: 58:56:c2:c8:ee:61
+      oui: 58:56:c2
+      vendor: HUAWEI TECHNOLOGIES CO.,LTD
+      type: network
+      source: arp-scan
+      first_seen: '2026-09-10'
+      status: active
+    mac_conflict: false
+    status: active
+  - device_id: michael-unknown-192-168-1-158
+    label: Unknown 192.168.1.158
+    local_ids: {}
+    interfaces:
+    - interface_id: primary
+      mac: 02:00:00:05:20:01
+      oui: 02:00:00
+      vendor: null
+      type: unknown
+      source: arp-scan
+      first_seen: '2026-09-10'
+      status: active
+    mac_conflict: false
+    status: active
+  - device_id: michael-unknown-192-168-1-161
+    label: Unknown 192.168.1.161
+    local_ids: {}
+    interfaces:
+    - interface_id: primary
+      mac: d8:d6:68:5a:bd:38
+      oui: d8:d6:68
+      vendor: null
+      type: unknown
+      source: arp-scan
+      first_seen: '2026-09-10'
+      status: active
+    mac_conflict: false
+    status: active
+  - device_id: michael-unknown-192-168-1-163
+    label: Unknown 192.168.1.163
+    local_ids: {}
+    interfaces:
+    - interface_id: primary
+      mac: d8:d6:68:34:98:8d
+      oui: d8:d6:68
+      vendor: null
+      type: unknown
+      source: arp-scan
+      first_seen: '2026-09-10'
+      status: active
+    mac_conflict: false
+    status: active
+  - device_id: michael-unknown-192-168-1-164
+    label: Unknown 192.168.1.164
+    local_ids: {}
+    interfaces:
+    - interface_id: primary
+      mac: 18:de:50:64:fe:44
+      oui: 18:de:50
+      vendor: null
+      type: unknown
+      source: arp-scan
+      first_seen: '2026-09-10'
+      status: active
+    mac_conflict: false
+    status: active
+  - device_id: michael-unknown-192-168-1-166
+    label: Unknown 192.168.1.166
+    local_ids: {}
+    interfaces:
+    - interface_id: primary
+      mac: 30:24:50:5c:39:7a
+      oui: '30:24:50'
+      vendor: null
+      type: unknown
+      source: arp-scan
+      first_seen: '2026-09-10'
+      status: active
+    mac_conflict: false
+    status: active
+  - device_id: michael-seiko-epson-corporation-192-168-1-167
+    label: Seiko Epson Corporation 192.168.1.167
+    local_ids:
+      observed_vendor: Seiko Epson Corporation
+    interfaces:
+    - interface_id: primary
+      mac: 50:57:9c:97:9b:8f
+      oui: 50:57:9c
+      vendor: Seiko Epson Corporation
+      type: unknown
+      source: arp-scan
+      first_seen: '2026-09-10'
+      status: active
+    mac_conflict: false
+    status: active
+  - device_id: michael-unknown-192-168-1-169
+    label: Unknown 192.168.1.169
+    local_ids: {}
+    interfaces:
+    - interface_id: primary
+      mac: 1c:4d:89:a9:b9:a3
+      oui: 1c:4d:89
+      vendor: null
+      type: unknown
+      source: arp-scan
+      first_seen: '2026-09-10'
+      status: active
+    mac_conflict: false
+    status: active
+  - device_id: michael-unknown-192-168-1-171
+    label: Unknown 192.168.1.171
+    local_ids: {}
+    interfaces:
+    - interface_id: primary
+      mac: 1c:e8:9e:e4:92:ab
+      oui: 1c:e8:9e
+      vendor: null
+      type: unknown
+      source: arp-scan
+      first_seen: '2026-09-10'
+      status: active
+    mac_conflict: false
+    status: active
+  - device_id: michael-unknown-192-168-1-172
+    label: Unknown 192.168.1.172
+    local_ids: {}
+    interfaces:
+    - interface_id: primary
+      mac: ba:c1:ce:cc:a1:8e
+      oui: ba:c1:ce
+      vendor: null
+      type: unknown
+      source: arp-scan
+      first_seen: '2026-09-10'
+      status: active
+    mac_conflict: false
+    status: active
+  - device_id: michael-unknown-192-168-1-173
+    label: Unknown 192.168.1.173
+    local_ids: {}
+    interfaces:
+    - interface_id: primary
+      mac: 34:8e:89:e4:df:2d
+      oui: 34:8e:89
+      vendor: null
+      type: unknown
+      source: arp-scan
+      first_seen: '2026-09-10'
+      status: active
+    mac_conflict: false
+    status: active
+  - device_id: michael-zhejiang-dahua-technology-co-ltd-192-168-1-174
+    label: Dahua camera 192.168.1.174
+    local_ids:
+      observed_vendor: Zhejiang Dahua Technology Co., Ltd.
+    interfaces:
+    - interface_id: primary
+      mac: e4:24:6c:5e:60:c0
+      oui: e4:24:6c
+      vendor: Zhejiang Dahua Technology Co., Ltd.
+      type: camera
+      source: arp-scan
+      first_seen: '2026-09-10'
+      status: active
+    mac_conflict: false
+    status: active
+  - device_id: michael-zhejiang-dahua-technology-co-ltd-192-168-1-175
+    label: Dahua camera 192.168.1.175
+    local_ids:
+      observed_vendor: Zhejiang Dahua Technology Co., Ltd.
+    interfaces:
+    - interface_id: primary
+      mac: bc:32:5f:97:1b:dd
+      oui: bc:32:5f
+      vendor: Zhejiang Dahua Technology Co., Ltd.
+      type: camera
+      source: arp-scan
+      first_seen: '2026-09-10'
+      status: active
+    mac_conflict: false
+    status: active
+  - device_id: michael-zhejiang-dahua-technology-co-ltd-192-168-1-176
+    label: Dahua camera 192.168.1.176
+    local_ids:
+      observed_vendor: Zhejiang Dahua Technology Co., Ltd.
+    interfaces:
+    - interface_id: primary
+      mac: 6c:1c:71:76:5a:01
+      oui: 6c:1c:71
+      vendor: Zhejiang Dahua Technology Co., Ltd.
+      type: camera
+      source: arp-scan
+      first_seen: '2026-09-10'
+      status: active
+    mac_conflict: false
+    status: active
+  - device_id: michael-unknown-192-168-1-177
+    label: Unknown 192.168.1.177
+    local_ids: {}
+    interfaces:
+    - interface_id: primary
+      mac: d8:fc:92:5a:77:05
+      oui: d8:fc:92
+      vendor: null
+      type: unknown
+      source: arp-scan
+      first_seen: '2026-09-10'
+      status: active
+    mac_conflict: false
+    status: active
+  - device_id: michael-unknown-192-168-1-180
+    label: Unknown 192.168.1.180
+    local_ids: {}
+    interfaces:
+    - interface_id: primary
+      mac: 82:7f:36:35:be:bf
+      oui: 82:7f:36
+      vendor: null
+      type: unknown
+      source: arp-scan
+      first_seen: '2026-09-10'
+      status: active
+    mac_conflict: false
+    status: active
+  - device_id: michael-murata-manufacturing-co-ltd-192-168-1-181
+    label: Murata Manufacturing Co., Ltd. 192.168.1.181
+    local_ids:
+      observed_vendor: Murata Manufacturing Co., Ltd.
+    interfaces:
+    - interface_id: primary
+      mac: c4:ac:59:c4:6e:ac
+      oui: c4:ac:59
+      vendor: Murata Manufacturing Co., Ltd.
+      type: unknown
+      source: arp-scan
+      first_seen: '2026-09-10'
+      status: active
+    mac_conflict: false
+    status: active
+  - device_id: michael-shanghai-high-flying-electronics-technology-co-ltd-dup-2-192-168-1-182
+    label: 'Shanghai High-Flying Electronics  Technology Co., Ltd (DUP: 2 192.168.1.182'
+    local_ids:
+      observed_vendor: 'Shanghai High-Flying Electronics  Technology Co., Ltd (DUP: 2'
+    interfaces:
+    - interface_id: primary
+      mac: 34:ea:e7:bf:17:92
+      oui: 34:ea:e7
+      vendor: 'Shanghai High-Flying Electronics  Technology Co., Ltd (DUP: 2'
+      type: unknown
+      source: arp-scan
+      first_seen: '2026-09-10'
+      status: active
+    mac_conflict: false
+    status: active
+  - device_id: michael-unknown-192-168-1-184
+    label: Unknown 192.168.1.184
+    local_ids: {}
+    interfaces:
+    - interface_id: primary
+      mac: 38:2c:e5:1e:b5:28
+      oui: 38:2c:e5
+      vendor: null
+      type: unknown
+      source: arp-scan
+      first_seen: '2026-09-10'
+      status: active
+    mac_conflict: false
+    status: active
+  - device_id: michael-unknown-192-168-1-187
+    label: Unknown 192.168.1.187
+    local_ids: {}
+    interfaces:
+    - interface_id: primary
+      mac: fc:3c:d7:a1:d8:6b
+      oui: fc:3c:d7
+      vendor: null
+      type: unknown
+      source: arp-scan
+      first_seen: '2026-09-10'
+      status: active
+    mac_conflict: false
+    status: active
+  - device_id: michael-unknown-192-168-1-196
+    label: Unknown 192.168.1.196
+    local_ids: {}
+    interfaces:
+    - interface_id: primary
+      mac: 4c:a9:19:11:92:f7
+      oui: 4c:a9:19
+      vendor: null
+      type: unknown
+      source: arp-scan
+      first_seen: '2026-09-10'
+      status: active
+    mac_conflict: false
+    status: active
+  - device_id: michael-unknown-192-168-1-197
+    label: Unknown 192.168.1.197
+    local_ids: {}
+    interfaces:
+    - interface_id: primary
+      mac: 38:2c:e5:1e:c4:ee
+      oui: 38:2c:e5
+      vendor: null
+      type: unknown
+      source: arp-scan
+      first_seen: '2026-09-10'
+      status: active
+    mac_conflict: false
+    status: active
+  - device_id: michael-asustek-computer-inc-192-168-1-199
+    label: ASUSTek COMPUTER INC. 192.168.1.199
+    local_ids:
+      observed_vendor: ASUSTek COMPUTER INC.
+    interfaces:
+    - interface_id: primary
+      mac: c8:60:00:8a:62:19
+      oui: c8:60:00
+      vendor: ASUSTek COMPUTER INC.
+      type: unknown
+      source: arp-scan
+      first_seen: '2026-09-10'
       status: active
     mac_conflict: false
     status: active
