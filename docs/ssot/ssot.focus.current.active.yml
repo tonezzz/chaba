@@ -9,7 +9,49 @@ sections:
 - title: Active Branch Focus
   icon: branch
   layout: list
-  items: []
+  items:
+  - label: tony_omen link down
+    text: 'Link monitor detected tony_omen is unreachable after scan and safe fixes.
+
+
+      Scan output:
+
+      - tailscale status --json (rc=0)
+
+      - ip -4 route (rc=0)
+
+      - ip -4 -br addr show (rc=0)
+
+      - ss -tlnp (rc=0)
+
+      - tailscale ping tony-omen -c 3 (rc=1)
+
+
+      Fix attempts:
+
+      - tailscale ping (rc=1)'
+    status: active
+    priority: high
+    started: '2026-09-11'
+    estimated_duration: 1 session
+    tags:
+    - monitoring
+    - network
+    - link
+    - alert
+    subtasks:
+    - label: Review scan output
+      status: not_started
+    - label: Apply manual fix or escalate
+      status: not_started
+    request_log: []
+    ownership:
+      owner: tony
+      session: ''
+      locked: true
+      lock_reason: Activated as active focus
+    branch: chaba
+    source: /home/tony/CascadeProjects/chaba-tony-dell/docs/ssot/focus-inbox/tony_omen-link-down-2026-09-06-220630.yml
 - title: Quick Wins
   icon: quick
   layout: list
