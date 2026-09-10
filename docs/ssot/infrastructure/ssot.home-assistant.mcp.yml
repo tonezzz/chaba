@@ -12,11 +12,15 @@ servers:
     webhook_id: mcp_d5528537d57627164033dc5e3e5e5aa6
     custom_component: ha_mcp_tools
     status: active
+    verified_at: '2026-09-09'
     notes: |
       HA core container is healthy and the UI returns HTTP 200. After a
       container restart the ha_mcp_tools MCP server came up on port 9584
-      (startup took several minutes while tony-dell CPU load was high). A container restart may clear transient state;
-      if the load stays high the startup watchdog may time out again.
+      (startup took several minutes while tony-dell CPU load was high). The
+      embedded_server.py timeout constants were increased to
+      _READY_STALL_TIMEOUT_SECONDS=300s and _READY_TOTAL_CAP_SECONDS=900s to
+      prevent the default 90s stall budget from killing the in-process server
+      during slow imports. Verified 2026-09-09.
 
   michael_dev:
     name: michael-dev
@@ -28,7 +32,13 @@ servers:
     webhook_id: mcp_ed77567866f1ebbb6fb091dc816cb550
     custom_component: ha_mcp_tools
     status: active
-    verified_at: '2026-09-04'
+    verified_at: '2026-09-09'
+    notes: |
+      Same ha_mcp_tools timeout patch as tony-ha applied to
+      ~/.config/michael-dev/custom_components/ha_mcp_tools/embedded_server.py
+      (_READY_STALL_TIMEOUT_SECONDS=300s, _READY_TOTAL_CAP_SECONDS=900s).
+      Without this the MCP server timed out after 90s during slow imports on
+      HA 2026.9.0. Verified with mcp_list_tools 2026-09-09.
     verified_tools:
       - ha_reload_core: reloaded 15 core components, brief groups API warning
       - ha_get_state: returned sensor.battery_1_charge_power state and attributes

@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>3D Charts Demo</title>
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/echarts-gl@2.1.0/dist/echarts-gl.min.js"></script>
+  <style>
+    html, body { margin: 0; background: #0b0f14; color: #dbe4ee; font-family: system-ui, sans-serif; }
+    h1 { font-size: 18px; margin: 16px 24px 4px; }
+    h2 { font-size: 14px; margin: 24px 24px 8px; color: #8aa0b5; font-weight: 600; }
+    .chart { width: 100vw; height: 65vh; margin-left: calc(50% - 50vw); }
+
+    /* ---- Pure CSS/DOM 3D bars ---- */
+    .scene {
+      --rx: -28deg;         /* tilt; drag handled in JS */
+      --ry: -38deg;
+      margin: 40px auto;
+      width: 520px; height: 300px;
+      perspective: 900px;
+      user-select: none; cursor: grab;
+    }
+    .plane {
+      position: relative; width: 100%; height: 100%;
+      transform-style: preserve-3d;
+      transform: rotateX(var(--rx)) rotateY(var(--ry));
+      transition: transform .1s linear;
+    }
+    .floor {
+      position: absolute; inset: 0;
+      background:
+        repeating-linear-gradient(0deg,  rgba(255,255,255,.07) 0 1px, transparent 1px 52px),
+        repeating-linear-gradient(90deg, rgba(255,255,255,.07) 0 1px, transparent 1px 52px),
+        #10161d;
+      transform: rotateX(90deg) translateZ(-150px);
+      transform-origin: center;
+      width: 520px; height: 520px; left: 0; top: -110px;
+    }
+    .bar3d { position: absolute; bottom: 0; transform-style: preserve-3d; }
+    .bar3d .face { position: absolute; }
+    .bar3d .front  { background: linear-gradient(#4dd0e1,#0288d1); left:0; top:0; }
+    .bar3d .back   { background: linear-gradient(#0288d1,#01579b); left:0; top:0; }
+    .bar3d .right  { background: linear-gradient(#26a0bd,#01579b); }
+    .bar3d .left   { background: linear-gradient(#01579b,#014a80); }
+    .bar3d .top    { background: #80deea; }
+    .bar3d .label {
+      position: absolute; left: 50%; bottom: -22px;
+      transform: translateX(-50%) rotateY(38deg);
+      font-size: 11px; color: #9fb3c8; white-space: nowrap;
+    }
+    .bar3d .val {
+      position: absolute; left: 50%; top: -20px;
+      transform: translateX(-50%) rotateY(38deg);
+      font-size: 11px; color: #b3e5fc;
+    }
+    .hint { text-align: center; color: #5c6f82; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <h1>3D Charts Demo</h1>
+
+  <h2>echarts-gl &mdash; bar3D (WebGL)</h2>
+  <div id="gl-bars" class="chart"></div>
+
+  <h2>echarts-gl &mdash; PV power: 24h profile, day on z-axis (30 days back)</h2>
+  <div id="gl-pv-week" class="chart"></div>
+
+  <h2>Variant 1 &mdash; bar3D: same PV data as 3D columns</h2>
+  <div id="pv-bar3d" class="chart"></div>
+
+  <h2>Variant 2 &mdash; scatter3D bubbles: size &amp; color = kW</h2>
+  <div id="pv-scatter" class="chart"></div>
+
+  <h2>Variant 3 &mdash; surface: smooth PV landscape over hour &times; day</h2>
+  <div id="pv-surface" class="chart"></div>
+
+  <h2>Variant 4 &mdash; line3D with animated trails</h2>
+  <div id="pv-ribbon" class="chart"></div>
+
+  <h2>echarts-gl &mdash; scatter3D (WebGL)</h2>
+  <div id="gl-scatter" class="chart"></div>
+
+  <h2>Pure CSS/DOM &mdash; no canvas, no WebGL (drag to rotate)</h2>
+  <div class="scene" id="css-scene">
+    <div class="plane" id="css-plane">
+      <div class="floor"></div>
+    </div>
+  </div>
+  <p class="hint">Each bar = 3 divs (front/right/top faces) in a preserve-3d plane.</p>
+
+  <script>
+    // Safe render helper: one bad chart can't kill the rest; auto-resize to window
+    const charts = [];
+    function renderChart(id, opt) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      try {
+        const c = echarts.init(el);
+        c.setOption(opt);
+        charts.push(c);
+      } catch (e) { console.error('[charts3d] failed:', id, e); }
+    }
+    window.addEventListener('resize', () => charts.forEach(c => c.resize()));
+
+    // ---------- echarts-gl bar3D: sample PV yield per hour per day ----------
+    const days = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+    const hours = ['6h','9h','12h','15h','18h'];
+    const pv = [];
+    for (let d = 0; d < days.length; d++)
+      for (let h = 0; h < hours.length; h++)
+        pv.push([h, d, +(Math.max(0, Math.sin((h+0.5)/hours.length*Math.PI)) * (6+Math.random()*2)).toFixed(1)]);
+
+    renderChart('gl-bars', {
+      backgroundColor: 'transparent',
+      tooltip: {},
+      xAxis3D: { type: 'category', data: hours, axisLabel: { color: '#9fb3c8' } },
+      yAxis3D: { type: 'category', data: days, axisLabel: { color: '#9fb3c8' } },
+      zAxis3D: { type: 'value', name: 'kWh', axisLabel: { color: '#9fb3c8' } },
+      grid3D: {
+        boxWidth: 160, boxDepth: 90,
+        light: { main: { intensity: 1.2 }, ambient: { intensity: 0.3 } },
+        viewControl: { autoRotate: false }
+      },
+      series: [{
+        type: 'bar3D', data: pv, shading: 'lambert',
+        itemStyle: { color: '#26c6da' },
+        emphasis: { itemStyle: { color: '#ffd54f' } }
+      }]
+    });
+
+    // ---------- echarts-gl lines3D: 24 hourly PV power values, 7 days back, day on z ----------
+    const weekDays = [];
+    for (let i = 29; i >= 0; i--) {
+      const d = new Date(); d.setDate(d.getDate() - i);
+      weekDays.push(d.toLocaleDateString('en-GB', { weekday: 'short', day: '2-digit', month: 'short' }));
+    }
+    // sample PV curve: bell shape peaking ~13:00, varies per day — one line3D series per day
+    const dayHues = weekDays.map((_, d) => (d * 47) % 360);   // 30 distinct hues
+    const pvSeries = weekDays.map((label, dayIdx) => {
+      // mostly stable days (~±8%), occasional cloudy dip (~55% output)
+      const dayFactor = (dayIdx % 11 === 5) ? 0.45 : 0.92 + ((dayIdx * 37) % 10) / 60;
+      const pts = [];
+      for (let h = 0; h < 24; h++) {
+        const t = (h - 13) / 4.5;
+        const kw = +(Math.max(0, 6.2 * Math.exp(-t * t) * dayFactor)).toFixed(2);
+        pts.push([h, label, kw]);                             // x=hour, y=day (depth), z=kW (vertical)
+      }
+      return {
+        type: 'line3D',
+        name: label,
+        data: pts,
+        lineStyle: { width: 3, color: `hsl(${dayHues[dayIdx]}, 80%, 60%)` },
+        emphasis: { lineStyle: { width: 6 } }
+      };
+    });
+
+    renderChart('gl-pv-week', {
+      backgroundColor: 'transparent',
+      tooltip: {
+        formatter: p => `${p.value[1]} ${String(p.value[0]).padStart(2,'0')}:00 — ${p.value[2]} kW`
+      },
+      xAxis3D: { type: 'value', name: 'Hour', min: 0, max: 23, interval: 3, axisLabel: { color: '#9fb3c8' } },
+      yAxis3D: { type: 'category', name: 'Day', data: weekDays, axisLabel: { color: '#9fb3c8' } },
+      zAxis3D: { type: 'value', name: 'kW', min: 0, axisLabel: { color: '#9fb3c8' } },
+      grid3D: {
+        boxWidth: 220, boxHeight: 70, boxDepth: 200,
+        light: { main: { intensity: 1.2 }, ambient: { intensity: 0.3 } },
+        viewControl: { autoRotate: false, alpha: 18, beta: 35 }
+      },
+      series: pvSeries
+    });
+
+    // ---------- Shared PV grid for variants: pvGrid[dayIdx][hour] = kW ----------
+    const pvGrid = weekDays.map((label, dayIdx) => {
+      const dayFactor = (dayIdx % 11 === 5) ? 0.45 : 0.92 + ((dayIdx * 37) % 10) / 60;
+      const row = [];
+      for (let h = 0; h < 24; h++) {
+        const t = (h - 13) / 4.5;
+        row.push(+(Math.max(0, 6.2 * Math.exp(-t * t) * dayFactor)).toFixed(2));
+      }
+      return row;
+    });
+    const pvFlat = [];                       // [hour, dayIdx, kW] for surface/scatter (day on y/depth)
+    const pvBarData = [];                    // [hour, dayIdx, kW] for bar3D (cat axes)
+    weekDays.forEach((label, d) =>
+      pvGrid[d].forEach((kw, h) => { pvFlat.push([h, d, kw]); pvBarData.push([h, d, kw]); }));
+    const pvTip = p => `${weekDays[p.value[1]]} ${String(p.value[0]).padStart(2,'0')}:00 — ${p.value[2]} kW`;
+    const pvAxis = {
+      xAxis3D: { type: 'value', name: 'Hour', min: 0, max: 23, interval: 3, axisLabel: { color: '#9fb3c8', formatter: h => weekDays && `${h}:00` } },
+      yAxis3D: { type: 'value', name: 'Day', min: 0, max: weekDays.length - 1, interval: 4, axisLabel: { color: '#9fb3c8', formatter: d => weekDays[d] || '' } },
+      zAxis3D: { type: 'value', name: 'kW', min: 0, axisLabel: { color: '#9fb3c8' } }
+    };
+    const pvGrid3D = {
+      boxWidth: 220, boxHeight: 70, boxDepth: 200,
+      light: { main: { intensity: 1.2 }, ambient: { intensity: 0.3 } },
+      viewControl: { autoRotate: false, alpha: 18, beta: 35 }
+    };
+
+    // Variant 1 — bar3D columns (category axes)
+    renderChart('pv-bar3d', {
+      backgroundColor: 'transparent',
+      tooltip: { formatter: pvTip },
+      xAxis3D: { type: 'category', name: 'Hour', data: [...Array(24).keys()], axisLabel: { color: '#9fb3c8' } },
+      yAxis3D: { type: 'category', name: 'Day', data: weekDays, axisLabel: { color: '#9fb3c8' } },
+      zAxis3D: { type: 'value', name: 'kW', axisLabel: { color: '#9fb3c8' } },
+      grid3D: pvGrid3D,
+      series: [{
+        type: 'bar3D', data: pvBarData, shading: 'lambert', barSize: 8,
+        itemStyle: { color: '#ffb74d' },
+        emphasis: { itemStyle: { color: '#4dd0e1' } }
+      }]
+    });
+
+    // Variant 2 — scatter3D bubbles, size & color follow kW
+    renderChart('pv-scatter', {
+      backgroundColor: 'transparent',
+      tooltip: { formatter: pvTip },
+      ...pvAxis,
+      grid3D: pvGrid3D,
+      visualMap: {
+        min: 0, max: 7, dimension: 2, calculable: true,
+        inRange: { color: ['#0d47a1', '#26c6da', '#ffd54f', '#ff7043'] },
+        textStyle: { color: '#9fb3c8' }
+      },
+      series: [{
+        type: 'scatter3D', data: pvFlat,
+        symbolSize: v => 2 + v[2] * 2.5,
+        itemStyle: { opacity: 0.9 }
+      }]
+    });
+
+    // Variant 3 — surface: smooth interpolated landscape
+    renderChart('pv-surface', {
+      backgroundColor: 'transparent',
+      tooltip: { formatter: pvTip },
+      ...pvAxis,
+      grid3D: pvGrid3D,
+      visualMap: {
+        show: false, min: 0, max: 7, dimension: 2,
+        inRange: { color: ['#1a237e', '#00838f', '#ffd54f'] }
+      },
+      series: [{
+        type: 'surface', data: pvFlat, shading: 'lambert',
+        wireframe: { show: true, lineStyle: { color: 'rgba(255,255,255,0.25)', width: 1 } }
+      }]
+    });
+
+    // Variant 4 — line3D with animated trail effect, one series per day
+    const pvTrails = weekDays.map((label, d) => ({
+      type: 'line3D',
+      name: label,
+      data: pvGrid[d].map((kw, h) => [h, d, kw]),
+      lineStyle: { width: 3, color: `hsl(${dayHues[d]}, 80%, 60%)` },
+      effect: { show: true, period: 4, trailWidth: 4, trailLength: 0.3, trailOpacity: 0.6, trailColor: '#fff' }
+    }));
+    renderChart('pv-ribbon', {
+      backgroundColor: 'transparent',
+      tooltip: {},
+      ...pvAxis,
+      grid3D: pvGrid3D,
+      series: pvTrails
+    });
+
+    // ---------- echarts-gl scatter3D: sample inverter temp / load / freq ----------
+    const scatter = [];
+    for (let i = 0; i < 200; i++)
+      scatter.push([+(20+Math.random()*40).toFixed(1), +(Math.random()*8).toFixed(2), +(49.6+Math.random()*0.8).toFixed(2)]);
+
+    renderChart('gl-scatter', {
+      backgroundColor: 'transparent',
+      tooltip: {},
+      xAxis3D: { name: 'Temp °C', axisLabel: { color: '#9fb3c8' } },
+      yAxis3D: { name: 'Load kW', axisLabel: { color: '#9fb3c8' } },
+      zAxis3D: { name: 'Freq Hz', axisLabel: { color: '#9fb3c8' } },
+      grid3D: { light: { main: { intensity: 1.2 }, ambient: { intensity: 0.3 } } },
+      series: [{
+        type: 'scatter3D', data: scatter, symbolSize: 6,
+        itemStyle: { color: '#81c784', opacity: 0.85 }
+      }]
+    });
+
+    // ---------- Pure CSS/DOM 3D bars ----------
+    const plane = document.getElementById('css-plane');
+    const values = [42, 78, 55, 90, 63, 30, 71];
+    const DEPTH = 34, BAR_W = 34, GAP = 20, SCALE = 2.2;
+
+    values.forEach((v, i) => {
+      const h = v * SCALE;
+      const x = 30 + i * (BAR_W + GAP);
+      const bar = document.createElement('div');
+      bar.className = 'bar3d';
+      bar.style.cssText = `left:${x}px; width:${BAR_W}px; height:${h}px; transform: translateZ(0)`;
+
+      bar.innerHTML =
+        `<div class="face front" style="width:${BAR_W}px;height:${h}px;transform:translateZ(${DEPTH/2}px)"></div>` +
+        `<div class="face back"  style="width:${BAR_W}px;height:${h}px;transform:translateZ(${-DEPTH/2}px)"></div>` +
+        `<div class="face right" style="width:${DEPTH}px;height:${h}px;left:${BAR_W-DEPTH/2}px;top:0;transform:rotateY(90deg)"></div>` +
+        `<div class="face left"  style="width:${DEPTH}px;height:${h}px;left:${-DEPTH/2}px;top:0;transform:rotateY(90deg)"></div>` +
+        `<div class="face top"   style="width:${BAR_W}px;height:${DEPTH}px;left:0;top:${-DEPTH/2}px;transform:rotateX(90deg)"></div>` +
+        `<div class="label">${days[i]}</div>` +
+        `<div class="val">${v}</div>`;
+      plane.appendChild(bar);
+    });
+
+    // drag to rotate
+    const scene = document.getElementById('css-scene');
+    let drag = null;
+    scene.addEventListener('pointerdown', e => { drag = { x: e.clientX, y: e.clientY }; scene.setPointerCapture(e.pointerId); });
+    scene.addEventListener('pointermove', e => {
+      if (!drag) return;
+      const ry = -38 + (e.clientX - drag.x) * 0.4;
+      const rx = Math.min(-5, Math.max(-80, -28 - (e.clientY - drag.y) * 0.4));
+      plane.style.setProperty('--ry', ry + 'deg');
+      plane.style.setProperty('--rx', rx + 'deg');
+    });
+    scene.addEventListener('pointerup', () => drag = null);
+  </script>
+</body>
+</html>

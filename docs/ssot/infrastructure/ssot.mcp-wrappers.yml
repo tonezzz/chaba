@@ -70,16 +70,24 @@ wrappers:
     LLAMA_URL: http://tony-omen:11434
   status: active
   server: mcp-llama
+- name: mcp-github-proxy
+  file: ~/.config/devin/mcp-scripts/mcp-github-proxy.py
+  type: stdio
+  target_host: local
+  description: Python stdio proxy for github-mcp-server; sources token from ~/.config/secrets/github-mcp.env and gates the MCP initialize handshake
+  status: active
+  server: github
 - name: run-github-mcp
   file: ~/.config/devin/mcp-scripts/run-github-mcp.sh
   type: stdio
   target_host: local
-  description: Launches GitHub MCP server locally
+  description: Legacy Podman-based launcher for github-mcp-server
   env:
     GITHUB_ACCESS_TOKEN: ~/.config/secrets/github-mcp.env
     GITHUB_PERSONAL_ACCESS_TOKEN: ~/.config/secrets/github-mcp.env
-  status: active
+  status: legacy
   server: github
+  note: Superseded by mcp-github-proxy.py; current mcp_config.json uses the proxy.
 - name: run-postgres-mcp
   file: ~/.config/devin/mcp-scripts/run-postgres-mcp.sh
   type: stdio

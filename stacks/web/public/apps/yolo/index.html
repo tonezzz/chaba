@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>YOLO</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = { theme: { extend: { colors: { bg: '#1a1a2e', card: '#16213e', accent: '#0a84ff' } } } };
+  </script>
+</head>
+<body class="bg-bg text-gray-200 min-h-screen">
+  <nav class="bg-card border-b border-gray-800">
+    <div class="max-w-6xl mx-auto px-4 h-12 flex items-center gap-6">
+      <a href="/apps/" class="text-sm text-gray-300 hover:text-accent">← Apps</a>
+      <span class="text-sm font-semibold text-white">YOLO</span>
+    </div>
+  </nav>
+  <main class="max-w-7xl mx-auto px-4 py-6">
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div class="lg:col-span-2">
+        <div class="bg-card border border-gray-700 rounded overflow-hidden">
+          <div class="p-3 flex items-center justify-between border-b border-gray-800">
+            <div>
+              <h2 class="text-lg font-semibold text-white">Annotated feed</h2>
+              <p id="meta" class="text-xs text-gray-400">waiting…</p>
+            </div>
+            <span id="ts" class="text-xs text-gray-500"></span>
+          </div>
+          <div class="aspect-video bg-black flex items-center justify-center">
+            <img id="img" class="w-full h-full object-contain" alt="YOLO annotated frame">
+          </div>
+        </div>
+      </div>
+      <div class="space-y-4">
+        <div class="bg-card border border-gray-700 rounded p-4">
+          <label class="block text-xs text-gray-400 mb-1">Camera source</label>
+          <select id="camera" class="w-full bg-bg border border-gray-700 rounded px-3 py-2 text-sm"></select>
+          <button id="apply-cam" class="mt-3 w-full bg-accent text-white rounded px-3 py-2 text-sm hover:opacity-90">Apply camera</button>
+        </div>
+        <div class="bg-card border border-gray-700 rounded p-4">
+          <label class="block text-xs text-gray-400 mb-1">TV target</label>
+          <select id="tv" class="w-full bg-bg border border-gray-700 rounded px-3 py-2 text-sm"></select>
+          <button id="cast" class="mt-3 w-full bg-accent text-white rounded px-3 py-2 text-sm hover:opacity-90">Cast to TV</button>
+          <p id="cast-status" class="text-xs text-gray-400 mt-2"></p>
+        </div>
+        <div class="bg-card border border-gray-700 rounded p-4">
+          <h3 class="text-sm font-semibold text-white mb-2">Detections</h3>
+          <div id="detections" class="text-sm text-gray-300 space-y-1"></div>
+        </div>
+      </div>
+    </div>
+  </main>
+  <script>
+    const YOLO = `http://${location.hostname}:8780`;
+    const CAMERAS = [
+      'xiaomi_c201',
+      'xiaomi_c201_hd',
+      'xiaomi_c201_h264',
+      'xiaomi_c201_hd_h264',
+    ];
+    const img = document.getElementById('img');
+    const meta = document.getElementById('meta');
+    const ts = document.getElementById('ts');
+    const detections = document.getElementById('detections');
+    const camera = document.getElementById('camera');
+    const tv = document.getElementById('tv');
+    const castStatus = document.getElementById('cast-status');
+
+    CAMERAS.forEach(src => {
+      const opt = document.createElement('option');
+      opt.value = src; opt.textContent = src;
+      camera.appendChild(opt);
+    });
+
+    async function refreshTv() {
+      try {
+        const r = await fetch(YOLO + '/tvs');
+        const j = await r.json();
+        const list = j.tvs && j.tvs.length ? j.tvs : ['media_player.tony_tv_cast'];
+        tv.innerHTML = '';
+        list.forEach(eid => {
+          const opt = document.createElement('option');
+          opt.value = eid; opt.textContent = eid;
+          tv.appendChild(opt);
+        });
+      } catch (e) {
+        tv.innerHTML = '<option value="media_player.tony_tv_cast">media_player.tony_tv_cast</option>';
+      }
+    }
+
+    async function refreshDetections() {
+      try {
+        const r = await fetch(YOLO + '/detect');
+        const j = await r.json();
+        ts.textContent = j.ts || '';
+        meta.textContent = `source: ${j.source || 'unknown'} · person: ${j.person_count || 0} · total: ${j.detections_count || (j.detections ? j.detections.length : 0)}`;
+        if (!j.detections || !j.detections.length) {
+          detections.innerHTML = '<div class="text-gray-500">No detections</div>';
+          return;
+        }
+        detections.innerHTML = j.detections.map(d =>
+          `<div class="flex justify-between gap-2"><span class="truncate">${d.class}</span><span class="text-gray-400">${d.conf}</span></div>`
+        ).join('');
+      } catch (e) {
+        detections.innerHTML = `<div class="text-red-400">error: ${e.message}</div>`;
+      }
+    }
+
+    function refreshImage() {
+      img.src = `${YOLO}/image?t=${Date.now()}`;
+    }
+
+    document.getElementById('apply-cam').addEventListener('click', async () => {
+      try {
+        const r = await fetch(`${YOLO}/set-source?src=${encodeURIComponent(camera.value)}`);
+        const j = await r.json();
+        if (j.ok) refreshDetections();
+      } catch (e) { castStatus.textContent = e.message; }
+    });
+
+    document.getElementById('cast').addEventListener('click', async () => {
+      castStatus.textContent = 'casting…';
+      try {
+        const r = await fetch(`${YOLO}/cast?target=${encodeURIComponent(tv.value)}`);
+        const j = await r.json();
+        castStatus.textContent = j.ok ? `casted to ${j.target}` : `error: ${j.error || 'unknown'}`;
+      } catch (e) { castStatus.textContent = `error: ${e.message}`; }
+    });
+
+    refreshTv();
+    refreshDetections();
+    refreshImage();
+    setInterval(refreshDetections, 2000);
+    setInterval(refreshImage, 2000);
+  </script>
+</body>
+</html>

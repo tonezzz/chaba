@@ -1,0 +1,29 @@
+title: PlayLive daemon not reachable after self-heal
+subtitle: playlived at http://127.0.0.1:9230 is unreachable on tony_dell
+icon: inbox
+focus:
+  label: playlive self-heal failure
+  text: 'The PlayLive daemon at http://127.0.0.1:9230 was not reachable. Self-heal
+    was attempted but failed. Last error: daemon unreachable after self-heal'
+  branch: topic/tailscale
+  priority: high
+  status: draft
+  tags:
+  - playlive
+  - infrastructure
+  - self-heal
+  missing_info: []
+  safe_to_parallel:
+    value: false
+    reason: Requires manual triage of the playlived daemon.
+  subtasks:
+  - label: Check playlived and Chrome CDP on the target host
+    status: not_started
+ownership:
+  owner: tony
+  session: ''
+  locked: false
+  lock_reason: ''
+source:
+  session: ''
+  date: '2026-09-07'

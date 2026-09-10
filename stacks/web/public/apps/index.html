@@ -28,7 +28,7 @@
   <main id="apps" class="max-w-7xl mx-auto px-4 py-6"></main>
   <script src="https://cdn.jsdelivr.net/npm/js-yaml@4.1.0/dist/js-yaml.min.js"></script>
   <script>
-    fetch('apps.yml').then(r => r.text()).then(text => {
+    fetch('/apps/apps.yml?v=' + Date.now()).then(r => r.text()).then(text => {
       const data = jsyaml.load(text);
       document.title = data.title || 'Apps';
       document.getElementById('nav').innerHTML = (data.nav || []).map(n =>
@@ -40,8 +40,8 @@
         <div class="bg-card border border-gray-700 rounded p-4 mb-6 text-sm text-gray-300">
           <p class="mb-2"><strong>Network options:</strong> choose the URL that matches where you are.</p>
           <ul class="list-disc list-inside space-y-1">
-            <li><strong>Home LAN:</strong> <code>http://tony-dell.local:8080/apps</code></li>
-            <li><strong>Tailscale tailnet:</strong> <code>http://tony-dell:8080/apps</code></li>
+            <li><strong>Home LAN:</strong> <code>http://tony-dell.local/apps</code></li>
+            <li><strong>Tailscale tailnet:</strong> <code>http://tony-dell/apps</code></li>
             <li><strong>Public internet (Home Assistant Live):</strong> <code>https://tony-dell.taila0626a.ts.net:8444/</code> — <a href="https://tony-dell.taila0626a.ts.net:8444/" class="text-accent hover:underline">learn more</a></li>
           </ul>
         </div>

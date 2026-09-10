@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Figma Capture Gallery</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: { bg: '#0f172a', card: '#1e293b' }
+        }
+      }
+    };
+  </script>
+  <style>
+    body { background-color: #0f172a; color: #e2e8f0; }
+    .modal-open { overflow: hidden; }
+  </style>
+</head>
+<body class="min-h-screen">
+  <nav class="bg-card border-b border-gray-800">
+    <div class="max-w-7xl mx-auto px-4 h-14 flex items-center gap-4">
+      <span class="text-xl font-bold text-cyan-400">Figma Gallery</span>
+      <span class="text-sm text-gray-400">Captured pages from Chaba</span>
+    </div>
+  </nav>
+
+  <main class="max-w-7xl mx-auto px-4 py-8">
+    <header class="mb-6">
+      <h1 class="text-3xl font-bold text-gray-100">Captured pages</h1>
+      <p class="text-gray-400 mt-2">Search, filter by tag, or click a card to preview the Figma capture.</p>
+    </header>
+
+    <div class="flex flex-col sm:flex-row gap-4 mb-6">
+      <input id="search" type="text" placeholder="Search captures..."
+        class="flex-1 px-4 py-2 rounded-lg bg-card border border-gray-700 text-gray-100 focus:border-cyan-500 focus:outline-none">
+      <select id="tag-filter"
+        class="px-4 py-2 rounded-lg bg-card border border-gray-700 text-gray-100 focus:border-cyan-500 focus:outline-none">
+        <option value="">All tags</option>
+      </select>
+    </div>
+
+    <div id="gallery" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+      <!-- Cards rendered by app.js -->
+    </div>
+
+    <p id="empty" class="hidden text-gray-400 mt-8">No captures match your filters.</p>
+  </main>
+
+  <!-- Preview modal -->
+  <div id="modal" class="fixed inset-0 z-50 hidden bg-black/80 flex items-center justify-center p-4" role="dialog" aria-modal="true">
+    <div class="bg-card rounded-xl border border-gray-700 max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+      <div class="p-4 border-b border-gray-700 flex justify-between items-center">
+        <h2 id="modal-title" class="text-xl font-semibold text-white"></h2>
+        <button id="modal-close" class="text-gray-400 hover:text-white text-2xl leading-none">&times;</button>
+      </div>
+      <div class="p-4">
+        <img id="modal-image" src="" alt="" class="w-full rounded-lg border border-gray-700">
+        <p id="modal-description" class="text-gray-300 mt-4"></p>
+        <div id="modal-tags" class="flex flex-wrap gap-2 mt-3"></div>
+        <div class="mt-4 flex flex-wrap gap-3">
+          <a id="modal-figma" href="#" target="_blank" rel="noopener"
+            class="px-4 py-2 rounded bg-cyan-600 text-white hover:bg-cyan-500">Open in Figma</a>
+          <a id="modal-source" href="#" target="_blank" rel="noopener"
+            class="px-4 py-2 rounded bg-gray-700 text-gray-100 hover:bg-gray-600">View source page</a>
+        </div>
+        <div id="modal-generated" class="hidden mt-4 p-3 bg-gray-900 rounded border border-gray-700">
+          <p class="text-sm text-gray-300 mb-2">Figma-to-code output:</p>
+          <div class="flex flex-wrap gap-3">
+            <a id="modal-generated-react" href="#" target="_blank" rel="noopener"
+              class="px-3 py-1.5 rounded bg-purple-900/50 text-purple-300 border border-purple-800 text-sm hover:bg-purple-800/50">React (TSX)</a>
+            <a id="modal-generated-preview" href="#" target="_blank" rel="noopener"
+              class="px-3 py-1.5 rounded bg-purple-900/50 text-purple-300 border border-purple-800 text-sm hover:bg-purple-800/50">Generated preview PNG</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

@@ -78,6 +78,11 @@ checklists:
         action: Run mcp-health and confirm no critical services are error/degraded.
         ssot_ref: docs/ssot/infrastructure/ssot.health.yml
         must: true
+      - id: mcp.devin
+        label: Verify Devin MCP tools
+        action: Run mcp_list_tools for each server in ~/.config/devin/mcp_config.json and mcp-health quick_health. If tony-ha (9584) or michael-dev (9585) does not list tools, restart the HA container and retry.
+        ssot_ref: docs/ssot/infrastructure/ssot.mcp-tools.yml
+        must: true
       - id: services.start
         label: Start expected services
         action: Restart the units listed in ssot.services.yml that are marked auto-start for the current host.
@@ -319,6 +324,10 @@ host_notes:
       - Home Assistant + michael-dev reachable; ha-live via Tailscale Serve 8444.
       - gpu-queue on tony-dell:3001 and Caddy on tony-dell:8080 answer.
       - Re-run mcp-health; compare against pre_shutdown snapshot.
+      - >-
+        Verify Devin MCP server endpoints on tony-dell; mcp_list_tools for tony-ha (:9584),
+        michael-dev (:9585), and all other tony-dell-hosted servers. Restart the HA container
+        if the MCP port is not listening.
     refs:
       - docs/ssot/infrastructure/ssot.tony-dell-failover.yml
       - docs/ssot/infrastructure/ssot.yomi-failover.yml

@@ -19,7 +19,11 @@ services:
     mcp_status: active
     mcp_status_notes: |
       HA core UI returns HTTP 200 and the ha_mcp_tools MCP server on port 9584
-      is responding after a service restart.
+      is responding after a service restart. Timeout patch applied to
+      ~/.config/home-assistant/custom_components/ha_mcp_tools/embedded_server.py
+      (_READY_STALL_TIMEOUT_SECONDS=300s, _READY_TOTAL_CAP_SECONDS=900s) to
+      prevent the default 90s stall budget from killing the in-process server
+      during slow imports. Verified 2026-09-09.
   go2rtc:
     port: 1984
     rtsp: 8554

@@ -1,9 +1,50 @@
 {
 	admin localhost:2018
+	auto_https off
 }
 
-:8080 {
+http://:80 {
+	@root80 path /
+	handle @root80 {
+		reverse_proxy 127.0.0.1:8092 {
+			header_up Host 127.0.0.1:8092
+		}
+	}
+	reverse_proxy 127.0.0.1:8080 {
+		header_up Host 127.0.0.1:8080
+	}
+}
+
+http://127.0.0.1:8080 {
+	bind 127.0.0.1
 	root * /srv/public
+
+	handle /apps/gev {
+		redir /apps/gev/ 308
+	}
+
+	handle_path /apps/gev/* {
+		root * /srv/public/apps/gev
+		file_server
+	}
+	handle /apps/yolo {
+		redir /apps/yolo/ 308
+	}
+
+	handle_path /apps/yolo/* {
+		root * /srv/public/apps/yolo
+		file_server
+	}
+
+	handle /apps/vnc {
+		redir /apps/vnc/ 308
+	}
+
+	handle_path /apps/vnc/* {
+		root * /srv/public/apps/vnc
+		file_server
+	}
+
 	handle /snapshot {
 		reverse_proxy 127.0.0.1:9005
 	}
@@ -182,7 +223,6 @@
 	handle /apps/node-red/* {
 		reverse_proxy 127.0.0.1:1880
 	}
-
 }
 
 # chaba.h3 local dev root

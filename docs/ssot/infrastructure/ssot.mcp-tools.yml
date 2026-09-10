@@ -334,6 +334,13 @@ failure_procedures:
 
 # Recent changes to this policy
 recent_changes:
+  - date: '2026-09-09'
+    description: |
+      All 18 configured MCP servers verified reachable after tony-dell post-restart.
+      github MCP now uses mcp-github-proxy.py to avoid stdio handshake failures.
+      tony-ha and michael-dev ha_mcp_tools timeout patched to 300s/900s to survive
+      slow imports on HA 2026.9.0.
+    impact: "Reliable post-restart MCP verification and github tool listing."
   - date: 2026-08-15
     description: "Created global MCP tools policy and catalog"
     impact: "Single source of truth for MCP selection and failure handling across chaba and trade"

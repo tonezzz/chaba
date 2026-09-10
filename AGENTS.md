@@ -85,3 +85,4 @@ Parallel sessions caused real breakage: duplicated `pfg2-card.ts`, undeclared `v
 - TPL tab holds single-tile templates applied via `apply-tpl.py` (e.g. `PV.b1`, `Temp`, `Freq`, `Daily`).
 - The `michael-dev` token in `~/.config/secrets/ha-michael-dev.env` is valid and works for REST and websocket.
 - Dashboard snapshot is `docs/home-assistant/dashboards/tony-test-current.json`.
+- Post-restart MCP verification: all 18 configured Devin MCP servers are reachable after tony-dell restart. `michael-dev` and `tony-ha` `ha_mcp_tools` require `_READY_STALL_TIMEOUT_SECONDS=300s` / `_READY_TOTAL_CAP_SECONDS=900s` in `embedded_server.py` to avoid startup timeout on HA 2026.9.0. `github` MCP now uses `~/.config/devin/mcp-scripts/mcp-github-proxy.py`.

@@ -5,7 +5,7 @@ services:
 - id: caddy
   name: Caddy
   type: http
-  url: 'https://tony-dell.taila0626a.ts.net:8080/apps/tony-live/'
+  url: 'http://tony-dell/apps/tony-live/'
   expected_status: 200
   timeout: 5
   category: web
@@ -13,7 +13,7 @@ services:
   - home
   - mobile
   host: tony_dell
-  note: Tests Caddy itself using a known deployed app; the /apps/map/ route is no longer built on tony-dell.
+  note: Tests Caddy on port 80 using a known deployed app.
 - id: raceman-web
   name: Raceman Web
   type: http
@@ -109,3 +109,28 @@ services:
   host: michael_ha
   verification:
   - 'tailscale ping michael-ha'
+
+- id: bserver
+  name: bserver Dashboard
+  type: http
+  url: 'http://tony-dell/'
+  expected_status: 200
+  timeout: 5
+  category: web
+  profiles:
+  - home
+  - mobile
+  host: tony_dell
+  note: Tests the root bserver dashboard behind Caddy.
+
+- id: caddy-public
+  name: Caddy Public HTTPS
+  type: http
+  url: 'https://tony-dell.taila0626a.ts.net/apps/tony-live/'
+  expected_status: 200
+  timeout: 10
+  category: web
+  profiles:
+  - mobile
+  host: tony_dell
+  note: Tests the Tailscale 443 HTTPS endpoint through Caddy.

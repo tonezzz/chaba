@@ -48,7 +48,13 @@ environments:
       webhook_id: mcp_ed77567866f1ebbb6fb091dc816cb550
       local_url: http://127.0.0.1:9585/private_B3WMIAChoseTpDS7fwgwRw
       tailnet_url: http://tony-dell:9585/private_B3WMIAChoseTpDS7fwgwRw
-      note: HA-MCP Server runs inside the dev container, exposed on host port 9585. Use the ha_reload_core tool to reload packages/helpers without a full container restart.
+      note: |
+        HA-MCP Server runs inside the dev container, exposed on host port 9585.
+        The embedded_server.py timeout constants were increased to
+        _READY_STALL_TIMEOUT_SECONDS=300s and _READY_TOTAL_CAP_SECONDS=900s
+        (from defaults 90s/600s) to prevent the in-process server from timing
+        out during slow imports on HA 2026.9.0. Use the ha_reload_core tool to
+        reload packages/helpers without a full container restart.
     autostart: loginctl enable-linger tony is yes; Quadlet WantedBy=default.target
     status: enabled
     core_config:
@@ -180,6 +186,9 @@ verification:
     - ss -tlnp | grep 8124
     - ss -tlnp | grep 9585
     - tailscale serve status | grep 8124
+    - mcp_list_tools for server michael-dev responds (may take 2-5 minutes
+      after restart; requires 300s/900s timeout patch in
+      ~/.config/michael-dev/custom_components/ha_mcp_tools/embedded_server.py)
   live:
     - tailscale ping michael-ha
     - curl -sf http://michael-ha:8123/
@@ -203,7 +212,10 @@ related_files:
 config:
   version: 1
   created_at: 2026-09-03
-  last_updated: 2026-09-05
+  last_updated: '2026-09-09'
   maintainer: tony
   status: enabled
-  note: HA-MCP reload verified 2026-09-04; .storage Lovelace changes still require a full container restart.
+  note: |
+    HA-MCP verified 2026-09-09. ha_mcp_tools timeout patch applied to avoid
+    startup timeout on HA 2026.9.0. .storage Lovelace changes still require a
+    full container restart.

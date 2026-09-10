@@ -67,8 +67,12 @@ bridge_improvements:
   - tv_commands: >
       Dedicated flat local tools executed by the bridge (not nested MCP calls):
       tv_command(cmd enum nav|scroll|back|stop|camera, arg) and
-      photo_slideshow(action enum next|previous|pause|resume). Verified:
-      'cast the help' -> tv_command(nav, help) -> cast-browser-server HTTP 200.
+      photo_slideshow(action enum next|previous|pause|resume). For cmd=camera,
+      arg is the HA camera entity name (e.g. 'ip_cam_65', 'xiaomi_c201'),
+      defaulting to 'ip_cam_65'. Verified:
+      'cast the help' -> tv_command(nav, help) -> cast-browser-server HTTP 200;
+      'cast the xiaomi camera' -> tv_command(camera, xiaomi_c201) ->
+      camera.play_stream camera.xiaomi_c201 HTTP 200.
   - tool_precision: >
       Precision techniques applied — flat enum-constrained schemas instead of
       nested ha_call_service proxy calls, explicit 'ALWAYS use X tool' +
