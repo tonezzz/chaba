@@ -73,12 +73,30 @@ def _type_label(typ: str) -> str:
     return f'<span style="color:{color}">{typ}</span>'
 
 
+def _needs_lookup(r: dict) -> bool:
+    if not r.get("mac"):
+        return False
+    typ = r.get("type") or "unknown"
+    did = r.get("device_id") or ""
+    label = r.get("label") or ""
+    return typ == "unknown" or did.startswith("discovered") or label.lower().startswith("unknown")
+
+
+def _mac_cell(r: dict) -> str:
+    mac = r.get("mac")
+    if not mac:
+        return "—"
+    if _needs_lookup(r):
+        return f'<a href="https://macvendors.com/lookup/{mac}" target="_blank" rel="noopener">{mac}</a>'
+    return mac
+
+
 def _table(rows: list[dict]) -> str:
     trs = []
     for r in rows:
         label = r.get("label") or r.get("device_id", "")
         iface = r.get("interface_id") or ""
-        mac = r.get("mac") or "—"
+        mac = _mac_cell(r)
         raw_ip = r.get("ip")
         ip = f'<a href="http://{raw_ip}" target="_blank" rel="noopener">{raw_ip}</a>' if raw_ip else "—"
         typ = r.get("type") or "unknown"
