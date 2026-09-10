@@ -63,13 +63,7 @@ def load_yaml(path: Path) -> dict:
         return yaml.safe_load(f) or {}
 
 
-def build_table_content(rows: list[dict], last_updated: str, instance: str) -> str:
-    active = sum(1 for r in rows if r.get("status") == "active")
-    stale = sum(1 for r in rows if r.get("status") == "stale")
-    unknown = sum(1 for r in rows if r.get("status") == "unknown")
-    no_mac = sum(1 for r in rows if not r.get("mac"))
-    no_ip = sum(1 for r in rows if not r.get("ip"))
-
+def _table(rows: list[dict]) -> str:
     trs = []
     for r in rows:
         label = r.get("label") or r.get("device_id", "")
@@ -89,14 +83,7 @@ def build_table_content(rows: list[dict], last_updated: str, instance: str) -> s
             f'<td>{typ}</td><td>{status}</td><td>{source}</td><td>{ip_kind}</td>'
             f'<td style="word-break:break-all">{seen}</td></tr>'
         )
-
     return (
-        f"**{len(rows)} interfaces** — {active} active, {stale} stale, {unknown} unknown "
-        f"· {no_mac} without MAC, {no_ip} without IP · Last updated: {last_updated}\n\n"
-        f"Sources: [{instance} SSOT](/local/ha/ssot.{instance}.yml)\n\n"
-        if rows
-        else f"No devices found. Last updated: {last_updated}\n\n"
-    ) + (
         '<table style="width:100%;border-collapse:collapse;table-layout:fixed;font-size:0.85em">\n'
         '<thead><tr>\n'
         '<th style="text-align:left;width:24%">Device</th>\n'
@@ -111,6 +98,38 @@ def build_table_content(rows: list[dict], last_updated: str, instance: str) -> s
         '</tr></thead>\n'
         '<tbody>\n' + '\n'.join(trs) + '\n</tbody></table>'
     )
+
+
+def _section(title: str, rows: list[dict]) -> str:
+    active = sum(1 for r in rows if r.get("status") == "active")
+    stale = sum(1 for r in rows if r.get("status") == "stale")
+    unknown = sum(1 for r in rows if r.get("status") == "unknown")
+    no_mac = sum(1 for r in rows if not r.get("mac"))
+    no_ip = sum(1 for r in rows if not r.get("ip"))
+    return (
+        f"### {title}\n\n"
+        f"**{len(rows)} interfaces** — {active} active, {stale} stale, {unknown} unknown "
+        f"· {no_mac} without MAC, {no_ip} without IP\n\n"
+        + _table(rows)
+    )
+
+
+def build_table_content(rows: list[dict], last_updated: str, instance: str) -> str:
+    if not rows:
+        return f"No devices found. Last updated: {last_updated}\n\n"
+
+    def is_active(r: dict) -> bool:
+        return r.get("status") == "active" and r.get("network_status") != "stale"
+
+    active_rows = [r for r in rows if is_active(r)]
+    legacy_rows = [r for r in rows if not is_active(r)]
+
+    parts = [f"**Last updated:** {last_updated} · Sources: [{instance} SSOT](/local/ha/ssot.{instance}.yml)\n\n"]
+    if active_rows:
+        parts.append(_section("Active devices", active_rows))
+    if legacy_rows:
+        parts.append(_section("Stale / Legacy devices", legacy_rows))
+    return "\n\n".join(parts)
 
 
 def devices_view_for_instance(instance: str, ssot: dict) -> dict:

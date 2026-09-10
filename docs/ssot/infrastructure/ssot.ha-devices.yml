@@ -31,6 +31,8 @@ schema:
       type: ethernet/wifi/bluetooth/unknown/etc.
       mac_source: Where the MAC/interface was sourced from
       ip_source: Where the IP allocation was sourced from
+      network_id: Network slug the IP belongs to (null if none)
+      network_status: active/stale/unknown of the IP's network
       status: active/stale/unknown
       ip_kind: static/reservation/dhcp/discovered/manual
       first_seen: ISO-8601 date this row was first observed
@@ -45,6 +47,8 @@ devices:
   type: ethernet
   mac_source: manual
   ip_source: arp
+  network_id: home-192.168.2.0-24
+  network_status: active
   status: active
   ip_kind: discovered
   first_seen: '2026-09-01'
@@ -58,6 +62,8 @@ devices:
   type: wifi
   mac_source: manual
   ip_source: arp
+  network_id: home-192.168.2.0-24
+  network_status: active
   status: active
   ip_kind: discovered
   first_seen: '2026-09-01'
@@ -71,6 +77,8 @@ devices:
   type: ethernet
   mac_source: arp
   ip_source: arp
+  network_id: home-192.168.2.0-24
+  network_status: active
   status: active
   ip_kind: static
   first_seen: '2026-09-01'
@@ -84,6 +92,8 @@ devices:
   type: wifi
   mac_source: arp
   ip_source: arp
+  network_id: home-192.168.2.0-24
+  network_status: active
   status: active
   ip_kind: discovered
   first_seen: '2026-09-01'
@@ -97,6 +107,8 @@ devices:
   type: wifi
   mac_source: arp
   ip_source: arp
+  network_id: home-192.168.2.0-24
+  network_status: active
   status: active
   ip_kind: discovered
   first_seen: '2026-09-01'
@@ -110,6 +122,8 @@ devices:
   type: wifi
   mac_source: arp
   ip_source: arp
+  network_id: home-192.168.2.0-24
+  network_status: active
   status: active
   ip_kind: discovered
   first_seen: '2026-09-01'
@@ -123,6 +137,8 @@ devices:
   type: wifi
   mac_source: arp
   ip_source: arp
+  network_id: home-192.168.2.0-24
+  network_status: active
   status: active
   ip_kind: discovered
   first_seen: '2026-09-01'
@@ -136,6 +152,8 @@ devices:
   type: unknown
   mac_source: arp
   ip_source: null
+  network_id: null
+  network_status: null
   status: active
   ip_kind: null
   first_seen: '2026-09-01'
@@ -149,6 +167,8 @@ devices:
   type: unknown
   mac_source: arp
   ip_source: null
+  network_id: null
+  network_status: null
   status: active
   ip_kind: null
   first_seen: '2026-09-01'
@@ -162,6 +182,8 @@ devices:
   type: unknown
   mac_source: arp
   ip_source: arp
+  network_id: home-192.168.2.0-24
+  network_status: active
   status: active
   ip_kind: discovered
   first_seen: '2026-09-01'
@@ -175,6 +197,8 @@ devices:
   type: unknown
   mac_source: arp
   ip_source: arp
+  network_id: home-192.168.2.0-24
+  network_status: active
   status: active
   ip_kind: discovered
   first_seen: '2026-09-01'
@@ -188,6 +212,8 @@ devices:
   type: unknown
   mac_source: arp
   ip_source: arp
+  network_id: home-192.168.2.0-24
+  network_status: active
   status: active
   ip_kind: discovered
   first_seen: '2026-09-01'
@@ -201,6 +227,8 @@ devices:
   type: wifi
   mac_source: manual
   ip_source: mysystem.macbook.yml
+  network_id: legacy-192.168.1.0-24
+  network_status: stale
   status: stale
   ip_kind: manual
   first_seen: '2026-09-01'
@@ -214,6 +242,8 @@ devices:
   type: wifi
   mac_source: manual
   ip_source: earlier-scan
+  network_id: legacy-192.168.1.0-24
+  network_status: stale
   status: unknown
   ip_kind: manual
   first_seen: '2026-09-01'
@@ -227,6 +257,8 @@ devices:
   type: unknown
   mac_source: arp
   ip_source: arp
+  network_id: home-192.168.2.0-24
+  network_status: active
   status: active
   ip_kind: discovered
   first_seen: '2026-09-01'
@@ -240,6 +272,8 @@ devices:
   type: unknown
   mac_source: arp
   ip_source: arp
+  network_id: home-192.168.2.0-24
+  network_status: active
   status: active
   ip_kind: discovered
   first_seen: '2026-09-04'
@@ -253,6 +287,8 @@ devices:
   type: unknown
   mac_source: arp
   ip_source: arp
+  network_id: home-192.168.2.0-24
+  network_status: active
   status: active
   ip_kind: discovered
   first_seen: '2026-09-01'
@@ -266,6 +302,8 @@ devices:
   type: unknown
   mac_source: arp
   ip_source: null
+  network_id: null
+  network_status: null
   status: active
   ip_kind: null
   first_seen: '2026-09-01'
@@ -279,6 +317,8 @@ devices:
   type: unknown
   mac_source: arp
   ip_source: null
+  network_id: null
+  network_status: null
   status: active
   ip_kind: null
   first_seen: '2026-09-01'
@@ -292,6 +332,8 @@ devices:
   type: unknown
   mac_source: null
   ip_source: arp
+  network_id: home-192.168.2.0-24
+  network_status: active
   status: active
   ip_kind: discovered
   first_seen: '2026-09-04'
@@ -305,6 +347,8 @@ devices:
   type: unknown
   mac_source: null
   ip_source: arp
+  network_id: home-192.168.2.0-24
+  network_status: active
   status: active
   ip_kind: discovered
   first_seen: '2026-09-04'
@@ -318,6 +362,8 @@ devices:
   type: unknown
   mac_source: null
   ip_source: arp
+  network_id: home-192.168.2.0-24
+  network_status: active
   status: active
   ip_kind: discovered
   first_seen: '2026-09-04'
@@ -331,6 +377,8 @@ devices:
   type: unknown
   mac_source: null
   ip_source: arp
+  network_id: home-192.168.2.0-24
+  network_status: active
   status: active
   ip_kind: discovered
   first_seen: '2026-09-04'
@@ -344,6 +392,8 @@ devices:
   type: unknown
   mac_source: null
   ip_source: arp
+  network_id: home-192.168.2.0-24
+  network_status: active
   status: active
   ip_kind: discovered
   first_seen: '2026-09-04'
@@ -357,6 +407,8 @@ devices:
   type: ethernet
   mac_source: ha-network-info
   ip_source: ha-network-info
+  network_id: michael-home-192.168.1.0-24
+  network_status: active
   status: active
   ip_kind: manual
   first_seen: '2026-09-02'
@@ -370,6 +422,8 @@ devices:
   type: wifi
   mac_source: ha-network-info
   ip_source: null
+  network_id: null
+  network_status: null
   status: stale
   ip_kind: null
   first_seen: '2026-09-02'
@@ -383,6 +437,8 @@ devices:
   type: bluetooth
   mac_source: ha-device-registry
   ip_source: null
+  network_id: null
+  network_status: null
   status: active
   ip_kind: null
   first_seen: '2026-09-02'
@@ -396,6 +452,8 @@ devices:
   type: ethernet
   mac_source: arp-scan
   ip_source: ha-config-upnp
+  network_id: michael-home-192.168.1.0-24
+  network_status: active
   status: active
   ip_kind: static
   first_seen: '2026-09-02'
@@ -409,6 +467,8 @@ devices:
   type: ethernet
   mac_source: arp-scan
   ip_source: ha-config-upnp
+  network_id: michael-home-192.168.1.0-24
+  network_status: active
   status: active
   ip_kind: discovered
   first_seen: '2026-09-02'
@@ -422,6 +482,8 @@ devices:
   type: wifi
   mac_source: arp-scan
   ip_source: ha-config-broadlink
+  network_id: michael-home-192.168.1.0-24
+  network_status: active
   status: active
   ip_kind: manual
   first_seen: '2026-09-02'
@@ -435,6 +497,8 @@ devices:
   type: wifi
   mac_source: arp-scan
   ip_source: ha-config-linkplay
+  network_id: michael-home-192.168.1.0-24
+  network_status: active
   status: active
   ip_kind: discovered
   first_seen: '2026-09-02'
@@ -448,6 +512,8 @@ devices:
   type: wifi
   mac_source: arp-scan
   ip_source: ha-config-linkplay
+  network_id: michael-home-192.168.1.0-24
+  network_status: active
   status: active
   ip_kind: discovered
   first_seen: '2026-09-02'
@@ -461,6 +527,8 @@ devices:
   type: wifi
   mac_source: arp-scan
   ip_source: ha-config-linkplay
+  network_id: michael-home-192.168.1.0-24
+  network_status: active
   status: active
   ip_kind: discovered
   first_seen: '2026-09-02'
@@ -474,6 +542,8 @@ devices:
   type: wifi
   mac_source: sonoff-config
   ip_source: null
+  network_id: null
+  network_status: null
   status: active
   ip_kind: null
   first_seen: '2026-09-02'
@@ -487,6 +557,8 @@ devices:
   type: wifi
   mac_source: arp-scan
   ip_source: arp-scan
+  network_id: michael-home-192.168.1.0-24
+  network_status: active
   status: active
   ip_kind: discovered
   first_seen: '2026-09-07'
@@ -500,6 +572,8 @@ devices:
   type: wifi
   mac_source: sonoff-config
   ip_source: null
+  network_id: null
+  network_status: null
   status: active
   ip_kind: null
   first_seen: '2026-09-02'
@@ -513,6 +587,8 @@ devices:
   type: wifi
   mac_source: arp-scan
   ip_source: arp-scan
+  network_id: michael-home-192.168.1.0-24
+  network_status: active
   status: active
   ip_kind: discovered
   first_seen: '2026-09-07'
@@ -526,6 +602,8 @@ devices:
   type: unknown
   mac_source: arp-scan
   ip_source: arp-scan
+  network_id: michael-home-192.168.1.0-24
+  network_status: active
   status: active
   ip_kind: manual
   first_seen: '2026-09-02'
@@ -539,6 +617,8 @@ devices:
   type: unknown
   mac_source: arp-scan
   ip_source: arp-scan
+  network_id: michael-home-192.168.1.0-24
+  network_status: active
   status: active
   ip_kind: manual
   first_seen: '2026-09-02'
@@ -552,6 +632,8 @@ devices:
   type: unknown
   mac_source: arp-scan
   ip_source: arp-scan
+  network_id: michael-home-192.168.1.0-24
+  network_status: active
   status: active
   ip_kind: manual
   first_seen: '2026-09-02'
@@ -565,6 +647,8 @@ devices:
   type: wifi
   mac_source: arp-scan
   ip_source: arp-scan
+  network_id: michael-home-192.168.1.0-24
+  network_status: active
   status: active
   ip_kind: discovered
   first_seen: '2026-09-02'
@@ -578,6 +662,8 @@ devices:
   type: unknown
   mac_source: arp-scan
   ip_source: arp-scan
+  network_id: michael-home-192.168.1.0-24
+  network_status: active
   status: active
   ip_kind: manual
   first_seen: '2026-09-02'
@@ -591,6 +677,8 @@ devices:
   type: wifi
   mac_source: arp-scan
   ip_source: arp-scan
+  network_id: michael-home-192.168.1.0-24
+  network_status: active
   status: active
   ip_kind: manual
   first_seen: '2026-09-02'
@@ -604,6 +692,8 @@ devices:
   type: ethernet
   mac_source: arp-scan
   ip_source: null
+  network_id: null
+  network_status: null
   status: active
   ip_kind: null
   first_seen: '2026-09-07'
@@ -617,6 +707,8 @@ devices:
   type: unknown
   mac_source: arp-scan
   ip_source: arp-scan
+  network_id: michael-home-192.168.1.0-24
+  network_status: active
   status: active
   ip_kind: discovered
   first_seen: '2026-09-02'
@@ -630,6 +722,8 @@ devices:
   type: virtual
   mac_source: ha-device-registry
   ip_source: ha-device-registry
+  network_id: null
+  network_status: unknown
   status: active
   ip_kind: null
   first_seen: null
@@ -642,6 +736,8 @@ devices:
   type: virtual
   mac_source: ha-device-registry
   ip_source: ha-device-registry
+  network_id: null
+  network_status: unknown
   status: active
   ip_kind: null
   first_seen: null
@@ -654,6 +750,8 @@ devices:
   type: virtual
   mac_source: ha-device-registry
   ip_source: ha-device-registry
+  network_id: null
+  network_status: unknown
   status: active
   ip_kind: null
   first_seen: null
@@ -666,6 +764,8 @@ devices:
   type: virtual
   mac_source: ha-device-registry
   ip_source: ha-device-registry
+  network_id: null
+  network_status: unknown
   status: active
   ip_kind: null
   first_seen: null
@@ -678,6 +778,8 @@ devices:
   type: virtual
   mac_source: ha-device-registry
   ip_source: ha-device-registry
+  network_id: null
+  network_status: unknown
   status: active
   ip_kind: null
   first_seen: null
