@@ -267,11 +267,13 @@ def _clean_mac(mac: str | None) -> str | None:
     return mac
 
 
-def _scan_hosts() -> list[dict]:
-    if not SCAN_FILE.exists():
+def _scan_hosts(path: Path | None = None) -> list[dict]:
+    if path is None:
+        path = SCAN_FILE
+    if not path.exists():
         return []
     try:
-        scan = json.loads(SCAN_FILE.read_text(encoding="utf-8"))
+        scan = json.loads(path.read_text(encoding="utf-8"))
     except (json.JSONDecodeError, OSError):
         return []
     hosts = []
@@ -283,14 +285,13 @@ def _scan_hosts() -> list[dict]:
     return hosts
 
 
-def apply_scan_to_rows(rows: list[dict], active_net: dict) -> None:
+def apply_scan_to_rows(rows: list[dict], scan_hosts: list[dict], active_net: dict) -> None:
     """Update runtime rows from scan: set current IP, last_seen, and scan source.
 
     Prefer MAC matches (device may have moved IP). For IP-only rows, just set
     last_seen when the IP is seen and the scan host has no conflicting MAC.
     """
-    hosts = _scan_hosts()
-    if not hosts:
+    if not scan_hosts:
         return
     for r in rows:
         ip = r.get("ip")
@@ -299,14 +300,14 @@ def apply_scan_to_rows(rows: list[dict], active_net: dict) -> None:
         matched_host = None
         # Best: same MAC anywhere (device may have moved IP)
         if mac:
-            for h in hosts:
+            for h in scan_hosts:
                 if h.get("mac") == mac:
                     matched_host = h
                     ts = h.get("_ts")
                     break
         # Fallback: same IP when row has no MAC or scan host has no MAC / same MAC
         if not matched_host and ip:
-            for h in hosts:
+            for h in scan_hosts:
                 if h.get("ip") == ip:
                     hmac = h.get("mac")
                     if not mac or not hmac or hmac == mac:
@@ -389,7 +390,6 @@ def main() -> None:
         for name, info in meta.items()
     }
 
-    scan_hosts = _scan_hosts()
     today = datetime.now(timezone.utc).date().isoformat()
 
     for ha_instance, paths in REGISTRY.items():
@@ -397,7 +397,9 @@ def main() -> None:
         ip_data = load_yaml(paths["ip"])
         active_net = network_info(ip_data)
         rows = build_instance_rows(ha_instance, mac_data, ip_data)
-        apply_scan_to_rows(rows, active_net)
+        scan_path = REPO_ROOT / "data" / "network-scan" / f"{ha_instance}-scan.json"
+        scan_hosts = _scan_hosts(scan_path)
+        apply_scan_to_rows(rows, scan_hosts, active_net)
         add_scan_only_rows(rows, ha_instance, scan_hosts, active_net)
         all_rows.extend(rows)
         ui_instances[ha_instance]["network"] = active_net
@@ -433,6 +435,7 @@ def main() -> None:
                 "docs/ssot/infrastructure/ssot.mac-address-registry.michael.yml",
                 "docs/ssot/infrastructure/ssot.ip-address-registry.michael.yml",
                 "data/network-scan/tony-ha-scan.json",
+                "data/network-scan/michael-ha-scan.json",
             ],
         },
         "schema": {
