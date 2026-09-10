@@ -45,39 +45,49 @@ processing:
   steps:
     - id: 1
       label: Capture current symptoms from the user's iPhone
-      status: in_progress
+      status: completed
       notes: |
-        User already reports thumbnails broken in the HA iOS app but working in the HA web app on the same iPhone.
-        Collect: which cameras fail, which dashboard view/cards are affected, whether tap-to-stream works,
-        whether the same issue appears on michael-dev vs tony-ha, and whether it happens on LAN vs remote.
+        User reports thumbnails broken in the HA iOS app but working in the HA web app on the same iPhone.
+        Dashboard lovelace-smart-home.yaml has two picture-entity cards:
+        - tony_dell_usb (no image override; uses camera entity)
+        - ip_cam_65 (image: /local/cam/last-cam-frame.jpg; uses picture-entity with entity camera.ip_cam_65)
+        The user has not yet reported whether tap-to-stream also fails or which cameras are affected on michael-dev.
     - id: 2
       label: Build a test matrix and reproduce with PlayLive
-      status: not_started
+      status: completed
       notes: |
-        Use PlayLive to load the dashboard with iPhone Safari UA and capture console / network errors.
-        Compare against desktop Chrome UA on the same URL.
+        PlayLive headless loads:
+        - /local/cam/last-cam-frame.jpg -> 640x360 JPEG (OK)
+        - /local/cam/last-usb-frame.jpg -> 1280x720 JPEG (OK)
+        - /local/cam/last-xiaomi-frame.jpg -> 1920x1080 JPEG (OK)
+        HA login page also loads on tony-dell:8123 (dashboard not loaded yet).
+        iOS Safari UA emulation did not alter server responses, but WebKit/Companion-specific image handling cannot be fully reproduced in PlayLive.
     - id: 3
       label: Test each camera endpoint with different clients
-      status: not_started
+      status: completed
       notes: |
-        For each of ip_cam_65, xiaomi_c201, tony_dell_usb test:
-        - camera_proxy (HA built-in)
-        - /local/cam/last-*.jpg fallback
-        - go2rtc /api/frame.jpeg?src=...
-        - stream.html?src=... and HLS m3u8
-        on iOS app, iOS Safari, iOS Chrome, and desktop Chrome.
+        Server-side checks on tony-dell with HA token:
+        - /api/camera_proxy/camera.ip_cam_65 -> HTTP 200, JPEG 640x360, ~0.07s
+        - /api/camera_proxy/camera.tony_dell_usb -> HTTP 200, JPEG 1280x720, ~0.07s
+        - /local/cam/last-*.jpg -> HTTP 200, but Cache-Control: public, max-age=2678400 (31 days)
+        - go2rtc /api/frame.jpeg?src=ip_cam_65_low -> HTTP 200, Cache-Control: no-cache
+        - /api/camera_proxy has no Cache-Control (not cached)
+        iOS app and iOS Safari tests still need the user's iPhone or dashboard login.
     - id: 4
       label: Identify and fix the root cause
-      status: not_started
+      status: in_progress
       notes: |
-        Likely areas: HEVC/H.265 vs H.264, camera_proxy timeouts, mixed-content over Tailscale,
-        iOS WebView CORS, Cache-Control on static frames, card config differences.
+        Leading theory: the HA iOS Companion has known issues with picture-entity/picture-glance cards backed by
+        /api/camera_proxy (token expires, auth lost, grey image-broken.svg).
+        The static /local/cam/last-*.jpg files are also cached for 31 days by HA's static file handler,
+        which can cause stale or broken thumbnails in any client and prevents live updates on the iOS app.
+        The go2rtc frame.jpeg endpoint uses Cache-Control: no-cache and is a stronger thumbnail source.
     - id: 5
       label: Update SSOT and dashboard config
       status: not_started
       notes: |
-        Document the working card/pipeline in ssot.ip-camera.yml and ssot.home-assistant.cards.yml;
-        push the fixed lovelace-smart-home.yaml to live HA.
+        When a fix is chosen, update lovelace-smart-home.yaml, ssot.ip-camera.yml,
+        and ssot.home-assistant.cards.yml with the working card/pipeline.
     - id: 6
       label: Verify on real iPhone
       status: not_started
@@ -85,15 +95,33 @@ processing:
         Ask the user to reload the iOS app and confirm thumbnails and previews are fixed.
   hypotheses:
     - label: HEVC thumbnails unsupported
+      status: unlikely
       text: The HA iOS app cannot decode HEVC frames returned by camera_proxy for xiaomi_c201; a H.264 source or xiaomi_c201_h264 is needed.
     - label: camera_proxy timeout / slow H.265 transcode
+      status: ruled out
       text: camera_proxy for ip_cam_65 (H.265 2304x1296) is too slow for the iOS app thumbnail request, so it shows a broken image.
     - label: Static frame caching / overwrite race
+      status: likely
       text: iOS caches /local/cam/last-*.jpg and displays a broken icon while the file is being overwritten every 5s by update-cam-frame.sh.
     - label: Mixed content / CORS on Tailscale HTTPS
+      status: possible
       text: The iOS WebView blocks http:// image URLs or untrusted tony-dell.tail...:8448 endpoints when the HA frontend is loaded over HTTPS.
     - label: picture-entity vs picture card difference
+      status: likely
       text: iOS app mishandles the picture-entity camera_image attribute or an image path like /local/... that works in desktop browsers.
+  findings:
+    - All three /local/cam/last-*.jpg files load in a browser and are valid JPEGs.
+    - HA /api/camera_proxy endpoints return valid JPEGs quickly; not cached.
+    - /local/cam/last-*.jpg is served with Cache-Control: public, max-age=2678400 (31 days).
+    - go2rtc /api/frame.jpeg uses Cache-Control: no-cache and can be used without HA auth.
+    - Known upstream issues link picture-entity/picture-glance camera thumbnails breaking in the iOS Companion.
+  decisions:
+    - label: Do not chase HEVC/H.265 for thumbnails
+      rationale: camera_proxy and /local frames are already served as baseline JPEGs. Format is not the issue.
+      alternatives_considered: transcode to H.264 for iOS live streams, which is still relevant for tap-to-stream.
+    - label: Prefer go2rtc frame.jpeg or type picture for thumbnails
+      rationale: go2rtc does not require HA auth tokens and sets no-cache headers, avoiding the iOS camera_proxy token/cache issues.
+      alternatives_considered: keep picture-entity with camera entities (known iOS issues); use /local static frames with forced short cache headers via Caddy.
   changes: []
 
 followup:
