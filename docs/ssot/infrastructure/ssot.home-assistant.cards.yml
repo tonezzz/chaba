@@ -23,9 +23,9 @@ repositories:
         test_url: https://tony-dell.taila0626a.ts.net:8124/tony-test/pf4
       michael-ha:
         target_host: ssot.values.yml::hosts.michael_ha
-        target_path: /config/www/sunsynk-power-flow-card-fork-v206.js
+        target_path: /config/www/sunsynk-power-flow-card-fork-v207.js
         lovelace_resources: /config/.storage/lovelace_resources
-        resource_path: /local/sunsynk-power-flow-card-fork-v206.js
+        resource_path: /local/sunsynk-power-flow-card-fork-v207.js
         restart: ha core restart
         test_url: https://nupo4ndqdqydt78zmpq0z5wzp1bdrqgs.ui.nabu.casa/tony-test/pf3
         note: >-
@@ -38,9 +38,9 @@ repositories:
           now enabled. Fallback: cdn.jsdelivr.net/gh/tonezzz/sunsynk-power-flow-card@<commit>/dist/...
       tony-ha:
         target_host: ssot.values.yml::hosts.tony_dell
-        target_path: /home/tony/.config/home-assistant/www/sunsynk-power-flow-card-fork-v206.js
+        target_path: /home/tony/.config/home-assistant/www/sunsynk-power-flow-card-fork-v207.js
         lovelace_resources: /home/tony/.config/home-assistant/.storage/lovelace_resources
-        resource_path: /local/sunsynk-power-flow-card-fork-v206.js
+        resource_path: /local/sunsynk-power-flow-card-fork-v207.js
         restart: systemctl --user restart tony-ha.service
         test_url: http://tony-dell:8123/
     source_files:
@@ -113,7 +113,7 @@ cards:
     name: Sunsynk Power Flow Card (fork)
     repo_ref: repositories.sunsynk-power-flow-card-fork
     bundle_version: 207
-    deployed_as: '/local/sunsynk-power-flow-card-fork-v207.js on michael-dev (md5 a41d5fd9ab4185edcfa111f1f80c597c); /local/sunsynk-power-flow-card-fork-v206.js on michael-ha and tony-ha (md5 c51253bb28b0aaaa12d9fe128e8b4425)'
+    deployed_as: '/local/sunsynk-power-flow-card-fork-v207.js on michael-dev (md5 a41d5fd9ab4185edcfa111f1f80c597c); /local/sunsynk-power-flow-card-fork-v207.js on michael-ha and tony-ha (md5 c51253bb28b0aaaa12d9fe128e8b4425)'
     dashboards:
       - id: tony-test/v0
         tab: V0
@@ -150,5 +150,5 @@ cards:
 
 status:
   last_build: '2026-09-08'
-  last_verified: '2026-09-09'
+  last_verified: '2026-09-10'
   health: active; v149 deployed to michael-dev and v122 to michael-ha; dev tabs are V0/V1/G1/TPL/TPL2/TPL_SOLIS/Data/Sankey/juWorkshop/Solar Assistant/glass/Weather/Solis Daily Energy Sankey (sunsynk on V0/V1/G1/TPL/TPL2); michael-ha tabs are V0/V1/SK/TPL/juWorkshop/Solar Assistant/glass/Weather (sunsynk on V0/V1/TPL); pfg/pfg2 features remain available in the bundle but PFG/PFG2/PF3/PF4 tabs were removed; version numbers are per-host counters — verify cross-host parity by md5sum, not version
