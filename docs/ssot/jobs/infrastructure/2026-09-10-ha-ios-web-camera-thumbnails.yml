@@ -1,0 +1,133 @@
+# SSOT Job: HA iOS app vs Web app camera thumbnail behavior
+# Investigate why camera thumbnails and previews render differently between
+# the Home Assistant iOS Companion app and the HA web UI on iPhone.
+
+title: HA iOS vs Web Camera Thumbnail Investigation
+subtitle: Identify root cause and fix camera thumbnail / preview breakage on the iOS app
+icon: camera
+
+planning:
+  goal: |
+    Explain why camera thumbnails and tap-to-stream previews work in Safari/Chrome on iPhone
+    but break (missing image, broken icon, or fails to load) in the Home Assistant iOS Companion app,
+    then fix the card configuration or pipeline so both clients show the same working result.
+  scope: |
+    In scope: Home Assistant dashboard lovelace-smart-home.yaml on tony-ha and michael-dev;
+    the go2rtc snapshot/frame endpoints; the last-*-frame.jpg fallback files;
+    the HA camera_proxy and picture-entity / picture card behavior;
+    the HA iOS Companion app, iOS Safari, and iOS Chrome.
+    Out of scope: Changing the iOS app itself; switching camera firmware; new dashboard redesigns.
+  success_criteria:
+    - Document the exact failure symptoms for each client and camera.
+    - Identify at least one root cause (format, transport, CORS, cache, proxy, card config).
+    - Update lovelace-smart-home.yaml or the snapshot pipeline so thumbnails are visible in both clients.
+    - Add the confirmed working configuration to docs/ssot/infrastructure/ssot.ip-camera.yml.
+    - Re-test after the fix and record results in this job.
+  risks:
+    - iOS WebKit behavior is hard to reproduce outside a real device. Mitigation: use PlayLive UA emulation and the user's direct iPhone feedback.
+    - camera_proxy and go2rtc endpoints may have different auth/CORS headers for external URLs. Mitigation: test both http://tony-dell:8123 and the Tailscale HTTPS URL.
+  resources:
+    - iPhone with HA iOS app and Safari/Chrome
+    - tony-dell Home Assistant instance (port 8123)
+    - go2rtc on tony-dell (port 1984 / 8448 over Tailscale)
+    - PlayLive for browser capture and UA testing
+    - docs/ssot/infrastructure/ssot.ip-camera.yml
+    - docs/ssot/infrastructure/ssot.home-assistant.cards.yml
+  owner: tony
+  estimated_duration: 1-2 sessions
+  related_focus:
+    - label: HA iOS vs Web camera thumbnails
+      file: docs/ssot/ssot.focus.current.active.yml
+
+processing:
+  status: in_progress
+  started_at: '2026-09-10'
+  steps:
+    - id: 1
+      label: Capture current symptoms from the user's iPhone
+      status: in_progress
+      notes: |
+        User already reports thumbnails broken in the HA iOS app but working in the HA web app on the same iPhone.
+        Collect: which cameras fail, which dashboard view/cards are affected, whether tap-to-stream works,
+        whether the same issue appears on michael-dev vs tony-ha, and whether it happens on LAN vs remote.
+    - id: 2
+      label: Build a test matrix and reproduce with PlayLive
+      status: not_started
+      notes: |
+        Use PlayLive to load the dashboard with iPhone Safari UA and capture console / network errors.
+        Compare against desktop Chrome UA on the same URL.
+    - id: 3
+      label: Test each camera endpoint with different clients
+      status: not_started
+      notes: |
+        For each of ip_cam_65, xiaomi_c201, tony_dell_usb test:
+        - camera_proxy (HA built-in)
+        - /local/cam/last-*.jpg fallback
+        - go2rtc /api/frame.jpeg?src=...
+        - stream.html?src=... and HLS m3u8
+        on iOS app, iOS Safari, iOS Chrome, and desktop Chrome.
+    - id: 4
+      label: Identify and fix the root cause
+      status: not_started
+      notes: |
+        Likely areas: HEVC/H.265 vs H.264, camera_proxy timeouts, mixed-content over Tailscale,
+        iOS WebView CORS, Cache-Control on static frames, card config differences.
+    - id: 5
+      label: Update SSOT and dashboard config
+      status: not_started
+      notes: |
+        Document the working card/pipeline in ssot.ip-camera.yml and ssot.home-assistant.cards.yml;
+        push the fixed lovelace-smart-home.yaml to live HA.
+    - id: 6
+      label: Verify on real iPhone
+      status: not_started
+      notes: |
+        Ask the user to reload the iOS app and confirm thumbnails and previews are fixed.
+  hypotheses:
+    - label: HEVC thumbnails unsupported
+      text: The HA iOS app cannot decode HEVC frames returned by camera_proxy for xiaomi_c201; a H.264 source or xiaomi_c201_h264 is needed.
+    - label: camera_proxy timeout / slow H.265 transcode
+      text: camera_proxy for ip_cam_65 (H.265 2304x1296) is too slow for the iOS app thumbnail request, so it shows a broken image.
+    - label: Static frame caching / overwrite race
+      text: iOS caches /local/cam/last-*.jpg and displays a broken icon while the file is being overwritten every 5s by update-cam-frame.sh.
+    - label: Mixed content / CORS on Tailscale HTTPS
+      text: The iOS WebView blocks http:// image URLs or untrusted tony-dell.tail...:8448 endpoints when the HA frontend is loaded over HTTPS.
+    - label: picture-entity vs picture card difference
+      text: iOS app mishandles the picture-entity camera_image attribute or an image path like /local/... that works in desktop browsers.
+  changes: []
+
+followup:
+  verification:
+    - Thumbnails render correctly in the HA iOS app for all three cameras.
+    - Tap-to-stream opens and plays in the iOS app.
+    - No visual regression in desktop Safari/Chrome.
+    - node scripts/ssot-validate-all.mjs passes.
+  rollback_plan:
+    - Revert lovelace-smart-home.yaml to the previous version.
+    - Restart Home Assistant to reload the dashboard.
+  handoff:
+    - tony for ongoing iPhone verification
+  deferred:
+    - Native iOS notification camera preview
+    - iOS widget thumbnails
+
+report:
+  status: not_started
+  completed_at: null
+  summary: ""
+  metrics: []
+  links: []
+  kb_review: []
+  lessons_learned: []
+
+config:
+  version: 1
+  created_at: '2026-09-10'
+  last_updated: '2026-09-10'
+  maintainer: tony
+  related_files:
+    - docs/ssot/templates/job.yml
+    - docs/ssot/infrastructure/ssot.ip-camera.yml
+    - docs/ssot/infrastructure/ssot.home-assistant.cards.yml
+    - /home/tony/.config/home-assistant/lovelace-smart-home.yaml
+    - /home/tony/.config/home-assistant/update-cam-frame.sh
