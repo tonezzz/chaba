@@ -25,7 +25,7 @@ import yaml
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
 OUT_SSOT = REPO_ROOT / "data" / "ssot" / "infrastructure" / "ssot.ha-devices.yml"
-OUT_UI = REPO_ROOT / "data" / "apps" / "ha" / "ssot.ui.ha.yml"
+OUT_UI = REPO_ROOT / "stacks" / "web" / "public" / "apps" / "ha" / "ssot.ui.ha.yml"
 SCAN_FILE = REPO_ROOT / "data" / "network-scan" / "tony-ha-scan.json"
 
 REGISTRY = {
