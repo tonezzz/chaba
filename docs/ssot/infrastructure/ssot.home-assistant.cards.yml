@@ -100,6 +100,13 @@ repositories:
       note: |
         The plain SOC group and the combined groups are mutually exclusive.  The combined text uses the
         same battery entity and `left-align st13 st8` style anchored near x=290, y=358 in compact mode.
+      ios_camera_thumbnail_fix_2026_09_10:
+        summary: Prefer type picture over picture-entity for camera thumbnails in the HA iOS Companion app.
+        rationale: picture-entity with camera entities relies on /api/camera_proxy tokens that can expire or return grey image-broken.svg on iOS. type picture loads a plain image URL and is handled reliably by the iOS WebView.
+        pattern:
+          - entity: avoid if possible; use only for more-info / badges.
+          - image: /local/cam/last-*.jpg for static freeze frames, or go2rtc https://.../api/frame.jpeg?src=... for no-cache live frames.
+          - tap_action: open more-info for the camera entity, or a go2rtc stream.html / stream.m3u8 URL for live viewing.
 
 cards:
   - id: sunsynk-power-flow-card
