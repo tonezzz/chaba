@@ -350,7 +350,11 @@ def add_scan_only_rows(rows: list[dict], ha_instance: str, scan_hosts: list[dict
         if not ip and not mac:
             continue
         did = device_id_from_mac(mac) if mac else f"discovered-{ip.replace('.', '-')}"
-        label = f"Unknown host {ip}" if ip else did
+        label = (
+            h.get("hostname")
+            or h.get("vendor")
+            or (f"Unknown host {ip}" if ip else did)
+        )
         rows.append(
             {
                 "ha_instance": ha_instance,
