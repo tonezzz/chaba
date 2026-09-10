@@ -63,6 +63,16 @@ def load_yaml(path: Path) -> dict:
         return yaml.safe_load(f) or {}
 
 
+def _status_badge(status: str) -> str:
+    color = {"active": "#4caf50", "stale": "#f44336"}.get(status, "#ff9800")
+    return f'<span style="color:{color};font-weight:600">{status}</span>'
+
+
+def _type_label(typ: str) -> str:
+    color = {"ethernet": "#03a9f4", "wifi": "#8bc34a", "bluetooth": "#9c27b0"}.get(typ, "var(--secondary-text-color)")
+    return f'<span style="color:{color}">{typ}</span>'
+
+
 def _table(rows: list[dict]) -> str:
     trs = []
     for r in rows:
@@ -80,7 +90,7 @@ def _table(rows: list[dict]) -> str:
         trs.append(
             f'<tr><td style="word-break:break-all">{label}</td><td>{iface}</td>'
             f'<td style="word-break:break-all">{mac}</td><td style="word-break:break-all">{ip}</td>'
-            f'<td>{typ}</td><td>{status}</td><td>{source}</td><td>{ip_kind}</td>'
+            f'<td>{_type_label(typ)}</td><td>{_status_badge(status)}</td><td>{source}</td><td>{ip_kind}</td>'
             f'<td style="word-break:break-all">{seen}</td></tr>'
         )
     return (
