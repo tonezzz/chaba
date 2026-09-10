@@ -62,6 +62,18 @@ deploy:
     optional: true
     note: Live michael-ha stores the tony-test dashboard in .storage/lovelace.tony_test. The repo dashboard files are archival snapshots; only deploy as YAML if explicitly converting live .storage to configuration.yaml.
 
+auth:
+  provider: homeassistant
+  username: nakva
+  display_user: Michael Nakvachara
+  owner: Michael Nakvachara
+  user_id: 6f6e965a3b76400b904c014ea843d02c
+  token:
+    file: /home/tony/.config/secrets/ha-michael-live.env
+    env: HASS_TOKEN
+    status: valid
+    note: Long-lived access token for automated HA-MCP/REST access. Do not commit.
+
 addons:
   - id: core_ssh
     name: Terminal & SSH
