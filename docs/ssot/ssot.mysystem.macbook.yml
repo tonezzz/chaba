@@ -145,8 +145,8 @@ sections:
         status: active
         tags: [health, monitoring, snapshot]
       - label: PlayLive / CDP Node
-        text: Playwright+CDP browser automation daemon (playlived) is not currently running on macbook; no listeners on ports 9222 or 9231 in the latest health snapshot. Chrome Remote Desktop headless profile is available; start the daemon manually or via launchd when needed.
-        status: inactive
+        text: Playwright+CDP browser automation daemon (playlived) is running on port 9231 (PID 5967). Headless Google Chrome is running with remote-debugging-port=9222 (PID 5773). A test chrome-live session was created and closed successfully. CDP is reachable at 127.0.0.1:9222 and playlived at 0.0.0.0:9231.
+        status: active
         tags: [playlive, cdp, browser, playwright, automation]
       - label: Node.js
         text: Node.js v20.17.0 and npm 10.8.2 installed at ~/.local/node; available on the shell PATH via ~/.zshenv
@@ -157,12 +157,12 @@ sections:
         status: active
         tags: [homebrew, package-manager, macos]
       - label: Podman
-        text: 'Podman v5.8.5 installed at ~/.local/podman (binary at ~/.local/podman/bin/podman). The podman-machine-default VM is created but has never been started (LAST UP: Never); podman ps -a shows no containers. PATH includes ~/.local/podman/bin via ~/.zshenv.'
+        text: 'Podman v5.8.5 installed at ~/.local/podman (binary at ~/.local/podman/bin/podman). The podman-machine-default VM is running (created 3 weeks ago, started 2026-09-10). The redis-macbook container is running and responding PONG on port 16379. PATH includes ~/.local/podman/bin via ~/.zshenv.'
         status: active
         tags: [podman, containers, virtualization]
       - label: Redis
-        text: Redis 7 Alpine container 'redis-macbook' is not running; podman-machine-default has never been started and podman ps -a shows no containers. Persistent volume 'redis-data' may exist but cannot be verified until the VM starts.
-        status: inactive
+        text: Redis 7 Alpine container 'redis-macbook' is running and responding PONG on port 16379. It is backed by persistent volume 'redis-data' and podman-machine-default.
+        status: active
         tags: [redis, podman, cache]
       - label: Terminal Access
         text: Full terminal access via SSH for command-line operations
@@ -275,7 +275,7 @@ sections:
 
 config:
   version: 3
-  last_updated: 2026-09-09
+  last_updated: 2026-09-10
   maintainer: tony
   related_files:
     - ssot.mysystem.home.yml (home environment overview)
