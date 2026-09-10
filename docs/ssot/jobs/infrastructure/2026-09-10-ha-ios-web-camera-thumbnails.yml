@@ -88,9 +88,9 @@ processing:
       status: completed
       notes: |
         Updated /home/tony/.config/home-assistant/lovelace-smart-home.yaml on tony-dell:
-        - tony_dell_usb, ip_cam_65, xiaomi_c201, and xiaomi_c201_sd cards now use type: picture with /local/cam/last-*.jpg images.
-        - desktop_* cameras remain picture-entity until a static frame source is available.
+        - tony_dell_usb, ip_cam_65, xiaomi_c201, xiaomi_c201_sd, and desktop_* cards now use type: picture with /local/cam/last-*.jpg images.
         - Backup saved as lovelace-smart-home.yaml.2026-09-10.
+        Updated /home/tony/.config/home-assistant/update-cam-frame.sh to add a 15s timeout per desktop capture and an flock guard to stop overlapping runs.
         Updated docs/ssot/infrastructure/ssot.ip-camera.yml to reflect the picture-card dashboard use.
         Restarted tony-ha.service; HA reachable on port 8123.
     - id: 6
@@ -131,7 +131,9 @@ processing:
       alternatives_considered: keep picture-entity with camera entities (known iOS issues); use /local static frames with forced short cache headers via Caddy.
   changes:
     - file: /home/tony/.config/home-assistant/lovelace-smart-home.yaml
-      summary: Replaced picture-entity camera cards with type picture using /local/cam/last-*.jpg static thumbnails to avoid iOS camera_proxy token issues.
+      summary: Replaced all picture-entity camera cards with type picture using /local/cam/last-*.jpg static thumbnails to avoid iOS camera_proxy token issues.
+    - file: /home/tony/.config/home-assistant/update-cam-frame.sh
+      summary: Added desktop HLS capture (last-desktop-*.jpg) with 15s timeout and flock to prevent overlapping captures.
     - file: /home/tony/.config/home-assistant/lovelace-smart-home.yaml.2026-09-10
       summary: Backup of the original dashboard before the picture-card change.
     - file: docs/ssot/infrastructure/ssot.ip-camera.yml
@@ -158,8 +160,9 @@ report:
   status: completed
   completed_at: '2026-09-10'
   summary: |
-    Replaced picture-entity camera cards with type: picture in lovelace-smart-home.yaml.
-    USB Cam uses /local/cam/last-usb-frame.jpg; Coffee Corner uses the go2rtc /api/frame.jpeg endpoint.
+    Replaced all picture-entity camera cards with type: picture in lovelace-smart-home.yaml to avoid HA iOS camera_proxy token issues.
+    Thumbnails now load from /local/cam/last-*.jpg freeze frames for tony_dell_usb, ip_cam_65, xiaomi_c201, xiaomi_c201_sd, and desktop_1/20/99.
+    update-cam-frame.sh was extended to capture desktop HLS streams with a 15s timeout and an flock guard.
     tony-ha.service was restarted and is reachable. iOS app thumbnails reported working.
   metrics: []
   links:
