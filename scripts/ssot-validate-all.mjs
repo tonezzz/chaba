@@ -245,7 +245,7 @@ function resolveInputs(args) {
       resolved.push(join(REPO, a));
     }
   }
-  const filtered = resolved.filter(p => p.endsWith('.yml') && p.includes('docs/ssot'));
+  const filtered = resolved.filter(p => existsSync(p) && p.endsWith('.yml') && p.includes('docs/ssot'));
   return mode ? { files: filtered, mode } : { files: filtered, mode: null };
 }
 

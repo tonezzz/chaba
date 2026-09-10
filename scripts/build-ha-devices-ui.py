@@ -6,24 +6,27 @@ Sources:
 - docs/ssot/infrastructure/ssot.ip-address-registry.yml
 - docs/ssot/infrastructure/ssot.mac-address-registry.michael.yml
 - docs/ssot/infrastructure/ssot.ip-address-registry.michael.yml
+- data/network-scan/tony-ha-scan.json (runtime scan results)
 
 Outputs:
-- docs/ssot/infrastructure/ssot.ha-devices.yml (canonical flat list)
-- stacks/web/public/apps/ha/ssot.ui.ha.yml (UI-optimized grouped view)
+- data/ssot/infrastructure/ssot.ha-devices.yml (runtime flat list with last_seen)
+- data/apps/ha/ssot.ui.ha.yml (UI-optimized grouped view)
 """
 
 from __future__ import annotations
 
 import json
 import os
+from datetime import datetime, timezone
 from pathlib import Path
 
 import yaml
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
-OUT_SSOT = REPO_ROOT / "docs" / "ssot" / "infrastructure" / "ssot.ha-devices.yml"
-OUT_UI = REPO_ROOT / "stacks" / "web" / "public" / "apps" / "ha" / "ssot.ui.ha.yml"
+OUT_SSOT = REPO_ROOT / "data" / "ssot" / "infrastructure" / "ssot.ha-devices.yml"
+OUT_UI = REPO_ROOT / "data" / "apps" / "ha" / "ssot.ui.ha.yml"
+SCAN_FILE = REPO_ROOT / "data" / "network-scan" / "tony-ha-scan.json"
 
 REGISTRY = {
     "tony-ha": {
@@ -255,6 +258,119 @@ def network_info(ip_data: dict) -> dict:
     }
 
 
+def _clean_mac(mac: str | None) -> str | None:
+    if not mac:
+        return None
+    mac = mac.lower()
+    if mac == "00:00:00:00:00:00":
+        return None
+    return mac
+
+
+def _scan_hosts() -> list[dict]:
+    if not SCAN_FILE.exists():
+        return []
+    try:
+        scan = json.loads(SCAN_FILE.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
+        return []
+    hosts = []
+    for h in scan.get("hosts", []):
+        h = dict(h)
+        h["mac"] = _clean_mac(h.get("mac"))
+        h["_ts"] = scan.get("discovered_at")
+        hosts.append(h)
+    return hosts
+
+
+def apply_scan_to_rows(rows: list[dict], active_net: dict) -> None:
+    """Update runtime rows from scan: set current IP, last_seen, and scan source.
+
+    Prefer MAC matches (device may have moved IP). For IP-only rows, just set
+    last_seen when the IP is seen and the scan host has no conflicting MAC.
+    """
+    hosts = _scan_hosts()
+    if not hosts:
+        return
+    for r in rows:
+        ip = r.get("ip")
+        mac = _clean_mac(r.get("mac"))
+        ts = None
+        matched_host = None
+        # Best: same MAC anywhere (device may have moved IP)
+        if mac:
+            for h in hosts:
+                if h.get("mac") == mac:
+                    matched_host = h
+                    ts = h.get("_ts")
+                    break
+        # Fallback: same IP when row has no MAC or scan host has no MAC / same MAC
+        if not matched_host and ip:
+            for h in hosts:
+                if h.get("ip") == ip:
+                    hmac = h.get("mac")
+                    if not mac or not hmac or hmac == mac:
+                        matched_host = h
+                        ts = h.get("_ts")
+                        break
+        if ts:
+            r["last_seen"] = ts
+            if matched_host:
+                scan_ip = matched_host.get("ip")
+                scan_source = matched_host.get("source")
+                # If we matched by MAC and the scan reports a different current IP,
+                # update the runtime IP so the dashboard link is usable.
+                if mac and scan_ip and scan_ip != r.get("ip"):
+                    r["ip"] = scan_ip
+                    r["ip_source"] = scan_source
+                    r["network_id"] = active_net.get("network_id")
+                    r["network_status"] = active_net.get("status")
+                    r["ip_kind"] = "discovered"
+
+
+def device_id_from_mac(mac: str) -> str:
+    return "discovered-" + mac.replace(":", "")
+
+
+def add_scan_only_rows(rows: list[dict], ha_instance: str, scan_hosts: list[dict], active_net: dict) -> None:
+    """Add newly discovered hosts that do not match any existing row."""
+    known_macs = {_clean_mac(r.get("mac")) for r in rows if r.get("mac")}
+    known_ips = {r.get("ip") for r in rows if r.get("ip")}
+    today = datetime.now(timezone.utc).date().isoformat()
+    for h in scan_hosts:
+        ip = h.get("ip")
+        mac = h.get("mac")
+        ts = h.get("_ts")
+        if mac and mac in known_macs:
+            continue
+        if ip and ip in known_ips:
+            # If a different device is at this IP, do not overwrite here
+            continue
+        if not ip and not mac:
+            continue
+        did = device_id_from_mac(mac) if mac else f"discovered-{ip.replace('.', '-')}"
+        label = f"Unknown host {ip}" if ip else did
+        rows.append(
+            {
+                "ha_instance": ha_instance,
+                "device_id": did,
+                "label": label,
+                "ip": ip,
+                "mac": mac,
+                "interface_id": "primary",
+                "type": "unknown",
+                "mac_source": h.get("source") if mac else None,
+                "ip_source": h.get("source"),
+                "network_id": active_net.get("network_id"),
+                "network_status": active_net.get("status"),
+                "status": "active",
+                "ip_kind": "discovered",
+                "first_seen": today,
+                "last_seen": ts,
+            }
+        )
+
+
 def main() -> None:
     all_rows: list[dict] = []
 
@@ -273,12 +389,18 @@ def main() -> None:
         for name, info in meta.items()
     }
 
+    scan_hosts = _scan_hosts()
+    today = datetime.now(timezone.utc).date().isoformat()
+
     for ha_instance, paths in REGISTRY.items():
         mac_data = load_yaml(paths["mac"])
         ip_data = load_yaml(paths["ip"])
+        active_net = network_info(ip_data)
         rows = build_instance_rows(ha_instance, mac_data, ip_data)
+        apply_scan_to_rows(rows, active_net)
+        add_scan_only_rows(rows, ha_instance, scan_hosts, active_net)
         all_rows.extend(rows)
-        ui_instances[ha_instance]["network"] = network_info(ip_data)
+        ui_instances[ha_instance]["network"] = active_net
         ui_instances[ha_instance]["devices"] = [
             {k: v for k, v in row.items() if k not in ("ha_instance",)} for row in rows
         ]
@@ -288,7 +410,6 @@ def main() -> None:
     ui_instances["michael-dev"]["devices"] = [
         {k: v for k, v in row.items() if k not in ("ha_instance",)} for row in dev_rows
     ]
-
     OUT_SSOT.parent.mkdir(parents=True, exist_ok=True)
     OUT_UI.parent.mkdir(parents=True, exist_ok=True)
 
@@ -303,7 +424,7 @@ def main() -> None:
         ],
         "config": {
             "version": 1,
-            "last_updated": "2026-09-04",
+            "last_updated": today,
             "maintainer": "tony",
             "status": "active",
             "source_files": [
@@ -311,6 +432,7 @@ def main() -> None:
                 "docs/ssot/infrastructure/ssot.ip-address-registry.yml",
                 "docs/ssot/infrastructure/ssot.mac-address-registry.michael.yml",
                 "docs/ssot/infrastructure/ssot.ip-address-registry.michael.yml",
+                "data/network-scan/tony-ha-scan.json",
             ],
         },
         "schema": {
@@ -344,10 +466,10 @@ def main() -> None:
         "icon": "🏠",
         "config": {
             "version": 1,
-            "last_updated": "2026-09-04",
+            "last_updated": today,
             "maintainer": "tony",
             "status": "active",
-            "source": "docs/ssot/infrastructure/ssot.ha-devices.yml",
+            "source": "data/ssot/infrastructure/ssot.ha-devices.yml",
         },
         "instances": ui_instances,
     }
