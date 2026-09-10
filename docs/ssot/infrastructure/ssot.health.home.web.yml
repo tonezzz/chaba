@@ -134,3 +134,16 @@ services:
   - mobile
   host: tony_dell
   note: Tests the Tailscale 443 HTTPS endpoint through Caddy.
+
+- id: gev
+  name: God’s Eye View
+  type: http
+  url: 'http://tony-dell/apps/gev/'
+  expected_status: 200
+  timeout: 10
+  category: web
+  profiles:
+  - home
+  - mobile
+  host: tony_dell
+  note: Verifies the GEV index and Cesium assets are reachable.

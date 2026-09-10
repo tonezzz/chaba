@@ -211,7 +211,8 @@ class Handler(BaseHTTPRequestHandler):
             if not HA_TOKEN:
                 self._json(503, {"ok": False, "error": "HA token not available"})
                 return
-            url = f"http://192.168.2.67:8780/image?v={int(time.time())}"
+            host = self.headers.get("Host") or f"127.0.0.1:{PORT}"
+            url = f"http://{host}/image?v={int(time.time())}"
             payload = json.dumps({
                 "entity_id": target,
                 "media_content_type": "image/jpeg",

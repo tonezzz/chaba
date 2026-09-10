@@ -64,6 +64,9 @@ sections:
           Build the app with the correct base:
             cd /home/tony/gods-eye-view
             npx vite build --base /apps/gev/
+          `vite-plugin-cesium` copies the Cesium assets under `dist/apps/gev/cesium/` because of the base path. Caddy strips `/apps/gev/` when serving the app, so the real Cesium directory must be `dist/cesium/`:
+            mv dist/apps/gev/cesium dist/cesium
+            rmdir dist/apps/gev 2>/dev/null; rmdir dist/apps 2>/dev/null || true
           If the build succeeds, the dist/ folder will contain an index.html that references
           /apps/gev/assets/... and /apps/gev/style.css.
           If the static /style.css or /logo.svg references are still absolute, open dist/index.html

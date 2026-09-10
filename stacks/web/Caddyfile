@@ -27,6 +27,19 @@ http://127.0.0.1:8080 {
 		root * /srv/public/apps/gev
 		file_server
 	}
+	handle /apps/gev-live {
+		redir /apps/gev-live/ 308
+	}
+	handle_path /apps/gev-live/* {
+		@ws path /ws
+		handle @ws {
+			reverse_proxy 127.0.0.1:8789
+		}
+		handle {
+			root * /srv/public/apps/gev-live
+			file_server
+		}
+	}
 	handle /apps/yolo {
 		redir /apps/yolo/ 308
 	}
