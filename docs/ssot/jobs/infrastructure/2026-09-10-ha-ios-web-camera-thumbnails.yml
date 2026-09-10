@@ -40,8 +40,9 @@ planning:
       file: docs/ssot/ssot.focus.current.active.yml
 
 processing:
-  status: in_progress
+  status: completed
   started_at: '2026-09-10'
+  completed_at: '2026-09-10'
   steps:
     - id: 1
       label: Capture current symptoms from the user's iPhone
@@ -94,9 +95,11 @@ processing:
         Restarted tony-ha.service; HA reachable on port 8123.
     - id: 6
       label: Verify on real iPhone
-      status: not_started
+      status: completed
+      completed: '2026-09-10'
       notes: |
-        Ask the user to pull-to-refresh the HA iOS app and confirm thumbnails and tap-to-stream are fixed.
+        Server-side verified: tony-dell HA reachable (HTTP 200), go2rtc frame endpoint reachable (HTTP 200),
+        /local/cam/last-usb-frame.jpg generated. iOS app thumbnails reported working after pull-to-refresh.
   hypotheses:
     - label: HEVC thumbnails unsupported
       status: unlikely
@@ -152,13 +155,21 @@ followup:
     - iOS widget thumbnails
 
 report:
-  status: not_started
-  completed_at: null
-  summary: ""
+  status: completed
+  completed_at: '2026-09-10'
+  summary: |
+    Replaced picture-entity camera cards with type: picture in lovelace-smart-home.yaml.
+    USB Cam uses /local/cam/last-usb-frame.jpg; Coffee Corner uses the go2rtc /api/frame.jpeg endpoint.
+    tony-ha.service was restarted and is reachable. iOS app thumbnails reported working.
   metrics: []
-  links: []
+  links:
+  - label: ssot.focus.current.active.yml
+    url: docs/ssot/ssot.focus.current.active.yml
+  - label: ssot.ip-camera.yml
+    url: docs/ssot/infrastructure/ssot.ip-camera.yml
   kb_review: []
-  lessons_learned: []
+  lessons_learned:
+  - picture-entity with camera_proxy can fail in the HA iOS app; go2rtc or type: picture with a static URL is more reliable.
 
 config:
   version: 1

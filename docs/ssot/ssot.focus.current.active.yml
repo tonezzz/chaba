@@ -11,9 +11,12 @@ sections:
   layout: list
   items:
   - label: HA iOS vs Web camera thumbnails
-    text: Investigate why camera thumbnails and tap-to-stream previews work in Safari/Chrome on iPhone but fail in the HA
-      iOS app. Follow the test matrix in docs/ssot/jobs/infrastructure/2026-09-10-ha-ios-web-camera-thumbnails.yml.
-    status: active
+    text: >-
+      Investigation completed. Dashboard now uses `type: picture` with
+      /local/cam/last-usb-frame.jpg and go2rtc frame endpoints; iOS thumbnails
+      reported working.
+    status: completed
+    completed: '2026-09-10'
     priority: medium
     started: '2026-09-10'
     estimated_duration: 1-2 sessions
@@ -36,7 +39,8 @@ sections:
       status: completed
       completed: '2026-09-10'
     - label: Verify on real iPhone and update SSOT
-      status: not_started
+      status: completed
+      completed: '2026-09-10'
     request_log: []
     ownership:
       owner: tony
