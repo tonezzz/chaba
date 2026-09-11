@@ -284,18 +284,24 @@ hosts:
         expected_state: inactive
         critical: false
         note: Planned, currently disabled
-    known_failed: []
+    known_failed:
+      - name: macbook-health
+        reason: macOS health snapshot launchd agent not yet installed
+        action: install-on-macbook
+      - name: macbook-offload-audit
+        reason: Offload-audit launchd agent is planned but not yet installed
+        action: install-on-macbook
     expected_resources:
       min_free_ram_mb: 500
       max_swap_used_percent: 80
       max_root_disk_percent: 90
       max_load_5m: 8.0
     last_observed:
-      status: unreachable
-      timestamp: '2026-09-11T09:46:00+07:00'
-      error: 'ssh to 100.124.59.112 port 22 timed out'
+      status: reachable
+      timestamp: '2026-09-11T12:13:44+07:00'
+      tailscale_ip: 100.124.59.112
       notes:
-        - 'macbook is currently offline; retry audit once reachable'
+        - 'Audited successfully when reachable; launchd agents macbook-health and macbook-offload-audit not installed'
     deltas: []
 
 related_files:
