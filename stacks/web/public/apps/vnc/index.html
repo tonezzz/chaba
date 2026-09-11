@@ -1,11 +1,28 @@
 <!doctype html>
 <html lang="en">
 <head>
+  <meta name="theme-color" content="#1a1a2e">
+  <meta name="background-color" content="#16213e">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Vnc">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="/apps/favicon.ico" sizes="any">
+  <link rel="apple-touch-icon" href="/apps/apple-touch-icon.png">
+
   <meta charset="utf-8">
   <meta http-equiv="refresh" content="0; url=vnc.html">
   <title>VNC</title>
 </head>
 <body>
   <p>Loading noVNC… <a href="vnc.html">click here</a> if not redirected.</p>
+
+<script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/apps/sw.js', { scope: '/apps/' })
+      .then((r) => console.log('SW registered', r.scope))
+      .catch((e) => console.error('SW registration failed', e));
+  }
+</script>
 </body>
 </html>

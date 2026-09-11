@@ -2,7 +2,16 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#1a1a2e">
+  <meta name="background-color" content="#16213e">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Apps">
+  <meta name="description" content="Local apps and tools on tony-dell">
+  <link rel="manifest" href="/apps/manifest.json">
+  <link rel="icon" href="/apps/favicon.ico" sizes="any">
+  <link rel="apple-touch-icon" href="/apps/apple-touch-icon.png">
   <title>Apps</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
@@ -47,7 +56,7 @@
         </div>
         <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
           ${data.apps.map(a => `
-            <a href="${a.href}" class="app-card">
+            <a href="${a.href}" class="app-card" ${['gev-live','rview-live'].includes(a.id) ? 'target="_blank" rel="noopener"' : ''}>
               <h2 class="text-lg font-semibold text-white">${a.icon ? a.icon + ' ' : ''}${a.title}</h2>
               <p class="text-gray-400 text-xs mt-1 line-clamp-2">${a.description}</p>
             </a>
@@ -55,6 +64,13 @@
         </div>
       `;
     });
+  </script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/apps/sw.js', { scope: '/apps/' })
+        .then((reg) => console.log('SW registered', reg.scope))
+        .catch((err) => console.error('SW registration failed', err));
+    }
   </script>
 </body>
 </html>

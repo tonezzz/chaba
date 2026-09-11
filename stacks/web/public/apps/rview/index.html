@@ -260,5 +260,13 @@
   pollStatus();
   setInterval(pollStatus, 2000);
 </script>
+
+<script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/apps/sw.js', { scope: '/apps/' })
+      .then((r) => console.log('SW registered', r.scope))
+      .catch((e) => console.error('SW registration failed', e));
+  }
+</script>
 </body>
 </html>
