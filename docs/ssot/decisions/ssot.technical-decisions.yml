@@ -317,6 +317,32 @@ decisions:
       - ~/.config/devin/mcp-scripts/mcp-workflows-podman-ssh.sh
       - docs/ssot/infrastructure/ssot.mcp.yml
 
+  - id: yolo-service-on-tony-dell
+    date: '2026-09-11'
+    title: Run Ultralytics YOLO service on tony-dell
+    status: accepted
+    context: |
+      Prototype YOLOv8n service (experiments/ultralytics-yolo-ha) consumes go2rtc streams and
+      exposes detections, an annotated image, and TV casting. Benchmarks: tony-omen CPU ~0.34 fps,
+      GPU ~0.37 fps; kk-macbook ~0.31 fps; tony-dell local go2rtc (ip_cam_65_low 640x360) ~0.82 fps.
+    chosen: tony-dell
+    reasoning: |
+      tony-dell hosts go2rtc and HA. tony-omen has a faster CPU/GPU but still fetches frames
+      remotely, kk-macbook adds Podman VM overhead, while tony-dell avoids LAN frame transport
+      and remote token management. The GPU did not improve end-to-end throughput because the
+      go2rtc JPEG fetch was the bottleneck.
+    consequences:
+      - Run with venv /home/tony/.cache/ultralytics-yolo-venv and experiments/ultralytics-yolo-ha/server.py
+      - Use GO2RTC_BASE=http://127.0.0.1:1984
+      - camera-monitor.service stopped to end go2rtc restart loops from expired xiaomi_c201 passToken
+      - Source is ip_cam_65_low until xiaomi_c201 token is refreshed from account.xiaomi.com cookies
+      - Measured ~0.82 fps on ip_cam_65_low; retry Podman build after disk I/O settles
+    related:
+      - experiments/ultralytics-yolo-ha/server.py
+      - experiments/ultralytics-yolo-ha/Containerfile
+      - docs/ssot/infrastructure/ssot.health.home.web.yml
+      - ~/.config/go2rtc/go2rtc.yaml
+
 related_files:
   - docs/ssot/ssot.focus.decisions.yml
   - docs/ssot/ssot.focus.sessions.yml
