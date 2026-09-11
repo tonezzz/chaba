@@ -223,13 +223,16 @@ hosts:
         expected_state: active
         critical: false
         note: Currently disabled/planned
+      - name: devin-cleanup.timer
+        type: timer
+        scope: user
+        expected_state: active
+        critical: false
+        note: Daily trigger for devin-cleanup.service; skips VACUUM while Devin is open
     known_failed:
       - name: arp-inventory-scan.service
         reason: Exits 2 when network conflicts/duplicates are detected, by design
         action: review-focus-inbox-alert
-      - name: devin-cleanup.service
-        reason: Devin sessions DB is in use; schedule when Devin is closed
-        action: schedule
 
     expected_resources:
       min_free_ram_mb: 1000
