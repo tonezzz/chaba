@@ -1,0 +1,320 @@
+title: Host Service & Resource Audit
+subtitle: Expected and observed state for tony-dell, tony-omen and kk-macbook
+icon: server
+version: 1
+last_updated: '2026-09-11'
+maintainer: tony
+
+overview:
+  purpose: |
+    Single source of truth for which services and resources each Chaba host is
+    expected to provide. A periodic or on-demand audit runner snapshots the live
+    state, compares it to this file, and reports deltas so service verification
+    becomes a one-command diff instead of manual ssh + systemctl + ps + free.
+  usage: |
+    python3 scripts/audit-hosts.py --host tony-dell
+    python3 scripts/audit-hosts.py --host tony-omen
+    python3 scripts/audit-hosts.py --host macbook
+
+runner:
+  script: scripts/audit-hosts.py
+  command: python3
+  output_dir: reports/audit-hosts
+  ssot: docs/ssot/infrastructure/ssot.audit.hosts.yml
+  schedule: daily
+  note: |
+    The runner writes per-host reports under reports/audit-hosts/ and prints a
+    delta summary. It does not overwrite this SSOT file automatically; the user
+    reviews the report and updates the canonical expected state here.
+
+hosts:
+  tony-dell:
+    tailscale_ip: 100.68.142.13
+    description: Secondary workstation, primary headless browser/cast target
+    role: secondary
+    tags:
+      - headless-primary
+      - barrier-client
+      - testing
+    expected_services:
+      - name: app-devin-desktop
+        type: scope
+        scope: user
+        expected_state: active
+        critical: true
+        verification: pgrep -a devin-desktop
+        note: Active unit name is the systemd scope, e.g. app-devin-desktop-<pid>.scope
+      - name: chrome-cdp-headless.service
+        type: service
+        scope: user
+        expected_state: active
+        critical: true
+      - name: cast-browser.service
+        type: service
+        scope: user
+        expected_state: active
+        critical: true
+      - name: cast-desktop@1.service
+        type: service
+        scope: user
+        expected_state: active
+        critical: false
+      - name: playlived.service
+        type: service
+        scope: user
+        expected_state: active
+        critical: false
+      - name: mcp-debug-sse.service
+        type: service
+        scope: user
+        expected_state: active
+        critical: true
+      - name: go2rtc.service
+        type: service
+        scope: user
+        expected_state: active
+        critical: false
+      - name: chaba-postgres-16.service
+        type: service
+        scope: user
+        expected_state: active
+        critical: true
+      - name: michael-dev.service
+        type: service
+        scope: user
+        expected_state: active
+        critical: false
+      - name: tony-ha.service
+        type: service
+        scope: user
+        expected_state: active
+        critical: true
+      - name: gpu-queue.service
+        type: service
+        scope: user
+        expected_state: active
+        critical: false
+      - name: gpu-queue-processor.service
+        type: service
+        scope: user
+        expected_state: active
+        critical: false
+      - name: ssot-optimization-snapshot.timer
+        type: timer
+        scope: user
+        expected_state: active
+        critical: false
+        note: Nightly trigger for ssot-optimization-snapshot.service
+    known_failed:
+      - name: session-c2.scope
+        reason: Transient session scope, no PIDs left to attach
+        action: ignore
+      - name: obex.service
+        reason: No Bluetooth adapter on headless host
+        action: ignore-or-mask
+      - name: obex.service
+        reason: No Bluetooth adapter on headless host
+        action: ignore-or-mask
+      - name: tony-dell-mcp-health.service
+        reason: SSH mcp-health query to tony-omen failed
+        action: investigate
+      - name: chrome-remote-desktop@tony.service
+        reason: Display ':20' not configured
+        action: disable-or-configure
+      - name: apport-autoreport.service
+        reason: whoopsie upload timeout
+        action: disable-if-not-needed
+      - name: sync-to-hdd.service
+        reason: /media/storage/backup not mounted
+        action: mount-backup-drive
+    expected_resources:
+      min_free_ram_mb: 500
+      max_swap_used_percent: 80
+      max_root_disk_percent: 85
+      max_load_5m: 8.0
+    last_observed:
+      timestamp: '2026-09-11T09:45:00+07:00'
+      active_user_services:
+        - app-devin-desktop-3657048.scope
+        - barrier-client.service
+        - camera-monitor.service
+        - camera-panel.service
+        - cast-browser.service
+        - cast-desktop@1.service
+        - cast-desktop@99.service
+        - chaba-funnel.service
+        - chaba-postgres-16.service
+        - chaba-tunnel.service
+        - chrome-cdp-headless.service
+        - gemini-ollama-proxy.service
+        - gev-gemini.service
+        - go2rtc.service
+        - gpu-queue-processor.service
+        - gpu-queue.service
+        - mcp-debug-sse.service
+        - mcp-link-monitor.service
+        - mcp-rview-oauth-proxy.service
+        - mcp-rview.service
+        - michael-ha-mcp-tunnel.service
+        - playlive-omen-cdp-tunnel.service
+        - playlived.service
+      failed_user_services:
+        - mcp-debug-h3-sync.service
+        - obex.service
+        - tony-dell-mcp-health.service
+      failed_system_services:
+        - session-c2.scope
+        - apport-autoreport.service
+        - chrome-remote-desktop@tony.service
+        - sync-to-hdd.service
+      memory:
+        total: 14Gi
+        used: 9.7Gi
+        free: 913Mi
+      swap:
+        total: 15Gi
+        used: 9.1Gi
+        free: 6.9Gi
+      disk:
+        mount: /
+        total: 118G
+        used: 82G
+        available: 31G
+        percent: 73
+      load:
+        1m: 4.12
+        5m: 4.46
+        15m: 4.59
+      uptime: '1 day, 18:09'
+      top_processes:
+        - 'devin-desktop ~7.5% mem'
+        - 'python3 ~3.4% mem'
+        - 'python3 ~3.3% mem'
+        - 'chrome ~2.5% mem'
+        - 'language_server ~2.2% mem'
+        - 'VMS.exe ~1.8% mem'
+      notes:
+        - 'devin-desktop package 3.9.19-1788908513 installed and running'
+        - 'michael-dev service shows 401 Unauthorized from michael-ha REST'
+        - 'websockify logged port-in-use error'
+        - 'gpu-queue logged GPU monitoring failed, assuming available'
+    deltas: []
+
+  tony-omen:
+    tailscale_ip: 100.75.102.88
+    description: Primary dev workstation, web server and GPU worker proxy
+    role: primary
+    tags:
+      - primary
+      - web-server
+      - barrier-server
+    expected_services:
+      - name: arp-inventory-scan.service
+        type: service
+        scope: user
+        expected_state: active
+        critical: false
+      - name: focus-dispatcher-safe-dispatch
+        type: service
+        scope: user
+        expected_state: active
+        critical: false
+        note: Currently disabled/planned
+    known_failed:
+      - name: arp-inventory-scan.service
+        reason: Needs investigation on tony-omen
+        action: investigate
+      - name: devin-cleanup.service
+        reason: Devin sessions DB prune failed
+        action: investigate
+      - name: focus-dispatcher-overnight.service
+        reason: Overnight focus review failed
+        action: investigate
+      - name: weaviate-index.service
+        reason: Weaviate automatic indexer failed
+        action: investigate
+    expected_resources:
+      min_free_ram_mb: 1000
+      max_swap_used_percent: 50
+      max_root_disk_percent: 85
+      max_load_5m: 10.0
+    last_observed:
+      timestamp: '2026-09-11T09:45:58+07:00'
+      active_user_services: []
+      failed_user_services:
+        - arp-inventory-scan.service
+        - devin-cleanup.service
+        - focus-dispatcher-overnight.service
+        - weaviate-index.service
+      failed_system_services: []
+      memory:
+        total: 30Gi
+        used: 20Gi
+        free: 1.5Gi
+      swap:
+        total: 59Gi
+        used: 4.1Gi
+        free: 55Gi
+      disk:
+        mount: /
+        total: null
+        used: null
+        available: null
+        percent: null
+      load:
+        1m: 1.79
+        5m: 2.30
+        15m: 2.85
+      uptime: '3 days, 19:41'
+      top_processes: []
+      notes:
+        - 'Active user services not yet snapshotted; run audit-hosts.py to populate'
+    deltas: []
+
+  macbook:
+    tailscale_ip: 100.124.59.112
+    description: macOS / iOS verification workstation and lightweight offload node
+    role: verify
+    tags:
+      - macos
+      - laptop
+      - offload
+    expected_services:
+      - name: macbook-health
+        type: launchd
+        expected_state: active
+        critical: false
+      - name: macbook-offload-audit
+        type: launchd
+        expected_state: inactive
+        critical: false
+        note: Planned, currently disabled
+    known_failed: []
+    expected_resources:
+      min_free_ram_mb: 500
+      max_swap_used_percent: 80
+      max_root_disk_percent: 90
+      max_load_5m: 8.0
+    last_observed:
+      status: unreachable
+      timestamp: '2026-09-11T09:46:00+07:00'
+      error: 'ssh to 100.124.59.112 port 22 timed out'
+      notes:
+        - 'macbook is currently offline; retry audit once reachable'
+    deltas: []
+
+related_files:
+  - scripts/audit-hosts.py
+  - reports/audit-hosts/
+
+related_ssot:
+  - docs/ssot/infrastructure/ssot.host-roles.yml
+  - docs/ssot/infrastructure/ssot.services.yml
+  - docs/ssot/infrastructure/ssot.health.home.tony-dell.yml
+  - docs/ssot/infrastructure/ssot.night-jobs.tony-dell.yml
+  - docs/ssot/infrastructure/ssot.night-jobs.tony-omen.yml
+  - docs/ssot/infrastructure/ssot.night-jobs.macbook.yml
+  - docs/ssot/infrastructure/ssot.h3-deployment.yml
+
+related_kb:
+  - docs/kb/audit-framework.md
