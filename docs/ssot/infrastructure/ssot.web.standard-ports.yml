@@ -161,9 +161,9 @@ sections:
       - label: "2.7 Update Tailscale Funnel to 443 (if desired)"
         text: |
           If the public URL is being moved to 443:
-            tailscale serve --https 443 localhost:443
-            tailscale funnel 443
-          Verify with `tailscale serve status`.
+            sudo -n tailscale funnel --yes --bg --https=443 127.0.0.1:80
+            sudo -n tailscale funnel --yes --bg --https=443 --set-path /apps/home-assistant/ 127.0.0.1:8123
+          Verify with `tailscale funnel status`.
 
   - title: Verify
     icon: ✅
