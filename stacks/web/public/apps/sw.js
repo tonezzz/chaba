@@ -1,4 +1,4 @@
-const CACHE = 'apps-v2';
+const CACHE = 'apps-v6';
 const SHELL = [
   '/apps/',
   '/apps/index.html',

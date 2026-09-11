@@ -1,15 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta name="theme-color" content="#1a1a2e">
-  <meta name="background-color" content="#16213e">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="God's Eye View">
-  <link rel="manifest" href="manifest.json">
-  <link rel="icon" href="/apps/favicon.ico" sizes="any">
-  <link rel="apple-touch-icon" href="/apps/apple-touch-icon.png">
-
   <link rel="stylesheet" href="/apps/gev/cesium/Widgets/widgets.css">
   <script src="/apps/gev/cesium/Cesium.js"></script>
 
@@ -17,12 +8,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>God's Eye View</title>
   <link rel="icon" type="image/svg+xml" href="/apps/gev/logo.svg" />
+  <link rel="manifest" href="/apps/gev/manifest.json" />
+  <meta name="apple-mobile-web-app-capable" content="no" />
+  <meta name="mobile-web-app-capable" content="no" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20,400,0,0" rel="stylesheet" />
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet" />
-  <script type="module" crossorigin src="/apps/gev/assets/index-CpDBZUa9.js"></script>
+  <script type="module" crossorigin src="/apps/gev/assets/index-apHsbUCH.js"></script>
   <link rel="stylesheet" crossorigin href="/apps/gev/assets/index-BeKkcf38.css">
 </head>
 <body>
@@ -38,7 +32,7 @@
   <!-- Title -->
   <div id="title-bar">
     <div class="title-glow"></div>
-    <h1><span class="title-logo brand-logo" data-logo-gaze data-logo-src="logo.svg" aria-hidden="true"><img src="/apps/gev/logo.svg" alt="" /></span> <span>GOD'S EYE <span class="title-accent">VIEW</span></span></h1>
+    <h1><span class="title-logo brand-logo" data-logo-gaze data-logo-src="/apps/gev/logo.svg" aria-hidden="true"><img src="/apps/gev/logo.svg" alt="" /></span> <span>GOD'S EYE <span class="title-accent">VIEW</span></span></h1>
     <p class="subtitle">NO PLACE LEFT BEHIND</p>
   </div>
 
@@ -927,19 +921,18 @@
   <!-- Loading screen -->
   <div id="loading-screen">
     <div class="loader-content">
-      <span class="loader-logo brand-logo" data-logo-gaze data-logo-src="logo.svg" aria-hidden="true"><img src="/apps/gev/logo.svg" alt="" /></span>
+      <span class="loader-logo brand-logo" data-logo-gaze data-logo-src="/apps/gev/logo.svg" aria-hidden="true"><img src="/apps/gev/logo.svg" alt="" /></span>
       <h2>GOD'S EYE <span class="title-accent">VIEW</span></h2>
       <p class="loader-status">Initializing photorealistic world...</p>
     </div>
   </div>
 
-
-<script>
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/apps/sw.js', { scope: '/apps/' })
-      .then((r) => console.log('SW registered', r.scope))
-      .catch((e) => console.error('SW registration failed', e));
-  }
-</script>
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/apps/sw.js?v=6', { scope: '/apps/', updateViaCache: 'none' })
+        .then((r) => console.log('SW registered', r.scope))
+        .catch((e) => console.error('SW registration failed', e));
+    }
+  </script>
 </body>
 </html>

@@ -12,6 +12,14 @@ HOST = os.environ.get('GEV_GEMINI_HOST', '0.0.0.0')
 PORT = int(os.environ.get('GEV_GEMINI_PORT', '8789'))
 MODEL = os.environ.get('GEV_GEMINI_MODEL', 'gemini-3.1-flash-live-preview')
 
+SYSTEM_INSTRUCTION = (
+    "You are GEV Voice Control, a concise voice controller for the God's Eye View Cesium geospatial app. "
+    "Have a natural spoken conversation. Treat direct commands like 'zoom into London', 'show flights', or 'what am I looking at' as GEV control requests. "
+    "Use the provided tools for navigation, layer visibility, camera motion, context mode, visual style, HUD, detection, scene playback, radio, CCTV, annotations, and analytical queries. "
+    "Never invent tool names or arguments. Keep confirmations short. When a request requires a tool, call it before speaking. "
+    "For ordinary conversation, answer normally without tools."
+)
+
 
 def load_api_key():
     if 'GEMINI_API_KEY' in os.environ:
@@ -21,6 +29,47 @@ def load_api_key():
         with open(secret_path) as f:
             return f.read().strip()
     raise RuntimeError('GEMINI_API_KEY not set and /run/secrets/gemini-api-key not found')
+
+
+def _clean_schema(schema):
+    if not isinstance(schema, dict):
+        return schema
+    schema.pop('additionalProperties', None)
+    schema.pop('additional_properties', None)
+    for key in list(schema.keys()):
+        val = schema[key]
+        if isinstance(val, dict):
+            schema[key] = _clean_schema(val)
+        elif isinstance(val, list):
+            schema[key] = [_clean_schema(v) if isinstance(v, dict) else v for v in val]
+    return schema
+
+
+def load_tools():
+    tool_path = os.path.join(os.path.dirname(__file__), 'tools.json')
+    if not os.path.exists(tool_path):
+        log('tools.json not found, running without function calling')
+        return []
+    try:
+        with open(tool_path) as f:
+            raw = json.load(f)
+    except Exception as e:
+        log(f'failed to load tools.json: {e}')
+        return []
+    declarations = []
+    for item in raw:
+        name = item.get('name')
+        description = item.get('description') or ''
+        parameters = _clean_schema(item.get('parameters') or {'type': 'object'})
+        if not name:
+            continue
+        declarations.append(types.FunctionDeclaration(
+            name=name,
+            description=description,
+            parameters=parameters,
+        ))
+    log(f'Loaded {len(declarations)} tool declarations')
+    return declarations
 
 
 def log(msg):
@@ -80,10 +129,19 @@ async def client_handler(websocket):
     try:
         api_key = load_api_key()
         client = genai.Client(api_key=api_key)
-        config = types.LiveConnectConfig(
-            response_modalities=['AUDIO'],
-            output_audio_transcription=types.AudioTranscriptionConfig(),
-        )
+        declarations = load_tools()
+        tools = [types.Tool(function_declarations=declarations)] if declarations else []
+        config_kwargs = {
+            'response_modalities': ['AUDIO'],
+            'output_audio_transcription': types.AudioTranscriptionConfig(),
+            'system_instruction': types.Content(
+                role='system',
+                parts=[types.Part(text=SYSTEM_INSTRUCTION)],
+            ),
+        }
+        if tools:
+            config_kwargs['tools'] = tools
+        config = types.LiveConnectConfig(**config_kwargs)
         live_ctx = client.aio.live.connect(model=MODEL, config=config)
         session = await live_ctx.__aenter__()
         try:

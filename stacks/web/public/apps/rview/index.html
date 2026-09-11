@@ -263,7 +263,7 @@
 
 <script>
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/apps/sw.js', { scope: '/apps/' })
+    navigator.serviceWorker.register('/apps/sw.js?v=6', { scope: '/apps/', updateViaCache: 'none' })
       .then((r) => console.log('SW registered', r.scope))
       .catch((e) => console.error('SW registration failed', e));
   }
