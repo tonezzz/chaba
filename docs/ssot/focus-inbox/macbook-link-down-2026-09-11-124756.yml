@@ -1,0 +1,42 @@
+title: Focus Inbox Item
+subtitle: Link monitor alert
+icon: inbox
+focus:
+  label: macbook link down
+  text: 'Link monitor detected macbook is unreachable after scan and safe fixes.
+
+
+    Scan output:
+
+    - tailscale status --json (rc=0)
+
+    - ip -4 route (rc=0)
+
+    - ip -4 -br addr show (rc=0)
+
+    - ss -tlnp (rc=0)
+
+    - tailscale ping kk-macbook -c 3 (rc=1)
+
+
+    Fix attempts:
+
+    - tailscale ping (rc=1)'
+  branch: chaba
+  priority: high
+  status: draft
+  tags:
+  - monitoring
+  - network
+  - link
+  - alert
+  missing_info:
+  - Determine if the failure is transient or a hardware/routing issue.
+  subtasks:
+  - label: Review scan output
+    status: not_started
+  - label: Apply manual fix or escalate
+    status: not_started
+source:
+  session: mcp-link-monitor
+  date: '2026-09-11'
