@@ -89,6 +89,26 @@ sections:
           screenlive:workspace:4, which starts cast-desktop@1 and plays the HLS camera
           stream on the selected TV.
 
+  - title: tony-omen crash-check lessons (2026-09-11)
+    icon: 🖥️
+    layout: list
+    items:
+      - label: Verify 'crashed' hosts over Tailscale, not LAN DNS
+        text: |
+          tony-omen looked down because LAN resolution returned the stale IP 192.168.1.48
+          (LAN is now 192.168.2.x). tailscale ping + ssh tony-omen showed it was up 4 days.
+          Always confirm via tailnet hostname/IP before assuming a host crashed.
+      - label: dockerd/containerd churn can look like a crash
+        text: |
+          The reported 'crash' was actually ~23% CPU each on dockerd and containerd since
+          Sep 10, driving load to ~5.9. Check ps aux --sort=-%cpu before rebooting so the
+          real culprit is recorded; an unhealthy container (mddb-chat-widget) was present.
+      - label: Journal vacuum is the defined pre-reboot 'vacuum'
+        text: |
+          'Run vacuum' maps to sudo journalctl --vacuum-size=500M in
+          scripts/system-maintenance.mjs. sudo -n works over SSH on tony-omen.
+          Freed 44.7M (530.3M -> 485.6M).
+
   - title: How to Improve
     icon: 🚀
     layout: list
@@ -126,7 +146,7 @@ sections:
 
 config:
   version: 1
-  last_updated: 2026-09-10
+  last_updated: 2026-09-11
   maintainer: tony
   related_files:
     - docs/ssot/ssot.improvements.yml

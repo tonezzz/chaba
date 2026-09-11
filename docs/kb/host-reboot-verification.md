@@ -168,6 +168,7 @@ Append one line per reboot to the session/focus log, e.g.:
 
 ```
 2026-09-07 tony-omen reboot: 40/52 healthy, 0 error, GPU ok, tailscale direct; unknowns = dell-side endpoints (helm, trade-api, mddb stats).
+2026-09-11 tony-omen reboot: post-reboot all checks pass, 0 failed units, GPU ok, journal vacuumed 44.7M; watch mddb-chat-widget health.
 ```
 
 Related: `docs/ssot/infrastructure/ssot.operations.yml`,
