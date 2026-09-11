@@ -1,0 +1,110 @@
+id: ssot.devin.maintenance
+title: Devin Sessions DB Maintenance
+subtitle: Cleanup, retention, and vacuum policy for Devin desktop/cli session databases
+category: infrastructure
+status: operational
+source_of_truth: true
+
+overview: |
+  Devin stores sessions, message nodes, and tool-call state in a local SQLite
+  database (`~/.local/share/devin/cli/sessions.db`). On active workstations this
+  database can grow quickly because message nodes may contain large base64
+  screenshots, code output, and card/dashboard JSON. This SSOT defines the
+  maintenance policy, cleanup timers, and manual runbook for keeping the DB under
+  control.
+
+hosts:
+  tony-dell:
+    path: /home/tony/.local/share/devin/cli/sessions.db
+    description: Secondary workstation, headless browser/cast target
+    current_size: 1.2Gi
+    service: devin-cleanup.timer
+    retention_days: 7
+    notes:
+      - Cleanup timer runs Sundays at 04:00.
+      - Service skips VACUUM if Devin code.lock is present.
+
+  tony-omen:
+    path: /home/tony/.local/share/devin/cli/sessions.db
+    description: Primary dev workstation
+    current_size: 51Gi
+    service: devin-cleanup.timer
+    retention_days: 7
+    notes:
+      - Cleanup timer runs daily at 03:00 with up to 1h randomized delay.
+      - Most DB size comes from active/recent sessions; 7-day retention does
+        not free much space until those sessions age out or are deleted manually.
+
+cleanup:
+  timer_schedule:
+    tony-dell: "Sun *-*-* 04:00:00"
+    tony-omen: "*-*-* 03:00:00 (RandomizedDelaySec=1h)"
+  service:
+    tony-dell: devin-cleanup.service
+    tony-omen: devin-cleanup.service
+  script:
+    tony-dell: /home/tony/.local/bin/devin-cleanup.sh
+    tony-omen: /home/tony/CascadeProjects/chaba/scripts/prune-devin-sessions.sh
+  retention_days: 7
+  behavior: |
+    1. Compute cutoff = now - retention_days.
+    2. Delete child rows from `message_nodes` and `tool_call_state` for sessions
+       with `last_activity_at < cutoff`.
+    3. Delete sessions with `last_activity_at < cutoff`.
+    4. VACUUM the database only when no Devin process has the file open.
+  skip_conditions:
+    - "Devin code.lock is present (tony-dell script checks this)."
+    - "fuser reports the DB is open (tony-omen script checks this)."
+    - "In those cases DELETE still runs, VACUUM is deferred."
+
+backup_policy: |
+  Automated cleanup does not back up the database before pruning.
+  `prune-devin-sessions.sh` supports `NO_BACKUP=1` for large DBs to avoid
+  duplicating a 50+ GiB file. If a pre-cleanup backup is required, set
+  `NO_BACKUP=` and ensure the filesystem has at least 2x the DB size free.
+
+vacuum_policy: |
+  - VACUUM requires an exclusive lock; it cannot run while Devin is using the DB.
+  - The timer-triggered cleanup will skip VACUUM when the DB is in use.
+  - To force a one-time VACUUM, close Devin and run the cleanup script manually:
+    - tony-dell: `systemctl --user start devin-cleanup.service`
+    - tony-omen: `systemctl --user start devin-cleanup.service`
+
+size_alerts:
+  - threshold_gb: 20
+    severity: warning
+    action: Review largest sessions and consider shorter retention or manual cleanup.
+  - threshold_gb: 50
+    severity: critical
+    action: |
+      The DB is consuming a large portion of the root filesystem. Identify the
+      largest active sessions, close Devin, and either delete those sessions or
+      move the DB to a larger disk.
+
+manual_cleanup_runbook: |
+  1. Identify the largest sessions:
+     SELECT m.session_id, s.title, COUNT(*) cnt,
+            SUM(LENGTH(m.chat_message))/1024/1024 total_mb
+     FROM message_nodes m
+     JOIN sessions s ON m.session_id = s.id
+     GROUP BY m.session_id
+     ORDER BY total_mb DESC;
+  2. Verify the session is not active by checking
+     `~/.local/share/devin/cli/session_locks/<session_id>.lock`.
+  3. Close Devin and run the cleanup script with the desired retention, or delete
+     specific sessions manually and then VACUUM.
+  4. Re-open Devin and verify the DB size.
+
+audit_checks:
+  - Check `devin-cleanup.timer` is active on each host.
+  - Check `devin-cleanup.service` is not in a failed state.
+  - Report DB size and largest sessions during host audits.
+
+related_files:
+  - scripts/prune-devin-sessions.sh
+  - /home/tony/.local/bin/devin-cleanup.sh
+  - /home/tony/.config/systemd/user/devin-cleanup.service
+  - /home/tony/.config/systemd/user/devin-cleanup.timer
+
+related_ssot:
+  - docs/ssot/infrastructure/ssot.audit.hosts.yml
