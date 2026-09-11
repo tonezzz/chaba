@@ -227,12 +227,7 @@ hosts:
       - name: devin-cleanup.service
         reason: Devin sessions DB is in use; schedule when Devin is closed
         action: schedule
-      - name: chaba-backup.service
-        reason: Backup script still tries to use local tony-omen PostgreSQL/Docker and the GoogleDrive mount fails permissions
-        action: update-backup-script
-      - name: chaba-backup-monitor.service
-        reason: Depends on chaba-backup which is not currently healthy
-        action: fix-backup-first
+
     expected_resources:
       min_free_ram_mb: 1000
       max_swap_used_percent: 50

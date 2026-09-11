@@ -1,320 +1,277 @@
 #!/bin/bash
 #
-# Backup Monitoring and Alerting System
-# Monitors backup status and sends alerts for failures or issues
+# Chaba backup monitor — verifies the latest backup set on GoogleDrive.
 #
 
-set -euo pipefail
+set -uo pipefail
 
-# Configuration
-BACKUP_ROOT="/home/tony/GoogleDrive/Tony AI/backup/chaba"
+# --- configuration ---------------------------------------------------------
+STATE_FILE="/home/tony/var/chaba/backup-state.json"
 BACKUP_LOG="/var/log/chaba-backup.log"
 MONITOR_LOG="/var/log/chaba-backup-monitor.log"
-ALERT_LOG="/var/log/chaba-backup-alerts.log"
+DEFAULT_MAX_AGE_HOURS=36
+MAX_AGE_HOURS=${BACKUP_MAX_AGE_HOURS:-$DEFAULT_MAX_AGE_HOURS}
+REMOTE_ROOT='gdrive:/Tony AI/backup/chaba'
 
-# Alert thresholds
-MAX_BACKUP_AGE_HOURS=36
-MIN_BACKUP_SIZE_MB=1  # Adjusted for small database
-MAX_FAILURE_COUNT=3
-
-# Logging function
+# --- helpers ---------------------------------------------------------------
 log() {
-    local level="$1"
-    shift
-    local message="$*"
-    local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
-    echo "[$timestamp] [$level] $message" | tee -a "$MONITOR_LOG"
+  local level="$1"
+  shift
+  local msg="$*"
+  local ts
+  ts=$(date '+%Y-%m-%d %H:%M:%S')
+  echo "[$ts] [$level] $msg" | tee -a "$MONITOR_LOG" >/dev/null
 }
 
-# Send alert
-send_alert() {
-    local severity="$1"
-    local message="$2"
-    local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
-    
-    echo "[$timestamp] [$severity] $message" >> "$ALERT_LOG"
-    
-    # Log to main monitor log
-    log "ALERT" "[$severity] $message"
-    
-    # Could integrate with notification system here
-    # For now, just log the alert
-    case "$severity" in
-        critical)
-            log "CRITICAL" "ALERT: $message"
-            ;;
-        warning)
-            log "WARNING" "ALERT: $message"
-            ;;
-        info)
-            log "INFO" "ALERT: $message"
-            ;;
-    esac
+# --- state -----------------------------------------------------------------
+load_state() {
+  if [ ! -f "$STATE_FILE" ]; then
+    log "ERROR" "State file not found: $STATE_FILE"
+    return 1
+  fi
+
+  if ! command -v jq &>/dev/null; then
+    log "ERROR" "jq not found"
+    return 1
+  fi
+
+  BACKUP_ID=$(jq -r '.backup_id // empty' "$STATE_FILE")
+  BACKUP_TS=$(jq -r '.timestamp // empty' "$STATE_FILE")
+  BACKUP_STATUS=$(jq -r '.status // empty' "$STATE_FILE")
+  DAILY_PATH=$(jq -r '.daily_path // empty' "$STATE_FILE")
+  PG_REMOTE=$(jq -r '.components.postgres // empty' "$STATE_FILE")
+  VOLS_REMOTE=$(jq -r '.components.volumes // empty' "$STATE_FILE")
+  CFG_REMOTE=$(jq -r '.components.configs // empty' "$STATE_FILE")
+  DOCS_REMOTE=$(jq -r '.components.docs // empty' "$STATE_FILE")
+
+  if [ -z "$BACKUP_ID" ] || [ -z "$BACKUP_TS" ]; then
+    log "ERROR" "State file is missing required fields"
+    return 1
+  fi
+
+  log "INFO" "Loaded state: backup_id=$BACKUP_ID, timestamp=$BACKUP_TS, status=$BACKUP_STATUS"
 }
 
-# Check backup freshness
-check_backup_freshness() {
-    log "INFO" "Checking backup freshness..."
-
-    local latest_backup=$(find "$BACKUP_ROOT/daily" -name "postgres_*.sql.gz" -type f 2>/dev/null | sort -r | head -1)
-
-    if [ -z "$latest_backup" ]; then
-        send_alert "critical" "No database backups found"
-        return 1
-    fi
-
-    local backup_age_hours=$(( ($(date +%s) - $(stat -c %Y "$latest_backup")) / 3600 ))
-
-    if [ "$backup_age_hours" -gt "$MAX_BACKUP_AGE_HOURS" ]; then
-        send_alert "critical" "Latest backup is ${backup_age_hours}h old (threshold: ${MAX_BACKUP_AGE_HOURS}h)"
-        return 1
-    fi
-
-    log "INFO" "Backup freshness check passed (${backup_age_hours}h old)"
-    return 0
+remote_size() {
+  local path="$1"
+  rclone ls "$path" 2>/dev/null | awk 'NR==1 {print $1}'
 }
 
-# Check backup size
-check_backup_size() {
-    log "INFO" "Checking backup size..."
-
-    local latest_backup=$(find "$BACKUP_ROOT/daily" -name "postgres_*.sql.gz" -type f 2>/dev/null | sort -r | head -1)
-
-    if [ -z "$latest_backup" ]; then
-        send_alert "critical" "No database backups found for size check"
-        return 1
-    fi
-
-    local backup_size_mb=$(du -m "$latest_backup" | cut -f1)
-
-    if [ "$backup_size_mb" -lt "$MIN_BACKUP_SIZE_MB" ]; then
-        send_alert "warning" "Backup size suspiciously small: ${backup_size_mb}MB (threshold: ${MIN_BACKUP_SIZE_MB}MB)"
-        return 1
-    fi
-
-    log "INFO" "Backup size check passed (${backup_size_mb}MB)"
-    return 0
+# --- checks ----------------------------------------------------------------
+check_status() {
+  log "INFO" "Checking backup status..."
+  if [ "$BACKUP_STATUS" != "success" ]; then
+    log "ERROR" "Latest backup did not report success: $BACKUP_STATUS"
+    return 1
+  fi
+  log "INFO" "Backup status OK"
 }
 
-# Check backup integrity
-check_backup_integrity() {
-    log "INFO" "Checking backup integrity..."
+check_freshness() {
+  log "INFO" "Checking backup freshness (threshold: ${MAX_AGE_HOURS}h)..."
 
-    local latest_backup=$(find "$BACKUP_ROOT/daily" -name "postgres_*.sql.gz" -type f 2>/dev/null | sort -r | head -1)
-    
-    if [ -z "$latest_backup" ]; then
-        send_alert "critical" "No database backups found for integrity check"
-        return 1
-    fi
-    
-    if gzip -t "$latest_backup" 2>/dev/null; then
-        log "INFO" "Backup integrity check passed"
-        return 0
+  local now
+  now=$(date +%s)
+  local bt
+  if ! bt=$(date -d "$BACKUP_TS" +%s 2>/dev/null); then
+    log "ERROR" "Cannot parse timestamp $BACKUP_TS"
+    return 1
+  fi
+
+  local age_hours=$(( (now - bt) / 3600 ))
+  if [ "$age_hours" -gt "$MAX_AGE_HOURS" ]; then
+    log "ERROR" "Latest backup is ${age_hours}h old (threshold: ${MAX_AGE_HOURS}h)"
+    return 1
+  fi
+
+  log "INFO" "Freshness OK: ${age_hours}h old"
+}
+
+check_size() {
+  log "INFO" "Checking backup sizes..."
+  local rc=0
+
+  local pg_path="$REMOTE_ROOT/$PG_REMOTE"
+  local pg_size
+  pg_size=$(remote_size "$pg_path")
+  if [ -z "$pg_size" ] || [ "$pg_size" -lt 100 ]; then
+    log "ERROR" "Postgres backup missing or too small: ${pg_size:-0} bytes"
+    rc=1
+  else
+    log "INFO" "Postgres backup size OK: $pg_size bytes"
+  fi
+
+  for comp in "$VOLS_REMOTE" "$CFG_REMOTE" "$DOCS_REMOTE"; do
+    local full="$REMOTE_ROOT/$comp"
+    local first
+    first=$(remote_size "$full")
+    if [ -z "$first" ] || [ "${first:-0}" -lt 1 ]; then
+      log "ERROR" "Component $comp missing or empty"
+      rc=1
     else
-        send_alert "critical" "Backup integrity check failed: $latest_backup"
-        return 1
+      log "INFO" "Component $comp has content"
     fi
+  done
+
+  return $rc
 }
 
-# Check backup completeness
-check_backup_completeness() {
-    log "INFO" "Checking backup completeness..."
+check_integrity() {
+  log "INFO" "Checking postgres backup integrity..."
+  local pg_path="$REMOTE_ROOT/$PG_REMOTE"
 
-    local required_backups=("postgres" "volumes" "configs" "docs")
-    local missing_backups=()
+  if ! rclone cat "$pg_path" 2>/dev/null | gzip -d - >/dev/null 2>&1; then
+    log "ERROR" "Postgres backup gzip integrity check failed"
+    return 1
+  fi
 
-    for backup_type in "${required_backups[@]}"; do
-        # Check for both direct files and subdirectory structure
-        local backup_count=$(find "$BACKUP_ROOT/daily" -name "${backup_type}_*.tar.gz" -o -name "${backup_type}_*.sql.gz" -o -name "${backup_type}_*" -type d 2>/dev/null | wc -l)
-
-        if [ "$backup_count" -eq 0 ]; then
-            missing_backups+=("$backup_type")
-        fi
-    done
-
-    if [ ${#missing_backups[@]} -gt 0 ]; then
-        send_alert "warning" "Missing backup types: ${missing_backups[*]}"
-        return 1
-    fi
-
-    log "INFO" "Backup completeness check passed"
-    return 0
+  log "INFO" "Postgres backup integrity OK"
 }
 
-# Check backup rotation
-check_backup_rotation() {
-    log "INFO" "Checking backup rotation..."
+check_completeness() {
+  log "INFO" "Checking backup completeness..."
+  local rc=0
 
-    local daily_count=$(find "$BACKUP_ROOT/daily" -type f 2>/dev/null | wc -l)
-    local weekly_count=$(find "$BACKUP_ROOT/weekly" -type f 2>/dev/null | wc -l)
-    local monthly_count=$(find "$BACKUP_ROOT/monthly" -type f 2>/dev/null | wc -l)
-
-    log "INFO" "Backup counts: daily=$daily_count, weekly=$weekly_count, monthly=$monthly_count"
-    
-    # Check if rotation is working (should not have excessive old backups)
-    local old_daily_count=$(find "$BACKUP_ROOT/daily" -name "*.sql.gz" -mtime +35 2>/dev/null | wc -l)
-    if [ "$old_daily_count" -gt 0 ]; then
-        send_alert "warning" "Found $old_daily_count daily backups older than 35 days (rotation may not be working)"
-        return 1
+  for comp in "$PG_REMOTE" "$VOLS_REMOTE" "$CFG_REMOTE" "$DOCS_REMOTE"; do
+    local full="$REMOTE_ROOT/$comp"
+    local count
+    count=$(rclone ls "$full" 2>/dev/null | wc -l)
+    if [ "$count" -lt 1 ]; then
+      log "ERROR" "Component $comp not found on remote"
+      rc=1
+    else
+      log "INFO" "Component $comp found ($count object(s))"
     fi
-    
-    log "INFO" "Backup rotation check passed"
-    return 0
+  done
+
+  return $rc
 }
 
-# Check backup failures
-check_backup_failures() {
-    log "INFO" "Checking recent backup failures..."
+check_rotation() {
+  log "INFO" "Checking backup rotation..."
 
-    # Only check recent failures (last 24 hours)
-    local cutoff_date=$(date -d '24 hours ago' '+%Y-%m-%d %H')
-    local failure_count=$(grep "$cutoff_date" "$BACKUP_LOG" 2>/dev/null | grep -c "ERROR.*backup failed" || true)
-    failure_count=${failure_count:-0}
+  local old=0
+  local cutoff
+  cutoff=$(date -d "35 days ago" +%Y%m%d%H%M%S)
 
-    if [ "$failure_count" -gt "$MAX_FAILURE_COUNT" ]; then
-        send_alert "critical" "Found $failure_count backup failures in log (threshold: $MAX_FAILURE_COUNT)"
-        return 1
+  local entry
+  while IFS= read -r entry; do
+    [ -z "$entry" ] && continue
+    local ts
+    ts=$(echo "$entry" | grep -oE '[0-9]{8}_[0-9]{6}' | tr -d '_' | head -n1)
+    [ -z "$ts" ] && continue
+    if [ "$ts" -lt "$cutoff" ]; then
+      old=$((old + 1))
     fi
+  done < <(rclone lsf "$DAILY_PATH" 2>/dev/null)
 
-    log "INFO" "Backup failure check passed ($failure_count failures)"
-    return 0
+  if [ "$old" -gt 0 ]; then
+    log "WARNING" "Found $old daily backup sets older than 35 days (rotation may not be working)"
+    return 1
+  fi
+
+  log "INFO" "Rotation OK"
 }
 
-# Check disk space
+check_failures() {
+  log "INFO" "Checking backup log for failures since latest backup..."
+
+  local count
+  count=$(python3 - "$BACKUP_LOG" "$BACKUP_TS" <<'PY'
+import re, datetime, sys
+log_path, last_ts = sys.argv[1:3]
+try:
+    cutoff = datetime.datetime.fromisoformat(last_ts).astimezone().replace(tzinfo=None)
+except ValueError:
+    cutoff = datetime.datetime.min
+c = 0
+try:
+    with open(log_path) as f:
+        for line in f:
+            m = re.search(r'^\[(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})\]', line)
+            if not m:
+                continue
+            ts = datetime.datetime.strptime(m.group(1), '%Y-%m-%d %H:%M:%S')
+            if ts >= cutoff and 'ERROR' in line:
+                c += 1
+except FileNotFoundError:
+    pass
+print(c)
+PY
+)
+
+  if [ "${count:-0}" -gt 0 ]; then
+    log "ERROR" "Found $count ERROR entries since latest backup"
+    return 1
+  fi
+
+  log "INFO" "No new errors since latest backup"
+}
+
 check_disk_space() {
-    log "INFO" "Checking disk space..."
-    
-    local available_gb=$(df -BG "$BACKUP_ROOT" | awk 'NR==2 {print $4}' | sed 's/G//')
-    local used_percent=$(df -BG "$BACKUP_ROOT" | awk 'NR==2 {print $5}' | sed 's/%//')
-    
-    log "INFO" "Disk space: ${available_gb}GB available, ${used_percent}% used"
-    
-    if [ "$available_gb" -lt 5 ]; then
-        send_alert "critical" "Low disk space: ${available_gb}GB available"
-        return 1
-    fi
-    
-    if [ "$used_percent" -gt 90 ]; then
-        send_alert "warning" "High disk usage: ${used_percent}% used"
-        return 1
-    fi
-    
-    log "INFO" "Disk space check passed"
-    return 0
+  log "INFO" "Checking local disk space..."
+
+  local avail
+  avail=$(df -BG / | awk 'NR==2 {print $4}' | sed 's/G//')
+  if [ "$avail" -lt 5 ]; then
+    log "ERROR" "Low local disk space: ${avail}GB"
+    return 1
+  fi
+
+  log "INFO" "Disk space OK: ${avail}GB free"
 }
 
-# Generate monitoring report
-generate_monitoring_report() {
-    log "INFO" "Generating monitoring report..."
-    
-    local report_file="$BACKUP_ROOT/logs/monitoring_report_$(date +%Y%m%d_%H%M%S).txt"
-    
-    cat > "$report_file" << EOF
-Chaba Backup Monitoring Report
-===============================
-Date: $(date)
-
-Backup Status:
---------------
-EOF
-    
-    # Backup freshness
-    local latest_backup=$(find "$BACKUP_ROOT/daily" -name "postgres_*.sql.gz" -type f 2>/dev/null | sort -r | head -1)
-    if [ -n "$latest_backup" ]; then
-        local backup_age_hours=$(( ($(date +%s) - $(stat -c %Y "$latest_backup")) / 3600 ))
-        echo "Latest backup: $backup_age_hours hours old" >> "$report_file"
-    else
-        echo "Latest backup: NOT FOUND" >> "$report_file"
-    fi
-    
-    # Backup counts
-    local daily_count=$(find "$BACKUP_ROOT/daily" -type f 2>/dev/null | wc -l)
-    local weekly_count=$(find "$BACKUP_ROOT/weekly" -type f 2>/dev/null | wc -l)
-    local monthly_count=$(find "$BACKUP_ROOT/monthly" -type f 2>/dev/null | wc -l)
-    
-    cat >> "$report_file" << EOF
-Daily backups: $daily_count
-Weekly backups: $weekly_count
-Monthly backups: $monthly_count
-
-Storage Usage:
---------------
-EOF
-    
-    local total_size=$(du -sh "$BACKUP_ROOT" | cut -f1)
-    local available_gb=$(df -BG "$BACKUP_ROOT" | awk 'NR==2 {print $4}' | sed 's/G//')
-    local used_percent=$(df -BG "$BACKUP_ROOT" | awk 'NR==2 {print $5}' | sed 's/%//')
-    
-    cat >> "$report_file" << EOF
-Total backup size: $total_size
-Available disk space: ${available_gb}GB
-Disk usage: ${used_percent}%
-
-Recent Alerts:
---------------
-EOF
-    
-    # Recent alerts
-    tail -10 "$ALERT_LOG" >> "$report_file" 2>/dev/null || echo "No recent alerts" >> "$report_file"
-    
-    log "INFO" "Monitoring report generated: $report_file"
-}
-
-# Main monitoring function
+# --- main ------------------------------------------------------------------
 main() {
-    local check_type="${1:-all}"
-    
-    log "INFO" "=========================================="
-    log "INFO" "Starting backup monitoring: $check_type"
-    log "INFO" "=========================================="
-    
-    local checks_passed=0
-    local checks_failed=0
-    
-    case "$check_type" in
-        freshness)
-            check_backup_freshness && checks_passed=$((checks_passed + 1)) || checks_failed=$((checks_failed + 1))
-            ;;
-        size)
-            check_backup_size && checks_passed=$((checks_passed + 1)) || checks_failed=$((checks_failed + 1))
-            ;;
-        integrity)
-            check_backup_integrity && checks_passed=$((checks_passed + 1)) || checks_failed=$((checks_failed + 1))
-            ;;
-        completeness)
-            check_backup_completeness && checks_passed=$((checks_passed + 1)) || checks_failed=$((checks_failed + 1))
-            ;;
-        rotation)
-            check_backup_rotation && checks_passed=$((checks_passed + 1)) || checks_failed=$((checks_failed + 1))
-            ;;
-        failures)
-            check_backup_failures && checks_passed=$((checks_passed + 1)) || checks_failed=$((checks_failed + 1))
-            ;;
-        disk)
-            check_disk_space && checks_passed=$((checks_passed + 1)) || checks_failed=$((checks_failed + 1))
-            ;;
-        all)
-            check_backup_freshness && checks_passed=$((checks_passed + 1)) || checks_failed=$((checks_failed + 1))
-            check_backup_size && checks_passed=$((checks_passed + 1)) || checks_failed=$((checks_failed + 1))
-            check_backup_integrity && checks_passed=$((checks_passed + 1)) || checks_failed=$((checks_failed + 1))
-            check_backup_completeness && checks_passed=$((checks_passed + 1)) || checks_failed=$((checks_failed + 1))
-            check_backup_rotation && checks_passed=$((checks_passed + 1)) || checks_failed=$((checks_failed + 1))
-            check_backup_failures && checks_passed=$((checks_passed + 1)) || checks_failed=$((checks_failed + 1))
-            check_disk_space && checks_passed=$((checks_passed + 1)) || checks_failed=$((checks_failed + 1))
-            generate_monitoring_report
-            ;;
-        *)
-            echo "Usage: $0 {freshness|size|integrity|completeness|rotation|failures|disk|all}"
-            exit 1
-            ;;
-    esac
-    
-    log "INFO" "Monitoring completed: $checks_passed passed, $checks_failed failed"
-    
-    if [ "$checks_failed" -gt 0 ]; then
-        exit 1
+  local check_type="${1:-all}"
+
+  log "INFO" "=========================================="
+  log "INFO" "Starting backup monitor: $check_type"
+  log "INFO" "=========================================="
+
+  load_state || exit 1
+
+  local checks_passed=0
+  local checks_failed=0
+
+  run_check() {
+    if "$@"; then
+      checks_passed=$((checks_passed + 1))
+    else
+      checks_failed=$((checks_failed + 1))
     fi
+  }
+
+  case "$check_type" in
+    status)       run_check check_status ;;
+    freshness)    run_check check_freshness ;;
+    size)         run_check check_size ;;
+    integrity)    run_check check_integrity ;;
+    completeness) run_check check_completeness ;;
+    rotation)     run_check check_rotation ;;
+    failures)     run_check check_failures ;;
+    disk)         run_check check_disk_space ;;
+    all)
+      run_check check_status
+      run_check check_freshness
+      run_check check_size
+      run_check check_integrity
+      run_check check_completeness
+      run_check check_rotation
+      run_check check_failures
+      run_check check_disk_space
+      ;;
+    *)
+      echo "Usage: $0 {status|freshness|size|integrity|completeness|rotation|failures|disk|all}" >&2
+      exit 1
+      ;;
+  esac
+
+  log "INFO" "Monitor completed: $checks_passed passed, $checks_failed failed"
+
+  if [ "$checks_failed" -gt 0 ]; then
+    exit 1
+  fi
 }
 
-# Run main function
 main "$@"
