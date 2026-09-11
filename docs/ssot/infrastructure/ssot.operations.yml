@@ -356,13 +356,27 @@ host_notes:
         weaviate-index.timer, arp-inventory-scan.timer.
       - sensor-reader container on :8001, Google Drive mount, Ollama, GPU Queue.
       - Re-run mcp-health; expect intentionally-off services to stay off.
+      - >-
+        Barrier: confirm `barriers.service` is listening on 24800 and has accepted
+        the tony-dell client (`ss -tlnp | grep 24800`). If the log repeats
+        "primary screen unavailable: unable to open screen", the X display was not
+        ready when the unit started; restart with `systemctl --user restart
+        barriers.service` once the seat is up.
     refs:
       - docs/ssot/infrastructure/ssot.health.home.system.yml
       - docs/ssot/infrastructure/ssot.gpu.yml
       - docs/ssot/infrastructure/ssot.night-jobs.tony-omen.yml
+    known_issues:
+      - >-
+        `barriers.service` can start before the GDM/Xauthority on DISPLAY :0 is
+        ready. The process stays alive but never binds port 24800 and cannot share
+        the mouse/keyboard. Post-reboot workaround: verify the port and restart the
+        unit. Permanent fix pending: add `After=gdm.service` and move
+        `StartLimitIntervalSec=0` from `[Service]` to `[Unit]` in
+        `~/.config/systemd/user/barriers.service`.
 
 metadata:
   created: '2026-09-07'
-  last_updated: '2026-09-07'
+  last_updated: '2026-09-11'
   maintainer: tony
   status: active
