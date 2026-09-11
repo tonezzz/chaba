@@ -1,19 +1,18 @@
 title: Development System Assessment
 subtitle: Periodic assessment of the chaba development workflow itself
 icon: clipboard-check
-last_reviewed: '2026-09-07T00:00:00+00:00'
+last_reviewed: '2026-09-11T03:01:27.900380+00:00'
 reviewer: assistant
 score:
   branches_total: 2
-  branches_ahead_of_master: 1
-  worktrees_total: 2
+  branches_ahead_of_master: 2
+  worktrees_total: 3
   active_foci: 1
-  ssot_warnings: 0
+  ssot_warnings: 2
   service_errors_last_night: 0
   ci_failures_7d: 0
-  untracked_files: 0
-  stashes_total: 0
-trend: stable
+  untracked_files: 3
+trend: declining
 pros:
 - label: SSOT-first workflow
   evidence: 197 SSOT files validated on every commit; master now current with HA-MCP, log CI, and merge cadence policy
@@ -28,23 +27,17 @@ pros:
   evidence: 0 untracked or modified file(s) on the canonical worktree after pending SSOT/focus commit
   trend: improving
 cons:
-- label: Branch/worktree sprawl
-  severity: low
-  evidence: Only feat/tpl-design is ahead of master (86 ahead / 62 behind) and it lives in the active chaba-tpl worktree; 2 worktrees total
+- label: SSOT quality regression
+  severity: high
+  evidence: 2 SSOT optimization warning(s)
   owner: tony
   status: open
-  improvement: feat/tpl-design is long-running active work; merge or rebase it onto master when that session completes
-- label: Stash sprawl
-  severity: low
-  evidence: 0 stashes after 2026-09-07/09 salvage — unique content was checked out from stashes 1, 2, and 5; obsolete/duplicate entries and superseded chaba.h3 work were dropped
-  owner: tony
-  status: resolved
-  improvement: Maintain zero permanent stashes; prefer branches or committed SSOT over long-lived stashes
+  improvement: Fix SSOT bloat, data-isolation, or log-reference warnings
 - label: Uncommitted working tree
   severity: medium
-  evidence: 0 untracked or modified file(s) on the canonical worktree as of 2026-09-07
+  evidence: 3 untracked or modified file(s)
   owner: tony
-  status: resolved
+  status: open
   improvement: Commit or .gitignore outstanding changes before the next session
 improvements:
 - label: SSOT quality regression resolved
@@ -63,4 +56,4 @@ improvements:
   source: dev-system.assessment
   target_score: branches_ahead_of_master <= 5 and worktrees_total <= 6
   status: completed
-next_review: '2026-09-06'
+next_review: '2026-09-12'

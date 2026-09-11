@@ -8,8 +8,8 @@ import sys
 import threading
 import time
 
-SERVER = "/home/tony/CascadeProjects/chaba-tony-dell/mcp-servers/mcp-health/server.js"
-CWD = "/home/tony/CascadeProjects/chaba-tony-dell"
+SERVER = "/home/tony/CascadeProjects/chaba/mcp-servers/mcp-health/server.js"
+CWD = "/home/tony/CascadeProjects/chaba"
 NODE = os.environ.get("NODE_BIN") or shutil.which("node") or "/home/tony/.n/bin/node"
 INIT_TIMEOUT = 15
 CALL_TIMEOUT = 60
@@ -22,7 +22,7 @@ def main():
     env = os.environ.copy()
     env["HEALTH_PROFILE"] = env.get("HEALTH_PROFILE", "home")
     env["HEALTH_CONFIG"] = env.get("HEALTH_CONFIG", os.path.join(CWD, "docs/ssot/infrastructure/ssot.health.yml"))
-    env["POSTGRES_HOST"] = env.get("POSTGRES_HOST", "tony-dell")
+    env["POSTGRES_HOST"] = env.get("POSTGRES_HOST", "100.68.142.13")
     env["POSTGRES_PORT"] = env.get("POSTGRES_PORT", "5432")
 
     proc = subprocess.Popen(

@@ -222,17 +222,20 @@ hosts:
         note: Currently disabled/planned
     known_failed:
       - name: arp-inventory-scan.service
-        reason: Needs investigation on tony-omen
-        action: investigate
+        reason: Exits 2 when network conflicts/duplicates are detected, by design
+        action: review-focus-inbox-alert
       - name: devin-cleanup.service
-        reason: Devin sessions DB prune failed
-        action: investigate
-      - name: focus-dispatcher-overnight.service
-        reason: Overnight focus review failed
-        action: investigate
+        reason: Devin sessions DB is in use; schedule when Devin is closed
+        action: schedule
       - name: weaviate-index.service
-        reason: Weaviate automatic indexer failed
+        reason: 'Auto-indexer aborts: missing docs/assessments/gpu-embedding/*.md pattern'
         action: investigate
+      - name: chaba-backup.service
+        reason: Backup script still tries to use local tony-omen PostgreSQL/Docker and the GoogleDrive mount fails permissions
+        action: update-backup-script
+      - name: chaba-backup-monitor.service
+        reason: Depends on chaba-backup which is not currently healthy
+        action: fix-backup-first
     expected_resources:
       min_free_ram_mb: 1000
       max_swap_used_percent: 50
