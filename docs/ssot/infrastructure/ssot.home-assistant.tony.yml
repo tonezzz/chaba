@@ -25,7 +25,7 @@ services:
     rtsp: 8554
     webrtc: 8555
     config: /home/tony/.config/go2rtc/go2rtc.yaml
-    purpose: H.264 proxy for ip_cam_65
+    purpose: H.264 proxy for ip_cam_65 and Xiaomi P2P transcoding for xiaomi_c201 / xiaomi_c100
   ha-live:
     tailscale_funnel: 'https://tony-dell.taila0626a.ts.net:8444'
     local_port: 127.0.0.1:9005
@@ -47,6 +47,8 @@ config:
   - /home/tony/.config/home-assistant/update-cam-frame.sh
   - /home/tony/.config/home-assistant/www/cam/last-cam-frame.jpg
   - /home/tony/.config/home-assistant/www/cam/last-usb-frame.jpg
+  - /home/tony/.config/home-assistant/www/cam/last-xiaomi-frame.jpg
+  - /home/tony/.config/home-assistant/www/cam/last-xiaomi-c100-frame.jpg
 
 bridges:
   - id: ha-live

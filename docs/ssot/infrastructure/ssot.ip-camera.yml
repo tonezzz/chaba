@@ -110,6 +110,7 @@ sections:
           - tony_dell_usb: /local/cam/last-usb-frame.jpg thumbnail; tap opens more-info for camera.tony_dell_usb.
           - ip_cam_65: /local/cam/last-cam-frame.jpg thumbnail; tap opens the go2rtc web player at stream.html?src=ip_cam_65_hd.
           - xiaomi_c201 and xiaomi_c201_sd: /local/cam/last-xiaomi-frame.jpg thumbnail; tap opens the go2rtc web player at stream.html?src=xiaomi_c201_hd_h264.
+          - xiaomi_c100 and xiaomi_c100_sd: /local/cam/last-xiaomi-c100-frame.jpg thumbnail; tap opens the go2rtc web player at stream.html?src=xiaomi_c100_hd_h264 or casts to the TV.
           - desktop_1/20/99: /local/cam/last-desktop-*.jpg thumbnail; tap calls camera.play_stream to cast to the TV.
 
   - title: Pros and Cons
@@ -174,6 +175,27 @@ sections:
       - label: Access URLs
         text: 'https://tony-dell.taila0626a.ts.net:8448/stream.html?src=xiaomi_c201_h264 ; rtsp://127.0.0.1:8554/xiaomi_c201{,_hd,_h264} ; http://127.0.0.1:1984/api/frame.jpeg?src=xiaomi_c201'
 
+  - title: Xiaomi C100 (Mi Home cloud camera)
+    icon: video
+    layout: list
+    items:
+      - label: Model
+        text: 'Xiaomi Smart Camera C100 (model chuangmi.camera.077ac1, did 1193098531)'
+      - label: Network
+        text: 'LAN 192.168.2.81; region sg; Mi account userId 6891138643'
+      - label: Transport
+        text: 'Xiaomi P2P via go2rtc xiaomi:// source (no local RTSP on the camera). Each connect needs Internet to fetch encryption keys.'
+      - label: go2rtc streams
+        text: 'xiaomi_c100 (SD HEVC 848x480+opus), xiaomi_c100_hd (subtype=3 2304x1296), xiaomi_c100_h264, xiaomi_c100_hd_h264 (H.264 transcoded for browsers/TV cast)'
+      - label: HA entities
+        text: 'camera.xiaomi_c100 (HD via go2rtc), camera.xiaomi_c100_sd; Miot controls pending'
+      - label: Dashboard
+        text: 'lovelace-smart-home.yaml picture card with HD /local/cam/last-xiaomi-c100-frame.jpg thumbnail; tap opens stream.html?src=xiaomi_c100_hd_h264 or casts to TV'
+      - label: Verified
+        text: '2026-09-11: RTSP hevc 848x480+opus and HD 2304x1296 OK; H.264 transcoded streams OK; freeze-frame JPEG generated'
+      - label: Access URLs
+        text: 'https://tony-dell.taila0626a.ts.net:8448/stream.html?src=xiaomi_c100_h264 ; rtsp://127.0.0.1:8554/xiaomi_c100{,_hd,_h264} ; http://127.0.0.1:1984/api/frame.jpeg?src=xiaomi_c100'
+
   - title: Next Steps
     icon: arrow-right
     layout: list
@@ -189,7 +211,7 @@ sections:
 
 config:
   version: 1
-  last_updated: '2026-09-08'
+  last_updated: '2026-09-11'
   maintainer: tony
   related_files:
     - /home/tony/.config/go2rtc/go2rtc.yaml
@@ -199,6 +221,7 @@ config:
     - /home/tony/.config/home-assistant/update-cam-frame.sh
     - /home/tony/.config/home-assistant/www/cam/last-cam-frame.jpg
     - /home/tony/.config/home-assistant/www/cam/last-usb-frame.jpg
+    - /home/tony/.config/home-assistant/www/cam/last-xiaomi-c100-frame.jpg
     - /home/tony/.config/home-assistant/configuration.yaml
     - /home/tony/.config/home-assistant/lovelace-smart-home.yaml
     - /home/tony/.config/secrets/home-assistant-token.env
