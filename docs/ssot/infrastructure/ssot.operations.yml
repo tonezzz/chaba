@@ -369,11 +369,12 @@ host_notes:
     known_issues:
       - >-
         `barriers.service` can start before the GDM/Xauthority on DISPLAY :0 is
-        ready. The process stays alive but never binds port 24800 and cannot share
-        the mouse/keyboard. Post-reboot workaround: verify the port and restart the
-        unit. Permanent fix pending: add `After=gdm.service` and move
-        `StartLimitIntervalSec=0` from `[Service]` to `[Unit]` in
-        `~/.config/systemd/user/barriers.service`.
+        ready, leaving it alive but unable to open the screen and not listening on
+        port 24800. Applied fix: add an `ExecStartPre` that waits up to 60 s for
+        `/tmp/.X11-unix/X0` and `/run/user/1000/gdm/Xauthority`, move
+        `StartLimitIntervalSec=0` from `[Service]` to `[Unit]`, then
+        `systemctl --user daemon-reload` and restart. The unit now starts reliably
+        after the X display is ready.
 
 metadata:
   created: '2026-09-07'
