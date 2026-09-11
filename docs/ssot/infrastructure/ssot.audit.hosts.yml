@@ -124,9 +124,6 @@ hosts:
       - name: sync-to-hdd.service
         reason: /media/storage/backup not mounted
         action: mount-backup-drive
-      - name: ha-card-snapshot.service
-        reason: Lovelace selector 'sunsynk-power-flow-card' not found/visible at tony-test/pf3
-        action: check-ha-card-and-view
     expected_resources:
       min_free_ram_mb: 500
       max_swap_used_percent: 80
@@ -297,11 +294,11 @@ hosts:
       max_root_disk_percent: 90
       max_load_5m: 8.0
     last_observed:
-      status: reachable
-      timestamp: '2026-09-11T12:13:44+07:00'
+      status: unreachable
+      timestamp: '2026-09-11T14:55:00+07:00'
       tailscale_ip: 100.124.59.112
       notes:
-        - 'Audited successfully when reachable; launchd agents macbook-health and macbook-offload-audit not installed'
+        - 'macbook is offline (last seen 15m ago, relay sin); SSH on 100.124.59.112:22 times out. Install launchd agents when reachable.'
     deltas: []
 
 related_files:
