@@ -33,6 +33,7 @@ IP_REGISTRY = (
     / "ssot.ip-address-registry.yml"
 )
 SCAN_FILE = REPO_ROOT / "data" / "network-scan" / "tony-ha-scan.json"
+HA_SCAN_FILE = Path.home() / ".config" / "home-assistant" / "www" / "ha" / "network-scan-latest.json"
 
 
 def load_yaml(path: Path) -> dict:
@@ -139,6 +140,12 @@ def main() -> int:
     }
     SCAN_FILE.write_text(json.dumps(scan_doc, indent=2), encoding="utf-8")
     print(f"Wrote {SCAN_FILE} ({len(hosts)} hosts)")
+    try:
+        HA_SCAN_FILE.parent.mkdir(parents=True, exist_ok=True)
+        HA_SCAN_FILE.write_text(json.dumps(scan_doc, indent=2), encoding="utf-8")
+        print(f"Wrote {HA_SCAN_FILE}")
+    except OSError as e:
+        print(f"Could not write HA copy: {e}")
     if "--push" in sys.argv:
         print("Rebuilding device registry and pushing dashboard...")
         build = REPO_ROOT / "scripts" / "build-ha-devices-ui.py"
