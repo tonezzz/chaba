@@ -86,3 +86,16 @@ Parallel sessions caused real breakage: duplicated `pfg2-card.ts`, undeclared `v
 - The `michael-dev` token in `~/.config/secrets/ha-michael-dev.env` is valid and works for REST and websocket.
 - Dashboard snapshot is `docs/home-assistant/dashboards/tony-test-current.json`.
 - Post-restart MCP verification: all 18 configured Devin MCP servers are reachable after tony-dell restart. `michael-dev` and `tony-ha` `ha_mcp_tools` require `_READY_STALL_TIMEOUT_SECONDS=300s` / `_READY_TOTAL_CAP_SECONDS=900s` in `embedded_server.py` to avoid startup timeout on HA 2026.9.0. `github` MCP now uses `~/.config/devin/mcp-scripts/mcp-github-proxy.py`.
+
+## XMEye VMS on tony-dell
+
+- Container: `xmeye-vms-vnc` (Podman), exposes VNC on `192.168.2.67:5900` (no password).
+- Browser noVNC: `http://tony-dell/apps/vnc/` -> `http://tony-dell/apps/vnc/vnc.html` (noVNC) -> `ws://tony-dell:6081/` (websockify proxy to VNC; port 6080 is reserved for `websockify-macbook.service`).
+- Websockify: `websockify 0.0.0.0:6081 127.0.0.1:5900` on tony-dell.
+- Wine virtual desktop startup (fixes wireframe/repaint issue): `wine explorer /desktop=VMS,1280x720 VMS.exe` from `/app` inside the container.
+- VMS config: `/home/tony/.cache/xmeye-vms/vms-runtime/config.ini`.
+- VMS app login: `admin` / `admin` (saved hash `F360C0DD174588FA` in `config.ini` `[Login]` `password`).
+- Device/DVR test password supplied by user: `amc123456`.
+- Second DVR Cloud/Serial ID to add: `d811d82e21d6c031`.
+- QR files for import: `Z:\\app\\qr\\S__7610372.jpg` and `Z:\\app\\qr\\QR.jpg` inside the VMS (mounted from `/home/tony/.cache/xmeye-vms/vms-runtime/qr/`).
+- Set `autologin=true` in `config.ini` after the saved hash is in place to skip the login prompt on next restart.

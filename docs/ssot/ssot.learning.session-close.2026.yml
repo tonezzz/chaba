@@ -56,6 +56,39 @@ sections:
           playlive-macbook-tunnel service on tony-dell must forward to macbook 127.0.0.1:9222
           because headless Chrome binds to the IPv4 loopback address.
 
+  - title: MCP and VMS session lessons
+    icon: book
+    layout: list
+    items:
+      - label: MCP list_tools is the real post-restart health check
+        text: |
+          Service active, port listening, and HTTP 200 are not enough for embedded MCP servers.
+          A successful mcp_list_tools call validates transport, auth, server startup, and
+          protocol compatibility. The post-restart SSOT now includes an explicit step that runs
+          mcp_list_tools for every configured Devin MCP server after restart.
+      - label: ha_mcp_tools needs a longer startup timeout
+        text: |
+          The in-process HA MCP server can take minutes to start on HA 2026.9.0 under load.
+          The _READY_STALL_TIMEOUT_SECONDS/_READY_TOTAL_CAP_SECONDS constants in
+          embedded_server.py were raised from 90s/600s to 300s/900s for both tony-ha and
+          michael-dev to prevent false timeout and port-collision retries.
+      - label: GitHub MCP needs a stdio handshake proxy
+        text: |
+          The github-mcp-server stdio transport is sensitive to early reads and large tool
+          catalog responses. Using mcp-github-proxy.py to gate the handshake and read the
+          token from ~/.config/secrets/github-mcp.env makes tool listing reliable.
+      - label: michael-dev cannot run Home Assistant add-ons
+        text: |
+          michael-dev is a Home Assistant Container install (rootless Podman), not HA OS,
+          so Grafana and other add-ons cannot be installed inside it. A standalone Grafana
+          plus InfluxDB container on tony-dell would be required for dashboard development.
+      - label: cast-browser-server can cast any workspace to the TV
+        text: |
+          POST /nav with {"url": "workspace:4"} captures the X desktop of workspace 4 and
+          casts a PNG to media_player.tony_tv_cast. For live streaming use
+          screenlive:workspace:4, which starts cast-desktop@1 and plays the HLS camera
+          stream on the selected TV.
+
   - title: How to Improve
     icon: 🚀
     layout: list
