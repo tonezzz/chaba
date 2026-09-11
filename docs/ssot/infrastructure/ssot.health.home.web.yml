@@ -147,3 +147,16 @@ services:
   - mobile
   host: tony_dell
   note: Verifies the GEV index and Cesium assets are reachable.
+
+- id: gev-live
+  name: GEV Gemini Live
+  type: http
+  url: 'http://tony-dell/apps/gev-live/'
+  expected_status: 200
+  timeout: 10
+  category: web
+  profiles:
+  - home
+  - mobile
+  host: tony_dell
+  note: Verifies the GEV Gemini Live test page and Caddy route.

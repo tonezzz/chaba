@@ -327,12 +327,12 @@ sections:
             curl -s -o /dev/null -w 'HTTP %{http_code}' -k https://tony-dell.taila0626a.ts.net/apps/
       - label: "Tailscale 443 repoint"
         text: |
-          To move the public HTTPS root to Caddy on 80, clear the old 443 backend and re-add:
-            sudo -n tailscale serve --yes --bg --https=443 127.0.0.1:80
-            sudo -n tailscale serve --yes --bg --https=443 --set-path /apps/home-assistant/ 127.0.0.1:8123
+          To expose the public HTTPS root to the internet through Caddy on 80, use Tailscale Funnel:
+            sudo -n tailscale funnel --yes --bg --https=443 127.0.0.1:80
+            sudo -n tailscale funnel --yes --bg --https=443 --set-path /apps/home-assistant/ 127.0.0.1:8123
           Verify:
-            curl -s -o /dev/null -w 'HTTP %{http_code}' -k https://tony-dell.taila0626a.ts.net/
-            curl -s -o /dev/null -w 'HTTP %{http_code}' -k https://tony-dell.taila0626a.ts.net/apps/home-assistant/
+            curl -s -o /dev/null -w 'HTTP %{http_code}' https://tony-dell.taila0626a.ts.net/
+            curl -s -o /dev/null -w 'HTTP %{http_code}' https://tony-dell.taila0626a.ts.net/apps/home-assistant/
       - label: "bserver service"
         text: |
           The root dashboard is served by `bserver` on 127.0.0.1:8092. It is defined by:
@@ -341,6 +341,20 @@ sections:
             systemctl --user daemon-reload
             systemctl --user start bserver
             systemctl --user is-active bserver
+      - label: "gev-gemini service"
+        text: |
+          The GEV Gemini Live bridge listens on 127.0.0.1:8789 and is proxied by Caddy at `/apps/gev-live/ws`.
+          It is defined by:
+            /home/tony/.config/containers/systemd/gev-gemini.container
+            /home/tony/CascadeProjects/chaba-tony-dell/stacks/tony-dell/gev-gemini/Containerfile
+          After changes:
+            podman build -t localhost/gev-gemini:latest /home/tony/CascadeProjects/chaba-tony-dell/stacks/tony-dell/gev-gemini
+            systemctl --user daemon-reload
+            systemctl --user start gev-gemini
+            systemctl --user is-active gev-gemini
+          Verify the HTTP page and WebSocket reachability:
+            curl -s -o /dev/null -w 'HTTP %{http_code}' http://tony-dell/apps/gev-live/
+            curl -s -o /dev/null -w 'HTTP %{http_code}' -k https://tony-dell.taila0626a.ts.net/apps/gev-live/
 
 config:
   version: 1
@@ -356,3 +370,7 @@ config:
     - docs/ssot/infrastructure/ssot.health.home.web.yml
     - docs/ssot/infrastructure/ssot.values.yml
     - docs/ssot/infrastructure/ssot.web.standard-ports.yml
+    - stacks/tony-dell/gev-gemini/Containerfile
+    - stacks/tony-dell/gev-gemini/bridge.py
+    - stacks/web/public/apps/gev-live/index.html
+    - ~/.config/containers/systemd/gev-gemini.container
