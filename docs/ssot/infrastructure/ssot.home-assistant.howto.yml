@@ -351,6 +351,26 @@ runbooks:
       - Runtime errors like missing variables can slip through Babel preset-typescript; use tsc as the gate.
     note: The card repo uses Babel to strip types and terser to minify; it never invokes the TypeScript compiler.
 
+  michael_dev_playlive_visual_verify:
+    purpose: Log in to michael-dev via Playlive and capture a screenshot of the tony-test Wide view.
+    steps:
+      - "michael-dev and michael-ha share the same UI credentials: ~/.local/share/home-assistant-michael/credentials.json (user 'nakva')"
+      - "Start a temporary http server on the LAN IP: python3 -m http.server 8898 --bind 0.0.0.0 --directory /tmp"
+      - "Write /tmp/creds.js with window.__HA_CREDS = {u:'nakva', p:'<PASSWORD>'}; use the password from credentials.json"
+      - "Create a playlive headless session and navigate to https://tony-dell.taila0626a.ts.net:8124/tony-test/wide"
+      - "Inject the creds script: document.head.appendChild(document.createElement('script')).src = 'http://<lan-ip>:8898/creds.js'"
+      - "Fill username/password using native HTMLInputElement value setter, dispatch input/change, then click the 'Log in' ha-button"
+      - "Set input[type='checkbox'].checked = true (Keep me logged in) before clicking Log in"
+      - "Wait for the page to load; the Wide view renders at https://tony-dell.taila0626a.ts.net:8124/tony-test/wide"
+      - "Use playlive_screenshot to capture the viewport; scroll with window.scrollTo(0,N) for lower content"
+      - "Stop the http server and delete /tmp/creds.js immediately after"
+    note: |
+      Verified 2026-09-10. The michael-dev UI accepts the michael-ha 'nakva' credentials and the
+      tony-test/wide view loads. Use screenshots to compare the dial/chart layout against the
+      reference image and iterate the grid/SVG configuration.
+    ssot: ssot.home-assistant.instances.yml
+    last_updated: '2026-09-10'
+
 status:
   last_updated: '2026-09-09'
   last_verified: '2026-09-09'
