@@ -11,12 +11,15 @@
   <link rel="apple-touch-icon" sizes="192x192" href="/apps/input-bridge/icon-192.png">
   <title>Input Bridge</title>
   <style>
-    :root { --bg: #0f172a; --panel: #1e293b; --text: #f8fafc; --muted: #94a3b8; --accent: #06b6d4; --danger: #ef4444; }
+    :root { --bg: #0f172a; --panel: #1e293b; --text: #f8fafc; --muted: #94a3b8; --accent: #06b6d4; --danger: #ef4444; --success: #22c55e; }
     * { box-sizing: border-box; }
-    html, body { height: 100%; margin: 0; background: var(--bg); color: var(--text); font-family: system-ui, -apple-system, sans-serif; overflow: hidden; touch-action: none; user-select: none; -webkit-user-select: none; }
+    html, body { height: 100%; margin: 0; background: var(--bg); color: var(--text); overflow: hidden; font-family: system-ui, -apple-system, sans-serif; touch-action: none; user-select: none; -webkit-user-select: none; }
     #capture { position: fixed; inset: 0; z-index: 1; }
-    #ui { position: fixed; top: 0.5rem; left: 0.5rem; right: 0.5rem; z-index: 10; max-width: 420px; background: rgba(15, 23, 42, 0.92); border: 1px solid #334155; border-radius: 8px; padding: 0.75rem; backdrop-filter: blur(4px); }
+    #trackpad-hint { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; z-index: 2; pointer-events: none; color: var(--muted); font-size: 1.25rem; text-align: center; }
+    #trackpad-hint.visible { display: flex; }
+    #ui { position: fixed; top: 0.5rem; left: 0.5rem; right: 0.5rem; z-index: 10; max-width: 460px; background: rgba(15, 23, 42, 0.94); border: 1px solid #334155; border-radius: 8px; padding: 0.75rem; backdrop-filter: blur(4px); }
     #ui.collapsed #controls { display: none; }
+    #ui.collapsed #responses { display: none; }
     #ui.collapsed #log { display: none; }
     #header { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem; }
     #status { font-size: 0.75rem; padding: 0.2rem 0.5rem; border-radius: 4px; background: #334155; }
@@ -24,19 +27,27 @@
     #status.error { background: #991b1b; }
     button { font: inherit; font-size: 0.8rem; padding: 0.35rem 0.6rem; border-radius: 6px; border: none; background: var(--accent); color: #082f49; font-weight: 600; cursor: pointer; }
     button.secondary { background: #334155; color: var(--text); }
-    input, select { font: inherit; font-size: 0.8rem; padding: 0.35rem; border-radius: 6px; border: 1px solid #475569; background: #0f172a; color: var(--text); width: 100%; }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    button#voiceBtn { background: var(--success); color: #052e16; }
+    button#voiceBtn.listening { background: var(--danger); color: #fff; }
+    input, select, textarea { font: inherit; font-size: 0.8rem; padding: 0.35rem; border-radius: 6px; border: 1px solid #475569; background: #0f172a; color: var(--text); width: 100%; }
     .row { display: flex; gap: 0.5rem; align-items: center; margin-bottom: 0.5rem; }
     .row label { font-size: 0.75rem; color: var(--muted); min-width: 4rem; }
-    .row input, .row select { flex: 1; }
+    .row input, .row select, .row textarea { flex: 1; }
+    .row button { width: auto; }
     .hint { font-size: 0.7rem; color: var(--muted); }
-    #log { height: 6rem; overflow: auto; font-size: 0.75rem; line-height: 1.4; background: #020617; border-radius: 6px; padding: 0.5rem; margin-top: 0.5rem; }
-    #log .ts { color: #64748b; margin-right: 0.4rem; }
+    #log, #responses { height: 5rem; overflow: auto; font-size: 0.75rem; line-height: 1.4; background: #020617; border-radius: 6px; padding: 0.5rem; margin-top: 0.5rem; }
+    #responses { height: 3rem; border-color: #064e3b; }
+    #log .ts, #responses .ts { color: #64748b; margin-right: 0.4rem; }
     #toggleUi { margin-left: auto; font-size: 0.7rem; padding: 0.2rem 0.4rem; }
+    #voiceHint { font-size: 0.7rem; color: var(--danger); display: none; }
     #pointer { position: fixed; width: 20px; height: 20px; border: 2px solid var(--accent); border-radius: 50%; transform: translate(-50%, -50%); pointer-events: none; z-index: 5; display: none; }
+    #modeRow select { width: auto; }
   </style>
 </head>
 <body>
   <div id="capture"></div>
+  <div id="trackpad-hint" class="visible"><div>Trackpad mode<br><small>drag to move pointer, tap to click, long-press to right-click, double-tap to double-click</small></div></div>
   <div id="pointer"></div>
   <div id="ui" class="collapsed">
     <div id="header">
@@ -45,14 +56,33 @@
       <button id="toggleUi">Show</button>
     </div>
     <div id="controls">
+      <div class="row" id="modeRow"><label>Mode</label>
+        <select id="mode">
+          <option value="direct">Direct (absolute)</option>
+          <option value="trackpad">Trackpad (relative)</option>
+        </select>
+      </div>
       <div class="row"><label>WS URL</label><input type="text" id="wsUrl" autocomplete="off" spellcheck="false"></div>
       <div class="row"><label>Room</label><input type="text" id="room" value="default"></div>
       <div class="row" style="justify-content: flex-end;">
         <button id="connect" class="secondary">Connect</button>
         <button id="clear" class="secondary">Clear</button>
       </div>
-      <div class="hint">Open the receiver on the target display, set the same room, then connect.</div>
+      <div class="row" id="voiceRow" style="flex-wrap: wrap; gap: 0.5rem;">
+        <label>Voice</label>
+        <select id="voiceLang" style="width: auto;">
+          <option value="en-US">en-US</option>
+          <option value="th-TH">th-TH</option>
+          <option value="zh-CN">zh-CN</option>
+          <option value="ja-JP">ja-JP</option>
+        </select>
+        <button id="voiceBtn">Hold to speak</button>
+        <span id="voiceHint">Voice not supported</span>
+      </div>
+      <div class="row"><label>Text</label><input type="text" id="textCmd" placeholder="type a command and press Enter" autocomplete="off" spellcheck="false"><button id="sendText" class="secondary">Send</button></div>
+      <div class="hint">Open the receiver on the target display and set the same room.</div>
     </div>
+    <div id="responses"></div>
     <pre id="log"></pre>
   </div>
 
@@ -63,10 +93,11 @@
     const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
     return {
       wsUrl: params.get('ws') || `${proto}//${location.host}/api/input-bridge/ws`,
-      room: params.get('room') || 'default'
+      room: params.get('room') || 'default',
+      mode: 'direct',
+      voiceLang: 'en-US'
     };
   };
-
   let settings = { ...defaultSettings() };
   try {
     const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
@@ -75,19 +106,45 @@
 
   const wsUrlInput = document.getElementById('wsUrl');
   const roomInput = document.getElementById('room');
+  const modeSelect = document.getElementById('mode');
   const statusEl = document.getElementById('status');
   const logEl = document.getElementById('log');
+  const responsesEl = document.getElementById('responses');
   const pointerEl = document.getElementById('pointer');
   const ui = document.getElementById('ui');
+  const trackpadHint = document.getElementById('trackpad-hint');
+  const voiceBtn = document.getElementById('voiceBtn');
+  const voiceHint = document.getElementById('voiceHint');
+  const voiceLang = document.getElementById('voiceLang');
+  const textCmd = document.getElementById('textCmd');
 
   wsUrlInput.value = settings.wsUrl;
   roomInput.value = settings.room;
+  modeSelect.value = settings.mode;
+  voiceLang.value = settings.voiceLang;
 
   let ws = null;
-  let reconnectTimer = null;
+  let mode = settings.mode;
+
+  // speech recognition
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  let recognition = null;
+  if (SpeechRecognition) {
+    recognition = new SpeechRecognition();
+    recognition.continuous = false;
+    recognition.interimResults = false;
+  } else {
+    voiceHint.style.display = 'inline';
+    voiceBtn.disabled = true;
+  }
 
   function saveSettings() {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify({ wsUrl: wsUrlInput.value, room: roomInput.value }));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      wsUrl: wsUrlInput.value,
+      room: roomInput.value,
+      mode: modeSelect.value,
+      voiceLang: voiceLang.value
+    }));
   }
 
   function setStatus(text, cls) {
@@ -104,6 +161,15 @@
     logEl.scrollTop = logEl.scrollHeight;
   }
 
+  function showResponse(text) {
+    const ts = new Date().toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    const line = document.createElement('div');
+    line.innerHTML = `<span class="ts">${ts}</span>${text}`;
+    responsesEl.appendChild(line);
+    if (responsesEl.children.length > 20) responsesEl.removeChild(responsesEl.firstChild);
+    responsesEl.scrollTop = responsesEl.scrollHeight;
+  }
+
   function send(obj) {
     if (ws && ws.readyState === WebSocket.OPEN) {
       ws.send(JSON.stringify(obj));
@@ -113,7 +179,7 @@
   function connect() {
     if (ws) return;
     const url = wsUrlInput.value.trim();
-    const room = roomInput.value.trim() || 'default';
+    const room = roomInput.value.trim();
     saveSettings();
     setStatus('connecting…');
     try {
@@ -132,43 +198,86 @@
       try {
         const msg = JSON.parse(e.data);
         if (msg.type === 'pong' || msg.type === 'presence') return;
+        if (msg.type === 'response') {
+          showResponse(msg.text);
+          log(`response: ${msg.text}`);
+        }
       } catch (err) {}
     };
-    ws.onclose = () => {
-      ws = null;
-      setStatus('disconnected', 'error');
-    };
-    ws.onerror = (e) => {
-      setStatus('error', 'error');
-      log('WebSocket error');
-    };
+    ws.onclose = () => { ws = null; setStatus('disconnected', 'error'); };
+    ws.onerror = () => { setStatus('error', 'error'); log('WebSocket error'); };
   }
 
-  function disconnect() {
-    if (ws) { ws.close(); ws = null; }
-    setStatus('disconnected');
-  }
+  function disconnect() { if (ws) { ws.close(); ws = null; } setStatus('disconnected'); }
 
-  document.getElementById('connect').addEventListener('click', () => {
-    if (ws) disconnect(); else connect();
-  });
-  document.getElementById('clear').addEventListener('click', () => { logEl.innerHTML = ''; });
+  document.getElementById('connect').addEventListener('click', () => { if (ws) disconnect(); else connect(); });
+  document.getElementById('clear').addEventListener('click', () => { logEl.innerHTML = ''; responsesEl.innerHTML = ''; });
   document.getElementById('toggleUi').addEventListener('click', () => {
     ui.classList.toggle('collapsed');
     document.getElementById('toggleUi').textContent = ui.classList.contains('collapsed') ? 'Show' : 'Hide';
   });
 
+  modeSelect.addEventListener('change', () => {
+    mode = modeSelect.value;
+    trackpadHint.classList.toggle('visible', mode === 'trackpad');
+    pointerEl.style.display = mode === 'trackpad' ? 'block' : 'none';
+    saveSettings();
+  });
+  trackpadHint.classList.toggle('visible', mode === 'trackpad');
+  pointerEl.style.display = mode === 'trackpad' ? 'block' : 'none';
+
+  // Voice
+  function sendVoice(text) {
+    if (!text) return;
+    log('voice: ' + text);
+    send({ type: 'voice', text, ts: Date.now() });
+  }
+
+  if (recognition) {
+    recognition.onresult = (e) => {
+      const text = e.results[0] && e.results[0][0] ? e.results[0][0].transcript : '';
+      if (text) sendVoice(text);
+    };
+    recognition.onerror = (e) => { log('voice error: ' + e.error); };
+    recognition.onend = () => { voiceBtn.classList.remove('listening'); voiceBtn.textContent = 'Hold to speak'; };
+
+    function startVoice(e) {
+      e.preventDefault();
+      if (!ws || ws.readyState !== WebSocket.OPEN) { log('connect first'); return; }
+      recognition.lang = voiceLang.value;
+      try { recognition.start(); voiceBtn.classList.add('listening'); voiceBtn.textContent = 'Listening…'; } catch (err) {}
+    }
+    function stopVoice(e) {
+      e.preventDefault();
+      try { recognition.stop(); } catch (err) {}
+    }
+    voiceBtn.addEventListener('pointerdown', startVoice);
+    voiceBtn.addEventListener('pointerup', stopVoice);
+    voiceBtn.addEventListener('pointerleave', stopVoice);
+    voiceBtn.addEventListener('touchstart', startVoice, { passive: false });
+    voiceBtn.addEventListener('touchend', stopVoice, { passive: false });
+  }
+  voiceLang.addEventListener('change', saveSettings);
+
+  // Text command
+  function sendTextCommand() {
+    const text = textCmd.value.trim();
+    if (text) { sendVoice(text); textCmd.value = ''; }
+  }
+  document.getElementById('sendText').addEventListener('click', sendTextCommand);
+  textCmd.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); sendTextCommand(); } });
+
   function isInUi(el) { return el && (el.closest && el.closest('#ui')); }
 
+  // Direct mode: absolute pointer/keyboard/wheel
   window.addEventListener('keydown', (e) => {
     if (isInUi(e.target)) return;
-    const data = {
+    send({
       type: 'keydown', ts: Date.now(),
       code: e.code, key: e.key, repeat: e.repeat,
       altKey: e.altKey, ctrlKey: e.ctrlKey, metaKey: e.metaKey, shiftKey: e.shiftKey
-    };
-    send(data);
-    log(`key ${e.key} (${e.code})`);
+    });
+    log(`key ${e.key}`);
   }, { passive: true });
 
   window.addEventListener('keyup', (e) => {
@@ -180,7 +289,7 @@
     });
   }, { passive: true });
 
-  function pointerEvent(type, e) {
+  function directPointer(type, e) {
     const data = {
       type, ts: Date.now(),
       x: e.clientX, y: e.clientY,
@@ -190,31 +299,28 @@
       buttons: e.buttons,
       pressure: e.pressure || 0,
       width: e.width || 0,
-      height: e.height || 0,
-      tiltX: e.tiltX || 0,
-      tiltY: e.tiltY || 0
+      height: e.height || 0
     };
     send(data);
     pointerEl.style.left = e.clientX + 'px';
     pointerEl.style.top = e.clientY + 'px';
     pointerEl.style.display = 'block';
-    if (type !== 'pointermove') log(`${type} x:${e.clientX} y:${e.clientY} btn:${e.button}`);
+    if (type !== 'pointermove') log(`${type} x:${e.clientX} y:${e.clientY}`);
   }
 
-  window.addEventListener('pointermove', (e) => { if (!isInUi(e.target)) pointerEvent('pointermove', e); });
-  window.addEventListener('pointerdown', (e) => { if (!isInUi(e.target)) pointerEvent('pointerdown', e); });
-  window.addEventListener('pointerup', (e) => { if (!isInUi(e.target)) pointerEvent('pointerup', e); });
+  window.addEventListener('pointermove', (e) => { if (mode === 'direct' && !isInUi(e.target)) directPointer('pointermove', e); });
+  window.addEventListener('pointerdown', (e) => { if (mode === 'direct' && !isInUi(e.target)) directPointer('pointerdown', e); });
+  window.addEventListener('pointerup', (e) => { if (mode === 'direct' && !isInUi(e.target)) directPointer('pointerup', e); });
 
   window.addEventListener('wheel', (e) => {
     if (isInUi(e.target)) return;
     e.preventDefault();
     send({ type: 'wheel', ts: Date.now(), deltaX: e.deltaX, deltaY: e.deltaY, deltaZ: e.deltaZ || 0, x: e.clientX, y: e.clientY });
-    log(`wheel Δx:${e.deltaX.toFixed(0)} Δy:${e.deltaY.toFixed(0)}`);
   }, { passive: false });
 
   ['touchstart', 'touchmove', 'touchend', 'touchcancel'].forEach((name) => {
     window.addEventListener(name, (e) => {
-      if (isInUi(e.target)) return;
+      if (isInUi(e.target) || mode !== 'direct') return;
       if (e.cancelable) e.preventDefault();
       const t = e.changedTouches[0] || e.touches[0];
       if (!t) return;
@@ -223,6 +329,71 @@
     }, { passive: false });
   });
 
+  // Trackpad mode
+  const trackpad = { active: false, startX: 0, startY: 0, lastX: 0, lastY: 0, startTime: 0, moved: false, lastTapTime: 0 };
+  const capture = document.getElementById('capture');
+
+  function trackpadStart(e) {
+    trackpad.active = true;
+    trackpad.startX = e.clientX;
+    trackpad.startY = e.clientY;
+    trackpad.lastX = e.clientX;
+    trackpad.lastY = e.clientY;
+    trackpad.startTime = Date.now();
+    trackpad.moved = false;
+  }
+
+  function trackpadMove(e) {
+    if (!trackpad.active) return;
+    const dx = e.clientX - trackpad.lastX;
+    const dy = e.clientY - trackpad.lastY;
+    if (Math.hypot(dx, dy) > 1.5) trackpad.moved = true;
+    send({ type: 'trackpad', ts: Date.now(), dx, dy });
+    trackpad.lastX = e.clientX;
+    trackpad.lastY = e.clientY;
+  }
+
+  function trackpadEnd(e) {
+    if (!trackpad.active) return;
+    trackpad.active = false;
+    const duration = Date.now() - trackpad.startTime;
+    if (!trackpad.moved) {
+      const now = Date.now();
+      const isDouble = (now - trackpad.lastTapTime) < 300;
+      if (isDouble) {
+        send({ type: 'click', ts: now, button: 0, clicks: 2 });
+        log('double click');
+      } else if (duration > 500) {
+        send({ type: 'click', ts: now, button: 2, clicks: 1 });
+        log('right click');
+      } else {
+        send({ type: 'click', ts: now, button: 0, clicks: 1 });
+        log('tap click');
+      }
+      trackpad.lastTapTime = now;
+    }
+  }
+
+  capture.addEventListener('pointerdown', (e) => {
+    if (mode !== 'trackpad' || isInUi(e.target)) return;
+    e.preventDefault();
+    trackpadStart(e);
+  });
+  capture.addEventListener('pointermove', (e) => {
+    if (mode !== 'trackpad' || isInUi(e.target)) return;
+    e.preventDefault();
+    trackpadMove(e);
+  });
+  capture.addEventListener('pointerup', (e) => {
+    if (mode !== 'trackpad' || isInUi(e.target)) return;
+    e.preventDefault();
+    trackpadEnd(e);
+  });
+  capture.addEventListener('pointercancel', (e) => {
+    if (mode === 'trackpad') trackpad.active = false;
+  });
+
+  // Gamepad
   let lastGamepadSent = 0;
   function pollGamepads() {
     if (typeof navigator.getGamepads !== 'function') return;
@@ -241,8 +412,8 @@
     }
     requestAnimationFrame(pollGamepads);
   }
-  window.addEventListener('gamepadconnected', (e) => { log('gamepad connected: ' + e.gamepad.id); pollGamepads(); });
-  window.addEventListener('gamepaddisconnected', (e) => { log('gamepad disconnected: ' + e.gamepad.id); });
+  window.addEventListener('gamepadconnected', (e) => { log('gamepad: ' + e.gamepad.id); pollGamepads(); });
+  window.addEventListener('gamepaddisconnected', (e) => { log('gamepad: ' + e.gamepad.id); });
   if (navigator.getGamepads) pollGamepads();
 
   window.addEventListener('beforeunload', disconnect);
