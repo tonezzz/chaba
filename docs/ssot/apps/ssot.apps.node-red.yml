@@ -1,0 +1,67 @@
+title: Node-RED
+subtitle: Flow-based automation editor connected to tony-ha for Home Assistant automations.
+icon: "🔴"
+sections:
+  - title: Core Features
+    icon: "✅"
+    layout: list
+    items:
+      - label: Flow editor
+        text: Web-based Node-RED editor for wiring together devices, services, and automations.
+      - label: Home Assistant websocket nodes
+        text: node-red-contrib-home-assistant-websocket provides events, current-state, call-service, and other HA nodes.
+      - label: Persistent storage
+        text: Flows, credentials, and installed nodes are stored in ~/.local/share/nodered on tony-dell.
+  - title: Technical Architecture
+    icon: "⚙️"
+    layout: list
+    items:
+      - label: nodered/node-red container
+        text: Rootless Podman Quadlet with network=host and data volume at /home/tony/.local/share/nodered.
+      - label: Caddy reverse proxy
+        text: Served under /apps/node-red/ on the tony-dell web stack at port 8080.
+      - label: Home Assistant token
+        text: Long-lived tony-ha token is injected via EnvironmentFile at ~/.config/secrets/nodered-ha.env.
+  - title: Files & Modules
+    icon: "📁"
+    layout: list
+    items:
+      - label: stacks/tony-dell/node-red/node-red.container
+        text: Quadlet container definition for the Node-RED service.
+      - label: ~/.local/share/nodered/settings.js
+        text: Runtime settings including httpAdminRoot, httpNodeRoot, and credentialSecret.
+      - label: ~/.config/secrets/nodered-ha.env
+        text: Secret environment file with HASS_TOKEN and NODE_RED_CREDENTIAL_SECRET.
+  - title: Deployment
+    icon: "🚀"
+    layout: list
+    items:
+      - label: Location
+        text: tony-dell; container runs as rootless podman with Quadlet.
+      - label: URLs
+        text: http://tony-dell.taila0626a.ts.net:8080/apps/node-red/ and http://tony-dell:8080/apps/node-red/
+      - label: Registry
+        text: Listed in stacks/web/public/apps/apps.yml and docs/ssot/apps/ssot.apps.yml
+      - label: Branch
+        text: master / chaba-tony-dell
+  - title: Testing
+    icon: "🧪"
+    layout: list
+    items:
+      - label: health check
+        text: curl -s -o /dev/null -w '%{http_code}' http://tony-dell.taila0626a.ts.net:8080/apps/node-red/ should return 200.
+      - label: HA connectivity
+        text: Add a server config node in the editor with Base URL http://tony-dell:8123 and the HASS_TOKEN, then list entities.
+  - title: Integration
+    icon: "🔗"
+    layout: list
+    items:
+      - label: tony-ha
+        text: Connects to the tony-ha Home Assistant instance via websocket and REST using a long-lived access token.
+config:
+  version: 1
+  created: '2026-09-11'
+  maintainer: tony
+  status: active
+  deployment: tony-dell
+  url: 'http://tony-dell.taila0626a.ts.net:8080/apps/node-red/'
