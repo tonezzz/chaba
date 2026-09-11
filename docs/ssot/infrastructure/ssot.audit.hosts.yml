@@ -105,6 +105,12 @@ hosts:
         expected_state: active
         critical: false
         note: Nightly trigger for ssot-optimization-snapshot.service
+      - name: devin-cleanup.timer
+        type: timer
+        scope: user
+        expected_state: active
+        critical: false
+        note: Weekly trigger for devin-cleanup.service; service skips if Devin code.lock is present
     known_failed:
       - name: session-c2.scope
         reason: Transient session scope, no PIDs left to attach
@@ -130,7 +136,7 @@ hosts:
       max_root_disk_percent: 85
       max_load_5m: 8.0
     last_observed:
-      timestamp: '2026-09-11T09:45:00+07:00'
+      timestamp: '2026-09-11T16:06:00+07:00'
       active_user_services:
         - app-devin-desktop-3657048.scope
         - barrier-client.service
