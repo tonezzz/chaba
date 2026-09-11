@@ -13,9 +13,11 @@ Usage:
 
 from __future__ import annotations
 
+import concurrent.futures
 import json
 import re
 import shutil
+import socket
 import subprocess
 import sys
 import xml.etree.ElementTree as ET
@@ -68,6 +70,37 @@ def parse_proc_net_arp() -> dict[str, str]:
             continue
         table[ip] = mac.lower()
     return table
+
+
+def _resolve_one(ip: str) -> str | None:
+    """Reverse-DNS lookup for a single IP."""
+    try:
+        name, _, _ = socket.gethostbyaddr(ip)
+        if name and name != ip:
+            return name
+    except (socket.herror, socket.gaierror, OSError):
+        pass
+    return None
+
+
+def resolve_hostnames(ips: list[str], timeout: float = 5.0) -> dict[str, str | None]:
+    """Return {ip: hostname_or_None} with a global timeout."""
+    results: dict[str, str | None] = {}
+    with concurrent.futures.ThreadPoolExecutor(max_workers=10) as ex:
+        futures = {ex.submit(_resolve_one, ip): ip for ip in ips}
+        done, not_done = concurrent.futures.wait(
+            futures, timeout=timeout, return_when=concurrent.futures.ALL_COMPLETED
+        )
+        for fut in done:
+            ip = futures[fut]
+            try:
+                results[ip] = fut.result(timeout=0)
+            except Exception:
+                results[ip] = None
+        for fut in not_done:
+            results[futures[fut]] = None
+            fut.cancel()
+    return results
 
 
 def run_nmap(cidr: str) -> dict[str, str]:
@@ -128,14 +161,21 @@ def main() -> int:
     arp_hosts = parse_proc_net_arp()
     hosts = merge_hosts(nmap_hosts, arp_hosts)
     now = datetime.now(timezone.utc).isoformat()
+    sorted_ips = sorted(hosts.keys(), key=lambda x: tuple(int(p) for p in x.split(".")))
+    hostnames = resolve_hostnames(sorted_ips)
     scan_doc = {
         "discovered_at": now,
         "network": cidr,
-        "tool": "nmap -sn + /proc/net/arp",
+        "tool": "nmap -sn + /proc/net/arp + reverse DNS",
         "host_count": len(hosts),
         "hosts": [
-            {"ip": ip, "mac": mac or None, "source": "arp" if ip in arp_hosts else "nmap"}
-            for ip, mac in sorted(hosts.items(), key=lambda x: tuple(int(p) for p in x[0].split(".")))
+            {
+                "ip": ip,
+                "mac": hosts[ip] or None,
+                "hostname": hostnames.get(ip) or None,
+                "source": "arp" if ip in arp_hosts else "nmap",
+            }
+            for ip in sorted_ips
         ],
     }
     SCAN_FILE.write_text(json.dumps(scan_doc, indent=2), encoding="utf-8")

@@ -33,7 +33,7 @@ SSOT_PATH = REPO_ROOT / "data" / "ssot" / "infrastructure" / "ssot.ha-devices.ym
 
 INSTANCES = {
     "tony-ha": {
-        "ha_url": "ws://tony-dell:8123/api/websocket",
+        "ha_url": "ws://127.0.0.1:8123/api/websocket",
         "token_file": Path.home() / ".config" / "secrets" / "home-assistant-token.env",
         "token_kind": "env",
     },
@@ -119,21 +119,22 @@ def _table(rows: list[dict]) -> str:
             f'<td>{_type_label(typ)}</td><td>{_status_badge(status)}</td><td>{source}</td><td>{ip_kind}</td>'
             f'<td style="word-break:break-all">{seen}</td></tr>'
         )
-    return (
-        '<table style="width:100%;border-collapse:collapse;table-layout:fixed;font-size:0.85em">\n'
+    table = (
+        '<table style="width:100%;min-width:900px;border-collapse:collapse;table-layout:auto;font-size:0.85em">\n'
         '<thead><tr>\n'
-        '<th style="text-align:left;width:22%">Device</th>\n'
-        '<th style="text-align:left;width:6%">Iface</th>\n'
-        '<th style="text-align:left;width:14%">MAC</th>\n'
-        '<th style="text-align:left;width:11%">IP</th>\n'
-        '<th style="text-align:left;width:7%">Type</th>\n'
-        '<th style="text-align:left;width:7%">Status</th>\n'
-        '<th style="text-align:left;width:8%">Source</th>\n'
-        '<th style="text-align:left;width:7%">IP kind</th>\n'
-        '<th style="text-align:left;width:13%">Seen</th>\n'
+        '<th style="text-align:left;white-space:nowrap">Device</th>\n'
+        '<th style="text-align:left;white-space:nowrap">Iface</th>\n'
+        '<th style="text-align:left;white-space:nowrap">MAC</th>\n'
+        '<th style="text-align:left;white-space:nowrap">IP</th>\n'
+        '<th style="text-align:left;white-space:nowrap">Type</th>\n'
+        '<th style="text-align:left;white-space:nowrap">Status</th>\n'
+        '<th style="text-align:left;white-space:nowrap">Source</th>\n'
+        '<th style="text-align:left;white-space:nowrap">IP kind</th>\n'
+        '<th style="text-align:left;white-space:nowrap">Seen</th>\n'
         '</tr></thead>\n'
         '<tbody>\n' + '\n'.join(trs) + '\n</tbody></table>'
     )
+    return f'<div style="overflow-x:auto">{table}</div>'
 
 
 def _section(title: str, rows: list[dict]) -> str:
@@ -195,6 +196,7 @@ async def build_and_push(instance: str) -> None:
     token = load_token(spec["token_file"], spec["token_kind"])
     ssot = load_yaml(SSOT_PATH)
     view = devices_view_for_instance(instance, ssot)
+    instance_rows = len([d for d in ssot.get("devices", []) if d.get("ha_instance") == instance])
 
     async with websockets.connect(spec["ha_url"]) as ws:
         async def cmd(payload: dict) -> dict:
@@ -242,7 +244,7 @@ async def build_and_push(instance: str) -> None:
         if not resp.get("success"):
             raise RuntimeError(f"Save failed: {resp.get('error')}")
 
-    print(f"Pushed {instance} Devices view ({len(ssot.get('devices', []))} total rows in SSOT)")
+    print(f"Pushed {instance} Devices view ({instance_rows} rows for {instance})")
 
 
 def main() -> None:
