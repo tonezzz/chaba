@@ -1,7 +1,7 @@
 title: IP Camera (VStarcam C7824WIP / ip_cam_65)
 subtitle: Local RTSP H.265 camera proxied through go2rtc on tony-dell
 version: 1
-last_updated: '2026-09-10'
+last_updated: '2026-09-11'
 
 sections:
   - title: Hardware
@@ -187,12 +187,14 @@ sections:
         text: 'Xiaomi P2P via go2rtc xiaomi:// source (no local RTSP on the camera). Each connect needs Internet to fetch encryption keys.'
       - label: go2rtc streams
         text: 'xiaomi_c100 (SD HEVC 848x480+opus), xiaomi_c100_hd (subtype=3 2304x1296), xiaomi_c100_h264, xiaomi_c100_hd_h264 (H.264 transcoded for browsers/TV cast)'
+      - label: Miot
+        text: 'Added via xiaomi_miot host/token (entry 01M2812CNMSTTP9VJ4D0GA7WA5). Token stored in ~/.config/secrets/xiaomi-c100-token.env (from ~/.config/secrets/xiaomi-miot.env).'
       - label: HA entities
-        text: 'camera.xiaomi_c100 (HD via go2rtc), camera.xiaomi_c100_sd; Miot controls pending'
+        text: 'camera.xiaomi_c100 (HD via go2rtc), camera.xiaomi_c100_sd; Miot: switch.chuangmi_077ac1_7d2c_switch_status, sensor.chuangmi_077ac1_7d2c_status, switch.chuangmi_077ac1_7d2c_motion_detection, select.chuangmi_077ac1_7d2c_night_shot, light.chuangmi_077ac1_7d2c_indicator_light (plus storage, watermark, WDR, recording, AI sensitivity controls)'
       - label: Dashboard
-        text: 'lovelace-smart-home.yaml picture card with HD /local/cam/last-xiaomi-c100-frame.jpg thumbnail; tap opens stream.html?src=xiaomi_c100_hd_h264 or casts to TV'
+        text: 'lovelace-smart-home.yaml picture card with HD /local/cam/last-xiaomi-c100-frame.jpg thumbnail; tap opens stream.html?src=xiaomi_c100_hd_h264 or casts to TV. New "Xiaomi C100 Controls" entities card for Miot controls and camera.xiaomi_c100 live stream.'
       - label: Verified
-        text: '2026-09-11: RTSP hevc 848x480+opus and HD 2304x1296 OK; H.264 transcoded streams OK; freeze-frame JPEG generated'
+        text: '2026-09-11: RTSP hevc 848x480+opus and HD 2304x1296 OK; H.264 transcoded streams OK; freeze-frame JPEG generated; Miot integration loaded and controls available'
       - label: Access URLs
         text: 'https://tony-dell.taila0626a.ts.net:8448/stream.html?src=xiaomi_c100_h264 ; rtsp://127.0.0.1:8554/xiaomi_c100{,_hd,_h264} ; http://127.0.0.1:1984/api/frame.jpeg?src=xiaomi_c100'
 
@@ -225,4 +227,6 @@ config:
     - /home/tony/.config/home-assistant/configuration.yaml
     - /home/tony/.config/home-assistant/lovelace-smart-home.yaml
     - /home/tony/.config/secrets/home-assistant-token.env
+    - /home/tony/.config/secrets/xiaomi-miot.env
+    - /home/tony/.config/secrets/xiaomi-c100-token.env
     - /home/tony/CascadeProjects/chaba-tony-dell/docs/ssot/infrastructure/ssot.services.yml
