@@ -112,9 +112,6 @@ hosts:
       - name: obex.service
         reason: No Bluetooth adapter on headless host
         action: ignore-or-mask
-      - name: obex.service
-        reason: No Bluetooth adapter on headless host
-        action: ignore-or-mask
       - name: tony-dell-mcp-health.service
         reason: SSH mcp-health query to tony-omen failed
         action: investigate
@@ -127,6 +124,9 @@ hosts:
       - name: sync-to-hdd.service
         reason: /media/storage/backup not mounted
         action: mount-backup-drive
+      - name: ha-card-snapshot.service
+        reason: Lovelace selector 'sunsynk-power-flow-card' not found/visible at tony-test/pf3
+        action: check-ha-card-and-view
     expected_resources:
       min_free_ram_mb: 500
       max_swap_used_percent: 80

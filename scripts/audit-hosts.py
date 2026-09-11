@@ -265,6 +265,8 @@ def diff_against_ssot(host: str, observed: dict, ssot_path: Path) -> list[str]:
         exp_type = exp.get("type", "service")
         if _is_present(exp_name, exp_type, active_units):
             continue
+        if exp_name in known_failed:
+            continue
         if exp.get("note", "").startswith("Currently disabled"):
             continue
         deltas.append(f"Expected service missing: {exp_name}")
