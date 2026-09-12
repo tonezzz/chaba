@@ -134,6 +134,36 @@ sections:
           Create launchd plists for playlived + Chrome and for redis-macbook via podman so the
           services survive reboot without manual SSH commands.
 
+  - title: Devin sessions.db cleanup on tony-omen (2026-09-12)
+    icon: 🗄️
+    layout: list
+    items:
+      - label: Time-based pruning misses the real bloat
+        text: |
+          sessions.db was 71G but 0 sessions were older than 7 days and only 20 (small) older
+          than 3. ~66G sat in 7 sessions from the last 48h. Before pruning, check per-session
+          size: SELECT s.id, COUNT(m.row_id), SUM(LENGTH(m.chat_message)) FROM sessions s
+          JOIN message_nodes m ON m.session_id=s.id GROUP BY s.id ORDER BY 3 DESC.
+          Targeted session-id deletes may beat retention windows.
+      - label: Corrupt DB breaks mid-prune and hides rows
+        text: |
+          DELETE FROM sessions failed with 'database disk image is malformed' (likely from the
+          Sep 10-11 crash). A damaged index under-counted sessions (156 visible vs 180 real).
+          Fix: rebuild with `sqlite3 sessions.db .recover | sqlite3 sessions-new.db`, prune the
+          clean copy, verify `PRAGMA integrity_check`, then swap files. prune-devin-sessions.sh
+          now runs a quick_check preflight (SKIP_INTEGRITY_CHECK=1 to bypass).
+      - label: .recover notes
+        text: |
+          .recover exits non-zero after hitting the bad page but still writes all salvageable
+          rows — do not trust set -e/pipefail around it; verify the new DB with integrity_check.
+          The 'sqlite_sequence reserved name' parse error in the replay is harmless.
+      - label: Operational details
+        text: |
+          Killed mid-VACUUM leaves a hot -journal file; the next sqlite3 open rolls it back
+          automatically (run a trivial query first). A plain `cp` backup of a WAL-mode DB
+          captures only the main file, not uncheckpointed -wal commits. Final result:
+          sessions.db 71G -> 4.0G, cli dir 65G -> 4.6G, 153 sessions kept, integrity ok.
+
   - title: Future Triggers
     icon: 🔔
     layout: list
@@ -146,7 +176,7 @@ sections:
 
 config:
   version: 1
-  last_updated: 2026-09-11
+  last_updated: 2026-09-12
   maintainer: tony
   related_files:
     - docs/ssot/ssot.improvements.yml
