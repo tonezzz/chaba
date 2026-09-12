@@ -116,14 +116,6 @@ function dockerHealthCheck() {
   return result.success;
 }
 
-function gpuMonitorCheck() {
-  log('=== GPU Monitor Check ===');
-  
-  const result = execCommand('node /home/tony/CascadeProjects/chaba-tony-dell/scripts/gpu-monitor.mjs', 'GPU monitoring check');
-  
-  return result.success;
-}
-
 function hostnameResolutionCheck() {
   log('=== Hostname Resolution Check ===');
   
@@ -213,7 +205,6 @@ function main() {
     logCleanup: logCleanup(),
     diskCheck: diskCheck(),
     dockerHealthCheck: dockerHealthCheck(),
-    gpuMonitorCheck: gpuMonitorCheck(),
     hostnameResolutionCheck: hostnameResolutionCheck()
   };
   

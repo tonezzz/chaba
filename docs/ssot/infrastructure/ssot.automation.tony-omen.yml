@@ -52,20 +52,13 @@ monitoring:
         - gpus
         - processes
     collectors:
-      - script: scripts/gpu-monitor.mjs
-        data_source: http://100.75.102.88:8001/api/gpu/status
-        schedule: "*/5 * * * *"
-        log: data/gpu-monitor/gpu-usage.log
-        alert_log: data/gpu-monitor/gpu-alerts.log
-        thresholds:
-          vram_warning: 80
-          vram_critical: 90
-          temp_warning: 75
-          temp_critical: 85
       - container: chaba-omen-netdata
         url: http://tony-omen.local:8080/apps/netdata/
       - mcp_tool: mcp1_gpu_status
         use_case: on-demand
+      - script: scripts/gpu-monitor.mjs
+        status: retired
+        reason: monitoring-dashboard.mjs is now the single live GPU consumer; kept for reference
 
   dashboard:
     status: active
@@ -73,7 +66,7 @@ monitoring:
     port: 3002
     update_interval: 30s
     data_source: http://100.75.102.88:8001/api/gpu/status
-    note: now consumes sensor-reader /api/gpu/status for GPU data; nvidia-smi remains a local fallback. Consider further consolidating gpu-monitor.mjs and dashboard into one sensor-reader consumer.
+    note: the single live GPU consumer; pulls from sensor-reader /api/gpu/status. nvidia-smi is a local fallback. gpu-monitor.mjs is no longer scheduled.
 
   retired:
     - id: chaba-health-monitor.timer
