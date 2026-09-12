@@ -2041,9 +2041,18 @@
         {
           "title": "G3",
           "path": "g3",
-          "type": "panel",
+          "type": "custom:grid-layout",
           "badges": [],
           "cards": [
+            {
+              "type": "entities",
+              "view_layout": {
+                "grid-area": "selector"
+              },
+              "entities": [
+                "input_select.dev_g3_source"
+              ]
+            },
             {
               "type": "custom:sunsynk-power-flow-card",
               "cardstyle": "pfg",
@@ -2073,7 +2082,8 @@
                     ],
                     "opacity": 1,
                     "view_offset": 40,
-                    "key": "g3"
+                    "key": "g3",
+                    "entity_input": "input_select.dev_g3_source"
                   }
                 ]
               },
@@ -2091,9 +2101,17 @@
               "pfg_border": {
                 "1,1": "2px solid #555"
               },
-              "pfg_transparent": true
+              "pfg_transparent": true,
+              "view_layout": {
+                "grid-area": "chart"
+              }
             }
-          ]
+          ],
+          "layout": {
+            "grid-template-columns": "100%",
+            "grid-template-rows": "auto 1fr",
+            "grid-template-areas": "\"selector\" \"chart\""
+          }
         },
         {
           "title": "TPL",
