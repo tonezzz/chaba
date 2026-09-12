@@ -51,7 +51,7 @@ sections:
       - label: Local dev
         text: npm install in stacks/web/gemini-mic-test, then GEMINI_API_KEY=... node server.mjs
       - label: URLs
-        text: 'http://tony-dell:8080/apps/gemini-mic-test/ and https://chaba.h3.gizmo-thailand.com/apps/gemini-mic-test/ once registered in Caddy'
+        text: 'https://tony-dell.taila0626a.ts.net:8080/apps/gemini-mic-test/ and https://chaba.h3.gizmo-thailand.com/apps/gemini-mic-test/ once the backend is running'
       - label: Registry
         text: Listed in stacks/web/public/apps/apps.yml and docs/ssot/apps/ssot.apps.yml
       - label: Branch
@@ -80,8 +80,8 @@ sections:
         text: Uses createScriptProcessor for quick cross-browser capture; AudioWorklet would be a later production improvement.
       - label: No tool calling
         text: The backend setup contains no function declarations, so Gemini cannot call tools.
-      - label: Caddy routing not configured
-        text: The WebSocket currently uses ws://localhost:3009/ws for local development; a Caddy /api/gemini-mic route is needed for HTTPS deploy.
+      - label: Backend must be started on tony-dell
+        text: The WebSocket uses ws://localhost:3009/ws for local development and /api/gemini-mic/ws for tony-dell deploy. The Caddy route is added; the server.mjs process still needs to be started with GEMINI_API_KEY.
 config:
   version: 1
   created: '2026-09-09'
