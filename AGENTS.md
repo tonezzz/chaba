@@ -99,3 +99,45 @@ Parallel sessions caused real breakage: duplicated `pfg2-card.ts`, undeclared `v
 - Second DVR Cloud/Serial ID to add: `d811d82e21d6c031`.
 - QR files for import: `Z:\\app\\qr\\S__7610372.jpg` and `Z:\\app\\qr\\QR.jpg` inside the VMS (mounted from `/home/tony/.cache/xmeye-vms/vms-runtime/qr/`).
 - Set `autologin=true` in `config.ini` after the saved hash is in place to skip the login prompt on next restart.
+
+## GEV Gemini Live voice deployment
+
+Source and build: `/home/tony/gods-eye-view`
+
+- Build: `npm run build` (requires Vite base `/apps/gev/`).
+- After every build, patch `dist/assets/index-*.js`:
+  - `/api/*` -> `/apps/gev/api/*`
+  - `/models/*` -> `/apps/gev/models/*`
+  - `msaaSamples:4` -> `/iPad|iPhone|iPod/.test(navigator.userAgent)?1:4`
+- Stage to `stacks/web/public/apps/gev/`: `index.html`, `*.svg`, `assets/`, `models/`, `cesium/`.
+
+Infrastructure:
+
+- Caddy serves `/apps/gev/*` from `stacks/web/public/apps/gev/`.
+- GEV API proxy: `gods-eye-view-api` on `127.0.0.1:4173` via Caddy `handle /apps/gev/api/*`.
+- Gemini bridge: `gev-gemini` on `ws://127.0.0.1:8789` proxied to `/apps/gev-live/ws`.
+- Bridge image: `localhost/gev-gemini:latest` built from `stacks/tony-dell/gev-gemini/`.
+- Tool declarations are extracted from `GEV_REALTIME_TOOLS` in `vite.config.js` and written to `stacks/tony-dell/gev-gemini/tools.json`. Gemini Live rejects `additionalProperties` in function-declaration parameters; the bridge strips them recursively.
+
+Voice controller (`src/voice/gevGeminiRealtime.js`):
+
+- Connects to `/apps/gev-live/ws`, captures mic audio as 16kHz PCM mono.
+- The `ScriptProcessorNode` input must pass through a `GainNode` set to `1` while recording and `0` while muted; the recording flag alone is not enough.
+
+Service worker / PWA:
+
+- Shared `/apps/sw.js` cache name is `apps-v6`.
+- All app pages register `/apps/sw.js?v=6` with scope `/apps/`.
+- GEV `index.html` links `/apps/gev/manifest.json`, sets `apple-mobile-web-app-capable=no` for iOS microphone compatibility, and registers the shared service worker.
+
+Test commands:
+
+- Page: `curl -s -o /dev/null -w '%{http_code}' https://tony-dell.taila0626a.ts.net/apps/gev/`
+- WS: `python3 -c "import asyncio, websockets, ssl; ..."` against `wss://tony-dell.taila0626a.ts.net/apps/gev-live/ws`
+- Text tool call cycle: send `{'type':'text','text':...}`, receive `function_call`, respond with `{'type':'tool_response','responses':[{'id':...,'name':...,'response':...}]}`.
+
+Caveats:
+
+- iOS microphone works in Safari, not in standalone home-screen PWA mode.
+- iPad requires `msaaSamples:1` to avoid Cesium WebGL crash.
+- Current implementation uses Gemini output transcription text only; no audio playback.
