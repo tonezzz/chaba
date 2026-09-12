@@ -8,11 +8,11 @@ score:
   branches_ahead_of_master: 3
   worktrees_total: 3
   active_foci: 1
-  ssot_warnings: 13
+  ssot_warnings: 0
   service_errors_last_night: 0
   ci_failures_7d: 0
-  untracked_files: 2
-trend: declining
+  untracked_files: 0
+trend: improving
 pros:
 - label: SSOT-first workflow
   evidence: 197 SSOT files validated on every commit; master now current with HA-MCP, log CI, and merge cadence policy
@@ -33,18 +33,7 @@ cons:
   owner: tony
   status: open
   improvement: Consolidate long-tail branches into master and archive or delete merged branches
-- label: SSOT quality regression
-  severity: high
-  evidence: 13 SSOT optimization warning(s)
-  owner: tony
-  status: open
-  improvement: Fix SSOT bloat, data-isolation, or log-reference warnings
-- label: Uncommitted working tree
-  severity: medium
-  evidence: 2 untracked or modified file(s)
-  owner: tony
-  status: open
-  improvement: Commit or .gitignore outstanding changes before the next session
+
 improvements:
 - label: SSOT quality regression resolved
   source: dev-system.assessment
