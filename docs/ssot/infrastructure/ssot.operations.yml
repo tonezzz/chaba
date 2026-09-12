@@ -354,6 +354,10 @@ host_notes:
       - >-
         systemd units: barriers.service (user), cpufreq-limit.service (system),
         weaviate-index.timer, arp-inventory-scan.timer.
+      - >-
+        Verify CPU frequency cap: `cpupower frequency-info` reports a 2.20 GHz
+        upper limit and `cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq`
+        returns 2200000. If the cap is wrong, restart `cpufreq-limit.service`.
       - sensor-reader container on :8001, Google Drive mount, Ollama, GPU Queue.
       - Re-run mcp-health; expect intentionally-off services to stay off.
       - >-
