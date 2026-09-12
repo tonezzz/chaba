@@ -53,6 +53,7 @@ monitoring:
         - processes
     collectors:
       - script: scripts/gpu-monitor.mjs
+        data_source: http://100.75.102.88:8001/api/gpu/status
         schedule: "*/5 * * * *"
         log: data/gpu-monitor/gpu-usage.log
         alert_log: data/gpu-monitor/gpu-alerts.log
@@ -71,7 +72,8 @@ monitoring:
     service: chaba-monitoring-dashboard.service
     port: 3002
     update_interval: 30s
-    note: currently calls nvidia-smi and service endpoints; should migrate to sensor-reader endpoints
+    data_source: http://100.75.102.88:8001/api/gpu/status
+    note: now consumes sensor-reader /api/gpu/status for GPU data; nvidia-smi remains a local fallback. Consider further consolidating gpu-monitor.mjs and dashboard into one sensor-reader consumer.
 
   retired:
     - id: chaba-health-monitor.timer

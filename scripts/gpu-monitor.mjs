@@ -26,20 +26,30 @@ function execCommand(command) {
 }
 
 function getGPUStatus() {
-  const nvidiaSmi = execCommand('nvidia-smi --query-gpu=memory.used,memory.total,utilization.gpu,temperature.gpu --format=csv,noheader,nounits');
-  if (!nvidiaSmi) return null;
+  const raw = execCommand('curl -s --connect-timeout 3 http://100.75.102.88:8001/api/gpu/status');
+  if (!raw) return null;
 
-  const [memoryUsed, memoryTotal, utilization, temperature] = nvidiaSmi.split(',').map(v => parseInt(v.trim()));
-  const memoryPercent = Math.round((memoryUsed / memoryTotal) * 100);
+  try {
+    const data = JSON.parse(raw);
+    const gpu = data.gpus?.[0];
+    if (!gpu) return null;
 
-  return {
-    memoryUsed,
-    memoryTotal,
-    memoryPercent,
-    utilization,
-    temperature,
-    timestamp: new Date().toISOString()
-  };
+    const memoryUsed = gpu.memory_used_mb;
+    const memoryTotal = gpu.memory_total_mb;
+    const memoryPercent = Math.round((memoryUsed / memoryTotal) * 100);
+
+    return {
+      memoryUsed,
+      memoryTotal,
+      memoryPercent,
+      utilization: gpu.utilization_percent,
+      temperature: gpu.temperature_c,
+      timestamp: new Date().toISOString()
+    };
+  } catch (error) {
+    console.error('Failed to parse sensor-reader GPU status:', error.message);
+    return null;
+  }
 }
 
 function logGPUStatus(status) {
