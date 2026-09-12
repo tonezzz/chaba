@@ -53,6 +53,7 @@
     let micStream = null;
     let micCtx = null;
     let processor = null;
+    let gain = null;
     let recordedChunks = [];
     let isRecording = false;
     let isInitializing = false;
@@ -123,6 +124,7 @@
         }
         if (micCtx.state === 'suspended') await micCtx.resume();
         isRecording = true;
+        if (gain) gain.gain.value = 1;
         ptt.classList.add('recording');
         ptt.textContent = 'Release to send';
         showMsg('Recording... release to send', 'info');
@@ -138,6 +140,7 @@
         await new Promise(r => setTimeout(r, 400));
       }
       isRecording = false;
+      if (gain) gain.gain.value = 0;
       ptt.classList.remove('recording');
       ptt.textContent = 'Hold to talk';
       if (!micCtx) {
@@ -167,7 +170,7 @@
           micCtx = new (window.AudioContext || window.webkitAudioContext)();
         }
         const src = micCtx.createMediaStreamSource(micStream);
-        const gain = micCtx.createGain();
+        gain = micCtx.createGain();
         gain.gain.value = 0;
         processor = micCtx.createScriptProcessor(4096, 1, 1);
         processor.onaudioprocess = (ev) => {
