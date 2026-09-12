@@ -267,11 +267,7 @@ template:
       unit_of_measurement: "W"
       state_class: measurement
       device_class: power
-    - name: inverters_1_pv_power
-      state: "{{ (states('input_number.dev_pv1_power') | float(4500) + states('input_number.dev_pv2_power') | float(3200)) }}"
-      unit_of_measurement: "W"
-      state_class: measurement
-      device_class: power
+
     - name: inverters_1_inverter_mode
       state: "{{ states('input_select.dev_inverter_mode') }}"
     - name: inverters_1_battery_direction
@@ -1099,6 +1095,18 @@ rest:
       - name: terrace_switch_switch_2
         unique_id: mha_mirror_terrace_switch_switch_2
         value_template: "{{ value_json.state }}"
+
+  - resource: http://michael-ha:8123/api/states/sensor.inverters_1_pv_power
+    headers:
+      Authorization: !secret michael_ha_auth
+    scan_interval: 30
+    sensor:
+      - name: inverters_1_pv_power
+        unique_id: mha_mirror_inverters_1_pv_power
+        value_template: "{{ value_json.state }}"
+        unit_of_measurement: "W"
+        device_class: power
+        state_class: measurement
 
 # Generic service relay to michael-ha — lets dev template switches
 # actually toggle the live entity. Read-only mirrors stay read-only;
