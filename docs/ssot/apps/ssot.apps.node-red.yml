@@ -39,7 +39,7 @@ sections:
       - label: Location
         text: tony-dell; container runs as rootless podman with Quadlet.
       - label: URLs
-        text: http://tony-dell.taila0626a.ts.net:8080/apps/node-red/ and http://tony-dell:8080/apps/node-red/
+        text: https://tony-dell.taila0626a.ts.net/apps/node-red/ and https://tony-dell.taila0626a.ts.net/apps/node-red/
       - label: Registry
         text: Listed in stacks/web/public/apps/apps.yml and docs/ssot/apps/ssot.apps.yml
       - label: Branch
@@ -49,7 +49,7 @@ sections:
     layout: list
     items:
       - label: health check
-        text: curl -s -o /dev/null -w '%{http_code}' http://tony-dell.taila0626a.ts.net:8080/apps/node-red/ should return 200.
+        text: curl -s -o /dev/null -w '%{http_code}' https://tony-dell.taila0626a.ts.net/apps/node-red/ should return 200.
       - label: HA connectivity
         text: Add a server config node in the editor with Base URL http://tony-dell:8123 and the HASS_TOKEN, then list entities.
   - title: Integration
@@ -64,4 +64,4 @@ config:
   maintainer: tony
   status: active
   deployment: tony-dell
-  url: 'http://tony-dell.taila0626a.ts.net:8080/apps/node-red/'
+  url: 'https://tony-dell.taila0626a.ts.net/apps/node-red/'

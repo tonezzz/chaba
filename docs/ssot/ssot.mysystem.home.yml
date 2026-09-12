@@ -147,7 +147,7 @@ sections:
     layout: list
     items:
       - label: Public HTTPS endpoint
-        text: https://tony-dell.taila0626a.ts.net:8080/ (Tailscale terminates TLS and proxies to local Caddy)
+        text: https://tony-dell.taila0626a.ts.net/ (Tailscale terminates TLS and proxies to local Caddy)
       - label: Tailscale serve
         text: tailscaled owns 100.68.142.13:8080 and forwards HTTP to the Caddy backend
       - label: Tailscale serve unit
@@ -165,7 +165,7 @@ sections:
       - label: Port conflict warning
         text: Do not let Caddy bind 0.0.0.0:8080 or tailscale will not be able to serve; do not point tailscale-serve-8080 to 127.0.0.1:8082 (that is tailscale-connections-server.py, not Caddy)
       - label: Check
-        text: "curl -s -o /dev/null -w %{http_code} https://tony-dell.taila0626a.ts.net:8080/apps/tony-live/ should return 200"
+        text: "curl -s -o /dev/null -w %{http_code} https://tony-dell.taila0626a.ts.net/apps/tony-live/ should return 200"
 
   - title: Services (tony-omen)
     icon: ⚙️
@@ -194,7 +194,7 @@ sections:
     items:
       - label: Apps Server
         text: Testing apps server on port 8080
-        url: http://tony-dell:8080
+        url: https://tony-dell.taila0626a.ts.net
 
   - title: Available Apps
     icon: 📱
@@ -218,7 +218,7 @@ sections:
       - label: Apps (tony-omen)
         text: http://tony-omen:8080/apps
       - label: Apps (tony-dell)
-        text: http://tony-dell:8080/apps
+        text: https://tony-dell.taila0626a.ts.net/apps
       - label: Chaba-h3 Preview
         text: http://tony-omen:8081/apps
       - label: Llama Router API
