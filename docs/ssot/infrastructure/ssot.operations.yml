@@ -358,6 +358,10 @@ host_notes:
         Verify CPU frequency cap: `cpupower frequency-info` reports a 2.20 GHz
         upper limit and `cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq`
         returns 2200000. If the cap is wrong, restart `cpufreq-limit.service`.
+      - >-
+        Verify monitoring data sources: `curl -s -o /dev/null -w '%{http_code}'
+        http://100.75.102.88:8001/health` returns 200 and `http://100.75.102.88:8001/api/sensors`
+        returns valid JSON with `host.temperatures` and `host.cpu_freq`.
       - sensor-reader container on :8001, Google Drive mount, Ollama, GPU Queue.
       - Re-run mcp-health; expect intentionally-off services to stay off.
       - >-

@@ -638,8 +638,8 @@ tony-omen:
       - /sys/devices/platform/hp-wmi
       - /sys/devices/system/cpu/intel_pstate
     health_check: 'ssh tony-omen curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:8001/health'
-    status: 'health check added; container currently stopped (2026-08-27)'
-    note: Extracted from the old status-api; provides hardware sensors, GPU, and Docker container data to the data API.
+    status: active
+    note: Running on tony-omen port 8001. Provides hardware sensors, CPU/GPU status, Docker container data, and fan/turbo control via /api/sensors.
 
 michael:
   home-assistant:
