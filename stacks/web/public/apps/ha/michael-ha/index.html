@@ -1,15 +1,34 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang='en'>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Michael HA Devices</title>
-    <link rel="stylesheet" href="../styles.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js"></script>
-    <script>window.HA_INSTANCE = 'michael-ha';</script>
+  <meta charset='UTF-8'>
+  <meta name='viewport' content='width=device-width, initial-scale=1.0, viewport-fit=cover'>
+  <meta name='theme-color' content='#0e1117'>
+  <title>Michael HA</title>
+  <link rel='stylesheet' href='../styles.css'>
+  <style>
+    .links { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; padding: 1.5rem; max-width: 900px; margin: 0 auto; align-content: start; min-height: 100vh; }
+    .ha-button { display: flex; flex-direction: column; gap: .5rem; padding: 2rem; background: var(--panel); border: 1px solid var(--border); border-radius: 12px; text-decoration: none; color: var(--text); text-align: center; justify-content: center; min-height: 160px; transition: border-color .15s, transform .1s; }
+    .ha-button:hover { border-color: var(--accent); transform: translateY(-2px); }
+    .ha-button .label { font-size: 1.4rem; font-weight: 600; color: var(--accent); }
+    .ha-button .url  { font-size: .8rem; color: var(--muted); word-break: break-all; }
+    @media (max-width: 640px) { .links { grid-template-columns: 1fr; } }
+  </style>
 </head>
 <body>
-    <div id="app"></div>
-    <script src="../ha-common.js?v=1"></script>
+  <header>
+    <h1>Michael HA</h1>
+    <p>Choose the path that works for your network</p>
+  </header>
+  <main class='links'>
+    <a class='ha-button' href='http://michael-ha:8123/'>
+      <span class='label'>Tailnet</span>
+      <span class='url'>michael-ha:8123</span>
+    </a>
+    <a class='ha-button' href='https://nupo4ndqdqydt78zmpq0z5wzp1bdrqgs.ui.nabu.casa/'>
+      <span class='label'>Nabu Casa</span>
+      <span class='url'>nupo4ndqdqydt78zmpq0z5wzp1bdrqgs.ui.nabu.casa</span>
+    </a>
+  </main>
 </body>
 </html>
