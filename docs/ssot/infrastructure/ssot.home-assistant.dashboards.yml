@@ -26,8 +26,10 @@ instances:
     repo_snapshot: docs/home-assistant/dashboards/michael-ha-tony-test-current.json
     note: >-
       The live michael-ha tony-test dashboard. 2026-09-13: Cast tab added (path cast)
-      with iframe to desktop-caster and the LG TV discovered on mn-home.
-      2026-09-08: PFG2 tab removed; current layout is
+      with iframe to desktop-caster and the LG TV discovered on mn-home, plus a
+      2x2 grid of picture-entity cards for tony-dell virtual desktops 1-4
+      (image.workspace_1..4) that call rest_command.tv_action to cast
+      screenlive:workspace:N. 2026-09-08: PFG2 tab removed; current layout is
       V0/V1/SK/TPL/juWorkshop/Solar Assistant/glass/Weather/Cast.
 
 tabs:
@@ -128,7 +130,10 @@ tabs:
     - order: 9
       title: Cast
       path: cast
-      note: LG webOS TV destination on mn-home (192.168.1.129) with an iframe to the desktop-caster page.
+      note: >-
+        LG webOS TV destination on mn-home (192.168.1.129) with an iframe to the
+        desktop-caster page, plus picture-entity cards for virtual desktops 1-4
+        that trigger rest_command.tv_action (screenlive:workspace:N) on tony-dell.
       test_url: https://nupo4ndqdqydt78zmpq0z5wzp1bdrqgs.ui.nabu.casa/tony-test/cast
 
 manual_steps:
@@ -145,4 +150,4 @@ manual_steps:
 status:
   last_updated: '2026-09-13'
   last_verified: '2026-09-13'
-  health: active; G1 on both hosts (dev v171 / ha v161, same md5 b404aab0) — surface3d PV chart on sensor.inverters_1_pv_power, vendored echarts libs in /local; Cast tab promoted from dev to live michael-ha tony-test; PF3/PF4/PFG/PFG1/PFG2 removed
+  health: active; G1 on both hosts (dev v171 / ha v161, same md5 b404aab0) — surface3d PV chart on sensor.inverters_1_pv_power, vendored echarts libs in /local; Cast tab promoted from dev to live michael-ha tony-test and now shows virtual desktop 1-4 picture-entity cards; PF3/PF4/PFG/PFG1/PFG2 removed
