@@ -1,0 +1,58 @@
+title: Ada Pi
+subtitle: iPad/iPhone PWA for full-duplex Gemini Live voice with Ada
+icon: 🤖
+sections:
+  - title: Core Features
+    icon: "✅"
+    layout: list
+    items:
+      - label: iPad/iPhone PWA
+        text: Responsive full-screen Progressive Web App with PWA manifest, animated Ada face, and touch controls.
+      - label: Full-duplex Gemini Live voice
+        text: Captures microphone audio at 16 kHz, streams PCM16 to the backend, and plays 24 kHz Gemini audio responses.
+      - label: Server-side credentials
+        text: Gemini API key and optional Home Assistant token stay on the server, not in the browser.
+  - title: Technical Architecture
+    icon: "⚙️"
+    layout: list
+    items:
+      - label: chaba/stacks/web/public/apps/ada-pi/
+        text: Static PWA files (index.html, app.js, manifest.json, static assets).
+      - label: chaba/stacks/web/Caddyfile.tony-omen
+        text: Caddy vhost for tony-omen exposing /apps/ada_pi/ on port 8082.
+      - label: /home/tony/CascadeProjects/ada-pi/pwa_server.py
+        text: FastAPI backend that re-uses backend/realtime_provider for Gemini Live.
+      - label: /home/tony/.config/systemd/user/ada-pi-pwa.service
+        text: User systemd unit running uvicorn on port 8000.
+      - label: /home/tony/.config/systemd/user/caddy-tony-omen.service
+        text: User systemd unit running Caddy with Caddyfile.tony-omen.
+  - title: Deployment
+    icon: "🚀"
+    layout: list
+    items:
+      - label: URL
+        text: 'https://tony-omen.taila0626a.ts.net/apps/ada_pi/'
+      - label: Tailscale
+        text: 'tony-omen.taila0626a.ts.net:443 is served by tailscale serve and proxies to the Caddy on 127.0.0.1:8082.'
+      - label: Registry
+        text: Listed in docs/ssot/apps/ssot.apps.yml.
+  - title: Testing
+    icon: "🧪"
+    layout: list
+    items:
+      - label: end-to-end
+        text: Open https://tony-omen.taila0626a.ts.net/apps/ada_pi/ on iPad/iPhone, tap Connect, and speak.
+  - title: Known Issues
+    icon: "⚠️"
+    layout: list
+    items:
+      - label: TCP 3009 dropped
+        text: The tailscale 443 reset removed the previous TCP 3009 listener; it can be re-added if still needed.
+      - label: rview not migrated
+        text: The old /apps/rview 443 mapping is gone; rview can be fixed separately later.
+config:
+  version: 1
+  created: '2026-09-12'
+  maintainer: tony
+  status: experimental
+  deployment: tony-omen
