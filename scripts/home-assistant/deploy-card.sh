@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Build + deploy the forked sunsynk-power-flow-card.
+# Build + deploy the forked pfg3d-card.
 # Usage: deploy-card.sh [--host michael-dev|michael-ha]   (default michael-dev)
 #        deploy-card.sh --host all                        (both hosts)
 #        deploy-card.sh --check                           (md5 parity report)
@@ -15,14 +15,15 @@ exec 9>"$LOCK"
 flock -n 9 || { echo "ERROR: another deploy is in progress ($LOCK)"; exit 1; }
 
 CARD_REPO="${CARD_REPO:-/home/tony/CascadeProjects/sunsynk-power-flow-card}"
-BASE="sunsynk-power-flow-card-fork"
+BASE="pfg3d-card"
+OLD_BASE="sunsynk-power-flow-card-fork"
 
 TARGET="michael-dev"
 [ "${1:-}" = "--host" ] && TARGET="$2"
 
 # --check: compare local dist md5 vs each host's ACTIVE bundle (no build/deploy)
 if [ "${1:-}" = "--check" ]; then
-  LOCAL_MD5=$(md5sum "$CARD_REPO/dist/sunsynk-power-flow-card.js" | cut -d' ' -f1)
+  LOCAL_MD5=$(md5sum "$CARD_REPO/dist/pfg3d-card.js" | cut -d' ' -f1)
   for host in michael-dev michael-ha; do
     case "$host" in
       michael-dev) SSH=tony-dell; RES=/home/tony/.config/michael-dev/.storage/lovelace_resources; WWW=/home/tony/.config/michael-dev/www ;;
@@ -75,6 +76,9 @@ deploy_to() {
     *) echo "unknown host $host" >&2; return 1 ;;
   esac
 
+  # Migrate old sunsynk-power-flow-card-fork resource entry to pfg3d-card.
+  ssh "$SSH" "if grep -q '${OLD_BASE}-v[0-9]*\.js' '$RES' 2>/dev/null; then sed -i -E 's|${OLD_BASE}-v([0-9]+)\.js|${BASE}-v\1.js|g' '$RES'; fi" || true
+
   local cur next file code i
   cur=$(ssh "$SSH" "grep -o '${BASE}-v[0-9]*' '$RES' | head -1 | grep -o '[0-9]*$'")
   [ -n "$cur" ] || { echo "ERROR: no existing ${BASE}-vN resource on $host:$RES"; return 1; }
@@ -82,7 +86,7 @@ deploy_to() {
   file="${BASE}-v${next}.js"
   echo "[$host] current: v$cur -> deploying v$next"
 
-  scp "dist/sunsynk-power-flow-card.js" "$SSH:$WWW/$file"
+  scp "dist/pfg3d-card.js" "$SSH:$WWW/$file"
   ssh "$SSH" "sed -i 's|${BASE}-v[0-9]*\.js|${file}|g' '$RES' && $RESTART"
 
   echo -n "[$host] waiting for HA..."
@@ -95,7 +99,7 @@ deploy_to() {
   echo " ${code:-timeout}"
   [ "$code" = "200" ] || { echo "ERROR: bundle not served on $host"; return 1; }
   local local_md5 remote_md5
-  local_md5=$(md5sum dist/sunsynk-power-flow-card.js | cut -d' ' -f1)
+  local_md5=$(md5sum dist/pfg3d-card.js | cut -d' ' -f1)
   remote_md5=$(ssh "$SSH" "md5sum '$WWW/$file'" | cut -d' ' -f1)
   [ "$remote_md5" = "$local_md5" ] && echo "[$host] md5 verified ($local_md5)" || echo "[$host] WARNING: md5 mismatch ($remote_md5 vs $local_md5)"
   echo "[$host] deployed /local/$file"

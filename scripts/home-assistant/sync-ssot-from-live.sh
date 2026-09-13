@@ -23,16 +23,16 @@ echo " -> ${DASHBOARD_LOCAL}"
 echo "Determining active card bundle version..."
 RESOURCES_REMOTE=${DEV_CONFIG}/.storage/lovelace_resources
 
-ACTIVE_URL=$(ssh "${HOST}" "cat ${RESOURCES_REMOTE}" | python3 -c "import sys,json; d=json.load(sys.stdin); items=[i for i in d.get('data',{}).get('items',[]) if 'sunsynk-power-flow-card-fork' in i.get('url','')]; print(items[0]['url'] if items else '')" || true)
+ACTIVE_URL=$(ssh "${HOST}" "cat ${RESOURCES_REMOTE}" | python3 -c "import sys,json; d=json.load(sys.stdin); items=[i for i in d.get('data',{}).get('items',[]) if 'pfg3d-card' in i.get('url','')]; print(items[0]['url'] if items else '')" || true)
 ACTIVE_VERSION=""
 if [[ -n "${ACTIVE_URL}" ]]; then
-    ACTIVE_VERSION=$(python3 -c "import re,sys; m=re.search(r'sunsynk-power-flow-card-fork-v(\d+)\.js', sys.argv[1]); print(m.group(1) if m else '')" "${ACTIVE_URL}")
+    ACTIVE_VERSION=$(python3 -c "import re,sys; m=re.search(r'pfg3d-card-v(\d+)\.js', sys.argv[1]); print(m.group(1) if m else '')" "${ACTIVE_URL}")
 fi
 
-LATEST_BUNDLE=$(ssh "${HOST}" "ls -1 ${WWW_REMOTE}/sunsynk-power-flow-card-fork-v*.js 2>/dev/null | sort -V | tail -n1" || true)
+LATEST_BUNDLE=$(ssh "${HOST}" "ls -1 ${WWW_REMOTE}/pfg3d-card-v*.js 2>/dev/null | sort -V | tail -n1" || true)
 LATEST_VERSION=""
 if [[ -n "${LATEST_BUNDLE}" ]]; then
-    LATEST_VERSION=$(basename "${LATEST_BUNDLE}" .js | sed 's/sunsynk-power-flow-card-fork-v//')
+    LATEST_VERSION=$(basename "${LATEST_BUNDLE}" .js | sed 's/pfg3d-card-v//')
 fi
 
 if [[ -n "${ACTIVE_VERSION}" ]]; then
@@ -41,7 +41,7 @@ if [[ -n "${ACTIVE_VERSION}" ]]; then
         echo " -> warning: active resource v${ACTIVE_VERSION} differs from newest www bundle v${LATEST_VERSION}"
         echo "              (check lovelace_resources and www/ for drift)"
     fi
-    if ! ssh "${HOST}" "test -f ${WWW_REMOTE}/sunsynk-power-flow-card-fork-v${VERSION}.js"; then
+    if ! ssh "${HOST}" "test -f ${WWW_REMOTE}/pfg3d-card-v${VERSION}.js"; then
         echo " -> error: active resource points to missing bundle v${VERSION} in ${WWW_REMOTE}"
         exit 1
     fi
@@ -59,7 +59,7 @@ import re
 with open("${CARDS_SSOT}", "r") as f:
     text = f.read()
 text = re.sub(r"^((?:[ \t]*).bundle_version:)[ \t]*\d+.*$", r"\1 ${VERSION}", text, flags=re.MULTILINE)
-text = re.sub(r"(sunsynk-power-flow-card-fork-)v\d+(\.js)", r"\1v${VERSION}\2", text)
+text = re.sub(r"(pfg3d-card-)v\d+(\.js)", r"\1v${VERSION}\2", text)
 with open("${CARDS_SSOT}", "w") as f:
     f.write(text)
 PY

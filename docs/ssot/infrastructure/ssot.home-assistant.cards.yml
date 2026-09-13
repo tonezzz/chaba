@@ -1,31 +1,31 @@
 title: Home Assistant Custom Cards
-subtitle: Build, deploy, source, and design context for the forked sunsynk-power-flow-card and related custom cards
+subtitle: Build, deploy, source, and design context for the forked pfg3d-card and related custom cards
 
 repositories:
-  sunsynk-power-flow-card-fork:
+  pfg3d-card:
     path: /home/tony/CascadeProjects/sunsynk-power-flow-card
     fork_of: slhub/sunsynk-power-flow-card
     current_commit: 6962e63
     package_version: 7.3.3
-    bundle_version: 235
+    bundle_version: 236
     build:
       command: npm run build
       tool: rollup -c --bundleConfigAsCjs
-      output: dist/sunsynk-power-flow-card.js
+      output: dist/pfg3d-card.js
     deploy:
       michael-dev:
         target_host: ssot.values.yml::hosts.tony_dell
-        target_path: /home/tony/.config/michael-dev/www/sunsynk-power-flow-card-fork-v235.js
+        target_path: /home/tony/.config/michael-dev/www/pfg3d-card-v236.js
         lovelace_resources: /home/tony/.config/michael-dev/.storage/lovelace_resources
-        resource_path: /local/sunsynk-power-flow-card-fork-v235.js
+        resource_path: /local/pfg3d-card-v236.js
         restart: systemctl --user restart michael-dev.service
         service_ref: infrastructure/ssot.services.yml#tony-dell.michael-dev.quadlet.service_unit
         test_url: https://tony-dell.taila0626a.ts.net:8124/tony-test/pf4
       michael-ha:
         target_host: ssot.values.yml::hosts.michael_ha
-        target_path: /config/www/sunsynk-power-flow-card-fork-v235.js
+        target_path: /config/www/pfg3d-card-v236.js
         lovelace_resources: /config/.storage/lovelace_resources
-        resource_path: /local/sunsynk-power-flow-card-fork-v235.js
+        resource_path: /local/pfg3d-card-v236.js
         restart: ha core restart
         test_url: https://nupo4ndqdqydt78zmpq0z5wzp1bdrqgs.ui.nabu.casa/tony-test/pf3
         note: >-
@@ -38,9 +38,9 @@ repositories:
           now enabled. Fallback: cdn.jsdelivr.net/gh/tonezzz/sunsynk-power-flow-card@<commit>/dist/...
       tony-ha:
         target_host: ssot.values.yml::hosts.tony_dell
-        target_path: /home/tony/.config/home-assistant/www/sunsynk-power-flow-card-fork-v235.js
+        target_path: /home/tony/.config/home-assistant/www/pfg3d-card-v236.js
         lovelace_resources: /home/tony/.config/home-assistant/.storage/lovelace_resources
-        resource_path: /local/sunsynk-power-flow-card-fork-v235.js
+        resource_path: /local/pfg3d-card-v236.js
         restart: systemctl --user restart tony-ha.service
         test_url: http://tony-dell:8123/
     source_files:
@@ -57,7 +57,7 @@ repositories:
         - src/cards/pfg/charts/bar3d.ts
         - src/cards/pfg/charts/pfg3d-loader.ts
         - src/cards/pfg/charts/pfg3d-chart.ts
-        - dist/sunsynk-power-flow-card.js
+        - dist/pfg3d-card.js
       new_untracked:
         - src/cards/ss2-card.ts
         - src/cards/ss3-card.ts
@@ -109,11 +109,11 @@ repositories:
           - tap_action: open more-info for the camera entity, or a go2rtc stream.html / stream.m3u8 URL for live viewing.
 
 cards:
-  - id: sunsynk-power-flow-card
-    name: Sunsynk Power Flow Card (fork)
-    repo_ref: repositories.sunsynk-power-flow-card-fork
-    bundle_version: 235
-    deployed_as: '/local/sunsynk-power-flow-card-fork-v235.js on michael-dev (md5 a41d5fd9ab4185edcfa111f1f80c597c); /local/sunsynk-power-flow-card-fork-v235.js on michael-ha and tony-ha (md5 c51253bb28b0aaaa12d9fe128e8b4425)'
+  - id: pfg3d-card
+    name: PFG3D Card
+    repo_ref: repositories.pfg3d-card
+    bundle_version: 236
+    deployed_as: '/local/pfg3d-card-v236.js on michael-dev (md5 a41d5fd9ab4185edcfa111f1f80c597c); /local/pfg3d-card-v236.js on michael-ha and tony-ha (md5 c51253bb28b0aaaa12d9fe128e8b4425)'
     dashboards:
       - id: tony-test/v0
         tab: V0
