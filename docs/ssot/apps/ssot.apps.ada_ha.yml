@@ -1,0 +1,90 @@
+title: Ada HA
+subtitle: iPad/iPhone PWA for full-duplex Gemini Live voice with Home Assistant integration
+icon: 🏠
+sections:
+  - title: Core Features
+    icon: "✅"
+    layout: list
+    items:
+      - label: iPad/iPhone PWA
+        text: Same voice PWA as Ada Pi but running with Home Assistant token for entity/control testing.
+      - label: Home Assistant integration
+        text: backend/home_assistant.py connects to tony-ha using HOME_ASSISTANT_TOKEN.
+      - label: Isolated dev instance
+        text: Runs on port 8002 with its own systemd unit, separate from production /apps/ada_pi.
+  - title: Technical Architecture
+    icon: "⚙️"
+    layout: list
+    items:
+      - label: /home/tony/CascadeProjects/ada-pi/pwa_server.py
+        text: Shared FastAPI backend with the Ada Pi app.
+      - label: /home/tony/.config/systemd/user/ada-ha-pwa.service
+        text: User systemd unit on tony-dell running uvicorn on port 8002.
+      - label: /home/tony/.config/secrets/ada-ha-pwa.env
+        text: GEMINI_API_KEY, HOME_ASSISTANT_TOKEN (from home-assistant-token.env), HOME_ASSISTANT_URL, HOME_ASSISTANT_PERSON, and HOME_ASSISTANT_HOME_PLUGS.
+      - label: /home/tony/.config/caddy/Caddyfile.tony-dell
+        text: Caddy handles /apps/ada_ha/* on the same 8085 vhost as /apps/ada_pi.
+  - title: Deployment
+    icon: "🚀"
+    layout: list
+    items:
+      - label: tony instance
+        text: 'https://tony-dell.taila0626a.ts.net/apps/ada_ha_tony/'
+      - label: michael instance
+        text: 'https://tony-dell.taila0626a.ts.net/apps/ada_ha_michael/'
+      - label: Caddy routing
+        text: 'tony on 127.0.0.1:8002, michael on 127.0.0.1:8003'
+      - label: Registry
+        text: Listed as ada-ha-tony and ada-ha-michael in docs/ssot/apps/ssot.apps.yml.
+  - title: Navigation
+    icon: "🗺️"
+    layout: list
+    items:
+      - label: /apps/ha/
+        text: Landing page with links to both Ada HA Tony and Michael instances.
+      - label: /apps/
+        text: App directory for tony-dell with links to HA, RView, and other apps.
+  - title: Testing
+    icon: "🧪"
+    layout: list
+    items:
+      - label: end-to-end
+        text: Open /apps/ada_ha_tony/ or /apps/ada_ha_michael/, tap Connect, and test /api/home-assistant/entities/ + entity power toggles.
+  - title: Known Issues
+    icon: "⚠️"
+    layout: list
+    items:
+      - label: Shared repo
+        text: Both /apps/ada_pi and /apps/ada_ha use the same ada-pi code; changes affect both unless managed.
+      - label: One Home Assistant instance
+        text: Both point to the same tony-ha; still isolated from the Gemini side.
+  - title: Development Roadmap
+    icon: "🛣️"
+    layout: list
+    items:
+      - label: Env tuning
+        text: Set HOME_ASSISTANT_HOME_LIGHTS and HOME_ASSISTANT_PERSON in ~/.config/secrets/ada-ha-pwa.env for real get_home_state results.
+      - label: Light dimming
+        text: Add set_light tool for brightness_pct and color_temp_kelvin.
+      - label: Generic state/service tools
+        text: Add get_state(entity_id) and call_service(domain, service, entity_id).
+      - label: PWA entity panel
+        text: Add a scrollable entity list with on/off toggles in the PWA UI.
+      - label: Function result log
+        text: Display last function call result in the PWA log.
+      - label: HA WebSocket
+        text: Subscribe to state_changed events instead of REST polling.
+      - label: Domain-specific tools
+        text: Split control_entity into turn_on_off, set_light, set_climate, set_media_player, run_scene.
+      - label: Room aliases
+        text: Map aliases like bedroom, office, desk to entity lists for natural commands.
+      - label: Confirmation gate
+        text: Make Gemini confirm before locks, covers, or critical switches.
+      - label: Conversation memory
+        text: Persist last 10 voice turns for context.
+config:
+  version: 1
+  created: '2026-09-13'
+  maintainer: tony
+  status: experimental
+  deployment: tony-dell

@@ -99,3 +99,97 @@ Parallel sessions caused real breakage: duplicated `pfg2-card.ts`, undeclared `v
 - New `/local/` assets may 404 in cached browsers while curl returns 200 — bump the reference `?v=N` in the config (runbook: `stale_local_asset_404` in howto SSOT).
 - `apply-tpl.py` gained `--bg` (forces copied charts to `position: "bg"`).
 - Dashboard snapshot is `docs/home-assistant/dashboards/tony-test-current.json`.
+
+# Devin on tony-dell — crash/runbook (2026-09-12)
+
+## Restart after a crash
+
+`devin-desktop` must be launched with the active X display on tony-dell. The process is *not* a systemd service; it is started as a background `nohup` job and shows up in `pgrep -a -f devin-desktop`.
+
+Quick restart command:
+
+```bash
+ssh tony-dell 'export DISPLAY=:1 XAUTHORITY=/run/user/1000/gdm/Xauthority; nohup /usr/bin/devin-desktop > /home/tony/.local/share/devin/cli/devin-restart-20260912.log 2>&1 </dev/null &'
+```
+
+Verify:
+
+```bash
+ssh tony-dell 'pgrep -a -f devin-desktop | grep -v "pgrep\|ssh\|tailscaled"'
+```
+
+## What was observed today
+
+- Installed version: `devin-desktop 3.10.23-1789035177`.
+- The main process was not running; five stale `app-devin-desktop-*.scope` units remained, holding orphaned child processes (yolo server, websockify, etc.).
+- `~/.local/share/devin/cli/watchdog.log` showed the renderer being killed by the watchdog when CPU stayed above 50% for 10s.
+- The last session log ended with `Parent process exited; shutting down ACP server` and was full of `affogato::agent::control_loop: max_trailing_images=1 HTTP 413 Payload Too Large` errors.
+- `~/.local/share/devin/cli/sessions.db` is ~2.0 GiB.
+
+## Log locations
+
+- Devin logs: `~/.local/share/devin/cli/logs/devin_YYYYMMDD-HHMMSS_<pid>.log`
+- Watchdog log: `~/.local/share/devin/cli/watchdog.log`
+- Cleanup log: `~/.local/share/devin/cli/cleanup.log`
+
+## Open problems to watch
+
+- `HTTP 413 Payload Too Large` with `max_trailing_images=1` may return if large screenshots are sent; the Headroom proxy (`http://127.0.0.1:8787`) was not running during this incident.
+- If the new `3.10.23` build keeps crashing, the cached `3.9.19-1788908513` deb is available in `/var/cache/apt/archives/` and can be downgraded.
+
+## Ada Pi PWA (learned 2026-09-13)
+
+### Runtime
+
+- Production URL: `https://tony-dell.taila0626a.ts.net/apps/ada_pi/`
+- Funnel: enabled (`tailscale funnel --bg --https=443 --yes 127.0.0.1:8085`)
+- Caddy on tony-dell: listens on `127.0.0.1:8085`, configured in `~/.config/caddy/Caddyfile.tony-dell`
+- Backend: `pwa_server.py` via `~/.config/systemd/user/ada-pi-pwa.service`, running on `0.0.0.0:8001`
+- Python venv: `/home/tony/CascadeProjects/ada-pi/.venv`
+- API key: from `~/.config/yomi/yomi-api.env` (`GEMINI_API_KEY`) into `~/.config/secrets/ada-pi-pwa.env`
+- WebSocket: `wss://tony-dell.taila0626a.ts.net/apps/ada_pi/ws`
+
+### Caddy routing
+
+- `/apps/ada_pi/*` → `127.0.0.1:8001` (strips `/apps/ada_pi` prefix)
+- `/apps/home-assistant/*` → `127.0.0.1:8123`
+- `/` → `127.0.0.1:80`
+
+### Service commands
+
+- `ssh tony-dell 'systemctl --user {start,stop,status} ada-pi-pwa caddy-tony-dell'`
+- `ssh tony-dell 'sudo -n tailscale funnel status'`
+- `ssh tony-dell 'sudo -n tailscale funnel --https=443 off'` to disable
+
+### SSOT
+
+- `docs/ssot/apps/ssot.apps.ada_pi.yml` and `docs/ssot/apps/ssot.apps.yml` list `ada-pi` under `tony-dell` host.
+
+## Ada HA PWA (learned 2026-09-13)
+
+### Runtime
+
+- Development URL: `https://tony-dell.taila0626a.ts.net/apps/ada_ha/`
+- Backend: `~/.config/systemd/user/ada-ha-pwa.service` running `uvicorn pwa_server:app --port 8002`
+- Env files:
+  - `~/.config/secrets/ada-ha-tony.env` → `tony-ha` (`http://127.0.0.1:8123`)
+  - `~/.config/secrets/ada-ha-michael.env` → `michael-ha` (`http://michael-ha:8123`)
+- Caddy: `~/.config/caddy/Caddyfile.tony-dell` routes `/apps/ada_ha_tony/` to `127.0.0.1:8002` and `/apps/ada_ha_michael/` to `127.0.0.1:8003`
+- WebSocket: `wss://tony-dell.taila0626a.ts.net/apps/ada_ha_tony/ws` and `wss://tony-dell.taila0626a.ts.net/apps/ada_ha_michael/ws`
+- Home Assistant: `tony-ha` at `http://127.0.0.1:8123`, `michael-ha` at `http://michael-ha:8123`
+- Navigation: `https://tony-dell.taila0626a.ts.net/apps/ha/` and `https://tony-dell.taila0626a.ts.net/apps/`
+
+### Service commands
+
+- `ssh tony-dell 'systemctl --user {start,stop,status} ada-ha-pwa'`
+- `ssh tony-dell 'systemctl --user restart caddy-tony-dell'`
+
+### Gemini tools
+
+- `get_home_state` — reads `HomeAssistantClient.snapshot()` (person + watched lights)
+- `control_entity` — calls `HomeAssistantClient.set_power(entity_id, on)` for light/switch/fan/input_boolean
+
+### SSOT
+
+- `docs/ssot/apps/ssot.apps.ada_ha.yml` and `docs/ssot/apps/ssot.apps.yml` list `ada-ha` under `tony-dell` host.
+
