@@ -1,4 +1,7 @@
 {
+  "version": 1,
+  "minor_version": 1,
+  "key": "lovelace.tony_test",
   "data": {
     "config": {
       "views": [
@@ -9,7 +12,7 @@
           "badges": [],
           "cards": [
             {
-              "type": "custom:sunsynk-power-flow-card",
+              "type": "custom:pfg3d-card",
               "cardstyle": "pfg2",
               "view_layout": {
                 "grid-area": "pfg"
@@ -281,7 +284,7 @@
                         "max": 80,
                         "decimals": 0,
                         "entity": "sensor.inverters_1_temperature",
-                        "unit": "\u00b0C",
+                        "unit": "°C",
                         "segments": [
                           {
                             "from": 0,
@@ -650,7 +653,7 @@
                         "max": 40,
                         "decimals": 1,
                         "entity": "sensor.tze200_mja3fuja_ts0601_temperature",
-                        "unit": "\u00b0C",
+                        "unit": "°C",
                         "segments": [
                           {
                             "from": 0,
@@ -977,7 +980,7 @@
           "badges": [],
           "cards": [
             {
-              "type": "custom:sunsynk-power-flow-card",
+              "type": "custom:pfg3d-card",
               "cardstyle": "pfg2",
               "view_layout": {
                 "grid-area": "pfg"
@@ -1063,7 +1066,7 @@
                         "max": 80,
                         "decimals": 0,
                         "entity": "sensor.inverters_1_temperature",
-                        "unit": "\u00b0C",
+                        "unit": "°C",
                         "segments": [
                           {
                             "from": 0,
@@ -1337,7 +1340,7 @@
                         "max": 40,
                         "decimals": 1,
                         "entity": "sensor.tze200_mja3fuja_ts0601_temperature",
-                        "unit": "\u00b0C",
+                        "unit": "°C",
                         "segments": [
                           {
                             "from": 0,
@@ -1927,41 +1930,37 @@
           ]
         },
         {
-          "title": "G1",
-          "path": "g1",
+          "title": "",
+          "path": "g3",
           "type": "panel",
           "badges": [],
           "cards": [
             {
-              "type": "custom:sunsynk-power-flow-card",
+              "type": "custom:pfg3d-card",
               "cardstyle": "pfg",
               "card_height": "100%",
               "card_width": "100%",
-              "title": "G1",
               "pfg_grid_size": 1,
               "pfg_grid_width": "100%",
-              "pfg_labels": {
-                "1,1": "PV kW \u2014 hour \u00d7 day"
-              },
               "pfg_charts": {
-                "1,1": {
-                  "type": "surface3d",
-                  "entity": "sensor.inverters_1_pv_power",
-                  "days": 30,
-                  "min": 0,
-                  "max": 10,
-                  "scale": 0.001,
-                  "unit": "kW",
-                  "wireframe": true,
-                  "position": "bg",
-                  "height": "100%",
-                  "rotate_sensitivity": [
-                    -4,
-                    4
-                  ],
-                  "rotate_center": "volume",
-                  "opacity": 1
-                }
+                "1,1": [
+                  {
+                    "type": "bar3d",
+                    "entity": "sensor.inverters_1_pv_power",
+                    "days": 10,
+                    "min": 0,
+                    "position": "bg",
+                    "height": "100%",
+                    "rotate_sensitivity": [
+                      -4,
+                      4
+                    ],
+                    "opacity": 1,
+                    "view_offset": 40,
+                    "key": "g3",
+                    "entity_input": "input_select.dev_g3_source"
+                  }
+                ]
               },
               "preset": "pfg",
               "show_solar": false,
@@ -1970,67 +1969,141 @@
                 "modern": true,
                 "autarky": "no"
               },
-              "pfg_fit_screen": true,
-              "pfg_label_pos": {
-                "1,1": "top"
-              },
+              "pfg_fit_screen": "120px",
               "pfg_border": {
-                "1,1": "2px solid #555"
+                "1,1": "1px solid rgba(255, 255, 255, 0.2)"
               },
-              "pfg_transparent": true
+              "pfg_transparent": true,
+              "card_mod": {
+                "style": "ha-card::before { content: none !important; } ha-card { background: transparent !important; box-shadow: none !important; }"
+              }
             }
-          ]
+          ],
+          "icon": "mdi:poll"
         },
         {
-          "title": "G2",
-          "path": "g2",
-          "type": "panel",
-          "badges": [],
-          "cards": [
+          "title": "Weather",
+          "path": "weather",
+          "type": "sections",
+          "max_columns": 4,
+          "sections": [
             {
-              "type": "custom:sunsynk-power-flow-card",
-              "cardstyle": "pfg",
-              "card_height": "100%",
-              "card_width": "100%",
-              "title": "G2",
-              "pfg_grid_size": 1,
-              "pfg_grid_width": "100%",
-              "pfg_labels": {
-                "1,1": "PV kW \u2014 hour \u00d7 day (bar3D)"
-              },
-              "pfg_charts": {
-                "1,1": {
-                  "type": "bar3d",
-                  "entity": "sensor.inverters_1_pv_power",
-                  "days": 30,
-                  "min": 0,
-                  "max": 10,
-                  "scale": 0.001,
-                  "unit": "kW",
-                  "position": "bg",
-                  "height": "100%",
-                  "rotate_sensitivity": [
-                    -4,
-                    4
-                  ],
-                  "opacity": 1
+              "type": "grid",
+              "cards": [
+                {
+                  "type": "vertical-stack",
+                  "title": "Weather Station",
+                  "cards": [
+                    {
+                      "type": "weather-forecast",
+                      "entity": "weather.forecast_home",
+                      "name": "Forecast Home",
+                      "show_current": true,
+                      "show_forecast": true,
+                      "forecast_type": "daily",
+                      "card_mod": {
+                        "style": "ha-card {\n  background: rgba(16, 32, 64, 0.35) !important;\n  backdrop-filter: blur(16px) saturate(160%) !important;\n  -webkit-backdrop-filter: blur(16px) saturate(160%) !important;\n  border: 1px solid rgba(255, 255, 255, 0.12) !important;\n  border-radius: 20px !important;\n  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.25) !important;\n  color: #ffffff !important;\n  --primary-text-color: #ffffff !important;\n  --secondary-text-color: #cccccc !important;\n}"
+                      }
+                    },
+                    {
+                      "type": "horizontal-stack",
+                      "cards": [
+                        {
+                          "type": "tile",
+                          "entity": "sensor.weather_outside_temperature",
+                          "name": "Temperature",
+                          "color": "amber",
+                          "card_mod": {
+                            "style": "ha-card {\n  background: rgba(16, 32, 64, 0.35) !important;\n  backdrop-filter: blur(16px) saturate(160%) !important;\n  -webkit-backdrop-filter: blur(16px) saturate(160%) !important;\n  border: 1px solid rgba(255, 255, 255, 0.12) !important;\n  border-radius: 20px !important;\n  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.25) !important;\n  color: #ffffff !important;\n  --primary-text-color: #ffffff !important;\n  --secondary-text-color: #cccccc !important;\n}"
+                          }
+                        },
+                        {
+                          "type": "tile",
+                          "entity": "sensor.weather_wind_speed",
+                          "name": "Wind",
+                          "color": "blue",
+                          "card_mod": {
+                            "style": "ha-card {\n  background: rgba(16, 32, 64, 0.35) !important;\n  backdrop-filter: blur(16px) saturate(160%) !important;\n  -webkit-backdrop-filter: blur(16px) saturate(160%) !important;\n  border: 1px solid rgba(255, 255, 255, 0.12) !important;\n  border-radius: 20px !important;\n  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.25) !important;\n  color: #ffffff !important;\n  --primary-text-color: #ffffff !important;\n  --secondary-text-color: #cccccc !important;\n}"
+                          }
+                        },
+                        {
+                          "type": "tile",
+                          "entity": "sensor.weather_cloud_cover",
+                          "name": "Clouds",
+                          "color": "grey",
+                          "card_mod": {
+                            "style": "ha-card {\n  background: rgba(16, 32, 64, 0.35) !important;\n  backdrop-filter: blur(16px) saturate(160%) !important;\n  -webkit-backdrop-filter: blur(16px) saturate(160%) !important;\n  border: 1px solid rgba(255, 255, 255, 0.12) !important;\n  border-radius: 20px !important;\n  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.25) !important;\n  color: #ffffff !important;\n  --primary-text-color: #ffffff !important;\n  --secondary-text-color: #cccccc !important;\n}"
+                          }
+                        },
+                        {
+                          "type": "tile",
+                          "entity": "sensor.weather_global_tilted_irradiance",
+                          "name": "Irradiance",
+                          "color": "orange",
+                          "card_mod": {
+                            "style": "ha-card {\n  background: rgba(16, 32, 64, 0.35) !important;\n  backdrop-filter: blur(16px) saturate(160%) !important;\n  -webkit-backdrop-filter: blur(16px) saturate(160%) !important;\n  border: 1px solid rgba(255, 255, 255, 0.12) !important;\n  border-radius: 20px !important;\n  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.25) !important;\n  color: #ffffff !important;\n  --primary-text-color: #ffffff !important;\n  --secondary-text-color: #cccccc !important;\n}"
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "type": "horizontal-stack",
+                      "cards": [
+                        {
+                          "type": "tile",
+                          "entity": "sensor.weather_pv_power_predicted",
+                          "name": "PV Predicted",
+                          "color": "green",
+                          "card_mod": {
+                            "style": "ha-card {\n  background: rgba(16, 32, 64, 0.35) !important;\n  backdrop-filter: blur(16px) saturate(160%) !important;\n  -webkit-backdrop-filter: blur(16px) saturate(160%) !important;\n  border: 1px solid rgba(255, 255, 255, 0.12) !important;\n  border-radius: 20px !important;\n  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.25) !important;\n  color: #ffffff !important;\n  --primary-text-color: #ffffff !important;\n  --secondary-text-color: #cccccc !important;\n}"
+                          }
+                        },
+                        {
+                          "type": "tile",
+                          "entity": "sensor.weather_pv_energy_generated",
+                          "name": "PV Generated",
+                          "color": "light-green",
+                          "card_mod": {
+                            "style": "ha-card {\n  background: rgba(16, 32, 64, 0.35) !important;\n  backdrop-filter: blur(16px) saturate(160%) !important;\n  -webkit-backdrop-filter: blur(16px) saturate(160%) !important;\n  border: 1px solid rgba(255, 255, 255, 0.12) !important;\n  border-radius: 20px !important;\n  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.25) !important;\n  color: #ffffff !important;\n  --primary-text-color: #ffffff !important;\n  --secondary-text-color: #cccccc !important;\n}"
+                          }
+                        },
+                        {
+                          "type": "tile",
+                          "entity": "sensor.weather_weather_code",
+                          "name": "Weather Code",
+                          "color": "deep-purple",
+                          "card_mod": {
+                            "style": "ha-card {\n  background: rgba(16, 32, 64, 0.35) !important;\n  backdrop-filter: blur(16px) saturate(160%) !important;\n  -webkit-backdrop-filter: blur(16px) saturate(160%) !important;\n  border: 1px solid rgba(255, 255, 255, 0.12) !important;\n  border-radius: 20px !important;\n  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.25) !important;\n  color: #ffffff !important;\n  --primary-text-color: #ffffff !important;\n  --secondary-text-color: #cccccc !important;\n}"
+                          }
+                        },
+                        {
+                          "type": "tile",
+                          "entity": "sensor.weather_is_day",
+                          "name": "Is Day",
+                          "color": "indigo",
+                          "card_mod": {
+                            "style": "ha-card {\n  background: rgba(16, 32, 64, 0.35) !important;\n  backdrop-filter: blur(16px) saturate(160%) !important;\n  -webkit-backdrop-filter: blur(16px) saturate(160%) !important;\n  border: 1px solid rgba(255, 255, 255, 0.12) !important;\n  border-radius: 20px !important;\n  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.25) !important;\n  color: #ffffff !important;\n  --primary-text-color: #ffffff !important;\n  --secondary-text-color: #cccccc !important;\n}"
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "type": "history-graph",
+                      "title": "24h Weather Trends",
+                      "hours_to_show": 24,
+                      "entities": [
+                        "sensor.weather_outside_temperature",
+                        "sensor.weather_wind_speed",
+                        "sensor.weather_cloud_cover",
+                        "sensor.weather_global_tilted_irradiance"
+                      ],
+                      "card_mod": {
+                        "style": "ha-card {\n  background: rgba(16, 32, 64, 0.35) !important;\n  backdrop-filter: blur(16px) saturate(160%) !important;\n  -webkit-backdrop-filter: blur(16px) saturate(160%) !important;\n  border: 1px solid rgba(255, 255, 255, 0.12) !important;\n  border-radius: 20px !important;\n  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.25) !important;\n  color: #ffffff !important;\n  --primary-text-color: #ffffff !important;\n  --secondary-text-color: #cccccc !important;\n}"
+                      }
+                    }
+                  ]
                 }
-              },
-              "preset": "pfg",
-              "show_solar": false,
-              "inverter": {
-                "model": "solis",
-                "modern": true,
-                "autarky": "no"
-              },
-              "pfg_fit_screen": true,
-              "pfg_label_pos": {
-                "1,1": "top"
-              },
-              "pfg_border": {
-                "1,1": "2px solid #555"
-              },
-              "pfg_transparent": true
+              ]
             }
           ]
         },
@@ -2192,7 +2265,7 @@
           "badges": [],
           "cards": [
             {
-              "type": "custom:sunsynk-power-flow-card",
+              "type": "custom:pfg3d-card",
               "cardstyle": "pfg",
               "view_layout": {
                 "grid-area": "pv"
@@ -2260,7 +2333,7 @@
               }
             },
             {
-              "type": "custom:sunsynk-power-flow-card",
+              "type": "custom:pfg3d-card",
               "cardstyle": "pfg",
               "view_layout": {
                 "grid-area": "grid"
@@ -2391,7 +2464,7 @@
               }
             },
             {
-              "type": "custom:sunsynk-power-flow-card",
+              "type": "custom:pfg3d-card",
               "cardstyle": "pfg",
               "view_layout": {
                 "grid-area": "battery"
@@ -2570,7 +2643,7 @@
               }
             },
             {
-              "type": "custom:sunsynk-power-flow-card",
+              "type": "custom:pfg3d-card",
               "cardstyle": "pfg",
               "card_height": "360px",
               "card_width": "100%",
@@ -2842,7 +2915,7 @@
               }
             },
             {
-              "type": "custom:sunsynk-power-flow-card",
+              "type": "custom:pfg3d-card",
               "cardstyle": "pfg",
               "card_height": "360px",
               "card_width": "100%",
@@ -2895,7 +2968,7 @@
               }
             },
             {
-              "type": "custom:sunsynk-power-flow-card",
+              "type": "custom:pfg3d-card",
               "cardstyle": "pfg",
               "preset": "pfg",
               "title": "Inverter",
@@ -2946,7 +3019,7 @@
                           "max": 80,
                           "needle": true,
                           "decimals": 1,
-                          "unit": "\u00b0C",
+                          "unit": "°C",
                           "position": "center",
                           "label": "Temp"
                         }
@@ -2986,7 +3059,7 @@
               }
             },
             {
-              "type": "custom:sunsynk-power-flow-card",
+              "type": "custom:pfg3d-card",
               "cardstyle": "pfg",
               "preset": "pfg",
               "title": "Sum",
@@ -3045,7 +3118,7 @@
               }
             },
             {
-              "type": "custom:sunsynk-power-flow-card",
+              "type": "custom:pfg3d-card",
               "cardstyle": "pfg",
               "preset": "pfg",
               "title": "Kitchen",
@@ -3098,7 +3171,7 @@
               }
             },
             {
-              "type": "custom:sunsynk-power-flow-card",
+              "type": "custom:pfg3d-card",
               "cardstyle": "pfg",
               "preset": "pfg",
               "title": "Living",
@@ -3135,7 +3208,7 @@
                           "max": 45,
                           "needle": true,
                           "decimals": 1,
-                          "unit": "\u00b0C",
+                          "unit": "°C",
                           "position": "center",
                           "label": "Temp"
                         }
@@ -3198,7 +3271,7 @@
               }
             },
             {
-              "type": "custom:sunsynk-power-flow-card",
+              "type": "custom:pfg3d-card",
               "cardstyle": "pfg",
               "preset": "pfg",
               "title": "Laundry",
@@ -3247,7 +3320,7 @@
               }
             },
             {
-              "type": "custom:sunsynk-power-flow-card",
+              "type": "custom:pfg3d-card",
               "cardstyle": "pfg",
               "preset": "pfg",
               "title": "Bedroom",
@@ -3271,7 +3344,7 @@
               "card_width": "100%"
             },
             {
-              "type": "custom:sunsynk-power-flow-card",
+              "type": "custom:pfg3d-card",
               "cardstyle": "pfg",
               "preset": "pfg",
               "title": "Terrace",
@@ -3295,7 +3368,7 @@
               "card_width": "100%"
             },
             {
-              "type": "custom:sunsynk-power-flow-card",
+              "type": "custom:pfg3d-card",
               "cardstyle": "pfg",
               "view_layout": {
                 "grid-area": "temp"
@@ -3344,7 +3417,7 @@
                     ],
                     "decimals": 1,
                     "label": "Temp",
-                    "unit": "\u00b0C",
+                    "unit": "°C",
                     "position": "center"
                   },
                   {
@@ -3355,14 +3428,14 @@
                     "max": 80,
                     "scale": 1,
                     "decimals": 1,
-                    "unit": "\u00b0C",
+                    "unit": "°C",
                     "position": "bottom"
                   }
                 ]
               }
             },
             {
-              "type": "custom:sunsynk-power-flow-card",
+              "type": "custom:pfg3d-card",
               "cardstyle": "pfg",
               "view_layout": {
                 "grid-area": "freq"
@@ -3429,7 +3502,7 @@
               }
             },
             {
-              "type": "custom:sunsynk-power-flow-card",
+              "type": "custom:pfg3d-card",
               "cardstyle": "pfg",
               "view_layout": {
                 "grid-area": "daily"
@@ -3496,7 +3569,7 @@
               }
             },
             {
-              "type": "custom:sunsynk-power-flow-card",
+              "type": "custom:pfg3d-card",
               "cardstyle": "pfg",
               "preset": "pfg",
               "title": "PV.a1",
@@ -3613,7 +3686,7 @@
               }
             },
             {
-              "type": "custom:sunsynk-power-flow-card",
+              "type": "custom:pfg3d-card",
               "cardstyle": "pfg",
               "preset": "pfg",
               "title": "PV.b1",
@@ -3730,7 +3803,7 @@
               }
             },
             {
-              "type": "custom:sunsynk-power-flow-card",
+              "type": "custom:pfg3d-card",
               "cardstyle": "pfg",
               "preset": "pfg",
               "title": "Grid.a1",
@@ -3851,7 +3924,7 @@
               }
             },
             {
-              "type": "custom:sunsynk-power-flow-card",
+              "type": "custom:pfg3d-card",
               "cardstyle": "pfg",
               "preset": "pfg",
               "title": "Grid.b1",
@@ -3972,7 +4045,7 @@
               }
             },
             {
-              "type": "custom:sunsynk-power-flow-card",
+              "type": "custom:pfg3d-card",
               "cardstyle": "pfg",
               "preset": "pfg",
               "title": "Battery.a1",
@@ -4089,7 +4162,7 @@
               }
             },
             {
-              "type": "custom:sunsynk-power-flow-card",
+              "type": "custom:pfg3d-card",
               "cardstyle": "pfg",
               "preset": "pfg",
               "title": "Battery.b1",
@@ -4206,7 +4279,7 @@
               }
             },
             {
-              "type": "custom:sunsynk-power-flow-card",
+              "type": "custom:pfg3d-card",
               "cardstyle": "pfg",
               "preset": "pfg",
               "title": "Inverter.a1",
@@ -4275,7 +4348,7 @@
                         "max": 80,
                         "decimals": 0,
                         "entity": "sensor.inverters_1_temperature",
-                        "unit": "\u00b0C",
+                        "unit": "°C",
                         "segments": [
                           {
                             "from": 0,
@@ -4323,7 +4396,7 @@
               }
             },
             {
-              "type": "custom:sunsynk-power-flow-card",
+              "type": "custom:pfg3d-card",
               "cardstyle": "pfg",
               "preset": "pfg",
               "title": "Inverter.b1",
@@ -4392,7 +4465,7 @@
                         "max": 80,
                         "decimals": 0,
                         "entity": "sensor.inverters_1_temperature",
-                        "unit": "\u00b0C",
+                        "unit": "°C",
                         "segments": [
                           {
                             "from": 0,
@@ -4440,7 +4513,7 @@
               }
             },
             {
-              "type": "custom:sunsynk-power-flow-card",
+              "type": "custom:pfg3d-card",
               "cardstyle": "pfg",
               "preset": "pfg",
               "title": "Pool.a1",
@@ -4504,7 +4577,7 @@
               }
             },
             {
-              "type": "custom:sunsynk-power-flow-card",
+              "type": "custom:pfg3d-card",
               "cardstyle": "pfg",
               "preset": "pfg",
               "title": "Pool.b1",
@@ -4568,7 +4641,7 @@
               }
             },
             {
-              "type": "custom:sunsynk-power-flow-card",
+              "type": "custom:pfg3d-card",
               "cardstyle": "pfg",
               "preset": "pfg",
               "title": "Sum.a1",
@@ -4671,7 +4744,7 @@
               }
             },
             {
-              "type": "custom:sunsynk-power-flow-card",
+              "type": "custom:pfg3d-card",
               "cardstyle": "pfg",
               "preset": "pfg",
               "title": "Sum.b1",
@@ -4774,7 +4847,7 @@
               }
             },
             {
-              "type": "custom:sunsynk-power-flow-card",
+              "type": "custom:pfg3d-card",
               "cardstyle": "pfg",
               "preset": "pfg",
               "title": "Kitchen.a1",
@@ -4866,7 +4939,7 @@
               }
             },
             {
-              "type": "custom:sunsynk-power-flow-card",
+              "type": "custom:pfg3d-card",
               "cardstyle": "pfg",
               "preset": "pfg",
               "title": "Kitchen.b1",
@@ -4958,7 +5031,7 @@
               }
             },
             {
-              "type": "custom:sunsynk-power-flow-card",
+              "type": "custom:pfg3d-card",
               "cardstyle": "pfg",
               "preset": "pfg",
               "title": "Home.a1",
@@ -5069,7 +5142,7 @@
               }
             },
             {
-              "type": "custom:sunsynk-power-flow-card",
+              "type": "custom:pfg3d-card",
               "cardstyle": "pfg",
               "preset": "pfg",
               "title": "Home.b1",
@@ -5180,7 +5253,7 @@
               }
             },
             {
-              "type": "custom:sunsynk-power-flow-card",
+              "type": "custom:pfg3d-card",
               "cardstyle": "pfg",
               "preset": "pfg",
               "title": "Bedroom.a1",
@@ -5226,7 +5299,7 @@
                         "max": 40,
                         "decimals": 1,
                         "entity": "sensor.tze200_mja3fuja_ts0601_temperature",
-                        "unit": "\u00b0C",
+                        "unit": "°C",
                         "segments": [
                           {
                             "from": 0,
@@ -5292,7 +5365,7 @@
               }
             },
             {
-              "type": "custom:sunsynk-power-flow-card",
+              "type": "custom:pfg3d-card",
               "cardstyle": "pfg",
               "preset": "pfg",
               "title": "Bedroom.b1",
@@ -5338,7 +5411,7 @@
                         "max": 40,
                         "decimals": 1,
                         "entity": "sensor.tze200_mja3fuja_ts0601_temperature",
-                        "unit": "\u00b0C",
+                        "unit": "°C",
                         "segments": [
                           {
                             "from": 0,
@@ -5404,7 +5477,7 @@
               }
             },
             {
-              "type": "custom:sunsynk-power-flow-card",
+              "type": "custom:pfg3d-card",
               "cardstyle": "pfg",
               "preset": "pfg",
               "title": "Terrace.a1",
@@ -5450,7 +5523,7 @@
                         "max": 40,
                         "decimals": 1,
                         "entity": "sensor.tze200_mja3fuja_ts0601_temperature",
-                        "unit": "\u00b0C",
+                        "unit": "°C",
                         "segments": [
                           {
                             "from": 0,
@@ -5515,7 +5588,7 @@
               }
             },
             {
-              "type": "custom:sunsynk-power-flow-card",
+              "type": "custom:pfg3d-card",
               "cardstyle": "pfg",
               "preset": "pfg",
               "title": "Terrace.b1",
@@ -5561,7 +5634,7 @@
                         "max": 40,
                         "decimals": 1,
                         "entity": "sensor.tze200_mja3fuja_ts0601_temperature",
-                        "unit": "\u00b0C",
+                        "unit": "°C",
                         "segments": [
                           {
                             "from": 0,
@@ -5626,7 +5699,7 @@
               }
             },
             {
-              "type": "custom:sunsynk-power-flow-card",
+              "type": "custom:pfg3d-card",
               "cardstyle": "pfg",
               "preset": "pfg",
               "title": "Living.a1",
@@ -5672,7 +5745,7 @@
                         "max": 40,
                         "decimals": 1,
                         "entity": "sensor.tze200_mja3fuja_ts0601_temperature",
-                        "unit": "\u00b0C",
+                        "unit": "°C",
                         "segments": [
                           {
                             "from": 0,
@@ -5738,7 +5811,7 @@
               }
             },
             {
-              "type": "custom:sunsynk-power-flow-card",
+              "type": "custom:pfg3d-card",
               "cardstyle": "pfg",
               "preset": "pfg",
               "title": "Living.b1",
@@ -5784,7 +5857,7 @@
                         "max": 40,
                         "decimals": 1,
                         "entity": "sensor.tze200_mja3fuja_ts0601_temperature",
-                        "unit": "\u00b0C",
+                        "unit": "°C",
                         "segments": [
                           {
                             "from": 0,
@@ -5850,7 +5923,7 @@
               }
             },
             {
-              "type": "custom:sunsynk-power-flow-card",
+              "type": "custom:pfg3d-card",
               "cardstyle": "pfg",
               "preset": "pfg",
               "title": "Laundry.a1",
@@ -5918,7 +5991,7 @@
               }
             },
             {
-              "type": "custom:sunsynk-power-flow-card",
+              "type": "custom:pfg3d-card",
               "cardstyle": "pfg",
               "preset": "pfg",
               "title": "Laundry.b1",
@@ -5991,170 +6064,6 @@
             "grid-template-rows": "repeat(12, auto)",
             "grid-template-areas": "\"pv pv pv pv pvv pvv pvv pvv pvh pvh pvh pvh\" \"grid grid grid grid ga ga ga ga gb gb gb gb\" \"battery battery battery battery batterya batterya batterya batterya batteryb batteryb batteryb batteryb\" \"inverter inverter inverter inverter invertera invertera invertera invertera inverterb inverterb inverterb inverterb\" \"pool pool pool pool poola poola poola poola poolb poolb poolb poolb\" \"sum sum sum sum suma suma suma suma sumb sumb sumb sumb\" \"kitchen kitchen kitchen kitchen kitchena kitchena kitchena kitchena kitchenb kitchenb kitchenb kitchenb\" \"home home home home homea homea homea homea homeb homeb homeb homeb\" \"bedroom bedroom bedroom bedroom bedrooma bedrooma bedrooma bedrooma bedroomb bedroomb bedroomb bedroomb\" \"terrace terrace terrace terrace terracea terracea terracea terracea terraceb terraceb terraceb terraceb\" \"living living living living livinga livinga livinga livinga livingb livingb livingb livingb\" \"laundry laundry laundry laundry laundrya laundrya laundrya laundrya laundryb laundryb laundryb laundryb\""
           }
-        },
-        {
-          "title": "juWorkshop",
-          "path": "juworkshop",
-          "type": "masonry",
-          "badges": [],
-          "cards": [
-            {
-              "type": "custom:power-flow-card",
-              "cardstyle": "ju",
-              "card_height": 700,
-              "card_width": 100,
-              "panel_mode": "no",
-              "large_font": "no",
-              "show_solar": "yes",
-              "show_ev": "no",
-              "show_bal": "no",
-              "show_chauf": "no",
-              "show_stirling": "no",
-              "battery": {
-                "energy": 14280,
-                "shutdown_soc": 20,
-                "show_daily": "yes",
-                "invert_power": "yes",
-                "bat1_name": "Pack 1",
-                "colour": "green",
-                "animation_speed": 6,
-                "max_power": 10000,
-                "full_capacity": 80,
-                "empty_capacity": 30,
-                "bat2_name": "Pack 2",
-                "bat3_name": "Pack 3",
-                "bat4_name": ""
-              },
-              "inverter": {
-                "modern": "multi",
-                "colour": "grey",
-                "autarky": "yes"
-              },
-              "solar": {
-                "show_daily": "yes",
-                "mppts": 2,
-                "kwc": 3.6,
-                "m2": 18
-              },
-              "load": {
-                "colour": "#5fb6ad",
-                "show_daily": "yes",
-                "show_aux": "no",
-                "animation_speed": 8,
-                "max_power": 6000,
-                "additional_loads": 2,
-                "load1_name": "Pool",
-                "load1_icon": "mdi:pool",
-                "load2_name": "Geyser",
-                "load2_icon": "mdi:heating-coil"
-              },
-              "grid": {
-                "show_grid": "yes",
-                "show_daily_buy": "no",
-                "show_daily_sell": "no",
-                "show_nonessential": "no"
-              },
-              "entities": {
-                "inverter_voltage_154": "sensor.inverters_1_ac_output_voltage",
-                "load_frequency_192": "sensor.inverters_1_grid_frequency",
-                "inverter_current_164": "sensor.inverters_1_load_current_essential_1",
-                "inverter_power_175": "sensor.inverters_1_load_power",
-                "grid_connected_status_194": "none",
-                "inverter_status_59": "sensor.inverters_1_inverter_mode",
-                "day_battery_charge_70": "sensor.solis_s6_eh3p10k_h_zp_today_battery_charge_energy",
-                "day_battery_discharge_71": "sensor.solis_s6_eh3p10k_h_zp_today_battery_discharge_energy",
-                "battery_voltage_183": "sensor.inverters_1_battery_voltage",
-                "battery_soc_184": "sensor.inverters_1_battery_state_of_charge",
-                "battery_power_190": "sensor.inverters_1_battery_power",
-                "battery_current_191": "sensor.inverters_1_battery_current",
-                "battery_current_direction": "sensor.inverters_1_battery_direction",
-                "grid_power_169": "sensor.inverters_1_grid_power",
-                "grid_ct_power_172": "sensor.inverters_1_grid_power_ld",
-                "day_grid_import_76": "none",
-                "day_grid_export_77": "none",
-                "day_load_energy_84": "sensor.solis_s6_eh3p10k_h_zp_today_energy_consumption",
-                "day_pv_energy_108": "none",
-                "pv1_power_186": "sensor.inverters_1_pv_power_1",
-                "pv2_power_187": "sensor.inverters_1_pv_power_2",
-                "pv1_voltage_109": "sensor.inverters_1_pv_voltage_1",
-                "pv1_current_110": "sensor.inverters_1_pv_current_1",
-                "pv2_voltage_111": "sensor.inverters_1_pv_voltage_2",
-                "pv2_current_112": "sensor.inverters_1_pv_current_2",
-                "pv1_state": "none",
-                "pv2_state": "none",
-                "radiator_temp_91": "sensor.inverters_1_temperature",
-                "use_timer_248": "none",
-                "day_bat1_charge": "sensor.battery_1_charge_energy_daily",
-                "day_bat1_discharge": "sensor.battery_1_discharge_energy_daily",
-                "battery1_voltage_183": "sensor.batteries_1_voltage",
-                "battery1_soc_184": "sensor.batteries_1_state_of_charge",
-                "battery1_power": "sensor.batteries_1_power",
-                "battery1_current_191": "sensor.batteries_1_current",
-                "bat1_disch_sw": "none",
-                "bat1_charg_sw": "none",
-                "day_bat2_charge": "sensor.battery_2_charge_energy_daily",
-                "day_bat2_discharge": "sensor.battery_2_discharge_energy_daily",
-                "battery2_voltage_183": "sensor.batteries_2_voltage",
-                "battery2_soc_184": "sensor.batteries_2_state_of_charge",
-                "battery2_power": "sensor.batteries_2_power",
-                "battery2_current_191": "sensor.batteries_2_current",
-                "bat2_disch_sw": "none",
-                "bat2_charg_sw": "none",
-                "bat2_ah": "sensor.batteries_2_charge_capacity",
-                "bat2_mid": "sensor.batteries_2_cell_voltage_average",
-                "bat2_dev": "sensor.batteries_2_cell_voltage_imbalance",
-                "day_bat3_charge": "sensor.battery_3_charge_energy_daily",
-                "day_bat3_discharge": "sensor.battery_3_discharge_energy_daily",
-                "battery3_voltage_183": "sensor.batteries_3_voltage",
-                "battery3_soc_184": "sensor.batteries_3_state_of_charge",
-                "battery3_power": "sensor.batteries_3_power",
-                "battery3_current_191": "sensor.batteries_3_current",
-                "bat3_disch_sw": "none",
-                "bat3_charg_sw": "none",
-                "bat3_ah": "sensor.batteries_3_charge_capacity",
-                "bat3_mid": "sensor.batteries_3_cell_voltage_average",
-                "bat3_dev": "sensor.batteries_3_cell_voltage_imbalance",
-                "day_bat4_charge": "none",
-                "day_bat4_discharge": "none",
-                "battery4_voltage_183": "none",
-                "battery4_soc_184": "none",
-                "battery4_power": "none",
-                "battery4_current_191": "none",
-                "bat4_disch_sw": "none",
-                "bat4_charg_sw": "none",
-                "bat4_ah": "none",
-                "bat4_mid": "none",
-                "bat4_dev": "none",
-                "bat1_ah": "sensor.batteries_1_charge_capacity",
-                "bat1_mid": "sensor.batteries_1_cell_voltage_average",
-                "bat1_min": "sensor.batteries_1_cell_voltage_lowest",
-                "bat1_max": "sensor.batteries_1_cell_voltage_highest",
-                "bat1_dev": "sensor.batteries_1_cell_voltage_imbalance",
-                "bat1_cell1temp": "sensor.batteries_1_temperature_1",
-                "bat1_cell2temp": "sensor.batteries_1_temperature_2",
-                "bat1_mostemp": "sensor.batteries_1_temperature_mos",
-                "bat2_min": "sensor.batteries_2_cell_voltage_lowest",
-                "bat2_max": "sensor.batteries_2_cell_voltage_highest",
-                "bat2_cell1temp": "sensor.batteries_2_temperature_1",
-                "bat2_cell2temp": "sensor.batteries_2_temperature_2",
-                "bat2_mostemp": "sensor.batteries_2_temperature_mos",
-                "bat3_min": "sensor.batteries_3_cell_voltage_lowest",
-                "bat3_max": "sensor.batteries_3_cell_voltage_highest",
-                "bat3_cell1temp": "sensor.batteries_3_temperature_1",
-                "bat3_cell2temp": "sensor.batteries_3_temperature_2",
-                "bat3_mostemp": "sensor.batteries_3_temperature_mos",
-                "bat4_min": "none",
-                "bat4_max": "none",
-                "bat4_cell1temp": "none",
-                "bat4_cell2temp": "none",
-                "bat4_mostemp": "none"
-              },
-              "card_mod": {
-                "style": "ha-card { --card-background-color: #102040 !important; background-color: #102040 !important; --primary-text-color: #ffffff !important; --secondary-text-color: #cccccc !important; color: #ffffff !important; }"
-              },
-              "decimal_places": 3
-            }
-          ]
         },
         {
           "title": "Solar Assistant",
@@ -6824,128 +6733,183 @@
           "path": "glass"
         },
         {
-          "title": "Weather",
-          "path": "weather",
-          "type": "sections",
-          "max_columns": 4,
-          "sections": [
+          "title": "juWorkshop",
+          "path": "juworkshop",
+          "type": "masonry",
+          "badges": [],
+          "cards": [
             {
-              "type": "grid",
-              "cards": [
-                {
-                  "type": "vertical-stack",
-                  "title": "Weather Station",
-                  "cards": [
-                    {
-                      "type": "weather-forecast",
-                      "entity": "weather.forecast_home",
-                      "name": "Forecast Home",
-                      "show_current": true,
-                      "show_forecast": true,
-                      "forecast_type": "daily",
-                      "card_mod": {
-                        "style": "ha-card {\n  background: rgba(16, 32, 64, 0.35) !important;\n  backdrop-filter: blur(16px) saturate(160%) !important;\n  -webkit-backdrop-filter: blur(16px) saturate(160%) !important;\n  border: 1px solid rgba(255, 255, 255, 0.12) !important;\n  border-radius: 20px !important;\n  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.25) !important;\n  color: #ffffff !important;\n  --primary-text-color: #ffffff !important;\n  --secondary-text-color: #cccccc !important;\n}"
-                      }
-                    },
-                    {
-                      "type": "horizontal-stack",
-                      "cards": [
-                        {
-                          "type": "tile",
-                          "entity": "sensor.weather_outside_temperature",
-                          "name": "Temperature",
-                          "color": "amber",
-                          "card_mod": {
-                            "style": "ha-card {\n  background: rgba(16, 32, 64, 0.35) !important;\n  backdrop-filter: blur(16px) saturate(160%) !important;\n  -webkit-backdrop-filter: blur(16px) saturate(160%) !important;\n  border: 1px solid rgba(255, 255, 255, 0.12) !important;\n  border-radius: 20px !important;\n  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.25) !important;\n  color: #ffffff !important;\n  --primary-text-color: #ffffff !important;\n  --secondary-text-color: #cccccc !important;\n}"
-                          }
-                        },
-                        {
-                          "type": "tile",
-                          "entity": "sensor.weather_wind_speed",
-                          "name": "Wind",
-                          "color": "blue",
-                          "card_mod": {
-                            "style": "ha-card {\n  background: rgba(16, 32, 64, 0.35) !important;\n  backdrop-filter: blur(16px) saturate(160%) !important;\n  -webkit-backdrop-filter: blur(16px) saturate(160%) !important;\n  border: 1px solid rgba(255, 255, 255, 0.12) !important;\n  border-radius: 20px !important;\n  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.25) !important;\n  color: #ffffff !important;\n  --primary-text-color: #ffffff !important;\n  --secondary-text-color: #cccccc !important;\n}"
-                          }
-                        },
-                        {
-                          "type": "tile",
-                          "entity": "sensor.weather_cloud_cover",
-                          "name": "Clouds",
-                          "color": "grey",
-                          "card_mod": {
-                            "style": "ha-card {\n  background: rgba(16, 32, 64, 0.35) !important;\n  backdrop-filter: blur(16px) saturate(160%) !important;\n  -webkit-backdrop-filter: blur(16px) saturate(160%) !important;\n  border: 1px solid rgba(255, 255, 255, 0.12) !important;\n  border-radius: 20px !important;\n  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.25) !important;\n  color: #ffffff !important;\n  --primary-text-color: #ffffff !important;\n  --secondary-text-color: #cccccc !important;\n}"
-                          }
-                        },
-                        {
-                          "type": "tile",
-                          "entity": "sensor.weather_global_tilted_irradiance",
-                          "name": "Irradiance",
-                          "color": "orange",
-                          "card_mod": {
-                            "style": "ha-card {\n  background: rgba(16, 32, 64, 0.35) !important;\n  backdrop-filter: blur(16px) saturate(160%) !important;\n  -webkit-backdrop-filter: blur(16px) saturate(160%) !important;\n  border: 1px solid rgba(255, 255, 255, 0.12) !important;\n  border-radius: 20px !important;\n  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.25) !important;\n  color: #ffffff !important;\n  --primary-text-color: #ffffff !important;\n  --secondary-text-color: #cccccc !important;\n}"
-                          }
-                        }
-                      ]
-                    },
-                    {
-                      "type": "horizontal-stack",
-                      "cards": [
-                        {
-                          "type": "tile",
-                          "entity": "sensor.weather_pv_power_predicted",
-                          "name": "PV Predicted",
-                          "color": "green",
-                          "card_mod": {
-                            "style": "ha-card {\n  background: rgba(16, 32, 64, 0.35) !important;\n  backdrop-filter: blur(16px) saturate(160%) !important;\n  -webkit-backdrop-filter: blur(16px) saturate(160%) !important;\n  border: 1px solid rgba(255, 255, 255, 0.12) !important;\n  border-radius: 20px !important;\n  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.25) !important;\n  color: #ffffff !important;\n  --primary-text-color: #ffffff !important;\n  --secondary-text-color: #cccccc !important;\n}"
-                          }
-                        },
-                        {
-                          "type": "tile",
-                          "entity": "sensor.weather_pv_energy_generated",
-                          "name": "PV Generated",
-                          "color": "light-green",
-                          "card_mod": {
-                            "style": "ha-card {\n  background: rgba(16, 32, 64, 0.35) !important;\n  backdrop-filter: blur(16px) saturate(160%) !important;\n  -webkit-backdrop-filter: blur(16px) saturate(160%) !important;\n  border: 1px solid rgba(255, 255, 255, 0.12) !important;\n  border-radius: 20px !important;\n  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.25) !important;\n  color: #ffffff !important;\n  --primary-text-color: #ffffff !important;\n  --secondary-text-color: #cccccc !important;\n}"
-                          }
-                        },
-                        {
-                          "type": "tile",
-                          "entity": "sensor.weather_weather_code",
-                          "name": "Weather Code",
-                          "color": "deep-purple",
-                          "card_mod": {
-                            "style": "ha-card {\n  background: rgba(16, 32, 64, 0.35) !important;\n  backdrop-filter: blur(16px) saturate(160%) !important;\n  -webkit-backdrop-filter: blur(16px) saturate(160%) !important;\n  border: 1px solid rgba(255, 255, 255, 0.12) !important;\n  border-radius: 20px !important;\n  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.25) !important;\n  color: #ffffff !important;\n  --primary-text-color: #ffffff !important;\n  --secondary-text-color: #cccccc !important;\n}"
-                          }
-                        },
-                        {
-                          "type": "tile",
-                          "entity": "sensor.weather_is_day",
-                          "name": "Is Day",
-                          "color": "indigo",
-                          "card_mod": {
-                            "style": "ha-card {\n  background: rgba(16, 32, 64, 0.35) !important;\n  backdrop-filter: blur(16px) saturate(160%) !important;\n  -webkit-backdrop-filter: blur(16px) saturate(160%) !important;\n  border: 1px solid rgba(255, 255, 255, 0.12) !important;\n  border-radius: 20px !important;\n  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.25) !important;\n  color: #ffffff !important;\n  --primary-text-color: #ffffff !important;\n  --secondary-text-color: #cccccc !important;\n}"
-                          }
-                        }
-                      ]
-                    },
-                    {
-                      "type": "history-graph",
-                      "title": "24h Weather Trends",
-                      "hours_to_show": 24,
-                      "entities": [
-                        "sensor.weather_outside_temperature",
-                        "sensor.weather_wind_speed",
-                        "sensor.weather_cloud_cover",
-                        "sensor.weather_global_tilted_irradiance"
-                      ],
-                      "card_mod": {
-                        "style": "ha-card {\n  background: rgba(16, 32, 64, 0.35) !important;\n  backdrop-filter: blur(16px) saturate(160%) !important;\n  -webkit-backdrop-filter: blur(16px) saturate(160%) !important;\n  border: 1px solid rgba(255, 255, 255, 0.12) !important;\n  border-radius: 20px !important;\n  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.25) !important;\n  color: #ffffff !important;\n  --primary-text-color: #ffffff !important;\n  --secondary-text-color: #cccccc !important;\n}"
-                      }
-                    }
-                  ]
-                }
-              ]
+              "type": "custom:power-flow-card",
+              "cardstyle": "ju",
+              "card_height": 700,
+              "card_width": 100,
+              "panel_mode": "no",
+              "large_font": "no",
+              "show_solar": "yes",
+              "show_ev": "no",
+              "show_bal": "no",
+              "show_chauf": "no",
+              "show_stirling": "no",
+              "battery": {
+                "energy": 14280,
+                "shutdown_soc": 20,
+                "show_daily": "yes",
+                "invert_power": "yes",
+                "bat1_name": "Pack 1",
+                "colour": "green",
+                "animation_speed": 6,
+                "max_power": 10000,
+                "full_capacity": 80,
+                "empty_capacity": 30,
+                "bat2_name": "Pack 2",
+                "bat3_name": "Pack 3",
+                "bat4_name": ""
+              },
+              "inverter": {
+                "modern": "multi",
+                "colour": "grey",
+                "autarky": "yes"
+              },
+              "solar": {
+                "show_daily": "yes",
+                "mppts": 2,
+                "kwc": 3.6,
+                "m2": 18
+              },
+              "load": {
+                "colour": "#5fb6ad",
+                "show_daily": "yes",
+                "show_aux": "no",
+                "animation_speed": 8,
+                "max_power": 6000,
+                "additional_loads": 2,
+                "load1_name": "Pool",
+                "load1_icon": "mdi:pool",
+                "load2_name": "Geyser",
+                "load2_icon": "mdi:heating-coil"
+              },
+              "grid": {
+                "show_grid": "yes",
+                "show_daily_buy": "no",
+                "show_daily_sell": "no",
+                "show_nonessential": "no"
+              },
+              "entities": {
+                "inverter_voltage_154": "sensor.inverters_1_ac_output_voltage",
+                "load_frequency_192": "sensor.inverters_1_grid_frequency",
+                "inverter_current_164": "sensor.inverters_1_load_current_essential_1",
+                "inverter_power_175": "sensor.inverters_1_load_power",
+                "grid_connected_status_194": "none",
+                "inverter_status_59": "sensor.inverters_1_inverter_mode",
+                "day_battery_charge_70": "sensor.solis_s6_eh3p10k_h_zp_today_battery_charge_energy",
+                "day_battery_discharge_71": "sensor.solis_s6_eh3p10k_h_zp_today_battery_discharge_energy",
+                "battery_voltage_183": "sensor.inverters_1_battery_voltage",
+                "battery_soc_184": "sensor.inverters_1_battery_state_of_charge",
+                "battery_power_190": "sensor.inverters_1_battery_power",
+                "battery_current_191": "sensor.inverters_1_battery_current",
+                "battery_current_direction": "sensor.inverters_1_battery_direction",
+                "grid_power_169": "sensor.inverters_1_grid_power",
+                "grid_ct_power_172": "sensor.inverters_1_grid_power_ld",
+                "day_grid_import_76": "none",
+                "day_grid_export_77": "none",
+                "day_load_energy_84": "sensor.solis_s6_eh3p10k_h_zp_today_energy_consumption",
+                "day_pv_energy_108": "none",
+                "pv1_power_186": "sensor.inverters_1_pv_power_1",
+                "pv2_power_187": "sensor.inverters_1_pv_power_2",
+                "pv1_voltage_109": "sensor.inverters_1_pv_voltage_1",
+                "pv1_current_110": "sensor.inverters_1_pv_current_1",
+                "pv2_voltage_111": "sensor.inverters_1_pv_voltage_2",
+                "pv2_current_112": "sensor.inverters_1_pv_current_2",
+                "pv1_state": "none",
+                "pv2_state": "none",
+                "radiator_temp_91": "sensor.inverters_1_temperature",
+                "use_timer_248": "none",
+                "day_bat1_charge": "sensor.battery_1_charge_energy_daily",
+                "day_bat1_discharge": "sensor.battery_1_discharge_energy_daily",
+                "battery1_voltage_183": "sensor.batteries_1_voltage",
+                "battery1_soc_184": "sensor.batteries_1_state_of_charge",
+                "battery1_power": "sensor.batteries_1_power",
+                "battery1_current_191": "sensor.batteries_1_current",
+                "bat1_disch_sw": "none",
+                "bat1_charg_sw": "none",
+                "day_bat2_charge": "sensor.battery_2_charge_energy_daily",
+                "day_bat2_discharge": "sensor.battery_2_discharge_energy_daily",
+                "battery2_voltage_183": "sensor.batteries_2_voltage",
+                "battery2_soc_184": "sensor.batteries_2_state_of_charge",
+                "battery2_power": "sensor.batteries_2_power",
+                "battery2_current_191": "sensor.batteries_2_current",
+                "bat2_disch_sw": "none",
+                "bat2_charg_sw": "none",
+                "bat2_ah": "sensor.batteries_2_charge_capacity",
+                "bat2_mid": "sensor.batteries_2_cell_voltage_average",
+                "bat2_dev": "sensor.batteries_2_cell_voltage_imbalance",
+                "day_bat3_charge": "sensor.battery_3_charge_energy_daily",
+                "day_bat3_discharge": "sensor.battery_3_discharge_energy_daily",
+                "battery3_voltage_183": "sensor.batteries_3_voltage",
+                "battery3_soc_184": "sensor.batteries_3_state_of_charge",
+                "battery3_power": "sensor.batteries_3_power",
+                "battery3_current_191": "sensor.batteries_3_current",
+                "bat3_disch_sw": "none",
+                "bat3_charg_sw": "none",
+                "bat3_ah": "sensor.batteries_3_charge_capacity",
+                "bat3_mid": "sensor.batteries_3_cell_voltage_average",
+                "bat3_dev": "sensor.batteries_3_cell_voltage_imbalance",
+                "day_bat4_charge": "none",
+                "day_bat4_discharge": "none",
+                "battery4_voltage_183": "none",
+                "battery4_soc_184": "none",
+                "battery4_power": "none",
+                "battery4_current_191": "none",
+                "bat4_disch_sw": "none",
+                "bat4_charg_sw": "none",
+                "bat4_ah": "none",
+                "bat4_mid": "none",
+                "bat4_dev": "none",
+                "bat1_ah": "sensor.batteries_1_charge_capacity",
+                "bat1_mid": "sensor.batteries_1_cell_voltage_average",
+                "bat1_min": "sensor.batteries_1_cell_voltage_lowest",
+                "bat1_max": "sensor.batteries_1_cell_voltage_highest",
+                "bat1_dev": "sensor.batteries_1_cell_voltage_imbalance",
+                "bat1_cell1temp": "sensor.batteries_1_temperature_1",
+                "bat1_cell2temp": "sensor.batteries_1_temperature_2",
+                "bat1_mostemp": "sensor.batteries_1_temperature_mos",
+                "bat2_min": "sensor.batteries_2_cell_voltage_lowest",
+                "bat2_max": "sensor.batteries_2_cell_voltage_highest",
+                "bat2_cell1temp": "sensor.batteries_2_temperature_1",
+                "bat2_cell2temp": "sensor.batteries_2_temperature_2",
+                "bat2_mostemp": "sensor.batteries_2_temperature_mos",
+                "bat3_min": "sensor.batteries_3_cell_voltage_lowest",
+                "bat3_max": "sensor.batteries_3_cell_voltage_highest",
+                "bat3_cell1temp": "sensor.batteries_3_temperature_1",
+                "bat3_cell2temp": "sensor.batteries_3_temperature_2",
+                "bat3_mostemp": "sensor.batteries_3_temperature_mos",
+                "bat4_min": "none",
+                "bat4_max": "none",
+                "bat4_cell1temp": "none",
+                "bat4_cell2temp": "none",
+                "bat4_mostemp": "none"
+              },
+              "card_mod": {
+                "style": "ha-card { --card-background-color: #102040 !important; background-color: #102040 !important; --primary-text-color: #ffffff !important; --secondary-text-color: #cccccc !important; color: #ffffff !important; }"
+              },
+              "decimal_places": 3
+            }
+          ]
+        },
+        {
+          "title": "Cast",
+          "path": "cast",
+          "icon": "mdi:cast",
+          "badges": [],
+          "cards": [
+            {
+              "type": "markdown",
+              "content": "Cast destination discovered on mn-home: **192.168.1.129** ([LG] webOS TV NANO81TSA). Alternate address: **192.168.1.191**."
+            },
+            {
+              "type": "iframe",
+              "url": "http://tony-dell.taila0626a.ts.net:8123/desktop-caster/desktop",
+              "aspect_ratio": "100%"
             }
           ]
         }
