@@ -61,18 +61,18 @@ if git -C "$CARD_REPO" rev-parse --verify main >/dev/null 2>&1; then
 fi
 
 deploy_to() {
-  local host="$1" SSH WWW RES RESTART URL_BASE
+  local host="$1" SSH WWW RES RESTART TEST_URL TEST_SSH
   case "$host" in
     michael-dev)
       SSH=tony-dell; WWW=/home/tony/.config/michael-dev/www
       RES=/home/tony/.config/michael-dev/.storage/lovelace_resources
       RESTART="systemctl --user restart michael-dev.service"
-      URL_BASE="https://tony-dell.taila0626a.ts.net:8124" ;;
+      TEST_URL="http://127.0.0.1:8124"; TEST_SSH=1 ;;
     michael-ha)
       SSH=michael-ha; WWW=/config/www
       RES=/config/.storage/lovelace_resources
       RESTART="ha core restart"
-      URL_BASE="http://michael-ha:8123" ;;
+      TEST_URL="http://michael-ha:8123"; TEST_SSH="" ;;
     *) echo "unknown host $host" >&2; return 1 ;;
   esac
 
@@ -92,7 +92,11 @@ deploy_to() {
   echo -n "[$host] waiting for HA..."
   code=""
   for i in $(seq 1 60); do
-    code=$(curl -sk -o /dev/null -w '%{http_code}' --max-time 10 "$URL_BASE/local/$file" || true)
+    if [ -n "$TEST_SSH" ]; then
+      code=$(ssh "$SSH" "curl -sk -o /dev/null -w '%{http_code}' --max-time 10 '${TEST_URL}/local/${file}'" || true)
+    else
+      code=$(curl -sk -o /dev/null -w '%{http_code}' --max-time 10 "${TEST_URL}/local/${file}" || true)
+    fi
     [ "$code" = "200" ] && break
     sleep 3
   done
