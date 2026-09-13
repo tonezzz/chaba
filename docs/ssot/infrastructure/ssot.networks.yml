@@ -1,0 +1,90 @@
+title: Network Access & Service Reachability
+subtitle: How to connect to each known network and which services are reachable from it
+icon: "🌐"
+
+ideas:
+  - One SSOT for network profiles, access methods, and service reachability rules.
+  - Passwords are not stored here; they live in NetworkManager or ~/.local/share/wifi/tony-omen-networks.json.
+  - Tailscale is the default fallback when local (.local) hostnames do not resolve.
+
+sections:
+  - title: Current Session
+    icon: "📡"
+    layout: list
+    items:
+      - label: mn-home
+        text: Connected to AisMN_5G on wlo1. IP 192.168.1.153/24, gateway 192.168.1.1, DNS 192.168.1.1. Key mgmt wpa-psk. This is Michael's home network (192.168.1.0/24). Active from 2026-09-13.
+        status: active
+      - label: tony-omen on mn-home
+        text: Reachable on this network via Tailscale (tony-omen / 100.75.102.88). The local 192.168.1.153 address is this session's DHCP lease.
+      - label: seen BSSIDs
+        text: D4:4F:67:A3:B2:7C, D4:4F:67:A4:34:60
+
+  - title: Known Networks
+    icon: "🗺️"
+    layout: list
+    items:
+      - label: mn-home
+        text: Michael's home. SSID AisMN_5G, 192.168.1.0/24, gateway 192.168.1.1. Typical device wlo1. The PSK has not been captured yet.
+        status: active
+      - label: tony-home
+        text: Tony's home. SSIDs TONY-WIFI_2.4G / TONY-WIFI_5G and netplan-eno1, 192.168.2.0/24, gateway 192.168.2.1. Credentials in ~/.local/share/wifi/tony-omen-networks.json.
+        status: available
+      - label: Mountain View
+        text: Resort network. SSIDs Mountain View Resort_2.4G / Mountain View Resort_5G, 192.168.1.0/24, gateway 192.168.1.1. Password 1111100000 in wifi JSON.
+        status: stale
+      - label: iPhone tether
+        text: SSID TONY-IP or USB enx, DHCP /28, fallback metric 100. Password tonytony. See ssot.tony-omen-multi-wan.yml.
+        status: fallback
+      - label: Albatros Rooms
+        text: SSIDs Albatros Rooms_2.4G / Albatros Rooms_5G, passwords in wifi JSON.
+        status: saved
+      - label: Maesang place07
+        text: SSID Maesang place07, password in wifi JSON.
+        status: saved
+
+  - title: Service Access Rules
+    icon: "🔌"
+    layout: list
+    items:
+      - label: Same-network local
+        text: On tony-home (192.168.2.0/24) use .local names and local IPs — tony-omen, tony-dell, tony-ha (port 8123), michael-dev (port 8124), mddb, postgres, etc.
+      - label: On mn-home or other trusted Wi-Fi
+        text: Local 192.168.1.x is Michael's network. Reach tony-omen/tony-dell services via Tailscale or their public funnel URLs. Use michael-ha via Tailscale (michael-ha) or Nabu Casa cloud.
+      - label: Public / internet access
+        text: tony-dell public funnel and Caddy endpoints (https://tony-dell.taila0626a.ts.net) and the michael-ha Nabu Casa URL are reachable from any internet-connected network.
+      - label: Tailscale everywhere
+        text: tailnet hostnames (tony-omen, tony-dell, michael-ha) and 100.x IPs work across all networks as long as Tailscale is connected.
+
+  - title: Credential Storage
+    icon: "🔐"
+    layout: list
+    items:
+      - label: Wi-Fi passwords
+        text: Stored in ~/.local/share/wifi/tony-omen-networks.json (mode 600) and in NetworkManager connection secrets. Not in git or SSOT.
+      - label: Tailscale
+        text: Logged in as the same tailnet user on tony-omen, tony-dell, and mobile devices.
+      - label: Home Assistant tokens
+        text: In per-service env files under ~/.config/secrets/ — not in SSOT.
+
+  - title: Switching Networks
+    icon: "🔄"
+    layout: list
+    items:
+      - label: nmcli connect
+        text: nmcli c up '<ConnectionName>'; verify with nmcli c show --active and ip route.
+      - label: route check
+        text: ip -4 route show default; ensure desired interface has the lowest metric.
+      - label: iPhone fallback
+        text: Bluetooth connect to TONY-IP triggers iOS Shortcut to enable hotspot; then connect to TONY-IP Wi-Fi or use enx USB tether.
+
+  - title: Next Steps
+    icon: "➡️"
+    layout: list
+    items:
+      - label: mn-home password
+        text: Add the AisMN_5G PSK to the secure wifi JSON if it is to be reused automatically.
+      - label: mn-home speed test
+        text: Run a quick download test and record it in the wifi JSON.
+      - label: michael-host scan
+        text: Confirm which 192.168.1.x hosts are reachable and update ssot.ip-address-registry.michael.yml.
