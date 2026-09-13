@@ -11,10 +11,11 @@ instances:
     repo_snapshot: docs/home-assistant/dashboards/tony-test-current.json
     note: >-
       The live Lovelace layout is stored in .storage/lovelace.tony_test. The
-      repo JSON is an archival snapshot. 2026-09-08: PF3/PF4/PFG/PFG1/PFG2
-      removed; current layout is
+      repo JSON is an archival snapshot. 2026-09-13: Cast tab added (path cast)
+      with iframe to desktop-caster and the LG TV discovered on mn-home.
+      2026-09-08: PF3/PF4/PFG/PFG1/PFG2 removed; current layout is
       V0/V1/G1/TPL/TPL2/TPL_SOLIS/Data/Sankey/juWorkshop/Solar
-      Assistant/glass/Weather/Solis Daily Energy Sankey.
+      Assistant/glass/Weather/Solis Daily Energy Sankey/Cast.
 
   live:
     name: tony-test
@@ -84,6 +85,11 @@ tabs:
     - order: 12
       title: Solis Daily Energy Sankey
       path: ~
+    - order: 13
+      title: Cast
+      path: cast
+      note: LG webOS TV destination on mn-home (192.168.1.129) with an iframe to the desktop-caster page.
+      test_url: https://tony-dell.taila0626a.ts.net:8124/tony-test/cast
 
   live:
     - order: 0
@@ -135,6 +141,6 @@ manual_steps:
   - To add a new tab, push via websocket mutate or use the HA UI, then snapshot
 
 status:
-  last_updated: '2026-09-08'
+  last_updated: '2026-09-13'
   last_verified: '2026-09-13'
-  health: active; G1 on both hosts (dev v171 / ha v161, same md5 b404aab0) — surface3d PV chart on sensor.inverters_1_pv_power, vendored echarts libs in /local; dev and michael-ha snapshots re-synced; PF3/PF4/PFG/PFG1/PFG2 removed
+  health: active; G1 on both hosts (dev v171 / ha v161, same md5 b404aab0) — surface3d PV chart on sensor.inverters_1_pv_power, vendored echarts libs in /local; Cast tab added; PF3/PF4/PFG/PFG1/PFG2 removed
