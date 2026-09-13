@@ -1,0 +1,37 @@
+{
+  admin localhost:2019
+}
+
+:8082 {
+  root * /home/tony/CascadeProjects/chaba/stacks/web/public
+
+  handle /apps/ada_pi {
+    redir /apps/ada_pi/ 308
+  }
+
+  handle /apps/ada_pi/ws {
+    uri strip_prefix /apps/ada_pi
+    reverse_proxy 127.0.0.1:8000
+  }
+
+  handle /apps/ada_pi/api/* {
+    uri strip_prefix /apps/ada_pi
+    reverse_proxy 127.0.0.1:8000
+  }
+
+  handle_path /apps/ada_pi/* {
+    root * /home/tony/CascadeProjects/chaba/stacks/web/public/apps/ada-pi
+    file_server
+    header Cache-Control "no-store"
+  }
+
+  # Tony-omen desktop cast stream and thumbnails
+  handle /tony-omen/desktop {
+    redir /tony-omen/desktop/ 308
+  }
+
+  handle_path /tony-omen/desktop/* {
+    root * /home/tony/.local/share/cast-desktop/desktop
+    file_server
+  }
+}
