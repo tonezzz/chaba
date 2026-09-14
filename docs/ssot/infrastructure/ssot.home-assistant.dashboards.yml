@@ -25,12 +25,9 @@ instances:
     storage_path: /config/.storage/lovelace.tony_test
     repo_snapshot: docs/home-assistant/dashboards/michael-ha-tony-test-current.json
     note: >-
-      The live michael-ha tony-test dashboard. 2026-09-13: Cast tab added (path cast)
-      with iframe to desktop-caster and the LG TV discovered on mn-home, plus a
-      2x2 grid of picture-entity cards for tony-omen virtual desktops 1-4
-      (image.tony_omen_workspace_1..4) that call rest_command.tv_action to cast
-      tony-omen:workspace:N. 2026-09-08: PFG2 tab removed; current layout is
-      V0/V1/SK/TPL/juWorkshop/Solar Assistant/glass/Weather/Cast.
+      The live michael-ha tony-test dashboard. 2026-09-14: Cast tab removed from
+      live michael-ha tony-test. 2026-09-08: PFG2 tab removed; current layout is
+      V0/V1/SK/TPL/juWorkshop/Solar Assistant/glass/Weather.
 
 tabs:
   dev:
@@ -127,17 +124,6 @@ tabs:
     - order: 8
       title: Weather
       path: weather
-    - order: 9
-      title: Cast
-      path: cast
-      note: >-
-        LG webOS TV destination on mn-home (192.168.1.129) with an iframe to the
-        desktop-caster page, plus picture-entity cards for tony-omen virtual
-        desktops 1-4 that trigger rest_command.tv_action (tony-omen:workspace:N)
-        to switch/cast the tony-omen desktop via camera.tony_omen_desktop_1, and
-        a 4-column grid of button cards that call rest_command.tv_control to run
-        tony-dell TV IR scripts (power, source, volume, mute, arrows, menu, back).
-      test_url: https://nupo4ndqdqydt78zmpq0z5wzp1bdrqgs.ui.nabu.casa/tony-test/cast
 
 manual_steps:
   - Preferred: mutate the live dashboard via scripts/home-assistant/push-dashboard.py (websocket lovelace/config/save; applies immediately, no restart)
@@ -152,5 +138,5 @@ manual_steps:
 
 status:
   last_updated: '2026-09-13'
-  last_verified: '2026-09-13'
-  health: active; G1 on both hosts (dev v171 / ha v161, same md5 b404aab0) — surface3d PV chart on sensor.inverters_1_pv_power, vendored echarts libs in /local; Cast tab promoted from dev to live michael-ha tony-test and now shows tony-omen virtual desktop 1-4 picture-entity cards; PF3/PF4/PFG/PFG1/PFG2 removed
+  last_verified: '2026-09-14'
+  health: active; G1 on both hosts (dev v171 / ha v161, same md5 b404aab0) — surface3d PV chart on sensor.inverters_1_pv_power, vendored echarts libs in /local; Cast tab removed from live michael-ha tony-test on 2026-09-14; PF3/PF4/PFG/PFG1/PFG2 removed
