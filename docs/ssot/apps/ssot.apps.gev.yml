@@ -1,0 +1,88 @@
+title: God’s Eye View (GEV)
+subtitle: Real-time voice-controlled map/3D view using a Gemini Live WebSocket bridge.
+icon: "👁️"
+sections:
+  - title: Core Features
+    icon: "✅"
+    layout: list
+    items:
+      - label: Push-to-talk voice control
+        text: Click the mic to start, speak a command, click again to end the turn; model receives the audio and returns a spoken response.
+      - label: Gemini Live 2-way audio
+        text: Browser sends 16 kHz PCM16 mic audio to the bridge and plays 24 kHz PCM16 model audio through an AudioWorklet.
+      - label: GEV tool calling
+        text: Gemini can invoke GEV tools such as fly_to_location, set_layer, and camera motion; results are returned to the model.
+      - label: Live status and transcripts
+        text: Console [GEV] logging and on-panel status show connection, function calls, text, and done/idle states.
+  - title: Technical Architecture
+    icon: "⚙️"
+    layout: list
+    items:
+      - label: Static bundle
+        text: Served from /home/tony/.config/caddy/public/apps/gev/ as index.html + versioned JS/CSS assets.
+      - label: gev-gemini bridge
+        text: Containerized service on tony-dell port 8789; opens a Gemini Live session and proxies audio/text/function calls between the browser and Google.
+      - label: Caddy routing
+        text: /apps/gev-live/* reverse-proxies to 127.0.0.1:8789.
+      - label: Google Maps integration
+        text: index.html loads the Maps JS API using __GOOGLE_MAPS_API_KEY__ for fly_to_location geocoding.
+  - title: Files & Modules
+    icon: "📁"
+    layout: list
+    items:
+      - label: index.html
+        text: App shell and loader; injects the Google Maps API key.
+      - label: index-CeIlPFGN-v15.js
+        text: Minified production bundle patched for AudioWorklet playback, end-of-turn lifecycle, and tool running.
+      - label: bridge.py
+        text: Gemini Live WebSocket proxy inside the gev-gemini container.
+      - label: tools.json
+        text: 28 function declarations sent to Gemini during setup.
+      - label: Caddyfile.tony-dell
+        text: Reverse proxy and static file routes for /apps/gev and /apps/gev-live.
+  - title: Deployment
+    icon: "🚀"
+    layout: list
+    items:
+      - label: Location
+        text: /home/tony/.config/caddy/public/apps/gev/ and the gev-gemini container on tony-dell.
+      - label: URLs
+        text: 'https://tony-dell.taila0626a.ts.net/apps/gev/'
+      - label: WebSocket
+        text: 'wss://tony-dell.taila0626a.ts.net/apps/gev-live/ws'
+      - label: Service
+        text: systemctl --user start gev-gemini.service (Docker container on port 8789).
+      - label: Registry
+        text: Listed in docs/ssot/apps/ssot.apps.yml under the tony-dell host.
+  - title: Testing
+    icon: "🧪"
+    layout: list
+    items:
+      - label: Hard refresh
+        text: Open https://tony-dell.taila0626a.ts.net/apps/gev/ in Chrome, hard-refresh, click the mic.
+      - label: Voice command test
+        text: Say "go to New York", click again to end, filter console for [GEV].
+  - title: Integration
+    icon: "🔗"
+    layout: list
+    items:
+      - label: Gemini Live API
+        text: Connects to Google's live bidi WebSocket through the bridge.
+      - label: Google Maps
+        text: fly_to_location uses the Maps Geocoder for place resolution.
+  - title: Known Issues
+    icon: "⚠️"
+    layout: list
+    items:
+      - label: Country-level geocoding
+        text: Thailand as a country fails; city-level queries like New York work. Likely needs a non-Google geocoder or country preset.
+      - label: Minified bundle patches
+        text: Working version is patched directly on tony-dell, not yet reflected in a buildable source repo.
+      - label: Safari verification pending
+        text: Latest fixes have only been confirmed on Chrome/Windows so far.
+config:
+  version: 1
+  created: '2026-09-14'
+  maintainer: tony
+  status: active
+  deployment: tony-dell

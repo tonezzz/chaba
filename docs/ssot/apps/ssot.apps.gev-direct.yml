@@ -1,0 +1,66 @@
+title: God’s Eye View (GEV) Direct
+subtitle: Experimental GEV voice client that connects the browser directly to the Gemini Live API using ephemeral tokens.
+icon: "👁️"
+sections:
+  - title: Core Features
+    icon: "✅"
+    layout: list
+    items:
+      - label: Direct browser WebSocket
+        text: Browser connects to wss://generativelanguage.googleapis.com/... with a short-lived access token, removing the bridge hop.
+      - label: Lower latency
+        text: Audio and function-call traffic bypasses the tony-dell proxy.
+      - label: Same GEV tooling
+        text: Reuses the existing map tool runner and AudioWorklet playback.
+      - label: Ephemeral token auth
+        text: Backend /apps/gev/token endpoint mints a 1-minute token from the real API key.
+  - title: Technical Architecture
+    icon: "⚙️"
+    layout: list
+    items:
+      - label: Token endpoint
+        text: Backend route (e.g. /apps/gev/token) returns a short-lived Gemini access token.
+      - label: GeminiLiveClient
+        text: New frontend client that sends setup, realtimeInput, clientContent, and toolResponse messages.
+      - label: Browser tool runner
+        text: Handles function_call messages and dispatches to the same GEV tool implementations.
+      - label: AudioWorklet playback
+        text: Plays 24 kHz PCM16 audio chunks received directly as binary WebSocket frames.
+  - title: Files & Modules
+    icon: "📁"
+    layout: list
+    items:
+      - label: token.py
+        text: Backend endpoint to create ephemeral Gemini Live tokens.
+      - label: geminiLiveClient.js
+        text: Direct WebSocket client for the Gemini BidiGenerateContent protocol.
+      - label: gevTools.js
+        text: Browser-side tool implementations (fly_to_location, set_layer, etc.).
+      - label: worklet-processor.js
+        text: AudioWorklet for PCM16 playback.
+  - title: Deployment
+    icon: "🚀"
+    layout: list
+    items:
+      - label: Location
+        text: stacks/web/public/apps/gev/ or equivalent build target.
+      - label: URLs
+        text: 'https://tony-dell.taila0626a.ts.net/apps/gev/'
+      - label: Token endpoint
+        text: 'https://tony-dell.taila0626a.ts.net/apps/gev/token'
+  - title: Known Issues
+    icon: "⚠️"
+    layout: list
+    items:
+      - label: Token lifecycle
+        text: Tokens expire quickly; must handle refresh or reconnect.
+      - label: Security
+        text: Never expose the real API key in the bundle; tokens only.
+      - label: Not yet implemented
+        text: No token endpoint or client exists yet.
+config:
+  version: 1
+  created: '2026-09-14'
+  maintainer: tony
+  status: experimental
+  deployment: tony-dell
