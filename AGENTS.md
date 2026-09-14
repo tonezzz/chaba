@@ -184,10 +184,20 @@ ssh tony-dell 'pgrep -a -f devin-desktop | grep -v "pgrep\|ssh\|tailscaled"'
 - `ssh tony-dell 'systemctl --user {start,stop,status} ada-ha-pwa'`
 - `ssh tony-dell 'systemctl --user restart caddy-tony-dell'`
 
+### REST endpoints
+
+- `GET /api/home-assistant/entities` — list controllable devices
+- `GET /api/home-assistant/sensors?search=<term>&limit=<n>` — list sensor entities
+- `GET /api/home-assistant/history?entity_id=<id>&hours=<n>` — fetch raw state history for one sensor
+- `GET /api/home-assistant/power-summary?hours=<n>` — G3 power summary (current + min/max/mean over N hours)
+- `POST /api/home-assistant/entities/{entity_id}/power` — turn light/switch/fan on or off
+
 ### Gemini tools
 
-- `get_home_state` — reads `HomeAssistantClient.snapshot()` (person + watched lights)
-- `control_entity` — calls `HomeAssistantClient.set_power(entity_id, on)` for light/switch/fan/input_boolean
+- `get_home_state` — current person state + watched plugs
+- `control_entity` — turn a light/switch/fan/input_boolean on or off
+- `get_power_summary` — voice summary of G3 solar/grid/load/battery data and recent history
+- `get_sensor_history` — detailed recent history for a specific sensor
 
 ### SSOT
 
