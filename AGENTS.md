@@ -198,6 +198,8 @@ ssh tony-dell 'pgrep -a -f devin-desktop | grep -v "pgrep\|ssh\|tailscaled"'
 - `control_entity` — turn a light/switch/fan/input_boolean on or off
 - `get_power_summary` — voice summary of G3 solar/grid/load/battery data and recent history
 - `get_sensor_history` — detailed recent history for a specific sensor
+- `list_sensors` — list available sensor entities with current state and unit
+- `search_sensors` — find a sensor by name or keyword
 
 ### SSOT
 
