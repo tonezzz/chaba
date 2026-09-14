@@ -451,14 +451,16 @@ def handle_tools_list(id_):
         },
         {
             "name": "mcp_query_ssot",
-            "description": "Find a relevant SSOT document and return a specific value or list at a dotted/integer path.",
+            "description": "Find a relevant SSOT document and return a specific value or list at a dotted/integer path. Supports * wildcards, fuzzy matching, and parent context.",
             "inputSchema": {
                 "type": "object",
                 "properties": {
                     "query": {"type": "string", "description": "Natural language or keyword query to locate the SSOT file"},
                     "path": {"type": "string", "description": "Direct relative path to the SSOT file"},
-                    "key": {"type": "string", "description": "Dotted path inside the YAML, e.g. 'audits' or 'schedule.default.runs' or 'audits.0.name'"},
+                    "key": {"type": "string", "description": "Dotted path inside the YAML, e.g. 'audits' or 'schedule.default.runs' or 'audits.0.name' or 'hosts.*.tailscale_ip'"},
                     "limit": {"type": "integer", "description": "If the result is a list, return up to this many items", "default": 50},
+                    "fuzzy": {"type": "boolean", "description": "Allow fuzzy key matching if an exact key is not found", "default": False},
+                    "context": {"type": "integer", "description": "Include N levels of parent context in the response", "default": 0},
                 },
             },
         },
@@ -480,7 +482,7 @@ def handle_tools_list(id_):
         },
         {
             "name": "mcp_ssot_get",
-            "description": "Resolve a single SSOT/registry asset by id or path and return its metadata plus source SSOT content.",
+            "description": "Resolve a single SSOT/registry asset by id or path and return its metadata plus source SSOT content, optionally querying a dotted path inside it.",
             "inputSchema": {
                 "type": "object",
                 "properties": {
@@ -488,6 +490,9 @@ def handle_tools_list(id_):
                     "id": {"type": "string", "description": "Asset id"},
                     "path": {"type": "string", "description": "Asset path"},
                     "ssot_limit": {"type": "integer", "description": "Maximum characters of source SSOT to return", "default": 20000},
+                    "key": {"type": "string", "description": "Dotted path inside the asset's source SSOT to query, e.g. 'runtime.ports.http'"},
+                    "fuzzy": {"type": "boolean", "description": "Allow fuzzy key matching if an exact key is not found", "default": False},
+                    "context": {"type": "integer", "description": "Include N levels of parent context in the query result", "default": 0},
                 },
             },
         },
@@ -729,6 +734,8 @@ def handle_tools_call(id_, params):
             path=arguments.get("path"),
             key=arguments.get("key"),
             limit=arguments.get("limit", 50),
+            fuzzy=arguments.get("fuzzy", False),
+            context=arguments.get("context", 0),
         )
         output = json.dumps(result, separators=(",", ":"))
     elif name == "mcp_ssot_query":
@@ -753,6 +760,9 @@ def handle_tools_call(id_, params):
             id=arguments.get("id"),
             path=arguments.get("path"),
             ssot_limit=arguments.get("ssot_limit", 20000),
+            key=arguments.get("key"),
+            fuzzy=arguments.get("fuzzy", False),
+            context=arguments.get("context", 0),
         )
         output = json.dumps(result, separators=(",", ":"))
     elif name == "mcp_context":

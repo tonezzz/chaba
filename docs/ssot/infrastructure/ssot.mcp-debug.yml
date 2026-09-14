@@ -571,6 +571,15 @@ tool_examples:
     description: Run a raw allowed command on a host
     example: '{"host": "tony_dell", "command": "ss -tlnp | grep 8080"}'
     note: The command must start with an allowed base from RAW_PREFIXES.
+  - tool: mcp_query_ssot
+    description: Query a precise value or list from an SSOT file by dotted path
+    example: '{"path": "docs/ssot/infrastructure/ssot.values.yml", "key": "ports.mcp_debug_cors"}'
+  - tool: mcp_query_ssot
+    description: Wildcard query to collect the same leaf from every child object
+    example: '{"path": "docs/ssot/infrastructure/ssot.values.yml", "key": "hosts.*.tailscale_ip"}'
+  - tool: mcp_query_ssot
+    description: Fuzzy match with one level of parent context
+    example: '{"path": "docs/ssot/infrastructure/ssot.values.yml", "key": "ports.mcp_debuc_cors", "fuzzy": true, "context": 1}'
 tool_selection:
   description: 'The SSOT query and context tools are arranged from the most precise to the
 

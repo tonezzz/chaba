@@ -1,10 +1,16 @@
 """MCP Debug SSOT read/search helpers."""
+import difflib
+import json
 import os
+import time
 from pathlib import Path
 
 import yaml
 
 from .config import REPO_DIR
+
+
+_SSOT_PARSED_CACHE = {}
 
 
 def _safe_path(path):
@@ -14,6 +20,50 @@ def _safe_path(path):
     except ValueError:
         return None
     return p
+
+
+def _load_yaml_cached(path):
+    """Load and cache parsed SSOT YAML, keyed by mtime."""
+    p = _safe_path(path)
+    if p is None:
+        raise ValueError("path is outside the repository")
+    if not p.exists():
+        raise FileNotFoundError(f"file not found: {p}")
+    cache_key = str(p)
+    mtime = p.stat().st_mtime
+    cached = _SSOT_PARSED_CACHE.get(cache_key)
+    if cached and cached[0] == mtime:
+        return cached[1]
+    with open(p) as f:
+        data = yaml.safe_load(f) or {}
+    _SSOT_PARSED_CACHE[cache_key] = (mtime, data)
+    return data
+
+
+_USAGE_LOG = REPO_DIR / "data" / "mcp-usage.ndjson"
+_USAGE_LOG.parent.mkdir(parents=True, exist_ok=True)
+
+
+def _log_usage(tool, kwargs, ok, result):
+    try:
+        val = result.get("value") if isinstance(result, dict) else result
+        row = {
+            "ts": time.time(),
+            "tool": tool,
+            "query": kwargs.get("query"),
+            "path": kwargs.get("path"),
+            "key": kwargs.get("key"),
+            "fuzzy": kwargs.get("fuzzy"),
+            "context": kwargs.get("context"),
+            "ok": ok,
+            "result_type": result.get("type") if isinstance(result, dict) else type(result).__name__,
+            "result_len": len(str(val)),
+            "error": result.get("error") if isinstance(result, dict) else None,
+        }
+        with open(_USAGE_LOG, "a", encoding="utf-8") as f:
+            f.write(json.dumps(row, ensure_ascii=False, default=str) + "\n")
+    except Exception:
+        pass
 
 
 def mcp_read_ssot(path=None, limit=20000):
@@ -168,28 +218,101 @@ def mcp_mddb_doc(query=None, collection="ssot-infrastructure", top_k=1, read_lim
     }
 
 
-def _navigate(data, key):
+def _navigate_wildcard(current, rest, fuzzy=False):
+    if not isinstance(current, (dict, list)):
+        return {
+            "value": None,
+            "error": "cannot apply wildcard to a non-container",
+            "info": {},
+        }
+    rest_key = ".".join(rest)
+    if isinstance(current, dict):
+        if not rest:
+            return {"value": current, "error": None, "info": {"wildcard": True}}
+        collected = {}
+        for k, v in current.items():
+            res = _navigate(v, rest_key, fuzzy=fuzzy)
+            if not res["error"]:
+                collected[k] = res["value"]
+        if not collected:
+            return {
+                "value": None,
+                "error": f"wildcard path produced no matches for '{rest_key}'",
+                "info": {"wildcard": True},
+            }
+        return {"value": collected, "error": None, "info": {"wildcard": True}}
+    else:
+        if not rest:
+            return {"value": current, "error": None, "info": {"wildcard": True}}
+        collected = []
+        for v in current:
+            res = _navigate(v, rest_key, fuzzy=fuzzy)
+            collected.append(res["value"] if not res["error"] else None)
+        return {"value": collected, "error": None, "info": {"wildcard": True}}
+
+
+def _navigate(data, key, fuzzy=False, context=0):
     if not key:
-        return data, None
+        return {"value": data, "error": None, "info": {}}
     parts = [p for p in key.split(".") if p]
     current = data
-    for part in parts:
+    parent_stack = []
+    fuzzy_parts = []
+    for i, part in enumerate(parts):
+        if context > 0:
+            parent_stack.append(current)
+        if part == "*":
+            rest = parts[i + 1:]
+            return _navigate_wildcard(current, rest, fuzzy=fuzzy)
         if isinstance(current, list):
             try:
                 idx = int(part)
                 current = current[idx]
             except (ValueError, IndexError):
-                return None, f"invalid list index '{part}' at key '{key}'"
+                return {
+                    "value": None,
+                    "error": f"invalid list index '{part}' at key '{key}'",
+                    "info": {},
+                }
         elif isinstance(current, dict):
             if part not in current:
-                return None, f"key '{part}' not found at '{key}'"
-            current = current[part]
+                suggestions = difflib.get_close_matches(part, current.keys(), n=3, cutoff=0.6)
+                if fuzzy and suggestions:
+                    resolved = suggestions[0]
+                    fuzzy_parts.append({"original": part, "resolved": resolved})
+                    part = resolved
+                    current = current[part]
+                else:
+                    info = {"suggestions": suggestions}
+                    if context > 0 and parent_stack:
+                        ctx_idx = min(context, len(parent_stack))
+                        info["context_path"] = ".".join(parts[:max(0, len(parts) - context)])
+                        info["context_value"] = parent_stack[-ctx_idx]
+                    return {
+                        "value": None,
+                        "error": f"key '{part}' not found at '{key}'",
+                        "info": info,
+                    }
+            else:
+                current = current[part]
         else:
-            return None, f"cannot traverse into non-container at '{part}'"
-    return current, None
+            return {
+                "value": None,
+                "error": f"cannot traverse into non-container at '{part}'",
+                "info": {},
+            }
+    info = {}
+    if fuzzy_parts:
+        info["fuzzy"] = True
+        info["fuzzy_parts"] = fuzzy_parts
+    if context > 0 and parent_stack:
+        ctx_idx = min(context, len(parent_stack))
+        info["context_path"] = ".".join(parts[:max(0, len(parts) - context)])
+        info["context_value"] = parent_stack[-ctx_idx]
+    return {"value": current, "error": None, "info": info}
 
 
-def mcp_query_ssot(query=None, path=None, key=None, limit=50):
+def mcp_query_ssot(query=None, path=None, key=None, limit=50, fuzzy=False, context=0):
     """Find an SSOT document and return a specific value or list at a dotted/integer path."""
     if not query and not path:
         return {"ok": False, "error": "query or path is required"}
@@ -204,18 +327,23 @@ def mcp_query_ssot(query=None, path=None, key=None, limit=50):
     if not resolved_path:
         return {"ok": False, "error": "could not resolve document path"}
 
-    read = mcp_read_ssot(path=resolved_path, limit=100000)
-    if not read.get("ok"):
-        return {"ok": False, "error": read.get("error", "failed to read SSOT")}
-
     try:
-        data = yaml.safe_load(read["content"])
+        data = _load_yaml_cached(resolved_path)
     except Exception as e:
-        return {"ok": False, "error": f"YAML parse error: {e}"}
+        result = {"ok": False, "error": str(e), "path": resolved_path, "key": key}
+        _log_usage("mcp_query_ssot", {"query": query, "path": path, "key": key, "fuzzy": fuzzy, "context": context}, False, result)
+        return result
 
-    value, error = _navigate(data, key)
+    res = _navigate(data, key, fuzzy=fuzzy, context=context)
+    value = res["value"]
+    error = res["error"]
+    info = res["info"]
+
     if error:
-        return {"ok": False, "error": error, "path": resolved_path, "key": key}
+        result = {"ok": False, "error": error, "path": resolved_path, "key": key}
+        result.update(info)
+        _log_usage("mcp_query_ssot", {"query": query, "path": path, "key": key, "fuzzy": fuzzy, "context": context}, False, result)
+        return result
 
     result_type = type(value).__name__
     truncated = False
@@ -224,7 +352,7 @@ def mcp_query_ssot(query=None, path=None, key=None, limit=50):
         if n > limit:
             value = value[:limit]
             truncated = True
-        return {
+        result = {
             "ok": True,
             "path": resolved_path,
             "key": key,
@@ -234,11 +362,14 @@ def mcp_query_ssot(query=None, path=None, key=None, limit=50):
             "truncated": truncated,
             "value": value,
         }
-
-    return {
-        "ok": True,
-        "path": resolved_path,
-        "key": key,
-        "type": result_type,
-        "value": value,
-    }
+    else:
+        result = {
+            "ok": True,
+            "path": resolved_path,
+            "key": key,
+            "type": result_type,
+            "value": value,
+        }
+    result.update(info)
+    _log_usage("mcp_query_ssot", {"query": query, "path": path, "key": key, "fuzzy": fuzzy, "context": context}, True, result)
+    return result
