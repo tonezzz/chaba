@@ -200,6 +200,7 @@ ssh tony-dell 'pgrep -a -f devin-desktop | grep -v "pgrep\|ssh\|tailscaled"'
 - `get_sensor_history` — detailed recent history for a specific sensor
 - `list_sensors` — list available sensor entities with current state and unit
 - `search_sensors` — find a sensor by name or keyword
+- `get_dashboard_tab` — read the named tab from the michael-ha tony-test dashboard and return its devices/states
 
 ### SSOT
 
