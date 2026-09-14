@@ -7,7 +7,7 @@ repositories:
     fork_of: slhub/sunsynk-power-flow-card
     current_commit: 6962e63
     package_version: 7.3.3
-    bundle_version: 237
+    bundle_version: 238
     build:
       command: npm run build
       tool: rollup -c --bundleConfigAsCjs
@@ -15,17 +15,17 @@ repositories:
     deploy:
       michael-dev:
         target_host: ssot.values.yml::hosts.tony_dell
-        target_path: /home/tony/.config/michael-dev/www/pfg3d-card-v237.js
+        target_path: /home/tony/.config/michael-dev/www/pfg3d-card-v238.js
         lovelace_resources: /home/tony/.config/michael-dev/.storage/lovelace_resources
-        resource_path: /local/pfg3d-card-v237.js
+        resource_path: /local/pfg3d-card-v238.js
         restart: systemctl --user restart michael-dev.service
         service_ref: infrastructure/ssot.services.yml#tony-dell.michael-dev.quadlet.service_unit
         test_url: https://tony-dell.taila0626a.ts.net:8124/tony-test/pf4
       michael-ha:
         target_host: ssot.values.yml::hosts.michael_ha
-        target_path: /config/www/pfg3d-card-v213.js
+        target_path: /config/www/pfg3d-card-v214.js
         lovelace_resources: /config/.storage/lovelace_resources
-        resource_path: /local/pfg3d-card-v213.js
+        resource_path: /local/pfg3d-card-v214.js
         restart: ha core restart
         test_url: https://nupo4ndqdqydt78zmpq0z5wzp1bdrqgs.ui.nabu.casa/tony-test/pf3
         note: >-
@@ -38,9 +38,9 @@ repositories:
           now enabled. Fallback: cdn.jsdelivr.net/gh/tonezzz/sunsynk-power-flow-card@<commit>/dist/...
       tony-ha:
         target_host: ssot.values.yml::hosts.tony_dell
-        target_path: /home/tony/.config/home-assistant/www/pfg3d-card-v237.js
+        target_path: /home/tony/.config/home-assistant/www/pfg3d-card-v238.js
         lovelace_resources: /home/tony/.config/home-assistant/.storage/lovelace_resources
-        resource_path: /local/pfg3d-card-v237.js
+        resource_path: /local/pfg3d-card-v238.js
         restart: systemctl --user restart tony-ha.service
         test_url: http://tony-dell:8123/
     source_files:
@@ -112,8 +112,8 @@ cards:
   - id: pfg3d-card
     name: PFG3D Card
     repo_ref: repositories.pfg3d-card
-    bundle_version: 237
-    deployed_as: '/local/pfg3d-card-v237.js on michael-dev (md5 a1398876119529d01c36de98d76066de); /local/pfg3d-card-v213.js on michael-ha (md5 a1398876119529d01c36de98d76066de)'
+    bundle_version: 238
+    deployed_as: '/local/pfg3d-card-v238.js on michael-dev (md5 d39394d4aa1fc64d687792d418ff3176); /local/pfg3d-card-v214.js on michael-ha (md5 d39394d4aa1fc64d687792d418ff3176)'
     dashboards:
       - id: tony-test/v0
         tab: V0
@@ -150,5 +150,5 @@ cards:
 
 status:
   last_build: '2026-09-08'
-  last_verified: '2026-09-13'
+  last_verified: '2026-09-14'
   health: active; v149 deployed to michael-dev and v122 to michael-ha; dev tabs are V0/V1/G1/TPL/TPL2/TPL_SOLIS/Data/Sankey/juWorkshop/Solar Assistant/glass/Weather/Solis Daily Energy Sankey (sunsynk on V0/V1/G1/TPL/TPL2); michael-ha tabs are V0/V1/SK/TPL/juWorkshop/Solar Assistant/glass/Weather (sunsynk on V0/V1/TPL); pfg/pfg2 features remain available in the bundle but PFG/PFG2/PF3/PF4 tabs were removed; version numbers are per-host counters — verify cross-host parity by md5sum, not version
