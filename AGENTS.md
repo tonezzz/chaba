@@ -206,3 +206,46 @@ ssh tony-dell 'pgrep -a -f devin-desktop | grep -v "pgrep\|ssh\|tailscaled"'
 
 - `docs/ssot/apps/ssot.apps.ada_ha.yml` and `docs/ssot/apps/ssot.apps.yml` list `ada-ha` under `tony-dell` host.
 
+### Network notes
+
+- `tony-dell.local` (mDNS) is not resolvable from the dev machine; use `tony-dell` (Tailscale) or the Tailscale IP instead.
+
+# ESP32 Test (esp32test) — learned 2026-09-14
+
+## Config
+
+- Source: `esp32/config.yaml`
+- Build path: `esp32/.esphome/build/esp32test/`
+- ESPHome: installed via `pipx` as `2026.8.2` (Python 3.14.4)
+- Board: `esp32dev`, framework `arduino`, chip ESP32-D0WD-V3 rev 3.1, MAC `c0:cd:d6:85:a8:38`
+
+## WiFi
+
+- Active SSID: `Xiaomi_A654`
+- IP: `192.168.31.231`, gateway `192.168.31.1`
+- Configured networks: `Xiaomi_A654` and `AisMN_2.4G` (both use `starboardwind`)
+- 5 GHz entries (`tony5`, `albatros5`, `aismn5g`) removed to fix 2.4 GHz-only ESP32 connection
+- `esp32/secrets.yaml` holds `!secret` placeholders for legacy networks and the real MQTT credentials
+
+## MQTT
+
+- Broker: `michael-ha` Mosquitto at `192.168.1.160:1883`
+- Credentials: username `mqtt` (password saved to `esp32/secrets.yaml`, `chmod 600`)
+- Credentials were found in `michael-ha` `/config/.storage/core.config_entries`
+- `michael-ha` HA auto-discovers the device via MQTT; entity IDs:
+  - `binary_sensor.esp32_test_node_status`
+  - `light.esp32_test_display_backlight`
+  - `sensor.esp32_test_connected_ssid`
+  - `sensor.esp32_test_ip_address`
+  - `sensor.esp32_test_uptime`
+  - `sensor.esp32_test_wifi_signal`
+  - `sensor.esp32_test_free_heap`
+
+## Flash / access
+
+- USB port: CH340 at `/dev/ttyUSB0` (root:dialout), needs `sudo chmod 666 /dev/ttyUSB0` or `dialout` group
+- Compile: `cd chaba && esphome compile esp32/config.yaml`
+- USB flash: `esphome run esp32/config.yaml --device /dev/ttyUSB0`
+- OTA: `esphome run esp32/config.yaml --device 192.168.31.231`
+- Direct `esphome` / ping access requires being on `Xiaomi_A654`; `michael-ha` can see it only through MQTT, not by IP
+
