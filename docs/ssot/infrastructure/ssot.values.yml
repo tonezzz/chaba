@@ -89,6 +89,15 @@ notebooklm:
     nlm: ~/.local/bin/nlm
     nbapi: ~/.local/bin/nbapi
     nlm_add: ~/.local/bin/nlm-add
+  sync:
+    notebook_id: fdfd3483-6b7e-4cb0-85f3-7f060698769c
+    chunk_files: 40
+    min_kb_group: 5
+    manifest: data/notebooklm-kb-sync-manifest.yml
+    script: scripts/notebooklm-kb-sync.py
+    service: ~/.config/systemd/user/notebooklm-kb-sync.service
+    timer: ~/.config/systemd/user/notebooklm-kb-sync.timer
+
   collections:
     chaba:
       folder_id: 1H7FHxy5nDxMOmcFtL79lmy_bttV35kjB

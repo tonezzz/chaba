@@ -10,7 +10,7 @@ from pathlib import Path
 NOTEBOOK_ID = "fdfd3483-6b7e-4cb0-85f3-7f060698769c"
 MDDB_URL = "http://127.0.0.1:11023/v1/search"
 MDDB_COLLECTION = "infrastructure-ssot"
-OUT = Path("/home/tony/CascadeProjects/chaba/docs/kb/experiments/notebooklm-kb-search-benchmark-2026-09-15.yml")
+OUT = Path("/home/tony/CascadeProjects/chaba/docs/kb/experiments/notebooklm-kb-search-benchmark-2026-09-15-v2.yml")
 QUESTIONS = [
     "What is the Tailscale IP of tony-dell?",
     "How do I restart the NotebookLM REST auth refresh?",
