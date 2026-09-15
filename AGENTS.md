@@ -352,6 +352,9 @@ rsync -avz /home/tony/CascadeProjects/chaba/stacks/web/public/apps/ tony-dell:/h
 - `docs/ssot/apps/*.yml`
 - `docs/ssot/ssot*.yml`
 - `docs/kb/**/*.md` and `*.yml`
+- `apps/dev/v0/README.md`
+- `stacks/ha-live/README.md`
+- `workflows/README.md`
 
 ### Sync
 
