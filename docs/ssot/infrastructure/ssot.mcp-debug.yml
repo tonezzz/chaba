@@ -586,6 +586,14 @@ tool_examples:
   - tool: mcp_query_ssot
     description: Fuzzy match with one level of parent context
     example: '{"path": "docs/ssot/infrastructure/ssot.values.yml", "key": "ports.mcp_debuc_cors", "fuzzy": true, "context": 1}'
+  - tool: mcp_query_ssot
+    description: Resolve an SSOT value that references another SSOT file
+    example: '{"path": "docs/ssot/infrastructure/ssot.values.yml", "key": "hosts.tony_dell.tailscale_ip"}'
+    note: The value may be a !ssot_ref or __ref__ object; it is resolved to the referenced value.
+  - tool: mcp_query_ssot
+    description: Interpolate an SSOT expression to build a dynamic URL or string
+    example: '{"path": "docs/ssot/infrastructure/ssot.values.yml", "key": "endpoints.example"}'
+    note: The value may be a ${ssot("ssot.values.yml", "hosts.tony_dell.tailscale_ip")} expression.
 tool_selection:
   description: 'The SSOT query and context tools are arranged from the most precise to the
 
@@ -594,7 +602,7 @@ tool_selection:
     '
   hierarchy:
   - tool: mcp_query_ssot
-    for: one precise value or list at a dotted path in a known or discovered SSOT file
+    for: one precise value, list, or dynamic reference at a dotted path in a known or discovered SSOT file
     example: path=docs/ssot/infrastructure/ssot.values.yml, key=ports.mcp_debug_cors
   - tool: mcp_mddb_doc
     for: full content of the most relevant SSOT document discovered by MDDB or keywords

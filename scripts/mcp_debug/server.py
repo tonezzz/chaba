@@ -452,7 +452,7 @@ def handle_tools_list(id_):
         },
         {
             "name": "mcp_query_ssot",
-            "description": "Find a relevant SSOT document and return a specific value or list at a dotted/integer path. Supports * wildcards, fuzzy matching, and parent context.",
+            "description": "Find a relevant SSOT document and return a specific value or list at a dotted/integer path. Supports * wildcards, fuzzy matching, parent context, and dynamic references (__ref__, !ssot_ref, ${ssot(...)} expressions).",
             "inputSchema": {
                 "type": "object",
                 "properties": {
@@ -462,6 +462,8 @@ def handle_tools_list(id_):
                     "limit": {"type": "integer", "description": "If the result is a list, return up to this many items", "default": 50},
                     "fuzzy": {"type": "boolean", "description": "Allow fuzzy key matching if an exact key is not found", "default": False},
                     "context": {"type": "integer", "description": "Include N levels of parent context in the response", "default": 0},
+                    "resolve": {"type": "boolean", "description": "Resolve __ref__, !ssot_ref, and ${ssot(...)} expressions in the value", "default": True},
+                    "trace": {"type": "boolean", "description": "Include the chain of resolved references in the response and in the usage log", "default": False},
                 },
             },
         },
@@ -742,6 +744,8 @@ def handle_tools_call(id_, params):
             limit=arguments.get("limit", 50),
             fuzzy=arguments.get("fuzzy", False),
             context=arguments.get("context", 0),
+            resolve=arguments.get("resolve", True),
+            trace=arguments.get("trace", False),
         )
         output = json.dumps(result, separators=(",", ":"))
     elif name == "mcp_ssot_query":

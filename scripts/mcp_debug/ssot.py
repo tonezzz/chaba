@@ -2,12 +2,21 @@
 import difflib
 import json
 import os
+import re
 import time
 from pathlib import Path
 
 import yaml
 
 from .config import REPO_DIR
+
+
+def _ssot_ref_constructor(loader, node):
+    value = loader.construct_scalar(node)
+    return {"__ref__": value}
+
+
+yaml.SafeLoader.add_constructor("!ssot_ref", _ssot_ref_constructor)
 
 
 _SSOT_PARSED_CACHE = {}
@@ -38,6 +47,107 @@ def _load_yaml_cached(path):
         data = yaml.safe_load(f) or {}
     _SSOT_PARSED_CACHE[cache_key] = (mtime, data)
     return data
+
+
+def _value_to_string(value):
+    if isinstance(value, (str, int, float, bool)):
+        return str(value)
+    return json.dumps(value, ensure_ascii=False, default=str)
+
+
+def _parse_ssot_args(inner):
+    """Parse a string like '...path...', '...key...' and return (path, key)."""
+    parts = re.findall(r'"([^"]*)"|\'([^\']*)\'', inner)
+    args = [p[0] if p[0] else p[1] for p in parts]
+    if len(args) != 2:
+        return None
+    return args[0], args[1]
+
+
+def _parse_ref(ref):
+    """Parse a __ref__ value, which may be a string 'path:key' or a dict."""
+    if isinstance(ref, dict):
+        path = ref.get("path") or ref.get("query")
+        key = ref.get("key")
+        if not path or not key:
+            return None
+        return path, key
+    if isinstance(ref, str):
+        if ":" not in ref:
+            return None
+        path, key = ref.rsplit(":", 1)
+        return path, key
+    return None
+
+
+def _resolve_ref(path, key, stack, trace, fuzzy=False, context=0, limit=50):
+    """Resolve one SSOT reference and recursively resolve its value."""
+    try:
+        p = _safe_path(path)
+        if p is None:
+            return {"value": None, "error": f"ref path is outside the repository: {path}", "trace": trace}
+        if not p.exists():
+            return {"value": None, "error": f"ref file not found: {path}", "trace": trace}
+        resolved_path = str(p.relative_to(REPO_DIR))
+        ref_key = (resolved_path, key)
+        if ref_key in stack:
+            return {"value": None, "error": f"circular SSOT reference: {ref_key}", "circular": True, "trace": trace}
+        data = _load_yaml_cached(resolved_path)
+        res = _navigate(data, key, fuzzy=fuzzy, context=context)
+        if res["error"]:
+            return {"value": None, "error": f"ref lookup failed for {resolved_path}:{key}: {res['error']}", "trace": trace}
+        value = res["value"]
+        trace.append({"path": resolved_path, "key": key, "type": type(value).__name__})
+        new_stack = stack | {ref_key}
+        return _resolve_value(value, stack=new_stack, trace=trace, fuzzy=fuzzy, context=context, limit=limit)
+    except Exception as e:
+        return {"value": None, "error": f"ref error for {path}:{key}: {e}", "trace": trace}
+
+
+def _interpolate_ssot(value, stack, trace, fuzzy=False, context=0, limit=50):
+    pattern = re.compile(r'\$\{ssot\(([^)]*)\)\}')
+    parts = []
+    pos = 0
+    for m in pattern.finditer(value):
+        parts.append(value[pos:m.start()])
+        target = _parse_ssot_args(m.group(1))
+        if not target:
+            return None, f"invalid ssot expression: {m.group(0)}"
+        res = _resolve_ref(target[0], target[1], stack, trace, fuzzy=fuzzy, context=context, limit=limit)
+        if res.get("error"):
+            return None, res["error"]
+        parts.append(_value_to_string(res["value"]))
+        pos = m.end()
+    parts.append(value[pos:])
+    return "".join(parts), None
+
+
+def _resolve_value(value, stack=None, trace=None, fuzzy=False, context=0, limit=50):
+    if trace is None:
+        trace = []
+    if stack is None:
+        stack = set()
+
+    if isinstance(value, dict) and "__ref__" in value:
+        target = _parse_ref(value["__ref__"])
+        if not target:
+            return {"value": value, "error": "invalid __ref__ value", "trace": trace}
+        return _resolve_ref(target[0], target[1], stack, trace, fuzzy=fuzzy, context=context, limit=limit)
+
+    if isinstance(value, str):
+        m = re.fullmatch(r'\$\{ssot\(([^)]*)\)\}', value)
+        if m:
+            target = _parse_ssot_args(m.group(1))
+            if not target:
+                return {"value": value, "error": f"invalid ssot expression: {value}", "trace": trace}
+            return _resolve_ref(target[0], target[1], stack, trace, fuzzy=fuzzy, context=context, limit=limit)
+        if "${ssot(" in value:
+            resolved, error = _interpolate_ssot(value, stack, trace, fuzzy=fuzzy, context=context, limit=limit)
+            if error:
+                return {"value": value, "error": error, "trace": trace}
+            return {"value": resolved, "error": None, "trace": trace}
+
+    return {"value": value, "error": None, "trace": trace}
 
 
 _USAGE_LOG = REPO_DIR / "data" / "mcp-usage.ndjson"
@@ -312,8 +422,14 @@ def _navigate(data, key, fuzzy=False, context=0):
     return {"value": current, "error": None, "info": info}
 
 
-def mcp_query_ssot(query=None, path=None, key=None, limit=50, fuzzy=False, context=0):
-    """Find an SSOT document and return a specific value or list at a dotted/integer path."""
+def mcp_query_ssot(query=None, path=None, key=None, limit=50, fuzzy=False, context=0, resolve=True, trace=False):
+    """Find an SSOT document and return a specific value or list at a dotted/integer path.
+
+    If resolve=True, values that are __ref__ objects, !ssot_ref tags, or ${ssot(...)}
+    expressions are resolved by looking up the referenced SSOT value. Circular
+    references are detected and reported. If trace=True, the resolution chain is
+    included in the response and in the usage log.
+    """
     if not query and not path:
         return {"ok": False, "error": "query or path is required"}
 
@@ -331,7 +447,7 @@ def mcp_query_ssot(query=None, path=None, key=None, limit=50, fuzzy=False, conte
         data = _load_yaml_cached(resolved_path)
     except Exception as e:
         result = {"ok": False, "error": str(e), "path": resolved_path, "key": key}
-        _log_usage("mcp_query_ssot", {"query": query, "path": path, "key": key, "fuzzy": fuzzy, "context": context}, False, result)
+        _log_usage("mcp_query_ssot", {"query": query, "path": path, "key": key, "fuzzy": fuzzy, "context": context, "resolve": resolve, "trace": trace}, False, result)
         return result
 
     res = _navigate(data, key, fuzzy=fuzzy, context=context)
@@ -342,8 +458,26 @@ def mcp_query_ssot(query=None, path=None, key=None, limit=50, fuzzy=False, conte
     if error:
         result = {"ok": False, "error": error, "path": resolved_path, "key": key}
         result.update(info)
-        _log_usage("mcp_query_ssot", {"query": query, "path": path, "key": key, "fuzzy": fuzzy, "context": context}, False, result)
+        _log_usage("mcp_query_ssot", {"query": query, "path": path, "key": key, "fuzzy": fuzzy, "context": context, "resolve": resolve, "trace": trace}, False, result)
         return result
+
+    resolved_trace = []
+    if resolve:
+        r = _resolve_value(value, fuzzy=fuzzy, context=context, limit=limit)
+        if r.get("error"):
+            result = {
+                "ok": False,
+                "error": r["error"],
+                "path": resolved_path,
+                "key": key,
+            }
+            if trace:
+                result["resolved_trace"] = r.get("trace", [])
+            result.update(info)
+            _log_usage("mcp_query_ssot", {"query": query, "path": path, "key": key, "fuzzy": fuzzy, "context": context, "resolve": resolve, "trace": trace}, False, result)
+            return result
+        value = r["value"]
+        resolved_trace = r.get("trace", [])
 
     result_type = type(value).__name__
     truncated = False
@@ -370,6 +504,12 @@ def mcp_query_ssot(query=None, path=None, key=None, limit=50, fuzzy=False, conte
             "type": result_type,
             "value": value,
         }
+    if resolve and resolved_trace:
+        result["resolved"] = True
+        if trace:
+            result["resolved_trace"] = resolved_trace
+    elif resolve:
+        result["resolved"] = False
     result.update(info)
-    _log_usage("mcp_query_ssot", {"query": query, "path": path, "key": key, "fuzzy": fuzzy, "context": context}, True, result)
+    _log_usage("mcp_query_ssot", {"query": query, "path": path, "key": key, "fuzzy": fuzzy, "context": context, "resolve": resolve, "trace": trace}, True, result)
     return result
