@@ -1,0 +1,76 @@
+#!/usr/bin/env python3
+"""Map a NotebookLM source title or source_id back to the original repo files."""
+import argparse
+import json
+import subprocess
+import sys
+from pathlib import Path
+
+REPO = Path.home() / "CascadeProjects" / "chaba"
+MANIFEST = REPO / "data" / "notebooklm-kb-sync-manifest.yml"
+
+
+def _load_manifest():
+    import yaml
+    if not MANIFEST.exists():
+        print(f"Manifest not found: {MANIFEST}", file=sys.stderr)
+        print("Run: python3 /home/tony/CascadeProjects/chaba/scripts/notebooklm-kb-sync.py", file=sys.stderr)
+        sys.exit(1)
+    with open(MANIFEST, encoding="utf-8") as f:
+        return yaml.safe_load(f) or {}
+
+
+def _live_sources(notebook_id):
+    out = subprocess.run(
+        ["nlm", "source", "list", notebook_id, "--json"],
+        capture_output=True, text=True, timeout=60,
+    )
+    if out.returncode != 0:
+        print(out.stderr, file=sys.stderr)
+        return []
+    return json.loads(out.stdout)
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Map a NotebookLM source to repo files.")
+    parser.add_argument("source", help="Source title or source_id")
+    parser.add_argument("--notebook", "-n", default="fdfd3483-6b7e-4cb0-85f3-7f060698769c")
+    parser.add_argument("--files-only", action="store_true", help="Only print original file paths")
+    args = parser.parse_args()
+
+    manifest = _load_manifest()
+    nb = manifest.get("notebook_id", args.notebook)
+    sources = [s for s in manifest.get("sources", []) if s.get("title") or s.get("source_id")]
+
+    # Find by title or source_id
+    matches = [
+        s for s in sources
+        if s.get("title") == args.source or s.get("source_id") == args.source
+    ]
+
+    if not matches:
+        # Try live title lookup from ID
+        live = _live_sources(nb)
+        live_titles = {s["id"]: s.get("title") for s in live}
+        title = live_titles.get(args.source, args.source)
+        matches = [s for s in sources if s.get("title") == title]
+
+    if not matches:
+        print(f"No source matching '{args.source}' in {MANIFEST}", file=sys.stderr)
+        sys.exit(1)
+
+    for s in matches:
+        if not args.files_only:
+            print(f"Source: {s.get('title')}")
+            print(f"  source_id: {s.get('source_id')}")
+            print(f"  drive_id: {s.get('drive_id')}")
+            print(f"  drive_name: {s.get('drive_name')}")
+            print(f"  sha256: {s.get('sha256')}")
+            print(f"  size: {s.get('size')}")
+            print(f"  files:")
+        for f in s.get("files", []):
+            print(f"    {f}")
+
+
+if __name__ == "__main__":
+    main()

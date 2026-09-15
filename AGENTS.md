@@ -360,6 +360,7 @@ rsync -avz /home/tony/CascadeProjects/chaba/stacks/web/public/apps/ tony-dell:/h
 - Manual: `python3 scripts/notebooklm-kb-sync.py`
 - Config: `docs/ssot/infrastructure/ssot.values.yml` → `notebooklm.sync`
 - Dry run: `python3 scripts/notebooklm-kb-sync.py --dry-run`
+- Post-commit hook: `.git/hooks/post-commit` runs an incremental sync when `docs/kb/`, `docs/ssot/`, `AGENTS.md`, or `README.md` change
 
 ### How to query
 
@@ -371,11 +372,29 @@ nlm query notebook fdfd3483-6b7e-4cb0-85f3-7f060698769c "<your question>" --time
 nlm query notebook fdfd3483-6b7e-4cb0-85f3-7f060698769c "<your question>" \
   --source-ids <source-id-1>,<source-id-2> --timeout 120
 
+# Cached query wrapper (stores answers for 24h)
+nlmq fdfd3483-6b7e-4cb0-85f3-7f060698769c "What is MDDB used for?"
+
+# Cite a source back to original repo files
+nlm-cite kb/mddb
+nlm-cite 40893dfc-243a-4988-bd77-f1bc916ee303
+
 # Helper: query by source title pattern (uses the sync manifest)
 python3 scripts/notebooklm-query.py "kb/mddb" "What is MDDB used for?"
 python3 scripts/notebooklm-query.py "ssot/infrastructure" "What is the tony-dell Tailscale IP?"
 python3 scripts/notebooklm-query.py "-" "Summarize the Home Assistant setup."
 ```
+
+### Helper scripts
+
+- `nlmq` — cached `nlm query` wrapper (`~/.local/bin/nlmq`)
+  - Same interface as `nlm query notebook <id> <question>`.
+  - Stores the raw answer in `~/.local/share/notebooklm/query-cache/` for 24h.
+  - Set `NLMQ_TTL` to change the cache lifetime in seconds.
+- `nlm-cite` — map a NotebookLM source title or source_id back to repo files
+  - `nlm-cite kb/mddb`
+  - `nlm-cite 40893dfc-243a-4988-bd77-f1bc916ee303`
+  - Uses `data/notebooklm-kb-sync-manifest.yml`.
 
 ### Notes
 

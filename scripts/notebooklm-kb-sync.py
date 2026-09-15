@@ -132,7 +132,11 @@ def merge_group(name, files, out_file):
             except Exception as e:
                 print(f"  skip {p}: {e}")
                 continue
-            out.write(f"\n\n===== {p.relative_to(REPO)} =====\n\n")
+            try:
+                header = p.relative_to(REPO).as_posix()
+            except ValueError:
+                header = p.as_posix()
+            out.write(f"\n\n===== {header} =====\n\n")
             out.write(text)
 
 
@@ -294,6 +298,14 @@ def build_chunks(workdir):
     merged.extend(chunk_kb_by_category(kb_md + kb_yml, workdir))
     merged.extend(chunk_items("meta/AGENTS", agents, workdir))
     merged.extend(chunk_items("meta/README", readme, workdir))
+
+    # Also sync the separate ada-pi repo's docs so the chaba KB covers its
+    # architecture and integrations (e.g. the RK600 weather station).
+    ada_pi = Path.home() / "CascadeProjects" / "ada-pi"
+    ada_pi_readme = [ada_pi / "README.md"] if (ada_pi / "README.md").exists() else []
+    ada_pi_docs = sorted((ada_pi / "docs").rglob("*.md")) if (ada_pi / "docs").exists() else []
+    merged.extend(chunk_items("ada-pi", ada_pi_readme + ada_pi_docs, workdir))
+
     return merged
 
 
@@ -302,7 +314,7 @@ def plan_sync(chunks, manifest, reconcile=False):
     for title, p, files in chunks:
         desired.append({
             "title": title,
-            "path": p,
+            "path": str(p),
             "sha256": sha256_file(p),
             "size": p.stat().st_size,
             "files": files,
@@ -456,7 +468,7 @@ def main():
                 _delete_sources([{"title": s.get("title", s["id"]), "source_id": s["id"]} for s in existing])
             except Exception as e:
                 print(f"  failed to list/delete existing sources: {e}", file=sys.stderr)
-            to_add = [{"title": t, "path": p, "sha256": sha256_file(p), "size": p.stat().st_size} for t, p in chunks]
+            to_add = [{"title": t, "path": str(p), "sha256": sha256_file(p), "size": p.stat().st_size, "files": files} for t, p, files in chunks]
             to_update = []
             to_delete = []
             unchanged = []

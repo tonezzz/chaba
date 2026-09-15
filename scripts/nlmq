@@ -1,0 +1,78 @@
+#!/usr/bin/env python3
+"""Cached wrapper around nlm query notebook."""
+import hashlib
+import json
+import os
+import subprocess
+import sys
+import time
+from pathlib import Path
+
+CACHE_DIR = Path.home() / ".local" / "share" / "notebooklm" / "query-cache"
+CACHE_TTL = int(os.environ.get("NLMQ_TTL", "86400"))
+
+
+def _cache_key(notebook, question):
+    h = hashlib.sha256(f"{notebook}:{question}".encode("utf-8")).hexdigest()
+    return h
+
+
+def _load(notebook, question):
+    key = _cache_key(notebook, question)
+    p = CACHE_DIR / f"{key}.json"
+    if not p.exists():
+        return None
+    try:
+        data = json.loads(p.read_text())
+        if time.time() - data.get("ts", 0) > CACHE_TTL:
+            return None
+        return data
+    except Exception:
+        return None
+
+
+def _save(notebook, question, raw):
+    CACHE_DIR.mkdir(parents=True, exist_ok=True)
+    key = _cache_key(notebook, question)
+    p = CACHE_DIR / f"{key}.json"
+    p.write_text(json.dumps({
+        "ts": time.time(),
+        "notebook": notebook,
+        "question": question,
+        "answer": raw,
+    }, ensure_ascii=False, indent=2))
+
+
+def main():
+    if len(sys.argv) < 3:
+        print("Usage: nlmq <notebook-id> '<question>' [--timeout <sec>]", file=sys.stderr)
+        sys.exit(1)
+
+    notebook = sys.argv[1]
+    question = sys.argv[2]
+    timeout = 120
+
+    if "--timeout" in sys.argv:
+        idx = sys.argv.index("--timeout")
+        if idx + 1 < len(sys.argv):
+            timeout = int(sys.argv[idx + 1])
+
+    cached = _load(notebook, question)
+    if cached:
+        print(cached["answer"])
+        return
+
+    out = subprocess.run(
+        ["nlm", "query", "notebook", notebook, question, "--timeout", str(timeout)],
+        capture_output=True, text=True, timeout=timeout + 30,
+    )
+    if out.returncode != 0:
+        print(out.stderr, file=sys.stderr)
+        sys.exit(out.returncode)
+
+    _save(notebook, question, out.stdout)
+    print(out.stdout)
+
+
+if __name__ == "__main__":
+    main()
