@@ -9,7 +9,7 @@ platform:
   network: host
   host: tony_dell
   port: 8123
-  host_port: 0.0.0.0:8123
+  host_port: 127.0.0.1:8123
   config: /home/tony/.config/home-assistant
   quadlet:
     container_unit: ~/.config/containers/systemd/tony-ha.container
@@ -32,9 +32,9 @@ mcp:
   webhook_id: mcp_d5528537d57627164033dc5e3e5e5aa6
   local_url: http://tony-dell:9584/private_CtYuVkJEl28cp8qA8yXNCQ
   tailnet_url: http://tony-dell:9584/private_CtYuVkJEl28cp8qA8yXNCQ
-  webhook: http://tony-dell:8123/api/webhook/mcp_d5528537d57627164033dc5e3e5e5aa6
+  webhook: http://127.0.0.1:8123/api/webhook/mcp_d5528537d57627164033dc5e3e5e5aa6
   caddy:
-    host_path: /apps/home-assistant/
+    host_path: /apps/ha/tony-ha/
     mcp_path: /api/ha-mcp/
     backend: 100.68.142.13
     caddyfile: /home/tony/CascadeProjects/chaba-tony-dell/stacks/web/Caddyfile

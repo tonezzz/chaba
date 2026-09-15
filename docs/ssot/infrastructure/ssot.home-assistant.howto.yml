@@ -338,7 +338,7 @@ runbooks:
       - Copy the exact dev bundle: cp /home/tony/.config/michael-dev/www/sunsynk-power-flow-card-fork-vN.js /home/tony/.config/home-assistant/www/
       - Update the resource via ws-resource-url.py using HASS_TOKEN from ~/.config/secrets/home-assistant-token.env (HA_LONG_LIVED_TOKEN)
       - If tony-test dashboard exists, merge desired views with push-dashboard.py; otherwise create the dashboard first
-      - Verify with curl -s -o /dev/null -w '%{http_code}' http://tony-dell:8123/local/sunsynk-power-flow-card-fork-vN.js
+      - Verify with curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8123/local/sunsynk-power-flow-card-fork-vN.js
     common_failures:
       - 'ws-resource-url.py fails with "no lovelace resource matching": the sunsynk resource must be seeded before it can be bumped.'
       - 'Resource updated but bundle 404s: restart tony-ha.service after editing .storage/lovelace_resources.'

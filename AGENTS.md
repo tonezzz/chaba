@@ -27,7 +27,7 @@ Valid modes: `normal`, `plan`, `build`, `review`.
 
 ## Key URLs
 
-- tony-ha: `http://tony-dell:8123`
+- tony-ha: `https://tony-dell.taila0626a.ts.net:8123`
 - michael-dev: `http://127.0.0.1:8124` / `https://tony-dell.taila0626a.ts.net:8124`
 - michael-ha: `http://michael-ha:8123` / `https://nupo4ndqdqydt78zmpq0z5wzp1bdrqgs.ui.nabu.casa/`
 - tony-test views: `https://tony-dell.taila0626a.ts.net:8124/tony-test/{pf3,pf4,pfg,pfg1,pfg2,tpl,data}`
