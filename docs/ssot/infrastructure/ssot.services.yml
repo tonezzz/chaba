@@ -515,8 +515,12 @@ tony-dell:
       service_unit: ~/.config/systemd/user/notebooklm-mcp.service
     cli_helpers:
       nlm: ~/.local/bin/nlm
+    drive_collection:
+      collection: chaba
+      folder_id: 1H7FHxy5nDxMOmcFtL79lmy_bttV35kjB
+      rclone_path: gdrive:notebooklm/chaba
     status: implemented (2026-09-15)
-    note: 'Persistent rootless Podman container. Mounts the authenticated .notebooklm-mcp-cli profile. Devin connects via podman exec. The ~/.local/bin/nlm wrapper calls podman exec on tony-dell or ssh there from tony-omen.'
+    note: 'Persistent rootless Podman container. Mounts the authenticated .notebooklm-mcp-cli profile. Devin connects via podman exec. The ~/.local/bin/nlm wrapper calls podman exec on tony-dell or ssh there from tony-omen. Google Drive collection for sources: gdrive:notebooklm/chaba.'
 
   notebooklm-rest:
     container: notebooklm-rest
@@ -539,8 +543,12 @@ tony-dell:
       service_unit: ~/.config/systemd/user/notebooklm-rest.service
     cli_helpers:
       nbapi: ~/.local/bin/nbapi
+    drive_collection:
+      collection: chaba
+      folder_id: 1H7FHxy5nDxMOmcFtL79lmy_bttV35kjB
+      rclone_path: gdrive:notebooklm/chaba
     status: implemented (2026-09-15)
-    note: 'FastAPI REST API on top of notebooklm-py. X-API-Key header is enforced via NOTEBOOKLM_REST_API_KEY. Exposed through Caddy at /apps/notebooklm/api on tony-dell.taila0626a.ts.net. The key lives in ~/.config/secrets/notebooklm-rest-api.env (not in git). Source and Dockerfile are in ~/.local/share/notebooklm/notebooklm-rest-api. The ~/.local/bin/nbapi wrapper sends the request to tony-dell (local curl on tony-dell, ssh on tony-omen).'
+    note: 'FastAPI REST API on top of notebooklm-py. X-API-Key header is enforced via NOTEBOOKLM_REST_API_KEY. Exposed through Caddy at /apps/notebooklm/api on tony-dell.taila0626a.ts.net. The key lives in ~/.config/secrets/notebooklm-rest-api.env (not in git). Source and Dockerfile are in ~/.local/share/notebooklm/notebooklm-rest-api. The ~/.local/bin/nbapi wrapper sends the request to tony-dell (local curl on tony-dell, ssh on tony-omen). Google Drive collection for sources: gdrive:notebooklm/chaba.'
 
 tony-omen:
   ollama:
