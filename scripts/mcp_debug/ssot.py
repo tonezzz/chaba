@@ -157,6 +157,7 @@ _USAGE_LOG.parent.mkdir(parents=True, exist_ok=True)
 def _log_usage(tool, kwargs, ok, result):
     try:
         val = result.get("value") if isinstance(result, dict) else result
+        resolved_trace = result.get("resolved_trace") if isinstance(result, dict) else None
         row = {
             "ts": time.time(),
             "tool": tool,
@@ -165,9 +166,13 @@ def _log_usage(tool, kwargs, ok, result):
             "key": kwargs.get("key"),
             "fuzzy": kwargs.get("fuzzy"),
             "context": kwargs.get("context"),
+            "resolve": kwargs.get("resolve"),
+            "trace": kwargs.get("trace"),
             "ok": ok,
             "result_type": result.get("type") if isinstance(result, dict) else type(result).__name__,
             "result_len": len(str(val)),
+            "resolved": result.get("resolved") if isinstance(result, dict) else None,
+            "resolved_trace_len": len(resolved_trace) if isinstance(resolved_trace, list) else 0,
             "error": result.get("error") if isinstance(result, dict) else None,
         }
         with open(_USAGE_LOG, "a", encoding="utf-8") as f:
