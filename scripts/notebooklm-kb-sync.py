@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Sync the Chaba repo's KB into a single NotebookLM notebook, incrementally."""
 import argparse
+import concurrent.futures
 import hashlib
 import json
 import os
@@ -9,6 +10,8 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import threading
+import time
 from pathlib import Path
 
 import yaml
@@ -24,18 +27,61 @@ def _load_ssot_values():
         return yaml.safe_load(f) or {}
 
 
-_SYNC = _load_ssot_values().get("notebooklm", {}).get("sync", {})
+_NOTEBOOKLM = _load_ssot_values().get("notebooklm", {})
+_SYNC = _NOTEBOOKLM.get("sync", {})
+_COLLECTION = _NOTEBOOKLM.get("collections", {}).get("chaba", {})
+_COLLECTION_PATH = _COLLECTION.get("path", "gdrive:notebooklm/chaba")
 
 NOTEBOOK_ID = os.environ.get("NOTEBOOKLM_KB_NOTEBOOK") or _SYNC.get(
     "notebook_id", "fdfd3483-6b7e-4cb0-85f3-7f060698769c"
 )
 CHUNK_FILES = _SYNC.get("chunk_files", 40)
 MIN_KB_GROUP = _SYNC.get("min_kb_group", 5)
+MAX_CHUNK_BYTES = _SYNC.get("max_chunk_bytes", 0)
+MAX_WORKERS = _SYNC.get("max_workers", 1)
+RETRY_ATTEMPTS = _SYNC.get("retry_attempts", 3)
+BACKOFF_BASE = _SYNC.get("backoff_base_seconds", 2)
 MANIFEST_PATH = REPO / _SYNC.get("manifest", "data/notebooklm-kb-sync-manifest.yml")
+SYNC_LOG = REPO / _SYNC.get("log", "data/notebooklm-kb-sync.ndjson")
+DRIVE_ROOT = _COLLECTION_PATH.rstrip("/") + "/notebooks"
+RCLONE_REMOTE = _NOTEBOOKLM.get("rclone_remote", "gdrive")
+_NLM_ADD_LOCK = threading.Lock()
+
+
+def _log_sync(record):
+    SYNC_LOG.parent.mkdir(parents=True, exist_ok=True)
+    with open(SYNC_LOG, "a", encoding="utf-8") as f:
+        f.write(json.dumps(record, ensure_ascii=False, default=str) + "\n")
+
+
+def _run_with_retry(cmd, env=None, timeout=60):
+    last_err = None
+    for attempt in range(RETRY_ATTEMPTS):
+        try:
+            return subprocess.run(
+                cmd,
+                text=True,
+                capture_output=True,
+                check=True,
+                env=env,
+                timeout=timeout,
+            )
+        except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as e:
+            last_err = e
+            if attempt < RETRY_ATTEMPTS - 1:
+                wait = BACKOFF_BASE * (2 ** attempt)
+                print(
+                    f"  retrying {' '.join(str(c) for c in cmd[:3])} in {wait}s "
+                    f"(attempt {attempt + 2}/{RETRY_ATTEMPTS})...",
+                    file=sys.stderr,
+                )
+                time.sleep(wait)
+            else:
+                raise last_err
 
 
 def run(cmd, **kwargs):
-    return subprocess.run(cmd, text=True, capture_output=True, check=True, **kwargs)
+    return _run_with_retry(cmd, **kwargs)
 
 
 def sha256_file(path):
@@ -47,16 +93,24 @@ def sha256_file(path):
 
 
 def nlm_source_list():
-    out = run(["nlm", "source", "list", NOTEBOOK_ID, "--json"], timeout=60).stdout
+    out = run(["nlm", "source", "list", NOTEBOOK_ID, "--json"], timeout=120).stdout
     return json.loads(out)
 
 
 def nlm_source_delete(source_id):
-    run(["nlm", "source", "delete", source_id, "--confirm"], timeout=60)
+    run(["nlm", "source", "delete", source_id, "--confirm"], timeout=120)
 
 
 def nlm_add(local_path, title):
-    out = run(["nlm-add", NOTEBOOK_ID, str(local_path), "-t", title], timeout=600).stdout
+    env = os.environ.copy()
+    env["NOTEBOOKLM_DRIVE_ROOT"] = DRIVE_ROOT
+    env["NOTEBOOKLM_RCLONE_REMOTE"] = RCLONE_REMOTE
+    with _NLM_ADD_LOCK:
+        out = run(
+            ["nlm-add", NOTEBOOK_ID, str(local_path), "-t", title],
+            env=env,
+            timeout=600,
+        ).stdout
     m_drive = re.search(r"Drive file:\s+(\S+)\s+\(([^)]+)\)", out)
     m_source = re.search(r"NLM source:\s+(\S+)", out)
     if not m_source:
@@ -69,6 +123,7 @@ def nlm_add(local_path, title):
 
 
 def merge_group(name, files, out_file):
+    out_file.parent.mkdir(parents=True, exist_ok=True)
     with open(out_file, "w", encoding="utf-8") as out:
         for f in sorted(files):
             p = Path(f)
@@ -77,22 +132,44 @@ def merge_group(name, files, out_file):
             except Exception as e:
                 print(f"  skip {p}: {e}")
                 continue
-            out.write(f"\n\n===== {p.relative_to(REPO)} =====\n\n")
+            try:
+                header = p.relative_to(REPO).as_posix()
+            except ValueError:
+                header = p.as_posix()
+            out.write(f"\n\n===== {header} =====\n\n")
             out.write(text)
 
 
-def chunk_and_merge(group_name, files, workdir):
-    paths = []
+def chunk_items(group_name, files, workdir):
     files = list(files)
     if not files:
-        return paths
-    for i in range(0, len(files), CHUNK_FILES):
-        chunk = files[i:i + CHUNK_FILES]
-        suffix = f"-{i // CHUNK_FILES + 1}" if len(files) > CHUNK_FILES else ""
+        return []
+
+    if MAX_CHUNK_BYTES and MAX_CHUNK_BYTES > 0:
+        chunks = []
+        current = []
+        current_bytes = 0
+        for f in files:
+            size = Path(f).stat().st_size
+            if current and (current_bytes + size) > MAX_CHUNK_BYTES:
+                chunks.append(current)
+                current = [f]
+                current_bytes = size
+            else:
+                current.append(f)
+                current_bytes += size
+        if current:
+            chunks.append(current)
+    else:
+        chunks = [files[i:i + CHUNK_FILES] for i in range(0, len(files), CHUNK_FILES)]
+
+    out = []
+    for idx, chunk in enumerate(chunks, 1):
+        suffix = f"-{idx}" if len(chunks) > 1 else ""
         out_file = workdir / f"{group_name}{suffix}.txt"
         merge_group(group_name, chunk, out_file)
-        paths.append((f"{group_name}{suffix}", out_file))
-    return paths
+        out.append((f"{group_name}{suffix}", out_file, [str(f) for f in chunk]))
+    return out
 
 
 def kb_category(p):
@@ -117,7 +194,6 @@ def chunk_kb_by_category(files, workdir):
     for f in sorted(files):
         groups[kb_category(f)].append(f)
 
-    # merge small flat categories into misc
     misc = []
     final = {}
     for cat, gfiles in groups.items():
@@ -131,12 +207,7 @@ def chunk_kb_by_category(files, workdir):
     paths = []
     for cat in sorted(final):
         gfiles = sorted(final[cat])
-        for i in range(0, len(gfiles), CHUNK_FILES):
-            chunk = gfiles[i:i + CHUNK_FILES]
-            suffix = f"-{i // CHUNK_FILES + 1}" if len(gfiles) > CHUNK_FILES else ""
-            out_file = workdir / f"kb-{cat}{suffix}.txt"
-            merge_group(f"kb-{cat}", chunk, out_file)
-            paths.append((f"kb-{cat}{suffix}", out_file))
+        paths.extend(chunk_items(f"kb/{cat}", gfiles, workdir))
     return paths
 
 
@@ -160,6 +231,56 @@ def save_manifest(sources):
                        f, sort_keys=False, allow_unicode=True)
 
 
+def _flatten_values(data, prefix=""):
+    rows = []
+    if isinstance(data, dict):
+        for k, v in data.items():
+            new_prefix = f"{prefix}.{k}" if prefix else str(k)
+            rows.extend(_flatten_values(v, new_prefix))
+    elif isinstance(data, list):
+        for i, v in enumerate(data):
+            rows.extend(_flatten_values(v, f"{prefix}[{i}]"))
+    else:
+        rows.append(f"{prefix}: {data}")
+    return rows
+
+
+def build_glossary(workdir):
+    values = _load_ssot_values()
+    out_file = workdir / "meta" / "glossary.txt"
+    out_file.parent.mkdir(parents=True, exist_ok=True)
+    rows = _flatten_values(values)
+    with open(out_file, "w", encoding="utf-8") as out:
+        out.write("===== SSOT Values Glossary =====\n\n")
+        out.write(f"Generated: {time.strftime('%Y-%m-%dT%H:%M:%S%z')}\n\n")
+        for line in sorted(rows):
+            out.write(line + "\n")
+    return [("meta/glossary", out_file, [str(SSOT_VALUES)])]
+
+
+def build_source_map(sources, workdir):
+    out_file = workdir / "meta" / "source-map.txt"
+    out_file.parent.mkdir(parents=True, exist_ok=True)
+    with open(out_file, "w", encoding="utf-8") as out:
+        out.write("===== NotebookLM Source Map =====\n\n")
+        out.write(f"Notebook ID: {NOTEBOOK_ID}\n")
+        out.write(f"Generated: {time.strftime('%Y-%m-%dT%H:%M:%S%z')}\n")
+        out.write(f"Sources: {len(sources)}\n\n")
+        for s in sorted(sources, key=lambda x: x["title"]):
+            out.write(f"title: {s['title']}\n")
+            out.write(f"  source_id: {s['source_id']}\n")
+            out.write(f"  drive_id: {s.get('drive_id', 'unknown')}\n")
+            out.write(f"  drive_name: {s.get('drive_name', 'unknown')}\n")
+            out.write(f"  size: {s.get('size', 0)}\n")
+            out.write(f"  sha256: {s['sha256']}\n")
+            if s.get("files"):
+                out.write(f"  files: {len(s['files'])}\n")
+                for f in s["files"]:
+                    out.write(f"    - {f}\n")
+            out.write("\n")
+    return out_file
+
+
 def build_chunks(workdir):
     infrastructure = sorted((REPO / "docs" / "ssot" / "infrastructure").glob("*.yml"))
     apps = sorted((REPO / "docs" / "ssot" / "apps").glob("*.yml"))
@@ -170,23 +291,33 @@ def build_chunks(workdir):
     readme = [REPO / "README.md"] if (REPO / "README.md").exists() else []
 
     merged = []
-    merged.extend(chunk_and_merge("infrastructure", infrastructure, workdir))
-    merged.extend(chunk_and_merge("ssot-apps", apps, workdir))
-    merged.extend(chunk_and_merge("ssot-top", sstop, workdir))
+    merged.extend(build_glossary(workdir))
+    merged.extend(chunk_items("ssot/infrastructure", infrastructure, workdir))
+    merged.extend(chunk_items("ssot/apps", apps, workdir))
+    merged.extend(chunk_items("ssot/top", sstop, workdir))
     merged.extend(chunk_kb_by_category(kb_md + kb_yml, workdir))
-    merged.extend(chunk_and_merge("AGENTS", agents, workdir))
-    merged.extend(chunk_and_merge("README", readme, workdir))
+    merged.extend(chunk_items("meta/AGENTS", agents, workdir))
+    merged.extend(chunk_items("meta/README", readme, workdir))
+
+    # Also sync the separate ada-pi repo's docs so the chaba KB covers its
+    # architecture and integrations (e.g. the RK600 weather station).
+    ada_pi = Path.home() / "CascadeProjects" / "ada-pi"
+    ada_pi_readme = [ada_pi / "README.md"] if (ada_pi / "README.md").exists() else []
+    ada_pi_docs = sorted((ada_pi / "docs").rglob("*.md")) if (ada_pi / "docs").exists() else []
+    merged.extend(chunk_items("ada-pi", ada_pi_readme + ada_pi_docs, workdir))
+
     return merged
 
 
-def plan_sync(chunks, manifest):
+def plan_sync(chunks, manifest, reconcile=False):
     desired = []
-    for title, p in chunks:
+    for title, p, files in chunks:
         desired.append({
             "title": title,
-            "path": p,
+            "path": str(p),
             "sha256": sha256_file(p),
             "size": p.stat().st_size,
+            "files": files,
         })
 
     old_by_title = {s["title"]: s for s in manifest.get("sources", []) if s.get("title")}
@@ -196,6 +327,7 @@ def plan_sync(chunks, manifest):
     to_add = []
     to_update = []
     to_delete = []
+    orphans = []
 
     for d in desired:
         old = old_by_title.get(d["title"])
@@ -211,27 +343,107 @@ def plan_sync(chunks, manifest):
         if title not in desired_by_title:
             to_delete.append(old)
 
-    return to_add, to_update, to_delete, unchanged
+    if reconcile:
+        try:
+            live_sources = nlm_source_list()
+            live_ids = {s["id"] for s in live_sources}
+            known_ids = {s.get("source_id") for s in manifest.get("sources", []) if s.get("source_id")}
+            for d in unchanged[:]:
+                if d.get("source_id") not in live_ids:
+                    d["old_source_id"] = d.pop("source_id")
+                    to_update.append(d)
+                    unchanged.remove(d)
+            for s in live_sources:
+                sid = s["id"]
+                if sid not in known_ids:
+                    orphans.append({"title": s.get("title", sid), "source_id": sid})
+        except Exception as e:
+            print(f"  failed to reconcile: {e}", file=sys.stderr)
+
+    return to_add, to_update, to_delete, unchanged, orphans
+
+
+def _delete_sources(sources):
+    deleted = 0
+    for s in sources:
+        sid = s.get("old_source_id") or s.get("source_id")
+        if not sid:
+            continue
+        try:
+            nlm_source_delete(sid)
+            print(f"  deleted {s['title']} ({sid})")
+            deleted += 1
+        except Exception as e:
+            print(f"  failed to delete {s['title']}: {e}", file=sys.stderr)
+    return deleted
+
+
+def _add_sources(sources):
+    new = []
+    errors = 0
+    if MAX_WORKERS and MAX_WORKERS > 1:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=MAX_WORKERS) as ex:
+            futures = {ex.submit(nlm_add, d["path"], d["title"]): d for d in sources}
+            for fut in concurrent.futures.as_completed(futures):
+                d = futures[fut]
+                try:
+                    info = fut.result()
+                    new.append({
+                        "title": d["title"],
+                        "sha256": d["sha256"],
+                        "source_id": info["source_id"],
+                        "drive_id": info["drive_id"],
+                        "drive_name": info["drive_name"],
+                        "size": d["size"],
+                        "files": d.get("files", []),
+                    })
+                    print(f"  added {d['title']} ({info['source_id']})")
+                except Exception as e:
+                    print(f"  failed to add {d['title']}: {e}", file=sys.stderr)
+                    errors += 1
+    else:
+        for d in sources:
+            try:
+                info = nlm_add(d["path"], d["title"])
+                new.append({
+                    "title": d["title"],
+                    "sha256": d["sha256"],
+                    "source_id": info["source_id"],
+                    "drive_id": info["drive_id"],
+                    "drive_name": info["drive_name"],
+                    "size": d["size"],
+                    "files": d.get("files", []),
+                })
+                print(f"  added {d['title']} ({info['source_id']})")
+            except Exception as e:
+                print(f"  failed to add {d['title']}: {e}", file=sys.stderr)
+                errors += 1
+    return new, errors
 
 
 def main():
     parser = argparse.ArgumentParser(description="Sync the Chaba repo's KB into a single NotebookLM notebook.")
     parser.add_argument("--dry-run", action="store_true", help="Show what would change without touching NotebookLM.")
     parser.add_argument("--force", action="store_true", help="Full refresh: delete and re-add all sources.")
+    parser.add_argument("--reconcile", action="store_true", help="Check live NotebookLM sources and remove orphaned ones.")
     args = parser.parse_args()
 
+    start = time.time()
     with tempfile.TemporaryDirectory(prefix="nlm-kb-sync-") as tmp:
         workdir = Path(tmp)
         chunks = build_chunks(workdir)
 
         print(f"Prepared {len(chunks)} merged source files:")
-        for title, p in chunks:
-            print(f"  {title}: {p.stat().st_size} bytes")
+        for title, p, files in chunks:
+            print(f"  {title}: {p.stat().st_size} bytes ({len(files)} files)")
 
         manifest = load_manifest()
-        to_add, to_update, to_delete, unchanged = plan_sync(chunks, manifest)
+        to_add, to_update, to_delete, unchanged, orphans = plan_sync(chunks, manifest, reconcile=args.reconcile)
 
-        print(f"\nPlan: {len(to_add)} add, {len(to_update)} update, {len(to_delete)} delete, {len(unchanged)} unchanged")
+        print(
+            f"\nPlan: {len(to_add)} add, {len(to_update)} update, "
+            f"{len(to_delete)} delete, {len(unchanged)} unchanged, {len(orphans)} orphan(s)"
+        )
 
         if args.dry_run:
             print("\nDry run; no changes.")
@@ -241,6 +453,8 @@ def main():
                 print(f"  would update: {d['title']} ({d['size']} bytes)")
             for s in to_delete:
                 print(f"  would delete: {s['title']} ({s.get('source_id')})")
+            for s in orphans:
+                print(f"  would delete orphan: {s['title']} ({s.get('source_id')})")
             for d in unchanged:
                 print(f"  unchanged: {d['title']}")
             return
@@ -251,52 +465,54 @@ def main():
             try:
                 existing = nlm_source_list()
                 print(f"Found {len(existing)} existing sources. Deleting...")
-                for src in existing:
-                    sid = src["id"]
-                    title = src.get("title", sid)
-                    try:
-                        nlm_source_delete(sid)
-                        print(f"  deleted {title} ({sid})")
-                    except Exception as e:
-                        print(f"  failed to delete {title}: {e}", file=sys.stderr)
+                _delete_sources([{"title": s.get("title", s["id"]), "source_id": s["id"]} for s in existing])
             except Exception as e:
                 print(f"  failed to list/delete existing sources: {e}", file=sys.stderr)
-            to_add = [d for _, d in chunks]
-            to_add = [{"title": t, "path": p, "sha256": sha256_file(p), "size": p.stat().st_size} for t, p in chunks]
+            to_add = [{"title": t, "path": str(p), "sha256": sha256_file(p), "size": p.stat().st_size, "files": files} for t, p, files in chunks]
             to_update = []
             to_delete = []
             unchanged = []
+            orphans = []
 
-        # Delete removed or updated sources first
-        for s in to_delete + to_update:
-            sid = s.get("old_source_id") or s.get("source_id")
-            if not sid:
-                continue
-            try:
-                nlm_source_delete(sid)
-                print(f"  deleted {s['title']} ({sid})")
-            except Exception as e:
-                print(f"  failed to delete {s['title']}: {e}", file=sys.stderr)
+        # Delete removed, updated, and orphaned sources first
+        _delete_sources(to_delete + orphans + to_update)
 
         # Add new and updated sources
-        new_sources = list(unchanged)
-        for d in to_add + to_update:
-            try:
-                info = nlm_add(d["path"], d["title"])
-                new_sources.append({
-                    "title": d["title"],
-                    "sha256": d["sha256"],
-                    "source_id": info["source_id"],
-                    "drive_id": info["drive_id"],
-                    "drive_name": info["drive_name"],
-                    "size": d["size"],
-                })
-                print(f"  added {d['title']} ({info['source_id']})")
-            except Exception as e:
-                print(f"  failed to add {d['title']}: {e}", file=sys.stderr)
+        added, add_errors = _add_sources(to_add + to_update)
+        new_sources = list(unchanged) + added
 
-        save_manifest(new_sources)
-        print(f"\nNotebook {NOTEBOOK_ID} KB sync complete.")
+        # Build and add a source-map source describing all other sources
+        try:
+            source_map_file = build_source_map(new_sources, workdir)
+            info = nlm_add(source_map_file, "meta/source-map")
+            new_sources.append({
+                "title": "meta/source-map",
+                "sha256": sha256_file(source_map_file),
+                "source_id": info["source_id"],
+                "drive_id": info["drive_id"],
+                "drive_name": info["drive_name"],
+                "size": source_map_file.stat().st_size,
+            })
+            print(f"  added meta/source-map ({info['source_id']})")
+        except Exception as e:
+            print(f"  failed to add meta/source-map: {e}", file=sys.stderr)
+            add_errors += 1
+
+    duration = time.time() - start
+    _log_sync({
+        "ts": start,
+        "duration": round(duration, 3),
+        "notebook_id": NOTEBOOK_ID,
+        "added": len(to_add),
+        "updated": len(to_update),
+        "deleted": len(to_delete) + len(orphans),
+        "unchanged": len(unchanged),
+        "errors": add_errors,
+        "force": full_refresh,
+        "reconcile": args.reconcile,
+    })
+    save_manifest(new_sources)
+    print(f"\nNotebook {NOTEBOOK_ID} KB sync complete in {duration:.1f}s.")
 
 
 if __name__ == "__main__":
