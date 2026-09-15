@@ -8542,6 +8542,195 @@
             }
           ],
           "path": "solis-daily-energy-sankey"
+        },
+        {
+          "title": "RK900 Weather (michael-dev)",
+          "path": "mn-weather",
+          "type": "masonry",
+          "cards": [
+            {
+              "type": "custom:pro-v-weather-card",
+              "title": "RK900 Console",
+              "style": "basic",
+              "outdoor_temp": "sensor.dev_rk900_temperature",
+              "outdoor_humidity": "sensor.dev_rk900_humidity",
+              "wind_speed": "sensor.dev_rk900_wind_speed_meters",
+              "wind_bearing": "sensor.dev_rk900_wind_direction",
+              "weather": "weather.forecast_home"
+            },
+            {
+              "type": "custom:apexcharts-card",
+              "header": {
+                "title": "RK900 24h",
+                "show": true
+              },
+              "graph_span": "24h",
+              "span": {
+                "start": "day"
+              },
+              "yaxis": [
+                {
+                  "id": "temp",
+                  "decimals": 1
+                },
+                {
+                  "id": "wind",
+                  "opposite": true,
+                  "decimals": 1
+                }
+              ],
+              "series": [
+                {
+                  "entity": "sensor.dev_rk900_temperature",
+                  "name": "Temp",
+                  "yaxis_id": "temp",
+                  "unit": "°C",
+                  "stroke_width": 2
+                },
+                {
+                  "entity": "sensor.dev_rk900_wind_speed_meters",
+                  "name": "Wind",
+                  "yaxis_id": "wind",
+                  "unit": "m/s",
+                  "stroke_width": 2
+                }
+              ]
+            },
+            {
+              "type": "custom:canvas-gauge-card",
+              "entity": "input_number.dev_rk900_wind_direction",
+              "card_height": 260,
+              "gauge": {
+                "type": "radial-gauge",
+                "width": 260,
+                "height": 260,
+                "minValue": 0,
+                "maxValue": 360,
+                "startAngle": 180,
+                "ticksAngle": 360,
+                "valueBox": false,
+                "exactTicks": true,
+                "majorTicks": [
+                  0,
+                  90,
+                  180,
+                  270
+                ],
+                "minorTicks": 10,
+                "strokeTicks": true,
+                "borders": false,
+                "colorPlate": "transparent",
+                "colorMajorTicks": "#333",
+                "colorMinorTicks": "#999",
+                "colorNumbers": "#333",
+                "colorNeedle": "#ff453a",
+                "needleType": "arrow",
+                "needleCircleSize": 8
+              }
+            },
+            {
+              "type": "custom:nimbus-weather-card",
+              "entity": "weather.forecast_home",
+              "name": "Forecast",
+              "max_items": 5,
+              "show_clock": false
+            },
+            {
+              "type": "custom:pro-v-weather-card",
+              "title": "RK900 Console",
+              "style": "basic",
+              "outdoor_temp": "sensor.dev_rk900_temperature",
+              "outdoor_humidity": "sensor.dev_rk900_humidity",
+              "wind_speed": "sensor.dev_rk900_wind_speed_meters",
+              "wind_bearing": "sensor.dev_rk900_wind_direction"
+            }
+          ]
+        },
+        {
+          "title": "Weather Cards",
+          "path": "weather-cards",
+          "type": "masonry",
+          "cards": [
+            {
+              "type": "custom:pro-v-weather-card",
+              "title": "PRO-V Console",
+              "style": "basic",
+              "outdoor_temp": "sensor.dev_rk900_temperature",
+              "outdoor_humidity": "sensor.dev_rk900_humidity",
+              "wind_speed": "sensor.dev_rk900_wind_speed_meters",
+              "wind_bearing": "sensor.dev_rk900_wind_direction",
+              "weather": "weather.forecast_home"
+            },
+            {
+              "type": "custom:apexcharts-card",
+              "header": {
+                "title": "RK900 24h",
+                "show": true
+              },
+              "graph_span": "24h",
+              "span": {
+                "start": "day"
+              },
+              "yaxis": [
+                {
+                  "id": "temp",
+                  "decimals": 1
+                },
+                {
+                  "id": "wind",
+                  "opposite": true,
+                  "decimals": 1
+                }
+              ],
+              "series": [
+                {
+                  "entity": "sensor.dev_rk900_temperature",
+                  "name": "Temp",
+                  "yaxis_id": "temp",
+                  "unit": "°C",
+                  "stroke_width": 2
+                },
+                {
+                  "entity": "sensor.dev_rk900_wind_speed_meters",
+                  "name": "Wind",
+                  "yaxis_id": "wind",
+                  "unit": "m/s",
+                  "stroke_width": 2
+                }
+              ]
+            },
+            {
+              "type": "custom:weather-forecast-card",
+              "entity": "weather.forecast_home",
+              "name": "Troinine Forecast",
+              "default_forecast": "daily"
+            },
+            {
+              "type": "custom:weather-flex-card",
+              "entity": "weather.forecast_home",
+              "name": "Flex Forecast",
+              "show_current": true,
+              "show_forecast": true,
+              "default_forecast": "daily"
+            },
+            {
+              "type": "custom:detailed-weather-forecast-card",
+              "entity": "weather.forecast_home",
+              "name": "Detailed Forecast"
+            },
+            {
+              "type": "custom:weather-forecast-extended-card",
+              "entity": "weather.forecast_home",
+              "name": "Extended Forecast"
+            },
+            {
+              "type": "custom:nimbus-weather-card",
+              "entity": "weather.forecast_home",
+              "name": "Nimbus Forecast",
+              "max_items": 5,
+              "show_clock": false
+            }
+          ]
         }
       ]
     }
