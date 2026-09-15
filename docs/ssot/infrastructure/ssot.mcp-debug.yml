@@ -636,6 +636,38 @@ phases:
   name: Deprecate remote-exec-tony-dell
   status: completed
   notes: remote-exec-tony-dell status set to deprecated; mcp-debug status set to operational
+maintenance:
+  hot_reload:
+    description: Reload the mcp-debug server in place to pick up code or SSOT config changes without restarting Devin.
+    command: mcp_debug
+    arguments: '{"command": "reload"}'
+    mechanism: |
+      The server flushes an ok response, sets MCP_RELOADED=1, and calls os.execv to
+      re-execute the same Python module. The stdio/SSH session is preserved.
+    notification: notifications/tools/list_changed
+    workflow:
+      - Make code/SSOT changes in the local chaba repo.
+      - scp changed scripts/mcp_debug/*.py and/or docs/ssot/infrastructure/ssot.mcp-debug.yml to the remote worktree.
+      - 'Call mcp_debug { "command": "reload" }.'
+      - The server re-execs and re-imports all modules; the client does not need to restart.
+    notes:
+      - All mcp_debug tools are reloaded (mcp_debug, mcp_query_ssot, mcp_ssot_query, mcp_ssot_get, mcp_raw, etc.).
+      - The first load of the reload code itself still requires a normal process restart; after that only mcp_debug reload is needed.
+    related_files:
+      - scripts/mcp_debug/server.py
+      - docs/ssot/infrastructure/ssot.mcp-debug.yml
+  ssot_query_improvements:
+    description: Recent enhancements to the SSOT query tools.
+    items:
+      - mcp_query_ssot supports dotted/integer paths, * wildcards, fuzzy key matching with suggestions, and parent context (context=N).
+      - mcp_query_ssot logs every call to data/mcp-usage.ndjson.
+      - mcp_ssot_get / mcp_registry_get support a key argument for dotted-path lookup inside a registry asset's source SSOT.
+      - Parsed SSOT YAML is cached by mtime.
+    related_files:
+      - scripts/mcp_debug/ssot.py
+      - scripts/mcp_debug/registry.py
+      - scripts/mcp_debug/server.py
+
 suggested_extensions:
 - id: stats
   name: mcp_stats tool
