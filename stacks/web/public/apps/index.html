@@ -34,7 +34,9 @@
       document.getElementById('nav').innerHTML = (data.nav || []).map(n =>
         `<a href="${n.href}" class="text-sm text-gray-300 hover:text-accent">${n.label}</a>`
       ).join('');
-      document.getElementById('apps').innerHTML = `
+      const appMap = new Map((data.apps || []).map(a => [a.id, a]));
+      const groupedIds = new Set();
+      let html = `
         <h1 class="text-2xl font-bold mb-1">${data.title}</h1>
         <p class="text-gray-400 text-sm mb-6">Local apps and tools on tony-dell.</p>
         <div class="bg-card border border-gray-700 rounded p-4 mb-6 text-sm text-gray-300">
@@ -45,15 +47,41 @@
             <li><strong>Public internet (Home Assistant Live):</strong> <code>https://tony-dell.taila0626a.ts.net:8444/</code> — <a href="https://tony-dell.taila0626a.ts.net:8444/" class="text-accent hover:underline">learn more</a></li>
           </ul>
         </div>
-        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-          ${data.apps.map(a => `
+      `;
+      (data.groups || []).forEach(g => {
+        html += `<h2 class="text-xl font-semibold mt-6 mb-3 text-white">${g.icon ? g.icon + ' ' : ''}${g.title}</h2>`;
+        if (g.description) {
+          html += `<p class="text-gray-400 text-sm mb-3">${g.description}</p>`;
+        }
+        html += `<div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 mb-4">`;
+        for (const id of (g.apps || [])) {
+          const a = appMap.get(id);
+          if (!a) continue;
+          groupedIds.add(id);
+          html += `
             <a href="${a.href}" class="app-card">
               <h2 class="text-lg font-semibold text-white">${a.icon ? a.icon + ' ' : ''}${a.title}</h2>
               <p class="text-gray-400 text-xs mt-1 line-clamp-2">${a.description}</p>
             </a>
-          `).join('')}
-        </div>
-      `;
+          `;
+        }
+        html += `</div>`;
+      });
+      const ungrouped = (data.apps || []).filter(a => !groupedIds.has(a.id));
+      if (ungrouped.length) {
+        html += `<h2 class="text-xl font-semibold mt-6 mb-3 text-white">Apps</h2>`;
+        html += `<div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">`;
+        for (const a of ungrouped) {
+          html += `
+            <a href="${a.href}" class="app-card">
+              <h2 class="text-lg font-semibold text-white">${a.icon ? a.icon + ' ' : ''}${a.title}</h2>
+              <p class="text-gray-400 text-xs mt-1 line-clamp-2">${a.description}</p>
+            </a>
+          `;
+        }
+        html += `</div>`;
+      }
+      document.getElementById('apps').innerHTML = html;
     });
   </script>
 </body>
