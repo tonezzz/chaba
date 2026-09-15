@@ -22,7 +22,7 @@ environments:
     runtime: rootless podman
     network: host
     port: 8124
-    host_port: 0.0.0.0:8124
+    host_port: 127.0.0.1:8124
     quadlet:
       container_unit: ~/.config/containers/systemd/michael-dev.container
       service_unit: ~/.config/systemd/user/michael-dev.service
@@ -33,10 +33,10 @@ environments:
       note: Not used — Tailscale serve provides HTTPS on port 8124. HA UI absolute redirects require internal_url to match the Tailnet HTTPS URL.
     https:
       provider: tailscale_serve
-      tailnet_url: https://tony-dell.taila0626a.ts.net:8124
-      proxy_target: http://127.0.0.1:8124
+      tailnet_url: 'https://${ssot("docs/ssot/infrastructure/ssot.values.yml", "hosts.tony_dell.tailscale")}:${ssot("docs/ssot/infrastructure/ssot.values.yml", "ports.ha_michael_dev")}'
+      proxy_target: 'http://127.0.0.1:${ssot("docs/ssot/infrastructure/ssot.values.yml", "ports.ha_michael_dev")}'
       note: tailscale serve --https=8124 http://127.0.0.1:8124 (must run as root or via sudo).
-    health_check: ssh tony-dell curl -sf https://tony-dell.taila0626a.ts.net:8124/ >/dev/null
+    health_check: 'ssh tony-dell curl -sf https://${ssot("docs/ssot/infrastructure/ssot.values.yml", "hosts.tony_dell.tailscale")}:${ssot("docs/ssot/infrastructure/ssot.values.yml", "ports.ha_michael_dev")}/ >/dev/null'
     mcp:
       server: ha_mcp_tools in-process
       status: active
@@ -46,13 +46,13 @@ environments:
       bind_host: 0.0.0.0
       secret_path: /private_B3WMIAChoseTpDS7fwgwRw
       webhook_id: mcp_ed77567866f1ebbb6fb091dc816cb550
-      local_url: http://127.0.0.1:9585/private_B3WMIAChoseTpDS7fwgwRw
-      tailnet_url: http://tony-dell:9585/private_B3WMIAChoseTpDS7fwgwRw
+      local_url: 'http://127.0.0.1:${ssot("docs/ssot/infrastructure/ssot.values.yml", "ports.ha_mcp_michael_dev")}/private_B3WMIAChoseTpDS7fwgwRw'
+      tailnet_url: 'http://${ssot("docs/ssot/infrastructure/ssot.values.yml", "hosts.tony_dell.name")}:${ssot("docs/ssot/infrastructure/ssot.values.yml", "ports.ha_mcp_michael_dev")}/private_B3WMIAChoseTpDS7fwgwRw'
       note: HA-MCP Server runs inside the dev container, exposed on host port 9585. Use the ha_reload_core tool to reload packages/helpers without a full container restart.
     autostart: loginctl enable-linger tony is yes; Quadlet WantedBy=default.target
     status: enabled
     core_config:
-      internal_url: https://tony-dell.taila0626a.ts.net:8124
+      internal_url: 'https://${ssot("docs/ssot/infrastructure/ssot.values.yml", "hosts.tony_dell.tailscale")}:${ssot("docs/ssot/infrastructure/ssot.values.yml", "ports.ha_michael_dev")}'
       note: Required so the frontend OAuth client_id and absolute redirects match the Tailnet HTTPS URL.
     auth:
       provider: homeassistant
@@ -74,8 +74,8 @@ environments:
         The long-lived HASS_TOKEN is the preferred automated credential. It works for REST, WebSocket,
         and HA-MCP, but not for browser OAuth login due to the redirect-URI issue.
     access:
-      local: http://127.0.0.1:8124
-      tailscale: https://tony-dell.taila0626a.ts.net:8124
+      local: 'http://127.0.0.1:${ssot("docs/ssot/infrastructure/ssot.values.yml", "ports.ha_michael_dev")}'
+      tailscale: 'https://${ssot("docs/ssot/infrastructure/ssot.values.yml", "hosts.tony_dell.tailscale")}:${ssot("docs/ssot/infrastructure/ssot.values.yml", "ports.ha_michael_dev")}'
   live:
     host: michael-ha
     type: nabu_casa
@@ -194,12 +194,12 @@ entity_mocks:
 verification:
   dev:
     - systemctl --user status michael-dev.service
-    - curl -sf http://127.0.0.1:8124/
-    - curl -sf https://tony-dell.taila0626a.ts.net:8124/
-    - python3 scripts/home-assistant/ha-mcp-call.py --url http://127.0.0.1:9585/private_B3WMIAChoseTpDS7fwgwRw --tool ha_reload_core
-    - ss -tlnp | grep 8124
-    - ss -tlnp | grep 9585
-    - tailscale serve status | grep 8124
+    - 'curl -sf http://127.0.0.1:${ssot("docs/ssot/infrastructure/ssot.values.yml", "ports.ha_michael_dev")}/'
+    - 'curl -sf https://${ssot("docs/ssot/infrastructure/ssot.values.yml", "hosts.tony_dell.tailscale")}:${ssot("docs/ssot/infrastructure/ssot.values.yml", "ports.ha_michael_dev")}/'
+    - 'python3 scripts/home-assistant/ha-mcp-call.py --url http://127.0.0.1:${ssot("docs/ssot/infrastructure/ssot.values.yml", "ports.ha_mcp_michael_dev")}/private_B3WMIAChoseTpDS7fwgwRw --tool ha_reload_core'
+    - 'ss -tlnp | grep ${ssot("docs/ssot/infrastructure/ssot.values.yml", "ports.ha_michael_dev")}'
+    - 'ss -tlnp | grep ${ssot("docs/ssot/infrastructure/ssot.values.yml", "ports.ha_mcp_michael_dev")}'
+    - 'tailscale serve status | grep ${ssot("docs/ssot/infrastructure/ssot.values.yml", "ports.ha_michael_dev")}'
   live:
     - tailscale ping michael-ha
     - curl -sf http://michael-ha:8123/

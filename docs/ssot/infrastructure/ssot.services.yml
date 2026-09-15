@@ -272,7 +272,7 @@ tony-dell:
     host: tony_dell
     network: host
     port: 8123
-    host_port: 0.0.0.0:8123
+    host_port: 127.0.0.1:8123
     quadlet:
       container_unit: ~/.config/containers/systemd/tony-ha.container
       service_unit: ~/.config/systemd/user/tony-ha.service
@@ -290,9 +290,9 @@ tony-dell:
       webhook_id: mcp_d5528537d57627164033dc5e3e5e5aa6
       local_url: http://tony-dell:9584/private_CtYuVkJEl28cp8qA8yXNCQ
       tailnet_url: http://tony-dell:9584/private_CtYuVkJEl28cp8qA8yXNCQ
-      webhook: http://tony-dell:8123/api/webhook/mcp_d5528537d57627164033dc5e3e5e5aa6
+      webhook: http://127.0.0.1:8123/api/webhook/mcp_d5528537d57627164033dc5e3e5e5aa6
     caddy:
-      host_path: /apps/home-assistant/
+      host_path: /apps/ha/tony-ha/
       mcp_path: /api/ha-mcp/
       backend: 100.68.142.13
       caddyfile: /home/tony/CascadeProjects/chaba-tony-dell/stacks/web/Caddyfile
@@ -306,7 +306,7 @@ tony-dell:
     runtime: rootless podman
     network: host
     port: 8124
-    host_port: 0.0.0.0:8124
+    host_port: 127.0.0.1:8124
     quadlet:
       container_unit: ~/.config/containers/systemd/michael-dev.container
       service_unit: ~/.config/systemd/user/michael-dev.service
@@ -503,6 +503,45 @@ tony-dell:
     status: implemented (2026-08-25)
     note: 'OAuth2 proxy for mcp-rview. Listens on 127.0.0.1:9004. Tailscale serve on tony-dell:443 proxies https://tony-dell.taila0626a.ts.net/ to 127.0.0.1:9004. Client credentials are in /home/tony/.config/mcp-rview-oauth-proxy.env (not in git).'
 
+  notebooklm-mcp:
+    container: notebooklm-mcp
+    image: localhost/notebooklm-mcp
+    runtime: rootless podman
+    network: host
+    host: tony_dell
+    data_volume: /home/tony/.local/share/notebooklm/.notebooklm-mcp-cli
+    quadlet:
+      container_unit: ~/.config/containers/systemd/notebooklm-mcp.container
+      service_unit: ~/.config/systemd/user/notebooklm-mcp.service
+    cli_helpers:
+      nlm: ~/.local/bin/nlm
+    status: implemented (2026-09-15)
+    note: 'Persistent rootless Podman container. Mounts the authenticated .notebooklm-mcp-cli profile. Devin connects via podman exec. The ~/.local/bin/nlm wrapper calls podman exec on tony-dell or ssh there from tony-omen.'
+
+  notebooklm-rest:
+    container: notebooklm-rest
+    image: localhost/notebooklm-rest
+    runtime: rootless podman
+    port: 8000
+    host_port: '127.0.0.1:3011'
+    host: tony_dell
+    data_volume: /home/tony/.local/share/notebooklm/notebooklm/storage_state.json
+    secrets:
+      - notebooklm-rest-api-key
+    environment:
+      - NOTEBOOKLM_STORAGE_PATH=/data/storage_state.json
+    env_file: ~/.config/secrets/notebooklm-rest-api.env
+    caddy_path: /apps/notebooklm/api
+    caddy_upstream: 127.0.0.1:3011
+    public_url: 'https://tony-dell.taila0626a.ts.net/apps/notebooklm/api'
+    quadlet:
+      container_unit: ~/.config/containers/systemd/notebooklm-rest.container
+      service_unit: ~/.config/systemd/user/notebooklm-rest.service
+    cli_helpers:
+      nbapi: ~/.local/bin/nbapi
+    status: implemented (2026-09-15)
+    note: 'FastAPI REST API on top of notebooklm-py. X-API-Key header is enforced via NOTEBOOKLM_REST_API_KEY. Exposed through Caddy at /apps/notebooklm/api on tony-dell.taila0626a.ts.net. The key lives in ~/.config/secrets/notebooklm-rest-api.env (not in git). Source and Dockerfile are in ~/.local/share/notebooklm/notebooklm-rest-api. The ~/.local/bin/nbapi wrapper sends the request to tony-dell (local curl on tony-dell, ssh on tony-omen).'
+
 tony-omen:
   ollama:
     container: ollama
@@ -525,6 +564,18 @@ tony-omen:
     routing:
       - trade data → 100.68.142.13:5432 (tony-dell, chaba-postgres-16)
     notes: Container stopped and removed; trade database migrated to tony-dell chaba-postgres-16. Yomi data was already on tony-dell.
+
+  notebooklm-rest-auth-refresh:
+    type: systemd user timer + oneshot service
+    host: tony_omen
+    script: ~/.local/bin/notebooklm-rest-auth-refresh
+    service_unit: ~/.config/systemd/user/notebooklm-rest-auth-refresh.service
+    timer_unit: ~/.config/systemd/user/notebooklm-rest-auth-refresh.timer
+    schedule: daily
+    target: tony-dell:/home/tony/.local/share/notebooklm/notebooklm/storage_state.json
+    action: 'notebooklm login --browser-cookies chrome, rsync storage_state.json to tony-dell, restart notebooklm-rest'
+    status: implemented (2026-09-15)
+    note: 'Keeps notebooklm-py storage_state.json fresh by re-extracting from tony-omen Chrome daily. The service waits 5s after container restart.'
   mddb:
     container: mddb
     image: tradik/mddb:latest

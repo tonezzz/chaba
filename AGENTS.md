@@ -27,7 +27,7 @@ Valid modes: `normal`, `plan`, `build`, `review`.
 
 ## Key URLs
 
-- tony-ha: `http://tony-dell:8123`
+- tony-ha: `https://tony-dell.taila0626a.ts.net:8123`
 - michael-dev: `http://127.0.0.1:8124` / `https://tony-dell.taila0626a.ts.net:8124`
 - michael-ha: `http://michael-ha:8123` / `https://nupo4ndqdqydt78zmpq0z5wzp1bdrqgs.ui.nabu.casa/`
 - tony-test views: `https://tony-dell.taila0626a.ts.net:8124/tony-test/{pf3,pf4,pfg,pfg1,pfg2,tpl,data}`
@@ -248,4 +248,26 @@ ssh tony-dell 'pgrep -a -f devin-desktop | grep -v "pgrep\|ssh\|tailscaled"'
 - USB flash: `esphome run esp32/config.yaml --device /dev/ttyUSB0`
 - OTA: `esphome run esp32/config.yaml --device 192.168.31.231`
 - Direct `esphome` / ping access requires being on `Xiaomi_A654`; `michael-ha` can see it only through MQTT, not by IP
+
+## Caddy HA subpath redirects (2026-09-15)
+
+- The Caddy subpath URLs under `/apps/ha/<instance>/` are now 308 redirects to the dedicated HTTPS endpoints.
+- `tony-ha`: `https://tony-dell.taila0626a.ts.net/apps/ha/tony-ha/` -> `https://tony-dell.taila0626a.ts.net:8123/`
+- `michael-dev`: `https://tony-dell.taila0626a.ts.net/apps/ha/michael-dev/` -> `https://tony-dell.taila0626a.ts.net:8124/`
+- `michael-ha`: `https://tony-dell.taila0626a.ts.net/apps/ha/michael-ha/` -> `https://nupo4ndqdqydt78zmpq0z5wzp1bdrqgs.ui.nabu.casa/`
+- Caddyfile: `~/.config/caddy/Caddyfile.tony-dell`; apply with `caddy fmt --overwrite /home/tony/.config/caddy/Caddyfile.tony-dell` and `systemctl --user restart caddy-tony-dell`.
+- HA is bound to loopback (`127.0.0.1:8123` and `127.0.0.1:8124`) and exposed via Tailscale Serve on the same ports.
+
+## NotebookLM (learned 2026-09-15)
+
+- `notebooklm-mcp-cli` (MCP/CLI) stores auth in `~/.notebooklm-mcp-cli/`, managed by `nlm`.
+- `notebooklm-py` (REST) uses `storage_state.json`; it expires more quickly than the `nlm` cookies.
+- Auth refresh: `~/.local/bin/notebooklm-rest-auth-refresh` runs daily on tony-omen, `rsync`s `storage_state.json` to tony-dell, and restarts `notebooklm-rest`.
+- CLI helpers: `~/.local/bin/nlm` (MCP/CLI via tony-dell container), `~/.local/bin/nbapi` (REST helper).
+- REST public URL: `https://tony-dell.taila0626a.ts.net/apps/notebooklm/api/v1/...` with `X-API-Key` from `~/.config/secrets/notebooklm-rest-api.env`.
+- Common commands:
+  - `nlm notebook list`
+  - `nbapi /v1/notebooks`
+  - `systemctl --user {start,stop,status} notebooklm-rest`
+  - `systemctl --user {start,status} notebooklm-rest-auth-refresh.service`
 
