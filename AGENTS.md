@@ -353,6 +353,7 @@ rsync -avz /home/tony/CascadeProjects/chaba/stacks/web/public/apps/ tony-dell:/h
 - `docs/ssot/ssot*.yml`
 - `docs/kb/**/*.md` and `*.yml`
 - `apps/dev/v0/README.md`
+- `mcp-servers/mcp-health/README.md`
 - `stacks/ha-live/README.md`
 - `workflows/README.md`
 
