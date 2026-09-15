@@ -516,6 +516,20 @@ tony-dell:
     status: implemented (2026-09-15)
     note: 'Persistent rootless Podman container. Mounts the authenticated .notebooklm-mcp-cli profile. Devin connects via podman exec.'
 
+  notebooklm-rest:
+    container: notebooklm-rest
+    image: localhost/notebooklm-rest
+    runtime: rootless podman
+    port: 8000
+    host_port: '127.0.0.1:3011'
+    host: tony_dell
+    data_volume: /home/tony/.local/share/notebooklm/notebooklm/storage_state.json
+    quadlet:
+      container_unit: ~/.config/containers/systemd/notebooklm-rest.container
+      service_unit: ~/.config/systemd/user/notebooklm-rest.service
+    status: implemented (2026-09-15)
+    note: 'FastAPI REST API on top of notebooklm-py. Binds to 127.0.0.1:3011 on tony-dell; no built-in API-key enforcement in this build, so keep it localhost-only or front with Caddy/Tailscale with auth if exposed.'
+
 tony-omen:
   ollama:
     container: ollama
