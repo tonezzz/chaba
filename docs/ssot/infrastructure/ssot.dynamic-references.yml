@@ -46,6 +46,38 @@ canonical_source:
     Keep hosts, ports, schedules, thresholds, paths, and other shared facts here.
     Consumer SSOTs should reference this file, not copy its values.
 
+consumers:
+  mcp_query_ssot:
+    for: Exact, dotted-path, wildcard, and fuzzy lookup of a single value.
+    resolves: true
+    line: Use this when you need the canonical value, a URL, or a nested fact.
+  mcp_ssot_get:
+    for: Registry asset lookup across partitioned SSOT files.
+    resolves: true
+    line: Use this when the key is a registry asset rather than a file path.
+  mcp_read_ssot:
+    for: Bounded direct read of a whole SSOT file.
+    resolves: false
+    line: Use this when you need the raw file, not just one value.
+  notebooklm-kb-sync:
+    for: Natural-language search and synthesis over the textual KB and SSOTs.
+    resolves: false
+    line: Use this when the question is fuzzy, cross-file, or needs prose explanation.
+
+notebooklm:
+  use_for:
+    - Fuzzy or natural-language questions across multiple KB/SSOT files.
+    - '"How do I...?" and "Why is this configured this way?" questions.'
+    - Discovering related concepts before drilling down with mcp_query_ssot.
+  do_not_use_for:
+    - Exact numeric values, ports, IPs, URLs, IDs, or secret paths.
+    - Deterministic, reproducible answers required for automation.
+    - Values that are not in the synced sources.
+    - Any action that will be executed without verifying with mcp_query_ssot first.
+  rule: |
+    NotebookLM is a secondary, read-only consumer of SSOT. It can suggest answers,
+    but canonical facts must still come from mcp_query_ssot or the resolver.
+
 anti_patterns:
   - bad: "note: 'Migrated 2026-08-17 from tony-omen to 100.68.142.13:8084'"
     why: A historical note should remain literal and human-readable.
