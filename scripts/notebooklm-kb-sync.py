@@ -308,6 +308,8 @@ def build_chunks(workdir):
     more_docs = []
     for d in [
         REPO / "apps" / "dev" / "v0" / "README.md",
+        REPO / "experiments" / "gold-thb-usd-causality" / "app" / "README.md",
+        REPO / "experiments" / "meshtastic-th-collector" / "README.md",
         REPO / "mcp-servers" / "mcp-health" / "README.md",
         REPO / "stacks" / "ha-live" / "README.md",
         REPO / "workflows" / "README.md",
