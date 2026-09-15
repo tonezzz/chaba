@@ -93,7 +93,12 @@ notebooklm:
     notebook_id: fdfd3483-6b7e-4cb0-85f3-7f060698769c
     chunk_files: 40
     min_kb_group: 5
+    max_chunk_bytes: 0
+    max_workers: 1
+    retry_attempts: 3
+    backoff_base_seconds: 2
     manifest: data/notebooklm-kb-sync-manifest.yml
+    log: data/notebooklm-kb-sync.ndjson
     script: scripts/notebooklm-kb-sync.py
     service: ~/.config/systemd/user/notebooklm-kb-sync.service
     timer: ~/.config/systemd/user/notebooklm-kb-sync.timer
