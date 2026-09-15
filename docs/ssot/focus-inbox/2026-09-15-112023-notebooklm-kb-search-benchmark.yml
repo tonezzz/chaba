@@ -1,0 +1,39 @@
+title: NotebookLM KB search benchmark
+subtitle: Test NotebookLM against current info-find/mddb search across all Chaba KB
+icon: inbox
+focus:
+  label: Run NotebookLM KB search benchmark
+  text: |
+    Compare NotebookLM (nlm query) against current search (mddb semantic / ssot-search)
+    using all Chaba KB. Create a test notebook, ingest a merged snapshot of docs/ and SSOT,
+    run a fixed question set, and produce a scorecard/recommendation.
+  branch: chaba
+  priority: high
+  status: completed
+  tags:
+  - notebooklm
+  - kb
+  - benchmark
+  - search
+  safe_to_parallel:
+    value: false
+    reason: Single notebook, single test run.
+  subtasks:
+  - label: Create NotebookLM benchmark notebook
+    status: completed
+  - label: Merge and ingest all KB sources
+    status: completed
+  - label: Run baseline (mddb) and NotebookLM queries
+    status: completed
+  - label: Score results and write report
+    status: completed
+  - label: Commit SSOT and report
+    status: completed
+ownership:
+  owner: tony
+  session: ''
+  locked: false
+  lock_reason: ''
+source:
+  session: ''
+  date: '2026-09-15'
