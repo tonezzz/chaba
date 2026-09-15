@@ -382,5 +382,17 @@ python3 scripts/notebooklm-query.py "-" "Summarize the Home Assistant setup."
 - Sync is incremental: only chunks whose sha256 changed are re-uploaded.
 - `--force` will delete and re-add all sources for a full refresh.
 - Sources are archived in Drive via `nlm-add`.
+
+## MDDB / chaba-glossary
+
+- Sync: `python3 scripts/sync-ssot-to-mddb.py` creates `chaba-glossary` from `ssot.values.yml` and `infrastructure-ssot` from all SSOT YAML.
+- Exact values: query `chaba-glossary` (uses plain-English value statements).
+- Topic search: query `infrastructure-ssot` (raw SSOT YAML).
+- Example:
+  ```bash
+  curl -sS -X POST http://127.0.0.1:11023/v1/search \
+    -H "Content-Type: application/json" \
+    -d '{"collection":"chaba-glossary","query":"Tailscale IP of tony-dell","limit":1}'
+  ```
 - See `docs/kb/experiments/notebooklm-kb-search-benchmark-2026-09-15.md` for the comparison with MDDB.
 

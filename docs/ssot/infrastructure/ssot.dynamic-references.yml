@@ -59,6 +59,10 @@ consumers:
     for: Bounded direct read of a whole SSOT file.
     resolves: false
     line: Use this when you need the raw file, not just one value.
+  mddb:
+    for: Semantic metadata and glossary search across indexed SSOT and KB text.
+    resolves: false
+    line: Use the chaba-glossary collection for exact values; use infrastructure-ssot for topic/keyword search.
   notebooklm-kb-sync:
     for: Natural-language search and synthesis over the textual KB and SSOTs.
     resolves: false
@@ -77,6 +81,19 @@ notebooklm:
   rule: |
     NotebookLM is a secondary, read-only consumer of SSOT. It can suggest answers,
     but canonical facts must still come from mcp_query_ssot or the resolver.
+
+mddb:
+  use_for:
+    - 'Exact value lookups in chaba-glossary: "Tailscale IP of tony-dell", "notebooklm port".'
+    - Keyword/title search across infrastructure-ssot.
+    - Finding which SSOT file documents a host, app, or service.
+  do_not_use_for:
+    - Procedural "How do I...?" questions that need synthesis.
+    - Natural-language questions not covered by the glossary.
+    - Exact dynamic values that should come from mcp_query_ssot.
+  rule: |
+    MDDB is a fast first-pass search layer. It is not a reasoning engine.
+    For exact canonical values, prefer mcp_query_ssot; for prose answers, prefer NotebookLM.
 
 anti_patterns:
   - bad: "note: 'Migrated 2026-08-17 from tony-omen to 100.68.142.13:8084'"
