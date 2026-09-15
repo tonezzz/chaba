@@ -275,4 +275,32 @@ ssh tony-dell 'pgrep -a -f devin-desktop | grep -v "pgrep\|ssh\|tailscaled"'
   - Default collection: `chaba/` (`1H7FHxy5nDxMOmcFtL79lmy_bttV35kjB`)
   - Add by Drive source: `nlm source add <nb> --drive <FILE_ID> --type doc --wait`
   - Add from rclone path: `rclone copy <local> gdrive:notebooklm/chaba` then add the Drive file by ID
+- Per-notebook file storage:
+  - Drive folder: `gdrive:notebooklm/chaba/notebooks/<notebook-id>/files`
+  - Local manifest: `~/.local/share/notebooklm/notebooks/<notebook-id>/manifest.yml`
+  - Helper: `nlm-add <notebook-id> <local-file> [-t "<title>"]`
+  - `nlm-add` converts `.md`/`.yml`/`.txt` to `.docx` on upload, adds by Drive ID, and records the source in the manifest
+
+## Chrome Remote Desktop (tony-dell)
+
+### Service
+
+- Instance unit: `chrome-remote-desktop@tony.service` (system unit, not user unit).
+- Status / start / stop:
+  - `chrome-remote-desktop --get-status`
+  - `sudo systemctl {start,stop,restart} chrome-remote-desktop@tony`
+- `chrome-remote-desktop-environment.service` (user) only injects environment; do not rely on it to run the host.
+
+### Known failure modes & fixes
+
+- Default Xorg+dummy path fails as non-root with `parse_vt_settings: Cannot open /dev/tty0 (Permission denied)`. Fix: force Xvfb.
+  - Drop-in: `/etc/systemd/system/chrome-remote-desktop@tony.service.d/xvfb.conf`
+    ```
+    [Service]
+    Environment=CHROME_REMOTE_DESKTOP_USE_XVFB=1
+    ```
+  - Then `sudo systemctl daemon-reload && sudo systemctl restart chrome-remote-desktop@tony`.
+- `~/.chrome-remote-desktop-session` must `exec` a long-running desktop/WM process. `startlxqt` (`lxqt-session`) segfaults in the headless Xvfb display; use `startxfce4` instead.
+  - Current session file: `exec /usr/bin/startxfce4`
+- When working, the CRD virtual display lives on `:20` (`/tmp/.X11-unix/X20`).
 
