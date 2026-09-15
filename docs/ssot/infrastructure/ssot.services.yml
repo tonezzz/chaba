@@ -722,3 +722,44 @@ michael:
       direct_connection: false
       note: Tailscale app on Home Assistant OS; HTTP 8123 verified
     note: 'Nabu Casa remote Home Assistant instance for michael.'
+
+
+tony_mn:
+  tailscale:
+    service: tailscaled.service
+    host: tony_mn
+    tailscale_ip: '100.106.196.22'
+    purpose: Tailscale node and subnet router for mn-home
+    status: active
+    note: 'Currently active. Run "tailscale up --advertise-routes=192.168.1.0/24 --accept-routes" to publish the mn-home subnet and accept peer routes.'
+  caddy:
+    service: caddy-tony-mn.service
+    host: tony_mn
+    port: 443
+    host_port: 0.0.0.0:443
+    purpose: HTTPS reverse proxy for local services on mn-home and tailnet
+    status: planned
+    note: 'Use for funnel-like local endpoints without relying on tony-dell. Map apps like /ada-pi, /notebooklm, /status.'
+  dnsmasq-mn:
+    service: dnsmasq-mn.service
+    host: tony_mn
+    port: 53
+    host_port: 127.0.0.1:53
+    purpose: Local DNS resolver for mn-home devices
+    status: planned
+    note: 'Cache + authoritative names for .mn, .local, and reverse DNS; optional AdGuard Home replacement.'
+  mcp-link-monitor:
+    service: mcp-link-monitor-mn.service
+    host: tony_mn
+    port: 9101
+    purpose: TCP reachability watchdog for mn-home and remote hosts
+    status: planned
+    note: 'Monitor 192.168.1.x, 100.x, and public endpoints; alert via syslog/Tailscale.'
+  ada-pi-mn:
+    service: ada-pi-mn.service
+    host: tony_mn
+    port: 8001
+    host_port: 0.0.0.0:8001
+    purpose: Ada Pi PWA local assistant for mn-home
+    status: planned
+    note: 'Could mirror tony-dell ada-pi for local RK600/weather, HA, and PWA access.'
