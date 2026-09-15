@@ -513,8 +513,10 @@ tony-dell:
     quadlet:
       container_unit: ~/.config/containers/systemd/notebooklm-mcp.container
       service_unit: ~/.config/systemd/user/notebooklm-mcp.service
+    cli_helpers:
+      nlm: ~/.local/bin/nlm
     status: implemented (2026-09-15)
-    note: 'Persistent rootless Podman container. Mounts the authenticated .notebooklm-mcp-cli profile. Devin connects via podman exec.'
+    note: 'Persistent rootless Podman container. Mounts the authenticated .notebooklm-mcp-cli profile. Devin connects via podman exec. The ~/.local/bin/nlm wrapper calls podman exec on tony-dell or ssh there from tony-omen.'
 
   notebooklm-rest:
     container: notebooklm-rest
@@ -535,8 +537,10 @@ tony-dell:
     quadlet:
       container_unit: ~/.config/containers/systemd/notebooklm-rest.container
       service_unit: ~/.config/systemd/user/notebooklm-rest.service
+    cli_helpers:
+      nbapi: ~/.local/bin/nbapi
     status: implemented (2026-09-15)
-    note: 'FastAPI REST API on top of notebooklm-py. X-API-Key header is enforced via NOTEBOOKLM_REST_API_KEY. Exposed through Caddy at /apps/notebooklm/api on tony-dell.taila0626a.ts.net. The key lives in ~/.config/secrets/notebooklm-rest-api.env (not in git). Source and Dockerfile are in ~/.local/share/notebooklm/notebooklm-rest-api.'
+    note: 'FastAPI REST API on top of notebooklm-py. X-API-Key header is enforced via NOTEBOOKLM_REST_API_KEY. Exposed through Caddy at /apps/notebooklm/api on tony-dell.taila0626a.ts.net. The key lives in ~/.config/secrets/notebooklm-rest-api.env (not in git). Source and Dockerfile are in ~/.local/share/notebooklm/notebooklm-rest-api. The ~/.local/bin/nbapi wrapper sends the request to tony-dell (local curl on tony-dell, ssh on tony-omen).'
 
 tony-omen:
   ollama:
