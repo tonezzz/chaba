@@ -1,0 +1,65 @@
+#!/usr/bin/env python3
+"""Ask NotebookLM to explain a recent log file in the context of the Chaba KB."""
+import argparse
+import re
+import subprocess
+import sys
+from pathlib import Path
+
+NOTEBOOK_ID = "fdfd3483-6b7e-4cb0-85f3-7f060698769c"
+DEFAULT_LOG = Path.home() / ".local" / "share" / "devin" / "cli" / "watchdog.log"
+
+
+def _tail(path, max_bytes=8000):
+    p = Path(path)
+    if not p.exists():
+        return ""
+    data = p.read_bytes()
+    return data[-max_bytes:].decode("utf-8", errors="ignore")
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Explain a log with NotebookLM and the Chaba KB.")
+    parser.add_argument("--log", "-l", default=str(DEFAULT_LOG), help="Path to log file")
+    parser.add_argument("--lines", type=int, default=200, help="Number of recent lines")
+    parser.add_argument("--context", "-c", default="", help="Extra context")
+    args = parser.parse_args()
+
+    raw = _tail(args.log)
+    lines = raw.splitlines()
+    sample = "\n".join(lines[-args.lines:])
+
+    if not sample.strip():
+        print(f"Log file empty or not found: {args.log}", file=sys.stderr)
+        sys.exit(1)
+
+    prompt = f"""A service produced this log output:
+
+```
+{sample}
+```
+
+{args.context}
+
+Using the Chaba KB, explain:
+1. What are the likely root causes?
+2. Which KB/SSOT sections or runbooks are relevant?
+3. What is the safest next step to fix or verify?
+4. Any exact facts (IPs, ports, commands) I should double-check with mcp_query_ssot before acting?
+"""
+
+    out = subprocess.run(
+        ["nlmq", NOTEBOOK_ID, prompt, "--timeout", "120"],
+        text=True, capture_output=True, timeout=180,
+    )
+    if out.returncode != 0:
+        print(out.stderr, file=sys.stderr)
+        sys.exit(out.returncode)
+
+    text = out.stdout
+    text = re.sub(r"\n## Sources:.*", "", text, flags=re.DOTALL)
+    print(text.strip())
+
+
+if __name__ == "__main__":
+    main()
