@@ -336,3 +336,38 @@ rsync -avz /home/tony/CascadeProjects/chaba/stacks/web/public/apps/ tony-dell:/h
 - Timer: `systemctl --user status apps-health-sync.timer` (daily)
 - When working, the CRD virtual display lives on `:20` (`/tmp/.X11-unix/X20`).
 
+## NotebookLM as the Chaba KB
+
+### Notebook
+
+- ID: `fdfd3483-6b7e-4cb0-85f3-7f060698769c`
+- Title: `Chaba KB search benchmark`
+- URL: `https://notebooklm.google.com/notebook/fdfd3483-6b7e-4cb0-85f3-7f060698769c`
+
+### What is synced
+
+- `AGENTS.md`
+- `README.md`
+- `docs/ssot/infrastructure/*.yml`
+- `docs/ssot/apps/*.yml`
+- `docs/ssot/ssot*.yml`
+- `docs/kb/**/*.md` and `*.yml`
+
+### Sync
+
+- Script: `scripts/notebooklm-kb-sync.py`
+- Timer: `systemctl --user status notebooklm-kb-sync.timer` (daily)
+- Manual: `python3 scripts/notebooklm-kb-sync.py`
+
+### How to query
+
+```bash
+nlm query notebook fdfd3483-6b7e-4cb0-85f3-7f060698769c "<your question>" --timeout 120
+```
+
+### Notes
+
+- Sync deletes old sources and re-ingests to keep answers current.
+- Sources are archived in Drive via `nlm-add`.
+- See `docs/kb/experiments/notebooklm-kb-search-benchmark-2026-09-15.md` for the comparison with MDDB.
+
