@@ -307,7 +307,7 @@ def build_chunks(workdir):
     # Other high-signal READMEs that live outside docs/.
     more_docs = []
     for d in [
-        REPO / "stacks" / "web" / "public" / "apps" / "dev" / "v0" / "README.md",
+        REPO / "apps" / "dev" / "v0" / "README.md",
         REPO / "stacks" / "ha-live" / "README.md",
         REPO / "workflows" / "README.md",
     ]:
