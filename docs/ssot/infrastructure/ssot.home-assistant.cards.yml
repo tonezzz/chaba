@@ -200,7 +200,57 @@ cards:
       - overlay history and forecast
     note: Use with HA statistics or data_generator to build bespoke wind/temp/humidity charts.
 
+  - id: troinine-weather-forecast-card
+    name: Weather Forecast Card (troinine)
+    source: https://github.com/troinine/ha-weather-forecast-card
+    purpose: Scrollable weather forecast with chart and hourly/daily toggle
+    use_for:
+      - forecast
+      - precipitation
+      - hourly daily toggle
+    note: Scrollable horizontal forecast list, toggle hourly/daily, chart mode, condition effects, tap actions.
+
+  - id: ltek-weather-flex-card
+    name: Weather Flex Card
+    source: https://github.com/Ltek/weather-flex-card
+    purpose: Sectioned, highly flexible weather/forecast card
+    use_for:
+      - forecast
+      - custom layout
+      - multiple weather sources
+    note: Independent sections (header, metrics, hourly, daily, sky bar, sun position, clock). Custom overrides per metric.
+
+  - id: tobiasb80-detailed-weather-forecast
+    name: Detailed Weather Forecast Card
+    source: https://github.com/tobiasb80/detailed-weather-forecast
+    purpose: Compact detailed forecast with expandable views
+    use_for:
+      - forecast
+      - detailed view
+      - nowcast
+    note: Large header, daily/hourly scrolling, expandable details, sunrise/sunset, nowcast precipitation chart.
+
+  - id: jvilhuber-ha-card-weather-conditions
+    name: Weather Conditions Card
+    source: https://github.com/jvilhuber/ha-card-weather-conditions
+    purpose: Composite conditions, marine, air quality, alerts
+    use_for:
+      - composite weather
+      - marine
+      - air quality
+      - pollen
+    note: Combines current/forecast, marine, UV, pollen, air quality, lightning, weather alerts, meteogram, wind map.
+
+  - id: thyraz-weather-forecast-extended
+    name: Weather Forecast Extended Card
+    source: https://github.com/Thyraz/weather-forecast-extended
+    purpose: Default-style forecast with precipitation values
+    use_for:
+      - forecast
+      - precipitation
+    note: Large header, daily/hourly, sunrise/sunset markers, precipitation values, nowcast.
+
 status:
   last_build: '2026-09-08'
-  last_verified: '2026-09-14'
+  last_verified: '2026-09-15'
   health: active; v149 deployed to michael-dev and v122 to michael-ha; dev tabs are V0/V1/G1/TPL/TPL2/TPL_SOLIS/Data/Sankey/juWorkshop/Solar Assistant/glass/Weather/Solis Daily Energy Sankey (sunsynk on V0/V1/G1/TPL/TPL2); michael-ha tabs are V0/V1/SK/TPL/juWorkshop/Solar Assistant/glass/Weather (sunsynk on V0/V1/TPL); pfg/pfg2 features remain available in the bundle but PFG/PFG2/PF3/PF4 tabs were removed; version numbers are per-host counters — verify cross-host parity by md5sum, not version
