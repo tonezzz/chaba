@@ -290,8 +290,9 @@ wss.on('connection', (ws) => {
       try {
         command = getProviderCommand(msg.provider, prompt, msg.mode);
       } catch (err) {
+        const runId = record ? record.id : null;
         finishRun('error', { exitCode: -1, error: err.message });
-        send('error', { message: err.message, runId: record ? record.id : null });
+        send('error', { message: err.message, runId });
         return;
       }
 
@@ -315,15 +316,17 @@ wss.on('connection', (ws) => {
 
       child.on('error', (err) => {
         send('err', { text: `spawn error: ${err.message}` });
+        const runId = record ? record.id : null;
         finishRun('error', { exitCode: -1, error: err.message });
-        send('error', { message: err.message, runId: record ? record.id : null });
+        send('error', { message: err.message, runId });
         child = null;
       });
 
       child.on('close', (code) => {
+        const runId = record ? record.id : null;
         finishRun('done', { exitCode: code ?? 0 });
         child = null;
-        send('done', { code: code ?? 0, runId: record ? record.id : null });
+        send('done', { code: code ?? 0, runId });
       });
     }
   });
