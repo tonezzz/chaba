@@ -270,4 +270,9 @@ ssh tony-dell 'pgrep -a -f devin-desktop | grep -v "pgrep\|ssh\|tailscaled"'
   - `nbapi /v1/notebooks`
   - `systemctl --user {start,stop,status} notebooklm-rest`
   - `systemctl --user {start,status} notebooklm-rest-auth-refresh.service`
+- Google Drive collections:
+  - Top-level folder: `notebooklm/` (`1beIctIVvLYKwsLwRNap7UXi3ZbFnS0xG`)
+  - Default collection: `chaba/` (`1H7FHxy5nDxMOmcFtL79lmy_bttV35kjB`)
+  - Add by Drive source: `nlm source add <nb> --drive <FILE_ID> --type doc --wait`
+  - Add from rclone path: `rclone copy <local> gdrive:notebooklm/chaba` then add the Drive file by ID
 
