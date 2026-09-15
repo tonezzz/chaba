@@ -157,7 +157,7 @@ def verify(local=True, live=False, timeout=5):
         def check(url):
             try:
                 out = subprocess.run(
-                    ["curl", "-sS", "-o", "/dev/null", "-w", "%{http_code}", "--max-time", str(timeout), url],
+                    ["curl", "-sSL", "-o", "/dev/null", "-w", "%{http_code}", "--max-time", str(timeout), url],
                     capture_output=True,
                     text=True,
                     timeout=timeout + 2,
