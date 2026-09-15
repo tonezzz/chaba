@@ -6897,14 +6897,23 @@
           ]
         },
         {
-          "title": "MN Weather",
+          "title": "RK900 Weather (via RK600-07B)",
           "path": "mn-weather",
           "type": "masonry",
           "cards": [
             {
+              "type": "markdown",
+              "content": "Local weather from **Rika RK900** sensor head, read through **RK600-07B** Modbus TCP at **192.168.31.148**."
+            },
+            {
+              "type": "weather-forecast",
+              "entity": "weather.forecast_home",
+              "show_forecast": true
+            },
+            {
               "type": "sensor",
-              "entity": "sensor.rk600_wind_speed",
-              "name": "Wind Speed",
+              "entity": "sensor.rk600_wind_speed_meters",
+              "name": "RK900 Wind Speed",
               "icon": "mdi:weather-windy",
               "graph": "line",
               "hours_to_show": 24,
@@ -6913,38 +6922,65 @@
             },
             {
               "type": "sensor",
-              "entity": "sensor.rk600_wind_direction",
-              "name": "Wind Direction",
-              "icon": "mdi:compass-outline",
+              "entity": "sensor.rk600_wind_speed",
+              "name": "RK900 Wind Speed",
+              "icon": "mdi:weather-windy",
               "graph": "line",
               "hours_to_show": 24,
               "detail": 1,
-              "unit": "°"
+              "unit": "kn"
+            },
+            {
+              "type": "custom:canvas-gauge-card",
+              "entity": "sensor.rk600_wind_direction",
+              "card_height": 260,
+              "gauge": {
+                "type": "radial-gauge",
+                "width": 260,
+                "height": 260,
+                "minValue": 0,
+                "maxValue": 360,
+                "startAngle": 180,
+                "ticksAngle": 360,
+                "valueBox": false,
+                "exactTicks": true,
+                "majorTicks": [
+                  0,
+                  90,
+                  180,
+                  270
+                ],
+                "minorTicks": 10,
+                "strokeTicks": true,
+                "borders": false,
+                "colorPlate": "transparent",
+                "colorMajorTicks": "#333",
+                "colorMinorTicks": "#999",
+                "colorNumbers": "#333",
+                "colorNeedle": "#ff453a",
+                "needleType": "arrow",
+                "needleCircleSize": 8
+              }
             },
             {
               "type": "entities",
-              "title": "RK600 Weather Station",
+              "title": "RK900 Weather Station (via RK600-07B)",
               "show_header_toggle": false,
               "entities": [
                 "sensor.rk600_device_status",
                 "sensor.rk600_wind_direction",
                 "sensor.rk600_wind_speed",
+                "sensor.rk600_wind_speed_meters",
                 "sensor.rk600_wind_speed_alt01",
                 "sensor.rk600_temperature",
-                "sensor.rk600_humidity",
-                "sensor.rk600_pressure",
-                "sensor.rk600_rainfall",
-                "sensor.rk600_rainfall_acc",
-                "sensor.rk600_real_wind_direction",
-                "sensor.rk600_real_wind_speed",
-                "sensor.rk600_uplink_count"
+                "sensor.rk600_humidity"
               ]
             },
             {
               "type": "history-graph",
-              "title": "Wind Speed & Direction (24h)",
+              "title": "RK900 Wind (24h)",
               "entities": [
-                "sensor.rk600_wind_speed",
+                "sensor.rk600_wind_speed_meters",
                 "sensor.rk600_wind_direction"
               ],
               "hours_to_show": 24,
@@ -6952,11 +6988,10 @@
             },
             {
               "type": "history-graph",
-              "title": "Temp / Humidity / Pressure (24h)",
+              "title": "RK900 Temp / Humidity (24h)",
               "entities": [
                 "sensor.rk600_temperature",
-                "sensor.rk600_humidity",
-                "sensor.rk600_pressure"
+                "sensor.rk600_humidity"
               ],
               "hours_to_show": 24,
               "refresh_interval": 60
