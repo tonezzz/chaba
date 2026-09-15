@@ -1,0 +1,68 @@
+title: Dynamic SSOT References
+subtitle: When and how to use ${ssot(...)} expressions, __ref__, and !ssot_ref
+icon: link
+version: 1
+
+overview:
+  purpose: |
+    Define the boundary for using dynamic SSOT references so the project gets
+    the benefits of a single source of truth without turning every SSOT file
+    into a fragile template.
+
+rule:
+  use_when_all_true:
+    - The value is a runtime address, URL, host:port, or IP composed from canonical values.
+    - The same value appears in more than one SSOT file or is likely to be reused.
+    - The file is a consumer, not the canonical source, and is read by mcp_query_ssot or mcp_ssot_get.
+  do_not_use_for:
+    - Canonical source files, especially docs/ssot/infrastructure/ssot.values.yml
+    - Narrative notes, migration history, or explanations
+    - Secrets, tokens, API keys, or credentials
+    - File paths, UUIDs, IDs, or one-off identifiers
+    - Values that only appear in one file
+    - Files consumed by tools that do not understand the !ssot_ref YAML tag
+
+syntax:
+  preferred:
+    - name: String interpolation with ${ssot(...)}
+      for: Composed URLs, host:port strings, and health-check commands
+      example: |
+        tailscale_funnel: 'https://${ssot("docs/ssot/infrastructure/ssot.values.yml", "hosts.tony_dell.tailscale")}:${ssot("docs/ssot/infrastructure/ssot.values.yml", "ports.ha_live_public")}'
+    - name: __ref__ object
+      for: Simple single-value substitutions that must stay plain YAML
+      example: |
+        backend:
+          __ref__:
+            path: docs/ssot/infrastructure/ssot.values.yml
+            key: hosts.tony_dell.tailscale_ip
+  allowed_with_care:
+    - name: '!ssot_ref'
+      for: Files that are guaranteed to only be loaded by mcp_debug/ssot.py
+      warning: Other consumers (config.py, MDDB sync, plain yaml.safe_load) will fail unless they also register the !ssot_ref constructor.
+
+canonical_source:
+  file: docs/ssot/infrastructure/ssot.values.yml
+  note: |
+    Keep hosts, ports, schedules, thresholds, paths, and other shared facts here.
+    Consumer SSOTs should reference this file, not copy its values.
+
+anti_patterns:
+  - bad: "note: 'Migrated 2026-08-17 from tony-omen to 100.68.142.13:8084'"
+    why: A historical note should remain literal and human-readable.
+  - bad: "image: docker.io/homeassistant/home-assistant:stable"
+    why: An external identifier is not derived from project infrastructure.
+  - bad: "secret_path: /private_CtYuVkJEl28cp8qA8yXNCQ"
+    why: Secrets and tokens must not be composed through SSOT references.
+  - bad: "port: ${ssot('ssot.values.yml', 'ports.ha_tony')}"
+    why: The canonical ssot.values.yml must not reference itself.
+
+migration:
+  steps:
+    - Add the missing canonical value to ssot.values.yml first.
+    - Replace the duplicated literal in consumer SSOTs with the chosen reference syntax.
+    - Validate the file with python3 -c "import yaml; yaml.safe_load(open('...'))".
+    - Run mcp_query_ssot against the new reference to confirm it resolves.
+  caution: |
+    Do not batch-convert every repeated string at once. Convert one logical
+    family (e.g., Home Assistant URLs) at a time, then evaluate the logs before
+    the next family.
