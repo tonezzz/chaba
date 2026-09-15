@@ -306,6 +306,17 @@ def build_chunks(workdir):
     ada_pi_docs = sorted((ada_pi / "docs").rglob("*.md")) if (ada_pi / "docs").exists() else []
     merged.extend(chunk_items("ada-pi", ada_pi_readme + ada_pi_docs, workdir))
 
+    # Other high-signal READMEs that live outside docs/.
+    more_docs = []
+    for d in [
+        REPO / "apps" / "dev" / "v0" / "README.md",
+        REPO / "stacks" / "ha-live" / "README.md",
+        REPO / "workflows" / "README.md",
+    ]:
+        if d.exists():
+            more_docs.append(d)
+    merged.extend(chunk_items("meta/extra", more_docs, workdir))
+
     return merged
 
 

@@ -19,7 +19,7 @@ sections:
     text: 17 known allocations; unknown active hosts are in the matching michael-home-scan report
 config:
   version: 1
-  last_updated: '2026-09-13'
+  last_updated: '2026-09-15'
   maintainer: tony
   status: active
   related_files:
@@ -451,4 +451,32 @@ config:
       kind: discovered
       status: stale
       first_seen: '2026-09-02'
+      source: arp-scan
+  - network_id: michael-xiaomi-192.168.31.0-24
+    cidr: 192.168.31.0/24
+    ssid: Xiaomi_A654
+    gateway: 192.168.31.1
+    dhcp_range: null
+    status: active
+    allocations:
+    - ip: 192.168.31.1
+      device_id: michael-xiaomi-router
+      interface_id: primary
+      kind: discovered
+      status: active
+      first_seen: '2026-09-15'
+      source: arp-scan
+    - ip: 192.168.31.24
+      device_id: michael-ha
+      interface_id: wlan0
+      kind: discovered
+      status: active
+      first_seen: '2026-09-15'
+      source: arp-scan
+    - ip: 192.168.31.148
+      device_id: michael-rk600-weather
+      interface_id: primary
+      kind: discovered
+      status: active
+      first_seen: '2026-09-15'
       source: arp-scan

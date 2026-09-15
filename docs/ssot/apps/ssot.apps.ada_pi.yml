@@ -50,6 +50,24 @@ sections:
         text: The tailscale 443 reset removed the previous TCP 3009 listener; it can be re-added if still needed.
       - label: rview not migrated
         text: The old /apps/rview 443 mapping is gone; rview can be fixed separately later.
+  - title: RK600-07B Data Logger + RK900 Weather Sensor
+    icon: "WX"
+    layout: list
+    items:
+      - label: Device
+        text: 'Rika RK600-07B data logger on Xiaomi_A654 at 192.168.31.148, MAC 0C:CF:89:A6:16:FD; connected sensor head is Rika RK900'
+      - label: Protocol
+        text: 'Modbus TCP port 502 (unit 1, holding registers); binary device console on port 23'
+      - label: Modbus register map
+        text: '0 = wind direction (°), 1 = wind speed (0.01 kn), 2 = temperature (0.1 °C), 3 = humidity (0.1 %); pressure/rainfall not installed'
+      - label: HA entities
+        text: 'sensor.rk600_* are the RK900 sensor readings exposed by the RK600-07B data logger (wind, direction, temperature, humidity, status)'
+      - label: Ada Pi tool
+        text: 'get_rk600_weather in backend/realtime_provider.py returns the local RK900 weather via the RK600-07B logger'
+      - label: Data source
+        text: 'ada-pi reads sensor.rk600_* from the configured Home Assistant instance (HOME_ASSISTANT_URL)'
+      - label: SSOT registry
+        text: 'Documented in ssot.mac-address-registry.michael.yml as michael-rk600-weather and ssot.ip-address-registry.michael.yml on the michael-xiaomi-192.168.31.0-24 network'
 config:
   version: 1
   created: '2026-09-12'

@@ -11,6 +11,8 @@ sections:
     items:
       - label: Michael home network
         text: '192.168.1.0/24, gateway 192.168.1.1, scanned via michael-ha (192.168.1.160) over Tailscale SSH'
+      - label: Michael Xiaomi A654 network
+        text: '192.168.31.0/24, gateway 192.168.31.1, scanned via michael-ha (192.168.31.24) over Tailscale SSH'
   - title: Duplicate MAC handling
     icon: ⚠️
     layout: list
@@ -22,10 +24,10 @@ sections:
     layout: list
     items:
       - label: Count
-        text: '18 devices with known MAC or local ID from HA config and device registry'
+        text: '20 devices with known MAC or local ID from HA config and device registry'
 config:
   version: 1
-  last_updated: '2026-09-02'
+  last_updated: '2026-09-15'
   maintainer: tony
   status: active
   related_files:
@@ -51,7 +53,7 @@ config:
       type: wifi
       source: ha-network-info
       first_seen: '2026-09-02'
-      status: stale
+      status: active
     - interface_id: bluetooth0
       mac: 2c:cf:67:36:c3:fd
       oui: 2c:cf:67
@@ -322,6 +324,36 @@ config:
       type: unknown
       source: arp-scan
       first_seen: '2026-09-07'
+      status: active
+    mac_conflict: false
+    status: active
+  - device_id: michael-xiaomi-router
+    label: Xiaomi A654 router/gateway
+    local_ids: {}
+    interfaces:
+    - interface_id: primary
+      mac: 44:f7:70:3e:f2:fe
+      oui: 44:f7:70
+      vendor: Beijing Xiaomi Mobile Software
+      type: wifi
+      source: arp-scan
+      first_seen: '2026-09-15'
+      status: active
+    mac_conflict: false
+    status: active
+  - device_id: michael-rk600-weather
+    label: Rika RK600-07B data logger with RK900 sensor head (Xiaomi A654)
+    local_ids:
+      model: RK600-07B
+      sensor: RK900
+    interfaces:
+    - interface_id: primary
+      mac: 0c:cf:89:a6:16:fd
+      oui: 0c:cf:89
+      vendor: Shenzhen Bilian Electronic
+      type: wifi
+      source: arp-scan
+      first_seen: '2026-09-15'
       status: active
     mac_conflict: false
     status: active
