@@ -14,10 +14,24 @@ from pathlib import Path
 import yaml
 
 REPO = Path.home() / "CascadeProjects" / "chaba"
-NOTEBOOK_ID = os.environ.get("NOTEBOOKLM_KB_NOTEBOOK", "fdfd3483-6b7e-4cb0-85f3-7f060698769c")
-CHUNK_FILES = 40
-MIN_KB_GROUP = 5
-MANIFEST_PATH = REPO / "data" / "notebooklm-kb-sync-manifest.yml"
+SSOT_VALUES = REPO / "docs" / "ssot" / "infrastructure" / "ssot.values.yml"
+
+
+def _load_ssot_values():
+    if not SSOT_VALUES.exists():
+        return {}
+    with open(SSOT_VALUES, encoding="utf-8") as f:
+        return yaml.safe_load(f) or {}
+
+
+_SYNC = _load_ssot_values().get("notebooklm", {}).get("sync", {})
+
+NOTEBOOK_ID = os.environ.get("NOTEBOOKLM_KB_NOTEBOOK") or _SYNC.get(
+    "notebook_id", "fdfd3483-6b7e-4cb0-85f3-7f060698769c"
+)
+CHUNK_FILES = _SYNC.get("chunk_files", 40)
+MIN_KB_GROUP = _SYNC.get("min_kb_group", 5)
+MANIFEST_PATH = REPO / _SYNC.get("manifest", "data/notebooklm-kb-sync-manifest.yml")
 
 
 def run(cmd, **kwargs):
