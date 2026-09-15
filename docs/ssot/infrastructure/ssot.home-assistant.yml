@@ -30,13 +30,16 @@ mcp:
   bind_host: 0.0.0.0
   secret_path: /private_CtYuVkJEl28cp8qA8yXNCQ
   webhook_id: mcp_d5528537d57627164033dc5e3e5e5aa6
-  local_url: http://tony-dell:9584/private_CtYuVkJEl28cp8qA8yXNCQ
-  tailnet_url: http://tony-dell:9584/private_CtYuVkJEl28cp8qA8yXNCQ
-  webhook: http://127.0.0.1:8123/api/webhook/mcp_d5528537d57627164033dc5e3e5e5aa6
+  local_url: 'http://${ssot("docs/ssot/infrastructure/ssot.values.yml", "hosts.tony_dell.name")}:${ssot("docs/ssot/infrastructure/ssot.values.yml", "ports.ha_mcp_tony")}/private_CtYuVkJEl28cp8qA8yXNCQ'
+  tailnet_url: 'http://${ssot("docs/ssot/infrastructure/ssot.values.yml", "hosts.tony_dell.name")}:${ssot("docs/ssot/infrastructure/ssot.values.yml", "ports.ha_mcp_tony")}/private_CtYuVkJEl28cp8qA8yXNCQ'
+  webhook: 'http://127.0.0.1:${ssot("docs/ssot/infrastructure/ssot.values.yml", "ports.ha_tony")}/api/webhook/mcp_d5528537d57627164033dc5e3e5e5aa6'
   caddy:
     host_path: /apps/ha/tony-ha/
     mcp_path: /api/ha-mcp/
-    backend: 100.68.142.13
+    backend:
+      __ref__:
+        path: docs/ssot/infrastructure/ssot.values.yml
+        key: hosts.tony_dell.tailscale_ip
     caddyfile: /home/tony/CascadeProjects/chaba-tony-dell/stacks/web/Caddyfile
   ssot: docs/ssot/infrastructure/ssot.home-assistant.mcp.yml
 
@@ -78,9 +81,9 @@ ha_live:
     host: /home/tony/.config/home-assistant/ha-live/bridge.py
   host: tony_dell
   local_port: 127.0.0.1:9005
-  tailscale_funnel: 'https://tony-dell.taila0626a.ts.net:8444'
-  websocket: 'wss://tony-dell.taila0626a.ts.net:8444/ws'
-  snapshot: 'https://tony-dell.taila0626a.ts.net:8444/snapshot'
+  tailscale_funnel: 'https://${ssot("docs/ssot/infrastructure/ssot.values.yml", "hosts.tony_dell.tailscale")}:${ssot("docs/ssot/infrastructure/ssot.values.yml", "ports.ha_live_public")}'
+  websocket: 'wss://${ssot("docs/ssot/infrastructure/ssot.values.yml", "hosts.tony_dell.tailscale")}:${ssot("docs/ssot/infrastructure/ssot.values.yml", "ports.ha_live_public")}/ws'
+  snapshot: 'https://${ssot("docs/ssot/infrastructure/ssot.values.yml", "hosts.tony_dell.tailscale")}:${ssot("docs/ssot/infrastructure/ssot.values.yml", "ports.ha_live_public")}/snapshot'
   expected_status: 200
   files:
     - stacks/ha-live/bridge.py
@@ -89,12 +92,12 @@ ha_live:
     - stacks/ha-live/ha-live.service
     - stacks/ha-live/README.md
   live_pages:
-    tony_live: 'https://tony-dell.taila0626a.ts.net/apps/tony-live/'
-    michael_live: 'https://tony-dell.taila0626a.ts.net/apps/michael-live/'
+    tony_live: 'https://${ssot("docs/ssot/infrastructure/ssot.values.yml", "hosts.tony_dell.tailscale")}:${ssot("docs/ssot/infrastructure/ssot.values.yml", "ports.ha_live_public")}/apps/tony-live/'
+    michael_live: 'https://${ssot("docs/ssot/infrastructure/ssot.values.yml", "hosts.tony_dell.tailscale")}:${ssot("docs/ssot/infrastructure/ssot.values.yml", "ports.ha_live_public")}/apps/michael-live/'
   health_checks:
     - 'tailscale ssh tony-dell ps -ef | grep ha-live/bridge.py'
     - 'ss -tlnp | grep 9005'
-    - "curl -s -o /dev/null -w '%{http_code}' https://tony-dell.taila0626a.ts.net:8444/"
+    - 'curl -s -o /dev/null -w ''%{http_code}'' https://${ssot("docs/ssot/infrastructure/ssot.values.yml", "hosts.tony_dell.tailscale")}:${ssot("docs/ssot/infrastructure/ssot.values.yml", "ports.ha_live_public")}/'
   recovery:
     - 'cd /home/tony/.config/home-assistant/ha-live && ./restart.sh'
     - 'tailscale serve status'
