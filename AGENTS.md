@@ -398,6 +398,10 @@ python3 scripts/notebooklm-query.py "-" "Summarize the Home Assistant setup."
 - `chaba-ask` — pick the right consumer for a natural-language question
   - `chaba-ask "How do I restart the NotebookLM auth refresh?"` → routes to `nlmq`
   - `chaba-ask "What is the tony-dell Tailscale IP?"` → tells you to use `mcp_query_ssot`
+- `nlm-pr-draft` — draft a PR description from the current branch's diff
+  - `nlm-pr-draft` or `nlm-pr-draft --base master`
+- `nlm-explain-log` — ask the KB to explain a recent log file
+  - `nlm-explain-log` or `nlm-explain-log -l /path/to.log`
 - `make` shortcuts — see `Makefile`:
   - `make ssot`, `make kb`, `make kb-dry`, `make nlmq Q="..."`, `make nlm-cite SOURCE=kb/mddb`
 - `verify-agents` — check that `AGENTS.md` bash snippets resolve to real executables/scripts
