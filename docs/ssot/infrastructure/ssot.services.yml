@@ -524,11 +524,19 @@ tony-dell:
     host_port: '127.0.0.1:3011'
     host: tony_dell
     data_volume: /home/tony/.local/share/notebooklm/notebooklm/storage_state.json
+    secrets:
+      - notebooklm-rest-api-key
+    environment:
+      - NOTEBOOKLM_STORAGE_PATH=/data/storage_state.json
+    env_file: ~/.config/secrets/notebooklm-rest-api.env
+    caddy_path: /apps/notebooklm/api
+    caddy_upstream: 127.0.0.1:3011
+    public_url: 'https://tony-dell.taila0626a.ts.net/apps/notebooklm/api'
     quadlet:
       container_unit: ~/.config/containers/systemd/notebooklm-rest.container
       service_unit: ~/.config/systemd/user/notebooklm-rest.service
     status: implemented (2026-09-15)
-    note: 'FastAPI REST API on top of notebooklm-py. Binds to 127.0.0.1:3011 on tony-dell; no built-in API-key enforcement in this build, so keep it localhost-only or front with Caddy/Tailscale with auth if exposed.'
+    note: 'FastAPI REST API on top of notebooklm-py. X-API-Key header is enforced via NOTEBOOKLM_REST_API_KEY. Exposed through Caddy at /apps/notebooklm/api on tony-dell.taila0626a.ts.net. The key lives in ~/.config/secrets/notebooklm-rest-api.env (not in git). Source and Dockerfile are in ~/.local/share/notebooklm/notebooklm-rest-api.'
 
 tony-omen:
   ollama:
