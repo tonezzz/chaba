@@ -434,7 +434,7 @@
             submitBtn.disabled = false;
             cancelBtn.disabled = true;
             addHistory({
-              id: crypto.randomUUID ? crypto.randomUUID() : Date.now(),
+              id: msg.runId || (crypto.randomUUID ? crypto.randomUUID() : Date.now()),
               prompt: promptInput.value.trim(),
               provider: providerSelect.value,
               model: modelSelect.value,
