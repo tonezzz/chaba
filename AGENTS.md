@@ -249,3 +249,12 @@ ssh tony-dell 'pgrep -a -f devin-desktop | grep -v "pgrep\|ssh\|tailscaled"'
 - OTA: `esphome run esp32/config.yaml --device 192.168.31.231`
 - Direct `esphome` / ping access requires being on `Xiaomi_A654`; `michael-ha` can see it only through MQTT, not by IP
 
+## Caddy HA subpath redirects (2026-09-15)
+
+- The Caddy subpath URLs under `/apps/ha/<instance>/` are now 308 redirects to the dedicated HTTPS endpoints.
+- `tony-ha`: `https://tony-dell.taila0626a.ts.net/apps/ha/tony-ha/` -> `https://tony-dell.taila0626a.ts.net:8123/`
+- `michael-dev`: `https://tony-dell.taila0626a.ts.net/apps/ha/michael-dev/` -> `https://tony-dell.taila0626a.ts.net:8124/`
+- `michael-ha`: `https://tony-dell.taila0626a.ts.net/apps/ha/michael-ha/` -> `https://nupo4ndqdqydt78zmpq0z5wzp1bdrqgs.ui.nabu.casa/`
+- Caddyfile: `~/.config/caddy/Caddyfile.tony-dell`; apply with `caddy fmt --overwrite /home/tony/.config/caddy/Caddyfile.tony-dell` and `systemctl --user restart caddy-tony-dell`.
+- HA is bound to loopback (`127.0.0.1:8123` and `127.0.0.1:8124`) and exposed via Tailscale Serve on the same ports.
+
