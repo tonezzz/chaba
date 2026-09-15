@@ -564,6 +564,18 @@ tony-omen:
     routing:
       - trade data → 100.68.142.13:5432 (tony-dell, chaba-postgres-16)
     notes: Container stopped and removed; trade database migrated to tony-dell chaba-postgres-16. Yomi data was already on tony-dell.
+
+  notebooklm-rest-auth-refresh:
+    type: systemd user timer + oneshot service
+    host: tony_omen
+    script: ~/.local/bin/notebooklm-rest-auth-refresh
+    service_unit: ~/.config/systemd/user/notebooklm-rest-auth-refresh.service
+    timer_unit: ~/.config/systemd/user/notebooklm-rest-auth-refresh.timer
+    schedule: daily
+    target: tony-dell:/home/tony/.local/share/notebooklm/notebooklm/storage_state.json
+    action: 'notebooklm login --browser-cookies chrome, rsync storage_state.json to tony-dell, restart notebooklm-rest'
+    status: implemented (2026-09-15)
+    note: 'Keeps notebooklm-py storage_state.json fresh by re-extracting from tony-omen Chrome daily. The service waits 5s after container restart.'
   mddb:
     container: mddb
     image: tradik/mddb:latest
