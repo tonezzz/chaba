@@ -503,6 +503,19 @@ tony-dell:
     status: implemented (2026-08-25)
     note: 'OAuth2 proxy for mcp-rview. Listens on 127.0.0.1:9004. Tailscale serve on tony-dell:443 proxies https://tony-dell.taila0626a.ts.net/ to 127.0.0.1:9004. Client credentials are in /home/tony/.config/mcp-rview-oauth-proxy.env (not in git).'
 
+  notebooklm-mcp:
+    container: notebooklm-mcp
+    image: localhost/notebooklm-mcp
+    runtime: rootless podman
+    network: host
+    host: tony_dell
+    data_volume: /home/tony/.local/share/notebooklm/.notebooklm-mcp-cli
+    quadlet:
+      container_unit: ~/.config/containers/systemd/notebooklm-mcp.container
+      service_unit: ~/.config/systemd/user/notebooklm-mcp.service
+    status: implemented (2026-09-15)
+    note: 'Persistent rootless Podman container. Mounts the authenticated .notebooklm-mcp-cli profile. Devin connects via podman exec.'
+
 tony-omen:
   ollama:
     container: ollama
