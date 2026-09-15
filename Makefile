@@ -1,4 +1,4 @@
-.PHONY: ssot kb kb-dry kb-full nlm-cite nlmq ha-build verify clean
+.PHONY: ssot kb kb-dry kb-full quick-ref nlm-cite nlmq ha-build verify clean
 
 REPO ?= /home/tony/CascadeProjects/chaba
 
@@ -13,6 +13,16 @@ kb-dry:
 
 kb-full:
 	python3 $(REPO)/scripts/notebooklm-kb-sync.py --force
+
+quick-ref:
+	@echo "make ssot           - validate all SSOT YAML"
+	@echo "make kb             - incremental NotebookLM sync"
+	@echo "make kb-dry         - dry-run sync"
+	@echo "make kb-full        - force full sync"
+	@echo "make nlmq Q='...'   - cached query"
+	@echo "make nlm-cite SOURCE=... - reverse source lookup"
+	@echo "make verify         - check AGENTS.md commands"
+	@echo "make clean          - remove __pycache__"
 
 nlm-cite:
 	@:$(if $(SOURCE),,$(error Set SOURCE, e.g. SOURCE=kb/mddb or SOURCE=<source-id>))
