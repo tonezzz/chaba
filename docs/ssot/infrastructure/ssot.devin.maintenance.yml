@@ -30,12 +30,13 @@ hosts:
   tony-omen:
     path: /home/tony/.local/share/devin/cli/sessions.db
     description: Primary dev workstation
-    current_size: 51Gi
+    current_size: 67Gi
     service: devin-cleanup.timer
-    retention_days: 7
+    retention_days: 3
     notes:
       - Cleanup timer runs daily at 03:00 with up to 1h randomized delay.
-      - Most DB size comes from active/recent sessions; 7-day retention does
+      - Retention reduced from 7 to 3 days on 2026-09-12 (DB had grown to 67 GiB).
+      - Most DB size comes from active/recent sessions; 3-day retention does
         not free much space until those sessions age out or are deleted manually.
 
 cleanup:
@@ -48,7 +49,9 @@ cleanup:
   script:
     tony-dell: /home/tony/.local/bin/devin-cleanup.sh
     tony-omen: /home/tony/CascadeProjects/chaba/scripts/prune-devin-sessions.sh
-  retention_days: 7
+  retention_days:
+    tony-dell: 7
+    tony-omen: 3
   behavior: |
     1. Compute cutoff = now - retention_days.
     2. Delete child rows from `message_nodes` and `tool_call_state` for sessions
