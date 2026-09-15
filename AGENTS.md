@@ -312,10 +312,27 @@ ssh tony-dell 'pgrep -a -f devin-desktop | grep -v "pgrep\|ssh\|tailscaled"'
 - Caddy `handle_path /apps/*` in `~/.config/caddy/Caddyfile.tony-dell` serves from the root above, not the repo
 - Changing files in the repo does **not** make them live until they are copied to Caddy's public directory
 
-### Sync
+### Workflow
 
-- Manual: `rsync -avz /home/tony/CascadeProjects/chaba/stacks/web/public/apps/ tony-dell:/home/tony/.config/caddy/public/apps/`
-- Automatic: `scripts/apps-health-sync.py` regenerates app health checks and syncs public apps to tony-dell
+1. Add app files to `stacks/web/public/apps/<your-app>/` (with an `index.html`)
+2. Regenerate `apps.yml`:
+   - `python3 /home/tony/CascadeProjects/chaba/scripts/apps-yml-generate.py --generate --verify`
+3. Commit/push
+4. The `apps-health-sync.timer` will:
+   - regenerate `docs/ssot/infrastructure/ssot.health.home.apps.yml`
+   - `rsync` public apps to tony-dell's Caddy root
+   - run a live HTTP verification against `https://tony-dell.taila0626a.ts.net`
+
+### Manual sync
+
+```bash
+rsync -avz /home/tony/CascadeProjects/chaba/stacks/web/public/apps/ tony-dell:/home/tony/.config/caddy/public/apps/
+```
+
+### Verification
+
+- Local consistency: `python3 scripts/apps-yml-generate.py --verify`
+- Live HTTP checks: `python3 scripts/apps-yml-generate.py --verify --live`
 - Timer: `systemctl --user status apps-health-sync.timer` (every 6 hours)
 - When working, the CRD virtual display lives on `:20` (`/tmp/.X11-unix/X20`).
 

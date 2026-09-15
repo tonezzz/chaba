@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Regenerate ssot.health.home.apps.yml and sync public apps to tony-dell."""
 import subprocess
+import sys
 import yaml
 from pathlib import Path
 
@@ -57,6 +58,20 @@ def main():
         check=True,
     )
     print(f"Synced public apps to {CADDY_APPS_DIR}")
+
+    # Auto-verification: every app in apps.yml must return 200 from tony-dell.
+    print("Running live verification...")
+    result = subprocess.run(
+        ["python3", str(REPO / "scripts" / "apps-yml-generate.py"), "--verify", "--live"],
+        capture_output=True,
+        text=True,
+    )
+    print(result.stdout)
+    if result.returncode != 0:
+        print(result.stderr, file=sys.stderr)
+        print("Live verification found failures; see above.", file=sys.stderr)
+    else:
+        print("Live verification passed.")
 
 
 if __name__ == "__main__":
