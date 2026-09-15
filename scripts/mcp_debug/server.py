@@ -1,6 +1,7 @@
 """MCP Debug server wiring."""
 import json
 import logging
+import os
 import sys
 from .config import HOSTS, DEBUG_COMMANDS, PRESETS, PRESET_DESCRIPTIONS
 from .hosts import run_on_host
@@ -64,7 +65,7 @@ def handle_tools_list(id_):
     tools = [
         {
             "name": "mcp_debug",
-            "description": f"Run a compact debug command on a host. Known commands: {known}",
+            "description": f"Run a compact debug command on a host, or use 'reload' to hot-reload this server. Known commands: {known}",
             "inputSchema": {
                 "type": "object",
                 "properties": {
@@ -569,8 +570,13 @@ def handle_tools_call(id_, params):
     command = arguments.get("command")
 
     if name == "mcp_debug":
-        if not host or not command:
-            return {"jsonrpc": "2.0", "id": id_, "error": {"code": -32602, "message": "host and command are required"}}
+        if not command:
+            return {"jsonrpc": "2.0", "id": id_, "error": {"code": -32602, "message": "command is required"}}
+        if command == "reload":
+            _mcp_debug_reload(id_)
+            # _mcp_debug_reload does not return
+        if not host:
+            return {"jsonrpc": "2.0", "id": id_, "error": {"code": -32602, "message": "host is required"}}
         output = mcp_debug(host, command)
     elif name == "mcp_raw":
         if not host or not command:
@@ -827,7 +833,31 @@ def handle_tools_call(id_, params):
     }
 
 
+def _mcp_debug_reload(id_):
+    """Hot-reload this mcp-debug server by re-executing the process in place."""
+    response = {
+        "jsonrpc": "2.0",
+        "id": id_,
+        "result": {
+            "content": [
+                {
+                    "type": "text",
+                    "text": json.dumps({"ok": True, "restarting": True}),
+                }
+            ]
+        },
+    }
+    print(json.dumps(response))
+    sys.stdout.flush()
+    os.environ["MCP_RELOADED"] = "1"
+    os.execv(sys.executable, [sys.executable, "-m", "mcp_debug.server"])
+    # os.execv does not return
+
+
 def main():
+    if os.environ.pop("MCP_RELOADED", None):
+        print(json.dumps({"jsonrpc": "2.0", "method": "notifications/tools/list_changed"}))
+        sys.stdout.flush()
     for line in sys.stdin:
         line = line.strip()
         if not line:

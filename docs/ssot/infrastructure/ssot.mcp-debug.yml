@@ -322,6 +322,9 @@ debug_commands:
     note: Abstract command; mcp-debug uses nvidia-smi --query-gpu. raw_command uses full nvidia-smi or rocm-smi --json to
       provide a larger raw baseline.
     raw_command: nvidia-smi 2>/dev/null || rocm-smi --json
+  reload:
+    description: Hot-reload this mcp-debug server process (re-execs to pick up code changes)
+    note: No host is used; the server reloads itself.
 raw_commands:
   allowed_prefixes:
   - systemctl
@@ -557,6 +560,9 @@ tool_examples:
     description: Run a compact debug command on a host
     example: '{"host": "tony_dell", "command": "services"}'
     note: The compact command is one of the keys in DEBUG_COMMANDS (df -h, ps, services, sockets, gpu, containers, etc.).
+  - tool: mcp_debug
+    description: Hot-reload the mcp-debug server to pick up code changes
+    example: '{"command": "reload"}'
   - tool: mcp_logs
     description: Fetch journalctl logs for a systemd unit
     example: '{"host": "tony_dell", "unit": "yomi-api.service", "lines": 20}'
