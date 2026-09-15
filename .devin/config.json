@@ -3,5 +3,43 @@
     "current": "normal",
     "allowed": ["normal", "plan", "build", "review"],
     "default": "normal"
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/home/tony/.config/devin/scripts/notebooklm-recall.sh",
+            "timeout": 180
+          }
+        ]
+      }
+    ],
+    "PostCompaction": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/home/tony/.config/devin/scripts/notebooklm-compaction.sh",
+            "timeout": 180
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "matcher": "",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "/home/tony/.config/devin/scripts/devin-session-end.sh",
+            "timeout": 180
+          }
+        ]
+      }
+    ]
   }
 }
