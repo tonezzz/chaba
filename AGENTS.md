@@ -302,5 +302,20 @@ ssh tony-dell 'pgrep -a -f devin-desktop | grep -v "pgrep\|ssh\|tailscaled"'
   - Then `sudo systemctl daemon-reload && sudo systemctl restart chrome-remote-desktop@tony`.
 - `~/.chrome-remote-desktop-session` must `exec` a long-running desktop/WM process. `startlxqt` (`lxqt-session`) segfaults in the headless Xvfb display; use `startxfce4` instead.
   - Current session file: `exec /usr/bin/startxfce4`
+
+## Web app deployment (tony-dell Caddy)
+
+### Source vs served directory
+
+- Repo source: `stacks/web/public/apps/`
+- Caddy `file_server` root: `~/.config/caddy/public/apps/` on tony-dell
+- Caddy `handle_path /apps/*` in `~/.config/caddy/Caddyfile.tony-dell` serves from the root above, not the repo
+- Changing files in the repo does **not** make them live until they are copied to Caddy's public directory
+
+### Sync
+
+- Manual: `rsync -avz /home/tony/CascadeProjects/chaba/stacks/web/public/apps/ tony-dell:/home/tony/.config/caddy/public/apps/`
+- Automatic: `scripts/apps-health-sync.py` regenerates app health checks and syncs public apps to tony-dell
+- Timer: `systemctl --user status apps-health-sync.timer` (every 6 hours)
 - When working, the CRD virtual display lives on `:20` (`/tmp/.X11-unix/X20`).
 

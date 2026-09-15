@@ -1,12 +1,15 @@
 #!/usr/bin/env python3
-"""Regenerate ssot.health.home.apps.yml from stacks/web/public/apps/apps.yml."""
+"""Regenerate ssot.health.home.apps.yml and sync public apps to tony-dell."""
+import subprocess
 import yaml
 from pathlib import Path
 
 REPO = Path.home() / "CascadeProjects" / "chaba"
 APPS_YML = REPO / "stacks" / "web" / "public" / "apps" / "apps.yml"
+APPS_DIR = REPO / "stacks" / "web" / "public" / "apps"
 OUT_YML = REPO / "docs" / "ssot" / "infrastructure" / "ssot.health.home.apps.yml"
 BASE_URL = "https://tony-dell.taila0626a.ts.net"
+CADDY_APPS_DIR = "tony-dell:/home/tony/.config/caddy/public/apps"
 
 
 def main():
@@ -39,6 +42,21 @@ def main():
     with open(OUT_YML, "w") as f:
         yaml.safe_dump(out, f, sort_keys=False, allow_unicode=True)
     print(f"Wrote {len(services)} app health checks to {OUT_YML}")
+
+    # Deploy public apps to tony-dell Caddy file_server root.
+    # Caddy serves /apps/* from this directory, not from the repo path.
+    print(f"Syncing {APPS_DIR} to {CADDY_APPS_DIR}...")
+    subprocess.run(
+        [
+            "rsync",
+            "-avz",
+            "--rsync-path=mkdir -p /home/tony/.config/caddy/public/apps && rsync",
+            f"{APPS_DIR}/",
+            f"{CADDY_APPS_DIR}/",
+        ],
+        check=True,
+    )
+    print(f"Synced public apps to {CADDY_APPS_DIR}")
 
 
 if __name__ == "__main__":
