@@ -333,6 +333,6 @@ rsync -avz /home/tony/CascadeProjects/chaba/stacks/web/public/apps/ tony-dell:/h
 
 - Local consistency: `python3 scripts/apps-yml-generate.py --verify`
 - Live HTTP checks: `python3 scripts/apps-yml-generate.py --verify --live`
-- Timer: `systemctl --user status apps-health-sync.timer` (every 6 hours)
+- Timer: `systemctl --user status apps-health-sync.timer` (daily)
 - When working, the CRD virtual display lives on `:20` (`/tmp/.X11-unix/X20`).
 
