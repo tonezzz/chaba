@@ -148,6 +148,58 @@ cards:
     source: stacks/web/public/apps/michael-live/
     instance: ssot.home-assistant.michael.dev.yml::environments.dev
 
+  - id: weather-station-card
+    name: Weather Station Card
+    source: https://github.com/chriguschneider/weather-station-card
+    purpose: Past weather-station sensor history + live current condition + optional weather.* forecast
+    use_for:
+      - statistics
+      - forecast overlay
+      - local station (RK900) history
+    dashboards:
+      - id: tony-test/mn-weather
+        tab: mnweather
+        instance: ssot.home-assistant.michael.dev.yml::environments.dev
+    note: >
+      Fits the RK900/RK600 use case because it charts the local Modbus
+      sensor history and can overlay weather.forecast_home in the same view.
+      Manual install: download weather-station-card.js from the latest GitHub
+      release, place in /local/community/weather-station-card/weather-station-card.js,
+      and add the module to Lovelace resources.
+
+  - id: pro-v-weather-card
+    name: PRO-V Weather Card
+    source: https://github.com/mycrouch/pro-v-weather-card
+    purpose: Console-style weather-station panel
+    use_for:
+      - console
+      - wind compass
+      - current readings
+    note: >
+      Source-agnostic Ecowitt/PRO-V console clone. Every slot is a GUI-selectable
+      entity; panels hide when not configured. Good for a single-glance RK900
+      dashboard with clock, moon, forecast, pressure, UV, solar and wind.
+
+  - id: nimbus-weather-card
+    name: Nimbus Weather Card
+    source: https://github.com/maxfok/nimbus-weather-card
+    purpose: Beautiful forecast / multi-source weather view
+    use_for:
+      - forecast
+      - multiple locations
+      - weather comparison
+    note: Apple Weather-inspired card with tabs, particle effects and hourly/daily toggle.
+
+  - id: apexcharts-card
+    name: ApexCharts Card
+    source: https://github.com/RomRider/apexcharts-card
+    purpose: Highly customisable statistics and time-series charts
+    use_for:
+      - custom statistics
+      - long-term data
+      - overlay history and forecast
+    note: Use with HA statistics or data_generator to build bespoke wind/temp/humidity charts.
+
 status:
   last_build: '2026-09-08'
   last_verified: '2026-09-14'
