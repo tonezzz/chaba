@@ -252,7 +252,6 @@ def build_glossary(workdir):
     rows = _flatten_values(values)
     with open(out_file, "w", encoding="utf-8") as out:
         out.write("===== SSOT Values Glossary =====\n\n")
-        out.write(f"Generated: {time.strftime('%Y-%m-%dT%H:%M:%S%z')}\n\n")
         for line in sorted(rows):
             out.write(line + "\n")
     return [("meta/glossary", out_file, [str(SSOT_VALUES)])]
@@ -264,7 +263,6 @@ def build_source_map(sources, workdir):
     with open(out_file, "w", encoding="utf-8") as out:
         out.write("===== NotebookLM Source Map =====\n\n")
         out.write(f"Notebook ID: {NOTEBOOK_ID}\n")
-        out.write(f"Generated: {time.strftime('%Y-%m-%dT%H:%M:%S%z')}\n")
         out.write(f"Sources: {len(sources)}\n\n")
         for s in sorted(sources, key=lambda x: x["title"]):
             out.write(f"title: {s['title']}\n")
