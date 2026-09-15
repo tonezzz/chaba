@@ -364,7 +364,17 @@ rsync -avz /home/tony/CascadeProjects/chaba/stacks/web/public/apps/ tony-dell:/h
 ### How to query
 
 ```bash
+# General query across all sources
 nlm query notebook fdfd3483-6b7e-4cb0-85f3-7f060698769c "<your question>" --timeout 120
+
+# Scoped to a category or a single chunk
+nlm query notebook fdfd3483-6b7e-4cb0-85f3-7f060698769c "<your question>" \
+  --source-ids <source-id-1>,<source-id-2> --timeout 120
+
+# Helper: query by source title pattern (uses the sync manifest)
+python3 scripts/notebooklm-query.py "kb/mddb" "What is MDDB used for?"
+python3 scripts/notebooklm-query.py "ssot/infrastructure" "What is the tony-dell Tailscale IP?"
+python3 scripts/notebooklm-query.py "-" "Summarize the Home Assistant setup."
 ```
 
 ### Notes

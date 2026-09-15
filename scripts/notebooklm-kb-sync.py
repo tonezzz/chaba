@@ -123,6 +123,7 @@ def nlm_add(local_path, title):
 
 
 def merge_group(name, files, out_file):
+    out_file.parent.mkdir(parents=True, exist_ok=True)
     with open(out_file, "w", encoding="utf-8") as out:
         for f in sorted(files):
             p = Path(f)
@@ -163,7 +164,7 @@ def chunk_items(group_name, files, workdir):
         suffix = f"-{idx}" if len(chunks) > 1 else ""
         out_file = workdir / f"{group_name}{suffix}.txt"
         merge_group(group_name, chunk, out_file)
-        out.append((f"{group_name}{suffix}", out_file))
+        out.append((f"{group_name}{suffix}", out_file, [str(f) for f in chunk]))
     return out
 
 
@@ -202,7 +203,7 @@ def chunk_kb_by_category(files, workdir):
     paths = []
     for cat in sorted(final):
         gfiles = sorted(final[cat])
-        paths.extend(chunk_items(f"kb-{cat}", gfiles, workdir))
+        paths.extend(chunk_items(f"kb/{cat}", gfiles, workdir))
     return paths
 
 
@@ -226,6 +227,56 @@ def save_manifest(sources):
                        f, sort_keys=False, allow_unicode=True)
 
 
+def _flatten_values(data, prefix=""):
+    rows = []
+    if isinstance(data, dict):
+        for k, v in data.items():
+            new_prefix = f"{prefix}.{k}" if prefix else str(k)
+            rows.extend(_flatten_values(v, new_prefix))
+    elif isinstance(data, list):
+        for i, v in enumerate(data):
+            rows.extend(_flatten_values(v, f"{prefix}[{i}]"))
+    else:
+        rows.append(f"{prefix}: {data}")
+    return rows
+
+
+def build_glossary(workdir):
+    values = _load_ssot_values()
+    out_file = workdir / "meta" / "glossary.txt"
+    out_file.parent.mkdir(parents=True, exist_ok=True)
+    rows = _flatten_values(values)
+    with open(out_file, "w", encoding="utf-8") as out:
+        out.write("===== SSOT Values Glossary =====\n\n")
+        out.write(f"Generated: {time.strftime('%Y-%m-%dT%H:%M:%S%z')}\n\n")
+        for line in sorted(rows):
+            out.write(line + "\n")
+    return [("meta/glossary", out_file, [str(SSOT_VALUES)])]
+
+
+def build_source_map(sources, workdir):
+    out_file = workdir / "meta" / "source-map.txt"
+    out_file.parent.mkdir(parents=True, exist_ok=True)
+    with open(out_file, "w", encoding="utf-8") as out:
+        out.write("===== NotebookLM Source Map =====\n\n")
+        out.write(f"Notebook ID: {NOTEBOOK_ID}\n")
+        out.write(f"Generated: {time.strftime('%Y-%m-%dT%H:%M:%S%z')}\n")
+        out.write(f"Sources: {len(sources)}\n\n")
+        for s in sorted(sources, key=lambda x: x["title"]):
+            out.write(f"title: {s['title']}\n")
+            out.write(f"  source_id: {s['source_id']}\n")
+            out.write(f"  drive_id: {s.get('drive_id', 'unknown')}\n")
+            out.write(f"  drive_name: {s.get('drive_name', 'unknown')}\n")
+            out.write(f"  size: {s.get('size', 0)}\n")
+            out.write(f"  sha256: {s['sha256']}\n")
+            if s.get("files"):
+                out.write(f"  files: {len(s['files'])}\n")
+                for f in s["files"]:
+                    out.write(f"    - {f}\n")
+            out.write("\n")
+    return out_file
+
+
 def build_chunks(workdir):
     infrastructure = sorted((REPO / "docs" / "ssot" / "infrastructure").glob("*.yml"))
     apps = sorted((REPO / "docs" / "ssot" / "apps").glob("*.yml"))
@@ -236,23 +287,25 @@ def build_chunks(workdir):
     readme = [REPO / "README.md"] if (REPO / "README.md").exists() else []
 
     merged = []
-    merged.extend(chunk_items("infrastructure", infrastructure, workdir))
-    merged.extend(chunk_items("ssot-apps", apps, workdir))
-    merged.extend(chunk_items("ssot-top", sstop, workdir))
+    merged.extend(build_glossary(workdir))
+    merged.extend(chunk_items("ssot/infrastructure", infrastructure, workdir))
+    merged.extend(chunk_items("ssot/apps", apps, workdir))
+    merged.extend(chunk_items("ssot/top", sstop, workdir))
     merged.extend(chunk_kb_by_category(kb_md + kb_yml, workdir))
-    merged.extend(chunk_items("AGENTS", agents, workdir))
-    merged.extend(chunk_items("README", readme, workdir))
+    merged.extend(chunk_items("meta/AGENTS", agents, workdir))
+    merged.extend(chunk_items("meta/README", readme, workdir))
     return merged
 
 
 def plan_sync(chunks, manifest, reconcile=False):
     desired = []
-    for title, p in chunks:
+    for title, p, files in chunks:
         desired.append({
             "title": title,
             "path": p,
             "sha256": sha256_file(p),
             "size": p.stat().st_size,
+            "files": files,
         })
 
     old_by_title = {s["title"]: s for s in manifest.get("sources", []) if s.get("title")}
@@ -330,6 +383,7 @@ def _add_sources(sources):
                         "drive_id": info["drive_id"],
                         "drive_name": info["drive_name"],
                         "size": d["size"],
+                        "files": d.get("files", []),
                     })
                     print(f"  added {d['title']} ({info['source_id']})")
                 except Exception as e:
@@ -346,6 +400,7 @@ def _add_sources(sources):
                     "drive_id": info["drive_id"],
                     "drive_name": info["drive_name"],
                     "size": d["size"],
+                    "files": d.get("files", []),
                 })
                 print(f"  added {d['title']} ({info['source_id']})")
             except Exception as e:
@@ -367,8 +422,8 @@ def main():
         chunks = build_chunks(workdir)
 
         print(f"Prepared {len(chunks)} merged source files:")
-        for title, p in chunks:
-            print(f"  {title}: {p.stat().st_size} bytes")
+        for title, p, files in chunks:
+            print(f"  {title}: {p.stat().st_size} bytes ({len(files)} files)")
 
         manifest = load_manifest()
         to_add, to_update, to_delete, unchanged, orphans = plan_sync(chunks, manifest, reconcile=args.reconcile)
@@ -413,6 +468,23 @@ def main():
         # Add new and updated sources
         added, add_errors = _add_sources(to_add + to_update)
         new_sources = list(unchanged) + added
+
+        # Build and add a source-map source describing all other sources
+        try:
+            source_map_file = build_source_map(new_sources, workdir)
+            info = nlm_add(source_map_file, "meta/source-map")
+            new_sources.append({
+                "title": "meta/source-map",
+                "sha256": sha256_file(source_map_file),
+                "source_id": info["source_id"],
+                "drive_id": info["drive_id"],
+                "drive_name": info["drive_name"],
+                "size": source_map_file.stat().st_size,
+            })
+            print(f"  added meta/source-map ({info['source_id']})")
+        except Exception as e:
+            print(f"  failed to add meta/source-map: {e}", file=sys.stderr)
+            add_errors += 1
 
     duration = time.time() - start
     _log_sync({
