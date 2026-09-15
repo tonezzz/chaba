@@ -395,6 +395,13 @@ python3 scripts/notebooklm-query.py "-" "Summarize the Home Assistant setup."
   - `nlm-cite kb/mddb`
   - `nlm-cite 40893dfc-243a-4988-bd77-f1bc916ee303`
   - Uses `data/notebooklm-kb-sync-manifest.yml`.
+- `chaba-ask` — pick the right consumer for a natural-language question
+  - `chaba-ask "How do I restart the NotebookLM auth refresh?"` → routes to `nlmq`
+  - `chaba-ask "What is the tony-dell Tailscale IP?"` → tells you to use `mcp_query_ssot`
+- `make` shortcuts — see `Makefile`:
+  - `make ssot`, `make kb`, `make kb-dry`, `make nlmq Q="..."`, `make nlm-cite SOURCE=kb/mddb`
+- `verify-agents` — check that `AGENTS.md` bash snippets resolve to real executables/scripts
+  - `python3 scripts/verify-agents-commands.py`
 
 ### Notes
 
@@ -405,6 +412,7 @@ python3 scripts/notebooklm-query.py "-" "Summarize the Home Assistant setup."
 ## MDDB / chaba-glossary
 
 - Sync: `python3 scripts/sync-ssot-to-mddb.py` creates `chaba-glossary` from `ssot.values.yml` and `infrastructure-ssot` from all SSOT YAML.
+- Timer: `systemctl --user status ssot-mddb-sync.timer` (daily)
 - Exact values: query `chaba-glossary` (uses plain-English value statements).
 - Topic search: query `infrastructure-ssot` (raw SSOT YAML).
 - Example:
