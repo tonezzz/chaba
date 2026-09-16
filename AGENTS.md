@@ -435,3 +435,16 @@ python3 scripts/notebooklm-query.py "-" "Summarize the Home Assistant setup."
   ```
 - See `docs/kb/experiments/notebooklm-kb-search-benchmark-2026-09-15.md` for the comparison with MDDB.
 
+## Quick HA device assessment
+
+- Script: `scripts/home-assistant/assess-device.py`
+- One-liner:
+  ```bash
+  python3 /home/tony/CascadeProjects/chaba/scripts/home-assistant/assess-device.py michael-ha/sr258
+  python3 /home/tony/CascadeProjects/chaba/scripts/home-assistant/assess-device.py michael-ha/sensor.foo
+  python3 /home/tony/CascadeProjects/chaba/scripts/home-assistant/assess-device.py --format json --verbose michael-ha/number.sr258_temperature
+  ```
+- Supported instances: `michael-ha`, `michael-dev`, `tony-ha`
+- Tokens are read from `~/.config/secrets/ha-michael-live.env`, `~/.config/secrets/ha-michael-dev.env`, `~/.config/secrets/home-assistant-token.env` (or the matching `*_TOKEN` env vars).
+- Use the `home-assistant` MCP server for deeper config or write operations; `assess-device.py` is the fast read-only fallback.
+

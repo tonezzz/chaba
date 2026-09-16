@@ -10,7 +10,7 @@ NOTEBOOK_ID = "fdfd3483-6b7e-4cb0-85f3-7f060698769c"
 def main():
     out = subprocess.run(
         ["nlm", "source", "list", NOTEBOOK_ID, "-a", "-j"],
-        capture_output=True, text=True, timeout=60,
+        capture_output=True, text=True, timeout=120,
     )
     if out.returncode != 0:
         print(out.stderr, file=sys.stderr)

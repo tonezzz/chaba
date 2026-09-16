@@ -56,6 +56,21 @@ policy:
       The ssot-search skill is the preferred tool for searching Trade SSOT
       YAML. Only fall back to docs-mcp for broader documentation searches.
 
+  home_assistant:
+    primary: home-assistant
+    default: |
+      Use the home-assistant MCP server for live Home Assistant lookups
+      (states, devices, entities, automations, helpers, dashboards).
+      Prefer read-only tools such as `ha_get_state`, `ha_search`,
+      `ha_get_device`, and `ha_call_read_tool`.
+    when_not_to_use: |
+      Do not use the home-assistant MCP to make destructive changes without
+      user confirmation. Do not use it for general OS/service health; use
+      mcp-health or mcp-debug instead.
+    fallback: |
+      If the server is unavailable, use `scripts/home-assistant/assess-device.py`
+      for direct HA REST state lookups, or query the relevant HA API manually.
+
   system_health:
     primary: mcp-health
     default: |
@@ -377,6 +392,26 @@ servers:
       - Weaviate vector search
     failure_procedure:
       - Verify the Weaviate service URL
+
+  - name: home-assistant
+    status: active
+    category: automation
+    use_cases:
+      - Live entity and device state lookups
+      - Automation, helper, dashboard, and scene inspection
+      - Read-only HA actions via ha_call_read_tool proxy
+    example_tools:
+      - ha_search
+      - ha_get_state
+      - ha_get_device
+      - ha_call_read_tool
+      - ha_get_history
+      - ha_get_overview
+      - ha_config_get_automation
+    failure_procedure:
+      - Check HA reachability and token validity
+      - Use scripts/home-assistant/assess-device.py for direct REST lookup
+      - Restart the HA-MCP custom component if the in-process server is down
 
   - name: mcp-debug
     status: active

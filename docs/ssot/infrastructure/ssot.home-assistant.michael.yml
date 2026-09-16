@@ -140,3 +140,14 @@ sync_rules:
   - "git -C chaba-michael push origin michael-ha"
   - "git -C chaba-michael rebase michael-ha michael-live"
   - "git -C chaba-michael push origin michael-live"
+
+device_aliases:
+  note: Short names for common Michael-HA devices and their representative entities.
+  sr258:
+    name: SR258
+    entities:
+      - number.sr258_temperature
+      - sensor.sr258_compressor_strength
+      - switch.sr258_child_lock
+      - switch.sr258_switch
+    note: Appears to be an HVAC-like unit (temperature setpoint, compressor strength, child lock, power switch).
