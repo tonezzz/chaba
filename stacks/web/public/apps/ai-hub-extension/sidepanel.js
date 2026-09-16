@@ -34,13 +34,35 @@ const sendCookiesBtn = document.getElementById('sendCookies');
 const cookieStatus = document.getElementById('cookieStatus');
 let lastCookiesJson = '';
 
-chrome.storage.local.get('bridgeUrl', ({ bridgeUrl }) => {
-  if (bridgeUrl) bridgeUrlInput.value = bridgeUrl;
+const nbApiKeyInput = document.getElementById('nbApiKey');
+const nbBaseUrlInput = document.getElementById('nbBaseUrl');
+const nbNotebookIdInput = document.getElementById('nbNotebookId');
+const nbListBtn = document.getElementById('nbListBtn');
+const nbUploadBtn = document.getElementById('nbUploadBtn');
+const nbStatus = document.getElementById('nbStatus');
+const notebookListSelect = document.getElementById('notebookList');
+
+const STORAGE_KEYS = ['bridgeUrl', 'nbApiKey', 'nbBaseUrl', 'nbNotebookId'];
+chrome.storage.local.get(STORAGE_KEYS, (r) => {
+  if (r.bridgeUrl) bridgeUrlInput.value = r.bridgeUrl;
+  if (r.nbApiKey) nbApiKeyInput.value = r.nbApiKey;
+  if (r.nbBaseUrl) nbBaseUrlInput.value = r.nbBaseUrl;
+  if (r.nbNotebookId) nbNotebookIdInput.value = r.nbNotebookId;
 });
 
-bridgeUrlInput.addEventListener('input', () => {
-  chrome.storage.local.set({ bridgeUrl: bridgeUrlInput.value });
-});
+function saveSettings() {
+  chrome.storage.local.set({
+    bridgeUrl: bridgeUrlInput.value,
+    nbApiKey: nbApiKeyInput.value,
+    nbBaseUrl: nbBaseUrlInput.value,
+    nbNotebookId: nbNotebookIdInput.value
+  });
+}
+
+bridgeUrlInput.addEventListener('input', saveSettings);
+nbApiKeyInput.addEventListener('input', saveSettings);
+nbBaseUrlInput.addEventListener('input', saveSettings);
+nbNotebookIdInput.addEventListener('input', saveSettings);
 
 const NOTEBOOKLM_URLS = [
   'https://notebooklm.google.com/',
@@ -118,5 +140,69 @@ sendCookiesBtn.addEventListener('click', async () => {
     cookieStatus.textContent = res.ok ? `Bridge: ${text}` : `Bridge error ${res.status}: ${text}`;
   } catch (err) {
     cookieStatus.textContent = `Bridge unreachable: ${err.message}`;
+  }
+});
+
+function getNbConfig() {
+  return {
+    nbApiKey: nbApiKeyInput.value.trim(),
+    nbBaseUrl: nbBaseUrlInput.value.trim().replace(/\/+$/, '')
+  };
+}
+
+nbListBtn.addEventListener('click', async () => {
+  const { nbApiKey, nbBaseUrl } = getNbConfig();
+  if (!nbApiKey || !nbBaseUrl) return nbStatus.textContent = 'Set API key and base URL.';
+  try {
+    const res = await fetch(`${nbBaseUrl}/v1/notebooks`, { headers: { 'X-API-Key': nbApiKey } });
+    if (!res.ok) throw new Error(res.statusText);
+    const data = await res.json();
+    const notebooks = data.notebooks || data;
+    populateNotebookList(notebooks);
+    nbStatus.textContent = `Loaded ${notebooks.length} notebooks.`;
+  } catch (err) {
+    nbStatus.textContent = `List failed: ${err.message}`;
+  }
+});
+
+function populateNotebookList(notebooks) {
+  notebookListSelect.innerHTML = '<option value="">Select notebook</option>';
+  for (const nb of notebooks) {
+    const opt = document.createElement('option');
+    opt.value = nb.id || nb.guid;
+    opt.textContent = nb.title || nb.name || nb.id;
+    notebookListSelect.appendChild(opt);
+  }
+}
+
+notebookListSelect.addEventListener('change', () => {
+  if (notebookListSelect.value) {
+    nbNotebookIdInput.value = notebookListSelect.value;
+    saveSettings();
+  }
+});
+
+nbUploadBtn.addEventListener('click', async () => {
+  const { nbApiKey, nbBaseUrl } = getNbConfig();
+  const notebookId = nbNotebookIdInput.value.trim();
+  if (!nbApiKey || !nbBaseUrl || !notebookId) return nbStatus.textContent = 'Set API key, base URL and notebook ID.';
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  if (!tab) return nbStatus.textContent = 'No active tab.';
+  try {
+    const result = await chrome.scripting.executeScript({
+      target: { tabId: tab.id },
+      func: () => ({ title: document.title, url: location.href, text: document.body.innerText.slice(0, 200_000) })
+    });
+    const { title, url, text } = result[0].result;
+    const payload = { title: `From: ${title}`, content: `${url}\n\n${text}` };
+    const res = await fetch(`${nbBaseUrl}/v1/notebooks/${notebookId}/sources/text`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-API-Key': nbApiKey },
+      body: JSON.stringify(payload)
+    });
+    const out = await res.text();
+    nbStatus.textContent = res.ok ? `Uploaded: ${res.status} ${out}` : `Upload failed ${res.status}: ${out}`;
+  } catch (err) {
+    nbStatus.textContent = `Upload error: ${err.message}`;
   }
 });

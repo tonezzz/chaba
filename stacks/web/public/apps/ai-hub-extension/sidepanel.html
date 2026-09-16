@@ -11,6 +11,7 @@
       <label><input type="checkbox" value="chatgpt.com" checked> ChatGPT</label>
       <label><input type="checkbox" value="gemini.google.com" checked> Gemini</label>
       <label><input type="checkbox" value="claude.ai" checked> Claude</label>
+      <label><input type="checkbox" value="midjourney.com" checked> Midjourney</label>
     </div>
     <textarea id="prompt" rows="4" placeholder="Prompt..."></textarea>
     <button id="send">Send to all</button>
@@ -24,6 +25,19 @@
         <button id="sendCookies">Send to bridge</button>
       </div>
       <div id="cookieStatus" class="status"></div>
+    </div>
+
+    <div class="section">
+      <h2>NotebookLM REST</h2>
+      <label>API key <input type="password" id="nbApiKey" placeholder="NOTEBOOKLM_REST_API_KEY"></label>
+      <label>Base URL <input type="text" id="nbBaseUrl" value="https://tony-dell.taila0626a.ts.net/apps/notebooklm/api"></label>
+      <label>Notebook ID <input type="text" id="nbNotebookId" placeholder="paste or select below"></label>
+      <select id="notebookList"><option value="">Select notebook</option></select>
+      <div class="row">
+        <button id="nbListBtn">List notebooks</button>
+        <button id="nbUploadBtn">Upload current page</button>
+      </div>
+      <div id="nbStatus" class="status"></div>
     </div>
 
     <h2>Responses</h2>

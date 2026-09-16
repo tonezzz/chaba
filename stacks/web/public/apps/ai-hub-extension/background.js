@@ -1,7 +1,8 @@
 const SITES = [
-  { host: 'chatgpt.com', url: 'https://chatgpt.com/' },
-  { host: 'gemini.google.com', url: 'https://gemini.google.com/app' },
-  { host: 'claude.ai', url: 'https://claude.ai/chat' }
+  { host: 'chatgpt.com', url: 'https://chatgpt.com/', pattern: 'https://chatgpt.com/*' },
+  { host: 'gemini.google.com', url: 'https://gemini.google.com/app', pattern: 'https://gemini.google.com/*' },
+  { host: 'claude.ai', url: 'https://claude.ai/chat', pattern: 'https://claude.ai/*' },
+  { host: 'midjourney.com', url: 'https://www.midjourney.com/imagine', pattern: 'https://*.midjourney.com/*' }
 ];
 
 chrome.action.onClicked.addListener(() => {
@@ -24,7 +25,7 @@ async function broadcast({ text, targets }) {
     : SITES;
 
   for (const site of list) {
-    const tabs = await chrome.tabs.query({ url: `https://${site.host}/*` });
+    const tabs = await chrome.tabs.query({ url: site.pattern });
     const tab = tabs[0] || await chrome.tabs.create({ url: site.url, active: false });
     await waitForTab(tab.id);
     try {

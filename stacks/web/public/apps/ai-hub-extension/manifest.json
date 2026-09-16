@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
   "name": "AI Hub",
-  "version": "0.1.0",
-  "description": "Broadcast prompts to ChatGPT, Gemini, and Claude",
+  "version": "0.2.0",
+  "description": "Broadcast prompts to ChatGPT, Gemini, Claude, and Midjourney; control NotebookLM",
   "permissions": [
     "tabs",
     "activeTab",
@@ -15,11 +15,14 @@
     "https://chatgpt.com/*",
     "https://gemini.google.com/*",
     "https://claude.ai/*",
+    "https://*.midjourney.com/*",
     "https://*.google.com/*",
     "https://accounts.google.com/*",
     "https://notebook.google.com/*",
     "https://notebooklm.google.com/*",
-    "http://127.0.0.1:9876/*"
+    "http://127.0.0.1:9876/*",
+    "http://127.0.0.1:3011/*",
+    "https://tony-dell.taila0626a.ts.net/apps/notebooklm/api/*"
   ],
   "background": {
     "service_worker": "background.js"
@@ -35,7 +38,8 @@
       "matches": [
         "https://chatgpt.com/*",
         "https://gemini.google.com/*",
-        "https://claude.ai/*"
+        "https://claude.ai/*",
+        "https://*.midjourney.com/*"
       ],
       "js": ["content.js"],
       "run_at": "document_idle"
