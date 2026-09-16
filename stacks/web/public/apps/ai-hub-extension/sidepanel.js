@@ -206,3 +206,32 @@ nbUploadBtn.addEventListener('click', async () => {
     nbStatus.textContent = `Upload error: ${err.message}`;
   }
 });
+
+const debugCaptureBtn = document.getElementById('debugCaptureBtn');
+const debugStatus = document.getElementById('debugStatus');
+
+debugCaptureBtn.addEventListener('click', async () => {
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  if (!tab) return debugStatus.textContent = 'No active tab.';
+  let debug = {};
+  try {
+    const res = await chrome.tabs.sendMessage(tab.id, { cmd: 'GET_DEBUG' });
+    debug = res || {};
+  } catch (err) {
+    debugStatus.textContent = `No content script on this tab: ${err.message}`;
+    return;
+  }
+  try {
+    const dataUrl = await chrome.tabs.captureVisibleTab(chrome.windows.WINDOW_ID_CURRENT, { format: 'png' });
+    const url = (bridgeUrlInput.value.trim() || 'http://127.0.0.1:9876').replace(/\/+$/, '');
+    const res = await fetch(`${url}/debug-screenshot`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ imageData: dataUrl, debug })
+    });
+    const text = await res.text();
+    debugStatus.textContent = res.ok ? text : `Debug save failed: ${res.status} ${text}`;
+  } catch (err) {
+    debugStatus.textContent = `Capture error: ${err.message}`;
+  }
+});

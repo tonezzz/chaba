@@ -72,6 +72,48 @@ function readLastAssistant() {
   return '';
 }
 
+function getCssPath(el) {
+  if (!el) return '';
+  const parts = [];
+  while (el && el.nodeType === Node.ELEMENT_NODE) {
+    let name = el.nodeName.toLowerCase();
+    if (el.id) {
+      name += '#' + el.id;
+      parts.unshift(name);
+      break;
+    }
+    let sib = el;
+    let nth = 1;
+    while (sib = sib.previousElementSibling) {
+      if (sib.nodeName.toLowerCase() === name) nth++;
+    }
+    if (nth > 1 || el.nextElementSibling) name += `:nth-of-type(${nth})`;
+    parts.unshift(name);
+    el = el.parentElement;
+  }
+  return parts.join(' > ');
+}
+
+function getDebugInfo() {
+  const el = document.querySelector(adapter.promptSelector);
+  const btn = document.querySelector(adapter.sendSelector);
+  return {
+    site: location.hostname,
+    prompt: {
+      found: !!el,
+      selector: getCssPath(el),
+      html: el ? el.outerHTML.slice(0, 500) : '',
+      rect: el ? el.getBoundingClientRect().toJSON() : null
+    },
+    send: {
+      found: !!btn,
+      selector: getCssPath(btn),
+      html: btn ? btn.outerHTML.slice(0, 500) : '',
+      rect: btn ? btn.getBoundingClientRect().toJSON() : null
+    }
+  };
+}
+
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.cmd === 'SEND') {
     setPrompt(request.text);
@@ -79,6 +121,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     sendResponse({ ok: true });
   } else if (request.cmd === 'READ') {
     sendResponse({ text: readLastAssistant() });
+  } else if (request.cmd === 'GET_DEBUG') {
+    sendResponse(getDebugInfo());
   }
   return true;
 });
