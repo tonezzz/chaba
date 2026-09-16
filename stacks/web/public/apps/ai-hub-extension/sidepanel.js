@@ -12,6 +12,37 @@ document.getElementById('targetChips').addEventListener('click', (e) => {
   }
 });
 
+const tabStatus = document.getElementById('tabStatus');
+const SITE_LABELS = [
+  { label: 'ChatGPT', urlMatch: 'chatgpt.com' },
+  { label: 'Gemini', urlMatch: 'gemini.google.com/app' },
+  { label: 'Gemini Images', urlMatch: 'gemini.google.com/images' },
+  { label: 'Claude', urlMatch: 'claude.ai' },
+  { label: 'Midjourney', urlMatch: 'midjourney.com' }
+];
+
+async function updateTabStatus() {
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  if (!tab) {
+    tabStatus.textContent = 'Active tab: —';
+    return;
+  }
+  const site = tab.url ? SITE_LABELS.find(s => tab.url.includes(s.urlMatch)) : null;
+  const short = tab.title || tab.url || '—';
+  tabStatus.textContent = site ? `Active: ${site.label} — ${short}` : `Active: ${short}`;
+}
+
+chrome.tabs.onActivated.addListener(updateTabStatus);
+chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+  if (changeInfo.url || changeInfo.title || changeInfo.status === 'complete') {
+    chrome.tabs.query({ active: true, currentWindow: true }, tabs => {
+      if (tabs[0] && tabs[0].id === tabId) updateTabStatus();
+    });
+  }
+});
+window.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') updateTabStatus(); });
+updateTabStatus();
+
 function appendResponse(site, text) {
   const div = document.createElement('div');
   div.className = 'response';
