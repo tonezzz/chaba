@@ -112,6 +112,9 @@ hosts:
         critical: false
         note: Weekly trigger for devin-cleanup.service; service skips if Devin code.lock is present
     known_failed:
+      - name: app-devin-desktop
+        reason: Devin desktop is started as a background nohup job, not a persistent systemd scope
+        action: restart-devin-desktop
       - name: session-c2.scope
         reason: Transient session scope, no PIDs left to attach
         action: ignore
@@ -130,6 +133,21 @@ hosts:
       - name: sync-to-hdd.service
         reason: /media/storage/backup not mounted
         action: mount-backup-drive
+      - name: ha-card-snapshot.service
+        reason: Home Assistant card snapshot helper is not currently running
+        action: investigate
+      - name: xdg-desktop-portal-gtk.service
+        reason: GTK portal for sandboxed apps; fails without an active X session
+        action: ignore-or-mask
+      - name: xfce4-notifyd.service
+        reason: XFCE notification daemon; fails when no X session is active
+        action: ignore-or-mask
+      - name: yomi-update-active.service
+        reason: Yomi active conversation update worker is not configured
+        action: disable-or-configure
+      - name: yomi-update-all.service
+        reason: Yomi all-conversations update worker is not configured
+        action: disable-or-configure
     expected_resources:
       min_free_ram_mb: 500
       max_swap_used_percent: 80
@@ -233,6 +251,12 @@ hosts:
       - name: arp-inventory-scan.service
         reason: Exits 2 when network conflicts/duplicates are detected, by design
         action: review-focus-inbox-alert
+      - name: weaviate-index.service
+        reason: Weaviate indexing queue; may fail while waiting for remote or GPU
+        action: review-focus-inbox-alert
+      - name: f08837a9d0ec269851e88ce856dfdcb130ebec993db3024ad4a93c7d39efbcd6-413857d9606b8a53.service
+        reason: Transient session scope with no remaining PIDs
+        action: ignore
 
     expected_resources:
       min_free_ram_mb: 1000
@@ -330,25 +354,47 @@ hosts:
         scope: system
         expected_state: active
         critical: true
-    known_failed: []
+    known_failed:
+      - name: grub-initrd-fallback.service
+        reason: Ubuntu/grub package service that fails on non-EFI fallback; harmless
+        action: ignore
     expected_resources:
       min_free_ram_mb: 500
       max_swap_used_percent: 80
       max_root_disk_percent: 85
       max_load_5m: 8.0
     last_observed:
-      observed_at: null
-      active_user_services: []
+      observed_at: '2026-09-16T13:45:16.683983+07:00'
+      active_user_services:
+        - caddy-mn01.service
+        - dbus.service
+        - filter-chain.service
+        - mpris-proxy.service
+        - pipewire-pulse.service
+        - pipewire.service
+        - wireplumber.service
       failed_user_services: []
-      failed_system_services: []
-      memory: {}
+      failed_system_services:
+        - grub-initrd-fallback.service
+      memory:
+        total: 7.1Gi
+        used: 960Mi
+        free: 3.9Gi
+        available: 6.2Gi
       swap: {}
-      disk: {}
-      load: {}
-      uptime: ""
-      top_processes: []
+      disk:
+        percent: '6'
+      load:
+        1m: 0.07
+        5m: 0.1
+        15m: 0.13
+      uptime: '3:33'
+      top_processes:
+        - '5463  2.8  0.1 gnome-shell'
+        - '5073  0.6  0.3 tailscaled'
+        - '13709  0.6  0.0 caddy'
       notes:
-        - "Baseline; run audit-hosts.py to populate."
+        - "SSOT and live state synced on 2026-09-16."
     deltas: []
 
 related_files:

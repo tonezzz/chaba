@@ -25,6 +25,140 @@ overview:
     - "Which tool should I use to inspect kernel errors? → dmesg"
 
 tools:
+  core:
+    - name: python3
+      package:
+        linux: python3
+        mac: python3
+      command: "python3 --version"
+      verify: "python3 --version"
+      decisions: ["run project Python scripts and tools"]
+      priority: essential
+
+    - name: python3-venv
+      package:
+        linux: python3-venv
+      check: "python3 -m venv --help"
+      command: "python3 -m venv <venv_path>"
+      verify: "python3 -m venv --help"
+      decisions: ["create isolated Python virtual environments"]
+      priority: essential
+
+    - name: pip
+      package:
+        linux: python3-pip
+        mac: pip
+      command: "pip --version"
+      verify: "pip --version"
+      decisions: ["install Python packages"]
+      priority: essential
+
+    - name: pipx
+      package:
+        linux: pipx
+        mac: pipx
+      command: "pipx --version"
+      verify: "pipx --version"
+      decisions: ["install Python tools in isolated venvs"]
+      priority: useful
+
+    - name: git
+      package:
+        linux: git
+        mac: git
+      command: "git --version"
+      verify: "git --version"
+      decisions: ["clone and update project repositories"]
+      priority: essential
+
+    - name: ssh
+      package:
+        linux: openssh-client
+        mac: openssh
+      command: "ssh -V"
+      verify: "ssh -V"
+      decisions: ["connect to remote hosts"]
+      priority: essential
+
+    - name: curl
+      package:
+        linux: curl
+        mac: curl
+      command: "curl -sfL <url>"
+      verify: "curl --version"
+      decisions: ["test HTTP/TCP endpoints"]
+      priority: essential
+
+    - name: wget
+      package:
+        linux: wget
+        mac: wget
+      command: "wget -qO- <url>"
+      verify: "wget --version"
+      decisions: ["download files from remote URLs"]
+      priority: useful
+
+    - name: jq
+      package:
+        linux: jq
+        mac: jq
+      command: "jq --version"
+      verify: "jq --version"
+      decisions: ["parse and transform JSON"]
+      priority: essential
+
+    - name: yq
+      package:
+        linux: yq
+        mac: yq
+      command: "yq --version"
+      verify: "yq --version"
+      decisions: ["parse and transform YAML"]
+      priority: essential
+
+    - name: eget
+      package: {}
+      check: "PATH=$HOME/.local/bin:$PATH command -v eget"
+      command: "eget install <repo>"
+      verify: "PATH=$HOME/.local/bin:$PATH eget --version 2>&1 || PATH=$HOME/.local/bin:$PATH eget --help | head -1"
+      decisions: ["install prebuilt binaries from GitHub releases"]
+      priority: optional
+
+  runtimes:
+    - name: node
+      package:
+        linux: nodejs
+        mac: node
+      command: "node --version"
+      verify: "node --version"
+      decisions: ["build and run JavaScript/TypeScript tools"]
+      priority: essential
+
+    - name: npm
+      package:
+        linux: npm
+        mac: npm
+      command: "npm --version"
+      verify: "npm --version"
+      decisions: ["install JavaScript dependencies"]
+      priority: essential
+
+    - name: go
+      package:
+        linux: golang-go
+        mac: go
+      command: "go version"
+      verify: "go version"
+      decisions: ["build Go-based utilities"]
+      priority: optional
+
+    - name: caddy
+      package: {}
+      command: "caddy version"
+      verify: "caddy version"
+      decisions: ["serve HTTPS reverse proxy and app landing"]
+      priority: useful
+
   network:
     - name: ip
       package:
@@ -75,6 +209,13 @@ tools:
       command: "tcpdump -i any -c 20"
       verify: "tcpdump --version"
       decisions: ["capture and inspect network traffic"]
+      priority: useful
+
+    - name: tailscale
+      package: {}
+      command: "tailscale version"
+      verify: "tailscale version"
+      decisions: ["Tailscale VPN status and management"]
       priority: useful
 
     - name: ping
@@ -193,7 +334,7 @@ hosts:
   mn01:
     os: linux
     package_manager: apt
-    recommended: essential
+    recommended: useful
   macbook:
     os: mac
     package_manager: brew

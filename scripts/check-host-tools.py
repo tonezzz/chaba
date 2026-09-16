@@ -108,7 +108,8 @@ def _main() -> int:
             pkg = tool.get("package", {}).get(os_name) or tool.get("package", {}).get("linux")
             record = {"name": name, "package": pkg}
 
-            which = _ssh(args.host, f"command -v {shlex.quote(name)}")
+            check_cmd = tool.get("check", f"command -v {shlex.quote(name)}")
+            which = _ssh(args.host, check_cmd)
             installed = which.returncode == 0 and which.stdout.strip()
 
             if not installed:
@@ -118,15 +119,17 @@ def _main() -> int:
                     inst = _ssh(args.host, install)
                     if inst.returncode == 0:
                         # Re-check
-                        which2 = _ssh(args.host, f"command -v {shlex.quote(name)}")
+                        which2 = _ssh(args.host, check_cmd)
                         if which2.returncode == 0 and which2.stdout.strip():
                             result["installed_now"].append(record)
+                            result["missing"] = [m for m in result["missing"] if m["name"] != name]
                             installed = True
                         else:
                             result["verify_failed"].append({"name": name, "error": f"installed but not in PATH: {which2.stderr.strip()}"})
                     else:
                         result["verify_failed"].append({"name": name, "error": f"install failed: {inst.stderr.strip()}"})
-                continue
+                if not installed:
+                    continue
 
             result["checked"].append(record)
             verify_cmd = tool.get("verify", f"{name} --version 2>&1 | head -1")
