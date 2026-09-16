@@ -148,6 +148,9 @@ hosts:
       - name: yomi-update-all.service
         reason: Yomi all-conversations update worker is not configured
         action: disable-or-configure
+      - name: tony-dell-monitor.service
+        reason: Display/host monitor helper is not currently running
+        action: investigate
     expected_resources:
       min_free_ram_mb: 500
       max_swap_used_percent: 80
