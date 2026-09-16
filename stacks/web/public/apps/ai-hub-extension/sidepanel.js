@@ -343,3 +343,49 @@ debugCaptureBtn.addEventListener('click', async () => {
     debugStatus.textContent = `Capture error: ${err.message}`;
   }
 });
+
+const dumpPageBtn = document.getElementById('dumpPageBtn');
+
+dumpPageBtn.addEventListener('click', async () => {
+  const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+  if (!tab) return debugStatus.textContent = 'No active tab.';
+  let page = {};
+  try {
+    const res = await chrome.scripting.executeScript({
+      target: { tabId: tab.id },
+      func: () => ({
+        url: location.href,
+        title: document.title,
+        text: document.body ? document.body.innerText : '',
+        fields: Array.from(document.querySelectorAll('input,select,textarea')).map(el => ({
+          tag: el.tagName.toLowerCase(),
+          type: el.type || '',
+          id: el.id || '',
+          name: el.name || '',
+          value: el.type === 'password'
+            ? (el.value ? '(set)' : '')
+            : (el.tagName === 'SELECT' ? (el.options[el.selectedIndex] || {}).text : el.value),
+          checked: typeof el.checked === 'boolean' ? el.checked : undefined
+        })),
+        html: document.documentElement ? document.documentElement.outerHTML : ''
+      })
+    });
+    page = res?.[0]?.result || {};
+    if (!page.text && !page.html) throw new Error('empty result');
+  } catch (err) {
+    debugStatus.textContent = `Script injection failed for ${tab.url}: ${err.message}`;
+    return;
+  }
+  try {
+    const url = (bridgeUrlInput.value.trim() || 'http://127.0.0.1:9876').replace(/\/+$/, '');
+    const res = await fetch(`${url}/page-dump`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(page)
+    });
+    const text = await res.text();
+    debugStatus.textContent = res.ok ? `Dumped ${page.text.length} chars: ${text}` : `Dump failed: ${res.status} ${text}`;
+  } catch (err) {
+    debugStatus.textContent = `Dump error: ${err.message}`;
+  }
+});
