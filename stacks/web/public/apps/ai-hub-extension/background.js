@@ -1,8 +1,9 @@
 const SITES = [
-  { host: 'chatgpt.com', url: 'https://chatgpt.com/', pattern: 'https://chatgpt.com/*' },
-  { host: 'gemini.google.com', url: 'https://gemini.google.com/app', pattern: 'https://gemini.google.com/*' },
-  { host: 'claude.ai', url: 'https://claude.ai/chat', pattern: 'https://claude.ai/*' },
-  { host: 'midjourney.com', url: 'https://www.midjourney.com/imagine', pattern: 'https://*.midjourney.com/*' }
+  { key: 'chatgpt', urlMatch: 'chatgpt.com', url: 'https://chatgpt.com/' },
+  { key: 'gemini', urlMatch: 'gemini.google.com/app', url: 'https://gemini.google.com/app' },
+  { key: 'gemini-images', urlMatch: 'gemini.google.com/images', url: 'https://gemini.google.com/images' },
+  { key: 'claude', urlMatch: 'claude.ai', url: 'https://claude.ai/chat' },
+  { key: 'midjourney', urlMatch: 'midjourney.com', url: 'https://www.midjourney.com/imagine' }
 ];
 
 chrome.action.onClicked.addListener(() => {
@@ -19,7 +20,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   return false;
 });
 
-function sendPrompt(text, siteHost) {
+function sendPrompt(text, siteKey) {
   function setNativeValue(element, value) {
     if (element.isContentEditable) {
       element.focus();
@@ -39,48 +40,50 @@ function sendPrompt(text, siteHost) {
     element.dispatchEvent(new Event('change', { bubbles: true }));
   }
   const ADAPTERS = {
-    'chatgpt.com': { promptSelector: '#prompt-textarea', sendSelector: 'button[data-testid="send-button"]' },
-    'gemini.google.com': { promptSelector: 'div[contenteditable="true"], textarea', sendSelector: 'button[aria-label="Send message"]' },
-    'claude.ai': { promptSelector: 'div[contenteditable="true"]', sendSelector: 'button[aria-label="Send message"], button[aria-label="Send"]' },
-    'midjourney.com': {
+    'chatgpt': { promptSelector: '#prompt-textarea', sendSelector: 'button[data-testid="send-button"]' },
+    'gemini': { promptSelector: 'div[contenteditable="true"], textarea', sendSelector: 'button[aria-label="Send message"]' },
+    'gemini-images': {
+      promptSelector: 'textarea[placeholder*="image" i], textarea, div[contenteditable="true"], input[type="text"]',
+      sendSelector: 'button[aria-label="Create" i], button[aria-label="Generate" i], button[type="submit"], [data-testid="generate-button"], [data-testid="create-button"]'
+    },
+    'claude': { promptSelector: 'div[contenteditable="true"]', sendSelector: 'button[aria-label="Send message"], button[aria-label="Send"]' },
+    'midjourney': {
       promptSelector: 'textarea, input[type="text"], div[contenteditable="true"], [data-testid="prompt-input"], [placeholder*="imagine" i]',
       sendSelector: 'button[type="submit"], button[aria-label="Imagine"], button[aria-label="Create"], button[aria-label="Generate"], [data-testid="imagine-button"], [data-testid="generate-button"]'
     }
   };
-  const host = location.hostname;
-  const site = Object.keys(ADAPTERS).find(h => host === h || host.endsWith('.' + h));
-  if (!site) return { ok: false, error: 'no adapter for ' + host };
-  const adapter = ADAPTERS[site];
+  const adapter = ADAPTERS[siteKey];
+  if (!adapter) return { ok: false, error: 'no adapter for ' + siteKey };
   const el = document.querySelector(adapter.promptSelector);
-  if (!el) return { ok: false, error: 'prompt not found', site, host };
+  if (!el) return { ok: false, error: 'prompt not found', siteKey };
   setNativeValue(el, text);
   const btn = document.querySelector(adapter.sendSelector);
-  if (!btn) return { ok: false, error: 'send button not found', site, host };
+  if (!btn) return { ok: false, error: 'send button not found', siteKey };
   if (!btn.disabled) btn.click();
-  return { ok: true, site, host };
+  return { ok: true, siteKey };
 }
 
 async function broadcast({ text, targets }) {
   const list = targets?.length
-    ? SITES.filter(s => targets.includes(s.host))
+    ? SITES.filter(s => targets.includes(s.key))
     : SITES;
 
   for (const site of list) {
     const allTabs = await chrome.tabs.query({});
-    const existing = allTabs.find(t => t.url && t.url.includes(site.host));
+    const existing = allTabs.find(t => t.url && t.url.includes(site.urlMatch));
     const tab = existing || await chrome.tabs.create({ url: site.url, active: false });
     if (!existing) await waitForTab(tab.id);
     try {
       const res = await chrome.scripting.executeScript({
         target: { tabId: tab.id },
         func: sendPrompt,
-        args: [text, site.host]
+        args: [text, site.key]
       });
       const result = res?.[0]?.result;
       if (!result?.ok) throw new Error(result?.error || 'unknown');
-      console.log('sent to', site.host, result);
+      console.log('sent to', site.key, result);
     } catch (err) {
-      console.error(`Failed to send to ${site.host}:`, err);
+      console.error(`Failed to send to ${site.key}:`, err);
     }
   }
 }
