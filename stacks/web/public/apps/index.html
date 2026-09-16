@@ -36,15 +36,26 @@
       ).join('');
       const appMap = new Map((data.apps || []).map(a => [a.id, a]));
       const groupedIds = new Set();
+      const appUrl = (a) => {
+        if (a.host && a.host_url && a.host !== hostLabel) {
+          return a.host_url + a.href;
+        }
+        return a.href;
+      };
+      const appHostBadge = (a) => a.host && a.host !== hostLabel ? ` <span class="text-[10px] text-gray-500">(${a.host})</span>` : '';
+      const origin = window.location.origin;
+      const hostname = window.location.hostname;
+      const isMn = hostname.includes('mn01');
+      const hostLabel = isMn ? 'mn01' : 'tony-dell';
       let html = `
         <h1 class="text-2xl font-bold mb-1">${data.title}</h1>
-        <p class="text-gray-400 text-sm mb-6">Local apps and tools on tony-dell.</p>
+        <p class="text-gray-400 text-sm mb-6">Local apps and tools on ${hostLabel}.</p>
         <div class="bg-card border border-gray-700 rounded p-4 mb-6 text-sm text-gray-300">
           <p class="mb-2"><strong>Network options:</strong> choose the URL that matches where you are.</p>
           <ul class="list-disc list-inside space-y-1">
-            <li><strong>Home LAN:</strong> <code>http://tony-dell.local:8080/apps</code></li>
-            <li><strong>Tailscale tailnet:</strong> <code>http://tony-dell:8080/apps</code></li>
-            <li><strong>Public internet (Home Assistant Live):</strong> <code>https://tony-dell.taila0626a.ts.net:8444/</code> — <a href="https://tony-dell.taila0626a.ts.net:8444/" class="text-accent hover:underline">learn more</a></li>
+            <li><strong>This page:</strong> <code>${origin}/apps</code></li>
+            ${isMn ? `<li><strong>Headless primary:</strong> <code>https://tony-dell.taila0626a.ts.net/apps</code></li>` : ''}
+            <li><strong>Home Assistant Live:</strong> <code>https://tony-dell.taila0626a.ts.net:8444/</code> — <a href="https://tony-dell.taila0626a.ts.net:8444/" class="text-accent hover:underline">learn more</a></li>
           </ul>
         </div>
       `;
@@ -59,8 +70,8 @@
           if (!a) continue;
           groupedIds.add(id);
           html += `
-            <a href="${a.href}" class="app-card">
-              <h2 class="text-lg font-semibold text-white">${a.icon ? a.icon + ' ' : ''}${a.title}</h2>
+            <a href="${appUrl(a)}" class="app-card">
+              <h2 class="text-lg font-semibold text-white">${a.icon ? a.icon + ' ' : ''}${a.title}${appHostBadge(a)}</h2>
               <p class="text-gray-400 text-xs mt-1 line-clamp-2">${a.description}</p>
             </a>
           `;
@@ -73,8 +84,8 @@
         html += `<div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">`;
         for (const a of ungrouped) {
           html += `
-            <a href="${a.href}" class="app-card">
-              <h2 class="text-lg font-semibold text-white">${a.icon ? a.icon + ' ' : ''}${a.title}</h2>
+            <a href="${appUrl(a)}" class="app-card">
+              <h2 class="text-lg font-semibold text-white">${a.icon ? a.icon + ' ' : ''}${a.title}${appHostBadge(a)}</h2>
               <p class="text-gray-400 text-xs mt-1 line-clamp-2">${a.description}</p>
             </a>
           `;

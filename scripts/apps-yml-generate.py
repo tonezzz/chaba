@@ -11,13 +11,15 @@ from pathlib import Path
 REPO = Path.home() / "CascadeProjects" / "chaba"
 APPS_DIR = REPO / "stacks" / "web" / "public" / "apps"
 APPS_YML = APPS_DIR / "apps.yml"
+SSOT_APPS = REPO / "docs" / "ssot" / "apps" / "ssot.apps.yml"
 BASE_URL = "https://tony-dell.taila0626a.ts.net"
 SKIP_PATHS = {"", ".", "shared", "shared/js", "shared/tests"}
 SKIP_PATTERNS = ["yomi/media", "yomi/fetch-data", "trade/data/imported"]
 
 
 def app_id_from_path(rel):
-    return rel.replace("/", "-")
+    # Normalize path separators and underscores to dashes so ids match ssot.apps.yml.
+    return rel.replace("/", "-").replace("_", "-")
 
 
 def href_from_path(rel):
@@ -74,6 +76,29 @@ def discover_apps():
     return sorted(apps, key=lambda a: a["id"])
 
 
+def load_ssot_apps():
+    """Return a mapping of app id -> {host, host_url} from ssot.apps.yml."""
+    if not SSOT_APPS.exists():
+        return {}
+    try:
+        ssot = yaml.safe_load(SSOT_APPS.read_text())
+    except Exception:
+        return {}
+    mapping = {}
+    hosts = ssot.get("apps-hosts", {}) if isinstance(ssot, dict) else {}
+    for host_id, host_cfg in hosts.items():
+        if not isinstance(host_cfg, dict):
+            continue
+        host_url = host_cfg.get("host_url", "").rstrip("/")
+        if not host_url:
+            continue
+        for app_id in host_cfg.get("apps", []):
+            mapping[app_id] = {"host": host_id, "host_url": host_url}
+    # Anything not in the registry defaults to tony-dell for historical reasons
+    mapping.setdefault("tony-dell", {"host": "tony-dell", "host_url": "https://tony-dell.taila0626a.ts.net"})
+    return mapping
+
+
 def load_apps_yml():
     if not APPS_YML.exists():
         return {"title": "Apps", "nav": [], "apps": []}
@@ -87,6 +112,7 @@ def save_apps_yml(data):
 def generate():
     data = load_apps_yml()
     discovered = discover_apps()
+    ssot_by_id = load_ssot_apps()
     existing_by_href = {a["href"]: a for a in data.get("apps", [])}
     existing_by_id = {a["id"]: a for a in data.get("apps", [])}
 
@@ -94,6 +120,9 @@ def generate():
     for app in discovered:
         href = app["href"]
         rel = app.pop("rel", None)
+        ssot = ssot_by_id.get(app["id"], {})
+        app["host"] = ssot.get("host", "tony-dell")
+        app["host_url"] = ssot.get("host_url", "https://tony-dell.taila0626a.ts.net")
         existing = existing_by_href.get(href)
         if existing:
             # preserve the existing id/icon, but refresh title/description from the page
@@ -105,6 +134,8 @@ def generate():
                 existing["description"] = app["description"]
             if not existing.get("icon"):
                 existing["icon"] = app["icon"]
+            existing.setdefault("host", app["host"])
+            existing.setdefault("host_url", app["host_url"])
             merged.append(existing)
         else:
             # only auto-add top-level apps, not nested ones that haven't been manually registered
@@ -117,6 +148,10 @@ def generate():
     # keep any existing apps that are not directory-based (e.g. proxy apps)
     for existing in data.get("apps", []):
         if not any(a.get("href") == existing["href"] for a in merged):
+            if not existing.get("host"):
+                ssot = ssot_by_id.get(existing.get("id", ""), {})
+                existing["host"] = ssot.get("host", "tony-dell")
+                existing["host_url"] = ssot.get("host_url", "https://tony-dell.taila0626a.ts.net")
             merged.append(existing)
 
     data["apps"] = sorted(merged, key=lambda a: a.get("id", ""))
