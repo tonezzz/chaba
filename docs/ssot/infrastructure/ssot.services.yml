@@ -738,8 +738,10 @@ mn01:
     port: 443
     host_port: 0.0.0.0:443
     purpose: HTTPS reverse proxy for local services on mn-home and tailnet
-    status: planned
-    note: 'Use for funnel-like local endpoints without relying on tony-dell. Map apps like /ada-pi, /notebooklm, /status.'
+    status: active
+    tailscale_funnel: 'https://mn01.taila0626a.ts.net'
+    caddyfile: '~/.config/caddy/Caddyfile.mn01'
+    note: 'Caddy listens on 127.0.0.1:8080; Tailscale Funnel forwards https://mn01.taila0626a.ts.net/ to it. Add app routes under /apps/<name>/*. Current root serves from ~/.config/caddy/public/apps/.'
   dnsmasq-mn:
     service: dnsmasq-mn.service
     host: mn01
