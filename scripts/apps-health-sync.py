@@ -52,13 +52,16 @@ def main():
         yaml.safe_dump(out, f, sort_keys=False, allow_unicode=True)
     print(f"Wrote {len(services)} app health checks to {OUT_YML}")
 
-    # Deploy public apps to each Caddy file_server root.
+    # Deploy public apps to Caddy file_server roots on known tailnet hosts.
     # Caddy serves /apps/* from this directory, not from the repo path.
     hosts = load_ssot_hosts()
     for host_id, host_cfg in hosts.items():
+        host_url = host_cfg.get("host_url", "")
+        if "taila0626a.ts.net" not in host_url:
+            continue
         target = f"{host_id}:/home/tony/.config/caddy/public/apps"
         print(f"Syncing {APPS_DIR} to {target}...")
-        subprocess.run(
+        result = subprocess.run(
             [
                 "rsync",
                 "-avz",
@@ -66,9 +69,13 @@ def main():
                 f"{APPS_DIR}/",
                 f"{target}/",
             ],
-            check=True,
+            capture_output=True,
+            text=True,
         )
-        print(f"Synced public apps to {target}")
+        if result.returncode == 0:
+            print(f"Synced public apps to {target}")
+        else:
+            print(f"WARNING: failed to sync to {target}: {result.stderr.strip()}")
 
     # Verification: consistency only. Use apps-yml-generate.py --verify --live manually
     # if you want to re-check HTTP status against each app's declared host_url.
