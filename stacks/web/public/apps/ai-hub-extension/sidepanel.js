@@ -43,6 +43,27 @@ chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
 window.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') updateTabStatus(); });
 updateTabStatus();
 
+const bridgeStatus = document.getElementById('bridgeStatus');
+
+async function checkBridge() {
+  const url = (bridgeUrlInput.value.trim() || 'http://127.0.0.1:9876').replace(/\/+$/, '');
+  const storage = await chrome.storage.local.get('lastCookieSync');
+  const syncText = storage.lastCookieSync
+    ? `Last cookie sync: ${new Date(storage.lastCookieSync).toLocaleTimeString()}`
+    : 'No cookie sync yet';
+  try {
+    const res = await fetch(`${url}/health`);
+    if (res.ok) bridgeStatus.textContent = `Bridge online — ${syncText}`;
+    else bridgeStatus.textContent = `Bridge error ${res.status} — ${syncText}`;
+  } catch (err) {
+    bridgeStatus.textContent = `Bridge offline — ${syncText}`;
+  }
+}
+
+bridgeUrlInput.addEventListener('input', () => { saveSettings(); checkBridge(); });
+setInterval(checkBridge, 10000);
+checkBridge();
+
 function appendResponse(site, text) {
   const div = document.createElement('div');
   div.className = 'response';

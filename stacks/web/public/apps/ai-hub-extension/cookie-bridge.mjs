@@ -9,6 +9,7 @@ const STORAGE = process.env.STORAGE || `${homedir()}/.notebooklm/profiles/defaul
 const RSYNC_TARGET = process.env.RSYNC_TARGET || '';
 const RESTART_CMD = process.env.RESTART_CMD || '';
 const DEBUG_DIR = `${homedir()}/.local/ai-hub/debug`;
+const DUMP_DIR = `${homedir()}/.local/ai-hub/page-dumps`;
 
 function handleCookies(req, res) {
   let body = '';
@@ -31,6 +32,7 @@ function handleCookies(req, res) {
       res.writeHead(200);
       res.end('ok');
     } catch (err) {
+      console.error('cookie-bridge save error:', err.message);
       res.writeHead(400);
       res.end(err.message);
     }
@@ -64,12 +66,18 @@ function handleDebugScreenshot(req, res) {
 
 createServer((req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
   if (req.method === 'OPTIONS') {
     res.writeHead(204);
     res.end();
+    return;
+  }
+
+  if (req.method === 'GET' && req.url === '/health') {
+    res.writeHead(200);
+    res.end('ok');
     return;
   }
 
@@ -80,6 +88,30 @@ createServer((req, res) => {
 
   if (req.method === 'POST' && req.url === '/debug-screenshot') {
     handleDebugScreenshot(req, res);
+    return;
+  }
+
+  if (req.method === 'POST' && req.url === '/page-dump') {
+    let body = '';
+    req.on('data', chunk => { body += chunk; });
+    req.on('end', () => {
+      try {
+        const data = JSON.parse(body);
+        if (typeof data.text !== 'string' && typeof data.html !== 'string') {
+          throw new Error('Expected text or html');
+        }
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+        const slug = String(data.title || data.url || 'page').replace(/[^a-z0-9]+/gi, '_').slice(0, 40);
+        mkdirSync(DUMP_DIR, { recursive: true });
+        const path = `${DUMP_DIR}/${timestamp}_${slug}.json`;
+        writeFileSync(path, JSON.stringify({ receivedAt: new Date().toISOString(), ...data }, null, 2));
+        res.writeHead(200);
+        res.end(`dump: ${path}`);
+      } catch (err) {
+        res.writeHead(400);
+        res.end(err.message);
+      }
+    });
     return;
   }
 
