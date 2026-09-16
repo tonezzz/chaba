@@ -1,0 +1,42 @@
+{
+	admin localhost:2020
+}
+
+:8080 {
+	# Landing
+	handle / {
+		redir /apps/ 302
+	}
+
+	# Ada HA Tony
+	handle /apps/ada_ha_tony {
+		redir /apps/ada_ha_tony/ 308
+	}
+
+	handle_path /apps/ada_ha_tony/* {
+		reverse_proxy 127.0.0.1:8002 {
+			header_up Host 127.0.0.1:8002
+		}
+	}
+
+	# Ada HA Michael
+	handle /apps/ada_ha_michael {
+		redir /apps/ada_ha_michael/ 308
+	}
+
+	handle_path /apps/ada_ha_michael/* {
+		reverse_proxy 127.0.0.1:8003 {
+			header_up Host 127.0.0.1:8003
+		}
+	}
+
+	# Apps directory
+	handle /apps {
+		redir /apps/ 308
+	}
+
+	handle_path /apps/* {
+		root * /home/tony/.config/caddy/public/apps
+		file_server browse
+	}
+}

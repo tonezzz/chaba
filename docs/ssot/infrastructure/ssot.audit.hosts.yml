@@ -352,6 +352,18 @@ hosts:
         expected_state: active
         critical: false
         note: Caddy for mn01 apps landing and /apps/* proxy
+      - name: ada-ha-tony.service
+        type: service
+        scope: user
+        expected_state: active
+        critical: false
+        note: Ada HA Tony instance on 0.0.0.0:8002
+      - name: ada-ha-michael.service
+        type: service
+        scope: user
+        expected_state: active
+        critical: false
+        note: Ada HA Michael instance on 0.0.0.0:8003
       - name: tailscaled.service
         type: service
         scope: system

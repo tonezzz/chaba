@@ -169,20 +169,22 @@ ssh tony-dell 'pgrep -a -f devin-desktop | grep -v "pgrep\|ssh\|tailscaled"'
 
 ### Runtime
 
-- Development URL: `https://tony-dell.taila0626a.ts.net/apps/ada_ha/`
-- Backend: `~/.config/systemd/user/ada-ha-pwa.service` running `uvicorn pwa_server:app --port 8002`
+- Production URL: `https://mn01.taila0626a.ts.net/apps/ada_ha/`
+- Backend:
+  - `~/.config/systemd/user/ada-ha-tony.service` running `uvicorn pwa_server:app --port 8002`
+  - `~/.config/systemd/user/ada-ha-michael.service` running `uvicorn pwa_server:app --port 8003`
 - Env files:
-  - `~/.config/secrets/ada-ha-tony.env` → `tony-ha` (`http://127.0.0.1:8123`)
-  - `~/.config/secrets/ada-ha-michael.env` → `michael-ha` (`http://michael-ha:8123`)
-- Caddy: `~/.config/caddy/Caddyfile.tony-dell` routes `/apps/ada_ha_tony/` to `127.0.0.1:8002` and `/apps/ada_ha_michael/` to `127.0.0.1:8003`
-- WebSocket: `wss://tony-dell.taila0626a.ts.net/apps/ada_ha_tony/ws` and `wss://tony-dell.taila0626a.ts.net/apps/ada_ha_michael/ws`
-- Home Assistant: `tony-ha` at `http://127.0.0.1:8123`, `michael-ha` at `http://michael-ha:8123`
-- Navigation: `https://tony-dell.taila0626a.ts.net/apps/ha/` and `https://tony-dell.taila0626a.ts.net/apps/`
+  - `~/.config/secrets/ada-ha-tony.env` → `tony-ha` (`https://tony-dell.taila0626a.ts.net:8123/`)
+  - `~/.config/secrets/ada-ha-michael.env` → `michael-ha` (`http://michael-ha:8123/`)
+- Caddy: `~/.config/caddy/Caddyfile.mn01` routes `/apps/ada_ha_tony/` to `127.0.0.1:8002` and `/apps/ada_ha_michael/` to `127.0.0.1:8003`
+- WebSocket: `wss://mn01.taila0626a.ts.net/apps/ada_ha_tony/ws` and `wss://mn01.taila0626a.ts.net/apps/ada_ha_michael/ws`
+- Home Assistant: `tony-ha` at `https://tony-dell.taila0626a.ts.net:8123/`, `michael-ha` at `http://michael-ha:8123/`
+- Navigation: `https://mn01.taila0626a.ts.net/apps/ha/` and `https://mn01.taila0626a.ts.net/apps/`
 
 ### Service commands
 
-- `ssh tony-dell 'systemctl --user {start,stop,status} ada-ha-pwa'`
-- `ssh tony-dell 'systemctl --user restart caddy-tony-dell'`
+- `ssh mn01 'systemctl --user {start,stop,status} ada-ha-tony ada-ha-michael'`
+- `ssh mn01 'systemctl --user restart caddy-mn01'`
 
 ### REST endpoints
 
@@ -204,7 +206,7 @@ ssh tony-dell 'pgrep -a -f devin-desktop | grep -v "pgrep\|ssh\|tailscaled"'
 
 ### SSOT
 
-- `docs/ssot/apps/ssot.apps.ada_ha.yml` and `docs/ssot/apps/ssot.apps.yml` list `ada-ha` under `tony-dell` host.
+- `docs/ssot/apps/ssot.apps.ada_ha.yml` and `docs/ssot/apps/ssot.apps.yml` list `ada-ha`, `ada-ha-tony`, and `ada-ha-michael` under the `mn01` host.
 
 ### Network notes
 

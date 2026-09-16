@@ -9,7 +9,7 @@ sections:
       - label: iPad/iPhone PWA
         text: Full-duplex voice PWA for Home Assistant, using Gemini Live and server-side HA token.
       - label: Multiple HA targets
-        text: Two isolated instances — ada-ha-tony (127.0.0.1:8123) and ada-ha-michael (michael-ha:8123).
+        text: Two isolated instances — ada-ha-tony (tony-dell.taila0626a.ts.net:8123) and ada-ha-michael (michael-ha:8123).
       - label: Energy + dashboard awareness
         text: Reads G3 power sensors and tony-test dashboard tabs by voice using the live HA websocket.
   - title: Technical Architecture
@@ -23,23 +23,23 @@ sections:
       - label: /home/tony/CascadeProjects/ada-pi/backend/home_assistant.py
         text: REST and websocket client for HA states, control, history, power summary, and dashboard tab extraction.
       - label: /home/tony/.config/systemd/user/ada-ha-tony.service
-        text: Runs uvicorn on 127.0.0.1:8002 with env /home/tony/.config/secrets/ada-ha-tony.env.
+        text: Runs uvicorn on 0.0.0.0:8002 on mn01 with env /home/tony/.config/secrets/ada-ha-tony.env.
       - label: /home/tony/.config/systemd/user/ada-ha-michael.service
-        text: Runs uvicorn on 127.0.0.1:8003 with env /home/tony/.config/secrets/ada-ha-michael.env.
-      - label: /home/tony/.config/caddy/Caddyfile.tony-dell
+        text: Runs uvicorn on 0.0.0.0:8003 on mn01 with env /home/tony/.config/secrets/ada-ha-michael.env.
+      - label: /home/tony/.config/caddy/Caddyfile.mn01
         text: Routes /apps/ada_ha_tony/* to 127.0.0.1:8002 and /apps/ada_ha_michael/* to 127.0.0.1:8003.
   - title: Deployment
     icon: "🚀"
     layout: list
     items:
       - label: tony instance
-        text: 'https://tony-dell.taila0626a.ts.net/apps/ada_ha_tony/'
+        text: 'https://mn01.taila0626a.ts.net/apps/ada_ha_tony/'
       - label: michael instance
-        text: 'https://tony-dell.taila0626a.ts.net/apps/ada_ha_michael/'
+        text: 'https://mn01.taila0626a.ts.net/apps/ada_ha_michael/'
       - label: Caddy routing
-        text: 'tony on 127.0.0.1:8002, michael on 127.0.0.1:8003, both via https 443'
+        text: 'tony on 127.0.0.1:8002, michael on 127.0.0.1:8003, both via mn01 Caddy on https 443'
       - label: Registry
-        text: Listed as ada-ha-tony and ada-ha-michael in docs/ssot/apps/ssot.apps.yml.
+        text: Listed as ada-ha-tony and ada-ha-michael under the mn01 host in docs/ssot/apps/ssot.apps.yml.
   - title: REST Endpoints
     icon: "🔌"
     layout: list
@@ -91,7 +91,7 @@ sections:
     layout: list
     items:
       - label: WebSocket ready
-        text: 'wss://tony-dell.taila0626a.ts.net/apps/ada_ha_{tony,michael}/ws returns {"type":"ready"}.'
+        text: 'wss://mn01.taila0626a.ts.net/apps/ada_ha_{tony,michael}/ws returns {"type":"ready"}.'
       - label: Voice
         text: Tap Connect and ask about the G3 power summary or a dashboard tab.
   - title: Known Issues
@@ -118,10 +118,24 @@ sections:
         text: Make Gemini confirm before locks, covers, or critical switches.
       - label: Conversation memory
         text: Persist last 10 voice turns for context.
+  - title: Lessons Learned
+    icon: "🎓"
+    layout: list
+    items:
+      - label: Live config is not versioned
+        text: User systemd units and Caddyfile snippets were only on tony-dell. They are now versioned under chaba/stacks/mn01/.
+      - label: HA URLs were host-local
+        text: The Tony env used 127.0.0.1:8123. On mn01 it must use a tailnet-reachable URL such as https://tony-dell.taila0626a.ts.net:8123/.
+      - label: mn01 lacked a stack
+        text: Creating chaba/stacks/mn01/ makes the Ada HA deployment reproducible on tony-dell or tony-omen in a failure.
+      - label: Audit did not cover Ada HA
+        text: ssot.audit.hosts.yml now expects ada-ha-tony.service and ada-ha-michael.service on mn01.
+      - label: Secrets and tokens are not in git
+        text: ~/.config/secrets/ada-ha-*.env and notebooklm-rest-api.env are still host-local and must be backed up separately.
 config:
-  version: 2
+  version: 3
   created: '2026-09-13'
-  updated: '2026-09-14'
+  updated: '2026-09-16'
   maintainer: tony
   status: active
-  deployment: tony-dell
+  deployment: mn01

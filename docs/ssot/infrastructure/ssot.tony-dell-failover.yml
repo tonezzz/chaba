@@ -57,6 +57,21 @@ host_roles:
     services_backup:
     - mcp-debug local stdio on tony-omen (mcp-debug.sh)
 
+  mn01:
+    name: mn01
+    tailnet: mn01
+    tailscale_ip: 100.106.196.22
+    role: portable home assistant
+    cannot_failover_to: |
+      Ada HA is stateless; it can be recreated on tony-dell or tony-omen using the chaba/stacks/mn01 templates and the backed-up secrets.
+    services_primary:
+    - caddy-mn01.service
+    - ada-ha-tony.service
+    - ada-ha-michael.service
+    services_backup:
+    - chaba/stacks/mn01/install.sh on tony-dell
+    - chaba/scripts/recover-mn01.sh
+
 failover_scenarios:
   - name: tony-omen down, tony-dell up
     trigger: tony-omen is unreachable or needs maintenance; Devin Desktop is unavailable
@@ -94,6 +109,16 @@ failover_scenarios:
       1. Use MacBook or mobile network to reach any host that comes back first
       2. Start tony-dell first for persistent services, then tony-omen for interactive work
       3. Verify Tailscale: tailscale status on the recovered host
+
+  - name: mn01 down, tony-dell up
+    trigger: mn01 is unreachable or the Ada HA services fail
+    user_impact: Ada HA Tony and Michael PWAs are unavailable until recreated on tony-dell
+    steps: |
+      1. Confirm tony-dell is healthy: ssh tony-dell tailscale status
+      2. Run the recovery script: bash /home/tony/CascadeProjects/chaba/scripts/recover-mn01.sh tony-dell
+      3. The script clones/copies the Ada Pi repo, restores ~/.config/secrets/ada-ha-*.env from backup, installs the systemd units, and updates Caddyfile.tony-dell.
+      4. Public URLs will shift back to https://tony-dell.taila0626a.ts.net/apps/ada_ha_{tony,michael}/ until mn01 recovers.
+      5. After mn01 recovers, re-run chaba/stacks/mn01/install.sh on mn01 and stop the temporary tony-dell units.
 
 mcp_client_switch:
   description: |

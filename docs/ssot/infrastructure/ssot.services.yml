@@ -765,3 +765,27 @@ mn01:
     purpose: Ada Pi PWA local assistant for mn-home
     status: planned
     note: 'Could mirror tony-dell ada-pi for local RK600/weather, HA, and PWA access.'
+  ada-ha-tony:
+    service: ada-ha-tony.service
+    host: mn01
+    port: 8002
+    host_port: 0.0.0.0:8002
+    purpose: Ada HA Tony instance (voice PWA for tony-ha)
+    status: active
+    tailnet_url: 'https://mn01.taila0626a.ts.net/apps/ada_ha_tony/'
+    env_file: '~/.config/secrets/ada-ha-tony.env'
+    caddyfile: '~/.config/caddy/Caddyfile.mn01'
+    upstream_ha: 'https://tony-dell.taila0626a.ts.net:8123/'
+    note: 'Backend is /home/tony/CascadeProjects/ada-pi/pwa_server.py. Environment uses HOME_ASSISTANT_URL=https://tony-dell.taila0626a.ts.net:8123/ and the Tony long-lived token.'
+  ada-ha-michael:
+    service: ada-ha-michael.service
+    host: mn01
+    port: 8003
+    host_port: 0.0.0.0:8003
+    purpose: Ada HA Michael instance (voice PWA for michael-ha)
+    status: active
+    tailnet_url: 'https://mn01.taila0626a.ts.net/apps/ada_ha_michael/'
+    env_file: '~/.config/secrets/ada-ha-michael.env'
+    caddyfile: '~/.config/caddy/Caddyfile.mn01'
+    upstream_ha: 'http://michael-ha:8123/'
+    note: 'Backend is /home/tony/CascadeProjects/ada-pi/pwa_server.py. Environment uses HOME_ASSISTANT_URL=http://michael-ha:8123/ and the Michael long-lived token.'
