@@ -19,6 +19,7 @@ OUTPUT_DIR_DEFAULT = REPO_ROOT / "reports" / "audit-hosts"
 HOSTS = {
     "tony-dell": {"tailnet": "tony-dell", "os": "linux", "user": "tony"},
     "tony-omen": {"tailnet": "tony-omen", "os": "linux", "user": "tony"},
+    "mn01": {"tailnet": "mn01", "os": "linux", "user": "tony"},
     "macbook": {"tailnet": "macbook", "os": "macos", "user": "kkkakk"},
 }
 
@@ -60,6 +61,9 @@ def linux_services(host: str, ssh: bool) -> dict:
     active, _err_active, _ = run(
         r"systemctl --user list-units --no-pager --plain | grep -E '\.(service|scope|timer)' | awk '{print $1, $3}'"
     )
+    active_sys, _err_active_sys, _ = run(
+        r"systemctl list-units --state=active --no-pager --plain | grep -E '\.(service|scope|timer)' | awk '{print $1, $3}'"
+    )
     failed_user, _err_user, _ = run(
         r"systemctl --user list-units --failed --no-pager --plain | grep -E '\.(service|scope)' | awk '{print $1}'"
     )
@@ -73,6 +77,7 @@ def linux_services(host: str, ssh: bool) -> dict:
 
     return {
         "active_user_services": _parse_kv(active),
+        "active_system_services": _parse_kv(active_sys),
         "failed_user_services": _parse_list(failed_user),
         "failed_system_services": _parse_list(failed_sys),
         "memory": _parse_free(free),
@@ -259,11 +264,14 @@ def diff_against_ssot(host: str, observed: dict, ssot_path: Path) -> list[str]:
                 if cfg.get("min_free_ram_mb") and mb < cfg["min_free_ram_mb"]:
                     deltas.append(f"free RAM {avail} below threshold {cfg['min_free_ram_mb']} MiB")
 
-    active_units = {s["unit"] for s in observed.get("active_user_services", []) if "unit" in s}
+    active_user_units = {s["unit"] for s in observed.get("active_user_services", []) if "unit" in s}
+    active_system_units = {s["unit"] for s in observed.get("active_system_services", []) if "unit" in s}
     for exp in expected:
         exp_name = exp["name"]
         exp_type = exp.get("type", "service")
-        if _is_present(exp_name, exp_type, active_units):
+        scope = exp.get("scope", "user")
+        active = active_system_units if scope == "system" else active_user_units
+        if _is_present(exp_name, exp_type, active):
             continue
         if exp_name in known_failed:
             continue

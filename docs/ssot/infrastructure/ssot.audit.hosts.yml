@@ -310,6 +310,47 @@ hosts:
         - 'macbook is offline (last seen 15m ago, relay sin); SSH on 100.124.59.112:22 times out. Install launchd agents when reachable.'
     deltas: []
 
+  mn01:
+    tailscale_ip: 100.106.196.22
+    description: Portable Ubuntu PC in mn-home
+    role: portable
+    tags:
+      - portable
+      - subnet-router
+      - dev-host
+    expected_services:
+      - name: caddy-mn01.service
+        type: service
+        scope: user
+        expected_state: active
+        critical: false
+        note: Caddy for mn01 apps landing and /apps/* proxy
+      - name: tailscaled.service
+        type: service
+        scope: system
+        expected_state: active
+        critical: true
+    known_failed: []
+    expected_resources:
+      min_free_ram_mb: 500
+      max_swap_used_percent: 80
+      max_root_disk_percent: 85
+      max_load_5m: 8.0
+    last_observed:
+      observed_at: null
+      active_user_services: []
+      failed_user_services: []
+      failed_system_services: []
+      memory: {}
+      swap: {}
+      disk: {}
+      load: {}
+      uptime: ""
+      top_processes: []
+      notes:
+        - "Baseline; run audit-hosts.py to populate."
+    deltas: []
+
 related_files:
   - scripts/audit-hosts.py
   - reports/audit-hosts/
