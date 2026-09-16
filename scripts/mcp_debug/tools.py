@@ -588,7 +588,6 @@ def mcp_eget(
     host,
     repo,
     to="~/.local/bin",
-    name=None,
     tag=None,
     asset=None,
     extract_all=False,
@@ -608,9 +607,7 @@ def mcp_eget(
         return {"ok": False, "error": f"target path not allowed: {err}", "path": to, "host": host}
 
     subcmd = "download" if download_only else "install"
-    parts = [subcmd, shlex.quote(repo), "--to", shlex.quote(allowed_to)]
-    if name:
-        parts.extend(["--name", shlex.quote(name)])
+    parts = [subcmd, shlex.quote(repo), "--quiet", "--to", shlex.quote(allowed_to)]
     if tag:
         parts.extend(["--tag", shlex.quote(tag)])
     if asset:
@@ -621,9 +618,8 @@ def mcp_eget(
     eget_args = " ".join(parts)
     command = (
         f"mkdir -p {shlex.quote(allowed_to)} && "
-        f"EGET=$(command -v eget 2>/dev/null) && "
-        f"[ -z \"$EGET\" ] && EGET=~/.local/bin/eget && "
-        f"[ -x \"$EGET\" ] || {{ echo 'eget not found'; exit 1; }} && "
+        f"EGET=$(command -v eget 2>/dev/null || echo $HOME/.local/bin/eget) && "
+        f'if [ ! -x "$EGET" ]; then echo "eget not found"; exit 1; fi && '
         f'"$EGET" {eget_args}'
     )
     result = run_on_host(host, command, compact=False, shell=True)
