@@ -12,8 +12,20 @@
       <label><input type="checkbox" value="gemini.google.com" checked> Gemini</label>
       <label><input type="checkbox" value="claude.ai" checked> Claude</label>
     </div>
-    <textarea id="prompt" rows="6" placeholder="Prompt..."></textarea>
+    <textarea id="prompt" rows="4" placeholder="Prompt..."></textarea>
     <button id="send">Send to all</button>
+
+    <div class="section">
+      <h2>NotebookLM auth</h2>
+      <label>Bridge URL <input type="text" id="bridgeUrl" value="http://127.0.0.1:9876"></label>
+      <div class="row">
+        <button id="captureCookies">Capture cookies</button>
+        <button id="copyCookies">Copy JSON</button>
+        <button id="sendCookies">Send to bridge</button>
+      </div>
+      <div id="cookieStatus" class="status"></div>
+    </div>
+
     <h2>Responses</h2>
     <div id="responses"></div>
   </div>
