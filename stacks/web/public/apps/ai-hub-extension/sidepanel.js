@@ -60,8 +60,20 @@ function formatCookie(c) {
   };
 }
 
+function getCookiesForUrl(url) {
+  if (!chrome.cookies) {
+    throw new Error('chrome.cookies is not available. Please reload the AI Hub extension from chrome://extensions.');
+  }
+  return new Promise((resolve, reject) => {
+    chrome.cookies.getAll({ url }, cookies => {
+      if (chrome.runtime.lastError) return reject(new Error(chrome.runtime.lastError.message));
+      resolve(cookies || []);
+    });
+  });
+}
+
 async function captureNotebooklmCookies() {
-  const sets = await Promise.all(NOTEBOOKLM_URLS.map(url => chrome.cookies.getAll({ url })));
+  const sets = await Promise.all(NOTEBOOKLM_URLS.map(url => getCookiesForUrl(url)));
   const seen = new Set();
   const cookies = [];
   for (const set of sets) {
