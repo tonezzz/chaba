@@ -63,7 +63,62 @@ cleanup:
     - "fuser reports the DB is open (tony-omen script checks this)."
     - "In those cases DELETE still runs, VACUUM is deferred."
 
+offload_to_notebooklm:
+  purpose: |
+    Before old sessions are deleted from the local SQLite DB, their raw
+    transcripts are uploaded to a NotebookLM archive so the history remains
+    searchable and can be recalled by Devin in future sessions.
+  notebook_id: 009b3efe-ff58-40bc-9a3b-9ec946b38deb
+  scripts:
+    - /home/tony/.config/devin/scripts/devin-extract-sessions.sh
+    - /home/tony/.config/devin/scripts/devin-archive-sessions.sh
+    - /home/tony/.config/devin/scripts/vacuum-devin-db.sh
+  workflow: |
+    1. Extract (no delete):
+       `bash /home/tony/.config/devin/scripts/devin-extract-sessions.sh --older-than 3`
+       Uploads the most recent `MAX_SOURCE_CHARS` of each old session to
+       NotebookLM and saves a local `.md` copy in
+       `~/.local/share/devin/notebook-summaries/raw`.
+    2. Extract and delete:
+       `bash /home/tony/.config/devin/scripts/devin-extract-sessions.sh --older-than 3 --delete`
+       Uploads to NotebookLM, then runs `devin rm --force <session-id>` for
+       each session that was successfully archived.
+    3. Final VACUUM:
+       Close all Devin windows and run
+       `bash /home/tony/.config/devin/scripts/vacuum-devin-db.sh`.
+       It creates a local SQLite backup, optionally extracts sessions again
+       (`DEVIN_EXTRACT_OLD_SESSIONS=1`), runs `VACUUM`, and keeps the backup
+       local by default.
+  environment:
+    DEVIN_ARCHIVE_NOTEBOOK: |
+      Notebook ID to upload raw transcripts to. Defaults to the shared
+      Chaba archive (`009b3efe-ff58-40bc-9a3b-9ec946b38deb`).
+    DEVIN_UPLOAD_BACKUP: |
+      Set to `1` to upload the SQLite backup to GDrive using rclone.
+      Default is `0` (local backup only).
+    DEVIN_EXTRACT_OLD_SESSIONS: |
+      Set to `1` inside `vacuum-devin-db.sh` to extract old sessions before
+      the final VACUUM. Default is `0` to keep the vacuum fast.
+    MAX_SOURCE_CHARS: |
+      Cap on how much of each session transcript is uploaded. Default `100000`.
+  notes:
+    - >
+      `nlm` is a local wrapper that ssh's to `tony-dell` and runs the
+      NotebookLM MCP container. Tailscale SSH must be authenticated for
+      uploads to succeed.
+    - >
+      Deleting sessions while Devin is running is best done via `devin rm`;
+      if the ACP server cannot remove the rows, delete after closing Devin.
+    - >
+      The `devin-archive-sessions.sh` script still exists for the previous
+      summary-and-delete flow; use it if you want condensed summaries rather
+      than raw transcripts.
+
 backup_policy: |
+  `vacuum-devin-db.sh` now creates a local backup before VACUUM and keeps it
+  on the host by default. Set `DEVIN_UPLOAD_BACKUP=1` to also copy the backup
+  to the configured rclone GDrive remote (`gdrive:DevinBackups`).
+
   Automated cleanup does not back up the database before pruning.
   `prune-devin-sessions.sh` supports `NO_BACKUP=1` for large DBs to avoid
   duplicating a 50+ GiB file. If a pre-cleanup backup is required, set
@@ -97,9 +152,13 @@ manual_cleanup_runbook: |
      ORDER BY total_mb DESC;
   2. Verify the session is not active by checking
      `~/.local/share/devin/cli/session_locks/<session_id>.lock`.
-  3. Close Devin and run the cleanup script with the desired retention, or delete
+  3. Offload the sessions you want to keep to NotebookLM:
+     `bash /home/tony/.config/devin/scripts/devin-extract-sessions.sh <session-id>`
+     or for a batch:
+     `bash /home/tony/.config/devin/scripts/devin-extract-sessions.sh --older-than 3 --delete`
+  4. Close Devin and run the cleanup script with the desired retention, or delete
      specific sessions manually and then VACUUM.
-  4. Re-open Devin and verify the DB size.
+  5. Re-open Devin and verify the DB size.
 
 audit_checks:
   - Check `devin-cleanup.timer` is active on each host.
@@ -109,6 +168,9 @@ audit_checks:
 related_files:
   - scripts/prune-devin-sessions.sh
   - /home/tony/.local/bin/devin-cleanup.sh
+  - /home/tony/.config/devin/scripts/devin-extract-sessions.sh
+  - /home/tony/.config/devin/scripts/devin-archive-sessions.sh
+  - /home/tony/.config/devin/scripts/vacuum-devin-db.sh
   - /home/tony/.config/systemd/user/devin-cleanup.service
   - /home/tony/.config/systemd/user/devin-cleanup.timer
 
