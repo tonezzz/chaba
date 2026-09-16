@@ -34,6 +34,14 @@ const sendCookiesBtn = document.getElementById('sendCookies');
 const cookieStatus = document.getElementById('cookieStatus');
 let lastCookiesJson = '';
 
+chrome.storage.local.get('bridgeUrl', ({ bridgeUrl }) => {
+  if (bridgeUrl) bridgeUrlInput.value = bridgeUrl;
+});
+
+bridgeUrlInput.addEventListener('input', () => {
+  chrome.storage.local.set({ bridgeUrl: bridgeUrlInput.value });
+});
+
 const NOTEBOOKLM_URLS = [
   'https://notebooklm.google.com/',
   'https://notebook.google.com/',
