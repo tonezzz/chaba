@@ -207,6 +207,42 @@ nbUploadBtn.addEventListener('click', async () => {
   }
 });
 
+function captureDebugInfo(site) {
+  function getCssPath(el) {
+    if (!el) return '';
+    const parts = [];
+    while (el && el.nodeType === 1) {
+      let name = el.nodeName.toLowerCase();
+      if (el.id) { name += '#' + el.id; parts.unshift(name); break; }
+      let sib = el, nth = 1;
+      while (sib = sib.previousElementSibling) { if (sib.nodeName.toLowerCase() === name) nth++; }
+      if (nth > 1 || el.nextElementSibling) name += `:nth-of-type(${nth})`;
+      parts.unshift(name);
+      el = el.parentElement;
+    }
+    return parts.join(' > ');
+  }
+  function rectObj(r) {
+    return r ? { x: r.x, y: r.y, width: r.width, height: r.height, top: r.top, right: r.right, bottom: r.bottom, left: r.left } : null;
+  }
+  const ADAPTERS = {
+    'midjourney.com': {
+      promptSelector: 'textarea, input[type="text"], div[contenteditable="true"], [data-testid="prompt-input"], [placeholder*="imagine" i]',
+      sendSelector: 'button[type="submit"], button[aria-label="Imagine"], button[aria-label="Create"], button[aria-label="Generate"], [data-testid="imagine-button"], [data-testid="generate-button"]'
+    }
+  };
+  const host = location.hostname;
+  const matched = Object.keys(ADAPTERS).find(h => host === h || host.endsWith('.' + h));
+  const adapter = matched ? ADAPTERS[matched] : null;
+  const el = adapter ? document.querySelector(adapter.promptSelector) : null;
+  const btn = adapter ? document.querySelector(adapter.sendSelector) : null;
+  return {
+    site, host, url: location.href, matched,
+    prompt: { found: !!el, selector: getCssPath(el), html: el ? el.outerHTML.slice(0, 500) : '', rect: rectObj(el ? el.getBoundingClientRect() : null) },
+    send: { found: !!btn, selector: getCssPath(btn), html: btn ? btn.outerHTML.slice(0, 500) : '', rect: rectObj(btn ? btn.getBoundingClientRect() : null) }
+  };
+}
+
 const debugCaptureBtn = document.getElementById('debugCaptureBtn');
 const debugStatus = document.getElementById('debugStatus');
 
@@ -215,22 +251,18 @@ debugCaptureBtn.addEventListener('click', async () => {
   if (!tab) return debugStatus.textContent = 'No active tab.';
   let debug = {};
   try {
-    const res = await chrome.tabs.sendMessage(tab.id, { cmd: 'GET_DEBUG' });
-    debug = res || {};
-  } catch {
-    try {
-      await chrome.scripting.executeScript({
-        target: { tabId: tab.id },
-        files: ['content.js']
-      });
-      await new Promise(resolve => setTimeout(resolve, 1200));
-      const res = await chrome.tabs.sendMessage(tab.id, { cmd: 'GET_DEBUG' });
-      debug = res || {};
-    } catch (err) {
-      debugStatus.textContent = `Could not inject or message content script: ${err.message}`;
-      return;
-    }
+    const res = await chrome.scripting.executeScript({
+      target: { tabId: tab.id },
+      func: captureDebugInfo,
+      args: [tab.url]
+    });
+    debug = res?.[0]?.result || { error: 'no result from executeScript' };
+  } catch (err) {
+    debugStatus.textContent = `Script injection failed for ${tab.url}: ${err.message}`;
+    console.error('debug capture error:', err);
+    return;
   }
+  debugStatus.textContent = `Debug captured: prompt=${debug.prompt?.found}, send=${debug.send?.found}. Sending to bridge...`;
   try {
     const dataUrl = await chrome.tabs.captureVisibleTab(chrome.windows.WINDOW_ID_CURRENT, { format: 'png' });
     const url = (bridgeUrlInput.value.trim() || 'http://127.0.0.1:9876').replace(/\/+$/, '');

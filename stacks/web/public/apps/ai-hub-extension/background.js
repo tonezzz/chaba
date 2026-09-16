@@ -19,6 +19,47 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   return false;
 });
 
+function sendPrompt(text, siteHost) {
+  function setNativeValue(element, value) {
+    if (element.isContentEditable) {
+      element.focus();
+      document.execCommand('selectAll', false, null);
+      document.execCommand('insertText', false, value);
+      return;
+    }
+    const isTextArea = element.tagName === 'TEXTAREA';
+    const proto = isTextArea ? window.HTMLTextAreaElement.prototype : window.HTMLInputElement.prototype;
+    const descriptor = Object.getOwnPropertyDescriptor(proto, 'value');
+    if (descriptor && descriptor.set) {
+      descriptor.set.call(element, value);
+    } else {
+      element.value = value;
+    }
+    element.dispatchEvent(new Event('input', { bubbles: true }));
+    element.dispatchEvent(new Event('change', { bubbles: true }));
+  }
+  const ADAPTERS = {
+    'chatgpt.com': { promptSelector: '#prompt-textarea', sendSelector: 'button[data-testid="send-button"]' },
+    'gemini.google.com': { promptSelector: 'div[contenteditable="true"], textarea', sendSelector: 'button[aria-label="Send message"]' },
+    'claude.ai': { promptSelector: 'div[contenteditable="true"]', sendSelector: 'button[aria-label="Send message"], button[aria-label="Send"]' },
+    'midjourney.com': {
+      promptSelector: 'textarea, input[type="text"], div[contenteditable="true"], [data-testid="prompt-input"], [placeholder*="imagine" i]',
+      sendSelector: 'button[type="submit"], button[aria-label="Imagine"], button[aria-label="Create"], button[aria-label="Generate"], [data-testid="imagine-button"], [data-testid="generate-button"]'
+    }
+  };
+  const host = location.hostname;
+  const site = Object.keys(ADAPTERS).find(h => host === h || host.endsWith('.' + h));
+  if (!site) return { ok: false, error: 'no adapter for ' + host };
+  const adapter = ADAPTERS[site];
+  const el = document.querySelector(adapter.promptSelector);
+  if (!el) return { ok: false, error: 'prompt not found', site, host };
+  setNativeValue(el, text);
+  const btn = document.querySelector(adapter.sendSelector);
+  if (!btn) return { ok: false, error: 'send button not found', site, host };
+  if (!btn.disabled) btn.click();
+  return { ok: true, site, host };
+}
+
 async function broadcast({ text, targets }) {
   const list = targets?.length
     ? SITES.filter(s => targets.includes(s.host))
@@ -28,30 +69,18 @@ async function broadcast({ text, targets }) {
     const allTabs = await chrome.tabs.query({});
     const existing = allTabs.find(t => t.url && t.url.includes(site.host));
     const tab = existing || await chrome.tabs.create({ url: site.url, active: false });
-    await waitForTab(tab.id);
-    let attempts = 0;
-    while (attempts < 3) {
-      attempts++;
-      try {
-        await chrome.tabs.sendMessage(tab.id, { cmd: 'PING' });
-        break;
-      } catch {
-        try {
-          await chrome.scripting.executeScript({
-            target: { tabId: tab.id },
-            files: ['content.js']
-          });
-          await new Promise(resolve => setTimeout(resolve, 1200));
-        } catch (err) {
-          console.error(`Failed to inject content script for ${site.host} (attempt ${attempts}):`, err);
-          if (attempts >= 3) continue;
-        }
-      }
-    }
+    if (!existing) await waitForTab(tab.id);
     try {
-      await chrome.tabs.sendMessage(tab.id, { cmd: 'SEND', text });
+      const res = await chrome.scripting.executeScript({
+        target: { tabId: tab.id },
+        func: sendPrompt,
+        args: [text, site.host]
+      });
+      const result = res?.[0]?.result;
+      if (!result?.ok) throw new Error(result?.error || 'unknown');
+      console.log('sent to', site.host, result);
     } catch (err) {
-      console.error(`Failed to message ${site.host}:`, err);
+      console.error(`Failed to send to ${site.host}:`, err);
     }
   }
 }
@@ -61,7 +90,7 @@ function waitForTab(tabId) {
     const listener = (id, info) => {
       if (id === tabId && info.status === 'complete') {
         chrome.tabs.onUpdated.removeListener(listener);
-        setTimeout(resolve, 500);
+        setTimeout(resolve, 800);
       }
     };
     chrome.tabs.onUpdated.addListener(listener);
