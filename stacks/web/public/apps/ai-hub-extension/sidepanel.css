@@ -140,3 +140,58 @@ label {
 .chip.active:hover {
   background: #2563eb;
 }
+
+details.section {
+  border-top: 1px solid #444;
+  padding-top: 10px;
+}
+
+summary {
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  align-items: center;
+}
+
+summary::-webkit-details-marker {
+  display: none;
+}
+
+summary::before {
+  content: '▶';
+  margin-right: 8px;
+  font-size: 0.8em;
+  color: #aaa;
+  transition: transform 0.1s;
+}
+
+details[open] > summary::before {
+  transform: rotate(90deg);
+}
+
+summary h2 {
+  display: inline;
+  margin: 0;
+}
+
+.section-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-left: 16px;
+}
+
+.subsection {
+  border-top: 1px solid #333;
+  padding-top: 8px;
+}
+
+.subsection:first-of-type {
+  border-top: none;
+  padding-top: 0;
+}
+
+.subsection h3 {
+  margin: 0 0 4px;
+  font-size: 0.95em;
+}
