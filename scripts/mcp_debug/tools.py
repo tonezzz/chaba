@@ -584,6 +584,53 @@ def mcp_put_file(host, path, content_base64, mode="644", overwrite=False):
     }
 
 
+def mcp_eget(
+    host,
+    repo,
+    to="~/.local/bin",
+    name=None,
+    tag=None,
+    asset=None,
+    extract_all=False,
+    download_only=False,
+):
+    """Install or download a prebuilt binary using eget.
+
+    Looks for eget in PATH first, then falls back to ~/.local/bin/eget.
+    """
+    if host not in HOSTS:
+        return {"ok": False, "error": f"unknown host: {host}", "host": host}
+    if not repo:
+        return {"ok": False, "error": "repo is required", "host": host}
+
+    allowed_to, err = _check_path_allowed(host, to)
+    if err:
+        return {"ok": False, "error": f"target path not allowed: {err}", "path": to, "host": host}
+
+    subcmd = "download" if download_only else "install"
+    parts = [subcmd, shlex.quote(repo), "--to", shlex.quote(allowed_to)]
+    if name:
+        parts.extend(["--name", shlex.quote(name)])
+    if tag:
+        parts.extend(["--tag", shlex.quote(tag)])
+    if asset:
+        parts.extend(["--asset", shlex.quote(asset)])
+    if extract_all:
+        parts.append("--extract-all")
+
+    eget_args = " ".join(parts)
+    command = (
+        f"mkdir -p {shlex.quote(allowed_to)} && "
+        f"EGET=$(command -v eget 2>/dev/null) && "
+        f"[ -z \"$EGET\" ] && EGET=~/.local/bin/eget && "
+        f"[ -x \"$EGET\" ] || {{ echo 'eget not found'; exit 1; }} && "
+        f'"$EGET" {eget_args}'
+    )
+    result = run_on_host(host, command, compact=False, shell=True)
+    result["h"] = host
+    return result
+
+
 def _clipboard_enabled(host):
     return HOSTS.get(host, {}).get(
         "clipboard",

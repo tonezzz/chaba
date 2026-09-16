@@ -22,6 +22,7 @@ from .tools import (
     mcp_adaptive,
     mcp_get_file,
     mcp_put_file,
+    mcp_eget,
     mcp_clipboard_get,
     mcp_clipboard_set,
     mcp_preset_list,
@@ -269,6 +270,24 @@ def handle_tools_list(id_):
                     "overwrite": {"type": "boolean", "description": "Allow overwriting existing file", "default": False},
                 },
                 "required": ["host", "path", "content_base64"],
+            },
+        },
+        {
+            "name": "mcp_eget",
+            "description": "Install or download a prebuilt binary using eget. Target path must be in the host allowlist.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "host": {"type": "string", "enum": list(HOSTS.keys()), "description": "Target host"},
+                    "repo": {"type": "string", "description": "Source repository or URL, e.g. 'BurntSushi/ripgrep'"},
+                    "to": {"type": "string", "description": "Target directory", "default": "~/.local/bin"},
+                    "name": {"type": "string", "description": "Override installed binary name"},
+                    "tag": {"type": "string", "description": "Specific release tag, e.g. 'v1.18.0'"},
+                    "asset": {"type": "string", "description": "Asset filter, e.g. 'linux,amd64,tar.gz'"},
+                    "extract_all": {"type": "boolean", "description": "Extract all files from archive", "default": False},
+                    "download_only": {"type": "boolean", "description": "Run 'eget download' instead of 'eget install'", "default": False},
+                },
+                "required": ["host", "repo"],
             },
         },
         {
@@ -666,6 +685,21 @@ def handle_tools_call(id_, params):
         if not host or not p or not b:
             return {"jsonrpc": "2.0", "id": id_, "error": {"code": -32602, "message": "host, path, and content_base64 are required"}}
         result = mcp_put_file(host, p, b, mode=arguments.get("mode", "644"), overwrite=arguments.get("overwrite", False))
+        output = json.dumps(result, separators=(",", ":"))
+    elif name == "mcp_eget":
+        p = arguments.get("repo")
+        if not host or not p:
+            return {"jsonrpc": "2.0", "id": id_, "error": {"code": -32602, "message": "host and repo are required"}}
+        result = mcp_eget(
+            host,
+            p,
+            to=arguments.get("to", "~/.local/bin"),
+            name=arguments.get("name"),
+            tag=arguments.get("tag"),
+            asset=arguments.get("asset"),
+            extract_all=arguments.get("extract_all", False),
+            download_only=arguments.get("download_only", False),
+        )
         output = json.dumps(result, separators=(",", ":"))
     elif name == "mcp_clipboard_get":
         h = arguments.get("host")
