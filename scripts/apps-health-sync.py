@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
-"""Regenerate ssot.health.home.apps.yml and sync public apps to tony-dell."""
+"""Regenerate ssot.health.home.apps.yml and sync public apps to each apps-host."""
 import subprocess
 import sys
+import urllib.parse
 import yaml
 from pathlib import Path
 
@@ -52,14 +53,22 @@ def main():
         yaml.safe_dump(out, f, sort_keys=False, allow_unicode=True)
     print(f"Wrote {len(services)} app health checks to {OUT_YML}")
 
-    # Deploy public apps to Caddy file_server roots on known tailnet hosts.
+    # Known Caddy file_server SSH aliases. Add new app hosts here as they land
+    # in ssot.apps.yml.
+    SYNCABLE_HOSTS = {"tony-dell", "mn01"}
+
+    # Deploy public apps to Caddy file_server roots on each distinct tailnet host.
     # Caddy serves /apps/* from this directory, not from the repo path.
     hosts = load_ssot_hosts()
+    synced = set()
     for host_id, host_cfg in hosts.items():
-        host_url = host_cfg.get("host_url", "")
-        if "taila0626a.ts.net" not in host_url:
+        if host_id not in SYNCABLE_HOSTS:
             continue
-        target = f"{host_id}:/home/tony/.config/caddy/public/apps"
+        ssh_host = host_id
+        if ssh_host in synced:
+            continue
+        synced.add(ssh_host)
+        target = f"{ssh_host}:/home/tony/.config/caddy/public/apps"
         print(f"Syncing {APPS_DIR} to {target}...")
         result = subprocess.run(
             [
