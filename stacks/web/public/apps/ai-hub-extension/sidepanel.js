@@ -217,9 +217,19 @@ debugCaptureBtn.addEventListener('click', async () => {
   try {
     const res = await chrome.tabs.sendMessage(tab.id, { cmd: 'GET_DEBUG' });
     debug = res || {};
-  } catch (err) {
-    debugStatus.textContent = `No content script on this tab: ${err.message}`;
-    return;
+  } catch {
+    try {
+      await chrome.scripting.executeScript({
+        target: { tabId: tab.id },
+        files: ['content.js']
+      });
+      await new Promise(resolve => setTimeout(resolve, 800));
+      const res = await chrome.tabs.sendMessage(tab.id, { cmd: 'GET_DEBUG' });
+      debug = res || {};
+    } catch (err) {
+      debugStatus.textContent = `Could not inject or message content script: ${err.message}`;
+      return;
+    }
   }
   try {
     const dataUrl = await chrome.tabs.captureVisibleTab(chrome.windows.WINDOW_ID_CURRENT, { format: 'png' });

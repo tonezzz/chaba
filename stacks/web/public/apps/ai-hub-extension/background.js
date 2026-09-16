@@ -29,6 +29,20 @@ async function broadcast({ text, targets }) {
     const tab = tabs[0] || await chrome.tabs.create({ url: site.url, active: false });
     await waitForTab(tab.id);
     try {
+      await chrome.tabs.sendMessage(tab.id, { cmd: 'PING' });
+    } catch {
+      try {
+        await chrome.scripting.executeScript({
+          target: { tabId: tab.id },
+          files: ['content.js']
+        });
+        await new Promise(resolve => setTimeout(resolve, 800));
+      } catch (err) {
+        console.error(`Failed to inject content script for ${site.host}:`, err);
+        continue;
+      }
+    }
+    try {
       await chrome.tabs.sendMessage(tab.id, { cmd: 'SEND', text });
     } catch (err) {
       console.error(`Failed to message ${site.host}:`, err);

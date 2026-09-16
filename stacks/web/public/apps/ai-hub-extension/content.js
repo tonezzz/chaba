@@ -17,6 +17,11 @@ function setNativeValue(element, value) {
   element.dispatchEvent(new Event('change', { bubbles: true }));
 }
 
+if (window.__aiHubInjected) {
+  return;
+}
+window.__aiHubInjected = true;
+
 const adapters = {
   'chatgpt.com': {
     promptSelector: '#prompt-textarea',
@@ -123,6 +128,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     sendResponse({ text: readLastAssistant() });
   } else if (request.cmd === 'GET_DEBUG') {
     sendResponse(getDebugInfo());
+  } else if (request.cmd === 'PING') {
+    sendResponse({ ok: true });
   }
   return true;
 });
