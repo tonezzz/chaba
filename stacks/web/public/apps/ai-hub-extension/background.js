@@ -25,21 +25,27 @@ async function broadcast({ text, targets }) {
     : SITES;
 
   for (const site of list) {
-    const tabs = await chrome.tabs.query({ url: site.pattern });
-    const tab = tabs[0] || await chrome.tabs.create({ url: site.url, active: false });
+    const allTabs = await chrome.tabs.query({});
+    const existing = allTabs.find(t => t.url && t.url.includes(site.host));
+    const tab = existing || await chrome.tabs.create({ url: site.url, active: false });
     await waitForTab(tab.id);
-    try {
-      await chrome.tabs.sendMessage(tab.id, { cmd: 'PING' });
-    } catch {
+    let attempts = 0;
+    while (attempts < 3) {
+      attempts++;
       try {
-        await chrome.scripting.executeScript({
-          target: { tabId: tab.id },
-          files: ['content.js']
-        });
-        await new Promise(resolve => setTimeout(resolve, 800));
-      } catch (err) {
-        console.error(`Failed to inject content script for ${site.host}:`, err);
-        continue;
+        await chrome.tabs.sendMessage(tab.id, { cmd: 'PING' });
+        break;
+      } catch {
+        try {
+          await chrome.scripting.executeScript({
+            target: { tabId: tab.id },
+            files: ['content.js']
+          });
+          await new Promise(resolve => setTimeout(resolve, 1200));
+        } catch (err) {
+          console.error(`Failed to inject content script for ${site.host} (attempt ${attempts}):`, err);
+          if (attempts >= 3) continue;
+        }
       }
     }
     try {

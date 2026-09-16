@@ -223,7 +223,7 @@ debugCaptureBtn.addEventListener('click', async () => {
         target: { tabId: tab.id },
         files: ['content.js']
       });
-      await new Promise(resolve => setTimeout(resolve, 800));
+      await new Promise(resolve => setTimeout(resolve, 1200));
       const res = await chrome.tabs.sendMessage(tab.id, { cmd: 'GET_DEBUG' });
       debug = res || {};
     } catch (err) {
