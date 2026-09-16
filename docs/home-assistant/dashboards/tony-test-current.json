@@ -8549,14 +8549,136 @@
           "type": "masonry",
           "cards": [
             {
+              "type": "conditional",
+              "conditions": [
+                {
+                  "entity": "input_boolean.dev_shutter_config_show",
+                  "state": "on"
+                }
+              ],
+              "card": {
+                "type": "entities",
+                "title": "Shutter Thresholds",
+                "entities": [
+                  "input_number.shutter_wind_dir_min",
+                  "input_number.shutter_wind_dir_max",
+                  "input_number.shutter_wind_speed_min"
+                ]
+              }
+            },
+            {
+              "type": "entities",
+              "title": "Shutter Logic Test",
+              "entities": [
+                "input_boolean.dev_shutter_config_show",
+                "input_number.dev_rk900_wind_direction",
+                "input_number.dev_rk900_wind_speed",
+                "sensor.dev_rk900_shutter_status",
+                "input_boolean.dev_shutter_state"
+              ]
+            },
+            {
+              "type": "custom:config-template-card",
+              "entities": [
+                "input_number.dev_rk900_wind_direction",
+                "input_number.shutter_wind_dir_min",
+                "input_number.shutter_wind_dir_max",
+                "input_number.dev_rk900_wind_speed",
+                "input_number.shutter_wind_speed_min",
+                "sensor.dev_rk900_shutter_status"
+              ],
+              "variables": [
+                {
+                  "name": "dir",
+                  "template": "return parseFloat(hass.states[\"input_number.dev_rk900_wind_direction\"].state) || 0"
+                },
+                {
+                  "name": "dmin",
+                  "template": "return parseFloat(hass.states[\"input_number.shutter_wind_dir_min\"].state) || 90"
+                },
+                {
+                  "name": "dmax",
+                  "template": "return parseFloat(hass.states[\"input_number.shutter_wind_dir_max\"].state) || 270"
+                },
+                {
+                  "name": "spd",
+                  "template": "return parseFloat(hass.states[\"input_number.dev_rk900_wind_speed\"].state) || 0"
+                },
+                {
+                  "name": "smin",
+                  "template": "return parseFloat(hass.states[\"input_number.shutter_wind_speed_min\"].state) || 12"
+                },
+                {
+                  "name": "in_close_zone",
+                  "template": "return (dmin <= dir && dir <= dmax) && (spd >= smin)"
+                },
+                {
+                  "name": "highlights",
+                  "template": "return [{\"from\": dmin, \"to\": dmax, \"color\": \"rgba(255, 80, 80, 0.35)\"}]"
+                },
+                {
+                  "name": "needle_color",
+                  "template": "return in_close_zone ? \"rgba(255, 60, 60, 1)\" : \"rgba(40, 200, 80, 1)\""
+                }
+              ],
+              "card": {
+                "type": "custom:canvas-gauge-card",
+                "entity": "input_number.dev_rk900_wind_direction",
+                "gauge": {
+                  "type": "radial-gauge",
+                  "title": "",
+                  "width": 260,
+                  "height": 260,
+                  "minValue": 0,
+                  "maxValue": 360,
+                  "startAngle": 180,
+                  "ticksAngle": 360,
+                  "valueBox": false,
+                  "units": "°",
+                  "majorTicks": [
+                    "N",
+                    "NE",
+                    "E",
+                    "SE",
+                    "S",
+                    "SW",
+                    "W",
+                    "NW",
+                    "N"
+                  ],
+                  "minorTicks": 0,
+                  "strokeTicks": false,
+                  "highlights": "${highlights}",
+                  "colorPlate": "transparent",
+                  "colorMajorTicks": "transparent",
+                  "colorMinorTicks": "transparent",
+                  "colorNumbers": "#e0e0e0",
+                  "numbersMargin": -18,
+                  "colorNeedle": "${needle_color}",
+                  "colorNeedleEnd": "${needle_color}",
+                  "needleType": "line",
+                  "needleStart": 70,
+                  "needleEnd": 99,
+                  "needleWidth": 3,
+                  "needleCircleSize": 8,
+                  "colorNeedleCircleOuter": "#e0e0e0",
+                  "colorNeedleCircleInner": "#e0e0e0",
+                  "borders": false,
+                  "borderShadowWidth": 0,
+                  "animationRule": "linear",
+                  "animationDuration": 600
+                }
+              }
+            },
+            {
               "type": "custom:pro-v-weather-card",
               "title": "RK900 Console",
               "style": "basic",
               "outdoor_temp": "sensor.dev_rk900_temperature",
               "outdoor_humidity": "sensor.dev_rk900_humidity",
-              "wind_speed": "sensor.dev_rk900_wind_speed_meters",
-              "wind_bearing": "sensor.dev_rk900_wind_direction",
-              "weather": "weather.forecast_home"
+              "wind_speed": "sensor.dev_rk900_wind_speed",
+              "wind_bearing": "sensor.dev_rk900_wind_to",
+              "weather": "weather.forecast_baan"
             },
             {
               "type": "custom:apexcharts-card",
@@ -8630,7 +8752,7 @@
             },
             {
               "type": "custom:nimbus-weather-card",
-              "entity": "weather.forecast_home",
+              "entity": "weather.forecast_baan",
               "name": "Forecast",
               "max_items": 5,
               "show_clock": false
@@ -8641,8 +8763,8 @@
               "style": "basic",
               "outdoor_temp": "sensor.dev_rk900_temperature",
               "outdoor_humidity": "sensor.dev_rk900_humidity",
-              "wind_speed": "sensor.dev_rk900_wind_speed_meters",
-              "wind_bearing": "sensor.dev_rk900_wind_direction"
+              "wind_speed": "sensor.dev_rk900_wind_speed",
+              "wind_bearing": "sensor.dev_rk900_wind_to"
             }
           ]
         },
@@ -8657,9 +8779,9 @@
               "style": "basic",
               "outdoor_temp": "sensor.dev_rk900_temperature",
               "outdoor_humidity": "sensor.dev_rk900_humidity",
-              "wind_speed": "sensor.dev_rk900_wind_speed_meters",
-              "wind_bearing": "sensor.dev_rk900_wind_direction",
-              "weather": "weather.forecast_home"
+              "wind_speed": "sensor.dev_rk900_wind_speed",
+              "wind_bearing": "sensor.dev_rk900_wind_to",
+              "weather": "weather.forecast_baan"
             },
             {
               "type": "custom:apexcharts-card",
@@ -8701,13 +8823,13 @@
             },
             {
               "type": "custom:weather-forecast-card",
-              "entity": "weather.forecast_home",
+              "entity": "weather.forecast_baan",
               "name": "Troinine Forecast",
               "default_forecast": "daily"
             },
             {
               "type": "custom:weather-flex-card",
-              "entity": "weather.forecast_home",
+              "entity": "weather.forecast_baan",
               "name": "Flex Forecast",
               "show_current": true,
               "show_forecast": true,
@@ -8715,17 +8837,17 @@
             },
             {
               "type": "custom:detailed-weather-forecast-card",
-              "entity": "weather.forecast_home",
+              "entity": "weather.forecast_baan",
               "name": "Detailed Forecast"
             },
             {
               "type": "custom:weather-forecast-extended-card",
-              "entity": "weather.forecast_home",
+              "entity": "weather.forecast_baan",
               "name": "Extended Forecast"
             },
             {
               "type": "custom:nimbus-weather-card",
-              "entity": "weather.forecast_home",
+              "entity": "weather.forecast_baan",
               "name": "Nimbus Forecast",
               "max_items": 5,
               "show_clock": false
