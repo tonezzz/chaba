@@ -1,0 +1,15 @@
+[Unit]
+Description=AI Hub NotebookLM cookie bridge
+After=network.target
+
+[Service]
+Type=simple
+Environment="PATH=%h/.local/node/bin:/usr/bin:/bin"
+EnvironmentFile=%h/.config/ai-hub/cookie-bridge.env
+WorkingDirectory=%h/.local/ai-hub
+ExecStart=%h/.local/node/bin/node %h/.local/ai-hub/cookie-bridge.mjs
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target
