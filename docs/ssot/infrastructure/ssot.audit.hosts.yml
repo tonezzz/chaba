@@ -369,6 +369,12 @@ hosts:
         scope: system
         expected_state: active
         critical: true
+      - name: mcp-link-monitor-mn.service
+        type: service
+        scope: user
+        expected_state: active
+        critical: false
+        note: TCP/IP link monitor migrated from tony-dell
     known_failed:
       - name: grub-initrd-fallback.service
         reason: Ubuntu/grub package service that fails on non-EFI fallback; harmless

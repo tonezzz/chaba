@@ -165,7 +165,8 @@ tony-dell:
     service: mcp-link-monitor.service
     host: tony_dell
     purpose: TCP/IP reachability watchdog for tony-omen, tony-dell, macbook
-    status: implemented (2026-08-13)
+    status: migrated to mn01 (2026-09-16)
+    note: 'Service stopped and disabled on tony-dell. mn01 now runs mcp-link-monitor-mn.service on port 9101.'
   chaba-funnel:
     service: chaba-funnel.service
     host: tony_dell
@@ -755,8 +756,8 @@ mn01:
     host: mn01
     port: 9101
     purpose: TCP reachability watchdog for mn-home and remote hosts
-    status: planned
-    note: 'Monitor 192.168.1.x, 100.x, and public endpoints; alert via syslog/Tailscale.'
+    status: active
+    note: 'Migrated from tony-dell. systemd unit runs /home/tony/CascadeProjects/chaba/scripts/mcp-link-monitor.py. Monitors 192.168.1.x, 100.x, and public endpoints; alert via syslog/Tailscale.'
   ada-pi-mn:
     service: ada-pi-mn.service
     host: mn01
