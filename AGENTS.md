@@ -260,6 +260,13 @@ ssh tony-dell 'pgrep -a -f devin-desktop | grep -v "pgrep\|ssh\|tailscaled"'
 - Caddyfile: `~/.config/caddy/Caddyfile.tony-dell`; apply with `caddy fmt --overwrite /home/tony/.config/caddy/Caddyfile.tony-dell` and `systemctl --user restart caddy-tony-dell`.
 - HA is bound to loopback (`127.0.0.1:8123` and `127.0.0.1:8124`) and exposed via Tailscale Serve on the same ports.
 
+## Tailscale subnet-route conflict (learned 2026-09-16)
+
+- `tony-dell` advertises `192.168.2.0/24` as a Tailscale subnet route (for remote tailnet access); `michael-ha` advertises `192.168.31.0/24`.
+- On nodes physically on `192.168.2.x`, Tailscale table-52 rules prefer the tunnel for the local subnet — LAN peers then see replies from the wrong source IP and TCP breaks (e.g., Deskreen on tony-omen unreachable from the iPad).
+- Fix on tony-omen: `lan-route-pref.service` (systemd) adds `ip rule ... to 192.168.2.0/24 priority 5000 lookup main` so LAN traffic uses `wlo1` directly. Check with `ip rule | grep 5000` and `ip route get <lan-ip>`.
+- `tony-dell` and `mn01` are on the same LAN and may need the same rule — unverified; check `ip route get` on each before assuming LAN reachability works there.
+
 ## NotebookLM (learned 2026-09-15)
 
 - `notebooklm-mcp-cli` (MCP/CLI) stores auth in `~/.notebooklm-mcp-cli/`, managed by `nlm`.
