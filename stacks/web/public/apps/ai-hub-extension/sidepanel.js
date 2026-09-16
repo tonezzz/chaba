@@ -1,11 +1,16 @@
 const promptInput = document.getElementById('prompt');
 const sendBtn = document.getElementById('send');
 const responsesDiv = document.getElementById('responses');
-const checkboxes = document.querySelectorAll('.targets input');
 
 function selectedTargets() {
-  return Array.from(checkboxes).filter(c => c.checked).map(c => c.value);
+  return Array.from(document.querySelectorAll('.chip.active')).map(c => c.dataset.value);
 }
+
+document.getElementById('targetChips').addEventListener('click', (e) => {
+  if (e.target.classList.contains('chip')) {
+    e.target.classList.toggle('active');
+  }
+});
 
 function appendResponse(site, text) {
   const div = document.createElement('div');
