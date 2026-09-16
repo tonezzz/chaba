@@ -71,6 +71,7 @@ offload_to_notebooklm:
   notebook_id: 009b3efe-ff58-40bc-9a3b-9ec946b38deb
   scripts:
     - /home/tony/.config/devin/scripts/devin-extract-sessions.sh
+    - /home/tony/.config/devin/scripts/devin-chunked-extract.sh
     - /home/tony/.config/devin/scripts/devin-archive-sessions.sh
     - /home/tony/.config/devin/scripts/vacuum-devin-db.sh
   workflow: |
@@ -89,6 +90,23 @@ offload_to_notebooklm:
        It creates a local SQLite backup, optionally extracts sessions again
        (`DEVIN_EXTRACT_OLD_SESSIONS=1`), runs `VACUUM`, and keeps the backup
        local by default.
+  chunked_archive:
+    script: /home/tony/.config/devin/scripts/devin-chunked-extract.sh
+    purpose: |
+      For sessions too large for a single NotebookLM source, split the raw
+      transcript into `MAX_SOURCE_CHARS` chunks, upload them to a temporary
+      staging notebook, ask NotebookLM to summarize the chunks, save the
+      summary to the archive notebook, and then delete the staging notebook.
+      The full transcript is also saved locally in `~/.local/share/devin/notebook-summaries/raw`.
+    limits:
+      MAX_SOURCE_CHARS: 100000 (default)
+      MAX_CHUNKS: 20 (default)
+    notes:
+      - "The current script summarizes and deletes the staging notebook immediately."
+      - "For a 7-day chunk retention, keep the staging notebook and run a separate"
+        "scheduled compactor that queries the staging notebook and deletes it"
+        "once the summary is generated."
+
   environment:
     DEVIN_ARCHIVE_NOTEBOOK: |
       Notebook ID to upload raw transcripts to. Defaults to the shared
