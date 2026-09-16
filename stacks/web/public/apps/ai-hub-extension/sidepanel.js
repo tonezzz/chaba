@@ -71,11 +71,20 @@ function appendResponse(site, text) {
   responsesDiv.appendChild(div);
 }
 
-sendBtn.addEventListener('click', () => {
+function sendPrompt() {
   const text = promptInput.value.trim();
   if (!text) return;
   const targets = selectedTargets();
   chrome.runtime.sendMessage({ cmd: 'BROADCAST_PROMPT', text, targets });
+}
+
+sendBtn.addEventListener('click', sendPrompt);
+
+promptInput.addEventListener('keydown', (e) => {
+  if (e.ctrlKey && e.key === 'Enter') {
+    e.preventDefault();
+    sendPrompt();
+  }
 });
 
 chrome.runtime.onMessage.addListener(request => {
