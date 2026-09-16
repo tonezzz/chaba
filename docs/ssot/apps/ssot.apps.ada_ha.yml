@@ -12,6 +12,8 @@ sections:
         text: Two isolated instances — ada-ha-tony (tony-dell.taila0626a.ts.net:8123) and ada-ha-michael (michael-ha:8123).
       - label: Energy + dashboard awareness
         text: Reads G3 power sensors and tony-test dashboard tabs by voice using the live HA websocket.
+      - label: Event logs
+        text: HA logbook, cross-entity open/close transition queries, per-entity timelines with durations, and a background event recorder persisted to MDDB.
   - title: Technical Architecture
     icon: "⚙️"
     layout: list
@@ -21,7 +23,9 @@ sections:
       - label: /home/tony/CascadeProjects/ada-pi/backend/realtime_provider.py
         text: Gemini Live client with function calling. Speech barge-in enabled (START_OF_ACTIVITY_INTERRUPTS).
       - label: /home/tony/CascadeProjects/ada-pi/backend/home_assistant.py
-        text: REST and websocket client for HA states, control, history, power summary, and dashboard tab extraction.
+        text: REST and websocket client for HA states, control, history, logbook, event transitions, power summary, and dashboard tab extraction.
+      - label: /home/tony/CascadeProjects/ada-pi/backend/event_recorder.py
+        text: Background websocket subscriber recording state_changed transitions for event domains; ring buffer plus batched MDDB persistence (collection ada-ha-events-*). Disable via DISABLE_EVENT_RECORDER=true.
       - label: /home/tony/.config/systemd/user/ada-ha-tony.service
         text: Runs uvicorn on 0.0.0.0:8002 on mn01 with env /home/tony/.config/secrets/ada-ha-tony.env.
       - label: /home/tony/.config/systemd/user/ada-ha-michael.service
@@ -50,6 +54,14 @@ sections:
         text: List sensor entities; optional search and limit query params.
       - label: GET /api/home-assistant/history
         text: Fetch state history for a single sensor over N hours.
+      - label: GET /api/home-assistant/logbook
+        text: HA logbook entries (friendly event text like 'Front door was opened'); optional entity_id and hours params.
+      - label: GET /api/home-assistant/events
+        text: Cross-entity state-change transitions across event domains (binary_sensor, cover, lock, person, light, switch, ...); hours, query, limit params.
+      - label: GET /api/home-assistant/entity-events
+        text: Per-entity event timeline with per-state durations; entity_id and hours params.
+      - label: GET /api/home-assistant/event-recorder
+        text: Background recorder status plus its in-memory transition buffer.
       - label: GET /api/home-assistant/power-summary
         text: Current G3 power values plus min/max/mean over N hours.
       - label: GET /api/home-assistant/dashboard-tab
@@ -76,6 +88,14 @@ sections:
         text: Voice summary of G3 solar/grid/load/battery power and recent history.
       - label: get_sensor_history
         text: Recent history for a specific sensor.
+      - label: get_logbook
+        text: HA logbook event entries, optionally for one entity.
+      - label: get_recent_events
+        text: Recent open/close/on-off state changes across the whole home; optional keyword filter.
+      - label: get_entity_events
+        text: One entity's event timeline with per-state durations (open/close times).
+      - label: ada_ha_search_events
+        text: Search recorded events from the background recorder (memory + persisted MDDB batches).
       - label: get_dashboard_tab
         text: Read the named tony-test dashboard tab and report displayed devices.
   - title: Navigation
@@ -133,7 +153,7 @@ sections:
       - label: Secrets and tokens are not in git
         text: ~/.config/secrets/ada-ha-*.env and notebooklm-rest-api.env are still host-local and must be backed up separately.
 config:
-  version: 3
+  version: 4
   created: '2026-09-13'
   updated: '2026-09-16'
   maintainer: tony
