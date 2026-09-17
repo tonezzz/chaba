@@ -17,16 +17,11 @@ registered tool including physical control tools.
 
 ## Timeline (ICT)
 
-| Time | Event |
-|---|---|
-| 17:00:27 | `ada-ha-michael.service` restarted (testing in progress on tony-dell) |
-| 17:08:21 | Client `100.68.142.13` calls `GET /api/tools`, then begins `POST /api/tools/call` loop |
-| 17:08:22 | `cover.gate_motor` ← `open_cover`; gate reports `opening` |
-| 17:08:27–17:08:48 | Alternating `open_cover` and `button.gate_motor_my_position` presses |
-| 17:09:17 | Cover returns to `unknown` (no position feedback) |
-| 17:09:53 | Service restarted again mid-loop |
-| 17:10:03–17:10:13 | Second burst: `open_cover` + two more jog presses |
-| 17:10:42 | Cover back to `unknown`; loop ends |
+- **17:08:21** — script on tony-dell starts calling `POST /api/tools/call` in a loop
+- **17:08:22–17:08:48** — gate commanded open + jogged via "My position" (gate moving)
+- **17:09:17** — gate finishes moving; cover state returns to `unknown`
+- **17:10:03–17:10:13** — second burst: gate opened + jogged again
+- **17:10:42** — loop ends; no further gate commands since
 
 ## Root Cause
 
