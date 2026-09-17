@@ -180,6 +180,8 @@ sections:
         text: MDDB collections were once keyed by HOME_ASSISTANT_URL slug; moving tony from 127.0.0.1 to the tailnet URL abandoned the old collections. ADA_INSTANCE_ID now pins identity; rule is fail quick and report, never silently fall back for identity config.
       - label: Funnel makes auth mandatory
         text: mn01 and tony-dell both run Tailscale Funnel on 443, so /apps/ada_ha_* and /apps/ada_pi are public-internet paths. confirmed=true only gates the model — direct REST callers self-assert it — which is why ADA_API_KEY covers /api/tools/call AND /ws.
+      - label: EnvironmentFile order overrides keys
+        text: 'ada-ha-*.service load ada-ha-<inst>.env THEN notebooklm-rest-api.env; a stale NOTEBOOKLM_REST_API_KEY in the second file silently overrode the per-instance scoped key, so every notebooklm-rest call returned 401 Invalid API key (key-gate runs before handlers, so the write queue never engaged). Fixed 2026-09-17 by commenting the stale key on mn01. Rule: notebooklm-rest-api.env must never carry a singular NOTEBOOKLM_REST_API_KEY on mn01 — scoped per-instance keys live only in ada-ha-*.env; the server side authenticates with NOTEBOOKLM_REST_API_KEYS + NOTEBOOKLM_REST_KEY_SCOPES.'
 config:
   version: 5
   created: '2026-09-13'

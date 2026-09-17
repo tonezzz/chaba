@@ -1,0 +1,20 @@
+[Unit]
+Description=NotebookLM REST API container (rootless podman)
+After=network-online.target
+Wants=network-online.target
+
+[Container]
+Image=localhost/notebooklm-rest
+ContainerName=notebooklm-rest
+PublishPort=100.68.142.13:3011:8000
+PublishPort=127.0.0.1:3011:8000
+EnvironmentFile=/home/tony/.config/secrets/notebooklm-rest-api.env
+Environment=NOTEBOOKLM_STORAGE_PATH=/data/storage_state.json
+Volume=/home/tony/.local/share/notebooklm/notebooklm-rest-data:/data:Z
+
+[Service]
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=default.target

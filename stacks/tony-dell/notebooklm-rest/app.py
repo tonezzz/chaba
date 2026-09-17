@@ -78,13 +78,86 @@ def require_api_key(request: Request, x_api_key: Optional[str] = Header(None, al
         raise HTTPException(status_code=403, detail=f"API key '{scope.get('name', 'scoped')}' is read-only")
 
 
-async def get_client() -> NotebookLMClient:
+# Shared client: per-request from_storage + open/close costs ~2-3s. Cache one
+# opened client and rebuild when storage_state.json changes on disk (the auth
+# keepalive rewrites it) or after any request error.
+_shared_client: Optional[NotebookLMClient] = None
+_shared_client_mtime: float = -1.0
+_client_lock = asyncio.Lock()
+
+
+class _SharedClientCtx:
+    """async-with shim over the shared client: yields it without closing.
+
+    Any exception inside the request body drops the shared client so the next
+    request rebuilds it from storage.
+    """
+
+    def __init__(self, inner: NotebookLMClient) -> None:
+        self._inner = inner
+
+    async def __aenter__(self) -> NotebookLMClient:
+        return self._inner
+
+    async def __aexit__(self, exc_type, exc, tb) -> bool:
+        global _shared_client
+        if exc is not None and _shared_client is self._inner:
+            _shared_client = None
+            try:
+                asyncio.create_task(self._inner.close())
+            except Exception:
+                pass
+        return False
+
+
+def _storage_mtime() -> float:
+    if not AUTH_STORAGE_PATH:
+        return -1.0
     try:
-        if AUTH_STORAGE_PATH:
-            return await NotebookLMClient.from_storage(AUTH_STORAGE_PATH)
-        return await NotebookLMClient.from_storage()
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to initialize NotebookLM client: {e}")
+        return os.stat(AUTH_STORAGE_PATH).st_mtime
+    except OSError:
+        return -1.0
+
+
+async def get_client():
+    """Shared opened client; rebuilt when storage changes on disk."""
+    global _shared_client, _shared_client_mtime
+    if _shared_client is not None and _storage_mtime() == _shared_client_mtime:
+        return _SharedClientCtx(_shared_client)
+    async with _client_lock:
+        mtime = _storage_mtime()
+        if _shared_client is None or mtime != _shared_client_mtime:
+            try:
+                client = await (
+                    NotebookLMClient.from_storage(AUTH_STORAGE_PATH)
+                    if AUTH_STORAGE_PATH
+                    else NotebookLMClient.from_storage()
+                )
+                await client.__aenter__()
+            except Exception as e:
+                raise HTTPException(
+                    status_code=500,
+                    detail=f"Failed to initialize NotebookLM client: {e}",
+                )
+            old = _shared_client
+            _shared_client = client
+            _shared_client_mtime = mtime
+            if old is not None:
+                try:
+                    asyncio.create_task(old.close())
+                except Exception:
+                    pass
+    return _SharedClientCtx(_shared_client)
+
+
+async def _close_shared_client() -> None:
+    global _shared_client
+    if _shared_client is not None:
+        try:
+            await _shared_client.close()
+        except Exception:
+            pass
+        _shared_client = None
 
 
 def map_rpc_error(e: RPCError) -> HTTPException:
@@ -272,6 +345,7 @@ async def lifespan(app: FastAPI):
     yield
     if task:
         task.cancel()
+    await _close_shared_client()
 
 
 # ----------------------------

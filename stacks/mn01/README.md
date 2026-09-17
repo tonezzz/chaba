@@ -14,9 +14,9 @@ Versioned, reproducible deployment of the Ada HA (Tony + Michael) voice PWA back
 
 `/home/tony/.config/secrets/` must contain:
 
-- `ada-ha-tony.env` — `GEMINI_API_KEY`, `HOME_ASSISTANT_URL=https://tony-dell.taila0626a.ts.net:8123/`, `HOME_ASSISTANT_TOKEN`, `ADA_INSTANCE_ID=tony`, etc.
-- `ada-ha-michael.env` — `GEMINI_API_KEY`, `HOME_ASSISTANT_URL=http://michael-ha:8123/`, `HOME_ASSISTANT_TOKEN`, `ADA_INSTANCE_ID=michael`, etc.
-- `notebooklm-rest-api.env` — shared NotebookLM REST API config
+- `ada-ha-tony.env` — `GEMINI_API_KEY`, `HOME_ASSISTANT_URL=https://tony-dell.taila0626a.ts.net:8123/`, `HOME_ASSISTANT_TOKEN`, `ADA_INSTANCE_ID=tony`, `NOTEBOOKLM_REST_API_KEY` (the scoped `ada-tony` key), `NOTEBOOKLM_NOTEBOOK_IDS_JSON`, etc.
+- `ada-ha-michael.env` — `GEMINI_API_KEY`, `HOME_ASSISTANT_URL=http://michael-ha:8123/`, `HOME_ASSISTANT_TOKEN`, `ADA_INSTANCE_ID=michael`, `NOTEBOOKLM_REST_API_KEY` (the scoped `ada-michael` key), etc.
+- `notebooklm-rest-api.env` — optional shared NotebookLM REST config (e.g. `NOTEBOOKLM_REST_BASE_URL`). **Must NOT contain `NOTEBOOKLM_REST_API_KEY`** — it is loaded after the per-instance env files, so a key here silently overrides the scoped per-instance keys and every call fails `401 Invalid API key` (hit on 2026-09-17 when a stale pre-scoping key lived here).
 
 These are **not** in git. Back them up via `scripts/backup-mn01.sh`.
 
