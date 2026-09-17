@@ -390,6 +390,43 @@ servers:
       Persistent rootless Podman container on tony-dell. Mounts auth state from /home/tony/.local/share/notebooklm/.notebooklm-mcp-cli.
       `nlm notebook list` verified from tony-omen. Devin uses stdio via mcp-notebooklm-ssh.sh.
 
+  google-home-lan:
+    name: Google Home LAN
+    description: Local-network control of Google Cast devices (Chromecast, Android TV, Google Home/Nest speakers) via pychromecast
+    implementation: podman localhost/google-home-mcp on mn01 (host network)
+    wrapper: none
+    url: http://100.106.196.22:8004/mcp
+    filter: none
+    single_instance: false
+    status: operational
+    config_files:
+      - devin: true
+      - windsurf: false
+    notes: |
+      FastMCP streamable-HTTP server, bound to the mn01 Tailscale IP only (100.106.196.22:8004).
+      Source: mcp-servers/google-home-mcp/server.py; stack: stacks/mn01/google-home-mcp/.
+      Quadlet: ~/.config/containers/systemd/google-home-mcp.container on mn01.
+      CAST_HOSTS=192.168.2.85 (TONY-TV, Skyworth SKWAMX3 TrueID box) is reachable cross-subnet via Tailscale routing; mDNS discovery covers the mn-home LAN (192.168.1.x).
+      Tools: discover_devices, device_info, cast_status, cast_play_media, cast_media_control, cast_volume, cast_quit_app, eureka_info.
+      Official remote Home MCP (home.googleapis.com/mcp) is configured separately as 'google-home'; it requires a Google Home Premium Advanced subscription (not active as of 2026-09-17).
+
+  google-home:
+    name: Google Home (official)
+    description: Google-managed remote Home MCP endpoint for smart-home control via the Home API
+    implementation: remote https://home.googleapis.com/mcp (Streamable HTTP, OAuth2)
+    wrapper: none
+    url: https://home.googleapis.com/mcp
+    filter: none
+    single_instance: false
+    status: blocked
+    config_files:
+      - devin: true
+      - windsurf: false
+    notes: |
+      OAuth uses a pre-registered Web-application client in a Google Cloud project (Home API enabled, scope https://www.googleapis.com/auth/home.platform.v2).
+      Tokens stored by Devin CLI under ~/.local/share/devin/mcp/oauth/.
+      Authenticated successfully 2026-09-17 but list_homes returns "At least one Home Premium Advanced subscription is required" — blocked until the account has Google Home Premium Advanced (early access is US English rollout).
+
 # Script locations (centralized)
 scripts:
   base_dir: ~/.config/devin/mcp-scripts

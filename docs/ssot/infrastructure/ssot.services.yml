@@ -804,3 +804,13 @@ mn01:
     caddyfile: '~/.config/caddy/Caddyfile.mn01'
     upstream_ha: 'http://michael-ha:8123/'
     note: 'Backend is /home/tony/CascadeProjects/ada-pi/pwa_server.py. Environment uses HOME_ASSISTANT_URL=http://michael-ha:8123/ and the Michael long-lived token.'
+  google-home-mcp:
+    service: google-home-mcp.service
+    host: mn01
+    port: 8004
+    host_port: '100.106.196.22:8004'
+    purpose: Local-network Google Cast device control MCP server (pychromecast + FastMCP)
+    status: active
+    quadlet: '~/.config/containers/systemd/google-home-mcp.container'
+    source: 'mcp-servers/google-home-mcp/server.py; stacks/mn01/google-home-mcp/'
+    note: 'Rootless podman, host networking, bound to tailnet IP only. CAST_HOSTS=192.168.2.85 (TONY-TV TrueID box, Skyworth SKWAMX3) reached cross-subnet via Tailscale; mDNS discovery covers mn-home LAN. Devin MCP url: http://100.106.196.22:8004/mcp.'

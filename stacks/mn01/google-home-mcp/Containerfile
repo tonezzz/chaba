@@ -1,0 +1,9 @@
+FROM docker.io/library/python:3.12-slim
+
+RUN pip install --no-cache-dir fastmcp pychromecast zeroconf
+
+WORKDIR /app
+COPY mcp-servers/google-home-mcp/server.py /app/server.py
+
+EXPOSE 8004
+ENTRYPOINT ["python", "/app/server.py"]
