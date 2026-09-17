@@ -106,8 +106,10 @@ sections:
   - label: honor-pad-9
     text: HONOR Pad 9 tablet — MAC 94:32:c1:6e:db:08 (192.168.2.89).
   - label: Unknown / randomized hosts
-    text: '192.168.2.73 (lwip 06:28:58:26:4b:2c), .74 (68:f0:bc:ad:20:8a), .76 (iPhone 22:73:11:ed:13:53), .78 (Watch b6:72:65:ca:aa:e1),
-      .79 (ea:9b:8f:d2:80:f0), .86 (Mac 72:b5:f0:db:14:f3), .88 (iPhone fa:31:d9:bd:44:ff), .91 (00:12:fb:0e:93:ed), .72 (Watch 3a:21:76:0b:08:85).
+    text: '192.168.2.74 (68:f0:bc:ad:20:8a), .76 (iPhone 22:73:11:ed:13:53), .78 (Watch b6:72:65:ca:aa:e1),
+      .79 (ea:9b:8f:d2:80:f0), .86 (Mac 72:b5:f0:db:14:f3), .88 (iPhone fa:31:d9:bd:44:ff).
+      Resolved 2026-09-17: .73/.82 = tony-repeater (lwip 06:28:58:26:4b:2c), .91 = samsung-tv (00:12:fb:0e:93:ed);
+      .72 floats between apple-watch-3a21760b0885 and xiaomi-c100 (b8:88:80:cb:7d:2c).
       Some are private Wi-Fi addresses; identify by disabling private Wi-Fi on the device or matching router hostnames.'
   - label: Legacy network
     text: macbook on 192.168.1.39 and google-tv on 192.168.1.50; MACs unknown/stale.
@@ -116,7 +118,7 @@ sections:
   layout: list
   items:
   - label: Resolve unknown hosts
-    text: 'Identify 192.168.2.73, .74, .76, .78, .79, .86, .88, .91 and .72. Many are private Wi-Fi addresses; disable private
+    text: 'Identify 192.168.2.74, .76, .78, .79, .86 and .88. Many are private Wi-Fi addresses; disable private
       addressing per device or use vendor/model/owner clues to assign stable device_ids.'
   - label: Populate legacy network
     text: Reconnect to Mountain View 5G/2.4G to scan 192.168.1.0/24 and capture macbook / Google TV MACs.
@@ -124,7 +126,7 @@ sections:
     text: Run nightly ARP scan and compare against this registry. New or duplicate MACs create a focus-inbox alert.
 config:
   version: 1
-  last_updated: '2026-09-10'
+  last_updated: '2026-09-17'
   maintainer: tony
   status: active
   related_files:
@@ -427,18 +429,18 @@ config:
       first_seen: '2026-09-09'
       last_observed: '2026-09-09'
       status: active
-  - device_id: discovered-0012fb0e93ed
-    label: Discovered 00:12:fb:0e:93:ed
+  - device_id: samsung-tv
+    label: Samsung TV-40C5000
     status: active
     interfaces:
-    - interface_id: wlan0
+    - interface_id: eth0
       mac: 00:12:fb:0e:93:ed
       oui: 0012FB
-      vendor: Unknown
-      type: wifi
+      vendor: Samsung Electronics
+      type: ethernet
       source: dhcp
       first_seen: '2026-09-09'
-      last_observed: '2026-09-09'
+      last_observed: '2026-09-17'
       status: active
   - device_id: tony-tv
     label: Tony TV
@@ -453,18 +455,18 @@ config:
       first_seen: '2026-09-09'
       last_observed: '2026-09-09'
       status: active
-  - device_id: lwip-062858264b2c
-    label: lwip (06:28:58:26:4b:2c)
+  - device_id: tony-repeater
+    label: Tenda Wi-Fi Repeater
     status: active
     interfaces:
     - interface_id: wlan0
       mac: 06:28:58:26:4b:2c
       oui: 062858
-      vendor: Unknown
+      vendor: Tenda (locally administered MAC, lwip/reasy-ui)
       type: wifi
       source: dhcp
       first_seen: '2026-09-09'
-      last_observed: '2026-09-09'
+      last_observed: '2026-09-17'
       status: active
   - device_id: esp32-test
     label: ESP32 Test

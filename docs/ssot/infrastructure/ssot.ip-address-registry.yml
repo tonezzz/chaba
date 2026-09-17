@@ -2,7 +2,7 @@ title: IP Address Registry
 subtitle: Per-network IP allocations linked to the MAC address registry
 icon: 🗺️
 version: 1
-last_updated: '2026-09-11'
+last_updated: '2026-09-17'
 ideas:
 - Every IP allocation links back to a stable device_id in ssot.mac-address-registry.yml
 - One network_record per subnet, with an allocations list
@@ -34,7 +34,8 @@ sections:
     text: TONY-WIFI_2.4G (wlo1) and netplan-eno1 (eno1). Default gateway 192.168.2.1.
   - label: Known hosts
     text: Router, tony-omen, tony-dell, Tuya coffee/bedside/TV/Cozy Life plugs, IP camera, Xiaomi C201, HP DeskJet, Tony TV,
-      ESP32 test, KKs MacBook Pro, KKs Mac Studio, Tony iPhone, realme C63, HONOR Pad 9, plus transient/randomized devices.
+      Samsung TV-40C5000 (behind Tenda repeater), Tenda repeater, ESP32 test, KKs MacBook Pro, KKs Mac Studio, Tony iPhone,
+      realme C63, HONOR Pad 9, plus transient/randomized devices.
   - label: Note
     text: This is the current active network. The detailed allocations are in config.networks below.
 - title: Legacy Network 192.168.1.0/24
@@ -52,8 +53,9 @@ sections:
   layout: list
   items:
   - label: Identify unknown hosts
-    text: 'Identify 192.168.2.73, .74, .76, .78, .79, .86, .88, .91 and .72. Many are private Wi-Fi addresses; use owner/device
-      clues or disable private MAC addressing to assign stable device_ids.'
+    text: 'Identify 192.168.2.74, .76, .78, .79, .86 and .88. Many are private Wi-Fi addresses; use owner/device
+      clues or disable private MAC addressing to assign stable device_ids. Note DHCP churn: tony-repeater floats .72/.73/.82,
+      samsung-tv floats .91/.92, xiaomi-c100 floats .72/.81 — re-resolve by MAC, not IP.'
   - label: Reconnect 192.168.1.0/24
     text: Switch to Mountain View 5G to capture current IPs and MACs for macbook and Google TV.
   - label: Expand
@@ -166,20 +168,20 @@ config:
       last_observed: '2026-09-09'
       source: dhcp
     - ip: 192.168.2.72
-      device_id: apple-watch-3a21760b0885
+      device_id: xiaomi-c100
       interface_id: wlan0
       kind: dhcp
       status: active
       first_seen: '2026-09-09'
-      last_observed: '2026-09-09'
-      source: dhcp
+      last_observed: '2026-09-17'
+      source: arp
     - ip: 192.168.2.73
-      device_id: lwip-062858264b2c
+      device_id: tony-repeater
       interface_id: wlan0
       kind: dhcp
       status: active
       first_seen: '2026-09-09'
-      last_observed: '2026-09-09'
+      last_observed: '2026-09-17'
       source: dhcp
     - ip: 192.168.2.74
       device_id: discovered-68f0bcad208a
@@ -318,12 +320,12 @@ config:
       last_observed: '2026-09-09'
       source: dhcp
     - ip: 192.168.2.91
-      device_id: discovered-0012fb0e93ed
-      interface_id: wlan0
+      device_id: samsung-tv
+      interface_id: eth0
       kind: dhcp
       status: active
       first_seen: '2026-09-09'
-      last_observed: '2026-09-09'
+      last_observed: '2026-09-17'
       source: dhcp
   - network_id: legacy-192.168.1.0-24
     cidr: 192.168.1.0/24
