@@ -430,11 +430,16 @@ async def delete_queued(qid: str):
 # Notebooks
 # ----------------------------
 @app.get("/v1/notebooks")
-async def list_notebooks():
+async def list_notebooks(request: Request):
     client = await get_client()
     async with client:
         try:
             nbs = await client.notebooks.list()
+            scope = getattr(request.state, "key_scope", None)
+            if scope:
+                allowed = scope.get("notebooks", ["*"])
+                if "*" not in allowed:
+                    nbs = [nb for nb in nbs if nb.id in allowed]
             return {"ok": True, "items": [_dump(nb) for nb in nbs]}
         except RPCError as e:
             raise map_rpc_error(e)
