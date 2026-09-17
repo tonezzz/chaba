@@ -18,10 +18,18 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       .catch(err => sendResponse({ ok: false, error: err.message }));
     return true;
   }
+  if (request.cmd === 'RESPONSE') {
+    chrome.storage.local.get('responses', r => {
+      const list = Array.isArray(r.responses) ? r.responses : [];
+      list.push({ site: request.site, text: request.text, ts: Date.now() });
+      chrome.storage.local.set({ responses: list.slice(-20) });
+    });
+    return false;
+  }
   return false;
 });
 
-function sendPrompt(text, siteKey) {
+async function sendPrompt(text, siteKey) {
   function setNativeValue(element, value) {
     if (element.isContentEditable) {
       element.focus();
@@ -62,9 +70,18 @@ function sendPrompt(text, siteKey) {
   const el = document.querySelector(adapter.promptSelector);
   if (!el) return { ok: false, error: 'prompt not found', siteKey };
   setNativeValue(el, text);
-  const btn = document.querySelector(adapter.sendSelector);
+  // Send buttons are often disabled until the framework processes the
+  // input events — poll briefly (re-querying, since React may swap nodes).
+  const deadline = Date.now() + 2500;
+  let btn = null;
+  while (Date.now() < deadline) {
+    btn = document.querySelector(adapter.sendSelector);
+    if (btn && !btn.disabled) break;
+    await new Promise(r => setTimeout(r, 150));
+  }
   if (!btn) return { ok: false, error: 'send button not found', siteKey };
-  if (!btn.disabled) btn.click();
+  if (btn.disabled) return { ok: false, error: 'send button stayed disabled', siteKey };
+  btn.click();
   return { ok: true, siteKey };
 }
 
@@ -167,10 +184,16 @@ function captureAndSendCookies() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ cookies })
       });
-      if (!res.ok) console.error('cookie-bridge returned', res.status, await res.text());
-      else {
+      const text = await res.text();
+      if (res.status === 409) {
+        console.log('cookie-bridge refused sync (protected state):', text);
+        chrome.storage.local.set({ lastCookieSyncResult: `protected: ${text.slice(0, 80)}` });
+      } else if (!res.ok) {
+        console.error('cookie-bridge returned', res.status, text);
+        chrome.storage.local.set({ lastCookieSyncResult: `error ${res.status}` });
+      } else {
         console.log('cookie-bridge updated with', cookies.length, 'cookies');
-        chrome.storage.local.set({ lastCookieSync: Date.now() });
+        chrome.storage.local.set({ lastCookieSync: Date.now(), lastCookieSyncResult: 'ok' });
       }
     } catch (err) {
       console.error('cookie-bridge error:', err.message);

@@ -38,6 +38,10 @@ const adapters = {
   'midjourney.com': {
     promptSelector: 'textarea, input[type="text"], div[contenteditable="true"], [data-testid="prompt-input"], [placeholder*="imagine" i]',
     sendSelector: 'button[type="submit"], button[aria-label="Imagine"], button[aria-label="Create"], button[aria-label="Generate"], [data-testid="imagine-button"], [data-testid="generate-button"]'
+  },
+  'aistudio.google.com': {
+    promptSelector: 'textarea, div[contenteditable="true"], ms-prompt-input-wrapper textarea',
+    sendSelector: 'button[aria-label*="Run" i], button[title*="Run" i], button[data-testid="run-button"], .run-button'
   }
 };
 
@@ -73,6 +77,12 @@ function readLastAssistant() {
   if (site === 'claude.ai') {
     const nodes = document.querySelectorAll('[data-testid="user-message"], .claude-message, .font-claude-message');
     return nodes[nodes.length - 1]?.innerText || '';
+  }
+  if (site === 'aistudio.google.com') {
+    const turns = document.querySelectorAll('ms-chat-turn[data-turn-role="Model"], ms-chat-turn, .chat-turn-container');
+    const last = turns[turns.length - 1];
+    const node = last?.querySelector('.markdown, ms-cmark-node') || last;
+    return node?.innerText?.trim() || '';
   }
   return '';
 }
