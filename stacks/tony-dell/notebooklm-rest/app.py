@@ -56,6 +56,11 @@ _HEALTH_CACHE_TTL = 60     # seconds between auth probes
 
 
 def require_api_key(request: Request, x_api_key: Optional[str] = Header(None, alias="X-API-Key")):
+    # GET /health* is unauthenticated so external monitors can probe liveness
+    # and auth status; they expose only ok/expired, no data. POST /health/auth/refresh
+    # stays key-gated.
+    if request.method == "GET" and request.url.path.startswith("/health"):
+        return
     if API_KEYS and x_api_key not in API_KEYS:
         raise HTTPException(status_code=401, detail="Invalid API key")
     scope = KEY_SCOPES.get(x_api_key or "")
@@ -384,7 +389,7 @@ async def health_auth(request: Request):
         probe["_ts"] = time.time()
         app.state.auth = probe
         cached = probe
-    return {
+    body = {
         "ok": cached.get("status") == "ok",
         "auth": cached.get("status"),
         "probe": cached.get("probe"),
@@ -393,6 +398,8 @@ async def health_auth(request: Request):
         "keepalive_interval_s": KEEPALIVE_INTERVAL,
         "queued_writes": len(_load_json(_QUEUE_PATH, [])),
     }
+    # Health monitors key on status code — 503 when auth is broken.
+    return JSONResponse(body, status_code=200 if body["ok"] else 503)
 
 
 @app.post("/health/auth/refresh")
