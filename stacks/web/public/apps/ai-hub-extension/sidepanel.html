@@ -18,7 +18,13 @@
     <div id="tabStatus" class="status">Active tab: —</div>
     <div id="bridgeStatus" class="status">Bridge: checking...</div>
     <textarea id="prompt" rows="4" placeholder="Prompt..."></textarea>
+    <div class="row saved-row">
+      <select id="savedPrompts"><option value="">Saved prompts…</option></select>
+      <button id="savePromptBtn" class="mini" type="button" title="Save current prompt">Save</button>
+      <button id="delPromptBtn" class="mini" type="button" title="Delete selected saved prompt">Del</button>
+    </div>
     <button id="send">Send to all</button>
+    <div id="sendStatus" class="status"></div>
 
     <details class="section" id="nbDetails">
       <summary><h2>NotebookLM</h2></summary>
@@ -26,6 +32,10 @@
         <div class="subsection">
           <h3>Auth</h3>
           <label>Bridge URL <input type="text" id="bridgeUrl" value="http://127.0.0.1:9876"></label>
+          <div class="row">
+            <button class="mini bridge-preset" data-bridge="http://127.0.0.1:9876" type="button">Local</button>
+            <button class="mini bridge-preset" data-bridge="https://tony-dell.taila0626a.ts.net/apps/notebooklm-cookies" type="button">Caddy</button>
+          </div>
           <div class="row">
             <button id="captureCookies">Capture cookies</button>
             <button id="copyCookies">Copy JSON</button>
@@ -43,6 +53,7 @@
           <div class="row">
             <button id="nbListBtn">List notebooks</button>
             <button id="nbUploadBtn">Upload current page</button>
+            <button id="nbAuthBtn">Check session</button>
           </div>
           <div id="nbStatus" class="status"></div>
         </div>
@@ -60,7 +71,10 @@
       </div>
     </details>
 
-    <h2>Responses</h2>
+    <div class="row responses-head">
+      <h2>Responses</h2>
+      <button id="clearResponsesBtn" class="mini" type="button">Clear</button>
+    </div>
     <div id="responses"></div>
   </div>
   <script src="sidepanel.js"></script>
