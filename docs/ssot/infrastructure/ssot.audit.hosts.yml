@@ -162,6 +162,9 @@ hosts:
     - name: tony-dell-monitor.service
       reason: Display/host monitor helper is not currently running
       action: investigate
+    - name: cookie-bridge.service
+      reason: Cookie bridge service failing on tony-dell; needs restart/investigation
+      action: restart
     expected_resources:
       min_free_ram_mb: 500
       max_swap_used_percent: 80
@@ -526,6 +529,18 @@ hosts:
     - name: f08837a9d0ec269851e88ce856dfdcb130ebec993db3024ad4a93c7d39efbcd6-413857d9606b8a53.service
       reason: Transient session scope with no remaining PIDs
       action: ignore
+    - name: michael-dev-parity.service
+      reason: Michael-dev parity service failing; investigate
+      action: investigate
+    - name: notebooklm-rest-auth-refresh.service
+      reason: Retired auth-refresh timer; should be stopped/removed
+      action: disable
+    - name: chaba-backup-monitor.service
+      reason: Backup monitor failing; investigate
+      action: investigate
+    - name: chaba-backup.service
+      reason: Backup service failing; investigate
+      action: investigate
     expected_resources:
       min_free_ram_mb: 1000
       max_swap_used_percent: 50
@@ -872,6 +887,15 @@ hosts:
     - name: grub-initrd-fallback.service
       reason: Ubuntu/grub package service that fails on non-EFI fallback; harmless
       action: ignore
+    - name: xdg-desktop-portal-gtk.service
+      reason: GTK portal for sandboxed apps; fails without an active X session
+      action: ignore-or-mask
+    - name: xdg-desktop-portal.service
+      reason: Desktop portal fails when no X session is active
+      action: ignore-or-mask
+    - name: xfce4-notifyd.service
+      reason: XFCE notification daemon; fails when no X session is active
+      action: ignore-or-mask
     expected_resources:
       min_free_ram_mb: 500
       max_swap_used_percent: 80
