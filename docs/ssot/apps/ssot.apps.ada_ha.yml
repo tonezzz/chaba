@@ -130,6 +130,8 @@ sections:
         text: ADA_READ_ONLY=true disables all actuating tools (voice and REST) for demo/customer instances.
       - label: Audit
         text: Every /api/tools/call is logged with tool name, args, and client IP; denials logged as warnings.
+      - label: QR onboarding
+        text: 'POST /api/auth/redeem-token (authenticated, body {"path": appBase}) mints a single-use redeem URL (ADA_REDEEM_TTL_S, default 10min). GET {base}/redeem/{token} burns it, sets the session cookie, and redirects to {base}/?api_key=<key> so the PWA stores the key. Scan once on iPhone/iPad and the device is authorized.'
       - label: Voice path
         text: Gemini control calls route through ToolRunner; the model must pass confirmed=true after explicit user confirmation.
   - title: Known Issues
