@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # Print the unlock deep-link for an Ada backend: <public-url>?api_key=<key>
 # The key is read from the service env file on its host — never stored here.
+# With --qr, mints a one-time redeem URL instead (burns on use, expires in
+# ADA_REDEEM_TTL_S) — a leaked QR/screenshot is useless after one scan.
 # Usage: ada-key-url.sh <tony|michael|ada-pi>   (add --qr to render a QR code)
 set -euo pipefail
 
@@ -18,8 +20,22 @@ if [[ -z "$key" ]]; then
   exit 1
 fi
 
-url="${base}?api_key=${key}"
-echo "$url"
+origin="${base%%/apps/*}"
+path="${base#"$origin"}"; path="${path%/}"
+
+if [[ "$want_qr" == "--qr" ]]; then
+  resp="$(curl -fsS --max-time 10 -X POST "${base}api/auth/redeem-token" \
+    -H "x-api-key: ${key}" -H 'content-type: application/json' \
+    -d "{\"path\": \"${path}\"}")" || { echo "redeem-token request failed" >&2; exit 1; }
+  read -r rel ttl < <(python3 -c \
+    'import json,sys; r=json.load(sys.stdin); print(r["redeem_url"], r["expires_in"])' <<< "$resp")
+  url="${origin}${rel}"
+  echo "$url"
+  echo "(one-time redeem link — burns on first use, expires in ${ttl}s)" >&2
+else
+  url="${base}?api_key=${key}"
+  echo "$url"
+fi
 
 if [[ "$want_qr" == "--qr" ]]; then
   if command -v qrencode >/dev/null 2>&1; then
