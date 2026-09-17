@@ -3,7 +3,8 @@ const SITES = [
   { key: 'gemini', urlMatch: 'gemini.google.com/app', url: 'https://gemini.google.com/app' },
   { key: 'gemini-images', urlMatch: 'gemini.google.com/images', url: 'https://gemini.google.com/images' },
   { key: 'claude', urlMatch: 'claude.ai', url: 'https://claude.ai/chat' },
-  { key: 'midjourney', urlMatch: 'midjourney.com', url: 'https://www.midjourney.com/imagine' }
+  { key: 'midjourney', urlMatch: 'midjourney.com', url: 'https://www.midjourney.com/imagine' },
+  { key: 'aistudio', urlMatch: 'aistudio.google.com', url: 'https://aistudio.google.com/prompts/new_chat' }
 ];
 
 chrome.action.onClicked.addListener(() => {
@@ -50,6 +51,10 @@ function sendPrompt(text, siteKey) {
     'midjourney': {
       promptSelector: 'textarea, input[type="text"], div[contenteditable="true"], [data-testid="prompt-input"], [placeholder*="imagine" i]',
       sendSelector: 'button[type="submit"], button[aria-label="Imagine"], button[aria-label="Create"], button[aria-label="Generate"], [data-testid="imagine-button"], [data-testid="generate-button"]'
+    },
+    'aistudio': {
+      promptSelector: 'textarea, div[contenteditable="true"], ms-prompt-input-wrapper textarea, [aria-label*="prompt" i]',
+      sendSelector: 'button[aria-label="Run"], button[aria-label*="Run" i], button[title*="Run" i], button[data-testid="run-button"], .run-button'
     }
   };
   const adapter = ADAPTERS[siteKey];
