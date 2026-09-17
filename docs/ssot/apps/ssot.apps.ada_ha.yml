@@ -48,6 +48,8 @@ sections:
     icon: "🔌"
     layout: list
     items:
+      - label: Auth
+        text: ADA_API_KEY (per-instance, in ~/.config/secrets/ada-ha-*.env) is required via X-Api-Key header or ?api_key= for /api/tools, /api/tools/call, and POST entity power. Read GET endpoints remain open.
       - label: GET /api/home-assistant/entities
         text: List controllable HA entities (lights, switches, fans, covers, buttons, media players).
       - label: GET /api/home-assistant/sensors
@@ -114,6 +116,20 @@ sections:
         text: 'wss://mn01.taila0626a.ts.net/apps/ada_ha_{tony,michael}/ws returns {"type":"ready"}.'
       - label: Voice
         text: Tap Connect and ask about the G3 power summary or a dashboard tab.
+  - title: Safety Model
+    icon: "🛡️"
+    layout: list
+    items:
+      - label: Server-side gate
+        text: ToolRunner gates every control tool (control_entity, control_cover, press_button, control_media_player, tv_action). Dangerous entities are denied unless confirmed=true is passed; related entities inherit danger by object_id prefix (e.g. button.gate_motor_my_position inherits cover.gate_motor).
+      - label: Rate limits
+        text: Sliding-window limits on control calls — 5/min per entity, 30/min global (ADA_CONTROL_MAX_PER_ENTITY, ADA_CONTROL_MAX_GLOBAL, ADA_CONTROL_RATE_WINDOW_S).
+      - label: Read-only mode
+        text: ADA_READ_ONLY=true disables all actuating tools (voice and REST) for demo/customer instances.
+      - label: Audit
+        text: Every /api/tools/call is logged with tool name, args, and client IP; denials logged as warnings.
+      - label: Voice path
+        text: Gemini control calls route through ToolRunner; the model must pass confirmed=true after explicit user confirmation.
   - title: Known Issues
     icon: "⚠️"
     layout: list
@@ -153,7 +169,7 @@ sections:
       - label: Secrets and tokens are not in git
         text: ~/.config/secrets/ada-ha-*.env and notebooklm-rest-api.env are still host-local and must be backed up separately.
 config:
-  version: 4
+  version: 5
   created: '2026-09-13'
   updated: '2026-09-16'
   maintainer: tony
