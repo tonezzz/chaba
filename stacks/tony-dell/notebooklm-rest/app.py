@@ -96,6 +96,12 @@ class _SharedClientCtx:
     def __init__(self, inner: NotebookLMClient) -> None:
         self._inner = inner
 
+    def __getattr__(self, name: str):
+        # Handlers use `async with client:` without rebinding, so proxy
+        # attribute access (client.chat, client.sources, ...) to the inner
+        # client.
+        return getattr(self._inner, name)
+
     async def __aenter__(self) -> NotebookLMClient:
         return self._inner
 
