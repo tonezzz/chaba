@@ -17,7 +17,7 @@ services:
 - id: app-ada-ha
   name: Ada HA
   type: http
-  url: https://mn01.taila0626a.ts.net/apps/ada_ha/
+  url: https://mn01.taila0626a.ts.net/apps/ha/ada/
   expected_status: 200
   timeout: 5
   category: apps
@@ -29,7 +29,7 @@ services:
 - id: app-ada-ha-michael
   name: Ada HA Michael
   type: http
-  url: https://mn01.taila0626a.ts.net/apps/ada_ha_michael/
+  url: https://mn01.taila0626a.ts.net/apps/ha/ada-michael/
   expected_status: 200
   timeout: 5
   category: apps
@@ -41,7 +41,19 @@ services:
 - id: app-ada-ha-tony
   name: Ada HA Tony
   type: http
-  url: https://mn01.taila0626a.ts.net/apps/ada_ha_tony/
+  url: https://mn01.taila0626a.ts.net/apps/ha/ada-tony/
+  expected_status: 200
+  timeout: 5
+  category: apps
+  profiles:
+  - home
+  - mobile
+  host: mn01
+  note: Auto-generated from stacks/web/public/apps/apps.yml
+- id: app-ha-pair
+  name: Ada HA — Pair a device
+  type: http
+  url: https://mn01.taila0626a.ts.net/apps/ha/pair/
   expected_status: 200
   timeout: 5
   category: apps
@@ -413,7 +425,7 @@ services:
 - id: app-tony-ha
   name: Tony HA
   type: http
-  url: https://tony-dell.taila0626a.ts.net/apps/tony-ha/
+  url: https://tony-dell.taila0626a.ts.net/apps/ha/tony-ha/
   expected_status: 200
   timeout: 5
   category: apps
