@@ -115,10 +115,13 @@ const bridgeStatus = document.getElementById('bridgeStatus');
 
 async function checkBridge() {
   const url = (bridgeUrlInput.value.trim() || 'http://127.0.0.1:9876').replace(/\/+$/, '');
-  const storage = await chrome.storage.local.get('lastCookieSync');
-  const syncText = storage.lastCookieSync
+  const storage = await chrome.storage.local.get(['lastCookieSync', 'lastCookieSyncResult']);
+  let syncText = storage.lastCookieSync
     ? `Last cookie sync: ${new Date(storage.lastCookieSync).toLocaleTimeString()}`
     : 'No cookie sync yet';
+  if (storage.lastCookieSyncResult && storage.lastCookieSyncResult !== 'ok') {
+    syncText += ` (${storage.lastCookieSyncResult})`;
+  }
   try {
     const res = await fetch(`${url}/health`, { signal: AbortSignal.timeout(5000) });
     if (res.ok) bridgeStatus.textContent = `Bridge online — ${syncText}`;
@@ -276,7 +279,7 @@ delPromptBtn.addEventListener('click', () => {
 
 chrome.runtime.onMessage.addListener(request => {
   if (request.cmd === 'RESPONSE') {
-    appendResponse(request.site, request.text);
+    appendResponse(request.site, request.text, undefined, false); // background persists
   }
 });
 
