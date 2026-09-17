@@ -1,5 +1,6 @@
 import { createServer } from 'http';
-import { writeFileSync, mkdirSync } from 'fs';
+import { writeFileSync, mkdirSync, existsSync, readFileSync } from 'fs';
+import { createHash } from 'crypto';
 import { dirname } from 'path';
 import { execSync } from 'child_process';
 import { homedir } from 'os';
@@ -11,6 +12,20 @@ const RESTART_CMD = process.env.RESTART_CMD || '';
 const DEBUG_DIR = `${homedir()}/.local/ai-hub/debug`;
 const DUMP_DIR = `${homedir()}/.local/ai-hub/page-dumps`;
 
+const AUTH_COOKIE_NAMES = ['SID', 'HSID', 'SSID', 'APISID', 'SAPISID', '__Secure-1PSID', '__Secure-3PSID'];
+
+function hasAuthCookies(cookies) {
+  return cookies.some(c => AUTH_COOKIE_NAMES.includes(c.name));
+}
+
+function cookieFingerprint(cookies) {
+  const canon = cookies
+    .map(c => `${c.name}|${c.domain}|${c.path}|${c.value}|${!!c.secure}`)
+    .sort()
+    .join('\n');
+  return createHash('sha256').update(canon).digest('hex');
+}
+
 function handleCookies(req, res) {
   let body = '';
   req.on('data', chunk => { body += chunk; });
@@ -18,6 +33,27 @@ function handleCookies(req, res) {
     try {
       const data = JSON.parse(body);
       if (!Array.isArray(data.cookies)) throw new Error('Expected cookies array');
+
+      const fingerprint = cookieFingerprint(data.cookies);
+      try {
+        if (existsSync(STORAGE)) {
+          const prev = JSON.parse(readFileSync(STORAGE, 'utf8'));
+          if (Array.isArray(prev.cookies)) {
+            if (cookieFingerprint(prev.cookies) === fingerprint) {
+              res.writeHead(200);
+              res.end('ok (unchanged)');
+              return;
+            }
+            // Refuse to overwrite an authenticated state with an anonymous
+            // (logged-out) cookie set — that would destroy recovery options.
+            if (hasAuthCookies(prev.cookies) && !hasAuthCookies(data.cookies)) {
+              res.writeHead(409);
+              res.end('refused: incoming set has no Google auth cookies; keeping existing state');
+              return;
+            }
+          }
+        }
+      } catch {}
 
       mkdirSync(dirname(STORAGE), { recursive: true });
       writeFileSync(STORAGE, JSON.stringify(data, null, 2));
@@ -30,7 +66,7 @@ function handleCookies(req, res) {
       }
 
       res.writeHead(200);
-      res.end('ok');
+      res.end('ok (updated)');
     } catch (err) {
       console.error('cookie-bridge save error:', err.message);
       res.writeHead(400);
