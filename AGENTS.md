@@ -459,3 +459,34 @@ python3 scripts/notebooklm-query.py "-" "Summarize the Home Assistant setup."
 - Tokens are read from `~/.config/secrets/ha-michael-live.env`, `~/.config/secrets/ha-michael-dev.env`, `~/.config/secrets/home-assistant-token.env` (or the matching `*_TOKEN` env vars).
 - Use the `home-assistant` MCP server for deeper config or write operations; `assess-device.py` is the fast read-only fallback.
 
+
+# AI Hub extension + Chrome remote debugging (learned 2026-09-17)
+
+## AI Hub extension
+
+- Source: `stacks/web/public/apps/ai-hub-extension/` (loaded unpacked, Chrome MV3).
+- Targets: chatgpt, gemini, gemini-images, claude, midjourney, aistudio. Prompt send/debug uses inline `chrome.scripting.executeScript` — no content-script dependency.
+- Cookie bridge: `cookie-bridge.mjs` runs on tony-omen `127.0.0.1:9876` (systemd user `cookie-bridge.service`). POST `/cookies` writes `~/.notebooklm/profiles/default/storage_state.json`, rsyncs to `tony-dell:.../notebooklm/storage_state.json`, restarts `notebooklm-rest`. Also `GET /health`, `POST /debug-screenshot`, `POST /page-dump`. Also reachable via Caddy: `https://tony-dell.taila0626a.ts.net/apps/notebooklm-cookies`.
+- Extension storage keys: `bridgeUrl`, `cookiesJson`, `lastCookieSync`, `selectedTargets`, `nb*` fields. A stale saved `bridgeUrl` silently overrides the HTML default — this was the "capture/send no response" cause in the old profile.
+- Auto-sync fires on ANY google-domain `cookies.onChanged` with 60s cooldown; every sync restarts `notebooklm-rest` on tony-dell. Verified working (syncs ~every minute while Google tabs are open) — restart churn may be worth raising.
+
+## Chrome remote debugging (Chrome ≥136)
+
+- Chrome 136+ **refuses** `--remote-debugging-port` on the default user-data-dir ("DevTools remote debugging requires a non-default data directory").
+- Working setup on tony-omen: cloned profile at `~/.config/google-chrome-debug` — `rsync -a` of `Default/` minus `File System`, `Service Worker`, `Cache`, `Code Cache`, `GPUCache`, `Crashpad`, `blob_storage`, plus `Local State`. Google login carries over on the same machine (cookies decrypt via same OS keyring).
+- Launch: `DISPLAY=:0 google-chrome --remote-debugging-port=9228 --user-data-dir=$HOME/.config/google-chrome-debug --no-first-run --no-default-browser-check`
+- Verify: `curl http://127.0.0.1:9228/json/version`. playlive's `tony-omen` host already expects CDP on 9228.
+- This box IS tony-omen — run chrome/debug commands locally, not over ssh. `pkill -f remote-debugging` will match and kill the calling shell; use `pgrep -f "^/opt/google/chrome"` (anchored to the real binary path).
+
+## chrome-devtools-mcp
+
+- Config: `.devin/mcp_config.local.json` (gitignored) — `npx -y chrome-devtools-mcp@1.9.0 --browserUrl http://127.0.0.1:9228 --no-usage-statistics --no-performance-crux`. New sessions pick it up on restart.
+- 29 tools; page-scoped tools require `pageId` (pageIdRouting on by default — get IDs from `list_pages`).
+- **Known bug**: frozen/discarded background tabs make `browser.pages()`-based tools (`list_pages`, `take_snapshot`, `new_page`… ) hang forever — upstream issues #1230/#1918/#2114, unfixed. Workaround: don't restore big sessions in the debug profile (we deleted `Default/Sessions` + `Current/Last Session|Tabs`), or activate tabs first.
+- Manual stdio test: pipe JSON-RPC `initialize` + `tools/call` lines to the npx command; **keep stdin open** (`sleep` after printf) — closing stdin kills the server mid-call.
+
+## Inspecting the extension via CDP
+
+- AI Hub unpacked id: `emeljcclmededmnnnoejcccnbeadeilm` (sha256 of path → a-p map).
+- Its MV3 service worker only wakes on `action.onClicked` + `cookies.onChanged` (`serviceworkerevents` in `Default/Preferences`); `tabs.onActivated` listeners added later aren't wake-events until the SW re-registers (reload/bump manifest version). To wake it over CDP: set a cookie on any page (`document.cookie="x=1"` or `Network.setCookie`), then connect to its `webSocketDebuggerUrl` and `Runtime.evaluate` `chrome.*` APIs (`awaitPromise:true`).
+- In the debug profile: 85 google cookies, 14 notebooklm cookies — login carried over.
