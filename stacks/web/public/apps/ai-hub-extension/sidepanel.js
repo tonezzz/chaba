@@ -2,6 +2,43 @@ const promptInput = document.getElementById('prompt');
 const sendBtn = document.getElementById('send');
 const responsesDiv = document.getElementById('responses');
 
+const bridgeUrlInput = document.getElementById('bridgeUrl');
+const captureCookiesBtn = document.getElementById('captureCookies');
+const copyCookiesBtn = document.getElementById('copyCookies');
+const sendCookiesBtn = document.getElementById('sendCookies');
+const cookieStatus = document.getElementById('cookieStatus');
+let lastCookiesJson = '';
+
+const nbApiKeyInput = document.getElementById('nbApiKey');
+const nbBaseUrlInput = document.getElementById('nbBaseUrl');
+const nbNotebookIdInput = document.getElementById('nbNotebookId');
+const nbListBtn = document.getElementById('nbListBtn');
+const nbUploadBtn = document.getElementById('nbUploadBtn');
+const nbStatus = document.getElementById('nbStatus');
+const notebookListSelect = document.getElementById('notebookList');
+
+const STORAGE_KEYS = ['bridgeUrl', 'nbApiKey', 'nbBaseUrl', 'nbNotebookId'];
+chrome.storage.local.get(STORAGE_KEYS, (r) => {
+  if (r.bridgeUrl) bridgeUrlInput.value = r.bridgeUrl;
+  if (r.nbApiKey) nbApiKeyInput.value = r.nbApiKey;
+  if (r.nbBaseUrl) nbBaseUrlInput.value = r.nbBaseUrl;
+  if (r.nbNotebookId) nbNotebookIdInput.value = r.nbNotebookId;
+});
+
+function saveSettings() {
+  chrome.storage.local.set({
+    bridgeUrl: bridgeUrlInput.value,
+    nbApiKey: nbApiKeyInput.value,
+    nbBaseUrl: nbBaseUrlInput.value,
+    nbNotebookId: nbNotebookIdInput.value
+  });
+}
+
+bridgeUrlInput.addEventListener('input', saveSettings);
+nbApiKeyInput.addEventListener('input', saveSettings);
+nbBaseUrlInput.addEventListener('input', saveSettings);
+nbNotebookIdInput.addEventListener('input', saveSettings);
+
 function selectedTargets() {
   return Array.from(document.querySelectorAll('.chip.active')).map(c => c.dataset.value);
 }
@@ -83,11 +120,11 @@ async function checkBridge() {
     ? `Last cookie sync: ${new Date(storage.lastCookieSync).toLocaleTimeString()}`
     : 'No cookie sync yet';
   try {
-    const res = await fetch(`${url}/health`);
+    const res = await fetch(`${url}/health`, { signal: AbortSignal.timeout(5000) });
     if (res.ok) bridgeStatus.textContent = `Bridge online — ${syncText}`;
     else bridgeStatus.textContent = `Bridge error ${res.status} — ${syncText}`;
   } catch (err) {
-    bridgeStatus.textContent = `Bridge offline — ${syncText}`;
+    bridgeStatus.textContent = `Bridge ${err.name === 'TimeoutError' ? 'timeout' : 'offline'} — ${syncText}`;
   }
 }
 
@@ -242,43 +279,6 @@ chrome.runtime.onMessage.addListener(request => {
     appendResponse(request.site, request.text);
   }
 });
-
-const bridgeUrlInput = document.getElementById('bridgeUrl');
-const captureCookiesBtn = document.getElementById('captureCookies');
-const copyCookiesBtn = document.getElementById('copyCookies');
-const sendCookiesBtn = document.getElementById('sendCookies');
-const cookieStatus = document.getElementById('cookieStatus');
-let lastCookiesJson = '';
-
-const nbApiKeyInput = document.getElementById('nbApiKey');
-const nbBaseUrlInput = document.getElementById('nbBaseUrl');
-const nbNotebookIdInput = document.getElementById('nbNotebookId');
-const nbListBtn = document.getElementById('nbListBtn');
-const nbUploadBtn = document.getElementById('nbUploadBtn');
-const nbStatus = document.getElementById('nbStatus');
-const notebookListSelect = document.getElementById('notebookList');
-
-const STORAGE_KEYS = ['bridgeUrl', 'nbApiKey', 'nbBaseUrl', 'nbNotebookId'];
-chrome.storage.local.get(STORAGE_KEYS, (r) => {
-  if (r.bridgeUrl) bridgeUrlInput.value = r.bridgeUrl;
-  if (r.nbApiKey) nbApiKeyInput.value = r.nbApiKey;
-  if (r.nbBaseUrl) nbBaseUrlInput.value = r.nbBaseUrl;
-  if (r.nbNotebookId) nbNotebookIdInput.value = r.nbNotebookId;
-});
-
-function saveSettings() {
-  chrome.storage.local.set({
-    bridgeUrl: bridgeUrlInput.value,
-    nbApiKey: nbApiKeyInput.value,
-    nbBaseUrl: nbBaseUrlInput.value,
-    nbNotebookId: nbNotebookIdInput.value
-  });
-}
-
-bridgeUrlInput.addEventListener('input', saveSettings);
-nbApiKeyInput.addEventListener('input', saveSettings);
-nbBaseUrlInput.addEventListener('input', saveSettings);
-nbNotebookIdInput.addEventListener('input', saveSettings);
 
 const NOTEBOOKLM_URLS = [
   'https://notebooklm.google.com/',
