@@ -551,8 +551,8 @@ tony-dell:
       folder_id: 1H7FHxy5nDxMOmcFtL79lmy_bttV35kjB
       rclone_path: gdrive:notebooklm/chaba
     notebooks_dir: gdrive:notebooklm/chaba/notebooks
-    status: implemented (2026-09-15)
-    note: 'FastAPI REST API on top of notebooklm-py. X-API-Key header is enforced via NOTEBOOKLM_REST_API_KEY. Exposed through Caddy at /apps/notebooklm/api on tony-dell.taila0626a.ts.net. The key lives in ~/.config/secrets/notebooklm-rest-api.env (not in git). Source and Dockerfile are in ~/.local/share/notebooklm/notebooklm-rest-api. The ~/.local/bin/nbapi wrapper sends the request to tony-dell (local curl on tony-dell, ssh on tony-omen). Google Drive collection for sources: gdrive:notebooklm/chaba. Notebook files stored under gdrive:notebooklm/chaba/notebooks/<nb-id>/files.'
+    status: implemented (2026-09-15); upgraded 2026-09-17
+    note: 'FastAPI REST API on top of notebooklm-py. X-API-Key header enforced via NOTEBOOKLM_REST_API_KEYS; NOTEBOOKLM_REST_KEY_SCOPES maps scoped keys to notebook allowlists (ada-michael key -> 1c12d5c8 notebook only, ada-tony key -> fdfd3483 only, admin key unrestricted). Exposed through Caddy at /apps/notebooklm/api on tony-dell.taila0626a.ts.net. Keys live in ~/.config/secrets/notebooklm-rest-api.env (not in git). Source and Dockerfile versioned in stacks/tony-dell/notebooklm-rest/, deployed to ~/.local/share/notebooklm/notebooklm-rest-api. Features: in-container auth keepalive (notebooklm auth refresh --verify every NOTEBOOKLM_KEEPALIVE_INTERVAL=900s), GET /health/auth passive probe + POST /health/auth/refresh, Idempotency-Key dedupe on POSTs, write queue (/v1/queue, flush on auth recovery), POST .../sources/prune lifecycle (prefix/age/keep/dry_run). The ~/.local/bin/nbapi wrapper sends the request to tony-dell (local curl on tony-dell, ssh on tony-omen). Google Drive collection for sources: gdrive:notebooklm/chaba. Notebook files stored under gdrive:notebooklm/chaba/notebooks/<nb-id>/files.'
 
 tony-omen:
   ollama:
@@ -584,10 +584,10 @@ tony-omen:
     service_unit: ~/.config/systemd/user/notebooklm-rest-auth-refresh.service
     timer_unit: ~/.config/systemd/user/notebooklm-rest-auth-refresh.timer
     schedule: daily
-    target: tony-dell:/home/tony/.local/share/notebooklm/notebooklm/storage_state.json
+    target: tony-dell:/home/tony/.local/share/notebooklm/notebooklm-rest-data/storage_state.json
     action: 'notebooklm login --browser-cookies chrome, rsync storage_state.json to tony-dell, restart notebooklm-rest'
-    status: implemented (2026-09-15)
-    note: 'Keeps notebooklm-py storage_state.json fresh by re-extracting from tony-omen Chrome daily. The service waits 5s after container restart.'
+    status: implemented (2026-09-15); fallback since 2026-09-17
+    note: 'Fallback only: the container now self-refreshes auth every 15min via auth refresh --verify. This timer re-extracts from tony-omen Chrome daily as a safety net. WARNING: Chrome 127+ App-Bound Encryption can silently drop SID/HSID/SSID producing a partial 9-cookie file that fails auth — verify SID is present before trusting an extraction.'
   mddb:
     container: mddb
     image: tradik/mddb:latest
