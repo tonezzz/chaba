@@ -586,8 +586,8 @@ tony-omen:
     schedule: daily
     target: tony-dell:/home/tony/.local/share/notebooklm/notebooklm-rest-data/storage_state.json
     action: 'notebooklm login --browser-cookies chrome, rsync storage_state.json to tony-dell, restart notebooklm-rest'
-    status: implemented (2026-09-15); fallback since 2026-09-17
-    note: 'Fallback only: the container now self-refreshes auth every 15min via auth refresh --verify. This timer re-extracts from tony-omen Chrome daily as a safety net. WARNING: Chrome 127+ App-Bound Encryption can silently drop SID/HSID/SSID producing a partial 9-cookie file that fails auth — verify SID is present before trusting an extraction.'
+    status: retired 2026-09-17 (timer disabled)
+    note: 'Retired: notebooklm-rest now holds master_token.json and self-mints/refreshes cookies in-container every 15min via auth refresh --verify — Chrome cookie extraction is no longer needed. The script remains at ~/.local/bin/notebooklm-rest-auth-refresh (fixed to rsync to notebooklm-rest-data/) if cookie re-seeding is ever required manually. Lesson: Chrome >=127 ABE can silently drop SID/HSID/SSID producing a partial cookie file; and a copied jar dies when the source Chrome rotates __Secure-1PSIDTS.'
   mddb:
     container: mddb
     image: tradik/mddb:latest
