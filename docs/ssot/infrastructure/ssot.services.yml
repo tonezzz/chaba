@@ -551,7 +551,7 @@ tony-dell:
       folder_id: 1H7FHxy5nDxMOmcFtL79lmy_bttV35kjB
       rclone_path: gdrive:notebooklm/chaba
     notebooks_dir: gdrive:notebooklm/chaba/notebooks
-    status: implemented (2026-09-15); upgraded 2026-09-17 (master-token auth: container self-mints cookies from /data/master_token.json, no Chrome dependency)
+    status: 'implemented (2026-09-15); upgraded 2026-09-17 (master-token auth — container self-mints cookies from /data/master_token.json, no Chrome dependency)'
     note: 'FastAPI REST API on top of notebooklm-py. X-API-Key header enforced via NOTEBOOKLM_REST_API_KEYS; NOTEBOOKLM_REST_KEY_SCOPES maps scoped keys to notebook allowlists (ada-michael key -> 1c12d5c8 notebook only, ada-tony key -> fdfd3483 only, admin key unrestricted). Exposed through Caddy at /apps/notebooklm/api on tony-dell.taila0626a.ts.net. Keys live in ~/.config/secrets/notebooklm-rest-api.env (not in git). Source and Dockerfile versioned in stacks/tony-dell/notebooklm-rest/, deployed to ~/.local/share/notebooklm/notebooklm-rest-api. Features: in-container auth keepalive (notebooklm auth refresh --verify every NOTEBOOKLM_KEEPALIVE_INTERVAL=900s), GET /health/auth passive probe + POST /health/auth/refresh, Idempotency-Key dedupe on POSTs, write queue (/v1/queue, flush on auth recovery), POST .../sources/prune lifecycle (prefix/age/keep/dry_run). The ~/.local/bin/nbapi wrapper sends the request to tony-dell (local curl on tony-dell, ssh on tony-omen). Google Drive collection for sources: gdrive:notebooklm/chaba. Notebook files stored under gdrive:notebooklm/chaba/notebooks/<nb-id>/files.'
 
 tony-omen:
