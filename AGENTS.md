@@ -174,9 +174,10 @@ ssh tony-dell 'pgrep -a -f devin-desktop | grep -v "pgrep\|ssh\|tailscaled"'
   - `~/.config/systemd/user/ada-ha-tony.service` running `uvicorn pwa_server:app --port 8002`
   - `~/.config/systemd/user/ada-ha-michael.service` running `uvicorn pwa_server:app --port 8003`
 - Env files:
-  - `~/.config/secrets/ada-ha-tony.env` → `tony-ha` (`https://tony-dell.taila0626a.ts.net:8123/`), `ADA_INSTANCE_ID=tony`
-  - `~/.config/secrets/ada-ha-michael.env` → `michael-ha` (`http://michael-ha:8123/`), `ADA_INSTANCE_ID=michael`
-  - `ada-pi-pwa.env` on tony-dell also sets `ADA_INSTANCE_ID=tony` (same HA, shared memory)
+  - `~/.config/secrets/ada-ha-tony.env` → `tony-ha` (`https://tony-dell.taila0626a.ts.net:8123/`), `ADA_INSTANCE_ID=tony`, `ADA_API_KEY` set
+  - `~/.config/secrets/ada-ha-michael.env` → `michael-ha` (`http://michael-ha:8123/`), `ADA_INSTANCE_ID=michael`, `ADA_API_KEY` set
+  - `ada-pi-pwa.env` on tony-dell also sets `ADA_INSTANCE_ID=tony` (same HA, shared memory) + `ADA_API_KEY`
+- `ADA_API_KEY` gates `POST .../entities/{id}/power`, `GET /api/tools`, `POST /api/tools/call` (401 without `X-Api-Key`/`?api_key=`); read GETs and `/ws` stay open. Users pass `?api_key=` once — the PWA stores it in localStorage. Required because Funnel exposes these paths publicly.
 - **`ADA_INSTANCE_ID` is required, fail-fast** (since 2026-09-17, ada-pi `b870d37`): it pins the MDDB memory collections (`ada-ha-snapshots|device-confidence|device-safety|events-<id>`). Never derive collection identity from `HOME_ASSISTANT_URL` — URL changes used to silently orphan all memory (`ada-ha-*-http-127-0-0-1-8123` orphans still exist). Missing/invalid → service refuses to start. Rule: **fail quick and report — no silent fallback for identity config.**
 - Caddy: `~/.config/caddy/Caddyfile.mn01` routes `/apps/ada_ha_tony/` to `127.0.0.1:8002` and `/apps/ada_ha_michael/` to `127.0.0.1:8003`
 - WebSocket: `wss://mn01.taila0626a.ts.net/apps/ada_ha_tony/ws` and `wss://mn01.taila0626a.ts.net/apps/ada_ha_michael/ws`
