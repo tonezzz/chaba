@@ -593,6 +593,15 @@ tony-omen:
     action: 'notebooklm login --browser-cookies chrome, rsync storage_state.json to tony-dell, restart notebooklm-rest'
     status: retired 2026-09-17 (timer disabled)
     note: 'Retired: notebooklm-rest now holds master_token.json and self-mints/refreshes cookies in-container every 15min via auth refresh --verify — Chrome cookie extraction is no longer needed. The script remains at ~/.local/bin/notebooklm-rest-auth-refresh (fixed to rsync to notebooklm-rest-data/) if cookie re-seeding is ever required manually. Lesson: Chrome >=127 ABE can silently drop SID/HSID/SSID producing a partial cookie file; and a copied jar dies when the source Chrome rotates __Secure-1PSIDTS.'
+
+  notebooklm-keepalive:
+    type: systemd user timer + oneshot service
+    host: tony_dell
+    timer_unit: ~/.config/systemd/user/notebooklm-keepalive.timer
+    schedule: every 15 min
+    action: 'curl -X POST http://127.0.0.1:3011/health/auth/refresh'
+    status: retired 2026-09-17 (timer disabled)
+    note: 'Retired: redundant with the in-container keepalive loop (NOTEBOOKLM_KEEPALIVE_INTERVAL=900s) and the endpoint is key-gated, so every fire just returned 401.'
   mddb:
     container: mddb
     image: tradik/mddb:latest
