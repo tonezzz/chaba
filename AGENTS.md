@@ -189,6 +189,7 @@ ssh tony-dell 'pgrep -a -f devin-desktop | grep -v "pgrep\|ssh\|tailscaled"'
 
 - `ssh mn01 'systemctl --user {start,stop,status} ada-ha-tony ada-ha-michael'`
 - `ssh mn01 'systemctl --user restart caddy-mn01'`
+- Deploy code: `scripts/deploy-ada.sh <mn01|tony-dell|all> [--restart]` — ff-only pull on the runtime checkout, restarts only on `.py`/requirements changes (static files serve from disk), fails fast on dirty tree / wrong tracking / divergence. **Runtime checkouts are read-only consumers of `origin/main` — never commit or merge on mn01/tony-dell.**
 
 ### REST endpoints
 

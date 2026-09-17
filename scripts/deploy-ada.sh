@@ -1,0 +1,94 @@
+#!/usr/bin/env bash
+# Deploy ada-pi to a runtime host. Runtime checkouts are read-only consumers
+# of origin/main — this fails fast instead of merging or hiding divergence.
+#
+#   - branch must be main, tracking origin/main, tree clean
+#   - pull is --ff-only; a diverged checkout stops with instructions
+#   - services restart only when Python code or requirements changed
+#     (pwa/ + frontend/ are served from disk; no restart needed)
+#   - inactive services are reported, never started silently
+#   - flock prevents concurrent deploys to the same host
+#
+# Usage: deploy-ada.sh <mn01|tony-dell|all> [--restart]
+set -euo pipefail
+
+target="${1:-}"; force_restart="${2:-}"
+
+case "$target" in
+  mn01)      hosts=(mn01) ;;
+  tony-dell) hosts=(tony-dell) ;;
+  all)       hosts=(mn01 tony-dell) ;;
+  *) echo "usage: $0 <mn01|tony-dell|all> [--restart]" >&2; exit 2 ;;
+esac
+
+host_config() {
+  case "$1" in
+    mn01)      echo "ada-ha-tony.service ada-ha-michael.service|8002 8003" ;;
+    tony-dell) echo "ada-pi-pwa.service|8001" ;;
+  esac
+}
+
+for host in "${hosts[@]}"; do
+  cfg="$(host_config "$host")"
+  services="${cfg%%|*}"; ports="${cfg##*|}"
+  echo "=== $host ==="
+  (
+    flock -n 9 || { echo "FAIL: another deploy to $host holds the lock"; exit 1; }
+    ssh "$host" bash -s -- "$services" "$ports" "$force_restart" <<'REMOTE'
+set -euo pipefail
+services="$1"; ports="$2"; force="${3:-}"
+cd "$HOME/CascadeProjects/ada-pi"
+
+branch=$(git branch --show-current)
+[[ "$branch" == main ]] || { echo "FAIL: on branch $branch (expected main)"; exit 1; }
+upstream=$(git rev-parse --abbrev-ref '@{u}' 2>/dev/null || true)
+[[ "$upstream" == "origin/main" ]] || {
+  echo "FAIL: main tracks ${upstream:-nothing} (expected origin/main)."
+  echo "  fix: git branch --set-upstream-to=origin/main main"
+  exit 1
+}
+[[ -z "$(git status --porcelain)" ]] || { echo "FAIL: dirty tree:"; git status --short; exit 1; }
+
+before=$(git rev-parse HEAD)
+git fetch -q origin
+git pull --ff-only -q || {
+  echo "FAIL: cannot fast-forward — local commits diverged from origin/main."
+  echo "  inspect: ssh <host> 'cd ~/CascadeProjects/ada-pi && git log --oneline origin/main..HEAD'"
+  exit 1
+}
+after=$(git rev-parse HEAD)
+
+if [[ "$before" == "$after" && "$force" != "--restart" ]]; then
+  echo "already at ${after:0:7} — nothing to pull"
+else
+  echo "updated ${before:0:7} -> ${after:0:7}"
+fi
+
+changed=""
+[[ "$before" != "$after" ]] && changed=$(git diff --name-only "$before" "$after")
+[[ -n "$changed" ]] && { echo "changed files:"; echo "$changed" | sed 's/^/  /'; }
+
+needs_restart=0
+[[ "$force" == "--restart" ]] && needs_restart=1
+grep -qE '\.py$|requirements\.txt' <<< "$changed" && needs_restart=1
+
+i=0
+for svc in $services; do
+  i=$((i+1)); port=$(cut -d' ' -f"$i" <<< "$ports")
+  if [[ $needs_restart == 1 ]]; then
+    if systemctl --user is-active --quiet "$svc"; then
+      systemctl --user restart "$svc"
+      echo "  $svc: restarted"
+    else
+      echo "  $svc: inactive — left stopped"
+      continue
+    fi
+  fi
+  sleep 1
+  state=$(systemctl --user is-active "$svc" 2>/dev/null || true)
+  http=$(curl -s -o /dev/null -w '%{http_code}' --max-time 5 "http://127.0.0.1:$port/api/auth/status" 2>/dev/null || echo 000)
+  echo "  $svc: $state (auth/status http $http)"
+done
+REMOTE
+  ) 9>"/tmp/ada-deploy-$host.lock"
+done
