@@ -4,326 +4,819 @@ icon: server
 version: 1
 last_updated: '2026-09-11'
 maintainer: tony
-
 overview:
-  purpose: |
-    Single source of truth for which services and resources each Chaba host is
+  purpose: 'Single source of truth for which services and resources each Chaba host
+    is
+
     expected to provide. A periodic or on-demand audit runner snapshots the live
+
     state, compares it to this file, and reports deltas so service verification
+
     becomes a one-command diff instead of manual ssh + systemctl + ps + free.
-  usage: |
-    python3 scripts/audit-hosts.py --host tony-dell
+
+    '
+  usage: 'python3 scripts/audit-hosts.py --host tony-dell
+
     python3 scripts/audit-hosts.py --host tony-omen
+
     python3 scripts/audit-hosts.py --host macbook
 
+    '
 runner:
   script: scripts/audit-hosts.py
   command: python3
   output_dir: reports/audit-hosts
   ssot: docs/ssot/infrastructure/ssot.audit.hosts.yml
   schedule: daily
-  note: |
-    The runner writes per-host reports under reports/audit-hosts/ and prints a
+  note: 'The runner writes per-host reports under reports/audit-hosts/ and prints
+    a
+
     delta summary. It does not overwrite this SSOT file automatically; the user
+
     reviews the report and updates the canonical expected state here.
 
+    '
 hosts:
   tony-dell:
     tailscale_ip: 100.68.142.13
     description: Secondary workstation, primary headless browser/cast target
     role: secondary
     tags:
-      - headless-primary
-      - barrier-client
-      - testing
+    - headless-primary
+    - barrier-client
+    - testing
     expected_services:
-      - name: app-devin-desktop
-        type: scope
-        scope: user
-        expected_state: active
-        critical: true
-        verification: pgrep -a devin-desktop
-        note: Active unit name is the systemd scope, e.g. app-devin-desktop-<pid>.scope
-      - name: chrome-cdp-headless.service
-        type: service
-        scope: user
-        expected_state: active
-        critical: true
-      - name: cast-browser.service
-        type: service
-        scope: user
-        expected_state: active
-        critical: true
-      - name: cast-desktop@1.service
-        type: service
-        scope: user
-        expected_state: active
-        critical: false
-      - name: playlived.service
-        type: service
-        scope: user
-        expected_state: active
-        critical: false
-      - name: mcp-debug-sse.service
-        type: service
-        scope: user
-        expected_state: active
-        critical: true
-      - name: go2rtc.service
-        type: service
-        scope: user
-        expected_state: active
-        critical: false
-      - name: chaba-postgres-16.service
-        type: service
-        scope: user
-        expected_state: active
-        critical: true
-      - name: michael-dev.service
-        type: service
-        scope: user
-        expected_state: active
-        critical: false
-      - name: tony-ha.service
-        type: service
-        scope: user
-        expected_state: active
-        critical: true
-      - name: gpu-queue.service
-        type: service
-        scope: user
-        expected_state: active
-        critical: false
-      - name: gpu-queue-processor.service
-        type: service
-        scope: user
-        expected_state: active
-        critical: false
-      - name: ssot-optimization-snapshot.timer
-        type: timer
-        scope: user
-        expected_state: active
-        critical: false
-        note: Nightly trigger for ssot-optimization-snapshot.service
-      - name: devin-cleanup.timer
-        type: timer
-        scope: user
-        expected_state: active
-        critical: false
-        note: Weekly trigger for devin-cleanup.service; service skips if Devin code.lock is present
+    - name: app-devin-desktop
+      type: scope
+      scope: user
+      expected_state: active
+      critical: true
+      verification: pgrep -a devin-desktop
+      note: Active unit name is the systemd scope, e.g. app-devin-desktop-<pid>.scope
+    - name: chrome-cdp-headless.service
+      type: service
+      scope: user
+      expected_state: active
+      critical: true
+    - name: cast-browser.service
+      type: service
+      scope: user
+      expected_state: active
+      critical: true
+    - name: cast-desktop@1.service
+      type: service
+      scope: user
+      expected_state: active
+      critical: false
+    - name: playlived.service
+      type: service
+      scope: user
+      expected_state: active
+      critical: false
+    - name: mcp-debug-sse.service
+      type: service
+      scope: user
+      expected_state: active
+      critical: true
+    - name: go2rtc.service
+      type: service
+      scope: user
+      expected_state: active
+      critical: false
+    - name: chaba-postgres-16.service
+      type: service
+      scope: user
+      expected_state: active
+      critical: true
+    - name: michael-dev.service
+      type: service
+      scope: user
+      expected_state: active
+      critical: false
+    - name: tony-ha.service
+      type: service
+      scope: user
+      expected_state: active
+      critical: true
+    - name: gpu-queue.service
+      type: service
+      scope: user
+      expected_state: active
+      critical: false
+    - name: gpu-queue-processor.service
+      type: service
+      scope: user
+      expected_state: active
+      critical: false
+    - name: ssot-optimization-snapshot.timer
+      type: timer
+      scope: user
+      expected_state: active
+      critical: false
+      note: Nightly trigger for ssot-optimization-snapshot.service
+    - name: devin-cleanup.timer
+      type: timer
+      scope: user
+      expected_state: active
+      critical: false
+      note: Weekly trigger for devin-cleanup.service; service skips if Devin code.lock
+        is present
     known_failed:
-      - name: app-devin-desktop
-        reason: Devin desktop is started as a background nohup job, not a persistent systemd scope
-        action: restart-devin-desktop
-      - name: session-c2.scope
-        reason: Transient session scope, no PIDs left to attach
-        action: ignore
-      - name: obex.service
-        reason: No Bluetooth adapter on headless host
-        action: ignore-or-mask
-      - name: tony-dell-mcp-health.service
-        reason: SSH mcp-health query to tony-omen failed
-        action: investigate
-      - name: chrome-remote-desktop@tony.service
-        reason: Display ':20' not configured
-        action: disable-or-configure
-      - name: apport-autoreport.service
-        reason: whoopsie upload timeout
-        action: disable-if-not-needed
-      - name: sync-to-hdd.service
-        reason: /media/storage/backup not mounted
-        action: mount-backup-drive
-      - name: ha-card-snapshot.service
-        reason: Home Assistant card snapshot helper is not currently running
-        action: investigate
-      - name: xdg-desktop-portal-gtk.service
-        reason: GTK portal for sandboxed apps; fails without an active X session
-        action: ignore-or-mask
-      - name: xfce4-notifyd.service
-        reason: XFCE notification daemon; fails when no X session is active
-        action: ignore-or-mask
-      - name: yomi-update-active.service
-        reason: Yomi active conversation update worker is not configured
-        action: disable-or-configure
-      - name: yomi-update-all.service
-        reason: Yomi all-conversations update worker is not configured
-        action: disable-or-configure
-      - name: tony-dell-monitor.service
-        reason: Display/host monitor helper is not currently running
-        action: investigate
+    - name: app-devin-desktop
+      reason: Devin desktop is started as a background nohup job, not a persistent
+        systemd scope
+      action: restart-devin-desktop
+    - name: session-c2.scope
+      reason: Transient session scope, no PIDs left to attach
+      action: ignore
+    - name: obex.service
+      reason: No Bluetooth adapter on headless host
+      action: ignore-or-mask
+    - name: tony-dell-mcp-health.service
+      reason: SSH mcp-health query to tony-omen failed
+      action: investigate
+    - name: chrome-remote-desktop@tony.service
+      reason: Display ':20' not configured
+      action: disable-or-configure
+    - name: apport-autoreport.service
+      reason: whoopsie upload timeout
+      action: disable-if-not-needed
+    - name: sync-to-hdd.service
+      reason: /media/storage/backup not mounted
+      action: mount-backup-drive
+    - name: ha-card-snapshot.service
+      reason: Home Assistant card snapshot helper is not currently running
+      action: investigate
+    - name: xdg-desktop-portal-gtk.service
+      reason: GTK portal for sandboxed apps; fails without an active X session
+      action: ignore-or-mask
+    - name: xfce4-notifyd.service
+      reason: XFCE notification daemon; fails when no X session is active
+      action: ignore-or-mask
+    - name: yomi-update-active.service
+      reason: Yomi active conversation update worker is not configured
+      action: disable-or-configure
+    - name: yomi-update-all.service
+      reason: Yomi all-conversations update worker is not configured
+      action: disable-or-configure
+    - name: tony-dell-monitor.service
+      reason: Display/host monitor helper is not currently running
+      action: investigate
     expected_resources:
       min_free_ram_mb: 500
       max_swap_used_percent: 80
       max_root_disk_percent: 85
       max_load_5m: 8.0
     last_observed:
-      observed_at: '2026-09-11T16:06:00+07:00'
+      observed_at: '2026-09-17T18:06:49.779015+07:00'
       active_user_services:
-        - app-devin-desktop-3657048.scope
-        - barrier-client.service
-        - camera-monitor.service
-        - camera-panel.service
-        - cast-browser.service
-        - cast-desktop@1.service
-        - cast-desktop@99.service
-        - chaba-funnel.service
-        - chaba-postgres-16.service
-        - chaba-tunnel.service
-        - chrome-cdp-headless.service
-        - gemini-ollama-proxy.service
-        - gev-gemini.service
-        - go2rtc.service
-        - gpu-queue-processor.service
-        - gpu-queue.service
-        - mcp-debug-sse.service
-        - mcp-link-monitor.service
-        - mcp-rview-oauth-proxy.service
-        - mcp-rview.service
-        - michael-ha-mcp-tunnel.service
-        - playlive-omen-cdp-tunnel.service
-        - playlived.service
+      - run-credentials-systemd\x2djournald.service.mount
+      - run-credentials-systemd\x2dresolved.service.mount
+      - app-com.google.Chrome-1020696.scope
+      - app-com.google.Chrome-1496592.scope
+      - app-com.google.Chrome-2695.scope
+      - app-com.google.Chrome-3184404.scope
+      - app-devin-desktop-1491813.scope
+      - init.scope
+      - libpod-0594fa279ff55905dd1e5bb8499b81dc5504d25cdacf6c793c46e8e89c15d787.scope
+      - libpod-1a4b07ecc97f050ed85e6da85804c9f2679f0b249e964e2500519e8cf4fe7971.scope
+      - libpod-3198b8e1151976f6d5138fe4b39dfc6c9fe4f10d693e9f1af3d321c4d8ada807.scope
+      - libpod-38b4d5382a32a78fcec54b48729897b2552de241ef2416ba6ab1999ec3cc9038.scope
+      - libpod-4808956403b3c6002686aba2a3bf8426320dbcde3396ab055aa45beb1b45a2d9.scope
+      - libpod-4ce623fa029f9a696ac9dba5dc08160acc59b332ec33717a005a2db9e0ad1d20.scope
+      - libpod-6a900a47496f89c533460c32024f9aa340be24c8f130675f0e9b2ec6561ee36f.scope
+      - libpod-71de0f482bf2963ce28cf2d20184ecd1fd58f8a3c4f51c3d86b6f0556a71a5b2.scope
+      - libpod-c159cce5f6deea768887c106731e6b78fb4626a0d6deca2d853a2fcfcac5f031.scope
+      - libpod-c9c6a38792f8896e6f4cfdd8e4b10d00d6d9ea75e1820cfa6da64d0440900890.scope
+      - libpod-conmon-6a900a47496f89c533460c32024f9aa340be24c8f130675f0e9b2ec6561ee36f.scope
+      - libpod-df01f30d120d31b1731becb25fd9af557c5b793a0a344cf182b690f6b4f47ded.scope
+      - podman-1496509.scope
+      - podman-451955.scope
+      - podman-451991.scope
+      - podman-452461.scope
+      - podman-452557.scope
+      - podman-pause-02734e72.scope
+      - ptyxis-spawn-c2d6c09f-91f1-435b-aef8-4b134c014073.scope
+      - ada-pi-pwa.service
+      - at-spi-dbus-bus.service
+      - barrier-client.service
+      - bserver.service
+      - caddy-tony-dell.service
+      - cam-frame-refresh.service
+      - camera-monitor.service
+      - camera-panel.service
+      - cast-browser.service
+      - cast-desktop@1.service
+      - chaba-gemini-mic-test.service
+      - chaba-monitoring-dashboard.service
+      - chaba-postgres-16.service
+      - chaba-tunnel.service
+      - chrome-cdp-headless.service
+      - cookie-bridge.service
+      - cookie-bridge2.service
+      - dbus.service
+      - dconf.service
+      - dev-miniapp-v0.service
+      - dnsmasq-postgre.service
+      - evolution-addressbook-factory.service
+      - evolution-calendar-factory.service
+      - evolution-source-registry.service
+      - filter-chain.service
+      - gcr-ssh-agent.service
+      - gemini-ollama-proxy.service
+      - gev-gemini.service
+      - gnome-keyring-daemon.service
+      - go2rtc.service
+      - gods-eye-view-api.service
+      - gpg-agent.service
+      - gpu-queue-processor.service
+      - gpu-queue.service
+      - gvfs-afc-volume-monitor.service
+      - gvfs-daemon.service
+      - gvfs-goa-volume-monitor.service
+      - gvfs-gphoto2-volume-monitor.service
+      - gvfs-metadata.service
+      - gvfs-mtp-volume-monitor.service
+      - gvfs-udisks2-volume-monitor.service
+      - ha-live.service
+      - helm.service
+      - lxqt-seat.service
+      - mcp-debug-sse.service
+      - mcp-rview-oauth-proxy.service
+      - mcp-rview.service
+      - mddb.service
+      - mha-state-push.service
+      - michael-dev.service
+      - michael-ha-mcp-tunnel.service
+      - mpris-proxy.service
+      - ms-playwright-mcp-ram-cache.service
+      - ms-playwright-ram-cache.service
+      - node-red.service
+      - notebooklm-mcp.service
+      - notebooklm-rest.service
+      - npm-cache-ram-cache.service
+      - pipewire-pulse.service
+      - pipewire.service
+      - plasma-kscreen.service
+      - plasma-xdg-desktop-portal-kde.service
+      - playlive-chrome.service
+      - playlive-macbook-tunnel.service
+      - playlive-omen-cdp-tunnel.service
+      - playlived.service
+      - podman-user-wait-network-online.service
+      - raceman-php.service
+      - raceman-web.service
+      - rclone-gdrive.service
+      - redis.service
+      - rview-api-image-build.service
+      - rview-api.service
+      - rview-live.service
+      - snap.snapd-desktop-integration.snapd-desktop-integration.service
+      - status-data-api.service
+      - tony-dell-mcp-health.service
+      - tony-dell-monitor.service
+      - tony-ha.service
+      - trade-api.service
+      - weaviate.service
+      - web.service
+      - websockify-macbook.service
+      - wireplumber.service
+      - workflows-mcp.service
+      - xdg-desktop-portal-gtk.service
+      - xdg-desktop-portal-lxqt.service
+      - xdg-desktop-portal.service
+      - xdg-document-portal.service
+      - xdg-permission-store.service
+      - xfce4-notifyd.service
+      - xvfb-99.service
+      - yolo-xiaomi.service
+      - yomi-api.service
+      - yomi-update-active.service
+      - yomi-update-all.service
+      - a6ef9a75fcf9606a421c5f200cf04bbb222400403fee35b6e6522fc7fb008e91-72469dac5ba725be.timer
+      - ac6a8e4c1f0c2719b663277f1f1e30365f8e617c0a108522467d6ffafc6a6b57-aa8f70e560821d6.timer
+      - ae2ea6f824b94a6c4a57fd2751744fb5bfacebad78c9c47ba5d1d36bee918c21-3fb04683250e5de2.timer
+      - b00cc0753d5a9ddd9596adfa2d243ab381ecfe55a1407e40fe5bc5754f2f5715-4d90f3f77318bb9a.timer
+      - b1712da02adf3d53dc807b62fcab2d5b17ed1148e65d1cecfe3ac59b01bbf8c6-13696ca7eea03cbc.timer
+      - cam-frame-refresh.timer
+      - cast-ha-panel.timer
+      - chaba-audit-full.timer
+      - chaba-audit.timer
+      - chaba-dell-health-agent.timer
+      - chaba-kb-audit.timer
+      - d661db0eda92afa4026320b0d7e4eb97cccb8a3ef05adf40a52100c200ee643c-6e6e274958d2ee90.timer
+      - devin-cleanup.timer
+      - fe6774067b81e39a303c5f378f0fc89917b1a4a81b96e74df94c8fe2e71f4111-3afd71cf7dc9c0a7.timer
+      - focus-dispatcher-overnight.timer
+      - ha-card-snapshot.timer
+      - ha-config-backup.timer
+      - launchpadlib-cache-clean.timer
+      - mcp-debug-h3-sync.timer
+      - network-scan-tony.timer
+      - notebooklm-keepalive.timer
+      - snap.firmware-updater.firmware-notifier.timer
+      - ssot-optimization-snapshot.timer
+      - tony-dell-health-snapshot.timer
+      - tony-dell-mcp-health.timer
+      - tony-dell-monitor.timer
+      - ubuntu-insights-collect.timer
+      - ubuntu-insights-upload.timer
+      - update-cam-frame.timer
+      - yomi-backup.timer
+      - yomi-update-active.timer
+      - yomi-update-all.timer
+      active_system_services:
+      - init.scope
+      - session-5844.scope
+      - session-6051.scope
+      - session-6052.scope
+      - session-6054.scope
+      - session-6056.scope
+      - session-6057.scope
+      - session-6058.scope
+      - session-6059.scope
+      - session-c1.scope
+      - session-c2640.scope
+      - session-c287.scope
+      - session-c304.scope
+      - session-c3302.scope
+      - session-c3303.scope
+      - session-c3304.scope
+      - session-c3305.scope
+      - session-c3306.scope
+      - session-c3307.scope
+      - session-c3308.scope
+      - session-c3309.scope
+      - session-c4104.scope
+      - session-c4105.scope
+      - session-c4107.scope
+      - accounts-daemon.service
+      - alsa-restore.service
+      - apparmor.service
+      - apport.service
+      - avahi-daemon.service
+      - bluetooth.service
+      - caddy.service
+      - chrome-remote-desktop@tony.service
+      - chrony.service
+      - colord.service
+      - console-setup.service
+      - cron.service
+      - cups-browsed.service
+      - cups.service
+      - dbus.service
+      - dracut-shutdown.service
+      - fwupd.service
+      - gdm.service
+      - kdump-tools.service
+      - keyboard-setup.service
+      - kmod-static-nodes.service
+      - lm-sensors.service
+      - ModemManager.service
+      - netplan-configure.service
+      - networkd-dispatcher.service
+      - NetworkManager-wait-online.service
+      - NetworkManager.service
+      - openvpn.service
+      - plymouth-quit-wait.service
+      - plymouth-read-write.service
+      - plymouth-start.service
+      - polkit.service
+      - power-profiles-daemon.service
+      - rsyslog.service
+      - rtkit-daemon.service
+      - setvtrgb.service
+      - smartmontools.service
+      - snap.cups.cups-browsed.service
+      - snap.cups.cupsd.service
+      - snapd.apparmor.service
+      - snapd.seeded.service
+      - snapd.service
+      - ssh.service
+      - switcheroo-control.service
+      - sysstat.service
+      - systemd-binfmt.service
+      - systemd-fsck-root.service
+      - systemd-fsck@dev-disk-by\x2duuid-E6FF\x2d442F.service
+      - systemd-journal-flush.service
+      - systemd-journald.service
+      - systemd-logind.service
+      - systemd-modules-load.service
+      - systemd-oomd.service
+      - systemd-random-seed.service
+      - systemd-remount-fs.service
+      - systemd-resolved.service
+      - systemd-sysctl.service
+      - systemd-tmpfiles-setup-dev-early.service
+      - systemd-tmpfiles-setup-dev.service
+      - systemd-tmpfiles-setup.service
+      - systemd-udev-load-credentials.service
+      - systemd-udev-trigger.service
+      - systemd-udevd.service
+      - systemd-user-sessions.service
+      - tailscale-serve-8080.service
+      - tailscaled.service
+      - udisks2.service
+      - ufw.service
+      - unattended-upgrades.service
+      - upower.service
+      - user-runtime-dir@1000.service
+      - user-runtime-dir@60578.service
+      - user@1000.service
+      - user@60578.service
+      - uuidd.service
+      - wpa_supplicant.service
+      - xorg-seat.service
+      - xrdp-sesman.service
+      - xrdp.service
+      - anacron.timer
+      - apt-daily-upgrade.timer
+      - apt-daily.timer
+      - dpkg-db-backup.timer
+      - e2scrub_all.timer
+      - fstrim.timer
+      - fwupd-refresh.timer
+      - logrotate.timer
+      - man-db.timer
+      - motd-news.timer
+      - sysstat-collect.timer
+      - sysstat-rotate.timer
+      - sysstat-summary.timer
+      - systemd-tmpfiles-clean.timer
+      - tony-dell-wan-failover.timer
+      - update-notifier-download.timer
+      - update-notifier-motd.timer
+      - xfs_scrub_all.timer
       failed_user_services:
-        - mcp-debug-h3-sync.service
-        - obex.service
-        - tony-dell-mcp-health.service
+      - cookie-bridge.service
+      - tony-dell-mcp-health.service
+      - xdg-desktop-portal-gtk.service
+      - xfce4-notifyd.service
+      - yomi-update-active.service
+      - yomi-update-all.service
       failed_system_services:
-        - session-c2.scope
-        - apport-autoreport.service
-        - chrome-remote-desktop@tony.service
-        - sync-to-hdd.service
+      - sync-to-hdd.service
       memory:
         total: 14Gi
-        used: 9.7Gi
-        free: 913Mi
-      swap:
-        total: 15Gi
-        used: 9.1Gi
-        free: 6.9Gi
+        used: 8.6Gi
+        free: 2.1Gi
+        shared: 249Mi
+        buff_cache: 4.9Gi
+        available: 6.4Gi
+      swap: {}
       disk:
-        mount: /
-        total: 118G
+        filesystem: /dev/sda5
+        size: 118G
         used: 82G
         available: 31G
-        percent: 73
+        percent: '73'
+        mount: /
+        total: 118G
       load:
-        1m: 4.12
-        5m: 4.46
-        15m: 4.59
-      uptime: '1 day, 18:09'
+        1m: 2.03
+        5m: 2.52
+        15m: 2.5
+      uptime: 2 days, 11:39
       top_processes:
-        - 'devin-desktop ~7.5% mem'
-        - 'python3 ~3.4% mem'
-        - 'python3 ~3.3% mem'
-        - 'chrome ~2.5% mem'
-        - 'language_server ~2.2% mem'
-        - 'VMS.exe ~1.8% mem'
+      - 1022114  4.7 47.2 chrome
+      - 991547  4.3  4.2 python3
+      - 1737635  3.0  1.2 python3
+      - 1492591  1.9  1.5 devin-desktop
+      - 1494647  1.8  0.9 language_server
+      - 420  1.6  1.1 systemd-journal
+      - 1020696  1.5  0.5 chrome
+      - 1016740  1.5  0.3 ptyxis-agent
+      - 3185235  1.2 17.1 chrome
       notes:
-        - 'devin-desktop package 3.9.19-1788908513 installed and running'
-        - 'michael-dev service shows 401 Unauthorized from michael-ha REST'
-        - 'websockify logged port-in-use error'
-        - 'gpu-queue logged GPU monitoring failed, assuming available'
+      - Live snapshot from audit-hosts.py at 2026-09-17T18:06:49.779015+07:00
     deltas: []
-
   tony-omen:
     tailscale_ip: 100.75.102.88
     description: Primary dev workstation, web server and GPU worker proxy
     role: primary
     tags:
-      - primary
-      - web-server
-      - barrier-server
+    - primary
+    - web-server
+    - barrier-server
     expected_services:
-      - name: arp-inventory-scan.service
-        type: service
-        scope: user
-        expected_state: active
-        critical: false
-      - name: focus-dispatcher-safe-dispatch
-        type: service
-        scope: user
-        expected_state: active
-        critical: false
-        note: Currently disabled/planned
-      - name: devin-cleanup.timer
-        type: timer
-        scope: user
-        expected_state: active
-        critical: false
-        note: Daily trigger for devin-cleanup.service; skips VACUUM while Devin is open
+    - name: arp-inventory-scan.service
+      type: service
+      scope: user
+      expected_state: active
+      critical: false
+    - name: focus-dispatcher-safe-dispatch
+      type: service
+      scope: user
+      expected_state: active
+      critical: false
+      note: Currently disabled/planned
+    - name: devin-cleanup.timer
+      type: timer
+      scope: user
+      expected_state: active
+      critical: false
+      note: Daily trigger for devin-cleanup.service; skips VACUUM while Devin is open
     known_failed:
-      - name: arp-inventory-scan.service
-        reason: Exits 2 when network conflicts/duplicates are detected, by design
-        action: review-focus-inbox-alert
-      - name: weaviate-index.service
-        reason: Weaviate indexing queue; may fail while waiting for remote or GPU
-        action: review-focus-inbox-alert
-      - name: f08837a9d0ec269851e88ce856dfdcb130ebec993db3024ad4a93c7d39efbcd6-413857d9606b8a53.service
-        reason: Transient session scope with no remaining PIDs
-        action: ignore
-
+    - name: arp-inventory-scan.service
+      reason: Exits 2 when network conflicts/duplicates are detected, by design
+      action: review-focus-inbox-alert
+    - name: weaviate-index.service
+      reason: Weaviate indexing queue; may fail while waiting for remote or GPU
+      action: review-focus-inbox-alert
+    - name: f08837a9d0ec269851e88ce856dfdcb130ebec993db3024ad4a93c7d39efbcd6-413857d9606b8a53.service
+      reason: Transient session scope with no remaining PIDs
+      action: ignore
     expected_resources:
       min_free_ram_mb: 1000
       max_swap_used_percent: 50
       max_root_disk_percent: 85
       max_load_5m: 10.0
     last_observed:
-      observed_at: '2026-09-11T09:45:58+07:00'
-      active_user_services: []
+      observed_at: '2026-09-17T18:06:51.093040+07:00'
+      active_user_services:
+      - run-credentials-systemd\x2djournald.service.mount
+      - run-credentials-systemd\x2dresolved.service.mount
+      - app-com.google.Chrome-3993302.scope
+      - app-com.google.Chrome-4014382.scope
+      - app-devin-desktop-173216.scope
+      - app-devin-desktop-3026024.scope
+      - app-devin-desktop-3278290.scope
+      - app-devin-desktop-836126.scope
+      - init.scope
+      - podman-pause-70f1202a.scope
+      - ptyxis-spawn-0cca83a5-3ed6-42a3-9126-5f199d9a5a5a.scope
+      - ptyxis-spawn-77558506-ec8b-4474-9da6-471a8d84e482.scope
+      - arp-inventory-scan.service
+      - at-spi-dbus-bus.service
+      - barriers.service
+      - cast-desktop@0.service
+      - clip-sync-dell.service
+      - cookie-bridge.service
+      - dbus.service
+      - dconf.service
+      - evolution-addressbook-factory.service
+      - evolution-calendar-factory.service
+      - evolution-source-registry.service
+      - f08837a9d0ec269851e88ce856dfdcb130ebec993db3024ad4a93c7d39efbcd6-413857d9606b8a53.service
+      - filter-chain.service
+      - gcr-ssh-agent.service
+      - gnome-keyring-daemon.service
+      - gpg-agent.service
+      - gvfs-afc-volume-monitor.service
+      - gvfs-daemon.service
+      - gvfs-goa-volume-monitor.service
+      - gvfs-gphoto2-volume-monitor.service
+      - gvfs-metadata.service
+      - gvfs-mtp-volume-monitor.service
+      - gvfs-udisks2-volume-monitor.service
+      - mcp-debug-cors.service
+      - mddb-tunnel.service
+      - michael-dev-parity.service
+      - michael-dev.service
+      - mpris-proxy.service
+      - ms-playwright-ram-cache.service
+      - notebooklm-rest-auth-refresh.service
+      - obex.service
+      - pipewire-pulse.service
+      - pipewire.service
+      - playlived.service
+      - podman-user-wait-network-online.service
+      - puccinialin-ram-cache.service
+      - rclone-gdrive.service
+      - screen-timeout-daemon.service
+      - snap.snapd-desktop-integration.snapd-desktop-integration.service
+      - tailscale-connections.service
+      - weaviate-embedding.service
+      - weaviate-search.service
+      - wireplumber.service
+      - xdg-desktop-portal-gtk.service
+      - xdg-desktop-portal.service
+      - xdg-document-portal.service
+      - xdg-permission-store.service
+      - xfce4-notifyd.service
+      - apps-health-sync.timer
+      - arp-inventory-scan.timer
+      - chaba-audit.timer
+      - chaba-kb-audit.timer
+      - devin-cleanup.timer
+      - f08837a9d0ec269851e88ce856dfdcb130ebec993db3024ad4a93c7d39efbcd6-413857d9606b8a53.timer
+      - focus-dispatcher-overnight.timer
+      - focus-dispatcher.timer
+      - launchpadlib-cache-clean.timer
+      - mcp-health-snapshot.timer
+      - michael-dev-parity.timer
+      - notebooklm-kb-sync.timer
+      - snap.firmware-updater.firmware-notifier.timer
+      - ssot-mddb-sync.timer
+      - ubuntu-insights-collect.timer
+      - ubuntu-insights-upload.timer
+      - weaviate-index.timer
+      active_system_services:
+      - docker-0d1596fdccdf9d2680ea06eda63ed82f8fee5c527404181308e36505057cf62f.scope
+      - docker-10e566d7eca3c0550128b6c7d1801f591e7f9b052bf5a701c71abac24f60780e.scope
+      - docker-3ae97e7e6eaddfde43ab343b21ea265f8e2a805e6b8d37be282b734dfd71c10b.scope
+      - docker-553881e767a11335fb3a3d4fe555fb72eeda8876f10faacd058263e8a33f1bbf.scope
+      - docker-71c58d82a668f5dbbfc35e4d795ae4d422c30a1c9d04f2c78f5989436d135750.scope
+      - docker-e2b1366be62b2c6b03b99adbc38acf1eb1d166396c70bfb3313adfd9870a424c.scope
+      - init.scope
+      - session-11853.scope
+      - session-13207.scope
+      - session-65.scope
+      - accounts-daemon.service
+      - alsa-restore.service
+      - anydesk.service
+      - apparmor.service
+      - apport.service
+      - avahi-daemon.service
+      - blk-availability.service
+      - bluetooth.service
+      - caddy-mddb.service
+      - chrony.service
+      - colord.service
+      - console-setup.service
+      - containerd.service
+      - cpufreq-limit.service
+      - cron.service
+      - cups-browsed.service
+      - cups.service
+      - dbus.service
+      - docker.service
+      - dracut-shutdown.service
+      - finalrd.service
+      - fwupd.service
+      - gdm.service
+      - ifupdown-pre.service
+      - iio-sensor-proxy.service
+      - kdump-tools.service
+      - keyboard-setup.service
+      - kmod-static-nodes.service
+      - lan-route-pref.service
+      - ldconfig.service
+      - libvirt-guests.service
+      - libvirtd.service
+      - lm-sensors.service
+      - lvm2-monitor.service
+      - lxc-monitord.service
+      - lxc-net.service
+      - lxc.service
+      - lxcfs.service
+      - ModemManager.service
+      - netplan-configure.service
+      - networkd-dispatcher.service
+      - networking.service
+      - NetworkManager-wait-online.service
+      - NetworkManager.service
+      - nvidia-persistenced.service
+      - openvpn.service
+      - plymouth-quit-wait.service
+      - plymouth-read-write.service
+      - plymouth-start.service
+      - polkit.service
+      - power-profiles-daemon.service
+      - qemu-kvm.service
+      - rsyslog.service
+      - rtkit-daemon.service
+      - setvtrgb.service
+      - smartmontools.service
+      - snapd.apparmor.service
+      - snapd.seeded.service
+      - snapd.service
+      - ssh.service
+      - ssot-sync.service
+      - switcheroo-control.service
+      - sysstat.service
+      - systemd-backlight@backlight:intel_backlight.service
+      - systemd-binfmt.service
+      - systemd-fsck-root.service
+      - systemd-fsck@dev-disk-by\x2duuid-0633\x2d270F.service
+      - systemd-fsck@dev-disk-by\x2duuid-655ab02e\x2d8f3e\x2d4547\x2db108\x2df571332382e2.service
+      - systemd-fsck@dev-disk-by\x2duuid-e440de9e\x2d3603\x2d423f\x2d8022\x2d595196c0ef30.service
+      - systemd-journal-catalog-update.service
+      - systemd-journal-flush.service
+      - systemd-journald.service
+      - systemd-logind.service
+      - systemd-machined.service
+      - systemd-modules-load.service
+      - systemd-oomd.service
+      - systemd-random-seed.service
+      - systemd-remount-fs.service
+      - systemd-resolved.service
+      - systemd-sysctl.service
+      - systemd-sysusers.service
+      - systemd-tmpfiles-setup-dev-early.service
+      - systemd-tmpfiles-setup-dev.service
+      - systemd-tmpfiles-setup.service
+      - systemd-udev-load-credentials.service
+      - systemd-udev-trigger.service
+      - systemd-udevd.service
+      - systemd-update-done.service
+      - systemd-user-sessions.service
+      - tailscaled.service
+      - thermald.service
+      - tony-omen-cp.service
+      - udisks2.service
+      - ufw.service
+      - unattended-upgrades.service
+      - upower.service
+      - user-runtime-dir@1000.service
+      - user@1000.service
+      - uuidd.service
+      - virtlockd.service
+      - virtlogd.service
+      - wpa_supplicant.service
+      - xrdp-sesman.service
+      - xrdp.service
+      - yomi-api.service
+      - zram-swap.service
+      - anacron.timer
+      - apt-daily-upgrade.timer
+      - apt-daily.timer
+      - chaba-assessment.timer
+      - chaba-backup-monitor.timer
+      - chaba-backup.timer
+      - dpkg-db-backup.timer
+      - e2scrub_all.timer
+      - fstrim.timer
+      - fwupd-refresh.timer
+      - logrotate.timer
+      - man-db.timer
+      - motd-news.timer
+      - overnight-assessment.timer
+      - phpsessionclean.timer
+      - sysstat-collect.timer
+      - sysstat-rotate.timer
+      - sysstat-summary.timer
+      - systemd-tmpfiles-clean.timer
+      - update-notifier-download.timer
+      - update-notifier-motd.timer
+      - yomi-fetch.timer
+      - yomi-process.timer
       failed_user_services:
-        - arp-inventory-scan.service
-        - devin-cleanup.service
-        - focus-dispatcher-overnight.service
-        - weaviate-index.service
-      failed_system_services: []
+      - arp-inventory-scan.service
+      - michael-dev-parity.service
+      - notebooklm-rest-auth-refresh.service
+      failed_system_services:
+      - chaba-backup-monitor.service
+      - chaba-backup.service
       memory:
         total: 30Gi
         used: 20Gi
-        free: 1.5Gi
-      swap:
-        total: 59Gi
-        used: 4.1Gi
-        free: 55Gi
+        free: 2.7Gi
+        shared: 1.3Gi
+        buff_cache: 9.1Gi
+        available: 9.8Gi
+      swap: {}
       disk:
+        filesystem: /dev/nvme0n1p6
+        size: 98G
+        used: 37G
+        available: 60G
+        percent: '39'
         mount: /
-        total: null
-        used: null
-        available: null
-        percent: null
+        total: 98G
       load:
-        1m: 1.79
-        5m: 2.30
-        15m: 2.85
-      uptime: '3 days, 19:41'
-      top_processes: []
+        1m: 4.31
+        5m: 4.19
+        15m: 4.22
+      uptime: 3 days,  1:32
+      top_processes:
+      - 173318  8.5 84.8 devin-desktop
+      - 174664  4.8  1.5 devin
+      - 174154  4.1  7.0 language_server
+      - 174611  3.6 15.0 devin
+      - 2869838  2.8 57.8 resources
+      - 4015948  1.9  2.6 chrome
+      - 4014382  1.7  5.4 chrome
+      - 3993302  1.4  1.7 chrome
+      - 173563  1.3  6.0 devin-desktop
       notes:
-        - 'Active user services not yet snapshotted; run audit-hosts.py to populate'
+      - Live snapshot from audit-hosts.py at 2026-09-17T18:06:51.093040+07:00
     deltas: []
-
   macbook:
     tailscale_ip: 100.124.59.112
     description: macOS / iOS verification workstation and lightweight offload node
     role: verify
     tags:
-      - macos
-      - laptop
-      - offload
+    - macos
+    - laptop
+    - offload
     expected_services:
-      - name: macbook-health
-        type: launchd
-        expected_state: active
-        critical: false
-      - name: macbook-offload-audit
-        type: launchd
-        expected_state: inactive
-        critical: false
-        note: Planned, currently disabled
+    - name: macbook-health
+      type: launchd
+      expected_state: active
+      critical: false
+    - name: macbook-offload-audit
+      type: launchd
+      expected_state: inactive
+      critical: false
+      note: Planned, currently disabled
     known_failed:
-      - name: macbook-health
-        reason: macOS health snapshot launchd agent not yet installed
-        action: install-on-macbook
-      - name: macbook-offload-audit
-        reason: Offload-audit launchd agent is planned but not yet installed
-        action: install-on-macbook
+    - name: macbook-health
+      reason: macOS health snapshot launchd agent not yet installed
+      action: install-on-macbook
+    - name: macbook-offload-audit
+      reason: Offload-audit launchd agent is planned but not yet installed
+      action: install-on-macbook
     expected_resources:
       min_free_ram_mb: 500
       max_swap_used_percent: 80
@@ -334,104 +827,234 @@ hosts:
       observed_at: '2026-09-11T14:55:00+07:00'
       tailscale_ip: 100.124.59.112
       notes:
-        - 'macbook is offline (last seen 15m ago, relay sin); SSH on 100.124.59.112:22 times out. Install launchd agents when reachable.'
+      - macbook is offline (last seen 15m ago, relay sin); SSH on 100.124.59.112:22
+        times out. Install launchd agents when reachable.
     deltas: []
-
   mn01:
     tailscale_ip: 100.106.196.22
     description: Portable Ubuntu PC in mn-home
     role: portable
     tags:
-      - portable
-      - subnet-router
-      - dev-host
+    - portable
+    - subnet-router
+    - dev-host
     expected_services:
-      - name: caddy-mn01.service
-        type: service
-        scope: user
-        expected_state: active
-        critical: false
-        note: Caddy for mn01 apps landing and /apps/* proxy
-      - name: ada-ha-tony.service
-        type: service
-        scope: user
-        expected_state: active
-        critical: false
-        note: Ada HA Tony instance on 0.0.0.0:8002
-      - name: ada-ha-michael.service
-        type: service
-        scope: user
-        expected_state: active
-        critical: false
-        note: Ada HA Michael instance on 0.0.0.0:8003
-      - name: tailscaled.service
-        type: service
-        scope: system
-        expected_state: active
-        critical: true
-      - name: mcp-link-monitor-mn.service
-        type: service
-        scope: user
-        expected_state: active
-        critical: false
-        note: TCP/IP link monitor migrated from tony-dell
+    - name: caddy-mn01.service
+      type: service
+      scope: user
+      expected_state: active
+      critical: false
+      note: Caddy for mn01 apps landing and /apps/* proxy
+    - name: ada-ha-tony.service
+      type: service
+      scope: user
+      expected_state: active
+      critical: false
+      note: Ada HA Tony instance on 0.0.0.0:8002
+    - name: ada-ha-michael.service
+      type: service
+      scope: user
+      expected_state: active
+      critical: false
+      note: Ada HA Michael instance on 0.0.0.0:8003
+    - name: tailscaled.service
+      type: service
+      scope: system
+      expected_state: active
+      critical: true
+    - name: mcp-link-monitor-mn.service
+      type: service
+      scope: user
+      expected_state: active
+      critical: false
+      note: TCP/IP link monitor migrated from tony-dell
     known_failed:
-      - name: grub-initrd-fallback.service
-        reason: Ubuntu/grub package service that fails on non-EFI fallback; harmless
-        action: ignore
+    - name: grub-initrd-fallback.service
+      reason: Ubuntu/grub package service that fails on non-EFI fallback; harmless
+      action: ignore
     expected_resources:
       min_free_ram_mb: 500
       max_swap_used_percent: 80
       max_root_disk_percent: 85
       max_load_5m: 8.0
     last_observed:
-      observed_at: '2026-09-16T13:45:16.683983+07:00'
+      observed_at: '2026-09-17T18:06:51.646831+07:00'
       active_user_services:
-        - caddy-mn01.service
-        - dbus.service
-        - filter-chain.service
-        - mpris-proxy.service
-        - pipewire-pulse.service
-        - pipewire.service
-        - wireplumber.service
-      failed_user_services: []
+      - run-credentials-systemd\x2djournald.service.mount
+      - run-credentials-systemd\x2dresolved.service.mount
+      - app-com.google.Chrome-46269.scope
+      - init.scope
+      - podman-pause-37591a1d.scope
+      - ada-ha-michael.service
+      - ada-ha-tony.service
+      - at-spi-dbus-bus.service
+      - caddy-mn01.service
+      - dbus.service
+      - filter-chain.service
+      - mcp-link-monitor-mn.service
+      - mpris-proxy.service
+      - notebooklm-mcp.service
+      - pipewire-pulse.service
+      - pipewire.service
+      - playlive-chrome.service
+      - playlived.service
+      - podman-user-wait-network-online.service
+      - wireplumber.service
+      - xdg-desktop-portal-gtk.service
+      - xdg-desktop-portal.service
+      - xdg-document-portal.service
+      - xdg-permission-store.service
+      - xfce4-notifyd.service
+      - launchpadlib-cache-clean.timer
+      - ubuntu-insights-collect.timer
+      - ubuntu-insights-upload.timer
+      active_system_services:
+      - init.scope
+      - session-1634.scope
+      - session-c1.scope
+      - accounts-daemon.service
+      - alsa-restore.service
+      - apparmor.service
+      - apport.service
+      - avahi-daemon.service
+      - blk-availability.service
+      - bluetooth.service
+      - chrony.service
+      - colord.service
+      - console-setup.service
+      - cron.service
+      - cups-browsed.service
+      - cups.service
+      - dbus.service
+      - dracut-shutdown.service
+      - finalrd.service
+      - fwupd.service
+      - gdm.service
+      - kdump-tools.service
+      - keyboard-setup.service
+      - kmod-static-nodes.service
+      - libvirt-guests.service
+      - libvirtd.service
+      - lm-sensors.service
+      - lvm2-monitor.service
+      - ModemManager.service
+      - netavark-firewalld-reload.service
+      - netplan-configure.service
+      - networkd-dispatcher.service
+      - NetworkManager-wait-online.service
+      - NetworkManager.service
+      - openvpn.service
+      - plymouth-quit-wait.service
+      - plymouth-read-write.service
+      - plymouth-start.service
+      - polkit.service
+      - power-profiles-daemon.service
+      - qemu-kvm.service
+      - rsyslog.service
+      - rtkit-daemon.service
+      - setvtrgb.service
+      - smartmontools.service
+      - snapd.apparmor.service
+      - snapd.seeded.service
+      - ssh.service
+      - switcheroo-control.service
+      - systemd-binfmt.service
+      - systemd-fsck-root.service
+      - systemd-fsck@dev-disk-by\x2duuid-F1AB\x2d9A30.service
+      - systemd-journal-flush.service
+      - systemd-journald.service
+      - systemd-logind.service
+      - systemd-machined.service
+      - systemd-modules-load.service
+      - systemd-oomd.service
+      - systemd-random-seed.service
+      - systemd-remount-fs.service
+      - systemd-resolved.service
+      - systemd-sysctl.service
+      - systemd-tmpfiles-setup-dev-early.service
+      - systemd-tmpfiles-setup-dev.service
+      - systemd-tmpfiles-setup.service
+      - systemd-udev-load-credentials.service
+      - systemd-udev-trigger.service
+      - systemd-udevd.service
+      - systemd-user-sessions.service
+      - tailscaled.service
+      - thermald.service
+      - udisks2.service
+      - unattended-upgrades.service
+      - upower.service
+      - user-runtime-dir@1000.service
+      - user-runtime-dir@60578.service
+      - user@1000.service
+      - user@60578.service
+      - virtlockd.service
+      - virtlogd.service
+      - wpa_supplicant.service
+      - anacron.timer
+      - apt-daily-upgrade.timer
+      - apt-daily.timer
+      - dpkg-db-backup.timer
+      - e2scrub_all.timer
+      - fstrim.timer
+      - fwupd-refresh.timer
+      - logrotate.timer
+      - man-db.timer
+      - motd-news.timer
+      - systemd-tmpfiles-clean.timer
+      - update-notifier-download.timer
+      - update-notifier-motd.timer
+      failed_user_services:
+      - xdg-desktop-portal-gtk.service
+      - xdg-desktop-portal.service
+      - xfce4-notifyd.service
       failed_system_services:
-        - grub-initrd-fallback.service
+      - grub-initrd-fallback.service
       memory:
         total: 7.1Gi
-        used: 960Mi
-        free: 3.9Gi
-        available: 6.2Gi
+        used: 2.2Gi
+        free: 668Mi
+        shared: 563Mi
+        buff_cache: 5.1Gi
+        available: 4.9Gi
       swap: {}
       disk:
+        filesystem: /dev/sda2
+        size: 234G
+        used: 14G
+        available: 209G
         percent: '6'
+        mount: /
+        total: 234G
       load:
-        1m: 0.07
-        5m: 0.1
-        15m: 0.13
-      uptime: '3:33'
+        1m: 1.41
+        5m: 0.67
+        15m: 0.59
+      uptime: 1 day,  7:55
       top_processes:
-        - '5463  2.8  0.1 gnome-shell'
-        - '5073  0.6  0.3 tailscaled'
-        - '13709  0.6  0.0 caddy'
+      - 46367  5.4  0.0 chrome
+      - 46269  3.5  5.9 chrome
+      - 5463  2.9  0.0 gnome-shell
+      - 46270  2.1  3.1 node
+      - 46315  1.7  2.2 chrome
+      - 46318  1.6  2.8 chrome
+      - 176050  1.2  0.4 uvicorn
+      - 6288  1.2  0.0 apport-gtk
+      - 5073  1.2  1.4 tailscaled
       notes:
-        - "SSOT and live state synced on 2026-09-16."
+      - Live snapshot from audit-hosts.py at 2026-09-17T18:06:51.646831+07:00
     deltas: []
-
 related_files:
-  - scripts/audit-hosts.py
-  - reports/audit-hosts/
-
+- scripts/audit-hosts.py
+- reports/audit-hosts/
 related_ssot:
-  - docs/ssot/infrastructure/ssot.host-roles.yml
-  - docs/ssot/infrastructure/ssot.services.yml
-  - docs/ssot/infrastructure/ssot.host-tools.yml
-  - docs/ssot/infrastructure/ssot.health.home.tony-dell.yml
-  - docs/ssot/infrastructure/ssot.night-jobs.tony-dell.yml
-  - docs/ssot/infrastructure/ssot.night-jobs.tony-omen.yml
-  - docs/ssot/infrastructure/ssot.night-jobs.macbook.yml
-  - docs/ssot/infrastructure/ssot.h3-deployment.yml
-  - docs/ssot/infrastructure/ssot.devin.maintenance.yml
-
+- docs/ssot/infrastructure/ssot.host-roles.yml
+- docs/ssot/infrastructure/ssot.services.yml
+- docs/ssot/infrastructure/ssot.host-tools.yml
+- docs/ssot/infrastructure/ssot.health.home.tony-dell.yml
+- docs/ssot/infrastructure/ssot.night-jobs.tony-dell.yml
+- docs/ssot/infrastructure/ssot.night-jobs.tony-omen.yml
+- docs/ssot/infrastructure/ssot.night-jobs.macbook.yml
+- docs/ssot/infrastructure/ssot.h3-deployment.yml
+- docs/ssot/infrastructure/ssot.devin.maintenance.yml
 related_kb:
-  - docs/kb/audit-framework.md
+- docs/kb/audit-framework.md

@@ -297,6 +297,8 @@ def main():
     parser.add_argument("--ssh", action="store_true", default=None,
                         help="Force ssh even when running on the target host")
     parser.add_argument("--no-ssh", action="store_true", help="Force local execution")
+    parser.add_argument("--save-to-ssot", action="store_true",
+                        help="Write the observed live state back into the SSOT")
     args = parser.parse_args()
 
     ssh = None
@@ -308,6 +310,9 @@ def main():
     observed = audit_host(args.host, ssh)
     deltas = diff_against_ssot(args.host, observed, args.ssot)
     observed["deltas"] = deltas
+
+    if args.save_to_ssot:
+        save_to_ssot(args.host, observed, args.ssot)
 
     args.output_dir.mkdir(parents=True, exist_ok=True)
     ts = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
@@ -322,6 +327,41 @@ def main():
             print(f"  - {d}")
     else:
         print("No deltas against SSOT expected state.")
+
+
+def save_to_ssot(host: str, observed: dict, ssot_path: Path):
+    if not ssot_path.exists():
+        print(f"SSOT not found at {ssot_path}; skipping --save-to-ssot")
+        return
+    ssot = yaml.safe_load(ssot_path.read_text())
+    if "hosts" not in ssot or host not in ssot.get("hosts", {}):
+        print(f"Host {host} not found in SSOT; skipping --save-to-ssot")
+        return
+
+    disk = observed.get("disk", {})
+    if "size" in disk and "total" not in disk:
+        disk["total"] = disk["size"]
+
+    ssot["hosts"][host]["last_observed"] = {
+        "observed_at": observed.get("timestamp"),
+        "active_user_services": [
+            s["unit"] for s in observed.get("active_user_services", []) if "unit" in s
+        ],
+        "active_system_services": [
+            s["unit"] for s in observed.get("active_system_services", []) if "unit" in s
+        ],
+        "failed_user_services": observed.get("failed_user_services", []),
+        "failed_system_services": observed.get("failed_system_services", []),
+        "memory": observed.get("memory", {}),
+        "swap": observed.get("swap", {}),
+        "disk": disk,
+        "load": observed.get("load", {}),
+        "uptime": observed.get("uptime", ""),
+        "top_processes": observed.get("top_processes", []),
+        "notes": [f"Live snapshot from audit-hosts.py at {observed.get('timestamp', '?')}"],
+    }
+    ssot_path.write_text(yaml.safe_dump(ssot, sort_keys=False, allow_unicode=True))
+    print(f"Updated SSOT last_observed for {host}")
 
 
 if __name__ == "__main__":
