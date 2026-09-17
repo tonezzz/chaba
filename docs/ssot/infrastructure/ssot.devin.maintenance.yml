@@ -30,7 +30,7 @@ hosts:
   tony-omen:
     path: /home/tony/.local/share/devin/cli/sessions.db
     description: Primary dev workstation
-    current_size: 67Gi
+    current_size: 6.6Gi
     service: devin-cleanup.timer
     retention_days: 3
     notes:
@@ -38,6 +38,11 @@ hosts:
       - Retention reduced from 7 to 3 days on 2026-09-12 (DB had grown to 67 GiB).
       - Most DB size comes from active/recent sessions; 3-day retention does
         not free much space until those sessions age out or are deleted manually.
+      - >
+        2026-09-16 chunked NotebookLM offload reduced DB ~13.3 GiB -> ~6.6 GiB;
+        largest sessions (utopian-pearl ~8 GiB, juvenile-umbra, ambiguous-rooster,
+        seemly-graffiti, invincible-avatar, abundance-cattle, olive-lamb,
+        blush-action, valuable-windflower) archived and deleted manually.
 
 cleanup:
   timer_schedule:
@@ -108,6 +113,13 @@ offload_to_notebooklm:
         For a 7-day chunk retention, keep the staging notebook and run a separate
         scheduled compactor that queries the staging notebook and deletes it
         once the summary is generated.
+      - >
+        The script tracks failures per stage (chunk upload, summary query,
+        archive add, staging delete, session delete) and exits non-zero with
+        `Incomplete: <id> — <reasons>` if anything failed. A metadata-stub
+        `--summary.md` is still written locally when the query fails, and the
+        orphan staging notebook ID is printed for manual cleanup. `--delete` is
+        skipped unless every stage succeeded.
 
   environment:
     DEVIN_ARCHIVE_NOTEBOOK: |
@@ -121,18 +133,58 @@ offload_to_notebooklm:
       the final VACUUM. Default is `0` to keep the vacuum fast.
     MAX_SOURCE_CHARS: |
       Cap on how much of each session transcript is uploaded. Default `100000`.
+    NLM_HOST: |
+      SSH host the `nlm` wrapper (`~/.local/bin/nlm`) delegates to. Default
+      `mn01` (rootless podman `notebooklm-mcp` container, image
+      `localhost/notebooklm-mcp:latest`, quadlet
+      `~/.config/containers/systemd/notebooklm-mcp.container` on mn01).
+      Set `NLM_HOST=tony-dell` to use the legacy host.
+    DEVIN_KEEP_BACKUPS: |
+      How many `sessions.db.*` backups `vacuum-devin-db.sh` keeps in
+      `~/.local/share/devin/cli/backups/` (plus `-shm`/`-wal` sidecars).
+      Default `2`.
   notes:
     - >
-      `nlm` is a local wrapper that ssh's to `tony-dell` and runs the
-      NotebookLM MCP container. Tailscale SSH must be authenticated for
+      `nlm` is a local wrapper that ssh's to `mn01` (was `tony-dell`) and runs
+      the NotebookLM MCP container. Tailscale SSH must be authenticated for
       uploads to succeed.
     - >
       Deleting sessions while Devin is running is best done via `devin rm`;
-      if the ACP server cannot remove the rows, delete after closing Devin.
+      however `devin rm` cannot see sessions created by devin-desktop (it
+      reports `no session found matching '<id>'` even though the row exists
+      in `sessions`). All extract/archive scripts therefore fall back to a
+      direct sqlite3 DELETE of `message_nodes`/`tool_call_state`/`sessions`
+      rows when `devin rm` fails. The sqlite3 path needs the DB unlocked —
+      close Devin first.
     - >
       The `devin-archive-sessions.sh` script still exists for the previous
       summary-and-delete flow; use it if you want condensed summaries rather
       than raw transcripts.
+
+  reauth_runbook: |
+    NotebookLM cookie auth expires frequently (observed ~15-60 min of API use;
+    `__Secure-*PSIDTS` rotates fast, so hand-copied headers are often stale on
+    arrival). When `nlm` reports "Authentication expired", do NOT paste a stale
+    header — harvest a live one from the logged-in Chrome on tony-omen via the
+    chrome-devtools MCP:
+
+    1. `new_page https://notebook.google.com/` (loads authenticated; the user's
+       Google session must be active in that Chrome profile).
+    2. `list_network_requests` → find any POST to notebook.google.com
+       (e.g. a `batchexecute` call).
+    3. `get_network_request` → copy the `cookie:` request header value.
+    4. Write it to `/tmp/nlm_cookies.txt`, then:
+       `scp /tmp/nlm_cookies.txt mn01:~/.local/share/notebooklm/.notebooklm-mcp-cli/cookies_import.txt`
+       `nlm login --manual -f /root/.notebooklm-mcp-cli/cookies_import.txt -p default`
+    5. Verify: `nlm notebook list --json` should return notebooks.
+
+    Caveats:
+    - The container mounts `~/.local/share/notebooklm/.notebooklm-mcp-cli` on
+      mn01 as `/root/.notebooklm-mcp-cli`; the `-f` path is container-side.
+    - `nlm login` (browser flow) does not work inside the container — no Chrome.
+    - Known open issue: notebooklm-rest logs `Failed to write updated cookies
+      to /data/storage_state.json: OSError` — refreshed cookies may not persist,
+      so re-auth is recurring until that mount/perm issue is fixed.
 
 backup_policy: |
   `vacuum-devin-db.sh` now creates a local backup before VACUUM and keeps it

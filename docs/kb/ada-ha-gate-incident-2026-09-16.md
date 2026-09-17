@@ -86,8 +86,10 @@ calls and 156 `POST /api/tools/call` access-log entries from
   UI now supports the key via `?api_key=` or a one-time prompt.
 - Consider enabling `ADA_READ_ONLY=true` on any instance reachable by
   customers or demos.
-- Optional: enable HA's `logbook:` integration on michael-ha for
-  "triggered by" attribution inside Home Assistant itself.
+- Resolved 2026-09-17: `get_logbook` works on both instances — HA 2026.x
+  moved the endpoint to `GET /api/logbook?end_time=&period=<days>&entity=`
+  (the old `/api/logbook/period/<ts>` path 404s); ada-pi tries the new form
+  first and falls back for older HA.
 - Long-term: a contact sensor or position-feedback motor on the gate
   would give true open/closed state instead of transient `opening`/
   `unknown`.

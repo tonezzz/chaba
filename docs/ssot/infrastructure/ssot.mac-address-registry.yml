@@ -79,9 +79,16 @@ sections:
     text: Secondary HA/go2rtc host — MAC 48:4d:7e:e4:3a:c7 (Wi-Fi).
   - label: tony-tv
     text: Tony TV (TrueID OTT SKWAMX3, Earda ODM Android TV box) — Wi-Fi b8:59:ce:74:75:28 (192.168.2.85). Chromecast built-in confirmed
-      (eureka name "TONY-TV", cast build 3.72.446070, ports 8008/8009 + Android TV remote 6466/6467). Attached Samsung panel has NO LAN
-      presence (dumb or WiFi off) — all casting goes through this box. No AirPlay receiver; AirScreen app or an external stick is the
-      AirPlay path.
+      (eureka name "TONY-TV", cast build 3.72.446070, ports 8008/8009 + Android TV remote 6466/6467). No AirPlay receiver; AirScreen app
+      or an external stick is the AirPlay path. Feeds the Samsung panel over HDMI.
+  - label: samsung-tv
+    text: Samsung TV-40C5000 (40" C5000-series LCD, ~2010) — eth0 MAC 00:12:fb:0e:93:ed, wired to the Tenda repeater LAN port. DHCP-floats
+      (seen .91, .92); NIC dies in standby so ARP/ping only work while the panel is on. DLNA DMR-1.50 ("DMRND/0.5") on 52235/52396/5601;
+      desc http://<ip>:52235/dmr/SamsungMRDesc.xml, UDN 215459bb-96b5-04f5-1476-2f50d2b694f9. No AirPlay/Screen Mirroring — DLNA cast only.
+  - label: tony-repeater
+    text: Tenda Wi-Fi repeater (reasy-ui/GoAhead, lwip) — MAC 06:28:58:26:4b:2c (locally administered). Admin UI http://<ip>/login.html;
+      own IP DHCP-floats (seen .72, .73, .82). Bridges wired clients via MAC-NAT/proxy-ARP, so the Samsung behind it can show the
+      repeater's MAC in ARP.
   - label: cozylife-01
     text: Cozy Life / Tuya plug — MAC 24:94:94:b0:f2:df.
   - label: tuya-plug-tv
