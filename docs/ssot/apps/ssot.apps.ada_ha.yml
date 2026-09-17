@@ -51,7 +51,7 @@ sections:
     layout: list
     items:
       - label: Auth
-        text: ADA_API_KEY (per-instance, in ~/.config/secrets/ada-ha-*.env) is required via X-Api-Key header or ?api_key= for /api/tools, /api/tools/call, and POST entity power. Read GET endpoints remain open.
+        text: ADA_API_KEY (per-instance, in ~/.config/secrets/ada-ha-*.env) is required via X-Api-Key header, ?api_key=, or the ada_session HttpOnly cookie for /api/tools, /api/tools/call, POST entity power, and /ws. Named keys via ADA_API_KEYS=name:key give per-caller audit + revocation. POST /api/auth/session issues the cookie; GET /api/auth/status reports state; POST /api/auth/logout clears it. Read GET endpoints remain open.
       - label: GET /api/home-assistant/entities
         text: List controllable HA entities (lights, switches, fans, covers, buttons, media players).
       - label: GET /api/home-assistant/sensors
@@ -172,6 +172,8 @@ sections:
         text: ~/.config/secrets/ada-ha-*.env and notebooklm-rest-api.env are still host-local and must be backed up separately.
       - label: URL-derived collection names orphan memory
         text: MDDB collections were once keyed by HOME_ASSISTANT_URL slug; moving tony from 127.0.0.1 to the tailnet URL abandoned the old collections. ADA_INSTANCE_ID now pins identity; rule is fail quick and report, never silently fall back for identity config.
+      - label: Funnel makes auth mandatory
+        text: mn01 and tony-dell both run Tailscale Funnel on 443, so /apps/ada_ha_* and /apps/ada_pi are public-internet paths. confirmed=true only gates the model — direct REST callers self-assert it — which is why ADA_API_KEY covers /api/tools/call AND /ws.
 config:
   version: 5
   created: '2026-09-13'
