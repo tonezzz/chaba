@@ -115,10 +115,27 @@ def mcp_transform(input=None, op="identity", params=None, results=None, captured
     return {"ok": False, "error": f"unknown transform op: {op}"}
 
 
+def _command_supported(host, command):
+    """Check whether a configured debug command is meaningful to benchmark on a host."""
+    meta = DEBUG_COMMANDS.get(command, {})
+    if meta.get("skip_savings"):
+        return False, "command is not a savings benchmark"
+    requires = meta.get("requires")
+    if requires:
+        required = set(requires if isinstance(requires, list) else [requires])
+        tags = set(HOSTS.get(host, {}).get("tags", []))
+        if not required.issubset(tags):
+            return False, f"host missing required tags: {sorted(required - tags)}"
+    return True, None
+
+
 def mcp_stats(host, command):
     raw_cmd = DEBUG_COMMANDS.get(command, {}).get("raw_command", command)
+    started = time.time()
     raw_result = run_on_host(host, raw_cmd, compact=False)
     compact_result = run_on_host(host, command, compact=True)
+    ended = time.time()
+    duration_ms = round((ended - started) * 1000, 1)
 
     raw_out = raw_result.get("out", "") or ""
     compact_out = compact_result.get("out", "") or ""
@@ -147,6 +164,7 @@ def mcp_stats(host, command):
         "savings_pct_chars": savings_pct_chars,
         "raw_rc": raw_result.get("rc"),
         "compact_rc": compact_result.get("rc"),
+        "duration_ms": duration_ms,
     }
 
 def mcp_vet(command, add=False):
@@ -260,8 +278,12 @@ def mcp_savings(hosts):
             continue
         if not HOSTS[host].get("compact", True):
             continue
-        per_host[host] = {"commands": {}, "log_commands": {}, "raw_chars": 0, "compact_chars": 0, "saved_chars": 0}
+        per_host[host] = {"commands": {}, "skipped": {}, "log_commands": {}, "raw_chars": 0, "compact_chars": 0, "saved_chars": 0}
         for command in commands:
+            supported, reason = _command_supported(host, command)
+            if not supported:
+                per_host[host]["skipped"][command] = reason
+                continue
             s = mcp_stats(host, command)
             per_host[host]["commands"][command] = s
             if s.get("ok"):
