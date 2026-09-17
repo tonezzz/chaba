@@ -2,7 +2,7 @@ id: ssot.host-tools
 title: Host Network & System Toolkit
 subtitle: Standard diagnostic and inspection tools for decision making across hosts
 icon: toolbox
-version: 1
+version: 2
 maintainer: tony
 status: active
 category: infrastructure
@@ -133,6 +133,68 @@ tools:
       decisions: ["render QR codes for unlock deep-links (ada-key-url.sh --qr)", "share URLs to phones/tablets"]
       priority: useful
 
+    - name: openssl
+      package:
+        linux: openssl
+        mac: openssl
+      command: "openssl rand -hex 24"
+      verify: "openssl version"
+      decisions: ["generate API keys and tokens (rotate-ada-key.sh)"]
+      priority: essential
+
+    - name: flock
+      package:
+        linux: util-linux
+      command: "flock -n <lockfile> <cmd>"
+      verify: "flock --version"
+      decisions: ["serialize deploys (deploy-ada.sh, deploy-card.sh locks)"]
+      priority: essential
+
+    - name: rsync
+      package:
+        linux: rsync
+        mac: rsync
+      command: "rsync -a <src> <dst>"
+      verify: "rsync --version"
+      decisions: ["sync files between hosts (backups, cookie bridge, deploys)"]
+      priority: essential
+
+    - name: sqlite3
+      package:
+        linux: sqlite3
+        mac: sqlite3
+      command: "sqlite3 <db> '<query>'"
+      verify: "sqlite3 --version"
+      decisions: ["inspect local DBs (devin sessions.db, MDDB search-index.db, HA .storage-adjacent files)"]
+      priority: useful
+
+    - name: rg
+      package:
+        linux: ripgrep
+        mac: ripgrep
+      command: "rg <pattern>"
+      verify: "rg --version"
+      decisions: ["fast code/log search"]
+      priority: useful
+
+    - name: tmux
+      package:
+        linux: tmux
+        mac: tmux
+      command: "tmux new -s <name>"
+      verify: "tmux -V"
+      decisions: ["persistent remote sessions on servers"]
+      priority: useful
+
+    - name: gh
+      package:
+        linux: gh
+        mac: gh
+      command: "gh pr create"
+      verify: "gh --version"
+      decisions: ["GitHub PR/issue operations (dev machines; needs auth)"]
+      priority: optional
+
   runtimes:
     - name: node
       package:
@@ -218,6 +280,15 @@ tools:
       command: "tcpdump -i any -c 20"
       verify: "tcpdump --version"
       decisions: ["capture and inspect network traffic"]
+      priority: useful
+
+    - name: dig
+      package:
+        linux: dnsutils
+        mac: bind
+      command: "dig +short <name>"
+      verify: "dig -v"
+      decisions: ["DNS lookups, tailnet/LAN name debugging"]
       priority: useful
 
     - name: tailscale
