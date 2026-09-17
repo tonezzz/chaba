@@ -317,6 +317,20 @@ ssh tony-dell 'pgrep -a -f devin-desktop | grep -v "pgrep\|ssh\|tailscaled"'
 - `~/.chrome-remote-desktop-session` must `exec` a long-running desktop/WM process. `startlxqt` (`lxqt-session`) segfaults in the headless Xvfb display; use `startxfce4` instead.
   - Current session file: `exec /usr/bin/startxfce4`
 
+## Chrome Remote Desktop (tony-omen)
+
+- Host config: `~/.config/chrome-remote-desktop/host#ad85c6685ce3fd99d30087e5d5840718.json` (`host_name=tony-omen-remote`, owner tonezzzz@gmail.com, pre-registered — no re-link needed unless the OAuth refresh token dies).
+- Start: `env -i HOME=$HOME PATH=/usr/local/bin:/usr/bin:/bin USER=$USER LOGNAME=$USER /opt/google/chrome-remote-desktop/chrome-remote-desktop --start` — start it with a CLEAN env, or leaked `SESSION_MANAGER`/`DBUS_SESSION_BUS_ADDRESS` make the spawned desktop session attach to the real session and exit instantly ("Failure count for 'session'" climbing in `journalctl --user`).
+- **Different display model than tony-dell**: here CRD supplies its own virtual X display, so `~/.chrome-remote-desktop-session` must NOT run `startxfce4` (it execs `xinit` → `Xorg.wrap: Only console users are allowed to run the X server`). Correct file (works 2026-09-17):
+  ```bash
+  #!/bin/bash
+  unset SESSION_MANAGER DBUS_SESSION_BUS_ADDRESS XAUTHORITY GNOME_KEYRING_CONTROL SSH_AUTH_SOCK
+  exec /usr/bin/dbus-run-session -- /usr/bin/xfce4-session
+  ```
+- Requires `dbus-x11` (installed 2026-09-17); without it xfce4-session dies with "dbus-launch not found" after ~5s.
+- Deleting the session file restores the interactive session chooser (`xsession_chooser`).
+- This is a separate virtual session, NOT a mirror of the physical `:0` monitor — for screen mirroring use Deskreen (`http://<host-ip>:3131`) or Sunshine/Moonlight.
+
 ## Web app deployment (tony-dell Caddy)
 
 ### Source vs served directory

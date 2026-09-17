@@ -2,7 +2,7 @@ title: Chaba System Improvements Archive 2026 H2
 subtitle: Completed improvements H2 archived from ssot.improvements.yml
 icon: archive
 source: docs/ssot/ssot.improvements.yml
-archived_at: '2026-09-02'
+archived_at: '2026-09-18'
 layout: list
 items:
 - label: Memory Usage Optimization
@@ -608,3 +608,28 @@ items:
   - validation
   - documentation
   - change-tracking
+- label: Node.js Security Vulnerabilities
+  text: Node.js dependencies had 4 security vulnerabilities (3 moderate, 1 high). Ran npm install to refresh the package-lock
+    tree, then npm rebuild better-sqlite3 for the current Node version. npm audit now reports 0 vulnerabilities and the docs
+    MCP server starts successfully with the chaba-tony-dell dependency path.
+  status: completed
+  priority: medium
+  effort: 2-4 hours
+  category: security
+  discovered: 2026-09-02
+  completed: '2026-09-04'
+  assessment_ref: overnight-assessment-2026-09-02
+  auto_generated: true
+  related_files:
+  - package.json
+  - package-lock.json
+  - scripts/security-scan.mjs
+  tags:
+  - auto-generated
+  - security
+  business_impact: 7
+  technical_impact: 8
+  user_experience_impact: 5
+  cost_savings_impact: 6
+  impact_summary: Auto-scored medium priority security improvement
+  accepted: '2026-09-04'

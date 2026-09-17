@@ -84,7 +84,9 @@ sections:
   - label: samsung-tv
     text: Samsung TV-40C5000 (40" C5000-series LCD, ~2010) — eth0 MAC 00:12:fb:0e:93:ed, wired to the Tenda repeater LAN port. DHCP-floats
       (seen .91, .92); NIC dies in standby so ARP/ping only work while the panel is on. DLNA DMR-1.50 ("DMRND/0.5") on 52235/52396/5601;
-      desc http://<ip>:52235/dmr/SamsungMRDesc.xml, UDN 215459bb-96b5-04f5-1476-2f50d2b694f9. No AirPlay/Screen Mirroring — DLNA cast only.
+      desc http://<ip>:52235/dmr/SamsungMRDesc.xml, UDN 215459bb-96b5-04f5-1476-2f50d2b694f9. DLNA playback visually confirmed
+      2026-09-17 via rygel (TonyTest) on tony-omen — pull via MEDIA.P/Source works clean; push (SetAVTransportURI+Play) needs an
+      on-screen accept prompt each time. No AirPlay/Screen Mirroring — DLNA cast only.
   - label: tony-repeater
     text: Tenda Wi-Fi repeater (reasy-ui/GoAhead, lwip) — MAC 06:28:58:26:4b:2c (locally administered). Admin UI http://<ip>/login.html;
       own IP DHCP-floats (seen .72, .73, .82). Bridges wired clients via MAC-NAT/proxy-ARP, so the Samsung behind it can show the
