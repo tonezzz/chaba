@@ -14,7 +14,7 @@ chrome.action.onClicked.addListener(() => {
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.cmd === 'BROADCAST_PROMPT') {
     broadcast(request)
-      .then(() => sendResponse({ ok: true }))
+      .then(results => sendResponse({ ok: true, results }))
       .catch(err => sendResponse({ ok: false, error: err.message }));
     return true;
   }
@@ -73,12 +73,18 @@ async function broadcast({ text, targets }) {
     ? SITES.filter(s => targets.includes(s.key))
     : SITES;
 
+  const results = [];
   for (const site of list) {
-    const allTabs = await chrome.tabs.query({});
-    const existing = allTabs.find(t => t.url && t.url.includes(site.urlMatch));
-    const tab = existing || await chrome.tabs.create({ url: site.url, active: false });
-    if (!existing) await waitForTab(tab.id);
+    let opened = false;
     try {
+      const allTabs = await chrome.tabs.query({});
+      const existing = allTabs.find(t => t.url && t.url.includes(site.urlMatch));
+      let tab = existing;
+      if (!tab) {
+        tab = await chrome.tabs.create({ url: site.url, active: false });
+        opened = true;
+        await waitForTab(tab.id);
+      }
       const res = await chrome.scripting.executeScript({
         target: { tabId: tab.id },
         func: sendPrompt,
@@ -86,11 +92,12 @@ async function broadcast({ text, targets }) {
       });
       const result = res?.[0]?.result;
       if (!result?.ok) throw new Error(result?.error || 'unknown');
-      console.log('sent to', site.key, result);
+      results.push({ key: site.key, ok: true, opened });
     } catch (err) {
-      console.error(`Failed to send to ${site.key}:`, err);
+      results.push({ key: site.key, ok: false, error: String(err.message || err), opened });
     }
   }
+  return results;
 }
 
 function waitForTab(tabId) {

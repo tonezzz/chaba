@@ -6,9 +6,39 @@ function selectedTargets() {
   return Array.from(document.querySelectorAll('.chip.active')).map(c => c.dataset.value);
 }
 
+const CHIP_URLMATCH = {
+  chatgpt: 'chatgpt.com',
+  gemini: 'gemini.google.com/app',
+  'gemini-images': 'gemini.google.com/images',
+  claude: 'claude.ai',
+  midjourney: 'midjourney.com',
+  aistudio: 'aistudio.google.com'
+};
+
+async function markOpenChips() {
+  const tabs = await chrome.tabs.query({});
+  document.querySelectorAll('.chip').forEach(chip => {
+    const m = CHIP_URLMATCH[chip.dataset.value];
+    chip.classList.toggle('has-tab', !!(m && tabs.some(t => t.url && t.url.includes(m))));
+  });
+}
+markOpenChips();
+chrome.tabs.onActivated.addListener(markOpenChips);
+chrome.tabs.onUpdated.addListener(markOpenChips);
+chrome.tabs.onRemoved.addListener(markOpenChips);
+
+chrome.storage.local.get('selectedTargets', r => {
+  if (Array.isArray(r.selectedTargets)) {
+    document.querySelectorAll('.chip').forEach(c => {
+      c.classList.toggle('active', r.selectedTargets.includes(c.dataset.value));
+    });
+  }
+});
+
 document.getElementById('targetChips').addEventListener('click', (e) => {
   if (e.target.classList.contains('chip')) {
     e.target.classList.toggle('active');
+    chrome.storage.local.set({ selectedTargets: selectedTargets() });
   }
 });
 
@@ -18,7 +48,8 @@ const SITE_LABELS = [
   { label: 'Gemini', urlMatch: 'gemini.google.com/app' },
   { label: 'Gemini Images', urlMatch: 'gemini.google.com/images' },
   { label: 'Claude', urlMatch: 'claude.ai' },
-  { label: 'Midjourney', urlMatch: 'midjourney.com' }
+  { label: 'Midjourney', urlMatch: 'midjourney.com' },
+  { label: 'AI Studio', urlMatch: 'aistudio.google.com' }
 ];
 
 async function updateTabStatus() {
@@ -64,18 +95,86 @@ bridgeUrlInput.addEventListener('input', () => { saveSettings(); checkBridge(); 
 setInterval(checkBridge, 10000);
 checkBridge();
 
-function appendResponse(site, text) {
+document.querySelectorAll('.bridge-preset').forEach(btn => {
+  btn.addEventListener('click', () => {
+    bridgeUrlInput.value = btn.dataset.bridge;
+    saveSettings();
+    checkBridge();
+  });
+});
+
+const sendStatus = document.getElementById('sendStatus');
+const clearResponsesBtn = document.getElementById('clearResponsesBtn');
+
+function setBusy(btn, label) {
+  btn.dataset.label = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = label;
+}
+function clearBusy(btn) {
+  btn.disabled = false;
+  if (btn.dataset.label) btn.textContent = btn.dataset.label;
+}
+
+const MAX_STORED_RESPONSES = 20;
+
+function appendResponse(site, text, ts, persist = true) {
   const div = document.createElement('div');
   div.className = 'response';
-  div.innerHTML = `<h3>${site}</h3><pre>${text}</pre>`;
+  const h = document.createElement('h3');
+  h.textContent = site;
+  const time = document.createElement('span');
+  time.className = 'resp-time';
+  time.textContent = new Date(ts || Date.now()).toLocaleTimeString();
+  const pre = document.createElement('pre');
+  pre.textContent = text;
+  div.append(h, time, pre);
   responsesDiv.appendChild(div);
+  if (persist) {
+    chrome.storage.local.get('responses', r => {
+      const list = Array.isArray(r.responses) ? r.responses : [];
+      list.push({ site, text, ts: ts || Date.now() });
+      chrome.storage.local.set({ responses: list.slice(-MAX_STORED_RESPONSES) });
+    });
+  }
 }
+
+chrome.storage.local.get('responses', r => {
+  if (Array.isArray(r.responses)) {
+    for (const resp of r.responses) appendResponse(resp.site, resp.text, resp.ts, false);
+  }
+});
+
+clearResponsesBtn.addEventListener('click', () => {
+  responsesDiv.innerHTML = '';
+  chrome.storage.local.remove('responses');
+});
 
 function sendPrompt() {
   const text = promptInput.value.trim();
   if (!text) return;
   const targets = selectedTargets();
-  chrome.runtime.sendMessage({ cmd: 'BROADCAST_PROMPT', text, targets });
+  if (!targets.length) {
+    sendStatus.textContent = 'No targets selected.';
+    return;
+  }
+  setBusy(sendBtn, 'Sending…');
+  sendStatus.textContent = '';
+  chrome.runtime.sendMessage({ cmd: 'BROADCAST_PROMPT', text, targets }, (resp) => {
+    clearBusy(sendBtn);
+    if (chrome.runtime.lastError) {
+      sendStatus.textContent = `Error: ${chrome.runtime.lastError.message}`;
+      return;
+    }
+    if (!resp || !resp.ok) {
+      sendStatus.textContent = `Failed: ${resp?.error || 'unknown'}`;
+      return;
+    }
+    const parts = resp.results.map(r =>
+      r.ok ? `${r.key}${r.opened ? ' (opened tab)' : ''}` : `${r.key}: ${r.error}`);
+    const okCount = resp.results.filter(r => r.ok).length;
+    sendStatus.textContent = `Sent ${okCount}/${resp.results.length} — ${parts.join(' · ')}`;
+  });
 }
 
 sendBtn.addEventListener('click', sendPrompt);
@@ -85,6 +184,57 @@ promptInput.addEventListener('keydown', (e) => {
     e.preventDefault();
     sendPrompt();
   }
+});
+
+// Saved prompts
+const savedPromptsSelect = document.getElementById('savedPrompts');
+const savePromptBtn = document.getElementById('savePromptBtn');
+const delPromptBtn = document.getElementById('delPromptBtn');
+const MAX_SAVED_PROMPTS = 20;
+
+function renderSavedPrompts(list) {
+  savedPromptsSelect.innerHTML = '<option value="">Saved prompts…</option>';
+  list.forEach((p, i) => {
+    const opt = document.createElement('option');
+    opt.value = String(i);
+    opt.textContent = p.length > 60 ? p.slice(0, 60) + '…' : p;
+    savedPromptsSelect.appendChild(opt);
+  });
+}
+
+chrome.storage.local.get('savedPrompts', r => {
+  renderSavedPrompts(Array.isArray(r.savedPrompts) ? r.savedPrompts : []);
+});
+
+savePromptBtn.addEventListener('click', () => {
+  const text = promptInput.value.trim();
+  if (!text) return;
+  chrome.storage.local.get('savedPrompts', r => {
+    let list = Array.isArray(r.savedPrompts) ? r.savedPrompts : [];
+    list = list.filter(p => p !== text);
+    list.unshift(text);
+    list = list.slice(0, MAX_SAVED_PROMPTS);
+    chrome.storage.local.set({ savedPrompts: list }, () => renderSavedPrompts(list));
+  });
+});
+
+savedPromptsSelect.addEventListener('change', () => {
+  const i = Number(savedPromptsSelect.value);
+  if (savedPromptsSelect.value === '') return;
+  chrome.storage.local.get('savedPrompts', r => {
+    const list = Array.isArray(r.savedPrompts) ? r.savedPrompts : [];
+    if (list[i] != null) promptInput.value = list[i];
+  });
+});
+
+delPromptBtn.addEventListener('click', () => {
+  const i = Number(savedPromptsSelect.value);
+  if (savedPromptsSelect.value === '') return;
+  chrome.storage.local.get('savedPrompts', r => {
+    const list = Array.isArray(r.savedPrompts) ? r.savedPrompts : [];
+    list.splice(i, 1);
+    chrome.storage.local.set({ savedPrompts: list }, () => renderSavedPrompts(list));
+  });
 });
 
 chrome.runtime.onMessage.addListener(request => {
@@ -185,7 +335,10 @@ async function captureNotebooklmCookies() {
 }
 
 captureCookiesBtn.addEventListener('click', () => {
-  captureNotebooklmCookies().catch(err => cookieStatus.textContent = `Error: ${err.message}`);
+  setBusy(captureCookiesBtn, 'Capturing…');
+  captureNotebooklmCookies()
+    .catch(err => cookieStatus.textContent = `Error: ${err.message}`)
+    .finally(() => clearBusy(captureCookiesBtn));
 });
 
 copyCookiesBtn.addEventListener('click', () => {
@@ -196,6 +349,7 @@ copyCookiesBtn.addEventListener('click', () => {
 sendCookiesBtn.addEventListener('click', async () => {
   if (!lastCookiesJson) return cookieStatus.textContent = 'Capture first.';
   const url = (bridgeUrlInput.value.trim() || 'http://127.0.0.1:9876').replace(/\/+$/, '');
+  setBusy(sendCookiesBtn, 'Sending…');
   try {
     const res = await fetch(`${url}/cookies`, {
       method: 'POST',
@@ -206,6 +360,8 @@ sendCookiesBtn.addEventListener('click', async () => {
     cookieStatus.textContent = res.ok ? `Bridge: ${text}` : `Bridge error ${res.status}: ${text}`;
   } catch (err) {
     cookieStatus.textContent = `Bridge unreachable: ${err.message}`;
+  } finally {
+    clearBusy(sendCookiesBtn);
   }
 });
 
@@ -219,15 +375,39 @@ function getNbConfig() {
 nbListBtn.addEventListener('click', async () => {
   const { nbApiKey, nbBaseUrl } = getNbConfig();
   if (!nbApiKey || !nbBaseUrl) return nbStatus.textContent = 'Set API key and base URL.';
+  setBusy(nbListBtn, 'Loading…');
   try {
     const res = await fetch(`${nbBaseUrl}/v1/notebooks`, { headers: { 'X-API-Key': nbApiKey } });
     if (!res.ok) throw new Error(res.statusText);
     const data = await res.json();
-    const notebooks = data.notebooks || data;
+    const notebooks = data.items || data.notebooks || data;
     populateNotebookList(notebooks);
     nbStatus.textContent = `Loaded ${notebooks.length} notebooks.`;
   } catch (err) {
     nbStatus.textContent = `List failed: ${err.message}`;
+  } finally {
+    clearBusy(nbListBtn);
+  }
+});
+
+const nbAuthBtn = document.getElementById('nbAuthBtn');
+nbAuthBtn.addEventListener('click', async () => {
+  const { nbApiKey, nbBaseUrl } = getNbConfig();
+  if (!nbApiKey || !nbBaseUrl) return nbStatus.textContent = 'Set API key and base URL.';
+  setBusy(nbAuthBtn, 'Checking…');
+  try {
+    const res = await fetch(`${nbBaseUrl}/health/auth`, { headers: { 'X-API-Key': nbApiKey } });
+    const data = await res.json().catch(() => ({}));
+    if (res.ok && data.auth === 'ok') {
+      const acct = data.probe?.account?.email || '';
+      nbStatus.textContent = `Session OK${acct ? ` (${acct})` : ''} — master_token: ${data.probe?.master_token?.present ? 'yes' : 'no'}`;
+    } else {
+      nbStatus.textContent = `Session problem ${res.status}: ${data.detail || data.auth || 'unknown'}`;
+    }
+  } catch (err) {
+    nbStatus.textContent = `Auth check error: ${err.message}`;
+  } finally {
+    clearBusy(nbAuthBtn);
   }
 });
 
@@ -254,6 +434,7 @@ nbUploadBtn.addEventListener('click', async () => {
   if (!nbApiKey || !nbBaseUrl || !notebookId) return nbStatus.textContent = 'Set API key, base URL and notebook ID.';
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   if (!tab) return nbStatus.textContent = 'No active tab.';
+  setBusy(nbUploadBtn, 'Uploading…');
   try {
     const result = await chrome.scripting.executeScript({
       target: { tabId: tab.id },
@@ -270,6 +451,8 @@ nbUploadBtn.addEventListener('click', async () => {
     nbStatus.textContent = res.ok ? `Uploaded: ${res.status} ${out}` : `Upload failed ${res.status}: ${out}`;
   } catch (err) {
     nbStatus.textContent = `Upload error: ${err.message}`;
+  } finally {
+    clearBusy(nbUploadBtn);
   }
 });
 
@@ -302,11 +485,19 @@ function captureDebugInfo(site) {
   const adapter = matched ? ADAPTERS[matched] : null;
   const el = adapter ? document.querySelector(adapter.promptSelector) : null;
   const btn = adapter ? document.querySelector(adapter.sendSelector) : null;
-  return {
+  const result = {
     site, host, url: location.href, matched,
     prompt: { found: !!el, selector: getCssPath(el), html: el ? el.outerHTML.slice(0, 500) : '', rect: rectObj(el ? el.getBoundingClientRect() : null) },
     send: { found: !!btn, selector: getCssPath(btn), html: btn ? btn.outerHTML.slice(0, 500) : '', rect: rectObj(btn ? btn.getBoundingClientRect() : null) }
   };
+  if (!adapter) {
+    const describe = e => ({ selector: getCssPath(e), html: e.outerHTML.slice(0, 200) });
+    result.candidates = {
+      inputs: Array.from(document.querySelectorAll('textarea, [contenteditable="true"], input[type="text"]')).slice(0, 8).map(describe),
+      buttons: Array.from(document.querySelectorAll('button[aria-label], button[type="submit"], [role="button"][aria-label]')).slice(0, 8).map(describe)
+    };
+  }
+  return result;
 }
 
 const debugCaptureBtn = document.getElementById('debugCaptureBtn');
@@ -315,6 +506,7 @@ const debugStatus = document.getElementById('debugStatus');
 debugCaptureBtn.addEventListener('click', async () => {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   if (!tab) return debugStatus.textContent = 'No active tab.';
+  setBusy(debugCaptureBtn, 'Capturing…');
   let debug = {};
   try {
     const res = await chrome.scripting.executeScript({
@@ -326,6 +518,7 @@ debugCaptureBtn.addEventListener('click', async () => {
   } catch (err) {
     debugStatus.textContent = `Script injection failed for ${tab.url}: ${err.message}`;
     console.error('debug capture error:', err);
+    clearBusy(debugCaptureBtn);
     return;
   }
   debugStatus.textContent = `Debug captured: prompt=${debug.prompt?.found}, send=${debug.send?.found}. Sending to bridge...`;
@@ -341,6 +534,8 @@ debugCaptureBtn.addEventListener('click', async () => {
     debugStatus.textContent = res.ok ? text : `Debug save failed: ${res.status} ${text}`;
   } catch (err) {
     debugStatus.textContent = `Capture error: ${err.message}`;
+  } finally {
+    clearBusy(debugCaptureBtn);
   }
 });
 
@@ -349,6 +544,7 @@ const dumpPageBtn = document.getElementById('dumpPageBtn');
 dumpPageBtn.addEventListener('click', async () => {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   if (!tab) return debugStatus.textContent = 'No active tab.';
+  setBusy(dumpPageBtn, 'Dumping…');
   let page = {};
   try {
     const res = await chrome.scripting.executeScript({
@@ -387,5 +583,7 @@ dumpPageBtn.addEventListener('click', async () => {
     debugStatus.textContent = res.ok ? `Dumped ${page.text.length} chars: ${text}` : `Dump failed: ${res.status} ${text}`;
   } catch (err) {
     debugStatus.textContent = `Dump error: ${err.message}`;
+  } finally {
+    clearBusy(dumpPageBtn);
   }
 });
