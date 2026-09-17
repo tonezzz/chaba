@@ -14,8 +14,8 @@ Versioned, reproducible deployment of the Ada HA (Tony + Michael) voice PWA back
 
 `/home/tony/.config/secrets/` must contain:
 
-- `ada-ha-tony.env` — `GEMINI_API_KEY`, `HOME_ASSISTANT_URL=https://tony-dell.taila0626a.ts.net:8123/`, `HOME_ASSISTANT_TOKEN`, etc.
-- `ada-ha-michael.env` — `GEMINI_API_KEY`, `HOME_ASSISTANT_URL=http://michael-ha:8123/`, `HOME_ASSISTANT_TOKEN`, etc.
+- `ada-ha-tony.env` — `GEMINI_API_KEY`, `HOME_ASSISTANT_URL=https://tony-dell.taila0626a.ts.net:8123/`, `HOME_ASSISTANT_TOKEN`, `ADA_INSTANCE_ID=tony`, etc.
+- `ada-ha-michael.env` — `GEMINI_API_KEY`, `HOME_ASSISTANT_URL=http://michael-ha:8123/`, `HOME_ASSISTANT_TOKEN`, `ADA_INSTANCE_ID=michael`, etc.
 - `notebooklm-rest-api.env` — shared NotebookLM REST API config
 
 These are **not** in git. Back them up via `scripts/backup-mn01.sh`.

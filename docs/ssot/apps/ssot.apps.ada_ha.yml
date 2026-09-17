@@ -26,6 +26,8 @@ sections:
         text: REST and websocket client for HA states, control, history, logbook, event transitions, power summary, and dashboard tab extraction.
       - label: /home/tony/CascadeProjects/ada-pi/backend/event_recorder.py
         text: Background websocket subscriber recording state_changed transitions for event domains; ring buffer plus batched MDDB persistence (collection ada-ha-events-*). Disable via DISABLE_EVENT_RECORDER=true.
+      - label: /home/tony/CascadeProjects/ada-pi/backend/instance.py
+        text: 'ADA_INSTANCE_ID resolution. Required, fail-fast: pins all MDDB memory collections to ada-ha-*-<instance> (tony/michael) instead of deriving them from HOME_ASSISTANT_URL. Missing or invalid → the service refuses to start.'
       - label: /home/tony/.config/systemd/user/ada-ha-tony.service
         text: Runs uvicorn on 0.0.0.0:8002 on mn01 with env /home/tony/.config/secrets/ada-ha-tony.env.
       - label: /home/tony/.config/systemd/user/ada-ha-michael.service
@@ -168,10 +170,12 @@ sections:
         text: ssot.audit.hosts.yml now expects ada-ha-tony.service and ada-ha-michael.service on mn01.
       - label: Secrets and tokens are not in git
         text: ~/.config/secrets/ada-ha-*.env and notebooklm-rest-api.env are still host-local and must be backed up separately.
+      - label: URL-derived collection names orphan memory
+        text: MDDB collections were once keyed by HOME_ASSISTANT_URL slug; moving tony from 127.0.0.1 to the tailnet URL abandoned the old collections. ADA_INSTANCE_ID now pins identity; rule is fail quick and report, never silently fall back for identity config.
 config:
   version: 5
   created: '2026-09-13'
-  updated: '2026-09-16'
+  updated: '2026-09-17'
   maintainer: tony
   status: active
   deployment: mn01
