@@ -124,6 +124,15 @@ tools:
       decisions: ["install prebuilt binaries from GitHub releases"]
       priority: optional
 
+    - name: qrencode
+      package:
+        linux: qrencode
+        mac: qrencode
+      command: "qrencode -t ANSIUTF8 <text>"
+      verify: "qrencode --version"
+      decisions: ["render QR codes for unlock deep-links (ada-key-url.sh --qr)", "share URLs to phones/tablets"]
+      priority: useful
+
   runtimes:
     - name: node
       package:

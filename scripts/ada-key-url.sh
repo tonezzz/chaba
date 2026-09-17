@@ -8,8 +8,8 @@ set -euo pipefail
 
 instance="${1:-}"; want_qr="${2:-}"
 case "$instance" in
-  tony)    host=mn01;      env_name=ada-ha-tony.env;    base=https://mn01.taila0626a.ts.net/apps/ada_ha_tony/ ;;
-  michael) host=mn01;      env_name=ada-ha-michael.env; base=https://mn01.taila0626a.ts.net/apps/ada_ha_michael/ ;;
+  tony)    host=mn01;      env_name=ada-ha-tony.env;    base=https://mn01.taila0626a.ts.net/apps/ha/ada-tony/ ;;
+  michael) host=mn01;      env_name=ada-ha-michael.env; base=https://mn01.taila0626a.ts.net/apps/ha/ada-michael/ ;;
   ada-pi)  host=tony-dell; env_name=ada-pi-pwa.env;     base=https://tony-dell.taila0626a.ts.net/apps/ada_pi/ ;;
   *) echo "usage: $0 <tony|michael|ada-pi> [--qr]" >&2; exit 2 ;;
 esac
@@ -24,11 +24,13 @@ origin="${base%%/apps/*}"
 path="${base#"$origin"}"; path="${path%/}"
 
 if [[ "$want_qr" == "--qr" ]]; then
-  resp="$(curl -fsS --max-time 10 -X POST "${base}api/auth/redeem-token" \
+  resp="$(curl -fsSL --max-time 10 -X POST "${base}api/auth/redeem-token" \
     -H "x-api-key: ${key}" -H 'content-type: application/json' \
     -d "{\"path\": \"${path}\"}")" || { echo "redeem-token request failed" >&2; exit 1; }
   read -r rel ttl < <(python3 -c \
-    'import json,sys; r=json.load(sys.stdin); print(r["redeem_url"], r["expires_in"])' <<< "$resp")
+    'import json,sys; r=json.load(sys.stdin); print(r["redeem_url"], r["expires_in"])' <<< "$resp") \
+    || { echo "unexpected redeem-token response: $resp" >&2; exit 1; }
+  [[ -n "$rel" ]] || { echo "empty redeem_url in response: $resp" >&2; exit 1; }
   url="${origin}${rel}"
   echo "$url"
   echo "(one-time redeem link — burns on first use, expires in ${ttl}s)" >&2
