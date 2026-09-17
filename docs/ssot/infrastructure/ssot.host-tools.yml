@@ -2,7 +2,7 @@ id: ssot.host-tools
 title: Host Network & System Toolkit
 subtitle: Standard diagnostic and inspection tools for decision making across hosts
 icon: toolbox
-version: 2
+version: 3
 maintainer: tony
 status: active
 category: infrastructure
@@ -194,6 +194,57 @@ tools:
       verify: "gh --version"
       decisions: ["GitHub PR/issue operations (dev machines; needs auth)"]
       priority: optional
+
+    - name: uv
+      package: {}
+      command: "uv venv / uv pip install <pkg>"
+      verify: "uv --version"
+      decisions: ["fast venv + package management (install via eget astral-sh/uv or pipx)"]
+      priority: optional
+
+    - name: websocat
+      package: {}
+      command: "websocat '<ws-url>'"
+      verify: "websocat --version"
+      decisions: ["WebSocket smoke tests (ada /ws endpoints; install via eget vi/websocat)"]
+      priority: optional
+
+  python:
+    - name: pyyaml
+      package:
+        linux: python3-yaml
+      check: "python3 -c 'import yaml'"
+      command: "python3 -c 'import yaml'"
+      verify: "python3 -c 'import yaml; print(yaml.__version__)'"
+      decisions: ["SSOT YAML parsing — required by most chaba scripts incl. check-host-tools.py"]
+      priority: essential
+
+    - name: websockets
+      package:
+        linux: python3-websockets
+      check: "python3 -c 'import websockets'"
+      command: "python3 -c 'import websockets'"
+      verify: "python3 -c 'import websockets; print(websockets.__version__)'"
+      decisions: ["HA websocket ops (push-dashboard.py), ws probes"]
+      priority: essential
+
+    - name: requests
+      package:
+        linux: python3-requests
+      check: "python3 -c 'import requests'"
+      command: "python3 -c 'import requests'"
+      verify: "python3 -c 'import requests; print(requests.__version__)'"
+      decisions: ["ad-hoc HTTP/API scripts"]
+      priority: useful
+
+    - name: qrcode
+      package:
+        linux: python3-qrcode
+      check: "python3 -c 'import qrcode'"
+      command: "python3 -c 'import qrcode'"
+      verify: "python3 -c 'import qrcode; print(qrcode.__version__)'"
+      decisions: ["QR generation in Python (pwa_server qr_svg, ad-hoc pairing links)"]
+      priority: useful
 
   runtimes:
     - name: node
