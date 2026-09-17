@@ -197,16 +197,18 @@ tools:
 
     - name: uv
       package: {}
+      check: "PATH=$HOME/.local/bin:$PATH command -v uv"
       command: "uv venv / uv pip install <pkg>"
-      verify: "uv --version"
-      decisions: ["fast venv + package management (install via eget astral-sh/uv or pipx)"]
+      verify: "PATH=$HOME/.local/bin:$PATH uv --version"
+      decisions: ["fast venv + package management (install: astral.sh/uv script or eget astral-sh/uv)"]
       priority: optional
 
     - name: websocat
       package: {}
+      check: "PATH=$HOME/.local/bin:$PATH command -v websocat"
       command: "websocat '<ws-url>'"
-      verify: "websocat --version"
-      decisions: ["WebSocket smoke tests (ada /ws endpoints; install via eget vi/websocat)"]
+      verify: "PATH=$HOME/.local/bin:$PATH websocat --version"
+      decisions: ["WebSocket smoke tests (ada /ws endpoints; install via eget vi/websocat -a x86_64-unknown-linux-musl)"]
       priority: optional
 
   python:
@@ -242,7 +244,7 @@ tools:
         linux: python3-qrcode
       check: "python3 -c 'import qrcode'"
       command: "python3 -c 'import qrcode'"
-      verify: "python3 -c 'import qrcode; print(qrcode.__version__)'"
+      verify: "python3 -c 'import importlib.metadata as m; print(m.version(\"qrcode\"))'"
       decisions: ["QR generation in Python (pwa_server qr_svg, ad-hoc pairing links)"]
       priority: useful
 

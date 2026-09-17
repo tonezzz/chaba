@@ -110,7 +110,7 @@ def _main() -> int:
 
             check_cmd = tool.get("check", f"command -v {shlex.quote(name)}")
             which = _ssh(args.host, check_cmd)
-            installed = which.returncode == 0 and which.stdout.strip()
+            installed = which.returncode == 0
 
             if not installed:
                 result["missing"].append(record)
@@ -120,7 +120,7 @@ def _main() -> int:
                     if inst.returncode == 0:
                         # Re-check
                         which2 = _ssh(args.host, check_cmd)
-                        if which2.returncode == 0 and which2.stdout.strip():
+                        if which2.returncode == 0:
                             result["installed_now"].append(record)
                             result["missing"] = [m for m in result["missing"] if m["name"] != name]
                             installed = True
