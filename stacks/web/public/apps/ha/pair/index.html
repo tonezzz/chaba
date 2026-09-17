@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#0e1117">
+  <meta name="description" content="Issue a named device key and one-time pairing QR for an Ada HA voice assistant instance.">
+  <title>Ada HA — Pair a device</title>
+  <link rel="stylesheet" href="../styles.css">
+  <style>
+    .wrap { max-width: 720px; margin: 0 auto; padding: 1.5rem; display: flex; flex-direction: column; gap: 1.25rem; }
+    .card { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; padding: 1.25rem; display: flex; flex-direction: column; gap: .75rem; }
+    .card h2 { margin: 0; font-size: 1.05rem; color: var(--accent); }
+    .card .sub { font-size: .8rem; color: var(--muted); word-break: break-all; }
+    .row { display: flex; gap: .5rem; align-items: center; flex-wrap: wrap; }
+    input[type="password"], input[type="text"] {
+      flex: 1; min-width: 180px; padding: .55rem .7rem; border-radius: 6px;
+      border: 1px solid var(--border); background: var(--bg); color: var(--text);
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .85rem;
+    }
+    button {
+      padding: .55rem 1rem; border-radius: 6px; border: 1px solid var(--border);
+      background: var(--panel); color: var(--text); cursor: pointer; font-size: .9rem;
+    }
+    button.primary { background: var(--accent); border-color: var(--accent); color: #0e1117; font-weight: 600; }
+    button:hover { border-color: var(--accent); }
+    button.primary:hover { filter: brightness(1.1); }
+    button:disabled { opacity: .5; cursor: default; }
+    button.danger { color: #f47067; font-size: .75rem; padding: .25rem .6rem; }
+    .status { font-size: .8rem; min-height: 1.2em; }
+    .status.err { color: #f47067; }
+    .status.ok { color: #3fb950; }
+    .status.muted { color: var(--muted); }
+    .qr-box { display: flex; flex-direction: column; align-items: center; gap: .75rem; }
+    .qr-box svg { width: 220px; height: 220px; background: #fff; border-radius: 8px; padding: 8px; }
+    .link-box { display: flex; gap: .5rem; width: 100%; }
+    .link-box input { font-size: .75rem; }
+    .expiry { font-size: .8rem; color: var(--muted); }
+    .expiry.warn { color: #d29922; }
+    a { color: var(--accent); }
+    .hint { font-size: .8rem; color: var(--muted); }
+    .devices { display: flex; flex-direction: column; gap: .4rem; }
+    .device { display: flex; align-items: center; gap: .5rem; font-size: .85rem; }
+    .device code { flex: 1; color: var(--text); }
+    .details { border-top: 1px solid var(--border); padding-top: .5rem; font-size: .8rem; color: var(--muted); }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Ada HA — Pair a device</h1>
+    <p><a href="/apps/ha/">← Home Assistant</a> · name a device → get a one-time QR → scan to authorize it</p>
+  </header>
+  <main class="wrap">
+    <section class="card" id="admin-card">
+      <h2>Admin key</h2>
+      <div class="sub">Paste the shared admin key once — it's only used to issue device keys and stays in this browser.</div>
+      <div class="row">
+        <input type="password" id="admin-key" placeholder="Admin key (ADA_API_KEYS admin:… on mn01)">
+        <button id="admin-save">Save</button>
+      </div>
+      <div class="status muted" id="admin-status"></div>
+    </section>
+    <section id="instances"></section>
+    <section class="card" id="result" hidden>
+      <h2 id="result-title">Pairing link</h2>
+      <div class="qr-box" id="qr-box"></div>
+      <div class="link-box">
+        <input type="text" id="pair-link" readonly>
+        <button id="copy-btn">Copy</button>
+      </div>
+      <div class="expiry" id="expiry"></div>
+      <div class="hint">Single use, ~10 minutes. The device that opens it stores its own key and unlocks the app immediately.</div>
+    </section>
+    <div class="row">
+      <button id="forget-btn">Forget admin key</button>
+    </div>
+  </main>
+  <script>
+    const INSTANCES = [
+      { id: "tony", title: "Ada HA Tony", base: "/apps/ada_ha_tony", desc: "Tony's home (tony-ha)" },
+      { id: "michael", title: "Ada HA Michael", base: "/apps/ada_ha_michael", desc: "Michael's home (michael-ha)" },
+    ];
+    const ADMIN_KEY = "ada_pair_admin_key";
+    const adminInput = document.querySelector("#admin-key");
+    const adminStatus = document.querySelector("#admin-status");
+    const instEl = document.querySelector("#instances");
+    const resultEl = document.querySelector("#result");
+    const qrBox = document.querySelector("#qr-box");
+    const linkInput = document.querySelector("#pair-link");
+    const expiryEl = document.querySelector("#expiry");
+    const titleEl = document.querySelector("#result-title");
+    let countdown = null;
+
+    adminInput.value = localStorage.getItem(ADMIN_KEY) || "";
+    adminStatus.textContent = adminInput.value ? "Saved — ready to issue device keys." : "Not set.";
+    adminStatus.className = adminInput.value ? "status ok" : "status muted";
+
+    document.querySelector("#admin-save").addEventListener("click", () => {
+      const k = adminInput.value.trim();
+      if (!k) { adminStatus.textContent = "Paste the key first."; adminStatus.className = "status err"; return; }
+      localStorage.setItem(ADMIN_KEY, k);
+      adminStatus.textContent = "Saved."; adminStatus.className = "status ok";
+    });
+    document.querySelector("#forget-btn").addEventListener("click", () => {
+      localStorage.removeItem(ADMIN_KEY);
+      adminInput.value = "";
+      adminStatus.textContent = "Cleared."; adminStatus.className = "status muted";
+    });
+
+    const adminKey = () => adminInput.value.trim() || localStorage.getItem(ADMIN_KEY) || "";
+
+    async function api(inst, method, path, body) {
+      const resp = await fetch(`${inst.base}${path}`, {
+        method,
+        headers: { "Content-Type": "application/json", "X-Api-Key": adminKey() },
+        body: body ? JSON.stringify(body) : undefined,
+      });
+      if (resp.status === 401) throw new Error("401");
+      const data = await resp.json().catch(() => ({}));
+      if (!resp.ok) throw new Error(data.detail || `HTTP ${resp.status}`);
+      return data;
+    }
+
+    for (const inst of INSTANCES) {
+      const div = document.createElement("div");
+      div.className = "card";
+      div.innerHTML = `
+        <h2>${inst.title}</h2>
+        <div class="sub">${inst.desc} · ${inst.base}</div>
+        <div class="row">
+          <input type="text" id="name-${inst.id}" placeholder="Device name (e.g. tony-iphone)">
+          <button class="primary" id="go-${inst.id}">Generate QR</button>
+        </div>
+        <div class="status muted" id="status-${inst.id}"></div>
+        <div class="devices" id="devices-${inst.id}"></div>`;
+      instEl.appendChild(div);
+      div.querySelector(`#go-${inst.id}`).addEventListener("click", () => issue(inst));
+      div.querySelector(`#name-${inst.id}`).addEventListener("keydown", e => { if (e.key === "Enter") issue(inst); });
+      refreshDevices(inst);
+    }
+
+    async function refreshDevices(inst) {
+      const box = document.querySelector(`#devices-${inst.id}`);
+      box.innerHTML = "";
+      try {
+        const data = await api(inst, "GET", "/api/auth/keys");
+        if (!data.issued?.length) return;
+        const details = document.createElement("div");
+        details.className = "details";
+        details.textContent = "Issued device keys:";
+        box.appendChild(details);
+        for (const name of data.issued) {
+          const row = document.createElement("div");
+          row.className = "device";
+          row.innerHTML = `<code>${name}</code>`;
+          const btn = document.createElement("button");
+          btn.className = "danger";
+          btn.textContent = "Revoke";
+          btn.addEventListener("click", async () => {
+            if (!confirm(`Revoke key "${name}" on ${inst.title}? The device loses access immediately.`)) return;
+            try { await api(inst, "DELETE", `/api/auth/keys/${name}`); refreshDevices(inst); }
+            catch (e) { alert(`Revoke failed: ${e.message}`); }
+          });
+          row.appendChild(btn);
+          box.appendChild(row);
+        }
+      } catch { /* leave empty if admin key not set */ }
+    }
+
+    async function issue(inst) {
+      const input = document.querySelector(`#name-${inst.id}`);
+      const status = document.querySelector(`#status-${inst.id}`);
+      const btn = document.querySelector(`#go-${inst.id}`);
+      const name = input.value.trim();
+      if (!adminKey()) { status.textContent = "Save the admin key above first."; status.className = "status err"; adminInput.focus(); return; }
+      if (!name) { status.textContent = "Enter a device name first."; status.className = "status err"; input.focus(); return; }
+      btn.disabled = true;
+      status.textContent = `Issuing key "${name}"…`; status.className = "status muted";
+      try {
+        const data = await api(inst, "POST", "/api/auth/keys", { name, path: inst.base, qr: true, origin: location.origin });
+        status.textContent = `Key "${name}" issued.`; status.className = "status ok";
+        input.value = "";
+        showResult(inst, name, location.origin + data.redeem_url, data.qr_svg, data.expires_in);
+        refreshDevices(inst);
+      } catch (e) {
+        status.textContent = e.message === "401"
+          ? "Admin key rejected — check it above."
+          : `Failed: ${e.message}`;
+        status.className = "status err";
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    function showResult(inst, name, url, svg, ttl) {
+      resultEl.hidden = false;
+      titleEl.textContent = `${inst.title} · ${name} — scan to pair`;
+      qrBox.innerHTML = svg || `<div class="hint">QR unavailable — use the link below.</div>`;
+      linkInput.value = url;
+      if (countdown) clearInterval(countdown);
+      let left = ttl;
+      const tick = () => {
+        expiryEl.textContent = left > 0 ? `Expires in ${left}s (or on first use)` : "Expired — generate a new link.";
+        expiryEl.className = left > 30 ? "expiry" : "expiry warn";
+        left -= 1;
+      };
+      tick(); countdown = setInterval(tick, 1000);
+      resultEl.scrollIntoView({ behavior: "smooth", block: "nearest" });
+    }
+
+    document.querySelector("#copy-btn").addEventListener("click", async () => {
+      await navigator.clipboard.writeText(linkInput.value).catch(() => linkInput.select());
+      document.querySelector("#copy-btn").textContent = "Copied";
+      setTimeout(() => document.querySelector("#copy-btn").textContent = "Copy", 1200);
+    });
+  </script>
+</body>
+</html>

@@ -132,6 +132,8 @@ sections:
         text: Every /api/tools/call is logged with tool name, args, and client IP; denials logged as warnings.
       - label: QR onboarding
         text: 'POST /api/auth/redeem-token (authenticated, body {"path": appBase}) mints a single-use redeem URL (ADA_REDEEM_TTL_S, default 10min). GET {base}/redeem/{token} burns it, sets the session cookie, and redirects to {base}/?api_key=<key> so the PWA stores the key. Scan once on iPhone/iPad and the device is authorized.'
+      - label: Device keys
+        text: 'POST /api/auth/keys {name} issues a per-device key persisted in ~/.config/secrets/ada-ha-<instance>-keys.json (ADA_KEYS_FILE to override) and returns its redeem URL/QR. GET lists names, DELETE /api/auth/keys/{name} revokes the key AND its sessions. Pair UI: /apps/ha/pair/ (admin key = ADA_API_KEYS admin:… shared on both instances).'
       - label: Voice path
         text: Gemini control calls route through ToolRunner; the model must pass confirmed=true after explicit user confirmation.
   - title: Known Issues
