@@ -179,7 +179,8 @@ async def _queue_flush() -> dict:
     remaining += queue[len(results):]
     async with _store_lock:
         _save_json(_QUEUE_PATH, remaining)
-    return {"flushed": len(results) - len(remaining), "remaining": len(remaining), "results": results}
+    flushed = sum(1 for r in results if r["ok"])
+    return {"flushed": flushed, "remaining": len(remaining), "results": results}
 
 
 # ----------------------------
