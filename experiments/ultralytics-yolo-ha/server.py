@@ -113,15 +113,17 @@ class Handler(BaseHTTPRequestHandler):
     def log_message(self, *args):
         pass
 
-    def _send(self, code, data, ctype, extra_headers=None):
+    def _send(self, code, data, ctype, extra_headers=None, method="GET"):
         self.send_response(code)
         self.send_header("Content-Type", ctype)
+        self.send_header("Content-Length", str(len(data)))
         self.send_header("Access-Control-Allow-Origin", "*")
         if extra_headers:
             for k, v in extra_headers.items():
                 self.send_header(k, v)
         self.end_headers()
-        self.wfile.write(data)
+        if method != "HEAD":
+            self.wfile.write(data)
 
     def _json(self, code, obj):
         self._send(code, json.dumps(obj, indent=2).encode(), "application/json")
@@ -132,9 +134,22 @@ class Handler(BaseHTTPRequestHandler):
     def do_OPTIONS(self):
         self.send_response(204)
         self.send_header("Access-Control-Allow-Origin", "*")
-        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS, HEAD")
         self.send_header("Access-Control-Allow-Headers", "Content-Type")
         self.end_headers()
+
+    def do_HEAD(self):
+        parsed = urlparse(self.path)
+        path = parsed.path
+        if path == "/image":
+            with state_lock:
+                img = state["annotated"]
+            if img is None:
+                self._send(404, b"no image yet", "text/plain", method="HEAD")
+            else:
+                self._send(200, img, "image/jpeg", method="HEAD")
+            return
+        self._send(200, b"", "text/plain", method="HEAD")
 
     def do_GET(self):
         parsed = urlparse(self.path)
