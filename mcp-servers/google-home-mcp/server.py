@@ -27,18 +27,53 @@ from pychromecast.models import CastInfo, HostServiceInfo
 BIND_HOST = os.environ.get("BIND_HOST", "127.0.0.1")
 PORT = int(os.environ.get("PORT", "8004"))
 CAST_HOSTS = [h.strip() for h in os.environ.get("CAST_HOSTS", "").split(",") if h.strip()]
+CACHE_PATH = os.environ.get(
+    "CACHE_PATH",
+    os.path.join(os.path.expanduser("~"), ".cache", "google-home-lan", "known-devices.json"),
+)
 
 mcp = FastMCP("google-home-lan")
 
 
-def _cast_info_for_host(host: str) -> CastInfo:
+def _load_cache() -> dict:
+    try:
+        return json.loads(open(CACHE_PATH).read())
+    except Exception:
+        return {}
+
+
+def _save_cache(cache: dict) -> None:
+    try:
+        os.makedirs(os.path.dirname(CACHE_PATH), exist_ok=True)
+        tmp = CACHE_PATH + ".tmp"
+        with open(tmp, "w") as f:
+            json.dump(cache, f)
+        os.replace(tmp, CACHE_PATH)
+    except Exception:
+        pass
+
+
+def _remember(info: CastInfo) -> None:
+    if not info.friendly_name:
+        return
+    cache = _load_cache()
+    cache[info.friendly_name.strip().lower()] = {
+        "host": info.host,
+        "model": info.model_name,
+        "manufacturer": info.manufacturer,
+        "uuid": str(info.uuid) if info.uuid else None,
+    }
+    _save_cache(cache)
+
+
+def _cast_info_for_host(host: str, friendly_name: str | None = None) -> CastInfo:
     """CastInfo for a static host, enriched via the eureka endpoint so it has
     a friendly name/model. Falls back to bare host on failure."""
     info = CastInfo(
         services={HostServiceInfo(host, 8009)},
         uuid=None,
         model_name=None,
-        friendly_name=None,
+        friendly_name=friendly_name,
         host=host,
         port=8009,
         cast_type=None,
@@ -61,6 +96,7 @@ def _cast_info_for_host(host: str) -> CastInfo:
                 cast_type="cast",
                 manufacturer=dev.get("manufacturer"),
             )
+            _remember(info)
     except Exception:
         pass
     return info
@@ -96,10 +132,13 @@ def _resolve(device: str) -> CastInfo:
         return _cast_info_for_host(device)
     devices = _discover()
     info = devices.get(device.lower())
-    if info is None:
-        known = ", ".join(sorted({i.friendly_name or i.host for i in devices.values()}))
-        raise ValueError(f"Device '{device}' not found. Discovered: {known or 'none'}")
-    return info
+    if info is not None:
+        return info
+    cached = _load_cache().get(device.lower())
+    if cached:
+        return _cast_info_for_host(cached["host"], friendly_name=device)
+    known = ", ".join(sorted({i.friendly_name or i.host for i in devices.values()}))
+    raise ValueError(f"Device '{device}' not found. Discovered: {known or 'none'}")
 
 
 @contextmanager
@@ -136,13 +175,14 @@ def discover_devices(timeout: float = 5.0) -> list[dict]:
     statically configured CAST_HOSTS). Returns friendly names for use in the
     other tools."""
     devices = _discover(timeout)
+    cache_by_host = {c["host"]: (n, c) for n, c in _load_cache().items()}
     seen = set()
     out = []
     for i in devices.values():
         if i.host in seen:
             continue
         seen.add(i.host)
-        out.append({
+        entry = {
             "name": i.friendly_name,
             "host": i.host,
             "port": i.port,
@@ -150,6 +190,31 @@ def discover_devices(timeout: float = 5.0) -> list[dict]:
             "manufacturer": i.manufacturer,
             "cast_type": i.cast_type,
             "uuid": str(i.uuid) if i.uuid else None,
+            "reachable": i.friendly_name is not None,
+        }
+        cached = cache_by_host.get(i.host)
+        if cached and i.friendly_name is None:
+            name, c = cached
+            entry["name"] = name
+            entry["model"] = c.get("model")
+            entry["manufacturer"] = c.get("manufacturer")
+            entry["uuid"] = c.get("uuid")
+            entry["cached"] = True
+        out.append(entry)
+    for name, c in cache_by_host.values():
+        if c["host"] in seen:
+            continue
+        seen.add(c["host"])
+        out.append({
+            "name": name,
+            "host": c["host"],
+            "port": 8009,
+            "model": c.get("model"),
+            "manufacturer": c.get("manufacturer"),
+            "cast_type": "cast",
+            "uuid": c.get("uuid"),
+            "reachable": False,
+            "cached": True,
         })
     return out
 

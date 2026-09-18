@@ -106,15 +106,23 @@ Parallel sessions caused real breakage: duplicated `pfg2-card.ts`, undeclared `v
 
 tony-dell's display stack (as of 2026-09-18):
 
-- `:1` / vt7 — the **persistent seat**: `xorg-seat.service` (root Xorg) + `lxqt-seat.service` (`startlxqt`, `Restart=always`). This is what Barrier controls. It is NOT the GDM greeter — the greeter lives on tty1 and `barrier-pin-vt.timer` keeps vt7 in the foreground.
+- `:1` / vt7 — the **persistent seat**: root Xorg + `xfce-seat.service` (`dbus-run-session -- xfce4-session`, `Restart=always`). This is what Barrier controls. It is NOT the GDM greeter — the greeter lives on tty1 and `barrier-pin-vt.timer` keeps vt7 in the foreground. (`lxqt-seat.service` was the predecessor — disabled 2026-09-18; pin-vt accepts either unit.)
 - `:20` — Chrome Remote Desktop's Xvfb session (`startxfce4`), separate and less durable.
 - `:99` — headless Xvfb for browser automation.
 
-`devin-desktop` belongs on `:1` (the persistent seat — same model as tony-omen's `:0` console session). Launching it on the CRD `:20` session means it dies when CRD restarts; launching it as a child of lxqt-session means it dies when `lxqt-seat` restarts. An ssh `nohup` launch on `:1` is the most durable manual option.
+`devin-desktop` belongs on `:1` (the persistent seat — same model as tony-omen's `:0` console session). Launching it on the CRD `:20` session means it dies when CRD restarts; launching it as a child of xfce4-session means it dies when `xfce-seat` restarts (but the XDG autostart immediately relaunches it — that is the designed lifecycle; a stray ssh-launched instance on the same display produces a SECOND devin process and duplicate windows, so don't launch manually while the seat session is alive).
 
-As of 2026-09-18 there is an XDG autostart entry (`~/.config/autostart/devin-desktop.desktop`), so devin-desktop starts automatically inside whichever desktop session comes up — after a reboot, `linger` → `lxqt-seat` → lxqt-session → autostart brings it back on `:1` with no manual step. GDM autologin is intentionally DISABLED: a gdm session on tty2 would steal the foreground VT from the Barrier seat and `barrier-pin-vt` is designed not to steal it back.
+As of 2026-09-18 there is an XDG autostart entry (`~/.config/autostart/devin-desktop.desktop`), so devin-desktop starts automatically inside whichever desktop session comes up — after a reboot, `linger` → `xfce-seat` → xfce4-session → autostart brings it back on `:1` with no manual step. GDM autologin is intentionally DISABLED: a gdm session on tty2 would steal the foreground VT from the Barrier seat and `barrier-pin-vt` is designed not to steal it back.
 
-Quick restart command (targets the persistent seat on `:1`):
+`xfce4-session` on the seat needs its own dbus session: the unit wraps it in `dbus-run-session` and unsets `SESSION_MANAGER DBUS_SESSION_BUS_ADDRESS GNOME_KEYRING_CONTROL SSH_AUTH_SOCK` — running bare `xfce4-session` or `startxfce4` under the shared user bus makes the session exit instantly (org.xfce.SessionManager name collision with the CRD session; `startxfce4` also exits immediately which restart-loops the unit).
+
+If devin is missing on `:1`, restart the seat session rather than launching devin by hand (a manual launch races the XDG autostart and produces two devin instances = duplicate windows):
+
+```bash
+ssh tony-dell 'systemctl --user restart xfce-seat.service'
+```
+
+Manual launch on `:1` is only for when NO desktop session is running (e.g. seat service broken):
 
 ```bash
 ssh tony-dell 'env DISPLAY=:1 XAUTHORITY=/run/user/1000/gdm/Xauthority DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus nohup /usr/share/devin-desktop/devin-desktop > /home/tony/.local/share/devin/cli/devin-restart-$(date +%Y%m%d-%H%M%S).log 2>&1 </dev/null &'
@@ -285,7 +293,8 @@ ssh tony-dell 'pgrep -a -f devin-desktop | grep -v "pgrep\|ssh\|tailscaled"'
 - `notebooklm-mcp-cli` (MCP/CLI) stores auth in `~/.notebooklm-mcp-cli/`, managed by `nlm`.
 - `notebooklm-py` (REST) uses `storage_state.json`; it expires more quickly than the `nlm` cookies.
 - Auth refresh: `~/.local/bin/notebooklm-rest-auth-refresh` runs daily on tony-omen, `rsync`s `storage_state.json` to tony-dell, and restarts `notebooklm-rest`.
-- CLI helpers: `~/.local/bin/nlm` (MCP/CLI via tony-dell container), `~/.local/bin/nbapi` (REST helper).
+- CLI helpers: `~/.local/bin/nlm` (ssh wrapper → `podman exec notebooklm-mcp nlm` on `$NLM_HOST`, default **mn01** — NOT the real binary), `~/.local/bin/nbapi` (REST helper).
+- **Re-auth when tokens go stale** (learned 2026-09-18): run `scripts/nlm-reauth.sh` on tony-omen. It invokes the real binary `~/.local/share/nlm-venv/bin/nlm login` (opens Chrome on the local display for Google sign-in), scp's `~/.notebooklm-mcp-cli/profiles/default/{cookies,metadata}.json` to `tony-dell:~/.local/share/notebooklm/.notebooklm-mcp-cli/profiles/default/`, and verifies with `nlm login --check` in the container. `SKIP_BROWSER=1` syncs existing creds without a login window. The `nlm` wrapper cannot do this — it SSHes to a container with no browser ("No supported browser found"), and CDP/openclaw auth only works if the target Chrome already has a Google session.
 - REST public URL: `https://tony-dell.taila0626a.ts.net/apps/notebooklm/api/v1/...` with `X-API-Key` from `~/.config/secrets/notebooklm-rest-api.env`.
 - Common commands:
   - `nlm notebook list`
@@ -302,6 +311,7 @@ ssh tony-dell 'pgrep -a -f devin-desktop | grep -v "pgrep\|ssh\|tailscaled"'
   - Local manifest: `~/.local/share/notebooklm/notebooks/<notebook-id>/manifest.yml`
   - Helper: `nlm-add <notebook-id> <local-file> [-t "<title>"]`
   - `nlm-add` converts `.md`/`.yml`/`.txt` to `.docx` on upload, adds by Drive ID, and records the source in the manifest
+- **Source deletion is broken at the API level** (`nlm source delete` / MCP `source_delete` → "Failed to delete source", matches earlier 401s). `notebook_delete` works. Delete individual sources via the NotebookLM web UI if needed.
 
 ## Chrome Remote Desktop (tony-dell)
 
