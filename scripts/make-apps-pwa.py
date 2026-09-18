@@ -8,7 +8,7 @@ import yaml
 BASE = '/home/tony/CascadeProjects/chaba-tony-dell/stacks/web/public/apps'
 SW_SNIPPET = '''\n<script>
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('/apps/sw.js', { scope: '/apps/' })
+    navigator.serviceWorker.register('/apps/sw.js?v=4', { scope: '/apps/' })
       .then((r) => console.log('SW registered', r.scope))
       .catch((e) => console.error('SW registration failed', e));
   }
@@ -46,6 +46,7 @@ def inject_head(html, title):
     head_inject = f'''\n  <meta name="theme-color" content="#1a1a2e">
   <meta name="background-color" content="#16213e">
   <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="{title}">
   <link rel="manifest" href="manifest.json">

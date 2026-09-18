@@ -19,8 +19,25 @@ http://127.0.0.1:8080 {
 	bind 127.0.0.1
 	root * /srv/public
 
+	# Ensure PWA shell and catalog metadata are always revalidated
+	@pwa_shell path_regexp \.(html|json|yml)$
+	header @pwa_shell Cache-Control "no-cache"
+
+	# Never let the browser or any intermediary cache the service worker
+	handle /apps/sw.js {
+		root * /srv/public
+		file_server
+		header Cache-Control "no-cache, no-store, must-revalidate"
+	}
+
 	handle /apps/gev {
 		redir /apps/gev/ 308
+	}
+
+	# GEV API proxy - must come before static files
+	handle /apps/gev/api/* {
+		uri strip_prefix /apps/gev
+		reverse_proxy 127.0.0.1:4173
 	}
 
 	handle_path /apps/gev/* {
