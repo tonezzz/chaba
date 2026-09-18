@@ -1,3 +1,8 @@
+---
+category: operations
+type: runbook
+---
+
 # Host Reboot Verification Runbook
 
 Standard procedure for planned reboots of `tony-omen` and `tony-dell`.

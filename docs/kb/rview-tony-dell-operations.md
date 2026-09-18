@@ -1,5 +1,6 @@
 ---
 category: operations
+type: runbook
 tags: [rview, rview-live, tony-dell, tailscale, podman, quadlet]
 created: 2026-08-22
 updated: 2026-08-22

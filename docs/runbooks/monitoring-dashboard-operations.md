@@ -3,9 +3,19 @@ title: Monitoring Dashboard Operations Runbook
 description: Operational procedures for the Chaba monitoring dashboard including real-time service monitoring, performance metrics, alert management, and troubleshooting
 tags: [monitoring, dashboard, operations, runbook, metrics, alerts]
 created: 2026-08-13
-updated: 2026-08-13
+updated: 2026-09-18
 category: operations
-related: [scripts/monitoring-dashboard.mjs, ssot.infrastructure/ssot.health.yml, kb/health-check.md]
+status: verified
+last_verified: 2026-09-18
+verification_method: live-tested (service active on tony-dell, :3002/api/status returns 200)
+scope: tony-dell (chaba-monitoring-dashboard.service); log paths under the chaba-tony-dell runtime checkout
+owner: tony
+related:
+  [
+    scripts/monitoring-dashboard.mjs,
+    docs/ssot/infrastructure/ssot.health.yml,
+    docs/kb/health-check.md,
+  ]
 search_keywords: [monitoring, dashboard, metrics, alerts, service-health, performance]
 ---
 
@@ -28,13 +38,13 @@ The Chaba monitoring dashboard provides real-time visibility into infrastructure
 
 ## Key Files
 
-| File                                         | Purpose                          |
-| -------------------------------------------- | -------------------------------- |
-| `scripts/monitoring-dashboard.mjs`           | Main monitoring dashboard server |
-| `scripts/test-monitoring-dashboard.sh`       | Dashboard test suite             |
-| `systemd/chaba-monitoring-dashboard.service` | Systemd service for auto-start   |
-| `logs/health-monitor.log`                    | Health monitor alert source      |
-| `/var/log/chaba-backup.log`                  | Backup operation logs            |
+| File                                         | Purpose                                                  |
+| -------------------------------------------- | -------------------------------------------------------- |
+| `scripts/monitoring-dashboard.mjs`           | Main monitoring dashboard server                         |
+| `scripts/test-monitoring-dashboard.sh`       | Dashboard test suite                                     |
+| `systemd/chaba-monitoring-dashboard.service` | Systemd service for auto-start                           |
+| `chaba-tony-dell/logs/health-monitor.log`    | Health monitor alert source (under the runtime checkout) |
+| `/var/log/chaba-backup.log`                  | Backup operation logs                                    |
 
 ## Dashboard Architecture
 
@@ -131,7 +141,7 @@ curl http://localhost:3002/api/refresh
 
 The dashboard integrates with the existing health monitor system:
 
-- **Alert Source**: `/home/tony/CascadeProjects/chaba/logs/health-monitor.log`
+- **Alert Source**: `/home/tony/CascadeProjects/chaba-tony-dell/logs/health-monitor.log`
 - **Alert Types**: Critical, warning, info
 - **Alert Display**: Recent 20 alerts with severity color-coding
 - **Alert Details**: Timestamp, severity, message, source
@@ -192,15 +202,17 @@ systemctl --user restart chaba-monitoring-dashboard.service
 # Force refresh via API
 curl http://localhost:3002/api/refresh
 
-# Check dashboard logs
-tail -f /var/log/chaba-monitoring-dashboard.log
+# Check dashboard logs (journal — the script writes no log file)
+journalctl --user -u chaba-monitoring-dashboard.service -f
 
 # Restart dashboard
 systemctl --user restart chaba-monitoring-dashboard.service
 
-# Test service health manually
-curl -f http://tony-omen.local:8080/api/health
-curl -f http://tony-omen.local:8080/
+# Test monitored endpoints manually (as defined in monitoring-dashboard.mjs)
+curl -f http://tony-dell:8000/health           # status-api
+curl -f http://tony-dell:3000/api/yomi/health  # yomi-api
+curl -f http://tony-dell:8080/                 # caddy
+curl -f http://tony-dell:3001/api/trade/health # trade-api
 ```
 
 ### Issue: GPU Metrics Not Showing
@@ -294,7 +306,7 @@ watch -n 5 'ps aux | grep monitoring-dashboard'
 
 ## Performance Metrics
 
-**Dashboard Performance**:
+**Dashboard Performance** (measured 2026-09-18: ~52MB resident matches the range below; others are estimates):
 
 - Memory usage: ~50-100MB
 - CPU usage: <5% during updates

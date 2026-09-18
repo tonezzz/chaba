@@ -12,7 +12,7 @@ docs/
 ├── implementation/        # Implementation guides and reports
 ├── kb/                    # Knowledge Base (how-to guides)
 ├── overview/              # Project-specific configurations
-├── reports/               # System assessment and status reports
+├── runbooks/              # Formal operational runbooks
 ├── sessions/              # Development session archives
 └── ssot/                  # Single Source of Truth configurations
 ```
@@ -37,15 +37,16 @@ Comprehensive guides for systems and workflows:
 - **[playlive-authentication.md](kb/playlive-authentication.md)** - PlayLive authentication troubleshooting
 - **[playwright-vs-playlive.md](kb/playwright-vs-playlive.md)** - Playwright vs PlayLive comparison
 - **[raceman-worktree-scope.md](kb/raceman-worktree-scope.md)** - Raceman worktree scope and refactoring
-- **[subagent-implementation-strategy.md](kb/subagent-implementation-strategy.md)** - Subagent creation and management patterns
-- **[token-optimization-summary.md](kb/token-optimization-summary.md)** - Token optimization implementation overview
-- **[token-optimization-monitoring-guide.md](kb/token-optimization-monitoring-guide.md)** - Token optimization monitoring procedures
-- **[token-optimization-runbook.md](kb/token-optimization-runbook.md)** - Token optimization operational procedures
-- **[token-optimization-testing.md](kb/token-optimization-testing.md)** - Token optimization testing procedures
+- **[subagent-focus-dispatch-safd.md](kb/subagent-focus-dispatch-safd.md)** - Sub-Agent Focus Dispatch (SAFD) convention for delegating work to sub-agents
+- **[token-optimization.md](kb/token-optimization.md)** - Token optimization implementation overview
+- **[token-optimization-maintenance.md](kb/token-optimization-maintenance.md)** - Token optimization monitoring and maintenance
+- **[token-optimization-procedures.md](kb/token-optimization-procedures.md)** - Token optimization operational procedures (Headroom proxy, MCP config)
+- **[token-optimization-troubleshooting.md](kb/token-optimization-troubleshooting.md)** - Token optimization troubleshooting
 - **[headroom-integration-monitoring-summary.md](kb/headroom-integration-monitoring-summary.md)** - Headroom proxy integration monitoring
 - **[headroom-test-results.md](kb/headroom-test-results.md)** - Headroom proxy test results
 - **[weaviate.md](kb/weaviate.md)** - Weaviate vector database and Chonkie chunking
-- **[weaviate-rest-api-fix.md](kb/weaviate-rest-api-fix.md)** - Weaviate REST API implementation details
+- **[weaviate-collections.md](kb/weaviate-collections.md)** - Weaviate collections and schema
+- **[weaviate-operations.md](kb/weaviate-operations.md)** - Weaviate REST API endpoints and operations
 - **[yaml-syntax-error-patterns.md](kb/yaml-syntax-error-patterns.md)** - Common YAML syntax errors and prevention
 - **[yomi-daily2-calendar.md](kb/yomi-daily2-calendar.md)** - Yomi daily calendar integration
 - **[yomi-summary-corruption.md](kb/yomi-summary-corruption.md)** - Yomi summary corruption prevention and detection
@@ -67,11 +68,13 @@ Technology evaluations and planning documents:
 - **[mdns-assessment.md](assessments/mdns-assessment.md)** - mDNS evaluation
 - **[github-mcp-model-assessment.md](assessments/github-mcp-model-assessment.md)** - GitHub MCP evaluation
 - **[hostname-enforcement-strategy.md](assessments/hostname-enforcement-strategy.md)** - Hostname usage standards
-- **[gpu-embedding/](assessments/gpu-embedding/)** - GPU embedding planning documents
+- **[gpu-embedding/archived/](assessments/gpu-embedding/archived/)** - GPU embedding planning documents (archived)
   - gpu-embedding-action-plan.md
   - gpu-embedding-feasibility-assessment.md
   - gpu-embedding-gap-analysis.md
   - gpu-embedding-revised-plan.md
+  - gpu-embedding-success-report.md
+  - gpu-sharing-analysis.md
   - gpu-sharing-data-collection.md
 
 ### Implementation (`docs/implementation/`)
@@ -79,20 +82,24 @@ Technology evaluations and planning documents:
 Implementation guides and technical documentation:
 
 - **[mcp-config-sync-implementation.md](implementation/mcp-config-sync-implementation.md)** - MCP configuration synchronization implementation guide
-- **[ssot-config-manager-implementation.md](implementation/ssot-config-manager-implementation.md)** - SSOT configuration manager implementation report
 
-### Reports (`docs/reports/`)
+### Runbooks (`docs/runbooks/`)
 
-System assessment and status reports:
+Formal operational runbooks — see also `docs/ssot/infrastructure/ssot.home-assistant.howto.yml` (~30 structured Home Assistant runbooks) and `docs/kb/home-assistant/pf3-runbook.md`:
 
-- **[mcp-config-status-report.md](reports/mcp-config-status-report.md)** - MCP configuration status report
-- **[overnight-assessment-2026-08-04.md](reports/overnight-assessment-2026-08-04.md)** - Comprehensive overnight system assessment
+- **[backup-system-operations.md](runbooks/backup-system-operations.md)** - Google Drive backup automation, monitoring, and restore
+- **[database-optimization-operations.md](runbooks/database-optimization-operations.md)** - PostgreSQL/Redis performance monitoring and tuning
+- **[deployment-operations.md](runbooks/deployment-operations.md)** - CI/CD pipeline, deployment, and rollback (operates on the `chaba-tony-dell` runtime checkout)
+- **[monitoring-dashboard-operations.md](runbooks/monitoring-dashboard-operations.md)** - Monitoring dashboard (port 3002) operations
+- **[production-deployment-operations.md](runbooks/production-deployment-operations.md)** - Production deployment workflow (aspirational — not yet executed)
+- **[security-audit-operations.md](runbooks/security-audit-operations.md)** - Security audit and hardening
+- **[tony-dell-rview-gemini-migration.md](runbooks/tony-dell-rview-gemini-migration.md)** - rview-api/rview-live migration to tony-dell podman (completed; gemini-live since renamed rview-live)
 
 ### SSOT (`docs/ssot/`)
 
 Single Source of Truth configurations — see **[ssot.index.yml](ssot/ssot.index.yml)** for the master index:
 
-- **[ssot.index.yml](ssot/ssot.index.yml)** - **Master index** of all 30 SSOT files with descriptions
+- **[ssot.index.yml](ssot/ssot.index.yml)** - **Master index** of SSOT files with descriptions
 - **[template.yml](ssot/template.yml)** - Template for new SSOT files
 - **[ssot.improvements.yml](ssot/ssot.improvements.yml)** - Active system improvements tracking (pending/in-progress only)
 - **[ssot.improvements.archive.yml](ssot/ssot.improvements.archive.yml)** - Completed improvements archive
@@ -130,7 +137,10 @@ Project-specific configurations (not moved during restructuring):
 - hosts.*.yml - Host configuration files
 - lab.plan-brief.yml - Lab planning brief
 - sso.apps.dev.yml - SSO configuration
+- ssot.kb.yml - Knowledge base SSOT
 - ssot.token-optimization.yml - Token optimization strategy (served copy)
+- system-overview.md - System overview
+- ssot-config-manager-implementation.md - SSOT configuration manager implementation report
 
 ## Key Documentation Patterns
 
@@ -230,9 +240,10 @@ For new contributors:
 
 ---
 
-Last updated: 2026-08-05
+Last updated: 2026-09-18
 
-- Added token optimization documentation (6 new KB entries)
-- Updated SSOT section with token optimization configuration
-- Added new KB entries for GPU embedding, impact scoring, MCP audit
-- Updated KB index with recent additions
+- Fixed 9 broken links (token-optimization._, weaviate-rest-api-fix, subagent-implementation-strategy, reports/_, ssot-config-manager-implementation)
+- Removed Reports section (docs/reports/ no longer exists)
+- Added Runbooks section covering docs/runbooks/
+- Updated gpu-embedding entries to archived/ subdirectory
+- Relocated ssot-config-manager-implementation.md reference to overview/

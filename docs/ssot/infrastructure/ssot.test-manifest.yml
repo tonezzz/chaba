@@ -19,8 +19,20 @@ tiers:
     description: Needs valid NotebookLM auth and/or reachable services.
     timeout_hint: ~2min
 
+hosts:
+  description: >
+    Each system declares `host` scope: `any` runs everywhere, a hostname runs
+    only there (other hosts SKIP that section). Service URLs use tailnet
+    FQDNs so they resolve from any host on the tailnet.
+    Canonical scheduled run lives on mn01 (~/checkouts/chaba, rsync'd daily
+    from tony-omen via chaba-mn01-sync.timer). tony-omen keeps its local
+    chaba-audit.timer for working-tree validation.
+  canonical_runner: mn01
+  sync: rsync from tony-omen, daily, excludes .git/node_modules/venv
+
 systems:
   ssot_yaml:
+    host: any
     description: All SSOT files validate structurally and cross-references resolve.
     validate_cmd: "node scripts/ssot-validate-all.mjs"
     refs_cmd: "python3 scripts/ssot-validate-refs.py"
@@ -29,6 +41,7 @@ systems:
     mcp_sources_cmd: "python3 scripts/ssot-validate-mcp-sources.py"
 
   modularity:
+    host: any
     description: >
       KB/SSOT file size, focus, and duplication policy. Violations are policy
       drift, not breakage — thresholds live in
@@ -39,6 +52,7 @@ systems:
     kb_cmd: "node scripts/audits/kb-modularity-audit.mjs"
 
   devin_db:
+    host: tony-omen
     description: Local Devin session database and backups.
     path: /home/tony/.local/share/devin/cli/sessions.db
     backup_dir: /home/tony/.local/share/devin/cli/backups
@@ -46,6 +60,7 @@ systems:
     max_size_gb: 20
 
   memory_local:
+    host: tony-omen
     description: Local memory caches (auth-free recall layer).
     session_memory: /home/tony/.local/share/devin/notebook-summaries/session-memory.md
     session_memory_max_age_hours: 72
@@ -56,6 +71,7 @@ systems:
     nlm_expected_host: mn01
 
   notebooklm:
+    host: any
     description: Cloud semantic archive (auth required, runs on mn01 container).
     archive_notebook: 009b3efe-ff58-40bc-9a3b-9ec946b38deb
     archive_title_fragment: "Devin Session Archive"
@@ -85,6 +101,7 @@ systems:
         session: juvenile-umbra
 
   mddb:
+    host: any
     description: >
       Local MDDB mirror at 127.0.0.1:11023 (mddb-server container, compose at
       CascadeProjects/mddb). The PRIMARY instance is tony-dell:11023 with
@@ -96,8 +113,8 @@ systems:
       QUOTA: Gemini embedding free tier ~1000 requests/day, resets midnight
       Pacific (07:00 UTC). Reindex WITHOUT force — force re-embeds every doc
       and burns the daily budget; the endpoint is incremental by default.
-    health_url: http://127.0.0.1:11023/health
-    vector_search_url: http://127.0.0.1:11023/v1/vector-search
+    health_url: http://tony-omen.taila0626a.ts.net:11023/health
+    vector_search_url: http://tony-omen.taila0626a.ts.net:11023/v1/vector-search
     min_collections: 3
     min_top_score: 0.45
     max_latency_ms: 600
@@ -108,12 +125,14 @@ systems:
     existing_script: scripts/test-global-rules-and-mddb.sh
 
   weaviate:
+    host: any
     description: Vector DB for SSOTDocument semantic search.
-    url: http://127.0.0.1:8082
+    url: http://tony-omen.taila0626a.ts.net:8082
     collection: SSOTDocument
     min_objects: 300
 
   mcp:
+    host: any
     description: MCP server smoke checks (reuse existing scripts).
     scripts:
       - path: scripts/mcp-debug-server-smoke.py

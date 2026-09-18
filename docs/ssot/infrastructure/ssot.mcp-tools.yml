@@ -201,6 +201,25 @@ policy:
     fallback: |
       Notify the user and verify the Weaviate service URL before falling back.
 
+  icloud_services:
+    primary: icloud
+    default: |
+      Use the icloud MCP (MrGo2/mcp-icloud, cloud mode on mn01) for iCloud
+      Email (IMAP/SMTP), Calendar (CalDAV) and Contacts (CardDAV) — read,
+      search, create, update. Syncs to iPhone/iPad automatically.
+    when_not_to_use: |
+      Notes, Reminders, Messages and Safari return errors in cloud mode —
+      they are local-mode only and require a Mac-hosted server. Do not use
+      icloud for iCloud Drive or Photos (not covered by this server).
+    caution: |
+      send-email reaches another person irrevocably — confirm with the user
+      before sending. mark-as-read and delete/update tools mutate live state.
+    fallback: |
+      If auth fails (401/UNAUTHORIZED), the app-specific password is revoked
+      or wrong — report and ask the user to regenerate at account.apple.com,
+      then update ~/.config/secrets/icloud-mcp.env on mn01 and recreate the
+      container (env is baked at podman create time).
+
   diagnostics:
     primary: mcp-debug
     default: |
@@ -420,6 +439,35 @@ servers:
       - Debug MCP calls and traffic
     note: |
       For diagnostics only. Not for routine use.
+
+  - name: icloud
+    status: active
+    category: personal_data
+    use_cases:
+      - iCloud Email read/search/send (IMAP/SMTP)
+      - iCloud Calendar list/search/create/update/delete (CalDAV)
+      - iCloud Contacts search/list/create/update (CardDAV)
+    example_tools:
+      - search-emails
+      - send-email
+      - list-folders
+      - list-calendars
+      - list-events
+      - create-event
+      - search-contacts
+      - check-auth-status
+    deployment: |
+      mcp-icloud@2.1.3 (MrGo2/icloud-mcp) cloud mode, podman container
+      icloud-mcp on mn01 (image: stacks/mn01/icloud-mcp/Containerfile).
+      Stdio-only; reached via mcp-icloud-ssh.sh wrapper
+      (ssh mn01 podman exec -i icloud-mcp icloud-mcp).
+      Credentials: ~/.config/secrets/icloud-mcp.env on mn01
+      (ICLOUD_EMAIL=tonezzzz@icloud.com + Apple app-specific password).
+    failure_procedure:
+      - "Probe: ssh mn01 podman exec -i icloud-mcp icloud-mcp + initialize"
+      - "Direct auth test: curl PROPFIND to caldav.icloud.com (expect 207)"
+      - "If 401/UNAUTHORIZED: ask user to regenerate app-specific password at account.apple.com, update env file, podman rm + create (env is baked at create time)"
+    verified: "2026-09-18 (IMAP INBOX, 3 CalDAV calendars, CardDAV contacts)"
 
 # Credentials and runtime configuration
 secrets:

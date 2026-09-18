@@ -1,5 +1,6 @@
 ---
 category: operations
+type: troubleshooting
 ---
 
 # Troubleshooting Steps

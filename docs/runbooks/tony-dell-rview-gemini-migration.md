@@ -8,13 +8,19 @@ category: operations
 related:
   - stacks/tony-dell/rview-api/rview-api.container
   - stacks/tony-dell/rview-api/rview-api-image.build
-  - stacks/tony-dell/gemini-live/gemini-live.container
-  - stacks/tony-dell/gemini-live/gemini-live-image.build
+  - stacks/tony-dell/rview-live/rview-live.container
+  - stacks/tony-dell/rview-live/rview-live-image.build
   - stacks/web/Caddyfile
-  - chaba-h3/proxy-server.mjs
+  - chaba-h3/proxy-server.mjs # on the chaba-h3 host, not in this repo
+status: completed
 ---
 
 # Tony-Dell RView + Gemini Live Migration Runbook
+
+> **Status (2026-09-18): completed — kept for reference.**
+> The migration was executed. `gemini-live` was renamed to `rview-live` on
+> 2026-08-25 (`stacks/tony-dell/rview-live/`, `stacks/web/rview-live/`),
+> so the `gemini-live` paths and service names below are historical.
 
 Move the backend services for `rview` (`rview-api`) and `gemini-live` from `tony-omen` (Docker Compose) to `tony-dell` (rootless podman Quadlet). The static web UIs stay on `chaba.h3` / `tony-omen` Caddy; only the API upstreams move.
 

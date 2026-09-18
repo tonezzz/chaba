@@ -11,7 +11,7 @@ overview:
 
 config:
   version: 1
-  last_updated: "2026-08-19"
+  last_updated: "2026-09-18"
   maintainer: tony
   status: active
 
@@ -237,6 +237,33 @@ audits:
     last_run:
     last_result:
 
+  - name: doc-links
+    script: scripts/audits/doc-links-audit.mjs
+    command: node
+    args: []
+    schedule: weekly
+    severity_on_fail: error
+    description: >
+      Broken-link detection for docs/INDEX.md, docs/runbooks/*.md markdown
+      links and `related:` frontmatter paths, plus path/related entries in
+      ssot.runbooks.yml. `related:` entries outside docs|scripts|systemd|stacks
+      (e.g. files living on other hosts) are skipped.
+    last_run:
+    last_result:
+
+  - name: staleness
+    script: scripts/audits/staleness-audit.mjs
+    command: node
+    args: []
+    schedule: weekly
+    severity_on_fail: warning
+    description: >
+      Flags declared exceptions/baselines that aged past their review window:
+      security baseline last_verified >90d, bloat_exemptions quarterly review
+      overdue, and audit-hosts last_observed snapshots >14d old.
+    last_run:
+    last_result:
+
   - name: ssot-kb-memory
     script: scripts/test-ssot-kb-memory.sh
     command: bash
@@ -288,14 +315,17 @@ groups:
     description: Cross-reference and naming consistency checks
     children:
       - standardization
+      - doc-links
+      - staleness
 
 plan:
   current_state:
-    - scripts/audits/run.mjs now uses js-yaml and supports --full for the monthly security-audit
-    - weekly chaba-audit.timer/service runs the default set (kb, ssot, security-scan)
-    - monthly chaba-audit-full.timer/service runs the full set including security-audit
-    - timers are installed and enabled on tony-dell
-    - default audit suite tested and passed on 2026-08-19
+    - scripts/audits/run.mjs derives PROJECT_ROOT from import.meta.url (runs on any checkout)
+    - run.mjs honors severity_on_fail: error-severity failures gate the suite; warning-severity failures report WARN without failing
+    - run.mjs writes a focus-inbox alert (audit-failures.yml) on error-severity failures and auto-resolves it when green
+    - weekly chaba-audit.timer/service runs the default set; monthly chaba-audit-full adds security-audit
+    - chaba-audit-watchdog.timer (daily) runs scripts/audit-watchdog.mjs: alerts via focus-inbox when summary.json is stale (>8d) or the last run had error-severity failures
+    - 15 audits registered; last full run passed 14/14 on 2026-09-18 (doc-links added 2026-09-18, not yet in a scheduled run)
     - KB entry added at docs/kb/audit-framework.md
   next_steps:
     - monitor first weekly and monthly runs
@@ -307,6 +337,8 @@ baseline:
 
 related_files:
   - scripts/audits/run.mjs
+  - scripts/audits/watchdog.mjs
+  - scripts/audits/staleness-audit.mjs
   - scripts/kb-audit.mjs
   - scripts/ssot-validate-all.mjs
   - scripts/security-scan.mjs
@@ -314,6 +346,8 @@ related_files:
   - scripts/ci-pipeline.sh
   - systemd/chaba-audit.service
   - systemd/chaba-audit.timer
+  - systemd/chaba-audit-watchdog.service
+  - systemd/chaba-audit-watchdog.timer
 
 related_ssot:
   - docs/ssot/ssot.index.yml

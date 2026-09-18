@@ -62,3 +62,24 @@ services:
     recovery_actions:
       - "Restart service: ssh tony-dell systemctl --user restart workflows-mcp.service"
       - "Check logs: ssh tony-dell journalctl --user -u workflows-mcp.service --tail 20"
+  - id: icloud-mcp
+    name: iCloud MCP
+    type: container
+    container: icloud-mcp
+    host: mn01
+    expected_state: running
+    timeout: 5
+    category: mcp
+    profiles:
+      - home
+      - mobile
+    note: "MrGo2/mcp-icloud (npm mcp-icloud@2.1.3) in cloud mode: IMAP/CalDAV/CardDAV via app-specific password. Stdio-only (no port); sessions run via 'podman exec -i icloud-mcp icloud-mcp' over SSH (mcp-icloud-ssh.sh). Image: stacks/mn01/icloud-mcp/Containerfile. Creds: ~/.config/secrets/icloud-mcp.env on mn01 (ICLOUD_EMAIL=tonezzzz@icloud.com). Env is baked at podman create time — env-file edits require podman rm + create, not restart."
+    verification:
+      - "Check container: ssh mn01 podman ps | grep icloud-mcp"
+      - 'Probe MCP: echo ''{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05","capabilities":{},"clientInfo":{"name":"probe","version":"1.0"}}}'' | ssh mn01 podman exec -i icloud-mcp icloud-mcp'
+      - "Direct auth test: ssh mn01 'source ~/.config/secrets/icloud-mcp.env && curl -s -o /dev/null -w %{http_code} -u $ICLOUD_EMAIL:$ICLOUD_APP_PASSWORD -X PROPFIND -H Depth:0 https://caldav.icloud.com/' (expect 207)"
+    recovery_actions:
+      - "Restart container: ssh mn01 podman restart icloud-mcp"
+      - "Recreate after env change: ssh mn01 'podman rm -f icloud-mcp && podman create --name icloud-mcp --env-file ~/.config/secrets/icloud-mcp.env localhost/icloud-mcp:latest && podman start icloud-mcp'"
+      - "Rebuild image: ssh mn01 'cd ~/CascadeProjects/chaba/stacks/mn01/icloud-mcp && podman build -t localhost/icloud-mcp:latest .'"
+      - "If auth fails (401/UNAUTHORIZED): verify app-specific password still valid at account.apple.com; revoke + regenerate + update env file + recreate"

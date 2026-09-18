@@ -1,5 +1,6 @@
 ---
 category: operations
+type: runbook
 ---
 
 # Documentation Maintenance Standards

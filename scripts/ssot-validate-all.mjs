@@ -89,6 +89,31 @@ import re
 import sys
 import yaml
 
+
+class _DupCheckLoader(yaml.SafeLoader):
+    """SafeLoader that rejects duplicate mapping keys.
+
+    PyYAML silently keeps the last duplicate key; js-yaml and the
+    standardization/infrastructure audits reject them. Using this loader
+    makes the ssot audit consistent with the stricter tooling.
+    """
+
+    def construct_mapping(self, node, deep=False):
+        seen = set()
+        for key_node, _ in node.value:
+            key = self.construct_object(key_node, deep=True)
+            if key in seen:
+                mark = key_node.start_mark
+                raise yaml.constructor.ConstructorError(
+                    "while constructing a mapping",
+                    node.start_mark,
+                    f"found duplicate key {key!r}",
+                    mark,
+                )
+            seen.add(key)
+        return super().construct_mapping(node, deep)
+
+
 FILE_PATHS = [
     ${pathsStr}
 ]
@@ -157,7 +182,7 @@ def validate_one(file_path):
         with open(file_path, 'r') as f:
             content = f.read()
         try:
-            data = yaml.safe_load(content)
+            data = yaml.load(content, Loader=_DupCheckLoader)
         except yaml.YAMLError as e:
             return {'path': rel, 'valid': False, 'errors': [f'YAML syntax error: {str(e)}'], 'warnings': []}
 

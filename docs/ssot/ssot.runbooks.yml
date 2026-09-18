@@ -1,0 +1,272 @@
+title: Runbook Registry
+subtitle: Canonical index of all operational runbooks — markdown, SSOT-embedded, and KB
+
+convention: |
+  Runbooks live in three places, on purpose:
+    1. docs/runbooks/*.md — long-form operational runbooks. Required
+       frontmatter: status (verified | partial | aspirational | completed |
+       unverified), last_verified, verification_method, scope, owner.
+    2. docs/ssot/**/*.yml — structured `runbooks:` / `*_runbook:` entries
+       kept inline with the system they describe (see
+       ssot.home-assistant.howto.yml, ssot.devin.maintenance.yml).
+    3. docs/kb/ — reference docs; runbook-like files carry
+       `type: runbook` or `type: troubleshooting` in frontmatter.
+  This file is the single discovery point. Add new runbooks here and tag
+  KB files rather than moving them.
+
+status_values:
+  verified: Live-tested against the running system (endpoint/service/timer confirmed)
+  partial: Scripts/commands verified against source, but not exercised live, or documented automation not deployed
+  aspirational: Describes intended workflow that has never been executed end-to-end
+  completed: One-shot procedure that has been executed; kept for reference
+  unverified: Template/generated content not yet checked
+
+verification:
+  link_check: "scripts/check-doc-links.sh — verifies markdown links and related: paths resolve"
+  review_cadence: Re-verify `partial` runbooks live before relying on them in an incident; re-check links on any doc restructuring
+
+runbooks:
+  # ── Tier 1: formal markdown runbooks (docs/runbooks/) ─────────────────────
+  backup-system-operations:
+    path: docs/runbooks/backup-system-operations.md
+    type: markdown
+    status: partial
+    last_verified: 2026-09-18
+    scope: runs on tony-omen; pulls postgres/volumes from tony-dell via ssh; Google Drive via rclone
+    related:
+      - scripts/backup-manager.sh
+      - scripts/backup-monitor.sh
+      - scripts/restore-manager.sh
+      - scripts/test-backup.sh
+      - systemd/chaba-backup.service
+      - systemd/chaba-backup.timer
+      - systemd/chaba-backup-monitor.service
+      - systemd/chaba-backup-monitor.timer
+    note: chaba-backup.timer / chaba-backup-monitor.timer exist in systemd/ but are NOT installed on tony-omen or tony-dell (checked 2026-09-18) — backups run manually only.
+
+  database-optimization-operations:
+    path: docs/runbooks/database-optimization-operations.md
+    type: markdown
+    status: partial
+    last_verified: 2026-09-18
+    scope: tony-dell postgres/redis containers
+    related:
+      - scripts/db-optimized.mjs
+      - scripts/db-optimizer.mjs
+      - scripts/db-performance-dashboard.mjs
+      - scripts/cache-manager.mjs
+      - scripts/backup-performance-monitor.mjs
+
+  deployment-operations:
+    path: docs/runbooks/deployment-operations.md
+    type: markdown
+    status: partial
+    last_verified: 2026-09-18
+    scope: chaba-tony-dell runtime checkout (hardcoded PROJECT_ROOT in scripts)
+    related:
+      - scripts/deploy.sh
+      - scripts/ci-pipeline.sh
+      - scripts/ci-pipeline.timer
+      - systemd/chaba-ci-pipeline.service
+    note: chaba-ci-pipeline.timer not installed on either host (checked 2026-09-18); chaba-tony-dell on tony-omen lacks scripts/ and systemd/, so the pre-deployment backup step would fail on missing members.
+
+  monitoring-dashboard-operations:
+    path: docs/runbooks/monitoring-dashboard-operations.md
+    type: markdown
+    status: verified
+    last_verified: 2026-09-18
+    scope: tony-dell (chaba-monitoring-dashboard.service, port 3002)
+    related:
+      - scripts/monitoring-dashboard.mjs
+      - scripts/test-monitoring-dashboard.sh
+      - systemd/chaba-monitoring-dashboard.service
+    note: Live-verified 2026-09-18 — service active on tony-dell 3+ days, /api/status returns 200, ~52MB resident.
+
+  production-deployment-operations:
+    path: docs/runbooks/production-deployment-operations.md
+    type: markdown
+    status: aspirational
+    last_verified: 2026-09-18
+    scope: stacks/web docker compose project
+    related:
+      - stacks/web/docker-compose.yml
+      - stacks/web/docker-compose.prod.yml
+      - stacks/web/docker-compose.secrets.yml
+      - stacks/web/scripts/generate-secrets.sh
+    note: Production deployment has never been executed. docker-compose.secrets.yml is a demonstration file; postgres/redis are not services in this compose project.
+
+  security-audit-operations:
+    path: docs/runbooks/security-audit-operations.md
+    type: markdown
+    status: partial
+    last_verified: 2026-09-18
+    scope: chaba-tony-dell runtime checkout
+    related:
+      - scripts/security-audit.sh
+      - scripts/security-harden.sh
+
+  tony-dell-rview-gemini-migration:
+    path: docs/runbooks/tony-dell-rview-gemini-migration.md
+    type: markdown
+    status: completed
+    last_verified: 2026-09-18
+    scope: tony-dell rootless podman (rview-api :3007, rview-live :3008)
+    related:
+      - stacks/tony-dell/rview-api/
+      - stacks/tony-dell/rview-live/
+      - stacks/web/Caddyfile
+    note: Migration executed; gemini-live renamed to rview-live on 2026-08-25 — paths in the doc are historical.
+
+  # ── Tier 2: SSOT-embedded runbooks ────────────────────────────────────────
+  home-assistant-howto:
+    path: docs/ssot/infrastructure/ssot.home-assistant.howto.yml
+    type: ssot-embedded
+    status: verified
+    scope: michael-dev / michael-ha / tony-ha dashboards, cards, auth
+    note: |
+      ~30 named runbooks embedded under `runbooks:` — dashboard mutation,
+      card build/deploy, token/auth, promotion, troubleshooting.
+      Names: add_dashboard_tab, copy_card_to_tab, decide_config_vs_code,
+      push_dashboard_via_websocket, build_deploy_custom_card,
+      create_long_lived_token, reload_core_config, get_ha_state_via_mcp,
+      call_ha_service_via_mcp, restart_ha_instance, add_battery_status_line,
+      fix_svg_text_overlay, edit_live_dashboard_no_restart,
+      rewire_pf3_battery_entities, deploy_package_michael_ha,
+      deploy_custom_card_michael_ha, apply_tpl_template,
+      copy_view_between_instances, promote_view,
+      deploy_custom_card_michael_ha_v2, sidebar_menu_listing,
+      stale_local_asset_404, ha_ui_login_headless, tokens_and_auth,
+      bundle_parity_worktrees, pfg_charts_modular, pfg_3d_charts,
+      deployment_policy, promote_tony_ha, build_typecheck,
+      michael_dev_playlive_visual_verify.
+
+  devin-maintenance-runbooks:
+    path: docs/ssot/infrastructure/ssot.devin.maintenance.yml
+    type: ssot-embedded
+    status: verified
+    scope: devin-desktop session DB on tony-dell and tony-omen
+    note: |
+      Two embedded runbooks: `reauth_runbook` (NotebookLM cookie re-auth via
+      chrome-devtools MCP harvest) and `manual_cleanup_runbook` (Devin
+      session DB pruning/VACUUM procedure).
+
+  # ── Tier 3: KB documents functioning as runbooks (type: runbook) ──────────
+  host-reboot-verification:
+    path: docs/kb/host-reboot-verification.md
+    type: kb
+    status: partial
+    scope: tony-omen / tony-dell reboot checklists
+    note: Canonical checklists in ssot.operations.yml (transition.pre_shutdown / post_restart).
+
+  pf3-runbook:
+    path: docs/kb/home-assistant/pf3-runbook.md
+    type: kb
+    status: verified
+    scope: sunsynk-power-flow-card + tony-test dashboard on michael-dev
+
+  rview-tony-dell-operations:
+    path: docs/kb/rview-tony-dell-operations.md
+    type: kb
+    status: partial
+    scope: rview-api / rview-live on tony-dell podman
+
+  token-optimization-procedures:
+    path: docs/kb/token-optimization-procedures.md
+    type: kb
+    status: partial
+    scope: Headroom proxy + MCP config on tony-omen
+
+  documentation-disaster-recovery:
+    path: docs/kb/documentation-disaster-recovery.md
+    type: kb
+    status: partial
+    related:
+      - docs/kb/documentation-disaster-backup.md
+      - docs/kb/documentation-disaster-recovery-procedures.md
+      - scripts/backup-configs.sh
+    note: backup-configs.sh runs via cron daily 03:00 → chaba-tony-dell/docs/backups/configs/; its MDDB-to-GDrive step fails on missing stacks/web/mddb/sync-to-gdrive.sh (observed 2026-09-18).
+
+  home-directory-cleanup-operations:
+    path: docs/kb/home-directory-cleanup-operations.md
+    type: kb
+    status: unverified
+
+  mddb-user-guide-operations:
+    path: docs/kb/mddb-user-guide-operations.md
+    type: kb
+    status: partial
+
+  playwright-vs-playlive-operations:
+    path: docs/kb/playwright-vs-playlive-operations.md
+    type: kb
+    status: unverified
+
+  weaviate-operations:
+    path: docs/kb/weaviate-operations.md
+    type: kb
+    status: partial
+    scope: weaviate :8082 on tony-dell
+
+  documentation-maintenance-suite:
+    path: docs/kb/documentation-maintenance-standards.md
+    type: kb
+    status: partial
+    related:
+      - docs/kb/documentation-maintenance-mcp-search.md
+      - docs/kb/documentation-maintenance-mcp-search-impl.md
+      - docs/kb/documentation-maintenance-templates.md
+
+  # KB maintenance/procedure docs (type: runbook, lower frequency)
+  app-ssot-standards-maintenance:
+    path: docs/kb/app-ssot-standards-maintenance.md
+    type: kb
+    status: unverified
+  ssot-documentation-standards-maintenance:
+    path: docs/kb/ssot-documentation-standards-maintenance.md
+    type: kb
+    status: unverified
+  tailscale-rollout-maintenance:
+    path: docs/kb/tailscale-rollout-maintenance.md
+    type: kb
+    status: unverified
+  token-optimization-maintenance:
+    path: docs/kb/token-optimization-maintenance.md
+    type: kb
+    status: partial
+  mddb-ollama-embedding-setup-maintenance:
+    path: docs/kb/mddb-ollama-embedding-setup-maintenance.md
+    type: kb
+    status: unverified
+  playlive-screen-timeout-dpms-verification:
+    path: docs/kb/playlive-screen-timeout-dpms-verification.md
+    type: kb
+    status: unverified
+
+  # ── Scheduled jobs actually running (for context, not runbooks) ───────────
+  scheduled-automation-reality:
+    type: context
+    note: |
+      What actually runs on schedule (checked 2026-09-18):
+      tony-omen cron: gpu-monitor (*/5m), system-maintenance (03:00),
+        overnight-assessment (02:00), backup-configs (03:00),
+        verify-docs (Sun 02:00 — currently FAILS on missing
+        architecture/ in the partial chaba-tony-dell checkout),
+        mddb backup-native (02:00, chaba-kbman).
+      tony-omen timers: chaba-audit, chaba-audit-watchdog, chaba-kb-audit
+        (chaba-health-monitor.timer installed but inactive).
+      tony-dell timers: chaba-audit, chaba-audit-full, chaba-kb-audit,
+        chaba-dell-health-agent, tony-dell-monitor, yomi-backup,
+        ha-config-backup, notebooklm/ssot-mddb/apps-health sync timers.
+      NOT deployed anywhere: chaba-backup.timer, chaba-backup-monitor.timer,
+        chaba-ci-pipeline.timer.
+
+config:
+  version: 1
+  last_updated: 2026-09-18
+  maintainer: tony
+  related_files:
+    - docs/INDEX.md
+    - docs/runbooks/
+    - docs/ssot/infrastructure/ssot.home-assistant.howto.yml
+    - docs/ssot/infrastructure/ssot.devin.maintenance.yml
+    - scripts/check-doc-links.sh

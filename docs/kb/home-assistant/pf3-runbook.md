@@ -1,3 +1,8 @@
+---
+category: operations
+type: runbook
+---
+
 # PF3 / Home Assistant Runbook
 
 This runbook covers the PF3 dashboard, the forked `sunsynk-power-flow-card`, and the four-battery layout used in the `tony-test` dashboard on `michael-dev`.

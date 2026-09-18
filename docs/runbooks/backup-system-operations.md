@@ -3,13 +3,18 @@ title: Backup System Operations Runbook
 description: Comprehensive operational procedures for the Chaba backup system including Google Drive integration, automated backups, monitoring, and restoration
 tags: [backup, operations, runbook, google-drive, disaster-recovery]
 created: 2026-08-13
-updated: 2026-08-13
+updated: 2026-09-18
 category: operations
+status: partial
+last_verified: 2026-09-18
+verification_method: script-checked + live unit check
+scope: runs on tony-omen (pulls postgres/volumes from tony-dell via ssh); Google Drive via rclone
+owner: tony
 related:
   [
-    ssot.infrastructure/ssot.automation.yml,
-    ssot.infrastructure/ssot.health.yml,
-    kb/google-drive-backup-system.md,
+    docs/ssot/infrastructure/ssot.automation.yml,
+    docs/ssot/infrastructure/ssot.health.yml,
+    docs/kb/google-drive-backup-system.md,
   ]
 search_keywords: [backup, restore, google-drive, disaster-recovery, backup-manager, backup-monitor]
 ---
@@ -72,6 +77,15 @@ The Chaba backup system provides automated, comprehensive backup of infrastructu
 
 **Schedule**: Daily at 2:00 AM (systemd timer)
 
+> **Deployment status (checked 2026-09-18)**: `chaba-backup.timer` and
+> `chaba-backup-monitor.timer` exist in `systemd/` but are **not installed**
+> on tony-omen or tony-dell — the documented automation does not currently
+> run. Backups must be triggered manually (below) until the timers are
+> deployed. The scheduled config backup that does run is a different
+> mechanism: cron `backup-configs.sh` daily 03:00 →
+> `chaba-tony-dell/docs/backups/configs/` (see
+> `docs/kb/documentation-disaster-backup.md`).
+
 **Manual Execution**:
 
 ```bash
@@ -94,7 +108,7 @@ The Chaba backup system provides automated, comprehensive backup of infrastructu
 
 ### Backup Monitoring
 
-**Schedule**: Hourly (systemd timer)
+**Schedule**: Hourly (systemd timer — **not installed**, see note above)
 
 **Manual Monitoring**:
 
@@ -347,7 +361,7 @@ docker exec postgres psql -U chaba -d chaba -c "SELECT 1;"
 docker volume rm volume_name
 ```
 
-## Performance Metrics
+## Performance Metrics (estimates — not measured)
 
 **Backup Performance**:
 

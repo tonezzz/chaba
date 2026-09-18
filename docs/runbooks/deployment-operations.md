@@ -3,8 +3,13 @@ title: Automated Deployment Operations Runbook
 description: Comprehensive operational procedures for the Chaba automated deployment system including CI/CD pipeline, testing, validation, rollback capabilities, and troubleshooting
 tags: [deployment, cicd, operations, runbook, automation, rollback]
 created: 2026-08-13
-updated: 2026-08-13
+updated: 2026-09-18
 category: operations
+status: partial
+last_verified: 2026-09-18
+verification_method: script-checked + live unit check (chaba-ci-pipeline.timer not installed on either host)
+scope: chaba-tony-dell runtime checkout (hardcoded PROJECT_ROOT in both scripts)
+owner: tony
 related:
   [
     scripts/deploy.sh,
@@ -22,6 +27,11 @@ search_keywords: [deployment, cicd, pipeline, rollback, testing, automation]
 ## Overview
 
 The Chaba automated deployment system provides safe infrastructure deployment with comprehensive testing, validation, and rollback capabilities. It includes pre-deployment backups, automated testing stages, service deployment, post-deployment validation, and automated rollback on failure.
+
+> **Scope note**: `deploy.sh` and `ci-pipeline.sh` hardcode
+> `PROJECT_ROOT=/home/tony/CascadeProjects/chaba-tony-dell` — the runtime
+> checkout, not this repository. The `logs/`, `deployments/`, `reports/`, and
+> `tests/results/` paths in this runbook are relative to that checkout.
 
 ## Purpose
 
@@ -125,6 +135,13 @@ The Chaba automated deployment system provides safe infrastructure deployment wi
 
 ### CI/CD Pipeline
 
+> **Deployment status (checked 2026-09-18)**: `chaba-ci-pipeline.timer`
+> exists in `systemd/` but is **not installed** on tony-omen or tony-dell —
+> the pipeline only runs manually. Also note `chaba-tony-dell` on tony-omen
+> is a partial checkout missing `scripts/` and `systemd/`, so
+> `deploy.sh`'s pre-deployment backup will fail there on missing members
+> until the checkout is complete.
+
 **Run Full CI/CD Pipeline**:
 
 ```bash
@@ -138,6 +155,7 @@ The Chaba automated deployment system provides safe infrastructure deployment wi
 # Run specific test stage
 ./scripts/ci-pipeline.sh syntax
 ./scripts/ci-pipeline.sh validation
+./scripts/ci-pipeline.sh audits
 ./scripts/ci-pipeline.sh backup
 ./scripts/ci-pipeline.sh monitoring
 ./scripts/ci-pipeline.sh security
@@ -148,6 +166,7 @@ The Chaba automated deployment system provides safe infrastructure deployment wi
 
 - **Syntax**: Shell script and Node.js script syntax validation
 - **Validation**: SSOT file validation and consistency checks
+- **Audits**: Audit suite via `scripts/audits/run.mjs`
 - **Backup**: Backup system functionality testing
 - **Monitoring**: Monitoring dashboard testing
 - **Security**: Security vulnerability scanning
@@ -325,8 +344,10 @@ tar -tzf deployments/backups/pre-deploy_*.tar.gz
 ls -la deployments/backups/
 
 # Manual rollback if automated fails
-cd /home/tony/CascadeProjects/chaba
-tar xzf deployments/backups/pre-deploy_*.tar.gz
+# Backups live under the runtime checkout and contain absolute paths,
+# so extract to / (as rollback_deployment does) — not into the repo dir.
+cd /home/tony/CascadeProjects/chaba-tony-dell
+tar xzf deployments/backups/pre-deploy_*.tar.gz -C /
 cd stacks/web
 docker compose up -d
 ```
@@ -361,7 +382,7 @@ ls -la tests/results/
 # Fix identified issues and re-run pipeline
 ```
 
-## Performance Metrics
+## Performance Metrics (estimates — not measured)
 
 **Deployment Performance**:
 

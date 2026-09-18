@@ -1,5 +1,6 @@
 ---
 category: operations
+type: troubleshooting
 ---
 
 # Hibernation Troubleshooting - Kernel Parameter Mismatch

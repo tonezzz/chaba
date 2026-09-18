@@ -1,5 +1,6 @@
 ---
 category: operations
+type: runbook
 ---
 
 # Phase 9 — Tailscale Client Auto-Updates (Selected)

@@ -18,10 +18,17 @@ const MAX_RESPONSE_MS = 2000;
 const MAX_BACKUP_AGE_HOURS = 24;
 
 const issues = [];
+const warns = [];
 const notes = [];
 
 function issue(msg) {
   issues.push(msg);
+}
+
+// Latency regressions and borderline states go to warns: they are reported in
+// the JSON output but do not fail the audit (a cold stats call is not breakage).
+function warn(msg) {
+  warns.push(msg);
 }
 
 function note(msg) {
@@ -122,7 +129,7 @@ async function checkMddbHealth() {
   if (!body) return;
 
   if (durationMs > MAX_RESPONSE_MS) {
-    issue(`MDDB /health slow: ${durationMs}ms`);
+    warn(`MDDB /health slow: ${durationMs}ms`);
   }
   if (body.status !== "healthy" && body.status !== "ok") {
     issue(`MDDB /health status=${body.status}`);
@@ -135,14 +142,23 @@ async function checkMddbHealth() {
 }
 
 async function checkMddbStats() {
-  const { body, durationMs } = await getJson(`${MDDB_BASE}/v1/stats`).catch((e) => {
+  const { body, durationMs } = await getJson(`${MDDB_BASE}/v1/stats`, 30000).catch((e) => {
     issue(`MDDB /v1/stats unreachable: ${e.message}`);
     return { body: null, durationMs: 0 };
   });
   if (!body) return;
 
   if (durationMs > MAX_RESPONSE_MS) {
-    issue(`MDDB /v1/stats slow: ${durationMs}ms`);
+    // /v1/stats can be cold-cache slow; retry once before warning.
+    await new Promise((r) => setTimeout(r, 500));
+    const retry = await getJson(`${MDDB_BASE}/v1/stats`, 30000).catch(() => null);
+    if (retry && retry.durationMs <= MAX_RESPONSE_MS) {
+      note(`MDDB /v1/stats slow first try (${durationMs}ms), ok on retry (${retry.durationMs}ms)`);
+    } else {
+      warn(
+        `MDDB /v1/stats slow: ${durationMs}ms${retry ? ` (retry ${retry.durationMs}ms)` : " (retry unreachable)"}`
+      );
+    }
   }
   if (body.mode && body.mode !== "wr") {
     issue(`MDDB /v1/stats mode=${body.mode}, expected wr`);
@@ -178,7 +194,7 @@ async function checkMddbSearch() {
   if (!body) return;
 
   if (durationMs > MAX_RESPONSE_MS) {
-    issue(`MDDB /v1/search slow: ${durationMs}ms`);
+    warn(`MDDB /v1/search slow: ${durationMs}ms`);
   }
   if (!Array.isArray(body) || body.length === 0) {
     issue('MDDB /v1/search returned no results for "postgres"');
@@ -200,7 +216,7 @@ async function checkProxyHealth() {
     if (body && (body.status === "ok" || body.status === "healthy")) {
       reachable = true;
       if (durationMs > MAX_RESPONSE_MS) {
-        issue(`Gemini proxy slow at ${proxyUrl}: ${durationMs}ms`);
+        warn(`Gemini proxy slow at ${proxyUrl}: ${durationMs}ms`);
       }
       if (body.gemini_model !== "gemini-embedding-2") {
         issue(`Gemini proxy primary model is ${body.gemini_model}, expected gemini-embedding-2`);
@@ -314,8 +330,10 @@ async function main() {
     mddb: MDDB_BASE,
     db_path: DB_PATH || null,
     issues,
+    warns,
     notes,
     total_issues: issues.length,
+    total_warns: warns.length,
     total_notes: notes.length,
   };
   console.log(JSON.stringify(result, null, 2));

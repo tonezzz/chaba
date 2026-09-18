@@ -1,4 +1,34 @@
+---
+title: Production Deployment Operations Runbook
+description: Procedures for deploying Chaba infrastructure to production including environment configuration, secrets management, and deployment workflows
+tags: [deployment, production, operations, runbook, docker, secrets]
+created: 2026-08-13
+updated: 2026-09-18
+category: operations
+status: aspirational
+last_verified: 2026-09-18
+verification_method: script-checked (compose files and secrets script exist; production deployment has never been executed)
+scope: stacks/web docker compose project (postgres/redis live in other stacks — `docker compose exec postgres` will fail from this project)
+owner: tony
+related:
+  [
+    stacks/web/docker-compose.yml,
+    stacks/web/docker-compose.prod.yml,
+    stacks/web/docker-compose.secrets.yml,
+    stacks/web/scripts/generate-secrets.sh,
+    docs/runbooks/deployment-operations.md,
+  ]
+search_keywords: [production, deployment, docker-secrets, env, rollback]
+---
+
 # Production Deployment Operations Runbook
+
+> **Status**: aspirational — describes the intended production workflow.
+> `docker-compose.secrets.yml` is a demonstration file (references services
+> like `activepieces` that don't exist in this stack) and `postgres`/`redis`
+> are not services in this compose project, so the `docker compose exec`
+> commands below need a stack that actually defines them before this runbook
+> can be executed end-to-end.
 
 ## Overview
 

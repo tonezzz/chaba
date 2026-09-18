@@ -1,5 +1,6 @@
 ---
 category: operations
+type: runbook
 ---
 
 # Standardized Templates (2026-08-06)

@@ -1,3 +1,27 @@
+---
+title: Database Optimization Operations Runbook
+description: Procedures for monitoring, optimizing, and maintaining PostgreSQL/Redis performance including connection pooling, query analysis, caching, and backup performance
+tags: [database, postgresql, redis, optimization, operations, runbook, caching]
+created: 2026-08-13
+updated: 2026-09-18
+category: operations
+status: partial
+last_verified: 2026-09-18
+verification_method: script-checked (all documented subcommands confirmed in scripts/)
+scope: tony-dell postgres/redis containers
+owner: tony
+related:
+  [
+    scripts/db-optimized.mjs,
+    scripts/db-optimizer.mjs,
+    scripts/db-performance-dashboard.mjs,
+    scripts/cache-manager.mjs,
+    scripts/backup-performance-monitor.mjs,
+    docs/ssot/infrastructure/ssot.health.yml,
+  ]
+search_keywords: [database, postgres, redis, performance, pool, cache, slow-query]
+---
+
 # Database Optimization Operations Runbook
 
 ## Overview
@@ -355,7 +379,7 @@ node scripts/backup-performance-monitor.mjs trends
 3. Consider incremental backups
 4. Archive old data to reduce database size
 
-## Performance Benchmarks
+## Performance Benchmarks (targets — not measured)
 
 ### Target Performance Metrics
 

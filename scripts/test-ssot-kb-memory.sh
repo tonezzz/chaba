@@ -40,6 +40,17 @@ print(cur if not isinstance(cur, (dict, list)) else '')
 PYEOF
 }
 
+# Host scoping: each system declares `host` in the manifest — `any` runs
+# everywhere, a hostname runs only there. This is how the canonical mn01
+# runner skips tony-omen-local checks (sessions.db, session-memory, backups).
+HOST=$(hostname -s)
+host_ok() {
+  local h
+  h=$(mget "systems.$1.host" 2>/dev/null || true)
+  [ -z "$h" ] && h="any"
+  [ "$h" = "any" ] || [ "$h" = "$HOST" ]
+}
+
 if [ "$TIER" != "t1-only" ]; then
 
 hdr "T0 — SSOT YAML integrity"

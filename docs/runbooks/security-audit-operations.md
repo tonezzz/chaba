@@ -3,10 +3,15 @@ title: Security Audit Operations Runbook
 description: Operational procedures for the Chaba security audit and hardening system including vulnerability scanning, security assessments, remediation procedures, and best practices
 tags: [security, audit, operations, runbook, hardening, vulnerability]
 created: 2026-08-13
-updated: 2026-08-13
+updated: 2026-09-18
 category: operations
+status: partial
+last_verified: 2026-09-18
+verification_method: script-checked (scripts exist; audit runs target the chaba-tony-dell checkout)
+scope: chaba-tony-dell runtime checkout; logs/reports written under that tree
+owner: tony
 related:
-  [scripts/security-audit.sh, scripts/security-harden.sh, ssot.infrastructure/ssot.health.yml]
+  [scripts/security-audit.sh, scripts/security-harden.sh, docs/ssot/infrastructure/ssot.health.yml]
 search_keywords: [security, audit, vulnerability, hardening, permissions, credentials]
 ---
 
@@ -339,7 +344,7 @@ df -h
 3. **Encryption**: Enable SSL/TLS for connections
 4. **Backups**: Regular encrypted backups
 
-## Performance Metrics
+## Performance Metrics (estimates — not measured)
 
 **Audit Performance**:
 

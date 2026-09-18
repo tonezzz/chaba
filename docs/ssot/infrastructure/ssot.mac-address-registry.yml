@@ -87,14 +87,15 @@ sections:
           (eureka name "TONY-TV", cast build 3.72.446070, ports 8008/8009 + Android TV remote 6466/6467). No AirPlay receiver; AirScreen app
           or an external stick is the AirPlay path. Feeds the Samsung panel over HDMI.
       - label: samsung-tv
-        text:
+        text: |
           Samsung TV-40C5000 (40" C5000-series LCD, ~2010) — eth0 MAC 00:12:fb:0e:93:ed, wired to the Tenda repeater LAN port. DHCP-floats
           (seen .91, .92); NIC dies in standby so ARP/ping only work while the panel is on. DLNA DMR-1.50 ("DMRND/0.5") on 52235/52396/5601;
           desc http://<ip>:52235/dmr/SamsungMRDesc.xml, UDN 215459bb-96b5-04f5-1476-2f50d2b694f9. DLNA playback visually confirmed
           2026-09-17 via rygel (TonyTest) on tony-omen — pull via MEDIA.P/Source works clean; push (SetAVTransportURI+Play) needs an
           on-screen accept prompt each time. No AirPlay/Screen Mirroring — DLNA cast only. In ARP it appears with the
           repeater's WAN MAC 0A:F0:BC:AD:20:8B (MAC-NAT); its own eth0 MAC is only visible when it's on the upstream network
-          directly.
+          directly. Power — HA `switch.plug_tv` feeds the whole TV corner (Samsung + TrueID box + repeater). When unavailable,
+          ask user before power-cycling — see "Samsung TV / TV-corner power flow" in AGENTS.md.
       - label: tony-repeater
         text:
           Tenda Wi-Fi repeater (reasy-ui/GoAhead, fw 005) — LAN MAC 06:28:58:26:4b:2c, WAN MAC 0A:F0:BC:AD:20:8B (both locally

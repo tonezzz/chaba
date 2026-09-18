@@ -508,3 +508,12 @@ python3 scripts/notebooklm-query.py "-" "Summarize the Home Assistant setup."
 - AI Hub unpacked id: `emeljcclmededmnnnoejcccnbeadeilm` (sha256 of path → a-p map).
 - Its MV3 service worker only wakes on `action.onClicked` + `cookies.onChanged` (`serviceworkerevents` in `Default/Preferences`); `tabs.onActivated` listeners added later aren't wake-events until the SW re-registers (reload/bump manifest version). To wake it over CDP: set a cookie on any page (`document.cookie="x=1"` or `Network.setCookie`), then connect to its `webSocketDebuggerUrl` and `Runtime.evaluate` `chrome.*` APIs (`awaitPromise:true`).
 - In the debug profile: 85 google cookies, 14 notebooklm cookies — login carried over.
+
+## Samsung TV / TV-corner power flow (learned 2026-09-18)
+
+`switch.plug_tv` on tony-ha powers the WHOLE TV corner: Samsung panel + TrueID box + Tenda repeater. When `media_player.tv_40c5000` (or the TrueID `media_player.tony_tv`) is `unavailable`, follow this flow instead of just reporting it dead:
+
+1. Check `switch.plug_tv` state. If `off`, ASK the user whether to turn it on (HA `switch.turn_on`) — don't just say the TV is off.
+2. If plug is `on` but TV still unavailable: the panel is in standby (NIC dies, nothing pings). Ask the user to power it on with the remote/button — a 2010 Samsung does NOT auto-boot on AC restore.
+3. Wait ~60s after power-on for DLNA/UPnP to come up (ports 52235/52396/5601), then re-check and continue the task.
+4. The repeater and TrueID box share the plug — they take their own boot time after plug-on (repeater: Tenda UI at .72/.73/.82 after ~1min; TrueID: Chromecast on 8008/8009).

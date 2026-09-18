@@ -1,5 +1,6 @@
 ---
 category: operations
+type: troubleshooting
 ---
 
 # Check container health status

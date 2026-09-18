@@ -5,13 +5,14 @@
  * runs each audit, and produces a normalized summary report.
  */
 import { spawn } from "child_process";
-import { writeFileSync, readFileSync, mkdirSync, copyFileSync } from "fs";
+import { writeFileSync, readFileSync, mkdirSync, copyFileSync, rmSync } from "fs";
 import { join } from "path";
 import yaml from "js-yaml";
 
 const PROJECT_ROOT = new URL("../../", import.meta.url).pathname.replace(/\/$/, "");
 const REPORTS_DIR = join(PROJECT_ROOT, "reports", "audits");
 const SSOT_FILE = join(PROJECT_ROOT, "docs", "ssot", "infrastructure", "ssot.audit.yml");
+const ALERT_FILE = join(PROJECT_ROOT, "docs", "ssot", "focus-inbox", "audit-failures.yml");
 
 function loadAuditSSOT() {
   const text = readFileSync(SSOT_FILE, "utf8");
@@ -40,6 +41,7 @@ function getAudits(full = false) {
     command: a.command,
     args: a.args || [],
     script: a.script,
+    severity: a.severity_on_fail || "error",
   }));
   const runNames = full
     ? doc.schedule?.full?.runs || allAudits.map((a) => a.name)
@@ -69,6 +71,7 @@ function runOne(audit) {
         name: audit.name,
         command: `${audit.command} ${[audit.script, ...audit.args].join(" ")}`,
         ok: code === 0,
+        severity: audit.severity,
         duration_ms: Date.now() - start,
         exit_code: code,
         stdout: stdout.trim(),
@@ -93,16 +96,20 @@ async function main() {
     console.log(`  -> ${result.ok ? "ok" : "failed"} in ${result.duration_ms}ms`);
   }
 
+  const statusOf = (r) => (r.ok ? "PASS" : r.severity === "warning" ? "WARN" : "FAIL");
+  const hardFailed = results.filter((r) => statusOf(r) === "FAIL");
+
   const summary = {
     audit: doc.title || "chaba-audit-suite",
     ssot: SSOT_FILE,
     timestamp: started,
     generated: new Date().toISOString(),
-    ok: results.every((r) => r.ok),
+    ok: hardFailed.length === 0,
     summary: {
       total: results.length,
       passed: results.filter((r) => r.ok).length,
-      failed: results.filter((r) => !r.ok).length,
+      warned: results.filter((r) => statusOf(r) === "WARN").length,
+      failed: hardFailed.length,
     },
     results,
   };
@@ -113,13 +120,11 @@ async function main() {
     `- SSOT: ${SSOT_FILE}`,
     `- Generated: ${summary.generated}`,
     `- Overall: ${summary.ok ? "PASS" : "FAIL"}`,
-    `- Passed: ${summary.summary.passed}/${summary.summary.total}`,
+    `- Passed: ${summary.summary.passed}/${summary.summary.total} (warned: ${summary.summary.warned})`,
     "",
     "| Audit | Status | Duration (ms) | Exit |",
     "|-------|--------|---------------|------|",
-    ...results.map(
-      (r) => `| ${r.name} | ${r.ok ? "PASS" : "FAIL"} | ${r.duration_ms} | ${r.exit_code} |`
-    ),
+    ...results.map((r) => `| ${r.name} | ${statusOf(r)} | ${r.duration_ms} | ${r.exit_code} |`),
     "",
     "## Details",
     "",
@@ -171,11 +176,36 @@ async function main() {
   }
   writeFileSync(historyFile, JSON.stringify(history, null, 2));
 
+  // Focus-inbox alert on hard failures; auto-resolve by removing it when green.
+  if (hardFailed.length > 0) {
+    const names = hardFailed.map((r) => r.name).join(", ");
+    writeFileSync(
+      ALERT_FILE,
+      [
+        "title: Audit suite failure",
+        `subtitle: ${hardFailed.length} error-severity audit(s) failed ${summary.generated}`,
+        "icon: alert",
+        "focus:",
+        "  label: Investigate audit failures",
+        "  text: |",
+        `    Failed audits: ${names}`,
+        "    Report: reports/audits/summary.md",
+        "    Re-run: node scripts/audits/run.mjs",
+        "",
+      ].join("\n"),
+      "utf8"
+    );
+  } else {
+    rmSync(ALERT_FILE, { force: true });
+  }
+
   if (summary.ok) {
     console.log("All audits passed.");
     process.exit(0);
   } else {
-    console.error("Some audits failed. See reports/audits/summary.json");
+    console.error(
+      `Some audits failed (error severity: ${hardFailed.map((r) => r.name).join(", ")}). See reports/audits/summary.json`
+    );
     process.exit(1);
   }
 }

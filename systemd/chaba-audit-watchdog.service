@@ -1,0 +1,11 @@
+[Unit]
+Description=Chaba audit watchdog (verify suite ran recently and is green)
+After=network.target
+
+[Service]
+Type=oneshot
+User=tony
+ExecStart=/home/tony/.n/bin/node /home/tony/CascadeProjects/chaba-tony-dell/scripts/audit-watchdog.mjs
+WorkingDirectory=/home/tony/CascadeProjects/chaba-tony-dell
+StandardOutput=append:/home/tony/CascadeProjects/chaba-tony-dell/logs/audit-watchdog.log
+StandardError=append:/home/tony/CascadeProjects/chaba-tony-dell/logs/audit-watchdog.log
