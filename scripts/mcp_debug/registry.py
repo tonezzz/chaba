@@ -5,7 +5,7 @@ from pathlib import Path
 import yaml
 
 from .config import REPO_DIR
-from .ssot import mcp_read_ssot
+from .ssot import mcp_query_ssot, mcp_read_ssot
 
 
 def _safe_path(path):
@@ -110,8 +110,8 @@ def mcp_registry_lookup(host=None, q=None, type=None, by="any", limit=5, offset=
     }
 
 
-def mcp_registry_get(host=None, id=None, path=None, ssot_limit=20000):
-    """Resolve a single asset by id or path and return its source SSOT."""
+def mcp_registry_get(host=None, id=None, path=None, ssot_limit=20000, key=None, fuzzy=False, context=0):
+    """Resolve a single asset by id or path and return its source SSOT, optionally with a dotted-path query."""
     if not id and not path:
         return {"ok": False, "error": "id or path is required"}
 
@@ -153,7 +153,7 @@ def mcp_registry_get(host=None, id=None, path=None, ssot_limit=20000):
             "asset": asset,
         }
 
-    return {
+    result = {
         "ok": True,
         "asset": asset,
         "ssot": {
@@ -162,3 +162,12 @@ def mcp_registry_get(host=None, id=None, path=None, ssot_limit=20000):
             "truncated": read.get("truncated", False),
         },
     }
+
+    if key:
+        qres = mcp_query_ssot(path=ssot_path, key=key, fuzzy=fuzzy, context=context)
+        result["ssot"]["query_result"] = qres
+        result["ok"] = qres.get("ok", False)
+        if not qres.get("ok"):
+            result["error"] = qres.get("error")
+
+    return result

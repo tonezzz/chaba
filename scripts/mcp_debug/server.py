@@ -1,6 +1,7 @@
 """MCP Debug server wiring."""
 import json
 import logging
+import os
 import sys
 from .config import HOSTS, DEBUG_COMMANDS, PRESETS, PRESET_DESCRIPTIONS
 from .hosts import run_on_host
@@ -64,7 +65,7 @@ def handle_tools_list(id_):
     tools = [
         {
             "name": "mcp_debug",
-            "description": f"Run a compact debug command on a host. Known commands: {known}",
+            "description": f"Run a compact debug command on a host, or use 'reload' to hot-reload this server. Known commands: {known}",
             "inputSchema": {
                 "type": "object",
                 "properties": {
@@ -451,14 +452,18 @@ def handle_tools_list(id_):
         },
         {
             "name": "mcp_query_ssot",
-            "description": "Find a relevant SSOT document and return a specific value or list at a dotted/integer path.",
+            "description": "Find a relevant SSOT document and return a specific value or list at a dotted/integer path. Supports * wildcards, fuzzy matching, parent context, and dynamic references (__ref__, !ssot_ref, ${ssot(...)} expressions).",
             "inputSchema": {
                 "type": "object",
                 "properties": {
                     "query": {"type": "string", "description": "Natural language or keyword query to locate the SSOT file"},
                     "path": {"type": "string", "description": "Direct relative path to the SSOT file"},
-                    "key": {"type": "string", "description": "Dotted path inside the YAML, e.g. 'audits' or 'schedule.default.runs' or 'audits.0.name'"},
+                    "key": {"type": "string", "description": "Dotted path inside the YAML, e.g. 'audits' or 'schedule.default.runs' or 'audits.0.name' or 'hosts.*.tailscale_ip'"},
                     "limit": {"type": "integer", "description": "If the result is a list, return up to this many items", "default": 50},
+                    "fuzzy": {"type": "boolean", "description": "Allow fuzzy key matching if an exact key is not found", "default": False},
+                    "context": {"type": "integer", "description": "Include N levels of parent context in the response", "default": 0},
+                    "resolve": {"type": "boolean", "description": "Resolve __ref__, !ssot_ref, and ${ssot(...)} expressions in the value", "default": True},
+                    "trace": {"type": "boolean", "description": "Include the chain of resolved references in the response and in the usage log", "default": False},
                 },
             },
         },
@@ -480,7 +485,7 @@ def handle_tools_list(id_):
         },
         {
             "name": "mcp_ssot_get",
-            "description": "Resolve a single SSOT/registry asset by id or path and return its metadata plus source SSOT content.",
+            "description": "Resolve a single SSOT/registry asset by id or path and return its metadata plus source SSOT content, optionally querying a dotted path inside it.",
             "inputSchema": {
                 "type": "object",
                 "properties": {
@@ -488,6 +493,9 @@ def handle_tools_list(id_):
                     "id": {"type": "string", "description": "Asset id"},
                     "path": {"type": "string", "description": "Asset path"},
                     "ssot_limit": {"type": "integer", "description": "Maximum characters of source SSOT to return", "default": 20000},
+                    "key": {"type": "string", "description": "Dotted path inside the asset's source SSOT to query, e.g. 'runtime.ports.http'"},
+                    "fuzzy": {"type": "boolean", "description": "Allow fuzzy key matching if an exact key is not found", "default": False},
+                    "context": {"type": "integer", "description": "Include N levels of parent context in the query result", "default": 0},
                 },
             },
         },
@@ -564,8 +572,13 @@ def handle_tools_call(id_, params):
     command = arguments.get("command")
 
     if name == "mcp_debug":
-        if not host or not command:
-            return {"jsonrpc": "2.0", "id": id_, "error": {"code": -32602, "message": "host and command are required"}}
+        if not command:
+            return {"jsonrpc": "2.0", "id": id_, "error": {"code": -32602, "message": "command is required"}}
+        if command == "reload":
+            _mcp_debug_reload(id_)
+            # _mcp_debug_reload does not return
+        if not host:
+            return {"jsonrpc": "2.0", "id": id_, "error": {"code": -32602, "message": "host is required"}}
         output = mcp_debug(host, command)
     elif name == "mcp_raw":
         if not host or not command:
@@ -729,6 +742,10 @@ def handle_tools_call(id_, params):
             path=arguments.get("path"),
             key=arguments.get("key"),
             limit=arguments.get("limit", 50),
+            fuzzy=arguments.get("fuzzy", False),
+            context=arguments.get("context", 0),
+            resolve=arguments.get("resolve", True),
+            trace=arguments.get("trace", False),
         )
         output = json.dumps(result, separators=(",", ":"))
     elif name == "mcp_ssot_query":
@@ -753,6 +770,9 @@ def handle_tools_call(id_, params):
             id=arguments.get("id"),
             path=arguments.get("path"),
             ssot_limit=arguments.get("ssot_limit", 20000),
+            key=arguments.get("key"),
+            fuzzy=arguments.get("fuzzy", False),
+            context=arguments.get("context", 0),
         )
         output = json.dumps(result, separators=(",", ":"))
     elif name == "mcp_context":
@@ -817,7 +837,31 @@ def handle_tools_call(id_, params):
     }
 
 
+def _mcp_debug_reload(id_):
+    """Hot-reload this mcp-debug server by re-executing the process in place."""
+    response = {
+        "jsonrpc": "2.0",
+        "id": id_,
+        "result": {
+            "content": [
+                {
+                    "type": "text",
+                    "text": json.dumps({"ok": True, "restarting": True}),
+                }
+            ]
+        },
+    }
+    print(json.dumps(response))
+    sys.stdout.flush()
+    os.environ["MCP_RELOADED"] = "1"
+    os.execv(sys.executable, [sys.executable, "-m", "mcp_debug.server"])
+    # os.execv does not return
+
+
 def main():
+    if os.environ.pop("MCP_RELOADED", None):
+        print(json.dumps({"jsonrpc": "2.0", "method": "notifications/tools/list_changed"}))
+        sys.stdout.flush()
     for line in sys.stdin:
         line = line.strip()
         if not line:
