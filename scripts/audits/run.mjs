@@ -90,14 +90,15 @@ async function main() {
   mkdirSync(REPORTS_DIR, { recursive: true });
   const started = new Date().toISOString();
   const results = [];
+  const statusOf = (r) => (r.ok ? "PASS" : r.severity === "warning" ? "WARN" : "FAIL");
+
   for (const audit of AUDITS) {
     console.log(`Running audit: ${audit.name}`);
     const result = await runOne(audit);
     results.push(result);
-    console.log(`  -> ${result.ok ? "ok" : "failed"} in ${result.duration_ms}ms`);
+    const label = result.ok ? "ok" : result.severity === "warning" ? "warn" : "FAILED";
+    console.log(`  -> ${label} in ${result.duration_ms}ms`);
   }
-
-  const statusOf = (r) => (r.ok ? "PASS" : r.severity === "warning" ? "WARN" : "FAIL");
   const hardFailed = results.filter((r) => statusOf(r) === "FAIL");
 
   const summary = {
@@ -202,7 +203,14 @@ async function main() {
   }
 
   if (summary.ok) {
-    console.log("All audits passed.");
+    const warned = results.filter((r) => statusOf(r) === "WARN");
+    if (warned.length) {
+      console.log(
+        `All audits passed; ${warned.length} warning-severity finding(s): ${warned.map((r) => r.name).join(", ")}`
+      );
+    } else {
+      console.log("All audits passed.");
+    }
     process.exit(0);
   } else {
     console.error(

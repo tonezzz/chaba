@@ -125,6 +125,17 @@ accepted_public_endpoints:
   - value: "0.0.0.0%virbr0:67"
     last_verified: "2026-08-19"
     reason: libvirt bridge bootp/IPv6
+  - value: "100.68.142.13:5432"
+    last_verified: "2026-09-18"
+    reason: >
+      tailscale serve --tcp 5432 forwarding tailnet -> 127.0.0.1:5432
+      (chaba-postgres-16). Restored 2026-09-18 after the serve silently
+      dropped; yomi-api/gpu-queue containers depend on it. Tailnet-only.
+  - value: "100.68.142.13:8444"
+    last_verified: "2026-09-18"
+    reason: >
+      tailscale serve --https=8444 TLS termination -> http://127.0.0.1:9005
+      (ha-live Gemini bridge). Restored 2026-09-18. Tailnet-only.
 
 related_files:
   - docs/ssot/infrastructure/ssot.audit.yml

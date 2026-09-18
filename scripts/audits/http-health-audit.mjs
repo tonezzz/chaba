@@ -50,6 +50,19 @@ function collectServices() {
     for (const s of doc?.services || []) {
       if (s.type !== "http" || s.disabled || !s.url || s.url.includes("{")) continue;
       if (s.profiles && !s.profiles.includes(PROFILE)) continue;
+      // Localhost URLs bound on another host can never be probed from here —
+      // that is a host-scoping limitation, not a service failure. Only
+      // probe localhost URLs when the declared host is this machine.
+      const isLocalUrl = /^https?:\/\/(127\.|localhost)/.test(s.url);
+      if (
+        isLocalUrl &&
+        s.host &&
+        s.host !== CURRENT_HOST &&
+        s.host !== CURRENT_HOST.replace(/-/g, "_")
+      ) {
+        warns.push(`${s.id || s.url}: localhost-only on ${s.host}; skipped (host-scoped)`);
+        continue;
+      }
       services.push({
         id: s.id || s.name || s.url,
         file,
