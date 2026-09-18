@@ -104,14 +104,20 @@ Parallel sessions caused real breakage: duplicated `pfg2-card.ts`, undeclared `v
 
 ## Restart after a crash
 
-`devin-desktop` must be launched inside a live user X session on tony-dell — NOT on the GDM greeter display (`:1`), which is killed whenever the greeter resets (this is what kept killing it). The process is _not_ a systemd service; it is started as a background `nohup` job and shows up in `pgrep -a -f devin-desktop`.
+tony-dell's display stack (as of 2026-09-18):
 
-As of 2026-09-18 there is an XDG autostart entry (`~/.config/autostart/devin-desktop.desktop`), so devin-desktop starts automatically inside whichever desktop session comes up (console autologin or the CRD XFCE session on `:20`). Manual restart is only needed when a session is already running and devin died inside it.
+- `:1` / vt7 — the **persistent seat**: `xorg-seat.service` (root Xorg) + `lxqt-seat.service` (`startlxqt`, `Restart=always`). This is what Barrier controls. It is NOT the GDM greeter — the greeter lives on tty1 and `barrier-pin-vt.timer` keeps vt7 in the foreground.
+- `:20` — Chrome Remote Desktop's Xvfb session (`startxfce4`), separate and less durable.
+- `:99` — headless Xvfb for browser automation.
 
-Quick restart command (targets the live CRD/XFCE session on `:20`, borrowing the session's dbus):
+`devin-desktop` belongs on `:1` (the persistent seat — same model as tony-omen's `:0` console session). Launching it on the CRD `:20` session means it dies when CRD restarts; launching it as a child of lxqt-session means it dies when `lxqt-seat` restarts. An ssh `nohup` launch on `:1` is the most durable manual option.
+
+As of 2026-09-18 there is an XDG autostart entry (`~/.config/autostart/devin-desktop.desktop`), so devin-desktop starts automatically inside whichever desktop session comes up — after a reboot, `linger` → `lxqt-seat` → lxqt-session → autostart brings it back on `:1` with no manual step. GDM autologin is intentionally DISABLED: a gdm session on tty2 would steal the foreground VT from the Barrier seat and `barrier-pin-vt` is designed not to steal it back.
+
+Quick restart command (targets the persistent seat on `:1`):
 
 ```bash
-ssh tony-dell 'SESSPID=$(pgrep -u tony -x xfce4-session | head -1); DBUS=$(tr "\0" "\n" < /proc/$SESSPID/environ | grep "^DBUS_SESSION_BUS_ADDRESS="); env DISPLAY=:20 XAUTHORITY=/home/tony/.Xauthority "$DBUS" nohup /usr/share/devin-desktop/devin-desktop > /home/tony/.local/share/devin/cli/devin-restart-$(date +%Y%m%d-%H%M%S).log 2>&1 </dev/null &'
+ssh tony-dell 'env DISPLAY=:1 XAUTHORITY=/run/user/1000/gdm/Xauthority DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/1000/bus nohup /usr/share/devin-desktop/devin-desktop > /home/tony/.local/share/devin/cli/devin-restart-$(date +%Y%m%d-%H%M%S).log 2>&1 </dev/null &'
 ```
 
 Verify:
