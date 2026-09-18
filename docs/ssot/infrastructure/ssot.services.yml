@@ -186,6 +186,24 @@ tony-dell:
     systemd: systemd/ha-live.service
     status: 'running (2026-08-31)'
     note: 'Started as podman exec from home-assistant. Managed by user systemd unit ha-live.service. WebSocket at wss://tony-dell.taila0626a.ts.net:8444/ws. Tested /ws handshake and received status=connected.'
+  node-red:
+    container: node-red
+    image: docker.io/nodered/node-red:latest
+    runtime: rootless podman
+    network: host
+    port: 1880
+    host_port: 127.0.0.1:1880
+    caddy_path: /apps/node-red
+    data_volume: /home/tony/.local/share/nodered
+    quadlet:
+      container_unit: ~/.config/containers/systemd/node-red.container
+      service_unit: ~/.config/systemd/user/node-red.service
+    env_file: ~/.config/secrets/nodered-ha.env
+    status: running
+    note: |
+      Containerized Node-RED connected to tony-ha via node-red-contrib-home-assistant-websocket.
+      Caddy reverse proxy at /apps/node-red/ and the HA token is in an env file outside git.
+
   playlived-dell:
     service: playlived-dell.service
     host: tony_dell
@@ -254,7 +272,7 @@ tony-dell:
     host: tony_dell
     network: host
     port: 8123
-    host_port: 0.0.0.0:8123
+    host_port: 127.0.0.1:8123
     quadlet:
       container_unit: ~/.config/containers/systemd/tony-ha.container
       service_unit: ~/.config/systemd/user/tony-ha.service
@@ -272,7 +290,7 @@ tony-dell:
       webhook_id: mcp_d5528537d57627164033dc5e3e5e5aa6
       local_url: http://tony-dell:9584/private_CtYuVkJEl28cp8qA8yXNCQ
       tailnet_url: http://tony-dell:9584/private_CtYuVkJEl28cp8qA8yXNCQ
-      webhook: http://tony-dell:8123/api/webhook/mcp_d5528537d57627164033dc5e3e5e5aa6
+      webhook: http://127.0.0.1:8123/api/webhook/mcp_d5528537d57627164033dc5e3e5e5aa6
     caddy:
       note: 'Not implemented — Caddyfile has no HA route. HA UI absolute redirects break path-prefixed proxying. UI access via tailscale serve https://tony-dell.taila0626a.ts.net:8123 -> 127.0.0.1:8123 (decision: tony-ha-tailscale-only-access).'
     health_check: ssh tony-dell curl -sf http://127.0.0.1:8123/ >/dev/null
@@ -285,7 +303,7 @@ tony-dell:
     runtime: rootless podman
     network: host
     port: 8124
-    host_port: 0.0.0.0:8124
+    host_port: 127.0.0.1:8124
     quadlet:
       container_unit: ~/.config/containers/systemd/michael-dev.container
       service_unit: ~/.config/systemd/user/michael-dev.service
@@ -482,6 +500,56 @@ tony-dell:
     status: implemented (2026-08-25)
     note: 'OAuth2 proxy for mcp-rview. Listens on 127.0.0.1:9004. Tailscale serve on tony-dell:443 proxies https://tony-dell.taila0626a.ts.net/ to 127.0.0.1:9004. Client credentials are in /home/tony/.config/mcp-rview-oauth-proxy.env (not in git).'
 
+  notebooklm-mcp:
+    container: notebooklm-mcp
+    image: localhost/notebooklm-mcp
+    runtime: rootless podman
+    network: host
+    host: tony_dell
+    data_volume: /home/tony/.local/share/notebooklm/.notebooklm-mcp-cli
+    quadlet:
+      container_unit: ~/.config/containers/systemd/notebooklm-mcp.container
+      service_unit: ~/.config/systemd/user/notebooklm-mcp.service
+    cli_helpers:
+      nlm: ~/.local/bin/nlm
+      nlm-add: ~/.local/bin/nlm-add
+    drive_collection:
+      collection: chaba
+      folder_id: 1H7FHxy5nDxMOmcFtL79lmy_bttV35kjB
+      rclone_path: gdrive:notebooklm/chaba
+    notebooks_dir: gdrive:notebooklm/chaba/notebooks
+    status: implemented (2026-09-15)
+    note: 'Persistent rootless Podman container. Mounts the authenticated .notebooklm-mcp-cli profile. Devin connects via podman exec. The ~/.local/bin/nlm wrapper calls podman exec on tony-dell or ssh there from tony-omen. Google Drive collection for sources: gdrive:notebooklm/chaba. The nlm-add helper uploads local files to gdrive:notebooklm/chaba/notebooks/<nb-id>/files, converts text to .docx, adds by Drive ID, and writes a local manifest.'
+
+  notebooklm-rest:
+    container: notebooklm-rest
+    image: localhost/notebooklm-rest
+    runtime: rootless podman
+    port: 8000
+    host_port: '127.0.0.1:${ssot("docs/ssot/infrastructure/ssot.values.yml", "ports.notebooklm_rest")}'
+    host: tony_dell
+    data_volume: /home/tony/.local/share/notebooklm/notebooklm/storage_state.json
+    secrets:
+      - notebooklm-rest-api-key
+    environment:
+      - NOTEBOOKLM_STORAGE_PATH=/data/storage_state.json
+    env_file: ~/.config/secrets/notebooklm-rest-api.env
+    caddy_path: /apps/notebooklm/api
+    caddy_upstream: '127.0.0.1:${ssot("docs/ssot/infrastructure/ssot.values.yml", "ports.notebooklm_rest")}'
+    public_url: 'https://${ssot("docs/ssot/infrastructure/ssot.values.yml", "hosts.tony_dell.tailscale")}/apps/notebooklm/api'
+    quadlet:
+      container_unit: ~/.config/containers/systemd/notebooklm-rest.container
+      service_unit: ~/.config/systemd/user/notebooklm-rest.service
+    cli_helpers:
+      nbapi: ~/.local/bin/nbapi
+    drive_collection:
+      collection: chaba
+      folder_id: 1H7FHxy5nDxMOmcFtL79lmy_bttV35kjB
+      rclone_path: gdrive:notebooklm/chaba
+    notebooks_dir: gdrive:notebooklm/chaba/notebooks
+    status: implemented (2026-09-15)
+    note: 'FastAPI REST API on top of notebooklm-py. X-API-Key header is enforced via NOTEBOOKLM_REST_API_KEY. Exposed through Caddy at /apps/notebooklm/api on tony-dell.taila0626a.ts.net. The key lives in ~/.config/secrets/notebooklm-rest-api.env (not in git). Source and Dockerfile are in ~/.local/share/notebooklm/notebooklm-rest-api. The ~/.local/bin/nbapi wrapper sends the request to tony-dell (local curl on tony-dell, ssh on tony-omen). Google Drive collection for sources: gdrive:notebooklm/chaba. Notebook files stored under gdrive:notebooklm/chaba/notebooks/<nb-id>/files.'
+
 tony-omen:
   ollama:
     container: ollama
@@ -504,6 +572,18 @@ tony-omen:
     routing:
       - trade data → 100.68.142.13:5432 (tony-dell, chaba-postgres-16)
     notes: Container stopped and removed; trade database migrated to tony-dell chaba-postgres-16. Yomi data was already on tony-dell.
+
+  notebooklm-rest-auth-refresh:
+    type: systemd user timer + oneshot service
+    host: tony_omen
+    script: ~/.local/bin/notebooklm-rest-auth-refresh
+    service_unit: ~/.config/systemd/user/notebooklm-rest-auth-refresh.service
+    timer_unit: ~/.config/systemd/user/notebooklm-rest-auth-refresh.timer
+    schedule: daily
+    target: tony-dell:/home/tony/.local/share/notebooklm/notebooklm/storage_state.json
+    action: 'notebooklm login --browser-cookies chrome, rsync storage_state.json to tony-dell, restart notebooklm-rest'
+    status: implemented (2026-09-15)
+    note: 'Keeps notebooklm-py storage_state.json fresh by re-extracting from tony-omen Chrome daily. The service waits 5s after container restart.'
   mddb:
     container: mddb
     image: tradik/mddb:latest
@@ -617,8 +697,8 @@ tony-omen:
       - /sys/devices/platform/hp-wmi
       - /sys/devices/system/cpu/intel_pstate
     health_check: 'ssh tony-omen curl -s -o /dev/null -w "%{http_code}" http://127.0.0.1:8001/health'
-    status: 'health check added; container currently stopped (2026-08-27)'
-    note: Extracted from the old status-api; provides hardware sensors, GPU, and Docker container data to the data API.
+    status: active
+    note: Running on tony-omen port 8001. Provides hardware sensors, CPU/GPU status, Docker container data, and fan/turbo control via /api/sensors.
 
 michael:
   home-assistant:

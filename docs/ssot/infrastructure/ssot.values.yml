@@ -43,9 +43,12 @@ ports:
   playlived_omen: 9231
   weaviate: 8084
   chaba_funnel: 8082 # decommissioned 2026-08-28; do not use for new services
-  web: 80
-  web_internal: 8080
   ha_live_public: 8444
+  ha_tony: 8123
+  ha_michael_dev: 8124
+  ha_mcp_tony: 9584
+  ha_mcp_michael_dev: 9585
+  notebooklm_rest: 3011
 
 schedules:
   audit_suite: '0 2 * * 0'
@@ -72,5 +75,44 @@ paths:
   reports_dir: reports
   logs_dir: logs
   systemd_user: /home/tony/.config/systemd/user
+  local_bin: /home/tony/.local/bin
+
+notebooklm:
+  account: tonezzzz@gmail.com
+  rclone_remote: gdrive
+  drive_root: notebooklm
+  drive_root_id: 1beIctIVvLYKwsLwRNap7UXi3ZbFnS0xG
+  default_collection: chaba
+  notebooks_dir: gdrive:notebooklm/chaba/notebooks
+  manifest_dir: /home/tony/.local/share/notebooklm/notebooks
+  cli_helpers:
+    nlm: ~/.local/bin/nlm
+    nbapi: ~/.local/bin/nbapi
+    nlm_add: ~/.local/bin/nlm-add
+    nlmq: ~/.local/bin/nlmq
+    nlm_cite: ~/.local/bin/nlm-cite
+    chaba_ask: ~/.local/bin/chaba-ask
+    nlm_pr_draft: ~/.local/bin/nlm-pr-draft
+    nlm_explain_log: ~/.local/bin/nlm-explain-log
+    verify_agents: scripts/verify-agents-commands.py
+  sync:
+    notebook_id: fdfd3483-6b7e-4cb0-85f3-7f060698769c
+    chunk_files: 40
+    min_kb_group: 5
+    max_chunk_bytes: 262144
+    max_workers: 1
+    retry_attempts: 3
+    backoff_base_seconds: 2
+    manifest: data/notebooklm-kb-sync-manifest.yml
+    log: data/notebooklm-kb-sync.ndjson
+    script: scripts/notebooklm-kb-sync.py
+    service: ~/.config/systemd/user/notebooklm-kb-sync.service
+    timer: ~/.config/systemd/user/notebooklm-kb-sync.timer
+
+  collections:
+    chaba:
+      folder_id: 1H7FHxy5nDxMOmcFtL79lmy_bttV35kjB
+      path: gdrive:notebooklm/chaba
+      note: default collection
 
 
