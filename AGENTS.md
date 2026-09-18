@@ -104,12 +104,14 @@ Parallel sessions caused real breakage: duplicated `pfg2-card.ts`, undeclared `v
 
 ## Restart after a crash
 
-`devin-desktop` must be launched with the active X display on tony-dell. The process is _not_ a systemd service; it is started as a background `nohup` job and shows up in `pgrep -a -f devin-desktop`.
+`devin-desktop` must be launched inside a live user X session on tony-dell — NOT on the GDM greeter display (`:1`), which is killed whenever the greeter resets (this is what kept killing it). The process is _not_ a systemd service; it is started as a background `nohup` job and shows up in `pgrep -a -f devin-desktop`.
 
-Quick restart command:
+As of 2026-09-18 there is an XDG autostart entry (`~/.config/autostart/devin-desktop.desktop`), so devin-desktop starts automatically inside whichever desktop session comes up (console autologin or the CRD XFCE session on `:20`). Manual restart is only needed when a session is already running and devin died inside it.
+
+Quick restart command (targets the live CRD/XFCE session on `:20`, borrowing the session's dbus):
 
 ```bash
-ssh tony-dell 'export DISPLAY=:1 XAUTHORITY=/run/user/1000/gdm/Xauthority; nohup /usr/bin/devin-desktop > /home/tony/.local/share/devin/cli/devin-restart-20260912.log 2>&1 </dev/null &'
+ssh tony-dell 'SESSPID=$(pgrep -u tony -x xfce4-session | head -1); DBUS=$(tr "\0" "\n" < /proc/$SESSPID/environ | grep "^DBUS_SESSION_BUS_ADDRESS="); env DISPLAY=:20 XAUTHORITY=/home/tony/.Xauthority "$DBUS" nohup /usr/share/devin-desktop/devin-desktop > /home/tony/.local/share/devin/cli/devin-restart-$(date +%Y%m%d-%H%M%S).log 2>&1 </dev/null &'
 ```
 
 Verify:
