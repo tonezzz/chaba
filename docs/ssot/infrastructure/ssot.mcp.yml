@@ -404,7 +404,7 @@ servers:
       FastMCP streamable-HTTP server, bound to the mn01 Tailscale IP only (100.106.196.22:8004).
       Source: mcp-servers/google-home-mcp/server.py; stack: stacks/mn01/google-home-mcp/.
       Quadlet: ~/.config/containers/systemd/google-home-mcp.container on mn01.
-      CAST_HOSTS=192.168.2.85 (TONY-TV, Skyworth SKWAMX3 TrueID box) is reachable cross-subnet via Tailscale routing; mDNS discovery covers the mn-home LAN (192.168.1.x).
+      CAST_HOSTS=192.168.2.85 (TONY-TV, Skyworth SKWAMX3 TrueID box); mn01 is on the same 192.168.2.0/24 LAN (enp1s0 192.168.2.79), so discovery is local mDNS plus eureka enrichment on port 8008. Devices that are powered off appear as bare host entries until reachable.
       Tools: discover_devices, device_info, cast_status, cast_play_media, cast_media_control, cast_volume, cast_quit_app, eureka_info.
       Official remote Home MCP (home.googleapis.com/mcp) is configured separately as 'google-home'; it requires a Google Home Premium Advanced subscription (not active as of 2026-09-17).
 
