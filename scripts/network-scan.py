@@ -20,6 +20,9 @@ import shutil
 import socket
 import subprocess
 import sys
+import time
+import urllib.error
+import urllib.request
 import xml.etree.ElementTree as ET
 from datetime import datetime, timezone
 from pathlib import Path
@@ -36,6 +39,10 @@ IP_REGISTRY = (
 )
 SCAN_FILE = REPO_ROOT / "data" / "network-scan" / "tony-ha-scan.json"
 HA_SCAN_FILE = Path.home() / ".config" / "home-assistant" / "www" / "ha" / "network-scan-latest.json"
+VENDOR_CACHE_FILE = REPO_ROOT / "data" / "network-scan" / "mac-vendor-cache.json"
+MACVENDORS_URL = "https://api.macvendors.com/{mac}"
+
+
 
 
 def load_yaml(path: Path) -> dict:
@@ -103,6 +110,49 @@ def resolve_hostnames(ips: list[str], timeout: float = 5.0) -> dict[str, str | N
     return results
 
 
+def load_vendor_cache() -> dict[str, str]:
+    if not VENDOR_CACHE_FILE.exists():
+        return {}
+    try:
+        return json.loads(VENDOR_CACHE_FILE.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        return {}
+
+
+def save_vendor_cache(cache: dict[str, str]) -> None:
+    VENDOR_CACHE_FILE.parent.mkdir(parents=True, exist_ok=True)
+    VENDOR_CACHE_FILE.write_text(json.dumps(cache, indent=2), encoding="utf-8")
+
+
+def lookup_vendor(mac: str) -> str | None:
+    try:
+        resp = urllib.request.urlopen(MACVENDORS_URL.format(mac=mac), timeout=15)
+        text = resp.read().decode("utf-8").strip()
+        if text and not text.startswith("{"):
+            return text
+    except urllib.error.HTTPError as e:
+        if e.code == 404:
+            return None
+    except Exception:
+        pass
+    return None
+
+
+def resolve_vendors(hosts: dict[str, str], cache: dict[str, str]) -> dict[str, str | None]:
+    """Populate vendor names for MACs using the cache + macvendors.com."""
+    results: dict[str, str | None] = {}
+    unknown = sorted({mac for mac in hosts.values() if mac and mac not in cache})
+    for i, mac in enumerate(unknown):
+        if i > 0:
+            time.sleep(1.5)
+        vendor = lookup_vendor(mac)
+        if vendor:
+            cache[mac] = vendor
+    for ip, mac in hosts.items():
+        results[ip] = cache.get(mac) if mac else None
+    return results
+
+
 def run_nmap(cidr: str) -> dict[str, str]:
     """Return {ip: mac} discovered by nmap -sn."""
     hosts: dict[str, str] = {}
@@ -163,16 +213,20 @@ def main() -> int:
     now = datetime.now(timezone.utc).isoformat()
     sorted_ips = sorted(hosts.keys(), key=lambda x: tuple(int(p) for p in x.split(".")))
     hostnames = resolve_hostnames(sorted_ips)
+    vendor_cache = load_vendor_cache()
+    vendors = resolve_vendors(hosts, vendor_cache)
+    save_vendor_cache(vendor_cache)
     scan_doc = {
         "discovered_at": now,
         "network": cidr,
-        "tool": "nmap -sn + /proc/net/arp + reverse DNS",
+        "tool": "nmap -sn + /proc/net/arp + reverse DNS + MAC vendor",
         "host_count": len(hosts),
         "hosts": [
             {
                 "ip": ip,
                 "mac": hosts[ip] or None,
                 "hostname": hostnames.get(ip) or None,
+                "vendor": vendors.get(ip) or None,
                 "source": "arp" if ip in arp_hosts else "nmap",
             }
             for ip in sorted_ips

@@ -60,11 +60,20 @@ def get_ip_allocations(data: dict) -> list[dict]:
     return allocs
 
 
-def build_instance_rows(ha_instance: str, mac_data: dict, ip_data: dict) -> list[dict]:
+def build_instance_rows(
+    ha_instance: str, mac_data: dict, ip_data: dict, scan_hosts: list[dict] | None = None
+) -> list[dict]:
     """Join mac and ip records by (device_id, interface_id) and add unmatched ones."""
     rows: list[dict] = []
     mac_records = {r["device_id"]: r for r in get_mac_records(mac_data)}
     allocs = get_ip_allocations(ip_data)
+    scan_mac_by_ip: dict[str, str] = {}
+    if scan_hosts:
+        for h in scan_hosts:
+            ip = h.get("ip")
+            mac = _clean_mac(h.get("mac"))
+            if ip and mac:
+                scan_mac_by_ip[ip] = mac
 
     def is_active(a: dict) -> bool:
         return a.get("network", {}).get("status") == "active"
@@ -103,28 +112,35 @@ def build_instance_rows(ha_instance: str, mac_data: dict, ip_data: dict) -> list
                 if len(candidates) == 1 or non_primary:
                     alloc = (non_primary or candidates)[0] if candidates else None
 
+            status = iface.get("status", "active")
+            network_status = (alloc.get("network") or {}).get("status") if alloc else None
+            iface_mac = iface.get("mac")
             if alloc:
                 used_alloc_ids.add(alloc["_idx"])
+                alloc_ip = alloc.get("ip")
+                scan_mac = scan_mac_by_ip.get(alloc_ip)
+                if scan_mac and iface_mac and scan_mac != iface_mac:
+                    status = "stale"
+                    network_status = "stale"
 
-            rows.append(
-                {
-                    "ha_instance": ha_instance,
-                    "device_id": did,
-                    "label": rec.get("label", did),
-                    "ip": alloc.get("ip") if alloc else None,
-                    "mac": iface.get("mac"),
-                    "interface_id": iid,
-                    "type": iface.get("type"),
-                    "mac_source": iface.get("source"),
-                    "ip_source": alloc.get("source") if alloc else None,
-                    "network_id": (alloc.get("network") or {}).get("network_id") if alloc else None,
-                    "network_status": (alloc.get("network") or {}).get("status") if alloc else None,
-                    "status": iface.get("status", "active"),
-                    "ip_kind": alloc.get("kind") if alloc else None,
-                    "first_seen": (alloc.get("first_seen") if alloc else None) or iface.get("first_seen"),
-                    "last_seen": alloc.get("last_seen") if alloc else None,
-                }
-            )
+            row = {
+                "ha_instance": ha_instance,
+                "device_id": did,
+                "label": rec.get("label", did),
+                "ip": alloc.get("ip") if alloc else None,
+                "mac": iface_mac,
+                "interface_id": iid,
+                "type": iface.get("type"),
+                "mac_source": iface.get("source"),
+                "ip_source": alloc.get("source") if alloc else None,
+                "network_id": (alloc.get("network") or {}).get("network_id") if alloc else None,
+                "network_status": network_status,
+                "status": status,
+                "ip_kind": alloc.get("kind") if alloc else None,
+                "first_seen": (alloc.get("first_seen") if alloc else None) or iface.get("first_seen"),
+                "last_seen": alloc.get("last_seen") if alloc else None,
+            }
+            rows.append(row)
 
     # Add IP allocations that have no matching mac interface at all
     for idx, alloc in enumerate(allocs):
@@ -136,20 +152,41 @@ def build_instance_rows(ha_instance: str, mac_data: dict, ip_data: dict) -> list
         # Skip if a mac interface with the same interface_id already covers this device
         if rec and any(iface.get("interface_id") == iid for iface in rec.get("interfaces", [])):
             continue
+
+        status = alloc.get("status", "active")
+        network_status = (alloc.get("network") or {}).get("status")
+        ip = alloc.get("ip")
+        scan_mac = scan_mac_by_ip.get(ip)
+        if scan_mac:
+            stale = False
+            if rec:
+                device_macs = {
+                    iface.get("mac")
+                    for iface in rec.get("interfaces", [])
+                    if iface.get("mac")
+                }
+                if device_macs and scan_mac not in device_macs:
+                    stale = True
+            else:
+                stale = True
+            if stale:
+                status = "stale"
+                network_status = "stale"
+
         rows.append(
             {
                 "ha_instance": ha_instance,
                 "device_id": did,
                 "label": rec.get("label", did) if rec else did,
-                "ip": alloc.get("ip"),
+                "ip": ip,
                 "mac": None,
                 "interface_id": iid,
                 "type": "unknown",
                 "mac_source": None,
                 "ip_source": alloc.get("source"),
                 "network_id": (alloc.get("network") or {}).get("network_id"),
-                "network_status": (alloc.get("network") or {}).get("status"),
-                "status": alloc.get("status", "active"),
+                "network_status": network_status,
+                "status": status,
                 "ip_kind": alloc.get("kind"),
                 "first_seen": alloc.get("first_seen"),
                 "last_seen": alloc.get("last_seen"),
@@ -298,11 +335,13 @@ def apply_scan_to_rows(rows: list[dict], scan_hosts: list[dict], active_net: dic
         mac = _clean_mac(r.get("mac"))
         ts = None
         matched_host = None
+        matched_by_mac = False
         # Best: same MAC anywhere (device may have moved IP)
         if mac:
             for h in scan_hosts:
                 if h.get("mac") == mac:
                     matched_host = h
+                    matched_by_mac = True
                     ts = h.get("_ts")
                     break
         # Fallback: same IP when row has no MAC or scan host has no MAC / same MAC
@@ -321,12 +360,30 @@ def apply_scan_to_rows(rows: list[dict], scan_hosts: list[dict], active_net: dic
                 scan_source = matched_host.get("source")
                 # If we matched by MAC and the scan reports a different current IP,
                 # update the runtime IP so the dashboard link is usable.
-                if mac and scan_ip and scan_ip != r.get("ip"):
+                if matched_by_mac and mac and scan_ip and scan_ip != r.get("ip"):
                     r["ip"] = scan_ip
                     r["ip_source"] = scan_source
                     r["network_id"] = active_net.get("network_id")
                     r["network_status"] = active_net.get("status")
                     r["ip_kind"] = "discovered"
+                    r["status"] = "active"
+                # Mark confirmed present devices active.
+                # Only do this for MAC matches or for IP-only matches where the scan
+                # also has no MAC (we cannot claim a device with a conflicting MAC).
+                if matched_by_mac or (not mac and not matched_host.get("mac")):
+                    r["status"] = "active"
+                    r["network_status"] = active_net.get("status")
+                # Improve stale generic labels for discovered devices
+                if matched_host and (r.get("device_id") or "").startswith("discovered-"):
+                    label = r.get("label", "")
+                    if not label or label.startswith("Unknown host") or label.startswith("Discovered "):
+                        new_label = (
+                            matched_host.get("hostname")
+                            or matched_host.get("vendor")
+                            or (f"Unknown host {scan_ip}" if scan_ip else label)
+                        )
+                        if new_label and new_label != label:
+                            r["label"] = new_label
 
 
 def device_id_from_mac(mac: str) -> str:
@@ -400,9 +457,9 @@ def main() -> None:
         mac_data = load_yaml(paths["mac"])
         ip_data = load_yaml(paths["ip"])
         active_net = network_info(ip_data)
-        rows = build_instance_rows(ha_instance, mac_data, ip_data)
         scan_path = REPO_ROOT / "data" / "network-scan" / f"{ha_instance}-scan.json"
         scan_hosts = _scan_hosts(scan_path)
+        rows = build_instance_rows(ha_instance, mac_data, ip_data, scan_hosts)
         apply_scan_to_rows(rows, scan_hosts, active_net)
         add_scan_only_rows(rows, ha_instance, scan_hosts, active_net)
         all_rows.extend(rows)
