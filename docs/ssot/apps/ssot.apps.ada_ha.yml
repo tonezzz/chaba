@@ -103,7 +103,7 @@ sections:
       - label: get_dashboard_tab
         text: Read the named tony-test dashboard tab and report displayed devices.
       - label: ada_session_recall
-        text: "Background recall against NotebookLM via notebooklm-rest. Optional group param routes to per-topic notebooks: memory (past voice sessions, default), infra (hosts/services/tailscale/mcp), apps (ada-pi/HA/playlive), kb (mddb/yomi/SSOT/docs), ops (workflows/tasks/experiments). Group map lives in NOTEBOOKLM_NOTEBOOK_IDS_JSON per instance env; transcripts persist to the memory group. Tony groups: memory=663ef269, infra=be2d05c6, apps=fdbb97d0, kb=c28b6ab9, ops=76a31e03."
+        text: "MDDB-first recall: per-instance MDDB collections serve cached/tiered summaries instantly; NotebookLM via notebooklm-rest is the deep-recall/archive path for explicit detail requests or low MDDB confidence (~26s, runs in background). Optional group param routes to per-topic notebooks: memory (past voice sessions, default), infra (hosts/services/tailscale/mcp), apps (ada-pi/HA/playlive), kb (mddb/yomi/SSOT/docs), ops (workflows/tasks/experiments). Group map lives in NOTEBOOKLM_NOTEBOOK_IDS_JSON per instance env; transcripts persist to the memory group. Tony groups: memory=663ef269, infra=be2d05c6, apps=fdbb97d0, kb=c28b6ab9, ops=76a31e03. Michael: memory only."
   - title: Navigation
     icon: "🗺️"
     layout: list
@@ -120,6 +120,22 @@ sections:
         text: 'wss://mn01.taila0626a.ts.net/apps/ha/ada-{tony,michael}/ws returns {"type":"ready"}.'
       - label: Voice
         text: Tap Connect and ask about the G3 power summary or a dashboard tab.
+  - title: Memory Architecture
+    icon: "🧠"
+    layout: list
+    items:
+      - label: Serving tiers
+        text: "Recall serves MDDB-first: per-instance summary collection ada-ha-recall-summary-<instance> warmed at connect (~0.2s); per-session summary docs + daily/weekly/monthly/yearly rollups via local Gemini (planned); NotebookLM deep recall only for explicit detail requests or low MDDB confidence (~26s, background)."
+      - label: Transcript archive
+        text: "Full session transcripts upload to the instance's NotebookLM memory notebook at session close (~5s). NotebookLM is the source-of-truth archive and batch-consolidation tool."
+      - label: Identity
+        text: "ADA_INSTANCE_ID is required (fail-fast) and pins all MDDB collection names; never derived from HOME_ASSISTANT_URL."
+      - label: Fail-quick
+        text: "Memory errors are logged, surfaced via GET /api/health (degraded flag + recent errors), and spoken explicitly — a failed search is never reported as 'nothing found'."
+      - label: Memory groups
+        text: "Per-topic NotebookLM notebooks via NOTEBOOKLM_NOTEBOOK_IDS_JSON: memory (default, receives transcripts), infra, apps, kb, ops. Tony has all five; Michael currently has memory only."
+      - label: Shared home knowledge
+        text: "Planned shared 'home' group (shared notebook + ada-ha-home MDDB collection, no instance suffix) for non-private cross-instance facts/news: topology, device aliases, procedures, status notices. Docs carry kind/scope/confidence/valid_from/last_verified/applies_to metadata; private transcripts, secrets, and live sensor state stay out."
   - title: Safety Model
     icon: "🛡️"
     layout: list
@@ -160,8 +176,10 @@ sections:
         text: Split control_entity into turn_on_off, set_light, set_climate, set_media_player, run_scene.
       - label: Confirmation gate
         text: Make Gemini confirm before locks, covers, or critical switches.
-      - label: Conversation memory
-        text: Persist last 10 voice turns for context.
+      - label: Tiered recall
+        text: Per-session MDDB summaries + daily/weekly/monthly/yearly rollups (local Gemini), semantic search over summaries, confidence-based escalation to NotebookLM deep recall.
+      - label: Shared home group
+        text: Shared 'home' NotebookLM notebook + ada-ha-home MDDB collection for cross-instance home facts/news with scope/validity metadata.
   - title: Lessons Learned
     icon: "🎓"
     layout: list
@@ -185,7 +203,7 @@ sections:
 config:
   version: 5
   created: "2026-09-13"
-  updated: "2026-09-17"
+  updated: "2026-09-18"
   maintainer: tony
   status: active
   deployment: mn01
