@@ -66,6 +66,15 @@ http://127.0.0.1:8080 {
 		file_server
 	}
 
+	handle /apps/dance2energy {
+		redir /apps/dance2energy/ 308
+	}
+
+	handle_path /apps/dance2energy/* {
+		root * /srv/public/apps/dance2energy
+		file_server
+	}
+
 	handle /apps/vnc {
 		redir /apps/vnc/ 308
 	}
