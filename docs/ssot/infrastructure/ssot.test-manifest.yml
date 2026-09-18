@@ -93,6 +93,9 @@ systems:
       768 dims), envs declared in CascadeProjects/mddb/docker-compose.yml.
       Fixed 2026-09-18: provider envs restored + vector-reindex run for
       existing docs.
+      QUOTA: Gemini embedding free tier ~1000 requests/day, resets midnight
+      Pacific (07:00 UTC). Reindex WITHOUT force — force re-embeds every doc
+      and burns the daily budget; the endpoint is incremental by default.
     health_url: http://127.0.0.1:11023/health
     vector_search_url: http://127.0.0.1:11023/v1/vector-search
     min_collections: 3
