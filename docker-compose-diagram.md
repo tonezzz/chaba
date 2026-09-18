@@ -16,22 +16,22 @@ graph TB
     subgraph "Docker Compose Services (3DGS Stack)"
         %% Base Image (build only)
         Base[base<br/> gaussian-splatting-base:latest<br/>Build Only]
-        
+
         %% COLMAP Service
         COLMAP[colmap<br/> gaussian-splatting-colmap:latest<br/>Structure-from-Motion]
-        
+
         %% 3DGS Service
         D3GS[3dgs<br/> gaussian-splatting-3dgs:latest<br/>Original 3DGS<br/>graphdeco-inria]
-        
+
         %% Nerfstudio Service
         Nerfstudio[nerfstudio<br/> gaussian-splatting-nerfstudio:latest<br/>Nerfstudio + gsplat<br/>Port: 7007]
-        
+
         %% Variants Service
         Variants[variants<br/> gaussian-splatting-variants:latest<br/>2DGS or Mip-Splatting or GOF]
-        
+
         %% John Service
         John[john<br/> gaussian-splatting-john:latest<br/>John the Ripper]
-        
+
         %% Jupyter Service
         Jupyter[jupyter<br/> gaussian-splatting-base:latest<br/>Jupyter Lab<br/>Port: 8888]
     end
@@ -104,6 +104,7 @@ graph TB
 ## Service Overview
 
 ### GPU-Accelerated Services
+
 - **colmap**: Structure-from-Motion preprocessing with GPU support
 - **3dgs**: Original 3D Gaussian Splatting implementation (graphdeco-inria)
 - **nerfstudio**: Nerfstudio with gsplat integration, web viewer on port 7007
@@ -111,10 +112,12 @@ graph TB
 - **jupyter**: Jupyter Lab environment with GPU support, accessible on port 8888
 
 ### CPU-Only Services
+
 - **john**: John the Ripper password recovery tool
 - **base**: Base image used for building other services (build-only)
 
 ### Frigate Stack (separate compose: `frigate/docker-compose.yml`)
+
 - **frigate**: Frigate NVR with AI object detection (CPU detector, VAAPI hwaccel)
   - Web UI on port 5000, RTSP restream on 8554, WebRTC on 8555
   - Camera: VSTARCAM at 192.168.1.41 (H.265, port 10554)
@@ -122,11 +125,13 @@ graph TB
   - Detection uses sub-stream (640x360) for lower bandwidth
 
 ### Shared Resources
+
 - **Volumes**: 3DGS services share `./data` and `./outputs`; Frigate uses `frigate/storage` and `frigate/db`
 - **GPU Access**: NVIDIA GPU with full driver capabilities (3DGS stack only)
 - **Network**: Nerfstudio (7007), Jupyter (8888), Frigate (5000, 8554, 8555)
 
 ### Development Features
+
 - **3dgs** has optional source code mounting for development
 - **3dgs** supports X11 forwarding for the SIBR viewer
 - **Jupyter** includes notebook workspace for experiments

@@ -6,29 +6,29 @@ category: operations
 
 ## Tailscale Spec Reference
 
-| Item | Value |
-|---|---|
-| Tailnet account | `tonezzzz@` |
-| `tony-omen` tailnet IPv4 | `100.75.102.88` |
-| `tony-dell` tailnet IPv4 | `100.68.142.13` |
-| `kk-macbook` tailnet IPv4 | `100.124.59.112` |
-| `tony-omen` Magic DNS (FQDN) | `tony-omen.taila0626a.ts.net` |
-| `tony-dell` Magic DNS (FQDN) | `tony-dell.taila0626a.ts.net` |
-| `kk-macbook` Magic DNS (FQDN) | `kk-macbook.taila0626a.ts.net` |
-| Home LAN | `192.168.1.0/24` |
-| `tony-omen` LAN mDNS | `tony-omen.local` |
-| `tony-dell` LAN mDNS | `tony-dell.local` |
-| Public Funnel URL | `https://tony-dell.taila0626a.ts.net:8444/` |
-| OAuth proxy (port 443) | `https://tony-dell.taila0626a.ts.net/` → `127.0.0.1:9004` |
-| Caddy / rview (port 8443) | `https://tony-dell.taila0626a.ts.net:8443/` → `127.0.0.1:8080` |
-| Funnel server listen port | `8082` |
-| Funnel proxy target | `http://127.0.0.1:8082` |
-| Active connections API | `https://tony-dell.taila0626a.ts.net:8444/api/tailscale/connections` |
-| API backend | `~/chaba-funnel/funnel-server.py` on `0.0.0.0:8082` |
-| Systemd user service | `~/.config/systemd/user/chaba-funnel.service` |
-| Health check file | `stacks/web/public/ssot.health.mobile.yml` |
-| Workflow block | `workflows/monitoring/universal-health-check.yml` (`tailscale_check`) |
-| Auto-update command | `tailscale set --auto-update` |
+| Item                          | Value                                                                 |
+| ----------------------------- | --------------------------------------------------------------------- |
+| Tailnet account               | `tonezzzz@`                                                           |
+| `tony-omen` tailnet IPv4      | `100.75.102.88`                                                       |
+| `tony-dell` tailnet IPv4      | `100.68.142.13`                                                       |
+| `kk-macbook` tailnet IPv4     | `100.124.59.112`                                                      |
+| `tony-omen` Magic DNS (FQDN)  | `tony-omen.taila0626a.ts.net`                                         |
+| `tony-dell` Magic DNS (FQDN)  | `tony-dell.taila0626a.ts.net`                                         |
+| `kk-macbook` Magic DNS (FQDN) | `kk-macbook.taila0626a.ts.net`                                        |
+| Home LAN                      | `192.168.1.0/24`                                                      |
+| `tony-omen` LAN mDNS          | `tony-omen.local`                                                     |
+| `tony-dell` LAN mDNS          | `tony-dell.local`                                                     |
+| Public Funnel URL             | `https://tony-dell.taila0626a.ts.net:8444/`                           |
+| OAuth proxy (port 443)        | `https://tony-dell.taila0626a.ts.net/` → `127.0.0.1:9004`             |
+| Caddy / rview (port 8443)     | `https://tony-dell.taila0626a.ts.net:8443/` → `127.0.0.1:8080`        |
+| Funnel server listen port     | `8082`                                                                |
+| Funnel proxy target           | `http://127.0.0.1:8082`                                               |
+| Active connections API        | `https://tony-dell.taila0626a.ts.net:8444/api/tailscale/connections`  |
+| API backend                   | `~/chaba-funnel/funnel-server.py` on `0.0.0.0:8082`                   |
+| Systemd user service          | `~/.config/systemd/user/chaba-funnel.service`                         |
+| Health check file             | `stacks/web/public/ssot.health.mobile.yml`                            |
+| Workflow block                | `workflows/monitoring/universal-health-check.yml` (`tailscale_check`) |
+| Auto-update command           | `tailscale set --auto-update`                                         |
 
 ## Goal
 

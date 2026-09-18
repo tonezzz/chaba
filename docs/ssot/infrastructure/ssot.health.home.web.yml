@@ -2,126 +2,126 @@ title: Chaba Health Checks (Home Profile) — Web
 subtitle: Home network health checks for the web category
 icon: heart-pulse
 services:
-- id: caddy
-  name: Caddy
-  type: http
-  url: 'https://tony-dell.taila0626a.ts.net/apps/tony-live/'
-  expected_status: 200
-  timeout: 5
-  category: web
-  profiles:
-  - home
-  - mobile
-  host: tony_dell
-  note: Tests Caddy itself using a known deployed app; the /apps/map/ route is no longer built on tony-dell.
-- id: raceman-web
-  name: Raceman Web
-  type: http
-  url: http://tony-dell:8083/apps/raceman/
-  expected_status: 200
-  timeout: 5
-  category: web
-  profiles:
-  - home
-  host: tony_dell
-- id: helm
-  name: Helm Dashboard
-  type: http
-  url: http://100.68.142.13:3003/apps/helm
-  expected_status: 200
-  timeout: 15
-  category: web
-  profiles:
-  - home
-  - mobile
-  verification:
-  - 'Check podman container: ssh tony-dell podman ps | grep helm'
-  - 'Check podman logs: ssh tony-dell podman logs helm --tail 20'
-  - 'Test direct podman container: curl -s http://100.68.142.13:3003/apps/helm/'
-  - 'Test Caddy proxy: curl -s http://100.68.142.13:3003/apps/helm/'
-  recovery_actions:
-  - 'Restart service: ssh tony-dell systemctl --user restart helm'
-  - 'Rebuild helm: ssh tony-dell "cd /home/tony/CascadeProjects/chaba-tony-dell/stacks/web
-    && docker compose up -d --build helm"'
-  - Check Caddy proxy configuration in stacks/web/Caddyfile
-  - 'Verify env: ssh tony-dell podman exec helm env | grep LLM'
-  host: tony_dell
-- id: raceman-php
-  name: Raceman PHP
-  type: container
-  container: raceman-php
-  host: tony_dell
-  expected_state: running
-  timeout: 5
-  category: web
-  profiles:
-  - home
-  note: Migrated to tony_dell rootless podman.
-- id: mddb-panel
-  name: MDDB Panel
-  type: http
-  url: http://100.68.142.13:3002/
-  expected_status: 200
-  timeout: 5
-  category: web
-  profiles:
-  - home
-  - mobile
-  host: tony_dell
-- id: home-assistant
-  name: Home Assistant
-  type: http
-  url: http://127.0.0.1:8123/
-  expected_status: 200
-  timeout: 10
-  category: web
-  profiles:
-  - home
-  verification:
-  - 'Check container: ssh tony-dell podman ps | grep home-assistant'
-  - 'Check logs: ssh tony-dell podman logs home-assistant --tail 20'
-  - 'Test direct: curl -s http://127.0.0.1:8123/'
-  recovery_actions:
-  - 'Restart service: ssh tony-dell systemctl --user restart home-assistant'
-  host: tony_dell
-- id: home-assistant-michael
-  name: Home Assistant (Michael)
-  type: http
-  url: https://nupo4ndqdqydt78zmpq0z5wzp1bdrqgs.ui.nabu.casa/
-  expected_status: 200
-  timeout: 15
-  category: web
-  profiles:
-  - home
-  - mobile
-  host: cloud
+  - id: caddy
+    name: Caddy
+    type: http
+    url: "https://tony-dell.taila0626a.ts.net/apps/tony-live/"
+    expected_status: 200
+    timeout: 5
+    category: web
+    profiles:
+      - home
+      - mobile
+    host: tony_dell
+    note: Tests Caddy itself using a known deployed app; the /apps/map/ route is no longer built on tony-dell.
+  - id: raceman-web
+    name: Raceman Web
+    type: http
+    url: http://tony-dell:8083/apps/raceman/
+    expected_status: 200
+    timeout: 5
+    category: web
+    profiles:
+      - home
+    host: tony_dell
+  - id: helm
+    name: Helm Dashboard
+    type: http
+    url: http://100.68.142.13:3003/apps/helm
+    expected_status: 200
+    timeout: 15
+    category: web
+    profiles:
+      - home
+      - mobile
+    verification:
+      - "Check podman container: ssh tony-dell podman ps | grep helm"
+      - "Check podman logs: ssh tony-dell podman logs helm --tail 20"
+      - "Test direct podman container: curl -s http://100.68.142.13:3003/apps/helm/"
+      - "Test Caddy proxy: curl -s http://100.68.142.13:3003/apps/helm/"
+    recovery_actions:
+      - "Restart service: ssh tony-dell systemctl --user restart helm"
+      - 'Rebuild helm: ssh tony-dell "cd /home/tony/CascadeProjects/chaba-tony-dell/stacks/web
+        && docker compose up -d --build helm"'
+      - Check Caddy proxy configuration in stacks/web/Caddyfile
+      - "Verify env: ssh tony-dell podman exec helm env | grep LLM"
+    host: tony_dell
+  - id: raceman-php
+    name: Raceman PHP
+    type: container
+    container: raceman-php
+    host: tony_dell
+    expected_state: running
+    timeout: 5
+    category: web
+    profiles:
+      - home
+    note: Migrated to tony_dell rootless podman.
+  - id: mddb-panel
+    name: MDDB Panel
+    type: http
+    url: http://100.68.142.13:3002/
+    expected_status: 200
+    timeout: 5
+    category: web
+    profiles:
+      - home
+      - mobile
+    host: tony_dell
+  - id: home-assistant
+    name: Home Assistant
+    type: http
+    url: http://127.0.0.1:8123/
+    expected_status: 200
+    timeout: 10
+    category: web
+    profiles:
+      - home
+    verification:
+      - "Check container: ssh tony-dell podman ps | grep home-assistant"
+      - "Check logs: ssh tony-dell podman logs home-assistant --tail 20"
+      - "Test direct: curl -s http://127.0.0.1:8123/"
+    recovery_actions:
+      - "Restart service: ssh tony-dell systemctl --user restart home-assistant"
+    host: tony_dell
+  - id: home-assistant-michael
+    name: Home Assistant (Michael)
+    type: http
+    url: https://nupo4ndqdqydt78zmpq0z5wzp1bdrqgs.ui.nabu.casa/
+    expected_status: 200
+    timeout: 15
+    category: web
+    profiles:
+      - home
+      - mobile
+    host: cloud
 
-- id: home-assistant-michael-tailscale
-  name: Home Assistant (Michael) Tailscale
-  type: http
-  url: http://michael-ha:8123/
-  expected_status: 200
-  timeout: 15
-  category: web
-  profiles:
-  - home
-  - mobile
-  host: michael_ha
-  verification:
-  - 'tailscale ping michael-ha'
-- id: node-red
-  name: Node-RED
-  type: http
-  url: https://tony-dell.taila0626a.ts.net/apps/node-red/
-  expected_status: 200
-  timeout: 10
-  category: web
-  profiles:
-  - home
-  host: tony_dell
-  verification:
-  - 'Check container: ssh tony-dell podman ps | grep node-red'
-  - 'Check logs: ssh tony-dell podman logs node-red --tail 20'
-  - 'Test direct: curl -s http://tony-dell:1880/'
-  recovery_actions:
-  - 'Restart service: ssh tony-dell systemctl --user restart node-red'
+  - id: home-assistant-michael-tailscale
+    name: Home Assistant (Michael) Tailscale
+    type: http
+    url: http://michael-ha:8123/
+    expected_status: 200
+    timeout: 15
+    category: web
+    profiles:
+      - home
+      - mobile
+    host: michael_ha
+    verification:
+      - "tailscale ping michael-ha"
+  - id: node-red
+    name: Node-RED
+    type: http
+    url: https://tony-dell.taila0626a.ts.net/apps/node-red/
+    expected_status: 200
+    timeout: 10
+    category: web
+    profiles:
+      - home
+    host: tony_dell
+    verification:
+      - "Check container: ssh tony-dell podman ps | grep node-red"
+      - "Check logs: ssh tony-dell podman logs node-red --tail 20"
+      - "Test direct: curl -s http://tony-dell:1880/"
+    recovery_actions:
+      - "Restart service: ssh tony-dell systemctl --user restart node-red"

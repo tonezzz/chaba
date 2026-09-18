@@ -17,6 +17,7 @@ Documented 2026-08-05 after fixing 4 critical YAML syntax errors in SSOT files d
 ### Editor Configuration
 
 **VS Code settings.json**:
+
 ```json
 {
   "yaml.validate": true,
@@ -32,6 +33,7 @@ Documented 2026-08-05 after fixing 4 critical YAML syntax errors in SSOT files d
 ### CI/CD Integration
 
 **GitHub Actions**:
+
 ```yaml
 - name: Validate YAML
   run: |
@@ -42,6 +44,7 @@ Documented 2026-08-05 after fixing 4 critical YAML syntax errors in SSOT files d
 ### Documentation Standards
 
 **SSOT Template**:
+
 - Include example valid entries
 - Document required fields
 - Provide format specifications

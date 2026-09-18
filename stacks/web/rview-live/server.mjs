@@ -40,15 +40,27 @@ const FUNCTION_DECLARATIONS = [
   },
   {
     name: "rview_show",
-    description: "Show media, a URL, or raw HTML in a view. Provide either view_id or view_number. Use media_type html with content for raw HTML. If the user asks to find or search for content, call web_search first, then pass the chosen result URL to rview_show. Otherwise, use only URLs the user provides or URLs you are certain are publicly reachable.",
+    description:
+      "Show media, a URL, or raw HTML in a view. Provide either view_id or view_number. Use media_type html with content for raw HTML. If the user asks to find or search for content, call web_search first, then pass the chosen result URL to rview_show. Otherwise, use only URLs the user provides or URLs you are certain are publicly reachable.",
     parameters: {
       type: "object",
       properties: {
-        view_id: { type: "string", description: "View ID. Either view_id or view_number must be provided." },
-        view_number: { type: "integer", description: "Numeric view number shown in the RView UI. Either view_id or view_number must be provided." },
+        view_id: {
+          type: "string",
+          description: "View ID. Either view_id or view_number must be provided.",
+        },
+        view_number: {
+          type: "integer",
+          description:
+            "Numeric view number shown in the RView UI. Either view_id or view_number must be provided.",
+        },
         url: { type: "string" },
         title: { type: "string" },
-        media_type: { type: "string", enum: ["auto", "image", "video", "audio", "iframe", "pdf", "html"], default: "auto" },
+        media_type: {
+          type: "string",
+          enum: ["auto", "image", "video", "audio", "iframe", "pdf", "html"],
+          default: "auto",
+        },
         content: { type: "string", description: "Raw HTML content when media_type is html" },
         enqueue: { type: "boolean", default: false },
       },
@@ -61,7 +73,10 @@ const FUNCTION_DECLARATIONS = [
     parameters: {
       type: "object",
       properties: {
-        view_id: { type: "string", description: "View ID. Either view_id or view_number must be provided." },
+        view_id: {
+          type: "string",
+          description: "View ID. Either view_id or view_number must be provided.",
+        },
         view_number: { type: "integer", description: "Numeric view number shown in the RView UI." },
         items: { type: "array", items: { type: "object" } },
         mode: { type: "string", enum: ["replace", "append"], default: "replace" },
@@ -75,9 +90,29 @@ const FUNCTION_DECLARATIONS = [
     parameters: {
       type: "object",
       properties: {
-        view_id: { type: "string", description: "View ID. Either view_id or view_number must be provided." },
+        view_id: {
+          type: "string",
+          description: "View ID. Either view_id or view_number must be provided.",
+        },
         view_number: { type: "integer", description: "Numeric view number shown in the RView UI." },
-        action: { type: "string", enum: ["play", "pause", "stop", "next", "prev", "seek", "volume", "fullscreen", "loop", "shuffle", "slideshow", "stop_slideshow", "clear_queue"] },
+        action: {
+          type: "string",
+          enum: [
+            "play",
+            "pause",
+            "stop",
+            "next",
+            "prev",
+            "seek",
+            "volume",
+            "fullscreen",
+            "loop",
+            "shuffle",
+            "slideshow",
+            "stop_slideshow",
+            "clear_queue",
+          ],
+        },
         value: {},
       },
       required: ["action"],
@@ -89,7 +124,10 @@ const FUNCTION_DECLARATIONS = [
     parameters: {
       type: "object",
       properties: {
-        view_id: { type: "string", description: "View ID. Either view_id or view_number must be provided." },
+        view_id: {
+          type: "string",
+          description: "View ID. Either view_id or view_number must be provided.",
+        },
         view_number: { type: "integer", description: "Numeric view number shown in the RView UI." },
       },
       required: [],
@@ -101,7 +139,10 @@ const FUNCTION_DECLARATIONS = [
     parameters: {
       type: "object",
       properties: {
-        view_id: { type: "string", description: "View ID. Either view_id or view_number must be provided." },
+        view_id: {
+          type: "string",
+          description: "View ID. Either view_id or view_number must be provided.",
+        },
         view_number: { type: "integer", description: "Numeric view number shown in the RView UI." },
       },
       required: [],
@@ -109,7 +150,8 @@ const FUNCTION_DECLARATIONS = [
   },
   {
     name: "web_search",
-    description: "Search the web for content. Returns result URLs that can be passed to rview_show or rview_queue. For images, use the 'image' field of a result as the URL for rview_show with media_type 'image'. For videos, use embed_url as an iframe or a direct .mp4 url with media_type 'video'. For web pages, call fetch_page to read the content and then use media_type 'html' with a generated HTML summary.",
+    description:
+      "Search the web for content. Returns result URLs that can be passed to rview_show or rview_queue. For images, use the 'image' field of a result as the URL for rview_show with media_type 'image'. For videos, use embed_url as an iframe or a direct .mp4 url with media_type 'video'. For web pages, call fetch_page to read the content and then use media_type 'html' with a generated HTML summary.",
     parameters: {
       type: "object",
       properties: {
@@ -122,13 +164,22 @@ const FUNCTION_DECLARATIONS = [
   },
   {
     name: "fetch_page",
-    description: "Fetch and extract the readable text/HTML of a web page. Use this when the user wants to summarize or re-render a web page in RView. After fetching, generate a clean HTML summary and call rview_show with media_type 'html' and the HTML in the 'content' field (pass the source URL as 'url').",
+    description:
+      "Fetch and extract the readable text/HTML of a web page. Use this when the user wants to summarize or re-render a web page in RView. After fetching, generate a clean HTML summary and call rview_show with media_type 'html' and the HTML in the 'content' field (pass the source URL as 'url').",
     parameters: {
       type: "object",
       properties: {
         url: { type: "string", description: "Full http or https URL to fetch" },
-        max_length: { type: "integer", default: 8000, description: "Maximum characters of extracted text" },
-        raw: { type: "boolean", default: false, description: "Return full raw HTML instead of extracted text" },
+        max_length: {
+          type: "integer",
+          default: 8000,
+          description: "Maximum characters of extracted text",
+        },
+        raw: {
+          type: "boolean",
+          default: false,
+          description: "Return full raw HTML instead of extracted text",
+        },
       },
       required: ["url"],
     },
@@ -146,10 +197,14 @@ class McpRviewClient {
 
   start() {
     return new Promise((resolve, reject) => {
-      const proc = spawn("python3", [join(__dirname, "..", "..", "..", "scripts", "mcp_rview", "server.py")], {
-        env: { ...process.env, RVIEW_API_URL: RVIEW_API_URL },
-        stdio: ["pipe", "pipe", "pipe"],
-      });
+      const proc = spawn(
+        "python3",
+        [join(__dirname, "..", "..", "..", "scripts", "mcp_rview", "server.py")],
+        {
+          env: { ...process.env, RVIEW_API_URL: RVIEW_API_URL },
+          stdio: ["pipe", "pipe", "pipe"],
+        }
+      );
       this.proc = proc;
       proc.stdout.on("data", (data) => this._onData(data));
       proc.stderr.on("data", (data) => log("mcp-rview stderr:", data.toString().trim()));
@@ -278,7 +333,12 @@ Rules:
       });
       this.geminiWs.on("close", (code, reason) => {
         log("Gemini WS closed", code, reason?.toString?.() || "");
-        this.sendToClient({ type: "status", message: "disconnected", code, reason: reason?.toString?.() });
+        this.sendToClient({
+          type: "status",
+          message: "disconnected",
+          code,
+          reason: reason?.toString?.(),
+        });
       });
     });
   }
@@ -310,7 +370,11 @@ Rules:
       }
       const toolResponse = { toolResponse: { functionResponses } };
       this.geminiWs.send(JSON.stringify(toolResponse));
-      this.sendToClient({ type: "tool-call", calls: msg.toolCall.functionCalls, responses: functionResponses });
+      this.sendToClient({
+        type: "tool-call",
+        calls: msg.toolCall.functionCalls,
+        responses: functionResponses,
+      });
       return;
     }
     // forward server content to client

@@ -5,6 +5,7 @@ category: operations
 # Rollback Procedures
 
 ### KB Rollback
+
 ```bash
 # Restore original KB from archive
 cd /home/tony/CascadeProjects/chaba-kbman
@@ -19,6 +20,7 @@ docker compose down
 ```
 
 ### SSOT Rollback
+
 ```bash
 # Stop file watcher service
 systemctl stop ssot-sync.service
@@ -29,6 +31,7 @@ systemctl disable ssot-sync.service
 ```
 
 ### Complete System Rollback
+
 ```bash
 # Stop all MDDB services
 cd /home/tony/CascadeProjects/chaba-kbman/stacks/web/mddb
@@ -42,4 +45,3 @@ tar -xzf docs/kb-backup-2026-08-12.tar.gz
 
 # Restart legacy services if needed
 ```
-

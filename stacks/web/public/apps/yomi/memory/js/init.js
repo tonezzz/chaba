@@ -8,19 +8,19 @@ if (!window.memoryState) {
     conversations: [],
     memories: [],
     filters: {
-      search: '',
+      search: "",
       startDate: null,
       endDate: null,
       conversations: [],
       topics: [],
-      memoryTypes: ['events', 'decisions', 'patterns']
+      memoryTypes: ["events", "decisions", "patterns"],
     },
-    currentView: 'timeline',
+    currentView: "timeline",
     stats: {
       totalMemories: 0,
-      totalConversations: 0
-    }
+      totalConversations: 0,
+    },
   };
 }
 
-console.log('Memory app initialization complete');
+console.log("Memory app initialization complete");

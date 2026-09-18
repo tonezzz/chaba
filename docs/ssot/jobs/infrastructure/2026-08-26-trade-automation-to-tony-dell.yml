@@ -5,7 +5,7 @@ id: 2026-08-26-trade-automation-to-tony-dell
 status: draft
 owner: tony
 project: chaba
-started: '2026-08-26'
+started: "2026-08-26"
 estimated_duration: 1 session
 
 planning:
@@ -20,14 +20,14 @@ planning:
       that were just cleaned up; trade-automation is the next logical move.
   scope:
     In scope:
-    - Create a rootless podman Quadlet for trade-automation on tony-dell.
-    - Copy/sync the trade project .env and data/config/logs paths.
-    - Update the Caddy /apps/trade reverse proxy if needed.
-    - Update SSOT: ssot.services.yml, ssot.health.home.other.yml.
+      - Create a rootless podman Quadlet for trade-automation on tony-dell.
+      - Copy/sync the trade project .env and data/config/logs paths.
+      - Update the Caddy /apps/trade reverse proxy if needed.
+      - Update SSOT: ssot.services.yml, ssot.health.home.other.yml.
     Out of scope:
-    - Migrating the trade postgres DB (already on tony-omen as the local primary
-      for the trade project; use existing connection string or decide later).
-    - GPU workloads (imagen2, ollama) remain on tony-omen.
+      - Migrating the trade postgres DB (already on tony-omen as the local primary
+        for the trade project; use existing connection string or decide later).
+      - GPU workloads (imagen2, ollama) remain on tony-omen.
   prerequisites:
     - trade-api is stable on tony-dell.
     - The trade project checkout on tony-dell is at /home/tony/CascadeProjects/trade

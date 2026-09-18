@@ -3,16 +3,16 @@ category: operations
 ---
 
 # Documentation Disaster Recovery
+
 ## What it is
 
 title: Documentation Disaster Recovery
 
-
 **Abstract**: Comprehensive disaster recovery strategy for Chaba documentation infrastructure with automated daily backups, verification procedures, and recovery processes to ensure documentation search capabilities can be quickly restored after system failures.
+
 ## Context/Background
 
 Created 2026-08-06 as part of Chaba infrastructure documentation.
-
 
 ## Overview
 
@@ -21,6 +21,7 @@ Documentation disaster recovery strategy protects critical documentation infrast
 ## Purpose
 
 Ensure documentation infrastructure can be quickly recovered from:
+
 - Complete system loss
 - Configuration corruption
 - Accidental file deletion
@@ -30,18 +31,21 @@ Ensure documentation infrastructure can be quickly recovered from:
 ## Maintenance
 
 ### Monthly Tasks
+
 - Review backup logs for errors
 - Test recovery procedure on non-production system
 - Verify retention policy compliance
 - Update contact information if needed
 
 ### Quarterly Tasks
+
 - Review and update disaster recovery documentation
 - Test complete disaster recovery scenario
 - Verify backup storage capacity
 - Update automation scripts if needed
 
 ### Annual Tasks
+
 - Complete disaster recovery drill
 - Review and update backup strategy
 - Verify all contact information
@@ -54,6 +58,7 @@ Ensure documentation infrastructure can be quickly recovered from:
 **Symptoms**: Backup script returns error, incomplete backup
 
 **Solutions**:
+
 - Check disk space availability
 - Verify permissions on backup directory
 - Check MCP configuration file exists
@@ -64,6 +69,7 @@ Ensure documentation infrastructure can be quickly recovered from:
 **Symptoms**: Verification returns errors, missing files
 
 **Solutions**:
+
 - Check documentation directory exists
 - Verify Git repository status
 - Run backup script to ensure fresh backup
@@ -74,6 +80,7 @@ Ensure documentation infrastructure can be quickly recovered from:
 **Symptoms**: Recovery incomplete, configuration not restored
 
 **Solutions**:
+
 - Verify backup files exist
 - Check permissions on target directories
 - Use restore point to revert if needed
@@ -84,6 +91,7 @@ Ensure documentation infrastructure can be quickly recovered from:
 **Symptoms**: `mcp_list_servers` missing expected servers
 
 **Solutions**:
+
 - Restart Devin Desktop
 - Verify MCP configuration file syntax
 - Check docs MCP server can rebuild index
@@ -98,9 +106,9 @@ Ensure documentation infrastructure can be quickly recovered from:
 
 ## Change History
 
-| Date | Change | Author |
-|------|--------|--------|
-| 2026-08-06 | Initial disaster recovery documentation | devin |
+| Date       | Change                                  | Author |
+| ---------- | --------------------------------------- | ------ |
+| 2026-08-06 | Initial disaster recovery documentation | devin  |
 
 ## Tags
 

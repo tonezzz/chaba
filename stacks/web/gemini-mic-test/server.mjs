@@ -29,14 +29,16 @@ class GeminiSession {
       this.geminiWs = new WebSocket(GEMINI_WS_URL);
       this.geminiWs.on("open", () => {
         log("connected to Gemini Live API");
-        this.geminiWs.send(JSON.stringify({
-          setup: {
-            model: `models/${GEMINI_LIVE_MODEL}`,
-            generationConfig: { responseModalities: ["AUDIO"] },
-            inputAudioTranscription: {},
-            outputAudioTranscription: {},
-          },
-        }));
+        this.geminiWs.send(
+          JSON.stringify({
+            setup: {
+              model: `models/${GEMINI_LIVE_MODEL}`,
+              generationConfig: { responseModalities: ["AUDIO"] },
+              inputAudioTranscription: {},
+              outputAudioTranscription: {},
+            },
+          })
+        );
         this.sendToClient({ type: "status", message: "connected" });
         resolve();
       });
@@ -48,7 +50,12 @@ class GeminiSession {
       });
       this.geminiWs.on("close", (code, reason) => {
         log("Gemini WS closed", code, reason?.toString?.() || "");
-        this.sendToClient({ type: "status", message: "disconnected", code, reason: reason?.toString?.() });
+        this.sendToClient({
+          type: "status",
+          message: "disconnected",
+          code,
+          reason: reason?.toString?.(),
+        });
       });
     });
   }
@@ -84,9 +91,11 @@ class GeminiSession {
   onClientMessage(msg) {
     if (!this.geminiWs || this.geminiWs.readyState !== WebSocket.OPEN) return;
     if (msg.type === "audio") {
-      this.geminiWs.send(JSON.stringify({
-        realtimeInput: { audio: { data: msg.data, mimeType: "audio/pcm;rate=16000" } },
-      }));
+      this.geminiWs.send(
+        JSON.stringify({
+          realtimeInput: { audio: { data: msg.data, mimeType: "audio/pcm;rate=16000" } },
+        })
+      );
     } else if (msg.type === "text") {
       this.geminiWs.send(JSON.stringify({ realtimeInput: { text: msg.text } }));
     } else if (msg.type === "activity-start") {

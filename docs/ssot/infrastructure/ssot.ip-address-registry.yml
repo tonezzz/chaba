@@ -2,356 +2,359 @@ title: IP Address Registry
 subtitle: Per-network IP allocations linked to the MAC address registry
 icon: 🗺️
 version: 1
-last_updated: '2026-09-17'
+last_updated: "2026-09-17"
 ideas:
-- Every IP allocation links back to a stable device_id in ssot.mac-address-registry.yml
-- One network_record per subnet, with an allocations list
-- Track static reservations, DHCP leases, and discovered hosts
-- Starting with home networks; expand to Tailscale, Docker, etc. later
+  - Every IP allocation links back to a stable device_id in ssot.mac-address-registry.yml
+  - One network_record per subnet, with an allocations list
+  - Track static reservations, DHCP leases, and discovered hosts
+  - Starting with home networks; expand to Tailscale, Docker, etc. later
 sections:
-- title: IP Registry Schema
-  icon: 🧩
-  layout: list
-  items:
-  - label: network_id
-    text: Stable slug (e.g. home-192.168.2.0-24, legacy-192.168.1.0-24).
-  - label: cidr
-    text: CIDR notation of the subnet.
-  - label: ssid / vlan
-    text: Wi-Fi SSID, VLAN name, or link type.
-  - label: gateway
-    text: Router IP for that subnet.
-  - label: dhcp_range
-    text: DHCP pool as [start, end] (null if unknown).
-  - label: allocations
-    text: 'List of ip_record: ip, device_id, interface_id, kind (static/reservation/dhcp/discovered), status, first_seen,
-      last_seen, source.'
-- title: Home Network 192.168.2.0/24
-  icon: 🏠
-  layout: list
-  items:
-  - label: Active connection
-    text: TONY-WIFI_2.4G (wlo1) and netplan-eno1 (eno1). Default gateway 192.168.2.1.
-  - label: Known hosts
-    text: Router, tony-omen, tony-dell, Tuya coffee/bedside/TV/Cozy Life plugs, IP camera, Xiaomi C201, HP DeskJet, Tony TV,
-      Samsung TV-40C5000 (behind Tenda repeater), Tenda repeater, ESP32 test, KKs MacBook Pro, KKs Mac Studio, Tony iPhone,
-      realme C63, HONOR Pad 9, plus transient/randomized devices.
-  - label: Note
-    text: This is the current active network. The detailed allocations are in config.networks below.
-- title: Legacy Network 192.168.1.0/24
-  icon: 🏠
-  layout: list
-  items:
-  - label: SSID
-    text: Mountain View 5G / Mountain View 2.4G (saved NetworkManager profiles).
-  - label: Known hosts
-    text: macbook at 192.168.1.39, Google TV at 192.168.1.50, and tony-omen had 192.168.1.54 in earlier sessions.
-  - label: Status
-    text: Stale — not reachable from the current 192.168.2.0/24 network. Needs a reconnect to rescan.
-- title: Next Steps
-  icon: ➡️
-  layout: list
-  items:
-  - label: Identify unknown hosts
-    text: 'Identify 192.168.2.74, .76, .78, .79, .86 and .88. Many are private Wi-Fi addresses; use owner/device
-      clues or disable private MAC addressing to assign stable device_ids. Note DHCP churn: tony-repeater floats .72/.73/.82,
-      samsung-tv floats .91/.92, xiaomi-c100 floats .72/.81 — re-resolve by MAC, not IP.'
-  - label: Reconnect 192.168.1.0/24
-    text: Switch to Mountain View 5G to capture current IPs and MACs for macbook and Google TV.
-  - label: Expand
-    text: Add Tailscale, Docker, LXC, and USB-tether networks once home networks are complete.
-  - label: Automation
-    text: Nightly ARP scan compares against this registry; new/duplicate IPs or MACs create focus-inbox alerts.
+  - title: IP Registry Schema
+    icon: 🧩
+    layout: list
+    items:
+      - label: network_id
+        text: Stable slug (e.g. home-192.168.2.0-24, legacy-192.168.1.0-24).
+      - label: cidr
+        text: CIDR notation of the subnet.
+      - label: ssid / vlan
+        text: Wi-Fi SSID, VLAN name, or link type.
+      - label: gateway
+        text: Router IP for that subnet.
+      - label: dhcp_range
+        text: DHCP pool as [start, end] (null if unknown).
+      - label: allocations
+        text:
+          "List of ip_record: ip, device_id, interface_id, kind (static/reservation/dhcp/discovered), status, first_seen,
+          last_seen, source."
+  - title: Home Network 192.168.2.0/24
+    icon: 🏠
+    layout: list
+    items:
+      - label: Active connection
+        text: TONY-WIFI_2.4G (wlo1) and netplan-eno1 (eno1). Default gateway 192.168.2.1.
+      - label: Known hosts
+        text:
+          Router, tony-omen, tony-dell, Tuya coffee/bedside/TV/Cozy Life plugs, IP camera, Xiaomi C201, HP DeskJet, Tony TV,
+          Samsung TV-40C5000 (behind Tenda repeater), Tenda repeater, ESP32 test, KKs MacBook Pro, KKs Mac Studio, Tony iPhone,
+          realme C63, HONOR Pad 9, plus transient/randomized devices.
+      - label: Note
+        text: This is the current active network. The detailed allocations are in config.networks below.
+  - title: Legacy Network 192.168.1.0/24
+    icon: 🏠
+    layout: list
+    items:
+      - label: SSID
+        text: Mountain View 5G / Mountain View 2.4G (saved NetworkManager profiles).
+      - label: Known hosts
+        text: macbook at 192.168.1.39, Google TV at 192.168.1.50, and tony-omen had 192.168.1.54 in earlier sessions.
+      - label: Status
+        text: Stale — not reachable from the current 192.168.2.0/24 network. Needs a reconnect to rescan.
+  - title: Next Steps
+    icon: ➡️
+    layout: list
+    items:
+      - label: Identify unknown hosts
+        text:
+          "Identify 192.168.2.74, .76, .78, .79, .86 and .88. Many are private Wi-Fi addresses; use owner/device
+          clues or disable private MAC addressing to assign stable device_ids. Note DHCP churn: tony-repeater floats .72/.73/.82,
+          samsung-tv floats .91/.92, xiaomi-c100 floats .72/.81 — re-resolve by MAC, not IP."
+      - label: Reconnect 192.168.1.0/24
+        text: Switch to Mountain View 5G to capture current IPs and MACs for macbook and Google TV.
+      - label: Expand
+        text: Add Tailscale, Docker, LXC, and USB-tether networks once home networks are complete.
+      - label: Automation
+        text: Nightly ARP scan compares against this registry; new/duplicate IPs or MACs create focus-inbox alerts.
 config:
   version: 1
-  last_updated: '2026-09-10'
+  last_updated: "2026-09-10"
   maintainer: tony
   status: active
   related_files:
-  - docs/ssot/infrastructure/ssot.mac-address-registry.yml
-  - docs/ssot/infrastructure/ssot.tuya-smart-plug.yml
-  - docs/ssot/infrastructure/ssot.ip-camera.yml
-  - docs/ssot/ssot.mysystem.home.yml
+    - docs/ssot/infrastructure/ssot.mac-address-registry.yml
+    - docs/ssot/infrastructure/ssot.tuya-smart-plug.yml
+    - docs/ssot/infrastructure/ssot.ip-camera.yml
+    - docs/ssot/ssot.mysystem.home.yml
   schema:
     network_record:
       required:
-      - network_id
-      - cidr
+        - network_id
+        - cidr
       fields:
         network_id: stable slug
         cidr: CIDR notation
         ssid: Wi-Fi SSID or VLAN name
         gateway: router IP
         dhcp_range:
-        - start_ip
-        - end_ip
+          - start_ip
+          - end_ip
         status: active/stale/unknown
         allocations:
-        - ip: IPv4 address
-          device_id: link to mac-address-registry
-          interface_id: which interface of the device
-          kind: static/reservation/dhcp/discovered
-          status: active/stale/reserved
-          first_seen: ISO-8601 date
-          last_seen: ISO-8601 date
-          source: arp/dhcp/sticker/manual
+          - ip: IPv4 address
+            device_id: link to mac-address-registry
+            interface_id: which interface of the device
+            kind: static/reservation/dhcp/discovered
+            status: active/stale/reserved
+            first_seen: ISO-8601 date
+            last_seen: ISO-8601 date
+            source: arp/dhcp/sticker/manual
   networks:
-  - network_id: home-192.168.2.0-24
-    cidr: 192.168.2.0/24
-    ssid: TONY-WIFI_2.4G / netplan-eno1
-    gateway: 192.168.2.1
-    dhcp_range: null
-    status: active
-    allocations:
-    - ip: 192.168.2.1
-      device_id: home-router
-      interface_id: primary
-      kind: static
+    - network_id: home-192.168.2.0-24
+      cidr: 192.168.2.0/24
+      ssid: TONY-WIFI_2.4G / netplan-eno1
+      gateway: 192.168.2.1
+      dhcp_range: null
       status: active
-      first_seen: '2026-09-10'
-      last_observed: '2026-09-10'
-      source: arp
-    - ip: 192.168.2.65
-      device_id: esp32-test
-      interface_id: wlan0
-      kind: reservation
-      status: active
-      first_seen: '2026-09-09'
-      last_observed: '2026-09-09'
-      source: dhcp
-    - ip: 192.168.2.66
-      device_id: tuya-plug-bedside
-      interface_id: wlan0
-      kind: reservation
-      status: active
-      first_seen: '2026-09-09'
-      last_observed: '2026-09-09'
-      source: dhcp
-    - ip: 192.168.2.67
-      device_id: tony-dell
-      interface_id: primary
-      kind: reservation
-      status: active
-      first_seen: '2026-09-09'
-      last_observed: '2026-09-09'
-      source: dhcp
-    - ip: 192.168.2.68
-      device_id: cozylife-01
-      interface_id: wlan0
-      kind: reservation
-      status: active
-      first_seen: '2026-09-09'
-      last_observed: '2026-09-09'
-      source: dhcp
-    - ip: 192.168.2.69
-      device_id: iphone-tony
-      interface_id: wlan0
-      kind: dhcp
-      status: active
-      first_seen: '2026-09-09'
-      last_observed: '2026-09-09'
-      source: dhcp
-    - ip: 192.168.2.70
-      device_id: tuya-plug-tv
-      interface_id: wlan0
-      kind: reservation
-      status: active
-      first_seen: '2026-09-09'
-      last_observed: '2026-09-09'
-      source: dhcp
-    - ip: 192.168.2.71
-      device_id: ip-cam-65
-      interface_id: wlan0
-      kind: reservation
-      status: active
-      first_seen: '2026-09-09'
-      last_observed: '2026-09-09'
-      source: dhcp
-    - ip: 192.168.2.72
-      device_id: xiaomi-c100
-      interface_id: wlan0
-      kind: dhcp
-      status: active
-      first_seen: '2026-09-09'
-      last_observed: '2026-09-17'
-      source: arp
-    - ip: 192.168.2.73
-      device_id: tony-repeater
-      interface_id: wlan0
-      kind: dhcp
-      status: active
-      first_seen: '2026-09-09'
-      last_observed: '2026-09-17'
-      source: dhcp
-    - ip: 192.168.2.74
-      device_id: discovered-68f0bcad208a
-      interface_id: wlan0-0af0
-      kind: dhcp
-      status: active
-      first_seen: '2026-09-09'
-      last_observed: '2026-09-10'
-      source: arp
-    - ip: 192.168.2.75
-      device_id: hp-deskjet-2700
-      interface_id: wlan0
-      kind: reservation
-      status: active
-      first_seen: '2026-09-09'
-      last_observed: '2026-09-09'
-      source: dhcp
-    - ip: 192.168.2.76
-      device_id: iphone-227311ed1353
-      interface_id: wlan0
-      kind: dhcp
-      status: active
-      first_seen: '2026-09-09'
-      last_observed: '2026-09-09'
-      source: dhcp
-    - ip: 192.168.2.77
-      device_id: bedroom-remote
-      interface_id: wlan0
-      kind: reservation
-      status: active
-      first_seen: '2026-09-09'
-      last_observed: '2026-09-11'
-      source: dhcp
-    - ip: 192.168.2.78
-      device_id: apple-watch-b67265caaae1
-      interface_id: wlan0
-      kind: dhcp
-      status: active
-      first_seen: '2026-09-09'
-      last_observed: '2026-09-09'
-      source: dhcp
-    - ip: 192.168.2.79
-      device_id: discovered-ea9b8fd280f0
-      interface_id: wlan0
-      kind: dhcp
-      status: active
-      first_seen: '2026-09-09'
-      last_observed: '2026-09-09'
-      source: dhcp
-    - ip: 192.168.2.80
-      device_id: kks-macbook-pro
-      interface_id: eth0
-      kind: dhcp
-      status: active
-      first_seen: '2026-09-09'
-      last_observed: '2026-09-09'
-      source: dhcp
-    - ip: 192.168.2.81
-      device_id: xiaomi-c100
-      interface_id: wlan0
-      kind: dhcp
-      status: active
-      first_seen: '2026-09-11'
-      last_observed: '2026-09-11'
-      source: dhcp
-    - ip: 192.168.2.82
-      device_id: kks-mac-studio
-      interface_id: wlan0
-      kind: dhcp
-      status: active
-      first_seen: '2026-09-09'
-      last_observed: '2026-09-09'
-      source: dhcp
-    - ip: 192.168.2.83
-      device_id: tony-omen
-      interface_id: wlo1
-      kind: dhcp
-      status: active
-      first_seen: '2026-09-09'
-      last_observed: '2026-09-09'
-      source: dhcp
-    - ip: 192.168.2.84
-      device_id: tony-omen
-      interface_id: eno1
-      kind: dhcp
-      status: active
-      first_seen: '2026-09-09'
-      last_observed: '2026-09-09'
-      source: dhcp
-    - ip: 192.168.2.85
-      device_id: tony-tv
-      interface_id: wlan0
-      kind: reservation
-      status: active
-      first_seen: '2026-09-09'
-      last_observed: '2026-09-09'
-      source: dhcp
-    - ip: 192.168.2.86
-      device_id: mac-72b5f0db14f3
-      interface_id: wlan0
-      kind: dhcp
-      status: active
-      first_seen: '2026-09-09'
-      last_observed: '2026-09-09'
-      source: dhcp
-    - ip: 192.168.2.87
-      device_id: tuya-plug-coffee
-      interface_id: wlan0
-      kind: reservation
-      status: active
-      first_seen: '2026-09-09'
-      last_observed: '2026-09-09'
-      source: dhcp
-    - ip: 192.168.2.88
-      device_id: iphone-fa31d9bd44ff
-      interface_id: wlan0
-      kind: dhcp
-      status: active
-      first_seen: '2026-09-09'
-      last_observed: '2026-09-09'
-      source: dhcp
-    - ip: 192.168.2.89
-      device_id: honor-pad-9
-      interface_id: wlan0
-      kind: dhcp
-      status: active
-      first_seen: '2026-09-09'
-      last_observed: '2026-09-09'
-      source: dhcp
-    - ip: 192.168.2.90
-      device_id: realme-c63
-      interface_id: wlan0
-      kind: dhcp
-      status: active
-      first_seen: '2026-09-09'
-      last_observed: '2026-09-09'
-      source: dhcp
-    - ip: 192.168.2.91
-      device_id: samsung-tv
-      interface_id: eth0
-      kind: dhcp
-      status: active
-      first_seen: '2026-09-09'
-      last_observed: '2026-09-17'
-      source: dhcp
-  - network_id: legacy-192.168.1.0-24
-    cidr: 192.168.1.0/24
-    ssid: Mountain View 5G / Mountain View 2.4G
-    gateway: 192.168.1.1
-    dhcp_range: null
-    status: stale
-    allocations:
-    - ip: 192.168.1.39
-      device_id: macbook
-      interface_id: wlan0
-      kind: manual
+      allocations:
+        - ip: 192.168.2.1
+          device_id: home-router
+          interface_id: primary
+          kind: static
+          status: active
+          first_seen: "2026-09-10"
+          last_observed: "2026-09-10"
+          source: arp
+        - ip: 192.168.2.65
+          device_id: esp32-test
+          interface_id: wlan0
+          kind: reservation
+          status: active
+          first_seen: "2026-09-09"
+          last_observed: "2026-09-09"
+          source: dhcp
+        - ip: 192.168.2.66
+          device_id: tuya-plug-bedside
+          interface_id: wlan0
+          kind: reservation
+          status: active
+          first_seen: "2026-09-09"
+          last_observed: "2026-09-09"
+          source: dhcp
+        - ip: 192.168.2.67
+          device_id: tony-dell
+          interface_id: primary
+          kind: reservation
+          status: active
+          first_seen: "2026-09-09"
+          last_observed: "2026-09-09"
+          source: dhcp
+        - ip: 192.168.2.68
+          device_id: cozylife-01
+          interface_id: wlan0
+          kind: reservation
+          status: active
+          first_seen: "2026-09-09"
+          last_observed: "2026-09-09"
+          source: dhcp
+        - ip: 192.168.2.69
+          device_id: iphone-tony
+          interface_id: wlan0
+          kind: dhcp
+          status: active
+          first_seen: "2026-09-09"
+          last_observed: "2026-09-09"
+          source: dhcp
+        - ip: 192.168.2.70
+          device_id: tuya-plug-tv
+          interface_id: wlan0
+          kind: reservation
+          status: active
+          first_seen: "2026-09-09"
+          last_observed: "2026-09-09"
+          source: dhcp
+        - ip: 192.168.2.71
+          device_id: ip-cam-65
+          interface_id: wlan0
+          kind: reservation
+          status: active
+          first_seen: "2026-09-09"
+          last_observed: "2026-09-09"
+          source: dhcp
+        - ip: 192.168.2.72
+          device_id: xiaomi-c100
+          interface_id: wlan0
+          kind: dhcp
+          status: active
+          first_seen: "2026-09-09"
+          last_observed: "2026-09-17"
+          source: arp
+        - ip: 192.168.2.73
+          device_id: tony-repeater
+          interface_id: wlan0
+          kind: dhcp
+          status: active
+          first_seen: "2026-09-09"
+          last_observed: "2026-09-17"
+          source: dhcp
+        - ip: 192.168.2.74
+          device_id: discovered-68f0bcad208a
+          interface_id: wlan0-0af0
+          kind: dhcp
+          status: active
+          first_seen: "2026-09-09"
+          last_observed: "2026-09-10"
+          source: arp
+        - ip: 192.168.2.75
+          device_id: hp-deskjet-2700
+          interface_id: wlan0
+          kind: reservation
+          status: active
+          first_seen: "2026-09-09"
+          last_observed: "2026-09-09"
+          source: dhcp
+        - ip: 192.168.2.76
+          device_id: iphone-227311ed1353
+          interface_id: wlan0
+          kind: dhcp
+          status: active
+          first_seen: "2026-09-09"
+          last_observed: "2026-09-09"
+          source: dhcp
+        - ip: 192.168.2.77
+          device_id: bedroom-remote
+          interface_id: wlan0
+          kind: reservation
+          status: active
+          first_seen: "2026-09-09"
+          last_observed: "2026-09-11"
+          source: dhcp
+        - ip: 192.168.2.78
+          device_id: apple-watch-b67265caaae1
+          interface_id: wlan0
+          kind: dhcp
+          status: active
+          first_seen: "2026-09-09"
+          last_observed: "2026-09-09"
+          source: dhcp
+        - ip: 192.168.2.79
+          device_id: discovered-ea9b8fd280f0
+          interface_id: wlan0
+          kind: dhcp
+          status: active
+          first_seen: "2026-09-09"
+          last_observed: "2026-09-09"
+          source: dhcp
+        - ip: 192.168.2.80
+          device_id: kks-macbook-pro
+          interface_id: eth0
+          kind: dhcp
+          status: active
+          first_seen: "2026-09-09"
+          last_observed: "2026-09-09"
+          source: dhcp
+        - ip: 192.168.2.81
+          device_id: xiaomi-c100
+          interface_id: wlan0
+          kind: dhcp
+          status: active
+          first_seen: "2026-09-11"
+          last_observed: "2026-09-11"
+          source: dhcp
+        - ip: 192.168.2.82
+          device_id: kks-mac-studio
+          interface_id: wlan0
+          kind: dhcp
+          status: active
+          first_seen: "2026-09-09"
+          last_observed: "2026-09-09"
+          source: dhcp
+        - ip: 192.168.2.83
+          device_id: tony-omen
+          interface_id: wlo1
+          kind: dhcp
+          status: active
+          first_seen: "2026-09-09"
+          last_observed: "2026-09-09"
+          source: dhcp
+        - ip: 192.168.2.84
+          device_id: tony-omen
+          interface_id: eno1
+          kind: dhcp
+          status: active
+          first_seen: "2026-09-09"
+          last_observed: "2026-09-09"
+          source: dhcp
+        - ip: 192.168.2.85
+          device_id: tony-tv
+          interface_id: wlan0
+          kind: reservation
+          status: active
+          first_seen: "2026-09-09"
+          last_observed: "2026-09-09"
+          source: dhcp
+        - ip: 192.168.2.86
+          device_id: mac-72b5f0db14f3
+          interface_id: wlan0
+          kind: dhcp
+          status: active
+          first_seen: "2026-09-09"
+          last_observed: "2026-09-09"
+          source: dhcp
+        - ip: 192.168.2.87
+          device_id: tuya-plug-coffee
+          interface_id: wlan0
+          kind: reservation
+          status: active
+          first_seen: "2026-09-09"
+          last_observed: "2026-09-09"
+          source: dhcp
+        - ip: 192.168.2.88
+          device_id: iphone-fa31d9bd44ff
+          interface_id: wlan0
+          kind: dhcp
+          status: active
+          first_seen: "2026-09-09"
+          last_observed: "2026-09-09"
+          source: dhcp
+        - ip: 192.168.2.89
+          device_id: honor-pad-9
+          interface_id: wlan0
+          kind: dhcp
+          status: active
+          first_seen: "2026-09-09"
+          last_observed: "2026-09-09"
+          source: dhcp
+        - ip: 192.168.2.90
+          device_id: realme-c63
+          interface_id: wlan0
+          kind: dhcp
+          status: active
+          first_seen: "2026-09-09"
+          last_observed: "2026-09-09"
+          source: dhcp
+        - ip: 192.168.2.91
+          device_id: samsung-tv
+          interface_id: eth0
+          kind: dhcp
+          status: active
+          first_seen: "2026-09-09"
+          last_observed: "2026-09-17"
+          source: dhcp
+    - network_id: legacy-192.168.1.0-24
+      cidr: 192.168.1.0/24
+      ssid: Mountain View 5G / Mountain View 2.4G
+      gateway: 192.168.1.1
+      dhcp_range: null
       status: stale
-      first_seen: '2026-09-01'
-      source: mysystem.macbook.yml
-    - ip: 192.168.1.50
-      device_id: google-tv
-      interface_id: wlan0
-      kind: manual
-      status: unknown
-      first_seen: '2026-09-01'
-      source: earlier-scan
-    - ip: 192.168.1.54
-      device_id: tony-omen
-      interface_id: wlo1
-      kind: dhcp
-      status: stale
-      first_seen: '2026-09-01'
-      source: earlier-scan
+      allocations:
+        - ip: 192.168.1.39
+          device_id: macbook
+          interface_id: wlan0
+          kind: manual
+          status: stale
+          first_seen: "2026-09-01"
+          source: mysystem.macbook.yml
+        - ip: 192.168.1.50
+          device_id: google-tv
+          interface_id: wlan0
+          kind: manual
+          status: unknown
+          first_seen: "2026-09-01"
+          source: earlier-scan
+        - ip: 192.168.1.54
+          device_id: tony-omen
+          interface_id: wlo1
+          kind: dhcp
+          status: stale
+          first_seen: "2026-09-01"
+          source: earlier-scan

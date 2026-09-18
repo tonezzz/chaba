@@ -17,14 +17,14 @@ SAFD is the convention for delegating focus items to background or foreground su
 
 ```yaml
 subagent:
-  runnable: true                  # can this be delegated?
-  profile: subagent_general       # or subagent_explore for read-only
-  parallel: false                 # can it run alongside other subagents?
-  requires_approval: false        # must the user approve before it starts?
-  can_change_host: false          # can it run on a different host?
+  runnable: true # can this be delegated?
+  profile: subagent_general # or subagent_explore for read-only
+  parallel: false # can it run alongside other subagents?
+  requires_approval: false # must the user approve before it starts?
+  can_change_host: false # can it run on a different host?
   notes: <human-readable notes>
   estimated_duration: "1 session" # optional
-  output_format: "summary"        # expected artifact
+  output_format: "summary" # expected artifact
 ```
 
 ## Execution modes
@@ -36,6 +36,7 @@ subagent:
 ## Contract and output
 
 When a focus is delegated, the dispatcher writes a `SUBAGENT_CONTRACT.md` with:
+
 - Scope and boundaries
 - Allowed operations and risk level
 - Communication rules (no clarifying questions, stop on destructive changes)

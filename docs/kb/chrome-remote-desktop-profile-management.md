@@ -3,6 +3,7 @@ category: operations
 ---
 
 # Chrome Remote Desktop Profile Management Strategy
+
 ## What it is
 
 title: Chrome Remote Desktop Profile Management Strategy
@@ -11,11 +12,12 @@ title: Chrome Remote Desktop Profile Management Strategy
 
 Created 2026-08-10 as part of Chaba infrastructure documentation.
 
-
 ## Context
+
 When setting up Chrome Remote Desktop on a MacBook that may be used by multiple people or with multiple Chrome profiles, it's important to establish a clear profile management strategy to avoid conflicts and maintain clean access control.
 
 ## Related Documentation
+
 - SSOT: `docs/ssot/ssot.mysystem.macbook.yml` - Complete MacBook configuration
 - SSH Setup: SSH key authentication and configuration
 - Network: Home network configuration and hostname resolution
@@ -34,6 +36,7 @@ When setting up Chrome Remote Desktop on a MacBook that may be used by multiple 
 - Document Chrome Remote Desktop PINs and access codes securely
 - Plan for backup remote access methods
 - Consider Chrome Remote Desktop usage policies for shared devices
+
 ## Tags
 
 - **security**: security

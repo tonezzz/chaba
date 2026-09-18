@@ -99,6 +99,7 @@ Unified information-finding flow for `chaba`, `trade`, and any other project in 
       `node .devin/skills/info-find/info-find.mjs --session <id> --record-result '<short JSON summary>'`
 
 Safety for other sessions:
+
 - All cache and audit files live under `~/.cache/devin/info-find/<project>/sessions/<session_id>/`.
 - Project name is derived from the current working directory, so `chaba`, `trade`, and any other project do not share cache.
 - Nothing is written to the skill directory, so the skill itself stays read-only and reusable.

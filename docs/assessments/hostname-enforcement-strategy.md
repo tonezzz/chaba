@@ -16,6 +16,7 @@ Remaining raw-IP references in docs are network-reference context (host tables, 
 ### Files with 192.168.1.48 (26 files found)
 
 #### High Priority (Configuration Files)
+
 - `stacks/web/public/ssot.health.yml` (10 matches) - Health check endpoints
 - `docs/ssot/infrastructure/ssot.health.yml` (10 matches) - Health check endpoints
 - `docs/ssot/infrastructure/ssot.health.home.yml` - ✅ Already updated
@@ -24,6 +25,7 @@ Remaining raw-IP references in docs are network-reference context (host tables, 
 - `stacks/web/public/apps/gpu-monitor/index.html` (1 match) - Netdata dashboard link
 
 #### Medium Priority (Documentation)
+
 - `docs/ssot/ssot.mysystem.home.yml` (5 matches) - Network documentation
 - `docs/ssot/infrastructure/ssot.gpu.yml` (5 matches) - GPU service URLs
 - `stacks/web/public/apps/health-check/README.md` (3 matches) - Documentation
@@ -31,6 +33,7 @@ Remaining raw-IP references in docs are network-reference context (host tables, 
 - `docs/overview/hosts.tony-dell.yml` (2 matches) - Host documentation
 
 #### Low Priority (Content/Reference)
+
 - `stacks/web/public/apps/sysdiag/sysdiag.yml` (14 matches) - System topology
 - `.windsurf/workflows/*.md` (4 matches) - Workflow documentation
 - `stacks/web/bserver-www/default/index.yaml` (11 matches) - BServer content
@@ -127,6 +130,7 @@ Update `.windsurfrules` to include hostname policy:
 ### 7. Migration Priority
 
 #### Phase 1: Critical Configuration (Immediate)
+
 - ✅ `ssot.health.home.yml` - Done
 - ✅ `ssot.health.mobile.yml` - Done
 - ⏳ `stacks/web/public/ssot.health.yml` - Needs update
@@ -134,15 +138,18 @@ Update `.windsurfrules` to include hostname policy:
 - ⏳ `stacks/web/public/apps/gpu-monitor/index.html` - Netdata link
 
 #### Phase 2: SSOT Documentation (High)
+
 - ⏳ `docs/ssot/ssot.mysystem.home.yml` - Network info
 - ⏳ `docs/ssot/infrastructure/ssot.gpu.yml` - GPU service URLs
 - ⏳ `docs/overview/hosts.*.yml` - Host documentation
 
 #### Phase 3: App Configuration (Medium)
+
 - ⏳ `stacks/web/public/apps/sysdiag/sysdiag.yml` - System topology
 - ⏳ `stacks/web/bserver-www/default/index.yaml` - BServer content
 
 #### Phase 4: Documentation (Low)
+
 - ⏳ Workflow files
 - ⏳ README files
 - ⏳ Other documentation
@@ -181,18 +188,21 @@ Add to CI pipeline:
 ## Implementation Recommendations
 
 ### Immediate Actions
+
 1. ✅ Update health check configurations (completed)
 2. ✅ Update remaining critical configuration files (completed)
 3. ✅ Add pre-commit hook for IP address detection (completed)
 4. ✅ Update `.windsurfrules` with hostname policy (completed)
 
 ### Short-term Actions
+
 1. ✅ Create hostname configuration standard (completed)
 2. ✅ Implement variable substitution in SSOT files (partially completed)
 3. ✅ Update SSOT template with hostname standards (documented)
 4. ✅ Create validation script (pre-commit hook implemented)
 
 ### Long-term Actions
+
 1. ✅ Implement comprehensive linting rules (pre-commit hook implemented)
 2. Add CI/CD validation
 3. ✅ Migrate all configuration files (critical files completed)
@@ -201,6 +211,7 @@ Add to CI pipeline:
 ## Exceptions
 
 IP addresses are acceptable in:
+
 - Network documentation explaining subnet structure
 - Firewall/security configuration
 - DNS configuration files

@@ -7,6 +7,7 @@ category: operations
 ### Backend Implementation
 
 **gdrive_fsspec_backend.py:**
+
 ```python
 from gdrive_fsspec import GoogleDriveFileSystem
 
@@ -16,7 +17,7 @@ class GDriveFsspecBackend:
             creds=service_account_credentials,
             token="service_account"
         )
-    
+
     def read_file(self, path: str) -> str:
         full_path = f"{self._folder_path}/{path}"
         with self.fs.open(full_path, 'r') as f:
@@ -24,6 +25,7 @@ class GDriveFsspecBackend:
 ```
 
 **Search Indexer Integration:**
+
 ```python
 # In search/indexer.py
 if config.settings.use_fsspec_backend:
@@ -42,6 +44,7 @@ def _read_file_content(self, file_path: Path):
 ### Configuration
 
 **config.py:**
+
 ```python
 # fsspec Configuration
 gdrive_service_account_json: str = os.getenv("GDRIVE_SERVICE_ACCOUNT_JSON", "/config/service_account.json")
@@ -49,6 +52,7 @@ use_fsspec_backend: bool = os.getenv("USE_FSSPEC_BACKEND", "false").lower() == "
 ```
 
 **requirements.txt:**
+
 ```
 gdrive-fsspec>=0.4.0
 ```
@@ -56,6 +60,7 @@ gdrive-fsspec>=0.4.0
 ### Container Configuration
 
 **docker-compose.yml:**
+
 ```yaml
 services:
   mcp-kbman:
@@ -115,4 +120,7 @@ chmod 600 ~/.config/service_account.json
 ### Host-Based Deployment (Current)
 
 **Configuration:**
+
 ```bash
+
+```

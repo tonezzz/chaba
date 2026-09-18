@@ -7,10 +7,10 @@ category: troubleshooting
 ## What it is
 
 Each Devin/Windsurf session spawns multiple Yomi MCP server processes (`~/.yomi/mcpb/run.mjs`). When the session ends, these processes are NOT killed — they become orphaned (reparented to PID 1/systemd) and continue running, consuming RAM and CPU indefinitely.
+
 ## Context/Background
 
 Created 2026-08-05 as part of Chaba infrastructure documentation.
-
 
 ## Impact
 
@@ -25,9 +25,11 @@ The Yomi MCP server (`run.mjs`) is launched by the IDE as a subprocess for each 
 ## Fix Applied (2026-08-05)
 
 Manually killed 14 orphaned instances (PIDs 1550563–1881206, started 14:32–18:24):
+
 ```bash
 kill 1550563 1624473 1625313 1626012 1680464 1801239 1802052 1804111 1858617 1859048 1860685 1879669 1880132 1881206
 ```
+
 Result: freed ~2GB RAM, ~10GB swap.
 
 ## Detection
@@ -44,12 +46,14 @@ ps aux | grep "yomi/mcpb/run.mjs" | grep -v grep | \
 ## Mitigation: Session-Start Cleanup
 
 Add to `~/.bashrc` or run before starting Devin:
+
 ```bash
 # Kill orphaned Yomi MCP instances (parent = PID 1) before starting new session
 pkill -f "yomi/mcpb/run.mjs" 2>/dev/null || true
 ```
 
 Or, a more targeted approach that only kills orphans:
+
 ```bash
 ps aux | grep "yomi/mcpb/run.mjs" | grep -v grep | while read user pid rest; do
   ppid=$(ps -o ppid= -p $pid 2>/dev/null | tr -d ' ')
@@ -60,12 +64,14 @@ done
 ## Long-term Fix
 
 Configure the Yomi MCP server as a singleton systemd user service:
+
 ```bash
 # /home/tony/.config/systemd/user/yomi-mcp.service
 [Service]
 ExecStart=/usr/bin/node /home/tony/.yomi/mcpb/run.mjs
 Restart=on-failure
 ```
+
 This ensures only one instance runs and it restarts cleanly across sessions.
 
 ## Related

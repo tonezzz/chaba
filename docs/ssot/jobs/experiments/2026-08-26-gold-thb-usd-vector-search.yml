@@ -35,12 +35,12 @@ planning:
 
 processing:
   status: not_started
-  started_at: '2026-08-26'
+  started_at: "2026-08-26"
   steps:
     - id: 1
       label: k-NN pattern matcher on return windows
       status: completed
-      completed_at: '2026-08-26'
+      completed_at: "2026-08-26"
       notes: |
         Implemented trended_knn.py with a 5-day window of THB and XAU log returns,
         k=50 neighbors, and distance-weighted forecasts. Tuned WINDOW, K, and
@@ -55,7 +55,7 @@ processing:
     - id: 2
       label: Regime-embedding with PCA
       status: completed
-      completed_at: '2026-08-26'
+      completed_at: "2026-08-26"
       notes: |
         Implemented trended_pca.py. PCA on a 3-day THB/XAU window before k-NN
         degrades performance for any N_COMPONENTS < 6:
@@ -67,7 +67,7 @@ processing:
     - id: 3
       label: Similarity-weighted forecast
       status: completed
-      completed_at: '2026-08-26'
+      completed_at: "2026-08-26"
       notes: |
         Implemented trended_weighted.py: a Nadaraya-Watson kernel smoother over all training
         windows. Best setting was RBF with GAMMA=0.5:
@@ -80,7 +80,7 @@ processing:
     - id: 4
       label: Anomaly / change-point filter
       status: completed
-      completed_at: '2026-08-26'
+      completed_at: "2026-08-26"
       notes: |
         Implemented trended_anomaly.py. The k-NN forecast is kept, but the position is
         forced to flat when the current THB/XAU window is farther from its k-th nearest
@@ -98,7 +98,7 @@ processing:
     - id: 5
       label: SSOT / documentation vector search with MDDB
       status: completed
-      completed_at: '2026-08-26'
+      completed_at: "2026-08-26"
       notes: |
         Implemented mddb_search.py and wired the results into the vector-search app.
         For each of the five ideas, the script queries MDDB's /v1/vector-search
@@ -110,7 +110,7 @@ processing:
     - id: 6
       label: App page with charts and explanations
       status: completed
-      completed_at: '2026-08-26'
+      completed_at: "2026-08-26"
       notes: |
         Created and deployed vector-search-ideas.html with synthetic charts for the
         5 ideas plus live out-of-sample equity curves for the 2-day THB trend,
@@ -157,8 +157,8 @@ report:
 
 config:
   version: 1
-  created_at: '2026-08-26'
-  last_updated: '2026-08-26'
+  created_at: "2026-08-26"
+  last_updated: "2026-08-26"
   maintainer: tony
   related_files:
     - docs/ssot/templates/job.yml

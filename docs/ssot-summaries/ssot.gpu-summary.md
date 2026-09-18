@@ -21,6 +21,7 @@ The SSOT GPU configuration defines policies and procedures for GPU resource mana
 ## Purpose
 
 Standardizes GPU resource management with:
+
 - VRAM budget allocation and monitoring
 - Model loading policies and priorities
 - GPU queue implementation details
@@ -30,12 +31,14 @@ Standardizes GPU resource management with:
 ## GPU Policy
 
 ### VRAM Budget
+
 - **Total VRAM**: 24GB (NVIDIA GPU)
 - **Available for AI**: ~16GB (system overhead reserved)
 - **Budget Allocation**: Per-service VRAM limits
 - **Monitoring**: Real-time VRAM usage tracking via Netdata
 
 ### Model Loading Policies
+
 - **Priority-based loading**: Critical services load first
 - **VRAM checking**: Verify available VRAM before model load
 - **Fallback policies**: Graceful degradation when VRAM insufficient
@@ -44,15 +47,18 @@ Standardizes GPU resource management with:
 ## Model Specifications
 
 ### Active Models
+
 - **Phi-3-mini-4k-instruct-q4.gguf**: 2.3GB VRAM, MCP/chatllama integration
 - **all-MiniLM-L6-v2**: 384 dimensions, embedding service
 
 ### Offline Models (GPU Memory Constraints)
-- **thai-legal-gemma-4b-cpt.Q4_K_M.gguf**: 5GB VRAM - *Offline since 2026-08-06*
-- **Imagen2 models**: Variable VRAM - *Offline since 2026-08-06*
-- **Txt2Vid models**: Variable VRAM - *Offline since 2026-08-06*
+
+- **thai-legal-gemma-4b-cpt.Q4_K_M.gguf**: 5GB VRAM - _Offline since 2026-08-06_
+- **Imagen2 models**: Variable VRAM - _Offline since 2026-08-06_
+- **Txt2Vid models**: Variable VRAM - _Offline since 2026-08-06_
 
 ### Model Loading Priority
+
 1. **P1 (Highest)**: Embedding service (always available)
 2. **P2**: Yomi summarization models
 3. **P3**: Image generation (Imagen2)
@@ -61,12 +67,14 @@ Standardizes GPU resource management with:
 ## GPU Queue Implementation
 
 ### Queue Architecture
+
 - **Database**: PostgreSQL with job tracking
 - **Orchestrator**: Node.js job processing system
 - **Monitoring**: Real-time status and metrics
 - **Backpressure**: GPU-aware load management
 
 ### Job Types
+
 - **embedding**: Text embedding jobs (2 concurrent max)
 - **imagen2**: Image generation jobs (1 concurrent max)
 - **txt2vid**: Text-to-video jobs (1 concurrent max)
@@ -75,12 +83,14 @@ Standardizes GPU resource management with:
 - **yomi_daily**: Yomi daily summary generation (1 concurrent max)
 
 ### Priority System
+
 - **P4**: embedding, yomi_summary, yomi_daily (highest priority)
 - **P3**: txt2vid, cogvideo
 - **P2**: imagen2
 - **P1**: llama (lowest priority)
 
 ### Backpressure System
+
 - **GPU monitoring**: Real-time utilization tracking via Netdata API
 - **Threshold**: Processing paused when GPU > 80% utilization
 - **Circuit breaker**: Automatic protection after 5 consecutive failures
@@ -89,18 +99,21 @@ Standardizes GPU resource management with:
 ## Systemd Services
 
 ### GPU Queue Service
+
 - **Service**: `gpu-queue.service`
 - **Implementation**: Node.js orchestrator
 - **Auto-restart**: Enabled
 - **Dependencies**: PostgreSQL, GPU access
 
 ### GPU Monitoring Service
+
 - **Service**: `gpu-monitor.service`
 - **Implementation**: Python monitoring script
 - **Schedule**: Every 5 minutes
 - **Alerts**: VRAM thresholds, temperature limits
 
 ### Embedding Service
+
 - **Service**: `embedding-service.service`
 - **Implementation**: Python Flask service
 - **GPU access**: CUDA-enabled
@@ -109,12 +122,14 @@ Standardizes GPU resource management with:
 ## MCP Tool Integration
 
 ### MCP-GPU Server
+
 - **Purpose**: GPU status and operations via MCP
 - **Tools**: GPU status, process listing, VRAM monitoring
 - **Integration**: Status API, health check dashboard
 - **Location**: `chaba/mcp-servers/mcp-gpu/server.py`
 
 ### MCP-Llama Server
+
 - **Purpose**: LLM inference via MCP
 - **Tools**: Model loading, text generation, queue management
 - **Integration**: GPU queue, Yomi summarization
@@ -123,16 +138,19 @@ Standardizes GPU resource management with:
 ## Monitoring Integration
 
 ### Netdata Integration
+
 - **GPU dashboard**: http://tony-omen.local:8080/apps/netdata/
 - **Metrics**: VRAM usage, utilization, temperature
 - **Alerts**: Configurable thresholds for VRAM and temperature
 
 ### Health Check Integration
+
 - **GPU tab**: Real-time GPU status in health dashboard
 - **Service health**: Individual GPU service monitoring
 - **Queue status**: GPU queue job status and metrics
 
 ### Custom Monitoring
+
 - **GPU monitor script**: `scripts/gpu-monitor.mjs`
 - **Queue monitoring**: `scripts/gpu-queue/monitoring.mjs`
 - **Alert thresholds**: VRAM 80%/90%, temperature 75°C/85°C
@@ -140,6 +158,7 @@ Standardizes GPU resource management with:
 ## Operational Procedures
 
 ### GPU Resource Allocation
+
 1. Check available VRAM before model load
 2. Verify GPU utilization is below threshold
 3. Load model with appropriate priority
@@ -147,6 +166,7 @@ Standardizes GPU resource management with:
 5. Unload model when no longer needed
 
 ### Queue Management
+
 1. Submit job with appropriate priority
 2. Monitor queue status and GPU utilization
 3. Handle backpressure when GPU > 80%
@@ -154,6 +174,7 @@ Standardizes GPU resource management with:
 5. Clean up completed/failed jobs
 
 ### Troubleshooting
+
 - **High VRAM usage**: Identify processes, hold llama, check for stuck jobs
 - **GPU service failures**: Check GPU access, nvidia-smi, container logs
 - **Queue stuck jobs**: Cancel stuck jobs, clean up queue, restart orchestrator
@@ -161,6 +182,7 @@ Standardizes GPU resource management with:
 ## Configuration Structure
 
 ### GPU Policy Format
+
 ```yaml
 gpu_policy:
   vram_budget:
@@ -175,6 +197,7 @@ gpu_policy:
 ```
 
 ### Queue Configuration Format
+
 ```yaml
 gpu_queue:
   database: postgresql
@@ -188,6 +211,7 @@ gpu_queue:
 ## Full Configuration
 
 For complete YAML configuration including all GPU policies, model specifications, queue details, and service configurations, see the authoritative source:
+
 - **GPU Configuration**: `docs/ssot/infrastructure/ssot.gpu.yml`
 
 ## Related Documentation
@@ -199,6 +223,6 @@ For complete YAML configuration including all GPU policies, model specifications
 
 ## Change History
 
-| Date | Change | Author |
-|------|--------|--------|
-| 2026-08-06 | Created SSOT GPU configuration summary | devin |
+| Date       | Change                                 | Author |
+| ---------- | -------------------------------------- | ------ |
+| 2026-08-06 | Created SSOT GPU configuration summary | devin  |

@@ -22,12 +22,12 @@ validation_categories:
         text: All standard SSOT files must have a title field
         applies_to: [standard-ssot]
         exceptions: [config-type, apps-subdirectory]
-        
+
       - label: Section Structure
         text: Files with sections must have title, icon, and layout fields
         applies_to: [standard-ssot]
         exceptions: [config-type]
-        
+
       - label: Item Structure
         text: Section items must have label and text fields
         applies_to: [standard-ssot]
@@ -41,12 +41,12 @@ validation_categories:
         text: All SSOT files must be valid YAML syntax
         applies_to: [all]
         exceptions: []
-        
+
       - label: No Trailing Whitespace
         text: Lines should not have trailing whitespace
         applies_to: [all]
         exceptions: []
-        
+
       - label: Consistent Indentation
         text: Use consistent 2-space indentation for YAML
         applies_to: [all]
@@ -60,12 +60,12 @@ validation_categories:
         text: Section titles within a file must be unique
         applies_to: [standard-ssot]
         exceptions: []
-        
+
       - label: No Duplicate Item Labels
         text: Item labels within a section must be unique
         applies_to: [standard-ssot]
         exceptions: []
-        
+
       - label: Cross-Reference Consistency
         text: References to other SSOT files must be valid
         applies_to: [all]
@@ -79,12 +79,12 @@ validation_categories:
         text: Use .local hostnames instead of IP addresses
         applies_to: [all]
         exceptions: [health-check, network-documentation]
-        
+
       - label: Standard Hostname Format
         text: Use format hostname.local (e.g. tony-omen.local)
         applies_to: [all]
         exceptions: []
-        
+
       - label: No IP Addresses
         text: Avoid hardcoded IP addresses (use ranges in documentation only)
         applies_to: [all]
@@ -98,12 +98,12 @@ validation_categories:
         text: SSOT files must start with 'ssot.' prefix
         applies_to: [all]
         exceptions: [template]
-        
+
       - label: Descriptive Names
         text: File names should be descriptive and follow kebab-case
         applies_to: [all]
         exceptions: []
-        
+
       - label: Category Organization
         text: Files should be organized in appropriate subdirectories
         applies_to: [all]
@@ -117,21 +117,21 @@ file_types:
     validation: strict
     required_fields: [title, sections]
     optional_fields: [subtitle, icon, ideas, config]
-    
+
   - title: Configuration-Type Files
     icon: ⚙️
     pattern: ssot.(health|gpu|services|apps).yml
     validation: flexible
     required_fields: []
     optional_fields: [all]
-    
+
   - title: Apps Subdirectory Files
     icon: 📱
     pattern: apps/ssot.apps.*.yml
     validation: data-only
     required_fields: []
     optional_fields: [all]
-    
+
   - title: Template Files
     icon: 📋
     pattern: template.yml
@@ -160,7 +160,7 @@ validation_patterns:
               tags: Optional array
               dependencies: Optional array
     applies_to: [standard-ssot]
-    
+
   - title: Configuration Structure
     icon: ⚙️
     pattern: |
@@ -170,7 +170,7 @@ validation_patterns:
       nested:
         key: value
     applies_to: [config-type]
-    
+
   - title: Apps Data Structure
     icon: 📱
     pattern: |
@@ -187,22 +187,22 @@ error_patterns:
     error: "Missing required field: {field}"
     resolution: "Add the missing field to the SSOT file"
     severity: error
-    
+
   - title: Invalid YAML Syntax
     error: "Invalid YAML syntax: {details}"
     resolution: "Fix YAML syntax errors (indentation, quotes, colons)"
     severity: error
-    
+
   - title: Duplicate Entry
     error: "Duplicate {entry_type}: {value}"
     resolution: "Remove or rename the duplicate entry"
     severity: error
-    
+
   - title: Hostname Violation
     error: "IP address found: {ip} (should use .local hostname)"
     resolution: "Replace IP address with .local hostname"
     severity: warning
-    
+
   - title: Cross-Reference Error
     error: "Invalid reference: {reference}"
     resolution: "Ensure the referenced file or section exists"
@@ -217,7 +217,7 @@ validation_workflow:
       - Verify file naming conventions
       - Determine file type classification
       - Load appropriate validation rules
-      
+
   - title: Syntax Validation
     icon: 🔧
     steps:
@@ -225,7 +225,7 @@ validation_workflow:
       - Check for structural errors
       - Validate indentation consistency
       - Check for trailing whitespace
-      
+
   - title: Content Validation
     icon: 📋
     steps:
@@ -233,7 +233,7 @@ validation_workflow:
       - Check field data types
       - Validate enum values (status, priority, layout)
       - Check for duplicate entries
-      
+
   - title: Consistency Validation
     icon: 🔗
     steps:
@@ -241,7 +241,7 @@ validation_workflow:
       - Validate cross-file references
       - Check hostname compliance
       - Compare with served/public copies
-      
+
   - title: Post-Validation
     icon: ✅
     steps:
@@ -259,7 +259,7 @@ best_practices:
       - Use subdirectories for logical grouping (infrastructure, apps, etc.)
       - Maintain template.yml for new file creation
       - Archive old versions rather than deleting
-      
+
   - title: Content Structure
     icon: 📝
     practices:
@@ -267,7 +267,7 @@ best_practices:
       - Include helpful subtitles for context
       - Use relevant emojis for visual organization
       - Document ideas and future plans in ideas section
-      
+
   - title: Maintenance
     icon: 🔄
     practices:
@@ -275,7 +275,7 @@ best_practices:
       - Update related files when making changes
       - Keep validation patterns up to date
       - Review and archive outdated entries
-      
+
   - title: Collaboration
     icon: 👥
     practices:

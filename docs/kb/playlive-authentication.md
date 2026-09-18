@@ -7,10 +7,10 @@ category: operations
 ## What it is
 
 PlayLive browser automation daemon extended with basic authentication support to enable verification of Caddy-protected pages like Yomi web interface.
+
 ## Context/Background
 
 Created 2026-08-04 as part of Chaba infrastructure documentation.
-
 
 ## Context
 

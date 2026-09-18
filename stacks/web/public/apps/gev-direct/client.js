@@ -1,13 +1,14 @@
-const TOKEN_URL = '/apps/gev/token';
-const WS_BASE = 'wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContentConstrained?access_token=';
+const TOKEN_URL = "/apps/gev/token";
+const WS_BASE =
+  "wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContentConstrained?access_token=";
 
 const SYSTEM_INSTRUCTION = "You are GEV Voice, a concise voice assistant.";
 
-const root = document.getElementById('gemini-mic');
-const button = document.getElementById('gemini-mic-button');
-const statusEl = document.getElementById('gemini-mic-status');
-const detail = document.getElementById('gemini-mic-detail');
-const bars = Array.from(root.querySelectorAll('.gemini-mic-visualizer span'));
+const root = document.getElementById("gemini-mic");
+const button = document.getElementById("gemini-mic-button");
+const statusEl = document.getElementById("gemini-mic-status");
+const detail = document.getElementById("gemini-mic-detail");
+const bars = Array.from(root.querySelectorAll(".gemini-mic-visualizer span"));
 
 let ws = null;
 let pendingClose = false;
@@ -25,9 +26,10 @@ let outputCtx = null;
 let outputProcessor = null;
 let outputResampler = null;
 
-function setStatus(st, msg = '') {
+function setStatus(st, msg = "") {
   root.dataset.status = st;
-  statusEl.textContent = { idle: 'OFF', connecting: 'CONN', listening: 'ON', executing: '...', error: 'ERR' }[st] || st;
+  statusEl.textContent =
+    { idle: "OFF", connecting: "CONN", listening: "ON", executing: "...", error: "ERR" }[st] || st;
   if (msg) detail.textContent = msg;
 }
 
@@ -35,7 +37,7 @@ function floatToInt16(floats) {
   const out = new Int16Array(floats.length);
   for (let i = 0; i < floats.length; i++) {
     const s = Math.max(-1, Math.min(1, floats[i]));
-    out[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+    out[i] = s < 0 ? s * 0x8000 : s * 0x7fff;
   }
   return out;
 }
@@ -44,7 +46,7 @@ function int16ToBase64(int16) {
   const buf = new ArrayBuffer(int16.length * 2);
   const view = new DataView(buf);
   for (let i = 0; i < int16.length; i++) view.setInt16(i * 2, int16[i], true);
-  let bin = '';
+  let bin = "";
   const bytes = new Uint8Array(buf);
   for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
   return btoa(bin);
@@ -61,7 +63,7 @@ function base64ToInt16(b64) {
 
 function int16ToFloat(int16) {
   const out = new Float32Array(int16.length);
-  for (let i = 0; i < int16.length; i++) out[i] = int16[i] / 0x7FFF;
+  for (let i = 0; i < int16.length; i++) out[i] = int16[i] / 0x7fff;
   return out;
 }
 
@@ -126,8 +128,14 @@ function startPlayback() {
 }
 
 function stopPlayback() {
-  if (outputProcessor) { try { outputProcessor.disconnect(); } catch {} }
-  if (outputCtx) { outputCtx.close().catch(() => {}); }
+  if (outputProcessor) {
+    try {
+      outputProcessor.disconnect();
+    } catch {}
+  }
+  if (outputCtx) {
+    outputCtx.close().catch(() => {});
+  }
   outputProcessor = null;
   outputCtx = null;
   outputResampler = null;
@@ -163,7 +171,7 @@ function startVisualizer(stream) {
       const end = Math.max(start + 1, Math.floor(((i + 1) / bars.length) * binCount));
       let e = 0;
       for (let b = start; b < end; b++) e += data[b];
-      const n = Math.min(1, (e / (end - start)) / 190);
+      const n = Math.min(1, e / (end - start) / 190);
       const g = n <= 0.12 ? 0 : (n - 0.12) / (1 - 0.12);
       const shaped = Math.pow(g, 0.72);
       bar.style.height = `${Math.round(5 + shaped * 23)}px`;
@@ -177,25 +185,38 @@ function startVisualizer(stream) {
 function stopVisualizer() {
   if (visualizerFrame) cancelAnimationFrame(visualizerFrame);
   visualizerFrame = null;
-  if (visualizerSource) { try { visualizerSource.disconnect(); } catch {} }
-  if (visualizerAnalyser) { try { visualizerAnalyser.disconnect(); } catch {} }
-  if (visualizerCtx) { visualizerCtx.close().catch(() => {}); }
+  if (visualizerSource) {
+    try {
+      visualizerSource.disconnect();
+    } catch {}
+  }
+  if (visualizerAnalyser) {
+    try {
+      visualizerAnalyser.disconnect();
+    } catch {}
+  }
+  if (visualizerCtx) {
+    visualizerCtx.close().catch(() => {});
+  }
   visualizerSource = null;
   visualizerAnalyser = null;
   visualizerData = null;
   visualizerCtx = null;
-  for (const bar of bars) { bar.style.removeProperty('height'); bar.style.removeProperty('opacity'); }
+  for (const bar of bars) {
+    bar.style.removeProperty("height");
+    bar.style.removeProperty("opacity");
+  }
 }
 
 async function startMic() {
   if (micStream) return;
   const AudioContextClass = window.AudioContext || window.webkitAudioContext;
   if (!AudioContextClass) {
-    setStatus('error', 'Web Audio not supported');
+    setStatus("error", "Web Audio not supported");
     return;
   }
   if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-    setStatus('error', 'Microphone not available');
+    setStatus("error", "Microphone not available");
     return;
   }
   try {
@@ -218,14 +239,16 @@ async function startMic() {
       const pcm = floatToInt16(micResampler.drain());
       if (ws && ws.readyState === 1 && pcm.length) {
         const b64 = int16ToBase64(pcm);
-        ws.send(JSON.stringify({
-          realtimeInput: {
-            audio: {
-              data: b64,
-              mimeType: 'audio/pcm;rate=16000'
-            }
-          }
-        }));
+        ws.send(
+          JSON.stringify({
+            realtimeInput: {
+              audio: {
+                data: b64,
+                mimeType: "audio/pcm;rate=16000",
+              },
+            },
+          })
+        );
       }
     };
     source.connect(proc);
@@ -234,15 +257,27 @@ async function startMic() {
     micProcessor = proc;
     startVisualizer(micStream);
   } catch (e) {
-    setStatus('error', 'Mic error: ' + e.message);
+    setStatus("error", "Mic error: " + e.message);
   }
 }
 
 function stopMic() {
-  if (micProcessor) { try { micProcessor.disconnect(); } catch {} }
-  if (micSource) { try { micSource.disconnect(); } catch {} }
-  if (micStream) { micStream.getTracks().forEach((t) => t.stop()); }
-  if (audioCtx) { audioCtx.close().catch(() => {}); }
+  if (micProcessor) {
+    try {
+      micProcessor.disconnect();
+    } catch {}
+  }
+  if (micSource) {
+    try {
+      micSource.disconnect();
+    } catch {}
+  }
+  if (micStream) {
+    micStream.getTracks().forEach((t) => t.stop());
+  }
+  if (audioCtx) {
+    audioCtx.close().catch(() => {});
+  }
   micProcessor = null;
   micSource = null;
   micStream = null;
@@ -253,38 +288,38 @@ function stopMic() {
 
 async function connect() {
   if (ws) return;
-  setStatus('connecting', 'Getting token...');
+  setStatus("connecting", "Getting token...");
   let token;
   try {
     const res = await fetch(TOKEN_URL);
     const data = await res.json();
-    if (!res.ok || !data.token) throw new Error(data.error || 'No token');
+    if (!res.ok || !data.token) throw new Error(data.error || "No token");
     token = data.token;
   } catch (e) {
-    setStatus('error', 'Token: ' + e.message);
+    setStatus("error", "Token: " + e.message);
     return;
   }
-  setStatus('connecting', 'Connecting...');
+  setStatus("connecting", "Connecting...");
   ws = new WebSocket(WS_BASE + token);
   ws.onopen = () => {
     const setup = {
       setup: {
-        model: 'models/gemini-3.1-flash-live-preview',
+        model: "models/gemini-3.1-flash-live-preview",
         generationConfig: {
-          responseModalities: ['AUDIO']
+          responseModalities: ["AUDIO"],
         },
-        systemInstruction: { parts: [{ text: SYSTEM_INSTRUCTION }] }
-      }
+        systemInstruction: { parts: [{ text: SYSTEM_INSTRUCTION }] },
+      },
     };
     ws.send(JSON.stringify(setup));
-    setStatus('listening', 'Speak...');
+    setStatus("listening", "Speak...");
   };
   ws.onerror = (e) => {
-    setStatus('error', 'WebSocket error');
+    setStatus("error", "WebSocket error");
     console.error(e);
   };
   ws.onclose = () => {
-    setStatus('idle', 'Standby');
+    setStatus("idle", "Standby");
     ws = null;
     pendingClose = false;
     stopMic();
@@ -292,12 +327,16 @@ async function connect() {
   };
   ws.onmessage = (e) => {
     let msg;
-    try { msg = JSON.parse(e.data); } catch { return; }
-    console.log('[GEV-DIRECT]', msg);
+    try {
+      msg = JSON.parse(e.data);
+    } catch {
+      return;
+    }
+    console.log("[GEV-DIRECT]", msg);
     if (msg.serverContent) {
       const sc = msg.serverContent;
       if (sc.outputTranscription && sc.outputTranscription.text) {
-        detail.textContent = 'Gemini: ' + sc.outputTranscription.text;
+        detail.textContent = "Gemini: " + sc.outputTranscription.text;
       }
       if (sc.modelTurn && sc.modelTurn.parts) {
         for (const part of sc.modelTurn.parts) {
@@ -306,13 +345,15 @@ async function connect() {
         }
       }
       if (sc.turnComplete) {
-        detail.textContent = 'Done';
-        if (pendingClose) { ws.close(); }
+        detail.textContent = "Done";
+        if (pendingClose) {
+          ws.close();
+        }
       }
     }
     if (msg.toolCall) {
       // no tool runner yet in this prototype
-      detail.textContent = 'Tool: ' + msg.toolCall.functionCalls.map(c => c.name).join(', ');
+      detail.textContent = "Tool: " + msg.toolCall.functionCalls.map((c) => c.name).join(", ");
     }
   };
   await startMic();
@@ -322,13 +363,13 @@ function finishTurn() {
   if (!ws) return;
   stopMic();
   pendingClose = true;
-  setStatus('executing', 'Thinking...');
+  setStatus("executing", "Thinking...");
   if (ws.readyState === 1) {
     ws.send(JSON.stringify({ clientContent: { turnComplete: true } }));
   }
 }
 
-button.addEventListener('click', () => {
+button.addEventListener("click", () => {
   if (ws) {
     if (pendingClose) {
       ws.close();

@@ -95,7 +95,7 @@ bouis:
     name: BOUI-1
     lat: 13.243858067632821
     lon: 100.92870143484448
-    color: '#fbbf24'
+    color: "#fbbf24"
 ```
 
 - The track page fetches `objects.yml`, draws a `L.circleMarker` for each entry, and lists them in the control panel with visibility toggles.
@@ -112,6 +112,7 @@ bouis:
 Track4 was successfully modularized from a monolithic 1003-line `track.js` into 10 focused modules, achieving 62% code reduction while maintaining functionality:
 
 **Modules extracted:**
+
 - `RacerIconRenderer` - Racer marker rendering and state visualization
 - `SimulationEngine` - Race simulation physics and timing
 - `UIController` - UI state management and event handling
@@ -122,6 +123,7 @@ Track4 was successfully modularized from a monolithic 1003-line `track.js` into 
 - `YamlEditor` - YAML editing interface, validation, save/load
 
 **Results:**
+
 - `track.js`: 1003 → 379 lines (62% reduction)
 - Total: 10 modules across the Track4 application
 - All 10 unit tests passing in `course.test.js`
@@ -129,6 +131,7 @@ Track4 was successfully modularized from a monolithic 1003-line `track.js` into 
 - SSOT documentation restructured for completeness with Access & URLs section
 
 **Testing:**
+
 - Unit tests: 10 tests in `course.test.js` (haversine, midpoint, resolveSide, buildGuide, buildRoundedGuide)
 - Integration: Module loading, course loading, racer rendering, simulation, layers, UI controls
 - Code quality: Pre-commit hooks for JS syntax, all modules pass `node --check`

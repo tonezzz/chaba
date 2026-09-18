@@ -1,7 +1,7 @@
 title: Tuya WiFi Smart Plugs
 subtitle: Local TinyTuya control for two Tuye-10A sockets on tony-dell
 version: 2
-last_updated: '2026-08-31'
+last_updated: "2026-08-31"
 
 sections:
   - title: Devices
@@ -9,9 +9,9 @@ sections:
     layout: list
     items:
       - label: Coffee plug
-        text: 'ปลั๊กกาแฟ — ID a33be68c03a6886d7f21zf, IP 192.168.2.80, MAC 2c:b4:71:e8:aa:06, category cz, protocol 3.5'
+        text: "ปลั๊กกาแฟ — ID a33be68c03a6886d7f21zf, IP 192.168.2.80, MAC 2c:b4:71:e8:aa:06, category cz, protocol 3.5"
       - label: Bedside plug
-        text: 'ปลัฦหัวเตียง — ID a319217035be6c2d60opfg, IP 192.168.2.68, MAC 2c:b4:71:e8:a8:e8, category cz, protocol 3.5'
+        text: "ปลัฦหัวเตียง — ID a319217035be6c2d60opfg, IP 192.168.2.68, MAC 2c:b4:71:e8:a8:e8, category cz, protocol 3.5"
       - label: Network
         text: tony-omen (192.168.2.0/24)
 
@@ -20,11 +20,11 @@ sections:
     layout: list
     items:
       - label: Cloud credentials
-        text: 'Stored in ~/.local/share/tuya/project-creds.json (Client ID, Client Secret, Project Code). The file is mode 600 and is not in the chaba git repository.'
+        text: "Stored in ~/.local/share/tuya/project-creds.json (Client ID, Client Secret, Project Code). The file is mode 600 and is not in the chaba git repository."
       - label: Legacy cloud credentials
-        text: 'Stored in ~/.local/share/tuya/credentials.json (Client ID, Client Secret, working region). Mode 600. Not in git.'
+        text: "Stored in ~/.local/share/tuya/credentials.json (Client ID, Client Secret, working region). Mode 600. Not in git."
       - label: Local device keys
-        text: 'Stored in ~/.local/share/tuya/devices.json once fetched from Tuya Cloud by TinyTuya. Mode 600. Not in git.'
+        text: "Stored in ~/.local/share/tuya/devices.json once fetched from Tuya Cloud by TinyTuya. Mode 600. Not in git."
       - label: Python environment
         text: /home/tony/.local/share/tuya/venv (tinytuya 1.20.0) for local control and Home Assistant command_line.
 
@@ -35,39 +35,39 @@ sections:
       - label: Control script
         text: /home/tony/.local/share/tuya/tuya-control.py
       - label: Commands
-        text: 'venv/bin/python tuya-control.py {coffee|bedside} [on|off|status]'
+        text: "venv/bin/python tuya-control.py {coffee|bedside} [on|off|status]"
       - label: Home Assistant command_line
-        text: 'Configured in /home/tony/.config/home-assistant/configuration.yaml with two local switches: ปลั๊กกาแฟ Local (switch.plakkaaaef_local) and ปลัฦหัวเตียง Local (switch.plalhawetiiyng_local)'
+        text: "Configured in /home/tony/.config/home-assistant/configuration.yaml with two local switches: ปลั๊กกาแฟ Local (switch.plakkaaaef_local) and ปลัฦหัวเตียง Local (switch.plalhawetiiyng_local)"
       - label: Polling
-        text: 'scan_interval: 5 seconds; command_timeout: 15 seconds'
+        text: "scan_interval: 5 seconds; command_timeout: 15 seconds"
       - label: Runtime
-        text: 'A dedicated TinyTuya venv is installed at /config/tuya/venv inside the Home Assistant container. The control script uses a file lock (/.tuya.lock) and a last-state cache (/last-state.json) to serialize concurrent calls and avoid brief OFF mis-reads.'
+        text: "A dedicated TinyTuya venv is installed at /config/tuya/venv inside the Home Assistant container. The control script uses a file lock (/.tuya.lock) and a last-state cache (/last-state.json) to serialize concurrent calls and avoid brief OFF mis-reads."
 
   - title: Current Status
     icon: activity
     layout: list
     items:
       - label: Cloud key fetch
-        text: 'Tuya IoT project linked to Smart Life/Cozy Life account. TinyTuya successfully retrieved both device IDs and local keys from the Singapore data center (openapi-sg.iotbing.com).'
+        text: "Tuya IoT project linked to Smart Life/Cozy Life account. TinyTuya successfully retrieved both device IDs and local keys from the Singapore data center (openapi-sg.iotbing.com)."
       - label: Local status
-        text: 'Both plugs respond to local UDP/TCP Tuya commands. Coffee and bedside plugs both ON.'
+        text: "Both plugs respond to local UDP/TCP Tuya commands. Coffee and bedside plugs both ON."
       - label: Official Tuya integration
-        text: 'Cloud-backed entities still present but the bedside plug entity remains stale (off). Local command_line switches are the authoritative on/off controls.'
+        text: "Cloud-backed entities still present but the bedside plug entity remains stale (off). Local command_line switches are the authoritative on/off controls."
       - label: HA-MCP exposure
-        text: 'ha_mcp_tools server is running on port 9584 with llm_api_exposure: full, so switch.plakkaaaef_local, switch.plalhawetiiyng_local, and camera.ip_cam_65 are exposed to the Gemini/LLM client.'
+        text: "ha_mcp_tools server is running on port 9584 with llm_api_exposure: full, so switch.plakkaaaef_local, switch.plalhawetiiyng_local, and camera.ip_cam_65 are exposed to the Gemini/LLM client."
 
   - title: Next Steps
     icon: arrow-right
     layout: list
     items:
       - label: Dashboard
-        text: 'Replace stale cloud switch cards with the new local entities in Home Assistant dashboards.'
+        text: "Replace stale cloud switch cards with the new local entities in Home Assistant dashboards."
       - label: HA-MCP exposure
-        text: 'Verify ha_mcp_tools exposes switch.plakkaaaef_local and switch.plalhawetiiyng_local to Gemini/bridge clients.'
+        text: "Verify ha_mcp_tools exposes switch.plakkaaaef_local and switch.plalhawetiiyng_local to Gemini/bridge clients."
 
 config:
   version: 2
-  last_updated: '2026-08-31'
+  last_updated: "2026-08-31"
   maintainer: tony
   related_files:
     - /home/tony/.config/home-assistant/configuration.yaml

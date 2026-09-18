@@ -3,7 +3,7 @@
 // ============================================================================
 
 // Reference to currentChatId from namespace
-let currentChatId = DailyApp.getState('currentChatId') || null;
+let currentChatId = DailyApp.getState("currentChatId") || null;
 
 /**
  * Load conversations from API
@@ -12,7 +12,7 @@ async function loadConversations() {
   try {
     return await YomiApi.loadConversations();
   } catch (error) {
-    console.error('Failed to load conversations:', error);
+    console.error("Failed to load conversations:", error);
     return [];
   }
 }
@@ -21,17 +21,17 @@ async function loadConversations() {
  * Load chat data (summaries and calendar)
  */
 async function loadChatData(chatId) {
-  DailyApp.setState('currentChatId', chatId);
+  DailyApp.setState("currentChatId", chatId);
   currentChatId = chatId;
-  
+
   // Set chat ID in summary module
   if (window.setCurrentChatId) {
     window.setCurrentChatId(chatId);
   }
-  
+
   // Load daily summaries
   const summaries = await window.loadDailySummaries(chatId);
-  
+
   // Update both calendar and summary modules with summaries
   if (window.setDailySummaries) {
     window.setDailySummaries(summaries);
@@ -39,17 +39,17 @@ async function loadChatData(chatId) {
   if (window.setCalendarDailySummaries) {
     window.setCalendarDailySummaries(summaries);
   }
-  
+
   // Set current month to most recent summary date
   if (window.setCurrentMonthToData) {
     window.setCurrentMonthToData();
   }
-  
+
   // Build calendar
   if (window.buildCalendar) {
     window.buildCalendar();
   }
-  
+
   // Select most recent date if available
   if (summaries.length > 0) {
     const dateStr = summaries[0].date;
@@ -65,52 +65,53 @@ async function loadChatData(chatId) {
  * Handle date selection
  */
 function handleDateSelected(dateStr) {
-  console.log('app.js: handleDateSelected called with', dateStr);
-  
+  console.log("app.js: handleDateSelected called with", dateStr);
+
   // Update summary panel
-  const summaryContent = document.getElementById('summary-content');
-  const summaryDate = document.getElementById('summary-date');
-  const summaryCount = document.getElementById('summary-count');
-  const headerResummarizeBtn = document.getElementById('header-resummarize-btn');
-  
+  const summaryContent = document.getElementById("summary-content");
+  const summaryDate = document.getElementById("summary-date");
+  const summaryCount = document.getElementById("summary-count");
+  const headerResummarizeBtn = document.getElementById("header-resummarize-btn");
+
   if (summaryDate) {
     summaryDate.textContent = DateUtils.formatDate(dateStr);
   }
-  
+
   if (window.renderSummaryForDate) {
     const summaryHtml = window.renderSummaryForDate(dateStr);
     if (summaryContent) {
       summaryContent.innerHTML = summaryHtml;
     }
   }
-  
+
   // Update message count
   // Database returns Thailand calendar date as YYYY-MM-DD string
   // No conversion needed - direct string comparison
-  const summaries = DailyApp.getState('dailySummaries') || [];
-  const summary = summaries.find(s => {
+  const summaries = DailyApp.getState("dailySummaries") || [];
+  const summary = summaries.find((s) => {
     return s.date === dateStr;
   });
-  
+
   if (summaryCount && summary) {
     summaryCount.textContent = `${summary.messageCount || 0} messages`;
   } else if (summaryCount) {
-    summaryCount.textContent = '';
+    summaryCount.textContent = "";
   }
-  
+
   // Show/hide header re-summarize button
   if (headerResummarizeBtn) {
     if (summary) {
-      headerResummarizeBtn.style.display = 'inline-block';
-      headerResummarizeBtn.onclick = () => window.resummarizeDayUI(DailyApp.getState('currentChatId'), dateStr, headerResummarizeBtn);
+      headerResummarizeBtn.style.display = "inline-block";
+      headerResummarizeBtn.onclick = () =>
+        window.resummarizeDayUI(DailyApp.getState("currentChatId"), dateStr, headerResummarizeBtn);
     } else {
-      headerResummarizeBtn.style.display = 'none';
+      headerResummarizeBtn.style.display = "none";
     }
   }
-  
+
   // Render messages
   if (window.renderMessagesForDate) {
-    window.renderMessagesForDate(DailyApp.getState('currentChatId'), dateStr);
+    window.renderMessagesForDate(DailyApp.getState("currentChatId"), dateStr);
   }
 }
 
@@ -122,9 +123,9 @@ function handleRefresh() {
   if (window.buildCalendar) {
     window.buildCalendar();
   }
-  
+
   // Re-render current date selection
-  const selectedDate = DailyApp.getState('selectedDate');
+  const selectedDate = DailyApp.getState("selectedDate");
   if (selectedDate) {
     handleDateSelected(selectedDate);
   }
@@ -134,26 +135,33 @@ function handleRefresh() {
  * Initialize the application
  */
 async function init() {
-  const select = document.getElementById('chat-select');
-  
+  const select = document.getElementById("chat-select");
+
   try {
     const conversations = await loadConversations();
     if (!conversations.length) {
-      document.getElementById('app').innerHTML = '<div class="empty-state">No conversations found.</div>';
+      document.getElementById("app").innerHTML =
+        '<div class="empty-state">No conversations found.</div>';
       return;
     }
-    
+
     // Populate chat selector
-    select.innerHTML = conversations.map(c => 
-      `<option value="${escapeHtml(c.id)}">${escapeHtml(c.name)}</option>`
-    ).join('');
-    
+    select.innerHTML = conversations
+      .map((c) => `<option value="${escapeHtml(c.id)}">${escapeHtml(c.name)}</option>`)
+      .join("");
+
     // Set up event listeners BEFORE loading chat data
-    DailyApp.events.on(DailyApp.modules.config?.EVENTS?.DATE_SELECTED || 'daily:dateSelected', handleDateSelected);
-    DailyApp.events.on(DailyApp.modules.config?.EVENTS?.DATA_REFRESHED || 'daily:dataRefreshed', handleRefresh);
-    
+    DailyApp.events.on(
+      DailyApp.modules.config?.EVENTS?.DATE_SELECTED || "daily:dateSelected",
+      handleDateSelected
+    );
+    DailyApp.events.on(
+      DailyApp.modules.config?.EVENTS?.DATA_REFRESHED || "daily:dataRefreshed",
+      handleRefresh
+    );
+
     // Load chat from URL parameter or first available
-    const chatParam = new URLSearchParams(location.search).get('chat');
+    const chatParam = new URLSearchParams(location.search).get("chat");
     if (chatParam) {
       select.value = chatParam;
       await loadChatData(chatParam);
@@ -161,32 +169,32 @@ async function init() {
       select.value = conversations[0].id;
       await loadChatData(conversations[0].id);
     }
-    
+
     // Set up event listeners
-    select.addEventListener('change', () => {
+    select.addEventListener("change", () => {
       const chatId = select.value;
       if (chatId) {
         const url = new URL(location.href);
-        url.searchParams.set('chat', chatId);
-        history.replaceState(null, '', url);
+        url.searchParams.set("chat", chatId);
+        history.replaceState(null, "", url);
         loadChatData(chatId);
       }
     });
-    
-    document.getElementById('prev-month').addEventListener('click', () => {
+
+    document.getElementById("prev-month").addEventListener("click", () => {
       if (window.navigatePrevMonth) {
         window.navigatePrevMonth();
       }
     });
-    
-    document.getElementById('next-month').addEventListener('click', () => {
+
+    document.getElementById("next-month").addEventListener("click", () => {
       if (window.navigateNextMonth) {
         window.navigateNextMonth();
       }
     });
-    
   } catch (err) {
-    document.getElementById('app').innerHTML = `<div class="empty-state">Error: ${escapeHtml(err.message)}</div>`;
+    document.getElementById("app").innerHTML =
+      `<div class="empty-state">Error: ${escapeHtml(err.message)}</div>`;
   }
 }
 
@@ -198,19 +206,19 @@ function escapeHtml(s) {
 }
 
 // Start the application when DOM is ready
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', init);
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", init);
 } else {
   init();
 }
 
 // Export for testing
-if (typeof module !== 'undefined' && module.exports) {
+if (typeof module !== "undefined" && module.exports) {
   module.exports = {
     loadConversations,
     loadChatData,
     handleDateSelected,
     handleRefresh,
-    init
+    init,
   };
 }

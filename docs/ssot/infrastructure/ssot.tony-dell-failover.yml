@@ -13,22 +13,22 @@ host_roles:
       If tony-omen is down, use MacBook for light interactive work and rely on tony-dell
       for persistent services.
     services_primary:
-    - llama-router
-    - ollama
-    - imagen2
-    - playlive
-    - playlived
-    - gpu-queue
-    - barrier-server
-    - caddy web (tony-dell:8080)
-    - bserver
-    - mcp-gpu
-    - mcp-llama
-    - mcp-debug-cors (port 9100)
-    - mcp-debug-audit (port 9100)
+      - llama-router
+      - ollama
+      - imagen2
+      - playlive
+      - playlived
+      - gpu-queue
+      - barrier-server
+      - caddy web (tony-dell:8080)
+      - bserver
+      - mcp-gpu
+      - mcp-llama
+      - mcp-debug-cors (port 9100)
+      - mcp-debug-audit (port 9100)
     services_backup:
-    - yomi-api (see ssot.yomi-failover.yml)
-    - postgres (see ssot.yomi-failover.yml)
+      - yomi-api (see ssot.yomi-failover.yml)
+      - postgres (see ssot.yomi-failover.yml)
 
   tony_dell:
     name: tony-dell
@@ -40,22 +40,22 @@ host_roles:
       equivalent local units. Some services (weaviate, redis, raceman, postgres, yomi)
       already run on both hosts but are active on tony-dell.
     services_primary:
-    - mcp-debug-sse (127.0.0.1:9101, Tailscale Serve 8446)
-    - mcp-health execution (mcp-health-ssh wrapper target)
-    - mcp-focus execution (mcp-focus-ssh wrapper target)
-    - yomi-api
-    - postgres
-    - redis
-    - weaviate
-    - raceman
-    - home-assistant
-    - helm
-    - ha-live (Tailscale Serve 8444)
-    - mcp-rview
-    - mcp-rview-oauth-proxy
-    - gpu-queue (tony-dell:3001)
+      - mcp-debug-sse (127.0.0.1:9101, Tailscale Serve 8446)
+      - mcp-health execution (mcp-health-ssh wrapper target)
+      - mcp-focus execution (mcp-focus-ssh wrapper target)
+      - yomi-api
+      - postgres
+      - redis
+      - weaviate
+      - raceman
+      - home-assistant
+      - helm
+      - ha-live (Tailscale Serve 8444)
+      - mcp-rview
+      - mcp-rview-oauth-proxy
+      - gpu-queue (tony-dell:3001)
     services_backup:
-    - mcp-debug local stdio on tony-omen (mcp-debug.sh)
+      - mcp-debug local stdio on tony-omen (mcp-debug.sh)
 
   mn01:
     name: mn01
@@ -65,12 +65,12 @@ host_roles:
     cannot_failover_to: |
       Ada HA is stateless; it can be recreated on tony-dell or tony-omen using the chaba/stacks/mn01 templates and the backed-up secrets.
     services_primary:
-    - caddy-mn01.service
-    - ada-ha-tony.service
-    - ada-ha-michael.service
+      - caddy-mn01.service
+      - ada-ha-tony.service
+      - ada-ha-michael.service
     services_backup:
-    - chaba/stacks/mn01/install.sh on tony-dell
-    - chaba/scripts/recover-mn01.sh
+      - chaba/stacks/mn01/install.sh on tony-dell
+      - chaba/scripts/recover-mn01.sh
 
 failover_scenarios:
   - name: tony-omen down, tony-dell up
@@ -129,11 +129,11 @@ mcp_client_switch:
   windsurf_config: /home/tony/.config/windsurf/mcp_config.json
   wrapper_dir: /home/tony/.config/devin/mcp-scripts
   tony_dell_wrappers:
-  - mcp-debug-ssh.sh
-  - mcp-health-ssh.sh
-  - mcp-focus-ssh.sh
+    - mcp-debug-ssh.sh
+    - mcp-health-ssh.sh
+    - mcp-focus-ssh.sh
   tony_omen_wrappers:
-  - mcp-debug.sh
+    - mcp-debug.sh
 
 health_checks:
   - name: tony-dell reachability
@@ -150,10 +150,10 @@ health_checks:
     expect: 2 received
   - name: tony-dell Caddy
     command: curl -s -o /dev/null -w '%{http_code}' https://tony-dell.taila0626a.ts.net/api/status
-    expect: '200'
+    expect: "200"
 
 notes:
-- Always use tailnet hostnames (tony-omen, tony-dell) or Tailscale IPs in failover commands. .local can fail across interfaces.
-- The mcp-health server runs over SSH on tony-dell; if tony-dell is down, mcp-health tool calls will fail until local execution is configured.
-- Failover is intentionally manual for DNS/Caddy/MCP client changes to avoid split-brain.
-- See also docs/ssot/infrastructure/ssot.yomi-failover.yml for Yomi/PostgreSQL-specific steps.
+  - Always use tailnet hostnames (tony-omen, tony-dell) or Tailscale IPs in failover commands. .local can fail across interfaces.
+  - The mcp-health server runs over SSH on tony-dell; if tony-dell is down, mcp-health tool calls will fail until local execution is configured.
+  - Failover is intentionally manual for DNS/Caddy/MCP client changes to avoid split-brain.
+  - See also docs/ssot/infrastructure/ssot.yomi-failover.yml for Yomi/PostgreSQL-specific steps.

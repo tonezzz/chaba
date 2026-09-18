@@ -19,14 +19,14 @@ export function groupMessagesByDate(messages) {
         console.warn(`Invalid deliveredTime (not a number): ${m.deliveredTime}, skipping`);
         continue;
       }
-      
+
       // Handle both millisecond and microsecond timestamps
       if (timestamp > 2500000000000) {
         // If timestamp is in microseconds, convert to milliseconds
         timestamp = Math.floor(timestamp / 1000);
       }
-      
-      const date = new Date(timestamp).toISOString().split('T')[0];
+
+      const date = new Date(timestamp).toISOString().split("T")[0];
       if (!byDate.has(date)) byDate.set(date, []);
       byDate.get(date).push(m);
     } catch (err) {
@@ -45,16 +45,18 @@ export function groupMessagesByDate(messages) {
 export function filterRecentDates(byDate, days = 30) {
   const cutoffDate = new Date();
   cutoffDate.setDate(cutoffDate.getDate() - days);
-  const cutoffDateStr = cutoffDate.toISOString().split('T')[0];
-  
+  const cutoffDateStr = cutoffDate.toISOString().split("T")[0];
+
   const filteredDates = new Map();
   for (const [date, msgs] of byDate) {
     if (date >= cutoffDateStr) {
       filteredDates.set(date, msgs);
     }
   }
-  
-  console.log(`Filtered to ${filteredDates.size} dates within last ${days} days (skipped ${byDate.size - filteredDates.size} older dates)`);
+
+  console.log(
+    `Filtered to ${filteredDates.size} dates within last ${days} days (skipped ${byDate.size - filteredDates.size} older dates)`
+  );
   return filteredDates;
 }
 
@@ -69,7 +71,8 @@ export function filterRecentDates(byDate, days = 30) {
  * @param {number} messageCount - Message count
  */
 export async function saveDailySummary(pool, chatId, date, events, actions, topics, messageCount) {
-  await pool.query(`
+  await pool.query(
+    `
     INSERT INTO daily_summaries (chat_id, date, events, actions, topics, message_count)
     VALUES ($1, $2, $3, $4, $5, $6)
     ON CONFLICT (chat_id, date) DO UPDATE SET
@@ -78,7 +81,9 @@ export async function saveDailySummary(pool, chatId, date, events, actions, topi
       topics = EXCLUDED.topics,
       message_count = EXCLUDED.message_count,
       updated_at = NOW()
-  `, [chatId, date, events, actions, topics, messageCount]);
+  `,
+    [chatId, date, events, actions, topics, messageCount]
+  );
 }
 
 /**
@@ -90,12 +95,12 @@ export function parseDailyResponse(response) {
   try {
     const jsonMatch = response.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
-      throw new Error('No JSON found in response');
+      throw new Error("No JSON found in response");
     }
     return JSON.parse(jsonMatch[0]);
   } catch (err) {
-    console.error('Failed to parse daily summary JSON:', err.message);
-    throw new Error('invalid json in response');
+    console.error("Failed to parse daily summary JSON:", err.message);
+    throw new Error("invalid json in response");
   }
 }
 
@@ -108,11 +113,11 @@ export function parseBatchDailyResponse(response) {
   try {
     const jsonMatch = response.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
-      throw new Error('No JSON found in response');
+      throw new Error("No JSON found in response");
     }
     return JSON.parse(jsonMatch[0]);
   } catch (err) {
-    console.error('Failed to parse batch daily summary JSON:', err.message);
-    throw new Error('invalid json in response');
+    console.error("Failed to parse batch daily summary JSON:", err.message);
+    throw new Error("invalid json in response");
   }
 }

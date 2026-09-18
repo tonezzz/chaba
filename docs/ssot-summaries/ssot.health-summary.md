@@ -7,7 +7,8 @@ created: 2026-08-06
 updated: 2026-08-06
 category: configuration
 related: [health-check.md, ssot.health.home.yml, ssot.health.mobile.yml]
-search_keywords: [health check, service monitoring, recovery actions, service endpoints, location-specific config]
+search_keywords:
+  [health check, service monitoring, recovery actions, service endpoints, location-specific config]
 ---
 
 # SSOT Health Configuration Summary
@@ -21,6 +22,7 @@ The SSOT health configuration defines health check endpoints, timeout values, ca
 ## Purpose
 
 Standardizes health monitoring across all services with:
+
 - Consistent endpoint patterns and timeout values
 - Category-based service classification (web, api, datastore, gpu, queue, optional)
 - Location-specific configuration (home vs mobile)
@@ -29,39 +31,48 @@ Standardizes health monitoring across all services with:
 ## Services Defined
 
 ### Web Services
+
 - **web**: Main web application health check
 - **status-api**: System status API providing hardware metrics
 
-### API Services  
+### API Services
+
 - **trade-api**: Trading API endpoint
 - **yomi-api**: Yomi LINE web application API
 - **camera-control**: Camera management API
 
 ### Datastore Services
+
 - **postgres**: PostgreSQL database
 - **redis**: Redis cache service
 
 ### GPU Services
+
 - **imagen2**: Image generation service (port 8000)
-- **thai-legal-inference**: Thai legal LLM service (port 8001) - *Offline due to GPU memory constraints*
-- **txt2vid**: Text-to-video service (port 8002) - *Offline due to GPU memory constraints*
+- **thai-legal-inference**: Thai legal LLM service (port 8001) - _Offline due to GPU memory constraints_
+- **txt2vid**: Text-to-video service (port 8002) - _Offline due to GPU memory constraints_
 
 ### Queue Services
+
 - **gpu-queue**: GPU job queue management system
 
 ### Optional Services
+
 - **frigate**: NVR service (offline since 2026-08-14, on-demand only)
 
 ## Key Configuration Patterns
 
 ### Health Check Endpoints
+
 - Standard pattern: `/health` or `/api/health`
 - HTTP status code: 200 for healthy
 - Timeout: 10 seconds (default)
 - Container health checks for Docker services
 
 ### Category-Based Filtering
+
 Services are categorized for dashboard filtering:
+
 - **web**: User-facing web applications
 - **api**: Backend API services
 - **datastore**: Database and cache services
@@ -70,6 +81,7 @@ Services are categorized for dashboard filtering:
 - **optional**: On-demand services
 
 ### Location-Specific Configuration
+
 - **ssot.health.yml**: Location-agnostic base configuration
 - **ssot.health.home.yml**: Home network (tony-omen.local, tony-dell.local)
 - **ssot.health.mobile.yml**: Mobile/remote (localhost, VPN paths)
@@ -77,17 +89,20 @@ Services are categorized for dashboard filtering:
 ## Recovery Actions
 
 ### Standard Recovery Patterns
+
 - **Service restart**: Docker container restart
 - **Health check verification**: Repeated endpoint testing
 - **Log analysis**: Container log review
 - **Dependency checks**: Verify dependent services are healthy
 
 ### GPU-Specific Recovery
+
 - **GPU memory high**: Identify processes using GPU memory, hold llama if needed
 - **GPU service failures**: Check GPU access, nvidia-smi availability
 - **Queue stuck jobs**: Cancel stuck jobs, clean up queue
 
 ### API Service Recovery
+
 - **Endpoint failures**: Check service logs, verify configuration
 - **Timeout issues**: Increase timeout values, check network connectivity
 - **Dependency failures**: Verify database/cache connectivity
@@ -95,6 +110,7 @@ Services are categorized for dashboard filtering:
 ## Configuration Structure
 
 ### Service Definition Format
+
 ```yaml
 - id: service-name
   name: Display Name
@@ -105,7 +121,9 @@ Services are categorized for dashboard filtering:
 ```
 
 ### Location Override Pattern
+
 Location-specific files override base configuration:
+
 - Add location-specific hostnames
 - Adjust timeout values for remote access
 - Add location-specific notes
@@ -114,17 +132,20 @@ Location-specific files override base configuration:
 ## Integration Points
 
 ### Health Check Dashboard
+
 - Primary consumer of SSOT health configuration
 - Auto-detects location and loads appropriate config
 - Displays service status with category filtering
 - Provides recovery action guidance
 
 ### Automated Monitoring
+
 - Overnight assessment script uses health endpoints
 - System automation scripts reference health check patterns
 - GPU monitoring integrates with GPU service health checks
 
 ### API Integration
+
 - Status API provides unified health check endpoint
 - Yomi API health monitoring
 - GPU queue API health status
@@ -132,6 +153,7 @@ Location-specific files override base configuration:
 ## Full Configuration
 
 For complete YAML configuration including all service definitions, timeout values, and recovery actions, see the authoritative source:
+
 - **Base Configuration**: `docs/ssot/infrastructure/ssot.health.yml`
 - **Home Configuration**: `docs/ssot/infrastructure/ssot.health.home.yml`
 - **Mobile Configuration**: `docs/ssot/infrastructure/ssot.health.mobile.yml`
@@ -145,6 +167,6 @@ For complete YAML configuration including all service definitions, timeout value
 
 ## Change History
 
-| Date | Change | Author |
-|------|--------|--------|
-| 2026-08-06 | Created SSOT health configuration summary | devin |
+| Date       | Change                                    | Author |
+| ---------- | ----------------------------------------- | ------ |
+| 2026-08-06 | Created SSOT health configuration summary | devin  |

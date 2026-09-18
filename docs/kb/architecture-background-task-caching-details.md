@@ -5,6 +5,7 @@ category: operations
 # Key Details
 
 ### Technical Details
+
 - **Task Scheduler**: Thread-based background scheduler
 - **Pre-Generation**: File indexes, search indexes, document summaries
 - **Cache Strategy**: TTL-based with automatic cleanup
@@ -14,6 +15,7 @@ category: operations
 ### Task Configuration
 
 #### Configurable Intervals
+
 ```python
 # Background Task Intervals
 FILE_INDEX_INTERVAL_SECONDS = 60      # File listing every 60s
@@ -22,6 +24,7 @@ CACHE_CLEANUP_INTERVAL_SECONDS = 3600  # Cache cleanup every hour
 ```
 
 #### Cache TTL Settings
+
 ```python
 # Cache Time-to-Live
 SEARCH_CACHE_TTL_HOURS = 24           # Search cache for 24 hours
@@ -30,6 +33,7 @@ CACHE_TTL_HOURS = 24                  # General cache for 24 hours
 ```
 
 #### Cache Size Limits
+
 ```python
 # Cache Management
 MAX_CACHE_SIZE_MB = 100               # Maximum cache size 100MB
@@ -40,9 +44,11 @@ ENABLE_SEARCH_CACHING = True          # Enable search result caching
 ### Component Architecture
 
 #### 1. PreGenerator (`tasks/pre_generator.py`)
+
 **Purpose**: Pre-generates commonly accessed data for performance
 
 **Responsibilities**:
+
 - File index generation (directory listings)
 - Search index generation (Whoosh indexing)
 - Document summary generation
@@ -50,6 +56,7 @@ ENABLE_SEARCH_CACHING = True          # Enable search result caching
 - Cache statistics tracking
 
 **Key Methods**:
+
 - `generate_file_index()` - Generate file listing cache
 - `generate_search_index()` - Generate search index cache
 - `generate_document_summaries()` - Generate document summaries
@@ -57,6 +64,7 @@ ENABLE_SEARCH_CACHING = True          # Enable search result caching
 - `get_cache_stats()` - Get cache statistics
 
 **Cache Structure**:
+
 ```python
 class PreGeneratedData(BaseModel):
     data_type: str           # Type of cached data
@@ -69,9 +77,11 @@ class PreGeneratedData(BaseModel):
 ```
 
 #### 2. TaskScheduler (`tasks/scheduler.py`)
+
 **Purpose**: Manages periodic background task execution
 
 **Responsibilities**:
+
 - Task registration and scheduling
 - Thread-based task execution
 - Task result tracking
@@ -79,6 +89,7 @@ class PreGeneratedData(BaseModel):
 - Task lifecycle management
 
 **Key Methods**:
+
 - `register_task(task_id, interval, function)` - Register periodic task
 - `start()` - Start scheduler
 - `stop()` - Stop scheduler
@@ -87,6 +98,7 @@ class PreGeneratedData(BaseModel):
 - `get_status()` - Get scheduler status
 
 **Task Definition**:
+
 ```python
 class TaskDefinition(BaseModel):
     task_id: str             # Unique task identifier
@@ -99,17 +111,19 @@ class TaskDefinition(BaseModel):
 ```
 
 #### 3. Task Models (`tasks/models.py`)
+
 **Purpose**: Data models for task and cache management
 
 **Responsibilities**:
+
 - Pydantic models for task definitions
 - Cache data models with validation
 - Result tracking models
 - Metadata models
 
 **Key Models**:
+
 - `TaskDefinition` - Task configuration and state
 - `PreGeneratedData` - Cache data with metadata
 - `TaskResult` - Task execution results
 - `CacheStats` - Cache statistics
-

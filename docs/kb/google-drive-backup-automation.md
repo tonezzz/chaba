@@ -5,7 +5,9 @@ category: operations
 # Systemd Automation
 
 ### Backup Service
+
 **File:** `/etc/systemd/system/chaba-backup.service`
+
 ```ini
 [Unit]
 Description=Chaba Infrastructure Backup System
@@ -21,7 +23,9 @@ StandardError=append:/var/log/chaba-backup.log
 ```
 
 ### Backup Timer
+
 **File:** `/etc/systemd/system/chaba-backup.timer`
+
 ```ini
 [Unit]
 Description=Chaba Infrastructure Backup Timer (Daily at 2 AM)
@@ -35,7 +39,9 @@ WantedBy=timers.target
 ```
 
 ### Monitoring Service
+
 **File:** `/etc/systemd/system/chaba-backup-monitor.service`
+
 ```ini
 [Unit]
 Description=Chaba Backup Monitoring and Alerting
@@ -51,7 +57,9 @@ StandardError=append:/var/log/chaba-backup-monitor.log
 ```
 
 ### Monitoring Timer
+
 **File:** `/etc/systemd/system/chaba-backup-monitor.timer`
+
 ```ini
 [Unit]
 Description=Chaba Backup Monitoring Timer (Hourly)
@@ -67,12 +75,14 @@ WantedBy=timers.target
 ## Script Updates
 
 ### Backup Manager Changes
+
 - Updated `BACKUP_ROOT` to Google Drive path
 - Added FUSE compatibility layer for Docker operations
 - Fixed `verification_failed` variable scope issue
 - Updated backup counting to use `find` commands for subdirectory structure
 
 ### Backup Monitor Changes
+
 - Updated all `ls -t` commands to `find` with `sort -r`
 - Adjusted `MIN_BACKUP_SIZE_MB` from 10 to 1 (for small database)
 - Fixed backup failure check to use proper date filtering
@@ -80,7 +90,9 @@ WantedBy=timers.target
 - Updated backup completeness check to detect subdirectory backups
 
 ### Health Monitor Integration
+
 **File:** `scripts/health-monitor.sh`
+
 ```bash
 # Google Drive backup mount check
 if ! mount | grep -q "gdrive.*on /home/tony/GoogleDrive"; then
@@ -100,6 +112,7 @@ fi
 ## Monitoring and Alerting
 
 ### Backup Monitoring Checks
+
 1. **Freshness:** Latest backup age < 36 hours
 2. **Size:** Latest backup > 1MB (adjusted for small database)
 3. **Integrity:** gzip/tar verification
@@ -109,6 +122,7 @@ fi
 7. **Disk Space:** > 5GB available, < 90% used
 
 ### Alert Thresholds
+
 ```bash
 MAX_BACKUP_AGE_HOURS=36
 MIN_BACKUP_SIZE_MB=1  # Adjusted for small database
@@ -116,6 +130,7 @@ MAX_FAILURE_COUNT=3
 ```
 
 ### Log Files
+
 - **Backup Log:** `/var/log/chaba-backup.log`
 - **Monitor Log:** `/var/log/chaba-backup-monitor.log`
 - **Alert Log:** `/var/log/chaba-backup-alerts.log`
@@ -123,6 +138,7 @@ MAX_FAILURE_COUNT=3
 ## Performance
 
 ### Backup Runtime
+
 - **Full Backup:** 21-22 seconds
 - **Database Backup:** ~1 second
 - **Volume Backups:** ~2 seconds (3 volumes)
@@ -130,6 +146,7 @@ MAX_FAILURE_COUNT=3
 - **Documentation Backup:** ~2 seconds
 
 ### Storage Usage
+
 - **Initial:** 463M total (3 daily backup sets)
 - **Growth Rate:** ~150MB per day (expected)
 - **Google Drive Sync:** Automatic via rclone
@@ -137,14 +154,17 @@ MAX_FAILURE_COUNT=3
 ## SSOT Integration
 
 ### Automation Configuration
+
 **File:** `docs/ssot/infrastructure/ssot.automation.yml`
+
 - Version 7 includes complete backup system configuration
 - Backup types, retention policies, monitoring details documented
 - Systemd services and restoration features listed
 
 ### Health Configuration
+
 **File:** `docs/ssot/infrastructure/ssot.health.yml`
+
 - gdrive-backup service added as optional system service
 - Verification procedures for Google Drive mount
 - Recovery actions for mount issues
-

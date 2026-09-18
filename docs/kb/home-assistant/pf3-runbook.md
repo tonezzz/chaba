@@ -31,21 +31,21 @@ All views are stored in `.storage` on `michael-dev` and snapshotted to the same 
 
 Tab order (PF3 is first):
 
-| Order | Title |
-|-------|-------|
-| 0 | PF3 |
-| 1 | PF4 |
-| 2 | PFG1 |
-| 3 | PFG |
-| 4 | PFG2 |
-| 5 | TPL |
-| 6 | Data |
-| 7 | Sankey |
-| 8 | juWorkshop |
-| 9 | Solar Assistant |
-| 10 | glass |
-| 11 | Weather |
-| 12 | Solis Daily Energy Sankey |
+| Order | Title                     |
+| ----- | ------------------------- |
+| 0     | PF3                       |
+| 1     | PF4                       |
+| 2     | PFG1                      |
+| 3     | PFG                       |
+| 4     | PFG2                      |
+| 5     | TPL                       |
+| 6     | Data                      |
+| 7     | Sankey                    |
+| 8     | juWorkshop                |
+| 9     | Solar Assistant           |
+| 10    | glass                     |
+| 11    | Weather                   |
+| 12    | Solis Daily Energy Sankey |
 
 PF3 and PF4 contain a single `custom:sunsynk-power-flow-card` in `cardstyle: lite` mode with a transparent background and the four-battery layout. PFG1, PFG, and TPL use `cardstyle: pfg`; PFG2 uses `cardstyle: pfg2`.
 
@@ -53,21 +53,21 @@ PF3 and PF4 contain a single `custom:sunsynk-power-flow-card` in `cardstyle: lit
 
 PF3 uses the main `battery` slot for the aggregate bank and `battery2`/`battery3`/`battery4` for physical packs 1-3.
 
-| Card slot | Entity type | Entity ID |
-|-----------|-------------|-----------|
-| battery (main) | voltage | `sensor.totals_battery_voltage` |
-| battery (main) | SOC | `sensor.totals_battery_state_of_charge` |
-| battery (main) | power | `sensor.totals_battery_power` |
-| battery (main) | current | `sensor.totals_battery_current` |
-| battery2 | voltage | `sensor.batteries_1_voltage` |
-| battery2 | SOC | `sensor.batteries_1_state_of_charge` |
-| battery2 | power/current | `sensor.battery_1_calculated_power` / `sensor.battery_1_calculated_current` |
-| battery3 | voltage | `sensor.batteries_2_voltage` |
-| battery3 | SOC | `sensor.batteries_2_state_of_charge` |
-| battery3 | power/current | `sensor.batteries_2_power` / `sensor.batteries_2_current` |
-| battery4 | voltage | `sensor.batteries_3_voltage` |
-| battery4 | SOC | `sensor.batteries_3_state_of_charge` |
-| battery4 | power/current | `sensor.batteries_3_power` / `sensor.batteries_3_current` |
+| Card slot      | Entity type   | Entity ID                                                                   |
+| -------------- | ------------- | --------------------------------------------------------------------------- |
+| battery (main) | voltage       | `sensor.totals_battery_voltage`                                             |
+| battery (main) | SOC           | `sensor.totals_battery_state_of_charge`                                     |
+| battery (main) | power         | `sensor.totals_battery_power`                                               |
+| battery (main) | current       | `sensor.totals_battery_current`                                             |
+| battery2       | voltage       | `sensor.batteries_1_voltage`                                                |
+| battery2       | SOC           | `sensor.batteries_1_state_of_charge`                                        |
+| battery2       | power/current | `sensor.battery_1_calculated_power` / `sensor.battery_1_calculated_current` |
+| battery3       | voltage       | `sensor.batteries_2_voltage`                                                |
+| battery3       | SOC           | `sensor.batteries_2_state_of_charge`                                        |
+| battery3       | power/current | `sensor.batteries_2_power` / `sensor.batteries_2_current`                   |
+| battery4       | voltage       | `sensor.batteries_3_voltage`                                                |
+| battery4       | SOC           | `sensor.batteries_3_state_of_charge`                                        |
+| battery4       | power/current | `sensor.batteries_3_power` / `sensor.batteries_3_current`                   |
 
 Pack 1 current and power are calculated from the total minus packs 2 and 3. The source package is `docs/home-assistant/configuration/packages/batteries_calculated.yaml`.
 
@@ -123,24 +123,30 @@ python3 scripts/home-assistant/push-dashboard.py \
 
 Tile config keys (all maps keyed by `"r,c"`):
 
-| Key | Value | Notes |
-|-----|-------|-------|
-| `pfg_labels` | string | text label |
-| `pfg_icons` | `mdi:*` name | per-tile icon |
-| `pfg_images` | `/local/...` URL | `object-fit: cover`; tile clips overflow |
-| `pfg_image_zoom` | number | `transform: scale(zoom)` on all image tiles |
-| `pfg_values` | `{entity, scale?, decimals?, unit?}` | live sensor value |
-| `pfg_sums` | `{entities[], scale?, decimals?, unit?}` | summed entities (e.g. PV1+PV2 in kW) |
-| `pfg_spans` | number N | tile becomes N x N; covered cells skipped |
-| `pfg_radius` | CSS radius | per-tile border-radius |
-| `pfg_grid_width` | CSS width | e.g. `"25%"`, `"360px"` |
+| Key              | Value                                    | Notes                                       |
+| ---------------- | ---------------------------------------- | ------------------------------------------- |
+| `pfg_labels`     | string                                   | text label                                  |
+| `pfg_icons`      | `mdi:*` name                             | per-tile icon                               |
+| `pfg_images`     | `/local/...` URL                         | `object-fit: cover`; tile clips overflow    |
+| `pfg_image_zoom` | number                                   | `transform: scale(zoom)` on all image tiles |
+| `pfg_values`     | `{entity, scale?, decimals?, unit?}`     | live sensor value                           |
+| `pfg_sums`       | `{entities[], scale?, decimals?, unit?}` | summed entities (e.g. PV1+PV2 in kW)        |
+| `pfg_spans`      | number N                                 | tile becomes N x N; covered cells skipped   |
+| `pfg_radius`     | CSS radius                               | per-tile border-radius                      |
+| `pfg_grid_width` | CSS width                                | e.g. `"25%"`, `"360px"`                     |
 
 Render priority per tile: label > icon > image > sum/value > `r,c` coordinate text.
 
 `pfg_lines` entries draw animated SVG flow lines between anchors:
 
 ```json
-{ "from": "4,7@topright", "to": "6,7@bottomright", "entity": "sensor.inverters_1_grid_power", "speed": 0.8, "max_power": 6000 }
+{
+  "from": "4,7@topright",
+  "to": "6,7@bottomright",
+  "entity": "sensor.inverters_1_grid_power",
+  "speed": 0.8,
+  "max_power": 6000
+}
 ```
 
 - Anchors: `"r,c"` (centre) plus `@top|bottom|left|right|topleft|topright|bottomleft|bottomright`. Anchors are span-aware — an edge/corner of an N x N tile uses the outer boundary.
@@ -170,8 +176,7 @@ The card has separate SVG groups for plain and combined states:
 To avoid the combined `{current}%` drawing over the plain `{current}%`, the plain group `<svg>` display expression must become `none` when the combined branch is visible. The condition is equivalent to:
 
 ```ts
-data.inverterProg.show ||
-(config.battery?.shutdown_soc && !config.battery?.shutdown_soc_offgrid)
+data.inverterProg.show || (config.battery?.shutdown_soc && !config.battery?.shutdown_soc_offgrid);
 ```
 
 Use the corresponding `config.battery2`, `config.battery3`, or `config.battery4` for each pack.
@@ -226,15 +231,15 @@ The `michael-dev` token is in `~/.config/secrets/ha-michael-dev.env`; the `micha
 
 ## Common failure modes
 
-| Symptom | Likely cause | Fix |
-|---------|--------------|-----|
-| Old card still shown after deploy | Browser cache or old resource path | Hard-refresh and confirm `lovelace_resources` points to the new bundle |
-| `404` for `/local/...js` | Bundle not copied to `www/` or resource path wrong | Check `www/` contents and `.storage/lovelace_resources` |
-| New card not loaded after restart | `michael-dev.service` failed or wrong config | Check `systemctl --user status michael-dev.service` and container logs |
-| Combined text overlaps plain text | Plain `Battery*_SOC` `<svg>` not hidden | Add combined-visible display condition in `bat-elements.ts` |
-| Fourth battery clipped | SVG canvas not wide/tall enough | Adjust card dimensions or viewBox in `compact-card.ts` / `ss4-card.ts` |
-| `tony-test` tabs wrong order | `.storage/lovelace.tony_test` not synced | Edit the `.storage` file directly or sync from `michael-ha` |
-| PF3 shows different entities than expected | Entity mapping drift | Compare live card config with `ssot.home-assistant.entities.yml` and re-sync |
+| Symptom                                    | Likely cause                                       | Fix                                                                          |
+| ------------------------------------------ | -------------------------------------------------- | ---------------------------------------------------------------------------- |
+| Old card still shown after deploy          | Browser cache or old resource path                 | Hard-refresh and confirm `lovelace_resources` points to the new bundle       |
+| `404` for `/local/...js`                   | Bundle not copied to `www/` or resource path wrong | Check `www/` contents and `.storage/lovelace_resources`                      |
+| New card not loaded after restart          | `michael-dev.service` failed or wrong config       | Check `systemctl --user status michael-dev.service` and container logs       |
+| Combined text overlaps plain text          | Plain `Battery*_SOC` `<svg>` not hidden            | Add combined-visible display condition in `bat-elements.ts`                  |
+| Fourth battery clipped                     | SVG canvas not wide/tall enough                    | Adjust card dimensions or viewBox in `compact-card.ts` / `ss4-card.ts`       |
+| `tony-test` tabs wrong order               | `.storage/lovelace.tony_test` not synced           | Edit the `.storage` file directly or sync from `michael-ha`                  |
+| PF3 shows different entities than expected | Entity mapping drift                               | Compare live card config with `ssot.home-assistant.entities.yml` and re-sync |
 
 ## Re-syncing live state to the repo
 

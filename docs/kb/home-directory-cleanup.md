@@ -19,11 +19,11 @@ After migrating user data to a dedicated home partition, the old home directory 
 
 ## Key Files
 
-| Location | Purpose |
-|----------|---------|
-| `/home/tony` | Active home directory (dedicated partition) |
-| `/mnt/root-partition/home/tony` | Old home directory (root partition) |
-| `/mnt/home-partition` | Mounted home partition |
+| Location                        | Purpose                                     |
+| ------------------------------- | ------------------------------------------- |
+| `/home/tony`                    | Active home directory (dedicated partition) |
+| `/mnt/root-partition/home/tony` | Old home directory (root partition)         |
+| `/mnt/home-partition`           | Mounted home partition                      |
 
 ## Related Documentation
 
@@ -33,8 +33,8 @@ After migrating user data to a dedicated home partition, the old home directory 
 
 ## Change History
 
-| Date | Change | Author |
-|------|--------|--------|
+| Date       | Change           | Author                         |
+| ---------- | ---------------- | ------------------------------ |
 | 2026-08-12 | Initial creation | Devin (session fortune-almond) |
 
 ## See also

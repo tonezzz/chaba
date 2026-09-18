@@ -7,29 +7,34 @@ category: operations
 ### Automated Validation Rules
 
 **Circular Dependencies**
+
 - Not allowed - flagged during validation
 - Example: A depends on B, B depends on A
 - Detected by overnight assessment script
 - Reported as critical issue
 
 **Missing Dependencies**
+
 - Referenced improvements must exist in SSOT
 - Checked against all improvement labels
 - Reported as medium issue
 - Must be resolved before dependency tracking works
 
 **Self Dependencies**
+
 - An improvement cannot depend on itself
 - Trivial validation check
 - Reported as medium issue
 
 **Status Validation**
+
 - Dependencies should be in 'completed' status before starting work
 - Checks if dependencies are pending or planned
 - Reports blocked improvements
 - Helps identify ready-to-start work
 
 **Priority Consistency**
+
 - Higher priority items shouldn't depend on lower priority
 - Example: high priority depends on low priority
 - Reported as medium issue
@@ -40,6 +45,7 @@ category: operations
 **File:** `scripts/overnight-assessment.mjs`
 
 **Validation Function:**
+
 ```javascript
 function validateDependencies(improvements) {
   const issues = [];
@@ -55,6 +61,7 @@ function validateDependencies(improvements) {
 ```
 
 **Assessment Report Integration:**
+
 - Dependency validation results included in assessment reports
 - Blocked improvements listed with their dependencies
 - Blocking improvements identified with downstream impact
@@ -82,6 +89,7 @@ node scripts/dependency-graph.mjs dot
 ### Output Formats
 
 **Text Format:**
+
 - Human-readable dependency tree
 - Status indicators (✅ completed, 🚀 ready, 🔒 blocked, 📋 planned)
 - Dependency chains shown with arrows
@@ -90,6 +98,7 @@ node scripts/dependency-graph.mjs dot
 - Grouped by status (completed, pending, planned)
 
 **Example Text Output:**
+
 ```
 🔒 Memory Usage Optimization (medium)
    ↳ Depends on: GPU Queue Job History Verification
@@ -101,14 +110,15 @@ node scripts/dependency-graph.mjs dot
 ```
 
 **Mermaid Format:**
+
 - Markdown-compatible graph syntax
 - Can be rendered in GitHub, GitLab, etc.
 - Suitable for documentation
 - Visual representation of dependencies
 
 **DOT Format:**
+
 - Graphviz format for visual diagrams
 - Can generate PNG, SVG, PDF
 - Professional diagram generation
 - Customizable styling
-

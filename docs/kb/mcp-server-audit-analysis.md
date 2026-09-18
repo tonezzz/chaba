@@ -5,6 +5,7 @@ category: operations
 # MCP Server Analysis
 
 ### 1. Yomi MCP Server
+
 - **Tool Count**: 15+ tools
 - **Estimated Token Overhead**: 8-12k tokens
 - **Usage Pattern**: HIGH - frequently used for communication analysis
@@ -39,6 +40,7 @@ category: operations
   - Search and collection tools (if not needed)
 
 ### 2. PostgreSQL MCP Server
+
 - **Tool Count**: 11 tools
 - **Estimated Token Overhead**: 3-5k tokens
 - **Usage Pattern**: MEDIUM - used for GPU queue and application data
@@ -65,6 +67,7 @@ category: operations
   - These are rarely used in day-to-day operations
 
 ### 3. GitHub MCP Server
+
 - **Tool Count**: 20+ tools
 - **Estimated Token Overhead**: 10-15k tokens
 - **Usage Pattern**: MEDIUM - used for git workflow automation
@@ -90,6 +93,7 @@ category: operations
   - Specialized tools (milestones, projects, etc.)
 
 ### 4. GPU MCP Server
+
 - **Tool Count**: 4 tools
 - **Estimated Token Overhead**: 1-2k tokens
 - **Usage Pattern**: HIGH - used for GPU queue operations
@@ -105,6 +109,7 @@ category: operations
 - **Current State**: 4 tools (unchanged)
 
 ### 5. mcp-llama MCP Server
+
 - **Tool Count**: 5 tools
 - **Estimated Token Overhead**: 1-2k tokens
 - **Usage Pattern**: UNKNOWN - needs usage analysis
@@ -121,6 +126,7 @@ category: operations
 - **Token Savings**: ~1-2k tokens eliminated
 
 ### 6. playlive.tony-dell MCP Server
+
 - **Tool Count**: 10+ tools
 - **Estimated Token Overhead**: 3-5k tokens
 - **Usage Pattern**: UNKNOWN - needs usage analysis
@@ -135,6 +141,7 @@ category: operations
 - **Token Savings**: ~3-5k tokens eliminated
 
 ### 7. remote-exec-tony-dell MCP Server
+
 - **Tool Count**: UNKNOWN
 - **Estimated Token Overhead**: UNKNOWN
 - **Usage Pattern**: UNKNOWN
@@ -144,4 +151,3 @@ category: operations
 - **Implementation Status**: ✅ DISABLED
 - **Reasoning**: Not essential for current workflow
 - **Token Savings**: TBD (unknown tool count)
-

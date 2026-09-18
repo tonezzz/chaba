@@ -35,13 +35,13 @@ planning:
 
 processing:
   status: completed
-  started_at: '2026-08-26'
-  completed_at: '2026-08-26'
+  started_at: "2026-08-26"
+  completed_at: "2026-08-26"
   steps:
     - id: 1
       label: Dynamic Time Warping (DTW) similarity
       status: completed
-      completed_at: '2026-08-26'
+      completed_at: "2026-08-26"
       notes: |
         Implemented trended_dtw.py. For each day, build a WINDOW of USD/THB log
         returns. Find the K training windows with the smallest DTW distance and
@@ -59,7 +59,7 @@ processing:
     - id: 2
       label: Delay-embedding k-NN (Takens-style)
       status: completed
-      completed_at: '2026-08-26'
+      completed_at: "2026-08-26"
       notes: |
         Implemented trended_delay.py. Build a WINDOW=6 vector from delayed copies
         of USD/THB log returns. Use k-NN in that phase-space and the weighted
@@ -77,7 +77,7 @@ processing:
     - id: 3
       label: Singular Spectrum Analysis (SSA)
       status: completed
-      completed_at: '2026-08-26'
+      completed_at: "2026-08-26"
       notes: |
         Implemented trended_ssa.py. For each month, fit SSA on the previous 252
         USD/THB returns with embedding L=20 and R=2 components. Reconstruct a
@@ -94,7 +94,7 @@ processing:
     - id: 4
       label: Time-varying / Markov-switching VAR
       status: completed
-      completed_at: '2026-08-26'
+      completed_at: "2026-08-26"
       notes: |
         Implemented trended_regime_var.py. For each month, split the previous 252
         days into low- and high-THB-volatility regimes at the median. Fit a separate
@@ -111,7 +111,7 @@ processing:
     - id: 5
       label: Graph / network view
       status: completed
-      completed_at: '2026-08-26'
+      completed_at: "2026-08-26"
       notes: |
         Implemented trended_graph.py and tune_graph.py. Grid search over LOOKBACK
         (252, 504), MAX_LAG (1, 2, 3, 5) and P_THRESHOLD (0.01, 0.05, 0.10, 0.20)
@@ -208,7 +208,7 @@ processing:
     - id: 6
       label: Wavelet coherence
       status: completed
-      completed_at: '2026-08-26'
+      completed_at: "2026-08-26"
       notes: |
         Implemented trended_wavelet.py. Compute a causal complex Morlet CWT on
         USD/THB returns for scales 4, 8, 16, 32. For each month, select the
@@ -226,7 +226,7 @@ processing:
     - id: 7
       label: App page to inspect ideas
       status: completed
-      completed_at: '2026-08-26'
+      completed_at: "2026-08-26"
       notes: |
         The app page (vector-analysis-ideas.html and vector-analysis-ideas.js)
         already existed from the initial SSOT and has been updated after each
@@ -297,8 +297,8 @@ report:
 
 config:
   version: 1
-  created_at: '2026-08-26'
-  last_updated: '2026-08-26'
+  created_at: "2026-08-26"
+  last_updated: "2026-08-26"
   maintainer: tony
   related_files:
     - docs/ssot/templates/job.yml

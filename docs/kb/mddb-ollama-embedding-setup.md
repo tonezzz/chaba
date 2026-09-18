@@ -19,9 +19,9 @@ Ollama has been successfully deployed as the embedding provider for MDDB, enabli
 
 ## Change History
 
-| Date | Change | Author |
-|------|--------|--------|
-| 2026-08-12 | Initial Ollama embedding setup documentation | devin |
+| Date       | Change                                       | Author |
+| ---------- | -------------------------------------------- | ------ |
+| 2026-08-12 | Initial Ollama embedding setup documentation | devin  |
 
 ## Tags
 

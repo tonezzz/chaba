@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 
-import { execSync } from 'child_process';
-import { writeFileSync, existsSync, mkdirSync, readFileSync } from 'fs';
-import { join } from 'path';
+import { execSync } from "child_process";
+import { writeFileSync, existsSync, mkdirSync, readFileSync } from "fs";
+import { join } from "path";
 
-const LOG_DIR = '/home/tony/CascadeProjects/chaba-tony-dell/logs/maintenance';
-const LOG_FILE = join(LOG_DIR, 'maintenance.log');
+const LOG_DIR = "/home/tony/CascadeProjects/chaba-tony-dell/logs/maintenance";
+const LOG_FILE = join(LOG_DIR, "maintenance.log");
 
 // Ensure log directory exists
 if (!existsSync(LOG_DIR)) mkdirSync(LOG_DIR, { recursive: true });
@@ -13,14 +13,14 @@ if (!existsSync(LOG_DIR)) mkdirSync(LOG_DIR, { recursive: true });
 function log(message) {
   const timestamp = new Date().toISOString();
   const logEntry = `[${timestamp}] ${message}\n`;
-  writeFileSync(LOG_FILE, logEntry, { flag: 'a' });
+  writeFileSync(LOG_FILE, logEntry, { flag: "a" });
   console.log(logEntry.trim());
 }
 
 function execCommand(command, description) {
   try {
     log(`Starting: ${description}`);
-    const result = execSync(command, { encoding: 'utf8', timeout: 300000 });
+    const result = execSync(command, { encoding: "utf8", timeout: 300000 });
     log(`Success: ${description}`);
     return { success: true, output: result };
   } catch (error) {
@@ -30,11 +30,11 @@ function execCommand(command, description) {
 }
 
 function dockerCleanup() {
-  log('=== Docker Cleanup ===');
-  
+  log("=== Docker Cleanup ===");
+
   // Remove unused containers, networks, images, and build cache
-  const result = execCommand('docker system prune -a -f --volumes', 'Docker system prune');
-  
+  const result = execCommand("docker system prune -a -f --volumes", "Docker system prune");
+
   if (result.success) {
     // Extract space reclaimed from output
     const match = result.output.match(/Total reclaimed space: (.+)/);
@@ -42,136 +42,157 @@ function dockerCleanup() {
       log(`Space reclaimed: ${match[1]}`);
     }
   }
-  
+
   return result.success;
 }
 
 function journalCleanup() {
-  log('=== Journal Cleanup ===');
-  
+  log("=== Journal Cleanup ===");
+
   // Limit journal size to 500M
-  const result = execCommand('sudo journalctl --vacuum-size=500M', 'Journal vacuum to 500M');
-  
+  const result = execCommand("sudo journalctl --vacuum-size=500M", "Journal vacuum to 500M");
+
   if (result.success) {
     const match = result.output.match(/freed (.+) of archived journals/);
     if (match) {
       log(`Journal space freed: ${match[1]}`);
     }
   }
-  
+
   return result.success;
 }
 
 function logCleanup() {
-  log('=== Log Cleanup ===');
-  
+  log("=== Log Cleanup ===");
+
   // Clean old log files (>30 days)
   const result = execCommand(
     'find /var/log -type f -name "*.log" -mtime +30 -delete 2>/dev/null || true',
-    'Clean logs older than 30 days'
+    "Clean logs older than 30 days"
   );
-  
+
   return result.success;
 }
 
 function diskCheck() {
-  log('=== Disk Space Check ===');
-  
-  const result = execCommand('df -h /', 'Check disk usage');
-  
+  log("=== Disk Space Check ===");
+
+  const result = execCommand("df -h /", "Check disk usage");
+
   if (result.success) {
     const match = result.output.match(/(\d+)%/);
     if (match) {
       const usage = parseInt(match[1]);
       log(`Disk usage: ${usage}%`);
-      
+
       if (usage > 90) {
-        log('⚠️  CRITICAL: Disk usage above 90%');
+        log("⚠️  CRITICAL: Disk usage above 90%");
       } else if (usage > 80) {
-        log('⚠️  WARNING: Disk usage above 80%');
+        log("⚠️  WARNING: Disk usage above 80%");
       }
     }
   }
-  
+
   return result.success;
 }
 
 function dockerHealthCheck() {
-  log('=== Docker Health Check ===');
-  
-  const result = execCommand('docker ps --format "{{.Names}}: {{.Status}}"', 'Check running containers');
-  
+  log("=== Docker Health Check ===");
+
+  const result = execCommand(
+    'docker ps --format "{{.Names}}: {{.Status}}"',
+    "Check running containers"
+  );
+
   if (result.success) {
-    const containers = result.output.trim().split('\n');
+    const containers = result.output.trim().split("\n");
     log(`Running containers: ${containers.length}`);
-    
+
     // Check for unhealthy containers
-    const unhealthy = containers.filter(c => c.includes('unhealthy') || c.includes('Exited'));
+    const unhealthy = containers.filter((c) => c.includes("unhealthy") || c.includes("Exited"));
     if (unhealthy.length > 0) {
       log(`⚠️  Unhealthy containers: ${unhealthy.length}`);
-      unhealthy.forEach(c => log(`  - ${c}`));
+      unhealthy.forEach((c) => log(`  - ${c}`));
     }
   }
-  
+
   return result.success;
 }
 
 function hostnameResolutionCheck() {
-  log('=== Hostname Resolution Check ===');
-  
+  log("=== Hostname Resolution Check ===");
+
   // Check /etc/hosts mapping for tony-omen.local
-  const hostsResult = execCommand('cat /etc/hosts | grep tony-omen.local', 'Check /etc/hosts mapping');
-  
+  const hostsResult = execCommand(
+    "cat /etc/hosts | grep tony-omen.local",
+    "Check /etc/hosts mapping"
+  );
+
   if (hostsResult.success) {
     log(`/etc/hosts mapping: ${hostsResult.output.trim()}`);
-    
+
     // Get resolved IP
-    const nslookupResult = execCommand('nslookup tony-omen.local 2>/dev/null | grep -A 1 "Name:" | tail -1 | awk \'{print $2}\'', 'Get resolved IP');
-    
+    const nslookupResult = execCommand(
+      "nslookup tony-omen.local 2>/dev/null | grep -A 1 \"Name:\" | tail -1 | awk '{print $2}'",
+      "Get resolved IP"
+    );
+
     if (nslookupResult.success) {
       const resolvedIP = nslookupResult.output.trim();
       log(`Resolved IP: ${resolvedIP}`);
-      
+
       // Get local IP using routing table (most reliable)
-      const localIPResult = execCommand('ip route get 1.1.1.1 2>/dev/null | awk \'{print $7}\' | head -1', 'Get local IP');
-      
+      const localIPResult = execCommand(
+        "ip route get 1.1.1.1 2>/dev/null | awk '{print $7}' | head -1",
+        "Get local IP"
+      );
+
       if (localIPResult.success) {
         const localIP = localIPResult.output.trim();
         log(`Local IP: ${localIP}`);
-        
+
         // Compare IPs
         if (resolvedIP !== localIP && localIP && resolvedIP) {
-          log('⚠️  WARNING: Hostname resolution mismatch detected');
+          log("⚠️  WARNING: Hostname resolution mismatch detected");
           log(`⚠️  tony-omen.local resolves to ${resolvedIP} but local IP is ${localIP}`);
-          log('⚠️  Check /etc/hosts file for correct IP mapping');
-          log('⚠️  Fix: sudo sed -i "s/' + resolvedIP + ' tony-omen.local/' + localIP + ' tony-omen.local/" /etc/hosts');
+          log("⚠️  Check /etc/hosts file for correct IP mapping");
+          log(
+            '⚠️  Fix: sudo sed -i "s/' +
+              resolvedIP +
+              " tony-omen.local/" +
+              localIP +
+              ' tony-omen.local/" /etc/hosts'
+          );
         } else {
-          log('✅ Hostname resolution correct');
+          log("✅ Hostname resolution correct");
         }
       }
     }
   } else {
-    log('⚠️  No tony-omen.local entry found in /etc/hosts');
+    log("⚠️  No tony-omen.local entry found in /etc/hosts");
   }
-  
+
   // Test HTTP connectivity
-  const httpResult = execCommand('curl -s -o /dev/null -w "%{http_code}" --max-time 3 http://tony-dell:8080/', 'Test HTTP connectivity');
+  const httpResult = execCommand(
+    'curl -s -o /dev/null -w "%{http_code}" --max-time 3 http://tony-dell:8080/',
+    "Test HTTP connectivity"
+  );
 
   if (httpResult.success) {
     const statusCode = httpResult.output.trim();
-    if (statusCode === '200') {
-      log('✅ HTTP connectivity to tony-dell:8080 successful');
+    if (statusCode === "200") {
+      log("✅ HTTP connectivity to tony-dell:8080 successful");
     } else {
       log(`⚠️  HTTP connectivity returned status ${statusCode}`);
     }
   }
-  
+
   return hostsResult.success;
 }
 
 function generateReport(results) {
-  log('=== Maintenance Report ===');
-  
+  log("=== Maintenance Report ===");
+
   const timestamp = new Date().toISOString();
   const report = {
     timestamp,
@@ -182,36 +203,36 @@ function generateReport(results) {
       diskCheck: results.diskCheck,
       dockerHealthCheck: results.dockerHealthCheck,
       gpuMonitorCheck: results.gpuMonitorCheck,
-      hostnameResolutionCheck: results.hostnameResolutionCheck
+      hostnameResolutionCheck: results.hostnameResolutionCheck,
     },
     summary: {
       total: Object.keys(results).length,
-      successful: Object.values(results).filter(r => r).length,
-      failed: Object.values(results).filter(r => !r).length
-    }
+      successful: Object.values(results).filter((r) => r).length,
+      failed: Object.values(results).filter((r) => !r).length,
+    },
   };
-  
+
   log(`Summary: ${report.summary.successful}/${report.summary.total} tasks successful`);
-  
+
   return report;
 }
 
 function main() {
-  log('=== Starting System Maintenance ===');
-  
+  log("=== Starting System Maintenance ===");
+
   const results = {
     dockerCleanup: dockerCleanup(),
     journalCleanup: journalCleanup(),
     logCleanup: logCleanup(),
     diskCheck: diskCheck(),
     dockerHealthCheck: dockerHealthCheck(),
-    hostnameResolutionCheck: hostnameResolutionCheck()
+    hostnameResolutionCheck: hostnameResolutionCheck(),
   };
-  
+
   const report = generateReport(results);
-  
-  log('=== System Maintenance Complete ===');
-  
+
+  log("=== System Maintenance Complete ===");
+
   return report;
 }
 
@@ -219,6 +240,6 @@ function main() {
 const report = main();
 
 // Export for use in other scripts
-if (process.argv[2] === '--export') {
+if (process.argv[2] === "--export") {
   console.log(JSON.stringify(report, null, 2));
 }

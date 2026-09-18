@@ -3,6 +3,7 @@ category: operations
 ---
 
 # Yomi Gemini Priority System
+
 ## What it is
 
 Selective re-summarization system for Gemini API to manage quota and prioritize high-value content.
@@ -11,11 +12,12 @@ Selective re-summarization system for Gemini API to manage quota and prioritize 
 
 Created 2026-08-06 as part of Chaba infrastructure documentation.
 
-
 ## Overview
+
 Selective re-summarization system for Gemini API to manage quota and prioritize high-value content.
 
 ## Related Documentation
+
 - [Gemini API Integration](./gemini-api-limits.md)
 - [Yomi Daily Calendar Timezone](./yomi-daily-calendar-timezone.md)
 - [Gemma 4 Model Card](https://ai.google.dev/gemma/docs/core/model_card_4)

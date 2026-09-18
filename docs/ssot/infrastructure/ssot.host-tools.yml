@@ -130,7 +130,11 @@ tools:
         mac: qrencode
       command: "qrencode -t ANSIUTF8 <text>"
       verify: "qrencode --version"
-      decisions: ["render QR codes for unlock deep-links (ada-key-url.sh --qr)", "share URLs to phones/tablets"]
+      decisions:
+        [
+          "render QR codes for unlock deep-links (ada-key-url.sh --qr)",
+          "share URLs to phones/tablets",
+        ]
       priority: useful
 
     - name: openssl
@@ -165,7 +169,8 @@ tools:
         mac: sqlite3
       command: "sqlite3 <db> '<query>'"
       verify: "sqlite3 --version"
-      decisions: ["inspect local DBs (devin sessions.db, MDDB search-index.db, HA .storage-adjacent files)"]
+      decisions:
+        ["inspect local DBs (devin sessions.db, MDDB search-index.db, HA .storage-adjacent files)"]
       priority: useful
 
     - name: rg
@@ -200,7 +205,8 @@ tools:
       check: "PATH=$HOME/.local/bin:$PATH command -v uv"
       command: "uv venv / uv pip install <pkg>"
       verify: "PATH=$HOME/.local/bin:$PATH uv --version"
-      decisions: ["fast venv + package management (install: astral.sh/uv script or eget astral-sh/uv)"]
+      decisions:
+        ["fast venv + package management (install: astral.sh/uv script or eget astral-sh/uv)"]
       priority: optional
 
     - name: websocat
@@ -208,7 +214,10 @@ tools:
       check: "PATH=$HOME/.local/bin:$PATH command -v websocat"
       command: "websocat '<ws-url>'"
       verify: "PATH=$HOME/.local/bin:$PATH websocat --version"
-      decisions: ["WebSocket smoke tests (ada /ws endpoints; install via eget vi/websocat -a x86_64-unknown-linux-musl)"]
+      decisions:
+        [
+          "WebSocket smoke tests (ada /ws endpoints; install via eget vi/websocat -a x86_64-unknown-linux-musl)",
+        ]
       priority: optional
 
   python:
@@ -244,7 +253,7 @@ tools:
         linux: python3-qrcode
       check: "python3 -c 'import qrcode'"
       command: "python3 -c 'import qrcode'"
-      verify: "python3 -c 'import importlib.metadata as m; print(m.version(\"qrcode\"))'"
+      verify: 'python3 -c ''import importlib.metadata as m; print(m.version("qrcode"))'''
       decisions: ["QR generation in Python (pwa_server qr_svg, ad-hoc pairing links)"]
       priority: useful
 
@@ -281,6 +290,25 @@ tools:
       command: "caddy version"
       verify: "caddy version"
       decisions: ["serve HTTPS reverse proxy and app landing"]
+      priority: useful
+
+  editors:
+    - name: nano
+      package:
+        linux: nano
+        mac: nano
+      command: "nano <file>"
+      verify: "nano --version"
+      decisions: ["edit files on servers (env files, configs)"]
+      priority: useful
+
+    - name: vim
+      package:
+        linux: vim
+        mac: vim
+      command: "vim <file>"
+      verify: "vim --version"
+      decisions: ["full-featured editor when nano is not enough"]
       priority: useful
 
   network:
@@ -343,6 +371,32 @@ tools:
       verify: "dig -v"
       decisions: ["DNS lookups, tailnet/LAN name debugging"]
       priority: useful
+
+    - name: mtr
+      package:
+        linux: mtr
+        mac: mtr
+      command: "mtr -r -c 10 <host>"
+      verify: "mtr --version"
+      decisions: ["trace route with per-hop loss/latency"]
+      priority: useful
+
+    - name: nmap
+      package:
+        linux: nmap
+        mac: nmap
+      command: "nmap -sP <subnet>"
+      verify: "nmap --version"
+      decisions: ["scan hosts/ports on a subnet"]
+      priority: optional
+
+    - name: netstat
+      package:
+        linux: net-tools
+      command: "netstat -tlnp"
+      verify: "netstat --version"
+      decisions: ["legacy socket listing (prefer ss)"]
+      priority: optional
 
     - name: tailscale
       package: {}
@@ -411,6 +465,23 @@ tools:
       decisions: ["collect CPU utilization samples"]
       priority: useful
 
+    - name: lsof
+      package:
+        linux: lsof
+        mac: lsof
+      command: "lsof -i :<port>"
+      verify: "lsof -v"
+      decisions: ["find which process holds a port or file"]
+      priority: optional
+
+    - name: strace
+      package:
+        linux: strace
+      command: "strace -f -p <pid>"
+      verify: "strace -V"
+      decisions: ["trace syscalls for stubborn service issues"]
+      priority: optional
+
   storage:
     - name: lsblk
       package:
@@ -435,6 +506,15 @@ tools:
       command: "ncdu /"
       verify: "ncdu -h"
       decisions: ["find what is consuming disk space"]
+      priority: useful
+
+    - name: tree
+      package:
+        linux: tree
+        mac: tree
+      command: "tree -L 2 <dir>"
+      verify: "tree --version"
+      decisions: ["view directory structure at a glance"]
       priority: useful
 
   containers:

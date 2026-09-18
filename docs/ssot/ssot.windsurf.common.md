@@ -7,6 +7,7 @@ TODO: Revisit this repo later to harvest more rules and prompts (memories/, tips
 ## Coding Principles
 
 ### Core Principles
+
 - Favor clarity and maintainability over brevity or cleverness.
 - Respect language idioms; use descriptive, consistent naming and formatting.
 - Keep functions small and single-responsibility; keep components loosely coupled.
@@ -16,37 +17,44 @@ TODO: Revisit this repo later to harvest more rules and prompts (memories/, tips
 - Profile before optimizing; manage resources properly (with, finally, RAII).
 
 ### Write for Humans First
+
 - Code should be understandable at a glance, making it more approachable for collaborators and your future self.
 - Avoid obfuscation or over-optimization that sacrifices readability.
 
 ### Future-Proof Your Design
+
 - Plan for growth and changing requirements, but do not overengineer.
 - Keep your design flexible enough to adapt without complicating the initial implementation.
 
 ### Code Quality and Readability
+
 - **Clarity First**: Write straightforward code that conveys its intent clearly. Minimize abstraction layers that obscure readability.
 - **Descriptive Naming**: Use meaningful, consistent names for variables, functions, classes, and modules that reflect their purpose.
 - **Consistent Formatting**: Follow established style guides and use automated tools to maintain uniform formatting across the codebase.
 - **Comment Thoughtfully**: Provide comments or docstrings where necessary, but avoid restating what the code already expresses.
 
 ### Architecture and Modularity
+
 - **Encapsulate Complexity**: Group related logic into self-contained modules or classes with clear, well-documented interfaces.
 - **Loose Coupling**: Design components to function independently, using abstraction layers or interfaces to reduce interdependencies.
 - **Apply DRY**: Refactor repetitive or duplicated code into shared utilities or functions to promote reuse and reduce bloat.
 - **Design for Extensibility**: Structure your codebase so you can add new features and functionalities without requiring major rewrites.
 
 ### Error Handling and Testing
+
 - **Error Awareness**: Implement robust error handling with clear messages and safe fallback paths for smoother recoveries.
 - **Write Tests Early**: Create relevant tests at the outset of development to quickly capture edge cases and catch regressions.
 - **Iterative Validation**: Run your tests frequently to ensure ongoing stability and to identify potential issues as your code evolves.
 - **Proactive Debugging**: Leverage logging, tracing, and profiling to diagnose and resolve errors efficiently.
 
 ### Performance and Resource Management
+
 - **Choose Efficient Solutions**: Adopt algorithms and data structures that suit your problem domain, optimizing for efficiency and scalability.
 - **Optimize When Necessary**: Maintain clarity in your codebase; address performance bottlenecks only after conducting proper profiling.
 - **Manage Resources Properly**: Follow best practices for handling external resources. For example, use `with` statements where applicable.
 
 ## Cascade Workflow
+
 - Use the project's configured tooling and scripts for linting, formatting, and checks instead of manual edits.
 - Verify facts before stating them; double-check changes before committing or creating PRs.
 - Update PRs/issues as work progresses; read comments for context and updates.
@@ -55,6 +63,7 @@ TODO: Revisit this repo later to harvest more rules and prompts (memories/, tips
 - Reload the window if Cascade behavior degrades after long sessions.
 
 ## Commit Messages
+
 Write a short English commit message (one sentence max) and format it as a code block:
 
 ```
@@ -176,6 +185,7 @@ At the end of every assistant response that answers or completes a user request,
 3. **Exception**: Only ask for user confirmation when creating entirely new KB entries for major new topics (not updates to existing entries)
 
 **KB-Worthy Triggers**:
+
 - Fixing significant bugs or issues (especially data corruption, security vulnerabilities)
 - Discovering new patterns, workarounds, or best practices
 - Implementing new systems, integrations, or technologies
@@ -185,6 +195,7 @@ At the end of every assistant response that answers or completes a user request,
 - Creating reusable patterns or conventions
 
 **Do NOT save**:
+
 - Temporary commands or one-off output
 - Obvious trivia or well-known information
 - Transient debugging steps without lasting value
@@ -193,6 +204,7 @@ At the end of every assistant response that answers or completes a user request,
 ## Immediate KB Creation (During Work)
 
 For significant discoveries during work (not end-of-session):
+
 1. Immediately suggest KB entry creation when encountering KB-worthy triggers
 2. Ask user for confirmation before creating major new entries
 3. Use auto-kb skill for processing to ensure consistency
@@ -216,6 +228,7 @@ Before using any MCP server, use `ssot-search` or `grep` to read only the releva
 ## Request-to-Focus Workflow
 
 At the start of every session:
+
 - Call `mcp_focus` with `mode=status` (if the mcp-focus server is available) to retrieve active foci, quick wins, and the current recommendation.
 - If the mcp-focus server is not available, read `docs/ssot/ssot.focus.current.yml` for the workflow and decision tree, then read `docs/ssot/ssot.focus.current.active.yml` for active foci and `docs/ssot/ssot.focus.current.backlog.yml` for quick wins / ready-safe / hand-off.
 - For ambiguous or non-trivial requests, call `mcp_focus(request, mode=recommend)` and follow the returned action before doing any work.

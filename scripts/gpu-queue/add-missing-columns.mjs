@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { pool } from './db.mjs';
+import { pool } from "./db.mjs";
 
 async function addMissingColumns() {
   const client = await pool.connect();
@@ -13,14 +13,14 @@ async function addMissingColumns() {
     `);
 
     if (checkExecTime.rows.length === 0) {
-      console.log('Adding execution_time_ms column...');
+      console.log("Adding execution_time_ms column...");
       await client.query(`
         ALTER TABLE gpu_queue_jobs
         ADD COLUMN execution_time_ms INTEGER
       `);
-      console.log('✓ execution_time_ms column added');
+      console.log("✓ execution_time_ms column added");
     } else {
-      console.log('✓ execution_time_ms column already exists');
+      console.log("✓ execution_time_ms column already exists");
     }
 
     // Check if embedding_dimensions column exists
@@ -32,14 +32,14 @@ async function addMissingColumns() {
     `);
 
     if (checkEmbeddingDim.rows.length === 0) {
-      console.log('Adding embedding_dimensions column...');
+      console.log("Adding embedding_dimensions column...");
       await client.query(`
         ALTER TABLE gpu_queue_jobs
         ADD COLUMN embedding_dimensions INTEGER
       `);
-      console.log('✓ embedding_dimensions column added');
+      console.log("✓ embedding_dimensions column added");
     } else {
-      console.log('✓ embedding_dimensions column already exists');
+      console.log("✓ embedding_dimensions column already exists");
     }
 
     // Check if embedding_model column exists
@@ -51,14 +51,14 @@ async function addMissingColumns() {
     `);
 
     if (checkEmbeddingModel.rows.length === 0) {
-      console.log('Adding embedding_model column...');
+      console.log("Adding embedding_model column...");
       await client.query(`
         ALTER TABLE gpu_queue_jobs
         ADD COLUMN embedding_model VARCHAR(100)
       `);
-      console.log('✓ embedding_model column added');
+      console.log("✓ embedding_model column added");
     } else {
-      console.log('✓ embedding_model column already exists');
+      console.log("✓ embedding_model column already exists");
     }
 
     // Check if text_count column exists
@@ -70,14 +70,14 @@ async function addMissingColumns() {
     `);
 
     if (checkTextCount.rows.length === 0) {
-      console.log('Adding text_count column...');
+      console.log("Adding text_count column...");
       await client.query(`
         ALTER TABLE gpu_queue_jobs
         ADD COLUMN text_count INTEGER DEFAULT 1
       `);
-      console.log('✓ text_count column added');
+      console.log("✓ text_count column added");
     } else {
-      console.log('✓ text_count column already exists');
+      console.log("✓ text_count column already exists");
     }
 
     // Check if gpu_used column exists
@@ -89,14 +89,14 @@ async function addMissingColumns() {
     `);
 
     if (checkGpuUsed.rows.length === 0) {
-      console.log('Adding gpu_used column...');
+      console.log("Adding gpu_used column...");
       await client.query(`
         ALTER TABLE gpu_queue_jobs
         ADD COLUMN gpu_used BOOLEAN DEFAULT false
       `);
-      console.log('✓ gpu_used column added');
+      console.log("✓ gpu_used column added");
     } else {
-      console.log('✓ gpu_used column already exists');
+      console.log("✓ gpu_used column already exists");
     }
 
     // Check if vram_used_mb column exists
@@ -108,14 +108,14 @@ async function addMissingColumns() {
     `);
 
     if (checkVramUsed.rows.length === 0) {
-      console.log('Adding vram_used_mb column...');
+      console.log("Adding vram_used_mb column...");
       await client.query(`
         ALTER TABLE gpu_queue_jobs
         ADD COLUMN vram_used_mb INTEGER
       `);
-      console.log('✓ vram_used_mb column added');
+      console.log("✓ vram_used_mb column added");
     } else {
-      console.log('✓ vram_used_mb column already exists');
+      console.log("✓ vram_used_mb column already exists");
     }
 
     // Check if mode column exists
@@ -127,14 +127,14 @@ async function addMissingColumns() {
     `);
 
     if (checkMode.rows.length === 0) {
-      console.log('Adding mode column...');
+      console.log("Adding mode column...");
       await client.query(`
         ALTER TABLE gpu_queue_jobs
         ADD COLUMN mode VARCHAR(10)
       `);
-      console.log('✓ mode column added');
+      console.log("✓ mode column added");
     } else {
-      console.log('✓ mode column already exists');
+      console.log("✓ mode column already exists");
     }
 
     // Check if batch_size column exists
@@ -146,14 +146,14 @@ async function addMissingColumns() {
     `);
 
     if (checkBatchSize.rows.length === 0) {
-      console.log('Adding batch_size column...');
+      console.log("Adding batch_size column...");
       await client.query(`
         ALTER TABLE gpu_queue_jobs
         ADD COLUMN batch_size INTEGER DEFAULT 1
       `);
-      console.log('✓ batch_size column added');
+      console.log("✓ batch_size column added");
     } else {
-      console.log('✓ batch_size column already exists');
+      console.log("✓ batch_size column already exists");
     }
 
     // Check if queue_wait_time_ms column exists
@@ -165,14 +165,14 @@ async function addMissingColumns() {
     `);
 
     if (checkQueueWait.rows.length === 0) {
-      console.log('Adding queue_wait_time_ms column...');
+      console.log("Adding queue_wait_time_ms column...");
       await client.query(`
         ALTER TABLE gpu_queue_jobs
         ADD COLUMN queue_wait_time_ms INTEGER
       `);
-      console.log('✓ queue_wait_time_ms column added');
+      console.log("✓ queue_wait_time_ms column added");
     } else {
-      console.log('✓ queue_wait_time_ms column already exists');
+      console.log("✓ queue_wait_time_ms column already exists");
     }
 
     // Check if result column exists
@@ -184,19 +184,19 @@ async function addMissingColumns() {
     `);
 
     if (checkResultColumn.rows.length === 0) {
-      console.log('Adding result column...');
+      console.log("Adding result column...");
       await client.query(`
         ALTER TABLE gpu_queue_jobs
         ADD COLUMN result JSONB
       `);
-      console.log('✓ result column added');
+      console.log("✓ result column added");
     } else {
-      console.log('✓ result column already exists');
+      console.log("✓ result column already exists");
     }
 
-    console.log('\nAll required columns are present!');
+    console.log("\nAll required columns are present!");
   } catch (error) {
-    console.error('Error adding columns:', error);
+    console.error("Error adding columns:", error);
   } finally {
     client.release();
     await pool.end();

@@ -1,16 +1,16 @@
-const http = require('http');
-const fs = require('fs');
-const path = require('path');
-const { spawn } = require('child_process');
-const WebSocket = require('ws');
+const http = require("http");
+const fs = require("fs");
+const path = require("path");
+const { spawn } = require("child_process");
+const WebSocket = require("ws");
 
 const PORT = process.env.PORT || 8005;
 
 let playground = { providers: [], categories: [], scores: {} };
 try {
-  playground = JSON.parse(fs.readFileSync(path.join(__dirname, 'playground.json'), 'utf8'));
+  playground = JSON.parse(fs.readFileSync(path.join(__dirname, "playground.json"), "utf8"));
 } catch (err) {
-  console.error('failed to load playground.json:', err.message);
+  console.error("failed to load playground.json:", err.message);
 }
 
 function categorize(prompt) {
@@ -32,7 +32,7 @@ function getLeaderboard(category) {
     const map = scores[category] || {};
     const rankings = Object.entries(map)
       .map(([key, score]) => {
-        const [providerId, modelId] = key.split('/');
+        const [providerId, modelId] = key.split("/");
         const provider = (playground.providers || []).find((p) => p.id === providerId);
         const model = provider ? provider.models.find((m) => m.id === modelId) : null;
         return {
@@ -56,97 +56,97 @@ function getLeaderboard(category) {
 }
 
 const server = http.createServer((req, res) => {
-  const parsed = new URL(req.url, 'http://localhost');
+  const parsed = new URL(req.url, "http://localhost");
   const pathname = parsed.pathname;
   const sendJson = (code, obj) => {
-    res.writeHead(code, { 'Content-Type': 'application/json' });
+    res.writeHead(code, { "Content-Type": "application/json" });
     res.end(JSON.stringify(obj));
   };
 
-  if (pathname === '/' || pathname === '/index.html') {
-    const file = path.join(__dirname, 'index.html');
+  if (pathname === "/" || pathname === "/index.html") {
+    const file = path.join(__dirname, "index.html");
     fs.readFile(file, (err, data) => {
       if (err) {
         res.writeHead(500);
-        res.end('failed to load index.html');
+        res.end("failed to load index.html");
       } else {
-        res.writeHead(200, { 'Content-Type': 'text/html' });
+        res.writeHead(200, { "Content-Type": "text/html" });
         res.end(data);
       }
     });
     return;
   }
 
-  if (pathname === '/health') {
+  if (pathname === "/health") {
     sendJson(200, { ok: true });
     return;
   }
 
-  if (pathname === '/api/providers') {
+  if (pathname === "/api/providers") {
     sendJson(200, { providers: playground.providers });
     return;
   }
 
-  if (pathname === '/api/categories') {
+  if (pathname === "/api/categories") {
     sendJson(200, { categories: playground.categories });
     return;
   }
 
-  if (pathname === '/api/categorize') {
-    const prompt = parsed.searchParams.get('prompt') || '';
+  if (pathname === "/api/categorize") {
+    const prompt = parsed.searchParams.get("prompt") || "";
     const categories = categorize(prompt);
     sendJson(200, { prompt, categories });
     return;
   }
 
-  if (pathname === '/api/leaderboard') {
-    const category = parsed.searchParams.get('category') || null;
+  if (pathname === "/api/leaderboard") {
+    const category = parsed.searchParams.get("category") || null;
     sendJson(200, getLeaderboard(category));
     return;
   }
 
   res.writeHead(404);
-  res.end('not found');
+  res.end("not found");
 });
 
-const wss = new WebSocket.Server({ server, path: '/ws' });
+const wss = new WebSocket.Server({ server, path: "/ws" });
 
 function getProviderCommand(provider, prompt, mode) {
-  const p = provider || 'devin-stub';
+  const p = provider || "devin-stub";
   switch (p) {
-    case 'devin-stub': {
-      const stubArgs = ['-p', '--', prompt];
-      if (mode && mode !== 'normal') {
-        stubArgs.unshift('--permission-mode', mode);
+    case "devin-stub": {
+      const stubArgs = ["-p", "--", prompt];
+      if (mode && mode !== "normal") {
+        stubArgs.unshift("--permission-mode", mode);
       }
       return {
-        cmd: 'python3',
-        args: [path.join(__dirname, 'devin-stub.py'), ...stubArgs],
+        cmd: "python3",
+        args: [path.join(__dirname, "devin-stub.py"), ...stubArgs],
         env: {},
       };
     }
-    case 'openai':
+    case "openai":
       return {
-        cmd: 'python3',
-        args: [path.join(__dirname, 'providers', 'openai.py'), prompt],
+        cmd: "python3",
+        args: [path.join(__dirname, "providers", "openai.py"), prompt],
         env: {},
       };
-    case 'claude':
+    case "claude":
       return {
-        cmd: 'python3',
-        args: [path.join(__dirname, 'providers', 'claude.py'), prompt],
+        cmd: "python3",
+        args: [path.join(__dirname, "providers", "claude.py"), prompt],
         env: {},
       };
-    case 'ollama':
+    case "ollama":
       return {
-        cmd: 'python3',
-        args: [path.join(__dirname, 'providers', 'ollama.py'), prompt],
+        cmd: "python3",
+        args: [path.join(__dirname, "providers", "ollama.py"), prompt],
         env: {},
       };
-    case 'gemini':
+    case "gemini":
       return {
-        cmd: 'python3',
-        args: [path.join(__dirname, 'providers', 'gemini.py'), prompt],
+        cmd: "python3",
+        args: [path.join(__dirname, "providers", "gemini.py"), prompt],
         env: {},
       };
     default:
@@ -156,12 +156,12 @@ function getProviderCommand(provider, prompt, mode) {
 
 function stripAnsi(buf) {
   return buf
-    .replace(/\x1b\[[0-9;?]*[a-zA-Z]/g, '')
-    .replace(/\x1b\][^\x07\x1b]*(?:\x07|\x1b\\)/g, '')
-    .replace(/\x1b[\(\)][AB012]/g, '');
+    .replace(/\x1b\[[0-9;?]*[a-zA-Z]/g, "")
+    .replace(/\x1b\][^\x07\x1b]*(?:\x07|\x1b\\)/g, "")
+    .replace(/\x1b[\(\)][AB012]/g, "");
 }
 
-wss.on('connection', (ws) => {
+wss.on("connection", (ws) => {
   let child = null;
 
   function send(type, payload) {
@@ -170,65 +170,65 @@ wss.on('connection', (ws) => {
     }
   }
 
-  ws.on('message', (raw) => {
+  ws.on("message", (raw) => {
     let msg;
     try {
       msg = JSON.parse(raw);
     } catch (e) {
-      send('error', { message: 'bad json' });
+      send("error", { message: "bad json" });
       return;
     }
 
-    if (msg.type === 'cancel' && child) {
-      child.kill('SIGTERM');
+    if (msg.type === "cancel" && child) {
+      child.kill("SIGTERM");
       child = null;
-      send('status', { text: 'cancelled' });
+      send("status", { text: "cancelled" });
       return;
     }
 
-    if (msg.type === 'prompt' && msg.prompt && !child) {
+    if (msg.type === "prompt" && msg.prompt && !child) {
       const prompt = String(msg.prompt).trim();
       if (!prompt) return;
 
-      send('status', { text: 'running' });
+      send("status", { text: "running" });
 
       let command;
       try {
         command = getProviderCommand(msg.provider, prompt, msg.mode);
       } catch (err) {
-        send('error', { message: err.message });
+        send("error", { message: err.message });
         return;
       }
 
       child = spawn(command.cmd, command.args, {
-        env: { ...process.env, NO_COLOR: '1', ...command.env },
+        env: { ...process.env, NO_COLOR: "1", ...command.env },
         cwd: __dirname,
         detached: false,
       });
 
-      child.stdout.on('data', (data) => {
-        send('out', { text: stripAnsi(data.toString('utf8')) });
+      child.stdout.on("data", (data) => {
+        send("out", { text: stripAnsi(data.toString("utf8")) });
       });
 
-      child.stderr.on('data', (data) => {
-        send('err', { text: stripAnsi(data.toString('utf8')) });
+      child.stderr.on("data", (data) => {
+        send("err", { text: stripAnsi(data.toString("utf8")) });
       });
 
-      child.on('error', (err) => {
-        send('err', { text: `spawn error: ${err.message}` });
+      child.on("error", (err) => {
+        send("err", { text: `spawn error: ${err.message}` });
         child = null;
       });
 
-      child.on('close', (code) => {
+      child.on("close", (code) => {
         child = null;
-        send('done', { code: code ?? 0 });
+        send("done", { code: code ?? 0 });
       });
     }
   });
 
-  ws.on('close', () => {
+  ws.on("close", () => {
     if (child) {
-      child.kill('SIGTERM');
+      child.kill("SIGTERM");
       child = null;
     }
   });

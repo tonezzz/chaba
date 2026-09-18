@@ -2,7 +2,7 @@ title: Storage Policy
 subtitle: Canonical data storage locations, retention, and cleanup status for chaba
 icon: database
 version: 1
-last_reviewed: '2026-08-31T14:00:00+07:00'
+last_reviewed: "2026-08-31T14:00:00+07:00"
 reviewer: assistant
 owner: tony
 trend: decreasing
@@ -20,16 +20,16 @@ policy:
   purpose: Track where files and data are stored, set retention and cleanup rules, and monitor status.
   review_frequency: weekly
   data_classification:
-    - 'git-managed: project source and SSOT in chaba/'
-    - 'non-git user data: ~/.local/share/, ~/.config/, ~/.cache/'
-    - 'secrets: ~/.config/secrets/ and other mode-0600 files'
-    - 'remote: Google Drive backups via rclone'
+    - "git-managed: project source and SSOT in chaba/"
+    - "non-git user data: ~/.local/share/, ~/.config/, ~/.cache/"
+    - "secrets: ~/.config/secrets/ and other mode-0600 files"
+    - "remote: Google Drive backups via rclone"
 
 categories:
   - id: devin-cli
     label: Devin CLI session state
     paths:
-      - '~/.local/share/devin/cli'
+      - "~/.local/share/devin/cli"
     current_size: 42G
     breakdown:
       sessions.db: 41G
@@ -46,14 +46,14 @@ categories:
     status: warning
     retention: Sessions kept for 7 days; logs and summaries retained until manually pruned.
     cleanup:
-      - 'Prune old sessions: scripts/prune-devin-sessions.sh [retention-days]'
+      - "Prune old sessions: scripts/prune-devin-sessions.sh [retention-days]"
       - Archive or delete ~/.local/share/devin/cli/logs files > 90 days
     note: Prune+VACUUM completed 2026-08-31 with 7-day retention. sessions.db 41G. Old backups removed.
 
   - id: containers
     label: Podman/Docker container storage
     paths:
-      - '~/.local/share/containers/storage'
+      - "~/.local/share/containers/storage"
     current_size: 3.1G
     breakdown:
       localhost/status-api: 1.66G
@@ -75,7 +75,7 @@ categories:
   - id: cache
     label: User cache
     paths:
-      - '~/.cache'
+      - "~/.cache"
     current_size: 2.8G
     breakdown:
       google-chrome: 1G
@@ -93,7 +93,7 @@ categories:
       - ms-playwright-mcp cache is on /dev/shm/ms-playwright-mcp (symlinked from ~/.cache; 29M)
       - puccinialin cache is on /dev/shm/puccinialin on tony-omen (symlinked from ~/.cache; 871M; ~0.09 s -> ~0.00 s)
       - npm cache is on /dev/shm/npm (symlinked from ~/.npm; 450M; ~0.17 s -> ~0.00 s)
-      - '~/.cache/trivy cleared 2026-08-30; will re-fetch on next scan'
+      - "~/.cache/trivy cleared 2026-08-30; will re-fetch on next scan"
       - Clear Chrome cache if not actively needed
     note: |
       Rclone VFS cache moved to /dev/shm/rclone-cache and max-size raised to 2G 2026-08-31.
@@ -118,12 +118,12 @@ categories:
   - id: claude
     label: Claude Desktop data
     paths:
-      - '~/.config/Claude'
+      - "~/.config/Claude"
     current_size: 318M
     breakdown:
-      'Claude Extensions/local.unpacked.rikaidev.yomi/node_modules': 174M
+      "Claude Extensions/local.unpacked.rikaidev.yomi/node_modules": 174M
       Cache: 87M
-      'Code Cache': 32M
+      "Code Cache": 32M
     threshold:
       warning: 200M
       critical: 500M
@@ -156,15 +156,15 @@ categories:
   - id: app-data
     label: Application data
     paths:
-      - '~/.local/share/yomi'
-      - '~/.local/share/tuya'
-      - '~/.local/share/home-assistant-michael'
-      - '~/.local/share/wifi'
-      - '~/.config/go2rtc'
+      - "~/.local/share/yomi"
+      - "~/.local/share/tuya"
+      - "~/.local/share/home-assistant-michael"
+      - "~/.local/share/wifi"
+      - "~/.config/go2rtc"
     current_size: 68.5M
     breakdown:
-      'yomi/search-index.db': 24M
-      'yomi/search-index.db-wal': 4.9M
+      "yomi/search-index.db": 24M
+      "yomi/search-index.db-wal": 4.9M
       tuya: 36M
       home-assistant-michael: 3.5M
       wifi: 8K
@@ -205,7 +205,7 @@ improvements:
     status: completed
     owner: tony
     script: scripts/prune-devin-sessions.sh
-    result: '7-day prune completed 2026-08-31: sessions.db 50G -> 41G; rows removed: 560 sessions, 303123 message_nodes, 50146 tool_call_state'
+    result: "7-day prune completed 2026-08-31: sessions.db 50G -> 41G; rows removed: 560 sessions, 303123 message_nodes, 50146 tool_call_state"
   - label: Prune container images
     source: ssot.storage.yml
     target_score: containers < 5G
@@ -224,5 +224,5 @@ improvements:
 
 review_schedule:
   frequency: weekly
-  next_review: '2026-09-07'
+  next_review: "2026-09-07"
   alert_dir: docs/ssot/focus-inbox

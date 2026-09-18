@@ -1,4 +1,4 @@
-import pool from './db.mjs';
+import pool from "./db.mjs";
 
 async function migrate() {
   const client = await pool.connect();
@@ -18,20 +18,20 @@ async function migrate() {
         UNIQUE(chat_id, date)
       )
     `);
-    console.log('Created daily_summaries table');
+    console.log("Created daily_summaries table");
 
     await client.query(`
       CREATE INDEX IF NOT EXISTS daily_summaries_chat_date 
       ON daily_summaries(chat_id, date DESC)
     `);
-    console.log('Created daily_summaries_chat_date index');
+    console.log("Created daily_summaries_chat_date index");
   } finally {
     client.release();
   }
   await pool.end();
 }
 
-migrate().catch(err => {
-  console.error('Migration failed:', err);
+migrate().catch((err) => {
+  console.error("Migration failed:", err);
   process.exit(1);
 });

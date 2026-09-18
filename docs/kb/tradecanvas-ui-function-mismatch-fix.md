@@ -3,18 +3,18 @@ category: troubleshooting
 ---
 
 # TradeCanvas UI Function Mismatch Fix & Modular Refactoring
+
 ## What it is
 
 **Date:** 2026-08-08
 
-
 **Date:** 2026-08-08  
 **Category:** UI/JavaScript  
 **Tags:** tradecanvas-ui, javascript, debugging, function-mismatch, modular-architecture
+
 ## Context/Background
 
 Created 2026-08-08 as part of Chaba infrastructure documentation.
-
 
 ## Context
 
@@ -30,7 +30,7 @@ chartLoader.init().then(() => initStrategyPanel(chartLoader));
 
 // strategy-compare.js (actual function name)
 function initComparePanel(chartLoader) {
-    // ...
+  // ...
 }
 ```
 
@@ -48,22 +48,22 @@ Changed compare.html to call the correct function:
 
 ```html
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const chartLoader = new ChartLoader({
-            containerId: 'main-chart',
-            symbol: 'THB',
-            timeframe: 'all',
-            showVolume: false,
-            showIndicators: false,
-            enableControls: false,
-            enableWebSocket: false,
-            enableMarkers: false,
-            autoRefresh: false
-        });
-
-        window.chartLoader = chartLoader;
-        chartLoader.init().then(() => initComparePanel(chartLoader)); // Fixed function name
+  document.addEventListener("DOMContentLoaded", function () {
+    const chartLoader = new ChartLoader({
+      containerId: "main-chart",
+      symbol: "THB",
+      timeframe: "all",
+      showVolume: false,
+      showIndicators: false,
+      enableControls: false,
+      enableWebSocket: false,
+      enableMarkers: false,
+      autoRefresh: false,
     });
+
+    window.chartLoader = chartLoader;
+    chartLoader.init().then(() => initComparePanel(chartLoader)); // Fixed function name
+  });
 </script>
 ```
 
@@ -74,11 +74,13 @@ The `strategies.js` file became too large (821 lines) with all strategy implemen
 ## Solution 2: Modular Refactoring
 
 ### Created Separate Module
+
 - **`hindsight-strategies.js`** - New file containing Hindsight01Strategy and Hindsight02Strategy classes
 - ~250 lines, focused solely on hindsight algorithms
 - Easier to test and debug independently
 
 ### Updated Load Order
+
 ```html
 <script src="chart-loader.js?v=14"></script>
 <script src="strategies.js?v=14"></script>
@@ -87,22 +89,24 @@ The `strategies.js` file became too large (821 lines) with all strategy implemen
 ```
 
 ### Dynamic Registration Pattern
+
 ```javascript
 function initComparePanel(chartLoader) {
-    // Register hindsight strategies from separate module
-    if (typeof Hindsight01Strategy !== 'undefined') {
-        StrategyFactory.register('hindsight_01', Hindsight01Strategy);
-        console.log('Registered Hindsight-01 strategy');
-    }
-    if (typeof Hindsight02Strategy !== 'undefined') {
-        StrategyFactory.register('hindsight_02', Hindsight02Strategy);
-        console.log('Registered Hindsight-02 strategy');
-    }
-    // ... rest of init
+  // Register hindsight strategies from separate module
+  if (typeof Hindsight01Strategy !== "undefined") {
+    StrategyFactory.register("hindsight_01", Hindsight01Strategy);
+    console.log("Registered Hindsight-01 strategy");
+  }
+  if (typeof Hindsight02Strategy !== "undefined") {
+    StrategyFactory.register("hindsight_02", Hindsight02Strategy);
+    console.log("Registered Hindsight-02 strategy");
+  }
+  // ... rest of init
 }
 ```
 
 ### File Size Reduction
+
 - **strategies.js**: Reduced from 821 lines to ~600 lines (removed 286 lines)
 - **hindsight-strategies.js**: New 250-line focused module
 - **Total**: More maintainable, easier to debug
@@ -118,6 +122,7 @@ function initComparePanel(chartLoader) {
 ## Verification
 
 After deployment:
+
 1. Hard refresh browser (Ctrl+F5) to clear cache
 2. Check console for "Registered Hindsight-01 strategy" and "Registered Hindsight-02 strategy"
 3. Verify no JavaScript errors in console

@@ -15,6 +15,7 @@ Global rules were updated to reflect the MDDB-based architecture and comprehensi
 ## Success Criteria Summary
 
 ### Global Rules Success
+
 - ✅ 95%+ of documentation queries use MDDB first
 - ✅ Appropriate MCP service selection in 90%+ of cases
 - ✅ User confirmation obtained before fallback in 100% of cases
@@ -22,6 +23,7 @@ Global rules were updated to reflect the MDDB-based architecture and comprehensi
 - ✅ Service failure detection works correctly
 
 ### MDDB Search Success
+
 - ✅ Search relevance scores > 0.45 for top results
 - ✅ Search response times < 600ms for 95% of queries
 - ✅ All 13 collections present and functional

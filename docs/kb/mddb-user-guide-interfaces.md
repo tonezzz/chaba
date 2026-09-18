@@ -3,11 +3,14 @@ category: operations
 ---
 
 # Web UI: Open browser and use search interface
+
 # MCP Integration: Use via AI assistants
+
 curl -X POST http://tony-omen.local:11023/v1/vector-search \
-  -H "Content-Type: application/json" \
-  -d '{"query":"mcp infrastructure configuration","limit":5,"collection":"ssot-infrastructure"}'
-```
+-H "Content-Type: application/json" \
+-d '{"query":"mcp infrastructure configuration","limit":5,"collection":"ssot-infrastructure"}'
+
+````
 
 ## MDDB Search Usage
 
@@ -54,9 +57,10 @@ mcp_call_tool("mddb", "get_document", {
 
 // List collections
 mcp_call_tool("mddb", "list_collections", {})
-```
+````
 
 **Best For**:
+
 - AI assistant queries
 - Programmatic access
 - Integration with workflows
@@ -67,6 +71,7 @@ mcp_call_tool("mddb", "list_collections", {})
 **Endpoint**: http://tony-omen.local:11023/
 
 **Key Endpoints**:
+
 - `/health`: System health check
 - `/v1/stats`: Database statistics
 - `/v1/vector-stats`: Search subsystem statistics
@@ -74,4 +79,7 @@ mcp_call_tool("mddb", "list_collections", {})
 - `/v1/vector-reindex`: Reindex collections
 
 **Usage Examples**:
+
 ```bash
+
+```

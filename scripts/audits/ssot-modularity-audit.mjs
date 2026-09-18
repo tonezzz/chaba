@@ -3,19 +3,19 @@
  * SSOT modularity audit.
  * Checks that SSOT files are focused, not overly nested, and do not duplicate titles or concerns.
  */
-import { readFileSync, readdirSync, writeFileSync, mkdirSync, existsSync } from 'fs';
-import { join, relative } from 'path';
-import yaml from 'js-yaml';
+import { readFileSync, readdirSync, writeFileSync, mkdirSync, existsSync } from "fs";
+import { join, relative } from "path";
+import yaml from "js-yaml";
 
-const PROJECT_ROOT = new URL('../../', import.meta.url).pathname.replace(/\/$/, '');
-const SSOT_DIR = join(PROJECT_ROOT, 'docs', 'ssot');
-const REPORTS_DIR = join(PROJECT_ROOT, 'reports', 'audits');
-const SSOT_FILE = join(PROJECT_ROOT, 'docs', 'ssot', 'infrastructure', 'ssot.audit.yml');
+const PROJECT_ROOT = new URL("../../", import.meta.url).pathname.replace(/\/$/, "");
+const SSOT_DIR = join(PROJECT_ROOT, "docs", "ssot");
+const REPORTS_DIR = join(PROJECT_ROOT, "reports", "audits");
+const SSOT_FILE = join(PROJECT_ROOT, "docs", "ssot", "infrastructure", "ssot.audit.yml");
 
 function loadConfig() {
   try {
-    const doc = yaml.load(readFileSync(SSOT_FILE, 'utf8'));
-    const audit = (doc.audits || []).find((a) => a.name === 'ssot-modularity');
+    const doc = yaml.load(readFileSync(SSOT_FILE, "utf8"));
+    const audit = (doc.audits || []).find((a) => a.name === "ssot-modularity");
     return audit?.thresholds || {};
   } catch {
     return {};
@@ -23,7 +23,7 @@ function loadConfig() {
 }
 
 function nestingDepth(obj, depth = 0) {
-  if (obj && typeof obj === 'object' && !Array.isArray(obj)) {
+  if (obj && typeof obj === "object" && !Array.isArray(obj)) {
     const keys = Object.keys(obj);
     if (keys.length === 0) return depth;
     return Math.max(...keys.map((k) => nestingDepth(obj[k], depth + 1)));
@@ -45,14 +45,14 @@ function main() {
 
   const files = [];
   for (const p of readdirSync(SSOT_DIR, { recursive: true })) {
-    if (typeof p !== 'string') continue;
-    if (p.endsWith('.yml')) {
+    if (typeof p !== "string") continue;
+    if (p.endsWith(".yml")) {
       files.push(join(SSOT_DIR, p));
     }
   }
 
   const items = files.map((p) => {
-    const raw = readFileSync(p, 'utf8');
+    const raw = readFileSync(p, "utf8");
     const words = raw.split(/\s+/).filter(Boolean).length;
     let parsed = null;
     let parseError = null;
@@ -61,9 +61,9 @@ function main() {
     } catch (e) {
       parseError = e.message;
     }
-    const topLevel = parsed && typeof parsed === 'object' ? Object.keys(parsed).length : 0;
+    const topLevel = parsed && typeof parsed === "object" ? Object.keys(parsed).length : 0;
     const depth = parsed ? nestingDepth(parsed) : 0;
-    const title = parsed?.title || '';
+    const title = parsed?.title || "";
     return {
       file: relative(PROJECT_ROOT, p),
       words,
@@ -76,12 +76,11 @@ function main() {
   });
 
   const pathMatches = (file, p) =>
-    p.endsWith('/') ? file.startsWith(p) : (file === p || file.startsWith(p + '/'));
+    p.endsWith("/") ? file.startsWith(p) : file === p || file.startsWith(p + "/");
 
   for (const item of items) {
     const isExcluded =
-      excludedTitles.has(item.title) ||
-      excludedPaths.some((p) => pathMatches(item.file, p));
+      excludedTitles.has(item.title) || excludedPaths.some((p) => pathMatches(item.file, p));
     if (isExcluded) continue;
     if (item.parse_error) {
       item.issues.push(`parse error: ${item.parse_error}`);
@@ -96,13 +95,12 @@ function main() {
       item.issues.push(`too deeply nested: ${item.depth} > ${maxDepth}`);
     }
     if (!item.title) {
-      item.issues.push('missing title');
+      item.issues.push("missing title");
     }
   }
 
   const isExcluded = (item) =>
-    excludedTitles.has(item.title) ||
-    excludedPaths.some((p) => pathMatches(item.file, p));
+    excludedTitles.has(item.title) || excludedPaths.some((p) => pathMatches(item.file, p));
 
   const titleCounts = {};
   for (const item of items) {
@@ -141,37 +139,36 @@ function main() {
   };
 
   mkdirSync(REPORTS_DIR, { recursive: true });
-  writeFileSync(join(REPORTS_DIR, 'ssot-modularity.json'), JSON.stringify(result, null, 2));
+  writeFileSync(join(REPORTS_DIR, "ssot-modularity.json"), JSON.stringify(result, null, 2));
 
   const md = [
-    '# SSOT Modularity Audit',
-    '',
+    "# SSOT Modularity Audit",
+    "",
     `- Generated: ${result.generated}`,
     `- Total: ${result.total}`,
     `- Flagged: ${result.flagged}`,
-    '',
-    '## Settings',
-    '',
+    "",
+    "## Settings",
+    "",
     `- max_words: ${maxWords}`,
     `- max_top_level_keys: ${maxTopLevel}`,
     `- max_nesting_depth: ${maxDepth}`,
     `- max_duplicate_titles: ${maxFilesWithSameTitle}`,
-    '',
-    '## Flagged files',
-    '',
-    ...flagged.map((i) => [
-      `### ${i.file}`,
-      '',
-      ...i.issues.map((issue) => `- ${issue}`),
-      '',
-    ].join('\n')),
-    ...(duplicateTitles.length ? [
-      '## Duplicate titles',
-      '',
-      ...duplicateTitles.map(([title, count]) => `- '${title}' used ${count} times`),
-    ] : []),
-  ].join('\n');
-  writeFileSync(join(REPORTS_DIR, 'ssot-modularity.md'), md);
+    "",
+    "## Flagged files",
+    "",
+    ...flagged.map((i) =>
+      [`### ${i.file}`, "", ...i.issues.map((issue) => `- ${issue}`), ""].join("\n")
+    ),
+    ...(duplicateTitles.length
+      ? [
+          "## Duplicate titles",
+          "",
+          ...duplicateTitles.map(([title, count]) => `- '${title}' used ${count} times`),
+        ]
+      : []),
+  ].join("\n");
+  writeFileSync(join(REPORTS_DIR, "ssot-modularity.md"), md);
 
   console.log(JSON.stringify(result, null, 2));
 }

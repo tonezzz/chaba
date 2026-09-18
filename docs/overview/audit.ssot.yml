@@ -22,11 +22,11 @@ sections:
       - label: 1. YAML syntax
         text: Each file must parse as valid YAML; structural errors are caught first.
       - label: 2. Schema
-        text: 'Required top-level keys: title, subtitle, icon, sections. Each section needs title, icon, layout, items/headers/rows/dataUrl.'
+        text: "Required top-level keys: title, subtitle, icon, sections. Each section needs title, icon, layout, items/headers/rows/dataUrl."
       - label: 3. Layout validity
-        text: 'Allowed layouts: list, table, tree, stats, panels, link-grid, dynamic-panels. Unknown layouts break overview.js.'
+        text: "Allowed layouts: list, table, tree, stats, panels, link-grid, dynamic-panels. Unknown layouts break overview.js."
       - label: 4. Naming convention
-        text: 'Preferred: group.subgroup.name.yml so sync-docs-overview.mjs can group panels. Flat names fall back to Ungrouped.'
+        text: "Preferred: group.subgroup.name.yml so sync-docs-overview.mjs can group panels. Flat names fall back to Ungrouped."
       - label: 5. Uniqueness
         text: No duplicate titles across all *.yml files; each file covers one distinct topic.
       - label: 6. Sync drift
@@ -66,7 +66,7 @@ sections:
       - label: Edit tool
         text: public/apps/shared/yml-edit.js lets users copy, download, or server-save per-page YAML sources from the browser.
       - label: Preview
-        text: ':8081 via Caddy full parity; :8123 php -S for local Plesk-style tests.'
+        text: ":8081 via Caddy full parity; :8123 php -S for local Plesk-style tests."
 
   - title: Maintenance workflow
     icon: 🛠️
@@ -88,8 +88,8 @@ sections:
     layout: list
     items:
       - label: Static-only
-        text: 'These YAML files are static data. chaba.h3 on Plesk has no Node/Docker/WebSocket/LAN APIs.'
+        text: "These YAML files are static data. chaba.h3 on Plesk has no Node/Docker/WebSocket/LAN APIs."
       - label: External SSOTs
-        text: 'Some values (camera URLs, ports) are mastered in cameras.json, compose files, or env files. Overview YAML links to them, does not duplicate them.'
+        text: "Some values (camera URLs, ports) are mastered in cameras.json, compose files, or env files. Overview YAML links to them, does not duplicate them."
       - label: Live drift
-        text: 'Runtime state changes are not auto-reflected here. Manual or periodic audits are needed to keep docs current.'
+        text: "Runtime state changes are not auto-reflected here. Manual or periodic audits are needed to keep docs current."

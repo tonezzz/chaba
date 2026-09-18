@@ -4,11 +4,11 @@ class HealthCheckDashboard {
     this.services = [];
     this.recoveryActions = {};
     this.autoRefreshInterval = null;
-    this.currentFilter = 'all';
-    this.location = 'auto'; // auto, home, mobile
+    this.currentFilter = "all";
+    this.location = "auto"; // auto, home, mobile
     this.configs = {
-      home: '/ssot.health.home.yml',
-      mobile: '/ssot.health.mobile.yml'
+      home: "/ssot.health.home.yml",
+      mobile: "/ssot.health.mobile.yml",
     };
     this.detectedLocation = null;
     this.init();
@@ -22,44 +22,44 @@ class HealthCheckDashboard {
 
     // Ensure location selector is updated after everything is loaded
     setTimeout(() => {
-      const location = this.location === 'auto' ? this.detectedLocation : this.location;
+      const location = this.location === "auto" ? this.detectedLocation : this.location;
       this.updateLocationSelector(location);
     }, 100);
 
     // Check if Yomi tab is active on load
     const yomiTab = document.querySelector('.health-tab[data-tab="yomi"]');
-    if (yomiTab && yomiTab.classList.contains('health-tab-active')) {
+    if (yomiTab && yomiTab.classList.contains("health-tab-active")) {
       this.checkYomiStatus();
     }
   }
 
   bindEvents() {
-    document.getElementById('btn-refresh').addEventListener('click', () => this.runHealthChecks());
-    document.getElementById('auto-refresh').addEventListener('change', (e) => {
+    document.getElementById("btn-refresh").addEventListener("click", () => this.runHealthChecks());
+    document.getElementById("auto-refresh").addEventListener("change", (e) => {
       if (e.target.checked) {
         this.startAutoRefresh();
       } else {
         this.stopAutoRefresh();
       }
     });
-    document.getElementById('category-filter').addEventListener('change', (e) => {
+    document.getElementById("category-filter").addEventListener("change", (e) => {
       this.currentFilter = e.target.value;
       this.renderServices();
     });
-    
+
     // Location selector
-    const locationSelector = document.getElementById('location-selector');
+    const locationSelector = document.getElementById("location-selector");
     if (locationSelector) {
-      locationSelector.addEventListener('change', (e) => {
+      locationSelector.addEventListener("change", (e) => {
         this.location = e.target.value;
         this.loadConfig();
       });
     }
 
     // Tab switching
-    const tabs = document.querySelectorAll('.health-tab');
-    tabs.forEach(tab => {
-      tab.addEventListener('click', () => {
+    const tabs = document.querySelectorAll(".health-tab");
+    tabs.forEach((tab) => {
+      tab.addEventListener("click", () => {
         const tabName = tab.dataset.tab;
         this.switchTab(tabName);
       });
@@ -68,28 +68,28 @@ class HealthCheckDashboard {
 
   switchTab(tabName) {
     // Update tab buttons
-    document.querySelectorAll('.health-tab').forEach(tab => {
-      tab.classList.remove('health-tab-active');
+    document.querySelectorAll(".health-tab").forEach((tab) => {
+      tab.classList.remove("health-tab-active");
       if (tab.dataset.tab === tabName) {
-        tab.classList.add('health-tab-active');
+        tab.classList.add("health-tab-active");
       }
     });
 
     // Update tab content
-    document.querySelectorAll('.health-tab-content').forEach(content => {
-      content.classList.remove('health-tab-active');
+    document.querySelectorAll(".health-tab-content").forEach((content) => {
+      content.classList.remove("health-tab-active");
       if (content.id === `tab-${tabName}`) {
-        content.classList.add('health-tab-active');
+        content.classList.add("health-tab-active");
       }
     });
 
     // Load Yomi status when switching to Yomi tab
-    if (tabName === 'yomi') {
+    if (tabName === "yomi") {
       this.checkYomiStatus();
     }
 
     // Load GPU status when switching to GPU tab
-    if (tabName === 'gpu') {
+    if (tabName === "gpu") {
       this.checkGPUStatus();
     }
   }
@@ -97,16 +97,14 @@ class HealthCheckDashboard {
   async detectLocation() {
     // Try to reach local endpoints to determine location
     // Use relative URLs since we're on the same domain
-    const homeEndpoints = [
-      '/api/health'
-    ];
+    const homeEndpoints = ["/api/health"];
 
     for (const endpoint of homeEndpoints) {
       try {
         const response = await fetch(endpoint);
         if (response.ok) {
-          this.detectedLocation = 'home';
-          return 'home';
+          this.detectedLocation = "home";
+          return "home";
         }
       } catch (error) {
         // Try next endpoint
@@ -115,15 +113,15 @@ class HealthCheckDashboard {
     }
 
     // If no home endpoint reachable, assume mobile
-    this.detectedLocation = 'mobile';
-    return 'mobile';
+    this.detectedLocation = "mobile";
+    return "mobile";
   }
 
   async loadConfig() {
     try {
       let location = this.location;
 
-      if (location === 'auto') {
+      if (location === "auto") {
         location = await this.detectLocation();
       }
 
@@ -141,9 +139,8 @@ class HealthCheckDashboard {
 
       // Update location selector
       this.updateLocationSelector(location);
-
     } catch (error) {
-      console.error('Failed to load health config:', error);
+      console.error("Failed to load health config:", error);
       this.showError(`Failed to load health configuration: ${error.message}`);
     }
   }
@@ -151,15 +148,16 @@ class HealthCheckDashboard {
   updateLocationSelector(location) {
     // Retry if elements aren't ready yet
     const update = () => {
-      const selector = document.getElementById('location-selector');
+      const selector = document.getElementById("location-selector");
       if (selector) {
         // Keep selector at current location setting
         selector.value = this.location;
 
         // Update status indicator
-        const statusIndicator = document.getElementById('location-status');
+        const statusIndicator = document.getElementById("location-status");
         if (statusIndicator) {
-          const detectedText = this.location === 'auto' && this.detectedLocation ? ` (${this.detectedLocation})` : '';
+          const detectedText =
+            this.location === "auto" && this.detectedLocation ? ` (${this.detectedLocation})` : "";
           statusIndicator.textContent = `Using: ${location}${detectedText}`;
           statusIndicator.className = `location-status location-${location}`;
         }
@@ -171,55 +169,53 @@ class HealthCheckDashboard {
   }
 
   async runHealthChecks() {
-    this.setRefreshStatus('refreshing');
-    const results = await Promise.all(
-      this.services.map(service => this.checkService(service))
-    );
-    
+    this.setRefreshStatus("refreshing");
+    const results = await Promise.all(this.services.map((service) => this.checkService(service)));
+
     this.services = this.services.map((service, index) => ({
       ...service,
-      status: results[index]
+      status: results[index],
     }));
 
     this.renderOverallStatus();
     this.renderServices();
     this.renderRecoveryActions();
     this.updateLastUpdated();
-    this.setRefreshStatus('success');
+    this.setRefreshStatus("success");
   }
 
   async checkYomiStatus() {
-    const container = document.getElementById('yomi-status');
+    const container = document.getElementById("yomi-status");
     container.innerHTML = '<div class="health-loading">Checking Yomi status...</div>';
 
     try {
       // Check Yomi API health endpoint
-      const response = await fetch('/api/yomi/health');
+      const response = await fetch("/api/yomi/health");
       const apiHealth = await response.json();
 
       // Get last updated timestamp
-      const lastUpdatedResponse = await fetch('/api/yomi/last-updated');
+      const lastUpdatedResponse = await fetch("/api/yomi/last-updated");
       const lastUpdatedData = await lastUpdatedResponse.json();
 
       // Get conversation count
-      const conversationsResponse = await fetch('/api/yomi/conversations');
+      const conversationsResponse = await fetch("/api/yomi/conversations");
       const conversationsData = await conversationsResponse.json();
 
       // Get summarization status
-      const summarizationResponse = await fetch('/api/yomi/summarization-status');
+      const summarizationResponse = await fetch("/api/yomi/summarization-status");
       const summarizationData = await summarizationResponse.json();
 
       // Get activity status
-      const activityResponse = await fetch('/api/yomi/activity-status');
+      const activityResponse = await fetch("/api/yomi/activity-status");
       const activityData = await activityResponse.json();
 
       const status = {
-        api: apiHealth.ok ? 'healthy' : 'unhealthy',
+        api: apiHealth.ok ? "healthy" : "unhealthy",
         lastUpdated: lastUpdatedData.lastUpdated,
         conversationCount: conversationsData.conversations?.length || 0,
         generatedAt: conversationsData.generatedAt,
         summarization: summarizationData,
-        activity: activityData
+        activity: activityData,
       };
 
       this.renderYomiStatus(status);
@@ -235,23 +231,29 @@ class HealthCheckDashboard {
   }
 
   async checkGPUStatus() {
-    const container = document.getElementById('gpu-status');
+    const container = document.getElementById("gpu-status");
     container.innerHTML = '<div class="health-loading">Checking GPU status...</div>';
 
     try {
       // Get GPU status from status-api
-      const gpuResponse = await fetch('/api/gpu/status');
+      const gpuResponse = await fetch("/api/gpu/status");
       const gpuData = await gpuResponse.json();
 
       // Get GPU queue status
-      const queueResponse = await fetch('/api/gpu-queue/status');
+      const queueResponse = await fetch("/api/gpu-queue/status");
       const queueData = await queueResponse.json();
 
       // Get GPU service health
       const [imagen2Health, thaiLegalHealth, txt2vidHealth] = await Promise.all([
-        fetch('http://tony-omen.local:8000/health').then(r => r.json()).catch(() => ({ status: 'error' })),
-        fetch('http://tony-omen.local:8001/health').then(r => r.json()).catch(() => ({ status: 'error' })),
-        fetch('http://tony-omen.local:8002/health').then(r => r.json()).catch(() => ({ status: 'error' }))
+        fetch("http://tony-omen.local:8000/health")
+          .then((r) => r.json())
+          .catch(() => ({ status: "error" })),
+        fetch("http://tony-omen.local:8001/health")
+          .then((r) => r.json())
+          .catch(() => ({ status: "error" })),
+        fetch("http://tony-omen.local:8002/health")
+          .then((r) => r.json())
+          .catch(() => ({ status: "error" })),
       ]);
 
       const status = {
@@ -260,8 +262,8 @@ class HealthCheckDashboard {
         services: {
           imagen2: imagen2Health,
           thaiLegal: thaiLegalHealth,
-          txt2vid: txt2vidHealth
-        }
+          txt2vid: txt2vidHealth,
+        },
       };
 
       this.renderGPUStatus(status);
@@ -277,19 +279,23 @@ class HealthCheckDashboard {
   }
 
   renderYomiStatus(status) {
-    const container = document.getElementById('yomi-status');
-    const lastUpdated = status.lastUpdated ? new Date(status.lastUpdated).toLocaleString() : 'Never';
-    const timeSinceUpdate = status.lastUpdated 
-      ? this.formatTimeSince(new Date(status.lastUpdated)) 
-      : 'Unknown';
+    const container = document.getElementById("yomi-status");
+    const lastUpdated = status.lastUpdated
+      ? new Date(status.lastUpdated).toLocaleString()
+      : "Never";
+    const timeSinceUpdate = status.lastUpdated
+      ? this.formatTimeSince(new Date(status.lastUpdated))
+      : "Unknown";
 
     const sum = status.summarization || {};
-    const summaryCoverage = sum.conversations?.total > 0 
-      ? Math.round((sum.conversations?.withMeaningfulSummary / sum.conversations?.total) * 100) 
-      : 0;
-    const categoryCoverage = sum.conversations?.total > 0 
-      ? Math.round((sum.conversations?.withCategory / sum.conversations?.total) * 100) 
-      : 0;
+    const summaryCoverage =
+      sum.conversations?.total > 0
+        ? Math.round((sum.conversations?.withMeaningfulSummary / sum.conversations?.total) * 100)
+        : 0;
+    const categoryCoverage =
+      sum.conversations?.total > 0
+        ? Math.round((sum.conversations?.withCategory / sum.conversations?.total) * 100)
+        : 0;
     const avgQuality = sum.conversations?.avgSummaryQuality || 0;
 
     const activity = status.activity || {};
@@ -299,14 +305,15 @@ class HealthCheckDashboard {
     const processStatus = activity.processStatus || {};
 
     // Check if initial render or error state
-    const isInitialRender = container.innerHTML.includes('health-loading') || 
-                           container.innerHTML.includes('health-yomi-error');
+    const isInitialRender =
+      container.innerHTML.includes("health-loading") ||
+      container.innerHTML.includes("health-yomi-error");
 
     if (isInitialRender) {
       container.innerHTML = `
         <div class="health-yomi-overview">
           <div class="health-yomi-stat">
-            <div class="health-yomi-status ${status.api}" data-field="api-status">${status.api === 'healthy' ? 'Connected' : 'Disconnected'}</div>
+            <div class="health-yomi-status ${status.api}" data-field="api-status">${status.api === "healthy" ? "Connected" : "Disconnected"}</div>
             <div class="health-yomi-label">API Status</div>
           </div>
           <div class="health-yomi-stat">
@@ -323,7 +330,7 @@ class HealthCheckDashboard {
           <h3 class="health-yomi-section-title">Current Activity</h3>
           <div class="health-yomi-activity">
             <div class="health-yomi-activity-status">
-              <div class="health-yomi-activity-indicator ${processStatus.status === 'processing' || processStatus.status === 'processing_batch' ? 'busy' : 'active'}"></div>
+              <div class="health-yomi-activity-indicator ${processStatus.status === "processing" || processStatus.status === "processing_batch" ? "busy" : "active"}"></div>
               <div class="health-yomi-activity-text">${this.getProcessStatusText(processStatus)}</div>
             </div>
             <div class="health-yomi-activity-metrics">
@@ -340,27 +347,36 @@ class HealthCheckDashboard {
                 <span class="health-yomi-activity-value">${metrics.database?.updates_last_hour || 0}</span>
               </div>
             </div>
-            ${processStatus.status && processStatus.status !== 'idle' ? `
+            ${
+              processStatus.status && processStatus.status !== "idle"
+                ? `
               <div class="health-yomi-progress">
                 <div class="health-yomi-progress-bar">
                   <div class="health-yomi-progress-fill" style="width: ${this.getProgressPercent(processStatus)}%"></div>
                 </div>
                 <div class="health-yomi-progress-text">${this.getProgressText(processStatus)}</div>
               </div>
-            ` : ''}
+            `
+                : ""
+            }
           </div>
         </div>
 
         <div class="health-yomi-section">
           <h3 class="health-yomi-section-title">Recent Activity</h3>
           <div class="health-yomi-activity-feed">
-            ${recentActivity.slice(0, 5).map(item => `
+            ${recentActivity
+              .slice(0, 5)
+              .map(
+                (item) => `
               <div class="health-yomi-activity-item">
                 <div class="health-yomi-activity-item-name">${item.name}</div>
                 <div class="health-yomi-activity-item-time">${this.formatTimeSince(new Date(item.updated_at))} ago</div>
-                <div class="health-yomi-activity-item-quality">Quality: ${item.summary_quality || 'N/A'}</div>
+                <div class="health-yomi-activity-item-quality">Quality: ${item.summary_quality || "N/A"}</div>
               </div>
-            `).join('')}
+            `
+              )
+              .join("")}
           </div>
         </div>
         
@@ -393,11 +409,11 @@ class HealthCheckDashboard {
           </div>
           <div class="health-yomi-detail">
             <span class="health-yomi-detail-label">Data generated at:</span>
-            <span class="health-yomi-detail-value" data-field="generated-at">${status.generatedAt ? new Date(status.generatedAt).toLocaleString() : 'Unknown'}</span>
+            <span class="health-yomi-detail-value" data-field="generated-at">${status.generatedAt ? new Date(status.generatedAt).toLocaleString() : "Unknown"}</span>
           </div>
           <div class="health-yomi-detail">
             <span class="health-yomi-detail-label">Latest summary date:</span>
-            <span class="health-yomi-detail-value" data-field="latest-summary">${sum.dailySummaries?.latestSummaryDate || 'None'}</span>
+            <span class="health-yomi-detail-value" data-field="latest-summary">${sum.dailySummaries?.latestSummaryDate || "None"}</span>
           </div>
         </div>
       `;
@@ -407,11 +423,11 @@ class HealthCheckDashboard {
       if (apiStatusEl) {
         const oldStatus = apiStatusEl.className;
         apiStatusEl.className = `health-yomi-status ${status.api}`;
-        apiStatusEl.textContent = status.api === 'healthy' ? 'Connected' : 'Disconnected';
-        
+        apiStatusEl.textContent = status.api === "healthy" ? "Connected" : "Disconnected";
+
         if (oldStatus !== `health-yomi-status ${status.api}`) {
-          apiStatusEl.classList.add('status-updated');
-          setTimeout(() => apiStatusEl.classList.remove('status-updated'), 1000);
+          apiStatusEl.classList.add("status-updated");
+          setTimeout(() => apiStatusEl.classList.remove("status-updated"), 1000);
         }
       }
 
@@ -420,8 +436,8 @@ class HealthCheckDashboard {
         const oldCount = countEl.textContent;
         countEl.textContent = status.conversationCount;
         if (oldCount !== String(status.conversationCount)) {
-          countEl.classList.add('stat-updated');
-          setTimeout(() => countEl.classList.remove('stat-updated'), 500);
+          countEl.classList.add("stat-updated");
+          setTimeout(() => countEl.classList.remove("stat-updated"), 500);
         }
       }
 
@@ -437,7 +453,9 @@ class HealthCheckDashboard {
 
       const generatedAtEl = container.querySelector('[data-field="generated-at"]');
       if (generatedAtEl) {
-        generatedAtEl.textContent = status.generatedAt ? new Date(status.generatedAt).toLocaleString() : 'Unknown';
+        generatedAtEl.textContent = status.generatedAt
+          ? new Date(status.generatedAt).toLocaleString()
+          : "Unknown";
       }
 
       // Update summarization stats
@@ -446,8 +464,8 @@ class HealthCheckDashboard {
         const oldVal = summaryCoverageEl.textContent;
         summaryCoverageEl.textContent = `${summaryCoverage}%`;
         if (oldVal !== `${summaryCoverage}%`) {
-          summaryCoverageEl.classList.add('stat-updated');
-          setTimeout(() => summaryCoverageEl.classList.remove('stat-updated'), 500);
+          summaryCoverageEl.classList.add("stat-updated");
+          setTimeout(() => summaryCoverageEl.classList.remove("stat-updated"), 500);
         }
       }
 
@@ -466,23 +484,23 @@ class HealthCheckDashboard {
         const oldVal = dailySummariesEl.textContent;
         dailySummariesEl.textContent = sum.dailySummaries?.totalSummaries || 0;
         if (oldVal !== String(sum.dailySummaries?.totalSummaries || 0)) {
-          dailySummariesEl.classList.add('stat-updated');
-          setTimeout(() => dailySummariesEl.classList.remove('stat-updated'), 500);
+          dailySummariesEl.classList.add("stat-updated");
+          setTimeout(() => dailySummariesEl.classList.remove("stat-updated"), 500);
         }
       }
 
       const latestSummaryEl = container.querySelector('[data-field="latest-summary"]');
       if (latestSummaryEl) {
-        latestSummaryEl.textContent = sum.dailySummaries?.latestSummaryDate || 'None';
+        latestSummaryEl.textContent = sum.dailySummaries?.latestSummaryDate || "None";
       }
 
       // Update progress bar if present
-      const progressFillEl = container.querySelector('.health-yomi-progress-fill');
-      const progressTextEl = container.querySelector('.health-yomi-progress-text');
-      const activityTextEl = container.querySelector('.health-yomi-activity-text');
-      const activityIndicatorEl = container.querySelector('.health-yomi-activity-indicator');
-      
-      if (processStatus.status && processStatus.status !== 'idle') {
+      const progressFillEl = container.querySelector(".health-yomi-progress-fill");
+      const progressTextEl = container.querySelector(".health-yomi-progress-text");
+      const activityTextEl = container.querySelector(".health-yomi-activity-text");
+      const activityIndicatorEl = container.querySelector(".health-yomi-activity-indicator");
+
+      if (processStatus.status && processStatus.status !== "idle") {
         if (progressFillEl) {
           progressFillEl.style.width = `${this.getProgressPercent(processStatus)}%`;
         }
@@ -493,20 +511,20 @@ class HealthCheckDashboard {
           activityTextEl.textContent = this.getProcessStatusText(processStatus);
         }
         if (activityIndicatorEl) {
-          activityIndicatorEl.className = `health-yomi-activity-indicator ${processStatus.status === 'processing' || processStatus.status === 'processing_batch' ? 'busy' : 'active'}`;
+          activityIndicatorEl.className = `health-yomi-activity-indicator ${processStatus.status === "processing" || processStatus.status === "processing_batch" ? "busy" : "active"}`;
         }
       } else {
         if (progressFillEl) {
-          progressFillEl.style.width = '0%';
+          progressFillEl.style.width = "0%";
         }
         if (progressTextEl) {
-          progressTextEl.textContent = '';
+          progressTextEl.textContent = "";
         }
         if (activityTextEl) {
-          activityTextEl.textContent = 'Idle - Monitoring active';
+          activityTextEl.textContent = "Idle - Monitoring active";
         }
         if (activityIndicatorEl) {
-          activityIndicatorEl.className = 'health-yomi-activity-indicator active';
+          activityIndicatorEl.className = "health-yomi-activity-indicator active";
         }
       }
     }
@@ -526,13 +544,14 @@ class HealthCheckDashboard {
   }
 
   getProcessStatusText(status) {
-    if (!status || status.status === 'idle') return 'Idle - Monitoring active';
-    if (status.status === 'starting') return 'Starting...';
-    if (status.status === 'processing') return `Processing: ${status.currentChat}`;
-    if (status.status === 'processing_batch') return `Processing batch ${status.batch}/${status.totalBatches}`;
-    if (status.status === 'batch_complete') return 'Batch complete';
-    if (status.status === 'complete') return 'Complete';
-    return status.status || 'Unknown';
+    if (!status || status.status === "idle") return "Idle - Monitoring active";
+    if (status.status === "starting") return "Starting...";
+    if (status.status === "processing") return `Processing: ${status.currentChat}`;
+    if (status.status === "processing_batch")
+      return `Processing batch ${status.batch}/${status.totalBatches}`;
+    if (status.status === "batch_complete") return "Batch complete";
+    if (status.status === "complete") return "Complete";
+    return status.status || "Unknown";
   }
 
   getProgressPercent(status) {
@@ -541,7 +560,7 @@ class HealthCheckDashboard {
   }
 
   getProgressText(status) {
-    if (!status || !status.total) return '';
+    if (!status || !status.total) return "";
     const completed = status.completed || 0;
     const total = status.total || 0;
     const successCount = status.successCount || 0;
@@ -549,14 +568,15 @@ class HealthCheckDashboard {
   }
 
   renderGPUStatus(status) {
-    const container = document.getElementById('gpu-status');
+    const container = document.getElementById("gpu-status");
     const gpu = status.gpu;
     const queue = status.queue;
     const services = status.services || {};
 
     // Check if initial render or error state
-    const isInitialRender = container.innerHTML.includes('health-loading') ||
-                           container.innerHTML.includes('health-gpu-error');
+    const isInitialRender =
+      container.innerHTML.includes("health-loading") ||
+      container.innerHTML.includes("health-gpu-error");
 
     if (isInitialRender) {
       // Extract GPU info
@@ -596,12 +616,19 @@ class HealthCheckDashboard {
       const temperatureC = gpuInfo.temperature_c || null;
 
       // Build processes list
-      const processesHtml = processes.length > 0 ? processes.map(p => `
+      const processesHtml =
+        processes.length > 0
+          ? processes
+              .map(
+                (p) => `
         <div class="health-gpu-process">
           <span class="health-gpu-process-name">${p.name}</span>
           <span class="health-gpu-process-memory">${(p.memory_used_mb / 1024).toFixed(1)} GB</span>
         </div>
-      `).join('') : '<div class="health-gpu-process health-gpu-process-empty">No GPU processes running</div>';
+      `
+              )
+              .join("")
+          : '<div class="health-gpu-process health-gpu-process-empty">No GPU processes running</div>';
 
       // Build queue status
       const pendingCount = queueStatus.pending || 0;
@@ -611,62 +638,93 @@ class HealthCheckDashboard {
       const cancelledCount = queueStatus.cancelled || 0;
 
       // Calculate job duration for running job
-      const runningJobDuration = runningJob && runningJob.started_at 
-        ? this.formatTimeSince(new Date(runningJob.started_at)) 
-        : null;
+      const runningJobDuration =
+        runningJob && runningJob.started_at
+          ? this.formatTimeSince(new Date(runningJob.started_at))
+          : null;
 
-      const runningJobHtml = runningJob ? `
+      const runningJobHtml = runningJob
+        ? `
         <div class="health-gpu-running-job">
           <div class="health-gpu-job-info">
             <span class="health-gpu-job-type">${runningJob.type}</span>
             <span class="health-gpu-job-id">#${runningJob.id}</span>
           </div>
           <div class="health-gpu-job-time">Started: ${new Date(runningJob.started_at).toLocaleTimeString()}</div>
-          ${runningJobDuration ? `<div class="health-gpu-job-duration">Running for: ${runningJobDuration}</div>` : ''}
+          ${runningJobDuration ? `<div class="health-gpu-job-duration">Running for: ${runningJobDuration}</div>` : ""}
         </div>
-      ` : '<div class="health-gpu-running-job health-gpu-job-empty">No job currently running</div>';
+      `
+        : '<div class="health-gpu-running-job health-gpu-job-empty">No job currently running</div>';
 
       // Build GPU service health
-      const imagen2Status = services.imagen2?.status === 'ok' ? 'healthy' : 'unhealthy';
-      const thaiLegalStatus = services.thaiLegal?.status === 'ok' ? 'healthy' : 'unhealthy';
-      const txt2vidStatus = services.txt2vid?.status === 'ok' ? 'healthy' : 'unhealthy';
+      const imagen2Status = services.imagen2?.status === "ok" ? "healthy" : "unhealthy";
+      const thaiLegalStatus = services.thaiLegal?.status === "ok" ? "healthy" : "unhealthy";
+      const txt2vidStatus = services.txt2vid?.status === "ok" ? "healthy" : "unhealthy";
 
-      const imagen2Model = services.imagen2?.model || 'Unknown';
-      const txt2vidModel = services.txt2vid?.model || 'Unknown';
+      const imagen2Model = services.imagen2?.model || "Unknown";
+      const txt2vidModel = services.txt2vid?.model || "Unknown";
 
       // Build job type breakdown
-      const jobTypeHtml = Object.keys(jobTypeBreakdown).length > 0 ? Object.entries(jobTypeBreakdown).map(([type, statuses]) => `
+      const jobTypeHtml =
+        Object.keys(jobTypeBreakdown).length > 0
+          ? Object.entries(jobTypeBreakdown)
+              .map(
+                ([type, statuses]) => `
         <div class="health-gpu-job-type-item">
           <span class="health-gpu-job-type-name">${type}</span>
           <span class="health-gpu-job-type-statuses">
-            ${Object.entries(statuses).map(([status, count]) => `
+            ${Object.entries(statuses)
+              .map(
+                ([status, count]) => `
               <span class="health-gpu-job-type-status health-gpu-job-type-${status}">${status}: ${count}</span>
-            `).join('')}
+            `
+              )
+              .join("")}
           </span>
         </div>
-      `).join('') : '<div class="health-gpu-job-type-empty">No job history</div>';
+      `
+              )
+              .join("")
+          : '<div class="health-gpu-job-type-empty">No job history</div>';
 
       // Build recent jobs
-      const recentJobsHtml = recentJobs.length > 0 ? recentJobs.map(job => `
+      const recentJobsHtml =
+        recentJobs.length > 0
+          ? recentJobs
+              .map(
+                (job) => `
         <div class="health-gpu-recent-job">
           <span class="health-gpu-recent-job-type">${job.type}</span>
           <span class="health-gpu-recent-job-id">#${job.id}</span>
           <span class="health-gpu-recent-job-status health-gpu-recent-${job.status}">${job.status}</span>
           <span class="health-gpu-recent-job-time">${this.formatTimeSince(new Date(job.completed_at || job.created_at))} ago</span>
         </div>
-      `).join('') : '<div class="health-gpu-recent-empty">No recent jobs</div>';
+      `
+              )
+              .join("")
+          : '<div class="health-gpu-recent-empty">No recent jobs</div>';
 
       // Build priority distribution
-      const priorityHtml = Object.keys(priorityDistribution).length > 0 ? Object.entries(priorityDistribution).map(([priority, count]) => {
-        const priorityNames = { '4': 'embedding', '3': 'txt2vid/cogvideo', '2': 'imagen2', '1': 'llama' };
-        return `
+      const priorityHtml =
+        Object.keys(priorityDistribution).length > 0
+          ? Object.entries(priorityDistribution)
+              .map(([priority, count]) => {
+                const priorityNames = {
+                  4: "embedding",
+                  3: "txt2vid/cogvideo",
+                  2: "imagen2",
+                  1: "llama",
+                };
+                return `
           <div class="health-gpu-priority-item">
             <span class="health-gpu-priority-level">P${priority}</span>
-            <span class="health-gpu-priority-name">${priorityNames[priority] || 'unknown'}</span>
+            <span class="health-gpu-priority-name">${priorityNames[priority] || "unknown"}</span>
             <span class="health-gpu-priority-count">${count}</span>
           </div>
         `;
-      }).join('') : '<div class="health-gpu-priority-empty">No pending jobs</div>';
+              })
+              .join("")
+          : '<div class="health-gpu-priority-empty">No pending jobs</div>';
 
       container.innerHTML = `
         <div class="health-gpu-overview">
@@ -686,33 +744,37 @@ class HealthCheckDashboard {
             <div class="health-gpu-value" data-field="gpu-util">${utilizationPercent}%</div>
             <div class="health-gpu-label">GPU Utilization</div>
           </div>
-          ${temperatureC !== null ? `
+          ${
+            temperatureC !== null
+              ? `
           <div class="health-gpu-stat">
             <div class="health-gpu-value" data-field="gpu-temp">${temperatureC}°C</div>
             <div class="health-gpu-label">Temperature</div>
           </div>
-          ` : ''}
+          `
+              : ""
+          }
         </div>
 
         <div class="health-gpu-section">
           <h3 class="health-gpu-section-title">GPU Service Health</h3>
           <div class="health-gpu-services">
             <div class="health-gpu-service">
-              <div class="health-gpu-service-status ${imagen2Status}" data-field="service-imagen2">${imagen2Status === 'healthy' ? '✓' : '✗'}</div>
+              <div class="health-gpu-service-status ${imagen2Status}" data-field="service-imagen2">${imagen2Status === "healthy" ? "✓" : "✗"}</div>
               <div class="health-gpu-service-info">
                 <span class="health-gpu-service-name">Imagen2</span>
                 <span class="health-gpu-service-model">${imagen2Model}</span>
               </div>
             </div>
             <div class="health-gpu-service">
-              <div class="health-gpu-service-status ${thaiLegalStatus}" data-field="service-thai-legal">${thaiLegalStatus === 'healthy' ? '✓' : '✗'}</div>
+              <div class="health-gpu-service-status ${thaiLegalStatus}" data-field="service-thai-legal">${thaiLegalStatus === "healthy" ? "✓" : "✗"}</div>
               <div class="health-gpu-service-info">
                 <span class="health-gpu-service-name">Thai Legal</span>
                 <span class="health-gpu-service-model">LLM</span>
               </div>
             </div>
             <div class="health-gpu-service">
-              <div class="health-gpu-service-status ${txt2vidStatus}" data-field="service-txt2vid">${txt2vidStatus === 'healthy' ? '✓' : '✗'}</div>
+              <div class="health-gpu-service-status ${txt2vidStatus}" data-field="service-txt2vid">${txt2vidStatus === "healthy" ? "✓" : "✗"}</div>
               <div class="health-gpu-service-info">
                 <span class="health-gpu-service-name">Txt2Vid</span>
                 <span class="health-gpu-service-model">${txt2vidModel}</span>
@@ -781,14 +843,18 @@ class HealthCheckDashboard {
           </div>
         </div>
 
-        ${Object.keys(priorityDistribution).length > 0 ? `
+        ${
+          Object.keys(priorityDistribution).length > 0
+            ? `
         <div class="health-gpu-section">
           <h3 class="health-gpu-section-title">Pending Priority Distribution</h3>
           <div class="health-gpu-priority" data-field="priority">
             ${priorityHtml}
           </div>
         </div>
-        ` : ''}
+        `
+            : ""
+        }
 
         <div class="health-gpu-links">
           <a href="/apps/gpu-queue/" target="_blank" class="health-gpu-link">GPU Queue UI</a>
@@ -837,12 +903,19 @@ class HealthCheckDashboard {
       // Update processes
       const processesEl = container.querySelector('[data-field="gpu-processes"]');
       if (processesEl && gpu.processes) {
-        const processesHtml = gpu.processes.length > 0 ? gpu.processes.map(p => `
+        const processesHtml =
+          gpu.processes.length > 0
+            ? gpu.processes
+                .map(
+                  (p) => `
           <div class="health-gpu-process">
             <span class="health-gpu-process-name">${p.name}</span>
             <span class="health-gpu-process-memory">${(p.memory_used_mb / 1024).toFixed(1)} GB</span>
           </div>
-        `).join('') : '<div class="health-gpu-process health-gpu-process-empty">No GPU processes running</div>';
+        `
+                )
+                .join("")
+            : '<div class="health-gpu-process health-gpu-process-empty">No GPU processes running</div>';
         processesEl.innerHTML = processesHtml;
       }
 
@@ -873,59 +946,73 @@ class HealthCheckDashboard {
       const runningJobEl = container.querySelector('[data-field="running-job"]');
       if (runningJobEl) {
         const runningJob = queue.running || null;
-        const runningJobDuration = runningJob && runningJob.started_at 
-          ? this.formatTimeSince(new Date(runningJob.started_at)) 
-          : null;
-        const runningJobHtml = runningJob ? `
+        const runningJobDuration =
+          runningJob && runningJob.started_at
+            ? this.formatTimeSince(new Date(runningJob.started_at))
+            : null;
+        const runningJobHtml = runningJob
+          ? `
           <div class="health-gpu-running-job">
             <div class="health-gpu-job-info">
               <span class="health-gpu-job-type">${runningJob.type}</span>
               <span class="health-gpu-job-id">#${runningJob.id}</span>
             </div>
             <div class="health-gpu-job-time">Started: ${new Date(runningJob.started_at).toLocaleTimeString()}</div>
-            ${runningJobDuration ? `<div class="health-gpu-job-duration">Running for: ${runningJobDuration}</div>` : ''}
+            ${runningJobDuration ? `<div class="health-gpu-job-duration">Running for: ${runningJobDuration}</div>` : ""}
           </div>
-        ` : '<div class="health-gpu-running-job health-gpu-job-empty">No job currently running</div>';
+        `
+          : '<div class="health-gpu-running-job health-gpu-job-empty">No job currently running</div>';
         runningJobEl.innerHTML = runningJobHtml;
       }
 
       // Update GPU service health
-      const imagen2Status = services.imagen2?.status === 'ok' ? 'healthy' : 'unhealthy';
-      const thaiLegalStatus = services.thaiLegal?.status === 'ok' ? 'healthy' : 'unhealthy';
-      const txt2vidStatus = services.txt2vid?.status === 'ok' ? 'healthy' : 'unhealthy';
+      const imagen2Status = services.imagen2?.status === "ok" ? "healthy" : "unhealthy";
+      const thaiLegalStatus = services.thaiLegal?.status === "ok" ? "healthy" : "unhealthy";
+      const txt2vidStatus = services.txt2vid?.status === "ok" ? "healthy" : "unhealthy";
 
       const imagen2El = container.querySelector('[data-field="service-imagen2"]');
       if (imagen2El) {
         imagen2El.className = `health-gpu-service-status ${imagen2Status}`;
-        imagen2El.textContent = imagen2Status === 'healthy' ? '✓' : '✗';
+        imagen2El.textContent = imagen2Status === "healthy" ? "✓" : "✗";
       }
 
       const thaiLegalEl = container.querySelector('[data-field="service-thai-legal"]');
       if (thaiLegalEl) {
         thaiLegalEl.className = `health-gpu-service-status ${thaiLegalStatus}`;
-        thaiLegalEl.textContent = thaiLegalStatus === 'healthy' ? '✓' : '✗';
+        thaiLegalEl.textContent = thaiLegalStatus === "healthy" ? "✓" : "✗";
       }
 
       const txt2vidEl = container.querySelector('[data-field="service-txt2vid"]');
       if (txt2vidEl) {
         txt2vidEl.className = `health-gpu-service-status ${txt2vidStatus}`;
-        txt2vidEl.textContent = txt2vidStatus === 'healthy' ? '✓' : '✗';
+        txt2vidEl.textContent = txt2vidStatus === "healthy" ? "✓" : "✗";
       }
 
       // Update job type breakdown
       const jobTypesEl = container.querySelector('[data-field="job-types"]');
       if (jobTypesEl && queue.jobTypeBreakdown) {
         const jobTypeBreakdown = queue.jobTypeBreakdown;
-        const jobTypeHtml = Object.keys(jobTypeBreakdown).length > 0 ? Object.entries(jobTypeBreakdown).map(([type, statuses]) => `
+        const jobTypeHtml =
+          Object.keys(jobTypeBreakdown).length > 0
+            ? Object.entries(jobTypeBreakdown)
+                .map(
+                  ([type, statuses]) => `
           <div class="health-gpu-job-type-item">
             <span class="health-gpu-job-type-name">${type}</span>
             <span class="health-gpu-job-type-statuses">
-              ${Object.entries(statuses).map(([status, count]) => `
+              ${Object.entries(statuses)
+                .map(
+                  ([status, count]) => `
                 <span class="health-gpu-job-type-status health-gpu-job-type-${status}">${status}: ${count}</span>
-              `).join('')}
+              `
+                )
+                .join("")}
             </span>
           </div>
-        `).join('') : '<div class="health-gpu-job-type-empty">No job history</div>';
+        `
+                )
+                .join("")
+            : '<div class="health-gpu-job-type-empty">No job history</div>';
         jobTypesEl.innerHTML = jobTypeHtml;
       }
 
@@ -933,14 +1020,21 @@ class HealthCheckDashboard {
       const recentJobsEl = container.querySelector('[data-field="recent-jobs"]');
       if (recentJobsEl && queue.recentJobs) {
         const recentJobs = queue.recentJobs;
-        const recentJobsHtml = recentJobs.length > 0 ? recentJobs.map(job => `
+        const recentJobsHtml =
+          recentJobs.length > 0
+            ? recentJobs
+                .map(
+                  (job) => `
           <div class="health-gpu-recent-job">
             <span class="health-gpu-recent-job-type">${job.type}</span>
             <span class="health-gpu-recent-job-id">#${job.id}</span>
             <span class="health-gpu-recent-job-status health-gpu-recent-${job.status}">${job.status}</span>
             <span class="health-gpu-recent-job-time">${this.formatTimeSince(new Date(job.completed_at || job.created_at))} ago</span>
           </div>
-        `).join('') : '<div class="health-gpu-recent-empty">No recent jobs</div>';
+        `
+                )
+                .join("")
+            : '<div class="health-gpu-recent-empty">No recent jobs</div>';
         recentJobsEl.innerHTML = recentJobsHtml;
       }
 
@@ -948,16 +1042,26 @@ class HealthCheckDashboard {
       const priorityEl = container.querySelector('[data-field="priority"]');
       if (priorityEl && queue.priorityDistribution) {
         const priorityDistribution = queue.priorityDistribution;
-        const priorityHtml = Object.keys(priorityDistribution).length > 0 ? Object.entries(priorityDistribution).map(([priority, count]) => {
-          const priorityNames = { '4': 'embedding', '3': 'txt2vid/cogvideo', '2': 'imagen2', '1': 'llama' };
-          return `
+        const priorityHtml =
+          Object.keys(priorityDistribution).length > 0
+            ? Object.entries(priorityDistribution)
+                .map(([priority, count]) => {
+                  const priorityNames = {
+                    4: "embedding",
+                    3: "txt2vid/cogvideo",
+                    2: "imagen2",
+                    1: "llama",
+                  };
+                  return `
             <div class="health-gpu-priority-item">
               <span class="health-gpu-priority-level">P${priority}</span>
-              <span class="health-gpu-priority-name">${priorityNames[priority] || 'unknown'}</span>
+              <span class="health-gpu-priority-name">${priorityNames[priority] || "unknown"}</span>
               <span class="health-gpu-priority-count">${count}</span>
             </div>
           `;
-        }).join('') : '<div class="health-gpu-priority-empty">No pending jobs</div>';
+                })
+                .join("")
+            : '<div class="health-gpu-priority-empty">No pending jobs</div>';
         priorityEl.innerHTML = priorityHtml;
       }
     }
@@ -965,8 +1069,8 @@ class HealthCheckDashboard {
 
   formatTimeSince(date) {
     const seconds = Math.floor((new Date() - date) / 1000);
-    
-    if (seconds < 60) return 'Just now';
+
+    if (seconds < 60) return "Just now";
     if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
     if (seconds < 86400) return `${Math.floor(seconds / 3600)}h ago`;
     if (seconds < 604800) return `${Math.floor(seconds / 86400)}d ago`;
@@ -975,20 +1079,20 @@ class HealthCheckDashboard {
 
   async checkService(service) {
     const startTime = Date.now();
-    
+
     try {
-      if (service.type === 'http') {
+      if (service.type === "http") {
         return await this.checkHttp(service, startTime);
-      } else if (service.type === 'container') {
+      } else if (service.type === "container") {
         return await this.checkContainer(service, startTime);
       } else {
-        return { status: 'unknown', error: 'Unknown service type' };
+        return { status: "unknown", error: "Unknown service type" };
       }
     } catch (error) {
       return {
-        status: 'unhealthy',
+        status: "unhealthy",
         error: error.message,
-        responseTime: Date.now() - startTime
+        responseTime: Date.now() - startTime,
       };
     }
   }
@@ -999,8 +1103,8 @@ class HealthCheckDashboard {
 
     try {
       const response = await fetch(service.url, {
-        method: 'GET',
-        signal: controller.signal
+        method: "GET",
+        signal: controller.signal,
       });
       clearTimeout(timeout);
 
@@ -1008,29 +1112,29 @@ class HealthCheckDashboard {
 
       if (response.status === service.expected_status) {
         return {
-          status: 'healthy',
+          status: "healthy",
           responseTime,
-          statusCode: response.status
+          statusCode: response.status,
         };
       } else {
         return {
-          status: 'degraded',
+          status: "degraded",
           responseTime,
           statusCode: response.status,
-          error: `Expected ${service.expected_status}, got ${response.status}`
+          error: `Expected ${service.expected_status}, got ${response.status}`,
         };
       }
     } catch (error) {
       clearTimeout(timeout);
-      if (error.name === 'AbortError') {
+      if (error.name === "AbortError") {
         return {
-          status: 'unhealthy',
-          error: 'Request timeout'
+          status: "unhealthy",
+          error: "Request timeout",
         };
       }
       return {
-        status: 'unhealthy',
-        error: error.message
+        status: "unhealthy",
+        error: error.message,
       };
     }
   }
@@ -1043,60 +1147,60 @@ class HealthCheckDashboard {
 
       if (data.state === service.expected_state) {
         return {
-          status: 'healthy',
+          status: "healthy",
           state: data.state,
-          responseTime: Date.now() - startTime
+          responseTime: Date.now() - startTime,
         };
       } else {
         return {
-          status: 'unhealthy',
+          status: "unhealthy",
           state: data.state,
-          error: `Expected ${service.expected_state}, got ${data.state}`
+          error: `Expected ${service.expected_state}, got ${data.state}`,
         };
       }
     } catch (error) {
       // Fallback: try direct container check via status-api health
       try {
-        const response = await fetch('/api/status');
+        const response = await fetch("/api/status");
         const data = await response.json();
-        
+
         if (data.containers && data.containers[service.container]) {
           const containerState = data.containers[service.container].state;
           if (containerState === service.expected_state) {
-            return { status: 'healthy', state: containerState };
+            return { status: "healthy", state: containerState };
           } else {
-            return { 
-              status: 'unhealthy', 
+            return {
+              status: "unhealthy",
               state: containerState,
-              error: `Expected ${service.expected_state}, got ${containerState}`
+              error: `Expected ${service.expected_state}, got ${containerState}`,
             };
           }
         }
       } catch (fallbackError) {
         // Ignore fallback error
       }
-      
+
       return {
-        status: 'unknown',
-        error: 'Cannot determine container status'
+        status: "unknown",
+        error: "Cannot determine container status",
       };
     }
   }
 
   renderOverallStatus() {
     const overall = this.calculateOverallStatus();
-    const container = document.getElementById('overall-status');
-    
+    const container = document.getElementById("overall-status");
+
     const stats = {
       total: this.services.length,
-      healthy: this.services.filter(s => s.status?.status === 'healthy').length,
-      degraded: this.services.filter(s => s.status?.status === 'degraded').length,
-      unhealthy: this.services.filter(s => s.status?.status === 'unhealthy').length,
-      unknown: this.services.filter(s => s.status?.status === 'unknown').length
+      healthy: this.services.filter((s) => s.status?.status === "healthy").length,
+      degraded: this.services.filter((s) => s.status?.status === "degraded").length,
+      unhealthy: this.services.filter((s) => s.status?.status === "unhealthy").length,
+      unknown: this.services.filter((s) => s.status?.status === "unknown").length,
     };
 
     // Check if initial render
-    const isInitialRender = container.innerHTML.includes('health-loading');
+    const isInitialRender = container.innerHTML.includes("health-loading");
 
     if (isInitialRender) {
       container.innerHTML = `
@@ -1123,11 +1227,11 @@ class HealthCheckDashboard {
       `;
     } else {
       // Update values in-place
-      this.updateStatValue(container, 'overall', overall.label, overall.class);
-      this.updateStatValue(container, 'healthy', stats.healthy, 'healthy');
-      this.updateStatValue(container, 'degraded', stats.degraded, 'degraded');
-      this.updateStatValue(container, 'unhealthy', stats.unhealthy, 'unhealthy');
-      this.updateStatValue(container, 'unknown', stats.unknown, 'unknown');
+      this.updateStatValue(container, "overall", overall.label, overall.class);
+      this.updateStatValue(container, "healthy", stats.healthy, "healthy");
+      this.updateStatValue(container, "degraded", stats.degraded, "degraded");
+      this.updateStatValue(container, "unhealthy", stats.unhealthy, "unhealthy");
+      this.updateStatValue(container, "unknown", stats.unknown, "unknown");
     }
   }
 
@@ -1137,37 +1241,38 @@ class HealthCheckDashboard {
       const oldValue = el.textContent;
       el.textContent = value;
       el.className = `health-stat-value ${className}`;
-      
+
       // Flash animation if value changed
       if (oldValue !== String(value)) {
-        el.classList.add('stat-updated');
-        setTimeout(() => el.classList.remove('stat-updated'), 500);
+        el.classList.add("stat-updated");
+        setTimeout(() => el.classList.remove("stat-updated"), 500);
       }
     }
   }
 
   calculateOverallStatus() {
-    const healthy = this.services.filter(s => s.status?.status === 'healthy').length;
+    const healthy = this.services.filter((s) => s.status?.status === "healthy").length;
     const total = this.services.length;
-    const unhealthy = this.services.filter(s => s.status?.status === 'unhealthy').length;
-    const degraded = this.services.filter(s => s.status?.status === 'degraded').length;
+    const unhealthy = this.services.filter((s) => s.status?.status === "unhealthy").length;
+    const degraded = this.services.filter((s) => s.status?.status === "degraded").length;
 
     if (unhealthy > 0) {
-      return { label: 'Unhealthy', class: 'unhealthy' };
+      return { label: "Unhealthy", class: "unhealthy" };
     } else if (degraded > 0) {
-      return { label: 'Degraded', class: 'degraded' };
+      return { label: "Degraded", class: "degraded" };
     } else if (healthy === total) {
-      return { label: 'Healthy', class: 'healthy' };
+      return { label: "Healthy", class: "healthy" };
     } else {
-      return { label: 'Unknown', class: 'unknown' };
+      return { label: "Unknown", class: "unknown" };
     }
   }
 
   renderServices() {
-    const container = document.getElementById('services-grid');
-    const filteredServices = this.currentFilter === 'all' 
-      ? this.services 
-      : this.services.filter(s => s.category === this.currentFilter);
+    const container = document.getElementById("services-grid");
+    const filteredServices =
+      this.currentFilter === "all"
+        ? this.services
+        : this.services.filter((s) => s.category === this.currentFilter);
 
     if (filteredServices.length === 0) {
       container.innerHTML = '<div class="health-loading">No services in this category</div>';
@@ -1175,15 +1280,16 @@ class HealthCheckDashboard {
     }
 
     // Check if this is initial render or update
-    const isInitialRender = container.innerHTML.includes('health-loading') || 
-                           container.children.length === 0;
+    const isInitialRender =
+      container.innerHTML.includes("health-loading") || container.children.length === 0;
 
     if (isInitialRender) {
-      container.innerHTML = filteredServices.map(service => 
-        this.renderServiceCard(service)).join('');
+      container.innerHTML = filteredServices
+        .map((service) => this.renderServiceCard(service))
+        .join("");
     } else {
       // Update existing cards in-place
-      filteredServices.forEach(service => {
+      filteredServices.forEach((service) => {
         this.updateServiceCard(service);
       });
     }
@@ -1193,46 +1299,52 @@ class HealthCheckDashboard {
     const existingCard = document.getElementById(`service-${service.id}`);
     if (!existingCard) {
       // Card doesn't exist, append it
-      const container = document.getElementById('services-grid');
-      container.insertAdjacentHTML('beforeend', this.renderServiceCard(service));
+      const container = document.getElementById("services-grid");
+      container.insertAdjacentHTML("beforeend", this.renderServiceCard(service));
       return;
     }
 
-    const status = service.status || { status: 'unknown' };
-    const statusClass = status.status || 'unknown';
-    const responseTime = status.responseTime ? `${status.responseTime}ms` : 'N/A';
-    const statusCode = status.statusCode || 'N/A';
-    const state = status.state || 'N/A';
+    const status = service.status || { status: "unknown" };
+    const statusClass = status.status || "unknown";
+    const responseTime = status.responseTime ? `${status.responseTime}ms` : "N/A";
+    const statusCode = status.statusCode || "N/A";
+    const state = status.state || "N/A";
 
     // Update status badge
-    const statusBadge = existingCard.querySelector('.health-service-status');
+    const statusBadge = existingCard.querySelector(".health-service-status");
     const oldStatus = statusBadge.className;
     statusBadge.className = `health-service-status ${statusClass}`;
-    statusBadge.textContent = status.status || 'Unknown';
+    statusBadge.textContent = status.status || "Unknown";
 
     // Add flash animation if status changed
     if (oldStatus !== `health-service-status ${statusClass}`) {
-      statusBadge.classList.add('status-updated');
-      setTimeout(() => statusBadge.classList.remove('status-updated'), 1000);
+      statusBadge.classList.add("status-updated");
+      setTimeout(() => statusBadge.classList.remove("status-updated"), 1000);
     }
 
     // Update response time
-    const responseTimeEl = existingCard.querySelector('.health-service-detail-value[data-field="responseTime"]');
+    const responseTimeEl = existingCard.querySelector(
+      '.health-service-detail-value[data-field="responseTime"]'
+    );
     if (responseTimeEl) {
       responseTimeEl.textContent = responseTime;
     }
 
     // Update status code for HTTP services
-    if (service.type === 'http') {
-      const statusCodeEl = existingCard.querySelector('.health-service-detail-value[data-field="statusCode"]');
+    if (service.type === "http") {
+      const statusCodeEl = existingCard.querySelector(
+        '.health-service-detail-value[data-field="statusCode"]'
+      );
       if (statusCodeEl) {
         statusCodeEl.textContent = statusCode;
       }
     }
 
     // Update state for container services
-    if (service.type === 'container') {
-      const stateEl = existingCard.querySelector('.health-service-detail-value[data-field="state"]');
+    if (service.type === "container") {
+      const stateEl = existingCard.querySelector(
+        '.health-service-detail-value[data-field="state"]'
+      );
       if (stateEl) {
         stateEl.textContent = state;
       }
@@ -1242,13 +1354,16 @@ class HealthCheckDashboard {
     const errorEl = existingCard.querySelector('.health-service-detail-value[data-field="error"]');
     if (status.error) {
       if (!errorEl) {
-        const detailsDiv = existingCard.querySelector('.health-service-details');
-        detailsDiv.insertAdjacentHTML('beforeend', `
+        const detailsDiv = existingCard.querySelector(".health-service-details");
+        detailsDiv.insertAdjacentHTML(
+          "beforeend",
+          `
           <div class="health-service-detail">
             <span class="health-service-detail-label">Error:</span>
             <span class="health-service-detail-value" style="color: var(--health-error)" data-field="error">${status.error}</span>
           </div>
-        `);
+        `
+        );
       } else {
         errorEl.textContent = status.error;
       }
@@ -1258,17 +1373,17 @@ class HealthCheckDashboard {
   }
 
   renderServiceCard(service) {
-    const status = service.status || { status: 'unknown' };
-    const statusClass = status.status || 'unknown';
-    const responseTime = status.responseTime ? `${status.responseTime}ms` : 'N/A';
-    const statusCode = status.statusCode || 'N/A';
-    const state = status.state || 'N/A';
+    const status = service.status || { status: "unknown" };
+    const statusClass = status.status || "unknown";
+    const responseTime = status.responseTime ? `${status.responseTime}ms` : "N/A";
+    const statusCode = status.statusCode || "N/A";
+    const state = status.state || "N/A";
 
     return `
       <div class="health-service" id="service-${service.id}">
         <div class="health-service-header">
           <span class="health-service-name">${service.name}</span>
-          <span class="health-service-status ${statusClass}">${status.status || 'Unknown'}</span>
+          <span class="health-service-status ${statusClass}">${status.status || "Unknown"}</span>
         </div>
         <div class="health-service-details">
           <div class="health-service-detail">
@@ -1279,79 +1394,103 @@ class HealthCheckDashboard {
             <span class="health-service-detail-label">Response Time:</span>
             <span class="health-service-detail-value" data-field="responseTime">${responseTime}</span>
           </div>
-          ${service.type === 'http' ? `
+          ${
+            service.type === "http"
+              ? `
             <div class="health-service-detail">
               <span class="health-service-detail-label">Status Code:</span>
               <span class="health-service-detail-value" data-field="statusCode">${statusCode}</span>
             </div>
-          ` : ''}
-          ${service.type === 'container' ? `
+          `
+              : ""
+          }
+          ${
+            service.type === "container"
+              ? `
             <div class="health-service-detail">
               <span class="health-service-detail-label">State:</span>
               <span class="health-service-detail-value" data-field="state">${state}</span>
             </div>
-          ` : ''}
-          ${status.error ? `
+          `
+              : ""
+          }
+          ${
+            status.error
+              ? `
             <div class="health-service-detail">
               <span class="health-service-detail-label">Error:</span>
               <span class="health-service-detail-value" style="color: var(--health-error)" data-field="error">${status.error}</span>
             </div>
-          ` : ''}
-          <div class="health-service-category">${service.category || 'uncategorized'}</div>
+          `
+              : ""
+          }
+          <div class="health-service-category">${service.category || "uncategorized"}</div>
         </div>
       </div>
     `;
   }
 
   renderRecoveryActions() {
-    const container = document.getElementById('recovery-actions');
-    
+    const container = document.getElementById("recovery-actions");
+
     if (!this.recoveryActions || Object.keys(this.recoveryActions).length === 0) {
       container.innerHTML = '<div class="health-loading">No recovery actions configured</div>';
       return;
     }
 
-    container.innerHTML = Object.entries(this.recoveryActions).map(([key, actions]) => `
+    container.innerHTML = Object.entries(this.recoveryActions)
+      .map(
+        ([key, actions]) => `
       <div class="health-recovery-section">
         <h3>${this.formatKey(key)}</h3>
         <div class="health-recovery-actions">
-          ${actions.map(action => `
+          ${actions
+            .map(
+              (action) => `
             <div class="health-recovery-action">${action}</div>
-          `).join('')}
+          `
+            )
+            .join("")}
         </div>
       </div>
-    `).join('');
+    `
+      )
+      .join("");
   }
 
   formatKey(key) {
-    return key.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+    return key
+      .split("_")
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(" ");
   }
 
   updateLastUpdated() {
     const now = new Date();
-    document.getElementById('last-updated').textContent = `Last updated: ${now.toLocaleTimeString()}`;
+    document.getElementById("last-updated").textContent =
+      `Last updated: ${now.toLocaleTimeString()}`;
   }
 
   setRefreshStatus(status) {
-    const element = document.getElementById('refresh-status');
+    const element = document.getElementById("refresh-status");
     element.className = `health-refresh-status ${status}`;
-    
+
     switch (status) {
-      case 'refreshing':
-        element.textContent = 'Refreshing...';
+      case "refreshing":
+        element.textContent = "Refreshing...";
         break;
-      case 'success':
-        element.textContent = 'Refreshed';
-        setTimeout(() => element.textContent = '', 2000);
+      case "success":
+        element.textContent = "Refreshed";
+        setTimeout(() => (element.textContent = ""), 2000);
         break;
-      case 'error':
-        element.textContent = 'Refresh failed';
+      case "error":
+        element.textContent = "Refresh failed";
         break;
     }
   }
 
   showError(message) {
-    const container = document.getElementById('services-grid');
+    const container = document.getElementById("services-grid");
     container.innerHTML = `<div class="health-loading" style="color: var(--health-error)">${message}</div>`;
   }
 
@@ -1359,10 +1498,10 @@ class HealthCheckDashboard {
     this.stopAutoRefresh();
     this.autoRefreshInterval = setInterval(() => {
       this.runHealthChecks();
-      
+
       // Also refresh Yomi status if Yomi tab is active
       const yomiTab = document.querySelector('.health-tab[data-tab="yomi"]');
-      if (yomiTab && yomiTab.classList.contains('health-tab-active')) {
+      if (yomiTab && yomiTab.classList.contains("health-tab-active")) {
         this.checkYomiStatus();
       }
     }, 30000); // 30 seconds
@@ -1377,6 +1516,6 @@ class HealthCheckDashboard {
 }
 
 // Initialize dashboard when DOM is ready
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener("DOMContentLoaded", () => {
   window.dashboard = new HealthCheckDashboard();
 });

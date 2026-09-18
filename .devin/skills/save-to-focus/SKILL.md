@@ -20,8 +20,8 @@ Use this skill when the user wants to park a task or new request in the focus-in
 4. Write a new file in `docs/ssot/focus-inbox/` using the structure from `docs/ssot/focus-inbox/TEMPLATE.yml`.
 5. If the user cannot provide a complete description, set `status: draft` and record the outstanding details in `missing_info`.
 6. Do not edit `docs/ssot/ssot.focus.current.yml` or `docs/ssot/ssot.focus.yml`.
-6. Validate the new YAML file with a quick Python `yaml.safe_load` check.
-7. Report the saved file path to the user.
+7. Validate the new YAML file with a quick Python `yaml.safe_load` check.
+8. Report the saved file path to the user.
 
 ## Examples
 

@@ -1,6 +1,7 @@
 ---
 description: Test responsive design using Playlive automation + Chrome DevTools Device Mode + manual iPad verification
 ---
+
 1. **Playlive Automation Phase**:
    - Create a Chrome session using `playlive_create_chrome_live` or `playlive_create_playwright_chrome`
    - Navigate to the target URL using `playlive_navigate`

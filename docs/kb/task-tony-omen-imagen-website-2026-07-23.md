@@ -16,11 +16,11 @@ Serve the `chaba-h3/public/apps/imagen` UI and the `imagen-inference` Docker API
 
 ## Decisions / why
 
-| Date | Decision | Reason |
-|------|----------|--------|
-| 2026-07-23 | Use the Caddy container (`web`) for `/tony-omen/apps/imagen` | It is the existing web server on `:8080`; `chaba-h3/proxy-server.mjs` was not the live process |
-| 2026-07-23 | Mount `chaba-h3/public/apps/imagen` into `web` at `/srv/public/tony-omen/apps/imagen` | Caddy's `root` is `/srv/public`; the URL path mirrors the container path |
-| 2026-07-23 | Connect the `web` container to the `chaba-h3_default` network | `imagen-inference` lives on that network, so `reverse_proxy imagen-inference:8000` works |
+| Date       | Decision                                                                              | Reason                                                                                         |
+| ---------- | ------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| 2026-07-23 | Use the Caddy container (`web`) for `/tony-omen/apps/imagen`                          | It is the existing web server on `:8080`; `chaba-h3/proxy-server.mjs` was not the live process |
+| 2026-07-23 | Mount `chaba-h3/public/apps/imagen` into `web` at `/srv/public/tony-omen/apps/imagen` | Caddy's `root` is `/srv/public`; the URL path mirrors the container path                       |
+| 2026-07-23 | Connect the `web` container to the `chaba-h3_default` network                         | `imagen-inference` lives on that network, so `reverse_proxy imagen-inference:8000` works       |
 
 ## Notes
 

@@ -39,7 +39,7 @@ runbooks:
   push_dashboard_via_websocket:
     purpose: Save tony-test dashboard config changes live without a restart (preferred over .storage edits).
     steps:
-      - 'Export the token into the environment first: `source ~/.config/secrets/ha-michael-dev.env` (the file exports HASS_TOKEN)'
+      - "Export the token into the environment first: `source ~/.config/secrets/ha-michael-dev.env` (the file exports HASS_TOKEN)"
       - Write a small mutate script defining mutate(config) that edits the views/cards dict in place
       - Run python3 scripts/home-assistant/push-dashboard.py https://tony-dell.taila0626a.ts.net:8124 tony-test --mutate /tmp/mutate.py
       - The script fetches lovelace/config, applies mutate(), and calls lovelace/config/save; the frontend refreshes automatically
@@ -319,7 +319,7 @@ runbooks:
       - 'Bundle version drift / incomplete deploys: verify by md5sum or curl the
         bundle, not just the version number.'
     ssot: ssot.home-assistant.design.yml
-    last_updated: '2026-09-09'
+    last_updated: "2026-09-09"
 
   deployment_policy:
     purpose: Human approval required before any deploy from michael-dev to another host.
@@ -341,8 +341,8 @@ runbooks:
       - Verify with curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8123/local/sunsynk-power-flow-card-fork-vN.js
     common_failures:
       - 'ws-resource-url.py fails with "no lovelace resource matching": the sunsynk resource must be seeded before it can be bumped.'
-      - 'Resource updated but bundle 404s: restart tony-ha.service after editing .storage/lovelace_resources.'
-      - 'push-dashboard.py fails: tony-test dashboard does not exist on tony-ha; create it first.'
+      - "Resource updated but bundle 404s: restart tony-ha.service after editing .storage/lovelace_resources."
+      - "push-dashboard.py fails: tony-test dashboard does not exist on tony-ha; create it first."
 
   build_typecheck:
     purpose: The rollup build does NOT type-check TypeScript.
@@ -369,9 +369,9 @@ runbooks:
       tony-test/wide view loads. Use screenshots to compare the dial/chart layout against the
       reference image and iterate the grid/SVG configuration.
     ssot: ssot.home-assistant.instances.yml
-    last_updated: '2026-09-10'
+    last_updated: "2026-09-10"
 
 status:
-  last_updated: '2026-09-09'
-  last_verified: '2026-09-16'
+  last_updated: "2026-09-09"
+  last_verified: "2026-09-16"
   health: active; websocket push-dashboard workflow verified; deploy runbook corrected (.storage resource changes need service restart, not ha_reload_core); sidebar API scope documented; stale /local 404 workaround (v-bump) documented; michael-ha working token located in ha-michael-live.env; pfg chart code modularized into src/cards/pfg/ with registry + single placement engine; pfg_3d_charts runbook added (category x-axis, incremental cache, dev-vs-live data note); deployment_policy, promote_tony_ha and build_typecheck runbooks added 2026-09-09

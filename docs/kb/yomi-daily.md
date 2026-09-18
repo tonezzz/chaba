@@ -9,6 +9,7 @@ category: operations
 Daily summarization processes conversation messages grouped by date to extract structured information:
 
 **Structured Output Format:**
+
 ```json
 {
   "events": ["Event 1", "Event 2"],
@@ -18,6 +19,7 @@ Daily summarization processes conversation messages grouped by date to extract s
 ```
 
 **Database Schema:**
+
 - Table: `daily_summaries`
 - Fields: chat_id, date, events (array), actions (array), topics (array), message_count
 - Index: chat_id + date for efficient lookups
@@ -25,16 +27,19 @@ Daily summarization processes conversation messages grouped by date to extract s
 ### Batch Processing Strategy
 
 **Batch Size:** 4 dates per API call
+
 - Reduces Llama API calls by 60-75%
 - Processes multiple dates in single request
 - Falls back to single-date processing on errors
 
 **Date Range:** Last 30 days
+
 - Reduces processing load by 40-60%
 - Focuses on recent activity
 - Configurable for different use cases
 
 **Processing Order:**
+
 1. One-on-one conversations (highest priority)
 2. Recent conversations (last 30 days)
 3. Older conversations (historical data)
@@ -44,12 +49,14 @@ Daily summarization processes conversation messages grouped by date to extract s
 **File:** `scripts/yomi/process-conversations.mjs`
 
 **Functions:**
+
 - `groupMessagesByDate(messages)`: Groups messages by date
 - `generateDailySummaries(chatId, messages, name)`: Main batch processing function
 - `saveDailySummary(chatId, date, events, actions, topics, messageCount)`: Saves to database
 - `processSingleDate(chatId, date, dayMessages, name, total, processed)`: Fallback for single dates
 
 **Batch Processing Flow:**
+
 1. Group messages by date
 2. Filter to last 30 days
 3. Create batch prompts (4 dates each)
@@ -78,16 +85,19 @@ Return format:
 ### Performance Optimizations
 
 **Parallel Processing:**
+
 - Process 3 conversations simultaneously for daily summaries
 - Uses daily rate limiter (3 concurrent)
 - Balances speed with GPU load
 
 **Selective Processing:**
+
 - Skip dates with < 5 messages
 - Skip conversations with < 10 total messages
 - Prioritize active conversations
 
 **Error Handling:**
+
 - Circuit breaker prevents cascading failures
 - Automatic fallback to single-date processing
 - Retry with exponential backoff
@@ -96,11 +106,13 @@ Return format:
 ### API Integration
 
 **Endpoint:** `/api/yomi/daily?chat=<id>`
+
 - Returns daily summaries for a conversation
 - JSON format with date keys
 - Includes message count per date
 
 **Example Response:**
+
 ```json
 {
   "2026-08-01": {
@@ -119,6 +131,7 @@ Return format:
 ### Database Integration
 
 **Query for Daily Summaries:**
+
 ```sql
 SELECT date, events, actions, topics, message_count
 FROM daily_summaries
@@ -127,8 +140,8 @@ ORDER BY date DESC
 ```
 
 **Statistics Tracking:**
+
 - Total daily summaries per conversation
 - Latest summary date
 - Average messages per day
 - Coverage percentage (days with summaries / total days)
-

@@ -12,22 +12,25 @@ The GPU queue system is operational and successfully managing multiple GPU workl
 ## Current GPU Utilization
 
 ### Hardware Capacity
+
 - **Total VRAM**: 4096 MB
 - **Current Available**: ~1101 MB (as of 2026-08-03)
 - **Current Used**: ~2616 MB (llama-server: 2442 MB, Python processes: 116 MB)
 - **Utilization**: ~64% of total VRAM
 
 ### Workload VRAM Requirements
-| Service | VRAM Usage | Priority | Current Status |
-|---------|-----------|----------|----------------|
-| Embedding | 2808 MB | P4 (highest) | Active, 32ms per embedding |
-| Llama | ~2400 MB | P1 (lowest) | Active, on-demand model loading |
-| Imagen2 | ~600 MB | P2 (medium) | Available via queue |
-| Txt2vid | ~2700 MB | P3 (high) | Available via queue |
+
+| Service   | VRAM Usage | Priority     | Current Status                  |
+| --------- | ---------- | ------------ | ------------------------------- |
+| Embedding | 2808 MB    | P4 (highest) | Active, 32ms per embedding      |
+| Llama     | ~2400 MB   | P1 (lowest)  | Active, on-demand model loading |
+| Imagen2   | ~600 MB    | P2 (medium)  | Available via queue             |
+| Txt2vid   | ~2700 MB   | P3 (high)    | Available via queue             |
 
 ## Performance Analysis
 
 ### Embedding Service Performance
+
 **Completed Jobs**: 4  
 **Average Execution Time**: 220.75ms  
 **Min Execution Time**: 175ms (single text)  
@@ -35,23 +38,28 @@ The GPU queue system is operational and successfully managing multiple GPU workl
 **Per-Text Performance**: ~55ms average (62ms for 3 texts, 68ms for 5 texts)
 
 **Performance Breakdown**:
+
 - Single embedding: 175ms (32ms per embedding)
 - Batch (3 texts): 187ms total (~62ms per text)
 - Batch (5 texts): 340ms total (~68ms per text)
 
 **Efficiency Analysis**:
+
 - GPU overhead: ~143ms fixed cost
 - Per-text marginal cost: ~55ms
 - Batch efficiency: 94% of single-text performance
 - VRAM efficiency: 2808MB / 4096MB = 68.6% utilization
 
 ### Queue Performance Metrics
+
 **Job Type Breakdown**:
+
 - Embedding: 4 completed, 6 cancelled, 3 failed
-- Imagen2: 3 completed, 1 cancelled, 1 failed  
+- Imagen2: 3 completed, 1 cancelled, 1 failed
 - Txt2vid: 1 completed
 
 **Queue Behavior**:
+
 - Priority system working correctly (P4 > P3 > P2 > P1)
 - Cancellation mechanism functional
 - Job failure rate: 4/14 (29%) - needs investigation
@@ -60,11 +68,13 @@ The GPU queue system is operational and successfully managing multiple GPU workl
 ## Resource Sharing Patterns
 
 ### Current Sharing Strategy
+
 **Policy**: Single workload at a time due to VRAM constraints  
 **Reasoning**: Combined usage would exceed available VRAM  
 **Implementation**: GPU queue with priority-based scheduling
 
 ### Actual Usage Patterns
+
 1. **Llama Server**: Always active (2400 MB VRAM)
    - Models loaded on-demand
    - Thai-legal model CPU-only (5GB)
@@ -89,11 +99,13 @@ The GPU queue system is operational and successfully managing multiple GPU workl
 ## Bottlenecks and Constraints
 
 ### VRAM Constraints
+
 **Primary Constraint**: 4096 MB total VRAM limits concurrent workloads  
 **Impact**: Only one GPU-intensive workload can run at a time  
 **Current Workaround**: Queue-based sequential processing
 
 ### Performance Bottlenecks
+
 1. **Embedding VRAM Usage**: 2808 MB is higher than expected
    - Possible cause: Model loaded entirely in GPU memory
    - Optimization opportunity: Model offloading or quantization
@@ -109,6 +121,7 @@ The GPU queue system is operational and successfully managing multiple GPU workl
 ## Optimization Opportunities
 
 ### Short-term Optimizations
+
 1. **Embedding VRAM Optimization**
    - Investigate model offloading to CPU
    - Try quantized models (INT8 vs FP16)
@@ -125,6 +138,7 @@ The GPU queue system is operational and successfully managing multiple GPU workl
    - Collect user experience metrics
 
 ### Medium-term Optimizations
+
 1. **Multi-GPU Support**
    - Add second GPU for parallel processing
    - Implement workload-specific GPU assignment
@@ -143,6 +157,7 @@ The GPU queue system is operational and successfully managing multiple GPU workl
 ## Recommendations
 
 ### Immediate Actions
+
 1. **Investigate Embedding VRAM Usage**
    - Profile GPU memory allocation
    - Test with quantized models
@@ -159,6 +174,7 @@ The GPU queue system is operational and successfully managing multiple GPU workl
    - Implement automatic retry for transient failures
 
 ### Strategic Recommendations
+
 1. **GPU Upgrade Consideration**
    - Current 4GB VRAM is limiting factor
    - 8GB+ GPU would enable concurrent workloads
@@ -178,6 +194,7 @@ The GPU queue system is operational and successfully managing multiple GPU workl
 ## Data Collection Plan
 
 ### Metrics to Collect
+
 1. **Per-Job Metrics**
    - Queue wait time
    - Execution time
@@ -198,6 +215,7 @@ The GPU queue system is operational and successfully managing multiple GPU workl
    - Performance SLA compliance
 
 ### Collection Implementation
+
 1. **Database Schema Updates**
    - Add queue_wait_time_ms tracking
    - Add gpu_utilization_percentage
@@ -215,6 +233,7 @@ The GPU queue system is operational and successfully managing multiple GPU workl
 The GPU queue system is successfully managing GPU resources across multiple services with effective priority-based scheduling. The embedding service is achieving excellent performance (32ms per embedding) justifying its highest priority. However, VRAM constraints limit concurrent processing, and the high VRAM usage of the embedding service (2808 MB) presents optimization opportunities.
 
 **Key Findings**:
+
 - Queue system operational and effective
 - Embedding performance excellent (34x faster than CPU)
 - VRAM constraints are primary bottleneck
@@ -222,6 +241,7 @@ The GPU queue system is successfully managing GPU resources across multiple serv
 - Queue wait time tracking needed
 
 **Next Steps**:
+
 1. Investigate embedding VRAM optimization
 2. Implement queue wait time tracking
 3. Analyze and reduce job failure rate

@@ -7,10 +7,10 @@ category: operations
 ## What it is
 
 Root cause analysis and prevention strategies for Yomi conversation summary corruption issues. Covers detection patterns, fixes implemented, and ongoing prevention measures for LLM-generated summaries.
+
 ## Context/Background
 
 Created 2026-08-04 as part of Chaba infrastructure documentation.
-
 
 ## Context
 
@@ -18,21 +18,23 @@ Yomi conversation summaries were experiencing corruption patterns including repe
 
 ## Related Files
 
-| File | Purpose |
-|------|---------|
-| `scripts/yomi/process-conversations.mjs` | LLM API configuration and summarization |
-| `scripts/yomi/summary-utils.mjs` | Corruption detection and quality scoring |
-| `scripts/yomi/db.mjs` | Database operations for summaries |
-| `docs/kb/yomi.md` | Yomi LINE web app comprehensive documentation |
+| File                                     | Purpose                                       |
+| ---------------------------------------- | --------------------------------------------- |
+| `scripts/yomi/process-conversations.mjs` | LLM API configuration and summarization       |
+| `scripts/yomi/summary-utils.mjs`         | Corruption detection and quality scoring      |
+| `scripts/yomi/db.mjs`                    | Database operations for summaries             |
+| `docs/kb/yomi.md`                        | Yomi LINE web app comprehensive documentation |
 
 ## Performance Impact
 
 ### Before Fixes
+
 - **Corrupted summaries**: 3 corrupted + 10 missing + 3 low-quality
 - **Cache entries**: 4 corrupted + 1 malformed
 - **Database entries**: 4 corrupted + 1 malformed
 
 ### After Fixes
+
 - **Corrupted summaries**: 0
 - **Cache entries**: 0 corrupted
 - **Database entries**: 0 corrupted

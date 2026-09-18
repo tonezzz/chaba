@@ -78,8 +78,8 @@ ssh tony-dell 'cat /sys/class/drm/card1-DP-2/status' # expect connected (else ch
 - [ ] `mcp-debug` MCP tools respond again (preflight `mcp_health(host="tony_dell")` ok).
 - [ ] Resume focus via focus-dispatcher if it was paused.
 - [ ] Screen black after reboot → check `/sys/class/drm/card1-DP-2/status`
-  (monitor may be on the other GPU or unplugged), then
-  `systemctl status xorg-seat` / `systemctl --user status lxqt-seat`.
+      (monitor may be on the other GPU or unplugged), then
+      `systemctl status xorg-seat` / `systemctl --user status lxqt-seat`.
 
 ## tony-omen — pre-shutdown
 
@@ -129,10 +129,10 @@ Fixed during recovery — all now persistent:
     `/tmp/.X11-unix/X1`, then `sudo -n chvt 7`
   - `barrier-client.service` — `DISPLAY=:1`, waits for the X1 socket, target
     `100.75.102.88`. Note: the CRD session (`:20`) no longer gets barrier input.
-  Post-reboot verify: `pgrep -a Xorg` (expect `:1`), `pgrep lxqt-session`,
-  `systemctl --user status barrier-client` ("connected to server").
-  To log in at the greeter instead: plug in a keyboard — the greeter is Wayland
-  and barrierc can't attach to it.
+    Post-reboot verify: `pgrep -a Xorg` (expect `:1`), `pgrep lxqt-session`,
+    `systemctl --user status barrier-client` ("connected to server").
+    To log in at the greeter instead: plug in a keyboard — the greeter is Wayland
+    and barrierc can't attach to it.
 - **tailscaled vs `0.0.0.0` port race**: `tailscale serve`/funnel entries and the
   `tailscale-serve-8080.service` system unit bind tailnet-IP ports at boot. Any
   container binding `0.0.0.0` on the same port gets `EADDRINUSE`. Resolution per
@@ -151,9 +151,9 @@ Fixed during recovery — all now persistent:
   `Requires=rview-api.service`. Runs the existing local image.
 - **mddb has a ~4–8 min init** before binding :11023/:11024/:9000 — a silent
   "running but not listening" window is normal; check `journalctl --user -u
-  mddb.service` for "Server initialization complete" before restarting it.
+mddb.service` for "Server initialization complete" before restarting it.
 - **trade-automation** can race Postgres at boot (`database system is starting
-  up`) — `systemctl --user restart trade-automation.service` after postgres is up.
+up`) — `systemctl --user restart trade-automation.service` after postgres is up.
 - Known check-config gaps (not service failures): health check hits
   `http://tony-dell:9002` for Trade API but it binds `127.0.0.1:9002`; tailnet
   `http://tony-dell:8080` returns 400 because `tailscale-serve-8080` terminates

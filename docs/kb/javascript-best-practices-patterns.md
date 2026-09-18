@@ -12,7 +12,7 @@ When dealing with async operations in event handlers, ensure the handler functio
 
 ```javascript
 // ❌ INCORRECT: Not async, no await
-document.getElementById('search-btn').addEventListener('click', () => {
+document.getElementById("search-btn").addEventListener("click", () => {
   const results = searchLocation(query); // Returns Promise, not awaited
   displayResults(results); // Undefined or Promise object
 });
@@ -22,7 +22,7 @@ document.getElementById('search-btn').addEventListener('click', () => {
 
 ```javascript
 // ✅ CORRECT: Async handler with proper await
-document.getElementById('search-btn').addEventListener('click', async () => {
+document.getElementById("search-btn").addEventListener("click", async () => {
   const results = await searchLocation(query); // Properly awaited
   displayResults(results); // Actual results
 });
@@ -36,7 +36,7 @@ document.getElementById('search-btn').addEventListener('click', async () => {
 4. **Loading States**: Show loading indicators during async operations
 
 ```javascript
-document.getElementById('search-btn').addEventListener('click', async () => {
+document.getElementById("search-btn").addEventListener("click", async () => {
   try {
     showLoading();
     const results = await searchLocation(query);
@@ -96,13 +96,13 @@ function searchLocationForRoute(query) {
 }
 
 // Dual export at end of file
-if (typeof window !== 'undefined') {
+if (typeof window !== "undefined") {
   window.searchLocationForRoute = searchLocationForRoute;
 }
 
-if (typeof module !== 'undefined' && module.exports) {
+if (typeof module !== "undefined" && module.exports) {
   module.exports = {
-    searchLocationForRoute
+    searchLocationForRoute,
   };
 }
 ```
@@ -137,16 +137,19 @@ if (typeof module !== 'undefined' && module.exports) {
 ### Issue: Race Conditions in Event Handlers
 
 **Symptoms**:
+
 - Code executes before async operations complete
 - Undefined values from async functions
 - Intermittent failures
 
 **Causes**:
+
 - Event handlers not marked as async
 - Async operations not awaited
 - Missing error handling
 
 **Solutions**:
+
 1. Add `async` keyword to event handler
 2. Use `await` for async operations
 3. Add try-catch for error handling
@@ -155,16 +158,19 @@ if (typeof module !== 'undefined' && module.exports) {
 ### Issue: Function Name Conflicts
 
 **Symptoms**:
+
 - Wrong function being called
 - Unexpected behavior
 - Functions not executing
 
 **Causes**:
+
 - Generic function names across modules
 - Multiple modules loaded in same page
 - Namespace pollution
 
 **Solutions**:
+
 1. Use descriptive, module-specific function names
 2. Consider module prefixes
 3. Use objects to namespace functions
@@ -173,18 +179,20 @@ if (typeof module !== 'undefined' && module.exports) {
 ### Issue: Module Export Failures
 
 **Symptoms**:
+
 - Functions not available in other modules
 - Import errors
 - Undefined function references
 
 **Causes**:
+
 - Missing module.exports
 - Incorrect export syntax
 - Export before function definition
 
 **Solutions**:
+
 1. Use dual export pattern (window + module.exports)
 2. Place exports at end of file
 3. Verify export syntax
 4. Test imports in different environments
-

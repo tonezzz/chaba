@@ -12,26 +12,32 @@ This is an isolated branch to test collecting and parsing Meshtastic MQTT JSON t
 ## Quick start
 
 1. Install Python deps:
+
    ```bash
    python3 -m venv .venv && source .venv/bin/activate
    pip install -r requirements.txt
    ```
 
 2. Start the broker:
+
    ```bash
    docker compose -f docker-compose.yml up -d
    ```
+
    Or with podman:
+
    ```bash
    podman-compose -f docker-compose.yml up -d
    ```
 
 3. Run the collector:
+
    ```bash
    python3 collector.py
    ```
 
 4. In another terminal, run the synthetic publisher:
+
    ```bash
    python3 synthetic-publisher.py
    ```
@@ -45,17 +51,17 @@ This is an isolated branch to test collecting and parsing Meshtastic MQTT JSON t
 
 All settings are passed as environment variables:
 
-| Variable | Default | Meaning |
-|---|---|---|
-| `MQTT_BROKER` | `localhost` | MQTT broker host |
-| `MQTT_PORT` | `1883` | MQTT broker port |
-| `MQTT_TOPIC` | `msh/TH/#` | Topic to subscribe to |
-| `OUTPUT` | `nodes.jsonl` | Output JSONL file |
-| `RECORD_POSITIONS` | `false` | Store `position` packets (set `true` to keep) |
-| `MQTT_TLS` | `false` | Use TLS (needed for port 8883) |
-| `MQTT_TLS_INSECURE` | `false` | Skip TLS cert verification (for self-signed brokers) |
-| `MQTT_USER` | — | Username if broker requires auth |
-| `MQTT_PASS` | — | Password if broker requires auth |
+| Variable            | Default       | Meaning                                              |
+| ------------------- | ------------- | ---------------------------------------------------- |
+| `MQTT_BROKER`       | `localhost`   | MQTT broker host                                     |
+| `MQTT_PORT`         | `1883`        | MQTT broker port                                     |
+| `MQTT_TOPIC`        | `msh/TH/#`    | Topic to subscribe to                                |
+| `OUTPUT`            | `nodes.jsonl` | Output JSONL file                                    |
+| `RECORD_POSITIONS`  | `false`       | Store `position` packets (set `true` to keep)        |
+| `MQTT_TLS`          | `false`       | Use TLS (needed for port 8883)                       |
+| `MQTT_TLS_INSECURE` | `false`       | Skip TLS cert verification (for self-signed brokers) |
+| `MQTT_USER`         | —             | Username if broker requires auth                     |
+| `MQTT_PASS`         | —             | Password if broker requires auth                     |
 
 ### Example: connect to the public Meshtastic broker
 

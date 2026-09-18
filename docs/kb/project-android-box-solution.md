@@ -58,12 +58,12 @@ ping -I wlan0 -c 3 192.168.1.1
 
 ### 3. Create re-usable scripts
 
-| File | Purpose |
-|------|---------|
-| `/data/vendor/wifi/wpa/wpa_supplicant_manual.conf` | Minimal wpa_supplicant config for `TONY-WIFI_2.4G` |
-| `/data/local/tmp/wifi_manual.sh` | Full setup: disable Android WiFi, kill old wpa_supplicant, start new one, wait for `COMPLETED`, assign static IP |
-| `/data/data/com.termux/files/home/.shortcuts/wifi_manual.sh` | Termux:Widget shortcut that runs the above as root |
-| `/data/data/com.termux/files/home/.shortcuts/start_mcp.sh` | Termux:Widget shortcut to restart the MCP server |
+| File                                                         | Purpose                                                                                                          |
+| ------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------- |
+| `/data/vendor/wifi/wpa/wpa_supplicant_manual.conf`           | Minimal wpa_supplicant config for `TONY-WIFI_2.4G`                                                               |
+| `/data/local/tmp/wifi_manual.sh`                             | Full setup: disable Android WiFi, kill old wpa_supplicant, start new one, wait for `COMPLETED`, assign static IP |
+| `/data/data/com.termux/files/home/.shortcuts/wifi_manual.sh` | Termux:Widget shortcut that runs the above as root                                                               |
+| `/data/data/com.termux/files/home/.shortcuts/start_mcp.sh`   | Termux:Widget shortcut to restart the MCP server                                                                 |
 
 ---
 
@@ -109,4 +109,3 @@ The `shell` tool schema exposes the `root` boolean flag.
 - `ping -I wlan0 -c 2 192.168.1.1`
 
 ---
-

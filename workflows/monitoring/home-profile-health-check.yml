@@ -29,12 +29,12 @@ blocks:
       command: |
         #!/bin/bash
         echo "Checking Web Services..."
-        
+
         # Verify hostname resolution before checking services
         echo "Verifying hostname resolution..."
         RESOLVED_IP=$(nslookup tony-omen.local 2>/dev/null | grep -A 1 "Name:" | tail -1 | awk '{print $2}')
         LOCAL_IP=$(ip addr show | grep "inet " | grep -v "127.0.0.1" | head -1 | awk '{print $2}' | cut -d'/' -f1)
-        
+
         if [ -n "$RESOLVED_IP" ]; then
           echo "tony-omen.local resolves to: $RESOLVED_IP"
           if [ -n "$LOCAL_IP" ]; then
@@ -48,7 +48,7 @@ blocks:
           echo "⚠️ WARNING: Could not resolve tony-omen.local"
         fi
         echo ""
-        
+
         # Check Caddy using hostname
         echo -n "Caddy: "
         if curl -s -o /dev/null -w "%{http_code}" --max-time {{inputs.timeout}} http://tony-omen.local:8080/apps/ | grep -q "200"; then
@@ -56,7 +56,7 @@ blocks:
         else
           echo "❌ Unhealthy"
         fi
-        
+
         # Check BServer using hostname
         echo -n "BServer: "
         if curl -s -o /dev/null -w "%{http_code}" --max-time {{inputs.timeout}} http://tony-omen.local:8080/ | grep -q "200"; then
@@ -73,7 +73,7 @@ blocks:
       command: |
         #!/bin/bash
         echo "Checking API Services..."
-        
+
         # Check Status API using hostname
         echo -n "Status API: "
         if curl -s -o /dev/null -w "%{http_code}" --max-time {{inputs.timeout}} http://tony-omen.local:8080/api/health | grep -q "200"; then
@@ -81,7 +81,7 @@ blocks:
         else
           echo "❌ Unhealthy"
         fi
-        
+
         # Check Yomi API using hostname
         echo -n "Yomi API: "
         if curl -s -o /dev/null -w "%{http_code}" --max-time {{inputs.timeout}} http://tony-omen.local:8080/api/yomi/health | grep -q "200"; then
@@ -89,7 +89,7 @@ blocks:
         else
           echo "❌ Unhealthy"
         fi
-        
+
         # Check Yomi Summarization using hostname
         echo -n "Yomi Summarization: "
         if curl -s -o /dev/null -w "%{http_code}" --max-time {{inputs.timeout}} http://tony-omen.local:8080/api/yomi/summarization-status | grep -q "200"; then
@@ -97,7 +97,7 @@ blocks:
         else
           echo "❌ Unhealthy"
         fi
-        
+
         # Check Yomi Rate Limiter using hostname
         echo -n "Yomi Rate Limiter: "
         if curl -s -o /dev/null -w "%{http_code}" --max-time {{inputs.timeout}} http://tony-omen.local:8080/api/yomi/rate-limiter-status | grep -q "200"; then
@@ -116,7 +116,7 @@ blocks:
       command: |
         #!/bin/bash
         echo "Checking Data Services..."
-        
+
         # Check Redis container
         echo -n "Redis: "
         if docker inspect redis >/dev/null 2>&1 && docker inspect redis | grep -q '"Status": "running"'; then
@@ -124,7 +124,7 @@ blocks:
         else
           echo "❌ Not running"
         fi
-        
+
         # Check Postgres container
         echo -n "Postgres: "
         if docker inspect postgres >/dev/null 2>&1 && docker inspect postgres | grep -q '"Status": "running"'; then
@@ -132,7 +132,7 @@ blocks:
         else
           echo "❌ Not running"
         fi
-        
+
         # Check Weaviate using hostname
         echo -n "Weaviate: "
         if curl -s -o /dev/null -w "%{http_code}" --max-time {{inputs.timeout}} http://tony-omen.local:8080/api/weaviate/v1/nodes | grep -q "200"; then
@@ -151,7 +151,7 @@ blocks:
       command: |
         #!/bin/bash
         echo "Checking Queue Services..."
-        
+
         # Check GPU Queue using hostname
         echo -n "GPU Queue: "
         if curl -s -o /dev/null -w "%{http_code}" --max-time {{inputs.timeout}} http://tony-omen.local:3001/health | grep -q "200"; then
@@ -170,7 +170,7 @@ blocks:
       command: |
         #!/bin/bash
         echo "Checking GPU Services (may be offline due to VRAM constraints)..."
-        
+
         # Check Llama Router using hostname
         echo -n "Llama Router: "
         if curl -s -o /dev/null -w "%{http_code}" --max-time 10 http://tony-omen.local:8001/health | grep -q "200"; then
@@ -178,7 +178,7 @@ blocks:
         else
           echo "⚠️ Offline (expected - GPU VRAM constraints)"
         fi
-        
+
         # Check Imagen2 using hostname
         echo -n "Imagen2: "
         if curl -s -o /dev/null -w "%{http_code}" --max-time 10 http://tony-omen.local:8000/health | grep -q "200"; then
@@ -186,7 +186,7 @@ blocks:
         else
           echo "⚠️ Offline (expected - GPU VRAM constraints)"
         fi
-        
+
         # Check Txt2Vid using hostname
         echo -n "Txt2Vid: "
         if curl -s -o /dev/null -w "%{http_code}" --max-time 10 http://tony-omen.local:8002/health | grep -q "200"; then
@@ -205,7 +205,7 @@ blocks:
       command: |
         #!/bin/bash
         echo "Checking Optional Services..."
-        
+
         # Check Activepieces container
         echo -n "Activepieces: "
         if docker inspect activepieces >/dev/null 2>&1 && docker inspect activepieces | grep -q '"Status": "running"'; then
@@ -213,7 +213,7 @@ blocks:
         else
           echo "⚠️ Not running (optional)"
         fi
-        
+
         # Check Frigate using hostname
         echo -n "Frigate NVR: "
         if curl -s -o /dev/null -w "%{http_code}" --max-time 10 http://tony-omen.local:8080/frigate/api/version | grep -q "200"; then
@@ -221,7 +221,7 @@ blocks:
         else
           echo "⚠️ Unhealthy (optional)"
         fi
-        
+
         # Check Camera Control using hostname
         echo -n "Camera Control: "
         if curl -s -o /dev/null -w "%{http_code}" --max-time {{inputs.timeout}} http://tony-omen.local:8090/ | grep -q "200"; then
@@ -240,7 +240,7 @@ blocks:
       command: |
         #!/bin/bash
         echo "Checking System Services..."
-        
+
         # Check Barrier client
         echo -n "Barrier Client: "
         if ps -ef | grep barrierc | grep -v grep | grep -q "tony-dell"; then
@@ -248,7 +248,7 @@ blocks:
         else
           echo "❌ Not running - Start with: nohup /usr/bin/barrierc --disable-crypto --name tony-dell --restart tony-omen.local > /tmp/barrier-client.log 2>&1 &"
         fi
-        
+
         # Check screen timeout cron jobs
         echo -n "Screen Timeout Cron: "
         if crontab -l | grep -q "screen-timeout"; then

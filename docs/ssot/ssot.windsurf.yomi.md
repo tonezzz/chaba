@@ -18,6 +18,7 @@ At the end of every assistant response that answers or completes a user request 
 ## Automatic KB Creation Policy (MANDATORY)
 
 **KB-Worthy Triggers**: Automatically suggest KB entry creation when:
+
 - Fixing significant bugs or issues (especially data corruption, security vulnerabilities)
 - Discovering new patterns, workarounds, or best practices
 - Implementing new systems, integrations, or technologies
@@ -27,6 +28,7 @@ At the end of every assistant response that answers or completes a user request 
 - Creating reusable patterns or conventions
 
 **KB Suggestion Process**:
+
 1. When encountering KB-worthy information, immediately suggest creating a KB entry
 2. Provide suggested KB entry title and brief description
 3. Explain why it's KB-worthy (operational value, reusability, prevention)
@@ -34,6 +36,7 @@ At the end of every assistant response that answers or completes a user request 
 5. Follow KB entry format with comprehensive details
 
 **Redundancy Check**:
+
 - Before suggesting new KB entry, check existing KB entries for overlap
 - Update existing entries instead of creating duplicates
 - Archive outdated entries rather than deleting

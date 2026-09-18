@@ -13,9 +13,9 @@ services:
       - "-mcp-stdio=false"
       - "-mode=wr"
     ports:
-      - "11023:11023"  # HTTP/REST API
-      - "11024:11024"  # gRPC API
-      - "9001:9000"    # MCP Server (changed from 9000 due to conflict)
+      - "11023:11023" # HTTP/REST API
+      - "11024:11024" # gRPC API
+      - "9001:9000" # MCP Server (changed from 9000 due to conflict)
     volumes:
       - ./vaults:/vaults
       - mddb-data:/app/data
@@ -76,7 +76,6 @@ services:
     labels:
       - "com.centurylinklabs.watchtower.enable=true"
       - "com.centurylinklabs.watchtower.scope=mddb"
-
 
 volumes:
   mddb-data:

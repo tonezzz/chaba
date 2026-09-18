@@ -16,23 +16,23 @@ import KeyTable from "./keysym.js";
 const DOMKeyTable = {};
 
 function addStandard(key, standard) {
-    if (standard === undefined) throw new Error("Undefined keysym for key \"" + key + "\"");
-    if (key in DOMKeyTable) throw new Error("Duplicate entry for key \"" + key + "\"");
-    DOMKeyTable[key] = [standard, standard, standard, standard];
+  if (standard === undefined) throw new Error('Undefined keysym for key "' + key + '"');
+  if (key in DOMKeyTable) throw new Error('Duplicate entry for key "' + key + '"');
+  DOMKeyTable[key] = [standard, standard, standard, standard];
 }
 
 function addLeftRight(key, left, right) {
-    if (left === undefined) throw new Error("Undefined keysym for key \"" + key + "\"");
-    if (right === undefined) throw new Error("Undefined keysym for key \"" + key + "\"");
-    if (key in DOMKeyTable) throw new Error("Duplicate entry for key \"" + key + "\"");
-    DOMKeyTable[key] = [left, left, right, left];
+  if (left === undefined) throw new Error('Undefined keysym for key "' + key + '"');
+  if (right === undefined) throw new Error('Undefined keysym for key "' + key + '"');
+  if (key in DOMKeyTable) throw new Error('Duplicate entry for key "' + key + '"');
+  DOMKeyTable[key] = [left, left, right, left];
 }
 
 function addNumpad(key, standard, numpad) {
-    if (standard === undefined) throw new Error("Undefined keysym for key \"" + key + "\"");
-    if (numpad === undefined) throw new Error("Undefined keysym for key \"" + key + "\"");
-    if (key in DOMKeyTable) throw new Error("Duplicate entry for key \"" + key + "\"");
-    DOMKeyTable[key] = [standard, standard, standard, numpad];
+  if (standard === undefined) throw new Error('Undefined keysym for key "' + key + '"');
+  if (numpad === undefined) throw new Error('Undefined keysym for key "' + key + '"');
+  if (key in DOMKeyTable) throw new Error('Duplicate entry for key "' + key + '"');
+  DOMKeyTable[key] = [standard, standard, standard, numpad];
 }
 
 // 3.2. Modifier Keys

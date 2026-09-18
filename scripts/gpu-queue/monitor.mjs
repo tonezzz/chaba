@@ -1,13 +1,13 @@
 /**
  * GPU Monitoring and Metrics Collection
- * 
+ *
  * Collects detailed GPU performance metrics for comparative analysis
  */
 
-import pg from 'pg';
+import pg from "pg";
 const { Pool } = pg;
 
-const DATABASE_URL = process.env.DATABASE_URL || 'postgres://chaba:chabapass@localhost:5432/chaba';
+const DATABASE_URL = process.env.DATABASE_URL || "postgres://chaba:chabapass@localhost:5432/chaba";
 const pool = new Pool({ connectionString: DATABASE_URL });
 
 let mcpGpu = null;
@@ -21,14 +21,14 @@ export function setGpuClient(gpuClient) {
  */
 export async function collectGPUMetrics() {
   if (!mcpGpu) {
-    console.warn('GPU MCP client not available');
+    console.warn("GPU MCP client not available");
     return null;
   }
 
   try {
     const gpuStatus = await mcpGpu.callTool({
-      name: 'mcp1_gpu_status',
-      arguments: {}
+      name: "mcp1_gpu_status",
+      arguments: {},
     });
 
     return {
@@ -38,10 +38,10 @@ export async function collectGPUMetrics() {
       vram_total_mb: gpuStatus.vram_total_mb || 4096,
       gpu_utilization: gpuStatus.gpu_utilization || 0,
       temperature: gpuStatus.temperature || 0,
-      processes: gpuStatus.processes || []
+      processes: gpuStatus.processes || [],
     };
   } catch (error) {
-    console.error('Failed to collect GPU metrics:', error);
+    console.error("Failed to collect GPU metrics:", error);
     return null;
   }
 }
@@ -60,7 +60,7 @@ export async function startMonitoring(intervalMs = 5000) {
       }
       await sleep(intervalMs);
     } catch (error) {
-      console.error('Monitoring error:', error);
+      console.error("Monitoring error:", error);
       await sleep(intervalMs);
     }
   }
@@ -71,21 +71,24 @@ export async function startMonitoring(intervalMs = 5000) {
  */
 async function storeGPUMetrics(metrics) {
   try {
-    await pool.query(`
+    await pool.query(
+      `
       INSERT INTO gpu_metrics 
       (timestamp, vram_used_mb, vram_free_mb, vram_total_mb, gpu_utilization, temperature, processes)
       VALUES ($1, $2, $3, $4, $5, $6, $7)
-    `, [
-      new Date(metrics.timestamp),
-      metrics.vram_used_mb,
-      metrics.vram_free_mb,
-      metrics.vram_total_mb,
-      metrics.gpu_utilization,
-      metrics.temperature,
-      JSON.stringify(metrics.processes)
-    ]);
+    `,
+      [
+        new Date(metrics.timestamp),
+        metrics.vram_used_mb,
+        metrics.vram_free_mb,
+        metrics.vram_total_mb,
+        metrics.gpu_utilization,
+        metrics.temperature,
+        JSON.stringify(metrics.processes),
+      ]
+    );
   } catch (error) {
-    console.error('Failed to store GPU metrics:', error);
+    console.error("Failed to store GPU metrics:", error);
   }
 }
 
@@ -101,7 +104,7 @@ export async function getGPUMetricsHistory(minutes = 60) {
     `);
     return result.rows;
   } catch (error) {
-    console.error('Failed to get GPU metrics history:', error);
+    console.error("Failed to get GPU metrics history:", error);
     return [];
   }
 }
@@ -125,7 +128,7 @@ export async function getGPUUtilizationStats(minutes = 60) {
     `);
     return result.rows[0] || null;
   } catch (error) {
-    console.error('Failed to get GPU utilization stats:', error);
+    console.error("Failed to get GPU utilization stats:", error);
     return null;
   }
 }
@@ -154,9 +157,9 @@ export async function createGPUMetricsTable() {
       ON gpu_metrics(timestamp DESC)
     `);
 
-    console.log('GPU metrics table ready');
+    console.log("GPU metrics table ready");
   } catch (error) {
-    console.error('Failed to create GPU metrics table:', error);
+    console.error("Failed to create GPU metrics table:", error);
   }
 }
 
@@ -179,7 +182,7 @@ export async function analyzeGPUPatterns(hours = 24) {
     `);
     return result.rows;
   } catch (error) {
-    console.error('Failed to analyze GPU patterns:', error);
+    console.error("Failed to analyze GPU patterns:", error);
     return [];
   }
 }
@@ -189,27 +192,30 @@ export async function analyzeGPUPatterns(hours = 24) {
  */
 export async function getJobGPUCorrelation(jobId) {
   try {
-    const db = await import('./db.mjs');
+    const db = await import("./db.mjs");
     const job = await db.getJob(jobId);
     if (!job) return null;
 
-    const result = await pool.query(`
+    const result = await pool.query(
+      `
       SELECT * FROM gpu_metrics
       WHERE timestamp BETWEEN $1 AND $2
       ORDER BY timestamp ASC
-    `, [job.started_at, job.completed_at]);
+    `,
+      [job.started_at, job.completed_at]
+    );
 
     return {
       job,
-      gpu_metrics: result.rows
+      gpu_metrics: result.rows,
     };
   } catch (error) {
-    console.error('Failed to get job-GPU correlation:', error);
+    console.error("Failed to get job-GPU correlation:", error);
     return null;
   }
 }
 
 // Helper function
 function sleep(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }

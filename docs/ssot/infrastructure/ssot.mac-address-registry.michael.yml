@@ -10,374 +10,374 @@ sections:
     layout: list
     items:
       - label: Michael home network
-        text: '192.168.1.0/24, gateway 192.168.1.1, scanned via michael-ha (192.168.1.160) over Tailscale SSH'
+        text: "192.168.1.0/24, gateway 192.168.1.1, scanned via michael-ha (192.168.1.160) over Tailscale SSH"
       - label: Michael Xiaomi A654 network
-        text: '192.168.31.0/24, gateway 192.168.31.1, scanned via michael-ha (192.168.31.24) over Tailscale SSH'
+        text: "192.168.31.0/24, gateway 192.168.31.1, scanned via michael-ha (192.168.31.24) over Tailscale SSH"
   - title: Duplicate MAC handling
     icon: ⚠️
     layout: list
     items:
       - label: Device_id is the primary key
-        text: 'MAC is a soft attribute. If two devices collide, set mac_conflict=true and a shared conflict_group, then resolve with local_ids, observed network, and vendor verification.'
+        text: "MAC is a soft attribute. If two devices collide, set mac_conflict=true and a shared conflict_group, then resolve with local_ids, observed network, and vendor verification."
   - title: Known devices
     icon: 📋
     layout: list
     items:
       - label: Count
-        text: '20 devices with known MAC or local ID from HA config and device registry'
+        text: "20 devices with known MAC or local ID from HA config and device registry"
 config:
   version: 1
-  last_updated: '2026-09-15'
+  last_updated: "2026-09-15"
   maintainer: tony
   status: active
   related_files:
-  - docs/ssot/infrastructure/ssot.mac-address-registry.yml
+    - docs/ssot/infrastructure/ssot.mac-address-registry.yml
   mac_registry:
-  - device_id: michael-ha
-    label: michael-ha Home Assistant host
-    local_ids:
-      hostname: michael-ha
-    interfaces:
-    - interface_id: end0
-      mac: 2c:cf:67:36:c3:fb
-      oui: 2c:cf:67
-      vendor: null
-      type: ethernet
-      source: ha-network-info
-      first_seen: '2026-09-02'
+    - device_id: michael-ha
+      label: michael-ha Home Assistant host
+      local_ids:
+        hostname: michael-ha
+      interfaces:
+        - interface_id: end0
+          mac: 2c:cf:67:36:c3:fb
+          oui: 2c:cf:67
+          vendor: null
+          type: ethernet
+          source: ha-network-info
+          first_seen: "2026-09-02"
+          status: active
+        - interface_id: wlan0
+          mac: 2c:cf:67:36:c3:fc
+          oui: 2c:cf:67
+          vendor: null
+          type: wifi
+          source: ha-network-info
+          first_seen: "2026-09-02"
+          status: active
+        - interface_id: bluetooth0
+          mac: 2c:cf:67:36:c3:fd
+          oui: 2c:cf:67
+          vendor: null
+          type: bluetooth
+          source: ha-device-registry
+          first_seen: "2026-09-02"
+          status: active
+      mac_conflict: false
       status: active
-    - interface_id: wlan0
-      mac: 2c:cf:67:36:c3:fc
-      oui: 2c:cf:67
-      vendor: null
-      type: wifi
-      source: ha-network-info
-      first_seen: '2026-09-02'
+    - device_id: michael-home-router
+      label: Huawei IGD (michael home router)
+      local_ids:
+        upnp_uuid: uuid:00e0fc37-2525-2828-2500-D44F67A43453
+      interfaces:
+        - interface_id: lan
+          mac: d4:4f:67:a4:34:53
+          oui: d4:4f:67
+          vendor: HUAWEI TECHNOLOGIES CO.,LTD
+          type: ethernet
+          source: arp-scan
+          first_seen: "2026-09-07"
+          status: active
+      mac_conflict: false
       status: active
-    - interface_id: bluetooth0
-      mac: 2c:cf:67:36:c3:fd
-      oui: 2c:cf:67
-      vendor: null
-      type: bluetooth
-      source: ha-device-registry
-      first_seen: '2026-09-02'
+    - device_id: michael-huawei-igd-secondary
+      label: Huawei IGD secondary / AP
+      local_ids:
+        upnp_uuid: uuid:00e0fc37-2525-2828-2500-d44f67a3b270
+      interfaces:
+        - interface_id: lan
+          mac: d4:4f:67:a3:b2:70
+          oui: d4:4f:67
+          vendor: HUAWEI TECHNOLOGIES CO.,LTD
+          type: ethernet
+          source: arp-scan
+          first_seen: "2026-09-07"
+          status: active
+      mac_conflict: false
       status: active
-    mac_conflict: false
-    status: active
-  - device_id: michael-home-router
-    label: Huawei IGD (michael home router)
-    local_ids:
-      upnp_uuid: uuid:00e0fc37-2525-2828-2500-D44F67A43453
-    interfaces:
-    - interface_id: lan
-      mac: d4:4f:67:a4:34:53
-      oui: d4:4f:67
-      vendor: HUAWEI TECHNOLOGIES CO.,LTD
-      type: ethernet
-      source: arp-scan
-      first_seen: '2026-09-07'
+    - device_id: michael-broadlink-rm4
+      label: Broadlink RM4 pro (michael)
+      local_ids: {}
+      interfaces:
+        - interface_id: wlan0
+          mac: a0:43:b0:54:70:2a
+          oui: a0:43:b0
+          vendor: Hangzhou BroadLink Technology Co.,Ltd
+          type: wifi
+          source: arp-scan
+          first_seen: "2026-09-07"
+          status: active
+      mac_conflict: false
       status: active
-    mac_conflict: false
-    status: active
-  - device_id: michael-huawei-igd-secondary
-    label: Huawei IGD secondary / AP
-    local_ids:
-      upnp_uuid: uuid:00e0fc37-2525-2828-2500-d44f67a3b270
-    interfaces:
-    - interface_id: lan
-      mac: d4:4f:67:a3:b2:70
-      oui: d4:4f:67
-      vendor: HUAWEI TECHNOLOGIES CO.,LTD
-      type: ethernet
-      source: arp-scan
-      first_seen: '2026-09-07'
+    - device_id: michael-ieast-denon
+      label: IEAST oliostream Denon (michael)
+      local_ids:
+        linkplay_id: FF970015DA1E07D643EB8A9B
+      interfaces:
+        - interface_id: wlan0
+          mac: 08:e9:f6:10:cf:94
+          oui: 08:e9:f6
+          vendor: AMPAK Technology,Inc.
+          type: wifi
+          source: arp-scan
+          first_seen: "2026-09-07"
+          status: active
+      mac_conflict: false
       status: active
-    mac_conflict: false
-    status: active
-  - device_id: michael-broadlink-rm4
-    label: Broadlink RM4 pro (michael)
-    local_ids: {}
-    interfaces:
-    - interface_id: wlan0
-      mac: a0:43:b0:54:70:2a
-      oui: a0:43:b0
-      vendor: Hangzhou BroadLink Technology Co.,Ltd
-      type: wifi
-      source: arp-scan
-      first_seen: '2026-09-07'
+    - device_id: michael-ieast-sony
+      label: IEAST oliostream Sony (michael)
+      local_ids:
+        linkplay_id: FF9700152D3ED9D2039639AF
+      interfaces:
+        - interface_id: wlan0
+          mac: 08:e9:f6:12:0e:20
+          oui: 08:e9:f6
+          vendor: AMPAK Technology,Inc.
+          type: wifi
+          source: arp-scan
+          first_seen: "2026-09-07"
+          status: active
+      mac_conflict: false
       status: active
-    mac_conflict: false
-    status: active
-  - device_id: michael-ieast-denon
-    label: IEAST oliostream Denon (michael)
-    local_ids:
-      linkplay_id: FF970015DA1E07D643EB8A9B
-    interfaces:
-    - interface_id: wlan0
-      mac: 08:e9:f6:10:cf:94
-      oui: 08:e9:f6
-      vendor: AMPAK Technology,Inc.
-      type: wifi
-      source: arp-scan
-      first_seen: '2026-09-07'
+    - device_id: michael-ieast-1dd8
+      label: IEAST oliostream 1DD8 (michael)
+      local_ids:
+        linkplay_id: FF97001550E43889CBBD099A
+      interfaces:
+        - interface_id: wlan0
+          mac: 08:e9:f6:12:1d:d8
+          oui: 08:e9:f6
+          vendor: AMPAK Technology,Inc.
+          type: wifi
+          source: arp-scan
+          first_seen: "2026-09-07"
+          status: active
+      mac_conflict: false
       status: active
-    mac_conflict: false
-    status: active
-  - device_id: michael-ieast-sony
-    label: IEAST oliostream Sony (michael)
-    local_ids:
-      linkplay_id: FF9700152D3ED9D2039639AF
-    interfaces:
-    - interface_id: wlan0
-      mac: 08:e9:f6:12:0e:20
-      oui: 08:e9:f6
-      vendor: AMPAK Technology,Inc.
-      type: wifi
-      source: arp-scan
-      first_seen: '2026-09-07'
+    - device_id: michael-sonoff-thr316d
+      label: Sonoff THR316D (michael)
+      local_ids:
+        sonoff_id: 1001dbc90b
+      interfaces:
+        - interface_id: wlan0
+          mac: c8:f0:9e:e7:55:20
+          oui: c8:f0:9e
+          vendor: Sonoff/Espressif
+          type: wifi
+          source: sonoff-config
+          first_seen: "2026-09-02"
+          status: active
+      mac_conflict: false
       status: active
-    mac_conflict: false
-    status: active
-  - device_id: michael-ieast-1dd8
-    label: IEAST oliostream 1DD8 (michael)
-    local_ids:
-      linkplay_id: FF97001550E43889CBBD099A
-    interfaces:
-    - interface_id: wlan0
-      mac: 08:e9:f6:12:1d:d8
-      oui: 08:e9:f6
-      vendor: AMPAK Technology,Inc.
-      type: wifi
-      source: arp-scan
-      first_seen: '2026-09-07'
+    - device_id: michael-sonoff-front-gate
+      label: Sonoff Front Gate (michael)
+      local_ids:
+        sonoff_id: 10010b42b6
+      interfaces:
+        - interface_id: wlan0
+          mac: c4:dd:57:0d:d1:a8
+          oui: c4:dd:57
+          vendor: Espressif Inc.
+          type: wifi
+          source: arp-scan
+          first_seen: "2026-09-07"
+          status: active
+      mac_conflict: false
       status: active
-    mac_conflict: false
-    status: active
-  - device_id: michael-sonoff-thr316d
-    label: Sonoff THR316D (michael)
-    local_ids:
-      sonoff_id: 1001dbc90b
-    interfaces:
-    - interface_id: wlan0
-      mac: c8:f0:9e:e7:55:20
-      oui: c8:f0:9e
-      vendor: Sonoff/Espressif
-      type: wifi
-      source: sonoff-config
-      first_seen: '2026-09-02'
+    - device_id: michael-sonoff-pool-pump
+      label: Sonoff Pool pump (michael)
+      local_ids:
+        sonoff_id: 10010b4ac9
+      interfaces:
+        - interface_id: wlan0
+          mac: c4:dd:57:0d:b4:a0
+          oui: c4:dd:57
+          vendor: Sonoff/Espressif
+          type: wifi
+          source: sonoff-config
+          first_seen: "2026-09-02"
+          status: active
+      mac_conflict: false
       status: active
-    mac_conflict: false
-    status: active
-  - device_id: michael-sonoff-front-gate
-    label: Sonoff Front Gate (michael)
-    local_ids:
-      sonoff_id: 10010b42b6
-    interfaces:
-    - interface_id: wlan0
-      mac: c4:dd:57:0d:d1:a8
-      oui: c4:dd:57
-      vendor: Espressif Inc.
-      type: wifi
-      source: arp-scan
-      first_seen: '2026-09-07'
+    - device_id: michael-sonoff-garden-lights
+      label: Sonoff Garden lights (michael)
+      local_ids:
+        sonoff_id: 1001232de3
+      interfaces:
+        - interface_id: wlan0
+          mac: 8c:ce:4e:0c:cf:2b
+          oui: 8c:ce:4e
+          vendor: Espressif Inc.
+          type: wifi
+          source: arp-scan
+          first_seen: "2026-09-07"
+          status: active
+      mac_conflict: false
       status: active
-    mac_conflict: false
-    status: active
-  - device_id: michael-sonoff-pool-pump
-    label: Sonoff Pool pump (michael)
-    local_ids:
-      sonoff_id: 10010b4ac9
-    interfaces:
-    - interface_id: wlan0
-      mac: c4:dd:57:0d:b4:a0
-      oui: c4:dd:57
-      vendor: Sonoff/Espressif
-      type: wifi
-      source: sonoff-config
-      first_seen: '2026-09-02'
+    - device_id: michael-iammeter-main
+      label: iMeter main (michael)
+      local_ids:
+        iammeter_id: IamMeter_MB
+      interfaces:
+        - interface_id: primary
+          mac: 02:00:00:0f:0d:01
+          oui: 02:00:00
+          vendor: unknown
+          type: unknown
+          source: arp-scan
+          first_seen: "2026-09-07"
+          status: active
+      mac_conflict: false
       status: active
-    mac_conflict: false
-    status: active
-  - device_id: michael-sonoff-garden-lights
-    label: Sonoff Garden lights (michael)
-    local_ids:
-      sonoff_id: 1001232de3
-    interfaces:
-    - interface_id: wlan0
-      mac: 8c:ce:4e:0c:cf:2b
-      oui: 8c:ce:4e
-      vendor: Espressif Inc.
-      type: wifi
-      source: arp-scan
-      first_seen: '2026-09-07'
+    - device_id: michael-iammeter-1c3bea19
+      label: iMeter 1C3BEA19 (michael)
+      local_ids:
+        iammeter_id: 1C3BEA19_MB
+      interfaces:
+        - interface_id: primary
+          mac: b0:f8:93:3a:53:1a
+          oui: b0:f8:93
+          vendor: Shanghai MXCHIP Information Technology Co., Ltd.
+          type: unknown
+          source: arp-scan
+          first_seen: "2026-09-07"
+          status: active
+      mac_conflict: false
       status: active
-    mac_conflict: false
-    status: active
-  - device_id: michael-iammeter-main
-    label: iMeter main (michael)
-    local_ids:
-      iammeter_id: IamMeter_MB
-    interfaces:
-    - interface_id: primary
-      mac: 02:00:00:0f:0d:01
-      oui: 02:00:00
-      vendor: unknown
-      type: unknown
-      source: arp-scan
-      first_seen: '2026-09-07'
+    - device_id: michael-solis-inverter-121
+      label: Solis S6-EH3P10K-H-ZP (michael)
+      local_ids:
+        serial: "1033300249120103"
+      interfaces:
+        - interface_id: primary
+          mac: 2c:bc:bb:5d:36:2b
+          oui: 2c:bc:bb
+          vendor: unknown
+          type: unknown
+          source: arp-scan
+          first_seen: "2026-09-07"
+          status: active
+      mac_conflict: false
       status: active
-    mac_conflict: false
-    status: active
-  - device_id: michael-iammeter-1c3bea19
-    label: iMeter 1C3BEA19 (michael)
-    local_ids:
-      iammeter_id: 1C3BEA19_MB
-    interfaces:
-    - interface_id: primary
-      mac: b0:f8:93:3a:53:1a
-      oui: b0:f8:93
-      vendor: Shanghai MXCHIP Information Technology Co., Ltd.
-      type: unknown
-      source: arp-scan
-      first_seen: '2026-09-07'
+    - device_id: michael-tuya-192-168-1-153
+      label: Unknown Tuya 192.168.1.153
+      local_ids:
+        observed_vendor: Tuya Smart Inc.
+      interfaces:
+        - interface_id: primary
+          mac: 7c:f6:66:8a:29:c2
+          oui: 7c:f6:66
+          vendor: Tuya Smart Inc.
+          type: wifi
+          source: arp-scan
+          first_seen: "2026-09-07"
+          status: active
+      mac_conflict: false
       status: active
-    mac_conflict: false
-    status: active
-  - device_id: michael-solis-inverter-121
-    label: Solis S6-EH3P10K-H-ZP (michael)
-    local_ids:
-      serial: '1033300249120103'
-    interfaces:
-    - interface_id: primary
-      mac: 2c:bc:bb:5d:36:2b
-      oui: 2c:bc:bb
-      vendor: unknown
-      type: unknown
-      source: arp-scan
-      first_seen: '2026-09-07'
+    - device_id: michael-solar-assistant
+      label: SolarAssistant monitor (michael)
+      local_ids: {}
+      interfaces:
+        - interface_id: primary
+          mac: 02:07:56:6e:e9:9a
+          oui: 02:07:56
+          vendor: unknown
+          type: unknown
+          source: arp-scan
+          first_seen: "2026-09-07"
+          status: active
+      mac_conflict: true
       status: active
-    mac_conflict: false
-    status: active
-  - device_id: michael-tuya-192-168-1-153
-    label: Unknown Tuya 192.168.1.153
-    local_ids:
-      observed_vendor: Tuya Smart Inc.
-    interfaces:
-    - interface_id: primary
-      mac: 7c:f6:66:8a:29:c2
-      oui: 7c:f6:66
-      vendor: Tuya Smart Inc.
-      type: wifi
-      source: arp-scan
-      first_seen: '2026-09-07'
+      conflict_group: 02-07-56-6e-e9-9a
+    - device_id: michael-lg-webos-tv
+      label: LG webOS TV NANO81TSA (michael)
+      local_ids:
+        serial: 30d85ae1-a334-a6f8-e89e-2a00d91a6c48
+      interfaces:
+        - interface_id: wlan0
+          mac: 74:c1:7e:9c:06:e7
+          oui: 74:c1:7e
+          vendor: unknown
+          type: wifi
+          source: arp-scan
+          first_seen: "2026-09-07"
+          status: active
+        - interface_id: eth0
+          mac: "44:27:45:27:53:08"
+          oui: "44:27:45"
+          vendor: unknown
+          type: ethernet
+          source: arp-scan
+          first_seen: "2026-09-07"
+          status: active
+      mac_conflict: true
       status: active
-    mac_conflict: false
-    status: active
-  - device_id: michael-solar-assistant
-    label: SolarAssistant monitor (michael)
-    local_ids: {}
-    interfaces:
-    - interface_id: primary
-      mac: 02:07:56:6e:e9:9a
-      oui: 02:07:56
-      vendor: unknown
-      type: unknown
-      source: arp-scan
-      first_seen: '2026-09-07'
+      conflict_group: 74-c1-7e-9c-06-e7
+    - device_id: michael-somfy-overkiz
+      label: Somfy Overkiz gateway (michael)
+      local_ids:
+        overkiz_id: 0402-5394-5231
+      interfaces:
+        - interface_id: primary
+          mac: f8:81:1a:52:19:cd
+          oui: f8:81:1a
+          vendor: OVERKIZ
+          type: unknown
+          source: arp-scan
+          first_seen: "2026-09-07"
+          status: active
+      mac_conflict: false
       status: active
-    mac_conflict: true
-    status: active
-    conflict_group: 02-07-56-6e-e9-9a
-  - device_id: michael-lg-webos-tv
-    label: LG webOS TV NANO81TSA (michael)
-    local_ids:
-      serial: 30d85ae1-a334-a6f8-e89e-2a00d91a6c48
-    interfaces:
-    - interface_id: wlan0
-      mac: 74:c1:7e:9c:06:e7
-      oui: 74:c1:7e
-      vendor: unknown
-      type: wifi
-      source: arp-scan
-      first_seen: '2026-09-07'
+    - device_id: michael-xiaomi-router
+      label: Xiaomi A654 router/gateway
+      local_ids: {}
+      interfaces:
+        - interface_id: primary
+          mac: 44:f7:70:3e:f2:fe
+          oui: 44:f7:70
+          vendor: Beijing Xiaomi Mobile Software
+          type: wifi
+          source: arp-scan
+          first_seen: "2026-09-15"
+          status: active
+      mac_conflict: false
       status: active
-    - interface_id: eth0
-      mac: '44:27:45:27:53:08'
-      oui: '44:27:45'
-      vendor: unknown
-      type: ethernet
-      source: arp-scan
-      first_seen: '2026-09-07'
+    - device_id: michael-rk600-weather
+      label: Rika RK600-07B data logger with RK900 sensor head (Xiaomi A654)
+      local_ids:
+        model: RK600-07B
+        sensor: RK900
+      interfaces:
+        - interface_id: primary
+          mac: 0c:cf:89:a6:16:fd
+          oui: 0c:cf:89
+          vendor: Shenzhen Bilian Electronic
+          type: wifi
+          source: arp-scan
+          first_seen: "2026-09-15"
+          status: active
+      mac_conflict: false
       status: active
-    mac_conflict: true
-    status: active
-    conflict_group: 74-c1-7e-9c-06-e7
-  - device_id: michael-somfy-overkiz
-    label: Somfy Overkiz gateway (michael)
-    local_ids:
-      overkiz_id: 0402-5394-5231
-    interfaces:
-    - interface_id: primary
-      mac: f8:81:1a:52:19:cd
-      oui: f8:81:1a
-      vendor: OVERKIZ
-      type: unknown
-      source: arp-scan
-      first_seen: '2026-09-07'
+    - device_id: mn01
+      label: Tony MN PC (portable Ubuntu)
+      local_ids:
+        hostname: mn01
+        tailscale: mn01
+      interfaces:
+        - interface_id: enp1s0
+          mac: 90:1b:0e:e4:e3:a5
+          oui: 90:1b:0e
+          vendor: Realtek Semiconductor Co., Ltd.
+          type: ethernet
+          source: ip-link
+          first_seen: "2026-09-15"
+          status: active
+        - interface_id: wlan0
+          mac: 88:11:00:c5:0a:2c
+          oui: 88:11:00
+          vendor: unknown
+          type: wifi
+          source: ip-link
+          first_seen: "2026-09-15"
+          status: active
+      mac_conflict: false
       status: active
-    mac_conflict: false
-    status: active
-  - device_id: michael-xiaomi-router
-    label: Xiaomi A654 router/gateway
-    local_ids: {}
-    interfaces:
-    - interface_id: primary
-      mac: 44:f7:70:3e:f2:fe
-      oui: 44:f7:70
-      vendor: Beijing Xiaomi Mobile Software
-      type: wifi
-      source: arp-scan
-      first_seen: '2026-09-15'
-      status: active
-    mac_conflict: false
-    status: active
-  - device_id: michael-rk600-weather
-    label: Rika RK600-07B data logger with RK900 sensor head (Xiaomi A654)
-    local_ids:
-      model: RK600-07B
-      sensor: RK900
-    interfaces:
-    - interface_id: primary
-      mac: 0c:cf:89:a6:16:fd
-      oui: 0c:cf:89
-      vendor: Shenzhen Bilian Electronic
-      type: wifi
-      source: arp-scan
-      first_seen: '2026-09-15'
-      status: active
-    mac_conflict: false
-    status: active
-  - device_id: mn01
-    label: Tony MN PC (portable Ubuntu)
-    local_ids:
-      hostname: mn01
-      tailscale: mn01
-    interfaces:
-    - interface_id: enp1s0
-      mac: 90:1b:0e:e4:e3:a5
-      oui: 90:1b:0e
-      vendor: Realtek Semiconductor Co., Ltd.
-      type: ethernet
-      source: ip-link
-      first_seen: '2026-09-15'
-      status: active
-    - interface_id: wlan0
-      mac: 88:11:00:c5:0a:2c
-      oui: 88:11:00
-      vendor: unknown
-      type: wifi
-      source: ip-link
-      first_seen: '2026-09-15'
-      status: active
-    mac_conflict: false
-    status: active

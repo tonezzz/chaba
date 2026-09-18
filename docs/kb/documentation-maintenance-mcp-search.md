@@ -5,18 +5,21 @@ category: operations
 # Troubleshooting
 
 ### Documentation Bloat Recurrence
+
 - Schedule quarterly documentation reviews
 - Implement archive policy for completed work
 - Consolidate related files during project completion
 - Review new documentation against size guidelines
 
 ### Cross-Reference Breakage
+
 - Update all references when moving files
 - Use search to find all references to moved files
 - Test links after consolidation
 - Update SSOT files that reference documentation
 
 ### Archive Location Confusion
+
 - Use consistent archive directory structure
 - Document archive criteria in project standards
 - Include dates in historical notes
@@ -32,34 +35,39 @@ category: operations
 
 ## Change History
 
-| Date | Change | Author |
-|------|--------|--------|
-| 2026-08-06 | Initial documentation maintenance standards | devin |
-| 2026-08-06 | Added MCP search optimization and template requirements | devin | example
+| Date       | Change                                                  | Author |
+| ---------- | ------------------------------------------------------- | ------ |
+| 2026-08-06 | Initial documentation maintenance standards             | devin  |
+| 2026-08-06 | Added MCP search optimization and template requirements | devin  | example |
+
 - `docs/kb/gpu-embedding-service.md` - Consolidated service documentation example
 - `.windsurf/workflows/auto-kb-creation.md` - KB entry creation workflow
 
 ## MCP Search Optimization (2026-08-06)
 
 ### Frontmatter Benefits
+
 - **Better search relevance**: Tags and keywords improve ranking
 - **Filterable metadata**: Category, date, related files for filtering
 - **Consistent structure**: Standardized format for AI processing
 - **Cross-reference mapping**: Related files field for context
 
 ### Search Keywords Strategy
+
 - **Primary terms**: Main domain terms and concepts
 - **Secondary terms**: Related concepts and synonyms
 - **Use cases**: Common search scenarios
 - **Related concepts**: Broader domain connections
 
 ### Section Standardization
+
 - **Abstract**: 2-3 sentence summary for search excerpts
 - **Overview**: What it is (2-3 sentences)
 - **Purpose**: What it accomplishes
 - **Consistent headings**: Standard section names across all docs
 
 ### SSOT Searchability
+
 - **Markdown summaries**: SSOT YAML files accompanied by Markdown summaries
 - **Authoritative sources**: Summaries link to YAML source files
 - **Search coverage**: Makes SSOT content searchable via MCP docs server
@@ -74,6 +82,7 @@ Implemented on 2026-08-06 during comprehensive documentation cleanup that addres
 ### Documentation Consolidation Strategy
 
 **Core Principles**:
+
 - Consolidate multiple related files into single operational guides
 - Archive completed implementation plans and assessment documents
 - Remove duplicate content across files
@@ -81,6 +90,7 @@ Implemented on 2026-08-06 during comprehensive documentation cleanup that addres
 - Maintain separation between skill definitions and system documentation
 
 **Consolidation Patterns**:
+
 - **Token Optimization**: 3 files (1,022 lines) → 1 operational guide (187 lines)
   - Archived: summary, monitoring guide, runbook
   - Created: token-optimization.md (current status, procedures, troubleshooting)
@@ -93,11 +103,13 @@ Implemented on 2026-08-06 during comprehensive documentation cleanup that addres
 ### Archive Policy
 
 **Archive Locations**:
+
 - `docs/kb/archived/` - Archived KB entries
 - `docs/assessments/*/archived/` - Archived assessment documents
 - `docs/archive/` - Historical planning documents
 
 **Archive Criteria**:
+
 - Completed implementation plans
 - Assessment documents for finished work
 - Outdated planning documents with historical value
@@ -105,6 +117,7 @@ Implemented on 2026-08-06 during comprehensive documentation cleanup that addres
 - Historical audits with implementation status updates
 
 **Archive Process**:
+
 1. Add prominent historical note with date and warning about stale content
 2. Fix for current standards compliance (e.g., IP addresses → .local hostnames)
 3. Add implementation status updates if applicable
@@ -114,14 +127,16 @@ Implemented on 2026-08-06 during comprehensive documentation cleanup that addres
 ### Historical Document Marking
 
 **Standard Historical Note Format**:
+
 ```markdown
-> **Note**: This is a historical planning document from [DATE]. 
-> Some information may be outdated, including TODO items, branch 
-> references, and infrastructure details. Current status should be 
+> **Note**: This is a historical planning document from [DATE].
+> Some information may be outdated, including TODO items, branch
+> references, and infrastructure details. Current status should be
 > verified in SSOT files and recent documentation.
 ```
 
 **Compliance Fixes Before Archiving**:
+
 - Replace IP addresses with `.local` hostnames
 - Update branch references if known
 - Mark completed TODO items
@@ -130,12 +145,14 @@ Implemented on 2026-08-06 during comprehensive documentation cleanup that addres
 ### Skill vs KB Documentation Separation
 
 **SKILL.md Files** (20-80 lines):
+
 - Focus on skill invocation and parameters
 - Describe what the skill does and when to use it
 - Reference comprehensive KB entries for details
 - Maintain concise, actionable skill definitions
 
 **KB Entries** (150-300 lines):
+
 - Comprehensive system documentation
 - Context/background and key details
 - Implementation procedures and configuration
@@ -143,6 +160,7 @@ Implemented on 2026-08-06 during comprehensive documentation cleanup that addres
 - Tags for discoverability
 
 **Anti-Pattern to Avoid**:
+
 - Do not duplicate comprehensive documentation in SKILL.md
 - SKILL.md should reference KB entries, not repeat them
 - KB entries should not contain skill invocation instructions
@@ -150,18 +168,21 @@ Implemented on 2026-08-06 during comprehensive documentation cleanup that addres
 ## Troubleshooting
 
 ### Documentation Bloat Recurrence
+
 - Schedule quarterly documentation reviews
 - Implement archive policy for completed work
 - Consolidate related files during project completion
 - Review new documentation against size guidelines
 
 ### Cross-Reference Breakage
+
 - Update all references when moving files
 - Use search to find all references to moved files
 - Test links after consolidation
 - Update SSOT files that reference documentation
 
 ### Archive Location Confusion
+
 - Use consistent archive directory structure
 - Document archive criteria in project standards
 - Include dates in historical notes
@@ -177,10 +198,11 @@ Implemented on 2026-08-06 during comprehensive documentation cleanup that addres
 
 ## Change History
 
-| Date | Change | Author |
-|------|--------|--------|
-| 2026-08-06 | Initial documentation maintenance standards | devin |
-| 2026-08-06 | Added MCP search optimization and template requirements | devin | example
+| Date       | Change                                                  | Author |
+| ---------- | ------------------------------------------------------- | ------ |
+| 2026-08-06 | Initial documentation maintenance standards             | devin  |
+| 2026-08-06 | Added MCP search optimization and template requirements | devin  | example |
+
 - `docs/kb/gpu-embedding-service.md` - Consolidated service documentation example
 - `.windsurf/workflows/auto-kb-creation.md` - KB entry creation workflow
 

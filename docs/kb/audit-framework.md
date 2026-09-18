@@ -2,8 +2,8 @@
 title: Chaba Audit Framework
 description: Consolidated weekly and monthly audit runner for KB, SSOT, security-scan, and security-audit
 tags: [audit, ssot, kb, security, operations, systemd]
-created: '2026-08-19'
-updated: '2026-08-19'
+created: "2026-08-19"
+updated: "2026-08-19"
 category: operations
 status: active
 related:
@@ -19,12 +19,12 @@ A single SSOT-driven runner that executes all project audits and writes a normal
 
 ## Audits
 
-| Audit | Script | Schedule | Notes |
-|-------|--------|----------|-------|
-| kb | `scripts/kb-audit.mjs --json` | weekly | KB coverage, freshness, and section quality |
-| ssot | `scripts/ssot-validate-all.mjs` | weekly | SSOT YAML syntax and cross-reference validation |
-| security-scan | `scripts/security-scan.mjs --json` | weekly | Credential and secret scan across the repo |
-| security-audit | `scripts/security-audit.sh` | monthly | System-level review; runs only with `--full` |
+| Audit          | Script                             | Schedule | Notes                                           |
+| -------------- | ---------------------------------- | -------- | ----------------------------------------------- |
+| kb             | `scripts/kb-audit.mjs --json`      | weekly   | KB coverage, freshness, and section quality     |
+| ssot           | `scripts/ssot-validate-all.mjs`    | weekly   | SSOT YAML syntax and cross-reference validation |
+| security-scan  | `scripts/security-scan.mjs --json` | weekly   | Credential and secret scan across the repo      |
+| security-audit | `scripts/security-audit.sh`        | monthly  | System-level review; runs only with `--full`    |
 
 ## Running it
 

@@ -38,4 +38,3 @@ xset q | grep -i dpms  # Should show DPMS enabled
 - Verify long-running operations complete successfully
 - Check that sessions persist across daytime hours
 - Confirm no "Target page, context or browser has been closed" errors during daytime
-

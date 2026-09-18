@@ -44,7 +44,7 @@ planning:
 
 processing:
   status: completed
-  started_at: '2026-08-25'
+  started_at: "2026-08-25"
   steps:
     - id: 1
       label: Confirm current state of mcp-rview-oauth-proxy on tony-omen
@@ -115,7 +115,7 @@ followup:
 
 report:
   status: completed
-  completed_at: '2026-08-25'
+  completed_at: "2026-08-25"
   summary: |
     The mcp-rview-oauth-proxy was already running on tony-dell (127.0.0.1:9004) but not managed or documented.
     Replaced the ad-hoc ~/.config/mcp-rview-oauth-proxy.py with a canonical scripts/mcp_rview/oauth_proxy.py that reads CLIENT_ID and CLIENT_SECRET from environment variables.
@@ -123,17 +123,17 @@ report:
     Tailscale serve on tony-dell:443 continues to proxy https://tony-dell.taila0626a.ts.net/ to 127.0.0.1:9004.
     The well-known endpoint at http://127.0.0.1:9004/.well-known/oauth-authorization-server now returns the expected metadata.
   metrics:
-  - name: services
-    value: 1
+    - name: services
+      value: 1
   links:
-  - file: docs/ssot/infrastructure/ssot.services.yml
-    description: mcp-rview-oauth-proxy registered under tony_dell
-  - file: docs/ssot/infrastructure/ssot.health.home.other.yml
-    description: mcp-rview-oauth-proxy health check added
-  - file: scripts/mcp_rview/oauth_proxy.py
-    description: canonical OAuth proxy source
-  - file: stacks/tony-dell/mcp-rview/mcp-rview-oauth-proxy.service
-    description: canonical systemd unit
+    - file: docs/ssot/infrastructure/ssot.services.yml
+      description: mcp-rview-oauth-proxy registered under tony_dell
+    - file: docs/ssot/infrastructure/ssot.health.home.other.yml
+      description: mcp-rview-oauth-proxy health check added
+    - file: scripts/mcp_rview/oauth_proxy.py
+      description: canonical OAuth proxy source
+    - file: stacks/tony-dell/mcp-rview/mcp-rview-oauth-proxy.service
+      description: canonical systemd unit
   kb_review: []
   lessons_learned: []
 

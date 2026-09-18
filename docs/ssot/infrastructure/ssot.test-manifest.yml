@@ -20,7 +20,6 @@ tiers:
     timeout_hint: ~2min
 
 systems:
-
   ssot_yaml:
     description: All SSOT files validate structurally and cross-references resolve.
     validate_cmd: "node scripts/ssot-validate-all.mjs"
@@ -28,6 +27,16 @@ systems:
     sync_cmd: "bash scripts/ssot-validate-sync.sh"
     stale_urls_cmd: "bash scripts/ssot-check-stale-urls.sh"
     mcp_sources_cmd: "python3 scripts/ssot-validate-mcp-sources.py"
+
+  modularity:
+    description: >
+      KB/SSOT file size, focus, and duplication policy. Violations are policy
+      drift, not breakage — thresholds live in
+      docs/ssot/infrastructure/ssot.audit.yml under the kb-modularity and
+      ssot-modularity audit definitions; update them there if the policy
+      legitimately changes.
+    ssot_cmd: "node scripts/audits/ssot-modularity-audit.mjs"
+    kb_cmd: "node scripts/audits/kb-modularity-audit.mjs"
 
   devin_db:
     description: Local Devin session database and backups.

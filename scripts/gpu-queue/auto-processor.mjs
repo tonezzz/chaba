@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-import * as db from './db.mjs';
-import * as queue from './queue.mjs';
+import * as db from "./db.mjs";
+import * as queue from "./queue.mjs";
 
 /**
  * Automatic Queue Processor
@@ -17,7 +17,7 @@ let isProcessing = false;
 
 async function processNextJob() {
   if (isProcessing) {
-    console.log('Already processing a job, skipping');
+    console.log("Already processing a job, skipping");
     return;
   }
 
@@ -26,7 +26,7 @@ async function processNextJob() {
     const job = await db.getNextPendingJob();
 
     if (!job) {
-      console.log('No pending jobs to process');
+      console.log("No pending jobs to process");
       consecutiveErrors = 0; // Reset error counter on successful check
       return;
     }
@@ -35,14 +35,15 @@ async function processNextJob() {
     await queue.processJob(job);
     consecutiveErrors = 0; // Reset error counter on successful processing
     console.log(`Job ${job.id} processing completed`);
-
   } catch (error) {
     consecutiveErrors++;
     console.error(`Error processing job (consecutive errors: ${consecutiveErrors}):`, error);
 
     if (consecutiveErrors >= MAX_CONSECUTIVE_ERRORS) {
-      console.error(`Too many consecutive errors (${consecutiveErrors}), backing off for ${ERROR_BACKOFF_MS}ms`);
-      await new Promise(resolve => setTimeout(resolve, ERROR_BACKOFF_MS));
+      console.error(
+        `Too many consecutive errors (${consecutiveErrors}), backing off for ${ERROR_BACKOFF_MS}ms`
+      );
+      await new Promise((resolve) => setTimeout(resolve, ERROR_BACKOFF_MS));
     }
   } finally {
     isProcessing = false;
@@ -50,7 +51,7 @@ async function processNextJob() {
 }
 
 async function startAutoProcessor() {
-  console.log('Starting automatic GPU queue processor...');
+  console.log("Starting automatic GPU queue processor...");
   console.log(`Processing interval: ${PROCESSING_INTERVAL_MS}ms`);
   console.log(`Max consecutive errors: ${MAX_CONSECUTIVE_ERRORS}`);
   console.log(`Error backoff: ${ERROR_BACKOFF_MS}ms`);
@@ -65,22 +66,22 @@ async function startAutoProcessor() {
 }
 
 // Graceful shutdown
-process.on('SIGTERM', async () => {
-  console.log('Shutting down auto processor...');
+process.on("SIGTERM", async () => {
+  console.log("Shutting down auto processor...");
   await db.closePool();
   process.exit(0);
 });
 
-process.on('SIGINT', async () => {
-  console.log('Shutting down auto processor...');
+process.on("SIGINT", async () => {
+  console.log("Shutting down auto processor...");
   await db.closePool();
   process.exit(0);
 });
 
 // Start processor if run directly
 if (import.meta.url === `file://${process.argv[1]}`) {
-  startAutoProcessor().catch(error => {
-    console.error('Failed to start auto processor:', error);
+  startAutoProcessor().catch((error) => {
+    console.error("Failed to start auto processor:", error);
     process.exit(1);
   });
 }

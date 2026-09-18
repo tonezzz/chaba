@@ -15,22 +15,27 @@ Integrated on 2026-08-10 to enhance automation capabilities beyond standalone cr
 ## Troubleshooting
 
 ### ModuleNotFoundError for mcp.server.fastmcp
+
 **Issue**: workflows-mcp requires `mcp<2.0.0` due to module removal in MCP 2.0
 **Solution**: `pipx inject workflows-mcp "mcp<2.0.0" --force`
 
 ### Workflow Not Found
+
 **Issue**: Workflow not appearing in list_workflows()
 **Solution**: Check workflow YAML syntax, verify workflow directory path in MCP config
 
 ### Variable Resolution Errors
+
 **Issue**: Template variables not resolving correctly
 **Solution**: Use correct output access patterns: `blocks.{id}.outputs.stdout`, check block dependencies
 
 ### Interactive Workflows Not Responding
+
 **Issue**: Prompt blocks hanging or not getting user input
 **Solution**: Use `resume_workflow()` for paused interactive workflows, check job status with `get_job_status()`
 
 ### MCP Compatibility Issues
+
 **Issue**: workflows-mcp not starting or import errors
 **Solution**: Reinstall with MCP constraint: `pipx reinstall workflows-mcp && pipx inject workflows-mcp "mcp<2.0.0" --force`
 

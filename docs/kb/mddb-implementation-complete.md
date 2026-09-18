@@ -20,9 +20,9 @@ MDDB has been fully implemented and tested as a replacement for the old docs/kb 
 
 ## Change History
 
-| Date | Change | Author |
-|------|--------|--------|
-| 2026-08-12 | Initial implementation completion documentation | devin |
+| Date       | Change                                          | Author |
+| ---------- | ----------------------------------------------- | ------ |
+| 2026-08-12 | Initial implementation completion documentation | devin  |
 
 ## Tags
 

@@ -34,7 +34,7 @@ checks:
       command: "ping -c 1 -W 2 {{address}}"
       expected_rc: 0
     tcp:
-      command: "python3 -c \"import socket; socket.create_connection(('{{address}}', {{port}}), timeout=5)\""
+      command: 'python3 -c "import socket; socket.create_connection((''{{address}}'', {{port}}), timeout=5)"'
       expected_rc: 0
       ports:
         tony_omen: 9100

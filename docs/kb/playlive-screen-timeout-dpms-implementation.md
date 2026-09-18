@@ -7,12 +7,14 @@ category: operations
 ### Root Cause
 
 **DPMS Screen Power Management**:
+
 - Linux DPMS (Display Power Management Signaling) automatically powers off displays after timeout
 - When screen turns off, Chrome CDP (Chrome DevTools Protocol) sessions terminate
 - PlayLive relies on persistent CDP connections for browser automation
 - Session closure causes "Target page, context or browser has been closed" errors
 
 **Failure Pattern**:
+
 ```
 PlayLive CDP Session Active
     ↓
@@ -28,12 +30,14 @@ PlayLive automation fails with session closure error
 ### Impact
 
 **PlayLive Automation Failures**:
+
 - Browser sessions close unexpectedly during automation workflows
 - Long-running operations fail after screen timeout
 - Intermittent "Target page, context or browser has been closed" errors
 - Unreliable automation for E2E testing and verification
 
 **Operational Impact**:
+
 - Recurring PlayLive failures requiring manual intervention
 - Lost automation state and session data
 - Disrupted AI-driven browser workflows
@@ -42,12 +46,14 @@ PlayLive automation fails with session closure error
 ### Solution
 
 **Time-Based Screen Timeout Scheduler**:
+
 - Cron-based scheduler running every 5 minutes on tony-dell
 - Disables DPMS during active hours (7am-10pm) for PlayLive compatibility
 - Enables DPMS during off-hours (10pm-7am) for power saving
 - Uses xset commands to control screen timeout and DPMS state
 
 **Schedule Configuration**:
+
 - **Daytime (7am-10pm)**: 15-minute timeout, DPMS disabled
 - **Nighttime (10pm-7am)**: 1-minute timeout, DPMS enabled
 - **Check interval**: Every 5 minutes via cron
@@ -60,6 +66,7 @@ PlayLive automation fails with session closure error
 **Location**: `/home/tony/screen-timeout-scheduler.sh` on tony-dell.local
 
 **Script Logic**:
+
 ```bash
 #!/bin/bash
 # Screen timeout scheduler for PlayLive compatibility
@@ -84,11 +91,13 @@ fi
 ### Cron Configuration
 
 **Cron Entry**:
+
 ```cron
 */5 * * * * /home/tony/screen-timeout-scheduler.sh
 ```
 
 **Schedule Details**:
+
 - Runs every 5 minutes
 - Checks current hour and applies appropriate screen settings
 - Automatic transitions at 7am (enable PlayLive mode) and 10pm (enable power saving)
@@ -97,6 +106,7 @@ fi
 ### xset Commands
 
 **Daytime Configuration (PlayLive Compatible)**:
+
 ```bash
 xset s 900 900    # Set 15-minute screen timeout (900 seconds)
 xset s off        # Disable screensaver
@@ -104,6 +114,7 @@ xset -dpms        # Disable DPMS (Display Power Management Signaling)
 ```
 
 **Nighttime Configuration (Power Saving)**:
+
 ```bash
 xset s 60 60      # Set 1-minute screen timeout (60 seconds)
 xset s on         # Enable screensaver
@@ -114,20 +125,22 @@ xset +dpms        # Enable DPMS for screen power management
 
 ### Timeout Values
 
-| Period | Hours | Timeout | DPMS | Purpose |
-|--------|-------|---------|------|---------|
-| Daytime | 7am-10pm | 15 minutes | Disabled | PlayLive compatibility |
-| Nighttime | 10pm-7am | 1 minute | Enabled | Power saving |
+| Period    | Hours    | Timeout    | DPMS     | Purpose                |
+| --------- | -------- | ---------- | -------- | ---------------------- |
+| Daytime   | 7am-10pm | 15 minutes | Disabled | PlayLive compatibility |
+| Nighttime | 10pm-7am | 1 minute   | Enabled  | Power saving           |
 
 ### Host Configuration
 
 **Primary Host**: tony-dell.local
+
 - PlayLive daemon runs on tony-dell
 - Chrome CDP endpoint on tony-dell
 - Screen timeout scheduler runs on tony-dell
 - Display connected to tony-dell for DPMS control
 
 **Environment Requirements**:
+
 - X server running (for xset commands)
 - Display accessible (DISPLAY environment variable set)
 - Cron daemon active
@@ -138,12 +151,14 @@ xset +dpms        # Enable DPMS for screen power management
 ### DPMS and CDP Interaction
 
 **Why DPMS Affects CDP**:
+
 - Chrome CDP maintains a connection to the browser process
 - Display power state changes can trigger browser cleanup
 - Some Chrome builds terminate CDP sessions when display state changes
 - PlayLive's persistent session model assumes stable display state
 
 **Chrome Behavior**:
+
 - CDP is designed for testing/automation scenarios
 - Display state changes are considered environment changes
 - Some Chrome versions are more sensitive to DPMS than others
@@ -152,18 +167,21 @@ xset +dpms        # Enable DPMS for screen power management
 ### Scheduler Design Rationale
 
 **5-Minute Check Interval**:
+
 - Frequent enough to ensure timely transitions
 - Minimal system overhead
 - Handles clock adjustments and system wake from sleep
 - Reduces risk of missed schedule boundaries
 
 **15-Minute Daytime Timeout**:
+
 - Long enough to avoid interruption during active work
 - Short enough to provide some power saving during idle periods
 - DPMS disabled is the key factor for PlayLive compatibility
 - Timeout value is secondary when DPMS is disabled
 
 **1-Minute Nighttime Timeout**:
+
 - Aggressive power saving during unused hours
 - Quick screen-off when not in use
 - DPMS enabled allows full power management
@@ -172,22 +190,25 @@ xset +dpms        # Enable DPMS for screen power management
 ### Alternative Approaches Considered
 
 **Option 1: Disable DPMS Entirely**
+
 - Pros: Maximum PlayLive compatibility
 - Cons: No power saving, increased energy consumption
 - Rejected: Not environmentally responsible
 
 **Option 2: Use Headless Chrome**
+
 - Pros: No display dependency
 - Cons: Loses live browser debugging capability, requires PlayLive changes
 - Rejected: Reduces PlayLive's utility for interactive debugging
 
 **Option 3: Chrome Flags to Ignore Display State**
+
 - Pros: No infrastructure changes
 - Cons: Chrome flags may not be reliable, version-dependent
 - Rejected: Uncertain effectiveness, maintenance burden
 
 **Option 4: Time-Based Scheduler (Selected)**
+
 - Pros: Balances automation needs with power saving, simple implementation
 - Cons: Requires cron and xset setup
 - Selected: Best balance of reliability and efficiency
-

@@ -7,10 +7,10 @@ category: operations
 ## What it is
 
 Caddyfile syntax errors that prevent the Caddy web server from starting, causing connection failures for all web services.
+
 ## Context/Background
 
 Created 2026-08-04 as part of Chaba infrastructure documentation.
-
 
 ## Context
 
@@ -19,18 +19,20 @@ Caddy configuration files must follow specific syntax rules. When these rules ar
 ## Prevention
 
 ### Code Review Checklist
+
 - Ensure all request matchers are defined within site blocks
 - Check for duplicate matcher definitions
 - Verify all matchers are used within their site block
 - Use consistent indentation to identify site block boundaries
 
 ### Site Block Structure
+
 ```caddyfile
 :8080 {
     # All matchers must be defined here
     @matcher_name path /path
     redir @matcher_name /path/ 308
-    
+
     handle_path /path/* {
         # Handler configuration
     }
@@ -40,12 +42,14 @@ Caddy configuration files must follow specific syntax rules. When these rules ar
 ## Common Caddyfile Patterns
 
 ### Path Redirects
+
 ```caddyfile
 @noslash path /apps/example
 redir @noslash /apps/example/ 308
 ```
 
 ### API Handlers
+
 ```caddyfile
 handle /api/example/* {
     reverse_proxy backend:8080
@@ -53,6 +57,7 @@ handle /api/example/* {
 ```
 
 ### Static File Serving
+
 ```caddyfile
 handle_path /apps/example/* {
     root * /srv/public/apps/example

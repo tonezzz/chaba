@@ -7,4 +7,4 @@ if (!window.dailySummaries) {
   window.dailySummaries = [];
 }
 
-console.log('Daily2 initialization complete');
+console.log("Daily2 initialization complete");

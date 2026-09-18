@@ -6,21 +6,25 @@ Generated: 2026-08-12 20:33:16
 ## Components
 
 ### Web Stack
+
 - Caddy web server
 - Static file serving
 - Reverse proxy for APIs
 
 ### Data Services
+
 - PostgreSQL database
 - Weaviate vector database
 - Redis cache (optional)
 
 ### AI/ML Services
+
 - Llama Router (GPU inference)
 - GPU Queue management
 - Image generation services
 
 ### Monitoring
+
 - Health check system
 - Performance monitoring
 - Alerting system

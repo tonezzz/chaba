@@ -28,9 +28,9 @@ processing:
   status: in_progress
   status: completed
   current_step: 8
-  started_at: '2026-08-27'
-  completed_at: '2026-08-27'
-  last_updated: '2026-08-27'
+  started_at: "2026-08-27"
+  completed_at: "2026-08-27"
+  last_updated: "2026-08-27"
   notes: |
     The tool sweep is complete. ATR-based position sizing is the best
     standalone tool. A wider grid confirmed ATR_WINDOW=7, TARGET_VOL=0.15,
@@ -41,8 +41,8 @@ steps:
   - id: 1
     label: SMA overlay on THB signal
     status: completed
-    started_at: '2026-08-27'
-    completed_at: '2026-08-27'
+    started_at: "2026-08-27"
+    completed_at: "2026-08-27"
     notes: |
       Implemented trended_sma_overlay.py. It only takes long positions when the
       5-day THB SMA is above the 20-day SMA, and short positions when below.
@@ -57,8 +57,8 @@ steps:
   - id: 2
     label: EMA overlay on THB signal
     status: completed
-    started_at: '2026-08-27'
-    completed_at: '2026-08-27'
+    started_at: "2026-08-27"
+    completed_at: "2026-08-27"
     notes: |
       Implemented trended_ema_overlay.py. It only takes long positions when the
       5-day THB EMA is above the 20-day EMA, and short positions when below.
@@ -73,8 +73,8 @@ steps:
   - id: 3
     label: RSI filter
     status: completed
-    started_at: '2026-08-27'
-    completed_at: '2026-08-27'
+    started_at: "2026-08-27"
+    completed_at: "2026-08-27"
     notes: |
       Implemented trended_rsi_filter.py. Uses 14-day XAU RSI to block long
       signals when RSI > 70 and short signals when RSI < 30.
@@ -89,8 +89,8 @@ steps:
   - id: 4
     label: MACD filter
     status: completed
-    started_at: '2026-08-27'
-    completed_at: '2026-08-27'
+    started_at: "2026-08-27"
+    completed_at: "2026-08-27"
     notes: |
       Implemented trended_macd_filter.py. Allows longs only when XAU MACD line
       is above its signal line (12/26/9 EMAs), and shorts when below.
@@ -104,8 +104,8 @@ steps:
   - id: 5
     label: Bollinger Band mean-reversion overlay
     status: completed
-    started_at: '2026-08-27'
-    completed_at: '2026-08-27'
+    started_at: "2026-08-27"
+    completed_at: "2026-08-27"
     notes: |
       Implemented trended_bollinger.py as a standalone XAU mean-reversion
       strategy. It goes short when the 20-day XAU return z-score is above 2
@@ -120,8 +120,8 @@ steps:
   - id: 6
     label: ATR-based position sizing
     status: completed
-    started_at: '2026-08-27'
-    completed_at: '2026-08-27'
+    started_at: "2026-08-27"
+    completed_at: "2026-08-27"
     notes: |
       Implemented trended_atr_sizing.py. The k-NN signal is scaled by the
       14-day XAU ATR to target 20% annual volatility, capped at 2x leverage.
@@ -135,8 +135,8 @@ steps:
   - id: 7
     label: Combined filter + sizing
     status: completed
-    started_at: '2026-08-27'
-    completed_at: '2026-08-27'
+    started_at: "2026-08-27"
+    completed_at: "2026-08-27"
     notes: |
       Implemented trended_thb_basis_best.py, combining the best filter (RSI)
       with the best sizing rule (ATR).
@@ -152,7 +152,7 @@ steps:
   - id: 8
     label: Update app and SSOT
     status: completed
-    completed_at: '2026-08-27'
+    completed_at: "2026-08-27"
     notes: |
       The thb-basis-tool-sweep.html app page is already wired to load all
       data/trended_*_equity.csv and results files. All seven CSV/JSON pairs are

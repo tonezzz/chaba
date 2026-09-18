@@ -11,4 +11,3 @@ category: operations
 - **MCP Integration**: ✅ 79 tools available
 - **Backup System**: ✅ Native API + Google Drive sync
 - **Migration Status**: ✅ Complete and ready for cutover
-

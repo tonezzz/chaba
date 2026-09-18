@@ -1,0 +1,10 @@
+FROM docker.io/library/node:20-alpine
+
+# MrGo2/icloud-mcp — stdio-only MCP server (JSON-RPC over stdin/stdout, no ports).
+# Cloud mode env: USE_LOCAL_MODE=false, ICLOUD_EMAIL, ICLOUD_APP_PASSWORD
+# (app-specific password from account.apple.com, supplied via --env-file at run).
+RUN npm install -g mcp-icloud@2.1.3
+
+# Idle container; MCP sessions run via `podman exec -i icloud-mcp icloud-mcp`
+# over SSH stdio (same pattern as notebooklm-mcp).
+ENTRYPOINT ["sleep", "infinity"]

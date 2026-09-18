@@ -18,9 +18,9 @@ related:
 
 Move the backend services for `rview` (`rview-api`) and `gemini-live` from `tony-omen` (Docker Compose) to `tony-dell` (rootless podman Quadlet). The static web UIs stay on `chaba.h3` / `tony-omen` Caddy; only the API upstreams move.
 
-| Service | Old location | New location | Port |
-|---------|--------------|--------------|------|
-| `rview-api` | `tony-omen` Docker Compose | `tony-dell` rootless podman | `3007` |
+| Service       | Old location               | New location                | Port   |
+| ------------- | -------------------------- | --------------------------- | ------ |
+| `rview-api`   | `tony-omen` Docker Compose | `tony-dell` rootless podman | `3007` |
 | `gemini-live` | `tony-omen` Docker Compose | `tony-dell` rootless podman | `3008` |
 
 `gemini-live` uses port `3008` because `mddb-panel` already occupies `3002` on `tony-dell`.
@@ -246,11 +246,11 @@ curl -s https://chaba.h3.gizmo-thailand.com/api/gemini-live/health
 
 ## Troubleshooting
 
-| Symptom | Cause | Fix |
-|---------|-------|-----|
-| `rview-api` not listening | State dir missing or image not built | Create `/home/tony/.local/share/rview-api`; run `systemctl --user start rview-api-image rview-api` |
-| `gemini-live` cannot spawn `mcp_rview/server.py` | `scripts/mcp_rview` not copied into image | Run `systemctl --user start gemini-live-image && systemctl --user restart gemini-live` |
-| `gemini-live` health fails | Missing `GEMINI_API_KEY` or `rview-api` not ready | Verify `podman secret inspect gemini-api-key`; check `rview-api` is running |
-| Caddy returns 502 | `tony-dell` hostname not resolving | Use `100.68.142.13:3007` / `100.68.142.13:3008` in Caddy or `/etc/hosts` |
-| `chaba.h3` still proxies to old host | Old process cached defaults | Restart the `chaba.h3` Node process or set env overrides |
-| Health check fails inside container | `curl` not in image | The Dockerfiles install `curl`; rebuild the image |
+| Symptom                                          | Cause                                             | Fix                                                                                                |
+| ------------------------------------------------ | ------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| `rview-api` not listening                        | State dir missing or image not built              | Create `/home/tony/.local/share/rview-api`; run `systemctl --user start rview-api-image rview-api` |
+| `gemini-live` cannot spawn `mcp_rview/server.py` | `scripts/mcp_rview` not copied into image         | Run `systemctl --user start gemini-live-image && systemctl --user restart gemini-live`             |
+| `gemini-live` health fails                       | Missing `GEMINI_API_KEY` or `rview-api` not ready | Verify `podman secret inspect gemini-api-key`; check `rview-api` is running                        |
+| Caddy returns 502                                | `tony-dell` hostname not resolving                | Use `100.68.142.13:3007` / `100.68.142.13:3008` in Caddy or `/etc/hosts`                           |
+| `chaba.h3` still proxies to old host             | Old process cached defaults                       | Restart the `chaba.h3` Node process or set env overrides                                           |
+| Health check fails inside container              | `curl` not in image                               | The Dockerfiles install `curl`; rebuild the image                                                  |

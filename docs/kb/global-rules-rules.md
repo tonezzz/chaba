@@ -11,6 +11,7 @@ category: operations
 **Test Scenarios**:
 
 **Scenario 1: Documentation Search Query**
+
 ```
 Query: "GPU memory management"
 Expected Behavior:
@@ -20,17 +21,20 @@ Expected Behavior:
 ```
 
 **Validation Method**:
+
 - Monitor agent tool calls during documentation searches
 - Check that `mcp_call_tool("mddb", "semantic_search", ...)` is called first
 - Verify fallback behavior is documented and confirmed with user
 - No silent fallback to grep/read without explanation
 
 **Success Criteria**:
+
 - ✅ MDDB semantic search called first in 95%+ of documentation queries
 - ✅ Fallback behavior documented and user confirmation obtained
 - ✅ No silent fallback to traditional tools
 
 **Scenario 2: SSOT-Specific Query**
+
 ```
 Query: "ssot.health.yml GPU configuration"
 Expected Behavior:
@@ -39,11 +43,13 @@ Expected Behavior:
 ```
 
 **Validation Method**:
+
 - Monitor for ssot-search skill invocation
 - Verify that YAML-specific queries use ssot-search
 - Check that MDDB is not used for exact YAML path queries
 
 **Success Criteria**:
+
 - ✅ ssot-search used for YAML-specific queries
 - ✅ MDDB not used for exact YAML structure queries
 - ✅ Appropriate tool selection based on query type
@@ -55,6 +61,7 @@ Expected Behavior:
 **Test Scenarios**:
 
 **Scenario 1: Documentation Query**
+
 ```
 Query: "How does the health check system work?"
 Expected Behavior:
@@ -64,16 +71,19 @@ Expected Behavior:
 ```
 
 **Validation Method**:
+
 - Monitor for mddb semantic_search calls
 - Check for absence of docs MCP server calls
 - Verify collection filtering usage (kb-system, ssot-infrastructure, etc.)
 
 **Success Criteria**:
+
 - ✅ MDDB used for documentation queries
 - ✅ No obsolete docs MCP server calls
 - ✅ Appropriate collection filtering applied
 
 **Scenario 2: System Health Query**
+
 ```
 Query: "Check the health of all services"
 Expected Behavior:
@@ -83,16 +93,19 @@ Expected Behavior:
 ```
 
 **Validation Method**:
+
 - Monitor for mcp-health tool calls
 - Check for check_health or get_health_status calls
 - Verify dependency analysis usage
 
 **Success Criteria**:
+
 - ✅ mcp-health used for system health queries
 - ✅ Comprehensive health checks performed
 - ✅ Dependency analysis leveraged when appropriate
 
 **Scenario 3: GPU Operations Query**
+
 ```
 Query: "What is the current GPU queue status?"
 Expected Behavior:
@@ -102,11 +115,13 @@ Expected Behavior:
 ```
 
 **Validation Method**:
+
 - Monitor for mcp-gpu tool calls
 - Check for GPU-specific tool usage
 - Verify queue status monitoring
 
 **Success Criteria**:
+
 - ✅ mcp-gpu used for GPU-specific queries
 - ✅ Appropriate GPU tools selected
 - ✅ Queue management operations correct
@@ -118,6 +133,7 @@ Expected Behavior:
 **Test Scenarios**:
 
 **Scenario 1: MDDB Service Failure**
+
 ```
 Condition: MDDB container stopped
 Expected Behavior:
@@ -128,6 +144,7 @@ Expected Behavior:
 ```
 
 **Validation Method**:
+
 - Stop MDDB container: `docker stop mddb`
 - Trigger documentation search query
 - Monitor agent response and tool calls
@@ -135,12 +152,14 @@ Expected Behavior:
 - Restart MDDB: `docker start mddb`
 
 **Success Criteria**:
+
 - ✅ MDDB failure detected and reported
 - ✅ Specific fix proposed (restart container)
 - ✅ User confirmation requested before fallback
 - ✅ No silent fallback to traditional tools
 
 **Scenario 2: API Key Failure**
+
 ```
 Condition: Invalid API key for external service
 Expected Behavior:
@@ -151,6 +170,7 @@ Expected Behavior:
 ```
 
 **Validation Method**:
+
 - Temporarily invalidate an API key
 - Trigger service usage
 - Monitor agent response
@@ -158,8 +178,8 @@ Expected Behavior:
 - Restore API key
 
 **Success Criteria**:
+
 - ✅ Authentication failure detected
 - ✅ Specific error reported
 - ✅ Fallback action proposed
 - ✅ User confirmation requested
-

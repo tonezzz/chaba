@@ -117,6 +117,7 @@ mcp_call_tool("playlive.tony-dell", "playlive_navigate", {
 ### Playwright Implementation
 
 Uses Playwright's built-in HTTP authentication support:
+
 - Credentials set at context level apply to all pages in that context
 - Automatically handles basic auth challenges
 - Supports both HTTP and HTTPS protocols
@@ -129,4 +130,3 @@ Uses Playwright's built-in HTTP authentication support:
 - Daemon is unauthenticated on LAN (existing security model)
 - Auth is for target page access only, not daemon security
 - Do not expose playlived to untrusted networks
-

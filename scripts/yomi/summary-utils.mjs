@@ -19,39 +19,40 @@ const ERROR_PATTERNS = [
   /unanswerable/i,
   /concoc/i, // From the True5G example
   /error/i,
-  /failed/i
+  /failed/i,
 ];
 
 /**
  * Detect corruption patterns in summary text
  */
 function detectCorruptionPatterns(summary) {
-  if (!summary || typeof summary !== 'string') return false;
-  
+  if (!summary || typeof summary !== "string") return false;
+
   const text = summary.trim();
-  
+
   // Check for repeated character patterns (e.g., "ดดดดดดวดดกอดกงววมวม")
   const repeatedCharPattern = /(.)\1{4,}/;
   if (repeatedCharPattern.test(text)) return true;
-  
+
   // Check for repeated word patterns (e.g., "discussing discussing Savannah Guthrie'ranews about Savannah Guthron")
   const words = text.split(/\s+/);
   const wordCounts = {};
   for (const word of words) {
-    if (word.length > 3) { // Only check meaningful words
+    if (word.length > 3) {
+      // Only check meaningful words
       wordCounts[word] = (wordCounts[word] || 0) + 1;
       if (wordCounts[word] >= 3) return true;
     }
   }
-  
+
   // Check for garbled text patterns (mixed random characters)
   const garbledPattern = /[^\w\s\u0E00-\u0E7F.,!?;:'"()-]/g;
   const garbledCount = (text.match(garbledPattern) || []).length;
   if (garbledCount > text.length * 0.3) return true;
-  
+
   // Check for specific corruption patterns found in investigation
-  if (text.includes('Guthron') || text.includes('Guthrie\'ranews')) return true;
-  
+  if (text.includes("Guthron") || text.includes("Guthrie'ranews")) return true;
+
   return false;
 }
 
@@ -59,19 +60,19 @@ function detectCorruptionPatterns(summary) {
  * Evaluate summary quality (0-100 score)
  */
 export function evaluateSummaryQuality(summary) {
-  if (!summary || typeof summary !== 'string') return 0;
-  
+  if (!summary || typeof summary !== "string") return 0;
+
   const text = summary.trim();
-  if (text === '') return 0;
-  
+  if (text === "") return 0;
+
   // Check for corruption patterns first
   if (detectCorruptionPatterns(text)) return 0;
-  
+
   // Check for generic error messages
   for (const pattern of ERROR_PATTERNS) {
     if (pattern.test(text)) return 0;
   }
-  
+
   // Quality scoring based on length and content
   const length = text.length;
   if (length < 10) return 10; // Very short
@@ -96,40 +97,42 @@ export async function retryWithBackoff(fn, options = {}) {
     maxRetries = 3,
     baseDelay = 1000, // 1 second
     maxDelay = 10000, // 10 seconds
-    onRetry = null
+    onRetry = null,
   } = options;
-  
+
   let lastError;
-  
+
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
       return await fn();
     } catch (error) {
       lastError = error;
-      
+
       // Don't retry on certain errors
       if (isNonRetryableError(error)) {
         throw error;
       }
-      
+
       // Don't retry after max attempts
       if (attempt === maxRetries) {
         throw error;
       }
-      
+
       // Calculate delay with exponential backoff
       const delay = Math.min(baseDelay * Math.pow(2, attempt), maxDelay);
-      
+
       if (onRetry) {
         onRetry(attempt + 1, delay, error);
       } else {
-        console.log(`Retry attempt ${attempt + 1}/${maxRetries} after ${delay}ms (error: ${error.message})`);
+        console.log(
+          `Retry attempt ${attempt + 1}/${maxRetries} after ${delay}ms (error: ${error.message})`
+        );
       }
-      
+
       await sleep(delay);
     }
   }
-  
+
   throw lastError;
 }
 
@@ -137,23 +140,23 @@ export async function retryWithBackoff(fn, options = {}) {
  * Check if error is non-retryable
  */
 function isNonRetryableError(error) {
-  const message = error.message?.toLowerCase() || '';
-  
+  const message = error.message?.toLowerCase() || "";
+
   // Network errors are retryable
-  if (message.includes('fetch failed') || message.includes('econnrefused')) {
+  if (message.includes("fetch failed") || message.includes("econnrefused")) {
     return false;
   }
-  
+
   // Validation errors are not retryable
-  if (message.includes('invalid') || message.includes('validation')) {
+  if (message.includes("invalid") || message.includes("validation")) {
     return true;
   }
-  
+
   // Timeout errors are retryable
-  if (message.includes('timeout')) {
+  if (message.includes("timeout")) {
     return false;
   }
-  
+
   return false;
 }
 
@@ -161,7 +164,7 @@ function isNonRetryableError(error) {
  * Sleep utility
  */
 function sleep(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 /**
@@ -183,23 +186,25 @@ export function parseCacheKey(key) {
 /**
  * Validate context length and truncate if necessary
  */
-export function validateAndTruncateContext(text, chatId = 'unknown') {
-  if (!text || typeof text !== 'string') return text;
-  
+export function validateAndTruncateContext(text, chatId = "unknown") {
+  if (!text || typeof text !== "string") return text;
+
   const length = text.length;
-  
+
   if (length > MAX_CONTEXT_LENGTH) {
-    console.log(`Context length ${length} exceeds limit ${MAX_CONTEXT_LENGTH} for ${chatId}, truncating`);
+    console.log(
+      `Context length ${length} exceeds limit ${MAX_CONTEXT_LENGTH} for ${chatId}, truncating`
+    );
     // Truncate from the beginning, keeping the most recent messages
     const truncated = text.slice(-MAX_CONTEXT_LENGTH);
     console.log(`Truncated to ${truncated.length} characters for ${chatId}`);
     return truncated;
   }
-  
+
   if (length > WARNING_CONTEXT_LENGTH) {
     console.log(`Context length ${length} approaching limit ${MAX_CONTEXT_LENGTH} for ${chatId}`);
   }
-  
+
   return text;
 }
 
@@ -207,19 +212,19 @@ export function validateAndTruncateContext(text, chatId = 'unknown') {
  * Get context length validation status
  */
 export function getContextLengthStatus(text) {
-  if (!text || typeof text !== 'string') {
-    return { valid: true, length: 0, status: 'empty' };
+  if (!text || typeof text !== "string") {
+    return { valid: true, length: 0, status: "empty" };
   }
-  
+
   const length = text.length;
-  
+
   if (length > MAX_CONTEXT_LENGTH) {
-    return { valid: false, length, status: 'exceeded', limit: MAX_CONTEXT_LENGTH };
+    return { valid: false, length, status: "exceeded", limit: MAX_CONTEXT_LENGTH };
   }
-  
+
   if (length > WARNING_CONTEXT_LENGTH) {
-    return { valid: true, length, status: 'warning', limit: MAX_CONTEXT_LENGTH };
+    return { valid: true, length, status: "warning", limit: MAX_CONTEXT_LENGTH };
   }
-  
-  return { valid: true, length, status: 'ok', limit: MAX_CONTEXT_LENGTH };
+
+  return { valid: true, length, status: "ok", limit: MAX_CONTEXT_LENGTH };
 }

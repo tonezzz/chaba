@@ -36,8 +36,8 @@ planning:
 processing:
   status: completed
   current_step: 6
-  started_at: '2026-08-26'
-  last_updated: '2026-08-26'
+  started_at: "2026-08-26"
+  last_updated: "2026-08-26"
   notes: |
     All six follow-up ideas completed. The branch best is THB + XAG (W=2, K=50,
     p=0.01, EDGE_LOOKBACK=504, TC=0.05%): Sharpe 3.52, ann ret 36.8%, vol 10.4%,
@@ -55,8 +55,8 @@ steps:
   - id: 1
     label: Vol-sized silver graph+k-NN
     status: completed
-    started_at: '2026-08-26'
-    completed_at: '2026-08-26'
+    started_at: "2026-08-26"
+    completed_at: "2026-08-26"
     notes: |
       Combine the tuned silver graph+k-NN with volatility-targeted position sizing
       from trended_graph_knn_vol.py. Target: higher Sharpe or lower drawdown while
@@ -74,8 +74,8 @@ steps:
   - id: 2
     label: Volatility/trend regime gate
     status: completed
-    started_at: '2026-08-26'
-    completed_at: '2026-08-26'
+    started_at: "2026-08-26"
+    completed_at: "2026-08-26"
     notes: |
       Implemented trended_graph_knn_silver_regime.py. The THB->XAU edge gate is
       combined with a realized XAU volatility gate: the month is skipped if the
@@ -89,8 +89,8 @@ steps:
   - id: 3
     label: Feature ablation
     status: completed
-    started_at: '2026-08-26'
-    completed_at: '2026-08-26'
+    started_at: "2026-08-26"
+    completed_at: "2026-08-26"
     notes: |
       Implemented tune_graph_knn_silver_ablate.py. Tested feature subsets
       (thb_xau_xag, thb_xau, thb_xag, xau_xag, xag) with K=10,30,50,
@@ -104,8 +104,8 @@ steps:
   - id: 4
     label: Transaction-cost stress test
     status: completed
-    started_at: '2026-08-26'
-    completed_at: '2026-08-26'
+    started_at: "2026-08-26"
+    completed_at: "2026-08-26"
     notes: |
       Implemented trended_graph_knn_thb_xag.py (THB + XAG, K=50) and ran the
       transaction-cost sweep on the new best feature subset:
@@ -118,8 +118,8 @@ steps:
   - id: 5
     label: Gold/silver spread feature
     status: completed
-    started_at: '2026-08-26'
-    completed_at: '2026-08-26'
+    started_at: "2026-08-26"
+    completed_at: "2026-08-26"
     notes: |
       Implemented trended_graph_knn_thb_spread.py. Uses THB return and the
       XAU/XAG log-spread return instead of raw XAG return. Result (W=2, K=50,
@@ -134,8 +134,8 @@ steps:
   - id: 6
     label: XAG->XAU Granger edge filter
     status: completed
-    started_at: '2026-08-26'
-    completed_at: '2026-08-26'
+    started_at: "2026-08-26"
+    completed_at: "2026-08-26"
     notes: |
       Implemented trended_graph_knn_thb_xag_dual.py. The trade gate now requires
       both THB->XAU and XAG->XAU Granger edges to be significant (P <= 0.01).

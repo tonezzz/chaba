@@ -5,6 +5,7 @@ category: operations
 # Operational Procedures
 
 ### Starting Headroom Proxy
+
 ```bash
 # Manual start
 .windsurf/start-headroom-proxy.sh
@@ -17,6 +18,7 @@ pkill -f "headroom proxy"
 ```
 
 ### Managing MCP Filtering
+
 ```bash
 # Modify filter configuration
 # Edit appropriate filter script in .windsurf/
@@ -30,8 +32,13 @@ pkill -f "headroom proxy"
 ```
 
 # Enable disabled server
+
 # Edit ~/.config/devin/mcp_config.json
+
 # Remove "disabled": true from server configuration
+
 # Restart Devin Desktop
+
 ```
 
+```

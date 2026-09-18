@@ -5,6 +5,7 @@ category: operations
 # Maintenance
 
 ### When to Update
+
 - New features added to the application
 - Architecture changes or refactoring
 - Deployment locations or methods change
@@ -12,6 +13,7 @@ category: operations
 - Known issues resolved or discovered
 
 ### Review Process
+
 - Quarterly review of all app SSOT files
 - Check for consistency with template
 - Update status classifications as needed
@@ -28,4 +30,3 @@ ssot-validate docs/ssot/apps/ssot.apps.[app-name].yml
 # Validate all app SSOT files
 ssot-validate docs/ssot/apps/
 ```
-

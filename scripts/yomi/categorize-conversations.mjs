@@ -1,43 +1,145 @@
-import { readFileSync, writeFileSync, renameSync } from 'node:fs';
+import { readFileSync, writeFileSync, renameSync } from "node:fs";
 
-const CONV = '/home/tony/CascadeProjects/chaba-tony-dell/stacks/web/public/apps/yomi/conversations.json';
+const CONV =
+  "/home/tony/CascadeProjects/chaba-tony-dell/stacks/web/public/apps/yomi/conversations.json";
 
 const CATEGORIES = [
-  { id: 'Family', keywords: ['ครอบครัว','บ้าน','พ่อ','แม่','ลูก','ปู่','ย่า','ตา','ยาย','น้อง','พี่','ที่บ้าน','แฟน','สามี','ภรรยา','family','dad','mom','parent','home'] },
-  { id: 'Work', keywords: ['งาน','office','บริษัท','ทีม','project','ลูกค้า','การงาน','work','team','meeting','business','company','job','office','colleague'] },
-  { id: 'Promo', keywords: ['ช้อป','shopping','sale','ลด','โปร','ดีล','ส่วนลด','คูปอง','พอยท์','7-eleven','big c','true','shopee','lazada','jd','promotion','promo','flash sale','free',' points','คะแนน','สินค้า','จำหน่าย','7-11','7 eleven'] },
-  { id: 'Official', keywords: ['official','บริการ','ธนาคาร','รัฐ','ประกัน','คลินิก','โรงพยาบาล','hospital','bank','gov','service','clinic','สาขา','ออฟฟิศ','ร้าน','store','delivery','order','แจ้ง','เตือน','ระบบ'] },
-  { id: 'Group', keywords: ['group','room','ห้อง','กลุ่ม','แชทกลุ่ม','group chat'] },
+  {
+    id: "Family",
+    keywords: [
+      "ครอบครัว",
+      "บ้าน",
+      "พ่อ",
+      "แม่",
+      "ลูก",
+      "ปู่",
+      "ย่า",
+      "ตา",
+      "ยาย",
+      "น้อง",
+      "พี่",
+      "ที่บ้าน",
+      "แฟน",
+      "สามี",
+      "ภรรยา",
+      "family",
+      "dad",
+      "mom",
+      "parent",
+      "home",
+    ],
+  },
+  {
+    id: "Work",
+    keywords: [
+      "งาน",
+      "office",
+      "บริษัท",
+      "ทีม",
+      "project",
+      "ลูกค้า",
+      "การงาน",
+      "work",
+      "team",
+      "meeting",
+      "business",
+      "company",
+      "job",
+      "office",
+      "colleague",
+    ],
+  },
+  {
+    id: "Promo",
+    keywords: [
+      "ช้อป",
+      "shopping",
+      "sale",
+      "ลด",
+      "โปร",
+      "ดีล",
+      "ส่วนลด",
+      "คูปอง",
+      "พอยท์",
+      "7-eleven",
+      "big c",
+      "true",
+      "shopee",
+      "lazada",
+      "jd",
+      "promotion",
+      "promo",
+      "flash sale",
+      "free",
+      " points",
+      "คะแนน",
+      "สินค้า",
+      "จำหน่าย",
+      "7-11",
+      "7 eleven",
+    ],
+  },
+  {
+    id: "Official",
+    keywords: [
+      "official",
+      "บริการ",
+      "ธนาคาร",
+      "รัฐ",
+      "ประกัน",
+      "คลินิก",
+      "โรงพยาบาล",
+      "hospital",
+      "bank",
+      "gov",
+      "service",
+      "clinic",
+      "สาขา",
+      "ออฟฟิศ",
+      "ร้าน",
+      "store",
+      "delivery",
+      "order",
+      "แจ้ง",
+      "เตือน",
+      "ระบบ",
+    ],
+  },
+  { id: "Group", keywords: ["group", "room", "ห้อง", "กลุ่ม", "แชทกลุ่ม", "group chat"] },
 ];
 
 function normalize(str) {
-  return String(str ?? '').toLowerCase().normalize('NFKC');
+  return String(str ?? "")
+    .toLowerCase()
+    .normalize("NFKC");
 }
-const BRANDS = new Set([
-  'Big C TH','CP ALL 7-Eleven TH','LINE SHOPPING','ShopeeTH','True5G','TrueYou'
-].map(normalize));
+const BRANDS = new Set(
+  ["Big C TH", "CP ALL 7-Eleven TH", "LINE SHOPPING", "ShopeeTH", "True5G", "TrueYou"].map(
+    normalize
+  )
+);
 
 function categorize(c) {
-  const text = normalize([c.name, c.lastPreview, c.summary].filter(Boolean).join(' '));
+  const text = normalize([c.name, c.lastPreview, c.summary].filter(Boolean).join(" "));
   const name = normalize(c.name);
-  const isGroup = c.id.startsWith('c') || c.id.startsWith('r');
+  const isGroup = c.id.startsWith("c") || c.id.startsWith("r");
 
-  if (BRANDS.has(name)) return { category: 'Official', source: 'brand', isGroup };
+  if (BRANDS.has(name)) return { category: "Official", source: "brand", isGroup };
 
   for (const cat of CATEGORIES) {
-    if (cat.id === 'Group' && !isGroup) continue;
+    if (cat.id === "Group" && !isGroup) continue;
     for (const kw of cat.keywords) {
-      if (text.includes(kw.toLowerCase())) return { category: cat.id, source: 'text', isGroup };
+      if (text.includes(kw.toLowerCase())) return { category: cat.id, source: "text", isGroup };
     }
   }
 
-  if (isGroup) return { category: 'Group', source: 'id', isGroup };
-  return { category: 'Personal', source: 'default', isGroup };
+  if (isGroup) return { category: "Group", source: "id", isGroup };
+  return { category: "Personal", source: "default", isGroup };
 }
 
 function main() {
-  const data = JSON.parse(readFileSync(CONV, 'utf8'));
-  if (!Array.isArray(data.conversations)) throw new Error('conversations array missing');
+  const data = JSON.parse(readFileSync(CONV, "utf8"));
+  if (!Array.isArray(data.conversations)) throw new Error("conversations array missing");
 
   for (const c of data.conversations) {
     const result = categorize(c);
@@ -46,7 +148,7 @@ function main() {
     c.categorySource = result.source;
   }
 
-  const tmp = CONV + '.tmp';
+  const tmp = CONV + ".tmp";
   writeFileSync(tmp, JSON.stringify(data, null, 2));
   renameSync(tmp, CONV);
 

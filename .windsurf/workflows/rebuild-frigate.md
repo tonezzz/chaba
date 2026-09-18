@@ -1,6 +1,7 @@
 ---
 description: Regenerate Frigate config and restart the NVR
 ---
+
 1. Confirm with the user before regenerating config and restarting Frigate. If they agree, proceed.
 2. Run `just -f /home/tony/CascadeProjects/chaba-tony-dell/Justfile rebuild-cameras`.
 3. Restart Frigate with `just -f /home/tony/CascadeProjects/chaba-tony-dell/Justfile restart-frigate`.

@@ -44,4 +44,3 @@ BASE = 'http://192.168.1.43:8080'
 - To use WiFi as the primary path, either disconnect Ethernet or change the default route to `192.168.1.1 dev wlan0`.
 
 ---
-

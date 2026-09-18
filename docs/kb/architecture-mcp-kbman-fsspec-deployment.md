@@ -11,18 +11,21 @@ Container-friendly deployment approach for mcp-kbman using fsspec with Google Dr
 ## Why fsspec?
 
 **Advantages over OAuth:**
+
 - Service account authentication (no browser interaction)
 - Container-friendly authentication
 - Standard fsspec interface (well-established ecosystem)
 - No interactive authentication required
 
 **Advantages over GitHub token auth:**
+
 - Keeps Google Drive as storage backend (current architecture)
 - No migration needed
 - Better performance (direct API access)
 - Familiar storage location
 
 **Advantages over rclone mount:**
+
 - No filesystem permission issues in containers
 - No mount dependency
 - Better container isolation

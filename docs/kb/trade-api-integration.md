@@ -7,10 +7,10 @@ category: operations
 ## What it is
 
 Trading data API service providing REST endpoints for dollar price data including exchange rates, dollar index, and commodity prices. Integrated with web stack via docker-compose and Caddyfile reverse proxy.
+
 ## Context/Background
 
 Created 2026-08-04 as part of Chaba infrastructure documentation.
-
 
 ## Related Documentation
 

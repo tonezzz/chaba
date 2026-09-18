@@ -46,11 +46,13 @@ Parsed objects look like:
 Yomi tracks processing state in a JSON file:
 
 ### Status File Location
+
 - **Path**: `/home/tony/CascadeProjects/chaba/stacks/web/public/apps/yomi/process-status.json`
 - **Format**: JSON with timestamp
 - **Updated by**: `process-conversations.mjs`
 
 ### Status Structure
+
 ```json
 {
   "status": "idle" | "processing",
@@ -62,6 +64,7 @@ Yomi tracks processing state in a JSON file:
 ```
 
 ### Usage
+
 - Can be manually cleared if stuck
 - Available via `/api/yomi/activity-status` for GPU monitor integration
 - Can be checked by health check for summarization status
@@ -69,14 +72,15 @@ Yomi tracks processing state in a JSON file:
 ## Backlog Management
 
 ### Backlog Assessment Strategy
+
 - Monitor `fetch-data/` directory for stale fetches
 - Check `process-status.json` for stuck processing
 - Review PostgreSQL for conversations without summaries
 - Use `summary_quality` field to identify low-quality summaries
 
 ### Clearing Strategy
+
 1. Identify conversations with `summary_quality = 0` or `null`
 2. Force re-summarize with `--force` flag
 3. Clear summary cache if needed: `rm /home/tony/CascadeProjects/chaba/stacks/web/public/apps/yomi/summaries.json`
 4. Monitor batch processing to avoid overwhelming GPU
-

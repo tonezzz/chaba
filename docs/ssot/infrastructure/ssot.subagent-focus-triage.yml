@@ -5,15 +5,15 @@ profile: subagent_explore
 version: 1
 
 purpose:
-- When a request is ambiguous or does not clearly match an active focus, quick win, or backlog item, dispatch a subagent with this prompt to classify the request.
-- The subagent does not modify files; it returns a JSON triage recommendation.
+  - When a request is ambiguous or does not clearly match an active focus, quick win, or backlog item, dispatch a subagent with this prompt to classify the request.
+  - The subagent does not modify files; it returns a JSON triage recommendation.
 
 inputs:
   request: the raw user request
   ssot_files:
-  - docs/ssot/ssot.focus.current.yml
-  - docs/ssot/ssot.focus.yml
-  - docs/ssot/focus-inbox/*.yml
+    - docs/ssot/ssot.focus.current.yml
+    - docs/ssot/ssot.focus.yml
+    - docs/ssot/focus-inbox/*.yml
 
 task: |
   You are a read-only focus triage subagent. Your job is to classify the user's request and recommend the exact intake action.
@@ -58,28 +58,28 @@ outputs:
       enum: [high, medium, low]
 
 usage:
-- When the main assistant receives an ambiguous request and the decision_tree case is unclear.
-- When mcp_focus or focus-dispatcher --intake returns low confidence or a tie.
-- When the user wants a second opinion before activating or committing to a new focus.
+  - When the main assistant receives an ambiguous request and the decision_tree case is unclear.
+  - When mcp_focus or focus-dispatcher --intake returns low confidence or a tie.
+  - When the user wants a second opinion before activating or committing to a new focus.
 
 examples:
-- request: "I have this idea but I am not sure where it belongs"
-  output:
-    action: inbox
-    target: null
-    reason: The request is vague and needs missing_info before classification.
-    confidence: high
-- request: "Can we improve the dispatcher logging?"
-  output:
-    action: backlog
-    target: null
-    safe_to_parallel: true
-    reason: The request is a multi-step improvement to an existing system component.
-    confidence: medium
-- request: "Can you run a quick py_compile check on mcp_debug?"
-  output:
-    action: safe
-    target: null
-    safe_to_parallel: true
-    reason: The request is a read-only validation that can run in parallel on a different branch.
-    confidence: high
+  - request: "I have this idea but I am not sure where it belongs"
+    output:
+      action: inbox
+      target: null
+      reason: The request is vague and needs missing_info before classification.
+      confidence: high
+  - request: "Can we improve the dispatcher logging?"
+    output:
+      action: backlog
+      target: null
+      safe_to_parallel: true
+      reason: The request is a multi-step improvement to an existing system component.
+      confidence: medium
+  - request: "Can you run a quick py_compile check on mcp_debug?"
+    output:
+      action: safe
+      target: null
+      safe_to_parallel: true
+      reason: The request is a read-only validation that can run in parallel on a different branch.
+      confidence: high

@@ -57,13 +57,13 @@ assessment:
     - docs/ssot/ssot.libs.yml exists, but it is UI-library focused, not Python code modules
   proposed_module_layout:
     - scripts/mcp_debug/__init__.py
-    - scripts/mcp_debug/config.py       # hosts, SSOT, PRESETS, REPO_DIR
-    - scripts/mcp_debug/hosts.py       # run_on_host and host-specific tool helpers
-    - scripts/mcp_debug/tools.py       # mcp_debug, mcp_raw, mcp_stats, mcp_vet, mcp_savings, ...
-    - scripts/mcp_debug/reports.py     # generate_savings_report, generate_json_report, generate_csv_report, mcp_report
-    - scripts/mcp_debug/focus.py       # mcp_focus
-    - scripts/mcp_debug/server.py      # handle_initialize, handle_tools_list, handle_tools_call
-    - scripts/mcp-debug-server.py      # main() and imports the package
+    - scripts/mcp_debug/config.py # hosts, SSOT, PRESETS, REPO_DIR
+    - scripts/mcp_debug/hosts.py # run_on_host and host-specific tool helpers
+    - scripts/mcp_debug/tools.py # mcp_debug, mcp_raw, mcp_stats, mcp_vet, mcp_savings, ...
+    - scripts/mcp_debug/reports.py # generate_savings_report, generate_json_report, generate_csv_report, mcp_report
+    - scripts/mcp_debug/focus.py # mcp_focus
+    - scripts/mcp_debug/server.py # handle_initialize, handle_tools_list, handle_tools_call
+    - scripts/mcp-debug-server.py # main() and imports the package
   rationale:
     - Each file has a single responsibility.
     - Adding a new tool or report only touches one module.

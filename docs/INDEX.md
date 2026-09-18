@@ -20,6 +20,7 @@ docs/
 ## Quick Navigation
 
 ### Knowledge Base (`docs/kb/`)
+
 Comprehensive guides for systems and workflows:
 
 - **[caddyfile-syntax-errors.md](kb/caddyfile-syntax-errors.md)** - Caddyfile syntax error patterns and fixes
@@ -51,6 +52,7 @@ Comprehensive guides for systems and workflows:
 - **[yomi.md](kb/yomi.md)** - Yomi LINE web app comprehensive documentation
 
 ### Architecture (`docs/architecture/`)
+
 System architecture and design documentation:
 
 - **[wireguard-architecture.md](architecture/wireguard-architecture.md)** - VPN architecture
@@ -58,6 +60,7 @@ System architecture and design documentation:
 - **[yomi-summarization-improvements.md](architecture/yomi-summarization-improvements.md)** - Yomi summarization enhancements
 
 ### Assessments (`docs/assessments/`)
+
 Technology evaluations and planning documents:
 
 - **[weaviate-assessment.md](assessments/weaviate-assessment.md)** - Weaviate vector database evaluation
@@ -72,18 +75,21 @@ Technology evaluations and planning documents:
   - gpu-sharing-data-collection.md
 
 ### Implementation (`docs/implementation/`)
+
 Implementation guides and technical documentation:
 
 - **[mcp-config-sync-implementation.md](implementation/mcp-config-sync-implementation.md)** - MCP configuration synchronization implementation guide
 - **[ssot-config-manager-implementation.md](implementation/ssot-config-manager-implementation.md)** - SSOT configuration manager implementation report
 
 ### Reports (`docs/reports/`)
+
 System assessment and status reports:
 
 - **[mcp-config-status-report.md](reports/mcp-config-status-report.md)** - MCP configuration status report
 - **[overnight-assessment-2026-08-04.md](reports/overnight-assessment-2026-08-04.md)** - Comprehensive overnight system assessment
 
 ### SSOT (`docs/ssot/`)
+
 Single Source of Truth configurations — see **[ssot.index.yml](ssot/ssot.index.yml)** for the master index:
 
 - **[ssot.index.yml](ssot/ssot.index.yml)** - **Master index** of all 30 SSOT files with descriptions
@@ -102,6 +108,7 @@ Single Source of Truth configurations — see **[ssot.index.yml](ssot/ssot.index
   - ssot.test.weaviate.yml, ssot.ui.yml, ssot.validation-patterns.yml
 
 ### Sessions (`docs/sessions/`)
+
 Development session archives (timestamped YAML files):
 
 - Session summaries with key decisions and discoveries
@@ -109,11 +116,13 @@ Development session archives (timestamped YAML files):
 - Chronological organization by timestamp
 
 ### Archive (`docs/archive/`)
+
 Historical and superseded documents:
 
 - **[plan-brief.md](archive/plan-brief.md)** - Historical project planning brief
 
 ### Overview (`docs/overview/`)
+
 Project-specific configurations (not moved during restructuring):
 
 - apps.yomi.yml - Yomi-specific app configuration
@@ -126,6 +135,7 @@ Project-specific configurations (not moved during restructuring):
 ## Key Documentation Patterns
 
 ### KB Entry Structure
+
 - Overview section explaining the system
 - Key files table with file purposes
 - Architecture and implementation details
@@ -134,6 +144,7 @@ Project-specific configurations (not moved during restructuring):
 - Tags and metadata for categorization
 
 ### SSOT File Structure
+
 - Title, subtitle, and icon fields
 - Ideas section for notes and context
 - Sections with title, icon, layout, and items
@@ -141,6 +152,7 @@ Project-specific configurations (not moved during restructuring):
 - Template-driven approach
 
 ### Session Archive Format
+
 - ISO timestamp naming (YYYY-MM-DDTHH-MM-SS.yml)
 - Title, date, summary, project fields
 - Sections for work completed and next steps
@@ -149,18 +161,21 @@ Project-specific configurations (not moved during restructuring):
 ## Documentation Workflows
 
 ### Adding New KB Entries
+
 1. Create file in `docs/kb/` with descriptive name
 2. Follow existing KB structure (overview, key files, troubleshooting)
 3. Add cross-references to related SSOT files
 4. Update this INDEX.md with new entry
 
 ### Adding New SSOT Files
+
 1. Copy `docs/ssot/template.yml` as starting point
 2. Place in appropriate subdirectory (apps/, infrastructure/, or root)
 3. Follow SSOT structure conventions
 4. Validate with ssot-validate skill
 
 ### Archiving Sessions
+
 1. Create session file in `docs/sessions/` with timestamp
 2. Include key decisions, discoveries, and next steps
 3. Link to relevant project and files
@@ -169,11 +184,13 @@ Project-specific configurations (not moved during restructuring):
 ## Related Resources
 
 ### Skills
+
 - **ssot-search** - Search across SSOT files
 - **ssot-validate** - Validate SSOT file syntax and structure
 - **health-check** - Check health of services defined in SSOT
 
 ### Scripts
+
 - **scripts/overnight-assessment.mjs** - Automated system assessment
 - **scripts/dependency-graph.mjs** - Generate dependency graphs
 - **scripts/dependency-resolver.mjs** - Analyze dependencies
@@ -181,18 +198,21 @@ Project-specific configurations (not moved during restructuring):
 - **scripts/validate-configs.sh** - SSOT configuration validation
 
 ### Configuration
+
 - **.windsurfrules** - Project rules and conventions
 - **.windsurf/workflows/** - Workflow documentation
 
 ## Maintenance
 
 ### Regular Updates
+
 - Review and update KB entries as systems evolve
 - Archive outdated documents to `docs/archive/`
 - Update cross-references when files move
 - Keep INDEX.md synchronized with structure changes
 
 ### Validation
+
 - Run ssot-validate skill to check SSOT files
 - Test documentation links resolve correctly
 - Verify scripts use correct file paths
@@ -201,6 +221,7 @@ Project-specific configurations (not moved during restructuring):
 ## Getting Started
 
 For new contributors:
+
 1. Read relevant KB entries for your area
 2. Review SSOT files for system configuration
 3. Check recent session archives for context
@@ -210,6 +231,7 @@ For new contributors:
 ---
 
 Last updated: 2026-08-05
+
 - Added token optimization documentation (6 new KB entries)
 - Updated SSOT section with token optimization configuration
 - Added new KB entries for GPU embedding, impact scoring, MCP audit

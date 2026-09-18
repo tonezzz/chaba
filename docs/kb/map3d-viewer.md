@@ -3,16 +3,16 @@ category: operations
 ---
 
 # Map3D Viewer
+
 ## What it is
 
 title: Map3D Viewer
 
-
 **Abstract**: A 3D map visualization application supporting point clouds, Gaussian splats, and tiltable overlays for race course visualization and geographic analysis.
+
 ## Context/Background
 
 Created 2026-08-06 as part of Chaba infrastructure documentation.
-
 
 ## Overview
 
@@ -28,13 +28,13 @@ Map3D Viewer is a web-based 3D visualization tool that renders geographic data i
 
 ## Key Files
 
-| File | Purpose |
-|------|---------|
-| `chaba-h3/public/apps/map3d/index.html` | Main HTML structure with 3D canvas |
-| `chaba-h3/public/apps/map3d/main.js` | 3D rendering logic and scene management |
-| `chaba-h3/public/apps/map3d/splat-layer.js` | Gaussian Splat rendering implementation |
-| `chaba-h3/public/apps/map3d/data/` | Point cloud and splat data files |
-| `docs/ssot/apps/ssot.apps.map3d.yml` | SSOT configuration and detailed documentation |
+| File                                        | Purpose                                       |
+| ------------------------------------------- | --------------------------------------------- |
+| `chaba-h3/public/apps/map3d/index.html`     | Main HTML structure with 3D canvas            |
+| `chaba-h3/public/apps/map3d/main.js`        | 3D rendering logic and scene management       |
+| `chaba-h3/public/apps/map3d/splat-layer.js` | Gaussian Splat rendering implementation       |
+| `chaba-h3/public/apps/map3d/data/`          | Point cloud and splat data files              |
+| `docs/ssot/apps/ssot.apps.map3d.yml`        | SSOT configuration and detailed documentation |
 
 ## Related Documentation
 
@@ -45,9 +45,9 @@ Map3D Viewer is a web-based 3D visualization tool that renders geographic data i
 
 ## Change History
 
-| Date | Change | Author |
-|------|--------|--------|
-| 2026-08-06 | Initial creation with 3D rendering details and integration notes | tony |
+| Date       | Change                                                           | Author |
+| ---------- | ---------------------------------------------------------------- | ------ |
+| 2026-08-06 | Initial creation with 3D rendering details and integration notes | tony   |
 
 ## Tags
 

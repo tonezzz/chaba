@@ -14,6 +14,7 @@
 **File**: `docs/ssot/ssot.focus.yml`
 **Purpose**: Strategic focus areas with shared vs per-branch tracking
 **Features**:
+
 - Active/pending/completed status tracking
 - Dependency tracking and history
 - Cross-branch focus coordination
@@ -24,6 +25,7 @@
 **File**: `docs/ssot/ssot.improvements.yml`
 **Purpose**: Pending system improvements with priority, effort, and impact scoring
 **Features**:
+
 - Priority and effort estimation
 - Dependency tracking
 - Impact scoring system
@@ -36,6 +38,7 @@
 **File**: `docs/ssot/ssot.validation-patterns.yml`
 **Purpose**: Validation rules, file-type classifications, and best practices
 **Features**:
+
 - SSOT system validation rules
 - File-type classifications
 - Best practices and patterns
@@ -46,6 +49,7 @@
 **File**: `docs/ssot/ssot.token-optimization.yml`
 **Purpose**: MCP filter config, Headroom proxy, Devin usage patterns for token cost reduction
 **Features**:
+
 - MCP filtering configuration
 - Headroom proxy setup
 - Token usage patterns
@@ -57,6 +61,7 @@
 **File**: `docs/ssot/ssot.libs.yml`
 **Purpose**: Design tokens, shared components, asset paths, build workflow
 **Features**:
+
 - Design tokens and variables
 - Shared component library
 - Asset path management
@@ -70,6 +75,7 @@
 **File**: `docs/ssot/ssot.diagrams.yml`
 **Purpose**: Architecture and connection diagrams for multi-host setups
 **Features**:
+
 - Playlive architecture diagrams
 - Barrier system diagrams
 - Multi-host connection diagrams
@@ -80,6 +86,7 @@
 **File**: `docs/ssot/ssot.devin.tools.yml`
 **Purpose**: MCP server definitions and launch configuration for Devin/Windsurf
 **Features**:
+
 - MCP server configurations
 - Launch parameters
 - Tool definitions
@@ -90,6 +97,7 @@
 **File**: `docs/ssot/ssot.docs.yml`
 **Purpose**: Document processing tools, LLM infrastructure, library evaluation
 **Features**:
+
 - Document processing tools
 - LLM infrastructure configuration
 - Library evaluation candidates
@@ -100,6 +108,7 @@
 **File**: `docs/ssot/ssot.test.weaviate.yml`
 **Purpose**: Weaviate vector database testing and optimization
 **Features**:
+
 - Embedding service setup
 - Test plans and procedures
 - Optimization notes
@@ -110,6 +119,7 @@
 **File**: `docs/ssot/ssot.mysystem.home.yml`
 **Purpose**: Home environment configuration (workstations, network, services)
 **Features**:
+
 - Workstation configurations (tony-omen, tony-dell)
 - Network configuration
 - Service endpoints
@@ -122,6 +132,7 @@
 **File**: `docs/ssot/ssot.documentation-infrastructure.yml`
 **Purpose**: Documentation infrastructure and disaster recovery procedures
 **Features**:
+
 - Backup scripts and schedules
 - Recovery procedures
 - MCP server configuration
@@ -132,6 +143,7 @@
 **File**: `docs/ssot/ssot.focus.yml`
 **Purpose**: Strategic focus automation system for activity monitoring
 **Features**:
+
 - Advanced activity monitoring
 - Dependency-driven automation
 - Multi-project support

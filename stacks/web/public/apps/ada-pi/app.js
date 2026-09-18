@@ -19,7 +19,7 @@ let assistantPlaybackActive = false;
 let localSpeechActive = false;
 let speechAboveFrames = 0;
 let speechBelowFrames = 0;
-let microphoneNoiseFloor = .004;
+let microphoneNoiseFloor = 0.004;
 let connectionInProgress = false;
 
 function setStatus(text) {
@@ -114,13 +114,15 @@ async function createPlayback() {
   playbackNode = new AudioWorkletNode(playbackContext, "pcm-player", { outputChannelCount: [1] });
   playbackAnalyser = playbackContext.createAnalyser();
   playbackAnalyser.fftSize = 256;
-  playbackAnalyser.smoothingTimeConstant = .68;
+  playbackAnalyser.smoothingTimeConstant = 0.68;
   playbackNode.connect(playbackAnalyser);
   playbackAnalyser.connect(playbackContext.destination);
   await playbackContext.resume();
   console.info("playback context", playbackContext.sampleRate, playbackContext.state);
   playbackContext.onstatechange = () => console.info("playback state", playbackContext.state);
-  document.body.addEventListener("touchstart", () => playbackContext?.resume().catch(() => {}), { passive: true });
+  document.body.addEventListener("touchstart", () => playbackContext?.resume().catch(() => {}), {
+    passive: true,
+  });
   document.body.addEventListener("click", () => playbackContext?.resume().catch(() => {}));
   startPlaybackMeter();
 }
@@ -136,8 +138,8 @@ function startPlaybackMeter() {
     let power = 0;
     for (const sample of samples) power += sample * sample;
     const rms = Math.sqrt(power / samples.length);
-    const level = Math.min(1, Math.max(0, (rms - .006) * 8.5));
-    smoothed = level > smoothed ? smoothed * .48 + level * .52 : smoothed * .76 + level * .24;
+    const level = Math.min(1, Math.max(0, (rms - 0.006) * 8.5));
+    smoothed = level > smoothed ? smoothed * 0.48 + level * 0.52 : smoothed * 0.76 + level * 0.24;
 
     if (now - lastUpdate >= 33) {
       window.idleFace?.setSpeechLevel(smoothed);
@@ -150,11 +152,13 @@ function startPlaybackMeter() {
 
 async function startMicrophone() {
   stream = await navigator.mediaDevices.getUserMedia({
-    audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }
+    audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
   });
   const track = stream.getAudioTracks()[0];
   const settings = track.getSettings();
-  setStatus(`Mic on (EC:${settings.echoCancellation}, AGC:${settings.autoGainControl}, ${settings.sampleRate} Hz)`);
+  setStatus(
+    `Mic on (EC:${settings.echoCancellation}, AGC:${settings.autoGainControl}, ${settings.sampleRate} Hz)`
+  );
 
   captureContext = new AudioContext({ latencyHint: "interactive" });
   const source = captureContext.createMediaStreamSource(stream);
@@ -167,22 +171,26 @@ async function startMicrophone() {
     let power = 0;
     for (const sample of samples) power += sample * sample;
     const rms = Math.sqrt(power / samples.length);
-    if (!localSpeechActive) microphoneNoiseFloor = microphoneNoiseFloor * .98 + rms * .02;
-    const startThreshold = Math.max(.012, microphoneNoiseFloor * 2.8);
-    const stopThreshold = Math.max(.008, microphoneNoiseFloor * 1.7);
+    if (!localSpeechActive) microphoneNoiseFloor = microphoneNoiseFloor * 0.98 + rms * 0.02;
+    const startThreshold = Math.max(0.012, microphoneNoiseFloor * 2.8);
+    const stopThreshold = Math.max(0.008, microphoneNoiseFloor * 1.7);
     if (!localSpeechActive) {
       speechAboveFrames = rms > startThreshold ? speechAboveFrames + 1 : 0;
       if (speechAboveFrames >= 3) {
         localSpeechActive = true;
         speechBelowFrames = 0;
-        socket.send(JSON.stringify({ type: "local_speech_started", rms, threshold: startThreshold }));
+        socket.send(
+          JSON.stringify({ type: "local_speech_started", rms, threshold: startThreshold })
+        );
       }
     } else {
       speechBelowFrames = rms < stopThreshold ? speechBelowFrames + 1 : 0;
       if (speechBelowFrames >= 12) {
         localSpeechActive = false;
         speechAboveFrames = 0;
-        socket.send(JSON.stringify({ type: "local_speech_stopped", rms, threshold: stopThreshold }));
+        socket.send(
+          JSON.stringify({ type: "local_speech_stopped", rms, threshold: stopThreshold })
+        );
       }
     }
     const pcm = downsampleToPCM16(samples, captureContext.sampleRate, INPUT_RATE);
@@ -277,19 +285,20 @@ async function connect() {
 
 async function disconnect(closeSocket = true) {
   window.idleFace?.setConnecting(false, true);
-  if (closeSocket && socket && socket.readyState < WebSocket.CLOSING) socket.close(1000, "user disconnect");
+  if (closeSocket && socket && socket.readyState < WebSocket.CLOSING)
+    socket.close(1000, "user disconnect");
   socket = null;
   if (captureNode) captureNode.disconnect();
   if (playbackMeterFrame) cancelAnimationFrame(playbackMeterFrame);
   playbackMeterFrame = null;
   playbackAnalyser = null;
-  if (stream) stream.getTracks().forEach(track => track.stop());
+  if (stream) stream.getTracks().forEach((track) => track.stop());
   if (captureContext) await captureContext.close().catch(() => {});
   if (playbackContext) await playbackContext.close().catch(() => {});
   stream = captureContext = playbackContext = captureNode = playbackNode = null;
   localSpeechActive = false;
   speechAboveFrames = speechBelowFrames = 0;
-  microphoneNoiseFloor = .004;
+  microphoneNoiseFloor = 0.004;
   assistantEntry = null;
   setStatus("Disconnected");
   setConnected(false);

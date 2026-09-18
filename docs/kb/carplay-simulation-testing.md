@@ -6,20 +6,28 @@ created: 2026-08-06
 updated: 2026-08-06
 category: implementation
 related: [ssot.apps.test-carplay.yml, app-ssot-standards.md, h3-pages.md]
-search_keywords: [carplay simulation, ipad testing, gps tracking, route planning, navigation testing, ios interface]
+search_keywords:
+  [
+    carplay simulation,
+    ipad testing,
+    gps tracking,
+    route planning,
+    navigation testing,
+    ios interface,
+  ]
 ---
 
 # CarPlay Simulation Testing
+
 ## What it is
 
 title: CarPlay Simulation Testing
 
-
 **Abstract**: CarPlay-style simulation interface for iPad testing that provides GPS tracking, route planning, and navigation simulation capabilities using iOS-inspired design patterns and modular architecture.
+
 ## Context/Background
 
 Created 2026-08-07 as part of Chaba infrastructure documentation.
-
 
 ## Overview
 
@@ -46,12 +54,14 @@ Test CarPlay is a simulation interface designed for iPad testing that replicates
 ### GPS Location System
 
 **Predefined Locations:**
+
 - Tony Omen: 13.7563, 100.5018 (Primary Workstation)
 - Tony Dell: 13.7565, 100.5020 (Secondary Workstation)
 - Home: 13.7560, 100.5015 (Home Location)
 - Chaba H3: 13.7520, 100.5000 (Chaba H3 Location)
 
 **Features:**
+
 - Centralized LOCATIONS object with GPS coordinates and metadata
 - Current location detection via browser geolocation API
 - Location type classification (workstation, home)
@@ -60,18 +70,21 @@ Test CarPlay is a simulation interface designed for iPad testing that replicates
 ### Route Planning Interface
 
 **Input Fields:**
+
 - Start location input with autocomplete
 - Destination location input with autocomplete
 - "My location" buttons for quick current location selection
 - Debounced search (300ms) for performance
 
 **Suggestions System:**
+
 - Auto-complete location suggestions
 - Separate suggestion panels for start/destination fields
 - Location filtering based on input
 - Visual feedback for suggestion selection
 
 **Route Calculation:**
+
 - Simulated route calculation between locations
 - Route visualization on map (when implemented)
 - Turn-by-turn direction simulation
@@ -80,12 +93,14 @@ Test CarPlay is a simulation interface designed for iPad testing that replicates
 ### UI Design Patterns
 
 **CarPlay-Inspired Styling:**
+
 - Dark theme with iOS color palette
 - Rounded corners and smooth animations
 - Touch-optimized controls and interactions
 - Responsive design for iPad screens
 
 **Components:**
+
 - Route input panel with header and body sections
 - Location suggestion panels (400px max height)
 - Current location buttons with GPS icons
@@ -94,12 +109,14 @@ Test CarPlay is a simulation interface designed for iPad testing that replicates
 ## Testing Procedures
 
 ### GPS Testing
+
 1. Test predefined location selection from suggestions
 2. Verify current location detection with browser geolocation
 3. Test location accuracy and coordinate mapping
 4. Validate location type classification
 
 ### Route Planning Testing
+
 1. Test start/destination input fields
 2. Verify auto-complete suggestions functionality
 3. Test debounced search performance
@@ -107,6 +124,7 @@ Test CarPlay is a simulation interface designed for iPad testing that replicates
 5. Test "My location" button functionality
 
 ### UI Testing
+
 1. Test iOS-style animations and transitions
 2. Verify responsive design on iPad screens
 3. Test touch interactions and gesture support
@@ -114,6 +132,7 @@ Test CarPlay is a simulation interface designed for iPad testing that replicates
 5. Test route suggestion panel visibility states
 
 ### Integration Testing
+
 1. Test GPS module integration with route planning
 2. Verify location database consistency
 3. Test state management across modules
@@ -122,21 +141,25 @@ Test CarPlay is a simulation interface designed for iPad testing that replicates
 ## Known Limitations
 
 **GPS Data:**
+
 - Coordinates are approximate Bangkok area values
 - Not connected to real GPS hardware
 - Limited to predefined location database
 
 **Route Calculation:**
+
 - Simulated routing, not connected to real routing API
 - No real-time traffic data
 - Limited to predefined location network
 
 **Map Integration:**
+
 - Map rendering not yet implemented
 - Currently UI-only simulation
 - Requires Leaflet or similar map library integration
 
 **Browser Dependencies:**
+
 - Requires geolocation API support
 - Dependent on browser permissions
 - Limited to browsers with GPS API access
@@ -156,9 +179,9 @@ Test CarPlay is a simulation interface designed for iPad testing that replicates
 
 ## Change History
 
-| Date | Change | Author |
-|------|--------|--------|
-| 2026-08-06 | Initial CarPlay simulation testing documentation | devin |
+| Date       | Change                                           | Author |
+| ---------- | ------------------------------------------------ | ------ |
+| 2026-08-06 | Initial CarPlay simulation testing documentation | devin  |
 
 ## Tags
 

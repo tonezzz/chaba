@@ -10,16 +10,16 @@ search_keywords: [cache, javascript, docker, caddy, version, script-tag, cache-c
 ---
 
 # Caddy Cache Issues - Docker-Based JavaScript Caching
+
 ## What it is
 
 title: Caddy Cache Issues - Docker-Based JavaScript Caching
 
-
 **Abstract**: Docker-based Caddy caching can prevent JavaScript changes from being picked up during development, requiring cache clearing or version parameter solutions to ensure updated code is served.
+
 ## Context/Background
 
 Created 2026-08-07 as part of Chaba infrastructure documentation.
-
 
 ## Overview
 
@@ -33,11 +33,11 @@ Caddy running in Docker containers can cache JavaScript files aggressively, prev
 
 ## Key Files
 
-| File | Purpose |
-|------|---------|
-| `chaba/stacks/web/Caddyfile` | Caddy configuration |
+| File                                  | Purpose                      |
+| ------------------------------------- | ---------------------------- |
+| `chaba/stacks/web/Caddyfile`          | Caddy configuration          |
 | `chaba/stacks/web/docker-compose.yml` | Docker compose configuration |
-| `chaba-h3/public/apps/*/index.html` | HTML files with script tags |
+| `chaba-h3/public/apps/*/index.html`   | HTML files with script tags  |
 
 ## Implementation/Architecture
 
@@ -66,11 +66,13 @@ Add version parameters to script tags to force cache invalidation:
 ```
 
 **Benefits**:
+
 - No cache clearing required
 - Works immediately
 - Can be automated in build process
 
 **Drawbacks**:
+
 - Requires manual version updates
 - Can accumulate old versions in cache over time
 
@@ -88,11 +90,13 @@ docker compose restart web
 ```
 
 **Benefits**:
+
 - Complete cache clearing
 - No code changes required
 - One-time operation
 
 **Drawbacks**:
+
 - Requires container access
 - Affects all cached content
 - Must be repeated after each deployment
@@ -107,11 +111,13 @@ docker compose restart web
 ```
 
 **Benefits**:
+
 - Simple command
 - Clears all cache
 - No manual intervention
 
 **Drawbacks**:
+
 - Brief service interruption
 - Affects all cached content
 - May not clear persistent cache in some configurations
@@ -121,16 +127,19 @@ docker compose restart web
 ### Issue: JavaScript Changes Not Reflecting
 
 **Symptoms**:
+
 - Updated JavaScript code not appearing in browser
 - Old code continues to run despite deployment
 - Browser cache clearing doesn't help
 
 **Causes**:
+
 - Caddy Docker cache serving old files
 - Version parameters not updated
 - Cache not cleared after deployment
 
 **Solutions**:
+
 1. Add version parameter to script tag: `?v=16`
 2. Clear Caddy cache: `docker exec web rm -rf /data/caddy/*`
 3. Restart web container: `docker compose restart web`
@@ -139,15 +148,18 @@ docker compose restart web
 ### Issue: Cache Clearing Not Working
 
 **Symptoms**:
+
 - Cache clearing commands don't resolve the issue
 - Old files still served after cache clear
 
 **Causes**:
+
 - Wrong container name
 - Incorrect cache path
 - Browser-side caching
 
 **Solutions**:
+
 1. Verify container name: `docker ps`
 2. Check cache path: `docker exec web ls -la /data/caddy/`
 3. Clear browser cache with hard refresh
@@ -199,9 +211,9 @@ header {
 
 ## Change History
 
-| Date | Change | Author |
-|------|--------|--------|
-| 2026-01-15 | Initial creation with cache clearing solutions and best practices | tony |
+| Date       | Change                                                            | Author |
+| ---------- | ----------------------------------------------------------------- | ------ |
+| 2026-01-15 | Initial creation with cache clearing solutions and best practices | tony   |
 
 ## Tags
 

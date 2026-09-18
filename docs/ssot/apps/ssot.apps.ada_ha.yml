@@ -27,7 +27,7 @@ sections:
       - label: /home/tony/CascadeProjects/ada-pi/backend/event_recorder.py
         text: Background websocket subscriber recording state_changed transitions for event domains; ring buffer plus batched MDDB persistence (collection ada-ha-events-*). Disable via DISABLE_EVENT_RECORDER=true.
       - label: /home/tony/CascadeProjects/ada-pi/backend/instance.py
-        text: 'ADA_INSTANCE_ID resolution. Required, fail-fast: pins all MDDB memory collections to ada-ha-*-<instance> (tony/michael) instead of deriving them from HOME_ASSISTANT_URL. Missing or invalid → the service refuses to start.'
+        text: "ADA_INSTANCE_ID resolution. Required, fail-fast: pins all MDDB memory collections to ada-ha-*-<instance> (tony/michael) instead of deriving them from HOME_ASSISTANT_URL. Missing or invalid → the service refuses to start."
       - label: /home/tony/.config/systemd/user/ada-ha-tony.service
         text: Runs uvicorn on 0.0.0.0:8002 on mn01 with env /home/tony/.config/secrets/ada-ha-tony.env.
       - label: /home/tony/.config/systemd/user/ada-ha-michael.service
@@ -39,11 +39,11 @@ sections:
     layout: list
     items:
       - label: tony instance
-        text: 'https://mn01.taila0626a.ts.net/apps/ha/ada-tony/'
+        text: "https://mn01.taila0626a.ts.net/apps/ha/ada-tony/"
       - label: michael instance
-        text: 'https://mn01.taila0626a.ts.net/apps/ha/ada-michael/'
+        text: "https://mn01.taila0626a.ts.net/apps/ha/ada-michael/"
       - label: Caddy routing
-        text: 'tony on 127.0.0.1:8002, michael on 127.0.0.1:8003, both via mn01 Caddy on https 443'
+        text: "tony on 127.0.0.1:8002, michael on 127.0.0.1:8003, both via mn01 Caddy on https 443"
       - label: Registry
         text: Listed as ada-ha-tony and ada-ha-michael under the mn01 host in docs/ssot/apps/ssot.apps.yml.
   - title: REST Endpoints
@@ -103,7 +103,7 @@ sections:
       - label: get_dashboard_tab
         text: Read the named tony-test dashboard tab and report displayed devices.
       - label: ada_session_recall
-        text: 'Background recall against NotebookLM via notebooklm-rest. Optional group param routes to per-topic notebooks: memory (past voice sessions, default), infra (hosts/services/tailscale/mcp), apps (ada-pi/HA/playlive), kb (mddb/yomi/SSOT/docs), ops (workflows/tasks/experiments). Group map lives in NOTEBOOKLM_NOTEBOOK_IDS_JSON per instance env; transcripts persist to the memory group. Tony groups: memory=663ef269, infra=be2d05c6, apps=fdbb97d0, kb=c28b6ab9, ops=76a31e03.'
+        text: "Background recall against NotebookLM via notebooklm-rest. Optional group param routes to per-topic notebooks: memory (past voice sessions, default), infra (hosts/services/tailscale/mcp), apps (ada-pi/HA/playlive), kb (mddb/yomi/SSOT/docs), ops (workflows/tasks/experiments). Group map lives in NOTEBOOKLM_NOTEBOOK_IDS_JSON per instance env; transcripts persist to the memory group. Tony groups: memory=663ef269, infra=be2d05c6, apps=fdbb97d0, kb=c28b6ab9, ops=76a31e03."
   - title: Navigation
     icon: "🗺️"
     layout: list
@@ -135,7 +135,7 @@ sections:
       - label: QR onboarding
         text: 'POST /api/auth/redeem-token (authenticated, body {"path": appBase}) mints a single-use redeem URL (ADA_REDEEM_TTL_S, default 10min). GET {base}/redeem/{token} burns it, sets the session cookie, and redirects to {base}/?api_key=<key> so the PWA stores the key. Scan once on iPhone/iPad and the device is authorized.'
       - label: Device keys
-        text: 'POST /api/auth/keys {name} issues a per-device key persisted in ~/.config/secrets/ada-ha-<instance>-keys.json (ADA_KEYS_FILE to override) and returns its redeem URL/QR. GET lists names, DELETE /api/auth/keys/{name} revokes the key AND its sessions. Pair UI: /apps/ha/pair/ (admin key = ADA_API_KEYS admin:… shared on both instances).'
+        text: "POST /api/auth/keys {name} issues a per-device key persisted in ~/.config/secrets/ada-ha-<instance>-keys.json (ADA_KEYS_FILE to override) and returns its redeem URL/QR. GET lists names, DELETE /api/auth/keys/{name} revokes the key AND its sessions. Pair UI: /apps/ha/pair/ (admin key = ADA_API_KEYS admin:… shared on both instances)."
       - label: Voice path
         text: Gemini control calls route through ToolRunner; the model must pass confirmed=true after explicit user confirmation.
   - title: Known Issues
@@ -181,11 +181,11 @@ sections:
       - label: Funnel makes auth mandatory
         text: mn01 and tony-dell both run Tailscale Funnel on 443, so /apps/ada_ha_* and /apps/ada_pi are public-internet paths. confirmed=true only gates the model — direct REST callers self-assert it — which is why ADA_API_KEY covers /api/tools/call AND /ws.
       - label: EnvironmentFile order overrides keys
-        text: 'ada-ha-*.service load ada-ha-<inst>.env THEN notebooklm-rest-api.env; a stale NOTEBOOKLM_REST_API_KEY in the second file silently overrode the per-instance scoped key, so every notebooklm-rest call returned 401 Invalid API key (key-gate runs before handlers, so the write queue never engaged). Fixed 2026-09-17 by commenting the stale key on mn01. Rule: notebooklm-rest-api.env must never carry a singular NOTEBOOKLM_REST_API_KEY on mn01 — scoped per-instance keys live only in ada-ha-*.env; the server side authenticates with NOTEBOOKLM_REST_API_KEYS + NOTEBOOKLM_REST_KEY_SCOPES.'
+        text: "ada-ha-*.service load ada-ha-<inst>.env THEN notebooklm-rest-api.env; a stale NOTEBOOKLM_REST_API_KEY in the second file silently overrode the per-instance scoped key, so every notebooklm-rest call returned 401 Invalid API key (key-gate runs before handlers, so the write queue never engaged). Fixed 2026-09-17 by commenting the stale key on mn01. Rule: notebooklm-rest-api.env must never carry a singular NOTEBOOKLM_REST_API_KEY on mn01 — scoped per-instance keys live only in ada-ha-*.env; the server side authenticates with NOTEBOOKLM_REST_API_KEYS + NOTEBOOKLM_REST_KEY_SCOPES."
 config:
   version: 5
-  created: '2026-09-13'
-  updated: '2026-09-17'
+  created: "2026-09-13"
+  updated: "2026-09-17"
   maintainer: tony
   status: active
   deployment: mn01

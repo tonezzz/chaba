@@ -5,7 +5,9 @@ category: operations
 # Implementation
 
 ### Configuration Management
+
 Centralized configuration in `config.py`:
+
 ```python
 # Search Configuration
 SEARCH_SOURCES = [...]
@@ -19,12 +21,14 @@ CACHE_CLEANUP_INTERVAL_SECONDS = 3600
 ```
 
 ### Error Handling
+
 - **Index Corruption**: Automatic rebuild on detection
 - **Source Unavailable**: Graceful degradation
 - **Cache Errors**: Fallback to direct search
 - **File Access Errors**: Skip problematic files
 
 ### Source Mapping
+
 - **Path Normalization**: Resolves relative vs absolute paths
 - **Source Tagging**: Each result tagged with source name
 - **Deduplication**: Removes duplicate results across sources
@@ -33,6 +37,7 @@ CACHE_CLEANUP_INTERVAL_SECONDS = 3600
 ## Usage/Commands
 
 ### Search Operations
+
 ```python
 from search.manager import SearchManager
 
@@ -49,6 +54,7 @@ results = manager.search("query", limit=10, use_cache=False)
 ```
 
 ### Index Management
+
 ```python
 # Rebuild index
 manager.rebuild_index()
@@ -61,6 +67,7 @@ manager.clear_cache()
 ```
 
 ### MCP Tool Integration
+
 ```python
 # Through mcp-kbman server
 mcp_call_tool("mcp-kbman", "search_kb", {"query": "hardware", "limit": 10})
@@ -68,4 +75,3 @@ mcp_call_tool("mcp-kbman", "rebuild_index", {})
 mcp_call_tool("mcp-kbman", "get_index_status", {})
 mcp_call_tool("mcp-kbman", "clear_search_cache", {})
 ```
-

@@ -3,16 +3,16 @@ category: operations
 ---
 
 # GPU Embedding Service
+
 ## What it is
 
 title: GPU Embedding Service
 
-
 **Abstract**: GPU-accelerated text embedding service using sentence-transformers for high-performance vector generation, achieving 34x performance improvement over CPU baseline through CUDA acceleration with comprehensive GPU queue integration and monitoring.
+
 ## Context/Background
 
 Created 2026-08-05 as part of Chaba infrastructure documentation.
-
 
 ## Overview
 
@@ -25,6 +25,7 @@ Provides high-performance text embedding capabilities for semantic search and ve
 ## Performance Metrics
 
 ### Baseline Comparison
+
 - **CPU Service**: 1.1s per embedding (all-MiniLM-L6-v2, 384 dimensions)
 - **GPU Service**: 32ms per embedding (all-MiniLM-L6-v2, 384 dimensions)
 - **Performance Gain**: 34x faster
@@ -32,6 +33,7 @@ Provides high-performance text embedding capabilities for semantic search and ve
 - **Model**: all-MiniLM-L6-v2 (sentence-transformers)
 
 ### Batch Embedding Performance
+
 - **Single Text**: 175ms per embedding
 - **3 Texts Batch**: 187ms total (~62ms per text)
 - **5 Texts Batch**: 340ms total (~68ms per text)
@@ -47,12 +49,12 @@ Provides high-performance text embedding capabilities for semantic search and ve
 
 ## Change History
 
-| Date | Change | Author |
-|------|--------|--------|
-| 2026-08-04 | Initial deployment | tony |
-| 2026-08-05 | GPU queue monitoring integration | tony |
-| 2026-08-06 | GPU queue backpressure system documentation | tony |
-| 2026-08-06 | Added frontmatter metadata, standardized structure | devin |
+| Date       | Change                                             | Author |
+| ---------- | -------------------------------------------------- | ------ |
+| 2026-08-04 | Initial deployment                                 | tony   |
+| 2026-08-05 | GPU queue monitoring integration                   | tony   |
+| 2026-08-06 | GPU queue backpressure system documentation        | tony   |
+| 2026-08-06 | Added frontmatter metadata, standardized structure | devin  |
 
 ## Tags
 

@@ -3,11 +3,13 @@ category: operations
 ---
 
 # Root Cause
+
 System was running older kernel (7.0.0-28-generic) without updated hibernation parameters, while GRUB configuration had been updated for newer kernel (7.0.0-29-generic). The `/sys/power/disk` showed `[disabled]` indicating hibernation was not enabled in the current kernel.
 
 ## Technical Details
 
 ### Configuration Status
+
 - **GRUB Configuration**: Correct
   - `resume=UUID=e440de9e-3603-423f-8022-595196c0ef30 resume_offset=34816`
   - Located in `/etc/default/grub` under `GRUB_CMDLINE_LINUX_DEFAULT`
@@ -21,12 +23,13 @@ System was running older kernel (7.0.0-28-generic) without updated hibernation p
   - Configured in `/etc/initramfs-tools/conf.d/resume`
   - Updated via `sudo update-initramfs -u`
 
-- **Kernel Mismatch**: 
+- **Kernel Mismatch**:
   - Running: 7.0.0-28-generic
   - GRUB configured for: 7.0.0-29-generic
   - This caused hibernation parameters to not be active
 
 ### System State
+
 - Secure Boot: Enabled (confirmed via `mokutil --sb-state`)
 - NVIDIA Drivers: Loaded (nvidia_uvm, nvidia_drm, nvidia_modeset modules present)
 - Power States: Only `freeze mem` available (missing `disk` for hibernation)
@@ -35,6 +38,7 @@ System was running older kernel (7.0.0-28-generic) without updated hibernation p
 ## Verification Commands
 
 ### Check Current Configuration
+
 ```bash
 # Check current kernel parameters
 cat /proc/cmdline
@@ -50,6 +54,7 @@ uname -r
 ```
 
 ### Verify Swap Configuration
+
 ```bash
 # Show active swap devices
 swapon --show
@@ -62,6 +67,7 @@ findmnt -no UUID -T /data/hibernate.swap
 ```
 
 ### Test Hibernation
+
 ```bash
 # Test hibernation via systemd
 systemctl hibernate
@@ -73,6 +79,7 @@ systemctl status systemd-hibernate
 ## Solution
 
 ### Immediate Fix
+
 1. Reboot to load newer kernel (7.0.0-29-generic) with updated hibernation parameters
 2. After reboot, verify hibernation is enabled:
    ```bash
@@ -85,6 +92,7 @@ systemctl status systemd-hibernate
    ```
 
 ### Configuration Updates (if needed)
+
 ```bash
 # Update GRUB configuration
 sudo update-grub
@@ -95,4 +103,3 @@ sudo update-initramfs -u
 # Reboot to apply changes
 sudo reboot
 ```
-

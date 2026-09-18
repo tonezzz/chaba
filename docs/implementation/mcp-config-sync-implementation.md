@@ -61,7 +61,9 @@ Windsurf Configuration
 This file defines MCP server configurations in two sections:
 
 #### `mcp` Section
+
 Lists MCP server names and their purposes:
+
 ```yaml
 mcp:
   cdp-tony-dell: Chrome DevTools Protocol (Tony Dell).
@@ -72,26 +74,29 @@ mcp:
 ```
 
 #### `mcp-conf` Section
+
 Defines how to run each MCP server:
+
 ```yaml
 mcp-conf:
-- name: github
-  command: /bin/bash
-  args:
-  - /home/tony/CascadeProjects/chaba/.windsurf/run-github-mcp.sh
-- name: mcp-gpu
-  command: /usr/bin/python3
-  args:
-  - /home/tony/CascadeProjects/chaba/mcp-servers/mcp-gpu/server.py
-  env:
-    IMAGEN_URL: http://localhost:8080/apps/imagen2/api
-    LLAMA_URL: http://tony-omen.taila0626a.ts.net:8001
-  disabled: false  # Optional, defaults to false
+  - name: github
+    command: /bin/bash
+    args:
+      - /home/tony/CascadeProjects/chaba/.windsurf/run-github-mcp.sh
+  - name: mcp-gpu
+    command: /usr/bin/python3
+    args:
+      - /home/tony/CascadeProjects/chaba/mcp-servers/mcp-gpu/server.py
+    env:
+      IMAGEN_URL: http://localhost:8080/apps/imagen2/api
+      LLAMA_URL: http://tony-omen.taila0626a.ts.net:8001
+    disabled: false # Optional, defaults to false
 ```
 
 ### ssot.gpu.yml
 
 This file defines the tools provided by MCP servers:
+
 ```yaml
 tools:
   mcp-gpu:
@@ -108,15 +113,19 @@ tools:
 ### generate-mcp-configs.py
 
 #### Purpose
+
 Generate MCP configuration from SSOT files and deploy to Windsurf.
 
 #### Usage
+
 ```bash
 python3 scripts/generate-mcp-configs.py
 ```
 
 #### Output
+
 The script outputs:
+
 1. Loading status of SSOT files
 2. Consistency validation results
 3. Wrapper script validation results
@@ -125,10 +134,12 @@ The script outputs:
 6. Summary with counts
 
 #### Exit Codes
+
 - `0`: Success, no issues found
 - `1`: Issues found (consistency or wrapper script problems)
 
 #### Example Output
+
 ```
 ============================================================
 MCP Configuration Synchronization
@@ -172,14 +183,17 @@ MCP servers configured: 5
 ### validate-configs.sh
 
 #### Purpose
+
 Validate all SSOT configuration files for syntax, structure, and compliance.
 
 #### Usage
+
 ```bash
 bash scripts/validate-configs.sh
 ```
 
 #### Validation Checks
+
 1. **YAML Syntax**: Ensures all YAML files are syntactically valid
 2. **SSOT Structure**: Checks for required fields (title, sections)
 3. **Duplicate Detection**: Identifies duplicate section titles
@@ -188,10 +202,12 @@ bash scripts/validate-configs.sh
 6. **MCP Configuration**: Validates MCP-specific structure
 
 #### Exit Codes
+
 - `0`: Success (with or without warnings)
 - `1`: Validation failed (errors found)
 
 #### Example Output
+
 ```
 ==========================================
 SSOT Configuration Validation
@@ -227,20 +243,22 @@ Total warnings: 0
 ### Adding a New MCP Server
 
 1. **Update SSOT** (`docs/ssot/ssot.devin.tools.yml`):
+
    ```yaml
    mcp:
      new-server: Description of new server.
 
    mcp-conf:
-   - name: new-server
-     command: /path/to/command
-     args:
-     - /path/to/script.sh
-     env:
-       VAR_NAME: value
+     - name: new-server
+       command: /path/to/command
+       args:
+         - /path/to/script.sh
+       env:
+         VAR_NAME: value
    ```
 
 2. **Create wrapper script** (if using shell script):
+
    ```bash
    touch .windsurf/run-new-server.sh
    chmod +x .windsurf/run-new-server.sh
@@ -248,11 +266,13 @@ Total warnings: 0
    ```
 
 3. **Run validation**:
+
    ```bash
    bash scripts/validate-configs.sh
    ```
 
 4. **Generate MCP config**:
+
    ```bash
    python3 scripts/generate-mcp-configs.py
    ```
@@ -265,16 +285,18 @@ Total warnings: 0
 ### Disabling an MCP Server
 
 1. **Update SSOT** (`docs/ssot/ssot.devin.tools.yml`):
+
    ```yaml
    mcp-conf:
-   - name: server-to-disable
-     command: /path/to/command
-     args:
-     - /path/to/script.sh
-     disabled: true  # Add this line
+     - name: server-to-disable
+       command: /path/to/command
+       args:
+         - /path/to/script.sh
+       disabled: true # Add this line
    ```
 
 2. **Regenerate config**:
+
    ```bash
    python3 scripts/generate-mcp-configs.py
    ```
@@ -299,6 +321,7 @@ Total warnings: 0
 **Cause:** The wrapper script referenced in SSOT does not exist.
 
 **Solution:**
+
 1. Check the path in `ssot.devin.tools.yml` under `mcp-conf`
 2. Create the wrapper script if missing:
    ```bash
@@ -312,6 +335,7 @@ Total warnings: 0
 **Cause:** The wrapper script exists but lacks execute permissions.
 
 **Solution:**
+
 ```bash
 chmod +x .windsurf/run-server-name.sh
 ```
@@ -321,6 +345,7 @@ chmod +x .windsurf/run-server-name.sh
 **Cause:** Two MCP servers have identical (command, args) pairs.
 
 **Solution:**
+
 1. Review `ssot.devin.tools.yml` mcp-conf section
 2. Ensure each server has a unique command/args combination
 3. If intentionally sharing a wrapper, use different arguments or environment variables
@@ -331,6 +356,7 @@ chmod +x .windsurf/run-server-name.sh
 
 **Solution:**
 Add the server to the mcp section in `ssot.devin.tools.yml`:
+
 ```yaml
 mcp:
   server-name: Description of server.
@@ -341,6 +367,7 @@ mcp:
 **Cause:** The Windsurf configuration directory does not exist.
 
 **Solution:**
+
 ```bash
 mkdir -p ~/.config/windsurf
 ```
@@ -350,6 +377,7 @@ mkdir -p ~/.config/windsurf
 **Cause:** YAML syntax error in SSOT file.
 
 **Solution:**
+
 1. Run validation to identify the problematic file:
    ```bash
    bash scripts/validate-configs.sh
@@ -367,6 +395,7 @@ mkdir -p ~/.config/windsurf
 
 **Solution:**
 Replace IP addresses with .local hostnames:
+
 - `192.168.1.48` → `tony-omen.local`
 - `192.168.1.42` → `tony-dell.local`
 
@@ -377,6 +406,7 @@ Replace IP addresses with .local hostnames:
 **Cause:** Windsurf/Cascade needs to be restarted to reload configuration.
 
 **Solution:**
+
 1. Restart Windsurf/Cascade application
 2. Or reload MCP configuration if the application supports it
 3. Check Windsurf logs for configuration loading errors
@@ -469,6 +499,7 @@ The `validate-configs.sh` script validates:
 ### Monitoring
 
 Monitor the following:
+
 - MCP server startup success/failure
 - Wrapper script execution errors
 - Configuration validation failures
@@ -485,6 +516,7 @@ Monitor the following:
 ### Git Hook (Optional)
 
 Add a pre-commit hook to validate SSOT files:
+
 ```bash
 #!/bin/bash
 # .git/hooks/pre-commit
@@ -498,6 +530,7 @@ fi
 ### CI Pipeline (Optional)
 
 Add SSOT validation to CI pipeline:
+
 ```yaml
 - name: Validate SSOT
   run: |
@@ -509,24 +542,24 @@ Add SSOT validation to CI pipeline:
 
 ### File Locations
 
-| File/Directory | Path | Purpose |
-|----------------|------|---------|
-| SSOT Directory | `docs/ssot/` | Single source of truth YAML files |
-| Devin Tools SSOT | `docs/ssot/ssot.devin.tools.yml` | MCP server configurations |
-| GPU SSOT | `docs/ssot/infrastructure/ssot.gpu.yml` | MCP tool definitions |
-| Generation Script | `scripts/generate-mcp-configs.py` | MCP config generator |
-| Validation Script | `scripts/validate-configs.sh` | SSOT validator |
-| Wrapper Scripts | `.windsurf/run-*.sh` | MCP server startup scripts |
-| Output Config | `~/.config/windsurf/mcp_config.json` | Generated MCP config |
+| File/Directory    | Path                                    | Purpose                           |
+| ----------------- | --------------------------------------- | --------------------------------- |
+| SSOT Directory    | `docs/ssot/`                            | Single source of truth YAML files |
+| Devin Tools SSOT  | `docs/ssot/ssot.devin.tools.yml`        | MCP server configurations         |
+| GPU SSOT          | `docs/ssot/infrastructure/ssot.gpu.yml` | MCP tool definitions              |
+| Generation Script | `scripts/generate-mcp-configs.py`       | MCP config generator              |
+| Validation Script | `scripts/validate-configs.sh`           | SSOT validator                    |
+| Wrapper Scripts   | `.windsurf/run-*.sh`                    | MCP server startup scripts        |
+| Output Config     | `~/.config/windsurf/mcp_config.json`    | Generated MCP config              |
 
 ### Exit Code Reference
 
-| Script | Exit Code | Meaning |
-|--------|-----------|---------|
-| generate-mcp-configs.py | 0 | Success, no issues |
-| generate-mcp-configs.py | 1 | Issues found (consistency or wrapper) |
-| validate-configs.sh | 0 | Success (with or without warnings) |
-| validate-configs.sh | 1 | Validation failed (errors) |
+| Script                  | Exit Code | Meaning                               |
+| ----------------------- | --------- | ------------------------------------- |
+| generate-mcp-configs.py | 0         | Success, no issues                    |
+| generate-mcp-configs.py | 1         | Issues found (consistency or wrapper) |
+| validate-configs.sh     | 0         | Success (with or without warnings)    |
+| validate-configs.sh     | 1         | Validation failed (errors)            |
 
 ### Related Documentation
 
@@ -538,6 +571,7 @@ Add SSOT validation to CI pipeline:
 ## Support
 
 For issues or questions about MCP configuration synchronization:
+
 1. Check this documentation
 2. Review the status report for current issues
 3. Run validation scripts to identify problems

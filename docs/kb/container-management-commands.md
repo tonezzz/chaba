@@ -5,6 +5,7 @@ category: operations
 # Key Details
 
 ### Technical Details
+
 - **Container Runtime**: Docker (primary), Podman (installed and configured)
 - **Orchestration**: Docker Compose for multi-container stacks
 - **GPU Support**: NVIDIA Container Toolkit for GPU workloads
@@ -13,6 +14,7 @@ category: operations
 - **Podman Configuration**: Optimized runtime with crun, security policies, and registry mirrors
 
 ### Podman Configuration
+
 - **Runtime**: crun (optimized for performance)
 - **Security Policy**: signedBy instead of insecureAcceptAnything
 - **Registry Mirrors**: GCR, USTC for faster image pulls
@@ -21,6 +23,7 @@ category: operations
 - **Configuration Files**: `/etc/containers/policy.json`, `/etc/containers/registries.conf`
 
 ### Container Categories
+
 - **Web Services**: Caddy, web stack, status API
 - **Data Services**: PostgreSQL, Redis, Weaviate
 - **AI/ML Services**: GPU embedding service, Thai legal inference
@@ -28,6 +31,7 @@ category: operations
 - **Integration**: Yomi MCP server, workflow automation
 
 ### GPU Container Configuration
+
 ```yaml
 # GPU container example
 services:
@@ -45,6 +49,7 @@ services:
 ## Usage/Commands
 
 ### Container Management
+
 ```bash
 # List running containers
 docker ps
@@ -69,6 +74,7 @@ docker restart <container-name>
 ```
 
 ### System Cleanup
+
 ```bash
 # Remove stopped containers
 docker container prune
@@ -84,6 +90,7 @@ docker system prune -a -f --volumes
 ```
 
 ### Podman Operations
+
 ```bash
 # Check Podman version
 podman version
@@ -91,3 +98,4 @@ podman version
 # List containers
 podman ps
 
+```

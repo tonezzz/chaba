@@ -9,14 +9,15 @@ category: operations
 Weaviate is a vector database for semantic search and RAG (Retrieval-Augmented Generation) pipelines. It provides AI-native vector storage with hybrid search capabilities (BM25 + vector search), built-in vectorization, and multi-tenancy support.
 
 **Note**: Archived REST API implementation details have been consolidated into this operational guide. The REST API approach resolved gRPC client compatibility issues and provides simpler HTTP-based interaction.
+
 ## Context/Background
 
 Created 2026-08-04 as part of Chaba infrastructure documentation.
 
-
 ## Architecture
 
 ### Container Configuration
+
 - **Location**: `/home/tony/CascadeProjects/chaba/stacks/web/docker-compose.yml`
 - **Image**: `semitechnologies/weaviate:latest`
 - **Version**: 1.38.8
@@ -24,6 +25,7 @@ Created 2026-08-04 as part of Chaba infrastructure documentation.
 - **Persistence**: Dedicated volume `weaviate_data` at `/var/lib/weaviate`
 
 ### Environment Configuration
+
 - `QUERY_DEFAULTS_LIMIT=25`
 - `AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED=true`
 - `PERSISTENCE_DATA_PATH=/var/lib/weaviate`
@@ -32,19 +34,20 @@ Created 2026-08-04 as part of Chaba infrastructure documentation.
 
 ## Key Files
 
-| File | Purpose |
-|------|---------|
-| `scripts/weaviate/index-ssot.mjs` | SSOT document indexing with Chonkie chunking and GPU embeddings |
-| `scripts/weaviate/index-simple.mjs` | Simple document indexing |
-| `scripts/weaviate/api.mjs` | Search API server |
-| `scripts/weaviate/schema.json` | Weaviate collection schema |
-| `scripts/chunk-text.py` | Chonkie text chunking integration (sentence-aware) |
-| `docs/ssot/ssot.test.weaviate.yml` | Weaviate configuration and status |
-| `docs/assessments/weaviate-assessment.md` | Weaviate vs pgvector analysis |
+| File                                      | Purpose                                                         |
+| ----------------------------------------- | --------------------------------------------------------------- |
+| `scripts/weaviate/index-ssot.mjs`         | SSOT document indexing with Chonkie chunking and GPU embeddings |
+| `scripts/weaviate/index-simple.mjs`       | Simple document indexing                                        |
+| `scripts/weaviate/api.mjs`                | Search API server                                               |
+| `scripts/weaviate/schema.json`            | Weaviate collection schema                                      |
+| `scripts/chunk-text.py`                   | Chonkie text chunking integration (sentence-aware)              |
+| `docs/ssot/ssot.test.weaviate.yml`        | Weaviate configuration and status                               |
+| `docs/assessments/weaviate-assessment.md` | Weaviate vs pgvector analysis                                   |
 
 ## Current Status
 
 ### Test Status
+
 - **Weaviate Container**: Running ✅
 - **Embedding Service**: Running ✅ (GPU, 32ms per embedding)
 - **Weaviate Search API**: Running ✅
@@ -54,6 +57,7 @@ Created 2026-08-04 as part of Chaba infrastructure documentation.
 - **Data Collection**: Completed ✅
 
 ### Known Issues
+
 - **Weaviate Client Library**: gRPC connection parameter compatibility issue
   - Error: "Cannot destructure property 'host' of params.connectionParams.grpc as it is undefined"
   - Location: `scripts/weaviate/index-ssot.mjs`
@@ -69,12 +73,14 @@ Created 2026-08-04 as part of Chaba infrastructure documentation.
 ## Use Cases
 
 ### High-Value Opportunities
+
 1. **Semantic Conversation Search (Yomi)**: Search LINE conversations by meaning
 2. **RAG for Daily Summaries**: Context-aware summarization with historical context
 3. **SSOT and KB Memory Search**: Semantic search across all SSOT documents
 4. **Image Similarity Search**: Find similar generated images across history
 
 ### Medium-Value Opportunities
+
 1. **Code Semantic Search**: Search code by functionality
 2. **Session Archive Intelligence**: Automatic clustering of related sessions
 

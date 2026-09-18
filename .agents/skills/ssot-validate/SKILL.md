@@ -19,10 +19,10 @@ Validate all SSOT YAML files in docs/ssot/:
    - YAML syntax is valid (can be parsed)
    - Required top-level fields exist: title (except for config-type SSOT files)
    - If sections exist, validate each section has:
-     * title field
-     * icon field
-     * layout field (list, grid, timeline, table, or diagram)
-     * items array (if layout requires it)
+     - title field
+     - icon field
+     - layout field (list, grid, timeline, table, or diagram)
+     - items array (if layout requires it)
    - Check for duplicate section titles within the same file
    - Check for duplicate item labels within the same section
    - Allow flexible structures for config-type files (ssot.health.yml, ssot.gpu.yml, etc.)

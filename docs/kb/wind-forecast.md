@@ -10,16 +10,16 @@ search_keywords: [wind-forecast, weather-api, open-meteo, race-weather, meteorol
 ---
 
 # Wind Forecast App
+
 ## What it is
 
 title: Wind Forecast App
 
-
 **Abstract**: A minimal wind forecast application providing map visualization and hourly wind data tables for Track4 race course locations using the Open-Meteo forecast API.
+
 ## Context/Background
 
 Created 2026-08-06 as part of Chaba infrastructure documentation.
-
 
 ## Overview
 
@@ -34,17 +34,18 @@ The Wind Forecast app is a lightweight, static web application that displays win
 
 ## Key Files
 
-| File | Purpose |
-|------|---------|
-| `chaba-h3/public/apps/wind/index.html` | Main HTML page with map and forecast table |
-| `docs/ssot/apps/ssot.apps.wind.yml` | SSOT configuration and detailed documentation |
-| `chaba-h3/public/apps/apps.yml` | App registry entry with 💨 icon |
+| File                                   | Purpose                                       |
+| -------------------------------------- | --------------------------------------------- |
+| `chaba-h3/public/apps/wind/index.html` | Main HTML page with map and forecast table    |
+| `docs/ssot/apps/ssot.apps.wind.yml`    | SSOT configuration and detailed documentation |
+| `chaba-h3/public/apps/apps.yml`        | App registry entry with 💨 icon               |
 
 ## Implementation/Architecture
 
 ### Data Source
 
 **Open-Meteo Forecast API**
+
 - **Provider**: Open-Meteo (free, no API key required)
 - **Models**: Global NWP models (ECMWF, GFS, etc.) interpolated for point forecasts
 - **Access**: Direct HTTPS API calls from browser
@@ -53,6 +54,7 @@ The Wind Forecast app is a lightweight, static web application that displays win
 ### Forecast Point
 
 **Location**: tabsai-ws8-track3 (Track4 course)
+
 - **Latitude**: 13.24413075920102
 - **Longitude**: 100.92940092086792
 - **Elevation**: 10 meters above ground (standard for marine forecasts)
@@ -61,11 +63,13 @@ The Wind Forecast app is a lightweight, static web application that displays win
 ### Data Display
 
 **Map Visualization**
+
 - Leaflet map centered on forecast point
 - Marker showing exact forecast location
 - Base map for geographic context
 
 **Hourly Table**
+
 - Next 24 hours of forecast data
 - Wind speed (km/h)
 - Wind direction (degrees and compass arrow)
@@ -97,12 +101,14 @@ The Wind Forecast app is a lightweight, static web application that displays win
 ### Integration with Track4
 
 **Manual Integration**:
+
 1. Check Wind Forecast for current conditions
 2. Note wind direction and speed
 3. Configure Track4 simulation with matching wind parameters
 4. Run simulation with realistic weather context
 
 **Data Flow**:
+
 ```
 Open-Meteo API → Wind Forecast App → Manual Entry → Track4 Simulation
 ```
@@ -144,9 +150,9 @@ Open-Meteo API → Wind Forecast App → Manual Entry → Track4 Simulation
 
 ## Change History
 
-| Date | Change | Author |
-|------|--------|--------|
-| 2026-08-06 | Initial creation with implementation details and limitations | tony |
+| Date       | Change                                                       | Author |
+| ---------- | ------------------------------------------------------------ | ------ |
+| 2026-08-06 | Initial creation with implementation details and limitations | tony   |
 
 ## Tags
 

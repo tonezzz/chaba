@@ -34,7 +34,7 @@ tools:
         type: string
         default: png
         note: png only in the first pass
-    returns: '{ok, content_base64, width, height, bytes, error}'
+    returns: "{ok, content_base64, width, height, bytes, error}"
     transport:
       macos: screencapture -x -
       linux:
@@ -49,7 +49,7 @@ tools:
       - name: host
         type: string
         required: true
-    returns: '{ok, windows: [{id, app, title, pid, focused, bounds}], error}'
+    returns: "{ok, windows: [{id, app, title, pid, focused, bounds}], error}"
     transport:
       macos: lsappinfo / osascript
       linux_x11: xwininfo -root -tree
@@ -62,7 +62,7 @@ tools:
       - name: host
         type: string
         required: true
-    returns: '{ok, content_base64, format, bytes, error}'
+    returns: "{ok, content_base64, format, bytes, error}"
     transport:
       macos: pbpaste -Prefer rtf image path / NSPasteboard read
       linux: xclip -selection clipboard -t image/png -o
@@ -78,7 +78,7 @@ tools:
         type: string
         required: false
         note: target application or window name
-    returns: '{ok, tree, error}'
+    returns: "{ok, tree, error}"
     transport:
       macos: AppleScript accessibility APIs
     status: experimental
@@ -127,7 +127,7 @@ implementation:
     - Add smoke tests on macbook and one Linux host before marking completed.
 
 status: active
-last_updated: '2026-08-22'
+last_updated: "2026-08-22"
 
 related_files:
   - docs/ssot/infrastructure/ssot.mcp-debug.yml

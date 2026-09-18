@@ -5,12 +5,12 @@ icon: 💰
 # Ideas and notes about token optimization
 # This SSOT file serves as the central repository for token optimization strategies
 ideas:
-- Reduce token consumption through multi-layered optimization approach
-- Implement filtering at MCP server level to reduce tool schema overhead
-- Add compression layer for data-heavy operations (database queries, file reads)
-- Optimize Devin configuration and usage patterns
-- Monitor and measure token usage to identify optimization opportunities
-- Balance cost reduction with operational efficiency
+  - Reduce token consumption through multi-layered optimization approach
+  - Implement filtering at MCP server level to reduce tool schema overhead
+  - Add compression layer for data-heavy operations (database queries, file reads)
+  - Optimize Devin configuration and usage patterns
+  - Monitor and measure token usage to identify optimization opportunities
+  - Balance cost reduction with operational efficiency
 
 # Validation rules for token optimization
 validation:
@@ -44,7 +44,7 @@ sections:
           - Commercial product (not open-source)
           - Requires MDM or manual installation per endpoint
           - Overkill for single-user setups
-        
+
       - label: Headroom
         text: Open-source proxy for 60-95% JSON reduction, 15-20% coding agent reduction, content-aware compression
         type: compression-layer
@@ -64,7 +64,7 @@ sections:
           - Requires Python 3.13
           - Additional service to maintain
           - Proxy adds slight latency
-        
+
       - label: MCP Filters (mcp-filter)
         text: Proxy MCP server for 72-91% reduction by filtering tool surfaces to only needed tools
         type: mcp-optimization
@@ -96,7 +96,7 @@ sections:
         recommended_action: Filter to essential tools (list_conversations, get_chat_messages, get_insight)
         status: operational
         current_state: Filtered to 4 tools (73% reduction)
-        
+
       - label: PostgreSQL MCP Server
         text: Database operations with 11 tools for query, execute, DDL operations, and schema management
         tool_count: 11
@@ -106,7 +106,7 @@ sections:
         recommended_action: Filter to CRUD operations only (query, execute, insert, update, delete)
         status: operational
         current_state: Filtered to 6 tools (45% reduction)
-        
+
       - label: GitHub MCP Server
         text: GitHub integration with 20+ tools for issues, PRs, commits, files, and repository management
         tool_count: 20+
@@ -116,7 +116,7 @@ sections:
         recommended_action: Filter to core workflow tools (issues, PRs, commits)
         status: operational
         current_state: Filtered to 8 tools (60% reduction)
-        
+
       - label: GPU MCP Server
         text: GPU management with 4 tools for status, llama control, and image generation
         tool_count: 4
@@ -126,7 +126,7 @@ sections:
         recommended_action: No filtering needed (already minimal)
         status: operational
         current_state: Unfiltered (4 tools, already minimal)
-        
+
       - label: Other MCP Servers
         text: mcp-llama, playlive (consolidated)
         tool_count: TBD
@@ -149,7 +149,7 @@ sections:
         status: pending
         priority: high
         action: Set Adaptive as default model in Devin Desktop settings
-        
+
       - label: Free Models for Routine Tasks
         text: Use SWE-1.6 or SWE-1.7 (free through Aug 8, 2026) for routine development tasks
         type: usage_pattern
@@ -158,7 +158,7 @@ sections:
         status: pending
         priority: high
         action: Select SWE-1.6 for routine code changes, debugging
-        
+
       - label: Prompt Caching Model Selection
         text: Choose models that report non-zero cached_input_tokens to reduce repeated-prefix costs
         type: configuration
@@ -173,10 +173,10 @@ sections:
           - swe-1-6 sessions consistently report 0 cached_input_tokens across 1 to 1048 messages
           - GLM-5.2 test was inconclusive because the model was switched mid-session; the session metadata showed display model SWE-1.6 while the config had already changed to glm-5-2
           - Session token statistics are stored in ~/.local/share/devin/cli/sessions.db under the metadata JSON column (response_dimensions array, not token_stats key)
-          - 'GLM-5.2 confirmed to support prompt caching: 605,953 cached_input_tokens in a 20-message session (2026-08-17, session tide-krypton)'
-          - 'GLM-5.2 output_tokens/msg = 501 vs SWE-1.7 Medium 561-717 across sessions of 260-1803 msgs; GLM-5.2 shows ~11-30% shorter output per turn, indicating shorter internal thinking'
-          - 'GLM-5.2 input_tokens/msg = 4,653 vs SWE-1.7 4,983-6,969; lower context overhead per turn'
-          - 'Caveat: GLM-5.2 sample is only 20 messages; cached_per_msg naturally grows in longer sessions as prefix accumulates; need to re-measure after 100+ messages'
+          - "GLM-5.2 confirmed to support prompt caching: 605,953 cached_input_tokens in a 20-message session (2026-08-17, session tide-krypton)"
+          - "GLM-5.2 output_tokens/msg = 501 vs SWE-1.7 Medium 561-717 across sessions of 260-1803 msgs; GLM-5.2 shows ~11-30% shorter output per turn, indicating shorter internal thinking"
+          - "GLM-5.2 input_tokens/msg = 4,653 vs SWE-1.7 4,983-6,969; lower context overhead per turn"
+          - "Caveat: GLM-5.2 sample is only 20 messages; cached_per_msg naturally grows in longer sessions as prefix accumulates; need to re-measure after 100+ messages"
         pending_tests:
           - Re-measure GLM-5.2 token stats after 100+ messages to confirm output_tokens/msg stays low in long sessions
           - Compare task quality (code correctness, instruction following) between GLM-5.2 and SWE-1.7 Medium
@@ -189,7 +189,7 @@ sections:
         status: pending
         priority: medium
         action: Audit .windsurfrules and convert conditional rules
-        
+
       - label: MCP Server Cleanup
         text: Disable unused MCP servers and tools to stay under 100-tool cap and reduce schema overhead
         type: configuration
@@ -197,7 +197,7 @@ sections:
         implementation_effort: low
         status: completed
         action: Audit MCP server usage and disable unused servers
-        
+
       - label: Session Scoping
         text: Use one task per session instead of marathon threads to reduce context accumulation
         type: usage_pattern
@@ -206,7 +206,7 @@ sections:
         status: pending
         priority: medium
         action: Start new session for each distinct task
-        
+
       - label: Precise Prompting
         text: Be specific with instructions to avoid back-and-forth loops and reduce token waste
         type: usage_pattern
@@ -229,7 +229,7 @@ sections:
           - MCP configuration optimization
         expected_savings: 30-40%
         status: completed
-        
+
       - label: "Phase 2: MCP Filtering (COMPLETED)"
         text: Implement mcp-filter for high-usage MCP servers
         date: 2026-08-05
@@ -240,7 +240,7 @@ sections:
           - Tested filtered MCP servers
         expected_savings: 50-70% (MCP-related)
         status: completed
-        
+
       - label: "Phase 3: Compression Layer (COMPLETED)"
         text: Install and configure Headroom proxy for data-heavy operations
         date: 2026-08-05
@@ -251,7 +251,7 @@ sections:
           - Tested compression effectiveness
         expected_savings: 30-50% (data operations)
         status: completed
-        
+
       - label: "Phase 4: Advanced Optimization (PENDING)"
         text: Evaluate TokenShift for governance and cross-agent optimization
         date: TBD
@@ -277,7 +277,7 @@ sections:
           - Model-specific costs
         status: established
         priority: high
-        
+
       - label: Optimization Tracking
         text: Track token usage reduction after each optimization phase
         metrics:
@@ -287,7 +287,7 @@ sections:
           - Operational overhead
         status: active
         priority: high
-        
+
       - label: Continuous Monitoring
         text: Ongoing monitoring to identify new optimization opportunities
         metrics:

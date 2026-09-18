@@ -7,14 +7,16 @@ Created Ssot Tony-Omen Multi-Wan
 ## Context/Background
 
 **Date:** 2026-08-25
-**Session Context:** 
+**Session Context:**
 
 ## Key Details
 
 ### Technical Details
+
 Created ssot tony-omen multi-wan ECMP config at docs/ssot/infrastructure/ssot.tony-omen-multi-wan.yml.
 
 ### Implementation
+
 - **Status:** Documented
 - **Date:** 2026-08-25
 - **Location:** docs/kb/

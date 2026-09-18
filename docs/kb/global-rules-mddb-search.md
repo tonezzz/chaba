@@ -11,6 +11,7 @@ category: operations
 **Test Scenarios**:
 
 **Scenario 1: Semantic Understanding**
+
 ```
 Query: "GPU memory management"
 Expected Results:
@@ -20,6 +21,7 @@ Expected Results:
 ```
 
 **Validation Method**:
+
 ```bash
 curl -X POST http://tony-omen.local:11023/v1/vector-search \
   -H "Content-Type: application/json" \
@@ -27,11 +29,13 @@ curl -X POST http://tony-omen.local:11023/v1/vector-search \
 ```
 
 **Success Criteria**:
+
 - ✅ Relevance scores > 0.45 for top 3 results
 - ✅ Results semantically related to query
 - ✅ Context-aware document ranking
 
 **Scenario 2: Cross-Collection Search**
+
 ```
 Query: "health check configuration"
 Expected Results:
@@ -41,6 +45,7 @@ Expected Results:
 ```
 
 **Validation Method**:
+
 ```bash
 curl -X POST http://tony-omen.local:11023/v1/vector-search \
   -H "Content-Type: application/json" \
@@ -48,11 +53,13 @@ curl -X POST http://tony-omen.local:11023/v1/vector-search \
 ```
 
 **Success Criteria**:
+
 - ✅ Results from multiple collections
 - ✅ Relevant configuration documents
 - ✅ Proper collection metadata
 
 **Scenario 3: SSOT-Specific Search**
+
 ```
 Query: "mcp infrastructure configuration"
 Expected Results:
@@ -62,6 +69,7 @@ Expected Results:
 ```
 
 **Validation Method**:
+
 ```bash
 curl -X POST http://tony-omen.local:11023/v1/vector-search \
   -H "Content-Type: application/json" \
@@ -69,6 +77,7 @@ curl -X POST http://tony-omen.local:11023/v1/vector-search \
 ```
 
 **Success Criteria**:
+
 - ✅ Results from ssot-infrastructure collection
 - ✅ High relevance scores (> 0.50)
 - ✅ Proper SSOT metadata present
@@ -80,6 +89,7 @@ curl -X POST http://tony-omen.local:11023/v1/vector-search \
 **Test Scenarios**:
 
 **Scenario 1: Response Time**
+
 ```
 Query: Various documentation queries
 Expected Performance:
@@ -89,6 +99,7 @@ Expected Performance:
 ```
 
 **Validation Method**:
+
 ```bash
 # Test multiple queries and measure response times
 for query in "GPU memory" "health check" "SSOT configuration" "API integration"; do
@@ -99,11 +110,13 @@ done
 ```
 
 **Success Criteria**:
+
 - ✅ Response times < 600ms for 95% of queries
 - ✅ Consistent performance (no >2x variance)
 - ✅ No performance degradation over time
 
 **Scenario 2: Concurrent Search Load**
+
 ```
 Condition: Multiple simultaneous search requests
 Expected Performance:
@@ -113,6 +126,7 @@ Expected Performance:
 ```
 
 **Validation Method**:
+
 ```bash
 # Run concurrent searches
 for i in {1..10}; do
@@ -124,6 +138,7 @@ wait
 ```
 
 **Success Criteria**:
+
 - ✅ All requests complete successfully
 - ✅ Response times remain < 1000ms
 - ✅ No search failures or timeouts
@@ -135,6 +150,7 @@ wait
 **Test Scenarios**:
 
 **Scenario 1: Collection Coverage**
+
 ```
 Expected Collections:
 - kb-system, kb-development, kb-operations, kb-features
@@ -144,16 +160,19 @@ Expected Collections:
 ```
 
 **Validation Method**:
+
 ```bash
 curl -s http://tony-omen.local:11023/v1/vector-stats | jq '.collections'
 ```
 
 **Success Criteria**:
+
 - ✅ All 13 expected collections present
 - ✅ Each collection has expected document count
 - ✅ All collections have embedded documents
 
 **Scenario 2: Document Coverage**
+
 ```
 Expected Documents:
 - 154+ total documents across all collections
@@ -164,11 +183,13 @@ Expected Documents:
 ```
 
 **Validation Method**:
+
 ```bash
 curl -s http://tony-omen.local:11023/v1/stats | jq '.totalDocuments'
 ```
 
 **Success Criteria**:
+
 - ✅ Total documents > 150
 - ✅ SSOT collection has 40 documents
 - ✅ KB collections have expected document counts
@@ -181,6 +202,7 @@ curl -s http://tony-omen.local:11023/v1/stats | jq '.totalDocuments'
 **Test Scenarios**:
 
 **Scenario 1: SSOT Auto-Sync Integration**
+
 ```
 Condition: Edit SSOT YAML file
 Expected Behavior:
@@ -190,6 +212,7 @@ Expected Behavior:
 ```
 
 **Validation Method**:
+
 ```bash
 # 1. Edit SSOT file
 echo "# Test change" >> /home/tony/CascadeProjects/chaba/docs/ssot/infrastructure/ssot.health.yml
@@ -207,12 +230,14 @@ git checkout /home/tony/CascadeProjects/chaba/docs/ssot/infrastructure/ssot.heal
 ```
 
 **Success Criteria**:
+
 - ✅ File watcher detects change within 2 seconds
 - ✅ MDDB updated automatically
 - ✅ Search results reflect the change
 - ✅ Sync service remains healthy
 
 **Scenario 2: MCP Integration**
+
 ```
 Condition: Use MDDB via MCP interface
 Expected Behavior:
@@ -222,22 +247,25 @@ Expected Behavior:
 ```
 
 **Validation Method**:
+
 ```javascript
 // Test via MCP interface
 mcp_call_tool("mddb", "semantic_search", {
-  "collection": "kb-system",
-  "query": "GPU memory",
-  "top_k": 3
-})
+  collection: "kb-system",
+  query: "GPU memory",
+  top_k: 3,
+});
 ```
 
 **Success Criteria**:
+
 - ✅ MCP tools respond without errors
 - ✅ Semantic search results returned
 - ✅ Collection filtering works correctly
 - ✅ Response times acceptable (< 1000ms)
 
 **Scenario 3: Health Monitoring Integration**
+
 ```
 Condition: MDDB health check via mcp-health
 Expected Behavior:
@@ -247,14 +275,15 @@ Expected Behavior:
 ```
 
 **Validation Method**:
+
 ```javascript
 // Test health monitoring
-mcp_call_tool("mcp-health", "check_health", {})
+mcp_call_tool("mcp-health", "check_health", {});
 ```
 
 **Success Criteria**:
+
 - ✅ MDDB health status reported
 - ✅ All MDDB endpoints checked
 - ✅ Dependency tracking functional
 - ✅ Recovery actions available
-

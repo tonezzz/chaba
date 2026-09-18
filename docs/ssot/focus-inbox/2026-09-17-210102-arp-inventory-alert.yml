@@ -1,0 +1,72 @@
+title: ARP inventory alert
+subtitle: Network scan changes detected at 2026-09-17-210102
+icon: inbox
+focus:
+  label: Review ARP inventory scan results
+  text: "ARP inventory scan found changes compared to the MAC/IP registries.
+
+
+    - New devices: 0
+
+    - New IP for known device: 0
+
+    - MAC changed: 5
+
+    - Conflicts: 11
+
+    - Duplicate MACs in scan: 0
+
+
+    Report: reports/network-inventory-scan-2026-09-17-210102.json"
+  branch: chaba
+  priority: medium
+  status: draft
+  tags:
+    - network
+    - arp
+    - inventory
+    - mac-registry
+  safe_to_parallel:
+    value: true
+    reason: Registry review only; does not change live services.
+  subtasks:
+    - label: Check MAC change for 192.168.2.89 (was honor-pad-9, now c2:28:25:cb:73:cc)
+      status: not_started
+    - label: Check MAC change for 192.168.2.80 (was kks-macbook-pro, now 26:40:66:65:16:7c)
+      status: not_started
+    - label: Check MAC change for 192.168.2.72 (was xiaomi-c100, now b8:88:80:cb:7d:2c)
+      status: not_started
+    - label: Check MAC change for 192.168.2.90 (was realme-c63, now 2c:b4:71:a7:2a:17)
+      status: not_started
+    - label: Check MAC change for 192.168.2.79 (was discovered-ea9b8fd280f0, now 90:1b:0e:e4:e3:a5)
+      status: not_started
+    - label: "Resolve MAC/IP conflict: 192.168.2.73 / 0a:f0:bc:ad:20:8b"
+      status: not_started
+    - label: "Resolve MAC/IP conflict: 192.168.2.75 / 3a:21:76:0b:08:85"
+      status: not_started
+    - label: "Resolve MAC/IP conflict: 192.168.2.91 / 0a:f0:bc:ad:20:8b"
+      status: not_started
+    - label: "Resolve MAC/IP conflict: 192.168.2.69 / 1c:1d:d3:e8:0a:4f"
+      status: not_started
+    - label: "Resolve MAC/IP conflict: 192.168.2.82 / 06:28:58:26:4b:2c"
+      status: not_started
+    - label: "Resolve MAC/IP conflict: 192.168.2.76 / 72:b5:f0:db:14:f3"
+      status: not_started
+    - label: "Resolve MAC/IP conflict: 192.168.2.78 / fa:31:d9:bd:44:ff"
+      status: not_started
+    - label: "Resolve MAC/IP conflict: 192.168.2.65 / 94:32:c1:6e:db:08"
+      status: not_started
+    - label: "Resolve MAC/IP conflict: 192.168.2.81 / 0a:f0:bc:ad:20:8b"
+      status: not_started
+    - label: "Resolve MAC/IP conflict: 192.168.2.74 / 22:73:11:ed:13:53"
+      status: not_started
+    - label: "Resolve MAC/IP conflict: 192.168.2.83 / ea:9b:8f:d2:80:f0"
+      status: not_started
+ownership:
+  owner: tony
+  session: ""
+  locked: false
+  lock_reason: ""
+source:
+  session: ""
+  date: "2026-09-18"

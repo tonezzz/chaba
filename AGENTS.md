@@ -104,7 +104,7 @@ Parallel sessions caused real breakage: duplicated `pfg2-card.ts`, undeclared `v
 
 ## Restart after a crash
 
-`devin-desktop` must be launched with the active X display on tony-dell. The process is *not* a systemd service; it is started as a background `nohup` job and shows up in `pgrep -a -f devin-desktop`.
+`devin-desktop` must be launched with the active X display on tony-dell. The process is _not_ a systemd service; it is started as a background `nohup` job and shows up in `pgrep -a -f devin-desktop`.
 
 Quick restart command:
 
@@ -475,7 +475,6 @@ python3 scripts/notebooklm-query.py "-" "Summarize the Home Assistant setup."
 - Supported instances: `michael-ha`, `michael-dev`, `tony-ha`
 - Tokens are read from `~/.config/secrets/ha-michael-live.env`, `~/.config/secrets/ha-michael-dev.env`, `~/.config/secrets/home-assistant-token.env` (or the matching `*_TOKEN` env vars).
 - Use the `home-assistant` MCP server for deeper config or write operations; `assess-device.py` is the fast read-only fallback.
-
 
 # AI Hub extension + Chrome remote debugging (learned 2026-09-17)
 

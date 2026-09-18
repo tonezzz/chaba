@@ -5,6 +5,7 @@ category: operations
 # Prompt / command preprocessor
 
 ## Purpose
+
 A read-only preprocessing step that grounds user requests in active focus, backlog, jobs, and command patterns before the assistant acts.
 
 ## Script
@@ -15,6 +16,7 @@ A read-only preprocessing step that grounds user requests in active focus, backl
 ## Input / output contract
 
 ### Input
+
 A single request string, either from the shell or via the `mcp_preprocess` MCP tool.
 
 ```bash
@@ -23,16 +25,16 @@ python3 scripts/prompt_preprocessor.py "promt preprocessor"
 
 ### Output (JSON)
 
-| Field | Type | Meaning |
-|---|---|---|
-| `ok` | bool | Whether preprocessing succeeded |
-| `request` | string | Original request |
-| `canonical_request` | string | Expanded, unambiguous prompt |
-| `confidence` | float | Match score (0-1) |
-| `suggested_action` | string | `continue_focus`, `quick_win`, `backlog`, `inbox`, `continue_job`, or `direct` |
-| `grounding` | object | Matched SSOT / focus / job source, label, status, priority, branch |
-| `command` | object? | If the input is a shell / mcp command, tool and canonical form |
-| `similar_items` | array | Runner-up matches for disambiguation |
+| Field               | Type    | Meaning                                                                        |
+| ------------------- | ------- | ------------------------------------------------------------------------------ |
+| `ok`                | bool    | Whether preprocessing succeeded                                                |
+| `request`           | string  | Original request                                                               |
+| `canonical_request` | string  | Expanded, unambiguous prompt                                                   |
+| `confidence`        | float   | Match score (0-1)                                                              |
+| `suggested_action`  | string  | `continue_focus`, `quick_win`, `backlog`, `inbox`, `continue_job`, or `direct` |
+| `grounding`         | object  | Matched SSOT / focus / job source, label, status, priority, branch             |
+| `command`           | object? | If the input is a shell / mcp command, tool and canonical form                 |
+| `similar_items`     | array   | Runner-up matches for disambiguation                                           |
 
 ## Supported features (v1)
 

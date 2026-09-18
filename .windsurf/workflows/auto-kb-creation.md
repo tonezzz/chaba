@@ -22,7 +22,7 @@ KB entries should be automatically created when:
 
 ## KB Entry Template
 
-```markdown
+````markdown
 # [Title]
 
 ## What it is
@@ -36,12 +36,15 @@ KB entries should be automatically created when:
 ## Key Details
 
 ### Technical Details
+
 - [Specific technical information, configurations, code snippets]
 
 ### Implementation
+
 - [How it was implemented or resolved]
 
 ### Files/Components
+
 - [Related files, services, or components]
 
 ## Usage/Commands
@@ -49,10 +52,12 @@ KB entries should be automatically created when:
 ```bash
 [Relevant commands or usage examples]
 ```
+````
 
 ## Troubleshooting
 
 ### Common Issues
+
 - [Issue 1]: [Solution]
 - [Issue 2]: [Solution]
 
@@ -65,6 +70,7 @@ KB entries should be automatically created when:
 
 - **[tag1]**: [description]
 - **[tag2]**: [description]
+
 ```
 
 ## Automation Workflow
@@ -161,7 +167,7 @@ For major new topics during work (not end-of-session):
 ### Current Implementation:
 - **Skill Location**: `.agents/skills/auto-kb/SKILL.md`
 - **Implementation**: `.agents/skills/auto-kb/auto-kb.mjs`
-- **Automatic Invocation**: MANDATORY per `.windsurfrules` 
+- **Automatic Invocation**: MANDATORY per `.windsurfrules`
 - **Path Configuration**: `/home/tony/CascadeProjects/chaba-tony-dell/docs/kb/`
 - **Redundancy Checking**: MDDB semantic search with fallback to local file-based check
 - **MDDB Integration**: Automatic indexing in appropriate KB collections
@@ -188,8 +194,10 @@ For major new topics during work (not end-of-session):
 
 ### Input (KB Review Section):
 ```
+
 KB review: Created daily2 page with calendar layout for Yomi daily summaries. Required web stack restart to pick up new file. Page now accessible at /apps/yomi/daily2/index.html with basic auth. Uses existing API endpoints and follows project styling conventions.
-```
+
+````
 
 ### Analysis:
 - **KB-Worthy**: Yes (new feature implementation)
@@ -236,16 +244,18 @@ http://tony-omen.local:8080/apps/yomi/daily2/index.html?chat=<chatId>
 
 # Restart web stack if new files not picked up
 just -f /home/tony/CascadeProjects/chaba-tony-dell/Justfile restart-web
-```
+````
 
 ## Troubleshooting
 
 ### Page not found (404)
+
 - Restart web stack: `just restart-web`
 - Verify file exists: `ls -la stacks/web/public/apps/yomi/daily2/`
 - Check Caddy is running: `docker ps | grep web`
 
 ### 401 Unauthorized
+
 - Expected behavior - Yomi pages require basic auth
 - Use Yomi credentials from environment configuration
 
@@ -260,6 +270,7 @@ just -f /home/tony/CascadeProjects/chaba-tony-dell/Justfile restart-web
 - **daily-summaries**: Daily summary generation and display
 - **calendar**: Date-based navigation interface
 - **web-ui**: Static web interface components
+
 ```
 
 ## Next Steps
@@ -271,3 +282,4 @@ just -f /home/tony/CascadeProjects/chaba-tony-dell/Justfile restart-web
 5. ✅ Refine based on usage patterns - **COMPLETED**
 6. Monitor usage and refine automation quality as needed
 7. Consider adding more sophisticated redundancy detection algorithms
+```

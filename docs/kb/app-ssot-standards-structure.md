@@ -52,7 +52,7 @@ sections:
     layout: list
     items:
       - label: [Feature name]
-        text: '[Detailed description]'
+        text: "[Detailed description]"
   # ... other sections
 config:
   version: 1
@@ -65,14 +65,17 @@ config:
 ## Naming Conventions
 
 ### File Naming
+
 - Pattern: `ssot.apps.[app-name].yml`
 - Use lowercase, hyphen-separated app names
 - Examples: `ssot.apps.track4.yml`, `ssot.apps.wind.yml`, `ssot.apps.test-pwa.yml`
 
 ### Section Icons
+
 Use consistent emoji icons for sections:
+
 - ✅ Core Features
-- ⚙️ Technical Architecture  
+- ⚙️ Technical Architecture
 - 📁 Files & Modules
 - 🚀 Deployment
 - 🧪 Testing
@@ -80,11 +83,12 @@ Use consistent emoji icons for sections:
 - ⚠️ Known Issues
 
 ### App Icons
+
 Use descriptive emoji for app identification:
+
 - 🏁 Race management apps
 - 💨 Weather/environmental apps
 - 🗺️ Mapping/visualization apps
 - 📱 Mobile/PWA apps
 - 🎨 Creative/design apps
 - 🔧 Utility/tool apps
-

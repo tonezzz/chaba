@@ -3,13 +3,17 @@ category: operations
 ---
 
 # Check container health status
+
 docker ps --format "{{.Names}}: {{.Status}}"
 
 # Find unhealthy containers
+
 docker ps --filter "health=unhealthy"
 
 # View container health logs
+
 docker inspect --format='{{json .State.Health}}' <container-name>
+
 ```
 
 ## Troubleshooting
@@ -44,3 +48,4 @@ docker inspect --format='{{json .State.Health}}' <container-name>
 - Clean up resources: `docker system prune -a -f --volumes`
 - Check system resources: `df -h`, `free -h`
 
+```

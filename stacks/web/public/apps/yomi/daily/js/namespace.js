@@ -10,7 +10,7 @@ const DailyApp = {
     currentMonth: null,
     selectedDate: null,
     availableDates: new Set(),
-    isInitialized: false
+    isInitialized: false,
   },
 
   // Module references
@@ -18,7 +18,7 @@ const DailyApp = {
     calendar: null,
     summary: null,
     messages: null,
-    config: null
+    config: null,
   },
 
   // Event emitter for inter-module communication
@@ -34,19 +34,19 @@ const DailyApp = {
 
     off(event, callback) {
       if (!this.listeners[event]) return;
-      this.listeners[event] = this.listeners[event].filter(cb => cb !== callback);
+      this.listeners[event] = this.listeners[event].filter((cb) => cb !== callback);
     },
 
     emit(event, data) {
       if (!this.listeners[event]) return;
-      this.listeners[event].forEach(callback => callback(data));
-    }
+      this.listeners[event].forEach((callback) => callback(data));
+    },
   },
 
   // State management
   setState(key, value) {
     this.state[key] = value;
-    this.events.emit('stateChanged', { key, value });
+    this.events.emit("stateChanged", { key, value });
   },
 
   getState(key) {
@@ -56,11 +56,11 @@ const DailyApp = {
   // Initialize application
   init() {
     if (this.state.isInitialized) {
-      console.warn('DailyApp already initialized');
+      console.warn("DailyApp already initialized");
       return;
     }
     this.state.isInitialized = true;
-    console.log('DailyApp namespace initialized');
+    console.log("DailyApp namespace initialized");
   },
 
   // Register module
@@ -72,13 +72,13 @@ const DailyApp = {
   // Get module
   getModule(name) {
     return this.modules[name];
-  }
+  },
 };
 
 // Make available globally
 window.DailyApp = DailyApp;
 
 // Export for module usage
-if (typeof module !== 'undefined' && module.exports) {
+if (typeof module !== "undefined" && module.exports) {
   module.exports = DailyApp;
 }

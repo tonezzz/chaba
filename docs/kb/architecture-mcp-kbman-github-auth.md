@@ -11,6 +11,7 @@ Alternative container deployment approach for mcp-kbman using GitHub token authe
 ## Why GitHub Token Auth?
 
 **Advantages over OAuth:**
+
 - Simpler authentication flow (no browser interaction)
 - Bearer token instead of complex OAuth dance
 - Easier container deployment
@@ -18,6 +19,7 @@ Alternative container deployment approach for mcp-kbman using GitHub token authe
 - No interactive authentication required
 
 **Advantages over GDrive mount:**
+
 - No filesystem permission issues in containers
 - Better container isolation
 - Native GitHub integration

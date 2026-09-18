@@ -1,15 +1,15 @@
 #!/usr/bin/env node
 /**
  * Cache Manager
- * 
+ *
  * Multi-layer caching system using Redis for API responses, database queries, and static assets.
  * Provides cache invalidation policies and performance monitoring.
  */
 
-import { createClient } from 'redis';
+import { createClient } from "redis";
 
-const REDIS_URL = process.env.REDIS_URL || 'redis://localhost:6379';
-const CACHE_PREFIX = 'chaba:';
+const REDIS_URL = process.env.REDIS_URL || "redis://localhost:6379";
+const CACHE_PREFIX = "chaba:";
 const DEFAULT_TTL = 300; // 5 minutes
 
 class CacheManager {
@@ -21,7 +21,7 @@ class CacheManager {
       misses: 0,
       sets: 0,
       deletes: 0,
-      errors: 0
+      errors: 0,
     };
   }
 
@@ -32,32 +32,32 @@ class CacheManager {
         socket: {
           reconnectStrategy: (retries) => {
             if (retries > 10) {
-              return new Error('Redis reconnection failed');
+              return new Error("Redis reconnection failed");
             }
             return Math.min(retries * 100, 3000);
-          }
-        }
+          },
+        },
       });
 
-      this.client.on('error', (err) => {
-        console.error('Redis Client Error:', err);
+      this.client.on("error", (err) => {
+        console.error("Redis Client Error:", err);
         this.stats.errors++;
       });
 
-      this.client.on('connect', () => {
-        console.log('Redis connected');
+      this.client.on("connect", () => {
+        console.log("Redis connected");
         this.connected = true;
       });
 
-      this.client.on('disconnect', () => {
-        console.log('Redis disconnected');
+      this.client.on("disconnect", () => {
+        console.log("Redis disconnected");
         this.connected = false;
       });
 
       await this.client.connect();
       return true;
     } catch (error) {
-      console.error('Failed to connect to Redis:', error);
+      console.error("Failed to connect to Redis:", error);
       this.connected = false;
       return false;
     }
@@ -88,7 +88,7 @@ class CacheManager {
     try {
       const key = this.makeKey(namespace, identifier);
       const value = await this.client.get(key);
-      
+
       if (value !== null) {
         this.stats.hits++;
         return JSON.parse(value);
@@ -97,7 +97,7 @@ class CacheManager {
         return null;
       }
     } catch (error) {
-      console.error('Cache get error:', error);
+      console.error("Cache get error:", error);
       this.stats.errors++;
       return null;
     }
@@ -118,7 +118,7 @@ class CacheManager {
       this.stats.sets++;
       return true;
     } catch (error) {
-      console.error('Cache set error:', error);
+      console.error("Cache set error:", error);
       this.stats.errors++;
       return false;
     }
@@ -138,7 +138,7 @@ class CacheManager {
       this.stats.deletes++;
       return true;
     } catch (error) {
-      console.error('Cache delete error:', error);
+      console.error("Cache delete error:", error);
       this.stats.errors++;
       return false;
     }
@@ -153,17 +153,17 @@ class CacheManager {
     }
 
     try {
-      const pattern = this.makeKey(namespace, '*');
+      const pattern = this.makeKey(namespace, "*");
       const keys = await this.client.keys(pattern);
-      
+
       if (keys.length > 0) {
         await this.client.del(keys);
         this.stats.deletes += keys.length;
       }
-      
+
       return true;
     } catch (error) {
-      console.error('Cache namespace delete error:', error);
+      console.error("Cache namespace delete error:", error);
       this.stats.errors++;
       return false;
     }
@@ -194,15 +194,15 @@ class CacheManager {
     try {
       const fullPattern = `${CACHE_PREFIX}${pattern}`;
       const keys = await this.client.keys(fullPattern);
-      
+
       if (keys.length > 0) {
         await this.client.del(keys);
         this.stats.deletes += keys.length;
       }
-      
+
       return true;
     } catch (error) {
-      console.error('Cache pattern invalidation error:', error);
+      console.error("Cache pattern invalidation error:", error);
       this.stats.errors++;
       return false;
     }
@@ -212,14 +212,15 @@ class CacheManager {
    * Get cache statistics
    */
   getStats() {
-    const hitRate = this.stats.hits + this.stats.misses > 0 
-      ? (this.stats.hits / (this.stats.hits + this.stats.misses) * 100).toFixed(2)
-      : 0;
-    
+    const hitRate =
+      this.stats.hits + this.stats.misses > 0
+        ? ((this.stats.hits / (this.stats.hits + this.stats.misses)) * 100).toFixed(2)
+        : 0;
+
     return {
       ...this.stats,
       hitRate: `${hitRate}%`,
-      connected: this.connected
+      connected: this.connected,
     };
   }
 
@@ -232,7 +233,7 @@ class CacheManager {
       misses: 0,
       sets: 0,
       deletes: 0,
-      errors: 0
+      errors: 0,
     };
   }
 
@@ -247,15 +248,15 @@ class CacheManager {
     try {
       const pattern = `${CACHE_PREFIX}*`;
       const keys = await this.client.keys(pattern);
-      
+
       if (keys.length > 0) {
         await this.client.del(keys);
         this.stats.deletes += keys.length;
       }
-      
+
       return true;
     } catch (error) {
-      console.error('Cache clear error:', error);
+      console.error("Cache clear error:", error);
       this.stats.errors++;
       return false;
     }

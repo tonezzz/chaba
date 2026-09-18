@@ -101,7 +101,11 @@ sections:
       - label: Barrier Server
         text: Runs on tony-omen via systemd (barriers.service) on 0.0.0.0:24800, reachable at 100.75.102.88:24800 over Tailscale
       - label: Barrier Client
-        text: Runs on tony-dell as systemd user unit (barrier-client.service) and connects to 100.75.102.88:24800 (Tailscale) to avoid stale /etc/hosts
+        text: Runs on tony-dell as systemd user unit (barrier-client.service); ExecStart calls ~/.local/bin/barrier-client-run.sh which picks the server address per network
+      - label: Server Address Policy
+        text: LAN-first — on home net (local IP in 192.168.2.0/24 AND 192.168.2.86:24800 reachable) the client connects to 192.168.2.86:24800; otherwise falls back to 100.75.102.88:24800 (Tailscale). Avoids stale /etc/hosts and tailnet blips (DERP/rekey drops with heartbeat=1000)
+      - label: LAN Enforcement
+        text: barrier-enforce-lan.timer (user, every 30s) runs ~/.local/bin/barrier-enforce-lan.sh; if the client is established to the wrong address for the current network it restarts barrier-client.service, which re-probes via the wrapper
       - label: Client Display
         text: DISPLAY=:1 (physical monitor), XAUTHORITY=/run/user/1000/gdm/Xauthority, LD_PRELOAD=/home/tony/.local/lib/nodelay.so
       - label: Client Binary
@@ -109,7 +113,7 @@ sections:
       - label: Start Command
         text: systemctl --user start barrier-client.service
       - label: Manual Fallback
-        text: nohup /home/tony/.local/bin/barrierc --no-daemon --disable-crypto --name tony-dell --log /tmp/barrier-client.log 100.75.102.88 >/dev/null 2>&1 &
+        text: nohup /home/tony/.local/bin/barrier-client-run.sh >/dev/null 2>&1 & (the wrapper picks LAN or Tailscale; pass the raw barrierc + address only to force a specific path)
       - label: Health Check
         text: systemctl --user is-active barrier-client.service && ssh -o ConnectTimeout=3 tony@tony-dell 'pgrep -a barrierc' && tail -n 5 /tmp/barrier-client.log
       - label: Autofix

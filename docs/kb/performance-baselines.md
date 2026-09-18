@@ -13,6 +13,7 @@ The performance baselines system provides automated performance monitoring and a
 ### Establishing Baselines
 
 1. **Run baseline collection:**
+
    ```bash
    node scripts/collect-performance-baselines.mjs
    ```
@@ -30,6 +31,7 @@ The performance baselines system provides automated performance monitoring and a
 ### Overnight Assessment Integration
 
 The overnight assessment automatically:
+
 1. Loads current baselines from YAML file
 2. Compares current health data against baselines
 3. Generates baseline analysis section in report
@@ -39,12 +41,14 @@ The overnight assessment automatically:
 ### Monitoring Baseline Quality
 
 **Signs baselines need update:**
+
 - Consistent anomalies in reports
 - Performance changes not reflected in baselines
 - Service architecture changes
 - New services added to health monitoring
 
 **When to re-establish baselines:**
+
 - After service upgrades
 - When performance characteristics change
 - Every 30 days for accuracy
@@ -68,16 +72,19 @@ The overnight assessment automatically:
 ## Maintenance
 
 **Weekly:**
+
 - Review baseline quality and confidence levels
 - Check for consistent anomalies in assessment reports
 - Update baselines if significant performance changes observed
 
 **Monthly:**
+
 - Re-establish baselines for accuracy
 - Review and update baseline thresholds
 - Assess need for additional services to monitor
 
 **Quarterly:**
+
 - Review baseline system effectiveness
 - Update documentation and procedures
 - Evaluate new monitoring technologies

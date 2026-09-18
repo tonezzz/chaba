@@ -28,7 +28,7 @@ services:
       # - /home/tony/.yomi/mcpb/node_modules/@modelcontextprotocol:/home/tony/.yomi/mcpb/node_modules/@modelcontextprotocol:ro
     environment:
       - NODE_ENV=production
-      - YOMI_MCP_PATH=/app/yomi/mcpb/run.mjs  # Use container path instead of host path
+      - YOMI_MCP_PATH=/app/yomi/mcpb/run.mjs # Use container path instead of host path
       - SUMMARY_CACHE=/app/media/summaries.json
 
   gpu-queue:
@@ -59,7 +59,8 @@ services:
     environment:
       - NODE_ENV=production
       - DATABASE_URL=postgresql://chaba:chabapass@postgres:5432/chaba
-      - PROJECTS_PATH=/app/projects  # Use container path instead of host path
+      - PROJECTS_PATH=/app/projects # Use container path instead of host path
+
 
   # In production, additional services would be added here:
   # - Monitoring (Prometheus, Grafana)

@@ -59,6 +59,20 @@ else
   drift "ssot-validate-sync.sh reports drift"
 fi
 
+hdr "T0 — Modularity policy"
+SSOT_MOD=$(mget systems.modularity.ssot_cmd)
+KB_MOD=$(mget systems.modularity.kb_cmd)
+if bash -c "${SSOT_MOD:-node scripts/audits/ssot-modularity-audit.mjs}" >/dev/null 2>&1; then
+  ok "ssot-modularity-audit.mjs — SSOT files within modularity thresholds"
+else
+  drift "ssot-modularity-audit.mjs reports modularity violations (thresholds in ssot.audit.yml)"
+fi
+if bash -c "${KB_MOD:-node scripts/audits/kb-modularity-audit.mjs}" >/dev/null 2>&1; then
+  ok "kb-modularity-audit.mjs — KB entries within modularity thresholds"
+else
+  drift "kb-modularity-audit.mjs reports modularity violations (thresholds in ssot.audit.yml)"
+fi
+
 hdr "T0 — Devin DB + backups"
 DB=$(mget systems.devin_db.path); BDIR=$(mget systems.devin_db.backup_dir)
 KEEP=$(mget systems.devin_db.keep_backups); MAXG=$(mget systems.devin_db.max_size_gb)

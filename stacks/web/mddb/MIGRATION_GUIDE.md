@@ -3,16 +3,18 @@
 ## Phase 1: Assessment and Planning
 
 ### 1.1 Export Current KB Content
+
 - Export all KB entries from current system
 - Identify file formats and structure (Markdown, YAML, etc.)
 - Map categories to MDDB structure
 - Document any custom metadata or properties
 
 ### 1.2 Directory Structure Planning
+
 ```
 mddb/vaults/default/
 ├── KB-System/          # System architecture
-├── KB-Development/     # Development workflows  
+├── KB-Development/     # Development workflows
 ├── KB-Operations/      # Operational procedures
 ├── KB-Features/        # Feature documentation
 ├── Assets/            # Images, diagrams
@@ -23,6 +25,7 @@ mddb/vaults/default/
 ## Phase 2: Content Migration
 
 ### 2.1 Content Conversion
+
 1. **Convert to Markdown Format**
    - Convert existing content to Markdown
    - Preserve formatting and structure
@@ -36,6 +39,7 @@ mddb/vaults/default/
    - Optimize for MDDB's search algorithms
 
 ### 2.2 Import to MDDB
+
 1. **Copy converted files** to `mddb/vaults/default/`
 2. **Use MDDB ingestion tools** via MCP or API
 3. **Verify file structure** and indexing
@@ -44,6 +48,7 @@ mddb/vaults/default/
 ## Phase 3: Integration Testing
 
 ### 3.1 Functionality Testing
+
 1. **Search Algorithm Testing**
    - Test BM25 search
    - Test semantic search
@@ -65,6 +70,7 @@ mddb/vaults/default/
 ## Phase 4: Cutover
 
 ### 4.1 Final Verification
+
 1. **Data Integrity Check**
    - Compare old vs new system completeness
    - Verify all content migrated successfully
@@ -78,6 +84,7 @@ mddb/vaults/default/
    - Monitor resource usage
 
 ### 4.2 User Training
+
 1. **Document MDDB Features**
    - Create user guide for MDDB interface
    - Document MCP tool usage
@@ -91,6 +98,7 @@ mddb/vaults/default/
    - Set up notification systems
 
 ### 4.3 Decommission Old System
+
 1. **Archive Old KB System**
    - Create complete backup of old system
    - Archive export files
@@ -106,6 +114,7 @@ mddb/vaults/default/
 ## Phase 5: Optimization
 
 ### 5.1 Search Algorithm Tuning
+
 1. **Algorithm Selection**
    - Test different search algorithms
    - Configure default algorithm per use case
@@ -119,6 +128,7 @@ mddb/vaults/default/
    - Monitor and adjust based on usage
 
 ### 5.2 Advanced Features
+
 1. **Custom MCP Tools**
    - Define YAML-based custom tools
    - Implement domain-specific operations
@@ -154,6 +164,7 @@ mddb/vaults/default/
 ## Rollback Plan
 
 If issues arise during migration:
+
 1. Stop MDDB container
 2. Restore old KB system from backup
 3. Revert Caddy configuration
@@ -164,7 +175,7 @@ If issues arise during migration:
 ## Estimated Timeline
 
 - Phase 1 (Assessment): 1-2 hours
-- Phase 2 (Migration): 2-4 hours  
+- Phase 2 (Migration): 2-4 hours
 - Phase 3 (Testing): 2-3 hours
 - Phase 4 (Cutover): 1-2 hours
 - Phase 5 (Optimization): Ongoing

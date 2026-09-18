@@ -58,7 +58,7 @@ if r.status_code == 429 or (r.status_code == 403 and rate_limit_exhausted):
 
 ```yaml
 environment:
-  - GITHUB_TOKEN=ghp_xxx  # Personal Access Token
+  - GITHUB_TOKEN=ghp_xxx # Personal Access Token
   - GITHUB_REPO=yourname/kb-repo
   - GITHUB_BRANCH=main
   - GITHUB_SUBDIRECTORY=kb
@@ -93,4 +93,3 @@ services:
       - SEARCH_INDEX_DIR=/cache/search_index
       - PRE_GENERATED_DIR=/cache/pre_generated
 ```
-

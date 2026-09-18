@@ -8,7 +8,7 @@ services:
     image: ghcr.io/blakeblackshear/frigate:stable
     privileged: true
     restart: no
-    shm_size: "256mb"  # Increase if you have many cameras
+    shm_size: "256mb" # Increase if you have many cameras
     devices:
       # Coral USB TPU
       - /dev/bus/usb:/dev/bus/usb
@@ -24,8 +24,8 @@ services:
       - ./db:/db
       - /etc/localtime:/etc/localtime:ro
     ports:
-      - "5000:5000"     # Web UI
-      - "8554:8554"     # RTSP restream
+      - "5000:5000" # Web UI
+      - "8554:8554" # RTSP restream
       - "8555:8555/tcp" # WebRTC
       - "8555:8555/udp"
     # Uncomment for NVIDIA GPU support

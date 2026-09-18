@@ -54,4 +54,3 @@ Recommendation: use the short Magic DNS name `tony-omen` inside the tailnet for 
 curl http://$(tailscale ip -4 tony-omen):8080/api/health
 curl http://tony-omen:8080/api/health
 ```
-

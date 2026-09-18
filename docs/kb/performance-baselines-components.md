@@ -11,11 +11,13 @@ category: operations
 **Purpose:** Collects performance baselines from MCP health server historical data
 
 **Usage:**
+
 ```bash
 node scripts/collect-performance-baselines.mjs
 ```
 
 **Features:**
+
 - Connects to MCP health server via stdio transport
 - Collects 7 days of health history
 - Calculates statistical baselines for each service:
@@ -27,8 +29,9 @@ node scripts/collect-performance-baselines.mjs
 - Saves baselines to `docs/ssot/infrastructure/performance-baselines.yml`
 
 **Baseline Quality Levels:**
+
 - **High confidence:** 5+ healthy checks
-- **Medium confidence:** 3-4 healthy checks  
+- **Medium confidence:** 3-4 healthy checks
 - **Low confidence:** 1-2 healthy checks
 
 ### 2. Overnight Assessment Integration
@@ -38,6 +41,7 @@ node scripts/collect-performance-baselines.mjs
 **Purpose:** Integrates baseline analysis into overnight assessment reports
 
 **Features:**
+
 - Loads baselines from YAML file
 - Compares current health data against baselines
 - Detects anomalies (>50% deviation)
@@ -46,6 +50,7 @@ node scripts/collect-performance-baselines.mjs
 - Generates structured baseline analysis report
 
 **Anomaly Detection Thresholds:**
+
 - **Critical anomaly:** >100% deviation from baseline
 - **Warning anomaly:** 50-100% deviation from baseline
 - **Degradation:** 20-50% deviation from baseline
@@ -57,6 +62,7 @@ node scripts/collect-performance-baselines.mjs
 **Location:** `docs/ssot/infrastructure/performance-baselines.yml`
 
 **Structure:**
+
 ```yaml
 baselines:
   ServiceName:
@@ -88,6 +94,7 @@ baselines:
 As of 2026-08-12, baselines established for 18 services:
 
 ### API Services
+
 - **Yomi API:** 165ms median, 100% healthy
 - **Yomi Summarization:** 166ms median, 100% healthy
 - **Yomi Rate Limiter:** 165ms median, 100% healthy
@@ -96,26 +103,30 @@ As of 2026-08-12, baselines established for 18 services:
 - **MDDB API:** 158ms median, 100% healthy
 
 ### Data Services
+
 - **Weaviate:** 200ms median, 100% healthy
 - **MDDB Panel:** 114ms median, 100% healthy
 
 ### GPU Services
+
 - **Imagen2:** 138ms median, 100% healthy
 - **GPU Queue:** 117ms median, 100% healthy
 
 ### System Services
+
 - **Yomi Update All Timer:** 22ms median, 100% healthy
 - **Yomi Update Active Timer:** 19ms median, 100% healthy
 - **Weaviate Index Timer:** 16ms median, 100% healthy
 - **Chaba Health Monitor Timer:** 17ms median, 100% healthy
 
 ### Web Services
+
 - **Caddy:** 141ms median, 100% healthy
 - **BServer:** 163ms median, 100% healthy
 - **Raceman Web:** 132ms median, 100% healthy
 
 ### Optional Services
+
 - **Frigate NVR:** 177ms median, 100% healthy
 
 **Note:** All current baselines have low confidence due to limited historical data (single check). Baselines will improve as more health history accumulates.
-

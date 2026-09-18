@@ -18,6 +18,7 @@ This runbook provides procedures for deploying the Chaba infrastructure to produ
 ### Development vs Production
 
 **Development Mode:**
+
 - `NODE_ENV=development` (default)
 - Placeholder API keys acceptable
 - Direct project directory mounts
@@ -26,6 +27,7 @@ This runbook provides procedures for deploying the Chaba infrastructure to produ
 - Source maps enabled
 
 **Production Mode:**
+
 - `NODE_ENV=production` (required)
 - Real API keys from secrets
 - Only static asset mounts
@@ -37,6 +39,7 @@ This runbook provides procedures for deploying the Chaba infrastructure to produ
 ### Environment Files
 
 **Development:** `.env`
+
 ```bash
 NODE_ENV=development
 GEMINI_API_KEY=placeholder
@@ -44,6 +47,7 @@ OPENAI_API_KEY=placeholder
 ```
 
 **Production:** `.env.production`
+
 ```bash
 NODE_ENV=production
 GEMINI_API_KEY=your_real_gemini_key
@@ -55,6 +59,7 @@ OPENAI_API_KEY=your_real_openai_key
 ### Option 1: Environment Variables (Simple)
 
 **Setup:**
+
 ```bash
 # Copy production template
 cp .env.example .env.production
@@ -64,6 +69,7 @@ nano .env.production
 ```
 
 **Required Production Values:**
+
 - `GEMINI_API_KEY` - Real Google Gemini API key
 - `OPENAI_API_KEY` - Real OpenAI API key
 - `AP_ENCRYPTION_KEY` - Strong encryption key
@@ -73,18 +79,21 @@ nano .env.production
 ### Option 2: Docker Secrets (Recommended)
 
 **Generate Secrets:**
+
 ```bash
 cd stacks/web
 ./scripts/generate-secrets.sh
 ```
 
 **Update API Keys:**
+
 ```bash
 nano secrets/gemini_api_key.txt
 nano secrets/openai_api_key.txt
 ```
 
 **Deploy with Secrets:**
+
 ```bash
 docker compose -f docker-compose.yml -f docker-compose.prod.yml -f docker-compose.secrets.yml --profile production up -d
 ```
@@ -94,6 +103,7 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml -f docker-compos
 ### Initial Production Deployment
 
 **1. Prepare Environment:**
+
 ```bash
 cd /home/tony/CascadeProjects/chaba/stacks/web
 
@@ -106,6 +116,7 @@ nano secrets/openai_api_key.txt
 ```
 
 **2. Configure Environment:**
+
 ```bash
 # Copy production environment template
 cp .env.example .env.production
@@ -115,6 +126,7 @@ nano .env.production
 ```
 
 **3. Deploy Services:**
+
 ```bash
 # Build and start production services
 docker compose -f docker-compose.yml -f docker-compose.prod.yml --profile production up -d --build
@@ -124,6 +136,7 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml --profile produc
 ```
 
 **4. Verify Deployment:**
+
 ```bash
 # Check web server
 curl http://localhost:8080/api/health
@@ -141,12 +154,14 @@ docker compose logs -f web
 ### Production Update Deployment
 
 **1. Pull Latest Changes:**
+
 ```bash
 cd /home/tony/CascadeProjects/chaba
 git pull origin master
 ```
 
 **2. Backup Current State:**
+
 ```bash
 # Database backup
 docker compose exec postgres pg_dump -U chaba chaba > backup_$(date +%Y%m%d).sql
@@ -156,6 +171,7 @@ cp stacks/web/.env.production stacks/web/.env.production.backup
 ```
 
 **3. Deploy Update:**
+
 ```bash
 cd stacks/web
 
@@ -164,6 +180,7 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml --profile produc
 ```
 
 **4. Verify Update:**
+
 ```bash
 # Health checks
 curl http://localhost:8080/api/health
@@ -177,22 +194,26 @@ docker compose logs --tail=50 helm
 ### Rollback Procedure
 
 **1. Identify Previous Version:**
+
 ```bash
 git log --oneline -10
 ```
 
 **2. Checkout Previous Version:**
+
 ```bash
 git checkout <previous_commit_hash>
 ```
 
 **3. Redeploy:**
+
 ```bash
 cd stacks/web
 docker compose -f docker-compose.yml -f docker-compose.prod.yml --profile production up -d --build --force-recreate
 ```
 
 **4. Restore Database (if needed):**
+
 ```bash
 docker compose exec -T postgres psql -U chaba chaba < backup_YYYYMMDD.sql
 ```
@@ -202,6 +223,7 @@ docker compose exec -T postgres psql -U chaba chaba < backup_YYYYMMDD.sql
 ### Helm Service
 
 **Development Configuration:**
+
 ```yaml
 volumes:
   - /home/tony/CascadeProjects:/home/tony/CascadeProjects:ro
@@ -210,6 +232,7 @@ environment:
 ```
 
 **Production Configuration:**
+
 ```yaml
 volumes:
   - ./public:/app/public:ro
@@ -220,6 +243,7 @@ environment:
 ```
 
 **Migration Steps:**
+
 1. Build static assets locally
 2. Copy to `./public` directory
 3. Update `PROJECTS_PATH` to container path
@@ -228,6 +252,7 @@ environment:
 ### Yomi API
 
 **Development Configuration:**
+
 ```yaml
 volumes:
   - ../../scripts/yomi:/app/yomi
@@ -235,6 +260,7 @@ volumes:
 ```
 
 **Production Configuration:**
+
 ```yaml
 volumes:
   - ./public/apps/yomi/media:/app/media:ro
@@ -244,6 +270,7 @@ environment:
 ```
 
 **Migration Steps:**
+
 1. Build Yomi application
 2. Copy built files to container
 3. Update MCP path to container location
@@ -252,18 +279,21 @@ environment:
 ### GPU Queue
 
 **Development Configuration:**
+
 ```yaml
 volumes:
   - ../../scripts/gpu-queue:/app/gpu-queue
 ```
 
 **Production Configuration:**
+
 ```yaml
 volumes:
   - gpu_queue_node_modules:/app/gpu-queue/node_modules
 ```
 
 **Migration Steps:**
+
 1. Build GPU queue application
 2. Include in Docker image
 3. Remove script directory mount
@@ -274,6 +304,7 @@ volumes:
 ### Production Monitoring
 
 **Health Checks:**
+
 ```bash
 # Web server health
 curl http://localhost:8080/api/health
@@ -284,6 +315,7 @@ curl http://localhost:8080/api/gpu-queue/health
 ```
 
 **Container Monitoring:**
+
 ```bash
 # Container status
 docker compose ps
@@ -300,11 +332,13 @@ docker compose logs -f yomi-api
 ### Log Aggregation
 
 **Structured Logging:**
+
 - Production logs should be structured JSON
 - Include timestamps, service names, log levels
 - Send to centralized logging system
 
 **Log Rotation:**
+
 ```bash
 # Configure log rotation in docker-compose
 logging:
@@ -319,6 +353,7 @@ logging:
 ### API Key Management
 
 **Never commit secrets:**
+
 ```bash
 # Add to .gitignore
 .env.production
@@ -328,6 +363,7 @@ secrets/
 ```
 
 **Rotate secrets regularly:**
+
 ```bash
 # Generate new secrets
 ./scripts/generate-secrets.sh
@@ -339,12 +375,14 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml --profile produc
 ### Network Security
 
 **Production Network:**
+
 - Use private networks where possible
 - Restrict external access to necessary ports only
 - Implement firewall rules
 - Use HTTPS with valid certificates
 
 **Docker Security:**
+
 ```yaml
 # Use read-only filesystems where possible
 read_only: true
@@ -364,17 +402,20 @@ user: "1000:1000"
 ### Database Backups
 
 **Automated Backups:**
+
 ```bash
 # Add to cron
 0 2 * * * cd /home/tony/CascadeProjects/chaba/stacks/web && docker compose exec postgres pg_dump -U chaba chaba > /backups/postgres_$(date +\%Y\%m\%d).sql
 ```
 
 **Manual Backup:**
+
 ```bash
 docker compose exec postgres pg_dump -U chaba chaba > backup.sql
 ```
 
 **Restore Backup:**
+
 ```bash
 docker compose exec -T postgres psql -U chaba chaba < backup.sql
 ```
@@ -382,6 +423,7 @@ docker compose exec -T postgres psql -U chaba chaba < backup.sql
 ### Volume Backups
 
 **Backup Volumes:**
+
 ```bash
 # List volumes
 docker volume ls
@@ -391,6 +433,7 @@ docker run --rm -v chaba_postgres_data:/data -v $(pwd):/backup alpine tar czf /b
 ```
 
 **Restore Volume:**
+
 ```bash
 docker run --rm -v chaba_postgres_data:/data -v $(pwd):/backup alpine tar xzf /backup/postgres_data.tar.gz
 ```
@@ -400,6 +443,7 @@ docker run --rm -v chaba_postgres_data:/data -v $(pwd):/backup alpine tar xzf /b
 ### Common Production Issues
 
 **Service Won't Start:**
+
 ```bash
 # Check logs
 docker compose logs <service>
@@ -412,6 +456,7 @@ docker stats
 ```
 
 **Database Connection Issues:**
+
 ```bash
 # Check database health
 docker compose exec postgres pg_isready
@@ -424,6 +469,7 @@ docker compose exec postgres psql -U chaba -d chaba -c "SELECT 1"
 ```
 
 **API Key Errors:**
+
 ```bash
 # Check environment variables
 docker compose exec <service> env | grep API_KEY
@@ -433,6 +479,7 @@ docker compose exec <service> ls -la /run/secrets/
 ```
 
 **Performance Issues:**
+
 ```bash
 # Check resource usage
 docker stats
@@ -449,26 +496,29 @@ docker compose exec redis redis-cli INFO stats
 ### Production Optimizations
 
 **Database Optimization:**
+
 - Enable connection pooling
 - Configure appropriate memory settings
 - Add indexes for slow queries
 - Regular vacuum and analyze
 
 **Caching Strategy:**
+
 - Configure Redis for session storage
 - Enable CDN for static assets
 - Implement application-level caching
 - Use HTTP caching headers
 
 **Resource Limits:**
+
 ```yaml
 deploy:
   resources:
     limits:
-      cpus: '2'
+      cpus: "2"
       memory: 2G
     reservations:
-      cpus: '1'
+      cpus: "1"
       memory: 1G
 ```
 
@@ -477,18 +527,21 @@ deploy:
 ### Regular Maintenance
 
 **Daily:**
+
 - Check service health
 - Review error logs
 - Monitor resource usage
 - Verify backups completed
 
 **Weekly:**
+
 - Review performance metrics
 - Check for security updates
 - Clean up old logs
 - Verify backup integrity
 
 **Monthly:**
+
 - Update dependencies
 - Review and rotate secrets
 - Performance tuning
@@ -497,6 +550,7 @@ deploy:
 ### Update Procedures
 
 **Security Updates:**
+
 ```bash
 # Update base images
 docker compose pull
@@ -506,6 +560,7 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml --profile produc
 ```
 
 **Application Updates:**
+
 ```bash
 # Pull latest code
 git pull origin master
@@ -520,6 +575,7 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml --profile produc
 ### Recovery Procedures
 
 **Complete System Recovery:**
+
 1. Restore from backup
 2. Verify database integrity
 3. Start services
@@ -527,12 +583,14 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml --profile produc
 5. Monitor for issues
 
 **Partial Recovery:**
+
 1. Identify affected services
 2. Restore specific components
 3. Verify functionality
 4. Update monitoring
 
 **Data Recovery:**
+
 1. Restore database from backup
 2. Verify data integrity
 3. Update application if needed

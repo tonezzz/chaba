@@ -24,9 +24,9 @@ The PWA uses `display: standalone` mode for native app-like experience:
 iOS-specific meta tags for proper iPad integration:
 
 ```html
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="theme-color" content="#2563eb">
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="theme-color" content="#2563eb" />
 ```
 
 ### Interactive Features
@@ -41,10 +41,13 @@ iOS-specific meta tags for proper iPad integration:
 Local storage persists user preferences across sessions:
 
 ```javascript
-localStorage.setItem('test-pwa-state', JSON.stringify({
-  count: currentCount,
-  currentTheme: selectedTheme
-}));
+localStorage.setItem(
+  "test-pwa-state",
+  JSON.stringify({
+    count: currentCount,
+    currentTheme: selectedTheme,
+  })
+);
 ```
 
 ## Operational Procedures
@@ -60,22 +63,26 @@ localStorage.setItem('test-pwa-state', JSON.stringify({
 ### Testing Procedures
 
 #### Full-Screen Verification
+
 1. Open app in Safari browser - note browser UI is visible
 2. Install to home screen and launch - note browser UI is hidden
 3. Compare the two experiences to confirm standalone mode
 
 #### Theme Testing
+
 1. Tap "Change Theme" button to cycle through all 5 themes
 2. Verify visual consistency across all themes
 3. Close and reopen app - theme should persist
 
 #### Persistence Testing
+
 1. Use counter to increment tap count
 2. Close app completely
 3. Reopen app - counter should show previous value
 4. Test with different themes - both should persist
 
 #### Status Detection
+
 1. Check "PWA Installed" status when launched from browser vs home screen
 2. Verify "Display Mode" shows correct mode (standalone vs browser)
 3. Test "Online" status by toggling WiFi/cellular connection
@@ -92,15 +99,17 @@ The Test PWA is deployed on the chaba-h3 Plesk static site:
 ## Troubleshooting
 
 ### Issue: Full-screen mode not working
+
 - **Symptoms**: App still shows browser UI when launched from home screen
 - **Causes**: Manifest not loaded, display mode not set to standalone, iOS cache
-- **Solutions**: 
+- **Solutions**:
   - Clear Safari cache and re-install
   - Verify manifest.json is accessible and valid
   - Ensure `display: standalone` is set in manifest
   - Remove and re-add to home screen
 
 ### Issue: Theme not persisting
+
 - **Symptoms**: Theme resets to default after closing app
 - **Causes**: Local storage disabled, JavaScript error, storage quota exceeded
 - **Solutions**:
@@ -109,10 +118,10 @@ The Test PWA is deployed on the chaba-h3 Plesk static site:
   - Clear local storage and test again
 
 ### Issue: Icons not displaying
+
 - **Symptoms**: Default app icon shows instead of custom icon
 - **Causes**: SVG icons not accessible, incorrect icon sizes, iOS cache
 - **Solutions**:
   - Verify icon files are accessible at correct paths
   - Ensure SVG files are valid and properly sized
   - Clear iOS cache and re-install app
-

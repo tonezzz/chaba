@@ -3,19 +3,19 @@
  * KB modularity audit.
  * Checks that each KB entry is focused, not oversized, not duplicated, and links to SSOT where appropriate.
  */
-import { readFileSync, readdirSync, writeFileSync, mkdirSync } from 'fs';
-import { join, relative } from 'path';
-import yaml from 'js-yaml';
+import { readFileSync, readdirSync, writeFileSync, mkdirSync } from "fs";
+import { join, relative } from "path";
+import yaml from "js-yaml";
 
-const PROJECT_ROOT = new URL('../../', import.meta.url).pathname.replace(/\/$/, '');
-const KB_DIR = join(PROJECT_ROOT, 'docs', 'kb');
-const REPORTS_DIR = join(PROJECT_ROOT, 'reports', 'audits');
-const SSOT_FILE = join(PROJECT_ROOT, 'docs', 'ssot', 'infrastructure', 'ssot.audit.yml');
+const PROJECT_ROOT = new URL("../../", import.meta.url).pathname.replace(/\/$/, "");
+const KB_DIR = join(PROJECT_ROOT, "docs", "kb");
+const REPORTS_DIR = join(PROJECT_ROOT, "reports", "audits");
+const SSOT_FILE = join(PROJECT_ROOT, "docs", "ssot", "infrastructure", "ssot.audit.yml");
 
 function loadConfig() {
   try {
-    const doc = yaml.load(readFileSync(SSOT_FILE, 'utf8'));
-    const audit = (doc.audits || []).find((a) => a.name === 'kb-modularity');
+    const doc = yaml.load(readFileSync(SSOT_FILE, "utf8"));
+    const audit = (doc.audits || []).find((a) => a.name === "kb-modularity");
     return audit?.thresholds || {};
   } catch {
     return {};
@@ -23,7 +23,14 @@ function loadConfig() {
 }
 
 function tokenize(text) {
-  return [...new Set(text.toLowerCase().split(/\W+/).filter((w) => w.length > 2))];
+  return [
+    ...new Set(
+      text
+        .toLowerCase()
+        .split(/\W+/)
+        .filter((w) => w.length > 2)
+    ),
+  ];
 }
 
 function jaccard(a, b) {
@@ -34,7 +41,7 @@ function jaccard(a, b) {
 }
 
 function extractText(raw) {
-  return raw.replace(/^---[\s\S]*?---\n*/, '').trim();
+  return raw.replace(/^---[\s\S]*?---\n*/, "").trim();
 }
 
 function main() {
@@ -48,17 +55,17 @@ function main() {
 
   const files = [];
   for (const f of readdirSync(KB_DIR)) {
-    if (f.endsWith('.md')) {
+    if (f.endsWith(".md")) {
       files.push(join(KB_DIR, f));
     }
   }
 
   const items = files.map((p) => {
-    const raw = readFileSync(p, 'utf8');
+    const raw = readFileSync(p, "utf8");
     const text = extractText(raw);
     const words = text.split(/\s+/).filter(Boolean);
     const headings = (text.match(/^#{1,6}\s+/gm) || []).length;
-    const category = raw.match(/^category:\s*(.+)$/m)?.[1]?.trim() || 'missing';
+    const category = raw.match(/^category:\s*(.+)$/m)?.[1]?.trim() || "missing";
     const links = (text.match(/\[.+?\]\(.+?\)/g) || []).length;
     const ssotLinks = (text.match(/docs\/ssot\//g) || []).length;
     const tokens = tokenize(text);
@@ -76,8 +83,7 @@ function main() {
 
   for (const item of items) {
     const isExcluded =
-      excludedFiles.has(item.file) ||
-      excludedPatterns.some((r) => r.test(item.file));
+      excludedFiles.has(item.file) || excludedPatterns.some((r) => r.test(item.file));
     if (isExcluded) continue;
     if (item.words > maxWords) {
       item.issues.push(`exceeds max_words: ${item.words} > ${maxWords}`);
@@ -85,8 +91,8 @@ function main() {
     if (item.headings > maxHeadings) {
       item.issues.push(`exceeds max_headings: ${item.headings} > ${maxHeadings}`);
     }
-    if (item.category === 'missing') {
-      item.issues.push('missing category');
+    if (item.category === "missing") {
+      item.issues.push("missing category");
     }
     if (item.links < minLinks) {
       item.issues.push(`too few links: ${item.links} < ${minLinks}`);
@@ -127,36 +133,35 @@ function main() {
   };
 
   mkdirSync(REPORTS_DIR, { recursive: true });
-  writeFileSync(join(REPORTS_DIR, 'kb-modularity.json'), JSON.stringify(result, null, 2));
+  writeFileSync(join(REPORTS_DIR, "kb-modularity.json"), JSON.stringify(result, null, 2));
 
   const md = [
-    '# KB Modularity Audit',
-    '',
+    "# KB Modularity Audit",
+    "",
     `- Generated: ${result.generated}`,
     `- Total: ${result.total}`,
     `- Flagged: ${result.flagged}`,
-    '',
-    '## Settings',
-    '',
+    "",
+    "## Settings",
+    "",
     `- max_words: ${maxWords}`,
     `- max_headings: ${maxHeadings}`,
     `- max_similarity: ${similarityThreshold}`,
-    '',
-    '## Flagged files',
-    '',
-    ...flagged.map((i) => [
-      `### ${i.file}`,
-      '',
-      ...i.issues.map((issue) => `- ${issue}`),
-      '',
-    ].join('\n')),
-    ...(duplicates.length ? [
-      '## High similarity pairs',
-      '',
-      ...duplicates.map((d) => `- ${d.a} <-> ${d.b} (${d.score})`),
-    ] : []),
-  ].join('\n');
-  writeFileSync(join(REPORTS_DIR, 'kb-modularity.md'), md);
+    "",
+    "## Flagged files",
+    "",
+    ...flagged.map((i) =>
+      [`### ${i.file}`, "", ...i.issues.map((issue) => `- ${issue}`), ""].join("\n")
+    ),
+    ...(duplicates.length
+      ? [
+          "## High similarity pairs",
+          "",
+          ...duplicates.map((d) => `- ${d.a} <-> ${d.b} (${d.score})`),
+        ]
+      : []),
+  ].join("\n");
+  writeFileSync(join(REPORTS_DIR, "kb-modularity.md"), md);
 
   console.log(JSON.stringify(result, null, 2));
 }

@@ -1,3 +1,7 @@
+title: GPU Workload Policy
+subtitle: Rules and reservations for GPU workloads across hosts
+icon: gpu
+
 policy:
   rule: Only one GPU workload at a time
   reason: Combined usage (~3.7GB) exceeds available VRAM when multiple workloads run simultaneously
@@ -28,9 +32,9 @@ policy:
     reason: Single llama.cpp router serves multiple models with ~70MB overhead
     tools: mcp2_hold_llama, mcp2_resume_llama (for CPU fallback during GPU contention)
     models:
-      - thai-legal-gemma-4b-cpt.Q4_K_M.gguf (5GB, CPU-only for legal app)
-      - Phi-3-mini-4k-instruct-q4.gguf (2.3GB, MCP/chatllama)
-    implemented: 2026-07-31
+      - Phi-3-mini-4k-instruct-q4.gguf (2.3GB, MCP/chatllama, active)
+      - thai-legal-gemma-4b-cpt.Q4_K_M.gguf (5GB, offline - GPU memory constraints)
+    implemented: 2026-07-31, thai-legal offline (2026-08-06)
 
   implementation:
     queue_manager:
@@ -128,28 +132,28 @@ policy:
       systemd:
         gpu-queue:
           file: ~/.config/systemd/user/gpu-queue.service
-          exec_start: /usr/bin/node /home/tony/CascadeProjects/chaba/scripts/gpu-queue/index.mjs
-          working_dir: /home/tony/CascadeProjects/chaba
+          exec_start: /usr/bin/node /home/tony/CascadeProjects/chaba-tony-dell/scripts/gpu-queue/index.mjs
+          working_dir: /home/tony/CascadeProjects/chaba-tony-dell
           restart: on-failure
           environment:
             - GPU_QUEUE_PORT=3001
         gpu-queue-processor:
           file: ~/.config/systemd/user/gpu-queue-processor.service
-          exec_start: /usr/bin/node /home/tony/CascadeProjects/chaba/scripts/gpu-queue/auto-processor.mjs
-          working_dir: /home/tony/CascadeProjects/chaba
+          exec_start: /usr/bin/node /home/tony/CascadeProjects/chaba-tony-dell/scripts/gpu-queue/auto-processor.mjs
+          working_dir: /home/tony/CascadeProjects/chaba-tony-dell
           restart: on-failure
           environment:
             - NODE_ENV=production
         weaviate-index:
           file: ~/.config/systemd/user/weaviate-index.service
-          exec_start: /usr/bin/node /home/tony/CascadeProjects/chaba/scripts/weaviate/auto-index.mjs
-          working_dir: /home/tony/CascadeProjects/chaba
+          exec_start: /usr/bin/node /home/tony/CascadeProjects/chaba-tony-dell/scripts/weaviate/auto-index.mjs
+          working_dir: /home/tony/CascadeProjects/chaba-tony-dell
           environment:
             - NODE_ENV=production
         weaviate-index-timer:
           file: ~/.config/systemd/user/weaviate-index.timer
           description: Run Weaviate indexing daily at 2 AM
-          onCalendar: *-*-* 02:00:00
+          onCalendar: "*-*-* 02:00:00"
       caddy_routing:
         - reverse_proxy /api/gpu-queue/* host.docker.internal:3001
 
@@ -170,7 +174,7 @@ tools:
     - mcp2_complete: Raw text completion
     - mcp2_tokenize: Get token IDs for text
     - mcp2_models: List available .gguf model files
-  playlive.local:
+  playlive:
     - mcp3_playlive_create_chrome_live: Create CDP-attached live Chrome session
     - mcp3_playlive_create_playwright: Create Playwright headless browser session
     - mcp3_playlive_navigate: Navigate to URL
@@ -180,16 +184,6 @@ tools:
     - mcp3_playlive_eval: Run JavaScript in page
     - mcp3_playlive_state: Get current page URL and title
     - mcp3_playlive_close_session: Close session
-  playlive.tony-dell:
-    - mcp4_playlive_create_chrome_live: Create CDP-attached live Chrome session (remote)
-    - mcp4_playlive_create_playwright: Create Playwright headless browser session (remote)
-    - mcp4_playlive_navigate: Navigate to URL
-    - mcp4_playlive_click: Click element by CSS selector
-    - mcp4_playlive_fill: Fill input by CSS selector
-    - mcp4_playlive_screenshot: Take screenshot
-    - mcp4_playlive_eval: Run JavaScript in page
-    - mcp4_playlive_state: Get current page URL and title
-    - mcp4_playlive_close_session: Close session
   postgres:
     - mcp5_query: Run read-only SQL query
     - mcp5_execute: Execute SQL statement (INSERT, UPDATE, DELETE)
@@ -210,7 +204,7 @@ tools:
     - mcp6_get_message_media: Download media (image/video/audio/file)
 
 current_state:
-  last_checked: 2026-08-03
+  last_checked: 2026-08-18
   vram_used_mb: 2616
   vram_free_mb: 1101
   running_processes:
@@ -219,9 +213,19 @@ current_state:
     - /opt/conda/bin/python (58 MB)
   note: Llama router on port 8001, models loaded on-demand, thai-legal CPU-only
 
+embedding_offload:
+  status: not_switched
+  reason: Gemini round-trip latency is ~3.7x higher than local Ollama (see reports/gemini-embedding-comparison.md)
+  ollama_service: still running on tony-omen port 11434 for query-time MDDB embeddings
+  gemini_proxy: available on tony-omen port 11435 for batch/off-peak re-indexing
+  gpu_usage_ollama: ~388 MB reported by nomic-embed-text
+
 monitoring:
   netdata:
     status: deployed
+    version: v2.11.0
+    container: chaba-omen-netdata
+    host: tony-omen
     access_points:
       - http://tony-omen.local:8080/apps/netdata/
       - http://tony-omen.local:8081/apps/netdata/
@@ -234,9 +238,13 @@ monitoring:
       - GPU clock frequencies
       - GPU processes and memory usage
       - Historical GPU performance data
-    integration: Auto-discovers NVIDIA GPU via nvidia-smi
+    integration: Auto-discovers NVIDIA GPU via nvidia-smi using the go.d nvidia_smi collector; requires --gpus all and a container restart after creation for the first GPU chart discovery
     retention: Default Netdata retention (1 hour detail, 1 day reduced resolution)
     alerts: Configurable alerts for GPU temperature, VRAM usage, utilization
+    notes:
+      - NETDATA_DISABLE=ebpf,nfacct,perf to avoid ENOBUFS errors
+      - Caddy /apps/netdata/ reverse proxy added to chaba/stacks/web/Caddyfile
+      - Netdata compose service added to chaba/stacks/web/docker-compose.yml
 
   mcp_gpu:
     tool: mcp1_gpu_status

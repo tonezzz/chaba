@@ -5,7 +5,9 @@ category: operations
 # GPU Queue Integration
 
 ### Database Schema Updates
+
 Added embedding-specific fields to `gpu_queue_jobs` table:
+
 - `embedding_dimensions`: Embedding vector dimensions (e.g., 384)
 - `embedding_model`: Model name (e.g., all-MiniLM-L6-v2)
 - `text_count`: Number of texts processed
@@ -18,10 +20,12 @@ Added embedding-specific fields to `gpu_queue_jobs` table:
 - `result`: Job result status/output
 
 ### Orchestrator Functions
+
 - **processEmbeddingJob()**: Handles embedding job processing in GPU queue
 - **updateJobMetadata()**: Updates embedding-specific metrics after job completion
 
 ### Enhanced Features
+
 - **VRAM Management**: Track GPU memory usage for embedding jobs
 - **GPU Hold/Resume**: Coordinate with llama GPU hold/resume
 - **Metrics Tracking**: Enhanced performance metrics for embedding operations
@@ -29,6 +33,7 @@ Added embedding-specific fields to `gpu_queue_jobs` table:
 - **Monitoring Integration**: GPU queue monitoring module added 2026-08-05
 
 ### GPU Queue Monitoring Module (2026-08-05)
+
 - **Module**: `scripts/gpu-queue/monitoring.mjs`
 - **Functions**:
   - `getQueueHealth()`: Queue status, running job, job type breakdown, priority distribution
@@ -43,6 +48,7 @@ Added embedding-specific fields to `gpu_queue_jobs` table:
   - `GET /api/gpu-queue/monitoring/overview` - System overview
 
 ### GPU Queue Backpressure System (2026-08-06)
+
 - **Module**: `scripts/gpu-queue/index.mjs`
 - **Purpose**: GPU-aware queue processing with intelligent load management
 - **Key Features**:
@@ -53,6 +59,7 @@ Added embedding-specific fields to `gpu_queue_jobs` table:
   - **Adaptive Wait Times**: Dynamic delays based on GPU load
 
 **GPU Monitoring:**
+
 ```javascript
 // GPU status check via Netdata API
 const gpuStatus = await checkGPUStatus();
@@ -61,6 +68,7 @@ const gpuStatus = await checkGPUStatus();
 ```
 
 **Job-Specific Rate Limits:**
+
 ```javascript
 const jobLimits = {
   yomi_summary: { maxConcurrent: 1, lastProcessed: 0 },
@@ -69,12 +77,13 @@ const jobLimits = {
   embedding: { maxConcurrent: 2, lastProcessed: 0 },
   imagen2: { maxConcurrent: 1, lastProcessed: 0 },
   txt2vid: { maxConcurrent: 1, lastProcessed: 0 },
-  llama: { maxConcurrent: 1, lastProcessed: 0 }
+  llama: { maxConcurrent: 1, lastProcessed: 0 },
 };
 // Minimum 3 seconds between same job types
 ```
 
 **Circuit Breaker:**
+
 ```javascript
 const MAX_CONSECUTIVE_FAILURES = 5;
 const BACKPRESSURE_DELAY = 30000; // 30 seconds
@@ -83,6 +92,7 @@ const BACKPRESSURE_DELAY = 30000; // 30 seconds
 ```
 
 **Adaptive Processing:**
+
 ```javascript
 // Adaptive wait time based on GPU load
 const waitTime = gpuStatus.memoryPercent > 60 ? 10000 : 5000;
@@ -90,9 +100,10 @@ const waitTime = gpuStatus.memoryPercent > 60 ? 10000 : 5000;
 ```
 
 **Smart Context Management:**
+
 ```javascript
 // Context length management with job-type-specific chunking
-function manageContextLength(prompt, jobType = 'default') {
+function manageContextLength(prompt, jobType = "default") {
   const MAX_CONTEXT_LENGTH = 6000;
   // For daily summaries: prioritize recent messages
   // For regular summaries: keep most recent content
@@ -101,8 +112,8 @@ function manageContextLength(prompt, jobType = 'default') {
 ```
 
 **Request Timeouts:**
+
 - Yomi summary: 30 seconds
-- Yomi daily: 60 seconds  
+- Yomi daily: 60 seconds
 - Yomi batch daily: 90 seconds
 - Implemented via AbortController for reliable timeout handling
-

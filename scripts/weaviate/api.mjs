@@ -8,20 +8,20 @@
  * Weaviate's hybrid search (alpha=0.5 balances keyword vs vector).
  */
 
-import { createServer } from 'http';
+import { createServer } from "http";
 
-const WEAVIATE_URL = process.env.WEAVIATE_URL || 'http://localhost:8082';
-const EMBEDDING_URL = process.env.EMBEDDING_SERVICE_URL || 'http://localhost:5000';
+const WEAVIATE_URL = process.env.WEAVIATE_URL || "http://localhost:8082";
+const EMBEDDING_URL = process.env.EMBEDDING_SERVICE_URL || "http://localhost:5000";
 const PORT = process.env.PORT || 3002;
 
-console.log('Weaviate Search API starting...');
-console.log('Weaviate URL:', WEAVIATE_URL);
-console.log('Embedding URL:', EMBEDDING_URL);
+console.log("Weaviate Search API starting...");
+console.log("Weaviate URL:", WEAVIATE_URL);
+console.log("Embedding URL:", EMBEDDING_URL);
 
 async function embedQuery(text) {
   const res = await fetch(`${EMBEDDING_URL}/embed-single`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ text }),
   });
   if (!res.ok) throw new Error(`Embedding service error: ${res.status}`);
@@ -40,7 +40,7 @@ async function hybridSearch(query, vector, limit, filters) {
           alpha: 0.5
         }
         limit: ${limit}
-        ${whereClause ? `where: ${whereClause}` : ''}
+        ${whereClause ? `where: ${whereClause}` : ""}
       ) {
         title
         content
@@ -55,34 +55,36 @@ async function hybridSearch(query, vector, limit, filters) {
   }`;
 
   const res = await fetch(`${WEAVIATE_URL}/v1/graphql`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ query: gql }),
   });
   if (!res.ok) throw new Error(`Weaviate error: ${res.status}`);
   const data = await res.json();
-  if (data.errors) throw new Error(data.errors.map(e => e.message).join('; '));
+  if (data.errors) throw new Error(data.errors.map((e) => e.message).join("; "));
   return data.data.Get.SSOTDocument || [];
 }
 
 function buildWhereClause(filters) {
-  if (!filters || Object.keys(filters).length === 0) return '';
+  if (!filters || Object.keys(filters).length === 0) return "";
   const operands = [];
   if (filters.type) {
     operands.push(`{path:["type"] operator:Equal valueText:${JSON.stringify(filters.type)}}`);
   }
   if (filters.category) {
-    operands.push(`{path:["category"] operator:Equal valueText:${JSON.stringify(filters.category)}}`);
+    operands.push(
+      `{path:["category"] operator:Equal valueText:${JSON.stringify(filters.category)}}`
+    );
   }
-  if (operands.length === 0) return '';
+  if (operands.length === 0) return "";
   if (operands.length === 1) return operands[0];
-  return `{operator:And operands:[${operands.join(',')}]}`;
+  return `{operator:And operands:[${operands.join(",")}]}`;
 }
 
 async function handleSearch(req, res) {
-  if (req.method !== 'POST') {
-    res.writeHead(405, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ error: 'Method not allowed' }));
+  if (req.method !== "POST") {
+    res.writeHead(405, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ error: "Method not allowed" }));
     return;
   }
 
@@ -90,17 +92,17 @@ async function handleSearch(req, res) {
     const body = await getRequestBody(req);
     const { query, limit = 20, filters = {} } = JSON.parse(body);
     if (!query || !query.trim()) {
-      res.writeHead(400, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ error: 'query is required' }));
+      res.writeHead(400, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: "query is required" }));
       return;
     }
 
-    console.log('Search query:', query, filters);
+    console.log("Search query:", query, filters);
 
     const vector = await embedQuery(query);
     const raw = await hybridSearch(query, vector, limit, filters);
 
-    const results = raw.map(r => ({
+    const results = raw.map((r) => ({
       title: r.title,
       content: r.content,
       path: r.path,
@@ -111,12 +113,11 @@ async function handleSearch(req, res) {
       similarity: parseFloat(parseFloat(r._additional?.score || 0).toFixed(4)),
     }));
 
-    res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ results, total: results.length, mode: 'hybrid' }));
-
+    res.writeHead(200, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ results, total: results.length, mode: "hybrid" }));
   } catch (error) {
-    console.error('Search error:', error);
-    res.writeHead(500, { 'Content-Type': 'application/json' });
+    console.error("Search error:", error);
+    res.writeHead(500, { "Content-Type": "application/json" });
     res.end(JSON.stringify({ error: error.message }));
   }
 }
@@ -138,30 +139,32 @@ async function handleHealth(req, res) {
 
   try {
     const r = await fetch(`${WEAVIATE_URL}/v1/graphql`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ query: '{Aggregate{SSOTDocument{meta{count}}}}' }),
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ query: "{Aggregate{SSOTDocument{meta{count}}}}" }),
     });
     const d = await r.json();
     docCount = d?.data?.Aggregate?.SSOTDocument?.[0]?.meta?.count || 0;
   } catch (_) {}
 
-  res.writeHead(200, { 'Content-Type': 'application/json' });
-  res.end(JSON.stringify({
-    status: weaviateOk && embeddingOk ? 'healthy' : 'degraded',
-    mode: 'hybrid',
-    weaviate: weaviateOk ? 'ok' : 'error',
-    embedding: embeddingOk ? 'ok' : 'error',
-    total_documents: docCount,
-  }));
+  res.writeHead(200, { "Content-Type": "application/json" });
+  res.end(
+    JSON.stringify({
+      status: weaviateOk && embeddingOk ? "healthy" : "degraded",
+      mode: "hybrid",
+      weaviate: weaviateOk ? "ok" : "error",
+      embedding: embeddingOk ? "ok" : "error",
+      total_documents: docCount,
+    })
+  );
 }
 
 function getRequestBody(req) {
   return new Promise((resolve, reject) => {
-    let body = '';
-    req.on('data', chunk => body += chunk);
-    req.on('end', () => resolve(body));
-    req.on('error', reject);
+    let body = "";
+    req.on("data", (chunk) => (body += chunk));
+    req.on("end", () => resolve(body));
+    req.on("error", reject);
   });
 }
 
@@ -169,29 +172,29 @@ const server = createServer(async (req, res) => {
   const url = new URL(req.url, `http://${req.headers.host}`);
 
   // CORS headers
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 
-  if (req.method === 'OPTIONS') {
+  if (req.method === "OPTIONS") {
     res.writeHead(200);
     res.end();
     return;
   }
 
-  if (url.pathname === '/search') {
+  if (url.pathname === "/search") {
     await handleSearch(req, res);
-  } else if (url.pathname === '/health') {
+  } else if (url.pathname === "/health") {
     await handleHealth(req, res);
   } else {
-    res.writeHead(404, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ error: 'Not found' }));
+    res.writeHead(404, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ error: "Not found" }));
   }
 });
 
-server.listen(PORT, '0.0.0.0', () => {
-  console.log('Weaviate Search API running on port', PORT);
-  console.log('Endpoints:');
-  console.log('  POST http://localhost:' + PORT + '/search');
-  console.log('  GET  http://localhost:' + PORT + '/health');
+server.listen(PORT, "0.0.0.0", () => {
+  console.log("Weaviate Search API running on port", PORT);
+  console.log("Endpoints:");
+  console.log("  POST http://localhost:" + PORT + "/search");
+  console.log("  GET  http://localhost:" + PORT + "/health");
 });

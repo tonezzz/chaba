@@ -95,12 +95,12 @@ ha_live:
     tony_live: 'https://${ssot("docs/ssot/infrastructure/ssot.values.yml", "hosts.tony_dell.tailscale")}:${ssot("docs/ssot/infrastructure/ssot.values.yml", "ports.ha_live_public")}/apps/tony-live/'
     michael_live: 'https://${ssot("docs/ssot/infrastructure/ssot.values.yml", "hosts.tony_dell.tailscale")}:${ssot("docs/ssot/infrastructure/ssot.values.yml", "ports.ha_live_public")}/apps/michael-live/'
   health_checks:
-    - 'tailscale ssh tony-dell ps -ef | grep ha-live/bridge.py'
-    - 'ss -tlnp | grep 9005'
+    - "tailscale ssh tony-dell ps -ef | grep ha-live/bridge.py"
+    - "ss -tlnp | grep 9005"
     - 'curl -s -o /dev/null -w ''%{http_code}'' https://${ssot("docs/ssot/infrastructure/ssot.values.yml", "hosts.tony_dell.tailscale")}:${ssot("docs/ssot/infrastructure/ssot.values.yml", "ports.ha_live_public")}/'
   recovery:
-    - 'cd /home/tony/.config/home-assistant/ha-live && ./restart.sh'
-    - 'tailscale serve status'
+    - "cd /home/tony/.config/home-assistant/ha-live && ./restart.sh"
+    - "tailscale serve status"
 
 health:
   home_assistant: ssh tony-dell curl -sf http://127.0.0.1:8123/ >/dev/null

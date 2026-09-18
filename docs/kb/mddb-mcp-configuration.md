@@ -21,6 +21,7 @@ The legacy `docker-compose.yml` in `stacks/web/mddb/docker-compose.yml` still ma
 ## Correct Configuration
 
 **MCP Config** (`~/.config/devin/mcp_config.json`):
+
 ```json
 {
   "mddb": {
@@ -30,6 +31,7 @@ The legacy `docker-compose.yml` in `stacks/web/mddb/docker-compose.yml` still ma
 ```
 
 **Verification**:
+
 ```bash
 # Test MCP endpoint (should return "MCP-Session-Id required")
 curl -s http://tony-dell:9000/mcp
@@ -45,6 +47,7 @@ ssh tony-dell 'podman logs mddb | grep MCP'
 ## Available MCP Tools
 
 After successful configuration, mddb provides these MCP tools:
+
 - `add_document` - Add or update documents
 - `search_documents` - Search with filters and sorting
 - `delete_document` - Delete documents
@@ -57,6 +60,7 @@ After successful configuration, mddb provides these MCP tools:
 **Symptom**: "Failed to list tools for server `mddb`"
 
 **Checks**:
+
 1. Verify docker container is running: `docker ps | grep mddb`
 2. Check port mapping: `docker port mddb`
 3. Test MCP endpoint: `curl -s http://localhost:9001/mcp`
@@ -74,6 +78,7 @@ After successful configuration, mddb provides these MCP tools:
 ## Health Monitoring
 
 The mddb-mcp endpoint is monitored by the health check system:
+
 - **Service ID**: `mddb-mcp`
 - **URL**: `http://tony-dell:9000/mcp`
 - **Expected status**: `400` (`{"error":"MCP-Session-Id required"}`)

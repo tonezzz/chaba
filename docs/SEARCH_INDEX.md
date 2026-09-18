@@ -16,6 +16,7 @@ search_keywords: [documentation index, search patterns, cross-reference, quick r
 ## Quick Reference by Category
 
 ### Operations & Monitoring
+
 - **Health Check Dashboard** - Real-time system monitoring with GPU, Yomi, and service status
   - Keywords: health monitoring, GPU status, service health, dashboard, auto-refresh
   - File: `kb/health-check.md`
@@ -41,6 +42,7 @@ search_keywords: [documentation index, search patterns, cross-reference, quick r
   - Search: "overnight assessment", "security scan", "disk usage"
 
 ### Architecture & Design
+
 - **Yomi Architecture** - LINE web app two-stage pipeline architecture
   - Keywords: Yomi, LINE, architecture, pipeline, two-stage
   - File: `architecture/yomi-architecture-separation.md`
@@ -60,6 +62,7 @@ search_keywords: [documentation index, search patterns, cross-reference, quick r
   - Search: "Wireguard", "VPN architecture", "networking"
 
 ### Implementation & Integration
+
 - **MCP Config Sync** - MCP configuration synchronization implementation
   - Keywords: MCP, configuration, synchronization, implementation
   - File: `implementation/mcp-config-sync-implementation.md`
@@ -73,6 +76,7 @@ search_keywords: [documentation index, search patterns, cross-reference, quick r
   - Search: "SSOT manager", "configuration validation", "SSOT implementation"
 
 ### Documentation & Standards
+
 - **Documentation Search** - Dual search methods guide (ssot-search + MCP docs server)
   - Keywords: documentation search, MCP, ssot-search, Flexsearch, grep
   - File: `kb/documentation-search.md`
@@ -92,6 +96,7 @@ search_keywords: [documentation index, search patterns, cross-reference, quick r
   - Search: "SSOT standards", "validation patterns", "SSOT structure"
 
 ### GPU & AI Services
+
 - **GPU Queue Monitoring** - GPU queue job monitoring and backpressure system
   - Keywords: GPU queue, monitoring, backpressure, job types, priorities
   - File: `kb/gpu-embedding-service.md` (GPU Queue section)
@@ -105,6 +110,7 @@ search_keywords: [documentation index, search patterns, cross-reference, quick r
   - Search: "Thai legal", "Gemma model", "document processing"
 
 ### Yomi System
+
 - **Yomi LINE Web App** - Comprehensive Yomi system documentation
   - Keywords: Yomi, LINE, web app, conversations, summarization
   - File: `kb/yomi.md`
@@ -124,6 +130,7 @@ search_keywords: [documentation index, search patterns, cross-reference, quick r
   - Search: "commercial filtering", "Yomi patterns", "message filtering"
 
 ### Infrastructure & Services
+
 - **Weaviate Vector Database** - Weaviate setup and Chonkie chunking
   - Keywords: Weaviate, vector database, embeddings, Chonkie, chunking
   - File: `kb/weaviate.md`
@@ -143,6 +150,7 @@ search_keywords: [documentation index, search patterns, cross-reference, quick r
   - Search: "disk space", "cleanup", "Docker cleanup"
 
 ### Troubleshooting & Issues
+
 - **Caddyfile Syntax Errors** - Caddyfile syntax error patterns and fixes
   - Keywords: Caddyfile, syntax errors, troubleshooting, reverse proxy
   - File: `kb/caddyfile-syntax-errors.md`
@@ -164,6 +172,7 @@ search_keywords: [documentation index, search patterns, cross-reference, quick r
 ## Common Search Patterns
 
 ### GPU-Related Searches
+
 - **"GPU memory"** → `gpu-embedding-service.md`, `health-check.md`, `ssot.gpu.yml`
 - **"GPU monitoring"** → `health-check.md`, `system-automation.md`, `ssot.gpu.yml`
 - **"GPU queue"** → `gpu-embedding-service.md`, `ssot.gpu.yml`, `health-check.md`
@@ -171,24 +180,28 @@ search_keywords: [documentation index, search patterns, cross-reference, quick r
 - **"GPU VRAM"** → `gpu-embedding-service.md`, `ssot.gpu.yml`, `health-check.md`
 
 ### Yomi-Related Searches
+
 - **"Yomi summarization"** → `yomi-architecture-separation.md`, `yomi-summarization-improvements.md`, `yomi.md`
 - **"Yomi API"** → `health-check.md`, `yomi.md`, `ssot.docs.yml`
 - **"Daily summaries"** → `yomi-daily2-calendar.md`, `yomi.md`, `yomi-summarization-improvements.md`
 - **"Yomi Gemini"** → `yomi-summarization-improvements.md`, `architecture/yomi-summarization-improvements.md`
 
 ### Health & Monitoring Searches
+
 - **"Health check"** → `health-check.md`, `ssot.health.yml`, `ssot.health.home.yml`
 - **"Service status"** → `health-check.md`, `ssot.health.yml`, `overnight-assessment.md`
 - **"System monitoring"** → `system-automation.md`, `health-check.md`, `overnight-assessment.md`
 - **"Auto-refresh"** → `health-check.md`, `system-automation.md`
 
 ### Configuration & SSOT Searches
+
 - **"SSOT configuration"** → `ssot.index.yml`, `ssot-validation-patterns.yml`, `ssot-documentation-standards.md`
 - **"Service configuration"** → `ssot.health.yml`, `ssot.services.yml`, `ssot.apps.yml`
 - **"GPU configuration"** → `ssot.gpu.yml`, `gpu-embedding-service.md`, `ssot-summaries/ssot.gpu-summary.md`
 - **"Health configuration"** → `ssot.health.yml`, `health-check.md`, `ssot-summaries/ssot.health-summary.md`
 
 ### Documentation Searches
+
 - **"Documentation search"** → `documentation-search.md`, `ssot.index.yml`
 - **"KB entry"** → `documentation-maintenance-standards.md`, `kb/.template.md`
 - **"SSOT search"** → `documentation-search.md`, `ssot.index.yml`
@@ -197,6 +210,7 @@ search_keywords: [documentation index, search patterns, cross-reference, quick r
 ## Cross-Reference Map
 
 ### SSOT to Documentation Mapping
+
 - `ssot.health.yml` → `health-check.md`, `ssot-summaries/ssot.health-summary.md`
 - `ssot.gpu.yml` → `gpu-embedding-service.md`, `ssot-summaries/ssot.gpu-summary.md`
 - `ssot.apps.yml` → `ssot-summaries/ssot.apps-summary.md`, per-app KB entries
@@ -204,12 +218,14 @@ search_keywords: [documentation index, search patterns, cross-reference, quick r
 - `ssot.automation.yml` → `system-automation.md`, `overnight-assessment.md`
 
 ### Documentation to SSOT Mapping
+
 - `health-check.md` → `ssot.health.yml`, `ssot.health.home.yml`, `ssot.health.mobile.yml`
 - `gpu-embedding-service.md` → `ssot.gpu.yml`, `ssot.test.weaviate.yml`
 - `system-automation.md` → `ssot.automation.yml`, `ssot.health.yml`
 - `documentation-search.md` → `ssot.index.yml`, `ssot.devin.tools.yml`
 
 ### Service Integration Mapping
+
 - **Yomi System** → `yomi.md`, `yomi-architecture-separation.md`, `yomi-daily2-calendar.md`, `ssot.docs.yml`
 - **GPU Services** → `gpu-embedding-service.md`, `ssot.gpu.yml`, `health-check.md`
 - **Health Monitoring** → `health-check.md`, `ssot.health.yml`, `system-automation.md`
@@ -218,6 +234,7 @@ search_keywords: [documentation index, search patterns, cross-reference, quick r
 ## Search Method Selection Guide
 
 ### Use ssot-search (SSOT YAML Only) When:
+
 - Searching for specific SSOT configuration values
 - Looking for exact YAML structure or patterns
 - Quick SSOT-specific lookups
@@ -225,12 +242,14 @@ search_keywords: [documentation index, search patterns, cross-reference, quick r
 - Pattern matching across SSOT files
 
 **Examples:**
+
 - "GPU memory" in SSOT files
 - "health check" endpoint definitions
 - "postgres" configuration values
 - "service" timeout values
 
 ### Use MCP Docs Server (All Documentation) When:
+
 - Broad documentation search without knowing exact location
 - Finding relevant content across KB, architecture, assessments
 - AI assistant queries (MCP-native)
@@ -238,6 +257,7 @@ search_keywords: [documentation index, search patterns, cross-reference, quick r
 - Want ranked results with excerpts
 
 **Examples:**
+
 - "GPU memory" across all documentation
 - "Yomi summarization" improvements
 - "health check" troubleshooting
@@ -262,16 +282,19 @@ SSOT YAML files are now accompanied by Markdown summaries for MCP searchability:
 ## Search Performance Tips
 
 ### Fast Exact Searches
+
 - Use ssot-search for SSOT YAML pattern matching (0.006s typical)
 - Best for known configuration values and exact terms
 - Direct file path access
 
 ### Broad Discovery Searches
+
 - Use MCP docs server for full-text search with relevance ranking
 - Best for discovering related content across documentation types
 - Ranked results with excerpts for context
 
 ### Hybrid Approach
+
 1. Start with MCP docs server for broad search
 2. Use ssot-search for exact SSOT pattern matching
 3. Use get_page to retrieve full content from MCP results
@@ -280,12 +303,14 @@ SSOT YAML files are now accompanied by Markdown summaries for MCP searchability:
 ## Index Maintenance
 
 ### Update Triggers
+
 - New KB entries created
 - SSOT configuration changes
 - New documentation added
 - Search patterns identified from usage
 
 ### Update Process
+
 1. Add new entries to appropriate category sections
 2. Update search keywords and cross-references
 3. Add new common search patterns
@@ -293,6 +318,7 @@ SSOT YAML files are now accompanied by Markdown summaries for MCP searchability:
 5. Validate cross-reference mappings
 
 ### Quality Checks
+
 - Verify all file paths are correct
 - Ensure search keywords are effective
 - Test common search patterns
@@ -308,6 +334,6 @@ SSOT YAML files are now accompanied by Markdown summaries for MCP searchability:
 
 ## Change History
 
-| Date | Change | Author |
-|------|--------|--------|
-| 2026-08-06 | Created comprehensive documentation search index | devin |
+| Date       | Change                                           | Author |
+| ---------- | ------------------------------------------------ | ------ |
+| 2026-08-06 | Created comprehensive documentation search index | devin  |

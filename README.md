@@ -9,17 +9,17 @@ A multi-purpose homelab stack: 3D Gaussian Splatting research, Frigate NVR traff
 
 ## Included Implementations
 
-| Container | Method | Repo |
-|-----------|--------|------|
-| `3dgs` | Original 3DGS (Kerbl et al. 2023) | graphdeco-inria/gaussian-splatting |
-| `nerfstudio` | gsplat / splatfacto | nerfstudio-project/nerfstudio |
-| `variants` (VARIANT=2dgs) | 2D Gaussian Splatting | hbb1/2d-gaussian-splatting |
-| `variants` (VARIANT=mip) | Mip-Splatting | autonomousvision/mip-splatting |
-| `variants` (VARIANT=gof) | Gaussian Opacity Fields | autonomousvision/gaussian-opacity-fields |
-| `colmap` | COLMAP SfM preprocessing | — |
-| `john` | John the Ripper (Jumbo) | openwall/john |
-| `jupyter` | JupyterLab research notebook | — |
-| `frigate` | Frigate NVR (AI-powered surveillance) | blakeblackshear/frigate |
+| Container                 | Method                                | Repo                                     |
+| ------------------------- | ------------------------------------- | ---------------------------------------- |
+| `3dgs`                    | Original 3DGS (Kerbl et al. 2023)     | graphdeco-inria/gaussian-splatting       |
+| `nerfstudio`              | gsplat / splatfacto                   | nerfstudio-project/nerfstudio            |
+| `variants` (VARIANT=2dgs) | 2D Gaussian Splatting                 | hbb1/2d-gaussian-splatting               |
+| `variants` (VARIANT=mip)  | Mip-Splatting                         | autonomousvision/mip-splatting           |
+| `variants` (VARIANT=gof)  | Gaussian Opacity Fields               | autonomousvision/gaussian-opacity-fields |
+| `colmap`                  | COLMAP SfM preprocessing              | —                                        |
+| `john`                    | John the Ripper (Jumbo)               | openwall/john                            |
+| `jupyter`                 | JupyterLab research notebook          | —                                        |
+| `frigate`                 | Frigate NVR (AI-powered surveillance) | blakeblackshear/frigate                  |
 
 ---
 
@@ -44,21 +44,21 @@ docker run --rm --gpus all nvidia/cuda:11.8.0-base-ubuntu22.04 nvidia-smi
 
 ### Hosts
 
-| Host | Hostname | Role |
-|------|----------|------|
-| tony-omen | tony-omen.local | Docker host, GPU/NVR/web server |
+| Host      | Hostname        | Role                                   |
+| --------- | --------------- | -------------------------------------- |
+| tony-omen | tony-omen.local | Docker host, GPU/NVR/web server        |
 | tony-dell | tony-dell.local | Secondary workstation / Barrier client |
 
 ### Stacks
 
-| Stack | Compose file | Ports |
-|-------|--------------|-------|
-| 3DGS / Research | `docker-compose.yml` | 7007 (nerfstudio), 8888 (jupyter) |
-| Frigate NVR | `frigate/docker-compose.yml` | 5000, 8554, 8555 |
-| Web (Caddy) | `stacks/web/docker-compose.yml` | 8080, 8081 |
-| AI (llama-server) | `stacks/ai/docker-compose.yml` (on tony-omen `chaba` worktree) | 8008 |
-| ChatLocal | `chat-uis/ChatLocal` (currently only in stale chaba-omen directory) | 3000 |
-| Neo Chat | `chat-uis/neo-chat` (currently only in stale chaba-omen directory) | 3001 |
+| Stack             | Compose file                                                        | Ports                             |
+| ----------------- | ------------------------------------------------------------------- | --------------------------------- |
+| 3DGS / Research   | `docker-compose.yml`                                                | 7007 (nerfstudio), 8888 (jupyter) |
+| Frigate NVR       | `frigate/docker-compose.yml`                                        | 5000, 8554, 8555                  |
+| Web (Caddy)       | `stacks/web/docker-compose.yml`                                     | 8080, 8081                        |
+| AI (llama-server) | `stacks/ai/docker-compose.yml` (on tony-omen `chaba` worktree)      | 8008                              |
+| ChatLocal         | `chat-uis/ChatLocal` (currently only in stale chaba-omen directory) | 3000                              |
+| Neo Chat          | `chat-uis/neo-chat` (currently only in stale chaba-omen directory)  | 3001                              |
 
 ### Web Apps (chaba.h3)
 
@@ -76,11 +76,13 @@ chmod +x scripts/*.sh
 ### 2. Prepare your scene
 
 **From images:**
+
 ```bash
 ./scripts/prepare_scene.sh --images /path/to/your/images --output ./data/my_scene
 ```
 
 **From video:**
+
 ```bash
 ./scripts/prepare_scene.sh --video /path/to/video.mp4 --output ./data/my_scene --fps 2
 ```
@@ -184,10 +186,12 @@ docker compose up -d
 **Cameras:** `frigate/cameras.json` is the single source of truth for 34+ traffic and local cameras. Run `python3 frigate/generate_config.py` to regenerate `frigate/config.yml` and `camera-map.html`.
 
 Config files:
+
 - `frigate/docker-compose.yml` — container definition
 - `frigate/config.yml` — Frigate configuration (cameras, detection, recording)
 
 Ports:
+
 - `5000` — Web UI
 - `8554` — RTSP restream
 - `8555` — WebRTC (TCP/UDP)
@@ -260,13 +264,13 @@ DR runbooks, backup sources, secrets inventory, and bootstrap checklist are main
 
 ## Benchmark Reference (Mip-NeRF360)
 
-| Method | PSNR ↑ | SSIM ↑ | LPIPS ↓ | Train Time |
-|--------|--------|--------|---------|------------|
-| 3DGS   | ~27.2  | ~0.815 | ~0.214  | ~35 min    |
-| Mip-Splatting | ~27.5 | ~0.820 | ~0.205 | ~40 min |
-| 2DGS   | ~26.9  | ~0.802 | ~0.230  | ~45 min    |
+| Method        | PSNR ↑ | SSIM ↑ | LPIPS ↓ | Train Time |
+| ------------- | ------ | ------ | ------- | ---------- |
+| 3DGS          | ~27.2  | ~0.815 | ~0.214  | ~35 min    |
+| Mip-Splatting | ~27.5  | ~0.820 | ~0.205  | ~40 min    |
+| 2DGS          | ~26.9  | ~0.802 | ~0.230  | ~45 min    |
 
-*Results vary by GPU and scene.*
+_Results vary by GPU and scene._
 
 ---
 

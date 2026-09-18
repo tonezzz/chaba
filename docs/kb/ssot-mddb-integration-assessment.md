@@ -26,6 +26,7 @@ category: operations
 ### Option 1 (SSOT YAML → MDDB Sync) - Recommended
 
 **Rationale**:
+
 - Preserves direct YAML editing workflow
 - Enables semantic search across SSOT
 - Reasonable implementation complexity
@@ -33,6 +34,7 @@ category: operations
 - Can implement incremental sync
 
 **Implementation Plan**:
+
 1. Create sync script for SSOT YAML → MDDB
 2. Add SSOT-specific collections to MDDB
 3. Implement manual sync command
@@ -40,6 +42,7 @@ category: operations
 5. Test search quality with YAML content
 
 **Pilot Implementation**:
+
 - Start with `docs/ssot/infrastructure/ssot.mcp.yml`
 - Create `ssot-infrastructure` collection
 - Test semantic search quality
@@ -48,6 +51,7 @@ category: operations
 ### Alternative: Option 2 (SSOT Documentation in MDDB)
 
 **Use Case**: If semantic search quality with YAML content is poor
+
 - Create human-readable SSOT documentation in MDDB
 - Link to YAML files for reference
 - Maintain documentation separately from config
@@ -56,25 +60,31 @@ category: operations
 ## Technical Considerations
 
 ### YAML Content in MDDB
+
 **Challenge**: YAML syntax may affect semantic search quality
 **Solution**: Format as Markdown code blocks with descriptive headers
 **Example**:
-```markdown
+
+````markdown
 # MCP Infrastructure Configuration
 
 ## Server: github
+
 - Name: GitHub Integration
 - Description: GitHub API integration
 - Implementation: docker ghcr.io/github/github-mcp-server:latest
 
 ## YAML Content
+
 ```yaml
 github:
   name: GitHub Integration
   description: GitHub API integration for workflow automation
   implementation: docker ghcr.io/github/github-mcp-server:latest
 ```
-```
+````
+
+````
 
 ### Sync Mechanism
 **Approach**: Manual sync command + optional file watcher
@@ -101,7 +111,7 @@ github:
     "last_synced": "2026-08-12T16:00:00Z"
   }
 }
-```
+````
 
 ## Next Steps
 
@@ -125,12 +135,14 @@ github:
 **Implemented**: Option 1 (SSOT YAML → MDDB Sync) with file watcher automation
 
 **Components**:
+
 - **Sync Script**: `scripts/sync-ssot-to-mddb.py` - Manual sync command
 - **File Watcher**: `scripts/watch-ssot-sync.py` - Auto-sync on YAML changes
 - **Systemd Service**: `scripts/ssot-sync.service` - Background service
 - **Collections**: ssot-infrastructure (10), ssot-apps (15), ssot-general (15)
 
 **Results**:
+
 - **Files Synced**: 40/40 SSOT YAML files
 - **Search Quality**: Excellent (0.54-0.72 relevance scores)
 - **Response Time**: Fast (110-143ms)
@@ -143,11 +155,13 @@ github:
 **mcp-health Extension**: SSOT file watcher and MDDB monitoring integration
 
 **Components**:
+
 - **SSOT Health Config**: `docs/ssot/infrastructure/ssot.health.yml` - Updated with SSOT services
 - **Systemd Service**: `ssot-sync.service` - Deployed to `/etc/systemd/system/`
 - **Service Status**: Active and running (systemctl status ssot-sync.service)
 
 **Health Checks Added**:
+
 - **ssot-sync-watcher**: Systemd service monitoring for SSOT file watcher
 - **mddb-api**: HTTP health endpoint (port 11023)
 - **mddb-stats**: HTTP stats endpoint (port 11023/v1/stats)
@@ -156,12 +170,14 @@ github:
 - **mddb-container**: Container health check for MDDB service
 
 **Service Configuration**:
+
 - **Criticality**: ssot-sync-watcher marked as "important" service
 - **Service Group**: ssot-sync group includes all SSOT and MDDB services
 - **Dependencies**: ssot-sync-watcher → mddb-api dependency tracking
 - **Recovery Actions**: Comprehensive recovery steps for each service
 
 **Monitoring Results**:
+
 - **SSOT Sync Watcher**: Active (systemd service running)
 - **MDDB API**: Healthy (HTTP 200, 158ms response time)
 - **MDDB Stats**: Healthy (HTTP 200, 153ms response time)
@@ -170,6 +186,7 @@ github:
 - **MDDB Container**: Running (docker container healthy)
 
 **MCP Tools Integration**:
+
 - **check_health**: Service-specific health checks
 - **get_health_status**: Overall system health monitoring
 - **analyze_dependencies**: Dependency analysis for ssot-sync-watcher
@@ -177,10 +194,10 @@ github:
 
 ## Change History
 
-| Date | Change | Author |
-|------|--------|--------|
-| 2026-08-12 | Initial SSOT-MDDB integration assessment | devin |
-| 2026-08-12 | Implementation completed - Option 1 with file watcher | devin |
+| Date       | Change                                                | Author |
+| ---------- | ----------------------------------------------------- | ------ |
+| 2026-08-12 | Initial SSOT-MDDB integration assessment              | devin  |
+| 2026-08-12 | Implementation completed - Option 1 with file watcher | devin  |
 
 ## Tags
 

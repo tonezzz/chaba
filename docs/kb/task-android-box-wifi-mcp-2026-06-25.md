@@ -9,7 +9,7 @@ category: operations
 **Device IP (Ethernet):** `192.168.1.43`  
 **Target SSID:** `TONY-WIFI_2.4G` (also `TONY-WIFI_5G` kept in config)  
 **WiFi password:** `tonytony`  
-**Final WiFi IP:** `192.168.1.200`  
+**Final WiFi IP:** `192.168.1.200`
 
 ---
 
@@ -487,27 +487,27 @@ Currently the user must tap the Termux:Widget shortcut after reboot. To make thi
 
 ## Part 8 — Quick Reference
 
-| Check | Command |
-|-------|---------|
-| WiFi status | `wpa_cli -p /data/vendor/wifi/wpa/sockets -i wlan0 status` |
-| WiFi networks | `wpa_cli -p /data/vendor/wifi/wpa/sockets -i wlan0 list_networks` |
-| Scan results | `wpa_cli -p /data/vendor/wifi/wpa/sockets -i wlan0 scan_results` |
-| Interface IP | `ifconfig wlan0` or `ip addr show wlan0` |
-| Gateway ping | `ping -I wlan0 -c 3 192.168.1.1` |
-| Routes | `ip route` |
-| Android WiFi service | `svc wifi disable` / `svc wifi enable` |
-| MCP server | `ps -A \| grep -i python` / `netstat -tlnp \| grep 8080` |
+| Check                | Command                                                           |
+| -------------------- | ----------------------------------------------------------------- |
+| WiFi status          | `wpa_cli -p /data/vendor/wifi/wpa/sockets -i wlan0 status`        |
+| WiFi networks        | `wpa_cli -p /data/vendor/wifi/wpa/sockets -i wlan0 list_networks` |
+| Scan results         | `wpa_cli -p /data/vendor/wifi/wpa/sockets -i wlan0 scan_results`  |
+| Interface IP         | `ifconfig wlan0` or `ip addr show wlan0`                          |
+| Gateway ping         | `ping -I wlan0 -c 3 192.168.1.1`                                  |
+| Routes               | `ip route`                                                        |
+| Android WiFi service | `svc wifi disable` / `svc wifi enable`                            |
+| MCP server           | `ps -A \| grep -i python` / `netstat -tlnp \| grep 8080`          |
 
-| Path | Purpose |
-|------|---------|
-| `/data/vendor/wifi/wpa/wpa_supplicant_manual.conf` | Manual wpa_supplicant config |
-| `/data/vendor/wifi/wpa/wifi_manual.log` | Manual wpa_supplicant log |
-| `/data/local/tmp/wifi_manual.sh` | WiFi setup script |
-| `/data/data/com.termux/files/home/mcp_server.py` | MCP server |
-| `/data/data/com.termux/files/home/mcp_server.log` | MCP server log |
-| `/data/data/com.termux/files/home/.shortcuts/wifi_manual.sh` | Termux:Widget WiFi shortcut |
-| `/data/data/com.termux/files/home/.shortcuts/start_mcp.sh` | Termux:Widget MCP shortcut |
-| `/data/misc/wifi/WifiConfigStore.xml` | Android WiFi config store |
+| Path                                                         | Purpose                      |
+| ------------------------------------------------------------ | ---------------------------- |
+| `/data/vendor/wifi/wpa/wpa_supplicant_manual.conf`           | Manual wpa_supplicant config |
+| `/data/vendor/wifi/wpa/wifi_manual.log`                      | Manual wpa_supplicant log    |
+| `/data/local/tmp/wifi_manual.sh`                             | WiFi setup script            |
+| `/data/data/com.termux/files/home/mcp_server.py`             | MCP server                   |
+| `/data/data/com.termux/files/home/mcp_server.log`            | MCP server log               |
+| `/data/data/com.termux/files/home/.shortcuts/wifi_manual.sh` | Termux:Widget WiFi shortcut  |
+| `/data/data/com.termux/files/home/.shortcuts/start_mcp.sh`   | Termux:Widget MCP shortcut   |
+| `/data/misc/wifi/WifiConfigStore.xml`                        | Android WiFi config store    |
 
 ---
 
@@ -517,20 +517,20 @@ This section describes the MCP (Model Context Protocol) server implemented in `/
 
 ### Server details
 
-| Property | Value |
-|----------|-------|
-| Host | `0.0.0.0` |
-| Port | `8080` |
-| Protocol | MCP over HTTP/SSE with JSON-RPC |
-| Protocol version | `2024-11-05` |
-| Server name | `android-box-mcp` |
-| Version | `0.1.0` |
+| Property         | Value                           |
+| ---------------- | ------------------------------- |
+| Host             | `0.0.0.0`                       |
+| Port             | `8080`                          |
+| Protocol         | MCP over HTTP/SSE with JSON-RPC |
+| Protocol version | `2024-11-05`                    |
+| Server name      | `android-box-mcp`               |
+| Version          | `0.1.0`                         |
 
 ### Endpoints
 
-| Endpoint | Method | Purpose |
-|----------|--------|---------|
-| `/sse` | `GET` | Open a Server-Sent Events stream. The server returns an `endpoint` event containing the session-specific message URL. |
+| Endpoint                   | Method | Purpose                                                                                                                    |
+| -------------------------- | ------ | -------------------------------------------------------------------------------------------------------------------------- |
+| `/sse`                     | `GET`  | Open a Server-Sent Events stream. The server returns an `endpoint` event containing the session-specific message URL.      |
 | `/message?session_id=<id>` | `POST` | Send JSON-RPC requests for the session. The server processes them asynchronously and pushes responses over the SSE stream. |
 
 ### Session flow
@@ -549,15 +549,15 @@ This section describes the MCP (Model Context Protocol) server implemented in `/
 
 ### JSON-RPC methods
 
-| Method | Params | Description |
-|--------|--------|-------------|
-| `initialize` | — | Returns protocol version, capabilities, and server info. |
-| `initialized` | — | Notification (no response). |
-| `tools/list` | — | Returns the list of available tools. |
-| `tools/call` | `name`, `arguments` | Executes a tool. |
-| `resources/list` | — | Returns the list of available resources. |
-| `resources/read` | `uri` | Reads a resource by URI. |
-| `prompts/list` | — | Returns an empty list (no prompts implemented). |
+| Method           | Params              | Description                                              |
+| ---------------- | ------------------- | -------------------------------------------------------- |
+| `initialize`     | —                   | Returns protocol version, capabilities, and server info. |
+| `initialized`    | —                   | Notification (no response).                              |
+| `tools/list`     | —                   | Returns the list of available tools.                     |
+| `tools/call`     | `name`, `arguments` | Executes a tool.                                         |
+| `resources/list` | —                   | Returns the list of available resources.                 |
+| `resources/read` | `uri`               | Reads a resource by URI.                                 |
+| `prompts/list`   | —                   | Returns an empty list (no prompts implemented).          |
 
 ### Capabilities
 
@@ -581,9 +581,9 @@ Run a shell command on the Android box.
   "inputSchema": {
     "type": "object",
     "properties": {
-      "command": {"type": "string", "description": "Shell command to run"},
-      "timeout": {"type": "integer", "description": "Timeout in seconds"},
-      "root": {"type": "boolean", "description": "Run as root via su (device must be rooted)"}
+      "command": { "type": "string", "description": "Shell command to run" },
+      "timeout": { "type": "integer", "description": "Timeout in seconds" },
+      "root": { "type": "boolean", "description": "Run as root via su (device must be rooted)" }
     },
     "required": ["command"]
   }
@@ -601,7 +601,7 @@ List installed Android packages.
   "inputSchema": {
     "type": "object",
     "properties": {
-      "filter": {"type": "string", "description": "Optional filter substring"}
+      "filter": { "type": "string", "description": "Optional filter substring" }
     }
   }
 }
@@ -618,8 +618,8 @@ Get recent Android logcat entries.
   "inputSchema": {
     "type": "object",
     "properties": {
-      "lines": {"type": "integer", "description": "Number of lines (max 500)"},
-      "filter": {"type": "string", "description": "Optional grep filter"}
+      "lines": { "type": "integer", "description": "Number of lines (max 500)" },
+      "filter": { "type": "string", "description": "Optional grep filter" }
     }
   }
 }
@@ -633,7 +633,7 @@ Get storage usage information.
 {
   "name": "get_storage",
   "description": "Get storage usage information",
-  "inputSchema": {"type": "object", "properties": {}}
+  "inputSchema": { "type": "object", "properties": {} }
 }
 ```
 
@@ -645,7 +645,7 @@ Get system uptime and load.
 {
   "name": "get_uptime",
   "description": "Get system uptime and load",
-  "inputSchema": {"type": "object", "properties": {}}
+  "inputSchema": { "type": "object", "properties": {} }
 }
 ```
 
@@ -657,7 +657,7 @@ Reboot the Android box.
 {
   "name": "reboot",
   "description": "Reboot the Android box",
-  "inputSchema": {"type": "object", "properties": {}}
+  "inputSchema": { "type": "object", "properties": {} }
 }
 ```
 
@@ -796,21 +796,21 @@ This device is a **Rockchip RK3328** TV box (`rk3328_box`, device tree `rockchip
 
 ### Alternative operating systems
 
-| OS | Compatibility | Notes |
-|----|---------------|-------|
-| **Stock Android / custom Android ROMs** | High | Generic RK3328 firmware images exist for T9, A5X Max, MX10, H96 Max, Z28, T98. Most common flash method is `.img` via RKDevTool or SD card. |
-| **Armbian (rk3318-box)** | Good | Official Armbian board target: `rk3318-box`. Offers Ubuntu 24.04 XFCE and Debian 13 Trixie minimal. Kernel 6.18.x. |
-| **LibreELEC / CoreELEC** | Variable | Requires the correct DTB. Onboard WiFi often does not work; USB WiFi adapters commonly used. |
-| **Mainline Linux / Debian / Ubuntu** | Variable | Firefly ROC-RK3328-CC docs cover `rkdeveloptool` and `upgrade_tool`. Device tree must match your board. |
+| OS                                      | Compatibility | Notes                                                                                                                                       |
+| --------------------------------------- | ------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Stock Android / custom Android ROMs** | High          | Generic RK3328 firmware images exist for T9, A5X Max, MX10, H96 Max, Z28, T98. Most common flash method is `.img` via RKDevTool or SD card. |
+| **Armbian (rk3318-box)**                | Good          | Official Armbian board target: `rk3318-box`. Offers Ubuntu 24.04 XFCE and Debian 13 Trixie minimal. Kernel 6.18.x.                          |
+| **LibreELEC / CoreELEC**                | Variable      | Requires the correct DTB. Onboard WiFi often does not work; USB WiFi adapters commonly used.                                                |
+| **Mainline Linux / Debian / Ubuntu**    | Variable      | Firefly ROC-RK3328-CC docs cover `rkdeveloptool` and `upgrade_tool`. Device tree must match your board.                                     |
 
 ### Flashing methods
 
-| Method | Tool | When to use |
-|--------|------|-------------|
-| **SD card boot** | `SD_Firmware_Tool.exe`, BalenaEtcher, `dd` | Safest first attempt; reversible by removing the SD card. |
-| **USB cable flash** | **RKDevTool**, **RK Batch Tool**, **FactoryTool** (Windows) | Full eMMC flash; requires Rockchip USB drivers. |
-| **Linux command line** | `rkdeveloptool`, `upgrade_tool` | Flash from Linux host. |
-| **MaskROM mode** | Any Rockchip tool | Last resort when bootloader is damaged. Requires shorting eMMC CLK to GND briefly while powering on. |
+| Method                 | Tool                                                        | When to use                                                                                          |
+| ---------------------- | ----------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| **SD card boot**       | `SD_Firmware_Tool.exe`, BalenaEtcher, `dd`                  | Safest first attempt; reversible by removing the SD card.                                            |
+| **USB cable flash**    | **RKDevTool**, **RK Batch Tool**, **FactoryTool** (Windows) | Full eMMC flash; requires Rockchip USB drivers.                                                      |
+| **Linux command line** | `rkdeveloptool`, `upgrade_tool`                             | Flash from Linux host.                                                                               |
+| **MaskROM mode**       | Any Rockchip tool                                           | Last resort when bootloader is damaged. Requires shorting eMMC CLK to GND briefly while powering on. |
 
 ### Important caveats
 
@@ -823,19 +823,19 @@ This device is a **Rockchip RK3328** TV box (`rk3328_box`, device tree `rockchip
 
 Armbian will feel similar to Ubuntu/Debian in many ways, but it will **not** be identical to a regular x86 Ubuntu desktop PC. Important differences:
 
-| Area | Armbian on RK3328 | Typical Ubuntu desktop PC |
-|------|-------------------|---------------------------|
-| **Architecture** | ARM64 (`aarch64`) | x86-64 (`amd64`) |
-| **Package availability** | Most packages work, but some proprietary or x86-only apps do not (e.g., Chrome, certain games, some Docker images). | Full x86 package ecosystem. |
-| **GPU / graphics** | Mali-450 MP2 with open-source `lima` driver. Desktop compositing works, but gaming and heavy 3D are limited. | NVIDIA/AMD/Intel drivers with full 3D acceleration. |
-| **Video decoding** | Hardware decode for H.264/H.265/VP9 may work under Android, but in Linux it often depends on `ffmpeg` patches and `v4l2-request`. Not as plug-and-play. | Desktop CPUs/GPUs handle decode easily; drivers mature. |
-| **WiFi** | Broadcom `bcmdhd` module. Armbian may not include the exact firmware or DTB binding for your board, so WiFi may not work out of the box. | Usually works with standard kernel drivers. |
-| **Ethernet** | Rockchip `rk_gmac-dwmac` driver is usually well supported in mainline. | Intel/Realtek drivers, very stable. |
-| **Bluetooth** | Your board reports `config.disable_bluetooth=true`; likely not usable in Linux either. | Standard USB/PCIe Bluetooth works. |
-| **Audio** | HDMI audio and analog AV may need DTB/DAC configuration. | Usually works automatically. |
-| **Performance** | 4x Cortex-A53 @ ~1.5 GHz, 4 GB RAM. Good for light server/HTPC tasks, slow for heavy browsing or compilation. | Desktop CPUs are much faster. |
-| **Boot** | Boots from eMMC or SD card; no UEFI/GRUB in the traditional sense. | UEFI + GRUB bootloader. |
-| **GPIO / I/O** | Some RK3328 boxes expose UART pads; GPIO headers may be limited. | Full PCIe, USB, GPIO on SBCs or motherboards. |
+| Area                     | Armbian on RK3328                                                                                                                                       | Typical Ubuntu desktop PC                               |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------- |
+| **Architecture**         | ARM64 (`aarch64`)                                                                                                                                       | x86-64 (`amd64`)                                        |
+| **Package availability** | Most packages work, but some proprietary or x86-only apps do not (e.g., Chrome, certain games, some Docker images).                                     | Full x86 package ecosystem.                             |
+| **GPU / graphics**       | Mali-450 MP2 with open-source `lima` driver. Desktop compositing works, but gaming and heavy 3D are limited.                                            | NVIDIA/AMD/Intel drivers with full 3D acceleration.     |
+| **Video decoding**       | Hardware decode for H.264/H.265/VP9 may work under Android, but in Linux it often depends on `ffmpeg` patches and `v4l2-request`. Not as plug-and-play. | Desktop CPUs/GPUs handle decode easily; drivers mature. |
+| **WiFi**                 | Broadcom `bcmdhd` module. Armbian may not include the exact firmware or DTB binding for your board, so WiFi may not work out of the box.                | Usually works with standard kernel drivers.             |
+| **Ethernet**             | Rockchip `rk_gmac-dwmac` driver is usually well supported in mainline.                                                                                  | Intel/Realtek drivers, very stable.                     |
+| **Bluetooth**            | Your board reports `config.disable_bluetooth=true`; likely not usable in Linux either.                                                                  | Standard USB/PCIe Bluetooth works.                      |
+| **Audio**                | HDMI audio and analog AV may need DTB/DAC configuration.                                                                                                | Usually works automatically.                            |
+| **Performance**          | 4x Cortex-A53 @ ~1.5 GHz, 4 GB RAM. Good for light server/HTPC tasks, slow for heavy browsing or compilation.                                           | Desktop CPUs are much faster.                           |
+| **Boot**                 | Boots from eMMC or SD card; no UEFI/GRUB in the traditional sense.                                                                                      | UEFI + GRUB bootloader.                                 |
+| **GPIO / I/O**           | Some RK3328 boxes expose UART pads; GPIO headers may be limited.                                                                                        | Full PCIe, USB, GPIO on SBCs or motherboards.           |
 
 ### Verdict
 
@@ -962,16 +962,16 @@ Moving from the current Android build to Armbian/Linux on this RK3328 box would 
 
 ### Summary
 
-| Use case | Android | Armbian/Linux |
-|----------|---------|---------------|
-| Media/TV apps | Good | Limited DRM support |
-| Home server / NAS | Poor | Good |
-| Development | Mediocre | Good |
-| Privacy/Minimalism | Poor | Good |
-| Updates | Stuck in 2020 | Active |
-| Remote SSH | Requires MCP/ADB | Native |
-| Package ecosystem | Play Store only | `apt` universe |
-| Root control | Restricted | Full |
+| Use case           | Android          | Armbian/Linux       |
+| ------------------ | ---------------- | ------------------- |
+| Media/TV apps      | Good             | Limited DRM support |
+| Home server / NAS  | Poor             | Good                |
+| Development        | Mediocre         | Good                |
+| Privacy/Minimalism | Poor             | Good                |
+| Updates            | Stuck in 2020    | Active              |
+| Remote SSH         | Requires MCP/ADB | Native              |
+| Package ecosystem  | Play Store only  | `apt` universe      |
+| Root control       | Restricted       | Full                |
 
 ## Appendix — Backup & Rollback Procedure
 
@@ -981,24 +981,24 @@ Before trying Armbian or any alternative firmware, the critical Android partitio
 
 #### Critical system partitions (`/data/backup_critical/`)
 
-| Partition | Size | Purpose |
-|-----------|------|---------|
-| `uboot.img` | 4 MB | Primary bootloader / IDB |
-| `trust.img` | 4 MB | ARM Trusted Firmware |
-| `security.img` | 4 MB | Security partition |
-| `misc.img` | 4 MB | Misc bootloader data |
-| `dtb.img` | 4 MB | Device tree blob |
-| `dtbo.img` | 4 MB | Device tree overlay |
-| `vbmeta.img` | 1 MB | Verified Boot metadata |
-| `boot.img` | 64 MB | Android kernel + ramdisk |
-| `recovery.img` | 96 MB | Recovery image |
-| `backup.img` | 112 MB | Vendor backup partition |
-| `cache.img` | 384 MB | Android cache |
-| `metadata.img` | 16 MB | Metadata |
-| `frp.img` | 512 KB | Factory Reset Protection |
-| `baseparameter.img` | 1 MB | Base parameters |
-| `logo.img` | 16 MB | Boot logo |
-| `super.img` | 3.0 GB | APEX/system/vendor dynamic partition |
+| Partition           | Size   | Purpose                              |
+| ------------------- | ------ | ------------------------------------ |
+| `uboot.img`         | 4 MB   | Primary bootloader / IDB             |
+| `trust.img`         | 4 MB   | ARM Trusted Firmware                 |
+| `security.img`      | 4 MB   | Security partition                   |
+| `misc.img`          | 4 MB   | Misc bootloader data                 |
+| `dtb.img`           | 4 MB   | Device tree blob                     |
+| `dtbo.img`          | 4 MB   | Device tree overlay                  |
+| `vbmeta.img`        | 1 MB   | Verified Boot metadata               |
+| `boot.img`          | 64 MB  | Android kernel + ramdisk             |
+| `recovery.img`      | 96 MB  | Recovery image                       |
+| `backup.img`        | 112 MB | Vendor backup partition              |
+| `cache.img`         | 384 MB | Android cache                        |
+| `metadata.img`      | 16 MB  | Metadata                             |
+| `frp.img`           | 512 KB | Factory Reset Protection             |
+| `baseparameter.img` | 1 MB   | Base parameters                      |
+| `logo.img`          | 16 MB  | Boot logo                            |
+| `super.img`         | 3.0 GB | APEX/system/vendor dynamic partition |
 
 Total: **~1.8 GB** (fits in `/data`).
 
@@ -1006,15 +1006,15 @@ All images have MD5 checksums verified in `/data/backup_critical/checksums.md5`.
 
 #### User data files (`/data/backup_data/`)
 
-| File | Contents |
-|------|----------|
-| `termux_home.tar.gz` | `/data/data/com.termux/files/home` (MCP server, scripts) |
-| `termux_shortcuts.tar.gz` | Termux:Widget shortcuts (empty if none) |
-| `wifi_manual.sh` | Manual WiFi setup script |
-| `wpa_supplicant_manual.conf` | Manual wpa_supplicant config |
-| `WifiConfigStore.xml` | Android WiFi config store |
-| `installed_packages.txt` | List of installed packages |
-| `build_props.txt` | Full `getprop` dump for reference |
+| File                         | Contents                                                 |
+| ---------------------------- | -------------------------------------------------------- |
+| `termux_home.tar.gz`         | `/data/data/com.termux/files/home` (MCP server, scripts) |
+| `termux_shortcuts.tar.gz`    | Termux:Widget shortcuts (empty if none)                  |
+| `wifi_manual.sh`             | Manual WiFi setup script                                 |
+| `wpa_supplicant_manual.conf` | Manual wpa_supplicant config                             |
+| `WifiConfigStore.xml`        | Android WiFi config store                                |
+| `installed_packages.txt`     | List of installed packages                               |
+| `build_props.txt`            | Full `getprop` dump for reference                        |
 
 ### What was NOT backed up
 

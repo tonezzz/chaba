@@ -166,7 +166,7 @@ tony-dell:
     host: tony_dell
     purpose: TCP/IP reachability watchdog for tony-omen, tony-dell, macbook
     status: migrated to mn01 (2026-09-16)
-    note: 'Service stopped and disabled on tony-dell. mn01 now runs mcp-link-monitor-mn.service on port 9101.'
+    note: "Service stopped and disabled on tony-dell. mn01 now runs mcp-link-monitor-mn.service on port 9101."
   chaba-funnel:
     service: chaba-funnel.service
     host: tony_dell
@@ -175,18 +175,18 @@ tony-dell:
     purpose: Tailscale Funnel landing page, docs, and health endpoint
     source: stacks/tony-dell/chaba-funnel/funnel-server.py
     status: decommissioned (2026-08-28)
-    note: 'Port 8444 reassigned to ha-live. Service may be retired or moved to a different port.'
+    note: "Port 8444 reassigned to ha-live. Service may be retired or moved to a different port."
   ha-live:
     service: ha-live.service
     host: tony_dell
     port: 9005
     host_port: 127.0.0.1:9005
     purpose: Push-to-talk Gemini Live bridge for Home Assistant
-    tailscale_funnel: 'https://tony-dell.taila0626a.ts.net:8444'
+    tailscale_funnel: "https://tony-dell.taila0626a.ts.net:8444"
     source: /home/tony/.config/home-assistant/ha-live/bridge.py
     systemd: systemd/ha-live.service
-    status: 'running (2026-08-31)'
-    note: 'Started as podman exec from home-assistant. Managed by user systemd unit ha-live.service. WebSocket at wss://tony-dell.taila0626a.ts.net:8444/ws. Tested /ws handshake and received status=connected.'
+    status: "running (2026-08-31)"
+    note: "Started as podman exec from home-assistant. Managed by user systemd unit ha-live.service. WebSocket at wss://tony-dell.taila0626a.ts.net:8444/ws. Tested /ws handshake and received status=connected."
   node-red:
     container: node-red
     image: docker.io/nodered/node-red:latest
@@ -212,7 +212,7 @@ tony-dell:
     systemd: mcp-servers/mcp-playlive/playlived-dell.service
     patch: mcp-servers/mcp-playlive/patch-playwright.sh
     status: implemented (2026-08-13)
-    note: 'ExecStartPre applies patch-playwright.sh to remove Playwright default --disable-dev-shm-usage on tony-dell (7.5G /dev/shm available).'
+    note: "ExecStartPre applies patch-playwright.sh to remove Playwright default --disable-dev-shm-usage on tony-dell (7.5G /dev/shm available)."
   google-chrome:
     launcher: scripts/mcp-scripts/google-chrome-launcher.sh
     local_path: ~/.local/bin/google-chrome-launcher.sh
@@ -220,24 +220,24 @@ tony-dell:
     host: tony_dell
     purpose: Desktop Chrome with disk and media cache on tmpfs
     status: implemented (2026-09-01)
-    note: 'Cache lives on /tmp (tmpfs). Profile remains in ~/.config/google-chrome.'
+    note: "Cache lives on /tmp (tmpfs). Profile remains in ~/.config/google-chrome."
   playlive-macbook-tunnel:
     service: playlive-macbook-tunnel.service
     host: tony_dell
     purpose: Persistent SSH tunnel from tony-dell to kk-macbook Chrome CDP for PlayLive
     systemd: systemd/playlive-macbook-tunnel.service
     status: running (2026-09-04)
-    note: 'Forwards tony-dell 127.0.0.1:9229 to kk-macbook [::1]:9222. playlive-hosts.yml uses http://127.0.0.1:9229 for kk-macbook.'
+    note: "Forwards tony-dell 127.0.0.1:9229 to kk-macbook [::1]:9222. playlive-hosts.yml uses http://127.0.0.1:9229 for kk-macbook."
   focus-dispatcher-overnight:
     timer: focus-dispatcher-overnight.timer
     host: tony_dell
     purpose: Nightly focus/dispatch run
     status: enabled (2026-08-18)
-    last_run: '2026-08-18T02:00:00+07:00'
-    next_run: '2026-08-19T03:00:00+07:00'
+    last_run: "2026-08-18T02:00:00+07:00"
+    next_run: "2026-08-19T03:00:00+07:00"
     verification:
-    - systemctl --user is-active focus-dispatcher-overnight.timer
-    - systemctl --user is-enabled focus-dispatcher-overnight.timer
+      - systemctl --user is-active focus-dispatcher-overnight.timer
+      - systemctl --user is-enabled focus-dispatcher-overnight.timer
   dnsmasq-postgre:
     service: dnsmasq-postgre.service
     host: tony_dell
@@ -265,7 +265,7 @@ tony-dell:
     dimensions: 768
     ollama_compatible: true
     status: migrated to tony-dell (2026-08-25)
-    note: 'Migrated from tony-omen docker compose to tony-dell rootless podman. MDDB now connects to http://100.68.142.13:11435 for embeddings. Maps text-embedding-004, nomic-embed-text, and gemini-embedding-* aliases to gemini-embedding-001/002.'
+    note: "Migrated from tony-omen docker compose to tony-dell rootless podman. MDDB now connects to http://100.68.142.13:11435 for embeddings. Maps text-embedding-004, nomic-embed-text, and gemini-embedding-* aliases to gemini-embedding-001/002."
   tony-ha:
     container: tony-ha
     image: docker.io/homeassistant/home-assistant:stable
@@ -299,8 +299,8 @@ tony-dell:
       caddyfile: /home/tony/CascadeProjects/chaba-tony-dell/stacks/web/Caddyfile
     health_check: ssh tony-dell curl -sf http://127.0.0.1:8123/ >/dev/null
     autostart: loginctl enable-linger tony is yes; Quadlet WantedBy=default.target
-    status: 'mcp server active (2026-08-25)'
-    note: 'Container rootless podman on tony-dell. HA-MCP active. Caddy reverse proxy, health check, and autostart configured. Two Tuya smart plugs under local TinyTuya command_line control (switch.plakkaaaef_local, switch.plalhawetiiyng_local). Camera ip_cam_65 now uses local go2rtc H.264 proxy for high-res stream. Official cloud Tuya integration still present but stale for the bedside plug.'
+    status: "mcp server active (2026-08-25)"
+    note: "Container rootless podman on tony-dell. HA-MCP active. Caddy reverse proxy, health check, and autostart configured. Two Tuya smart plugs under local TinyTuya command_line control (switch.plakkaaaef_local, switch.plalhawetiiyng_local). Camera ip_cam_65 now uses local go2rtc H.264 proxy for high-res stream. Official cloud Tuya integration still present but stale for the bedside plug."
   michael-dev:
     container: michael-dev
     image: docker.io/homeassistant/home-assistant:stable
@@ -330,7 +330,7 @@ tony-dell:
     health_check: ssh tony-dell curl -sf http://127.0.0.1:8124/ >/dev/null
     autostart: loginctl enable-linger tony is yes; Quadlet WantedBy=default.target
     status: enabled
-    note: 'Dev staging container for michael-ha. Runs on tony-dell host network at port 8124 to avoid conflict with tony-ha on 8123.'
+    note: "Dev staging container for michael-ha. Runs on tony-dell host network at port 8124 to avoid conflict with tony-ha on 8123."
   go2rtc:
     service: go2rtc.service
     host: tony_dell
@@ -345,8 +345,8 @@ tony-dell:
     binary: /home/tony/.local/bin/go2rtc
     autostart: systemctl --user enable go2rtc
     health_check: systemctl --user is-active go2rtc
-    hls_url: 'https://tony-dell.taila0626a.ts.net:8448/api/stream.m3u8?src=ip_cam_65_hd'
-    tailscale_funnel: 'https://tony-dell.taila0626a.ts.net:8448'
+    hls_url: "https://tony-dell.taila0626a.ts.net:8448/api/stream.m3u8?src=ip_cam_65_hd"
+    tailscale_funnel: "https://tony-dell.taila0626a.ts.net:8448"
     status: implemented (2026-08-31)
   gpu-queue:
     container: gpu-queue
@@ -384,7 +384,7 @@ tony-dell:
       - imagen2, yomi_summary, yomi_daily, yomi_daily_batch (priority 2)
       - llama (priority 1)
     status: migrated to tony-dell (2026-08-25)
-    note: 'Migrated from tony-omen docker compose to tony-dell rootless podman with --network host. GPU workers (llama, imagen2, txt2vid) remain on tony-omen and are reached via 100.75.102.88. Removed from stacks/web/docker-compose.yml.'
+    note: "Migrated from tony-omen docker compose to tony-dell rootless podman with --network host. GPU workers (llama, imagen2, txt2vid) remain on tony-omen and are reached via 100.75.102.88. Removed from stacks/web/docker-compose.yml."
 
   gpu-queue-processor:
     container: gpu-queue-processor
@@ -402,7 +402,7 @@ tony-dell:
       - GPU_IMAGEN2_URL=http://100.75.102.88:8000
       - GPU_TXT2VID_URL=http://100.75.102.88:8002
     status: migrated to tony-dell (2026-08-25)
-    note: 'Migrated from tony-omen docker compose to tony-dell rootless podman. Polls the tony-dell gpu-queue database and dispatches jobs to tony-omen GPU workers at 100.75.102.88.'
+    note: "Migrated from tony-omen docker compose to tony-dell rootless podman. Polls the tony-dell gpu-queue database and dispatches jobs to tony-omen GPU workers at 100.75.102.88."
 
   multi-wan:
     ssot: docs/ssot/infrastructure/ssot.tony-dell-multi-wan.yml
@@ -438,7 +438,7 @@ tony-dell:
     network: host
     host: tony_dell
     port: 3007
-    host_port: '100.68.142.13:3007'
+    host_port: "100.68.142.13:3007"
     data_volume: /home/tony/.local/share/rview-api
     build_unit: ~/.config/containers/systemd/rview-api-image.build
     quadlet:
@@ -447,12 +447,12 @@ tony-dell:
       build_unit: ~/.config/systemd/user/rview-api-image.service
     source: stacks/tony-dell/rview-api
     caddy_upstream: tony-dell:3007
-    public_funnel: 'tony-dell.taila0626a.ts.net:3007'
-    tailscale_funnel: '--tcp=3007 --bg 3007'
+    public_funnel: "tony-dell.taila0626a.ts.net:3007"
+    tailscale_funnel: "--tcp=3007 --bg 3007"
     health_check: curl -sf http://127.0.0.1:3007/health >/dev/null
     usage_log: /home/tony/.local/share/rview-api/usage.log
     status: implemented (2026-08-20)
-    note: 'Migrated from tony-omen; state persisted to ~/.local/share/rview-api. Caddy /apps/rview/api/* reverse proxy updated to tony-dell:3007. Image is built by the rview-api-image.build Quadlet unit. Public access is also available via Tailscale Funnel TCP (tony-dell.taila0626a.ts.net:3007) for the chaba.h3 proxy.'
+    note: "Migrated from tony-omen; state persisted to ~/.local/share/rview-api. Caddy /apps/rview/api/* reverse proxy updated to tony-dell:3007. Image is built by the rview-api-image.build Quadlet unit. Public access is also available via Tailscale Funnel TCP (tony-dell.taila0626a.ts.net:3007) for the chaba.h3 proxy."
   rview-live:
     container: rview-live
     image: localhost/rview-live:latest
@@ -460,7 +460,7 @@ tony-dell:
     network: host
     host: tony_dell
     port: 3008
-    host_port: '100.68.142.13:3008'
+    host_port: "100.68.142.13:3008"
     build_unit: ~/.config/containers/systemd/rview-live-image.build
     quadlet:
       container_unit: ~/.config/containers/systemd/rview-live.container
@@ -469,26 +469,26 @@ tony-dell:
     source: stacks/tony-dell/rview-live
     depends_on: rview-api
     caddy_upstream: tony-dell:3008
-    public_funnel: 'tony-dell.taila0626a.ts.net:3008'
-    tailscale_funnel: '--tcp=3008 --bg 3008'
+    public_funnel: "tony-dell.taila0626a.ts.net:3008"
+    tailscale_funnel: "--tcp=3008 --bg 3008"
     health_check: curl -sf http://127.0.0.1:3008/health >/dev/null
     secrets:
       - gemini-api-key
     environment:
       - GEMINI_LIVE_PORT=3008
     status: implemented (2026-08-20)
-    note: 'Migrated from tony-omen to avoid conflict with mddb-panel on port 3002. Caddy /api/rview-live/* reverse proxy updated to tony-dell:3008. GEMINI_API_KEY is injected from the podman secret `gemini-api-key` as an env variable. Image is built by the rview-live-image.build Quadlet unit and depends on rview-api. The bundled scripts/mcp_rview/server.py now also exposes fetch_page for reading web pages. Public access is also available via Tailscale Funnel TCP (tony-dell.taila0626a.ts.net:3008) for the chaba.h3 proxy.'
+    note: "Migrated from tony-omen to avoid conflict with mddb-panel on port 3002. Caddy /api/rview-live/* reverse proxy updated to tony-dell:3008. GEMINI_API_KEY is injected from the podman secret `gemini-api-key` as an env variable. Image is built by the rview-live-image.build Quadlet unit and depends on rview-api. The bundled scripts/mcp_rview/server.py now also exposes fetch_page for reading web pages. Public access is also available via Tailscale Funnel TCP (tony-dell.taila0626a.ts.net:3008) for the chaba.h3 proxy."
   mcp-rview:
     service: mcp-rview
     host: tony_dell
     port: 9003
-    host_port: '127.0.0.1:9003'
+    host_port: "127.0.0.1:9003"
     service_unit: ~/.config/systemd/user/mcp-rview.service
     source: stacks/tony-dell/mcp-rview/mcp-rview.service
     depends_on: rview-api
     health_check: 'curl -sfI -H "Accept: text/event-stream" http://127.0.0.1:9003/sse >/dev/null'
     environment:
-      - 'RVIEW_API_URL=http://127.0.0.1:3007/state'
+      - "RVIEW_API_URL=http://127.0.0.1:3007/state"
     status: implemented (2026-08-21)
     note: stdio MCP proxy that exposes rview_* tools and fetch_page to external MCP clients (e.g., Claude Desktop via the mcp-rview-oauth-proxy on 9004). Spawns /home/tony/CascadeProjects/chaba-tony-dell/scripts/mcp_rview/server.py and proxies to http://127.0.0.1:3007/state.
 
@@ -496,13 +496,13 @@ tony-dell:
     service: mcp-rview-oauth-proxy
     host: tony_dell
     port: 9004
-    host_port: '127.0.0.1:9004'
+    host_port: "127.0.0.1:9004"
     service_unit: ~/.config/systemd/user/mcp-rview-oauth-proxy.service
     source: stacks/tony-dell/mcp-rview/mcp-rview-oauth-proxy.service
     depends_on: mcp-rview
-    health_check: 'curl -sf http://127.0.0.1:9004/.well-known/oauth-authorization-server >/dev/null'
+    health_check: "curl -sf http://127.0.0.1:9004/.well-known/oauth-authorization-server >/dev/null"
     status: implemented (2026-08-25)
-    note: 'OAuth2 proxy for mcp-rview. Listens on 127.0.0.1:9004. Tailscale serve on tony-dell:443 proxies https://tony-dell.taila0626a.ts.net/ to 127.0.0.1:9004. Client credentials are in /home/tony/.config/mcp-rview-oauth-proxy.env (not in git).'
+    note: "OAuth2 proxy for mcp-rview. Listens on 127.0.0.1:9004. Tailscale serve on tony-dell:443 proxies https://tony-dell.taila0626a.ts.net/ to 127.0.0.1:9004. Client credentials are in /home/tony/.config/mcp-rview-oauth-proxy.env (not in git)."
 
   notebooklm-mcp:
     container: notebooklm-mcp
@@ -523,7 +523,7 @@ tony-dell:
       rclone_path: gdrive:notebooklm/chaba
     notebooks_dir: gdrive:notebooklm/chaba/notebooks
     status: implemented (2026-09-15)
-    note: 'Persistent rootless Podman container. Mounts the authenticated .notebooklm-mcp-cli profile. Devin connects via podman exec. The ~/.local/bin/nlm wrapper calls podman exec on tony-dell or ssh there from tony-omen. Google Drive collection for sources: gdrive:notebooklm/chaba. The nlm-add helper uploads local files to gdrive:notebooklm/chaba/notebooks/<nb-id>/files, converts text to .docx, adds by Drive ID, and writes a local manifest.'
+    note: "Persistent rootless Podman container. Mounts the authenticated .notebooklm-mcp-cli profile. Devin connects via podman exec. The ~/.local/bin/nlm wrapper calls podman exec on tony-dell or ssh there from tony-omen. Google Drive collection for sources: gdrive:notebooklm/chaba. The nlm-add helper uploads local files to gdrive:notebooklm/chaba/notebooks/<nb-id>/files, converts text to .docx, adds by Drive ID, and writes a local manifest."
 
   notebooklm-rest:
     container: notebooklm-rest
@@ -551,13 +551,13 @@ tony-dell:
       rclone_path: gdrive:notebooklm/chaba
     notebooks_dir: gdrive:notebooklm/chaba/notebooks
     host_port: '100.68.142.13:${ssot("docs/ssot/infrastructure/ssot.values.yml", "ports.notebooklm_rest")} + 127.0.0.1 (tailnet-bound since 2026-09-17 so /health/auth is monitorable)'
-    status: 'implemented (2026-09-15); upgraded 2026-09-17 (master-token auth — container self-mints cookies from /data/master_token.json, no Chrome dependency)'
+    status: "implemented (2026-09-15); upgraded 2026-09-17 (master-token auth — container self-mints cookies from /data/master_token.json, no Chrome dependency)"
     security_notes:
-      - 'master_token.json is a Google OAuth refresh token for tonezzzz@gmail.com — full-account blast radius, not NotebookLM-scoped. File is 0600, on tony-dell only, NOT covered by any backup script (verified 2026-09-17: backup-mn01.sh, ha-config-backup, yomi-backup all exclude it).'
-      - 'Notebook scoping (ada-michael/ada-tony keys) is REST-layer only — the underlying Google session sees all notebooks. If master_token dies (revocation/password change), keepalive silently fails: GET /health/auth returns 503; manual re-extraction via notebooklm login required.'
-      - 'GET /health* is intentionally unauthenticated for monitors (returns ok/expired only); POST /health/auth/refresh and all /v1/* remain key-gated.'
+      - "master_token.json is a Google OAuth refresh token for tonezzzz@gmail.com — full-account blast radius, not NotebookLM-scoped. File is 0600, on tony-dell only, NOT covered by any backup script (verified 2026-09-17: backup-mn01.sh, ha-config-backup, yomi-backup all exclude it)."
+      - "Notebook scoping (ada-michael/ada-tony keys) is REST-layer only — the underlying Google session sees all notebooks. If master_token dies (revocation/password change), keepalive silently fails: GET /health/auth returns 503; manual re-extraction via notebooklm login required."
+      - "GET /health* is intentionally unauthenticated for monitors (returns ok/expired only); POST /health/auth/refresh and all /v1/* remain key-gated."
       - 'auth check via CLI must pass --storage /data/storage_state.json (or NOTEBOOKLM_STORAGE_PATH); default profile path reports a false-negative "error".'
-    note: 'FastAPI REST API on top of notebooklm-py. X-API-Key header enforced via NOTEBOOKLM_REST_API_KEYS; NOTEBOOKLM_REST_KEY_SCOPES maps scoped keys to notebook allowlists (ada-michael key -> 1c12d5c8 notebook only, ada-tony key -> the 5 tony notebooks memory/infra/apps/kb/ops, admin key unrestricted). Exposed through Caddy at /apps/notebooklm/api on tony-dell.taila0626a.ts.net. Keys live in ~/.config/secrets/notebooklm-rest-api.env (not in git). Source, Dockerfile, and the quadlet are versioned in stacks/tony-dell/notebooklm-rest/ (deploy.sh pushes, rebuilds, restarts); live copy at ~/.local/share/notebooklm/notebooklm-rest-api — always sync live edits back to the stack. Features: shared warm NotebookLMClient rebuilt on storage_state.json mtime change or request error (~2-3s saved per call, added 2026-09-17), in-container auth keepalive (notebooklm auth refresh --verify every NOTEBOOKLM_KEEPALIVE_INTERVAL=900s), GET /health/auth passive probe + POST /health/auth/refresh, Idempotency-Key dedupe on POSTs, write queue (/v1/queue, flush on auth recovery), POST .../sources/prune lifecycle (prefix/age/keep/dry_run). The ~/.local/bin/nbapi wrapper sends the request to tony-dell (local curl on tony-dell, ssh on tony-omen). Google Drive collection for sources: gdrive:notebooklm/chaba. Notebook files stored under gdrive:notebooklm/chaba/notebooks/<nb-id>/files.'
+    note: "FastAPI REST API on top of notebooklm-py. X-API-Key header enforced via NOTEBOOKLM_REST_API_KEYS; NOTEBOOKLM_REST_KEY_SCOPES maps scoped keys to notebook allowlists (ada-michael key -> 1c12d5c8 notebook only, ada-tony key -> the 5 tony notebooks memory/infra/apps/kb/ops, admin key unrestricted). Exposed through Caddy at /apps/notebooklm/api on tony-dell.taila0626a.ts.net. Keys live in ~/.config/secrets/notebooklm-rest-api.env (not in git). Source, Dockerfile, and the quadlet are versioned in stacks/tony-dell/notebooklm-rest/ (deploy.sh pushes, rebuilds, restarts); live copy at ~/.local/share/notebooklm/notebooklm-rest-api — always sync live edits back to the stack. Features: shared warm NotebookLMClient rebuilt on storage_state.json mtime change or request error (~2-3s saved per call, added 2026-09-17), in-container auth keepalive (notebooklm auth refresh --verify every NOTEBOOKLM_KEEPALIVE_INTERVAL=900s), GET /health/auth passive probe + POST /health/auth/refresh, Idempotency-Key dedupe on POSTs, write queue (/v1/queue, flush on auth recovery), POST .../sources/prune lifecycle (prefix/age/keep/dry_run). The ~/.local/bin/nbapi wrapper sends the request to tony-dell (local curl on tony-dell, ssh on tony-omen). Google Drive collection for sources: gdrive:notebooklm/chaba. Notebook files stored under gdrive:notebooklm/chaba/notebooks/<nb-id>/files."
 
 tony-omen:
   ollama:
@@ -590,18 +590,18 @@ tony-omen:
     timer_unit: ~/.config/systemd/user/notebooklm-rest-auth-refresh.timer
     schedule: daily
     target: tony-dell:/home/tony/.local/share/notebooklm/notebooklm-rest-data/storage_state.json
-    action: 'notebooklm login --browser-cookies chrome, rsync storage_state.json to tony-dell, restart notebooklm-rest'
+    action: "notebooklm login --browser-cookies chrome, rsync storage_state.json to tony-dell, restart notebooklm-rest"
     status: retired 2026-09-17 (timer disabled)
-    note: 'Retired: notebooklm-rest now holds master_token.json and self-mints/refreshes cookies in-container every 15min via auth refresh --verify — Chrome cookie extraction is no longer needed. The script remains at ~/.local/bin/notebooklm-rest-auth-refresh (fixed to rsync to notebooklm-rest-data/) if cookie re-seeding is ever required manually. Lesson: Chrome >=127 ABE can silently drop SID/HSID/SSID producing a partial cookie file; and a copied jar dies when the source Chrome rotates __Secure-1PSIDTS.'
+    note: "Retired: notebooklm-rest now holds master_token.json and self-mints/refreshes cookies in-container every 15min via auth refresh --verify — Chrome cookie extraction is no longer needed. The script remains at ~/.local/bin/notebooklm-rest-auth-refresh (fixed to rsync to notebooklm-rest-data/) if cookie re-seeding is ever required manually. Lesson: Chrome >=127 ABE can silently drop SID/HSID/SSID producing a partial cookie file; and a copied jar dies when the source Chrome rotates __Secure-1PSIDTS."
 
   notebooklm-keepalive:
     type: systemd user timer + oneshot service
     host: tony_dell
     timer_unit: ~/.config/systemd/user/notebooklm-keepalive.timer
     schedule: every 15 min
-    action: 'curl -X POST http://127.0.0.1:3011/health/auth/refresh'
+    action: "curl -X POST http://127.0.0.1:3011/health/auth/refresh"
     status: retired 2026-09-17 (timer disabled)
-    note: 'Retired: redundant with the in-container keepalive loop (NOTEBOOKLM_KEEPALIVE_INTERVAL=900s) and the endpoint is key-gated, so every fire just returned 401.'
+    note: "Retired: redundant with the in-container keepalive loop (NOTEBOOKLM_KEEPALIVE_INTERVAL=900s) and the endpoint is key-gated, so every fire just returned 401."
   mddb:
     container: mddb
     image: tradik/mddb:latest
@@ -696,8 +696,6 @@ tony-omen:
     notes:
       - See docs/ssot/infrastructure/ssot.gemini-models.yml for canonical model names and free-tier rate limits
 
-
-
   sensor-reader:
     container: sensor-reader
     image: docker.io/library/sensor-reader:latest
@@ -736,14 +734,13 @@ michael:
       derp_relay: sin
       direct_connection: false
       note: Tailscale app on Home Assistant OS; HTTP 8123 verified
-    note: 'Nabu Casa remote Home Assistant instance for michael.'
-
+    note: "Nabu Casa remote Home Assistant instance for michael."
 
 mn01:
   tailscale:
     service: tailscaled.service
     host: mn01
-    tailscale_ip: '100.106.196.22'
+    tailscale_ip: "100.106.196.22"
     purpose: Tailscale node and subnet router for mn-home
     status: active
     note: 'Currently active. Run "tailscale up --advertise-routes=192.168.1.0/24 --accept-routes" to publish the mn-home subnet and accept peer routes.'
@@ -754,9 +751,9 @@ mn01:
     host_port: 0.0.0.0:443
     purpose: HTTPS reverse proxy for local services on mn-home and tailnet
     status: active
-    tailscale_funnel: 'https://mn01.taila0626a.ts.net'
-    caddyfile: '~/.config/caddy/Caddyfile.mn01'
-    note: 'Caddy listens on 127.0.0.1:8080; Tailscale Funnel forwards https://mn01.taila0626a.ts.net/ to it. Add app routes under /apps/<name>/*. Current root serves from ~/.config/caddy/public/apps/.'
+    tailscale_funnel: "https://mn01.taila0626a.ts.net"
+    caddyfile: "~/.config/caddy/Caddyfile.mn01"
+    note: "Caddy listens on 127.0.0.1:8080; Tailscale Funnel forwards https://mn01.taila0626a.ts.net/ to it. Add app routes under /apps/<name>/*. Current root serves from ~/.config/caddy/public/apps/."
   dnsmasq-mn:
     service: dnsmasq-mn.service
     host: mn01
@@ -764,14 +761,14 @@ mn01:
     host_port: 127.0.0.1:53
     purpose: Local DNS resolver for mn-home devices
     status: planned
-    note: 'Cache + authoritative names for .mn, .local, and reverse DNS; optional AdGuard Home replacement.'
+    note: "Cache + authoritative names for .mn, .local, and reverse DNS; optional AdGuard Home replacement."
   mcp-link-monitor:
     service: mcp-link-monitor-mn.service
     host: mn01
     port: 9101
     purpose: TCP reachability watchdog for mn-home and remote hosts
     status: active
-    note: 'Migrated from tony-dell. systemd unit runs /home/tony/CascadeProjects/chaba/scripts/mcp-link-monitor.py. Monitors 192.168.1.x, 100.x, and public endpoints; alert via syslog/Tailscale.'
+    note: "Migrated from tony-dell. systemd unit runs /home/tony/CascadeProjects/chaba/scripts/mcp-link-monitor.py. Monitors 192.168.1.x, 100.x, and public endpoints; alert via syslog/Tailscale."
   ada-pi-mn:
     service: ada-pi-mn.service
     host: mn01
@@ -779,7 +776,7 @@ mn01:
     host_port: 0.0.0.0:8001
     purpose: Ada Pi PWA local assistant for mn-home
     status: planned
-    note: 'Could mirror tony-dell ada-pi for local RK600/weather, HA, and PWA access.'
+    note: "Could mirror tony-dell ada-pi for local RK600/weather, HA, and PWA access."
   ada-ha-tony:
     service: ada-ha-tony.service
     host: mn01
@@ -787,11 +784,11 @@ mn01:
     host_port: 0.0.0.0:8002
     purpose: Ada HA Tony instance (voice PWA for tony-ha)
     status: active
-    tailnet_url: 'https://mn01.taila0626a.ts.net/apps/ha/ada-tony/'
-    env_file: '~/.config/secrets/ada-ha-tony.env'
-    caddyfile: '~/.config/caddy/Caddyfile.mn01'
-    upstream_ha: 'https://tony-dell.taila0626a.ts.net:8123/'
-    note: 'Backend is /home/tony/CascadeProjects/ada-pi/pwa_server.py. Environment uses HOME_ASSISTANT_URL=https://tony-dell.taila0626a.ts.net:8123/ and the Tony long-lived token.'
+    tailnet_url: "https://mn01.taila0626a.ts.net/apps/ha/ada-tony/"
+    env_file: "~/.config/secrets/ada-ha-tony.env"
+    caddyfile: "~/.config/caddy/Caddyfile.mn01"
+    upstream_ha: "https://tony-dell.taila0626a.ts.net:8123/"
+    note: "Backend is /home/tony/CascadeProjects/ada-pi/pwa_server.py. Environment uses HOME_ASSISTANT_URL=https://tony-dell.taila0626a.ts.net:8123/ and the Tony long-lived token."
   ada-ha-michael:
     service: ada-ha-michael.service
     host: mn01
@@ -799,18 +796,18 @@ mn01:
     host_port: 0.0.0.0:8003
     purpose: Ada HA Michael instance (voice PWA for michael-ha)
     status: active
-    tailnet_url: 'https://mn01.taila0626a.ts.net/apps/ha/ada-michael/'
-    env_file: '~/.config/secrets/ada-ha-michael.env'
-    caddyfile: '~/.config/caddy/Caddyfile.mn01'
-    upstream_ha: 'http://michael-ha:8123/'
-    note: 'Backend is /home/tony/CascadeProjects/ada-pi/pwa_server.py. Environment uses HOME_ASSISTANT_URL=http://michael-ha:8123/ and the Michael long-lived token.'
+    tailnet_url: "https://mn01.taila0626a.ts.net/apps/ha/ada-michael/"
+    env_file: "~/.config/secrets/ada-ha-michael.env"
+    caddyfile: "~/.config/caddy/Caddyfile.mn01"
+    upstream_ha: "http://michael-ha:8123/"
+    note: "Backend is /home/tony/CascadeProjects/ada-pi/pwa_server.py. Environment uses HOME_ASSISTANT_URL=http://michael-ha:8123/ and the Michael long-lived token."
   google-home-mcp:
     service: google-home-mcp.service
     host: mn01
     port: 8004
-    host_port: '100.106.196.22:8004'
+    host_port: "100.106.196.22:8004"
     purpose: Local-network Google Cast device control MCP server (pychromecast + FastMCP)
     status: active
-    quadlet: '~/.config/containers/systemd/google-home-mcp.container'
-    source: 'mcp-servers/google-home-mcp/server.py; stacks/mn01/google-home-mcp/'
-    note: 'Rootless podman, host networking, bound to tailnet IP only. CAST_HOSTS=192.168.2.85 (TONY-TV TrueID box, Skyworth SKWAMX3) reached cross-subnet via Tailscale; mDNS discovery covers mn-home LAN. Devin MCP url: http://100.106.196.22:8004/mcp.'
+    quadlet: "~/.config/containers/systemd/google-home-mcp.container"
+    source: "mcp-servers/google-home-mcp/server.py; stacks/mn01/google-home-mcp/"
+    note: "Rootless podman, host networking, bound to tailnet IP only. CAST_HOSTS=192.168.2.85 (TONY-TV TrueID box, Skyworth SKWAMX3) reached cross-subnet via Tailscale; mDNS discovery covers mn-home LAN. Devin MCP url: http://100.106.196.22:8004/mcp."

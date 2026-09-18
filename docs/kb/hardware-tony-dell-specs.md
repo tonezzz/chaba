@@ -13,7 +13,7 @@ Generated: 2026-07-08T13:36:47.999258+00:00 UTC
 - **User:** tony
 - **Home:** /home/tony
 - **Shell:** /bin/bash
-- **Uptime:** 20:36:49 up 2 days,  6:16,  1 user,  load average: 2.43, 1.80, 1.28
+- **Uptime:** 20:36:49 up 2 days, 6:16, 1 user, load average: 2.43, 1.80, 1.28
 
 ## System
 
@@ -60,13 +60,14 @@ Firmware Version: 1.24.0
 ```
 Linux tony-dell 7.0.0-22-generic #22-Ubuntu SMP PREEMPT_DYNAMIC Mon May 25 15:54:34 UTC 2026 x86_64 GNU/Linux
 ```
+
 ## Network
 
 ### Interfaces
 
 ```
-lo               UNKNOWN        127.0.0.1/8 ::1/128 
-enp0s31f6        UP             192.168.1.42/24 2001:fb1:8d:f657:1642:244a:8516:cf8e/64 2001:fb1:8d:f657:7c40:fe4e:861d:d299/64 2001:fb1:8d:f657:c9d7:60a7:2ee3:82d6/64 fe80::2c01:1291:a04f:3e13/64 
+lo               UNKNOWN        127.0.0.1/8 ::1/128
+enp0s31f6        UP             192.168.1.42/24 2001:fb1:8d:f657:1642:244a:8516:cf8e/64 2001:fb1:8d:f657:7c40:fe4e:861d:d299/64 2001:fb1:8d:f657:c9d7:60a7:2ee3:82d6/64 fe80::2c01:1291:a04f:3e13/64
 wlx00761100125e  DOWN
 ```
 

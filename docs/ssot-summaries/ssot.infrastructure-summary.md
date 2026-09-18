@@ -12,11 +12,13 @@
 ### Location-Specific Health Configs
 
 **Home Network**: `docs/ssot/infrastructure/ssot.health.home.yml`
+
 - Uses tony-omen.local hostnames
 - Home network specific endpoints
 - Local service monitoring
 
 **Mobile/Remote**: `docs/ssot/infrastructure/ssot.health.mobile.yml`
+
 - Uses localhost or VPN paths
 - Remote access configurations
 - Mobile service monitoring
@@ -26,6 +28,7 @@
 **File**: `docs/ssot/infrastructure/ssot.gpu.yml`
 **Purpose**: GPU policy, VRAM budget, queue implementation details
 **Key Components**:
+
 - GPU memory allocation and budgeting
 - Queue system for GPU resource management
 - Systemd services for GPU services
@@ -37,6 +40,7 @@
 **File**: `docs/ssot/infrastructure/ssot.services.yml`
 **Purpose**: Service configuration summary
 **Services Covered**:
+
 - llama-router: LLM model routing
 - postgres: Database configuration
 - Container details and orchestration
@@ -47,6 +51,7 @@
 **File**: `docs/ssot/infrastructure/ssot.automation.yml`
 **Purpose**: Automated monitoring and maintenance schedules
 **Automation Tasks**:
+
 - GPU monitoring (5-minute intervals)
 - System maintenance (3 AM daily)
 - Overnight assessment (2 AM daily)
@@ -58,6 +63,7 @@
 **File**: `docs/ssot/infrastructure/ssot.disaster-recovery.yml`
 **Purpose**: Disaster recovery infrastructure documentation
 **Components**:
+
 - Backup scripts and schedules
 - Recovery procedures
 - Verification status

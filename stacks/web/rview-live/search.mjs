@@ -18,7 +18,10 @@ function decodeHtmlEntities(str) {
 
 function stripTags(str) {
   if (!str) return "";
-  return str.replace(/<[^>]*>/g, "").replace(/\s+/g, " ").trim();
+  return str
+    .replace(/<[^>]*>/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 function escapeRegex(str) {

@@ -5,6 +5,7 @@ category: operations
 # System Overview
 
 **Primary Components**:
+
 - **MDDB Server**: Containerized knowledge base with semantic search
 - **SSOT YAML Files**: Directly editable configuration files (source of truth)
 - **File Watcher**: Automatic sync service for SSOT changes
@@ -13,6 +14,7 @@ category: operations
 - **Health Monitoring**: mcp-health monitoring for reliability
 
 **Document Collections** (13 total):
+
 - Chaba KB: kb-system, kb-development, kb-operations, kb-features
 - Trade KB: trade-kb-system, trade-kb-development, trade-kb-operations, trade-kb-features
 - SSOT: ssot-infrastructure, ssot-apps, ssot-general
@@ -25,12 +27,14 @@ category: operations
 **Policy**: SSOT YAML files are edited directly as the primary workflow
 
 **Why This Matters**:
+
 - YAML is the source of truth for system configuration
 - Direct editing is familiar and efficient for infrastructure management
 - Preserves existing operational workflows
 - No special tools or interfaces required
 
 **How to Edit SSOT**:
+
 1. Navigate to SSOT directory: `/home/tony/CascadeProjects/chaba/docs/ssot/`
 2. Edit YAML files directly with your preferred editor
 3. Save changes normally
@@ -38,4 +42,7 @@ category: operations
 5. Changes become searchable via MDDB immediately
 
 **Example Workflow**:
+
 ```bash
+
+```

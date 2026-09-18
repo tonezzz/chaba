@@ -1,9 +1,9 @@
-import pg from 'pg';
+import pg from "pg";
 
 const { Pool } = pg;
 
 // Read DATABASE_URL from environment or use default
-const DATABASE_URL = process.env.DATABASE_URL || 'postgres://chaba:chabapass@localhost:5432/chaba';
+const DATABASE_URL = process.env.DATABASE_URL || "postgres://chaba:chabapass@localhost:5432/chaba";
 
 const pool = new Pool({
   connectionString: DATABASE_URL,
@@ -40,23 +40,20 @@ export async function createJob(type, params) {
 
 // Get job by ID
 export async function getJob(id) {
-  const result = await pool.query(
-    'SELECT * FROM gpu_queue_jobs WHERE id = $1',
-    [id]
-  );
+  const result = await pool.query("SELECT * FROM gpu_queue_jobs WHERE id = $1", [id]);
   return result.rows[0] || null;
 }
 
 // List all jobs, optionally filtered by status
 export async function listJobs(status = null) {
-  let query = 'SELECT * FROM gpu_queue_jobs';
+  let query = "SELECT * FROM gpu_queue_jobs";
   const params = [];
 
   if (status) {
-    query += ' WHERE status = $1 ORDER BY priority DESC, created_at ASC';
+    query += " WHERE status = $1 ORDER BY priority DESC, created_at ASC";
     params.push(status);
   } else {
-    query += ' ORDER BY created_at DESC';
+    query += " ORDER BY created_at DESC";
   }
 
   const result = await pool.query(query, params);
@@ -76,13 +73,13 @@ export async function getNextPendingJob() {
 
 // Update job status
 export async function updateJobStatus(id, status, error = null) {
-  const updates = ['status = $1'];
+  const updates = ["status = $1"];
   const values = [status];
   let paramIndex = 2;
 
-  if (status === 'running') {
+  if (status === "running") {
     updates.push(`started_at = NOW()`);
-  } else if (status === 'completed' || status === 'failed' || status === 'cancelled') {
+  } else if (status === "completed" || status === "failed" || status === "cancelled") {
     updates.push(`completed_at = NOW()`);
   }
 
@@ -96,7 +93,7 @@ export async function updateJobStatus(id, status, error = null) {
 
   const query = `
     UPDATE gpu_queue_jobs
-    SET ${updates.join(', ')}
+    SET ${updates.join(", ")}
     WHERE id = $${paramIndex}
     RETURNING *
   `;
@@ -126,7 +123,7 @@ export async function updateJobMetrics(id, metrics) {
     mode,
     batch_size,
     queue_wait_time_ms,
-    result
+    result,
   } = metrics;
 
   const updates = [];
@@ -181,7 +178,7 @@ export async function updateJobMetrics(id, metrics) {
 
   const query = `
     UPDATE gpu_queue_jobs
-    SET ${updates.join(', ')}
+    SET ${updates.join(", ")}
     WHERE id = $${paramIndex}
     RETURNING *
   `;
@@ -198,20 +195,15 @@ export async function updateJobResult(id, result) {
     WHERE id = $2
     RETURNING *
   `;
-  
+
   const dbResult = await pool.query(query, [result, id]);
   return dbResult.rows[0];
 }
 
 // Update job metadata (for embedding-specific fields)
 export async function updateJobMetadata(id, metadata) {
-  const {
-    embedding_dimensions,
-    embedding_model,
-    text_count,
-    processing_time_ms,
-    gpu_used
-  } = metadata;
+  const { embedding_dimensions, embedding_model, text_count, processing_time_ms, gpu_used } =
+    metadata;
 
   const updates = [];
   const values = [];
@@ -253,7 +245,7 @@ export async function updateJobMetadata(id, metadata) {
 
   const query = `
     UPDATE gpu_queue_jobs
-    SET ${updates.join(', ')}
+    SET ${updates.join(", ")}
     WHERE id = $${paramIndex}
     RETURNING *
   `;
@@ -273,7 +265,7 @@ export async function getQueueStatus() {
   `);
 
   const statusCounts = { pending: 0, running: 0, completed: 0, failed: 0, cancelled: 0 };
-  result.rows.forEach(row => {
+  result.rows.forEach((row) => {
     statusCounts[row.status] = parseInt(row.count);
   });
 
@@ -282,15 +274,13 @@ export async function getQueueStatus() {
 
 // Get running job (if any)
 export async function getRunningJob() {
-  const result = await pool.query(
-    "SELECT * FROM gpu_queue_jobs WHERE status = 'running' LIMIT 1"
-  );
+  const result = await pool.query("SELECT * FROM gpu_queue_jobs WHERE status = 'running' LIMIT 1");
   return result.rows[0] || null;
 }
 
 // Cancel a job
 export async function cancelJob(id) {
-  return updateJobStatus(id, 'cancelled');
+  return updateJobStatus(id, "cancelled");
 }
 
 // Clean up old completed jobs (older than 24 hours)
@@ -317,7 +307,7 @@ export async function getJobTypeBreakdown() {
   `);
 
   const breakdown = {};
-  result.rows.forEach(row => {
+  result.rows.forEach((row) => {
     if (!breakdown[row.type]) {
       breakdown[row.type] = {};
     }
@@ -353,7 +343,7 @@ export async function getPriorityDistribution() {
   `);
 
   const distribution = {};
-  result.rows.forEach(row => {
+  result.rows.forEach((row) => {
     distribution[row.priority] = parseInt(row.count);
   });
 
@@ -469,7 +459,8 @@ export async function getVRAMUsagePatterns() {
 
 // Get recent job history with metrics
 export async function getRecentJobsWithMetrics(limit = 50) {
-  const result = await pool.query(`
+  const result = await pool.query(
+    `
     SELECT 
       id,
       type,
@@ -488,7 +479,9 @@ export async function getRecentJobsWithMetrics(limit = 50) {
     FROM gpu_queue_jobs
     ORDER BY created_at DESC
     LIMIT $1
-  `, [limit]);
+  `,
+    [limit]
+  );
   return result.rows;
 }
 
@@ -507,7 +500,7 @@ export async function getJobStats(hours = 24) {
     GROUP BY type, status
     ORDER BY type, status
   `;
-  
+
   const result = await pool.query(query);
   return result.rows;
 }
@@ -527,7 +520,7 @@ export async function getCancellationRate(hours = 24) {
     GROUP BY type
     ORDER BY type
   `;
-  
+
   const result = await pool.query(query);
   return result.rows;
 }
@@ -541,8 +534,7 @@ export async function getRecentFailures(limit = 10) {
     ORDER BY created_at DESC
     LIMIT $1
   `;
-  
+
   const result = await pool.query(query, [limit]);
   return result.rows;
 }
-

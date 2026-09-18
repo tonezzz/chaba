@@ -5,6 +5,7 @@ category: operations
 # Technical Details
 
 ### System Architecture
+
 ```
 SSOT YAML Files (docs/ssot/*.yml)
     ↓ (direct editing, primary workflow)
@@ -18,6 +19,7 @@ Search Interfaces (Web UI, MCP, REST API)
 ```
 
 ### Performance Metrics
+
 - **MDDB Container**: 0.77% CPU, 121.9MB memory (0.39% of 30.52GB)
 - **MDDB Data**: 47.2MB storage (245 documents, 277 revisions)
 - **Ollama Data**: 262MB storage (nomic-embed-text model)
@@ -26,7 +28,7 @@ Search Interfaces (Web UI, MCP, REST API)
 - **Search Quality**: 0.45-0.80 relevance scores
 
 ### Service Dependencies
+
 - **ssot-sync-watcher**: [mddb-api]
 - **MDDB Services**: [Ollama embeddings]
 - **Monitoring**: mcp-health covers all services
-

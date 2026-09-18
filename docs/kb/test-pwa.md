@@ -3,16 +3,16 @@ category: operations
 ---
 
 # Test PWA - iPad Progressive Web App
+
 ## What it is
 
 title: Test PWA - iPad Progressive Web App
 
-
 **Abstract**: A Progressive Web App (PWA) demo application for testing iPad full-screen capabilities, featuring interactive elements, theme switching, local storage persistence, and comprehensive status detection for PWA installation and display modes.
+
 ## Context/Background
 
 Created 2026-08-06 as part of Chaba infrastructure documentation.
-
 
 ## Overview
 
@@ -28,15 +28,15 @@ The Test PWA is a demonstration application deployed on the chaba-h3 platform th
 
 ## Key Files
 
-| File | Purpose |
-|------|---------|
-| `chaba-h3/public/apps/test-pwa/index.html` | Main HTML structure with meta tags and app container |
-| `chaba-h3/public/apps/test-pwa/manifest.json` | PWA manifest with display mode, icons, and theme configuration |
-| `chaba-h3/public/apps/test-pwa/app.css` | Responsive CSS with theme variables and touch-friendly controls |
-| `chaba-h3/public/apps/test-pwa/app.js` | Interactive logic for counter, themes, and status detection |
-| `chaba-h3/public/apps/test-pwa/icon-192.svg` | SVG icon for home screen (192x192) |
-| `chaba-h3/public/apps/test-pwa/icon-512.svg` | SVG icon for app launcher (512x512) |
-| `docs/ssot/apps/ssot.apps.test-pwa.yml` | SSOT configuration and detailed feature documentation |
+| File                                          | Purpose                                                         |
+| --------------------------------------------- | --------------------------------------------------------------- |
+| `chaba-h3/public/apps/test-pwa/index.html`    | Main HTML structure with meta tags and app container            |
+| `chaba-h3/public/apps/test-pwa/manifest.json` | PWA manifest with display mode, icons, and theme configuration  |
+| `chaba-h3/public/apps/test-pwa/app.css`       | Responsive CSS with theme variables and touch-friendly controls |
+| `chaba-h3/public/apps/test-pwa/app.js`        | Interactive logic for counter, themes, and status detection     |
+| `chaba-h3/public/apps/test-pwa/icon-192.svg`  | SVG icon for home screen (192x192)                              |
+| `chaba-h3/public/apps/test-pwa/icon-512.svg`  | SVG icon for app launcher (512x512)                             |
+| `docs/ssot/apps/ssot.apps.test-pwa.yml`       | SSOT configuration and detailed feature documentation           |
 
 ## Related Documentation
 
@@ -47,9 +47,9 @@ The Test PWA is a demonstration application deployed on the chaba-h3 platform th
 
 ## Change History
 
-| Date | Change | Author |
-|------|--------|--------|
-| 2026-08-06 | Initial creation with full PWA implementation and documentation | tony |
+| Date       | Change                                                          | Author |
+| ---------- | --------------------------------------------------------------- | ------ |
+| 2026-08-06 | Initial creation with full PWA implementation and documentation | tony   |
 
 ## Tags
 

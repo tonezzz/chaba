@@ -24,11 +24,13 @@ export GITHUB_REPO=yourname/kb-repo
 ### Token Storage Options
 
 **Option 1: Environment Variable (Recommended)**
+
 ```bash
 export GITHUB_TOKEN=ghp_xxx
 ```
 
 **Option 2: Config File**
+
 ```bash
 # ~/.config/mcp-kbman/config.toml
 [github]
@@ -78,6 +80,7 @@ github_subdirectory: str = os.getenv("GITHUB_SUBDIRECTORY", "")
 ### 4. Implement GitHub Storage Class
 
 Based on know-ops-mcp `GitHubStorage` class with:
+
 - Token-based authentication
 - Base64 content encoding
 - Git Trees API for listing
@@ -92,4 +95,3 @@ search_sources: list[str] = [
     "/home/tony/CascadeProjects/chaba/docs"  # Project documentation
 ]
 ```
-

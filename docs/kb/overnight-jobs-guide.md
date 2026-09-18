@@ -5,12 +5,15 @@ category: operations
 # Overnight Assessment Jobs Guide
 
 ## Overview
+
 The expanded overnight assessment system provides comprehensive system health monitoring and performance analysis. It runs 14 major assessment areas covering all aspects of the Chaba infrastructure, plus automatic improvement creation for critical findings.
 
 ## What's New (Expanded from Original)
+
 The original overnight assessment covered 8 areas. The expanded version adds 6 new comprehensive areas and enhances existing ones:
 
 ### New Assessment Areas:
+
 1. **Comprehensive Log Analysis** - 7-day pattern detection, frequency analysis, error correlation
 2. **Database Performance Deep Dive** - Historical trends, long-running queries, growth analysis
 3. **Network Performance Analysis** - Interface statistics, connectivity checks, DNS resolution
@@ -22,6 +25,7 @@ The original overnight assessment covered 8 areas. The expanded version adds 6 n
 9. **Performance Baseline Comparison** - 7-day trend analysis, performance degradation detection
 
 ### Enhanced Areas:
+
 - **Health Check Integration** - Added systemd service status checks
 - **GPU & Queue Analysis** - Added job history analysis
 - **Yomi System Health** - Added LINE API rate limit pattern analysis
@@ -31,20 +35,24 @@ The original overnight assessment covered 8 areas. The expanded version adds 6 n
 ## Files Created
 
 ### Core Scripts
+
 - `scripts/overnight-jobs-expanded.sh` - Main assessment script (14 assessment areas)
 - `scripts/run-overnight-now.sh` - Manual execution helper script
 
 ### Systemd Configuration
+
 - `systemd/overnight-assessment.service` - Service definition
 - `systemd/overnight-assessment.timer` - Timer definition (daily 2 AM)
 
 ### Output Locations
+
 - **Logs:** `logs/overnight-TIMESTAMP.log` or `logs/overnight-manual-TIMESTAMP.log`
 - **Reports:** `reports/overnight-assessment-TIMESTAMP.md`
 
 ## Report Structure
 
 The generated markdown report includes:
+
 1. **Executive Summary** - Quick overview of system health
 2. **14 Assessment Area Sections** - Detailed analysis for each area
 3. **Health Score** - Overall system health metrics
@@ -63,6 +71,7 @@ The generated markdown report includes:
 ## Integration with Existing Systems
 
 This expanded assessment integrates with:
+
 - **Health Check API** - Uses existing `http://tony-omen.local:8080/api/health`
 - **GPU Queue API** - Uses existing `http://tony-omen.local:3001/api/gpu-queue/status`
 - **Yomi APIs** - Uses existing Yomi health and rate limiter endpoints
@@ -89,6 +98,7 @@ This expanded assessment integrates with:
 ## Future Enhancements
 
 Potential additions for future versions:
+
 - Historical trend analysis with graphs
 - Automated alerting for critical issues
 - Integration with monitoring dashboards

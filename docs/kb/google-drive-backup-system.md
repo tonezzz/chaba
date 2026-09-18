@@ -5,9 +5,11 @@ category: operations
 # Google Drive Backup System with FUSE Compatibility
 
 ## Context
+
 The Chaba infrastructure backup system was migrated from local storage to Google Drive for cloud-based backup storage. This required FUSE mount compatibility fixes due to Docker's inability to directly mount FUSE filesystems.
 
 ## Related Documentation
+
 - `scripts/backup-manager.sh` - Main backup script
 - `scripts/backup-monitor.sh` - Backup monitoring script
 - `scripts/restore-manager.sh` - Backup restoration script
@@ -18,6 +20,7 @@ The Chaba infrastructure backup system was migrated from local storage to Google
 - `docs/ssot/infrastructure/ssot.health.yml` - Health service configuration
 
 ## Tags
+
 - backup, google-drive, fuse, docker, systemd, automation, infrastructure
 
 ## See also

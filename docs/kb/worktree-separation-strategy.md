@@ -7,14 +7,15 @@ category: operations
 ## What it is
 
 Git worktree separation strategy for organizing the chaba project into focused worktrees based on functional domains, enabling parallel development while maintaining clear project boundaries.
+
 ## Context/Background
 
 Created 2026-08-05 as part of Chaba infrastructure documentation.
 
-
 ## Context
 
 The chaba project uses Git worktrees to separate concerns:
+
 - **chaba-h3**: Main worktree with full application ecosystem
 - **chaba-raceman**: Race management tools (Track2/3/4, Raceman, Wind, Map3D)
 - **chaba**: Tony Omen canonical worktree

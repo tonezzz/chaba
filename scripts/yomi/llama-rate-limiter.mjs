@@ -10,7 +10,9 @@ class RateLimiter {
 
   async run(fn) {
     if (this.running >= this.maxConcurrent) {
-      console.log(`Rate limit reached: ${this.running}/${this.maxConcurrent} running, queuing request`);
+      console.log(
+        `Rate limit reached: ${this.running}/${this.maxConcurrent} running, queuing request`
+      );
       await this.waitForSlot();
     }
 
@@ -28,7 +30,7 @@ class RateLimiter {
       const timeout = setTimeout(() => {
         const index = this.queue.indexOf({ resolve, reject });
         if (index > -1) this.queue.splice(index, 1);
-        reject(new Error('Rate limiter queue timeout'));
+        reject(new Error("Rate limiter queue timeout"));
       }, this.queueTimeout);
 
       this.queue.push({ resolve, reject, timeout });
@@ -47,7 +49,7 @@ class RateLimiter {
     return {
       running: this.running,
       queued: this.queue.length,
-      maxConcurrent: this.maxConcurrent
+      maxConcurrent: this.maxConcurrent,
     };
   }
 }
@@ -58,16 +60,16 @@ class CircuitBreaker {
     this.timeout = timeout;
     this.failureCount = 0;
     this.lastFailureTime = null;
-    this.state = 'closed'; // closed, open, half-open
+    this.state = "closed"; // closed, open, half-open
   }
 
   async run(fn) {
-    if (this.state === 'open') {
+    if (this.state === "open") {
       if (Date.now() - this.lastFailureTime > this.timeout) {
-        console.log('Circuit breaker entering half-open state');
-        this.state = 'half-open';
+        console.log("Circuit breaker entering half-open state");
+        this.state = "half-open";
       } else {
-        throw new Error('Circuit breaker is open');
+        throw new Error("Circuit breaker is open");
       }
     }
 
@@ -83,19 +85,19 @@ class CircuitBreaker {
 
   onSuccess() {
     this.failureCount = 0;
-    if (this.state === 'half-open') {
-      console.log('Circuit breaker closing after successful request');
-      this.state = 'closed';
+    if (this.state === "half-open") {
+      console.log("Circuit breaker closing after successful request");
+      this.state = "closed";
     }
   }
 
   onFailure() {
     this.failureCount++;
     this.lastFailureTime = Date.now();
-    
+
     if (this.failureCount >= this.threshold) {
       console.log(`Circuit breaker opening after ${this.failureCount} failures`);
-      this.state = 'open';
+      this.state = "open";
     }
   }
 
@@ -103,15 +105,15 @@ class CircuitBreaker {
     return {
       state: this.state,
       failureCount: this.failureCount,
-      lastFailureTime: this.lastFailureTime
+      lastFailureTime: this.lastFailureTime,
     };
   }
 
   reset() {
     this.failureCount = 0;
     this.lastFailureTime = null;
-    this.state = 'closed';
-    console.log('Circuit breaker reset');
+    this.state = "closed";
+    console.log("Circuit breaker reset");
   }
 }
 
@@ -131,5 +133,5 @@ export {
   summaryCircuitBreaker,
   dailyCircuitBreaker,
   embeddingRateLimiter,
-  embeddingCircuitBreaker
+  embeddingCircuitBreaker,
 };

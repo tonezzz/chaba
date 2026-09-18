@@ -33,13 +33,13 @@ source .env
 node server.js
 ```
 
-| Provider | Required env | Notes |
-| --- | --- | --- |
-| `devin-stub` | none | Always works; prints a canned response. |
-| `openai` | `OPENAI_API_KEY` | Uses `gpt-4o-mini`. |
-| `claude` | `ANTHROPIC_API_KEY` | Uses `claude-3-5-sonnet-20241022`. |
-| `ollama` | none (local) | Set `OLLAMA_HOST` and `OLLAMA_MODEL` if not the defaults. |
-| `gemini` | `GEMINI_API_KEY` | Uses `gemini-2.5-flash`. |
+| Provider     | Required env        | Notes                                                     |
+| ------------ | ------------------- | --------------------------------------------------------- |
+| `devin-stub` | none                | Always works; prints a canned response.                   |
+| `openai`     | `OPENAI_API_KEY`    | Uses `gpt-4o-mini`.                                       |
+| `claude`     | `ANTHROPIC_API_KEY` | Uses `claude-3-5-sonnet-20241022`.                        |
+| `ollama`     | none (local)        | Set `OLLAMA_HOST` and `OLLAMA_MODEL` if not the defaults. |
+| `gemini`     | `GEMINI_API_KEY`    | Uses `gemini-2.5-flash`.                                  |
 
 ## What it does
 

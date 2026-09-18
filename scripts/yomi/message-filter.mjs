@@ -11,13 +11,13 @@
  */
 export function shouldFilterMessage(text) {
   if (!text) return true;
-  
+
   // Filter out messages that only contain encrypted keyMaterial/fileName data
   // These are media metadata without actual conversation content
-  if (text.startsWith('{') && text.includes('keyMaterial')) {
+  if (text.startsWith("{") && text.includes("keyMaterial")) {
     return true;
   }
-  
+
   return false;
 }
 
@@ -27,7 +27,7 @@ export function shouldFilterMessage(text) {
  * @returns {Array} - Filtered messages
  */
 export function filterMessages(messages) {
-  return messages.filter(m => !shouldFilterMessage(m.text));
+  return messages.filter((m) => !shouldFilterMessage(m.text));
 }
 
 /**
@@ -39,10 +39,10 @@ export function filterMessages(messages) {
 export function extractMessageText(message, mediaLabelFn) {
   const text = message.text || (message.mediaType ? mediaLabelFn(message) : null);
   if (!text) return null;
-  
+
   if (shouldFilterMessage(text)) {
     return null;
   }
-  
+
   return text;
 }

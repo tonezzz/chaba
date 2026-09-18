@@ -34,18 +34,18 @@ Run each question with the default agent and with a short system-style prefix:
 
 ## Test queries
 
-| # | Question | Expected ground-truth | SSOT key |
-|---|----------|----------------------|----------|
-| 1 | What is the Tailscale IP of tony-dell? | 100.68.142.13 | ssot.values.yml:hosts.tony_dell.tailscale_ip |
-| 2 | What is the NotebookLM notebook ID used for the Chaba KB? | fdfd3483-6b7e-4cb0-85f3-7f060698769c | ssot.values.yml:notebooklm.sync.notebook_id |
-| 3 | What port does the NotebookLM REST service bind to on tony-dell? | 3011 | ssot.values.yml:ports.notebooklm_rest |
-| 4 | What is the URL of the Michael dev Home Assistant instance? | https://tony-dell.taila0626a.ts.net:8124 | ssot.home-assistant.michael.dev.yml:environments.dev.https.tailnet_url (resolved) |
-| 5 | What is the public URL of the NotebookLM REST API? | https://tony-dell.taila0626a.ts.net/apps/notebooklm/api | ssot.services.yml:tony-dell.notebooklm-rest.public_url (resolved) |
-| 6 | What is the HA Live public port? | 8444 | ssot.values.yml:ports.ha_live_public |
-| 7 | What is the tailnet URL of the michael-dev Home Assistant? | https://tony-dell.taila0626a.ts.net:8124 | ssot.home-assistant.michael.dev.yml:environments.dev.https.tailnet_url (resolved) |
-| 8 | What is the local port of the tony Home Assistant MCP? | 9584 | ssot.values.yml:ports.ha_mcp_tony |
-| 9 | What is the default collection for NotebookLM? | chaba | ssot.values.yml:notebooklm.default_collection |
-| 10 | What is the rclone remote for the Chaba notebooklm collection? | gdrive | ssot.values.yml:notebooklm.rclone_remote |
+| #   | Question                                                         | Expected ground-truth                                   | SSOT key                                                                          |
+| --- | ---------------------------------------------------------------- | ------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| 1   | What is the Tailscale IP of tony-dell?                           | 100.68.142.13                                           | ssot.values.yml:hosts.tony_dell.tailscale_ip                                      |
+| 2   | What is the NotebookLM notebook ID used for the Chaba KB?        | fdfd3483-6b7e-4cb0-85f3-7f060698769c                    | ssot.values.yml:notebooklm.sync.notebook_id                                       |
+| 3   | What port does the NotebookLM REST service bind to on tony-dell? | 3011                                                    | ssot.values.yml:ports.notebooklm_rest                                             |
+| 4   | What is the URL of the Michael dev Home Assistant instance?      | https://tony-dell.taila0626a.ts.net:8124                | ssot.home-assistant.michael.dev.yml:environments.dev.https.tailnet_url (resolved) |
+| 5   | What is the public URL of the NotebookLM REST API?               | https://tony-dell.taila0626a.ts.net/apps/notebooklm/api | ssot.services.yml:tony-dell.notebooklm-rest.public_url (resolved)                 |
+| 6   | What is the HA Live public port?                                 | 8444                                                    | ssot.values.yml:ports.ha_live_public                                              |
+| 7   | What is the tailnet URL of the michael-dev Home Assistant?       | https://tony-dell.taila0626a.ts.net:8124                | ssot.home-assistant.michael.dev.yml:environments.dev.https.tailnet_url (resolved) |
+| 8   | What is the local port of the tony Home Assistant MCP?           | 9584                                                    | ssot.values.yml:ports.ha_mcp_tony                                                 |
+| 9   | What is the default collection for NotebookLM?                   | chaba                                                   | ssot.values.yml:notebooklm.default_collection                                     |
+| 10  | What is the rclone remote for the Chaba notebooklm collection?   | gdrive                                                  | ssot.values.yml:notebooklm.rclone_remote                                          |
 
 ## Evaluation criteria
 

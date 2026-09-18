@@ -1,6 +1,7 @@
 ---
 description: Audit recent assistant behavior and update the knowledge base
 ---
+
 1. Ask the user for audit scope: `current session`, `last N conversations`, or `since <date>`.
 2. Review the selected conversation(s) for:
    a. Explicit corrections (`no, do X`, `wrong`, `use Y instead`).

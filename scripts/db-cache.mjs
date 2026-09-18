@@ -3,34 +3,39 @@
  * Caches PostgreSQL query results using Redis to reduce database load
  */
 
-import cacheManager from './cache-manager.mjs';
+import cacheManager from "./cache-manager.mjs";
 
 const QUERY_CACHE_TTLS = {
-  conversations: 300,      // 5 minutes
-  messages: 60,          // 1 minute
-  summaries: 300,        // 5 minutes
-  categories: 600,       // 10 minutes
-  stats: 120,           // 2 minutes
-  gpu_queue: 30,        // 30 seconds
-  health: 30             // 30 seconds
+  conversations: 300, // 5 minutes
+  messages: 60, // 1 minute
+  summaries: 300, // 5 minutes
+  categories: 600, // 10 minutes
+  stats: 120, // 2 minutes
+  gpu_queue: 30, // 30 seconds
+  health: 30, // 30 seconds
 };
 
 /**
  * Cache wrapper for database queries
  */
-export async function cachedQuery(pool, query, params, ttl = 300, namespace = 'db') {
+export async function cachedQuery(pool, query, params, ttl = 300, namespace = "db") {
   // Generate cache key from query and params
   const cacheKey = `${query}:${JSON.stringify(params)}`;
-  
+
   try {
-    const { data, cached } = await cacheManager.getOrSet(namespace, cacheKey, async () => {
-      const result = await pool.query(query, params);
-      return result;
-    }, ttl);
-    
+    const { data, cached } = await cacheManager.getOrSet(
+      namespace,
+      cacheKey,
+      async () => {
+        const result = await pool.query(query, params);
+        return result;
+      },
+      ttl
+    );
+
     return { ...data, cached };
   } catch (error) {
-    console.error('Cached query error:', error);
+    console.error("Cached query error:", error);
     // Fall through to direct query on cache error
     return await pool.query(query, params);
   }
@@ -44,7 +49,7 @@ export async function invalidateDbCache(pattern) {
     await cacheManager.invalidatePattern(`db:${pattern}*`);
     console.log(`Database cache invalidated: ${pattern}`);
   } catch (error) {
-    console.error('Database cache invalidation error:', error);
+    console.error("Database cache invalidation error:", error);
   }
 }
 
@@ -52,20 +57,20 @@ export async function invalidateDbCache(pattern) {
  * Invalidate specific database cache
  */
 export async function invalidateConversationsDbCache() {
-  await invalidateDbCache('conversations');
+  await invalidateDbCache("conversations");
 }
 
 export async function invalidateMessagesDbCache() {
-  await invalidateDbCache('messages');
+  await invalidateDbCache("messages");
 }
 
 export async function invalidateSummariesDbCache() {
-  await invalidateDbCache('summaries');
+  await invalidateDbCache("summaries");
 }
 
 export async function invalidateAllDbCache() {
-  await cacheManager.deleteNamespace('db');
-  console.log('All database cache invalidated');
+  await cacheManager.deleteNamespace("db");
+  console.log("All database cache invalidated");
 }
 
 /**
@@ -75,7 +80,7 @@ export class CachedQueryBuilder {
   constructor(pool) {
     this.pool = pool;
   }
-  
+
   async conversations(ttl = QUERY_CACHE_TTLS.conversations) {
     return cachedQuery(
       this.pool,
@@ -85,20 +90,20 @@ export class CachedQueryBuilder {
        ORDER BY last_message_time DESC NULLS LAST`,
       [],
       ttl,
-      'conversations'
+      "conversations"
     );
   }
-  
+
   async messagesByChat(chatId, limit = 100, ttl = QUERY_CACHE_TTLS.messages) {
     return cachedQuery(
       this.pool,
       `SELECT data, media_analysis FROM messages WHERE chat_id = $1 ORDER BY delivered_time DESC LIMIT $2`,
       [chatId, limit],
       ttl,
-      'messages'
+      "messages"
     );
   }
-  
+
   async dailySummaries(chatId, ttl = QUERY_CACHE_TTLS.summaries) {
     return cachedQuery(
       this.pool,
@@ -108,10 +113,10 @@ export class CachedQueryBuilder {
        ORDER BY date DESC`,
       [chatId],
       ttl,
-      'summaries'
+      "summaries"
     );
   }
-  
+
   async conversationStats(ttl = QUERY_CACHE_TTLS.stats) {
     return cachedQuery(
       this.pool,
@@ -122,10 +127,10 @@ export class CachedQueryBuilder {
        FROM conversations`,
       [],
       ttl,
-      'stats'
+      "stats"
     );
   }
-  
+
   async gpuQueueStats(ttl = QUERY_CACHE_TTLS.gpu_queue) {
     return cachedQuery(
       this.pool,
@@ -137,7 +142,7 @@ export class CachedQueryBuilder {
        FROM gpu_queue`,
       [],
       ttl,
-      'gpu_queue'
+      "gpu_queue"
     );
   }
 }
@@ -146,25 +151,25 @@ export class CachedQueryBuilder {
  * Cache warming function - pre-populate cache with common queries
  */
 export async function warmCache(pool) {
-  console.log('Warming database cache...');
-  
+  console.log("Warming database cache...");
+
   const builder = new CachedQueryBuilder(pool);
-  
+
   try {
     // Warm conversations cache
     await builder.conversations();
-    console.log('✓ Conversations cache warmed');
-    
+    console.log("✓ Conversations cache warmed");
+
     // Warm stats cache
     await builder.conversationStats();
-    console.log('✓ Stats cache warmed');
-    
+    console.log("✓ Stats cache warmed");
+
     // Warm GPU queue cache
     await builder.gpuQueueStats();
-    console.log('✓ GPU queue cache warmed');
-    
-    console.log('Database cache warming completed');
+    console.log("✓ GPU queue cache warmed");
+
+    console.log("Database cache warming completed");
   } catch (error) {
-    console.error('Cache warming error:', error);
+    console.error("Cache warming error:", error);
   }
 }

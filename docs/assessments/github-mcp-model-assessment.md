@@ -7,6 +7,7 @@ The GitHub MCP server provides **NO AI/ML models**. It is focused exclusively on
 ## Available Tool Categories
 
 ### 1. Pull Request Management
+
 - `create_pull_request` - Create new PRs
 - `add_comment_to_pending_review` - Add review comments
 - `add_reply_to_pull_request_comment` - Reply to PR comments
@@ -18,6 +19,7 @@ The GitHub MCP server provides **NO AI/ML models**. It is focused exclusively on
 - `close_pull_request` - Close PR
 
 ### 2. Issue Management
+
 - `create_issue` - Create new issues
 - `list_issues` - List repository issues
 - `search_issues` - Search issues with filters
@@ -27,12 +29,14 @@ The GitHub MCP server provides **NO AI/ML models**. It is focused exclusively on
 - `close_issue` - Close issues
 
 ### 3. File Operations
+
 - `get_file_content` - Get file content from repository
 - `create_or_update_file` - Create or update files
 - `delete_file` - Delete files
 - `list_commits` - List commit history
 
 ### 4. Repository Management
+
 - `get_me` - Get current user info
 - `list_repositories` - List user's repositories
 - `get_repository` - Get repository details
@@ -40,6 +44,7 @@ The GitHub MCP server provides **NO AI/ML models**. It is focused exclusively on
 - `fork_repository` - Fork a repository
 
 ### 5. Branch Management
+
 - `list_branches` - List repository branches
 - `create_branch` - Create new branch
 - `delete_branch` - Delete branch
@@ -49,6 +54,7 @@ The GitHub MCP server provides **NO AI/ML models**. It is focused exclusively on
 ### ❌ NO AI/ML Models Available
 
 **What the GitHub MCP tool provides:**
+
 - ✅ GitHub API integration
 - ✅ Repository management
 - ✅ Issue/PR workflow automation
@@ -57,6 +63,7 @@ The GitHub MCP server provides **NO AI/ML models**. It is focused exclusively on
 - ✅ Comment and review capabilities
 
 **What it does NOT provide:**
+
 - ❌ AI models (LLMs, embeddings, etc.)
 - ❌ Code generation models
 - ❌ Image generation models
@@ -66,6 +73,7 @@ The GitHub MCP server provides **NO AI/ML models**. It is focused exclusively on
 ## Use Cases for GitHub MCP Tool
 
 ### ✅ Suitable For:
+
 - Automating GitHub workflows
 - Managing issues and pull requests
 - File operations in repositories
@@ -74,6 +82,7 @@ The GitHub MCP server provides **NO AI/ML models**. It is focused exclusively on
 - CI/CD integration
 
 ### ❌ Not Suitable For:
+
 - AI/ML model inference
 - Code generation
 - Text embeddings
@@ -100,12 +109,14 @@ The GitHub MCP server provides **NO AI/ML models**. It is focused exclusively on
 ## Recommendation
 
 **For GPU embeddings:**
+
 - ❌ GitHub MCP tool is not relevant
 - ✅ Use local approach (CPU or GPU PyTorch)
 - ✅ Use existing mcp-llama for text generation if needed
 - ✅ Use existing mcp-gpu for GPU management
 
 **For GitHub automation:**
+
 - ✅ GitHub MCP tool is excellent for repository operations
 - ✅ Can automate issue/PR workflows
 - ✅ Can manage file operations

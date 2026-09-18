@@ -320,8 +320,6 @@ This document describes all health check endpoints configured in the SSOT health
 
 ## Testing
 
-
-
 ## Related Documentation
 
 - [SSOT Health Configuration](../ssot/infrastructure/ssot.health.yml)

@@ -29,6 +29,7 @@ stacks/web/public/apps/
 **Purpose**: General date manipulation and formatting
 
 **Key Functions**:
+
 - `formatDate()` - Format dates for display
 - `formatTime()` - Format times for display
 - `isValidDate()` - Validate date formats
@@ -40,6 +41,7 @@ stacks/web/public/apps/
 - `getRelativeTime()` - Human-readable time differences
 
 **Usage Example**:
+
 ```javascript
 DateUtils.formatDate(new Date()); // "Friday, August 7, 2026"
 DateUtils.getRelativeTime(new Date(Date.now() - 3600000)); // "1 hour ago"
@@ -50,15 +52,17 @@ DateUtils.getRelativeTime(new Date(Date.now() - 3600000)); // "1 hour ago"
 **Purpose**: Thailand timezone-specific date handling
 
 **Key Functions**:
+
 - `utcToThailandDate()` - Convert Thailand time to calendar date
 - `thailandDateToUtc()` - Convert Thailand calendar date to UTC
 - `getThailandDateRange()` - Get Thailand calendar date ranges
 - `formatDateKeyThailand()` - Format dates in Thailand time
 
 **Usage Example**:
+
 ```javascript
-DateUtils.utcToThailandDate('2026-08-03T15:29:28Z'); // "2026-08-03"
-DateUtils.getThailandDateRange('2026-08-03'); // Thailand calendar range
+DateUtils.utcToThailandDate("2026-08-03T15:29:28Z"); // "2026-08-03"
+DateUtils.getThailandDateRange("2026-08-03"); // Thailand calendar range
 ```
 
 #### 3. API Utilities (`api-utils.js`)
@@ -66,6 +70,7 @@ DateUtils.getThailandDateRange('2026-08-03'); // Thailand calendar range
 **Purpose**: Generic HTTP request handling with consistent error handling
 
 **Key Functions**:
+
 - `get()` / `post()` / `put()` / `delete()` - HTTP methods
 - `getWithParams()` - GET with query parameters
 - `handleResponse()` - Consistent response parsing
@@ -74,10 +79,11 @@ DateUtils.getThailandDateRange('2026-08-03'); // Thailand calendar range
 - `buildQueryString()` - Query string construction
 
 **Usage Example**:
+
 ```javascript
-ApiUtils.get('/api/endpoint');
-ApiUtils.post('/api/endpoint', { data: 'value' });
-ApiUtils.getWithParams('/api/endpoint', { param1: 'value1' });
+ApiUtils.get("/api/endpoint");
+ApiUtils.post("/api/endpoint", { data: "value" });
+ApiUtils.getWithParams("/api/endpoint", { param1: "value1" });
 ```
 
 #### 4. Yomi API (`api-yomi.js`)
@@ -85,6 +91,7 @@ ApiUtils.getWithParams('/api/endpoint', { param1: 'value1' });
 **Purpose**: Yomi-specific API endpoints wrapper
 
 **Key Functions**:
+
 - `loadConversations()` - Load all conversations
 - `loadDailySummaries()` - Load daily summaries for a chat
 - `loadMessages()` - Load messages for date range
@@ -95,6 +102,7 @@ ApiUtils.getWithParams('/api/endpoint', { param1: 'value1' });
 - `searchCollectiveMemory()` - Search memory
 
 **Usage Example**:
+
 ```javascript
 const conversations = await YomiApi.loadConversations();
 const summaries = await YomiApi.loadDailySummaries(chatId);
@@ -106,6 +114,7 @@ const messages = await YomiApi.loadMessages(chatId, startDate, endDate);
 **Purpose**: Common UI helper functions
 
 **Key Functions**:
+
 - `escapeHtml()` - XSS prevention
 - `createElement()` - DOM element creation
 - `showLoading()` / `showError()` / `showEmpty()` - State display
@@ -118,9 +127,10 @@ const messages = await YomiApi.loadMessages(chatId, startDate, endDate);
 - `getQueryParam()` / `setQueryParam()` - URL parameter handling
 
 **Usage Example**:
+
 ```javascript
-UiUtils.showLoading('#container', 'Loading data...');
-UiUtils.showToast('Operation successful', 'success');
+UiUtils.showLoading("#container", "Loading data...");
+UiUtils.showToast("Operation successful", "success");
 const debouncedFn = UiUtils.debounce(func, 300);
 ```
 
@@ -167,16 +177,18 @@ When creating new shared utilities:
 ### Migration Pattern
 
 **Before (inline code)**:
+
 ```javascript
 async function loadConversations() {
-  const res = await fetch('/api/yomi/conversations');
-  if (!res.ok) throw new Error('HTTP ' + res.status);
+  const res = await fetch("/api/yomi/conversations");
+  if (!res.ok) throw new Error("HTTP " + res.status);
   const data = await res.json();
   return data.conversations || [];
 }
 ```
 
 **After (using shared utilities)**:
+
 ```javascript
 async function loadConversations() {
   return await YomiApi.loadConversations();
@@ -186,26 +198,30 @@ async function loadConversations() {
 ## Benefits
 
 ### 1. Code Reusability
+
 - Common functionality written once, used everywhere
 - Reduces code duplication by ~40% in migrated apps
 
 ### 2. Consistency
+
 - Standardized error handling across all apps
 - Consistent API call patterns
 - Uniform date formatting and timezone handling
 
 ### 3. Maintainability
+
 - Bug fixes applied once, benefit all apps
 - Easier to add new features
 - Centralized documentation
 
 ### 4. Developer Experience
+
 - Clear, documented APIs
 - Predictable function signatures
 - Reduced cognitive load when switching between apps
 
 ### 5. Testing
+
 - Easier to test core functionality
 - Test once, validate everywhere
 - Better test coverage
-

@@ -28,17 +28,20 @@ status: active
 ## Tools
 
 ### Development Environment
+
 - **Windsurf/Cascade**: IDE-based AI coding for daily development
 - **Devin**: Autonomous tasks and pull requests
 - **mcp-kbman**: Knowledge base management and search
 - **GitHub**: Infrastructure and project code sync
 
 ### Knowledge Management
+
 - **Personal KB**: `/home/tony/GoogleDrive/Tony AI/KB/` (GDrive sync)
 - **SSOT**: `/home/tony/CascadeProjects/chaba/docs/ssot/` (GitHub sync)
 - **Project Docs**: `/home/tony/CascadeProjects/chaba/docs/` (GitHub sync)
 
 ### AI Agent Access
+
 - AI agents access Personal KB via mcp-kbman MCP server
 - Use mcp-kbman search for unified knowledge discovery
 - Reference Personal KB ai-context/ for personal context and preferences
@@ -46,17 +49,20 @@ status: active
 ## Workflow Preferences
 
 ### Before Starting Work
+
 - Run `bash ./kb-start.sh` for Personal KB work
 - Check git status for SSOT and project docs
 - Resolve any conflicts or issues before proceeding
 
 ### During Work
+
 - Make minimal, focused changes
 - Test changes before committing
 - Update relevant documentation
 - Follow existing patterns and conventions
 
 ### After Work
+
 - Run `bash ./kb-end.sh "summary"` for Personal KB
 - Commit SSOT and project docs with descriptive messages
 - Push to GitHub for multi-machine sync

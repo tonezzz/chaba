@@ -21,7 +21,7 @@ overview:
 
 decisions:
   - id: mcp-debug-unified-commands
-    date: '2026-08-17'
+    date: "2026-08-17"
     title: Add unified cross-platform commands to mcp-debug
     status: accepted
     context: |
@@ -58,7 +58,7 @@ decisions:
       - scripts/mcp_debug/mcp-debug-macos
       - ~/.local/bin/mcp-debug
   - id: mcp-debug-cors-proxy
-    date: '2026-08-16'
+    date: "2026-08-16"
     title: How to serve live mcp-savings.json to the HTTPS chaba.h3 page
     status: accepted
     context: |
@@ -71,7 +71,13 @@ decisions:
         pros: [simple fetch from the page, no server-side proxy]
         cons: [requires TLS termination and certificate on tony-dell, opens tony-dell port to HTTPS]
       - label: Same-origin PHP proxy on chaba.h3
-        pros: [avoids mixed-content, hides upstream HTTP URL from browser, fast to deploy, falls back to cached snapshot]
+        pros:
+          [
+            avoids mixed-content,
+            hides upstream HTTP URL from browser,
+            fast to deploy,
+            falls back to cached snapshot,
+          ]
         cons: [adds PHP dependency, one more network hop, proxy must be maintained]
       - label: Disable live URL until a secure endpoint is available
         pros: [no mixed-content risk, no extra code]
@@ -95,7 +101,7 @@ decisions:
       - chaba-h3/public/apps/docs/mcp_debug/app.js
 
   - id: mcp-debug-file-clipboard-bridge
-    date: '2026-08-17'
+    date: "2026-08-17"
     title: How to add auditable remote file get/put to mcp-debug
     status: accepted
     context: |
@@ -107,7 +113,15 @@ decisions:
         pros: [reuses the existing raw-command path, minimal new code]
         cons: [blurs the line between raw and auditable commands, harder to log, harder to vet]
       - label: Add dedicated mcp_get_file and mcp_put_file tools
-        pros: [clear contract, path-allowlist per host, hard size cap, base64 payload, overwrite control, detailed logging]
+        pros:
+          [
+            clear contract,
+            path-allowlist per host,
+            hard size cap,
+            base64 payload,
+            overwrite control,
+            detailed logging,
+          ]
         cons: [new tool schemas, new SSOT file, more code in tools.py]
       - label: Use a separate file-transfer MCP server
         pros: [isolated security surface, could reuse scp/sftp]
@@ -132,7 +146,7 @@ decisions:
       - scripts/mcp_debug/server.py
 
   - id: migrate-core-services-to-tony-dell-podman
-    date: '2026-08-17'
+    date: "2026-08-17"
     title: Migrate core chaba services from tony-omen Docker to tony-dell rootless Podman with Quadlet
     status: accepted
     context: |
@@ -146,10 +160,22 @@ decisions:
         cons: [continues to rely on tony-omen for critical data services, no rootless isolation]
       - label: Move to tony-dell Docker with compose
         pros: [familiar docker compose tooling, direct volume migration]
-        cons: [still requires rootful Docker or complex rootless setup, no native systemd integration]
+        cons:
+          [still requires rootful Docker or complex rootless setup, no native systemd integration]
       - label: Move to tony-dell rootless Podman with Quadlet
-        pros: [systemd user units auto-start on boot, no root privileges, host-network simplifies known ports, aligns with existing Quadlet work]
-        cons: [new Quadlet units to write, image imports via docker save | podman load, port conflicts must be resolved per service]
+        pros:
+          [
+            systemd user units auto-start on boot,
+            no root privileges,
+            host-network simplifies known ports,
+            aligns with existing Quadlet work,
+          ]
+        cons:
+          [
+            new Quadlet units to write,
+            image imports via docker save | podman load,
+            port conflicts must be resolved per service,
+          ]
     chosen: Move to tony-dell rootless Podman with Quadlet
     reasoning: |
       Rootless Podman with Quadlet gives native systemd user integration, starts containers at boot without
@@ -177,7 +203,7 @@ decisions:
       - stacks/web/Caddyfile
 
   - id: mcp-focus-decision-logging
-    date: '2026-08-17'
+    date: "2026-08-17"
     title: How to record focus intake, technical, and session decisions through mcp_focus
     status: accepted
     context: |
@@ -189,7 +215,12 @@ decisions:
         pros: [clear contract per destination, easy to permission independently]
         cons: [more MCP tools, more server wiring, more to remember]
       - label: Single mcp_focus with modes
-        pros: [reuses existing session-start tool, keeps decision writing next to focus router, fewer tools]
+        pros:
+          [
+            reuses existing session-start tool,
+            keeps decision writing next to focus router,
+            fewer tools,
+          ]
         cons: [larger tool schema, mode dispatch adds complexity]
     chosen: Single mcp_focus with modes
     reasoning: |
@@ -209,7 +240,7 @@ decisions:
       - docs/ssot/ssot.focus.sessions.yml
 
   - id: rview-view-number-and-media-fallback
-    date: '2026-08-22'
+    date: "2026-08-22"
     title: Auto-number RView views and fall back to iframe on media load failure
     status: accepted
     context: |
@@ -247,7 +278,7 @@ decisions:
       - stacks/web/public/apps/rview/index.html
 
   - id: ha-live-uses-port-8444
-    date: '2026-08-29'
+    date: "2026-08-29"
     title: Use port 8444 for the Home Assistant Gemini Live bridge (ha-live)
     status: accepted
     context: |
@@ -273,10 +304,10 @@ decisions:
       endpoint useful. SSOT, health checks, docs, and the public apps index were all
       swept to remove stale Chaba Funnel references.
     consequences:
-      - 'Tailscale 8444 now funnels to 127.0.0.1:9005 (ha-live)'
-      - 'https://tony-dell.taila0626a.ts.net:8444/ is the canonical Gemini Live bridge URL'
-      - 'chaba-funnel references removed from ssot.values.yml, health SSOT, KB, and public pages'
-      - 'Old ssot.health 8444 health check repointed to ha-live'
+      - "Tailscale 8444 now funnels to 127.0.0.1:9005 (ha-live)"
+      - "https://tony-dell.taila0626a.ts.net:8444/ is the canonical Gemini Live bridge URL"
+      - "chaba-funnel references removed from ssot.values.yml, health SSOT, KB, and public pages"
+      - "Old ssot.health 8444 health check repointed to ha-live"
     related:
       - docs/ssot/infrastructure/ssot.values.yml
       - docs/ssot/infrastructure/ssot.health.home.web.yml
@@ -285,7 +316,7 @@ decisions:
       - stacks/web/public/apps/tailscale-funnel/index.html
 
   - id: workflows-mcp-persistent-container
-    date: '2026-08-29'
+    date: "2026-08-29"
     title: Run Workflows MCP as a persistent Podman container on tony-dell
     status: accepted
     context: |

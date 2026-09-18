@@ -3,6 +3,7 @@ category: operations
 ---
 
 # Disk Space Management
+
 ## What it is
 
 `/data` is the primary storage volume for Docker images, build cache, model weights, and HuggingFace downloads. It fills up faster than the OS disk. Two main reclaim targets: Docker build cache and HuggingFace model cache.
@@ -10,7 +11,6 @@ category: operations
 ## Context/Background
 
 Created 2026-08-05 as part of Chaba infrastructure documentation.
-
 
 ## Overview
 
@@ -54,19 +54,19 @@ Look for the "Build Cache" row.
 
 ### Active models (do not delete)
 
-| Model | Size | Used by |
-|-------|------|---------|
+| Model     | Size  | Used by                                        |
+| --------- | ----- | ---------------------------------------------- |
 | SDXL-base | 13 GB | `imagen2-inference` service (active container) |
 
 ### Potentially removable (no active containers as of 2026-08-05)
 
-| Model | Size | Notes |
-|-------|------|-------|
-| LTX-Video-diffusers | 27 GB | No active container; largest reclaim opportunity |
-| Thai-Legal HF full-precision | 15 GB | GGUF quantised version already at `/data/gguf` — this is the redundant full-precision copy |
-| SDXL-Lightning | 6.5 GB | No active container |
-| Juggernaut-XL | 6.4 GB | No active container |
-| RealVisXL | 6.2 GB | No active container |
+| Model                        | Size   | Notes                                                                                      |
+| ---------------------------- | ------ | ------------------------------------------------------------------------------------------ |
+| LTX-Video-diffusers          | 27 GB  | No active container; largest reclaim opportunity                                           |
+| Thai-Legal HF full-precision | 15 GB  | GGUF quantised version already at `/data/gguf` — this is the redundant full-precision copy |
+| SDXL-Lightning               | 6.5 GB | No active container                                                                        |
+| Juggernaut-XL                | 6.4 GB | No active container                                                                        |
+| RealVisXL                    | 6.2 GB | No active container                                                                        |
 
 **Total potentially removable: ~61 GB**
 

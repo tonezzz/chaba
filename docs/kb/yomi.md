@@ -8,16 +8,17 @@ category: operations
 
 A static web view served from `http://tony-omen.local:8080/apps/yomi/`.
 It lists LINE conversations from the Yomi MCP server and lets you click a title to see recent messages. Each conversation also has an `↗` icon that opens a full single-conversation view (`chat.html?chat=<chatId>`) in a new tab.
+
 ## Context/Background
 
 Created 2026-08-04 as part of Chaba infrastructure documentation.
-
 
 ## Architecture (Post-Improvement)
 
 Yomi has been split into a two-stage pipeline for better reliability and monitoring:
 
 ### Stage 1: Fetch (`fetch-conversations.mjs`)
+
 - Connects to Yomi MCP server
 - Fetches conversation list (limit: 200)
 - Downloads messages for each conversation (100 messages per chat)
@@ -26,6 +27,7 @@ Yomi has been split into a two-stage pipeline for better reliability and monitor
 - Runs every 15 minutes via systemd timer
 
 ### Stage 2: Process (`process-conversations.mjs`)
+
 - Reads from `fetch-data/` directory
 - Generates AI summaries using Gemini API (gemma-4-31b-it) with language detection (Thai/English/mixed)
 - Categorizes conversations
@@ -35,6 +37,7 @@ Yomi has been split into a two-stage pipeline for better reliability and monitor
 - Runs via systemd timer with flexible scheduling for intermittent PC usage
 
 ### API Server (`yomi-api.mjs`)
+
 - HTTP API on port 3000 (default)
 - **Systemd Service**: `yomi-api.service` (auto-restart enabled)
 - Endpoints:
@@ -58,18 +61,18 @@ Yomi has been split into a two-stage pipeline for better reliability and monitor
 
 ## Key files
 
-| File | Purpose |
-|------|---------|
-| `chaba/stacks/web/public/apps/yomi/index.html` | Conversation list, inline message toggle, new-tab icon |
-| `chaba/stacks/web/public/apps/yomi/chat.html` | Full single-conversation view |
-| `chaba/stacks/web/public/apps/yomi/.gitignore` | Ignores generated `conversations.json` and `messages/` |
-| `chaba/scripts/yomi/fetch-conversations.mjs` | Stage 1: Fetch conversations from LINE API |
-| `chaba/scripts/yomi/process-conversations.mjs` | Stage 2: Process and summarize conversations |
-| `chaba/scripts/yomi/yomi-api.mjs` | HTTP API server for Yomi data |
-| `chaba/scripts/yomi/categorize-conversations.mjs` | Conversation categorization logic |
-| `chaba/scripts/yomi/summary-utils.mjs` | Summary generation and quality evaluation |
-| `chaba/scripts/yomi/db.mjs` | PostgreSQL database connection |
-| `chaba/stacks/web/Caddyfile` | `handle_path /apps/yomi/*` serves `/srv/public/apps/yomi` |
+| File                                              | Purpose                                                   |
+| ------------------------------------------------- | --------------------------------------------------------- |
+| `chaba/stacks/web/public/apps/yomi/index.html`    | Conversation list, inline message toggle, new-tab icon    |
+| `chaba/stacks/web/public/apps/yomi/chat.html`     | Full single-conversation view                             |
+| `chaba/stacks/web/public/apps/yomi/.gitignore`    | Ignores generated `conversations.json` and `messages/`    |
+| `chaba/scripts/yomi/fetch-conversations.mjs`      | Stage 1: Fetch conversations from LINE API                |
+| `chaba/scripts/yomi/process-conversations.mjs`    | Stage 2: Process and summarize conversations              |
+| `chaba/scripts/yomi/yomi-api.mjs`                 | HTTP API server for Yomi data                             |
+| `chaba/scripts/yomi/categorize-conversations.mjs` | Conversation categorization logic                         |
+| `chaba/scripts/yomi/summary-utils.mjs`            | Summary generation and quality evaluation                 |
+| `chaba/scripts/yomi/db.mjs`                       | PostgreSQL database connection                            |
+| `chaba/stacks/web/Caddyfile`                      | `handle_path /apps/yomi/*` serves `/srv/public/apps/yomi` |
 
 ## Data directory
 

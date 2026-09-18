@@ -36,7 +36,7 @@ syntax:
             path: docs/ssot/infrastructure/ssot.values.yml
             key: hosts.tony_dell.tailscale_ip
   allowed_with_care:
-    - name: '!ssot_ref'
+    - name: "!ssot_ref"
       for: Files that are guaranteed to only be loaded by mcp_debug/ssot.py
       warning: Other consumers (config.py, MDDB sync, plain yaml.safe_load) will fail unless they also register the !ssot_ref constructor.
 

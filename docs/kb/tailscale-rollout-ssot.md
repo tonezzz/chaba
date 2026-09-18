@@ -75,4 +75,3 @@ skill ssot-validate
 - **Subnet routes**: advertise the `192.168.1.0/24` home subnet from `tony-omen` so remote devices can reach non-Tailscale LAN devices.
 - **Exit node**: make `tony-omen` an exit node for secure mobile internet routing.
 - **Headscale**: if the cloud coordination server is not acceptable, migrate to a self-hosted Headscale instance later.
-

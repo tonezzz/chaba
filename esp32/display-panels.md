@@ -4,14 +4,14 @@
 
 ## Candidates found on GitHub
 
-| Repo | What it is | Notes |
-|---|---|---|
-| [element-software/CYD-ESPHome-HA-Monitor](https://github.com/element-software/CYD-ESPHome-HA-Monitor) | HAMon — clock + 6–8 HA sensor slots, dynamic colors, optional touch, web YAML generator | Cleanest **status monitor** for HA entities |
-| [drrcastro/CYD-Smart-Dashboard-for-Home-Assistant](https://github.com/drrcastro/CYD-Smart-Dashboard-for-Home-Assistant) | 6 customizable sensor slots + touch actions + auto-brightness | Interactive **dashboard** with tap-to-trigger |
-| [1achy/ESPHOME-esp32-2432s028r-LCD](https://github.com/1achy/ESPHOME-esp32-2432s028r-LCD) | 4-page meteo / wind / HA / **status** UI, LVGL | Has a dedicated **status** page; chosen for next try |
-| [Rishi8078/Docky-CYD](https://github.com/Rishi8078/Docky-CYD) | Polished desk dock: time, weather, scenes, transport, media, printer | Full **control panel** look |
-| [gubas/cyd_HA](https://github.com/gubas/cyd_HA) | Multi-page weather, sensors, 3D printer, control menu | More elaborate, French/English/Spanish |
-| [steemandavid/CYD-HA-display](https://github.com/steemandavid/CYD-HA-display) | Wall control panel for HA: power, temperatures, energy, devices | Good if you want multiple HA pages |
+| Repo                                                                                                                    | What it is                                                                              | Notes                                                |
+| ----------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- | ---------------------------------------------------- |
+| [element-software/CYD-ESPHome-HA-Monitor](https://github.com/element-software/CYD-ESPHome-HA-Monitor)                   | HAMon — clock + 6–8 HA sensor slots, dynamic colors, optional touch, web YAML generator | Cleanest **status monitor** for HA entities          |
+| [drrcastro/CYD-Smart-Dashboard-for-Home-Assistant](https://github.com/drrcastro/CYD-Smart-Dashboard-for-Home-Assistant) | 6 customizable sensor slots + touch actions + auto-brightness                           | Interactive **dashboard** with tap-to-trigger        |
+| [1achy/ESPHOME-esp32-2432s028r-LCD](https://github.com/1achy/ESPHOME-esp32-2432s028r-LCD)                               | 4-page meteo / wind / HA / **status** UI, LVGL                                          | Has a dedicated **status** page; chosen for next try |
+| [Rishi8078/Docky-CYD](https://github.com/Rishi8078/Docky-CYD)                                                           | Polished desk dock: time, weather, scenes, transport, media, printer                    | Full **control panel** look                          |
+| [gubas/cyd_HA](https://github.com/gubas/cyd_HA)                                                                         | Multi-page weather, sensors, 3D printer, control menu                                   | More elaborate, French/English/Spanish               |
+| [steemandavid/CYD-HA-display](https://github.com/steemandavid/CYD-HA-display)                                           | Wall control panel for HA: power, temperatures, energy, devices                         | Good if you want multiple HA pages                   |
 
 ## Chosen for next try: 1achy
 

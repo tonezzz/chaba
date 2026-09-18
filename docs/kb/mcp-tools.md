@@ -3,27 +3,27 @@ category: operations
 ---
 
 # MCP Tools Inventory
+
 ## What it is
 
 This document tracks the MCP servers used by the chaba lab and how to maintain them.
 
-
 This document tracks the MCP servers used by the chaba lab and how to maintain them.
+
 ## Context/Background
 
 Created 2026-08-04 as part of Chaba infrastructure documentation.
 
-
 ## Server Inventory
 
-| Server | Type | Command | Purpose | Secrets / Env |
-| --- | --- | --- | --- | --- |
-| `yomi` | stdio | `/usr/bin/node /home/tony/.yomi/mcpb/run.mjs` | LINE conversation viewer | Basic-auth on web side |
-| `github` | stdio (wrapper) | `/bin/bash /home/tony/CascadeProjects/chaba/.windsurf/run-github-mcp.sh` | GitHub MCP server | `~/.config/secrets/github-mcp.env` |
-| `mcp-llama` | stdio (wrapper) | `/bin/bash /home/tony/CascadeProjects/chaba/.windsurf/run-llama-mcp.sh` | Local LLM endpoint | `LLAMA_URL` |
-| `playwright` | stdio | `/usr/bin/npx -y @playwright/mcp@0.0.78` | Browser automation | None |
-| `playwright` | HTTP/SSE | `http://localhost:8931/mcp` | Browser automation (long-running) | `~/.windsurf/run-playwright-mcp-http.sh` |
-| `mcp-kbman` | stdio | `python3 -m mcp_kbman.server` | KB management with search and workflow | `GDRIVE_MOUNT_POINT` |
+| Server       | Type            | Command                                                                  | Purpose                                | Secrets / Env                            |
+| ------------ | --------------- | ------------------------------------------------------------------------ | -------------------------------------- | ---------------------------------------- |
+| `yomi`       | stdio           | `/usr/bin/node /home/tony/.yomi/mcpb/run.mjs`                            | LINE conversation viewer               | Basic-auth on web side                   |
+| `github`     | stdio (wrapper) | `/bin/bash /home/tony/CascadeProjects/chaba/.windsurf/run-github-mcp.sh` | GitHub MCP server                      | `~/.config/secrets/github-mcp.env`       |
+| `mcp-llama`  | stdio (wrapper) | `/bin/bash /home/tony/CascadeProjects/chaba/.windsurf/run-llama-mcp.sh`  | Local LLM endpoint                     | `LLAMA_URL`                              |
+| `playwright` | stdio           | `/usr/bin/npx -y @playwright/mcp@0.0.78`                                 | Browser automation                     | None                                     |
+| `playwright` | HTTP/SSE        | `http://localhost:8931/mcp`                                              | Browser automation (long-running)      | `~/.windsurf/run-playwright-mcp-http.sh` |
+| `mcp-kbman`  | stdio           | `python3 -m mcp_kbman.server`                                            | KB management with search and workflow | `GDRIVE_MOUNT_POINT`                     |
 
 ## Config Files
 
@@ -68,12 +68,14 @@ Then switch the Windsurf MCP config to `mcp_config.http.json` and reload the IDE
 **Purpose**: YAML-based workflow orchestration and automation
 
 **Installation**:
+
 ```bash
 pipx install workflows-mcp
 pipx inject workflows-mcp "mcp<2.0.0" --force  # MCP 2.0 compatibility
 ```
 
 **Configuration**:
+
 ```json
 {
   "mcpServers": {
@@ -89,6 +91,7 @@ pipx inject workflows-mcp "mcp<2.0.0" --force  # MCP 2.0 compatibility
 ```
 
 **Key Tools**:
+
 - `list_workflows()` - List available workflows
 - `execute_workflow(workflow="name", inputs={...})` - Execute registered workflow
 - `execute_inline_workflow(workflow_yaml="...", inputs={...})` - Execute ad-hoc YAML
@@ -105,6 +108,7 @@ pipx inject workflows-mcp "mcp<2.0.0" --force  # MCP 2.0 compatibility
 **Location**: `/home/tony/CascadeProjects/chaba-kbman/mcp-kbman`
 
 **Configuration**:
+
 ```json
 {
   "mcpServers": {
@@ -123,6 +127,7 @@ pipx inject workflows-mcp "mcp<2.0.0" --force  # MCP 2.0 compatibility
 ```
 
 **Key Tools**:
+
 - **File Operations**: `list_gdrive_files()`, `get_gdrive_file()`, `upload_gdrive_file()`, `update_gdrive_file()`, `delete_gdrive_file()`
 - **Search Operations**: `search_kb()`, `rebuild_index()`, `get_index_status()`, `clear_search_cache()`
 - **Background Tasks**: `get_scheduler_status()`, `trigger_task()`, `get_task_results()`, `get_pre_generated_stats()`
@@ -130,6 +135,7 @@ pipx inject workflows-mcp "mcp<2.0.0" --force  # MCP 2.0 compatibility
 - **Session Management**: `kb_read_current_context()`, `kb_update_current_context()`, `kb_read_active_projects()`, `kb_update_active_projects()`
 
 **Features**:
+
 - Multi-source search across Personal KB (28 docs) and Project Docs (186 docs) - 214 total documents
 - Background task system with configurable intervals (60s file index, 300s search index, 3600s cleanup)
 - 90%+ performance improvement through pre-generation and caching
@@ -147,6 +153,7 @@ pipx inject workflows-mcp "mcp<2.0.0" --force  # MCP 2.0 compatibility
 **Location**: `/home/tony/CascadeProjects/chaba/mcp-servers/mcp-health/`
 
 **Configuration**:
+
 ```json
 {
   "mcpServers": {
@@ -163,12 +170,14 @@ pipx inject workflows-mcp "mcp<2.0.0" --force  # MCP 2.0 compatibility
 ```
 
 **Key Tools**:
+
 - `check_health(service?)` - Run health checks for all or specific services
 - `get_health_status()` - Get current health status from database
 - `get_health_history(service_name?, limit?)` - Get historical health data
 - `get_health_summary(service_name?)` - Get uptime statistics and trends
 
 **Features**:
+
 - Hybrid orchestrator model (MCP as coordinator, not executor)
 - Network profile auto-detection (home vs mobile)
 - SQLite persistence for health history
@@ -176,12 +185,14 @@ pipx inject workflows-mcp "mcp<2.0.0" --force  # MCP 2.0 compatibility
 - Reads from SSOT health configuration
 
 **Architecture**:
+
 - MCP Layer: Standardized tools and interfaces
 - Execution Layer: Calls existing health-check skill
 - Persistence Layer: SQLite database (health-history.db)
 - Configuration Layer: SSOT health configuration files
 
 **Database Schema**:
+
 ```sql
 CREATE TABLE health_checks (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -194,17 +205,20 @@ CREATE TABLE health_checks (
 ```
 
 **Network Profile Detection**:
+
 - Home Profile: If `tony-omen.local` resolves, uses home network config
 - Mobile Profile: If home unavailable, detects current IP via `ip route get 1.1.1.1`
 - URL Substitution: Automatically replaces `{profile}` placeholders with detected base URL
 
 **Development Status**:
+
 - Phase 1 (MVP): ✅ Complete - Basic health check orchestration
 - Phase 2: ✅ Complete - SQLite persistence for health history and trends
 - Phase 1+2 (Real Health Checks): ✅ Complete - HTTP, container, systemd checks with categorization
 - Phase 3: ⏳ Pending - Alerting and notification capabilities
 
 **Completed Features (Phase 1+2)**:
+
 - Real HTTP health checks using curl with expected_status validation from SSOT config
 - Container health checks using docker ps with expected_state validation from SSOT config
 - Systemd health checks using systemctl with expected_state validation from SSOT config
@@ -220,6 +234,7 @@ CREATE TABLE health_checks (
 **Documentation**: See `mcp-servers/mcp-health/README.md` for detailed usage and troubleshooting
 
 **YAML Syntax Note**: URL placeholders in SSOT health config must be quoted to avoid parsing errors:
+
 ```yaml
 # Correct
 url: "{profile}/api/health"

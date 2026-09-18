@@ -36,4 +36,3 @@ Following the Tailscale rollout, the same `tailscale-funnel-connections` branch 
 ### Why this is in scope
 
 The `barrier-server` health check is a direct tailnet consumer: it verifies that the Barrier client on `tony-dell` can reach `tony-omen` over the `100.x` Tailscale address. Keeping these notes in the Tailscale KB makes the operational relationship explicit.
-

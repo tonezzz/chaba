@@ -13,14 +13,15 @@ Durable operational context for the `rview` remote media viewer and `rview-live`
 
 ## Endpoints
 
-| Service | Local (tony-dell) | Tailscale HTTPS | Caddy on tony-dell |
-|---|---|---|---|
-| `rview` UI | `http://tony-dell:8080/apps/rview/` | `https://tony-dell.taila0626a.ts.net:8443/apps/rview/` | `http://tony-dell:8080/apps/rview/` |
-| `rview-live` UI | `http://tony-dell:8080/apps/rview-live/` | `https://tony-dell.taila0626a.ts.net:8443/apps/rview-live/` | `http://tony-dell:8080/apps/rview-live/` |
-| `rview-api` | `http://127.0.0.1:3007` | `https://tony-dell.taila0626a.ts.net:8443/apps/rview/api/` via Caddy | `http://tony-dell:8080/apps/rview/api/` |
-| `rview-live` WebSocket/API | `http://127.0.0.1:3008` | `wss://tony-dell.taila0626a.ts.net:8443/api/rview-live/` | `http://tony-dell:8080/api/rview-live/` |
+| Service                    | Local (tony-dell)                        | Tailscale HTTPS                                                      | Caddy on tony-dell                       |
+| -------------------------- | ---------------------------------------- | -------------------------------------------------------------------- | ---------------------------------------- |
+| `rview` UI                 | `http://tony-dell:8080/apps/rview/`      | `https://tony-dell.taila0626a.ts.net:8443/apps/rview/`               | `http://tony-dell:8080/apps/rview/`      |
+| `rview-live` UI            | `http://tony-dell:8080/apps/rview-live/` | `https://tony-dell.taila0626a.ts.net:8443/apps/rview-live/`          | `http://tony-dell:8080/apps/rview-live/` |
+| `rview-api`                | `http://127.0.0.1:3007`                  | `https://tony-dell.taila0626a.ts.net:8443/apps/rview/api/` via Caddy | `http://tony-dell:8080/apps/rview/api/`  |
+| `rview-live` WebSocket/API | `http://127.0.0.1:3008`                  | `wss://tony-dell.taila0626a.ts.net:8443/api/rview-live/`             | `http://tony-dell:8080/api/rview-live/`  |
 
 Tailscale TCP serve is also enabled:
+
 - `tony-dell.taila0626a.ts.net:3007` → `127.0.0.1:3007`
 - `tony-dell.taila0626a.ts.net:3008` → `127.0.0.1:3008`
 
@@ -45,6 +46,7 @@ From `https://tony-dell.taila0626a.ts.net:8443/apps/rview-live/`:
 - `"Search the web for <topic>, read the first result, and create an HTML summary in RView"`
 
 Gemini uses these tools:
+
 - `web_search` — DuckDuckGo, no API key.
 - `fetch_page` — fetches a URL and returns title/extracted text.
 - `rview_show` / `rview_queue` / `rview_control` — update the remote viewer.

@@ -17,10 +17,11 @@ import json
 import os
 import urllib.request
 from contextlib import contextmanager
+from uuid import UUID
 
 import pychromecast
 from fastmcp import FastMCP
-from pychromecast.discovery import discover_listed_chromecasts, get_device_info
+from pychromecast.discovery import discover_listed_chromecasts
 from pychromecast.models import CastInfo, HostServiceInfo
 
 BIND_HOST = os.environ.get("BIND_HOST", "127.0.0.1")
@@ -44,17 +45,21 @@ def _cast_info_for_host(host: str) -> CastInfo:
         manufacturer=None,
     )
     try:
-        dev = get_device_info(host, timeout=5)
+        with urllib.request.urlopen(
+            f"http://{host}:8008/setup/eureka_info?params=device_info", timeout=6
+        ) as resp:
+            dev = json.loads(resp.read().decode()).get("device_info", {})
         if dev:
+            udn = dev.get("ssdp_udn")
             info = CastInfo(
                 services=info.services,
-                uuid=dev.uuid,
-                model_name=dev.model_name,
-                friendly_name=dev.friendly_name,
+                uuid=UUID(udn) if udn else None,
+                model_name=dev.get("model_name"),
+                friendly_name=dev.get("name"),
                 host=host,
                 port=8009,
-                cast_type=dev.cast_type,
-                manufacturer=dev.manufacturer,
+                cast_type="cast",
+                manufacturer=dev.get("manufacturer"),
             )
     except Exception:
         pass
@@ -69,12 +74,15 @@ def _discover(timeout: float = 5.0) -> dict[str, CastInfo]:
     )
     pychromecast.discovery.stop_discovery(browser)
     devices: dict[str, CastInfo] = {}
+    seen_hosts = {i.host for i in cast_infos}
     for info in cast_infos:
+        if not info.friendly_name:
+            info = _cast_info_for_host(info.host)
         if info.friendly_name:
             devices[info.friendly_name.strip().lower()] = info
         devices[info.host] = info
     for host in CAST_HOSTS:
-        if not any(i.host == host for i in devices.values()):
+        if host not in seen_hosts:
             info = _cast_info_for_host(host)
             if info.friendly_name:
                 devices[info.friendly_name.strip().lower()] = info

@@ -9,6 +9,7 @@ category: operations
 **Scenario**: Total system failure requiring full restore
 
 **Recovery Steps**:
+
 1. Restore system from Timeshift snapshot
 2. Clone chaba repository from GitHub
 3. Restore MCP configs: `./scripts/recover-configs.sh`
@@ -24,6 +25,7 @@ category: operations
 **Scenario**: Documentation files corrupted or accidentally deleted
 
 **Recovery Steps**:
+
 1. Git checkout clean version: `git checkout -- .`
 2. Verify file integrity: `./scripts/verify-docs.sh`
 3. Test search functionality
@@ -37,6 +39,7 @@ category: operations
 **Scenario**: MCP config file corrupted or deleted
 
 **Recovery Steps**:
+
 1. Restore from daily backup: `./scripts/recover-configs.sh`
 2. Restart Devin Desktop
 3. Verify MCP servers: `mcp_list_servers`
@@ -50,6 +53,7 @@ category: operations
 **Scenario**: GitHub repository lost or corrupted
 
 **Recovery Steps**:
+
 1. Restore from local system backup
 2. Create new GitHub repository
 3. Push restored content
@@ -66,6 +70,7 @@ category: operations
 **Command**: `./scripts/verify-docs.sh`
 
 **What it verifies**:
+
 - File count meets minimum (100+ files)
 - Critical directories exist
 - Template files present
@@ -103,20 +108,24 @@ category: operations
 ## Backup Locations
 
 ### Primary Storage
+
 - **Git Repository**: GitHub (remote)
 - **Local Repository**: `/home/tony/CascadeProjects/chaba/.git`
 
 ### Configuration Backups
+
 - **Location**: `/home/tony/CascadeProjects/chaba/docs/backups/configs/`
 - **Retention**: 30 days
 - **Contents**: MCP configs, skills, rules
 
 ### Restore Points
+
 - **Location**: `/home/tony/CascadeProjects/chaba/docs/backups/configs/restore_points/`
 - **Created**: Before each recovery operation
 - **Retention**: Manual cleanup
 
 ### Logs
+
 - **Backup Log**: `docs/backups/backup.log`
 - **Verification Log**: `docs/backups/verify.log`
 
@@ -127,6 +136,7 @@ The disaster recovery strategy is documented in SSOT for single source of truth:
 **SSOT File**: `docs/ssot/ssot.documentation-infrastructure.yml`
 
 **Contains**:
+
 - Critical infrastructure components
 - Backup strategy details
 - Recovery procedures
@@ -134,4 +144,3 @@ The disaster recovery strategy is documented in SSOT for single source of truth:
 - Verification procedures
 - Disaster recovery scenarios
 - Contact information
-

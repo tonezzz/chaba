@@ -14,6 +14,7 @@ fsspec was considered as a Python-native alternative to rclone for Google Drive 
 ## Status at Archive
 
 **Evaluation**: In Progress
+
 - ✅ Basic feasibility testing with gdrivefs
 - ✅ Integration testing with mcp-kbman container
 - ⏳ Full implementation deferred
@@ -28,12 +29,14 @@ fsspec was considered as a Python-native alternative to rclone for Google Drive 
 ## Decision Rationale
 
 **Chosen Solution**: rclone
+
 - ✅ Proven reliability and performance
 - ✅ Already implemented and working
 - ✅ Simple configuration and maintenance
 - ✅ Good integration with existing backup scripts
 
 **Deferred Solution**: fsspec
+
 - ⏳ Requires additional development
 - ⏳ Performance characteristics unknown
 - ⏳ Integration complexity higher than rclone
@@ -42,6 +45,7 @@ fsspec was considered as a Python-native alternative to rclone for Google Drive 
 ## Restoration
 
 If restoration is needed:
+
 ```bash
 cd /home/tony/CascadeProjects/chaba-kbman/stacks/web/mddb
 mv fsspec.archive/test-fsspec.py .
@@ -52,6 +56,7 @@ mv fsspec.archive/test-fsspec.py .
 ## Current Solution
 
 **rclone** remains the active Google Drive sync solution:
+
 - **Script**: sync-to-gdrive.sh
 - **Target**: Tony AI/mddb
 - **Status**: Operational and tested

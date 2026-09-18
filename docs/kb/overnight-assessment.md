@@ -3,6 +3,7 @@ category: operations
 ---
 
 # Overnight System Assessment
+
 ## What it is
 
 Automated overnight system assessment that runs comprehensive health checks and performance analysis of the Chaba infrastructure. Scheduled to run daily at 2:00 AM via systemd timer, generating detailed reports for system administrators.
@@ -11,41 +12,44 @@ Automated overnight system assessment that runs comprehensive health checks and 
 
 Created 2026-08-05 as part of Chaba infrastructure documentation.
 
-
 ## Overview
 
 Automated overnight system assessment that runs comprehensive health checks and performance analysis of the Chaba infrastructure. Scheduled to run daily at 2:00 AM via systemd timer, generating detailed reports for system administrators.
 
 ## Key files
 
-| File | Purpose |
-|------|---------|
-| `chaba/.agents/skills/overnight-assessment/SKILL.md` | Assessment skill definition and scope |
-| `chaba/scripts/overnight-assessment.mjs` | Main assessment script (Node.js) |
-| `/etc/systemd/system/chaba-assessment.timer` | Systemd timer for scheduling |
-| `/etc/systemd/system/chaba-assessment.service` | Systemd service definition |
-| `chaba/reports/overnight-assessment-YYYY-MM-DD.md` | Generated assessment reports |
-| `chaba/reports/archive/` | Reports older than 30 days (auto-archived) |
+| File                                                 | Purpose                                    |
+| ---------------------------------------------------- | ------------------------------------------ |
+| `chaba/.agents/skills/overnight-assessment/SKILL.md` | Assessment skill definition and scope      |
+| `chaba/scripts/overnight-assessment.mjs`             | Main assessment script (Node.js)           |
+| `/etc/systemd/system/chaba-assessment.timer`         | Systemd timer for scheduling               |
+| `/etc/systemd/system/chaba-assessment.service`       | Systemd service definition                 |
+| `chaba/reports/overnight-assessment-YYYY-MM-DD.md`   | Generated assessment reports               |
+| `chaba/reports/archive/`                             | Reports older than 30 days (auto-archived) |
 
 ## Issue Prioritization
 
 ### Critical Issues (🚨)
+
 - GPU temperature > 85°C
 - Core service failures (Status API, Yomi API, etc.)
 - Critical endpoint unavailability
 
 ### High Priority Issues (⚠️)
+
 - GPU temperature > 75°C
 - GPU VRAM usage > 90%
 - Docker container failures
 - High error counts in services
 
 ### Medium Priority Issues (📋)
+
 - GPU queue failures
 - Elevated resource usage
 - Configuration inconsistencies
 
 ### Low Priority Issues (💡)
+
 - IP addresses in config files (should use .local)
 - Documentation updates needed
 - Minor optimization opportunities
@@ -95,12 +99,14 @@ Each overnight assessment generates a markdown report with:
 ## Scheduling
 
 **Timer Configuration:**
+
 - **Schedule:** Daily at 2:00 AM (`OnCalendar=*-*-* 02:00:00`)
 - **Persistence:** Enabled (runs missed jobs on boot)
 - **Accuracy:** 1 minute
 - **Location:** `/etc/systemd/system/chaba-assessment.timer`
 
 **Service Configuration:**
+
 - **User:** tony
 - **Working Directory:** `/home/tony/CascadeProjects/chaba`
 - **Script:** `scripts/overnight-assessment.mjs`
@@ -161,6 +167,7 @@ Current monitoring thresholds:
 ## Maintenance
 
 **Regular Tasks:**
+
 - Review assessment reports weekly
 - Monitor for recurring issues
 - Update thresholds as needed
@@ -177,6 +184,7 @@ Reports are automatically archived at the end of every assessment run via `archi
 - Files older than 30 days are moved (not deleted) — recoverable if needed
 
 **Troubleshooting:**
+
 - Check logs in `logs/assessment-error.log` for failures
 - Verify systemd timer is active: `systemctl status chaba-assessment.timer`
 - Test script manually to debug issues

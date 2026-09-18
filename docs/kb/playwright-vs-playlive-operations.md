@@ -5,12 +5,14 @@ category: operations
 # Current Implementation
 
 ### Raceman Project
+
 - **Playwright Version**: 1.61.1
 - **Purpose**: E2E testing of raceman application
 - **Target**: localhost:8083 (raceman container)
 - **Test Files**: e2e/track3.spec.js, e2e/imagen2.spec.js, e2e/reefriders.spec.js
 
 ### PlayLive Daemon
+
 - **Hosts**:
   - `tony-omen.local:9231` — consolidated session daemon
   - `tony-dell.local:9230` — UI verification daemon for offloading browser work from `tony-omen`
@@ -21,14 +23,15 @@ category: operations
 ## Session Types in PlayLive
 
 1. **chrome-live**: CDP-attached to existing Chrome
-2. **playwright-chrome**: Playwright attached to CDP Chrome  
+2. **playwright-chrome**: Playwright attached to CDP Chrome
 3. **playwright-headless**: Local headless Playwright browser
 
 ## Technical Implementation
 
 ### PlayLive Daemon (playlived.mjs)
+
 ```javascript
-import { chromium } from 'playwright';
+import { chromium } from "playwright";
 
 // Session management
 const sessions = new Map();
@@ -40,6 +43,7 @@ const page = await context.newPage();
 ```
 
 ### MCP Client (playlive-server.py)
+
 ```python
 from mcp.server.fastmcp import FastMCP
 
@@ -54,6 +58,7 @@ def playlive_navigate(session_id: str, url: str) -> str:
 ## Independence of Installations
 
 The raceman project's Playwright installation is independent of the PlayLive daemon:
+
 - **Separate installations**: Each has its own Playwright browser cache
 - **Different purposes**: Raceman for E2E testing, PlayLive for AI automation
 - **No direct dependency**: Changes to one don't affect the other
@@ -64,6 +69,7 @@ The raceman project's Playwright installation is independent of the PlayLive dae
 ### Session Management
 
 PlayLive requires proper session management for effective testing:
+
 - Sessions persist across operations and must be explicitly cleaned up
 - Multiple AI agents can share sessions, requiring coordination
 - Session state must be managed to prevent conflicts
@@ -72,6 +78,7 @@ PlayLive requires proper session management for effective testing:
 ### Playwright Reinstallation
 
 After system updates or PlayLive daemon updates, Playwright may need reinstallation:
+
 ```bash
 # Reinstall Playwright browsers
 npx playwright install
@@ -81,11 +88,13 @@ npx playwright install --with-deps
 ```
 
 **Symptoms**:
+
 - PlayLive fails to start browser sessions
 - CDP connection errors
 - Browser crashes on session creation
 
 **Causes**:
+
 - System updates affecting Playwright binaries
 - Playwright version mismatches
 - Missing browser dependencies after system updates
@@ -93,6 +102,7 @@ npx playwright install --with-deps
 ### Testing Effectiveness
 
 PlayLive is effective for testing web applications when:
+
 - Proper session management is implemented
 - Sessions are cleaned up after testing
 - Playwright binaries are up-to-date
@@ -121,4 +131,3 @@ The PlayLive browser cache on each host must match the installed `playwright` pa
 
 - `/home/tony/.local/playlive/package.json`: `"playwright": "1.62.0"`
 - If Playwright is ever bumped, reinstall browser binaries with: `npx playwright install chromium`
-

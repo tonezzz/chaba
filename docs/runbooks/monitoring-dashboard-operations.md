@@ -28,28 +28,31 @@ The Chaba monitoring dashboard provides real-time visibility into infrastructure
 
 ## Key Files
 
-| File | Purpose |
-|------|---------|
-| `scripts/monitoring-dashboard.mjs` | Main monitoring dashboard server |
-| `scripts/test-monitoring-dashboard.sh` | Dashboard test suite |
-| `systemd/chaba-monitoring-dashboard.service` | Systemd service for auto-start |
-| `logs/health-monitor.log` | Health monitor alert source |
-| `/var/log/chaba-backup.log` | Backup operation logs |
+| File                                         | Purpose                          |
+| -------------------------------------------- | -------------------------------- |
+| `scripts/monitoring-dashboard.mjs`           | Main monitoring dashboard server |
+| `scripts/test-monitoring-dashboard.sh`       | Dashboard test suite             |
+| `systemd/chaba-monitoring-dashboard.service` | Systemd service for auto-start   |
+| `logs/health-monitor.log`                    | Health monitor alert source      |
+| `/var/log/chaba-backup.log`                  | Backup operation logs            |
 
 ## Dashboard Architecture
 
 ### Web Interface
+
 - **URL**: `http://localhost:3002`
 - **Auto-refresh**: 30 seconds
 - **Manual refresh**: Refresh button
 - **Dark theme**: Modern dark interface
 
 ### API Endpoints
+
 - **`/`**: Main dashboard HTML
 - **`/api/status`**: JSON API with all metrics
 - **`/api/refresh`**: Force refresh endpoint
 
 ### Monitored Components
+
 1. **Services**: status-api, yomi-api, caddy, trade-api
 2. **Containers**: postgres, redis, caddy, gpu-queue
 3. **Performance**: Memory, disk, GPU temperature, GPU utilization
@@ -61,12 +64,14 @@ The Chaba monitoring dashboard provides real-time visibility into infrastructure
 ### Dashboard Startup
 
 **Manual Startup**:
+
 ```bash
 # Start dashboard manually
 node /home/tony/CascadeProjects/chaba/scripts/monitoring-dashboard.mjs
 ```
 
 **Systemd Automation**:
+
 ```bash
 # Enable auto-start on boot
 systemctl --user enable chaba-monitoring-dashboard.service
@@ -79,6 +84,7 @@ systemctl --user status chaba-monitoring-dashboard.service
 ```
 
 **Access Dashboard**:
+
 - Open browser to `http://localhost:3002`
 - Dashboard auto-refreshes every 30 seconds
 - Manual refresh with Refresh button
@@ -86,6 +92,7 @@ systemctl --user status chaba-monitoring-dashboard.service
 ### API Usage
 
 **Get Current Status**:
+
 ```bash
 # Get JSON status
 curl http://localhost:3002/api/status
@@ -98,6 +105,7 @@ curl http://localhost:3002/api/status | jq '.gpu'
 ```
 
 **Force Refresh**:
+
 ```bash
 # Trigger immediate dashboard update
 curl http://localhost:3002/api/refresh
@@ -106,11 +114,13 @@ curl http://localhost:3002/api/refresh
 ### Testing and Validation
 
 **Run Dashboard Tests**:
+
 ```bash
 ./scripts/test-monitoring-dashboard.sh
 ```
 
 **Test Coverage**:
+
 - Script existence and permissions
 - Node.js availability
 - Systemd service file validation
@@ -120,6 +130,7 @@ curl http://localhost:3002/api/refresh
 ### Health Check Integration
 
 The dashboard integrates with the existing health monitor system:
+
 - **Alert Source**: `/home/tony/CascadeProjects/chaba/logs/health-monitor.log`
 - **Alert Types**: Critical, warning, info
 - **Alert Display**: Recent 20 alerts with severity color-coding
@@ -130,17 +141,20 @@ The dashboard integrates with the existing health monitor system:
 ### Issue: Dashboard Not Accessible
 
 **Symptoms**:
+
 - Browser cannot connect to `http://localhost:3002`
 - Connection refused error
 - Dashboard not responding
 
 **Causes**:
+
 - Dashboard service not running
 - Port 3002 already in use
 - Node.js not available
 - Network connectivity issues
 
 **Solutions**:
+
 ```bash
 # Check if dashboard is running
 ps aux | grep monitoring-dashboard
@@ -161,16 +175,19 @@ systemctl --user restart chaba-monitoring-dashboard.service
 ### Issue: Service Status Not Updating
 
 **Symptoms**:
+
 - Service status shows stale information
 - Last update timestamp old
 - Auto-refresh not working
 
 **Causes**:
+
 - Dashboard update loop stopped
 - Service health check failures
 - Network connectivity issues
 
 **Solutions**:
+
 ```bash
 # Force refresh via API
 curl http://localhost:3002/api/refresh
@@ -189,16 +206,19 @@ curl -f http://tony-omen.local:8080/
 ### Issue: GPU Metrics Not Showing
 
 **Symptoms**:
+
 - GPU temperature shows "N/A"
 - GPU utilization not updating
 - GPU memory shows "N/A"
 
 **Causes**:
+
 - nvidia-smi not available
 - GPU not detected
 - NVIDIA drivers not loaded
 
 **Solutions**:
+
 ```bash
 # Check nvidia-smi availability
 nvidia-smi
@@ -216,16 +236,19 @@ systemctl --user restart chaba-monitoring-dashboard.service
 ### Issue: Backup Status Not Updating
 
 **Symptoms**:
+
 - Backup status shows "unknown"
 - Google Drive mount status incorrect
 - Backup count not updating
 
 **Causes**:
+
 - Google Drive not mounted
 - Backup logs not accessible
 - Backup directory structure changed
 
 **Solutions**:
+
 ```bash
 # Check Google Drive mount
 mount | grep gdrive
@@ -243,16 +266,19 @@ tail -f /var/log/chaba-backup.log
 ### Issue: High Memory Usage in Dashboard
 
 **Symptoms**:
+
 - Dashboard process using excessive memory
 - Memory leak suspected
 - System resources degraded
 
 **Causes**:
+
 - Memory leak in dashboard code
 - Excessive data retention
 - Update interval too frequent
 
 **Solutions**:
+
 ```bash
 # Check dashboard memory usage
 ps aux | grep monitoring-dashboard
@@ -269,18 +295,21 @@ watch -n 5 'ps aux | grep monitoring-dashboard'
 ## Performance Metrics
 
 **Dashboard Performance**:
+
 - Memory usage: ~50-100MB
 - CPU usage: <5% during updates
 - Update interval: 30 seconds
 - API response time: <100ms
 
 **Monitoring Coverage**:
+
 - Services: 4 HTTP endpoints + 4 Docker containers
 - Performance: Memory, disk, GPU metrics
 - Alerts: Last 20 alerts from health monitor
 - Backup: Mount status, last backup, backup count
 
 **System Impact**:
+
 - Minimal CPU usage during updates
 - Low memory footprint
 - Network usage: ~1-2KB per update
@@ -294,6 +323,6 @@ watch -n 5 'ps aux | grep monitoring-dashboard'
 
 ## Change History
 
-| Date | Change | Author |
-|------|--------|--------|
-| 2026-08-13 | Initial creation with real-time monitoring and API endpoints | Devin |
+| Date       | Change                                                       | Author |
+| ---------- | ------------------------------------------------------------ | ------ |
+| 2026-08-13 | Initial creation with real-time monitoring and API endpoints | Devin  |

@@ -1,20 +1,22 @@
 # chaba Lab Plan Brief
 
 ## 1. Goal
+
 Build and maintain a self-hosted lab on `tony-omen` that covers 3D Gaussian Splatting research, AI-powered IP-camera surveillance, a static Plesk web presence (`chaba.h3`), local LLM/AI endpoints, and a LINE conversation archive.
 
 Keep responsibilities split between the three worktrees:
+
 - `chaba` / `master` — generic baseline, shared documentation, and Frigate camera registry.
 - `chaba-omen` / `chaba-omen` — host infrastructure: Caddy, status APIs, MCP servers, NVR runtime, AI/llama server.
 - `chaba.h3` / `chaba.h3` — static-only Plesk site under `public/` (HTML, CSS, JS, YAML).
 
 ## 2. Worktrees & Sources of Truth
 
-| Worktree | Branch | Purpose | Key Files |
-|----------|--------|---------|-----------|
-| `/home/tony/CascadeProjects/chaba` | `master` | Generic baseline + Frigate registry + shared docs | `frigate/cameras.json`, `stacks/web/`, `docs/plan-brief.md` |
-| `/home/tony/CascadeProjects/chaba-omen` | `chaba-omen` | Host infrastructure: Caddy, APIs, NVR, MCP, AI | `stacks/`, `mcp/`, `frigate/` (runtime) |
-| `/home/tony/CascadeProjects/chaba-h3` | `chaba.h3` | Static-only Plesk site | `public/` (HTML/CSS/JS/YAML) |
+| Worktree                                | Branch       | Purpose                                           | Key Files                                                   |
+| --------------------------------------- | ------------ | ------------------------------------------------- | ----------------------------------------------------------- |
+| `/home/tony/CascadeProjects/chaba`      | `master`     | Generic baseline + Frigate registry + shared docs | `frigate/cameras.json`, `stacks/web/`, `docs/plan-brief.md` |
+| `/home/tony/CascadeProjects/chaba-omen` | `chaba-omen` | Host infrastructure: Caddy, APIs, NVR, MCP, AI    | `stacks/`, `mcp/`, `frigate/` (runtime)                     |
+| `/home/tony/CascadeProjects/chaba-h3`   | `chaba.h3`   | Static-only Plesk site                            | `public/` (HTML/CSS/JS/YAML)                                |
 
 Rule: `chaba.h3` stays static-only. Do not commit Node/Docker backend files, `.env`, `inference/`, or `proxy-server.mjs` to `chaba.h3`.
 
@@ -35,6 +37,7 @@ Rule: `chaba.h3` stays static-only. Do not commit Node/Docker backend files, `.e
 - Camera control panel runs at `:8090` for enable/disable/discover.
 
 Status:
+
 - [x] Camera registry in `cameras.json` with 34 cameras
 - [x] Frigate `config.yml` generation via `generate_config.py`
 - [x] Web map with pinned panels and heading arrows
@@ -48,6 +51,7 @@ Status:
 ## 5. Web Apps
 
 ### `chaba.h3` (Plesk static, `8081` preview)
+
 - `/apps/track3/` and `/apps/track4/` — windsurfing course map, simulation, YAML course editor, PHP state persistence.
 - `/apps/imagen2/` — SDXL-Lightning image generation UI, modular JS, queue, history.
 - `/apps/reefriders/` and `/apps/reefriders-01/` — static WordPress mirror builders.
@@ -55,12 +59,14 @@ Status:
 - `/apps/overview/` — system status / plan page.
 
 ### `chaba-omen` / `8080` apps
+
 - `/apps/yomi/` — LINE conversation viewer with AI summaries and media gallery.
 - `/apps/camera-map.html` — served camera map.
 - `/apps/chatllama/`, `/apps/chatlocal/`, `/apps/neo-chat/` — LLM/chat UIs.
 - `/apps/trade/` — Dollar price database and trading system (USD/THB, DXY, commodities).
 
 ### Trade System Integration
+
 - **Location**: `/home/tony/CascadeProjects/trade`
 - **Documentation**: [Trade Documentation Index](../../trade/docs/INDEX.md)
 - **Features**: Historical USD exchange rates, Dollar Index (DXY), commodity prices, trading signals, backtesting
@@ -69,6 +75,7 @@ Status:
 - **Status**: THB integration complete (547 records, 1981-2026), TradeCanvas Enhanced working with THB as default
 
 Status:
+
 - [x] `nav.js` shared navigation across `chaba.h3` and `8080` apps
 - [x] Tailwind bright/dark themes and `apps.yml` data-driven landing page
 - [ ] Commit the large `chaba.h3` WIP in logical chunks
@@ -82,6 +89,7 @@ Status:
 - Yomi media pipeline planned: image captioning, audio transcription (faster-whisper), video frame captioning.
 
 Status:
+
 - [x] `mcp-llama` running with GPU offload
 - [x] `imagen2` modular frontend + Lightning backend
 - [x] Yomi summaries and category filter chips

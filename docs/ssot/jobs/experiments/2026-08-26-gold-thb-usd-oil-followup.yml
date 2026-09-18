@@ -51,12 +51,12 @@ planning:
 
 processing:
   status: completed
-  started_at: '2026-08-26'
+  started_at: "2026-08-26"
   steps:
     - id: 1
       label: Source and align daily oil data
       status: completed
-      completed_at: '2026-08-26'
+      completed_at: "2026-08-26"
       notes: |
         Fetched Brent (BZ=F) and WTI (CL=F) daily close prices from Yahoo
         Finance, a public, no-API-key source. Cached in
@@ -71,7 +71,7 @@ processing:
     - id: 2
       label: Implement trended_oil.py
       status: completed
-      completed_at: '2026-08-26'
+      completed_at: "2026-08-26"
       notes: |
         Used the existing trended_oil.py draft with the 2-day WTI oil trend
         signal for XAU. Walk-forward OOS 2014-2026:
@@ -85,7 +85,7 @@ processing:
     - id: 3
       label: Implement trended_graph_knn_oil.py
       status: completed
-      completed_at: '2026-08-26'
+      completed_at: "2026-08-26"
       notes: |
         Added the 2-day WTI return to the graph+k-NN feature vector
         (thb_ret, xau_ret, oil_ret). Kept WINDOW=2, K=30, P_THRESHOLD=0.01,
@@ -100,7 +100,7 @@ processing:
     - id: 4
       label: Implement trended_graph_oil.py
       status: completed
-      completed_at: '2026-08-26'
+      completed_at: "2026-08-26"
       notes: |
         Built a graph edge filter requiring both THB->XAU and oil->XAU
         Granger-causality edges to be significant (p < 0.01) before allowing
@@ -115,7 +115,7 @@ processing:
     - id: 5
       label: Compare to THB-only graph+k-NN baseline
       status: completed
-      completed_at: '2026-08-26'
+      completed_at: "2026-08-26"
       notes: |
         Re-ran the THB-only graph+k-NN baseline on the same OOS period:
         - Sharpe: 2.77
@@ -128,7 +128,7 @@ processing:
     - id: 6
       label: Commit and push when results are in
       status: completed
-      completed_at: '2026-08-26'
+      completed_at: "2026-08-26"
       notes: |
         Committed the oil follow-up: SSOT, data files, and variant scripts.
         No oil variant beat the THB-only graph+k-NN baseline, so no milestone
@@ -169,7 +169,7 @@ processing:
 
 report:
   status: completed
-  completed_at: '2026-08-26'
+  completed_at: "2026-08-26"
   summary: |
     All three oil variants were run through the same 2014-2026 walk-forward
     out-of-sample protocol as the THB-only graph+k-NN baseline. Adding WTI oil
@@ -235,8 +235,8 @@ followup:
 
 config:
   version: 1
-  created_at: '2026-08-26'
-  last_updated: '2026-08-26'
+  created_at: "2026-08-26"
+  last_updated: "2026-08-26"
   maintainer: tony
   related_files:
     - docs/ssot/jobs/experiments/2026-08-26-gold-thb-usd-vector-analysis.yml

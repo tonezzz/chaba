@@ -34,11 +34,11 @@ inputs:
 blocks:
   - id: kb-start
     type: Shell
-    command: "cd /home/tony/CascadeProjects/chaba-kbman/mcp-kbman && python3 -c 'from workflow.coordinator import WorkflowCoordinator; coordinator = WorkflowCoordinator(); check = coordinator.kb_start_check(); print(check[\"ready_for_work\"])'"
-  
+    command: 'cd /home/tony/CascadeProjects/chaba-kbman/mcp-kbman && python3 -c ''from workflow.coordinator import WorkflowCoordinator; coordinator = WorkflowCoordinator(); check = coordinator.kb_start_check(); print(check["ready_for_work"])'''
+
   - id: kb-end
     type: Shell
-    command: "cd /home/tony/CascadeProjects/chaba-kbman/mcp-kbman && python3 -c 'from workflow.coordinator import WorkflowCoordinator; coordinator = WorkflowCoordinator(); result = coordinator.kb_end_commit(\"{{inputs.summary}}\"); print(result[\"success\"])'"
+    command: 'cd /home/tony/CascadeProjects/chaba-kbman/mcp-kbman && python3 -c ''from workflow.coordinator import WorkflowCoordinator; coordinator = WorkflowCoordinator(); result = coordinator.kb_end_commit("{{inputs.summary}}"); print(result["success"])'''
 ```
 
 ### Integration Benefits
@@ -47,4 +47,3 @@ blocks:
 - **Structured KB management**: Use mcp-kbman tools in workflows for consistent KB operations
 - **Error handling**: Leverage mcp-kbman's validation and duplicate detection in workflows
 - **Session tracking**: Integrate current-context and active-projects management in workflows
-

@@ -14,7 +14,7 @@ class GPUMonitor {
 
   bindEvents() {
     // Auto-refresh checkbox
-    document.getElementById('auto-refresh').addEventListener('change', (e) => {
+    document.getElementById("auto-refresh").addEventListener("change", (e) => {
       this.autoRefresh = e.target.checked;
       if (this.autoRefresh) {
         this.startAutoRefresh();
@@ -24,17 +24,17 @@ class GPUMonitor {
     });
 
     // Refresh button
-    document.getElementById('btn-refresh').addEventListener('click', () => {
+    document.getElementById("btn-refresh").addEventListener("click", () => {
       this.refresh();
     });
 
     // Hold llama button
-    document.getElementById('btn-hold-llama').addEventListener('click', () => {
+    document.getElementById("btn-hold-llama").addEventListener("click", () => {
       this.holdLlama();
     });
 
     // Resume llama button
-    document.getElementById('btn-resume-llama').addEventListener('click', () => {
+    document.getElementById("btn-resume-llama").addEventListener("click", () => {
       this.resumeLlama();
     });
   }
@@ -54,15 +54,15 @@ class GPUMonitor {
   }
 
   async refresh() {
-    const refreshStatus = document.getElementById('refresh-status');
-    refreshStatus.textContent = 'Refreshing...';
-    refreshStatus.className = 'gpu-refresh-status refreshing';
+    const refreshStatus = document.getElementById("refresh-status");
+    refreshStatus.textContent = "Refreshing...";
+    refreshStatus.className = "gpu-refresh-status refreshing";
 
     try {
       // Fetch GPU status, queue status in parallel
       const [gpuData, queueData] = await Promise.all([
         this.fetchGPUStatus(),
-        this.fetchQueueStatus()
+        this.fetchQueueStatus(),
       ]);
 
       this.updateGPUOverview(gpuData);
@@ -73,43 +73,43 @@ class GPUMonitor {
 
       // Update last updated time
       const now = new Date();
-      document.getElementById('last-updated').textContent = 
+      document.getElementById("last-updated").textContent =
         `Last updated: ${now.toLocaleTimeString()}`;
 
-      refreshStatus.textContent = '';
-      refreshStatus.className = 'gpu-refresh-status';
+      refreshStatus.textContent = "";
+      refreshStatus.className = "gpu-refresh-status";
 
       // Start auto-refresh if enabled and not already running
       if (this.autoRefresh && !this.refreshTimer) {
         this.startAutoRefresh();
       }
     } catch (error) {
-      console.error('Error refreshing GPU data:', error);
-      refreshStatus.textContent = 'Error refreshing data';
-      refreshStatus.className = 'gpu-refresh-status error';
+      console.error("Error refreshing GPU data:", error);
+      refreshStatus.textContent = "Error refreshing data";
+      refreshStatus.className = "gpu-refresh-status error";
     }
   }
 
   async fetchGPUStatus() {
     // Fetch GPU status from status-api
-    const response = await fetch('/api/gpu/status');
+    const response = await fetch("/api/gpu/status");
     if (!response.ok) {
-      throw new Error('Failed to fetch GPU status');
+      throw new Error("Failed to fetch GPU status");
     }
     return await response.json();
   }
 
   async fetchQueueStatus() {
-    const response = await fetch('/api/gpu-queue/status');
+    const response = await fetch("/api/gpu-queue/status");
     if (!response.ok) {
-      throw new Error('Failed to fetch queue status');
+      throw new Error("Failed to fetch queue status");
     }
     return await response.json();
   }
 
   updateGPUOverview(data) {
-    const container = document.getElementById('gpu-overview');
-    
+    const container = document.getElementById("gpu-overview");
+
     if (!data || !data.gpus || data.gpus.length === 0) {
       container.innerHTML = '<div class="gpu-loading">No GPU data available</div>';
       return;
@@ -147,8 +147,8 @@ class GPUMonitor {
   }
 
   updateVRAMUsage(data) {
-    const container = document.getElementById('vram-usage');
-    
+    const container = document.getElementById("vram-usage");
+
     if (!data || !data.gpus || data.gpus.length === 0) {
       container.innerHTML = '<div class="gpu-loading">No VRAM data available</div>';
       return;
@@ -160,7 +160,7 @@ class GPUMonitor {
 
     container.innerHTML = `
       <div class="gpu-vram-bar">
-        <div class="gpu-vram-fill ${isWarning ? 'warning' : ''}" style="width: ${vramPercent}%">
+        <div class="gpu-vram-fill ${isWarning ? "warning" : ""}" style="width: ${vramPercent}%">
           ${vramPercent}%
         </div>
       </div>
@@ -173,14 +173,16 @@ class GPUMonitor {
   }
 
   updateGPUProcesses(data) {
-    const container = document.getElementById('gpu-processes');
-    
+    const container = document.getElementById("gpu-processes");
+
     if (!data || !data.processes || data.processes.length === 0) {
       container.innerHTML = '<div class="gpu-loading">No GPU processes running</div>';
       return;
     }
 
-    const processList = data.processes.map(proc => `
+    const processList = data.processes
+      .map(
+        (proc) => `
       <div class="gpu-process-item">
         <div>
           <span class="gpu-process-pid">PID: ${proc.pid}</span>
@@ -188,22 +190,24 @@ class GPUMonitor {
         </div>
         <span class="gpu-process-memory">${proc.memory_used_mb} MB</span>
       </div>
-    `).join('');
+    `
+      )
+      .join("");
 
     container.innerHTML = `<div class="gpu-process-list">${processList}</div>`;
   }
 
   updateQueueStatus(data) {
-    const container = document.getElementById('gpu-queue');
-    
+    const container = document.getElementById("gpu-queue");
+
     if (!data) {
       container.innerHTML = '<div class="gpu-loading">No queue data available</div>';
       return;
     }
 
     const { runningJob, pendingJobs } = data;
-    
-    let statusHTML = '';
+
+    let statusHTML = "";
     if (runningJob) {
       statusHTML = `
         <div class="gpu-queue-status">
@@ -236,37 +240,38 @@ class GPUMonitor {
   }
 
   async updateBackgroundProcessing() {
-    const container = document.getElementById('background-processing');
+    const container = document.getElementById("background-processing");
     if (!container) return;
 
     try {
-      const response = await fetch('/api/yomi/activity-status');
+      const response = await fetch("/api/yomi/activity-status");
       if (!response.ok) {
-        throw new Error('Failed to fetch processing status');
+        throw new Error("Failed to fetch processing status");
       }
       const data = await response.json();
       const processStatus = data.processStatus || {};
 
-      let statusHTML = '';
-      
-      if (processStatus.status === 'idle' || !processStatus.status) {
+      let statusHTML = "";
+
+      if (processStatus.status === "idle" || !processStatus.status) {
         statusHTML = `
           <div class="gpu-processing-status">
             <span class="gpu-processing-badge idle">Idle</span>
             <span>No background processing</span>
           </div>
         `;
-      } else if (processStatus.status === 'processing') {
+      } else if (processStatus.status === "processing") {
         statusHTML = `
           <div class="gpu-processing-status">
             <span class="gpu-processing-badge active">Processing</span>
             <span>Conversation: ${processStatus.currentChat?.substring(0, 12)}...</span>
           </div>
         `;
-      } else if (processStatus.status === 'processing_batch') {
-        const progress = processStatus.completed && processStatus.total 
-          ? Math.round((processStatus.completed / processStatus.total) * 100) 
-          : 0;
+      } else if (processStatus.status === "processing_batch") {
+        const progress =
+          processStatus.completed && processStatus.total
+            ? Math.round((processStatus.completed / processStatus.total) * 100)
+            : 0;
         statusHTML = `
           <div class="gpu-processing-status">
             <span class="gpu-processing-badge active">Batch Processing</span>
@@ -281,7 +286,7 @@ class GPUMonitor {
             </div>
           </div>
         `;
-      } else if (processStatus.status === 'complete') {
+      } else if (processStatus.status === "complete") {
         statusHTML = `
           <div class="gpu-processing-status">
             <span class="gpu-processing-badge success">Complete</span>
@@ -312,7 +317,7 @@ class GPUMonitor {
 
       container.innerHTML = statusHTML;
     } catch (error) {
-      console.error('Error fetching processing status:', error);
+      console.error("Error fetching processing status:", error);
       container.innerHTML = '<div class="gpu-loading">Error loading processing status</div>';
     }
   }
@@ -325,63 +330,63 @@ class GPUMonitor {
   }
 
   async holdLlama() {
-    const statusEl = document.getElementById('action-status');
-    statusEl.textContent = 'Holding llama...';
-    statusEl.className = 'gpu-action-status info';
+    const statusEl = document.getElementById("action-status");
+    statusEl.textContent = "Holding llama...";
+    statusEl.className = "gpu-action-status info";
 
     try {
-      const response = await fetch('/api/gpu/hold-llama', { method: 'POST' });
+      const response = await fetch("/api/gpu/hold-llama", { method: "POST" });
       const result = await response.json();
-      
+
       if (result.success) {
         statusEl.textContent = result.message;
-        statusEl.className = 'gpu-action-status success';
+        statusEl.className = "gpu-action-status success";
         setTimeout(() => this.refresh(), 1000);
       } else {
-        statusEl.textContent = result.message || 'Failed to hold llama';
-        statusEl.className = 'gpu-action-status error';
+        statusEl.textContent = result.message || "Failed to hold llama";
+        statusEl.className = "gpu-action-status error";
       }
     } catch (error) {
-      console.error('Error holding llama:', error);
-      statusEl.textContent = 'Error holding llama: ' + error.message;
-      statusEl.className = 'gpu-action-status error';
+      console.error("Error holding llama:", error);
+      statusEl.textContent = "Error holding llama: " + error.message;
+      statusEl.className = "gpu-action-status error";
     }
   }
 
   async resumeLlama() {
-    const statusEl = document.getElementById('action-status');
-    statusEl.textContent = 'Resuming llama...';
-    statusEl.className = 'gpu-action-status info';
+    const statusEl = document.getElementById("action-status");
+    statusEl.textContent = "Resuming llama...";
+    statusEl.className = "gpu-action-status info";
 
     try {
-      const response = await fetch('/api/gpu/resume-llama', { method: 'POST' });
+      const response = await fetch("/api/gpu/resume-llama", { method: "POST" });
       const result = await response.json();
-      
+
       if (result.success) {
         statusEl.textContent = result.message;
-        statusEl.className = 'gpu-action-status success';
+        statusEl.className = "gpu-action-status success";
         setTimeout(() => this.refresh(), 1000);
       } else {
-        statusEl.textContent = result.message || 'Failed to resume llama';
-        statusEl.className = 'gpu-action-status error';
+        statusEl.textContent = result.message || "Failed to resume llama";
+        statusEl.className = "gpu-action-status error";
       }
     } catch (error) {
-      console.error('Error resuming llama:', error);
-      statusEl.textContent = 'Error resuming llama: ' + error.message;
-      statusEl.className = 'gpu-action-status error';
+      console.error("Error resuming llama:", error);
+      statusEl.textContent = "Error resuming llama: " + error.message;
+      statusEl.className = "gpu-action-status error";
     }
   }
 
   truncatePath(path) {
-    if (!path) return 'Unknown';
+    if (!path) return "Unknown";
     if (path.length > 40) {
-      return '...' + path.slice(-37);
+      return "..." + path.slice(-37);
     }
     return path;
   }
 }
 
 // Initialize on DOM ready
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener("DOMContentLoaded", () => {
   new GPUMonitor();
 });

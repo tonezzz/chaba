@@ -3,7 +3,8 @@ subtitle: Prompt preprocessor to disambiguate requests against project KB
 icon: inbox
 focus:
   label: Prompt / command preprocessor for context and precision
-  text: 'Build a preprocessing layer that runs before assistant interpretation of user requests and commands.
+  text:
+    'Build a preprocessing layer that runs before assistant interpretation of user requests and commands.
 
     It should:
 
@@ -26,37 +27,37 @@ focus:
   priority: medium
   status: active
   tags:
-  - mcp
-  - prompt
-  - preprocessor
-  - context
-  - kb
-  - focus
-  - workflow
+    - mcp
+    - prompt
+    - preprocessor
+    - context
+    - kb
+    - focus
+    - workflow
   missing_info:
-  - Whether the preprocessor should be a standalone MCP tool (mcp_prompt), a prompt-template in SSOT, or a step in mcp_focus.
-  - Which KB sources to prioritize: MDDB, ssot.*, decisions, focus current, or all.
-  - How much of the processing should be read-only versus allowed to update focus/inbox.
+    - Whether the preprocessor should be a standalone MCP tool (mcp_prompt), a prompt-template in SSOT, or a step in mcp_focus.
+    - Which KB sources to prioritize: MDDB, ssot.*, decisions, focus current, or all.
+    - How much of the processing should be read-only versus allowed to update focus/inbox.
   safe_to_parallel:
     value: false
     reason: Touches the active focus router, mcp_focus, and KB retrieval; must be the active branch or shared focus.
   subtasks:
-  - label: Survey current mcp_focus, mcp_debug, and subagent-focus-triage to find existing disambiguation logic
-    status: not_started
-  - label: Design the preprocessor schema and output contract
-    status: not_started
-  - label: Implement a read-only prototype that grounds a user request in active focus and KB
-    status: not_started
-  - label: Add command canonicalization for mcp_debug/mcp_raw
-    status: not_started
-  - label: Validate with real ambiguous requests and measure precision improvement
-    status: not_started
-  started: '2026-08-19'
+    - label: Survey current mcp_focus, mcp_debug, and subagent-focus-triage to find existing disambiguation logic
+      status: not_started
+    - label: Design the preprocessor schema and output contract
+      status: not_started
+    - label: Implement a read-only prototype that grounds a user request in active focus and KB
+      status: not_started
+    - label: Add command canonicalization for mcp_debug/mcp_raw
+      status: not_started
+    - label: Validate with real ambiguous requests and measure precision improvement
+      status: not_started
+  started: "2026-08-19"
 ownership:
   owner: tony
   session: chaba-2026-08-18
   locked: false
-  lock_reason: ''
+  lock_reason: ""
 source:
   session: chaba-2026-08-18
-  date: '2026-08-18'
+  date: "2026-08-18"

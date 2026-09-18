@@ -35,22 +35,22 @@ planning:
 
 processing:
   status: completed
-  started_at: '2026-08-19'
+  started_at: "2026-08-19"
   steps:
     - id: 1
       label: Implement mcp_query_ssot
       status: completed
-      completed_at: '2026-08-19'
+      completed_at: "2026-08-19"
       notes: Added to scripts/mcp_debug/ssot.py, wired in server.py, and registered in ssot.mcp-debug.yml
     - id: 2
       label: Implement web audit report
       status: completed
-      completed_at: '2026-08-19'
+      completed_at: "2026-08-19"
       notes: Created stacks/web/public/apps/audit/index.html + app.js; run.mjs copies summary.json to data/
     - id: 3
       label: Expose mcp_context and mcp_session_summary as MCP tools
       status: completed
-      completed_at: '2026-08-19'
+      completed_at: "2026-08-19"
       notes: Added scripts/mcp_debug/context.py wrapper, server.py wiring, and ssot.mcp-debug.yml registration
   decisions:
     - label: Web report data location
@@ -84,42 +84,42 @@ followup:
     - tony for monitoring
   completed_outside_initial_three:
     - label: Audit trend history
-      completed_at: '2026-08-19'
+      completed_at: "2026-08-19"
       notes: |
         scripts/audits/run.mjs now archives a timestamped summary to
         reports/audits/history/ and maintains a compact history.json with the
         last 90 runs (timestamp, ok, passed, failed, total, duration_ms).
     - label: Auto-KB quality scoring as a scheduled job
-      completed_at: '2026-08-19'
+      completed_at: "2026-08-19"
       notes: |
         auto-kb-quality-audit.mjs now defaults to report-only with --apply and
         --json flags. A weekly systemd timer/service runs the quality and
         categorization audits and writes reports.
     - label: Web focus decision tree
-      completed_at: '2026-08-19'
+      completed_at: "2026-08-19"
       notes: |
         Added stacks/web/public/apps/focus/decision.html + decision-app.js and
         scripts/generate-focus-tree.mjs which writes data/decision-tree.json
         from ssot.mcp-focus.yml.
     - label: Prompt preprocessor as MCP tool
-      completed_at: '2026-08-19'
+      completed_at: "2026-08-19"
       notes: |
         Added scripts/mcp_debug/preprocess.py wrapper and registered mcp_preprocess
         in mcp_debug server and ssot.mcp-debug.yml.
     - label: mcp-health for the audit suite
-      completed_at: '2026-08-19'
+      completed_at: "2026-08-19"
       notes: |
         Added /audit-health endpoint to scripts/mcp_debug/http_server.py,
         registered it in ssot.mcp-debug.cors.yml, and added an mcp-debug-audit
         health check to ssot.health.home.yml.
     - label: SSOT value registry
-      completed_at: '2026-08-19'
+      completed_at: "2026-08-19"
       notes: |
         Added docs/ssot/infrastructure/ssot.values.yml with canonical hosts,
         ports, schedules, thresholds, and paths. Indexed in ssot.index.yml and
         queryable via mcp_query_ssot.
     - label: mcp_context consolidation
-      completed_at: '2026-08-19'
+      completed_at: "2026-08-19"
       notes: |
         Added a tool_selection hierarchy to ssot.mcp-debug.yml documenting when
         to use mcp_query_ssot, mcp_mddb_doc, mcp_read_ssot, mcp_search_ssot,
@@ -128,7 +128,7 @@ followup:
 
 report:
   status: completed
-  completed_at: '2026-08-19'
+  completed_at: "2026-08-19"
   summary: |
     All three MCP tool improvements were implemented and verified. mcp_query_ssot
     resolves SSOT documents by query or path and returns dotted/integer-key values.
@@ -159,8 +159,8 @@ report:
 
 config:
   version: 1
-  created_at: '2026-08-19'
-  last_updated: '2026-08-19'
+  created_at: "2026-08-19"
+  last_updated: "2026-08-19"
   maintainer: tony
   related_files:
     - docs/ssot/templates/job.yml

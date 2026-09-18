@@ -6,52 +6,56 @@ category: operations
 
 ## Feature Comparison Matrix
 
-| Feature | Old Skill | MCP Server | Status |
-|---------|-----------|------------|--------|
-| **Core Health Checks** | | | |
-| HTTP checks | ✅ | ✅ | ✅ Parity |
-| Container checks | ✅ | ✅ | ✅ Parity |
-| Systemd checks | ✅ | ✅ | ✅ Parity |
-| Network profile detection | ✅ | ✅ | ✅ Parity |
-| URL placeholder substitution | ✅ | ✅ | ✅ Parity |
-| Status categorization | ✅ | ✅ | ✅ Parity |
-| **Advanced Features** | | | |
-| Historical tracking | ❌ | ✅ | ✅ MCP superior |
-| Alert system | ❌ | ✅ | ✅ MCP superior |
-| Port conflict detection | ❌ | ✅ | ✅ MCP superior |
-| Proxy validation | ❌ | ✅ | ✅ MCP superior |
-| Dependency analysis | ✅ | ✅ | ✅ Parity (MCP enhanced) |
-| Service recovery | ❌ | ✅ | ✅ MCP superior |
-| Enhanced troubleshooting | ❌ | ✅ | ✅ MCP superior |
-| **SSOT Integration** | | | |
-| SSOT recovery actions | ✅ | ✅ | ✅ Parity |
-| Service categories | ✅ | ✅ | ✅ Parity |
-| Dependency tracking | ✅ | ✅ | ✅ Parity |
-| Profile-specific configs | ❌ | ✅ | ✅ MCP superior |
-| **Output Format** | | | |
-| Structured reports | ✅ | ✅ | ✅ Parity |
-| Category grouping | ✅ | ✅ | ✅ Parity |
-| Recovery suggestions | ✅ | ✅ | ✅ Parity |
-| JSON output | ❌ | ✅ | ✅ MCP superior |
+| Feature                      | Old Skill | MCP Server | Status                   |
+| ---------------------------- | --------- | ---------- | ------------------------ |
+| **Core Health Checks**       |           |            |                          |
+| HTTP checks                  | ✅        | ✅         | ✅ Parity                |
+| Container checks             | ✅        | ✅         | ✅ Parity                |
+| Systemd checks               | ✅        | ✅         | ✅ Parity                |
+| Network profile detection    | ✅        | ✅         | ✅ Parity                |
+| URL placeholder substitution | ✅        | ✅         | ✅ Parity                |
+| Status categorization        | ✅        | ✅         | ✅ Parity                |
+| **Advanced Features**        |           |            |                          |
+| Historical tracking          | ❌        | ✅         | ✅ MCP superior          |
+| Alert system                 | ❌        | ✅         | ✅ MCP superior          |
+| Port conflict detection      | ❌        | ✅         | ✅ MCP superior          |
+| Proxy validation             | ❌        | ✅         | ✅ MCP superior          |
+| Dependency analysis          | ✅        | ✅         | ✅ Parity (MCP enhanced) |
+| Service recovery             | ❌        | ✅         | ✅ MCP superior          |
+| Enhanced troubleshooting     | ❌        | ✅         | ✅ MCP superior          |
+| **SSOT Integration**         |           |            |                          |
+| SSOT recovery actions        | ✅        | ✅         | ✅ Parity                |
+| Service categories           | ✅        | ✅         | ✅ Parity                |
+| Dependency tracking          | ✅        | ✅         | ✅ Parity                |
+| Profile-specific configs     | ❌        | ✅         | ✅ MCP superior          |
+| **Output Format**            |           |            |                          |
+| Structured reports           | ✅        | ✅         | ✅ Parity                |
+| Category grouping            | ✅        | ✅         | ✅ Parity                |
+| Recovery suggestions         | ✅        | ✅         | ✅ Parity                |
+| JSON output                  | ❌        | ✅         | ✅ MCP superior          |
 
 ## Key Improvements in MCP
 
 ### 1. Enhanced Systemd Timer Handling
+
 - **Old skill**: Timers categorized as degraded
 - **MCP**: Timer detection with proper categorization (waiting = healthy)
 - **Result**: 4 timer services now correctly reported as healthy instead of degraded
 
 ### 2. Container Detection
+
 - **Old skill**: `docker compose ps` only
 - **MCP**: `docker compose ps` with `docker ps` fallback
 - **Result**: Better compatibility with different container setups
 
 ### 3. SSOT Recovery Actions
+
 - **Old skill**: Direct SSOT recovery_actions integration
 - **MCP**: SSOT recovery actions + enhanced troubleshooting
 - **Result**: More comprehensive recovery guidance
 
 ### 4. Profile-Specific Configuration
+
 - **Old skill**: Single config file
 - **MCP**: Profile-specific config loading with fallback
 - **Result**: More flexible configuration management
@@ -59,6 +63,7 @@ category: operations
 ## Current Test Results
 
 ### Latest MCP Health Check (2026-08-12)
+
 - **29 services monitored**
 - **18 healthy (62%)** - Improved from 17 (59%)
 - **0 degraded (0%)** - Improved from 4 (14%) due to timer fix
@@ -66,6 +71,7 @@ category: operations
 - **3 unknown (10%)** - GPU services as expected
 
 ### Timer Status Improvement
+
 - Yomi Update All Timer: degraded → healthy ✅
 - Yomi Update Active Timer: degraded → healthy ✅
 - Weaviate Index Timer: degraded → healthy ✅
@@ -85,6 +91,7 @@ category: operations
 ## Migration Benefits
 
 ### Immediate Benefits
+
 - ✅ 4 timer services now correctly categorized (degraded → healthy)
 - ✅ Better container detection with docker compose fallback
 - ✅ SSOT recovery actions integrated into troubleshooting
@@ -93,6 +100,7 @@ category: operations
 - ✅ Alert system with notifications
 
 ### Long-term Benefits
+
 - ✅ Single source of truth for health monitoring
 - ✅ Enhanced monitoring capabilities (port conflicts, proxy validation)
 - ✅ Automated service recovery with conflict resolution
@@ -119,6 +127,7 @@ category: operations
 **✅ APPROVE COMPLETE REPLACEMENT**
 
 The MCP health server provides:
+
 - **100% feature parity** with old health-check skill
 - **Enhanced capabilities** not available in old skill
 - **Bug fixes** for timer categorization and container detection
@@ -133,5 +142,7 @@ The MCP health server provides:
 4. Monitor for any missing use cases
 
 ## Created: 2026-08-12
+
 ## Context: MCP Health Server Phase 3 Enhanced Monitoring completion
+
 ## Related: docs/ssot/ssot.improvements.yml, mcp-servers/mcp-health/README.md

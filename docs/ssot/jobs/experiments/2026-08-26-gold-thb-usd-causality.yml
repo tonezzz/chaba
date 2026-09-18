@@ -34,26 +34,26 @@ planning:
 
 processing:
   status: in_progress
-  started_at: '2026-08-26'
+  started_at: "2026-08-26"
   steps:
     - id: 1
       label: Define hypotheses and variable set
       status: completed
-      completed_at: '2026-08-26'
+      completed_at: "2026-08-26"
       notes: |
         Hypotheses: gold changes lead USD/THB; USD/THB leads gold;
         both respond contemporaneously to external USD shocks.
     - id: 2
       label: Fetch and cache daily time series
       status: completed
-      completed_at: '2026-08-26'
+      completed_at: "2026-08-26"
       notes: |
         Fetched XAU/USD (5,375 rows) and USD/THB (3,076 rows) from Alpha Vantage
         and stored as CSVs under experiments/gold-thb-usd-causality/data/.
     - id: 3
       label: Clean, align, and stationarize
       status: completed
-      completed_at: '2026-08-26'
+      completed_at: "2026-08-26"
       notes: |
         Inner join on common trading days gives 3,076 aligned daily observations
         from 2014-11-07 to 2026-08-25. Log levels are non-stationary (ADF p > 0.05),
@@ -61,14 +61,14 @@ processing:
     - id: 4
       label: Exploratory analysis and visualizations
       status: completed
-      completed_at: '2026-08-26'
+      completed_at: "2026-08-26"
       notes: |
         Cross-correlation of returns is strongest at lag 0 (r = -0.2205). There is
         a contemporaneous negative relationship between gold and USD/THB returns.
     - id: 5
       label: Causality and lead-lag tests
       status: completed
-      completed_at: '2026-08-26'
+      completed_at: "2026-08-26"
       notes: |
         Granger causality on log returns:
         - XAU returns do NOT Granger-cause USD/THB returns (p > 0.5 for lags 1-5).
@@ -76,14 +76,14 @@ processing:
     - id: 6
       label: Report and archive
       status: completed
-      completed_at: '2026-08-26'
+      completed_at: "2026-08-26"
       notes: |
         Reproducible analysis verified end-to-end. Results saved to data/results.json.
         Report section of this SSOT completed and committed.
     - id: 7
       label: Add USD/EUR proxy and trivariate VAR robustness
       status: completed
-      completed_at: '2026-08-26'
+      completed_at: "2026-08-26"
       notes: |
         Fetched USD/EUR (3,077 rows) as a USD-strength proxy, extended the analysis
         to a 3-variable VAR (lag 4 selected by AIC), and re-ran Granger causality.
@@ -128,7 +128,7 @@ followup:
 
 report:
   status: completed
-  completed_at: '2026-08-26'
+  completed_at: "2026-08-26"
   summary: |
     Daily log returns of XAU/USD, USD/THB, and USD/EUR from 2014-11-07 to 2026-08-25
     (3,076 aligned observations) are stationary, while the gold and THB log levels
@@ -166,8 +166,8 @@ report:
 
 config:
   version: 1
-  created_at: '2026-08-26'
-  last_updated: '2026-08-26'
+  created_at: "2026-08-26"
+  last_updated: "2026-08-26"
   maintainer: tony
   related_files:
     - docs/ssot/templates/job.yml

@@ -30,11 +30,13 @@ node scripts/db-performance-dashboard.mjs health
 ```
 
 **Expected Output:**
+
 - Health status (healthy/unhealthy)
 - Pool statistics (total, idle, active connections)
 - Query metrics (total queries, slow queries, execution time)
 
 **Troubleshooting:**
+
 - If unhealthy: Check container status, connection pool, and database logs
 - If high utilization: Increase pool size or optimize queries
 - If slow queries: Run optimization analysis
@@ -46,6 +48,7 @@ node scripts/db-performance-dashboard.mjs real-time
 ```
 
 **Expected Output:**
+
 - Real-time query metrics
 - Pool utilization
 - Performance indicators
@@ -57,6 +60,7 @@ node scripts/db-performance-dashboard.mjs cache-effectiveness
 ```
 
 **Expected Output:**
+
 - Cache hit rate
 - Query efficiency
 - Combined performance score
@@ -70,6 +74,7 @@ node scripts/db-performance-dashboard.mjs optimization
 ```
 
 **Expected Output:**
+
 - Unused indexes (cleanup opportunities)
 - Missing indexes (performance improvements)
 - Slow query analysis
@@ -82,6 +87,7 @@ node scripts/db-optimizer.mjs
 ```
 
 **Report Contents:**
+
 - Table size analysis
 - Index usage statistics
 - Slow query patterns
@@ -91,17 +97,20 @@ node scripts/db-optimizer.mjs
 ### Apply Index Recommendations
 
 **Review recommendations first:**
+
 ```bash
 node scripts/db-performance-dashboard.mjs optimization
 ```
 
 **Apply missing indexes:**
+
 ```sql
 -- Example from recommendations
 CREATE INDEX idx_media_analysis_jobs_message_id ON media_analysis_jobs(message_id);
 ```
 
 **Remove unused indexes:**
+
 ```sql
 -- Use caution - verify index is truly unused
 DROP INDEX unused_index_name;
@@ -112,6 +121,7 @@ DROP INDEX unused_index_name;
 ### Current Pool Configuration
 
 **Default Settings** (from `db-optimized.mjs`):
+
 - Max connections: 20
 - Min connections: 2
 - Idle timeout: 30s
@@ -121,25 +131,28 @@ DROP INDEX unused_index_name;
 ### Adjust Pool Size
 
 **For high load:**
+
 ```javascript
 // In db-optimized.mjs
 const poolConfig = {
-  max: 30,  // Increase from 20
-  min: 5,   // Increase from 2
+  max: 30, // Increase from 20
+  min: 5, // Increase from 2
   // ... other settings
 };
 ```
 
 **For low load:**
+
 ```javascript
 const poolConfig = {
-  max: 10,  // Decrease from 20
-  min: 1,   // Decrease from 2
+  max: 10, // Decrease from 20
+  min: 1, // Decrease from 2
   // ... other settings
 };
 ```
 
 **After changes:**
+
 ```bash
 # Restart services using the pool
 docker restart gpu-queue
@@ -156,6 +169,7 @@ node scripts/db-performance-dashboard.mjs cache-effectiveness
 ```
 
 **Cache Metrics:**
+
 - Hit rate (target: > 80%)
 - Misses (should be minimal for hot data)
 - Connection status
@@ -165,32 +179,36 @@ node scripts/db-performance-dashboard.mjs cache-effectiveness
 **Default TTL: 300s (5 minutes)**
 
 **Adjust for different data types:**
+
 ```javascript
 // In cache-manager.mjs
-await cacheManager.set('namespace', 'key', value, ttl);
+await cacheManager.set("namespace", "key", value, ttl);
 
 // Short TTL for frequently changing data
-await cacheManager.set('user_sessions', 'user123', data, 60); // 1 minute
+await cacheManager.set("user_sessions", "user123", data, 60); // 1 minute
 
 // Long TTL for static data
-await cacheManager.set('config', 'app_settings', config, 3600); // 1 hour
+await cacheManager.set("config", "app_settings", config, 3600); // 1 hour
 ```
 
 ### Cache Invalidation
 
 **Invalidate specific key:**
+
 ```javascript
-await cacheManager.delete('namespace', 'key');
+await cacheManager.delete("namespace", "key");
 ```
 
 **Invalidate namespace:**
+
 ```javascript
-await cacheManager.deleteNamespace('user_sessions');
+await cacheManager.deleteNamespace("user_sessions");
 ```
 
 **Invalidate by pattern:**
+
 ```javascript
-await cacheManager.invalidatePattern('user_sessions:*');
+await cacheManager.invalidatePattern("user_sessions:*");
 ```
 
 ## Backup Performance Monitoring
@@ -202,6 +220,7 @@ node scripts/backup-performance-monitor.mjs storage
 ```
 
 **Expected Output:**
+
 - Daily/weekly/monthly backup counts
 - Storage usage by backup type
 - Total storage consumption
@@ -213,6 +232,7 @@ node scripts/backup-performance-monitor.mjs trends
 ```
 
 **Expected Output:**
+
 - Backup duration trends
 - Size growth rate
 - Performance degradation detection
@@ -224,6 +244,7 @@ node scripts/backup-performance-monitor.mjs report
 ```
 
 **Report Contents:**
+
 - Performance trends
 - Size analysis
 - Storage statistics
@@ -281,10 +302,12 @@ node scripts/backup-performance-monitor.mjs trends
 ### High Slow Query Rate
 
 **Symptoms:**
+
 - Slow query rate > 10%
 - Average execution time > 500ms
 
 **Actions:**
+
 1. Run optimization analysis: `node scripts/db-performance-dashboard.mjs optimization`
 2. Apply missing index recommendations
 3. Review query patterns in application code
@@ -293,10 +316,12 @@ node scripts/backup-performance-monitor.mjs trends
 ### Low Cache Hit Rate
 
 **Symptoms:**
+
 - Cache hit rate < 50%
 - High cache misses
 
 **Actions:**
+
 1. Check cache connection: `node scripts/db-performance-dashboard.mjs cache-effectiveness`
 2. Review TTL settings (may be too short)
 3. Check cache key patterns (may be too granular)
@@ -305,10 +330,12 @@ node scripts/backup-performance-monitor.mjs trends
 ### High Pool Utilization
 
 **Symptoms:**
+
 - Pool utilization > 80%
 - Waiting clients > 0
 
 **Actions:**
+
 1. Check for connection leaks in application code
 2. Increase pool size in `db-optimized.mjs`
 3. Review query execution times (optimize slow queries)
@@ -317,10 +344,12 @@ node scripts/backup-performance-monitor.mjs trends
 ### Backup Performance Degradation
 
 **Symptoms:**
+
 - Backup duration increasing over time
 - Backup size growing rapidly
 
 **Actions:**
+
 1. Run backup performance analysis: `node scripts/backup-performance-monitor.mjs trends`
 2. Review data retention policies
 3. Consider incremental backups
@@ -363,16 +392,19 @@ Database performance metrics are documented in SSOT:
 ## Maintenance Schedule
 
 ### Daily (Automated)
+
 - Database health checks
 - Cache effectiveness monitoring
 - Backup performance tracking
 
 ### Weekly (Manual Review)
+
 - Optimization report review
 - Index recommendation evaluation
 - Backup trend analysis
 
 ### Monthly (Manual Review)
+
 - Comprehensive performance analysis
 - Pool configuration adjustment
 - Cache strategy optimization
@@ -383,6 +415,7 @@ Database performance metrics are documented in SSOT:
 ### Database Performance Degradation
 
 **Immediate Actions:**
+
 1. Check database health: `node scripts/db-performance-dashboard.mjs health`
 2. Identify slow queries: `node scripts/db-performance-dashboard.mjs optimization`
 3. Restart database if needed: `docker restart postgres`
@@ -391,6 +424,7 @@ Database performance metrics are documented in SSOT:
 ### Cache Failure
 
 **Immediate Actions:**
+
 1. Check Redis status: `docker ps | grep redis`
 2. Restart Redis if needed: `docker restart redis`
 3. Cache will auto-reconnect on next operation
@@ -399,6 +433,7 @@ Database performance metrics are documented in SSOT:
 ### Backup Failure
 
 **Immediate Actions:**
+
 1. Check backup logs: `tail -f /var/log/chaba-backup.log`
 2. Verify disk space: `df -h /home/tony/GoogleDrive/Tony\ AI/backup/chaba`
 3. Check PostgreSQL container: `docker ps | grep postgres`

@@ -3,16 +3,16 @@ category: operations
 ---
 
 # JavaScript Best Practices - Async Functions and Module Exports
+
 ## What it is
 
 title: JavaScript Best Practices - Async Functions and Module Exports
 
-
 **Abstract**: JavaScript best practices for handling async operations in event handlers and managing function exports across modules to prevent conflicts and ensure proper execution order.
+
 ## Context/Background
 
 Created 2026-08-07 as part of Chaba infrastructure documentation.
-
 
 ## Overview
 
@@ -27,11 +27,11 @@ JavaScript applications often require careful handling of async operations and m
 
 ## Key Files
 
-| File | Purpose |
-|------|---------|
+| File                                                      | Purpose                         |
+| --------------------------------------------------------- | ------------------------------- |
 | `chaba-h3/public/apps/test-carplay/route-input-module.js` | Example of async event handlers |
-| `chaba-h3/public/apps/test-carplay/map-module.js` | Example of function exports |
-| `chaba-h3/public/apps/test-carplay/index.html` | Script loading order |
+| `chaba-h3/public/apps/test-carplay/map-module.js`         | Example of function exports     |
+| `chaba-h3/public/apps/test-carplay/index.html`            | Script loading order            |
 
 ## Related Documentation
 
@@ -41,9 +41,9 @@ JavaScript applications often require careful handling of async operations and m
 
 ## Change History
 
-| Date | Change | Author |
-|------|--------|--------|
-| 2026-01-15 | Initial creation with async patterns and export best practices | tony |
+| Date       | Change                                                         | Author |
+| ---------- | -------------------------------------------------------------- | ------ |
+| 2026-01-15 | Initial creation with async patterns and export best practices | tony   |
 
 ## Tags
 

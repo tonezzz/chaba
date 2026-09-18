@@ -41,6 +41,7 @@
 ## WireGuard Configuration Files
 
 ### Mobile Device (wg0.conf)
+
 ```ini
 [Interface]
 PrivateKey = <Mobile_Private_Key>
@@ -55,6 +56,7 @@ PersistentKeepalive = 25
 ```
 
 ### Home Workstation (wg0.conf)
+
 ```ini
 [Interface]
 PrivateKey = <Home_Private_Key>
@@ -192,6 +194,7 @@ Solution Options:
 ## Summary
 
 **WireGuard Advantages:**
+
 - Pure P2P, no coordination servers
 - Lightweight, fast, minimal code
 - Full control over configuration
@@ -199,6 +202,7 @@ Solution Options:
 - Open source, auditable
 
 **WireGuard Challenges:**
+
 - Manual configuration and key management
 - Must handle dynamic IPs manually (DDNS, scripts)
 - NAT traversal requires additional setup

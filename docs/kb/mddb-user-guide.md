@@ -23,18 +23,21 @@ Implemented on 2026-08-12 as part of the complete migration from legacy document
 ## Support and Escalation
 
 **Common Issues**:
+
 - MDDB container not running
 - SSOT sync service not active
 - Search not finding expected content
 - Performance degradation
 
 **Escalation Path**:
+
 1. Check troubleshooting section above
 2. Review system logs and health status
 3. Check related documentation
 4. Contact system administrator if issues persist
 
 **System Administrator Contact**:
+
 - Monitor health status via mcp-health
 - Check system logs for detailed error information
 - Review SSOT and MDDB configuration files

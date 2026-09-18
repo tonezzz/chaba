@@ -14,6 +14,7 @@ When routing to Docker containers in Caddy, there are two main approaches:
 ## Implementation
 
 **Current MDDB Panel Routing** (Caddyfile):
+
 ```caddy
 # MDDB Panel
 handle_path /apps/mddb/* {
@@ -23,6 +24,7 @@ handle_path /apps/mddb/* {
 ```
 
 **Container Details**:
+
 - Container: `mddb-panel`
 - Image: `tradik/mddb:panel-latest`
 - Container IP: `172.19.0.6`
@@ -32,12 +34,14 @@ handle_path /apps/mddb/* {
 ## When to Use Direct IP Routing
 
 **Use direct IP routing when**:
+
 - Container name resolution is unreliable or inconsistent
 - Need to bypass Docker's internal DNS for specific routing scenarios
 - Container IP is static and predictable (network-scoped or fixed IP)
 - Troubleshooting routing issues with container names
 
 **Use container name routing when**:
+
 - Standard Docker networking with dynamic IPs
 - Containers may be recreated with different IPs
 - Want automatic service discovery
@@ -57,6 +61,7 @@ docker inspect mddb-panel | grep -A 5 "IPAddress"
 ## Pros and Cons
 
 **Direct IP Routing**:
+
 - ✅ Reliable when container IP is static
 - ✅ Bypasses Docker DNS issues
 - ✅ Explicit routing control
@@ -65,6 +70,7 @@ docker inspect mddb-panel | grep -A 5 "IPAddress"
 - ❌ Breaks if container is recreated with different IP
 
 **Container Name Routing**:
+
 - ✅ Automatic service discovery
 - ✅ Handles container recreation
 - ✅ Standard Docker networking pattern
@@ -75,6 +81,7 @@ docker inspect mddb-panel | grep -A 5 "IPAddress"
 ## MDDB API Routing
 
 The MDDB API still uses container name routing:
+
 ```caddy
 # MDDB API
 handle /api/mddb/* {

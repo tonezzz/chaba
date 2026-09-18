@@ -10,8 +10,8 @@ x-gpu: &gpu
 
 # ── Shared volumes ────────────────────────────────────────────────────────────
 x-volumes: &shared-volumes
-  - ./data:/data          # Input datasets & captured scenes
-  - ./outputs:/outputs    # Training outputs, checkpoints, .ply files
+  - ./data:/data # Input datasets & captured scenes
+  - ./outputs:/outputs # Training outputs, checkpoints, .ply files
 
 # ── Shared env ────────────────────────────────────────────────────────────────
 x-env: &shared-env
@@ -19,14 +19,13 @@ x-env: &shared-env
   - NVIDIA_DRIVER_CAPABILITIES=all
 
 services:
-
   # ── Base image (build only, not run directly) ───────────────────────────────
   base:
     build:
       context: docker/base
       dockerfile: Dockerfile
     image: gaussian-splatting-base:latest
-    profiles: ["build"]  # Only used during build phase
+    profiles: ["build"] # Only used during build phase
 
   # ── COLMAP: Structure-from-Motion preprocessing ─────────────────────────────
   colmap:
@@ -52,7 +51,7 @@ services:
     volumes:
       - ./data:/data
       - ./outputs:/outputs
-      - ./src/gaussian-splatting:/workspace/gaussian-splatting  # Dev mount (optional)
+      - ./src/gaussian-splatting:/workspace/gaussian-splatting # Dev mount (optional)
     ipc: host
     stdin_open: true
     tty: true
@@ -72,9 +71,9 @@ services:
     environment:
       - NVIDIA_VISIBLE_DEVICES=all
       - NVIDIA_DRIVER_CAPABILITIES=all
-      - METHOD=splatfacto  # Override: splatfacto | splatfacto-big
+      - METHOD=splatfacto # Override: splatfacto | splatfacto-big
     ports:
-      - "7007:7007"  # Nerfstudio web viewer
+      - "7007:7007" # Nerfstudio web viewer
     volumes: *shared-volumes
     ipc: host
     stdin_open: true
@@ -90,7 +89,7 @@ services:
     environment:
       - NVIDIA_VISIBLE_DEVICES=all
       - NVIDIA_DRIVER_CAPABILITIES=all
-      - VARIANT=2dgs  # Override: 2dgs | mip | gof
+      - VARIANT=2dgs # Override: 2dgs | mip | gof
     volumes: *shared-volumes
     ipc: host
     stdin_open: true
@@ -127,4 +126,3 @@ services:
                --NotebookApp.token='' --NotebookApp.password=''
                --notebook-dir=/workspace/notebooks"
     ipc: host
-

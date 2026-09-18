@@ -1,6 +1,7 @@
 ---
 description: Audit my Devin/Windsurf usage and suggest improvements
 ---
+
 1. Gather evidence:
    - `git status` in `/home/tony/CascadeProjects/chaba-tony-dell` and `/home/tony/CascadeProjects/chaba-h3`.
    - `docker ps --format "table {{.Names}}\t{{.Status}}"` for active containers.

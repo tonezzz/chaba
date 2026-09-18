@@ -3,6 +3,7 @@ category: operations
 ---
 
 # Shared JavaScript Utilities Approach
+
 ## What it is
 
 This document describes the shared JavaScript utilities approach implemented for the chaba web applications to address code duplication, improve maintainability, and establish consistent patterns across apps.
@@ -10,7 +11,6 @@ This document describes the shared JavaScript utilities approach implemented for
 ## Context/Background
 
 Created 2026-08-07 as part of Chaba infrastructure documentation.
-
 
 ## Overview
 

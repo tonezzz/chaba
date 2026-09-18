@@ -5,6 +5,7 @@ category: operations
 # Key Details
 
 ### Technical Details
+
 - **Installation Method**: pipx with MCP 2.0 compatibility fix
 - **MCP Compatibility**: Requires `mcp<2.0.0` due to `mcp.server.fastmcp` module removal in MCP 2.0
 - **Workflow Directory**: `/home/tony/CascadeProjects/chaba/workflows/`
@@ -12,6 +13,7 @@ category: operations
 - **Environment Variables**: `WORKFLOWS_TEMPLATE_PATHS`, `WORKFLOWS_LOG_LEVEL`
 
 ### Installation Commands
+
 ```bash
 # Install workflows-mcp
 pipx install workflows-mcp
@@ -24,6 +26,7 @@ workflows-mcp --help
 ```
 
 ### MCP Configuration
+
 ```json
 {
   "mcpServers": {
@@ -39,6 +42,7 @@ workflows-mcp --help
 ```
 
 ### Workflow Directory Structure
+
 ```
 /home/tony/CascadeProjects/chaba/workflows/
 ├── automation/       # General automation workflows
@@ -48,6 +52,7 @@ workflows-mcp --help
 ```
 
 ### Valid Data Types
+
 - `str` - String values
 - `num` - Numeric values (not `int`)
 - `bool` - Boolean values
@@ -55,6 +60,7 @@ workflows-mcp --help
 - `dict` - Object values
 
 ### Block Types
+
 - **Shell**: Execute shell commands
 - **Http**: Make HTTP requests
 - **Log**: Log messages (use Shell instead - Log block not supported)
@@ -63,8 +69,9 @@ workflows-mcp --help
 - **Workflow**: Call other workflows
 
 ### Output Access Patterns
+
 Shell block outputs:
+
 - `blocks.{id}.outputs.stdout` - Standard output
 - `blocks.{id}.outputs.stderr` - Standard error
 - `blocks.{id}.outputs.exit_code` - Exit code
-

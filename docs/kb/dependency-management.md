@@ -3,6 +3,7 @@ category: operations
 ---
 
 # Dependency Management System
+
 ## What it is
 
 The dependency management system provides structured tracking of improvement dependencies in the SSOT (Single Source of Truth) configuration. It enables critical path analysis, prevents blocking issues, and ensures improvements are implemented in the correct order.
@@ -10,7 +11,6 @@ The dependency management system provides structured tracking of improvement dep
 ## Context/Background
 
 Created 2026-08-04 as part of Chaba infrastructure documentation.
-
 
 ## Overview
 
@@ -20,19 +20,20 @@ The dependency management system provides structured tracking of improvement dep
 
 ## Key files
 
-| File | Purpose |
-|------|---------|
-| `docs/ssot/ssot.improvements.yml` | SSOT file with dependency fields |
-| `scripts/dependency-graph.mjs` | Generate dependency graphs (text, mermaid, DOT) |
+| File                                                                           | Purpose                                           |
+| ------------------------------------------------------------------------------ | ------------------------------------------------- |
+| `docs/ssot/ssot.improvements.yml`                                              | SSOT file with dependency fields                  |
+| `scripts/dependency-graph.mjs`                                                 | Generate dependency graphs (text, mermaid, DOT)   |
 | `scripts/dependency-resolver.mjs` Analyze dependencies and suggest resolutions |
-| `scripts/overnight-assessment.mjs` | Automated dependency validation |
-| `docs/kb/overnight-assessment.md` | Assessment documentation with dependency features |
+| `scripts/overnight-assessment.mjs`                                             | Automated dependency validation                   |
+| `docs/kb/overnight-assessment.md`                                              | Assessment documentation with dependency features |
 
 ## Dependency Management Workflow
 
 ### Complete Dependency Lifecycle
 
 **1. Planning Phase:**
+
 ```bash
 # Analyze current dependencies
 node scripts/dependency-resolver.mjs
@@ -42,24 +43,28 @@ node scripts/dependency-graph.mjs text
 ```
 
 **Actions:**
+
 - Review ready-to-start improvements
 - Identify blocked improvements
 - Add suggested dependencies
 - Resolve priority conflicts
 
 **2. Implementation Phase:**
+
 - Start with ready-to-start improvements (no incomplete dependencies)
 - Complete dependencies before starting dependent work
 - Update SSOT status as work progresses
 - Mark improvements as in_progress when started
 
 **3. Validation Phase:**
+
 - Overnight assessment automatically validates dependencies
 - Check for circular dependencies and missing references
 - Review blocked improvements and resolve dependencies
 - Generate updated dependency graphs
 
 **4. Completion Phase:**
+
 - Mark improvements as completed in SSOT
 - Dependent improvements become ready to start
 - Re-run dependency resolver to update recommendations
@@ -91,6 +96,7 @@ node scripts/dependency-graph.mjs text
 ## Future Enhancements
 
 **Planned Features:**
+
 - Dependency impact analysis (what if X is delayed?)
 - Automatic dependency suggestion based on category
 - Dependency visualization in health check dashboard
@@ -99,6 +105,7 @@ node scripts/dependency-graph.mjs text
 - Integration with project management tools (GitHub Projects, Jira)
 
 **Potential Improvements:**
+
 - Dependency templates for common patterns
 - Bulk dependency operations
 - Dependency import/export

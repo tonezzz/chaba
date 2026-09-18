@@ -3,16 +3,16 @@ category: operations
 ---
 
 # Application SSOT Standards
+
 ## What it is
 
 title: Application SSOT Standards
 
-
 **Abstract**: Standardized structure and conventions for application SSOT (Single Source of Truth) files to ensure consistency across the chaba project ecosystem, making documentation easier to create, maintain, and search.
+
 ## Context/Background
 
 Created 2026-08-06 as part of Chaba infrastructure documentation.
-
 
 ## Overview
 
@@ -35,9 +35,9 @@ Application SSOT files provide comprehensive documentation for individual applic
 
 ## Change History
 
-| Date | Change | Author |
-|------|--------|--------|
-| 2026-08-06 | Initial creation with template and standards | tony |
+| Date       | Change                                       | Author |
+| ---------- | -------------------------------------------- | ------ |
+| 2026-08-06 | Initial creation with template and standards | tony   |
 
 ## Tags
 

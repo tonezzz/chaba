@@ -5,24 +5,25 @@ category: operations
 # Implementation
 
 ### Default Task Setup
+
 ```python
 def setup_default_tasks(scheduler: TaskScheduler):
     """Configure default background tasks."""
-    
+
     # File index generation (every 60s)
     scheduler.register_task(
         task_id="file_index_generator",
         interval_seconds=60,
         function=generate_file_index_task
     )
-    
+
     # Search index generation (every 300s)
     scheduler.register_task(
-        task_id="search_index_generator", 
+        task_id="search_index_generator",
         interval_seconds=300,
         function=generate_search_index_task
     )
-    
+
     # Cache cleanup (every 3600s)
     scheduler.register_task(
         task_id="cache_cleanup",
@@ -32,6 +33,7 @@ def setup_default_tasks(scheduler: TaskScheduler):
 ```
 
 ### Cache Storage Structure
+
 ```
 /home/tony/.cache/mcp-kbman/pre_generated/
 ├── file_index_index.json           # File listing cache
@@ -43,16 +45,19 @@ def setup_default_tasks(scheduler: TaskScheduler):
 ### Performance Measurements
 
 #### File Index Generation
+
 - **Uncached**: ~0.042s (direct filesystem scan)
 - **Cached**: ~0.004s (JSON cache read)
 - **Improvement**: 90% faster
 
 #### Search Index Generation
+
 - **Uncached**: ~0.15s (Whoosh indexing)
 - **Cached**: ~0.004s (JSON cache read)
 - **Improvement**: 97% faster
 
 #### Search Query Performance
+
 - **Uncached**: ~0.1-0.3s (Whoosh search)
 - **Cached**: ~0.004s (result cache)
 - **Improvement**: 98% faster
@@ -60,6 +65,7 @@ def setup_default_tasks(scheduler: TaskScheduler):
 ## Usage/Commands
 
 ### MCP Tool Integration
+
 ```python
 # Get scheduler status
 mcp_call_tool("mcp-kbman", "get_scheduler_status", {})
@@ -78,6 +84,7 @@ mcp_call_tool("mcp-kbman", "clear_pre_generated_cache", {"data_type": "file_inde
 ```
 
 ### Direct Python Usage
+
 ```python
 from tasks.pre_generator import DocumentPreGenerator
 from tasks.scheduler import TaskScheduler
@@ -98,42 +105,51 @@ scheduler.trigger_task("file_index_generator")
 ## Troubleshooting
 
 ### Tasks Not Running
+
 **Issue**: Background tasks not executing
 **Solution**:
+
 - Check scheduler status: `get_scheduler_status()`
 - Verify scheduler is enabled: `SCHEDULER_ENABLED=True`
 - Check task intervals are configured correctly
 - Review task error counts in status
 
 ### Cache Not Updating
+
 **Issue**: Cached data not refreshing
 **Solution**:
+
 - Check task execution frequency
 - Verify TTL settings are appropriate
 - Manually trigger task: `trigger_task(task_id)`
 - Check cache expiration times
 
 ### High Memory Usage
+
 **Issue**: Cache consuming too much memory
 **Solution**:
+
 - Reduce cache size limit: `MAX_CACHE_SIZE_MB`
 - Increase cache cleanup frequency
 - Reduce TTL for pre-generated data
 - Monitor cache statistics regularly
 
 ### Cache Corruption
+
 **Issue**: Cache files corrupted or invalid
 **Solution**:
+
 - Clear specific cache: `clear_pre_generated_cache(data_type)`
 - Clear all caches: `clear_pre_generated_cache()`
 - Regenerate caches by triggering tasks
 - Check cache file permissions
 
 ### Performance Degradation
+
 **Issue**: System performance degraded with background tasks
 **Solution**:
+
 - Increase task intervals (reduce frequency)
 - Disable unnecessary tasks
 - Monitor CPU/memory usage during task execution
 - Consider offloading to separate process
-

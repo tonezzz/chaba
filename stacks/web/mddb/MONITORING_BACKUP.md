@@ -29,6 +29,7 @@ mddb:
 ## Backup Strategy
 
 ### 1. Volume Backup
+
 **Add to existing backup script** (`/home/tony/CascadeProjects/chaba-kbman/scripts/backup.sh`):
 
 ```bash
@@ -47,7 +48,9 @@ backup_mddb
 ```
 
 ### 2. Automated Backup Schedule
+
 **Add to crontab**:
+
 ```bash
 # Daily MDDB backup at 2 AM
 0 2 * * * /home/tony/CascadeProjects/chaba-kbman/stacks/web/mddb/backup.sh
@@ -59,6 +62,7 @@ backup_mddb
 ## Monitoring Integration
 
 ### 1. Netdata Integration
+
 **Add to existing Netdata configuration**:
 
 ```yaml
@@ -74,6 +78,7 @@ mddb_container:
 ```
 
 ### 2. Status API Integration
+
 **Add to existing status-api** (`/home/tony/CascadeProjects/chaba/stacks/web/status-api/main.py`):
 
 ```python
@@ -110,6 +115,7 @@ services:
 ## Alert Configuration
 
 **Set up alerts for**:
+
 - Container downtime (>5 minutes)
 - Volume usage >80%
 - API response time >2s
@@ -120,6 +126,7 @@ services:
 ## Performance Monitoring
 
 ### Key Metrics to Monitor
+
 1. **Container Health**
    - CPU usage
    - Memory usage
@@ -152,12 +159,14 @@ services:
 ### Common Issues
 
 1. **Container Not Starting**
+
    ```bash
    docker logs mddb
    docker inspect mddb
    ```
 
 2. **MCP Tools Not Available**
+
    ```bash
    curl http://localhost:9000/tools
    docker exec mddb curl http://localhost:9000/tools
@@ -176,16 +185,19 @@ services:
 ## Maintenance Tasks
 
 ### Daily
+
 - Review health check status
 - Check backup completion
 - Monitor resource usage
 
 ### Weekly
+
 - Review performance metrics
 - Check log files for errors
 - Verify backup integrity
 
 ### Monthly
+
 - Review storage growth trends
 - Test restore procedure
 - Update documentation if needed

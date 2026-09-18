@@ -3,16 +3,16 @@ category: operations
 ---
 
 # Health Check Dashboard
+
 ## What it is
 
 title: Health Check Dashboard
 
-
 **Abstract**: Real-time system health monitoring dashboard providing unified view of service status, GPU metrics, and Yomi API health with auto-refresh, category-based filtering, and location-specific configuration support.
+
 ## Context/Background
 
 Created 2026-08-04 as part of Chaba infrastructure documentation.
-
 
 ## Overview
 
@@ -24,18 +24,19 @@ Provides unified real-time monitoring of all Chaba infrastructure services with 
 
 ## Key files
 
-| File | Purpose |
-|------|---------|
-| `chaba/stacks/web/public/apps/health-check/index.html` | Main dashboard HTML with tab navigation |
-| `chaba/stacks/web/public/apps/health-check/health-check.js` | Dashboard logic, health checks, tab switching |
-| `chaba/stacks/web/public/apps/health-check/health-check.css` | Dashboard styling |
-| `chaba/docs/ssot/infrastructure/ssot.health.yml` | Service definitions and recovery actions |
-| `chaba/docs/ssot/infrastructure/ssot.health.home.yml` | Home location-specific config |
-| `chaba/docs/ssot/infrastructure/ssot.health.mobile.yml` | Mobile location-specific config |
+| File                                                         | Purpose                                       |
+| ------------------------------------------------------------ | --------------------------------------------- |
+| `chaba/stacks/web/public/apps/health-check/index.html`       | Main dashboard HTML with tab navigation       |
+| `chaba/stacks/web/public/apps/health-check/health-check.js`  | Dashboard logic, health checks, tab switching |
+| `chaba/stacks/web/public/apps/health-check/health-check.css` | Dashboard styling                             |
+| `chaba/docs/ssot/infrastructure/ssot.health.yml`             | Service definitions and recovery actions      |
+| `chaba/docs/ssot/infrastructure/ssot.health.home.yml`        | Home location-specific config                 |
+| `chaba/docs/ssot/infrastructure/ssot.health.mobile.yml`      | Mobile location-specific config               |
 
 ## Location Detection
 
 The dashboard auto-detects location (home vs mobile) by trying to reach local endpoints:
+
 - Home: `http://tony-omen:8080/api/status`
 - Mobile: Fallback if home endpoints unreachable
 
@@ -46,6 +47,7 @@ Location-specific SSOT configs are loaded based on detected location.
 ## Caddyfile Routing
 
 Important routing rules in `chaba/stacks/web/Caddyfile`:
+
 - `/api/gpu/*` → `status-api:8000` (must use `handle`, not `handle_path`)
 - `/api/gpu-queue/*` → `host.docker.internal:3001`
 - `/api/yomi/*` → `host.docker.internal:3000`
@@ -60,13 +62,13 @@ Important routing rules in `chaba/stacks/web/Caddyfile`:
 
 ## Change History
 
-| Date | Change | Author |
-|------|--------|--------|
-| 2026-08-20 | Switched health-check URLs and mcp-health auto-detect from `.local` mDNS to tailnet short names (`tony-omen`, `tony-dell`) | devin |
-| 2026-08-01 | Initial creation | tony |
-| 2026-08-03 | GPU service health checks, Txt2Vid migration | tony |
-| 2026-08-03 | Enhanced GPU queue monitoring with job type breakdown | tony |
-| 2026-08-06 | Added frontmatter metadata, standardized structure | devin |
+| Date       | Change                                                                                                                     | Author |
+| ---------- | -------------------------------------------------------------------------------------------------------------------------- | ------ |
+| 2026-08-20 | Switched health-check URLs and mcp-health auto-detect from `.local` mDNS to tailnet short names (`tony-omen`, `tony-dell`) | devin  |
+| 2026-08-01 | Initial creation                                                                                                           | tony   |
+| 2026-08-03 | GPU service health checks, Txt2Vid migration                                                                               | tony   |
+| 2026-08-03 | Enhanced GPU queue monitoring with job type breakdown                                                                      | tony   |
+| 2026-08-06 | Added frontmatter metadata, standardized structure                                                                         | devin  |
 
 ## Tags
 

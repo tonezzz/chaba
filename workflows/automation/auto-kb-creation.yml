@@ -62,13 +62,13 @@ blocks:
       command: |
         #!/bin/bash
         KB_DIR="/home/tony/CascadeProjects/chaba-yomi/docs/kb"
-        
+
         if [ ! -d "$KB_DIR" ]; then
           echo "KB directory does not exist"
           echo "KB_EXISTS=false"
           exit 0
         fi
-        
+
         # Check for existing entry with similar title
         if find "$KB_DIR" -name "*.md" -exec grep -l "{{inputs.issue_title}}" {} \; 2>/dev/null | grep -q .; then
           echo "KB entry already exists with similar title"
@@ -87,19 +87,19 @@ blocks:
       command: |
         #!/bin/bash
         eval "$(echo "{{blocks.validate_input.outputs.stdout}}" | grep -E '^[A-Z_]+=')"
-        
+
         if [ "$KB_EXISTS" = "true" ]; then
           echo "KB entry already exists, skipping creation"
           exit 0
         fi
-        
+
         KB_DIR="/home/tony/CascadeProjects/chaba-yomi/docs/kb"
         TIMESTAMP=$(date -Iseconds)
         DATE=$(date +%Y-%m-%d)
         SAFE_TITLE=$(echo "$ISSUE_TITLE" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9-]/-/g' | sed 's/-\+/-/g')
         FILENAME="${SAFE_TITLE}-${DATE}.md"
         FILEPATH="$KB_DIR/$FILENAME"
-        
+
         # Create KB entry content using echo
         echo "# Test KB Entry" > "$FILEPATH"
         echo "" >> "$FILEPATH"
@@ -112,7 +112,7 @@ blocks:
         echo "" >> "$FILEPATH"
         echo "$ISSUE_DESCRIPTION" >> "$FILEPATH"
         echo "" >> "$FILEPATH"
-        
+
         # Add related issues if provided
         if [ -n "$RELATED_ISSUES" ]; then
           echo "## Related Issues" >> "$FILEPATH"
@@ -120,7 +120,7 @@ blocks:
           echo "$RELATED_ISSUES" >> "$FILEPATH"
           echo "" >> "$FILEPATH"
         fi
-        
+
         # Add tags
         echo "## Tags" >> "$FILEPATH"
         echo "" >> "$FILEPATH"
@@ -130,7 +130,7 @@ blocks:
           echo "auto-generated, kb-automation, $ISSUE_TYPE" >> "$FILEPATH"
         fi
         echo "" >> "$FILEPATH"
-        
+
         # Add metadata
         echo "## Metadata" >> "$FILEPATH"
         echo "" >> "$FILEPATH"
@@ -144,7 +144,7 @@ blocks:
         echo "- SSOT Health Configuration: docs/ssot/infrastructure/ssot.health.yml" >> "$FILEPATH"
         echo "- System Maintenance: scripts/system-maintenance.mjs" >> "$FILEPATH"
         echo "- Overnight Assessment: scripts/overnight-assessment.mjs" >> "$FILEPATH"
-        
+
         echo "KB entry created: $FILEPATH"
         echo "KB_CREATED=true"
         echo "KB_FILEPATH=$FILEPATH"
@@ -160,14 +160,14 @@ blocks:
         #!/bin/bash
         eval "$(echo "{{blocks.validate_input.outputs.stdout}}" | grep -E '^[A-Z_]+=')"
         eval "$(echo "{{blocks.create_kb_entry.outputs.stdout}}" | grep -E '^[A-Z_]+=')"
-        
+
         echo ""
         echo "KB Creation Summary"
         echo "=================="
         echo "Issue Type: $ISSUE_TYPE"
         echo "Issue Title: $ISSUE_TITLE"
         echo ""
-        
+
         if [ "$KB_EXISTS" = "true" ]; then
           echo "Status: Skipped (entry already exists)"
         elif [ "$KB_CREATED" = "true" ]; then

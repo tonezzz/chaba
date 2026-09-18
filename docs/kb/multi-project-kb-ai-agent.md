@@ -5,6 +5,7 @@ category: operations
 # AI Agent Tool Selection Improvements
 
 ### Current Issues
+
 - Tools from multiple docs MCP servers without context
 - No automatic project awareness
 - Manual tool selection required
@@ -13,6 +14,7 @@ category: operations
 ### Proposed Improvements
 
 #### 1. Project Context Metadata
+
 ```python
 # Add project context to tool descriptions
 tools = [
@@ -24,7 +26,7 @@ tools = [
     },
     {
         "name": "search_docs_trade",
-        "description": "Search trade project documentation", 
+        "description": "Search trade project documentation",
         "project": "trade",
         "scope": "trade knowledge base"
     }
@@ -32,6 +34,7 @@ tools = [
 ```
 
 #### 2. Context-Aware Tool Selection
+
 ```python
 def select_tools_for_context(context):
     """Select appropriate tools based on project context"""
@@ -44,6 +47,7 @@ def select_tools_for_context(context):
 ```
 
 #### 3. Unified Search Interface
+
 ```python
 def unified_search(query, project=None):
     """Search across all projects with optional project filter"""
@@ -55,4 +59,3 @@ def unified_search(query, project=None):
             results.extend(search_project(query, proj))
         return deduplicate_results(results)
 ```
-

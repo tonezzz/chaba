@@ -39,13 +39,13 @@ status: completed
 
 ## Decisions / why
 
-| Decision | Reason |
-|----------|--------|
-| Invoke KB helper scripts with `bash` | The GDrive FUSE mount is `noexec`; shebang execution fails even with `+x` |
+| Decision                                  | Reason                                                                                                     |
+| ----------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| Invoke KB helper scripts with `bash`      | The GDrive FUSE mount is `noexec`; shebang execution fails even with `+x`                                  |
 | Keep `xrdp`, remove Chrome Remote Desktop | xrdp can be made GDM-safe via PAM; CRD always spawns a conflicting X11 session and has no clean workaround |
-| Add `meta/memories.md` | The memory system returned nothing for the session blocker; an explicit index prevents rediscovery |
-| Use `changes.md` per device/project | Decisions and reasons are now scannable without reading full notes or git history |
-| Keep backup remote URL as a placeholder | Cannot create the user’s private repo without credentials; setup steps documented in `meta/backup.md` |
+| Add `meta/memories.md`                    | The memory system returned nothing for the session blocker; an explicit index prevents rediscovery         |
+| Use `changes.md` per device/project       | Decisions and reasons are now scannable without reading full notes or git history                          |
+| Keep backup remote URL as a placeholder   | Cannot create the user’s private repo without credentials; setup steps documented in `meta/backup.md`      |
 
 ## Notes
 

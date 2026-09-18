@@ -7,14 +7,16 @@ Switched Tony-Omen To Home
 ## Context/Background
 
 **Date:** 2026-08-25
-**Session Context:** 
+**Session Context:**
 
 ## Key Details
 
 ### Technical Details
+
 Switched tony-omen to home: TONY-WIFI_5G and eno1 active. Removed forced 100/full dispatcher; eno1 now auto-negotiates to 1000 Mb/s Full with r8169 driver. eno1 speed 17-29 MB/s. r8168 not needed.
 
 ### Implementation
+
 - **Status:** Documented
 - **Date:** 2026-08-25
 - **Location:** docs/kb/

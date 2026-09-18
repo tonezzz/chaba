@@ -11,6 +11,7 @@ This skill analyzes KB review sections from assistant responses and automaticall
 ## When to use
 
 Invoke this skill when:
+
 - A KB review section contains KB-worthy information (automatic at end of sessions)
 - You want to automate KB entry creation during work (with user confirmation)
 - You need to check for redundancy with existing entries
@@ -19,6 +20,7 @@ Invoke this skill when:
 ## What it needs
 
 Input (one of):
+
 - CLI argument: `node auto-kb.mjs "<kb-review-content>" ["<context>"]`
 - Environment: `KB_REVIEW_CONTENT="..."` and optional `KB_SESSION_CONTEXT="..."`, plus either `MCP_REDUNDANCY_FILE` or `MCP_REDUNDANCY_RESULT`
 - Stdin: `echo "..." | node auto-kb.mjs`
@@ -68,13 +70,15 @@ The KB review section should be a concise summary of decisions, discoveries, or 
 ## Quality criteria
 
 Only creates entries for:
+
 - **Operational value**: Helps with current/future operations
-- **Reusability**: Can be applied to similar situations  
+- **Reusability**: Can be applied to similar situations
 - **Prevention**: Helps prevent recurring issues
 - **Specificity**: Contains actionable technical details
 - **Context**: Includes when/why it's relevant
 
 Does NOT create entries for:
+
 - Temporary commands or one-off output
 - Obvious trivia or well-known information
 - Transient debugging steps without lasting value

@@ -3,11 +3,11 @@
  * Code and formatting quality audit.
  * Runs the workspace lint/format checks and npm audit, returning a normalized report.
  */
-import { exec } from 'child_process';
-import { promisify } from 'util';
+import { exec } from "child_process";
+import { promisify } from "util";
 
 const execAsync = promisify(exec);
-const PROJECT_ROOT = new URL('../../', import.meta.url).pathname.replace(/\/$/, '');
+const PROJECT_ROOT = new URL("../../", import.meta.url).pathname.replace(/\/$/, "");
 
 async function runCheck(label, command, timeoutMs = 120000) {
   try {
@@ -21,7 +21,7 @@ async function runCheck(label, command, timeoutMs = 120000) {
     return {
       label,
       ok: false,
-      output: (error.stdout || '') + (error.stderr || ''),
+      output: (error.stdout || "") + (error.stderr || ""),
       exit: error.code,
     };
   }
@@ -30,13 +30,16 @@ async function runCheck(label, command, timeoutMs = 120000) {
 async function main() {
   const results = [];
 
-  results.push(await runCheck('format:check', 'npm run format:check'));
-  results.push(await runCheck('spell-check', 'npx cspell "docs/**/*.md"'));
+  results.push(await runCheck("format:check", "npm run format:check"));
+  results.push(await runCheck("spell-check", 'npx cspell "docs/**/*.md"'));
 
   // Optional, may fail on network or if dependencies are fine
-  const audit = await runCheck('npm-audit', 'npm audit --audit-level=moderate --json', 120000);
-  if (!audit.ok && audit.output.includes('ECONNREFUSED') || audit.output.includes('ENETUNREACH')) {
-    audit.note = 'npm audit could not reach registry; not counted as a hard failure';
+  const audit = await runCheck("npm-audit", "npm audit --audit-level=moderate --json", 120000);
+  if (
+    (!audit.ok && audit.output.includes("ECONNREFUSED")) ||
+    audit.output.includes("ENETUNREACH")
+  ) {
+    audit.note = "npm audit could not reach registry; not counted as a hard failure";
     audit.ok = true;
   }
   results.push(audit);
@@ -44,7 +47,9 @@ async function main() {
   const issues = [];
   for (const r of results) {
     if (!r.ok) {
-      const lines = r.output.split('\n').filter(l => l.includes('[warn]') || l.includes('[error]') || l.includes('Error'));
+      const lines = r.output
+        .split("\n")
+        .filter((l) => l.includes("[warn]") || l.includes("[error]") || l.includes("Error"));
       issues.push(`${r.label}: failed with ${lines.length} reported issue(s)`);
     }
   }

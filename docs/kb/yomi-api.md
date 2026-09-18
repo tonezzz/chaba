@@ -5,6 +5,7 @@ category: operations
 # API Endpoints
 
 ### Implemented Endpoints (in `yomi-api.mjs`)
+
 - `GET /api/yomi/health` - Health check
 - `GET /api/yomi/conversations` - List all conversations
 - `GET /api/yomi/messages?chat=<id>` - Get messages for a conversation
@@ -20,4 +21,3 @@ category: operations
 - `GET /api/yomi/summarization-status` - Summarization statistics and quality metrics
 - `GET /api/yomi/summary-quality` - Detailed quality metrics per conversation
 - `POST /api/yomi/resummarize` - Trigger re-summarization of conversations
-

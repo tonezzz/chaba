@@ -5,6 +5,7 @@ category: operations
 # Monitoring Progress
 
 ### While Running
+
 ```bash
 # Monitor the log file in real-time
 tail -f logs/overnight-manual-TIMESTAMP.log
@@ -17,6 +18,7 @@ tail -20 logs/overnight-manual-TIMESTAMP.log
 ```
 
 ### After Completion
+
 ```bash
 # View the generated report
 cat reports/overnight-assessment-TIMESTAMP.md
@@ -27,4 +29,3 @@ grep -i error logs/overnight-manual-TIMESTAMP.log
 # View summary of what was completed
 grep "===.*===" logs/overnight-manual-TIMESTAMP.log
 ```
-

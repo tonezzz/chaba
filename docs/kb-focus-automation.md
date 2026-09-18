@@ -1,6 +1,7 @@
 # Strategic Focus Automation System
 
 ## Overview
+
 Advanced activity monitoring and dependency-driven automation for strategic focus management across multiple projects and branches.
 
 ## Architecture
@@ -58,6 +59,7 @@ Advanced activity monitoring and dependency-driven automation for strategic focu
 ## Data Structures
 
 ### Activity Record
+
 ```javascript
 {
   timestamp: ISO8601,
@@ -79,6 +81,7 @@ Advanced activity monitoring and dependency-driven automation for strategic focu
 ```
 
 ### Focus Pattern
+
 ```javascript
 {
   focus_name: string,
@@ -105,6 +108,7 @@ Advanced activity monitoring and dependency-driven automation for strategic focu
 ```
 
 ### Focus Suggestion
+
 ```javascript
 {
   suggested_focus: string,
@@ -126,6 +130,7 @@ Advanced activity monitoring and dependency-driven automation for strategic focu
 ```
 
 ### Dependency Graph
+
 ```javascript
 {
   nodes: {
@@ -157,6 +162,7 @@ Advanced activity monitoring and dependency-driven automation for strategic focu
 ## Workflow
 
 ### 1. Activity Tracking Loop
+
 ```mermaid
 graph TD
     A[Start Session] --> B[Load Current Focus]
@@ -176,6 +182,7 @@ graph TD
 ```
 
 ### 2. Focus Suggestion Process
+
 ```mermaid
 graph TD
     A[Load Activity History] --> B[Analyze Recent Patterns]
@@ -189,6 +196,7 @@ graph TD
 ```
 
 ### 3. Dependency-Driven Activation
+
 ```mermaid
 graph TD
     A[Focus Completes] --> B[Update Dependency Graph]
@@ -204,6 +212,7 @@ graph TD
 ```
 
 ### 4. Predictive Planning
+
 ```mermaid
 graph TD
     A[Load Historical Data] --> B[Calculate Project Velocity]
@@ -218,18 +227,21 @@ graph TD
 ## Integration Points
 
 ### SSOT Focus Integration
+
 - Read current focus status from `docs/ssot/ssot.focus.yml`
 - Update focus status based on activity patterns
 - Validate focus transitions before applying
 - Maintain focus history in SSOT
 
 ### Git Integration
+
 - Hook into git commit process for activity tracking
 - Analyze commit messages for focus context
 - Track branch switching patterns
 - Monitor merge activity
 
 ### Session Integration
+
 - Track session start/end times
 - Log session context and goals
 - Measure session effectiveness
@@ -238,6 +250,7 @@ graph TD
 ## Configuration
 
 ### Activity Thresholds
+
 ```javascript
 {
   activity_tracking: {
@@ -262,6 +275,7 @@ graph TD
 ## Commands
 
 ### Activity Tracking
+
 ```bash
 # Start activity tracking for current session
 node scripts/focus-automation/activity-tracker.mjs start
@@ -274,6 +288,7 @@ node scripts/focus-automation/activity-tracker.mjs status
 ```
 
 ### Focus Suggestions
+
 ```bash
 # Generate focus suggestions based on recent activity
 node scripts/focus-automation/focus-suggester.mjs generate
@@ -286,6 +301,7 @@ node scripts/focus-automation/focus-suggester.mjs patterns
 ```
 
 ### Dependency Management
+
 ```bash
 # Check dependency status for all focuses
 node scripts/focus-automation/dependency-resolver.mjs status
@@ -298,6 +314,7 @@ node scripts/focus-automation/dependency-resolver.mjs graph
 ```
 
 ### Predictive Planning
+
 ```bash
 # Generate predictive focus timeline
 node scripts/focus-automation/predictive-planner.mjs timeline
@@ -312,24 +329,28 @@ node scripts/focus-automation/predictive-planner.mjs bottlenecks
 ## Implementation Phases
 
 ### Phase 1: Core Activity Tracking
+
 - Activity tracker implementation
 - Activity database structure
 - Basic pattern recognition
 - SSOT integration
 
 ### Phase 2: Focus Suggestions
+
 - Focus suggestion engine
 - Dependency awareness
 - Priority alignment
 - Notification system
 
 ### Phase 3: Dependency Automation
+
 - Dependency resolver
 - Auto-activation logic
 - Dependency notifications
 - Critical path analysis
 
 ### Phase 4: Predictive Planning
+
 - Velocity calculation
 - Predictive modeling
 - Resource optimization

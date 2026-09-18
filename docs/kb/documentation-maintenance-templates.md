@@ -27,4 +27,4 @@ search_keywords: [keyword1, keyword2, synonym, related-term]
 # SSOT [Name] Summary
 
 **Abstract**: [2-3 sentence summary]
-
+```

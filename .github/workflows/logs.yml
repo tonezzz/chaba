@@ -4,17 +4,17 @@ on:
   push:
     branches: [master, main]
     paths:
-      - 'docs/ssot/infrastructure/ssot.health*.yml'
-      - 'docs/ssot/infrastructure/ssot.automation.yml'
-      - 'scripts/ci-check-logs.py'
+      - "docs/ssot/infrastructure/ssot.health*.yml"
+      - "docs/ssot/infrastructure/ssot.automation.yml"
+      - "scripts/ci-check-logs.py"
   pull_request:
     branches: [master, main]
     paths:
-      - 'docs/ssot/infrastructure/ssot.health*.yml'
-      - 'docs/ssot/infrastructure/ssot.automation.yml'
-      - 'scripts/ci-check-logs.py'
+      - "docs/ssot/infrastructure/ssot.health*.yml"
+      - "docs/ssot/infrastructure/ssot.automation.yml"
+      - "scripts/ci-check-logs.py"
   schedule:
-    - cron: '0 2 * * *'
+    - cron: "0 2 * * *"
 
 jobs:
   validate-log-references:
@@ -24,7 +24,7 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: "3.11"
       - name: Install dependencies
         run: pip install pyyaml
       - name: Validate log and service references

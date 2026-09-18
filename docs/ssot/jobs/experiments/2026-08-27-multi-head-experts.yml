@@ -140,7 +140,7 @@ planning:
 
 processing:
   status: in_progress
-  started_at: '2026-08-27'
+  started_at: "2026-08-27"
   steps:
     - id: 1
       label: Standardize the Expert interface
@@ -151,7 +151,7 @@ processing:
     - id: 2
       label: Define and compute the context vector
       status: completed
-      completed_at: '2026-08-27'
+      completed_at: "2026-08-27"
       notes: |
         Created `context.py` with 24 causal features: recent return sums (2/5/10d),
         volatilities (5/20d), RSI, Bollinger z-score, rolling correlations,
@@ -159,7 +159,7 @@ processing:
     - id: 3
       label: Build the rolling memory and vector search
       status: completed
-      completed_at: '2026-08-27'
+      completed_at: "2026-08-27"
       notes: |
         Created `memory.py` with a `Memory` class that stores contexts,
         realized head returns, and dates; fits a standardized `NearestNeighbors`
@@ -167,7 +167,7 @@ processing:
     - id: 4
       label: Implement k-NN Sharpe weighting
       status: completed
-      completed_at: '2026-08-27'
+      completed_at: "2026-08-27"
       notes: |
         Created `multi_head_knn_sharpe.py` (the k-NN Sharpe router). It queries
         50 historical neighbors, computes each head's local Sharpe over those
@@ -195,7 +195,7 @@ processing:
     - id: 7
       label: Add equal-weight and best-single baselines
       status: completed
-      completed_at: '2026-08-27'
+      completed_at: "2026-08-27"
       notes: |
         Created `multi_head_experts_equal.py` which imports `trended_atr_sizing`,
         `trended_graph_knn_thb_xag`, and `trended_graph_knn_vol_silver`, runs them
@@ -292,8 +292,8 @@ report:
 
 config:
   version: 1
-  created_at: '2026-08-27'
-  last_updated: '2026-08-27T00:00:00Z'
+  created_at: "2026-08-27"
+  last_updated: "2026-08-27T00:00:00Z"
   maintainer: tony
   related_files:
     - docs/ssot/templates/job.yml

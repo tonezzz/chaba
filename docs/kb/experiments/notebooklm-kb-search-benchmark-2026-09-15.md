@@ -6,14 +6,14 @@ MDDB collection: `infrastructure-ssot`
 
 ## Sources ingested into NotebookLM
 
-| Source | NLM source ID | Size |
-|---|---|---|
-| AGENTS.md | 3230c2de-07c8-44a0-a66f-aa846f387141 | 20K |
-| README.md | b2d9ecf1-0123-44a1-8815-5496192a3682 | 8.6K |
-| ssot-apps | f112d9b0-b529-4b70-b47f-dc5ee2fdb71e | 126K |
-| ssot-top | 19d4ebd3-a830-49e7-b855-e95f238f3e44 | 505K |
-| ssot-infrastructure chunks | c916c8c0, b30b932b, 2e2077af | 3 × 200K |
-| kb chunks | 572981d2, c5a49947, 467ed4fa, 24e33814 | 4 × 233K |
+| Source                     | NLM source ID                          | Size     |
+| -------------------------- | -------------------------------------- | -------- |
+| AGENTS.md                  | 3230c2de-07c8-44a0-a66f-aa846f387141   | 20K      |
+| README.md                  | b2d9ecf1-0123-44a1-8815-5496192a3682   | 8.6K     |
+| ssot-apps                  | f112d9b0-b529-4b70-b47f-dc5ee2fdb71e   | 126K     |
+| ssot-top                   | 19d4ebd3-a830-49e7-b855-e95f238f3e44   | 505K     |
+| ssot-infrastructure chunks | c916c8c0, b30b932b, 2e2077af           | 3 × 200K |
+| kb chunks                  | 572981d2, c5a49947, 467ed4fa, 24e33814 | 4 × 233K |
 
 Total: 13 sources, ~2.2 MB of text.
 
@@ -30,27 +30,27 @@ Total: 13 sources, ~2.2 MB of text.
 
 ## Results summary
 
-| # | Question | MDDB top hit | NotebookLM answer | NLM time |
-|---|---|---|---|---|
-| 1 | Tailscale IP of tony-dell | `apps-ssot.apps.ada_ha` (irrelevant) | Correct: `100.68.142.13` | 38.6s |
-| 2 | Restart NotebookLM REST auth refresh | `apps-ssot.apps.ada_ha` (irrelevant) | Correct: `systemctl --user start notebooklm-rest-auth-refresh.service` or `~/.local/bin/notebooklm-rest-auth-refresh` | 42.8s |
-| 3 | Caddy public apps root | `apps-ssot.apps.ada_ha` (irrelevant) | Correct: `~/.config/caddy/public/apps/` | 42.1s |
-| 4 | nlm-add workflow | `apps-ssot.apps.ada_ha` (irrelevant) | Correct: convert, upload to Drive, add by Drive ID, write manifest | 43.4s |
-| 5 | Fix devin-desktop crash | `apps-ssot.apps.ada_ha` (irrelevant) | Correct: `nohup` X display restart + stale scopes + watchdog + logs | 55.6s |
-| 6 | michael-ha token file | `apps-ssot.apps.ada_ha` (irrelevant) | Correct: `~/.config/secrets/ha-michael-live.env` | 48.6s |
-| 7 | Deploy card bundle to michael-dev | `apps-ssot.apps.ada_ha` (irrelevant) | Correct: worktree, tsc, `deploy-card.sh`, verify, sync SSOT | 68.7s |
-| 8 | Add app to public apps page | `apps-ssot.apps.ada_ha` (irrelevant) | Correct: add to `stacks/web/public/apps/`, run `apps-yml-generate.py`, `apps-health-sync` deploys | 48.9s |
+| #   | Question                             | MDDB top hit                         | NotebookLM answer                                                                                                     | NLM time |
+| --- | ------------------------------------ | ------------------------------------ | --------------------------------------------------------------------------------------------------------------------- | -------- |
+| 1   | Tailscale IP of tony-dell            | `apps-ssot.apps.ada_ha` (irrelevant) | Correct: `100.68.142.13`                                                                                              | 38.6s    |
+| 2   | Restart NotebookLM REST auth refresh | `apps-ssot.apps.ada_ha` (irrelevant) | Correct: `systemctl --user start notebooklm-rest-auth-refresh.service` or `~/.local/bin/notebooklm-rest-auth-refresh` | 42.8s    |
+| 3   | Caddy public apps root               | `apps-ssot.apps.ada_ha` (irrelevant) | Correct: `~/.config/caddy/public/apps/`                                                                               | 42.1s    |
+| 4   | nlm-add workflow                     | `apps-ssot.apps.ada_ha` (irrelevant) | Correct: convert, upload to Drive, add by Drive ID, write manifest                                                    | 43.4s    |
+| 5   | Fix devin-desktop crash              | `apps-ssot.apps.ada_ha` (irrelevant) | Correct: `nohup` X display restart + stale scopes + watchdog + logs                                                   | 55.6s    |
+| 6   | michael-ha token file                | `apps-ssot.apps.ada_ha` (irrelevant) | Correct: `~/.config/secrets/ha-michael-live.env`                                                                      | 48.6s    |
+| 7   | Deploy card bundle to michael-dev    | `apps-ssot.apps.ada_ha` (irrelevant) | Correct: worktree, tsc, `deploy-card.sh`, verify, sync SSOT                                                           | 68.7s    |
+| 8   | Add app to public apps page          | `apps-ssot.apps.ada_ha` (irrelevant) | Correct: add to `stacks/web/public/apps/`, run `apps-yml-generate.py`, `apps-health-sync` deploys                     | 48.9s    |
 
 ## Scorecard
 
-| Criteria | MDDB (current) | NotebookLM |
-|---|---|---|
-| Accuracy | 0/8 | 8/8 |
-| Citation / source tracking | key + title only, mostly wrong | inline citations with exact source IDs and quoted text |
-| Completeness | requires user to read retrieved doc and synthesize | full step-by-step answer with context |
-| Speed | ~0.05s per query | ~40-70s per query |
-| Natural language handling | poor; returns the same 3 app docs for every question | excellent; handles rephrasing and procedure |
-| Setup cost | already running, incremental | requires auth, Drive upload, ~10 min ingest for full KB |
+| Criteria                   | MDDB (current)                                       | NotebookLM                                              |
+| -------------------------- | ---------------------------------------------------- | ------------------------------------------------------- |
+| Accuracy                   | 0/8                                                  | 8/8                                                     |
+| Citation / source tracking | key + title only, mostly wrong                       | inline citations with exact source IDs and quoted text  |
+| Completeness               | requires user to read retrieved doc and synthesize   | full step-by-step answer with context                   |
+| Speed                      | ~0.05s per query                                     | ~40-70s per query                                       |
+| Natural language handling  | poor; returns the same 3 app docs for every question | excellent; handles rephrasing and procedure             |
+| Setup cost                 | already running, incremental                         | requires auth, Drive upload, ~10 min ingest for full KB |
 
 ## Key findings
 

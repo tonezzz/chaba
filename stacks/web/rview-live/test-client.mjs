@@ -6,7 +6,12 @@ ws.on("open", () => {
   console.log("client connected");
   // send text to trigger rview_show
   setTimeout(() => {
-    ws.send(JSON.stringify({ type: "text", text: "Show the image https://upload.wikimedia.org/wikipedia/commons/thumb/3/3a/Cat03.jpg/1200px-Cat03.jpg in view default" }));
+    ws.send(
+      JSON.stringify({
+        type: "text",
+        text: "Show the image https://upload.wikimedia.org/wikipedia/commons/thumb/3/3a/Cat03.jpg/1200px-Cat03.jpg in view default",
+      })
+    );
     console.log("sent text");
   }, 3000);
 });

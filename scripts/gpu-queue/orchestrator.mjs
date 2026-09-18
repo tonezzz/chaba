@@ -1,38 +1,38 @@
 #!/usr/bin/env node
-import * as db from './db.mjs';
+import * as db from "./db.mjs";
 
 // GPU Queue Orchestrator
 // This script processes jobs from the queue using MCP tools
 // Run this from Cascade or a cron job
 
 // Llama server URL - migrated to tony-dell rootless podman, GPU workers remain on tony-omen
-const LLAMA_URL = process.env.GPU_LLAMA_URL || 'http://tony-omen:8008/v1/chat/completions';
-const IMAGEN2_URL = process.env.GPU_IMAGEN2_URL || 'http://tony-omen:8000';
-const TXT2VID_URL = process.env.GPU_TXT2VID_URL || 'http://tony-omen:8002';
+const LLAMA_URL = process.env.GPU_LLAMA_URL || "http://tony-omen:8008/v1/chat/completions";
+const IMAGEN2_URL = process.env.GPU_IMAGEN2_URL || "http://tony-omen:8000";
+const TXT2VID_URL = process.env.GPU_TXT2VID_URL || "http://tony-omen:8002";
 
 async function processNextJob() {
   // Get next pending job
   const job = await db.getNextPendingJob();
 
   if (!job) {
-    console.log('No pending jobs');
+    console.log("No pending jobs");
     return null;
   }
 
   console.log(`Processing job ${job.id}: ${job.type}`);
 
   // Mark as running
-  await db.updateJobStatus(job.id, 'running');
+  await db.updateJobStatus(job.id, "running");
 
   return job;
 }
 
 async function completeJob(jobId, success = true, error = null) {
   if (success) {
-    await db.updateJobStatus(jobId, 'completed');
+    await db.updateJobStatus(jobId, "completed");
     console.log(`Job ${jobId} completed`);
   } else {
-    await db.updateJobStatus(jobId, 'failed', error);
+    await db.updateJobStatus(jobId, "failed", error);
     console.log(`Job ${jobId} failed: ${error}`);
   }
 }
@@ -46,9 +46,9 @@ async function getQueueStatus() {
 // Call imagen2-inference API directly
 async function callImagen2Inference(params) {
   const response = await fetch(`${IMAGEN2_URL}/generate`, {
-    method: 'POST',
+    method: "POST",
     headers: {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
     },
     body: JSON.stringify({
       prompt: params.prompt,
@@ -56,7 +56,7 @@ async function callImagen2Inference(params) {
       height: params.height || 512,
       steps: params.steps || 4,
       guidance_scale: params.guidance_scale || 1.0,
-      mode: params.mode || 'lightning_txt2img',
+      mode: params.mode || "lightning_txt2img",
     }),
   });
 
@@ -70,13 +70,13 @@ async function callImagen2Inference(params) {
 // Call txt2vid-inference API directly
 async function callTxt2vidInference(params) {
   const response = await fetch(`${TXT2VID_URL}/generate`, {
-    method: 'POST',
+    method: "POST",
     headers: {
-      'Content-Type': 'application/json',
+      "Content-Type": "application/json",
     },
     body: JSON.stringify({
       prompt: params.prompt,
-      negative_prompt: params.negative_prompt || '',
+      negative_prompt: params.negative_prompt || "",
       width: params.width || 256,
       height: params.height || 256,
       num_frames: params.num_frames || 16,
@@ -100,14 +100,14 @@ async function processImagen2Job(job) {
 
   try {
     // Generate image
-    console.log('Generating image...');
+    console.log("Generating image...");
     const result = await callImagen2Inference(job.params);
-    console.log('Image generated:', result.id);
+    console.log("Image generated:", result.id);
 
     await completeJob(job.id, true);
     return result;
   } catch (error) {
-    console.error('Imagen2 job failed:', error);
+    console.error("Imagen2 job failed:", error);
     await completeJob(job.id, false, error.message);
     throw error;
   }
@@ -119,12 +119,12 @@ async function processLlamaJob(job) {
 
   try {
     // mcp2_chat would be called here by Cascade
-    console.log('Llama chat would be called by Cascade with params:', job.params);
+    console.log("Llama chat would be called by Cascade with params:", job.params);
 
     await completeJob(job.id, true);
-    return { response: 'Llama response placeholder' };
+    return { response: "Llama response placeholder" };
   } catch (error) {
-    console.error('Llama job failed:', error);
+    console.error("Llama job failed:", error);
     await completeJob(job.id, false, error.message);
     throw error;
   }
@@ -136,14 +136,14 @@ async function processTxt2vidJob(job) {
 
   try {
     // Generate video
-    console.log('Generating video...');
+    console.log("Generating video...");
     const result = await callTxt2vidInference(job.params);
-    console.log('Video generated:', result.job_id);
+    console.log("Video generated:", result.job_id);
 
     await completeJob(job.id, true);
     return result;
   } catch (error) {
-    console.error('Txt2vid job failed:', error);
+    console.error("Txt2vid job failed:", error);
     await completeJob(job.id, false, error.message);
     throw error;
   }
@@ -155,23 +155,26 @@ async function processEmbeddingJob(job) {
 
   try {
     const params = job.params;
-    const embeddingServiceUrl = params.embedding_service_url || process.env.GPU_EMBEDDING_URL || 'http://localhost:5000';
+    const embeddingServiceUrl =
+      params.embedding_service_url || process.env.GPU_EMBEDDING_URL || "http://localhost:5000";
     const useGpu = params.use_gpu !== false; // default to GPU
 
     // Determine endpoint based on single or batch
     const isBatch = params.texts && Array.isArray(params.texts);
-    const endpoint = isBatch ? '/embed' : '/embed-single';
-    const payload = isBatch 
+    const endpoint = isBatch ? "/embed" : "/embed-single";
+    const payload = isBatch
       ? { texts: params.texts, use_gpu: useGpu }
       : { text: params.text, use_gpu: useGpu };
 
     console.log(`Calling embedding service at ${embeddingServiceUrl}${endpoint}`);
-    console.log(`GPU mode: ${useGpu}, Batch: ${isBatch}, Text count: ${isBatch ? params.texts.length : 1}`);
+    console.log(
+      `GPU mode: ${useGpu}, Batch: ${isBatch}, Text count: ${isBatch ? params.texts.length : 1}`
+    );
 
     const startTime = Date.now();
     const response = await fetch(`${embeddingServiceUrl}${endpoint}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
 
@@ -183,8 +186,8 @@ async function processEmbeddingJob(job) {
     const duration = Date.now() - startTime;
 
     console.log(`Embeddings generated in ${duration}ms`);
-    console.log(`Dimensions: ${result.dimensions || result.embeddings?.[0]?.length || 'unknown'}`);
-    console.log(`Model: ${result.model || params.model || 'unknown'}`);
+    console.log(`Dimensions: ${result.dimensions || result.embeddings?.[0]?.length || "unknown"}`);
+    console.log(`Model: ${result.model || params.model || "unknown"}`);
 
     // Update job with embedding metadata
     await db.updateJobMetadata(job.id, {
@@ -192,53 +195,55 @@ async function processEmbeddingJob(job) {
       embedding_model: result.model || params.model,
       text_count: isBatch ? params.texts.length : 1,
       processing_time_ms: duration,
-      gpu_used: useGpu
+      gpu_used: useGpu,
     });
 
     await completeJob(job.id, true);
     return result;
   } catch (error) {
-    console.error('Embedding job failed:', error);
+    console.error("Embedding job failed:", error);
     await completeJob(job.id, false, error.message);
     throw error;
   }
 }
 
 // Improved context management with smart chunking
-function manageContextLength(prompt, jobType = 'default') {
+function manageContextLength(prompt, jobType = "default") {
   const MAX_CONTEXT_LENGTH = 6000;
   const WARNING_THRESHOLD = 5000;
-  
+
   if (prompt.length <= MAX_CONTEXT_LENGTH) {
     return { prompt, truncated: false, originalLength: prompt.length };
   }
-  
-  console.log(`Context length ${prompt.length} exceeds ${MAX_CONTEXT_LENGTH}, applying smart chunking`);
-  
+
+  console.log(
+    `Context length ${prompt.length} exceeds ${MAX_CONTEXT_LENGTH}, applying smart chunking`
+  );
+
   // For daily summaries, prioritize recent messages
-  if (jobType === 'yomi_daily' || jobType === 'yomi_daily_batch') {
+  if (jobType === "yomi_daily" || jobType === "yomi_daily_batch") {
     // Split by date sections and keep most recent
     const dateSections = prompt.split(/(\d{4}-\d{2}-\d{2}:)/);
     const recentSections = dateSections.slice(-10); // Keep last 10 sections
-    const chunked = recentSections.join('');
-    
+    const chunked = recentSections.join("");
+
     if (chunked.length <= MAX_CONTEXT_LENGTH) {
       return { prompt: chunked, truncated: true, originalLength: prompt.length };
     }
-    
+
     // If still too long, truncate from end
-    return { 
-      prompt: chunked.slice(-MAX_CONTEXT_LENGTH), 
-      truncated: true, 
-      originalLength: prompt.length 
+    return {
+      prompt: chunked.slice(-MAX_CONTEXT_LENGTH),
+      truncated: true,
+      originalLength: prompt.length,
     };
   }
-  
+
   // For summaries, keep most recent content
-  return { 
-    prompt: prompt.slice(-MAX_CONTEXT_LENGTH), 
-    truncated: true, 
-    originalLength: prompt.length 
+  return {
+    prompt: prompt.slice(-MAX_CONTEXT_LENGTH),
+    truncated: true,
+    originalLength: prompt.length,
   };
 }
 
@@ -249,56 +254,62 @@ async function processYomiSummaryJob(job) {
   try {
     const params = job.params;
     const llamaUrl = LLAMA_URL;
-    
+
     // Smart context management
-    const { prompt: validatedPrompt, truncated, originalLength } = manageContextLength(params.prompt, 'yomi_summary');
-    
+    const {
+      prompt: validatedPrompt,
+      truncated,
+      originalLength,
+    } = manageContextLength(params.prompt, "yomi_summary");
+
     if (truncated) {
-      console.log(`Context truncated from ${originalLength} to ${validatedPrompt.length} characters`);
+      console.log(
+        `Context truncated from ${originalLength} to ${validatedPrompt.length} characters`
+      );
     }
-    
+
     console.log(`Calling Llama API for chat ${params.chatId}`);
-    
+
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 30000); // 30 second timeout
-    
+
     try {
       const response = await fetch(llamaUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          model: 'Phi-3-mini-4k-instruct-q4',
-          messages: [{ role: 'user', content: validatedPrompt }],
+          model: "Phi-3-mini-4k-instruct-q4",
+          messages: [{ role: "user", content: validatedPrompt }],
           max_tokens: params.maxTokens || 50,
           temperature: params.temperature || 0.3,
         }),
-        signal: controller.signal
+        signal: controller.signal,
       });
-      
+
       clearTimeout(timeout);
-      
+
       if (!response.ok) {
         throw new Error(`Llama API failed: ${response.status} ${response.statusText}`);
       }
 
       const data = await response.json();
       const result = data.choices?.[0]?.message?.content?.trim() || null;
-      
+
       console.log(`Summary generated for chat ${params.chatId}`);
-      
+
       // Store result using updateJobMetrics
       await db.updateJobMetrics(job.id, { result });
       await completeJob(job.id, true);
       return result;
     } catch (error) {
       clearTimeout(timeout);
-      if (error.name === 'AbortError') {
-        throw new Error('Llama API timeout after 60s');
+      if (error.name === "AbortError") {
+        throw new Error("Llama API timeout after 60s");
       }
       throw error;
     }
   } catch (error) {
-    console.error('Yomi summary job failed:', error);
+    console.error("Yomi summary job failed:", error);
     await completeJob(job.id, false, error.message);
     throw error;
   }
@@ -311,66 +322,76 @@ async function processYomiDailyJob(job) {
   try {
     const params = job.params;
     const llamaUrl = LLAMA_URL;
-    
+
     // Smart context management for daily summaries
-    const { prompt: validatedPrompt, truncated, originalLength } = manageContextLength(params.prompt, 'yomi_daily');
-    
+    const {
+      prompt: validatedPrompt,
+      truncated,
+      originalLength,
+    } = manageContextLength(params.prompt, "yomi_daily");
+
     if (truncated) {
-      console.log(`Context truncated from ${originalLength} to ${validatedPrompt.length} characters`);
+      console.log(
+        `Context truncated from ${originalLength} to ${validatedPrompt.length} characters`
+      );
     }
-    
+
     console.log(`Calling Llama API for daily summary of ${params.chatId} on ${params.date}`);
-    
+
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 60000); // 60 second timeout for daily summaries
-    
+
     try {
       const response = await fetch(llamaUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          model: 'Phi-3-mini-4k-instruct-q4',
+          model: "Phi-3-mini-4k-instruct-q4",
           messages: [
-            { role: 'system', content: 'You extract structured information from chat conversations and return valid JSON.' },
-            { role: 'user', content: validatedPrompt }
+            {
+              role: "system",
+              content:
+                "You extract structured information from chat conversations and return valid JSON.",
+            },
+            { role: "user", content: validatedPrompt },
           ],
           max_tokens: params.maxTokens || 300,
           temperature: params.temperature || 0.3,
-          stop: ['\n\n']
+          stop: ["\n\n"],
         }),
-        signal: controller.signal
+        signal: controller.signal,
       });
-      
+
       clearTimeout(timeout);
-      
+
       if (!response.ok) {
         throw new Error(`Llama API failed: ${response.status} ${response.statusText}`);
       }
 
       const data = await response.json();
       const content = data.choices?.[0]?.message?.content?.trim();
-      if (!content) throw new Error('empty llama response');
-      
+      if (!content) throw new Error("empty llama response");
+
       const jsonMatch = content.match(/\{[\s\S]*\}/);
-      if (!jsonMatch) throw new Error('no json in response');
-      
+      if (!jsonMatch) throw new Error("no json in response");
+
       const result = JSON.parse(jsonMatch[0]);
-      
+
       console.log(`Daily summary generated for ${params.chatId} on ${params.date}`);
-      
+
       // Store result using updateJobMetrics
       await db.updateJobMetrics(job.id, { result: JSON.stringify(result) });
       await completeJob(job.id, true);
       return result;
     } catch (error) {
       clearTimeout(timeout);
-      if (error.name === 'AbortError') {
-        throw new Error('Llama API timeout after 60s');
+      if (error.name === "AbortError") {
+        throw new Error("Llama API timeout after 60s");
       }
       throw error;
     }
   } catch (error) {
-    console.error('Yomi daily summary job failed:', error);
+    console.error("Yomi daily summary job failed:", error);
     await completeJob(job.id, false, error.message);
     throw error;
   }
@@ -383,116 +404,139 @@ async function processYomiDailyBatchJob(job) {
   try {
     const params = job.params;
     const llamaUrl = LLAMA_URL;
-    
+
     // Smart context management for batch daily summaries
-    const { prompt: validatedPrompt, truncated, originalLength } = manageContextLength(params.prompt, 'yomi_daily_batch');
-    
+    const {
+      prompt: validatedPrompt,
+      truncated,
+      originalLength,
+    } = manageContextLength(params.prompt, "yomi_daily_batch");
+
     if (truncated) {
-      console.log(`Context truncated from ${originalLength} to ${validatedPrompt.length} characters`);
+      console.log(
+        `Context truncated from ${originalLength} to ${validatedPrompt.length} characters`
+      );
     }
-    
-    console.log(`Calling Llama API for batch daily summary of ${params.chatId} (${params.dates?.length || 0} dates)`);
-    
+
+    console.log(
+      `Calling Llama API for batch daily summary of ${params.chatId} (${params.dates?.length || 0} dates)`
+    );
+
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 90000); // 90 second timeout for batch summaries
-    
+
     try {
       const response = await fetch(llamaUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          model: 'Phi-3-mini-4k-instruct-q4',
+          model: "Phi-3-mini-4k-instruct-q4",
           messages: [
-            { role: 'system', content: 'You extract structured information from chat conversations and return valid JSON with date keys.' },
-            { role: 'user', content: validatedPrompt }
+            {
+              role: "system",
+              content:
+                "You extract structured information from chat conversations and return valid JSON with date keys.",
+            },
+            { role: "user", content: validatedPrompt },
           ],
           max_tokens: params.maxTokens || 600,
           temperature: params.temperature || 0.3,
-          stop: ['\n\n']
+          stop: ["\n\n"],
         }),
-        signal: controller.signal
+        signal: controller.signal,
       });
-      
+
       clearTimeout(timeout);
-      
+
       if (!response.ok) {
         throw new Error(`Llama API failed: ${response.status} ${response.statusText}`);
       }
 
       const data = await response.json();
       const content = data.choices?.[0]?.message?.content?.trim();
-      if (!content) throw new Error('empty llama response');
-      
+      if (!content) throw new Error("empty llama response");
+
       const jsonMatch = content.match(/\{[\s\S]*\}/);
-      if (!jsonMatch) throw new Error('no json in response');
-      
+      if (!jsonMatch) throw new Error("no json in response");
+
       const result = JSON.parse(jsonMatch[0]);
-      
+
       console.log(`Batch daily summary generated for ${params.chatId}`);
-      
+
       // Store result using updateJobMetrics
       await db.updateJobMetrics(job.id, { result: JSON.stringify(result) });
       await completeJob(job.id, true);
       return result;
     } catch (error) {
       clearTimeout(timeout);
-      if (error.name === 'AbortError') {
-        throw new Error('Llama API timeout after 90s');
+      if (error.name === "AbortError") {
+        throw new Error("Llama API timeout after 90s");
       }
       throw error;
     }
   } catch (error) {
-    console.error('Yomi batch daily summary job failed:', error);
+    console.error("Yomi batch daily summary job failed:", error);
     await completeJob(job.id, false, error.message);
     throw error;
   }
 }
 
 // Export functions for use by queue processor
-export { processNextJob, completeJob, getQueueStatus, processImagen2Job, processLlamaJob, processTxt2vidJob, processEmbeddingJob, processYomiSummaryJob, processYomiDailyJob, processYomiDailyBatchJob };
+export {
+  processNextJob,
+  completeJob,
+  getQueueStatus,
+  processImagen2Job,
+  processLlamaJob,
+  processTxt2vidJob,
+  processEmbeddingJob,
+  processYomiSummaryJob,
+  processYomiDailyJob,
+  processYomiDailyBatchJob,
+};
 
 // CLI interface
 const args = process.argv.slice(2);
 const command = args[0];
 
 switch (command) {
-  case 'next':
-    processNextJob().then(job => {
+  case "next":
+    processNextJob().then((job) => {
       if (job) {
         console.log(JSON.stringify(job, null, 2));
       }
     });
     break;
 
-  case 'complete':
+  case "complete":
     const jobId = parseInt(args[1], 10);
-    const success = args[2] !== 'false';
+    const success = args[2] !== "false";
     const error = args[3] || null;
     completeJob(jobId, success, error);
     break;
 
-  case 'status':
-    getQueueStatus().then(status => {
+  case "status":
+    getQueueStatus().then((status) => {
       console.log(JSON.stringify(status, null, 2));
     });
     break;
 
-  case 'process':
-    processNextJob().then(job => {
+  case "process":
+    processNextJob().then((job) => {
       if (job) {
-        if (job.type === 'imagen2') {
+        if (job.type === "imagen2") {
           processImagen2Job(job);
-        } else if (job.type === 'llama') {
+        } else if (job.type === "llama") {
           processLlamaJob(job);
-        } else if (job.type === 'txt2vid') {
+        } else if (job.type === "txt2vid") {
           processTxt2vidJob(job);
-        } else if (job.type === 'embedding') {
+        } else if (job.type === "embedding") {
           processEmbeddingJob(job);
-        } else if (job.type === 'yomi_summary') {
+        } else if (job.type === "yomi_summary") {
           processYomiSummaryJob(job);
-        } else if (job.type === 'yomi_daily') {
+        } else if (job.type === "yomi_daily") {
           processYomiDailyJob(job);
-        } else if (job.type === 'yomi_daily_batch') {
+        } else if (job.type === "yomi_daily_batch") {
           processYomiDailyBatchJob(job);
         } else {
           console.log(`Unknown job type: ${job.type}`);
@@ -503,9 +547,9 @@ switch (command) {
     break;
 
   default:
-    console.log('Usage:');
-    console.log('  node orchestrator.mjs next       - Get next pending job');
-    console.log('  node orchestrator.mjs complete <id> [success] [error] - Mark job complete');
-    console.log('  node orchestrator.mjs status     - Get queue status');
-    console.log('  node orchestrator.mjs process    - Process next job (imagen2 only)');
+    console.log("Usage:");
+    console.log("  node orchestrator.mjs next       - Get next pending job");
+    console.log("  node orchestrator.mjs complete <id> [success] [error] - Mark job complete");
+    console.log("  node orchestrator.mjs status     - Get queue status");
+    console.log("  node orchestrator.mjs process    - Process next job (imagen2 only)");
 }

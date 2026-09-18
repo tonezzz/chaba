@@ -146,7 +146,7 @@ function show(viewId, url, title, mediaType, enqueue, content) {
     url,
     title: title || "",
     media_type: mt,
-    content: mt === "html" ? (content || url) : undefined,
+    content: mt === "html" ? content || url : undefined,
     added_at: now(),
   };
   if (enqueue) {
@@ -348,7 +348,10 @@ const server = createServer(async (req, res) => {
   try {
     if (req.method === "GET") {
       const action = url.searchParams.get("action");
-      const viewId = resolveViewId(url.searchParams.get("view_id"), url.searchParams.get("view_number"));
+      const viewId = resolveViewId(
+        url.searchParams.get("view_id"),
+        url.searchParams.get("view_number")
+      );
       if (action === "list") {
         sendJson(res, 200, listViews());
       } else if (action === "status") {
@@ -376,7 +379,14 @@ const server = createServer(async (req, res) => {
           result = createView(viewId, payload.display_name);
           break;
         case "show":
-          result = show(effectiveViewId, payload.url, payload.title, payload.media_type, payload.enqueue, payload.content);
+          result = show(
+            effectiveViewId,
+            payload.url,
+            payload.title,
+            payload.media_type,
+            payload.enqueue,
+            payload.content
+          );
           break;
         case "queue":
           result = queueView(effectiveViewId, payload.items, payload.mode || "replace");
@@ -406,5 +416,7 @@ const server = createServer(async (req, res) => {
 
 loadState();
 server.listen(PORT, "0.0.0.0", () => {
-  console.log(`rview-api listening on port ${PORT}, state file ${STATE_FILE}, usage log ${USAGE_LOG}`);
+  console.log(
+    `rview-api listening on port ${PORT}, state file ${STATE_FILE}, usage log ${USAGE_LOG}`
+  );
 });

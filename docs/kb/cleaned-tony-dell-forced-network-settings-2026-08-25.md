@@ -7,14 +7,16 @@ Cleaned Tony-Dell Forced Network Settings
 ## Context/Background
 
 **Date:** 2026-08-25
-**Session Context:** 
+**Session Context:**
 
 ## Key Details
 
 ### Technical Details
+
 Cleaned tony-dell forced network settings: set Wired connection 1 802-3-ethernet.auto-negotiate to yes and deleted stale netplan-enp4s0f0 profile. enp0s31f6 remains 1000 Mb/s Full auto-negotiation.
 
 ### Implementation
+
 - **Status:** Documented
 - **Date:** 2026-08-25
 - **Location:** docs/kb/

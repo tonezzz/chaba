@@ -47,6 +47,7 @@ echo "=== Testing Complete ==="
 ### Continuous Monitoring
 
 **Metrics to Track**:
+
 - MDDB search response times (p50, p95, p99)
 - Search relevance scores (average, median)
 - MDDB service uptime and health
@@ -55,9 +56,9 @@ echo "=== Testing Complete ==="
 - Agent tool selection patterns
 
 **Alert Thresholds**:
+
 - Search response time > 1000ms (warning), > 2000ms (critical)
 - Search relevance score < 0.30 (warning), < 0.20 (critical)
 - MDDB service health check failure (critical)
 - SSOT sync failure (warning)
 - MCP tool failure rate > 5% (warning), > 10% (critical)
-

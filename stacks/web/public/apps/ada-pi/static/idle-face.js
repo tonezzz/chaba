@@ -16,11 +16,20 @@
     narrow: "M704 750 C754 735 846 735 896 750 C858 788 742 788 704 750Z",
     open: "M710 754 C754 722 846 722 890 754 C876 835 724 835 710 754Z",
     wide: "M680 752 C746 720 854 720 920 752 C895 828 705 828 680 752Z",
-    round: "M742 748 C770 706 830 706 858 748 C884 842 716 842 742 748Z"
+    round: "M742 748 C770 706 830 706 858 748 C884 842 716 842 742 748Z",
   };
   const expressions = [
-    "neutral", "sassy", "amused", "skeptical", "annoyed", "mad",
-    "concerned", "surprised", "mischievous", "serious", "alert"
+    "neutral",
+    "sassy",
+    "amused",
+    "skeptical",
+    "annoyed",
+    "mad",
+    "concerned",
+    "surprised",
+    "mischievous",
+    "serious",
+    "alert",
   ];
   const expressionMouths = {
     neutral: mouthShapes.rest,
@@ -33,7 +42,7 @@
     surprised: "M752 748 C778 718 822 718 848 748 C866 823 734 823 752 748Z",
     mischievous: "M682 758 C750 782 846 766 918 728 C866 805 746 810 682 758Z",
     serious: "M700 756 C760 750 840 750 900 756 C848 770 752 770 700 756Z",
-    alert: "M692 760 C756 744 844 744 908 760 C850 779 750 779 692 760Z"
+    alert: "M692 760 C756 744 844 744 908 760 C850 779 750 779 692 760Z",
   };
   const expressionBrowPaths = {
     neutral: ["M270 326 C372 305 500 305 600 326", "M1330 326 C1228 305 1100 305 1000 326"],
@@ -46,7 +55,7 @@
     surprised: ["M270 305 C380 252 502 258 595 305", "M1330 305 C1220 252 1098 258 1005 305"],
     mischievous: ["M252 326 C374 286 518 305 622 352", "M1348 326 C1226 286 1082 305 978 352"],
     serious: ["M268 323 C370 306 502 306 604 323", "M1332 323 C1230 306 1098 306 996 323"],
-    alert: ["M258 319 C374 305 510 323 614 354", "M1342 319 C1226 305 1090 323 986 354"]
+    alert: ["M258 319 C374 305 510 323 614 354", "M1342 319 C1226 305 1090 323 986 354"],
   };
 
   let gazeTimer = null;
@@ -99,17 +108,17 @@
       brow.setAttribute("d", pathData);
       brow.style.opacity = pathData ? "1" : "0";
     });
-    if (speechLevel <= .025) applyMouthShape("rest", true);
+    if (speechLevel <= 0.025) applyMouthShape("rest", true);
     return true;
   }
 
   function setSpeechLevel(value, immediate = false) {
     const next = Math.max(0, Math.min(1, Number(value) || 0));
-    speechLevel = immediate ? next : speechLevel * .3 + next * .7;
+    speechLevel = immediate ? next : speechLevel * 0.3 + next * 0.7;
     face.style.setProperty("--speech-level", speechLevel.toFixed(3));
-    face.classList.toggle("is-speaking", speechLevel > .025);
+    face.classList.toggle("is-speaking", speechLevel > 0.025);
 
-    if (immediate || speechLevel <= .025) {
+    if (immediate || speechLevel <= 0.025) {
       applyMouthShape("rest");
       lastMouthChange = performance.now();
       return;
@@ -119,12 +128,12 @@
     if (now - lastMouthChange < 58) return;
     let shape;
     if (expression === "surprised") {
-      shape = speechLevel < .16 ? "narrow" : "round";
+      shape = speechLevel < 0.16 ? "narrow" : "round";
     } else if (["serious", "annoyed", "mad", "concerned"].includes(expression)) {
-      shape = speechLevel < .2 || mouthShape === "open" ? "narrow" : "open";
-    } else if (speechLevel < .13) shape = "narrow";
-    else if (speechLevel < .34) shape = mouthShape === "narrow" ? "open" : "narrow";
-    else if (speechLevel < .62) shape = mouthShape === "round" ? "open" : "round";
+      shape = speechLevel < 0.2 || mouthShape === "open" ? "narrow" : "open";
+    } else if (speechLevel < 0.13) shape = "narrow";
+    else if (speechLevel < 0.34) shape = mouthShape === "narrow" ? "open" : "narrow";
+    else if (speechLevel < 0.62) shape = mouthShape === "round" ? "open" : "round";
     else shape = mouthShape === "wide" ? "open" : "wide";
     applyMouthShape(shape);
     lastMouthChange = now;
@@ -151,9 +160,9 @@
     clearTimeout(gazeTimer);
     // Longer focus holds are mixed with ordinary glances so the movement
     // feels intentional instead of metronomic.
-    const delay = Math.random() < .34 ? randomBetween(4500, 7000) : randomBetween(1800, 3800);
+    const delay = Math.random() < 0.34 ? randomBetween(4500, 7000) : randomBetween(1800, 3800);
     gazeTimer = setTimeout(() => {
-      const magnitude = Math.random() < .62 ? .68 : 1;
+      const magnitude = Math.random() < 0.62 ? 0.68 : 1;
       setGaze(randomBetween(-18, 18) * magnitude, randomBetween(-10, 10) * magnitude);
       scheduleGaze();
     }, delay);
@@ -161,18 +170,23 @@
 
   function scheduleSaccade() {
     clearTimeout(saccadeTimer);
-    saccadeTimer = setTimeout(() => {
-      face.classList.add("micro-saccade");
-      applyGaze(baseGaze.x + randomBetween(-2.6, 2.6), baseGaze.y + randomBetween(-1.5, 1.5));
-      later(() => face.classList.remove("micro-saccade"), 125);
-      scheduleSaccade();
-    }, randomBetween(520, 1250));
+    saccadeTimer = setTimeout(
+      () => {
+        face.classList.add("micro-saccade");
+        applyGaze(baseGaze.x + randomBetween(-2.6, 2.6), baseGaze.y + randomBetween(-1.5, 1.5));
+        later(() => face.classList.remove("micro-saccade"), 125);
+        scheduleSaccade();
+      },
+      randomBetween(520, 1250)
+    );
   }
 
   function blinkOnce(onFinished, strength = 1) {
     const baseLift = ["surprised", "concerned"].includes(expression)
       ? 4
-      : (["serious", "annoyed", "mad"].includes(expression) ? 2 : 3);
+      : ["serious", "annoyed", "mad"].includes(expression)
+        ? 2
+        : 3;
     const lift = `${(-baseLift * strength).toFixed(1)}px`;
     eyes.forEach((eye) => eye.classList.add("is-blinking"));
     face.style.setProperty("--blink-left", ".055");
@@ -197,12 +211,15 @@
 
   function scheduleBlink() {
     clearTimeout(blinkTimer);
-    blinkTimer = setTimeout(() => {
-      blinkOnce(() => {
-        if (Math.random() < .18) later(() => blinkOnce(scheduleBlink, 1.3), 115);
-        else scheduleBlink();
-      });
-    }, randomBetween(2800, 6500));
+    blinkTimer = setTimeout(
+      () => {
+        blinkOnce(() => {
+          if (Math.random() < 0.18) later(() => blinkOnce(scheduleBlink, 1.3), 115);
+          else scheduleBlink();
+        });
+      },
+      randomBetween(2800, 6500)
+    );
   }
 
   function stop() {

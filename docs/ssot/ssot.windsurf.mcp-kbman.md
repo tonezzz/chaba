@@ -21,6 +21,7 @@ At the end of every assistant response that answers or completes a user request,
 4. **Exception**: Only ask for user confirmation when creating entirely new KB entries for major new topics (not updates to existing entries)
 
 **KB-Worthy Triggers**:
+
 - Fixing significant bugs or issues (especially data corruption, security vulnerabilities)
 - Discovering new patterns, workarounds, or best practices
 - Implementing new systems, integrations, or technologies
@@ -30,6 +31,7 @@ At the end of every assistant response that answers or completes a user request,
 - Creating reusable patterns or conventions
 
 **Do NOT save**:
+
 - Temporary commands or one-off output
 - Obvious trivia or well-known information
 - Transient debugging steps without lasting value
@@ -38,6 +40,7 @@ At the end of every assistant response that answers or completes a user request,
 ## Immediate KB Creation (During Work)
 
 For significant discoveries during work (not end-of-session):
+
 1. Immediately suggest KB entry creation when encountering KB-worthy triggers
 2. Ask user for confirmation before creating major new entries
 3. Use auto-kb skill for processing to ensure consistency

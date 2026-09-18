@@ -7,18 +7,21 @@ category: operations
 ### Adding New Documentation
 
 **SSOT Configuration**:
+
 1. Create new YAML file in appropriate SSOT directory
 2. Follow SSOT documentation standards
 3. File watcher automatically syncs to MDDB
 4. Document becomes searchable immediately
 
 **KB Entries**:
+
 1. Create KB entry in `docs/kb/` directory
 2. Follow KB template and standards
 3. Run manual sync or wait for periodic sync
 4. Document becomes searchable via MDDB
 
 **General Documentation**:
+
 1. Add documentation to appropriate directory
 2. Follow project documentation standards
 3. Run migration script if needed
@@ -27,18 +30,21 @@ category: operations
 ### Updating Existing Documentation
 
 **SSOT Updates**:
+
 1. Edit YAML file directly
 2. Save changes
 3. File watcher syncs automatically
 4. Changes reflected in search immediately
 
 **KB Updates**:
+
 1. Edit KB entry directly
 2. Save changes
 3. Run manual sync or wait for periodic sync
 4. Changes reflected in search
 
 **General Documentation Updates**:
+
 1. Edit documentation file directly
 2. Save changes
 3. Run migration script if needed
@@ -47,6 +53,7 @@ category: operations
 ### Troubleshooting
 
 **MDDB Not Responding**:
+
 ```bash
 # Check container status
 docker ps | grep mddb
@@ -63,6 +70,7 @@ curl -s http://tony-omen.local:11023/health
 ```
 
 **SSOT Auto-Sync Not Working**:
+
 ```bash
 ## Performance and Quality
 
@@ -102,3 +110,4 @@ curl -s http://tony-omen.local:11023/health
 - **Backup configuration** and SSOT files regularly
 - **Test sync functionality** after changes
 
+```

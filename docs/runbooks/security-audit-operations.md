@@ -5,7 +5,8 @@ tags: [security, audit, operations, runbook, hardening, vulnerability]
 created: 2026-08-13
 updated: 2026-08-13
 category: operations
-related: [scripts/security-audit.sh, scripts/security-harden.sh, ssot.infrastructure/ssot.health.yml]
+related:
+  [scripts/security-audit.sh, scripts/security-harden.sh, ssot.infrastructure/ssot.health.yml]
 search_keywords: [security, audit, vulnerability, hardening, permissions, credentials]
 ---
 
@@ -29,17 +30,18 @@ The Chaba security audit system provides comprehensive security analysis with au
 
 ## Key Files
 
-| File | Purpose |
-|------|---------|
-| `scripts/security-audit.sh` | Main security audit script |
-| `scripts/security-harden.sh` | Security hardening and remediation script |
-| `logs/security-audit.log` | Security audit operation logs |
-| `reports/security-audit-*.txt` | Detailed security audit reports |
-| `reports/security-recommendations-*.txt` | Security hardening recommendations |
+| File                                     | Purpose                                   |
+| ---------------------------------------- | ----------------------------------------- |
+| `scripts/security-audit.sh`              | Main security audit script                |
+| `scripts/security-harden.sh`             | Security hardening and remediation script |
+| `logs/security-audit.log`                | Security audit operation logs             |
+| `reports/security-audit-*.txt`           | Detailed security audit reports           |
+| `reports/security-recommendations-*.txt` | Security hardening recommendations        |
 
 ## Security Audit Architecture
 
 ### Audit Categories
+
 1. **File Permissions**: Environment files, sensitive files, world-readable checks
 2. **Git Security**: Credential exposure in git history, .env file commits
 3. **Docker Security**: Root containers, socket permissions, user directives
@@ -50,11 +52,13 @@ The Chaba security audit system provides comprehensive security analysis with au
 8. **API Key Security**: Hardcoded credentials in scripts, environment variable usage
 
 ### Severity Classification
+
 - **High**: Immediate action required (credential exposure, insecure authentication)
 - **Medium**: Plan within 1 week (container security, network exposure)
 - **Low**: Next maintenance window (file permissions, logging)
 
 ### False Positive Filtering
+
 - **Excluded Directories**: node_modules, venv, library files
 - **File Patterns**: Test files, documentation, build artifacts
 - **Known Safe**: Certificate files, configuration templates
@@ -64,12 +68,14 @@ The Chaba security audit system provides comprehensive security analysis with au
 ### Running Security Audit
 
 **Full Security Audit**:
+
 ```bash
 # Run comprehensive security audit
 ./scripts/security-audit.sh
 ```
 
 **Expected Output**:
+
 - Security issues found by severity
 - Detailed issue descriptions
 - Remediation recommendations
@@ -77,6 +83,7 @@ The Chaba security audit system provides comprehensive security analysis with au
 - Exit code based on severity (1=high, 2=medium, 0=success)
 
 **Audit Results**:
+
 - Total issues count
 - High/medium/low risk breakdown
 - Report file location
@@ -85,18 +92,21 @@ The Chaba security audit system provides comprehensive security analysis with au
 ### Security Hardening
 
 **Automated Hardening**:
+
 ```bash
 # Run security hardening
 ./scripts/security-harden.sh
 ```
 
 **Auto-Fixed Issues**:
+
 - Environment file permissions (664 → 600)
 - Backup log permissions (644 → 640)
 - Systemd service User directives
 - File permission corrections
 
 **Manual Fixes Required**:
+
 - PostgreSQL authentication configuration
 - Docker container non-root user implementation
 - Network interface binding restrictions
@@ -105,6 +115,7 @@ The Chaba security audit system provides comprehensive security analysis with au
 ### Security Report Review
 
 **View Latest Report**:
+
 ```bash
 # Find latest security report
 ls -lt reports/security-audit-*.txt | head -1
@@ -114,6 +125,7 @@ cat reports/security-audit-*.txt
 ```
 
 **Report Contents**:
+
 - Executive summary with issue counts
 - Detailed findings by severity
 - Security recommendations
@@ -123,6 +135,7 @@ cat reports/security-audit-*.txt
 ### Regular Security Audits
 
 **Schedule Weekly Audits**:
+
 ```bash
 # Add to crontab for weekly audits
 crontab -e
@@ -132,6 +145,7 @@ crontab -e
 ```
 
 **Systemd Timer Alternative**:
+
 ```bash
 # Create systemd timer for weekly audits
 # (implementation similar to backup system)
@@ -142,16 +156,19 @@ crontab -e
 ### Issue: Security Audit Fails with Permission Denied
 
 **Symptoms**:
+
 - Audit script fails with permission errors
 - Cannot access certain directories
 - Log file creation fails
 
 **Causes**:
+
 - Insufficient permissions for audit script
 - Log directory not accessible
 - System directories restricted
 
 **Solutions**:
+
 ```bash
 # Check script permissions
 ls -la scripts/security-audit.sh
@@ -172,16 +189,19 @@ sudo ./scripts/security-audit.sh
 ### Issue: False Positives in Security Audit
 
 **Symptoms**:
+
 - Too many high-risk issues reported
 - Library files flagged as sensitive
 - Test files marked as security issues
 
 **Causes**:
+
 - False positive filtering not working
 - Pattern matching too broad
 - New file types not excluded
 
 **Solutions**:
+
 ```bash
 # Check false positive filtering in security-audit.sh
 # Look for node_modules and venv exclusions
@@ -195,16 +215,19 @@ sudo ./scripts/security-audit.sh
 ### Issue: PostgreSQL Authentication Check Fails
 
 **Symptoms**:
+
 - Database security check fails
 - Cannot access pg_hba.conf
 - PostgreSQL container not responding
 
 **Causes**:
+
 - PostgreSQL container not running
 - Insufficient permissions for container access
 - pg_hba.conf location changed
 
 **Solutions**:
+
 ```bash
 # Check PostgreSQL container status
 docker ps | grep postgres
@@ -219,16 +242,19 @@ docker exec postgres psql -U chaba -d chaba -c "SHOW listen_addresses;"
 ### Issue: Hardening Script Doesn't Fix Issues
 
 **Symptoms**:
+
 - Security hardening runs but issues persist
 - File permissions not changed
 - Systemd services not updated
 
 **Causes**:
+
 - File ownership conflicts
 - Systemd service already has User directive
 - File already has correct permissions
 
 **Solutions**:
+
 ```bash
 # Check file ownership
 ls -la .env stacks/web/.env
@@ -249,16 +275,19 @@ grep "User=" systemd/*.service
 ### Issue: Security Report Not Generated
 
 **Symptoms**:
+
 - Audit completes but no report file
 - Report directory not accessible
 - Report file empty
 
 **Causes**:
+
 - Reports directory not created
 - Disk space insufficient
 - File write permissions
 
 **Solutions**:
+
 ```bash
 # Check reports directory
 ls -la reports/
@@ -276,30 +305,35 @@ df -h
 ## Security Best Practices
 
 ### Regular Security Maintenance
+
 1. **Weekly Audits**: Run security-audit.sh weekly
 2. **Monthly Hardening**: Run security-harden.sh monthly
 3. **Quarterly Reviews**: Review security recommendations
 4. **Annual Assessment**: Comprehensive security review
 
 ### Credential Management
+
 1. **Environment Variables**: Use environment variables for all secrets
 2. **No Hardcoding**: Never hardcode credentials in scripts
 3. **Git History**: Remove committed credentials with git-filter-repo
 4. **Rotation**: Rotate API keys and passwords regularly
 
 ### Container Security
+
 1. **Non-Root Users**: Run containers as non-root users
 2. **Minimal Images**: Use minimal base images
 3. **Scanning**: Regular vulnerability scanning with Trivy
 4. **Updates**: Keep containers and images updated
 
 ### Network Security
+
 1. **Interface Binding**: Bind to specific interfaces when possible
 2. **Firewall Rules**: Use firewall rules to restrict access
 3. **VPN**: Use VPN for remote access
 4. **Monitoring**: Monitor network traffic and connections
 
 ### Database Security
+
 1. **Authentication**: Use strong authentication (md5, scram-sha-256)
 2. **Network Binding**: Restrict to specific IP addresses
 3. **Encryption**: Enable SSL/TLS for connections
@@ -308,6 +342,7 @@ df -h
 ## Performance Metrics
 
 **Audit Performance**:
+
 - Full audit duration: 30-60 seconds
 - Git history scan: 10-20 seconds
 - Docker security check: 5-10 seconds
@@ -315,12 +350,14 @@ df -h
 - Report generation: 5-10 seconds
 
 **Hardening Performance**:
+
 - File permission fixes: 5-10 seconds
 - Systemd service updates: 5-10 seconds
 - Report generation: 5-10 seconds
 - Total hardening: 20-30 seconds
 
 **System Impact**:
+
 - CPU usage: <10% during audit
 - Memory usage: <50MB
 - Disk usage: <1MB for reports
@@ -334,6 +371,6 @@ df -h
 
 ## Change History
 
-| Date | Change | Author |
-|------|--------|--------|
-| 2026-08-13 | Initial creation with comprehensive security audit and hardening | Devin |
+| Date       | Change                                                           | Author |
+| ---------- | ---------------------------------------------------------------- | ------ |
+| 2026-08-13 | Initial creation with comprehensive security audit and hardening | Devin  |

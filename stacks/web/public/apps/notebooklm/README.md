@@ -4,9 +4,9 @@ Mini web frontends and helper tools for the central NotebookLM deployment on ton
 
 ## Subapps
 
-| Subapp | Path | Purpose |
-|--------|------|---------|
-| v0 | `apps/notebooklm/v0/` | Static landing page and quick reference for NotebookLM CLI/REST helpers. |
+| Subapp | Path                  | Purpose                                                                  |
+| ------ | --------------------- | ------------------------------------------------------------------------ |
+| v0     | `apps/notebooklm/v0/` | Static landing page and quick reference for NotebookLM CLI/REST helpers. |
 
 ## Related infrastructure
 

@@ -83,7 +83,7 @@ blocks:
             CONNECTIVITY_STATUS="mobile_profile"
           fi
         fi
-        
+
         # Export configuration for subsequent blocks (only variable assignments)
         echo "PROFILE=$PROFILE"
         echo "BASE_URL=$BASE_URL"
@@ -102,14 +102,14 @@ blocks:
         #!/bin/bash
         # Parse configuration from previous block (filter out non-variable lines)
         eval "$(echo "{{blocks.detect_and_configure.outputs.stdout}}" | grep -E '^[A-Z_]+=')"
-        
+
         echo "Running health checks for $PROFILE profile..."
         echo "Base URL: $BASE_URL | Timeout: ${TIMEOUT}s"
         echo ""
-        
+
         # Show hostname check warnings if present
         echo "{{blocks.detect_and_configure.outputs.stdout}}" | grep "HOSTNAME_CHECK:" && echo ""
-        
+
         # Show connectivity status if available
         if [ -n "$CONNECTIVITY_STATUS" ]; then
           if [ "$CONNECTIVITY_STATUS" = "home_failed" ]; then
@@ -117,7 +117,7 @@ blocks:
             echo ""
           fi
         fi
-        
+
         # Run HTTP checks sequentially for reliability
         start=$(date +%s.%N)
         status_code=$(curl -s -o /dev/null -w "%{http_code}" --max-time "$TIMEOUT" "http://$BASE_URL:8080/apps/")
@@ -128,7 +128,7 @@ blocks:
         else
           echo "❌ Caddy: Unhealthy (HTTP $status_code, ${duration}s)"
         fi
-        
+
         start=$(date +%s.%N)
         status_code=$(curl -s -o /dev/null -w "%{http_code}" --max-time "$TIMEOUT" "http://$BASE_URL:8080/api/health")
         end=$(date +%s.%N)
@@ -138,7 +138,7 @@ blocks:
         else
           echo "❌ Status API: Unhealthy (HTTP $status_code, ${duration}s)"
         fi
-        
+
         start=$(date +%s.%N)
         status_code=$(curl -s -o /dev/null -w "%{http_code}" --max-time "$TIMEOUT" "http://$BASE_URL:8080/api/yomi/health")
         end=$(date +%s.%N)
@@ -148,7 +148,7 @@ blocks:
         else
           echo "❌ Yomi API: Unhealthy (HTTP $status_code, ${duration}s)"
         fi
-        
+
         start=$(date +%s.%N)
         status_code=$(curl -s -o /dev/null -w "%{http_code}" --max-time "$TIMEOUT" "http://$BASE_URL:8080/api/weaviate/v1/nodes")
         end=$(date +%s.%N)
@@ -158,7 +158,7 @@ blocks:
         else
           echo "❌ Weaviate: Unhealthy (HTTP $status_code, ${duration}s)"
         fi
-        
+
         start=$(date +%s.%N)
         status_code=$(curl -s -o /dev/null -w "%{http_code}" --max-time "$TIMEOUT" "http://$BASE_URL:3001/health")
         end=$(date +%s.%N)
@@ -180,7 +180,7 @@ blocks:
         #!/bin/bash
         # Parse configuration from previous block (filter out non-variable lines)
         eval "$(echo "{{blocks.detect_and_configure.outputs.stdout}}" | grep -E '^[A-Z_]+=')"
-        
+
         if [ "$CHECK_CONTAINERS" = "true" ]; then
           echo "Checking container services..."
           
@@ -232,23 +232,23 @@ blocks:
       command: |
         #!/bin/bash
         set -e
-        
+
         TAILSCALE_STATUS=$(tailscale status --json 2>/dev/null | python3 -c "import json,sys; d=json.load(sys.stdin); s=d.get('Self',{}); print('self:',s.get('DNSName','?'),'ips:',s.get('TailscaleIPs',[]))" 2>&1) && \
           echo "✅ Tailscale: $TAILSCALE_STATUS" || \
           echo "❌ Tailscale: cannot get status"
-        
+
         if tailscale ping tony-omen >/dev/null 2>&1; then
           echo "✅ tony-omen: reachable via tailnet"
         else
           echo "❌ tony-omen: not reachable via tailnet"
         fi
-        
+
         if tailscale ping tony-dell >/dev/null 2>&1; then
           echo "✅ tony-dell: reachable via tailnet"
         else
           echo "❌ tony-dell: not reachable via tailnet"
         fi
-        
+
         FUNNEL_STATUS=$(curl -4 -s -o /dev/null -w "%{http_code}" --max-time 10 https://tony-dell.taila0626a.ts.net:8444/apps/tailscale-funnel/ 2>&1)
         if [ "$FUNNEL_STATUS" = "200" ]; then
           echo "✅ Tailscale Funnel: public page returned HTTP 200"
@@ -267,29 +267,29 @@ blocks:
         #!/bin/bash
         # Parse configuration from previous block (filter out non-variable lines)
         eval "$(echo "{{blocks.detect_and_configure.outputs.stdout}}" | grep -E '^[A-Z_]+=')"
-        
+
         # Count services from actual output
         HTTP_OUTPUT="{{blocks.parallel_health_check.outputs.stdout}}"
         CONTAINER_OUTPUT="{{blocks.container_check.outputs.stdout}}"
-        
+
         HTTP_TOTAL=$(echo "$HTTP_OUTPUT" | grep -c "✅\|❌\|⚠️" || echo "0")
         HTTP_HEALTHY=$(echo "$HTTP_OUTPUT" | grep -c "✅" || echo "0")
         HTTP_UNHEALTHY=$(echo "$HTTP_OUTPUT" | grep -c "❌" || echo "0")
-        
+
         CONTAINER_TOTAL=$(echo "$CONTAINER_OUTPUT" | grep -c "✅\|❌\|⚠️" || echo "0")
         CONTAINER_HEALTHY=$(echo "$CONTAINER_OUTPUT" | grep -c "✅" || echo "0")
-        
+
         TOTAL_SERVICES=$((HTTP_TOTAL + CONTAINER_TOTAL))
         TOTAL_HEALTHY=$((HTTP_HEALTHY + CONTAINER_HEALTHY))
         TOTAL_UNHEALTHY=$((HTTP_UNHEALTHY + (CONTAINER_TOTAL - CONTAINER_HEALTHY)))
-        
+
         # Calculate health score
         if [ "$TOTAL_SERVICES" -gt 0 ]; then
           HEALTH_SCORE=$((TOTAL_HEALTHY * 100 / TOTAL_SERVICES))
         else
           HEALTH_SCORE=0
         fi
-        
+
         # Determine overall status
         if [ "$HEALTH_SCORE" -eq 100 ]; then
           OVERALL_STATUS="operational"
@@ -298,7 +298,7 @@ blocks:
         else
           OVERALL_STATUS="critical"
         fi
-        
+
         # Generate human-readable summary
         echo ""
         echo "=========================================="
@@ -329,7 +329,7 @@ blocks:
         echo "=========================================="
         echo "JSON Output"
         echo "=========================================="
-        
+
         # Generate JSON output
         echo '{"profile":"'"$PROFILE"'","base_url":"'"$BASE_URL"'","timestamp":"'"$(date -Iseconds)"'","health_score":'"$HEALTH_SCORE"',"overall_status":"'"$OVERALL_STATUS"'","configuration":{"timeout":'"$TIMEOUT"',"container_checks":'"$CHECK_CONTAINERS"',"optional_services":'"$SKIP_OPTIONAL"',"parallel_execution":'"$PARALLEL"'},"services":{"total":'"$TOTAL_SERVICES"',"healthy":'"$TOTAL_HEALTHY"',"unhealthy":'"$TOTAL_UNHEALTHY"',"http_checks":{"total":'"$HTTP_TOTAL"',"healthy":'"$HTTP_HEALTHY"',"unhealthy":'"$HTTP_UNHEALTHY"'},"container_checks":{"total":'"$CONTAINER_TOTAL"',"healthy":'"$CONTAINER_HEALTHY"',"unhealthy":'"$((CONTAINER_TOTAL - CONTAINER_HEALTHY))"'}}}'
       timeout: 5

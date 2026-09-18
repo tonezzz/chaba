@@ -3,16 +3,18 @@ category: operations
 ---
 
 # MDDB Collections
+
 collections:
-  chaba-kb-system: 27 documents
-  chaba-kb-development: 15 documents
-  chaba-kb-operations: 4 documents
-  chaba-kb-features: 42 documents
-  trade-kb-system: [trade docs]
-  trade-kb-development: [trade docs]
-  trade-kb-operations: [trade docs]
-  trade-kb-features: [trade docs]
-```
+chaba-kb-system: 27 documents
+chaba-kb-development: 15 documents
+chaba-kb-operations: 4 documents
+chaba-kb-features: 42 documents
+trade-kb-system: [trade docs]
+trade-kb-development: [trade docs]
+trade-kb-operations: [trade docs]
+trade-kb-features: [trade docs]
+
+````
 
 **Benefits**:
 - Unified search across all projects
@@ -46,19 +48,20 @@ class MultiProjectKBManager:
             'trade': {'backend': 'file', 'path': '/home/tony/CascadeProjects/trade/docs'},
             'other': {'backend': 'tbd'}
         }
-    
+
     def search(self, query, project=None):
         if project:
             return self.search_project(query, project)
         else:
             return self.search_all(query)
-    
+
     def add_document(self, content, project, category):
         backend = self.projects[project]['backend']
         # Route to appropriate backend
-```
+````
 
 **Benefits**:
+
 - Unified MCP interface
 - Project-aware tool selection
 - Flexible backend support
@@ -66,6 +69,7 @@ class MultiProjectKBManager:
 - Cross-project search capability
 
 **Challenges**:
+
 - Requires completing mcp-kbman development
 - More complex architecture
 - Additional maintenance overhead
@@ -73,12 +77,14 @@ class MultiProjectKBManager:
 ### Option 3: Project Context Tool Naming
 
 **Architecture**:
+
 - Keep current fragmented system
 - Add project context to tool names
 - AI agent context awareness
 - Manual project selection
 
 **Implementation**:
+
 ```json
 {
   "mcpServers": {
@@ -95,14 +101,15 @@ class MultiProjectKBManager:
 ```
 
 **Benefits**:
+
 - Minimal changes required
 - Clear project separation
 - No migration needed
 - Simple to implement
 
 **Drawbacks**:
+
 - Still fragmented architecture
 - No cross-project search
 - Redundant infrastructure
 - Manual project selection required
-

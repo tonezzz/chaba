@@ -16,11 +16,11 @@ Provide a private host inventory now, then add server-side live and last-known s
 
 ## Decisions / why
 
-| Date | Decision | Reason |
-|------|----------|--------|
-| 2026-07-22 | Deploy from Plesk Git using `chaba.h3` | GitHub-hosted FTPS deployments failed because the hosting FTP data connection was reset. |
-| 2026-07-22 | Remove the GitHub FTPS workflow | Plesk Git is the single deployment path and avoids repeated failed GitHub Actions runs. |
-| 2026-07-22 | Keep the host inventory free of internal IP addresses | The page must not expose private network details. |
+| Date       | Decision                                              | Reason                                                                                   |
+| ---------- | ----------------------------------------------------- | ---------------------------------------------------------------------------------------- |
+| 2026-07-22 | Deploy from Plesk Git using `chaba.h3`                | GitHub-hosted FTPS deployments failed because the hosting FTP data connection was reset. |
+| 2026-07-22 | Remove the GitHub FTPS workflow                       | Plesk Git is the single deployment path and avoids repeated failed GitHub Actions runs.  |
+| 2026-07-22 | Keep the host inventory free of internal IP addresses | The page must not expose private network details.                                        |
 
 ## Notes
 

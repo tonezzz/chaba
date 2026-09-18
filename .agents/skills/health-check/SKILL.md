@@ -11,6 +11,7 @@ triggers:
 ---
 
 **DEPRECATED**: This skill is deprecated in favor of the MCP health server tools. Please use the MCP health server tools directly:
+
 - `mcp-health:check_health` - Run health checks for all services
 - `mcp-health:get_health_status` - Get current health status
 - `mcp-health:get_health_history` - Get historical health data
@@ -25,6 +26,7 @@ triggers:
 - `mcp-health:get_troubleshooting_info` - Get enhanced troubleshooting information
 
 **Migration Guide**:
+
 1. Replace skill invocation with `mcp-health:check_health` tool call
 2. Use `mcp-health:get_troubleshooting_info` for recovery guidance
 3. Use `mcp-health:analyze_dependencies` for dependency analysis
@@ -33,6 +35,7 @@ triggers:
 **Legacy Implementation** (for backward compatibility):
 
 This skill now acts as a convenience wrapper for the MCP health server. The MCP server provides:
+
 - Enhanced capabilities (historical tracking, alerts, advanced monitoring)
 - Better performance (database persistence, optimized queries)
 - Standardized interface (MCP protocol integration)
@@ -42,12 +45,14 @@ The MCP health server is the authoritative source for health monitoring. This sk
 
 **Direct MCP Tool Usage Example**:
 Instead of invoking this skill, use:
+
 ```
 Call tool: mcp-health:check_health
 Parameters: {} (for all services) or {"service": "Caddy"} (for specific service)
 ```
 
 **Benefits of MCP Health Server**:
+
 - Historical tracking and trend analysis
 - Alert system with notifications
 - Port conflict detection

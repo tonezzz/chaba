@@ -7,6 +7,7 @@ description: Comprehensive session archiving with status summary and KB archivin
 Accepted triggers: `/archive`, `/summarize` (backward compatibility), or phrases like "Let's archive" or "summarize this"
 
 ## Default Behavior (no flags)
+
 1. Generate comprehensive status summary with these sections:
    - Working on (1-2 lines on current task/focus)
    - Done (completed items, verified deployments, closed issues)
@@ -27,11 +28,13 @@ Accepted triggers: `/archive`, `/summarize` (backward compatibility), or phrases
 6. End with "Ready to be archived."
 
 ## Optional Flags (for granularity control)
+
 - `--no-status` or `--kb-only`: Skip status summary, only KB archiving
 - `--session-only`: Only session YAML archiving (via archive skill), no KB
 - `--status-only`: Only status summary, no archiving
 
 ## Guidelines
+
 - Be concise and specific; reference files/services/URLs where relevant
 - Do not invent status; base the summary on conversation evidence
 - If scope is unclear, ask which project or context to summarize

@@ -29,7 +29,7 @@ svg_text_rendering:
     Duplicate IDs such as battery_soc_184 and duration_text are intentional across branches and do not alone indicate an overlay.
 
 battery_status_line:
-  format: '{target}% | {current}%'
+  format: "{target}% | {current}%"
   anchor:
     x: 290
     y: 358
@@ -38,13 +38,13 @@ battery_status_line:
   text_source:
     plain:
       id: Battery*_SOC
-      text: '{current}%'
+      text: "{current}%"
     shutdown:
       id: Battery*_SOC_Shutdown
-      text: '{shutdown_soc}% | {current}%'
+      text: "{shutdown_soc}% | {current}%"
     program_capacity:
       id: Battery*_SOC_Program_Capacity
-      text: '{capacity}% | {current}%'
+      text: "{capacity}% | {current}%"
   exclusion_logic: |
     The plain Battery*__SOC <svg> is hidden when either the shutdown or program capacity branch
     is visible. This prevents the underlying {current}% from drawing over the digit in the combined
@@ -56,8 +56,8 @@ battery_state_message:
     x: 169
     y: 311
   examples:
-    - '2 hrs, 51 min TO FULL @16:37'
-    - '5 hrs, 34 min TO EMPTY @22:20'
+    - "2 hrs, 51 min TO FULL @16:37"
+    - "5 hrs, 34 min TO EMPTY @22:20"
 
 battery_runtime_line:
   anchor:
@@ -67,10 +67,10 @@ battery_runtime_line:
   branches:
     discharge:
       id: duration_text
-      example: 'RUNTIME TO 20% @22:20'
+      example: "RUNTIME TO 20% @22:20"
     charge:
       id: duration_text_charging
-      example: 'TO 20% CHARGE @22:20'
+      example: "TO 20% CHARGE @22:20"
   note: |
     Both text nodes can be present at the same coordinates. The inactive branch is rendered with
     fill: transparent, so only the active direction text is visually visible. For robust hiding,
@@ -135,24 +135,24 @@ pfg2_card:
 pfg_feature_keys:
   applies_to: [pfg, pfg2]
   grid:
-    pfg_grid_size: 'N (default 10 for pfg, 15 for pfg2); 1-indexed r,c tile keys'
-    pfg_grid_cols: 'N (v92+); override cols for non-square grids'
-    pfg_grid_rows: 'N (v92+); override rows for non-square grids; anchors use cols for x, rows for y'
+    pfg_grid_size: "N (default 10 for pfg, 15 for pfg2); 1-indexed r,c tile keys"
+    pfg_grid_cols: "N (v92+); override cols for non-square grids"
+    pfg_grid_rows: "N (v92+); override rows for non-square grids; anchors use cols for x, rows for y"
     pfg_grid_width: 'CSS width of the grid, e.g. "25%" or "360px"'
-    pfg_radius: 'map r,c -> CSS border-radius for that tile'
+    pfg_radius: "map r,c -> CSS border-radius for that tile"
     pfg_border: 'map r,c -> CSS border override for that tile (v78+), e.g. "4px solid #ffffff"'
-    pfg_hide_grid: 'boolean (v79+); hides tile borders, the r,c fallback text, and all pfg_lines connectors. Explicit pfg_labels still render (v87+). Images/icons/values/status colors still render.'
-    pfg_transparent: 'boolean (v93+); removes ha-card background/border/shadow and the theme card-mod frosted-glass ::before/::after layer (v94+)'
+    pfg_hide_grid: "boolean (v79+); hides tile borders, the r,c fallback text, and all pfg_lines connectors. Explicit pfg_labels still render (v87+). Images/icons/values/status colors still render."
+    pfg_transparent: "boolean (v93+); removes ha-card background/border/shadow and the theme card-mod frosted-glass ::before/::after layer (v94+)"
     pfg_inverter_at: '"r,c" (v77+); places the built-in inverter image tile at that cell'
-    pfg_debug_layers: 'boolean (v162+); outlines each render layer and tags it — cell=red, img=green, chart:<position>=cyan, label=yellow. For inspecting layer stacking.'
+    pfg_debug_layers: "boolean (v162+); outlines each render layer and tags it — cell=red, img=green, chart:<position>=cyan, label=yellow. For inspecting layer stacking."
     pfg_tile_style: 'map "r,c" -> {bg, border, radius, image, image_fit} (v162+); consolidated per-tile style that overrides pfg_images/pfg_border/pfg_radius/pfg_image_fit and the implicit cell tint'
   tiles:
-    note: 'Render priority per tile: label > icon > image > sum/value > r,c coordinate text.'
+    note: "Render priority per tile: label > icon > image > sum/value > r,c coordinate text."
     pfg_labels: 'map "r,c" -> text label; " " blanks a cell; rendered even under pfg_hide_grid'
     pfg_label_pos: 'map "r,c" -> CSS top for the label overlay (default 55% - 26px)'
     pfg_icons: 'map "r,c" -> mdi icon name (e.g. mdi:solar-power)'
     pfg_images: 'map "r,c" -> image URL served from /local/'
-    pfg_image_zoom: 'number; object-fit:cover plus transform:scale(zoom), applied to all image tiles'
+    pfg_image_zoom: "number; object-fit:cover plus transform:scale(zoom), applied to all image tiles"
     pfg_image_fit: 'map "r,c" -> contain|cover|fill per tile (default cover; inverter tiles default contain)'
     pfg_values: 'map "r,c" -> {entity, scale?, decimals?, unit?} live sensor value tile'
     pfg_value_labels: 'map "r,c" -> small caption rendered above the tile value (v88+)'
@@ -162,7 +162,7 @@ pfg_feature_keys:
     pfg_fit_screen: 'boolean|"Npx" (v97/v98+); grid fills 100% width x (100vh - reserve) with free cell stretch — no aspect lock, no scrollbar. Lines stretch via preserveAspectRatio="none".'
   charts:
     key: pfg_charts
-    note: "r,c -> chart def or array of defs; types: gauge, bar, history, cycle, surface3d (v141+). position: center|bottom|top|fill|cycle overlays the tile (works over images). \"bg\" is a deprecated alias of \"fill\" (v162+). cycle rotates through step groups at interval seconds; entities[] sums multiple sensors in one def. history uses recorder history_during_period with 5min cache; fields: entity/entities, hours, min/max, scale, decimals, unit, label, stroke, fill, needle, segments, gradient, interval, steps."
+    note: 'r,c -> chart def or array of defs; types: gauge, bar, history, cycle, surface3d (v141+). position: center|bottom|top|fill|cycle overlays the tile (works over images). "bg" is a deprecated alias of "fill" (v162+). cycle rotates through step groups at interval seconds; entities[] sums multiple sensors in one def. history uses recorder history_during_period with 5min cache; fields: entity/entities, hours, min/max, scale, decimals, unit, label, stroke, fill, needle, segments, gradient, interval, steps.'
     surface3d: |
       echarts-gl surface, lazy-loaded from /local/echarts-5.5.1.min.js +
       /local/echarts-gl-2.1.0.min.js (vendored to www/ on both hosts, v171 dev /
@@ -198,22 +198,22 @@ pfg_feature_keys:
     note: 'scripts/home-assistant/apply-tpl.py copies TPL-tab card templates (title -> r,c) onto any view: apply-tpl.py <ha_url> <dashboard> <src_view> <dst_view> --map "Title:r,c;..."'
   values:
     key: pfg_values
-    note: 'r,c -> entity id string or {entity, scale, decimals, unit, label}'
+    note: "r,c -> entity id string or {entity, scale, decimals, unit, label}"
   preset:
     key: preset
     note: '"pfg" merges standard entity/section defaults (src/cards/pfg-presets.ts) before validation; per-section card config keys override the preset.'
   lines:
     key: pfg_lines
     fields:
-      from: 'anchor, required'
-      to: 'anchor, required'
-      via: 'anchor, optional intermediate point'
+      from: "anchor, required"
+      to: "anchor, required"
+      via: "anchor, optional intermediate point"
       elbow: '"h" horizontal-first or "v" vertical-first route between from and to'
-      entity: 'numeric sensor driving direction, color, live state, and speed'
-      color: 'hex override; default is the entity status color, else #FF9100'
-      speed: 'seconds per dash cycle at max_power (default 0.8)'
-      max_power: 'watts counted as full speed (default 1000)'
-      invert: 'boolean; flips the entity sign before direction/speed math (e.g. battery power negative-on-discharge)'
+      entity: "numeric sensor driving direction, color, live state, and speed"
+      color: "hex override; default is the entity status color, else #FF9100"
+      speed: "seconds per dash cycle at max_power (default 0.8)"
+      max_power: "watts counted as full speed (default 1000)"
+      invert: "boolean; flips the entity sign before direction/speed math (e.g. battery power negative-on-discharge)"
     anchor_syntax: |
       "r,c" = tile centre. Edge/corner suffix after @:
       top | bottom | left | right | topleft | topright | bottomleft | bottomright.
@@ -227,9 +227,9 @@ pfg_feature_keys:
       faster. Zero/unavailable pauses the animation and dims the line to 60%.
       Lines use vector-effect="non-scaling-stroke" with stroke-width 2px.
   pfg2_canonical_tilemap:
-    note: 'Source of truth for TPL->PFG2 tile placement; pass to apply-tpl.py --map or promote-view.sh --map'
-    map: 'Grid:1,7;Sum:3,1;Inverter:3,4;Battery:5,1;Home:5,7;Living:7,4;Kitchen:7,7;Laundry:9,4;Pool:9,7'
-    pv_override: 'PV1 1,1 and PV2 1,4 use TPL card PV.b1 (bars); PV2 entities retargeted to *_2'
+    note: "Source of truth for TPL->PFG2 tile placement; pass to apply-tpl.py --map or promote-view.sh --map"
+    map: "Grid:1,7;Sum:3,1;Inverter:3,4;Battery:5,1;Home:5,7;Living:7,4;Kitchen:7,7;Laundry:9,4;Pool:9,7"
+    pv_override: "PV1 1,1 and PV2 1,4 use TPL card PV.b1 (bars); PV2 entities retargeted to *_2"
   tile_workflow_decision_tree: |
     Design/iterate a tile:
       1. Build/edit the single-tile card in the TPL tab (push-dashboard.py mutate, no restart).
@@ -270,7 +270,7 @@ multi_battery_layout:
     location: x=190, y=285, width=100, height=45
     contents: voltage and signed current on the first line, power and SOC on the second line
     fill: rgba(16,32,64,0.85)
-    example: '53.0 V -34.2 A / 1.83 kW 77 %'
+    example: "53.0 V -34.2 A / 1.83 kW 77 %"
 
 classes:
   st13:
@@ -304,6 +304,6 @@ known_patterns:
       SS4 or full-card tabs.
 
 status:
-  last_updated: '2026-09-05'
-  last_verified: '2026-09-16'
+  last_updated: "2026-09-05"
+  last_verified: "2026-09-16"
   health: active; v79 deployed; pfg/pfg2 feature keys, anchor syntax, speed-scaled flow lines, and pfg_hide_grid documented; signed-current and direction override documented for compact/lite cards; pfg2 deployed to michael-ha after SK with pfg_hide_grid=true

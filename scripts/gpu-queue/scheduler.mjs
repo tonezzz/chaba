@@ -1,6 +1,6 @@
 /**
  * Advanced Queue Scheduling Algorithms
- * 
+ *
  * Implements multiple scheduling strategies for comparative testing:
  * - Priority-based (current)
  * - Shortest Job First (SJF)
@@ -10,19 +10,19 @@
  * - Dynamic priority (based on system state)
  */
 
-import * as db from './db.mjs';
-import { predictJobDuration } from './job-duration-prediction.mjs';
-import { getNextJobWithMemoryConstraint } from './gpu-memory-aware.mjs';
-import { getNextJobWithDynamicPriority } from './dynamic-priority.mjs';
+import * as db from "./db.mjs";
+import { predictJobDuration } from "./job-duration-prediction.mjs";
+import { getNextJobWithMemoryConstraint } from "./gpu-memory-aware.mjs";
+import { getNextJobWithDynamicPriority } from "./dynamic-priority.mjs";
 
 // Scheduling algorithms
 const SCHEDULERS = {
-  priority: 'priority',           // Current: priority-based
-  sjf: 'sjf',                     // Shortest Job First
-  rr: 'rr',                       // Round Robin
-  adaptive: 'adaptive',           // Adaptive based on performance
-  memory_aware: 'memory_aware',   // GPU memory-aware scheduling
-  dynamic_priority: 'dynamic_priority' // Dynamic priority adjustment
+  priority: "priority", // Current: priority-based
+  sjf: "sjf", // Shortest Job First
+  rr: "rr", // Round Robin
+  adaptive: "adaptive", // Adaptive based on performance
+  memory_aware: "memory_aware", // GPU memory-aware scheduling
+  dynamic_priority: "dynamic_priority", // Dynamic priority adjustment
 };
 
 let currentScheduler = SCHEDULERS.memory_aware; // Use memory-aware by default
@@ -58,7 +58,7 @@ async function estimateExecutionTime(type, params) {
       return metrics[0].avg_execution_time;
     }
   } catch (error) {
-    console.error('Failed to get historical metrics:', error);
+    console.error("Failed to get historical metrics:", error);
   }
 
   // Fallback estimates (in ms)
@@ -70,7 +70,7 @@ async function estimateExecutionTime(type, params) {
     llama: 3000,
     yomi_summary: 5000,
     yomi_daily: 8000,
-    yomi_daily_batch: 15000
+    yomi_daily_batch: 15000,
   };
 
   return estimates[type] || 10000;
@@ -87,14 +87,14 @@ async function getNextJobPriority() {
  * Shortest Job First scheduling
  */
 async function getNextJobSJF() {
-  const jobs = await db.listJobs('pending');
+  const jobs = await db.listJobs("pending");
   if (jobs.length === 0) return null;
 
   // Estimate execution time for each job
   const jobsWithEstimates = await Promise.all(
     jobs.map(async (job) => ({
       job,
-      estimate: await estimateExecutionTime(job.type, job.params)
+      estimate: await estimateExecutionTime(job.type, job.params),
     }))
   );
 
@@ -109,7 +109,7 @@ async function getNextJobSJF() {
  */
 let rrIndex = 0;
 async function getNextJobRR() {
-  const jobs = await db.listJobs('pending');
+  const jobs = await db.listJobs("pending");
   if (jobs.length === 0) return null;
 
   // Simple round robin based on job order
@@ -122,35 +122,35 @@ async function getNextJobRR() {
  * Adaptive scheduling based on performance
  */
 async function getNextJobAdaptive() {
-  const jobs = await db.listJobs('pending');
+  const jobs = await db.listJobs("pending");
   if (jobs.length === 0) return null;
 
   // Get recent performance metrics
   const metrics = await db.getComparativeMetrics();
-  
+
   // Build performance profile
   const performanceProfile = {};
-  metrics.forEach(metric => {
+  metrics.forEach((metric) => {
     const key = `${metric.type}_${metric.mode}`;
     performanceProfile[key] = {
       avgTime: metric.avg_time,
-      efficiency: metric.job_count > 0 ? metric.avg_time / metric.job_count : Infinity
+      efficiency: metric.job_count > 0 ? metric.avg_time / metric.job_count : Infinity,
     };
   });
 
   // Score each job based on historical performance
   const jobsWithScores = await Promise.all(
     jobs.map(async (job) => {
-      const mode = job.params.mode || 'cpu';
+      const mode = job.params.mode || "cpu";
       const key = `${job.type}_${mode}`;
       const profile = performanceProfile[key] || { avgTime: 10000, efficiency: 1 };
-      
+
       // Lower score = better (faster, more efficient)
       const score = profile.avgTime * profile.efficiency;
-      
+
       return {
         job,
-        score
+        score,
       };
     })
   );
@@ -217,14 +217,14 @@ export function optimizeBatch(texts, maxBatchSize = 32) {
  */
 export async function getSchedulerStats() {
   const jobs = await db.getRecentJobsWithMetrics(100);
-  
+
   const stats = {
     total_jobs: jobs.length,
     by_type: {},
     by_mode: {},
     avg_execution_time: 0,
     avg_queue_wait: 0,
-    scheduler: currentScheduler
+    scheduler: currentScheduler,
   };
 
   let totalExecutionTime = 0;
@@ -232,7 +232,7 @@ export async function getSchedulerStats() {
   let executionCount = 0;
   let queueWaitCount = 0;
 
-  jobs.forEach(job => {
+  jobs.forEach((job) => {
     // By type
     if (!stats.by_type[job.type]) {
       stats.by_type[job.type] = { count: 0, avg_time: 0 };
@@ -273,7 +273,7 @@ export async function getSchedulerStats() {
   }
 
   // Calculate per-type averages
-  Object.keys(stats.by_type).forEach(type => {
+  Object.keys(stats.by_type).forEach((type) => {
     const typeData = stats.by_type[type];
     if (typeData.count > 0) {
       typeData.avg_time = typeData.avg_time / typeData.count;
@@ -281,7 +281,7 @@ export async function getSchedulerStats() {
   });
 
   // Calculate per-mode averages
-  Object.keys(stats.by_mode).forEach(mode => {
+  Object.keys(stats.by_mode).forEach((mode) => {
     const modeData = stats.by_mode[mode];
     if (modeData.count > 0) {
       modeData.avg_time = modeData.avg_time / modeData.count;

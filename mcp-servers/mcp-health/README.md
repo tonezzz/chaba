@@ -13,6 +13,7 @@ Centralized health monitoring and telemetry orchestrator for Chaba infrastructur
 ## Architecture
 
 The MCP Health Server follows a hybrid orchestrator model:
+
 - **MCP Layer**: Provides standardized tools and interfaces
 - **Execution Layer**: Calls existing health-check skill for actual health checks
 - **Persistence Layer**: SQLite database for historical data
@@ -47,12 +48,15 @@ The server is configured in `/home/tony/.config/devin/mcp_config.json`:
 ## Available Tools
 
 ### `check_health`
+
 Run health checks for all services defined in SSOT health configuration.
 
 **Parameters:**
+
 - `service` (optional): Specific service name to check (checks all if not provided)
 
 **Returns:**
+
 ```json
 {
   "summary": {
@@ -75,9 +79,11 @@ Run health checks for all services defined in SSOT health configuration.
 ```
 
 ### `get_health_status`
+
 Get current health status of all services from the database.
 
 **Returns:**
+
 ```json
 [
   {
@@ -90,13 +96,16 @@ Get current health status of all services from the database.
 ```
 
 ### `get_health_history`
+
 Get historical health check data for analysis.
 
 **Parameters:**
+
 - `service_name` (optional): Service name to filter history
 - `limit` (optional): Maximum number of records (default: 100)
 
 **Returns:**
+
 ```json
 [
   {
@@ -111,12 +120,15 @@ Get historical health check data for analysis.
 ```
 
 ### `get_health_summary`
+
 Get health summary including uptime, failure counts, and trends.
 
 **Parameters:**
+
 - `service_name` (optional): Service name for specific summary
 
 **Returns:**
+
 ```json
 {
   "by_category": {
@@ -128,12 +140,15 @@ Get health summary including uptime, failure counts, and trends.
 ```
 
 ### `analyze_dependencies`
+
 Analyze service dependencies and detect cascading failures.
 
 **Parameters:**
+
 - `service_name` (optional): Service name to analyze dependencies for
 
 **Returns:**
+
 ```json
 {
   "dependency_analysis": {
@@ -151,15 +166,18 @@ Analyze service dependencies and detect cascading failures.
 ```
 
 ### `get_alerts`
+
 Get active and historical alerts.
 
 **Parameters:**
+
 - `service_name` (optional): Service name to filter alerts
 - `severity` (optional): Severity level to filter (critical, error, degraded, info)
 - `resolved` (optional): Filter for resolved vs unresolved alerts
 - `limit` (optional): Maximum number of alerts to return (default: 50)
 
 **Returns:**
+
 ```json
 {
   "alerts": [
@@ -182,12 +200,15 @@ Get active and historical alerts.
 ```
 
 ### `acknowledge_alert`
+
 Acknowledge an alert to prevent duplicate notifications.
 
 **Parameters:**
+
 - `alert_id` (required): Alert ID to acknowledge
 
 **Returns:**
+
 ```json
 {
   "success": true,
@@ -197,9 +218,11 @@ Acknowledge an alert to prevent duplicate notifications.
 ```
 
 ### `get_alert_config`
+
 Get current alert configuration from SSOT.
 
 **Returns:**
+
 ```json
 {
   "alert_config": {
@@ -231,13 +254,13 @@ alerts:
       url: "https://monitoring.example.com/webhook"
       severity: [critical]
       description: Webhook for external monitoring systems
-  
+
   thresholds:
     critical_services_down: 3
     sustained_failure_minutes: 5
     recovery_notification: true
     response_time_threshold_ms: 5000
-  
+
   service_criticality:
     critical: [caddy, postgres, gpu-queue]
     important: [yomi-api, status-api, trade-api, mddb-api]
@@ -312,6 +335,7 @@ CREATE TABLE alerts (
 - **Phase 3**: ✅ Complete - Alerting and notification capabilities
 
 **Completed Features (Phase 1+2)**:
+
 - Real HTTP health checks using curl with expected_status validation from SSOT config
 - Container health checks using docker ps with expected_state validation from SSOT config
 - Systemd health checks using systemctl with expected_state validation from SSOT config
@@ -323,6 +347,7 @@ CREATE TABLE alerts (
 - Enhanced database schema with detailed health metrics including expected values
 
 **Completed Features (Phase 3)**:
+
 - Alert generation based on service status changes
 - Service criticality levels (critical, important, optional)
 - Alert deduplication to prevent spam
@@ -347,21 +372,25 @@ CREATE TABLE alerts (
 ## Usage Examples
 
 ### Check all services
+
 ```bash
 mcp_call_tool mcp-health check_health {}
 ```
 
 ### Check specific service
+
 ```bash
 mcp_call_tool mcp-health check_health {"service": "Caddy"}
 ```
 
 ### Get health summary
+
 ```bash
 mcp_call_tool mcp-health get_health_summary {}
 ```
 
 ### Get historical data
+
 ```bash
 mcp_call_tool mcp-health get_health_history {"service_name": "Caddy", "limit": 50}
 ```
@@ -369,16 +398,19 @@ mcp_call_tool mcp-health get_health_history {"service_name": "Caddy", "limit": 5
 ## Troubleshooting
 
 ### Server not responding
+
 - Check MCP configuration in `~/.config/devin/mcp_config.json`
 - Verify server file exists and is executable
 - Check server logs for errors
 
 ### Health config not loading
+
 - Verify `HEALTH_CONFIG` environment variable points to correct file
 - Check YAML syntax in health configuration file
 - Ensure URL placeholders are properly quoted: `url: "{profile}/api/health"`
 
 ### Database errors
+
 - Check write permissions for `health-history.db`
 - Verify SQLite database is not corrupted
 - Ensure sufficient disk space

@@ -9,10 +9,10 @@ hosts:
     tailnet: tony-omen
     tailscale_ip: 100.75.102.88
     tags:
-    - primary
-    - server
-    - web-server
-    - barrier-server
+      - primary
+      - server
+      - web-server
+      - barrier-server
     headless_browser:
       enabled: true
       role: fallback
@@ -32,10 +32,10 @@ hosts:
     tailnet: tony-dell
     tailscale_ip: 100.68.142.13
     tags:
-    - secondary
-    - testing
-    - barrier-client
-    - headless-primary
+      - secondary
+      - testing
+      - barrier-client
+      - headless-primary
     headless_browser:
       enabled: true
       role: primary
@@ -52,13 +52,13 @@ hosts:
     tailscale_ip: 100.124.59.112
     local_hostname: KKs-MacBook-Pro.local
     tags:
-    - macos
-    - ios
-    - laptop
-    - verify
-    - xcode
-    - offload
-    - playlive
+      - macos
+      - ios
+      - laptop
+      - verify
+      - xcode
+      - offload
+      - playlive
     headless_browser:
       enabled: true
       role: fallback
@@ -74,44 +74,44 @@ hosts:
       eligible: true
       kind: lightweight-macbook
       can_run:
-      - playwright / headless Chrome automation
-      - mcp_raw macOS-compatible tasks
-      - health snapshots and monitoring
-      - subagent explore/research
-      - verification of iOS/macOS builds
+        - playwright / headless Chrome automation
+        - mcp_raw macOS-compatible tasks
+        - health snapshots and monitoring
+        - subagent explore/research
+        - verification of iOS/macOS builds
       cannot_run:
-      - Linux x86_64 Docker/Podman containers
-      - GPU/ML training workloads
-      - long-running stateful services requiring systemd
+        - Linux x86_64 Docker/Podman containers
+        - GPU/ML training workloads
+        - long-running stateful services requiring systemd
       preferred_for:
-      - mac_ios_verify
-      - browser automation overflow when tony-dell/tony-omen are busy
-      - quick one-off macOS commands
+        - mac_ios_verify
+        - browser automation overflow when tony-dell/tony-omen are busy
+        - quick one-off macOS commands
 
 policies:
   headless_browser_priority:
-  - tony-dell
-  - tony-omen
-  - kk-macbook
+    - tony-dell
+    - tony-omen
+    - kk-macbook
   mac_ios_verify: kk-macbook
   offload:
     candidate_order:
-    - tony-dell
-    - kk-macbook
-    - tony-omen
+      - tony-dell
+      - kk-macbook
+      - tony-omen
     when_to_use_kk-macbook:
-    - tony-dell and tony-omen are at high load or memory pressure
-    - task is macOS-specific or needs Safari/WebKit
-    - task is a lightweight subagent that does not need Linux containers
+      - tony-dell and tony-omen are at high load or memory pressure
+      - task is macOS-specific or needs Safari/WebKit
+      - task is a lightweight subagent that does not need Linux containers
 
   web_preview:
     default: use-direct-hostname
     when_to_use_browser_preview: only in isolated environments or when direct access is unavailable
     decisions:
-    - source: docs/ssot/infrastructure/ssot.health.yml
-      note: Avoid browser preview for local testing; use a regular browser with direct hostnames
-    - source: docs/ssot/ssot.mysystem.home.yml
-      note: chaba-h3 preview on tony-omen port 8081 is for pre-deploy parity, not default local browsing
+      - source: docs/ssot/infrastructure/ssot.health.yml
+        note: Avoid browser preview for local testing; use a regular browser with direct hostnames
+      - source: docs/ssot/ssot.mysystem.home.yml
+        note: chaba-h3 preview on tony-omen port 8081 is for pre-deploy parity, not default local browsing
 
 dns_aliases:
   postgre:
@@ -126,8 +126,8 @@ dns_aliases:
       - Backup/failover plan is in docs/ssot/infrastructure/ssot.yomi-failover.yml.
 
 related_files:
-- docs/ssot/infrastructure/ssot.mcp-debug.yml
-- docs/ssot/infrastructure/ssot.health.yml
-- docs/ssot/apps/ssot.apps.playlive.yml
-- docs/ssot/ssot.mysystem.home.yml
-- docs/ssot/ssot.mysystem.macbook.yml
+  - docs/ssot/infrastructure/ssot.mcp-debug.yml
+  - docs/ssot/infrastructure/ssot.health.yml
+  - docs/ssot/apps/ssot.apps.playlive.yml
+  - docs/ssot/ssot.mysystem.home.yml
+  - docs/ssot/ssot.mysystem.macbook.yml

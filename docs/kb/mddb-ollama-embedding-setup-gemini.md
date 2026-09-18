@@ -36,11 +36,11 @@ Test collections on `tony-dell`:
 
 Both indexed the same 3 test documents.
 
-| Query | Gemini top score | Gemini latency | Ollama top score | Ollama latency |
-|---|---|---|---|---|
-| `Gemini embedding API` | 0.8073 (gemini-embedding) | ~575 ms | 0.8248 (gemini-embedding) | ~5.9 s (cold) |
-| `Ollama GPU memory` | 0.8453 (ollama-gpu) | ~524 ms | 0.8107 (ollama-gpu) | ~117 ms (warm) |
-| `Tailscale networking` | 0.8234 (tailscale-networking) | ~481 ms | 0.7983 (tailscale-networking) | ~4.8 s (cold) |
+| Query                  | Gemini top score              | Gemini latency | Ollama top score              | Ollama latency |
+| ---------------------- | ----------------------------- | -------------- | ----------------------------- | -------------- |
+| `Gemini embedding API` | 0.8073 (gemini-embedding)     | ~575 ms        | 0.8248 (gemini-embedding)     | ~5.9 s (cold)  |
+| `Ollama GPU memory`    | 0.8453 (ollama-gpu)           | ~524 ms        | 0.8107 (ollama-gpu)           | ~117 ms (warm) |
+| `Tailscale networking` | 0.8234 (tailscale-networking) | ~481 ms        | 0.7983 (tailscale-networking) | ~4.8 s (cold)  |
 
 **Findings**: Gemini relevance is comparable or slightly better. Gemini latency is ~500 ms per query, while Ollama is ~100 ms once warm but 1-6 s on cold starts.
 
@@ -82,4 +82,3 @@ curl -s http://tony-dell:12024/v1/vector-stats
 - `scripts/mddb/gemini-ollama-proxy.mjs` — Gemini/Ollama proxy
 - `stacks/web/mddb/docker-compose.yml` — MDDB and proxy compose
 - `docs/ssot/infrastructure/ssot.gemini-embedding.yml` — Gemini embedding SSOT
-

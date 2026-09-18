@@ -3,13 +3,14 @@ category: operations
 ---
 
 # Documentation Search Methods
+
 ## What it is
 
 **Abstract**: Comprehensive guide to unified MDDB search for Chaba infrastructure documentation with SSOT-MDDB integration policy - direct YAML editing preserved with automatic sync to MDDB for semantic search across 154+ documents.
+
 ## Context/Background
 
 Created 2026-08-06 as part of Chaba infrastructure documentation.
-
 
 ## Overview
 
@@ -21,11 +22,11 @@ Enables efficient information retrieval across Chaba documentation through dual 
 
 ## Change History
 
-| Date | Change | Author |
-|------|--------|--------|
-| 2026-08-06 | Initial dual search methods documentation | devin |
-| 2026-08-12 | Migrated to unified MDDB search, removed mcp-kbman references | devin |
-| 2026-08-15 | Aligned with .windsurfrules: MDDB primary, ssot-search for exact YAML, docs MCP fallback | devin |
+| Date       | Change                                                                                   | Author |
+| ---------- | ---------------------------------------------------------------------------------------- | ------ |
+| 2026-08-06 | Initial dual search methods documentation                                                | devin  |
+| 2026-08-12 | Migrated to unified MDDB search, removed mcp-kbman references                            | devin  |
+| 2026-08-15 | Aligned with .windsurfrules: MDDB primary, ssot-search for exact YAML, docs MCP fallback | devin  |
 
 ## Tags
 

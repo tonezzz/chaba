@@ -1,17 +1,17 @@
 #!/usr/bin/env node
 
-import { execSync } from 'child_process';
-import { writeFileSync, existsSync, mkdirSync, readFileSync } from 'fs';
-import { join } from 'path';
+import { execSync } from "child_process";
+import { writeFileSync, existsSync, mkdirSync, readFileSync } from "fs";
+import { join } from "path";
 
-const DATA_DIR = '/home/tony/CascadeProjects/chaba-tony-dell/data/gpu-monitor';
-const LOG_FILE = join(DATA_DIR, 'gpu-usage.log');
-const ALERT_FILE = join(DATA_DIR, 'gpu-alerts.log');
+const DATA_DIR = "/home/tony/CascadeProjects/chaba-tony-dell/data/gpu-monitor";
+const LOG_FILE = join(DATA_DIR, "gpu-usage.log");
+const ALERT_FILE = join(DATA_DIR, "gpu-alerts.log");
 const THRESHOLDS = {
-  warning: 80,    // 80% VRAM usage triggers warning
-  critical: 90,  // 90% VRAM usage triggers critical alert
-  temp_warning: 75,  // 75°C triggers temperature warning
-  temp_critical: 85  // 85°C triggers critical temperature alert
+  warning: 80, // 80% VRAM usage triggers warning
+  critical: 90, // 90% VRAM usage triggers critical alert
+  temp_warning: 75, // 75°C triggers temperature warning
+  temp_critical: 85, // 85°C triggers critical temperature alert
 };
 
 // Ensure data directory exists
@@ -19,14 +19,14 @@ if (!existsSync(DATA_DIR)) mkdirSync(DATA_DIR, { recursive: true });
 
 function execCommand(command) {
   try {
-    return execSync(command, { encoding: 'utf8' }).trim();
+    return execSync(command, { encoding: "utf8" }).trim();
   } catch (error) {
     return null;
   }
 }
 
 function getGPUStatus() {
-  const raw = execCommand('curl -s --connect-timeout 3 http://100.75.102.88:8001/api/gpu/status');
+  const raw = execCommand("curl -s --connect-timeout 3 http://100.75.102.88:8001/api/gpu/status");
   if (!raw) return null;
 
   try {
@@ -44,17 +44,17 @@ function getGPUStatus() {
       memoryPercent,
       utilization: gpu.utilization_percent,
       temperature: gpu.temperature_c,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     };
   } catch (error) {
-    console.error('Failed to parse sensor-reader GPU status:', error.message);
+    console.error("Failed to parse sensor-reader GPU status:", error.message);
     return null;
   }
 }
 
 function logGPUStatus(status) {
   const logEntry = `${status.timestamp} | VRAM: ${status.memoryPercent}% (${status.memoryUsed}/${status.memoryTotal}MB) | Util: ${status.utilization}% | Temp: ${status.temperature}°C\n`;
-  writeFileSync(LOG_FILE, logEntry, { flag: 'a' });
+  writeFileSync(LOG_FILE, logEntry, { flag: "a" });
 }
 
 function checkAlerts(status) {
@@ -64,34 +64,34 @@ function checkAlerts(status) {
   // VRAM Usage Alerts
   if (status.memoryPercent >= THRESHOLDS.critical) {
     alerts.push({
-      type: 'CRITICAL',
-      category: 'vram',
+      type: "CRITICAL",
+      category: "vram",
       message: `GPU VRAM usage critical: ${status.memoryPercent}% (${status.memoryUsed}/${status.memoryTotal}MB)`,
-      timestamp
+      timestamp,
     });
   } else if (status.memoryPercent >= THRESHOLDS.warning) {
     alerts.push({
-      type: 'WARNING',
-      category: 'vram',
+      type: "WARNING",
+      category: "vram",
       message: `GPU VRAM usage elevated: ${status.memoryPercent}% (${status.memoryUsed}/${status.memoryTotal}MB)`,
-      timestamp
+      timestamp,
     });
   }
 
   // Temperature Alerts
   if (status.temperature >= THRESHOLDS.temp_critical) {
     alerts.push({
-      type: 'CRITICAL',
-      category: 'temperature',
+      type: "CRITICAL",
+      category: "temperature",
       message: `GPU temperature critical: ${status.temperature}°C`,
-      timestamp
+      timestamp,
     });
   } else if (status.temperature >= THRESHOLDS.temp_warning) {
     alerts.push({
-      type: 'WARNING',
-      category: 'temperature',
+      type: "WARNING",
+      category: "temperature",
       message: `GPU temperature elevated: ${status.temperature}°C`,
-      timestamp
+      timestamp,
     });
   }
 
@@ -101,26 +101,28 @@ function checkAlerts(status) {
 function logAlerts(alerts) {
   if (alerts.length === 0) return;
 
-  const alertEntry = alerts.map(alert => 
-    `${alert.timestamp} | ${alert.type} | ${alert.category} | ${alert.message}\n`
-  ).join('');
+  const alertEntry = alerts
+    .map((alert) => `${alert.timestamp} | ${alert.type} | ${alert.category} | ${alert.message}\n`)
+    .join("");
 
-  writeFileSync(ALERT_FILE, alertEntry, { flag: 'a' });
+  writeFileSync(ALERT_FILE, alertEntry, { flag: "a" });
 }
 
 function getHistoricalData(hours = 24) {
   if (!existsSync(LOG_FILE)) return [];
 
-  const lines = readFileSync(LOG_FILE, 'utf8').split('\n').filter(line => line.trim());
+  const lines = readFileSync(LOG_FILE, "utf8")
+    .split("\n")
+    .filter((line) => line.trim());
   const cutoffTime = new Date(Date.now() - hours * 60 * 60 * 1000);
 
   return lines
-    .filter(line => {
-      const timestamp = new Date(line.split('|')[0].trim());
+    .filter((line) => {
+      const timestamp = new Date(line.split("|")[0].trim());
       return timestamp >= cutoffTime;
     })
-    .map(line => {
-      const parts = line.split('|').map(p => p.trim());
+    .map((line) => {
+      const parts = line.split("|").map((p) => p.trim());
       const timestamp = parts[0];
       const vramMatch = parts[1].match(/VRAM: (\d+)% \((\d+)\/(\d+)MB\)/);
       const utilMatch = parts[2].match(/Util: (\d+)%/);
@@ -132,7 +134,7 @@ function getHistoricalData(hours = 24) {
         memoryUsed: parseInt(vramMatch[2]),
         memoryTotal: parseInt(vramMatch[3]),
         utilization: parseInt(utilMatch[1]),
-        temperature: parseInt(tempMatch[1])
+        temperature: parseInt(tempMatch[1]),
       };
     });
 }
@@ -140,44 +142,46 @@ function getHistoricalData(hours = 24) {
 function calculateStats(data) {
   if (data.length === 0) return null;
 
-  const memoryValues = data.map(d => d.memoryPercent);
-  const utilValues = data.map(d => d.utilization);
-  const tempValues = data.map(d => d.temperature);
+  const memoryValues = data.map((d) => d.memoryPercent);
+  const utilValues = data.map((d) => d.utilization);
+  const tempValues = data.map((d) => d.temperature);
 
-  const avg = arr => arr.reduce((a, b) => a + b, 0) / arr.length;
-  const max = arr => Math.max(...arr);
-  const min = arr => Math.min(...arr);
+  const avg = (arr) => arr.reduce((a, b) => a + b, 0) / arr.length;
+  const max = (arr) => Math.max(...arr);
+  const min = (arr) => Math.min(...arr);
 
   return {
     memory: {
       avg: Math.round(avg(memoryValues)),
       max: max(memoryValues),
-      min: min(memoryValues)
+      min: min(memoryValues),
     },
     utilization: {
       avg: Math.round(avg(utilValues)),
       max: max(utilValues),
-      min: min(utilValues)
+      min: min(utilValues),
     },
     temperature: {
       avg: Math.round(avg(tempValues)),
       max: max(tempValues),
-      min: min(tempValues)
+      min: min(tempValues),
     },
-    samples: data.length
+    samples: data.length,
   };
 }
 
 function main() {
-  console.log('GPU Monitoring Check...');
+  console.log("GPU Monitoring Check...");
 
   const status = getGPUStatus();
   if (!status) {
-    console.error('Failed to get GPU status');
+    console.error("Failed to get GPU status");
     return;
   }
 
-  console.log(`Current Status: VRAM ${status.memoryPercent}% | Util ${status.utilization}% | Temp ${status.temperature}°C`);
+  console.log(
+    `Current Status: VRAM ${status.memoryPercent}% | Util ${status.utilization}% | Temp ${status.temperature}°C`
+  );
 
   // Log current status
   logGPUStatus(status);
@@ -186,16 +190,18 @@ function main() {
   const alerts = checkAlerts(status);
   if (alerts.length > 0) {
     console.log(`⚠️  ${alerts.length} alert(s) triggered`);
-    alerts.forEach(alert => console.log(`  ${alert.type}: ${alert.message}`));
+    alerts.forEach((alert) => console.log(`  ${alert.type}: ${alert.message}`));
     logAlerts(alerts);
   }
 
   // Calculate historical stats
   const historicalData = getHistoricalData(24);
   const stats = calculateStats(historicalData);
-  
+
   if (stats) {
-    console.log(`24h Stats: VRAM avg ${stats.memory.avg}% (max ${stats.memory.max}%) | Temp avg ${stats.temperature.avg}°C (max ${stats.temperature.max}°C)`);
+    console.log(
+      `24h Stats: VRAM avg ${stats.memory.avg}% (max ${stats.memory.max}%) | Temp avg ${stats.temperature.avg}°C (max ${stats.temperature.max}°C)`
+    );
   }
 
   return { status, alerts, stats };
@@ -203,9 +209,9 @@ function main() {
 
 // Run monitoring check
 const result = main();
-console.log('GPU monitoring check complete');
+console.log("GPU monitoring check complete");
 
 // Export for use in other scripts
-if (process.argv[2] === '--export') {
+if (process.argv[2] === "--export") {
   console.log(JSON.stringify(result, null, 2));
 }

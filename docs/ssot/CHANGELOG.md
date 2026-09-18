@@ -3,6 +3,7 @@
 This file tracks significant changes to SSOT files for audit trail and rollback capability.
 
 ## Format
+
 - Date: YYYY-MM-DD
 - File: Path to SSOT file
 - Change Type: major|minor|patch
@@ -13,6 +14,7 @@ This file tracks significant changes to SSOT files for audit trail and rollback 
 ## Recent Changes
 
 ### 2026-08-18
+
 - **File**: docs/ssot/ssot.terminology.yml
 - **Change Type**: minor
 - **Description**: Created canonical terminology SSOT defining assistant context, rules, memories, SSOT, KB, and focus/decision vocabulary; also lists recent ambiguous terms and recommended corrections.
@@ -26,6 +28,7 @@ This file tracks significant changes to SSOT files for audit trail and rollback 
 - **Rollback**: Revert the ssot.index.yml addition.
 
 ### 2026-08-12
+
 - **File**: docs/ssot/ssot.mysystem.home.yml
 - **Change Type**: minor
 - **Description**: Added hardware specifications section with CPU (Intel i7-9750H @ 2.60GHz max, 800MHz min), GPU, and memory details. Added CPU frequency monitoring status.
@@ -63,6 +66,7 @@ This file tracks significant changes to SSOT files for audit trail and rollback 
 - **Rollback**: Revert index descriptions
 
 ### 2026-08-12
+
 - **File**: docs/ssot/infrastructure/ssot.mcp.yml
 - **Change Type**: minor
 - **Description**: Added mddb MCP server entry with configuration details, updated mcp-health notes to include Phase 4 completion and new tools
@@ -94,6 +98,7 @@ This file tracks significant changes to SSOT files for audit trail and rollback 
 - **Rollback**: Delete KB entry
 
 ### 2026-08-12
+
 - **File**: docs/ssot/infrastructure/ssot.health.yml
 - **Change Type**: minor
 - **Description**: Added playlived service to health monitoring with browser installation verification, updated service criticality to include playlived as important service, added automation service group
@@ -131,6 +136,7 @@ This file tracks significant changes to SSOT files for audit trail and rollback 
 - **Rollback**: Delete comparison document
 
 ### 2026-08-12 (Earlier)
+
 - **File**: docs/ssot/ssot.index.yml
 - **Change Type**: patch
 - **Description**: Fixed index inconsistencies - removed references to non-existent ssot.health.home.yml and ssot.health.mobile.yml, added mcp-health server documentation, added ssot.maintenance.yml reference
@@ -188,17 +194,20 @@ This file tracks significant changes to SSOT files for audit trail and rollback 
 ## Change Categories
 
 ### Major Changes
+
 - New SSOT files created
 - Significant structural changes to existing files
 - New maintenance frameworks or processes
 - Major configuration changes affecting multiple systems
 
 ### Minor Changes
+
 - New sections or fields added to existing files
 - Updated documentation or descriptions
 - Process improvements or tool additions
 
 ### Patch Changes
+
 - Bug fixes and corrections
 - Syntax fixes (YAML, formatting)
 - Index updates and consistency fixes

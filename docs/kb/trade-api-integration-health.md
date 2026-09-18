@@ -5,6 +5,7 @@ category: operations
 # Health Check Response
 
 ### Sample Response
+
 ```json
 {
   "status": "warning",
@@ -30,20 +31,26 @@ category: operations
 ## Troubleshooting
 
 ### Container Not Starting
+
 **Check**:
+
 ```bash
 docker logs trade-api
 docker ps | grep trade-api
 ```
 
 ### Database Connection Failed
+
 **Verify**:
+
 - PostgreSQL container is running and healthy
 - Environment variables are correct in docker-compose.yml
 - Network connectivity between containers
 
 ### API Not Accessible via Caddy
+
 **Check**:
+
 ```bash
 docker logs web
 curl http://localhost:8000/api/health  # Direct container access
@@ -51,12 +58,15 @@ curl http://tony-omen.local:8080/apps/trade/api/health  # Via Caddy
 ```
 
 ### Caddyfile Parsing Errors
+
 **Common Issues**:
+
 - Duplicate matcher definitions (e.g., @raceman_noslash defined twice)
 - Invalid directive syntax
 - Missing closing braces
 
 **Solution**:
+
 ```bash
 docker logs web  # Check for parsing errors
 # Remove duplicate matchers
@@ -67,13 +77,15 @@ docker exec web caddy reload --config /etc/caddy/Caddyfile
 ## Data Freshness Warnings
 
 ### Current Warnings
+
 - Exchange rates data: 34 days old
 - Commodity prices data: 8 days old
 
 ### Resolution
+
 Update data using trade project scripts:
+
 ```bash
 cd /home/tony/CascadeProjects/trade
 python download_data.py
 ```
-

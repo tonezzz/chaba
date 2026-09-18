@@ -5,11 +5,13 @@ category: operations
 # Key Details
 
 ### SSOT Locations
+
 - **Primary Source**: `docs/ssot/` - authoritative SSOT files
 - **Public Documentation**: `public/docs/overview/` - public-facing documentation
 - **Web Stack**: `stacks/web/web/public/` - web application public files
 
 ### Directory Structure
+
 ```
 docs/ssot/
 ├── ssot.validation-patterns.yml    # Validation rules and patterns
@@ -37,6 +39,7 @@ docs/ssot/
 ```
 
 ### File Naming Conventions
+
 - **Prefix**: All SSOT files must start with `ssot.`
 - **Format**: Use kebab-case (e.g., `ssot.devin.tools.yml`)
 - **Descriptive**: Names should clearly indicate the file's purpose
@@ -45,6 +48,7 @@ docs/ssot/
 ### SSOT-MDDB Integration Policy (CRITICAL)
 
 **Primary Workflow**: Direct YAML Editing
+
 - **Policy**: SSOT YAML files are edited directly as the primary workflow
 - **Reason**: YAML is the source of truth, direct editing is familiar and efficient
 - **Tools**: Text editors, IDEs, direct file manipulation
@@ -52,6 +56,7 @@ docs/ssot/
 - **Importance**: This policy is critical and must be preserved
 
 **Automatic MDDB Sync**
+
 - **Policy**: SSOT YAML files are automatically synced to MDDB for semantic search
 - **Mechanism**: File watcher (`watch-ssot-sync.py`) monitors `docs/ssot/` directory
 - **Trigger**: YAML file modifications trigger sync within 2 seconds
@@ -60,6 +65,7 @@ docs/ssot/
 - **Importance**: Enables semantic search without disrupting editing workflow
 
 **MDDB Search Interface**
+
 - **Purpose**: MDDB provides semantic search across SSOT content
 - **Benefit**: AI-powered search with Ollama embeddings (nomic-embed-text)
 - **Collections**: `ssot-infrastructure`, `ssot-apps`, `ssot-general`
@@ -68,6 +74,7 @@ docs/ssot/
 - **Importance**: Provides enhanced search capabilities while preserving direct editing
 
 **Workflow Summary**
+
 ```
 Direct YAML Editing (docs/ssot/*.yml)
     ↓ (automatic, 2-second delay)
@@ -79,6 +86,7 @@ Semantic Search (via MDDB)
 ```
 
 **Monitoring and Recovery**
+
 - **Health Monitoring**: mcp-health monitors file watcher and MDDB health
 - **Service Status**: `ssot-sync.service` monitored as "important" service
 - **Recovery**: File watcher restart, manual sync, YAML validation
@@ -86,6 +94,7 @@ Semantic Search (via MDDB)
 - **Alerts**: Configured for service failures and sync issues
 
 **Policy Rationale**
+
 - **Preserves Familiar Workflow**: Direct YAML editing remains unchanged
 - **Enables Enhanced Search**: MDDB provides semantic search without workflow disruption
 - **Automatic Sync**: Transparent synchronization eliminates manual steps
@@ -94,9 +103,9 @@ Semantic Search (via MDDB)
 - **Health Monitoring**: Comprehensive monitoring ensures reliability
 
 ### Cross-Reference Standards
+
 - **SSOT to KB**: Each SSOT file should reference related KB entries
 - **KB to SSOT**: Each KB entry should reference related SSOT files
 - **Related Documentation**: Include links to related documentation in both directions
 - **SSOT Index**: All new SSOT files must be registered in ssot.index.yml
 - **Consistent Format**: Use standardized related documentation section format
-

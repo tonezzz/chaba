@@ -3,16 +3,16 @@ category: operations
 ---
 
 # System Automation
+
 ## What it is
 
 Automated monitoring and maintenance scripts for Chaba infrastructure.
 
-
 Automated monitoring and maintenance scripts for Chaba infrastructure.
+
 ## Context/Background
 
 Created 2026-08-06 as part of Chaba infrastructure documentation.
-
 
 ## Data Retention
 
@@ -24,20 +24,24 @@ Created 2026-08-06 as part of Chaba infrastructure documentation.
 ## Customization
 
 ### Adjust Thresholds
+
 Edit `scripts/gpu-monitor.mjs`:
+
 ```javascript
 const THRESHOLDS = {
-  warning: 80,    // VRAM warning threshold
-  critical: 90,  // VRAM critical threshold
-  temp_warning: 75,  // Temperature warning
-  temp_critical: 85  // Temperature critical
+  warning: 80, // VRAM warning threshold
+  critical: 90, // VRAM critical threshold
+  temp_warning: 75, // Temperature warning
+  temp_critical: 85, // Temperature critical
 };
 ```
 
 ### Modify Schedule
+
 Edit `scripts/setup-automation.sh` cron expressions.
 
 ### Add Maintenance Tasks
+
 Edit `scripts/system-maintenance.mjs` to add new functions.
 
 ## Best Practices
@@ -69,6 +73,7 @@ Edit `scripts/system-maintenance.mjs` to add new functions.
 - [ ] Integration with monitoring services (Prometheus, Grafana)
 - [ ] Automated remediation for common issues
 - [ ] Resource usage forecasting
+
 ## Tags
 
 - **docker**: docker

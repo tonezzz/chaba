@@ -11,19 +11,19 @@
 export function detectLanguage(text) {
   // Thai character ranges: U+0E00-U+0E7F
   const thaiChars = text.match(/[\u0E00-\u0E7F]/g);
-  const totalChars = text.replace(/\s/g, '').length;
-  
-  if (totalChars === 0) return 'unknown';
-  
+  const totalChars = text.replace(/\s/g, "").length;
+
+  if (totalChars === 0) return "unknown";
+
   const thaiRatio = thaiChars ? thaiChars.length / totalChars : 0;
-  
+
   // Adjusted thresholds for better mixed detection
   // Thai dominant: > 60% Thai characters
   // Mixed: 5-60% Thai characters
   // Default to Thai for LINE conversations: < 5% Thai characters
-  if (thaiRatio > 0.6) return 'thai';
-  if (thaiRatio > 0.05) return 'mixed';
-  return 'thai'; // Default to Thai for LINE conversations
+  if (thaiRatio > 0.6) return "thai";
+  if (thaiRatio > 0.05) return "mixed";
+  return "thai"; // Default to Thai for LINE conversations
 }
 
 /**
@@ -33,17 +33,17 @@ export function detectLanguage(text) {
  */
 export function detectConversationLanguage(messages) {
   const textContent = messages
-    .map(m => {
-      const text = m.text || '';
+    .map((m) => {
+      const text = m.text || "";
       // Filter out null strings and actual "null" text values
-      if (text === 'null' || text === 'undefined' || !text.trim()) return '';
+      if (text === "null" || text === "undefined" || !text.trim()) return "";
       return text;
     })
     .filter(Boolean)
-    .join(' ');
-  
-  if (!textContent) return 'thai'; // Default to Thai for LINE conversations
-  
+    .join(" ");
+
+  if (!textContent) return "thai"; // Default to Thai for LINE conversations
+
   return detectLanguage(textContent);
 }
 
@@ -55,17 +55,17 @@ export function detectConversationLanguage(messages) {
  * @returns {string} - Language-specific prompt
  */
 export function getLanguageSpecificPrompt(language, name, lines) {
-  const baseContent = lines.join('\n');
-  
+  const baseContent = lines.join("\n");
+
   switch (language) {
-    case 'thai':
-    case 'unknown': // Default to Thai for unknown language
+    case "thai":
+    case "unknown": // Default to Thai for unknown language
       return `สรุปการสนทนา LINE กับ ${name} เป็นประโยคเดียวสั้นๆ (ไม่เกิน 20 คำ) เน้นหัวข้อหลัก คำถาม หรือการตัดสินใจ\n\n${baseContent}\n\nสรุป:`;
-    
-    case 'mixed':
+
+    case "mixed":
       return `Summarize the following LINE conversation with ${name} in one concise sentence (under 20 words). Use the same language as the messages (Thai/English mix). Focus on the main topic, question, or decision.\n\n${baseContent}\n\nSummary:`;
-    
-    case 'english':
+
+    case "english":
     default:
       return `Summarize the following LINE conversation with ${name} in one concise sentence (under 20 words). Focus on the main topic, question, or decision.\n\n${baseContent}\n\nSummary:`;
   }
@@ -80,11 +80,11 @@ export function getLanguageSpecificPrompt(language, name, lines) {
  * @returns {string} - Language-specific daily prompt
  */
 export function getLanguageSpecificDailyPrompt(language, date, name, lines) {
-  const baseContent = lines.join('\n');
-  
+  const baseContent = lines.join("\n");
+
   switch (language) {
-    case 'thai':
-    case 'unknown': // Default to Thai for unknown language
+    case "thai":
+    case "unknown": // Default to Thai for unknown language
       return `สกัดข้อมูลจากข้อความ LINE วันที่ ${date} ในการสนทนากับ ${name}:
 - เหตุการณ์ (สิ่งที่เกิดขึ้น)
 - การกระทำ (สิ่งที่คนทำหรือวางแผนจะทำ)
@@ -100,7 +100,7 @@ export function getLanguageSpecificDailyPrompt(language, date, name, lines) {
 ข้อความ:
 ${baseContent}`;
 
-    case 'mixed':
+    case "mixed":
       return `Extract from these LINE messages for ${date} in conversation with ${name}:
 - Events (things that happened)
 - Actions (things people did or plan to do)
@@ -116,7 +116,7 @@ Format as JSON:
 Messages:
 ${baseContent}`;
 
-    case 'english':
+    case "english":
     default:
       return `Extract from these LINE messages for ${date} in conversation with ${name}:
 - Events (things that happened)
@@ -144,11 +144,11 @@ ${baseContent}`;
  * @returns {string} - Language-specific batch daily prompt
  */
 export function getLanguageSpecificBatchDailyPrompt(language, name, dates, dateSections) {
-  const baseContent = dateSections.join('\n\n');
-  
+  const baseContent = dateSections.join("\n\n");
+
   switch (language) {
-    case 'thai':
-    case 'unknown': // Default to Thai for unknown language
+    case "thai":
+    case "unknown": // Default to Thai for unknown language
       return `สกัดข้อมูลจากข้อความ LINE หลายวัน (${dates}) ในการสนทนากับ ${name}:
 - เหตุการณ์ (สิ่งที่เกิดขึ้น)
 - การกระทำ (สิ่งที่คนทำหรือวางแผนจะทำ)
@@ -166,7 +166,7 @@ export function getLanguageSpecificBatchDailyPrompt(language, name, dates, dateS
 ข้อความ:
 ${baseContent}`;
 
-    case 'mixed':
+    case "mixed":
       return `Extract structured information from these LINE messages for conversation with ${name} across multiple dates (${dates}):
 - Events (things that happened)
 - Actions (things people did or plan to do)
@@ -184,7 +184,7 @@ Format as JSON (by date):
 Messages:
 ${baseContent}`;
 
-    case 'english':
+    case "english":
     default:
       return `Extract structured information from these LINE messages for conversation with ${name} across multiple dates (${dates}):
 - Events (things that happened)

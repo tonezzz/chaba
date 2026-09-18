@@ -19,21 +19,26 @@ category: operations
 ### Integration Methods
 
 **Method 1: Environment Variable (Recommended)**
+
 ```bash
 export ANTHROPIC_BASE_URL=http://127.0.0.1:8787
 ```
+
 Add to `~/.bashrc` or `~/.zshrc` for persistence.
 
 **Method 2: Devin Desktop Settings**
+
 - Configure custom API endpoint in Devin Desktop settings
 - Set Base URL to: `http://127.0.0.1:8787`
 
 **Method 3: Session-Specific**
+
 ```bash
 ANTHROPIC_BASE_URL=http://127.0.0.1:8787 devin-desktop
 ```
 
 ### Current Status
+
 - ✅ Headroom proxy running on port 8787
 - ✅ Health check: All systems healthy
 - ✅ Uptime: ~15 minutes (since start)
@@ -59,17 +64,20 @@ ANTHROPIC_BASE_URL=http://127.0.0.1:8787 devin-desktop
 ### Monitoring Schedule
 
 **Daily**:
+
 - Check Headroom proxy status
 - Verify no errors in logs
 - Quick stats check
 
 **Weekly**:
+
 - Run comprehensive monitoring script
 - Verify MCP tool counts
 - Check MCP server health
 - Review token usage trends
 
 **Monthly**:
+
 - Detailed performance analysis
 - Cost savings calculation
 - Review filter effectiveness
@@ -78,6 +86,7 @@ ANTHROPIC_BASE_URL=http://127.0.0.1:8787 devin-desktop
 ### Current Monitoring Results
 
 **Headroom Proxy Status**:
+
 - Status: ✅ Running
 - Uptime: ~15 minutes
 - API requests: 0 (awaiting Devin integration)
@@ -85,6 +94,7 @@ ANTHROPIC_BASE_URL=http://127.0.0.1:8787 devin-desktop
 - Cost savings: $0.00 (no traffic yet)
 
 **MCP Filtering Status**:
+
 - Total tools: 22 (from 65+ original)
 - Tool reduction: 66%
 - All servers healthy
@@ -95,6 +105,7 @@ ANTHROPIC_BASE_URL=http://127.0.0.1:8787 devin-desktop
 ### Start Using Headroom Proxy
 
 1. **Choose Integration Method**:
+
    ```bash
    # Run configuration script for options
    .windsurf/configure-devin-headroom.sh
@@ -114,4 +125,7 @@ ANTHROPIC_BASE_URL=http://127.0.0.1:8787 devin-desktop
 ### Monitor Performance
 
 **Real-time Monitoring**:
+
 ```bash
+
+```

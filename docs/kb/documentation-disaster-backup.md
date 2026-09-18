@@ -5,6 +5,7 @@ category: operations
 # Critical Infrastructure Components
 
 ### Documentation Files
+
 - **Location**: `/home/tony/CascadeProjects/chaba/docs/`
 - **Content**: KB entries, SSOT files, architecture docs, assessments
 - **Backup Priority**: Critical
@@ -12,6 +13,7 @@ category: operations
 - **Backup Method**: Git version control
 
 ### MCP Configuration
+
 - **Location**: `/home/tony/.config/devin/mcp_config.json`
 - **Content**: MCP server definitions including docs MCP server
 - **Backup Priority**: Critical
@@ -19,6 +21,7 @@ category: operations
 - **Backup Method**: Automated daily backup script
 
 ### Skills Configuration
+
 - **Location**: `/home/tony/.config/devin/skills/`
 - **Content**: Devin skills (ssot-search, auto-kb, etc.)
 - **Backup Priority**: High
@@ -26,6 +29,7 @@ category: operations
 - **Backup Method**: Automated daily backup script
 
 ### SSOT YAML Files
+
 - **Location**: `/home/tony/CascadeProjects/chaba/docs/ssot/`
 - **Content**: All SSOT configuration files
 - **Backup Priority**: Critical
@@ -33,6 +37,7 @@ category: operations
 - **Backup Method**: Git version control
 
 ### Documentation Templates
+
 - **Location**: `/home/tony/CascadeProjects/chaba/docs/kb/.template.md`
 - **Content**: KB template, SSOT summary templates
 - **Backup Priority**: High
@@ -42,6 +47,7 @@ category: operations
 ## Backup Strategy
 
 ### Primary: Git Version Control
+
 - **Scope**: All documentation files in chaba repository
 - **Frequency**: Automatic on commit
 - **Retention**: Permanent history
@@ -49,6 +55,7 @@ category: operations
 - **Location**: GitHub repository
 
 ### Secondary: Configuration Backup Script
+
 - **Scope**: MCP configs, skills, rules
 - **Frequency**: Daily at 3 AM via cron
 - **Retention**: 30 days
@@ -56,6 +63,7 @@ category: operations
 - **Location**: `docs/backups/configs/`
 
 ### Tertiary: System-Level Backup
+
 - **Scope**: Full system including `/home/tony/.config/devin/`
 - **Frequency**: Weekly
 - **Retention**: 4 weeks
@@ -69,6 +77,7 @@ category: operations
 **Purpose**: Automated daily backup of MCP configurations and skills
 
 **What it backs up:**
+
 - MCP configuration (`mcp_config.json`)
 - Windsurf MCP configuration
 - Devin skills directory
@@ -77,6 +86,7 @@ category: operations
 - Project rules (`.windsurfrules`)
 
 **Features:**
+
 - Timestamped backups
 - Automatic cleanup of old backups (30-day retention)
 - Creates latest symlinks for easy recovery
@@ -84,6 +94,7 @@ category: operations
 - Size reporting
 
 **Usage:**
+
 ```bash
 ./scripts/backup-configs.sh
 ```
@@ -95,6 +106,7 @@ category: operations
 **Purpose**: Verify documentation integrity and search functionality
 
 **What it checks:**
+
 - Documentation file count (minimum 100 files expected)
 - Critical directories exist (kb, ssot, architecture, etc.)
 - KB template exists
@@ -108,6 +120,7 @@ category: operations
 - Git repository status
 
 **Usage:**
+
 ```bash
 ./scripts/verify-docs.sh
 ```
@@ -119,6 +132,7 @@ category: operations
 **Purpose**: Restore MCP configurations and skills from backup
 
 **What it restores:**
+
 - MCP configuration
 - Windsurf MCP configuration
 - Devin skills
@@ -127,12 +141,14 @@ category: operations
 - Project rules
 
 **Features:**
+
 - Creates restore point before recovery
 - Supports specific timestamp or "latest" backup
 - Verifies backup files exist before restore
 - Provides clear next steps after recovery
 
 **Usage:**
+
 ```bash
 # Restore from latest backup
 ./scripts/recover-configs.sh
@@ -146,13 +162,14 @@ category: operations
 **Purpose**: Configure cron jobs for automated backups and verification
 
 **What it sets up:**
+
 - Daily backup at 3 AM
 - Weekly verification on Sunday at 2 AM
 - Log file configuration
 - Crontab management
 
 **Usage:**
+
 ```bash
 ./scripts/setup-automation-cron.sh
 ```
-

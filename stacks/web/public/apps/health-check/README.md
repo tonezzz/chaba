@@ -14,18 +14,21 @@ Location-aware health monitoring dashboard for Chaba services.
 ## Location Modes
 
 ### Auto-detect (default)
+
 - Tries to reach local endpoint `http://tony-omen.local:8080/api/status`
 - If successful: uses home configuration
 - If fails: uses mobile configuration
 - 2-second timeout for detection
 
 ### Home (Local)
+
 - Full local network access
 - All services available including container checks
 - Direct access to GPU services
 - Faster timeouts (5-10 seconds)
 
 ### Mobile (External)
+
 - External/VPN access only
 - Limited service set (no container checks)
 - Longer timeouts (10-15 seconds)
@@ -48,6 +51,7 @@ Location-aware health monitoring dashboard for Chaba services.
 ## Mobile Configuration Notes
 
 The mobile configuration:
+
 - Excludes container-based checks (don't work externally)
 - Uses longer timeouts for external network latency
 - Includes mobile-specific recovery actions (VPN, network issues)

@@ -35,31 +35,33 @@ category: operations
 ```javascript
 // Define async function
 async function searchLocationForRoute(query) {
-  const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}`);
+  const response = await fetch(
+    `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}`
+  );
   if (!response.ok) {
-    throw new Error('Search failed');
+    throw new Error("Search failed");
   }
   return await response.json();
 }
 
 // Async event handler with error handling
-document.getElementById('search-btn').addEventListener('click', async (event) => {
+document.getElementById("search-btn").addEventListener("click", async (event) => {
   event.preventDefault();
-  
-  const query = document.getElementById('search-input').value;
-  const loadingIndicator = document.getElementById('loading');
-  const resultsContainer = document.getElementById('results');
-  
+
+  const query = document.getElementById("search-input").value;
+  const loadingIndicator = document.getElementById("loading");
+  const resultsContainer = document.getElementById("results");
+
   try {
-    loadingIndicator.style.display = 'block';
-    resultsContainer.innerHTML = '';
-    
+    loadingIndicator.style.display = "block";
+    resultsContainer.innerHTML = "";
+
     const results = await searchLocationForRoute(query);
     displayResults(results);
   } catch (error) {
     resultsContainer.innerHTML = `<div class="error">Error: ${error.message}</div>`;
   } finally {
-    loadingIndicator.style.display = 'none';
+    loadingIndicator.style.display = "none";
   }
 });
 ```
@@ -81,18 +83,17 @@ function displayRoute(route) {
 }
 
 // Dual export at end of file
-if (typeof window !== 'undefined') {
+if (typeof window !== "undefined") {
   window.searchLocationForRoute = searchLocationForRoute;
   window.calculateRoute = calculateRoute;
   window.displayRoute = displayRoute;
 }
 
-if (typeof module !== 'undefined' && module.exports) {
+if (typeof module !== "undefined" && module.exports) {
   module.exports = {
     searchLocationForRoute,
     calculateRoute,
-    displayRoute
+    displayRoute,
   };
 }
 ```
-

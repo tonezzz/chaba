@@ -19,12 +19,14 @@ This document outlines the systematic approach for collecting performance data a
 **Objective**: Compare CPU-only vs GPU-accelerated embedding generation
 
 **Variables**:
+
 - Mode: CPU vs GPU
 - Model: all-MiniLM-L6-v2 (384 dims) vs OpenAI text-embedding-3-small (1536 dims)
 - Batch sizes: 1, 8, 16, 32, 64 texts
 - Text lengths: Short (<100 chars), Medium (100-500 chars), Long (>500 chars)
 
 **Metrics Collected**:
+
 - Execution time (ms)
 - VRAM usage (MB)
 - GPU utilization (%)
@@ -33,6 +35,7 @@ This document outlines the systematic approach for collecting performance data a
 - Cost (for OpenAI)
 
 **Success Criteria**:
+
 - CPU embeddings: <10s per batch of 32
 - GPU embeddings: <2s per batch of 32
 - VRAM usage: <500MB for embeddings
@@ -43,17 +46,20 @@ This document outlines the systematic approach for collecting performance data a
 **Objective**: Compare different queue scheduling strategies
 
 **Algorithms Tested**:
+
 1. **Priority-based** (current): txt2vid > imagen2 > llama > embedding
 2. **Shortest Job First (SJF)**: Optimize for average completion time
 3. **Round Robin**: Fair allocation across job types
 4. **Adaptive**: Dynamic based on historical performance
 
 **Test Workloads**:
+
 - Light: 2 concurrent jobs, 30s duration
-- Medium: 5 concurrent jobs, 60s duration  
+- Medium: 5 concurrent jobs, 60s duration
 - Heavy: 10 concurrent jobs, 120s duration
 
 **Metrics Collected**:
+
 - Total completion time
 - Average job completion time
 - Average queue wait time
@@ -61,6 +67,7 @@ This document outlines the systematic approach for collecting performance data a
 - Job starvation (jobs waiting >60s)
 
 **Success Criteria**:
+
 - Adaptive scheduler: 20% improvement in avg completion time
 - SJF: 15% improvement in avg wait time
 - Round Robin: Fair allocation (no starvation)
@@ -70,11 +77,13 @@ This document outlines the systematic approach for collecting performance data a
 **Objective**: Find optimal batch sizes for different workloads
 
 **Workloads**:
+
 - Embeddings: 1, 8, 16, 32, 64 texts
 - Image generation: 1, 4, 8 images
 - Video generation: 1, 2, 4 videos
 
 **Metrics Collected**:
+
 - Total execution time
 - Per-item execution time
 - VRAM usage
@@ -82,6 +91,7 @@ This document outlines the systematic approach for collecting performance data a
 - Error rate
 
 **Success Criteria**:
+
 - Find "knee" in performance curve
 - Balance between throughput and latency
 - VRAM usage <80% capacity
@@ -91,12 +101,14 @@ This document outlines the systematic approach for collecting performance data a
 **Objective**: Measure system behavior under realistic load
 
 **Scenarios**:
+
 - **Burst load**: 10 jobs in 10s, then idle
 - **Sustained load**: 2 jobs/minute for 10 minutes
 - **Peak load**: 20 jobs in 30s
 - **Mixed load**: Combination of all job types
 
 **Metrics Collected**:
+
 - Queue depth over time
 - GPU utilization over time
 - VRAM usage patterns
@@ -104,6 +116,7 @@ This document outlines the systematic approach for collecting performance data a
 - System stability
 
 **Success Criteria**:
+
 - No queue depth >20
 - GPU utilization >70% during peak
 - Error rate <5%
@@ -236,43 +249,49 @@ This document outlines the systematic approach for collecting performance data a
 
 ### Decision Matrix
 
-| Strategy | Performance | Efficiency | Reliability | UX | Overall |
-|----------|-------------|------------|-------------|-----|---------|
-| Current (Priority) | Baseline | Baseline | Baseline | Baseline | Baseline |
-| CPU Embeddings | ? | ? | ? | ? | ? |
-| GPU Embeddings | ? | ? | ? | ? | ? |
-| SJF Scheduling | ? | ? | ? | ? | ? |
-| Adaptive Scheduling | ? | ? | ? | ? | ? |
-| Hybrid Approach | ? | ? | ? | ? | ? |
+| Strategy            | Performance | Efficiency | Reliability | UX       | Overall  |
+| ------------------- | ----------- | ---------- | ----------- | -------- | -------- |
+| Current (Priority)  | Baseline    | Baseline   | Baseline    | Baseline | Baseline |
+| CPU Embeddings      | ?           | ?          | ?           | ?        | ?        |
+| GPU Embeddings      | ?           | ?          | ?           | ?        | ?        |
+| SJF Scheduling      | ?           | ?          | ?           | ?        | ?        |
+| Adaptive Scheduling | ?           | ?          | ?           | ?        | ?        |
+| Hybrid Approach     | ?           | ?          | ?           | ?        | ?        |
 
 ## Implementation Timeline
 
 ### Week 1: Setup and Baseline
+
 - Deploy monitoring infrastructure
 - Collect baseline metrics
 - Validate data collection
 
 ### Week 2: CPU Embeddings
+
 - Deploy CPU embedding service
 - Run performance tests
 - Document results
 
 ### Week 3: GPU Queue Integration
+
 - Add embeddings to queue
 - Test queue integration
 - Compare CPU vs GPU
 
 ### Week 4: Scheduling Optimization
+
 - Test scheduling algorithms
 - Implement adaptive scheduler
 - Validate improvements
 
 ### Week 5: Load Testing
+
 - Run load scenarios
 - Stress test system
 - Document limits
 
 ### Week 6: Analysis and Decision
+
 - Analyze all collected data
 - Compare strategies
 - Make final recommendation
@@ -282,18 +301,21 @@ This document outlines the systematic approach for collecting performance data a
 ### Database Schema
 
 **gpu_queue_jobs** (enhanced):
+
 - Performance metrics (execution_time_ms, gpu_used, vram_used_mb)
 - Mode tracking (cpu, gpu, hybrid)
 - Batch optimization (batch_size)
 - Queue metrics (queue_wait_time_ms)
 
 **gpu_metrics** (new):
+
 - Continuous GPU monitoring
 - VRAM usage over time
 - GPU utilization
 - Temperature tracking
 
 **test_results** (new):
+
 - Test suite results
 - Comparative test data
 - Performance benchmarks
