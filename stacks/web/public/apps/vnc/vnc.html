@@ -58,6 +58,22 @@
             padding: 5px 5px 4px 5px;
             cursor: pointer;
         }
+        #sendEnterButton {
+            position: fixed;
+            top: 0px;
+            right: 100px;
+            border: 1px outset;
+            padding: 5px 5px 4px 5px;
+            cursor: pointer;
+        }
+        #sendEscButton {
+            position: fixed;
+            top: 0px;
+            right: 180px;
+            border: 1px outset;
+            padding: 5px 5px 4px 5px;
+            cursor: pointer;
+        }
 
         #screen {
             flex: 1; /* fill remaining space */
@@ -109,6 +125,18 @@
             return false;
         }
 
+        function sendEnter() {
+            rfb.sendKey(0xff0d, 'Enter', true);
+            rfb.sendKey(0xff0d, 'Enter', false);
+            return false;
+        }
+
+        function sendEsc() {
+            rfb.sendKey(0xff1b, 'Escape', true);
+            rfb.sendKey(0xff1b, 'Escape', false);
+            return false;
+        }
+
         // Show a status text in the top bar
         function status(text) {
             document.getElementById('status').textContent = text;
@@ -136,13 +164,17 @@
 
         document.getElementById('sendCtrlAltDelButton')
             .onclick = sendCtrlAltDel;
+        document.getElementById('sendEnterButton')
+            .onclick = sendEnter;
+        document.getElementById('sendEscButton')
+            .onclick = sendEsc;
 
         // Read parameters specified in the URL query string
         // By default, use the host and port of server that served this file
-        const host = readQueryVariable('host', 'tony-dell');
-        const port = readQueryVariable('port', '6081');
+        const host = readQueryVariable('host', window.location.hostname);
+        const port = readQueryVariable('port', '');
         const password = readQueryVariable('password', '');
-        const path = readQueryVariable('path', '');
+        const path = readQueryVariable('path', 'apps/vnc/ws');
 
         // | | |         | | |
         // | | | Connect | | |
@@ -183,6 +215,8 @@
     <div id="top_bar">
         <div id="status">Loading</div>
         <div id="sendCtrlAltDelButton">Send CtrlAltDel</div>
+        <div id="sendEnterButton">Send Enter</div>
+        <div id="sendEscButton">Send Esc</div>
     </div>
     <div id="screen">
         <!-- This is where the remote screen will appear -->

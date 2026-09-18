@@ -89,15 +89,21 @@ Parallel sessions caused real breakage: duplicated `pfg2-card.ts`, undeclared `v
 
 ## XMEye VMS on tony-dell
 
-- Container: `xmeye-vms-vnc` (Podman), exposes VNC on `192.168.2.67:5900` (no password).
-- Browser noVNC: `http://tony-dell/apps/vnc/` -> `http://tony-dell/apps/vnc/vnc.html` (noVNC) -> `ws://tony-dell:6081/` (websockify proxy to VNC; port 6080 is reserved for `websockify-macbook.service`).
+- Container: `xmeye-vms-vnc` (Podman, `--cpus 0.5`), exposes VNC on `192.168.2.67:5900` (no password).
+- Browser noVNC: `http://tony-dell/apps/vnc/` -> `http://tony-dell/apps/vnc/vnc.html` (noVNC) -> `ws://tony-dell/apps/vnc/ws` (Caddy reverse proxy to `host.containers.internal:6081` -> websockify -> VNC). HTTPS uses `wss://tony-dell.taila0626a.ts.net/apps/vnc/ws` (same Caddy path, TLS via Tailscale). Port 6080 is reserved for `websockify-macbook.service`.
 - Websockify: `websockify 0.0.0.0:6081 127.0.0.1:5900` on tony-dell.
-- Wine virtual desktop startup (fixes wireframe/repaint issue): `wine explorer /desktop=VMS,1280x720 VMS.exe` from `/app` inside the container.
+- Startup: `rm -f /tmp/.X11-unix/X99` (stale socket cleanup), `Xvfb :99 -screen 0 1280x720x16`, `twm -display :99`, `x11vnc -display :99 -noxkb -forever -shared -rfbport 5900 -nopw -wait 50 -defer 30`, then `cd /app && wine explorer /desktop=VMS,1280x720 VMS.exe`. Use `-shared` so browser reconnects don't get refused.
+- VMS login may start as a wireframe; one click in the noVNC window renders it.
 - VMS config: `/home/tony/.cache/xmeye-vms/vms-runtime/config.ini`.
 - VMS app login: `admin` / `admin` (saved hash `F360C0DD174588FA` in `config.ini` `[Login]` `password`).
-- Device/DVR test password supplied by user: `amc123456`.
-- Second DVR Cloud/Serial ID to add: `d811d82e21d6c031`.
-- QR files for import: `Z:\\app\\qr\\S__7610372.jpg` and `Z:\\app\\qr\\QR.jpg` inside the VMS (mounted from `/home/tony/.cache/xmeye-vms/vms-runtime/qr/`).
+- Device/DVR test password supplied by user: `amc123456` (also stored, along with per-DVR cloud IDs/users, in `~/.config/secrets/xmeye-dvr.env`).
+- DVRs:
+  - `noble-club`: Cloud/Serial ID `d811d82e21d6c031`, user `admin`, pass in `~/.config/secrets/xmeye-dvr.env`.
+  - `noble-a`: Cloud/Serial ID `f2ca2dca0bc4ae4fnxjd`, user `advance`, pass in `~/.config/secrets/xmeye-dvr.env`.
+- QR files for import (inside the VMS at `Z:\\app\\qr\\`, mounted from `/home/tony/.cache/xmeye-vms/vms-runtime/qr/`):
+  - `S__7610372.jpg`
+  - `QR.jpg`
+  - `qr-noble-a.jpg`
 - Set `autologin=true` in `config.ini` after the saved hash is in place to skip the login prompt on next restart.
 
 ## GEV Gemini Live voice deployment

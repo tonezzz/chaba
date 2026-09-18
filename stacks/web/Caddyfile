@@ -53,6 +53,10 @@ http://127.0.0.1:8080 {
 		redir /apps/vnc/ 308
 	}
 
+	handle /apps/vnc/ws {
+		reverse_proxy host.containers.internal:6081
+	}
+
 	handle_path /apps/vnc/* {
 		root * /srv/public/apps/vnc
 		file_server
