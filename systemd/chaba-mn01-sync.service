@@ -1,0 +1,9 @@
+[Unit]
+Description=Sync chaba repo to mn01 audit checkout (rsync, excludes .git/node_modules/venv)
+After=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/rsync -az --delete --exclude '.git' --exclude 'node_modules' --exclude 'venv' --exclude '.venv' --exclude '__pycache__' --exclude 'reports' --exclude 'logs' --exclude '*.pyc' /home/tony/CascadeProjects/chaba/ mn01:/home/tony/checkouts/chaba/
+StandardOutput=append:/home/tony/CascadeProjects/chaba/logs/chaba-mn01-sync.log
+StandardError=append:/home/tony/CascadeProjects/chaba/logs/chaba-mn01-sync.log

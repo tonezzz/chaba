@@ -84,6 +84,7 @@ else
   drift "kb-modularity-audit.mjs reports modularity violations (thresholds in ssot.audit.yml)"
 fi
 
+if host_ok devin_db; then
 hdr "T0 — Devin DB + backups"
 DB=$(mget systems.devin_db.path); BDIR=$(mget systems.devin_db.backup_dir)
 KEEP=$(mget systems.devin_db.keep_backups); MAXG=$(mget systems.devin_db.max_size_gb)
@@ -97,7 +98,11 @@ else
 fi
 NB=$(ls -1 "$BDIR"/sessions.db.* 2>/dev/null | grep -vc -- '-shm\|-wal')
 [ "$NB" -le "$KEEP" ] && ok "backups retained: $NB ≤ $KEEP" || drift "backups retained: $NB > $KEEP (pruning broken?)"
+else
+  skip "devin_db — host-scoped to $(mget systems.devin_db.host 2>/dev/null) (running on $HOST)"
+fi
 
+if host_ok memory_local; then
 hdr "T0 — Local memory layer"
 MEM=$(mget systems.memory_local.session_memory); RAW=$(mget systems.memory_local.raw_dir)
 MAXAGE=$(mget systems.memory_local.session_memory_max_age_hours)
@@ -121,6 +126,9 @@ else
 fi
 
 grep -q "NLM_HOST:-$NLMHOST" "$NLM" && ok "nlm wrapper defaults to $NLMHOST" || drift "nlm wrapper no longer defaults to $NLMHOST — check $NLM"
+else
+  skip "memory_local — host-scoped to $(mget systems.memory_local.host 2>/dev/null) (running on $HOST)"
+fi
 
 fi # end T0 block
 
@@ -196,7 +204,8 @@ MINC=$(mget systems.mddb.min_collections); MINSC=$(mget systems.mddb.min_top_sco
 MCOL=$(mget systems.mddb.canary_collection); MQ=$(mget systems.mddb.canary_query)
 if curl -sf -m 10 "$MH" >/dev/null 2>&1; then
   ok "MDDB health endpoint up"
-  NCOL=$(curl -sf -m 30 "http://127.0.0.1:11023/v1/stats" 2>/dev/null | python3 -c "import json,sys; d=json.load(sys.stdin); c=d.get('collections',[]); print(len(c) if isinstance(c,list) else c)" 2>/dev/null || echo "?")
+  STATS_URL="${MH%/health}/v1/stats"
+  NCOL=$(curl -sf -m 30 "$STATS_URL" 2>/dev/null | python3 -c "import json,sys; d=json.load(sys.stdin); c=d.get('collections',[]); print(len(c) if isinstance(c,list) else c)" 2>/dev/null || echo "?")
   [ "$NCOL" != "?" ] && [ "$NCOL" -ge "$MINC" ] 2>/dev/null && ok "MDDB collections: $NCOL ≥ $MINC" || drift "MDDB collections: $NCOL (expected ≥$MINC)"
   VOUT=$(curl -s -m 15 -X POST "$VS" -H "Content-Type: application/json" \
        -d "{\"query\":\"$MQ\",\"limit\":3,\"collection\":\"$MCOL\"}" 2>/dev/null)
