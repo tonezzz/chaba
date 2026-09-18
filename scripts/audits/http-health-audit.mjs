@@ -19,11 +19,13 @@ import http from "http";
 import https from "https";
 import { readdirSync, readFileSync } from "fs";
 import { join } from "path";
+import { hostname } from "os";
 import yaml from "js-yaml";
 
 const PROJECT_ROOT = new URL("../../", import.meta.url).pathname.replace(/\/$/, "");
 const HEALTH_DIR = join(PROJECT_ROOT, "docs", "ssot", "infrastructure");
 const PROFILE = process.env.HEALTH_PROFILE || "home";
+const CURRENT_HOST = hostname();
 const SLOW_MS = 2000;
 const CERT_WARN_DAYS = 30;
 const CERT_FAIL_DAYS = 7;

@@ -105,12 +105,12 @@ else
     echo "⚠ Backup directory missing (will be created on first backup)"
 fi
 
-# Verify file integrity (check for empty files)
+# Verify file integrity (check for empty files; .gitkeep placeholders are intentional)
 echo "Checking for empty or corrupted files..."
-EMPTY_FILES=$(find "$DOCS_DIR" -type f -size 0 | wc -l)
+EMPTY_FILES=$(find "$DOCS_DIR" -type f -size 0 ! -name ".gitkeep" | wc -l)
 if [ $EMPTY_FILES -gt 0 ]; then
     echo "✗ Found $EMPTY_FILES empty files"
-    find "$DOCS_DIR" -type f -size 0
+    find "$DOCS_DIR" -type f -size 0 ! -name ".gitkeep"
     exit 1
 fi
 echo "✓ No empty files found"

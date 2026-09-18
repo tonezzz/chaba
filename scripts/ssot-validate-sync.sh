@@ -5,7 +5,9 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(dirname "$0")"
-SSOT_DIR="/home/tony/CascadeProjects/chaba-tony-dell/docs/ssot"
+# The canonical SSOT tree lives in the main checkout; chaba-tony-dell/docs
+# is a partial runtime checkout missing required files.
+SSOT_DIR="/home/tony/CascadeProjects/chaba/docs/ssot"
 LOG_FILE="/home/tony/CascadeProjects/chaba-tony-dell/logs/ssot-validation.log"
 mkdir -p "$(dirname "$LOG_FILE")"
 
@@ -176,7 +178,8 @@ sync_configurations() {
 # Generate validation report
 generate_report() {
     local timestamp=$(date '+%Y-%m-%d %H:%M:%S')
-    local report_file="$SSOT_DIR/validation-report-$timestamp.txt"
+    # Reports go next to the log, not into the SSOT tree itself
+    local report_file="$(dirname "$LOG_FILE")/ssot-validation-report-$timestamp.txt"
     
     {
         echo "SSOT Validation Report"

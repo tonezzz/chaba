@@ -12,6 +12,7 @@ docs/
 ├── implementation/        # Implementation guides and reports
 ├── kb/                    # Knowledge Base (how-to guides)
 ├── overview/              # Project-specific configurations
+├── reports/               # System assessment and status reports
 ├── runbooks/              # Formal operational runbooks
 ├── sessions/              # Development session archives
 └── ssot/                  # Single Source of Truth configurations
@@ -82,6 +83,14 @@ Technology evaluations and planning documents:
 Implementation guides and technical documentation:
 
 - **[mcp-config-sync-implementation.md](implementation/mcp-config-sync-implementation.md)** - MCP configuration synchronization implementation guide
+
+### Reports (`docs/reports/`)
+
+System assessment and status reports:
+
+- **[mcp-config-status-report.md](reports/mcp-config-status-report.md)** - MCP configuration status report
+- **[mcp-savings-2026-08-16.md](reports/mcp-savings-2026-08-16.md)** - MCP savings analysis
+- **[gpu-queue-cancellation-analysis.md](reports/gpu-queue-cancellation-analysis.md)** - GPU queue cancellation analysis
 
 ### Runbooks (`docs/runbooks/`)
 
@@ -249,8 +258,9 @@ For new contributors:
 
 Last updated: 2026-09-18
 
-- Fixed 9 broken links (token-optimization._, weaviate-rest-api-fix, subagent-implementation-strategy, reports/_, ssot-config-manager-implementation)
-- Removed Reports section (docs/reports/ no longer exists)
+- Fixed 9 broken links (token-optimization*, weaviate-rest-api-fix, subagent-implementation-strategy, ssot-config-manager-implementation)
+- Restored Reports section with current contents of docs/reports/
 - Added Runbooks section covering docs/runbooks/
 - Updated gpu-embedding entries to archived/ subdirectory
 - Relocated ssot-config-manager-implementation.md reference to overview/
+- Added Runbook Conventions section + doc-links audit note
