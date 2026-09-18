@@ -19,6 +19,7 @@ const __dirname = path.dirname(__filename);
 // Configuration
 const PORT = 3002;
 const UPDATE_INTERVAL = 30000; // 30 seconds
+const SENSOR_READER_URL = 'http://100.75.102.88:8001';
 const LOG_FILE = '/home/tony/CascadeProjects/chaba-tony-dell/logs/health-monitor.log';
 const BACKUP_LOG = '/var/log/chaba-backup.log';
 const BACKUP_MONITOR_LOG = '/var/log/chaba-backup-monitor.log';
@@ -177,18 +178,45 @@ async function parseBackupLogs() {
     }
 }
 
-// Get GPU status
+// Get GPU status from sensor-reader, fallback to local nvidia-smi
 async function getGPUStatus() {
+    try {
+        const response = await fetch(`${SENSOR_READER_URL}/api/gpu/status`, {
+            method: 'GET',
+            signal: AbortSignal.timeout(5000)
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            const gpu = data.gpus?.[0];
+
+            if (gpu) {
+                return {
+                    name: gpu.name,
+                    memoryUsed: `${gpu.memory_used_mb} MiB`,
+                    memoryTotal: `${gpu.memory_total_mb} MiB`,
+                    temperature: gpu.temperature_c,
+                    utilization: gpu.utilization_percent,
+                    source: 'sensor-reader',
+                    lastCheck: new Date().toISOString()
+                };
+            }
+        }
+    } catch (error) {
+        console.error('sensor-reader GPU fetch failed, falling back to nvidia-smi:', error.message);
+    }
+
     try {
         const { stdout } = await execAsync('nvidia-smi --query-gpu=name,memory.used,memory.total,temperature.gpu,utilization.gpu --format=csv,noheader');
         const gpuData = stdout.trim().split(',').map(s => s.trim());
-        
+
         return {
             name: gpuData[0],
             memoryUsed: gpuData[1],
             memoryTotal: gpuData[2],
             temperature: gpuData[3],
             utilization: gpuData[4],
+            source: 'nvidia-smi',
             lastCheck: new Date().toISOString()
         };
     } catch (error) {
