@@ -172,6 +172,10 @@ http://127.0.0.1:8080 {
 		reverse_proxy 100.68.142.13:3008
 	}
 
+
+	handle_path /api/gemini-mic/* {
+		reverse_proxy 100.68.142.13:3009
+	}
 	handle /api/yomi/* {
 		reverse_proxy 100.68.142.13:3000
 	}
