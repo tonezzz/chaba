@@ -206,7 +206,22 @@ runbooks:
       - Version numbers are per-host counters — compare bundle md5 across hosts for parity, not the v-number
       - If Tailscale SSH prints a login.tailscale.com link, ask the user to open it, then retry
 
+  rename_device_via_websocket:
+    purpose: Rename a device + its entities on tony-ha without the UI (same calls the UI makes; no restart).
+    steps:
+      - tony-ha binds loopback on tony-dell — connect to ws://127.0.0.1:8123/api/websocket and auth with HA_LONG_LIVED_TOKEN from ~/.config/secrets/home-assistant-token.env
+      - Find the device via config/device_registry/list (match on name/name_by_user), its entities via config/entity_registry/list (match device_id)
+      - config/device_registry/update with name_by_user = new display name
+      - config/entity_registry/update per entity: name = new display name; new_entity_id to also rename the entity_id (follow the Thai-slug convention, e.g. switch.cozy1 -> switch.plakphadlom)
+      - Grep .storage/lovelace.* for the old entity_id/name; update references via lovelace/config + lovelace/config/save with url_path (live, no restart)
+      - Verify with get_states (friendly_name) and re-list the registries
+    note: |
+      Verified 2026-09-18 renaming Cozy1 -> ปลั๊กพัดลม (cozylife_local plug). Entity `name` is a
+      user override — with has_entity_name:false, clearing it reverts to original_name, so set it
+      explicitly. entity_id renames do NOT auto-update dashboards or frontend recents; check
+      .storage references first.
+
 status:
-  last_updated: '2026-09-05'
-  last_verified: '2026-09-05'
+  last_updated: '2026-09-18'
+  last_verified: '2026-09-18'
   health: active; websocket push-dashboard workflow verified; deploy runbook corrected (.storage resource changes need service restart, not ha_reload_core)

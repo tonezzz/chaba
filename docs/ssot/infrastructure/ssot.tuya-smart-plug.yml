@@ -1,7 +1,7 @@
 title: Tuya WiFi Smart Plugs
-subtitle: Local TinyTuya control for two Tuye-10A sockets on tony-dell
-version: 2
-last_updated: '2026-08-31'
+subtitle: Local TinyTuya control for two Tuye-10A sockets plus a CozyLife socket on tony-dell
+version: 3
+last_updated: '2026-09-18'
 
 sections:
   - title: Devices
@@ -9,9 +9,11 @@ sections:
     layout: list
     items:
       - label: Coffee plug
-        text: 'ปลั๊กกาแฟ — ID a33be68c03a6886d7f21zf, IP 192.168.2.80, MAC 2c:b4:71:e8:aa:06, category cz, protocol 3.5'
+        text: 'ปลั๊กกาแฟ — ID a33be68c03a6886d7f21zf, IP 192.168.2.87, MAC 2c:b4:71:e8:aa:06, category cz, protocol 3.5'
       - label: Bedside plug
-        text: 'ปลัฦหัวเตียง — ID a319217035be6c2d60opfg, IP 192.168.2.68, MAC 2c:b4:71:e8:a8:e8, category cz, protocol 3.5'
+        text: 'ปลัฦหัวเตียง — ID a319217035be6c2d60opfg, IP 192.168.2.66, MAC 2c:b4:71:e8:a8:e8, category cz, protocol 3.5'
+      - label: Fan plug (CozyLife)
+        text: 'ปลั๊กพัดลม — CozyLife "Smart socket" model dRFfOO via the cozylife_local integration (not TinyTuya). Device ID 71759158249494b0f2df, MAC 24:94:94:b0:f2:df, IP 192.168.2.68. A fan is plugged into it (noted 2026-09-18). Formerly named "Cozy1".'
       - label: Network
         text: tony-omen (192.168.2.0/24)
 
@@ -55,6 +57,8 @@ sections:
         text: 'Cloud-backed entities still present but the bedside plug entity remains stale (off). Local command_line switches are the authoritative on/off controls.'
       - label: HA-MCP exposure
         text: 'ha_mcp_tools server is running on port 9584 with llm_api_exposure: full, so switch.plakkaaaef_local, switch.plalhawetiiyng_local, and camera.ip_cam_65 are exposed to the Gemini/LLM client.'
+      - label: Fan plug entities
+        text: 'switch.plakphadlom (main on/off, renamed from switch.cozy1 on 2026-09-18) plus cozylife_local helpers: schedule switch/time/selects, power-on-state and LED selects, IP sensor. Dashboard smart-home entities card updated in the same change.'
 
   - title: Next Steps
     icon: arrow-right
@@ -66,8 +70,8 @@ sections:
         text: 'Verify ha_mcp_tools exposes switch.plakkaaaef_local and switch.plalhawetiiyng_local to Gemini/bridge clients.'
 
 config:
-  version: 2
-  last_updated: '2026-08-31'
+  version: 3
+  last_updated: '2026-09-18'
   maintainer: tony
   related_files:
     - /home/tony/.config/home-assistant/configuration.yaml
