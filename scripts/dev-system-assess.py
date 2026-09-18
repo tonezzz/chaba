@@ -188,7 +188,10 @@ def build_assessment(check_only=False, metrics_only=False):
     }
 
     if not check_only:
-        save_ssot(assessment)
+        changed = {k: v for k, v in assessment.items() if k != "last_reviewed"} != \
+                  {k: v for k, v in old.items() if k != "last_reviewed"}
+        if changed:
+            save_ssot(assessment)
     if not check_only or metrics_only:
         REPORTS_DIR.mkdir(exist_ok=True)
         (REPORTS_DIR / "DEV_SYSTEM_ASSESSMENT.json").write_text(json.dumps(assessment, indent=2, default=str), encoding="utf-8")
