@@ -106,6 +106,10 @@ sections:
         text: LAN-first — on home net (local IP in 192.168.2.0/24 AND 192.168.2.86:24800 reachable) the client connects to 192.168.2.86:24800; otherwise falls back to 100.75.102.88:24800 (Tailscale). Avoids stale /etc/hosts and tailnet blips (DERP/rekey drops with heartbeat=1000)
       - label: LAN Enforcement
         text: barrier-enforce-lan.timer (user, every 30s) runs ~/.local/bin/barrier-enforce-lan.sh; if the client is established to the wrong address for the current network it restarts barrier-client.service, which re-probes via the wrapper
+      - label: VT Pinning
+        text: barrier-pin-vt.timer (user, every 15s) runs ~/.local/bin/barrier-pin-vt.sh; while lxqt-seat is up it chvt 7s whenever another VT is in front (GDM Wayland greeter on tty1, gettys). Skips if a real user graphical/tty session holds the foreground VT
+      - label: Greeter Limitation
+        text: GDM login greeter is Wayland-only (WaylandEnable=false is ignored); barrierc cannot inject into it — the seat desktop lives on vt7 and the pin-vt timer keeps it in front
       - label: Client Display
         text: DISPLAY=:1 (physical monitor), XAUTHORITY=/run/user/1000/gdm/Xauthority, LD_PRELOAD=/home/tony/.local/lib/nodelay.so
       - label: Client Binary

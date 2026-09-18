@@ -121,6 +121,39 @@ hosts:
         critical: false
         note: Weekly trigger for devin-cleanup.service; service skips if Devin code.lock
           is present
+      - name: xorg-seat.service
+        type: service
+        scope: system
+        expected_state: active
+        critical: true
+        note: Root Xorg :1 on vt7 — the physical seat display that barrier controls
+      - name: lxqt-seat.service
+        type: service
+        scope: user
+        expected_state: active
+        critical: true
+        note: startlxqt on DISPLAY=:1; replaces the unusable Wayland GDM greeter
+      - name: barrier-client.service
+        type: service
+        scope: user
+        expected_state: active
+        critical: true
+        note: ExecStart runs ~/.local/bin/barrier-client-run.sh — LAN-first
+          (192.168.2.86) on home net, Tailscale (100.75.102.88) fallback
+      - name: barrier-enforce-lan.timer
+        type: timer
+        scope: user
+        expected_state: active
+        critical: false
+        note: Every 30s; restarts barrier-client.service if it is connected via
+          the wrong address for the current network
+      - name: barrier-pin-vt.timer
+        type: timer
+        scope: user
+        expected_state: active
+        critical: false
+        note: Every 15s; chvt 7 when lxqt-seat is up but another VT is in front
+          (greeter/getty). Never steals a real user graphical session
     known_failed:
       - name: app-devin-desktop
         reason: Devin desktop is started as a background nohup job, not a persistent
