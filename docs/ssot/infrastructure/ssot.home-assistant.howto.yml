@@ -221,6 +221,20 @@ runbooks:
       explicitly. entity_id renames do NOT auto-update dashboards or frontend recents; check
       .storage references first.
 
+  person_detect_switch_automation:
+    purpose: Wire YOLO person detection on a go2rtc camera to a switch on tony-ha (used for the Coffee Corner fan).
+    steps:
+      - Ensure yolo-xiaomi.service is running; it serves person_count on http://127.0.0.1:8780/detect (source selectable via input_select.yolo_camera_source + rest_command.yolo_set_source)
+      - Add a rest resource in configuration.yaml polling /detect every 5s — a sensor for person_count and a binary_sensor gated on the desired source stream
+      - Add the automation to automations.yaml: state trigger binary_sensor on for ~5s -> turn_on; off/unavailable/unknown for the clear delay -> turn_off
+      - 'Reload live without restart: POST /api/services/rest/reload and /api/services/automation/reload with HA_LONG_LIVED_TOKEN from ~/.config/secrets/home-assistant-token.env'
+    note: |
+      Verified 2026-09-18 (automation.coffee_corner_fan_follows_person -> switch.plakphadlom).
+      availability_template is NOT a valid rest binary_sensor option — fold error checks
+      into value_template. for: triggers only arm on NEW transitions after a reload; a
+      state already in place before reload will not start the timer. Switching the YOLO
+      source away from the gated camera flips the binary sensor off.
+
 status:
   last_updated: '2026-09-18'
   last_verified: '2026-09-18'
