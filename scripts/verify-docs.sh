@@ -7,7 +7,9 @@
 set -e
 
 # Configuration
-DOCS_DIR="/home/tony/CascadeProjects/chaba-tony-dell/docs"
+# The real documentation tree lives in the main checkout; chaba-tony-dell/docs
+# is only a partial runtime checkout (missing architecture/ etc).
+DOCS_DIR="/home/tony/CascadeProjects/chaba/docs"
 EXPECTED_MIN_FILES=100
 EXPECTED_MCP_SERVERS="docs github yomi postgres mcp-gpu mcp-llama"
 

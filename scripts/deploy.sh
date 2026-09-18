@@ -27,10 +27,17 @@ log() {
 }
 
 # Error handling
+ROLLBACK_IN_PROGRESS=""
+
 error_exit() {
     log "ERROR" "$1"
-    log "ERROR" "Deployment failed - rolling back..."
-    rollback_deployment
+    # Guard against recursion: a failure inside rollback_deployment must not
+    # trigger another rollback attempt.
+    if [ -z "$ROLLBACK_IN_PROGRESS" ]; then
+        ROLLBACK_IN_PROGRESS=1
+        log "ERROR" "Deployment failed - rolling back..."
+        rollback_deployment
+    fi
     exit 1
 }
 
@@ -197,7 +204,11 @@ generate_deployment_report() {
     local backup_file="$3"
     
     local report_file="$PROJECT_ROOT/reports/deployment-$(date +%Y%m%d_%H%M%S).txt"
-    
+    mkdir -p "$(dirname "$report_file")"
+
+    # latest_backup is local to rollback_deployment; resolve it here for the report
+    local latest_backup=$(ls -t "$BACKUP_DIR"/pre-deploy_*.tar.gz 2>/dev/null | head -1)
+
     cat > "$report_file" << EOF
 Chaba Infrastructure Deployment Report
 ===================================

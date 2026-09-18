@@ -7,6 +7,7 @@
 import { spawn } from "child_process";
 import { writeFileSync, readFileSync, mkdirSync, copyFileSync, rmSync } from "fs";
 import { join } from "path";
+import { hostname } from "os";
 import yaml from "js-yaml";
 
 const PROJECT_ROOT = new URL("../../", import.meta.url).pathname.replace(/\/$/, "");
@@ -101,6 +102,7 @@ async function main() {
 
   const summary = {
     audit: doc.title || "chaba-audit-suite",
+    host: hostname(),
     ssot: SSOT_FILE,
     timestamp: started,
     generated: new Date().toISOString(),

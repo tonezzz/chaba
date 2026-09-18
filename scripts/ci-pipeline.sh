@@ -146,7 +146,8 @@ generate_test_report() {
     log "INFO" "Generating test report..."
     
     local report_file="$PROJECT_ROOT/reports/ci-test-report-$(date +%Y%m%d_%H%M%S).txt"
-    
+    mkdir -p "$(dirname "$report_file")"
+
     cat > "$report_file" << EOF
 Chaba CI/CD Pipeline Test Report
 ================================

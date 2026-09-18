@@ -251,6 +251,34 @@ audits:
     last_run:
     last_result:
 
+  - name: http-health
+    script: scripts/audits/http-health-audit.mjs
+    command: node
+    args: []
+    schedule: weekly
+    severity_on_fail: warning
+    description: >
+      Live HTTP probes for every type:http service declared in
+      ssot.health.*.yml (unique URLs, declared expected_status + timeout).
+      Timeout retries once at 2x before failing. Also checks TLS cert
+      expiry (<30d warn, <7d fail). HEALTH_PROFILE selects the profile set.
+    last_run:
+    last_result:
+
+  - name: smoke
+    script: scripts/audits/smoke-audit.mjs
+    command: node
+    args: []
+    schedule: weekly
+    severity_on_fail: warning
+    description: >
+      Runs the MCP smoke scripts declared in ssot.test-manifest.yml
+      systems.mcp.scripts (mcp-debug, focus, verify-all-mcp-servers).
+      Non-zero exit or 120s timeout fails. Overlaps the ssot-kb-memory T1
+      mcp section by design: this reports per-script exits in the suite.
+    last_run:
+    last_result:
+
   - name: staleness
     script: scripts/audits/staleness-audit.mjs
     command: node
@@ -306,7 +334,9 @@ groups:
     description: Health SSOT and infrastructure configuration consistency
     children:
       - infrastructure
+      - http-health
       - mddb
+      - smoke
   - name: code-suite
     description: Code formatting, spell, and dependency security
     children:
@@ -317,6 +347,21 @@ groups:
       - standardization
       - doc-links
       - staleness
+
+semantics:
+  description: >
+    Verdict taxonomy across the audit tracks. PASS means the declared
+    invariant holds. FAIL (exit 1) means a hard invariant broke — a missing
+    file, unreachable required service, or parse error. WARN means a
+    warning-severity audit failed: reported in the summary but the suite
+    still exits 0 (run.mjs honors severity_on_fail). DRIFT (manifest-driven
+    checks only) means live state differs from declared expectations and is
+    usually fixed by updating the manifest, not the system. SKIP means a
+    precondition (auth, host scope) was absent.
+  overlap:
+    - mddb: the `mddb` audit checks the live API contract (health, stats, search, proxy); the `ssot-kb-memory` mddb section checks declared manifest expectations (collections, score threshold). Both run; mddb-audit verdicts are harder (live probes), manifest verdicts are DRIFT-style.
+    - ssot_yaml: the `ssot` audit and the ssot-kb-memory T0 block both run ssot-validate-all; results are cached so the overlap is cheap.
+    - mcp smoke: the `smoke` audit and ssot-kb-memory T1 mcp section run the same manifest-declared scripts; smoke reports per-script exits in the suite, T1 reports them inside the drift suite.
 
 plan:
   current_state:

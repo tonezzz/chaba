@@ -161,6 +161,13 @@ Project-specific configurations (not moved during restructuring):
 - Consistent YAML formatting
 - Template-driven approach
 
+### Runbook Conventions
+
+- Runbooks live in three places: `docs/runbooks/*.md` (long-form), `docs/ssot/**/*.yml` (structured `runbooks:` entries inline with the system), `docs/kb/` (tagged `type: runbook` or `type: troubleshooting` in frontmatter)
+- `docs/ssot/ssot.runbooks.yml` is the canonical registry — add new runbooks there
+- Formal runbooks carry `status`, `last_verified`, `verification_method`, `scope`, `owner` in frontmatter
+- `scripts/audits/doc-links-audit.mjs` (weekly, standardization-suite) fails on broken doc links and `related:` paths
+
 ### Session Archive Format
 
 - ISO timestamp naming (YYYY-MM-DDTHH-MM-SS.yml)
