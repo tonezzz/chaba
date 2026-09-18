@@ -92,12 +92,17 @@ sections:
           (seen .91, .92); NIC dies in standby so ARP/ping only work while the panel is on. DLNA DMR-1.50 ("DMRND/0.5") on 52235/52396/5601;
           desc http://<ip>:52235/dmr/SamsungMRDesc.xml, UDN 215459bb-96b5-04f5-1476-2f50d2b694f9. DLNA playback visually confirmed
           2026-09-17 via rygel (TonyTest) on tony-omen — pull via MEDIA.P/Source works clean; push (SetAVTransportURI+Play) needs an
-          on-screen accept prompt each time. No AirPlay/Screen Mirroring — DLNA cast only.
+          on-screen accept prompt each time. No AirPlay/Screen Mirroring — DLNA cast only. In ARP it appears with the
+          repeater's WAN MAC 0A:F0:BC:AD:20:8B (MAC-NAT); its own eth0 MAC is only visible when it's on the upstream network
+          directly.
       - label: tony-repeater
         text:
-          Tenda Wi-Fi repeater (reasy-ui/GoAhead, lwip) — MAC 06:28:58:26:4b:2c (locally administered). Admin UI http://<ip>/login.html;
-          own IP DHCP-floats (seen .72, .73, .82). Bridges wired clients via MAC-NAT/proxy-ARP, so the Samsung behind it can show the
-          repeater's MAC in ARP.
+          Tenda Wi-Fi repeater (reasy-ui/GoAhead, fw 005) — LAN MAC 06:28:58:26:4b:2c, WAN MAC 0A:F0:BC:AD:20:8B (both locally
+          administered). Admin UI http://<ip>/login.html; own IP DHCP-floats (seen .72, .73, .82). Config dumped 2026-09-18
+          (~/.local/ai-hub/page-dumps/repeater-config-2026-09-18.json) — Universal Repeater (client+ap) bridging upstream
+          TONY-WIFI_2.4G to own SSID TONY-WIFI_2.4G-ext (WPA2-PSK, 2.4GHz only, 11b/g/n, ch6/20MHz). DHCP server OFF; LAN
+          192.168.2.73/24; NTP GMT+7. Auto-maintenance reboots daily at 03:00 — explains IP drift and intermittent admin UI.
+          Clients behind it appear in ARP with WAN MAC 0A:F0:BC:AD:20:8B (MAC-NAT), e.g. the Samsung on its LAN port.
       - label: cozylife-01
         text: Cozy Life / Tuya plug — MAC 24:94:94:b0:f2:df.
       - label: tuya-plug-tv
