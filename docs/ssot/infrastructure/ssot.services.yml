@@ -274,14 +274,11 @@ tony-dell:
       tailnet_url: http://tony-dell:9584/private_CtYuVkJEl28cp8qA8yXNCQ
       webhook: http://tony-dell:8123/api/webhook/mcp_d5528537d57627164033dc5e3e5e5aa6
     caddy:
-      host_path: /apps/home-assistant/
-      mcp_path: /api/ha-mcp/
-      backend: 100.68.142.13
-      caddyfile: /home/tony/CascadeProjects/chaba-tony-dell/stacks/web/Caddyfile
+      note: 'Not implemented — Caddyfile has no HA route. HA UI absolute redirects break path-prefixed proxying. UI access via tailscale serve https://tony-dell.taila0626a.ts.net:8123 -> 127.0.0.1:8123 (decision: tony-ha-tailscale-only-access).'
     health_check: ssh tony-dell curl -sf http://127.0.0.1:8123/ >/dev/null
     autostart: loginctl enable-linger tony is yes; Quadlet WantedBy=default.target
     status: 'mcp server active (2026-08-25)'
-    note: 'Container rootless podman on tony-dell. HA-MCP active. Caddy reverse proxy, health check, and autostart configured. Two Tuya smart plugs under local TinyTuya command_line control (switch.plakkaaaef_local, switch.plalhawetiiyng_local). Camera ip_cam_65 now uses local go2rtc H.264 proxy for high-res stream. Official cloud Tuya integration still present but stale for the bedside plug.'
+    note: 'Container rootless podman on tony-dell. HA-MCP active, health check and autostart configured. UI reachable via tailscale serve https://tony-dell.taila0626a.ts.net:8123 only (loopback bind, no LAN listener). Two Tuya smart plugs under local TinyTuya command_line control (switch.plakkaaaef_local, switch.plalhawetiiyng_local). Camera ip_cam_65 now uses local go2rtc H.264 proxy for high-res stream. Official cloud Tuya integration still present but stale for the bedside plug.'
   michael-dev:
     container: michael-dev
     image: docker.io/homeassistant/home-assistant:stable

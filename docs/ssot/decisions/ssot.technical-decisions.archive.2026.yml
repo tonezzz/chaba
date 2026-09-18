@@ -1,0 +1,80 @@
+title: Technical Decisions Archive 2026
+subtitle: Archived decision records moved out of ssot.technical-decisions.yml
+icon: archive
+source: docs/ssot/decisions/ssot.technical-decisions.yml
+archived_at: '2026-09-18'
+
+decisions:
+  - id: mcp-debug-unified-commands
+    date: '2026-08-17'
+    title: Add unified cross-platform commands to mcp-debug
+    status: accepted
+    context: |
+      The mcp-debug command list has grown and now includes multiple tools that
+      have equivalent implementations on Linux, macOS, or different runtimes
+      (e.g., podman vs docker, systemctl vs launchctl, ss vs netstat, nvidia-smi
+      vs rocm-smi). We want fewer command variants and more host-agnostic
+      diagnostics without losing the ability to tell which backend answered.
+    options:
+      - label: Keep every runtime-specific command separate
+        pros: [exact output per tool, no parser abstraction, simple wrappers]
+        cons: [long allowlists, presets must branch per host, harder for sub-agents]
+      - label: Add one abstract command per concept with backend auto-detection
+        pros: [shorter allowlists, host-agnostic presets, consistent compact JSON]
+        cons: [more complex wrappers, parsers may differ, can mask runtime details]
+    chosen: Add one abstract command per concept with backend auto-detection
+    reasoning: |
+      The compact layer already normalizes raw text into JSON. Auto-detecting a
+      backend inside a single `containers`, `services`, `sockets`, or `gpu` command
+      keeps the user-facing command list small while still exposing the actual
+      backend in a `runtime` key. Commands will be vetted with `mcp_stats` before
+      promotion to `recommended: true`.
+    consequences:
+      immediate:
+        - New `containers`, `services`, `sockets`, and `gpu` commands in mcp-debug
+        - Backend runtime recorded in compact JSON output
+        - New suggested extensions and active focus created
+      future:
+        - May add `memory` and `block_devices` abstractions if these prove useful
+        - Raw allowlist can shrink as abstract commands replace duplicates
+    related:
+      - docs/ssot/infrastructure/ssot.mcp-debug.yml
+      - docs/ssot/infrastructure/ssot.mcp-tools.yml
+      - scripts/mcp_debug/mcp-debug-macos
+      - ~/.local/bin/mcp-debug
+  - id: mcp-debug-cors-proxy
+    date: '2026-08-16'
+    title: How to serve live mcp-savings.json to the HTTPS chaba.h3 page
+    status: accepted
+    context: |
+      The chaba.h3 page is served over HTTPS. Browsers block the public page from
+      fetching the tony-omen/tony-dell CORS HTTP endpoint (mixed-content and .local
+      mDNS resolution issues). The report must still refresh without a full page
+      reload.
+    options:
+      - label: HTTPS CORS endpoint on tony-dell
+        pros: [simple fetch from the page, no server-side proxy]
+        cons: [requires TLS termination and certificate on tony-dell, opens tony-dell port to HTTPS]
+      - label: Same-origin PHP proxy on chaba.h3
+        pros: [avoids mixed-content, hides upstream HTTP URL from browser, fast to deploy, falls back to cached snapshot]
+        cons: [adds PHP dependency, one more network hop, proxy must be maintained]
+      - label: Disable live URL until a secure endpoint is available
+        pros: [no mixed-content risk, no extra code]
+        cons: [page never shows live data, must regenerate and commit snapshot manually]
+    chosen: Same-origin PHP proxy on chaba.h3
+    reasoning: |
+      The PHP proxy gives the page live data without waiting for TLS infrastructure
+      on tony-dell. It keeps the upstream HTTP endpoint inside the server network
+      and lets the browser make a same-origin HTTPS request. A cached snapshot
+      fallback means the page still renders if tony-dell is unreachable. The proxy
+      can be replaced by a direct HTTPS endpoint later without changing the public
+      contract because callers use /api/mcp-savings.php.
+    consequences:
+      - chaba-h3/public/api/mcp-savings.php fetches http://100.68.142.13:9100/mcp-savings.json
+      - app.js sets LIVE_DATA_URL to "/api/mcp-savings.php"
+      - CORS server remains on tony-dell for now
+      - Future option to add TLS to tony-dell and switch the proxy upstream
+    related:
+      - docs/ssot/infrastructure/ssot.mcp-debug.cors.yml
+      - chaba-h3/public/api/mcp-savings.php
+      - chaba-h3/public/apps/docs/mcp_debug/app.js

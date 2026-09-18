@@ -34,10 +34,7 @@ mcp:
   tailnet_url: http://tony-dell:9584/private_CtYuVkJEl28cp8qA8yXNCQ
   webhook: http://tony-dell:8123/api/webhook/mcp_d5528537d57627164033dc5e3e5e5aa6
   caddy:
-    host_path: /apps/home-assistant/
-    mcp_path: /api/ha-mcp/
-    backend: 100.68.142.13
-    caddyfile: /home/tony/CascadeProjects/chaba-tony-dell/stacks/web/Caddyfile
+    note: 'Not implemented — Caddyfile has no HA route. HA UI absolute redirects break path-prefixed proxying (same conclusion as michael-dev). UI access is via tailscale serve https://tony-dell.taila0626a.ts.net:8123 -> 127.0.0.1:8123 (decision: tony-ha-tailscale-only-access).'
   ssot: docs/ssot/infrastructure/ssot.home-assistant.mcp.yml
 
 custom_components:

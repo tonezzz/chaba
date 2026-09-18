@@ -19,81 +19,9 @@ overview:
     - Focus history (see ssot.focus.yml)
     - Session notes (see ssot.focus.sessions.yml)
 
-decisions:
-  - id: mcp-debug-unified-commands
-    date: '2026-08-17'
-    title: Add unified cross-platform commands to mcp-debug
-    status: accepted
-    context: |
-      The mcp-debug command list has grown and now includes multiple tools that
-      have equivalent implementations on Linux, macOS, or different runtimes
-      (e.g., podman vs docker, systemctl vs launchctl, ss vs netstat, nvidia-smi
-      vs rocm-smi). We want fewer command variants and more host-agnostic
-      diagnostics without losing the ability to tell which backend answered.
-    options:
-      - label: Keep every runtime-specific command separate
-        pros: [exact output per tool, no parser abstraction, simple wrappers]
-        cons: [long allowlists, presets must branch per host, harder for sub-agents]
-      - label: Add one abstract command per concept with backend auto-detection
-        pros: [shorter allowlists, host-agnostic presets, consistent compact JSON]
-        cons: [more complex wrappers, parsers may differ, can mask runtime details]
-    chosen: Add one abstract command per concept with backend auto-detection
-    reasoning: |
-      The compact layer already normalizes raw text into JSON. Auto-detecting a
-      backend inside a single `containers`, `services`, `sockets`, or `gpu` command
-      keeps the user-facing command list small while still exposing the actual
-      backend in a `runtime` key. Commands will be vetted with `mcp_stats` before
-      promotion to `recommended: true`.
-    consequences:
-      immediate:
-        - New `containers`, `services`, `sockets`, and `gpu` commands in mcp-debug
-        - Backend runtime recorded in compact JSON output
-        - New suggested extensions and active focus created
-      future:
-        - May add `memory` and `block_devices` abstractions if these prove useful
-        - Raw allowlist can shrink as abstract commands replace duplicates
-    related:
-      - docs/ssot/infrastructure/ssot.mcp-debug.yml
-      - docs/ssot/infrastructure/ssot.mcp-tools.yml
-      - scripts/mcp_debug/mcp-debug-macos
-      - ~/.local/bin/mcp-debug
-  - id: mcp-debug-cors-proxy
-    date: '2026-08-16'
-    title: How to serve live mcp-savings.json to the HTTPS chaba.h3 page
-    status: accepted
-    context: |
-      The chaba.h3 page is served over HTTPS. Browsers block the public page from
-      fetching the tony-omen/tony-dell CORS HTTP endpoint (mixed-content and .local
-      mDNS resolution issues). The report must still refresh without a full page
-      reload.
-    options:
-      - label: HTTPS CORS endpoint on tony-dell
-        pros: [simple fetch from the page, no server-side proxy]
-        cons: [requires TLS termination and certificate on tony-dell, opens tony-dell port to HTTPS]
-      - label: Same-origin PHP proxy on chaba.h3
-        pros: [avoids mixed-content, hides upstream HTTP URL from browser, fast to deploy, falls back to cached snapshot]
-        cons: [adds PHP dependency, one more network hop, proxy must be maintained]
-      - label: Disable live URL until a secure endpoint is available
-        pros: [no mixed-content risk, no extra code]
-        cons: [page never shows live data, must regenerate and commit snapshot manually]
-    chosen: Same-origin PHP proxy on chaba.h3
-    reasoning: |
-      The PHP proxy gives the page live data without waiting for TLS infrastructure
-      on tony-dell. It keeps the upstream HTTP endpoint inside the server network
-      and lets the browser make a same-origin HTTPS request. A cached snapshot
-      fallback means the page still renders if tony-dell is unreachable. The proxy
-      can be replaced by a direct HTTPS endpoint later without changing the public
-      contract because callers use /api/mcp-savings.php.
-    consequences:
-      - chaba-h3/public/api/mcp-savings.php fetches http://100.68.142.13:9100/mcp-savings.json
-      - app.js sets LIVE_DATA_URL to "/api/mcp-savings.php"
-      - CORS server remains on tony-dell for now
-      - Future option to add TLS to tony-dell and switch the proxy upstream
-    related:
-      - docs/ssot/infrastructure/ssot.mcp-debug.cors.yml
-      - chaba-h3/public/api/mcp-savings.php
-      - chaba-h3/public/apps/docs/mcp_debug/app.js
+archive: docs/ssot/decisions/ssot.technical-decisions.archive.2026.yml
 
+decisions:
   - id: mcp-debug-file-clipboard-bridge
     date: '2026-08-17'
     title: How to add auditable remote file get/put to mcp-debug
@@ -342,6 +270,47 @@ decisions:
       - experiments/ultralytics-yolo-ha/Containerfile
       - docs/ssot/infrastructure/ssot.health.home.web.yml
       - ~/.config/go2rtc/go2rtc.yaml
+
+  - id: tony-ha-tailscale-only-access
+    date: '2026-09-18'
+    title: tony-ha reachable only via Tailscale HTTPS; use one URL for internal and external
+    status: accepted
+    context: |
+      Setting up the Home Assistant companion app surfaced that tony-ha had no
+      working LAN URL. HA binds loopback only (configuration.yaml http.server_host:
+      127.0.0.1), so http://tony-dell:8123 and http://tony-dell.local:8123 fail —
+      tailscaled owns 8123 on the tailnet IP and answers plain HTTP with
+      "Client sent an HTTP request to an HTTPS server". tailscale serve provides
+      the TLS-terminating proxy https://tony-dell.taila0626a.ts.net:8123 ->
+      127.0.0.1:8123 (tailnet only, no Funnel on this port).
+    options:
+      - label: Expose plain HTTP on the LAN interface
+        pros: [works without Tailscale, simple http://192.168.2.67:8123]
+        cons: [widens LAN attack surface, duplicates the existing tailnet path, needs http.server_host change + restart]
+      - label: Path-prefixed Caddy route (/apps/ha/tony-ha/)
+        pros: [LAN HTTP via existing Caddy]
+        cons: [HA UI absolute redirects break path-prefixed proxying — already rejected for michael-dev]
+      - label: Use the tailscale serve HTTPS URL for both internal and external
+        pros: [single canonical URL, works on LAN and remote, TLS everywhere, no HA change]
+        cons: [requires Tailscale client connected on the device]
+    chosen: Use the tailscale serve HTTPS URL for both internal and external
+    reasoning: |
+      One URL (https://tony-dell.taila0626a.ts.net:8123) covers home WiFi and
+      remote access as long as the client is on the tailnet. No HA or proxy
+      changes are needed and it avoids reopening a plain-HTTP listener on the
+      LAN. The path-prefixed Caddy option was previously abandoned for
+      michael-dev because HA absolute redirects break under a path prefix.
+    consequences:
+      - 'HA app: set both internal and external URL to https://tony-dell.taila0626a.ts.net:8123'
+      - 'Client devices must run Tailscale; no TOTP/MFA on tony-ha (password-only login)'
+      - 'Stale http://tony-dell:8123 references fixed in instances/services/health/node-red SSOTs and AGENTS.md'
+      - 'Phantom Caddy /apps/ha/tony-ha/ and /api/ha-mcp/ routes marked not-implemented in SSOT'
+    related:
+      - docs/ssot/infrastructure/ssot.home-assistant.instances.yml
+      - docs/ssot/infrastructure/ssot.home-assistant.yml
+      - docs/ssot/infrastructure/ssot.services.yml
+      - docs/ssot/infrastructure/ssot.health.home.web.yml
+      - ~/.config/home-assistant/configuration.yaml
 
 related_files:
   - docs/ssot/ssot.focus.decisions.yml

@@ -51,7 +51,7 @@ sections:
       - label: health check
         text: curl -s -o /dev/null -w '%{http_code}' http://tony-dell.taila0626a.ts.net:8080/apps/node-red/ should return 200.
       - label: HA connectivity
-        text: Add a server config node in the editor with Base URL http://tony-dell:8123 and the HASS_TOKEN, then list entities.
+        text: Add a server config node in the editor with Base URL http://127.0.0.1:8123 (host network; HA binds loopback) and the HASS_TOKEN, then list entities.
   - title: Integration
     icon: "🔗"
     layout: list
