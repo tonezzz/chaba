@@ -9,8 +9,8 @@ import yaml
 from pathlib import Path
 from datetime import datetime
 
-SSOT_DIR = "/home/tony/CascadeProjects/chaba/docs/ssot"
-MDBB_SERVER = "http://tony-dell.taila0626a.ts.net:11023/v1"
+SSOT_DIR = "/home/tony/CascadeProjects/chaba-tony-dell/docs/ssot"
+MDBB_SERVER = os.environ.get("MDDB_BASE", "http://tony-dell:11023") + "/v1"
 
 # Reusable session with retries to survive transient connection drops
 _mddb_session = requests.Session()

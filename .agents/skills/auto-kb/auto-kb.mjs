@@ -284,16 +284,17 @@ function determineCategory(content) {
 }
 
 function getMDDBCollection(category) {
+  // Canonical kb-* collections — keep in sync with scripts/sync-kb-to-mddb.py
   if (category === 'troubleshooting' || category === 'development') {
-    return 'chaba-development';
+    return 'kb-development';
   }
   if (category === 'operations') {
-    return 'chaba-operations';
+    return 'kb-operations';
   }
   if (category === 'architecture' || category === 'implementation') {
-    return 'chaba-system';
+    return 'kb-system';
   }
-  return 'chaba-features';
+  return 'kb-features';
 }
 
 /**

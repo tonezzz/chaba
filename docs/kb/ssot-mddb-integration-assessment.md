@@ -175,12 +175,45 @@ github:
 - **analyze_dependencies**: Dependency analysis for ssot-sync-watcher
 - **get_troubleshooting_info**: Enhanced troubleshooting for SSOT services
 
+## Memory-System Reassessment (2026-09-18)
+
+Full audit of the Devin memory layers on tony-dell and the drift found between them.
+
+### Layer map
+
+| Layer | Location | Role |
+|---|---|---|
+| Windsurf native memory | `~/.codeium/windsurf/` (memories/, user_settings.pb, cascade *.pb) | Built-in rules/auto-memories + trajectory store feeding session summaries |
+| Rules | `.windsurfrules` → `ssot.windsurf.common.md` + overlays, `AGENTS.md`, `.windsurf/rules/` | Always-on behavior/context |
+| Procedural | `.devin/skills/`, `.agents/skills/`, `.windsurf/workflows/` | How-to memory (auto-kb, ssot-search, deploys) |
+| Project KB | `docs/kb/` (~312 md) | Curated operational knowledge |
+| Personal KB | `~/devin-kb` → `~/CascadeProjects/devin-kb` (git-synced) | Cross-machine facts |
+| SSOT + focus | `docs/ssot/*.yml`, `ssot.focus.*`, `focus-inbox/` | Structured truth + cross-session task state |
+| MDDB | `http://tony-dell:11023` (~620 docs) | Semantic search index |
+
+### Gaps found and fixes applied
+
+- **Collection fragmentation**: `auto-kb.mjs` wrote to `chaba-*` collections while the bulk index used `kb-*`. Fixed `getMDDBCollection()` to emit canonical `kb-*`; `scripts/sync-kb-to-mddb.py` re-homes misfiled docs (`chaba-development`, `chaba-system`).
+- **Stale sync paths**: `sync-ssot-to-mddb.py`, `watch-ssot-sync.py`, and `ssot-sync.service` pointed at removed `~/CascadeProjects/chaba*` paths. Repointed to `chaba-tony-dell`.
+- **File↔MDDB drift**: ~200 of 312 KB files were not indexed; `sync-kb-to-mddb.py` backfills, detects drift via `content_md5` meta, supports `--missing-only`, `--sync-deletes`, `--dry-run`.
+- **KB index generator bug**: `generate-docs.sh` used `head -1`, grabbing the `---` frontmatter line → index full of `[---]` entries. Now parses frontmatter and groups by real `category:`.
+- **devin-kb path mismatch**: rule referenced `~/devin-kb`; repo lives at `~/CascadeProjects/devin-kb`. Rule updated (checks both), symlink created; repo archived on GitHub blocks push (unarchive to resume sync).
+- **Empty native memory**: `~/.codeium/windsurf/memories/global_rules.md` populated with cross-project global rules.
+
+### MDDB collection conventions (canonical)
+
+- `kb-development`, `kb-features`, `kb-operations`, `kb-system` — `docs/kb/` files, keyed by filename, `source=kb`, category-mapped.
+- `infrastructure-ssot` — all SSOT YAML.
+- `chaba-architecture` — architecture docs (not KB files).
+- `ada-ha-*` — Home Assistant event/snapshot captures.
+
 ## Change History
 
 | Date | Change | Author |
 |------|--------|--------|
 | 2026-08-12 | Initial SSOT-MDDB integration assessment | devin |
 | 2026-08-12 | Implementation completed - Option 1 with file watcher | devin |
+| 2026-09-18 | Memory-system reassessment; kb-* canonicalization, sync-kb-to-mddb.py, path/index/global-rules fixes | devin |
 
 ## Tags
 
