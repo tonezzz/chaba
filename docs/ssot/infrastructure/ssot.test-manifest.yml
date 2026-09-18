@@ -1,0 +1,110 @@
+id: ssot.test-manifest
+title: Test Manifest — SSOT, KB, and Memory Systems
+subtitle: Expected-state declarations consumed by scripts/test-ssot-kb-memory.sh
+category: infrastructure
+status: operational
+source_of_truth: true
+
+overview: |
+  This manifest declares the expected state of the SSOT / knowledge-base /
+  memory pipeline. scripts/test-ssot-kb-memory.sh compares live state against
+  these values and reports drift — when a system legitimately changes (e.g.
+  archive gains sources, host moves), update THIS file, not the test script.
+
+tiers:
+  t0:
+    description: Free, fast, always runnable. No auth or network needed.
+    timeout_hint: <30s
+  t1:
+    description: Needs valid NotebookLM auth and/or reachable services.
+    timeout_hint: ~2min
+
+systems:
+
+  ssot_yaml:
+    description: All SSOT files validate structurally and cross-references resolve.
+    validate_cmd: "node scripts/ssot-validate-all.mjs"
+    refs_cmd: "python3 scripts/ssot-validate-refs.py"
+    sync_cmd: "bash scripts/ssot-validate-sync.sh"
+    stale_urls_cmd: "bash scripts/ssot-check-stale-urls.sh"
+    mcp_sources_cmd: "python3 scripts/ssot-validate-mcp-sources.py"
+
+  devin_db:
+    description: Local Devin session database and backups.
+    path: /home/tony/.local/share/devin/cli/sessions.db
+    backup_dir: /home/tony/.local/share/devin/cli/backups
+    keep_backups: 2
+    max_size_gb: 20
+
+  memory_local:
+    description: Local memory caches (auth-free recall layer).
+    session_memory: /home/tony/.local/share/devin/notebook-summaries/session-memory.md
+    session_memory_max_age_hours: 72
+    raw_dir: /home/tony/.local/share/devin/notebook-summaries/raw
+    stub_marker: "metadata stub"
+    recall_hook: /home/tony/.config/devin/scripts/notebooklm-recall.sh
+    nlm_wrapper: /home/tony/.local/bin/nlm
+    nlm_expected_host: mn01
+
+  notebooklm:
+    description: Cloud semantic archive (auth required, runs on mn01 container).
+    archive_notebook: 009b3efe-ff58-40bc-9a3b-9ec946b38deb
+    archive_title_fragment: "Devin Session Archive"
+    min_sources: 38
+    staging_prefix: "staging-"
+    max_staging_notebooks: 0
+    canary_query: "What was the session 'tony-dell Devin crash scan and cleanup' about?"
+    canary_expect_substring: "devin-desktop"
+    known_sources:
+      - id: 8f204a35-ebdf-4ed2-934c-a9a6091c74fe
+        session: ambiguous-rooster
+      - id: 8af77fc0-c401-4180-92a8-5f6851b77f79
+        session: seemly-graffiti
+      - id: 6a7d258e-1955-418c-b644-1726163db3a0
+        session: invincible-avatar
+      - id: de893ba3-0502-42ac-8d9e-b5a71fb23a7b
+        session: abundance-cattle
+      - id: 8a5b9a5c-0652-48f4-bc38-d01962072517
+        session: olive-lamb
+      - id: 4cd16ff1-c214-4cbf-b3af-ab7215766b2b
+        session: blush-action
+      - id: 49378be0-c4eb-4199-87cb-b0cbd294c19f
+        session: valuable-windflower
+      - id: bdb30772-f2ec-42a9-a0e1-0b06e61ce55f
+        session: utopian-pearl
+      - id: 39d9c789-0eb0-4f3f-92f8-84cc46552a13
+        session: juvenile-umbra
+
+  mddb:
+    description: Local knowledge-base service (semantic search over docs).
+    health_url: http://127.0.0.1:11023/health
+    vector_search_url: http://127.0.0.1:11023/v1/vector-search
+    min_collections: 20
+    min_top_score: 0.45
+    max_latency_ms: 600
+    canary_collection: chaba-system
+    canary_query: "GPU memory management"
+    existing_script: scripts/test-global-rules-and-mddb.sh
+
+  weaviate:
+    description: Vector DB for SSOTDocument semantic search.
+    url: http://127.0.0.1:8082
+    collection: SSOTDocument
+    min_objects: 300
+
+  mcp:
+    description: MCP server smoke checks (reuse existing scripts).
+    scripts:
+      - path: scripts/mcp-debug-server-smoke.py
+        args: []
+      - path: scripts/test-focus-smoke.py
+        args: []
+      - path: scripts/verify-all-mcp-servers.py
+        args: []
+
+drift_policy: |
+  FAIL means live state broke a hard invariant (file missing, service down,
+  integrity error). DRIFT means live state differs from declared expectations
+  (counts, hosts, IDs) — either the system changed and the manifest is stale,
+  or the system regressed. Report both distinctly; the fix for DRIFT is usually
+  a manifest update, not a code fix.

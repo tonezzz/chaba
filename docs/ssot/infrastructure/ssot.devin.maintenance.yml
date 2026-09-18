@@ -236,6 +236,11 @@ audit_checks:
   - Check `devin-cleanup.timer` is active on each host.
   - Check `devin-cleanup.service` is not in a failed state.
   - Report DB size and largest sessions during host audits.
+  - Run `bash scripts/test-ssot-kb-memory.sh` (T0, no auth) and
+    `bash scripts/test-ssot-kb-memory.sh t1` (adds NotebookLM/MDDB/Weaviate/MCP
+    checks). Expected state is declared in
+    `docs/ssot/infrastructure/ssot.test-manifest.yml` — update it when the
+    system intentionally changes so DRIFT means regression, not noise.
 
 related_files:
   - scripts/prune-devin-sessions.sh
