@@ -185,7 +185,7 @@ MINC=$(mget systems.mddb.min_collections); MINSC=$(mget systems.mddb.min_top_sco
 MCOL=$(mget systems.mddb.canary_collection); MQ=$(mget systems.mddb.canary_query)
 if curl -sf -m 10 "$MH" >/dev/null 2>&1; then
   ok "MDDB health endpoint up"
-  NCOL=$(curl -sf -m 10 "http://127.0.0.1:11023/v1/stats" 2>/dev/null | python3 -c "import json,sys; d=json.load(sys.stdin); c=d.get('collections',[]); print(len(c) if isinstance(c,list) else c)" 2>/dev/null || echo "?")
+  NCOL=$(curl -sf -m 30 "http://127.0.0.1:11023/v1/stats" 2>/dev/null | python3 -c "import json,sys; d=json.load(sys.stdin); c=d.get('collections',[]); print(len(c) if isinstance(c,list) else c)" 2>/dev/null || echo "?")
   [ "$NCOL" != "?" ] && [ "$NCOL" -ge "$MINC" ] 2>/dev/null && ok "MDDB collections: $NCOL ≥ $MINC" || drift "MDDB collections: $NCOL (expected ≥$MINC)"
   VOUT=$(curl -s -m 15 -X POST "$VS" -H "Content-Type: application/json" \
        -d "{\"query\":\"$MQ\",\"limit\":3,\"collection\":\"$MCOL\"}" 2>/dev/null)
@@ -207,7 +207,9 @@ hdr "T1 — Weaviate"
 WU=$(mget systems.weaviate.url); WC=$(mget systems.weaviate.collection); WMIN=$(mget systems.weaviate.min_objects)
 if curl -sf -m 10 "$WU/v1/.well-known/ready" >/dev/null 2>&1 || curl -sf -m 10 "$WU/v1/meta" >/dev/null 2>&1; then
   ok "Weaviate reachable"
-  CNT=$(curl -sf -m 10 "$WU/v1/objects?class=$WC&limit=1" 2>/dev/null | python3 -c "import json,sys; d=json.load(sys.stdin); print(d.get('totalResults', len(d.get('objects',[]))))" 2>/dev/null || echo "?")
+  CNT=$(curl -sf -m 15 -X POST "$WU/v1/graphql" -H "Content-Type: application/json" \
+        -d "{\"query\":\"{Aggregate{$WC{meta{count}}}}\"}" 2>/dev/null \
+        | python3 -c "import json,sys; d=json.load(sys.stdin); print(d['data']['Aggregate']['$WC'][0]['meta']['count'])" 2>/dev/null || echo "?")
   [ "$CNT" != "?" ] && [ "$CNT" -ge "$WMIN" ] 2>/dev/null && ok "Weaviate $WC objects: $CNT ≥ $WMIN" || drift "Weaviate $WC objects: $CNT (expected ≥$WMIN)"
 else
   drift "Weaviate declared but unreachable at $WU"
