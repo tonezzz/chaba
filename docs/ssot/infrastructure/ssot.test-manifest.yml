@@ -76,14 +76,22 @@ systems:
         session: juvenile-umbra
 
   mddb:
-    description: Local knowledge-base service (semantic search over docs).
+    description: >
+      Local MDDB mirror at 127.0.0.1:11023 (mddb-server container, compose at
+      CascadeProjects/mddb). The PRIMARY instance is tony-dell:11023 with
+      ~21 collections / ~607 docs; the local mirror holds a subset.
+      KNOWN DRIFT (2026-09-18): local container runs without MDDB_EMBEDDING_*
+      envs so vector-search errors; the Gemini-Ollama proxy (tony-omen:11435)
+      referenced by chaba/stacks/web/mddb/docker-compose.yml is also down.
     health_url: http://127.0.0.1:11023/health
     vector_search_url: http://127.0.0.1:11023/v1/vector-search
-    min_collections: 20
+    min_collections: 3
     min_top_score: 0.45
     max_latency_ms: 600
-    canary_collection: chaba-system
+    canary_collection: infrastructure-ssot
     canary_query: "GPU memory management"
+    remote_primary: http://tony-dell:11023
+    remote_min_collections: 21
     existing_script: scripts/test-global-rules-and-mddb.sh
 
   weaviate:

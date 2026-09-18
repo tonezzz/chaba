@@ -7,7 +7,7 @@ import { exec } from 'child_process';
 import { promisify } from 'util';
 
 const execAsync = promisify(exec);
-const PROJECT_ROOT = '/home/tony/CascadeProjects/chaba-tony-dell';
+const PROJECT_ROOT = new URL('../../', import.meta.url).pathname.replace(/\/$/, '');
 
 async function runCheck(label, command, timeoutMs = 120000) {
   try {

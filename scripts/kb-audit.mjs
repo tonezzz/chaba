@@ -11,8 +11,8 @@ import { readFileSync, writeFileSync, readdirSync, existsSync, statSync } from '
 import { join } from 'path';
 import { execSync } from 'child_process';
 
-const KB_DIR = '/home/tony/CascadeProjects/chaba-tony-dell/docs/kb';
-const PROJECT_DIR = '/home/tony/CascadeProjects/chaba-tony-dell';
+const PROJECT_DIR = new URL('../', import.meta.url).pathname.replace(/\/$/, '');
+const KB_DIR = `${PROJECT_DIR}/docs/kb`;
 
 /**
  * Get all KB entries with metadata

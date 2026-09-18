@@ -41,15 +41,6 @@ automation:
     script: scripts/overnight-jobs-expanded.sh
     orchestrator: python3 scripts/orchestrate.py --workflow overnight
     workflow: docs/ssot/infrastructure/ssot.orchestration.overnight.yml
-
-  worktree_sync:
-    script: python3 scripts/worktree-sync.py
-    orchestrator: python3 scripts/orchestrate.py --workflow worktrees
-    workflow: docs/ssot/infrastructure/ssot.orchestration.worktrees.yml
-    schedule: "0 1 * * 0"
-    frequency: weekly on Sunday at 1 AM
-    log_file: logs/worktree-sync.log
-    status: active (2026-08-25)
     schedule: "0 2 * * *"
     frequency: daily at 2 AM
     log_file: logs/overnight-TIMESTAMP.log
@@ -72,6 +63,15 @@ automation:
       - performance baseline comparison (7-day trend analysis + degradation detection)
       - auto-improvement creation (automatic SSOT entry generation for critical findings)
     status: active (2026-08-13)
+
+  worktree_sync:
+    script: python3 scripts/worktree-sync.py
+    orchestrator: python3 scripts/orchestrate.py --workflow worktrees
+    workflow: docs/ssot/infrastructure/ssot.orchestration.worktrees.yml
+    schedule: "0 1 * * 0"
+    frequency: weekly on Sunday at 1 AM
+    log_file: logs/worktree-sync.log
+    status: active (2026-08-25)
 
   backup_system:
     script: scripts/backup-manager.sh

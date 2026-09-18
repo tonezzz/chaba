@@ -45,6 +45,7 @@ schedule:
       - standardization-suite
       - code-suite
       - dev-system
+      - ssot-kb-memory
     note: groups are expanded to individual audits by the runner
   full:
     frequency: monthly
@@ -60,6 +61,7 @@ schedule:
       - standardization-suite
       - code-suite
       - dev-system
+      - ssot-kb-memory
     note: installed and enabled on tony-dell; security-audit may need privileges
 
 audits:
@@ -232,6 +234,22 @@ audits:
     schedule: weekly
     severity_on_fail: warning
     description: Development system assessment; metrics, branch/worktree sprawl, and review cadence
+    last_run:
+    last_result:
+
+  - name: ssot-kb-memory
+    script: scripts/test-ssot-kb-memory.sh
+    command: bash
+    args:
+      - t1
+    schedule: weekly
+    severity_on_fail: warning
+    description: >
+      Drift/failure checks for SSOT, Devin DB, local memory layer, NotebookLM
+      archive, MDDB, Weaviate, and MCP smoke suite. Expected state is declared
+      in docs/ssot/infrastructure/ssot.test-manifest.yml; DRIFT lines mean live
+      state differs from declared expectations (update the manifest if
+      intentional). NotebookLM checks SKIP when nlm auth is expired.
     last_run:
     last_result:
 
