@@ -7,7 +7,7 @@
 #   grid_power grid_voltage grid_frequency
 #   bat_soc_avg bat_power_sum load_power
 set -eu
-. "$HOME/.config/secrets/home-assistant-token.env"
+. "$HOME/.config/secrets/ha-michael-dev.env"
 OUT="${1:-$HOME/CascadeProjects/chaba-tony-dell/stacks/web/public/snapshots/pv1.txt}"
 HA="http://127.0.0.1:8124"
 

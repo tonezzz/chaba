@@ -38,9 +38,9 @@ def load_token():
     with open(TOKEN_FILE) as f:
         for line in f:
             line = line.strip()
-            if line.startswith("HA_LONG_LIVED_TOKEN="):
+            if line.startswith(("HA_LONG_LIVED_TOKEN=", "HASS_TOKEN=")):
                 return line.split("=", 1)[1]
-    raise SystemExit(f"HA_LONG_LIVED_TOKEN not found in {TOKEN_FILE}")
+    raise SystemExit(f"HA_LONG_LIVED_TOKEN or HASS_TOKEN not found in {TOKEN_FILE}")
 
 
 def rpc(method, path, payload=None):
@@ -93,7 +93,7 @@ def snapshot(url, selector, out_path, max_w, max_h, wait_s, bands):
     token = load_token()
     origin = url.split("/", 3)[0] + "//" + url.split("/", 3)[2]
     sess = rpc("POST", "/sessions",
-               {"type": "playwright-headless", "target": "local"})
+               {"type": "chrome-live", "target": "remote"})
     sid = sess["session_id"]
     try:
         # Establish origin context so localStorage is writable for this origin.
