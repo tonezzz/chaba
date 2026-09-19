@@ -7,6 +7,54 @@ nav:
   - label: Trade
     href: /apps/trade/tradecanvas-ui/
 groups:
+  - id: home
+    title: Home Assistant
+    description: Dashboards, casting, and automation around the HA instances
+    icon: 🏠
+    apps:
+      - ha
+      - tony-ha
+      - tony-live
+      - ha-cast
+      - ha-dossier
+      - node-red
+  - id: ada
+    title: Ada Voice
+    description: Gemini voice assistants and device pairing
+    icon: 🎙️
+    apps:
+      - ada-ha
+      - ada-ha-tony
+      - ada-ha-michael
+      - ha-pair
+      - ada-pi
+  - id: ai
+    title: AI & Chat
+    description: LLM playgrounds and chat workspaces
+    icon: 🤖
+    apps:
+      - dev-v0
+      - chatllama
+      - chatlocal
+      - neo-chat
+      - thai-legal
+      - gemini-mic-test
+  - id: knowledge
+    title: Knowledge & Search
+    description: NotebookLM tools and semantic SSOT search
+    icon: 📝
+    apps:
+      - notebooklm
+      - notebooklm-v0
+      - weaviate-search
+  - id: gev
+    title: GEV & Maps
+    description: God's Eye View and camera maps
+    icon: 🗺️
+    apps:
+      - gev
+      - gev-direct
+      - map
   - id: yomi
     title: Yomi
     description: LINE conversation tools
@@ -17,14 +65,56 @@ groups:
       - yomi-daily2
       - yomi-memory
       - yomi-search
+  - id: trade
+    title: Trading
+    description: Trading dashboards and chart UIs
+    icon: 📈
+    apps:
+      - trade-tradecanvas-ui
+      - trade-wick-ui
+  - id: remote
+    title: Cameras & Remote
+    description: Camera monitors, media casting, and remote control
+    icon: 📷
+    apps:
+      - cams
+      - rview
+      - rview-live
+      - input-bridge
+      - vnc
+      - yolo
+  - id: creative
+    title: Creative
+    description: Image, video, and design generation tools
+    icon: 🎨
+    apps:
+      - imagen2
+      - raj
+      - txt2vid
+      - figma-gallery
+  - id: system
+    title: System & Ops
+    description: Health, audit, monitoring, and project dashboards
+    icon: 🔧
+    apps:
+      - audit
+      - health-check
+      - sysdiag
+      - gpu-monitor
+      - focus
+      - helm
+      - tony-omen-temp
+      - tailscale-funnel
+  - id: experiments
+    title: Experiments
+    description: Demos, placeholders, and one-off projects
+    icon: 🧪
+    apps:
+      - charts3d
+      - pegion
+      - temp-graph
+      - test-carplay
 apps:
-  - id: .
-    title: Apps
-    description: Apps app
-    icon: 📱
-    href: /apps/./
-    host: tony-dell
-    host_url: https://tony-dell.taila0626a.ts.net
   - id: ada-ha
     title: Ada HA
     description: Ada HA app
@@ -147,6 +237,20 @@ apps:
     href: /apps/ha/
     host: tony-dell
     host_url: https://tony-dell.taila0626a.ts.net
+  - id: ha-cast
+    title: Cast
+    description: Choose the cast source — TV and desktop casting control
+    icon: 📺
+    href: /apps/ha/cast/
+    host: tony-dell
+    host_url: https://tony-dell.taila0626a.ts.net
+  - id: ha-dossier
+    title: DOSSIER
+    description: Home Assistant dossier and documentation page
+    icon: 📋
+    href: /apps/ha/dossier/
+    host: tony-dell
+    host_url: https://tony-dell.taila0626a.ts.net
   - id: ha-pair
     title: Ada HA — Pair a device
     description: One-time QR/link to authorize a phone or tablet on an Ada HA instance
@@ -208,6 +312,13 @@ apps:
     description: NotebookLM tools and quick reference
     icon: 📝
     href: /apps/notebooklm/
+    host: tony-dell
+    host_url: https://tony-dell.taila0626a.ts.net
+  - id: notebooklm-v0
+    title: NotebookLM v0
+    description: Quick reference for the central NotebookLM deployment on tony-dell
+    icon: 📝
+    href: /apps/notebooklm/v0/
     host: tony-dell
     host_url: https://tony-dell.taila0626a.ts.net
   - id: pegion
@@ -275,7 +386,7 @@ apps:
     host_url: https://tony-dell.taila0626a.ts.net
   - id: tony-ha
     title: Tony HA
-    description: Tony Home Assistant dashboard
+    description: Tony Home Assistant live instance (redirects to tony-dell:8123)
     icon: 🏠
     href: /apps/ha/tony-ha/
     host: tony-dell
