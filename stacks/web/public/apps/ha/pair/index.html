@@ -4,8 +4,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="theme-color" content="#0e1117">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="description" content="Issue a named device key and one-time pairing QR for an Ada HA voice assistant instance.">
   <title>Ada HA — Pair a device</title>
+  <link rel="manifest" href="manifest.json">
   <link rel="stylesheet" href="../styles.css">
   <style>
     .wrap { max-width: 720px; margin: 0 auto; padding: 1.5rem; display: flex; flex-direction: column; gap: 1.25rem; }
@@ -62,6 +65,12 @@
         <input type="password" id="admin-key" placeholder="Admin key (ADA_API_KEYS admin:… on mn01)">
         <button id="admin-save">Save</button>
       </div>
+      <div class="row">
+        <button class="small" id="install-panel">QR: install this panel</button>
+        <button class="small" id="install-ada-tony">QR: Ada Tony app</button>
+        <button class="small" id="install-ada-michael">QR: Ada Michael app</button>
+      </div>
+      <div class="hint">One-time admin install — scan on iPhone → Add to Home Screen. Hands the raw admin key to that device.</div>
       <div class="status muted" id="admin-status"></div>
     </section>
     <section id="instances"></section>
@@ -81,10 +90,16 @@
   </main>
   <script>
     const INSTANCES = [
-      { id: "tony", title: "Ada HA Tony", base: "/apps/ha/ada-tony", desc: "Tony's home (tony-ha)" },
-      { id: "michael", title: "Ada HA Michael", base: "/apps/ha/ada-michael", desc: "Michael's home (michael-ha)" },
+      { id: "tony", title: "Ada HA Tony", system: "tony-ha", base: "/apps/ha/ada-tony", desc: "Tony's home (tony-ha)" },
+      { id: "michael", title: "Ada HA Michael", system: "michael-ha", base: "/apps/ha/ada-michael", desc: "Michael's home (michael-ha)" },
     ];
     const ADMIN_KEY = "ada_pair_admin_key";
+
+    const urlKey = new URLSearchParams(location.search).get("api_key");
+    if (urlKey) {
+      localStorage.setItem(ADMIN_KEY, urlKey);
+      history.replaceState(null, "", location.pathname + location.hash);
+    }
     const adminInput = document.querySelector("#admin-key");
     const adminStatus = document.querySelector("#admin-status");
     const instEl = document.querySelector("#instances");
@@ -112,6 +127,28 @@
     });
 
     const adminKey = () => adminInput.value.trim() || localStorage.getItem(ADMIN_KEY) || "";
+
+    async function adminInstall(inst, redirect, label) {
+      if (!adminKey()) { adminStatus.textContent = "Save the admin key first."; adminStatus.className = "status err"; adminInput.focus(); return; }
+      adminStatus.textContent = "Minting install link…"; adminStatus.className = "status muted";
+      try {
+        const body = { path: inst.base, qr: true, origin: location.origin };
+        if (redirect) body.redirect = redirect;
+        const data = await api(inst, "POST", "/api/auth/redeem-token", body);
+        adminStatus.textContent = "Install link ready — scan within 10 min."; adminStatus.className = "status ok";
+        showResult(null, label, location.origin + data.redeem_url, data.qr_svg, data.expires_in, "Install");
+      } catch (e) {
+        adminStatus.textContent = e.message === "401" ? "Admin key rejected — check it above." : `Failed: ${e.message}`;
+        adminStatus.className = "status err";
+      }
+    }
+
+    document.querySelector("#install-panel").addEventListener("click",
+      () => adminInstall(INSTANCES[0], "/apps/ha/pair", "Install this pair panel — raw admin key"));
+    document.querySelector("#install-ada-tony").addEventListener("click",
+      () => adminInstall(INSTANCES[0], "", `Install ${INSTANCES[0].title} app (${INSTANCES[0].system}) — admin key`));
+    document.querySelector("#install-ada-michael").addEventListener("click",
+      () => adminInstall(INSTANCES[1], "", `Install ${INSTANCES[1].title} app (${INSTANCES[1].system}) — admin key`));
 
     async function api(inst, method, path, body) {
       const resp = await fetch(`${inst.base}${path}`, {
@@ -168,7 +205,7 @@
             try {
               const data = await api(inst, "POST", `/api/auth/keys/${encodeURIComponent(name)}/redeem`,
                 { path: inst.base, qr: true, origin: location.origin });
-              showResult(inst, name, location.origin + data.redeem_url, data.qr_svg, data.expires_in);
+              showResult(inst, name, location.origin + data.redeem_url, data.qr_svg, data.expires_in, "Re-pair");
             } catch (e) {
               alert(e.message === "401" ? "Admin key rejected — check it above." : `Re-pair failed: ${e.message}`);
             }
@@ -213,9 +250,11 @@
       }
     }
 
-    function showResult(inst, name, url, svg, ttl) {
+    function showResult(inst, name, url, svg, ttl, verb = "Pair") {
       resultEl.hidden = false;
-      titleEl.textContent = `${inst.title} · ${name} — scan to pair`;
+      titleEl.textContent = inst
+        ? `${verb} ${name} — ${inst.title} (${inst.system})`
+        : name;
       qrBox.innerHTML = svg || `<div class="hint">QR unavailable — use the link below.</div>`;
       linkInput.value = url;
       if (countdown) clearInterval(countdown);
@@ -223,7 +262,7 @@
       const tick = () => {
         expiryEl.textContent = left > 0 ? `Expires in ${left}s (or on first use)` : "Expired — generate a new link.";
         expiryEl.className = left > 30 ? "expiry" : "expiry warn";
-        if (left > 0 && left % 15 === 0) refreshDevices(inst); // catch the device flipping to "bound"
+        if (left > 0 && left % 15 === 0 && inst) refreshDevices(inst); // catch the device flipping to "bound"
         left -= 1;
       };
       tick(); countdown = setInterval(tick, 1000);

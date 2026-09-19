@@ -133,11 +133,15 @@ sections:
       - label: Audit
         text: Every /api/tools/call is logged with tool name, args, and client IP; denials logged as warnings.
       - label: QR onboarding
-        text: 'POST /api/auth/redeem-token (authenticated, body {"path": appBase}) mints a single-use redeem URL (ADA_REDEEM_TTL_S, default 10min). GET {base}/redeem/{token} burns it, sets the session cookie, and redirects to {base}/?api_key=<key> so the PWA stores the key. Scan once on iPhone/iPad and the device is authorized.'
+        text: 'POST /api/auth/redeem-token (authenticated, body {"path": appBase, optional "redirect": path}) mints a single-use redeem URL (ADA_REDEEM_TTL_S, default 10min). GET {base}/redeem/{token} burns it, sets the session cookie, and redirects to {redirect or base}/?api_key=<key> so the target page stores the key. Scan once on iPhone/iPad and the device is authorized.'
       - label: Device keys
         text: 'POST /api/auth/keys {name} issues a per-device key persisted in ~/.config/secrets/ada-ha-<instance>-keys.json (ADA_KEYS_FILE to override) and returns its redeem URL/QR. GET lists names plus per-key bindings, DELETE /api/auth/keys/{name} revokes the key AND its sessions. POST /api/auth/keys/{name}/redeem re-mints a redeem link for an existing key (re-pair) and resets its device binding. Pair UI: /apps/ha/pair/ (admin key = ADA_API_KEYS admin:… shared on both instances).'
+      - label: Admin install QR
+        text: 'Buttons in the pair page admin card mint caller-bound redeem links for one-time admin installs: "install this panel" passes redirect=/apps/ha/pair so an iPhone lands on the pair UI storing the raw admin key (manages both instances), while the Ada Tony/Michael app buttons land on the voice PWA. pair/manifest.json makes Add to Home Screen install the panel standalone. The raw admin key cannot be revoked per-device — rotate ADA_API_KEYS to revoke.'
+      - label: In-PWA re-pair
+        text: 'The voice PWA Re-pair button scans a redeem QR in-app (jsQR vendored at frontend/jsQR.js) or accepts a pasted link, then POST /api/auth/redeem {token, expect_name, device_id}. The server peeks the token and burns it ONLY when its bound name matches the caller (a valid presented key wins over expect_name); wrong-name, expired, or foreign-binding scans return 403 with the token intact. The browser ?api_key=<key> landing also verifies the key name against stored ada_key_name — a wrong-name link is stripped, never stored.'
       - label: Device binding
-        text: 'Each issued key locks to the first device id seen (TOFU): the PWA stores a random ada_device_id in localStorage and sends it as X-Device-Id header / device_id WS param; auth.enforce_device rejects requests from any other device. Admin/env keys are never bound; unbound legacy keys keep working until their PWA binds. Only the admin can reset a binding via re-pair — a stolen key cannot re-register.'
+        text: 'Each issued key locks to the first device id seen (TOFU): the PWA stores a random ada_device_id in localStorage and sends it as X-Device-Id header / device_id WS param; auth.enforce_device rejects requests from any other device. Admin/env keys are never bound; unbound legacy keys keep working until their PWA binds. Only the admin can reset a binding via re-pair — a stolen key cannot re-register. Re-pair is same-name enforced: a device can only redeem links minted for its own key name.'
       - label: Voice path
         text: Gemini control calls route through ToolRunner; the model must pass confirmed=true after explicit user confirmation.
   - title: Known Issues
@@ -185,7 +189,7 @@ sections:
 config:
   version: 5
   created: '2026-09-13'
-  updated: '2026-09-17'
+  updated: '2026-09-19'
   maintainer: tony
   status: active
   deployment: mn01
