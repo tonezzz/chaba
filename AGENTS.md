@@ -134,6 +134,24 @@ Verify:
 ssh tony-dell 'pgrep -a -f devin-desktop | grep -v "pgrep\|ssh\|tailscaled"'
 ```
 
+## "Cannot start" but processes exist (learned 2026-09-19)
+
+If devin-desktop processes are running but no usable window appears, check window state before restarting anything:
+
+```bash
+ssh tony-dell 'export DISPLAY=:1 XAUTHORITY=/run/user/1000/gdm/Xauthority; \
+  xdotool search --class devin-desktop; \
+  xprop -id <win> _NET_WM_DESKTOP; xprop -root _NET_CURRENT_DESKTOP; \
+  xwininfo -id <win> | grep "Map State"; scrot /tmp/scr.png'  # screenshot shows the truth
+```
+
+Two observed variants:
+
+1. **Window on another workspace** — xfwm4 unmaps windows on inactive desktops. `_NET_WM_DESKTOP` ≠ `_NET_CURRENT_DESKTOP`. Fix: `xdotool set_desktop_for_window <win> <current> && xdotool windowactivate <win>`.
+2. **Hung renderer (black window)** — window is `IsViewable` and focused but paints solid black; taskbar shows it but it never displays. The renderer is dead; remapping won't help. Restart the instance: `kill <main-pid>` (TERM first), clean leftover children (`pgrep -f devin-desktop`), then relaunch on `:1` with the manual-launch command above. Sessions persist in `sessions.db` — nothing is lost. Careful with `pkill -f` over ssh: the remote shell's own cmdline matches the pattern and kills the session — use explicit PIDs or exclude self.
+
+Also check for a duplicate instance: clicking the launcher while the first instance is alive spawns a second devin-desktop that stalls (only a 10x10 dummy window, no renderer). Kill the duplicate's main PID — do NOT kill the instance that owns the real session window (check `_NET_WM_PID` on the titled window).
+
 ## What was observed today
 
 - Installed version: `devin-desktop 3.10.23-1789035177`.
@@ -535,3 +553,16 @@ python3 scripts/notebooklm-query.py "-" "Summarize the Home Assistant setup."
 2. If plug is `on` but TV still unavailable: the panel is in standby (NIC dies, nothing pings). Ask the user to power it on with the remote/button — a 2010 Samsung does NOT auto-boot on AC restore.
 3. Wait ~60s after power-on for DLNA/UPnP to come up (ports 52235/52396/5601), then re-check and continue the task.
 4. The repeater and TrueID box share the plug — they take their own boot time after plug-on (repeater: Tenda UI at .72/.73/.82 after ~1min; TrueID: Chromecast on 8008/8009).
+
+## On-demand casting (built 2026-09-19)
+
+tony-ha cast lifecycle — every cast goes through the gate, nothing targets dead devices:
+
+- `script.cast_power_on(target)` — `tv` = Samsung DLNA (`media_player.tv_40c5000`), `box` = TrueID Chromecast (`media_player.tony_tv_cast`). If target unavailable → `switch.plug_tv` on, sets `input_boolean.cast_powered_by_us`, waits 90s for the entity, notifies on timeout. Always (re)starts `timer.cast_idle` (5 min).
+- `script.cast_cleanup` — turns off both cast targets, cancels timer, clears flag. TV stays powered; only cast-side state unwinds.
+- `script.cast_camera` — power_on(box) → `camera.play_stream` of `camera.xiaomi_c201` to `tony_tv_cast` (default desk camera per Tony).
+- `automation.cast_idle_shutdown` — timer.finished + flag on → if either target `playing`: skip + persistent-notification + restart timer; else `cast_cleanup`.
+- `automation.cast_activity_reset` — either target → `playing` + flag on → restart timer.
+- Wrapped with the gate (first action = `script.cast_power_on` box): `1788623518229` (Thai hello TTS), `assist_tv_control`, `cast_youtube_on_input`, `youtube_search_on_query`, `cast_youtube_from_search`, `cast_youtube_from_picker`, `youtube_request_handler`, `youtube_auto_play_next`, `youtube_queue_control` — in `/home/tony/.config/home-assistant/automations.yaml` on tony-dell (backup `automations.yaml.bak-20260918`).
+- The 11 `assist_cast_*`/`cast_from_youtube_result_button`/`update_youtube_result_buttons` entities are ORPHANED entity-registry entries (no backing config) — they'll always show `unavailable`; safe to registry-delete if desired.
+- Cast target entity is `media_player.tony_tv_cast` (Google Cast), NOT `media_player.tony_tv` (Android TV Remote) — don't confuse them.
