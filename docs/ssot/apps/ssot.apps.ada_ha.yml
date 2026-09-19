@@ -1,0 +1,189 @@
+title: Ada HA
+subtitle: iPad/iPhone PWA for full-duplex Gemini Live voice with Home Assistant integration
+icon: 🏠
+sections:
+  - title: Core Features
+    icon: "✅"
+    layout: list
+    items:
+      - label: iPad/iPhone PWA
+        text: Full-duplex voice PWA for Home Assistant, using Gemini Live and server-side HA token.
+      - label: Multiple HA targets
+        text: Two isolated instances — ada-ha-tony (tony-dell.taila0626a.ts.net:8123) and ada-ha-michael (michael-ha:8123).
+      - label: Energy + dashboard awareness
+        text: Reads G3 power sensors and tony-test dashboard tabs by voice using the live HA websocket.
+      - label: Event logs
+        text: HA logbook, cross-entity open/close transition queries, per-entity timelines with durations, and a background event recorder persisted to MDDB.
+  - title: Technical Architecture
+    icon: "⚙️"
+    layout: list
+    items:
+      - label: /home/tony/CascadeProjects/ada-pi/pwa_server.py
+        text: Shared FastAPI backend. Static PWA served from /pwa; dynamic API routes under /api/home-assistant/.
+      - label: /home/tony/CascadeProjects/ada-pi/backend/realtime_provider.py
+        text: Gemini Live client with function calling. Speech barge-in enabled (START_OF_ACTIVITY_INTERRUPTS).
+      - label: /home/tony/CascadeProjects/ada-pi/backend/home_assistant.py
+        text: REST and websocket client for HA states, control, history, logbook, event transitions, power summary, and dashboard tab extraction.
+      - label: /home/tony/CascadeProjects/ada-pi/backend/event_recorder.py
+        text: Background websocket subscriber recording state_changed transitions for event domains; ring buffer plus batched MDDB persistence (collection ada-ha-events-*). Disable via DISABLE_EVENT_RECORDER=true.
+      - label: /home/tony/CascadeProjects/ada-pi/backend/instance.py
+        text: 'ADA_INSTANCE_ID resolution. Required, fail-fast: pins all MDDB memory collections to ada-ha-*-<instance> (tony/michael) instead of deriving them from HOME_ASSISTANT_URL. Missing or invalid → the service refuses to start.'
+      - label: /home/tony/.config/systemd/user/ada-ha-tony.service
+        text: Runs uvicorn on 0.0.0.0:8002 on mn01 with env /home/tony/.config/secrets/ada-ha-tony.env.
+      - label: /home/tony/.config/systemd/user/ada-ha-michael.service
+        text: Runs uvicorn on 0.0.0.0:8003 on mn01 with env /home/tony/.config/secrets/ada-ha-michael.env.
+      - label: /home/tony/.config/caddy/Caddyfile.mn01
+        text: Routes /apps/ha/ada-tony/* to 127.0.0.1:8002 and /apps/ha/ada-michael/* to 127.0.0.1:8003.
+  - title: Deployment
+    icon: "🚀"
+    layout: list
+    items:
+      - label: tony instance
+        text: 'https://mn01.taila0626a.ts.net/apps/ha/ada-tony/'
+      - label: michael instance
+        text: 'https://mn01.taila0626a.ts.net/apps/ha/ada-michael/'
+      - label: Caddy routing
+        text: 'tony on 127.0.0.1:8002, michael on 127.0.0.1:8003, both via mn01 Caddy on https 443'
+      - label: Registry
+        text: Listed as ada-ha-tony and ada-ha-michael under the mn01 host in docs/ssot/apps/ssot.apps.yml.
+  - title: REST Endpoints
+    icon: "🔌"
+    layout: list
+    items:
+      - label: Auth
+        text: ADA_API_KEY (per-instance, in ~/.config/secrets/ada-ha-*.env) is required via X-Api-Key header, the api_key query param, or the ada_session HttpOnly cookie for /api/tools, /api/tools/call, POST entity power, and /ws. Named keys via ADA_API_KEYS=name:key give per-caller audit + revocation. POST /api/auth/session issues the cookie; GET /api/auth/status reports state; POST /api/auth/logout clears it. Read GET endpoints remain open.
+      - label: GET /api/home-assistant/entities
+        text: List controllable HA entities (lights, switches, fans, covers, buttons, media players).
+      - label: GET /api/home-assistant/sensors
+        text: List sensor entities; optional search and limit query params.
+      - label: GET /api/home-assistant/history
+        text: Fetch state history for a single sensor over N hours.
+      - label: GET /api/home-assistant/logbook
+        text: HA logbook entries (friendly event text like 'Front door was opened'); optional entity_id and hours params.
+      - label: GET /api/home-assistant/events
+        text: Cross-entity state-change transitions across event domains (binary_sensor, cover, lock, person, light, switch, ...); hours, query, limit params.
+      - label: GET /api/home-assistant/entity-events
+        text: Per-entity event timeline with per-state durations; entity_id and hours params.
+      - label: GET /api/home-assistant/event-recorder
+        text: Background recorder status plus its in-memory transition buffer.
+      - label: GET /api/home-assistant/power-summary
+        text: Current G3 power values plus min/max/mean over N hours.
+      - label: GET /api/home-assistant/dashboard-tab
+        text: Read a named tony-test tab and return its displayed entities with current states.
+      - label: POST /api/home-assistant/entities/{entity_id}/power
+        text: Turn a light/switch/fan/input_boolean on or off.
+  - title: Gemini Tools
+    icon: "🧠"
+    layout: list
+    items:
+      - label: get_home_state
+        text: Current person state and watched home plugs.
+      - label: control_entity
+        text: Turn on/off a controllable HA entity.
+      - label: list_home_devices
+        text: List all controllable HA devices.
+      - label: search_home_devices
+        text: Find a controllable device by name or keyword.
+      - label: list_sensors
+        text: List available sensor entities with current state and unit.
+      - label: search_sensors
+        text: Find a sensor by name or keyword.
+      - label: get_power_summary
+        text: Voice summary of G3 solar/grid/load/battery power and recent history.
+      - label: get_sensor_history
+        text: Recent history for a specific sensor.
+      - label: get_logbook
+        text: HA logbook event entries, optionally for one entity.
+      - label: get_recent_events
+        text: Recent open/close/on-off state changes across the whole home; optional keyword filter.
+      - label: get_entity_events
+        text: One entity's event timeline with per-state durations (open/close times).
+      - label: ada_ha_search_events
+        text: Search recorded events from the background recorder (memory + persisted MDDB batches).
+      - label: get_dashboard_tab
+        text: Read the named tony-test dashboard tab and report displayed devices.
+      - label: ada_session_recall
+        text: 'Background recall against NotebookLM via notebooklm-rest. Optional group param routes to per-topic notebooks: memory (past voice sessions, default), infra (hosts/services/tailscale/mcp), apps (ada-pi/HA/playlive), kb (mddb/yomi/SSOT/docs), ops (workflows/tasks/experiments). Group map lives in NOTEBOOKLM_NOTEBOOK_IDS_JSON per instance env; transcripts persist to the memory group. Tony groups: memory=663ef269, infra=be2d05c6, apps=fdbb97d0, kb=c28b6ab9, ops=76a31e03.'
+  - title: Navigation
+    icon: "🗺️"
+    layout: list
+    items:
+      - label: /apps/ha/
+        text: Landing page with links to both Ada HA Tony and Michael instances.
+      - label: /apps/
+        text: App directory for tony-dell with links to HA, RView, and other apps.
+  - title: Testing
+    icon: "🧪"
+    layout: list
+    items:
+      - label: WebSocket ready
+        text: 'wss://mn01.taila0626a.ts.net/apps/ha/ada-{tony,michael}/ws returns {"type":"ready"}.'
+      - label: Voice
+        text: Tap Connect and ask about the G3 power summary or a dashboard tab.
+  - title: Safety Model
+    icon: "🛡️"
+    layout: list
+    items:
+      - label: Server-side gate
+        text: ToolRunner gates every control tool (control_entity, control_cover, press_button, control_media_player, tv_action). Dangerous entities are denied unless confirmed=true is passed; related entities inherit danger by object_id prefix (e.g. button.gate_motor_my_position inherits cover.gate_motor).
+      - label: Rate limits
+        text: Sliding-window limits on control calls — 5/min per entity, 30/min global (ADA_CONTROL_MAX_PER_ENTITY, ADA_CONTROL_MAX_GLOBAL, ADA_CONTROL_RATE_WINDOW_S).
+      - label: Read-only mode
+        text: ADA_READ_ONLY=true disables all actuating tools (voice and REST) for demo/customer instances.
+      - label: Audit
+        text: Every /api/tools/call is logged with tool name, args, and client IP; denials logged as warnings.
+      - label: QR onboarding
+        text: 'POST /api/auth/redeem-token (authenticated, body {"path": appBase}) mints a single-use redeem URL (ADA_REDEEM_TTL_S, default 10min). GET {base}/redeem/{token} burns it, sets the session cookie, and redirects to {base}/?api_key=<key> so the PWA stores the key. Scan once on iPhone/iPad and the device is authorized.'
+      - label: Device keys
+        text: 'POST /api/auth/keys {name} issues a per-device key persisted in ~/.config/secrets/ada-ha-<instance>-keys.json (ADA_KEYS_FILE to override) and returns its redeem URL/QR. GET lists names, DELETE /api/auth/keys/{name} revokes the key AND its sessions. Pair UI: /apps/ha/pair/ (admin key = ADA_API_KEYS admin:… shared on both instances).'
+      - label: Voice path
+        text: Gemini control calls route through ToolRunner; the model must pass confirmed=true after explicit user confirmation.
+  - title: Known Issues
+    icon: "⚠️"
+    layout: list
+    items:
+      - label: Shared repo
+        text: Both /apps/ada_pi and /apps/ha/ada use the same ada-pi code; changes affect both unless managed.
+      - label: Barge-in echo
+        text: iPad/iPhone speaker echo can cause false barge-in in very loud environments; headphones are the reliable fix.
+  - title: Development Roadmap
+    icon: "🛣️"
+    layout: list
+    items:
+      - label: Light dimming
+        text: Add set_light tool for brightness_pct and color_temp_kelvin.
+      - label: Generic state/service tools
+        text: Add call_service(domain, service, entity_id) for arbitrary HA service calls.
+      - label: PWA entity panel
+        text: Add a scrollable entity list with on/off toggles in the PWA UI.
+      - label: Domain-specific tools
+        text: Split control_entity into turn_on_off, set_light, set_climate, set_media_player, run_scene.
+      - label: Confirmation gate
+        text: Make Gemini confirm before locks, covers, or critical switches.
+      - label: Conversation memory
+        text: Persist last 10 voice turns for context.
+  - title: Lessons Learned
+    icon: "🎓"
+    layout: list
+    items:
+      - label: Live config is not versioned
+        text: User systemd units and Caddyfile snippets were only on tony-dell. They are now versioned under chaba/stacks/mn01/.
+      - label: HA URLs were host-local
+        text: The Tony env used 127.0.0.1:8123. On mn01 it must use a tailnet-reachable URL such as https://tony-dell.taila0626a.ts.net:8123/.
+      - label: mn01 lacked a stack
+        text: Creating chaba/stacks/mn01/ makes the Ada HA deployment reproducible on tony-dell or tony-omen in a failure.
+      - label: Audit did not cover Ada HA
+        text: ssot.audit.hosts.yml now expects ada-ha-tony.service and ada-ha-michael.service on mn01.
+      - label: Secrets and tokens are not in git
+        text: ~/.config/secrets/ada-ha-*.env and notebooklm-rest-api.env are still host-local and must be backed up separately.
+      - label: URL-derived collection names orphan memory
+        text: MDDB collections were once keyed by HOME_ASSISTANT_URL slug; moving tony from 127.0.0.1 to the tailnet URL abandoned the old collections. ADA_INSTANCE_ID now pins identity; rule is fail quick and report, never silently fall back for identity config.
+      - label: Funnel makes auth mandatory
+        text: mn01 and tony-dell both run Tailscale Funnel on 443, so /apps/ada_ha_* and /apps/ada_pi are public-internet paths. confirmed=true only gates the model — direct REST callers self-assert it — which is why ADA_API_KEY covers /api/tools/call AND /ws.
+config:
+  version: 5
+  created: '2026-09-13'
+  updated: '2026-09-17'
+  maintainer: tony
+  status: active
+  deployment: mn01

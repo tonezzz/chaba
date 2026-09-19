@@ -90,6 +90,21 @@ sections:
       - label: Verify
         text: playlive_state returns url and title.
 
+  - title: Decision guide
+    icon: 🌲
+    layout: list
+    items:
+      - label: Default first move
+        text: When a task needs any browser interaction, start with playlive_create_playwright on tony-dell. It is headless, fastest (~50-100MB less RAM, quicker startup), and does not require Chrome CDP to be running.
+      - label: Use chrome-live only when
+        text: You need to see or interact with a visible browser window, capture a human-readable screenshot of a live session, or debug rendering. Use target tony-dell with remote_url http://127.0.0.1:9222.
+      - label: Use playlive-macbook only when
+        text: The target is macOS-specific, Safari/WebKit-only, or an iOS-style preview. Use the tony-omen SSH tunnel on 127.0.0.1:9229.
+      - label: Skip PlayLive when
+        text: You only need raw HTML/JSON, an HTTP status, or a REST check. Use curl or mcp-debug instead; it is faster and lighter.
+      - label: Auth shortcut
+        text: For Caddy basic-auth pages, create the session first, then pass credentials during navigation instead of pre-configuring the daemon.
+
   - title: Maintenance
     icon: 🔧
     layout: list

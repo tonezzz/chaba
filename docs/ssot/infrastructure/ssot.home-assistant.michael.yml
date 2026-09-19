@@ -51,13 +51,28 @@ deploy:
       /root/.ssh/authorized_keys. 2026-09-06: michael-ha-mcp-tunnel on
       tony-dell failed after the OOM outage because it uses the devin-deploy
       key, which was missing from the live authorized_keys.
-  token_file: /home/tony/.local/share/home-assistant-michael/ha-token
+  token_file: /home/tony/.config/secrets/ha-michael-live.env
+  token_note: >-
+    Previous token at ~/.local/share/home-assistant-michael/ha-token was rotated
+    2026-09-08; current HASS_TOKEN is in ha-michael-live.env.
   reload_url: http://michael-ha:8123/api/services/homeassistant/reload_core_config
   dashboards:
     source: docs/home-assistant/dashboards/
     destination: /config/lovelace/
     optional: true
     note: Live michael-ha stores the tony-test dashboard in .storage/lovelace.tony_test. The repo dashboard files are archival snapshots; only deploy as YAML if explicitly converting live .storage to configuration.yaml.
+
+auth:
+  provider: homeassistant
+  username: nakva
+  display_user: Michael Nakvachara
+  owner: Michael Nakvachara
+  user_id: 6f6e965a3b76400b904c014ea843d02c
+  token:
+    file: /home/tony/.config/secrets/ha-michael-live.env
+    env: HASS_TOKEN
+    status: valid
+    note: Long-lived access token for automated HA-MCP/REST access. Do not commit.
 
 addons:
   - id: core_ssh
@@ -91,7 +106,7 @@ mcp:
     remote: homeassistant:9584
     via: root@michael-ha
     status: active
-    verified_at: '2026-09-03'
+    verified_at: '2026-09-08'
     note: TCP forward via core_ssh (tcp_forwarding enabled). 'homeassistant'
       is the Home Assistant core container hostname on the hassio Docker
       network (canonical value in ssot.values.yml hosts.michael_ha.hassio_network_host).
@@ -105,6 +120,7 @@ packages:
   - docs/home-assistant/configuration/packages/pool_sankey.yaml
 
 dashboards:
+  - docs/home-assistant/dashboards/michael-ha-tony-test-current.json
   - docs/home-assistant/dashboards/tony-test-current.json
   - docs/home-assistant/dashboards/tony-test-original.json
 
@@ -124,3 +140,14 @@ sync_rules:
   - "git -C chaba-michael push origin michael-ha"
   - "git -C chaba-michael rebase michael-ha michael-live"
   - "git -C chaba-michael push origin michael-live"
+
+device_aliases:
+  note: Short names for common Michael-HA devices and their representative entities.
+  sr258:
+    name: SR258
+    entities:
+      - number.sr258_temperature
+      - sensor.sr258_compressor_strength
+      - switch.sr258_child_lock
+      - switch.sr258_switch
+    note: Appears to be an HVAC-like unit (temperature setpoint, compressor strength, child lock, power switch).

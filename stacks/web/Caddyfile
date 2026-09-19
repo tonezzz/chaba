@@ -181,10 +181,10 @@ http://127.0.0.1:8080 {
 		reverse_proxy 100.68.142.13:3008
 	}
 
-
 	handle_path /api/gemini-mic/* {
 		reverse_proxy 100.68.142.13:3009
 	}
+
 	handle /api/yomi/* {
 		reverse_proxy 100.68.142.13:3000
 	}
@@ -195,6 +195,10 @@ http://127.0.0.1:8080 {
 
 	handle /api/gpu-queue/* {
 		reverse_proxy 100.68.142.13:3001
+	}
+
+	handle_path /api/input-bridge/* {
+		reverse_proxy 127.0.0.1:3010
 	}
 
 	handle /api/* {

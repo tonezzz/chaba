@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NotebookLM Apps</title>
+  <style>
+    :root { color-scheme: light dark; --bg: #111; --fg: #eee; --muted: #888; --accent: #4af; }
+    @media (prefers-color-scheme: light) { :root { --bg: #fff; --fg: #222; --muted: #666; --accent: #07c; } }
+    * { box-sizing: border-box; }
+    body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--fg); margin: 0; padding: 1.5rem; }
+    h1 { font-size: 1.4rem; margin: 0 0 0.5rem; }
+    p { margin: 0 0 1rem; color: var(--muted); }
+    .subapps { display: grid; grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr)); gap: 1rem; }
+    a.card { display: block; padding: 1rem; border: 1px solid #666; border-radius: 0.5rem; text-decoration: none; color: var(--fg); background: rgba(128,128,128,0.05); }
+    a.card:hover { border-color: var(--accent); }
+    .card h2 { font-size: 1.1rem; margin: 0 0 0.25rem; color: var(--accent); }
+    .card p { margin: 0; font-size: 0.9rem; }
+  </style>
+</head>
+<body>
+  <h1>NotebookLM Apps</h1>
+  <p>Mini web frontends and tools for the central NotebookLM deployment on tony-dell.</p>
+  <nav class="subapps" id="subapp-list">
+    <a class="card" href="v0/">
+      <h2>v0</h2>
+      <p>Static landing page for NotebookLM tools: nlm, nbapi, nlm-add, and SSOT docs.</p>
+    </a>
+  </nav>
+</body>
+</html>

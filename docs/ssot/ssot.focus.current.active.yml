@@ -10,48 +10,47 @@ sections:
   icon: branch
   layout: list
   items:
-  - label: tony_omen link down
-    text: 'Link monitor detected tony_omen is unreachable after scan and safe fixes.
-
-
-      Scan output:
-
-      - tailscale status --json (rc=0)
-
-      - ip -4 route (rc=0)
-
-      - ip -4 -br addr show (rc=0)
-
-      - ss -tlnp (rc=0)
-
-      - tailscale ping tony-omen -c 3 (rc=1)
-
-
-      Fix attempts:
-
-      - tailscale ping (rc=1)'
+  - label: 2026-09-10 session handoff — devin cleanup + barrier image copy
+    text: "Session handoff from 2026-09-10. The Devin session grew too large; this item captures\npending work and learnings.\n\
+      \nCompleted:\n- michael-dev HA-MCP is now healthy: port 9585 responding, 172 entities via MCP.\n- All 3 HA MCPs verified:\
+      \ home-assistant (211), michael-ha (1,337), michael-dev (172).\n- SSOT updated: auth/display names synced for michael-dev\
+      \ and michael-ha.\n- ssot.home-assistant.instances.yml status block refreshed to 2026-09-10.\n- Commits b2f7aa21 and\
+      \ 4e800abd pushed to origin/master.\n\nPending work:\n- devin-cleanup.timer on tony-omen failed at 03:24: `No space\
+      \ left on device` while\n  copying 155G sessions.db to backups. Need more space or modify the script to skip/relocate\n\
+      \  the backup.\n- Barrier image copy/paste (tony-omen → tony-dell) is a known Barrier 2.4.0 Linux\n  limitation; needs\
+      \ a workaround or replacement.\n- mcp-health active alert: `Home Assistant Live (Gemini Live bridge)` HTTP 502 since\n\
+      \  2026-09-06 22:47.\n\nBarrier workaround options:\n1. Replace Barrier with input-leap / patched build on both hosts.\n\
+      2. Shared-clipboard folder + hotkey scripts (sync image via ssh/tailscale).\n3. Enable Barrier drag-and-drop and drop\
+      \ image files instead of paste.\n\nDevin cleanup options:\n1. Free ~155G on /home so the backup+vacuum can complete.\n\
+      2. Modify scripts/prune-devin-sessions.sh to skip the backup when disk is low.\n3. Move the DB to a larger disk, prune/vacuum,\
+      \ then move back.\n"
     status: active
-    priority: high
-    started: '2026-09-11'
+    priority: medium
+    started: '2026-09-10'
     estimated_duration: 1 session
     tags:
-    - monitoring
-    - network
-    - link
-    - alert
+    - handoff
+    - devin-cleanup
+    - barrier
+    - home-assistant
+    - mcp
     subtasks:
-    - label: Review scan output
+    - label: Devin cleanup — free space or modify prune-devin-sessions.sh to skip backup
       status: not_started
-    - label: Apply manual fix or escalate
+    - label: Barrier image copy — pick workaround and implement
       status: not_started
+    - label: Investigate mcp-health alert — Home Assistant Live (Gemini Live bridge) HTTP 502
+      status: not_started
+    - label: michael-dev HA-MCP — done; verify overnight and document if needed
+      status: completed
     request_log: []
     ownership:
       owner: tony
       session: ''
       locked: true
       lock_reason: Activated as active focus
-    branch: chaba
-    source: /home/tony/CascadeProjects/chaba-tony-dell/docs/ssot/focus-inbox/tony_omen-link-down-2026-09-06-220630.yml
+    branch: master
+    source: /home/tony/CascadeProjects/chaba/docs/ssot/focus-inbox/2026-09-10-070156-session-handoff-devin-cleanup-barrier-image.yml
 - title: Quick Wins
   icon: quick
   layout: list

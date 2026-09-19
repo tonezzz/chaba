@@ -44,4 +44,29 @@ if ! python3 scripts/ssot-validate-refs.py >/dev/null 2>&1; then
     exit 1
 fi
 
+# ---------------------------------------------------------------------------
+# 3. Parse-check staged/committed HA YAML (tolerant of HA tags like !secret)
+# ---------------------------------------------------------------------------
+if ! python3 - <<'PYEOF'
+import subprocess, sys, yaml
+class L(yaml.SafeLoader): pass
+L.add_multi_constructor('!', lambda l, s, n: l.construct_scalar(n))
+files = subprocess.check_output(
+    ['git', 'diff', '--name-only', '--diff-filter=ACM', 'HEAD~1', 'HEAD']
+).decode().split()
+bad = []
+for f in files:
+    if f.startswith('docs/home-assistant/') and f.endswith(('.yaml', '.yml')):
+        try:
+            yaml.load(open(f), Loader=L)
+        except Exception as e:
+            bad.append(f'{f}: {e}')
+if bad:
+    print('ERROR: HA YAML parse errors:', *bad, sep='\n  ', file=sys.stderr)
+    sys.exit(1)
+PYEOF
+then
+    exit 1
+fi
+
 exit 0

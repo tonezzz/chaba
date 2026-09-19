@@ -8,5 +8,31 @@ version: 1
 # This file captures the subset of schedules and overrides that run on the MacBook.
 
 automation:
-  status: stub
-  note: The MacBook currently has no scheduled automation; this file reserves the per-host namespace for future timers.
+  status: active
+  last_updated: '2026-09-08'
+  note: The MacBook is now a lightweight offload node for macOS-compatible and browser-automation tasks.
+  jobs:
+    - id: playlive-offload-listener
+      name: PlayLive CDP offload listener
+      schedule: always (launchd / launchctl)
+      command: /Users/kkkakk/chaba-health/playlived or playlive-macbook service
+      purpose: Accept Playwright/CDP tasks from tony-dell via playlive-macbook-tunnel
+      health_url: http://macbook:9232/sessions
+      depends_on: [playlive-macbook-tunnel.service on tony-dell, Google Chrome on macbook]
+      enabled: true
+      status: planned
+    - id: mcp-raw-macos
+      name: mcp_raw macOS command dispatcher
+      schedule: on-demand
+      command: ssh macbook <macOS-safe shell commands>
+      purpose: Run lightweight, read-only or safe macOS commands from mcp_debug when compact is unavailable
+      enabled: true
+      status: planned
+    - id: subagent-offload
+      name: macbook subagent overflow
+      schedule: on-demand (focus-dispatcher)
+      command: dispatch via mcp-focus or ssh
+      purpose: Run explore/research or iOS/macOS verification subagents on the MacBook when tony-dell/tony-omen are busy
+      safe_to_parallel: true
+      enabled: true
+      status: planned

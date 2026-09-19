@@ -34,7 +34,14 @@ mcp:
   tailnet_url: 'http://${ssot("docs/ssot/infrastructure/ssot.values.yml", "hosts.tony_dell.name")}:${ssot("docs/ssot/infrastructure/ssot.values.yml", "ports.ha_mcp_tony")}/private_CtYuVkJEl28cp8qA8yXNCQ'
   webhook: 'http://127.0.0.1:${ssot("docs/ssot/infrastructure/ssot.values.yml", "ports.ha_tony")}/api/webhook/mcp_d5528537d57627164033dc5e3e5e5aa6'
   caddy:
-    note: 'Not implemented — Caddyfile has no HA route. HA UI absolute redirects break path-prefixed proxying (same conclusion as michael-dev). UI access is via tailscale serve https://tony-dell.taila0626a.ts.net:8123 -> 127.0.0.1:8123 (decision: tony-ha-tailscale-only-access).'
+    host_path: /apps/ha/tony-ha/
+    mcp_path: /api/ha-mcp/
+    backend:
+      __ref__:
+        path: docs/ssot/infrastructure/ssot.values.yml
+        key: hosts.tony_dell.tailscale_ip
+    caddyfile: /home/tony/CascadeProjects/chaba-tony-dell/stacks/web/Caddyfile
+    note: 'Planned paths — not yet routed in the Caddyfile (verified 2026-09-18: no /apps/ha/ or ha-mcp handles). HA UI absolute redirects break path-prefixed proxying (same conclusion as michael-dev). UI access is via tailscale serve https://tony-dell.taila0626a.ts.net:8123 -> 127.0.0.1:8123 (decision: tony-ha-tailscale-only-access).'
   ssot: docs/ssot/infrastructure/ssot.home-assistant.mcp.yml
 
 custom_components:

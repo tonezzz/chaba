@@ -7,7 +7,9 @@ target view at the cells given by --map, then saves the whole dashboard.
 
 Usage:
     apply-tpl.py <ha_url> <dashboard_path> <src_view> <dst_view> \\
-        --map "TPLTitle:r,c;Title:r,c ..." [--dry-run]
+        --map "TPLTitle:r,c;Title:r,c ..." [--dry-run] [--bg]
+
+    --bg forces every copied chart def to position: 'bg' (background layer).
     (pairs separated by ';' since cells contain commas)
 
 Example:
@@ -33,6 +35,7 @@ async def main():
             t, cell = pair.split(":", 1)
             mapping.append((t.strip(), cell.strip()))
     dry = "--dry-run" in sys.argv
+    bg = "--bg" in sys.argv
     token = os.environ["HASS_TOKEN"]
 
     async with websockets.connect(url.replace("http", "ws", 1) + "/api/websocket") as ws:
@@ -62,8 +65,14 @@ async def main():
                 src = t.get(k, {})
                 val = src.get("1,1") if isinstance(src, dict) else None
                 if val is not None:
-                    dst.setdefault(k, {})[cell] = copy.deepcopy(val)
-            print(f"  {title} -> {cell}")
+                    val = copy.deepcopy(val)
+                    if k == "pfg_charts" and bg:
+                        defs = val if isinstance(val, list) else [val]
+                        for d in defs:
+                            if isinstance(d, dict):
+                                d["position"] = "bg"
+                    dst.setdefault(k, {})[cell] = val
+            print(f"  {title} -> {cell}{' [bg]' if bg else ''}")
 
         if not dry:
             out = await cmd({"type": "lovelace/config/save",

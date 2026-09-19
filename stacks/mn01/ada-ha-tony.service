@@ -1,0 +1,15 @@
+[Unit]
+Description=Ada HA Tony backend
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/CascadeProjects/ada-pi
+EnvironmentFile=%h/.config/secrets/ada-ha-tony.env
+EnvironmentFile=%h/.config/secrets/notebooklm-rest-api.env
+ExecStart=%h/CascadeProjects/ada-pi/.venv/bin/uvicorn pwa_server:app --host 0.0.0.0 --port 8002
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target

@@ -4,6 +4,6 @@
 set -euo pipefail
 
 exec /usr/bin/ssh -o BatchMode=yes tony-dell \
-  'cd /home/tony/CascadeProjects/chaba-tony-dell && \
-   PYTHONPATH=/home/tony/CascadeProjects/chaba-tony-dell/scripts \
+  'cd /home/tony/CascadeProjects/chaba && \
+   PYTHONPATH=/home/tony/CascadeProjects/chaba/scripts \
    /usr/bin/python3 -m mcp_debug.server'

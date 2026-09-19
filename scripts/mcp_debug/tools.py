@@ -115,10 +115,27 @@ def mcp_transform(input=None, op="identity", params=None, results=None, captured
     return {"ok": False, "error": f"unknown transform op: {op}"}
 
 
+def _command_supported(host, command):
+    """Check whether a configured debug command is meaningful to benchmark on a host."""
+    meta = DEBUG_COMMANDS.get(command, {})
+    if meta.get("skip_savings"):
+        return False, "command is not a savings benchmark"
+    requires = meta.get("requires")
+    if requires:
+        required = set(requires if isinstance(requires, list) else [requires])
+        tags = set(HOSTS.get(host, {}).get("tags", []))
+        if not required.issubset(tags):
+            return False, f"host missing required tags: {sorted(required - tags)}"
+    return True, None
+
+
 def mcp_stats(host, command):
     raw_cmd = DEBUG_COMMANDS.get(command, {}).get("raw_command", command)
+    started = time.time()
     raw_result = run_on_host(host, raw_cmd, compact=False)
     compact_result = run_on_host(host, command, compact=True)
+    ended = time.time()
+    duration_ms = round((ended - started) * 1000, 1)
 
     raw_out = raw_result.get("out", "") or ""
     compact_out = compact_result.get("out", "") or ""
@@ -147,6 +164,7 @@ def mcp_stats(host, command):
         "savings_pct_chars": savings_pct_chars,
         "raw_rc": raw_result.get("rc"),
         "compact_rc": compact_result.get("rc"),
+        "duration_ms": duration_ms,
     }
 
 def mcp_vet(command, add=False):
@@ -260,8 +278,12 @@ def mcp_savings(hosts):
             continue
         if not HOSTS[host].get("compact", True):
             continue
-        per_host[host] = {"commands": {}, "log_commands": {}, "raw_chars": 0, "compact_chars": 0, "saved_chars": 0}
+        per_host[host] = {"commands": {}, "skipped": {}, "log_commands": {}, "raw_chars": 0, "compact_chars": 0, "saved_chars": 0}
         for command in commands:
+            supported, reason = _command_supported(host, command)
+            if not supported:
+                per_host[host]["skipped"][command] = reason
+                continue
             s = mcp_stats(host, command)
             per_host[host]["commands"][command] = s
             if s.get("ok"):
@@ -582,6 +604,49 @@ def mcp_put_file(host, path, content_base64, mode="644", overwrite=False):
         "bytes_written": len(data),
         "mode": mode,
     }
+
+
+def mcp_eget(
+    host,
+    repo,
+    to="~/.local/bin",
+    tag=None,
+    asset=None,
+    extract_all=False,
+    download_only=False,
+):
+    """Install or download a prebuilt binary using eget.
+
+    Looks for eget in PATH first, then falls back to ~/.local/bin/eget.
+    """
+    if host not in HOSTS:
+        return {"ok": False, "error": f"unknown host: {host}", "host": host}
+    if not repo:
+        return {"ok": False, "error": "repo is required", "host": host}
+
+    allowed_to, err = _check_path_allowed(host, to)
+    if err:
+        return {"ok": False, "error": f"target path not allowed: {err}", "path": to, "host": host}
+
+    subcmd = "download" if download_only else "install"
+    parts = [subcmd, shlex.quote(repo), "--quiet", "--to", shlex.quote(allowed_to)]
+    if tag:
+        parts.extend(["--tag", shlex.quote(tag)])
+    if asset:
+        parts.extend(["--asset", shlex.quote(asset)])
+    if extract_all:
+        parts.append("--extract-all")
+
+    eget_args = " ".join(parts)
+    command = (
+        f"mkdir -p {shlex.quote(allowed_to)} && "
+        f"EGET=$(command -v eget 2>/dev/null || echo $HOME/.local/bin/eget) && "
+        f'if [ ! -x "$EGET" ]; then echo "eget not found"; exit 1; fi && '
+        f'"$EGET" {eget_args}'
+    )
+    result = run_on_host(host, command, compact=False, shell=True)
+    result["h"] = host
+    return result
 
 
 def _clipboard_enabled(host):

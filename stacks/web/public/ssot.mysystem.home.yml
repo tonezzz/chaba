@@ -47,7 +47,7 @@ sections:
         text: Intel Core i7-9750H (6 cores/12 threads), 2.60GHz hardware max, 800MHz min
         tags: [hardware, cpu, performance]
       - label: tony-omen CPU operational cap
-        text: Software capped to 2.40GHz via cpufreq-limit.service (cpupower -u 2.40GHz, governor performance)
+        text: Software capped to 2.20GHz via cpufreq-limit.service (cpupower -u 2.20GHz, governor performance)
         tags: [hardware, cpu, performance, power]
         status: active
       - label: tony-omen GPU
@@ -56,9 +56,9 @@ sections:
       - label: tony-omen Memory
         text: 32GB RAM
         tags: [hardware, memory]
-      - label: CPU Frequency Monitoring
-        text: Monitored via health-monitor.sh (checks load, temperature, throttling)
-        tags: [monitoring, cpu, health-check]
+      - label: tony-omen CPU and Thermal Monitoring
+        text: Monitored via sensor-reader (port 8001), cpufreq-limit.service, and Netdata; checks load, temperature, throttling, and frequency cap.
+        tags: [monitoring, cpu, gpu, thermal, health-check]
         status: active
 
   - title: Power Management

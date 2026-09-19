@@ -1,0 +1,165 @@
+{
+  "providers": [
+    {
+      "id": "devin-stub",
+      "name": "Devin (stub)",
+      "models": [
+        {
+          "id": "stub",
+          "name": "v0 stub",
+          "tags": ["chat"]
+        }
+      ]
+    },
+    {
+      "id": "openai",
+      "name": "OpenAI",
+      "models": [
+        {
+          "id": "gpt-4o",
+          "name": "GPT-4o",
+          "tags": ["code", "reasoning", "plan", "chat", "creative"]
+        },
+        {
+          "id": "gpt-4o-mini",
+          "name": "GPT-4o Mini",
+          "tags": ["summarize", "chat", "code", "translate"]
+        }
+      ]
+    },
+    {
+      "id": "claude",
+      "name": "Claude",
+      "models": [
+        {
+          "id": "claude-3-5-sonnet-20241022",
+          "name": "Claude 3.5 Sonnet",
+          "tags": ["code", "reasoning", "creative", "plan", "chat"]
+        }
+      ]
+    },
+    {
+      "id": "ollama",
+      "name": "Ollama (local)",
+      "models": [
+        {
+          "id": "llama3.2",
+          "name": "Llama 3.2",
+          "tags": ["chat", "summarize", "reasoning"]
+        },
+        {
+          "id": "codellama",
+          "name": "CodeLlama",
+          "tags": ["code"]
+        }
+      ]
+    },
+    {
+      "id": "gemini",
+      "name": "Gemini",
+      "models": [
+        {
+          "id": "gemini-2.5-flash",
+          "name": "Gemini 2.5 Flash",
+          "tags": ["code", "reasoning", "summarize", "chat", "plan"]
+        }
+      ]
+    }
+  ],
+  "categories": [
+    {
+      "id": "code",
+      "name": "Generate code",
+      "terms": ["code", "function", "python", "bash", "script", "program", "implement", "class", "module", "write a function", "write a script"]
+    },
+    {
+      "id": "creative",
+      "name": "Creative writing",
+      "terms": ["story", "poem", "essay", "write about", "creative", "draft", "blog"]
+    },
+    {
+      "id": "reasoning",
+      "name": "Step-by-step reasoning",
+      "terms": ["explain", "why", "how does", "reason", "logic", "solve", "prove", "compare", "contrast"]
+    },
+    {
+      "id": "summarize",
+      "name": "Summarize text",
+      "terms": ["summarize", "summary", "tl;dr", "tldr", "condense", "shorten", "key points"]
+    },
+    {
+      "id": "translate",
+      "name": "Translate or localize",
+      "terms": ["translate", "vietnamese", "chinese", "spanish", "french", "japanese", "korean", "german", "localization", "localize"]
+    },
+    {
+      "id": "plan",
+      "name": "Make a plan",
+      "terms": ["plan", "steps", "checklist", "roadmap", "todo", "schedule", "outline"]
+    },
+    {
+      "id": "chat",
+      "name": "General chat",
+      "terms": ["hello", "hi", "hey", "chat", "talk", "conversation"]
+    }
+  ],
+  "scores": {
+    "code": {
+      "openai/gpt-4o": 0.92,
+      "claude/claude-3-5-sonnet-20241022": 0.9,
+      "gemini/gemini-2.5-flash": 0.88,
+      "openai/gpt-4o-mini": 0.75,
+      "ollama/codellama": 0.65,
+      "ollama/llama3.2": 0.45,
+      "devin-stub/stub": 0.1
+    },
+    "creative": {
+      "claude/claude-3-5-sonnet-20241022": 0.9,
+      "openai/gpt-4o": 0.88,
+      "gemini/gemini-2.5-flash": 0.82,
+      "openai/gpt-4o-mini": 0.7,
+      "ollama/llama3.2": 0.5,
+      "devin-stub/stub": 0.1
+    },
+    "reasoning": {
+      "claude/claude-3-5-sonnet-20241022": 0.91,
+      "openai/gpt-4o": 0.9,
+      "gemini/gemini-2.5-flash": 0.87,
+      "openai/gpt-4o-mini": 0.72,
+      "ollama/llama3.2": 0.5,
+      "devin-stub/stub": 0.1
+    },
+    "summarize": {
+      "openai/gpt-4o-mini": 0.9,
+      "gemini/gemini-2.5-flash": 0.88,
+      "openai/gpt-4o": 0.85,
+      "claude/claude-3-5-sonnet-20241022": 0.84,
+      "ollama/llama3.2": 0.5,
+      "devin-stub/stub": 0.1
+    },
+    "translate": {
+      "openai/gpt-4o-mini": 0.88,
+      "openai/gpt-4o": 0.87,
+      "gemini/gemini-2.5-flash": 0.86,
+      "claude/claude-3-5-sonnet-20241022": 0.82,
+      "ollama/llama3.2": 0.4,
+      "devin-stub/stub": 0.1
+    },
+    "plan": {
+      "claude/claude-3-5-sonnet-20241022": 0.89,
+      "openai/gpt-4o": 0.88,
+      "gemini/gemini-2.5-flash": 0.85,
+      "openai/gpt-4o-mini": 0.72,
+      "ollama/llama3.2": 0.5,
+      "devin-stub/stub": 0.1
+    },
+    "chat": {
+      "openai/gpt-4o-mini": 0.9,
+      "openai/gpt-4o": 0.88,
+      "gemini/gemini-2.5-flash": 0.86,
+      "claude/claude-3-5-sonnet-20241022": 0.85,
+      "ollama/llama3.2": 0.6,
+      "devin-stub/stub": 0.2
+    }
+  }
+}

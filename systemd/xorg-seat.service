@@ -1,0 +1,13 @@
+[Unit]
+Description=X server :1 on vt7 (physical seat display)
+After=systemd-user-sessions.service
+Conflicts=getty@tty7.service
+
+[Service]
+Type=simple
+ExecStart=/usr/lib/xorg/Xorg :1 vt7 -seat seat0 -nolisten tcp
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

@@ -11,9 +11,6 @@ mkdir -p "$LOG_DIR"
 
 echo "Setting up system automation..."
 
-# GPU Monitoring - every 5 minutes
-(crontab -l 2>/dev/null | grep -v "gpu-monitor"; echo "*/5 * * * * $SCRIPT_DIR/gpu-monitor.mjs >> $LOG_DIR/gpu-monitor.log 2>&1") | crontab -
-
 # System Maintenance - daily at 3 AM
 (crontab -l 2>/dev/null | grep -v "system-maintenance"; echo "0 3 * * * $SCRIPT_DIR/system-maintenance.mjs >> $LOG_DIR/system-maintenance.log 2>&1") | crontab -
 
@@ -22,7 +19,6 @@ echo "Setting up system automation..."
 
 echo "Automation setup complete!"
 echo "Scheduled tasks:"
-echo "  - GPU Monitoring: Every 5 minutes"
 echo "  - System Maintenance: Daily at 3 AM"
 echo "  - Overnight Assessment: Daily at 2 AM"
 echo ""

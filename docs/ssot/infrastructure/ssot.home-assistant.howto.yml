@@ -206,6 +206,171 @@ runbooks:
       - Version numbers are per-host counters — compare bundle md5 across hosts for parity, not the v-number
       - If Tailscale SSH prints a login.tailscale.com link, ask the user to open it, then retry
 
+  sidebar_menu_listing:
+    purpose: Enumerate the HA sidebar (menu) for an instance.
+    steps:
+      - "API 'lovelace/dashboards/list' (websocket) returns ONLY custom dashboards (e.g. Map, Overview, Tony test, Dossier)"
+      - Built-in panels (Energy, Activity, History, Logbook, Media, To-do, Settings, Notifications) and add-on ingress entries (File editor, HA-MCP, HACS, Matter Server) are NOT Lovelace dashboards and never appear in that list
+      - "Sidebar order is per-user: 'frontend/get_user_data' key 'core.sidebar' -> panelOrder (may be unset = default order)"
+      - For a visual list use playlive headless + login (see ha_ui_login_headless)
+
+  stale_local_asset_404:
+    purpose: Fix a newly added /config/www file that 404s in the browser while curl returns 200.
+    steps:
+      - Browsers (and the HA service worker) cache /local/ responses; a 404 served before the file existed persists
+      - First try a hard refresh (Ctrl+Shift+R)
+      - Reliable fix: bump the reference in the view config — change '/local/name.jpg' to '/local/name.jpg?v=2' via websocket lovelace/config/save (apply to every occurrence in the config)
+      - HA serves /local/ live from /config/www; no restart needed for new files
+
+  ha_ui_login_headless:
+    purpose: Log into an HA UI inside a playlive headless browser session.
+    steps:
+      - "michael-ha UI creds live in ~/.local/share/home-assistant-michael/credentials.json (username+password); verified login user 'nakva' 2026-09-08"
+      - playlive headless sessions have no real CDP port and cannot reach 127.0.0.1 of this host — serve creds on the LAN IP instead
+      - "Trick: write /tmp/creds.js (window.__HA_CREDS={u,p}), serve /tmp via 'python3 -m http.server 8898 --bind 0.0.0.0 --directory /tmp', then playlive_eval a script that injects <script src='http://<lan-ip>:8898/creds.js'> (script tags bypass CORS) and fills the fields"
+      - "Fill via the native setter: Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,'value').set.call(el,v) then dispatch input+change — plain el.value= does not stick on HA's lit inputs"
+      - "The submit button is <ha-button> with text 'Log in' (inside shadow DOMs) — find via recursive shadow query and click()"
+      - ALWAYS delete /tmp/creds.js and kill the http.server afterwards (credentials were briefly served on the LAN)
+
+  tokens_and_auth:
+    purpose: Which credential files actually work for michael-ha API/websocket.
+    steps:
+      - "~/.config/secrets/ha-michael-live.env (HASS_TOKEN=...) is the WORKING long-lived token for michael-ha REST+websocket"
+      - "~/.local/share/home-assistant-michael/ha-token went stale 2026-09-08 (auth_invalid) — prefer ha-michael-live.env; regenerate if both fail"
+      - "~/.config/secrets/ha-michael-dev.env (HASS_TOKEN) works for michael-dev on https://tony-dell.taila0626a.ts.net:8124"
+
+  bundle_parity_worktrees:
+    purpose: Avoid deploying a main build that is OLDER than a host's live bundle.
+    steps:
+      - "Parallel sessions build/deploy from worktree branches; dev's live version may not be on main"
+      - "Before deploying from main, check 'git worktree list' and 'git log main..<branch>' — merge feature branches first so nothing is lost"
+      - "Fast parity: scp the exact deployed bundle file (e.g. dev's www/sunsynk-...-v144.js) to the other host and repoint lovelace_resources, then merge source to main later"
+      - Always finish with deploy-card.sh --check and compare md5
+
+  pfg_charts_modular:
+    purpose: Chart code layout after 2026-09-09 refactor.
+    steps:
+      - "src/cards/pfg/: shared.ts (status/hexToRgba/resolveChartValue), history.ts (fetch/merge/cache), place.ts (chartOverlayStyle — single placement engine: bottom|top|bg|cycle|center), index.ts (RENDERERS registry + registerChart)"
+      - "Per-type renderers in src/cards/pfg/charts/: bar.ts bars.ts gauge.ts history.ts group.ts cycle.ts surface3d.ts bar3d.ts"
+      - "3D shared code in src/cards/pfg/charts/pfg3d-loader.ts (ensureEchartsGl + fetchHourlyDayGrid), pfg3d.ts (axes/tooltip/viewControl), pfg3d-chart.ts (reactive <pfg-3d-chart> custom element)"
+      - "New chart type = new file + one line in RENDERERS; do NOT edit pfg-card.ts placement"
+      - "group/cycle import the registry (circular-import warnings in rollup are expected and safe)"
+
+  pfg_3d_charts:
+    purpose: Development/debugging reference for the pfg surface3d (G1) and bar3d (G2) hourly-grid charts.
+    architecture: |
+      G1 = sunsynk-power-flow-card chart 'surface3d' (echarts-gl surface), view g1.
+      G2 = sunsynk-power-flow-card chart 'bar3d' (echarts-gl bar3D), view g2.
+      Both are rendered by a shared reactive <pfg-3d-chart> custom element in
+      src/cards/pfg/charts/pfg3d-chart.ts. Data is loaded by fetchHourlyDayGrid in
+      src/cards/pfg/charts/pfg3d-loader.ts, axes/tooltip/viewControl by
+      src/cards/pfg/charts/pfg3d.ts, and the hover-plane helper by
+      src/cards/pfg/charts/pfg3d-hover.ts. surface3d.ts and bar3d.ts are now thin
+      wrappers that instantiate the custom element with type='surface'|'bar'.
+      Entity: sensor.inverters_1_pv_power.
+      michael-dev uses a dev template entity (input_number.dev_pv*_power) so data is
+      synthetic; michael-ha uses the real recorder entity.
+    data_and_cache: |
+      - Recorder statistics are absolute timestamps; group by hass.config.time_zone,
+        not the browser timezone.
+      - Missing day/hour cells are zero-filled.
+      - fetchHourlyDayGrid tries hourly statistics first, then 5-minute statistics,
+        then raw state history as a last resort.
+      - Concurrent identical requests are deduplicated (in-flight promise caches for
+        both fetchHourlyDayGrid and fetchHistorySeries).
+      - Persistent localStorage caches keep data across reloads; incremental fetches
+        only pull the delta since lastEnd. See ssot.home-assistant.design.yml
+        data_cache_policy for the shared policy.
+      - Cache keys: pfg3d:<entity>:<days>:<scale> for 3D; pfgh:<entities>:<hours> for
+        history/area. cache: 0 disables; 3D defaults to infinite until the window
+        changes, history/area defaults to memory-only to avoid localStorage quota
+        blowups. Huge raw-history windows are never persisted in localStorage.
+    axis_and_labels: |
+      - ECharts GL xAxis3D type:'value' IGNORES 'inverse'. To control order use
+        type:'category' with data: [0..23] (or reversed) — the category order is the
+        axis order.
+      - Axis labels and names: set color + fontWeight + textShadowBlur/textShadowColor
+        on axisLabel and nameTextStyle. For white labels on dark bg use
+        color '#ffffff', fontWeight 'bold', textShadowBlur 3, textShadowColor
+        'rgba(0,0,0,0.75)'.
+      - For category hour axes use axisLabel.formatter to show "HH:00".
+      - The day axis uses yAxis3D type:'value' min:0 max:days-1 inverse:true.
+    interaction: |
+      - Native echarts-gl drag/orbit was unreliable; both charts use a custom pointer
+        implementation (pointerdown/move/up + chart.dispatchAction/viewControl).
+      - Keep frontCenter/volumeCenter aligned with the axis min/max so the drag
+        pivot is correct. viewControl.distance: 300 frames the whole grid.
+    deploy_and_verify: |
+      - Build in a worktree (sunsynk-wt-*), merge to main, run deploy-card.sh.
+      - deploy-card.sh reads the current version from the target's lovelace_resources
+        (single source of truth). The dev live file must be on the same version.
+      - promote-michael.sh copies the exact dev bundle and updates the michael-ha
+        resource via websocket; its immediate post-check is race-prone — recheck
+        with ws-resource-url.py or grep lovelace_resources on michael-ha.
+      - After any axis/data change, verify the loaded bundle matches and hard-refresh
+        the browser (the module cache is keyed by the v{N} filename).
+    common_failures: |
+      - 'Axis direction not changing: you probably used inverse on a value axis; use
+        category + data order instead.'
+      - 'Data rising/falling at the wrong time: check timezone grouping in
+        fetchHourlyDayGrid — it must use hass.config.time_zone.'
+      - 'michael-dev looks synthetic: dev uses dev_pv*_power input_number template;
+        michael-ha uses real recorder data. The card code is not the cause.'
+      - 'Bundle version drift / incomplete deploys: verify by md5sum or curl the
+        bundle, not just the version number.'
+    ssot: ssot.home-assistant.design.yml
+    last_updated: '2026-09-18'
+
+  deployment_policy:
+    purpose: Human approval required before any deploy from michael-dev to another host.
+    steps:
+      - Never run deploy-card.sh with a non-dev target (michael-ha, tony-ha, or --host all) without explicit user approval in the same session.
+      - Never run promote-michael.sh or promote-tony.sh without explicit user approval in the same session.
+      - Iterating and previewing on michael-dev is fine; anything that touches michael-ha or tony-ha must be approved.
+    note: tony-dell hosts both michael-dev and tony-ha, but they are separate instances; copying a bundle or resource to tony-ha is a deploy, not a local file move.
+
+  promote_tony_ha:
+    purpose: Promote the dev bundle to tony-ha on tony-dell (rootless podman, port 8123).
+    steps:
+      - Ensure tony-ha.service is active: systemctl --user is-active tony-ha.service
+      - Check for an existing sunsynk-power-flow-card-fork resource in /home/tony/.config/home-assistant/.storage/lovelace_resources
+      - 'If the resource is missing: add a new entry {id: <uuid>, url: "/local/sunsynk-power-flow-card-fork-vN.js", type: "module"} and restart tony-ha.service'
+      - Copy the exact dev bundle: cp /home/tony/.config/michael-dev/www/sunsynk-power-flow-card-fork-vN.js /home/tony/.config/home-assistant/www/
+      - Update the resource via ws-resource-url.py using HASS_TOKEN from ~/.config/secrets/home-assistant-token.env (HA_LONG_LIVED_TOKEN)
+      - If tony-test dashboard exists, merge desired views with push-dashboard.py; otherwise create the dashboard first
+      - Verify with curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:8123/local/sunsynk-power-flow-card-fork-vN.js
+    common_failures:
+      - 'ws-resource-url.py fails with "no lovelace resource matching": the sunsynk resource must be seeded before it can be bumped.'
+      - 'Resource updated but bundle 404s: restart tony-ha.service after editing .storage/lovelace_resources.'
+      - 'push-dashboard.py fails: tony-test dashboard does not exist on tony-ha; create it first.'
+
+  build_typecheck:
+    purpose: The rollup build does NOT type-check TypeScript.
+    steps:
+      - Run a typecheck before trusting the bundle: npx -p typescript tsc --noEmit
+      - Runtime errors like missing variables can slip through Babel preset-typescript; use tsc as the gate.
+    note: The card repo uses Babel to strip types and terser to minify; it never invokes the TypeScript compiler.
+
+  michael_dev_playlive_visual_verify:
+    purpose: Log in to michael-dev via Playlive and capture a screenshot of the tony-test Wide view.
+    steps:
+      - "michael-dev and michael-ha share the same UI credentials: ~/.local/share/home-assistant-michael/credentials.json (user 'nakva')"
+      - "Start a temporary http server on the LAN IP: python3 -m http.server 8898 --bind 0.0.0.0 --directory /tmp"
+      - "Write /tmp/creds.js with window.__HA_CREDS = {u:'nakva', p:'<PASSWORD>'}; use the password from credentials.json"
+      - "Create a playlive headless session and navigate to https://tony-dell.taila0626a.ts.net:8124/tony-test/wide"
+      - "Inject the creds script: document.head.appendChild(document.createElement('script')).src = 'http://<lan-ip>:8898/creds.js'"
+      - "Fill username/password using native HTMLInputElement value setter, dispatch input/change, then click the 'Log in' ha-button"
+      - "Set input[type='checkbox'].checked = true (Keep me logged in) before clicking Log in"
+      - "Wait for the page to load; the Wide view renders at https://tony-dell.taila0626a.ts.net:8124/tony-test/wide"
+      - "Use playlive_screenshot to capture the viewport; scroll with window.scrollTo(0,N) for lower content"
+      - "Stop the http server and delete /tmp/creds.js immediately after"
+    note: |
+      Verified 2026-09-10. The michael-dev UI accepts the michael-ha 'nakva' credentials and the
+      tony-test/wide view loads. Use screenshots to compare the dial/chart layout against the
+      reference image and iterate the grid/SVG configuration.
+    ssot: ssot.home-assistant.instances.yml
+    last_updated: '2026-09-10'
+
   rename_device_via_websocket:
     purpose: Rename a device + its entities on tony-ha without the UI (same calls the UI makes; no restart).
     steps:
@@ -238,4 +403,4 @@ runbooks:
 status:
   last_updated: '2026-09-18'
   last_verified: '2026-09-18'
-  health: active; websocket push-dashboard workflow verified; deploy runbook corrected (.storage resource changes need service restart, not ha_reload_core)
+  health: active; websocket push-dashboard workflow verified; deploy runbook corrected (.storage resource changes need service restart, not ha_reload_core); sidebar API scope documented; stale /local 404 workaround (v-bump) documented; michael-ha working token located in ha-michael-live.env; pfg chart code modularized into src/cards/pfg/ with registry + single placement engine; pfg_3d_charts runbook added (category x-axis, incremental cache, dev-vs-live data note); deployment_policy, promote_tony_ha and build_typecheck runbooks added 2026-09-09; rename_device_via_websocket and person_detect_switch_automation runbooks added 2026-09-18

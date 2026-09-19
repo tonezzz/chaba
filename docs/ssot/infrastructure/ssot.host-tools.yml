@@ -1,0 +1,502 @@
+id: ssot.host-tools
+title: Host Network & System Toolkit
+subtitle: Standard diagnostic and inspection tools for decision making across hosts
+icon: toolbox
+version: 3
+maintainer: tony
+status: active
+category: infrastructure
+source_of_truth: true
+
+overview:
+  purpose: |
+    Single source of truth for the CLI network and system tools that should be
+    available on each host. Use it to answer "which tool should I use for X?"
+    and to verify that every host has the expected toolkit installed and working.
+  usage: |
+    python3 scripts/check-host-tools.py --host mn01
+    python3 scripts/check-host-tools.py --host tony-dell --install-missing
+    python3 scripts/check-host-tools.py --host tony-dell --verify-all
+  decision_support:
+    - "Which tool should I use to check network throughput? → iperf3"
+    - "Which tool should I use to inspect link speed/duplex? → ethtool"
+    - "Which tool should I use to find disk hogs? → ncdu"
+    - "Which tool should I use to check active connections? → nmcli or ss"
+    - "Which tool should I use to inspect kernel errors? → dmesg"
+
+tools:
+  core:
+    - name: python3
+      package:
+        linux: python3
+        mac: python3
+      command: "python3 --version"
+      verify: "python3 --version"
+      decisions: ["run project Python scripts and tools"]
+      priority: essential
+
+    - name: python3-venv
+      package:
+        linux: python3-venv
+      check: "python3 -m venv --help"
+      command: "python3 -m venv <venv_path>"
+      verify: "python3 -m venv --help"
+      decisions: ["create isolated Python virtual environments"]
+      priority: essential
+
+    - name: pip
+      package:
+        linux: python3-pip
+        mac: pip
+      command: "pip --version"
+      verify: "pip --version"
+      decisions: ["install Python packages"]
+      priority: essential
+
+    - name: pipx
+      package:
+        linux: pipx
+        mac: pipx
+      command: "pipx --version"
+      verify: "pipx --version"
+      decisions: ["install Python tools in isolated venvs"]
+      priority: useful
+
+    - name: git
+      package:
+        linux: git
+        mac: git
+      command: "git --version"
+      verify: "git --version"
+      decisions: ["clone and update project repositories"]
+      priority: essential
+
+    - name: ssh
+      package:
+        linux: openssh-client
+        mac: openssh
+      command: "ssh -V"
+      verify: "ssh -V"
+      decisions: ["connect to remote hosts"]
+      priority: essential
+
+    - name: curl
+      package:
+        linux: curl
+        mac: curl
+      command: "curl -sfL <url>"
+      verify: "curl --version"
+      decisions: ["test HTTP/TCP endpoints"]
+      priority: essential
+
+    - name: wget
+      package:
+        linux: wget
+        mac: wget
+      command: "wget -qO- <url>"
+      verify: "wget --version"
+      decisions: ["download files from remote URLs"]
+      priority: useful
+
+    - name: jq
+      package:
+        linux: jq
+        mac: jq
+      command: "jq --version"
+      verify: "jq --version"
+      decisions: ["parse and transform JSON"]
+      priority: essential
+
+    - name: yq
+      package:
+        linux: yq
+        mac: yq
+      command: "yq --version"
+      verify: "yq --version"
+      decisions: ["parse and transform YAML"]
+      priority: essential
+
+    - name: eget
+      package: {}
+      check: "PATH=$HOME/.local/bin:$PATH command -v eget"
+      command: "eget install <repo>"
+      verify: "PATH=$HOME/.local/bin:$PATH eget --version 2>&1 || PATH=$HOME/.local/bin:$PATH eget --help | head -1"
+      decisions: ["install prebuilt binaries from GitHub releases"]
+      priority: optional
+
+    - name: qrencode
+      package:
+        linux: qrencode
+        mac: qrencode
+      command: "qrencode -t ANSIUTF8 <text>"
+      verify: "qrencode --version"
+      decisions: ["render QR codes for unlock deep-links (ada-key-url.sh --qr)", "share URLs to phones/tablets"]
+      priority: useful
+
+    - name: openssl
+      package:
+        linux: openssl
+        mac: openssl
+      command: "openssl rand -hex 24"
+      verify: "openssl version"
+      decisions: ["generate API keys and tokens (rotate-ada-key.sh)"]
+      priority: essential
+
+    - name: flock
+      package:
+        linux: util-linux
+      command: "flock -n <lockfile> <cmd>"
+      verify: "flock --version"
+      decisions: ["serialize deploys (deploy-ada.sh, deploy-card.sh locks)"]
+      priority: essential
+
+    - name: rsync
+      package:
+        linux: rsync
+        mac: rsync
+      command: "rsync -a <src> <dst>"
+      verify: "rsync --version"
+      decisions: ["sync files between hosts (backups, cookie bridge, deploys)"]
+      priority: essential
+
+    - name: sqlite3
+      package:
+        linux: sqlite3
+        mac: sqlite3
+      command: "sqlite3 <db> '<query>'"
+      verify: "sqlite3 --version"
+      decisions: ["inspect local DBs (devin sessions.db, MDDB search-index.db, HA .storage-adjacent files)"]
+      priority: useful
+
+    - name: rg
+      package:
+        linux: ripgrep
+        mac: ripgrep
+      command: "rg <pattern>"
+      verify: "rg --version"
+      decisions: ["fast code/log search"]
+      priority: useful
+
+    - name: tmux
+      package:
+        linux: tmux
+        mac: tmux
+      command: "tmux new -s <name>"
+      verify: "tmux -V"
+      decisions: ["persistent remote sessions on servers"]
+      priority: useful
+
+    - name: gh
+      package:
+        linux: gh
+        mac: gh
+      command: "gh pr create"
+      verify: "gh --version"
+      decisions: ["GitHub PR/issue operations (dev machines; needs auth)"]
+      priority: optional
+
+    - name: uv
+      package: {}
+      check: "PATH=$HOME/.local/bin:$PATH command -v uv"
+      command: "uv venv / uv pip install <pkg>"
+      verify: "PATH=$HOME/.local/bin:$PATH uv --version"
+      decisions: ["fast venv + package management (install: astral.sh/uv script or eget astral-sh/uv)"]
+      priority: optional
+
+    - name: websocat
+      package: {}
+      check: "PATH=$HOME/.local/bin:$PATH command -v websocat"
+      command: "websocat '<ws-url>'"
+      verify: "PATH=$HOME/.local/bin:$PATH websocat --version"
+      decisions: ["WebSocket smoke tests (ada /ws endpoints; install via eget vi/websocat -a x86_64-unknown-linux-musl)"]
+      priority: optional
+
+  python:
+    - name: pyyaml
+      package:
+        linux: python3-yaml
+      check: "python3 -c 'import yaml'"
+      command: "python3 -c 'import yaml'"
+      verify: "python3 -c 'import yaml; print(yaml.__version__)'"
+      decisions: ["SSOT YAML parsing — required by most chaba scripts incl. check-host-tools.py"]
+      priority: essential
+
+    - name: websockets
+      package:
+        linux: python3-websockets
+      check: "python3 -c 'import websockets'"
+      command: "python3 -c 'import websockets'"
+      verify: "python3 -c 'import websockets; print(websockets.__version__)'"
+      decisions: ["HA websocket ops (push-dashboard.py), ws probes"]
+      priority: essential
+
+    - name: requests
+      package:
+        linux: python3-requests
+      check: "python3 -c 'import requests'"
+      command: "python3 -c 'import requests'"
+      verify: "python3 -c 'import requests; print(requests.__version__)'"
+      decisions: ["ad-hoc HTTP/API scripts"]
+      priority: useful
+
+    - name: qrcode
+      package:
+        linux: python3-qrcode
+      check: "python3 -c 'import qrcode'"
+      command: "python3 -c 'import qrcode'"
+      verify: "python3 -c 'import importlib.metadata as m; print(m.version(\"qrcode\"))'"
+      decisions: ["QR generation in Python (pwa_server qr_svg, ad-hoc pairing links)"]
+      priority: useful
+
+  runtimes:
+    - name: node
+      package:
+        linux: nodejs
+        mac: node
+      command: "node --version"
+      verify: "node --version"
+      decisions: ["build and run JavaScript/TypeScript tools"]
+      priority: essential
+
+    - name: npm
+      package:
+        linux: npm
+        mac: npm
+      command: "npm --version"
+      verify: "npm --version"
+      decisions: ["install JavaScript dependencies"]
+      priority: essential
+
+    - name: go
+      package:
+        linux: golang-go
+        mac: go
+      command: "go version"
+      verify: "go version"
+      decisions: ["build Go-based utilities"]
+      priority: optional
+
+    - name: caddy
+      package: {}
+      command: "caddy version"
+      verify: "caddy version"
+      decisions: ["serve HTTPS reverse proxy and app landing"]
+      priority: useful
+
+  network:
+    - name: ip
+      package:
+        linux: iproute2
+      command: "ip -br -c a"
+      verify: "ip -V"
+      decisions: ["verify interface state", "check IP and route"]
+      priority: essential
+
+    - name: ss
+      package:
+        linux: iproute2
+      command: "ss -tlnp"
+      verify: "ss -h"
+      decisions: ["list listening TCP sockets", "check ports"]
+      priority: essential
+
+    - name: ethtool
+      package:
+        linux: ethtool
+        mac: ethtool
+      command: "ethtool -S <iface>"
+      verify: "ethtool --version"
+      decisions: ["diagnose link speed/duplex", "check NIC counters"]
+      priority: essential
+
+    - name: iperf3
+      package:
+        linux: iperf3
+        mac: iperf3
+      command: "iperf3 -c <host> -t 10"
+      verify: "iperf3 --version"
+      decisions: ["measure real throughput between hosts"]
+      priority: useful
+
+    - name: nmcli
+      package:
+        linux: network-manager
+      command: "nmcli con show --active"
+      verify: "nmcli --version"
+      decisions: ["inspect active connections", "troubleshoot NetworkManager"]
+      priority: useful
+
+    - name: tcpdump
+      package:
+        linux: tcpdump
+        mac: tcpdump
+      command: "tcpdump -i any -c 20"
+      verify: "tcpdump --version"
+      decisions: ["capture and inspect network traffic"]
+      priority: useful
+
+    - name: dig
+      package:
+        linux: dnsutils
+        mac: bind
+      command: "dig +short <name>"
+      verify: "dig -v"
+      decisions: ["DNS lookups, tailnet/LAN name debugging"]
+      priority: useful
+
+    - name: tailscale
+      package: {}
+      command: "tailscale version"
+      verify: "tailscale version"
+      decisions: ["Tailscale VPN status and management"]
+      priority: useful
+
+    - name: ping
+      builtin: true
+      package: {}
+      command: "ping -c 4 <host>"
+      verify: "ping -V"
+      decisions: ["basic reachability"]
+      priority: essential
+
+    - name: curl
+      builtin: true
+      package:
+        linux: curl
+        mac: curl
+      command: "curl -sfL <url>"
+      verify: "curl --version"
+      decisions: ["test HTTP/TCP endpoints"]
+      priority: essential
+
+  system:
+    - name: htop
+      package:
+        linux: htop
+        mac: htop
+      command: "htop"
+      verify: "htop --version"
+      decisions: ["inspect CPU, memory and process load"]
+      priority: essential
+
+    - name: iotop
+      package:
+        linux: iotop
+      command: "iotop -ao"
+      verify: "iotop --version"
+      decisions: ["find processes causing disk I/O"]
+      priority: useful
+
+    - name: smartctl
+      package:
+        linux: smartmontools
+      command: "smartctl -a /dev/sda"
+      verify: "smartctl --version"
+      decisions: ["check disk health"]
+      priority: useful
+
+    - name: dmesg
+      builtin: true
+      package: {}
+      command: "dmesg -T -l err"
+      verify: "dmesg --help"
+      decisions: ["review kernel errors and hardware alerts"]
+      priority: essential
+
+    - name: sar
+      package:
+        linux: sysstat
+      command: "sar -u 1 5"
+      verify: "sar -V"
+      decisions: ["collect CPU utilization samples"]
+      priority: useful
+
+  storage:
+    - name: lsblk
+      package:
+        linux: util-linux
+      command: "lsblk -f"
+      verify: "lsblk --version"
+      decisions: ["list block devices and filesystems"]
+      priority: essential
+
+    - name: df
+      builtin: true
+      package: {}
+      command: "df -h"
+      verify: "df --version"
+      decisions: ["check free disk space"]
+      priority: essential
+
+    - name: ncdu
+      package:
+        linux: ncdu
+        mac: ncdu
+      command: "ncdu /"
+      verify: "ncdu -h"
+      decisions: ["find what is consuming disk space"]
+      priority: useful
+
+  containers:
+    - name: podman
+      package:
+        linux: podman
+      command: "podman ps -a"
+      verify: "podman --version"
+      decisions: ["list running/stopped podman containers"]
+      priority: useful
+
+    - name: docker
+      package:
+        linux: docker.io
+        mac: docker
+      command: "docker ps -a"
+      verify: "docker --version"
+      decisions: ["list Docker containers when podman is not used"]
+      priority: optional
+
+hosts:
+  tony_omen:
+    os: linux
+    package_manager: apt
+    recommended: all
+  tony_dell:
+    os: linux
+    package_manager: apt
+    recommended: all
+  mn01:
+    os: linux
+    package_manager: apt
+    recommended: useful
+  macbook:
+    os: mac
+    package_manager: brew
+    recommended: essential
+
+runner:
+  script: scripts/check-host-tools.py
+  workflow:
+    - check: "command -v <name>"
+    - verify: "<verify>"
+    - install: "<install_command>"
+    - cleanup: "rm -f /tmp/host-tools-*"
+  install_commands:
+    apt: "sudo apt-get update && sudo apt-get install -y <package>"
+    brew: "brew install <package>"
+  cleanup:
+    paths:
+      - /tmp/host-tools-*.json
+      - /tmp/host-tools-*.log
+      - /tmp/host-tools-*.pcap
+      - /tmp/iperf3-test-*
+    note: |
+      Removes all temporary report, log, capture and download artifacts created
+      by the runner. The cleanup step always runs, even if a check or install fails.
+  report:
+    format: json
+    path: /tmp/host-tools-report-<host>.json
+
+related_ssot:
+  - docs/ssot/infrastructure/ssot.audit.hosts.yml
+  - docs/ssot/infrastructure/ssot.values.yml
+  - docs/ssot/infrastructure/ssot.mcp-debug.yml

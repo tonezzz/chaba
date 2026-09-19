@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NotebookLM v0</title>
+  <style>
+    :root { color-scheme: light dark; --bg: #111; --fg: #eee; --muted: #888; --accent: #4af; }
+    @media (prefers-color-scheme: light) { :root { --bg: #fff; --fg: #222; --muted: #666; --accent: #07c; } }
+    * { box-sizing: border-box; }
+    body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--fg); margin: 0; padding: 1.5rem; }
+    h1 { font-size: 1.4rem; margin: 0 0 0.5rem; }
+    h2 { font-size: 1.1rem; margin: 1.5rem 0 0.5rem; }
+    p { margin: 0 0 1rem; color: var(--muted); }
+    code, pre { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; background: rgba(128,128,128,0.1); border-radius: 0.35rem; }
+    code { padding: 0.15rem 0.35rem; }
+    pre { padding: 1rem; overflow: auto; }
+    a { color: var(--accent); }
+    ul { line-height: 1.7; }
+  </style>
+</head>
+<body>
+  <h1>NotebookLM v0</h1>
+  <p>Quick reference for the central NotebookLM deployment on tony-dell.</p>
+
+  <h2>CLI helpers</h2>
+  <ul>
+    <li><code>nlm</code> — wrapper for the <code>notebooklm-mcp</code> container</li>
+    <li><code>nbapi</code> — REST API helper for <code>/v1/notebooks</code></li>
+    <li><code>nlm-add</code> — upload a local file to Drive and add it to a notebook</li>
+  </ul>
+
+  <h2>Common commands</h2>
+  <pre><code>nlm create notebook "My KB"
+nlm-add &lt;notebook-id&gt; /path/to/file.md -t "Title"
+nlm notebook list
+nbapi /v1/notebooks</code></pre>
+
+  <h2>Links</h2>
+  <ul>
+    <li><a href="https://tony-dell.taila0626a.ts.net/apps/notebooklm/api/v1/notebooks">REST API</a> (needs <code>X-API-Key</code>)</li>
+    <li><a href="/apps/notebooklm/">Back to apps</a></li>
+    <li><a href="https://github.com/tonezzz/chaba/blob/master/docs/ssot/infrastructure/ssot.values.yml">SSOT values</a></li>
+  </ul>
+</body>
+</html>

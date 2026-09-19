@@ -1,0 +1,40 @@
+#!/usr/bin/env python3
+"""Show a concise status of the Chaba KB notebook sources."""
+import json
+import subprocess
+import sys
+
+NOTEBOOK_ID = "fdfd3483-6b7e-4cb0-85f3-7f060698769c"
+
+
+def main():
+    out = subprocess.run(
+        ["nlm", "source", "list", NOTEBOOK_ID, "-a", "-j"],
+        capture_output=True, text=True, timeout=120,
+    )
+    if out.returncode != 0:
+        print(out.stderr, file=sys.stderr)
+        sys.exit(out.returncode)
+
+    try:
+        data = json.loads(out.stdout)
+    except json.JSONDecodeError:
+        print(out.stdout)
+        sys.exit(1)
+
+    sources = data if isinstance(data, list) else data.get("sources", [])
+    active = [s for s in sources if s.get("status") == 2]
+    stale_or_other = [s for s in sources if s.get("status") != 2]
+    print(f"NotebookLM sources for {NOTEBOOK_ID}")
+    print(f"  active: {len(active)} | stale/orphan: {len(stale_or_other)} | total: {len(sources)}")
+    print(f"{'Title':<30} {'Status':<10} {'ID'}")
+    print("-" * 78)
+    for s in sorted(active, key=lambda x: x.get("title", "")):
+        title = s.get("title", "")[:29]
+        status = s.get("status", 0)
+        sid = s.get("id", "-")[:8]
+        print(f"{title:<30} {status:<10} {sid}")
+
+
+if __name__ == "__main__":
+    main()

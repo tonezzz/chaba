@@ -1,10 +1,10 @@
 title: Tony-Omen Multi-WAN ECMP
-subtitle: Use 5 GHz Wi-Fi (wlo1) as primary, wired Ethernet (eno1) as secondary, and iPhone USB tether (enx) as fallback
+subtitle: Use wired Ethernet (eno1) as primary, 5 GHz Wi-Fi (wlo1) as hot backup, and iPhone USB tether (enx) as fallback
 icon: network
 
 ideas:
-  - Make wlo1 (fast 5 GHz home Wi-Fi) the primary default route on tony-omen.
-  - Use eno1 wired as a secondary path when wlo1 is down.
+  - Make eno1 (wired Ethernet) the primary default route on tony-omen.
+  - Use wlo1 (5 GHz home Wi-Fi) as a hot-backup path when eno1 is down.
   - Use the iPhone USB tether (enx7ed2da73308a) only as a fallback, with a much higher route metric.
   - Use an iOS Shortcut to turn on the iPhone Personal Hotspot automatically when tony-omen connects.
   - Keep the NetworkManager dispatcher that rebuilds default routes whenever eno1, wlo1, or enx changes state.
@@ -25,10 +25,10 @@ sections:
     icon: workflow
     layout: list
     items:
-      - label: wlo1 primary
-        text: default via 192.168.2.1 dev wlo1 metric 10.
-      - label: eno1 secondary
-        text: default via 192.168.2.1 dev eno1 metric 20.
+      - label: eno1 primary
+        text: default via 192.168.2.1 dev eno1 metric 10.
+      - label: wlo1 hot backup
+        text: default via 192.168.2.1 dev wlo1 metric 20.
       - label: enx iPhone USB fallback
         text: default via <IPHONE_USB_GATEWAY> dev enx7ed2da73308a metric 100; only used when wlo1 and eno1 are down.
       - label: Hash policy
@@ -50,9 +50,22 @@ sections:
     layout: list
     items:
       - label: Primary/secondary/fallback routes present
-        text: ip -4 -o route show default reports wlo1 metric 10, eno1 metric 20, and enx metric 100.
+        text: ip -4 -o route show default reports eno1 metric 10, wlo1 metric 20, and enx metric 100.
       - label: iPhone fallback works
         text: With wlo1 and eno1 disconnected, traffic flows through enx and the iPhone hotspot.
+
+  - title: iOS Hotspot Trigger
+    icon: phone
+    layout: list
+    items:
+      - label: Pairing
+        text: iPhone is paired with tony-omen Bluetooth controller (D0:57:7B:EA:6A:40, device name TONY-IP, MAC 7C:D2:DA:73:68:3B) and trusted.
+      - label: iOS Shortcut
+        text: Shortcuts automation triggers on Bluetooth connect to tony-omen. Primary action is "Set Personal Hotspot" → On. If that action is unavailable on a specific iOS build, fall back to "Open URL" with "prefs:root=INTERNET_TETHERING" and toggle manually.
+      - label: How to use
+        text: On the iPhone, Settings → Bluetooth, tap tony-omen to reconnect. The iOS Shortcut turns Personal Hotspot On automatically. tony-omen then uses TONY-IP Wi-Fi or enx USB as the metric-100 fallback.
+      - label: Manual command
+        text: On tony-omen, "bluetoothctl connect 7C:D2:DA:73:68:3B" can also force the Bluetooth connection and trigger the shortcut.
 
   - title: Notes
     icon: note
@@ -66,3 +79,9 @@ sections:
         text: iPhone tether throughput depends on iPhone Wi-Fi/cellular state; typical observed per-stream 5-32 MB/s.
       - label: Source IP changes
         text: New outbound connections may use either 192.168.2.x or <IPHONE_USB_DHCP_ADDRESS>; applications sensitive to source IP may see occasional re-authentication.
+      - label: Same-subnet ARP self-conflict
+        text: 'With eno1 and wlo1 on the same 192.168.2.0/24 subnet, NM''s post-activation ACD probe for the new DHCP address leaves one NIC, loops through the router, and is answered by the other NIC (arp_ignore=0 default) — NM logs "conflict detected ... with host <own other NIC MAC>" and strips the interface''s routes. Fixed 2026-09-17: net.ipv4.conf.all.arp_ignore=1 + arp_announce=2 persisted in /etc/sysctl.d/99-multipath.conf. ecmp-up sleep raised 0.5s→2s because NM installs routes ~0.55s after the up event and the rebuild was missing them.'
+      - label: NIC tuning 2026-09-17
+        text: 'eno1 promoted to primary (metric 10) and wlo1 demoted to hot backup (metric 20) on 2026-09-17 — wired latency ~0.5ms vs ~2ms on wifi with identical ~340-390 Mbit/s throughput through the router. TONY-WIFI_5G autoconnect-priority raised to 20 so wlo1 prefers 5 GHz (was stuck on 2.4G/144Mb, now 866Mb VHT). eno1 IRQ coalescing rx-usecs=50 rx-frames=16 applied and re-applied by ecmp-up (r8169 has no adaptive mode). eno1 PCI runtime PM set to auto; EEE already active. Wi-Fi powersave intentionally OFF (conflicting conf.d files exist: default-wifi-powersave-on.conf=3 vs wifi-powersave-off.conf=2, the latter wins) — keeps latency steady for Deskreen/Chrome-debug; enable only if battery/heat matters. eno1 PCIe ASPM is Disabled at LnkCtl — pcie_aspm.policy=powersave added to GRUB_CMDLINE_LINUX_DEFAULT on 2026-09-17 (takes effect next reboot; revert if eno1 link flaps).'
+      - label: Router DHCP reservations
+        text: 'Router is a ZTE F688 ONT at 192.168.2.1 (NOT the ASUS — ASUS_ROUTER_* creds in ~/.config/secrets/asus-router.env happen to work on it). Added DHCP bindings "tonyomen"=192.168.2.86/b0:22:7a:f0:73:cd and "omenwlan"=192.168.2.84/d0:57:7b:ea:6a:3c on 2026-09-17, replacing stale "esp32test" (device moved to 192.168.31.x) and "hpdeskjet" (user-approved). Quirks: binding table caps at 10 entries; POSTs need a per-page _sessionTmpToken + RSA-signed "Check" header (sha256 of body, PKCS1v15, pubkey embedded in the login page JS); new binding names must not share a prefix with an existing name (tonyomenwifi was rejected -257, omenwlan accepted).'

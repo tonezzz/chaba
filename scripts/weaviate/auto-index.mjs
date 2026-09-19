@@ -17,8 +17,8 @@ async function runAutoIndex() {
   try {
     // Run the main indexing script
     const { stdout, stderr } = await execAsync(
-      'node /home/tony/CascadeProjects/chaba-tony-dell/scripts/weaviate/index-ssot.mjs',
-      { timeout: 300000 } // 5 minute timeout
+      'node /home/tony/CascadeProjects/chaba/scripts/weaviate/index-ssot.mjs',
+      { timeout: 600000 } // 10 minute timeout
     );
 
     console.log('Indexing output:', stdout);

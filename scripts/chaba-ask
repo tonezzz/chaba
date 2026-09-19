@@ -1,0 +1,63 @@
+#!/usr/bin/env python3
+"""Route a natural-language question to the right Chaba consumer."""
+import argparse
+import os
+import re
+import subprocess
+import sys
+
+import yaml
+
+SSOT_VALUES = "/home/tony/CascadeProjects/chaba/docs/ssot/infrastructure/ssot.values.yml"
+
+
+def _notebook_id():
+    with open(SSOT_VALUES, encoding="utf-8") as f:
+        values = yaml.safe_load(f) or {}
+    return values.get("notebooklm", {}).get("sync", {}).get(
+        "notebook_id", "fdfd3483-6b7e-4cb0-85f3-7f060698769c"
+    )
+
+
+def classify(question: str):
+    q = question.lower().strip()
+    # Exact value / canonical fact
+    if re.search(r"\b(ip|port|id|token|file|path|url|password|key)\b", q):
+        if re.search(r"\b(what is|which|where is|what's)\b", q):
+            return "exact", "mcp_query_ssot"
+    # Glossary / keyword search
+    if re.search(r"\b(find|search|lookup|glossary|definition)\b", q):
+        return "keyword", "mddb"
+    # Everything else goes to NotebookLM
+    return "prose", "notebooklm"
+
+
+def route(question: str, timeout: int = 120):
+    kind, consumer = classify(question)
+    if consumer == "mcp_query_ssot":
+        print(f"[{consumer}] This is an exact-value question.")
+        print(f"  Use mcp_query_ssot (or the resolver) with the dotted SSOT path for: {question!r}")
+        return 0
+    if consumer == "mddb":
+        print(f"[{consumer}] Try MDDB semantic search:")
+        print(f"  curl -s http://127.0.0.1:11023/v1/search \\")
+        print(f"    -H 'Content-Type: application/json' \\")
+        print(f"    -d '{chr(123)}\"query\": \"{question}\", \"collection\": \"infrastructure-ssot\"{chr(125)}'")
+        return 0
+    # prose -> NotebookLM
+    notebook = _notebook_id()
+    return subprocess.call(
+        ["nlmq", notebook, question, "--timeout", str(timeout)]
+    )
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Route a question to the right Chaba consumer.")
+    parser.add_argument("question", help="Natural-language question")
+    parser.add_argument("--timeout", type=int, default=120)
+    args = parser.parse_args()
+    return route(args.question, args.timeout)
+
+
+if __name__ == "__main__":
+    sys.exit(main())

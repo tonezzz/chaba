@@ -17,7 +17,7 @@ profiles:
     service_urls:
       llama_url: http://tony-omen.taila0626a.ts.net:11434
       llama_server_url: http://tony-omen.taila0626a.ts.net:8001
-      imagen_url: http://tony-dell.taila0626a.ts.net:8080/apps/imagen2/api
+      imagen_url: https://tony-dell.taila0626a.ts.net/apps/imagen2/api
       playlive_url: http://tony-dell.taila0626a.ts.net:9230
       weaviate_url: http://tony-dell.taila0626a.ts.net:8084
       postgres_url: postgresql://tony-dell.taila0626a.ts.net:5432
@@ -36,7 +36,7 @@ profiles:
     service_urls:
       llama_url: http://tony-omen.taila0626a.ts.net:11434
       llama_server_url: http://tony-omen.taila0626a.ts.net:8001
-      imagen_url: http://tony-dell.taila0626a.ts.net:8080/apps/imagen2/api
+      imagen_url: https://tony-dell.taila0626a.ts.net/apps/imagen2/api
       playlive_url: http://tony-dell.taila0626a.ts.net:9230
       weaviate_url: http://tony-dell.taila0626a.ts.net:8084
       postgres_url: postgresql://tony-dell.taila0626a.ts.net:5432
@@ -374,6 +374,21 @@ servers:
       - windsurf: false
     notes: |
       Private token is configured in ~/.config/devin/mcp_config.json.
+
+  notebooklm:
+    name: NotebookLM
+    description: NotebookLM MCP/CLI bridge on tony-dell
+    implementation: bash /home/tony/.config/devin/mcp-scripts/mcp-notebooklm-ssh.sh
+    wrapper: podman-ssh
+    filter: none
+    single_instance: false
+    status: operational
+    config_files:
+      - devin: true
+      - windsurf: false
+    notes: |
+      Persistent rootless Podman container on tony-dell. Mounts auth state from /home/tony/.local/share/notebooklm/.notebooklm-mcp-cli.
+      `nlm notebook list` verified from tony-omen. Devin uses stdio via mcp-notebooklm-ssh.sh.
 
 # Script locations (centralized)
 scripts:

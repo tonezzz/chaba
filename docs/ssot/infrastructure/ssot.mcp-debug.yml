@@ -283,6 +283,7 @@ debug_commands:
     description: macOS top 10 processes by CPU
     compact: true
     expected_output: top_processes
+    requires: macos
     note: macOS only; Linux top does not support these flags.
   lsof -nP -iTCP:
     description: TCP sockets and network connections
@@ -294,6 +295,7 @@ debug_commands:
     description: macOS launchd loaded services
     compact: true
     expected_output: launchd_services
+    requires: macos
     note: macOS only; Linux has no launchctl.
   containers:
     description: Running containers from podman or docker
@@ -324,11 +326,12 @@ debug_commands:
     raw_command: nvidia-smi 2>/dev/null || rocm-smi --json
   reload:
     description: Hot-reload this mcp-debug server process (re-execs to pick up code changes)
+    skip_savings: true
     note: No host is used; the server reloads itself.
 raw_commands_source: docs/ssot/infrastructure/ssot.mcp-debug.raw-commands.yml
 
 server:
-  script: /home/tony/CascadeProjects/chaba-tony-dell/scripts/mcp_debug/server.py
+  script: /home/tony/CascadeProjects/chaba/scripts/mcp_debug/server.py
   wrapper: /home/tony/.config/devin/mcp-scripts/mcp-debug.sh
   log_level: INFO
   health:
@@ -355,6 +358,7 @@ server:
   - mcp_adaptive
   - mcp_get_file
   - mcp_put_file
+  - mcp_eget
   - mcp_clipboard_get
   - mcp_clipboard_set
   - mcp_screenshot

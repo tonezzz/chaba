@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Playground v0.2</title>
+  <style>
+    :root { color-scheme: light dark; --bg: #111; --fg: #eee; --muted: #888; --accent: #4af; }
+    @media (prefers-color-scheme: light) { :root { --bg: #fff; --fg: #222; --muted: #666; --accent: #07c; } }
+    * { box-sizing: border-box; }
+    body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--fg); margin: 0; padding: 1.5rem; }
+    h1, h2, h3 { font-size: 1.2rem; margin: 0 0 0.5rem; }
+    h2 { font-size: 1rem; margin-top: 1.5rem; }
+    p { margin: 0 0 1rem; color: var(--muted); }
+    .tabs { display: flex; gap: 0.5rem; margin-bottom: 1rem; border-bottom: 1px solid #666; }
+    .tab { background: transparent; border: none; color: var(--muted); padding: 0.5rem 0.75rem; cursor: pointer; border-bottom: 2px solid transparent; }
+    .tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+    .panel { display: none; }
+    .panel.active { display: block; }
+    form { display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1rem; }
+    textarea, select, button, input { font: inherit; padding: 0.5rem 0.75rem; border: 1px solid #666; border-radius: 0.35rem; background: var(--bg); color: var(--fg); }
+    textarea#prompt { width: 100%; min-height: 5rem; resize: vertical; font-family: inherit; }
+    .form-row { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; }
+    button { cursor: pointer; background: var(--accent); color: #fff; border-color: var(--accent); }
+    button.secondary { background: transparent; color: var(--accent); border-color: var(--accent); }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    .chip { display: inline-flex; align-items: center; gap: 0.25rem; background: rgba(128,128,128,0.15); border: 1px solid #666; border-radius: 0.5rem; padding: 0.25rem 0.5rem; font-size: 0.8rem; cursor: pointer; }
+    .chip.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+    #status { font-size: 0.85rem; color: var(--muted); margin-bottom: 0.5rem; }
+    #log, #modal-prompt, #modal-output {
+      white-space: pre-wrap;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: 0.85rem;
+      background: rgba(128,128,128,0.08);
+      border: 1px solid #666;
+      border-radius: 0.35rem;
+      padding: 1rem;
+      min-height: 8rem;
+      max-height: 40vh;
+      overflow: auto;
+      line-height: 1.4;
+    }
+    #modal-prompt, #modal-output { min-height: 4rem; }
+    #history { display: flex; flex-direction: column; gap: 0.35rem; }
+    .history-item {
+      background: rgba(128,128,128,0.06);
+      border: 1px solid #666;
+      border-radius: 0.35rem;
+      padding: 0.5rem 0.75rem;
+      cursor: pointer;
+      display: flex;
+      gap: 0.75rem;
+      align-items: baseline;
+    }
+    .history-item:hover { background: rgba(128,128,128,0.12); }
+    .history-time { color: var(--muted); font-size: 0.75rem; white-space: nowrap; }
+    .history-provider { color: var(--accent); font-size: 0.75rem; white-space: nowrap; }
+    .history-prompt { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .provider-card, .leaderboard-card {
+      background: rgba(128,128,128,0.06);
+      border: 1px solid #666;
+      border-radius: 0.35rem;
+      padding: 0.75rem;
+      margin-bottom: 0.5rem;
+    }
+    .leaderboard-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr)); gap: 0.5rem; }
+    .modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      padding: 1rem;
+    }
+    .modal[hidden] { display: none; }
+    .modal-content {
+      background: var(--bg);
+      border: 1px solid #666;
+      border-radius: 0.5rem;
+      max-width: 50rem;
+      width: 100%;
+      max-height: 90vh;
+      display: flex;
+      flex-direction: column;
+    }
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.75rem 1rem;
+      border-bottom: 1px solid #666;
+    }
+    .modal-body { padding: 1rem; overflow: auto; }
+    .modal-body pre { margin: 0.5rem 0 1rem; }
+  </style>
+</head>
+<body>
+  <h1>AI Playground v0.2</h1>
+  <p>Auto-categorised, model-aware, leaderboard-driven AI playground.</p>
+
+  <div class="tabs">
+    <button class="tab active" data-tab="play">Play</button>
+    <button class="tab" data-tab="leaderboard">Leaderboard</button>
+    <button class="tab" data-tab="providers">Providers</button>
+  </div>
+
+  <div id="play" class="panel active">
+    <form id="cmd-form">
+      <textarea id="prompt" placeholder="e.g. write a Python function to reverse a string&#10;Ctrl+Enter to run" required></textarea>
+      <div id="category-chips"></div>
+      <div class="form-row">
+        <select id="provider" title="Provider"></select>
+        <select id="model" title="Model"></select>
+        <select id="mode" title="Permission mode">
+          <option value="normal">normal</option>
+          <option value="accept-edits">accept-edits</option>
+          <option value="smart">smart</option>
+          <option value="bypass">bypass</option>
+        </select>
+        <button type="submit" id="submit-btn">Run</button>
+        <button type="button" id="cancel-btn" disabled>Cancel</button>
+        <button type="button" id="reconnect-btn" class="secondary" hidden>Reconnect</button>
+      </div>
+    </form>
+
+    <div id="status">idle</div>
+    <pre id="log"></pre>
+
+    <h2>History</h2>
+    <div id="history"></div>
+  </div>
+
+  <div id="leaderboard" class="panel">
+    <h2>Leaderboard by job type</h2>
+    <div id="leaderboard-list" class="leaderboard-grid"></div>
+  </div>
+
+  <div id="providers" class="panel">
+    <h2>Provider registry</h2>
+    <div id="providers-list"></div>
+  </div>
+
+  <div id="history-modal" class="modal" hidden>
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3>Run details</h3>
+        <button id="modal-close" type="button">Close</button>
+      </div>
+      <div class="modal-body">
+        <p><strong>Provider:</strong> <span id="modal-provider"></span> &nbsp; <strong>Model:</strong> <span id="modal-model"></span></p>
+        <p><strong>Categories:</strong> <span id="modal-categories"></span></p>
+        <p><strong>Time:</strong> <span id="modal-time"></span></p>
+        <p><strong>Prompt</strong></p>
+        <pre id="modal-prompt"></pre>
+        <p><strong>Output</strong></p>
+        <pre id="modal-output"></pre>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const form = document.getElementById('cmd-form');
+    const promptInput = document.getElementById('prompt');
+    const modeSelect = document.getElementById('mode');
+    const providerSelect = document.getElementById('provider');
+    const modelSelect = document.getElementById('model');
+    const categoryChips = document.getElementById('category-chips');
+    const submitBtn = document.getElementById('submit-btn');
+    const cancelBtn = document.getElementById('cancel-btn');
+    const reconnectBtn = document.getElementById('reconnect-btn');
+    const status = document.getElementById('status');
+    const log = document.getElementById('log');
+    const historyContainer = document.getElementById('history');
+    const leaderboardList = document.getElementById('leaderboard-list');
+    const providersList = document.getElementById('providers-list');
+    const modal = document.getElementById('history-modal');
+    const modalProvider = document.getElementById('modal-provider');
+    const modalModel = document.getElementById('modal-model');
+    const modalCategories = document.getElementById('modal-categories');
+    const modalTime = document.getElementById('modal-time');
+    const modalPrompt = document.getElementById('modal-prompt');
+    const modalOutput = document.getElementById('modal-output');
+    const modalClose = document.getElementById('modal-close');
+
+    const LS_PREFIX = 'ai-playground-v0.';
+    const LS_HISTORY = LS_PREFIX + 'history';
+    const LS_PROVIDER = LS_PREFIX + 'provider';
+    const LS_MODEL = LS_PREFIX + 'model';
+    const LS_MODE = LS_PREFIX + 'mode';
+    const MAX_HISTORY = 50;
+
+    let ws = null;
+    let running = false;
+    let currentOutput = '';
+    let playground = { providers: [], categories: [], scores: {} };
+    let selectedCategories = new Set();
+    let categorizeTimer = null;
+
+    function append(text) {
+      log.textContent += text;
+      log.scrollTop = log.scrollHeight;
+      currentOutput += text;
+    }
+
+    function setStatus(text) {
+      status.textContent = text;
+    }
+
+    function loadHistory() {
+      try { return JSON.parse(localStorage.getItem(LS_HISTORY) || '[]'); } catch (e) { return []; }
+    }
+
+    function saveHistory(items) {
+      localStorage.setItem(LS_HISTORY, JSON.stringify(items.slice(0, MAX_HISTORY)));
+    }
+
+    function formatTime(ts) { return new Date(ts).toLocaleString(); }
+
+    function renderHistory() {
+      const items = loadHistory();
+      historyContainer.innerHTML = '';
+      if (items.length === 0) { historyContainer.innerHTML = '<p style="color: var(--muted)">No runs yet.</p>'; return; }
+      items.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'history-item';
+        div.innerHTML = `
+          <span class="history-time">${formatTime(item.timestamp)}</span>
+          <span class="history-provider">${item.provider} / ${item.model}</span>
+          <span class="history-prompt" title="${item.prompt.replace(/"/g, '&quot;')}">${item.prompt}</span>
+        `;
+        div.addEventListener('click', () => openModal(item));
+        historyContainer.appendChild(div);
+      });
+    }
+
+    function addHistory(item) {
+      const items = [item, ...loadHistory()];
+      saveHistory(items);
+      renderHistory();
+    }
+
+    function openModal(item) {
+      modalProvider.textContent = item.provider;
+      modalModel.textContent = item.model;
+      modalCategories.textContent = (item.categories || []).join(', ') || '—';
+      modalTime.textContent = formatTime(item.timestamp);
+      modalPrompt.textContent = item.prompt;
+      modalOutput.textContent = item.output;
+      modal.hidden = false;
+    }
+
+    function closeModal() { modal.hidden = true; }
+
+    function saveSettings() {
+      localStorage.setItem(LS_PROVIDER, providerSelect.value);
+      localStorage.setItem(LS_MODEL, modelSelect.value);
+      localStorage.setItem(LS_MODE, modeSelect.value);
+    }
+
+    function loadSettings() {
+      const lastProvider = localStorage.getItem(LS_PROVIDER);
+      const lastModel = localStorage.getItem(LS_MODEL);
+      const lastMode = localStorage.getItem(LS_MODE);
+      if (lastProvider) providerSelect.value = lastProvider;
+      if (lastMode) modeSelect.value = lastMode;
+      updateModelSelect();
+      if (lastModel) modelSelect.value = lastModel;
+      renderHistory();
+    }
+
+    function seedHistory() {
+      const params = new URLSearchParams(location.search);
+      const seeded = params.get('seed') !== '1' && localStorage.getItem(LS_PREFIX + 'seeded');
+      if (seeded || loadHistory().length > 0) return;
+      const now = Date.now();
+      const samples = [
+        { id: now - 3000, prompt: 'write a python hello world function', provider: 'gemini', model: 'gemini-2.5-flash', categories: ['code'], output: '```python\ndef hello_world():\n    print("Hello, World!")\n\nhello_world()\n```', timestamp: now - 3000 },
+        { id: now - 2000, prompt: 'explain recursion in one sentence', provider: 'claude', model: 'claude-3-5-sonnet-20241022', categories: ['reasoning'], output: 'Recursion is a function that calls itself to solve smaller instances of the same problem.', timestamp: now - 2000 },
+        { id: now - 1000, prompt: 'list three primary colors', provider: 'openai', model: 'gpt-4o-mini', categories: ['chat'], output: 'Red, green, and blue.', timestamp: now - 1000 }
+      ];
+      saveHistory(samples);
+      renderHistory();
+      localStorage.setItem(LS_PREFIX + 'seeded', '1');
+      params.delete('seed');
+      const newUrl = params.toString() ? '?' + params.toString() : location.pathname;
+      history.replaceState(null, '', newUrl);
+      setStatus('seeded sample history');
+    }
+
+    function updateModelSelect() {
+      const provider = playground.providers.find(p => p.id === providerSelect.value);
+      modelSelect.innerHTML = '';
+      (provider ? provider.models : []).forEach(m => {
+        const opt = document.createElement('option');
+        opt.value = m.id;
+        opt.textContent = m.name;
+        modelSelect.appendChild(opt);
+      });
+    }
+
+    async function loadPlayground() {
+      try {
+        const [pRes, cRes, lRes] = await Promise.all([
+          fetch('/api/providers'),
+          fetch('/api/categories'),
+          fetch('/api/leaderboard')
+        ]);
+        const p = await pRes.json();
+        const c = await cRes.json();
+        playground = { ...playground, providers: p.providers, categories: c.categories };
+        populateProviderSelect();
+        populateCategories();
+        renderProviders();
+        const lb = await lRes.json();
+        renderLeaderboard(lb);
+      } catch (e) {
+        setStatus('failed to load playground data');
+      }
+    }
+
+    function populateProviderSelect() {
+      providerSelect.innerHTML = '';
+      playground.providers.forEach(p => {
+        const opt = document.createElement('option');
+        opt.value = p.id;
+        opt.textContent = p.name;
+        providerSelect.appendChild(opt);
+      });
+      providerSelect.addEventListener('change', () => { updateModelSelect(); saveSettings(); });
+      updateModelSelect();
+    }
+
+    function populateCategories() {
+      categoryChips.innerHTML = '';
+      playground.categories.forEach(cat => {
+        const chip = document.createElement('span');
+        chip.className = 'chip';
+        chip.textContent = cat.name;
+        chip.dataset.id = cat.id;
+        chip.addEventListener('click', () => {
+          chip.classList.toggle('active');
+          if (selectedCategories.has(cat.id)) selectedCategories.delete(cat.id); else selectedCategories.add(cat.id);
+        });
+        categoryChips.appendChild(chip);
+      });
+    }
+
+    function renderCategories(ids) {
+      const chips = categoryChips.querySelectorAll('.chip');
+      selectedCategories = new Set(ids || []);
+      chips.forEach(chip => {
+        chip.classList.toggle('active', selectedCategories.has(chip.dataset.id));
+      });
+    }
+
+    async function autoCategorize() {
+      const prompt = promptInput.value.trim();
+      if (!prompt) return;
+      try {
+        const res = await fetch('/api/categorize?prompt=' + encodeURIComponent(prompt));
+        const data = await res.json();
+        renderCategories(data.categories);
+      } catch (e) {
+        // ignore
+      }
+    }
+
+    function renderLeaderboard(lb) {
+      leaderboardList.innerHTML = '';
+      if (lb.category) {
+        lb.rankings.forEach((r, i) => {
+          const card = document.createElement('div');
+          card.className = 'leaderboard-card';
+          card.innerHTML = `<strong>#${i + 1} ${r.modelName}</strong><br><span style="color:var(--muted)">${r.providerName}</span><br>score ${r.score}`;
+          leaderboardList.appendChild(card);
+        });
+        return;
+      }
+      if (lb.categories) {
+        for (const [catId, rankings] of Object.entries(lb.categories)) {
+          const cat = playground.categories.find(c => c.id === catId);
+          const card = document.createElement('div');
+          card.className = 'leaderboard-card';
+          const list = rankings.slice(0, 3).map((r, i) => `${i + 1}. ${r.modelName} (${r.score})`).join('<br>');
+          card.innerHTML = `<strong>${cat ? cat.name : catId}</strong><br>${list}`;
+          leaderboardList.appendChild(card);
+        }
+      }
+    }
+
+    function renderProviders() {
+      providersList.innerHTML = '';
+      playground.providers.forEach(p => {
+        const card = document.createElement('div');
+        card.className = 'provider-card';
+        const models = p.models.map(m => `<li><strong>${m.name}</strong> — ${m.tags.join(', ')}</li>`).join('');
+        card.innerHTML = `<h3>${p.name}</h3><ul>${models}</ul>`;
+        providersList.appendChild(card);
+      });
+    }
+
+    function connect() {
+      if (ws && (ws.readyState === WebSocket.CONNECTING || ws.readyState === WebSocket.OPEN)) return;
+      const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const base = location.pathname.replace(/\/[^\/]*$/, '') + '/';
+      const wsPath = base + 'ws';
+      setStatus('connecting...');
+      reconnectBtn.hidden = true;
+      ws = new WebSocket(`${proto}//${location.host}${wsPath}`);
+      ws.onopen = () => {
+        setStatus('connected, idle');
+        reconnectBtn.hidden = true;
+      };
+      ws.onclose = () => {
+        ws = null;
+        setStatus('disconnected — click Reconnect to retry');
+        reconnectBtn.hidden = false;
+      };
+      ws.onerror = (err) => {
+        console.error('websocket error', err);
+        setStatus('connection error');
+      };
+      ws.onmessage = (ev) => {
+        const msg = JSON.parse(ev.data);
+        switch (msg.type) {
+          case 'status': setStatus(msg.text); break;
+          case 'out': append(msg.text); break;
+          case 'err': append('ERR: ' + msg.text); break;
+          case 'done':
+            setStatus(`done (exit ${msg.code})`);
+            running = false;
+            submitBtn.disabled = false;
+            cancelBtn.disabled = true;
+            addHistory({
+              id: msg.runId || (crypto.randomUUID ? crypto.randomUUID() : Date.now()),
+              prompt: promptInput.value.trim(),
+              provider: providerSelect.value,
+              model: modelSelect.value,
+              categories: Array.from(selectedCategories),
+              output: currentOutput,
+              timestamp: Date.now(),
+            });
+            break;
+          case 'error':
+            setStatus('error: ' + msg.message);
+            running = false;
+            submitBtn.disabled = false;
+            cancelBtn.disabled = true;
+            append('ERR: ' + msg.message);
+            break;
+        }
+      };
+    }
+
+    connect();
+    loadPlayground().then(loadSettings).then(seedHistory);
+
+    modeSelect.addEventListener('change', saveSettings);
+    modelSelect.addEventListener('change', saveSettings);
+
+    promptInput.addEventListener('input', () => {
+      if (categorizeTimer) clearTimeout(categorizeTimer);
+      categorizeTimer = setTimeout(autoCategorize, 300);
+    });
+
+    promptInput.addEventListener('keydown', (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        e.preventDefault();
+        form.requestSubmit();
+      }
+    });
+
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      if (!ws || ws.readyState !== WebSocket.OPEN) { setStatus('not connected'); return; }
+      if (running) return;
+      const prompt = promptInput.value.trim();
+      if (!prompt) return;
+      running = true;
+      currentOutput = '';
+      log.textContent = '';
+      setStatus('sending...');
+      submitBtn.disabled = true;
+      cancelBtn.disabled = false;
+      saveSettings();
+      ws.send(JSON.stringify({
+        type: 'prompt',
+        prompt,
+        provider: providerSelect.value,
+        model: modelSelect.value,
+        mode: modeSelect.value,
+        categories: Array.from(selectedCategories),
+      }));
+    });
+
+    cancelBtn.addEventListener('click', () => {
+      if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type: 'cancel' }));
+    });
+
+    reconnectBtn.addEventListener('click', () => { setStatus('connecting...'); reconnectBtn.hidden = true; connect(); });
+    modalClose.addEventListener('click', closeModal);
+    modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(); });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !modal.hidden) closeModal(); });
+
+    document.querySelectorAll('.tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+        tab.classList.add('active');
+        document.getElementById(tab.dataset.tab).classList.add('active');
+      });
+    });
+  </script>
+</body>
+</html>

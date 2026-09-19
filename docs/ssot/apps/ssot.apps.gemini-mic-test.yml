@@ -1,0 +1,90 @@
+title: Gemini Mic Test
+subtitle: GEV-style microphone panel wired to Gemini Live for quick voice testing.
+icon: "🎙️"
+sections:
+  - title: Core Features
+    icon: "✅"
+    layout: list
+    items:
+      - label: GEV-style mic panel
+        text: Reuses the dark sci-fi capsule UI from gods-eye-view with status, ON/OFF button, and 15-bar audio visualizer.
+      - label: 16 kHz PCM streaming
+        text: Captures mono microphone audio at 16 kHz, converts it to 16-bit PCM, base64-encodes it, and streams to the backend via WebSocket.
+      - label: Gemini Live playback
+        text: Receives 24 kHz audio responses from Gemini Live and plays them through a Web Audio output queue.
+      - label: Live transcripts
+        text: Displays input and output transcription text as they arrive from the Gemini Live serverContent messages.
+  - title: Technical Architecture
+    icon: "⚙️"
+    layout: list
+    items:
+      - label: stacks/web/public/apps/gemini-mic-test/index.html
+        text: Static frontend page containing the mic panel markup.
+      - label: stacks/web/public/apps/gemini-mic-test/style.css
+        text: Scoped dark-glass styles for the gemini-mic panel and visualizer.
+      - label: stacks/web/public/apps/gemini-mic-test/mic.js
+        text: Web Audio capture/playback, visualizer, WebSocket client, and Gemini message handling.
+      - label: stacks/web/public/apps/gemini-mic-test/mic.svg
+        text: Microphone icon from the GEV project.
+      - label: stacks/web/gemini-mic-test/server.mjs
+        text: Node WebSocket bridge to the Gemini Live bidi API with no tools.
+      - label: stacks/web/gemini-mic-test/package.json
+        text: npm package definition with ws dependency.
+  - title: Files & Modules
+    icon: "📁"
+    layout: list
+    items:
+      - label: index.html
+        text: App shell and static mic panel DOM.
+      - label: style.css
+        text: Panel and visualizer CSS.
+      - label: mic.js
+        text: Front-end audio + WebSocket controller.
+      - label: server.mjs
+        text: Backend Gemini Live proxy.
+  - title: Deployment
+    icon: "🚀"
+    layout: list
+    items:
+      - label: Location
+        text: stacks/web/public/apps/gemini-mic-test/ and stacks/web/gemini-mic-test/
+      - label: Local dev
+        text: npm install in stacks/web/gemini-mic-test, then GEMINI_API_KEY=... node server.mjs
+      - label: URLs
+        text: 'https://tony-dell.taila0626a.ts.net/apps/gemini-mic-test/ and https://chaba.h3.gizmo-thailand.com/apps/gemini-mic-test/ once the backend is running'
+      - label: Registry
+        text: Listed in stacks/web/public/apps/apps.yml and docs/ssot/apps/ssot.apps.yml
+      - label: Branch
+        text: master
+  - title: Testing
+    icon: "🧪"
+    layout: list
+    items:
+      - label: syntax check
+        text: node --check stacks/web/gemini-mic-test/server.mjs
+      - label: end-to-end
+        text: Start the backend with a valid GEMINI_API_KEY, open /apps/gemini-mic-test/ over HTTPS or localhost, click ON/OFF, and speak.
+  - title: Integration
+    icon: "🔗"
+    layout: list
+    items:
+      - label: Gemini Live API
+        text: Connects to wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent using GEMINI_API_KEY.
+      - label: gods-eye-view UI
+        text: UI inspired by the GEV MIC panel in src/voice/gevRealtime.js and style.css.
+  - title: Known Issues
+    icon: "⚠️"
+    layout: list
+    items:
+      - label: ScriptProcessorNode deprecated
+        text: Uses createScriptProcessor for quick cross-browser capture; AudioWorklet would be a later production improvement.
+      - label: No tool calling
+        text: The backend setup contains no function declarations, so Gemini cannot call tools.
+      - label: Backend must be started on tony-dell
+        text: The WebSocket uses ws://localhost:3009/ws for local development and /api/gemini-mic/ws for tony-dell deploy. The Caddy route is added; the server.mjs process still needs to be started with GEMINI_API_KEY.
+config:
+  version: 1
+  created: '2026-09-09'
+  maintainer: tony
+  status: experimental
+  deployment: tony-dell, chaba.h3

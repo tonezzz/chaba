@@ -103,3 +103,23 @@ wrappers:
   target_host: local
   description: Switches Devin MCP profile between home and mobile
   status: active
+- name: mcp-notebooklm-ssh
+  file: ~/.config/devin/mcp-scripts/mcp-notebooklm-ssh.sh
+  type: stdio
+  target_host: tony_dell
+  persistent: true
+  container: notebooklm-mcp
+  podman_service: notebooklm-mcp.service
+  description: SSH bridge to the persistent notebooklm-mcp container on tony-dell; connects via podman exec
+  status: active
+  server: notebooklm
+- name: mcp-notebooklm
+  file: ~/.config/devin/mcp-scripts/mcp-notebooklm.sh
+  type: stdio
+  target_host: tony_dell
+  persistent: true
+  container: notebooklm-mcp
+  podman_service: notebooklm-mcp.service
+  description: Local podman exec bridge to the notebooklm-mcp container on tony-dell
+  status: active
+  server: notebooklm

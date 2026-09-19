@@ -1,17 +1,74 @@
 title: Chaba System Automation — Tony-Omen
-subtitle: Host-specific automation schedule and overrides for tony-omen
+subtitle: Host-specific monitoring and automation for tony-omen
 icon: robot
 host: tony_omen
-version: 1
+version: 2
 
-# The authoritative automation definitions remain in ssot.automation.yml.
-# This file captures the subset of schedules and overrides that run on tony-omen.
+note: |
+  The authoritative cross-host automation definitions remain in ssot.automation.yml.
+  This file is the canonical tony-omen monitoring and automation surface.
 
 automation:
   gpu_monitoring:
     status: active
     note: GPU monitoring runs on tony-omen because the GPU is local to this host.
-
-  chaba-health-monitor:
+  cpu_thermal:
     status: active
-    note: Health snapshots for tony-omen are collected here.
+    note: CPU frequency cap and thermal monitoring run on tony-omen.
+
+monitoring:
+  cpu_thermal:
+    status: active
+    cap:
+      value: 2.20GHz
+      source: cpufreq-limit.service
+      verification:
+        - cpupower frequency-info
+        - cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq
+    live_data:
+      endpoint: http://100.75.102.88:8001/api/sensors
+      fields:
+        - cpu_percent
+        - cpu_per_core
+        - load_average
+        - temperatures
+        - cpu_freq
+        - cooling
+        - fan_control
+    historical:
+      - container: chaba-omen-netdata
+        url: http://tony-omen.local:8080/apps/netdata/
+      - script: scripts/overnight-jobs-expanded.sh
+      - script: scripts/overnight-assessment.mjs
+    retired:
+      - script: scripts/health-monitor.sh
+        reason: chaba-health-monitor.timer decommissioned; use sensor-reader instead
+
+  gpu:
+    status: active
+    live_data:
+      endpoint: http://100.75.102.88:8001/api/gpu/status
+      fields:
+        - gpus
+        - processes
+    collectors:
+      - container: chaba-omen-netdata
+        url: http://tony-omen.local:8080/apps/netdata/
+      - mcp_tool: mcp1_gpu_status
+        use_case: on-demand
+      - script: scripts/gpu-monitor.mjs
+        status: retired
+        reason: monitoring-dashboard.mjs is now the single live GPU consumer; kept for reference
+
+  dashboard:
+    status: active
+    service: chaba-monitoring-dashboard.service
+    port: 3002
+    update_interval: 30s
+    data_source: http://100.75.102.88:8001/api/gpu/status
+    note: the single live GPU consumer; pulls from sensor-reader /api/gpu/status. nvidia-smi is a local fallback. gpu-monitor.mjs is no longer scheduled.
+
+  retired:
+    - id: chaba-health-monitor.timer
+      status: decommissioned
+      replaced_by: sensor-reader + tony-dell health agents

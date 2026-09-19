@@ -165,7 +165,8 @@ tony-dell:
     service: mcp-link-monitor.service
     host: tony_dell
     purpose: TCP/IP reachability watchdog for tony-omen, tony-dell, macbook
-    status: implemented (2026-08-13)
+    status: migrated to mn01 (2026-09-16)
+    note: 'Service stopped and disabled on tony-dell. mn01 now runs mcp-link-monitor-mn.service on port 9101.'
   chaba-funnel:
     service: chaba-funnel.service
     host: tony_dell
@@ -292,7 +293,11 @@ tony-dell:
       tailnet_url: http://tony-dell:9584/private_CtYuVkJEl28cp8qA8yXNCQ
       webhook: http://127.0.0.1:8123/api/webhook/mcp_d5528537d57627164033dc5e3e5e5aa6
     caddy:
-      note: 'Not implemented — Caddyfile has no HA route. HA UI absolute redirects break path-prefixed proxying. UI access via tailscale serve https://tony-dell.taila0626a.ts.net:8123 -> 127.0.0.1:8123 (decision: tony-ha-tailscale-only-access).'
+      host_path: /apps/ha/tony-ha/
+      mcp_path: /api/ha-mcp/
+      backend: 100.68.142.13
+      caddyfile: /home/tony/CascadeProjects/chaba-tony-dell/stacks/web/Caddyfile
+      note: 'Planned paths — not yet routed in the Caddyfile (verified 2026-09-18). HA UI absolute redirects break path-prefixed proxying. UI access via tailscale serve https://tony-dell.taila0626a.ts.net:8123 -> 127.0.0.1:8123 (decision: tony-ha-tailscale-only-access).'
     health_check: ssh tony-dell curl -sf http://127.0.0.1:8123/ >/dev/null
     autostart: loginctl enable-linger tony is yes; Quadlet WantedBy=default.target
     status: 'mcp server active (2026-08-25)'
@@ -526,9 +531,8 @@ tony-dell:
     image: localhost/notebooklm-rest
     runtime: rootless podman
     port: 8000
-    host_port: '127.0.0.1:${ssot("docs/ssot/infrastructure/ssot.values.yml", "ports.notebooklm_rest")}'
     host: tony_dell
-    data_volume: /home/tony/.local/share/notebooklm/notebooklm/storage_state.json
+    data_volume: /home/tony/.local/share/notebooklm/notebooklm-rest-data
     secrets:
       - notebooklm-rest-api-key
     environment:
@@ -547,8 +551,14 @@ tony-dell:
       folder_id: 1H7FHxy5nDxMOmcFtL79lmy_bttV35kjB
       rclone_path: gdrive:notebooklm/chaba
     notebooks_dir: gdrive:notebooklm/chaba/notebooks
-    status: implemented (2026-09-15)
-    note: 'FastAPI REST API on top of notebooklm-py. X-API-Key header is enforced via NOTEBOOKLM_REST_API_KEY. Exposed through Caddy at /apps/notebooklm/api on tony-dell.taila0626a.ts.net. The key lives in ~/.config/secrets/notebooklm-rest-api.env (not in git). Source and Dockerfile are in ~/.local/share/notebooklm/notebooklm-rest-api. The ~/.local/bin/nbapi wrapper sends the request to tony-dell (local curl on tony-dell, ssh on tony-omen). Google Drive collection for sources: gdrive:notebooklm/chaba. Notebook files stored under gdrive:notebooklm/chaba/notebooks/<nb-id>/files.'
+    host_port: '100.68.142.13:${ssot("docs/ssot/infrastructure/ssot.values.yml", "ports.notebooklm_rest")} + 127.0.0.1 (tailnet-bound since 2026-09-17 so /health/auth is monitorable)'
+    status: 'implemented (2026-09-15); upgraded 2026-09-17 (master-token auth — container self-mints cookies from /data/master_token.json, no Chrome dependency)'
+    security_notes:
+      - 'master_token.json is a Google OAuth refresh token for tonezzzz@gmail.com — full-account blast radius, not NotebookLM-scoped. File is 0600, on tony-dell only, NOT covered by any backup script (verified 2026-09-17: backup-mn01.sh, ha-config-backup, yomi-backup all exclude it).'
+      - 'Notebook scoping (ada-michael/ada-tony keys) is REST-layer only — the underlying Google session sees all notebooks. If master_token dies (revocation/password change), keepalive silently fails: GET /health/auth returns 503; manual re-extraction via notebooklm login required.'
+      - 'GET /health* is intentionally unauthenticated for monitors (returns ok/expired only); POST /health/auth/refresh and all /v1/* remain key-gated.'
+      - 'auth check via CLI must pass --storage /data/storage_state.json (or NOTEBOOKLM_STORAGE_PATH); default profile path reports a false-negative "error".'
+    note: 'FastAPI REST API on top of notebooklm-py. X-API-Key header enforced via NOTEBOOKLM_REST_API_KEYS; NOTEBOOKLM_REST_KEY_SCOPES maps scoped keys to notebook allowlists (ada-michael key -> 1c12d5c8 notebook only, ada-tony key -> fdfd3483 only, admin key unrestricted). Exposed through Caddy at /apps/notebooklm/api on tony-dell.taila0626a.ts.net. Keys live in ~/.config/secrets/notebooklm-rest-api.env (not in git). Source and Dockerfile versioned in stacks/tony-dell/notebooklm-rest/, deployed to ~/.local/share/notebooklm/notebooklm-rest-api. Features: in-container auth keepalive (notebooklm auth refresh --verify every NOTEBOOKLM_KEEPALIVE_INTERVAL=900s), GET /health/auth passive probe + POST /health/auth/refresh, Idempotency-Key dedupe on POSTs, write queue (/v1/queue, flush on auth recovery), POST .../sources/prune lifecycle (prefix/age/keep/dry_run). The ~/.local/bin/nbapi wrapper sends the request to tony-dell (local curl on tony-dell, ssh on tony-omen). Google Drive collection for sources: gdrive:notebooklm/chaba. Notebook files stored under gdrive:notebooklm/chaba/notebooks/<nb-id>/files.'
 
 tony-omen:
   ollama:
@@ -580,10 +590,19 @@ tony-omen:
     service_unit: ~/.config/systemd/user/notebooklm-rest-auth-refresh.service
     timer_unit: ~/.config/systemd/user/notebooklm-rest-auth-refresh.timer
     schedule: daily
-    target: tony-dell:/home/tony/.local/share/notebooklm/notebooklm/storage_state.json
+    target: tony-dell:/home/tony/.local/share/notebooklm/notebooklm-rest-data/storage_state.json
     action: 'notebooklm login --browser-cookies chrome, rsync storage_state.json to tony-dell, restart notebooklm-rest'
-    status: implemented (2026-09-15)
-    note: 'Keeps notebooklm-py storage_state.json fresh by re-extracting from tony-omen Chrome daily. The service waits 5s after container restart.'
+    status: retired 2026-09-17 (timer disabled)
+    note: 'Retired: notebooklm-rest now holds master_token.json and self-mints/refreshes cookies in-container every 15min via auth refresh --verify — Chrome cookie extraction is no longer needed. The script remains at ~/.local/bin/notebooklm-rest-auth-refresh (fixed to rsync to notebooklm-rest-data/) if cookie re-seeding is ever required manually. Lesson: Chrome >=127 ABE can silently drop SID/HSID/SSID producing a partial cookie file; and a copied jar dies when the source Chrome rotates __Secure-1PSIDTS.'
+
+  notebooklm-keepalive:
+    type: systemd user timer + oneshot service
+    host: tony_dell
+    timer_unit: ~/.config/systemd/user/notebooklm-keepalive.timer
+    schedule: every 15 min
+    action: 'curl -X POST http://127.0.0.1:3011/health/auth/refresh'
+    status: retired 2026-09-17 (timer disabled)
+    note: 'Retired: redundant with the in-container keepalive loop (NOTEBOOKLM_KEEPALIVE_INTERVAL=900s) and the endpoint is key-gated, so every fire just returned 401.'
   mddb:
     container: mddb
     image: tradik/mddb:latest
@@ -719,3 +738,70 @@ michael:
       direct_connection: false
       note: Tailscale app on Home Assistant OS; HTTP 8123 verified
     note: 'Nabu Casa remote Home Assistant instance for michael.'
+
+
+mn01:
+  tailscale:
+    service: tailscaled.service
+    host: mn01
+    tailscale_ip: '100.106.196.22'
+    purpose: Tailscale node and subnet router for mn-home
+    status: active
+    note: 'Currently active. Run "tailscale up --advertise-routes=192.168.1.0/24 --accept-routes" to publish the mn-home subnet and accept peer routes.'
+  caddy:
+    service: caddy-mn01.service
+    host: mn01
+    port: 443
+    host_port: 0.0.0.0:443
+    purpose: HTTPS reverse proxy for local services on mn-home and tailnet
+    status: active
+    tailscale_funnel: 'https://mn01.taila0626a.ts.net'
+    caddyfile: '~/.config/caddy/Caddyfile.mn01'
+    note: 'Caddy listens on 127.0.0.1:8080; Tailscale Funnel forwards https://mn01.taila0626a.ts.net/ to it. Add app routes under /apps/<name>/*. Current root serves from ~/.config/caddy/public/apps/.'
+  dnsmasq-mn:
+    service: dnsmasq-mn.service
+    host: mn01
+    port: 53
+    host_port: 127.0.0.1:53
+    purpose: Local DNS resolver for mn-home devices
+    status: planned
+    note: 'Cache + authoritative names for .mn, .local, and reverse DNS; optional AdGuard Home replacement.'
+  mcp-link-monitor:
+    service: mcp-link-monitor-mn.service
+    host: mn01
+    port: 9101
+    purpose: TCP reachability watchdog for mn-home and remote hosts
+    status: active
+    note: 'Migrated from tony-dell. systemd unit runs /home/tony/CascadeProjects/chaba/scripts/mcp-link-monitor.py. Monitors 192.168.1.x, 100.x, and public endpoints; alert via syslog/Tailscale.'
+  ada-pi-mn:
+    service: ada-pi-mn.service
+    host: mn01
+    port: 8001
+    host_port: 0.0.0.0:8001
+    purpose: Ada Pi PWA local assistant for mn-home
+    status: planned
+    note: 'Could mirror tony-dell ada-pi for local RK600/weather, HA, and PWA access.'
+  ada-ha-tony:
+    service: ada-ha-tony.service
+    host: mn01
+    port: 8002
+    host_port: 0.0.0.0:8002
+    purpose: Ada HA Tony instance (voice PWA for tony-ha)
+    status: active
+    tailnet_url: 'https://mn01.taila0626a.ts.net/apps/ha/ada-tony/'
+    env_file: '~/.config/secrets/ada-ha-tony.env'
+    caddyfile: '~/.config/caddy/Caddyfile.mn01'
+    upstream_ha: 'https://tony-dell.taila0626a.ts.net:8123/'
+    note: 'Backend is /home/tony/CascadeProjects/ada-pi/pwa_server.py. Environment uses HOME_ASSISTANT_URL=https://tony-dell.taila0626a.ts.net:8123/ and the Tony long-lived token.'
+  ada-ha-michael:
+    service: ada-ha-michael.service
+    host: mn01
+    port: 8003
+    host_port: 0.0.0.0:8003
+    purpose: Ada HA Michael instance (voice PWA for michael-ha)
+    status: active
+    tailnet_url: 'https://mn01.taila0626a.ts.net/apps/ha/ada-michael/'
+    env_file: '~/.config/secrets/ada-ha-michael.env'
+    caddyfile: '~/.config/caddy/Caddyfile.mn01'
+    upstream_ha: 'http://michael-ha:8123/'
+    note: 'Backend is /home/tony/CascadeProjects/ada-pi/pwa_server.py. Environment uses HOME_ASSISTANT_URL=http://michael-ha:8123/ and the Michael long-lived token.'

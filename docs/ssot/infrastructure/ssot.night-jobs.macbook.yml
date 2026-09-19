@@ -13,3 +13,13 @@ jobs:
   status: active
   output: /Users/kkkakk/var/chaba/health/macbook-snapshot.json
   note: Captures lan_ip, tailscale_ip, wifi_ssid, memory pressure, process counts, disk hogs, and ports.
+- id: macbook-offload-audit
+  name: MacBook Offload Capability Audit
+  host: macbook
+  type: launchd
+  unit: com.chaba.macbook-offload-audit
+  schedule: every 30 minutes
+  enabled: false
+  status: planned
+  output: /Users/kkkakk/var/chaba/health/macbook-offload-audit.json
+  note: Reports PlayLive/mcp-raw availability, load average, and whether the MacBook is ready to receive offloaded tasks.

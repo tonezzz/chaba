@@ -46,7 +46,7 @@ sections:
         text: Intel Core i7-9750H (6 cores/12 threads), 2.60GHz hardware max, 800MHz min
         tags: [hardware, cpu, performance]
       - label: tony-omen CPU operational cap
-        text: Software capped to 2.40GHz via cpufreq-limit.service (cpupower -u 2.40GHz, governor performance)
+        text: Software capped to 2.20GHz via cpufreq-limit.service (cpupower -u 2.20GHz, governor performance)
         tags: [hardware, cpu, performance, power]
         status: active
       - label: tony-omen GPU
@@ -55,39 +55,33 @@ sections:
       - label: tony-omen Memory
         text: 32GB RAM
         tags: [hardware, memory]
-      - label: CPU Frequency Monitoring
-        text: Monitored via health-monitor.sh (checks load, temperature, throttling)
-        tags: [monitoring, cpu, health-check]
+      - label: tony-omen CPU and Thermal Monitoring
+        text: Monitored via sensor-reader (port 8001), cpufreq-limit.service, and Netdata; checks load, temperature, throttling, and frequency cap.
+        tags: [monitoring, cpu, gpu, thermal, health-check]
         status: active
 
   - title: Power Management
     icon: 🔋
     layout: list
     items:
-      - label: Screen Timeout Schedule
-        text: Automatic screen timeout adjustment based on time of day
+      - label: Screen Timeout
+        text: Screen turns off after 5 minutes of idle time; long-running processes continue running (no system suspend)
         status: active
         tags: [power, automation, screen-timeout]
-      - label: Nighttime Hours (10pm-8am)
-        text: "Screen timeout: 1 minute (aggressive power saving)"
-        status: scheduled
-      - label: Daytime Hours (8am-10pm)
-        text: "Screen timeout: 10 minutes (normal operation)"
-        status: scheduled
-      - label: tony-omen Scripts
-        text: /home/tony/scripts/screen-timeout-night.sh, /home/tony/scripts/screen-timeout-day.sh
-      - label: tony-dell Scripts
-        text: /home/tony/scripts/screen-timeout-night.sh, /home/tony/scripts/screen-timeout-day.sh
-      - label: Cron Schedule
-        text: "0 22 * * * (nighttime), 0 8 * * * (daytime)"
+      - label: Timeout Value
+        text: "300 seconds (5 minutes) - DPMS Off: 300s"
+      - label: Service
+        text: systemd --user screen-timeout-daemon.service on tony-dell and tony-omen
+      - label: Daemon Script
+        text: /home/tony/screen-timeout-daemon.sh
       - label: Log Location
-        text: /home/tony/logs/screen-timeout.log
+        text: /home/tony/.local/share/screen-timeout-daemon.log
       - label: Current Settings (tony-omen)
-        text: "Screen timeout: 600s, DPMS: Off 900s (standby/suspend disabled)"
+        text: "Screen timeout: 600s (X screensaver, ignored), DPMS: Enabled, Off: 300s"
       - label: Current Settings (tony-dell)
-        text: "Screen timeout: 0s (disabled), DPMS: Disabled"
+        text: "Screen timeout: 600s (X screensaver, ignored), DPMS: Enabled, Off: 300s"
       - label: Implementation Date
-        text: 2026-08-11
+        text: 2026-09-07
 
   - title: Network
     icon: 🌐
@@ -107,19 +101,71 @@ sections:
       - label: Barrier Server
         text: Runs on tony-omen via systemd (barriers.service) on 0.0.0.0:24800, reachable at 100.75.102.88:24800 over Tailscale
       - label: Barrier Client
-        text: Runs on tony-dell and connects to 100.75.102.88:24800 (Tailscale) to avoid stale /etc/hosts
+        text: Runs on tony-dell as systemd user unit (barrier-client.service) and connects to 100.75.102.88:24800 (Tailscale) to avoid stale /etc/hosts
+      - label: Client Display
+        text: DISPLAY=:1 (physical monitor), XAUTHORITY=/run/user/1000/gdm/Xauthority, LD_PRELOAD=/home/tony/.local/lib/nodelay.so
       - label: Client Binary
         text: /home/tony/.local/bin/barrierc (actual path; /usr/bin/barrierc not installed)
       - label: Start Command
+        text: systemctl --user start barrier-client.service
+      - label: Manual Fallback
         text: nohup /home/tony/.local/bin/barrierc --no-daemon --disable-crypto --name tony-dell --log /tmp/barrier-client.log 100.75.102.88 >/dev/null 2>&1 &
       - label: Health Check
-        text: ssh -o ConnectTimeout=3 tony@tony-dell 'pgrep -a barrierc' && tail -n 5 /tmp/barrier-client.log
+        text: systemctl --user is-active barrier-client.service && ssh -o ConnectTimeout=3 tony@tony-dell 'pgrep -a barrierc' && tail -n 5 /tmp/barrier-client.log
       - label: Autofix
-        text: ssh -o ConnectTimeout=3 tony@tony-dell 'pkill -x barrierc 2>/dev/null; nohup /home/tony/.local/bin/barrierc --no-daemon --disable-crypto --name tony-dell --log /tmp/barrier-client.log 100.75.102.88 >/dev/null 2>&1 &'
+        text: ssh -o ConnectTimeout=3 tony@tony-dell 'pkill -x barrierc 2>/dev/null; systemctl --user daemon-reload && systemctl --user restart barrier-client.service'
       - label: Server Autofix
         text: systemctl --user restart barriers.service
       - label: Logs
         text: /tmp/barrier-client.log (client), /tmp/barrier-server.log (server)
+
+  - title: Physical Display (tony-dell)
+    icon: 🖥️
+    layout: list
+    items:
+      - label: Monitor output
+        text: DP-2 on the Intel iGPU (PCI 0:2:0, /dev/dri/card1-DP-2)
+      - label: Black screen cause
+        text: Xorg autoconfig picks the AMD card (PCI 1:0:0, /dev/dri/card0) by default, which has no monitor connected
+      - label: Xorg seat service
+        text: root Xorg :1 vt7 via /etc/systemd/system/xorg-seat.service; repo copy in systemd/xorg-seat.service
+      - label: Xorg iGPU config
+        text: /etc/X11/xorg.conf.d/20-xorg-seat.conf forces the Intel iGPU; repo copy in systemd/xorg-seat.conf
+      - label: Install / update
+        text: sudo install -m 0644 systemd/xorg-seat.conf /etc/X11/xorg.conf.d/20-xorg-seat.conf && sudo install -m 0644 systemd/xorg-seat.service /etc/systemd/system/xorg-seat.service && sudo systemctl daemon-reload && sudo systemctl restart xorg-seat.service
+      - label: LXQt desktop session
+        text: User unit lxqt-seat.service runs startlxqt on DISPLAY=:1; it needs XAUTHORITY=/run/user/1000/gdm/Xauthority to connect to the root Xorg; repo copy in systemd/lxqt-seat.service
+      - label: Install LXQt user unit
+        text: cp systemd/lxqt-seat.service ~/.config/systemd/user/lxqt-seat.service && systemctl --user daemon-reload && systemctl --user enable --now lxqt-seat.service
+      - label: Barrier target
+        text: barrier-client.service uses DISPLAY=:1 and XAUTHORITY=/run/user/1000/gdm/Xauthority after X1 is up (both lxqt-seat and barrier share the same gdm cookie)
+      - label: Check
+        text: DISPLAY=:1 XAUTHORITY=/run/user/1000/gdm/Xauthority xrandr should show DP-2 connected and primary, and systemctl --user is-active lxqt-seat barrier-client should be active
+
+  - title: Web (tony-dell)
+    icon: 🌐
+    layout: list
+    items:
+      - label: Public HTTPS endpoint
+        text: https://tony-dell.taila0626a.ts.net/ (Tailscale terminates TLS and proxies to local Caddy)
+      - label: Tailscale serve
+        text: tailscaled owns 100.68.142.13:8080 and forwards HTTP to the Caddy backend
+      - label: Tailscale serve unit
+        text: /etc/systemd/system/tailscale-serve-8080.service; repo copy in systemd/tailscale-serve-8080.service
+      - label: Install tailscale serve unit
+        text: sudo install -m 0644 systemd/tailscale-serve-8080.service /etc/systemd/system/tailscale-serve-8080.service && sudo systemctl daemon-reload && sudo systemctl enable --now tailscale-serve-8080.service
+      - label: Caddy backend
+        text: rootless podman container named web; Caddy serves http://127.0.0.1:8080 only (bind 127.0.0.1, auto_https off)
+      - label: Caddyfile
+        text: /home/tony/CascadeProjects/chaba-tony-dell/stacks/web/Caddyfile (worktree copy on tony-dell)
+      - label: Critical Caddyfile directives
+        text: "{ auto_https off } globally and http://127.0.0.1:8080 { bind 127.0.0.1 ... } to avoid colliding with tailscaled"
+      - label: Restart Caddy
+        text: /usr/bin/docker restart web
+      - label: Port conflict warning
+        text: Do not let Caddy bind 0.0.0.0:8080 or tailscale will not be able to serve; do not point tailscale-serve-8080 to 127.0.0.1:8082 (that is tailscale-connections-server.py, not Caddy)
+      - label: Check
+        text: "curl -s -o /dev/null -w %{http_code} https://tony-dell.taila0626a.ts.net/apps/tony-live/ should return 200"
 
   - title: Services (tony-omen)
     icon: ⚙️
@@ -148,7 +194,7 @@ sections:
     items:
       - label: Apps Server
         text: Testing apps server on port 8080
-        url: http://tony-dell:8080
+        url: https://tony-dell.taila0626a.ts.net
 
   - title: Available Apps
     icon: 📱
@@ -172,7 +218,7 @@ sections:
       - label: Apps (tony-omen)
         text: http://tony-omen:8080/apps
       - label: Apps (tony-dell)
-        text: http://tony-dell:8080/apps
+        text: https://tony-dell.taila0626a.ts.net/apps
       - label: Chaba-h3 Preview
         text: http://tony-omen:8081/apps
       - label: Llama Router API

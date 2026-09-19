@@ -1,0 +1,13 @@
+[Unit]
+Description=Tailscale Serve HTTPS on 8080 for tony-dell
+After=tailscaled.service
+Wants=tailscaled.service
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/tailscale serve --https=8080 http://127.0.0.1:8080
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

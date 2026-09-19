@@ -67,7 +67,7 @@ sections:
       - label: stacks/web/public/apps/yomi/chat.html
         text: 'Single-conversation view with messages, media rendering, lightbox, and refetch button.'
       - label: stacks/web/Caddyfile
-        text: 'handle_path /apps/yomi/* serves static files; /api/yomi/* reverse-proxies to host.docker.internal:3000. Basic auth with YOMI_PASSWORD_HASH.'
+        text: '/apps/yomi/** and /api/yomi/* reverse-proxy to tony-dell:3000. Basic auth on tony-omen:8080. No static Yomi files served from tony-omen.'
 
   - title: Deployment
     icon: 🚀
@@ -76,7 +76,7 @@ sections:
       - label: Location
         text: 'chaba/scripts/yomi/ (backend), chaba/stacks/web/public/apps/yomi/ (frontend), chaba/stacks/web/Caddyfile (routing).'
       - label: URLs
-        text: 'List: http://tony-omen:8080/apps/yomi/ (basic-auth, tailscale MagicDNS). Also http://tony-omen.local:8080/apps/yomi/ (mDNS, same host). Chat: /apps/yomi/chat.html?chat=<chatId>. API: /api/yomi/*.'
+        text: 'List: http://tony-dell:3000/apps/yomi/ (primary, tailscale MagicDNS). Caddy fallback: http://tony-omen:8080/apps/yomi/ (basic-auth). Chat: /apps/yomi/chat.html?chat=<chatId>. API: /api/yomi/*.'
       - label: Registry
         text: 'Listed in stacks/web/public/apps/apps.yml on 8080 stack. Not on chaba-h3 8081 stack.'
       - label: Branch
@@ -84,7 +84,7 @@ sections:
       - label: Systemd Services
         text: 'yomi-api.service (API server, auto-restart), yomi-fetch.timer (every 30min), yomi-process.timer (hourly overnight + 12PM/6PM/8PM), yomi-fetch-on-boot.service, yomi-process-on-boot.service. Managed via systemctl --user.'
       - label: Primary Host
-        text: 'tony-dell (failover primary). Backup on tony-omen with daily pg_dump + rsync. See infrastructure/ssot.yomi-failover.yml.'
+        text: 'tony-dell (primary). tony-omen:8080 remains as a Caddy reverse-proxy fallback. See infrastructure/ssot.yomi-failover.yml.'
 
   - title: Testing
     icon: 🧪

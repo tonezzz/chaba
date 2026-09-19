@@ -363,15 +363,38 @@ host_notes:
       - >-
         systemd units: barriers.service (user), cpufreq-limit.service (system),
         weaviate-index.timer, arp-inventory-scan.timer.
+      - >-
+        Verify CPU frequency cap: `cpupower frequency-info` reports a 2.20 GHz
+        upper limit and `cat /sys/devices/system/cpu/cpu0/cpufreq/scaling_max_freq`
+        returns 2200000. If the cap is wrong, restart `cpufreq-limit.service`.
+      - >-
+        Verify monitoring data sources: `curl -s -o /dev/null -w '%{http_code}'
+        http://100.75.102.88:8001/health` returns 200 and `http://100.75.102.88:8001/api/sensors`
+        returns valid JSON with `host.temperatures` and `host.cpu_freq`.
       - sensor-reader container on :8001, Google Drive mount, Ollama, GPU Queue.
       - Re-run mcp-health; expect intentionally-off services to stay off.
+      - >-
+        Barrier: confirm `barriers.service` is listening on 24800 and has accepted
+        the tony-dell client (`ss -tlnp | grep 24800`). If the log repeats
+        "primary screen unavailable: unable to open screen", the X display was not
+        ready when the unit started; restart with `systemctl --user restart
+        barriers.service` once the seat is up.
     refs:
       - docs/ssot/infrastructure/ssot.health.home.system.yml
       - docs/ssot/infrastructure/ssot.gpu.yml
       - docs/ssot/infrastructure/ssot.night-jobs.tony-omen.yml
+    known_issues:
+      - >-
+        `barriers.service` can start before the GDM/Xauthority on DISPLAY :0 is
+        ready, leaving it alive but unable to open the screen and not listening on
+        port 24800. Applied fix: add an `ExecStartPre` that waits up to 60 s for
+        `/tmp/.X11-unix/X0` and `/run/user/1000/gdm/Xauthority`, move
+        `StartLimitIntervalSec=0` from `[Service]` to `[Unit]`, then
+        `systemctl --user daemon-reload` and restart. The unit now starts reliably
+        after the X display is ready.
 
 metadata:
   created: '2026-09-07'
-  last_updated: '2026-09-07'
+  last_updated: '2026-09-11'
   maintainer: tony
   status: active

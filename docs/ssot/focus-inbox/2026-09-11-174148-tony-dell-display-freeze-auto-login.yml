@@ -1,0 +1,46 @@
+title: tony-dell display freeze, auto-login, and auto-start setup
+subtitle: Recover frozen display and configure reliable login/app startup
+icon: inbox
+
+focus:
+  label: tony-dell display freeze recovery
+  text: >
+    tony-dell X session froze (white screen with black box in top-left) while
+    experimenting with screen timeout and Barrier keep-awake. GDM and Xorg were
+    restarted; auto-login is already enabled and the session has recovered.
+    Need to decide the final display policy and document/enable the desired
+    auto-start applications.
+  branch: ""
+  priority: high
+  status: draft
+  tags: [tony-dell, display, gdm, auto-login, autostart, barrier, screen-timeout]
+  missing_info:
+    - Should tony-dell screen stay always on, or do we implement a Barrier-aware idle blank?
+    - Which GUI/systemd-user apps must start automatically after auto-login?
+    - Should the screen-timeout-daemon remain disabled on tony-dell?
+  safe_to_parallel:
+    value: false
+    reason: Affects the active display session and GDM auto-login on tony-dell.
+  subtasks:
+    - label: Restart GDM/Xorg to recover frozen display
+      status: completed
+    - label: Verify auto-login is enabled in /etc/gdm3/custom.conf
+      status: completed
+    - label: Disable screen-timeout-daemon on tony-dell to prevent re-freeze
+      status: completed
+    - label: Decide final screen blanking policy for tony-dell
+      status: not_started
+    - label: Identify and enable tony-dell auto-start apps
+      status: not_started
+    - label: Document final configuration in SSOT
+      status: not_started
+
+ownership:
+  owner: tony
+  session: ""
+  locked: false
+  lock_reason: ""
+
+source:
+  session: ""
+  date: 2026-09-11

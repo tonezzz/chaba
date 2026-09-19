@@ -2,18 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#1a1a2e">
-  <meta name="background-color" content="#16213e">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="mobile-web-app-capable" content="yes">
-
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="Apps">
-  <meta name="description" content="Local apps and tools on tony-dell">
-  <link rel="manifest" href="/apps/manifest.json">
-  <link rel="icon" href="/apps/favicon.ico" sizes="any">
-  <link rel="apple-touch-icon" href="/apps/apple-touch-icon.png">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Apps</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
@@ -39,40 +28,72 @@
   <main id="apps" class="max-w-7xl mx-auto px-4 py-6"></main>
   <script src="https://cdn.jsdelivr.net/npm/js-yaml@4.1.0/dist/js-yaml.min.js"></script>
   <script>
-    fetch('/apps/apps.yml?v=' + Date.now()).then(r => r.text()).then(text => {
+    fetch('apps.yml').then(r => r.text()).then(text => {
       const data = jsyaml.load(text);
       document.title = data.title || 'Apps';
       document.getElementById('nav').innerHTML = (data.nav || []).map(n =>
         `<a href="${n.href}" class="text-sm text-gray-300 hover:text-accent">${n.label}</a>`
       ).join('');
-      document.getElementById('apps').innerHTML = `
+      const appMap = new Map((data.apps || []).map(a => [a.id, a]));
+      const groupedIds = new Set();
+      const appUrl = (a) => {
+        if (a.host && a.host_url && a.host !== hostLabel) {
+          return a.host_url + a.href;
+        }
+        return a.href;
+      };
+      const appHostBadge = (a) => a.host && a.host !== hostLabel ? ` <span class="text-[10px] text-gray-500">(${a.host})</span>` : '';
+      const origin = window.location.origin;
+      const hostname = window.location.hostname;
+      const isMn = hostname.includes('mn01');
+      const hostLabel = isMn ? 'mn01' : 'tony-dell';
+      let html = `
         <h1 class="text-2xl font-bold mb-1">${data.title}</h1>
-        <p class="text-gray-400 text-sm mb-6">Local apps and tools on tony-dell.</p>
+        <p class="text-gray-400 text-sm mb-6">Local apps and tools on ${hostLabel}.</p>
         <div class="bg-card border border-gray-700 rounded p-4 mb-6 text-sm text-gray-300">
           <p class="mb-2"><strong>Network options:</strong> choose the URL that matches where you are.</p>
           <ul class="list-disc list-inside space-y-1">
-            <li><strong>Home LAN:</strong> <code>http://tony-dell.local/apps</code></li>
-            <li><strong>Tailscale tailnet:</strong> <code>http://tony-dell/apps</code></li>
-            <li><strong>Public internet (Home Assistant Live):</strong> <code>https://tony-dell.taila0626a.ts.net:8444/</code> — <a href="https://tony-dell.taila0626a.ts.net:8444/" class="text-accent hover:underline">learn more</a></li>
+            <li><strong>This page:</strong> <code>${origin}/apps</code></li>
+            ${isMn ? `<li><strong>Headless primary:</strong> <code>https://tony-dell.taila0626a.ts.net/apps</code></li>` : ''}
+            <li><strong>Home Assistant Live:</strong> <code>https://tony-dell.taila0626a.ts.net:8444/</code> — <a href="https://tony-dell.taila0626a.ts.net:8444/" class="text-accent hover:underline">learn more</a></li>
           </ul>
         </div>
-        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-          ${data.apps.map(a => `
-            <a href="${a.href}" class="app-card" ${['gev-live','rview-live'].includes(a.id) ? 'target="_blank" rel="noopener"' : ''}>
-              <h2 class="text-lg font-semibold text-white">${a.icon ? a.icon + ' ' : ''}${a.title}</h2>
+      `;
+      (data.groups || []).forEach(g => {
+        html += `<h2 class="text-xl font-semibold mt-6 mb-3 text-white">${g.icon ? g.icon + ' ' : ''}${g.title}</h2>`;
+        if (g.description) {
+          html += `<p class="text-gray-400 text-sm mb-3">${g.description}</p>`;
+        }
+        html += `<div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 mb-4">`;
+        for (const id of (g.apps || [])) {
+          const a = appMap.get(id);
+          if (!a) continue;
+          groupedIds.add(id);
+          html += `
+            <a href="${appUrl(a)}" class="app-card" ${['gev-live','rview-live'].includes(a.id) ? 'target="_blank" rel="noopener"' : ''}>
+              <h2 class="text-lg font-semibold text-white">${a.icon ? a.icon + ' ' : ''}${a.title}${appHostBadge(a)}</h2>
               <p class="text-gray-400 text-xs mt-1 line-clamp-2">${a.description}</p>
             </a>
-          `).join('')}
-        </div>
-      `;
+          `;
+        }
+        html += `</div>`;
+      });
+      const ungrouped = (data.apps || []).filter(a => !groupedIds.has(a.id));
+      if (ungrouped.length) {
+        html += `<h2 class="text-xl font-semibold mt-6 mb-3 text-white">Apps</h2>`;
+        html += `<div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">`;
+        for (const a of ungrouped) {
+          html += `
+            <a href="${appUrl(a)}" class="app-card" ${['gev-live','rview-live'].includes(a.id) ? 'target="_blank" rel="noopener"' : ''}>
+              <h2 class="text-lg font-semibold text-white">${a.icon ? a.icon + ' ' : ''}${a.title}${appHostBadge(a)}</h2>
+              <p class="text-gray-400 text-xs mt-1 line-clamp-2">${a.description}</p>
+            </a>
+          `;
+        }
+        html += `</div>`;
+      }
+      document.getElementById('apps').innerHTML = html;
     });
-  </script>
-  <script>
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/apps/sw.js?v=6', { scope: '/apps/', updateViaCache: 'none' })
-        .then((reg) => console.log('SW registered', reg.scope))
-        .catch((err) => console.error('SW registration failed', err));
-    }
   </script>
 </body>
 </html>

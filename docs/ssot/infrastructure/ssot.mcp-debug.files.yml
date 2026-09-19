@@ -52,6 +52,29 @@ tools:
       - all calls logged with host, path, size, mode, overwrite
       - writes to paths outside allowlist are rejected
 
+  mcp_eget:
+    description: Install or download a prebuilt binary from GitHub/GitLab/Gitea/SourceForge using eget.
+    input:
+      host: target host (must be in allowed host list)
+      repo: source repository or URL, e.g. 'BurntSushi/ripgrep'
+      to: target directory (must match an allowed_path_prefix), default ~/.local/bin
+      tag: optional release tag
+      asset: optional asset filter
+      extract_all: extract all archive files
+      download_only: use 'eget download' instead of 'eget install'
+    output:
+      ok: true | false
+      h: host
+      rc: eget exit code
+      out: stdout
+      err: stderr
+      error: error message if ok is false
+    transport: SSH exec; command is 'eget install <repo> --to <allowed_path> ...'
+    security:
+      - target path is vetted against the host's allowed_path_prefixes
+      - all arguments are shlex-quoted
+      - no sudo required
+
   mcp_clipboard_get:
     description: Read the target host's clipboard as text.
     status: experimental

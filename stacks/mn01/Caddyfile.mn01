@@ -1,0 +1,101 @@
+{
+	admin localhost:2020
+}
+
+:8080 {
+	# Landing
+	handle / {
+		redir * /apps/ 302
+	}
+
+	# Ada HA Tony — voice PWA backend
+	handle /apps/ha/ada-tony {
+		redir * /apps/ha/ada-tony/ 308
+	}
+
+	handle_path /apps/ha/ada-tony/* {
+		reverse_proxy 127.0.0.1:8002 {
+			header_up Host 127.0.0.1:8002
+		}
+	}
+
+	# Ada HA Michael — voice PWA backend
+	handle /apps/ha/ada-michael {
+		redir * /apps/ha/ada-michael/ 308
+	}
+
+	handle_path /apps/ha/ada-michael/* {
+		reverse_proxy 127.0.0.1:8003 {
+			header_up Host 127.0.0.1:8003
+		}
+	}
+
+	# HA instance shortcuts — HA UI breaks under a path prefix, so redirect
+	# to the full host URL (same convention as Caddyfile.tony-dell).
+	handle /apps/ha/tony-ha {
+		redir * /apps/ha/tony-ha/ 308
+	}
+
+	handle_path /apps/ha/tony-ha/* {
+		redir * https://tony-dell.taila0626a.ts.net:8123/ 308
+	}
+
+	handle /apps/ha/michael-dev {
+		redir * /apps/ha/michael-dev/ 308
+	}
+
+	handle_path /apps/ha/michael-dev/* {
+		redir * https://tony-dell.taila0626a.ts.net:8124/ 308
+	}
+
+	handle /apps/ha/michael-ha {
+		redir * /apps/ha/michael-ha/ 308
+	}
+
+	handle_path /apps/ha/michael-ha/* {
+		redir * https://nupo4ndqdqydt78zmpq0z5wzp1bdrqgs.ui.nabu.casa/ 308
+	}
+
+	# Legacy paths — keep old bookmarks/paired devices working
+	handle /apps/ada_ha_tony {
+		redir * /apps/ha/ada-tony/ 308
+	}
+
+	handle_path /apps/ada_ha_tony/* {
+		redir * /apps/ha/ada-tony{uri} 308
+	}
+
+	handle /apps/ada_ha_michael {
+		redir * /apps/ha/ada-michael/ 308
+	}
+
+	handle_path /apps/ada_ha_michael/* {
+		redir * /apps/ha/ada-michael{uri} 308
+	}
+
+	handle /apps/ada_ha {
+		redir * /apps/ha/ada/ 308
+	}
+
+	handle_path /apps/ada_ha/* {
+		redir * /apps/ha/ada{uri} 308
+	}
+
+	handle /apps/tony-ha {
+		redir * /apps/ha/tony-ha/ 308
+	}
+
+	handle_path /apps/tony-ha/* {
+		redir * /apps/ha/tony-ha{uri} 308
+	}
+
+	# Apps directory
+	handle /apps {
+		redir * /apps/ 308
+	}
+
+	handle_path /apps/* {
+		root * /home/tony/.config/caddy/public/apps
+		file_server browse
+	}
+}

@@ -11,11 +11,11 @@ sections:
       - label: Model
         text: VStarcam C7824WIP (ip_cam_65)
       - label: Network
-        text: '192.168.2.66 / Wi-Fi (192.168.2.0/24)'
+        text: '192.168.2.71 (was .66) / Wi-Fi (192.168.2.0/24)'
       - label: Credentials
         text: 'admin / tonytony'
       - label: RTSP URL base
-        text: 'rtsp://admin:tonytony@192.168.2.66:10554/tcp/av0_{0,1,3}'
+        text: 'rtsp://admin:tonytony@192.168.2.71:10554/udp/av0_{0,1,3} (2026-09-08: camera TCP transport broke; UDP required)'
 
   - title: Source Streams
     icon: layers
@@ -34,6 +34,8 @@ sections:
     items:
       - label: Config
         text: /home/tony/.config/go2rtc/go2rtc.yaml
+      - label: Binary
+        text: 'go2rtc 1.9.14+dev.c245815 (master build 2026-09-08, includes Xiaomi auto re-login on token expiry). Backup: ~/.local/bin/go2rtc.1.9.14.bak'
       - label: Listen
         text: 'API: 127.0.0.1:1984, RTSP: 127.0.0.1:8554, WebRTC: 127.0.0.1:8555'
       - label: ip_cam_65 (auto)
@@ -45,14 +47,14 @@ sections:
       - label: Auto script
         text: /home/tony/.config/go2rtc/ip_cam_65_auto.sh probes av0_0 then execs either the HD or low ffmpeg pipeline.
       - label: FFmpeg flags
-        text: '-fflags +genpts+discardcorrupt -err_detect ignore_err -rtsp_transport tcp -c:v libx264 -pix_fmt yuv420p -an -f mpegts'
+        text: '-fflags +genpts+discardcorrupt -err_detect ignore_err -rtsp_transport udp -c:v libx264 -pix_fmt yuv420p -an -f mpegts'
 
   - title: Monitoring and Auto-Fix
     icon: refresh-cw
     layout: list
     items:
       - label: Monitor script
-        text: /home/tony/.config/home-assistant/ha-live/camera-monitor.py
+        text: /home/tony/.config/home-assistant/ha-live/camera-monitor.py (probes ip_cam_65, ip_cam_65_hd + xiaomi_c201; 25s timeout; restarts go2rtc after 3 fails)
       - label: What it does
         text: 'ffprobes rtsp://127.0.0.1:8554/ip_cam_65 and rtsp://127.0.0.1:8554/ip_cam_65_hd every 30 seconds. After 3 consecutive failures it runs systemctl --user restart go2rtc.'
       - label: systemd service
@@ -92,6 +94,8 @@ sections:
         text: 'https://tony-dell.taila0626a.ts.net:8448/api/stream.m3u8?src=ip_cam_65_low'
       - label: HLS HD
         text: 'https://tony-dell.taila0626a.ts.net:8448/api/stream.m3u8?src=ip_cam_65_hd'
+      - label: Remote snapshot
+        text: 'https://tony-dell.taila0626a.ts.net:8448/api/frame.jpeg?src=ip_cam_65_low'
       - label: Local snapshot
         text: 'http://127.0.0.1:1984/api/frame.jpeg?src=ip_cam_65'
       - label: Local RTSP
@@ -114,7 +118,13 @@ sections:
       - label: USB camera still
         text: /local/cam/last-usb-frame.jpg (use when camera.tony_dell_usb is unavailable)
       - label: Dashboard use
-        text: 'Smart Home dashboard (lovelace-smart-home.yaml) uses picture for ip_cam_65 with the /local/cam/last-cam-frame.jpg thumbnail and a tap_action URL to the go2rtc web player (stream.html?src=ip_cam_65_hd). tony_dell_usb uses picture-entity for its fast camera_proxy. This avoids the slow ffmpeg camera_proxy for the IP camera thumbnail.'
+        text: |
+          Smart Home dashboard (lovelace-smart-home.yaml) uses type: picture cards to avoid picture-entity camera_proxy auth/caching issues on the HA iOS app:
+          - tony_dell_usb: /local/cam/last-usb-frame.jpg thumbnail; tap opens more-info for camera.tony_dell_usb.
+          - ip_cam_65: /local/cam/last-cam-frame.jpg thumbnail; tap opens the go2rtc web player at stream.html?src=ip_cam_65_hd.
+          - xiaomi_c201 and xiaomi_c201_sd: /local/cam/last-xiaomi-frame.jpg thumbnail; tap opens the go2rtc web player at stream.html?src=xiaomi_c201_hd_h264.
+          - xiaomi_c100 and xiaomi_c100_sd: /local/cam/last-xiaomi-c100-frame.jpg thumbnail; tap opens the go2rtc web player at stream.html?src=xiaomi_c100_hd_h264 or casts to the TV.
+          - desktop_1/20/99: /local/cam/last-desktop-*.jpg thumbnail; tap calls camera.play_stream to cast to the TV.
 
   - title: Pros and Cons
     icon: scale
@@ -141,7 +151,7 @@ sections:
     layout: list
     items:
       - label: Adaptive stream
-        text: 'ip_cam_65 currently serving H.264 2304x1296 at 15 fps (HD source is healthy).'
+        text: 'ip_cam_65 serving H.264 2304x1296 via UDP (verified 2026-09-08 in browser). ip_cam_65_low/hd are exec:ffmpeg entries with -rtsp_transport udp; go2rtc ffmpeg: module defaults to TCP which the camera now rejects.'
       - label: Low stream
         text: 'ip_cam_65_low stable H.264 640x360; available for thumbnails.'
       - label: HD stream
@@ -153,6 +163,54 @@ sections:
       - label: Monitor
         text: 'camera-monitor.service is active and will restart go2rtc if streams fail 3 times in a row.'
 
+  - title: Xiaomi C201 (Mi Home cloud camera)
+    icon: video
+    layout: list
+    items:
+      - label: Model
+        text: 'Xiaomi Smart Camera C201 (model xiaomi.camera.c201, did 1213157088)'
+      - label: Network
+        text: 'LAN 192.168.2.77; region sg; Mi account userId 6891138643'
+      - label: Transport
+        text: 'Xiaomi P2P via go2rtc xiaomi:// source (no local RTSP on the camera). Each connect needs Internet to fetch encryption keys.'
+      - label: go2rtc streams
+        text: 'xiaomi_c201 (SD HEVC 848x480+opus), xiaomi_c201_hd (subtype=3), xiaomi_c201_h264 (H.264 transcode of xiaomi_c201), xiaomi_c201_hd_h264 (H.264 1920x1080 transcode of the HD feed for browsers)'
+      - label: Auth
+        text: 'Requires Mi passToken in go2rtc.yaml: xiaomi: "6891138643": V1:***. Get it from account.xiaomi.com cookies (userId + passToken). Token historically expired ~3 days (issue #2233); the dev build re-logins automatically. v1.9.14 WebUI login is broken (cannot obtain passToken).'
+      - label: HA entities
+        text: 'camera.xiaomi_c201 (HD via go2rtc), camera.xiaomi_c201_sd, plus xiaomi_miot controls (switch status, motion detection, night shot, indicator light)'
+      - label: Dashboard
+        text: 'lovelace-smart-home.yaml picture card with HD /local/cam/last-xiaomi-frame.jpg thumbnail; tap opens stream.html?src=xiaomi_c201_hd_h264'
+      - label: Verified
+        text: '2026-09-08: RTSP hevc 848x480+opus OK; browser H.264 playback 848x480 verified via PlayLive; snapshot frame endpoint working'
+      - label: Two-way audio
+        text: 'Supported by the go2rtc xiaomi module — use the mic button in stream.html (WebRTC)'
+      - label: Access URLs
+        text: 'https://tony-dell.taila0626a.ts.net:8448/stream.html?src=xiaomi_c201_h264 ; rtsp://127.0.0.1:8554/xiaomi_c201{,_hd,_h264} ; http://127.0.0.1:1984/api/frame.jpeg?src=xiaomi_c201'
+
+  - title: Xiaomi C100 (Mi Home cloud camera)
+    icon: video
+    layout: list
+    items:
+      - label: Model
+        text: 'Xiaomi Smart Camera C100 (model chuangmi.camera.077ac1, did 1193098531)'
+      - label: Network
+        text: 'LAN 192.168.2.81; region sg; Mi account userId 6891138643'
+      - label: Transport
+        text: 'Xiaomi P2P via go2rtc xiaomi:// source (no local RTSP on the camera). Each connect needs Internet to fetch encryption keys.'
+      - label: go2rtc streams
+        text: 'xiaomi_c100 (SD HEVC 848x480+opus), xiaomi_c100_hd (subtype=3 2304x1296), xiaomi_c100_h264, xiaomi_c100_hd_h264 (H.264 transcoded for browsers/TV cast)'
+      - label: Miot
+        text: 'Added via xiaomi_miot host/token (entry 01M2812CNMSTTP9VJ4D0GA7WA5). Token stored in ~/.config/secrets/xiaomi-c100-token.env (from ~/.config/secrets/xiaomi-miot.env).'
+      - label: HA entities
+        text: 'camera.xiaomi_c100 (HD via go2rtc), camera.xiaomi_c100_sd; Miot: switch.chuangmi_077ac1_7d2c_switch_status, sensor.chuangmi_077ac1_7d2c_status, switch.chuangmi_077ac1_7d2c_motion_detection, select.chuangmi_077ac1_7d2c_night_shot, light.chuangmi_077ac1_7d2c_indicator_light (plus storage, watermark, WDR, recording, AI sensitivity controls)'
+      - label: Dashboard
+        text: 'lovelace-smart-home.yaml picture card with HD /local/cam/last-xiaomi-c100-frame.jpg thumbnail; tap opens stream.html?src=xiaomi_c100_hd_h264 or casts to TV. New "Xiaomi C100 Controls" entities card for Miot controls and camera.xiaomi_c100 live stream.'
+      - label: Verified
+        text: '2026-09-11: RTSP hevc 848x480+opus and HD 2304x1296 OK; H.264 transcoded streams OK; freeze-frame JPEG generated; Miot integration loaded and controls available'
+      - label: Access URLs
+        text: 'https://tony-dell.taila0626a.ts.net:8448/stream.html?src=xiaomi_c100_h264 ; rtsp://127.0.0.1:8554/xiaomi_c100{,_hd,_h264} ; http://127.0.0.1:1984/api/frame.jpeg?src=xiaomi_c100'
+
   - title: Next Steps
     icon: arrow-right
     layout: list
@@ -162,7 +220,7 @@ sections:
       - label: Thumbnail reliability
         text: 'Use go2rtc snapshot endpoint with src=ip_cam_65_low for dashboard cards instead of the ffmpeg camera frame.'
       - label: PTZ and speaker
-        text: 'Investigate vendor-specific CGI/HTTP API or replace with an ONVIF/RTSP controllable camera if needed.'
+        text: 'DHCP reservation for 192.168.2.71 verified in the ZTE F688 router (binding name ipcam65, MAC d4:9e:3b:6a:94:90). Investigate vendor-specific CGI/HTTP API for PTZ.'
       - label: Future hardware
         text: 'Consider a H.264-native or ONVIF-compliant camera to eliminate H.265 transcoding and enable PTZ/speaker control.'
 
@@ -178,9 +236,12 @@ config:
     - /home/tony/.config/home-assistant/update-cam-frame.sh
     - /home/tony/.config/home-assistant/www/cam/last-cam-frame.jpg
     - /home/tony/.config/home-assistant/www/cam/last-usb-frame.jpg
+    - /home/tony/.config/home-assistant/www/cam/last-xiaomi-c100-frame.jpg
     - /home/tony/.config/home-assistant/configuration.yaml
     - /home/tony/.config/home-assistant/lovelace-smart-home.yaml
     - /home/tony/.config/secrets/home-assistant-token.env
+    - /home/tony/.config/secrets/xiaomi-miot.env
+    - /home/tony/.config/secrets/xiaomi-c100-token.env
     - /home/tony/CascadeProjects/chaba-tony-dell/docs/ssot/infrastructure/ssot.services.yml
     - /home/tony/CascadeProjects/chaba-tony-dell/experiments/ultralytics-yolo-ha/server.py
     - /home/tony/.config/systemd/user/yolo-xiaomi.service

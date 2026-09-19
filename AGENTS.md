@@ -40,12 +40,21 @@ Valid modes: `normal`, `plan`, `build`, `review`.
 - The `michael-dev` token in `~/.config/secrets/ha-michael-dev.env` is valid and works for REST (verified 2026-09-04).
 - Tailscale SSH (`ssh tony-dell`) periodically requires a browser auth check; it prints a `login.tailscale.com/a/...` link — ask the user to open it, then retry.
 
+## Deployment policy
+
+- **Never auto-deploy from michael-dev.** Building and previewing on `michael-dev` is fine, but deploying or promoting the bundle/dashboard to `michael-ha` or `tony-ha` requires explicit user approval in the same session.
+- `deploy-card.sh` is dev-only by default; use `promote-michael.sh` or `promote-tony.sh` for live hosts.
+- Even if `tony-ha` runs on the same machine (`tony-dell`), copying a bundle or resource to it is a deploy and must be approved.
+
 ## Build / deploy commands
 
 - Build card: `cd /home/tony/CascadeProjects/sunsynk-power-flow-card && npm run build`
+- Typecheck before trusting the bundle: `npx -p typescript tsc --noEmit` (the rollup build uses Babel and does NOT type-check)
 - Restart michael-dev: `ssh tony-dell 'systemctl --user restart michael-dev.service'`
 - Restart michael-ha: `ssh michael-ha 'ha core restart'`
-- Deploy card bundle: `./scripts/home-assistant/deploy-card.sh [--host michael-dev|michael-ha|all]` — builds, derives next version from the *target's* remote `lovelace_resources`, scp's, restarts, verifies HTTP 200. Version numbers are per-host; verify parity by `md5sum`, not version.
+- Deploy card bundle to dev: `./scripts/home-assistant/deploy-card.sh` — builds, derives the next version from michael-dev's `lovelace_resources`, scp's, restarts, verifies HTTP 200.
+- Promote dev bundle/views to michael-ha: `./scripts/home-assistant/promote-michael.sh --views g1,g2,tpl` (requires explicit user approval)
+- Promote dev bundle/views to tony-ha: `./scripts/home-assistant/promote-tony.sh --views g1,g2,tpl` (requires explicit user approval; seed the resource on first run).
 - Push dashboard config live (no restart): `python3 scripts/home-assistant/push-dashboard.py <ha_url> tony-test --mutate /tmp/mutate.py` (dev: `source ~/.config/secrets/ha-michael-dev.env`; ha: `HASS_TOKEN=$(cat ~/.local/share/home-assistant-michael/ha-token)`)
 - Apply a TPL template onto a view tile: `python3 scripts/home-assistant/apply-tpl.py <ha_url> tony-test tpl pfg2 --map "Title:r,c;..."` (does NOT copy pfg_spans; add `--dry-run` to preview)
 - Sync live dashboard into repo: `./scripts/home-assistant/sync-ssot-from-live.sh`
@@ -75,15 +84,20 @@ Parallel sessions caused real breakage: duplicated `pfg2-card.ts`, undeclared `v
 2. **Deploy lock** — `deploy-card.sh` uses `flock /tmp/pfg-deploy.lock`; concurrent deploys are refused. Do not bypass it.
 3. **Dashboard pushes** — whoever runs `push-dashboard.py` must run `sync-ssot-from-live.sh` immediately after, then commit. The live dashboard is a shared resource; unsynced mutations are the main source of drift between sessions.
 
-## Current state (2026-09-07)
+## Current state (2026-09-09)
 
-- Active card bundle: `v100` on michael-dev / `v99` on michael-ha — same md5 (`fe9942680fb5…`), source commit `f7aa98d`. Version numbers are per-host; compare content by md5.
-- Deployed: `michael-dev` (PF3/PF4/PFG/PFG1/PFG2/TPL/Dossier) and `michael-ha` (PFG2 first tab, TPL after SK).
-- `cardstyle` branches: `lite` (PF3/PF4), `pfg` (PFG/PFG1/TPL), `pfg2` (PFG2 — same renderer as `pfg`, `pfg_grid_size` default 15; `pfg2-card.ts` was removed in v71).
-- `pfg`/`pfg2` full key set — `pfg_images`, `pfg_labels`, `pfg_label_pos`, `pfg_icons`, `pfg_values`, `pfg_value_labels`, `pfg_value_label_pos`, `pfg_image_zoom`, `pfg_image_fit`, `pfg_lines`, `pfg_spans` (incl. `RxC` and responsive `{square,portrait,landscape}`), `pfg_radius`, `pfg_border`, `pfg_sums`, `pfg_grid_size`, `pfg_grid_cols`, `pfg_grid_rows`, `pfg_grid_width`, `pfg_hide_grid`, `pfg_transparent`, `pfg_fit_screen`, `pfg_inverter_at`, `pfg_charts` (gauge/bar/history/cycle/bars) — see `ssot.home-assistant.design.yml`.
-- PFG2 layout (9 cols × 10 rows, transparent, hide-grid, free-fit): PV1 `1,1`, PV2 `1,4`, Grid `1,7`, PV Total `3,1`, Inverter `3,4`, Batt `5,1`, Home `5,7`, Living `7,4`, Kitchen `7,7`, Laundry `9,4`, Pool `9,7` — all spans `2x3`. Empty band `r3–4, cols 7–9` is intentionally open.
-- TPL tab holds single-tile templates applied via `apply-tpl.py` (e.g. `PV.b1`, `Temp`, `Freq`, `Daily`).
-- The `michael-dev` token in `~/.config/secrets/ha-michael-dev.env` is valid and works for REST and websocket.
+- Active card bundle: `v207` on michael-dev; `v206` on michael-ha and tony-ha. Per-host counters; verify parity by md5, not version.
+- Chart code is modularized under `src/cards/pfg/` (registry + `chartOverlayStyle` + per-type files in `charts/` plus `pfg3d-loader.ts` and `pfg3d-chart.ts`). `pfg-shared.ts` is gone — update imports to `./pfg`.
+- 3D charts (`surface3d`/`bar3d`) are now rendered by a reactive `<pfg-3d-chart>` custom element: incremental hourly-statistics refresh, camera state preserved on updates, and observers/listeners cleaned up on disconnect.
+- `deploy-card.sh` is dev-only; live promotion uses `promote-michael.sh` (michael-ha) and `promote-tony.sh` (tony-ha) and requires explicit user approval.
+- echarts/echarts-gl are vendored at `/local/echarts-5.5.1.min.js` + `/local/echarts-gl-2.1.0.min.js` on both hosts; `surface3d`/`bar3d` try local first, CDN fallback.
+- 3D chart lessons (G1 surface3d / G2 bar3d): use `xAxis3D.type: 'category'` + `data` order for hour axes — `inverse` on a `value` axis is ignored by ECharts GL. See `pfg_3d_charts` runbook in `docs/ssot/infrastructure/ssot.home-assistant.howto.yml`.
+- History/accumulating charts share the localStorage incremental cache policy (`data_cache_policy` in `ssot.home-assistant.design.yml`).
+- michael-ha credentials: API/websocket token = `~/.config/secrets/ha-michael-live.env` (the `ha-token` file was refreshed to the same value 2026-09-08); UI login = `~/.local/share/home-assistant-michael/credentials.json` (`nakva`).
+- michael-ha sidebar verified visually: Overview, Dossier, Map, Tony test + built-ins (Energy/Activity/History/File editor/HA-MCP/HACS/Matter Server/Settings/Notifications).
+- michael-ha tony-test tabs: `V0 (p0) → V1 (p0-2) → G1 → SK → TPL → juWorkshop → Solar Assistant → glass → Weather`.
+- New `/local/` assets may 404 in cached browsers while curl returns 200 — bump the reference `?v=N` in the config (runbook: `stale_local_asset_404` in howto SSOT).
+- `apply-tpl.py` gained `--bg` (forces copied charts to `position: "bg"`).
 - Dashboard snapshot is `docs/home-assistant/dashboards/tony-test-current.json`.
 - Post-restart MCP verification: all 18 configured Devin MCP servers are reachable after tony-dell restart. `michael-dev` and `tony-ha` `ha_mcp_tools` require `_READY_STALL_TIMEOUT_SECONDS=300s` / `_READY_TOTAL_CAP_SECONDS=900s` in `embedded_server.py` to avoid startup timeout on HA 2026.9.0. `github` MCP now uses `~/.config/devin/mcp-scripts/mcp-github-proxy.py`.
 
@@ -147,3 +161,399 @@ Caveats:
 - iOS microphone works in Safari, not in standalone home-screen PWA mode.
 - iPad requires `msaaSamples:1` to avoid Cesium WebGL crash.
 - Current implementation uses Gemini output transcription text only; no audio playback.
+
+# Devin on tony-dell — crash/runbook (2026-09-12)
+
+## Restart after a crash
+
+`devin-desktop` must be launched with the active X display on tony-dell. The process is *not* a systemd service; it is started as a background `nohup` job and shows up in `pgrep -a -f devin-desktop`.
+
+Quick restart command:
+
+```bash
+ssh tony-dell 'export DISPLAY=:1 XAUTHORITY=/run/user/1000/gdm/Xauthority; nohup /usr/bin/devin-desktop > /home/tony/.local/share/devin/cli/devin-restart-20260912.log 2>&1 </dev/null &'
+```
+
+Verify:
+
+```bash
+ssh tony-dell 'pgrep -a -f devin-desktop | grep -v "pgrep\|ssh\|tailscaled"'
+```
+
+## What was observed today
+
+- Installed version: `devin-desktop 3.10.23-1789035177`.
+- The main process was not running; five stale `app-devin-desktop-*.scope` units remained, holding orphaned child processes (yolo server, websockify, etc.).
+- `~/.local/share/devin/cli/watchdog.log` showed the renderer being killed by the watchdog when CPU stayed above 50% for 10s.
+- The last session log ended with `Parent process exited; shutting down ACP server` and was full of `affogato::agent::control_loop: max_trailing_images=1 HTTP 413 Payload Too Large` errors.
+- `~/.local/share/devin/cli/sessions.db` is ~2.0 GiB.
+
+## Log locations
+
+- Devin logs: `~/.local/share/devin/cli/logs/devin_YYYYMMDD-HHMMSS_<pid>.log`
+- Watchdog log: `~/.local/share/devin/cli/watchdog.log`
+- Cleanup log: `~/.local/share/devin/cli/cleanup.log`
+
+## Open problems to watch
+
+- `HTTP 413 Payload Too Large` with `max_trailing_images=1` may return if large screenshots are sent; the Headroom proxy (`http://127.0.0.1:8787`) was not running during this incident.
+- If the new `3.10.23` build keeps crashing, the cached `3.9.19-1788908513` deb is available in `/var/cache/apt/archives/` and can be downgraded.
+
+## Ada Pi PWA (learned 2026-09-13)
+
+### Runtime
+
+- Production URL: `https://tony-dell.taila0626a.ts.net/apps/ada_pi/`
+- Funnel: enabled (`tailscale funnel --bg --https=443 --yes 127.0.0.1:8085`)
+- Caddy on tony-dell: listens on `127.0.0.1:8085`, configured in `~/.config/caddy/Caddyfile.tony-dell`
+- Backend: `pwa_server.py` via `~/.config/systemd/user/ada-pi-pwa.service`, running on `0.0.0.0:8001`
+- Python venv: `/home/tony/CascadeProjects/ada-pi/.venv`
+- API key: from `~/.config/yomi/yomi-api.env` (`GEMINI_API_KEY`) into `~/.config/secrets/ada-pi-pwa.env`
+- WebSocket: `wss://tony-dell.taila0626a.ts.net/apps/ada_pi/ws`
+
+### Caddy routing
+
+- `/apps/ada_pi/*` → `127.0.0.1:8001` (strips `/apps/ada_pi` prefix)
+- `/apps/home-assistant/*` → `127.0.0.1:8123`
+- `/` → `127.0.0.1:80`
+
+### Service commands
+
+- `ssh tony-dell 'systemctl --user {start,stop,status} ada-pi-pwa caddy-tony-dell'`
+- `ssh tony-dell 'sudo -n tailscale funnel status'`
+- `ssh tony-dell 'sudo -n tailscale funnel --https=443 off'` to disable
+
+### SSOT
+
+- `docs/ssot/apps/ssot.apps.ada_pi.yml` and `docs/ssot/apps/ssot.apps.yml` list `ada-pi` under `tony-dell` host.
+
+## Ada HA PWA (learned 2026-09-13)
+
+### Runtime
+
+- Production URLs: `https://mn01.taila0626a.ts.net/apps/ha/ada-tony/` and `https://mn01.taila0626a.ts.net/apps/ha/ada-michael/` (legacy `/apps/ada_ha_*` 308-redirects)
+- Backend:
+  - `~/.config/systemd/user/ada-ha-tony.service` running `uvicorn pwa_server:app --port 8002`
+  - `~/.config/systemd/user/ada-ha-michael.service` running `uvicorn pwa_server:app --port 8003`
+- Env files:
+  - `~/.config/secrets/ada-ha-tony.env` → `tony-ha` (`https://tony-dell.taila0626a.ts.net:8123/`), `ADA_INSTANCE_ID=tony`, `ADA_API_KEY` set
+  - `~/.config/secrets/ada-ha-michael.env` → `michael-ha` (`http://michael-ha:8123/`), `ADA_INSTANCE_ID=michael`, `ADA_API_KEY` set
+  - `ada-pi-pwa.env` on tony-dell also sets `ADA_INSTANCE_ID=tony` (same HA, shared memory) + `ADA_API_KEY`
+- `ADA_API_KEY` gates `POST .../entities/{id}/power`, `GET /api/tools`, `POST /api/tools/call`, **and `/ws`** (4401 reject). Read GETs stay open. Optional `ADA_API_KEYS=name:key,...` gives per-caller names in logs + per-key revocation. `POST /api/auth/session` trades a key for a 12h HMAC HttpOnly cookie (`ada_session`, path = app base); `GET /api/auth/status` reports auth state; `POST /api/auth/logout` clears it. PWA: `?api_key=` unlocks (stripped from URL after storing), a Lock/Unlock button in the toolbar manages state, and a full-screen unlock card validates the key before storing.
+- Key ops: `scripts/ada-key-url.sh <tony|michael|ada-pi> [--qr]` prints the unlock deep-link; `/apps/ha/pair/` issues named per-device keys + one-time QR links (`POST /api/auth/keys`, persisted to `~/.config/secrets/ada-ha-<inst>-keys.json`, revocable via `DELETE`). `--qr` mints a **one-time** `/redeem/{token}` URL via `POST /api/auth/redeem-token` — burns on first GET, expires in `ADA_REDEEM_TTL_S`=600s, hands the device the key + session cookie); `scripts/rotate-ada-key.sh <instance>` rotates + restarts + prints the new link.
+- **`ADA_INSTANCE_ID` is required, fail-fast** (since 2026-09-17, ada-pi `b870d37`): it pins the MDDB memory collections (`ada-ha-snapshots|device-confidence|device-safety|events-<id>`). Never derive collection identity from `HOME_ASSISTANT_URL` — URL changes used to silently orphan all memory (`ada-ha-*-http-127-0-0-1-8123` orphans still exist). Missing/invalid → service refuses to start. Rule: **fail quick and report — no silent fallback for identity config.**
+- Caddy: `~/.config/caddy/Caddyfile.mn01` routes `/apps/ha/ada-tony/` to `127.0.0.1:8002` and `/apps/ha/ada-michael/` to `127.0.0.1:8003` (legacy `/apps/ada_ha_*` paths 308 to the canonical ones); tony-dell's Caddyfile also proxies the canonical paths to mn01
+- WebSocket: `wss://mn01.taila0626a.ts.net/apps/ha/ada-tony/ws` and `wss://mn01.taila0626a.ts.net/apps/ha/ada-michael/ws`
+- Home Assistant: `tony-ha` at `https://tony-dell.taila0626a.ts.net:8123/`, `michael-ha` at `http://michael-ha:8123/`
+- Navigation: `https://mn01.taila0626a.ts.net/apps/ha/` and `https://mn01.taila0626a.ts.net/apps/`
+
+### Service commands
+
+- `ssh mn01 'systemctl --user {start,stop,status} ada-ha-tony ada-ha-michael'`
+- `ssh mn01 'systemctl --user restart caddy-mn01'`
+- Deploy code: `scripts/deploy-ada.sh <mn01|tony-dell|all> [--restart]` — ff-only pull on the runtime checkout, restarts only on `.py`/requirements changes (static files serve from disk), fails fast on dirty tree / wrong tracking / divergence. **Runtime checkouts are read-only consumers of `origin/main` — never commit or merge on mn01/tony-dell.**
+
+### REST endpoints
+
+- `GET /api/home-assistant/entities` — list controllable devices
+- `GET /api/home-assistant/sensors?search=<term>&limit=<n>` — list sensor entities
+- `GET /api/home-assistant/history?entity_id=<id>&hours=<n>` — fetch raw state history for one sensor
+- `GET /api/home-assistant/power-summary?hours=<n>` — G3 power summary (current + min/max/mean over N hours)
+- `POST /api/home-assistant/entities/{entity_id}/power` — turn light/switch/fan on or off
+
+### Gemini tools
+
+- `get_home_state` — current person state + watched plugs
+- `control_entity` — turn a light/switch/fan/input_boolean on or off
+- `get_power_summary` — voice summary of G3 solar/grid/load/battery data and recent history
+- `get_sensor_history` — detailed recent history for a specific sensor
+- `list_sensors` — list available sensor entities with current state and unit
+- `search_sensors` — find a sensor by name or keyword
+- `get_dashboard_tab` — read the named tab from the michael-ha tony-test dashboard and return its devices/states
+
+### SSOT
+
+- `docs/ssot/apps/ssot.apps.ada_ha.yml` and `docs/ssot/apps/ssot.apps.yml` list `ada-ha`, `ada-ha-tony`, and `ada-ha-michael` under the `mn01` host.
+
+### Network notes
+
+- `tony-dell.local` (mDNS) is not resolvable from the dev machine; use `tony-dell` (Tailscale) or the Tailscale IP instead.
+
+# ESP32 Test (esp32test) — learned 2026-09-14
+
+## Config
+
+- Source: `esp32/config.yaml`
+- Build path: `esp32/.esphome/build/esp32test/`
+- ESPHome: installed via `pipx` as `2026.8.2` (Python 3.14.4)
+- Board: `esp32dev`, framework `arduino`, chip ESP32-D0WD-V3 rev 3.1, MAC `c0:cd:d6:85:a8:38`
+
+## WiFi
+
+- Active SSID: `Xiaomi_A654`
+- IP: `192.168.31.231`, gateway `192.168.31.1`
+- Configured networks: `Xiaomi_A654` and `AisMN_2.4G` (both use `starboardwind`)
+- 5 GHz entries (`tony5`, `albatros5`, `aismn5g`) removed to fix 2.4 GHz-only ESP32 connection
+- `esp32/secrets.yaml` holds `!secret` placeholders for legacy networks and the real MQTT credentials
+
+## MQTT
+
+- Broker: `michael-ha` Mosquitto at `192.168.1.160:1883`
+- Credentials: username `mqtt` (password saved to `esp32/secrets.yaml`, `chmod 600`)
+- Credentials were found in `michael-ha` `/config/.storage/core.config_entries`
+- `michael-ha` HA auto-discovers the device via MQTT; entity IDs:
+  - `binary_sensor.esp32_test_node_status`
+  - `light.esp32_test_display_backlight`
+  - `sensor.esp32_test_connected_ssid`
+  - `sensor.esp32_test_ip_address`
+  - `sensor.esp32_test_uptime`
+  - `sensor.esp32_test_wifi_signal`
+  - `sensor.esp32_test_free_heap`
+
+## Flash / access
+
+- USB port: CH340 at `/dev/ttyUSB0` (root:dialout), needs `sudo chmod 666 /dev/ttyUSB0` or `dialout` group
+- Compile: `cd chaba && esphome compile esp32/config.yaml`
+- USB flash: `esphome run esp32/config.yaml --device /dev/ttyUSB0`
+- OTA: `esphome run esp32/config.yaml --device 192.168.31.231`
+- Direct `esphome` / ping access requires being on `Xiaomi_A654`; `michael-ha` can see it only through MQTT, not by IP
+
+## Caddy HA subpath redirects (2026-09-15)
+
+- The Caddy subpath URLs under `/apps/ha/<instance>/` are now 308 redirects to the dedicated HTTPS endpoints.
+- `tony-ha`: `https://tony-dell.taila0626a.ts.net/apps/ha/tony-ha/` -> `https://tony-dell.taila0626a.ts.net:8123/`
+- `michael-dev`: `https://tony-dell.taila0626a.ts.net/apps/ha/michael-dev/` -> `https://tony-dell.taila0626a.ts.net:8124/`
+- `michael-ha`: `https://tony-dell.taila0626a.ts.net/apps/ha/michael-ha/` -> `https://nupo4ndqdqydt78zmpq0z5wzp1bdrqgs.ui.nabu.casa/`
+- Caddyfile: `~/.config/caddy/Caddyfile.tony-dell`; apply with `caddy fmt --overwrite /home/tony/.config/caddy/Caddyfile.tony-dell` and `systemctl --user restart caddy-tony-dell`.
+- HA is bound to loopback (`127.0.0.1:8123` and `127.0.0.1:8124`) and exposed via Tailscale Serve on the same ports.
+
+## Tailscale subnet-route conflict (learned 2026-09-16)
+
+- `tony-dell` advertises `192.168.2.0/24` as a Tailscale subnet route (for remote tailnet access); `michael-ha` advertises `192.168.31.0/24`.
+- On nodes physically on `192.168.2.x`, Tailscale table-52 rules prefer the tunnel for the local subnet — LAN peers then see replies from the wrong source IP and TCP breaks (e.g., Deskreen on tony-omen unreachable from the iPad).
+- Fix on tony-omen: `lan-route-pref.service` (systemd) adds `ip rule ... to 192.168.2.0/24 priority 5000 lookup main` so LAN traffic uses `wlo1` directly. Check with `ip rule | grep 5000` and `ip route get <lan-ip>`.
+- `tony-dell` and `mn01` are on the same LAN and may need the same rule — unverified; check `ip route get` on each before assuming LAN reachability works there.
+
+## NotebookLM (learned 2026-09-15)
+
+- `notebooklm-mcp-cli` (MCP/CLI) stores auth in `~/.notebooklm-mcp-cli/`, managed by `nlm`.
+- `notebooklm-py` (REST) uses `storage_state.json`; it expires more quickly than the `nlm` cookies.
+- Auth refresh: `~/.local/bin/notebooklm-rest-auth-refresh` runs daily on tony-omen, `rsync`s `storage_state.json` to tony-dell, and restarts `notebooklm-rest`.
+- CLI helpers: `~/.local/bin/nlm` (MCP/CLI via tony-dell container), `~/.local/bin/nbapi` (REST helper).
+- REST public URL: `https://tony-dell.taila0626a.ts.net/apps/notebooklm/api/v1/...` with `X-API-Key` from `~/.config/secrets/notebooklm-rest-api.env`.
+- Common commands:
+  - `nlm notebook list`
+  - `nbapi /v1/notebooks`
+  - `systemctl --user {start,stop,status} notebooklm-rest`
+  - `systemctl --user {start,status} notebooklm-rest-auth-refresh.service`
+- Google Drive collections:
+  - Top-level folder: `notebooklm/` (`1beIctIVvLYKwsLwRNap7UXi3ZbFnS0xG`)
+  - Default collection: `chaba/` (`1H7FHxy5nDxMOmcFtL79lmy_bttV35kjB`)
+  - Add by Drive source: `nlm source add <nb> --drive <FILE_ID> --type doc --wait`
+  - Add from rclone path: `rclone copy <local> gdrive:notebooklm/chaba` then add the Drive file by ID
+- Per-notebook file storage:
+  - Drive folder: `gdrive:notebooklm/chaba/notebooks/<notebook-id>/files`
+  - Local manifest: `~/.local/share/notebooklm/notebooks/<notebook-id>/manifest.yml`
+  - Helper: `nlm-add <notebook-id> <local-file> [-t "<title>"]`
+  - `nlm-add` converts `.md`/`.yml`/`.txt` to `.docx` on upload, adds by Drive ID, and records the source in the manifest
+
+## Chrome Remote Desktop (tony-dell)
+
+### Service
+
+- Instance unit: `chrome-remote-desktop@tony.service` (system unit, not user unit).
+- Status / start / stop:
+  - `chrome-remote-desktop --get-status`
+  - `sudo systemctl {start,stop,restart} chrome-remote-desktop@tony`
+- `chrome-remote-desktop-environment.service` (user) only injects environment; do not rely on it to run the host.
+
+### Known failure modes & fixes
+
+- Default Xorg+dummy path fails as non-root with `parse_vt_settings: Cannot open /dev/tty0 (Permission denied)`. Fix: force Xvfb.
+  - Drop-in: `/etc/systemd/system/chrome-remote-desktop@tony.service.d/xvfb.conf`
+    ```
+    [Service]
+    Environment=CHROME_REMOTE_DESKTOP_USE_XVFB=1
+    ```
+  - Then `sudo systemctl daemon-reload && sudo systemctl restart chrome-remote-desktop@tony`.
+- `~/.chrome-remote-desktop-session` must `exec` a long-running desktop/WM process. `startlxqt` (`lxqt-session`) segfaults in the headless Xvfb display; use `startxfce4` instead.
+  - Current session file: `exec /usr/bin/startxfce4`
+
+## Web app deployment (tony-dell Caddy)
+
+### Source vs served directory
+
+- Repo source: `stacks/web/public/apps/`
+- Caddy `file_server` root: `~/.config/caddy/public/apps/` on tony-dell
+- Caddy `handle_path /apps/*` in `~/.config/caddy/Caddyfile.tony-dell` serves from the root above, not the repo
+- Changing files in the repo does **not** make them live until they are copied to Caddy's public directory
+
+### Workflow
+
+1. Add app files to `stacks/web/public/apps/<your-app>/` (with an `index.html`)
+2. Regenerate `apps.yml`:
+   - `python3 /home/tony/CascadeProjects/chaba/scripts/apps-yml-generate.py --generate --verify`
+3. Commit/push
+4. The `apps-health-sync.timer` will:
+   - regenerate `docs/ssot/infrastructure/ssot.health.home.apps.yml`
+   - `rsync` public apps to tony-dell's Caddy root
+   - run a live HTTP verification against `https://tony-dell.taila0626a.ts.net`
+
+### Manual sync
+
+```bash
+rsync -avz /home/tony/CascadeProjects/chaba/stacks/web/public/apps/ tony-dell:/home/tony/.config/caddy/public/apps/
+```
+
+### Verification
+
+- Local consistency: `python3 scripts/apps-yml-generate.py --verify`
+- Live HTTP checks: `python3 scripts/apps-yml-generate.py --verify --live`
+- Timer: `systemctl --user status apps-health-sync.timer` (daily)
+- When working, the CRD virtual display lives on `:20` (`/tmp/.X11-unix/X20`).
+
+## NotebookLM as the Chaba KB
+
+### Notebook
+
+- ID: `fdfd3483-6b7e-4cb0-85f3-7f060698769c`
+- Title: `Chaba KB search benchmark`
+- URL: `https://notebooklm.google.com/notebook/fdfd3483-6b7e-4cb0-85f3-7f060698769c`
+
+### What is synced
+
+- `AGENTS.md`
+- `README.md`
+- `docs/ssot/infrastructure/*.yml`
+- `docs/ssot/apps/*.yml`
+- `docs/ssot/ssot*.yml`
+- `docs/kb/**/*.md` and `*.yml`
+- `apps/dev/v0/README.md`
+- `experiments/gold-thb-usd-causality/app/README.md`
+- `experiments/meshtastic-th-collector/README.md`
+- `mcp-servers/mcp-health/README.md`
+- `stacks/ha-live/README.md`
+- `workflows/README.md`
+
+### Sync
+
+- Script: `scripts/notebooklm-kb-sync.py`
+- Timer: `systemctl --user status notebooklm-kb-sync.timer` (daily)
+- Manual: `python3 scripts/notebooklm-kb-sync.py`
+- Config: `docs/ssot/infrastructure/ssot.values.yml` → `notebooklm.sync`
+- Dry run: `python3 scripts/notebooklm-kb-sync.py --dry-run`
+- Post-commit hook: `.git/hooks/post-commit` runs an incremental sync when `docs/kb/`, `docs/ssot/`, `AGENTS.md`, or `README.md` change
+
+### How to query
+
+```bash
+# General query across all sources
+nlm query notebook fdfd3483-6b7e-4cb0-85f3-7f060698769c "<your question>" --timeout 120
+
+# Scoped to a category or a single chunk
+nlm query notebook fdfd3483-6b7e-4cb0-85f3-7f060698769c "<your question>" \
+  --source-ids <source-id-1>,<source-id-2> --timeout 120
+
+# Cached query wrapper (stores answers for 24h)
+nlmq fdfd3483-6b7e-4cb0-85f3-7f060698769c "What is MDDB used for?"
+
+# Cite a source back to original repo files
+nlm-cite kb/mddb
+nlm-cite 40893dfc-243a-4988-bd77-f1bc916ee303
+
+# Helper: query by source title pattern (uses the sync manifest)
+python3 scripts/notebooklm-query.py "kb/mddb" "What is MDDB used for?"
+python3 scripts/notebooklm-query.py "ssot/infrastructure" "What is the tony-dell Tailscale IP?"
+python3 scripts/notebooklm-query.py "-" "Summarize the Home Assistant setup."
+```
+
+### Helper scripts
+
+- `nlmq` — cached `nlm query` wrapper (`~/.local/bin/nlmq`)
+  - Same interface as `nlm query notebook <id> <question>`.
+  - Stores the raw answer in `~/.local/share/notebooklm/query-cache/` for 24h.
+  - Set `NLMQ_TTL` to change the cache lifetime in seconds.
+- `nlm-cite` — map a NotebookLM source title or source_id back to repo files
+  - `nlm-cite kb/mddb`
+  - `nlm-cite 40893dfc-243a-4988-bd77-f1bc916ee303`
+  - Uses `data/notebooklm-kb-sync-manifest.yml`.
+- `chaba-ask` — pick the right consumer for a natural-language question
+  - `chaba-ask "How do I restart the NotebookLM auth refresh?"` → routes to `nlmq`
+  - `chaba-ask "What is the tony-dell Tailscale IP?"` → tells you to use `mcp_query_ssot`
+- `nlm-pr-draft` — draft a PR description from the current branch's diff
+  - `nlm-pr-draft` or `nlm-pr-draft --base master`
+- `nlm-explain-log` — ask the KB to explain a recent log file
+  - `nlm-explain-log` or `nlm-explain-log -l /path/to.log`
+- `nlm-status` — list active sources in the Chaba KB notebook
+  - `nlm-status`
+- `make` shortcuts — see `Makefile`:
+  - `make ssot`, `make kb`, `make kb-dry`, `make nlmq Q="..."`, `make nlm-cite SOURCE=kb/mddb`
+- `verify-agents` — check that `AGENTS.md` bash snippets resolve to real executables/scripts
+  - `python3 scripts/verify-agents-commands.py`
+
+### Notes
+
+- Sync is incremental: only chunks whose sha256 changed are re-uploaded.
+- `--force` will delete and re-add all sources for a full refresh.
+- Sources are archived in Drive via `nlm-add`.
+
+## MDDB / chaba-glossary
+
+- Sync: `python3 scripts/sync-ssot-to-mddb.py` creates `chaba-glossary` from `ssot.values.yml` and `infrastructure-ssot` from all SSOT YAML.
+- Timer: `systemctl --user status ssot-mddb-sync.timer` (daily)
+- Exact values: query `chaba-glossary` (uses plain-English value statements).
+- Topic search: query `infrastructure-ssot` (raw SSOT YAML).
+- Example:
+  ```bash
+  curl -sS -X POST http://127.0.0.1:11023/v1/search \
+    -H "Content-Type: application/json" \
+    -d '{"collection":"chaba-glossary","query":"Tailscale IP of tony-dell","limit":1}'
+  ```
+- See `docs/kb/experiments/notebooklm-kb-search-benchmark-2026-09-15.md` for the comparison with MDDB.
+
+## Quick HA device assessment
+
+- Script: `scripts/home-assistant/assess-device.py`
+- One-liner:
+  ```bash
+  python3 /home/tony/CascadeProjects/chaba/scripts/home-assistant/assess-device.py michael-ha/sr258
+  python3 /home/tony/CascadeProjects/chaba/scripts/home-assistant/assess-device.py michael-ha/sensor.foo
+  python3 /home/tony/CascadeProjects/chaba/scripts/home-assistant/assess-device.py --format json --verbose michael-ha/number.sr258_temperature
+  ```
+- Supported instances: `michael-ha`, `michael-dev`, `tony-ha`
+- Tokens are read from `~/.config/secrets/ha-michael-live.env`, `~/.config/secrets/ha-michael-dev.env`, `~/.config/secrets/home-assistant-token.env` (or the matching `*_TOKEN` env vars).
+- Use the `home-assistant` MCP server for deeper config or write operations; `assess-device.py` is the fast read-only fallback.
+
+
+# AI Hub extension + Chrome remote debugging (learned 2026-09-17)
+
+## AI Hub extension
+
+- Source: `stacks/web/public/apps/ai-hub-extension/` (loaded unpacked, Chrome MV3).
+- Targets: chatgpt, gemini, gemini-images, claude, midjourney, aistudio. Prompt send/debug uses inline `chrome.scripting.executeScript` — no content-script dependency.
+- Cookie bridge: `cookie-bridge.mjs` runs on tony-omen `127.0.0.1:9876` (systemd user `cookie-bridge.service`, env `~/.config/ai-hub/cookie-bridge.env`). POST `/cookies` writes `~/.notebooklm/profiles/default/storage_state.json`, rsyncs to `tony-dell:~/.local/share/notebooklm/notebooklm-rest-data/storage_state.json` (the path the container mounts — NOT `notebooklm/`), restarts `notebooklm-rest`. Also `GET /health`, `POST /debug-screenshot`, `POST /page-dump`. Also reachable via Caddy: `https://tony-dell.taila0626a.ts.net/apps/notebooklm-cookies`. Bridge refuses unchanged sets and any sync that would drop auth/DBSC-bound cookies (SID/HSID/APISID).
+- **DBSC**: Chrome ≥136 binds `SID`/`HSID`/`APISID` to the device — `chrome.cookies` never sees them, so extension-captured state is always incomplete. The working path is `master_token.json` (minted cookies, no export): bootstrap via `~/.local/share/nlm-venv/bin/notebooklm login --master-token --account tonezzzz@gmail.com --cdp-url http://127.0.0.1:9228` (gpsoauth is in `nlm-venv`). The EmbeddedSetup sign-in tab appears to HANG after "I agree" — cosmetic only; the oauth_token is captured on the redirect and `master_token.json` + full `storage_state.json` (with SID) are written anyway. After bootstrap, `notebooklm auth refresh` re-mints headlessly.
+- `nbapi` wrapper (tony-dell `~/.local/bin/nbapi`) reads `NOTEBOOKLM_REST_API_KEYS` (first entry) from `~/.config/secrets/notebooklm-rest-api.env`. Master key rotated 2026-09-17; scoped keys `ada-michael`/`ada-tony` in `NOTEBOOKLM_REST_KEY_SCOPES` unchanged.
+- Extension storage keys: `bridgeUrl`, `cookiesJson`, `lastCookieSync`, `selectedTargets`, `nb*` fields. A stale saved `bridgeUrl` silently overrides the HTML default — this was the "capture/send no response" cause in the old profile.
+- Auto-sync fires on ANY google-domain `cookies.onChanged` with 60s cooldown; every sync restarts `notebooklm-rest` on tony-dell. Verified working (syncs ~every minute while Google tabs are open) — restart churn may be worth raising.
+
+## Chrome remote debugging (Chrome ≥136)
+
+- Chrome 136+ **refuses** `--remote-debugging-port` on the default user-data-dir ("DevTools remote debugging requires a non-default data directory").
+- Working setup on tony-omen: cloned profile at `~/.config/google-chrome-debug` — `rsync -a` of `Default/` minus `File System`, `Service Worker`, `Cache`, `Code Cache`, `GPUCache`, `Crashpad`, `blob_storage`, plus `Local State`. Google login carries over on the same machine (cookies decrypt via same OS keyring).
+- Launch: `DISPLAY=:0 google-chrome --remote-debugging-port=9228 --user-data-dir=$HOME/.config/google-chrome-debug --no-first-run --no-default-browser-check`
+- Verify: `curl http://127.0.0.1:9228/json/version`. playlive's `tony-omen` host already expects CDP on 9228.
+- This box IS tony-omen — run chrome/debug commands locally, not over ssh. `pkill -f remote-debugging` will match and kill the calling shell; use `pgrep -f "^/opt/google/chrome"` (anchored to the real binary path).
+
+## chrome-devtools-mcp
+
+- Config: `.devin/mcp_config.local.json` (gitignored) — `npx -y chrome-devtools-mcp@1.9.0 --browserUrl http://127.0.0.1:9228 --no-usage-statistics --no-performance-crux`. New sessions pick it up on restart.
+- 29 tools; page-scoped tools require `pageId` (pageIdRouting on by default — get IDs from `list_pages`).
+- **Known bug**: frozen/discarded background tabs make `browser.pages()`-based tools (`list_pages`, `take_snapshot`, `new_page`… ) hang forever — upstream issues #1230/#1918/#2114, unfixed. Workaround: don't restore big sessions in the debug profile (we deleted `Default/Sessions` + `Current/Last Session|Tabs`), or activate tabs first.
+- Manual stdio test: pipe JSON-RPC `initialize` + `tools/call` lines to the npx command; **keep stdin open** (`sleep` after printf) — closing stdin kills the server mid-call.
+
+## Inspecting the extension via CDP
+
+- AI Hub unpacked id: `emeljcclmededmnnnoejcccnbeadeilm` (sha256 of path → a-p map).
+- Its MV3 service worker only wakes on `action.onClicked` + `cookies.onChanged` (`serviceworkerevents` in `Default/Preferences`); `tabs.onActivated` listeners added later aren't wake-events until the SW re-registers (reload/bump manifest version). To wake it over CDP: set a cookie on any page (`document.cookie="x=1"` or `Network.setCookie`), then connect to its `webSocketDebuggerUrl` and `Runtime.evaluate` `chrome.*` APIs (`awaitPromise:true`).
+- In the debug profile: 85 google cookies, 14 notebooklm cookies — login carried over.

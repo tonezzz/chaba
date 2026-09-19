@@ -1,0 +1,56 @@
+title: ARP inventory alert
+subtitle: Network scan changes detected at 2026-09-08-210147
+icon: inbox
+focus:
+  label: Review ARP inventory scan results
+  text: 'ARP inventory scan found changes compared to the MAC/IP registries.
+
+
+    - New devices: 0
+
+    - New IP for known device: 2
+
+    - MAC changed: 3
+
+    - Conflicts: 3
+
+    - Duplicate MACs in scan: 0
+
+
+    Report: reports/network-inventory-scan-2026-09-08-210147.json'
+  branch: chaba
+  priority: medium
+  status: processed
+  tags:
+  - network
+  - arp
+  - inventory
+  - mac-registry
+  safe_to_parallel:
+    value: true
+    reason: Registry review only; does not change live services.
+  subtasks:
+  - label: Add new IP 192.168.2.91 for discovered-00e04c361276 to IP registry
+    status: completed
+  - label: Add new IP 192.168.2.89 for discovered-784f4386da1a to IP registry
+    status: completed
+  - label: Check MAC change for 192.168.2.67 (was discovered-484d7ee43ac7, now 48:4d:7e:e4:3a:c7)
+    status: completed
+  - label: Check MAC change for 192.168.2.68 (was tuya-plug-bedside, now 24:94:94:b0:f2:df)
+    status: completed
+  - label: Check MAC change for 192.168.2.87 (was tuya-plug-coffee, now 2c:b4:71:e8:aa:06)
+    status: completed
+  - label: 'Resolve MAC/IP conflict: 192.168.2.71 / d4:9e:3b:6a:94:90'
+    status: completed
+  - label: 'Resolve MAC/IP conflict: 192.168.2.70 / cc:50:e3:19:a0:2f'
+    status: completed
+  - label: 'Resolve MAC/IP conflict: 192.168.2.79 / 22:73:11:ed:13:53'
+    status: completed
+ownership:
+  owner: tony
+  session: ''
+  locked: false
+  lock_reason: ''
+source:
+  session: ''
+  date: '2026-09-09'

@@ -22,6 +22,7 @@ let audioCtx = null;
 let micStream = null;
 let micSource = null;
 let micProcessor = null;
+let micResampler = null;
 let visualizerCtx = null;
 let visualizerAnalyser = null;
 let visualizerSource = null;
@@ -29,7 +30,7 @@ let visualizerData = null;
 let visualizerFrame = null;
 let outputCtx = null;
 let outputProcessor = null;
-let outputQueue = [];
+let outputResampler = null;
 
 function setStatus(st, msg = '') {
   root.dataset.status = st;
@@ -69,6 +70,64 @@ function int16ToFloat(int16) {
   const out = new Float32Array(int16.length);
   for (let i = 0; i < int16.length; i++) out[i] = int16[i] / 0x7FFF;
   return out;
+}
+
+class Resampler {
+  constructor(inputRate, outputRate) {
+    this.step = inputRate / outputRate;
+    this.buffer = [];
+    this.phase = 0;
+  }
+
+  push(data) {
+    for (let i = 0; i < data.length; i++) this.buffer.push(data[i]);
+  }
+
+  drain() {
+    const out = [];
+    while (this.phase + 1 < this.buffer.length) {
+      const i = Math.floor(this.phase);
+      const frac = this.phase - i;
+      const a = this.buffer[i];
+      const b = this.buffer[i + 1];
+      out.push(a + (b - a) * frac);
+      this.phase += this.step;
+    }
+    this.prune();
+    return new Float32Array(out);
+  }
+
+  produce(n) {
+    const out = new Float32Array(n);
+    for (let j = 0; j < n; j++) {
+      if (this.phase + 1 >= this.buffer.length) {
+        out.fill(0, j);
+        break;
+      }
+      const i = Math.floor(this.phase);
+      const frac = this.phase - i;
+      const a = this.buffer[i];
+      const b = this.buffer[i + 1];
+      out[j] = a + (b - a) * frac;
+      this.phase += this.step;
+    }
+    this.prune();
+    return out;
+  }
+
+  prune() {
+    const lastIdx = this.buffer.length - 1;
+    if (this.phase >= lastIdx) {
+      this.buffer = this.buffer.slice(lastIdx);
+      this.phase -= lastIdx;
+    } else {
+      const used = Math.floor(this.phase);
+      if (used > 0) {
+        this.buffer = this.buffer.slice(used);
+        this.phase -= used;
+      }
+    }
+  }
 }
 
 function startVisualizer(stream) {
@@ -123,26 +182,20 @@ function stopVisualizer() {
 
 function startPlayback() {
   if (outputProcessor) return;
-  const ctx = new AudioContext({ sampleRate: 24000 });
-  const proc = ctx.createScriptProcessor(4096, 0, 1);
+  const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+  if (!AudioContextClass) return;
+  try {
+    outputCtx = new AudioContextClass({ sampleRate: 24000 });
+  } catch {
+    outputCtx = new AudioContextClass();
+  }
+  outputResampler = new Resampler(24000, outputCtx.sampleRate);
+  const proc = outputCtx.createScriptProcessor(4096, 0, 1);
   proc.onaudioprocess = (e) => {
     const out = e.outputBuffer.getChannelData(0);
-    let written = 0;
-    while (written < out.length && outputQueue.length) {
-      const chunk = outputQueue[0];
-      const take = Math.min(chunk.length, out.length - written);
-      out.set(chunk.subarray(0, take), written);
-      if (take === chunk.length) {
-        outputQueue.shift();
-      } else {
-        outputQueue[0] = chunk.subarray(take);
-      }
-      written += take;
-    }
-    if (written < out.length) out.fill(0, written);
+    out.set(outputResampler.produce(out.length));
   };
-  proc.connect(ctx.destination);
-  outputCtx = ctx;
+  proc.connect(outputCtx.destination);
   outputProcessor = proc;
 }
 
@@ -151,29 +204,46 @@ function stopPlayback() {
   if (outputCtx) { outputCtx.close().catch(() => {}); }
   outputProcessor = null;
   outputCtx = null;
-  outputQueue = [];
+  outputResampler = null;
 }
 
 function playAudio(b64) {
   startPlayback();
-  outputQueue.push(int16ToFloat(base64ToInt16(b64)));
+  outputResampler.push(int16ToFloat(base64ToInt16(b64)));
 }
 
 async function startMic() {
   if (micStream) return;
+  const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+  if (!AudioContextClass) {
+    setStatus('error', 'Web Audio not supported');
+    return;
+  }
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    setStatus('error', 'Microphone not available');
+    return;
+  }
   try {
     micStream = await navigator.mediaDevices.getUserMedia({
-      audio: { sampleRate: 16000, channelCount: 1, echoCancellation: true, noiseSuppression: true },
+      audio: { echoCancellation: true, noiseSuppression: true },
     });
-    audioCtx = new AudioContext({ sampleRate: 16000 });
+    try {
+      audioCtx = new AudioContextClass({ sampleRate: 16000 });
+    } catch {
+      audioCtx = new AudioContextClass();
+    }
     await audioCtx.resume();
+    micResampler = new Resampler(audioCtx.sampleRate, 16000);
     const source = audioCtx.createMediaStreamSource(micStream);
     const proc = audioCtx.createScriptProcessor(4096, 1, 1);
     proc.onaudioprocess = (e) => {
-      if (!ws || ws.readyState !== 1) return;
-      const floats = e.inputBuffer.getChannelData(0);
-      const pcm = floatToInt16(floats);
-      ws.send(JSON.stringify({ type: 'audio', data: int16ToBase64(pcm) }));
+      e.outputBuffer.getChannelData(0).fill(0);
+      if (!micResampler) return;
+      micResampler.push(e.inputBuffer.getChannelData(0));
+      const pcm = floatToInt16(micResampler.drain());
+      if (ws && ws.readyState === 1 && pcm.length) {
+        ws.send(JSON.stringify({ type: 'audio', data: int16ToBase64(pcm) }));
+      }
     };
     source.connect(proc);
     proc.connect(audioCtx.destination);
@@ -194,6 +264,7 @@ function stopMic() {
   micSource = null;
   micStream = null;
   audioCtx = null;
+  micResampler = null;
   stopVisualizer();
 }
 

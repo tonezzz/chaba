@@ -38,6 +38,7 @@ sections:
           - Devin skills directory - 4.0K
           - Global rules (global_rules.md) - 5.8K
           - Project rules (.windsurfrules) - 7.8K
+          - mn01 Ada HA units and Caddyfile (via scripts/backup-mn01.sh) - 1.5K
           - Backup manifest - 482 bytes
 
       - label: Git Version Control
@@ -100,6 +101,13 @@ sections:
           - 6. Test search functionality
         recovery_time: 30-60 minutes
         data_loss: Minimal (daily backups + git history)
+
+      - label: mn01 Ada HA Recovery
+        text: Recreate the mn01 Ada HA voice PWAs on tony-dell or a fresh host
+        command: ./scripts/recover-mn01.sh <target-host>
+        recovery_time: 10-15 minutes
+        data_loss: Minimal if scripts/backup-mn01.sh ran; secrets must be restored separately
+        restore_point: Created by the recovery script
 
   - title: Verification Status
     icon: ✅

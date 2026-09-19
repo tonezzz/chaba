@@ -32,6 +32,11 @@ hosts:
     tailscale_ip: '100.80.105.88'
     hassio_network_host: homeassistant
     note: Home Assistant core container hostname on the hassio Docker network.
+  mn01:
+    name: mn01
+    tailscale: mn01.taila0626a.ts.net
+    tailscale_ip: '100.106.196.22'
+    note: 'Portable Ubuntu PC in mn-home (192.168.1.0/24). Planned local IP 192.168.1.200; Tailscale subnet router for mn-home.'
 
 ports:
   mcp_debug_cors: 9100
@@ -48,6 +53,8 @@ ports:
   ha_michael_dev: 8124
   ha_mcp_tony: 9584
   ha_mcp_michael_dev: 9585
+  ada_ha_tony: 8002
+  ada_ha_michael: 8003
   notebooklm_rest: 3011
 
 schedules:
@@ -94,6 +101,7 @@ notebooklm:
     chaba_ask: ~/.local/bin/chaba-ask
     nlm_pr_draft: ~/.local/bin/nlm-pr-draft
     nlm_explain_log: ~/.local/bin/nlm-explain-log
+    nlm_status: ~/.local/bin/nlm-status
     verify_agents: scripts/verify-agents-commands.py
   sync:
     notebook_id: fdfd3483-6b7e-4cb0-85f3-7f060698769c
