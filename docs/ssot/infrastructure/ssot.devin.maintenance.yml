@@ -120,6 +120,16 @@ offload_to_notebooklm:
         `--summary.md` is still written locally when the query fails, and the
         orphan staging notebook ID is printed for manual cleanup. `--delete` is
         skipped unless every stage succeeded.
+      - >
+        ONE session-id per invocation — `Error: only one session-id may be
+        provided` otherwise. Batch via a shell loop.
+    progress_2026_09_18: |
+      Archived + deleted: chivalrous-babcat, lacy-taxicab, statuesque-attack,
+      expensive-button (archive notebook at 36 sources, 0 staging orphans,
+      0 orphaned message_nodes). Pending next auth window: woolly-potato
+      (partial archive — 15/20 chunks, summary in archive) and
+      cooing-cyclamen (summary local-only, not in archive). Both keep their
+      full.md transcripts locally regardless.
 
   environment:
     DEVIN_ARCHIVE_NOTEBOOK: |
@@ -185,6 +195,32 @@ offload_to_notebooklm:
     - Known open issue: notebooklm-rest logs `Failed to write updated cookies
       to /data/storage_state.json: OSError` — refreshed cookies may not persist,
       so re-auth is recurring until that mount/perm issue is fixed.
+
+    Better paths (found 2026-09-18):
+    - PREFERRED: `scripts/nlm-reauth.sh mn01` on tony-omen runs the REAL
+      nlm binary (`~/.local/share/nlm-venv/bin/nlm`) — a full browser login —
+      then scp's `cookies.json`/`metadata.json` to the container profile dir.
+      A real login saves a Chrome profile, which is required for
+      `nlm auth refresh` (non-interactive cookie reissue) to work; manual
+      cookie imports can never use `auth refresh` ("saved Chrome profile may
+      be missing or its login expired").
+    - `nlm auth refresh` can keep a session alive indefinitely IF a saved
+      Chrome profile exists — candidates: `nlm-reauth.sh` (real login) or
+      `nlm login --provider openclaw --cdp-url <url>` (attaches to an external
+      Chrome over CDP; tony-omen's debug Chrome listens on 127.0.0.1:9228 with
+      `--user-data-dir=~/.config/google-chrome-debug`; the notebooklm-mcp
+      container is host-networked, so `ssh -R <port>:localhost:9228 mn01`
+      could expose it as http://127.0.0.1:<port> — unverified).
+    - Sizing rule: one harvest buys ~20-60 min ≈ 1-2 archive sessions.
+      Multi-session batches WILL hit expiry mid-run; either reauth per
+      session or fix durable auth (real login + `auth refresh`) first.
+    - Safety gates verified: sessions are never deleted unless the summary
+      is archived AND the staging notebook is deleted; partial runs leave a
+      `staging-*` orphan (list: `nlm notebook list --json` | grep staging;
+      delete: `nlm notebook delete <id> --confirm`) and keep the session.
+    - `devin-chunked-extract.sh` accepts ONE session-id per invocation —
+      loop for batches. Extraction (full.md) works without auth; only the
+      NotebookLM stages and `--delete` gate on it.
 
 backup_policy: |
   `vacuum-devin-db.sh` now creates a local backup before VACUUM and keeps it
