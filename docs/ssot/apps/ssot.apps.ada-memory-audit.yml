@@ -1,0 +1,51 @@
+title: Ada Memory Audit Model
+subtitle: What is recorded when memory-bank documents change — storage-level revisions, semantic status links, and the planned write log
+icon: 🕵️
+sections:
+  - title: Storage-Level Audit (exists today)
+    icon: "🗄️"
+    layout: list
+    items:
+      - label: Revisions
+        text: MDDB keeps a revision per document update — old content is retained in the DB (12k+ revisions observed in stats). Every correct-in-place write is therefore auditable at storage level.
+      - label: Access paths
+        text: "HTTP: POST /v1/revisions (list), POST /v1/revisions/restore. Builtin MCP tools in current mddbd: list_revisions, restore_revision, truncate_revisions. Caveat: verify the deployed mddbd version exposes them — older MCP surfaces did not."
+      - label: Retention
+        text: max_revisions on collection creation caps history per doc (0 = unlimited). Bank collections should keep unlimited until size demands otherwise — memory corrections are the audit trail.
+  - title: Semantic-Level Audit (designed)
+    icon: "📄"
+    layout: list
+    items:
+      - label: Status field
+        text: 'status: active | superseded | retracted | expired on every doc — recall filters on active, so history stays queryable via metadata filters without polluting answers.'
+      - label: Linkage
+        text: supersedes / superseded_by doc keys preserve the chain when a fact is re-scoped or misattributed — provenance is explicit, not inferred.
+      - label: Provenance fields
+        text: 'source: voice | manual | import, plus valid_from / last_verified — shows where a memory came from and when it was last confirmed true.'
+  - title: Gap — Write Log
+    icon: "⚠️"
+    layout: list
+    items:
+      - label: What's missing
+        text: No record of WHO wrote WHAT, WHEN, via WHICH tool. Revisions capture content deltas but not actor/tool/session.
+      - label: Option A — meta fields
+        text: Add written_by (tool name), session_id, updated_by to each doc's meta. Cheap, rides existing writes; weakest for multi-actor forensics.
+      - label: Option B — audit collection
+        text: "Dedicated ada-ha-bank-audit-{instance} collection: one doc per write {ts, instance, tool, bank, key, verb, old_status, new_status}. Queryable, but adds a write per write — decide before runtime lands."
+      - label: Recommendation
+        text: Start with Option A meta fields (written_by/session_id) — revisit Option B if cross-session forensics are actually needed.
+  - title: Not Audited
+    icon: "📓"
+    layout: list
+    items:
+      - label: NotebookLM tier
+        text: "Append-only archive — no edit audit beyond 'Correction: <key> (date)' source titles. Acceptable: NLM is historical, MDDB is the answer."
+      - label: Registry changes
+        text: Bank definition changes are audited by git history on this repo (SSOT), not by MDDB.
+config:
+  version: 1
+  created: "2026-09-19"
+  updated: "2026-09-19"
+  maintainer: tony
+  status: draft
+  deployment: mn01

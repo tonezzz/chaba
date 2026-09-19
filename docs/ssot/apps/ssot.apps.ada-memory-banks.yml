@@ -1,0 +1,184 @@
+title: Ada Memory Banks
+subtitle: Declarative registry of named memory banks for Ada (MDDB fast tier + optional NotebookLM deep tier), each assignable per instance (tony/michael)
+icon: 🧠
+sections:
+  - title: Concept
+    icon: "💡"
+    layout: list
+    items:
+      - label: Memory bank
+        text: A named logical memory store. Each bank owns one MDDB collection (fast recall/write tier) and optionally one NotebookLM notebook (deep-recall/archive tier). Banks are the user-facing knowledge layer; the internal operational collections (ada-ha-snapshots-*, ada-ha-events-*, ada-ha-device-*, ada-ha-recall-summary-*) stay unchanged.
+      - label: Assignment
+        text: Every bank lists the instance IDs allowed to use it. A service loads only banks whose instances list contains its own ADA_INSTANCE_ID. Shared banks appear in both tony and michael; per-instance or single-instance banks are private.
+      - label: Identity rule
+        text: Same fail-fast policy as ADA_INSTANCE_ID — a bank that cannot resolve its collection name or is not assigned to the running instance is skipped loudly (logged + surfaced via /api/health degraded flag), never silently routed elsewhere.
+  - title: Naming
+    icon: "🏷️"
+    layout: list
+    items:
+      - label: Shared banks
+        text: "MDDB collection ada-ha-bank-<name> with no instance suffix. Example: ada-ha-bank-general."
+      - label: Per-instance banks
+        text: "scope: instance expands {instance} in mddb_collection, e.g. ada-ha-bank-personal-{instance} → ada-ha-bank-personal-tony."
+      - label: Separation
+        text: The ada-ha-bank-* prefix keeps curated knowledge distinct from operational telemetry (snapshots/events/device-*) so recall and retention policies can differ.
+  - title: Document Metadata
+    icon: "📄"
+    layout: list
+    items:
+      - label: kind
+        text: fact | preference | person | procedure | note — drives recall ranking and summary prompts.
+      - label: scope
+        text: shared | tony | michael — mirrors the bank assignment; private transcripts, secrets, and live sensor state never enter shared banks.
+      - label: confidence
+        text: 0.0–1.0; low-confidence hits escalate to the NotebookLM tier instead of being spoken as fact.
+      - label: validity
+        text: valid_from and last_verified (ISO dates) let recall prefer fresh facts and flag stale ones.
+      - label: applies_to
+        text: Optional entity_id/area list tying a fact to HA objects (e.g. cover.gate_motor).
+      - label: subject / attribute
+        text: Optional "what it's about" + "which aspect" pair (e.g. gate-remote / location) — the join key that lets search find differently-phrased facts about the same thing for update/conflict detection.
+      - label: status
+        text: active | superseded | retracted | expired — recall surfaces only active docs; superseded docs link via supersedes/superseded_by keys.
+      - label: valid_until
+        text: 'Optional TTL date ("pump is being repaired this week") — expiry is applied lazily at recall time as status: expired.'
+      - label: source
+        text: voice | manual | import — provenance for audits and later consolidation.
+  - title: Runtime Wiring
+    icon: "⚙️"
+    layout: list
+    items:
+      - label: Registry file
+        text: Authored here in SSOT; rendered to ADA_MEMORY_BANKS_FILE (default ~/.config/ada/memory-banks.json) on mn01 and tony-dell at deploy time. Services read the file, filter by ada_instance_id().
+      - label: backend/memory_banks.py
+        text: "Planned module in ada-pi: loads the registry, resolves mddb_collection ({instance} expansion), exposes banks(), collection_for(bank), notebook_for(bank). Fail-fast on missing registry for any bank marked required."
+      - label: ada_remember tool
+        text: Planned Gemini tool ada_remember(bank, text) → writes to the bank's MDDB collection with metadata above; optionally mirrors to the bank's NotebookLM notebook as a text source.
+      - label: Recall routing
+        text: ada_session_recall gains a bank param (superset of today's group). MDDB semantic search on the bank's collection first; low confidence or explicit detail requests escalate to the bank's notebook (~20s, background) — same tiered policy as now.
+      - label: Introspection
+        text: GET /api/memory/banks returns the banks assigned to the running instance with collection/notebook resolution for debugging.
+      - label: ada-pi-pwa
+        text: Runs ADA_INSTANCE_ID=tony, so it automatically sees every bank assigned to tony — consistent with today's shared-memory behavior.
+  - title: NotebookLM Tier
+    icon: "📓"
+    layout: list
+    items:
+      - label: notebooklm_group
+        text: Optional group name resolved per-instance via NOTEBOOKLM_NOTEBOOK_IDS_JSON (memory/infra/apps/kb/ops). Use this when each instance should keep its own deep-tier notebook.
+      - label: notebooklm_id
+        text: Optional literal notebook ID for a genuinely shared deep tier (one notebook both instances read). Mutually exclusive with notebooklm_group.
+      - label: Back-compat
+        text: NOTEBOOKLM_NOTEBOOK_IDS_JSON keeps working; a recall group with no matching bank falls back to today's behavior and maps to a default ada-ha-bank-<group> collection if ever persisted.
+  - title: Write & Update
+    icon: "✏️"
+    layout: list
+    items:
+      - label: Find-then-update
+        text: Updates require a read first — ada_memory_search returns doc keys. A match gets corrected in place (same key, revision +1, last_verified bumped); no match creates a new doc with a derived slug key.
+      - label: Three update verbs
+        text: "Correct = overwrite same key in place (MDDB revision history is the audit trail). Supersede = write a new key, mark the old doc status: superseded with superseded_by/supersedes links. Retract = status: retracted, preferred over delete; hard delete only for privacy/secret leaks."
+      - label: Per-bank write policy
+        text: "writable gates writes entirely (false = read-only bank). write_policy reuses the ToolRunner confirmed=true gate — same pattern as dangerous HA entities: confirmed = Ada must ask before writing, direct = write immediately. allowed_tools lists which write tools may touch the bank."
+      - label: NotebookLM is append-only
+        text: "NLM sources can't be edited, so updates are never mirrored in place — MDDB is the mutable current truth, NotebookLM is the append-only archive. On update, optionally add a 'Correction: <key> (date)' text source."
+      - label: Full schema
+        text: The formal meta schema and verb semantics live in ssot.apps.ada-memory-schema.yml.
+  - title: Status
+    icon: "🚦"
+    layout: list
+    items:
+      - label: Registry
+        text: "This file is the source of truth for bank definitions; the banks: block below is machine-readable and rendered to the runtime JSON."
+      - label: Implementation
+        text: "memory_banks.py, ada_remember, and bank-aware recall are planned — all banks are status: planned until code lands."
+      - label: Adjusting banks
+        text: "Add/remove/rename banks by editing the banks: block; flip instances to move a bank between tony and michael; no code change needed for assignment-only edits."
+
+banks:
+  general:
+    title: General knowledge
+    description: Free-form facts, preferences, and "remember that…" notes
+    scope: shared
+    instances: [tony, michael]
+    mddb_collection: ada-ha-bank-general
+    notebooklm_group: memory
+    notebooklm_id: null
+    kinds: [fact, preference, note]
+    writable: true
+    write_policy: confirmed
+    allowed_tools: [ada_remember, ada_forget]
+    status: planned
+  home:
+    title: Household knowledge
+    description: Home topology, device aliases, procedures, status notices (the planned shared 'home' group)
+    scope: shared
+    instances: [tony, michael]
+    mddb_collection: ada-ha-bank-home
+    notebooklm_group: null
+    notebooklm_id: null
+    kinds: [fact, procedure, note]
+    writable: false
+    write_policy: confirmed
+    allowed_tools: []
+    status: planned
+  people:
+    title: People and relationships
+    description: Who is who, relationships, individual preferences
+    scope: shared
+    instances: [tony, michael]
+    mddb_collection: ada-ha-bank-people
+    notebooklm_group: null
+    notebooklm_id: null
+    kinds: [person, preference, fact]
+    writable: true
+    write_policy: confirmed
+    allowed_tools: [ada_remember, ada_forget]
+    status: planned
+  personal:
+    title: Private per-instance memory
+    description: Instance-private notes that must never cross to the other instance
+    scope: instance
+    instances: [tony, michael]
+    mddb_collection: ada-ha-bank-personal-{instance}
+    notebooklm_group: null
+    notebooklm_id: null
+    kinds: [fact, preference, note]
+    writable: true
+    write_policy: direct
+    allowed_tools: [ada_remember, ada_forget]
+    status: planned
+  tony-projects:
+    title: Tony project notes
+    description: Tony-only project and infrastructure notes
+    scope: instance
+    instances: [tony]
+    mddb_collection: ada-ha-bank-projects-tony
+    notebooklm_group: infra
+    notebooklm_id: null
+    kinds: [fact, procedure, note]
+    writable: true
+    write_policy: confirmed
+    allowed_tools: [ada_remember, ada_forget]
+    status: planned
+  note:
+    title: Scratch notes (test bank)
+    description: Tony-only sandbox bank for testing the ada_remember write/update flow
+    scope: instance
+    instances: [tony]
+    mddb_collection: ada-ha-bank-note-{instance}
+    notebooklm_group: null
+    notebooklm_id: null
+    kinds: [note, fact]
+    writable: true
+    write_policy: direct
+    allowed_tools: [ada_remember, ada_forget]
+    status: testing
+
+config:
+  version: 2
+  created: "2026-09-18"
+  updated: "2026-09-19"
+  maintainer: tony
+  status: draft
+  deployment: mn01

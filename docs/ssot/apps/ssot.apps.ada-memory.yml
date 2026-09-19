@@ -1,0 +1,57 @@
+title: Ada Memory Architecture
+subtitle: Parent SSOT for Ada's memory system — bank registry, document schema, write/update semantics, audit model, and implementation progress across tony-ha and michael-ha
+icon: 🧠
+sections:
+  - title: Overview
+    icon: "💡"
+    layout: list
+    items:
+      - label: Purpose
+        text: Ada has two memory tiers — MDDB collections (fast, mutable, semantic-search tier) and NotebookLM notebooks (deep, append-only archive tier). This family of SSOT files defines how memory is organized, written, updated, and audited.
+      - label: Motivation
+        text: Memory collection names were previously derived from HOME_ASSISTANT_URL — a URL change orphaned all existing memories. Identity is now pinned by ADA_INSTANCE_ID (fail-fast in backend/instance.py), and curated knowledge is separated from operational telemetry.
+      - label: Instances
+        text: tony (ada-ha-tony.service :8002, ada-pi-pwa :8001) and michael (ada-ha-michael.service :8003). Every memory bank lists which instances may use it; a service loads only banks assigned to its own ADA_INSTANCE_ID.
+      - label: Fail-fast rule
+        text: A bank not assigned to the running instance, or one whose collection template cannot resolve, is rejected loudly (log + degraded health flag) — never silently routed elsewhere. Same policy as ADA_INSTANCE_ID.
+  - title: Tiers
+    icon: "🗄️"
+    layout: list
+    items:
+      - label: MDDB fast tier
+        text: Operational collections (ada-ha-snapshots-*, ada-ha-events-*, ada-ha-device-*, ada-ha-recall-summary-*) are unchanged. Curated bank collections use the separate ada-ha-bank-* prefix so recall and retention policies can differ. MDDB is the mutable current truth.
+      - label: NotebookLM deep tier
+        text: Append-only archive routed via NOTEBOOKLM_NOTEBOOK_IDS_JSON groups (memory/infra/apps/kb/ops) or a literal notebook ID per bank. Sources can't be edited — updates are never mirrored in place; optionally a 'Correction:' text source is added.
+      - label: Other databases
+        text: MDDB is the document/memory tier only — it does NOT cover Postgres (trade/yomi), Redis, Weaviate, per-app SQLite, or HA .storage. The bank registry itself is a YAML→JSON file, not a database.
+  - title: SSOT Family
+    icon: "📚"
+    layout: list
+    items:
+      - label: ssot.apps.ada-memory-banks.yml
+        text: 'Declarative bank registry — the machine-readable banks: block rendered to ~/.config/ada/memory-banks.json at deploy time. Assignment, collections, NotebookLM routing, write policies per bank.'
+      - label: ssot.apps.ada-memory-schema.yml
+        text: Document meta schema (kind/scope/status/subject/attribute/validity/provenance) and the three write verbs (correct/supersede/retract) with per-bank write-policy fields.
+      - label: ssot.apps.ada-memory-audit.yml
+        text: Audit model — MDDB revision history, semantic status links, the planned write-log, and what is NOT audited (NotebookLM).
+      - label: ssot.apps.ada-memory-progress.yml
+        text: Machine-readable milestone/task tracker for the implementation. Update statuses here as work lands.
+  - title: Runtime Plan
+    icon: "⚙️"
+    layout: list
+    items:
+      - label: backend/memory_banks.py (ada-pi)
+        text: Planned — loads the rendered registry, filters by ada_instance_id(), expands {instance}, exposes banks()/collection_for()/notebook_for(). Fail-fast on unassigned or unresolvable banks.
+      - label: Tools
+        text: Planned Gemini tools ada_remember(bank, text) and ada_forget(bank, key); ada_session_recall gains a bank param. Write path honors each bank's writable/write_policy/allowed_tools.
+      - label: Introspection
+        text: Planned GET /api/memory/banks returns banks assigned to the running instance with collection/notebook resolution for debugging.
+      - label: Test sandbox
+        text: 'The note bank (tony-only, write_policy: direct) is the friction-free target for exercising the write/update path first.'
+config:
+  version: 1
+  created: "2026-09-19"
+  updated: "2026-09-19"
+  maintainer: tony
+  status: draft
+  deployment: mn01

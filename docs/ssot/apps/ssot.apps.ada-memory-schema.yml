@@ -1,0 +1,77 @@
+title: Ada Memory Document Schema & Write Semantics
+subtitle: Formal meta schema for memory-bank documents and the write/update verb contract used by ada_remember/ada_forget
+icon: 📐
+sections:
+  - title: Document Meta Schema
+    icon: "📄"
+    layout: list
+    items:
+      - label: kind
+        text: fact | preference | person | procedure | note — drives recall ranking and summary prompts.
+      - label: scope
+        text: shared | tony | michael — mirrors the bank assignment; private transcripts, secrets, and live sensor state never enter shared banks.
+      - label: subject / attribute
+        text: "Optional 'what it's about' + 'which aspect' pair (e.g. subject: gate-remote, attribute: location). The join key for conflict detection — lets search find a differently-phrased fact about the same thing."
+      - label: status
+        text: 'active | superseded | retracted | expired — recall filters on status: active. Superseded docs keep superseded_by/supersedes key links; expired is applied lazily when valid_until passes.'
+      - label: confidence
+        text: 0.0–1.0; low-confidence hits escalate to the NotebookLM tier instead of being spoken as fact.
+      - label: validity
+        text: valid_from and last_verified (ISO dates) — recall prefers fresh facts; last_verified is bumped on every user confirmation. valid_until is an optional TTL.
+      - label: applies_to
+        text: Optional entity_id/area list tying a fact to HA objects (e.g. cover.gate_motor).
+      - label: provenance
+        text: "source: voice | manual | import. Planned extensions for write auditing: written_by (tool name), session_id, updated_by — see ssot.apps.ada-memory-audit.yml."
+      - label: linkage
+        text: supersedes / superseded_by — doc keys linking a fact to its replacement/replaced versions, preserving provenance across re-scoped facts.
+  - title: Write Verbs
+    icon: "✏️"
+    layout: list
+    items:
+      - label: Find-then-update
+        text: "Updates require a read first: ada_memory_search(bank, query) returns doc keys + content. Match found → correct in place (same key, revision +1, last_verified bumped). No match → new doc with a derived slug key."
+      - label: Correct (in-place)
+        text: Same fact, new value → overwrite the same key. MDDB revision history is the audit trail; the common case.
+      - label: Supersede (new doc)
+        text: 'The fact itself was misattributed or re-scoped → write a new key, set old doc status: superseded + superseded_by: <new-key>, new doc gets supersedes: <old-key>. Preserves identity instead of rewriting it.'
+      - label: Retract
+        text: 'Fact no longer true → status: retracted (+ reason in content). Preferred over delete_document — retracted docs stop surfacing (status: active filter) but stay auditable. Hard delete only for privacy/secret leaks.'
+      - label: Expiry
+        text: 'valid_until expiry is just status: expired applied lazily at recall time.'
+  - title: Per-Bank Write Policy
+    icon: "🔐"
+    layout: list
+    items:
+      - label: writable
+        text: Master switch per bank. false = read-only bank; write tools are rejected loudly (curated banks like home start here until trusted).
+      - label: write_policy
+        text: "confirmed | direct — reuses the ToolRunner confirmed=true gate, the same pattern as dangerous HA entities. confirmed = Ada must ask the user before writing (shared banks); direct = write immediately (private/test banks)."
+      - label: allowed_tools
+        text: "Which write tools may touch the bank, e.g. [ada_remember, ada_forget]. Empty = nothing can write even if writable: true."
+      - label: Fail-fast
+        text: A write to a bank that is unassigned, not writable, or unresolvable is rejected with a clear error — never silently routed to another collection.
+  - title: NotebookLM Boundary
+    icon: "📓"
+    layout: list
+    items:
+      - label: Append-only
+        text: NLM sources cannot be edited — updates are never mirrored in place. MDDB is the mutable current truth; NotebookLM is the append-only archive.
+      - label: Correction sources
+        text: "On update, optionally add a text source titled 'Correction: <key> (YYYY-MM-DD)'. The archive preserves the evolution while MDDB always answers with the latest."
+      - label: No delete
+        text: Retracted docs are NOT removed from NotebookLM — recall always consults MDDB first and treats the archive as historical.
+  - title: Voice Flow Example
+    icon: "🎙️"
+    layout: list
+    items:
+      - label: Update path
+        text: '"The gate remote isn''t in the drawer anymore, it''s in the cabinet" → ada_memory_search(note, "gate remote") → key match → (confirmed policy) "You told me it was in the drawer — update?" → ada_remember same key, revision +1, last_verified bumped.'
+      - label: Contradiction detection
+        text: subject+attribute meta lets search find "a fact about the same thing" even when phrased differently — contradictions surface as update candidates, not duplicates.
+config:
+  version: 1
+  created: "2026-09-19"
+  updated: "2026-09-19"
+  maintainer: tony
+  status: draft
+  deployment: mn01

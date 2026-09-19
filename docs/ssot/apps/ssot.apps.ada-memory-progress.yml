@@ -1,0 +1,66 @@
+title: Ada Memory Implementation Progress
+subtitle: Machine-readable milestone tracker for the Ada memory-bank rollout — update statuses here as work lands
+icon: 📈
+sections:
+  - title: How To Use
+    icon: "💡"
+    layout: list
+    items:
+      - label: Statuses
+        text: pending | in_progress | done | blocked. Update item status as work completes; bump config.updated and add a note when a milestone flips.
+      - label: Scope
+        text: Tracks registry → runtime → deploy. Design decisions live in ssot.apps.ada-memory.yml / -schema.yml / -audit.yml, not here.
+  - title: Milestones
+    icon: "🚦"
+    layout: list
+    items:
+      - label: registry
+        text: Bank registry defined in SSOT — banks, assignment, write policies, note test bank.
+      - label: runtime
+        text: ada-pi loads the registry, resolves collections, exposes write/recall tools.
+      - label: deploy
+        text: Registry rendered to ~/.config/ada/memory-banks.json on mn01 + tony-dell; services restarted; isolation verified.
+
+milestones:
+  - id: registry
+    title: SSOT registry & schema
+    status: done
+    items:
+      - { task: "Banks registry file created (v1)", status: done, date: "2026-09-18" }
+      - { task: "Write-policy fields + Write & Update section + meta additions (v2)", status: done, date: "2026-09-19" }
+      - { task: "note test bank (tony-only, direct write)", status: done, date: "2026-09-19" }
+      - { task: "Parent/schema/audit/progress SSOT files", status: done, date: "2026-09-19" }
+      - { task: "SSOT validation (376 files, 0 errors)", status: done, date: "2026-09-19" }
+      - { task: "Seed ada-ha-bank-note-tony test doc + verify (1 doc, 2 revisions — update path works)", status: done, date: "2026-09-19" }
+      - { task: "Re-sync SSOT to MDDB (local mirror 127.0.0.1:11023, 381 files)", status: done, date: "2026-09-19" }
+  - id: runtime
+    title: ada-pi runtime
+    status: pending
+    items:
+      - { task: "backend/memory_banks.py — load registry, filter by ADA_INSTANCE_ID, expand {instance}", status: pending }
+      - { task: "Render registry to ~/.config/ada/memory-banks.json (ADA_MEMORY_BANKS_FILE)", status: pending }
+      - { task: "MDDB write/read helpers honoring writable/write_policy/allowed_tools", status: pending }
+      - { task: "ada_remember tool (find-then-update, correct/supersede/retract)", status: pending }
+      - { task: "ada_forget tool (retract preferred over delete)", status: pending }
+      - { task: "ada_memory_search returning doc keys", status: pending }
+      - { task: "Bank-aware ada_session_recall (MDDB → NLM escalation)", status: pending }
+      - { task: "GET /api/memory/banks introspection endpoint", status: pending }
+      - { task: "Degraded health flag for unresolvable/unassigned banks", status: pending }
+  - id: deploy
+    title: Deploy & verify
+    status: pending
+    items:
+      - { task: "Deploy to mn01 (ada-ha-tony :8002, ada-ha-michael :8003)", status: pending }
+      - { task: "Deploy to tony-dell (ada-pi-pwa :8001)", status: pending }
+      - { task: "Verify note + tony-projects absent from michael's /api/memory/banks", status: pending }
+      - { task: "Verify shared banks visible on both instances", status: pending }
+      - { task: "Verify {instance} expansion → ada-ha-bank-note-tony / ada-ha-bank-personal-{tony,michael}", status: pending }
+      - { task: "Create remaining ada-ha-bank-* collections once runtime is ready", status: pending }
+
+config:
+  version: 1
+  created: "2026-09-19"
+  updated: "2026-09-19"
+  maintainer: tony
+  status: active
+  deployment: mn01
