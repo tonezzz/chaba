@@ -15,6 +15,8 @@ class AdaPairQrCard extends HTMLElement {
 
   set hass(hass) {
     const url = (hass.states["input_text.ada_pair_redeem_url"] || {}).state || "";
+    if (url === this._lastUrl) return;   // no change — don't rebuild the <img>
+    this._lastUrl = url;
     const body = this._body;
     body.innerHTML = "";
     if (!url || url === "unknown" || url === "unavailable") {
