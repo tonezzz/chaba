@@ -400,7 +400,28 @@ runbooks:
       state already in place before reload will not start the timer. Switching the YOLO
       source away from the gated camera flips the binary sensor off.
 
+  request_iphone_confirmation:
+    purpose: Ask the user for an approve/deny decision via an actionable iPhone push on tony-ha, with the result readable by tony-ada.
+    steps:
+      - Pick a unique tag (e.g. deploy-20260920)
+      - "Set input_text.devin_confirmation to 'awaiting: <question> [<tag>]'"
+      - 'Create a persistent_notification with notification_id: <tag> (visible in HA UI and Ada)'
+      - 'Call notify.mobile_app_tony_ip with actions APPROVE_<tag> and DENY_<tag>'
+      - 'User must TOUCH-AND-HOLD the notification (~1s) to see Approve/Deny — swiping left only opens the iOS management menu, not the actions'
+      - "automation.devin_confirmation_capture_iphone_action catches mobile_app_notification_action, splits verdict+tag from the action id, writes '<verdict> [<tag>] via iPhone at <ts>' into the helper, dismisses persistent_notification <tag>, and logs to logbook"
+      - Poll input_text.devin_confirmation (or read it via Ada /api/home-assistant/entities + logbook) for the verdict before proceeding
+    note: |
+      Verified 2026-09-20 end-to-end (tag conf-b7d4, real iPhone Approve) and durable
+      across an HA restart. The tag MUST be embedded in the action id — the
+      mobile_app_notification_action payload carries only the action string, so a bare
+      'APPROVE' cannot be correlated to a request. iOS suppresses banners while the HA
+      app is foregrounded — check Notification Center. The helper resets to 'idle' on
+      restart. iCloud MCP cloud mode cannot send push notifications (email/calendar/
+      contacts only; reminders/notes are local-macOS only) — HA Companion notify is the
+      correct channel for confirmations.
+    last_updated: '2026-09-20'
+
 status:
-  last_updated: '2026-09-18'
+  last_updated: '2026-09-20'
   last_verified: '2026-09-18'
-  health: active; websocket push-dashboard workflow verified; deploy runbook corrected (.storage resource changes need service restart, not ha_reload_core); sidebar API scope documented; stale /local 404 workaround (v-bump) documented; michael-ha working token located in ha-michael-live.env; pfg chart code modularized into src/cards/pfg/ with registry + single placement engine; pfg_3d_charts runbook added (category x-axis, incremental cache, dev-vs-live data note); deployment_policy, promote_tony_ha and build_typecheck runbooks added 2026-09-09; rename_device_via_websocket and person_detect_switch_automation runbooks added 2026-09-18
+  health: active; websocket push-dashboard workflow verified; deploy runbook corrected (.storage resource changes need service restart, not ha_reload_core); sidebar API scope documented; stale /local 404 workaround (v-bump) documented; michael-ha working token located in ha-michael-live.env; pfg chart code modularized into src/cards/pfg/ with registry + single placement engine; pfg_3d_charts runbook added (category x-axis, incremental cache, dev-vs-live data note); deployment_policy, promote_tony_ha and build_typecheck runbooks added 2026-09-09; rename_device_via_websocket and person_detect_switch_automation runbooks added 2026-09-18; request_iphone_confirmation runbook added 2026-09-20 (tony-ha iPhone approve/deny via notify.mobile_app_tony_ip + input_text.devin_confirmation, verified end-to-end)
