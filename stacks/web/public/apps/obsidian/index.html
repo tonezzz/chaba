@@ -78,12 +78,12 @@ async function loadTree() {
   const t = await (await fetch(BASE + '/api/tree')).json();
   const s = document.getElementById('sidebar');
   s.innerHTML = '';
-  const order = ['general','home','people','personal/tony','personal/michael','tony-projects','note','inbox'];
-  const dirs = Object.keys(t.banks).sort((a,b) => order.indexOf(a) - order.indexOf(b) || a.localeCompare(b));
+  const dirs = (t.bank_order || Object.keys(t.banks)).filter(d => t.banks[d]);
   for (const dir of dirs) {
+    const bm = (t.bank_meta || {})[dir] || {};
     const g = document.createElement('div');
     g.className = 'mb-3';
-    g.innerHTML = `<div class="text-[11px] uppercase tracking-wide text-gray-500 px-2 py-1">${dir}</div>`;
+    g.innerHTML = `<div class="text-[11px] uppercase tracking-wide text-gray-500 px-2 py-1" title="${bm.description || ''}">${bm.title || dir}${bm.writable === false ? ' 🔒' : ''}</div>`;
     for (const n of t.banks[dir]) {
       const el = document.createElement('div');
       el.className = 'note-item px-2 py-1 rounded cursor-pointer text-sm flex items-center gap-2' + (cur===n.path?' sel':'');

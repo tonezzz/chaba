@@ -35,8 +35,39 @@ MDDB = os.environ.get("ADA_MEMORY_MDDB_URL", "http://100.68.142.13:11023/v1")
 API_KEY = os.environ.get("ADA_API_KEY") or ""
 INDEX_HTML = REPO / "stacks/web/public/apps/obsidian/index.html"
 SYNC_SCRIPT = REPO / "scripts/ada/sync-ada-memory-to-mddb.py"
+BANKS_SSOT = REPO / "docs/ssot/apps/ssot.apps.ada-memory-banks.yml"
 
 app = FastAPI(title="Ada Memory Vault")
+
+
+def _bank_meta() -> tuple[list[str], dict]:
+    """Sidebar order + per-dir info derived from the bank registry SSOT —
+    the same dir mapping the sync script uses (single-instance banks are
+    flat dirs, multi-instance banks get name/<instance> subdirs)."""
+    try:
+        banks = yaml.safe_load(BANKS_SSOT.read_text()).get("banks") or {}
+    except Exception:
+        return [], {}
+    order, info = [], {}
+    for name, spec in banks.items():
+        instances = spec.get("instances") or []
+        meta = {
+            "title": spec.get("title") or name,
+            "description": spec.get("description") or "",
+            "writable": bool(spec.get("writable")),
+            "scope": spec.get("scope") or "shared",
+        }
+        if spec.get("scope") == "instance" and len(instances) > 1:
+            for inst in instances:
+                d = f"{name}/{inst}"
+                order.append(d)
+                info[d] = {**meta, "title": f"{meta['title']} ({inst})"}
+        else:
+            order.append(name)
+            info[name] = meta
+    order.append("inbox")
+    info["inbox"] = {"title": "Inbox", "description": "Voice-written notes awaiting review", "writable": True, "scope": ""}
+    return order, info
 
 _FM_RE = re.compile(r"^---\s*\n(.*?)\n---\s*\n?(.*)$", re.DOTALL)
 
@@ -83,7 +114,10 @@ async def tree() -> dict:
             "subject": fm.get("subject"),
             "chars": len(body),
         })
-    return {"vault": str(VAULT), "banks": banks}
+    order, meta = _bank_meta()
+    extra = [d for d in banks if d not in order]
+    return {"vault": str(VAULT), "banks": banks,
+            "bank_order": order + extra, "bank_meta": meta}
 
 
 @app.get("/api/note")
