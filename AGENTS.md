@@ -365,7 +365,7 @@ Also check for a duplicate instance: clicking the launcher while the first insta
   ```
 - Requires `dbus-x11` (installed 2026-09-17); without it xfce4-session dies with "dbus-launch not found" after ~5s.
 - Deleting the session file restores the interactive session chooser (`xsession_chooser`).
-- This is a separate virtual session, NOT a mirror of the physical `:0` monitor — for screen mirroring use Sunshine/Moonlight. (Deskreen was removed 2026-09-19.)
+- This is a separate virtual session, NOT a mirror of the physical `:0` monitor — for screen mirroring use Sunshine/Moonlight. (Deskreen was removed 2026-09-19.) Runbook: `docs/kb/media-casting-runbook.md`.
 
 ## Web app deployment (tony-dell Caddy)
 
