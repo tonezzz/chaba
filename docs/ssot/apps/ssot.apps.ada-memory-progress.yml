@@ -35,32 +35,36 @@ milestones:
       - { task: "Re-sync SSOT to MDDB (local mirror 127.0.0.1:11023, 381 files)", status: done, date: "2026-09-19" }
   - id: runtime
     title: ada-pi runtime
-    status: pending
+    status: done
     items:
-      - { task: "backend/memory_banks.py — load registry, filter by ADA_INSTANCE_ID, expand {instance}", status: pending }
-      - { task: "Render registry to ~/.config/ada/memory-banks.json (ADA_MEMORY_BANKS_FILE)", status: pending }
-      - { task: "MDDB write/read helpers honoring writable/write_policy/allowed_tools", status: pending }
-      - { task: "ada_remember tool (find-then-update, correct/supersede/retract)", status: pending }
-      - { task: "ada_forget tool (retract preferred over delete)", status: pending }
-      - { task: "ada_memory_search returning doc keys", status: pending }
-      - { task: "Bank-aware ada_session_recall (MDDB → NLM escalation)", status: pending }
-      - { task: "GET /api/memory/banks introspection endpoint", status: pending }
-      - { task: "Degraded health flag for unresolvable/unassigned banks", status: pending }
+      - { task: "backend/memory_banks.py — load registry, filter by ADA_INSTANCE_ID, expand {instance}", status: done, date: "2026-09-20" }
+      - { task: "Render registry to ~/.config/ada/memory-banks.json (scripts/ada/render-memory-banks.py; rendered on tony-omen, mn01, tony-dell)", status: done, date: "2026-09-20" }
+      - { task: "MDDB write/read helpers honoring writable/write_policy/allowed_tools", status: done, date: "2026-09-20" }
+      - { task: "ada_remember tool (find-then-update, correct/supersede)", status: done, date: "2026-09-20" }
+      - { task: "ada_forget tool (retract preferred over delete)", status: done, date: "2026-09-20" }
+      - { task: "ada_memory_search returning doc keys (vector-search with listing fallback)", status: done, date: "2026-09-20" }
+      - { task: "Bank-aware ada_session_recall (MDDB vector fast tier → bank notebook NLM escalation)", status: done, date: "2026-09-20" }
+      - { task: "GET /api/memory/banks introspection endpoint", status: done, date: "2026-09-20" }
+      - { task: "Degraded health flag for unresolvable/unassigned banks", status: done, date: "2026-09-20" }
+      - { task: "Fix latent MddbClient bug: filter_meta→filterMeta (server ignored snake_case); /v1/search has no query field", status: done, date: "2026-09-20" }
+      - { task: "Unit tests tests/test_memory_banks.py (21 tests) + live smoke test on ada-ha-bank-note-tony", status: done, date: "2026-09-20" }
   - id: deploy
     title: Deploy & verify
-    status: pending
+    status: done
     items:
-      - { task: "Deploy to mn01 (ada-ha-tony :8002, ada-ha-michael :8003)", status: pending }
-      - { task: "Deploy to tony-dell (ada-pi-pwa :8001)", status: pending }
-      - { task: "Verify note + tony-projects absent from michael's /api/memory/banks", status: pending }
-      - { task: "Verify shared banks visible on both instances", status: pending }
-      - { task: "Verify {instance} expansion → ada-ha-bank-note-tony / ada-ha-bank-personal-{tony,michael}", status: pending }
-      - { task: "Create remaining ada-ha-bank-* collections once runtime is ready", status: pending }
+      - { task: "Push ada-pi changes to origin/main (949b17a), then scripts/deploy-ada.sh", status: done, date: "2026-09-20" }
+      - { task: "Deploy to mn01 (ada-ha-tony :8002, ada-ha-michael :8003 — michael needed manual restart)", status: done, date: "2026-09-20" }
+      - { task: "Deploy to tony-dell (ada-pi-pwa :8001)", status: done, date: "2026-09-20" }
+      - { task: "Verify note + tony-projects absent from michael's /api/memory/banks (4 banks; 'note' tool call errors correctly)", status: done, date: "2026-09-20" }
+      - { task: "Verify shared banks visible on both instances (general/home/people/personal on both)", status: done, date: "2026-09-20" }
+      - { task: "Verify {instance} expansion → ada-ha-bank-personal-tony / -michael confirmed via /api/memory/banks", status: done, date: "2026-09-20" }
+      - { task: "Verify ada_memory_search live on ada-ha-tony (vector hits, scores 0.70/0.47)", status: done, date: "2026-09-20" }
+      - { task: "Create remaining ada-ha-bank-* collections once runtime is ready", status: pending, note: "collections auto-create on first write; only ada-ha-bank-note-tony exists so far" }
 
 config:
-  version: 1
+  version: 2
   created: "2026-09-19"
-  updated: "2026-09-19"
+  updated: "2026-09-20"
   maintainer: tony
   status: active
   deployment: mn01
