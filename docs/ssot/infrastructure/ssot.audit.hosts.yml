@@ -552,6 +552,30 @@ hosts:
         expected_state: active
         critical: false
         note: Daily trigger for devin-cleanup.service; skips VACUUM while Devin is open
+      - name: ada-memory-pull.timer
+        type: timer
+        scope: user
+        expected_state: active
+        critical: false
+        note: Hourly — pulls mn01 vault edits into git + commits + pushes back
+      - name: ada-memory-backup.timer
+        type: timer
+        scope: user
+        expected_state: active
+        critical: false
+        note: Nightly 04:30 — dumps MDDB banks to backups/ada-memory (personal → ~/.local/share/ada-backups)
+      - name: ada-memory-rollup.timer
+        type: timer
+        scope: user
+        expected_state: active
+        critical: false
+        note: Daily 03:45 — daily/weekly/monthly recall-summary rollups
+      - name: ada-memory-health.timer
+        type: timer
+        scope: user
+        expected_state: active
+        critical: false
+        note: Hourly — NLM auth + inbox-age checks emitting chaba-events
     known_failed:
       - name: arp-inventory-scan.service
         reason: Exits 2 when network conflicts/duplicates are detected, by design
@@ -916,6 +940,18 @@ hosts:
         expected_state: active
         critical: false
         note: TCP/IP link monitor migrated from tony-dell
+      - name: ada-memory-sync.timer
+        type: timer
+        scope: user
+        expected_state: active
+        critical: false
+        note: Hourly — vault→MDDB sync on mn01
+      - name: ada-memory-drift.timer
+        type: timer
+        scope: user
+        expected_state: active
+        critical: false
+        note: Sunday 09:00 — recall drift report, tripwires emit chaba-events
     known_failed:
       - name: grub-initrd-fallback.service
         reason: Ubuntu/grub package service that fails on non-EFI fallback; harmless

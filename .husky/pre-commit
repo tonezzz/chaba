@@ -4,6 +4,15 @@
 
 set -e
 
+# Privacy guard: personal vault notes must never be committed — chaba is
+# public on GitHub. .gitignore covers normal adds; this catches -f force-adds
+# and gitignore regressions.
+if git diff --cached --name-only | grep -q '^docs/ada-memory/personal/'; then
+    echo "❌ BLOCKED: docs/ada-memory/personal/** is staged — this repo is public." >&2
+    echo "   Unstage with: git restore --staged docs/ada-memory/personal/" >&2
+    exit 1
+fi
+
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
