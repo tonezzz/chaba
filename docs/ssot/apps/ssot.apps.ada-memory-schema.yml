@@ -87,8 +87,8 @@ meta_schema:
     bank: {role: system, required: true}
     scope: {role: system, required: true, enum: [shared, tony, michael]}
     kind: {required: true, default: note, enum: [fact, preference, person, procedure, note]}
-    status: {required: true, default: active, enum: [active, superseded, retracted, expired]}
-    source: {role: provenance, required: true, enum: [voice, manual, import]}
+    status: {required: true, default: active, enum: [active, draft, superseded, retracted, expired]}
+    source: {role: provenance, required: true, enum: [voice, manual, import, extract]}
     written_by: {role: provenance, required: true}
     subject: {required: false}
     attribute: {required: false}

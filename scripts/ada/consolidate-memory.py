@@ -77,7 +77,15 @@ def consolidate(vault: Path, dry: bool) -> int:
             print(f"{'> ' if not dry else '  (dry) '}{rel_src} -> {rel_dst}")
             if not dry:
                 dest.parent.mkdir(parents=True, exist_ok=True)
-                note_path.rename(dest)
+                # Promotion = review: a draft candidate moved into a bank dir
+                # goes live (status: active) so recall can see it.
+                if note and str(note["frontmatter"].get("status") or "") == "draft":
+                    note["frontmatter"]["status"] = "active"
+                    import yaml as _yaml
+                    fm = _yaml.safe_dump(note["frontmatter"], sort_keys=True)
+                    dest.write_text(f"---\n{fm}---\n{note['body']}\n")
+                else:
+                    note_path.rename(dest)
             moved += 1
     print(f"\n{moved} moved, {skipped} skipped" + (" (dry run)" if dry else ""))
     return moved

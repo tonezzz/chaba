@@ -283,9 +283,12 @@ def export_inbox(mddb: Mddb, mapping: list[dict], dry: bool) -> None:
     for m in mapping:
         if not m["writable"]:
             continue  # read-only banks never receive voice writes
+        # Voice writes (source=voice, active) plus auto-extracted session
+        # candidates (status=draft, any source) — both need human review.
         docs = [d for d in mddb.list_docs(m["collection"])
-                if (d.get("meta") or {}).get("source", [""])[0] == "voice"
-                and (d.get("meta") or {}).get("status", [""])[0] == "active"]
+                if ((d.get("meta") or {}).get("source", [""])[0] == "voice"
+                    and (d.get("meta") or {}).get("status", [""])[0] == "active")
+                or (d.get("meta") or {}).get("status", [""])[0] == "draft"]
         if not docs:
             continue
         outdir = VAULT / "inbox" / m["bank"]

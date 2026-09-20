@@ -82,6 +82,17 @@ class TestConsolidate(unittest.TestCase):
             self.assertTrue((vault / "note/x.md").exists())
             self.assertFalse((vault / "inbox/note/x.md").exists())
 
+    def test_draft_promoted_to_active(self):
+        with tempfile.TemporaryDirectory() as td:
+            vault = Path(td)
+            (vault / "inbox/note").mkdir(parents=True)
+            (vault / "inbox/note/c.md").write_text(
+                "---\nkey: note/c\nstatus: draft\nbank: note\nscope: tony\n---\ncandidate\n")
+            consolidate.consolidate(vault, dry=False)
+            out = (vault / "note/c.md").read_text()
+            assert "status: active" in out, out
+            assert "candidate" in out
+
     def test_skips_unregistered_bank_and_clobber(self):
         with tempfile.TemporaryDirectory() as td:
             vault = Path(td)
