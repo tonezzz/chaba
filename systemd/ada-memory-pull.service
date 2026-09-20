@@ -1,0 +1,9 @@
+[Unit]
+Description=Pull mn01 vault edits into the git checkout (docs/ada-memory) + commit
+# Runs on tony-omen against the canonical checkout; closes the loop so
+# apps/obsidian edits on mn01 reach git without a manual pull-vault.sh run.
+# personal/* stays local-only (gitignored).
+
+[Service]
+Type=oneshot
+ExecStart=%h/CascadeProjects/chaba/scripts/ada/pull-vault.sh --commit
