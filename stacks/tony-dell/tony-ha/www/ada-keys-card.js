@@ -33,9 +33,12 @@ class AdaKeysCard extends HTMLElement {
       for (const key of keys) {
         const row = document.createElement("div");
         row.style.cssText = "display:flex;align-items:center;gap:8px;font-size:.9rem";
-        const code = document.createElement("code");
-        code.style.flex = "1";
+        const code = document.createElement("a");
+        code.href = "#";
+        code.title = "Re-pair and open the session in this browser (admin verify)";
+        code.style.cssText = "flex:1;color:var(--primary-color);text-decoration:none;font-family:monospace";
         code.textContent = key;
+        code.onclick = (e) => this._repairAndOpen(e, inst.id, key, code);
         const repair = this._btn("Re-pair");
         repair.onclick = () =>
           hass.callService("script", "ada_pair_reissue", { instance: inst.id, name: key });
@@ -55,6 +58,33 @@ class AdaKeysCard extends HTMLElement {
       empty.textContent = "No issued keys.";
       list.appendChild(empty);
     }
+  }
+
+  async _repairAndOpen(e, instance, name, el) {
+    e.preventDefault();
+    if (el.dataset.busy) return;
+    el.dataset.busy = "1";
+    const prev = el.textContent;
+    el.textContent = name + " — re-pairing…";
+    try {
+      const res = await this._hass.callWS({
+        type: "call_service",
+        domain: "script",
+        service: "ada_pair_reissue",
+        service_data: { instance, name },
+        return_response: true,
+      });
+      const path = res && res.response && res.response.content && res.response.content.redeem_url;
+      if (!path) throw new Error("no redeem_url in response");
+      const origin = (this._config && this._config.origin) || "https://mn01.taila0626a.ts.net";
+      window.open(origin + path, "_blank", "noopener");
+    } catch (err) {
+      el.textContent = name + " — failed: " + (err.message || err);
+      setTimeout(() => { el.textContent = prev; delete el.dataset.busy; }, 4000);
+      return;
+    }
+    el.textContent = prev;
+    delete el.dataset.busy;
   }
 
   _btn(label) {
