@@ -22,6 +22,8 @@ sections:
         text: Operational collections (ada-ha-snapshots-*, ada-ha-events-*, ada-ha-device-*, ada-ha-recall-summary-*) are unchanged. Curated bank collections use the separate ada-ha-bank-* prefix so recall and retention policies can differ. MDDB is the mutable current truth.
       - label: NotebookLM deep tier
         text: Append-only archive routed via NOTEBOOKLM_NOTEBOOK_IDS_JSON groups (memory/infra/apps/kb/ops) or a literal notebook ID per bank. Sources can't be edited — updates are never mirrored in place; optionally a 'Correction:' text source is added.
+      - label: Obsidian vault authoring tier
+        text: 'docs/ada-memory/ is the human-curated, git-tracked authoring surface (folder = bank, frontmatter = meta schema). scripts/ada/sync-ada-memory-to-mddb.py pushes vault→MDDB and exports voice-written docs to inbox/ for review. The vault is never in the voice latency path — MDDB serves recall.'
       - label: Other databases
         text: MDDB is the document/memory tier only — it does NOT cover Postgres (trade/yomi), Redis, Weaviate, per-app SQLite, or HA .storage. The bank registry itself is a YAML→JSON file, not a database.
   - title: SSOT Family
@@ -36,18 +38,20 @@ sections:
         text: Audit model — MDDB revision history, semantic status links, the planned write-log, and what is NOT audited (NotebookLM).
       - label: ssot.apps.ada-memory-progress.yml
         text: Machine-readable milestone/task tracker for the implementation. Update statuses here as work lands.
-  - title: Runtime Plan
+  - title: Runtime
     icon: "⚙️"
     layout: list
     items:
       - label: backend/memory_banks.py (ada-pi)
-        text: Planned — loads the rendered registry, filters by ada_instance_id(), expands {instance}, exposes banks()/collection_for()/notebook_for(). Fail-fast on unassigned or unresolvable banks.
+        text: LIVE — loads the rendered registry, filters by ada_instance_id(), expands {instance}, exposes banks()/bank()/notebook(). Fail-loud errors surface in /api/health.
       - label: Tools
-        text: Planned Gemini tools ada_remember(bank, text) and ada_forget(bank, key); ada_session_recall gains a bank param. Write path honors each bank's writable/write_policy/allowed_tools.
+        text: LIVE — ada_memory_search (vector + listing fallback), ada_remember (find-then-update correct/supersede), ada_forget (retract); ada_session_recall bank param does MDDB fast tier → bank notebook NLM escalation. Write path honors writable/write_policy/allowed_tools via confirmed=true.
       - label: Introspection
-        text: Planned GET /api/memory/banks returns banks assigned to the running instance with collection/notebook resolution for debugging.
+        text: LIVE — GET /api/memory/banks (ADA_API_KEY) returns banks assigned to the running instance with collection/notebook resolution; registry errors fold into /api/health degraded.
       - label: Test sandbox
         text: 'The note bank (tony-only, write_policy: direct) is the friction-free target for exercising the write/update path first.'
+      - label: Vault sync
+        text: 'scripts/ada/sync-ada-memory-to-mddb.py — vault→MDDB upsert with unchanged-skip, remote-only report, --export-inbox pulls source=voice docs to inbox/, --delete-remote removes remote-only non-voice docs. Mapping derives from the banks registry.'
 config:
   version: 1
   created: "2026-09-19"

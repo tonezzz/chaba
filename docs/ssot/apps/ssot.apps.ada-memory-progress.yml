@@ -60,9 +60,21 @@ milestones:
       - { task: "Verify {instance} expansion → ada-ha-bank-personal-tony / -michael confirmed via /api/memory/banks", status: done, date: "2026-09-20" }
       - { task: "Verify ada_memory_search live on ada-ha-tony (vector hits, scores 0.70/0.47)", status: done, date: "2026-09-20" }
       - { task: "Create remaining ada-ha-bank-* collections once runtime is ready", status: pending, note: "collections auto-create on first write; only ada-ha-bank-note-tony exists so far" }
+  - id: vault
+    title: Obsidian vault authoring tier
+    status: done
+    items:
+      - { task: "docs/ada-memory/ skeleton (per-bank dirs + README contract)", status: done, date: "2026-09-20" }
+      - { task: "scripts/ada/sync-ada-memory-to-mddb.py — vault→MDDB upsert, unchanged-skip, remote-only report", status: done, date: "2026-09-20" }
+      - { task: "--export-inbox pulls source=voice + status=active docs to inbox/<bank>/ for review", status: done, date: "2026-09-20" }
+      - { task: "Round-trip verified live: export→promote→sync no-op; create/update/remote-only; Ada recalls vault doc (score 0.78)", status: done, date: "2026-09-20" }
+      - { task: "Gate-remote voice note exported to inbox/ + promoted to note/ as workflow demo", status: done, date: "2026-09-20" }
+      - { task: "Decide vault→git policy for personal/* (private content in repo)", status: pending }
+      - { task: "Decide Obsidian desktop/mobile install for tony-dell", status: pending }
+      - { task: "Cleanup: delete orphaned URL-derived ada-ha-* collections", status: pending }
 
 config:
-  version: 2
+  version: 3
   created: "2026-09-19"
   updated: "2026-09-20"
   maintainer: tony
