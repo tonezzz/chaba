@@ -78,6 +78,12 @@ milestones:
       - { task: "ada_remember dedupe: vector hit >=0.85 (ADA_BANK_UPDATE_THRESHOLD) => correct in place", status: done, date: "2026-09-20" }
       - { task: "Bank recall fallback: no notebook => escalate to memory group; hit scores logged", status: done, date: "2026-09-20" }
       - { task: "scripts/ada/pull-vault.sh — pull mn01 vault edits back to git checkout", status: done, date: "2026-09-20" }
+      - { task: "Modularity: MddbClient→backend/mddb_client.py; memory ops→backend/memory_ops.py (ToolRunner delegates); meta_schema block in schema SSOT drives sync field lists + runtime warn-on-drift; obsidian sidebar reads registry", status: done, date: "2026-09-20" }
+      - { task: "consolidate-memory.py — promote reviewed inbox/<bank>/ notes into bank dirs (scope-aware for personal/*)", status: done, date: "2026-09-20" }
+      - { task: "sync --resolve-voice: auto take-remote only when remote written_by=ada_remember AND vault file is uncurated voice export; real conflicts still report", status: done, date: "2026-09-20" }
+      - { task: "backup-mddb-banks.py — dumps banks + recall summaries to backups/ada-memory/ (personal banks go to ~/.local/share/ada-backups/, never git); --git commits+pushes", status: done, date: "2026-09-20" }
+      - { task: "recall-drift-report.py — parses ada-ha journals for bank-recall hit/miss scores; tripwires miss>50% or mean<0.55 → chaba-events; miss logging added to conversation_memory.py", status: done, date: "2026-09-20" }
+      - { task: "Timers live: ada-memory-sync hourly (mn01), ada-memory-backup nightly 04:30 (tony-omen), ada-memory-drift Sun 09:00 (mn01)", status: done, date: "2026-09-20" }
 
 config:
   version: 3

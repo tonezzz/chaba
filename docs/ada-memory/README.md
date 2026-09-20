@@ -65,8 +65,9 @@ The gate remote is kept in the hallway cabinet, not the kitchen drawer.
   vault version). Provenance is preserved via `origin_source` /
   `origin_written_by`.
 - Voice writes (`ada_remember`) go to MDDB first; `--export-inbox` pulls
-  active `source=voice` docs into `inbox/` — review, then move the file
-  into the right bank folder to promote it.
+  active `source=voice` docs into `inbox/` — review, then promote with
+  `scripts/ada/consolidate-memory.py` (moves each note into its bank dir;
+  `personal/` picks `tony`/`michael` by the note's `scope`).
 - `writable: false` banks (e.g. `home`) block *Ada* from writing — this
   vault is human authority and syncs regardless.
 - **`personal/*` is git-ignored** — the chaba repo is public on GitHub, so
@@ -74,3 +75,13 @@ The gate remote is kept in the hallway cabinet, not the kitchen drawer.
   encryption policy is decided.
 - Edits made in `apps/obsidian` on mn01 live in its rsync'd copy — pull
   them back with `scripts/ada/pull-vault.sh mn01`.
+
+## Scheduled jobs (systemd user timers)
+
+| Job | Host | Cadence | What it does |
+|---|---|---|---|
+| `ada-memory-sync.timer` | mn01 | hourly | `--export-inbox` then sync `--resolve-voice` (voice-owned conflicts auto-resolve to remote; real conflicts report) |
+| `ada-memory-backup.timer` | tony-omen | nightly 04:30 | `backup-mddb-banks.py --git` — dumps all banks + recall summaries to `backups/ada-memory/` and commits; `personal/*` dumps go to `~/.local/share/ada-backups/` (never git) |
+| `ada-memory-drift.timer` | mn01 | Sun 09:00 | `recall-drift-report.py --emit` — tripwires on miss rate >50% or mean hit score <0.55 → posts to the chaba events feed |
+
+Unit sources: `systemd/ada-memory-*.{service,timer}` in this repo.

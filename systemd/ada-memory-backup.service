@@ -1,0 +1,9 @@
+[Unit]
+Description=Ada memory bank MDDB backup -> git (backups/ada-memory/)
+# Runs on tony-omen (this chaba checkout is on master; tony-dell's checkout
+# tracks a test branch). Personal banks dump to ~/.local/share/ada-backups/.
+
+[Service]
+Type=oneshot
+WorkingDirectory=%h/CascadeProjects/chaba
+ExecStart=/usr/bin/python3 %h/CascadeProjects/chaba/scripts/ada/backup-mddb-banks.py --git

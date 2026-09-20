@@ -1,0 +1,7 @@
+[Unit]
+Description=Ada bank-recall drift report (journal scores -> chaba-events on tripwire)
+# Runs on mn01 where ada-ha-* journal the recall scores.
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 %h/CascadeProjects/chaba-vault/scripts/ada/recall-drift-report.py --since '7 days ago' --emit
