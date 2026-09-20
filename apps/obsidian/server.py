@@ -177,13 +177,18 @@ class CommitRequest(BaseModel):
 
 @app.post("/api/commit")
 async def commit(req: CommitRequest, request: Request) -> dict:
+    """Sync vault -> MDDB, then queue the git commit: this runtime copy isn't
+    a git checkout — tony-omen's hourly ada-memory-pull.timer pulls the vault,
+    commits and pushes it. personal/* stays local by design."""
     _check_write_auth(request)
-    add = _run(["git", "add", "docs/ada-memory"])
-    if not add["ok"]:
-        return add
-    ci = _run(["git", "commit", "-m", req.message or "vault edit via apps/obsidian"])
-    push = _run(["git", "push"]) if ci["ok"] else {"ok": False, "output": "skipped"}
-    return {"ok": ci["ok"], "commit": ci["output"], "push": push}
+    sync = _run(["python3", str(SYNC_SCRIPT), "--mddb", MDDB])
+    return {
+        "ok": sync["ok"],
+        "commit": "queued — ada-memory-pull.timer on tony-omen commits hourly "
+                  "(personal/* is gitignored, never committed)",
+        "push": {"ok": True, "output": "via timer"},
+        "sync": sync["output"][-800:],
+    }
 
 
 if __name__ == "__main__":

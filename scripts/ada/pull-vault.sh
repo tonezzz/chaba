@@ -13,6 +13,7 @@ COMMIT=0
 for arg in "$@"; do
   case "$arg" in
     --commit) COMMIT=1 ;;
+    --push) PUSH=1 ;;
     *) HOST="$arg" ;;
   esac
 done
@@ -35,4 +36,12 @@ if [[ "$COMMIT" == 1 ]]; then
   fi
 else
   git -C "$REPO" status --short docs/ada-memory || true
+fi
+
+# Optional reverse direction: push the git checkout's vault back to the
+# remote host (vault edits committed elsewhere reach the app's live copy).
+# No --delete and personal/ excluded — remote-only files survive.
+if [[ "${PUSH:-0}" == 1 ]]; then
+  rsync -az --exclude 'personal/' "$VAULT/" "$REMOTE"
+  echo "pushed $VAULT -> $REMOTE (no delete; personal/ untouched)"
 fi
