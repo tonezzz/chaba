@@ -145,13 +145,11 @@ document.getElementById('btn-sync').onclick = async (e) => {
 };
 
 document.getElementById('btn-commit').onclick = async () => {
-  const msg = prompt('Commit message:', 'vault edit via apps/obsidian');
-  if (msg === null) return;
   const d = await (await api('/api/commit', { method: 'POST',
-    headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message: msg }) })).json();
+    headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({}) })).json();
   document.getElementById('n-msg').textContent = d.ok
-    ? 'committed' + (d.push && d.push.ok ? ' + pushed' : ' (push skipped/failed — local only)')
-    : 'nothing to commit: ' + (d.commit || '').slice(0, 200);
+    ? 'synced → MDDB; ' + (d.commit || '')
+    : 'sync failed: ' + (d.sync || d.detail || '').slice(0, 200);
   refreshStatus();
 };
 
