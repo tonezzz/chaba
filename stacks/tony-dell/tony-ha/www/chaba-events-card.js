@@ -241,14 +241,23 @@ class ChabaEventsCard extends HTMLElement {
     if (e.requires_response && !e.responded) {
       const ack = document.createElement("button");
       ack.textContent = e._pn ? "Dismiss" : "Ack";
-      ack.onclick = () => {
-        if (e._pn) {
-          this._hass.callService("persistent_notification", "dismiss", {
-            notification_id: e.id.slice(3),
-          });
-        } else {
-          this._hass.callService("shell_command", "chaba_event_ack", { id: e.id });
-          setTimeout(() => this._loadFeed(), 600);
+      ack.onclick = async () => {
+        // optimistic update — reconcile with the feed in the background
+        e.responded = true;
+        ack.disabled = true;
+        this._render();
+        try {
+          if (e._pn) {
+            await this._hass.callService("persistent_notification", "dismiss", {
+              notification_id: e.id.slice(3),
+            });
+          } else {
+            await this._hass.callService("shell_command", "chaba_event_ack", {
+              id: e.id,
+            });
+          }
+        } finally {
+          this._loadFeed();
         }
       };
       top.appendChild(ack);
