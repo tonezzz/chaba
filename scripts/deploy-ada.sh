@@ -22,8 +22,11 @@ case "$target" in
 esac
 
 host_config() {
+  # Comma-separated — ssh joins remote args with spaces, so space-separated
+  # lists would arrive as multiple args and silently drop every service but
+  # the first (the ada-ha-michael-never-restarts bug).
   case "$1" in
-    mn01)      echo "ada-ha-tony.service ada-ha-michael.service|8002 8003" ;;
+    mn01)      echo "ada-ha-tony.service,ada-ha-michael.service|8002,8003" ;;
     tony-dell) echo "ada-pi-pwa.service|8001" ;;
   esac
 }
@@ -57,7 +60,8 @@ for host in "${hosts[@]}"; do
     flock -n 9 || { echo "FAIL: another deploy to $host holds the lock"; exit 1; }
     if out="$(ssh "$host" bash -s -- "$services" "$ports" "$force_restart" <<'REMOTE'
 set -euo pipefail
-services="$1"; ports="$2"; force="${3:-}"
+# Args arrive comma-joined (ssh arg joining makes space-separated lists unsafe).
+IFS=',' read -ra svcs <<< "$1"; IFS=',' read -ra prts <<< "$2"; force="${3:-}"
 cd "$HOME/CascadeProjects/ada-pi"
 
 branch=$(git branch --show-current)
@@ -94,8 +98,8 @@ needs_restart=0
 grep -qE '\.py$|requirements\.txt' <<< "$changed" && needs_restart=1
 
 i=0
-for svc in $services; do
-  i=$((i+1)); port=$(cut -d' ' -f"$i" <<< "$ports")
+for svc in "${svcs[@]}"; do
+  i=$((i+1)); port="${prts[$((i-1))]:-}"
   if [[ $needs_restart == 1 ]]; then
     if systemctl --user is-active --quiet "$svc"; then
       systemctl --user restart "$svc"

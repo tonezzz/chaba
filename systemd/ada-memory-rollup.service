@@ -1,0 +1,9 @@
+[Unit]
+Description=Ada memory rollup — session summaries -> daily/weekly/monthly docs
+# Runs on tony-omen (ada-pi venv has google-genai; GEMINI_API_KEY in env file).
+# Scheduled before ada-memory-backup.timer so rollups land in the nightly dump.
+
+[Service]
+Type=oneshot
+EnvironmentFile=%h/.config/secrets/ada-pi-pwa.env
+ExecStart=%h/CascadeProjects/ada-pi/.venv/bin/python %h/CascadeProjects/chaba/scripts/ada/rollup-summaries.py
