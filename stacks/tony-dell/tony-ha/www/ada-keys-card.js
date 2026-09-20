@@ -66,6 +66,9 @@ class AdaKeysCard extends HTMLElement {
     el.dataset.busy = "1";
     const prev = el.textContent;
     el.textContent = name + " — re-pairing…";
+    // Open the window synchronously inside the user gesture — iOS Safari and
+    // webviews block window.open calls that happen after an await.
+    const win = window.open("", "_blank");
     try {
       const res = await this._hass.callWS({
         type: "call_service",
@@ -76,14 +79,34 @@ class AdaKeysCard extends HTMLElement {
       });
       const path = res && res.response && res.response.content && res.response.content.redeem_url;
       if (!path) throw new Error("no redeem_url in response");
-      const origin = (this._config && this._config.origin) || "https://mn01.taila0626a.ts.net";
-      window.open(origin + path, "_blank", "noopener");
+      const url = ((this._config && this._config.origin) || "https://mn01.taila0626a.ts.net") + path;
+      if (win) {
+        win.location.href = url;
+      } else {
+        this._showOpenLink(el, url, name);   // popup fully blocked → inline link
+        return;
+      }
     } catch (err) {
+      if (win) win.close();
       el.textContent = name + " — failed: " + (err.message || err);
       setTimeout(() => { el.textContent = prev; delete el.dataset.busy; }, 4000);
       return;
     }
     el.textContent = prev;
+    delete el.dataset.busy;
+  }
+
+  _showOpenLink(el, url, name) {
+    el.textContent = "";
+    const a = document.createElement("a");
+    a.href = url;
+    a.target = "_blank";
+    a.rel = "noopener";
+    a.style.color = "var(--primary-color)";
+    a.textContent = "Tap to open session";
+    a.onclick = () => { setTimeout(() => { el.textContent = name; }, 500); };
+    el.appendChild(a);
+    setTimeout(() => { if (el.contains(a)) el.textContent = name; }, 120000);
     delete el.dataset.busy;
   }
 
