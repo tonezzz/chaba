@@ -289,8 +289,8 @@ debug_commands:
     description: TCP sockets and network connections
     compact: true
     expected_output: lsof_tcp
-    raw_command: lsof -nP
-    note: Works on Linux and macOS; raw uses 'lsof -nP' to include UDP as a larger baseline.
+    raw_command: lsof -nP -iTCP
+    note: Works on Linux and macOS; the raw baseline is also -iTCP to keep the benchmark fast and focused.
   launchctl list:
     description: macOS launchd loaded services
     compact: true

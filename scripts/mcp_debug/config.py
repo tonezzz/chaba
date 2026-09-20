@@ -20,6 +20,9 @@ if FILES_SSOT.exists():
     with open(FILES_SSOT) as f:
         FILE_CONFIG = yaml.safe_load(f) or {}
 
+RAW_COMMANDS_SSOT = REPO_DIR / (CONFIG.get("raw_commands_source") or "docs/ssot/infrastructure/ssot.mcp-debug.raw-commands.yml")
+RAW_COMMANDS = (yaml.safe_load(open(RAW_COMMANDS_SSOT)) or {}) if RAW_COMMANDS_SSOT.exists() else {}
+
 def _load_log_units():
     units = []
     home_path = REPO_DIR / "docs" / "ssot" / "infrastructure" / "ssot.health.home.yml"
@@ -45,8 +48,8 @@ def _load_log_units():
 
 HOSTS = CONFIG.get("hosts", {})
 DEBUG_COMMANDS = CONFIG.get("debug_commands", {})
-RAW_PREFIXES = CONFIG.get("raw_commands", {}).get("allowed_prefixes", [])
-RAW_CATEGORIES = CONFIG.get("raw_commands", {}).get("categories", {})
+RAW_PREFIXES = RAW_COMMANDS.get("raw_commands", {}).get("allowed_prefixes", [])
+RAW_CATEGORIES = RAW_COMMANDS.get("raw_commands", {}).get("categories", {})
 PRESETS = CONFIG.get("presets", {})
 LOG_UNITS = _load_log_units()
 PRESET_DESCRIPTIONS = {name: data.get("description", "") for name, data in PRESETS.items()}
@@ -63,12 +66,14 @@ def load_report_config():
 
 
 def reload_config():
-    global CONFIG, HOSTS, DEBUG_COMMANDS, RAW_PREFIXES, PRESETS, PRESET_DESCRIPTIONS
+    global CONFIG, HOSTS, DEBUG_COMMANDS, RAW_PREFIXES, RAW_CATEGORIES, RAW_COMMANDS, PRESETS, PRESET_DESCRIPTIONS
     with open(SSOT) as f:
         CONFIG = yaml.safe_load(f)
+    raw_path = REPO_DIR / (CONFIG.get("raw_commands_source") or "docs/ssot/infrastructure/ssot.mcp-debug.raw-commands.yml")
+    RAW_COMMANDS = (yaml.safe_load(open(raw_path)) or {}) if raw_path.exists() else {}
     HOSTS = CONFIG.get("hosts", {})
     DEBUG_COMMANDS = CONFIG.get("debug_commands", {})
-    RAW_PREFIXES = CONFIG.get("raw_commands", {}).get("allowed_prefixes", [])
-    RAW_CATEGORIES = CONFIG.get("raw_commands", {}).get("categories", {})
+    RAW_PREFIXES = RAW_COMMANDS.get("raw_commands", {}).get("allowed_prefixes", [])
+    RAW_CATEGORIES = RAW_COMMANDS.get("raw_commands", {}).get("categories", {})
     PRESETS = CONFIG.get("presets", {})
     PRESET_DESCRIPTIONS = {name: data.get("description", "") for name, data in PRESETS.items()}
