@@ -91,7 +91,7 @@ sections:
       - label: Registry
         text: "This file is the source of truth for bank definitions; the banks: block below is machine-readable and rendered to the runtime JSON."
       - label: Implementation
-        text: "memory_banks.py, ada_remember, and bank-aware recall are planned — all banks are status: planned until code lands."
+        text: "memory_banks.py, ada_remember, and bank-aware recall are LIVE (deployed 2026-09-20) — banks marked status: active are serving recall/writes."
       - label: Adjusting banks
         text: "Add/remove/rename banks by editing the banks: block; flip instances to move a bank between tony and michael; no code change needed for assignment-only edits."
 
@@ -108,7 +108,7 @@ banks:
     writable: true
     write_policy: confirmed
     allowed_tools: [ada_remember, ada_forget]
-    status: planned
+    status: active
   home:
     title: Household knowledge
     description: Home topology, device aliases, procedures, status notices (the planned shared 'home' group)
@@ -121,7 +121,7 @@ banks:
     writable: false
     write_policy: confirmed
     allowed_tools: []
-    status: planned
+    status: active
   people:
     title: People and relationships
     description: Who is who, relationships, individual preferences
@@ -134,7 +134,7 @@ banks:
     writable: true
     write_policy: confirmed
     allowed_tools: [ada_remember, ada_forget]
-    status: planned
+    status: active
   personal:
     title: Private per-instance memory
     description: Instance-private notes that must never cross to the other instance
@@ -147,7 +147,7 @@ banks:
     writable: true
     write_policy: direct
     allowed_tools: [ada_remember, ada_forget]
-    status: planned
+    status: active
   tony-projects:
     title: Tony project notes
     description: Tony-only project and infrastructure notes
@@ -160,7 +160,7 @@ banks:
     writable: true
     write_policy: confirmed
     allowed_tools: [ada_remember, ada_forget]
-    status: planned
+    status: active
   note:
     title: Scratch notes (test bank)
     description: Tony-only sandbox bank for testing the ada_remember write/update flow
