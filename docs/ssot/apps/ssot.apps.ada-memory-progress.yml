@@ -69,7 +69,7 @@ milestones:
       - { task: "--export-inbox pulls source=voice + status=active docs to inbox/<bank>/ for review", status: done, date: "2026-09-20" }
       - { task: "Round-trip verified live: export→promote→sync no-op; create/update/remote-only; Ada recalls vault doc (score 0.78)", status: done, date: "2026-09-20" }
       - { task: "Gate-remote voice note exported to inbox/ + promoted to note/ as workflow demo", status: done, date: "2026-09-20" }
-      - { task: "Decide vault→git policy for personal/* (private content in repo)", status: done, date: "2026-09-20", note: "gitignored for now — chaba is public on GitHub; revisit with private-mirror/encryption policy" }
+      - { task: "Decide vault→git policy for personal/* (private content in repo)", status: done, date: "2026-09-20", note: "DECIDED 2026-09-20: keep local-only — gitignored + ~/.local/share/ada-backups/ dumps via backup-mddb-banks.py; no private mirror, no encryption" }
       - { task: "Decide Obsidian desktop/mobile install for tony-dell", status: pending, note: "superseded for now by apps/obsidian web viewer" }
       - { task: "Cleanup: delete orphaned URL-derived ada-ha-* collections", status: done, date: "2026-09-20", note: "deleted 7 collections, 33 docs on tony-dell" }
       - { task: "apps/obsidian mini web app on mn01 (browse/edit/sync/commit UI, :8004, obsidian-vault.service)", status: done, date: "2026-09-20" }
@@ -92,6 +92,8 @@ milestones:
       - { task: "FIXED deploy-ada.sh: ssh arg joining dropped all but first service (michael never restarted) — comma-joined args now", status: done, date: "2026-09-20" }
       - { task: "pull-vault --push: bidirectional reconcile — git checkout vault pushes back to mn01 (no --delete, personal/ excluded); hourly timer", status: done, date: "2026-09-20" }
       - { task: "apps/obsidian Commit button fixed: was calling git on a non-repo copy — now syncs MDDB + reports queued hourly commit", status: done, date: "2026-09-20" }
+      - { task: "tests/ada_memory/test_memory_scripts.py — 13 unit tests: voice-owned conflict logic, frontmatter roundtrip, consolidate routing, rollup source_keys idempotency, drift tripwires, backup privacy routing", status: done, date: "2026-09-20" }
+      - { task: "ADA_* env surface consolidated into ssot.apps.ada_ha.yml 'Environment surface' section (identity/auth/safety/recall/summary/logging groups)", status: done, date: "2026-09-20" }
       - { task: "chaba-admin Events tab: chaba-events-card + chaba-event-log.py feed (24h), shared filter via input_text, logbook toggle, producers wired (ada_pair_*, deploy-ada)", status: done, date: "2026-09-20" }
       - { task: "Architecture assessment written (docs/assessments/ada-memory-architecture-assessment.md); bank statuses flipped planned→active", status: done, date: "2026-09-20" }
 

@@ -202,6 +202,22 @@ sections:
         text: mn01 and tony-dell both run Tailscale Funnel on 443, so /apps/ada_ha_* and /apps/ada_pi are public-internet paths. confirmed=true only gates the model — direct REST callers self-assert it — which is why ADA_API_KEY covers /api/tools/call AND /ws.
       - label: EnvironmentFile order overrides keys
         text: "ada-ha-*.service load ada-ha-<inst>.env THEN notebooklm-rest-api.env; a stale NOTEBOOKLM_REST_API_KEY in the second file silently overrode the per-instance scoped key, so every notebooklm-rest call returned 401 Invalid API key (key-gate runs before handlers, so the write queue never engaged). Fixed 2026-09-17 by commenting the stale key on mn01. Rule: notebooklm-rest-api.env must never carry a singular NOTEBOOKLM_REST_API_KEY on mn01 — scoped per-instance keys live only in ada-ha-*.env; the server side authenticates with NOTEBOOKLM_REST_API_KEYS + NOTEBOOKLM_REST_KEY_SCOPES."
+  - title: Environment surface (ADA_*/GEMINI_*/etc.)
+    icon: "🧩"
+    layout: list
+    items:
+      - label: Identity / instance
+        text: "ADA_INSTANCE_ID (required, fail-fast) — tony|michael; pins ada-ha-*-<instance> MDDB collections. ADA_MEMORY_BANKS_FILE — registry JSON override (default ~/.config/ada/memory-banks.json). ADA_TIMEZONE (America/New_York). DISABLE_EVENT_RECORDER / DISABLE_GET_HOME_STATE — feature killswitches."
+      - label: Auth
+        text: "ADA_API_KEY (required for writes + /ws), ADA_API_KEYS=name:key,... per-caller keys, ADA_KEYS_FILE (keys JSON path), ADA_REDEEM_TTL_S (600), ADA_SESSION_TTL_S, ADA_DASHBOARD_URL_PATH (tony-test)."
+      - label: Safety / policy
+        text: "ADA_READ_ONLY=true disables actuating tools. ADA_CONTROL_MAX_PER_ENTITY (5) / ADA_CONTROL_MAX_GLOBAL (30) / ADA_CONTROL_RATE_WINDOW_S (60) — sliding-window rate limits. ADA_EXCLUDED_TOOLS — comma list to hide tools."
+      - label: Memory recall
+        text: "ADA_BANK_SEARCH_THRESHOLD (0.45) — bank + summary vector hit floor. ADA_BANK_UPDATE_THRESHOLD (0.85) — ada_remember dedupe/correct-in-place floor. ADA_RECALL_SLOW_AFTER_S (10) — filler-speech delay before NotebookLM completes."
+      - label: Summarization
+        text: "ADA_SUMMARY_MODEL (gemini-3.5-flash-lite), ADA_SUMMARY_MAX_TRANSCRIPT_CHARS (8000), GEMINI_API_KEY (required for rolling/session summaries + rollup job)."
+      - label: Logging / misc
+        text: "ADA_LOG_DIR, ADA_LOG_LEVEL (INFO), ADA_LOG_MAX_BYTES, ADA_LOG_BACKUPS, ADA_HABIT_DB. Vision: ADA_VISION_BACKEND (auto), ADA_VIDEO_MODE (activity), ADA_HAILO_MODEL_DIR / _DETECTION_HEF / _POSE_HEF / _ROTATE_*. Gemini Live: GEMINI_LIVE_MODEL / _VOICE / _INSTRUCTIONS / GEMINI_VIDEO_RESOLUTION / GEMINI_POSTURE_MODEL. External: MDDB_BASE_URL, NOTEBOOKLM_NOTEBOOK_ID(S_JSON), GOOGLE_API_KEY."
 config:
   version: 5
   created: "2026-09-13"
