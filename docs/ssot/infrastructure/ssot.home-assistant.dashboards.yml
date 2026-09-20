@@ -48,11 +48,15 @@ instances:
       configuration.yaml), secret ada_admin_key in secrets.yaml. QR SVG is
       written to /config/www/pair-qr.svg and shown in a picture card. Admin key
       stays server-side in secrets.yaml.
+      Issued-keys card is custom:ada-keys-card (/local/ada-keys-card.js,
+      repo: stacks/tony-dell/tony-ha/www/ada-keys-card.js) — renders each key
+      with Re-pair (script.ada_pair_reissue: revoke+issue, since POST keys
+      409s on a taken name) and Revoke (script.ada_pair_revoke_named) buttons.
     tabs:
       - title: Pair
         path: pair
         icon: mdi:qrcode-plus
-        cards: issue/revoke form, pairing QR picture, redeem link, issued-keys list, capabilities info
+        cards: issue/revoke form, pairing QR picture, redeem link, ada-keys-card, capabilities info
 
 tabs:
   dev:
