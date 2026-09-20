@@ -67,7 +67,10 @@ instances:
       persistent_notification entities (always requires-response). Shared
       filter state in input_text.chaba_events_filter ({"hidden": [...]});
       native logbook card gated by input_boolean.chaba_events_show_logbook via
-      a conditional card. Producers: shell_command.chaba_event /
+      a conditional card — note HA 2026.8 logbook cards error
+      ("target has no entities") without entities:/target:, so it carries a
+      curated entity list (pairing/cast scripts+automations, helpers, cast
+      devices, ada sensors). Producers: shell_command.chaba_event /
       chaba_event_ack (base64 JSON payload), called from ada_pair_* scripts;
       deploy-ada.sh emits over SSH. Events with requires_response && !responded
       pin to top with a pulsing border (prefers-reduced-motion respected);
