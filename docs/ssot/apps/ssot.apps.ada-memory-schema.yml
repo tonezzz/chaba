@@ -69,9 +69,39 @@ sections:
       - label: Contradiction detection
         text: subject+attribute meta lets search find "a fact about the same thing" even when phrased differently — contradictions surface as update candidates, not duplicates.
 config:
-  version: 1
+  version: 2
   created: "2026-09-19"
-  updated: "2026-09-19"
+  updated: "2026-09-20"
   maintainer: tony
   status: draft
   deployment: mn01
+
+# Machine-readable meta schema — the single source of truth for document
+# meta fields. Consumed by:
+#   scripts/ada/render-memory-banks.py  -> ~/.config/ada/memory-banks.json (schema key)
+#   scripts/ada/sync-ada-memory-to-mddb.py (reads this file directly)
+#   ada-pi backend/memory_ops.py        (validates written meta)
+# Adding a field here is how you extend the schema everywhere.
+meta_schema:
+  fields:
+    bank: {role: system, required: true}
+    scope: {role: system, required: true, enum: [shared, tony, michael]}
+    kind: {required: true, default: note, enum: [fact, preference, person, procedure, note]}
+    status: {required: true, default: active, enum: [active, superseded, retracted, expired]}
+    source: {role: provenance, required: true, enum: [voice, manual, import]}
+    written_by: {role: provenance, required: true}
+    subject: {required: false}
+    attribute: {required: false}
+    valid_from: {required: true, type: date}
+    last_verified: {required: true, type: date}
+    valid_until: {required: false, type: date}
+    applies_to: {required: false, type: list}
+    supersedes: {required: false, type: key}
+    superseded_by: {required: false, type: key}
+    retracted_reason: {required: false}
+    confidence: {required: false, type: float}
+    origin_source: {role: provenance, required: false}
+    origin_written_by: {role: provenance, required: false}
+  # Frontmatter-only field (pins the MDDB key on the vault side; stored as
+  # the MDDB doc key, not as meta).
+  vault_only_fields: [key]

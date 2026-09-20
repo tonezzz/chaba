@@ -39,15 +39,35 @@ import yaml
 
 REPO = Path(__file__).resolve().parents[2]
 SSOT = REPO / "docs/ssot/apps/ssot.apps.ada-memory-banks.yml"
+SCHEMA_SSOT = REPO / "docs/ssot/apps/ssot.apps.ada-memory-schema.yml"
 VAULT = REPO / "docs/ada-memory"
 MDDB = os.environ.get("ADA_MEMORY_MDDB_URL", "http://100.68.142.13:11023/v1").rstrip("/")
 
-META_FIELDS = (
-    "kind", "status", "subject", "attribute", "valid_from", "last_verified",
-    "valid_until", "applies_to", "supersedes", "superseded_by",
-    "retracted_reason", "origin_source", "origin_written_by",
-)
-MANAGED_FIELDS = ("bank", "scope", "source", "written_by") + META_FIELDS
+# Field lists are derived from the meta_schema block in
+# ssot.apps.ada-memory-schema.yml — extend the schema there, not here.
+_VAULT_STAMPED = ("bank", "scope", "source", "written_by")
+
+
+def _load_meta_fields() -> tuple[tuple[str, ...], tuple[str, ...]]:
+    try:
+        schema = yaml.safe_load(SCHEMA_SSOT.read_text()).get("meta_schema") or {}
+        fields = tuple((schema.get("fields") or {}).keys())
+        if fields:
+            managed = fields
+            declared = tuple(f for f in fields if f not in _VAULT_STAMPED)
+            return declared, managed
+    except Exception:
+        pass
+    # Fallback if the schema SSOT is unreadable.
+    declared = (
+        "kind", "status", "subject", "attribute", "valid_from", "last_verified",
+        "valid_until", "applies_to", "supersedes", "superseded_by",
+        "retracted_reason", "origin_source", "origin_written_by",
+    )
+    return declared, _VAULT_STAMPED + declared
+
+
+META_FIELDS, MANAGED_FIELDS = _load_meta_fields()
 
 
 def load_bank_map() -> list[dict]:

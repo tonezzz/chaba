@@ -24,6 +24,7 @@ from pathlib import Path
 import yaml
 
 SSOT = Path(__file__).resolve().parents[2] / "docs/ssot/apps/ssot.apps.ada-memory-banks.yml"
+SCHEMA_SSOT = SSOT.with_name("ssot.apps.ada-memory-schema.yml")
 DEFAULT_OUT = Path.home() / ".config/ada/memory-banks.json"
 
 
@@ -32,10 +33,16 @@ def render() -> dict:
     banks = data.get("banks")
     if not isinstance(banks, dict) or not banks:
         raise SystemExit(f"{SSOT}: no 'banks' map found")
-    return {
+    out = {
         "source": str(SSOT),
         "banks": banks,
     }
+    if SCHEMA_SSOT.exists():
+        schema = yaml.safe_load(SCHEMA_SSOT.read_text()).get("meta_schema")
+        if schema:
+            out["schema"] = schema
+            out["schema_source"] = str(SCHEMA_SSOT)
+    return out
 
 
 def main() -> int:
