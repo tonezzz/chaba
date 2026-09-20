@@ -65,19 +65,5 @@ The gate remote is kept in the hallway cabinet, not the kitchen drawer.
 - `writable: false` banks (e.g. `home`) block *Ada* from writing — this
   vault is human authority and syncs regardless.
 - **`personal/*` is git-ignored** — the chaba repo is public on GitHub, so
-  private notes stay local-only (decided 2026-09-20: no private mirror, no
-  encryption). The pre-commit hook hard-blocks staged `personal/**` files.
-
-## Backup & restore
-
-- `ada-memory-backup.timer` (nightly 04:30, tony-omen) dumps every bank +
-  recall-summary collection to `backups/ada-memory/` (shared, in git) and
-  `~/.local/share/ada-backups/ada-memory/` (personal, never git).
-- `ada-memory-backup-mirror.timer` (weekly Sun 05:00, tony-omen) pushes the
-  dumps to `mn01:~/.local/share/ada-mddb-mirror/` — a warm copy off the
-  primary host.
-- **Restore:** `scripts/ada/restore-mddb-banks.py <dump-dir>` — verified in a
-  drill 2026-09-20 (content + meta identical). RTO ≈ minutes once a dump
-  exists; the mn01 mirror covers tony-omen loss.
-- If MDDB is down but the vault is intact, recall falls back to NotebookLM
-  deep tier until MDDB is restored.
+  private notes stay local-only for now. Revisit once a private-mirror or
+  encryption policy is decided.
