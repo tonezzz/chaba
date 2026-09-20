@@ -622,12 +622,12 @@ tony-ha cast lifecycle — every cast goes through the gate, nothing targets dea
 
 - `script.cast_power_on(target)` — `tv` = Samsung DLNA (`media_player.tv_40c5000`), `box` = TrueID Chromecast (`media_player.tony_tv_cast`). If target unavailable → `switch.plug_tv` on, sets `input_boolean.cast_powered_by_us`, waits 90s for the entity, notifies on timeout. Always (re)starts `timer.cast_idle` (5 min).
 - `input_boolean.youtube_search_pending` gates `automation.cast_youtube_from_search_result`: `youtube_search_on_query` arms it on a new `input_text.youtube_query`, and the search-result automation requires it `on` + query `last_changed` < 30 min, then clears it. Added 2026-09-20 because `sensor.youtube_search_result` polls every 10 min and YouTube's top result kept alternating, re-firing `cast_power_on` → `plug_tv` on in a loop. Passive poll flips now do nothing; only a fresh query casts.
-- `script.cast_cleanup` — turns off both cast targets, cancels timer, clears flag. TV stays powered; only cast-side state unwinds.
-- `script.cast_camera` — power_on(box) → `camera.play_stream` of `camera.xiaomi_c201` to `tony_tv_cast` (default desk camera per Tony).
+- `script.cast_cleanup` — `shell_command.cast_host_cleanup` (ssh tony-omen, kills deskreen-ce + cast ffmpeg feeders), turns off both cast targets, cancels timer, clears flag. TV stays powered; only cast-side state unwinds. shell_command defined in tony-ha configuration.yaml (ssh -i /config/.ssh/id_tony_omen tony@tony-omen.taila0626a.ts.net — container DNS maps 'tony-omen' to a stale 192.168.1.x, use the FQDN).
+- `script.cast_camera` — power_on(box) → camera.xiaomi_c201 → verify playing → fallback `camera.xiaomi_c201_sd` → notify on failure. LAN-only; no cloud path exists for Xiaomi→Chromecast (Google cloud casting is Nest-only).
 - `automation.cast_idle_shutdown` — timer.finished + flag on → if either target `playing`: skip + persistent-notification + restart timer; else `cast_cleanup`.
 - `automation.cast_activity_reset` — either target → `playing` + flag on → restart timer.
 - Wrapped with the gate (first action = `script.cast_power_on` box): `1788623518229` (Thai hello TTS), `assist_tv_control`, `cast_youtube_on_input`, `youtube_search_on_query`, `cast_youtube_from_search`, `cast_youtube_from_picker`, `youtube_request_handler`, `youtube_auto_play_next`, `youtube_queue_control` — in `/home/tony/.config/home-assistant/automations.yaml` on tony-dell (backup `automations.yaml.bak-20260918`).
-- The 11 `assist_cast_*`/`cast_from_youtube_result_button`/`update_youtube_result_buttons` entities are ORPHANED entity-registry entries (no backing config) — they'll always show `unavailable`; safe to registry-delete if desired.
+- The 11 `assist_cast_*`/`cast_from_youtube_result_button`/`update_youtube_result_buttons` entities were orphaned registry entries — deleted 2026-09-20 via ha_remove_entity.
 - Cast target entity is `media_player.tony_tv_cast` (Google Cast), NOT `media_player.tony_tv` (Android TV Remote) — don't confuse them.
 
 ## Chaba admin Events feed (built 2026-09-20)
