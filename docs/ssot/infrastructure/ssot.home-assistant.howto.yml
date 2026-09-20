@@ -319,7 +319,7 @@ runbooks:
       - 'Bundle version drift / incomplete deploys: verify by md5sum or curl the
         bundle, not just the version number.'
     ssot: ssot.home-assistant.design.yml
-    last_updated: "2026-09-09"
+    last_updated: '2026-09-18'
 
   deployment_policy:
     purpose: Human approval required before any deploy from michael-dev to another host.
@@ -371,7 +371,36 @@ runbooks:
     ssot: ssot.home-assistant.instances.yml
     last_updated: "2026-09-10"
 
+  rename_device_via_websocket:
+    purpose: Rename a device + its entities on tony-ha without the UI (same calls the UI makes; no restart).
+    steps:
+      - tony-ha binds loopback on tony-dell — connect to ws://127.0.0.1:8123/api/websocket and auth with HA_LONG_LIVED_TOKEN from ~/.config/secrets/home-assistant-token.env
+      - Find the device via config/device_registry/list (match on name/name_by_user), its entities via config/entity_registry/list (match device_id)
+      - config/device_registry/update with name_by_user = new display name
+      - config/entity_registry/update per entity: name = new display name; new_entity_id to also rename the entity_id (follow the Thai-slug convention, e.g. switch.cozy1 -> switch.plakphadlom)
+      - Grep .storage/lovelace.* for the old entity_id/name; update references via lovelace/config + lovelace/config/save with url_path (live, no restart)
+      - Verify with get_states (friendly_name) and re-list the registries
+    note: |
+      Verified 2026-09-18 renaming Cozy1 -> ปลั๊กพัดลม (cozylife_local plug). Entity `name` is a
+      user override — with has_entity_name:false, clearing it reverts to original_name, so set it
+      explicitly. entity_id renames do NOT auto-update dashboards or frontend recents; check
+      .storage references first.
+
+  person_detect_switch_automation:
+    purpose: Wire YOLO person detection on a go2rtc camera to a switch on tony-ha (used for the Coffee Corner fan).
+    steps:
+      - Ensure yolo-xiaomi.service is running; it serves person_count on http://127.0.0.1:8780/detect (source selectable via input_select.yolo_camera_source + rest_command.yolo_set_source)
+      - Add a rest resource in configuration.yaml polling /detect every 5s — a sensor for person_count and a binary_sensor gated on the desired source stream
+      - Add the automation to automations.yaml: state trigger binary_sensor on for ~5s -> turn_on; off/unavailable/unknown for the clear delay -> turn_off
+      - 'Reload live without restart: POST /api/services/rest/reload and /api/services/automation/reload with HA_LONG_LIVED_TOKEN from ~/.config/secrets/home-assistant-token.env'
+    note: |
+      Verified 2026-09-18 (automation.coffee_corner_fan_follows_person -> switch.plakphadlom).
+      availability_template is NOT a valid rest binary_sensor option — fold error checks
+      into value_template. for: triggers only arm on NEW transitions after a reload; a
+      state already in place before reload will not start the timer. Switching the YOLO
+      source away from the gated camera flips the binary sensor off.
+
 status:
-  last_updated: "2026-09-09"
-  last_verified: "2026-09-16"
-  health: active; websocket push-dashboard workflow verified; deploy runbook corrected (.storage resource changes need service restart, not ha_reload_core); sidebar API scope documented; stale /local 404 workaround (v-bump) documented; michael-ha working token located in ha-michael-live.env; pfg chart code modularized into src/cards/pfg/ with registry + single placement engine; pfg_3d_charts runbook added (category x-axis, incremental cache, dev-vs-live data note); deployment_policy, promote_tony_ha and build_typecheck runbooks added 2026-09-09
+  last_updated: '2026-09-18'
+  last_verified: '2026-09-18'
+  health: active; websocket push-dashboard workflow verified; deploy runbook corrected (.storage resource changes need service restart, not ha_reload_core); sidebar API scope documented; stale /local 404 workaround (v-bump) documented; michael-ha working token located in ha-michael-live.env; pfg chart code modularized into src/cards/pfg/ with registry + single placement engine; pfg_3d_charts runbook added (category x-axis, incremental cache, dev-vs-live data note); deployment_policy, promote_tony_ha and build_typecheck runbooks added 2026-09-09; rename_device_via_websocket and person_detect_switch_automation runbooks added 2026-09-18

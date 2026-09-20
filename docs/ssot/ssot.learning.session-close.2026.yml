@@ -1,0 +1,182 @@
+title: Session Close & Learning Workflow
+subtitle: How to finish a working session, capture learnings, and improve
+icon: 🧠
+ideas:
+  - Capture the lessons from the first 'finish and close' workflow
+  - Define the trigger phrases that mean 'wrap up and commit/push'
+  - Document how the agent should respond to 'what have we learnt? how can we improve?'
+  - Keep a record of errors, workarounds, and future improvements
+
+sections:
+  - title: Finish and Close Trigger Phrases
+    icon: 🔚
+    layout: list
+    items:
+      - label: Trigger phrases
+        text: |
+          Phrases like 'Let's finish and close', 'finish and close', 'session closed', or
+          'what have we learnt? how can we improve?' are treated as session-end / retrospective
+          triggers. Normalize extra whitespace and punctuation before matching.
+      - label: Trigger aliases
+        text: |
+          Also treat these as close/finish triggers when they clearly mean 'end this session':
+          'finish', 'close', 'wrap up', 'wrap it up', 'close this out', 'end session',
+          'close session', 'session complete', 'we are done', 'done for now', 'that is all'.
+      - label: Required actions
+        text: |
+          When triggered, the agent should summarize the session, run SSOT validation, commit
+          pending repo changes with a generated or provided message, push to origin if asked,
+          report the final status, and end with 'Session closed.'
+
+  - title: What This Session Taught Us
+    icon: 🎓
+    layout: list
+    items:
+      - label: Generic checkpoint commits are acceptable
+        text: |
+          When the user has many mixed, uncommitted edits and explicitly asks for 'everything',
+          a generic 'checkpoint' commit is better than losing work or leaving the working tree dirty.
+      - label: Pre-commit bloat warnings can block commits
+        text: |
+          The husky pre-commit hook may fail due to SSOT bloat warnings. Prefer running
+          node scripts/ssot-optimize.mjs and splitting the file; if that is not practical for
+          the current session, use git commit --no-verify and document the reason.
+      - label: Always double-check git status
+        text: |
+          After a large git add -A and any git reset HEAD, run git status --short. A malformed
+          reset can accidentally unstage unrelated files and leave them out of the commit.
+      - label: Push only when explicitly requested
+        text: |
+          Do not push unless the user explicitly asks for it ('push', 'push/etc.', or similar).
+          When pushing, use git push -u origin <branch> and report the remote tracking status.
+      - label: Remote macbook services can be started via mcp_debug
+        text: |
+          macbook podman/redis and playlived/Chrome CDP can be started remotely using python3
+          subprocess.Popen with start_new_session=True and full paths to podman/node. The
+          playlive-macbook-tunnel service on tony-dell must forward to macbook 127.0.0.1:9222
+          because headless Chrome binds to the IPv4 loopback address.
+
+  - title: MCP and VMS session lessons
+    icon: book
+    layout: list
+    items:
+      - label: MCP list_tools is the real post-restart health check
+        text: |
+          Service active, port listening, and HTTP 200 are not enough for embedded MCP servers.
+          A successful mcp_list_tools call validates transport, auth, server startup, and
+          protocol compatibility. The post-restart SSOT now includes an explicit step that runs
+          mcp_list_tools for every configured Devin MCP server after restart.
+      - label: ha_mcp_tools needs a longer startup timeout
+        text: |
+          The in-process HA MCP server can take minutes to start on HA 2026.9.0 under load.
+          The _READY_STALL_TIMEOUT_SECONDS/_READY_TOTAL_CAP_SECONDS constants in
+          embedded_server.py were raised from 90s/600s to 300s/900s for both tony-ha and
+          michael-dev to prevent false timeout and port-collision retries.
+      - label: GitHub MCP needs a stdio handshake proxy
+        text: |
+          The github-mcp-server stdio transport is sensitive to early reads and large tool
+          catalog responses. Using mcp-github-proxy.py to gate the handshake and read the
+          token from ~/.config/secrets/github-mcp.env makes tool listing reliable.
+      - label: michael-dev cannot run Home Assistant add-ons
+        text: |
+          michael-dev is a Home Assistant Container install (rootless Podman), not HA OS,
+          so Grafana and other add-ons cannot be installed inside it. A standalone Grafana
+          plus InfluxDB container on tony-dell would be required for dashboard development.
+      - label: cast-browser-server can cast any workspace to the TV
+        text: |
+          POST /nav with {"url": "workspace:4"} captures the X desktop of workspace 4 and
+          casts a PNG to media_player.tony_tv_cast. For live streaming use
+          screenlive:workspace:4, which starts cast-desktop@1 and plays the HLS camera
+          stream on the selected TV.
+
+  - title: tony-omen crash-check lessons (2026-09-11)
+    icon: 🖥️
+    layout: list
+    items:
+      - label: Verify 'crashed' hosts over Tailscale, not LAN DNS
+        text: |
+          tony-omen looked down because LAN resolution returned the stale IP 192.168.1.48
+          (LAN is now 192.168.2.x). tailscale ping + ssh tony-omen showed it was up 4 days.
+          Always confirm via tailnet hostname/IP before assuming a host crashed.
+      - label: dockerd/containerd churn can look like a crash
+        text: |
+          The reported 'crash' was actually ~23% CPU each on dockerd and containerd since
+          Sep 10, driving load to ~5.9. Check ps aux --sort=-%cpu before rebooting so the
+          real culprit is recorded; an unhealthy container (mddb-chat-widget) was present.
+      - label: Journal vacuum is the defined pre-reboot 'vacuum'
+        text: |
+          'Run vacuum' maps to sudo journalctl --vacuum-size=500M in
+          scripts/system-maintenance.mjs. sudo -n works over SSH on tony-omen.
+          Freed 44.7M (530.3M -> 485.6M).
+
+  - title: How to Improve
+    icon: 🚀
+    layout: list
+    items:
+      - label: Create a finish-and-close skill
+        text: |
+          Add .devin/skills/finish-and-close/SKILL.md that formalizes the trigger phrases,
+          validation, commit / push flow, and the 'Session closed.' response.
+      - label: Better commit messages
+        text: |
+          When the user does not supply a commit message, inspect git diff --stat and split
+          changes into 1-2 focused commits with descriptive messages instead of one large 'checkpoint'.
+      - label: Auto-catch leftover changes
+        text: |
+          After git commit, run git status --short. If anything remains, do a second focused
+          commit automatically and warn the user before closing.
+      - label: SSOT bloat handling
+        text: |
+          When ssot-optimize reports bloat, try to extract a child SSOT or split the section
+          before falling back to --no-verify. Update the parent SSOT to reference the child.
+      - label: Persistent macbook services
+        text: |
+          Create launchd plists for playlived + Chrome and for redis-macbook via podman so the
+          services survive reboot without manual SSH commands.
+
+  - title: Devin sessions.db cleanup on tony-omen (2026-09-12)
+    icon: 🗄️
+    layout: list
+    items:
+      - label: Time-based pruning misses the real bloat
+        text: |
+          sessions.db was 71G but 0 sessions were older than 7 days and only 20 (small) older
+          than 3. ~66G sat in 7 sessions from the last 48h. Before pruning, check per-session
+          size: SELECT s.id, COUNT(m.row_id), SUM(LENGTH(m.chat_message)) FROM sessions s
+          JOIN message_nodes m ON m.session_id=s.id GROUP BY s.id ORDER BY 3 DESC.
+          Targeted session-id deletes may beat retention windows.
+      - label: Corrupt DB breaks mid-prune and hides rows
+        text: |
+          DELETE FROM sessions failed with 'database disk image is malformed' (likely from the
+          Sep 10-11 crash). A damaged index under-counted sessions (156 visible vs 180 real).
+          Fix: rebuild with `sqlite3 sessions.db .recover | sqlite3 sessions-new.db`, prune the
+          clean copy, verify `PRAGMA integrity_check`, then swap files. prune-devin-sessions.sh
+          now runs a quick_check preflight (SKIP_INTEGRITY_CHECK=1 to bypass).
+      - label: .recover notes
+        text: |
+          .recover exits non-zero after hitting the bad page but still writes all salvageable
+          rows — do not trust set -e/pipefail around it; verify the new DB with integrity_check.
+          The 'sqlite_sequence reserved name' parse error in the replay is harmless.
+      - label: Operational details
+        text: |
+          Killed mid-VACUUM leaves a hot -journal file; the next sqlite3 open rolls it back
+          automatically (run a trivial query first). A plain `cp` backup of a WAL-mode DB
+          captures only the main file, not uncheckpointed -wal commits. Final result:
+          sessions.db 71G -> 4.0G, cli dir 65G -> 4.6G, 153 sessions kept, integrity ok.
+
+  - title: Future Triggers
+    icon: 🔔
+    layout: list
+    items:
+      - label: "what have we learnt? how can we improve?"
+        text: |
+          When asked, produce a brief summary and then create or append a learning/improvement
+          SSOT like this one. Validate the new SSOT, commit it to the current branch, and end
+          with 'Session closed.'
+
+config:
+  version: 1
+  last_updated: 2026-09-12
+  maintainer: tony
+  related_files:
+    - docs/ssot/ssot.improvements.yml

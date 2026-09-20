@@ -9,8 +9,8 @@ import yaml
 from pathlib import Path
 
 
-SSOT_DIR = "/home/tony/CascadeProjects/chaba/docs/ssot"
-MDBB_SERVER = "http://127.0.0.1:11023/v1"
+SSOT_DIR = os.environ.get("SSOT_DIR", str(Path(__file__).resolve().parent.parent / "docs" / "ssot"))
+MDBB_SERVER = os.environ.get("MDDB_BASE", "http://127.0.0.1:11023") + "/v1"
 
 # Reusable session with retries to survive transient connection drops
 _mddb_session = requests.Session()

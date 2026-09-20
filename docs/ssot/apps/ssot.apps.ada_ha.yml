@@ -51,7 +51,7 @@ sections:
     layout: list
     items:
       - label: Auth
-        text: ADA_API_KEY (per-instance, in ~/.config/secrets/ada-ha-*.env) is required via X-Api-Key header, ?api_key=, or the ada_session HttpOnly cookie for /api/tools, /api/tools/call, POST entity power, and /ws. Named keys via ADA_API_KEYS=name:key give per-caller audit + revocation. POST /api/auth/session issues the cookie; GET /api/auth/status reports state; POST /api/auth/logout clears it. Read GET endpoints remain open.
+        text: ADA_API_KEY (per-instance, in ~/.config/secrets/ada-ha-*.env) is required via X-Api-Key header, the api_key query param, or the ada_session HttpOnly cookie for /api/tools, /api/tools/call, POST entity power, and /ws. Named keys via ADA_API_KEYS=name:key give per-caller audit + revocation. POST /api/auth/session issues the cookie; GET /api/auth/status reports state; POST /api/auth/logout clears it. Read GET endpoints remain open.
       - label: GET /api/home-assistant/entities
         text: List controllable HA entities (lights, switches, fans, covers, buttons, media players).
       - label: GET /api/home-assistant/sensors
@@ -151,7 +151,9 @@ sections:
       - label: QR onboarding
         text: 'POST /api/auth/redeem-token (authenticated, body {"path": appBase}) mints a single-use redeem URL (ADA_REDEEM_TTL_S, default 10min). GET {base}/redeem/{token} burns it, sets the session cookie, and redirects to {base}/?api_key=<key> so the PWA stores the key. Scan once on iPhone/iPad and the device is authorized.'
       - label: Device keys
-        text: "POST /api/auth/keys {name} issues a per-device key persisted in ~/.config/secrets/ada-ha-<instance>-keys.json (ADA_KEYS_FILE to override) and returns its redeem URL/QR. GET lists names, DELETE /api/auth/keys/{name} revokes the key AND its sessions. Pair UI: /apps/ha/pair/ (admin key = ADA_API_KEYS admin:… shared on both instances)."
+        text: 'POST /api/auth/keys {name} issues a per-device key persisted in ~/.config/secrets/ada-ha-<instance>-keys.json (ADA_KEYS_FILE to override) and returns its redeem URL/QR. GET lists names plus per-key bindings, DELETE /api/auth/keys/{name} revokes the key AND its sessions. POST /api/auth/keys/{name}/redeem re-mints a redeem link for an existing key (re-pair) and resets its device binding. Pair UI: /apps/ha/pair/ (admin key = ADA_API_KEYS admin:… shared on both instances).'
+      - label: Device binding
+        text: 'Each issued key locks to the first device id seen (TOFU): the PWA stores a random ada_device_id in localStorage and sends it as X-Device-Id header / device_id WS param; auth.enforce_device rejects requests from any other device. Admin/env keys are never bound; unbound legacy keys keep working until their PWA binds. Only the admin can reset a binding via re-pair — a stolen key cannot re-register.'
       - label: Voice path
         text: Gemini control calls route through ToolRunner; the model must pass confirmed=true after explicit user confirmation.
   - title: Known Issues

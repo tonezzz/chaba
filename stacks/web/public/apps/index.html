@@ -70,7 +70,7 @@
           if (!a) continue;
           groupedIds.add(id);
           html += `
-            <a href="${appUrl(a)}" class="app-card">
+            <a href="${appUrl(a)}" class="app-card" ${['gev-live','rview-live'].includes(a.id) ? 'target="_blank" rel="noopener"' : ''}>
               <h2 class="text-lg font-semibold text-white">${a.icon ? a.icon + ' ' : ''}${a.title}${appHostBadge(a)}</h2>
               <p class="text-gray-400 text-xs mt-1 line-clamp-2">${a.description}</p>
             </a>
@@ -84,7 +84,7 @@
         html += `<div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">`;
         for (const a of ungrouped) {
           html += `
-            <a href="${appUrl(a)}" class="app-card">
+            <a href="${appUrl(a)}" class="app-card" ${['gev-live','rview-live'].includes(a.id) ? 'target="_blank" rel="noopener"' : ''}>
               <h2 class="text-lg font-semibold text-white">${a.icon ? a.icon + ' ' : ''}${a.title}${appHostBadge(a)}</h2>
               <p class="text-gray-400 text-xs mt-1 line-clamp-2">${a.description}</p>
             </a>

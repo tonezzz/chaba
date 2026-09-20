@@ -1,0 +1,12 @@
+[Unit]
+Description=Ultralytics YOLOv8 detector for xiaomi_c201
+After=network-online.target go2rtc.service
+
+[Service]
+Type=simple
+ExecStart=/home/tony/CascadeProjects/chaba-tony-dell/experiments/ultralytics-yolo-ha/run.sh
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=default.target

@@ -1,0 +1,49 @@
+title: Focus Inbox Item
+subtitle: macbook link-down alerts resolved
+icon: inbox
+
+focus:
+  label: macbook link down (resolved)
+  text: |
+    Batch-resolved 9 stale link-monitor alerts generated between 2026-09-06 and 2026-09-09.
+    macbook is reachable over Tailscale (100.124.59.112), SSH key auth works, and remote
+    commands execute successfully via mcp_debug.
+
+    Alerts reviewed:
+      - macbook-link-down-2026-09-06-113600.yml
+      - macbook-link-down-2026-09-06-180735.yml
+      - macbook-link-down-2026-09-07-124834.yml
+      - macbook-link-down-2026-09-08-112623.yml
+      - macbook-link-down-2026-09-08-174318.yml
+      - macbook-link-down-2026-09-09-000623.yml
+      - macbook-link-down-2026-09-09-080746.yml
+      - macbook-link-down-2026-09-09-102440.yml
+
+    Verification performed:
+      - ssh macbook succeeded with hostname KKs-MacBook-Pro.local
+      - mcp_debug mcp_raw uptime/df/hostname/launchctl all returned successfully
+      - caffeinate -i -s is keeping the system awake with the display off
+  branch: null
+  priority: high
+  status: completed
+  tags:
+  - monitoring
+  - network
+  - link
+  - macbook
+  - resolved
+  subtasks:
+  - label: Verify macbook reachability
+    status: completed
+  - label: Clear stale alerts
+    status: completed
+
+ownership:
+  owner: tony
+  session: macbook-service-audit
+  locked: false
+  lock_reason: ''
+
+source:
+  session: mcp-link-monitor
+  date: '2026-09-10'

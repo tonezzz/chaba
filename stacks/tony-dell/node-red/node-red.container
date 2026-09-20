@@ -1,0 +1,27 @@
+[Unit]
+Description=Node-RED (rootless podman)
+After=network-online.target
+Wants=network-online.target
+
+[Container]
+Image=docker.io/nodered/node-red:latest
+ContainerName=node-red
+Network=host
+User=node-red
+PodmanArgs=--userns=keep-id
+Environment=TZ=Asia/Bangkok
+Environment=HA_URL=http://tony-dell:8123
+EnvironmentFile=/home/tony/.config/secrets/nodered-ha.env
+Volume=/home/tony/.local/share/nodered:/data:Z
+HealthCmd=/bin/sh -c 'curl -sfL http://127.0.0.1:1880/apps/node-red/ >/dev/null'
+HealthInterval=30s
+HealthTimeout=10s
+HealthRetries=5
+HealthStartPeriod=120s
+
+[Service]
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target

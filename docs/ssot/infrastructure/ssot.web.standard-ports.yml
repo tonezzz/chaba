@@ -1,0 +1,161 @@
+title: Web Stack Standard Ports Migration & God’s Eye View Integration Runbook
+subtitle: Move tony-dell web endpoints from 8080/8444 to 80/443 and add God’s Eye
+  View under /apps/gev
+icon: 🌐
+version: 1
+overview:
+  purpose: 'Consolidate all tony-dell web traffic onto standard HTTP/HTTPS ports (80/443),
+
+    eliminate non-standard port numbers from bookmarks and SSOT, and integrate
+
+    God’s Eye View as a first-class app served from the main web stack.
+
+    '
+  scope:
+  - stacks/web/Caddyfile
+  - stacks/web/docker-compose.yml
+  - stacks/web/public/apps/apps.yml
+  - stacks/web/public/apps/index.html
+  - stacks/web/public/apps/manifest.json
+  - stacks/web/public/apps/sw.js
+  - stacks/web/public/apps/icon.svg
+  - stacks/web/public/apps/icon-192.png
+  - stacks/web/public/apps/icon-512.png
+  - stacks/web/public/apps/apple-touch-icon.png
+  - stacks/web/public/apps/favicon.ico
+  - stacks/web/public/apps/gev/ (new build output)
+  - scripts/make-apps-pwa.py
+  - docs/ssot/infrastructure/ssot.health.home.web.yml
+  - docs/ssot/infrastructure/ssot.values.yml
+  - Tailscale Funnel configuration on tony-dell
+  target_urls:
+  - http://tony-dell/ (HTTP 80)
+  - http://tony-dell.local/ (HTTP 80)
+  - https://tony-dell.taila0626a.ts.net/ (HTTPS 443)
+  new_app_url: /apps/gev/
+  owner: tony
+  status: applied
+config:
+  version: 1
+  created: 2026-09-10
+  maintainer: tony
+  status: applied
+  deployment: tony-dell
+  related_files:
+  - stacks/web/Caddyfile
+  - stacks/web/docker-compose.yml
+  - stacks/web/public/apps/apps.yml
+  - stacks/web/public/apps/index.html
+  - stacks/web/public/apps/manifest.json
+  - stacks/web/public/apps/sw.js
+  - stacks/web/public/apps/icon.svg
+  - stacks/web/public/apps/icon-192.png
+  - stacks/web/public/apps/icon-512.png
+  - stacks/web/public/apps/apple-touch-icon.png
+  - stacks/web/public/apps/favicon.ico
+  - docs/ssot/infrastructure/ssot.health.home.web.yml
+  - docs/ssot/infrastructure/ssot.values.yml
+  - docs/ssot/infrastructure/ssot.web.standard-ports.yml
+  - scripts/make-apps-pwa.py
+  - stacks/tony-dell/gev-gemini/Containerfile
+  - stacks/tony-dell/gev-gemini/bridge.py
+  - stacks/web/public/apps/gev-live/index.html
+  - ~/.config/containers/systemd/gev-gemini.container
+  - /home/tony/gods-eye-view/server.mjs
+  - ~/.config/systemd/user/gods-eye-view-api.service
+  - chaba-tony-dell/docs/ssot/infrastructure/ssot.web.standard-ports.appendix.yml
+sections:
+- title: Verify
+  icon: ✅
+  layout: list
+  items:
+  - label: 3.1 Test HTTP on port 80
+    text: "From tony-dell:\n  curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1/\n\
+      \  curl -s -o /dev/null -w '%{http_code}' http://tony-dell/\nExpected: 200\n"
+  - label: 3.2 Test HTTPS on 443 / Tailscale
+    text: "From another tailnet host:\n  curl -s -o /dev/null -w '%{http_code}' https://tony-dell.taila0626a.ts.net/\n\
+      Expected: 200\n"
+  - label: 3.3 Test God’s Eye View
+    text: "From any LAN/tailnet client:\n  curl -s -o /dev/null -w '%{http_code}'\
+      \ http://tony-dell/apps/gev/\n  curl -s http://tony-dell/apps/gev/ | grep -o\
+      \ \"God's Eye View\"\n  curl -s -o /dev/null -w '%{http_code}' 'http://tony-dell/apps/gev/api/opensky?lat=30.2672&lon=-97.7431'\n\
+      \  curl -s -o /dev/null -w '%{http_code}' http://tony-dell/apps/gev/models/airplane.glb\n\
+      \  curl -s -o /dev/null -w '%{http_code}' http://tony-dell/apps/gev/mic.svg\nOpen\
+      \ in a browser and confirm the globe loads, the map tiles render, and the sidebar\
+      \ appears.\n"
+  - label: 3.4 Test existing apps
+    text: "Sample every critical route:\n  curl -s http://tony-dell/apps/\n  curl\
+      \ -s http://tony-dell/apps/helm/\n  curl -s http://tony-dell/apps/trade/tradecanvas-ui/\n\
+      \  curl -s http://tony-dell/apps/rview/\n  curl -s http://tony-dell/apps/yomi/\n\
+      Expected: 200 for each, and the UI assets load without 404s in the browser network\
+      \ tab.\n"
+  - label: 3.5 Test old URLs are deprecated
+    text: "Old bookmarks should either fail or redirect. Desired behavior:\n  curl\
+      \ -s -o /dev/null -w '%{http_code}' http://tony-dell:8080/apps/\nIf it returns\
+      \ 000/connection refused, that is acceptable. If you want a redirect, add a\
+      \ second\nCaddy server block on 8080 that returns `redir http://tony-dell{uri}\
+      \ 308`.\n"
+- title: Reboot persistence & lifecycle
+  icon: 🔄
+  layout: list
+  items:
+  - label: Persistent sysctl for port 80
+    text: "Created /etc/sysctl.d/99-unprivileged-ports.conf with:\n  net.ipv4.ip_unprivileged_port_start=0\n\
+      Apply without reboot:\n  sudo -n sysctl -p /etc/sysctl.d/99-unprivileged-ports.conf\n"
+  - label: User linger and service enable
+    text: "Ensure the web service survives logout and starts at boot:\n  loginctl\
+      \ show-user tony | grep Linger   # expect yes\n  systemctl --user is-enabled\
+      \ web         # expect generated\nIf needed:\n  loginctl enable-linger tony\n\
+      \  systemctl --user enable web\n"
+  - label: Pre-shutdown
+    text: "Before host shutdown or Caddyfile changes, capture state and stop gracefully:\n\
+      \  systemctl --user stop web\n  # or for a rolling reload\n  podman exec web\
+      \ caddy reload --config /etc/caddy/Caddyfile --adapter caddyfile\n"
+  - label: Post-startup verification
+    text: "After reboot, confirm Caddy is on 80 and 8080 and public HTTPS is live:\n\
+      \  ss -tlnp '( sport = :80 or sport = :8080 )'\n  curl -s -o /dev/null -w 'HTTP\
+      \ %{http_code}' http://tony-dell/apps/\n  curl -s -o /dev/null -w 'HTTP %{http_code}'\
+      \ http://tony-dell/apps/gev/\n  curl -s -o /dev/null -w 'HTTP %{http_code}'\
+      \ http://tony-dell/apps/tony-live/\n  curl -s -o /dev/null -w 'HTTP %{http_code}'\
+      \ -k https://tony-dell.taila0626a.ts.net/apps/\n"
+  - label: PWA app pages
+    text: 'Every app entry under /apps/ now has its own manifest.json and service
+      worker
+
+      registration via the shared /apps/sw.js. To regenerate per-app PWA files after
+
+      bulk HTML changes, run scripts/make-apps-pwa.py (or manually ensure each
+
+      app index.html links to manifest.json and registers /apps/sw.js with scope /apps/).
+
+      '
+  - label: Tailscale 443 repoint
+    text: "To expose the public HTTPS root to the internet through Caddy on 80, use\
+      \ Tailscale Funnel:\n  sudo -n tailscale funnel --yes --bg --https=443 127.0.0.1:80\n\
+      \  sudo -n tailscale funnel --yes --bg --https=443 --set-path /apps/home-assistant/\
+      \ 127.0.0.1:8123\nVerify:\n  curl -s -o /dev/null -w 'HTTP %{http_code}' https://tony-dell.taila0626a.ts.net/\n\
+      \  curl -s -o /dev/null -w 'HTTP %{http_code}' https://tony-dell.taila0626a.ts.net/apps/home-assistant/\n"
+  - label: bserver service
+    text: "The root dashboard is served by `bserver` on 127.0.0.1:8092. It is defined\
+      \ by:\n  /home/tony/.config/containers/systemd/bserver.container\nAfter changes:\n\
+      \  systemctl --user daemon-reload\n  systemctl --user start bserver\n  systemctl\
+      \ --user is-active bserver\n"
+  - label: gev-gemini service
+    text: "The GEV Gemini Live bridge listens on 127.0.0.1:8789 and is proxied by\
+      \ Caddy at `/apps/gev-live/ws`.\nIt is defined by:\n  /home/tony/.config/containers/systemd/gev-gemini.container\n\
+      \  /home/tony/CascadeProjects/chaba-tony-dell/stacks/tony-dell/gev-gemini/Containerfile\n\
+      After changes:\n  podman build -t localhost/gev-gemini:latest /home/tony/CascadeProjects/chaba-tony-dell/stacks/tony-dell/gev-gemini\n\
+      \  systemctl --user daemon-reload\n  systemctl --user start gev-gemini\n  systemctl\
+      \ --user is-active gev-gemini\nVerify the HTTP page and WebSocket reachability:\n\
+      \  curl -s -o /dev/null -w 'HTTP %{http_code}' http://tony-dell/apps/gev-live/\n\
+      \  curl -s -o /dev/null -w 'HTTP %{http_code}' -k https://tony-dell.taila0626a.ts.net/apps/gev-live/\n"
+  - label: gods-eye-view-api service
+    text: "The GEV backend API and model proxy listens on 127.0.0.1:4173. Caddy routes\
+      \ `/apps/gev/api/*` to it (with `uri strip_prefix /apps/gev`) and `/apps/gev/*`\
+      \ static files are served by Caddy.\nIt is defined by:\n  /home/tony/gods-eye-view/server.mjs\n\
+      \  /home/tony/.config/systemd/user/gods-eye-view-api.service\nAfter changes or\
+      \ first install:\n  cd /home/tony/gods-eye-view && npm install --ignore-engines\n\
+      \  systemctl --user daemon-reload\n  systemctl --user enable --now gods-eye-view-api\n\
+      \  systemctl --user is-active gods-eye-view-api\nThen reload Caddy:\n  podman\
+      \ exec web caddy reload --config /etc/caddy/Caddyfile\nVerify:\n  curl -s -o /dev/null\n\
+      \  -w 'HTTP %{http_code}' 'http://tony-dell/apps/gev/api/opensky?lat=30.2672&lon=-97.7431'\n"

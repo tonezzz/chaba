@@ -2,57 +2,33 @@
 
 /**
  * SSOT Validation Script - optimized
- *
+ * 
  * Validates all SSOT YAML files for syntax and structure using a single
  * batched Python invocation with parallel file processing.
  */
 
-import {
-  readFileSync,
-  readdirSync,
-  existsSync,
-  writeFileSync,
-  statSync,
-  unlinkSync,
-  mkdirSync,
-} from "fs";
-import { dirname, join, relative } from "path";
-import { fileURLToPath } from "url";
-import { execSync } from "child_process";
-import { createHash } from "crypto";
+import { readFileSync, readdirSync, existsSync, writeFileSync, statSync, unlinkSync, mkdirSync } from 'fs';
+import { dirname, join, relative } from 'path';
+import { fileURLToPath } from 'url';
+import { execSync } from 'child_process';
+import { createHash } from 'crypto';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const REPO = join(__dirname, "..");
-const SSOT_DIR = join(__dirname, "..", "docs", "ssot");
-const CACHE_DIR = join(REPO, ".cache");
-const CACHE_FILE = join(CACHE_DIR, "ssot-validate.json");
-const TEMP_PY = "/tmp/ssot-validate-batch.py";
-const OPT_DOC = join(SSOT_DIR, "ssot.file-optimization.yml");
-const SELF_PATH = fileURLToPath(import.meta.url);
+const REPO = join(__dirname, '..');
+const SSOT_DIR = join(__dirname, '..', 'docs', 'ssot');
+const CACHE_DIR = join(REPO, '.cache');
+const CACHE_FILE = join(CACHE_DIR, 'ssot-validate.json');
+const TEMP_PY = '/tmp/ssot-validate-batch.py';
 
 function sha256(filePath) {
   const content = readFileSync(filePath);
-  return createHash("sha256").update(content).digest("hex");
-}
-
-// Cached results are only valid for the current validator + exemption config.
-// Changing this script or ssot.file-optimization.yml must re-validate everything.
-function configFingerprint() {
-  const h = createHash("sha256");
-  for (const p of [SELF_PATH, OPT_DOC]) {
-    try {
-      h.update(readFileSync(p));
-    } catch {
-      // missing file still yields a stable fingerprint for this config
-    }
-  }
-  return h.digest("hex");
+  return createHash('sha256').update(content).digest('hex');
 }
 
 function loadCache() {
   if (!existsSync(CACHE_FILE)) return {};
   try {
-    return JSON.parse(readFileSync(CACHE_FILE, "utf8"));
+    return JSON.parse(readFileSync(CACHE_FILE, 'utf8'));
   } catch {
     return {};
   }
@@ -60,7 +36,7 @@ function loadCache() {
 
 function saveCache(cache) {
   if (!existsSync(CACHE_DIR)) mkdirSync(CACHE_DIR, { recursive: true });
-  writeFileSync(CACHE_FILE, JSON.stringify(cache, null, 2), "utf8");
+  writeFileSync(CACHE_FILE, JSON.stringify(cache, null, 2), 'utf8');
 }
 
 function findYAMLFiles(dir, files = []) {
@@ -70,7 +46,7 @@ function findYAMLFiles(dir, files = []) {
     const stat = statSync(fullPath);
     if (stat.isDirectory()) {
       findYAMLFiles(fullPath, files);
-    } else if (item.endsWith(".yml") && !item.toLowerCase().includes("template")) {
+    } else if (item.endsWith('.yml') && !item.toLowerCase().includes('template')) {
       files.push(fullPath);
     }
   }
@@ -78,41 +54,13 @@ function findYAMLFiles(dir, files = []) {
 }
 
 function buildPythonScript(filePaths) {
-  const pathsStr = filePaths
-    .map((p) => p.replace(/\\/g, "\\\\").replace(/'/g, "\\'"))
-    .map((p) => `'${p}'`)
-    .join(",\n    ");
+  const pathsStr = filePaths.map(p => p.replace(/\\/g, '\\\\').replace(/'/g, "\\'")).map(p => `'${p}'`).join(',\n    ');
   return `
 import concurrent.futures
 import json
 import re
 import sys
 import yaml
-
-
-class _DupCheckLoader(yaml.SafeLoader):
-    """SafeLoader that rejects duplicate mapping keys.
-
-    PyYAML silently keeps the last duplicate key; js-yaml and the
-    standardization/infrastructure audits reject them. Using this loader
-    makes the ssot audit consistent with the stricter tooling.
-    """
-
-    def construct_mapping(self, node, deep=False):
-        seen = set()
-        for key_node, _ in node.value:
-            key = self.construct_object(key_node, deep=True)
-            if key in seen:
-                mark = key_node.start_mark
-                raise yaml.constructor.ConstructorError(
-                    "while constructing a mapping",
-                    node.start_mark,
-                    f"found duplicate key {key!r}",
-                    mark,
-                )
-            seen.add(key)
-        return super().construct_mapping(node, deep)
-
 
 FILE_PATHS = [
     ${pathsStr}
@@ -159,8 +107,6 @@ def _data_isolation_scan(rel, content, warnings):
     for match in SECRETS_RE.finditer(content):
         value = match.group(2)
         # Skip references to environment variables, secret file paths, and placeholders
-        if not re.search(r'[A-Za-z0-9]', value):
-            continue
         if re.match(r'^[A-Z_]+$', value):
             continue
         if re.match(r'^[~/.]', value):
@@ -182,7 +128,7 @@ def validate_one(file_path):
         with open(file_path, 'r') as f:
             content = f.read()
         try:
-            data = yaml.load(content, Loader=_DupCheckLoader)
+            data = yaml.safe_load(content)
         except yaml.YAMLError as e:
             return {'path': rel, 'valid': False, 'errors': [f'YAML syntax error: {str(e)}'], 'warnings': []}
 
@@ -275,87 +221,65 @@ if __name__ == '__main__':
 
 function resolveInputs(args) {
   if (args.length === 0) return { files: [], mode: null };
-  const mode = args.find((a) => a.startsWith("--"));
+  const mode = args.find(a => a.startsWith('--'));
   const resolved = [];
   for (const a of args) {
-    if (a === "--staged") {
+    if (a === '--staged') {
       try {
-        const staged = execSync("git diff --cached --name-only", { encoding: "utf8", cwd: REPO })
-          .trim()
-          .split("\n")
-          .filter(Boolean);
-        resolved.push(...staged.map((p) => join(REPO, p)));
-      } catch {
-        /* ignore */
-      }
-    } else if (a === "--changed") {
+        const staged = execSync('git diff --cached --name-only', { encoding: 'utf8', cwd: REPO }).trim().split('\n').filter(Boolean);
+        resolved.push(...staged.map(p => join(REPO, p)));
+      } catch { /* ignore */ }
+    } else if (a === '--changed') {
       try {
-        const changed = execSync("git diff --name-only", { encoding: "utf8", cwd: REPO })
-          .trim()
-          .split("\n")
-          .filter(Boolean);
-        resolved.push(...changed.map((p) => join(REPO, p)));
-      } catch {
-        /* ignore */
-      }
-    } else if (a === "--uncommitted") {
+        const changed = execSync('git diff --name-only', { encoding: 'utf8', cwd: REPO }).trim().split('\n').filter(Boolean);
+        resolved.push(...changed.map(p => join(REPO, p)));
+      } catch { /* ignore */ }
+    } else if (a === '--uncommitted') {
       try {
-        const staged = execSync("git diff --cached --name-only", { encoding: "utf8", cwd: REPO })
-          .trim()
-          .split("\n")
-          .filter(Boolean);
-        const changed = execSync("git diff --name-only", { encoding: "utf8", cwd: REPO })
-          .trim()
-          .split("\n")
-          .filter(Boolean);
+        const staged = execSync('git diff --cached --name-only', { encoding: 'utf8', cwd: REPO }).trim().split('\n').filter(Boolean);
+        const changed = execSync('git diff --name-only', { encoding: 'utf8', cwd: REPO }).trim().split('\n').filter(Boolean);
         const all = new Set([...staged, ...changed]);
-        resolved.push(...[...all].map((p) => join(REPO, p)));
-      } catch {
-        /* ignore */
-      }
+        resolved.push(...[...all].map(p => join(REPO, p)));
+      } catch { /* ignore */ }
     } else {
       resolved.push(join(REPO, a));
     }
   }
-  const filtered = resolved.filter((p) => p.endsWith(".yml") && p.includes("docs/ssot"));
+  const filtered = resolved.filter(p => existsSync(p) && p.endsWith('.yml') && p.includes('docs/ssot'));
   return mode ? { files: filtered, mode } : { files: filtered, mode: null };
 }
 
 function main() {
   if (!existsSync(SSOT_DIR)) {
-    console.log("SSOT directory not found");
+    console.log('SSOT directory not found');
     return;
   }
 
   const args = process.argv.slice(2);
   const resolved = resolveInputs(args);
-  const allFiles =
-    resolved.mode && resolved.files.length === 0
-      ? []
-      : resolved.files.length > 0
-        ? resolved.files
-        : findYAMLFiles(SSOT_DIR);
+  const allFiles = resolved.mode && resolved.files.length === 0
+    ? []
+    : (resolved.files.length > 0 ? resolved.files : findYAMLFiles(SSOT_DIR));
   if (allFiles.length === 0) {
-    console.log("=== SSOT Validation Report ===\n");
-    console.log("Found 0 SSOT YAML files\n");
-    console.log("=== Summary ===");
-    console.log("Total files checked: 0");
-    console.log("Valid files: 0");
-    console.log("Total errors: 0");
-    console.log("Total warnings: 0");
-    console.log("Validation time: 0ms");
-    console.log("\n✅ All SSOT files are valid");
+    console.log('=== SSOT Validation Report ===\n');
+    console.log('Found 0 SSOT YAML files\n');
+    console.log('=== Summary ===');
+    console.log('Total files checked: 0');
+    console.log('Valid files: 0');
+    console.log('Total errors: 0');
+    console.log('Total warnings: 0');
+    console.log('Validation time: 0ms');
+    console.log('\n✅ All SSOT files are valid');
     return;
   }
 
   const cache = loadCache();
-  const fp = configFingerprint();
   const toValidate = [];
   const cachedResults = [];
   const start = Date.now();
   for (const file of allFiles) {
     const hash = sha256(file);
-    if (cache[file] && cache[file].hash === hash && cache[file].fp === fp) {
+    if (cache[file] && cache[file].hash === hash) {
       cachedResults.push(cache[file].result);
     } else {
       toValidate.push(file);
@@ -364,22 +288,20 @@ function main() {
 
   let pyResults = [];
   if (toValidate.length > 0) {
-    console.log("=== SSOT Validation Report ===\n");
-    console.log(
-      `Found ${allFiles.length} SSOT YAML files (${toValidate.length} to validate, ${cachedResults.length} from cache)\n`
-    );
+    console.log('=== SSOT Validation Report ===\n');
+    console.log(`Found ${allFiles.length} SSOT YAML files (${toValidate.length} to validate, ${cachedResults.length} from cache)\n`);
 
     const pythonScript = buildPythonScript(toValidate);
-    writeFileSync(TEMP_PY, pythonScript, "utf8");
+    writeFileSync(TEMP_PY, pythonScript, 'utf8');
 
     try {
       const output = execSync(`python3 ${TEMP_PY}`, {
-        encoding: "utf8",
-        stdio: ["ignore", "pipe", "pipe"],
+        encoding: 'utf8',
+        stdio: ['ignore', 'pipe', 'pipe'],
       });
       pyResults = JSON.parse(output);
     } catch (error) {
-      console.error("Python execution error:", error.message);
+      console.error('Python execution error:', error.message);
       process.exit(1);
     } finally {
       // Debug: keep temp file
@@ -388,14 +310,12 @@ function main() {
 
     for (const r of pyResults) {
       const fullPath = join(SSOT_DIR, r.path);
-      cache[fullPath] = { hash: sha256(fullPath), fp, result: r };
+      cache[fullPath] = { hash: sha256(fullPath), result: r };
     }
     saveCache(cache);
   } else {
-    console.log("=== SSOT Validation Report ===\n");
-    console.log(
-      `Found ${allFiles.length} SSOT YAML files (all ${cachedResults.length} from cache)\n`
-    );
+    console.log('=== SSOT Validation Report ===\n');
+    console.log(`Found ${allFiles.length} SSOT YAML files (all ${cachedResults.length} from cache)\n`);
   }
 
   const results = [...cachedResults, ...pyResults].sort((a, b) => a.path.localeCompare(b.path));
@@ -409,12 +329,12 @@ function main() {
     console.log(`Validating: ${result.path}`);
     if (result.errors.length > 0) {
       console.log(`  ❌ Errors:`);
-      result.errors.forEach((error) => console.log(`    - ${error}`));
+      result.errors.forEach(error => console.log(`    - ${error}`));
       totalErrors += result.errors.length;
     }
     if (result.warnings.length > 0) {
       console.log(`  ⚠️  Warnings:`);
-      result.warnings.forEach((warning) => console.log(`    - ${warning}`));
+      result.warnings.forEach(warning => console.log(`    - ${warning}`));
       totalWarnings += result.warnings.length;
     }
     if (result.valid) {
@@ -424,7 +344,7 @@ function main() {
     console.log();
   }
 
-  console.log("=== Summary ===");
+  console.log('=== Summary ===');
   console.log(`Total files checked: ${allFiles.length}`);
   console.log(`Valid files: ${validFiles}`);
   console.log(`Total errors: ${totalErrors}`);

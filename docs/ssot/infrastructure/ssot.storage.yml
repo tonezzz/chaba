@@ -48,7 +48,15 @@ categories:
     cleanup:
       - "Prune old sessions: scripts/prune-devin-sessions.sh [retention-days]"
       - Archive or delete ~/.local/share/devin/cli/logs files > 90 days
-    note: Prune+VACUUM completed 2026-08-31 with 7-day retention. sessions.db 41G. Old backups removed.
+    note: |
+      Prune+VACUUM completed 2026-08-31 with 7-day retention. sessions.db 41G. Old backups removed.
+      tony-omen 2026-09-12 - sessions.db was corrupt ("database disk image is malformed" on DELETE
+      FROM sessions; index hid 24 sessions). Rebuilt via .recover into sessions-new.db, then deleted
+      27 sessions (7 huge ones ~66G + 20 older than 3 days) and VACUUMed. Result: sessions.db
+      71G -> 4.0G, 153 sessions, integrity ok. 716 log files >30d removed; stale Sep-10 backup
+      fragments and session_locks cleared; 71G pre-cleanup backup deleted after Devin verified.
+      prune-devin-sessions.sh now runs a quick_check preflight; on a malformed DB use the .recover
+      rebuild path instead of in-place prune.
 
   - id: containers
     label: Podman/Docker container storage

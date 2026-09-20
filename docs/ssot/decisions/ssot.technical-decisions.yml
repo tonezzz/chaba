@@ -19,89 +19,11 @@ overview:
     - Focus history (see ssot.focus.yml)
     - Session notes (see ssot.focus.sessions.yml)
 
-decisions:
-  - id: mcp-debug-unified-commands
-    date: "2026-08-17"
-    title: Add unified cross-platform commands to mcp-debug
-    status: accepted
-    context: |
-      The mcp-debug command list has grown and now includes multiple tools that
-      have equivalent implementations on Linux, macOS, or different runtimes
-      (e.g., podman vs docker, systemctl vs launchctl, ss vs netstat, nvidia-smi
-      vs rocm-smi). We want fewer command variants and more host-agnostic
-      diagnostics without losing the ability to tell which backend answered.
-    options:
-      - label: Keep every runtime-specific command separate
-        pros: [exact output per tool, no parser abstraction, simple wrappers]
-        cons: [long allowlists, presets must branch per host, harder for sub-agents]
-      - label: Add one abstract command per concept with backend auto-detection
-        pros: [shorter allowlists, host-agnostic presets, consistent compact JSON]
-        cons: [more complex wrappers, parsers may differ, can mask runtime details]
-    chosen: Add one abstract command per concept with backend auto-detection
-    reasoning: |
-      The compact layer already normalizes raw text into JSON. Auto-detecting a
-      backend inside a single `containers`, `services`, `sockets`, or `gpu` command
-      keeps the user-facing command list small while still exposing the actual
-      backend in a `runtime` key. Commands will be vetted with `mcp_stats` before
-      promotion to `recommended: true`.
-    consequences:
-      immediate:
-        - New `containers`, `services`, `sockets`, and `gpu` commands in mcp-debug
-        - Backend runtime recorded in compact JSON output
-        - New suggested extensions and active focus created
-      future:
-        - May add `memory` and `block_devices` abstractions if these prove useful
-        - Raw allowlist can shrink as abstract commands replace duplicates
-    related:
-      - docs/ssot/infrastructure/ssot.mcp-debug.yml
-      - docs/ssot/infrastructure/ssot.mcp-tools.yml
-      - scripts/mcp_debug/mcp-debug-macos
-      - ~/.local/bin/mcp-debug
-  - id: mcp-debug-cors-proxy
-    date: "2026-08-16"
-    title: How to serve live mcp-savings.json to the HTTPS chaba.h3 page
-    status: accepted
-    context: |
-      The chaba.h3 page is served over HTTPS. Browsers block the public page from
-      fetching the tony-omen/tony-dell CORS HTTP endpoint (mixed-content and .local
-      mDNS resolution issues). The report must still refresh without a full page
-      reload.
-    options:
-      - label: HTTPS CORS endpoint on tony-dell
-        pros: [simple fetch from the page, no server-side proxy]
-        cons: [requires TLS termination and certificate on tony-dell, opens tony-dell port to HTTPS]
-      - label: Same-origin PHP proxy on chaba.h3
-        pros:
-          [
-            avoids mixed-content,
-            hides upstream HTTP URL from browser,
-            fast to deploy,
-            falls back to cached snapshot,
-          ]
-        cons: [adds PHP dependency, one more network hop, proxy must be maintained]
-      - label: Disable live URL until a secure endpoint is available
-        pros: [no mixed-content risk, no extra code]
-        cons: [page never shows live data, must regenerate and commit snapshot manually]
-    chosen: Same-origin PHP proxy on chaba.h3
-    reasoning: |
-      The PHP proxy gives the page live data without waiting for TLS infrastructure
-      on tony-dell. It keeps the upstream HTTP endpoint inside the server network
-      and lets the browser make a same-origin HTTPS request. A cached snapshot
-      fallback means the page still renders if tony-dell is unreachable. The proxy
-      can be replaced by a direct HTTPS endpoint later without changing the public
-      contract because callers use /api/mcp-savings.php.
-    consequences:
-      - chaba-h3/public/api/mcp-savings.php fetches http://100.68.142.13:9100/mcp-savings.json
-      - app.js sets LIVE_DATA_URL to "/api/mcp-savings.php"
-      - CORS server remains on tony-dell for now
-      - Future option to add TLS to tony-dell and switch the proxy upstream
-    related:
-      - docs/ssot/infrastructure/ssot.mcp-debug.cors.yml
-      - chaba-h3/public/api/mcp-savings.php
-      - chaba-h3/public/apps/docs/mcp_debug/app.js
+archive: docs/ssot/decisions/ssot.technical-decisions.archive.2026.yml
 
+decisions:
   - id: mcp-debug-file-clipboard-bridge
-    date: "2026-08-17"
+    date: '2026-08-17'
     title: How to add auditable remote file get/put to mcp-debug
     status: accepted
     context: |
@@ -113,15 +35,7 @@ decisions:
         pros: [reuses the existing raw-command path, minimal new code]
         cons: [blurs the line between raw and auditable commands, harder to log, harder to vet]
       - label: Add dedicated mcp_get_file and mcp_put_file tools
-        pros:
-          [
-            clear contract,
-            path-allowlist per host,
-            hard size cap,
-            base64 payload,
-            overwrite control,
-            detailed logging,
-          ]
+        pros: [clear contract, path-allowlist per host, hard size cap, base64 payload, overwrite control, detailed logging]
         cons: [new tool schemas, new SSOT file, more code in tools.py]
       - label: Use a separate file-transfer MCP server
         pros: [isolated security surface, could reuse scp/sftp]
@@ -146,7 +60,7 @@ decisions:
       - scripts/mcp_debug/server.py
 
   - id: migrate-core-services-to-tony-dell-podman
-    date: "2026-08-17"
+    date: '2026-08-17'
     title: Migrate core chaba services from tony-omen Docker to tony-dell rootless Podman with Quadlet
     status: accepted
     context: |
@@ -160,22 +74,10 @@ decisions:
         cons: [continues to rely on tony-omen for critical data services, no rootless isolation]
       - label: Move to tony-dell Docker with compose
         pros: [familiar docker compose tooling, direct volume migration]
-        cons:
-          [still requires rootful Docker or complex rootless setup, no native systemd integration]
+        cons: [still requires rootful Docker or complex rootless setup, no native systemd integration]
       - label: Move to tony-dell rootless Podman with Quadlet
-        pros:
-          [
-            systemd user units auto-start on boot,
-            no root privileges,
-            host-network simplifies known ports,
-            aligns with existing Quadlet work,
-          ]
-        cons:
-          [
-            new Quadlet units to write,
-            image imports via docker save | podman load,
-            port conflicts must be resolved per service,
-          ]
+        pros: [systemd user units auto-start on boot, no root privileges, host-network simplifies known ports, aligns with existing Quadlet work]
+        cons: [new Quadlet units to write, image imports via docker save | podman load, port conflicts must be resolved per service]
     chosen: Move to tony-dell rootless Podman with Quadlet
     reasoning: |
       Rootless Podman with Quadlet gives native systemd user integration, starts containers at boot without
@@ -203,7 +105,7 @@ decisions:
       - stacks/web/Caddyfile
 
   - id: mcp-focus-decision-logging
-    date: "2026-08-17"
+    date: '2026-08-17'
     title: How to record focus intake, technical, and session decisions through mcp_focus
     status: accepted
     context: |
@@ -215,12 +117,7 @@ decisions:
         pros: [clear contract per destination, easy to permission independently]
         cons: [more MCP tools, more server wiring, more to remember]
       - label: Single mcp_focus with modes
-        pros:
-          [
-            reuses existing session-start tool,
-            keeps decision writing next to focus router,
-            fewer tools,
-          ]
+        pros: [reuses existing session-start tool, keeps decision writing next to focus router, fewer tools]
         cons: [larger tool schema, mode dispatch adds complexity]
     chosen: Single mcp_focus with modes
     reasoning: |
@@ -240,7 +137,7 @@ decisions:
       - docs/ssot/ssot.focus.sessions.yml
 
   - id: rview-view-number-and-media-fallback
-    date: "2026-08-22"
+    date: '2026-08-22'
     title: Auto-number RView views and fall back to iframe on media load failure
     status: accepted
     context: |
@@ -278,7 +175,7 @@ decisions:
       - stacks/web/public/apps/rview/index.html
 
   - id: ha-live-uses-port-8444
-    date: "2026-08-29"
+    date: '2026-08-29'
     title: Use port 8444 for the Home Assistant Gemini Live bridge (ha-live)
     status: accepted
     context: |
@@ -304,10 +201,10 @@ decisions:
       endpoint useful. SSOT, health checks, docs, and the public apps index were all
       swept to remove stale Chaba Funnel references.
     consequences:
-      - "Tailscale 8444 now funnels to 127.0.0.1:9005 (ha-live)"
-      - "https://tony-dell.taila0626a.ts.net:8444/ is the canonical Gemini Live bridge URL"
-      - "chaba-funnel references removed from ssot.values.yml, health SSOT, KB, and public pages"
-      - "Old ssot.health 8444 health check repointed to ha-live"
+      - 'Tailscale 8444 now funnels to 127.0.0.1:9005 (ha-live)'
+      - 'https://tony-dell.taila0626a.ts.net:8444/ is the canonical Gemini Live bridge URL'
+      - 'chaba-funnel references removed from ssot.values.yml, health SSOT, KB, and public pages'
+      - 'Old ssot.health 8444 health check repointed to ha-live'
     related:
       - docs/ssot/infrastructure/ssot.values.yml
       - docs/ssot/infrastructure/ssot.health.home.web.yml
@@ -316,7 +213,7 @@ decisions:
       - stacks/web/public/apps/tailscale-funnel/index.html
 
   - id: workflows-mcp-persistent-container
-    date: "2026-08-29"
+    date: '2026-08-29'
     title: Run Workflows MCP as a persistent Podman container on tony-dell
     status: accepted
     context: |
@@ -348,40 +245,72 @@ decisions:
       - ~/.config/devin/mcp-scripts/mcp-workflows-podman-ssh.sh
       - docs/ssot/infrastructure/ssot.mcp.yml
 
-  - id: ada-memory-mddb-first-tiered-summaries
-    date: "2026-09-18"
-    title: Ada recall serves MDDB-first with tiered summaries; NotebookLM is deep-recall/archive
+  - id: yolo-service-on-tony-dell
+    date: '2026-09-11'
+    title: Run Ultralytics YOLO service on tony-dell
     status: accepted
     context: |
-      ada_session_recall answers every history question through NotebookLM
-      via notebooklm-rest (~26s per query) with a single MDDB rolling summary
-      (recent-sessions) as the fast path. One rolling summary cannot answer
-      specific topic/date questions, and routing all recall through NotebookLM
-      keeps common answers slow and coupled to an external service.
-    options:
-      - label: Keep NotebookLM as primary recall path
-        pros: [deep semantic recall over full transcripts, no new pipeline]
-        cons: [~26s for common questions, external dependency on every recall]
-      - label: MDDB-first with tiered summaries, NotebookLM as deep-recall/archive
-        pros: [fast common recall, survives restarts, NotebookLM stays transcript SoT]
-        cons: [needs per-session summaries, rollup jobs, escalation rules]
-    chosen: MDDB-first with tiered summaries, NotebookLM as deep-recall/archive
+      Prototype YOLOv8n service (experiments/ultralytics-yolo-ha) consumes go2rtc streams and
+      exposes detections, an annotated image, and TV casting. Benchmarks: tony-omen CPU ~0.34 fps,
+      GPU ~0.37 fps; kk-macbook ~0.31 fps; tony-dell local go2rtc (ip_cam_65_low 640x360) ~0.82 fps.
+    chosen: tony-dell
     reasoning: |
-      MDDB already hosts the persisted recent-sessions summary (~0.2s warm,
-      ~0.6s write). Extend it to per-session summaries plus daily/weekly/
-      monthly/yearly rollups generated by local Gemini, and serve recall
-      from the cheapest tier with coverage. NotebookLM is invoked only for
-      explicit detail requests ("what exactly did we decide"), low MDDB
-      confidence, or long-range consolidation. Fail-quick semantics hold:
-      a failed lookup is reported, never silently shown as "nothing found".
+      tony-dell hosts go2rtc and HA. tony-omen has a faster CPU/GPU but still fetches frames
+      remotely, kk-macbook adds Podman VM overhead, while tony-dell avoids LAN frame transport
+      and remote token management. The GPU did not improve end-to-end throughput because the
+      go2rtc JPEG fetch was the bottleneck.
     consequences:
-      - "Add per-session summary docs to per-instance MDDB recall collections"
-      - "Add daily/weekly/monthly/yearly rollup jobs via local Gemini"
-      - "Add confidence/coverage metadata and MDDB->NotebookLM escalation rules"
-      - "NotebookLM = transcript archive + explicit deep-recall path only"
+      - Run with venv /home/tony/.cache/ultralytics-yolo-venv and experiments/ultralytics-yolo-ha/server.py
+      - Use GO2RTC_BASE=http://127.0.0.1:1984
+      - camera-monitor.service stopped to end go2rtc restart loops from expired xiaomi_c201 passToken
+      - Source is ip_cam_65_low until xiaomi_c201 token is refreshed from account.xiaomi.com cookies
+      - Measured ~0.82 fps on ip_cam_65_low; retry Podman build after disk I/O settles
     related:
-      - docs/ssot/apps/ssot.apps.ada_ha.yml
-      - ~/CascadeProjects/ada-pi/backend/conversation_memory.py
+      - experiments/ultralytics-yolo-ha/server.py
+      - experiments/ultralytics-yolo-ha/Containerfile
+      - docs/ssot/infrastructure/ssot.health.home.web.yml
+      - ~/.config/go2rtc/go2rtc.yaml
+
+  - id: tony-ha-tailscale-only-access
+    date: '2026-09-18'
+    title: tony-ha reachable only via Tailscale HTTPS; use one URL for internal and external
+    status: accepted
+    context: |
+      Setting up the Home Assistant companion app surfaced that tony-ha had no
+      working LAN URL. HA binds loopback only (configuration.yaml http.server_host:
+      127.0.0.1), so http://tony-dell:8123 and http://tony-dell.local:8123 fail —
+      tailscaled owns 8123 on the tailnet IP and answers plain HTTP with
+      "Client sent an HTTP request to an HTTPS server". tailscale serve provides
+      the TLS-terminating proxy https://tony-dell.taila0626a.ts.net:8123 ->
+      127.0.0.1:8123 (tailnet only, no Funnel on this port).
+    options:
+      - label: Expose plain HTTP on the LAN interface
+        pros: [works without Tailscale, simple http://192.168.2.67:8123]
+        cons: [widens LAN attack surface, duplicates the existing tailnet path, needs http.server_host change + restart]
+      - label: Path-prefixed Caddy route (/apps/ha/tony-ha/)
+        pros: [LAN HTTP via existing Caddy]
+        cons: [HA UI absolute redirects break path-prefixed proxying — already rejected for michael-dev]
+      - label: Use the tailscale serve HTTPS URL for both internal and external
+        pros: [single canonical URL, works on LAN and remote, TLS everywhere, no HA change]
+        cons: [requires Tailscale client connected on the device]
+    chosen: Use the tailscale serve HTTPS URL for both internal and external
+    reasoning: |
+      One URL (https://tony-dell.taila0626a.ts.net:8123) covers home WiFi and
+      remote access as long as the client is on the tailnet. No HA or proxy
+      changes are needed and it avoids reopening a plain-HTTP listener on the
+      LAN. The path-prefixed Caddy option was previously abandoned for
+      michael-dev because HA absolute redirects break under a path prefix.
+    consequences:
+      - 'HA app: set both internal and external URL to https://tony-dell.taila0626a.ts.net:8123'
+      - 'Client devices must run Tailscale; no TOTP/MFA on tony-ha (password-only login)'
+      - 'Stale http://tony-dell:8123 references fixed in instances/services/health/node-red SSOTs and AGENTS.md'
+      - 'Phantom Caddy /apps/ha/tony-ha/ and /api/ha-mcp/ routes marked not-implemented in SSOT'
+    related:
+      - docs/ssot/infrastructure/ssot.home-assistant.instances.yml
+      - docs/ssot/infrastructure/ssot.home-assistant.yml
+      - docs/ssot/infrastructure/ssot.services.yml
+      - docs/ssot/infrastructure/ssot.health.home.web.yml
+      - ~/.config/home-assistant/configuration.yaml
 
 related_files:
   - docs/ssot/ssot.focus.decisions.yml

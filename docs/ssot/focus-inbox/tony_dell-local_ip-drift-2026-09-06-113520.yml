@@ -1,0 +1,26 @@
+title: Focus Inbox Item
+subtitle: IP drift alert
+icon: inbox
+focus:
+  label: tony_dell local_ip drift
+  text: 'Detected local_ip drift for tony_dell: expected 192.168.2.67, observed 100.68.142.13.
+    The monitor will not auto-update SSOT; please verify and edit docs/ssot/infrastructure/ssot.host-roles.yml.'
+  branch: chaba
+  priority: medium
+  status: draft
+  tags:
+  - monitoring
+  - network
+  - drift
+  - tony_dell
+  missing_info:
+  - Confirm the new address is stable and correct
+  - Update docs/ssot/infrastructure/ssot.host-roles.yml if needed
+  subtasks:
+  - label: Verify new address
+    status: not_started
+  - label: Update SSOT
+    status: not_started
+source:
+  session: mcp-link-monitor
+  date: '2026-09-06'

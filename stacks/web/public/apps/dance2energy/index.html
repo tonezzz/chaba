@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dance Energy – Live</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%;overflow:hidden;background:#F0E5D4}
+canvas{display:block;width:100%;height:100%;object-fit:contain}
+video{display:none}
+#overlay{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:10}
+#startBtn{
+  font:600 1.4rem/1 system-ui,sans-serif;
+  color:#4a3520;background:rgba(180,140,100,.12);
+  border:1px solid rgba(120,80,40,.2);border-radius:12px;
+  padding:1rem 2.4rem;cursor:pointer;backdrop-filter:blur(6px);
+  transition:background .2s;
+}
+#startBtn:hover{background:rgba(180,140,100,.22)}
+#status{position:fixed;bottom:12px;left:12px;color:rgba(80,60,40,.35);
+  font:12px/1.4 monospace;z-index:10;pointer-events:none}
+</style>
+</head>
+<body>
+
+<canvas id="main" width="1920" height="1080"></canvas>
+<video id="webcam" playsinline></video>
+
+<div id="overlay">
+  <button id="startBtn">Start Camera</button>
+</div>
+<div id="status"></div>
+
+<script type="importmap">
+{
+  "imports": {
+    "@mediapipe/tasks-vision": "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.21/vision_bundle.mjs"
+  }
+}
+</script>
+<script type="module" src="app.js"></script>
+</body>
+</html>

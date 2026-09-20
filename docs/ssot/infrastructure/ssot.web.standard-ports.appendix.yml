@@ -1,0 +1,191 @@
+title: Web Stack Standard Ports Migration Appendix
+subtitle: Detailed pre-flight, process, fix, and re-verify/re-fix steps for the 80/443
+  migration and GEV integration
+icon: 📎
+sections:
+- title: Pre-flight
+  icon: 🔍
+  layout: list
+  items:
+  - label: 1.1 Inventory the current web stack
+    text: "Record the current state of the tony-dell web stack before any changes.\n\
+      - Caddy container: web (caddy:latest)\n- Caddyfile: /home/tony/CascadeProjects/chaba-tony-dell/stacks/web/Caddyfile\n\
+      - Compose: /home/tony/CascadeProjects/chaba-tony-dell/stacks/web/docker-compose.yml\n\
+      - Public root: /home/tony/CascadeProjects/chaba-tony-dell/stacks/web/public\n\
+      - Current endpoints:\n  - http://tony-dell:8080/ (Caddy dashboard + apps)\n\
+      \  - http://tony-dell:8081/ (chaba-h3 dev)\n  - https://tony-dell.taila0626a.ts.net:8444/\
+      \ (Tailscale Funnel → ha-live)\n- Reverse-proxied apps and their upstream ports\
+      \ (rview 3007, yomi 3000, trade 9002, etc.)\n"
+  - label: 1.2 Confirm port 80/443 are free
+    text: "Run on tony-dell:\n  ss -tlnp | grep -E ':80|:443'\n  sudo ss -tlnp | grep\
+      \ -E ':80|:443'\nExpected: no listeners. If systemd, docker, or another Caddy\
+      \ is bound, stop or reassign it first.\n"
+  - label: 1.3 Back up all mutable files
+    text: "Copy the current working config to a rollback directory:\n  mkdir -p /home/tony/backups/web-ports-$(date\
+      \ +%Y%m%d-%H%M%S)\n  cp stacks/web/Caddyfile \"$_/\"\n  cp stacks/web/docker-compose.yml\
+      \ \"$_/\"\n  cp stacks/web/public/apps/apps.yml \"$_/\"\n  cp docs/ssot/infrastructure/ssot.health.home.web.yml\
+      \ \"$_/\"\n  cp docs/ssot/infrastructure/ssot.values.yml \"$_/\"\nCommit the\
+      \ repo before the change so you can `git checkout --` the files if needed.\n"
+  - label: 1.4 Build God’s Eye View for the /apps/gev base path
+    text: "The Vite dev server cannot be reverse-proxied under a sub-path without\
+      \ asset 404s.\nBuild the app with the correct base:\n  cd /home/tony/gods-eye-view\n\
+      \  npx vite build --base /apps/gev/\n`vite-plugin-cesium` copies the Cesium\
+      \ assets under `dist/apps/gev/cesium/` because of the base path. Caddy strips\
+      \ `/apps/gev/` when serving the app, so the real Cesium directory must be `dist/cesium/`:\n\
+      \  mv dist/apps/gev/cesium dist/cesium\n  rmdir dist/apps/gev 2>/dev/null; rmdir\
+      \ dist/apps 2>/dev/null || true\nIf the build succeeds, the dist/ folder will\
+      \ contain an index.html that references\n/apps/gev/assets/... and /apps/gev/style.css.\n\
+      If the static /style.css or /logo.svg references are still absolute, open dist/index.html\n\
+      and change `href=\"/style.css\"` to `href=\"style.css\"` and `src=\"/logo.svg\"\
+      ` to `src=\"logo.svg\"`\nso they resolve relative to /apps/gev/.\n"
+  - label: 1.5 Stage the built app into the Caddy public tree
+    text: "Copy the build output to the web stack:\n  mkdir -p /home/tony/CascadeProjects/chaba-tony-dell/stacks/web/public/apps/gev\n\
+      \  cp -r /home/tony/gods-eye-view/dist/* /home/tony/CascadeProjects/chaba-tony-dell/stacks/web/public/apps/gev/\n\
+      Verify a file list:\n  ls /home/tony/CascadeProjects/chaba-tony-dell/stacks/web/public/apps/gev/\n"
+  - label: 1.6 Verify the Caddy container can bind privileged ports
+    text: "The `web` container currently runs as the Caddy image default user. Check:\n\
+      \  podman exec web caddy list-modules\n  podman exec web whoami\nIf `whoami`\
+      \ is `caddy` (non-root), add `user: root` or `cap_add: [NET_BIND_SERVICE]` in\n\
+      docker-compose.yml, then `podman compose down && podman compose up -d` to pick\
+      \ it up.\n"
+  - label: 1.7 Prepare Tailscale for 443
+    text: "If the public funnel currently points 8444 to local 8444/9005, decide whether\
+      \ to:\n  a) move the funnel to local 443 and route through Caddy, or\n  b) keep\
+      \ ha-live on 8444 and add a second funnel for 443.\nRecord the current funnel\
+      \ state:\n  tailscale serve status\n"
+- title: Process
+  icon: ⚙️
+  layout: list
+  items:
+  - label: 2.1 Update Caddyfile for 80/443
+    text: "Replace the `http://127.0.0.1:8080` block with:\n  {\n    auto_https off\n\
+      \  }\n  :80 {\n    bind 0.0.0.0\n    root * /srv/public\n    ...existing routes...\n\
+      \  }\nFor 443, either:\n  a) Use Tailscale TLS: keep `auto_https off` and terminate\
+      \ TLS with Tailscale Funnel, or\n  b) Enable `auto_https on` and use Tailscale-provided\
+      \ certs.\nAdd the `handle /apps/gev/` route:\n  handle /apps/gev {\n    redir\
+      \ /apps/gev/ 308\n  }\n  handle_path /apps/gev/* {\n    root * /srv/public/apps/gev\n\
+      \    file_server\n  }\n"
+  - label: 2.2 Update docker-compose.yml port bindings
+    text: "Change:\n  ports:\n    - 127.0.0.1:8080:8080\n    - 127.0.0.1:8081:8081\n\
+      to:\n  ports:\n    - 80:80\n    - 443:443\n    - 8081:8081   # keep chaba-h3\
+      \ until migrated\nIf running rootless Podman with `podman compose`, the host\
+      \ ports 80/443 may still require\nroot or `net.ipv4.ip_unprivileged_port_start=0`.\n"
+  - label: 2.3 Update apps.yml
+    text: "Edit /home/tony/CascadeProjects/chaba-tony-dell/stacks/web/public/apps/apps.yml:\n\
+      \  - id: gods-eye-view\n    title: God’s Eye View\n    description: Real-time\
+      \ 3D geospatial intelligence console\n    icon: \U0001F30D\n    href: /apps/gev/\n\
+      Also update any existing `href: http://tony-dell:8080/...` links to remove `:8080`.\n"
+  - label: 2.4 Update public index.html network options
+    text: 'Edit /home/tony/CascadeProjects/chaba-tony-dell/stacks/web/public/apps/index.html:
+
+      - Change `http://tony-dell.local:8080/apps` → `http://tony-dell.local/apps`
+
+      - Change `http://tony-dell:8080/apps` → `http://tony-dell/apps`
+
+      - Change `https://tony-dell.taila0626a.ts.net:8444/` → `https://tony-dell.taila0626a.ts.net/`
+
+      '
+  - label: 2.5 Update SSOT health checks and values
+    text: '- docs/ssot/infrastructure/ssot.health.home.web.yml: change `:8080` URLs
+      to port 80/443.
+
+      - docs/ssot/infrastructure/ssot.values.yml: update any `public_web_url` or `landing_url`
+      values.
+
+      '
+  - label: 2.6 Rebuild and restart the web stack
+    text: 'cd /home/tony/CascadeProjects/chaba-tony-dell/stacks/web
+
+      podman compose down
+
+      podman compose --profile production up -d
+
+      podman ps | grep web
+
+      '
+  - label: 2.7 Update Tailscale Funnel to 443 (if desired)
+    text: "If the public URL is being moved to 443:\n  sudo -n tailscale funnel --yes\
+      \ --bg --https=443 127.0.0.1:80\n  sudo -n tailscale funnel --yes --bg --https=443\
+      \ --set-path /apps/home-assistant/ 127.0.0.1:8123\nVerify with `tailscale funnel\
+      \ status`.\n"
+- title: Fix
+  icon: 🔧
+  layout: list
+  items:
+  - label: 4.1 Caddy fails to bind 80/443
+    text: "Symptom: `web` container exits or logs `bind: permission denied`.\nFix:\n\
+      \  - Ensure the container user is root or has `CAP_NET_BIND_SERVICE`.\n  - On\
+      \ the host, run `sudo sysctl net.ipv4.ip_unprivileged_port_start=0` (ephemeral;\
+      \ add to sysctl for persistence).\n  - Or keep 8080/8444 and add a root-level\
+      \ `iptables` redirect: `sudo iptables -t nat -A PREROUTING -p tcp --dport 80\
+      \ -j REDIRECT --to 8080`.\n"
+  - label: 4.2 God’s Eye View assets 404
+    text: "Symptom: Blank page, browser console shows 404 for /style.css or /src/.../main.js.\n\
+      Fix:\n  - Rebuild with the correct base path:\n      npx vite build --base /apps/gev/\n\
+      \  - Inspect dist/index.html. If `href` still starts with `/` (not `/apps/gev/`),\
+      \ either:\n      a) patch them manually, or\n      b) add Vite `base: '/apps/gev/'`\
+      \ in vite.config.js (check the existing defineConfig).\n  - Re-copy dist/ into\
+      \ /srv/public/apps/gev/ and hard-refresh the browser.\n"
+  - label: 4.3 Mixed content or CORS on 443
+    text: "Symptom: HTTPS page blocks an HTTP upstream (OpenSky, AIS, etc.).\nFix:\n\
+      \  - The upstream API calls in God’s Eye View are proxied through its own Vite\
+      \ dev server, not Caddy.\n  - Since we are serving a static build, the dev-server\
+      \ proxy is gone. Either:\n      a) keep the Vite dev server on a dedicated port\
+      \ and link to it (revert this runbook), or\n      b) move the API proxy logic\
+      \ into Caddy (add `handle_path /api/opensky/*`, `/api/ais/*`, etc.).\n"
+  - label: 4.4 Tailscale 8444 still used by ha-live
+    text: "Symptom: Public https://tony-dell.taila0626a.ts.net:8444/ stops working.\n\
+      Fix:\n  - If you moved the funnel to 443, update any bookmarks/SSOT pointing\
+      \ at :8444.\n  - If ha-live must stay on 8444, add a separate Caddy listener\
+      \ for 8444 or keep the funnel unchanged\n    and only route 443 through Caddy.\n"
+  - label: 4.5 Rollback plan
+    text: "If multiple failures occur, restore quickly:\n  cd /home/tony/CascadeProjects/chaba-tony-dell/stacks/web\n\
+      \  cp <backup>/Caddyfile .\n  cp <backup>/docker-compose.yml .\n  cp <backup>/apps.yml\
+      \ public/apps/\n  podman compose down\n  podman compose --profile production\
+      \ up -d\nThen verify with `curl http://tony-dell:8080/apps/`.\n"
+- title: Re-verify
+  icon: 🔄
+  layout: list
+  items:
+  - label: 5.1 Re-run the Verify checklist after any fix
+    text: "Do not consider a fix complete until:\n  - `curl http://tony-dell/` returns\
+      \ 200\n  - `curl https://tony-dell.taila0626a.ts.net/` returns 200 (if 443 is\
+      \ configured)\n  - `curl http://tony-dell/apps/gev/` returns 200 and HTML contains\
+      \ \"God's Eye View\"\n  - `curl http://tony-dell/apps/` returns 200 and lists\
+      \ God’s Eye View\n  - Browser network tab shows no 404s for /apps/gev/ assets\n\
+      \  - All other sampled apps still return 200\n"
+  - label: 5.2 Update health checks and SSOT
+    text: "Once stable, update:\n  - docs/ssot/infrastructure/ssot.health.home.web.yml\
+      \ with the new URLs\n  - docs/ssot/infrastructure/ssot.values.yml with the canonical\
+      \ public/landing URLs\n  - Any HA dashboards or markdown that reference `tony-dell:8080`\
+      \ or `tony-dell:8444`\n"
+  - label: 5.3 Commit the changes
+    text: "After final verification, commit the changed files:\n  git add stacks/web/Caddyfile\
+      \ stacks/web/docker-compose.yml stacks/web/public/apps/apps.yml stacks/web/public/apps/index.html\
+      \ docs/ssot/infrastructure/\n  git commit -m \"Web stack: move to 80/443 and\
+      \ add God’s Eye View under /apps/gev\"\nPush only if requested.\n"
+- title: Re-fix
+  icon: 🔁
+  layout: list
+  items:
+  - label: 6.1 Re-fix loop
+    text: 'If Re-verify fails, return to the appropriate Fix step, apply it, then
+      return to Re-verify.
+
+      Do not skip Re-verify after a Re-fix. Track iterations in the runbook notes
+      below.
+
+      '
+  - label: 6.2 Runbook notes
+    text: "Use this section to record what actually happened during the migration:\n\
+      \  iteration: 0\n  date:\n  issues_found: []\n  fixes_applied: []\n  final_status:\
+      \ applied\nUpdate after each Re-fix/Re-verify cycle.\n"
+config:
+  version: 1
+  created: '2026-09-11'
+  maintainer: tony
+  status: applied
+  deployment: tony-dell
+  related_files:
+  - docs/ssot/infrastructure/ssot.web.standard-ports.yml
+  - chaba-tony-dell/docs/ssot/infrastructure/ssot.web.standard-ports.appendix.yml

@@ -26,6 +26,7 @@
     button:hover { border-color: var(--accent); }
     button.primary:hover { filter: brightness(1.1); }
     button:disabled { opacity: .5; cursor: default; }
+    button.small { font-size: .75rem; padding: .25rem .6rem; }
     button.danger { color: #f47067; font-size: .75rem; padding: .25rem .6rem; }
     .status { font-size: .8rem; min-height: 1.2em; }
     .status.err { color: #f47067; }
@@ -41,7 +42,10 @@
     .hint { font-size: .8rem; color: var(--muted); }
     .devices { display: flex; flex-direction: column; gap: .4rem; }
     .device { display: flex; align-items: center; gap: .5rem; font-size: .85rem; }
-    .device code { flex: 1; color: var(--text); }
+    .device code { color: var(--text); }
+    .device .bind { flex: 1; font-size: .7rem; color: var(--muted); }
+    .device .bind.bound { color: #3fb950; }
+    .device .bind.unbound { color: #d29922; }
     .details { border-top: 1px solid var(--border); padding-top: .5rem; font-size: .8rem; color: var(--muted); }
   </style>
 </head>
@@ -167,7 +171,24 @@
         for (const name of data.issued) {
           const row = document.createElement("div");
           row.className = "device";
-          row.innerHTML = `<code>${name}</code>`;
+          const bound = data.bindings?.[name];
+          row.innerHTML = `<code>${name}</code>`
+            + `<span class="bind ${bound ? "bound" : "unbound"}">`
+            + (bound ? `bound · ${String(bound).slice(0, 8)}` : "unbound") + `</span>`;
+          const rebtn = document.createElement("button");
+          rebtn.className = "small";
+          rebtn.textContent = "Re-pair";
+          rebtn.title = "New QR/link for this device (keeps the same key)";
+          rebtn.addEventListener("click", async () => {
+            try {
+              const data = await api(inst, "POST", `/api/auth/keys/${encodeURIComponent(name)}/redeem`,
+                { path: inst.base, qr: true, origin: location.origin });
+              showResult(inst, name, location.origin + data.redeem_url, data.qr_svg, data.expires_in);
+            } catch (e) {
+              alert(e.message === "401" ? "Admin key rejected — check it above." : `Re-pair failed: ${e.message}`);
+            }
+          });
+          row.appendChild(rebtn);
           const btn = document.createElement("button");
           btn.className = "danger";
           btn.textContent = "Revoke";
@@ -217,6 +238,7 @@
       const tick = () => {
         expiryEl.textContent = left > 0 ? `Expires in ${left}s (or on first use)` : "Expired — generate a new link.";
         expiryEl.className = left > 30 ? "expiry" : "expiry warn";
+        if (left > 0 && left % 15 === 0) refreshDevices(inst); // catch the device flipping to "bound"
         left -= 1;
       };
       tick(); countdown = setInterval(tick, 1000);

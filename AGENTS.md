@@ -27,7 +27,7 @@ Valid modes: `normal`, `plan`, `build`, `review`.
 
 ## Key URLs
 
-- tony-ha: `https://tony-dell.taila0626a.ts.net:8123`
+- tony-ha: `https://tony-dell.taila0626a.ts.net:8123` (tailnet only — HA binds loopback; no LAN/plain-HTTP access)
 - michael-dev: `http://127.0.0.1:8124` / `https://tony-dell.taila0626a.ts.net:8124`
 - michael-ha: `http://michael-ha:8123` / `https://nupo4ndqdqydt78zmpq0z5wzp1bdrqgs.ui.nabu.casa/`
 - tony-test views: `https://tony-dell.taila0626a.ts.net:8124/tony-test/{pf3,pf4,pfg,pfg1,pfg2,tpl,data}`
@@ -99,6 +99,68 @@ Parallel sessions caused real breakage: duplicated `pfg2-card.ts`, undeclared `v
 - New `/local/` assets may 404 in cached browsers while curl returns 200 — bump the reference `?v=N` in the config (runbook: `stale_local_asset_404` in howto SSOT).
 - `apply-tpl.py` gained `--bg` (forces copied charts to `position: "bg"`).
 - Dashboard snapshot is `docs/home-assistant/dashboards/tony-test-current.json`.
+- Post-restart MCP verification: all 18 configured Devin MCP servers are reachable after tony-dell restart. `michael-dev` and `tony-ha` `ha_mcp_tools` require `_READY_STALL_TIMEOUT_SECONDS=300s` / `_READY_TOTAL_CAP_SECONDS=900s` in `embedded_server.py` to avoid startup timeout on HA 2026.9.0. `github` MCP now uses `~/.config/devin/mcp-scripts/mcp-github-proxy.py`.
+
+## XMEye VMS on tony-dell
+
+- Container: `xmeye-vms-vnc` (Podman, `--cpus 0.5`), exposes VNC on `192.168.2.67:5900` (no password).
+- Browser noVNC: `http://tony-dell/apps/vnc/` -> `http://tony-dell/apps/vnc/vnc.html` (noVNC) -> `ws://tony-dell/apps/vnc/ws` (Caddy reverse proxy to `host.containers.internal:6081` -> websockify -> VNC). HTTPS uses `wss://tony-dell.taila0626a.ts.net/apps/vnc/ws` (same Caddy path, TLS via Tailscale). Port 6080 is reserved for `websockify-macbook.service`.
+- Websockify: `websockify 0.0.0.0:6081 127.0.0.1:5900` on tony-dell.
+- Startup: `rm -f /tmp/.X11-unix/X99` (stale socket cleanup), `Xvfb :99 -screen 0 1280x720x16`, `twm -display :99`, `x11vnc -display :99 -noxkb -forever -shared -rfbport 5900 -nopw -wait 50 -defer 30`, then `cd /app && wine explorer /desktop=VMS,1280x720 VMS.exe`. Use `-shared` so browser reconnects don't get refused.
+- VMS login may start as a wireframe; one click in the noVNC window renders it.
+- VMS config: `/home/tony/.cache/xmeye-vms/vms-runtime/config.ini`.
+- VMS app login: `admin` / `admin` (saved hash `F360C0DD174588FA` in `config.ini` `[Login]` `password`).
+- Device/DVR test password supplied by user: `amc123456` (also stored, along with per-DVR cloud IDs/users, in `~/.config/secrets/xmeye-dvr.env`).
+- DVRs:
+  - `noble-club`: Cloud/Serial ID `d811d82e21d6c031`, user `admin`, pass in `~/.config/secrets/xmeye-dvr.env`.
+  - `noble-a`: Cloud/Serial ID `f2ca2dca0bc4ae4fnxjd`, user `advance`, pass in `~/.config/secrets/xmeye-dvr.env`.
+- QR files for import (inside the VMS at `Z:\\app\\qr\\`, mounted from `/home/tony/.cache/xmeye-vms/vms-runtime/qr/`):
+  - `S__7610372.jpg`
+  - `QR.jpg`
+  - `qr-noble-a.jpg`
+- Set `autologin=true` in `config.ini` after the saved hash is in place to skip the login prompt on next restart.
+
+## GEV Gemini Live voice deployment
+
+Source and build: `/home/tony/gods-eye-view`
+
+- Build: `npm run build` (requires Vite base `/apps/gev/`).
+- After every build, patch `dist/assets/index-*.js`:
+  - `/api/*` -> `/apps/gev/api/*`
+  - `/models/*` -> `/apps/gev/models/*`
+  - `msaaSamples:4` -> `/iPad|iPhone|iPod/.test(navigator.userAgent)?1:4`
+- Stage to `stacks/web/public/apps/gev/`: `index.html`, `*.svg`, `assets/`, `models/`, `cesium/`.
+
+Infrastructure:
+
+- Caddy serves `/apps/gev/*` from `stacks/web/public/apps/gev/`.
+- GEV API proxy: `gods-eye-view-api` on `127.0.0.1:4173` via Caddy `handle /apps/gev/api/*`.
+- Gemini bridge: `gev-gemini` on `ws://127.0.0.1:8789` proxied to `/apps/gev-live/ws`.
+- Bridge image: `localhost/gev-gemini:latest` built from `stacks/tony-dell/gev-gemini/`.
+- Tool declarations are extracted from `GEV_REALTIME_TOOLS` in `vite.config.js` and written to `stacks/tony-dell/gev-gemini/tools.json`. Gemini Live rejects `additionalProperties` in function-declaration parameters; the bridge strips them recursively.
+
+Voice controller (`src/voice/gevGeminiRealtime.js`):
+
+- Connects to `/apps/gev-live/ws`, captures mic audio as 16kHz PCM mono.
+- The `ScriptProcessorNode` input must pass through a `GainNode` set to `1` while recording and `0` while muted; the recording flag alone is not enough.
+
+Service worker / PWA:
+
+- Shared `/apps/sw.js` cache name is `apps-v6`.
+- All app pages register `/apps/sw.js?v=6` with scope `/apps/`.
+- GEV `index.html` links `/apps/gev/manifest.json`, sets `apple-mobile-web-app-capable=no` for iOS microphone compatibility, and registers the shared service worker.
+
+Test commands:
+
+- Page: `curl -s -o /dev/null -w '%{http_code}' https://tony-dell.taila0626a.ts.net/apps/gev/`
+- WS: `python3 -c "import asyncio, websockets, ssl; ..."` against `wss://tony-dell.taila0626a.ts.net/apps/gev-live/ws`
+- Text tool call cycle: send `{'type':'text','text':...}`, receive `function_call`, respond with `{'type':'tool_response','responses':[{'id':...,'name':...,'response':...}]}`.
+
+Caveats:
+
+- iOS microphone works in Safari, not in standalone home-screen PWA mode.
+- iPad requires `msaaSamples:1` to avoid Cesium WebGL crash.
+- Current implementation uses Gemini output transcription text only; no audio playback.
 
 # Devin on tony-dell — crash/runbook (2026-09-12)
 

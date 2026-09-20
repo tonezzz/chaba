@@ -26,6 +26,24 @@ if fuser "$DB" >/dev/null 2>&1; then
   echo "Warning: $DB is currently in use by Devin. DELETE will still run, VACUUM will be skipped." >&2
 fi
 
+# Lesson (2026-09-12, tony-omen): a corrupt sessions.db fails mid-run with
+# "database disk image is malformed" — after message_nodes are already deleted
+# but before the sessions rows go. Check integrity BEFORE touching anything.
+# A corrupt DB can also under-report row counts via damaged indexes, so time-based
+# pruning may silently miss data. Rebuild instead:
+#   sqlite3 "$DB" .recover | sqlite3 sessions-new.db
+#   # prune sessions-new.db, verify: PRAGMA integrity_check;
+#   # then swap sessions-new.db into place.
+if [ "${SKIP_INTEGRITY_CHECK:-0}" != "1" ]; then
+  echo "Running quick_check (can take a while on large DBs; SKIP_INTEGRITY_CHECK=1 to bypass) ..."
+  if ! sqlite3 "$DB" "PRAGMA quick_check;" | head -20 | grep -qx 'ok'; then
+    echo "Error: $DB failed integrity check — do NOT prune in place." >&2
+    echo "Recover instead: sqlite3 \"$DB\" .recover | sqlite3 sessions-new.db" >&2
+    echo "(set SKIP_INTEGRITY_CHECK=1 to force the in-place prune anyway)" >&2
+    exit 1
+  fi
+fi
+
 if [ "${NO_BACKUP:-}" != "1" ]; then
   mkdir -p "$BACKUP_DIR"
   BACKUP="$BACKUP_DIR/sessions-$TIMESTAMP.db"

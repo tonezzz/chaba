@@ -1,0 +1,19 @@
+# Add to configuration.yaml
+
+rest:
+  - resource: "http://192.168.2.67:8780/detect"
+    scan_interval: 5
+    sensor:
+      - name: "YOLO Xiaomi Person Count"
+        unique_id: yolo_xiaomi_person_count
+        value_template: "{{ value_json.person_count | int }}"
+        json_attributes_path: "$"
+        json_attributes:
+          - "counts"
+          - "ts"
+
+camera:
+  - platform: generic
+    name: YOLO Xiaomi Annotated
+    still_image_url: "http://192.168.2.67:8780/image"
+    verify_ssl: false

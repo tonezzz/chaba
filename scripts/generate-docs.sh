@@ -190,41 +190,39 @@ generate_kb_index() {
         echo "Auto-generated index of all KB entries"
         echo "Generated: $(date '+%Y-%m-%d %H:%M:%S')"
         echo ""
-        echo "## KB Entries"
-        echo ""
-        
-        # List all markdown files in KB directory
+
+        # Group entries by their `category:` frontmatter. Title is the first
+        # markdown H1 (skipping YAML frontmatter), falling back to filename.
+        local categories=()
+        declare -A entries=()
         for file in "$KB_DIR"/*.md; do
-            if [[ -f "$file" && "$(basename "$file")" != "README.md" ]]; then
-                local filename=$(basename "$file")
-                local title=$(head -1 "$file" | sed 's/^# //')
-                echo "- [$title]($filename)"
+            [[ -f "$file" ]] || continue
+            local filename=$(basename "$file")
+            [[ "$filename" == "README.md" ]] && continue
+            local title=$(grep -m1 '^# ' "$file" | sed 's/^# //')
+            [[ -z "$title" ]] && title="$filename"
+            local category=$(grep -m1 '^category:' "$file" | sed 's/^category:[[:space:]]*//')
+            [[ -z "$category" || "$category" == \[* ]] && category="uncategorized"
+            if [[ -z "${entries[$category]:-}" ]]; then
+                categories+=("$category")
+                entries[$category]=""
             fi
+            entries[$category]+="- [$title]($filename)"$'\n'
         done
-        
-        echo ""
-        echo "## Categories"
-        echo ""
-        echo "### System"
-        echo "- Health monitoring"
-        echo "- Performance optimization"
-        echo "- Service management"
-        echo ""
-        echo "### Development"
-        echo "- Code quality"
-        echo "- Testing"
-        echo "- Deployment"
-        echo ""
-        echo "### Operations"
-        echo "- Backup and recovery"
-        echo "- Monitoring"
-        echo "- Security"
-        echo ""
+
+        IFS=$'\n' categories=($(sort <<<"${categories[*]}")); unset IFS
+        for category in "${categories[@]}"; do
+            echo "## $(tr '[:lower:]' '[:upper:]' <<<"${category:0:1}")${category:1}"
+            echo ""
+            printf '%s' "${entries[$category]}" | sort
+            echo ""
+        done
+
         echo "## Related Documentation"
         echo ""
         echo "- [SSOT Documentation](../ssot/)"
         echo "- [API Documentation](../api/)"
-        
+
     } > "$output_file"
     
     log INFO "Generated KB index: $output_file"
