@@ -29,6 +29,31 @@ instances:
       live michael-ha tony-test. 2026-09-08: PFG2 tab removed; current layout is
       V0/V1/SK/TPL/juWorkshop/Solar Assistant/glass/Weather.
 
+  chaba_admin:
+    name: chaba-admin
+    instance: tony-ha
+    title: Chaba admin
+    icon: mdi:shield-crown
+    url: https://tony-dell.taila0626a.ts.net:8123/chaba-admin/pair
+    require_admin: true
+    created: "2026-09-20"
+    storage_path: /home/tony/.config/home-assistant/.storage/lovelace.chaba_admin
+    note: >-
+      Sidebar dashboard (storage mode) hosting the Ada HA pair panel natively —
+      no iframe. Backing config lives in tony-ha YAML:
+      input_text.ada_pair_device_name / ada_pair_redeem_url,
+      input_select.ada_pair_instance, scripts ada_pair_issue / ada_pair_revoke
+      (scripts.yaml), rest_command ada_issue_key / ada_revoke_key,
+      shell_command ada_pair_save_qr, rest sensors ada_*_issued_keys (all in
+      configuration.yaml), secret ada_admin_key in secrets.yaml. QR SVG is
+      written to /config/www/pair-qr.svg and shown in a picture card. Admin key
+      stays server-side in secrets.yaml.
+    tabs:
+      - title: Pair
+        path: pair
+        icon: mdi:qrcode-plus
+        cards: issue/revoke form, pairing QR picture, redeem link, issued-keys list, capabilities info
+
 tabs:
   dev:
     - order: 0

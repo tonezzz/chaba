@@ -71,6 +71,21 @@
       <div class="expiry" id="expiry"></div>
       <div class="hint">Single use, ~10 minutes. The device that opens it stores its own key and unlocks the app immediately.</div>
     </section>
+    <section class="card" id="access-info">
+      <h2>What a paired device gets</h2>
+      <div class="sub">The redeem link hands the device a <em>named, revocable</em> key for the chosen Ada HA instance — not the admin key, not the HA token.</div>
+      <div class="details">
+        <strong>Voice PWA</strong> — full-duplex Gemini Live assistant for that HA instance<br>
+        <strong>Control</strong> — lights, switches, fans, media players, buttons; covers/gates need spoken confirmation; rate-limited; audit-logged under the device name<br>
+        <strong>Reads</strong> — entity states, sensors + history, power summary, event timelines, dashboard tabs, device search<br>
+        <strong>Memory</strong> — session recall (MDDB + NotebookLM deep recall) and remember/forget on the instance's memory banks
+      </div>
+      <div class="details">
+        <strong>Not granted:</strong> minting or revoking keys (admin only), HA credentials (server-side), access to the other instance — a tony key only works on ada-tony.
+        Revoking a key here kills its sessions immediately.
+      </div>
+      <div class="details">The same panel exists inside Home Assistant: <strong>Chaba admin → Pair</strong> on tony-ha.</div>
+    </section>
     <div class="row">
       <button id="forget-btn">Forget admin key</button>
     </div>
