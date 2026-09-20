@@ -7,3 +7,4 @@ Description=Pull mn01 vault edits into the git checkout (docs/ada-memory) + comm
 [Service]
 Type=oneshot
 ExecStart=%h/CascadeProjects/chaba/scripts/ada/pull-vault.sh --commit --push
+ExecStart=/usr/bin/python3 %h/CascadeProjects/chaba/scripts/ada/sync-devin-summaries.py
