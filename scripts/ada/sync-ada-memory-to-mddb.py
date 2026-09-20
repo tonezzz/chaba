@@ -138,12 +138,13 @@ def build_meta(fm: dict, bank: str, scope: str, today: str) -> dict:
 
 
 class Mddb:
-    def __init__(self, base: str) -> None:
+    def __init__(self, base: str, timeout: int = 20) -> None:
         self.base = base
+        self.timeout = timeout
         self.s = requests.Session()
 
     def _post(self, path: str, payload: dict):
-        r = self.s.post(f"{self.base}{path}", json=payload, timeout=20)
+        r = self.s.post(f"{self.base}{path}", json=payload, timeout=self.timeout)
         r.raise_for_status()
         return r.json()
 
