@@ -190,8 +190,18 @@ def write_note_file(path: Path, meta: dict, body: str) -> None:
     path.write_text("---\n" + yaml.safe_dump(fm, sort_keys=True) + "---\n" + body + "\n")
 
 
+def _voice_owned(note: dict, remote_doc: dict) -> bool:
+    """True when both sides of the conflict trace to voice writes: the remote
+    doc was last written by ada_remember AND the vault file is a raw voice
+    export (written_by=ada_remember in frontmatter — never curated). Only
+    then is take-remote safe to apply automatically."""
+    fm = note.get("frontmatter") or {}
+    return (_writer(remote_doc) == "ada_remember"
+            and str(fm.get("written_by") or "") == "ada_remember")
+
+
 def sync(mddb: Mddb, mapping: list[dict], dry: bool, delete_remote: bool,
-         take_remote: bool, take_vault: bool) -> int:
+         take_remote: bool, take_vault: bool, resolve_voice: bool = False) -> int:
     today = date.today().isoformat()
     conflicts = 0
     for m in mapping:
@@ -233,8 +243,10 @@ def sync(mddb: Mddb, mapping: list[dict], dry: bool, delete_remote: bool,
                     continue
                 # Someone other than the vault last wrote this doc (voice,
                 # ada_remember, manual MDDB edit). Never overwrite blindly.
-                if take_remote:
-                    print(f"  v {key} (pulling remote -> vault)")
+                if take_remote or (resolve_voice and _voice_owned(note, old)):
+                    tag = "pulling remote -> vault" if take_remote else \
+                        "voice-owned conflict, remote wins"
+                    print(f"  v {key} ({tag})")
                     if not dry:
                         write_note_file(paths[key], old.get("meta") or {},
                                         old.get("contentMd") or "")
@@ -303,6 +315,11 @@ def main() -> int:
                     help="delete remote docs absent from vault (never source=voice)")
     ap.add_argument("--take-remote", action="store_true",
                     help="on conflict: pull the remote doc into the vault file")
+    ap.add_argument("--resolve-voice", action="store_true",
+                    help="on conflict: auto take-remote only when both sides are "
+                         "voice-written (remote written_by=ada_remember and the "
+                         "vault file is an uncurated voice export). Genuine "
+                         "vault-vs-voice conflicts still report and skip.")
     ap.add_argument("--take-vault", action="store_true",
                     help="on conflict: force-push the vault version over remote")
     args = ap.parse_args()
@@ -318,7 +335,7 @@ def main() -> int:
         return 0
 
     conflicts = sync(mddb, mapping, args.dry_run, args.delete_remote,
-                     args.take_remote, args.take_vault)
+                     args.take_remote, args.take_vault, args.resolve_voice)
     if args.dry_run:
         print("\n(dry run — no writes)")
     return 1 if conflicts else 0
