@@ -8,6 +8,7 @@
  */
 import { existsSync, statSync, readFileSync, writeFileSync, rmSync } from "fs";
 import { join } from "path";
+import { spawnSync } from "child_process";
 
 const PROJECT_ROOT = new URL("../", import.meta.url).pathname.replace(/\/$/, "");
 const SUMMARY = join(PROJECT_ROOT, "reports", "audits", "summary.json");
@@ -17,6 +18,33 @@ const FAIL_ALERT = join(INBOX, "audit-failures.yml");
 
 // The weekly suite should produce a summary within this window.
 const MAX_AGE_DAYS = Number(process.env.AUDIT_MAX_AGE_DAYS || 8);
+
+// Mirror watchdog alerts into the chaba-admin Events feed (24h retention,
+// requires_response pinned). Best-effort: event logging must never block
+// or fail the watchdog itself.
+function emitEvent(title, body, severity = "error") {
+  try {
+    const payload = JSON.stringify({
+      title,
+      category: "audit",
+      source: "audit-watchdog",
+      severity,
+      body,
+      requires_response: true,
+      confidence: 0.9,
+    });
+    const r = spawnSync(
+      "ssh",
+      ["tony-dell", "python3",
+       "/home/tony/.config/home-assistant/scripts/chaba-event-log.py",
+       "add", "-"],
+      { input: payload, timeout: 20000, encoding: "utf8" }
+    );
+    console.log(r.status === 0 ? "event emitted" : `event emit failed: ${r.stderr}`);
+  } catch (e) {
+    console.log(`event emit failed: ${e.message}`);
+  }
+}
 
 function writeAlert(path, title, subtitle, text) {
   writeFileSync(
@@ -54,6 +82,10 @@ if (!summary) {
     "No readable reports/audits/summary.json",
     "The audit runner has never produced a summary on this host or the file is unreadable.\nRe-run: node scripts/audits/run.mjs"
   );
+  emitEvent(
+    "Audit suite not running",
+    "No readable reports/audits/summary.json — the audit runner has never produced a summary on this host. Re-run: node scripts/audits/run.mjs"
+  );
   process.exit(1);
 }
 
@@ -63,6 +95,10 @@ if (ageDays > MAX_AGE_DAYS) {
     "Audit suite stale",
     `Last summary ${ageDays.toFixed(1)}d old (max ${MAX_AGE_DAYS}d)`,
     `Generated: ${summary.generated || "unknown"}\nCheck chaba-audit.timer: systemctl --user status chaba-audit.timer\nRe-run: node scripts/audits/run.mjs`
+  );
+  emitEvent(
+    "Audit suite stale",
+    `Last audit summary is ${ageDays.toFixed(1)}d old (max ${MAX_AGE_DAYS}d). Check chaba-audit.timer on mn01.`
   );
   process.exit(1);
 }
@@ -85,6 +121,10 @@ if (summary.ok === false) {
     );
   }
   console.log(`FAIL: ${failed}`);
+  emitEvent(
+    "Audit suite failing",
+    `Error-severity audits failing: ${failed || "unknown"}. Report: reports/audits/summary.md`
+  );
   process.exit(1);
 }
 

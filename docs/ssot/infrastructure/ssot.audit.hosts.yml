@@ -576,6 +576,12 @@ hosts:
         expected_state: active
         critical: false
         note: Hourly — NLM auth + inbox-age checks emitting chaba-events
+      - name: ada-memory-backup-mirror.timer
+        type: timer
+        scope: user
+        expected_state: active
+        critical: false
+        note: Weekly Sun 05:00 — pushes MDDB dumps to mn01 warm copy (tony-omen->mn01 ssh)
     known_failed:
       - name: arp-inventory-scan.service
         reason: Exits 2 when network conflicts/duplicates are detected, by design

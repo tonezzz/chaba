@@ -88,15 +88,17 @@ Ops loop: `ada-memory-sync` (hourly, mn01) · `ada-memory-pull` (hourly, tony-om
 
 ## Recommendations (priority order)
 
-1. **Flip registry statuses to `active`** — banks are live; `planned`/`testing` is now misleading. Also mark the `note` bank's role as the permanent sandbox.
-2. **Add a pre-commit/CI guard** rejecting staged files under `docs/ada-memory/personal/**` — belt-and-suspenders on top of gitignore for a public repo.
-3. **NLM auth health → chaba-events producer** — cookie expiry is the most fragile dependency and currently fails silently for recall.
-4. **List all five memory timers in `ssot.audit.hosts.yml`** so the audit watchdog reports a dead timer instead of silence.
-5. **Verify `written_by`/`session_id` on every write path** — close the audit gap now while write volume is small; retrofitting provenance is harder.
-6. **MDDB availability plan** — at minimum document restore-RTO; consider a weekly replicated dump on mn01 so fast-tier recall can be pointed at a warm copy in an emergency.
-7. **Wire remaining producers into chaba-events** (audit watchdog results, cast lifecycle) so the Events tab is the single pane it was designed to be.
-8. **Inbox-age tripwire** — emit an event when `inbox/` holds unreviewed voice notes >7 days.
+1. ~~**Flip registry statuses to `active`**~~ — **done** (`ssot.apps.ada-memory-banks.yml`; `note` bank stays `testing` as the permanent sandbox).
+2. ~~**Pre-commit guard on `personal/**`**~~ — **done**: `.husky/pre-commit` + live `.git/hooks/pre-commit` reject staged `docs/ada-memory/personal/**`; verified by force-add test.
+3. ~~**NLM auth health → chaba-events**~~ — **done**: `scripts/ada/memory-health-check.py` hourly via `ada-memory-health.timer` (tony-omen); auth failure emits a `requires_response` event, deduped via `~/.cache/ada-memory-health.json` (re-emits on appearance or every 24h while firing).
+4. ~~**List memory timers in `ssot.audit.hosts.yml`**~~ — **done**: all six (sync/drift on mn01; pull/backup/rollup/health on tony-omen) plus `ada-memory-backup-mirror.timer`.
+5. ~~**`written_by`/`session_id` on every write path**~~ — **done**: `written_by` was already stamped (ada_remember / obsidian-vault); added `session_id` to `ada_remember` meta and `retracted_by_session` to `ada_forget` (ada-pi `08114fa`, deployed to all three services; 26 tests pass).
+6. ~~**MDDB availability plan**~~ — **done**: `ada-memory-backup-mirror.timer` pushes dumps to `mn01:~/.local/share/ada-mddb-mirror/` weekly; RTO documented in `docs/ada-memory/README.md`.
+7. ~~**Wire remaining producers into chaba-events**~~ — **done**: `audit-watchdog.mjs` emits `requires_response` events on stale/failing suites; cast lifecycle was already covered via `persistent_notification` merge (cast_power_on timeouts, idle-skip) — plus fixed a real bug: `cast_cleanup` errored every run on `media_player.tv_40c5000` turn_off, silently skipping `timer.cancel`/`cast_powered_by_us` (now `continue_on_error`).
+8. ~~**Inbox-age tripwire**~~ — **done**: folded into `memory-health-check.py` (>7d unreviewed voice notes → `requires_response` event).
+
+**Remaining (deferred):** MDDB warm-*failover* (mirror is restore-only, not a live replica), embedding-health canary, confidence enforcement beyond prompt-level, and NLM "Correction:" source deletion (401 upstream).
 
 ## Verdict
 
-The architecture is sound and, unusually for a personal-AI memory system, actually deployed end-to-end with verification at each layer. The main risks are not design flaws but operational: a single MDDB point of failure, an external embedding dependency, silent-failure modes (NLM auth, dead timers), and privacy guardrails that rely on convention rather than enforcement. Recommendations 1–5 are all cheap and close the biggest silent-failure gaps.
+The architecture is sound and, unusually for a personal-AI memory system, actually deployed end-to-end with verification at each layer. As of 2026-09-20 all eight recommendations landed: silent-failure modes now emit events (NLM auth, dead timers via audit registration, drift tripwires, stale audit suite, aging inbox), provenance covers every write path, privacy has a hard guard instead of a convention, and MDDB has a verified restore path plus an off-host warm copy. Residual risk concentrates in external dependencies (embedding quota, NLM cookies) and the still-manual inbox review cadence.

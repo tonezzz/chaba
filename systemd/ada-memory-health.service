@@ -1,0 +1,6 @@
+[Unit]
+Description=Ada memory health checks (NLM auth, inbox age) -> chaba-events
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 %h/CascadeProjects/chaba/scripts/ada/memory-health-check.py
