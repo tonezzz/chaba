@@ -58,12 +58,19 @@ The gate remote is kept in the hallway cabinet, not the kitchen drawer.
 
 ## Rules
 
-- **Vault wins** for human-edited fields; MDDB revisions still audit writes.
+- **Conflict-safe sync**: if a remote doc was last written by anything
+  other than the vault (`written_by` ≠ `obsidian-vault`) and the vault
+  file diverges, the sync reports `CONFLICT` and skips it. Resolve with
+  `--take-remote` (pull remote → vault file) or `--take-vault` (force the
+  vault version). Provenance is preserved via `origin_source` /
+  `origin_written_by`.
 - Voice writes (`ada_remember`) go to MDDB first; `--export-inbox` pulls
-  them into `inbox/` — review, then move the file into the right bank
-  folder to promote it.
+  active `source=voice` docs into `inbox/` — review, then move the file
+  into the right bank folder to promote it.
 - `writable: false` banks (e.g. `home`) block *Ada* from writing — this
   vault is human authority and syncs regardless.
 - **`personal/*` is git-ignored** — the chaba repo is public on GitHub, so
   private notes stay local-only for now. Revisit once a private-mirror or
   encryption policy is decided.
+- Edits made in `apps/obsidian` on mn01 live in its rsync'd copy — pull
+  them back with `scripts/ada/pull-vault.sh mn01`.

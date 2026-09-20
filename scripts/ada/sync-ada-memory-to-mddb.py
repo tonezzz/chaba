@@ -45,7 +45,7 @@ MDDB = os.environ.get("ADA_MEMORY_MDDB_URL", "http://100.68.142.13:11023/v1").rs
 META_FIELDS = (
     "kind", "status", "subject", "attribute", "valid_from", "last_verified",
     "valid_until", "applies_to", "supersedes", "superseded_by",
-    "retracted_reason",
+    "retracted_reason", "origin_source", "origin_written_by",
 )
 MANAGED_FIELDS = ("bank", "scope", "source", "written_by") + META_FIELDS
 
@@ -93,11 +93,20 @@ def build_meta(fm: dict, bank: str, scope: str, today: str) -> dict:
         "scope": [scope],
         "status": [str(fm.get("status") or "active")],
         "kind": [str(fm.get("kind") or "note")],
-        "source": [str(fm.get("source") or "manual")],
-        "written_by": [str(fm.get("written_by") or "obsidian-vault")],
+        # The vault is the writer of record — this is what lets the sync
+        # distinguish "remote last touched by vault" (safe to overwrite)
+        # from "remote last touched by voice/ada_remember" (conflict).
+        "source": ["manual"],
+        "written_by": [VAULT_WRITER],
         "valid_from": [str(fm.get("valid_from") or today)],
         "last_verified": [str(fm.get("last_verified") or today)],
     }
+    # Preserve where the memory originally came from (e.g. a promoted
+    # voice note keeps origin_source=voice).
+    if fm.get("source") and fm["source"] != "manual":
+        meta["origin_source"] = [str(fm["source"])]
+    if fm.get("written_by") and fm["written_by"] != VAULT_WRITER:
+        meta["origin_written_by"] = [str(fm["written_by"])]
     for field in ("subject", "attribute", "valid_until", "supersedes",
                   "superseded_by", "retracted_reason"):
         if fm.get(field):
@@ -133,12 +142,42 @@ def _managed_meta(meta: dict) -> dict:
     return {k: v for k, v in (meta or {}).items() if k in MANAGED_FIELDS}
 
 
-def sync(mddb: Mddb, mapping: list[dict], dry: bool, delete_remote: bool) -> int:
+def _fm_to_meta(fm: dict) -> dict:
+    """Frontmatter scalars/lists -> MDDB list-meta, for comparing an exported
+    note's declared fields against the remote doc's stored meta."""
+    return {
+        k: ([str(x) for x in v] if isinstance(v, list) else [str(v)])
+        for k, v in fm.items()
+        if k in MANAGED_FIELDS and v not in (None, "", [])
+    }
+
+
+VAULT_WRITER = "obsidian-vault"
+
+
+def _writer(doc: dict) -> str:
+    return (doc.get("meta") or {}).get("written_by", [""])[0]
+
+
+def _source(doc: dict) -> str:
+    return (doc.get("meta") or {}).get("source", [""])[0]
+
+
+def write_note_file(path: Path, meta: dict, body: str) -> None:
+    fm = {k: (v[0] if isinstance(v, list) and len(v) == 1 else v)
+          for k, v in meta.items() if k in MANAGED_FIELDS or k == "key"}
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("---\n" + yaml.safe_dump(fm, sort_keys=True) + "---\n" + body + "\n")
+
+
+def sync(mddb: Mddb, mapping: list[dict], dry: bool, delete_remote: bool,
+         take_remote: bool, take_vault: bool) -> int:
     today = date.today().isoformat()
-    rc = 0
+    conflicts = 0
     for m in mapping:
         vdir = VAULT / m["dir"]
         notes = {}
+        paths = {}
         if vdir.is_dir():
             for f in sorted(vdir.glob("*.md")):
                 if f.name.startswith(("_", ".")) or f.name == "README.md":
@@ -149,6 +188,7 @@ def sync(mddb: Mddb, mapping: list[dict], dry: bool, delete_remote: bool) -> int
                     continue
                 key = note["frontmatter"].get("key") or f"{m['bank']}/{f.stem}"
                 notes[key] = note
+                paths[key] = f
 
         remote = {d.get("key"): d for d in mddb.list_docs(m["collection"])}
         label = f"{m['dir']:<20} -> {m['collection']}"
@@ -163,6 +203,27 @@ def sync(mddb: Mddb, mapping: list[dict], dry: bool, delete_remote: bool) -> int
                _managed_meta(old.get("meta")) == meta:
                 print(f"  = {key} (unchanged)")
                 continue
+            if old is not None and _writer(old) != VAULT_WRITER and not take_vault:
+                remote_managed = _managed_meta(old.get("meta"))
+                declared = _fm_to_meta(note["frontmatter"])
+                if (old.get("contentMd") or "") == body and declared == remote_managed:
+                    # Vault file is just the untouched exported copy of the
+                    # remote doc — nothing to push, nothing to fight over.
+                    print(f"  = {key} (remote copy, unedited)")
+                    continue
+                # Someone other than the vault last wrote this doc (voice,
+                # ada_remember, manual MDDB edit). Never overwrite blindly.
+                if take_remote:
+                    print(f"  v {key} (pulling remote -> vault)")
+                    if not dry:
+                        write_note_file(paths[key], old.get("meta") or {},
+                                        old.get("contentMd") or "")
+                    continue
+                print(f"  CONFLICT {key} (remote written by "
+                      f"{_writer(old) or _source(old) or 'unknown'}, vault differs — "
+                      f"resolve manually or rerun with --take-remote/--take-vault)")
+                conflicts += 1
+                continue
             verb = "update" if old is not None else "create"
             print(f"  {'~' if old else '+'} {key} ({verb})")
             if not dry:
@@ -171,16 +232,17 @@ def sync(mddb: Mddb, mapping: list[dict], dry: bool, delete_remote: bool) -> int
         for key, doc in remote.items():
             if key in notes:
                 continue
-            src = (doc.get("meta") or {}).get("source", [""])[0]
-            if delete_remote and src != "voice":
-                print(f"  - {key} (remote-only, deleted)")
+            src = _source(doc)
+            if (delete_remote or _writer(doc) == VAULT_WRITER) and src != "voice":
+                print(f"  - {key} (gone from vault / remote-only, deleted)")
                 if not dry:
                     mddb.delete(m["collection"], key)
             else:
                 tag = "voice" if src == "voice" else "remote-only"
                 print(f"  ? {key} ({tag}, kept)")
-        rc += 1
-    return rc
+    if conflicts:
+        print(f"\n{conflicts} conflict(s) — remote content preserved")
+    return conflicts
 
 
 def export_inbox(mddb: Mddb, mapping: list[dict], dry: bool) -> None:
@@ -195,22 +257,17 @@ def export_inbox(mddb: Mddb, mapping: list[dict], dry: bool) -> None:
             continue
         outdir = VAULT / "inbox" / m["bank"]
         for doc in docs:
-            meta = doc.get("meta") or {}
+            meta = dict(doc.get("meta") or {})
             key = doc.get("key") or "unknown"
             slug = key.split("/", 1)[-1] or key
             path = outdir / f"{slug}.md"
             if path.exists():
                 print(f"  = {path.relative_to(VAULT)} (already exported)")
                 continue
-            fm = {k: (v[0] if isinstance(v, list) and len(v) == 1 else v)
-                  for k, v in meta.items() if k in MANAGED_FIELDS}
-            fm["key"] = key
-            body = doc.get("contentMd") or ""
-            text = "---\n" + yaml.safe_dump(fm, sort_keys=True) + "---\n" + body + "\n"
+            meta["key"] = [key]
             print(f"  + {path.relative_to(VAULT)}")
             if not dry:
-                outdir.mkdir(parents=True, exist_ok=True)
-                path.write_text(text)
+                write_note_file(path, meta, doc.get("contentMd") or "")
 
 
 def main() -> int:
@@ -224,7 +281,13 @@ def main() -> int:
                     help="export source=voice docs into inbox/<bank>/ instead of syncing")
     ap.add_argument("--delete-remote", action="store_true",
                     help="delete remote docs absent from vault (never source=voice)")
+    ap.add_argument("--take-remote", action="store_true",
+                    help="on conflict: pull the remote doc into the vault file")
+    ap.add_argument("--take-vault", action="store_true",
+                    help="on conflict: force-push the vault version over remote")
     args = ap.parse_args()
+    if args.take_remote and args.take_vault:
+        ap.error("--take-remote and --take-vault are mutually exclusive")
 
     VAULT = args.vault
     mapping = load_bank_map()
@@ -234,10 +297,11 @@ def main() -> int:
         export_inbox(mddb, mapping, args.dry_run)
         return 0
 
-    sync(mddb, mapping, args.dry_run, args.delete_remote)
+    conflicts = sync(mddb, mapping, args.dry_run, args.delete_remote,
+                     args.take_remote, args.take_vault)
     if args.dry_run:
         print("\n(dry run — no writes)")
-    return 0
+    return 1 if conflicts else 0
 
 
 if __name__ == "__main__":
