@@ -1,0 +1,17 @@
+[Unit]
+Description=Ada memory vault viewer (apps/obsidian) — review/edit docs/ada-memory
+After=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/CascadeProjects/chaba-vault
+Environment=ADA_MEMORY_VAULT=%h/CascadeProjects/chaba-vault/docs/ada-memory
+Environment=ADA_VAULT_REPO=%h/CascadeProjects/chaba-vault
+Environment=ADA_MEMORY_MDDB_URL=http://100.68.142.13:11023/v1
+EnvironmentFile=-%h/.config/secrets/ada-vault.env
+ExecStart=%h/CascadeProjects/ada-pi/.venv/bin/python %h/CascadeProjects/chaba-vault/apps/obsidian/server.py
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target

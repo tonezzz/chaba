@@ -64,4 +64,6 @@ The gate remote is kept in the hallway cabinet, not the kitchen drawer.
   folder to promote it.
 - `writable: false` banks (e.g. `home`) block *Ada* from writing — this
   vault is human authority and syncs regardless.
-- `personal/*` content is private — think before committing it to git.
+- **`personal/*` is git-ignored** — the chaba repo is public on GitHub, so
+  private notes stay local-only for now. Revisit once a private-mirror or
+  encryption policy is decided.

@@ -30,6 +30,17 @@
 		}
 	}
 
+	# Obsidian — Ada memory vault review/editor (ada-vault-viewer)
+	handle /apps/obsidian {
+		redir * /apps/obsidian/ 308
+	}
+
+	handle_path /apps/obsidian/* {
+		reverse_proxy 127.0.0.1:8004 {
+			header_up Host 127.0.0.1:8004
+		}
+	}
+
 	# HA instance shortcuts — HA UI breaks under a path prefix, so redirect
 	# to the full host URL (same convention as Caddyfile.tony-dell).
 	handle /apps/ha/tony-ha {

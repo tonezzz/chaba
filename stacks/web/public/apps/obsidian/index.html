@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Review and edit the Ada memory vault (docs/ada-memory)">
+  <title>Ada Memory Vault</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/js-yaml@4.1.0/dist/js-yaml.min.js"></script>
+  <script>
+    tailwind.config = { theme: { extend: { colors: { bg: '#1a1a2e', card: '#16213e', accent: '#0a84ff' } } } };
+  </script>
+  <style>
+    body { font-family: system-ui, sans-serif; }
+    .status-active { color: #34d399; } .status-retracted { color: #f87171; }
+    .status-superseded, .status-expired { color: #fbbf24; }
+    .note-item:hover { background: rgba(10,132,255,0.08); }
+    .note-item.sel { background: rgba(10,132,255,0.15); border-left: 2px solid #0a84ff; }
+    .prose-dark h1,.prose-dark h2,.prose-dark h3 { font-weight: 600; margin: .75rem 0 .25rem; }
+    .prose-dark h1 { font-size: 1.3rem; } .prose-dark h2 { font-size: 1.15rem; }
+    .prose-dark p { margin: .4rem 0; } .prose-dark ul { list-style: disc; padding-left: 1.25rem; margin: .4rem 0; }
+    .prose-dark code { background: rgba(255,255,255,.08); padding: 0 .3rem; border-radius: .25rem; font-size: .85em; }
+    .meta td { padding: .15rem .75rem .15rem 0; font-size: .8rem; }
+    .meta td:first-child { color: #9ca3af; }
+  </style>
+</head>
+<body class="bg-bg text-gray-200 min-h-screen">
+  <nav class="bg-card border-b border-gray-800">
+    <div class="px-4 h-12 flex items-center gap-4">
+      <a href="/apps/" class="text-sm text-gray-400 hover:text-accent">← Apps</a>
+      <h1 class="font-semibold">Ada Memory Vault</h1>
+      <span id="dirty" class="text-xs text-gray-500"></span>
+      <div class="ml-auto flex gap-2">
+        <button id="btn-sync" class="text-xs px-3 py-1.5 rounded bg-card border border-gray-700 hover:border-accent">Push to Ada</button>
+        <button id="btn-commit" class="text-xs px-3 py-1.5 rounded bg-card border border-gray-700 hover:border-accent">Commit</button>
+      </div>
+    </div>
+  </nav>
+  <div class="flex" style="min-height: calc(100vh - 3rem)">
+    <aside id="sidebar" class="w-72 shrink-0 border-r border-gray-800 overflow-y-auto p-3"></aside>
+    <main class="flex-1 p-6 overflow-y-auto max-w-4xl">
+      <div id="empty" class="text-gray-500 text-sm mt-8 text-center">Select a note on the left.<br><span class="text-xs">Banks on the left map 1:1 to ada-ha-bank-* collections.</span></div>
+      <div id="view" class="hidden">
+        <div class="flex items-center gap-3 mb-1">
+          <h2 id="n-title" class="text-lg font-semibold"></h2>
+          <span id="n-status" class="text-xs"></span>
+          <span id="n-kind" class="text-xs text-gray-500"></span>
+          <div class="ml-auto flex gap-2">
+            <button id="btn-edit" class="text-xs px-3 py-1 rounded bg-card border border-gray-700 hover:border-accent">Edit</button>
+            <button id="btn-save" class="hidden text-xs px-3 py-1 rounded bg-accent text-white">Save</button>
+          </div>
+        </div>
+        <table id="n-meta" class="meta mb-4"></table>
+        <div id="n-body" class="prose-dark text-sm leading-relaxed"></div>
+        <textarea id="n-edit" class="hidden w-full h-96 mt-2 bg-card border border-gray-700 rounded p-3 font-mono text-xs"></textarea>
+        <div id="n-msg" class="text-xs text-gray-500 mt-2"></div>
+      </div>
+    </main>
+  </div>
+<script>
+const BASE = location.pathname.replace(/\/$/, '');
+let apiKey = localStorage.getItem('obsidian-key') || '';
+let cur = null, editing = false;
+
+async function api(path, opts = {}) {
+  opts.headers = Object.assign({ 'X-API-Key': apiKey }, opts.headers);
+  const r = await fetch(BASE + path, opts);
+  if (r.status === 401) {
+    apiKey = prompt('API key required for writes:') || '';
+    localStorage.setItem('obsidian-key', apiKey);
+    if (apiKey) return api(path, opts);
+  }
+  return r;
+}
+
+async function loadTree() {
+  const t = await (await fetch(BASE + '/api/tree')).json();
+  const s = document.getElementById('sidebar');
+  s.innerHTML = '';
+  const order = ['general','home','people','personal/tony','personal/michael','tony-projects','note','inbox'];
+  const dirs = Object.keys(t.banks).sort((a,b) => order.indexOf(a) - order.indexOf(b) || a.localeCompare(b));
+  for (const dir of dirs) {
+    const g = document.createElement('div');
+    g.className = 'mb-3';
+    g.innerHTML = `<div class="text-[11px] uppercase tracking-wide text-gray-500 px-2 py-1">${dir}</div>`;
+    for (const n of t.banks[dir]) {
+      const el = document.createElement('div');
+      el.className = 'note-item px-2 py-1 rounded cursor-pointer text-sm flex items-center gap-2' + (cur===n.path?' sel':'');
+      el.innerHTML = `<span class="status-${n.status}">●</span><span class="truncate">${n.name}</span>` +
+        (n.subject ? `<span class="ml-auto text-[10px] text-gray-500 truncate">${n.subject}</span>` : '');
+      el.onclick = () => openNote(n.path);
+      g.appendChild(el);
+    }
+    s.appendChild(g);
+  }
+}
+
+async function openNote(path) {
+  cur = path; editing = false;
+  const d = await (await fetch(BASE + '/api/note?path=' + encodeURIComponent(path))).json();
+  document.getElementById('empty').classList.add('hidden');
+  document.getElementById('view').classList.remove('hidden');
+  document.getElementById('n-edit').classList.add('hidden');
+  document.getElementById('n-body').classList.remove('hidden');
+  document.getElementById('btn-save').classList.add('hidden');
+  document.getElementById('btn-edit').classList.remove('hidden');
+  document.getElementById('n-title').textContent = path;
+  const fm = d.frontmatter || {};
+  const st = document.getElementById('n-status');
+  st.textContent = fm.status || 'active';
+  st.className = 'text-xs status-' + (fm.status || 'active');
+  document.getElementById('n-kind').textContent = fm.kind ? '· ' + fm.kind : '';
+  document.getElementById('n-meta').innerHTML = Object.entries(fm)
+    .filter(([k]) => !['status','kind'].includes(k))
+    .map(([k,v]) => `<tr><td>${k}</td><td>${Array.isArray(v)?v.join(', '):v}</td></tr>`).join('');
+  document.getElementById('n-body').innerHTML = marked.parse(d.body || '');
+  document.getElementById('n-edit').value = d.raw;
+  document.getElementById('n-msg').textContent = '';
+  loadTree();
+}
+
+document.getElementById('btn-edit').onclick = () => {
+  editing = true;
+  document.getElementById('n-body').classList.add('hidden');
+  document.getElementById('n-edit').classList.remove('hidden');
+  document.getElementById('btn-edit').classList.add('hidden');
+  document.getElementById('btn-save').classList.remove('hidden');
+};
+
+document.getElementById('btn-save').onclick = async () => {
+  const r = await api('/api/note', { method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ path: cur, raw: document.getElementById('n-edit').value }) });
+  const d = await r.json();
+  document.getElementById('n-msg').textContent = r.ok ? 'saved — Push to Ada to publish' : 'error: ' + (d.detail || r.status);
+  if (r.ok) { editing = false; openNote(cur); refreshStatus(); }
+};
+
+document.getElementById('btn-sync').onclick = async (e) => {
+  e.target.disabled = true; e.target.textContent = 'Syncing…';
+  const d = await (await api('/api/sync', { method: 'POST' })).json();
+  e.target.disabled = false; e.target.textContent = 'Push to Ada';
+  document.getElementById('n-msg').textContent = d.ok ? 'synced to MDDB' : 'sync failed: ' + (d.output || d.detail || '').slice(0, 300);
+};
+
+document.getElementById('btn-commit').onclick = async () => {
+  const msg = prompt('Commit message:', 'vault edit via apps/obsidian');
+  if (msg === null) return;
+  const d = await (await api('/api/commit', { method: 'POST',
+    headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ message: msg }) })).json();
+  document.getElementById('n-msg').textContent = d.ok
+    ? 'committed' + (d.push && d.push.ok ? ' + pushed' : ' (push skipped/failed — local only)')
+    : 'nothing to commit: ' + (d.commit || '').slice(0, 200);
+  refreshStatus();
+};
+
+async function refreshStatus() {
+  const s = await (await fetch(BASE + '/api/status')).json();
+  document.getElementById('dirty').textContent = s.dirty ? '● uncommitted changes' : '';
+}
+
+loadTree(); refreshStatus();
+</script>
+</body>
+</html>
