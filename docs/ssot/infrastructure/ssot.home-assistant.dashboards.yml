@@ -38,6 +38,7 @@ instances:
     require_admin: true
     created: "2026-09-20"
     storage_path: /home/tony/.config/home-assistant/.storage/lovelace.chaba_admin
+    repo_snapshot: docs/home-assistant/dashboards/chaba-admin-current.json
     note: >-
       Sidebar dashboard (storage mode) hosting the Ada HA pair panel natively —
       no iframe. Backing config lives in tony-ha YAML:
@@ -59,11 +60,27 @@ instances:
       QR display is custom:ada-pair-qr-card (/local/ada-pair-qr-card.js, same
       repo dir) — renders /local/pair-qr.svg with a ?v= cache-buster derived
       from the redeem token (stock picture card caches the URL forever).
+      Events tab added 2026-09-20: custom:chaba-events-card
+      (/local/chaba-events-card.js, repo: stacks/tony-dell/tony-ha/www/) reads
+      /local/chaba-events.json (written by /config/scripts/chaba-event-log.py —
+      flock, 24h prune, 300 cap, `ack` sets responded) plus live
+      persistent_notification entities (always requires-response). Shared
+      filter state in input_text.chaba_events_filter ({"hidden": [...]});
+      native logbook card gated by input_boolean.chaba_events_show_logbook via
+      a conditional card. Producers: shell_command.chaba_event /
+      chaba_event_ack (base64 JSON payload), called from ada_pair_* scripts;
+      deploy-ada.sh emits over SSH. Events with requires_response && !responded
+      pin to top with a pulsing border (prefers-reduced-motion respected);
+      confidence <0.6 shown as outlined chip.
     tabs:
       - title: Pair
         path: pair
         icon: mdi:qrcode-plus
         cards: issue/revoke form, pairing QR picture, redeem link, ada-keys-card, capabilities info
+      - title: Events
+        path: events
+        icon: mdi:bell-badge-outline
+        cards: chaba-events-card, conditional logbook (24h)
 
 tabs:
   dev:
@@ -173,6 +190,6 @@ manual_steps:
   - To add a new tab, push via websocket mutate or use the HA UI, then snapshot
 
 status:
-  last_updated: "2026-09-13"
-  last_verified: "2026-09-16"
+  last_updated: "2026-09-20"
+  last_verified: "2026-09-20"
   health: active; G1 on both hosts (dev v171 / ha v161, same md5 b404aab0) — surface3d PV chart on sensor.inverters_1_pv_power, vendored echarts libs in /local; Cast tab removed from live michael-ha tony-test on 2026-09-14; PF3/PF4/PFG/PFG1/PFG2 removed

@@ -621,6 +621,7 @@ python3 scripts/notebooklm-query.py "-" "Summarize the Home Assistant setup."
 tony-ha cast lifecycle — every cast goes through the gate, nothing targets dead devices:
 
 - `script.cast_power_on(target)` — `tv` = Samsung DLNA (`media_player.tv_40c5000`), `box` = TrueID Chromecast (`media_player.tony_tv_cast`). If target unavailable → `switch.plug_tv` on, sets `input_boolean.cast_powered_by_us`, waits 90s for the entity, notifies on timeout. Always (re)starts `timer.cast_idle` (5 min).
+- `input_boolean.youtube_search_pending` gates `automation.cast_youtube_from_search_result`: `youtube_search_on_query` arms it on a new `input_text.youtube_query`, and the search-result automation requires it `on` + query `last_changed` < 30 min, then clears it. Added 2026-09-20 because `sensor.youtube_search_result` polls every 10 min and YouTube's top result kept alternating, re-firing `cast_power_on` → `plug_tv` on in a loop. Passive poll flips now do nothing; only a fresh query casts.
 - `script.cast_cleanup` — turns off both cast targets, cancels timer, clears flag. TV stays powered; only cast-side state unwinds.
 - `script.cast_camera` — power_on(box) → `camera.play_stream` of `camera.xiaomi_c201` to `tony_tv_cast` (default desk camera per Tony).
 - `automation.cast_idle_shutdown` — timer.finished + flag on → if either target `playing`: skip + persistent-notification + restart timer; else `cast_cleanup`.
@@ -628,3 +629,13 @@ tony-ha cast lifecycle — every cast goes through the gate, nothing targets dea
 - Wrapped with the gate (first action = `script.cast_power_on` box): `1788623518229` (Thai hello TTS), `assist_tv_control`, `cast_youtube_on_input`, `youtube_search_on_query`, `cast_youtube_from_search`, `cast_youtube_from_picker`, `youtube_request_handler`, `youtube_auto_play_next`, `youtube_queue_control` — in `/home/tony/.config/home-assistant/automations.yaml` on tony-dell (backup `automations.yaml.bak-20260918`).
 - The 11 `assist_cast_*`/`cast_from_youtube_result_button`/`update_youtube_result_buttons` entities are ORPHANED entity-registry entries (no backing config) — they'll always show `unavailable`; safe to registry-delete if desired.
 - Cast target entity is `media_player.tony_tv_cast` (Google Cast), NOT `media_player.tony_tv` (Android TV Remote) — don't confuse them.
+
+## Chaba admin Events feed (built 2026-09-20)
+
+`chaba-admin` dashboard on tony-ha gained an **Events** tab (`/chaba-admin/events`) — a unified, filterable event feed plus the native HA logbook.
+
+- Feed file: `/config/www/chaba-events.json` on tony-dell (served at `/local/chaba-events.json`). Writer: `/config/scripts/chaba-event-log.py` (repo: `stacks/tony-dell/tony-ha/scripts/`) — flock + atomic write, prunes >24h, caps 300, `add`/`ack`/`list`. Runs on host python3 or in-container `/usr/local/bin/python3` — same script both places.
+- Producers call `shell_command.chaba_event` (payload = base64 JSON: `{title, category, severity, body, link, requires_response, confidence}`) from HA, or `python3 .../chaba-event-log.py add '<json>'` over SSH from anywhere. `shell_command.chaba_event_ack` marks `responded`. Wired today: all four `ada_pair_*` scripts (scripts.yaml) and `deploy-ada.sh` (emit per-host, requires_response on failure).
+- Card: `custom:chaba-events-card` (`/local/chaba-events-card.js`, repo `stacks/tony-dell/tony-ha/www/`) — merges the JSON feed with live `persistent_notification` entities (always requires-response, Dismiss calls `persistent_notification.dismiss`). Unresolved response-needed events pin to top with a pulsing border (reduced-motion safe); `confidence < 0.6` gets an outlined chip.
+- Shared visibility state (same on every device): `input_text.chaba_events_filter` holds `{"hidden": ["category", ...]}` — new categories self-register, no YAML change needed. `input_boolean.chaba_events_show_logbook` gates the conditional native `logbook` card (24h).
+- To add a new producer from a HA automation/script: `action: shell_command.chaba_event` with `payload: "{{ {...} | to_json | base64_encode }}"`. From a shell script: `ssh tony-dell python3 /home/tony/.config/home-assistant/scripts/chaba-event-log.py add '<json>'`.

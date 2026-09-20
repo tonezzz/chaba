@@ -1,0 +1,81 @@
+{
+  "version": 1,
+  "minor_version": 1,
+  "key": "lovelace.chaba_admin",
+  "data": {
+    "config": {
+      "views": [
+        {
+          "title": "Pair",
+          "path": "pair",
+          "icon": "mdi:qrcode-plus",
+          "cards": [
+            {
+              "type": "entities",
+              "title": "Issue / revoke a device key",
+              "icon": "mdi:cellphone-key",
+              "entities": [
+                {
+                  "entity": "input_select.ada_pair_instance",
+                  "name": "Ada instance"
+                },
+                {
+                  "entity": "input_text.ada_pair_device_name",
+                  "name": "Device name"
+                },
+                {
+                  "entity": "script.ada_pair_issue",
+                  "name": "Generate pairing QR",
+                  "action_name": "Generate"
+                },
+                {
+                  "entity": "script.ada_pair_revoke",
+                  "name": "Revoke (uses Device name)",
+                  "action_name": "Revoke"
+                }
+              ]
+            },
+            {
+              "type": "custom:ada-pair-qr-card",
+              "title": "Pairing QR — single use, ~10 min"
+            },
+            {
+              "type": "custom:ada-keys-card",
+              "title": "Issued keys"
+            },
+            {
+              "type": "markdown",
+              "title": "What a paired device gets",
+              "content": "The device gets a named, revocable key for **one** Ada HA instance:\n\n- **Voice PWA** — Gemini Live voice assistant\n- **Control** — lights, switches, fans, media players, buttons; covers/gates need spoken confirmation; rate-limited; audit-logged per device name\n- **Reads** — states, sensors + history, power summary, event timelines, dashboard tabs, device search\n- **Memory** — recall + remember/forget on the instance's memory banks\n\nNot granted: minting/revoking keys (admin only), HA credentials (server-side), the other instance. Revoking a key kills its sessions immediately.\n\n[Open full pair admin page](https://mn01.taila0626a.ts.net/apps/ha/pair/)"
+            }
+          ]
+        },
+        {
+          "title": "Events",
+          "path": "events",
+          "icon": "mdi:bell-badge-outline",
+          "cards": [
+            {
+              "type": "custom:chaba-events-card"
+            },
+            {
+              "type": "conditional",
+              "conditions": [
+                {
+                  "condition": "state",
+                  "entity": "input_boolean.chaba_events_show_logbook",
+                  "state": "on"
+                }
+              ],
+              "card": {
+                "type": "logbook",
+                "hours_to_show": 24,
+                "title": "Home Assistant logbook (24h)"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

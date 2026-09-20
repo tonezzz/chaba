@@ -28,13 +28,34 @@ host_config() {
   esac
 }
 
+EVENT_LOG=/home/tony/.config/home-assistant/scripts/chaba-event-log.py
+
+emit_event() {  # best-effort chaba-admin Events feed entry; never fails the deploy
+  local host="$1" out="$2" status="${3:-ok}"
+  local line title payload
+  line=$(grep -m1 -E '^(updated|already at)' <<< "$out" || true)
+  if [[ "$status" == ok ]]; then
+    title="ada deploy $host: ${line:-done}"
+  else
+    title="ada deploy $host FAILED"
+  fi
+  payload=$(OUT="${out: -2000}" TITLE="$title" STATUS="$status" python3 -c '
+import json, os
+print(json.dumps({"title": os.environ["TITLE"], "category": "deploy",
+                  "source": "deploy-ada.sh",
+                  "severity": "info" if os.environ["STATUS"] == "ok" else "fail",
+                  "requires_response": os.environ["STATUS"] != "ok",
+                  "body": os.environ["OUT"]}))')
+  printf '%s' "$payload" | ssh tony-dell "python3 $EVENT_LOG add -" >/dev/null 2>&1 || true
+}
+
 for host in "${hosts[@]}"; do
   cfg="$(host_config "$host")"
   services="${cfg%%|*}"; ports="${cfg##*|}"
   echo "=== $host ==="
   (
     flock -n 9 || { echo "FAIL: another deploy to $host holds the lock"; exit 1; }
-    ssh "$host" bash -s -- "$services" "$ports" "$force_restart" <<'REMOTE'
+    if out="$(ssh "$host" bash -s -- "$services" "$ports" "$force_restart" <<'REMOTE'
 set -euo pipefail
 services="$1"; ports="$2"; force="${3:-}"
 cd "$HOME/CascadeProjects/ada-pi"
@@ -90,5 +111,9 @@ for svc in $services; do
   echo "  $svc: $state (auth/status http $http)"
 done
 REMOTE
+    )"; then rc=0; else rc=$?; fi
+    echo "$out"
+    emit_event "$host" "$out" "$( [[ $rc == 0 ]] && echo ok || echo fail)"
+    [[ $rc == 0 ]] || exit "$rc"
   ) 9>"/tmp/ada-deploy-$host.lock"
 done
