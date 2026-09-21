@@ -99,11 +99,25 @@ milestones:
       - { task: "Assessment recs landed: personal/ pre-commit guard, memory-health-check.py + timer (NLM auth + inbox-age → chaba-events, deduped), all timers in audit SSOT, session_id provenance on writes (ada-pi 08114fa), MDDB backup mirror to mn01 + RTO doc, audit-watchdog→chaba-events, cast_cleanup continue_on_error fix", status: done, date: "2026-09-20" }
       - { task: "devin bank (ada-ha-bank-devin-tony) + kb-* banks wired read-only; sync-devin-summaries.py backfills history_*.md; read-only banks skip status filter", status: done, date: "2026-09-20" }
       - { task: "Auto-distill: session close extracts <=5 candidate facts -> bank docs status=draft -> inbox export -> consolidate flips to active (ADA_EXTRACT_CANDIDATES)", status: done, date: "2026-09-20" }
+  - id: knowledge-circle
+    title: Knowledge circle — verify & reinforce loop (docs/ada-memory/tony-projects/knowledge-circle.md)
+    status: in_progress
+    items:
+      - { task: "meta_schema + use_count/last_used/outcome/outcome_note/outcome_session fields", status: done, date: "2026-09-21" }
+      - { task: "memory_ops.record_use_bg — use_count/last_used bump on search hits + bank-recall hits (fire-and-forget)", status: done, date: "2026-09-21" }
+      - { task: "Confidence gate — hits below ADA_BANK_CONFIDENCE_MIN (0.4) tagged unverified in search + recall", status: done, date: "2026-09-21" }
+      - { task: "ada_outcome tool — records good/bad/partial/skipped/worked/failed/bought_* on a doc, nudges confidence, bumps last_verified", status: done, date: "2026-09-21" }
+      - { task: "Correction-aware distillation — extraction detects corrections (attribute=correction), procedures, gap questions", status: done, date: "2026-09-21" }
+      - { task: "Miss lines log the query (json-quoted) so misses are clusterable", status: done, date: "2026-09-21" }
+      - { task: "scripts/ada/memory-gap-report.py — cluster journal misses -> status=draft gap notes -> inbox review", status: done, date: "2026-09-21" }
+      - { task: "scripts/ada/memory-staleness-sweep.py — stale-doc iPhone approve/deny via devin_confirmation flow (--apply consumes verdicts)", status: done, date: "2026-09-21" }
+      - { task: "Timers: gap-report weekly (mn01), staleness sweep weekly + --apply daily", status: pending, note: "scripts ready; install systemd timers + register in ssot.audit.hosts.yml" }
+      - { task: "Canary recall set (~10 known-answer questions, weekly correctness metric)", status: pending }
 
 config:
-  version: 3
+  version: 4
   created: "2026-09-19"
-  updated: "2026-09-20"
+  updated: "2026-09-21"
   maintainer: tony
   status: active
   deployment: mn01

@@ -26,6 +26,8 @@ consolidate = load("consolidate-memory")
 backup = load("backup-mddb-banks")
 rollup = load("rollup-summaries")
 drift = load("recall-drift-report")
+gaps = load("memory-gap-report")
+staleness = load("memory-staleness-sweep")
 
 
 class TestSyncLogic(unittest.TestCase):
@@ -139,6 +141,54 @@ class TestDrift(unittest.TestCase):
         self.assertEqual(drift.drift_reasons(r), [])
         r["recalls"] = 20
         self.assertTrue(drift.drift_reasons(r))
+
+
+class TestGapReport(unittest.TestCase):
+    def test_parse_misses_with_query(self):
+        text = (
+            'bank recall \'general\': miss q="what is the wifi password" '
+            "(top scores=[0.3]) — escalating to notebook\n"
+            "bank recall 'note': 2 hit(s), scores=[0.7]\n"
+        )
+        self.assertEqual(gaps.parse_misses(text),
+                         [("general", "what is the wifi password")])
+
+    def test_parse_misses_legacy_line(self):
+        # Pre-2026-09-21 builds log no q= — still counted, no query.
+        text = "bank recall 'note': miss (top scores=[0.3])\n"
+        self.assertEqual(gaps.parse_misses(text), [("note", None)])
+
+    def test_norm_q_clusters_phrasing(self):
+        a = gaps.norm_q("What's the Wi-Fi password?")
+        b = gaps.norm_q("what is the wifi password")
+        self.assertEqual(a, "what s the wi fi password")
+        self.assertNotEqual(a, b)  # honest: normalization isn't semantic
+
+    def test_unit_instance_mapping(self):
+        self.assertEqual(gaps.unit_instance("ada-ha-michael.service"), "michael")
+        self.assertEqual(gaps.unit_instance("ada-pi-pwa.service"), "tony")
+
+    def test_drift_regex_still_matches_new_format(self):
+        # The drift report's MISS_RE must keep matching the new q= line.
+        line = 'bank recall \'x\': miss q="q" (top scores=[0.2])'
+        self.assertTrue(drift.MISS_RE.search(line))
+
+
+class TestStalenessSweep(unittest.TestCase):
+    def test_verdict_parse(self):
+        m = staleness.VERDICT_RE.match(
+            "APPROVE [stale-ab12cd34] via iPhone at 2026-09-21")
+        self.assertEqual((m.group(1), m.group(2)), ("APPROVE", "stale-ab12cd34"))
+
+    def test_verdict_parse_rejects_awaiting(self):
+        self.assertIsNone(
+            staleness.VERDICT_RE.match("awaiting: Still true? [stale-x]"))
+
+    def test_tag_is_stable(self):
+        a = staleness.tag_for("ada-ha-bank-note-tony", "note/x")
+        b = staleness.tag_for("ada-ha-bank-note-tony", "note/x")
+        self.assertEqual(a, b)
+        self.assertTrue(a.startswith("stale-"))
 
 
 class TestBackupRouting(unittest.TestCase):
