@@ -60,6 +60,35 @@ def make_vault(td: str) -> Path:
     return v
 
 
+class TestHubSplit(unittest.TestCase):
+    def test_oversized_subject_splits_into_month_subhubs(self):
+        with tempfile.TemporaryDirectory() as td:
+            v = Path(td)
+            (v / "general").mkdir(parents=True)
+            for i in range(45):
+                month = "2026-08" if i % 2 else "2026-09"
+                (v / f"general/s{i}.md").write_text(
+                    f"---\nkey: general/s{i}\nkind: note\nstatus: active\n"
+                    f"subject: mega\ndate: {month}-{i % 28 + 1:02d}\n---\nx\n")
+            mod = load_server(v, deploy="tailnet")
+            from fastapi.testclient import TestClient
+            cli = TestClient(mod.app)
+            g = cli.get("/api/graph").json()
+            ids = {n["id"]: n for n in g["nodes"]}
+            self.assertIn("subject:mega", ids)
+            self.assertIn("subject:mega:2026-08", ids)
+            self.assertIn("subject:mega:2026-09", ids)
+            self.assertTrue(ids["subject:mega:2026-08"].get("subhub"))
+            hub_links = [l for l in g["links"]
+                         if l["type"] == "subject"
+                         and l["target"] == "subject:mega"]
+            self.assertEqual(hub_links, [])  # members link to sub-hubs only
+            sub_links = [l for l in g["links"]
+                         if l["type"] == "subject"
+                         and l["target"].startswith("subject:mega:2")]
+            self.assertEqual(len(sub_links), 45)
+
+
 class TestDeployGuard(unittest.TestCase):
     def test_public_without_key_refuses_to_start(self):
         with tempfile.TemporaryDirectory() as td:

@@ -275,7 +275,8 @@ async def _similar_for(cli: httpx.AsyncClient, sem: asyncio.Semaphore,
 
 @app.get("/api/graph")
 async def api_graph(request: Request, banks: str = "", status: str = "",
-                    similar: int = 0, hubs: int = 1) -> dict:
+                    similar: int = 0, hubs: int = 1,
+                    sim_limit: int = 250) -> dict:
     """Merged vault+MDDB knowledge graph. Nodes keyed {collection}:{key};
     sync flag shows vault/MDDB membership drift. See ssot.apps.ada-memory-banks
     Visibility section for the public: filter."""
@@ -308,7 +309,7 @@ async def api_graph(request: Request, banks: str = "", status: str = "",
         bodies.setdefault(nid, body)
         rm = raw.setdefault(nid, {})
         for k in ("subject", "supersedes", "superseded_by", "related",
-                  "source_keys", "applies_to"):
+                  "source_keys", "applies_to", "attribute", "date"):
             vals = _ml(meta, k) if k != "subject" else ([str(_m1(meta, k))] if _m1(meta, k) else [])
             rm.setdefault(k, vals)
 
@@ -361,6 +362,7 @@ async def api_graph(request: Request, banks: str = "", status: str = "",
 
     async with httpx.AsyncClient(timeout=20) as cli:
         for b, docs in await asyncio.gather(*(fetch_coll(b) for b in entries)):
+            coll = b["collection"]
             for doc in docs or []:
                 key = str(doc.get("key") or "")
                 if not key:
@@ -451,6 +453,33 @@ async def api_graph(request: Request, banks: str = "", status: str = "",
                 add_edge(nid, t, "related")
 
     # --- subject/entity structure: hub nodes (default) or cliques ---
+    # Groups larger than HUB_CAP get split into sub-hubs (month bucket from
+    # `date` meta, else `attribute`) so mega-subjects stay readable; if no
+    # useful bucket exists the hub links only the top-cap members.
+    HUB_CAP = 40
+
+    def _rank(m: str):
+        try:
+            uc = int(nodes[m].get("use_count") or 0)
+        except (TypeError, ValueError):
+            uc = 0
+        return (uc, str(nodes[m].get("last_verified") or ""))
+
+    def bucketize(members: list[str]) -> dict[str, list[str]]:
+        """Try coarser→finer granularity: month, day, then attribute.
+        Reject splits that don't split (1 bucket) or over-split
+        (buckets ≈ members — e.g. unique-per-doc attributes)."""
+        for gran in (7, 10, 0):
+            buckets: dict[str, list[str]] = {}
+            for m in members:
+                rm = raw.get(m) or {}
+                bkt = ((rm.get("date") or [""])[0][:gran] if gran else "") \
+                    or (rm.get("attribute") or [""])[0] or "other"
+                buckets.setdefault(bkt, []).append(m)
+            if 1 < len(buckets) < len(members) * 0.8:
+                return buckets
+        return {}
+
     for field, prefix, hub_type, clique_type in (
         ("subject", "subject", "subject", "same_subject"),
         ("applies_to", "entity", "applies_to", "same_entity"),
@@ -464,22 +493,54 @@ async def api_graph(request: Request, banks: str = "", status: str = "",
                 continue
             if hubs:
                 hid = f"{prefix}:{val}"
-                nodes[hid] = {"id": hid, "hub": field, "label": val}
-                for m in members:
-                    add_edge(m, hid, hub_type, label=val)
-            else:
+                if len(members) <= HUB_CAP:
+                    nodes[hid] = {"id": hid, "hub": field, "label": val,
+                                  "members": len(members)}
+                    for m in members:
+                        add_edge(m, hid, hub_type, label=val)
+                    continue
+                nodes[hid] = {"id": hid, "hub": field,
+                              "label": f"{val} ({len(members)})",
+                              "members": len(members)}
+                buckets = bucketize(members)
+                if buckets:
+                    for bkt, ms in buckets.items():
+                        sid = f"{prefix}:{val}:{bkt}"
+                        nodes[sid] = {"id": sid, "hub": field, "label": bkt,
+                                      "members": len(ms), "subhub": True}
+                        keep = (ms if len(ms) <= HUB_CAP
+                                else sorted(ms, key=_rank, reverse=True)[:HUB_CAP])
+                        for m in keep:
+                            add_edge(m, sid, hub_type)
+                        add_edge(sid, hid, "hub", label=val)
+                else:
+                    ranked = sorted(members, key=_rank, reverse=True)
+                    for m in ranked[:HUB_CAP]:
+                        add_edge(m, hid, hub_type, label=val)
+            elif len(members) <= HUB_CAP:
                 for i, a in enumerate(members):
                     for c in members[i + 1:]:
                         add_edge(a, c, clique_type, label=val)
 
     # --- optional vector-similarity edges (cached 1h) ---
+    # sim_limit caps the node set (highest-degree first) — a full pairwise
+    # probe is N requests to /vector-search, so don't fan out over the whole
+    # corpus on a checkbox click.
     similarity = False
+    sim_computed = 0
     if similar:
+        deg: dict[str, int] = {}
+        for l in links:
+            deg[l["source"]] = deg.get(l["source"], 0) + 1
+            deg[l["target"]] = deg.get(l["target"], 0) + 1
         coll_set = {b["collection"] for b in entries if b["collection"]}
+        cand = [nid for nid, n in nodes.items()
+                if n["collection"] in coll_set and bodies.get(nid)]
+        cand.sort(key=lambda i: deg.get(i, 0), reverse=True)
+        ids = cand[:max(1, sim_limit)]
+        sim_computed = len(ids)
         sem = asyncio.Semaphore(6)
         async with httpx.AsyncClient(timeout=15) as cli:
-            ids = [nid for nid, n in nodes.items()
-                   if n["collection"] in coll_set and bodies.get(nid)]
             results = dict(zip(ids, await asyncio.gather(*(
                 _similar_for(cli, sem, nid, nodes[nid]["collection"],
                              bodies[nid])
@@ -518,6 +579,7 @@ async def api_graph(request: Request, banks: str = "", status: str = "",
             "hidden_banks": (
                 sum(1 for b in _bank_map() if not b["public"]) if visible else 0
             ),
+            "similar_computed": sim_computed,
         },
     }
     if mddb_fail:
