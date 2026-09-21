@@ -1,0 +1,150 @@
+title: Post-Restart Recovery Lessons (2026-09-21)
+subtitle: Issues found after rebooting tony-dell and tony-omen, and their permanent fixes
+date: "2026-09-21"
+icon: 🔧
+context: |
+  Both tony-dell and tony-omen were rebooted. Post-restart verification revealed three
+  configuration issues that caused services to fail on every boot. All three were fixed
+  permanently so they won't recur on future reboots.
+
+lessons:
+  - id: system-caddy-port-conflict
+    title: System caddy.service steals port 80 from podman web.service
+    severity: critical
+    symptom: |
+      After reboot, all HTTPS endpoints on tony-dell returned 502.
+      The podman web.service (Caddy with the real chaba Caddyfile) was crash-looping
+      (restart count 70) with "bind: address already in use" on port 80.
+    root_cause: |
+      A system-level caddy.service (default Ubuntu install, enabled) auto-starts on boot
+      and binds port 80 with the default Caddyfile (serving /usr/share/caddy).
+      The podman web.service (rootless, with the real chaba Caddyfile) cannot bind port 80.
+    fix: |
+      Stopped and disabled the system caddy.service:
+        sudo systemctl stop caddy && sudo systemctl disable caddy
+      The podman web.service now binds port 80 correctly on boot.
+    prevention: |
+      The system caddy.service is now disabled. Do not re-enable it.
+      If a package upgrade re-enables it, disable it again.
+    files_changed:
+      - system: /etc/systemd/system/multi-user.target.wants/caddy.service (removed)
+
+  - id: tailscale-serve-stale-port
+    title: Tailscale Serve proxies HTTPS:443 to dead port 8085
+    severity: critical
+    symptom: |
+      Even after Caddy was running, HTTPS via Tailscale (https://tony-dell.taila0626a.ts.net)
+      returned 502. HTTP on port 80 worked fine.
+    root_cause: |
+      Tailscale Serve was configured to proxy HTTPS:443 → http://127.0.0.1:8085,
+      but nothing listens on port 8085. No reference to 8085 exists anywhere in the repo.
+      The config was stale — likely from a previous architecture where a listener was on 8085.
+      Caddy listens on port 80, not 8085.
+    fix: |
+      Repointed Tailscale Serve to port 80:
+        sudo tailscale funnel --bg --https 443 --yes http://127.0.0.1:80
+      This also re-enabled Funnel (the `tailscale serve` command removed it; `tailscale funnel`
+      re-added it). All HTTPS endpoints now return 200.
+    prevention: |
+      Tailscale Serve config is now: HTTPS:443 → http://127.0.0.1:80 (Caddy).
+      If port 8085 is ever referenced again, it's wrong — Caddy is on port 80.
+    note: |
+      The `tailscale serve set-config` command with legacy JSON format was ignored
+      (warnings about deprecated format). Use `tailscale serve`/`tailscale funnel` CLI
+      commands directly to update the config.
+
+  - id: chaba-tunnel-stale-lan-ip
+    title: chaba-tunnel uses stale LAN IP for tony-omen
+    severity: high
+    symptom: |
+      chaba-tunnel.service (reverse SSH tunnel from tony-dell to tony-omen) was
+      crash-looping with "Connection refused" to 192.168.1.48:22.
+    root_cause: |
+      The systemd unit hardcoded tony-omen's LAN IP as 192.168.1.48.
+      After tony-omen rebooted, its LAN IP changed to 192.168.2.86 (DHCP).
+      The tunnel couldn't reach the old IP.
+    fix: |
+      Updated the ExecStart in chaba-tunnel.service to use the Tailscale hostname
+      `tony-omen` instead of the hardcoded LAN IP:
+        sed -i 's/tony@192.168.1.48/tony@tony-omen/' \
+          ~/.config/systemd/user/chaba-tunnel.service
+      Tailscale hostnames are stable across reboots and IP changes.
+    prevention: |
+      Never hardcode LAN IPs in systemd units or scripts. Use Tailscale hostnames
+      (e.g., `tony-omen`) or Tailscale IPs (e.g., `100.75.102.88`) which are stable.
+    files_changed:
+      - host: /home/tony/.config/systemd/user/chaba-tunnel.service (on tony-dell)
+
+  - id: barrier-client-xauthority-check
+    title: barrier-client ExecStartPre waits for non-existent Xauthority file
+    severity: high
+    symptom: |
+      barrier-client.service was stuck in "activating (start-pre)" after every reboot.
+      Barrier KVM client never started.
+    root_cause: |
+      The ExecStartPre checked for /run/user/1000/gdm/Xauthority, but this file is never
+      created on tony-dell's setup. The Xorg on :1 runs as root via GDM without a per-user
+      Xauthority file. X connections to :1 work without any Xauthority (xhost-based auth).
+      The /run/user/1000/gdm/ directory doesn't even exist.
+    fix: |
+      Removed the Xauthority check from ExecStartPre, keeping only the X socket check:
+        [ -S /tmp/.X11-unix/X1 ] && exit 0
+      (was: [ -S /tmp/.X11-unix/X1 ] && [ -r /run/user/1000/gdm/Xauthority ] && exit 0)
+    prevention: |
+      Don't check for Xauthority files that may not exist. The X socket (/tmp/.X11-unix/X1)
+      is sufficient to verify the display is ready.
+    files_changed:
+      - host: /home/tony/.config/systemd/user/barrier-client.service (on tony-dell)
+
+  - id: barrier-client-stale-lan-ip
+    title: barrier-client-run.sh hardcodes tony-omen LAN IP
+    severity: medium
+    symptom: |
+      barrier-client-run.sh hardcoded 192.168.2.86 as tony-omen's LAN IP.
+      This breaks every time tony-omen's DHCP-assigned LAN IP changes.
+    root_cause: |
+      The script preferred LAN for lower latency but hardcoded the IP.
+      After tony-omen rebooted, the IP changed and the LAN path would fail.
+    fix: |
+      Updated the script to resolve tony-omen's IP dynamically from
+      `tailscale status` output, with a Tailscale IP fallback (100.75.102.88).
+      The script now re-evaluates on every service restart.
+    prevention: |
+      Never hardcode LAN IPs in scripts. Resolve dynamically or use Tailscale
+      hostnames/IPs which are stable.
+    files_changed:
+      - host: /home/tony/.local/bin/barrier-client-run.sh (on tony-dell)
+
+  - id: network-scan-startup-race
+    title: network-scan-tony.service races tony-ha on boot
+    severity: low
+    symptom: |
+      network-scan-tony.service failed on first boot attempt because tony-ha wasn't
+      ready yet (ConnectionRefused on 127.0.0.1:8123).
+    root_cause: |
+      The service runs early in boot and tries to connect to tony-ha before HA is
+      fully started. No dependency ordering on tony-ha.service.
+    fix: |
+      Manually restarted after tony-ha was ready. The service has a timer that
+      retries every ~15 minutes, so it self-heals.
+    prevention: |
+      Consider adding After=tony-ha.service or a retry loop in the ExecStartPre
+      that waits for port 8123 to be available before running the scan.
+
+general_principles:
+  - |
+    Never hardcode LAN IPs in systemd units, scripts, or configs. DHCP-assigned IPs
+    change on reboot. Use Tailscale hostnames (tony-omen, tony-dell) or Tailscale IPs
+    (100.x.x.x) which are stable across reboots and network changes.
+  - |
+    After a reboot, check for port conflicts between system services and user/podman
+    services. A default-installed system service (like caddy.service) can auto-start
+    and steal a port that a podman container needs.
+  - |
+    Tailscale Serve/Funnel config can become stale. Verify the proxy targets after
+    architecture changes. Use `tailscale serve status` to audit, and `tailscale serve`/
+    `tailscale funnel` CLI commands (not set-config with legacy JSON) to update.
+  - |
+    Xauthority files are not always present. On GDM-managed Xorg sessions, the X server
+    may run as root without a per-user Xauthority. Check whether X connections actually
+    need auth before requiring an Xauthority file in ExecStartPre.
