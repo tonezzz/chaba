@@ -6,11 +6,16 @@ docs exist nowhere else until exported to the vault inbox. This dumps every
 bank collection (plus the rolling recall summaries) so a lost/corrupted
 MDDB can be rebuilt.
 
-Privacy: personal banks are written to a local-only dir
-(default ~/.local/share/ada-backups/), never into the repo.
+Privacy: personal banks and any bank whose dir is in PRIVATE_DIRS are
+written to a local-only dir (default ~/.local/share/ada-backups/), never
+into the repo. Repo-bound dumps are also scanned for credential-shaped
+content and quarantined to the private dir on a hit — the devin bank and
+recall summaries carry raw transcripts that have already leaked real
+secrets once (GEMINI_API_KEY / HOME_ASSISTANT_TOKEN, blocked by GitHub
+push protection 2026-09-21).
 
 Usage:
-  backup-mddb-banks.py                # dump all banks (shared→repo, personal→local)
+  backup-mddb-banks.py                # dump all banks (shared→repo, private→local)
   backup-mddb-banks.py --dry-run      # report what would be written
   backup-mddb-banks.py --git          # write + git add/commit+push the repo dump
 """
@@ -20,6 +25,7 @@ from __future__ import annotations
 import argparse
 import importlib.util
 import json
+import re
 import subprocess
 import sys
 from datetime import datetime, timezone
@@ -35,6 +41,38 @@ _spec.loader.exec_module(ada_sync)
 
 DEFAULT_OUT = REPO / "backups/ada-memory"
 DEFAULT_PRIVATE_OUT = Path.home() / ".local/share/ada-backups/ada-memory"
+
+# Vault-dir prefixes whose contents are uncontrolled (raw transcripts,
+# session summaries) — always private, regardless of curation status.
+PRIVATE_DIRS = ("personal", "devin")
+
+# Credential-shaped content that must never reach the public repo. A hit
+# on a repo-bound dump quarantines the whole file to the private dir.
+SECRET_PATTERNS = re.compile(
+    r"AIza[0-9A-Za-z_\-]{20,}|"            # Google/GCP API keys
+    r"ya29\.[0-9A-Za-z_\-]{20,}|"          # Google OAuth access tokens
+    r"ghp_[0-9A-Za-z]{20,}|"               # GitHub PATs
+    r"xox[baprs]-[0-9A-Za-z-]{10,}|"       # Slack tokens
+    r"sk-[0-9A-Za-z]{20,}|"                # OpenAI-style keys
+    r"-----BEGIN [A-Z ]*PRIVATE KEY-----|"
+    r"(?i:(api[_-]?key|token|secret))\s*[=:]\s*[\"']?[A-Za-z0-9_\-\.]{24,}"
+)
+
+
+_ENV_REF = re.compile(
+    r"^(process\.env|os\.environ|os\.getenv|\$\{|ENV\[|<[A-Z_]+>$)")
+
+
+def scan_for_secrets(text: str) -> list[str]:
+    hits = []
+    for m in SECRET_PATTERNS.finditer(text):
+        hit = m.group(0)
+        # "KEY = process.env.X" / "TOKEN=${X}" are references, not values.
+        value = re.split(r"\s*[=:]\s*[\"']?", hit, maxsplit=1)[-1]
+        if len(m.groups()) > 0 and m.group(1) and _ENV_REF.match(value):
+            continue
+        hits.append(hit[:40])
+    return sorted(set(hits))
 
 
 def dump_collection(mddb: "ada_sync.Mddb", collection: str) -> dict:
@@ -71,10 +109,12 @@ def main() -> int:
 
     collections: list[tuple[str, str]] = []  # (collection, privacy)
     for m in mapping:
-        privacy = "private" if m["dir"].startswith("personal") else "repo"
+        privacy = ("private" if m["dir"].startswith(PRIVATE_DIRS) else "repo")
         collections.append((m["collection"], privacy))
     for inst in sorted(instances):
-        collections.append((f"ada-ha-recall-summary-{inst}", "repo"))
+        # Recall summaries are session-derived transcript content — the
+        # same leak surface as raw transcripts; keep them private.
+        collections.append((f"ada-ha-recall-summary-{inst}", "private"))
 
     written = 0
     for collection, privacy in dict.fromkeys(collections):
@@ -86,13 +126,21 @@ def main() -> int:
         if data["doc_count"] == 0:
             print(f"  = {collection} (empty, skipped)")
             continue
+        payload = json.dumps(data, indent=1, ensure_ascii=False)
+        if privacy == "repo":
+            hits = scan_for_secrets(payload)
+            if hits:
+                privacy = "private"
+                print(f"  ! {collection}: credential-shaped content "
+                      f"({len(hits)} hit(s), e.g. {hits[0][:18]}...) — "
+                      "quarantined to private dir")
         outdir = args.private_output if privacy == "private" else args.output
         path = outdir / f"{collection}.json"
         print(f"  {'(dry) ' if args.dry_run else ''}w {collection} -> {path} "
               f"({data['doc_count']} docs{' [local-only]' if privacy == 'private' else ''})")
         if not args.dry_run:
             outdir.mkdir(parents=True, exist_ok=True)
-            path.write_text(json.dumps(data, indent=1, ensure_ascii=False) + "\n")
+            path.write_text(payload + "\n")
         written += 1
 
     print(f"\n{written} collection(s) dumped")
