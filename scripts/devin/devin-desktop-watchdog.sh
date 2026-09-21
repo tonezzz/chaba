@@ -36,7 +36,28 @@ notify() {
     return 0
 }
 
-main_pid() { pgrep -f "^${BIN}\$" | head -1; }
+# Main GUI process = cmdline starting with $BIN but not a child type
+# (--type=renderer/gpu/utility/...), not the cli.js launcher, not crashpad.
+# Deliberately NOT anchored at end: a GUI launched with flags (e.g.
+# --no-sandbox) still counts as the main process.
+main_pid() {
+    local p args
+    for p in $(pgrep -f "^${BIN}" 2>/dev/null); do
+        args=$(tr '\0' ' ' <"/proc/$p/cmdline" 2>/dev/null) || continue
+        case "$args" in
+            *--type=*|*cli.js*|*crashpad*) continue ;;
+        esac
+        echo "$p"
+        return 0
+    done
+    # Fallback: Devin's own single-instance lock holds the GUI main PID.
+    if [ -f "$HOME/.config/Devin/code.lock" ]; then
+        p=$(cat "$HOME/.config/Devin/code.lock" 2>/dev/null)
+        case "$p" in ''|*[!0-9]*) return 1 ;; esac
+        kill -0 "$p" 2>/dev/null && { echo "$p"; return 0; }
+    fi
+    return 1
+}
 
 # --- 1. stuck renderer killer ------------------------------------------------
 for pid in $(pgrep -f "^${BIN} --type=renderer"); do
@@ -65,8 +86,11 @@ if ! main_pid >/dev/null || [ -z "$(main_pid)" ]; then
                  --no-legend 'app-devin-desktop-*' 2>/dev/null)
 
     # Tool-spawned children that outlive the app (headless browser, probes).
-    pkill -f 'user-data-dir=/tmp/chrome-devtools-profile' 2>/dev/null
-    pkill -f "^${BIN} --type=" 2>/dev/null
+    # Recheck first: a fresh instance may have just started (race guard).
+    if ! main_pid >/dev/null || [ -z "$(main_pid)" ]; then
+        pkill -f 'user-data-dir=/tmp/chrome-devtools-profile' 2>/dev/null
+        pkill -f "^${BIN} --type=" 2>/dev/null
+    fi
     [ "$orphans" -gt 0 ] && notify "Devin crashed; cleaned $orphans orphaned scope(s)."
 
     # --- 4. optional auto-restart ---------------------------------------------
