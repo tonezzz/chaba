@@ -89,17 +89,17 @@ async function load() {
   nodes = nodes.filter(n => !drop.has(n.id));
   links = links.filter(l => !drop.has(l.source) && !drop.has(l.target));
 
-  const idx = new Map(nodes.map((n, i) => [n.id, i]));
+  const idx = new Set(nodes.map(n => n.id));
   links = links.filter(l => idx.has(l.source) && idx.has(l.target));
   const degree = new Map();
   for (const l of links) {
     degree.set(l.source, (degree.get(l.source) || 0) + 1);
     degree.set(l.target, (degree.get(l.target) || 0) + 1);
   }
-  // graphGL resolves link endpoints via node `name` — our names are labels
-  // (not unique), so convert links to numeric data indices instead.
+  // graphGL dedupes nodes by id/name — display labels collide across
+  // collections, so every node gets a unique `id` and edges use it.
   links = links.map(l => ({
-    source: idx.get(l.source), target: idx.get(l.target),
+    source: l.source, target: l.target,
     lineStyle: l.type === 'similar' ? { opacity: 0.12, curveness: 0.1 }
              : l.type === 'supersedes' ? { color: '#f59e0b', width: 2 } : {},
   }));
@@ -112,8 +112,9 @@ async function load() {
     const size = n.hub ? 10 + Math.min(deg * 1.5, 18)
                        : 6 + Math.min(deg * 2, 20) + Math.min(n.use_count || 0, 6);
     const item = {
+      id: n.id,
       name: n.label || n.id,
-      value: n.id,
+      value: deg,
       category: cats.indexOf(n.hub ? '_hub' : (n.bank || '?')),
       symbolSize: n.id === focusId ? size + 8 : size,
       itemStyle: { color: n.missing ? '#ef4444' : n.hub ? '#64748b' : catColor[n.bank] },
