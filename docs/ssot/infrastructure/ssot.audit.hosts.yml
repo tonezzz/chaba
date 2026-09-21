@@ -582,6 +582,18 @@ hosts:
         expected_state: active
         critical: false
         note: Weekly Sun 05:00 — pushes MDDB dumps to mn01 warm copy (tony-omen->mn01 ssh)
+      - name: ada-memory-staleness.timer
+        type: timer
+        scope: user
+        expected_state: active
+        critical: false
+        note: Weekly Sun 10:00 — asks "still true?" for the stalest bank doc via iPhone approve/deny (input_text.devin_confirmation)
+      - name: ada-memory-staleness-apply.timer
+        type: timer
+        scope: user
+        expected_state: active
+        critical: false
+        note: Daily 08:30 — consumes pending staleness verdicts (approve->last_verified, deny->retract)
     known_failed:
       - name: arp-inventory-scan.service
         reason: Exits 2 when network conflicts/duplicates are detected, by design
@@ -958,6 +970,12 @@ hosts:
         expected_state: active
         critical: false
         note: Sunday 09:00 — recall drift report, tripwires emit chaba-events
+      - name: ada-memory-gaps.timer
+        type: timer
+        scope: user
+        expected_state: active
+        critical: false
+        note: Sunday 09:30 — clusters journal recall misses into status=draft gap notes -> inbox review
     known_failed:
       - name: grub-initrd-fallback.service
         reason: Ubuntu/grub package service that fails on non-EFI fallback; harmless
