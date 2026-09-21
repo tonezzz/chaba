@@ -252,6 +252,46 @@ banks:
     write_policy: confirmed
     allowed_tools: []
     status: active
+  purchase:
+    title: Purchase decision checks
+    description: "Pre-purchase criteria + check history for POST /api/decision/check. Criteria docs (kind fact/preference) teach Ada the rules — 'remember that I don't trust shops under 4.7'. Check docs (kind=check) are the audit log written by the endpoint itself, recallable via ada_memory_search('didn't I check this before?')."
+    scope: shared
+    instances: [tony]
+    mddb_collection: ada-ha-bank-purchase
+    notebooklm_group: null
+    notebooklm_id: null
+    kinds: [fact, preference, note, check]
+    writable: true
+    write_policy: confirmed
+    allowed_tools: [ada_remember, ada_forget]
+    status: active
+    # Seed criteria — applied by scripts/ada/seed-purchase-criteria.py (idempotent).
+    # Edit here, re-run the seeder; do not hand-edit MDDB docs.
+    seed:
+      - key: criteria/shop-rating
+        kind: preference
+        subject: shop-rating
+        text: "Avoid Shopee/marketplace shops rated below 4.7 or with fewer than 50 ratings unless the item is trivial (under 200 THB). Prefer Shopee Mall or Preferred sellers for branded goods."
+      - key: criteria/price-sanity
+        kind: preference
+        subject: price-sanity
+        text: "If a listing is more than ~30% below the cheapest official-store or Lazada price, flag it — likely counterfeit, grey import without local warranty, or a variant/price-bait trick."
+      - key: criteria/warranty
+        kind: preference
+        subject: warranty
+        text: "Electronics and powered devices must state a warranty (shop or brand). No warranty mention means caution at minimum; expensive items should carry brand warranty."
+      - key: criteria/spec-verification
+        kind: procedure
+        subject: spec-verification
+        text: "Cross-check claimed specs (capacity, wattage, chipset, materials) against the manufacturer's official page before a buy verdict. Misrepresented specs are the most common listing fraud."
+      - key: criteria/review-evidence
+        kind: preference
+        subject: review-evidence
+        text: "Prefer listings with 10+ reviews including buyer photos. Treat a perfect 5.0 rating with few reviews, or reviews that look templated, as a red flag rather than a positive."
+      - key: criteria/alternatives
+        kind: preference
+        subject: alternatives
+        text: "A buy verdict should name at least one alternative source (official store, Lazada, or another seller) with an approximate price for comparison."
 
 config:
   version: 2

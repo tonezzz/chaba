@@ -86,9 +86,9 @@ meta_schema:
   fields:
     bank: {role: system, required: true}
     scope: {role: system, required: true, enum: [shared, tony, michael]}
-    kind: {required: true, default: note, enum: [fact, preference, person, procedure, note]}
+    kind: {required: true, default: note, enum: [fact, preference, person, procedure, note, check]}
     status: {required: true, default: active, enum: [active, draft, superseded, retracted, expired]}
-    source: {role: provenance, required: true, enum: [voice, manual, import, extract]}
+    source: {role: provenance, required: true, enum: [voice, manual, import, extract, api]}
     written_by: {role: provenance, required: true}
     subject: {required: false}
     attribute: {required: false}
@@ -104,6 +104,11 @@ meta_schema:
     origin_written_by: {role: provenance, required: false}
     session_id: {role: provenance, required: false}
     retracted_by_session: {role: provenance, required: false}
+    # decision-check docs (kind: check) — written by /api/decision/check
+    verdict: {required: false, enum: [buy, caution, avoid]}
+    product: {required: false}
+    mode: {required: false, enum: [quick, deep]}
+    checked_by: {role: provenance, required: false}
   # Frontmatter-only field (pins the MDDB key on the vault side; stored as
   # the MDDB doc key, not as meta).
   vault_only_fields: [key]
