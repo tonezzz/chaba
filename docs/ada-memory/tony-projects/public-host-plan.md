@@ -101,6 +101,13 @@ nightly `/v1/backup` on idc01 + pull to mn01/tony-omen over tailnet.
 Keep the pre-migration tony-dell snapshot permanently as
 last-known-good.
 
+Observed 2026-09-21 (live): MDDB cold start on tony-dell took ~40 min
+for HTTP to come up, and the **vector index kept loading ~25+ min more —
+writes FAIL during that window** (add/update error out because MDDB
+embeds on write) while `ada_remember` still reported success to the
+caller — silent memory loss. Plan cold-start windows deliberately; the
+deferred follower replica (§10) also covers this gap.
+
 ## 5. Embeddings — open decision
 
 Existing vectors are `gemini-embedding-2` via gemini-ollama-proxy
