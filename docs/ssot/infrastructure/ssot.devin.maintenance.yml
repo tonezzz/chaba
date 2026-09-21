@@ -24,7 +24,8 @@ hosts:
       - Cleanup timer runs Sundays at 04:00.
       - Service skips VACUUM if Devin code.lock is present.
       - Devin desktop updated to 3.10.23-1789035177 on 2026-09-12.
-      - devin-desktop-watchdog.sh runs every 10 minutes to kill a renderer stuck above 50% CPU for 10 seconds.
+      - "devin-desktop-watchdog.sh runs every 10 minutes (source: scripts/devin/): kills renderers stuck >50% CPU for 10s, stops orphaned app-devin-desktop-* scopes when the main process dies, alerts on AppArmor denials/renderer crashes; optional auto-restart via ~/.config/devin/watchdog-autorestart."
+      - AppArmor userns profile installed 2026-09-21 (/etc/apparmor.d/devin-desktop, source: scripts/devin/apparmor-devin-desktop); required because kernel.apparmor_restrict_unprivileged_userns=1 was silently denying the Electron sandbox.
       - cast-desktop@1.service, playlived.service, go2rtc.service, and Wine VMS.exe reniced to 10 to reduce UI contention.
 
   tony-omen:
@@ -43,6 +44,15 @@ hosts:
         largest sessions (utopian-pearl ~8 GiB, juvenile-umbra, ambiguous-rooster,
         seemly-graffiti, invincible-avatar, abundance-cattle, olive-lamb,
         blush-action, valuable-windflower) archived and deleted manually.
+      - >
+        2026-09-21 renderer SIGTRAP crash traced to AppArmor unprivileged_userns
+        denial (fixed via /etc/apparmor.d/devin-desktop profile, source:
+        scripts/devin/). Post-crash relaunch needs cache purge of
+        ~/.config/Devin/{GPUCache,Code Cache,CachedData} when main.log shows
+        "launch-failed, code: 1002". Relaunch via nohup + DISPLAY=:0.0 +
+        XAUTHORITY=/run/user/1000/gdm/Xauthority (systemd-run --user launches
+        observed dying ~1.3s in). Watchdog installed via cron (was missing on
+        this host).
 
 cleanup:
   timer_schedule:

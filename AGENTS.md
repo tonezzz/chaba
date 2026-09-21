@@ -162,11 +162,23 @@ Caveats:
 - iPad requires `msaaSamples:1` to avoid Cesium WebGL crash.
 - Current implementation uses Gemini output transcription text only; no audio playback.
 
-# Devin on tony-dell — crash/runbook (2026-09-12)
+# Devin desktop — crash/runbook (2026-09-12, updated 2026-09-21)
 
 ## Restart after a crash
 
-`devin-desktop` must be launched with the active X display on tony-dell. The process is *not* a systemd service; it is started as a background `nohup` job and shows up in `pgrep -a -f devin-desktop`.
+`devin-desktop` must be launched with the active X display. The process is *not* a systemd service; start it as a background `nohup` job (preferred — `systemd-run --user` launches have been observed to die ~1.3s in on tony-omen) and it shows up in `pgrep -a -f devin-desktop`.
+
+tony-omen uses `DISPLAY=:0.0`, tony-dell uses `DISPLAY=:1` — check `/tmp/.X11-unix/X*` for the live display socket.
+
+## Crash signatures (learned 2026-09-21 on tony-omen)
+
+- `renderer process gone (reason: crashed, code: 5)` + kernel `apparmor="DENIED" ... capability=sys_admin ... comm="devin-desktop"` → Ubuntu's `unprivileged_userns` restriction is blocking the Electron sandbox. Fix: install `scripts/devin/apparmor-devin-desktop` to `/etc/apparmor.d/devin-desktop` + `sudo apparmor_parser -r` (or run `scripts/devin/install-devin-host.sh`). Required on every Ubuntu ≥24.04 host — both tony-dell and tony-omen have `kernel.apparmor_restrict_unprivileged_userns=1`.
+- `renderer process gone (reason: launch-failed, code: 1002)` on every restart after a dirty shutdown → corrupted `~/.config/Devin/{GPUCache,"Code Cache",CachedData}` → rename them and relaunch.
+- App dead but `app-devin-desktop-*.scope` still "active" → orphaned tool-spawned children (headless Chrome `user-data-dir=/tmp/chrome-devtools-profile`, probes) keep burning CPU; `systemctl --user stop` the scope. The watchdog now does this automatically (see below).
+
+## Watchdog
+
+`~/.local/bin/devin-desktop-watchdog.sh` (source: `scripts/devin/devin-desktop-watchdog.sh`, installed by `install-devin-host.sh`) runs from cron every 10 min on tony-dell and tony-omen: kills renderers stuck >50% CPU for 10s, stops orphaned app scopes when the main process is gone, alerts on new AppArmor denials/renderer crashes via log + notify-send, and auto-restarts if `~/.config/devin/watchdog-autorestart` exists.
 
 Quick restart command:
 
