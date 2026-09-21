@@ -24,7 +24,7 @@ hosts:
       - Cleanup timer runs Sundays at 04:00.
       - Service skips VACUUM if Devin code.lock is present.
       - Devin desktop updated to 3.10.23-1789035177 on 2026-09-12.
-      - "devin-desktop-watchdog.sh runs every 10 minutes (source: scripts/devin/): kills renderers stuck >50% CPU for 10s, stops orphaned app-devin-desktop-* scopes when the main process dies, alerts on AppArmor denials/renderer crashes; optional auto-restart via ~/.config/devin/watchdog-autorestart."
+      - "devin-desktop-watchdog.sh runs every 10 minutes (source: scripts/devin/): kills renderers only when wedged (>50% CPU sustained across two consecutive runs ~10min apart + 2min startup grace; state in ~/.local/state/devin-watchdog/hot-renderers), stops orphaned app-devin-desktop-* scopes when the main process dies, alerts on AppArmor denials/renderer crashes; optional auto-restart via ~/.config/devin/watchdog-autorestart."
       - AppArmor userns profile installed 2026-09-21 (/etc/apparmor.d/devin-desktop, source: scripts/devin/apparmor-devin-desktop); required because kernel.apparmor_restrict_unprivileged_userns=1 was silently denying the Electron sandbox.
       - cast-desktop@1.service, playlived.service, go2rtc.service, and Wine VMS.exe reniced to 10 to reduce UI contention.
 
@@ -52,7 +52,9 @@ hosts:
         "launch-failed, code: 1002". Relaunch via nohup + DISPLAY=:0.0 +
         XAUTHORITY=/run/user/1000/gdm/Xauthority (systemd-run --user launches
         observed dying ~1.3s in). Watchdog installed via cron (was missing on
-        this host).
+        this host); later same-day it killed a legit busy renderer mid-scan
+        session (presented to the user as a crash dialog), so the kill policy
+        was changed to require sustained CPU across two consecutive runs.
 
 cleanup:
   timer_schedule:
@@ -77,6 +79,52 @@ cleanup:
     - "Devin code.lock is present (tony-dell script checks this)."
     - "fuser reports the DB is open (tony-omen script checks this)."
     - "In those cases DELETE still runs, VACUUM is deferred."
+
+lifecycle_hooks:
+  purpose: |
+    `.devin/config.json` (repo-tracked, applies to every clone) registers three
+    Devin lifecycle hooks. The hook commands are absolute paths into
+    `~/.config/devin/scripts/`, which is machine-local state — install them on
+    each host with `bash scripts/devin/install-devin-host.sh` (source:
+    `scripts/devin/session/`). Missing scripts fail open (the hook is skipped),
+    so a host without them silently loses recall/archive behavior.
+  events:
+    SessionStart:
+      script: /home/tony/.config/devin/scripts/notebooklm-recall.sh
+      behavior: |
+        Injects the tail (~8k chars) of the rolling local memory cache
+        `~/.local/share/devin/notebook-summaries/session-memory.md` into the
+        session context as additionalContext. NotebookLM is the cold archive;
+        this cache is the fast local recall layer.
+    PostCompaction:
+      script: /home/tony/.config/devin/scripts/notebooklm-compaction.sh
+      behavior: |
+        Saves the compactor summary to
+        `~/.local/share/devin/notebook-summaries/compactions/<session>-<ts>.md`,
+        uploads it to the NotebookLM archive notebook via `nlm source add`,
+        appends it to the rolling session-memory.md cache (kept <= ~50KB),
+        then runs devin-git-checkpoint.sh to auto-commit accumulated changes
+        (protected branches skipped unless DEVIN_AUTO_COMMIT_MAIN=1).
+    SessionEnd:
+      script: /home/tony/.config/devin/scripts/devin-session-end.sh
+      behavior: |
+        Runs a final devin-git-checkpoint.sh, posts a close note to the
+        NotebookLM archive, and appends it to session-memory.md.
+  helper:
+    script: /home/tony/.config/devin/scripts/devin-git-checkpoint.sh
+    notes: |
+      Auto-commits modified/deleted tracked files (`git add -u`) in
+      DEVIN_PROJECT_DIR. Env: DEVIN_AUTO_COMMIT=0 stages only,
+      DEVIN_AUTO_COMMIT_INCLUDE_UNTRACKED=1 also adds untracked files,
+      DEVIN_AUTO_COMMIT_PROTECTED_BRANCHES defaults to `main`.
+  dependencies:
+    - nlm wrapper on PATH (~/.local/bin/nlm) with an authenticated
+      notebooklm-mcp container — see offload_to_notebooklm.environment.NLM_HOST
+      and the reauth_runbook. tony-dell uses a local container; tony-omen
+      delegates to mn01.
+    - python3 on PATH (hook payloads are parsed with embedded python).
+  repo_source: scripts/devin/session/
+  installer: scripts/devin/install-devin-host.sh
 
 offload_to_notebooklm:
   purpose: |
@@ -249,10 +297,16 @@ audit_checks:
 
 related_files:
   - scripts/prune-devin-sessions.sh
+  - scripts/devin/session/ (repo source for ~/.config/devin/scripts/)
+  - scripts/devin/install-devin-host.sh
   - /home/tony/.local/bin/devin-cleanup.sh
   - /home/tony/.config/devin/scripts/devin-extract-sessions.sh
   - /home/tony/.config/devin/scripts/devin-archive-sessions.sh
   - /home/tony/.config/devin/scripts/vacuum-devin-db.sh
+  - /home/tony/.config/devin/scripts/notebooklm-recall.sh
+  - /home/tony/.config/devin/scripts/notebooklm-compaction.sh
+  - /home/tony/.config/devin/scripts/devin-session-end.sh
+  - /home/tony/.config/devin/scripts/devin-git-checkpoint.sh
   - /home/tony/.config/systemd/user/devin-cleanup.service
   - /home/tony/.config/systemd/user/devin-cleanup.timer
 

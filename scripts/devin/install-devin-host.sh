@@ -4,6 +4,9 @@
 #      kernel.apparmor_restrict_unprivileged_userns=1 otherwise denies the
 #      Electron sandbox -> renderer SIGTRAP crashes).
 #   2. devin-desktop-watchdog.sh -> ~/.local/bin + cron every 10 min.
+#   3. Session lifecycle hook + NotebookLM offload scripts ->
+#      ~/.config/devin/scripts/ (referenced by .devin/config.json hooks and
+#      ssot.devin.maintenance.yml).
 #
 # Usage: bash scripts/devin/install-devin-host.sh
 set -euo pipefail
@@ -32,5 +35,14 @@ if ! crontab -l 2>/dev/null | grep -q 'devin-desktop-watchdog.sh'; then
 else
     echo "watchdog: installed (cron entry already present)"
 fi
+
+# --- Session scripts ----------------------------------------------------------
+# ~/.config/devin/scripts/ is machine-local state; .devin/config.json hooks
+# (SessionStart/PostCompaction/SessionEnd) and the NotebookLM offload runbooks
+# in ssot.devin.maintenance.yml reference these absolute paths.
+SCRIPTS_DIR="$HOME/.config/devin/scripts"
+mkdir -p "$SCRIPTS_DIR"
+install -m 0755 "$DIR"/session/*.sh "$SCRIPTS_DIR/"
+echo "session scripts: installed to $SCRIPTS_DIR"
 
 echo "done. Optional: touch ~/.config/devin/watchdog-autorestart to enable auto-restart."
