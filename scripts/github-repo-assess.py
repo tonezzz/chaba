@@ -442,17 +442,28 @@ def sync_mddb(scored: list[dict], discoveries: list[dict], today: str,
             doc_meta({"name": "github-assessment-summary",
                       "band": "summary"}, today))
 
+    # Batch ingest with skipEmbeddings: /add queues behind the serial
+    # embed worker, which stalls badly when the embedding provider is
+    # rate-limited/down. Docs land instantly; POST /v1/vector-reindex
+    # {"collection": ..., "force": false} embeds them later.
     changed = deleted = skipped = 0
+    docs = []
     for key, (body, meta) in wanted.items():
         old = remote.get(key)
         if old and (old.get("contentMd") or "") == body:
             skipped += 1
             continue
         print(f"  {'(dry) ' if dry else ''}{'~' if old else '+'} {key}")
-        if not dry:
-            _mddb_call(mddb.add, COLLECTION, key, body, meta)
-            time.sleep(0.4)
-        changed += 1
+        docs.append({"key": key, "lang": "en", "contentMd": body,
+                     "meta": meta})
+    if docs and not dry:
+        r = mddb.s.post(f"{mddb.base}/add-batch", timeout=120, json={
+            "collection": COLLECTION, "documents": docs,
+            "options": {"skipEmbeddings": True, "saveRevision": True},
+        })
+        r.raise_for_status()
+        print(f"  batch: {r.json()}")
+        changed = len(docs)
     for key, doc in remote.items():
         if not prune:
             break
