@@ -30,11 +30,32 @@
         <label class="ctl"><input type="checkbox" id="f-retracted"> show retracted</label>
         <label class="ctl"><input type="checkbox" id="f-similar"> similarity edges</label>
         <button id="btn-reload" class="text-xs px-3 py-1.5 rounded bg-card border border-gray-700 hover:border-accent">Reload</button>
+        <button id="btn-legend" class="text-xs w-7 h-7 rounded-full bg-card border border-gray-700 hover:border-accent" title="How to read this graph">?</button>
       </div>
     </div>
   </nav>
   <div id="chart"></div>
   <div id="msg" class="fixed bottom-3 left-4 text-xs text-gray-500"></div>
+  <div id="legend" class="hidden fixed bottom-3 right-4 bg-card/95 border border-gray-700 rounded-lg p-4 text-xs leading-relaxed max-w-xs z-50">
+    <div class="flex items-center justify-between mb-2">
+      <b>How to read this</b>
+      <button class="text-gray-500 hover:text-gray-200" onclick="document.getElementById('legend').classList.add('hidden')">✕</button>
+    </div>
+    <div class="space-y-1.5 text-gray-300">
+      <div><span style="color:#4dd0e1">●</span> colored dot = memory doc — <b>color is the bank</b> (legend up top)</div>
+      <div><span style="color:#64748b">●</span> grey dot = <b>hub</b> — a <code>subject:</code> topic or <code>entity:</code> shared by 2+ docs</div>
+      <div>bigger dot = more links / more voice recalls</div>
+      <div><span class="inline-block w-2.5 h-2.5 rounded-full border-2 border-amber-500 align-middle"></span> amber ring = MDDB only (voice note not yet in vault)</div>
+      <div><span class="inline-block w-2.5 h-2.5 rounded-full border-2 border-dashed border-cyan-300 align-middle"></span> dashed ring = inbox (awaiting review)</div>
+      <div><span style="color:#ef4444">●</span> red = dangling supersedes link (broken provenance)</div>
+      <div><span class="inline-block w-2.5 h-2.5 rounded-full border-2 border-green-400 align-middle"></span>/<span class="inline-block w-2.5 h-2.5 rounded-full border-2 border-red-400 align-middle"></span> border = recall outcome correct/wrong</div>
+      <div>dim dot = vault-only, retracted, or superseded</div>
+      <div><span class="text-amber-500 font-bold">—</span> thick amber edge = supersedes (old → new)</div>
+    </div>
+    <div class="mt-2 pt-2 border-t border-gray-700 text-gray-400">
+      drag to rotate · scroll to zoom · hover for details · click a doc to open it in the vault
+    </div>
+  </div>
 <script>
 const BASE = location.pathname.replace(/\/graph\/?$/, '');
 document.getElementById('lnk-vault').href = BASE + '/';
@@ -178,6 +199,8 @@ chart.on('click', p => {
   if (n && n.path) location.href = BASE + '/?note=' + encodeURIComponent(n.path);
 });
 document.getElementById('btn-reload').onclick = load;
+document.getElementById('btn-legend').onclick = () =>
+  document.getElementById('legend').classList.toggle('hidden');
 for (const id of ['f-subjects', 'f-entities', 'f-retracted', 'f-similar'])
   document.getElementById(id).onchange = load;
 load();
