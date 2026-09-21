@@ -31,16 +31,42 @@
       <a href="/apps/" class="text-sm text-gray-400 hover:text-accent">← Apps</a>
       <h1 class="font-semibold">Ada Memory Vault</h1>
       <span id="dirty" class="text-xs text-gray-500"></span>
-      <div class="ml-auto flex gap-2">
-        <button id="btn-sync" class="text-xs px-3 py-1.5 rounded bg-card border border-gray-700 hover:border-accent">Push to Ada</button>
-        <button id="btn-commit" class="text-xs px-3 py-1.5 rounded bg-card border border-gray-700 hover:border-accent">Sync + queue commit</button>
+      <span id="deploy-badge" class="hidden text-xs px-2 py-0.5 rounded bg-amber-900/50 text-amber-300"></span>
+      <div class="ml-auto flex gap-2 items-center">
+        <a id="lnk-graph" href="#" class="text-xs px-3 py-1.5 rounded bg-card border border-gray-700 hover:border-accent" title="3D knowledge graph of all memory docs">Graph</a>
+        <button id="btn-sync" class="text-xs px-3 py-1.5 rounded bg-card border border-gray-700 hover:border-accent" title="Push vault changes into Ada's memory (MDDB)">Push to Ada</button>
+        <button id="btn-commit" class="text-xs px-3 py-1.5 rounded bg-card border border-gray-700 hover:border-accent" title="Push to MDDB + queue the hourly git commit on tony-omen">Sync + queue commit</button>
+        <button id="btn-help" class="text-xs w-7 h-7 rounded-full bg-card border border-gray-700 hover:border-accent" title="What is this? How does it work?">?</button>
       </div>
     </div>
   </nav>
+  <div id="help" class="hidden fixed inset-0 bg-black/60 z-50 flex items-start justify-center p-6" onclick="if(event.target===this)this.classList.add('hidden')">
+    <div class="bg-card border border-gray-700 rounded-lg max-w-lg w-full p-5 text-sm leading-relaxed mt-10">
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="font-semibold">About this app</h2>
+        <button class="text-gray-500 hover:text-gray-200" onclick="document.getElementById('help').classList.add('hidden')">✕</button>
+      </div>
+      <p class="text-gray-400 mb-3">Review/edit tier for <b class="text-gray-200">Ada's memory banks</b>. Each left-sidebar folder maps 1:1 to an <code>ada-ha-bank-*</code> collection in MDDB — what Ada recalls by voice.</p>
+      <ol class="list-decimal pl-5 space-y-1 text-gray-300">
+        <li>Select a note → <b>Edit</b> → <b>Save</b> (writes the vault file only)</li>
+        <li><b>Push to Ada</b> syncs vault → MDDB so Ada sees it</li>
+        <li><b>Sync + queue commit</b> also queues the hourly git commit on tony-omen</li>
+      </ol>
+      <div class="mt-3 text-gray-300">
+        <div class="mb-1 font-medium text-gray-200">Status dots</div>
+        <div><span class="status-active">●</span> active &nbsp; <span class="status-superseded">●</span> superseded/expired &nbsp; <span class="status-retracted">●</span> retracted</div>
+      </div>
+      <div class="mt-3 text-gray-400 space-y-1">
+        <div>🔒 bank title = read-only bank (<code>writable: false</code> in the registry)</div>
+        <div>🔑 Writes ask for an API key once; stored in your browser.</div>
+        <div>🕸️ <b>Graph</b> = 3D map of every memory doc and its links.</div>
+      </div>
+    </div>
+  </div>
   <div class="flex" style="min-height: calc(100vh - 3rem)">
     <aside id="sidebar" class="w-72 shrink-0 border-r border-gray-800 overflow-y-auto p-3"></aside>
     <main class="flex-1 p-6 overflow-y-auto max-w-4xl">
-      <div id="empty" class="text-gray-500 text-sm mt-8 text-center">Select a note on the left.<br><span class="text-xs">Banks on the left map 1:1 to ada-ha-bank-* collections.</span></div>
+      <div id="empty" class="text-gray-500 text-sm mt-8 text-center">Select a note on the left.<br><span class="text-xs">Banks on the left map 1:1 to ada-ha-bank-* collections.</span><br><button class="mt-3 text-xs px-3 py-1.5 rounded bg-card border border-gray-700 hover:border-accent" onclick="document.getElementById('help').classList.remove('hidden')">How does this work?</button></div>
       <div id="view" class="hidden">
         <div class="flex items-center gap-3 mb-1">
           <h2 id="n-title" class="text-lg font-semibold"></h2>
@@ -74,8 +100,12 @@ async function api(path, opts = {}) {
   return r;
 }
 
+document.getElementById('btn-help').onclick = () =>
+  document.getElementById('help').classList.remove('hidden');
+document.getElementById('lnk-graph').href = BASE + '/graph';
+
 async function loadTree() {
-  const t = await (await fetch(BASE + '/api/tree')).json();
+  const t = await (await api('/api/tree')).json();
   const s = document.getElementById('sidebar');
   s.innerHTML = '';
   const dirs = (t.bank_order || Object.keys(t.banks)).filter(d => t.banks[d]);
@@ -98,7 +128,7 @@ async function loadTree() {
 
 async function openNote(path) {
   cur = path; editing = false;
-  const d = await (await fetch(BASE + '/api/note?path=' + encodeURIComponent(path))).json();
+  const d = await (await api('/api/note?path=' + encodeURIComponent(path))).json();
   document.getElementById('empty').classList.add('hidden');
   document.getElementById('view').classList.remove('hidden');
   document.getElementById('n-edit').classList.add('hidden');
@@ -154,11 +184,18 @@ document.getElementById('btn-commit').onclick = async () => {
 };
 
 async function refreshStatus() {
-  const s = await (await fetch(BASE + '/api/status')).json();
+  const s = await (await api('/api/status')).json();
   document.getElementById('dirty').textContent = s.dirty ? '● uncommitted changes' : '';
+  if (s.deploy === 'public') {
+    const b = document.getElementById('deploy-badge');
+    b.textContent = `public view — ${s.hidden_banks} banks hidden`;
+    b.classList.remove('hidden');
+  }
 }
 
 loadTree(); refreshStatus();
+const initNote = new URLSearchParams(location.search).get('note');
+if (initNote) openNote(initNote);
 </script>
 </body>
 </html>

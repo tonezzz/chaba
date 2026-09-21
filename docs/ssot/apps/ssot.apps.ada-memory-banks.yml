@@ -84,6 +84,14 @@ sections:
         text: "NLM sources can't be edited, so updates are never mirrored in place — MDDB is the mutable current truth, NotebookLM is the append-only archive. On update, optionally add a 'Correction: <key> (date)' text source."
       - label: Full schema
         text: The formal meta schema and verb semantics live in ssot.apps.ada-memory-schema.yml.
+  - title: Visibility
+    icon: "👁️"
+    layout: list
+    items:
+      - label: public
+        text: "true = served when the vault UI runs with ADA_DEPLOY=public; absent/false = tailnet-only. Deny-by-default: a bank must be consciously marked public. Applies to vault tree/note/graph metadata, not just bodies — hidden banks are dropped before any node/edge emission."
+      - label: Host vs policy
+        text: "ADA_DEPLOY env declares where the service runs (context, per-host); public: declares what may leave the tailnet (policy, in SSOT). See docs/ada-memory/tony-projects/public-host-plan.md."
   - title: Status
     icon: "🚦"
     layout: list
@@ -109,6 +117,7 @@ banks:
     write_policy: confirmed
     allowed_tools: [ada_remember, ada_forget, ada_outcome]
     status: active
+    public: false
   home:
     title: Household knowledge
     description: Home topology, device aliases, procedures, status notices (the planned shared 'home' group)
@@ -122,6 +131,7 @@ banks:
     write_policy: confirmed
     allowed_tools: []
     status: active
+    public: false
   people:
     title: People and relationships
     description: Who is who, relationships, individual preferences
@@ -135,6 +145,7 @@ banks:
     write_policy: confirmed
     allowed_tools: [ada_remember, ada_forget, ada_outcome]
     status: active
+    public: false
   personal:
     title: Private per-instance memory
     description: Instance-private notes that must never cross to the other instance
@@ -148,6 +159,7 @@ banks:
     write_policy: direct
     allowed_tools: [ada_remember, ada_forget, ada_outcome]
     status: active
+    public: false
   tony-projects:
     title: Tony project notes
     description: Tony-only project and infrastructure notes
@@ -161,6 +173,7 @@ banks:
     write_policy: confirmed
     allowed_tools: [ada_remember, ada_forget, ada_outcome]
     status: active
+    public: false
   note:
     title: Scratch notes (test bank)
     description: Tony-only sandbox bank for testing the ada_remember write/update flow
@@ -174,6 +187,7 @@ banks:
     write_policy: direct
     allowed_tools: [ada_remember, ada_forget, ada_outcome]
     status: testing
+    public: false
   devin:
     title: Devin session history
     description: Tony-only read-only bank of Devin CLI session summaries (~/.local/share/devin/cli/summaries/history_*.md), synced by scripts/ada/sync-devin-summaries.py. Ask here for "what did we work on" questions.
@@ -187,6 +201,7 @@ banks:
     write_policy: confirmed
     allowed_tools: []
     status: active
+    public: false
   kb-development:
     title: Development knowledge base
     description: Chaba dev/architecture docs synced from the kb — read-only for Ada
@@ -200,6 +215,7 @@ banks:
     write_policy: confirmed
     allowed_tools: []
     status: active
+    public: false
   kb-features:
     title: Feature knowledge base
     description: Feature docs synced from the kb — read-only for Ada
@@ -226,6 +242,7 @@ banks:
     write_policy: confirmed
     allowed_tools: []
     status: active
+    public: false
   kb-system:
     title: System knowledge base
     description: System/architecture docs synced from the kb — read-only for Ada
@@ -239,6 +256,7 @@ banks:
     write_policy: confirmed
     allowed_tools: []
     status: active
+    public: false
   github:
     title: GitHub repo assessment
     description: Per-repo scores, fork/upstream drift, and discovery candidates from scripts/github-repo-assess.py — read-only for Ada. Ask here for "which repos need updating" or "new repos worth trying" questions.
@@ -252,6 +270,7 @@ banks:
     write_policy: confirmed
     allowed_tools: []
     status: active
+    public: true
   purchase:
     title: Purchase decision checks
     description: "Pre-purchase criteria + check history for POST /api/decision/check. Criteria docs (kind fact/preference) teach Ada the rules — 'remember that I don't trust shops under 4.7'. Check docs (kind=check) are the audit log written by the endpoint itself, recallable via ada_memory_search('didn't I check this before?')."
@@ -265,6 +284,7 @@ banks:
     write_policy: confirmed
     allowed_tools: [ada_remember, ada_forget, ada_outcome]
     status: active
+    public: false
     # Seed criteria — applied by scripts/ada/seed-purchase-criteria.py (idempotent).
     # Edit here, re-run the seeder; do not hand-edit MDDB docs.
     seed:
@@ -305,11 +325,12 @@ banks:
     write_policy: confirmed
     allowed_tools: []
     status: active
+    public: false
 
 config:
   version: 2
   created: "2026-09-18"
-  updated: "2026-09-19"
+  updated: "2026-09-21"
   maintainer: tony
   status: draft
   deployment: mn01

@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="3D knowledge graph of Ada's memory banks">
+  <title>Ada Memory Graph</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/echarts-gl@2.1.0/dist/echarts-gl.min.js"></script>
+  <script>
+    tailwind.config = { theme: { extend: { colors: { bg: '#1a1a2e', card: '#16213e', accent: '#0a84ff' } } } };
+  </script>
+  <style>
+    body { font-family: system-ui, sans-serif; }
+    #chart { width: 100vw; height: calc(100vh - 3rem); }
+    .ctl { display: flex; align-items: center; gap: .3rem; font-size: 11px; color: #9ca3af; cursor: pointer; }
+  </style>
+</head>
+<body class="bg-bg text-gray-200">
+  <nav class="bg-card border-b border-gray-800">
+    <div class="px-4 h-12 flex items-center gap-4">
+      <a href="/apps/" class="text-sm text-gray-400 hover:text-accent">← Apps</a>
+      <a id="lnk-vault" href="#" class="text-sm text-gray-400 hover:text-accent">Vault</a>
+      <h1 class="font-semibold">Memory Graph</h1>
+      <span id="deploy-badge" class="hidden text-xs px-2 py-0.5 rounded bg-amber-900/50 text-amber-300"></span>
+      <div class="ml-auto flex items-center gap-4">
+        <label class="ctl"><input type="checkbox" id="f-subjects" checked> subjects</label>
+        <label class="ctl"><input type="checkbox" id="f-entities" checked> entities</label>
+        <label class="ctl"><input type="checkbox" id="f-retracted"> show retracted</label>
+        <label class="ctl"><input type="checkbox" id="f-similar"> similarity edges</label>
+        <button id="btn-reload" class="text-xs px-3 py-1.5 rounded bg-card border border-gray-700 hover:border-accent">Reload</button>
+      </div>
+    </div>
+  </nav>
+  <div id="chart"></div>
+  <div id="msg" class="fixed bottom-3 left-4 text-xs text-gray-500"></div>
+<script>
+const BASE = location.pathname.replace(/\/graph\/?$/, '');
+document.getElementById('lnk-vault').href = BASE + '/';
+let apiKey = localStorage.getItem('obsidian-key') || '';
+
+async function api(path) {
+  const r = await fetch(BASE + path, { headers: { 'X-API-Key': apiKey } });
+  if (r.status === 401) {
+    apiKey = prompt('API key required:') || '';
+    localStorage.setItem('obsidian-key', apiKey);
+    if (apiKey) return api(path);
+  }
+  return r;
+}
+
+const PALETTE = ['#4dd0e1','#81c784','#ffb74d','#ba68c8','#f06292','#a1887f',
+                 '#90a4ae','#fff176','#4db6ac','#e57373','#9575cd','#64b5f6',
+                 '#dce775','#ff8a65','#aed581','#4fc3f7'];
+const SYNC_STYLE = {
+  synced:     {},
+  vault_only: { itemStyle: { opacity: 0.45 } },
+  mddb_only:  { itemStyle: { borderColor: '#f59e0b', borderWidth: 2 } },
+  inbox:      { itemStyle: { borderColor: '#4dd0e1', borderWidth: 2, borderType: 'dashed' } },
+};
+
+const chart = echarts.init(document.getElementById('chart'));
+const focusId = new URLSearchParams(location.search).get('focus');
+
+function params() {
+  const p = new URLSearchParams();
+  p.set('hubs', '1');
+  if (!document.getElementById('f-retracted').checked) p.set('status', 'active');
+  if (document.getElementById('f-similar').checked) p.set('similar', '1');
+  return p.toString();
+}
+
+async function load() {
+  const msg = document.getElementById('msg');
+  msg.textContent = 'loading…';
+  const r = await api('/api/graph?' + params());
+  if (!r.ok) { msg.textContent = 'graph failed: ' + r.status; return; }
+  const g = await r.json();
+
+  const showSubjects = document.getElementById('f-subjects').checked;
+  const showEntities = document.getElementById('f-entities').checked;
+  let nodes = g.nodes || [], links = g.links || [];
+  const drop = new Set();
+  for (const n of nodes) {
+    if (n.hub === 'subject' && !showSubjects) drop.add(n.id);
+    if (n.hub === 'applies_to' && !showEntities) drop.add(n.id);
+  }
+  nodes = nodes.filter(n => !drop.has(n.id));
+  links = links.filter(l => !drop.has(l.source) && !drop.has(l.target));
+
+  const idx = new Map(nodes.map((n, i) => [n.id, i]));
+  links = links.filter(l => idx.has(l.source) && idx.has(l.target));
+  const degree = new Map();
+  for (const l of links) {
+    degree.set(l.source, (degree.get(l.source) || 0) + 1);
+    degree.set(l.target, (degree.get(l.target) || 0) + 1);
+  }
+
+  const cats = [...new Set(nodes.map(n => n.bank || (n.hub ? '_hub' : '?')))];
+  const catColor = Object.fromEntries(cats.map((c, i) => [c, PALETTE[i % PALETTE.length]]));
+
+  const data = nodes.map((n, i) => {
+    const deg = degree.get(n.id) || 0;
+    const size = n.hub ? 10 + Math.min(deg * 1.5, 18)
+                       : 6 + Math.min(deg * 2, 20) + Math.min(n.use_count || 0, 6);
+    const item = {
+      name: n.label || n.id,
+      value: n.id,
+      category: cats.indexOf(n.hub ? '_hub' : (n.bank || '?')),
+      symbolSize: n.id === focusId ? size + 8 : size,
+      itemStyle: { color: n.missing ? '#ef4444' : n.hub ? '#64748b' : catColor[n.bank] },
+      label: { show: n.id === focusId, fontSize: 14, fontWeight: 'bold' },
+      _n: n,
+    };
+    Object.assign(item.itemStyle, (SYNC_STYLE[n.sync] || {}).itemStyle || {});
+    if (n.status === 'retracted' || n.status === 'superseded' || n.status === 'expired')
+      item.itemStyle.opacity = Math.min(item.itemStyle.opacity ?? 1, 0.35);
+    if (n.outcome === 'correct') item.itemStyle.borderColor = '#34d399';
+    if (n.outcome === 'wrong') item.itemStyle.borderColor = '#f87171';
+    if (item.itemStyle.borderColor) item.itemStyle.borderWidth = 2;
+    return item;
+  });
+
+  chart.setOption({
+    backgroundColor: '#0b0f14',
+    legend: { data: cats, textStyle: { color: '#9ca3af', fontSize: 11 }, top: 4 },
+    tooltip: {
+      formatter: p => {
+        const n = p.data && p.data._n;
+        if (!n) return p.name;
+        if (n.hub) return `${n.hub}: ${n.label}`;
+        return [
+          `<b>${n.key || n.label}</b>`, n.bank, n.kind,
+          n.status, n.sync, n.written_by || '',
+          n.subject ? 'subject: ' + n.subject : '',
+          n.verdict ? 'verdict: ' + n.verdict : '',
+        ].filter(Boolean).join(' · ');
+      },
+    },
+    series: [{
+      type: 'graphGL',
+      layout: 'forceAtlas2',
+      forceAtlas2: { steps: 5, edgeWeightInfluence: 4, jitterTolerence: 10,
+                     preventOverlap: true, edgeWeight: [0.2, 1] },
+      categories: cats.map(c => ({ name: c })),
+      data, links,
+      roam: true,
+      focusNodeAdjacency: false,
+      itemStyle: { opacity: 0.95 },
+      emphasis: { label: { show: true, fontSize: 12, color: '#fff' },
+                  itemStyle: { opacity: 1 } },
+      lineStyle: { color: 'source', opacity: 0.35, width: 1 },
+    }],
+  }, true);
+
+  if (g.context && g.context.deploy === 'public') {
+    const b = document.getElementById('deploy-badge');
+    b.textContent = `public view — ${g.stats.hidden_banks} banks hidden`;
+    b.classList.remove('hidden');
+  }
+  const s = g.stats || {};
+  msg.textContent = (g.warning ? g.warning + ' · ' : '') +
+    `${s.nodes} nodes · ${s.links} links · synced ${s.synced} · mddb-only ${s.mddb_only} · vault-only ${s.vault_only}` +
+    (s.dangling ? ` · ⚠ ${s.dangling} dangling` : '');
+}
+
+chart.on('click', p => {
+  const n = p.data && p.data._n;
+  if (n && n.path) location.href = BASE + '/?note=' + encodeURIComponent(n.path);
+});
+document.getElementById('btn-reload').onclick = load;
+for (const id of ['f-subjects', 'f-entities', 'f-retracted', 'f-similar'])
+  document.getElementById(id).onchange = load;
+load();
+</script>
+</body>
+</html>
