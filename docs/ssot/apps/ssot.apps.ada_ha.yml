@@ -74,6 +74,10 @@ sections:
         text: Read a named tony-test tab and return its displayed entities with current states.
       - label: POST /api/home-assistant/entities/{entity_id}/power
         text: Turn a light/switch/fan/input_boolean on or off.
+      - label: POST /api/decision/check
+        text: "Purchase-verification pipeline (backend/decision_check.py). Body {text?, url?, image_b64?, image_mime?, mode: quick|deep} — paste listing text, a link, or a screenshot. Pipeline: Gemini normalizes a product record → active criteria docs from the 'purchase' bank → Gemini + Google Search grounding verifies price/specs/red flags and finds alternatives → result persisted as a kind=check doc in the bank + chaba-admin event via HA shell_command.chaba_event. Adapters are domain-neutral; 'shopee' is first."
+      - label: GET /api/decision/history
+        text: Newest-first list of past checks from the purchase bank (kind=check docs).
   - title: Gemini Tools
     icon: "🧠"
     layout: list
