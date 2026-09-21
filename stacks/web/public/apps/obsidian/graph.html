@@ -22,6 +22,8 @@
       border-radius: 6px; padding: 6px 10px; font-size: 11px; line-height: 1.5;
       color: #e5e7eb; max-width: 320px; }
     .graph-tooltip .dim { color: #9ca3af; }
+    .graph-tooltip i { color: #cbd5e1; display: block; margin: 4px 0;
+      border-left: 2px solid #374151; padding-left: 6px; }
     .bank-chip { cursor: pointer; opacity: 1; transition: opacity .15s; }
     .bank-chip.off { opacity: .35; text-decoration: line-through; }
   </style>
@@ -213,19 +215,62 @@ function rgba(hex, a) {
 
 function depth() { return parseInt(document.getElementById('f-depth').value, 10); }
 
+const esc = s => String(s ?? '').replace(/[&<>"']/g,
+  c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+const SYNC_HUMAN = {
+  synced:     'in sync (vault + MDDB)',
+  mddb_only:  'in MDDB only — not yet exported to the vault',
+  vault_only: 'vault draft — not pushed to MDDB',
+  inbox:      'in inbox — awaiting review',
+};
+const STATUS_DOT = { active: '#34d399', draft: '#fbbf24', review: '#fbbf24',
+                     retracted: '#ef4444', superseded: '#9ca3af', expired: '#9ca3af' };
+
+function relDate(d) {
+  const days = Math.floor((Date.now() - new Date(d)) / 864e5);
+  if (isNaN(days)) return '';
+  if (days <= 0) return 'today';
+  if (days === 1) return 'yesterday';
+  if (days < 30) return `${days}d ago`;
+  if (days < 365) return `${Math.floor(days / 30)}mo ago`;
+  return `${Math.floor(days / 365)}y ago`;
+}
+
 function tip(n) {
-  if (n.hub) return `${n.hub} hub${n.subhub ? ' (sub-cluster)' : ''}<br><b>${n.label}</b>` +
-    (n.members ? `<br><span class="dim">${n.members} members</span>` : '');
-  if (n.missing) return `dangling reference<br><b>${n.key || n.id}</b>`;
-  return [
-    `<b>${n.label || n.key}</b>`,
-    `<span class="dim">${n.bank} · ${n.kind || '?'} · ${n.status || '?'} · ${n.sync || '?'}</span>`,
-    n.subject ? `subject: ${n.subject}` : '',
-    n.written_by ? `<span class="dim">by ${n.written_by}</span>` : '',
-    n.verdict ? `verdict: ${n.verdict}` : '',
-    n.use_count ? `recalled ${n.use_count}×` : '',
-    n.path ? '<span class="dim">double-click to open in vault</span>' : '',
-  ].filter(Boolean).join('<br>');
+  if (n.hub) {
+    const what = n.hub === 'subject' ? 'topic' : 'entity';
+    return `<b>${esc(n.label)}</b><br>` +
+      `<span class="dim">${what} hub${n.subhub ? ' (sub-cluster)' : ''}` +
+      `${n.members ? ` — ${n.members} docs` : ''}</span>`;
+  }
+  if (n.missing)
+    return `<b>${esc(n.key || n.id)}</b><br><span class="dim">referenced but ` +
+      `not in the graph — retracted, filtered, or in a hidden bank</span>`;
+
+  const bc = (window._catColor || {})[n.bank] || '#8aa0b5';
+  const dot = STATUS_DOT[n.status] || '#34d399';
+  // friendlier titles: devin sessions read "Session Sep 18 · 00f3ee"
+  let title = n.label || n.key || n.id;
+  if (n.bank === 'devin' && n.date)
+    title = `Session ${n.date} · ${String(n.key || '').split('/').pop().slice(0, 6)}`;
+
+  const lines = [
+    `<span style="color:${bc}">●</span> <b>${esc(title)}</b>`,
+    `<span class="dim">${esc(n.bank)} · ${esc((n.kind || 'note').replace(/-/g, ' '))}</span>`,
+  ];
+  if (n.excerpt) lines.push(`<i>${esc(n.excerpt)}</i>`);
+  lines.push(`<span style="color:${dot}">●</span> ${esc(n.status || 'active')} · ${esc(SYNC_HUMAN[n.sync] || n.sync || '')}`);
+
+  const foot = [];
+  if (n.subject) foot.push(`subject: ${esc(n.subject)}`);
+  if (n.written_by) foot.push(`by ${esc(n.written_by)}`);
+  if (n.use_count) foot.push(`recalled ${n.use_count}×`);
+  if (n.last_verified) foot.push(`verified ${relDate(n.last_verified)}`);
+  if (n.verdict) foot.push(`verdict: ${esc(n.verdict)}`);
+  if (foot.length) lines.push(`<span class="dim">${foot.join(' · ')}</span>`);
+  if (n.path) lines.push(`<span class="dim">double-click to open in vault</span>`);
+  return lines.join('<br>');
 }
 
 // BFS neighborhood filter for local/ego mode

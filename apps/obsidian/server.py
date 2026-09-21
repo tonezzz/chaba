@@ -231,6 +231,25 @@ async def status(request: Request) -> dict:
             "counts": counts, "deploy": DEPLOY, "hidden_banks": hidden}
 
 
+def _excerpt(body: str, limit: int = 160) -> str:
+    """First meaningful content line (skips frontmatter, headers, blanks,
+    `=== MARKER ===` lines, and the system-prompt section of session
+    transcripts)."""
+    _, txt = _split(body)
+    skip_section = False
+    for line in txt.splitlines():
+        s = line.strip()
+        if s.startswith("==="):
+            skip_section = "system" in s.lower()
+            continue
+        if skip_section:
+            continue
+        s = s.lstrip("#").strip()
+        if s and not s.startswith("---") and s.strip("=-*_#> "):
+            return s[:limit]
+    return ""
+
+
 def _m1(meta: dict, k: str):
     """Unwrap MDDB list-meta or frontmatter scalar -> scalar|None."""
     v = (meta or {}).get(k)
@@ -307,6 +326,8 @@ async def api_graph(request: Request, banks: str = "", status: str = "",
             if v is not None and n.get(k) is None:
                 n[k] = v
         bodies.setdefault(nid, body)
+        if body and not n.get("excerpt"):
+            n["excerpt"] = _excerpt(body)
         rm = raw.setdefault(nid, {})
         for k in ("subject", "supersedes", "superseded_by", "related",
                   "source_keys", "applies_to", "attribute", "date"):
@@ -339,6 +360,7 @@ async def api_graph(request: Request, banks: str = "", status: str = "",
             "outcome": _m1(fm, "outcome"),
             "verdict": _m1(fm, "verdict"),
             "last_verified": str(fm.get("last_verified") or "") or None,
+            "date": _m1(fm, "date"),
         }, fm, body)
         nodes[nid]["sync"] = "inbox" if folder == "inbox" else "vault_only"
 
@@ -386,6 +408,7 @@ async def api_graph(request: Request, banks: str = "", status: str = "",
                     "outcome": _m1(merged, "outcome"),
                     "verdict": _m1(merged, "verdict"),
                     "last_verified": _m1(merged, "last_verified"),
+                    "date": _m1(merged, "date"),
                 }, merged, body)
                 n = nodes[nid]
                 n["sync"] = "synced" if n.get("path") else "mddb_only"
