@@ -19,23 +19,49 @@ class ChabaLogCard extends HTMLElement {
     this._card = document.createElement("ha-card");
     this._card.header = this._config.title || "Logbook";
     const style = document.createElement("style");
+    // NOTE: light DOM (no shadow root) — :host matches nothing here, so the
+    // element is styled via its tag name and all classes are clc- prefixed.
     style.textContent = `
-      :host { display:flex; flex-direction:column; height:100%;
+      chaba-log-card { display:flex; flex-direction:column; height:100%;
         min-height:calc(100vh - var(--header-height, 56px) - 56px); }
-      ha-card { display:flex; flex-direction:column; flex:1; min-height:0; }
-      .filters { display:flex; flex-wrap:wrap; gap:4px 14px;
+      chaba-log-card > ha-card { display:flex; flex-direction:column;
+        flex:1; min-height:0; }
+      .clc-filters { display:flex; flex-wrap:wrap; gap:4px 14px;
         padding:2px 16px 10px; flex:0 0 auto; }
-      .filters label { display:flex; align-items:center; gap:5px;
+      .clc-filters label { display:flex; align-items:center; gap:5px;
         font-size:.85rem; cursor:pointer; color:var(--primary-text-color); }
-      .content { flex:1; min-height:0; overflow-y:auto; padding:0 8px 8px; }
-      .err { padding:8px 16px; color:var(--error-color,#f47067); font-size:.85rem; }
+      .clc-content { flex:1; min-height:0; overflow-y:auto; padding:0 8px 8px; }
+      .clc-err { padding:8px 16px; color:var(--error-color,#f47067); font-size:.85rem; }
     `;
     this._filters = document.createElement("div");
-    this._filters.className = "filters";
+    this._filters.className = "clc-filters";
     this._content = document.createElement("div");
-    this._content.className = "content";
+    this._content.className = "clc-content";
     this._card.append(style, this._filters, this._content);
     this.appendChild(this._card);
+  }
+
+  connectedCallback() {
+    this._onResize = () => this._fitHeight();
+    window.addEventListener("resize", this._onResize);
+    this._fitHeight();
+    // settle after the view finishes layout (top edge moves into place)
+    requestAnimationFrame(() => this._fitHeight());
+    setTimeout(() => this._fitHeight(), 300);
+  }
+
+  disconnectedCallback() {
+    window.removeEventListener("resize", this._onResize);
+  }
+
+  // Fit exactly to the remaining viewport: measure our own top edge
+  // (accounts for header + tabs + view padding however the panel lays out)
+  // rather than guessing CSS vars. Keeps the page itself from scrolling so
+  // only the log contents scroll.
+  _fitHeight() {
+    const top = this.getBoundingClientRect().top;
+    const h = Math.max(150, Math.floor(window.innerHeight - top - 8));
+    if (h > 0) this.style.height = h + "px";
   }
 
   _group(eid) {
@@ -69,7 +95,7 @@ class ChabaLogCard extends HTMLElement {
   async _buildInner() {
     if (!window.loadCardHelpers) {
       this._content.innerHTML =
-        '<div class="err">loadCardHelpers unavailable</div>';
+        '<div class="clc-err">loadCardHelpers unavailable</div>';
       return;
     }
     const helpers = await window.loadCardHelpers();
@@ -137,6 +163,7 @@ class ChabaLogCard extends HTMLElement {
       this._inner.hass = hass;
     }
     this._renderFilters();
+    this._fitHeight();
   }
 
   getCardSize() {
