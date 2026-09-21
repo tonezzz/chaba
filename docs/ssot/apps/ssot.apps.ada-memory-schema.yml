@@ -104,6 +104,13 @@ meta_schema:
     origin_written_by: {role: provenance, required: false}
     session_id: {role: provenance, required: false}
     retracted_by_session: {role: provenance, required: false}
+    # knowledge-circle reinforcement fields — see
+    # docs/ada-memory/tony-projects/knowledge-circle.md
+    use_count: {required: false, type: int}
+    last_used: {required: false, type: date}
+    outcome: {required: false}
+    outcome_note: {required: false}
+    outcome_session: {role: provenance, required: false}
     # decision-check docs (kind: check) — written by /api/decision/check
     verdict: {required: false, enum: [buy, caution, avoid]}
     product: {required: false}
