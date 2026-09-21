@@ -96,7 +96,10 @@ tony-dell:
     related_units:
       - mddb.service
     status: implemented (2026-08-17)
-    note: Migrated from tony-omen; copied mddb.db (~101MB) and vaults to tony-dell; Caddy reverse proxy updated to 100.68.142.13:11023.
+    note: |
+      Migrated from tony-omen; copied mddb.db (~101MB) and vaults to tony-dell; Caddy reverse proxy updated to 100.68.142.13:11023.
+      Embeddings via gemini-ollama-proxy: MDDB_EMBEDDING_PROVIDER=ollama, MDDB_EMBEDDING_API_URL=http://127.0.0.1:11435 (host network, loopback is fine), MDDB_EMBEDDING_MODEL=nomic-embed-text, MDDB_EMBEDDING_DIMENSIONS=768.
+      2026-09-21: semantic search was broken because the unit had MDDB_EMBEDDING_API_URL=http://127.0.0.1:9 (discard port); fixed to 11435.
   mddb-panel:
     container: mddb-panel
     image: docker.io/tradik/mddb:panel-latest
