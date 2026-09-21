@@ -39,9 +39,9 @@
         <datalist id="nodes-list"></datalist>
         <select id="f-depth" class="text-xs px-1.5 py-1.5 rounded bg-card border border-gray-700 text-gray-300"
                 title="Local graph: after clicking a node, show only its neighborhood to this depth">
-          <option value="0">global</option>
+          <option value="0" selected>global</option>
           <option value="1">local·1</option>
-          <option value="2" selected>local·2</option>
+          <option value="2">local·2</option>
           <option value="3">local·3</option>
         </select>
         <label class="ctl"><input type="checkbox" id="f-subjects" checked> subjects</label>
@@ -157,8 +157,11 @@ const Graph = ForceGraph3D()(document.getElementById('chart'))
       return;
     }
     focusNodeId = n.id;
-    if (depth() > 0) render(lastG);
-    flyTo(n);
+    if (depth() > 0) {
+      render(lastG);           // onEngineStop flies the camera post-layout
+    } else {
+      flyTo(n);
+    }
     updateChip();
   })
   .nodeColor(n => {
@@ -401,8 +404,8 @@ document.getElementById('search').addEventListener('change', e => {
                           || (x.label || '').toLowerCase().includes(q));
   if (n) {
     focusNodeId = n.id;
-    if (depth() > 0) { render(lastG); n = byId.get(n.id) || n; }
-    flyTo(n);
+    if (depth() > 0) render(lastG);   // onEngineStop flies post-layout
+    else flyTo(n);
     updateChip();
   }
   else document.getElementById('msg').textContent = `no node matching "${e.target.value.trim()}"`;
