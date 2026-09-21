@@ -214,6 +214,9 @@ Two observed variants:
 
 Also check for a duplicate instance: clicking the launcher while the first instance is alive spawns a second devin-desktop that stalls (only a 10x10 dummy window, no renderer). Kill the duplicate's main PID — do NOT kill the instance that owns the real session window (check `_NET_WM_PID` on the titled window).
 
+3. **"Remote ACP is disconnected. Authentication failed: Failed to fetch team settings: fetch timed out after 10000ms"** (seen 2026-09-21) — banner in the chat pane; acp log shows `team_settings: Team settings refresh failed` plus continuous `remote config revalidation failed ... operation timed out` warnings. If curl to `server.codeium.com`/`api.devin.ai` works but the app's fetches hang, the acp process is wedged: the Reconnect button will NOT respawn it. Fix: `kill <devin-acp-pid>` (banner changes to "Process exited"), and if Reconnect still doesn't respawn, kill the main PID and relaunch on `:1` with the manual-launch command — xfce4-session does NOT auto-respawn devin-desktop on exit (autostart only fires at login). Sessions persist in `sessions.db`. Residual `remote config revalidation` WARNs ~1/min are non-fatal (keeps last-good config).
+4. **"Unable to watch for file changes"** notification — inotify exhaustion. Bumped to `fs.inotify.max_user_watches=524288` / `max_user_instances=1024` via `/etc/sysctl.d/90-devin-inotify.conf` (passwordless sudo works on tony-dell).
+
 ## What was observed today
 
 - Installed version: `devin-desktop 3.10.23-1789035177`.
