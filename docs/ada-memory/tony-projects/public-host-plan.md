@@ -5,128 +5,205 @@ subject: public-host
 attribute: plan-draft
 ---
 
-# Public host = Ada deployment server — draft plan
+# Public host = Ada deployment server — plan
 
-Status: DRAFT v2 for review. Scope changed 2026-09-21: the VPS is the
-deployment server that *runs* Ada, not just an edge proxy.
+Status: v3b — M0-M3 EXECUTED on idc01, 2026-09-21.
+Decisions: all three Ada instances run on the VPS; MDDB moves to the VPS
+as the ONLY instance — no tony-dell standby initially. Data-security
+hardening and a standby/follower are deferred (§10). Memory data is
+currently mock/non-critical.
+
+## 0. What's live now (idc01)
+
+- Host: VPS `idc01` — 157.85.110.99, tailnet `100.74.146.0`,
+  Ubuntu 24.04 x86_64, 2 vCPU / 7.8 GB / 96 GB, KVM.
+- Hardened: key-only SSH (password auth off — root pw was shared in
+  chat), ufw 22/80/443, fail2ban, unattended-upgrades, rootless podman.
+- Tailscale: joined, `--accept-routes`; all home hosts reachable except
+  michael-ha (mn01 is not currently advertising its subnet route — fix
+  on mn01 or use Nabu Casa URL for ada-ha-michael).
+- Running (systemd user units, `tony` user, linger on):
+  - `ada-pi-pwa` :8001, `ada-ha-tony` :8002, `ada-ha-michael` :8003 —
+    all `127.0.0.1`-bound, healthy, 14 banks loaded, MDDB reachable
+    over tailnet (still pointing at tony-dell:11023).
+  - `caddy-edge` quadlet (podman `Network=host`) — real ACME cert.
+- Public URL: `https://157.85.110.99.sslip.io/` → ada-pi-pwa (canary).
+  sslip.io is an interim domain — swap for a real domain anytime.
+- Secrets copied host-to-host (env + keys JSON + calendar token).
+- `deploy-ada.sh` gained an `idc01` case (committed 50a8dc37).
+- SSH alias: `ssh idc01` (tony-omen `~/.ssh/config`).
 
 ## 1. What Ada is today
 
 Three instances of the same app — `pwa_server:app` (FastAPI + uvicorn),
 differentiated only by env files:
 
-| Service | Host | Port | Instance |
+| Service | Home | Port | Instance |
 |---|---|---|---|
 | ada-ha-tony | mn01 | 8002 | tony |
 | ada-ha-michael | mn01 | 8003 | michael |
 | ada-pi-pwa | tony-dell | 8001 | tony |
 
-`backend/main.py` (Hailo/camera/pironman vision stack) is the old Pi
-prototype — not deployed on servers, not needed on a VPS.
+`backend/main.py` (Hailo/camera/pironman) is the old Pi prototype — not
+deployed, not needed on a VPS. `pwa_server` is nearly stateless: only
+local state is the issued-keys JSON + logs.
 
-## 2. Runtime dependency assessment
+## 2. Runtime dependencies of pwa_server
 
-What `pwa_server` actually needs to operate:
-
-| Dependency | Required? | What breaks without it |
+| Dependency | Required? | Without it |
 |---|---|---|
-| Gemini API (`GEMINI_API_KEY`, Live + `ADA_SUMMARY_MODEL` + decision_check grounding) | **hard** | No voice, no chat, no summaries, no decision check |
-| MDDB (`MDDB_BASE_URL`, :11023) | **hard-ish** | Memory banks, session summaries, decision checks, event log all fail; `/api/health` goes degraded |
-| Home Assistant (`HOME_ASSISTANT_URL` + token) | per-instance | No entity/sensor/dashboard tools, no `chaba_event` transport; chat still works |
-| NotebookLM REST (:3011 + scoped key) | soft | Deep-recall/archive tier gone; MDDB-first recall still works |
-| `ADA_MEMORY_BANKS_FILE` (rendered JSON) | **hard** | Bank resolution fails loudly by design |
-| `~/.config/secrets/ada-ha-<inst>.env` + keys JSON | **hard** | No instance identity, no auth |
-| Caddy edge for TLS + path routing | **hard** for public | Plain HTTP otherwise |
+| Gemini API (`GEMINI_API_KEY` — Live, summaries, decision_check) | hard | no voice/chat/checks |
+| MDDB (:11023) | hard-ish | banks/summaries/events/checks fail; health=degraded |
+| Home Assistant (URL+token) | per-instance | no entity tools, no chaba_event; chat works |
+| NotebookLM REST (:3011, scoped key) | soft | deep-recall tier gone; MDDB tier still works |
+| `ADA_MEMORY_BANKS_FILE` (rendered JSON) | hard | banks fail loudly by design |
+| env + keys JSON | hard | no identity/auth |
+| Caddy edge (TLS + routing) | hard for public | plain HTTP |
 
-`pwa_server` itself is nearly stateless: the only local state is the
-issued-keys JSON (`~/.config/secrets/ada-ha-<inst>-keys.json`) and logs.
-No sqlite/habits DB in the PWA path.
+## 3. Target placement
 
-## 3. Adjacent services (not in-process, run on timers)
-
-Sync/rollup/backup scripts (`sync-ada-memory-to-mddb.py`,
-`rollup-summaries.py`, `sync-devin-summaries.py`, `recall-drift-report.py`,
-`backup-mddb-banks.py`, `render-memory-banks.py`, `consolidate-memory.py`)
-— plain Python + systemd timers; need a repo checkout and MDDB
-reachability. `obsidian-vault` web UI on mn01 is optional.
-
-## 4. Placement recommendation
-
-| Component | VPS? | Why |
+| Component | Where | Notes |
 |---|---|---|
-| `pwa_server` instances | **Yes** | Stateless, light (~FastAPI + websockets), designed for env-based relocation |
-| Caddy edge (real domain + ACME) | **Yes** | The point of the public host |
-| Scheduled Ada jobs | Yes (phase 2) | Centralizes ops on the deployment server |
-| MDDB | **Keep home** (revisit) | Stateful 346MB store of personal memory; tailnet hop adds only ~10-50ms to recall; moving it drags embedding-proxy deps + data migration |
-| notebooklm-rest | **Keep home** | `master_token.json` is a whole-Google-account credential — putting it on a public VPS widens the blast radius badly |
-| Home Assistant | No | By definition |
+| ada-ha-tony / ada-ha-michael / ada-pi-pwa | **idc01** | systemd user units — done |
+| Caddy edge + domain + ACME | **idc01** | done on sslip.io interim |
+| MDDB (sole instance) | **idc01** | podman quadlet; tailnet+lo only — M4 pending |
+| Scheduled Ada jobs (sync/rollup/drift/backup) | **idc01** | phase M6 |
+| notebooklm-rest / notebooklm-mcp | tony-dell | master_token = whole-Google credential |
+| Weaviate | tony-dell | home-internal dep (yomi/index jobs) |
+| Open Notebook | tony-dell | eval stack; adopt-or-retire later |
+| obsidian-vault | mn01 | tailnet-only write UI; see resolution below |
+| Home Assistant ×2 | home | by definition |
+| tony-dell mddb | **retired after cutover** | stop → archive cold → disable |
+| Home Ada instances | standby | units stay installed, `disabled` |
 
-Key property of this split: if the home uplink dies, the public Ada
-endpoint still answers — `/api/health` reports degraded and voice/chat
-still work, only memory + HA tools fail.
+Resolved 2026-09-21: `apps/obsidian` stays tailnet-only by default. If it
+is ever deployed on the public host it runs `ADA_DEPLOY=public` — all
+`/api/*` reads require X-API-Key (startup refuses otherwise) and only
+banks flagged `public: true` in ssot.apps.ada-memory-banks.yml are
+served (deny-by-default; today only `github` is public).
 
-## 5. Secrets that must live on the VPS
+## 4. MDDB migration (one-way) — M4, pending
 
-- `GEMINI_API_KEY` (required)
-- `ADA_API_KEYS` + per-instance keys JSON (device auth)
-- `HOME_ASSISTANT_TOKEN` — sensitive: controls the house. Mitigate with
-  a dedicated HA user/token, and Tailscale ACLs limiting the VPS to HA
-  port only.
-- `NOTEBOOKLM_REST_API_KEY` — scoped key only (already per-instance).
-- All in `~/.config/secrets/*.env`, mode 600, never committed.
+1. On tony-dell: `GET /v1/backup` snapshot (consistent `mddb.db` while
+   running) or stop → copy `~/.config/containers/mddb/data` + `vaults`.
+2. rsync to idc01 `~/.config/containers/mddb/`, start mddb quadlet
+   (tailnet+loopback bind), verify `/v1/stats` doc/revision counts.
+3. Repoint every consumer's `MDDB_BASE_URL` to `100.74.146.0:11023`
+   (Ada envs, Devin mcp config, sync/rollup scripts, HA event_recorder).
+4. Soak ~1 week with tony-dell mddb stopped but data intact.
+5. Archive `mddb.db` cold (mn01 or GDrive), then disable the unit.
 
-## 6. Network/security
+**Backups become the only safety net** — no standby. Mandatory:
+nightly `/v1/backup` on idc01 + pull to mn01/tony-omen over tailnet.
+Keep the pre-migration tony-dell snapshot permanently as
+last-known-good.
 
-- VPS joins tailnet as a tagged node; ACLs allow only: tony-dell:11023
-  (MDDB), tony-dell:3011 (NLM REST), HA ports (8123 / michael-ha),
-  mn01 if needed. Nothing else.
-- Public firewall: 80/443/SSH only; key-only SSH.
-- Public surface: Ada PWA paths only. Never proxy HA admin, MDDB, MCP.
-- Caddy rate-limit on `/api/*`; auth unchanged (device-key → cookie).
-- Sizing: 1-2 GB RAM, 1-2 vCPU is ample. No GPU needed (Gemini is
-  remote; the Hailo stack isn't part of pwa_server). Python 3.11+ venv.
-- Bandwidth: voice audio is server-side to Gemini Live — modest.
+## 5. Embeddings — open decision
 
-## 7. Provider candidates (unchanged)
+Existing vectors are `gemini-embedding-2` via gemini-ollama-proxy
+(the `nomic-embed-text` name is an alias to gemini-embedding-2).
 
-- Oracle free tier — free, but arm64 (venv deps are pure-Python/fastapi,
-  so likely fine; litert/hailo wheels not needed by pwa_server).
-- Hetzner CX22 ~EUR 4/mo x86, or DO/Vultr ~$4-6, prefer SG region.
+- A: run gemini-ollama-proxy on idc01 → vectors stay compatible.
+- B: real local Ollama `nomic-embed-text` (CPU) → kills quota
+  dependency, but stored vectors become incomparable — full reindex
+  via `scripts/mddb/reindex.py`.
+- Recommendation: A at migration, evaluate B later.
 
-## 8. Phases
+## 6. Repo / stack / data structure
 
-- M0 — provision VPS, harden, rootless podman OR plain systemd user
-  units (Ada currently runs as systemd units, not containers — decide;
-  podman gives parity with other quadlets, systemd units are simpler
-  and match deploy-ada.sh today).
-- M1 — tailnet join + ACLs; verify VPS can reach MDDB/NLM/HA and nothing
-  else.
-- M2 — Caddy + domain + ACME; proxy one Ada instance; browser test.
-- M3 — replicate ada-pi checkout (origin/main, deploy-ada.sh contract),
-  render memory-banks file, copy env+keys files, run one Ada instance
-  alongside the home one (canary).
-- M4 — migrate public Ada URLs to the VPS; keep mn01/tony-dell instances
-  as fallback during soak.
-- M5 — move scheduled jobs; register VPS in ssot.audit.hosts.yml +
-  health SSOT; chaba_event on deploys.
+```
+stacks/idc01/                    # in chaba repo, stacks/<host>/ convention
+├── podman/                    # quadlets -> ~/.config/containers/systemd/
+│   ├── caddy-edge.container + Caddyfile   (deployed)
+│   ├── mddb.container         # M4; tailnet+lo bind
+│   ├── mddb-panel.container   # tailnet-only (optional)
+│   └── gemini-proxy.container # (option A) / ollama.container (B)
+├── ada/                       # ada unit files (deployed)
+├── jobs/                      # timers: sync/rollup/drift/backup (M6)
+└── README.md
+```
 
-## 9. Open questions for Tony
+SSOT TODO: new `ssot.apps.idc01.yml`, host entry in
+`ssot.audit.hosts.yml`, `ssot.networks.yml`, health endpoints.
 
-1. Domain: buy one / free subdomain / reuse existing?
-2. Provider: free ARM (Oracle) vs ~$4-5 x86?
-3. Which Ada instances move: just `ada-pi-pwa` (the public-facing one),
-  or ada-ha-tony/michael too?
-4. Containers (podman quadlets) vs systemd units for Ada on the VPS?
-5. OK with `HOME_ASSISTANT_TOKEN` living on the VPS (dedicated HA user),
-  or should HA calls hairpin through a relay instead?
-6. Should MDDB eventually move too, or permanently stay home?
+On-host layout (deployed):
 
-## 10. Ada review path
+```
+~/CascadeProjects/ada-pi/      # origin/main checkout
+~/CascadeProjects/chaba/       # scripts + render targets
+~/.config/containers/systemd/  # quadlets (caddy-edge)
+~/.config/containers/mddb/{data,vaults}/  # ready for M4
+~/.config/ada/memory-banks.json  # rendered
+~/.config/secrets/*.env          # 600
+~/.local/share/backups/          # staging dir ready
+```
 
-This file lives in the vault (`docs/ada-memory/tony-projects/`).
-`python3 scripts/ada/sync-ada-memory-to-mddb.py` pushes it into
-`ada-ha-bank-projects-tony`, so Ada-Tony can recall it via
-`ada_memory_search(bank="tony-projects")` when asked to "review the
-public host plan". Review notes come back via `ada_remember` and land
-in `docs/ada-memory/inbox/` on the next `--export-inbox` run for human
-review.
+## 7. Secrets on idc01
+
+- `GEMINI_API_KEY`, `ADA_API_KEYS` + keys JSONs, `HOME_ASSISTANT_TOKEN`,
+  `NOTEBOOKLM_REST_API_KEY` (scoped), `ada-google-calendar-token.json`.
+- `~/.config/secrets/*.env` mode 600; nightly pull to mn01 pending.
+- NOTE (2026-09-21 incident): GEMINI_API_KEY + HA token live inside a
+  devin-bank transcript doc in MDDB — rotate before/during M4 so the
+  VPS never holds live-but-leaked creds.
+
+## 8. Network/security (baseline — done)
+
+- Tailnet node; ACLs TODO: scope idc01 to HA ports + tony-dell:3011,
+  home hosts→idc01:11023 for consumers.
+- Public firewall: 80/443/22 only; key-only SSH; fail2ban.
+- MDDB will bind tailnet iface + loopback — never public (M4).
+- Caddy `rate_limit` needs a plugin build — deferred; Ada auth is
+  device-key based anyway.
+
+## 9. Write-outage handling
+
+Home uplink down → home writers (event_recorder, syncs) can't reach the
+VPS leader. Phase-2: local spool/outbox on home writers, flush on
+reconnect (same pattern as notebooklm-rest's write queue). Ada-side
+writes are local on the VPS — unaffected.
+
+## 10. DEFERRED backlog (after VPS deployment is proven)
+
+- **Standby replica**: MDDB has native leader-follower replication —
+  `MDDB_REPLICATION_ROLE=leader` on idc01, `follower` on a home host,
+  `MDDB_REPLICATION_SECRET` shared secret, gRPC :11024, <50ms lag,
+  embeddings replicate via binlog (follower needs no embedding
+  provider). Promotion is manual (restart as standalone). Also gives
+  home consumers a local read replica.
+- `MDDB_AUTH_ENABLED=true` + per-consumer keys (unauthenticated today).
+- `public:` bank flag enforcement end-to-end.
+- Disk encryption / provider threat model before real personal data.
+- notebooklm-rest move, only if dedicated Google account adopted.
+
+## 11. Phases
+
+- M0 done — provision + harden idc01 (SSH keys, ufw, fail2ban, podman)
+- M1 done — tailnet join + accept-routes (michael-ha subnet route pending)
+- M2 done — Caddy edge + sslip.io + ACME; ada-pi-pwa proxied + healthy
+- M3 done — ada-pi checkout + env/keys + rendered banks; all 3 up
+- M4 pending — MDDB migration per §4
+- M5 pending — home Ada units → standby; move public URLs off Funnel
+- M6 pending — scheduled jobs; SSOT registration; health endpoints
+- M7 pending — soak ~1 week → archive tony-dell mddb.db → disable
+
+## 12. Open questions for Tony
+
+1. Real domain? (sslip.io works; a real domain is nicer for Ada URLs)
+2. Expose ada-ha-tony/ada-ha-michael publicly? Subdomains via
+   `<name>.157.85.110.99.sslip.io` work today, or keep them tailnet-only.
+3. michael-ha reachability: re-advertise mn01 subnet route, or point
+   ada-ha-michael at the Nabu Casa URL?
+4. Embeddings: proxy→Gemini (A) vs local nomic + reindex (B)?
+5. HA token on VPS (current: copied) vs dedicated HA user later?
+
+## 13. Ada review path
+
+Vault file → `sync-ada-memory-to-mddb.py` → `ada-ha-bank-projects-tony`.
+Ask Ada-Tony: "review the public host plan" — `ada_memory_search` finds
+it; review notes return via `ada_remember` → `docs/ada-memory/inbox/`
+on next `--export-inbox`.
+
+NOTE: this file is canonical in the mn01 vault
+(`~/CascadeProjects/chaba-vault/docs/ada-memory/tony-projects/`);
+the repo copy gets overwritten by vault pulls — edit mn01 first.
