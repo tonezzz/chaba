@@ -288,6 +288,7 @@ async function load() {
 }
 
 function render(g) {
+  if (!g) return;
   const msg = document.getElementById('msg');
   const showSubjects = document.getElementById('f-subjects').checked;
   const showEntities = document.getElementById('f-entities').checked;
@@ -398,7 +399,12 @@ document.getElementById('search').addEventListener('change', e => {
         || gdNodes.find(x => (x.label || '').toLowerCase() === q)
         || gdNodes.find(x => (x.key || '').toLowerCase().includes(q)
                           || (x.label || '').toLowerCase().includes(q));
-  if (n) { focusNodeId = n.id; flyTo(n); updateChip(); }
+  if (n) {
+    focusNodeId = n.id;
+    if (depth() > 0) { render(lastG); n = byId.get(n.id) || n; }
+    flyTo(n);
+    updateChip();
+  }
   else document.getElementById('msg').textContent = `no node matching "${e.target.value.trim()}"`;
 });
 
