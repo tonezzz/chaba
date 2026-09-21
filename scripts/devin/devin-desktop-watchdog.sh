@@ -2,7 +2,9 @@
 # devin-desktop-watchdog.sh — health monitor for devin-desktop
 #
 # Runs from cron every 10 min. Actions:
-#   1. Kill renderers stuck above CPU threshold (original behavior).
+#   1. Kill renderers only when wedged: above CPU threshold across two
+#      consecutive runs (~10 min) with a startup grace period — single-run
+#      bursts (indexing, agent sessions) are left alone.
 #   2. If the main devin-desktop process is gone, clean up orphaned
 #      app-devin-desktop-*.scope units and tool-spawned children
 #      (headless Chrome, probes) that keep burning CPU after a crash.
@@ -59,20 +61,37 @@ main_pid() {
     return 1
 }
 
-# --- 1. stuck renderer killer ------------------------------------------------
+# --- 1. wedged renderer killer ------------------------------------------------
+# A renderer is only killed if it stays above the CPU threshold across two
+# consecutive watchdog runs (~10 min apart) and is at least 2 min old. This
+# prevents killing legit busy renderers (indexing, agent sessions) that burn
+# CPU for a while but settle — killing those looks like a crash to the user.
+HOT_FILE="$STATE_DIR/hot-renderers"
+declare -A HOT
+if [ -f "$HOT_FILE" ]; then
+    while read -r p t; do HOT[$p]=$t; done <"$HOT_FILE"
+fi
+: >"$HOT_FILE.new"
+now=$(date +%s)
 for pid in $(pgrep -f "^${BIN} --type=renderer"); do
-    cpu1=$(ps -p "$pid" -o %cpu= 2>/dev/null | awk '{print $1}')
-    if awk -v c="${cpu1:-0}" -v t="$CPU_PCT" 'BEGIN {exit !(c > t)}'; then
-        sleep "$CPU_HOLD_SECS"
-        if kill -0 "$pid" 2>/dev/null; then
-            cpu2=$(ps -p "$pid" -o %cpu= 2>/dev/null | awk '{print $1}')
-            if awk -v c="${cpu2:-0}" -v t="$CPU_PCT" 'BEGIN {exit !(c > t)}'; then
-                log "Killing stuck devin-desktop renderer $pid (cpu $cpu1 -> $cpu2)"
-                kill -TERM "$pid" 2>/dev/null
-            fi
-        fi
+    etimes=$(ps -o etimes= -p "$pid" 2>/dev/null | tr -d ' ')
+    [ "${etimes:-0}" -lt 120 ] && continue   # startup grace
+    cpu1=$(ps -o %cpu= -p "$pid" 2>/dev/null | awk '{print $1}')
+    awk -v c="${cpu1:-0}" -v t="$CPU_PCT" 'BEGIN {exit !(c > t)}' || continue
+    sleep "$CPU_HOLD_SECS"
+    kill -0 "$pid" 2>/dev/null || continue
+    cpu2=$(ps -o %cpu= -p "$pid" 2>/dev/null | awk '{print $1}')
+    awk -v c="${cpu2:-0}" -v t="$CPU_PCT" 'BEGIN {exit !(c > t)}' || continue
+    if [ -n "${HOT[$pid]:-}" ]; then
+        log "Killing wedged devin-desktop renderer $pid (hot since $(date -d "@${HOT[$pid]}" -Iseconds), cpu ${cpu1}->${cpu2})"
+        notify "Devin renderer $pid wedged (> ${CPU_PCT}% CPU for >10 min) — killed"
+        kill -TERM "$pid" 2>/dev/null
+    else
+        echo "$pid $now" >>"$HOT_FILE.new"
+        log "Renderer $pid hot (cpu ${cpu1}->${cpu2} > ${CPU_PCT}%); will kill next run if still hot"
     fi
 done
+mv "$HOT_FILE.new" "$HOT_FILE"
 
 # --- 2. orphan cleanup when the main process is dead -------------------------
 if ! main_pid >/dev/null || [ -z "$(main_pid)" ]; then
@@ -102,11 +121,14 @@ if ! main_pid >/dev/null || [ -z "$(main_pid)" ]; then
                 [ -S "$sock" ] || continue
                 disp=":${sock##*X}"
                 log "Auto-restarting devin-desktop on DISPLAY=$disp"
-                systemd-run --user --unit=devin-desktop env \
-                    DISPLAY="$disp" \
+                # nohup+setsid, not systemd-run: transient-service launches were
+                # observed dying ~1.3s in on tony-omen (2026-09-21).
+                env DISPLAY="$disp" \
                     XAUTHORITY="/run/user/$(id -u)/gdm/Xauthority" \
                     DBUS_SESSION_BUS_ADDRESS="unix:path=/run/user/$(id -u)/bus" \
-                    /usr/bin/devin-desktop >/dev/null 2>&1
+                    setsid /usr/bin/devin-desktop \
+                    >>"$HOME/.local/share/devin/cli/devin-restart-watchdog.log" \
+                    2>&1 </dev/null &
                 echo "$now" >"$STATE_DIR/last-restart"
                 notify "Devin desktop auto-restarted on DISPLAY=$disp"
                 break
