@@ -1,0 +1,77 @@
+title: HP DeskJet 2700 Printer Setup & iPhone AirPrint (2026-09-21)
+subtitle: Verified printer over IPP, added CUPS queue, diagnosed iPhone Wi-Fi Direct
+date: "2026-09-21"
+icon: 🖨️
+context: |
+  User asked to verify their printer. No printer was documented in SSOT or MDDB.
+  Discovery found an HP DeskJet 2700 series on the LAN; verified end-to-end with a
+  test page, added a permanent CUPS queue, and diagnosed why iPhone "Wi-Fi Direct"
+  printing appeared broken.
+
+printer:
+  model: HP DeskJet 2700 series
+  bonjour_name: "HP DeskJet 2700 series [05C516]"
+  hostname: HPE073E705C516.local
+  ip: 192.168.2.74
+  mac: e0:73:e7:05:c5:16
+  ipp_uri: ipp://HPE073E705C516.local/ipp/print
+  wifi_direct_ssid: "DIRECT-16-HP DeskJet 2700 series"   # WPA2
+  cups_queue: HP-DeskJet-2700                            # driverless "IPP Everywhere", on tony-dell
+  open_ports: [80, 443, 631, 9100]
+  ews: http://192.168.2.74/   # JS SPA; raw XML via /DevMgmt/*.xml (e.g. NetAppsDyn.xml)
+
+lessons:
+  - id: printer-verification-flow
+    title: Verify a network printer without CUPS
+    severity: info
+    detail: |
+      lpinfo -v and ippfind discover it via mDNS. ipptool with a Get-Printer-Attributes
+      test file against ipp://<host>.local/ipp/print returns printer-state,
+      printer-is-accepting-jobs, and marker-levels (ink %). Ping + /dev/tcp port check
+      confirms reachability. A test page via the CUPS queue exercises the full path.
+
+  - id: iphone-wifi-direct-not-a-thing
+    title: iOS has no Wi-Fi Direct pairing — "DIRECT-xx" is just a Wi-Fi network
+    severity: important
+    detail: |
+      Android/Mopria negotiate Wi-Fi Direct peer-to-peer; iOS does not. For iPhone,
+      "print via Wi-Fi Direct" means: Settings → Wi-Fi → join the printer's DIRECT-xx
+      SSID (WPA2 password from the printer's Wi-Fi Direct guide / EWS), accept the
+      "no internet" warning, then print via normal AirPrint. If the iPhone is on the
+      home LAN instead, plain AirPrint should already work — Wi-Fi Direct is only
+      needed away from the home network.
+
+  - id: airprint-mdns-checklist
+    title: AirPrint discovery is pure mDNS TXT
+    severity: info
+    detail: |
+      AirPrint needs _ipp._tcp/_ipps._tcp adverts whose TXT includes pdl with
+      image/urf, a URF capability string, rp=ipp/print, and ty. Verified with python
+      zeroconf ServiceBrowser (avahi-browse not installed). If the phone and printer
+      are on different SSIDs (extender, guest VLAN) or the router filters multicast,
+      discovery silently fails even though the printer is reachable by IP.
+
+  - id: deskjet-2700-notes
+    title: HP DeskJet 2700 quirks seen here
+    severity: info
+    detail: |
+      Tri-color cartridge reported markerInkAlmostEmpty at ~20% (black ~60%). During
+      a job the printer reports spool-area-full-report — benign HP quirk, not an
+      error. EWS root is a JS SPA; DevMgmt XML endpoints (DiscoveryTree.xml,
+      NetAppsDyn.xml) expose real config without a browser.
+
+  - id: network-context
+    title: LAN context for future debugging
+    severity: info
+    detail: |
+      Home SSIDs: TONY-WIFI_5G, TONY-WIFI_2.4G, TONY-WIFI_2.4G-ext (extender —
+      possible client isolation). Router bridges 2.4G/5G and passes mDNS (verified:
+      tony-dell on 5G discovered printer on same subnet 192.168.2.0/24). If iPhone
+      AirPrint fails on LAN, check for guest network / VPN / Private Relay first.
+
+config:
+  version: 1
+  last_updated: 2026-09-21
+  maintainer: tony
+  related_files:
+    - docs/ssot/ssot.learning.session-close.2026.yml
