@@ -70,9 +70,11 @@ instances:
       /local/chaba-events.json (written by /config/scripts/chaba-event-log.py —
       flock, 24h prune, 300 cap, `ack` sets responded) plus live
       persistent_notification entities (always requires-response). Shared
-      filter state in input_text.chaba_events_filter ({"hidden": [...]});
-      native logbook card gated by input_boolean.chaba_events_show_logbook via
-      a conditional card — note HA 2026.8 logbook cards error
+      filter state in input_text.chaba_events_filter ({"hidden": [...]}).
+      Log tab added 2026-09-21: native logbook card moved off the Events tab
+      onto its own tab, still gated by input_boolean.chaba_events_show_logbook
+      via a conditional card (the "logbook" checkbox inside chaba-events-card
+      flips that boolean) — note HA 2026.8 logbook cards error
       ("target has no entities") without entities:/target:, so it carries a
       curated entity list (pairing/cast scripts+automations, helpers, cast
       devices, ada sensors). Producers: shell_command.chaba_event /
@@ -88,7 +90,11 @@ instances:
       - title: Events
         path: events
         icon: mdi:bell-badge-outline
-        cards: chaba-events-card, conditional logbook (24h)
+        cards: chaba-events-card
+      - title: Log
+        path: log
+        icon: mdi:history
+        cards: conditional logbook (24h), gated by input_boolean.chaba_events_show_logbook
 
 tabs:
   dev:
@@ -199,5 +205,5 @@ manual_steps:
 
 status:
   last_updated: "2026-09-20"
-  last_verified: "2026-09-20"
+  last_verified: "2026-09-21"
   health: active; G1 on both hosts (dev v171 / ha v161, same md5 b404aab0) — surface3d PV chart on sensor.inverters_1_pv_power, vendored echarts libs in /local; Cast tab removed from live michael-ha tony-test on 2026-09-14; PF3/PF4/PFG/PFG1/PFG2 removed
