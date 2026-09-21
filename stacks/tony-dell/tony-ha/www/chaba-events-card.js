@@ -7,17 +7,14 @@
 //      via persistent_notification.dismiss.
 //
 // Category visibility is shared across devices via input_text.chaba_events_filter
-// (JSON {"hidden": [...]}). The "logbook" checkbox maps to
-// input_boolean.chaba_events_show_logbook which gates the native logbook card
-// on the same view.
+// (JSON {"hidden": [...], "log_hidden": [...]} — the "log_hidden" key belongs
+// to chaba-log-card on the Log tab; writes here merge rather than replace).
 class ChabaEventsCard extends HTMLElement {
   setConfig(config) {
     this._config = config || {};
     this._feedUrl = this._config.url || "/local/chaba-events.json";
     this._filterEntity =
       this._config.filter_entity || "input_text.chaba_events_filter";
-    this._logbookEntity =
-      this._config.logbook_entity || "input_boolean.chaba_events_show_logbook";
     this._events = [];
     this._fetchErr = null;
 
@@ -106,9 +103,15 @@ class ChabaEventsCard extends HTMLElement {
 
   async _setHidden(hidden) {
     if (!this._hass) return;
+    let j = {};
+    try {
+      j = JSON.parse(this._hass.states[this._filterEntity]?.state || "{}");
+    } catch {}
+    if (!Array.isArray(j.hidden)) j.hidden = [];
+    j.hidden = [...hidden];
     await this._hass.callService("input_text", "set_value", {
       entity_id: this._filterEntity,
-      value: JSON.stringify({ hidden: [...hidden] }),
+      value: JSON.stringify(j),
     });
   }
 
@@ -147,7 +150,6 @@ class ChabaEventsCard extends HTMLElement {
     const { pending, rest } = this._merged();
     const hidden = this._hidden();
     const cats = new Set(all_cats(this._merged()));
-    cats.add("logbook");
 
     // filters
     this._filters.innerHTML = "";
@@ -155,18 +157,10 @@ class ChabaEventsCard extends HTMLElement {
       const lb = document.createElement("label");
       const cb = document.createElement("input");
       cb.type = "checkbox";
-      cb.checked = c === "logbook"
-        ? this._hass.states[this._logbookEntity]?.state === "on"
-        : !hidden.has(c);
+      cb.checked = !hidden.has(c);
       cb.onchange = () => {
-        if (c === "logbook") {
-          this._hass.callService("input_boolean",
-            cb.checked ? "turn_on" : "turn_off",
-            { entity_id: this._logbookEntity });
-        } else {
-          if (cb.checked) hidden.delete(c); else hidden.add(c);
-          this._setHidden(hidden);
-        }
+        if (cb.checked) hidden.delete(c); else hidden.add(c);
+        this._setHidden(hidden);
       };
       lb.append(cb, document.createTextNode(c));
       this._filters.appendChild(lb);

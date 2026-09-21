@@ -70,11 +70,19 @@ instances:
       /local/chaba-events.json (written by /config/scripts/chaba-event-log.py —
       flock, 24h prune, 300 cap, `ack` sets responded) plus live
       persistent_notification entities (always requires-response). Shared
-      filter state in input_text.chaba_events_filter ({"hidden": [...]}).
-      Log tab added 2026-09-21: native logbook card moved off the Events tab
-      onto its own tab, still gated by input_boolean.chaba_events_show_logbook
-      via a conditional card (the "logbook" checkbox inside chaba-events-card
-      flips that boolean) — note HA 2026.8 logbook cards error
+      filter state in input_text.chaba_events_filter ({"hidden": [...],
+      "log_hidden": [...]} — both cards merge-write the shared JSON).
+      Log tab added 2026-09-21: `type: panel` view with a single
+      custom:chaba-log-card (/local/chaba-log-card.js?v=1, same repo dir) that
+      wraps the native logbook card full-viewport — header + its own
+      per-domain filter checkboxes stay fixed while the log scrolls inside
+      the card. Filter groups are entity domains (input_* grouped as
+      "input"), persisted as "log_hidden" in the same input_text; toggling a
+      group rebuilds the inner card's entities list. The inner card's chrome
+      is flattened via an injected shadowRoot <style>. Events card v4 dropped
+      the "logbook" checkbox (it gated a card on another tab);
+      input_boolean.chaba_events_show_logbook is now vestigial — nothing
+      reads it. Note HA 2026.8 logbook cards error
       ("target has no entities") without entities:/target:, so it carries a
       curated entity list (pairing/cast scripts+automations, helpers, cast
       devices, ada sensors). Producers: shell_command.chaba_event /
@@ -94,7 +102,8 @@ instances:
       - title: Log
         path: log
         icon: mdi:history
-        cards: conditional logbook (24h), gated by input_boolean.chaba_events_show_logbook
+        type: panel
+        cards: chaba-log-card (full-height logbook 24h, own domain filters)
 
 tabs:
   dev:
