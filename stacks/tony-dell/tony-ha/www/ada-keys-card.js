@@ -32,14 +32,18 @@ class AdaKeysCard extends HTMLElement {
       list.appendChild(head);
       for (const key of keys) {
         const row = document.createElement("div");
-        row.style.cssText = "display:flex;align-items:center;gap:8px;font-size:.9rem";
-        const code = document.createElement("a");
-        code.href = "#";
-        code.title = "Re-pair and open the session in this browser (admin verify)";
-        code.style.cssText = "flex:1;color:var(--primary-color);text-decoration:none;font-family:monospace";
+        row.style.cssText = "display:flex;align-items:center;gap:6px;font-size:.9rem";
+        const code = document.createElement("span");
+        code.style.cssText = "flex:1;font-family:monospace;overflow:hidden;text-overflow:ellipsis";
         code.textContent = key;
-        code.onclick = (e) => this._repairAndOpen(e, inst.id, key, code);
+        const voice = this._btn("Voice");
+        voice.title = "Re-pair and open the voice interface in a popup";
+        voice.onclick = (e) => this._repairAndOpen(e, inst.id, key, code, "voice");
+        const chat = this._btn("Text");
+        chat.title = "Re-pair and open the text chat interface in a popup";
+        chat.onclick = (e) => this._repairAndOpen(e, inst.id, key, code, "chat");
         const repair = this._btn("Re-pair");
+        repair.title = "Re-pair without opening — refreshes the QR on this dashboard";
         repair.onclick = () =>
           hass.callService("script", "ada_pair_reissue", { instance: inst.id, name: key });
         const revoke = this._btn("Revoke");
@@ -48,7 +52,7 @@ class AdaKeysCard extends HTMLElement {
           if (confirm(`Revoke key "${key}" on ${inst.title}? The device loses access immediately.`))
             hass.callService("script", "ada_pair_revoke_named", { instance: inst.id, name: key });
         };
-        row.append(code, repair, revoke);
+        row.append(code, voice, chat, repair, revoke);
         list.appendChild(row);
       }
     }
@@ -60,7 +64,7 @@ class AdaKeysCard extends HTMLElement {
     }
   }
 
-  async _repairAndOpen(e, instance, name, el) {
+  async _repairAndOpen(e, instance, name, el, ui) {
     e.preventDefault();
     if (el.dataset.busy) return;
     el.dataset.busy = "1";
@@ -74,7 +78,7 @@ class AdaKeysCard extends HTMLElement {
         type: "call_service",
         domain: "script",
         service: "ada_pair_reissue",
-        service_data: { instance, name },
+        service_data: { instance, name, ui },
         return_response: true,
       });
       const path = res && res.response && res.response.content && res.response.content.redeem_url;

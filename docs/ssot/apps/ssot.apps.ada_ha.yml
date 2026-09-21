@@ -20,6 +20,8 @@ sections:
     items:
       - label: /home/tony/CascadeProjects/ada-pi/pwa_server.py
         text: Shared FastAPI backend. Static PWA served from /pwa; dynamic API routes under /api/home-assistant/.
+      - label: /home/tony/CascadeProjects/ada-pi/pwa/chat/
+        text: 'Text chat page at {base}/chat/ sharing the same /ws endpoint: sends {"type":"text","text":...} frames (routed to provider.send_text_turn, 4000-char cap), renders assistant_transcript_delta/user_transcript bubbles, and plays PCM replies with a Voice on/off toggle. Same device-key auth (api_key param, session cookie, redeem redirect param). Each /ws connection owns its own Gemini Live provider session — chat and voice clients do NOT share context.'
       - label: /home/tony/CascadeProjects/ada-pi/backend/realtime_provider.py
         text: Gemini Live client with function calling. Speech barge-in enabled (START_OF_ACTIVITY_INTERRUPTS).
       - label: /home/tony/CascadeProjects/ada-pi/backend/home_assistant.py
@@ -120,6 +122,8 @@ sections:
         text: 'wss://mn01.taila0626a.ts.net/apps/ha/ada-{tony,michael}/ws returns {"type":"ready"}.'
       - label: Voice
         text: Tap Connect and ask about the G3 power summary or a dashboard tab.
+      - label: Text chat
+        text: 'Open {base}/chat/ (or the Text button on the chaba-admin issued-keys card), send a message, expect transcript deltas + PCM audio frames back over /ws.'
   - title: Memory Architecture
     icon: "🧠"
     layout: list
