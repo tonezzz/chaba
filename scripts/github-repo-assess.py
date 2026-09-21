@@ -399,7 +399,9 @@ def _mddb_call(fn, *args, retries: int = 4, delay: float = 1.0):
 
 def sync_mddb(scored: list[dict], discoveries: list[dict], today: str,
               dry: bool, prune: bool = True) -> None:
-    mddb = ada_sync.Mddb(ada_sync.MDDB, timeout=60)
+    # Long timeout: /add queues behind the server's serial embed worker,
+    # which can be saturated by backlog retries after outages.
+    mddb = ada_sync.Mddb(ada_sync.MDDB, timeout=300)
     remote = {d.get("key"): d for d in mddb.list_docs(COLLECTION)}
     wanted: dict[str, tuple[str, dict]] = {}
 
