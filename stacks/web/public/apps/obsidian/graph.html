@@ -6,15 +6,19 @@
   <meta name="description" content="3D knowledge graph of Ada's memory banks">
   <title>Ada Memory Graph</title>
   <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/echarts-gl@2.1.0/dist/echarts-gl.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/3d-force-graph@1.78.4/dist/3d-force-graph.min.js"></script>
   <script>
     tailwind.config = { theme: { extend: { colors: { bg: '#1a1a2e', card: '#16213e', accent: '#0a84ff' } } } };
   </script>
   <style>
     body { font-family: system-ui, sans-serif; }
     #chart { width: 100vw; height: calc(100vh - 3rem); }
+    #chart canvas { display: block; }
     .ctl { display: flex; align-items: center; gap: .3rem; font-size: 11px; color: #9ca3af; cursor: pointer; }
+    .graph-tooltip { background: #16213e !important; border: 1px solid #374151;
+      border-radius: 6px; padding: 6px 10px; font-size: 11px; line-height: 1.5;
+      color: #e5e7eb; max-width: 320px; }
+    .graph-tooltip .dim { color: #9ca3af; }
   </style>
 </head>
 <body class="bg-bg text-gray-200">
@@ -42,18 +46,17 @@
       <button class="text-gray-500 hover:text-gray-200" onclick="document.getElementById('legend').classList.add('hidden')">✕</button>
     </div>
     <div class="space-y-1.5 text-gray-300">
-      <div><span style="color:#4dd0e1">●</span> colored dot = memory doc — <b>color is the bank</b> (legend up top)</div>
-      <div><span style="color:#64748b">●</span> grey dot = <b>hub</b> — a <code>subject:</code> topic or <code>entity:</code> shared by 2+ docs</div>
-      <div>bigger dot = more links / more voice recalls</div>
-      <div><span class="inline-block w-2.5 h-2.5 rounded-full border-2 border-amber-500 align-middle"></span> amber ring = MDDB only (voice note not yet in vault)</div>
-      <div><span class="inline-block w-2.5 h-2.5 rounded-full border-2 border-dashed border-cyan-300 align-middle"></span> dashed ring = inbox (awaiting review)</div>
+      <div><span style="color:#4dd0e1">●</span> colored sphere = memory doc — <b>color is the bank</b></div>
+      <div><span style="color:#64748b">●</span> grey sphere = <b>hub</b> — a <code>subject:</code> topic or <code>entity:</code> shared by 2+ docs</div>
+      <div>bigger sphere = more links / more voice recalls</div>
+      <div>bright solid = in MDDB + vault (or MDDB-only) · <span class="text-gray-500">faded</span> = vault-only, retracted, or superseded</div>
       <div><span style="color:#ef4444">●</span> red = dangling supersedes link (broken provenance)</div>
-      <div><span class="inline-block w-2.5 h-2.5 rounded-full border-2 border-green-400 align-middle"></span>/<span class="inline-block w-2.5 h-2.5 rounded-full border-2 border-red-400 align-middle"></span> border = recall outcome correct/wrong</div>
-      <div>dim dot = vault-only, retracted, or superseded</div>
       <div><span class="text-amber-500 font-bold">—</span> thick amber edge = supersedes (old → new)</div>
+      <div><span class="text-gray-500 font-bold">···</span> faint edge = semantic similarity (enable in toolbar)</div>
     </div>
+    <div id="legend-banks" class="mt-2 pt-2 border-t border-gray-700 flex flex-wrap gap-x-3 gap-y-1"></div>
     <div class="mt-2 pt-2 border-t border-gray-700 text-gray-400">
-      drag to rotate · scroll to zoom · hover for details · click a doc to open it in the vault
+      drag to rotate · scroll to zoom · right-drag to pan · hover for details · click a doc to open it in the vault
     </div>
   </div>
 <script>
@@ -74,15 +77,30 @@ async function api(path) {
 const PALETTE = ['#4dd0e1','#81c784','#ffb74d','#ba68c8','#f06292','#a1887f',
                  '#90a4ae','#fff176','#4db6ac','#e57373','#9575cd','#64b5f6',
                  '#dce775','#ff8a65','#aed581','#4fc3f7'];
-const SYNC_STYLE = {
-  synced:     {},
-  vault_only: { itemStyle: { opacity: 0.45 } },
-  mddb_only:  { itemStyle: { borderColor: '#f59e0b', borderWidth: 2 } },
-  inbox:      { itemStyle: { borderColor: '#4dd0e1', borderWidth: 2, borderType: 'dashed' } },
+const LINK_STYLE = {
+  supersedes:  { color: '#f59e0b', width: 2 },
+  rollup:      { color: '#34d399', width: 1.2 },
+  related:     { color: '#9575cd', width: 1 },
+  subject:     { color: '#3b4c63', width: 0.6 },
+  applies_to:  { color: '#2f4459', width: 0.6 },
+  same_subject:{ color: '#3b4c63', width: 0.4 },
+  same_entity: { color: '#2f4459', width: 0.4 },
+  similar:     { color: '#8aa0b5', width: 0.2 },
 };
 
-const chart = echarts.init(document.getElementById('chart'));
 const focusId = new URLSearchParams(location.search).get('focus');
+
+const Graph = ForceGraph3D()(document.getElementById('chart'))
+  .backgroundColor('#0b0f14')
+  .showNavInfo(false)
+  .nodeId('id')
+  .nodeRelSize(4)
+  .linkOpacity(0.35)
+  .linkDirectionalArrowLength(0)
+  .onNodeHover(n => document.body.style.cursor = n && n.path ? 'pointer' : 'default')
+  .onNodeClick(n => {
+    if (n.path) location.href = BASE + '/?note=' + encodeURIComponent(n.path);
+  });
 
 function params() {
   const p = new URLSearchParams();
@@ -90,6 +108,25 @@ function params() {
   if (!document.getElementById('f-retracted').checked) p.set('status', 'active');
   if (document.getElementById('f-similar').checked) p.set('similar', '1');
   return p.toString();
+}
+
+function rgba(hex, a) {
+  const n = parseInt(hex.slice(1), 16);
+  return `rgba(${n >> 16 & 255},${n >> 8 & 255},${n & 255},${a})`;
+}
+
+function tip(n) {
+  if (n.hub) return `${n.hub} hub<br><b>${n.label}</b>`;
+  if (n.missing) return `dangling reference<br><b>${n.key || n.id}</b>`;
+  return [
+    `<b>${n.label || n.key}</b>`,
+    `<span class="dim">${n.bank} · ${n.kind || '?'} · ${n.status || '?'} · ${n.sync || '?'}</span>`,
+    n.subject ? `subject: ${n.subject}` : '',
+    n.written_by ? `<span class="dim">by ${n.written_by}</span>` : '',
+    n.verdict ? `verdict: ${n.verdict}` : '',
+    n.use_count ? `recalled ${n.use_count}×` : '',
+    n.path ? '<span class="dim">click to open in vault</span>' : '',
+  ].filter(Boolean).join('<br>');
 }
 
 async function load() {
@@ -101,87 +138,53 @@ async function load() {
 
   const showSubjects = document.getElementById('f-subjects').checked;
   const showEntities = document.getElementById('f-entities').checked;
-  let nodes = g.nodes || [], links = g.links || [];
   const drop = new Set();
-  for (const n of nodes) {
+  for (const n of g.nodes || []) {
     if (n.hub === 'subject' && !showSubjects) drop.add(n.id);
     if (n.hub === 'applies_to' && !showEntities) drop.add(n.id);
   }
-  nodes = nodes.filter(n => !drop.has(n.id));
-  links = links.filter(l => !drop.has(l.source) && !drop.has(l.target));
+  const nodes = (g.nodes || []).filter(n => !drop.has(n.id));
+  const links = (g.links || [])
+    .filter(l => !drop.has(l.source) && !drop.has(l.target));
 
-  const idx = new Set(nodes.map(n => n.id));
-  links = links.filter(l => idx.has(l.source) && idx.has(l.target));
   const degree = new Map();
   for (const l of links) {
     degree.set(l.source, (degree.get(l.source) || 0) + 1);
     degree.set(l.target, (degree.get(l.target) || 0) + 1);
   }
-  // graphGL dedupes nodes by id/name — display labels collide across
-  // collections, so every node gets a unique `id` and edges use it.
-  links = links.map(l => ({
-    source: l.source, target: l.target,
-    lineStyle: l.type === 'similar' ? { opacity: 0.12, curveness: 0.1 }
-             : l.type === 'supersedes' ? { color: '#f59e0b', width: 2 } : {},
-  }));
 
-  const cats = [...new Set(nodes.map(n => n.bank || (n.hub ? '_hub' : '?')))];
-  const catColor = Object.fromEntries(cats.map((c, i) => [c, PALETTE[i % PALETTE.length]]));
+  const banks = [...new Set(nodes.filter(n => !n.hub).map(n => n.bank || '?'))];
+  const catColor = Object.fromEntries(banks.map((c, i) => [c, PALETTE[i % PALETTE.length]]));
 
-  const data = nodes.map((n, i) => {
-    const deg = degree.get(n.id) || 0;
-    const size = n.hub ? 10 + Math.min(deg * 1.5, 18)
-                       : 6 + Math.min(deg * 2, 20) + Math.min(n.use_count || 0, 6);
-    const item = {
-      id: n.id,
-      name: n.label || n.id,
-      value: deg,
-      category: cats.indexOf(n.hub ? '_hub' : (n.bank || '?')),
-      symbolSize: n.id === focusId ? size + 8 : size,
-      itemStyle: { color: n.missing ? '#ef4444' : n.hub ? '#64748b' : catColor[n.bank] },
-      label: { show: n.id === focusId, fontSize: 14, fontWeight: 'bold' },
-      _n: n,
-    };
-    Object.assign(item.itemStyle, (SYNC_STYLE[n.sync] || {}).itemStyle || {});
-    if (n.status === 'retracted' || n.status === 'superseded' || n.status === 'expired')
-      item.itemStyle.opacity = Math.min(item.itemStyle.opacity ?? 1, 0.35);
-    if (n.outcome === 'correct') item.itemStyle.borderColor = '#34d399';
-    if (n.outcome === 'wrong') item.itemStyle.borderColor = '#f87171';
-    if (item.itemStyle.borderColor) item.itemStyle.borderWidth = 2;
-    return item;
-  });
+  const dim = n =>
+    n.sync === 'vault_only' ||
+    ['retracted', 'superseded', 'expired'].includes(n.status);
 
-  chart.setOption({
-    backgroundColor: '#0b0f14',
-    legend: { data: cats, textStyle: { color: '#9ca3af', fontSize: 11 }, top: 4 },
-    tooltip: {
-      formatter: p => {
-        const n = p.data && p.data._n;
-        if (!n) return p.name;
-        if (n.hub) return `${n.hub}: ${n.label}`;
-        return [
-          `<b>${n.key || n.label}</b>`, n.bank, n.kind,
-          n.status, n.sync, n.written_by || '',
-          n.subject ? 'subject: ' + n.subject : '',
-          n.verdict ? 'verdict: ' + n.verdict : '',
-        ].filter(Boolean).join(' · ');
-      },
-    },
-    series: [{
-      type: 'graphGL',
-      layout: 'forceAtlas2',
-      forceAtlas2: { steps: 5, edgeWeightInfluence: 4, jitterTolerence: 10,
-                     preventOverlap: true, edgeWeight: [0.2, 1] },
-      categories: cats.map(c => ({ name: c })),
-      data, links,
-      roam: true,
-      focusNodeAdjacency: false,
-      itemStyle: { opacity: 0.95 },
-      emphasis: { label: { show: true, fontSize: 12, color: '#fff' },
-                  itemStyle: { opacity: 1 } },
-      lineStyle: { color: 'source', opacity: 0.35, width: 1 },
-    }],
-  }, true);
+  const gd = {
+    nodes: nodes.map(n => ({
+      ...n,
+      _deg: degree.get(n.id) || 0,
+    })),
+    links,
+  };
+
+  Graph
+    .graphData(gd)
+    .nodeLabel(tip)
+    .nodeVal(n => n.hub ? 2 + Math.min(n._deg * 0.4, 8)
+                        : 0.6 + Math.min(n._deg * 0.5, 8) + Math.min((n.use_count || 0) * 0.2, 3))
+    .nodeColor(n => {
+      if (n.missing) return '#ef4444';
+      if (n.hub) return '#64748b';
+      const c = catColor[n.bank] || '#8aa0b5';
+      return dim(n) ? rgba(c, 0.35) : c;
+    })
+    .linkColor(l => (LINK_STYLE[l.type] || {}).color || '#3b4c63')
+    .linkWidth(l => (LINK_STYLE[l.type] || {}).width || 0.6);
+
+  const lb = document.getElementById('legend-banks');
+  lb.innerHTML = banks.map(b =>
+    `<span><span style="color:${catColor[b]}">●</span> ${b}</span>`).join('');
 
   if (g.context && g.context.deploy === 'public') {
     const b = document.getElementById('deploy-badge');
@@ -192,12 +195,21 @@ async function load() {
   msg.textContent = (g.warning ? g.warning + ' · ' : '') +
     `${s.nodes} nodes · ${s.links} links · synced ${s.synced} · mddb-only ${s.mddb_only} · vault-only ${s.vault_only}` +
     (s.dangling ? ` · ⚠ ${s.dangling} dangling` : '');
+
+  if (focusId) {
+    Graph.onEngineStop(() => {
+      const n = gd.nodes.find(x => x.id === focusId);
+      if (n && n.x !== undefined) {
+        const dist = 60;
+        const r = 1 + dist / Math.hypot(n.x, n.y, n.z);
+        Graph.cameraPosition(
+          { x: n.x * r, y: n.y * r, z: n.z * r }, n, 1500);
+      }
+      Graph.onEngineStop(() => {});  // one-shot
+    });
+  }
 }
 
-chart.on('click', p => {
-  const n = p.data && p.data._n;
-  if (n && n.path) location.href = BASE + '/?note=' + encodeURIComponent(n.path);
-});
 document.getElementById('btn-reload').onclick = load;
 document.getElementById('btn-legend').onclick = () =>
   document.getElementById('legend').classList.toggle('hidden');
