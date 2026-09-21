@@ -110,6 +110,8 @@ sections:
         text: Read the named tony-test dashboard tab and report displayed devices.
       - label: ada_session_recall
         text: "MDDB-first recall: per-instance MDDB collections serve cached/tiered summaries instantly; NotebookLM via notebooklm-rest is the deep-recall/archive path for explicit detail requests or low MDDB confidence (~26s, runs in background). Optional group param routes to per-topic notebooks: memory (past voice sessions, default), infra (hosts/services/tailscale/mcp), apps (ada-pi/HA/playlive), kb (mddb/yomi/SSOT/docs), ops (workflows/tasks/experiments). Group map lives in NOTEBOOKLM_NOTEBOOK_IDS_JSON per instance env; transcripts persist to the memory group. Tony groups: memory=663ef269, infra=be2d05c6, apps=fdbb97d0, kb=c28b6ab9, ops=76a31e03. Michael: memory only."
+      - label: ada_decision_check
+        text: "Voice entry to the purchase-verification pipeline (backend/decision_check.py). Args {product, url?, mode: quick|deep} — product is the listing text/details the user dictated or pasted. NON_BLOCKING: returns 'checking' instantly, engine runs in background (~30-60s), verdict arrives via send_text_turn; a slow filler keeps the user informed. Results persist as kind=check docs (caller=voice) + chaba-admin event. Image input stays on the Check panel; criteria via ada_remember to the 'purchase' bank; past checks via ada_memory_search."
   - title: Navigation
     icon: "🗺️"
     layout: list
