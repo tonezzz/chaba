@@ -1,0 +1,18 @@
+# This profile allows everything and only exists to give the
+# application a name instead of having the label "unconfined"
+#
+# Required on Ubuntu >= 24.04 where kernel.apparmor_restrict_unprivileged_userns=1
+# blocks devin-desktop's Electron sandbox (capability=sys_admin denial ->
+# renderer SIGTRAP / "renderer process gone (crashed, code: 5)").
+# Same pattern as the distro-shipped /etc/apparmor.d/chrome profile.
+
+abi <abi/5.0>,
+include <tunables/global>
+
+profile devin-desktop /usr/share/devin-desktop/devin-desktop flags=(unconfined) {
+  userns,
+  @{exec_path} mr,
+
+  # Site-specific additions and overrides. See local/README for details.
+  include if exists <local/devin-desktop>
+}
