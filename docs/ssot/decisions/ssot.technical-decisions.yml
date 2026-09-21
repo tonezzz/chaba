@@ -312,6 +312,68 @@ decisions:
       - docs/ssot/infrastructure/ssot.health.home.web.yml
       - ~/.config/home-assistant/configuration.yaml
 
+  - id: ada-calendar-provider-backend
+    date: '2026-09-21'
+    title: How ada gets calendar + tasks tools that can switch between Google, iCloud, and Outlook
+    status: accepted
+    context: |
+      Ada needed calendar reading and task planning tools. The natural instinct
+      was to find an MCP repo, but ada's ToolRunner dispatches tool calls to
+      native Python methods — MCP servers cannot plug in without a client
+      bridge. The user also wants the ability to switch providers (Google →
+      iCloud/Hotmail) or read several at once, so the provider had to be
+      modular from day one. A second constraint: GEMINI_API_KEY cannot
+      authenticate calendar calls (API keys carry no user identity), but the
+      OAuth Desktop client in ~/.config/secrets/google_credentials.json lives
+      in the same gen-lang-client project and is reusable for consent.
+    options:
+      - label: Direct provider adapters behind a CalendarProvider protocol
+        pros: [async-native httpx fits ada's FastAPI/asyncio design, full API
+               fidelity (freebusy, per-calendar routing), zero new runtime deps,
+               new provider = one file + one registry block]
+        cons: [ada owns OAuth per provider; one token file per service]
+      - label: Home Assistant as the provider abstraction
+        pros: [zero new auth in ada — HA owns OAuth per integration;
+               reuses existing home_assistant.py client]
+        cons: [calendar.create_event/todo support is patchy per HA integration,
+               every call inherits HA latency on top of Gemini's round trip,
+               tool surface capped at what HA exposes]
+      - label: MCP server bridge in ToolRunner
+        pros: [unlocks the whole MCP ecosystem (nspady/google-calendar-mcp etc.)]
+        cons: [new MCP client machinery inside a voice-latency path, extra
+               process lifecycle to manage on mn01, overkill for v1]
+      - label: Bidirectional sync between providers
+        pros: [same events visible in every native app]
+        cons: [conflict resolution and duplicate handling forever; rejected —
+               aggregation at read time gives the same user-visible answer]
+    chosen: Direct provider adapters behind a CalendarProvider protocol, Google first
+    reasoning: |
+      The protocol + aggregator (backend/calendar_providers.py) gives provider
+      switching via the rendered registry (read: aggregate|name, write: name,
+      instances:) — the same shape as memory banks. Google gets a real adapter
+      (httpx + refresh token, no google-api-python-client weight on the Pi);
+      CalDAV covers iCloud/Fastmail/Nextcloud as one adapter later; MS Graph
+      only when actually needed. Writes require confirmed=true server-side.
+      HA-mediation stays available as a future read-only adapter if a provider
+      is easier to wire in HA than directly.
+    consequences:
+      - backend/calendar_providers.py + backend/google_calendar.py added
+      - CALENDAR_WRITE_TOOLS gate in tool_runner.py; declarations + instruction
+        paragraph in realtime_provider.py
+      - 'Registry SSOT: docs/ssot/apps/ssot.apps.ada-calendar.yml rendered to
+        ~/.config/ada/calendar.json by scripts/ada/render-calendar-providers.py'
+      - 'Auth: scripts/ada/google-calendar-auth.py mints
+        ~/.config/secrets/ada-google-calendar-token.json from the shared
+        google_credentials.json client (scopes: calendar.readonly,
+        calendar.events, tasks); consent screen must be published or tokens
+        expire in 7 days'
+      - Calendar/Tasks APIs must be enabled on project gen-lang-client-0694401188
+    related:
+      - docs/ssot/apps/ssot.apps.ada-calendar.yml
+      - docs/ssot/infrastructure/ssot.ada.howto.yml
+      - 'ada-pi: backend/calendar_providers.py, backend/google_calendar.py,
+        backend/tool_runner.py, backend/realtime_provider.py'
+
 related_files:
   - docs/ssot/ssot.focus.decisions.yml
   - docs/ssot/ssot.focus.sessions.yml
