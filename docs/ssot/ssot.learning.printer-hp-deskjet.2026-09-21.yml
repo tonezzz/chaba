@@ -1,5 +1,5 @@
 title: HP DeskJet 2700 Printer Setup & iPhone AirPrint (2026-09-21)
-subtitle: Verified printer over IPP, added CUPS queue, diagnosed iPhone Wi-Fi Direct
+subtitle: Verified printer over IPP, added CUPS queue, diagnosed iPhone Wi-Fi Direct, enabled flatbed scanning + Thunar print menu
 date: "2026-09-21"
 icon: 🖨️
 context: |
@@ -19,6 +19,21 @@ printer:
   cups_queue: HP-DeskJet-2700                            # driverless "IPP Everywhere", on tony-dell
   open_ports: [80, 443, 631, 9100]
   ews: http://192.168.2.74/   # JS SPA; raw XML via /DevMgmt/*.xml (e.g. NetAppsDyn.xml)
+
+scanner:
+  type: flatbed only (no ADF)
+  escl_url: https://192.168.2.74/eSCL   # also http://192.168.2.74:8080/eSCL
+  sane_device: "airscan:e0:HP DeskJet 2700 series [05C516]"   # the working backend
+  resolutions: [75, 100, 200, 300, 600, 1200]   # discrete steps only
+  formats: [image/jpeg, application/pdf, application/octet-stream]
+  max_area: 2550x3508 in 1/300in units (~A4/Letter flatbed)
+  cli_scan: "scanimage -d 'airscan:e0:HP DeskJet 2700 series [05C516]' --format=png --resolution 300 -o out.png"
+  pdf_scan: "scan-doc ~/scan.pdf 300   # ~/bin/scan-doc, raw-eSCL client, most reliable"
+  gui: simple-scan (installed 2026-09-21) — pick the "eSCL HP DeskJet 2700" device, not webcam
+  disabled_backends:
+    - "escl in /etc/sane.d/dll.conf — sends 'escl:ThreeHundredthsOfInches', firmware rejects with HTTP 409, error surfaces as misleading 'Document feeder out of documents'"
+    - "hpaio in /etc/sane.d/dll.d/hplip — 'Error during device I/O'; hp-scan hangs"
+  thunar_print_action: "uca.xml 'Print' action runs `lp %F` for pdf/jpg/png/gif/tif/bmp/txt/ps → HP-DeskJet-2700 queue"
 
 lessons:
   - id: printer-verification-flow
@@ -59,6 +74,28 @@ lessons:
       a job the printer reports spool-area-full-report — benign HP quirk, not an
       error. EWS root is a JS SPA; DevMgmt XML endpoints (DiscoveryTree.xml,
       NetAppsDyn.xml) expose real config without a browser.
+
+  - id: escl-scanjob-hp-quirks
+    title: HP eSCL ScanJob must be minimal — pwg:InputSource, no ScanRegions
+    severity: important
+    detail: |
+      POST /eSCL/ScanJobs returns 409 Conflict unless the ScanSettings use
+      <pwg:InputSource>Platen</pwg:InputSource> (not scan:InputSource) and OMIT
+      <pwg:ScanRegions> entirely — sending even a valid region (2550x3508,
+      ThreeHundredthsOfInches) gets 409. HTTP 503 means a stale job is still
+      open: DELETE it via the JobUri in /eSCL/ScannerStatus. Fetch the page at
+      {JobUrl}/NextDocument, then DELETE the job. Working client: ~/bin/scan-doc.
+
+  - id: sane-backend-selection
+    title: Scanning this DeskJet requires the airscan backend, not escl/hpaio
+    severity: important
+    detail: |
+      scanimage -L listed escl, hpaio, and airscan devices for the same scanner.
+      escl fails (malformed ContentRegionUnits value — see escl-scanjob-hp-quirks),
+      hpaio fails I/O, hp-scan hangs on probe. sane-airscan scans fine. Fix:
+      comment out `escl` in /etc/sane.d/dll.conf and `hpaio` in
+      /etc/sane.d/dll.d/hplip so GUI apps (simple-scan) auto-pick airscan.
+      Reversible by uncommenting.
 
   - id: network-context
     title: LAN context for future debugging
