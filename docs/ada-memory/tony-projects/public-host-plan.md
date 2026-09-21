@@ -28,7 +28,10 @@ currently mock/non-critical.
     over tailnet (still pointing at tony-dell:11023).
   - `caddy-edge` quadlet (podman `Network=host`) — real ACME cert.
 - Public URL: `https://157.85.110.99.sslip.io/` → ada-pi-pwa (canary).
-  sslip.io is an interim domain — swap for a real domain anytime.
+- Tailnet URL: `https://idc01.taila0626a.ts.net/` → ada-pi-pwa via
+  `tailscale serve` (tailnet-only for now — verified 200 from tony-omen).
+- Domain plan (decided 2026-09-21): use the Tailscale address for now;
+  Tony will add a **Cloudflare** service later for the real domain.
 - Secrets copied host-to-host (env + keys JSON + calendar token).
 - `deploy-ada.sh` gained an `idc01` case (committed 50a8dc37).
 - SSH alias: `ssh idc01` (tony-omen `~/.ssh/config`).
@@ -189,7 +192,9 @@ writes are local on the VPS — unaffected.
 
 ## 12. Open questions for Tony
 
-1. Real domain? (sslip.io works; a real domain is nicer for Ada URLs)
+1. Domain — RESOLVED for now: tailscale address
+   (`idc01.taila0626a.ts.net`) + sslip.io fallback; Cloudflare-backed
+   real domain comes later (Tony will add the service).
 2. Expose ada-ha-tony/ada-ha-michael publicly? Subdomains via
    `<name>.157.85.110.99.sslip.io` work today, or keep them tailnet-only.
 3. michael-ha reachability: re-advertise mn01 subnet route, or point
