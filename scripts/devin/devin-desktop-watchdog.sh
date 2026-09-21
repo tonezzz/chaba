@@ -2,9 +2,12 @@
 # devin-desktop-watchdog.sh — health monitor for devin-desktop
 #
 # Runs from cron every 10 min. Actions:
-#   1. Kill renderers only when wedged: above CPU threshold across two
-#      consecutive runs (~10 min) with a startup grace period — single-run
-#      bursts (indexing, agent sessions) are left alone.
+#   1. Kill renderers only when wedged: interval CPU (measured during a
+#      10s hold, NOT ps lifetime-average) above threshold across several
+#      consecutive runs (~30 min) with a startup grace period — legit
+#      busy renderers (indexing, agent sessions, scan jobs) are left alone.
+#      WATCHDOG_RENDERER_KILL=0 in ~/.config/devin/watchdog.conf keeps the
+#      detection + heads-up notification but never kills.
 #   2. If the main devin-desktop process is gone, clean up orphaned
 #      app-devin-desktop-*.scope units and tool-spawned children
 #      (headless Chrome, probes) that keep burning CPU after a crash.
@@ -19,9 +22,19 @@
 LOG="$HOME/.local/share/devin/cli/watchdog.log"
 STATE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}/devin-watchdog"
 BIN="/usr/share/devin-desktop/devin-desktop"
-CPU_PCT="${WATCHDOG_CPU_PCT:-50}"
-CPU_HOLD_SECS="${WATCHDOG_CPU_HOLD_SECS:-10}"
+CPU_PCT=95
+CPU_HOLD_SECS=10
+HOT_RUNS=3
+RENDERER_KILL=1
 RESTART_COOLDOWN_SECS=1800
+# Per-host overrides: WATCHDOG_CPU_PCT, WATCHDOG_CPU_HOLD_SECS,
+# WATCHDOG_HOT_RUNS, WATCHDOG_RENDERER_KILL (0 = detect+notify only,
+# never kill — right choice for the primary workstation).
+[ -f "$HOME/.config/devin/watchdog.conf" ] && . "$HOME/.config/devin/watchdog.conf"
+CPU_PCT="${WATCHDOG_CPU_PCT:-$CPU_PCT}"
+CPU_HOLD_SECS="${WATCHDOG_CPU_HOLD_SECS:-$CPU_HOLD_SECS}"
+HOT_RUNS="${WATCHDOG_HOT_RUNS:-$HOT_RUNS}"
+RENDERER_KILL="${WATCHDOG_RENDERER_KILL:-$RENDERER_KILL}"
 mkdir -p "$(dirname "$LOG")" "$STATE_DIR"
 
 log() { echo "$(date -Iseconds) $*" >>"$LOG"; }
@@ -61,34 +74,47 @@ main_pid() {
     return 1
 }
 
-# --- 1. wedged renderer killer ------------------------------------------------
-# A renderer is only killed if it stays above the CPU threshold across two
-# consecutive watchdog runs (~10 min apart) and is at least 2 min old. This
-# prevents killing legit busy renderers (indexing, agent sessions) that burn
-# CPU for a while but settle — killing those looks like a crash to the user.
+# --- 1. wedged renderer detection (+ optional kill) ---------------------------
+# Detection always runs: a renderer >=2 min old whose *interval* CPU (times
+# delta measured over CPU_HOLD_SECS, not the ps lifetime average which stays
+# elevated long after a busy renderer settles) stays above CPU_PCT for a run
+# is logged and notified once. It is only killed if it stays pegged for
+# HOT_RUNS consecutive runs (~10 min apart) AND WATCHDOG_RENDERER_KILL=1.
+# Killing a legit busy renderer presents as a crash dialog to the user, so the
+# bar is deliberately high; on the primary workstation set RENDERER_KILL=0.
 HOT_FILE="$STATE_DIR/hot-renderers"
-declare -A HOT
+declare -A SEEN RUNS
 if [ -f "$HOT_FILE" ]; then
-    while read -r p t; do HOT[$p]=$t; done <"$HOT_FILE"
+    while read -r p t r; do SEEN[$p]=$t; RUNS[$p]=${r:-1}; done <"$HOT_FILE"
 fi
 : >"$HOT_FILE.new"
 now=$(date +%s)
 for pid in $(pgrep -f "^${BIN} --type=renderer"); do
     etimes=$(ps -o etimes= -p "$pid" 2>/dev/null | tr -d ' ')
     [ "${etimes:-0}" -lt 120 ] && continue   # startup grace
-    cpu1=$(ps -o %cpu= -p "$pid" 2>/dev/null | awk '{print $1}')
-    awk -v c="${cpu1:-0}" -v t="$CPU_PCT" 'BEGIN {exit !(c > t)}' || continue
+    t1=$(ps -o times= -p "$pid" 2>/dev/null | tr -d ' ')
+    [ -n "$t1" ] || continue
     sleep "$CPU_HOLD_SECS"
-    kill -0 "$pid" 2>/dev/null || continue
-    cpu2=$(ps -o %cpu= -p "$pid" 2>/dev/null | awk '{print $1}')
-    awk -v c="${cpu2:-0}" -v t="$CPU_PCT" 'BEGIN {exit !(c > t)}' || continue
-    if [ -n "${HOT[$pid]:-}" ]; then
-        log "Killing wedged devin-desktop renderer $pid (hot since $(date -d "@${HOT[$pid]}" -Iseconds), cpu ${cpu1}->${cpu2})"
-        notify "Devin renderer $pid wedged (> ${CPU_PCT}% CPU for >10 min) — killed"
+    t2=$(ps -o times= -p "$pid" 2>/dev/null | tr -d ' ')
+    [ -n "$t2" ] || continue   # exited during the hold
+    cpu=$(awk -v d="$((t2 - t1))" -v h="$CPU_HOLD_SECS" \
+          'BEGIN {printf "%.1f", d * 100 / h}')
+    awk -v c="$cpu" -v t="$CPU_PCT" 'BEGIN {exit !(c >= t)}' || continue
+    runs=$(( ${RUNS[$pid]:-0} + 1 ))
+    if [ "$RENDERER_KILL" = "1" ] && [ "$runs" -ge "$HOT_RUNS" ]; then
+        log "Killing wedged devin-desktop renderer $pid (hot since $(date -d "@${SEEN[$pid]}" -Iseconds), $runs runs, interval cpu $cpu%)"
+        notify "Devin renderer $pid wedged (>${CPU_PCT}% CPU for ~$((HOT_RUNS * 10)) min) — killed"
         kill -TERM "$pid" 2>/dev/null
     else
-        echo "$pid $now" >>"$HOT_FILE.new"
-        log "Renderer $pid hot (cpu ${cpu1}->${cpu2} > ${CPU_PCT}%); will kill next run if still hot"
+        echo "$pid ${SEEN[$pid]:-$now} $runs" >>"$HOT_FILE.new"
+        log "Renderer $pid hot (interval cpu $cpu% >= ${CPU_PCT}%, run $runs/$HOT_RUNS, kill=$RENDERER_KILL)"
+        if [ "$runs" -eq 1 ]; then
+            if [ "$RENDERER_KILL" = "1" ]; then
+                notify "Devin renderer $pid busy (${cpu}% CPU) — will be killed if still pegged in ~$((HOT_RUNS * 10)) min"
+            else
+                notify "Devin renderer $pid busy (${cpu}% CPU, kill disabled)"
+            fi
+        fi
     fi
 done
 mv "$HOT_FILE.new" "$HOT_FILE"
