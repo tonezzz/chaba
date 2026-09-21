@@ -9,7 +9,7 @@
 #   - inactive services are reported, never started silently
 #   - flock prevents concurrent deploys to the same host
 #
-# Usage: deploy-ada.sh <mn01|tony-dell|all> [--restart]
+# Usage: deploy-ada.sh <mn01|tony-dell|idc01|all> [--restart]
 set -euo pipefail
 
 target="${1:-}"; force_restart="${2:-}"
@@ -17,8 +17,9 @@ target="${1:-}"; force_restart="${2:-}"
 case "$target" in
   mn01)      hosts=(mn01) ;;
   tony-dell) hosts=(tony-dell) ;;
-  all)       hosts=(mn01 tony-dell) ;;
-  *) echo "usage: $0 <mn01|tony-dell|all> [--restart]" >&2; exit 2 ;;
+  idc01)     hosts=(idc01) ;;
+  all)       hosts=(mn01 tony-dell idc01) ;;
+  *) echo "usage: $0 <mn01|tony-dell|idc01|all> [--restart]" >&2; exit 2 ;;
 esac
 
 host_config() {
@@ -28,6 +29,7 @@ host_config() {
   case "$1" in
     mn01)      echo "ada-ha-tony.service,ada-ha-michael.service|8002,8003" ;;
     tony-dell) echo "ada-pi-pwa.service|8001" ;;
+    idc01)     echo "ada-pi-pwa.service,ada-ha-tony.service,ada-ha-michael.service|8001,8002,8003" ;;
   esac
 }
 
