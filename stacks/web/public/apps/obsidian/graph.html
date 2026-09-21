@@ -96,6 +96,13 @@ async function load() {
     degree.set(l.source, (degree.get(l.source) || 0) + 1);
     degree.set(l.target, (degree.get(l.target) || 0) + 1);
   }
+  // graphGL resolves link endpoints via node `name` — our names are labels
+  // (not unique), so convert links to numeric data indices instead.
+  links = links.map(l => ({
+    source: idx.get(l.source), target: idx.get(l.target),
+    lineStyle: l.type === 'similar' ? { opacity: 0.12, curveness: 0.1 }
+             : l.type === 'supersedes' ? { color: '#f59e0b', width: 2 } : {},
+  }));
 
   const cats = [...new Set(nodes.map(n => n.bank || (n.hub ? '_hub' : '?')))];
   const catColor = Object.fromEntries(cats.map((c, i) => [c, PALETTE[i % PALETTE.length]]));
