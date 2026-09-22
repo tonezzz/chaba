@@ -266,6 +266,25 @@ tony-dell:
     requested_model_alias: text-embedding-004
     dimensions: 768
     ollama_compatible: true
+    ollama_fallback:
+      env: OLLAMA_FALLBACK_BASE=http://127.0.0.1:11434, OLLAMA_FALLBACK_MODEL=nomic-embed-text, OLLAMA_CIRCUIT_COOLDOWN_MS=3600000
+      behaviour: >-
+        Per-chunk fallback after Gemini retries exhaust; circuit breaker opens
+        on failure and routes straight to Ollama for the cooldown window.
+        NOTE: nomic vectors are a different space than gemini — during an
+        outage only fallback-embedded docs are searchable; force
+        /v1/vector-reindex per collection once Gemini quota recovers.
+  ollama:
+    service: Ollama local inference (embedding fallback)
+    runtime: rootless podman
+    host: idc01
+    port: 11434
+    host_port: 127.0.0.1:11434
+    quadlet:
+      container_unit: ~/.config/containers/systemd/ollama.container
+      service_unit: ~/.config/systemd/user/ollama.service
+    models: [nomic-embed-text]
+    status: running on idc01 (2026-09-22) — embedding fallback for mddb
     status: running on idc01 (2026-09-22) and tony-dell
     note: "MDDB on idc01 connects to http://127.0.0.1:11435. Maps text-embedding-004, nomic-embed-text, and gemini-embedding-* aliases to gemini-embedding-001/002."
   obsidian-vault:
