@@ -94,6 +94,16 @@ class AdaVoiceCard extends HTMLElement {
       "text-overflow:ellipsis;white-space:nowrap";
     body.appendChild(this._line);
 
+    // Speaker chip — shows identified speaker name + confidence.
+    this._speakerChip = document.createElement("div");
+    this._speakerChip.style.cssText =
+      "display:none;margin-top:6px;font-size:.75rem;gap:4px;align-items:center";
+    this._speakerChip.innerHTML =
+      '<span style="font-size:.9em">👤</span>'
+      + '<span class="avc-speaker-name"></span>'
+      + '<span class="avc-speaker-conf" style="opacity:.6"></span>';
+    body.appendChild(this._speakerChip);
+
     // Unlock row — shown when no usable key is configured/stored.
     this._unlockRow = document.createElement("div");
     this._unlockRow.style.cssText = "display:none;gap:6px;align-items:center";
@@ -327,6 +337,9 @@ class AdaVoiceCard extends HTMLElement {
       case "speech_stopped":
         this._setStatus("Listening");
         break;
+      case "speaker":
+        this._showSpeaker(ev);
+        break;
       case "clear_audio":
         this._assistantPlaying = false;
         this._playbackNode?.port.postMessage({ type: "clear" });
@@ -444,6 +457,7 @@ class AdaVoiceCard extends HTMLElement {
     this._speechAbove = this._speechBelow = 0;
     this._noiseFloor = 0.004;
     this._assistantEntry = null;
+    if (this._speakerChip) this._speakerChip.style.display = "none";
     if (this._state !== "locked" && this._state !== "error") {
       this._state = "idle";
       this._setStatus("Disconnected");
@@ -469,6 +483,33 @@ class AdaVoiceCard extends HTMLElement {
 
   _setStatus(t) { if (this._status) this._status.textContent = t; }
   _setLevel(v) { if (this._levelBar) this._levelBar.style.width = `${Math.round(v * 100)}%`; }
+
+  _showSpeaker(ev) {
+    if (!this._speakerChip) return;
+    const name = ev.display_name || ev.name;
+    if (!name) {
+      this._speakerChip.style.display = "none";
+      return;
+    }
+    const conf = ev.confidence;
+    const high = conf >= 0.6;
+    this._speakerChip.style.display = "flex";
+    this._speakerChip.querySelector(".avc-speaker-name").textContent = name;
+    this._speakerChip.querySelector(".avc-speaker-conf").textContent =
+      conf != null ? `${Math.round(conf * 100)}%` : "";
+    // Solid chip for high confidence, outlined for low.
+    this._speakerChip.style.padding = high ? "2px 8px" : "2px 8px";
+    this._speakerChip.style.borderRadius = "10px";
+    this._speakerChip.style.border = high
+      ? "1px solid var(--primary-color)"
+      : "1px dashed var(--secondary-text-color)";
+    this._speakerChip.style.background = high
+      ? "var(--primary-color)"
+      : "transparent";
+    this._speakerChip.style.color = high
+      ? "var(--primary-text-color)"
+      : "var(--secondary-text-color)";
+  }
 
   _render() {
     if (!this._micBtn) return;

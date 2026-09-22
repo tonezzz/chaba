@@ -78,6 +78,10 @@ sections:
         text: "cd ~/CascadeProjects/ada-pi && .venv/bin/python scripts/scenario-live.py tests/scenarios-live/reconnect_continuity.yaml --url ws://127.0.0.1:8001/ws --api-key \"$ADA_API_KEY\""
       - label: Manual simulation
         text: "Connect to /ws with the usual api_key auth plus &simulate_away_s=432000 — the server greets as if the user was away that many seconds."
+      - label: Distill benchmark
+        text: "cd ~/CascadeProjects/chaba && GEMINI_API_KEY=... python3 scripts/ada/memory-distill-benchmark.py --dump — 11 fixture sessions through the real extraction prompt; recall/precision scoring, no MDDB writes."
+      - label: Distill dry-run
+        text: "python3 scripts/ada/memory-distill.py --dry-run — prints what the batch job would draft from real session summaries; nothing is written."
   - title: Coverage
     icon: "🗂️"
     layout: list
@@ -86,5 +90,7 @@ sections:
         text: memory_lifecycle.yaml (remember/correct/forget lifecycle), michael_technician.yaml (HA recall + remember), reconnect_continuity.yaml (all 5 tiers + first-session + bad duration).
       - label: tests/scenarios-live/
         text: michael_technician.yaml (live recall + remember roundtrip), reconnect_continuity.yaml (resume-tier topic reference + long-gap greeting).
+      - label: scripts/ada/memory-distill-*
+        text: "memory-distill-scenarios.yml (11 fixtures: durable kinds + noise rejection + no-save + dedup) and memory-distill-benchmark.py (recall/precision, thresholds 0.75/0.50). Baseline 2026-09-22: 100%/100%."
       - label: Known gaps
         text: Live greeting text is not asserted verbatim (model-dependent). test-manifest's shell runner has hardcoded per-system sections — the ada-pi suite is not auto-run by test-ssot-kb-memory.sh; run it directly or wire it into CI later.
