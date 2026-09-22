@@ -105,11 +105,34 @@ instances:
       deploy-ada.sh emits over SSH. Events with requires_response && !responded
       pin to top with a pulsing border (prefers-reduced-motion respected);
       confidence <0.6 shown as outlined chip.
+      Voice card added 2026-09-22 at the top of the Pair tab:
+      custom:ada-voice-card (/local/ada-voice-card.js?v=1, repo:
+      stacks/tony-dell/tony-ha/www/ada-voice-card.js) — embeds the full Ada
+      Gemini Live client in the dashboard, no iframe/redirect. It ports the
+      PWA transport (ada-pi pwa/app.js): getUserMedia -> ScriptProcessor
+      downsamples to PCM16@16kHz over WebSocket; server PCM16@24kHz plays
+      through a blob-URL AudioWorklet (PCMPlayer); JSON control messages
+      (ready/transcripts/response_*/live_reconnecting/clear_audio) drive the
+      status line. Connects to wss://mn01.taila0626a.ts.net/apps/ha/ada-tony/ws
+      with device_id + api_key query params — websocket_authorized accepts
+      the api_key param so no CORS/REST calls are needed. Key resolution:
+      config api_key -> localStorage ada_voice_api_key -> paste-once unlock
+      field (accepts a raw key or a full unlock-link URL). A named
+      ADA_API_KEYS entry `ha-dash` on mn01
+      (~/.config/secrets/ada-ha-tony.env, key value in
+      ~/.config/secrets/ada-ha-dash-key.txt) is used — named env keys are
+      never device-bound (enforce_device only binds file-issued keys), so
+      one key works from every browser and is revocable by editing the env.
+      The key is deliberately NOT in dashboard config: lovelace snapshots
+      are synced into this repo. 4401 close = rejected key -> unlock field.
+      Mic needs HTTPS (satisfied via Tailscale serve :8123) and a user
+      gesture for AudioContext (the mic-button tap). Card disconnects mic +
+      socket in disconnectedCallback when the view is left.
     tabs:
       - title: Pair
         path: pair
         icon: mdi:qrcode-plus
-        cards: issue/revoke form, pairing QR picture, redeem link, ada-keys-card, capabilities info
+        cards: ada-voice-card, issue/revoke form, pairing QR picture, redeem link, ada-keys-card, capabilities info
       - title: Events
         path: events
         icon: mdi:bell-badge-outline
