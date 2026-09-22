@@ -18,6 +18,7 @@ Env:
 from __future__ import annotations
 
 import asyncio
+import json
 import os
 import re
 import subprocess
@@ -624,6 +625,69 @@ async def sync(request: Request) -> dict:
     """Push vault → MDDB (runs the sync script; whole vault, idempotent)."""
     _check_write_auth(request)
     return _run(["python3", str(SYNC_SCRIPT), "--mddb", MDDB])
+
+
+class ExportRequest(BaseModel):
+    id: str  # graph node id: "collection:key"
+
+
+@app.post("/api/export")
+async def export_to_vault(req: ExportRequest, request: Request) -> dict:
+    """Export an MDDB-only doc into the vault as a frontmatter .md —
+    the 'fix drift' action for mddb_only graph nodes. Refuses to
+    overwrite an existing vault note; hidden banks stay hidden (404)."""
+    _check_write_auth(request)
+    coll, _, key = req.id.partition(":")
+    if not coll or not key:
+        raise HTTPException(400, "id must be 'collection:key'")
+    entry = next((b for b in _bank_map() if b["collection"] == coll), None)
+    if not entry:
+        raise HTTPException(404, f"no bank maps to collection {coll}")
+    visible = _visible_dirs()
+    if visible and entry["dir"] not in visible:
+        raise HTTPException(404, "no such document")
+
+    async with httpx.AsyncClient(timeout=15) as cli:
+        try:
+            r = await cli.post(f"{MDDB}/get",
+                               json={"collection": coll, "key": key,
+                                     "lang": "en"})
+            r.raise_for_status()
+            doc = r.json()
+        except httpx.HTTPStatusError as e:
+            raise HTTPException(404 if e.response.status_code == 404 else 502,
+                                f"mddb get failed: {e.response.status_code}")
+        except Exception as e:
+            raise HTTPException(502, f"mddb get failed: {e}")
+
+    meta = doc.get("meta") or {}
+    doc_fm, body = _split(str(doc.get("contentMd") or ""))
+    merged = {**doc_fm, **meta}
+
+    stem = re.sub(r"[^A-Za-z0-9._-]+", "-",
+                  key.rsplit("/", 1)[-1]).strip("-.") or "note"
+    rel = f"{entry['dir']}/{stem}.md"
+    p = _safe_path(rel)
+    if p.exists():
+        raise HTTPException(409, f"vault note already exists: {rel}")
+
+    fm = {"key": key}
+    for k in ("kind", "status", "subject", "scope", "source", "written_by",
+              "date", "last_verified", "confidence", "use_count", "verdict",
+              "attribute", "session_id", "origin_source", "origin_written_by"):
+        v = _m1(merged, k)
+        if v is not None:
+            fm[k] = v
+    fm["source"] = fm.get("source") or "mddb-export"
+
+    lines = ["---"]
+    for k, v in fm.items():
+        s = str(v)
+        lines.append(f"{k}: {json.dumps(s) if any(c in s for c in ':#') else s}")
+    lines += ["---", "", body.strip(), ""]
+    p.parent.mkdir(parents=True, exist_ok=True)
+    p.write_text("\n".join(lines))
+    return {"ok": True, "path": rel}
 
 
 class CommitRequest(BaseModel):

@@ -61,6 +61,21 @@
   <div id="chart"></div>
   <div id="msg" class="fixed bottom-3 left-4 text-xs text-gray-500"></div>
   <div id="chip-local" class="hidden fixed top-14 left-4 text-xs px-2.5 py-1 rounded bg-card/95 border border-accent cursor-pointer z-40"></div>
+  <div id="detail" class="hidden fixed top-14 right-4 w-72 bg-card/95 border border-gray-700 rounded-lg p-4 text-xs leading-relaxed z-40">
+    <div class="flex items-start justify-between gap-2 mb-1">
+      <b id="d-title" class="text-sm"></b>
+      <button id="d-close" class="text-gray-500 hover:text-gray-200">✕</button>
+    </div>
+    <div id="d-meta" class="text-gray-400"></div>
+    <div id="d-excerpt" class="hidden italic border-l-2 border-gray-700 pl-2 my-2 text-gray-300"></div>
+    <div id="d-status" class="mt-1.5"></div>
+    <div id="d-foot" class="mt-1.5 text-gray-500"></div>
+    <div class="mt-3 flex gap-2">
+      <button id="d-open" class="navbtn hidden">Open in vault</button>
+      <button id="d-export" class="navbtn hidden" title="Write this MDDB doc into the vault as a reviewable note">Export to vault</button>
+    </div>
+    <div id="d-hint" class="mt-2 text-gray-500"></div>
+  </div>
   <div id="legend" class="hidden fixed bottom-3 right-4 bg-card/95 border border-gray-700 rounded-lg p-4 text-xs leading-relaxed max-w-xs z-50">
     <div class="flex items-center justify-between mb-2">
       <b>How to read this</b>
@@ -86,12 +101,13 @@ const BASE = location.pathname.replace(/\/graph\/?$/, '');
 document.getElementById('lnk-vault').href = BASE + '/';
 let apiKey = localStorage.getItem('obsidian-key') || '';
 
-async function api(path) {
-  const r = await fetch(BASE + path, { headers: { 'X-API-Key': apiKey } });
+async function api(path, init = {}) {
+  init.headers = { ...(init.headers || {}), 'X-API-Key': apiKey };
+  const r = await fetch(BASE + path, init);
   if (r.status === 401) {
     apiKey = prompt('API key required:') || '';
     localStorage.setItem('obsidian-key', apiKey);
-    if (apiKey) return api(path);
+    if (apiKey) return api(path, init);
   }
   return r;
 }
@@ -165,6 +181,7 @@ const Graph = ForceGraph3D()(document.getElementById('chart'))
       flyTo(n);
     }
     updateChip();
+    showDetail(n);
   })
   .nodeColor(n => {
     if (highlight.nodes.size) {
@@ -306,6 +323,89 @@ function flyTo(n) {
   };
   tryFly();
 }
+
+let selNode = null;
+
+function showDetail(n) {
+  selNode = n;
+  const d = document.getElementById('detail');
+  if (n.hub) {
+    document.getElementById('d-title').textContent = n.label;
+    document.getElementById('d-meta').textContent =
+      `${n.hub === 'subject' ? 'topic' : 'entity'} hub${n.subhub ? ' · sub-cluster' : ''}`;
+    document.getElementById('d-status').innerHTML =
+      n.members ? `${n.members} docs in this ${n.hub === 'subject' ? 'topic' : 'entity'}` : '';
+    document.getElementById('d-foot').textContent = '';
+    document.getElementById('d-excerpt').classList.add('hidden');
+    document.getElementById('d-open').classList.add('hidden');
+    document.getElementById('d-export').classList.add('hidden');
+    document.getElementById('d-hint').textContent =
+      'set local·N then click a member to drill in';
+    d.classList.remove('hidden');
+    return;
+  }
+  const bc = (window._catColor || {})[n.bank] || '#8aa0b5';
+  const dot = STATUS_DOT[n.status] || '#34d399';
+  let title = n.label || n.key || n.id;
+  if (n.bank === 'devin' && n.date)
+    title = `Session ${n.date} · ${String(n.key || '').split('/').pop().slice(0, 6)}`;
+  document.getElementById('d-title').innerHTML =
+    `<span style="color:${bc}">●</span> ${esc(title)}`;
+  document.getElementById('d-meta').textContent =
+    `${n.bank} · ${(n.kind || 'note').replace(/-/g, ' ')}`;
+  const ex = document.getElementById('d-excerpt');
+  if (n.excerpt) { ex.textContent = n.excerpt; ex.classList.remove('hidden'); }
+  else ex.classList.add('hidden');
+  document.getElementById('d-status').innerHTML =
+    `<span style="color:${dot}">●</span> ${esc(n.status || 'active')} · ` +
+    `${esc(SYNC_HUMAN[n.sync] || n.sync || '')}`;
+  const foot = [];
+  if (n.subject) foot.push(`subject: ${n.subject}`);
+  if (n.written_by) foot.push(`by ${n.written_by}`);
+  if (n.use_count) foot.push(`recalled ${n.use_count}×`);
+  if (n.last_verified) foot.push(`verified ${relDate(n.last_verified)}`);
+  if (n.verdict) foot.push(`verdict: ${n.verdict}`);
+  document.getElementById('d-foot').textContent = foot.join(' · ');
+  document.getElementById('d-open').classList.toggle('hidden', !n.path);
+  document.getElementById('d-export').classList.toggle('hidden',
+    n.sync !== 'mddb_only');
+  const eb = document.getElementById('d-export');
+  eb.disabled = false; eb.textContent = 'Export to vault';
+  document.getElementById('d-hint').textContent =
+    n.path ? 'double-click also opens it' : '';
+  d.classList.remove('hidden');
+}
+
+document.getElementById('d-close').onclick = () =>
+  document.getElementById('detail').classList.add('hidden');
+document.getElementById('d-open').onclick = () => {
+  if (selNode && selNode.path)
+    location.href = BASE + '/?note=' + encodeURIComponent(selNode.path);
+};
+document.getElementById('d-export').onclick = async () => {
+  const btn = document.getElementById('d-export');
+  if (!selNode) return;
+  btn.disabled = true; btn.textContent = 'exporting…';
+  const r = await api('/api/export', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ id: selNode.id }),
+  });
+  const j = await r.json().catch(() => ({}));
+  if (r.ok) {
+    btn.textContent = 'exported ✓';
+    selNode.sync = 'synced';
+    selNode.path = j.path;
+    document.getElementById('d-open').classList.remove('hidden');
+    document.getElementById('d-status').innerHTML =
+      `<span style="color:#34d399">●</span> ${selNode.status || 'active'} · exported to ${esc(j.path)}`;
+    document.getElementById('msg').textContent = `exported → ${j.path}`;
+  } else {
+    btn.textContent = 'export failed';
+    document.getElementById('msg').textContent =
+      `export failed: ${j.detail || r.status}`;
+  }
+};
 
 function updateChip() {
   const chip = document.getElementById('chip-local');

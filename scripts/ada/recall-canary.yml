@@ -1,0 +1,50 @@
+# Recall canary set — known-answer questions over the real corpus.
+# Each entry should have an obvious correct doc; the check fails if the
+# expected doc isn't in the aggregated top-N hits across its banks.
+#
+# Matchers (any combination):
+#   expect_key:      exact doc key (e.g. note/gate-remote-location)
+#   expect_subject:  meta.subject value
+#   expect_text:     substring in contentMd (case-insensitive)
+#   expect_any:      true — pass if ANY hit clears the threshold
+# banks:             restrict to these bank names (default: all)
+canaries:
+  - q: "where is the gate remote kept"
+    banks: [note, general, inbox]
+    expect_key: note/gate-remote-location
+
+  - q: "plan for moving ada to a public server"
+    banks: [tony-projects]
+    expect_key: tony-projects/public-host-plan
+
+  - q: "how does the knowledge circle review work"
+    banks: [tony-projects]
+    expect_key: tony-projects/knowledge-circle
+
+  - q: "mouse stuttering fix"
+    banks: [tony-projects]
+    expect_key: tony-projects/tony-omen-mouse-stuttering
+
+  - q: "google home mcp in podman"
+    banks: [devin]
+    expect_text: "podman"
+
+  - q: "xiaomi camera"
+    banks: [general, inbox]
+    expect_text: "camera"
+
+  - q: "what port does mddb use"
+    banks: [infrastructure-ssot, kb-system]
+    expect_text: "11023"
+
+  - q: "anker 737 power bank"
+    banks: [purchase]
+    expect_subject: check-anker-737-power-bank
+
+  - q: "voice assistant memory banks"
+    banks: [kb-system, kb-features]
+    expect_any: true
+
+  - q: "obsidian vault graph"
+    banks: [tony-projects, kb-features, devin]
+    expect_any: true

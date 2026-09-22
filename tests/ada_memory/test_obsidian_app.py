@@ -89,6 +89,87 @@ class TestHubSplit(unittest.TestCase):
             self.assertEqual(len(sub_links), 45)
 
 
+class _FakeResp:
+    def __init__(self, payload, status=200):
+        self._p = payload
+        self.status_code = status
+        self.request = None
+    def raise_for_status(self):
+        if self.status_code >= 400:
+            import httpx
+            req = httpx.Request("POST", "http://x/v1/get")
+            raise httpx.HTTPStatusError("err", request=req,
+                                        response=httpx.Response(self.status_code))
+    def json(self):
+        return self._p
+
+
+class _FakeClient:
+    """httpx.AsyncClient stand-in: /get returns a canned doc."""
+    def __init__(self, *a, **k): pass
+    async def __aenter__(self): return self
+    async def __aexit__(self, *a): return False
+    async def post(self, url, json=None, **_):
+        if url.endswith("/get"):
+            return _FakeResp({
+                "key": json["key"],
+                "meta": {"kind": ["note"], "subject": ["gate-remote"],
+                          "date": ["2026-09-18"], "written_by": ["devin-cli"]},
+                "contentMd": "the remote lives in the hallway drawer",
+            })
+        return _FakeResp([])
+
+
+class TestExport(unittest.TestCase):
+    def _cli(self, td):
+        v = make_vault(td)
+        mod = load_server(v)
+        from fastapi.testclient import TestClient
+        return mod, v, TestClient(mod.app)
+
+    def test_export_writes_vault_note(self):
+        with tempfile.TemporaryDirectory() as td:
+            mod, v, cli = self._cli(td)
+            with mock.patch.object(mod.httpx, "AsyncClient", _FakeClient):
+                r = cli.post("/api/export",
+                             json={"id": "ada-ha-bank-note-tony:note/remote-loc"})
+            self.assertEqual(r.status_code, 200, r.text)
+            p = v / "note/remote-loc.md"
+            self.assertTrue(p.exists())
+            txt = p.read_text()
+            self.assertIn("key: note/remote-loc", txt)
+            self.assertIn("subject: gate-remote", txt)
+            self.assertIn("hallway drawer", txt)
+
+    def test_export_refuses_overwrite(self):
+        with tempfile.TemporaryDirectory() as td:
+            mod, v, cli = self._cli(td)
+            with mock.patch.object(mod.httpx, "AsyncClient", _FakeClient):
+                r = cli.post("/api/export",
+                             json={"id": "ada-ha-bank-note-tony:note/a"})
+            self.assertEqual(r.status_code, 409)  # note/a.md already exists
+
+    def test_export_unknown_collection_404(self):
+        with tempfile.TemporaryDirectory() as td:
+            mod, v, cli = self._cli(td)
+            with mock.patch.object(mod.httpx, "AsyncClient", _FakeClient):
+                r = cli.post("/api/export", json={"id": "nope:x"})
+            self.assertEqual(r.status_code, 404)
+
+    def test_export_hidden_bank_404_in_public(self):
+        with tempfile.TemporaryDirectory() as td:
+            mod, v, cli = self._cli(td)
+            mod2 = load_server(v, deploy="public", api_key="k")
+            from fastapi.testclient import TestClient
+            cli2 = TestClient(mod2.app)
+            with mock.patch.object(mod2.httpx, "AsyncClient", _FakeClient):
+                # note bank is not public: true -> hidden in public mode
+                r = cli2.post("/api/export",
+                              json={"id": "ada-ha-bank-note-tony:note/a"},
+                              headers={"X-API-Key": "k"})
+            self.assertEqual(r.status_code, 404)
+
+
 class TestDeployGuard(unittest.TestCase):
     def test_public_without_key_refuses_to_start(self):
         with tempfile.TemporaryDirectory() as td:
