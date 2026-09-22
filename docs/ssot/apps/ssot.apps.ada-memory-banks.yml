@@ -328,6 +328,34 @@ banks:
     allowed_tools: []
     status: active
     public: false
+  devin-kb:
+    title: Devin knowledge base
+    description: "Docs from the devin-kb repo (~/devin-kb/docs/**) synced by scripts/sync-docs-to-mddb.py — hardware notes, preferences, tech-stack, runbooks. Read-only for Ada."
+    scope: shared
+    instances: [tony]
+    mddb_collection: devin-kb
+    notebooklm_group: null
+    notebooklm_id: null
+    kinds: [note, procedure, fact]
+    writable: false
+    write_policy: confirmed
+    allowed_tools: []
+    status: active
+    public: false
+  chaba-docs:
+    title: Chaba project docs
+    description: "Chaba docs/** trees without their own pipeline (runbooks, home-assistant, architecture, assessments, reports, …) synced by scripts/sync-docs-to-mddb.py. Read-only for Ada."
+    scope: shared
+    instances: [tony]
+    mddb_collection: chaba-docs
+    notebooklm_group: null
+    notebooklm_id: null
+    kinds: [note, procedure, fact]
+    writable: false
+    write_policy: confirmed
+    allowed_tools: []
+    status: active
+    public: false
 
 config:
   version: 2
