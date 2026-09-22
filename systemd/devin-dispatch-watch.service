@@ -1,0 +1,9 @@
+[Unit]
+Description=Report finished devin-dispatch tasks (chaba-admin event + iPhone notify + MDDB writeback)
+# -p sessions don't write history_*.md, so this watcher is the only
+# outcome path: reads transcript.json's last agent step per finished
+# devin-task-* unit.
+
+[Service]
+Type=oneshot
+ExecStart=%h/.local/bin/devin-dispatch-watch

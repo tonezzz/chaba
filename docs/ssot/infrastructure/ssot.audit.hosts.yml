@@ -154,6 +154,12 @@ hosts:
         critical: false
         note: Every 15s; chvt 7 when lxqt-seat is up but another VT is in front
           (greeter/getty). Never steals a real user graphical session
+      - name: secrets-console.service
+        type: service
+        scope: user
+        expected_state: active
+        critical: false
+        note: Tailnet-only Secrets Console on port 8005
     known_failed:
       - name: app-devin-desktop
         reason: Devin desktop is started as a background nohup job, not a persistent
@@ -206,6 +212,16 @@ hosts:
         note: "Hourly (:45) — pushes THIS host's devin CLI session summaries to
           MDDB ada-ha-bank-devin-tony on idc01; closes devin-summaries-tony-dell-gap.
           Units in chaba/systemd/devin-summaries-sync.{service,timer}."
+      - name: devin-dispatch-watch.timer
+        type: timer
+        scope: user
+        expected_state: active
+        critical: false
+        note: "Every 5 min — reports finished devin-dispatch tasks: chaba-admin
+          event + iPhone notify + outcome doc to ada-ha-bank-devin-tony (devin -p
+          sessions don't write history_*.md, so this is the only outcome path).
+          Units in chaba/systemd/devin-dispatch-watch.{service,timer},
+          script scripts/devin/devin-dispatch-watch.sh."
     expected_resources:
       min_free_ram_mb: 500
       max_swap_used_percent: 80
