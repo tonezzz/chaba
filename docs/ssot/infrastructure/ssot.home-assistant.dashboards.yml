@@ -65,13 +65,19 @@ instances:
       QR display is custom:ada-pair-qr-card (/local/ada-pair-qr-card.js, same
       repo dir) — renders /local/pair-qr.svg with a ?v= cache-buster derived
       from the redeem token (stock picture card caches the URL forever).
-      Events tab added 2026-09-20: custom:chaba-events-card
-      (/local/chaba-events-card.js, repo: stacks/tony-dell/tony-ha/www/) reads
+      Events tab added 2026-09-20, panel-ized 2026-09-22: `type: panel` view
+      with custom:chaba-events-card (/local/chaba-events-card.js?v=5, repo:
+      stacks/tony-dell/tony-ha/www/) — full-height card with fixed
+      toolbar/banner/filters and internally scrolling .rows (same
+      JS-measured fit as chaba-log-card: parent content-box bottom clamped
+      to visualViewport). Top toolbar has a source <select> ("All sources"
+      + distinct event.source values, persisted as "src"); rows also show a
+      ghost source chip. Reads
       /local/chaba-events.json (written by /config/scripts/chaba-event-log.py —
       flock, 24h prune, 300 cap, `ack` sets responded) plus live
       persistent_notification entities (always requires-response). Shared
       filter state in input_text.chaba_events_filter ({"hidden": [...],
-      "log_hidden": [...]} — both cards merge-write the shared JSON).
+      "log_hidden": [...], "src": "..."} — all cards merge-write the JSON).
       Log tab added 2026-09-21: `type: panel` view with a single
       custom:chaba-log-card (/local/chaba-log-card.js?v=4, same repo dir) —
       an isolated copy of the built-in /logbook page so its UX/UI can be
@@ -107,12 +113,19 @@ instances:
       - title: Events
         path: events
         icon: mdi:bell-badge-outline
-        cards: chaba-events-card
+        type: panel
+        cards: chaba-events-card (full-height, source dropdown + category filters)
       - title: Log
         path: log
         icon: mdi:history
         type: panel
         cards: chaba-log-card (full-height logbook 24h, own domain filters)
+      - title: Ada Pages
+        path: ada-pages
+        icon: mdi:file-document-edit-outline
+        type: panel
+        cards: iframe → mn01 /apps/ha/ada-tony/cms/ (added manually 2026-09-21;
+          URL embeds an ada- API key — redacted in the repo snapshot)
 
 tabs:
   dev:
@@ -223,5 +236,5 @@ manual_steps:
 
 status:
   last_updated: "2026-09-20"
-  last_verified: "2026-09-21"
+  last_verified: "2026-09-22"
   health: active; G1 on both hosts (dev v171 / ha v161, same md5 b404aab0) — surface3d PV chart on sensor.inverters_1_pv_power, vendored echarts libs in /local; Cast tab removed from live michael-ha tony-test on 2026-09-14; PF3/PF4/PFG/PFG1/PFG2 removed
