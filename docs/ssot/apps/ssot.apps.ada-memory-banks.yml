@@ -68,6 +68,8 @@ sections:
         text: Optional group name resolved per-instance via NOTEBOOKLM_NOTEBOOK_IDS_JSON (memory/infra/apps/kb/ops). Use this when each instance should keep its own deep-tier notebook.
       - label: notebooklm_id
         text: Optional literal notebook ID for a genuinely shared deep tier (one notebook both instances read). Mutually exclusive with notebooklm_group.
+      - label: 'Gotcha: key scopes'
+        text: 'notebooklm-rest enforces a per-key notebook allowlist (NOTEBOOKLM_REST_KEY_SCOPES in ~/.config/secrets/notebooklm-rest-api.env on tony-dell). A group mapping alone is not enough — each new notebook must also be added to the calling key''s scope or every call returns 403. Michael''s set: memory=1c12d5c8…, infra=31fba197…, apps=1aa3e5be…, kb=5f52938d…, ops=7a970489… (created 2026-09-22).'
       - label: Back-compat
         text: NOTEBOOKLM_NOTEBOOK_IDS_JSON keeps working; a recall group with no matching bank falls back to today's behavior and maps to a default ada-ha-bank-<group> collection if ever persisted.
   - title: Write & Update

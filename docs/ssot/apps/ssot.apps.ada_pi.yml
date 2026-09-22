@@ -40,6 +40,12 @@ sections:
     icon: "🧪"
     layout: list
     items:
+      - label: unit
+        text: "tests/ in ada-pi — unittest discover (no pytest dep). Memory/tool tests use AsyncMock MDDB; session-config tests assert the live Gemini config."
+      - label: offline scenarios
+        text: "tests/scenarios/*.yaml — declarative seed+steps+expect files run by tests/scenario_engine.py against ToolRunner with an in-memory FakeMddb (keyword-overlap vector stand-in). Covers recall, confirmed writes, supersede, draft visibility, access control, query expansion."
+      - label: live scenarios
+        text: "tests/scenarios-live/*.yaml — scripts/scenario-live.py replays user text turns over /ws?api_key= and asserts on tool_call/tool_result trace events + transcripts (calls_any/result_contains/response_contains). Verified live on ada-ha-michael :8003 2026-09-22."
       - label: end-to-end
         text: Open https://tony-omen.taila0626a.ts.net/apps/ada_pi/ on iPad/iPhone, tap Connect, and speak.
   - title: Known Issues
@@ -69,8 +75,9 @@ sections:
       - label: SSOT registry
         text: "Documented in ssot.mac-address-registry.michael.yml as michael-rk600-weather and ssot.ip-address-registry.michael.yml on the michael-xiaomi-192.168.31.0-24 network"
 config:
-  version: 1
+  version: 2
   created: "2026-09-12"
+  updated: "2026-09-22"
   maintainer: tony
   status: experimental
   deployment: tony-omen

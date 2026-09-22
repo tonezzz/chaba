@@ -126,9 +126,26 @@ milestones:
       - { task: "scripts/ada/distill-devin-bank.py — ISO-week digests via chunked Gemini passes (source_keys idempotent), sources marked status=superseded + superseded_by; current week never touched", status: done, date: "2026-09-22" }
       - { task: "Backlog distilled: 893 raw transcripts -> devin/weekly-2026W37 + devin/weekly-2026W38; 595→~38 active raw docs (current week only)", status: done, date: "2026-09-22" }
       - { task: "Schedule distillation (weekly timer, after sync-devin-summaries)", status: pending }
+  - id: conversation-quality
+    title: Conversation-aware recall + scenario testing
+    status: done
+    items:
+      - { task: "Cross-bank search: ada_memory_search bank='all' (default) fan-out merged by score; ada_session_recall accepts 'all'", status: done, date: "2026-09-22" }
+      - { task: "Per-instance tool schemas — {banks}/{writable_banks} placeholders filled from registry at connect; michael no longer sees tony-only banks", status: done, date: "2026-09-22" }
+      - { task: "Draft visibility: recent same-instance drafts surface in personal/general recall tagged [unverified draft] (score>=0.55, age<=7d)", status: done, date: "2026-09-22" }
+      - { task: "Fix remember(supersedes) key collision — new doc bumped to -2/-3 instead of overwriting the superseded doc", status: done, date: "2026-09-22" }
+      - { task: "ConversationMemory shared across provider reconnects (per-ws-session); transcript survives session swaps", status: done, date: "2026-09-22" }
+      - { task: "expand_query: anaphoric/short tool queries get last-4-turns context appended before embedding; self-contained-query instruction added", status: done, date: "2026-09-22" }
+      - { task: "Session priming at connect: rolling summary + top personal/general facts injected as system turn", status: done, date: "2026-09-22" }
+      - { task: "NLM answer cache ada-ha-nlm-answers-{instance} (0.90 threshold, 7d TTL) — repeat deep-tier questions skip the 20-60s chat/ask", status: done, date: "2026-09-22" }
+      - { task: "tool_call/tool_result ProviderEvents forwarded to ws clients (drives live scenario assertions)", status: done, date: "2026-09-22" }
+      - { task: "Scenario testing: tests/scenarios/*.yaml offline (FakeMddb) + tests/scenarios-live/*.yaml via scripts/scenario-live.py; michael-technician live run PASSED on :8003", status: done, date: "2026-09-22" }
+      - { task: "Michael NotebookLM groups completed: infra/apps/kb/ops notebooks created + added to ada-michael key scope (NOTEBOOKLM_REST_KEY_SCOPES)", status: done, date: "2026-09-22" }
+      - { task: "Deployed ada-pi 8182b89 to mn01 (both services healthy); pushed a83f80d", status: done, date: "2026-09-22" }
+      - { task: "Seed michael's new notebooks with SSOT/infra sources (empty today; group recall answers 'notebook is empty')", status: pending }
 
 config:
-  version: 5
+  version: 6
   created: "2026-09-19"
   updated: "2026-09-22"
   maintainer: tony

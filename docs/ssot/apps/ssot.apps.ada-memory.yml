@@ -48,16 +48,32 @@ sections:
         text: LIVE — ada_memory_search (vector + listing fallback), ada_remember (find-then-update correct/supersede), ada_forget (retract); ada_session_recall bank param does MDDB fast tier → bank notebook NLM escalation. Write path honors writable/write_policy/allowed_tools via confirmed=true.
       - label: Introspection
         text: LIVE — GET /api/memory/banks (ADA_API_KEY) returns banks assigned to the running instance with collection/notebook resolution; registry errors fold into /api/health degraded.
+      - label: Cross-bank search
+        text: "ada_memory_search bank defaults to 'all' — fans out across the instance's banks and merges hits by score; the model no longer has to guess which bank. Same for ada_session_recall bank='all'."
+      - label: Per-instance tool schemas
+        text: "Tool descriptions fill {banks}/{writable_banks} from the registry at connect, so each instance only ever sees its own bank names."
+      - label: Draft visibility
+        text: "status=draft docs surface in recall for DRAFT_VISIBLE_BANKS (default personal,general) only when scope==own instance, score>=0.55, age<=7d — tagged [unverified draft]. Env: ADA_DRAFT_VISIBLE_BANKS/ADA_DRAFT_MIN_SCORE/ADA_DRAFT_MAX_AGE_DAYS."
+      - label: Session priming
+        text: "At ws connect (and on non-resumed reconnects) a system turn injects the rolling recent-sessions summary + top personal/general facts (memory_ops.session_prime_text, ADA_SESSION_PRIME=0 disables)."
+      - label: Coreference expansion
+        text: "Short/anaphoric tool queries get the last 4 transcript turns appended before embedding (ConversationMemory.expand_query) — fixes 'the other one' misses. Instructions also require self-contained tool queries."
+      - label: Deep-tier cache
+        text: "NLM chat/ask answers are cached per instance in ada-ha-nlm-answers-{instance} (score>=0.90 question match, 7d TTL, keyed by bank/group ctx). Repeat misses return in <1s."
+      - label: Trace events
+        text: "Every tool call/result is emitted as a ProviderEvent and forwarded to ws clients as {type: tool_call|tool_result} — drives the live scenario driver's assertions."
       - label: Test sandbox
         text: 'The note bank (tony-only, write_policy: direct) is the friction-free target for exercising the write/update path first.'
+      - label: Scenario tests
+        text: "tests/scenarios/*.yaml run offline against ToolRunner+FakeMddb (unittest discover); tests/scenarios-live/*.yaml replay real /ws text turns via scripts/scenario-live.py against a live service."
       - label: Vault sync
         text: 'scripts/ada/sync-ada-memory-to-mddb.py — vault→MDDB upsert with unchanged-skip, remote-only report, --export-inbox pulls source=voice docs to inbox/, --delete-remote removes remote-only non-voice docs. Mapping derives from the banks registry.'
       - label: Devin-bank distillation
         text: 'scripts/ada/distill-devin-bank.py rolls raw subject=devin-session transcripts into devin/weekly-<ISOweek> digests (chunked Gemini passes when a week exceeds the prompt budget, source_keys idempotency), then marks sources status=superseded + superseded_by. The current ISO week is never distilled. Health audited weekly by scripts/audits/memory-banks-audit.mjs (memory-suite).'
 config:
-  version: 1
+  version: 2
   created: "2026-09-19"
-  updated: "2026-09-19"
+  updated: "2026-09-22"
   maintainer: tony
   status: draft
   deployment: mn01
