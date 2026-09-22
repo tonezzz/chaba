@@ -268,6 +268,38 @@ tony-dell:
     ollama_compatible: true
     status: running on idc01 (2026-09-22) and tony-dell
     note: "MDDB on idc01 connects to http://127.0.0.1:11435. Maps text-embedding-004, nomic-embed-text, and gemini-embedding-* aliases to gemini-embedding-001/002."
+  obsidian-vault:
+    service: Ada Memory Vault web app (notes browser + knowledge graph)
+    runtime: python3 venv (~/jobenv)
+    host: idc01
+    port: 8004
+    host_port: 127.0.0.1:8004
+    service_unit: ~/.config/systemd/user/obsidian-vault.service
+    access: tailnet-only via tailscale serve https://idc01.taila0626a.ts.net:8443
+    vault: ~/obsidian-app/vault (rsynced from mn01 canonical docs/ada-memory)
+    env: ADA_DEPLOY=tailnet, ADA_API_KEY write-gate, MDDB via 100.74.146.0:11023
+    status: running on idc01 (2026-09-22); migrated from mn01
+  open-notebook:
+    service: Open Notebook app+API (eval)
+    runtime: rootless podman
+    host: idc01
+    port: "5055 (api), 8502 (ui)"
+    host_port: "127.0.0.1:5055, 127.0.0.1:8502"
+    quadlet:
+      container_unit: ~/.config/containers/systemd/open-notebook.container
+      service_unit: ~/.config/systemd/user/open-notebook.service
+    access: tailnet-only via tailscale serve (UI :8444, API :8445)
+    volumes: [open-notebook-data, open-notebook-surreal-data]
+    status: running on idc01 (2026-09-22); migrated from tony-dell (unit files preserved in ~/.config/containers/systemd-disabled there)
+  open-notebook-surreal:
+    service: SurrealDB backing store for open-notebook
+    runtime: rootless podman
+    host: idc01
+    network: open-notebook (podman network)
+    quadlet:
+      container_unit: ~/.config/containers/systemd/open-notebook-surreal.container
+      service_unit: ~/.config/systemd/user/open-notebook-surreal.service
+    status: running on idc01 (2026-09-22)
   tony-ha:
     container: tony-ha
     image: docker.io/homeassistant/home-assistant:stable

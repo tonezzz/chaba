@@ -30,6 +30,13 @@ currently mock/non-critical.
 - Public URL: `https://157.85.110.99.sslip.io/` → ada-pi-pwa (canary).
 - Tailnet URL: `https://idc01.taila0626a.ts.net/` → ada-pi-pwa via
   `tailscale serve` (tailnet-only for now — verified 200 from tony-omen).
+- Also on idc01 (tailnet-only via serve): obsidian vault app :8443,
+  OpenNotebook UI :8444 + API :8445, mddb-panel at 100.74.146.0:3002.
+- Hardening pass 2026-09-22: SSH now tailnet-only (public :22 closed);
+  mddb/panel bound to the tailnet IP (loopback closed); 21 devin-bank
+  transcript docs redacted in place on idc01 (live Google API keys,
+  HA JWTs, GOCSPX OAuth secret removed — revision history dropped via
+  delete+re-add). Tokens still live → rotation remains user action.
 - Domain plan (decided 2026-09-21): use the Tailscale address for now;
   Tony will add a **Cloudflare** service later for the real domain.
 - Secrets copied host-to-host (env + keys JSON + calendar token).
