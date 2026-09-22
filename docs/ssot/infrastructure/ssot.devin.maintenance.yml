@@ -21,7 +21,7 @@ hosts:
     service: devin-cleanup.timer
     retention_days: 7
     notes:
-      - Cleanup timer runs Sundays at 04:00.
+      - Cleanup timer disabled 2026-09-21 (was Sundays 04:00) — on-demand only.
       - Service skips VACUUM if Devin code.lock is present.
       - Devin desktop updated to 3.10.23-1789035177 on 2026-09-12.
       - "devin-desktop-watchdog.sh runs every 10 minutes (source: scripts/devin/): detects wedged renderers by interval CPU (10s times-delta, not lifetime %cpu) >=95%; kills only after 3 consecutive hot runs ~30min (tony-dell default; tony-omen sets WATCHDOG_RENDERER_KILL=0 in ~/.config/devin/watchdog.conf = notify-only, after two false-positive kills presented as crashes on 2026-09-21), stops orphaned app-devin-desktop-* scopes when the main process dies, alerts on AppArmor denials/renderer crashes; optional auto-restart via ~/.config/devin/watchdog-autorestart."
@@ -31,11 +31,11 @@ hosts:
   tony-omen:
     path: /home/tony/.local/share/devin/cli/sessions.db
     description: Primary dev workstation
-    current_size: 6.6Gi
+    current_size: 1.5Gi
     service: devin-cleanup.timer
     retention_days: 3
     notes:
-      - Cleanup timer runs daily at 03:00 with up to 1h randomized delay.
+      - Cleanup timer disabled 2026-09-21 (was daily 03:00 + 1h jitter) — on-demand only.
       - Retention reduced from 7 to 3 days on 2026-09-12 (DB had grown to 67 GiB).
       - Most DB size comes from active/recent sessions; 3-day retention does
         not free much space until those sessions age out or are deleted manually.
@@ -44,6 +44,9 @@ hosts:
         largest sessions (utopian-pearl ~8 GiB, juvenile-umbra, ambiguous-rooster,
         seemly-graffiti, invincible-avatar, abundance-cattle, olive-lamb,
         blush-action, valuable-windflower) archived and deleted manually.
+      - >
+        2026-09-21 manual vacuum: 1.5 GiB, integrity ok, auto_vacuum enabled.
+        devin-cleanup.timer disabled (on-demand only).
       - >
         2026-09-21 renderer SIGTRAP crash traced to AppArmor unprivileged_userns
         denial (fixed via /etc/apparmor.d/devin-desktop profile, source:
@@ -58,8 +61,34 @@ hosts:
 
 cleanup:
   timer_schedule:
-    tony-dell: "Sun *-*-* 04:00:00"
-    tony-omen: "*-*-* 03:00:00 (RandomizedDelaySec=1h)"
+    tony-dell: "disabled 2026-09-21 (was Sun *-*-* 04:00:00) — on-demand only"
+    tony-omen: "disabled 2026-09-21 (was *-*-* 03:00:00 RandomizedDelaySec=1h) — on-demand only"
+  policy: |
+    Scheduled pruning is disabled on all hosts as of 2026-09-21. Both timers were
+    no-ops in practice (recent sessions are under retention, so nothing was
+    deleted), and VACUUM without prior DELETE reclaims almost nothing (124 KiB
+    of 1.5 GiB on tony-omen). auto_vacuum is enabled on tony-omen's DB, covering
+    steady-state growth. Size monitoring is carried by audit-hosts.py instead —
+    see size_alerts below. Re-enable per host with:
+      systemctl --user enable --now devin-cleanup.timer
+    The devin-desktop-watchdog cron (10 min, both hosts) stays enabled — it is
+    crash safety, not maintenance.
+  on_demand: |
+    Run when: sessions.db > ~5 GiB, /home < 20% free, Devin feels sluggish, or
+    before/after a Devin upgrade or crash restart. Sequence:
+    1. Pre-check: `du -sh ~/.local/share/devin/cli/sessions.db; df -h /home` —
+       the backup needs ~1x DB size free (the 2026-09-10 67 GiB failure was the
+       backup copy, not the vacuum).
+    2. Optional archive: verify `nlm notebook list` auth first (expires fast),
+       then `devin-extract-sessions.sh --older-than N --delete`.
+    3. Check per-session size before trusting retention windows — most bloat
+       sits in a few recent sessions, not old ones (see manual_cleanup_runbook).
+    4. Close Devin, run `bash ~/.config/devin/scripts/vacuum-devin-db.sh`
+       (backup + integrity check + VACUUM + auto_vacuum). NO_BACKUP=1 via
+       prune-devin-sessions.sh if disk is tight.
+    5. Relaunch: tony-omen DISPLAY=:0, tony-dell DISPLAY=:1, both with
+       XAUTHORITY=/run/user/1000/gdm/Xauthority (see devin-desktop-crash-runbook
+       in devin-kb).
   service:
     tony-dell: devin-cleanup.service
     tony-omen: devin-cleanup.service
@@ -256,10 +285,15 @@ backup_policy: |
 
 vacuum_policy: |
   - VACUUM requires an exclusive lock; it cannot run while Devin is using the DB.
-  - The timer-triggered cleanup will skip VACUUM when the DB is in use.
-  - To force a one-time VACUUM, close Devin and run the cleanup script manually:
+  - Timers are disabled (on-demand only). To force a one-time VACUUM, close Devin
+    and run the cleanup script manually:
     - tony-dell: `systemctl --user start devin-cleanup.service`
     - tony-omen: `systemctl --user start devin-cleanup.service`
+  - Prefer `~/.config/devin/scripts/vacuum-devin-db.sh` — it also makes a
+    consistent backup, verifies integrity, and enables auto_vacuum.
+  - Note (2026-09-21): Devin v3000.10.21+ ships upstream SQLite fixes reducing
+    session-DB corruption risk; the corruption that justified defensive pruning
+    is less likely on current builds.
 
 size_alerts:
   - threshold_gb: 20
@@ -291,9 +325,10 @@ manual_cleanup_runbook: |
   5. Re-open Devin and verify the DB size.
 
 audit_checks:
-  - Check `devin-cleanup.timer` is active on each host.
+  - Check `devin-cleanup.timer` is inactive/disabled on each host (on-demand only).
   - Check `devin-cleanup.service` is not in a failed state.
-  - Report DB size and largest sessions during host audits.
+  - Report DB size and largest sessions during host audits — this is now the
+    primary size monitor; flag when sessions.db crosses size_alerts thresholds.
 
 related_files:
   - scripts/prune-devin-sessions.sh

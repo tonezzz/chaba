@@ -164,6 +164,44 @@ sections:
           captures only the main file, not uncheckpointed -wal commits. Final result:
           sessions.db 71G -> 4.0G, cli dir 65G -> 4.6G, 153 sessions kept, integrity ok.
 
+  - title: Devin sessions.db on-demand decision (2026-09-21)
+    icon: 🗄️
+    layout: list
+    items:
+      - label: VACUUM without DELETE reclaims almost nothing
+        text: |
+          Manual vacuum on tony-omen: 1.5 GiB DB, 0 sessions older than 3 days,
+          saved 124 KiB. Scheduled vacuum is a no-op when retention keeps nothing
+          eligible — deletion is where the space comes from, vacuum only compacts.
+      - label: Timers disabled; audits carry the monitoring
+        text: |
+          devin-cleanup.timer disabled on tony-dell and tony-omen 2026-09-21 —
+          policy is on-demand only. audit-hosts.py size reporting plus the
+          20G/50G size_alerts in ssot.devin.maintenance.yml replace the schedule
+          as the growth watchdog. auto_vacuum is enabled on tony-omen's DB.
+      - label: The expensive step is the backup copy, not the vacuum
+        text: |
+          The 2026-09-10 devin-cleanup failure ('No space left', 155G copy) was
+          the pre-vacuum cp, not VACUUM itself. Always `df -h` first and keep
+          NO_BACKUP=1 as the escape hatch on large DBs.
+      - label: Lock ordering for the manual flow
+        text: |
+          DELETE can run while Devin is open; VACUUM cannot (exclusive lock).
+          Correct sequence: archive (nlm) -> delete -> close Devin ->
+          vacuum-devin-db.sh -> relaunch. devin rm cannot see desktop sessions —
+          sqlite3 fallback needs the DB unlocked.
+      - label: Watchdog is crash safety, not maintenance
+        text: |
+          devin-desktop-watchdog.sh (cron, 10 min, both hosts) stays enabled —
+          it guards against renderer runaway/orphan scopes. Only the cleanup
+          timers went on-demand.
+      - label: New builds reduce the corruption motive
+        text: |
+          Devin v3000.10.21+ ships upstream SQLite fixes reducing session-DB
+          corruption risk — the malformed-DB scenario that justified defensive
+          scheduled pruning is less likely now. quick_check preflight in
+          prune-devin-sessions.sh stays as a safety net.
+
   - title: Future Triggers
     icon: 🔔
     layout: list
@@ -176,7 +214,7 @@ sections:
 
 config:
   version: 1
-  last_updated: 2026-09-12
+  last_updated: 2026-09-21
   maintainer: tony
   related_files:
     - docs/ssot/ssot.improvements.yml

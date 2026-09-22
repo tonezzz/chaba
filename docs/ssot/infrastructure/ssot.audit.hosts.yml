@@ -117,10 +117,10 @@ hosts:
     - name: devin-cleanup.timer
       type: timer
       scope: user
-      expected_state: active
+      expected_state: inactive
       critical: false
-      note: Weekly trigger for devin-cleanup.service; service skips if Devin code.lock
-        is present
+      note: Disabled 2026-09-21 — on-demand only per ssot.devin.maintenance.yml;
+        run devin-cleanup.service manually
     known_failed:
     - name: app-devin-desktop
       reason: Devin desktop is started as a background nohup job, not a persistent
@@ -516,9 +516,10 @@ hosts:
     - name: devin-cleanup.timer
       type: timer
       scope: user
-      expected_state: active
+      expected_state: inactive
       critical: false
-      note: Daily trigger for devin-cleanup.service; skips VACUUM while Devin is open
+      note: Disabled 2026-09-21 — on-demand only per ssot.devin.maintenance.yml;
+        run devin-cleanup.service manually
     known_failed:
     - name: arp-inventory-scan.service
       reason: Exits 2 when network conflicts/duplicates are detected, by design
