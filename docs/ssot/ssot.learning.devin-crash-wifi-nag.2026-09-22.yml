@@ -1,0 +1,75 @@
+title: Devin renderer-crash recovery + NM wifi nag misattribution (2026-09-22)
+subtitle: What happened when devin-desktop died on tony-dell, and why NetworkManager keeps asking for a wifi password that is actually correct
+date: "2026-09-22"
+icon: 🧠
+context: |
+  devin-desktop disappeared from the tony-dell :1 seat, and separately tony-dell kept
+  prompting for the "Naris" wifi password. Both were diagnosed and fixed in one session.
+
+lessons:
+  - id: devin-watchdog-kill-cascade
+    title: Watchdog renderer kill cascades into full devin-desktop shutdown
+    severity: medium
+    symptom: |
+      devin-desktop completely gone from :1 — no processes at all, not just a wedged
+      window. watchdog.log showed a renderer running ~100-120% interval CPU for 3
+      consecutive checks, killed at 10:30; main process then logged
+      "Render frame was disposed before WebFrameMain could be accessed" and shut down
+      at 10:37 ("WindsurfWindowsMainManager: Shutdown initiated").
+    root_cause: |
+      devin-watchdog kills a hot renderer to recover the window, but this time the
+      killed render frame was treated as a fatal window error by the main process,
+      which destroyed the window and exited. The XDG autostart only fires at session
+      start, so nothing relaunched it.
+    fix: |
+      `systemctl --user restart xfce-seat.service` on tony-dell — the autostart entry
+      relaunches devin cleanly inside the new session. Do NOT launch devin by hand on
+      :1 while a seat session is alive (races autostart -> duplicate instances).
+      Verify with `xdotool search --class devin-desktop` + `xwininfo` (main window
+      should be IsViewable; a 10x10 IsUnMapped "devin-desktop" window is the normal
+      Electron helper, not the UI).
+    prevention: |
+      A killed renderer should not kill the app. If this recurs, consider tracking
+      whether watchdog kills correlate with full exits — the watchdog may need to
+      restart the whole app instead of just the renderer.
+
+  - id: devin-summaries-tony-dell-gap
+    title: tony-dell devin session summaries never reach ada memory
+    severity: medium
+    symptom: |
+      `~/.local/share/devin/cli/summaries/history_*.md` accumulates on tony-dell
+      (41 files) but none appear in the `ada-ha-bank-devin-tony` MDDB collection.
+    root_cause: |
+      `sync-devin-summaries.py` only runs inside `ada-memory-pull.service`, which is
+      installed on tony-omen (hourly). It reads the LOCAL summaries dir, so it only
+      ships tony-omen's sessions (~1044 files). tony-dell has no ada-memory timers.
+    fix: |
+      Not yet applied. Options discussed: (a) per-host devin-summaries-sync.timer
+      pushing to MDDB at 100.74.146.0:11023 — recommended; (b) move the whole
+      ada-memory-pull to idc01 (MDDB now lives there) — but summaries still need
+      per-host pushers since neither desktop's dir is local to idc01.
+      idc01 prerequisites found: chaba checkout exists; `ssh idc01->mn01` fails
+      host-key verification; no git user.email configured.
+
+  - id: nm-wrong-key-misattribution
+    title: NetworkManager reports WRONG_KEY and prompts for password on flaky USB wifi
+    severity: low
+    symptom: |
+      tony-dell kept popping a wifi password prompt for SSID "Naris" even though the
+      stored PSK was correct and had worked days earlier.
+    root_cause: |
+      The MT7601U USB dongle at -73dBm intermittently drops 4-way handshake replies
+      (disconnect reason=15 = handshake timeout). wpa_supplicant reports the failure
+      as "pre-shared key may be incorrect" / WRONG_KEY; NM then marks the connection
+      `need-auth` and nm-applet prompts — misattributing RF/driver flakiness to a
+      bad password. Verify the AP's actual security first:
+      `sudo iw dev <if> scan` showed Naris is plain WPA2-PSK/CCMP (no SAE/PMF), and
+      `sudo nmcli con up Naris` connected fine with the stored key.
+    fix: |
+      `sudo nmcli con mod Naris connection.autoconnect-retries 0` — retry forever
+      instead of entering need-auth. Persisted: nmcli wrote it back into the
+      netplan yaml (/etc/netplan/90-NM-*.yaml), so it survives reboot.
+    prevention: |
+      Before believing a WRONG_KEY report, force `sudo nmcli con up <ssid>` once —
+      if it connects, the key is fine and the problem is link quality/driver.
+      Note: nmcli and wifi rescan are polkit-restricted over ssh; use sudo.
