@@ -6,8 +6,8 @@ configured embedding provider regenerates vectors. Safe to re-run because it
 preserves existing keys and metadata.
 
 Usage:
-    MDDB_BASE=http://tony-dell:11023 python3 scripts/mddb/reindex.py
-    MDDB_BASE=http://localhost:11023 COLLECTIONS=test,kb-system python3 scripts/mddb/reindex.py
+    MDDB_BASE=http://100.74.146.0:11023 python3 scripts/mddb/reindex.py
+    MDDB_BASE=http://100.74.146.0:11023 COLLECTIONS=test,kb-system python3 scripts/mddb/reindex.py
     python3 scripts/mddb/reindex.py --dry-run
 """
 import argparse
@@ -16,7 +16,7 @@ import os
 import urllib.request
 import urllib.error
 
-MDDB_BASE = os.environ.get("MDDB_BASE", "http://tony-dell:11023")
+MDDB_BASE = os.environ.get("MDDB_BASE", "http://100.74.146.0:11023")
 COLLECTIONS = [c for c in os.environ.get("COLLECTIONS", "").split(",") if c]
 
 DEFAULT_COLLECTIONS = [

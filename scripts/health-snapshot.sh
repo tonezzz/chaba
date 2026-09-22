@@ -63,7 +63,7 @@ def get_wifi_ssid():
     out, _, rc = run("iwgetid -r 2>/dev/null")
     if rc == 0 and out:
         return out
-    out, _, _ = run("nmcli -t -f active,ssid dev wifi 2>/dev/null | grep '^yes:' | head -1")
+    out, _, _ = run("nmcli -t -f active,ssid dev wifi list --rescan no 2>/dev/null | grep '^yes:' | head -1")
     if out:
         return out.split(":", 1)[-1].strip()
     return ""

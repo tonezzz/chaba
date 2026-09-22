@@ -8,7 +8,7 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 NOTEBOOK_ID = "fdfd3483-6b7e-4cb0-85f3-7f060698769c"
-MDDB_URL = "http://127.0.0.1:11023/v1/search"
+MDDB_URL = "http://100.74.146.0:11023/v1/search"
 MDDB_COLLECTION = "infrastructure-ssot"
 OUT = Path("/home/tony/CascadeProjects/chaba/docs/kb/experiments/notebooklm-kb-search-benchmark-2026-09-15-v2.yml")
 QUESTIONS = [

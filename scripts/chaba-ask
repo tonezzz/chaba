@@ -40,7 +40,7 @@ def route(question: str, timeout: int = 120):
         return 0
     if consumer == "mddb":
         print(f"[{consumer}] Try MDDB semantic search:")
-        print(f"  curl -s http://127.0.0.1:11023/v1/search \\")
+        print(f"  curl -s http://100.74.146.0:11023/v1/search \\")
         print(f"    -H 'Content-Type: application/json' \\")
         print(f"    -d '{chr(123)}\"query\": \"{question}\", \"collection\": \"infrastructure-ssot\"{chr(125)}'")
         return 0
