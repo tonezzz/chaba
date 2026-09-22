@@ -150,7 +150,7 @@ banks:
     public: false
   personal:
     title: Private per-instance memory
-    description: Instance-private notes that must never cross to the other instance
+    description: Instance-private notes that must never cross to the other instance. When speaker ID is active, this bank is the default personal bank for the instance owner (Tony on tony, Michael on michael). Other identified speakers (e.g. KK) are routed to their person-scoped bank instead.
     scope: instance
     instances: [tony, michael]
     mddb_collection: ada-ha-bank-personal-{instance}
@@ -162,6 +162,23 @@ banks:
     allowed_tools: [ada_remember, ada_forget, ada_outcome]
     status: active
     public: false
+    person_scope: default
+  personal-kk:
+    title: KK private memory
+    description: Person-scoped private memory for KK. Assigned to the tony instance (KK uses Tony's Ada instance) but isolated from Tony's personal bank. Routed by speaker identity — only used when the current speaker is identified as KK.
+    scope: person
+    instances: [tony]
+    mddb_collection: ada-ha-bank-personal-kk
+    notebooklm_group: null
+    notebooklm_id: null
+    kinds: [fact, preference, note]
+    writable: true
+    write_policy: direct
+    allowed_tools: [ada_remember, ada_forget, ada_outcome]
+    status: active
+    public: false
+    person_scope: person.kk
+    speaker_name: KK
   tony-projects:
     title: Tony project notes
     description: Tony-only project and infrastructure notes
@@ -358,9 +375,9 @@ banks:
     public: false
 
 config:
-  version: 2
+  version: 3
   created: "2026-09-18"
-  updated: "2026-09-21"
+  updated: "2026-09-22"
   maintainer: tony
   status: draft
   deployment: mn01
