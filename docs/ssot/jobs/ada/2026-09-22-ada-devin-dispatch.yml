@@ -1,0 +1,101 @@
+# SSOT Job Lifecycle: Ada -> Devin session dispatch
+# Tell Ada "start a Devin session on tony-dell for X"; she dispatches a
+# non-interactive devin -p run in a dedicated worktree, tracks it, follows
+# up until done, and reports the outcome back through the devin bank.
+
+title: Ada -> Devin session dispatch
+subtitle: Voice-triggered headless Devin sessions on tony-dell, worktree-isolated, tracked to completion
+icon: robot
+
+planning:
+  goal: |
+    Tony can tell Ada (voice or PWA) to start a Devin session on tony-dell
+    for a development task. Ada dispatches a non-interactive `devin -p`
+    session in a dedicated git worktree, tracks progress, supports
+    follow-up messages, and reports the outcome via the devin memory
+    bank + chaba-admin events. Discussing a feature with Ada produces a
+    handoff doc that a Devin session (or Devin CLI on tony-omen) picks
+    up for implementation.
+  scope: |
+    In scope:
+      - scripts/devin/devin-dispatch.sh on tony-dell — worktree per task,
+        systemd-run wrapper, JSON session registry, repo whitelist,
+        prompt templating
+      - devin CLI on tony-dell PATH (bundled binary at
+        /usr/share/devin-desktop/resources/app/extensions/windsurf/devin/bin/devin)
+      - P1 fix: per-host devin-summaries sync on tony-dell
+        (devin-summaries-sync.timer -> MDDB idc01) — closes the documented
+        devin-summaries-tony-dell-gap
+      - Ada tools: devin_dispatch / devin_status / devin_followup —
+        confirmed=true ToolRunner gate, Gemini declarations
+      - devin-handoff MDDB collection/bank — Ada writes distilled specs;
+        Devin sessions read via mddb MCP ("check the ada handoff")
+      - devin-dispatch-watch.timer on tony-dell — completion detection,
+        chaba-admin event, outcome writeback
+    Out of scope:
+      - devin acp (JSON-RPC streaming bridge) — -p/-r covers the need;
+        revisit only if multi-turn steering is required
+      - Dispatching to hosts other than tony-dell
+      - michael instance
+  success_criteria:
+    - 'Voice: "start a devin session on tony-dell to <task>" dispatches a
+      real session after confirmed=true'
+    - Worktree isolation enforced — never touches a dirty checkout
+    - ada_status/devin_status shows running vs finished sessions
+    - Completed sessions produce a summary doc in ada-ha-bank-devin-tony
+      and a chaba-admin event
+    - 'saying "check the ada handoff" in a Devin session returns Ada-written specs'
+  risks:
+    - 'Unattended agent writes: accept-edits or smart permission mode only,
+      never dangerous; repo whitelist; dispatched sessions run as tony on
+      tony-dell.'
+    - 'Repo state: worktree-per-task is mandatory (AGENTS.md parallel-
+      session rules — a prior incident involved duplicated files/version
+      races).'
+    - 'Follow-up routing: -r SESSION_ID needs the id captured at dispatch;
+      registry file is the source of truth.'
+    - devin CLI bundled under devin-desktop may update in place — pin by
+      path, doctor-check after desktop updates.
+    - 'Summaries gap: without per-host sync, tony-dell session outcomes are
+      invisible to Ada — must land P1 fix first.'
+  resources:
+    - /usr/share/devin-desktop/resources/app/extensions/windsurf/devin/bin/devin
+      on tony-dell (supports -p, --permission-mode, --export, -r, list, acp)
+    - scripts/ada/sync-devin-summaries.py (existing; runs hourly only on
+      tony-omen via ada-memory-pull.service)
+    - ssot.learning.devin-crash-wifi-nag.2026-09-22.yml (the documented gap)
+    - backend/tool_runner.py confirmed=true gate; chaba-admin events via
+      shell_command.chaba_event
+    - Related job: 2026-09-22-document-print-pipeline.yml (consumer use-case)
+  owner: tony
+  estimated_duration: 2 sessions
+
+processing:
+  status: in_progress
+  started_at: "2026-09-22"
+  steps:
+    - id: 1
+      label: "Job SSOT draft"
+      status: done
+      notes: "2026-09-22: this file."
+    - id: 2
+      label: "P1a: devin-summaries-sync.timer on tony-dell -> MDDB idc01 (fixes devin-summaries-tony-dell-gap)"
+      status: done
+      notes: "2026-09-22: units in chaba/systemd/devin-summaries-sync.{service,timer}, deployed to tony-dell ~/.config/systemd/user, enabled hourly :45. First run synced 10 local summaries; collection ada-ha-bank-devin-tony now 954 docs. Registered in ssot.audit.hosts.yml."
+    - id: 3
+      label: "P1b: devin-dispatch.sh on tony-dell (worktree + systemd-run + registry + whitelist)"
+      status: done
+      notes: "2026-09-22: scripts/devin/devin-dispatch.sh -> ~/.local/bin/devin-dispatch. Subcommands start/status/followup/logs/tail; worktree per task under ~/CascadeProjects/dispatch-wt-*, systemd-run --user unit devin-task-<id>, registry ~/.local/share/devin-dispatch/tasks/<id>/. Whitelist: chaba, ada-pi, sunsynk-card. Learned: -p rejects a positional PATH arg (cwd via --working-directory); CLI was not logged in — copied credentials.toml from tony-omen (windsurf_api_key)."
+    - id: 4
+      label: "Smoke test: dispatch trivial task over SSH, verify registry + transcript + summary sync"
+      status: done
+      notes: "2026-09-22: dispatch+followup both ran to success; transcript.json exported per turn; session registered in sessions.db (resumable via -c/-r in worktree). FINDING: -p sessions do NOT write history_*.md summaries — the dispatch watcher must read the outcome from transcript.json's last agent message, not wait for the bank sync."
+    - id: 5
+      label: "P2: devin-handoff collection + Ada tools devin_dispatch/devin_status/devin_followup (confirmed gate) + Gemini declarations"
+      status: pending
+    - id: 6
+      label: "P3: devin-dispatch-watch.timer — completion events + outcome writeback + iPhone notify"
+      status: pending
+    - id: 7
+      label: "P4 (optional): handoff docs -> docs/ssot/focus-inbox renderer for repo-based triage"
+      status: pending

@@ -1,0 +1,9 @@
+[Unit]
+Description=Sync local Devin CLI session summaries into MDDB ada-ha-bank-devin-tony
+# Per-host companion to tony-omen's ada-memory-pull.service: reads THIS
+# host's ~/.local/share/devin/cli/summaries and pushes to MDDB on idc01.
+# Closes devin-summaries-tony-dell-gap (ssot.learning.devin-crash-wifi-nag).
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 %h/CascadeProjects/chaba/scripts/ada/sync-devin-summaries.py

@@ -236,6 +236,13 @@ Also check for a duplicate instance: clicking the launcher while the first insta
 - `HTTP 413 Payload Too Large` with `max_trailing_images=1` may return if large screenshots are sent; the Headroom proxy (`http://127.0.0.1:8787`) was not running during this incident.
 - If the new `3.10.23` build keeps crashing, the cached `3.9.19-1788908513` deb is available in `/var/cache/apt/archives/` and can be downgraded.
 
+## Headless Devin dispatch on tony-dell (learned 2026-09-22)
+
+- Launch a non-interactive session: `ssh tony-dell '~/.local/bin/devin-dispatch start <repo> "<task>"'` — creates a worktree (`~/CascadeProjects/dispatch-wt-<id>`, branch `dispatch/<id>`) and a `systemd-run --user` unit `devin-task-<id>`. Subcommands: `status`, `followup <id> "<msg>"`, `logs <id>`, `tail <id>`. Whitelisted repos: chaba, ada-pi, sunsynk-card. Source: `scripts/devin/devin-dispatch.sh`; registry at `~/.local/share/devin-dispatch/tasks/<id>/` (prompt.txt, transcript.json, meta.json).
+- `devin` CLI on tony-dell is NOT in PATH — use `/usr/share/devin-desktop/resources/app/extensions/windsurf/devin/bin/devin`. Auth via `~/.local/share/devin/credentials.toml` (copied from tony-omen 2026-09-22).
+- `devin -p` quirks: no positional PATH arg allowed (workspace = cwd via systemd `--working-directory`); `--respect-workspace-trust false` needed for fresh worktrees; sessions do NOT write `history_*.md` summaries — read outcomes from the exported `transcript.json` last agent message.
+- tony-dell summaries reach MDDB via `devin-summaries-sync.timer` (hourly :45, user unit) — closes the documented tony-dell gap.
+
 ## Ada Pi PWA (learned 2026-09-13)
 
 ### Runtime

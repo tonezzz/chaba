@@ -1,0 +1,84 @@
+# SSOT Job Lifecycle: Ada document intake -> print-optimize -> archive
+# Upload a document (photo/scan/PDF) to Ada; she classifies it, renders a
+# print-ready B&W PDF, prints on confirmed request, and archives metadata
+# to a private documents bank.
+
+title: Ada document intake -> print-optimize -> archive
+subtitle: PWA upload, doc-type-aware B&W print pipeline, confirmed-gate IPP print, private documents bank
+icon: printer
+
+planning:
+  goal: |
+    Uploading a document image or PDF to Ada produces a print-ready B&W
+    PDF (cleaned background, correct physical size on A4), prints it on
+    the HP DeskJet 2700 only after explicit confirmation, and archives a
+    copy whose metadata is recallable ("when does my ID card expire?").
+  scope: |
+    In scope:
+      - backend/document_check.py — assess pipeline mirroring
+        decision_check.py: classify (Gemini vision) -> measure (PIL/numpy)
+        -> plan (doc-type profile) -> render -> respond
+      - imaging module: flat-field shading correction, levels, unsharp,
+        A4 @300dpi canvas, true-size placement, PDF emit
+      - POST /api/documents/intake (+pdf_b64) and GET /api/documents/{key}/pdf
+      - ToolRunner tools ada_document_print + ada_document_archive,
+        confirmed=true gate (physical actuation + ink cost)
+      - CUPS remote queue on mn01 -> ipp://192.168.2.74/ipp/print
+        (IPP Everywhere, driverless — mn01 is on 192.168.2.0/24)
+      - PWA document panel reusing the check-panel upload pattern
+      - banks: documents — scope instance (tony), public: false,
+        write_policy: confirmed; metadata docs only, not binaries
+      - ~/ada-documents/ local-only archive (YYYY/MM/<slug>.pdf), NOT git
+    Out of scope:
+      - eSCL flatbed scan -> archive loop (P4 follow-up; scan-doc already
+        works on tony-dell)
+      - OCR/tesseract — Gemini vision does metadata extraction
+      - Michael instance — documents bank is tony-only
+  success_criteria:
+    - ID-card photo upload -> PDF prints at true 85.6x54mm on A4
+    - Print requires confirmed=true; Ada restates doc + settings first
+    - 'a voice request like "print the deed I uploaded yesterday" resolves via documents bank'
+    - Sensitive docs never enter git, shared banks, or repo-bound backups
+  risks:
+    - 'Privacy: ID cards/title deeds are sensitive — documents bank must be
+      instance-scoped, public:false; archive dir local-only; apply the
+      backup-mddb-banks.py private-routing lesson to any dump.'
+    - Low-res sources can't gain detail — report a legibility/confidence
+      note in the assessment instead of silently upscaling.
+    - 'Print scaling: must send print-scaling=none for true-size output;
+      "fit to page" breaks ID-1 sizing silently.'
+    - Gemini free-tier 429s — reuse the bounded-retry from decision_check.
+    - PDF intake needs pymupdf or poppler on mn01 — verify availability.
+    - 'Printer sleeps/powers off: 2026-09-22 it was ARP-unreachable from
+      BOTH mn01 and tony-dell while powered off — mn01↔printer LAN path
+      itself is fine (mn01 wired .79 on the same 192.168.2.0/24). The
+      printer-status precheck must treat unreachable as "printer off",
+      not as a config error.'
+  resources:
+    - backend/decision_check.py (pipeline template) + pwa_server.py
+      /api/decision/check (intake pattern)
+    - backend/tool_runner.py confirmed=true gate
+    - ssot.learning.printer-hp-deskjet.2026-09-21.yml (IPP URI, CUPS,
+      eSCL quirks, marker-levels ink check)
+    - ssot.apps.ada-memory-banks.yml banks: block (registry-only add)
+    - 'Prototype output: ~/Documents/print-bw/ (pipeline already proven
+      on 4 deed pages + ID card this session)'
+  owner: tony
+  estimated_duration: 2-3 sessions
+
+processing:
+  status: planned
+  started_at: "2026-09-22"
+  steps:
+    - id: 1
+      label: "P1: intake endpoint + document_check.py + imaging module -> PWA preview/download"
+      status: pending
+    - id: 2
+      label: "P2: CUPS queue on mn01 + ada_document_print tool + printer-status precheck (ink/state) + iPhone confirm"
+      status: pending
+    - id: 3
+      label: "P3: documents bank (SSOT + render) + ~/ada-documents archive + metadata extraction + file backup"
+      status: pending
+    - id: 4
+      label: "P4 (optional): eSCL scan -> optimize -> archive one-command loop"
+      status: pending

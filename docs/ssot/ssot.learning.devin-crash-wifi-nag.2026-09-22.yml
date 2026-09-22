@@ -44,12 +44,14 @@ lessons:
       installed on tony-omen (hourly). It reads the LOCAL summaries dir, so it only
       ships tony-omen's sessions (~1044 files). tony-dell has no ada-memory timers.
     fix: |
-      Not yet applied. Options discussed: (a) per-host devin-summaries-sync.timer
-      pushing to MDDB at 100.74.146.0:11023 — recommended; (b) move the whole
-      ada-memory-pull to idc01 (MDDB now lives there) — but summaries still need
-      per-host pushers since neither desktop's dir is local to idc01.
-      idc01 prerequisites found: chaba checkout exists; `ssh idc01->mn01` fails
-      host-key verification; no git user.email configured.
+      APPLIED 2026-09-22 (option a): devin-summaries-sync.{service,timer}
+      installed on tony-dell (chaba/systemd/), hourly at :45, pushes this
+      host's summaries to MDDB idc01 (default URL already points there).
+      First run synced 10 files; registered in ssot.audit.hosts.yml.
+      NOTE: headless `devin -p` sessions do NOT write history_*.md — see
+      jobs/ada/2026-09-22-ada-devin-dispatch.yml step 4.
+      Still open if desired: same per-host pusher for tony-omen already
+      covered by ada-memory-pull; idc01 has no devin sessions.
 
   - id: nm-wrong-key-misattribution
     title: NetworkManager reports WRONG_KEY and prompts for password on flaky USB wifi

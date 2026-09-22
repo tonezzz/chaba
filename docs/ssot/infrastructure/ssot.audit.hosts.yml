@@ -198,6 +198,14 @@ hosts:
       - name: cookie-bridge.service
         reason: Cookie bridge service failing on tony-dell; needs restart/investigation
         action: restart
+      - name: devin-summaries-sync.timer
+        type: timer
+        scope: user
+        expected_state: active
+        critical: false
+        note: "Hourly (:45) — pushes THIS host's devin CLI session summaries to
+          MDDB ada-ha-bank-devin-tony on idc01; closes devin-summaries-tony-dell-gap.
+          Units in chaba/systemd/devin-summaries-sync.{service,timer}."
     expected_resources:
       min_free_ram_mb: 500
       max_swap_used_percent: 80
