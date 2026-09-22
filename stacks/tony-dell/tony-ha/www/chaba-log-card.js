@@ -44,6 +44,12 @@ class ChabaLogCard extends HTMLElement {
   connectedCallback() {
     this._onResize = () => this._fitHeight();
     window.addEventListener("resize", this._onResize);
+    // iOS Safari: innerHeight includes space hidden under the browser
+    // toolbar; visualViewport tracks the actually-visible area (and fires
+    // resize when the toolbar shows/hides).
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener("resize", this._onResize);
+    }
     this._fitHeight();
     // settle after the view finishes layout (top edge moves into place)
     requestAnimationFrame(() => this._fitHeight());
@@ -52,15 +58,26 @@ class ChabaLogCard extends HTMLElement {
 
   disconnectedCallback() {
     window.removeEventListener("resize", this._onResize);
+    if (window.visualViewport) {
+      window.visualViewport.removeEventListener("resize", this._onResize);
+    }
   }
 
-  // Fit exactly to the remaining viewport: measure our own top edge
-  // (accounts for header + tabs + view padding however the panel lays out)
-  // rather than guessing CSS vars. Keeps the page itself from scrolling so
-  // only the log contents scroll.
+  // Fit exactly to the space the layout allocated: fill down to our
+  // parent's content-box bottom (honors whatever padding the view uses),
+  // clamped to the visual viewport so iOS toolbars don't leave a gap or
+  // push the card under the edge.
   _fitHeight() {
-    const top = this.getBoundingClientRect().top;
-    const h = Math.max(150, Math.floor(window.innerHeight - top - 8));
+    const r = this.getBoundingClientRect();
+    const vv = window.visualViewport;
+    let bottom = vv ? vv.offsetTop + vv.height : window.innerHeight;
+    const p = this.parentElement;
+    if (p) {
+      const pr = p.getBoundingClientRect();
+      const padB = parseFloat(getComputedStyle(p).paddingBottom) || 0;
+      bottom = Math.min(bottom, pr.bottom - padB);
+    }
+    const h = Math.max(150, Math.floor(bottom - r.top));
     if (h > 0) this.style.height = h + "px";
   }
 

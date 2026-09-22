@@ -73,12 +73,14 @@ instances:
       filter state in input_text.chaba_events_filter ({"hidden": [...],
       "log_hidden": [...]} — both cards merge-write the shared JSON).
       Log tab added 2026-09-21: `type: panel` view with a single
-      custom:chaba-log-card (/local/chaba-log-card.js?v=2, same repo dir) that
+      custom:chaba-log-card (/local/chaba-log-card.js?v=3, same repo dir) that
       wraps the native logbook card full-viewport — header + its own
       per-domain filter checkboxes stay fixed while the log scrolls inside
-      the card. Vertical fit is JS-measured (window.innerHeight minus the
-      card's own top edge, refit on resize/hass) because the card renders
-      light-DOM and :host selectors don't apply; CSS height:100% is the
+      the card. Vertical fit is JS-measured: fill to the parent's
+      content-box bottom clamped to visualViewport (innerHeight under-counts
+      on iOS when the browser toolbar is visible), refit on resize/hass.
+      The card renders light-DOM so :host doesn't apply — selectors are
+      scoped via the tag name and clc-* classes; CSS height:100% is the
       fallback. Filter groups are entity domains (input_* grouped as
       "input"), persisted as "log_hidden" in the same input_text; toggling a
       group rebuilds the inner card's entities list. The inner card's chrome
