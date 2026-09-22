@@ -99,6 +99,34 @@ instances:
       deploy-ada.sh emits over SSH. Events with requires_response && !responded
       pin to top with a pulsing border (prefers-reduced-motion respected);
       confidence <0.6 shown as outlined chip.
+      Voice card added 2026-09-22 at the top of the Pair tab:
+      custom:ada-voice-card (/local/ada-voice-card.js?v=2, repo:
+      stacks/tony-dell/tony-ha/www/ada-voice-card.js) — embeds the full Ada
+      Gemini Live client in the dashboard, no iframe/redirect. It ports the
+      PWA transport (ada-pi pwa/app.js): getUserMedia -> ScriptProcessor
+      downsamples to PCM16@16kHz over WebSocket; server PCM16@24kHz plays
+      through a blob-URL AudioWorklet (PCMPlayer); JSON control messages
+      (ready/transcripts/response_*/live_reconnecting/clear_audio) drive the
+      status line. Connects to wss://mn01.taila0626a.ts.net/apps/ha/ada-tony/ws
+      with device_id + api_key query params — websocket_authorized accepts
+      the api_key param so no CORS/REST calls are needed. Key provisioning
+      is automatic: on first connect the card calls script.ada_voice_key via
+      hass.callWS (return_response) — the script creates-or-repairs a
+      per-device issued key ha-<device8> (rest_command.ada_issue_key /
+      ada_repair_key), then burns the redeem token server-side via
+      rest_command.ada_voice_redeem (POST /api/auth/redeem with
+      token+expect_name+device_id, NO api-key header — a caller key would
+      override expect_name and fail) and returns the raw key, which the
+      card caches in localStorage ada_voice_api_key. First WS connect TOFU-
+      binds the key to the browser's device_id; a 4401 close (revoked /
+      foreign binding) triggers one re-mint retry, then falls back to a
+      paste-once unlock field. The admin key never leaves HA (secrets.yaml),
+      no key sits in dashboard config (lovelace snapshots sync into this
+      repo), and every browser gets its own revocable issued key visible in
+      the ada-keys-card list. Mic needs HTTPS (satisfied via Tailscale
+      serve :8123) and a user gesture for AudioContext (the mic-button
+      tap). Card disconnects mic + socket in disconnectedCallback when the
+      view is left.
     tabs:
       - title: Pair
         path: pair

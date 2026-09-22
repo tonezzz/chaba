@@ -5,9 +5,13 @@
 //
 // Config:
 //   type: custom:ada-voice-card
-//   ws_url:  wss://mn01.taila0626a.ts.net/apps/ha/ada-tony/ws   (default)
-//   api_key: <key>   optional — else a one-time paste field is shown
-//   title:   Ada     optional
+//   ws_url:   wss://mn01.taila0626a.ts.net/apps/ha/ada-tony/ws   (default)
+//   instance: tony | michael   (default tony — selects the backend + key name)
+//   api_key:  <key>   optional — normally unset: the card auto-mints a
+//             per-device issued key via script.ada_voice_key (server-side
+//             redeem; the admin key never reaches the browser). The paste
+//             field below is only a fallback when the script fails.
+//   title:    Ada     optional
 
 const AVC_INPUT_RATE = 16000;
 const AVC_OUTPUT_RATE = 24000;
@@ -34,6 +38,7 @@ class AdaVoiceCard extends HTMLElement {
     this._speechBelow = 0;
     this._noiseFloor = 0.004;
     this._micMuted = false;
+    this._mintRetried = false;
     this._state = "idle"; // idle | locked | connecting | listening | speaking | reconnecting | error
     this._build();
   }
@@ -141,6 +146,30 @@ class AdaVoiceCard extends HTMLElement {
     const fromUrl = params.get("api_key");
     if (fromUrl) localStorage.setItem(AVC_KEY_STORAGE, fromUrl);
     return localStorage.getItem(AVC_KEY_STORAGE) || "";
+  }
+
+  // Mint a per-device issued key through HA: script.ada_voice_key creates
+  // (or re-pairs) ha-<device8> on the backend and redeems it server-side,
+  // returning the raw key. The admin credential never leaves HA.
+  async _mintKey() {
+    if (!this._hass) return null;
+    try {
+      const res = await this._hass.callWS({
+        type: "call_service",
+        domain: "script",
+        service: "ada_voice_key",
+        service_data: {
+          instance: this._config.instance || "tony",
+          device_id: this._deviceId(),
+        },
+        return_response: true,
+      });
+      const key = res?.response?.content?.api_key || null;
+      if (key) localStorage.setItem(AVC_KEY_STORAGE, key);
+      return key;
+    } catch {
+      return null;
+    }
   }
 
   // ---------- audio ----------
@@ -343,14 +372,18 @@ class AdaVoiceCard extends HTMLElement {
     this._render();
   }
 
-  async _connect() {
+  async _connect(isRetry = false) {
     if (this._connecting || this._socket) return;
     this._connecting = true;
+    if (!isRetry) this._mintRetried = false;
     this._state = "connecting";
     this._setStatus("Requesting microphone…");
     this._render();
     try {
-      if (!this._apiKey()) throw new Error("locked");
+      if (!this._apiKey()) {
+        this._setStatus("Pairing this device…");
+        if (!(await this._mintKey())) throw new Error("locked");
+      }
       await this._createPlayback();
       await this._startMicrophone();
       const wsUrl = `${this._config.ws_url || AVC_DEFAULT_WS}`
@@ -364,11 +397,19 @@ class AdaVoiceCard extends HTMLElement {
         else this._playbackNode?.port.postMessage(m.data, [m.data]);
       };
       this._socket.onerror = () => { this._line.textContent = "WebSocket error"; };
-      this._socket.onclose = (e) => {
+      this._socket.onclose = async (e) => {
+        if (e.code === 4401 && !this._mintRetried) {
+          // Key revoked or bound to another device — re-mint and retry once.
+          this._mintRetried = true;
+          localStorage.removeItem(AVC_KEY_STORAGE);
+          await this._teardown(false);
+          this._connect(true);
+          return;
+        }
         if (e.code === 4401) {
           localStorage.removeItem(AVC_KEY_STORAGE);
           this._state = "locked";
-          this._setStatus("Key rejected");
+          this._setStatus("Key rejected — paste a key below");
         }
         this._teardown(false);
       };
