@@ -65,19 +65,13 @@ instances:
       QR display is custom:ada-pair-qr-card (/local/ada-pair-qr-card.js, same
       repo dir) — renders /local/pair-qr.svg with a ?v= cache-buster derived
       from the redeem token (stock picture card caches the URL forever).
-      Events tab added 2026-09-20, panel-ized 2026-09-22: `type: panel` view
-      with custom:chaba-events-card (/local/chaba-events-card.js?v=5, repo:
-      stacks/tony-dell/tony-ha/www/) — full-height card with fixed
-      toolbar/banner/filters and internally scrolling .rows (same
-      JS-measured fit as chaba-log-card: parent content-box bottom clamped
-      to visualViewport). Top toolbar has a source <select> ("All sources"
-      + distinct event.source values, persisted as "src"); rows also show a
-      ghost source chip. Reads
+      Events tab added 2026-09-20: custom:chaba-events-card
+      (/local/chaba-events-card.js, repo: stacks/tony-dell/tony-ha/www/) reads
       /local/chaba-events.json (written by /config/scripts/chaba-event-log.py —
       flock, 24h prune, 300 cap, `ack` sets responded) plus live
       persistent_notification entities (always requires-response). Shared
       filter state in input_text.chaba_events_filter ({"hidden": [...],
-      "log_hidden": [...], "src": "..."} — all cards merge-write the JSON).
+      "log_hidden": [...]} — both cards merge-write the shared JSON).
       Log tab added 2026-09-21: `type: panel` view with a single
       custom:chaba-log-card (/local/chaba-log-card.js?v=4, same repo dir) —
       an isolated copy of the built-in /logbook page so its UX/UI can be
@@ -105,39 +99,15 @@ instances:
       deploy-ada.sh emits over SSH. Events with requires_response && !responded
       pin to top with a pulsing border (prefers-reduced-motion respected);
       confidence <0.6 shown as outlined chip.
-      Voice card added 2026-09-22 at the top of the Pair tab:
-      custom:ada-voice-card (/local/ada-voice-card.js?v=1, repo:
-      stacks/tony-dell/tony-ha/www/ada-voice-card.js) — embeds the full Ada
-      Gemini Live client in the dashboard, no iframe/redirect. It ports the
-      PWA transport (ada-pi pwa/app.js): getUserMedia -> ScriptProcessor
-      downsamples to PCM16@16kHz over WebSocket; server PCM16@24kHz plays
-      through a blob-URL AudioWorklet (PCMPlayer); JSON control messages
-      (ready/transcripts/response_*/live_reconnecting/clear_audio) drive the
-      status line. Connects to wss://mn01.taila0626a.ts.net/apps/ha/ada-tony/ws
-      with device_id + api_key query params — websocket_authorized accepts
-      the api_key param so no CORS/REST calls are needed. Key resolution:
-      config api_key -> localStorage ada_voice_api_key -> paste-once unlock
-      field (accepts a raw key or a full unlock-link URL). A named
-      ADA_API_KEYS entry `ha-dash` on mn01
-      (~/.config/secrets/ada-ha-tony.env, key value in
-      ~/.config/secrets/ada-ha-dash-key.txt) is used — named env keys are
-      never device-bound (enforce_device only binds file-issued keys), so
-      one key works from every browser and is revocable by editing the env.
-      The key is deliberately NOT in dashboard config: lovelace snapshots
-      are synced into this repo. 4401 close = rejected key -> unlock field.
-      Mic needs HTTPS (satisfied via Tailscale serve :8123) and a user
-      gesture for AudioContext (the mic-button tap). Card disconnects mic +
-      socket in disconnectedCallback when the view is left.
     tabs:
       - title: Pair
         path: pair
         icon: mdi:qrcode-plus
-        cards: ada-voice-card, issue/revoke form, pairing QR picture, redeem link, ada-keys-card, capabilities info
+        cards: issue/revoke form, pairing QR picture, redeem link, ada-keys-card, capabilities info
       - title: Events
         path: events
         icon: mdi:bell-badge-outline
-        type: panel
-        cards: chaba-events-card (full-height, source dropdown + category filters)
+        cards: chaba-events-card
       - title: Log
         path: log
         icon: mdi:history
@@ -147,8 +117,12 @@ instances:
         path: ada-pages
         icon: mdi:file-document-edit-outline
         type: panel
-        cards: iframe → mn01 /apps/ha/ada-tony/cms/ (added manually 2026-09-21;
-          URL embeds an ada- API key — redacted in the repo snapshot)
+        cards: iframe → https://mn01.taila0626a.ts.net/apps/ha/ada-tony/cms/?api_key=...
+          (dedicated ada-ha-tony key 'cms-viewer' on mn01; key is embedded in the
+          URL because iframes can't set headers — it is revocable via the Pair
+          tab. First browsing context to open the tab TOFU-binds the key; a
+          second device shows the unlock prompt and needs its own key.
+          Added 2026-09-22 via .storage edit + tony-ha restart.)
 
 tabs:
   dev:
@@ -259,5 +233,5 @@ manual_steps:
 
 status:
   last_updated: "2026-09-20"
-  last_verified: "2026-09-22"
+  last_verified: "2026-09-21"
   health: active; G1 on both hosts (dev v171 / ha v161, same md5 b404aab0) — surface3d PV chart on sensor.inverters_1_pv_power, vendored echarts libs in /local; Cast tab removed from live michael-ha tony-test on 2026-09-14; PF3/PF4/PFG/PFG1/PFG2 removed
