@@ -11,9 +11,24 @@ const GEMINI_EMBEDDING_FALLBACK_MODEL =
     ? "gemini-embedding-2"
     : "gemini-embedding-001");
 const DEFAULT_DIMENSIONS = parseInt(process.env.GEMINI_EMBEDDING_DIMENSIONS || "768", 10);
+const OLLAMA_FALLBACK_BASE = (process.env.OLLAMA_FALLBACK_BASE || "").replace(/\/$/, "");
+const OLLAMA_FALLBACK_MODEL = process.env.OLLAMA_FALLBACK_MODEL || "nomic-embed-text";
+// OpenRouter middle tier: mirrors google/* embedding models through an
+// OpenAI-compatible /embeddings endpoint. Same underlying model = same
+// vector space, so a Gemini-quota outage degrades to OR without breaking
+// recall. Only engaged when OPENROUTER_API_KEY is set.
+const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY || "";
+const OPENROUTER_BASE = (process.env.OPENROUTER_BASE || "https://openrouter.ai/api/v1").replace(/\/$/, "");
+const OPENROUTER_PREFIX = process.env.OPENROUTER_MODEL_PREFIX || "google/";
 const MAX_RPM = parseInt(process.env.GEMINI_PROXY_MAX_RPM || "100", 10);
 const BATCH_SIZE = parseInt(process.env.GEMINI_PROXY_BATCH_SIZE || "100", 10);
 const MAX_RETRIES = parseInt(process.env.GEMINI_PROXY_MAX_RETRIES || "5", 10);
+const CIRCUIT_COOLDOWN_MS = parseInt(process.env.OLLAMA_CIRCUIT_COOLDOWN_MS || "300000", 10);
+// When Gemini exhausts retries (quota outage), open the circuit: route
+// straight to the Ollama fallback for a cooldown instead of paying the
+// retry+backoff cost on every request.
+let geminiCircuitOpenUntil = 0;
+let lastBackupProvider = null;
 const INITIAL_BACKOFF_MS = 500;
 const MAX_BACKOFF_MS = 30000;
 
@@ -156,6 +171,68 @@ async function fetchGeminiBatch(texts, geminiModel, outputDimensionality, fallba
   }
 }
 
+async function fetchOllamaBatch(texts) {
+  const resp = await fetch(`${OLLAMA_FALLBACK_BASE}/api/embed`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ model: OLLAMA_FALLBACK_MODEL, input: texts }),
+  });
+  if (!resp.ok) {
+    const t = await resp.text();
+    throw new Error(`Ollama fallback error: ${resp.status} - ${t}`);
+  }
+  const data = await resp.json();
+  return data.embeddings || [];
+}
+
+async function fetchOpenRouterBatch(texts, orModel, outputDimensionality) {
+  const resp = await fetch(`${OPENROUTER_BASE}/embeddings`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${OPENROUTER_API_KEY}`,
+    },
+    body: JSON.stringify({
+      model: orModel,
+      input: texts,
+      dimensions: outputDimensionality,
+    }),
+  });
+  if (!resp.ok) {
+    const t = await resp.text();
+    throw new Error(`OpenRouter error: ${resp.status} - ${t.slice(0, 200)}`);
+  }
+  const data = await resp.json();
+  const list = data.data || [];
+  if (list.length !== texts.length) {
+    throw new Error(`OpenRouter returned ${list.length}/${texts.length} embeddings`);
+  }
+  return list.map((entry) => entry.embedding);
+}
+
+async function fetchBackupBatch(texts, geminiModel, outputDimensionality) {
+  // Prefer OpenRouter's google/* mirror — same model, same vector space —
+  // before degrading to local Ollama (different space, breaks recall).
+  if (OPENROUTER_API_KEY) {
+    try {
+      const orModel = `${OPENROUTER_PREFIX}${geminiModel}`;
+      console.log(`routing ${texts.length} input(s) via OpenRouter ${orModel}`);
+      const out = await fetchOpenRouterBatch(texts, orModel, outputDimensionality);
+      lastBackupProvider = orModel;
+      return out;
+    } catch (err) {
+      console.log(`OpenRouter failed (${String(err.message).slice(0, 80)})`);
+      if (!OLLAMA_FALLBACK_BASE) throw err;
+    }
+  }
+  if (!OLLAMA_FALLBACK_BASE) {
+    throw new Error("no backup embedding provider configured");
+  }
+  console.log(`embedding ${texts.length} input(s) via Ollama ${OLLAMA_FALLBACK_MODEL}`);
+  lastBackupProvider = OLLAMA_FALLBACK_MODEL;
+  return await fetchOllamaBatch(texts);
+}
+
 async function handleEmbed(req, res) {
   let raw = "";
   for await (const chunk of req) {
@@ -213,15 +290,35 @@ async function handleEmbed(req, res) {
 
   const start = process.hrtime.bigint();
   const embeddings = [];
+  let usedFallback = false;
   try {
     for (let i = 0; i < inputs.length; i += BATCH_SIZE) {
       const chunk = inputs.slice(i, i + BATCH_SIZE);
-      const chunkEmbeddings = await fetchGeminiBatch(
-        chunk,
-        geminiModel,
-        outputDimensionality,
-        GEMINI_EMBEDDING_FALLBACK_MODEL
-      );
+      let chunkEmbeddings;
+      const circuitOpen =
+        (OLLAMA_FALLBACK_BASE || OPENROUTER_API_KEY) &&
+        Date.now() < geminiCircuitOpenUntil;
+      if (circuitOpen) {
+        chunkEmbeddings = await fetchBackupBatch(chunk, geminiModel, outputDimensionality);
+        usedFallback = true;
+      } else {
+        try {
+          chunkEmbeddings = await fetchGeminiBatch(
+            chunk,
+            geminiModel,
+            outputDimensionality,
+            GEMINI_EMBEDDING_FALLBACK_MODEL
+          );
+        } catch (err) {
+          if (!OLLAMA_FALLBACK_BASE && !OPENROUTER_API_KEY) throw err;
+          geminiCircuitOpenUntil = Date.now() + CIRCUIT_COOLDOWN_MS;
+          console.log(
+            `Gemini failed (${err.message.slice(0, 80)}); circuit open ${CIRCUIT_COOLDOWN_MS / 1000}s`
+          );
+          chunkEmbeddings = await fetchBackupBatch(chunk, geminiModel, outputDimensionality);
+          usedFallback = true;
+        }
+      }
       embeddings.push(...chunkEmbeddings);
     }
   } catch (err) {
@@ -233,6 +330,7 @@ async function handleEmbed(req, res) {
   const result = {
     model: requestedModel,
     gemini_model: geminiModel,
+    fallback: usedFallback ? lastBackupProvider : null,
     output_dimensionality: outputDimensionality,
     duration_ms: durationMs,
     embeddings: embeddings,
@@ -260,6 +358,7 @@ const server = createServer((req, res) => {
       status: "ok",
       gemini_model: GEMINI_EMBEDDING_MODEL,
       dimensions: DEFAULT_DIMENSIONS,
+      ollama_fallback: OLLAMA_FALLBACK_BASE ? OLLAMA_FALLBACK_MODEL : null,
     });
   }
 
