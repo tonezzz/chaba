@@ -114,13 +114,14 @@ milestones:
       - { task: "Timers: ada-memory-gaps Sun 09:30 (mn01), ada-memory-staleness Sun 10:00 + -apply daily 08:30 (tony-omen), registered in ssot.audit.hosts.yml", status: done, date: "2026-09-21" }
       - { task: "Deployed ada-pi c82388f to all 3 services; registry re-rendered to mn01+tony-dell", status: done, date: "2026-09-21" }
       - { task: "Incident: devin-bank backup dumped a session transcript holding live GEMINI_API_KEY+HA token; purged from unpushed history, backup routing fixed (devin+recall summaries -> private, secret-scan quarantine)", status: done, date: "2026-09-21" }
-      - { task: "Canary recall set: scripts/ada/recall-canary.py + .yml — 10 known-answer questions over real banks, same vector-search path as ada_memory_search", status: done, date: "2026-09-22", note: "baseline 4/10 pass — found real gaps: pre-alias (non-gemini) embeddings score ~0.02 (tony-projects/general/purchase), purchase bank 10/11 docs unembedded, note+inbox vault-only. Reindex via scripts/mddb/reindex.py; weekly timer pending" }
+      - { task: "Canary recall set: scripts/ada/recall-canary.py + .yml — 10 known-answer questions over real banks, same vector-search path as ada_memory_search", status: done, date: "2026-09-22", note: "baseline 4/10 pass — found real gaps: pre-alias (non-gemini) embeddings score ~0.02 (tony-projects/general/purchase), purchase bank 10/11 docs unembedded, note+inbox vault-only. Reindex via scripts/mddb/reindex.py. Weekly ada-recall-canary.timer installed on idc01; first run there scored 7/10" }
+      - { task: "MDDB primary migrated tony-dell -> idc01 (mddb.service + gemini-ollama-proxy quadlets, tailnet-only 100.74.146.0:11023/9000/11024); all consumers repointed; nightly mddb-backup.timer on idc01 + mddb-backup-pull.timer on tony-omen; mddb-panel on idc01:3002", status: done, date: "2026-09-22" }
       - { task: "Open: rotate GEMINI_API_KEY + HOME_ASSISTANT_TOKEN (still live inside the devin-bank transcript doc in MDDB)", status: pending }
 
 config:
-  version: 4
+  version: 5
   created: "2026-09-19"
-  updated: "2026-09-21"
+  updated: "2026-09-22"
   maintainer: tony
   status: active
   deployment: mn01

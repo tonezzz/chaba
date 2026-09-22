@@ -54,10 +54,21 @@ print(json.dumps({"title": os.environ["TITLE"], "category": "deploy",
   printf '%s' "$payload" | ssh tony-dell "python3 $EVENT_LOG add -" >/dev/null 2>&1 || true
 }
 
+# Render the memory-bank registry once; per-host we compare and ship it.
+# Services read it at startup, so a drifted file forces a restart.
+script_dir="$(cd "$(dirname "$0")" && pwd)"
+python3 "$script_dir/ada/render-memory-banks.py" >/dev/null
+local_banks_sum=$(md5sum ~/.config/ada/memory-banks.json | cut -d' ' -f1)
+
 for host in "${hosts[@]}"; do
   cfg="$(host_config "$host")"
   services="${cfg%%|*}"; ports="${cfg##*|}"
   echo "=== $host ==="
+  remote_banks_sum=$(ssh "$host" 'md5sum ~/.config/ada/memory-banks.json 2>/dev/null | cut -d" " -f1' || true)
+  if [[ "$remote_banks_sum" != "$local_banks_sum" ]]; then
+    python3 "$script_dir/ada/render-memory-banks.py" --host "$host"
+    force_restart="--restart"   # banks file changed — restart regardless of code drift
+  fi
   (
     flock -n 9 || { echo "FAIL: another deploy to $host holds the lock"; exit 1; }
     if out="$(ssh "$host" bash -s -- "$services" "$ports" "$force_restart" <<'REMOTE'
