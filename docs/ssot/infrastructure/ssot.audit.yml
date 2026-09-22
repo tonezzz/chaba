@@ -46,6 +46,7 @@ schedule:
       - code-suite
       - dev-system
       - ssot-kb-memory
+      - memory-suite
     note: groups are expanded to individual audits by the runner
   full:
     frequency: monthly
@@ -62,6 +63,7 @@ schedule:
       - code-suite
       - dev-system
       - ssot-kb-memory
+      - memory-suite
     note: installed and enabled on tony-dell; security-audit may need privileges
 
 audits:
@@ -308,6 +310,27 @@ audits:
     last_run:
     last_result:
 
+  - name: memory-banks
+    script: scripts/audits/memory-banks-audit.mjs
+    command: node
+    args: []
+    schedule: weekly
+    severity_on_fail: warning
+    description: >
+      Ada memory-bank health: registry <-> MDDB collection drift (expected
+      state derived from ssot.apps.ada-memory-banks.yml), schema hygiene on
+      ada-ha-bank-* docs, NotebookLM group routing env coverage, devin-bank
+      sync freshness, and devin distillation backlog. DRIFT warns mean live
+      state differs from the registry — fix the registry or the system.
+    thresholds:
+      max_undistilled_devin: 200
+      max_doc_bytes: 51200
+      max_missing_core_docs: 0
+      devin_sync_stale_days: 2
+      revision_bloat_ratio: 20
+    last_run:
+    last_result:
+
 groups:
   - name: kb-suite
     description: All KB health, quality, categorization, and modularity audits
@@ -347,6 +370,10 @@ groups:
       - standardization
       - doc-links
       - staleness
+  - name: memory-suite
+    description: Ada memory-bank registry/health audits (MDDB banks, vault, NLM routing)
+    children:
+      - memory-banks
 
 semantics:
   description: >
@@ -370,7 +397,7 @@ plan:
     - run.mjs writes a focus-inbox alert (audit-failures.yml) on error-severity failures and auto-resolves it when green
     - weekly chaba-audit.timer/service runs the default set; monthly chaba-audit-full adds security-audit
     - chaba-audit-watchdog.timer (daily) runs scripts/audit-watchdog.mjs: alerts via focus-inbox when summary.json is stale (>8d) or the last run had error-severity failures
-    - 15 audits registered; last full run passed 14/14 on 2026-09-18 (doc-links added 2026-09-18, not yet in a scheduled run)
+    - 16 audits registered; last full run passed 14/14 on 2026-09-18 (doc-links added 2026-09-18, memory-banks added 2026-09-22, neither yet in a scheduled run)
     - KB entry added at docs/kb/audit-framework.md
   next_steps:
     - monitor first weekly and monthly runs

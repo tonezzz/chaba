@@ -52,6 +52,8 @@ sections:
         text: 'The note bank (tony-only, write_policy: direct) is the friction-free target for exercising the write/update path first.'
       - label: Vault sync
         text: 'scripts/ada/sync-ada-memory-to-mddb.py — vault→MDDB upsert with unchanged-skip, remote-only report, --export-inbox pulls source=voice docs to inbox/, --delete-remote removes remote-only non-voice docs. Mapping derives from the banks registry.'
+      - label: Devin-bank distillation
+        text: 'scripts/ada/distill-devin-bank.py rolls raw subject=devin-session transcripts into devin/weekly-<ISOweek> digests (chunked Gemini passes when a week exceeds the prompt budget, source_keys idempotency), then marks sources status=superseded + superseded_by. The current ISO week is never distilled. Health audited weekly by scripts/audits/memory-banks-audit.mjs (memory-suite).'
 config:
   version: 1
   created: "2026-09-19"

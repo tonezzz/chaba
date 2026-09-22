@@ -117,6 +117,15 @@ milestones:
       - { task: "Canary recall set: scripts/ada/recall-canary.py + .yml — 10 known-answer questions over real banks, same vector-search path as ada_memory_search", status: done, date: "2026-09-22", note: "baseline 4/10 -> 10/10 after /v1/vector-reindex (force) on 6 stale ada-ha-bank-* collections — pre-alias embeddings were invisible to gemini-embedded queries. Weekly ada-recall-canary.timer installed on idc01. Remaining corpus gap: inbox vault-only docs awaiting review" }
       - { task: "MDDB primary migrated tony-dell -> idc01 (mddb.service + gemini-ollama-proxy quadlets, tailnet-only 100.74.146.0:11023/9000/11024); all consumers repointed; nightly mddb-backup.timer on idc01 + mddb-backup-pull.timer on tony-omen; mddb-panel on idc01:3002", status: done, date: "2026-09-22" }
       - { task: "Open: rotate GEMINI_API_KEY + HOME_ASSISTANT_TOKEN (still live inside the devin-bank transcript doc in MDDB)", status: pending }
+  - id: bank-maintenance
+    title: Bank maintenance — audit + distillation
+    status: done
+    items:
+      - { task: "scripts/audits/memory-banks-audit.mjs — registry↔MDDB drift, ada-ha-bank-* schema hygiene, NLM group routing env coverage, devin sync freshness, PATCH /v1/update probe, distillation backlog", status: done, date: "2026-09-22" }
+      - { task: "Registered as memory-banks in ssot.audit.yml memory-suite (weekly, warning severity)", status: done, date: "2026-09-22" }
+      - { task: "scripts/ada/distill-devin-bank.py — ISO-week digests via chunked Gemini passes (source_keys idempotent), sources marked status=superseded + superseded_by; current week never touched", status: done, date: "2026-09-22" }
+      - { task: "Backlog distilled: 893 raw transcripts -> devin/weekly-2026W37 + devin/weekly-2026W38; 595→~38 active raw docs (current week only)", status: done, date: "2026-09-22" }
+      - { task: "Schedule distillation (weekly timer, after sync-devin-summaries)", status: pending }
 
 config:
   version: 5
