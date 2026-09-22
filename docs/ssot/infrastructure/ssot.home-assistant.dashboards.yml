@@ -73,15 +73,19 @@ instances:
       filter state in input_text.chaba_events_filter ({"hidden": [...],
       "log_hidden": [...]} — both cards merge-write the shared JSON).
       Log tab added 2026-09-21: `type: panel` view with a single
-      custom:chaba-log-card (/local/chaba-log-card.js?v=3, same repo dir) that
-      wraps the native logbook card full-viewport — header + its own
-      per-domain filter checkboxes stay fixed while the log scrolls inside
-      the card. Vertical fit is JS-measured: fill to the parent's
-      content-box bottom clamped to visualViewport (innerHeight under-counts
-      on iOS when the browser toolbar is visible), refit on resize/hass.
-      The card renders light-DOM so :host doesn't apply — selectors are
-      scoped via the tag name and clc-* classes; CSS height:100% is the
-      fallback. Filter groups are entity domains (input_* grouped as
+      custom:chaba-log-card (/local/chaba-log-card.js?v=4, same repo dir) —
+      an isolated copy of the built-in /logbook page so its UX/UI can be
+      modified freely. It renders the same <ha-logbook> element +
+      logbook/event_stream backend as the native page (force-loaded via a
+      throwaway hui-logbook-card from loadCardHelpers), behind our own
+      toolbar: Live 1h/24h/7d presets ({recent: seconds} = live tailing),
+      Custom datetime range ({range:[Date,Date]} = fixed window), refresh,
+      entity text filter, and the per-domain checkbox row. The list scrolls
+      inside the card; vertical fit is JS-measured (parent content-box
+      bottom clamped to visualViewport — innerHeight under-counts on iOS
+      when the browser toolbar is visible), refit on resize/hass. The card
+      renders light-DOM so :host doesn't apply — selectors are scoped via
+      the tag name and clc-* classes; CSS height:100% is the fallback. Filter groups are entity domains (input_* grouped as
       "input"), persisted as "log_hidden" in the same input_text; toggling a
       group rebuilds the inner card's entities list. The inner card's chrome
       is flattened via an injected shadowRoot <style>. Events card v4 dropped
