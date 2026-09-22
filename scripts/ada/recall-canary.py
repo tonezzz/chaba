@@ -22,7 +22,7 @@ from pathlib import Path
 import yaml
 
 MDDB = os.environ.get(
-    "ADA_MEMORY_MDDB_URL", "http://100.68.142.13:11023/v1"
+    "ADA_MEMORY_MDDB_URL", "http://100.74.146.0:11023/v1"
 ).rstrip("/")
 BANKS_FILE = Path(os.environ.get(
     "ADA_MEMORY_BANKS_FILE", "~/.config/ada/memory-banks.json"

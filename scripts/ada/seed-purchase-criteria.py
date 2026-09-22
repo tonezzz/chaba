@@ -28,7 +28,7 @@ from pathlib import Path
 import yaml
 
 SSOT = Path(__file__).resolve().parents[2] / "docs/ssot/apps/ssot.apps.ada-memory-banks.yml"
-MDDB_BASE_URL = os.environ.get("MDDB_BASE_URL", "http://100.68.142.13:11023/v1").rstrip("/")
+MDDB_BASE_URL = os.environ.get("MDDB_BASE_URL", "http://100.74.146.0:11023/v1").rstrip("/")
 
 
 def _post(path: str, payload: dict, timeout: int = 20) -> dict | None | str:

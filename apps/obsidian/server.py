@@ -8,7 +8,7 @@ Caddy at /apps/obsidian/*. Read access is open on the tailnet; writes
 Env:
   ADA_MEMORY_VAULT    vault root   (default ~/CascadeProjects/chaba-vault/docs/ada-memory)
   ADA_VAULT_REPO      repo root    (default ~/CascadeProjects/chaba-vault)
-  ADA_MEMORY_MDDB_URL MDDB base    (default http://100.68.142.13:11023/v1)
+  ADA_MEMORY_MDDB_URL MDDB base    (default http://100.74.146.0:11023/v1)
   ADA_API_KEY         optional write gate (same convention as ada-ha services)
   ADA_DEPLOY          tailnet (default) | public — public requires ADA_API_KEY,
                       gates ALL /api reads behind it, and serves only banks
@@ -38,7 +38,7 @@ VAULT = Path(os.environ.get(
 REPO = Path(os.environ.get(
     "ADA_VAULT_REPO", "~/CascadeProjects/chaba-vault"
 )).expanduser()
-MDDB = os.environ.get("ADA_MEMORY_MDDB_URL", "http://100.68.142.13:11023/v1").rstrip("/")
+MDDB = os.environ.get("ADA_MEMORY_MDDB_URL", "http://100.74.146.0:11023/v1").rstrip("/")
 API_KEY = os.environ.get("ADA_API_KEY") or ""
 DEPLOY = os.environ.get("ADA_DEPLOY", "tailnet").strip().lower() or "tailnet"
 INDEX_HTML = REPO / "stacks/web/public/apps/obsidian/index.html"

@@ -41,7 +41,7 @@ REPO = Path(__file__).resolve().parents[2]
 SSOT = REPO / "docs/ssot/apps/ssot.apps.ada-memory-banks.yml"
 SCHEMA_SSOT = REPO / "docs/ssot/apps/ssot.apps.ada-memory-schema.yml"
 VAULT = REPO / "docs/ada-memory"
-MDDB = os.environ.get("ADA_MEMORY_MDDB_URL", "http://100.68.142.13:11023/v1").rstrip("/")
+MDDB = os.environ.get("ADA_MEMORY_MDDB_URL", "http://100.74.146.0:11023/v1").rstrip("/")
 
 # Field lists are derived from the meta_schema block in
 # ssot.apps.ada-memory-schema.yml — extend the schema there, not here.

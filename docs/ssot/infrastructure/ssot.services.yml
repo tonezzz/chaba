@@ -84,19 +84,21 @@ tony-dell:
       - maxmemory-policy = volatile-lru
   mddb:
     container: mddb
-    image: docker.io/chaba/mddb-page-tools:latest
+    image: docker.io/tradik/mddb:latest
     runtime: rootless podman
     network: host
     port: 11023 (API), 11024 (gRPC), 9000 (MCP)
-    host_port: 100.68.142.13:11023
+    host_port: 100.74.146.0:11023
+    host: idc01
     data_volume: /home/tony/.config/containers/mddb/data
     quadlet:
       container_unit: ~/.config/containers/systemd/mddb.container
       service_unit: ~/.config/systemd/user/mddb.service
     related_units:
       - mddb.service
-    status: implemented (2026-08-17)
-    note: Migrated from tony-omen; copied mddb.db (~101MB) and vaults to tony-dell; Caddy reverse proxy updated to 100.68.142.13:11023.
+      - gemini-ollama-proxy.service
+    status: migrated to idc01 (2026-09-22)
+    note: "Primary moved tony-dell -> idc01 (public VPS, tailnet-only access — UFW allows tailscale0 only). Snapshot /v1/backup pre-migration-20260922-0914 copied to idc01; all consumers repointed to 100.74.146.0. Embedding via gemini-ollama-proxy on idc01 (option A — Gemini-compatible vectors preserved). tony-dell copy retired after soak. Cold-start caveat — vector index loads minutes after HTTP is up and writes fail during that window."
   mddb-panel:
     container: mddb-panel
     image: docker.io/tradik/mddb:panel-latest
@@ -248,15 +250,15 @@ tony-dell:
     service: Gemini-Ollama embedding proxy
     provider: Chaba (Google Gemini API backend)
     runtime: rootless podman
-    host: tony_dell
+    host: idc01 (also still on tony_dell until its mddb retires)
     port: 11435
     host_port: 0.0.0.0:11435
     quadlet:
       container_unit: ~/.config/containers/systemd/gemini-ollama-proxy.container
       service_unit: ~/.config/systemd/user/gemini-ollama-proxy.service
-    source: /home/tony/CascadeProjects/chaba-tony-dell/scripts/mddb/gemini-ollama-proxy.mjs
+    source: /home/tony/CascadeProjects/chaba/scripts/mddb/gemini-ollama-proxy.mjs (idc01 copy at ~/.config/containers/mddb/proxy/)
     secrets:
-      - gemini-api-key
+      - gemini-api-key (idc01: ~/.config/secrets/mddb-gemini.env EnvironmentFile)
     environment:
       - GEMINI_EMBEDDING_MODEL=gemini-embedding-2
       - GEMINI_EMBEDDING_FALLBACK_MODEL=gemini-embedding-001
@@ -264,8 +266,8 @@ tony-dell:
     requested_model_alias: text-embedding-004
     dimensions: 768
     ollama_compatible: true
-    status: migrated to tony-dell (2026-08-25)
-    note: "Migrated from tony-omen docker compose to tony-dell rootless podman. MDDB now connects to http://100.68.142.13:11435 for embeddings. Maps text-embedding-004, nomic-embed-text, and gemini-embedding-* aliases to gemini-embedding-001/002."
+    status: running on idc01 (2026-09-22) and tony-dell
+    note: "MDDB on idc01 connects to http://127.0.0.1:11435. Maps text-embedding-004, nomic-embed-text, and gemini-embedding-* aliases to gemini-embedding-001/002."
   tony-ha:
     container: tony-ha
     image: docker.io/homeassistant/home-assistant:stable

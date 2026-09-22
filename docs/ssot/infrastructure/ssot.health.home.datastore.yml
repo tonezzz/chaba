@@ -63,19 +63,19 @@ services:
   - id: mddb-api
     name: MDDB API
     type: http
-    url: http://tony-dell:11023/health
+    url: http://idc01:11023/health
     expected_status: 200
     timeout: 5
     category: datastore
     profiles:
       - home
       - mobile
-    note: Direct port access for health check, bypasses Caddy routing
-    host: tony_dell
+    note: MDDB on idc01 (tailnet-only). Direct port access for health check, bypasses Caddy routing
+    host: idc01
   - id: mddb-mcp
     name: MDDB MCP Server
     type: http
-    url: http://tony-dell:9000/mcp
+    url: http://idc01:9000/mcp
     expected_status: 400
     timeout: 5
     category: datastore
@@ -85,14 +85,12 @@ services:
     note: MCP endpoint for AI agent integration; GET /mcp returns 400, only POST is
       valid, so 400 is the healthy response
     recovery_actions:
-      - "Check MDDB container: docker ps | grep mddb"
-      - "Restart MDDB: cd /home/tony/CascadeProjects/chaba-kbman/stacks/web/mddb && docker
-        compose restart mddb"
-      - "Check MDDB logs: cd /home/tony/CascadeProjects/chaba-kbman/stacks/web/mddb &&
-        docker compose logs mddb"
-      - "Verify MCP endpoint: curl -s http://tony-dell:9000/mcp"
+      - "Check MDDB container: ssh idc01 podman ps | grep mddb"
+      - "Restart MDDB: ssh idc01 systemctl --user restart mddb.service"
+      - "Check MDDB logs: ssh idc01 journalctl --user -u mddb.service --since '-1h'"
+      - "Verify MCP endpoint: curl -s http://idc01:9000/mcp"
       - "Check MCP config: cat ~/.config/devin/mcp_config.json | grep mddb"
-    host: tony_dell
+    host: idc01
   - id: mddb-stats
     name: MDDB Stats Endpoint
     type: http
