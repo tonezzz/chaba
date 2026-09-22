@@ -1,0 +1,90 @@
+title: Ada Scenario Testing
+subtitle: Offline + live scenario framework for Ada's memory/tooling layer, and the reconnect away-time tiers it covers
+icon: 🧪
+sections:
+  - title: Surfaces
+    icon: "🧱"
+    layout: list
+    items:
+      - label: Offline engine
+        text: tests/scenario_engine.py + tests/test_scenarios.py (ada-pi). Every tests/scenarios/*.yaml runs deterministically against an in-memory FakeMddb + real ToolRunner + ConversationMemory — no network, no Gemini.
+      - label: Live driver
+        text: scripts/scenario-live.py + tests/scenarios-live/*.yaml. Replays scripted text turns against a running /ws endpoint and checks ws trace events (tool_call/tool_result/assistant_transcript_delta). LLM phrasing varies — live expectations are deliberately soft.
+      - label: Why two tiers
+        text: Offline scenarios pin deterministic state (tier, directive text, tool semantics). Live scenarios verify the real pipeline end-to-end — Gemini decides tools, ws transport, reconnect greeting — but can only assert loosely.
+  - title: Offline Step DSL
+    icon: "📝"
+    layout: list
+    items:
+      - label: say / assistant
+        text: Append a user/assistant turn to the ConversationMemory transcript (feeds query-expansion and reconnect-tail context).
+      - label: expand_query
+        text: Runs the coreference expander; check with expanded_contains.
+      - label: tool + args
+        text: Executes a real tool through ToolRunner (ada_memory_search, ada_remember, ada_forget, ada_outcome); check verb/count_min/hits_contain/hit_banks/draft_hits_min/error_contains/no_error.
+      - label: reconnect_after
+        text: Simulates a websocket disconnect+reconnect. Duration '90s'/'5m'/'4h'/'2d'/'1w' or bare seconds; null/'none' = first-ever session. Snapshots the transcript tail, resets ConversationMemory, and runs the real session_prime_text with the simulated gap. Result exposes tier/away_seconds/prime — check with output_contains / output_not_contains.
+      - label: seed
+        text: Pre-loads FakeMddb collections (by bank name or raw collection); meta lists support __TODAY__.
+  - title: Expectations
+    icon: "🎯"
+    layout: list
+    items:
+      - label: output_contains / output_not_contains
+        text: >
+          Substring checks over the JSON step result — the primary reconnect
+          assertion ("tier": "resume", directive phrases, transcript-tail fragments).
+      - label: Live-only keys
+        text: >
+          calls_any, calls, no_calls, result_contains, response_contains,
+          response_nonempty, timeout_s (default 90), settle_s (default 5).
+          Reconnect turn: "- reconnect: {away_s: 300}" re-opens /ws with
+          ?simulate_away_s=N and checks the unprompted greeting turn.
+  - title: Reconnect Tiers
+    icon: "🔁"
+    layout: list
+    items:
+      - label: resume (<15 min)
+        text: Brief disconnect — same conversation. Directive injects the pre-disconnect transcript tail; Ada greets briefly and picks up where she left off.
+      - label: return (<4 h)
+        text: Same-day hours — welcome back, offer to continue the earlier topic.
+      - label: recap (<24 h)
+        text: Most of a day — welcome back, offer a one-line recap, ask to continue.
+      - label: days (<7 d)
+        text: Several days — greet, mention what was last discussed, don't assume the old task is still active.
+      - label: long (>=7 d)
+        text: A week or more — treat as a fresh start; prior context is background only.
+      - label: none
+        text: First-ever session (no end marker) — generic prime, no session note.
+  - title: Implementation
+    icon: "⚙️"
+    layout: list
+    items:
+      - label: backend/memory_ops.py
+        text: away_tier() classifies the gap; reconnect_directive() builds the session note; session_prime_text(away_seconds, last_tail) prepends it and switches the header to "act on the session note".
+      - label: pwa_server.py
+        text: _reconnect_context() resolves away time — in-memory _last_session_end first, persisted MDDB marker after restarts, ?simulate_away_s= test hook. _mark_session_end() snapshots the tail on ws close and upserts key 'last-session-end' into ada-ha-recall-summary-<instance> (meta kind=session-end, ended_at, ended_at_ts, last_tail).
+      - label: Provider reconnects
+        text: A mid-session Gemini Live reconnect (go_away/resumption) re-primes WITHOUT the reconnect directive — it is the same live conversation, only the websocket boundary counts as away.
+      - label: backend/conversation_memory.py
+        text: record_session_end() / last_session_end() own the marker doc read/write.
+  - title: Run Commands
+    icon: "▶️"
+    layout: list
+    items:
+      - label: Offline suite
+        text: "cd ~/CascadeProjects/ada-pi && .venv/bin/python -m unittest tests.test_scenarios -v"
+      - label: Live suite
+        text: "cd ~/CascadeProjects/ada-pi && .venv/bin/python scripts/scenario-live.py tests/scenarios-live/reconnect_continuity.yaml --url ws://127.0.0.1:8001/ws --api-key \"$ADA_API_KEY\""
+      - label: Manual simulation
+        text: "Connect to /ws with the usual api_key auth plus &simulate_away_s=432000 — the server greets as if the user was away that many seconds."
+  - title: Coverage
+    icon: "🗂️"
+    layout: list
+    items:
+      - label: tests/scenarios/
+        text: memory_lifecycle.yaml (remember/correct/forget lifecycle), michael_technician.yaml (HA recall + remember), reconnect_continuity.yaml (all 5 tiers + first-session + bad duration).
+      - label: tests/scenarios-live/
+        text: michael_technician.yaml (live recall + remember roundtrip), reconnect_continuity.yaml (resume-tier topic reference + long-gap greeting).
+      - label: Known gaps
+        text: Live greeting text is not asserted verbatim (model-dependent). test-manifest's shell runner has hardcoded per-system sections — the ada-pi suite is not auto-run by test-ssot-kb-memory.sh; run it directly or wire it into CI later.
