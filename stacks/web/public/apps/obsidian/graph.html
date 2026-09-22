@@ -73,6 +73,7 @@
     <div class="mt-3 flex gap-2">
       <button id="d-open" class="navbtn hidden">Open in vault</button>
       <button id="d-export" class="navbtn hidden" title="Write this MDDB doc into the vault as a reviewable note">Export to vault</button>
+      <button id="d-collapse" class="navbtn hidden">Collapse members</button>
     </div>
     <div id="d-hint" class="mt-2 text-gray-500"></div>
   </div>
@@ -93,7 +94,8 @@
     </div>
     <div id="legend-banks" class="mt-2 pt-2 border-t border-gray-700 flex flex-wrap gap-x-3 gap-y-1"></div>
     <div class="mt-2 pt-2 border-t border-gray-700 text-gray-400">
-      drag to rotate · scroll to zoom · right-drag to pan · hover highlights the neighborhood · <b>click</b> centers the camera (with local·N set, filters to its neighborhood) · <b>double-click</b> opens the doc in the vault
+      drag to rotate · scroll to zoom · right-drag to pan · hover highlights the neighborhood · <b>click</b> centers the camera + shows details (with local·N set, filters to its neighborhood) · <b>double-click</b> a doc opens the vault, a hub collapses/expands it, a pinned node releases it · drag a node to pin it<br>
+      <span class="text-gray-500">keys: <code>/</code> search · <code>f</code> fit · <code>space</code> pause · <code>esc</code> clear</span>
     </div>
   </div>
 <script>
@@ -135,6 +137,9 @@ if (paramDepth > 0) document.getElementById('f-depth').value = String(paramDepth
 let lastG = null, gdNodes = [], hiddenBanks = new Set();
 const neighbors = new Map();          // id -> Set<id>
 const linksOf = new Map();            // id -> Set<link>
+const hubOf = new Map();              // member id -> Set<hub id> (subject/entity edges)
+const subParent = new Map();          // sub-hub id -> parent hub id ('hub' edges)
+const collapsed = new Set();          // collapsed hub ids
 const byId = new Map();               // id -> node
 const highlight = { nodes: new Set(), links: new Set() };
 let hoverNode = null, lastClick = { id: null, t: 0 };
@@ -166,12 +171,19 @@ const Graph = ForceGraph3D()(document.getElementById('chart'))
     refreshHighlight();
     document.body.style.cursor = n ? 'pointer' : 'default';
   })
+  .onNodeDragEnd(n => { n.fx = n.x; n.fy = n.y; n.fz = n.z; })  // pin on drag
   .onNodeClick(n => {
     const now = Date.now();
     const dbl = lastClick.id === n.id && now - lastClick.t < 400;
     lastClick = { id: n.id, t: now };
-    if (dbl && n.path) {
-      location.href = BASE + '/?note=' + encodeURIComponent(n.path);
+    if (dbl) {
+      if (n.path) {                        // doc -> open in vault
+        location.href = BASE + '/?note=' + encodeURIComponent(n.path);
+      } else if (n.hub) {                  // hub -> collapse/expand members
+        toggleCollapse(n.id);
+      } else {                             // pinned node -> release
+        n.fx = n.fy = n.fz = undefined;
+      }
       return;
     }
     focusNodeId = n.id;
@@ -195,11 +207,35 @@ const Graph = ForceGraph3D()(document.getElementById('chart'))
                                        : (LINK_STYLE[l.type] || {}).color || '#3b4c63')
   .linkWidth(l => highlight.links.has(l) ? 2.5
                                        : (LINK_STYLE[l.type] || {}).width || 0.6)
-  .linkVisibility(l => {
-    const s = byId.get(lid(l)), t = byId.get(lid2(l));
-    return (!s || !hiddenBanks.has(s.bank)) && (!t || !hiddenBanks.has(t.bank));
-  })
-  .nodeVisibility(n => !hiddenBanks.has(n.bank));
+  .linkVisibility(l => !nodeHidden(lid(l)) && !nodeHidden(lid2(l)))
+  .nodeVisibility(n => !nodeHidden(n.id));
+
+function nodeHidden(id) {
+  const n = byId.get(id);
+  if (!n) return false;
+  if (hiddenBanks.has(n.bank)) return true;
+  if (collapsed.size) {
+    if (!n.hub) {
+      const hubs = hubOf.get(id);
+      if (hubs && hubs.size && [...hubs].every(h => collapsed.has(h)))
+        return true;
+    } else if (n.subhub && collapsed.has(subParent.get(id))) {
+      return true;  // parent collapsed -> hide its sub-hubs too
+    }
+  }
+  return false;
+}
+
+function toggleCollapse(hubId) {
+  const collapsing = !collapsed.has(hubId);
+  collapsing ? collapsed.add(hubId) : collapsed.delete(hubId);
+  // collapsing a parent also folds its sub-hubs (and vice versa)
+  for (const [sid, pid] of subParent) {
+    if (pid === hubId) collapsing ? collapsed.add(sid) : collapsed.delete(sid);
+  }
+  Graph.nodeVisibility(Graph.nodeVisibility())
+       .linkVisibility(Graph.linkVisibility());
+}
 
 function refreshHighlight() {
   Graph.nodeColor(Graph.nodeColor())
@@ -339,8 +375,11 @@ function showDetail(n) {
     document.getElementById('d-excerpt').classList.add('hidden');
     document.getElementById('d-open').classList.add('hidden');
     document.getElementById('d-export').classList.add('hidden');
+    const cb = document.getElementById('d-collapse');
+    cb.classList.remove('hidden');
+    cb.textContent = collapsed.has(n.id) ? 'Expand members' : 'Collapse members';
     document.getElementById('d-hint').textContent =
-      'set local·N then click a member to drill in';
+      'double-click a hub to collapse/expand it';
     d.classList.remove('hidden');
     return;
   }
@@ -369,6 +408,7 @@ function showDetail(n) {
   document.getElementById('d-open').classList.toggle('hidden', !n.path);
   document.getElementById('d-export').classList.toggle('hidden',
     n.sync !== 'mddb_only');
+  document.getElementById('d-collapse').classList.add('hidden');
   const eb = document.getElementById('d-export');
   eb.disabled = false; eb.textContent = 'Export to vault';
   document.getElementById('d-hint').textContent =
@@ -376,6 +416,13 @@ function showDetail(n) {
   d.classList.remove('hidden');
 }
 
+document.getElementById('d-collapse').onclick = () => {
+  if (selNode && selNode.hub) {
+    toggleCollapse(selNode.id);
+    document.getElementById('d-collapse').textContent =
+      collapsed.has(selNode.id) ? 'Expand members' : 'Collapse members';
+  }
+};
 document.getElementById('d-close').onclick = () =>
   document.getElementById('detail').classList.add('hidden');
 document.getElementById('d-open').onclick = () => {
@@ -463,10 +510,20 @@ function render(g) {
   }
 
   const degree = new Map();
-  neighbors.clear(); linksOf.clear(); byId.clear();
+  neighbors.clear(); linksOf.clear(); hubOf.clear();
+  subParent.clear(); byId.clear();
   for (const l of links) {
     degree.set(l.source, (degree.get(l.source) || 0) + 1);
     degree.set(l.target, (degree.get(l.target) || 0) + 1);
+    if (l.type === 'subject' || l.type === 'applies_to') {
+      // member (source) -> hub (target)
+      if (!hubOf.has(l.source)) hubOf.set(l.source, new Set());
+      hubOf.get(l.source).add(l.target);
+    }
+    if (l.type === 'hub') {
+      // sub-hub (source) -> parent hub (target)
+      subParent.set(l.source, l.target);
+    }
     for (const [a, b] of [[l.source, l.target], [l.target, l.source]]) {
       if (!neighbors.has(a)) neighbors.set(a, new Set());
       neighbors.get(a).add(b);
@@ -572,6 +629,27 @@ for (const id of ['f-subjects', 'f-entities', 'f-unlinked'])
 for (const id of ['f-retracted', 'f-similar'])
   document.getElementById(id).onchange = load;
 document.getElementById('f-depth').onchange = () => { updateChip(); render(lastG); };
+
+// keyboard shortcuts — skip while typing in inputs
+document.addEventListener('keydown', e => {
+  if (e.target.matches('input,select,textarea')) {
+    if (e.key === 'Escape') e.target.blur();
+    return;
+  }
+  if (e.key === '/') { e.preventDefault(); document.getElementById('search').focus(); }
+  else if (e.key === 'f') Graph.zoomToFit(900, 50);
+  else if (e.key === ' ') { e.preventDefault(); document.getElementById('btn-pause').click(); }
+  else if (e.key === 'Escape') {
+    document.getElementById('detail').classList.add('hidden');
+    document.getElementById('legend').classList.add('hidden');
+    if (focusNodeId) {
+      focusNodeId = null;
+      document.getElementById('f-depth').value = '0';
+      updateChip();
+      render(lastG);
+    }
+  }
+});
 load();
 </script>
 </body>

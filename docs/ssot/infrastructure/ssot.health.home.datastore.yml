@@ -94,97 +94,89 @@ services:
   - id: mddb-stats
     name: MDDB Stats Endpoint
     type: http
-    url: http://tony-dell:11023/v1/stats
+    url: http://idc01:11023/v1/stats
     expected_status: 200
     timeout: 5
     category: datastore
     profiles:
       - home
       - mobile
-    note: Direct port access for stats endpoint, bypasses Caddy routing
+    note: MDDB on idc01 (tailnet-only). Direct port access, bypasses Caddy routing
     recovery_actions:
-      - "Check MDDB container: docker ps | grep mddb"
-      - "Restart MDDB: cd /home/tony/CascadeProjects/chaba-kbman/stacks/web/mddb && docker
-        compose restart mddb"
-      - "Check MDDB logs: cd /home/tony/CascadeProjects/chaba-kbman/stacks/web/mddb &&
-        docker compose logs mddb"
-      - "Verify port 11023 is accessible: curl -s http://tony-dell:11023/v1/stats"
-    host: tony_dell
+      - "Check MDDB service: ssh idc01 systemctl --user status mddb.service"
+      - "Restart MDDB: ssh idc01 systemctl --user restart mddb.service"
+      - "Check MDDB logs: ssh idc01 journalctl --user -u mddb.service --since '-1h'"
+      - "Verify port 11023: curl -s http://idc01:11023/v1/stats"
+    host: idc01
   - id: mddb-vector-stats
     name: MDDB Vector Stats Endpoint
     type: http
-    url: http://tony-dell:11023/v1/vector-stats
+    url: http://idc01:11023/v1/vector-stats
     expected_status: 200
     timeout: 5
     category: datastore
     profiles:
       - home
       - mobile
-    note: Direct port access for vector stats endpoint, bypasses Caddy routing
+    note: MDDB on idc01 (tailnet-only). Direct port access, bypasses Caddy routing
     recovery_actions:
-      - "Check MDDB container: docker ps | grep mddb"
-      - "Restart MDDB: cd /home/tony/CascadeProjects/chaba-kbman/stacks/web/mddb && docker
-        compose restart mddb"
-      - "Check MDDB logs: cd /home/tony/CascadeProjects/chaba-kbman/stacks/web/mddb &&
-        docker compose logs mddb"
-      - "Verify port 11023 is accessible: curl -s http://tony-dell:11023/v1/vector-stats"
-    host: tony_dell
+      - "Check MDDB service: ssh idc01 systemctl --user status mddb.service"
+      - "Restart MDDB: ssh idc01 systemctl --user restart mddb.service"
+      - "Check MDDB logs: ssh idc01 journalctl --user -u mddb.service --since '-1h'"
+      - "Verify port 11023: curl -s http://idc01:11023/v1/vector-stats"
+    host: idc01
   - id: mddb-metrics
     name: MDDB Metrics Endpoint
     type: http
-    url: http://tony-dell:11023/metrics
+    url: http://idc01:11023/metrics
     expected_status: 200
     timeout: 5
     category: datastore
     profiles:
       - home
       - mobile
-    note: Direct port access for metrics endpoint, bypasses Caddy routing
+    note: MDDB on idc01 (tailnet-only). Direct port access, bypasses Caddy routing
     recovery_actions:
-      - "Check MDDB container: docker ps | grep mddb"
-      - "Restart MDDB: cd /home/tony/CascadeProjects/chaba-kbman/stacks/web/mddb && docker
-        compose restart mddb"
-      - "Check MDDB logs: cd /home/tony/CascadeProjects/chaba-kbman/stacks/web/mddb &&
-        docker compose logs mddb"
-      - "Verify port 11023 is accessible: curl -s http://tony-dell:11023/metrics"
-    host: tony_dell
+      - "Check MDDB service: ssh idc01 systemctl --user status mddb.service"
+      - "Restart MDDB: ssh idc01 systemctl --user restart mddb.service"
+      - "Check MDDB logs: ssh idc01 journalctl --user -u mddb.service --since '-1h'"
+      - "Verify port 11023: curl -s http://idc01:11023/metrics"
+    host: idc01
   - id: mddb-container
-    name: MDDB Container
-    type: container
-    container: mddb
-    expected_state: running
+    name: MDDB Service
+    type: systemd
+    service: mddb.service
+    expected_state: active
     timeout: 5
     category: datastore
     profiles:
       - home
       - mobile
-    note: "MDDB container runs on tony-dell; health is checked by podman ps locally."
+    note: "MDDB runs as a podman quadlet (mddb.service, user unit) on idc01."
     recovery_actions:
-      - "Check container status: docker ps -a | grep mddb"
-      - "Start container: cd /home/tony/CascadeProjects/chaba-kbman/stacks/web/mddb &&
-        docker compose up -d mddb"
-      - "Check container logs: cd /home/tony/CascadeProjects/chaba-kbman/stacks/web/mddb
-        && docker compose logs mddb"
-      - "Verify docker compose config: cd /home/tony/CascadeProjects/chaba-kbman/stacks/web/mddb
-        && docker compose config"
-    host: tony_dell
+      - "Check service: ssh idc01 systemctl --user status mddb.service"
+      - "Restart: ssh idc01 systemctl --user restart mddb.service"
+      - "Check logs: ssh idc01 journalctl --user -u mddb.service --since '-1h'"
+      - "Quadlet file: ~/.config/containers/systemd/mddb.container on idc01"
+    host: idc01
   - id: gemini-ollama-proxy
     name: Gemini-Ollama Embedding Proxy
-    type: http
-    url: http://tony-dell:11435/health
-    expected_status: 200
-    timeout: 10
+    type: systemd
+    service: gemini-ollama-proxy.service
+    expected_state: active
+    timeout: 5
     category: datastore
     profiles:
       - home
       - mobile
-    note: Gemini-to-Ollama embedding proxy on tony-dell. MDDB uses this for embeddings.
-      Migrated from tony-omen docker compose.
+    note: "Gemini-to-Ollama embedding proxy on idc01, loopback-only
+      (127.0.0.1:11435) — only mddb needs it. MDDB embeds through this;
+      ollama.service on idc01 is the fallback."
     verification:
-      - "Check podman: ssh tony-dell podman ps | grep gemini-ollama-proxy"
-      - "Test health: curl -s http://tony-dell:11435/health"
-      - "Check logs: ssh tony-dell podman logs gemini-ollama-proxy --tail 20"
+      - "Check service: ssh idc01 systemctl --user status gemini-ollama-proxy.service"
+      - "Test health: ssh idc01 curl -s http://127.0.0.1:11435/health"
+      - "Check logs: ssh idc01 journalctl --user -u gemini-ollama-proxy.service --since '-1h'"
     recovery_actions:
-      - "Restart: ssh tony-dell systemctl --user restart gemini-ollama-proxy"
-      - "Verify GEMINI_API_KEY podman secret: ssh tony-dell podman secret ls"
-    host: tony_dell
+      - "Restart: ssh idc01 systemctl --user restart gemini-ollama-proxy.service"
+      - "Verify GEMINI_API_KEY podman secret: ssh idc01 podman secret ls"
+    host: idc01

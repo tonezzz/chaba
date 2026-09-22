@@ -170,6 +170,42 @@ class TestExport(unittest.TestCase):
             self.assertEqual(r.status_code, 404)
 
 
+class TestPromote(unittest.TestCase):
+    def test_promote_moves_inbox_note(self):
+        with tempfile.TemporaryDirectory() as td:
+            v = make_vault(td)
+            (v / "inbox/draft.md").write_text(
+                "---\nkey: draft\nstatus: draft\n---\nidea\n")
+            mod = load_server(v)
+            from fastapi.testclient import TestClient
+            r = TestClient(mod.app).post(
+                "/api/promote", json={"path": "inbox/draft.md",
+                                      "bank": "general"})
+            self.assertEqual(r.status_code, 200, r.text)
+            self.assertFalse((v / "inbox/draft.md").exists())
+            self.assertTrue((v / "general/draft.md").exists())
+
+    def test_promote_rejects_non_inbox(self):
+        with tempfile.TemporaryDirectory() as td:
+            v = make_vault(td)
+            mod = load_server(v)
+            from fastapi.testclient import TestClient
+            r = TestClient(mod.app).post(
+                "/api/promote", json={"path": "note/b.md", "bank": "general"})
+            self.assertEqual(r.status_code, 400)
+
+    def test_promote_unknown_bank_404(self):
+        with tempfile.TemporaryDirectory() as td:
+            v = make_vault(td)
+            (v / "inbox/draft.md").write_text("---\nkey: d\n---\nx\n")
+            mod = load_server(v)
+            from fastapi.testclient import TestClient
+            r = TestClient(mod.app).post(
+                "/api/promote", json={"path": "inbox/draft.md",
+                                      "bank": "nope"})
+            self.assertEqual(r.status_code, 404)
+
+
 class TestDeployGuard(unittest.TestCase):
     def test_public_without_key_refuses_to_start(self):
         with tempfile.TemporaryDirectory() as td:

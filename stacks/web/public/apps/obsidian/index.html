@@ -72,7 +72,12 @@
           <h2 id="n-title" class="text-lg font-semibold"></h2>
           <span id="n-status" class="text-xs"></span>
           <span id="n-kind" class="text-xs text-gray-500"></span>
-          <div class="ml-auto flex gap-2">
+          <div class="ml-auto flex items-center gap-2">
+            <span id="promote-wrap" class="hidden items-center gap-1.5">
+              <span class="text-[11px] text-gray-500">promote to</span>
+              <select id="promote-bank" class="text-xs px-1.5 py-1 rounded bg-card border border-gray-700"></select>
+              <button id="btn-promote" class="text-xs px-3 py-1 rounded bg-card border border-gray-700 hover:border-accent">Promote</button>
+            </span>
             <button id="btn-edit" class="text-xs px-3 py-1 rounded bg-card border border-gray-700 hover:border-accent">Edit</button>
             <button id="btn-save" class="hidden text-xs px-3 py-1 rounded bg-accent text-white">Save</button>
           </div>
@@ -104,8 +109,11 @@ document.getElementById('btn-help').onclick = () =>
   document.getElementById('help').classList.remove('hidden');
 document.getElementById('lnk-graph').href = BASE + '/graph';
 
+let bankMeta = {};
+
 async function loadTree() {
   const t = await (await api('/api/tree')).json();
+  bankMeta = t.bank_meta || {};
   const s = document.getElementById('sidebar');
   s.innerHTML = '';
   const dirs = (t.bank_order || Object.keys(t.banks)).filter(d => t.banks[d]);
@@ -147,8 +155,41 @@ async function openNote(path) {
   document.getElementById('n-body').innerHTML = marked.parse(d.body || '');
   document.getElementById('n-edit').value = d.raw;
   document.getElementById('n-msg').textContent = '';
+
+  const pw = document.getElementById('promote-wrap');
+  if (path.startsWith('inbox/')) {
+    const sel = document.getElementById('promote-bank');
+    sel.innerHTML = '';
+    for (const [dir, bm] of Object.entries(bankMeta)) {
+      if (dir === 'inbox' || bm.writable === false) continue;
+      const o = document.createElement('option');
+      o.value = bm.bank || dir;
+      o.textContent = bm.title || dir;
+      sel.appendChild(o);
+    }
+    pw.classList.remove('hidden');
+    pw.classList.add('inline-flex');
+  } else {
+    pw.classList.add('hidden');
+    pw.classList.remove('inline-flex');
+  }
   loadTree();
 }
+
+document.getElementById('btn-promote').onclick = async () => {
+  const bank = document.getElementById('promote-bank').value;
+  const r = await api('/api/promote', { method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ path: cur, bank }) });
+  const j = await r.json().catch(() => ({}));
+  const msg = document.getElementById('n-msg');
+  if (r.ok) {
+    msg.textContent = `promoted → ${j.path}`;
+    openNote(j.path);
+  } else {
+    msg.textContent = `promote failed: ${j.detail || r.status}`;
+  }
+};
 
 document.getElementById('btn-edit').onclick = () => {
   editing = true;

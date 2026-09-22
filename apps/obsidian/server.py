@@ -108,7 +108,8 @@ def _bank_meta() -> tuple[list[str], dict]:
     order, info = [], {}
     for b in _bank_map():
         order.append(b["dir"])
-        info[b["dir"]] = {"title": b["title"], "description": b["description"],
+        info[b["dir"]] = {"bank": b["bank"], "title": b["title"],
+                          "description": b["description"],
                           "writable": b["writable"], "scope": b["scope"]}
     return order, info
 
@@ -625,6 +626,38 @@ async def sync(request: Request) -> dict:
     """Push vault → MDDB (runs the sync script; whole vault, idempotent)."""
     _check_write_auth(request)
     return _run(["python3", str(SYNC_SCRIPT), "--mddb", MDDB])
+
+
+class PromoteRequest(BaseModel):
+    path: str   # inbox/... note
+    bank: str   # target bank name from the registry
+
+
+@app.post("/api/promote")
+async def promote(req: PromoteRequest, request: Request) -> dict:
+    """Move an inbox/* note into a bank dir — the review-accept action.
+    Inbox notes are vault-only drafts; promoting files them under the
+    bank so the next sync pushes them into MDDB."""
+    _check_write_auth(request)
+    src_rel = req.path.strip()
+    if not src_rel.startswith("inbox/"):
+        raise HTTPException(400, "only inbox/* notes can be promoted")
+    p = _safe_path(src_rel)
+    if not p.exists():
+        raise HTTPException(404, f"no such note: {src_rel}")
+    entry = next((b for b in _bank_map() if b["bank"] == req.bank), None)
+    if not entry:
+        raise HTTPException(404, f"no such bank: {req.bank}")
+    visible = _visible_dirs()
+    if visible and entry["dir"] not in visible:
+        raise HTTPException(404, "no such bank")
+    dst_rel = f"{entry['dir']}/{p.name}"
+    dst = _safe_path(dst_rel)
+    if dst.exists():
+        raise HTTPException(409, f"target already exists: {dst_rel}")
+    dst.parent.mkdir(parents=True, exist_ok=True)
+    p.rename(dst)
+    return {"ok": True, "path": dst_rel}
 
 
 class ExportRequest(BaseModel):
