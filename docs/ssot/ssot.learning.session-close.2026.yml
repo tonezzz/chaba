@@ -202,6 +202,58 @@ sections:
           scheduled pruning is less likely now. quick_check preflight in
           prune-devin-sessions.sh stays as a safety net.
 
+  - title: Devin renderer crash + watchdog hardening (2026-09-21/22)
+    icon: 🛡️
+    layout: list
+    items:
+      - label: Ubuntu 24.04 unprivileged_userns breaks Electron silently
+        text: |
+          kernel.apparmor_restrict_unprivileged_userns=1 denies the Electron
+          sandbox sys_admin; devin-desktop ships no profile so renderers run
+          degraded and die with SIGTRAP (code 5) under load. Fix = a userns
+          profile cloned from the distro's /etc/apparmor.d/chrome; source in
+          scripts/devin/apparmor-devin-desktop, installed on both hosts.
+      - label: launch-failed 1002 after a dirty shutdown = corrupted caches
+        text: |
+          Persistent renderer launch failures after a crash are caused by
+          ~/.config/Devin/{GPUCache,Code Cache,CachedData}; rename and relaunch.
+      - label: ps %cpu is a lifetime average — useless for 'still busy' checks
+        text: |
+          A renderer that worked hard then idles keeps a high %cpu reading long
+          after settling. The watchdog now measures interval CPU from the
+          `times=` delta over a 10s hold — that is the real current load.
+      - label: Killing a busy renderer IS a crash from the user's seat
+        text: |
+          Two watchdog kills (10s-then-2-runs policies) each presented as
+          'window terminated unexpectedly' mid-session on tony-omen — during an
+          active SANE scan task. Bar now >=95% interval CPU across 3 runs
+          (~30min); kill is opt-in via WATCHDOG_RENDERER_KILL in
+          ~/.config/devin/watchdog.conf (omen sets 0: detect+notify only).
+      - label: Electron crash dialogs ignore XTEST; wmctrl -c kills the app
+        text: |
+          xdotool clicks/keys do not reach the 'window terminated' dialog, and
+          closing it via wmctrl tears down the whole Devin app. Remote recovery
+          = kill main PID + nohup relaunch (systemd-run --user dies ~1.3s in
+          on omen; use setsid nohup with DISPLAY/XAUTHORITY/DBUS env).
+      - label: mha_mirror REST sensors need an availability guard
+        text: |
+          57/56 mirror sensors on omen/dell spammed float() ValueErrors every
+          poll when michael-ha sources went 'unavailable'. Added
+          `availability: "{{ value_json.state not in ('unavailable','unknown','none') }}"`
+          — entity goes unavailable cleanly instead. Files now repo-tracked
+          under stacks/<host>/michael-dev/packages/.
+      - label: Healthcheck port must match the host's actual bind
+        text: |
+          omen's michael-dev quadlet curled :8124 (copied from dell where it
+          dodges tony-ha) but HA binds :8123 there — 9h of 30s healthcheck
+          failures churned podman/journal and fed the crash-time load.
+      - label: MDDB embed URL was pointing at the discard port
+        text: |
+          MDDB_EMBEDDING_API_URL=http://127.0.0.1:9 broke semantic search;
+          correct target is the gemini-ollama-proxy on :11435 (host network).
+          Post-restart 'vector index is loading' is normal warmup on the
+          632MB DB on the slow HDD — CPU-bound index build, self-resolves.
+
   - title: Future Triggers
     icon: 🔔
     layout: list
@@ -214,7 +266,7 @@ sections:
 
 config:
   version: 1
-  last_updated: 2026-09-21
+  last_updated: 2026-09-22
   maintainer: tony
   related_files:
     - docs/ssot/ssot.improvements.yml
