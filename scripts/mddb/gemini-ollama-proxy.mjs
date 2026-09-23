@@ -233,6 +233,9 @@ async function fetchBackupBatch(texts, geminiModel, outputDimensionality, skipGe
       return out;
     } catch (err) {
       console.log(`OpenRouter failed (${String(err.message).slice(0, 80)})`);
+      // OR-primary: fail hard — Gemini/Ollama are different vector
+      // spaces; a fallback write silently corrupts the index.
+      if (OPENROUTER_PRIMARY) throw err;
     }
   }
   if (GEMINI_API_KEY && !skipGemini) {
@@ -322,7 +325,8 @@ async function handleEmbed(req, res) {
         Date.now() < geminiCircuitOpenUntil;
       if (circuitOpen || (OPENROUTER_PRIMARY && OPENROUTER_API_KEY)) {
         // skipGemini when the circuit is open (Gemini presumed dead);
-        // in OR-primary mode Gemini stays as a degraded fallback.
+        // in OR-primary mode an OR failure is fatal — wrong-space
+        // fallback is worse than an error.
         chunkEmbeddings = await fetchBackupBatch(
           chunk, geminiModel, outputDimensionality, circuitOpen);
         usedFallback = true;
@@ -356,6 +360,7 @@ async function handleEmbed(req, res) {
   const result = {
     model: requestedModel,
     gemini_model: geminiModel,
+    provider: usedFallback ? lastBackupProvider : geminiModel,
     fallback: usedFallback ? lastBackupProvider : null,
     output_dimensionality: outputDimensionality,
     duration_ms: durationMs,
