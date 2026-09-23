@@ -170,50 +170,11 @@ instances:
         cards: iframe → https://mn01.taila0626a.ts.net/apps/ha/ada-tony/cms/?api_key=...
           (dedicated ada-ha-tony key 'cms-viewer' on mn01; key is embedded in the
           URL because iframes can't set headers — it is revocable via the Pair
-          tab. First browsing context to open the tab TOFU-binds the key; a
-          second device shows the unlock prompt and needs its own key.
-          Added 2026-09-22 via .storage edit + tony-ha restart.
-          Retirement candidate per decision ada-ha-native-primary-ui — the
-          embedded CMS miniapp conflicts with HA-as-primary-UI; remove once
-          a native CMS surface exists or the feature is dropped.)
-
-  chaba_home:
-    name: chaba-home
-    instance: tony-ha
-    title: Chaba home
-    icon: mdi:home-heart
-    url: https://tony-dell.taila0626a.ts.net:8123/chaba-home/ai
-    require_admin: false
-    storage_path: /home/tony/.config/home-assistant/.storage/lovelace.chaba_home (on tony-dell)
-    repo_snapshot: docs/home-assistant/dashboards/chaba-home-current.json
-    note: >-
-      Sidebar dashboard (storage mode), NOT admin-gated — the user-facing
-      counterpart to chaba-admin and the primary Ada surface per decision
-      ada-ha-native-primary-ui. Both views are `type: panel` so each can
-      hold exactly one top-level card; the AI view wraps its two cards in a
-      vertical-stack to satisfy that.
-      ada-activity-card ("Live activity") is a second element defined inside
-      ada-voice-card.js — no separate resource. The voice card publishes
-      status/transcript/error events to a shared window channel
-      (window.__adaVoiceActivity, deduped, 300-entry cap); the activity card
-      renders them log-style with You/Ada/status/error rows and survives
-      view switches. Config: title, height (default calc(100vh - 380px)).
-      Live resource versions: ada-voice-card.js?v=4,
-      ada-keys-card.js?v=4, ada-pair-qr-card.js?v=2, ada-users-card.js?v=1,
-      chaba-events-card.js?v=5, chaba-log-card.js?v=4, pfg3d-card-v239.js?v=2.
-    tabs:
-      - title: AI
-        path: ai
-        icon: mdi:robot-outline
-        type: panel
-        cards: vertical-stack( ada-voice-card "Live assistant", ada-activity-card "Live activity" )
-      - title: Nobito
-        path: nobito
-        icon: mdi:poll
-        type: panel
-        cards: pfg3d-card (cardstyle pfg; single bar3d chart on
-          sensor.nobito_pm2_5 — hour×day low–high, 10 days, stat:range,
-          position bg, pfg_transparent)
+          tab. The key is a shared viewer key (device='*' in the keys file),
+          so it works from any browser without binding. Added 2026-09-22; the
+          api_key param was restored 2026-09-23 via push-dashboard.py websocket
+          mutate — a HA restart had flushed its in-memory config over the
+          earlier .storage edit. Use push-dashboard.py, not .storage edits.)
 
   chaba_home:
     name: chaba-home
