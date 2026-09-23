@@ -92,7 +92,8 @@ processing:
       notes: "2026-09-22: dispatch+followup both ran to success; transcript.json exported per turn; session registered in sessions.db (resumable via -c/-r in worktree). FINDING: -p sessions do NOT write history_*.md summaries — the dispatch watcher must read the outcome from transcript.json's last agent message, not wait for the bank sync."
     - id: 5
       label: "P2: devin-handoff collection + Ada tools devin_dispatch/devin_status/devin_followup (confirmed gate) + Gemini declarations"
-      status: pending
+      status: done
+      notes: "2026-09-23: ada-pi backend/devin_dispatch.py shells 'ssh 192.168.2.67 ~/.local/bin/devin-dispatch' (LAN IP — tailnet name hits tailscaled-ssh interactive re-auth, unusable from a service). DEVIN_CONFIRMED_TOOLS gates dispatch+followup behind confirmed=true; devin_status is read-only. Gemini declarations + DEVIN_INSTRUCTIONS + ADA_EXCLUDED_TOOLS strip added in realtime_provider. devin-handoff bank registered in ssot.apps.ada-memory-banks.yml (writable, write_policy=confirmed) so Ada saves specs via ada_remember for 'check the ada handoff' prompts. Auth: generated mn01->tony-dell ed25519 key + ssh config IdentityFile; idc01 key was already authorized. Gate + live status verified locally."
     - id: 6
       label: "P3: devin-dispatch-watch.timer — completion events + outcome writeback + iPhone notify"
       status: done

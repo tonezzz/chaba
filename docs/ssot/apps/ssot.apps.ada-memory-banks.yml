@@ -221,6 +221,20 @@ banks:
     allowed_tools: []
     status: active
     public: false
+  devin-handoff:
+    title: Devin task handoff
+    description: Tony-only writable bank of distilled implementation specs for dispatched Devin sessions. Ada saves a spec here during conversation (ada_remember); a dispatched session is told to 'check the ada handoff' and reads the spec via the mddb MCP server. Keep entries short, self-contained, and free of secrets — a headless agent consumes them verbatim.
+    scope: instance
+    instances: [tony]
+    mddb_collection: ada-ha-bank-devin-handoff
+    notebooklm_group: null
+    notebooklm_id: null
+    kinds: [note, fact, procedure]
+    writable: true
+    write_policy: confirmed
+    allowed_tools: [ada_remember, ada_forget, ada_outcome]
+    status: active
+    public: false
   kb-development:
     title: Development knowledge base
     description: Chaba dev/architecture docs synced from the kb — read-only for Ada
