@@ -162,7 +162,14 @@ pfg_feature_keys:
     pfg_fit_screen: 'boolean|"Npx" (v97/v98+); grid fills 100% width x (100vh - reserve) with free cell stretch — no aspect lock, no scrollbar. Lines stretch via preserveAspectRatio="none".'
   charts:
     key: pfg_charts
-    note: 'r,c -> chart def or array of defs; types: gauge, bar, history, cycle, surface3d (v141+). position: center|bottom|top|fill|cycle overlays the tile (works over images). "bg" is a deprecated alias of "fill" (v162+). cycle rotates through step groups at interval seconds; entities[] sums multiple sensors in one def. history uses recorder history_during_period with 5min cache; fields: entity/entities, hours, min/max, scale, decimals, unit, label, stroke, fill, needle, segments, gradient, interval, steps.'
+    note: 'r,c -> chart def or array of defs; types: gauge, bar, bars, history, area, cycle, group, flow (v240+), surface3d (v141+). position: center|bottom|top|fill|cycle overlays the tile (works over images). "bg" is a deprecated alias of "fill" (v162+). cycle rotates through step groups at interval seconds; entities[] sums multiple sensors in one def. history uses recorder history_during_period with 5min cache; fields: entity/entities, hours, min/max, scale, decimals, unit, label, stroke, fill, needle, segments, gradient, interval, steps.'
+    flow: |
+      v240+ — animated power-flow tile. Entities: pv (list ok), grid,
+      battery, load (list ok); each optional, absent = node hidden.
+      Sign convention: grid +import/-export, battery +discharge/-charge;
+      invert_grid/invert_battery flip sensor polarity. Direction drives
+      animateMotion dots (SMIL); |power| < min_power (default 25 raw)
+      renders a dim static edge. speed = dot travel seconds (2.2).
     surface3d: |
       echarts-gl surface, lazy-loaded from /local/echarts-5.5.1.min.js +
       /local/echarts-gl-2.1.0.min.js (vendored to www/ on both hosts, v171 dev /
