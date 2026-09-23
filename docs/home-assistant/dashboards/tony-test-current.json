@@ -8578,7 +8578,27 @@
               "title": "Shutter Logic Test",
               "entities": [
                 {
-                  "entity": "sensor.dev_rk900_shutter_status",
+                  "type": "section",
+                  "name": "Current Wind Status"
+                },
+                {
+                  "entity": "sensor.dev_wind_direction",
+                  "name": "Wind Direction"
+                },
+                {
+                  "entity": "sensor.dev_wind_speed",
+                  "name": "Wind Speed"
+                },
+                {
+                  "entity": "sensor.dev_wind_speed_meters",
+                  "name": "Wind Speed (m/s)"
+                },
+                {
+                  "entity": "sensor.dev_rainfall",
+                  "name": "Rainfall"
+                },
+                {
+                  "entity": "sensor.dev_shutter_status",
                   "name": "Shutter Status"
                 },
                 "input_boolean.dev_shutter_state",
@@ -8677,23 +8697,23 @@
                   "card": {
                     "type": "custom:config-template-card",
                     "entities": [
-                      "sensor.dev_rk900_wind_direction",
+                      "sensor.dev_wind_direction",
                       "input_number.shutter_wind_dir_min",
                       "input_number.shutter_wind_dir_max",
-                      "sensor.dev_rk900_wind_speed",
+                      "sensor.dev_wind_speed",
                       "input_number.shutter_wind_speed_min",
-                      "sensor.dev_rk900_shutter_status",
-                      "sensor.dev_rk900_rainfall",
+                      "sensor.dev_shutter_status",
+                      "sensor.dev_rainfall",
                       "input_number.shutter_rain_min",
-                      "input_boolean.dev_rk900_simulation"
+                      "input_boolean.dev_simulation"
                     ],
                     "variables": {
-                      "dir": "parseFloat(states[\"sensor.dev_rk900_wind_direction\"].state) || 0",
+                      "dir": "parseFloat(states[\"sensor.dev_wind_direction\"].state) || 0",
                       "dmin": "parseFloat(states[\"input_number.shutter_wind_dir_min\"].state) || 90",
                       "dmax": "parseFloat(states[\"input_number.shutter_wind_dir_max\"].state) || 270",
-                      "spd": "parseFloat(states[\"sensor.dev_rk900_wind_speed\"].state) || 0",
+                      "spd": "parseFloat(states[\"sensor.dev_wind_speed\"].state) || 0",
                       "smin": "parseFloat(states[\"input_number.shutter_wind_speed_min\"].state) || 12",
-                      "rain": "parseFloat(states[\"sensor.dev_rk900_rainfall\"].state) || 0",
+                      "rain": "parseFloat(states[\"sensor.dev_rainfall\"].state) || 0",
                       "rmin": "parseFloat(states[\"input_number.shutter_rain_min\"].state) || 0.5",
                       "in_close_zone": "((vars.dmin <= vars.dir) && (vars.dir <= vars.dmax) && (vars.spd >= vars.smin)) || (vars.rain >= vars.rmin)",
                       "highlights": "[{\"from\": vars.dmin, \"to\": vars.dmax, \"color\": \"rgba(255, 80, 80, 0.35)\"}]",
@@ -8701,7 +8721,7 @@
                     },
                     "card": {
                       "type": "custom:canvas-gauge-card",
-                      "entity": "sensor.dev_rk900_wind_direction",
+                      "entity": "sensor.dev_wind_direction",
                       "gauge": {
                         "type": "radial-gauge",
                         "title": "",
@@ -8749,13 +8769,13 @@
                     }
                   }
                 },
-                "input_boolean.dev_rk900_simulation",
+                "input_boolean.dev_simulation",
                 {
                   "type": "conditional",
                   "conditions": [
                     {
                       "condition": "state",
-                      "entity": "input_boolean.dev_rk900_simulation",
+                      "entity": "input_boolean.dev_simulation",
                       "state": "on"
                     }
                   ],
@@ -8769,12 +8789,12 @@
                   "conditions": [
                     {
                       "condition": "state",
-                      "entity": "input_boolean.dev_rk900_simulation",
+                      "entity": "input_boolean.dev_simulation",
                       "state": "on"
                     }
                   ],
                   "row": {
-                    "entity": "input_number.dev_rk900_wind_direction"
+                    "entity": "input_number.dev_wind_direction"
                   }
                 },
                 {
@@ -8782,12 +8802,12 @@
                   "conditions": [
                     {
                       "condition": "state",
-                      "entity": "input_boolean.dev_rk900_simulation",
+                      "entity": "input_boolean.dev_simulation",
                       "state": "on"
                     }
                   ],
                   "row": {
-                    "entity": "input_number.dev_rk900_wind_speed"
+                    "entity": "input_number.dev_wind_speed"
                   }
                 },
                 {
@@ -8795,12 +8815,12 @@
                   "conditions": [
                     {
                       "condition": "state",
-                      "entity": "input_boolean.dev_rk900_simulation",
+                      "entity": "input_boolean.dev_simulation",
                       "state": "on"
                     }
                   ],
                   "row": {
-                    "entity": "input_number.dev_rk900_rainfall"
+                    "entity": "input_number.dev_rainfall"
                   }
                 }
               ]
@@ -8809,10 +8829,10 @@
               "type": "custom:pro-v-weather-card",
               "title": "RK900 Console",
               "style": "basic",
-              "outdoor_temp": "sensor.dev_rk900_temperature",
-              "outdoor_humidity": "sensor.dev_rk900_humidity",
-              "wind_speed": "sensor.dev_rk900_wind_speed",
-              "wind_bearing": "sensor.dev_rk900_wind_to",
+              "outdoor_temp": "sensor.dev_temperature",
+              "outdoor_humidity": "sensor.dev_humidity",
+              "wind_speed": "sensor.dev_wind_speed",
+              "wind_bearing": "sensor.dev_wind_to",
               "weather": "weather.forecast_baan"
             },
             {
@@ -8838,14 +8858,14 @@
               ],
               "series": [
                 {
-                  "entity": "sensor.dev_rk900_temperature",
+                  "entity": "sensor.dev_temperature",
                   "name": "Temp",
                   "yaxis_id": "temp",
                   "unit": "°C",
                   "stroke_width": 2
                 },
                 {
-                  "entity": "sensor.dev_rk900_wind_speed_meters",
+                  "entity": "sensor.dev_wind_speed_meters",
                   "name": "Wind",
                   "yaxis_id": "wind",
                   "unit": "m/s",
@@ -8855,7 +8875,7 @@
             },
             {
               "type": "custom:canvas-gauge-card",
-              "entity": "input_number.dev_rk900_wind_direction",
+              "entity": "input_number.dev_wind_direction",
               "card_height": 208,
               "gauge": {
                 "type": "radial-gauge",
@@ -8896,10 +8916,10 @@
               "type": "custom:pro-v-weather-card",
               "title": "RK900 Console",
               "style": "basic",
-              "outdoor_temp": "sensor.dev_rk900_temperature",
-              "outdoor_humidity": "sensor.dev_rk900_humidity",
-              "wind_speed": "sensor.dev_rk900_wind_speed",
-              "wind_bearing": "sensor.dev_rk900_wind_to"
+              "outdoor_temp": "sensor.dev_temperature",
+              "outdoor_humidity": "sensor.dev_humidity",
+              "wind_speed": "sensor.dev_wind_speed",
+              "wind_bearing": "sensor.dev_wind_to"
             }
           ]
         },
@@ -8912,10 +8932,10 @@
               "type": "custom:pro-v-weather-card",
               "title": "PRO-V Console",
               "style": "basic",
-              "outdoor_temp": "sensor.dev_rk900_temperature",
-              "outdoor_humidity": "sensor.dev_rk900_humidity",
-              "wind_speed": "sensor.dev_rk900_wind_speed",
-              "wind_bearing": "sensor.dev_rk900_wind_to",
+              "outdoor_temp": "sensor.dev_temperature",
+              "outdoor_humidity": "sensor.dev_humidity",
+              "wind_speed": "sensor.dev_wind_speed",
+              "wind_bearing": "sensor.dev_wind_to",
               "weather": "weather.forecast_baan"
             },
             {
@@ -8941,14 +8961,14 @@
               ],
               "series": [
                 {
-                  "entity": "sensor.dev_rk900_temperature",
+                  "entity": "sensor.dev_temperature",
                   "name": "Temp",
                   "yaxis_id": "temp",
                   "unit": "°C",
                   "stroke_width": 2
                 },
                 {
-                  "entity": "sensor.dev_rk900_wind_speed_meters",
+                  "entity": "sensor.dev_wind_speed_meters",
                   "name": "Wind",
                   "yaxis_id": "wind",
                   "unit": "m/s",
