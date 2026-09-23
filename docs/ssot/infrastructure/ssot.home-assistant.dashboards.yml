@@ -225,10 +225,14 @@ instances:
       chart, pfg_transparent + pfg_fit_screen) pointed at the Tuya Nobito air
       sensor (sensor.nobito_pm2_5, µg/m³) instead of PV power. The dev-only
       entity_input helper (input_select.dev_g3_source) was dropped — the entity
-      is hardcoded. Bundle is /local/sunsynk-power-flow-card-fork-v206.js
-      (already registered); echarts-5.5.1.min.js + echarts-gl-2.1.0.min.js were
-      vendored into tony-ha /local/ the same day (copied from michael-dev www)
-      so the 3D chart loads local-first instead of CDN fallback. Nobito is a
+      is hardcoded. IMPORTANT: custom:pfg3d-card is NOT part of the
+      sunsynk-power-flow-card bundle — it is a standalone bundle. Deployed
+      2026-09-23: /local/pfg3d-card-v239.js?v=1 (module resource, copied from
+      michael-dev www; v206-era sunsynk bundle only contains the
+      pfg3d-hover-plane helper, so the view showed "configuration error" until
+      this resource was added). echarts-5.5.1.min.js +
+      echarts-gl-2.1.0.min.js were vendored into tony-ha /local/ (copied from
+      michael-dev www) so the 3D chart loads local-first, CDN fallback. Nobito is a
       battery Tuya device (cloud integration) that sleeps between reports —
       entities show unavailable while asleep; a flat card value means stale
       data, not a real reading.
@@ -347,6 +351,6 @@ manual_steps:
   - To add a new tab, push via websocket mutate or use the HA UI, then snapshot
 
 status:
-  last_updated: "2026-09-22"
-  last_verified: "2026-09-22"
+  last_updated: "2026-09-23"
+  last_verified: "2026-09-23"
   health: active; G1 on both hosts (dev v171 / ha v161, same md5 b404aab0) — surface3d PV chart on sensor.inverters_1_pv_power, vendored echarts libs in /local; Cast tab removed from live michael-ha tony-test on 2026-09-14; PF3/PF4/PFG/PFG1/PFG2 removed
