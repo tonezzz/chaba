@@ -30,12 +30,38 @@ sections:
     icon: "🚀"
     layout: list
     items:
-      - label: URL
-        text: "https://tony-dell.taila0626a.ts.net/apps/ada_pi/"
-      - label: Tailscale
-        text: "tony-dell.taila0626a.ts.net:443 is served by tailscale serve and proxies to the Caddy on 127.0.0.1:8085."
+      - label: Live services running pwa_server.py
+        text: "ada-pi-pwa on tony-dell :8001 (standalone, binds 0.0.0.0 — plain-HTTP LAN reachable), chaba-guest on tony-dell :8014 (CHABA_MEMORY guest mode, LAN :8126 via Caddy XFF), ada-ha-tony on mn01 :8002 and ada-ha-michael on mn01 :8003 (behind /apps/ha/ada-*/ on the tailnet)."
+      - label: Tailnet URLs
+        text: "https://tony-dell.taila0626a.ts.net/apps/ada_pi/ (proxy → :8001), https://mn01.taila0626a.ts.net/apps/ha/ada-tony/ and …/ada-michael/."
       - label: Registry
         text: Listed in docs/ssot/apps/ssot.apps.yml.
+  - title: Frontend surfaces — retirement audit (2026-09-23)
+    icon: "🧭"
+    layout: list
+    items:
+      - label: Decision
+        text: "ada-ha-native-primary-ui (ssot.technical-decisions.yml): HA is the primary user-facing Ada UI; standalone frontends retire in stages. Backend API/WS routes stay — the HA cards and internal tools use them."
+      - label: "pwa/ root + app.js (voice PWA)"
+        text: "Served by every pwa_server instance at /. Only remaining launcher is the ada-keys-card Voice popup (redeem link lands on /redeem/{token} then redirects to the PWA root with the raw key). Redundant with custom:ada-voice-card."
+      - label: "pwa/chat/"
+        text: "Ada text chat. Still launched by the ada-keys-card Text popup (ui=chat redeem). No HA-native text chat exists yet — keep until one does."
+      - label: "pwa/cms/"
+        text: "CMS pages browser. Consumed by the chaba-admin ada-pages iframe tab (cms-viewer key passed in the URL query). Retirement candidate — remove the tab when a native CMS surface exists or the feature is dropped."
+      - label: "pwa/guest/"
+        text: "Chaba guest page (register → voice clip → guest chat). Served by chaba-guest :8014 on LAN :8126 via the gate QR flow. KEEP — this is the guest surface, not a miniapp duplicate."
+      - label: pwa/enroll.html
+        text: "Standalone speaker-enrollment page. No internal links; apps index points at idc01/enroll.html (host currently unreachable). Guest enrollment goes through guest.js instead — likely obsolete, confirm before removal."
+      - label: manifest.json
+        text: "PWA install metadata for the standalone app — dies with the root mount."
+      - label: "/redeem/{token}"
+        text: "One-time redeem → session cookie + 302 to dest/ with the raw key in the query string. Still needed for QR pairing of non-HA consumers (guest chat key, cms-viewer) and headless keys; HA-native browsers self-mint via script.ada_voice_key and never touch it."
+      - label: "Static /apps/ada-pi/ (dash) snapshot"
+        text: "stacks/web/public/apps/ada-pi/ is a frozen static copy served by Caddy file_server — no WS/API proxying, so it's a broken shell. Pure cleanup candidate."
+      - label: "LAN exposure"
+        text: "ada-pi-pwa binds 0.0.0.0:8001 — the full PWA is reachable at http://192.168.2.67:8001/ on plain HTTP. Retiring the service removes this surface entirely."
+      - label: "Backend routes that must stay"
+        text: "/ws, /api/auth/*, /api/chaba/*, /api/home-assistant/*, /api/speakers/*, /api/memory/*, /api/decision/*, /api/documents/*, /api/tools/*, /api/chat/transcript, /api/cms/* (until cms tab retires), /api/health."
   - title: Testing
     icon: "🧪"
     layout: list
@@ -45,7 +71,7 @@ sections:
       - label: offline scenarios
         text: "tests/scenarios/*.yaml — declarative seed+steps+expect files run by tests/scenario_engine.py against ToolRunner with an in-memory FakeMddb (keyword-overlap vector stand-in). Covers recall, confirmed writes, supersede, draft visibility, access control, query expansion."
       - label: live scenarios
-        text: "tests/scenarios-live/*.yaml — scripts/scenario-live.py replays user text turns over /ws?api_key= and asserts on tool_call/tool_result trace events + transcripts (calls_any/result_contains/response_contains). Verified live on ada-ha-michael :8003 2026-09-22."
+        text: "tests/scenarios-live/*.yaml — scripts/scenario-live.py replays user text turns over /ws with an api_key query param and asserts on tool_call/tool_result trace events + transcripts (calls_any/result_contains/response_contains). Verified live on ada-ha-michael :8003 2026-09-22."
       - label: end-to-end
         text: Open https://tony-omen.taila0626a.ts.net/apps/ada_pi/ on iPad/iPhone, tap Connect, and speak.
   - title: Known Issues
