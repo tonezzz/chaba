@@ -106,7 +106,7 @@ instances:
       pin to top with a pulsing border (prefers-reduced-motion respected);
       confidence <0.6 shown as outlined chip.
       Voice card added 2026-09-22 at the top of the Pair tab:
-      custom:ada-voice-card (/local/ada-voice-card.js?v=3, repo:
+      custom:ada-voice-card (/local/ada-voice-card.js?v=4, repo:
       stacks/tony-dell/tony-ha/www/ada-voice-card.js) — embeds the full Ada
       Gemini Live client in the dashboard, no iframe/redirect. It ports the
       PWA transport (ada-pi pwa/app.js): getUserMedia -> ScriptProcessor
@@ -165,6 +165,42 @@ instances:
           Retirement candidate per decision ada-ha-native-primary-ui — the
           embedded CMS miniapp conflicts with HA-as-primary-UI; remove once
           a native CMS surface exists or the feature is dropped.)
+
+  chaba_home:
+    name: chaba-home
+    instance: tony-ha
+    title: Chaba home
+    icon: mdi:home-heart
+    url: https://tony-dell.taila0626a.ts.net:8123/chaba-home/ai
+    require_admin: false
+    storage_path: /home/tony/.config/home-assistant/.storage/lovelace.chaba_home (on tony-dell)
+    repo_snapshot: docs/home-assistant/dashboards/chaba-home-current.json
+    note: >-
+      Sidebar dashboard (storage mode), NOT admin-gated — the user-facing
+      counterpart to chaba-admin and the primary Ada surface per decision
+      ada-ha-native-primary-ui. Both views are `type: panel` so each can
+      hold exactly one top-level card; the AI view wraps its two cards in a
+      vertical-stack to satisfy that.
+      KNOWN ISSUE (2026-09-23): the AI view references
+      custom:ada-activity-card ("Live activity") but ada-activity-card.js is
+      neither registered in lovelace_resources nor present in www/ (or the
+      repo) — the card renders nothing until the resource is added or the
+      card removed. Live resource versions: ada-voice-card.js?v=4,
+      ada-keys-card.js?v=4, ada-pair-qr-card.js?v=2, ada-users-card.js?v=1,
+      chaba-events-card.js?v=5, chaba-log-card.js?v=4, pfg3d-card-v239.js?v=2.
+    tabs:
+      - title: AI
+        path: ai
+        icon: mdi:robot-outline
+        type: panel
+        cards: vertical-stack( ada-voice-card "Live assistant", ada-activity-card "Live activity" )
+      - title: Nobito
+        path: nobito
+        icon: mdi:poll
+        type: panel
+        cards: pfg3d-card (cardstyle pfg; single bar3d chart on
+          sensor.nobito_pm2_5 — hour×day low–high, 10 days, stat:range,
+          position bg, pfg_transparent)
 
 tabs:
   dev:

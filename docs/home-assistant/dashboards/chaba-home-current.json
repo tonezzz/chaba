@@ -1,0 +1,80 @@
+{
+  "views": [
+    {
+      "title": "AI",
+      "path": "ai",
+      "type": "panel",
+      "icon": "mdi:robot-outline",
+      "badges": [],
+      "cards": [
+        {
+          "type": "vertical-stack",
+          "cards": [
+            {
+              "type": "custom:ada-voice-card",
+              "title": "Live assistant"
+            },
+            {
+              "type": "custom:ada-activity-card",
+              "title": "Live activity"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "title": "Nobito",
+      "path": "nobito",
+      "type": "panel",
+      "icon": "mdi:poll",
+      "badges": [],
+      "cards": [
+        {
+          "type": "custom:pfg3d-card",
+          "cardstyle": "pfg",
+          "card_height": "100%",
+          "card_width": "100%",
+          "pfg_grid_size": 1,
+          "pfg_grid_width": "100%",
+          "pfg_labels": {
+            "1,1": "Nobito PM2.5 µg/m³ — hour×day low–high"
+          },
+          "pfg_charts": {
+            "1,1": [
+              {
+                "type": "bar3d",
+                "entity": "sensor.nobito_pm2_5",
+                "days": 10,
+                "min": 0,
+                "scale": 1,
+                "unit": "µg/m³",
+                "position": "bg",
+                "height": "100%",
+                "rotate_sensitivity": [
+                  -4,
+                  4
+                ],
+                "opacity": 1,
+                "view_offset": 40,
+                "key": "g3",
+                "stat": "range"
+              }
+            ]
+          },
+          "preset": "pfg",
+          "show_solar": false,
+          "inverter": {
+            "model": "solis",
+            "modern": true,
+            "autarky": "no"
+          },
+          "pfg_fit_screen": "120px",
+          "pfg_border": {
+            "1,1": "1px solid rgba(255, 255, 255, 0.2)"
+          },
+          "pfg_transparent": true
+        }
+      ]
+    }
+  ]
+}
