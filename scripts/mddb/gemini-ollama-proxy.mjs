@@ -21,6 +21,12 @@ const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY || "";
 const OPENROUTER_BASE = (process.env.OPENROUTER_BASE || "https://openrouter.ai/api/v1").replace(/\/$/, "");
 const OPENROUTER_PREFIX = process.env.OPENROUTER_MODEL_PREFIX || "google/";
 const OPENROUTER_PROVIDER = process.env.OPENROUTER_PROVIDER || "Google";
+// When set, OpenRouter is tried FIRST for every request — keeps docs and
+// queries in one vector space even while direct-Gemini quota flaps
+// (Vertex gemini-embedding-2 != AI Studio gemini-embedding-2 in practice,
+// so interleaving the two silently zeroes scores).
+const OPENROUTER_PRIMARY = process.env.OPENROUTER_PRIMARY === "1"
+  || process.env.OPENROUTER_PRIMARY === "true";
 const MAX_RPM = parseInt(process.env.GEMINI_PROXY_MAX_RPM || "100", 10);
 const BATCH_SIZE = parseInt(process.env.GEMINI_PROXY_BATCH_SIZE || "100", 10);
 const MAX_RETRIES = parseInt(process.env.GEMINI_PROXY_MAX_RETRIES || "5", 10);
@@ -215,9 +221,9 @@ async function fetchOpenRouterBatch(texts, orModel, outputDimensionality) {
   return list.map((entry) => entry.embedding);
 }
 
-async function fetchBackupBatch(texts, geminiModel, outputDimensionality) {
-  // Prefer OpenRouter's google/* mirror — same model, same vector space —
-  // before degrading to local Ollama (different space, breaks recall).
+async function fetchBackupBatch(texts, geminiModel, outputDimensionality, skipGemini = false) {
+  // Order: OpenRouter (Vertex gemini space) -> direct Gemini -> Ollama.
+  // When OR is primary this whole chain is the normal path.
   if (OPENROUTER_API_KEY) {
     try {
       const orModel = `${OPENROUTER_PREFIX}${geminiModel}`;
@@ -227,7 +233,18 @@ async function fetchBackupBatch(texts, geminiModel, outputDimensionality) {
       return out;
     } catch (err) {
       console.log(`OpenRouter failed (${String(err.message).slice(0, 80)})`);
-      if (!OLLAMA_FALLBACK_BASE) throw err;
+    }
+  }
+  if (GEMINI_API_KEY && !skipGemini) {
+    try {
+      const out = await fetchGeminiBatch(
+        texts, geminiModel, outputDimensionality,
+        GEMINI_EMBEDDING_FALLBACK_MODEL
+      );
+      lastBackupProvider = geminiModel;
+      return out;
+    } catch (err) {
+      console.log(`backup Gemini failed (${String(err.message).slice(0, 80)})`);
     }
   }
   if (!OLLAMA_FALLBACK_BASE) {
@@ -303,8 +320,11 @@ async function handleEmbed(req, res) {
       const circuitOpen =
         (OLLAMA_FALLBACK_BASE || OPENROUTER_API_KEY) &&
         Date.now() < geminiCircuitOpenUntil;
-      if (circuitOpen) {
-        chunkEmbeddings = await fetchBackupBatch(chunk, geminiModel, outputDimensionality);
+      if (circuitOpen || (OPENROUTER_PRIMARY && OPENROUTER_API_KEY)) {
+        // skipGemini when the circuit is open (Gemini presumed dead);
+        // in OR-primary mode Gemini stays as a degraded fallback.
+        chunkEmbeddings = await fetchBackupBatch(
+          chunk, geminiModel, outputDimensionality, circuitOpen);
         usedFallback = true;
       } else {
         try {
@@ -320,7 +340,8 @@ async function handleEmbed(req, res) {
           console.log(
             `Gemini failed (${err.message.slice(0, 80)}); circuit open ${CIRCUIT_COOLDOWN_MS / 1000}s`
           );
-          chunkEmbeddings = await fetchBackupBatch(chunk, geminiModel, outputDimensionality);
+          chunkEmbeddings = await fetchBackupBatch(
+            chunk, geminiModel, outputDimensionality, true);
           usedFallback = true;
         }
       }
