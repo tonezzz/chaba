@@ -37,8 +37,9 @@ class AdaKeysCard extends HTMLElement {
         code.style.cssText = "flex:1;font-family:monospace;overflow:hidden;text-overflow:ellipsis";
         code.textContent = key;
         const voice = this._btn("Voice");
-        voice.title = "Re-pair and open the voice interface in a popup";
-        voice.onclick = (e) => this._repairAndOpen(e, inst.id, key, code, "voice");
+        voice.title = "Open the HA-native voice page for this instance (the card self-mints a key)";
+        voice.onclick = () =>
+          window.open(this._haUrl(inst.id), "_blank", "popup,width=1100,height=800");
         const chat = this._btn("Text");
         chat.title = "Re-pair and open the text chat interface in a popup";
         chat.onclick = (e) => this._repairAndOpen(e, inst.id, key, code, "chat");
@@ -98,6 +99,15 @@ class AdaKeysCard extends HTMLElement {
     }
     el.textContent = prev;
     delete el.dataset.busy;
+  }
+
+  _haUrl(instance) {
+    if (this._config && this._config.ha_url) return this._config.ha_url;
+    const map = {
+      tony: "https://tony-dell.taila0626a.ts.net:8123/chaba-home/ai",
+      michael: "https://nupo4ndqdqydt78zmpq0z5wzp1bdrqgs.ui.nabu.casa/",
+    };
+    return map[instance] || map.tony;
   }
 
   _showOpenLink(el, url, name) {
