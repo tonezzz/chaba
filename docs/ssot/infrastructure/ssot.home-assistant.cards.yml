@@ -7,7 +7,7 @@ repositories:
     fork_of: slhub/sunsynk-power-flow-card
     current_commit: 6962e63
     package_version: 7.3.3
-    bundle_version: 239
+    bundle_version: 240
     build:
       command: npm run build
       tool: rollup -c --bundleConfigAsCjs
@@ -15,9 +15,9 @@ repositories:
     deploy:
       michael-dev:
         target_host: ssot.values.yml::hosts.tony_dell
-        target_path: /home/tony/.config/michael-dev/www/pfg3d-card-v239.js
+        target_path: /home/tony/.config/michael-dev/www/pfg3d-card-v240.js
         lovelace_resources: /home/tony/.config/michael-dev/.storage/lovelace_resources
-        resource_path: /local/pfg3d-card-v239.js
+        resource_path: /local/pfg3d-card-v240.js
         restart: systemctl --user restart michael-dev.service
         service_ref: infrastructure/ssot.services.yml#tony-dell.michael-dev.quadlet.service_unit
         test_url: https://tony-dell.taila0626a.ts.net:8124/tony-test/pf4
@@ -112,8 +112,8 @@ cards:
   - id: pfg3d-card
     name: PFG3D Card
     repo_ref: repositories.pfg3d-card
-    bundle_version: 239
-    deployed_as: "/local/pfg3d-card-v239.js on michael-dev (md5 d39394d4aa1fc64d687792d418ff3176); /local/pfg3d-card-v239.js on michael-ha (md5 d39394d4aa1fc64d687792d418ff3176)"
+    bundle_version: 240
+    deployed_as: "/local/pfg3d-card-v240.js on michael-dev (md5 93f0d7c22b347a427894eac68124a21c); /local/pfg3d-card-v239.js on michael-ha (md5 d39394d4aa1fc64d687792d418ff3176)"
     dashboards:
       - id: tony-test/v0
         tab: V0
