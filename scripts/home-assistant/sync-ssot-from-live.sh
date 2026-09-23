@@ -54,12 +54,22 @@ else
 fi
 
 if [[ -n "${VERSION}" ]]; then
+    REMOTE_MD5=$(ssh "${HOST}" "md5sum ${WWW_REMOTE}/pfg3d-card-v${VERSION}.js 2>/dev/null" | cut -d' ' -f1)
     python3 - <<PY
 import re
 with open("${CARDS_SSOT}", "r") as f:
     text = f.read()
 text = re.sub(r"^((?:[ \t]*).bundle_version:)[ \t]*\d+.*$", r"\1 ${VERSION}", text, flags=re.MULTILINE)
-text = re.sub(r"(pfg3d-card-)v\d+(\.js)", r"\1v${VERSION}\2", text)
+# Scope bundle rewrites to the michael-dev deploy block — other hosts run
+# their own versions (per-host counters; parity is checked by md5).
+m = re.search(r"^(      michael-dev:.*?)(?=^      \S)", text, flags=re.S | re.M)
+if m:
+    fixed = re.sub(r"(pfg3d-card-)v\d+(\.js)", r"\1v${VERSION}\2", m.group(1))
+    text = text[:m.start(1)] + fixed + text[m.end(1):]
+remote_md5 = "${REMOTE_MD5}"
+if remote_md5:
+    text = re.sub(r"pfg3d-card-v\d+\.js on michael-dev \(md5 [0-9a-f]+\)",
+                  "pfg3d-card-v${VERSION}.js on michael-dev (md5 " + remote_md5 + ")", text)
 with open("${CARDS_SSOT}", "w") as f:
     f.write(text)
 PY
