@@ -88,6 +88,26 @@ hosts:
       - browser automation overflow when tony-dell/tony-omen are busy
       - quick one-off macOS commands
 
+  idc01:
+    description: Offsite Siamdata VPS (Bangkok) — tailnet-only MDDB replica + public Caddy edge; Cloudflare WARP for international egress
+    tailnet: idc01
+    tailscale_ip: 100.74.146.0
+    public_ip: '<IDC01_PUBLIC_IP>'
+    tags:
+    - vps
+    - offsite
+    - mddb-replica
+    - public-edge
+    headless_browser:
+      enabled: false
+    web_preview:
+      enabled: false
+    ssh:
+      user: tony
+      via: tailnet only (public :22 filtered); keys authorized for tony-dell + tony-omen
+    egress: cloudflare-warp (always-on); see ssot.idc01.yml
+    detail_ssot: docs/ssot/infrastructure/ssot.idc01.yml
+
 policies:
   headless_browser_priority:
   - tony-dell
