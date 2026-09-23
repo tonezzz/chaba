@@ -250,7 +250,37 @@ cards:
       - precipitation
     note: Large header, daily/hourly, sunrise/sunset markers, precipitation values, nowcast.
 
+cardstyle_policy:
+  as_of: "2026-09-23"
+  canonical:
+    pfg: "Tile-grid renderer; all TPL/workshop/wall tiles"
+    pfg2: "Tile-grid renderer, 15x15 default grid; V0/V1 wall views"
+    full: "Classic animated sunsynk flow diagram; juWorkshop view on all hosts"
+  retired:
+    - compact
+    - lite
+    - test2
+    - ss2
+    - ss3
+    - ss4
+    - ju
+  notes: >-
+    'ju' existed only in the legacy sunsynk-power-flow-card-fork bundles and is
+    NOT a cardstyle in pfg3d-card — it matches no dispatch branch and renders
+    blank. The retired cardstyles above still have renderers in the bundle
+    (code-prune pending) but no dashboard uses them; do not add new cards with
+    them. pfg has no flow/arrows chart type, so 'full' is the only animated
+    flow view until/unless a flow tile lands.
+  legacy_bundles:
+    note: >-
+      custom:power-flow-card and its bundles (sunsynk-power-flow-card-fork-v*.js,
+      power-flow-card-v3.js) retired fleet-wide 2026-09-23: resources deleted on
+      tony-ha, michael-ha, michael-dev; stale files removed from www/ on
+      tony-ha + michael-dev. pfg3d-card is the only flow/tile card in use.
+      v206+v239 both registered pfg-cycle causing a duplicate-element
+      DOMException on every dashboard load — that collision is gone.
+
 status:
   last_build: "2026-09-08"
   last_verified: "2026-09-16"
-  health: active; v149 deployed to michael-dev and v122 to michael-ha; dev tabs are V0/V1/G1/TPL/TPL2/TPL_SOLIS/Data/Sankey/juWorkshop/Solar Assistant/glass/Weather/Solis Daily Energy Sankey (sunsynk on V0/V1/G1/TPL/TPL2); michael-ha tabs are V0/V1/SK/TPL/juWorkshop/Solar Assistant/glass/Weather (sunsynk on V0/V1/TPL); pfg/pfg2 features remain available in the bundle but PFG/PFG2/PF3/PF4 tabs were removed; version numbers are per-host counters — verify cross-host parity by md5sum, not version
+  health: active; pfg3d-card-v239 on michael-dev and tony-ha, v214 on michael-ha (per-host counters — verify cross-host parity by md5sum, not version); legacy power-flow-card bundles retired fleet-wide 2026-09-23; cardstyle inventory is pfg + pfg2 + one 'full' juWorkshop diagram per host — see cardstyle_policy
