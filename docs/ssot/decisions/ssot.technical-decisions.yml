@@ -374,6 +374,54 @@ decisions:
       - 'ada-pi: backend/calendar_providers.py, backend/google_calendar.py,
         backend/tool_runner.py, backend/realtime_provider.py'
 
+  - id: ada-ha-native-primary-ui
+    date: '2026-09-23'
+    title: Home Assistant is the primary user-facing Ada UI; retire standalone miniapps
+    status: accepted
+    context: |
+      Ada now has an embedded HA experience — custom:ada-voice-card ("Live
+      assistant") on chaba-home/ai, plus ada-keys-card and ada-users-card on
+      chaba-admin/pair — alongside a standalone PWA served by ada-pi
+      (pwa_server.py, port 8001). Keeping a separate user-facing frontend
+      duplicates auth/session surfaces and widens the externally exposed
+      attack surface.
+    options:
+      - label: Keep the standalone PWA alongside the HA card
+        pros: [PWA works without HA, no migration needed]
+        cons: [two auth flows to secure, two UIs to maintain, more external exposure]
+      - label: HA-native UI is primary; retire standalone frontends
+        pros: [single auth path via HA session + per-device keys, fewer
+               public-facing surfaces, less security work]
+        cons: [depends on HA availability; Ada backend API routes must stay
+               for the card and internal tooling]
+    chosen: HA-native Ada UI is the primary user interface
+    reasoning: |
+      The HA card already delivers the full voice experience with HA-mediated
+      per-device key issuance — no pasted API keys, no iframe, no separate
+      page. Consolidating on HA gives one auth/session model and fewer
+      external surfaces to secure and maintain. The user explicitly prefers
+      accessing everything from inside the HA app for exactly this reason.
+    consequences:
+      - 'Retirement candidates once dependencies are migrated: pwa/index.html,
+        app.js, chat/, cms/, enroll.html, manifest.json, and the ada-pi-pwa
+        public/tailnet frontend routes'
+      - 'Backend routes stay: /ws, /api/auth/*, /api/home-assistant/*,
+        /api/tools/*, /api/memory/*, /api/decision/*, /api/chat/*, /api/cms/*
+        are still required by the HA card and internal tooling'
+      - 'Retirement is staged and dependency-aware: audit consumers first,
+        then remove frontend pages, then disable ada-pi-pwa public routes —
+        no silent removal'
+      - chaba-admin/ada-pages (embeds the CMS miniapp) is a retirement candidate
+      - Reassess pairing/QR and /redeem/{token} flows as the HA-native
+        experience matures
+    related:
+      - docs/ssot/infrastructure/ssot.home-assistant.cards.yml
+      - docs/ssot/infrastructure/ssot.home-assistant.dashboards.yml
+      - stacks/tony-dell/tony-ha/www/ada-voice-card.js
+      - stacks/tony-dell/tony-ha/www/ada-keys-card.js
+      - stacks/tony-dell/tony-ha/www/ada-users-card.js
+      - 'ada-pi: pwa_server.py, pwa/'
+
 related_files:
   - docs/ssot/ssot.focus.decisions.yml
   - docs/ssot/ssot.focus.sessions.yml

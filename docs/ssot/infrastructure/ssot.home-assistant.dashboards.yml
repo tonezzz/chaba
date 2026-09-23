@@ -133,6 +133,11 @@ instances:
       serve :8123) and a user gesture for AudioContext (the mic-button
       tap). Card disconnects mic + socket in disconnectedCallback when the
       view is left.
+      Direction (decision ada-ha-native-primary-ui, 2026-09-23): HA is the
+      primary user-facing Ada UI — users reach Ada from inside the HA app so
+      there is one auth/session surface and less to secure. The standalone
+      ada-pi PWA frontend is a staged retirement candidate; backend API/WS
+      routes stay because these cards still use them.
     tabs:
       - title: Pair
         path: pair
@@ -156,7 +161,10 @@ instances:
           URL because iframes can't set headers — it is revocable via the Pair
           tab. First browsing context to open the tab TOFU-binds the key; a
           second device shows the unlock prompt and needs its own key.
-          Added 2026-09-22 via .storage edit + tony-ha restart.)
+          Added 2026-09-22 via .storage edit + tony-ha restart.
+          Retirement candidate per decision ada-ha-native-primary-ui — the
+          embedded CMS miniapp conflicts with HA-as-primary-UI; remove once
+          a native CMS surface exists or the feature is dropped.)
 
 tabs:
   dev:
