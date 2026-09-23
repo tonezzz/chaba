@@ -100,4 +100,5 @@ processing:
       notes: "2026-09-22: scripts/devin/devin-dispatch-watch.sh -> ~/.local/bin on tony-dell, timer every 5min. Detects finished devin-task-* units (incl. --collect GC'd units: no unit + transcript = done), reads last agent step from transcript.json, emits chaba-admin event + notify.mobile_app_tony_ip + writes devin/<session_id> outcome doc to ada-ha-bank-devin-tony, stamps meta.json notified_at (no re-fire). Verified end-to-end on smoke task 20260922-194454 (event + MDDB doc devin/whip-saga). Registered in ssot.audit.hosts.yml."
     - id: 7
       label: "P4 (optional): handoff docs -> docs/ssot/focus-inbox renderer for repo-based triage"
-      status: pending
+      status: done
+      notes: "2026-09-23: scripts/devin/render-handoff-inbox.py renders ada-ha-bank-devin-handoff docs to docs/ssot/focus-inbox/handoff-*.yml (draft status, branch from meta repo/applies_to). Idempotent; GC removes entries for retracted/superseded docs (only files with its renderer marker). Invoked best-effort at the tail of devin-dispatch-watch.timer on tony-dell. Verified: render -> unchanged re-run -> GC after bank delete."

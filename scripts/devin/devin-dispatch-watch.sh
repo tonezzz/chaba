@@ -169,3 +169,9 @@ for d in "$DISPATCH_DIR"/tasks/*/; do
         "$(printf 'Dispatched task %s (unit %s, result %s).\n\n%s' "$id" "$unit" "$result" "$out")"
     meta_stamp "$d" "${result:-unknown}"
 done
+
+# P4: keep focus-inbox entries in sync with the ada-ha-bank-devin-handoff
+# bank so repo triage picks up pending Ada-written specs. Best-effort —
+# never block or fail the watch on it.
+HANDOFF_RENDERER="$HOME/CascadeProjects/chaba/scripts/devin/render-handoff-inbox.py"
+[ -f "$HANDOFF_RENDERER" ] && log "handoff-inbox: $(python3 "$HANDOFF_RENDERER" 2>&1)" || true
