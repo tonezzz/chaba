@@ -12,12 +12,37 @@
 //             redeem; the admin key never reaches the browser). The paste
 //             field below is only a fallback when the script fails.
 //   title:    Ada     optional
+//
+// Controls: the Mute button hard-mutes the mic (track disabled — nothing
+// is captured or sent; press again to unmute). The "Auto" checkbox gates
+// the mic on the card's local VAD: after local_speech_stopped the mic is
+// auto-muted (audio still captured for VAD but not sent), and speaking
+// again auto-resumes. Auto state persists in localStorage.
 
 const AVC_INPUT_RATE = 16000;
 const AVC_OUTPUT_RATE = 24000;
 const AVC_DEFAULT_WS = "wss://mn01.taila0626a.ts.net/apps/ha/ada-tony/ws";
 const AVC_KEY_STORAGE = "ada_voice_api_key";
 const AVC_DEVICE_STORAGE = "ada_voice_device_id";
+const AVC_AUTO_STORAGE = "ada_voice_auto_mute";
+
+// Shared live-activity channel. The voice card publishes status/transcript
+// events here; ada-activity-card elements on the same page render them
+// log-style. Lives on window so it survives card reconnects/view switches.
+const AVC_ACTIVITY = "__adaVoiceActivity";
+function avcChannel() {
+  return (window[AVC_ACTIVITY] = window[AVC_ACTIVITY] || { entries: [], subs: new Set() });
+}
+function avcLog(kind, text) {
+  if (!text) return;
+  const ch = avcChannel();
+  const last = ch.entries[ch.entries.length - 1];
+  if (last && last.kind === kind && last.text === text) return; // dedupe repeats
+  const entry = { t: Date.now(), kind, text };
+  ch.entries.push(entry);
+  if (ch.entries.length > 300) ch.entries.splice(0, ch.entries.length - 300);
+  ch.subs.forEach((fn) => { try { fn(entry); } catch {} });
+}
 
 class AdaVoiceCard extends HTMLElement {
   setConfig(config) {
@@ -32,12 +57,15 @@ class AdaVoiceCard extends HTMLElement {
     this._playbackMeterFrame = null;
     this._connecting = false;
     this._assistantEntry = null;
+    this._pendingAdaLog = null;
     this._assistantPlaying = false;
     this._localSpeech = false;
     this._speechAbove = 0;
     this._speechBelow = 0;
     this._noiseFloor = 0.004;
     this._micMuted = false;
+    this._auto = localStorage.getItem(AVC_AUTO_STORAGE) === "1";
+    this._autoMuted = false;
     this._mintRetried = false;
     this._state = "idle"; // idle | locked | connecting | listening | speaking | reconnecting | error
     this._build();
@@ -82,10 +110,33 @@ class AdaVoiceCard extends HTMLElement {
     this._muteBtn = document.createElement("button");
     this._muteBtn.style.cssText =
       "padding:4px 10px;border-radius:6px;border:1px solid var(--divider-color,#444);" +
-      "background:var(--secondary-background-color,#1c2128);color:var(--primary-text-color);cursor:pointer;font-size:.75rem;display:none";
+      "background:var(--secondary-background-color,#1c2128);color:var(--primary-text-color);cursor:pointer;font-size:.75rem;white-space:nowrap";
     this._muteBtn.onclick = () => this._toggleMute();
 
-    row.append(this._micBtn, mid, this._muteBtn);
+    this._autoChk = document.createElement("input");
+    this._autoChk.type = "checkbox";
+    this._autoChk.checked = this._auto;
+    this._autoChk.onchange = () => {
+      this._auto = this._autoChk.checked;
+      localStorage.setItem(AVC_AUTO_STORAGE, this._auto ? "1" : "0");
+      if (!this._auto && this._autoMuted) {
+        this._autoMuted = false;
+        this._setStatus("Listening");
+        this._render();
+      }
+    };
+    const autoLabel = document.createElement("label");
+    autoLabel.style.cssText =
+      "display:flex;align-items:center;gap:4px;font-size:.75rem;cursor:pointer;white-space:nowrap;" +
+      "color:var(--secondary-text-color)";
+    autoLabel.title = "Auto-mute the mic when you stop speaking — speak again to resume";
+    autoLabel.append(this._autoChk, document.createTextNode("Auto"));
+
+    const ctl = document.createElement("div");
+    ctl.style.cssText = "display:flex;flex-direction:column;gap:6px;align-items:stretch;flex:none";
+    ctl.append(this._muteBtn, autoLabel);
+
+    row.append(this._micBtn, mid, ctl);
     body.appendChild(row);
 
     this._line = document.createElement("div");
@@ -93,16 +144,6 @@ class AdaVoiceCard extends HTMLElement {
       "font-size:.85rem;color:var(--secondary-text-color);min-height:1.1em;overflow:hidden;" +
       "text-overflow:ellipsis;white-space:nowrap";
     body.appendChild(this._line);
-
-    // Speaker chip — shows identified speaker name + confidence.
-    this._speakerChip = document.createElement("div");
-    this._speakerChip.style.cssText =
-      "display:none;margin-top:6px;font-size:.75rem;gap:4px;align-items:center";
-    this._speakerChip.innerHTML =
-      '<span style="font-size:.9em">👤</span>'
-      + '<span class="avc-speaker-name"></span>'
-      + '<span class="avc-speaker-conf" style="opacity:.6"></span>';
-    body.appendChild(this._speakerChip);
 
     // Unlock row — shown when no usable key is configured/stored.
     this._unlockRow = document.createElement("div");
@@ -306,6 +347,7 @@ class AdaVoiceCard extends HTMLElement {
         this._speechAbove = rms > startTh ? this._speechAbove + 1 : 0;
         if (this._speechAbove >= 3) {
           this._localSpeech = true; this._speechBelow = 0;
+          if (this._autoMuted) { this._autoMuted = false; this._setStatus("Listening"); this._render(); }
           ws.send(JSON.stringify({ type: "local_speech_started", rms, threshold: startTh }));
         }
       } else {
@@ -313,9 +355,11 @@ class AdaVoiceCard extends HTMLElement {
         if (this._speechBelow >= 12) {
           this._localSpeech = false; this._speechAbove = 0;
           ws.send(JSON.stringify({ type: "local_speech_stopped", rms, threshold: stopTh }));
+          if (this._auto) { this._autoMuted = true; this._setStatus("Auto-muted — speak to resume"); this._render(); }
         }
       }
-      ws.send(this._downsample(samples, this._captureContext.sampleRate, AVC_INPUT_RATE));
+      if (!this._autoMuted)
+        ws.send(this._downsample(samples, this._captureContext.sampleRate, AVC_INPUT_RATE));
     };
     source.connect(this._captureNode);
     this._captureNode.connect(silent);
@@ -337,16 +381,15 @@ class AdaVoiceCard extends HTMLElement {
       case "speech_stopped":
         this._setStatus("Listening");
         break;
-      case "speaker":
-        this._showSpeaker(ev);
-        break;
       case "clear_audio":
         this._assistantPlaying = false;
         this._playbackNode?.port.postMessage({ type: "clear" });
+        this._pendingAdaLog = null;
         this._assistantEntry = null;
         break;
       case "user_transcript":
         this._line.textContent = `You: ${ev.text}`;
+        avcLog("you", ev.text);
         break;
       case "assistant_transcript_delta":
         this._assistantEntry = (this._assistantEntry || "") + ev.text;
@@ -355,6 +398,7 @@ class AdaVoiceCard extends HTMLElement {
         this._assistantPlaying = true;
         this._state = "speaking";
         if (this._assistantEntry) this._line.textContent = `Ada: ${this._assistantEntry}`;
+        this._pendingAdaLog = this._assistantEntry || null;
         this._assistantEntry = "";
         if (this._playbackContext?.state === "suspended") this._playbackContext.resume().catch(() => {});
         this._setStatus("Ada is speaking…");
@@ -363,6 +407,8 @@ class AdaVoiceCard extends HTMLElement {
         this._assistantPlaying = false;
         this._state = "listening";
         if (this._assistantEntry) this._line.textContent = `Ada: ${this._assistantEntry}`;
+        avcLog("ada", this._pendingAdaLog || this._assistantEntry);
+        this._pendingAdaLog = null;
         this._assistantEntry = null;
         this._playbackNode?.port.postMessage({ type: "flush" });
         this._setStatus("Listening");
@@ -370,6 +416,8 @@ class AdaVoiceCard extends HTMLElement {
       case "response_interrupted":
         this._assistantPlaying = false;
         this._state = "listening";
+        if (this._pendingAdaLog) avcLog("ada", this._pendingAdaLog + " (interrupted)");
+        this._pendingAdaLog = null;
         this._assistantEntry = null;
         this._setStatus("Listening");
         break;
@@ -380,6 +428,7 @@ class AdaVoiceCard extends HTMLElement {
         break;
       case "error":
         this._line.textContent = `Error: ${ev.message || ev.type}`;
+        avcLog("error", ev.message || ev.type);
         break;
     }
     this._render();
@@ -454,10 +503,11 @@ class AdaVoiceCard extends HTMLElement {
     if (this._playbackContext) await this._playbackContext.close().catch(() => {});
     this._stream = this._captureContext = this._playbackContext = this._captureNode = this._playbackNode = null;
     this._localSpeech = this._assistantPlaying = false;
+    this._autoMuted = false;
     this._speechAbove = this._speechBelow = 0;
     this._noiseFloor = 0.004;
     this._assistantEntry = null;
-    if (this._speakerChip) this._speakerChip.style.display = "none";
+    this._pendingAdaLog = null;
     if (this._state !== "locked" && this._state !== "error") {
       this._state = "idle";
       this._setStatus("Disconnected");
@@ -481,35 +531,8 @@ class AdaVoiceCard extends HTMLElement {
 
   // ---------- ui ----------
 
-  _setStatus(t) { if (this._status) this._status.textContent = t; }
+  _setStatus(t) { if (this._status) this._status.textContent = t; avcLog("status", t); }
   _setLevel(v) { if (this._levelBar) this._levelBar.style.width = `${Math.round(v * 100)}%`; }
-
-  _showSpeaker(ev) {
-    if (!this._speakerChip) return;
-    const name = ev.display_name || ev.name;
-    if (!name) {
-      this._speakerChip.style.display = "none";
-      return;
-    }
-    const conf = ev.confidence;
-    const high = conf >= 0.6;
-    this._speakerChip.style.display = "flex";
-    this._speakerChip.querySelector(".avc-speaker-name").textContent = name;
-    this._speakerChip.querySelector(".avc-speaker-conf").textContent =
-      conf != null ? `${Math.round(conf * 100)}%` : "";
-    // Solid chip for high confidence, outlined for low.
-    this._speakerChip.style.padding = high ? "2px 8px" : "2px 8px";
-    this._speakerChip.style.borderRadius = "10px";
-    this._speakerChip.style.border = high
-      ? "1px solid var(--primary-color)"
-      : "1px dashed var(--secondary-text-color)";
-    this._speakerChip.style.background = high
-      ? "var(--primary-color)"
-      : "transparent";
-    this._speakerChip.style.color = high
-      ? "var(--primary-text-color)"
-      : "var(--secondary-text-color)";
-  }
 
   _render() {
     if (!this._micBtn) return;
@@ -517,19 +540,23 @@ class AdaVoiceCard extends HTMLElement {
     const busy = this._state === "connecting" || this._state === "reconnecting";
     this._micIcon.setAttribute("icon",
       this._state === "locked" ? "mdi:lock" :
+      this._micMuted || this._autoMuted ? "mdi:microphone-off" :
       this._state === "speaking" ? "mdi:account-voice" :
       active ? "mdi:microphone" :
       busy ? "mdi:loading" : "mdi:microphone-outline");
     this._micBtn.style.borderColor =
       this._state === "locked" ? "var(--error-color,#f47067)" :
+      this._micMuted || this._autoMuted ? "var(--error-color,#f47067)" :
       this._state === "speaking" ? "var(--primary-color,#03a9f4)" :
       active ? "var(--success-color,#4caf50)" : "var(--divider-color,#444)";
     this._micBtn.style.color =
       this._state === "locked" ? "var(--error-color,#f47067)" :
       active || busy ? "var(--primary-color,#03a9f4)" : "var(--primary-text-color)";
     this._micBtn.style.animation = busy ? "avc-pulse 1.2s ease-in-out infinite" : "";
-    this._muteBtn.style.display = active ? "" : "none";
-    this._muteBtn.textContent = this._micMuted ? "Mic: Off" : "Mic: On";
+    this._muteBtn.textContent = this._micMuted ? "Muted" : "Mute";
+    this._muteBtn.style.borderColor = this._micMuted ? "var(--error-color,#f47067)" : "var(--divider-color,#444)";
+    this._muteBtn.style.color = this._micMuted ? "var(--error-color,#f47067)" : "var(--primary-text-color)";
+    this._autoChk.checked = this._auto;
     this._unlockRow.style.display = this._state === "locked" && !this._apiKey() ? "flex" : "none";
   }
 
@@ -545,3 +572,78 @@ if (!document.getElementById("avc-style")) {
   document.head.appendChild(st);
 }
 customElements.define("ada-voice-card", AdaVoiceCard);
+
+// ada-activity-card — log-style live feed of the voice card's activity:
+// status transitions, You/Ada transcripts, errors. Renders the shared
+// window channel (avcChannel); entries survive view switches, clear on
+// page reload. Config: title (default "Live activity"), height (default
+// calc(100vh - 380px)).
+class AdaActivityCard extends HTMLElement {
+  setConfig(config) {
+    this._config = config || {};
+    const card = document.createElement("ha-card");
+    card.header = this._config.title || "Live activity";
+    card.style.overflow = "hidden";
+    this._list = document.createElement("div");
+    this._list.style.cssText =
+      "padding:4px 16px 14px;overflow-y:auto;font-size:.78rem;line-height:1.55;" +
+      "font-family:var(--code-font-family,monospace);white-space:pre-wrap;word-break:break-word;" +
+      `height:${this._config.height || "calc(100vh - 380px)"};min-height:120px`;
+    card.appendChild(this._list);
+    this.appendChild(card);
+    this._renderAll();
+  }
+
+  connectedCallback() {
+    if (!this._sub) {
+      this._sub = (e) => this._append(e);
+      avcChannel().subs.add(this._sub);
+    }
+  }
+
+  disconnectedCallback() {
+    if (this._sub) {
+      avcChannel().subs.delete(this._sub);
+      this._sub = null;
+    }
+  }
+
+  _row(e) {
+    const d = document.createElement("div");
+    const ts = document.createElement("span");
+    ts.style.color = "var(--secondary-text-color,#888)";
+    ts.textContent = new Date(e.t).toTimeString().slice(0, 8) + "  ";
+    const tag = document.createElement("span");
+    const colors = {
+      you: "var(--success-color,#4caf50)",
+      ada: "var(--primary-color,#03a9f4)",
+      status: "var(--secondary-text-color,#888)",
+      error: "var(--error-color,#f47067)",
+    };
+    tag.style.color = colors[e.kind] || "inherit";
+    if (e.kind !== "status") tag.style.fontWeight = "600";
+    tag.textContent = ({ you: "You", ada: "Ada", status: "·", error: "err" }[e.kind] || e.kind) + "  ";
+    const body = document.createElement("span");
+    if (e.kind === "status") body.style.color = "var(--secondary-text-color,#888)";
+    body.textContent = e.text;
+    d.append(ts, tag, body);
+    return d;
+  }
+
+  _append(e) {
+    if (!this._list) return;
+    const nearBottom = this._list.scrollTop + this._list.clientHeight >= this._list.scrollHeight - 40;
+    this._list.appendChild(this._row(e));
+    if (nearBottom) this._list.scrollTop = this._list.scrollHeight;
+  }
+
+  _renderAll() {
+    if (!this._list) return;
+    this._list.textContent = "";
+    avcChannel().entries.forEach((e) => this._list.appendChild(this._row(e)));
+    this._list.scrollTop = this._list.scrollHeight;
+  }
+
+  getCardSize() { return 4; }
+}
+customElements.define("ada-activity-card", AdaActivityCard);
