@@ -77,8 +77,9 @@ processing:
       label: "P2: CUPS queue on mn01 + ada_document_print tool + printer-status precheck (ink/state) + iPhone confirm"
       status: pending
     - id: 3
-      label: "P3: documents bank (SSOT + render) + ~/ada-documents archive + metadata extraction + file backup"
+      label: "P3: doc-archive service on idc01 + documents bank + gdrive:ada-documents store + metadata extraction + NLM source feed"
       status: pending
+      notes: "2026-09-23 decisions (docs/kb/document-archive-service.md): raw scans on personal gdrive OK; archived sets auto-become NLM sources; originals kept. Dedup: sha256 exact, pHash+doc-number re-capture detection, supersedes chain for new versions — never auto-delete. idc01 needs rclone + gdrive token copied from tony-dell."
     - id: 4
       label: "P4 (optional): eSCL scan -> optimize -> archive one-command loop"
       status: pending
