@@ -65,6 +65,12 @@ instances:
       QR display is custom:ada-pair-qr-card (/local/ada-pair-qr-card.js, same
       repo dir) — renders /local/pair-qr.svg with a ?v= cache-buster derived
       from the redeem token (stock picture card caches the URL forever).
+      Users card is custom:ada-users-card (/local/ada-users-card.js, same repo
+      dir) — lists HA auth users via config/auth/list (system_generated
+      filtered out), per-user key name user-<username>; users without a key
+      get an Issue button that sets the shared pair inputs and runs
+      script.ada_pair_issue (QR lands in the QR card), keyed users get the
+      same Voice/Text/Re-pair/Revoke buttons as the keys card.
       Events tab added 2026-09-20: custom:chaba-events-card
       (/local/chaba-events-card.js, repo: stacks/tony-dell/tony-ha/www/) reads
       /local/chaba-events.json (written by /config/scripts/chaba-event-log.py —
@@ -131,7 +137,7 @@ instances:
       - title: Pair
         path: pair
         icon: mdi:qrcode-plus
-        cards: issue/revoke form, pairing QR picture, redeem link, ada-keys-card, capabilities info
+        cards: ada-voice-card (Live assistant), issue/revoke form, pairing QR picture, ada-keys-card, ada-users-card, capabilities info
       - title: Events
         path: events
         icon: mdi:bell-badge-outline
