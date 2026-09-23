@@ -120,7 +120,7 @@ milestones:
       - { task: "Docs coverage: scripts/sync-docs-to-mddb.py syncs devin-kb repo + uncovered chaba docs/** trees; new banks devin-kb + chaba-docs registered (read-only, tony)", status: done, date: "2026-09-22", note: "49 docs synced; vector search verification blocked by gemini-embedding rate limit + mddb HNSW panic on nil vectors during ingest burst" }
       - { task: "scripts/ada/export-transcripts.py — pulls ~/.local/share/ada/transcripts from ada hosts to ~/.local/share/ada-review/ (local-only, never committed) for Devin session audits", status: done, date: "2026-09-22" }
       - { task: "Open: rotate GEMINI_API_KEY + HOME_ASSISTANT_TOKEN (transcript docs redacted on idc01 2026-09-22 — tokens still live until rotated)", status: pending }
-      - { task: "Open: re-run vector-reindex on devin-kb + chaba-docs once Gemini embedding quota recovers; verify canary-style recall", status: pending }
+      - { task: "Embedding outage fix: OpenRouter tier added to gemini-ollama-proxy (google/gemini-embedding-2 via Vertex route — same vector space); full corpus reindex running through OR 2026-09-23; recall verified ~0.6 scores. Direct-Gemini path resumes automatically once quota resets (same space).", status: done, date: "2026-09-23" }
       - { task: "Open: mddb bug — HNSW Add panics on nil vector when embedding provider fails mid-add; consider upstream fix or retry-with-backoff in sync scripts", status: pending }
   - id: bank-maintenance
     title: Bank maintenance — audit + distillation
