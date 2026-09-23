@@ -31,9 +31,9 @@ sections:
     layout: list
     items:
       - label: Live services running pwa_server.py
-        text: "ada-pi-pwa on tony-dell :8001 (standalone, binds 0.0.0.0 — plain-HTTP LAN reachable), chaba-guest on tony-dell :8014 (CHABA_MEMORY guest mode, LAN :8126 via Caddy XFF), ada-ha-tony on mn01 :8002 and ada-ha-michael on mn01 :8003 (behind /apps/ha/ada-*/ on the tailnet)."
+        text: "ada-pi-pwa on idc01 :8001 (loopback, tailnet-only via tailscale serve at the idc01 root — moved from tony-dell 2026-09-23), chaba-guest on tony-dell :8014 (CHABA_MEMORY guest mode, LAN :8126 via Caddy XFF), ada-ha-tony on mn01 :8002 and ada-ha-michael on mn01 :8003 (behind /apps/ha/ada-*/ on the tailnet; idc01 also runs copies)."
       - label: Tailnet URLs
-        text: "https://tony-dell.taila0626a.ts.net/apps/ada_pi/ (proxy → :8001), https://mn01.taila0626a.ts.net/apps/ha/ada-tony/ and …/ada-michael/."
+        text: "https://idc01.taila0626a.ts.net/ (standalone PWA, tailnet only), https://mn01.taila0626a.ts.net/apps/ha/ada-tony/ and …/ada-michael/."
       - label: Registry
         text: Listed in docs/ssot/apps/ssot.apps.yml.
   - title: Frontend surfaces — retirement audit (2026-09-23)
@@ -58,8 +58,8 @@ sections:
         text: "One-time redeem → session cookie + 302 to dest/ with the raw key in the query string. Still needed for QR pairing of non-HA consumers (guest chat key, cms-viewer) and headless keys; HA-native browsers self-mint via script.ada_voice_key and never touch it."
       - label: "Static /apps/ada-pi/ (dash) snapshot"
         text: "stacks/web/public/apps/ada-pi/ is a frozen static copy served by Caddy file_server — no WS/API proxying, so it's a broken shell. Pure cleanup candidate."
-      - label: "LAN exposure"
-        text: "ada-pi-pwa binds 0.0.0.0:8001 — the full PWA is reachable at http://192.168.2.67:8001/ on plain HTTP. Retiring the service removes this surface entirely."
+      - label: "LAN exposure — resolved 2026-09-23"
+        text: "ada-pi-pwa previously bound 0.0.0.0:8001 on tony-dell (full PWA on plain-HTTP LAN). Service moved to idc01 (loopback + tailnet-only serve); the tony-dell unit is stopped+disabled."
       - label: "Backend routes that must stay"
         text: "/ws, /api/auth/*, /api/chaba/*, /api/home-assistant/*, /api/speakers/*, /api/memory/*, /api/decision/*, /api/documents/*, /api/tools/*, /api/chat/transcript, /api/cms/* (until cms tab retires), /api/health."
   - title: Testing

@@ -28,7 +28,7 @@ host_config() {
   # the first (the ada-ha-michael-never-restarts bug).
   case "$1" in
     mn01)      echo "ada-ha-tony.service,ada-ha-michael.service|8002,8003" ;;
-    tony-dell) echo "ada-pi-pwa.service|8001" ;;
+    tony-dell) echo "chaba-guest.service|8014" ;;
     idc01)     echo "ada-pi-pwa.service,ada-ha-tony.service,ada-ha-michael.service|8001,8002,8003" ;;
   esac
 }

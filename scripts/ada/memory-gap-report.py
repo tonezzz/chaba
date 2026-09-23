@@ -17,7 +17,7 @@ Usage:
   memory-gap-report.py --dry-run              # report only, no writes
   memory-gap-report.py --emit                 # also chaba-event on new gaps
   memory-gap-report.py --since '7 days ago' --min-misses 2
-  memory-gap-report.py --ssh tony-dell --units ada-pi-pwa.service
+  memory-gap-report.py --ssh idc01 --units ada-pi-pwa.service
 """
 
 from __future__ import annotations

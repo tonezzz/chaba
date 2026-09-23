@@ -844,6 +844,16 @@ mn01:
     purpose: Ada Pi PWA local assistant for mn-home
     status: planned
     note: "Could mirror tony-dell ada-pi for local RK600/weather, HA, and PWA access."
+  ada-pi-pwa:
+    service: ada-pi-pwa.service
+    host: idc01
+    port: 8001
+    host_port: 127.0.0.1:8001
+    purpose: Standalone Ada PWA backend (voice/chat/cms/enroll frontend + API)
+    status: active on idc01 (2026-09-23); retired on tony-dell same day
+    tailnet_url: "https://idc01.taila0626a.ts.net/"
+    env_file: "~/.config/secrets/ada-pi-pwa.env"
+    note: "Backend is /home/tony/CascadeProjects/ada-pi/pwa_server.py. Moved tony-dell -> idc01 per decision ada-ha-native-primary-ui; the tony-dell unit is stopped+disabled, removing the 0.0.0.0:8001 plain-HTTP LAN exposure. Frontend pages remain staged-retirement candidates — see ssot.apps.ada_pi.yml."
   ada-ha-tony:
     service: ada-ha-tony.service
     host: mn01
