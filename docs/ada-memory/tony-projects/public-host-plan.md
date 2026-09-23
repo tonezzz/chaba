@@ -206,6 +206,8 @@ writes are local on the VPS — unaffected.
   (nomic-embed-text on idc01).
 
 
+
+
 ## 11. Phases
 
 - M0 done — provision + harden idc01 (SSH keys, ufw, fail2ban, podman)
