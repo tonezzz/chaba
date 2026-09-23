@@ -1,6 +1,7 @@
 // ada-users-card — lists HA user accounts with per-user Ada pairing actions.
 // Buttons: Issue (new keys, QR lands in ada-pair-qr-card), QR icon (re-pair —
-// pops up a fresh pairing QR in place), Revoke.
+// pops up a fresh pairing QR in place, plus a link that opens the HA web UI
+// in a popup window), Revoke.
 // Per-user Ada key name convention: user-<username>.
 class AdaUsersCard extends HTMLElement {
   setConfig(config) {
@@ -195,8 +196,7 @@ class AdaUsersCard extends HTMLElement {
       "display:grid;place-items:center;color:#333;font-size:12px;text-align:center";
     body.textContent = "Minting QR…";
     const link = document.createElement("a");
-    link.style.cssText = "font-size:.7rem;color:var(--primary-color);word-break:break-all;max-width:280px";
-    link.target = "_blank";
+    link.style.cssText = "font-size:.7rem;color:var(--primary-color);word-break:break-all;max-width:280px;cursor:pointer";
     link.rel = "noopener";
     const close = this._btn("Close");
     close.onclick = () => ov.remove();
@@ -222,13 +222,28 @@ class AdaUsersCard extends HTMLElement {
         svgEl.setAttribute("width", "216");
         svgEl.setAttribute("height", "216");
       }
-      const url = ((this._config && this._config.origin) || "https://mn01.taila0626a.ts.net") + path;
-      link.href = url;
-      link.textContent = url;
+      // The link opens the HA web UI for this instance in a popup window —
+      // HA is the primary Ada surface (the voice card self-mints keys), so
+      // we don't send people to the standalone voice panel.
+      const haUrl = this._haUrl(instance);
+      link.onclick = (e) => {
+        e.preventDefault();
+        window.open(haUrl, "_blank", "popup,width=1100,height=800");
+      };
+      link.textContent = haUrl;
     } catch (err) {
       body.textContent = "Re-pair failed: " + (err.message || err);
       body.style.color = "#b43228";
     }
+  }
+
+  _haUrl(instance) {
+    if (this._config && this._config.ha_url) return this._config.ha_url;
+    const map = {
+      tony: "https://tony-dell.taila0626a.ts.net:8123/chaba-home/ai",
+      michael: "https://nupo4ndqdqydt78zmpq0z5wzp1bdrqgs.ui.nabu.casa/",
+    };
+    return map[instance] || map.tony;
   }
 
   _iconBtn(icon) {
