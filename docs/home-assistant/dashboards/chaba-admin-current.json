@@ -1,114 +1,81 @@
 {
- "views": [
-  {
-   "title": "Pair",
-   "path": "pair",
-   "icon": "mdi:qrcode-plus",
-   "cards": [
+  "views": [
     {
-     "type": "custom:ada-voice-card",
-     "title": "Live assistant"
+      "title": "Pair",
+      "path": "pair",
+      "icon": "mdi:qrcode-plus",
+      "cards": [
+        {
+          "type": "custom:ada-keys-card",
+          "title": "Issued keys"
+        },
+        {
+          "type": "custom:ada-users-card",
+          "title": "Users"
+        },
+        {
+          "type": "markdown",
+          "title": "What a paired device gets",
+          "content": "The device gets a named, revocable key for **one** Ada HA instance:\n\n- **Voice PWA** \u2014 Gemini Live voice assistant\n- **Control** \u2014 lights, switches, fans, media players, buttons; covers/gates need spoken confirmation; rate-limited; audit-logged per device name\n- **Reads** \u2014 states, sensors + history, power summary, event timelines, dashboard tabs, device search\n- **Memory** \u2014 recall + remember/forget on the instance's memory banks\n\nNot granted: minting/revoking keys (admin only), HA credentials (server-side), the other instance. Revoking a key kills its sessions immediately.\n\n[Open full pair admin page](https://mn01.taila0626a.ts.net/apps/ha/pair/)"
+        }
+      ]
     },
     {
-     "type": "entities",
-     "title": "Issue / revoke a device key",
-     "icon": "mdi:cellphone-key",
-     "entities": [
-      {
-       "entity": "input_select.ada_pair_instance",
-       "name": "Ada instance"
-      },
-      {
-       "entity": "input_text.ada_pair_device_name",
-       "name": "Device name"
-      },
-      {
-       "entity": "script.ada_pair_issue",
-       "name": "Generate pairing QR",
-       "action_name": "Generate"
-      },
-      {
-       "entity": "script.ada_pair_revoke",
-       "name": "Revoke (uses Device name)",
-       "action_name": "Revoke"
-      }
-     ]
+      "title": "Events",
+      "path": "events",
+      "icon": "mdi:bell-badge-outline",
+      "cards": [
+        {
+          "type": "custom:chaba-events-card"
+        }
+      ],
+      "type": "panel"
     },
     {
-     "type": "custom:ada-pair-qr-card",
-     "title": "Pairing QR — single use, ~10 min"
+      "title": "Log",
+      "path": "log",
+      "icon": "mdi:history",
+      "cards": [
+        {
+          "type": "custom:chaba-log-card",
+          "title": "Home Assistant logbook (24h)",
+          "hours_to_show": 24,
+          "entities": [
+            "script.ada_pair_issue",
+            "script.ada_pair_revoke",
+            "script.ada_pair_reissue",
+            "script.ada_pair_revoke_named",
+            "script.cast_power_on",
+            "script.cast_cleanup",
+            "script.cast_camera",
+            "automation.cast_idle_shutdown",
+            "automation.cast_activity_reset",
+            "automation.cast_youtube_from_search_result",
+            "input_boolean.youtube_search_pending",
+            "input_boolean.cast_powered_by_us",
+            "input_boolean.chaba_events_show_logbook",
+            "input_text.chaba_events_filter",
+            "media_player.tony_tv_cast",
+            "media_player.tv_40c5000",
+            "switch.plug_tv",
+            "sensor.ada_tony_issued_keys",
+            "sensor.ada_michael_issued_keys"
+          ]
+        }
+      ],
+      "type": "panel"
     },
     {
-     "type": "custom:ada-keys-card",
-     "title": "Issued keys"
-    },
-    {
-     "type": "custom:ada-users-card",
-     "title": "Users"
-    },
-    {
-     "type": "markdown",
-     "title": "What a paired device gets",
-     "content": "The device gets a named, revocable key for **one** Ada HA instance:\n\n- **Voice PWA** — Gemini Live voice assistant\n- **Control** — lights, switches, fans, media players, buttons; covers/gates need spoken confirmation; rate-limited; audit-logged per device name\n- **Reads** — states, sensors + history, power summary, event timelines, dashboard tabs, device search\n- **Memory** — recall + remember/forget on the instance's memory banks\n\nNot granted: minting/revoking keys (admin only), HA credentials (server-side), the other instance. Revoking a key kills its sessions immediately.\n\n[Open full pair admin page](https://mn01.taila0626a.ts.net/apps/ha/pair/)"
+      "title": "Ada Pages",
+      "path": "ada-pages",
+      "icon": "mdi:file-document-edit-outline",
+      "type": "panel",
+      "cards": [
+        {
+          "type": "iframe",
+          "url": "https://mn01.taila0626a.ts.net/apps/ha/ada-tony/cms/?api_key=ada-Wge9naA9nq_ABAMwjuZfKF4vvqmCNzq7"
+        }
+      ]
     }
-   ]
-  },
-  {
-   "title": "Events",
-   "path": "events",
-   "icon": "mdi:bell-badge-outline",
-   "cards": [
-    {
-     "type": "custom:chaba-events-card"
-    }
-   ],
-   "type": "panel"
-  },
-  {
-   "title": "Log",
-   "path": "log",
-   "icon": "mdi:history",
-   "cards": [
-    {
-     "type": "custom:chaba-log-card",
-     "title": "Home Assistant logbook (24h)",
-     "hours_to_show": 24,
-     "entities": [
-      "script.ada_pair_issue",
-      "script.ada_pair_revoke",
-      "script.ada_pair_reissue",
-      "script.ada_pair_revoke_named",
-      "script.cast_power_on",
-      "script.cast_cleanup",
-      "script.cast_camera",
-      "automation.cast_idle_shutdown",
-      "automation.cast_activity_reset",
-      "automation.cast_youtube_from_search_result",
-      "input_boolean.youtube_search_pending",
-      "input_boolean.cast_powered_by_us",
-      "input_boolean.chaba_events_show_logbook",
-      "input_text.chaba_events_filter",
-      "media_player.tony_tv_cast",
-      "media_player.tv_40c5000",
-      "switch.plug_tv",
-      "sensor.ada_tony_issued_keys",
-      "sensor.ada_michael_issued_keys"
-     ]
-    }
-   ],
-   "type": "panel"
-  },
-  {
-   "title": "Ada Pages",
-   "path": "ada-pages",
-   "icon": "mdi:file-document-edit-outline",
-   "type": "panel",
-   "cards": [
-    {
-     "type": "iframe",
-     "url": "https://mn01.taila0626a.ts.net/apps/ha/ada-tony/cms/"
-    }
-   ]
-  }
- ]
+  ]
 }
