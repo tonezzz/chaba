@@ -1,0 +1,15 @@
+# LAN-only HA proxy for guests — binds the LAN IP only, sets X-Forwarded-For
+# so Home Assistant sees real client IPs (NOT 127.0.0.1). This is what makes
+# it safe to keep 127.0.0.1 in trusted_networks for the chaba bridge: loopback
+# is trusted, LAN guests are not.
+{
+	auto_https off
+}
+
+http://192.168.2.67:8125 {
+	bind 192.168.2.67
+	reverse_proxy 127.0.0.1:8123 {
+		header_up X-Forwarded-For {remote_host}
+		header_up X-Forwarded-Proto http
+	}
+}

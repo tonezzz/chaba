@@ -1,13 +1,14 @@
 [Unit]
-Description=LAN listener for Home Assistant guest access (192.168.2.67:8125 -> 127.0.0.1:8123)
+Description=LAN-only HA proxy for guests (Caddy, 192.168.2.67:8125 -> 127.0.0.1:8123, XFF)
 After=network-online.target
 Wants=network-online.target
 
 [Service]
 Type=simple
-# Plain HTTP on the home LAN only. HA stays loopback+tailscale; this relay is
-# the only LAN path and exists solely so guest phones can reach the UI.
-ExecStart=/usr/bin/socat TCP-LISTEN:8125,bind=192.168.2.67,fork,reuseaddr TCP:127.0.0.1:8123
+# Reverse proxy (not raw TCP): sets X-Forwarded-For so HA sees the real LAN
+# client IP. Raw socat would make every guest appear as 127.0.0.1 — dangerous
+# once loopback is in trusted_networks for the chaba login bridge.
+ExecStart=/usr/bin/caddy run --config %h/.config/chaba/Caddyfile.guest --adapter caddyfile
 Restart=on-failure
 RestartSec=5
 

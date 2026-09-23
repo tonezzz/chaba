@@ -1,0 +1,106 @@
+title: "Chaba Guest System — Build Lessons"
+subtitle: "What we learnt building the file-backed memory layer + ada-pi guest mode"
+icon: 🌺
+
+ideas:
+  - Record hard-won lessons from the chaba + guest implementation so parallel
+    sessions and future agents don't repeat them.
+
+sections:
+  - title: Parallel-session hazard (real incident)
+    icon: ⚠️
+    layout: list
+    items:
+      - label: Edits lost to a parallel commit
+        text: |
+          2026-09-23: edits to ada-pi backend/realtime_provider.py were silently
+          lost — a parallel session committed f48bde0 mid-build and the file on
+          disk reverted. The edit tool reported success and the read tool kept
+          showing the changed content (stale buffer/overlay), so grep/exec/md5sum
+          on disk disagreed with tool reads.
+      - label: Detection + recovery
+        text: |
+          Symptom: `git status` shows the file unmodified right after editing it.
+          Verify with `exec` (grep/sed/md5sum) — disk is ground truth, tool reads
+          can serve a stale overlay. Recovery: re-apply via python heredoc through
+          exec, then grep-verify on disk before committing.
+      - label: Prevention
+        text: |
+          Before editing a file in a repo with parallel sessions, check
+          `git log -1 --format=%ci -- <file>` and mtime. After edits, verify with
+          `git status`/grep via exec, not just the read tool. Consider worktrees
+          for multi-session repos (ada-pi already uses ada-wt-* pattern).
+
+  - title: Chaba renderer conventions
+    icon: 🧩
+    layout: list
+    items:
+      - label: Control file + context blocks
+        text: |
+          ssot.chaba.memory.yml is the single control file: profiles.devin /
+          profiles.guest, per-section + global soft/hard budgets, include/more
+          queries. Source files opt in via `context:` blocks with audience keys
+          (`agent`, `guest`). `more` entries land in report.yml only.
+      - label: Outputs are local-only
+        text: |
+          Renders go to ~/.local/share/chaba/ — never commit context.md,
+          report*.yml, memory-report.json (gitignored). Guests/ directory there
+          holds visitor memory; never commit that either.
+      - label: Update triggers
+        text: |
+          SessionStart (--if-stale + inject), SessionEnd warm render,
+          post-commit/post-merge hooks in ~/.config/devin/git-hooks/,
+          `render-memory.py` manual, --check in test-ssot-kb-memory.sh T0.
+
+  - title: ada-pi guest mode
+    icon: 🤖
+    layout: list
+    items:
+      - label: CHABA_MEMORY=1
+        text: |
+          pwa_server.py + realtime_provider.py + tool_runner.py all check
+          chaba_memory.enabled(). In chaba mode: mddb/memory/events are None
+          (ToolRunner skips AdaMemoryStore so ADA_INSTANCE_ID isn't required),
+          tools are cut to CHABA_ALLOW, memory tools become guest_* file ops.
+      - label: Guest deny-pattern
+        text: |
+          With no MDDB safety map, _check_control_allowed falls back to a
+          regex deny-list: lock|cover|button|gate|garage|door|siren|alarm.
+          control_entity stays allowed for lights/media but moving devices
+          are refused server-side regardless of what the model asks.
+      - label: Identity flow
+        text: |
+          ?name= binds session memory name; {type:"register"} queues
+          pending/<name>.yml; admin promote moves guests/<name>.yml →
+          users/<name>.yml + creates <name>-private.yml, runs person/create
+          over WS, binds voiceprint guest-<slug> → person.<name>, and pushes
+          identity_changed to live sessions.
+
+  - title: HA guest access
+    icon: 🏠
+    layout: list
+    items:
+      - label: tony-ha bindings
+        text: |
+          HA listens on 127.0.0.1:8123 + tailscale IPs only (server_host set).
+          trusted_proxies already includes 127.0.0.1/::1 with
+          use_x_forwarded_for: true — a reverse proxy on loopback can pass
+          real client IPs.
+      - label: LAN proxy must set XFF
+        text: |
+          CRITICAL: if 127.0.0.1 is ever added to trusted_networks, a raw
+          socat LAN listener would make every guest appear trusted →
+          user-picker bypass to admin. The LAN listener must be an HTTP
+          reverse proxy (Caddy) setting X-Forwarded-For, so guests keep their
+          real LAN IPs and get normal login.
+      - label: Password-less bridge
+        text: |
+          Preferred over a shared password — add 127.0.0.1/32 to trusted_networks,
+          bridge runs the trusted_networks login flow (pick guest user_id) →
+          burn-once tokens. admin_change_password needs an OWNER token — the
+          ada-ha-tony token (user 'HA-MCP Server') is admin but not owner.
+          hass --script auth hangs while HA runs (storage lock) — don't use it.
+      - label: Existing guest user
+        text: |
+          tony-ha already has user `guest` (id ae7a1185323e45e39f4bb0110b43c023)
+          and person.guest bound to it — reuse, don't recreate.
