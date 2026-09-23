@@ -9,7 +9,7 @@ import { statSync, readdirSync } from 'fs';
 import { dirname, join, basename } from 'path';
 import { spawnSync } from 'child_process';
 
-const MDDB_BASE = process.env.MDDB_BASE || 'http://tony-dell:11023';
+const MDDB_BASE = process.env.MDDB_BASE || 'http://100.74.146.0:11023';
 const DB_PATH = process.env.MDDB_DB_PATH || '';
 const PROXY_URLS = [
   'http://tony-omen:11435',

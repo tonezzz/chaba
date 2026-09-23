@@ -91,7 +91,7 @@ remote_endpoints = {
     "caddy": f"http://{TONY_OMEN_IP}:8080/",
     "status-api": f"http://{TONY_OMEN_IP}:8080/health",
     "yomi-api": f"http://{TONY_OMEN_IP}:8080/api/yomi/health",
-    "mddb-api": f"http://{TONY_OMEN_IP}:11023/health",
+    "mddb-api": "http://100.74.146.0:11023/health",
     "weaviate": f"http://{TONY_OMEN_IP}:8080/api/weaviate/v1/nodes",
     "llama-server": f"http://{TONY_OMEN_IP}:8008/health",
     "imagen2": f"http://{TONY_OMEN_IP}:8000/health",

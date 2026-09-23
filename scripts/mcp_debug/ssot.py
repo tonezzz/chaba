@@ -206,7 +206,7 @@ def mcp_read_ssot(path=None, limit=20000):
     }
 
 
-MDDB_BASE = os.environ.get("MDDB_BASE_URL", "http://tony-dell:11023")
+MDDB_BASE = os.environ.get("MDDB_BASE_URL", "http://100.74.146.0:11023")
 
 
 def _mddb_search(query, collection="ssot-infrastructure", limit=5):

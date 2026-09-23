@@ -306,7 +306,7 @@ cat >> "$REPORT_FILE" << EOF
 ### Connectivity Checks
 EOF
 # Check key endpoints
-for endpoint in tony-omen.local:8080 tony-omen.local:3001 tony-omen.local:11023; do
+for endpoint in tony-omen.local:8080 tony-omen.local:3001 100.74.146.0:11023; do
     echo "### Endpoint: $endpoint" >> "$REPORT_FILE"
     timeout 5 bash -c "echo > /dev/tcp/${endpoint/:/\/}" 2>&1 && echo "✓ Connected" || echo "✗ Failed" >> "$REPORT_FILE"
 done

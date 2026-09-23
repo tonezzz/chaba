@@ -97,7 +97,8 @@ tony-dell:
       - mddb.service
     status: implemented (2026-08-17)
     note: |
-      Migrated from tony-omen; copied mddb.db (~101MB) and vaults to tony-dell; Caddy reverse proxy updated to 100.68.142.13:11023.
+      CONSOLIDATED 2026-09-23: canonical MDDB is idc01 (100.74.146.0:11023 REST / :9000 MCP, ~2595 docs, ~1.4GB, durable ext4). The tony-dell unit is inactive/disabled and the tony-omen docker mddb-server is stopped. All clients point at idc01: Devin mcp_config on both hosts (:9000/mcp), ada-pi MDDB_BASE_URL, chaba scripts (sync-ssot-to-mddb, sync-kb-to-mddb, reindex, bench-kb-search, mddb-audit, test-global-rules), tony-dell-monitor + overnight-jobs health probes.
+      History: migrated from tony-omen; copied mddb.db (~101MB) and vaults to tony-dell; Caddy reverse proxy updated to 100.68.142.13:11023.
       Embeddings via gemini-ollama-proxy: MDDB_EMBEDDING_PROVIDER=ollama, MDDB_EMBEDDING_API_URL=http://127.0.0.1:11435 (host network, loopback is fine), MDDB_EMBEDDING_MODEL=nomic-embed-text, MDDB_EMBEDDING_DIMENSIONS=768.
       2026-09-21: semantic search was broken because the unit had MDDB_EMBEDDING_API_URL=http://127.0.0.1:9 (discard port); fixed to 11435.
   mddb-panel:

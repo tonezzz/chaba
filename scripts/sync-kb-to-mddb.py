@@ -13,7 +13,7 @@ Usage:
     python3 scripts/sync-kb-to-mddb.py --sync-deletes # also remove orphans
 
 Env:
-    MDDB_BASE   default http://tony-dell:11023
+    MDDB_BASE   default http://100.74.146.0:11023
     KB_DIR      default <repo>/docs/kb
 """
 import argparse
@@ -30,7 +30,7 @@ from urllib3.util.retry import Retry
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 KB_DIR = Path(os.environ.get("KB_DIR", REPO_ROOT / "docs" / "kb"))
-MDDB_BASE = os.environ.get("MDDB_BASE", "http://tony-dell:11023")
+MDDB_BASE = os.environ.get("MDDB_BASE", "http://100.74.146.0:11023")
 
 # Collections that hold KB documents (kb-* canonical; chaba-* are legacy
 # auto-kb targets whose KB docs get re-homed). chaba-architecture is NOT
