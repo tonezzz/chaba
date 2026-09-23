@@ -14,6 +14,18 @@
 #
 # Repos are whitelisted below — add a name=path pair to allow more.
 # Env: DISPATCH_PERMISSION_MODE (default smart), DISPATCH_DIR, DEVIN_BIN.
+#
+# Permission modes (devin --help): auto = read-only only, accept-edits =
+# +workspace edits, smart = +model-judged actions, dangerous = all tools.
+# For real build tasks use DISPATCH_PERMISSION_MODE=dangerous — 'smart'
+# auto-rejects anything the fast model deems risky (curl/pytest/systemctl)
+# and an unattended session just quits on rejection (seen 2026-09-23:
+# doc-archive task died after two rejections). Worktree isolation +
+# the no-push/no-deploy prompt rails are the real guardrails.
+#
+# Gotcha: worktrees are cut from THIS host's local HEAD — files committed
+# on another host won't exist in the worktree until tony-dell pulls.
+# Copy spec inputs into the worktree explicitly if they're unpushed.
 
 set -euo pipefail
 
