@@ -1602,10 +1602,16 @@
                     "position": "bg",
                     "height": "75%",
                     "hours": 24,
-                    "entities": ["sensor.inverters_1_pv_power_1", "sensor.inverters_1_pv_power_2"],
+                    "entities": [
+                      "sensor.inverters_1_pv_power_1",
+                      "sensor.inverters_1_pv_power_2"
+                    ],
                     "scale": 0.001,
                     "max": 10000,
-                    "colors": ["#00E676", "#4fc3f7"],
+                    "colors": [
+                      "#00E676",
+                      "#4fc3f7"
+                    ],
                     "stroke_width": 0.5,
                     "fill_opacity": 0.6
                   },
@@ -1945,7 +1951,10 @@
                     "min": 0,
                     "position": "bg",
                     "height": "100%",
-                    "rotate_sensitivity": [-4, 4],
+                    "rotate_sensitivity": [
+                      -4,
+                      4
+                    ],
                     "opacity": 1,
                     "view_offset": 40,
                     "key": "g3",
@@ -1971,6 +1980,314 @@
             }
           ],
           "icon": "mdi:poll"
+        },
+        {
+          "title": "mnweather",
+          "path": "mn-weather",
+          "type": "masonry",
+          "cards": [
+            {
+              "type": "custom:config-template-card",
+              "entities": [
+                "sensor.rk600_wind_direction",
+                "input_number.shutter_wind_dir_min",
+                "input_number.shutter_wind_dir_max",
+                "sensor.rk600_wind_speed",
+                "input_number.shutter_wind_speed_min",
+                "sensor.rk600_shutter_status",
+                "input_boolean.rk600_shutter_config_show"
+              ],
+              "variables": [
+                {
+                  "name": "dir",
+                  "template": "return parseFloat(hass.states[\"sensor.rk600_wind_direction\"].state) || 0"
+                },
+                {
+                  "name": "dmin",
+                  "template": "return parseFloat(hass.states[\"input_number.shutter_wind_dir_min\"].state) || 90"
+                },
+                {
+                  "name": "dmax",
+                  "template": "return parseFloat(hass.states[\"input_number.shutter_wind_dir_max\"].state) || 270"
+                },
+                {
+                  "name": "spd",
+                  "template": "return parseFloat(hass.states[\"sensor.rk600_wind_speed\"].state) || 0"
+                },
+                {
+                  "name": "smin",
+                  "template": "return parseFloat(hass.states[\"input_number.shutter_wind_speed_min\"].state) || 12"
+                },
+                {
+                  "name": "in_close_zone",
+                  "template": "return (dmin <= dir && dir <= dmax) && (spd >= smin)"
+                },
+                {
+                  "name": "highlights",
+                  "template": "return [{\"from\": dmin, \"to\": dmax, \"color\": \"rgba(255, 80, 80, 0.35)\"}]"
+                },
+                {
+                  "name": "needle_color",
+                  "template": "return in_close_zone ? \"rgba(255, 60, 60, 1)\" : \"rgba(40, 200, 80, 1)\""
+                },
+                {
+                  "name": "dir_text",
+                  "template": "return Math.round(dir) + '°'"
+                }
+              ],
+              "card": {
+                "type": "custom:canvas-gauge-card",
+                "entity": "sensor.rk600_wind_direction",
+                "gauge": {
+                  "type": "radial-gauge",
+                  "title": "${dir_text}",
+                  "width": 260,
+                  "height": 260,
+                  "minValue": 0,
+                  "maxValue": 360,
+                  "startAngle": 180,
+                  "ticksAngle": 360,
+                  "valueBox": false,
+                  "units": "°",
+                  "majorTicks": [
+                    "N",
+                    "NE",
+                    "E",
+                    "SE",
+                    "S",
+                    "SW",
+                    "W",
+                    "NW",
+                    "N"
+                  ],
+                  "minorTicks": 0,
+                  "strokeTicks": false,
+                  "highlights": "${highlights}",
+                  "colorPlate": "transparent",
+                  "colorMajorTicks": "transparent",
+                  "colorMinorTicks": "transparent",
+                  "colorNumbers": "#e0e0e0",
+                  "numbersMargin": -18,
+                  "colorNeedle": "${needle_color}",
+                  "colorNeedleEnd": "${needle_color}",
+                  "needleType": "line",
+                  "needleStart": 70,
+                  "needleEnd": 99,
+                  "needleWidth": 3,
+                  "needleCircleSize": 8,
+                  "colorNeedleCircleOuter": "#e0e0e0",
+                  "colorNeedleCircleInner": "#e0e0e0",
+                  "borders": false,
+                  "borderShadowWidth": 0,
+                  "animationRule": "linear",
+                  "animationDuration": 600,
+                  "valueDec": 0,
+                  "titleFontColor": "#e0e0e0",
+                  "titleFontSize": 24,
+                  "titleFontFamily": "Arial",
+                  "titleFontWeight": "bold"
+                }
+              }
+            },
+            {
+              "type": "entities",
+              "title": "Shutter Logic",
+              "entities": [
+                "sensor.rk600_wind_direction",
+                "sensor.rk600_wind_speed",
+                "sensor.rk600_shutter_status",
+                "input_boolean.rk600_shutter_state",
+                {
+                  "entity": "input_boolean.rk600_shutter_config_show",
+                  "name": "Show Shutter Config"
+                }
+              ]
+            },
+            {
+              "type": "conditional",
+              "conditions": [
+                {
+                  "entity": "input_boolean.rk600_shutter_config_show",
+                  "state": "on"
+                }
+              ],
+              "card": {
+                "type": "vertical-stack",
+                "title": "Shutter Thresholds",
+                "cards": [
+                  {
+                    "type": "custom:config-template-card",
+                    "entities": [
+                      "sensor.rk600_wind_direction",
+                      "input_number.shutter_wind_dir_min",
+                      "input_number.shutter_wind_dir_max",
+                      "sensor.rk600_wind_speed",
+                      "input_number.shutter_wind_speed_min",
+                      "sensor.rk600_shutter_status",
+                      "input_boolean.rk600_shutter_config_show"
+                    ],
+                    "variables": [
+                      {
+                        "name": "dir",
+                        "template": "return parseFloat(hass.states[\"sensor.rk600_wind_direction\"].state) || 0"
+                      },
+                      {
+                        "name": "dmin",
+                        "template": "return parseFloat(hass.states[\"input_number.shutter_wind_dir_min\"].state) || 90"
+                      },
+                      {
+                        "name": "dmax",
+                        "template": "return parseFloat(hass.states[\"input_number.shutter_wind_dir_max\"].state) || 270"
+                      },
+                      {
+                        "name": "spd",
+                        "template": "return parseFloat(hass.states[\"sensor.rk600_wind_speed\"].state) || 0"
+                      },
+                      {
+                        "name": "smin",
+                        "template": "return parseFloat(hass.states[\"input_number.shutter_wind_speed_min\"].state) || 12"
+                      },
+                      {
+                        "name": "in_close_zone",
+                        "template": "return (dmin <= dir && dir <= dmax) && (spd >= smin)"
+                      },
+                      {
+                        "name": "highlights",
+                        "template": "return [{\"from\": dmin, \"to\": dmax, \"color\": \"rgba(255, 80, 80, 0.35)\"}]"
+                      },
+                      {
+                        "name": "needle_color",
+                        "template": "return in_close_zone ? \"rgba(255, 60, 60, 1)\" : \"rgba(40, 200, 80, 1)\""
+                      },
+                      {
+                        "name": "dir_text",
+                        "template": "return Math.round(dir) + '°'"
+                      }
+                    ],
+                    "card": {
+                      "type": "custom:canvas-gauge-card",
+                      "entity": "sensor.rk600_wind_direction",
+                      "gauge": {
+                        "type": "radial-gauge",
+                        "title": "",
+                        "width": 180,
+                        "height": 180,
+                        "minValue": 0,
+                        "maxValue": 360,
+                        "startAngle": 180,
+                        "ticksAngle": 360,
+                        "valueBox": false,
+                        "units": "°",
+                        "majorTicks": [
+                          "N",
+                          "NE",
+                          "E",
+                          "SE",
+                          "S",
+                          "SW",
+                          "W",
+                          "NW",
+                          "N"
+                        ],
+                        "minorTicks": 0,
+                        "strokeTicks": false,
+                        "highlights": "${highlights}",
+                        "colorPlate": "transparent",
+                        "colorMajorTicks": "transparent",
+                        "colorMinorTicks": "transparent",
+                        "colorNumbers": "#e0e0e0",
+                        "numbersMargin": -12,
+                        "colorNeedle": "${needle_color}",
+                        "colorNeedleEnd": "${needle_color}",
+                        "needleType": "line",
+                        "needleStart": 70,
+                        "needleEnd": 99,
+                        "needleWidth": 2,
+                        "needleCircleSize": 6,
+                        "colorNeedleCircleOuter": "#e0e0e0",
+                        "colorNeedleCircleInner": "#e0e0e0",
+                        "borders": false,
+                        "borderShadowWidth": 0,
+                        "animationRule": "linear",
+                        "animationDuration": 600,
+                        "valueDec": 0,
+                        "titleFontColor": "#e0e0e0",
+                        "titleFontSize": 16,
+                        "titleFontFamily": "Arial",
+                        "titleFontWeight": "bold"
+                      }
+                    }
+                  },
+                  {
+                    "type": "entities",
+                    "entities": [
+                      "input_number.shutter_wind_dir_min",
+                      "input_number.shutter_wind_dir_max",
+                      "input_number.shutter_wind_speed_min"
+                    ]
+                  }
+                ]
+              }
+            },
+            {
+              "type": "custom:pro-v-weather-card",
+              "title": "PRO-V Animated",
+              "style": "basic",
+              "outdoor_temp": "sensor.rk600_temperature",
+              "outdoor_humidity": "sensor.rk600_humidity",
+              "wind_speed": "sensor.rk600_wind_speed_meters",
+              "wind_bearing": "sensor.rk600_wind_direction",
+              "weather": "weather.forecast_home"
+            },
+            {
+              "type": "custom:apexcharts-card",
+              "header": {
+                "title": "RK600 24h",
+                "show": true
+              },
+              "graph_span": "24h",
+              "span": {
+                "start": "day"
+              },
+              "yaxis": [
+                {
+                  "id": "temp",
+                  "decimals": 1
+                },
+                {
+                  "id": "wind",
+                  "opposite": true,
+                  "decimals": 1
+                }
+              ],
+              "series": [
+                {
+                  "entity": "sensor.rk600_temperature",
+                  "name": "Temp",
+                  "yaxis_id": "temp",
+                  "unit": "°C",
+                  "stroke_width": 2
+                },
+                {
+                  "entity": "sensor.rk600_wind_speed_meters",
+                  "name": "Wind",
+                  "yaxis_id": "wind",
+                  "unit": "m/s",
+                  "stroke_width": 2
+                }
+              ]
+            },
+            {
+              "type": "custom:nimbus-weather-card",
+              "entity": "weather.forecast_home",
+              "name": "Forecast",
+              "max_items": 5,
+              "show_clock": false,
+              "card_mod": {
+                "style": "@media (min-width: 1000px) { ha-card { transform: scale(0.85); transform-origin: top left; } }"
+              }
+            }
+          ]
         },
         {
           "title": "Weather",
@@ -3069,7 +3386,10 @@
                 "1,1": [
                   {
                     "type": "gauge",
-                    "entities": ["sensor.inverters_1_pv_power_1", "sensor.inverters_1_pv_power_2"],
+                    "entities": [
+                      "sensor.inverters_1_pv_power_1",
+                      "sensor.inverters_1_pv_power_2"
+                    ],
                     "min": 0,
                     "max": 10000,
                     "scale": 0.001,
@@ -3080,7 +3400,10 @@
                   },
                   {
                     "type": "history",
-                    "entities": ["sensor.inverters_1_pv_power_1", "sensor.inverters_1_pv_power_2"],
+                    "entities": [
+                      "sensor.inverters_1_pv_power_1",
+                      "sensor.inverters_1_pv_power_2"
+                    ],
                     "hours": 24,
                     "min": 0,
                     "max": 10000,
@@ -6724,8 +7047,8 @@
           "badges": [],
           "cards": [
             {
-              "type": "custom:power-flow-card",
-              "cardstyle": "ju",
+              "type": "custom:pfg3d-card",
+              "cardstyle": "full",
               "card_height": 700,
               "card_width": 100,
               "panel_mode": "no",
@@ -6878,97 +7201,6 @@
                 "style": "ha-card { --card-background-color: #102040 !important; background-color: #102040 !important; --primary-text-color: #ffffff !important; --secondary-text-color: #cccccc !important; color: #ffffff !important; }"
               },
               "decimal_places": 3
-            }
-          ]
-        },
-        {
-          "title": "RK900 Weather (via RK600-07B)",
-          "path": "mn-weather",
-          "type": "masonry",
-          "cards": [
-            {
-              "type": "markdown",
-              "content": "Local weather from **Rika RK900** sensor head, read through **RK600-07B** Modbus TCP at **192.168.31.148**."
-            },
-            {
-              "type": "weather-forecast",
-              "entity": "weather.forecast_home",
-              "show_forecast": true
-            },
-            {
-              "type": "sensor",
-              "entity": "sensor.rk600_wind_speed_meters",
-              "name": "RK900 Wind Speed",
-              "icon": "mdi:weather-windy",
-              "graph": "line",
-              "hours_to_show": 24,
-              "detail": 1,
-              "unit": "m/s"
-            },
-            {
-              "type": "sensor",
-              "entity": "sensor.rk600_wind_speed",
-              "name": "RK900 Wind Speed",
-              "icon": "mdi:weather-windy",
-              "graph": "line",
-              "hours_to_show": 24,
-              "detail": 1,
-              "unit": "kn"
-            },
-            {
-              "type": "custom:canvas-gauge-card",
-              "entity": "sensor.rk600_wind_direction",
-              "card_height": 260,
-              "gauge": {
-                "type": "radial-gauge",
-                "width": 260,
-                "height": 260,
-                "minValue": 0,
-                "maxValue": 360,
-                "startAngle": 180,
-                "ticksAngle": 360,
-                "valueBox": false,
-                "exactTicks": true,
-                "majorTicks": [0, 90, 180, 270],
-                "minorTicks": 10,
-                "strokeTicks": true,
-                "borders": false,
-                "colorPlate": "transparent",
-                "colorMajorTicks": "#333",
-                "colorMinorTicks": "#999",
-                "colorNumbers": "#333",
-                "colorNeedle": "#ff453a",
-                "needleType": "arrow",
-                "needleCircleSize": 8
-              }
-            },
-            {
-              "type": "entities",
-              "title": "RK900 Weather Station (via RK600-07B)",
-              "show_header_toggle": false,
-              "entities": [
-                "sensor.rk600_device_status",
-                "sensor.rk600_wind_direction",
-                "sensor.rk600_wind_speed",
-                "sensor.rk600_wind_speed_meters",
-                "sensor.rk600_wind_speed_alt01",
-                "sensor.rk600_temperature",
-                "sensor.rk600_humidity"
-              ]
-            },
-            {
-              "type": "history-graph",
-              "title": "RK900 Wind (24h)",
-              "entities": ["sensor.rk600_wind_speed_meters", "sensor.rk600_wind_direction"],
-              "hours_to_show": 24,
-              "refresh_interval": 60
-            },
-            {
-              "type": "history-graph",
-              "title": "RK900 Temp / Humidity (24h)",
-              "entities": ["sensor.rk600_temperature", "sensor.rk600_humidity"],
-              "hours_to_show": 24,
-              "refresh_interval": 60
             }
           ]
         }
