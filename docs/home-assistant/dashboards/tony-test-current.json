@@ -8677,48 +8677,18 @@
                 "input_number.dev_rk900_rainfall",
                 "input_number.shutter_rain_min"
               ],
-              "variables": [
-                {
-                  "name": "dir",
-                  "template": "return parseFloat(hass.states[\"input_number.dev_rk900_wind_direction\"].state) || 0"
-                },
-                {
-                  "name": "dmin",
-                  "template": "return parseFloat(hass.states[\"input_number.shutter_wind_dir_min\"].state) || 90"
-                },
-                {
-                  "name": "dmax",
-                  "template": "return parseFloat(hass.states[\"input_number.shutter_wind_dir_max\"].state) || 270"
-                },
-                {
-                  "name": "spd",
-                  "template": "return parseFloat(hass.states[\"input_number.dev_rk900_wind_speed\"].state) || 0"
-                },
-                {
-                  "name": "smin",
-                  "template": "return parseFloat(hass.states[\"input_number.shutter_wind_speed_min\"].state) || 12"
-                },
-                {
-                  "name": "rain",
-                  "template": "return parseFloat(hass.states[\"input_number.dev_rk900_rainfall\"].state) || 0"
-                },
-                {
-                  "name": "rmin",
-                  "template": "return parseFloat(hass.states[\"input_number.shutter_rain_min\"].state) || 0.5"
-                },
-                {
-                  "name": "in_close_zone",
-                  "template": "return ((dmin <= dir && dir <= dmax) && (spd >= smin)) || (rain >= rmin)"
-                },
-                {
-                  "name": "highlights",
-                  "template": "return [{\"from\": dmin, \"to\": dmax, \"color\": \"rgba(255, 80, 80, 0.35)\"}]"
-                },
-                {
-                  "name": "needle_color",
-                  "template": "return in_close_zone ? \"rgba(255, 60, 60, 1)\" : \"rgba(40, 200, 80, 1)\""
-                }
-              ],
+              "variables": {
+                "dir": "parseFloat(states[\"input_number.dev_rk900_wind_direction\"].state) || 0",
+                "dmin": "parseFloat(states[\"input_number.shutter_wind_dir_min\"].state) || 90",
+                "dmax": "parseFloat(states[\"input_number.shutter_wind_dir_max\"].state) || 270",
+                "spd": "parseFloat(states[\"input_number.dev_rk900_wind_speed\"].state) || 0",
+                "smin": "parseFloat(states[\"input_number.shutter_wind_speed_min\"].state) || 12",
+                "rain": "parseFloat(states[\"input_number.dev_rk900_rainfall\"].state) || 0",
+                "rmin": "parseFloat(states[\"input_number.shutter_rain_min\"].state) || 0.5",
+                "in_close_zone": "((vars.dmin <= vars.dir) && (vars.dir <= vars.dmax) && (vars.spd >= vars.smin)) || (vars.rain >= vars.rmin)",
+                "highlights": "[{\"from\": vars.dmin, \"to\": vars.dmax, \"color\": \"rgba(255, 80, 80, 0.35)\"}]",
+                "needle_color": "vars.in_close_zone ? \"rgba(255, 60, 60, 1)\" : \"rgba(40, 200, 80, 1)\""
+              },
               "card": {
                 "type": "custom:canvas-gauge-card",
                 "entity": "input_number.dev_rk900_wind_direction",
