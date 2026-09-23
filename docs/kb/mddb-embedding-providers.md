@@ -55,8 +55,15 @@ corpus must stay on ONE path or scores collapse to ~0.
   occasional chunks during bulk reindex — a doc may lose tail chunks
   (seen on `tony-projects/public-host-plan`, `kb-development`).
   Affected docs need re-add or split ingest; fix is upstream in mddb.
-- OR key has a $1 monthly limit — top up the OpenRouter account if
-  embeds start failing (`GET /api/v1/auth/key` shows `limit_remaining`).
+- OR key spend limit — check `GET /api/v1/auth/key`
+  (`limit_remaining`); topped to $4 on 2026-09-23.
+- OR-primary mode is FAIL-HARD: if OR errors the proxy returns 502 —
+  Gemini/Ollama are never used because a wrong-space write is worse
+  than an error. Response field `provider` names the serving backend.
+- Incident 2026-09-23: Cloudflare WARP (`warp-svc`) running on idc01
+  mangled inbound connections — SSH dropped pre-banner, services hung.
+  `systemctl stop warp-svc` restored it. If SSH to idc01 ever accepts
+  TCP then closes before the banner, check warp-svc first.
 
 ## Verification commands
 
