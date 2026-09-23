@@ -215,6 +215,9 @@ instances:
     icon: mdi:home-heart
     url: https://tony-dell.taila0626a.ts.net:8123/chaba-home/g3
     require_admin: false
+    depends_on:
+      - custom:ada-voice-card (/local/ada-voice-card.js — same card and
+        auto-minted per-device key flow documented under chaba_admin above)
     created: "2026-09-22"
     storage_path: /home/tony/.config/home-assistant/.storage/lovelace.chaba_home
     repo_snapshot: docs/home-assistant/dashboards/chaba-home-current.json
@@ -235,13 +238,18 @@ instances:
       michael-dev www) so the 3D chart loads local-first, CDN fallback. Nobito is a
       battery Tuya device (cloud integration) that sleeps between reports —
       entities show unavailable while asleep; a flat card value means stale
-      data, not a real reading.
+      data, not a real reading. 2026-09-23: ada-voice-card added at the top —
+      the panel view's single card is now a vertical-stack (voice card, then
+      the pfg3d card); the pfg3d card title was removed and pfg_fit_screen
+      raised 120px → 290px to keep the chart inside the viewport below the
+      voice card.
     tabs:
       - title: Nobito
         path: g3
         icon: mdi:poll
         type: panel
-        cards: pfg3d-card bar3d on sensor.nobito_pm2_5 (10-day hour×day, min 0)
+        cards: vertical-stack of ada-voice-card on top + pfg3d-card bar3d on
+          sensor.nobito_pm2_5 (10-day hour×day, min 0, no title)
 
 tabs:
   dev:
