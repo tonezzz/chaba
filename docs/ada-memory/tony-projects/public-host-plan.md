@@ -192,6 +192,19 @@ writes are local on the VPS — unaffected.
 - `public:` bank flag enforcement end-to-end.
 - Disk encryption / provider threat model before real personal data.
 - notebooklm-rest move, only if dedicated Google account adopted.
+- **ada_ask_open_notebook** (deep-tier tool — spec, unbuilt):
+  read-only Ada tool calling `POST {OPEN_NOTEBOOK_URL}/api/search/ask/simple`
+  `{question, strategy_model, answer_model, final_answer_model}` ->
+  grounded answer + citations over the notebook corpus (517-source
+  `chaba-kb-bench` lives there). Ada side: ToolRunner entry, no
+  confirmation (read-only); invoke only when `ada_memory_search` top
+  score is low or the user asks for a deep dive — same tier as
+  NotebookLM today but self-hosted and API-clean. Latency budget
+  ~20-70s/question on Gemini models; >300s on phi3-gguf/4GB GPU, so
+  gate registration on a generation path under ~60s (Gemini quota
+  recovery or a faster local model). Embeddings already local
+  (nomic-embed-text on idc01).
+
 
 ## 11. Phases
 
