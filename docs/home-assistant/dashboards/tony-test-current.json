@@ -7210,6 +7210,31 @@
                 "style": "ha-card { --card-background-color: #102040 !important; background-color: #102040 !important; --primary-text-color: #ffffff !important; --secondary-text-color: #cccccc !important; color: #ffffff !important; }"
               },
               "decimal_places": 3
+            },
+            {
+              "type": "custom:pfg3d-card",
+              "cardstyle": "pfg",
+              "card_height": "300px",
+              "card_width": "100%",
+              "title": "Flow tile",
+              "pfg_grid_size": 2,
+              "pfg_transparent": true,
+              "pfg_charts": {
+                "1,1": {
+                  "type": "flow",
+                  "pv": [
+                    "sensor.inverters_1_pv_power_1",
+                    "sensor.inverters_1_pv_power_2"
+                  ],
+                  "grid": "sensor.inverters_1_grid_power",
+                  "battery": "sensor.inverters_1_battery_power",
+                  "load": "sensor.inverters_1_load_power",
+                  "scale": 0.001,
+                  "unit": "kW",
+                  "decimals": 2,
+                  "label": "Power flow"
+                }
+              }
             }
           ]
         },
@@ -8549,131 +8574,81 @@
           "type": "masonry",
           "cards": [
             {
-              "type": "conditional",
-              "conditions": [
-                {
-                  "entity": "input_boolean.dev_shutter_config_show",
-                  "state": "on"
-                }
-              ],
-              "card": {
-                "type": "vertical-stack",
-                "title": "Shutter Thresholds",
-                "cards": [
-                  {
-                    "type": "custom:config-template-card",
-                    "entities": [
-                      "input_number.dev_rk900_wind_direction",
-                      "input_number.shutter_wind_dir_min",
-                      "input_number.shutter_wind_dir_max",
-                      "input_number.dev_rk900_wind_speed",
-                      "input_number.shutter_wind_speed_min",
-                      "sensor.dev_rk900_shutter_status"
-                    ],
-                    "variables": [
-                      {
-                        "name": "dir",
-                        "template": "return parseFloat(hass.states[\"input_number.dev_rk900_wind_direction\"].state) || 0"
-                      },
-                      {
-                        "name": "dmin",
-                        "template": "return parseFloat(hass.states[\"input_number.shutter_wind_dir_min\"].state) || 90"
-                      },
-                      {
-                        "name": "dmax",
-                        "template": "return parseFloat(hass.states[\"input_number.shutter_wind_dir_max\"].state) || 270"
-                      },
-                      {
-                        "name": "spd",
-                        "template": "return parseFloat(hass.states[\"input_number.dev_rk900_wind_speed\"].state) || 0"
-                      },
-                      {
-                        "name": "smin",
-                        "template": "return parseFloat(hass.states[\"input_number.shutter_wind_speed_min\"].state) || 12"
-                      },
-                      {
-                        "name": "in_close_zone",
-                        "template": "return (dmin <= dir && dir <= dmax) && (spd >= smin)"
-                      },
-                      {
-                        "name": "highlights",
-                        "template": "return [{\"from\": dmin, \"to\": dmax, \"color\": \"rgba(255, 80, 80, 0.35)\"}]"
-                      },
-                      {
-                        "name": "needle_color",
-                        "template": "return in_close_zone ? \"rgba(255, 60, 60, 1)\" : \"rgba(40, 200, 80, 1)\""
-                      }
-                    ],
-                    "card": {
-                      "type": "custom:canvas-gauge-card",
-                      "entity": "input_number.dev_rk900_wind_direction",
-                      "gauge": {
-                        "type": "radial-gauge",
-                        "title": "",
-                        "width": 180,
-                        "height": 180,
-                        "minValue": 0,
-                        "maxValue": 360,
-                        "startAngle": 180,
-                        "ticksAngle": 360,
-                        "valueBox": false,
-                        "units": "°",
-                        "majorTicks": [
-                          "N",
-                          "NE",
-                          "E",
-                          "SE",
-                          "S",
-                          "SW",
-                          "W",
-                          "NW",
-                          "N"
-                        ],
-                        "minorTicks": 0,
-                        "strokeTicks": false,
-                        "highlights": "${highlights}",
-                        "colorPlate": "transparent",
-                        "colorMajorTicks": "transparent",
-                        "colorMinorTicks": "transparent",
-                        "colorNumbers": "#e0e0e0",
-                        "numbersMargin": -12,
-                        "colorNeedle": "${needle_color}",
-                        "colorNeedleEnd": "${needle_color}",
-                        "needleType": "line",
-                        "needleStart": 70,
-                        "needleEnd": 99,
-                        "needleWidth": 2,
-                        "needleCircleSize": 6,
-                        "colorNeedleCircleOuter": "#e0e0e0",
-                        "colorNeedleCircleInner": "#e0e0e0",
-                        "borders": false,
-                        "borderShadowWidth": 0,
-                        "animationRule": "linear",
-                        "animationDuration": 600,
-                        "titleFontSize": 16
-                      }
-                    }
-                  },
-                  {
-                    "type": "entities",
-                    "entities": [
-                      "input_number.shutter_wind_dir_min",
-                      "input_number.shutter_wind_dir_max",
-                      "input_number.shutter_wind_speed_min"
-                    ]
-                  }
-                ]
-              }
-            },
-            {
               "type": "entities",
               "title": "Shutter Logic Test",
               "entities": [
-                "input_boolean.dev_shutter_config_show",
                 "input_number.dev_rk900_wind_direction",
                 "input_number.dev_rk900_wind_speed",
+                "input_number.dev_rk900_rainfall",
                 "sensor.dev_rk900_shutter_status",
-                "input_boolean.dev_shutter_state"
+                "input_boolean.dev_shutter_state",
+                "input_boolean.dev_shutter_config_show",
+                {
+                  "type": "conditional",
+                  "conditions": [
+                    {
+                      "condition": "state",
+                      "entity": "input_boolean.dev_shutter_config_show",
+                      "state": "on"
+                    }
+                  ],
+                  "row": {
+                    "type": "section",
+                    "name": "Thresholds"
+                  }
+                },
+                {
+                  "type": "conditional",
+                  "conditions": [
+                    {
+                      "condition": "state",
+                      "entity": "input_boolean.dev_shutter_config_show",
+                      "state": "on"
+                    }
+                  ],
+                  "row": {
+                    "entity": "input_number.shutter_wind_dir_min"
+                  }
+                },
+                {
+                  "type": "conditional",
+                  "conditions": [
+                    {
+                      "condition": "state",
+                      "entity": "input_boolean.dev_shutter_config_show",
+                      "state": "on"
+                    }
+                  ],
+                  "row": {
+                    "entity": "input_number.shutter_wind_dir_max"
+                  }
+                },
+                {
+                  "type": "conditional",
+                  "conditions": [
+                    {
+                      "condition": "state",
+                      "entity": "input_boolean.dev_shutter_config_show",
+                      "state": "on"
+                    }
+                  ],
+                  "row": {
+                    "entity": "input_number.shutter_wind_speed_min"
+                  }
+                },
+                {
+                  "type": "conditional",
+                  "conditions": [
+                    {
+                      "condition": "state",
+                      "entity": "input_boolean.dev_shutter_config_show",
+                      "state": "on"
+                    }
+                  ],
+                  "row": {
+                    "entity": "input_number.shutter_rain_min"
+                  }
+                }
               ]
             },
             {
@@ -8684,7 +8659,9 @@
                 "input_number.shutter_wind_dir_max",
                 "input_number.dev_rk900_wind_speed",
                 "input_number.shutter_wind_speed_min",
-                "sensor.dev_rk900_shutter_status"
+                "sensor.dev_rk900_shutter_status",
+                "input_number.dev_rk900_rainfall",
+                "input_number.shutter_rain_min"
               ],
               "variables": [
                 {
@@ -8708,8 +8685,16 @@
                   "template": "return parseFloat(hass.states[\"input_number.shutter_wind_speed_min\"].state) || 12"
                 },
                 {
+                  "name": "rain",
+                  "template": "return parseFloat(hass.states[\"input_number.dev_rk900_rainfall\"].state) || 0"
+                },
+                {
+                  "name": "rmin",
+                  "template": "return parseFloat(hass.states[\"input_number.shutter_rain_min\"].state) || 0.5"
+                },
+                {
                   "name": "in_close_zone",
-                  "template": "return (dmin <= dir && dir <= dmax) && (spd >= smin)"
+                  "template": "return ((dmin <= dir && dir <= dmax) && (spd >= smin)) || (rain >= rmin)"
                 },
                 {
                   "name": "highlights",
