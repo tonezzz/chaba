@@ -164,6 +164,53 @@ sections:
           captures only the main file, not uncheckpointed -wal commits. Final result:
           sessions.db 71G -> 4.0G, cli dir 65G -> 4.6G, 153 sessions kept, integrity ok.
 
+  - title: Rika RK600 + Ada progressive memory (2026-09-23)
+    icon: 🌦️
+    layout: list
+    items:
+      - label: 'Missing default route = LAN works, cloud fails'
+        text: |
+          The RK600/Samkoon HMI outage was not an app crash: it had 192.168.31.148 and a
+          connected-subnet route but no 0.0.0.0/0, so Modbus/telnet on the LAN kept working
+          while cloud uploads died with ENETUNREACH. Adding a default route via the LAN
+          gateway restored the cloud upload socket instantly. Persisted via
+          rika-watchdog.service (user unit, linger=yes) which re-adds the route and
+          restarts the Samkoon app when needed. When a device "stops reporting" but local
+          services still answer, check the routing table before restarting anything.
+      - label: Legacy vendor portals often outlive their DNS
+        text: |
+          rikacloud.com:8000 resolved to a stale address whose port was filtered; the live
+          portal and JSON API run on a different IP (see docs/kb/rika-rk600-cloud-upload.md).
+          Auth = POST /login returning a JWT, sent back in a request header named token
+          (not Authorization). The facility id for data endpoints is 22100502, not the
+          device row id 286. Inspect the SPA bundle to find the real API base and header
+          conventions.
+      - label: Zero telemetry != dead sensor — wait for the event
+        text: |
+          Rain gauge e5 was all-zero during dry weather and HA templates were hardcoded 0,
+          so the sensor looked unverifiable. Actual overnight rain produced 74 nonzero e5
+          rows across two events — the whole chain (gauge -> serial -> HMI -> cloud -> API)
+          works. Don't record "sensor broken/not verified" as permanent; mark it
+          pending-event and re-check after weather.
+      - label: Progressive-deepening memory works, but needs guardrails
+        text: |
+          The Ada scenario test (quick summary -> save to general/weather-station ->
+          confirmed deepen -> update same doc) proved the flow: shared-bank writes need
+          confirmed=true, ada_remember on an existing subject/attribute corrects in place
+          instead of duplicating, and a Coverage: L0/L1/L2 footer tells future turns what
+          was already searched. Failure modes seen: first turn picked bank=tony-projects
+          instead of general, an unrelated fact ("no longer general manager") contaminated
+          the summary, and a stale "rain never reported" claim was propagated. Rules added
+          to docs/kb/devin-to-ada-task-requests.md: search general first, bank='all' only
+          after confirmation, fold in only topic-relevant facts, prefer newest verified
+          source, record which sources were searched.
+      - label: Draft-in-general beats devin-bank for task requests
+        text: |
+          A pending Devin->Ada task request stored in the devin transcript bank was buried
+          by hundreds of transcript docs in semantic search. The same request as a draft in
+          ada-ha-bank-general surfaced reliably (draft-visible bank + recency + score).
+          Transcript banks are archives, not queues.
+
   - title: Future Triggers
     icon: 🔔
     layout: list
