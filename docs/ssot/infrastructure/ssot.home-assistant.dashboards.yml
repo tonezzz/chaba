@@ -69,8 +69,10 @@ instances:
       dir) — lists HA auth users via config/auth/list (system_generated
       filtered out), per-user key name user-<username>; users without a key
       get an Issue button that sets the shared pair inputs and runs
-      script.ada_pair_issue (QR lands in the QR card), keyed users get the
-      same Voice/Text/Re-pair/Revoke buttons as the keys card.
+      script.ada_pair_issue (QR lands in the QR card), keyed users get a
+      QR-icon button that opens an overlay with the redeem QR plus a
+      clickable link that pops up the HA web UI (/chaba-home/ai) —
+      Voice/Text/Re-pair/Revoke buttons removed 2026-09-23.
       Events tab added 2026-09-20: custom:chaba-events-card
       (/local/chaba-events-card.js, repo: stacks/tony-dell/tony-ha/www/) reads
       /local/chaba-events.json (written by /config/scripts/chaba-event-log.py —
@@ -105,7 +107,9 @@ instances:
       deploy-ada.sh emits over SSH. Events with requires_response && !responded
       pin to top with a pulsing border (prefers-reduced-motion respected);
       confidence <0.6 shown as outlined chip.
-      Voice card added 2026-09-22 at the top of the Pair tab:
+      Voice card added 2026-09-22 at the top of the Pair tab, moved off it
+      2026-09-23 (pair tab is admin-only; the live mic lives on
+      chaba-home/ai):
       custom:ada-voice-card (/local/ada-voice-card.js?v=4, repo:
       stacks/tony-dell/tony-ha/www/ada-voice-card.js) — embeds the full Ada
       Gemini Live client in the dashboard, no iframe/redirect. It ports the
@@ -142,7 +146,7 @@ instances:
       - title: Pair
         path: pair
         icon: mdi:qrcode-plus
-        cards: ada-voice-card (Live assistant), issue/revoke form, pairing QR picture, ada-keys-card, ada-users-card, capabilities info
+        cards: ada-keys-card, ada-users-card (QR-icon re-pair popup), capabilities info — voice card, issue/revoke form, and pairing-QR card removed 2026-09-23 (voice lives on chaba-home/ai; per-user QR popups supersede the shared pair form)
       - title: Events
         path: events
         icon: mdi:bell-badge-outline
@@ -181,11 +185,13 @@ instances:
       ada-ha-native-primary-ui. Both views are `type: panel` so each can
       hold exactly one top-level card; the AI view wraps its two cards in a
       vertical-stack to satisfy that.
-      KNOWN ISSUE (2026-09-23): the AI view references
-      custom:ada-activity-card ("Live activity") but ada-activity-card.js is
-      neither registered in lovelace_resources nor present in www/ (or the
-      repo) — the card renders nothing until the resource is added or the
-      card removed. Live resource versions: ada-voice-card.js?v=4,
+      ada-activity-card ("Live activity") is a second element defined inside
+      ada-voice-card.js — no separate resource. The voice card publishes
+      status/transcript/error events to a shared window channel
+      (window.__adaVoiceActivity, deduped, 300-entry cap); the activity card
+      renders them log-style with You/Ada/status/error rows and survives
+      view switches. Config: title, height (default calc(100vh - 380px)).
+      Live resource versions: ada-voice-card.js?v=4,
       ada-keys-card.js?v=4, ada-pair-qr-card.js?v=2, ada-users-card.js?v=1,
       chaba-events-card.js?v=5, chaba-log-card.js?v=4, pfg3d-card-v239.js?v=2.
     tabs:
