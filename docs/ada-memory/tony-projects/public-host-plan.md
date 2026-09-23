@@ -24,14 +24,27 @@ currently mock/non-critical.
   on mn01 or use Nabu Casa URL for ada-ha-michael).
 - Running (systemd user units, `tony` user, linger on):
   - `ada-pi-pwa` :8001, `ada-ha-tony` :8002, `ada-ha-michael` :8003 —
-    all `127.0.0.1`-bound, healthy, 14 banks loaded, MDDB reachable
-    over tailnet (still pointing at tony-dell:11023).
+    all `127.0.0.1`-bound, healthy.
+  - `mddb` — PRIMARY since 2026-09-22, bound to `100.74.146.0`
+    (HTTP :11023, gRPC :11024, MCP :9000 with API-key auth). The old
+    tony-dell primary is stopped/disabled (data kept for rollback).
+  - `gemini-ollama-proxy` :11435 loopback — Gemini primary →
+    `nomic-embed-text` Ollama fallback with circuit breaker; hourly
+    `mddb-embed-space-check.timer` flips the corpus back to Gemini space
+    on recovery and runs the recall canary (fails loudly on regression).
+  - `ollama` container — nomic-embed-text + llama3.2 (as phi3-gguf alias).
   - `caddy-edge` quadlet (podman `Network=host`) — real ACME cert.
 - Public URL: `https://157.85.110.99.sslip.io/` → ada-pi-pwa (canary).
 - Tailnet URL: `https://idc01.taila0626a.ts.net/` → ada-pi-pwa via
   `tailscale serve` (tailnet-only for now — verified 200 from tony-omen).
 - Also on idc01 (tailnet-only via serve): obsidian vault app :8443,
   OpenNotebook UI :8444 + API :8445, mddb-panel at 100.74.146.0:3002.
+- Backups (all restore-verified): mddb nightly 02:30 → `~/mddb-backups`
+  (pulled to home); open-notebook SurrealDB export nightly 02:45 →
+  `~/open-notebook-backups` (import-tested, 518 sources); obsidian vault
+  tar nightly 03:00 → `~/obsidian-backups`; monthly restore-check timer
+  re-imports the newest SurrealDB export into a scratch container and
+  fails loudly on <100 sources.
 - Hardening pass 2026-09-22: SSH now tailnet-only (public :22 closed);
   mddb/panel bound to the tailnet IP (loopback closed); 21 devin-bank
   transcript docs redacted in place on idc01 (live Google API keys,
@@ -115,16 +128,19 @@ embeds on write) while `ada_remember` still reported success to the
 caller — silent memory loss. Plan cold-start windows deliberately; the
 deferred follower replica (§10) also covers this gap.
 
-## 5. Embeddings — open decision
+## 5. Embeddings — DECIDED 2026-09-23: hybrid (B-aware A)
 
-Existing vectors are `gemini-embedding-2` via gemini-ollama-proxy
-(the `nomic-embed-text` name is an alias to gemini-embedding-2).
-
-- A: run gemini-ollama-proxy on idc01 → vectors stay compatible.
-- B: real local Ollama `nomic-embed-text` (CPU) → kills quota
-  dependency, but stored vectors become incomparable — full reindex
-  via `scripts/mddb/reindex.py`.
-- Recommendation: A at migration, evaluate B later.
+Gemini stays canonical; local Ollama `nomic-embed-text` is the outage
+fallback. gemini-ollama-proxy tries Gemini → alternate model → Ollama,
+with a circuit breaker (1h cooldown after 429s) so bulk loads don't pay
+retry cost per chunk. Mixed-space hazard is handled by
+`mddb-embed-space-check.timer`: hourly probe, tracks corpus space in
+`~/mddb-embed-space`, and on Gemini recovery force-reindexes all
+collections back to gemini space then runs the recall canary (timer
+fails on regression). Recall during the first outage: 10/10 canary in
+nomic space. Open Notebook uses the same local nomic for retrieval;
+generation still needs Gemini quota or a faster local model (deferred —
+phi3-gguf on tony-omen's 4GB GPU is >300s/question, unusable live).
 
 ## 6. Repo / stack / data structure
 
@@ -188,8 +204,14 @@ writes are local on the VPS — unaffected.
   embeddings replicate via binlog (follower needs no embedding
   provider). Promotion is manual (restart as standalone). Also gives
   home consumers a local read replica.
-- `MDDB_AUTH_ENABLED=true` + per-consumer keys (unauthenticated today).
+- `MDDB_AUTH_ENABLED=true` + per-consumer keys for HTTP/gRPC
+  (MCP :9000 already key-gated; core ports still open on the tailnet).
+- **Local generation for deep-tier** — phi3-gguf on tony-omen's 4GB GPU
+  is >300s/question; a 7B-class card or accepting cloud dependence is a
+  spend decision (deferred).
 - `public:` bank flag enforcement end-to-end.
+- Rotate Gemini API key + HA tokens (purge-only was chosen; the leaked
+  values may still be valid and live in pre-rewrite backups — user action).
 - Disk encryption / provider threat model before real personal data.
 - notebooklm-rest move, only if dedicated Google account adopted.
 - **ada_ask_open_notebook** (deep-tier tool — spec, unbuilt):
