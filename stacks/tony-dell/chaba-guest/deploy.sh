@@ -123,7 +123,7 @@ chaba_guest_qr:
       target:
         entity_id: input_text.chaba_guest_qr_url
       data:
-        value: "{{ bridge.response.gate_url }}&r={{ ('http://192.168.2.67:8126' ~ chat.response.redeem_url) | urlencode }}"
+        value: "{{ bridge.content.gate_url }}&r={{ ('http://192.168.2.67:8126' ~ chat.content.redeem_url) | urlencode }}"
 '''
 sp.write_text(s)
 print("chaba scripts merged")
