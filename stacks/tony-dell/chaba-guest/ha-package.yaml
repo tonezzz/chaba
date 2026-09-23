@@ -23,6 +23,14 @@ rest_command:
     method: POST
     headers:
       X-Api-Key: !secret chaba_api_key
+  chaba_guest_reissue:
+    # Fresh one-time redeem link for the shared 'guest' chat key.
+    url: "http://127.0.0.1:8014/api/auth/keys/guest/redeem"
+    method: POST
+    content_type: "application/json"
+    headers:
+      X-Api-Key: !secret chaba_api_key
+    payload: '{"path": "/", "redirect": "/guest/", "origin": "http://192.168.2.67:8126"}'
 
 rest:
   - resource: http://127.0.0.1:8014/api/chaba/pending
@@ -63,15 +71,17 @@ script:
 
   chaba_guest_qr:
     alias: "Chaba: mint guest QR"
-    description: "Mint a fresh one-time guest entry link and HA auto-login bridge; writes the gate URL to input_text.chaba_guest_qr_url for the QR card."
+    description: "Mint a one-time HA auto-login bridge AND a fresh guest-chat redeem link; combines them into the gate URL written to input_text.chaba_guest_qr_url for the QR card."
     sequence:
       - action: rest_command.chaba_ha_bridge_mint
         response_variable: bridge
+      - action: rest_command.chaba_guest_reissue
+        response_variable: chat
       - action: input_text.set_value
         target:
           entity_id: input_text.chaba_guest_qr_url
         data:
-          value: "{{ bridge.response.gate_url }}"
+          value: "{{ bridge.response.gate_url }}&r={{ ('http://192.168.2.67:8126' ~ chat.response.redeem_url) | urlencode }}"
 
 input_text:
   chaba_guest_qr_url:

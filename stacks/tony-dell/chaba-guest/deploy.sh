@@ -26,11 +26,13 @@ if "127.0.0.1" not in block.group(2):
     src = src[:block.end(2)] + "        - 127.0.0.1/32\n" + src[block.end(2):]
     print("added 127.0.0.1/32 to trusted_networks")
 
-# --- rest_command += chaba entries (insert before the NEXT top-level key)
+# --- rest_command: strip existing chaba_* entries, re-insert the full set
 rc = re.search(r"^rest_command:\n((?:  .*\n)+)", src, re.M)
 assert rc, "rest_command block not found"
-if "chaba_guest_promote:" not in rc.group(1):
-    insert = (
+rcbody = re.sub(r"  chaba_\w+:\n(?:    .*\n|      .*\n)+", "", rc.group(1))
+src = src[:rc.start(1)] + rcbody + src[rc.end(1):]
+rc = re.search(r"^rest_command:\n((?:  .*\n)+)", src, re.M)
+insert = (
         '  chaba_guest_promote:\n'
         '    url: "http://127.0.0.1:8014/api/chaba/promote/{{ name | urlencode }}"\n'
         '    method: POST\n'
@@ -48,9 +50,16 @@ if "chaba_guest_promote:" not in rc.group(1):
         '    method: POST\n'
         '    headers:\n'
         '      X-Api-Key: !secret chaba_api_key\n'
+        '  chaba_guest_reissue:\n'
+        '    url: "http://127.0.0.1:8014/api/auth/keys/guest/redeem"\n'
+        '    method: POST\n'
+        '    content_type: "application/json"\n'
+        '    headers:\n'
+        '      X-Api-Key: !secret chaba_api_key\n'
+        '    payload: \'{"path": "/", "redirect": "/guest/", "origin": "http://192.168.2.67:8126"}\'\n'
     )
-    src = src[:rc.end(1)] + insert + src[rc.end(1):]
-    print("added chaba rest_commands")
+src = src[:rc.end(1)] + insert + src[rc.end(1):]
+print("chaba rest_commands merged")
 
 # --- rest += pending-guests sensor (append to the rest: list block)
 rest = re.search(r"^rest:\n((?:  .*\n)+)", src, re.M)
@@ -73,11 +82,11 @@ if "chaba_pending_guests" not in rest.group(1):
 
 cfg.write_text(src)
 
-# --- scripts.yaml += promote/revoke/qr
+# --- scripts.yaml: replace chaba_guest_* blocks wholesale (idempotent update)
 sp = pathlib.Path.home() / ".config/home-assistant/scripts.yaml"
 s = sp.read_text()
-if "chaba_guest_promote:" not in s:
-    s += '''
+s = re.sub(r"\nchaba_guest_(promote|revoke|qr):\n(?:  .*\n|    .*\n|      .*\n|        .*\n|          .*\n)+", "\n", s)
+s += '''
 chaba_guest_promote:
   alias: "Chaba: promote guest"
   description: "Promote a pending guest to a named user."
@@ -104,18 +113,20 @@ chaba_guest_revoke:
 
 chaba_guest_qr:
   alias: "Chaba: mint guest QR"
-  description: "Mint a one-time HA auto-login bridge; URL lands in input_text.chaba_guest_qr_url."
+  description: "Mint a one-time HA auto-login bridge AND a fresh guest-chat redeem link; combined gate URL lands in input_text.chaba_guest_qr_url."
   sequence:
     - action: rest_command.chaba_ha_bridge_mint
       response_variable: bridge
+    - action: rest_command.chaba_guest_reissue
+      response_variable: chat
     - action: input_text.set_value
       target:
         entity_id: input_text.chaba_guest_qr_url
       data:
-        value: "{{ bridge.response.gate_url }}"
+        value: "{{ bridge.response.gate_url }}&r={{ ('http://192.168.2.67:8126' ~ chat.response.redeem_url) | urlencode }}"
 '''
     sp.write_text(s)
-    print("added chaba scripts")
+    print("chaba scripts merged")
 
 # --- input_texts.yaml += qr url holder
 ip = pathlib.Path.home() / ".config/home-assistant/input_texts.yaml"

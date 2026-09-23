@@ -25,17 +25,19 @@
       <a id="retry" class="btn" href="/" hidden>Open Home Assistant</a>
     </div>
     <script>
-      // /local/chaba-gate.html?t=<bridge-token>[&b=<bridge-base-url>]
+      // /local/chaba-gate.html?t=<bridge-token>[&b=<bridge-base-url>][&r=<redeem-url>]
       // Fetches burn-once credentials from the chaba guest service and writes
       // hassTokens into this origin's localStorage, which is what the HA
-      // frontend reads for its session.
+      // frontend reads for its session. If r= is present it is offered as
+      // the "guest chat" link after sign-in.
       (async () => {
         const msg = document.getElementById("msg");
         const err = document.getElementById("err");
         const params = new URLSearchParams(location.search);
         const token = params.get("t");
-        // Bridge base: explicit ?b= param, else the same-origin proxy path.
-        const base = params.get("b") || `${location.origin.replace(/:\d+$/, "")}/apps/chaba`;
+        const chat = params.get("r");
+        // Bridge base: explicit ?b= param, else the LAN chaba listener.
+        const base = params.get("b") || "http://192.168.2.67:8126";
         if (!token) { msg.textContent = ""; err.textContent = "Missing token — scan the QR again."; return; }
         try {
           const resp = await fetch(`${base}/api/chaba/ha-bridge/${encodeURIComponent(token)}`);
@@ -45,8 +47,20 @@
           }
           const tok = await resp.json();
           localStorage.setItem("hassTokens", JSON.stringify(tok));
-          msg.textContent = "Done — opening the dashboard…";
-          location.replace("/");
+          if (chat) {
+            msg.textContent = "Signed in. Open the dashboard, or the guest chat:";
+            const a = document.getElementById("retry");
+            a.textContent = "Open guest chat";
+            a.href = chat;
+            a.hidden = false;
+            const dash = document.createElement("a");
+            dash.className = "btn"; dash.href = "/"; dash.textContent = "Open dashboard";
+            dash.style.marginTop = "8px";
+            a.after(dash);
+          } else {
+            msg.textContent = "Done — opening the dashboard…";
+            location.replace("/");
+          }
         } catch (e) {
           msg.textContent = "";
           err.textContent = `Sign-in failed: ${e.message || e}. The link may already have been used — ask for a fresh QR.`;
