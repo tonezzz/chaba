@@ -1,0 +1,133 @@
+title: Chaba Memory Control
+subtitle: Declarative manifest for Chaba's rendered session context (devin + guest profiles)
+icon: brain
+version: 1
+
+overview:
+  purpose: |
+    Chaba (ชบา) is the file-based memory/context system for Devin sessions and
+    the guest web assistant. This file declares which sections exist, what each
+    includes, and the size budgets. A renderer (scripts/chaba/render-memory.py)
+    resolves the queries at render time — string-level, local files only, no
+    MDDB, no AI — and writes bounded context artifacts to ~/.local/share/chaba/.
+  boundary: |
+    Chaba never reads or writes Ada's MDDB banks (ada-ha-bank-*). Ada never
+    writes into docs/ssot/chaba/. The only shared surface is read-only
+    `context:` blocks in ordinary SSOT files.
+  layers:
+    L0: rendered context file injected into every session (the only auto-loaded memory)
+    L1: prepared report.yml — deeper detail, pull-only via exact key lookup
+    L2: docs/ssot/** full corpus via mcp_query_ssot / mcp_read_ssot
+    L3: session logs — session-memory.md + compactions/*.md (files only)
+
+render:
+  dir: ~/.local/share/chaba
+  report_file: memory-report.json
+  resolution: string-only
+  profiles:
+    devin:
+      output: context.md
+      report: report.yml
+      limits: {soft: 12000, hard: 20000}
+      overflow_order: [sessions, focus, project, home]   # dropped first → last
+      sections: [agent, user, home, project, focus, sessions]
+    guest:
+      output: context-guest.md
+      report: report-guest.yml
+      limits: {soft: 4000, hard: 6000}
+      sections: [assist, home, guests]
+
+sections:
+
+  agent:
+    description: |
+      How Devin should operate in this repository: session modes, git/deploy
+      policy, safety gates. Highest priority — never dropped.
+    priority: 100
+    required: true
+    limits: {soft: 1500, hard: 2500}
+    include:
+      - {file: docs/ssot/infrastructure/ssot.devin-modes.yml, key: context.agent}
+      - {file: docs/ssot/ssot.git-policy.yml,               key: context.agent}
+    more:
+      - label: Full mode behavior tables
+        key: agent.modes
+        source: {file: docs/ssot/infrastructure/ssot.devin-modes.yml, key: modes}
+
+  user:
+    description: Who the operator is and how to respond.
+    priority: 90
+    limits: {soft: 800, hard: 1200}
+    include:
+      - {file: docs/ssot/chaba/ssot.chaba.user-profile.yml, key: context.user}
+
+  home:
+    description: Host inventory, canonical addresses, service topology.
+    priority: 70
+    limits: {soft: 1500, hard: 2500}
+    include:
+      - file: docs/ssot/infrastructure/ssot.values.yml
+        key: hosts
+        format: "- {name} — {tailscale} ({tailscale_ip})"
+      - {file: docs/ssot/ssot.mysystem.home.yml,           key: context.agent}
+    guest_include:
+      - {file: docs/ssot/ssot.mysystem.home.yml,           key: context.guest}
+      - {file: docs/ssot/infrastructure/ssot.values.yml,   key: context.guest}
+    more:
+      - label: Canonical ports registry
+        key: home.ports
+        source: {file: docs/ssot/infrastructure/ssot.values.yml, key: ports}
+      - label: Canonical schedules registry
+        key: home.schedules
+        source: {file: docs/ssot/infrastructure/ssot.values.yml, key: schedules}
+
+  project:
+    description: Repo conventions — parallel sessions, build/deploy entry points.
+    priority: 80
+    limits: {soft: 1500, hard: 2500}
+    include:
+      - {file: AGENTS.md, section: "Chaba memory"}
+
+  focus:
+    description: Active focus items — what is being worked on now.
+    priority: 60
+    limits: {soft: 1200, hard: 2000}
+    include:
+      - file: docs/ssot/ssot.focus.current.active.yml
+        key: sections.*.items.*
+        max_items: 5
+        format: "- {label} [{status}]"
+
+  sessions:
+    description: Recent session outcomes, fed by compaction/session-end hooks.
+    priority: 40
+    limits: {soft: 5000, hard: 8000}
+    source:
+      kind: rolling-log
+      file: ~/.local/share/devin/notebook-summaries/session-memory.md
+      max_entries: 3
+      min_chars: 200        # skip "Session end"/checkpoint stubs
+
+  # ---- guest-only sections ----
+
+  assist:
+    description: |
+      Behavior rules for the guest assistant: ask the visitor's name once,
+      disclose that saved memories are public, and offer admin promotion.
+    source:
+      kind: inline
+      text: |
+        - You are Chaba, the house assistant. Visitors reach you by scanning a QR or opening a link.
+        - On first contact, ask the visitor's name and remember it for this session.
+        - Before saving anything, say clearly: memories you save here are visible to everyone in this household.
+        - Offer registration (name + voice) so an admin can promote the visitor to a named user.
+        - You may answer questions about the home and read public guest memories only.
+
+  guests:
+    description: Public memories saved by visitors, namespaced by declared name.
+    limits: {soft: 1500, hard: 2500}
+    source:
+      - kind: dir
+        file: [guests/*.yml, users/*.yml]
+        pick: entries
+        format: "- ({name}) {key}: {text}"

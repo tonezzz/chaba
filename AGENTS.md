@@ -12,6 +12,15 @@ Then follow the behavior for that mode in `docs/ssot/infrastructure/ssot.devin-m
 
 Valid modes: `normal`, `plan`, `build`, `review`.
 
+## Chaba memory
+
+- Worktree per session for card-repo changes; never edit the live checkout when another session may run.
+- Deploy lock: deploy-card.sh uses flock /tmp/pfg-deploy.lock — do not bypass.
+- After push-dashboard.py, always run sync-ssot-from-live.sh and commit.
+- Dashboard config changes: mutate live over websocket, then sync. No rebuild needed.
+- Verify card changes on michael-dev before promoting; promotion needs explicit approval.
+- This repo's memory/context system is Chaba (ชบา). Ada is the separate voice assistant — her memory lives in ada-* MDDB banks; do not write to them from here.
+
 # Agent Quick Reference - Home Assistant
 
 ## Entry points

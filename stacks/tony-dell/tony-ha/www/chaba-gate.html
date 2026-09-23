@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta http-equiv="Cache-Control" content="no-store">
+    <title>Chaba — signing you in</title>
+    <style>
+      body { margin: 0; min-height: 100vh; display: grid; place-items: center;
+             background: #02090f; color: #c9fbff; font: 15px/1.5 system-ui, sans-serif; }
+      #card { max-width: 340px; padding: 28px 24px; border: 1px solid #0d4a63;
+              border-radius: 14px; background: #04141c; text-align: center; }
+      h1 { margin: 0 0 8px; color: #aef8ff; font-size: 22px; }
+      #msg { color: #75bdc5; margin: 0 0 14px; }
+      #err { color: #ff9a8a; min-height: 20px; font-size: 13px; }
+      a.btn { display: inline-block; padding: 10px 18px; border: 1px solid #087ef2;
+              border-radius: 9px; color: #aef8ff; text-decoration: none; font-weight: 600; }
+    </style>
+  </head>
+  <body>
+    <div id="card">
+      <h1>Chaba guest access</h1>
+      <p id="msg">Signing you in to the home dashboard…</p>
+      <div id="err"></div>
+      <a id="retry" class="btn" href="/" hidden>Open Home Assistant</a>
+    </div>
+    <script>
+      // /local/chaba-gate.html?t=<bridge-token>[&b=<bridge-base-url>]
+      // Fetches burn-once credentials from the chaba guest service and writes
+      // hassTokens into this origin's localStorage, which is what the HA
+      // frontend reads for its session.
+      (async () => {
+        const msg = document.getElementById("msg");
+        const err = document.getElementById("err");
+        const params = new URLSearchParams(location.search);
+        const token = params.get("t");
+        // Bridge base: explicit ?b= param, else the same-origin proxy path.
+        const base = params.get("b") || `${location.origin.replace(/:\d+$/, "")}/apps/chaba`;
+        if (!token) { msg.textContent = ""; err.textContent = "Missing token — scan the QR again."; return; }
+        try {
+          const resp = await fetch(`${base}/api/chaba/ha-bridge/${encodeURIComponent(token)}`);
+          if (!resp.ok) {
+            const body = await resp.json().catch(() => ({}));
+            throw new Error(body.error || `bridge returned ${resp.status}`);
+          }
+          const tok = await resp.json();
+          localStorage.setItem("hassTokens", JSON.stringify(tok));
+          msg.textContent = "Done — opening the dashboard…";
+          location.replace("/");
+        } catch (e) {
+          msg.textContent = "";
+          err.textContent = `Sign-in failed: ${e.message || e}. The link may already have been used — ask for a fresh QR.`;
+          document.getElementById("retry").hidden = false;
+        }
+      })();
+    </script>
+  </body>
+</html>

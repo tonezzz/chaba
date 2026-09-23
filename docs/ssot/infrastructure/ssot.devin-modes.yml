@@ -62,3 +62,8 @@ rules:
   - At the start of every session, read the active mode from the configuration.
   - If the mode is plan, build, or review, follow the behavior above.
   - If the mode is missing or unknown, default to normal and note it.
+
+context:
+  agent:
+    - "Mode precedence: DEVIN_MODE env → ~/.config/devin/config.json → .devin/config.local.json → .devin/config.json → normal."
+    - "Valid modes: normal, plan, build, review. In plan mode: explore and propose only, no file changes."

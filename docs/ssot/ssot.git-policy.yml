@@ -98,3 +98,9 @@ worktree_policy:
   - Clean worktrees should be removed after the branch is merged.
   - Dirty worktrees must be committed or stashed before the worktree is removed.
   - Each worktree must map to one branch; do not create multiple worktrees for the same branch.
+
+context:
+  agent:
+    - "Linear history on master; cherry-pick or squash, no merge commits."
+    - "Never push without explicit request. Never commit secrets or docs/ada-memory/personal/**."
+    - "Leave unrelated working-tree changes untouched; commit only what the task produced."

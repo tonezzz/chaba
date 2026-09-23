@@ -1,0 +1,79 @@
+# Chaba guest HA package — merge into tony-ha configuration (e.g. as a
+# packages file). Provides the pending-guests sensor for ada-users-card and
+# the promote/revoke/bridge scripts it calls.
+#
+# The chaba service on tony-dell listens on 127.0.0.1:8014 (tailnet/LAN proxied).
+# !secret chaba_api_key must hold the service's ADA_API_KEY.
+
+rest_command:
+  chaba_guest_promote:
+    url: "http://127.0.0.1:8014/api/chaba/promote/{{ name | urlencode }}"
+    method: POST
+    headers:
+      X-Api-Key: !secret chaba_api_key
+    content_type: "application/json"
+    payload: "{}"
+  chaba_guest_revoke:
+    url: "http://127.0.0.1:8014/api/chaba/revoke/{{ name | urlencode }}"
+    method: POST
+    headers:
+      X-Api-Key: !secret chaba_api_key
+  chaba_ha_bridge_mint:
+    url: "http://127.0.0.1:8014/api/chaba/ha-bridge"
+    method: POST
+    headers:
+      X-Api-Key: !secret chaba_api_key
+
+rest:
+  - resource: http://127.0.0.1:8014/api/chaba/pending
+    headers:
+      X-Api-Key: !secret chaba_api_key
+    scan_interval: 20
+    sensor:
+      - name: "Chaba pending guests"
+        unique_id: chaba_pending_guests
+        value_template: "{{ value_json.pending | length }}"
+        json_attributes:
+          - pending
+
+script:
+  chaba_guest_promote:
+    alias: "Chaba: promote guest"
+    description: "Promote a pending guest to a named user (private namespace + person entity)."
+    fields:
+      name:
+        name: Guest name
+        required: true
+    sequence:
+      - action: rest_command.chaba_guest_promote
+        data:
+          name: "{{ name }}"
+
+  chaba_guest_revoke:
+    alias: "Chaba: revoke guest"
+    description: "Archive a guest/user's memory files and drop live sessions."
+    fields:
+      name:
+        name: Guest name
+        required: true
+    sequence:
+      - action: rest_command.chaba_guest_revoke
+        data:
+          name: "{{ name }}"
+
+  chaba_guest_qr:
+    alias: "Chaba: mint guest QR"
+    description: "Mint a fresh one-time guest entry link and HA auto-login bridge; writes the gate URL to input_text.chaba_guest_qr_url for the QR card."
+    sequence:
+      - action: rest_command.chaba_ha_bridge_mint
+        response_variable: bridge
+      - action: input_text.set_value
+        target:
+          entity_id: input_text.chaba_guest_qr_url
+        data:
+          value: "{{ bridge.response.gate_url }}"
+
+input_text:
+  chaba_guest_qr_url:
+    name: "Chaba guest QR URL"
+    max: 255

@@ -118,6 +118,45 @@ class AdaUsersCard extends HTMLElement {
       }
       list.appendChild(row);
     }
+    this._renderPendingGuests(list);
+  }
+
+  // Pending chaba guest registrations — fed by sensor.chaba_pending_guests
+  // (a REST sensor polling the chaba guest service). Promote/dismiss run
+  // script.chaba_guest_promote / script.chaba_guest_revoke on the live host.
+  _renderPendingGuests(list) {
+    const hass = this._hass;
+    const st = hass && hass.states["sensor.chaba_pending_guests"];
+    const pending = (st && st.attributes && st.attributes.pending) || [];
+    const head = document.createElement("div");
+    head.style.cssText = "margin-top:10px;font-size:.8rem;color:var(--secondary-text-color);text-transform:uppercase;letter-spacing:.05em";
+    head.textContent = `Pending guests (${pending.length})`;
+    list.appendChild(head);
+    if (!pending.length) {
+      const none = document.createElement("div");
+      none.style.cssText = "font-size:.85rem;color:var(--secondary-text-color)";
+      none.textContent = st ? "No pending registrations." : "sensor.chaba_pending_guests unavailable";
+      list.appendChild(none);
+      return;
+    }
+    for (const g of pending) {
+      const row = document.createElement("div");
+      row.style.cssText = "display:flex;align-items:center;gap:6px;font-size:.9rem";
+      const name = document.createElement("span");
+      name.style.cssText = "flex:1;overflow:hidden;text-overflow:ellipsis";
+      name.textContent = g.name + (g.requested_at ? ` — ${String(g.requested_at).slice(0, 16)}` : "");
+      const promote = this._btn("Promote");
+      promote.title = `Promote ${g.name} to a named user (creates person.<name>, binds voiceprint, opens private namespace)`;
+      promote.onclick = () => hass.callService("script", "chaba_guest_promote", { name: g.name });
+      const dismiss = this._btn("Dismiss");
+      dismiss.style.color = "var(--error-color, #f47067)";
+      dismiss.onclick = () => {
+        if (confirm(`Dismiss pending guest "${g.name}"?`))
+          hass.callService("script", "chaba_guest_revoke", { name: g.name });
+      };
+      row.append(name, promote, dismiss);
+      list.appendChild(row);
+    }
   }
 
   async _issue(el, instance, key) {

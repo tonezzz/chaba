@@ -1,0 +1,15 @@
+[Unit]
+Description=LAN listener for Home Assistant guest access (192.168.2.67:8125 -> 127.0.0.1:8123)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+# Plain HTTP on the home LAN only. HA stays loopback+tailscale; this relay is
+# the only LAN path and exists solely so guest phones can reach the UI.
+ExecStart=/usr/bin/socat TCP-LISTEN:8125,bind=192.168.2.67,fork,reuseaddr TCP:127.0.0.1:8123
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target

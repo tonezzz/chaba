@@ -1,0 +1,15 @@
+[Unit]
+Description=Chaba guest assistant (ada-pi pwa_server, CHABA_MEMORY=1)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/CascadeProjects/ada-pi
+EnvironmentFile=%h/.config/secrets/chaba-guest.env
+ExecStart=%h/CascadeProjects/ada-pi/.venv/bin/python -m uvicorn pwa_server:app --host 127.0.0.1 --port 8014
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target

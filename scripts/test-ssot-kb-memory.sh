@@ -126,6 +126,24 @@ else
 fi
 
 grep -q "NLM_HOST:-$NLMHOST" "$NLM" && ok "nlm wrapper defaults to $NLMHOST" || drift "nlm wrapper no longer defaults to $NLMHOST — check $NLM"
+
+# Chaba memory control: all section queries must resolve and budgets must hold.
+CHABA_RENDER="$REPO_ROOT/scripts/chaba/render-memory.py"
+if [ -x "$CHABA_RENDER" ] || [ -f "$CHABA_RENDER" ]; then
+  if python3 "$CHABA_RENDER" --check >/dev/null 2>&1; then
+    ok "chaba render-memory.py --check clean (queries resolve, budgets hold)"
+  else
+    bad "chaba render-memory.py --check failed — run it for details"
+  fi
+  CHABA_CTX="$HOME/.local/share/chaba/context.md"
+  if [ -f "$CHABA_CTX" ] && [ -s "$CHABA_CTX" ]; then
+    ok "chaba context.md rendered ($(wc -c <"$CHABA_CTX") bytes)"
+  else
+    drift "chaba context.md missing — run render-memory.py"
+  fi
+else
+  skip "chaba renderer not present at $CHABA_RENDER"
+fi
 else
   skip "memory_local — host-scoped to $(mget systems.memory_local.host 2>/dev/null) (running on $HOST)"
 fi

@@ -323,3 +323,12 @@ config:
     - ssot.apps.yml
     - infrastructure/ssot.health.home.yml (home health checks)
     - infrastructure/ssot.health.mobile.yml (mobile health checks)
+
+context:
+  agent:
+    - "tony-omen: dev/GPU host. tony-dell: HA + apps host. mn01: Ada/memory host at mn-home. idc01: public VPS."
+    - "All HA URLs are Tailscale HTTPS; no LAN/plain-HTTP access to tony-ha."
+    - "Deploys to production (michael-ha, tony-ha, idc01 public) require explicit same-session approval."
+  guest:
+    - "This is Tony's home assistant. Lights and media are controllable; doors and gates are not."
+    - "Weather and house status are visible on the dashboard."

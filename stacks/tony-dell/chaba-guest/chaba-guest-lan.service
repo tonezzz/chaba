@@ -1,0 +1,13 @@
+[Unit]
+Description=LAN listener for the chaba guest service (192.168.2.67:8126 -> 127.0.0.1:8014)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/socat TCP-LISTEN:8126,bind=192.168.2.67,fork,reuseaddr TCP:127.0.0.1:8014
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target
