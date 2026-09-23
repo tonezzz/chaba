@@ -130,7 +130,14 @@ instances:
       card caches in localStorage ada_voice_api_key. First WS connect TOFU-
       binds the key to the browser's device_id; a 4401 close (revoked /
       foreign binding) triggers one re-mint retry, then falls back to a
-      paste-once unlock field. The admin key never leaves HA (secrets.yaml),
+      paste-once unlock field. v3 (2026-09-23): controls column added —
+      a Mute button hard-mutes the mic (track disabled), and an "Auto"
+      checkbox (persisted in localStorage ada_voice_auto_mute) VAD-gates
+      the mic: after local_speech_stopped the mic is auto-muted (captured
+      for VAD but not sent) and speaking again auto-resumes. v4 (2026-09-23):
+      the card publishes status transitions + You/Ada transcripts to a shared
+      window channel consumed by custom:ada-activity-card (same bundle) — a
+      log-style live feed used on chaba-home's AI tab. The admin key never leaves HA (secrets.yaml),
       no key sits in dashboard config (lovelace snapshots sync into this
       repo), and every browser gets its own revocable issued key visible in
       the ada-keys-card list. Mic needs HTTPS (satisfied via Tailscale
@@ -213,7 +220,7 @@ instances:
     instance: tony-ha
     title: Chaba home
     icon: mdi:home-heart
-    url: https://tony-dell.taila0626a.ts.net:8123/chaba-home/g3
+    url: https://tony-dell.taila0626a.ts.net:8123/chaba-home/ai
     require_admin: false
     depends_on:
       - custom:ada-voice-card (/local/ada-voice-card.js — same card and
@@ -242,14 +249,27 @@ instances:
       the panel view's single card is now a vertical-stack (voice card, then
       the pfg3d card); the pfg3d card title was removed and pfg_fit_screen
       raised 120px → 290px to keep the chart inside the viewport below the
-      voice card.
+      voice card. Later 2026-09-23: split into two tabs — "AI" (path ai,
+      mdi:robot-outline) holds the voice card (titled "Live assistant") plus
+      a new custom:ada-activity-card ("Live activity", defined in the same
+      ada-voice-card.js bundle v4) that renders a log-style live feed of
+      status transitions + You/Ada transcripts from a shared window channel
+      (300-entry cap, auto-scroll, dedupes repeats); "Nobito" (path nobito,
+      mdi:poll) holds the pfg3d chart alone with pfg_fit_screen back at
+      120px.
     tabs:
+      - title: AI
+        path: ai
+        icon: mdi:robot-outline
+        type: panel
+        cards: vertical-stack of ada-voice-card ("Live assistant") +
+          ada-activity-card ("Live activity" log feed)
       - title: Nobito
-        path: g3
+        path: nobito
         icon: mdi:poll
         type: panel
-        cards: vertical-stack of ada-voice-card on top + pfg3d-card bar3d on
-          sensor.nobito_pm2_5 (10-day hour×day, min 0, no title)
+        cards: pfg3d-card bar3d on sensor.nobito_pm2_5 (10-day hour×day,
+          min 0, no title)
 
 tabs:
   dev:
