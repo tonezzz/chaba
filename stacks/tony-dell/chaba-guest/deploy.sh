@@ -125,8 +125,8 @@ chaba_guest_qr:
       data:
         value: "{{ bridge.response.gate_url }}&r={{ ('http://192.168.2.67:8126' ~ chat.response.redeem_url) | urlencode }}"
 '''
-    sp.write_text(s)
-    print("chaba scripts merged")
+sp.write_text(s)
+print("chaba scripts merged")
 
 # --- input_texts.yaml += qr url holder
 ip = pathlib.Path.home() / ".config/home-assistant/input_texts.yaml"
