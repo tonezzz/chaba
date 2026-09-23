@@ -1,7 +1,6 @@
 // ada-users-card — lists HA user accounts with per-user Ada pairing actions.
-// Same button vocabulary as ada-keys-card (Voice/Text/Re-pair/Revoke) plus an
-// Issue action that drives script.ada_pair_issue via the shared inputs so the
-// pairing QR lands in the ada-pair-qr-card on this view.
+// Buttons: Issue (new keys, QR lands in ada-pair-qr-card), QR icon (re-pair —
+// pops up a fresh pairing QR in place), Revoke.
 // Per-user Ada key name convention: user-<username>.
 class AdaUsersCard extends HTMLElement {
   setConfig(config) {
@@ -99,22 +98,16 @@ class AdaUsersCard extends HTMLElement {
         issue.onclick = () => this._issue(code, inst, key);
         row.appendChild(issue);
       } else {
-        const voice = this._btn("Voice");
-        voice.title = "Re-pair and open the voice interface in a popup";
-        voice.onclick = (e) => this._repairAndOpen(e, inst, key, code, "voice");
-        const chat = this._btn("Text");
-        chat.title = "Re-pair and open the text chat interface in a popup";
-        chat.onclick = (e) => this._repairAndOpen(e, inst, key, code, "chat");
-        const repair = this._btn("Re-pair");
-        repair.title = "Re-pair without opening — refreshes the QR on this dashboard";
-        repair.onclick = () => hass.callService("script", "ada_pair_reissue", { instance: inst, name: key });
+        const qr = this._iconBtn("mdi:qrcode");
+        qr.title = "Re-pair — pop up a fresh pairing QR for this key";
+        qr.onclick = () => this._showQrPopup(inst, key);
         const revoke = this._btn("Revoke");
         revoke.style.color = "var(--error-color, #f47067)";
         revoke.onclick = () => {
           if (confirm(`Revoke key "${key}" on ${inst}? The device loses access immediately.`))
             hass.callService("script", "ada_pair_revoke_named", { instance: inst, name: key });
         };
-        row.append(voice, chat, repair, revoke);
+        row.append(qr, revoke);
       }
       list.appendChild(row);
     }
@@ -185,54 +178,69 @@ class AdaUsersCard extends HTMLElement {
     setTimeout(() => { el.textContent = prev; delete el.dataset.busy; }, 6000);
   }
 
-  async _repairAndOpen(e, instance, name, el, ui) {
-    e.preventDefault();
-    if (el.dataset.busy) return;
-    el.dataset.busy = "1";
-    const prev = el.textContent;
-    el.textContent = name + " — re-pairing…";
-    // Open the window synchronously inside the user gesture — iOS Safari and
-    // webviews block window.open calls that happen after an await.
-    const win = window.open("", "_blank");
+  async _showQrPopup(instance, name) {
+    const ov = document.createElement("div");
+    ov.style.cssText =
+      "position:fixed;inset:0;z-index:9999;display:grid;place-items:center;background:rgba(0,0,0,.6)";
+    const card = document.createElement("div");
+    card.style.cssText =
+      "background:var(--card-background-color,#1c2128);padding:20px;border-radius:12px;" +
+      "display:flex;flex-direction:column;align-items:center;gap:10px;max-width:320px";
+    const title = document.createElement("div");
+    title.style.cssText = "font-weight:600;font-size:.95rem";
+    title.textContent = `Pair ${name}`;
+    const body = document.createElement("div");
+    body.style.cssText =
+      "width:232px;min-height:232px;background:#fff;border-radius:8px;padding:8px;" +
+      "display:grid;place-items:center;color:#333;font-size:12px;text-align:center";
+    body.textContent = "Minting QR…";
+    const link = document.createElement("a");
+    link.style.cssText = "font-size:.7rem;color:var(--primary-color);word-break:break-all;max-width:280px";
+    link.target = "_blank";
+    link.rel = "noopener";
+    const close = this._btn("Close");
+    close.onclick = () => ov.remove();
+    ov.onclick = (e) => { if (e.target === ov) ov.remove(); };
+    card.append(title, body, link, close);
+    ov.appendChild(card);
+    document.body.appendChild(ov);
     try {
       const res = await this._hass.callWS({
         type: "call_service",
         domain: "script",
         service: "ada_pair_reissue",
-        service_data: { instance, name, ui },
+        service_data: { instance, name },
         return_response: true,
       });
-      const path = res && res.response && res.response.content && res.response.content.redeem_url;
-      if (!path) throw new Error("no redeem_url in response");
-      const url = ((this._config && this._config.origin) || "https://mn01.taila0626a.ts.net") + path;
-      if (win) {
-        win.location.href = url;
-      } else {
-        this._showOpenLink(el, url, name);
-        return;
+      const content = res && res.response && res.response.content;
+      const svg = content && content.qr_svg;
+      const path = content && content.redeem_url;
+      if (!svg || !path) throw new Error("no QR in response");
+      body.innerHTML = svg;
+      const svgEl = body.querySelector("svg");
+      if (svgEl) {
+        svgEl.setAttribute("width", "216");
+        svgEl.setAttribute("height", "216");
       }
+      const url = ((this._config && this._config.origin) || "https://mn01.taila0626a.ts.net") + path;
+      link.href = url;
+      link.textContent = url;
     } catch (err) {
-      if (win) win.close();
-      el.textContent = name + " — failed: " + (err.message || err);
-      setTimeout(() => { el.textContent = prev; delete el.dataset.busy; }, 4000);
-      return;
+      body.textContent = "Re-pair failed: " + (err.message || err);
+      body.style.color = "#b43228";
     }
-    el.textContent = prev;
-    delete el.dataset.busy;
   }
 
-  _showOpenLink(el, url, name) {
-    el.textContent = "";
-    const a = document.createElement("a");
-    a.href = url;
-    a.target = "_blank";
-    a.rel = "noopener";
-    a.style.color = "var(--primary-color)";
-    a.textContent = "Tap to open session";
-    a.onclick = () => { setTimeout(() => { el.textContent = name; }, 500); };
-    el.appendChild(a);
-    setTimeout(() => { if (el.contains(a)) el.textContent = name; }, 120000);
-    delete el.dataset.busy;
+  _iconBtn(icon) {
+    const b = document.createElement("button");
+    b.style.cssText =
+      "padding:2px 8px;border-radius:6px;border:1px solid var(--divider-color,#444);" +
+      "background:var(--secondary-background-color,#1c2128);color:var(--primary-text-color);cursor:pointer;display:inline-flex;align-items:center";
+    const i = document.createElement("ha-icon");
+    i.setAttribute("icon", icon);
+    i.style.cssText = "--mdc-icon-size:16px";
+    b.appendChild(i);
+    return b;
   }
 
   _btn(label) {
