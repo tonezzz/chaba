@@ -31,7 +31,7 @@ hosts:
   tony-omen:
     path: /home/tony/.local/share/devin/cli/sessions.db
     description: Primary dev workstation
-    current_size: 1.5Gi
+    current_size: 1.7Gi
     service: devin-cleanup.timer
     retention_days: 3
     notes:
@@ -58,6 +58,14 @@ hosts:
         this host); later same-day it killed a legit busy renderer mid-scan
         session (presented to the user as a crash dialog), so the kill policy
         was changed to require sustained CPU across two consecutive runs.
+      - >
+        2026-09-24 on-demand run: 26 stale sessions (>3d) offloaded to the
+        NotebookLM archive + local raw copies, deleted after Devin exit, then
+        vacuum-devin-db.sh — 2.0 GiB -> 1.7 GiB, integrity ok, auto_vacuum
+        confirmed on. 25 of the 26 were hidden=1 and had never been archived;
+        the extract script's hidden=0 filter misses them, so per-id extraction
+        is required for hidden sessions. notebooklm-mcp container on mn01 had
+        died (exit 137) and needed a restart before offload worked.
 
 cleanup:
   timer_schedule:
