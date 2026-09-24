@@ -1,0 +1,106 @@
+title: Ada->Devin dispatch ops learnings (2026-09-24)
+subtitle: Tailscale ssh interception, --collect result loss, one-shot notification staleness, and a self-critiquing dispatched session
+date: "2026-09-24"
+icon: 🧠
+context: |
+  Completed the Ada->Devin dispatch job (P2 Ada tools + P4 focus-inbox renderer),
+  consolidated tony-dell's 25 diverged unpushed commits onto the rewritten history,
+  and hardened devin-dispatch-watch based on a dispatched session's own assessment
+  of it (written into the devin-handoff bank — the feedback loop works).
+
+lessons:
+  - id: tailscaled-ssh-intercepts-plain-ssh
+    title: ssh <tailnet-name> from other hosts hits interactive re-auth — services must use the LAN path
+    severity: high
+    symptom: |
+      `ssh tony-dell` from tony-omen/mn01 hangs printing "Tailscale SSH requires an
+      additional check" + a login.tailscale.com link. deploy-ada.sh stalled for
+      minutes on emit_event; ada devin_* tools would have been unusable from mn01/idc01.
+    root_cause: |
+      MagicDNS resolves the hostname to the tailscale IP where tailscaled-ssh
+      intercepts port 22 and periodically demands browser re-auth. The LAN IP
+      (192.168.2.67) reaches plain sshd with normal key auth.
+    fix: |
+      backend/devin_dispatch.py defaults ADA_DEVIN_DISPATCH_HOST to the LAN IP;
+      deploy-ada.sh emit_event gained -o ConnectTimeout=8 -o BatchMode=yes.
+      Generated a dedicated mn01->tony-dell ed25519 key + ssh config IdentityFile;
+      idc01 already had a key.
+    prevention: |
+      Any service-to-service ssh in this infra should target the LAN IP or an
+      explicit ssh config alias, never the tailnet hostname. Interactive `ssh
+      tony-dell` still works for humans after opening the printed auth link.
+
+  - id: collect-unit-result-loss
+    title: systemd-run --collect destroys the unit Result — record exit_code yourself
+    severity: medium
+    symptom: |
+      devin-dispatch-watch inferred result=success for any GC'd unit with a
+      transcript. A crashed/killed devin -p session looks identical: unit unloaded,
+      transcript present.
+    root_cause: |
+      --collect unloads the unit at exit; the Result property is gone AND the user
+      journal on tony-dell retains no 'Succeeded./Failed with result' lines for
+      these units (only process output + the Consumed-accounting line).
+    fix: |
+      devin-dispatch wraps the run in bash: `devin -p ... || rc=$?; echo $rc >
+      $TASK_DIR/exit_code`. Watch prefers exit_code, then journal, then transcript
+      inference (labelled inferred in logs).
+    prevention: |
+      Any systemd-run --collect job that needs post-hoc success/failure must write
+      its own result artifact; do not rely on the journal.
+
+  - id: one-shot-notify-staleness
+    title: Single notified_at stamp hides follow-up completions and channel failures
+    severity: medium
+    symptom: |
+      A task dispatched, completed, stamped — then resumed via devin-dispatch
+      followup — finished again with no event/notify/outcome update. Also every
+      channel call was `|| true`, so a failed MDDB write still stamped notified_at.
+    fix: |
+      meta now tracks notified_fu (latest follow-up index reported); a newer fu
+      unit finishing re-fires. Per-channel stamps event_at/notify_at/mddb_at are
+      only set on success so a failed channel retries next run.
+    prevention: |
+      Watchdog-style notifiers should version their "last reported" marker
+      against the unit-of-work identity (fu index), not the task.
+
+  - id: post-rewrite-multi-host-divergence
+    title: History rewrite stranded tony-dell's 25 unpushed commits — rescue via rebase, not reset
+    severity: medium
+    symptom: |
+      After the credential-purge rewrite+push, tony-dell showed ahead 25/behind 24.
+      The 25 were real HA feature work (mn-weather dial, ada-voice-card v3,
+      chaba-home dashboard), not just rewritten auto-commits.
+    fix: |
+      `git cherry -v origin/master HEAD` proved all 25 patch-unique; rebased onto
+      origin/master resolving conflicts per-file: canonical-format dashboard
+      snapshots over raw `{'data':...}` websocket exports, per-hunk SSOT merges,
+      both-sides card merge for Nobito tab, dropped a duplicated chaba_home doc
+      block. One commit went empty (mute feature already upstream via live sync).
+    prevention: |
+      When rewriting pushed history on a multi-host repo, check every checkout for
+      unpushed work BEFORE rewriting; verify with git cherry, not just commit
+      subjects. Generated snapshot files (*-current.json) resolve by regeneration
+      anyway — pick the canonical format and let the next sync fix drift.
+
+  - id: self-assessment-via-handoff-bank
+    title: Dispatched sessions can audit the infrastructure that runs them
+    severity: info
+    symptom: |
+      A dispatched task asked to assess the dispatch system wrote
+      devin-handoff/dispatch-assessment-2026-09-23 into the handoff bank — the P4
+      renderer surfaced it in focus-inbox, and it contained three real bugs in
+      devin-dispatch-watch (result inference, one-shot notify, silent channels).
+    fix: All three were fixed the same session (see the other lessons).
+    prevention: |
+      Periodically dispatch "assess X" tasks — the headless sessions produce
+      genuinely useful self-audits. The handoff bank + focus-inbox renderer is the
+      intended feedback surface.
+
+status:
+  last_verified: "2026-09-24"
+  related:
+    - docs/ssot/jobs/ada/2026-09-22-ada-devin-dispatch.yml
+    - scripts/devin/devin-dispatch.sh
+    - scripts/devin/devin-dispatch-watch.sh
+    - scripts/devin/render-handoff-inbox.py
