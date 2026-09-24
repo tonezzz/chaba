@@ -387,8 +387,8 @@ config:
       mac_conflict: false
       status: active
       notes: "Samkoon AK070AB Android HMI verified to have NO bluetooth hardware/stack (no bluetooth_manager service, empty /sys/class/bluetooth, bluetooth_on=0, no BT packages) — 2026-09-24."
-    - device_id: michael-jk-bms-scharger
-      label: JK BMS on weather-station battery (advert "SCharger-7KS-S0-NS2351395951")
+    - device_id: michael-huawei-scharger
+      label: Huawei SCharger-7KS-S0 EV wallbox charger (7.4 kW, single-phase)
       local_ids:
         ble_name: SCharger-7KS-S0-NS2351395951
         serial: NS2351395951
@@ -403,7 +403,7 @@ config:
           status: active
       mac_conflict: false
       status: active
-      notes: "Site technician says the weather-station battery module is a JK BMS with Bluetooth; this advert is the candidate (JK BMS names are user-renameable). Rejects unauthenticated BLE connects. Confirm via JK BMS app or ESP32 syssi/esphome-jk-bms (service FFE0, char FFE1). NOT wired into the Samkoon — Modbus :502 regs 4-47 are all zero."
+      notes: "Huawei EV wallbox — BLE 5.0 is FusionSolar-app authentication only (bonding required, non-persistent bonds, a001/a002 auth handshake not telemetry; Battery svc 99%). Also has WiFi/Ethernet/RFID/OCPP 1.6 + optional Modbus-TCP :502 — HA integration exists (FusionSolar/OCPP). NOT the weather-station BMS — JK BMS was not seen in the 2026-09-24 scan (likely out of range or radio asleep)."
     - device_id: michael-amway-atmosphere-mini
       label: Amway Atmosphere Mini air purifier (advert "Mini-Atmosphere")
       local_ids:

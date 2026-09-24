@@ -83,9 +83,14 @@ The site technician reported "the weather station has Bluetooth" — that is the
   purifier, LG/Samsung appliances, XMEye cams, Tuya, Solis datalogger,
   SolarAssistant, TV box). Full inventory in
   `ssot.mac-address-registry.michael.yml`. No Rika/weather advert exists.
-- **BMS candidate:** `SCharger-7KS-S0-NS2351395951` @ `58:56:C2:C8:EE:62`
-  (Espressif OUI) — JK BMS advert names are user-renameable; drops
-  unauthenticated connects. Confirm on-site with the JK BMS app.
+- **`SCharger-7KS-S0-NS2351395951` @ `58:56:C2:C8:EE:62` is NOT the BMS** —
+  it's Michael's **Huawei SCharger-7KS-S0 EV wallbox** (BLE = FusionSolar app
+  auth only; bonding required, GATT reads empty). Also offers Modbus-TCP/OCPP
+  if EV-charger telemetry is ever wanted — separate integration.
+- **The JK BMS itself did NOT appear in the scan.** Likely out of BLE range
+  at the station enclosure/pole (scan ran from michael-ha indoors), or its
+  BLE radio sleeps until woken/app-initiated. Needs an on-site scan next to
+  the battery box (nRF Connect or JK BMS app).
 - **No BMS on the Modbus bus:** `:502` regs 4–47 are all zero — only e1–e4
   (rain e5 when raining) are polled. The BMS cannot be read *through* the HMI.
 - **ESP32 path is viable if wanted:** JK BMS BLE = service `FFE0`, char `FFE1`;
