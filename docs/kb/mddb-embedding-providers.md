@@ -60,10 +60,19 @@ corpus must stay on ONE path or scores collapse to ~0.
 - OR-primary mode is FAIL-HARD: if OR errors the proxy returns 502 —
   Gemini/Ollama are never used because a wrong-space write is worse
   than an error. Response field `provider` names the serving backend.
+- `mddb-embed-space-check.timer` (hourly flip back to Gemini space)
+  RETIRED 2026-09-23 — obsolete and dangerous under OR-primary: on
+  Gemini recovery it would have reindexed the corpus into a second
+  space. Unit files + script removed from idc01.
 - Incident 2026-09-23: Cloudflare WARP (`warp-svc`) running on idc01
   mangled inbound connections — SSH dropped pre-banner, services hung.
-  `systemctl stop warp-svc` restored it. If SSH to idc01 ever accepts
-  TCP then closes before the banner, check warp-svc first.
+  Root cause not fully isolated (its fwmark/table-65743 rules coexist
+  with tailscale's without an obvious main-table clash — likely a
+  userspace interception or resource issue). ARCHIVED: unit stopped +
+  disabled 2026-09-23; re-enable only after investigating why it was
+  installed (Cloudflare Zero Trust for the future domain?). If SSH to
+  idc01 ever accepts TCP then closes before the banner, check
+  `systemctl is-active warp-svc` first.
 
 ## Verification commands
 
