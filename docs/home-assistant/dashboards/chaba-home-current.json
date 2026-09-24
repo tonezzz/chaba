@@ -1,125 +1,146 @@
 {
-  "views": [
-    {
-      "title": "AI",
-      "path": "ai",
-      "type": "panel",
-      "icon": "mdi:robot-outline",
-      "badges": [],
-      "cards": [
-        {
-          "type": "vertical-stack",
-          "cards": [
-            {
-              "type": "custom:ada-voice-card",
-              "title": "Live assistant"
-            },
-            {
-              "type": "custom:ada-activity-card",
-              "title": "Live activity"
-            },
-            {
-              "type": "custom:pfg3d-card",
-              "cardstyle": "pfg",
-              "card_height": "100%",
-              "card_width": "100%",
-              "pfg_grid_size": 1,
-              "pfg_grid_width": "100%",
-              "pfg_labels": {
-                "1,1": "Nobito PM2.5 µg/m³ — hour×day low–high"
-              },
-              "pfg_charts": {
-                "1,1": [
-                  {
-                    "type": "bar3d",
-                    "entity": "sensor.nobito_pm2_5",
-                    "days": 10,
-                    "min": 0,
-                    "scale": 1,
-                    "unit": "µg/m³",
-                    "position": "bg",
-                    "height": "100%",
-                    "rotate_sensitivity": [
-                      -4,
-                      4
-                    ],
-                    "opacity": 1,
-                    "view_offset": 40,
-                    "key": "g3",
-                    "stat": "range"
-                  }
-                ]
-              },
-              "preset": "pfg",
-              "show_solar": false,
-              "inverter": {
-                "model": "solis",
-                "modern": true,
-                "autarky": "no"
-              },
-              "pfg_fit_screen": "120px",
-              "pfg_border": {
-                "1,1": "1px solid rgba(255, 255, 255, 0.2)"
-              },
-              "pfg_transparent": true
-            }
-          ]
-        }
-      ]
-    },
-    {
-      "title": "Nobito",
-      "path": "nobito",
-      "type": "panel",
-      "icon": "mdi:poll",
-      "badges": [],
-      "cards": [
-        {
-          "type": "custom:pfg3d-card",
-          "cardstyle": "pfg",
-          "card_height": "100%",
-          "card_width": "100%",
-          "pfg_grid_size": 1,
-          "pfg_grid_width": "100%",
-          "pfg_labels": {
-            "1,1": "Nobito PM2.5 µg/m³ — hour×day low–high"
-          },
-          "pfg_charts": {
-            "1,1": [
-              {
-                "type": "bar3d",
-                "entity": "sensor.nobito_pm2_5",
-                "days": 10,
-                "min": 0,
-                "scale": 1,
-                "unit": "µg/m³",
-                "position": "bg",
-                "height": "100%",
-                "rotate_sensitivity": [
-                  -4,
-                  4
-                ],
-                "opacity": 1,
-                "view_offset": 40,
-                "key": "g3",
-                "stat": "range"
-              }
+    "version": 1,
+    "minor_version": 1,
+    "key": "lovelace.chaba_home",
+    "data": {
+        "config": {
+            "views": [
+                {
+                    "title": "AI",
+                    "path": "ai",
+                    "type": "panel",
+                    "icon": "mdi:robot-outline",
+                    "badges": [],
+                    "cards": [
+                        {
+                            "type": "vertical-stack",
+                            "cards": [
+                                {
+                                    "type": "custom:ada-voice-card",
+                                    "title": "Live assistant"
+                                },
+                                {
+                                    "type": "custom:ada-activity-card",
+                                    "title": "Live activity"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "title": "Nobito",
+                    "path": "nobito",
+                    "type": "panel",
+                    "icon": "mdi:poll",
+                    "badges": [],
+                    "cards": [
+                        {
+                            "type": "custom:pfg3d-card",
+                            "cardstyle": "pfg",
+                            "card_height": "100%",
+                            "card_width": "100%",
+                            "pfg_grid_size": 1,
+                            "pfg_grid_width": "100%",
+                            "pfg_labels": {
+                                "1,1": "Nobito PM2.5 \u00b5g/m\u00b3 \u2014 hour\u00d7day low\u2013high",
+                                "1,2": "Nobito CO\u2082 ppm \u2014 hour\u00d7day lo\u2013hi",
+                                "1,3": "Nobito PM10 \u00b5g/m\u00b3 \u2014 hour\u00d7day lo\u2013hi"
+                            },
+                            "pfg_charts": {
+                                "1,1": [
+                                    {
+                                        "type": "bar3d",
+                                        "entity": "sensor.nobito_pm2_5",
+                                        "days": 10,
+                                        "min": 0,
+                                        "scale": 1,
+                                        "unit": "\u00b5g/m\u00b3",
+                                        "position": "bg",
+                                        "height": "100%",
+                                        "rotate_sensitivity": [
+                                            -4,
+                                            4
+                                        ],
+                                        "opacity": 1,
+                                        "view_offset": 40,
+                                        "key": "g3",
+                                        "stat": "range"
+                                    }
+                                ],
+                                "1,2": [
+                                    {
+                                        "type": "bar3d",
+                                        "days": 10,
+                                        "min": 0,
+                                        "scale": 1,
+                                        "position": "bg",
+                                        "height": "100%",
+                                        "rotate_sensitivity": [
+                                            -4,
+                                            4
+                                        ],
+                                        "opacity": 1,
+                                        "view_offset": 40,
+                                        "stat": "range",
+                                        "entity": "sensor.nobito_carbon_dioxide",
+                                        "unit": "ppm",
+                                        "key": "nobito-co2"
+                                    }
+                                ],
+                                "1,3": [
+                                    {
+                                        "type": "bar3d",
+                                        "days": 10,
+                                        "min": 0,
+                                        "scale": 1,
+                                        "position": "bg",
+                                        "height": "100%",
+                                        "rotate_sensitivity": [
+                                            -4,
+                                            4
+                                        ],
+                                        "opacity": 1,
+                                        "view_offset": 40,
+                                        "stat": "range",
+                                        "entity": "sensor.nobito_pm10",
+                                        "unit": "\u00b5g/m\u00b3",
+                                        "key": "nobito-pm10"
+                                    }
+                                ]
+                            },
+                            "preset": "pfg",
+                            "show_solar": false,
+                            "inverter": {
+                                "model": "solis",
+                                "modern": true,
+                                "autarky": "no"
+                            },
+                            "pfg_fit_screen": "120px",
+                            "pfg_border": {
+                                "1,1": "1px solid rgba(255, 255, 255, 0.2)",
+                                "1,2": "1px solid rgba(255, 255, 255, 0.2)",
+                                "1,3": "1px solid rgba(255, 255, 255, 0.2)"
+                            },
+                            "pfg_transparent": true,
+                            "pfg_grid_cols": 3,
+                            "pfg_grid_rows": 1
+                        }
+                    ]
+                },
+                {
+                    "title": "Chat",
+                    "path": "chat",
+                    "icon": "mdi:message-text-outline",
+                    "type": "panel",
+                    "cards": [
+                        {
+                            "type": "custom:ada-chat-card",
+                            "title": "Ada chat",
+                            "height": "calc(100vh - 240px)"
+                        }
+                    ]
+                }
             ]
-          },
-          "preset": "pfg",
-          "show_solar": false,
-          "inverter": {
-            "model": "solis",
-            "modern": true,
-            "autarky": "no"
-          },
-          "pfg_fit_screen": "120px",
-          "pfg_border": {
-            "1,1": "1px solid rgba(255, 255, 255, 0.2)"
-          },
-          "pfg_transparent": true
         }
-      ]
     }
-  ]
 }
