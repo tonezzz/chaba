@@ -120,6 +120,35 @@ the node must physically sit near the battery enclosure for BLE range).
 - **Flash:** `~/.local/bin/esphome run ~/.local/share/esphome/jkbms.yaml`
   (serial via `/dev/ttyUSB0` for first flash; OTA after it joins WiFi)
 
+## Merged display+BMS attempt on esp32test (2026-09-24) — FAILED at runtime
+
+Tried merging `jk_bms_ble` into the esp32test config (`esp32/esp32-test-idf.yaml`,
+esp-idf, compiled fine: DRAM 58.9% static / flash 78.8%). OTA flash via
+michael-ha tunnel to `192.168.31.231:3232` succeeded, but the device died
+within ~1 min: WiFi came up, API port listened, handshake never completed,
+then total silence (no ping, no ports, no `safe_mode` OTA window after 10+ min).
+
+- **Likely cause:** heap exhaustion. NimBLE alone reserves ~56 KB DRAM
+  (DRAM pool 124,580 B with BLE vs 180,736 B without). The merged build's
+  ~51 KB static headroom couldn't cover NimBLE runtime allocs + display
+  buffers → malloc failure → crash/hang. A boot loop early enough never
+  increments the boot-failure counter, so `safe_mode` never engages.
+- **Fix applied in the merge:** `ESP.getFreeHeap()` → `esp_get_free_heap_size()`
+  (Arduino API doesn't exist under esp-idf).
+- **Conclusion:** single-board option (B) is not viable on a plain
+  ESP32-D0WD (no PSRAM). Use option A (repurpose esp32test as BMS bridge,
+  lose display) or option C (second board for `jkbms.yaml`).
+- **Recovery images** in `~/.local/share/esphome/recovery/`:
+  `esp32test-displayonly.{ota,factory}.bin` (original config, no BLE — full
+  restore), `jkbms.{ota,factory}.bin` (dedicated BMS bridge).
+- **Device state:** esp32test at Michael's is DOWN after the bad flash —
+  needs a physical power-cycle (any OTA window that appears: push
+  `esp32test-displayonly.ota.bin`) or serial reflash on-site
+  (`esphome upload` won't work remotely until it answers on 3232 again).
+- **Site address note:** on Michael's LAN it DHCPs as `192.168.31.231`
+  (reachable through michael-ha, which is a 172.30.x container — `ip neigh`
+  there never shows LAN MACs; find ESPHome nodes by port-sweeping 6053/3232).
+
 ## Notes
 
 - The PSK for `TONY-WIFI_2.4G` is stored in the tony-dell `secrets.yaml` and referenced via `!secret` in the repo config.
