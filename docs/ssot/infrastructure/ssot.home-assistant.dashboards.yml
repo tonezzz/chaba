@@ -113,7 +113,7 @@ instances:
       downsamples to PCM16@16kHz over WebSocket; server PCM16@24kHz plays
       through a blob-URL AudioWorklet (PCMPlayer); JSON control messages
       (ready/transcripts/response_*/live_reconnecting/clear_audio) drive the
-      status line. Connects to wss://mn01.taila0626a.ts.net/apps/ha/ada-tony/ws
+      status line. Connects to wss://idc01.taila0626a.ts.net/apps/ha/ada-tony/ws
       with device_id + api_key query params — websocket_authorized accepts
       the api_key param so no CORS/REST calls are needed. Key provisioning
       is automatic: on first connect the card calls script.ada_voice_key via
@@ -163,8 +163,8 @@ instances:
         path: ada-pages
         icon: mdi:file-document-edit-outline
         type: panel
-        cards: iframe → https://mn01.taila0626a.ts.net/apps/ha/ada-tony/cms/?api_key=...
-          (dedicated ada-ha-tony key 'cms-viewer' on mn01; key is embedded in the
+        cards: iframe → https://idc01.taila0626a.ts.net/apps/ha/ada-tony/cms/?api_key=...
+          (dedicated ada-ha-tony key 'cms-viewer' on idc01; key is embedded in the
           URL because iframes can't set headers — it is revocable via the Pair
           tab. The key is a shared viewer key (device='*' in the keys file),
           so it works from any browser without binding. Added 2026-09-22; the

@@ -856,28 +856,28 @@ mn01:
     note: "Backend is /home/tony/CascadeProjects/ada-pi/pwa_server.py. Moved tony-dell -> idc01 per decision ada-ha-native-primary-ui; the tony-dell unit is stopped+disabled, removing the 0.0.0.0:8001 plain-HTTP LAN exposure. Frontend pages remain staged-retirement candidates — see ssot.apps.ada_pi.yml."
   ada-ha-tony:
     service: ada-ha-tony.service
-    host: mn01
+    host: idc01
     port: 8002
-    host_port: 0.0.0.0:8002
+    host_port: 127.0.0.1:8002
     purpose: Ada HA Tony instance (voice PWA for tony-ha)
     status: active
-    tailnet_url: "https://mn01.taila0626a.ts.net/apps/ha/ada-tony/"
+    tailnet_url: "https://idc01.taila0626a.ts.net/apps/ha/ada-tony/"
     env_file: "~/.config/secrets/ada-ha-tony.env"
-    caddyfile: "~/.config/caddy/Caddyfile.mn01"
+    edge: "tailscale serve path mount /apps/ha/ada-tony -> 127.0.0.1:8002 on idc01; mn01 Caddy reverse-proxies the same paths to idc01 as a legacy alias"
     upstream_ha: "https://tony-dell.taila0626a.ts.net:8123/"
     note: "Backend is /home/tony/CascadeProjects/ada-pi/pwa_server.py. Environment uses HOME_ASSISTANT_URL=https://tony-dell.taila0626a.ts.net:8123/ and the Tony long-lived token. A synced mirror runs on idc01 :8002 (loopback) exposed at https://idc01.taila0626a.ts.net/apps/ha/ada-tony/ — same admin keys; issued-keys file synced from mn01 2026-09-23 (re-sync after key churn)."
   ada-ha-michael:
     service: ada-ha-michael.service
-    host: mn01
+    host: idc01
     port: 8003
-    host_port: 0.0.0.0:8003
+    host_port: 127.0.0.1:8003
     purpose: Ada HA Michael instance (voice PWA for michael-ha)
     status: active
-    tailnet_url: "https://mn01.taila0626a.ts.net/apps/ha/ada-michael/"
+    tailnet_url: "https://idc01.taila0626a.ts.net/apps/ha/ada-michael/"
     env_file: "~/.config/secrets/ada-ha-michael.env"
-    caddyfile: "~/.config/caddy/Caddyfile.mn01"
+    edge: "tailscale serve path mount /apps/ha/ada-michael -> 127.0.0.1:8003 on idc01; mn01 Caddy reverse-proxies the same paths to idc01 as a legacy alias"
     upstream_ha: "http://michael-ha:8123/"
-    note: "Backend is /home/tony/CascadeProjects/ada-pi/pwa_server.py. Environment uses HOME_ASSISTANT_URL=http://michael-ha:8123/ and the Michael long-lived token. A synced mirror runs on idc01 :8003 (loopback) exposed at https://idc01.taila0626a.ts.net/apps/ha/ada-michael/ — same admin keys."
+    note: "Backend is /home/tony/CascadeProjects/ada-pi/pwa_server.py. Environment uses HOME_ASSISTANT_URL=http://michael-ha:8123/ and the Michael long-lived token. A synced mirror runs on idc01 :8003 (loopback) exposed at https://idc01.taila0626a.ts.net/apps/ha/ada-michael/ — same admin keys; idc01 reaches michael-ha directly over tailnet (verified 401 on /api/ 2026-09-23)."
   google-home-mcp:
     service: google-home-mcp.service
     host: mn01

@@ -5,7 +5,7 @@
 //
 // Config:
 //   type: custom:ada-voice-card
-//   ws_url:   wss://mn01.taila0626a.ts.net/apps/ha/ada-tony/ws   (default)
+//   ws_url:   wss://idc01.taila0626a.ts.net/apps/ha/ada-tony/ws   (default)
 //   instance: tony | michael   (default tony — selects the backend + key name)
 //   api_key:  <key>   optional — normally unset: the card auto-mints a
 //             per-device issued key via script.ada_voice_key (server-side
@@ -21,7 +21,7 @@
 
 const AVC_INPUT_RATE = 16000;
 const AVC_OUTPUT_RATE = 24000;
-const AVC_DEFAULT_WS = "wss://mn01.taila0626a.ts.net/apps/ha/ada-tony/ws";
+const AVC_DEFAULT_WS = "wss://idc01.taila0626a.ts.net/apps/ha/ada-tony/ws";
 const AVC_KEY_STORAGE = "ada_voice_api_key";
 const AVC_DEVICE_STORAGE = "ada_voice_device_id";
 const AVC_AUTO_STORAGE = "ada_voice_auto_mute";

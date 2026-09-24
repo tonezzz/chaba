@@ -41,13 +41,13 @@ sections:
     layout: list
     items:
       - label: tony instance
-        text: "https://mn01.taila0626a.ts.net/apps/ha/ada-tony/"
+        text: "https://idc01.taila0626a.ts.net/apps/ha/ada-tony/"
       - label: michael instance
-        text: "https://mn01.taila0626a.ts.net/apps/ha/ada-michael/"
-      - label: Caddy routing
-        text: "tony on 127.0.0.1:8002, michael on 127.0.0.1:8003, both via mn01 Caddy on https 443"
+        text: "https://idc01.taila0626a.ts.net/apps/ha/ada-michael/"
+      - label: Edge routing
+        text: "tailscale serve path mounts on idc01: /apps/ha/ada-tony -> 127.0.0.1:8002, /apps/ha/ada-michael -> 127.0.0.1:8003; mn01 Caddy reverse-proxies the same paths to idc01 as a legacy alias"
       - label: Registry
-        text: Listed as ada-ha-tony and ada-ha-michael under the mn01 host in docs/ssot/apps/ssot.apps.yml.
+        text: Listed as ada-ha-tony and ada-ha-michael under the idc01 host in docs/ssot/apps/ssot.apps.yml.
   - title: REST Endpoints
     icon: "🔌"
     layout: list
@@ -125,7 +125,7 @@ sections:
     layout: list
     items:
       - label: WebSocket ready
-        text: 'wss://mn01.taila0626a.ts.net/apps/ha/ada-{tony,michael}/ws returns {"type":"ready"}.'
+        text: 'wss://idc01.taila0626a.ts.net/apps/ha/ada-{tony,michael}/ws returns {"type":"ready"}.'
       - label: Voice
         text: Tap Connect and ask about the G3 power summary or a dashboard tab.
       - label: Text chat
