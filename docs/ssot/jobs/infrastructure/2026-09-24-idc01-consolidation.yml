@@ -1,0 +1,97 @@
+title: Consolidate Ada + memory stack on idc01
+subtitle: Record the completed migrations and finish standby-hygiene tail items
+icon: container
+id: 2026-09-24-idc01-consolidation
+status: in_progress
+owner: tony
+project: chaba
+started: "2026-09-22"
+estimated_duration: 3 sessions
+
+planning:
+  goal: |
+    idc01 is the primary host for the Ada + memory stack: ada-pi-pwa,
+    ada-ha-tony, ada-ha-michael, mddb (+gemini-ollama-proxy + ollama),
+    obsidian-vault, open-notebook. mn01 and tony-dell keep only LAN-bound
+    or standby roles.
+  rationale: |
+    - Single public VPS for the tailnet-served Ada surfaces; removes the
+      tony-dell 0.0.0.0:8001 plain-HTTP LAN exposure (decision
+      ada-ha-native-primary-ui).
+    - MDDB + embeddings co-located with the Ada instances that query it.
+  scope:
+    in_scope:
+      - Record migrated services in ssot.services.yml + host roles in
+        ssot.mysystem.home.yml.
+      - "Standby hygiene — mn01 ada units stopped+disabled, checkout kept
+        current by deploy-ada.sh (pull-only semantics already correct —
+        it restarts only active units)."
+      - Secret rotation for the stack (rotate-ada-secrets.sh ready).
+    out_of_scope:
+      - Moving HA itself, chaba-guest (LAN-bound), xmeye-vms,
+        google-home-mcp (mn01 LAN devices), or the obsidian vault canonical
+        copy (mn01 remains the source; idc01 rsyncs from it).
+
+implementation:
+  steps:
+    - id: 1
+      label: Migrate mddb + gemini-ollama-proxy + ollama to idc01
+      status: done
+      notes: |
+        2026-09-22. Snapshot copied, consumers repointed to 100.74.146.0,
+        tony-dell copy retired. Cold-start caveat: vector index loads
+        minutes after HTTP is up; writes fail during that window.
+    - id: 2
+      label: Migrate ada-pi-pwa to idc01
+      status: done
+      notes: 2026-09-23. tony-dell unit stopped+disabled; tailnet-only via tailscale serve.
+    - id: 3
+      label: Migrate ada-ha-tony + ada-ha-michael to idc01
+      status: done
+      notes: 2026-09-23. mn01 Caddy reverse-proxies the same /apps/ha/ada-* paths as a legacy alias.
+    - id: 4
+      label: Migrate obsidian-vault + open-notebook to idc01
+      status: done
+      notes: 2026-09-22. Vault still rsyncs from mn01 canonical docs/ada-memory.
+    - id: 5
+      label: Update host-role descriptions (ssot.mysystem.home.yml + rendered context)
+      status: done
+      notes: 2026-09-24. idc01 now listed as Ada/memory host; mn01 = standby + legacy alias.
+    - id: 6
+      label: mn01 standby hygiene — stop+disable ada-ha-* units
+      status: pending
+      notes: |
+        ssot.apps.ada_pi.yml documents "stopped+disabled as standby" but the
+        units are currently ACTIVE on mn01 (harmless — they serve no traffic
+        while Caddy proxies to idc01 — but drifted). deploy-ada.sh already
+        does the right thing: pulls the checkout and only restarts active
+        units, so stopping them is sticky. Run:
+          ssh mn01 'systemctl --user stop ada-ha-tony ada-ha-michael &&
+                    systemctl --user disable ada-ha-tony ada-ha-michael'
+    - id: 7
+      label: Rotate stack secrets (GEMINI_API_KEY ...UEQA + 3 HA tokens)
+      status: pending
+      notes: |
+        scripts/ada/rotate-ada-secrets.sh + docs/kb/secret-rotation.md.
+        Gemini key needs AI Studio (no gcloud/automation path available);
+        HA long-lived tokens need the HA profile UI — michael-ha could be
+        minted via OAuth+WS using stored nakva creds if desired.
+    - id: 8
+      label: Retire the mn01 legacy Caddy alias (after soak)
+      status: pending
+      notes: |
+        mn01.taila0626a.ts.net/apps/ha/ada-* proxies to idc01 for clients
+        still using the old URL. Drop after confirming no consumers.
+    - id: 9
+      label: tony-dell ada env files — stale secrets retained on disk
+      status: pending
+      notes: |
+        ada-ha-pwa.env/ada-ha-tony.env/ada-ha-michael.env on tony-dell hold
+        live tokens although the services there are retired. Rotate script
+        updates them anyway; consider deleting the files to reduce the
+        secret surface.
+
+verification:
+  - "curl -s https://idc01.taila0626a.ts.net/api/auth/status -> 200/401 (not 000)"
+  - "mn01: systemctl --user is-active ada-ha-tony -> inactive (after step 6)"
+  - "chaba-events.json shows deploy/decision events flowing from idc01"

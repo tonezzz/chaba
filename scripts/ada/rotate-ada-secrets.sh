@@ -99,7 +99,10 @@ REMOTE
 
   if [ "$NO_RESTART" = "0" ] && [ "$DRY_RUN" = "0" ]; then
     units=$(restart_units "$host")
-    [ -n "$units" ] && ssh "$host" "systemctl --user restart $units 2>/dev/null; systemctl --user is-active $units 2>/dev/null | paste -sd' '" || true
+    # restart-if-active only — a stopped standby unit (mn01 ada-*) must stay down
+    [ -n "$units" ] && ssh "$host" "for u in $units; do
+      systemctl --user is-active --quiet \"\$u\" && { systemctl --user restart \"\$u\"; echo \"  \$u restarted\"; } || echo \"  \$u inactive — left stopped\"
+    done" || true
   fi
 done
 
