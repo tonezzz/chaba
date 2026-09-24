@@ -259,7 +259,13 @@ writes are local on the VPS — unaffected.
   mn01 Caddy proxies same paths to idc01 as legacy alias; consumers repointed to
   idc01 URLs (apps.yml, voice card, Lovelace iframe, health+services SSOT);
   cms-viewer shared key replicated on idc01; ws+http verified end-to-end
-- M6 pending — scheduled jobs; SSOT registration; health endpoints
+- M6 done 2026-09-24 — all job timers live on idc01: ada-memory-sync (hourly; one
+  meta-churn conflict resolved via --take-remote), obsidian-vault-sync, mddb-backup
+  (nightly, verified landing), open-notebook-backup, obsidian-vault-backup,
+  ada-recall-canary, ada-memory-drift, ada-memory-gaps, ada-memory-distill
+  (migrated off mn01 + smoke-tested — emitted 2 drafts). Known gap: distill's
+  chaba-event-log emit does `ssh tony-dell` which idc01 can't reach — non-fatal,
+  events just don't land in the HA log.
 - M7 pending — soak ~1 week → archive tony-dell mddb.db → disable
 
 ## 12. Open questions for Tony
