@@ -10,13 +10,13 @@
 // Config:
 //   title:    card title (default "Ada chat")
 //   instance: ada instance key, e.g. tony|michael (default tony)
-//   ws_url:   wss://mn01.taila0626a.ts.net/apps/ha/ada-tony/ws   (default)
+//   ws_url:   wss://idc01.taila0626a.ts.net/apps/ha/ada-tony/ws   (default)
 //   height:   log height (default 260px)
 //   api_key:  <key>   optional — normally unset, card self-mints
 
 const ACC_KEY_STORAGE = "ada_voice_api_key";
 const ACC_DEVICE_STORAGE = "ada_voice_device_id";
-const ACC_DEFAULT_WS = "wss://mn01.taila0626a.ts.net/apps/ha/ada-tony/ws";
+const ACC_DEFAULT_WS = "wss://idc01.taila0626a.ts.net/apps/ha/ada-tony/ws";
 
 class AdaChatCard extends HTMLElement {
   setConfig(config) {
