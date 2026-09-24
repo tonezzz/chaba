@@ -7,27 +7,11 @@ attribute: plan-draft
 
 # Public host = Ada deployment server — plan
 
-Status: v3c — M0-M3 EXECUTED on idc01, 2026-09-21; M4 effectively DONE
-2026-09-23 (MDDB live + healthy on idc01 tailnet :11023, all Ada envs
-already repointed — mn01's ada-ha-tony uses `MDDB_BASE_URL=
-http://100.74.146.0:11023/v1`; tony-dell's local mddb is stopped).
+Status: v3b — M0-M3 EXECUTED on idc01, 2026-09-21.
 Decisions: all three Ada instances run on the VPS; MDDB moves to the VPS
 as the ONLY instance — no tony-dell standby initially. Data-security
 hardening and a standby/follower are deferred (§10). Memory data is
 currently mock/non-critical.
-
-## 0b. BLOCKER 2026-09-23 — tailnet path MTU blackhole to idc01
-
-Symptom: SSH to idc01 (tailnet IP) stalls at KEX_ECDH_REPLY; tailnet
-HTTPS times out; `ping -M do` fails >~1000B from tony-dell, mn01 AND
-tony-omen. Diagnosis: idc01's public v6 endpoint is AS13335 CLOUDFLARENET;
-underlay ping6 to it passes 1280B fine, but tailnet inner packets >~1030B
-die with no ICMP-PTB — a PMTUD blackhole, likely Cloudflare transit or a
-low tailscale0 MTU on idc01. NOT a transparent proxy (ICMP fails equally).
-Impact: mn01 Ada memory ops are FAILING NOW (mddb search/vector/add
-errors in journal since 14:54 — any MDDB request/response >~1KB dies).
-Fix requires idc01 console: `ip link` check + lower tailscale0 MTU
-(~1000) or TCPMSS clamp; SSH/edge unreachable until then.
 
 ## 0. What's live now (idc01)
 
