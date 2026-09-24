@@ -24,10 +24,10 @@ sections:
     layout: list
     items:
       - label: Count
-        text: "20 devices with known MAC or local ID from HA config and device registry"
+        text: "28 devices with known MAC or local ID from HA config and device registry; +8 BLE devices added from 2026-09-24 bluetoothctl scan on michael-ha hci0"
 config:
   version: 1
-  last_updated: "2026-09-15"
+  last_updated: "2026-09-24"
   maintainer: tony
   status: active
   related_files:
@@ -247,6 +247,7 @@ config:
       label: Solis S6-EH3P10K-H-ZP (michael)
       local_ids:
         serial: "1033300249120103"
+        ble_name: D_7A124911077092C6
       interfaces:
         - interface_id: primary
           mac: 2c:bc:bb:5d:36:2b
@@ -256,8 +257,17 @@ config:
           source: arp-scan
           first_seen: "2026-09-07"
           status: active
+        - interface_id: ble
+          mac: 2c:bc:bb:5d:36:2a
+          oui: 2c:bc:bb
+          vendor: unknown
+          type: bluetooth
+          source: ble-scan-michael-ha
+          first_seen: "2026-09-24"
+          status: active
       mac_conflict: false
       status: active
+      notes: "BLE advert 'D_7A124911077092C6' on MAC adjacent to the registered datalogger MAC (.2a vs .2b) — near-certain the Solis WiFi datalogger's BLE provisioning radio."
     - device_id: michael-tuya-192-168-1-153
       label: Unknown Tuya 192.168.1.153
       local_ids:
@@ -275,7 +285,8 @@ config:
       status: active
     - device_id: michael-solar-assistant
       label: SolarAssistant monitor (michael)
-      local_ids: {}
+      local_ids:
+        ble_name: SolarAssistant
       interfaces:
         - interface_id: primary
           mac: 02:07:56:6e:e9:9a
@@ -285,9 +296,18 @@ config:
           source: arp-scan
           first_seen: "2026-09-07"
           status: active
+        - interface_id: ble
+          mac: 29:7a:8a:82:3d:13
+          oui: 29:7a:8a
+          vendor: unknown
+          type: bluetooth
+          source: ble-scan-michael-ha
+          first_seen: "2026-09-24"
+          status: active
       mac_conflict: true
       status: active
       conflict_group: 02-07-56-6e-e9-9a
+      notes: "BLE address is a random/private address and may rotate; advert name 'SolarAssistant' seen 2026-09-24. Can bridge BMS/inverter data to MQTT if configured."
     - device_id: michael-lg-webos-tv
       label: LG webOS TV NANO81TSA (michael)
       local_ids:
@@ -309,9 +329,18 @@ config:
           source: arp-scan
           first_seen: "2026-09-07"
           status: active
+        - interface_id: ble
+          mac: "44:27:45:27:53:09"
+          oui: "44:27:45"
+          vendor: unknown
+          type: bluetooth
+          source: ble-scan-michael-ha
+          first_seen: "2026-09-24"
+          status: active
       mac_conflict: true
       status: active
       conflict_group: 74-c1-7e-9c-06-e7
+      notes: "BLE advert name '[LG] webOS TV NANO81TSA'; BLE MAC is eth0+1."
     - device_id: michael-somfy-overkiz
       label: Somfy Overkiz gateway (michael)
       local_ids:
@@ -354,6 +383,137 @@ config:
           type: wifi
           source: arp-scan
           first_seen: "2026-09-15"
+          status: active
+      mac_conflict: false
+      status: active
+      notes: "Samkoon AK070AB Android HMI verified to have NO bluetooth hardware/stack (no bluetooth_manager service, empty /sys/class/bluetooth, bluetooth_on=0, no BT packages) — 2026-09-24."
+    - device_id: michael-jk-bms-scharger
+      label: JK BMS on weather-station battery (advert "SCharger-7KS-S0-NS2351395951")
+      local_ids:
+        ble_name: SCharger-7KS-S0-NS2351395951
+        serial: NS2351395951
+      interfaces:
+        - interface_id: ble
+          mac: 58:56:c2:c8:ee:62
+          oui: 58:56:c2
+          vendor: Espressif Inc.
+          type: bluetooth
+          source: ble-scan-michael-ha
+          first_seen: "2026-09-24"
+          status: active
+      mac_conflict: false
+      status: active
+      notes: "Site technician says the weather-station battery module is a JK BMS with Bluetooth; this advert is the candidate (JK BMS names are user-renameable). Rejects unauthenticated BLE connects. Confirm via JK BMS app or ESP32 syssi/esphome-jk-bms (service FFE0, char FFE1). NOT wired into the Samkoon — Modbus :502 regs 4-47 are all zero."
+    - device_id: michael-amway-atmosphere-mini
+      label: Amway Atmosphere Mini air purifier (advert "Mini-Atmosphere")
+      local_ids:
+        ble_name: Mini-Atmosphere
+        serial: 21028A08583890CAB
+        module_serial: 22058C06343954B1F
+        fw: v2.1.2021
+        sw: v1.4.4
+      interfaces:
+        - interface_id: ble
+          mac: f8:f0:05:55:02:5f
+          oui: f8:f0:05
+          vendor: Microchip/Atmel BLE module
+          type: bluetooth
+          source: ble-scan-michael-ha
+          first_seen: "2026-09-24"
+          status: active
+      mac_conflict: false
+      status: active
+      notes: "Manufacturer company ID 0x0431 = Amway Corp. Rich vendor GATT tree (0431xxxx services); GPS + 'TH' region characteristics are app-written config, not a GPS sensor. NOT the weather station."
+    - device_id: michael-ipcam-506036
+      label: IP camera, BLE provisioning "506036N49001993-01" (probable XMEye-type)
+      local_ids:
+        ble_name: 506036N49001993-01
+      interfaces:
+        - interface_id: ble
+          mac: a4:c1:38:00:9c:15
+          oui: a4:c1:38
+          vendor: Telink BLE SoC
+          type: bluetooth
+          source: ble-scan-michael-ha
+          first_seen: "2026-09-24"
+          status: active
+      mac_conflict: false
+      status: active
+      notes: "Services FFE0+FEE7 (Tencent provisioning); drops unauthenticated connects. Same profile as michael-ipcam-504185."
+    - device_id: michael-ipcam-504185
+      label: IP camera, BLE provisioning "504185749006634-00" (probable XMEye-type)
+      local_ids:
+        ble_name: 504185749006634-00
+      interfaces:
+        - interface_id: ble
+          mac: c8:47:80:3a:58:d7
+          oui: c8:47:80
+          vendor: Telink BLE SoC
+          type: bluetooth
+          source: ble-scan-michael-ha
+          first_seen: "2026-09-24"
+          status: active
+      mac_conflict: false
+      status: active
+      notes: "Services FFE0+FEE7 (Tencent provisioning); drops unauthenticated connects. Same profile as michael-ipcam-506036."
+    - device_id: michael-gtking-atv
+      label: Beelink GT-King Android TV box (advert "GTKing_AT_ATV")
+      local_ids:
+        ble_name: GTKing_AT_ATV
+      interfaces:
+        - interface_id: ble
+          mac: 22:22:4e:76:04:b5
+          oui: 22:22:4e
+          vendor: unknown
+          type: bluetooth
+          source: ble-scan-michael-ha
+          first_seen: "2026-09-24"
+          status: active
+      mac_conflict: false
+      status: active
+    - device_id: michael-samsung-washer
+      label: Samsung washer (advert "Washer")
+      local_ids:
+        ble_name: Washer
+      interfaces:
+        - interface_id: ble
+          mac: 1c:e8:9e:e4:92:ac
+          oui: 1c:e8:9e
+          vendor: Samsung Electronics
+          type: bluetooth
+          source: ble-scan-michael-ha
+          first_seen: "2026-09-24"
+          status: active
+      mac_conflict: false
+      status: active
+      notes: "Manufacturer company ID 0x0075 = Samsung."
+    - device_id: michael-tuya-ble-382ce5
+      label: Tuya BLE device (advert "TUYA_")
+      local_ids:
+        ble_name: TUYA_
+      interfaces:
+        - interface_id: ble
+          mac: 38:2c:e5:cc:14:60
+          oui: 38:2c:e5
+          vendor: unknown
+          type: bluetooth
+          source: ble-scan-michael-ha
+          first_seen: "2026-09-24"
+          status: active
+      mac_conflict: false
+      status: active
+      notes: "Two more 'TY'-named Tuya advertisers were seen in the same scan; MACs not captured."
+    - device_id: michael-ble-unknown-683dcb
+      label: Unidentified BLE device 68:3D:CB:6B:01:B1
+      local_ids: {}
+      interfaces:
+        - interface_id: ble
+          mac: 68:3d:cb:6b:01:b1
+          oui: 68:3d:cb
+          vendor: unknown
+          type: bluetooth
+          source: ble-scan-michael-ha
+          first_seen: "2026-09-24"
           status: active
       mac_conflict: false
       status: active

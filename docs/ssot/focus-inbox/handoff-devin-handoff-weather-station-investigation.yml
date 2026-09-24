@@ -1,0 +1,36 @@
+title: weather-station-investigation
+subtitle: 'Devin handoff spec: devin-handoff/weather-station-investigation'
+icon: robot
+focus:
+  label: weather-station-investigation
+  text: 'Devin task: Investigate why ''ada-ha-tony'' (on tony-dell or idc01) cannot fetch weather data
+    from ''ada-ha-michael'' (on mn01), check for authentication/network issues, determine if it is a security
+    or technical block, and propose a secure solution.'
+  branch: chaba
+  priority: medium
+  status: draft
+  tags:
+  - devin
+  - handoff
+  safe_to_parallel:
+    value: true
+    reason: Spec document; execution goes through devin_dispatch which creates an isolated worktree.
+  subtasks:
+  - label: Dispatch via devin_dispatch (repo chaba, prompt references bank doc devin-handoff/weather-station-investigation)
+    status: not_started
+  - label: 'BLE survey at Michael site (2026-09-24): technician''s "bluetooth" = JK BMS on station
+      battery (advert SCharger-7KS-S0-NS2351395951 @ 58:56:C2:C8:EE:62, unverified). Samkoon
+      HMI has NO BT hardware; no weather BLE peripheral exists; Modbus :502 regs 4-47 all zero
+      so BMS is not on that bus. ESP32 path viable via syssi/esphome-jk-bms BLE (FFE0/FFE1) but
+      needs a dedicated board on-site. Full notes: docs/kb/rika-rk600-cloud-upload.md +
+      ssot.mac-address-registry.michael.yml'
+    status: done
+ownership:
+  owner: tony
+  session: ''
+  locked: false
+  lock_reason: ''
+source:
+  bank_key: devin-handoff/weather-station-investigation
+  renderer: render-handoff-inbox
+  date: '2026-09-24'

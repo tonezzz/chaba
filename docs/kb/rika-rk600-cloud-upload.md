@@ -69,6 +69,34 @@ has been 0 in every row ever uploaded** (see rain verification below).
 | HMI → Rika cloud | TCP `39.99.253.232:8899` | **Working** — ESTABLISHED, ~1 row/min since 14:44 |
 | Samkoon tunnel | peergine `connect.peergine.com:7885` | Working after route fix |
 | HA rain/pressure sensors | `sensor.rk600_rainfall` etc. | **Hardcoded stubs** (`state: "0"` in `packages/rika_rk600.yaml`) — HA cannot see rain at all |
+| Battery BMS | BLE only (JK BMS) | Not polled by HMI — see below |
+
+## Bluetooth (surveyed 2026-09-24)
+
+The site technician reported "the weather station has Bluetooth" — that is the
+**battery module's JK BMS**, not a sensor-data path. Verified:
+
+- **Samkoon HMI has no Bluetooth at all** — `bluetooth_manager` service absent,
+  `/sys/class/bluetooth` empty, `bluetooth_on=0`, no BT packages. Technician's
+  "HMIClient" reference is the Samkoon phone app (TCP/cloud, not BT).
+- **BLE scan from michael-ha hci0** found only household devices (Amway
+  purifier, LG/Samsung appliances, XMEye cams, Tuya, Solis datalogger,
+  SolarAssistant, TV box). Full inventory in
+  `ssot.mac-address-registry.michael.yml`. No Rika/weather advert exists.
+- **BMS candidate:** `SCharger-7KS-S0-NS2351395951` @ `58:56:C2:C8:EE:62`
+  (Espressif OUI) — JK BMS advert names are user-renameable; drops
+  unauthenticated connects. Confirm on-site with the JK BMS app.
+- **No BMS on the Modbus bus:** `:502` regs 4–47 are all zero — only e1–e4
+  (rain e5 when raining) are polled. The BMS cannot be read *through* the HMI.
+- **ESP32 path is viable if wanted:** JK BMS BLE = service `FFE0`, char `FFE1`;
+  `syssi/esphome-jk-bms` (or `txubelaxu` fork for PB-series hw v14/15) polls it
+  from ESPHome → HA/MQTT. Needs a **dedicated ESP32 at Michael's site**
+  (BLE range; `esp32test` stays home and is heap-constrained anyway). WiFi creds
+  for `Xiaomi_A654`/`AisMN_2.4G` already exist in `esp32/config.yaml`.
+- Alternative: the on-site **SolarAssistant** dongle can bridge a JK BMS over
+  RS485→MQTT if it's wired to the station battery — check with Michael.
+- Do NOT write to `SCharger`/`SolarAssistant` BLE characteristics remotely;
+  probing is read-only + connect attempts only.
 
 ## Root cause of the upload outage
 
