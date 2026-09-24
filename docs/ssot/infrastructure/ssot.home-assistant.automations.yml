@@ -201,7 +201,11 @@ cast_entities:
       time_pattern by cast_guard_reset_rate_counter"
     timer.cast_idle: "5-min inactivity clock feeding cast_idle_shutdown"
   scripts:
-    script.cast_power_on: "power-on sequence (target: box)"
+    script.cast_power_on: "power-on sequence (target: box) — GATED 2026-09-24:
+      aborts+notifies when cast_enabled=off; 10-min manual-off cooldown
+      suppresses plug power (plug_tv off/unavailable within 600s of
+      last_changed); turns the plug on only when it isn't already on;
+      persistent_notification on every real auto-power"
     script.cast_cleanup: "end-of-session cleanup"
     script.cast_camera: "cast camera to TV"
     script.cast_youtube_tv: "cast YouTube to TONY-TV"
@@ -218,7 +222,10 @@ cast_entities:
     remote.tony_tv: "IR remote bridge"
     switch.plug_tv: "smart plug — HARD power cut (last-resort kill)"
   host_side:
-    cast-browser.service: "persistent headless chrome :8799 (nav/shot/cast PNG)"
+    cast-browser.service: "persistent headless chrome :8799 (nav/shot/cast PNG);
+      wakeCastTarget GATED 2026-09-24 — same cast_enabled + 10-min plug-off
+      cooldown + notify-on-autopower as cast_power_on; all 5 cast paths return
+      'blocked:*' instead of casting when suppressed"
     cast-ha-panel.timer: "60s re-cast of input_select.tv_display"
     cast-ha-selected.sh: "timer payload — gates on input_boolean.cast_enabled,
       camera branch casts input_select.tv_camera with source-liveness skip"
@@ -316,6 +323,10 @@ gaps:
         restarts bloated cast-browser, honors cast_enabled, logs go2rtc
         cam_consumers"
       - "camera hardcode: input_select.tv_camera replaces ip_cam_65 constant"
+      - "uncommanded plug power-ons (found 2026-09-24): cast_power_on +
+        wakeCastTarget unconditionally powered plug_tv on every cast request
+        while the corner was down — undid manual power-offs within ~40s.
+        Fixed: cast_enabled gate + 10-min manual-off cooldown + notify"
     open:
       - "no session cap: a stream stuck reporting 'playing' defeats the idle
         timer — DEFERRED, add when telemetry justifies"
