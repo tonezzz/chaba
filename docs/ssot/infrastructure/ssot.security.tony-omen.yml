@@ -28,7 +28,7 @@ expected_exposure:
   - { listener: "0.0.0.0:9230",  class: lan, service: playlived, note: "PLAYLIVED_PORT=9230 in playlived.service; values.yml updated 2026-09-24" }
   - { listener: "0.0.0.0:9876",  class: lan, service: cookie-bridge, note: "~/.local/ai-hub/cookie-bridge.mjs" }
   - { listener: "0.0.0.0:19999", class: lan, service: netdata, note: "docker container" }
-  # fc42:...:53 = lxd/incus bridge dnsmasq (ULA, lan-class); 10.0.3.1/192.168.122.1:53 = lxc/libvirt bridge dns
+  # fc42::/7 + private bridge :53 listeners = lxd/libvirt dnsmasq (lan-class)
   # KNOWN STRAY: 0.0.0.0:9999 `nc -l` leftover debug listener seen 2026-09-24 — intentionally NOT declared; audit keeps flagging until killed
 
 remote_access:

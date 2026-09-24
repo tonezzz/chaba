@@ -13,7 +13,7 @@ expected_exposure:
   - { listener: "0.0.0.0:80",          class: public-ip,    service: caddy,  note: "speaker-enroll edge (HTTP)" }
   - { listener: "0.0.0.0:443",         class: public-ip,    service: caddy,  note: "speaker-enroll edge (TLS, SNI required)" }
   - { listener: "0.0.0.0:22",          class: tailnet-only, service: sshd,   note: "wildcard bind; public :22 denied by ufw — effective exposure tailnet only (verified 2026-09-24)" }
-  - { listener: "0.0.0.0:3002",        class: tailnet-only, service: mddb-panel, note: "wildcard bind; public reach blocked by ufw default-deny — rebind to tailnet IP pending" }
+  - { listener: "100.74.146.0:3002",   class: tailnet-only, service: mddb-panel, note: "rebound 2026-09-24 via host-patched server.js bind-mounted in quadlet (upstream hardcodes 0.0.0.0; image update may need re-patch)" }
   - { listener: "100.74.146.0:11023",  class: tailnet-only, service: mddb,   note: "http API, authEnabled=false — tailnet is the boundary" }
   - { listener: "100.74.146.0:11024",  class: tailnet-only, service: mddb,   note: "gRPC" }
   - { listener: "100.74.146.0:9000",   class: tailnet-only, service: mddb,   note: "MCP listener, API-key gated (mddb-mcp-api-key)" }
@@ -71,11 +71,8 @@ deviations:
   - item: "sshd PasswordAuthentication yes"
     reason: "fallback login if tailnet breaks"
     last_verified: "2026-09-22"
-  - item: "mddb-panel 0.0.0.0:3002 wildcard bind"
-    reason: "public reach blocked by ufw default-deny; rebind to tailnet IP pending"
-    last_verified: "2026-09-24"
-  - item: "warp daemon not running"
-    reason: "warp-svc dead since idc01 incident — WARP intended enabled+always-on; restart pending, do not auto-restart (incident was WARP-related)"
+  - item: "warp disabled"
+    reason: "enabling warp-svc 2026-09-24 wedged userspace (sshd/tailscale-ssh hang, tailnet+TCP services unaffected) — same signature as the original incident; stopped+disabled; WARP egress stays OFF until the root cause is diagnosed"
     last_verified: "2026-09-24"
 
 last_observed: {}
