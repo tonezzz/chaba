@@ -196,7 +196,12 @@ instances:
       michael-dev www) so the 3D chart loads local-first, CDN fallback. Nobito is a
       battery Tuya device (cloud integration) that sleeps between reports —
       entities show unavailable while asleep; a flat card value means stale
-      data, not a real reading. 2026-09-23: ada-voice-card added at the top —
+      data, not a real reading. 2026-09-24 root cause of stuck values: the
+      Tuya sharing MQ push channel delivers zero messages for this account,
+      so ALL Tuya entities on tony-ha freeze at the setup-time REST snapshot
+      until HA restarts (device itself is online and reporting current data
+      to the cloud) — see ssot.services.yml tony-ha note. 2026-09-23:
+      ada-voice-card added at the top —
       the panel view's single card is now a vertical-stack (voice card, then
       the pfg3d card); the pfg3d card title was removed and pfg_fit_screen
       raised 120px → 290px to keep the chart inside the viewport below the
