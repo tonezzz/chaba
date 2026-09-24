@@ -108,6 +108,15 @@ runbook doc — the pair was the "source of truth" convention):
 under both zones — clients discovered services via DNS rather than
 config files.
 
+**Secondary deployment targets** (not core hosts, but they surface in
+recall — scripts/deploy-node-1.sh and friends):
+
+- **node-1** — Plesk-managed web node (`node-1.h3.surf-thailand.com`);
+  deploy pipeline for sites (restart via Plesk)
+- **dev-host** / **dell-host** — dev mirror containers mirroring
+  production nodes (user accounts, SSH, mounted workspace); replaced
+  node-1 as the canonical dev target inside chaba0 itself
+
 **Conventions worth noting**: `PC1_STACK_ENV_FILE` env-override
 pattern (`.env.local` gitignored, `--env-file` on compose up) — same
 secret-layering idea as today's `~/.config/secrets/*.env` + env_file
