@@ -1,0 +1,55 @@
+title: Security Posture — mn01
+subtitle: Declared security state for the mn-home portable node; diffed live by scripts/audit-security.py
+icon: shield
+version: 1
+last_updated: "2026-09-24"
+maintainer: tony
+
+host: mn01
+standard: docs/ssot/infrastructure/ssot.security.yml
+
+expected_exposure:
+  # Public edge (Tailscale Funnel — internet-reachable). Live funnel is the
+  # site root proxied to Caddy; per-app paths are routed inside Caddyfile.mn01.
+  - { listener: "ts-funnel:443/", class: funnel, service: "tailscale funnel", target: "127.0.0.1:8080", note: "verified 2026-09-24: https://mn01.taila0626a.ts.net / proxy http://127.0.0.1:8080" }
+  # Tailnet
+  - { listener: "100.106.196.22:8004", class: tailnet-only, service: google-home-mcp, optional: true, note: "rootless podman, host net — container was down at first audit 2026-09-24" }
+  - { listener: "100.106.196.22:5900", class: tailnet-only, service: xmeye-vms-vnc, note: "VNC, NO PASSWORD — tailnet bind only, never expose; moved from tony-dell 2026-09-24; quadlet stacks/services/xmeye-vms" }
+  # LAN
+  - { listener: "0.0.0.0:8080", class: lan, service: caddy, note: "local edge behind funnel; Caddyfile.mn01" }
+  - { listener: "0.0.0.0:8002", class: lan, service: ada-ha-tony, note: "uvicorn backend" }
+  - { listener: "0.0.0.0:8003", class: lan, service: ada-ha-michael, note: "uvicorn backend" }
+  - { listener: "0.0.0.0:8001", class: lan, service: ada-pi-mn, optional: true, note: "planned — local Ada Pi PWA for mn-home, not yet deployed" }
+  - { listener: "0.0.0.0:22",   class: lan, service: sshd }
+
+remote_access:
+  sshd: { port: 22, bind: "0.0.0.0", password_auth: deviation }
+  recovery: { physical: "portable PC at mn-home", note: "remote site — no OOB console; tailnet is the only path" }
+
+firewall:
+  tool: nftables
+  inbound_default: accept
+  rules:
+    - "tailscale ts-input/ts-forward chains installed by tailscaled"
+    - "libvirt virbr0 chains (192.168.123.0/24)"
+  note: "no ufw; INPUT policy accept — inbound exposure governed by listeners + tailnet, verified 2026-09-24"
+
+tailscale:
+  ip: "100.106.196.22"
+  serve: []
+  funnel:
+    - { https: 443, path: "/", target: "http://127.0.0.1:8080" }
+  role: [subnet-router, ada-edge]
+  subnet_router: { advertises: "192.168.1.0/24", note: "mn-home; planned local IP 192.168.1.200" }
+
+egress:
+  warp: { enabled: false }
+  transparent_proxy: { enabled: false }
+
+deviations:
+  - item: "sshd PasswordAuthentication yes"
+    reason: "remote site — password fallback if tailnet breaks; PermitRootLogin prohibit-password"
+    last_verified: "2026-09-24"
+
+last_observed: {}
+deltas: []

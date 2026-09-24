@@ -110,14 +110,17 @@ Parallel sessions caused real breakage: duplicated `pfg2-card.ts`, undeclared `v
 - Dashboard snapshot is `docs/home-assistant/dashboards/tony-test-current.json`.
 - Post-restart MCP verification: all 18 configured Devin MCP servers are reachable after tony-dell restart. `michael-dev` and `tony-ha` `ha_mcp_tools` require `_READY_STALL_TIMEOUT_SECONDS=300s` / `_READY_TOTAL_CAP_SECONDS=900s` in `embedded_server.py` to avoid startup timeout on HA 2026.9.0. `github` MCP now uses `~/.config/devin/mcp-scripts/mcp-github-proxy.py`.
 
-## XMEye VMS on tony-dell
+## XMEye VMS — primary on mn01, standby on tony-dell
 
-- Container: `xmeye-vms-vnc` (Podman, `--cpus 0.5`), exposes VNC on `192.168.2.67:5900` (no password).
-- Browser noVNC: `http://tony-dell/apps/vnc/` -> `http://tony-dell/apps/vnc/vnc.html` (noVNC) -> `ws://tony-dell/apps/vnc/ws` (Caddy reverse proxy to `host.containers.internal:6081` -> websockify -> VNC). HTTPS uses `wss://tony-dell.taila0626a.ts.net/apps/vnc/ws` (same Caddy path, TLS via Tailscale). Port 6080 is reserved for `websockify-macbook.service`.
-- Websockify: `websockify 0.0.0.0:6081 127.0.0.1:5900` on tony-dell.
-- Startup: `rm -f /tmp/.X11-unix/X99` (stale socket cleanup), `Xvfb :99 -screen 0 1280x720x16`, `twm -display :99`, `x11vnc -display :99 -noxkb -forever -shared -rfbport 5900 -nopw -wait 50 -defer 30`, then `cd /app && wine explorer /desktop=VMS,1280x720 VMS.exe`. Use `-shared` so browser reconnects don't get refused.
-- VMS login may start as a wireframe; one click in the noVNC window renders it.
-- VMS config: `/home/tony/.cache/xmeye-vms/vms-runtime/config.ini`.
+Migrated 2026-09-24: primary instance runs on **mn01** as quadlet `xmeye-vms.service`
+(container `xmeye-vms-vnc`, `--cpus 0.5`), VNC bound to `100.106.196.22:5900` (tailnet-only,
+no password — never bind LAN/public). tony-dell keeps the old container stopped as standby
+(`192.168.2.67:5900` if restarted).
+
+- Stack (portable, host-agnostic): `stacks/services/xmeye-vms/` — quadlet, install.sh (renders `PublishPort` from `tailscale ip -4`), verify.sh, README with move runbook. State on each host: `~/.local/share/xmeye-vms/{vms-runtime→/app, wineprefix→/wine}`; secrets `~/.config/secrets/xmeye-dvr.env` out-of-band.
+- Browser noVNC (tailnet-gated): `https://tony-dell.taila0626a.ts.net/apps/vms/` -> `wss://…/apps/vms/ws` (Caddy -> `websockify-vms-mn01.service` 127.0.0.1:6082 -> `100.106.196.22:5900`). Route requires `Tailscale-User-Login` — public funnel and LAN get 403. Legacy dell path `/apps/vnc/` still exists (websockify :6081, dell VNC when standby runs). Port 6080 is reserved for `websockify-macbook.service`.
+- Startup (`/app/start-vms.sh` in vms-runtime): clears `/tmp/.X11-unix/X99` **and** `/tmp/.X99-lock` (a stale lock after `podman restart` kills Xvfb), `Xvfb :99 -screen 0 1280x720x16`, `x11vnc -display :99 -noxkb -forever -shared -rfbport 5900 -nopw`, then `wine explorer /desktop=VMS,1280x720 VMS.exe`. **No twm** — a window manager makes VMS map as an interactive-placement wireframe and eats the first click; without it the desktop maps at 0,0 and renders immediately.
+- VMS config: `vms-runtime/config.ini` (`autologin=true`, `www.xmeye.net` cloud). VMS app login `admin`/`admin` (saved hash `F360C0DD174588FA`).
 - VMS app login: `admin` / `admin` (saved hash `F360C0DD174588FA` in `config.ini` `[Login]` `password`).
 - Device/DVR test password supplied by user: `amc123456` (also stored, along with per-DVR cloud IDs/users, in `~/.config/secrets/xmeye-dvr.env`).
 - DVRs:
