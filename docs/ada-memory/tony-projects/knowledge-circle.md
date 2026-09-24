@@ -51,7 +51,7 @@ This converts the bank from a notebook into a learning system.
 
 Recall misses are already logged (recall-drift-report). Weekly job
 clusters miss queries by topic; a topic with ≥3 misses and no active
-doc → auto-draft a `kind: note, status: draft` gap note into `inbox/`
+doc → auto-draft a `kind: note, status: active` gap note into `inbox/`
 ("Ada couldn't answer questions about X") — human fills or dismisses.
 
 Closes: "questions Ada can't answer" → capture.

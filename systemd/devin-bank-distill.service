@@ -1,0 +1,11 @@
+[Unit]
+Description=Distill raw Devin session docs into weekly digest docs in ada-ha-bank-devin-tony
+# Weekly companion to devin-summaries-sync.timer: after summaries land in
+# MDDB, aggregate the completed ISO week's raw transcripts into
+# devin/weekly-<YYYY>W<ww> digests and supersede the sources.
+# See scripts/ada/distill-devin-bank.py.
+
+[Service]
+Type=oneshot
+EnvironmentFile=%h/.config/secrets/ada-pi-pwa.env
+ExecStart=/usr/bin/python3 %h/CascadeProjects/chaba/scripts/ada/distill-devin-bank.py
