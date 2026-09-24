@@ -33,6 +33,15 @@ RX_DONE = re.compile(
     r"assistant response completed duration_ms=(\d+) audio_chunks=\d+ audio_bytes=(\d+)")
 RX_CALL = re.compile(r"function_call received.*name=([A-Za-z_0-9]+)")
 RX_RESULT = re.compile(r"function_call result.*name=([A-Za-z_0-9]+) result=")
+RX_RESOLVE = re.compile(
+    r"name=ada_resolve_action.*resolution':\s*'(\w+)'")
+RX_MEMWRITE = re.compile(r"name=ada_remember result")
+RX_EXTWRITE = re.compile(
+    r"name=(calendar_create_event|calendar_delete_event|tasks_add|"
+    r"tasks_complete) result")
+RX_SPEAKER_ID = re.compile(
+    r"(?:identified|enrolled)\s+speaker[^a-z]*'([A-Za-zก-๙]+)'")
+RX_STARTED = re.compile(r"Started (ada-[\w.-]+)\.service")
 
 
 def fetch(host: str, unit: str, since: str) -> list[str]:
@@ -56,8 +65,15 @@ def parse(lines: list[str]) -> dict[str, dict]:
         "interrupted": 0, "reconnects": 0,
         "agenda_failures": 0, "proposal_failures": 0,
         "local_speech": 0, "speaker_events": 0, "warnings": 0,
+        "applied": 0, "dismissed": 0,
+        "memory_writes": 0, "ext_writes": defaultdict(int),
+        "failed_lines": 0, "speakers": set(),
     })
+    restarts: dict[str, int] = defaultdict(int)
     for ln in lines:
+        if (m := RX_STARTED.search(ln)):
+            restarts[m.group(1)] += 1
+            continue
         m = RX_SESSION.search(ln)
         if not m:
             continue
@@ -97,7 +113,17 @@ def parse(lines: list[str]) -> dict[str, dict]:
             s["local_speech"] += 1
         elif re.search(r"speaker[_ ]", ln):
             s["speaker_events"] += 1
-    return sess
+            if (m := RX_SPEAKER_ID.search(ln)):
+                s["speakers"].add(m.group(1))
+        if (m := RX_RESOLVE.search(ln)):
+            s["applied" if m.group(1) == "applied" else "dismissed"] += 1
+        elif RX_MEMWRITE.search(ln):
+            s["memory_writes"] += 1
+        elif (m := RX_EXTWRITE.search(ln)):
+            s["ext_writes"][m.group(1)] += 1
+        elif " ERROR " in ln or " failed:" in ln.lower():
+            s["failed_lines"] += 1
+    return sess, restarts
 
 
 def summary_row(sid: str, s: dict) -> dict:
@@ -117,10 +143,16 @@ def summary_row(sid: str, s: dict) -> dict:
         "local_speech": s["local_speech"],
         "speaker_events": s["speaker_events"],
         "warnings": s["warnings"],
+        "applied": s["applied"], "dismissed": s["dismissed"],
+        "memory_writes": s["memory_writes"],
+        "ext_writes": dict(s["ext_writes"]),
+        "failed_lines": s["failed_lines"],
+        "speakers": sorted(s["speakers"]),
     }
 
 
-def ops_block(rows: list[dict], since: str) -> str:
+def ops_block(rows: list[dict], since: str,
+              restarts: dict[str, int] | None = None) -> str:
     """Compact '## ops' digest for the rolling-log injection path."""
     n = len(rows)
     resp = [r for r in rows if r["responses"]]
@@ -131,6 +163,14 @@ def ops_block(rows: list[dict], since: str) -> str:
     af = sum(r["agenda_failures"] for r in rows)
     tok = sum(r["tokens_in"] + r["tokens_out"] for r in rows)
     ds = [r["mean_resp_ms"] for r in resp if r["mean_resp_ms"]]
+    ap = sum(r.get("applied", 0) for r in rows)
+    di = sum(r.get("dismissed", 0) for r in rows)
+    mw = sum(r.get("memory_writes", 0) for r in rows)
+    xw: dict[str, int] = defaultdict(int)
+    for r in rows:
+        for k, v in r.get("ext_writes", {}).items():
+            xw[k] += v
+    fl = sum(r.get("failed_lines", 0) for r in rows)
     hot = sorted(rows, key=lambda r: -r["tool_errors"])[:3]
     lines = [f"## ops ({since} — {n} sessions)"]
     if n:
@@ -140,6 +180,17 @@ def ops_block(rows: list[dict], since: str) -> str:
             f" | tokens ~{tok // 1000}k")
         if ds:
             lines.append(f"resp latency mean {int(statistics.mean(ds))}ms")
+        if ap + di:
+            lines.append(f"suggestions applied {ap} / dismissed {di}")
+        if mw or xw:
+            w = " ".join(f"{k.replace('calendar_','').replace('tasks_','tasks:')}={v}"
+                         for k, v in sorted(xw.items()))
+            lines.append(f"memory writes {mw} | ext writes {w}")
+        if fl:
+            lines.append(f"failed/error lines {fl}")
+        if restarts:
+            lines.append("restarts: " + " ".join(
+                f"{u}={c}" for u, c in sorted(restarts.items()) if c))
         for r in hot:
             if r["tool_errors"]:
                 lines.append(f"error-heavy: {r['session']} "
@@ -162,11 +213,13 @@ def main() -> int:
     args = ap.parse_args()
 
     rows: list[dict] = []
+    restarts: dict[str, int] = {}
     for unit in args.units.split(","):
         unit = unit.strip()
         if not unit:
             continue
-        sess = parse(fetch(args.host, unit, args.since))
+        sess, rst = parse(fetch(args.host, unit, args.since))
+        restarts.update(rst)
         for sid, s in sess.items():
             row = summary_row(sid, s)
             row["unit"] = unit
@@ -195,7 +248,7 @@ def main() -> int:
                     print(f"warn: merge {p.name}: {e}", file=sys.stderr)
         print(f"ops merged into {merged} report(s)")
 
-    print(ops_block(rows, args.since))
+    print(ops_block(rows, args.since, restarts))
     return 0
 
 
