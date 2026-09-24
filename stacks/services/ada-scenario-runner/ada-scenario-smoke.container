@@ -1,0 +1,23 @@
+[Unit]
+Description=Ada live-scenario runner — smoke tier (safe, no actuation)
+After=network-online.target
+
+[Container]
+Image=localhost/ada-scenario-runner:latest
+ContainerName=ada-scenario-smoke
+Network=host
+Volume=%h/CascadeProjects/ada-pi:/app:ro
+Volume=%h/.config/secrets/ada-ha-tony-keys.json:/secrets/keys.json:ro
+Environment=ADA_LIVE_URL=ws://127.0.0.1:8002/ws
+Environment=MDDB_BASE_URL=http://100.74.146.0:11023/v1
+Environment=ADA_KEYS_FILE=/secrets/keys.json
+EnvironmentFile=-%h/.config/secrets/ada-ha-tony.env
+Exec=--tier smoke
+
+[Service]
+Type=oneshot
+RemainAfterExit=no
+TimeoutStartSec=1800
+
+[Install]
+WantedBy=default.target

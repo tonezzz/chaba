@@ -1,0 +1,4 @@
+FROM docker.io/python:3.12-slim
+RUN pip install --no-cache-dir websockets pyyaml
+# Repo is bind-mounted at /app (read-only): scenarios, driver, keys live there.
+ENTRYPOINT ["python", "/app/scripts/scenario-report.py"]
