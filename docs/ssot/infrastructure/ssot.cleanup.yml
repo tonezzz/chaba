@@ -90,6 +90,7 @@ targets:
       - prune old Devin sessions through devin-cleanup.service or prune-devin-sessions.sh
       - VACUUM only when the DB is not in use
     pre_cleanup:
+      - run scripts/devin/devin-precleanup-check.py and review the generated report
       - run the Devin DB integrity check
       - verify summaries/outcomes are preserved before deleting source sessions
       - check code.lock, session_locks, fuser, and running Devin processes

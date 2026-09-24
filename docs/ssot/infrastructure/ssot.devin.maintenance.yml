@@ -243,7 +243,8 @@ pre_cleanup:
     - Verify NotebookLM or local archive output exists for sessions selected for deletion.
     - Check code.lock, session_locks/*.lock, fuser sessions.db, running Devin processes, and active dispatch tasks.
     - Decide whether a local backup is required; use NO_BACKUP=1 only after archive verification and with enough free space.
-    - Produce a dry-run list of sessions older than the cutoff before deleting rows.
+    - Produce a dry-run list of sessions older than the cutoff before deleting rows
+      (`scripts/devin/devin-precleanup-check.py` writes the read-only evidence report).
   required_before_vacuum:
     - Confirm sessions.db is not open by Devin and no session locks are active.
     - Confirm the backup/archive decision was recorded.
@@ -298,6 +299,7 @@ audit_checks:
     system intentionally changes so DRIFT means regression, not noise.
 
 related_files:
+  - scripts/devin/devin-precleanup-check.py
   - scripts/prune-devin-sessions.sh
   - /home/tony/.local/bin/devin-cleanup.sh
   - /home/tony/.config/devin/scripts/devin-extract-sessions.sh

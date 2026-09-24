@@ -30,7 +30,7 @@ render:
       report: report.yml
       limits: {soft: 12000, hard: 20000}
       overflow_order: [ada-focus, ada-sessions, sessions, focus, project, home]   # dropped first → last
-      sections: [agent, user, immediate, home, project, focus, access, sessions, ada-sessions, ada-focus]
+      sections: [agent, user, immediate, home, project, focus, access, sessions, ada-sessions, ada-focus, timeline]
     guest:
       output: context-guest.md
       report: report-guest.yml
@@ -135,6 +135,21 @@ sections:
       file: ~/.local/share/devin/notebook-summaries/session-memory.md
       max_entries: 3
       min_chars: 200        # skip "Session end"/checkpoint stubs
+
+  timeline:
+    description: |
+      Identity timeline — first_seen/last_seen per chaba user and guest,
+      stamped on session connect by backend/chaba_memory.set_identity.
+      Ada key issuance dates live in the ada keys file ('issued' field,
+      backend/auth.py create_key) — outside chaba's trust boundary.
+    priority: 40
+    limits: {soft: 800, hard: 1200}
+    source:
+      kind: dir
+      file:
+        - ~/.local/share/chaba/users/*.yml
+        - ~/.local/share/chaba/guests/*.yml
+      format: "- {name}: first {first_seen}, last {last_seen}"
 
   ada-sessions:
     description: |
