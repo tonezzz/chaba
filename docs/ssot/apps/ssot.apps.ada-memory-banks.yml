@@ -178,6 +178,7 @@ banks:
     status: active
     public: false
     person_scope: person.kk
+    key_scope: [user-kk]   # her issued key routes here even without voice ID
   personal-testo:
     title: Testo private memory
     description: Person-scoped private memory for Testo (HA user). Assigned to the tony instance but isolated from Tony's personal bank — routed by speaker identity (person.testo_2). Testo also gets a restricted person_policies allowlist so his sessions cannot reach Tony's banks.
@@ -193,6 +194,7 @@ banks:
     status: active
     public: false
     person_scope: person.testo_2
+    key_scope: [testo, user-testo]   # his keys route here even without voice ID
     speaker_name: KK
   tony-projects:
     title: Tony project notes
