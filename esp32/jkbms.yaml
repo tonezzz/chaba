@@ -1,0 +1,165 @@
+# JK BMS bridge node — dedicated ESP32 at Michael's site
+#
+# Connects to the weather-station battery's JK BMS over BLE and publishes
+# voltage/current/SOC/cell data to Home Assistant via the native API
+# (same pattern as esp32-test — no MQTT secrets exist yet; add the mqtt:
+# block back + mqtt_* keys in secrets.yaml if MQTT is ever needed).
+#
+# Deploy notes:
+# - Board must sit within ~10 m of the battery enclosure (same as the
+#   technician's phone when his app "finds the BMS automatically").
+# - WiFi: joins Xiaomi_A654 / AisMN_2.4G (Michael's networks, creds below
+#   mirror esp32-test).
+# - First boot on-site: watch logs for "BMS-like device" lines (advert
+#   scanner below), copy the MAC into secrets.yaml as jkbms_ble_mac,
+#   reflash. BLE name is not needed for connect — MAC only.
+# - Secrets live in ~/.local/share/esphome/secrets.yaml (not in git):
+#     jkbms_ble_mac, jkbms_ble_name, jkbms_password
+# - protocol_version: JK02_24S covers hw 6.x–11.x (most JK-B/BD boards).
+#   If the BMS is a JK_PBx (hw v14/v15) switch to the txubelaxu fork and
+#   protocol JK02_32S — see esp32/info.md.
+
+substitutions:
+  name: jkbms
+  friendly_name: "Weather Station BMS"
+
+esphome:
+  name: ${name}
+  friendly_name: ${friendly_name}
+
+esp32:
+  board: esp32dev
+  framework:
+    type: arduino
+
+logger:
+
+api:
+
+ota:
+  - platform: esphome
+
+wifi:
+  power_save_mode: none
+  networks:
+    - ssid: !secret wifi_ssid_tony24
+      password: !secret wifi_password_tony24
+    - ssid: !secret wifi_ssid_albatros24
+      password: !secret wifi_password_albatros24
+    - ssid: !secret wifi_ssid_maesang
+      password: !secret wifi_password_maesang
+    - ssid: "Xiaomi_A654"
+      password: "starboardwind"
+    - ssid: "AisMN_2.4G"
+      password: "starboardwind"
+  ap:
+    ssid: "JKBMS-Fallback"
+    password: "12345678"
+
+external_components:
+  - source: github://syssi/esphome-jk-bms@main
+
+esp32_ble_tracker:
+  on_ble_advertise:
+    then:
+      - lambda: |-
+          std::string n = x.get_name();
+          if (n.rfind("JK-", 0) == 0 || n.rfind("JK_", 0) == 0 ||
+              n.find("BMS") != std::string::npos) {
+            ESP_LOGW("ble_adv", "BMS-like advert: name=%s mac=%s rssi=%d",
+                     n.c_str(), x.address_str().c_str(), x.get_rssi());
+          }
+
+ble_client:
+  - mac_address: !secret jkbms_ble_mac
+    id: client0
+
+jk_bms_ble:
+  - ble_client_id: client0
+    protocol_version: JK02_24S
+    throttle: 10s
+    id: bms0
+
+sensor:
+  - platform: jk_bms_ble
+    jk_bms_ble_id: bms0
+    state_of_charge:
+      name: "${friendly_name} SOC"
+    average_cell_voltage:
+      name: "${friendly_name} cell avg"
+    delta_cell_voltage:
+      name: "${friendly_name} cell delta"
+    min_cell_voltage:
+      name: "${friendly_name} cell min"
+    max_cell_voltage:
+      name: "${friendly_name} cell max"
+    min_voltage_cell:
+      name: "${friendly_name} min cell #"
+    max_voltage_cell:
+      name: "${friendly_name} max cell #"
+    cell_voltage_1:
+      name: "${friendly_name} cell 1"
+    cell_voltage_2:
+      name: "${friendly_name} cell 2"
+    cell_voltage_3:
+      name: "${friendly_name} cell 3"
+    cell_voltage_4:
+      name: "${friendly_name} cell 4"
+    cell_voltage_5:
+      name: "${friendly_name} cell 5"
+    cell_voltage_6:
+      name: "${friendly_name} cell 6"
+    cell_voltage_7:
+      name: "${friendly_name} cell 7"
+    cell_voltage_8:
+      name: "${friendly_name} cell 8"
+    total_voltage:
+      name: "${friendly_name} voltage"
+    current:
+      name: "${friendly_name} current"
+    power:
+      name: "${friendly_name} power"
+    charging_power:
+      name: "${friendly_name} charge power"
+    discharging_power:
+      name: "${friendly_name} discharge power"
+    capacity_remaining:
+      name: "${friendly_name} capacity remaining"
+    charging_cycles:
+      name: "${friendly_name} cycles"
+    mosfet_temperature:
+      name: "${friendly_name} MOS temp"
+    temperature_sensor_1:
+      name: "${friendly_name} temp 1"
+    temperature_sensor_2:
+      name: "${friendly_name} temp 2"
+    state_of_health:
+      name: "${friendly_name} SOH"
+    balancing_current:
+      name: "${friendly_name} balance current"
+    total_runtime:
+      name: "${friendly_name} runtime"
+
+switch:
+  - platform: jk_bms_ble
+    jk_bms_ble_id: bms0
+    charging:
+      name: "${friendly_name} charging"
+    discharging:
+      name: "${friendly_name} discharging"
+    balancer:
+      name: "${friendly_name} balancer"
+  - platform: ble_client
+    ble_client_id: client0
+    id: ble_client_switch0
+    name: "${friendly_name} BLE link"
+
+text_sensor:
+  - platform: jk_bms_ble
+    jk_bms_ble_id: bms0
+    errors:
+      name: "${friendly_name} error text"
+    errors_bitmask_hex:
+      name: "${friendly_name} errors"
+    total_runtime_formatted:
+      name: "${friendly_name} uptime"

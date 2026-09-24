@@ -88,6 +88,38 @@ heap is ~222 KB stable.
   ~/.local/bin/esphome run ~/.local/share/esphome/esp32-test.yaml
   ```
 
+## JK BMS bridge node (2026-09-24)
+
+Second, dedicated node for the weather-station battery at Michael's site —
+separate from esp32-test (BLE stack won't fit alongside the display app, and
+the node must physically sit near the battery enclosure for BLE range).
+
+- **Config source:** `esp32/jkbms.yaml` → `~/.local/share/esphome/jkbms.yaml`
+- **Component:** `github://syssi/esphome-jk-bms@main` (`jk_bms_ble`, protocol
+  `JK02_24S`; if the BMS turns out to be a JK_PBx hw v14/v15 board, use the
+  `txubelaxu/esphome-jk-bms` fork and `JK02_32S` instead)
+- **Framework:** resolves to `esp-idf` automatically — ESPHome 2026.x
+  requires esp-idf for `ble_client`/`esp32_ble_tracker` (the `type: arduino`
+  line in the yaml is overridden; left there for documentation)
+- **Secrets needed** in `~/.local/share/esphome/secrets.yaml`:
+  `jkbms_ble_mac` (fill after on-site advert capture — placeholder
+  `AA:BB:CC:DD:EE:FF` compiles but won't connect), `jkbms_ble_name`,
+  `jkbms_password` (already copied from `~/.config/secrets/jkbms.env`)
+- **Advert scanner:** `esp32_ble_tracker.on_ble_advertise` logs any
+  `JK-*`/`JK_*`/`*BMS*` names with MAC+RSSI at WARN — first boot on-site
+  reveals the real MAC for `jkbms_ble_mac`, then reflash.
+- **Sensors:** SOC, SOH, pack voltage/current/power, charge/discharge power,
+  capacity remaining, cycles, 8× cell voltages, min/max/avg/delta cells,
+  MOS temp + 2 battery temps, balancing current, runtime, errors (hex+text);
+  switches for charging/discharging/balancer + BLE link toggle.
+- **Build verified 2026-09-24:** `esphome compile jkbms.yaml` OK —
+  flash 67.2% / RAM 56.5% of a plain esp32dev.
+- **Build env fix:** `~/.cache/esphome/idf` was partially downloaded
+  (Aug 25) — cmake reinstalled to `tools/cmake/3.30.2` and the esp-idf
+  5.5.5 framework re-fetched; builds clean now.
+- **Flash:** `~/.local/bin/esphome run ~/.local/share/esphome/jkbms.yaml`
+  (serial via `/dev/ttyUSB0` for first flash; OTA after it joins WiFi)
+
 ## Notes
 
 - The PSK for `TONY-WIFI_2.4G` is stored in the tony-dell `secrets.yaml` and referenced via `!secret` in the repo config.
