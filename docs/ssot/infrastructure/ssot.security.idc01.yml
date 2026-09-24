@@ -72,7 +72,7 @@ deviations:
     reason: "fallback login if tailnet breaks"
     last_verified: "2026-09-22"
   - item: "warp disabled"
-    reason: "enabling warp-svc 2026-09-24 wedged userspace (sshd/tailscale-ssh hang, tailnet+TCP services unaffected) — same signature as the original incident; stopped+disabled; WARP egress stays OFF until the root cause is diagnosed"
+    reason: "enabling warp-svc 2026-09-24 wedged userspace — watchdog logged main-loop idle 994s with fwmark/firewall rules half-loaded; sshd+tailscale-ssh hung, tailnet+TCP services unaffected; stopped+disabled; re-enable only after exclusions/policy-routing verified under console access"
     last_verified: "2026-09-24"
 
 last_observed: {}

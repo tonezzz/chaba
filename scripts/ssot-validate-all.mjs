@@ -274,6 +274,14 @@ function main() {
   }
 
   const cache = loadCache();
+  // Exemption/threshold config changes must invalidate cached results —
+  // otherwise stale warnings (or suppressed errors) replay forever.
+  const optDoc = join(SSOT_DIR, 'ssot.file-optimization.yml');
+  const configHash = existsSync(optDoc) ? sha256(optDoc) : 'none';
+  if (cache.__configHash !== configHash) {
+    for (const k of Object.keys(cache)) delete cache[k];
+    cache.__configHash = configHash;
+  }
   const toValidate = [];
   const cachedResults = [];
   const start = Date.now();

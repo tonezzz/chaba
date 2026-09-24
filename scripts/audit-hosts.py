@@ -30,6 +30,15 @@ def run_local(cmd: str, timeout: int = 30) -> tuple[int, str, str]:
 
 def run_ssh(host: str, cmd: str, timeout: int = 60) -> tuple[int, str, str]:
     cfg = HOSTS[host]
+    # Try the tailnet name first — ssh config / MagicDNS resolve it and the
+    # host key is usually in known_hosts under the name. Raw IPs often fail
+    # host-key verification (mn01 does).
+    target = cfg["tailnet"]
+    ssh_cmd = ["ssh", "-o", "BatchMode=yes", "-o", "ConnectTimeout=10",
+               f"{cfg['user']}@{target}", cmd]
+    out, err, rc = _run(ssh_cmd, timeout)
+    if rc == 0 or out.strip():
+        return out, err, rc
     try:
         ip = subprocess.run(
             ["tailscale", "ip", "-4", cfg["tailnet"]],
@@ -41,6 +50,8 @@ def run_ssh(host: str, cmd: str, timeout: int = 60) -> tuple[int, str, str]:
     except (subprocess.CalledProcessError, FileNotFoundError):
         # Fall back to tailnet hostname if tailscale binary is missing
         ip = cfg["tailnet"]
+    if ip == target:
+        return out, err, rc
     ssh_cmd = ["ssh", "-o", "BatchMode=yes", "-o", "ConnectTimeout=10",
                f"{cfg['user']}@{ip}", cmd]
     return _run(ssh_cmd, timeout)
