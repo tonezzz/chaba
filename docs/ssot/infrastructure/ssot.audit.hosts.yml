@@ -1184,6 +1184,138 @@ hosts:
       notes:
         - Live snapshot from audit-hosts.py at 2026-09-17T18:06:51.646831+07:00
     deltas: []
+  idc01:
+    tailscale_ip: 100.74.146.0
+    description: Public VPS — Ada deployment server; services tailnet-only
+      except the caddy-edge sslip.io canary (public IP lives in the plan doc)
+    role: public-vps
+    tags:
+      - public
+      - vps
+      - ada
+    expected_services:
+      - name: ada-pi-pwa.service
+        type: service
+        scope: user
+        expected_state: active
+        critical: true
+        note: Ada PWA on 127.0.0.1:8001 — primary instance (moved from
+          tony-dell); public canary via caddy-edge on sslip.io, tailnet serve root
+      - name: ada-ha-tony.service
+        type: service
+        scope: user
+        expected_state: active
+        critical: false
+        note: Ada HA Tony on 127.0.0.1:8002; mn01 unit remains as standby
+      - name: ada-ha-michael.service
+        type: service
+        scope: user
+        expected_state: active
+        critical: false
+        note: Ada HA Michael on 127.0.0.1:8003
+      - name: caddy-edge.service
+        type: service
+        scope: user
+        expected_state: active
+        critical: true
+        note: Podman quadlet Network=host — TLS edge + ACME cert for sslip.io
+      - name: mddb.service
+        type: service
+        scope: user
+        expected_state: active
+        critical: true
+        note: Sole MDDB instance on tailnet 100.74.146.0:11023 (quadlet);
+          migrated from tony-dell 2026-09-22
+      - name: mddb-panel.service
+        type: service
+        scope: user
+        expected_state: active
+        critical: false
+        note: MDDB panel, tailnet-only at 100.74.146.0:3002
+      - name: gemini-ollama-proxy.service
+        type: service
+        scope: user
+        expected_state: active
+        critical: false
+        note: Embedding proxy :11435 -> Gemini, ollama fallback
+      - name: ollama.service
+        type: service
+        scope: user
+        expected_state: active
+        critical: false
+        note: Local nomic-embed-text fallback for mddb embeddings
+      - name: obsidian-vault.service
+        type: service
+        scope: user
+        expected_state: active
+        critical: false
+        note: Ada memory vault app on 127.0.0.1:8004, tailnet serve :8443
+      - name: open-notebook.service
+        type: service
+        scope: user
+        expected_state: active
+        critical: false
+        note: OpenNotebook eval — UI :8502 + API :5055 via tailnet serve
+      - name: open-notebook-surreal.service
+        type: service
+        scope: user
+        expected_state: active
+        critical: false
+        note: SurrealDB backing store for open-notebook
+      - name: tailscaled.service
+        type: service
+        scope: system
+        expected_state: active
+        critical: true
+      - name: mddb-backup.timer
+        type: timer
+        scope: user
+        expected_state: active
+        critical: true
+        note: Nightly /v1/backup — only safety net while no follower replica
+      - name: obsidian-vault-sync.timer
+        type: timer
+        scope: user
+        expected_state: active
+        critical: false
+      - name: obsidian-vault-backup.timer
+        type: timer
+        scope: user
+        expected_state: active
+        critical: false
+      - name: open-notebook-backup.timer
+        type: timer
+        scope: user
+        expected_state: active
+        critical: false
+      - name: open-notebook-restore-check.timer
+        type: timer
+        scope: user
+        expected_state: active
+        critical: false
+      - name: ada-memory-sync.timer
+        type: timer
+        scope: user
+        expected_state: active
+        critical: false
+        note: Vault->MDDB sync
+      - name: ada-memory-drift.timer
+        type: timer
+        scope: user
+        expected_state: active
+        critical: false
+      - name: ada-memory-gaps.timer
+        type: timer
+        scope: user
+        expected_state: active
+        critical: false
+      - name: ada-recall-canary.timer
+        type: timer
+        scope: user
+        expected_state: active
+        critical: false
+        note: Weekly known-answer recall probe
+    known_failed: []
 related_files:
   - scripts/audit-hosts.py
   - reports/audit-hosts/
@@ -1197,5 +1329,6 @@ related_ssot:
   - docs/ssot/infrastructure/ssot.night-jobs.macbook.yml
   - docs/ssot/infrastructure/ssot.h3-deployment.yml
   - docs/ssot/infrastructure/ssot.devin.maintenance.yml
+  - docs/ssot/infrastructure/ssot.cleanup.yml
 related_kb:
   - docs/kb/audit-framework.md
