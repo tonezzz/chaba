@@ -1,33 +1,88 @@
 #!/usr/bin/env python3
-"""Export Ada voice transcripts from a runtime host for offline review.
+"""Export Ada voice transcripts + session reports for offline review.
 
-Ada (ada-pi >= transcript persistence) archives raw voice-session
-transcripts to ADA_TRANSCRIPT_DIR (default ~/.local/share/ada/transcripts)
-on the host running ada-ha-*.service. This script pulls them to a local
-review directory so a Devin session can audit conversation quality —
-missed recalls, wrong tool choices, missed action items, prompt gaps.
+Pulls the L0/L1 layer from an Ada runtime host:
+  ~/.local/share/ada/transcripts/*.md   raw transcripts (private, local-only)
+  ~/.local/share/ada/reports/*.json     L1 session reports (session-report.py)
+  ~/.local/share/ada/session-memory.md  rolling '## ' memory log
+
+into the local review dir (~/.local/share/ada-review/), then runs
+focus-rollup.py to refresh focus-digest.md — one command refreshes the
+whole offline corpus that memory.yml's ada-sessions/ada-focus sections
+read.
 
 Privacy: transcripts can contain private details and credential-shaped
 text. The output directory is intentionally outside the repo and must
 never be committed. Keep it that way.
 
 Usage:
-  export-transcripts.py                    # pull from mn01 (default host)
-  export-transcripts.py --host idc01
+  export-transcripts.py                    # pull idc01 (live host), rollup
+  export-transcripts.py --host mn01        # standby host (transcripts only)
   export-transcripts.py --since 2026-09-20 --limit 20
-  export-transcripts.py --local /path/to/transcripts   # no ssh, copy local
+  export-transcripts.py --backfill         # stage-2 LLM reports for
+                                           # transcripts missing one
+  export-transcripts.py --local /path      # no ssh, local dir source
 """
 
 from __future__ import annotations
 
 import argparse
+import re
 import shutil
 import subprocess
 import sys
 from pathlib import Path
 
-REMOTE_DIR = "~/.local/share/ada/transcripts"
+REMOTE_BASE = "~/.local/share/ada"
+REMOTE_DIR = f"{REMOTE_BASE}/transcripts"
+REMOTE_REPORTS = f"{REMOTE_BASE}/reports"
+REMOTE_LOG = f"{REMOTE_BASE}/session-memory.md"
 DEFAULT_OUT = Path.home() / ".local/share/ada-review/transcripts"
+ADA_SCRIPTS = Path(__file__).resolve().parent
+
+
+def _ssh_ls(host: str, pattern: str) -> list[str]:
+    try:
+        out = subprocess.run(
+            ["ssh", "-o", "BatchMode=yes", host,
+             f"ls -1 {pattern} 2>/dev/null | sort -r"],
+            capture_output=True, text=True, timeout=30, check=True,
+        )
+    except subprocess.CalledProcessError:
+        return []
+    return [l.strip() for l in out.stdout.splitlines() if l.strip()]
+
+
+def _scp(host: str, remote: str, dst: Path) -> bool:
+    r = subprocess.run(
+        ["scp", "-q", f"{host}:{remote}", str(dst)], timeout=60)
+    return r.returncode == 0
+
+
+def _merge_session_log(local: Path, remote_text: str) -> int:
+    """Union '## ' entries by heading; returns count of new entries."""
+    def entries(text: str) -> dict[str, str]:
+        out = {}
+        for e in re.split(r"\n(?=## )", text):
+            e = e.strip()
+            if not e:
+                continue
+            head = e.split("\n", 1)[0].strip()
+            out[head] = e
+        return out
+
+    prev = local.read_text(encoding="utf-8") if local.exists() else ""
+    merged = entries(prev)
+    new = 0
+    for head, e in entries(remote_text).items():
+        if head not in merged:
+            merged[head] = e
+            new += 1
+    # chronological-ish order: heading is '## YYYY-MM-DD <id>'
+    ordered = [merged[h] for h in sorted(merged)]
+    local.parent.mkdir(parents=True, exist_ok=True)
+    local.write_text("\n\n".join(ordered) + "\n", encoding="utf-8")
+    return new
 
 
 def main() -> int:
@@ -35,8 +90,8 @@ def main() -> int:
         description=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
-    ap.add_argument("--host", default="mn01",
-                    help="ada runtime host to pull from (mn01|idc01|tony-dell)")
+    ap.add_argument("--host", default="idc01",
+                    help="ada runtime host to pull from (idc01|mn01|tony-dell)")
     ap.add_argument("--local", type=Path, default=None,
                     help="read transcripts from a local dir instead of ssh")
     ap.add_argument("--out", type=Path, default=DEFAULT_OUT)
@@ -45,34 +100,35 @@ def main() -> int:
                     help="only transcripts dated >= YYYY-MM-DD (filename prefix)")
     ap.add_argument("--limit", type=int, default=50,
                     help="max most-recent transcripts to copy")
+    ap.add_argument("--no-reports", action="store_true",
+                    help="skip pulling reports/ and session-memory.md")
+    ap.add_argument("--no-rollup", action="store_true",
+                    help="skip focus-rollup.py refresh at the end")
+    ap.add_argument("--backfill", action="store_true",
+                    help="generate stage-2 reports for transcripts missing one "
+                         "(one LLM call each — slow)")
     args = ap.parse_args()
 
     args.out.mkdir(parents=True, exist_ok=True)
+    review = args.out.parent          # ~/.local/share/ada-review
+    reports_dir = review / "reports"
+    session_log = review / "session-memory.md"
 
+    # ---- transcripts ----
     if args.local is not None:
         src = args.local.expanduser()
         files = sorted(p for p in src.glob("*.md") if p.is_file())
     else:
-        # List remote transcript files, newest first.
-        try:
-            out = subprocess.run(
-                ["ssh", args.host,
-                 f"ls -1 {args.remote_dir}/*.md 2>/dev/null | sort -r"],
-                capture_output=True, text=True, timeout=30, check=True,
-            )
-        except subprocess.CalledProcessError as exc:
-            print(f"ssh listing failed on {args.host}: {exc.stderr.strip()}",
+        remote = _ssh_ls(args.host, f"{args.remote_dir}/*.md")
+        if not remote and args.remote_dir == REMOTE_DIR:
+            print(f"ssh listing failed or empty on {args.host}",
                   file=sys.stderr)
             return 1
-        files = [Path(line.strip()) for line in out.stdout.splitlines()
-                 if line.strip()]
+        files = [Path(l) for l in remote]
 
     if args.since:
         files = [p for p in files if p.name >= args.since]
     files = files[: args.limit]
-    if not files:
-        print("no transcripts found")
-        return 0
 
     copied = []
     if args.local is not None:
@@ -80,18 +136,59 @@ def main() -> int:
             dst = args.out / p.name
             if not dst.exists() or dst.stat().st_size != p.stat().st_size:
                 shutil.copy2(p, dst)
-            copied.append(dst.name)
-    else:
-        # Filenames are generated by Ada (date + sanitized session id), so
-        # plain per-file scp is safe and lossless.
-        for p in files:
-            r = subprocess.run(
-                ["scp", "-q", f"{args.host}:{args.remote_dir}/{p.name}",
-                 str(args.out / p.name)],
-                timeout=60,
-            )
-            if r.returncode == 0:
                 copied.append(p.name)
+    else:
+        for p in files:
+            if _scp(args.host, f"{args.remote_dir}/{p.name}",
+                    args.out / p.name):
+                copied.append(p.name)
+    print(f"transcripts: {len(copied)} copied -> {args.out}")
+
+    # ---- reports + session-memory.md ----
+    if not args.no_reports and args.local is None:
+        reports_dir.mkdir(parents=True, exist_ok=True)
+        remote_reports = _ssh_ls(args.host, f"{REMOTE_REPORTS}/*.json")
+        n = 0
+        for rp in remote_reports:
+            name = Path(rp).name
+            dst = reports_dir / name
+            if not dst.exists() and _scp(args.host, f"{REMOTE_REPORTS}/{name}",
+                                         dst):
+                n += 1
+        print(f"reports: {n} new -> {reports_dir} "
+              f"({len(list(reports_dir.glob('*.json')))} total)")
+
+        out = subprocess.run(
+            ["ssh", "-o", "BatchMode=yes", args.host,
+             f"cat {REMOTE_LOG} 2>/dev/null"],
+            capture_output=True, text=True, timeout=30)
+        if out.returncode == 0 and out.stdout.strip():
+            added = _merge_session_log(session_log, out.stdout)
+            print(f"session-memory.md: +{added} entries merged "
+                  f"-> {session_log}")
+
+    # ---- backfill missing reports (optional, LLM cost) ----
+    if args.backfill:
+        have = {p.stem for p in reports_dir.glob("*.json")}
+        missing = [p for p in sorted(args.out.glob("*.md"))
+                   if p.stem not in have]
+        print(f"backfill: {len(missing)} transcripts missing reports")
+        for p in missing:
+            r = subprocess.run(
+                [sys.executable, str(ADA_SCRIPTS / "session-report.py"),
+                 str(p), "--emit-session-log", str(session_log)],
+                capture_output=True, text=True, timeout=180)
+            if r.returncode != 0:
+                print(f"  {p.name}: FAILED {r.stderr.strip()[:120]}",
+                      file=sys.stderr)
+
+    # ---- rollup ----
+    if not args.no_rollup:
+        r = subprocess.run(
+            [sys.executable, str(ADA_SCRIPTS / "focus-rollup.py"),
+             "--reports", str(reports_dir)],
+            capture_output=True, text=True)
+        print(r.stdout.strip() or r.stderr.strip())
 
     manifest = args.out / "MANIFEST.txt"
     with manifest.open("w") as fh:
@@ -99,8 +196,6 @@ def main() -> int:
                  f"pulled={len(copied)}\n")
         for name in copied:
             fh.write(f"{name}\n")
-    print(f"copied {len(copied)} transcript(s) -> {args.out}")
-    print(f"manifest: {manifest}")
     return 0
 
 

@@ -71,9 +71,15 @@ def load_reports(d: Path) -> list[dict]:
     out = []
     for p in sorted(d.glob("*.json")):
         try:
-            out.append(json.loads(p.read_text(encoding="utf-8")))
+            r = json.loads(p.read_text(encoding="utf-8"))
         except Exception as e:
             print(f"warn: {p.name}: {e}", file=sys.stderr)
+            continue
+        # Live reports (conversation_memory) lack these; batch reports set
+        # them. Derive from the filename either way — it is authoritative.
+        r.setdefault("file", p.name)
+        r.setdefault("date", p.stem[:10])
+        out.append(r)
     return out
 
 
