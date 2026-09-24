@@ -201,11 +201,14 @@ cast_entities:
       time_pattern by cast_guard_reset_rate_counter"
     timer.cast_idle: "5-min inactivity clock feeding cast_idle_shutdown"
   scripts:
-    script.cast_power_on: "power-on sequence (target: box) — GATED 2026-09-24:
-      aborts+notifies when cast_enabled=off; 10-min manual-off cooldown
-      suppresses plug power (plug_tv off/unavailable within 600s of
-      last_changed); turns the plug on only when it isn't already on;
-      persistent_notification on every real auto-power"
+    script.cast_power_on: "power-on sequence (target: box, force: bool) —
+      GATED 2026-09-24: aborts+notifies when cast_enabled=off; 10-min
+      manual-off cooldown (plug_tv off/unavailable within 600s of
+      last_changed) suppresses power and posts an APPROVAL event to
+      /chaba-admin/events (Ack -> chaba-event-log.py runs the embedded
+      action -> cast_power_on force:true); force:true bypasses cooldown
+      only; plug turn_on only when plug not already on; notification on
+      every real auto-power"
     script.cast_cleanup: "end-of-session cleanup"
     script.cast_camera: "cast camera to TV"
     script.cast_youtube_tv: "cast YouTube to TONY-TV"

@@ -102,6 +102,13 @@ instances:
       deploy-ada.sh emits over SSH. Events with requires_response && !responded
       pin to top with a pulsing border (prefers-reduced-motion respected);
       confidence <0.6 shown as outlined chip.
+      2026-09-24: events may carry `action: {domain, service, data}` —
+      `chaba-event-log.py ack` executes it via HA REST (token in
+      /config/secrets.yaml `chaba_event_api_token`); the card labels such
+      buttons "Approve" instead of "Ack". Used by cast_power_on /
+      wakeCastTarget plug-cooldown suppression. Log tab entity list trimmed:
+      dropped vestigial input_boolean.chaba_events_show_logbook and
+      input_text.chaba_events_filter (card internals, no logbook value).
       Voice card added 2026-09-22 at the top of the Pair tab, moved off it
       2026-09-23 (pair tab is admin-only; the live mic lives on
       chaba-home/ai):

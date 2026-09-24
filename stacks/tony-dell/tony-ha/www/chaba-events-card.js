@@ -355,7 +355,7 @@ class ChabaEventsCard extends HTMLElement {
     }
     if (e.requires_response && !e.responded) {
       const ack = document.createElement("button");
-      ack.textContent = e._pn ? "Dismiss" : "Ack";
+      ack.textContent = e._pn ? "Dismiss" : (e.action ? "Approve" : "Ack");
       ack.onclick = async () => {
         // optimistic update — reconcile with the feed in the background
         e.responded = true;
