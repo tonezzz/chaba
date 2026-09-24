@@ -16,6 +16,8 @@ sections:
         text: "Keep WARP off tailscale hosts (idc01, mn01, tony-dell all run tailscaled as their service edge). If WARP is ever reintroduced, pin it to a route that excludes tailscale CGNAT ranges — or pick one userspace VPN per host."
       - label: Deploy fallout
         text: "deploy-ada.sh fails mid-run on wedged hosts (ssh mkdir step dies). Safe to re-run; untracked files on idc01's ada-pi checkout (scenario WIP from parallel sessions) can also block pulls — verify identical-to-origin before moving aside."
+      - label: Related — m2m ssh bypass
+        text: "Separate fix same day: tailscaled-ssh intercepts :22 and demands periodic browser re-auth, so machine-to-machine ssh from tailnet-only hosts (idc01) hangs under BatchMode. Fixed with a systemd socket drop-in on tony-dell (ssh.socket.d/listen-2222.conf → ListenStream=0.0.0.0:8222 — socket-activated sshd ignores ListenAddress in sshd_config; :2222 was taken, :8222 chosen) + idc01 ~/.ssh/config alias 'tony-dell-m2m' → 100.68.142.13:8222 + idc01 pubkey in authorized_keys. Plain sshd, key auth, reusable by any service-to-service ssh. Powers ada_doc_print (DOC_PRINT_SSH=tony-dell-m2m)."
 status:
   last_verified: "2026-09-24"
   related:
