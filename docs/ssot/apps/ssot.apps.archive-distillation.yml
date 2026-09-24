@@ -1,0 +1,73 @@
+# Archive distillation — canonical conventions (schema law)
+# Design rationale: docs/kb/archive-distillation-design.md
+# Purpose: when a repo goes stale, distill into topic reports BEFORE
+# archiving — organized memory replaces raw outdated dumps.
+
+title: Archive distillation conventions
+
+archive_distillation:
+  version: 1
+  created: "2026-09-23"
+  status: approved-draft
+
+  storage:
+    reports_root: docs/kb/archive/<repo>/<topic>.md
+    manifests_root: docs/archive/manifests/<repo>.yml
+    timeline_index: docs/kb/archive/TIMELINE.md
+    bank: chaba-archive          # read-only; see ssot.apps.ada-memory-banks.yml
+    sync: scripts/sync-docs-to-mddb.py source map `chaba-archive`
+
+  report_frontmatter:
+    required: [kind, bank, source_repo, source_commit, topic, status,
+               period, covers, extracted]
+    optional: [follows, superseded_by]
+    values:
+      kind: archive-report
+      bank: chaba-archive
+      status: [historical, partial-current, superseded]
+      period: "[YYYY-MM, YYYY-MM] — when the topic was live knowledge"
+
+  report_sections:
+    required:
+      - Summary
+      - Timeline        # dated events; every entry needs a source ref
+      - Still-true facts   # tagged [still-true]/[historical]/[superseded-by X]
+      - Key details
+      - Source map      # source file -> section (audit trail)
+      - Not preserved   # DECLARED drops — honesty mechanism, mandatory
+
+  manifest:
+    rules:
+      - "every file in the source tree appears exactly once: consumed
+        by a topic report OR declared topic=excluded-noise"
+      - "audit.unaccounted must equal 0 — the archive gate"
+      - "each file entry: path, sha256, size, topic"
+      - "manifest pins source repo + commit sha — re-distillable later"
+
+  audit:
+    tool: scripts/audit-archive.py
+    checks:
+      - "manifest unaccounted == 0"
+      - "every covers: file exists in manifest with matching sha256"
+      - "declared topic per file == report that lists it"
+      - "every Timeline entry has a source ref + parseable date"
+      - "follows/superseded_by link targets exist"
+    gates:
+      machine: "completeness of accounting (coverage, links, dates)"
+      human: "quality of extraction — review Not preserved + topic map"
+
+  timeline:
+    per_report: "## Timeline section — dated events from source docs +
+      git log dates (prefer real commit dates over guesses)"
+    global_index: "TIMELINE.md generated from all reports' period +
+      timeline entries, date-sorted, shows supersedes chains"
+    linking: "follows = older thing it replaced; superseded_by = newer
+      thing that replaced it — makes evolution traversable"
+
+  benchmark:
+    purpose: "choose extraction engine — Devin vs Gemini/Ada"
+    rubric: [coverage, fact-retention-vs-ground-truth,
+             declared-loss-quality, factual-errors, time, cost]
+    output: scorecard appended to manifest audit block
+
+  completed_archives: []   # append {repo, commit, date, reports:[...]}
