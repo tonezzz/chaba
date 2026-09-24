@@ -511,6 +511,29 @@ control_policies:
   unknown:
     allow_domains: [light]
 
+# Language policy — bilingual household (EN/TH). Preserve originals,
+# index in English, answer in the user's language.
+# Rationale: gemini-embedding-2 is multilingual so cross-language vector
+# recall works, but same-language matching is stronger; translation at
+# write time risks baking a mistranslation into permanent false facts.
+# Response language is independent of storage language — tests must use
+# bilingual assertions (see tests/scenarios-live/archive_recall.yaml).
+language_policy:
+  raw_layer:
+    # transcripts, raw memories, ada_remember captures
+    rule: "preserve original language; every doc carries lang: en|th"
+    thai_note: "store as said; add an English gloss field for Thai memories
+      so the English index layer can find them"
+  index_layer:
+    # canonical knowledge: gap docs, procedures, reports, SSOT-derived docs
+    rule: "English only — this is the uniform retrieval surface"
+  response_layer:
+    rule: "Ada answers in the user's language — independent of storage"
+  test_policy:
+    rule: "response_contains assertions must carry EN+TH terms where the
+      semantic answer could come back in either language"
+  source: "decision 2026-09-24 — hybrid model; see session discussion"
+
 config:
   version: 3
   created: "2026-09-18"

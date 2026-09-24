@@ -82,6 +82,10 @@ sections:
         text: The tailscale 443 reset removed the previous TCP 3009 listener; it can be re-added if still needed.
       - label: rview not migrated
         text: The old /apps/rview 443 mapping is gone; rview can be fixed separately later.
+      - label: Mid-response replays (2026-09-24)
+        text: "Gemini Live stream aborts server-side (close 1008, ~11 in 3 days on ada-ha-tony incl. bursts of 3 in 6 min on one session); reconnect via session_resumption makes Gemini REPLAY the interrupted response — user hears stop+respeak. Also possible self-inflicted aborts: send_client_content text turns (e.g. UNRECOGNIZED_SPEAKER_NOTE) landing mid-turn. Fix on ada-pi branch fix/replay-suppress: heard-prefix suppression in pwa_server pump (swallow matching audio+deltas until replay catches up, bail on divergence) — pending parallel-session review/merge."
+      - label: Ambient/foreign noise behavior
+        text: "Mic audio always streams; server VAD (START_SENSITIVITY_LOW) can treat TV/foreign speech as a turn (barge-in risk). Speaker-ID fires speaker_unrecognized + injects a system note; person_policies sandbox unknown speakers (general+home banks, light-only control). Verified by tests/scenarios-live/ambient_foreign_voice.yaml: she declines politely and offers enrollment without acting."
   - title: RK600-07B Data Logger + RK900 Weather Sensor
     icon: "WX"
     layout: list
