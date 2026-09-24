@@ -51,7 +51,7 @@ print(json.dumps({"title": os.environ["TITLE"], "category": "deploy",
                   "severity": "info" if os.environ["STATUS"] == "ok" else "fail",
                   "requires_response": os.environ["STATUS"] != "ok",
                   "body": os.environ["OUT"]}))')
-  printf '%s' "$payload" | ssh tony-dell "python3 $EVENT_LOG add -" >/dev/null 2>&1 || true
+  printf '%s' "$payload" | ssh -o ConnectTimeout=8 -o BatchMode=yes tony-dell "python3 $EVENT_LOG add -" >/dev/null 2>&1 || true
 }
 
 # Render the memory-bank registry once; per-host we compare and ship it.
