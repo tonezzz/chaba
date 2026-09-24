@@ -73,31 +73,62 @@ except Exception:
 PY
 }
 
-meta_stamp() { # dir result — adds finished/notified fields
-    python3 - "$1" "$2" <<'PY'
+meta_stamp() { # dir result fu_index channels_done — stamps per-channel
+    # flags + notified_fu so follow-up completions re-fire and failed
+    # channels retry on the next run instead of going silent.
+    python3 - "$1" "$2" "$3" "$4" <<'PY'
 import json, sys
 from datetime import datetime, timezone
-d, result = sys.argv[1:3]
+d, result, fu, chans = sys.argv[1:5]
 m = json.load(open(f"{d}/meta.json"))
+now = datetime.now(timezone.utc).isoformat()
 m["result"] = result
-m["finished_at"] = datetime.now(timezone.utc).isoformat()
-m["notified_at"] = m["finished_at"]
+m["finished_at"] = now
+m["notified_fu"] = int(fu)
+m["notified_at"] = now
+for c in chans.split(","):
+    if c:
+        m[f"{c}_at"] = now
 json.dump(m, open(f"{d}/meta.json", "w"), indent=1)
 PY
 }
 
-already_done() {
-    python3 - "$1" <<'PY'
+already_done() { # dir fu_index — done if notified_fu covers latest unit
+    python3 - "$1" "$2" <<'PY'
 import json, sys
 try:
-    sys.exit(0 if json.load(open(sys.argv[1] + "/meta.json")).get("notified_at") else 1)
+    m = json.load(open(sys.argv[1] + "/meta.json"))
+    fu = int(sys.argv[2])
+    if m.get("notified_fu") is not None:
+        sys.exit(0 if int(m["notified_fu"]) >= fu else 1)
+    # legacy tasks: notified_at covers only the base unit (fu index 0)
+    sys.exit(0 if (fu == 0 and m.get("notified_at")) else 1)
 except Exception:
     sys.exit(1)
 PY
 }
 
-emit_event() { # title severity requires_response body
-    TITLE="$1" SEV="$2" RR="$3" BODY="$4" python3 - <<'PY' | python3 "$EVENT_LOG_LOCAL" add - >/dev/null 2>&1 || true
+latest_fu() { # highest follow-up index present (0 = base unit only)
+    local d="$1" n=0 f
+    for f in "$d"/fu-*.txt; do
+        [ -f "$f" ] || continue
+        local k="${f##*/fu-}"; k="${k%.txt}"
+        [ "$k" -gt "$n" ] 2>/dev/null && n="$k"
+    done
+    echo "$n"
+}
+
+journal_result() { # infer exit result from journal even after --collect GC
+    # Prints "success"|"failed"|"" — the unit's Result field is gone once
+    # collected, but journal lines like 'devin-task-X.service: Succeeded.'
+    # and 'Failed with result ...' persist.
+    journalctl --user-unit "devin-task-$1.service" --no-pager -o cat \
+        2>/dev/null | grep -oE "Succeeded\.|Failed with result '[a-z-]+'" \
+        | tail -1 | sed "s/Succeeded\./success/;s/Failed with result '\([a-z-]*\)'/\1/"
+}
+
+emit_event() { # title severity requires_response body — rc 0 on success
+    TITLE="$1" SEV="$2" RR="$3" BODY="$4" python3 - <<'PY' | python3 "$EVENT_LOG_LOCAL" add - >/dev/null 2>&1
 import json, os
 print(json.dumps({"title": os.environ["TITLE"], "category": "devin-dispatch",
     "source": "devin-dispatch-watch",
@@ -114,7 +145,7 @@ notify_iphone() { # title message
     [ -n "$token" ] || return 0
     TITLE="$1" MSG="$2" python3 - <<'PY' | curl -sf -X POST \
         -H "Authorization: Bearer $token" -H "Content-Type: application/json" \
-        -d @- "$HA_URL_LOCAL/api/services/notify/mobile_app_tony_ip" >/dev/null 2>&1 || true
+        -d @- "$HA_URL_LOCAL/api/services/notify/mobile_app_tony_ip" >/dev/null 2>&1
 import json, os
 print(json.dumps({"title": os.environ["TITLE"],
                   "message": os.environ["MSG"][:500]}))
@@ -123,7 +154,7 @@ PY
 
 mddb_add() { # key body
     KEY="$1" BODY="$2" python3 - <<'PY' | curl -sf -X POST \
-        -H "Content-Type: application/json" -d @- "$MDDB/add" >/dev/null 2>&1 || true
+        -H "Content-Type: application/json" -d @- "$MDDB/add" >/dev/null 2>&1
 import json, os
 body = os.environ["BODY"]
 print(json.dumps({
@@ -143,15 +174,28 @@ shopt -s nullglob
 for d in "$DISPATCH_DIR"/tasks/*/; do
     id=$(basename "$d")
     [ -f "$d/meta.json" ] || continue
-    already_done "$d" && continue
+    fu=$(latest_fu "$d")
+    already_done "$d" "$fu" && continue
     any_active "$id" && continue
 
     read -r unit state result <<<"$(latest_unit "$id")"
     if [ -z "${unit:-}" ]; then
         # dispatch uses systemd-run --collect: finished units are unloaded
-        # entirely. No unit + transcript = ran to completion and was GC'd.
+        # entirely. No unit + transcript = ran and was GC'd — but the unit's
+        # Result is gone too, so prefer the exit_code the dispatch wrapper
+        # records, then the journal; only fall back to inference last.
         [ -f "$d/transcript.json" ] || continue   # never started / still pending
-        unit="(collected)"; result="success"
+        if [ -f "$d/exit_code" ]; then
+            ec=$(cat "$d/exit_code" 2>/dev/null)
+            unit="(collected,exit=$ec)"
+            [ "$ec" = "0" ] && result="success" || result="exit-$ec"
+        else
+            unit="(collected)"
+            result=$(journal_result "$id")
+            # No record at all (tasks from before exit_code): a transcript
+            # with agent output is the best available signal of completion.
+            [ -z "$result" ] && { result="success"; unit="(collected,inferred)"; }
+        fi
     fi
     out=$(outcome "$d/transcript.json")
     sid=$(session_id "$d/transcript.json")
@@ -162,12 +206,17 @@ for d in "$DISPATCH_DIR"/tasks/*/; do
         sev="fail"; rr="true"; label="FAILED ($result)"
     fi
 
-    log "task $id finished: unit=$unit result=${result:-none} sid=${sid:-?}"
-    emit_event "devin task $id: $label" "$sev" "$rr" "$out"
-    notify_iphone "Devin task ${label}" "${id}: ${out:0:200}"
-    [ -n "$sid" ] && mddb_add "devin/$sid" \
-        "$(printf 'Dispatched task %s (unit %s, result %s).\n\n%s' "$id" "$unit" "$result" "$out")"
-    meta_stamp "$d" "${result:-unknown}"
+    log "task $id finished: unit=$unit fu=$fu result=${result:-none} sid=${sid:-?}"
+    chans=""
+    emit_event "devin task $id: $label" "$sev" "$rr" "$out" && chans="event"
+    notify_iphone "Devin task ${label}" "${id}: ${out:0:200}" && chans="$chans,notify"
+    if [ -n "$sid" ]; then
+        mddb_add "devin/$sid" \
+            "$(printf 'Dispatched task %s (unit %s, result %s).\n\n%s' "$id" "$unit" "$result" "$out")" \
+            && chans="$chans,mddb"
+    fi
+    [ -n "$chans" ] || log "WARN: all channels failed for $id — will retry next run"
+    meta_stamp "$d" "${result:-unknown}" "$fu" "$chans"
 done
 
 # P4: keep focus-inbox entries in sync with the ada-ha-bank-devin-handoff

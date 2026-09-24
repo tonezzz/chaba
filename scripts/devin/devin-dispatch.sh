@@ -58,11 +58,17 @@ _devin_run() { # unit worktree prompt_file extra-args...
   local unit="$1" wt="$2" prompt="$3"; shift 3
   # No positional PATH arg: --print mode rejects it; --working-directory
   # already sets the session workspace.
+  # The unit runs under --collect: when it finishes, systemd unloads it and
+  # the Result field is gone (user journal doesn't retain Succeeded/Failed
+  # lines here). Wrap the run so the real exit code lands in the task dir —
+  # devin-dispatch-watch reads it to report the true outcome.
   systemd-run --user --unit="$unit" --working-directory="$wt" --collect \
     --setenv=HOME="$HOME" --setenv=PATH="$PATH" \
-    "$DEVIN_BIN" -p --permission-mode "$PERMISSION_MODE" \
-    --respect-workspace-trust false \
-    --prompt-file "$prompt" "$@"
+    --setenv=DEVIN_BIN="$DEVIN_BIN" --setenv=PERMISSION_MODE="$PERMISSION_MODE" \
+    --setenv=PROMPT="$prompt" --setenv=TASK_DIR="$(dirname "$prompt")" \
+    /bin/bash -c 'rc=0; "$DEVIN_BIN" -p --permission-mode "$PERMISSION_MODE" \
+      --respect-workspace-trust false --prompt-file "$PROMPT" "$@" || rc=$?; \
+      echo "$rc" > "$TASK_DIR/exit_code"; exit "$rc"' _ "$@"
 }
 
 cmd_start() {
