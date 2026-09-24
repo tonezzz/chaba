@@ -30,6 +30,35 @@ browser: page → auth → ws → ready → primed greeting → first answer.
    memory tools themselves cost ~1s (see latency-probe results).
 4. **Tailnet + TLS ≈ +50ms total** — remote access is not a factor.
 
+## Network hop timing (each leg measured)
+
+```
+tony-omen ──7ms──▶ idc01 ──<1ms──▶ mddb / proxy / ollama / surreal
+    │              │
+    │              ├──32ms tcp / 99ms ttfb──▶ generativelanguage.googleapis.com
+    │              ├──165ms ttfb──▶ googleapis (calendar)
+    │              ├──7ms──▶ tony-dell (tony-ha API ttfb 32ms)
+    │              ├──7ms──▶ mn01
+    │              └──7ms──▶ michael-ha (API ttfb 248ms)
+```
+
+| Hop | Connect | TTFB | Notes |
+|---|---|---|---|
+| tony-omen → idc01 tailnet | 7ms RTT (direct, not relayed) | 41ms | WireGuard direct via 157.85.110.99 |
+| tony-omen → idc01 sslip.io | — | 153ms | +110ms vs tailnet: slower dns+TLS |
+| idc01 → uvicorn :8001 | 0.2ms | <1ms | loopback |
+| idc01 → mddb :11023 | 0.2ms | 1ms | same host |
+| mddb → embed proxy :11435 | 0.2ms | 1ms | same host |
+| proxy → ollama :11434 | — | 3ms | same host |
+| idc01 → open-notebook :5055 | 0.3ms | 4ms | same host |
+| idc01 → generativelanguage | 32ms tcp / 64ms TLS | 99ms | ws handshake ≠ this — Live session init is ~5s server-side |
+| idc01 → googleapis (calendar) | 30ms tcp | 165ms | agenda prefetch hop |
+| idc01 → tony-dell / mn01 / michael-ha | ~7ms each | 32–248ms | all direct tailnet, VPS is region-local |
+
+**Takeaway:** no network hop explains latency except Gemini. The whole
+internal path (mddb + embed + tools) is <5ms; every tailnet leg is ~7ms.
+The ~5s `ws→ready` is Gemini Live session setup server-side, not transit.
+
 ## Perceived-latency summary
 
 - Open → interactive: **~5s** (ws handshake; page+auth are ~0)
