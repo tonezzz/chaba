@@ -31,11 +31,11 @@ sections:
       - label: /home/tony/CascadeProjects/ada-pi/backend/instance.py
         text: "ADA_INSTANCE_ID resolution. Required, fail-fast: pins all MDDB memory collections to ada-ha-*-<instance> (tony/michael) instead of deriving them from HOME_ASSISTANT_URL. Missing or invalid → the service refuses to start."
       - label: /home/tony/.config/systemd/user/ada-ha-tony.service
-        text: Runs uvicorn on 0.0.0.0:8002 on mn01 with env /home/tony/.config/secrets/ada-ha-tony.env.
+        text: Runs uvicorn on 0.0.0.0:8002 on idc01 with env /home/tony/.config/secrets/ada-ha-tony.env (mn01 unit exists but is stopped+disabled standby since 2026-09-24).
       - label: /home/tony/.config/systemd/user/ada-ha-michael.service
-        text: Runs uvicorn on 0.0.0.0:8003 on mn01 with env /home/tony/.config/secrets/ada-ha-michael.env.
-      - label: /home/tony/.config/caddy/Caddyfile.mn01
-        text: Routes /apps/ha/ada-tony/* to 127.0.0.1:8002 and /apps/ha/ada-michael/* to 127.0.0.1:8003.
+        text: Runs uvicorn on 0.0.0.0:8003 on idc01 with env /home/tony/.config/secrets/ada-ha-michael.env (mn01 standby as above).
+      - label: /home/tony/.config/caddy/Caddyfile.mn01 + Caddyfile.tony-dell
+        text: Both alias /apps/ha/ada-tony|ada-michael/* to https://idc01.taila0626a.ts.net (legacy paths kept working).
   - title: Deployment
     icon: "🚀"
     layout: list
@@ -45,7 +45,7 @@ sections:
       - label: michael instance
         text: "https://idc01.taila0626a.ts.net/apps/ha/ada-michael/"
       - label: Edge routing
-        text: "tailscale serve path mounts on idc01: /apps/ha/ada-tony -> 127.0.0.1:8002, /apps/ha/ada-michael -> 127.0.0.1:8003; mn01 Caddy reverse-proxies the same paths to idc01 as a legacy alias"
+        text: "tailscale serve path mounts on idc01: /apps/ha/ada-tony -> 127.0.0.1:8002, /apps/ha/ada-michael -> 127.0.0.1:8003; mn01 AND tony-dell Caddy reverse-proxy the same paths to idc01 as legacy aliases (tony-dell repointed from mn01:800x 2026-09-24)"
       - label: Registry
         text: Listed as ada-ha-tony and ada-ha-michael under the idc01 host in docs/ssot/apps/ssot.apps.yml.
   - title: REST Endpoints
@@ -231,7 +231,7 @@ sections:
 config:
   version: 5
   created: "2026-09-13"
-  updated: "2026-09-18"
+  updated: "2026-09-24"
   maintainer: tony
   status: active
-  deployment: mn01
+  deployment: idc01

@@ -112,7 +112,55 @@ class AdaUsersCard extends HTMLElement {
       }
       list.appendChild(row);
     }
+    this._renderOtherKeys(list, inst, issued);
     this._renderPendingGuests(list);
+  }
+
+  // Issued keys that don't map to an HA user's user-<username> name —
+  // device-named keys (kk-iphone), integration keys (ha-*), admin/test keys.
+  // Same row actions as user rows, plus the Voice/Text quick-open the old
+  // ada-keys-card provided.
+  _renderOtherKeys(list, inst, issued) {
+    const hass = this._hass;
+    const userKeys = new Set((this._users || []).map((u) => this._keyName(u)));
+    const others = [...issued].filter((k) => !userKeys.has(k)).sort();
+    const head = document.createElement("div");
+    head.style.cssText = "margin-top:10px;font-size:.8rem;color:var(--secondary-text-color);text-transform:uppercase;letter-spacing:.05em";
+    head.textContent = `Other issued keys (${others.length})`;
+    list.appendChild(head);
+    if (!others.length) {
+      const none = document.createElement("div");
+      none.style.cssText = "font-size:.85rem;color:var(--secondary-text-color)";
+      none.textContent = "None — every issued key belongs to an HA user.";
+      list.appendChild(none);
+      return;
+    }
+    for (const key of others) {
+      const row = document.createElement("div");
+      row.style.cssText = "display:flex;align-items:center;gap:6px;font-size:.9rem";
+      const name = document.createElement("span");
+      name.style.cssText = "flex:1;overflow:hidden;text-overflow:ellipsis;font-family:monospace";
+      name.textContent = key;
+      const voice = this._btn("Voice");
+      voice.title = "Open the HA-native voice page for this instance (the card self-mints a key)";
+      voice.onclick = () =>
+        window.open(this._haUrl(inst), "_blank", "popup,width=1100,height=800");
+      const chat = this._btn("Text");
+      chat.title = "Open the HA-native chat page for this instance (the card self-mints a key)";
+      chat.onclick = () =>
+        window.open(this._haUrl(inst, "chat"), "_blank", "popup,width=1100,height=800");
+      const qr = this._iconBtn("mdi:qrcode");
+      qr.title = "Re-pair — pop up a fresh pairing QR for this key";
+      qr.onclick = () => this._showQrPopup(inst, key);
+      const revoke = this._btn("Revoke");
+      revoke.style.color = "var(--error-color, #f47067)";
+      revoke.onclick = () => {
+        if (confirm(`Revoke key "${key}" on ${inst}? The device loses access immediately.`))
+          hass.callService("script", "ada_pair_revoke_named", { instance: inst, name: key });
+      };
+      row.append(name, voice, chat, qr, revoke);
+      list.appendChild(row);
+    }
   }
 
   // Pending chaba guest registrations — fed by sensor.chaba_pending_guests
@@ -237,10 +285,10 @@ class AdaUsersCard extends HTMLElement {
     }
   }
 
-  _haUrl(instance) {
+  _haUrl(instance, view) {
     if (this._config && this._config.ha_url) return this._config.ha_url;
     const map = {
-      tony: "https://tony-dell.taila0626a.ts.net:8123/chaba-home/ai",
+      tony: `https://tony-dell.taila0626a.ts.net:8123/chaba-home/${view || "ai"}`,
       michael: "https://nupo4ndqdqydt78zmpq0z5wzp1bdrqgs.ui.nabu.casa/",
     };
     return map[instance] || map.tony;

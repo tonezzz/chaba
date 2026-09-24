@@ -59,15 +59,14 @@ implementation:
       notes: 2026-09-24. idc01 now listed as Ada/memory host; mn01 = standby + legacy alias.
     - id: 6
       label: mn01 standby hygiene — stop+disable ada-ha-* units
-      status: pending
+      status: done
       notes: |
-        ssot.apps.ada_pi.yml documents "stopped+disabled as standby" but the
-        units are currently ACTIVE on mn01 (harmless — they serve no traffic
-        while Caddy proxies to idc01 — but drifted). deploy-ada.sh already
-        does the right thing: pulls the checkout and only restarts active
-        units, so stopping them is sticky. Run:
-          ssh mn01 'systemctl --user stop ada-ha-tony ada-ha-michael &&
-                    systemctl --user disable ada-ha-tony ada-ha-michael'
+        2026-09-24 (evening): units stopped+disabled on mn01. Same session
+        also repointed tony-dell Caddy /apps/ha/ada-tony|ada-michael from
+        mn01:8002/8003 to https://idc01.taila0626a.ts.net — that stale route
+        was still feeding the mn01 units (it is what served KK's morning
+        session). Both edges now proxy to idc01; verified
+        /apps/ha/ada-tony/api/health 200 via tony-dell edge.
     - id: 7
       label: Rotate stack secrets (GEMINI_API_KEY ...UEQA + 3 HA tokens)
       status: pending
