@@ -8578,6 +8578,19 @@
               "title": "Shutter Logic Test",
               "entities": [
                 {
+                  "type": "button",
+                  "icon": "mdi:help-circle",
+                  "name": "Guided demo — tap for Devin",
+                  "action_name": "Start",
+                  "tap_action": {
+                    "action": "call-service",
+                    "service": "script.turn_on",
+                    "target": {
+                      "entity_id": "script.dev_tour_request"
+                    }
+                  }
+                },
+                {
                   "type": "section",
                   "name": "Current Wind Status"
                 },
@@ -8711,7 +8724,7 @@
                       "smin": "parseFloat(states[\"input_number.shutter_wind_speed_min\"].state) || 12",
                       "rain": "parseFloat(states[\"sensor.dev_rainfall\"].state) || 0",
                       "rmin": "parseFloat(states[\"input_number.shutter_rain_min\"].state) || 0.5",
-                      "in_close_zone": "((vars.dmin <= vars.dir) && (vars.dir <= vars.dmax) && (vars.spd >= vars.smin)) || (vars.rain >= vars.rmin)",
+                      "in_close_zone": "(((vars.dmin <= vars.dmax) && (vars.dmin <= vars.dir) && (vars.dir <= vars.dmax)) || ((vars.dmin > vars.dmax) && ((vars.dir >= vars.dmin) || (vars.dir <= vars.dmax)))) && (vars.spd >= vars.smin) || (vars.rain >= vars.rmin)",
                       "highlights": "[{\"from\": vars.dmin, \"to\": vars.dmax, \"color\": \"rgba(255, 80, 80, 0.35)\"}]",
                       "needle_color": "vars.in_close_zone ? \"rgba(255, 60, 60, 1)\" : \"rgba(40, 200, 80, 1)\""
                     },
@@ -8819,7 +8832,8 @@
                     "entity": "input_number.dev_rainfall"
                   }
                 }
-              ]
+              ],
+              "show_header_toggle": false
             },
             {
               "type": "custom:pro-v-weather-card",
