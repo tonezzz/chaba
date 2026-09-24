@@ -432,6 +432,23 @@ banks:
     status: active
     public: false
 
+# Conversational persona — adjustable per-identity style knobs. Stored as
+# doc 'persona/self' inside the speaker's resolved personal bank (personal,
+# personal-kk, personal-testo), so per-person isolation rides the existing
+# person-scope + person_policies machinery for free. The ada_persona tool
+# validates knob/value against this schema and applies changes mid-session;
+# session prime injects non-default knobs for the identified speaker.
+persona:
+  doc_key: persona/self
+  knobs:
+    tone:          {values: [warm, direct, professional, playful], default: warm}
+    verbosity:     {values: [brief, normal, detailed], default: normal}
+    formality:     {values: [casual, polite, formal], default: polite}
+    language:      {values: [auto, en, th], default: auto}
+    address_name:  {type: string, max: 40, default: ""}
+    emoji:         {type: bool, default: false}
+    proactiveness: {values: [minimal, normal, proactive], default: normal}
+
 # Per-identity bank ACL — resolved against the session's memory identity:
 # identified speaker's HA person entity first, then the issued device-key
 # name, then 'unknown' for anonymous sessions (no key, no speaker).
