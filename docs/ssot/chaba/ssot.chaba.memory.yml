@@ -30,7 +30,7 @@ render:
       report: report.yml
       limits: {soft: 12000, hard: 20000}
       overflow_order: [sessions, focus, project, home]   # dropped first → last
-      sections: [agent, user, home, project, focus, sessions]
+      sections: [agent, user, immediate, home, project, focus, sessions]
     guest:
       output: context-guest.md
       report: report-guest.yml
@@ -60,6 +60,19 @@ sections:
     limits: {soft: 800, hard: 1200}
     include:
       - {file: docs/ssot/chaba/ssot.chaba.user-profile.yml, key: context.user}
+
+  immediate:
+    description: |
+      Working set at last session end — resume context. Written by
+      scripts/chaba/immediate-pin.py (session-end hook or mid-flight pin);
+      entries expire via ttl_hours. Only file this section may read.
+    priority: 85
+    limits: {soft: 800, hard: 1500}
+    source:
+      kind: immediate
+      file: ~/.local/share/chaba/immediate.yml
+      max_entries: 3
+      ttl_hours: 72
 
   home:
     description: Host inventory, canonical addresses, service topology.

@@ -225,6 +225,47 @@ def run_source(src, render_dir, repo_root, errors):
                 else:
                     lines.append(f"- ({name}) {it}")
         return lines
+    if kind == "immediate":
+        path = os.path.expanduser(src.get("file", ""))
+        try:
+            doc = load_yaml(path) or {}
+        except Exception as e:
+            errors.append(f"immediate {src.get('file')}: {e}")
+            return []
+        import datetime
+        now = datetime.datetime.now().astimezone()
+        default_ttl = src.get("ttl_hours", 72)
+        lines = []
+        n_entries = 0
+        for e in doc.get("entries", []) or []:
+            if not isinstance(e, dict) or not e.get("session"):
+                continue
+            try:
+                ts = datetime.datetime.fromisoformat(str(e.get("ts", "")))
+                ttl = e.get("ttl_hours", default_ttl)
+                if ts.tzinfo and (now - ts).total_seconds() > ttl * 3600:
+                    continue  # expired — "immediate" means immediate
+            except ValueError:
+                continue  # unparseable ts — drop
+            lines.append(f"- {e['session']} ({str(e.get('ts',''))[:16]}): {e.get('task','(no task)')}")
+            detail = ", ".join(
+                p for p in (
+                    f"branch {e['branch']}" if e.get("branch") else "",
+                    str(e.get("last_commit") or ""),
+                ) if p
+            )
+            if detail:
+                lines.append(f"  {detail}")
+            for o in e.get("open") or []:
+                lines.append(f"  open: {o}")
+            if e.get("next"):
+                lines.append(f"  next: {e['next']}")
+            if e.get("pointer"):
+                lines.append(f"  → {e['pointer']}")
+            n_entries += 1
+            if n_entries >= src.get("max_entries", 3):
+                break
+        return lines
     errors.append(f"unknown source kind: {kind}")
     return []
 
