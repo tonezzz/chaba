@@ -89,7 +89,7 @@ local state is the issued-keys JSON + logs.
 |---|---|---|
 | ada-ha-tony / ada-ha-michael / ada-pi-pwa | **idc01** | systemd user units — done |
 | Caddy edge + domain + ACME | **idc01** | done on sslip.io interim |
-| MDDB (sole instance) | **idc01** | podman quadlet; tailnet+lo only — M4 pending |
+| MDDB (sole instance) | **idc01** | podman quadlet — migrated, all consumers repointed |
 | Scheduled Ada jobs (sync/rollup/drift/backup) | **idc01** | phase M6 |
 | notebooklm-rest / notebooklm-mcp | tony-dell | master_token = whole-Google credential |
 | Weaviate | tony-dell | home-internal dep (yomi/index jobs) |
@@ -105,7 +105,24 @@ is ever deployed on the public host it runs `ADA_DEPLOY=public` — all
 banks flagged `public: true` in ssot.apps.ada-memory-banks.yml are
 served (deny-by-default; today only `github` is public).
 
-## 4. MDDB migration (one-way) — M4, pending
+## 4. MDDB migration (one-way) — M4, done 2026-09-23
+
+> Done: MDDB live on idc01; every Ada env already used
+> `MDDB_BASE_URL=http://100.74.146.0:11023/v1`; tony-dell local MDDB
+> stopped. 2026-09-24: verified durable + serving after the WARP
+> incident below.
+
+### Post-mortem: tailnet MTU blackhole (2026-09-23)
+
+Cloudflare WARP (`warp-svc`) was enabled on idc01 ~14:54 +07 and
+shrank the effective path MTU to ~1030 bytes with no ICMP
+fragmentation-needed returns (classic PMTUD blackhole): SSH stalled
+at KEX_ECDH_REPLY, tailnet HTTPS and MDDB responses >1KB died, and
+mn01 Ada logged mddb search/vector/add failures. Stopping warp-svc
+restored everything. **Keep warp-svc disabled** (`systemctl disable
+warp-svc`) or it re-breaks on next boot.
+
+Original migration procedure follows for the record:
 
 1. On tony-dell: `GET /v1/backup` snapshot (consistent `mddb.db` while
    running) or stop → copy `~/.config/containers/mddb/data` + `vaults`.
@@ -236,8 +253,12 @@ writes are local on the VPS — unaffected.
 - M1 done — tailnet join + accept-routes (michael-ha subnet route pending)
 - M2 done — Caddy edge + sslip.io + ACME; ada-pi-pwa proxied + healthy
 - M3 done — ada-pi checkout + env/keys + rendered banks; all 3 up
-- M4 pending — MDDB migration per §4
-- M5 pending — home Ada units → standby; move public URLs off Funnel
+- M4 done — MDDB on idc01; all Ada envs point at it; tony-dell MDDB stopped
+- M5 done 2026-09-24 — mn01 ada-ha-tony/ada-ha-michael stopped+disabled (standby);
+  tailscale serve path-mounts /apps/ha/ada-{tony,michael} -> :8002/:8003 on idc01;
+  mn01 Caddy proxies same paths to idc01 as legacy alias; consumers repointed to
+  idc01 URLs (apps.yml, voice card, Lovelace iframe, health+services SSOT);
+  cms-viewer shared key replicated on idc01; ws+http verified end-to-end
 - M6 pending — scheduled jobs; SSOT registration; health endpoints
 - M7 pending — soak ~1 week → archive tony-dell mddb.db → disable
 

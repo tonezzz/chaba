@@ -4,7 +4,6 @@ bank: personal
 key: distill/2026-09-22-tony-is-no-longer-the-general
 kind: fact
 last_verified: '2026-09-22'
-scope: tony
 source: extract
 status: draft
 subject: property-management
