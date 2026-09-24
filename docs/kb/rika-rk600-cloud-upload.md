@@ -87,10 +87,14 @@ The site technician reported "the weather station has Bluetooth" — that is the
   it's Michael's **Huawei SCharger-7KS-S0 EV wallbox** (BLE = FusionSolar app
   auth only; bonding required, GATT reads empty). Also offers Modbus-TCP/OCPP
   if EV-charger telemetry is ever wanted — separate integration.
-- **The JK BMS itself did NOT appear in the scan.** Likely out of BLE range
-  at the station enclosure/pole (scan ran from michael-ha indoors), or its
-  BLE radio sleeps until woken/app-initiated. Needs an on-site scan next to
-  the battery box (nRF Connect or JK BMS app).
+- **The JK BMS itself did NOT appear in the scan** — confirmed 2026-09-24
+  to be a **range issue**, not a dead radio: the site technician's phone app
+  finds the BMS automatically when he is physically close to it. michael-ha
+  is too far away. An ESP32 parked near the battery enclosure would see the
+  advert the same way the phone does. Still needed on-site: advert name/MAC
+  (nRF Connect scan or read from the app), and WHICH app the tech uses
+  (identifies the protocol — "JK BMS" app → JK02 protocol →
+  `syssi/esphome-jk-bms` works out of the box).
 - **No BMS on the Modbus bus:** `:502` regs 4–47 are all zero — only e1–e4
   (rain e5 when raining) are polled. The BMS cannot be read *through* the HMI.
 - **ESP32 path is viable if wanted:** JK BMS BLE = service `FFE0`, char `FFE1`;
