@@ -13,9 +13,9 @@
 		redir * /apps/ha/ada-tony/ 308
 	}
 
-	handle_path /apps/ha/ada-tony/* {
-		reverse_proxy 127.0.0.1:8002 {
-			header_up Host 127.0.0.1:8002
+	handle /apps/ha/ada-tony/* {
+		reverse_proxy https://idc01.taila0626a.ts.net {
+			header_up Host idc01.taila0626a.ts.net
 		}
 	}
 
@@ -24,9 +24,9 @@
 		redir * /apps/ha/ada-michael/ 308
 	}
 
-	handle_path /apps/ha/ada-michael/* {
-		reverse_proxy 127.0.0.1:8003 {
-			header_up Host 127.0.0.1:8003
+	handle /apps/ha/ada-michael/* {
+		reverse_proxy https://idc01.taila0626a.ts.net {
+			header_up Host idc01.taila0626a.ts.net
 		}
 	}
 
@@ -36,8 +36,8 @@
 	}
 
 	handle_path /apps/obsidian/* {
-		reverse_proxy 127.0.0.1:8004 {
-			header_up Host 127.0.0.1:8004
+		reverse_proxy https://idc01.taila0626a.ts.net:8443 {
+			header_up Host idc01.taila0626a.ts.net
 		}
 	}
 
