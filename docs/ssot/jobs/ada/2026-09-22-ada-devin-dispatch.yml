@@ -102,3 +102,7 @@ processing:
       label: "P4 (optional): handoff docs -> docs/ssot/focus-inbox renderer for repo-based triage"
       status: done
       notes: "2026-09-23: scripts/devin/render-handoff-inbox.py renders ada-ha-bank-devin-handoff docs to docs/ssot/focus-inbox/handoff-*.yml (draft status, branch from meta repo/applies_to). Idempotent; GC removes entries for retracted/superseded docs (only files with its renderer marker). Invoked best-effort at the tail of devin-dispatch-watch.timer on tony-dell. Verified: render -> unchanged re-run -> GC after bank delete."
+    - id: 8
+      label: "Outcome-path hardening: transcript verdicts + dispatch-outcome.md + retryable notify"
+      status: done
+      notes: "2026-09-24: branch fix/devin-dispatch-outcome (worktree wt-dispatch-hardening). watcher outcome() now prefers the last agent step with no pending tool_calls (mid-turn preambles were being recorded as outcomes); new transcript_verdict() marks FAILED(permission) when a rejected tool call killed the session (rejection is session-fatal in -p but exits 0 — proven on tasks dispatch-au + nobito-pm2-5) and 'incomplete' on mid-turn crashes; meta_stamp only sets notified_fu/notified_at when the MDDB outcome doc landed so failed writes retry next tick; dispatch prompt now requires ./dispatch-outcome.md in the worktree (watcher prefers it over transcript scraping) and states the sandbox boundary explicitly. Verified verdicts against real transcripts; installed to ~/.local/bin."
