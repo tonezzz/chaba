@@ -87,7 +87,11 @@ cmd_start() {
 You are running unattended via devin-dispatch (a headless, user-triggered
 session). Work only inside this worktree. Do not commit to the default
 branch, do not push, and do not deploy unless the task explicitly says so.
-When finished, end with a short summary of what changed and how to verify it.
+Access outside this worktree may be rejected, and in this mode a rejected
+tool call ends the session — keep everything inside the worktree.
+When finished, write your final summary to ./dispatch-outcome.md in this
+worktree (what changed or was found, the result, how to verify), then end
+with the same one-paragraph summary as your last message.
 
 Task: $task
 EOF
