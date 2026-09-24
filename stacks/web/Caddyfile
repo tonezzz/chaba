@@ -88,6 +88,28 @@ http://127.0.0.1:8080 {
 		file_server
 	}
 
+	# VMS (XMEye) noVNC → websockify :6082 → mn01 VNC :5900
+	# Tailnet-only: the VNC backend has no password, so this must never be public.
+	# tailscaled sets Tailscale-User-Login only for authenticated tailnet peers and
+	# strips client-supplied Tailscale-* headers (verified via public funnel ingress
+	# 2026-09-24), so its presence is a trustworthy gate. LAN and funnel get 403.
+	handle /apps/vms {
+		redir /apps/vms/ 308
+	}
+
+	handle /apps/vms/ws {
+		@vms_ws_pub not header Tailscale-User-Login tonezzzz@gmail.com
+		respond @vms_ws_pub 403
+		reverse_proxy 127.0.0.1:6082
+	}
+
+	handle_path /apps/vms/* {
+		@vms_pub not header Tailscale-User-Login tonezzzz@gmail.com
+		respond @vms_pub 403
+		root * /srv/public/apps/vms
+		file_server
+	}
+
 	handle /snapshot {
 		reverse_proxy 127.0.0.1:9005
 	}
