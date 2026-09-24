@@ -72,9 +72,13 @@ sections:
         text: '-rtsp_transport tcp -i rtsp://127.0.0.1:8554/ip_cam_65 (now adaptive)'
       - label: Person detection (YOLO)
         text: |
-          yolo-xiaomi.service (user unit) runs experiments/ultralytics-yolo-ha/server.py:
-          Ultralytics YOLOv8n on CPU, frames via go2rtc /api/frame.jpeg, serving
-          127.0.0.1:8780 (/detect JSON person_count/source, /image annotated, /set-source?src=).
+          yolo-xiaomi.service (user unit on tony-omen since 2026-09-24, moved off
+          tony-dell to free CPU) runs experiments/ultralytics-yolo-ha/server.py:
+          Ultralytics YOLOv8n on CPU, frames via go2rtc http://192.168.2.67:1984
+          /api/frame.jpeg, serving 0.0.0.0:8780 on 192.168.2.86
+          (/detect JSON person_count/source, /image annotated, /set-source?src=).
+          HA polls http://192.168.2.86:8780/detect; rest/template reload applied
+          2026-09-24 — no HA restart needed.
           input_select.yolo_camera_source + rest_command.yolo_set_source pick the stream
           (currently ip_cam_65_low — Coffee Corner view). configuration.yaml polls /detect
           every 5s: sensor.yolo_person_count + binary_sensor.coffee_corner_person

@@ -389,7 +389,7 @@ runbooks:
   person_detect_switch_automation:
     purpose: Wire YOLO person detection on a go2rtc camera to a switch on tony-ha (used for the Coffee Corner fan).
     steps:
-      - Ensure yolo-xiaomi.service is running; it serves person_count on http://127.0.0.1:8780/detect (source selectable via input_select.yolo_camera_source + rest_command.yolo_set_source)
+      - Ensure yolo-xiaomi.service is running on tony-omen; it serves person_count on http://192.168.2.86:8780/detect (source selectable via input_select.yolo_camera_source + rest_command.yolo_set_source)
       - Add a rest resource in configuration.yaml polling /detect every 5s — a sensor for person_count and a binary_sensor gated on the desired source stream
       - Add the automation to automations.yaml: state trigger binary_sensor on for ~5s -> turn_on; off/unavailable/unknown for the clear delay -> turn_off
       - 'Reload live without restart: POST /api/services/rest/reload and /api/services/automation/reload with HA_LONG_LIVED_TOKEN from ~/.config/secrets/home-assistant-token.env'

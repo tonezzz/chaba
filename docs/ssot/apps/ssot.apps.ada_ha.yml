@@ -28,22 +28,26 @@ sections:
         text: Background websocket subscriber recording state_changed transitions for event domains; ring buffer plus batched MDDB persistence (collection ada-ha-events-*). Disable via DISABLE_EVENT_RECORDER=true.
       - label: /home/tony/CascadeProjects/ada-pi/backend/instance.py
         text: 'ADA_INSTANCE_ID resolution. Required, fail-fast: pins all MDDB memory collections to ada-ha-*-<instance> (tony/michael) instead of deriving them from HOME_ASSISTANT_URL. Missing or invalid → the service refuses to start.'
-      - label: /home/tony/.config/systemd/user/ada-ha-tony.service
-        text: Runs uvicorn on 0.0.0.0:8002 on mn01 with env /home/tony/.config/secrets/ada-ha-tony.env.
-      - label: /home/tony/.config/systemd/user/ada-ha-michael.service
-        text: Runs uvicorn on 0.0.0.0:8003 on mn01 with env /home/tony/.config/secrets/ada-ha-michael.env.
-      - label: /home/tony/.config/caddy/Caddyfile.mn01
-        text: Routes /apps/ha/ada-tony/* to 127.0.0.1:8002 and /apps/ha/ada-michael/* to 127.0.0.1:8003.
+      - label: /home/tony/.config/systemd/user/ada-ha-tony.service (idc01, PRIMARY)
+        text: Runs uvicorn on 127.0.0.1:8002 on idc01 with env /home/tony/.config/secrets/ada-ha-tony.env. Since 2026-09-24 this is the primary backend (public-host plan M3+); the mn01 unit is disabled standby.
+      - label: /home/tony/.config/systemd/user/ada-ha-michael.service (idc01, PRIMARY)
+        text: Runs uvicorn on 127.0.0.1:8003 on idc01 — reaches michael-ha via tailnet (michael-ha resolves through MagicDNS, verified 2026-09-24). mn01 unit disabled standby.
+      - label: /home/tony/.config/caddy/Caddyfile.mn01 (bridge)
+        text: Since 2026-09-24 proxies /apps/ha/ada-tony/* and /apps/ha/ada-michael/* to https://idc01.taila0626a.ts.net (full path preserved; tailscale serve strips the mount). Keeps the mn01 funnel URLs working while the backends live on idc01.
+      - label: tailscale serve on idc01 (tailnet-only)
+        text: 'https://idc01.taila0626a.ts.net/apps/ha/ada-tony → 127.0.0.1:8002 and /apps/ha/ada-michael → 127.0.0.1:8003 (added 2026-09-24; root / → ada-pi-pwa :8001). WS verified end-to-end.'
   - title: Deployment
     icon: "🚀"
     layout: list
     items:
-      - label: tony instance
-        text: 'https://mn01.taila0626a.ts.net/apps/ha/ada-tony/'
-      - label: michael instance
-        text: 'https://mn01.taila0626a.ts.net/apps/ha/ada-michael/'
+      - label: tony instance (public, bridged)
+        text: 'https://mn01.taila0626a.ts.net/apps/ha/ada-tony/ → idc01:8002'
+      - label: michael instance (public, bridged)
+        text: 'https://mn01.taila0626a.ts.net/apps/ha/ada-michael/ → idc01:8003'
+      - label: tailnet endpoints
+        text: 'https://idc01.taila0626a.ts.net/apps/ha/ada-{tony,michael}/ (serve, tailnet-only)'
       - label: Caddy routing
-        text: 'tony on 127.0.0.1:8002, michael on 127.0.0.1:8003, both via mn01 Caddy on https 443'
+        text: 'mn01 caddy bridges both paths to the idc01 serve edge; backends are loopback-bound on idc01.'
       - label: Registry
         text: Listed as ada-ha-tony and ada-ha-michael under the mn01 host in docs/ssot/apps/ssot.apps.yml.
   - title: REST Endpoints
