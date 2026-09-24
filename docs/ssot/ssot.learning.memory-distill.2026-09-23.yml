@@ -1,0 +1,74 @@
+title: Memory Distill Batch Job — Session Learnings
+subtitle: Building a benchmark-gated extraction backstop for Ada memory
+icon: 🎓
+ideas:
+  - Fixture benchmarks catch extraction prompt gaps in one iteration
+  - status=draft is the safe write mode for LLM-generated memory
+  - Inline extraction and batch sweep coexist via semantic dedup
+
+sections:
+  - title: What Worked
+    icon: ✅
+    layout: list
+    items:
+      - label: Benchmark first, iterate cheaply
+        text: |
+          memory-distill-benchmark.py (11 fixture scenarios, no MDDB writes) caught a
+          real prompt gap on the first run — "investigation outcomes" weren't being
+          extracted (78% recall). One prompt line fixed it: 100% recall, 100% precision,
+          0 noise candidates. Any future prompt change re-runs this gate.
+      - label: Draft status as the write gate
+        text: |
+          All LLM-generated candidates write status=draft — invisible to ada_memory_search
+          (status=active filter), exported to docs/ada-memory/inbox/ for human review.
+          The only exception is by design: personal/general recall surfaces recent drafts
+          tagged [unverified draft] (<=7d, score>=0.55).
+      - label: Two-layer dedup
+        text: |
+          subject+attribute filterMeta match catches exact repeats; vector-search
+          top-score > 0.82 catches paraphrases. On the mn01 dry-run this correctly
+          skipped 8 candidates already present from inline extraction and prior runs.
+      - label: Backstop complements inline
+        text: |
+          Inline ADA_EXTRACT_CANDIDATES (session close, on by default) is the fast path;
+          memory-distill.py weekly sweeps sessions it missed. First live run found 2 real
+          facts inline missed (khun-namphu juristic manager, zone-a GM change). Dedup
+          makes the two paths coexist without double-writes.
+
+  - title: Gotchas Hit
+    icon: ⚠️
+    layout: list
+    items:
+      - label: chaba-vault on mn01 is a synced copy, not git
+        text: |
+          Timers on mn01 run scripts from ~/CascadeProjects/chaba-vault/scripts/ada/.
+          New scripts must be scp'd there AND committed to chaba master — the vault sync
+          will carry the committed version, but an uncommitted script could be lost.
+      - label: .format() vs JSON braces in prompts
+        text: |
+          Embedding a JSON example in a .format() prompt needs doubled braces —
+          {{"bank","subject"}} — or it raises KeyError on the literal field names.
+      - label: Distill state is per-host
+        text: |
+          ~/.cache/ada-memory-distill.json tracks processed session keys per host.
+          Running on a second host re-processes all sessions — harmless (dedup catches
+          rewrites) but costs a Gemini pass. Keep the canonical run on mn01 only.
+      - label: Fixture banks can have multiple right answers
+        text: |
+          "kk's birthday" legitimately fits both people and personal-kk banks. The
+          benchmark's `bank:` field accepts a list of acceptable banks — strict single-
+          bank expectations create false failures.
+
+  - title: Patterns to Reuse
+    icon: 🔁
+    layout: list
+    items:
+      - label: Scenario YAML + importlib benchmark
+        text: |
+          Same shape as recall-canary.py + .yml: fixtures in YAML, scorer imports the
+          real code path via importlib (no copy of the logic), PASS/MISS + totals +
+          exit code. Reusable for any LLM-output quality gate.
+      - label: Review flow parity
+        text: |
+          New LLM-generated content should land in the same draft->inbox->consolidate
+          path as memory-gap-report.py — one review habit covers all sources.
