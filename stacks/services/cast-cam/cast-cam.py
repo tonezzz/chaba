@@ -104,6 +104,13 @@ def cmd_scan(_):
 
 
 def cmd_run(args):
+    # Managed kill switch (packages/cast-safety.yaml).
+    try:
+        if state('input_boolean.cast_enabled')['state'] != 'on':
+            sys.exit('input_boolean.cast_enabled is off — managed casting disabled')
+    except KeyError:
+        pass  # helper not present on this instance — continue
+
     cams = cameras()
     if not cams:
         sys.exit('no cameras available')
@@ -165,13 +172,19 @@ def cmd_run(args):
         sys.exit(f'play_stream failed: {e}')
 
     # cast-ha-panel.timer re-casts input_select.tv_display every 60s and would
-    # reclaim the TV. 'camera' is a native option, but the timer's script casts
-    # camera.ip_cam_65 specifically — so only that camera gets sustained casts.
-    if cam == 'camera.ip_cam_65':
-        call('input_select', 'select_option', {'entity_id': 'input_select.tv_display', 'option': 'camera'})
-        print("  set input_select.tv_display=camera — the 60s timer now keeps this cast alive")
-    else:
-        print("  note: cast-ha-panel.timer re-casts tv_display every 60s and will reclaim the TV;")
+    # reclaim the TV. Point input_select.tv_camera at this camera first — the
+    # timer's script reads it — then tv_display=camera keeps the cast alive.
+    try:
+        opts = state('input_select.tv_camera')['attributes'].get('options', [])
+        if cam in opts:
+            call('input_select', 'select_option', {'entity_id': 'input_select.tv_camera', 'option': cam})
+            call('input_select', 'select_option', {'entity_id': 'input_select.tv_display', 'option': 'camera'})
+            print(f"  set input_select.tv_camera={cam} + tv_display=camera — timer keeps this cast alive")
+        else:
+            print(f"  note: {cam} not in input_select.tv_camera options —")
+            print("        the 60s timer will reclaim the TV; `systemctl --user stop cast-ha-panel.timer` to hold.")
+    except KeyError:
+        print("  note: input_select.tv_camera missing — timer will reclaim the TV;")
         print("        `systemctl --user stop cast-ha-panel.timer` to hold this cast.")
 
     # --- Step 5: verify ----------------------------------------------------
