@@ -1,0 +1,167 @@
+id: ssot.cleanup
+title: Device Cleanup Policy
+subtitle: Safe pre-cleanup, cleanup targets, and post-cleanup verification for PCs and devices
+category: infrastructure
+status: draft
+source_of_truth: true
+owner: tony
+created: "2026-09-24"
+last_updated: "2026-09-24"
+
+overview: |
+  Defines the general safety policy for cleanup operations across Chaba hosts.
+  ssot.storage.yml tracks where space is going; this file defines how cleanup is
+  performed safely, which paths are protected, and which targets are allowed.
+
+scope:
+  hosts:
+    tony-omen:
+      role: interactive primary and GPU host
+      cleanup_profile: workstation
+    tony-dell:
+      role: persistent service host and Devin dispatch host
+      cleanup_profile: service-host-hdd
+      notes:
+        - Avoid broad recursive scans; the primary disk is a spinning HDD.
+    macbook:
+      role: portable fallback workstation
+      cleanup_profile: workstation
+    mn01:
+      role: Ada HA backend host
+      cleanup_profile: service-host
+    idc01:
+      role: public/VPS host for Ada PWA, MDDB, open-notebook, and tailnet apps
+      cleanup_profile: vps-service-host
+    michael-ha:
+      role: Michael Home Assistant host
+      cleanup_profile: appliance-service-host
+
+policy:
+  default_mode: dry_run_first
+  approval:
+    automatic_timer_cleanup: allowed only for targets marked automatic_ok
+    manual_deletion: requires a reviewed candidate list or explicit operator approval
+    protected_paths: never delete through generic cleanup
+  protected_paths:
+    - ~/.config/secrets
+    - ~/.ssh
+    - ~/.gnupg
+    - ~/.local/share/ada
+    - ~/.local/share/ada-backups
+    - ~/.local/share/yomi/search-index.db*
+    - ~/.local/share/devin/cli/sessions.db
+    - ~/.local/share/devin/cli/backups
+    - ~/.local/share/devin-dispatch/tasks
+    - git worktrees or checkouts with uncommitted changes
+  rules:
+    - Use allowlisted cleanup targets only; do not run broad home-directory deletes.
+    - Produce a dry-run candidate list before destructive cleanup.
+    - Preserve recall, audit, backup, and event data before removing source files.
+    - Do not delete open databases, active locks, or files with active writers.
+    - Do not clean service data while the owning service is writing unless the target explicitly allows it.
+    - Prefer application-owned delete/prune commands over rm where available.
+    - Record what was cleaned, freed space, and skipped items.
+
+pre_cleanup:
+  checklist_ref: docs/ssot/infrastructure/ssot.operations.yml#transition.pre_cleanup
+  required_evidence:
+    - host and target scope confirmed
+    - disk free and target sizes captured
+    - protected path review completed
+    - active writers/locks checked
+    - backup/archive/recall path verified where required
+    - dry-run candidate list reviewed
+
+post_cleanup:
+  checklist_ref: docs/ssot/infrastructure/ssot.operations.yml#transition.post_cleanup
+  required_evidence:
+    - freed space and remaining target sizes recorded
+    - owning services still healthy
+    - timers and scheduled jobs still active
+    - skipped/failed items recorded
+    - relevant SSOT sizes or notes updated
+
+targets:
+  devin_sessions:
+    hosts: [tony-dell, tony-omen]
+    owner_ssot: docs/ssot/infrastructure/ssot.devin.maintenance.yml
+    automatic_ok: true
+    cleanup:
+      - prune old Devin sessions through devin-cleanup.service or prune-devin-sessions.sh
+      - VACUUM only when the DB is not in use
+    pre_cleanup:
+      - run the Devin DB integrity check
+      - verify summaries/outcomes are preserved before deleting source sessions
+      - check code.lock, session_locks, fuser, and running Devin processes
+      - decide backup vs NO_BACKUP=1 based on free space and archive verification
+
+  devin_dispatch_worktrees:
+    hosts: [tony-dell]
+    automatic_ok: false
+    paths:
+      - ~/CascadeProjects/dispatch-wt-*
+    cleanup:
+      - remove worktrees only after the task registry shows a terminal state
+      - keep ~/.local/share/devin-dispatch/tasks as audit history
+    protected:
+      - ~/.local/share/devin-dispatch/tasks
+
+  user_cache:
+    hosts: [tony-omen, tony-dell, macbook]
+    owner_ssot: docs/ssot/infrastructure/ssot.storage.yml
+    automatic_ok: false
+    cleanup:
+      - clear disposable caches only when the owning app is closed or the cache is known rebuildable
+      - preserve ram-cache sync units until their ExecStop sync has completed
+
+  container_storage:
+    hosts: [tony-omen, tony-dell, mn01, idc01]
+    automatic_ok: false
+    cleanup:
+      - remove dangling images and stopped scratch containers only after confirming running services
+      - never prune volumes used by mddb, open-notebook, postgres, weaviate, or other stateful services
+    idc01_notes:
+      - MDDB data lives at ~/.config/containers/mddb/data; do not manually delete
+      - open-notebook uses podman volumes open-notebook-data and open-notebook-surreal-data
+
+  mddb_backups:
+    hosts: [idc01]
+    automatic_ok: true
+    cleanup:
+      - prune old local backup archives only after the nightly backup timer and tony-omen pull mirror are healthy
+      - keep at least one verified recent backup before removing older archives
+    protected:
+      - ~/.config/containers/mddb/data
+
+  open_notebook_backups:
+    hosts: [idc01]
+    automatic_ok: true
+    paths:
+      - ~/open-notebook-backups/open-notebook-*.surql.gz
+    cleanup:
+      - honor the 7-day retention used by open-notebook-backup.timer
+      - verify the newest export exists before deleting older exports
+
+  ada_transcripts:
+    hosts: [mn01, idc01, tony-dell]
+    automatic_ok: false
+    paths:
+      - ~/.local/share/ada/transcripts
+    cleanup:
+      - export to ~/.local/share/ada-review or the approved review location before deletion
+      - never commit or back up private transcripts into repository-bound backups
+
+  logs_and_reports:
+    hosts: [tony-omen, tony-dell, macbook, mn01, idc01, michael-ha]
+    owner_ssot: docs/ssot/infrastructure/ssot.automation.yml
+    automatic_ok: true
+    cleanup:
+      - rotate or remove logs/reports only within the owning retention policy
+      - keep recent error evidence until the related incident is closed
+
+related_ssot:
+  - docs/ssot/infrastructure/ssot.operations.yml
+  - docs/ssot/infrastructure/ssot.storage.yml
+  - docs/ssot/infrastructure/ssot.automation.yml
+  - docs/ssot/infrastructure/ssot.devin.maintenance.yml
+  - docs/ssot/infrastructure/ssot.services.yml

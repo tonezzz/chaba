@@ -70,4 +70,12 @@ archive_distillation:
              declared-loss-quality, factual-errors, time, cost]
     output: scorecard appended to manifest audit block
 
-  completed_archives: []   # append {repo, commit, date, reports:[...]}
+  completed_archives:
+    - {repo: chaba0, commit: b5f1a62, date: "2026-09-24",
+       reports: [host-infrastructure, network-dns, operations-runbooks,
+                 reorg-methodology, deployment, mcp-ecosystem, sites-apps],
+       audit: pass, archived_on_github: true}
+    - {repo: ada, commit: see-manifest, date: "2026-09-24",
+       reports: [ada-v2-platform], audit: pass, archived_on_github: true}
+    - {repo: chaba_weaviate, commit: empty-repo, date: "2026-09-24",
+       reports: [], audit: pass, archived_on_github: true}

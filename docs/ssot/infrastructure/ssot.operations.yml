@@ -263,6 +263,72 @@ checklists:
         action: Update the backup log or improvement history with the result.
         must: true
 
+  pre_cleanup:
+    id: transition.pre_cleanup
+    purpose: |
+      Verify cleanup can delete data safely before a manual or automated cleanup run.
+    owner: tony
+    steps:
+      - id: cleanup.scope
+        label: Confirm cleanup scope
+        action: Confirm host, target, paths, retention, and whether the run is dry-run or apply.
+        ssot_ref: docs/ssot/infrastructure/ssot.cleanup.yml
+        must: true
+      - id: cleanup.baseline
+        label: Capture usage baseline
+        action: Record disk free, target sizes, top consumers, and recent cleanup status.
+        must: true
+      - id: cleanup.protected
+        label: Review protected paths
+        action: Confirm protected paths and active checkouts are excluded from the candidate set.
+        ssot_ref: docs/ssot/infrastructure/ssot.cleanup.yml
+        must: true
+      - id: cleanup.preserve
+        label: Preserve recall and audit data
+        action: Verify required summaries, archives, backups, outcomes, or mirrors exist before deleting source data.
+        must: true
+      - id: cleanup.backup
+        label: Backup decision
+        action: Create or verify a backup, or explicitly record why backup is skipped.
+        must: true
+      - id: cleanup.locks
+        label: Check active writers and locks
+        action: Check open databases, lock files, running services, active sessions, and owning timers.
+        must: true
+      - id: cleanup.dry_run
+        label: Review dry-run candidates
+        action: Produce the deletion candidate list and confirm it matches the approved scope.
+        must: true
+
+  post_cleanup:
+    id: transition.post_cleanup
+    purpose: |
+      Verify cleanup completed safely and record the outcome.
+    owner: tony
+    steps:
+      - id: cleanup.verify
+        label: Verify cleanup result
+        action: Record freed space, remaining sizes, deleted counts, and skipped items.
+        must: true
+      - id: cleanup.services
+        label: Verify owning services
+        action: Confirm affected services, timers, and health checks are still in the expected state.
+        ssot_ref: docs/ssot/infrastructure/ssot.services.yml
+        must: true
+      - id: cleanup.integrity
+        label: Check data integrity
+        action: Run the target-specific integrity check when one exists, such as SQLite quick_check or backup verification.
+        must: false
+      - id: cleanup.record
+        label: Record cleanup outcome
+        action: Update the cleanup report, event log, focus item, or incident note with the result.
+        must: true
+      - id: cleanup.ssot
+        label: Update SSOT state
+        action: Update ssot.cleanup.yml, ssot.storage.yml, or the owning SSOT when sizes, policy, or status changed.
+        ssot_ref: docs/ssot/infrastructure/ssot.cleanup.yml
+        must: false
+
   pre_maintenance:
     id: transition.pre_maintenance
     purpose: |

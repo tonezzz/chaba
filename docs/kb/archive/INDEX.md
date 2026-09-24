@@ -30,3 +30,20 @@ Audit: PASS (unaccounted=0).
 
 Extracted by: host-infrastructure + network-dns = Devin; other 5 =
 gemini-2.5-flash (benchmark — see manifest audit.scorecard).
+Archived on GitHub 2026-09-24.
+
+## ada ("A.D.A — Advanced Design Assistant", 2025-12 → 2026-02)
+
+Direct ancestor of ada-pi: Gemini Native Audio voice + CAD + 3D
+printing + gesture UI + face auth + Kasa. 78 files → 1 report.
+Manifest: `docs/archive/manifests/ada.yml`. Audit: PASS.
+Archived on GitHub 2026-09-24.
+
+| Report | Files | One-liner |
+|---|---|---|
+| [ada-v2-platform](ada/ada-v2-platform.md) | 76 | the Ada lineage — voice+tools core survives in ada-pi; CAD/print/gesture dropped |
+
+## chaba_weaviate
+
+Empty repo (0 files) — Weaviate DB experiment never populated.
+Manifest records 0 files. Archived on GitHub 2026-09-24.

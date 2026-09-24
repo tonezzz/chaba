@@ -232,6 +232,25 @@ backup_policy: |
   duplicating a 50+ GiB file. If a pre-cleanup backup is required, set
   `NO_BACKUP=` and ensure the filesystem has at least 2x the DB size free.
 
+pre_cleanup:
+  checklist_ref: docs/ssot/infrastructure/ssot.operations.yml#transition.pre_cleanup
+  applies_to: [tony-dell, tony-omen]
+  required_before_delete:
+    - Confirm the host-specific retention window: 7 days on tony-dell, 3 days on tony-omen.
+    - Capture disk free, sessions.db size, WAL/SHM sidecar sizes, session count, and largest sessions.
+    - Run the DB integrity check; if quick_check fails, stop and use the .recover rebuild path.
+    - Verify session summaries are synced or locally preserved before source sessions are deleted.
+    - Verify NotebookLM or local archive output exists for sessions selected for deletion.
+    - Check code.lock, session_locks/*.lock, fuser sessions.db, running Devin processes, and active dispatch tasks.
+    - Decide whether a local backup is required; use NO_BACKUP=1 only after archive verification and with enough free space.
+    - Produce a dry-run list of sessions older than the cutoff before deleting rows.
+  required_before_vacuum:
+    - Confirm sessions.db is not open by Devin and no session locks are active.
+    - Confirm the backup/archive decision was recorded.
+  report:
+    path: ~/.local/share/devin/cleanup-reports/
+    event: Emit a chaba event when cleanup is run unattended or skips VACUUM because the DB is in use.
+
 vacuum_policy: |
   - VACUUM requires an exclusive lock; it cannot run while Devin is using the DB.
   - The timer-triggered cleanup will skip VACUUM when the DB is in use.
@@ -289,3 +308,5 @@ related_files:
 
 related_ssot:
   - docs/ssot/infrastructure/ssot.audit.hosts.yml
+  - docs/ssot/infrastructure/ssot.cleanup.yml
+  - docs/ssot/infrastructure/ssot.operations.yml
