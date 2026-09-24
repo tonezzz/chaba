@@ -1,0 +1,44 @@
+title: Security Posture — kk-macbook
+subtitle: Declared security state for the MacBook; diffed live by scripts/audit-security.py
+icon: shield
+version: 1
+last_updated: "2026-09-24"
+maintainer: tony
+
+host: kk-macbook          # tailnet name used by audit scripts: "macbook"
+standard: docs/ssot/infrastructure/ssot.security.yml
+os: macos                 # launchd not systemd; ALF not ufw — runner uses macos command set
+
+# Laptop is frequently offline/asleep (tailnet last seen 10d ago at first
+# audit 2026-09-24) — all entries optional; they declare the intended set
+# for when the machine is up.
+expected_exposure:
+  - { listener: "0.0.0.0:22",     class: lan, service: "Remote Login (sshd)", optional: true, note: "ssh kkkakk@macbook used by audit-hosts" }
+  - { listener: "127.0.0.1:9222", class: loopback, service: "Chrome CDP", optional: true, note: "reached remotely via playlive-macbook-tunnel on tony-dell" }
+  - { listener: "0.0.0.0:9232",   class: lan, service: playlived, optional: true }
+  - { listener: "127.0.0.1:6379", class: loopback, service: "redis (podman)", optional: true }
+
+remote_access:
+  sshd: { port: 22, password_auth: needs-verification, note: "macOS Remote Login" }
+  chrome_remote_desktop: { note: "primary GUI remote path" }
+  recovery: { chrome_remote_desktop: "GUI OOB", physical: "laptop" }
+
+firewall:
+  tool: socketfilterfw      # /usr/libexec/ApplicationFirewall/socketfilterfw --getglobalstate
+  inbound_default: needs-verification
+  rules: []
+
+tailscale:
+  ip: "100.124.59.112"
+  serve: []
+  funnel: []
+  role: [verify-node, offload]
+
+egress:
+  warp: { enabled: false }
+  transparent_proxy: { enabled: false }
+
+deviations: []
+
+last_observed: {}
+deltas: []

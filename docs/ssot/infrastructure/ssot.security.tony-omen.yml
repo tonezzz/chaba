@@ -1,0 +1,63 @@
+title: Security Posture — tony-omen
+subtitle: Declared security state for the primary workstation; diffed live by scripts/audit-security.py
+icon: shield
+version: 1
+last_updated: "2026-09-24"
+maintainer: tony
+
+host: tony-omen
+standard: docs/ssot/infrastructure/ssot.security.yml
+
+expected_exposure:
+  - { listener: "0.0.0.0:22",    class: lan, service: sshd }
+  - { listener: "0.0.0.0:3389",  class: lan, service: xrdp }
+  - { listener: "0.0.0.0:9443",  class: lan, service: caddy, note: "live caddy edge (verified 2026-09-24)" }
+  - { listener: "0.0.0.0:8080",  class: lan, service: caddy, optional: true, note: "web preview — not bound at first audit" }
+  - { listener: "0.0.0.0:8081",  class: lan, service: caddy, optional: true, note: "chaba-h3 parity preview — not bound at first audit" }
+  - { listener: "0.0.0.0:24800", class: lan, service: barrier, note: "barrier server" }
+  - { listener: "0.0.0.0:11434", class: lan, service: ollama }
+  - { listener: "0.0.0.0:3000",  class: lan, service: yomi-api }
+  - { listener: "0.0.0.0:3002",  class: lan, service: weaviate-api, note: "chaba scripts/weaviate/api.mjs" }
+  - { listener: "0.0.0.0:5000",  class: lan, service: embedding-service-gpu, note: "chaba embeddings (venv-embeddings)" }
+  - { listener: "0.0.0.0:7070",  class: lan, service: anydesk, note: "anydesk client listener" }
+  - { listener: "0.0.0.0:8001",  class: lan, service: sensor-reader, note: "docker container" }
+  - { listener: "0.0.0.0:8123",  class: lan, service: homeassistant, note: "HA instance on omen (python3 -m homeassistant /config)" }
+  - { listener: "0.0.0.0:8780",  class: lan, service: ultralytics-yolo-ha, note: "experiments/ultralytics-yolo-ha server.py" }
+  - { listener: "0.0.0.0:9010",  class: lan, service: tailscale-connections-server, note: "chaba stacks/web" }
+  - { listener: "0.0.0.0:9100",  class: lan, service: mcp-debug-cors }
+  - { listener: "0.0.0.0:9230",  class: lan, service: playlived, note: "PLAYLIVED_PORT=9230 in playlived.service; values.yml updated 2026-09-24" }
+  - { listener: "0.0.0.0:9876",  class: lan, service: cookie-bridge, note: "~/.local/ai-hub/cookie-bridge.mjs" }
+  - { listener: "0.0.0.0:19999", class: lan, service: netdata, note: "docker container" }
+  # fc42:...:53 = lxd/incus bridge dnsmasq (ULA, lan-class); 10.0.3.1/192.168.122.1:53 = lxc/libvirt bridge dns
+  # KNOWN STRAY: 0.0.0.0:9999 `nc -l` leftover debug listener seen 2026-09-24 — intentionally NOT declared; audit keeps flagging until killed
+
+remote_access:
+  sshd: { port: 22, bind: "0.0.0.0", password_auth: deviation }
+  tailscale_ssh: needs-verification
+  recovery: { physical: "console workstation", note: "barrier-server seat" }
+
+firewall:
+  tool: nftables
+  inbound_default: accept
+  rules:
+    - "ufw inactive; nft INPUT policy accept with tailscale ts-input + libvirt + docker chains"
+  note: "verified 2026-09-24 — no ufw; inbound exposure governed by listeners"
+
+tailscale:
+  ip: "100.75.102.88"
+  serve: []                  # declare any `tailscale serve status` output on first audit
+  funnel: []                 # none expected — verify
+  role: [primary-workstation, barrier-server]
+
+egress:
+  warp: { enabled: false }
+  transparent_proxy: { enabled: false }
+  note: "multi-WAN ECMP wired 1Gbps + iPhone USB tether — ssot.tony-omen-multi-wan.yml"
+
+deviations:
+  - item: "sshd PasswordAuthentication yes"
+    reason: "workstation password fallback; PermitRootLogin prohibit-password"
+    last_verified: "2026-09-24"
+
+last_observed: {}
+deltas: []

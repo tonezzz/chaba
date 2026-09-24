@@ -37,6 +37,11 @@ hosts:
     tailscale: mn01.taila0626a.ts.net
     tailscale_ip: "100.106.196.22"
     note: "Portable Ubuntu PC in mn-home (192.168.1.0/24). Planned local IP 192.168.1.200; Tailscale subnet router for mn-home."
+  idc01:
+    name: idc01
+    tailscale: idc01.taila0626a.ts.net
+    tailscale_ip: "100.74.146.0"
+    note: "Siamdata VPS, Bangkok — public edge (Caddy 80/443) + MDDB replica + Ada backends. Public IP masked per data-isolation; security posture in ssot.security.idc01.yml."
 
 ports:
   mcp_debug_cors: 9100
@@ -46,7 +51,7 @@ ports:
   yomi_api: 3000
   trade_api: 9000
   playlived: 9230
-  playlived_omen: 9231
+  playlived_omen: 9230 # verified 2026-09-24: playlived.service sets PLAYLIVED_PORT=9230
   weaviate: 8084
   chaba_funnel: 8082 # decommissioned 2026-08-28; do not use for new services
   ha_live_public: 8444

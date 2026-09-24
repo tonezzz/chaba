@@ -17,8 +17,8 @@ expected_exposure:
   - { listener: "100.106.196.22:5900", class: tailnet-only, service: xmeye-vms-vnc, note: "VNC, NO PASSWORD — tailnet bind only, never expose; moved from tony-dell 2026-09-24; quadlet stacks/services/xmeye-vms" }
   # LAN
   - { listener: "0.0.0.0:8080", class: lan, service: caddy, note: "local edge behind funnel; Caddyfile.mn01" }
-  - { listener: "0.0.0.0:8002", class: lan, service: ada-ha-tony, note: "uvicorn backend" }
-  - { listener: "0.0.0.0:8003", class: lan, service: ada-ha-michael, note: "uvicorn backend" }
+  - { listener: "0.0.0.0:8002", class: lan, service: ada-ha-tony, optional: true, note: "evacuated to idc01 2026-09-24 — Caddyfile.mn01 reverse-proxies /apps/ha/ada-* to idc01.taila0626a.ts.net" }
+  - { listener: "0.0.0.0:8003", class: lan, service: ada-ha-michael, optional: true, note: "evacuated to idc01 2026-09-24 — same proxy path as ada-tony" }
   - { listener: "0.0.0.0:8001", class: lan, service: ada-pi-mn, optional: true, note: "planned — local Ada Pi PWA for mn-home, not yet deployed" }
   - { listener: "0.0.0.0:22",   class: lan, service: sshd }
 

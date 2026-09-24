@@ -13,6 +13,14 @@ This file tracks significant changes to SSOT files for audit trail and rollback 
 
 ## Recent Changes
 
+### 2026-09-24
+
+- **File**: docs/ssot/infrastructure/ssot.security.yml (+ 7 new files)
+- **Change Type**: major
+- **Description**: Added the security posture SSOT family — ssot.security.yml standard (exposure classes, per-domain baselines, deviation rule) plus per-host posture files for tony-dell, tony-omen, mn01, idc01, kk-macbook, a devices file (michael-ha, routers, DVRs), and template.security-host.yml. New runner scripts/audit-security.py diffs declared posture vs live state; registered as security-posture in the security-suite. ssot.audit.baseline.yml entries gained host: fields; ssot.values.yml gained the idc01 host.
+- **Impact**: Per-host security standard + diff is now declared and auditable; fixes security-audit.sh baseline path bug (was reading ssot.audit.yml instead of ssot.audit.baseline.yml) and staleness-audit.mjs e.endpoint -> e.value.
+- **Rollback**: Remove docs/ssot/infrastructure/ssot.security*.yml, template.security-host.yml, scripts/audit-security.py, and revert the index/audit/baseline/values edits.
+
 ### 2026-08-18
 
 - **File**: docs/ssot/ssot.terminology.yml

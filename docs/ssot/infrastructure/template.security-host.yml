@@ -1,0 +1,35 @@
+title: "Security Posture — [host]"
+subtitle: "Declared security state for [host]; diffed live by scripts/audit-security.py"
+icon: shield
+version: 1
+last_updated: "YYYY-MM-DD"
+maintainer: tony
+
+host: "[hostname matching scripts/audit-security.py HOSTS]"
+standard: docs/ssot/infrastructure/ssot.security.yml
+
+expected_exposure:           # every listener that SHOULD exist
+  - { listener: "ADDR:PORT", class: "loopback|tailnet-only|lan|funnel|public-ip", service: name, note: "why" }
+
+remote_access:
+  sshd: { port: 22, bind: "...", password_auth: "yes|no|needs-verification" }
+  recovery: {}
+
+firewall:
+  tool: "ufw|nft|socketfilterfw|needs-verification"
+  inbound_default: "deny|needs-verification"
+  rules: []
+
+tailscale:
+  ip: "100.x.x.x"
+  serve: []                  # {port, proto, target}
+  funnel: []                 # {https, path?, target} — empty = explicitly none
+  role: []
+
+egress:
+  warp: { enabled: false }
+  transparent_proxy: { enabled: false }
+
+deviations: []               # {item, reason, last_verified, review_by?}
+last_observed: {}            # written by audit-security.py --save-to-ssot
+deltas: []

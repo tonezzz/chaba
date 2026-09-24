@@ -1,0 +1,82 @@
+title: Security Posture — idc01
+subtitle: Declared security state for the Siamdata VPS; diffed live by scripts/audit-security.py
+icon: shield
+version: 1
+last_updated: "2026-09-24"
+maintainer: tony
+
+host: idc01
+standard: docs/ssot/infrastructure/ssot.security.yml
+narrative: docs/ssot/infrastructure/ssot.services.yml   # idc01 service entries; host card ssot.idc01.yml exists on branch test/ultralytics-yolo-ha (unmerged)
+
+expected_exposure:
+  - { listener: "0.0.0.0:80",          class: public-ip,    service: caddy,  note: "speaker-enroll edge (HTTP)" }
+  - { listener: "0.0.0.0:443",         class: public-ip,    service: caddy,  note: "speaker-enroll edge (TLS, SNI required)" }
+  - { listener: "0.0.0.0:22",          class: tailnet-only, service: sshd,   note: "wildcard bind; public :22 denied by ufw — effective exposure tailnet only (verified 2026-09-24)" }
+  - { listener: "0.0.0.0:3002",        class: tailnet-only, service: mddb-panel, note: "wildcard bind; public reach blocked by ufw default-deny — rebind to tailnet IP pending" }
+  - { listener: "100.74.146.0:11023",  class: tailnet-only, service: mddb,   note: "http API, authEnabled=false — tailnet is the boundary" }
+  - { listener: "100.74.146.0:11024",  class: tailnet-only, service: mddb,   note: "gRPC" }
+  - { listener: "100.74.146.0:9000",   class: tailnet-only, service: mddb,   note: "MCP listener, API-key gated (mddb-mcp-api-key)" }
+  - { listener: "127.0.0.1:11434",     class: loopback,     service: ollama, note: "nomic-embed-text fallback; also serves open-notebook" }
+  - { listener: "127.0.0.1:11435",     class: loopback,     service: gemini-ollama-proxy, note: "MDDB connects here; maps embedding aliases to gemini-embedding-*" }
+  - { listener: "127.0.0.1:8001",      class: loopback,     service: ada-pi-pwa, note: "Ada PWA backend; published via tailscale serve" }
+  - { listener: "127.0.0.1:8002",      class: loopback,     service: ada-ha-tony, note: "evacuated from mn01 2026-09-24; mn01 caddy reverse-proxies here" }
+  - { listener: "127.0.0.1:8003",      class: loopback,     service: ada-ha-michael, note: "evacuated from mn01 2026-09-24" }
+  - { listener: "127.0.0.1:8004",      class: loopback,     service: obsidian-vault, note: "Ada Memory Vault web app" }
+  - { listener: "127.0.0.1:5055",      class: loopback,     service: open-notebook-api }
+  - { listener: "127.0.0.1:8502",      class: loopback,     service: open-notebook-ui }
+  # tailscale serve terminations (all tailnet-only, https unless noted):
+  - { listener: "ts-serve:root",  class: tailnet-only, service: serve, target: "127.0.0.1:8001", note: "ada-pi-pwa at https://idc01.taila0626a.ts.net/" }
+  - { listener: "ts-serve:8443",  class: tailnet-only, service: serve, target: "127.0.0.1:8004", note: "obsidian-vault" }
+  - { listener: "ts-serve:8444",  class: tailnet-only, service: serve, target: "127.0.0.1:8502", note: "open-notebook UI" }
+  - { listener: "ts-serve:8445",  class: tailnet-only, service: serve, target: "127.0.0.1:5055", note: "open-notebook API" }
+
+remote_access:
+  sshd: { port: 22, bind: tailnet-only, password_auth: deviation }
+  tailscale_ssh: false
+  recovery:
+    provider_panel: "Siamdata web console — recovery path if tailnet+ssh both break (firewall/console toggles live there)"
+
+firewall:
+  tool: ufw
+  inbound_default: deny
+  rules:
+    - "allow tailscale0"
+    - "allow 80/tcp (caddy edge)"
+    - "allow 443/tcp (caddy edge)"
+  note: "ssot.services.yml: 'UFW allows tailscale0 only' for host access — public reach is limited to the web edge ports"
+
+tailscale:
+  ip: "100.74.146.0"
+  serve:
+    - { port: root,  proto: https, target: "127.0.0.1:8001" }
+    - { port: 8443,  proto: https, target: "127.0.0.1:8004" }
+    - { port: 8444,  proto: https, target: "127.0.0.1:8502" }
+    - { port: 8445,  proto: https, target: "127.0.0.1:5055" }
+  funnel: []                  # none — explicitly declared
+  role: [mddb-replica, public-edge]
+
+egress:
+  warp:
+    enabled: false              # daemon down as of 2026-09-24 — intended enabled; restart pending (see deviations)
+    mode: warp
+    always_on: true             # intent once daemon is restarted
+    exclusions: ["100.64.0.0/10", "<TONY_HOME_WAN_IP>/32", "<MICHAEL_HA_WAN_IP>/32"]
+    verify: "warp-cli tunnel ip list"
+    side_effects: "Egress IP is now Cloudflare — anything allowlisted to the idc01 public IP breaks"
+  transparent_proxy: { enabled: false }
+  sysctl: "net.core.default_qdisc=fq + net.ipv4.tcp_congestion_control=bbr in /etc/sysctl.d/90-bbr.conf"
+
+deviations:
+  - item: "sshd PasswordAuthentication yes"
+    reason: "fallback login if tailnet breaks"
+    last_verified: "2026-09-22"
+  - item: "mddb-panel 0.0.0.0:3002 wildcard bind"
+    reason: "public reach blocked by ufw default-deny; rebind to tailnet IP pending"
+    last_verified: "2026-09-24"
+  - item: "warp daemon not running"
+    reason: "warp-svc dead since idc01 incident — WARP intended enabled+always-on; restart pending, do not auto-restart (incident was WARP-related)"
+    last_verified: "2026-09-24"
+
+last_observed: {}
+deltas: []

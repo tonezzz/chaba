@@ -1,0 +1,146 @@
+title: Security Standard
+subtitle: Baseline security policy for all chaba hosts — exposure classes, per-domain standards, deviation rule
+icon: 🛡️
+version: 1
+last_updated: "2026-09-24"
+maintainer: tony
+
+ideas:
+  - Tailnet is the primary security boundary; public exposure is opt-in and must be declared per host.
+  - Per-host posture files (ssot.security.<host>.yml) declare expected state and only carry diffs from this standard.
+  - Every deviation carries reason + last_verified so staleness tracking can expire it (90d window).
+  - scripts/audit-security.py diffs declared posture vs live state (ss, ufw/nft, tailscale serve/funnel, warp-cli, sshd -T).
+
+sections:
+  - title: Exposure Classes
+    icon: 🌐
+    layout: list
+    items:
+      - label: loopback
+        text: Bound to 127.0.0.1 / ::1 only. Always acceptable; still listed in the posture file for completeness. Examples —Ollama, internal bridges.
+      - label: tailnet-only
+        text: Bound to the host's 100.x tailscale IP or published via `tailscale serve`. Default for anything cross-host. Examples —MDDB on idc01, serve :5432 on tony-dell.
+      - label: lan
+        text: Bound to a LAN interface or 0.0.0.0 but only reachable on the home LAN. Acceptable for LAN conveniences; must be listed in the posture file. Examples —XMEye VNC on 192.168.2.67:5900, barrier :24800.
+      - label: funnel
+        text: Public via Tailscale Funnel ingress. Every funnel path must be declared — funnel puts the service on the open internet. Examples —mn01 /apps/ha/ada-*, tony-dell /.
+      - label: public-ip
+        text: Terminated on a real public IP (idc01 eth0, Nabu Casa). Highest scrutiny — requires declared exception. Examples —idc01 Caddy 80/443, michael-ha Nabu Casa.
+
+  - title: Standard — Service Binding
+    icon: 🔌
+    layout: list
+    items:
+      - label: Default bind
+        text: New services bind loopback or the tailnet IP. 0.0.0.0 requires an entry in the host posture file AND (while security-audit.sh still reads it) ssot.audit.baseline.yml.
+      - label: No auth means tailnet only
+        text: A service with authEnabled=false or no auth (MDDB, Ollama, VNC) may never be class funnel or public-ip — the tailnet is the auth boundary.
+      - label: Unknown listeners
+        text: Any observed listener not in expected_exposure is a delta. Investigate, then either close it or declare it — never leave it silent.
+
+  - title: Standard — Remote Access
+    icon: 🔑
+    layout: list
+    items:
+      - label: sshd
+        text: Key auth only by standard. PasswordAuthentication yes is a deviation requiring reason + last_verified (current exception — idc01, fallback-if-tailnet-breaks).
+      - label: Tailnet-preferred
+        text: sshd on public interfaces should be filtered or key-only; tailnet :22 is the preferred path on all hosts.
+      - label: Other remote access
+        text: xrdp, Chrome Remote Desktop, VNC, Tailscale SSH — each declared per host with its exposure class. No-password VNC is lan-class maximum, never tailnet/public.
+      - label: Recovery path
+        text: Every host documents its out-of-band recovery (provider console, CRD, physical) in remote_access.recovery — the idc01 lesson.
+
+  - title: Standard — Host Firewall
+    icon: 🧱
+    layout: list
+    items:
+      - label: Policy
+        text: Default-deny inbound on public interfaces; allow tailscale0 unconditionally; LAN allows only on home hosts.
+      - label: Tool
+        text: ufw on Ubuntu hosts (declared per host); nftables acceptable alternative; macOS uses ALF (socketfilterfw).
+      - label: Rule declarations
+        text: Persistent allow rules are listed in the host posture file firewall.rules so the runner can diff them.
+
+  - title: Standard — Tailscale
+    icon: 🔗
+    layout: list
+    items:
+      - label: serve
+        text: tailscale serve = tailnet-only, always acceptable; declared per host with port-to-target map.
+      - label: funnel
+        text: tailscale funnel = public. Each path must be declared with its backend and a note on what it exposes (tony-dell funnel / exposes the bserver dashboard publicly — flagged).
+      - label: Roles
+        text: Subnet routers (mn01), exit nodes, and Tailscale SSH are declared per host.
+      - label: Tailnet invariants
+        text: 100.64.0.0/10 must never route through egress overrides (WARP, proxies). Peer WireGuard endpoints must be excluded so direct tunnels stay direct.
+
+  - title: Standard — Egress Overrides
+    icon: ↗️
+    layout: list
+    items:
+      - label: Cloudflare WARP
+        text: Egress-only tool for hosts with bad international transit (idc01). Mandatory exclusions — 100.64.0.0/10 plus each peer WireGuard endpoint /32 (discover via `tailscale status`). Never terminates inbound. Verify exclusions with `warp-cli tunnel ip list`.
+      - label: Transparent proxy / other
+        text: Any host-level transparent proxy or forced-egress (redsocks/tproxy/vpn include-all) is opt-in and must be declared with its bypass list. None declared as of 2026-09-24.
+      - label: Egress-IP side effects
+        text: Anything allowlisted to a host's native public IP breaks when egress goes via WARP/proxy — record dependents in the posture file.
+
+  - title: Standard — Secrets and Data Isolation
+    icon: 🔐
+    layout: list
+    items:
+      - label: No secrets in SSOT
+        text: Credential metadata lives in ssot.secrets.yml (slots, consumers, rotation) — never values. Posture files reference credential ids only.
+      - label: Public IPs masked
+        text: Real public IPs are written as <HOST_PUBLIC_IP> placeholders; resolve live via `tailscale status` or provider panel.
+      - label: Leaked-credential incidents
+        text: Credentials flagged LEAKED in ssot.secrets.yml get rotation steps there; posture files record which hosts hold slots only when security-relevant.
+
+  - title: Deviation Rule
+    icon: ⚠️
+    layout: list
+    items:
+      - label: Required keys
+        text: Every entry in a host file's deviations list must have item, reason, last_verified (YYYY-MM-DD). review_by is optional (default = last_verified + 90d).
+      - label: Expiry
+        text: Deviations older than 90d are stale — re-verify or remove. Same rule as ssot.audit.baseline.yml so the staleness audit covers both once pointed here.
+      - label: Standard upgrades
+        text: If a deviation repeats across 3+ hosts, promote it into this standard instead of copy-pasting exceptions.
+
+  - title: Audit Wiring
+    icon: 🕵️
+    layout: list
+    items:
+      - label: Runner
+        text: scripts/audit-security.py --host <name> snapshots live state (ss -tln, ufw status, tailscale serve/funnel status, warp-cli status, sshd -T) and diffs against ssot.security.<host>.yml. --save-to-ssot writes last_observed + deltas back.
+      - label: Schedule
+        text: Registered in ssot.audit.yml as security-posture in security-suite — weekly alongside security-scan; monthly security-audit unchanged.
+      - label: Reports
+        text: reports/audit-security/<host>-<timestamp>.yml; drift exits 1 and surfaces via the audit runner's focus-inbox alert at warning severity.
+
+  - title: Host Coverage
+    icon: 🗺️
+    layout: list
+    items:
+      - label: tony-dell
+        text: ssot.security.tony-dell.yml — funnel edge (public / + /apps/home-assistant/), lan services (VNC, xrdp, barrier), tailnet serve. Funnel / exposes bserver dashboard — declared, flagged.
+      - label: tony-omen
+        text: ssot.security.tony-omen.yml — primary workstation; lan + tailnet only, no public edge.
+      - label: mn01
+        text: ssot.security.mn01.yml — Ada funnel edge (/apps/ha/ada-*), mn-home subnet router; only other funnel edge besides tony-dell.
+      - label: idc01
+        text: ssot.security.idc01.yml — only real public IP (Caddy 80/443), WARP egress, ufw tailnet0-only + web ports, sshd password-auth deviation.
+      - label: kk-macbook
+        text: ssot.security.kk-macbook.yml — macOS; ALF + launchd instead of ufw + systemd.
+      - label: devices
+        text: ssot.security.devices.yml — michael-ha (Nabu Casa), routers, DVRs; cannot run standard controls so only exposure + credential refs are recorded.
+
+related_files:
+  - docs/ssot/infrastructure/ssot.audit.baseline.yml
+  - docs/ssot/infrastructure/ssot.secrets.yml
+  - docs/ssot/infrastructure/ssot.networks.yml
+  - docs/ssot/infrastructure/ssot.audit.hosts.yml
+  - docs/ssot/infrastructure/ssot.services.yml
+  - scripts/audit-security.py
+  - scripts/security-audit.sh

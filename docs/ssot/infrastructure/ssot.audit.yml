@@ -157,6 +157,22 @@ audits:
     last_run:
     last_result:
 
+  - name: security-posture
+    script: scripts/audit-security.py
+    command: python3
+    args:
+      - --host
+      - all
+    schedule: weekly
+    severity_on_fail: warning
+    description: >
+      Per-host security posture diff — listeners, firewall, tailscale
+      serve/funnel, WARP, and sshd effective config vs the declared state in
+      docs/ssot/infrastructure/ssot.security.<host>.yml (standard:
+      ssot.security.yml). Reports to reports/audit-security/.
+    last_run:
+    last_result:
+
   - name: auto-kb-quality
     script: scripts/auto-kb-quality-audit.mjs
     command: node
@@ -349,10 +365,11 @@ groups:
     children:
       - caddy
   - name: security-suite
-    description: Secret scan and system-level security review
+    description: Secret scan, system-level security review, and per-host posture diff
     children:
       - security-scan
       - security-audit
+      - security-posture
   - name: infrastructure-suite
     description: Health SSOT and infrastructure configuration consistency
     children:

@@ -1,0 +1,51 @@
+title: Security Posture — Managed Devices
+subtitle: Devices that cannot run the host standard — exposure + credential refs only
+icon: shield
+version: 1
+last_updated: "2026-09-24"
+maintainer: tony
+
+standard: docs/ssot/infrastructure/ssot.security.yml
+note: "Not runner-diffed. Records what is reachable, how it is authed, and which ssot.secrets.yml id holds credentials."
+
+devices:
+  michael-ha:
+    kind: home-assistant-os
+    exposure:
+      - { what: "Nabu Casa remote UI", class: public-ip, note: "public via Nabu Casa cloud — the sanctioned public HA path" }
+      - { what: "tailscale node michael-ha :8123", class: tailnet-only }
+      - { what: "sshd (HAOS ssh add-on)", class: lan, note: "ssh michael-ha 'ha core restart'" }
+    credentials: [ha-michael-live-token]
+    recovery: "Nabu Casa UI + local console"
+
+  tony-home-router:
+    kind: router
+    exposure:
+      - { what: "admin UI on gateway 192.168.2.1", class: lan }
+      - { what: "WAN admin", class: public-ip, note: "verify disabled — check on next audit" }
+    credentials: [router-asus]
+    note: "asus-router.env / router-192.168.1.1.env slot names predate the 192.168.2.x renumbering — verify which file is live"
+
+  mn-home-routers:
+    kind: router
+    exposure:
+      - { what: "Huawei HG8145X6N admin 192.168.1.1", class: lan }
+      - { what: "secondary Huawei 192.168.1.124", class: lan }
+    credentials: []
+
+  xmeye-dvrs:
+    kind: dvr
+    exposure:
+      - { what: "noble-club / noble-a on tony-home LAN", class: lan }
+      - { what: "XMEye cloud P2P (cloud IDs)", class: public-ip, note: "vendor P2P — inherent exposure, credentials are the control" }
+    credentials: [xmeye-dvr]
+    deviations:
+      - item: "default-ish app login admin/admin in VMS config"
+        reason: "VMS app-level login only; DVR creds live in xmeye-dvr.env"
+        last_verified: "2026-09-24"
+
+  iphone:
+    kind: mobile
+    exposure:
+      - { what: "TONY-IP hotspot (multi-WAN backup path)", class: lan }
+    credentials: []

@@ -16,15 +16,15 @@ ACCEPTED_ROOT_CONTAINERS=""
 ACCEPTED_PUBLIC_ENDPOINTS=""
 
 function load_baseline() {
-    local ssot_file="$PROJECT_ROOT/docs/ssot/infrastructure/ssot.audit.yml"
+    local ssot_file="$PROJECT_ROOT/docs/ssot/infrastructure/ssot.audit.baseline.yml"
     if [ -f "$ssot_file" ]; then
         ACCEPTED_ROOT_CONTAINERS=$(python3 -c "
 import yaml
 try:
     with open('$ssot_file') as f:
         data = yaml.safe_load(f)
-    for c in data.get('baseline', {}).get('accepted_root_containers', []):
-        print(c)
+    for c in data.get('accepted_root_containers', []):
+        print(c.get('value', c) if isinstance(c, dict) else c)
 except Exception:
     pass
 ")
@@ -33,8 +33,8 @@ import yaml
 try:
     with open('$ssot_file') as f:
         data = yaml.safe_load(f)
-    for e in data.get('baseline', {}).get('accepted_public_endpoints', []):
-        print(e)
+    for e in data.get('accepted_public_endpoints', []):
+        print(e.get('value', e) if isinstance(e, dict) else e)
 except Exception:
     pass
 ")

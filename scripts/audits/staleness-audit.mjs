@@ -58,7 +58,7 @@ if (!baseline) {
   const stale = [];
   const sections = [
     ["accepted_root_containers", (e) => `${e.name} (verified ${e.last_verified})`],
-    ["accepted_public_endpoints", (e) => `${e.endpoint} (verified ${e.last_verified})`],
+    ["accepted_public_endpoints", (e) => `${e.value} (verified ${e.last_verified})`],
   ];
   for (const [key, fmt] of sections) {
     for (const entry of baseline[key] || []) {
