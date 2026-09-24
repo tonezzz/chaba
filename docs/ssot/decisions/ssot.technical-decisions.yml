@@ -422,6 +422,78 @@ decisions:
       - stacks/tony-dell/tony-ha/www/ada-users-card.js
       - 'ada-pi: pwa_server.py, pwa/'
 
+  - id: tv-casting-groups
+    date: '2026-09-24'
+    title: tony-ha automations split into managed (UI-uneditable) and editable
+      groups, plus runaway-cast auditing
+    status: accepted
+    context: |
+      tony-ha has 17 UI automations (assessed into
+      ssot.home-assistant.automations.yml) plus a host-side cast pipeline
+      (cast-browser :8799, cast-ha-panel.timer 60s re-cast, cast-desktop@1 HLS,
+      websockify). Two failure modes are unguarded: (a) runaway behavior — cast
+      storms, stuck 'playing' sessions, leaked ffmpeg/chromium processes, and
+      (b) safety logic (idle shutdown, activity reset) living in the same
+      UI-editable file as convenience automations, where an accidental edit can
+      silently remove the only runaway protection.
+    options:
+      - label: Keep everything UI-editable, add audits only
+        pros: [no migration, simplest]
+        cons: [safety automations remain one misclick from deletion; audits
+               can't trust the guards they depend on]
+      - label: Split — managed package automations vs editable UI automations
+        pros: [safety code is git-reviewed and UI-editor-proof (packages are
+               not editable in the UI, only toggleable); clear ownership;
+               editable group stays flexible]
+        cons: [migration work; two places to look for automation logic]
+      - label: Move all casting to host-side systemd only
+        pros: [single process model]
+        cons: [loses HA UI visibility, voice/conversation triggers, entity
+               state conditions; worse UX]
+    chosen: Split into managed (packages/cast-safety.yaml + similar) and
+      editable (automations.yaml) groups
+    reasoning: |
+      HA's package mechanism makes automations visible-but-not-UI-editable —
+      exactly the "uneditable" semantics wanted for safety. The idle-shutdown /
+      activity-reset pair, the new rate-limit/session-cap/flap/source guards,
+      and the cast_enabled kill switch become managed; YouTube pipeline,
+      assist sentences, reminders stay editable. A host-side audit script
+      complements HA-side guards for process-level runaways (ffmpeg, chromium)
+      that HA can't see.
+    consequences:
+      implemented_2026_09_24:
+        - "input_boolean.cast_enabled — master kill switch; honored by
+          cast-ha-selected.sh and cast-cam.py (managed paths)"
+        - "managed guards live: rate_limit (counter.cast_starts >6/10min ->
+          tv_display=off + cast_enabled=off + cleanup + notify),
+          count_session_starts, reset_rate_counter (time_pattern /10),
+          source_lost (tv_camera unavailable mid-cast -> cleanup)"
+        - "moved to managed: cast_idle_shutdown, cast_activity_reset —
+          same ids, deleted from automations.yaml via config API"
+        - "input_select.tv_camera — replaces hardcoded ip_cam_65 in
+          cast-ha-selected.sh; camera branch skips unavailable sources"
+        - "host audit live: audit-cast.timer every 5min ->
+          ~/.local/bin/audit-cast.sh (ffmpeg census, cast-browser RSS>3GiB
+          restart, orphan x11vnc/websockify kill, cast_enabled enforcement);
+          log ~/.local/share/cast-audit.log"
+        - "HA restarted once to load homeassistant.packages"
+      deferred:
+        - "cast_guard_session_cap — add scoped to cast_powered_by_us (~6h)
+          when telemetry justifies"
+        - "cast_guard_flap — no observed flap storm; audit-cast covers
+          proc-level churn"
+        - "moves of reboot_esp32test_when_offline, set_visionos_theme_on_startup
+          — still proposed_managed"
+        - "event-driven rework of cast-ha-panel.timer (60s poll stays, now
+          bounded by kill switch + source check)"
+        - "cast_enabled enforcement in editable paths (YouTube chain, assist
+          sentences) — by design v1; audit kills host leftovers regardless"
+        - "CLEANUP: script.tv_cast_* unavailable legacy — removal candidate"
+    related:
+      - docs/ssot/infrastructure/ssot.home-assistant.automations.yml
+      - docs/kb/home-assistant/tv-casting-runbook.md
+      - stacks/services/cast-cam/
+
 related_files:
   - docs/ssot/ssot.focus.decisions.yml
   - docs/ssot/ssot.focus.sessions.yml

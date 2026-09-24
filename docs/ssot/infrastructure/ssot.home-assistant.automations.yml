@@ -1,0 +1,254 @@
+title: Home Assistant Automations — tony-ha
+subtitle: Inventory + management grouping for all automations on tony-ha; edit plan lives in docs/ssot/decisions/ssot.technical-decisions.yml (tv-casting-groups)
+icon: automation
+version: 1
+last_updated: "2026-09-24"
+maintainer: tony
+
+host: tony-ha
+live_source: /config/automations.yaml (host path ~/.config/home-assistant/automations.yaml)
+audit_source: "HA REST /api/states + automations.yaml parse"
+
+# ---------------------------------------------------------------------------
+# Grouping model (decision: tv-casting-groups)
+#   managed  — defined in YAML under packages/ (NOT editable in the UI editor;
+#              toggleable only). Reserved for safety guards and stable,
+#              well-defined behaviors. Changes go through git review.
+#   editable — UI automations.yaml; user-facing conveniences the user may
+#              tweak in the UI editor.
+#   proposed — currently editable, recommended to move to managed.
+# ---------------------------------------------------------------------------
+
+automations:
+
+  # ---- cast lifecycle / safety (managed — packages/cast-safety.yaml) ------
+  - id: cast_idle_shutdown
+    alias: "Cast: idle shutdown"
+    group: managed
+    location: /config/packages/cast-safety.yaml
+    purpose: "timer.cast_idle finished -> script.cast_cleanup unless a target is
+      still playing (defer 5 min + persistent_notification)"
+    triggers: "event timer.finished (timer.cast_idle)"
+    mode: single
+    safety_role: "primary runaway guard — prevents orphaned cast sessions"
+    last_triggered: "2026-09-22"
+
+  - id: cast_activity_reset
+    alias: "Cast: activity reset"
+    group: managed
+    location: /config/packages/cast-safety.yaml
+    purpose: "media_player -> playing restarts timer.cast_idle (keeps active
+      sessions alive)"
+    triggers: "state media_player.tony_tv_cast|tv_40c5000 -> playing"
+    mode: single
+    safety_role: "complements idle shutdown — activity resets the clock"
+    last_triggered: "2026-09-22"
+
+  - id: cast_guard_count_session_starts
+    alias: "Cast guard: count session starts"
+    group: managed
+    location: /config/packages/cast-safety.yaml
+    purpose: "cast player off->on increments counter.cast_starts"
+    triggers: "state media_player.tony_tv_cast|tv_40c5000 from off"
+    safety_role: "rate-limit input"
+
+  - id: cast_guard_rate_limit
+    alias: "Cast guard: rate limit"
+    group: managed
+    location: /config/packages/cast-safety.yaml
+    purpose: "counter.cast_starts > 6 in 10-min window -> tv_display=off +
+      cast_enabled=off + cast_cleanup + notify"
+    triggers: "numeric_state counter.cast_starts > 6"
+    safety_role: "cast-storm breaker — trips the master kill switch"
+
+  - id: cast_guard_reset_rate_counter
+    alias: "Cast guard: reset rate counter"
+    group: managed
+    location: /config/packages/cast-safety.yaml
+    purpose: "counter.cast_starts reset every 10 min (sliding window)"
+    triggers: "time_pattern /10"
+
+  - id: cast_guard_source_lost
+    alias: "Cast guard: source lost"
+    group: managed
+    location: /config/packages/cast-safety.yaml
+    purpose: "selected tv_camera -> unavailable while tv_display=camera ->
+      cast_cleanup + notify (no black-screen hold)"
+    triggers: "state camera.* -> unavailable"
+    safety_role: "source liveness guard"
+
+  # ---- voice / cast UX (editable) ------------------------------------------
+  - id: assist_tv_control
+    alias: "Assist: TV control"
+    group: editable
+    purpose: "conversation trigger (~50 sentences) -> cast-browser :8799
+      commands via sentence_map (nav/scroll/click/camera/stop)"
+    triggers: "conversation"
+    mode: single
+    note: "large sentence_map variable — heaviest user-facing cast surface;
+      'cast the camera'/'show the camera on tv' already wired"
+
+  - id: phuudkhmaawaaswasdiiphaanthiiwii
+    alias: "พูดคำว่าสวัสดีผ่านทีวี"
+    group: editable
+    purpose: "event speak_hello_on_tv -> script.cast_power_on(box) + tts.speak
+      on tony_tv_cast"
+    triggers: "event speak_hello_on_tv"
+    mode: single
+
+  # ---- YouTube pipeline (editable) ------------------------------------------
+  - id: cast_youtube_when_video_id_is_entered
+    alias: "Cast YouTube when video ID is entered"
+    group: editable
+    purpose: "input_text.youtube_video_id set -> cast video"
+    last_triggered: "2026-09-20"
+  - id: search_youtube_when_query_pauses
+    alias: "Search YouTube when query pauses"
+    group: editable
+    purpose: "input_text.youtube_query idle -> script.youtube_search_now"
+    last_triggered: "2026-09-20"
+  - id: cast_youtube_from_search_result
+    alias: "Cast YouTube from search result"
+    group: editable
+    last_triggered: "2026-09-20"
+  - id: cast_youtube_from_picker
+    alias: "Cast YouTube from picker"
+    group: editable
+    last_triggered: "2026-09-20"
+  - id: youtube_request_handler
+    alias: "YouTube request handler"
+    group: editable
+    last_triggered: "2026-09-20"
+  - id: youtube_play_next_from_queue
+    alias: "YouTube play next from queue"
+    group: editable
+    last_triggered: "2026-09-20"
+  - id: youtube_queue_control
+    alias: "YouTube queue control"
+    group: editable
+    last_triggered: "2026-09-08"
+
+  # ---- device / system (mixed) ----------------------------------------------
+  - id: set_visionos_theme_on_startup
+    alias: "Set visionOS theme on startup"
+    group: proposed_managed
+    purpose: "HA start -> set theme; deterministic, no user tuning needed"
+    last_triggered: "2026-09-23"
+  - id: reboot_esp32test_when_offline
+    alias: "Reboot esp32test when offline"
+    group: proposed_managed
+    purpose: "esp32test offline -> reboot via switch; device recovery —
+      safety-adjacent"
+    last_triggered: "2026-09-13"
+    note: "esp32test currently down at Michael's (bad merged flash 2026-09-24);
+      verify automation doesn't hammer a dead device"
+  - id: battery_reminder_kk_macbook
+    alias: "Battery reminder: kk-macbook"
+    group: editable
+    last_triggered: "2026-09-13"
+  - id: battery_reminder_tony_omen
+    alias: "Battery reminder: tony-omen"
+    group: editable
+    last_triggered: never
+  - id: devin_confirmation_capture_iphone_action
+    alias: "Devin confirmation: capture iPhone action"
+    group: editable
+    mode: queued
+    last_triggered: "2026-09-18"
+  - id: coffee_corner_fan_follows_person
+    alias: "Coffee Corner fan follows person"
+    group: editable
+    last_triggered: "2026-09-24"
+
+# ---------------------------------------------------------------------------
+# Supporting cast entities (referenced by the automations above)
+# ---------------------------------------------------------------------------
+cast_entities:
+  helpers:
+    input_boolean.cast_enabled: "MANAGED master kill switch — every managed
+      cast path (cast-ha-selected.sh, cast-cam.py) exits when off; tripped
+      automatically by cast_guard_rate_limit"
+    input_boolean.cast_powered_by_us: "set when WE powered the TV — cleanup only
+      kills our own sessions"
+    input_select.tv_camera: "MANAGED which camera the tv_display=camera timer
+      casts (was hardcoded ip_cam_65)"
+    input_select.tv_display: "what the 60s cast-ha-panel.timer keeps on screen
+      (smart-home/dossier/photos/map/panel/camera/help/vms/off)"
+    input_select.tv_cast_target: "cast destination (options: TONY-TV Cast)"
+    input_text.tv_command: "raw command injection path"
+    counter.cast_starts: "MANAGED cast-session counter; reset on a 10-min
+      time_pattern by cast_guard_reset_rate_counter"
+    timer.cast_idle: "5-min inactivity clock feeding cast_idle_shutdown"
+  scripts:
+    script.cast_power_on: "power-on sequence (target: box)"
+    script.cast_cleanup: "end-of-session cleanup"
+    script.cast_camera: "cast camera to TV"
+    script.cast_youtube_tv: "cast YouTube to TONY-TV"
+    script.tv_action + script.tv_*: "IR/remote control set via remote.tony_tv
+      (up/down/left/right/ok/menu/return/power/source/vol)"
+    script.tv_cast_*: "legacy per-view cast scripts — all UNAVAILABLE (dead
+      references; candidates for removal or package migration)"
+    script.yolo_cast: "cast YOLO view"
+    script.youtube_*: "search/pick/send helpers"
+  players:
+    media_player.tony_tv: "androidtv — real power state + app (TrueID box)"
+    media_player.tony_tv_cast: "chromecast target"
+    media_player.tv_40c5000: "second cast target (idle)"
+    remote.tony_tv: "IR remote bridge"
+    switch.plug_tv: "smart plug — HARD power cut (last-resort kill)"
+  host_side:
+    cast-browser.service: "persistent headless chrome :8799 (nav/shot/cast PNG)"
+    cast-ha-panel.timer: "60s re-cast of input_select.tv_display"
+    cast-ha-selected.sh: "timer payload — gates on input_boolean.cast_enabled,
+      camera branch casts input_select.tv_camera with source-liveness skip"
+    audit-cast.timer: "5-min host audit (~/.local/bin/audit-cast.sh) — kills
+      leaked ffmpeg, restarts bloated cast-browser, kills orphan
+      x11vnc/websockify, stops cast units when cast_enabled=off; log
+      ~/.local/share/cast-audit.log"
+    cast-desktop@1.service: "X desktop -> HLS (CPUQuota 60%)"
+    ha-card-snapshot.timer: "pv1.png refresh while dashboard view casts"
+    websockify-vms-mn01.service: ":6082 -> mn01:5900 (vms cast path)"
+
+# ---------------------------------------------------------------------------
+# Gaps found during assessment (feed the audit design)
+# ---------------------------------------------------------------------------
+gaps:
+  status_2026_09_24:
+    closed:
+      - "rate limit: cast_guard_rate_limit trips cast_enabled at >6 starts/10min"
+      - "source liveness: cast-ha-selected.sh skips unavailable tv_camera;
+        cast_guard_source_lost cleans up if the camera dies mid-cast"
+      - "host watchdog: audit-cast.timer (5min) kills leaked ffmpeg/orphans,
+        restarts bloated cast-browser, honors cast_enabled"
+      - "camera hardcode: input_select.tv_camera replaces ip_cam_65 constant"
+    open:
+      - "no session cap: a stream stuck reporting 'playing' defeats the idle
+        timer — DEFERRED, add when telemetry justifies"
+      - "no flap detection on media_player state churn — DEFERRED"
+      - "script.tv_cast_* all unavailable — dead legacy, removal candidate"
+      - "cast_enabled is honored by managed paths only; UI/voice cast paths
+        (YouTube chain, assist sentences) do not check it — by design v1;
+        the audit still kills host-side leftovers when off"
+      - "cast-ha-panel.timer still polls every 60s — bounded now (kill switch
+        + source check) but an event-driven rework remains the cleaner fix"
+
+audit_hooks:
+  managed_guards: "see automations[] group:managed — all in
+    /config/packages/cast-safety.yaml"
+  deferred_guards:
+    - id: cast_guard_session_cap
+      fires: "system-owned (cast_powered_by_us) session > 6h -> cleanup + notify"
+      why_deferred: "no telemetry showing long sessions are a problem; scope to
+        powered_by_us only when added"
+    - id: cast_guard_flap
+      fires: "media_player state changes > 20/min -> cleanup + notify"
+      why_deferred: "no observed flap storm; audit-cast covers proc-level churn"
+  kill_switch:
+    input_boolean.cast_enabled: "master gate checked by every managed cast
+      path; rate-limit guard trips it automatically"
+    hard_cut: "switch.plug_tv — physical last resort (manual runbook only;
+      audit-cast never touches it)"
+  host_audit: "audit-cast.timer -> ~/.local/bin/audit-cast.sh every 5 min:
+    ffmpeg census vs cast-desktop units, cast-browser RSS >3GiB restart,
+    orphan x11vnc/websockify kill (cgroup-checked), cast_enabled/display
+    consistency; log ~/.local/share/cast-audit.log + persistent_notification"
