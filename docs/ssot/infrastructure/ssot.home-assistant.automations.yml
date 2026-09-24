@@ -158,6 +158,9 @@ automations:
     last_triggered: "2026-09-13"
     note: "esp32test currently down at Michael's (bad merged flash 2026-09-24);
       edge trigger means one hub cycle per off-transition — safe"
+  - id: tuya_entry_reload_watchdog
+    group: managed
+    purpose: "hourly reload via packages/system-managed.yaml — Tuya MQ push dead; bounds staleness <=1h. edeb520"
   - id: battery_reminder_kk_macbook
     alias: "Battery reminder: kk-macbook"
     group: editable
