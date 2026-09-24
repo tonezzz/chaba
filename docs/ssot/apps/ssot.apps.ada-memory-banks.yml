@@ -459,12 +459,15 @@ persona:
 # explicitly trusted. {full: true} = unrestricted (Tony's people/keys).
 # allow = whitelist; deny = subtractive.
 person_policies:
+  admin:        {full: true}   # env ADA_API_KEY identity
   person.tony: {full: true}
-  person.kk:   {full: true}
+  person.kk:
+    allow: [general, home, people, purchase, personal-kk]
+  user-kk:
+    allow: [general, home, people, purchase, personal-kk]
   tony-ip:     {full: true}
   user-tonezzzz: {full: true}
   user-tony2:    {full: true}
-  user-kk:       {full: true}
   user-ha-mcp-server: {full: true}
   ha-03e85ebb:   {full: true}
   ha-4d0e0dee:   {full: true}
@@ -489,12 +492,15 @@ person_policies:
 # identities still can't actuate dangerous domains (lock/cover/alarm/…)
 # because the global deny floor already blocks them.
 control_policies:
+  admin:        {full: true}
   person.tony: {full: true}
-  person.kk:   {full: true}
+  person.kk:
+    allow_domains: [light, switch, input_boolean, script, media_player]
+  user-kk:
+    allow_domains: [light, switch, input_boolean, script, media_player]
   tony-ip:     {full: true}
   user-tonezzzz: {full: true}
   user-tony2:    {full: true}
-  user-kk:       {full: true}
   user-ha-mcp-server: {full: true}
   ha-03e85ebb:   {full: true}
   ha-4d0e0dee:   {full: true}
