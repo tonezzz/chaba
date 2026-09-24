@@ -136,8 +136,12 @@ then total silence (no ping, no ports, no `safe_mode` OTA window after 10+ min).
 - **Fix applied in the merge:** `ESP.getFreeHeap()` → `esp_get_free_heap_size()`
   (Arduino API doesn't exist under esp-idf).
 - **Conclusion:** single-board option (B) is not viable on a plain
-  ESP32-D0WD (no PSRAM). Use option A (repurpose esp32test as BMS bridge,
-  lose display) or option C (second board for `jkbms.yaml`).
+  ESP32-D0WD (no PSRAM). **Chosen: option A** — esp32test is repurposed as
+  the dedicated BMS bridge running `jkbms.yaml` (node name becomes `jkbms`,
+  display function retired). OTA retry loop + subnet watcher are armed to
+  push `recovery/jkbms.ota.bin` the moment the board answers on 3232 again
+  (needs a physical power-cycle first; a boot loop should reach `safe_mode`
+  OTA after ~10 failed boots).
 - **Recovery images** in `~/.local/share/esphome/recovery/`:
   `esp32test-displayonly.{ota,factory}.bin` (original config, no BLE — full
   restore), `jkbms.{ota,factory}.bin` (dedicated BMS bridge).
