@@ -29,8 +29,8 @@ render:
       output: context.md
       report: report.yml
       limits: {soft: 12000, hard: 20000}
-      overflow_order: [sessions, focus, project, home]   # dropped first → last
-      sections: [agent, user, immediate, home, project, focus, access, sessions]
+      overflow_order: [ada-focus, ada-sessions, sessions, focus, project, home]   # dropped first → last
+      sections: [agent, user, immediate, home, project, focus, access, sessions, ada-sessions, ada-focus]
     guest:
       output: context-guest.md
       report: report-guest.yml
@@ -135,6 +135,32 @@ sections:
       file: ~/.local/share/devin/notebook-summaries/session-memory.md
       max_entries: 3
       min_chars: 200        # skip "Session end"/checkpoint stubs
+
+  ada-sessions:
+    description: |
+      Recent Ada voice-session reports (L1). Written at session end by
+      ada-pi conversation_memory on the Ada host; reviewed/mirrored at
+      ~/.local/share/ada-review/session-memory.md by export + batch
+      scripts/ada/session-report.py.
+    priority: 45
+    limits: {soft: 1500, hard: 2500}
+    source:
+      kind: rolling-log
+      file: ~/.local/share/ada-review/session-memory.md
+      max_entries: 3
+      min_chars: 80
+
+  ada-focus:
+    description: |
+      Per-thread digests (L2) grouped by emergent focus tags —
+      scripts/ada/focus-rollup.py over the L1 session reports.
+    priority: 45
+    limits: {soft: 1500, hard: 2500}
+    source:
+      kind: rolling-log
+      file: ~/.local/share/ada-review/focus-digest.md
+      max_entries: 5
+      min_chars: 80
 
   # ---- guest-only sections ----
 
