@@ -402,6 +402,20 @@ banks:
     allowed_tools: []
     status: active
     public: false
+  documents:
+    title: Archived document sets
+    description: "Metadata index for document archives on gdrive:ada-documents/ (stacks/idc01/doc-archive service) — one doc per archived set with page sha256/dhash, Drive folder/file ids, doc_type, and an extracted-identifiers summary for semantic recall. Page bytes never enter MDDB — fetch via the doc-archive REST API or rclone cat. Read-only here: writes go through doc-archive's own confirmed flow (POST /v1/archive), not ada_remember. Devin reads the same collection via the mddb MCP server."
+    scope: instance
+    instances: [tony]
+    mddb_collection: documents
+    notebooklm_group: null
+    notebooklm_id: null
+    kinds: [note, fact]
+    writable: false
+    write_policy: confirmed
+    allowed_tools: []
+    status: active
+    public: false
 
 config:
   version: 3
