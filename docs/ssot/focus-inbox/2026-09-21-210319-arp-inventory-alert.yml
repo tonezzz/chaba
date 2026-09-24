@@ -1,0 +1,54 @@
+title: ARP inventory alert
+subtitle: Network scan changes detected at 2026-09-21-210319
+icon: inbox
+focus:
+  label: Review ARP inventory scan results
+  text: 'ARP inventory scan found changes compared to the MAC/IP registries.
+
+
+    - New devices: 0
+
+    - New IP for known device: 0
+
+    - MAC changed: 4
+
+    - Conflicts: 3
+
+    - Duplicate MACs in scan: 0
+
+
+    Report: reports/network-inventory-scan-2026-09-21-210319.json'
+  branch: chaba
+  priority: medium
+  status: draft
+  tags:
+  - network
+  - arp
+  - inventory
+  - mac-registry
+  safe_to_parallel:
+    value: true
+    reason: Registry review only; does not change live services.
+  subtasks:
+  - label: Check MAC change for 192.168.2.79 (was discovered-ea9b8fd280f0, now 90:1b:0e:e4:e3:a5)
+    status: not_started
+  - label: Check MAC change for 192.168.2.69 (was iphone-tony, now b8:88:80:cb:7d:2c)
+    status: not_started
+  - label: Check MAC change for 192.168.2.88 (was iphone-fa31d9bd44ff, now be:8c:b3:fc:74:0e)
+    status: not_started
+  - label: Check MAC change for 192.168.2.78 (was apple-watch-b67265caaae1, now 26:40:66:65:16:7c)
+    status: not_started
+  - label: 'Resolve MAC/IP conflict: 192.168.2.72 / e0:73:e7:05:c5:16'
+    status: not_started
+  - label: 'Resolve MAC/IP conflict: 192.168.2.73 / 0a:f0:bc:ad:20:8b'
+    status: not_started
+  - label: 'Resolve MAC/IP conflict: 192.168.2.80 / 06:28:58:26:4b:2c'
+    status: not_started
+ownership:
+  owner: tony
+  session: ''
+  locked: false
+  lock_reason: ''
+source:
+  session: ''
+  date: '2026-09-22'

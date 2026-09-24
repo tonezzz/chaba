@@ -1,0 +1,72 @@
+# SSOT Job Lifecycle: Ada batch memory distillation + extraction benchmark
+# Weekly backstop that re-reads voice session summaries and drafts durable
+# facts the inline ADA_EXTRACT_CANDIDATES pass missed — plus a fixture
+# benchmark that scores extraction quality (precision/recall).
+
+title: Ada batch memory distillation + extraction benchmark
+subtitle: Session-summary sweep -> draft memory candidates -> human review, with a scenario benchmark as the quality gate
+icon: flask
+
+planning:
+  goal: |
+    Nothing durable slips through: inline session-close extraction
+    (ADA_EXTRACT_CANDIDATES) is the fast path, but sessions where it
+    errored, was disabled, or predates the feature need a backstop.
+    memory-distill.py re-reads ada-ha-recall-summary-<instance>
+    session-summary docs, asks Gemini for durable candidates, applies
+    bank policy + semantic dedup, and writes status=draft docs that
+    never surface in recall until reviewed (same draft->inbox->promote
+    path as memory-gap-report.py). memory-distill-benchmark.py keeps the
+    extraction prompt honest with fixture scenarios scored for
+    precision/recall.
+  scope: |
+    In scope:
+      - scripts/ada/memory-distill.py — incremental sweep (state file),
+        chunked Gemini extraction, bank/kind policy validation,
+        subject + semantic dedup, status=draft writes, --emit/--dry-run
+      - scripts/ada/memory-distill-scenarios.yml + memory-distill-benchmark.py
+        — 11 fixture scenarios, recall/precision scoring, no MDDB writes
+      - SSOT updates (progress, testing, howto)
+    Out of scope:
+      - changing the inline extractor prompt (benchmark can gate it later)
+      - a systemd timer (proposed — weekly after ada-memory-gaps)
+      - auto-promoting drafts (human review stays mandatory)
+  success_criteria:
+    - benchmark >= 75% recall, >= 50% precision, no extra-cap violations
+    - live run writes only status=draft docs; active recall unaffected
+    - re-runs are incremental (processed session keys in state file)
+  risks:
+    - noise candidates cost review time — mitigated by strict prompt +
+      dedup + draft-only writes
+    - semantic dedup threshold 0.82 may miss near-dupes phrased
+      differently — reviewer sees them in inbox and deletes
+  resources:
+    - GEMINI_API_KEY (generateContent, gemini-3.5-flash-lite)
+    - MDDB /v1 (list_docs, /search, /vector-search, /add)
+  owner: tony
+  estimated_duration: 1 session
+
+processing:
+  status: done
+  started_at: "2026-09-22"
+  steps:
+    - id: 1
+      label: Batch distillation job
+      status: done
+      notes: "scripts/ada/memory-distill.py — session-summary docs -> chunked Gemini JSON extraction -> valid_candidate() enforces writable bank + kind coercion (e.g. procedure->note when bank lacks procedure) -> subject-match + vector dedup (0.82) -> status=draft writes with session_keys provenance. State: ~/.cache/ada-memory-distill.json."
+    - id: 2
+      label: Benchmark harness + scenarios
+      status: done
+      notes: "memory-distill-benchmark.py + memory-distill-scenarios.yml — 11 fixtures (decisions, facts, preferences, procedures, person, purchase, incident-outcome, mixed, 2 noise-rejection, cross-session dedup). Imports the real extraction path via importlib; scores recall/precision; exits nonzero below thresholds (0.75/0.50)."
+    - id: 3
+      label: Benchmark results
+      status: done
+      notes: "First run 78% recall / 88% precision: missed an investigation-outcome phrasing (prompt gap, fixed) and picked personal-kk over people for a person fact (fixture now accepts either). Final: 9/9 recall, 9/9 precision, 0 extras, PASS."
+    - id: 4
+      label: Live run verified
+      status: done
+      notes: "22 real session summaries swept: 2 drafts written (people/khun-namphu juristic-manager fact; personal/zone-a GM role change — both missed by inline extraction), 2 semantic dups correctly skipped (water-bills 0.84, weather-station 0.95). Verified drafts carry status=draft + written_by=memory-distill and are invisible to status=active recall."
+    - id: 5
+      label: Weekly timer
+      status: pending
+      notes: "Proposed: weekly on mn01 after ada-memory-gaps.timer (Sun 09:45), --emit on. Register in ssot.audit.hosts.yml when installed. Pending user approval."

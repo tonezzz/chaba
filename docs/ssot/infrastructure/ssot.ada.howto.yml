@@ -1,0 +1,96 @@
+title: Ada How-To Runbooks
+subtitle: Step-by-step procedures for ada-pi tools, calendar providers, and memory banks
+
+prerequisites:
+  - ssot: ssot.apps.ada-calendar.yml
+  - ssot: ssot.apps.ada-memory-banks.yml
+  - ssot: ssot.apps.ada_pi.yml
+  - decisions: ssot.technical-decisions.yml (ada-calendar-provider-backend)
+
+runbooks:
+  add_ada_tool:
+    purpose: Add a new Gemini Live tool to ada — all three layers must move together.
+    steps:
+      - "Add the method to ToolRunner in ada-pi/backend/tool_runner.py (async, simple typed args)"
+      - "If it mutates anything, add its name to the right gate set (CONTROL_TOOLS / MEMORY_WRITE_TOOLS / CALENDAR_WRITE_TOOLS) and give it a confirmed arg"
+      - "Add a function_declaration in backend/realtime_provider.py — description written as WHEN to use it, parameters_json_schema with additionalProperties: false"
+      - "Extend the instruction paragraph in GeminiLiveProvider.__init__ with the workflow (call order, confirm protocol, which tool family to prefer)"
+      - "Add a unit test; deploy via chaba/scripts/deploy-ada.sh"
+    note: |
+      The description is the primary steering mechanism; the instruction
+      paragraph teaches sequencing. The gate enforces the contract server-side
+      even if the model misbehaves. Keep declarations and instructions in sync —
+      ADA_EXCLUDED_TOOLS removes both.
+
+  google_calendar_reauth:
+    purpose: Re-mint the Google refresh token when calendar tools return auth errors.
+    steps:
+      - "Confirm the consent screen is published (Testing status = tokens die in 7 days): console.cloud.google.com -> project gen-lang-client-0694401188 -> OAuth consent screen"
+      - "Confirm Google Calendar API and Google Tasks API are enabled on that project"
+      - "Run: python3 scripts/ada/google-calendar-auth.py --host mn01 (opens a browser; approve with the Google account)"
+      - "Verify: python3 scripts/ada/google-calendar-auth.py --check"
+      - "No service restart needed — the adapter re-reads the token file on the next call"
+    note: |
+      The token file is per-ada (ada-google-calendar-token.json); the OAuth
+      client (google_credentials.json) is shared with the Drive backup — do
+      not overwrite it.
+
+  add_calendar_provider:
+    purpose: Add a calendar/tasks provider (e.g. iCloud via CalDAV) to ada.
+    steps:
+      - "Write the adapter in ada-pi/backend/<provider>_calendar.py implementing CalendarProvider (and TasksProvider if it has tasks)"
+      - "Register the adapter name in CalendarService._build (backend/calendar_providers.py)"
+      - "Add the provider block under calendar.providers in ssot.apps.ada-calendar.yml (adapter, instances, status: active, secrets pointer)"
+      - "Store credentials under ~/.config/secrets/ on the ada host"
+      - "Render: python3 scripts/ada/render-calendar-providers.py --host mn01"
+      - "Verify: ada 'which calendars do I have' should list the new provider's calendars"
+    note: |
+      Switching entirely: set calendar.read + calendar.write to the new
+      provider name. Running several: leave read: aggregate; writes go to
+      write: unless the user names 'provider:calendar_id'.
+
+  save_decision_to_memory:
+    purpose: Capture a decision or Q&A outcome so ada, Devin, and the vault can all recall it later.
+    steps:
+      - "By voice: tell ada 'remember that <fact>' — she calls ada_remember (confirmed banks ask first)"
+      - "From scripts/devin: POST /api/tools/call {tool: ada_remember, args: {bank, subject, attribute, kind, text, confirmed: true}} on any running service (mn01:8002, tony-dell:8001, idc01:8001/8002)"
+      - "Recall: ada_memory_search by voice, MDDB semantic_search for Devin, vault note after the next sync-ada-memory-to-mddb run"
+      - "For superseding facts pass key or subject+attribute — remember() does find-then-update; use ada_forget to retract, ada_outcome to record how it turned out"
+    note: |
+      New docs take ~3-4 min to become searchable (async embedding via
+      gemini-ollama-proxy) — a direct /v1/get confirms the write immediately.
+      Verified live 2026-09-21: general/google-tasks written via HTTP
+      ada_remember, recalled rank-1 at score 0.73.
+
+  distill_memory_backstop:
+    purpose: Sweep voice session summaries for durable facts the inline extraction missed; draft them for review.
+    steps:
+      - "Dry-run first: python3 scripts/ada/memory-distill.py --dry-run (prints candidates, writes nothing)"
+      - "Real run: python3 scripts/ada/memory-distill.py [--instance tony] [--since-days 14] [--emit]"
+      - "Needs GEMINI_API_KEY in env (source ~/.config/secrets/ada-pi-pwa.env); MDDB via ADA_MEMORY_MDDB_URL"
+      - "Review drafts: sync-ada-memory-to-mddb.py --export-inbox -> docs/ada-memory/inbox/ -> promote with consolidate-memory.py"
+      - "Regression-gate prompt changes: python3 scripts/ada/memory-distill-benchmark.py (--dump to see candidates)"
+    note: |
+      Backstop for inline ADA_EXTRACT_CANDIDATES (session-close, on by
+      default). Writes are status=draft — invisible to ada_memory_search
+      until promoted. Dedup: same subject+attribute in the bank, or a
+      vector hit above 0.82. First live run caught 2 facts inline missed.
+
+  calendar_tool_debug:
+    purpose: Diagnose calendar tools failing or returning empty results.
+    steps:
+      - "Check the registry rendered: python3 scripts/ada/render-calendar-providers.py --check (drift = re-render + deploy)"
+      - "Check ~/.config/ada/calendar.json on the ada host lists the provider with status: active and the right instances:"
+      - "Verify the token works: python3 scripts/ada/google-calendar-auth.py --check on a host with the token file"
+      - "Check service logs: journalctl --user -u ada-ha-tony -n 100 | grep -i calendar"
+      - "Confirm ADA_INSTANCE_ID matches the provider's instances list"
+    note: |
+      A missing registry or no providers for the instance makes tools return
+      'not configured' — deliberate, not a bug. Per-provider failures surface
+      in the 'errors' list of list results rather than failing the whole call.
+
+config:
+  version: 1
+  created: "2026-09-21"
+  maintainer: tony
+  status: active

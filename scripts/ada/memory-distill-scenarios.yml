@@ -1,0 +1,99 @@
+# Fixture scenarios for memory-distill-benchmark.py.
+# Each scenario feeds `sessions` (voice-session-summary prose, matching
+# conversation_memory.py output style) through the real Gemini extraction
+# prompt and checks the candidates against `expect`.
+#
+# expect item fields:
+#   contains:  [substrings] — ALL must appear (case-insensitive) in one
+#              candidate's text for a hit
+#   bank:      optional exact bank match
+#   kind:      optional exact kind match (after policy coercion)
+# max_extra:   cap on unmatched candidates (default 2) — precision guard
+
+scenarios:
+  - name: explicit-decision
+    instance: tony
+    sessions:
+      - "The user asked ada to plan the calendar rollout. After discussion, tony decided to deploy the calendar tools to mn01 first and keep the michael instance excluded until it has its own provider configured. The user also asked about tomorrow's weather."
+    expect:
+      - {contains: ["mn01", "exclud"], bank: tony-projects}
+    max_extra: 1
+
+  - name: durable-fact-path
+    instance: tony
+    sessions:
+      - "The session covered Google OAuth setup. The user ran the auth script and the token was written to ~/.config/secrets/ada-google-calendar-token.json with mode 600, then copied to mn01. Verification passed."
+    expect:
+      - {contains: ["ada-google-calendar-token.json"], kind: fact}
+    max_extra: 1
+
+  - name: stated-preference
+    instance: tony
+    sessions:
+      - "The user reviewed the calendar list and said the Thailand holidays calendar should stay out of day planning — it's noise. Everything else can be included."
+    expect:
+      - {contains: ["holiday", "exclud"], kind: preference}
+    max_extra: 1
+
+  - name: reusable-procedure
+    instance: tony
+    sessions:
+      - "Troubleshooting session: the ada service on tony-dell wasn't coming back after reboot. The fix was enabling linger and then 'systemctl --user restart ada-pi-pwa.service'. The user asked ada to remember the restart procedure."
+    expect:
+      - {contains: ["systemctl", "ada-pi-pwa"], kind: procedure}
+    max_extra: 1
+
+  - name: person-fact
+    instance: tony
+    sessions:
+      - "The user mentioned that kk's birthday is on March 5 and asked ada to remember it for next year. Otherwise just chatted about dinner plans."
+    expect:
+      - {contains: ["kk", "march 5"], bank: [people, personal-kk]}
+    max_extra: 1
+
+  - name: purchase-decision
+    instance: tony
+    sessions:
+      - "The user compared 32GB RAM kits on Shopee and decided to buy the Kingston Fury kit for the workstation because it was cheaper per GB. No purchase was made yet — the decision was recorded for later."
+    expect:
+      - {contains: ["kingston", "ram"], bank: purchase}
+    max_extra: 1
+
+  - name: completed-resolution
+    instance: tony
+    sessions:
+      - "The user asked why the task list was empty. Investigation showed all 99 Google Tasks had been completed, and the user confirmed they deliberately marked them done in a cleanup. Nothing to restore."
+    expect:
+      - {contains: ["tasks", "completed"]}
+    max_extra: 1
+
+  - name: mixed-signal-noise
+    instance: tony
+    sessions:
+      - "Small talk about the weather, then the user decided ada should name the queried scope in answers and offer to expand it. Then a quick question about coffee plug prices, no conclusion."
+    expect:
+      - {contains: ["scope", "expand"]}
+    max_extra: 0
+
+  - name: pure-noise
+    instance: tony
+    sessions:
+      - "The user asked about the weather, exchanged greetings, and asked ada to play some music. No decisions, facts, or preferences were stated."
+    expect: []
+    max_extra: 0
+
+  - name: no-save-request
+    instance: tony
+    sessions:
+      - "The user read out the new wifi password to check connectivity, then explicitly told ada not to save it anywhere. The rest of the session was about TV volume."
+    expect: []
+    max_extra: 0
+
+  - name: multi-session-dedup
+    instance: tony
+    sessions:
+      - "Session one: the user decided the calendar read set should be all calendars except Thailand holidays."
+      - "Session two: revisit of the same topic — the user reconfirmed all calendars except Thailand holidays are in the read set, and asked about lunch."
+    expect:
+      - {contains: ["calendar", "holiday"]}
+    max_extra: 1

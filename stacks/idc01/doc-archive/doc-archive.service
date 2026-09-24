@@ -1,0 +1,15 @@
+[Unit]
+Description=doc-archive — document archiving API (Drive REST + MDDB)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=%h/.local/share/doc-archive
+EnvironmentFile=%h/.config/secrets/doc-archive.env
+ExecStart=%h/.local/share/doc-archive/venv/bin/python -m uvicorn doc_archive:app --host ${DOC_ARCHIVE_BIND} --port ${DOC_ARCHIVE_PORT}
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=default.target

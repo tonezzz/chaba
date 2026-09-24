@@ -1,0 +1,23 @@
+[Unit]
+Description=doc-archive container (rootless podman) — alternative to doc-archive.service
+After=network-online.target
+Wants=network-online.target
+
+[Container]
+Image=localhost/doc-archive
+ContainerName=doc-archive
+# Host network so the container can reach MDDB on idc01's own tailnet IP
+# (100.74.146.0:11023 — MDDB binds tailscale0 only, not loopback) and so
+# uvicorn can bind the tailnet IP directly via DOC_ARCHIVE_BIND.
+Network=host
+EnvironmentFile=/home/tony/.config/secrets/doc-archive.env
+# In-container default for RCLONE_CONF is /root/.config/rclone/rclone.conf
+# (python:3.12-slim runs as root); mount the host conf read-only.
+Volume=/home/tony/.config/rclone/rclone.conf:/root/.config/rclone/rclone.conf:ro,Z
+
+[Service]
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=default.target

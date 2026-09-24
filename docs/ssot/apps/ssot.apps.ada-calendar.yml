@@ -1,0 +1,139 @@
+title: Ada Calendar & Tasks
+subtitle: Provider-agnostic calendar/tasks tools for Ada — Google adapter live, CalDAV/MS Graph pluggable via registry
+icon: 📅
+sections:
+  - title: Concept
+    icon: "💡"
+    layout: list
+    items:
+      - label: Provider-agnostic tools
+        text: "Gemini-visible tools (calendar_*, tasks_*, plan_day) never name a provider. backend/calendar_providers.py defines CalendarProvider/TasksProvider protocols and normalized CalendarEvent/Task models; adapters normalize each service."
+      - label: Registry-driven
+        text: "The calendar: block below is rendered to ~/.config/ada/calendar.json by scripts/ada/render-calendar-providers.py (ADA_CALENDAR_FILE overrides). Same pattern as memory banks: instances: + status: filter per ADA_INSTANCE_ID; unknown adapter on an active provider fails loudly."
+      - label: Aggregate reads, routed writes
+        text: "read: aggregate fans out list calls across active providers and merges; write: names the default write provider. Explicit 'provider:calendar_id' overrides both. Events are never replicated between providers — aggregation is the sync model."
+      - label: Qualified ids
+        text: "Everything returned to the model carries provider-qualified ids ('google:primary/abc123', 'google:@default/xyz') so delete/complete calls route back to the right adapter."
+  - title: Auth Model
+    icon: "🔐"
+    layout: list
+    items:
+      - label: OAuth client
+        text: "Reuses the Desktop-app client in ~/.config/secrets/google_credentials.json — project gen-lang-client-0694401188, the same project as GEMINI_API_KEY. Calendar API + Tasks API must be enabled on that project."
+      - label: Token file
+        text: "Per-ada refresh token at ~/.config/secrets/ada-google-calendar-token.json (override ADA_GOOGLE_TOKEN_FILE or per-provider token_file). Minted by scripts/ada/google-calendar-auth.py; scopes: calendar.readonly, calendar.events, tasks."
+      - label: Consent screen
+        text: "OAuth consent screen must be Publishing status=production — 'Testing' status expires refresh tokens after 7 days."
+      - label: API key is not auth
+        text: "GEMINI_API_KEY identifies the project for billing only; it can never read user calendar data. Calendar/Tasks require OAuth."
+  - title: Tool Contract
+    icon: "🛠️"
+    layout: list
+    items:
+      - label: Reads (ungated)
+        text: "calendar_list_calendars, calendar_list_events, calendar_freebusy, tasks_list, plan_day — NON_BLOCKING, partial results include per-provider errors list."
+      - label: Writes (confirmed=true)
+        text: "calendar_create_event, calendar_delete_event, tasks_add, tasks_complete — in CALENDAR_WRITE_TOOLS; _check_calendar_write_allowed requires confirmed=true and honors ADA_READ_ONLY."
+      - label: Dispatch
+        text: "ToolRunner.calendar lazily loads CalendarService from the rendered registry; None means not configured on this instance (tools return a 'not configured' error, not a crash)."
+      - label: Timezone
+        text: "All 'today/tomorrow' parsing and naive datetimes resolve in ADA_TIMEZONE (default Asia/Bangkok)."
+  - title: Adapter Capability Matrix
+    icon: "🧩"
+    layout: list
+    items:
+      - label: google (live)
+        text: "backend/google_calendar.py — httpx-native Calendar API v3 + Tasks API. Events list/create/delete, freebusy, task lists/tasks/complete. tasks: true."
+      - label: caldav (planned)
+        text: "python-caldav covers iCloud + Fastmail + Nextcloud in one adapter. iCloud tasks = VTODO (Apple Reminders). No freebusy on iCloud. Credentials pattern mirrors icloud-mcp (app-specific password)."
+      - label: msgraph (planned)
+        text: "Microsoft Graph for Outlook/Hotmail events + To Do tasks via msal OAuth. Build only when an Outlook calendar is actually in play."
+      - label: home-assistant (rejected as primary)
+        text: "HA calendar.*/todo.* integrations could proxy providers, but create-event support is per-integration and weaker; kept as a possible read adapter, not the primary path. See decision record ada-calendar-provider-backend."
+  - title: Files
+    icon: "📁"
+    layout: list
+    items:
+      - label: backend/calendar_providers.py
+        text: "Models, protocols, CalendarService (registry load, aggregate reads, write routing, plan_day)."
+      - label: backend/google_calendar.py
+        text: "Google adapter: refresh-token exchange, events, freebusy, tasks."
+      - label: backend/tool_runner.py
+        text: "CALENDAR_WRITE_TOOLS gate + calendar_*/tasks_*/plan_day methods."
+      - label: backend/realtime_provider.py
+        text: "function_declarations + instruction paragraph (calendar workflow playbook)."
+      - label: scripts/ada/google-calendar-auth.py
+        text: "One-time consent flow + --check verifier + --host scp to runtime hosts."
+      - label: scripts/ada/render-calendar-providers.py
+        text: "SSOT -> ~/.config/ada/calendar.json renderer (--host, --check), same shape as render-memory-banks.py."
+  - title: Runbooks
+    icon: "📖"
+    layout: list
+    items:
+      - label: ssot.ada.howto.yml
+        text: "google_calendar_reauth, add_calendar_provider, calendar_tool_debug live in the ada howto SSOT."
+  - title: Known Issues
+    icon: "⚠️"
+    layout: list
+    items:
+      - label: Google Tasks limits
+        text: "Tasks API due is date-only (time ignored); no subtasks/recurrence exposed in the normalized Task model."
+      - label: All-day end date
+        text: "Google all-day events use exclusive end dates — pass the day after for a one-day event; the adapter passes dates through verbatim."
+
+# Machine-readable registry — rendered to ~/.config/ada/calendar.json by
+# scripts/ada/render-calendar-providers.py. Edit here, re-render, deploy.
+calendar:
+  read: aggregate
+  write: google
+  providers:
+    google:
+      adapter: google
+      title: Google Calendar + Tasks (tony's account)
+      instances: [tony]
+      status: active
+      tasks: true
+      # Read set — all 15 calendars on the account (verified 2026-09-21 via
+      # calendar-smoke.py). 'primary' = "Tony's main". Writes go to
+      # default_calendar unless the user names 'google:<calid>'.
+      calendars:
+        - primary                                                        # Tony's main
+        - family00576230129484617118@group.calendar.google.com           # Family
+        - en.th#holiday@group.v.calendar.google.com                      # Holidays in Thailand
+        - 3c31ljkn7vs1ea05vt9sd1dfdg@group.calendar.google.com           # CallTrack
+        - tanku63uj83vg0b2k4vr89r1hg@group.calendar.google.com           # Banks & payments
+        - 2f3oo3ukm6hr1l2898qfluqe0o@group.calendar.google.com           # Hosting (Domain & Web)
+        - lmniec088vkvphpjdluvl1nmn4@group.calendar.google.com           # Jobs (periodics)
+        - 28124f2c289d2d53faeef2ab3e30c5e81255d5a51163660218af97ae9e24f0d7@group.calendar.google.com  # Jarvis Reminders
+        - e468a444120e07570cdd58c5123052af2612f8280a5591c028479a514520adc5@group.calendar.google.com  # ${GOOGLE_CALENDAR_JARVIS_CALENDAR_NAME} (literal name — old script bug)
+        - cd18e8b64e3bc42c4bae1af349cfab2a1f329c76817595e5339600d150ba1de9@group.calendar.google.com  # Noble Park - Working
+        - edadaa3903a82265a3684223a9dedcf741ef689f3c66f910f66d5440fce45abe@group.calendar.google.com  # Noble Park - Planning
+        - 5376a2affe56e30e7fabea676c42bdaab52326e6d9b0556e478d6597fdacde82@group.calendar.google.com  # Noble Park - Event
+        - 12dfebf81f112ab1b42ca73c650b896c892b7717dab8590756cec35cca64a0bc@group.calendar.google.com  # Noble A - Working
+        - 332136e2292f48b7d97a9bb3a3c9b84359e44d550f8b1dba75376c7f39f8726e@group.calendar.google.com  # Noble A - Planning
+        - c25a2f285322ac7f96b097b588a9132058955cd72baa046f533ce88ec7ae8184@group.calendar.google.com  # Noble A - Event
+      default_calendar: primary
+      task_list: "@default"
+      token_file: ~/.config/secrets/ada-google-calendar-token.json
+    icloud:
+      adapter: caldav
+      title: iCloud Calendar + Reminders (CalDAV)
+      instances: []
+      status: planned
+      tasks: true
+      url: https://caldav.icloud.com
+      notes: "Needs caldav adapter implementation + app-specific password secret."
+    outlook:
+      adapter: msgraph
+      title: Outlook/Hotmail + To Do (Microsoft Graph)
+      instances: []
+      status: planned
+      tasks: true
+      notes: "Needs msgraph adapter implementation + MS OAuth client."
+
+config:
+  version: 1
+  created: "2026-09-21"
+  maintainer: tony
+  status: experimental
+  deployment: mn01

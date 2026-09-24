@@ -1,0 +1,86 @@
+# SSOT Job Lifecycle: Ada Google Calendar + Tasks tools
+# Give ada provider-agnostic calendar/tasks tools, Google adapter first,
+# with the registry/SSOT machinery to add CalDAV/MS Graph later.
+
+title: Ada Google Calendar + Tasks tools
+subtitle: Provider-agnostic calendar backend, Google adapter, confirmed-gate writes
+icon: calendar
+
+planning:
+  goal: |
+    Ada can answer schedule questions, plan a day from events + open tasks,
+    and create/delete events and tasks after explicit user confirmation —
+    behind a provider abstraction so iCloud/Outlook can join later.
+  scope: |
+    In scope:
+      - backend/calendar_providers.py: models, protocols, registry, aggregator
+      - backend/google_calendar.py: httpx-native Calendar v3 + Tasks adapter
+      - ToolRunner methods + CALENDAR_WRITE_TOOLS confirmed=true gate
+      - Gemini Live function_declarations + instruction paragraph
+      - scripts/ada/google-calendar-auth.py (consent) + render-calendar-providers.py
+      - SSOT: ssot.apps.ada-calendar.yml, decision record, ada howto runbooks
+    Out of scope:
+      - CalDAV (iCloud) and MS Graph adapter implementations
+      - PWA calendar UI surface (tools work via /api/tools/call already)
+      - Cross-provider event replication (rejected — see decision)
+      - MCP bridge for third-party calendar servers
+  success_criteria:
+    - Asking "what is on my calendar today" answers from live Google Calendar data
+    - Creating an event requires restating details + confirmed=true
+    - calendar tools degrade cleanly ('not configured') on instances with no registry
+    - Adding a provider = adapter file + registry block (runbook exists)
+  risks:
+    - OAuth consent screen in Testing status → refresh tokens die in 7 days. Mitigation: publish the app; --check verifies refresh works.
+    - Gemini Live rejects schemas — follow existing declaration shape exactly (parameters_json_schema, additionalProperties false).
+    - Voice latency: calendar calls add a network hop; NON_BLOCKING + short answers keep it acceptable.
+  resources:
+    - ~/.config/secrets/google_credentials.json (shared OAuth client, gen-lang-client-* project)
+    - ~/.config/secrets/ada-google-calendar-token.json (minted by auth script)
+    - decision: ada-calendar-provider-backend in ssot.technical-decisions.yml
+  owner: tony
+  estimated_duration: 1 session + OAuth consent
+
+processing:
+  status: in_progress
+  started_at: "2026-09-21"
+  steps:
+    - id: 1
+      label: Provider-agnostic backend (models, protocols, registry, aggregator)
+      status: done
+      notes: "backend/calendar_providers.py — CalendarService.load() mirrors memory-bank registry semantics (instances, status, fail-loud unknown adapter, absent file = disabled)."
+    - id: 2
+      label: Google adapter
+      status: done
+      notes: "backend/google_calendar.py — httpx-native refresh-token flow, events CRUD + freebusy + tasks, composite raw ids (calid/eid, listid/taskid)."
+    - id: 3
+      label: ToolRunner methods + write gate
+      status: done
+      notes: "CALENDAR_WRITE_TOOLS={calendar_create_event, calendar_delete_event, tasks_add, tasks_complete}; confirmed=true required, ADA_READ_ONLY honored."
+    - id: 4
+      label: Gemini declarations + instruction paragraph
+      status: done
+      notes: "9 declarations added; instruction teaches read-first workflow, local-tz dates, restate+confirm for writes, qualified ids."
+    - id: 5
+      label: Auth + render scripts
+      status: done
+      notes: "chaba/scripts/ada/google-calendar-auth.py (loopback consent, --check, --host scp) and render-calendar-providers.py (SSOT → ~/.config/ada/calendar.json)."
+    - id: 6
+      label: Unit tests
+      status: done
+      notes: "tests/test_calendar_providers.py — 29 tests pass (parse/range, registry filtering, aggregation + write routing, write gate, google adapter request shapes with mocked httpx); full suite 199/199 green in .venv."
+    - id: 7
+      label: OAuth consent + token mint (manual)
+      status: done
+      notes: "Token minted 2026-09-21 to ~/.config/secrets/ada-google-calendar-token.json, scp'd to mn01. Verified on both hosts: refresh OK, calendarList reachable (15 calendars: primary + Noble Park/A Working/Event/Planning, Family, CallTrack, Banks, Jobs, Jarvis, holidays)."
+    - id: 8
+      label: Smoke test via real API (pre-deploy)
+      status: done
+      notes: "scripts/ada/calendar-smoke.py — local read smoke OK (15 calendars, 33 open tasks incl. Thai titles), --write-test create+delete OK on primary. Open item: registry reads calendars:[primary] only — user to decide which of the 15 calendars ada should see."
+    - id: 9
+      label: Dark deploy + live verify
+      status: done
+      notes: "ada-pi 26488f1 pushed to origin/main (committed from ada-pi-wt-calendar worktree — main checkout had interleaved uncommitted kcircle work, left untouched) and deployed to mn01 + tony-dell. ADA_EXCLUDED_TOOLS set in ada-ha-tony.env, ada-ha-michael.env, ada-pi-pwa.env — verified in the running process env. HTTP verified: calendar_list_events returns live tz-correct data; tasks_add denied without confirmed=true."
+    - id: 10
+      label: Voice enable + verify
+      status: done
+      notes: "2026-09-21: all 15 calendars added to read set (fixed a real bug — '#' in holiday calendar id needed URL-encoding, commit d562221). Registry+token on mn01 AND tony-dell (learned: ada-pi-pwa lives on tony-dell, not the dev box — tony-omen had a stale crash-looping unit, stopped). ADA_EXCLUDED_TOOLS removed from ada-ha-tony.env + ada-pi-pwa.env (kept on ada-ha-michael — no providers for that instance). Live-verified plan_day on both: 3 events + 33 tasks, no errors."
