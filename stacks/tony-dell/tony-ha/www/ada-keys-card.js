@@ -41,8 +41,9 @@ class AdaKeysCard extends HTMLElement {
         voice.onclick = () =>
           window.open(this._haUrl(inst.id), "_blank", "popup,width=1100,height=800");
         const chat = this._btn("Text");
-        chat.title = "Re-pair and open the text chat interface in a popup";
-        chat.onclick = (e) => this._repairAndOpen(e, inst.id, key, code, "chat");
+        chat.title = "Open the HA-native chat page for this instance (the card self-mints a key)";
+        chat.onclick = () =>
+          window.open(this._haUrl(inst.id, "chat"), "_blank", "popup,width=1100,height=800");
         const repair = this._btn("Re-pair");
         repair.title = "Re-pair without opening — refreshes the QR on this dashboard";
         repair.onclick = () =>
@@ -65,63 +66,13 @@ class AdaKeysCard extends HTMLElement {
     }
   }
 
-  async _repairAndOpen(e, instance, name, el, ui) {
-    e.preventDefault();
-    if (el.dataset.busy) return;
-    el.dataset.busy = "1";
-    const prev = el.textContent;
-    el.textContent = name + " — re-pairing…";
-    // Open the window synchronously inside the user gesture — iOS Safari and
-    // webviews block window.open calls that happen after an await.
-    const win = window.open("", "_blank");
-    try {
-      const res = await this._hass.callWS({
-        type: "call_service",
-        domain: "script",
-        service: "ada_pair_reissue",
-        service_data: { instance, name, ui },
-        return_response: true,
-      });
-      const path = res && res.response && res.response.content && res.response.content.redeem_url;
-      if (!path) throw new Error("no redeem_url in response");
-      const url = ((this._config && this._config.origin) || "https://mn01.taila0626a.ts.net") + path;
-      if (win) {
-        win.location.href = url;
-      } else {
-        this._showOpenLink(el, url, name);   // popup fully blocked → inline link
-        return;
-      }
-    } catch (err) {
-      if (win) win.close();
-      el.textContent = name + " — failed: " + (err.message || err);
-      setTimeout(() => { el.textContent = prev; delete el.dataset.busy; }, 4000);
-      return;
-    }
-    el.textContent = prev;
-    delete el.dataset.busy;
-  }
-
-  _haUrl(instance) {
+  _haUrl(instance, view) {
     if (this._config && this._config.ha_url) return this._config.ha_url;
     const map = {
-      tony: "https://tony-dell.taila0626a.ts.net:8123/chaba-home/ai",
+      tony: `https://tony-dell.taila0626a.ts.net:8123/chaba-home/${view || "ai"}`,
       michael: "https://nupo4ndqdqydt78zmpq0z5wzp1bdrqgs.ui.nabu.casa/",
     };
     return map[instance] || map.tony;
-  }
-
-  _showOpenLink(el, url, name) {
-    el.textContent = "";
-    const a = document.createElement("a");
-    a.href = url;
-    a.target = "_blank";
-    a.rel = "noopener";
-    a.style.color = "var(--primary-color)";
-    a.textContent = "Tap to open session";
-    a.onclick = () => { setTimeout(() => { el.textContent = name; }, 500); };
-    el.appendChild(a);
-    setTimeout(() => { if (el.contains(a)) el.textContent = name; }, 120000);
-    delete el.dataset.busy;
   }
 
   _btn(label) {
