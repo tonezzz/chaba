@@ -214,7 +214,15 @@ instances:
       from hourly min to hourly max (stacked bar3D: transparent base=min,
       delta=max−min, colored by hi via visualMap dimension 4, tooltip shows
       "lo–hi"). Requires the in-place patched pfg3d-card-v239.js (resource
-      ?v=2) — see cards SSOT.
+      ?v=2) — see cards SSOT. Later 2026-09-24: Nobito tab is now a 3×1
+      tile grid (pfg_grid_cols:3) — "1,1" sensor.nobito_pm2_5 (µg/m³),
+      "1,2" sensor.nobito_carbon_dioxide (ppm), "1,3" sensor.nobito_pm10
+      (µg/m³), all bar3d stat:range. Other Nobito entities available but
+      not charted: temperature, humidity, VOC, formaldehyde,
+      air_quality_index (enum 1–4), battery + battery_state (diagnostic).
+      Caveat: HA only sees Tuya cloud snapshots — Tuya's own dp-log shows
+      finer movement than HA statistics; hourly min==max slivers are
+      expected while the sensor sleeps.
     tabs:
       - title: AI
         path: ai
@@ -226,8 +234,9 @@ instances:
         path: nobito
         icon: mdi:poll
         type: panel
-        cards: pfg3d-card bar3d stat=range on sensor.nobito_pm2_5 (10-day
-          hour×day floating lo–hi bars, no title)
+        cards: pfg3d-card 3×1 grid, bar3d stat=range 10-day hour×day
+          floating lo–hi bars on nobito_pm2_5 (µg/m³), nobito_carbon_dioxide
+          (ppm), nobito_pm10 (µg/m³), no title
       - title: Chat
         path: chat
         icon: mdi:message-text-outline
