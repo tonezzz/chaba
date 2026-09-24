@@ -1002,6 +1002,12 @@ hosts:
         expected_state: active
         critical: false
         note: Sunday 09:30 — clusters journal recall misses into status=draft gap notes -> inbox review
+      - name: ada-memory-distill.timer
+        type: timer
+        scope: user
+        expected_state: active
+        critical: false
+        note: Sunday 09:45 — batch backstop; distills session summaries into status=draft memory candidates (env from ada-ha-tony.env, --emit)
     known_failed:
       - name: grub-initrd-fallback.service
         reason: Ubuntu/grub package service that fails on non-EFI fallback; harmless
