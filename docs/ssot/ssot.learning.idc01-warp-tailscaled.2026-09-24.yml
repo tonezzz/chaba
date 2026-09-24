@@ -1,0 +1,23 @@
+title: idc01 — Cloudflare WARP starves tailscaled
+subtitle: "Twice in one day (2026-09-24): tailnet edge dead while host looked alive"
+icon: 🧠
+sections:
+  - title: Lesson
+    icon: 🎓
+    layout: list
+    items:
+      - label: Symptom signature
+        text: "idc01 ping replies (~60ms tailnet) and TCP/22 accepts, BUT ssh handshake hangs and https://idc01.taila0626a.ts.net times out. Host is fine — tailscaled/serve is wedged. Don't assume a dead box; check the tailnet edge first."
+      - label: Root cause
+        text: "Cloudflare WARP (warp-svc) running on the same box fights tailscaled for the userspace networking stack. With WARP active, tailscaled starves: serve proxy dead, MagicDNS/routes flap, tailscale-ssh auth stalls. Second hit same day confirmed — not transient."
+      - label: Fix
+        text: "Stop/disable warp-svc on idc01 (`systemctl stop warp-svc` or user-side `warp-cli disconnect`+disable). Everything recovers instantly — no reboot needed (verified: 200 in 40ms + ssh OK the moment WARP stopped, 22h uptime intact)."
+      - label: Prevention
+        text: "Keep WARP off tailscale hosts (idc01, mn01, tony-dell all run tailscaled as their service edge). If WARP is ever reintroduced, pin it to a route that excludes tailscale CGNAT ranges — or pick one userspace VPN per host."
+      - label: Deploy fallout
+        text: "deploy-ada.sh fails mid-run on wedged hosts (ssh mkdir step dies). Safe to re-run; untracked files on idc01's ada-pi checkout (scenario WIP from parallel sessions) can also block pulls — verify identical-to-origin before moving aside."
+status:
+  last_verified: "2026-09-24"
+  related:
+    - docs/ssot/apps/ssot.apps.ada_pi.yml
+    - scripts/deploy-ada.sh
