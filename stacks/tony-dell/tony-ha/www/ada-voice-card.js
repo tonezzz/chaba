@@ -225,6 +225,11 @@ class AdaVoiceCard extends HTMLElement {
 
   // ---------- audio ----------
 
+  _zeros(n) {
+    if (!this._z || this._z.length !== n) this._z = new Float32Array(n);
+    return this._z;
+  }
+
   _downsample(input, inputRate, outputRate) {
     const ratio = inputRate / outputRate;
     const length = Math.floor(input.length / ratio);
@@ -335,8 +340,10 @@ class AdaVoiceCard extends HTMLElement {
     this._captureNode.onaudioprocess = (event) => {
       const ws = this._socket;
       if (!ws || ws.readyState !== WebSocket.OPEN) return;
-      if (this._micMuted) return;
       const samples = event.inputBuffer.getChannelData(0);
+      // Muted: the disabled track already delivers zeros — keep streaming
+      // them so the server VAD sees silence and closes the turn in ~500ms.
+      // Withholding frames instead leaves the turn open and Ada "holds".
       let power = 0;
       for (const s of samples) power += s * s;
       const rms = Math.sqrt(power / samples.length);
@@ -358,8 +365,9 @@ class AdaVoiceCard extends HTMLElement {
           if (this._auto) { this._autoMuted = true; this._setStatus("Auto-muted — speak to resume"); this._render(); }
         }
       }
-      if (!this._autoMuted)
-        ws.send(this._downsample(samples, this._captureContext.sampleRate, AVC_INPUT_RATE));
+      // Auto-muted: send zeros (never the real samples) — same reason.
+      ws.send(this._downsample(this._autoMuted ? this._zeros(samples.length) : samples,
+                               this._captureContext.sampleRate, AVC_INPUT_RATE));
     };
     source.connect(this._captureNode);
     this._captureNode.connect(silent);
