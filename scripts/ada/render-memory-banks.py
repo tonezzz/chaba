@@ -37,6 +37,7 @@ def render() -> dict:
         "source": str(SSOT),
         "banks": banks,
         "person_policies": data.get("person_policies") or {},
+        "control_policies": data.get("control_policies") or {},
         "persona": data.get("persona") or {},
     }
     if SCHEMA_SSOT.exists():

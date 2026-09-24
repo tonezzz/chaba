@@ -30,7 +30,7 @@ render:
       report: report.yml
       limits: {soft: 12000, hard: 20000}
       overflow_order: [sessions, focus, project, home]   # dropped first → last
-      sections: [agent, user, immediate, home, project, focus, sessions]
+      sections: [agent, user, immediate, home, project, focus, access, sessions]
     guest:
       output: context-guest.md
       report: report-guest.yml
@@ -110,6 +110,21 @@ sections:
         key: sections.*.items.*
         max_items: 5
         format: "- {label} [{status}]"
+
+  access:
+    description: |
+      Identity access posture for Ada — who can read which memory banks
+      (person_policies) and actuate which HA domains (control_policies).
+      Dynamic: rendered from the registry SSOT; restricted-by-default.
+    priority: 30
+    limits: {soft: 800, hard: 1200}
+    include:
+      - file: docs/ssot/apps/ssot.apps.ada-memory-banks.yml
+        key: person_policies
+        format: "- {_key}: {allow}"
+      - file: docs/ssot/apps/ssot.apps.ada-memory-banks.yml
+        key: control_policies
+        format: "- {_key}: {allow_domains}"
 
   sessions:
     description: Recent session outcomes, fed by compaction/session-end hooks.

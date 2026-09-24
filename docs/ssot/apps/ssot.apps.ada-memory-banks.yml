@@ -451,16 +451,63 @@ persona:
 
 # Per-identity bank ACL — resolved against the session's memory identity:
 # identified speaker's HA person entity first, then the issued device-key
-# name, then 'unknown' for anonymous sessions (no key, no speaker).
-# Identities without an entry get the full instance set (tony/kk unchanged).
+# name, then 'default' for unlisted named identities, then 'unknown' for
+# anonymous sessions. RESTRICTED-BY-DEFAULT: an unlisted identity gets the
+# 'default' policy, NOT the full set — new people start guest-level until
+# explicitly trusted. {full: true} = unrestricted (Tony's people/keys).
 # allow = whitelist; deny = subtractive.
 person_policies:
+  person.tony: {full: true}
+  person.kk:   {full: true}
+  tony-ip:     {full: true}
+  user-tonezzzz: {full: true}
+  user-tony2:    {full: true}
+  user-kk:       {full: true}
+  user-ha-mcp-server: {full: true}
+  ha-03e85ebb:   {full: true}
+  ha-4d0e0dee:   {full: true}
+  ha-bf66722a:   {full: true}
+  ha-testdebug001: {full: true}
   person.testo_2:
     allow: [general, home, people, purchase, personal-testo]
   testo:
     allow: [general, home, people, purchase, personal-testo]
+  user-testo:
+    allow: [general, home, people, purchase, personal-testo]
+  default:
+    allow: [general, home]
   unknown:
     allow: [general, home]
+
+# Per-identity actuation ACL — which HA control tools a session may use.
+# Same identity resolution as person_policies. {full: true} bypasses the
+# policy layer (the global danger-pattern floor and confirmed= flow still
+# apply). Otherwise: allow_domains whitelists entity domains (absent from
+# it = denied), deny_domains/deny_entities always deny. Restricted
+# identities still can't actuate dangerous domains (lock/cover/alarm/…)
+# because the global deny floor already blocks them.
+control_policies:
+  person.tony: {full: true}
+  person.kk:   {full: true}
+  tony-ip:     {full: true}
+  user-tonezzzz: {full: true}
+  user-tony2:    {full: true}
+  user-kk:       {full: true}
+  user-ha-mcp-server: {full: true}
+  ha-03e85ebb:   {full: true}
+  ha-4d0e0dee:   {full: true}
+  ha-bf66722a:   {full: true}
+  ha-testdebug001: {full: true}
+  person.testo_2:
+    allow_domains: [light, switch, input_boolean, script, media_player]
+  testo:
+    allow_domains: [light, switch, input_boolean, script, media_player]
+  user-testo:
+    allow_domains: [light, switch, input_boolean, script, media_player]
+  default:
+    allow_domains: [light, switch, input_boolean]
+  unknown:
+    allow_domains: [light]
 
 config:
   version: 3

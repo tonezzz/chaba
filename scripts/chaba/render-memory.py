@@ -135,7 +135,7 @@ def flatten_lines(value, fmt=None, max_items=None):
                 try:
                     lines.append(fmt.format(**fields))
                 except (KeyError, IndexError):
-                    lines.append(fmt_item(v, None))
+                    lines.append(f"- {k}: {fmt_item(v, None).lstrip('- ')}")
         elif fmt:
             lines.append(fmt_item(value, fmt))
         else:
