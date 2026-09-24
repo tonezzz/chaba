@@ -964,13 +964,15 @@ hosts:
         scope: user
         expected_state: active
         critical: false
-        note: Ada HA Tony instance on 0.0.0.0:8002
+        note: Standby since idc01 cutover (stopped+disabled 2026-09-23);
+          canonical instance now on idc01 :8002 — expected delta
       - name: ada-ha-michael.service
         type: service
         scope: user
         expected_state: active
         critical: false
-        note: Ada HA Michael instance on 0.0.0.0:8003
+        note: Standby since idc01 cutover (stopped+disabled 2026-09-23);
+          canonical instance now on idc01 :8003 — expected delta
       - name: tailscaled.service
         type: service
         scope: system
