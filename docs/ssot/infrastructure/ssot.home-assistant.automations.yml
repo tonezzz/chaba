@@ -92,12 +92,15 @@ automations:
   - id: assist_tv_control
     alias: "Assist: TV control"
     group: editable
-    purpose: "conversation trigger (~50 sentences) -> cast-browser :8799
-      commands via sentence_map (nav/scroll/click/camera/stop)"
+    purpose: "conversation trigger (~50 sentences) -> cast_power_on +
+      camera.play_stream / cast-browser :8799 commands via sentence_map
+      (nav/scroll/click/camera/stop)"
     triggers: "conversation"
     mode: single
     note: "large sentence_map variable — heaviest user-facing cast surface;
-      'cast the camera'/'show the camera on tv' already wired"
+      'cast the camera'/'show the camera on tv' already wired. 2026-09-24
+      fix: camera branch passed select OPTION LABEL as media_player
+      entity_id — now resolves friendly_name -> entity_id"
 
   - id: phuudkhmaawaaswasdiiphaanthiiwii
     alias: "พูดคำว่าสวัสดีผ่านทีวี"
@@ -139,20 +142,22 @@ automations:
     group: editable
     last_triggered: "2026-09-08"
 
-  # ---- device / system (mixed) ----------------------------------------------
+  # ---- device / system (managed — packages/system-managed.yaml) ------------
   - id: set_visionos_theme_on_startup
     alias: "Set visionOS theme on startup"
-    group: proposed_managed
+    group: managed
+    location: /config/packages/system-managed.yaml
     purpose: "HA start -> set theme; deterministic, no user tuning needed"
     last_triggered: "2026-09-23"
   - id: reboot_esp32test_when_offline
     alias: "Reboot esp32test when offline"
-    group: proposed_managed
-    purpose: "esp32test offline -> reboot via switch; device recovery —
-      safety-adjacent"
+    group: managed
+    location: /config/packages/system-managed.yaml
+    purpose: "esp32test offline 5min -> power-cycle switch.usb_test_hub;
+      edge-triggered (no hammering)"
     last_triggered: "2026-09-13"
     note: "esp32test currently down at Michael's (bad merged flash 2026-09-24);
-      verify automation doesn't hammer a dead device"
+      edge trigger means one hub cycle per off-transition — safe"
   - id: battery_reminder_kk_macbook
     alias: "Battery reminder: kk-macbook"
     group: editable
@@ -179,8 +184,10 @@ cast_entities:
     input_boolean.cast_enabled: "MANAGED master kill switch — every managed
       cast path (cast-ha-selected.sh, cast-cam.py) exits when off; tripped
       automatically by cast_guard_rate_limit"
-    input_boolean.cast_powered_by_us: "set when WE powered the TV — cleanup only
-      kills our own sessions"
+    input_boolean.cast_powered_by_us: "ownership flag — set ONLY when the
+      system physically powered the hardware on (cast_power_on sees the
+      target 'unavailable'). Sessions started while the TV was already on
+      stay unowned: guards skip them by design"
     input_select.tv_camera: "MANAGED which camera the tv_display=camera timer
       casts (was hardcoded ip_cam_65)"
     input_select.tv_display: "what the 60s cast-ha-panel.timer keeps on screen
