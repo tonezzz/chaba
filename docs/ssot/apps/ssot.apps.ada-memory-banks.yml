@@ -459,25 +459,30 @@ persona:
 # explicitly trusted. {full: true} = unrestricted (Tony's people/keys).
 # allow = whitelist; deny = subtractive.
 person_policies:
-  admin:        {full: true}   # env ADA_API_KEY identity
-  person.tony: {full: true}
+  admin:        {full: true, label: Tony}   # env ADA_API_KEY identity
+  person.tony: {full: true, label: Tony}
   person.kk:
+    label: KK
     allow: [general, home, people, purchase, personal-kk]
   user-kk:
+    label: KK
     allow: [general, home, people, purchase, personal-kk]
-  tony-ip:     {full: true}
-  user-tonezzzz: {full: true}
-  user-tony2:    {full: true}
-  user-ha-mcp-server: {full: true}
-  ha-03e85ebb:   {full: true}
-  ha-4d0e0dee:   {full: true}
-  ha-bf66722a:   {full: true}
-  ha-testdebug001: {full: true}
+  tony-ip:     {full: true, label: Tony}
+  user-tonezzzz: {full: true, label: Tony}
+  user-tony2:    {full: true, label: Tony}
+  user-ha-mcp-server: {full: true, label: Tony}
+  ha-03e85ebb:   {full: true, label: Tony}
+  ha-4d0e0dee:   {full: true, label: Tony}
+  ha-bf66722a:   {full: true, label: Tony}
+  ha-testdebug001: {full: true, label: Tony}
   person.testo_2:
+    label: Testo
     allow: [general, home, people, purchase, personal-testo]
   testo:
+    label: Testo
     allow: [general, home, people, purchase, personal-testo]
   user-testo:
+    label: Testo
     allow: [general, home, people, purchase, personal-testo]
   default:
     allow: [general, home]
