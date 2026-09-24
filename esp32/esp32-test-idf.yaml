@@ -1,0 +1,360 @@
+esphome:
+  name: esp32test
+  friendly_name: "ESP32 Test"
+  on_boot:
+    - priority: -100
+      then:
+        - light.turn_on:
+            id: display_backlight
+            brightness: 100%
+
+esp32:
+  board: esp32dev
+  framework:
+    type: esp-idf
+
+logger:
+
+api:
+
+ota:
+  - platform: esphome
+
+wifi:
+  power_save_mode: none
+  networks:
+    - ssid: !secret wifi_ssid_tony24
+      password: !secret wifi_password_tony24
+    - ssid: !secret wifi_ssid_tony5
+      password: !secret wifi_password_tony5
+    - ssid: !secret wifi_ssid_albatros24
+      password: !secret wifi_password_albatros24
+    - ssid: !secret wifi_ssid_albatros5
+      password: !secret wifi_password_albatros5
+    - ssid: !secret wifi_ssid_maesang
+      password: !secret wifi_password_maesang
+    - ssid: !secret wifi_ssid_tonyip
+      password: !secret wifi_password_tonyip
+  ap:
+    ssid: "ESP32-Test-Fallback"
+    password: "12345678"
+
+spi:
+  - id: tft
+    clk_pin: GPIO14
+    mosi_pin: GPIO13
+    miso_pin:
+      number: GPIO12
+      ignore_strapping_warning: true
+  - id: touch
+    clk_pin: GPIO25
+    mosi_pin: GPIO32
+    miso_pin: GPIO39
+
+output:
+  - platform: ledc
+    id: backlight
+    pin: GPIO21
+    frequency: 1000Hz
+
+light:
+  - platform: monochromatic
+    id: display_backlight
+    name: "Display Backlight"
+    output: backlight
+    default_transition_length: 0s
+
+font:
+  - file: "gfonts://Roboto"
+    id: font1
+    size: 48
+  - file: "gfonts://Roboto"
+    id: font_small
+    size: 20
+  - file: "gfonts://Roboto"
+    id: font_mid
+    size: 28
+
+display:
+  - platform: mipi_spi
+    id: cyd_display
+    model: ILI9341
+    spi_id: tft
+    cs_pin:
+      number: GPIO15
+      ignore_strapping_warning: true
+    dc_pin:
+      number: GPIO2
+      ignore_strapping_warning: true
+    invert_colors: false
+    auto_clear_enabled: true
+    dimensions:
+      width: 240
+      height: 320
+    pages:
+      - id: page_pv1
+        lambda: |-
+          it.fill(Color(0, 0, 0));
+          it.rectangle(0, 0, 240, 320, Color(0, 0, 128));
+          it.filled_rectangle(0, 0, 240, 40, Color(0, 0, 100));
+          it.print(4, 10, id(font_small), Color(255, 255, 255), "Power Sources");
+          if (id(pv1_ok)) {
+            int x[3] = {10, 85, 160};
+
+            it.print(x[0], 44, id(font_small), Color(200, 200, 200), "PV1");
+            it.print(x[1], 44, id(font_small), Color(200, 200, 200), "PV2");
+            it.print(x[2], 44, id(font_small), Color(200, 200, 200), "Grid");
+
+            it.printf(x[0], 68, id(font_mid), Color(255, 255, 0), "%.2f", id(pv1_power) / 1000.0);
+            it.printf(x[1], 68, id(font_mid), Color(255, 255, 0), "%.2f", id(pv2_power) / 1000.0);
+            it.printf(x[2], 68, id(font_mid), Color(255, 255, 0), "%.2f", id(grid_power) / 1000.0);
+
+            it.print(x[0], 104, id(font_small), Color(200, 200, 200), "kW");
+            it.print(x[1], 104, id(font_small), Color(200, 200, 200), "kW");
+            it.print(x[2], 104, id(font_small), Color(200, 200, 200), "kW");
+
+            it.printf(x[0], 132, id(font_small), Color(255, 255, 255), "%.0fV %.1fA", id(pv1_voltage), id(pv1_current));
+            it.printf(x[1], 132, id(font_small), Color(255, 255, 255), "%.0fV %.1fA", id(pv2_voltage), id(pv2_current));
+            it.printf(x[2], 132, id(font_small), Color(255, 255, 255), "%.0fV %.1fHz", id(grid_voltage), id(grid_freq));
+
+            it.line(10, 168, 230, 168, Color(0, 0, 128));
+
+            int bx[2] = {10, 120};
+            it.print(bx[0], 178, id(font_small), Color(200, 200, 200), "Battery");
+            it.print(bx[1], 178, id(font_small), Color(200, 200, 200), "Load");
+
+            Color batc = id(bat_power) < 0 ? Color(0, 200, 0) : Color(255, 160, 0);
+            it.printf(bx[0], 202, id(font_mid), batc, "%.2f", id(bat_power) / 1000.0);
+            it.printf(bx[1], 202, id(font_mid), Color(95, 182, 173), "%.2f", id(load_power) / 1000.0);
+
+            it.print(bx[0], 238, id(font_small), Color(200, 200, 200), "kW");
+            it.print(bx[1], 238, id(font_small), Color(200, 200, 200), "kW");
+
+            it.printf(bx[0], 266, id(font_small), Color(255, 255, 255), "%.0f%% %s", id(bat_soc), id(bat_power) < 0 ? "chg" : "dis");
+            unsigned long age_s = (millis() - id(pv1_last)) / 1000;
+            it.printf(bx[1], 266, id(font_small),
+                      age_s > 120 ? Color(255, 0, 0) : Color(150, 150, 150),
+                      "Upd %lus", age_s);
+          } else {
+            it.print(4, 150, id(font_small), Color(255, 255, 0), "Loading...");
+          }
+
+touchscreen:
+  - platform: xpt2046
+    id: cyd_touch
+    spi_id: touch
+    cs_pin: GPIO33
+    interrupt_pin: GPIO36
+    threshold: 400
+    calibration:
+      x_min: 300
+      x_max: 3800
+      y_min: 300
+      y_max: 3800
+
+text_sensor:
+  - platform: wifi_info
+    ip_address:
+      name: "IP Address"
+      id: ip_addr
+    ssid:
+      name: "Connected SSID"
+      id: wifi_ssid_text
+  - platform: jk_bms_ble
+    jk_bms_ble_id: bms0
+    errors:
+      name: "BMS errors"
+    errors_bitmask_hex:
+      name: "BMS errors hex"
+    total_runtime_formatted:
+      name: "BMS uptime"
+
+sensor:
+  - platform: uptime
+    name: "Uptime"
+    id: uptime_s
+    type: seconds
+  - platform: wifi_signal
+    name: "WiFi Signal"
+    id: wifi_signal_db
+    update_interval: 60s
+  - platform: template
+    name: "Free Heap"
+    id: free_heap
+    unit_of_measurement: "B"
+    update_interval: 5s
+    lambda: |-
+      return (float) esp_get_free_heap_size();
+
+  - platform: jk_bms_ble
+    jk_bms_ble_id: bms0
+    state_of_charge:
+      name: "BMS SOC"
+    average_cell_voltage:
+      name: "BMS cell avg"
+    delta_cell_voltage:
+      name: "BMS cell delta"
+    min_cell_voltage:
+      name: "BMS cell min"
+    max_cell_voltage:
+      name: "BMS cell max"
+    cell_voltage_1:
+      name: "BMS cell 1"
+    cell_voltage_2:
+      name: "BMS cell 2"
+    cell_voltage_3:
+      name: "BMS cell 3"
+    cell_voltage_4:
+      name: "BMS cell 4"
+    cell_voltage_5:
+      name: "BMS cell 5"
+    cell_voltage_6:
+      name: "BMS cell 6"
+    cell_voltage_7:
+      name: "BMS cell 7"
+    cell_voltage_8:
+      name: "BMS cell 8"
+    total_voltage:
+      name: "BMS voltage"
+    current:
+      name: "BMS current"
+    power:
+      name: "BMS power"
+    charging_power:
+      name: "BMS charge power"
+    discharging_power:
+      name: "BMS discharge power"
+    capacity_remaining:
+      name: "BMS capacity"
+    charging_cycles:
+      name: "BMS cycles"
+    mosfet_temperature:
+      name: "BMS MOS temp"
+    temperature_sensor_1:
+      name: "BMS temp 1"
+    temperature_sensor_2:
+      name: "BMS temp 2"
+    state_of_health:
+      name: "BMS SOH"
+    balancing_current:
+      name: "BMS balance current"
+    total_runtime:
+      name: "BMS runtime"
+
+binary_sensor:
+  - platform: status
+    name: "Node Status"
+    id: system_status
+
+interval:
+  - interval: 60s
+    then:
+      - http_request.get:
+          url: "http://192.168.2.67:8080/snapshots/pv1.txt"
+          capture_response: true
+          on_response:
+            then:
+              - lambda: |-
+                  float v[12] = {};
+                  if (sscanf(body.c_str(), "%f\n%f\n%f\n%f\n%f\n%f\n%f\n%f\n%f\n%f\n%f\n%f",
+                             &v[0], &v[1], &v[2], &v[3], &v[4], &v[5],
+                             &v[6], &v[7], &v[8], &v[9], &v[10], &v[11]) == 12) {
+                    id(pv1_power) = v[0]; id(pv1_voltage) = v[1]; id(pv1_current) = v[2];
+                    id(pv2_power) = v[3]; id(pv2_voltage) = v[4]; id(pv2_current) = v[5];
+                    id(grid_power) = v[6]; id(grid_voltage) = v[7]; id(grid_freq) = v[8];
+                    id(bat_soc) = v[9]; id(bat_power) = v[10]; id(load_power) = v[11];
+                    id(pv1_ok) = true;
+                    id(pv1_last) = millis();
+                  }
+              - component.update: cyd_display
+
+globals:
+  - id: pv1_power
+    type: float
+    initial_value: "0"
+  - id: pv1_voltage
+    type: float
+    initial_value: "0"
+  - id: pv1_current
+    type: float
+    initial_value: "0"
+  - id: pv2_power
+    type: float
+    initial_value: "0"
+  - id: pv2_voltage
+    type: float
+    initial_value: "0"
+  - id: pv2_current
+    type: float
+    initial_value: "0"
+  - id: grid_power
+    type: float
+    initial_value: "0"
+  - id: grid_voltage
+    type: float
+    initial_value: "0"
+  - id: grid_freq
+    type: float
+    initial_value: "0"
+  - id: bat_soc
+    type: float
+    initial_value: "0"
+  - id: bat_power
+    type: float
+    initial_value: "0"
+  - id: load_power
+    type: float
+    initial_value: "0"
+  - id: pv1_ok
+    type: bool
+    initial_value: "false"
+  - id: pv1_last
+    type: uint32_t
+    initial_value: "0"
+
+http_request:
+  useragent: esphome
+  timeout: 10s
+  verify_ssl: false
+  buffer_size_rx: 1024
+  id: http_client
+
+captive_portal:
+
+external_components:
+  - source: github://syssi/esphome-jk-bms@main
+
+esp32_ble_tracker:
+  on_ble_advertise:
+    then:
+      - lambda: |-
+          std::string n = x.get_name();
+          if (n.rfind("JK-", 0) == 0 || n.rfind("JK_", 0) == 0 ||
+              n.find("BMS") != std::string::npos) {
+            ESP_LOGW("ble_adv", "BMS-like advert: name=%s mac=%s rssi=%d",
+                     n.c_str(), x.address_str().c_str(), x.get_rssi());
+          }
+
+ble_client:
+  - mac_address: !secret jkbms_ble_mac
+    id: client0
+
+jk_bms_ble:
+  - ble_client_id: client0
+    protocol_version: JK02_24S
+    throttle: 10s
+    id: bms0
+
+switch:
+  - platform: jk_bms_ble
+    jk_bms_ble_id: bms0
+    charging:
+      name: "BMS charging"
+    discharging:
+      name: "BMS discharging"
+    balancer:
+      name: "BMS balancer"
+  - platform: ble_client
+    ble_client_id: client0
+    id: ble_client_switch0
+    name: "BMS BLE link"
