@@ -274,6 +274,14 @@ function main() {
   }
 
   const cache = loadCache();
+  // Bloat exemptions live in ssot.file-optimization.yml — a change there must
+  // invalidate cached results, which embed exemption-dependent warnings.
+  const optDocPath = join(SSOT_DIR, 'ssot.file-optimization.yml');
+  const optDocHash = existsSync(optDocPath) ? sha256(optDocPath) : '';
+  if (cache.__optDocHash !== optDocHash) {
+    for (const k of Object.keys(cache)) delete cache[k];
+    cache.__optDocHash = optDocHash;
+  }
   const toValidate = [];
   const cachedResults = [];
   const start = Date.now();
