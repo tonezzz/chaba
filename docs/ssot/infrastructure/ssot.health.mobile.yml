@@ -217,7 +217,7 @@ services:
   - id: mddb-api
     name: MDDB API
     type: http
-    url: http://tony-dell:11023/health
+    url: http://idc01:11023/health
     expected_status: 200
     timeout: 5
     category: datastore
@@ -228,24 +228,24 @@ services:
   - id: mddb-mcp
     name: MDDB MCP Server
     type: http
-    url: http://tony-dell:9000/mcp
-    expected_status: 400
+    url: http://idc01:9000/mcp
+    expected_status: 401
     timeout: 5
     category: datastore
     profiles:
       - home
       - mobile
-    note: MCP endpoint for AI agent integration; GET /mcp returns 400, only POST is valid, so 400 is the healthy response
+    note: MCP endpoint for AI agent integration; unauthenticated GET /mcp returns 401 (key-gated on idc01), so 401 is the healthy response
     recovery_actions:
-      - "Check MDDB container: docker ps | grep mddb"
-      - "Restart MDDB: cd /home/tony/CascadeProjects/chaba-kbman/stacks/web/mddb && docker compose restart mddb"
-      - "Check MDDB logs: cd /home/tony/CascadeProjects/chaba-kbman/stacks/web/mddb && docker compose logs mddb"
-      - "Verify MCP endpoint: curl -s http://tony-dell:9000/mcp"
+      - "Check MDDB container: ssh idc01 'podman ps | grep mddb'"
+      - "Restart MDDB: ssh idc01 'systemctl --user restart mddb'"
+      - "Check MDDB logs: ssh idc01 'journalctl --user -u mddb --since \"1h ago\"'"
+      - "Verify MCP endpoint: curl -s http://idc01:9000/mcp"
       - "Check MCP config: cat ~/.config/devin/mcp_config.json | grep mddb"
   - id: mddb-panel
     name: MDDB Panel
     type: http
-    url: http://100.68.142.13:3002/
+    url: http://idc01:3002/
     expected_status: 200
     timeout: 5
     category: web
@@ -255,7 +255,7 @@ services:
   - id: mddb-stats
     name: MDDB Stats Endpoint
     type: http
-    url: http://tony-dell:11023/v1/stats
+    url: http://idc01:11023/v1/stats
     expected_status: 200
     timeout: 5
     category: datastore
@@ -264,14 +264,14 @@ services:
       - mobile
     note: Direct port access for stats endpoint, bypasses Caddy routing
     recovery_actions:
-      - "Check MDDB container: docker ps | grep mddb"
-      - "Restart MDDB: cd /home/tony/CascadeProjects/chaba-kbman/stacks/web/mddb && docker compose restart mddb"
-      - "Check MDDB logs: cd /home/tony/CascadeProjects/chaba-kbman/stacks/web/mddb && docker compose logs mddb"
-      - "Verify port 11023 is accessible: curl -s http://tony-dell:11023/v1/stats"
+      - "Check MDDB container: ssh idc01 'podman ps | grep mddb'"
+      - "Restart MDDB: ssh idc01 'systemctl --user restart mddb'"
+      - "Check MDDB logs: ssh idc01 'journalctl --user -u mddb --since \"1h ago\"'"
+      - "Verify port 11023 is accessible: curl -s http://idc01:11023/v1/stats"
   - id: mddb-vector-stats
     name: MDDB Vector Stats Endpoint
     type: http
-    url: http://tony-dell:11023/v1/vector-stats
+    url: http://idc01:11023/v1/vector-stats
     expected_status: 200
     timeout: 5
     category: datastore
@@ -280,14 +280,14 @@ services:
       - mobile
     note: Direct port access for vector stats endpoint, bypasses Caddy routing
     recovery_actions:
-      - "Check MDDB container: docker ps | grep mddb"
-      - "Restart MDDB: cd /home/tony/CascadeProjects/chaba-kbman/stacks/web/mddb && docker compose restart mddb"
-      - "Check MDDB logs: cd /home/tony/CascadeProjects/chaba-kbman/stacks/web/mddb && docker compose logs mddb"
-      - "Verify port 11023 is accessible: curl -s http://tony-dell:11023/v1/vector-stats"
+      - "Check MDDB container: ssh idc01 'podman ps | grep mddb'"
+      - "Restart MDDB: ssh idc01 'systemctl --user restart mddb'"
+      - "Check MDDB logs: ssh idc01 'journalctl --user -u mddb --since \"1h ago\"'"
+      - "Verify port 11023 is accessible: curl -s http://idc01:11023/v1/vector-stats"
   - id: mddb-metrics
     name: MDDB Metrics Endpoint
     type: http
-    url: http://tony-dell:11023/metrics
+    url: http://idc01:11023/metrics
     expected_status: 200
     timeout: 5
     category: datastore
@@ -296,9 +296,9 @@ services:
       - mobile
     note: Direct port access for metrics endpoint, bypasses Caddy routing
     recovery_actions:
-      - "Check MDDB container: docker ps | grep mddb"
-      - "Restart MDDB: cd /home/tony/CascadeProjects/chaba-kbman/stacks/web/mddb && docker compose restart mddb"
-      - "Check MDDB logs: cd /home/tony/CascadeProjects/chaba-kbman/stacks/web/mddb && docker compose logs mddb"
+      - "Check MDDB container: ssh idc01 'podman ps | grep mddb'"
+      - "Restart MDDB: ssh idc01 'systemctl --user restart mddb'"
+      - "Check MDDB logs: ssh idc01 'journalctl --user -u mddb --since \"1h ago\"'"
       - "Verify port 11023 is accessible: curl -s http://tony-dell:11023/metrics"
   - id: mddb-container
     name: MDDB Container
