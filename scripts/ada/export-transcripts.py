@@ -104,6 +104,10 @@ def main() -> int:
                     help="skip pulling reports/ and session-memory.md")
     ap.add_argument("--no-rollup", action="store_true",
                     help="skip focus-rollup.py refresh at the end")
+    ap.add_argument("--no-ops", action="store_true",
+                    help="skip journal-report.py session-ops pull")
+    ap.add_argument("--ops-since", default="7 days ago",
+                    help="journal window for the ops layer")
     ap.add_argument("--backfill", action="store_true",
                     help="generate stage-2 reports for transcripts missing one "
                          "(one LLM call each — slow)")
@@ -182,12 +186,24 @@ def main() -> int:
                 print(f"  {p.name}: FAILED {r.stderr.strip()[:120]}",
                       file=sys.stderr)
 
+    # ---- session-ops layer (journald) ----
+    ops_file = review / "session-ops.jsonl"
+    if not args.no_ops and args.local is None:
+        r = subprocess.run(
+            [sys.executable, str(ADA_SCRIPTS / "journal-report.py"),
+             "--host", args.host, "--since", args.ops_since,
+             "--out", str(review), "--merge-reports", str(reports_dir)],
+            capture_output=True, text=True)
+        print(r.stdout.strip().splitlines()[0] if r.stdout.strip()
+              else f"ops: {r.stderr.strip()[:120]}")
+
     # ---- rollup ----
     if not args.no_rollup:
-        r = subprocess.run(
-            [sys.executable, str(ADA_SCRIPTS / "focus-rollup.py"),
-             "--reports", str(reports_dir)],
-            capture_output=True, text=True)
+        cmd = [sys.executable, str(ADA_SCRIPTS / "focus-rollup.py"),
+               "--reports", str(reports_dir)]
+        if ops_file.exists():
+            cmd += ["--ops", str(ops_file)]
+        r = subprocess.run(cmd, capture_output=True, text=True)
         print(r.stdout.strip() or r.stderr.strip())
 
     manifest = args.out / "MANIFEST.txt"
