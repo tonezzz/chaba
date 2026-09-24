@@ -35,7 +35,7 @@ render:
       output: context-guest.md
       report: report-guest.yml
       limits: {soft: 4000, hard: 6000}
-      sections: [assist, home, guests]
+      sections: [assist, home, guests, session-log]
 
 sections:
 
@@ -159,3 +159,15 @@ sections:
         file: [guests/*.yml, users/*.yml]
         pick: entries
         format: "- ({name}) {key}: {text}"
+
+  session-log:
+    description: |
+      Rolling tail of recent guest/chat sessions — appended by the service
+      at session end, injected at next connect so the assistant can refer
+      to earlier conversations.
+    limits: {soft: 1200, hard: 2000}
+    source:
+      kind: rolling-log
+      file: session-memory.md
+      max_entries: 2
+      min_chars: 80
