@@ -494,6 +494,52 @@ decisions:
       - docs/kb/home-assistant/tv-casting-runbook.md
       - stacks/services/cast-cam/
 
+  - id: cast-failure-scenarios
+    date: '2026-09-24'
+    title: Failure-scenario handling for TV casting (target lost, source lost,
+      storm, HA down)
+    status: accepted
+    context: |
+      Two scenarios needed explicit answers: (a) TV powered off mid-cast —
+      powered_by_us stayed set and the 60s timer kept play_stream-ing a dead
+      target, and a Chromecast can CEC-wake the TV, so the automation could
+      fight the user's power-off; (b) a cast source dying — camera entity
+      unavailable is catchable, but a wedged go2rtc producer leaves the entity
+      'idle' with 0 consumers (black screen, entity looks healthy).
+    options:
+      - label: Guard every transition in HA
+        pros: [fastest response, in-entity-model]
+        cons: [HA automations can't guard HA itself; more counter/timer
+               machinery to maintain]
+      - label: HA guards for entity-visible failures + host audit for
+               process-level truth
+        pros: [each failure caught at the layer that can see it; audit works
+               even when HA is wedged]
+        cons: [silent-dead streams only get observability, not auto-fix]
+    chosen: HA guards for entity-visible failures, host audit for proc-level,
+      observability-only for silent-dead streams
+    reasoning: |
+      TV-off and receiver-death are entity-visible — a managed guard
+      (cast_guard_target_lost, 45s debounce, powered_by_us-gated) handles them
+      and stops the CEC wake-fight. Camera-unavailable is handled by
+      cast_guard_source_lost plus the pre-cast check in cast-ha-selected.sh.
+      A go2rtc producer wedged mid-stream is invisible to entities, so
+      audit-cast logs cam_consumers and WARNs — detection without blind
+      auto-kill, since a producer restart is the actual fix and belongs in a
+      runbook step, not a trigger-happy automation.
+    consequences:
+      - "cast_guard_target_lost: tony_tv->off/standby 45s OR cast player
+        active->off 45s while powered_by_us -> tv_display=off + cleanup + notify"
+      - "manual (non-owned) sessions are never touched — all guards gated on
+        powered_by_us"
+      - "audit-cast logs go2rtc cam_consumers when tv_display=camera; WARN at 0"
+      - "silent-dead stream fix remains manual: power-cycle camera, verify
+        ffprobe, recast — documented in runbook"
+      - "full scenario table lives in automations SSOT failure_scenarios:"
+    related:
+      - docs/ssot/infrastructure/ssot.home-assistant.automations.yml
+      - docs/kb/home-assistant/tv-casting-runbook.md
+
 related_files:
   - docs/ssot/ssot.focus.decisions.yml
   - docs/ssot/ssot.focus.sessions.yml

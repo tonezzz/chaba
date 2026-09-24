@@ -68,6 +68,17 @@ automations:
     purpose: "counter.cast_starts reset every 10 min (sliding window)"
     triggers: "time_pattern /10"
 
+  - id: cast_guard_target_lost
+    alias: "Cast guard: target lost"
+    group: managed
+    location: /config/packages/cast-safety.yaml
+    purpose: "cast target lost mid-session -> tv_display=off + cleanup + notify.
+      Without it the 60s timer keeps casting at a dead TV (and a Chromecast
+      can CEC-wake it, fighting the user's power-off)"
+    triggers: "media_player.tony_tv -> off/standby/unavailable 45s, OR cast
+      player active->off/unavailable 45s; condition powered_by_us=on"
+    safety_role: "runaway guard — stops re-cast churn at a dead target"
+
   - id: cast_guard_source_lost
     alias: "Cast guard: source lost"
     group: managed
@@ -210,6 +221,77 @@ cast_entities:
     websockify-vms-mn01.service: ":6082 -> mn01:5900 (vms cast path)"
 
 # ---------------------------------------------------------------------------
+# Failure scenarios — what actually happens (decision: cast-failure-scenarios)
+# ---------------------------------------------------------------------------
+failure_scenarios:
+
+  tv_off_during_our_cast:
+    description: "User powers the TV off (remote/plug) while WE own the session
+      (cast_powered_by_us=on)"
+    chain:
+      - "media_player.tony_tv -> off/standby; tony_tv_cast -> off/unavailable"
+      - "cast_guard_target_lost (45s debounce): tv_display=off +
+        script.cast_cleanup + notify — stops the 60s re-cast immediately"
+      - "before this guard: powered_by_us stayed on and the timer kept
+        play_stream-ing; a Chromecast can CEC-wake the TV = automation fights
+        the user's power-off. Idle shutdown only healed it up to 5 min later"
+    residual: "TV power itself is never touched by cleanup — TV stays off,
+      powered_by_us cleared, host feeders stopped"
+
+  tv_off_during_manual_cast:
+    description: "User's own cast session (powered_by_us=off), TV powered off"
+    chain:
+      - "no managed guard fires (all gated on powered_by_us) — by design we
+        don't touch sessions we don't own"
+      - "host-side feeders keep running until their own timers/units stop"
+    residual: "audit-cast stops lingering cast-desktop/page units only when
+      cast_enabled=off or tv_display=off; a manual session's units are left
+      alone"
+
+  camera_unavailable_mid_cast:
+    description: "Selected input_select.tv_camera entity -> unavailable while
+      tv_display=camera"
+    chain:
+      - "cast_guard_source_lost: script.cast_cleanup + notify — no black-screen
+        hold"
+      - "cast-ha-selected.sh also pre-checks: unavailable source -> skips cast"
+    residual: "camera flapping unavailable<->idle re-triggers the cast on the
+      next 60s timer tick — rate_limit bounds total churn"
+
+  camera_dead_silently:
+    description: "go2rtc producer wedged: camera entity stays 'idle' but 0
+      consumers; receiver shows black/frozen"
+    chain:
+      - "NO HA-side guard — entity looks healthy"
+      - "audit-cast logs cam_consumers + WARNs (observability, no action)"
+      - "idle shutdown cleans up only if nothing reports 'playing'; a receiver
+        stuck 'playing' on black defeats the idle timer (session cap DEFERRED)"
+    residual: "fix = power-cycle camera; verify ffprobe before recast
+      (observed 2026-09-24 with ip_cam_65)"
+
+  stream_ends_naturally:
+    description: "YouTube/video/HLS ends normally"
+    chain:
+      - "media_player -> idle/off -> timer.cast_idle expires ->
+        cast_idle_shutdown -> cleanup (powered_by_us sessions only)"
+
+  cast_storm:
+    description: "Any path starts >6 cast sessions in 10 min"
+    chain:
+      - "cast_guard_count_session_starts increments counter.cast_starts"
+      - "cast_guard_rate_limit: tv_display=off + cast_enabled=off + cleanup +
+        notify — master switch trips, managed paths go dead"
+      - "audit-cast additionally stops cast units on next 5-min pass"
+
+  ha_automation_engine_down:
+    description: "HA wedged — no automation can fire"
+    chain:
+      - "audit-cast.timer (systemd, independent of HA) still kills leaked
+        ffmpeg, restarts bloated cast-browser, kills orphan helpers"
+      - "it reads HA state best-effort; if HA API is down the guard clauses
+        see empty state and only proc-level checks act"
+
+# ---------------------------------------------------------------------------
 # Gaps found during assessment (feed the audit design)
 # ---------------------------------------------------------------------------
 gaps:
@@ -218,8 +300,11 @@ gaps:
       - "rate limit: cast_guard_rate_limit trips cast_enabled at >6 starts/10min"
       - "source liveness: cast-ha-selected.sh skips unavailable tv_camera;
         cast_guard_source_lost cleans up if the camera dies mid-cast"
+      - "target liveness: cast_guard_target_lost stops 60s re-cast churn when
+        the TV is powered off / receiver dies (prevents CEC wake-fight)"
       - "host watchdog: audit-cast.timer (5min) kills leaked ffmpeg/orphans,
-        restarts bloated cast-browser, honors cast_enabled"
+        restarts bloated cast-browser, honors cast_enabled, logs go2rtc
+        cam_consumers"
       - "camera hardcode: input_select.tv_camera replaces ip_cam_65 constant"
     open:
       - "no session cap: a stream stuck reporting 'playing' defeats the idle

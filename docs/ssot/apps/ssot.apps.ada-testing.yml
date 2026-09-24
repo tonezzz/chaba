@@ -1,5 +1,5 @@
 title: Ada Scenario Testing
-subtitle: Offline + live scenario framework for Ada's memory/tooling layer, and the reconnect away-time tiers it covers
+subtitle: Offline + live + voice scenario framework for Ada's memory/tooling layer, reconnect tiers, and speaker enrollment
 icon: 🧪
 sections:
   - title: Surfaces
@@ -9,9 +9,23 @@ sections:
       - label: Offline engine
         text: tests/scenario_engine.py + tests/test_scenarios.py (ada-pi). Every tests/scenarios/*.yaml runs deterministically against an in-memory FakeMddb + real ToolRunner + ConversationMemory — no network, no Gemini.
       - label: Live driver
-        text: scripts/scenario-live.py + tests/scenarios-live/*.yaml. Replays scripted text turns against a running /ws endpoint and checks ws trace events (tool_call/tool_result/assistant_transcript_delta). LLM phrasing varies — live expectations are deliberately soft.
+        text: scripts/scenario-live.py + tests/scenarios-live/*.yaml. Replays scripted text/audio turns against a running /ws endpoint and checks ws trace events (tool_call/tool_result/speaker/speaker_unrecognized). LLM phrasing varies — live expectations are deliberately soft.
       - label: Why two tiers
-        text: Offline scenarios pin deterministic state (tier, directive text, tool semantics). Live scenarios verify the real pipeline end-to-end — Gemini decides tools, ws transport, reconnect greeting — but can only assert loosely.
+        text: Offline scenarios pin deterministic state (tier, directive text, tool semantics). Live scenarios verify the real pipeline end-to-end — Gemini decides tools, ws transport, reconnect greeting, speaker identification — but can only assert loosely.
+  - title: Scenario Taxonomy
+    icon: "🗂️"
+    layout: list
+    items:
+      - label: Contract tests
+        text: Tool-call + result contract — does the model call the right tool with the right args, and does the result shape match? (speaker_enrollment_sim asserts ada_enroll_speaker fires and fails gracefully without audio.)
+      - label: Pipeline tests
+        text: Real transport + server machinery — ws frames, PCM16 streaming, SpeakerSession buffering, reconnect simulation, DELETE cleanup. (speaker_enrollment audio tier.)
+      - label: Behavior tests
+        text: LLM decisions that can't be pinned — does Ada offer enrollment, resolve 'it', answer from context? Soft expectations only (response_contains, calls_any).
+      - label: Security tests
+        text: Isolation boundaries — cross_instance_isolation proves michael's tool calls can never return tony-only bank content. These use hard assertions (result_not_contains), not soft ones.
+      - label: Operational probes
+        text: latency_probe isolates per-path cost (baseline/recall/write/cross-bank) — a regression perf harness, not a correctness test.
   - title: Offline Step DSL
     icon: "📝"
     layout: list
@@ -26,20 +40,46 @@ sections:
         text: Simulates a websocket disconnect+reconnect. Duration '90s'/'5m'/'4h'/'2d'/'1w' or bare seconds; null/'none' = first-ever session. Snapshots the transcript tail, resets ConversationMemory, and runs the real session_prime_text with the simulated gap. Result exposes tier/away_seconds/prime — check with output_contains / output_not_contains.
       - label: seed
         text: Pre-loads FakeMddb collections (by bank name or raw collection); meta lists support __TODAY__.
+  - title: Live Turn DSL
+    icon: "🎙️"
+    layout: list
+    items:
+      - label: user
+        text: A text turn sent as {"type":"text"} — the standard live step.
+      - label: audio
+        text: Streams a PCM16 fixture (tests/fixtures/*.pcm, 16kHz mono) as binary ws frames — exercises SpeakerSession.feed, identification, and enroll_from_buffer. Path resolves against tests/fixtures/ first.
+      - label: reconnect
+        text: '"- reconnect: {away_s: 300}" re-opens /ws with ?simulate_away_s=N and checks the unprompted greeting turn.'
+      - label: params
+        text: "Top-level map appended to the connect URL — e.g. `params: {simulate_unknown_speaker: 1}` injects the unrecognized-speaker system note without real audio (text-tier contract test)."
   - title: Expectations
     icon: "🎯"
     layout: list
     items:
       - label: output_contains / output_not_contains
-        text: >
-          Substring checks over the JSON step result — the primary reconnect
-          assertion ("tier": "resume", directive phrases, transcript-tail fragments).
+        text: Substring checks over the JSON step result — the primary offline reconnect assertion (tier, directive phrases, transcript-tail fragments).
       - label: Live-only keys
-        text: >
-          calls_any, calls, no_calls, result_contains, response_contains,
-          response_nonempty, timeout_s (default 90), settle_s (default 5).
-          Reconnect turn: "- reconnect: {away_s: 300}" re-opens /ws with
-          ?simulate_away_s=N and checks the unprompted greeting turn.
+        text: calls_any (≥1 listed call), calls (all required), no_calls, result_contains, result_not_contains, response_contains, response_not_contains, response_nonempty, timeout_s (default 90), settle_s (default 5).
+      - label: events_contain
+        text: "Assert ws events arrived — e.g. {type: speaker_unrecognized} after unknown voice, {type: speaker} after enrolled voice replays. Dict entries match on the listed keys only."
+      - label: Live persistence guard
+        text: "The driver appends ?no_persist=1 by default — test sessions skip transcript upload, extraction drafts, summaries, and the session-end marker. --persist opts out. A scenario `cleanup:` block runs even on failure — mddb_delete (key or contains match) removes written docs, speaker_remove deletes enrolled voiceprints via DELETE /api/speakers/<name> (names are URL-quoted)."
+  - title: Speaker / Voice Path
+    icon: "🗣️"
+    layout: list
+    items:
+      - label: Unrecognized signal
+        text: "SpeakerSession counts consecutive identify misses (UNKNOWN_AFTER_MISSES=2 on real speech) then fires on_unrecognized once — pwa_server sends ws event {type: speaker_unrecognized, best_score} AND injects a system turn so Ada may offer ada_enroll_speaker. A match resets the counter."
+      - label: Enrollment buffer
+        text: SpeakerSession keeps a rolling _recent tail of ALL fed audio (identification consumes _buffer, not _recent) so ada_enroll_speaker can capture the voice that was just speaking even mid-identification.
+      - label: Simulate hook
+        text: "?simulate_unknown_speaker=1 on /ws sends a simulated speaker_unrecognized event + the same system note at connect — exercises the offer+tool path with zero audio."
+      - label: Cleanup endpoint
+        text: "DELETE /api/speakers/{name} (x-api-key) removes a voiceprint via identifier.remove(); 404 when absent. Also PUT /api/speakers/{name}/metadata for ha_person/display_name."
+      - label: Fixtures
+        text: tests/fixtures/voice-guest.pcm + voice-other.pcm — deterministic synthetic 5s PCM16 (harmonic stack + syllable envelope) from gen_voice_fixture.py. ECAPA embeds them consistently enough for the enroll→re-identify roundtrip; Gemini may transcribe them as odd speech, which is harmless.
+      - label: Requirement
+        text: Audio tier needs speechbrain+torch in the service venv — present on idc01, absent on mn01. Sim tier has no such requirement.
   - title: Reconnect Tiers
     icon: "🔁"
     layout: list
@@ -63,11 +103,11 @@ sections:
       - label: backend/memory_ops.py
         text: away_tier() classifies the gap; reconnect_directive() builds the session note; session_prime_text(away_seconds, last_tail) prepends it and switches the header to "act on the session note".
       - label: pwa_server.py
-        text: _reconnect_context() resolves away time — in-memory _last_session_end first, persisted MDDB marker after restarts, ?simulate_away_s= test hook. _mark_session_end() snapshots the tail on ws close and upserts key 'last-session-end' into ada-ha-recall-summary-<instance> (meta kind=session-end, ended_at, ended_at_ts, last_tail).
+        text: _reconnect_context() resolves away time — in-memory _last_session_end first, persisted MDDB marker after restarts, ?simulate_away_s= test hook. _mark_session_end() snapshots the tail on ws close and upserts key 'last-session-end' into ada-ha-recall-summary-<instance>.
+      - label: backend/speaker_id.py
+        text: SpeakerIdentifier (ECAPA embedder + enrolled voiceprints) and SpeakerSession (per-ws buffer, identify loop, miss counting, enroll_from_buffer).
       - label: Provider reconnects
         text: A mid-session Gemini Live reconnect (go_away/resumption) re-primes WITHOUT the reconnect directive — it is the same live conversation, only the websocket boundary counts as away.
-      - label: backend/conversation_memory.py
-        text: record_session_end() / last_session_end() own the marker doc read/write.
   - title: Run Commands
     icon: "▶️"
     layout: list
@@ -75,22 +115,40 @@ sections:
       - label: Offline suite
         text: "cd ~/CascadeProjects/ada-pi && .venv/bin/python -m unittest tests.test_scenarios -v"
       - label: Live suite
-        text: "cd ~/CascadeProjects/ada-pi && .venv/bin/python scripts/scenario-live.py tests/scenarios-live/reconnect_continuity.yaml --url ws://127.0.0.1:8001/ws --api-key \"$ADA_API_KEY\""
+        text: "cd ~/CascadeProjects/ada-pi && .venv/bin/python scripts/scenario-live.py tests/scenarios-live/<name>.yaml --url ws://127.0.0.1:8003/ws --api-key \"$ADA_API_KEY\" -v (8002=tony, 8003=michael on idc01; services bind loopback — run on the host)"
+      - label: Speaker sim (text tier)
+        text: "scripts/scenario-live.py tests/scenarios-live/speaker_enrollment_sim.yaml — no audio needed, works anywhere"
+      - label: Speaker audio tier
+        text: "scripts/scenario-live.py tests/scenarios-live/speaker_enrollment.yaml — needs speechbrain in the service venv (idc01)"
       - label: Manual simulation
-        text: "Connect to /ws with the usual api_key auth plus &simulate_away_s=432000 — the server greets as if the user was away that many seconds."
+        text: "Connect to /ws with api_key plus &simulate_away_s=432000 (away greeting) or &simulate_unknown_speaker=1 (enrollment offer)."
       - label: Distill benchmark
         text: "cd ~/CascadeProjects/chaba && GEMINI_API_KEY=... python3 scripts/ada/memory-distill-benchmark.py --dump — 11 fixture sessions through the real extraction prompt; recall/precision scoring, no MDDB writes."
-      - label: Distill dry-run
-        text: "python3 scripts/ada/memory-distill.py --dry-run — prints what the batch job would draft from real session summaries; nothing is written."
   - title: Coverage
-    icon: "🗂️"
+    icon: "�"
     layout: list
     items:
-      - label: tests/scenarios/
-        text: memory_lifecycle.yaml (remember/correct/forget lifecycle), michael_technician.yaml (HA recall + remember), reconnect_continuity.yaml (all 5 tiers + first-session + bad duration).
+      - label: tests/scenarios/ (offline)
+        text: memory_lifecycle.yaml (remember/correct/forget lifecycle + draft visibility + access gates), michael_technician.yaml (HA recall + coreference + remember), reconnect_continuity.yaml (all 5 tiers + first-session + bad duration), token_usage.yaml.
       - label: tests/scenarios-live/
-        text: michael_technician.yaml (live recall + remember roundtrip), reconnect_continuity.yaml (resume-tier topic reference + long-gap greeting).
+        text: michael_technician (recall+write roundtrip), reconnect_continuity (resume + long-gap greeting), latency_probe (per-path latency), cross_instance_isolation (michael must not leak tony banks), speaker_enrollment_sim (unrecognized → offer → graceful no-audio error), speaker_enrollment (voice fixture → unrecognized event → enroll → reconnect → re-identified).
       - label: scripts/ada/memory-distill-*
-        text: "memory-distill-scenarios.yml (11 fixtures: durable kinds + noise rejection + no-save + dedup) and memory-distill-benchmark.py (recall/precision, thresholds 0.75/0.50). Baseline 2026-09-22: 100%/100%."
+        text: "memory-distill-scenarios.yml (11 fixtures) + memory-distill-benchmark.py — baseline 2026-09-22: 100%/100%."
       - label: Known gaps
-        text: Live greeting text is not asserted verbatim (model-dependent). test-manifest's shell runner has hardcoded per-system sections — the ada-pi suite is not auto-run by test-ssot-kb-memory.sh; run it directly or wire it into CI later.
+        text: Live greeting text not asserted verbatim. ada-pi suite not wired into test-ssot-kb-memory.sh. No judge-model response-quality pass yet. No machine-readable result artifact for historical comparison.
+  - title: Assessment Tools (proposed)
+    icon: "🧰"
+    layout: list
+    items:
+      - label: Goal
+        text: A small CLI (scripts/ada-assess.py) both Devin and Ada can call to answer "is the system working?" — wraps scenario catalog, preflight, run, and result reporting in one machine-readable interface instead of ad-hoc commands.
+      - label: Read-only commands
+        text: "list (scenario catalog + taxonomy), describe <name> (turns, hooks, requirements), preflight <name> (service health, speechbrain, MDDB, key scope — no session), results <name> (last run outcome + timing)."
+      - label: Session commands
+        text: "run <name> [--persist] [--judge] — executes a scenario with no_persist+cleanup defaults; suite <tag> — runs a taxonomy group; compare <run1> <run2> — latency/assertion diff."
+      - label: Maintenance commands
+        text: "clean — remove leftover test artifacts (zeta markers, guest voiceprints, test transcripts) by the same cleanup rules scenarios declare."
+      - label: Ada integration
+        text: "Expose run/preflight/results as ada_* tools later so Michael can ask 'is your memory working?' — read-only by default; any run that writes (enrollment, remember) still requires the same confirm flow."
+      - label: Output
+        text: "--json for machine-readable {scenario, pass, failures[], tool_calls, latencies} so results feed MDDB or dashboards; human summary stays the default."

@@ -36,6 +36,7 @@ but **not editable** there (toggleable only). Changes go through git.
 | Kill switch | `input_boolean.cast_enabled` | `cast-ha-selected.sh` and `cast-cam.py` exit when `off`; auto-tripped by rate limit |
 | Rate limit | `counter.cast_starts` + `cast_guard_*` | `>6` cast starts in a 10-min window → `tv_display=off`, `cast_enabled=off`, `script.cast_cleanup`, notify |
 | Source liveness | `cast_guard_source_lost` + script check | selected `input_select.tv_camera` → `unavailable` while `tv_display=camera` → cleanup + notify; timer script also skips dead sources |
+| Target liveness | `cast_guard_target_lost` | TV off / receiver dead 45s while `powered_by_us` → `tv_display=off` + cleanup + notify (stops CEC wake-fight) |
 | Idle cleanup | `cast_idle_shutdown` + `cast_activity_reset` | moved to the package (same ids); `cast_powered_by_us` still gates cleanup to our sessions |
 | Host audit | `audit-cast.timer` → `~/.local/bin/audit-cast.sh` | every 5 min, HA-independent: kills ffmpeg with no owning unit or >150% CPU, restarts cast-browser >3GiB RSS, kills orphan x11vnc/websockify, stops cast units when `cast_enabled=off`. Log: `~/.local/share/cast-audit.log` |
 | Physical | `switch.plug_tv` | hard power cut — manual last resort only, audit never touches it |
@@ -45,6 +46,19 @@ Camera selection: `input_select.tv_camera` (managed) replaces the old
 
 Deferred (see SSOT `audit_hooks.deferred_guards`): session cap, flap
 detection, `cast_enabled` in editable YouTube/assist paths.
+
+## Failure scenarios — what happens, what to do
+
+| Scenario | Automatic behavior | Manual recovery |
+|---|---|---|
+| **TV powered off mid-cast (our session)** | `cast_guard_target_lost` (45s): `tv_display=off` + `cast_cleanup` + notify. Stops the 60s re-cast — prevents the Chromecast CEC wake-fight. TV stays off; `powered_by_us` cleared | none needed — recast normally when desired |
+| **TV off during a manual/user cast** | nothing (guards are `powered_by_us`-gated by design) | host feeders stop with their own units |
+| **Camera → `unavailable` mid-cast** | `cast_guard_source_lost`: cleanup + notify; timer script also skips dead sources | check camera/go2rtc, recast when `idle` |
+| **Camera silently dead** (entity `idle`, 0 go2rtc consumers, black screen) | no auto-fix — `audit-cast` logs `WARN … 0 go2rtc consumers` in `~/.local/share/cast-audit.log` | power-cycle camera → `ffprobe rtsp://admin:…@192.168.2.71:10554/udp/av0_1` until stream info returns → recast |
+| **Stream ends naturally** (YouTube/HLS done) | player → idle → `timer.cast_idle` → `cast_idle_shutdown` → cleanup | — |
+| **Cast storm** (>6 starts/10min) | `cast_guard_rate_limit`: `tv_display=off`, `cast_enabled=off`, cleanup, notify | investigate cause → `input_boolean.turn_on cast_enabled` |
+| **HA automation engine wedged** | `audit-cast.timer` still kills leaked ffmpeg / orphan helpers / bloated cast-browser | `tail ~/.local/share/cast-audit.log`; restart `tony-ha` |
+| **Cast guard won't stop / total wedge** | — | kill chain below; `switch.plug_tv` last |
 
 ## Kill chain (runaway response order)
 
