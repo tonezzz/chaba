@@ -55,19 +55,14 @@ instances:
       QR without opening; Revoke calls script.ada_pair_revoke_named.
       ada_pair_reissue (voice|chat ui) → rest_command.ada_repair_key POST
       /api/auth/keys/{name}/redeem on mn01 (preserves key identity/audit;
-      redirect: ui=chat lands on /apps/ha/ada-{instance}/chat) — still used
-      by script.ada_pair_issue/reissue for non-HA QR pairing.
+      ui=chat lands on /apps/ha/ada-{instance}/chat).
       QR display is custom:ada-pair-qr-card (/local/ada-pair-qr-card.js, same
       repo dir) — renders /local/pair-qr.svg with a ?v= cache-buster derived
       from the redeem token (stock picture card caches the URL forever).
-      Users card is custom:ada-users-card (/local/ada-users-card.js, same repo
-      dir) — lists HA auth users via config/auth/list (system_generated
-      filtered out), per-user key name user-<username>; users without a key
-      get an Issue button that sets the shared pair inputs and runs
-      script.ada_pair_issue (QR lands in the QR card), keyed users get a
-      QR-icon button that opens an overlay with the redeem QR plus a
-      clickable link that pops up the HA web UI (/chaba-home/ai) —
-      Voice/Text/Re-pair/Revoke buttons removed 2026-09-23.
+      Users card is custom:ada-users-card (same repo dir) — lists HA auth
+      users via config/auth/list; Issue runs script.ada_pair_issue, keyed
+      users get a QR-icon button opening an overlay with the redeem QR +
+      link to the HA web UI (/chaba-home/ai).
       Events tab added 2026-09-20: custom:chaba-events-card
       (/local/chaba-events-card.js, repo: stacks/tony-dell/tony-ha/www/) reads
       /local/chaba-events.json (written by /config/scripts/chaba-event-log.py —
@@ -91,16 +86,13 @@ instances:
       the tag name and clc-* classes; CSS height:100% is the fallback. Filter groups are entity domains (input_* grouped as
       "input"), persisted as "log_hidden" in the same input_text; toggling a
       group rebuilds the inner card's entities list. The inner card's chrome
-      is flattened via an injected shadowRoot <style>. Events card v4 dropped
-      the "logbook" checkbox (it gated a card on another tab);
-      input_boolean.chaba_events_show_logbook is now vestigial — nothing
-      reads it. Note HA 2026.8 logbook cards error
-      ("target has no entities") without entities:/target:, so it carries a
-      curated entity list (pairing/cast scripts+automations, helpers, cast
-      devices, ada sensors). Producers: shell_command.chaba_event /
-      chaba_event_ack (base64 JSON payload), called from ada_pair_* scripts;
-      deploy-ada.sh emits over SSH. Events with requires_response && !responded
-      pin to top with a pulsing border (prefers-reduced-motion respected);
+      is flattened via an injected shadowRoot <style>.
+      input_boolean.chaba_events_show_logbook is vestigial — nothing reads
+      it. HA 2026.8 logbook cards error ("target has no entities") without
+      entities:/target:, so the card carries a curated entity list.
+      Producers: shell_command.chaba_event / chaba_event_ack (base64 JSON),
+      called from ada_pair_* scripts; deploy-ada.sh emits over SSH. Events
+      with requires_response && !responded pin to top with a pulsing border;
       confidence <0.6 shown as outlined chip.
       2026-09-24: events may carry `action: {domain, service, data}` —
       `chaba-event-log.py ack` executes it via HA REST (token in
@@ -169,7 +161,14 @@ instances:
         path: ada-pages
         icon: mdi:file-document-edit-outline
         type: panel
-        cards: iframe → https://idc01.taila0626a.ts.net/apps/ha/ada-tony/cms/?api_key=...
+        cards: iframe → https://idc01.taila0626a.ts.net/apps/ha/ada-tony/cm)
+      - title: Obsidian
+        path: obsidian
+        icon: mdi:notebook-outline
+        type: panel
+        cards: iframe → https://mn01.taila0626a.ts.net/apps/obsidian/
+          (added 2026-09-24 via push-dashboard.py mutate; no api_key —
+          tailnet reads open, app prompts for write key itselfs/?api_key=...
           (dedicated ada-ha-tony key 'cms-viewer' on idc01; key is embedded in the
           URL because iframes can't set headers — it is revocable via the Pair
           tab. The key is a shared viewer key (device='*' in the keys file),
