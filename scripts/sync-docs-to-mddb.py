@@ -65,6 +65,13 @@ SOURCES = [
         "exclude_dirs": _EXCLUDED_CHABA_DIRS,
         "skip_names": {"README.md"},
     },
+    {
+        "name": "chaba-archive",
+        "dir": REPO_ROOT / "docs" / "kb" / "archive",
+        "collection": "chaba-archive",
+        "recursive": True,
+        "skip_names": set(),
+    },
 ]
 
 _session = requests.Session()
