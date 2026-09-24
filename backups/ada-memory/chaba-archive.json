@@ -1,0 +1,483 @@
+{
+ "collection": "chaba-archive",
+ "exported_at": "2026-09-24T21:30:17.203917+00:00",
+ "doc_count": 14,
+ "docs": [
+  {
+   "id": "chaba-archive|ada/ada-v2-platform.md|en",
+   "key": "ada/ada-v2-platform.md",
+   "lang": "en",
+   "meta": {
+    "content_md5": [
+     "3348c02a98e6402f80ab7128581865e7"
+    ],
+    "last_synced": [
+     "2026-09-24T17:28:51.079251"
+    ],
+    "last_used": [
+     "2026-09-24"
+    ],
+    "rel_path": [
+     "ada/ada-v2-platform.md"
+    ],
+    "repo": [
+     "chaba-archive"
+    ],
+    "source": [
+     "docs-sync"
+    ],
+    "title": [
+     "Ada v2 platform — archive of ada repo"
+    ],
+    "use_count": [
+     "50"
+    ]
+   },
+   "contentMd": "---\nkind: archive-report\nbank: chaba-archive\nsource_repo: ada\nsource_commit: HEAD-at-archive (manifest ada.yml)\ntopic: ada-v2-platform\nstatus: historical\nperiod: [2025-12, 2026-02]\nfollows: [chaba0-era assistant prototypes]\nsuperseded_by: ada-pi (voice) + chaba memory/HA ecosystem\ncovers:\n  - ada_v2/**\nextracted: 2026-09-24\nextracted_by: devin\n---\n\n# Ada v2 platform — archive of ada repo\n\n## Summary\n\n**A.D.A = Advanced Design Assistant** — the direct ancestor of ada-pi.\nAn Electron+React desktop app backed by a Python FastAPI/Socket.IO\nserver, built on **Gemini 2.5 Native Audio** for low-latency voice with\ninterrupt handling. Beyond chat it had real actuators: parametric CAD\ngeneration (build123d → STL), 3D printing (OrcaSlicer + Moonraker/\nOctoPrint), MediaPipe gesture UI (\"Minority Report\"), face-landmarker\nbiometric login, Playwright web agent, TP-Link Kasa smart-home control,\nand file-based project memory.\n\n## Timeline\n\n- 2025-12: ada_v2 codebase present in repo\n- 2026-02-02: repo last pushed; frozen\n- 2026-02+: voice/design split — voice path evolved into ada-pi\n  (Raspberry Pi + HA cards), CAD/print/gesture features dropped\n- 2026-09-24: repo distilled → chaba-archive; archived on GitHub\n\n## Still-true facts\n\n- [still-true] Gemini Live/Native-Audio remains the voice engine —\n  ada-pi uses the same provider family.\n- [still-true] Tool-per-domain backend pattern (cad_agent,\n  printer_agent, kasa_agent, web_agent as separate modules) — the same\n  shape as ada-pi's tool_runner + domain tools.\n- [still-true] Socket.IO/streaming architecture for realtime voice —\n  ada-pi uses WS + PCM worklets; same realtime model.\n- [historical] CAD/3D-printing features (build123d, OrcaSlicer,\n  Moonraker) — no successor in ada-pi; dormant capability.\n- [historical] MediaPipe gesture UI + face-landmarker auth — dropped;\n  ada-pi uses voiceprint + API keys instead.\n- [historical] Electron+React desktop — replaced by PWA + HA cards\n  (decision ada-ha-native-primary-ui).\n- [historical] Kasa smart-home agent — superseded by Home Assistant\n  integration (broader device coverage).\n- [historical] File-based JSON \"project memory\" — superseded by MDDB\n  memory banks.\n\n## Key details\n\n**Backend (Python 3.11, FastAPI + Socket.IO)**: `server.py` (56KB) was\nthe hub; `ada.py` (113KB) wrapped the Gemini Live session; agents were\nseparate modules: `cad_agent.py` (build123d parametric models → STL),\n`printer_agent.py` (OrcaSlicer slicing + Moonraker/OctoPrint submit),\n`kasa_agent.py` (python-kasa device control), `web_agent.py`\n(Playwright browser automation), `authenticator.py` (MediaPipe face\nauth), `capture_face.py`, `project_manager.py` (JSON project memory),\n`tools.py`, `temp_cad_gen.py`.\n\n**Gesture model**: pinch = confirm/click, open palm = release window,\nfist = grab+drag window — a hand-tracking window manager.\n\n**Lineage note**: the name \"Ada\" + Gemini voice + tool-agent shape all\noriginate here; ada-pi kept the voice+tools core and traded the\nCAD/vision/gesture surface for memory banks + HA integration.\n\n## Source map\n\n- `ada_v2/README.md` → Summary, capabilities table, architecture\n- `ada_v2/backend/*.py` → Key details (module responsibilities from\n  headers/docstrings; code-level detail not distilled — see Not\n  preserved)\n- `ada_v2/frontend/`, Dockerfiles, Caddyfile, ci.yml → deployment\n  shape (Electron build + containerized backend)\n\n## Not preserved\n\n- Per-module code internals (~300KB of agent/server code) — concepts\n  captured; code stays in git history if ever resurrected.\n- `face_landmarker.task` (3.7MB MediaPipe model) — binary asset,\n  excluded-noise.\n- CAD feature parameters, printer profiles, gesture thresholds —\n  implementation details of dropped features.\n- `.env.example` contents — superseded by current secrets layout.\n",
+   "addedAt": 1790245731,
+   "updatedAt": 1790266153
+  },
+  {
+   "id": "chaba-archive|auto-kb-1786785150731.md|en",
+   "key": "auto-kb-1786785150731.md",
+   "lang": "en",
+   "meta": {
+    "content_md5": [
+     "763941e6a193ea9135b17c66816ef2c6"
+    ],
+    "last_synced": [
+     "2026-09-24T16:40:49.935108"
+    ],
+    "last_used": [
+     "2026-09-24"
+    ],
+    "rel_path": [
+     "auto-kb-1786785150731.md"
+    ],
+    "repo": [
+     "chaba-archive"
+    ],
+    "source": [
+     "docs-sync"
+    ],
+    "title": [
+     "KB review: no new KB-worthy facts"
+    ],
+    "use_count": [
+     "40"
+    ]
+   },
+   "contentMd": "# KB review: no new KB-worthy facts\n\n## What it is\n\nKB review: no new KB-worthy facts\n\n## Context/Background\n\nCreated 2026-08-15 from automated KB creation workflow.\n\n## Key Details\n\n### Technical Details\n\n- **Generated**: 2026-08-15\n- **Source**: Automated KB creation skill\n\n### Implementation\n\nKB review: no new KB-worthy facts. Verified tony-dell WiFi (wlx00761100125e) is connected to SSID Naris, has IP 192.168.1.55, default route via 192.168.1.1 metric 600, and internet reachability confirmed via ping -I wlx00761100125e 8.8.8.8. Wired enp0s31f6 remains the primary default route (metric 100, 192.168.1.42). No patterns or configuration changes to preserve.\n\n## Related Documentation\n\n- **[auto-kb-creation.md](../../.windsurf/workflows/auto-kb-creation.md)** - Automated KB creation workflow\n\n## Tags\n\n- **auto-generated**: Automatically created KB entry\n- **2026**: Year tag\n\n_Archived 2026-08-19: did not meet updated KB quality threshold._\n",
+   "addedAt": 1790242849,
+   "updatedAt": 1790266153
+  },
+  {
+   "id": "chaba-archive|auto-kb-1786785847841.md|en",
+   "key": "auto-kb-1786785847841.md",
+   "lang": "en",
+   "meta": {
+    "content_md5": [
+     "01e3686b0b501b9977326d58176097fb"
+    ],
+    "last_synced": [
+     "2026-09-24T16:40:49.965928"
+    ],
+    "last_used": [
+     "2026-09-24"
+    ],
+    "rel_path": [
+     "auto-kb-1786785847841.md"
+    ],
+    "repo": [
+     "chaba-archive"
+    ],
+    "source": [
+     "docs-sync"
+    ],
+    "title": [
+     "No KB-worthy facts from this session"
+    ],
+    "use_count": [
+     "42"
+    ]
+   },
+   "contentMd": "# No KB-worthy facts from this session\n\n## What it is\n\nNo KB-worthy facts from this session\n\n## Context/Background\n\nCreated 2026-08-15 from automated KB creation workflow.\n\n## Key Details\n\n### Technical Details\n\n- **Generated**: 2026-08-15\n- **Source**: Automated KB creation skill\n\n### Implementation\n\nNo KB-worthy facts from this session. The work was a routine verification of tony-dell network interfaces and a recommendation plan for using its WiFi as a backup/failover path. No configuration changes were made and no new patterns were discovered that need preservation.\n\n## Related Documentation\n\n- **[auto-kb-creation.md](../../.windsurf/workflows/auto-kb-creation.md)** - Automated KB creation workflow\n\n## Tags\n\n- **auto-generated**: Automatically created KB entry\n- **2026**: Year tag\n\n_Archived 2026-08-19: did not meet updated KB quality threshold._\n",
+   "addedAt": 1790242849,
+   "updatedAt": 1790266153
+  },
+  {
+   "id": "chaba-archive|auto-kb-1786787696951.md|en",
+   "key": "auto-kb-1786787696951.md",
+   "lang": "en",
+   "meta": {
+    "content_md5": [
+     "500664ca2c6da0adf11448b2f740b0df"
+    ],
+    "last_synced": [
+     "2026-09-24T16:40:49.993313"
+    ],
+    "last_used": [
+     "2026-09-24"
+    ],
+    "rel_path": [
+     "auto-kb-1786787696951.md"
+    ],
+    "repo": [
+     "chaba-archive"
+    ],
+    "source": [
+     "docs-sync"
+    ],
+    "title": [
+     "No new KB-worthy facts"
+    ],
+    "use_count": [
+     "39"
+    ]
+   },
+   "contentMd": "# No new KB-worthy facts\n\n## What it is\n\nNo new KB-worthy facts\n\n## Context/Background\n\nCreated 2026-08-15 from automated KB creation workflow.\n\n## Key Details\n\n### Technical Details\n\n- **Generated**: 2026-08-15\n- **Source**: Automated KB creation skill\n\n### Implementation\n\nNo new KB-worthy facts. The recommendation to renumber the TONY-WIFI_5G router's LAN subnet is standard networking practice for avoiding duplicate 192.168.1.0/24; no new systems, patterns, or infrastructure changes were introduced. No new KB entry needed.\n\n## Related Documentation\n\n- **[auto-kb-creation.md](../../.windsurf/workflows/auto-kb-creation.md)** - Automated KB creation workflow\n\n## Tags\n\n- **auto-generated**: Automatically created KB entry\n- **2026**: Year tag\n\n_Archived 2026-08-19: did not meet updated KB quality threshold._\n",
+   "addedAt": 1790242849,
+   "updatedAt": 1790266098
+  },
+  {
+   "id": "chaba-archive|auto-kb-1786788497933.md|en",
+   "key": "auto-kb-1786788497933.md",
+   "lang": "en",
+   "meta": {
+    "content_md5": [
+     "dc179addfe51d62d8711fd0f2b1bf294"
+    ],
+    "last_synced": [
+     "2026-09-24T16:40:50.023057"
+    ],
+    "last_used": [
+     "2026-09-24"
+    ],
+    "rel_path": [
+     "auto-kb-1786788497933.md"
+    ],
+    "repo": [
+     "chaba-archive"
+    ],
+    "source": [
+     "docs-sync"
+    ],
+    "title": [
+     "Router renumbering on TONY-WIFI_5G applied on the router, bu"
+    ],
+    "use_count": [
+     "33"
+    ]
+   },
+   "contentMd": "# Router renumbering on TONY-WIFI_5G applied on the router, bu\n\n## What it is\n\nRouter renumbering on TONY-WIFI_5G applied on the router, but tony-dell wired still holds the old 192.168.1.42/24 DHCP lease\n\n## Context/Background\n\nCreated 2026-08-15 from automated KB creation workflow.\n\n## Key Details\n\n### Technical Details\n\n- **Generated**: 2026-08-15\n- **Source**: Automated KB creation skill\n\n### Implementation\n\nRouter renumbering on TONY-WIFI_5G applied on the router, but tony-dell wired still holds the old 192.168.1.42/24 DHCP lease. Wired gateway 192.168.1.1 is now unreachable; the host needs a DHCP release/renew or reboot to pick up 192.168.2.x. WiFi on Naris remains working (public IP 58.8.225.11). No new KB-worthy patterns or systems.\n\n## Related Documentation\n\n- **[auto-kb-creation.md](../../.windsurf/workflows/auto-kb-creation.md)** - Automated KB creation workflow\n\n## Tags\n\n- **auto-generated**: Automatically created KB entry\n- **2026**: Year tag\n\n_Archived 2026-08-19: did not meet updated KB quality threshold._\n",
+   "addedAt": 1790242850,
+   "updatedAt": 1790266098
+  },
+  {
+   "id": "chaba-archive|chaba0/deployment.md|en",
+   "key": "chaba0/deployment.md",
+   "lang": "en",
+   "meta": {
+    "content_md5": [
+     "21b57d88d08db29c6548ec9edad6dc26"
+    ],
+    "last_synced": [
+     "2026-09-24T16:40:50.056884"
+    ],
+    "last_used": [
+     "2026-09-24"
+    ],
+    "rel_path": [
+     "chaba0/deployment.md"
+    ],
+    "repo": [
+     "chaba-archive"
+    ],
+    "source": [
+     "docs-sync"
+    ],
+    "title": [
+     "Deployment — archive of chaba0"
+    ],
+    "use_count": [
+     "50"
+    ]
+   },
+   "contentMd": "---\nkind: archive-report\nbank: chaba-archive\nsource_repo: chaba0\nsource_commit: b5f1a6268e3e754a3281c55261a4ba7c8980bae9\ntopic: deployment\nstatus: historical\nperiod: [2025-12, 2026-03]\nfollows: []\nsuperseded_by: deploy-ada.sh + idc01 service model\ncovers:\n  - docs/line-webhook-deployment.md\n  - docs/mcp-nodehost.md\n  - installer/README.md\n  - installer/configs/node-1.example.yaml\n  - installer/package.json\n  - installer/src/cli/index.js\n  - installer/src/config/loader.js\nextracted: 2026-09-24\nextracted_by: gemini-2.5-flash (benchmark)\n---\n\n# Deployment — archive of chaba0\n\n## Summary\nThis topic details the deployment strategies and tools used or planned within the `chaba0` project. It covers the specific manual steps for deploying the `mcp-line` webhook receiver to the `idc1` stack, including LINE console configuration and Docker Compose execution. Additionally, it outlines the planned `mcp-nodehost` service for app orchestration and introduces a generic `service-installer` CLI tool designed for distributed service deployment via SSH.\n\n## Timeline\ndates unknown — frozen 2026-03-28\n\n## Still-true facts\n*   The concept of deploying specific microservices (e.g., `mcp-line`) to distinct environments/stacks. [still-true]\n*   The need for secure configuration management for external API credentials (e.g., LINE Channel Secret, Access Token). [still-true]\n*   The use of Docker and Docker Compose for defining and orchestrating services in deployment environments. [still-true]\n*   The `mcp-line` service was designed to integrate with the LINE Messaging API via webhooks. [still-true]\n*   The `idc1` stack was a specific deployment target environment used in `chaba0`. [historical]\n*   The specific LINE Channel ID, Secret, and Access Token provided in the guide were example credentials for `chaba0` and are no longer valid. [historical]\n*   The `mcp-nodehost` service was a planned component for application orchestration, intended to replace `mcp-apphost`. [historical]\n*   The `service-installer` CLI provided a framework for declarative, SSH-based deployment and status checks. [superseded-by more integrated CI/CD pipelines in `chaba`/`ada-pi`]\n\n## Key details\n*   **LINE Webhook Deployment (`mcp-line` on `idc1` stack):**\n    *   **Purpose:** To receive webhook events from the LINE Platform and integrate them with `chaba0`.\n    *   **Service:** `mcp-line`, a dedicated webhook receiver service.\n    *   **Architecture:** LINE Platform → HTTPS → `line.idc1.surf-thailand.com` → Caddy (reverse proxy) → `mcp-line:8088`.\n    *   **Configuration:** Required setup in the LINE Developers Console (creating a Messaging API channel, noting Channel ID, Secret, Access Token, and setting the Webhook URL to `https://line.idc1.surf-thailand.com/webhook/line`). Environment variables (`LINE_CHANNEL_SECRET`, `LINE_CHANNEL_ACCESS_TOKEN`, `MCP_LINE_PORT`) were configured in the `idc1-stack/.env` file.\n    *   **Deployment Method:** Manual execution of a PowerShell script (`idc1-stack.ps1`) to bring up the Docker Compose stack.\n    *   **Verification:** Health checks (`/health`) and testing the webhook endpoint (`/webhook/line`).\n    *   **Survival into `chaba`/`ada-pi`:** The core concept of LINE integration and a dedicated webhook service likely survived, but the specific `idc1` stack and manual deployment steps were abstracted or automated within `chaba`/`ada-pi`'s more mature infrastructure.\n*   **`mcp-nodehost` (Planned App Orchestrator):**\n    *   **Purpose:** Intended as an app builder/orchestrator service, replacing `mcp-apphost`. It was designed to manage and host applications.\n    *   **Status in `chaba0`:** This component was in a \"planned\" state at the time of the archive. Its service code (`mcp/mcp-nodehost/`) and stack configuration files (`stacks/app-demo/docker-compose.yml`, `Caddyfile`) were not yet present or fully implemented.\n    *   **Intended Layout:** Service code in `mcp/mcp-nodehost/`, with Docker Compose and Caddy configurations in `stacks/app-demo/`.\n    *   **Survival into `chaba`/`ada-pi`:** The *need* for an app orchestration component undoubtedly survived, but the specific `mcp-nodehost` implementation or naming might have evolved significantly or been absorbed into a broader platform management system in `chaba`/`ada-pi`.\n*   **`service-installer` CLI:**\n    *   **Purpose:** A generic command-line interface tool for deploying and managing services across distributed targets. It aimed to provide a standardized way to push code and execute commands remotely.\n    *   **Commands:** `service-installer deploy <service>` (to deploy a specified service to configured targets, including a `dry-run` option) and `service-installer status <service>` (to check the deployment status of a service on all targets).\n    *   **Configuration:** Utilized YAML configuration files (e.g., `configs/targets.example.yaml`, `node-1.example.yaml`) to define:\n        *   `targets`: Remote hosts, including connection details (host, port, username, authentication method), environment variables, and optional `preCommands`/`postCommands`.\n        *   `services`: Service definitions, specifying artifact sources (e.g., Git repository and branch), and lifecycle commands (`setup`, `start`, `status`, `health`) to be executed on the targets.\n    *   **Technology:** Implemented in Node.js, leveraging `node-ssh` for secure remote command execution.\n    *   **Survival into `chaba`/`ada-pi`:** The *concept* of a declarative, configuration-driven deployment tool for distributed services strongly influenced `chaba`/`ada-pi`. While the specific `service-installer` CLI might not have been carried forward as a standalone tool, its principles of defining targets and service lifecycle commands were likely integrated into a more comprehensive CI/CD or platform management system.\n\n## Not preserved\n*   The specific `idc1` stack deployment script and its manual execution steps were not preserved as a primary deployment method in `chaba`/`ada-pi`. This was superseded by more automated and generic CI/CD pipelines to improve efficiency and reliability.\n*   The explicit `mcp-nodehost` renaming and its incomplete implementation state were not directly carried forward. The functionality it aimed to provide was likely integrated into a different, more mature orchestration layer within `chaba`/`ada-pi`.\n*   The `service-installer` CLI, while a functional proof-of-concept, was likely not preserved as a standalone tool in `chaba`/`ada-pi`. Its core logic and configuration patterns were absorbed into a more robust, centralized deployment system or platform, making the standalone CLI redundant for the successor projects.\n*   The specific LINE Channel ID, Secret, and Access Token provided in the `docs/line-webhook-deployment.md` were not preserved due to security reasons and their ephemeral nature as test or development credentials.\n\n## Source map\n\n- `installer/, docs/line-webhook-deployment.md, docs/mcp-nodehost.md` → report sections above (bundle: file headers/READMEs/first-60-lines per file, 7 files)\n",
+   "addedAt": 1790242850,
+   "updatedAt": 1790266153
+  },
+  {
+   "id": "chaba-archive|chaba0/host-infrastructure.md|en",
+   "key": "chaba0/host-infrastructure.md",
+   "lang": "en",
+   "meta": {
+    "content_md5": [
+     "29fb58ff971f2a29560868cf9b0b099c"
+    ],
+    "last_synced": [
+     "2026-09-24T17:52:11.094712"
+    ],
+    "last_used": [
+     "2026-09-24"
+    ],
+    "rel_path": [
+     "chaba0/host-infrastructure.md"
+    ],
+    "repo": [
+     "chaba-archive"
+    ],
+    "source": [
+     "docs-sync"
+    ],
+    "title": [
+     "Host infrastructure — archive of chaba0"
+    ],
+    "use_count": [
+     "46"
+    ]
+   },
+   "contentMd": "---\nkind: archive-report\nbank: chaba-archive\nsource_repo: chaba0\nsource_commit: b5f1a6268e3e754a3281c55261a4ba7c8980bae9\ntopic: host-infrastructure\nstatus: historical\nperiod: [2025-12, 2026-03]\nfollows: []\nsuperseded_by: current tailnet topology (idc01, tony-omen, tony-dell, mn01)\ncovers:\n  - docs/host-idc1.json\n  - docs/host-pc1.json\n  - docs/host-pc2.json\n  - docs/stacks-idc1.json\n  - docs/stacks-pc1.json\n  - docs/stacks-pc2.json\n  - docs/idc1-stack.json\n  - docs/idc1-vpn.json\n  - docs/pc1-stack.json\n  - docs/pc1-ai.json\n  - docs/pc1-db.json\n  - docs/pc1-deka.json\n  - docs/pc1-devops.json\n  - docs/pc1-gpu.json\n  - docs/pc1-host-caddy.json\n  - docs/pc2-stack.json\n  - docs/pc2-stack-vpn.json\n  - docs/pc2-ai.json\n  - docs/pc2-host-caddy.json\n  - docs/wt_pc1.json\n  - docs/system-inventory/pc2/stack-plan.md\n  - docs/system-inventory/pc2/2025-12-06.md\n  - docs/system-inventory/idc1/2025-12-10.md\n  - stacks/pc1-stack/**\n  - stacks/pc2-worker/**\n  - stacks/pc2-stack/**\n  - stacks/idc1-stack/**\n  - stacks/idc1-vpn/**\n  - stacks/deka-stack/**\n  - docker/**\n  - templates/**\n  - .env.template\nextracted: 2026-09-24\n---\n\n# Host infrastructure — archive of chaba0\n\n## Summary\n\nThe chaba0-era fleet was three hosts joined by self-hosted WireGuard +\nCoreDNS (`*.vpn` zone) with public ingress via Caddy on\n`*.surf-thailand.com`:\n\n| Old host | OS | Role | Current equivalent |\n|---|---|---|---|\n| **idc1** | Linux VPS | production, VPN hub (wg-easy 10.8.0.1), DNS, MCP suite, public ingress | **idc01** — same role (public VPS), now tailnet-only, no public Caddy |\n| **pc1** | Windows | workstation + dev + mcp-suite | **tony-omen** — now Ubuntu dev machine running Devin |\n| **pc2** | Windows | worker, MCP ingress (`1mcp.pc2.vpn`), service mirror for integration testing | **tony-dell** (HA/stacks) + **mn01** (Ada instances) — role split across two hosts |\n\nEverything below is [historical] unless tagged otherwise.\n\n## Timeline\n\n- 2025-12-03: initial commit — project structure + deployment setup\n- 2025-12-06: stacks + system-inventory first census (pc2 stack-plan)\n- 2025-12-10: idc1 inventory snapshot\n- 2025-12-23: DNS zones last revised (vpn.db serial 2025122702)\n- 2026-01-26: host JSONs last revised\n- 2026-03-28: repo frozen — project moved to chaba\n\n## Still-true facts (verified against current state)\n\n- [still-true] The public VPS is the single shared egress — idc01 today\n  still serves that role (MDDB + proxy + Caddy edge).\n- [still-true] Host-level ingress owns :80/:443 and forwards to stack\n  ingress — same pattern as tony-dell's Caddy → container mapping.\n- [still-true] Worker host mirrors MCP services locally for\n  integration testing before deployment — today's michael-dev +\n  scenario-live pattern follows the same principle.\n- [superseded-by Tailscale] WireGuard `10.8.0.0/24` + CoreDNS `*.vpn`\n  zone — replaced by tailnet `100.64.0.0/10` + MagicDNS\n  `*.taila0626a.ts.net`.\n- [superseded-by tailnet serve] Public `*.surf-thailand.com` Caddy\n  ingress on every host — now only idc01 exposes anything, and only\n  via tailscale serve.\n- [superseded-by Devin MCP config] The `1mcp-agent` aggregator\n  endpoint (`http://pc1.vpn:3051/mcp?app=windsurf`) — MCP servers now\n  attach directly via Devin's mcp config / Streamable-HTTP.\n\n## Key details\n\n**Stacks per host** (each had a docker-compose stack dir + a JSON\nrunbook doc — the pair was the \"source of truth\" convention):\n\n- idc1: `idc1-stack` (core MCP services), `idc1-vpn` (wg-easy +\n  CoreDNS), `deka-stack` (memory service, port 8470 per SRV)\n- pc1: `pc1-stack` (1mcp-agent + common MCP servers, `mcp-suite`\n  profile incl. mcp-tester)\n- pc2: `pc2-worker` (dev-proxy ingress :19081 + mcp0 aggregator +\n  downstream providers), `pc2-stack` (minimal alternate), `pc2-vpn`\n  (WireGuard client + NRPT rules + firewall)\n- Shared: `host-caddy` per host bound :80/:443 and routed\n  hostname/path → stack ingress (pc1-stack Caddy on 3080/3443)\n\n**Service discovery**: DNS SRV records enumerated MCP endpoints\n(`_mcp-devops._tcp`, `_mcp-docker._tcp`, `_mcp-playwright._tcp`…)\nunder both zones — clients discovered services via DNS rather than\nconfig files.\n\n**Secondary deployment targets** (not core hosts, but they surface in\nrecall — scripts/deploy-node-1.sh and friends):\n\n- **node-1** — Plesk-managed web node (`node-1.h3.surf-thailand.com`);\n  deploy pipeline for sites (restart via Plesk)\n- **dev-host** / **dell-host** — dev mirror containers mirroring\n  production nodes (user accounts, SSH, mounted workspace); replaced\n  node-1 as the canonical dev target inside chaba0 itself\n\n**Conventions worth noting**: `PC1_STACK_ENV_FILE` env-override\npattern (`.env.local` gitignored, `--env-file` on compose up) — same\nsecret-layering idea as today's `~/.config/secrets/*.env` + env_file\npattern in ssot.services.yml. Stack JSON docs used a `schema_version`\nfield and a `recovery.verify` block with copy-paste check commands —\nthe ancestor of today's SSOT + health-check structure.\n\n## Source map\n\n- `docs/host-*.json` → Summary table + ingress pattern\n- `docs/stacks-*.json`, `docs/*-stack.json`, `docs/idc1-vpn.json`,\n  `docs/pc2-stack-vpn.json` → Stacks per host + Key details\n- `docs/system-inventory/*` → Timeline + pc2 worker goals\n- `stacks/*` → stack composition (compose files verified, contents\n  not itemized — see Not preserved)\n- `docker/`, `templates/`, `.env.template` → env-override convention\n\n## Not preserved\n\n- Per-container port/pin details of each compose service (~50\n  container defs across stacks) — superseded by current stacks;\n  recoverable from git if ever needed.\n- `wt_pc1.json`, `pc1-*`/ai/db/deka/devops/gpu split docs — per-role\n  detail folded into the host table; the GPU doc predates tony-dell's\n  GPU work entirely.\n- docker/dev-host + docker/node-1 dev containers (Dockerfile, sshd,\n  authorized_keys samples) — dev-environment scaffolding, dead pattern.\n- pc2-vpn NRPT/firewall recovery recipes — Windows-specific, WireGuard\n  retired.\n",
+   "addedAt": 1790242850,
+   "updatedAt": 1790266153
+  },
+  {
+   "id": "chaba-archive|chaba0/mcp-ecosystem.md|en",
+   "key": "chaba0/mcp-ecosystem.md",
+   "lang": "en",
+   "meta": {
+    "content_md5": [
+     "0d5e12067176271a259a9990f7a24b62"
+    ],
+    "last_synced": [
+     "2026-09-24T16:40:50.137160"
+    ],
+    "last_used": [
+     "2026-09-24"
+    ],
+    "rel_path": [
+     "chaba0/mcp-ecosystem.md"
+    ],
+    "repo": [
+     "chaba-archive"
+    ],
+    "source": [
+     "docs-sync"
+    ],
+    "title": [
+     "Mcp Ecosystem — archive of chaba0"
+    ],
+    "use_count": [
+     "55"
+    ]
+   },
+   "contentMd": "---\nkind: archive-report\nbank: chaba-archive\nsource_repo: chaba0\nsource_commit: b5f1a6268e3e754a3281c55261a4ba7c8980bae9\ntopic: mcp-ecosystem\nstatus: historical\nperiod: [2025-12, 2026-03]\nfollows: []\nsuperseded_by: current MCP servers (yomi, home-assistant, github, mddb, ...)\ncovers:\n  - archive/mcp-glama-stdio/requirements.txt\n  - archive/mcp-glama-stdio/server.py\n  - devops-mcp.http\n  - mcp/deka-chat-api/Dockerfile\n  - mcp/deka-chat-api/main.py\n  - mcp/deka-chat-api/requirements.txt\n  - mcp/mcp-acc/Dockerfile\n  - mcp/mcp-acc/main.py\n  - mcp/mcp-acc/requirements.txt\n  - mcp/mcp-agents/Dockerfile\n  - mcp/mcp-agents/README.md\n  - mcp/mcp-agents/index.js\n  - mcp/mcp-agents/package-lock.json\n  - mcp/mcp-agents/package.json\n  - mcp/mcp-agents/www/test/agens/index.html\n  - mcp/mcp-agents/www/test/agens/main.js\n  - mcp/mcp-agents/www/test/agens/style.css\n  - mcp/mcp-assistant/Dockerfile\n  - mcp/mcp-assistant/main.py\n  - mcp/mcp-assistant/requirements.txt\n  - mcp/mcp-assistant/static/index.html\n  - mcp/mcp-audidoc/Dockerfile\n  - mcp/mcp-audidoc/main.py\n  - mcp/mcp-audidoc/requirements.txt\n  - mcp/mcp-cuda/Dockerfile\n  - mcp/mcp-cuda/main.py\n  - mcp/mcp-cuda/requirements.txt\n  - mcp/mcp-deka/Dockerfile\n  - mcp/mcp-deka/main.py\n  - mcp/mcp-deka/requirements.txt\n  - mcp/mcp-devops/.env.example\n  - mcp/mcp-devops/Dockerfile\n  - mcp/mcp-devops/README.md\n  - mcp/mcp-devops/package-lock.json\n  - mcp/mcp-devops/package.json\n  - mcp/mcp-devops/scripts/diagnostics-dev-host.mjs\n  - mcp/mcp-devops/scripts/diagnostics-dev-host.sh\n  - mcp/mcp-devops/scripts/pc2-compose-control.mjs\n  - mcp/mcp-devops/src/chatAgent.js\n  - mcp/mcp-devops/src/chatStore.js\n  - mcp/mcp-devops/src/config.js\n  - mcp/mcp-devops/src/executors.js\n  - mcp/mcp-devops/src/index.js\n  - mcp/mcp-devops/src/llmClient.js\n  - mcp/mcp-devops/src/mcp0Client.js\n  - mcp/mcp-devops/src/runStore.js\n  - mcp/mcp-devops/src/telemetry.js\n  - mcp/mcp-devops/src/workflowCatalog.js\n  - mcp/mcp-doc-archiver/.dockerignore\n  - mcp/mcp-doc-archiver/Dockerfile\n  - mcp/mcp-doc-archiver/README.md\n  - mcp/mcp-doc-archiver/main.py\n  - mcp/mcp-doc-archiver/requirements.txt\n  - mcp/mcp-docker/.dockerignore\n  - mcp/mcp-docker/.gitignore\n  - mcp/mcp-docker/.python-version\n  - mcp/mcp-docker/Dockerfile\n  - mcp/mcp-docker/LICENSE\n  - mcp/mcp-docker/README.md\n  - mcp/mcp-docker/pyproject.toml\n  - mcp/mcp-docker/src/docker_mcp/__init__.py\n  - mcp/mcp-docker/src/docker_mcp/docker_executor.py\n  - mcp/mcp-docker/src/docker_mcp/handlers.py\n  - mcp/mcp-docker/src/docker_mcp/http_server.py\n  - mcp/mcp-docker/src/docker_mcp/server.py\n  - mcp/mcp-docker/uv.lock\n  - mcp/mcp-github-models/Dockerfile\n  - mcp/mcp-github-models/main.py\n  - mcp/mcp-github-models/requirements.txt\n  - mcp/mcp-glama/Dockerfile\n  - mcp/mcp-glama/main.py\n  - mcp/mcp-glama/requirements.txt\n  - mcp/mcp-http/.dockerignore\n  - mcp/mcp-http/Dockerfile\n  - mcp/mcp-http/main.py\n  - mcp/mcp-http/requirements.txt\n  - mcp/mcp-imagen/Dockerfile\n  - mcp/mcp-imagen/main.py\n  - mcp/mcp-imagen/requirements.txt\n  - mcp/mcp-imagen-light/Dockerfile\n  - ... (91 more files under topic)\nextracted: 2026-09-24\nextracted_by: gemini-2.5-flash (benchmark)\n---\n\n# Mcp Ecosystem — archive of chaba0\n\n## Summary\nThe `mcp-ecosystem` comprised a collection of microservices built around the Model Context Protocol (MCP) within the `chaba0` project. These services, typically named `mcp-<function>`, exposed various functionalities as structured tools, enabling AI assistants like Claude Desktop to interact with external systems and data sources. It formed the modular backbone for `chaba0`'s capabilities, encompassing components for RAG, image generation, DevOps, Docker management, chat, and observability.\n\n## Timeline\ndates unknown — frozen 2026-03-28\n\n## Still-true facts\n*   The Model Context Protocol (MCP) was a core architectural principle. [still-true]\n*   Services were primarily implemented in Python (FastAPI) and Node.js (Express). [still-true]\n*   Many services were designed to expose structured tools for AI agents. [still-true]\n*   `chaba0` was an early AI-assistant platform. [historical]\n*   Claude Desktop was an intended client for MCP services. [historical]\n*   `mcp-glama` and `mcp-openai-gateway` acted as interfaces to LLM backends. [still-true]\n*   `mcp-rag` provided Retrieval Augmented Generation capabilities. [still-true]\n*   `mcp-cuda` and `mcp-imagen` handled GPU-accelerated tasks like image generation and embeddings. [still-true]\n*   `mcp-docker` enabled AI control over Docker operations. [still-true]\n*   `mcp-tester` was used for health checks and validation of the stack. [still-true]\n*   `mcp-task` was a minimal orchestrator for tool invocation. [still-true]\n*   `mcp-assistant` was an endpoint for tool invocation, acting as a central router. [still-true]\n*   `mcp-http` provided a controlled way for agents to make HTTP requests. [still-true]\n*   `mcp-webtops` managed ephemeral browser environments. [still-true]\n*   `mcp-doc-archiver` and `mcp-audidoc` handled document processing and archiving. [still-true]\n*   `mcp-deka` was a web scraping/automation service, often paired with Playwright. [still-true]\n*   `mcp-meeting` likely handled meeting-related functionalities. [still-true]\n*   `mcp-quickchart` generated charts. [still-true]\n*   `mcp-memory` was a Node.js service, likely for persistent memory/state. [still-true]\n*   `mcp-ws-gateway` bridged WebSocket clients to SSE and MCP JSON-RPC. [still-true]\n*   `mcp-devops` aimed to automate preview and publish workflows. [historical]\n*   `mcp-agents` provided observability into multi-agent API sessions. [historical]\n*   `mcp-line` integrated with the LINE messaging platform. [historical]\n\n## Key details\nThe `mcp-ecosystem` was a modular architecture where each `mcp-<service>` was a microservice exposing specific capabilities via the Model Context Protocol (MCP). These services typically ran as FastAPI (Python) or Express (Node.js) applications, communicating via HTTP.\n\n**Core Components and their functions:**\n*   **`mcp0`**: The central MCP router/gateway, responsible for discovering and routing requests to other MCP providers using a `ProviderRegistry`.\n*   **`deka-chat-api`**: A chat API integrating RAG and LLM services, leveraging `mcp-rag-deka`, `mcp-glama`, and `mcp-deka`.\n*   **`mcp-acc`**: A web content processing and automation service, using `BeautifulSoup` and `httpx` for accessing and manipulating web resources.\n*   **`mcp-agents`**: Provided observability tools for multi-agent API sessions, allowing clients to `fetch_sessions`, `fetch_archives`, and perform `observability_probe` checks against an `AGENTS_API_BASE`.\n*   **`mcp-assistant`**: An endpoint for tool invocation, acting as a proxy or orchestrator, connecting to an LLM (`GLAMA_MCP_URL`) and a general tool invocation endpoint (`ONE_MCP_URL`).\n*   **`mcp-audidoc`**: Handled document processing, including PDF parsing (`PyPDF`) and potentially OCR (`pytesseract`).\n*   **`mcp-cuda`**: A GPU-accelerated service for tasks like image generation (`StableDiffusionPipeline`) and embeddings (`SentenceTransformer`, `CrossEncoder`).\n*   **`mcp-deka`**: A web scraping and automation service, often integrating with `mcp-playwright` for browser automation, storing data in SQLite.\n*   **`mcp-devops`**: Automated `chaba0`'s preview and publish workflows, exposing tools for `preview automation` and `publish orchestration` by wrapping existing scripts.\n*   **`mcp-doc-archiver`**: A document archiving and chat UI service, built on `mcp-rag` and `mcp-openai-gateway`, supporting PDF uploads and OCR.\n*   **`mcp-docker`**: Enabled AI agents to manage Docker containers and Compose stacks, offering features like creation, deployment, logging, and status monitoring.\n*   **`mcp-github-models`**: An interface to GitHub-hosted LLM models.\n*   **`mcp-glama`**: A generic LLM gateway, routing requests to a configured `GLAMA_API_URL`.\n*   **`mcp-http`**: A controlled HTTP client for agents, allowing them to make web requests within defined `ALLOWED_HOSTS`.\n*   **`mcp-imagen`**: An image generation service using `diffusers` (e.g., `StableDiffusion`) for text-to-image tasks.\n*   **`mcp-imagen-light`**: A lighter image generation service, likely offloading heavy processing to `mcp-cuda` and managing image storage.\n*   **`mcp-instrans`**: (Node.js) A translation service, likely using Google Translate API.\n*   **`mcp-line`**: An integration with the LINE messaging platform.\n*   **`mcp-meeting`**: A service for managing meeting-related functionalities.\n*   **`mcp-memory`**: (Node.js) A service for persistent memory or state management.\n*   **`mcp-openai-gateway`**: An OpenAI-compatible API gateway, routing requests to `GLAMA_API_URL` or `MCP_AGENT_URL`.\n*   **`mcp-quickchart`**: Generated charts using the QuickChart API.\n*   **`mcp-rag`**: A Retrieval Augmented Generation service, using `QdrantClient` for vector search (text and image collections) and `SentenceTransformer` for embeddings, potentially with `Ollama`.\n*   **`mcp-rag-light`**: A lighter RAG service, potentially offloading embeddings to `mcp-cuda`.\n*   **`mcp-task`**: A minimal task orchestrator, persisting tasks to SQLite and supporting tool calls on other MCP providers.\n*   **`mcp-tester`**: A health check service for the `chaba0` stack, running declarative HTTP tests and providing structured pass/fail summaries.\n*   **`mcp-vaja`**: (Node.js) Functionality uncertain, but `vaja` often implies voice/audio processing.\n*   **`mcp-webtops`**: Managed ephemeral browser environments (Docker-based) for agents.\n*   **`mcp-ws-gateway`**: A WebSocket gateway, bridging browser clients to `mcp-openai-gateway` (SSE) and `1mcp-agent` (MCP JSON-RPC).\n*   **`webtops-cp`**: A control panel for `mcp-webtops`.\n*   **`webtops-router`**: A router for `webtops`, managing connections and state for ephemeral browser environments.\n\n**Survival into `chaba`/`ada-pi`:**\nThe core concept of modular, MCP-based services for AI tools was preserved and evolved. Fundamental capabilities like LLM gateways, RAG, image generation/processing, web automation, tool orchestration, task management, document processing, and observability/testing were critical and carried over, likely refactored and integrated more deeply into the successor platform's architecture. Specific implementations and legacy dependencies were updated or replaced.\n\n## Not preserved\n*   **Specific `chaba0` deployment scripts and targets within `mcp-devops`**: The direct wrappers around `chaba0`-era PowerShell and shell scripts (e.g., `deploy-a1-idc1.sh`) were not preserved. This was because `chaba`/`ada-pi` developed its own, more integrated and robust CI/CD and deployment pipelines, rendering the `chaba0`-specific automation obsolete.\n*   **The `mcp-line` messaging integration as a standalone service**: This specific integration with the LINE platform was likely not preserved in its original form. Future platforms would either integrate messaging capabilities more generically or focus on core AI functionalities, leaving specific platform integrations to more flexible, configurable adapters or third-party tools.\n*   **The `mcp-agents` direct proxy to `sites/a1-idc1/api/agents`**: This component's direct dependency on a `chaba0`-specific multi-agent API endpoint was not preserved. `chaba`/`ada-pi` would have developed its own internal agent management and observability APIs, making this specific proxy redundant.\n*   **The `mcp0` codebase as a standalone router**: While the *functionality* of a central MCP router and tool registry was critical and evolved into the core of `chaba`/`ada-pi`'s agent runtime, the specific `mcp0` implementation was likely refactored and integrated more deeply into the successor platform's architecture for improved performance, scalability, and tighter coupling with the new system.\n\n## Source map\n\n- `mcp/ except mcp-playwright` → report sections above (bundle: file headers/READMEs/first-60-lines per file, 171 files)\n",
+   "addedAt": 1790242850,
+   "updatedAt": 1790266153
+  },
+  {
+   "id": "chaba-archive|chaba0/network-dns.md|en",
+   "key": "chaba0/network-dns.md",
+   "lang": "en",
+   "meta": {
+    "content_md5": [
+     "72ff3b6df155d7035a1574403ca73049"
+    ],
+    "last_synced": [
+     "2026-09-24T16:40:50.182435"
+    ],
+    "last_used": [
+     "2026-09-24"
+    ],
+    "rel_path": [
+     "chaba0/network-dns.md"
+    ],
+    "repo": [
+     "chaba-archive"
+    ],
+    "source": [
+     "docs-sync"
+    ],
+    "title": [
+     "Network + DNS — archive of chaba0"
+    ],
+    "use_count": [
+     "44"
+    ]
+   },
+   "contentMd": "---\nkind: archive-report\nbank: chaba-archive\nsource_repo: chaba0\nsource_commit: b5f1a6268e3e754a3281c55261a4ba7c8980bae9\ntopic: network-dns\nstatus: historical\nperiod: [2025-12, 2026-01]\nfollows: []\nsuperseded_by: Tailscale MagicDNS (*.taila0626a.ts.net)\ncovers:\n  - docs/dns/hosts.csv\n  - docs/dns/ips.json\n  - docs/dns/surf-thailand.com.srv.txt\n  - docs/dns/vpn.srv.txt\n  - docs/dns/zones/Corefile.sample\n  - docs/dns/zones/surf-thailand.com.db\n  - docs/dns/zones/vpn.db\n  - docs/idc1-vpn.json\n  - docs/idc1_url.json\n  - docs/pc1_url.json\n  - docs/pc2_url.json\n  - docs/wt_pc1.json\nextracted: 2026-09-24\n---\n\n# Network + DNS — archive of chaba0\n\n## Summary\n\nchaba0 ran a **two-zone self-hosted DNS**: a public zone\n`surf-thailand.com` (per-host subdomains → public IPs, served by\nCaddy) and a private zone `.vpn` over a self-hosted **WireGuard mesh**\n(`10.8.0.0/24`, wg-easy on idc1 + CoreDNS). All inter-host traffic\nrode the WG tunnel; service discovery used SRV records in both zones.\n\nBoth zones are [historical] — fully replaced by Tailscale\n(`100.64.0.0/10` + MagicDNS `*.taila0626a.ts.net`) on 2026-09.\n\n## Timeline\n\n- 2025-12-18: surf-thailand.com.db zone serial 2025121801\n- 2025-12-23: DNS docs last revised; vpn.db serial 2025122702\n- 2026-01-26: idc1-vpn.json last revised (last known-good WG config)\n- 2026-03-28: frozen — the mesh stayed live until the tailnet cutover\n  (see docs/kb/mddb-public-host-plan.md for the 2026-09 replacement)\n\n## Still-true facts\n\n- [historical] WireGuard subnet `10.8.0.0/24`: idc1=10.8.0.1 (server,\n  wg-easy UI on 127.0.0.1:51821, UDP 51820), pc1=10.8.0.11\n  (+rag.pc1.vpn alias), pc2=10.8.0.12.\n- [historical] `*.vpn` resolved via CoreDNS on 10.8.0.1:53; Windows\n  hosts used NRPT rules to route `.vpn` lookups to it (a recurring\n  failure point — see pc2-stack-vpn.json's `vpn_no_dns` recovery).\n- [historical] Public zone: `idc1.surf-thailand.com` → 103.245.164.48;\n  pc1/pc2 subdomains pointed at their (NAT'd) public IPs but were\n  effectively unreachable inbound — real traffic was VPN-only.\n- [historical] Service discovery: SRV records like\n  `_mcp-memory._tcp.idc1.vpn 0 0 8470` and\n  `_wireguard._udp.idc1.surf-thailand.com 0 0 51820` enumerated the\n  whole MCP fleet — ~20 service types across 3 hosts.\n- [superseded-by MagicDNS] All of it — tailnet names + tailscale serve\n  now provide the same reachability with zero zone files to maintain.\n- [still-true, pattern] The *idea* survives: one authoritative\n  inventory of service→host→port (then SRV records, now\n  `ssot.services.yml` + ssot.health.yml).\n\n## Key details\n\n**Why it was replaced**: two zones + NRPT on Windows + wg-easy meant\nthree moving parts per client; `vpn_no_dns` was a documented recurring\nsymptom (stale DNS cache, missing NRPT rule, tunnel down). Tailscale\ncollapses all of it into the agent — the 2026-09 idc01 plan\nexplicitly chose tailnet-only to avoid running public ingress/DNS at\nall.\n\n**Domain**: `surf-thailand.com` was Tony's public domain for the\nproject; the current plan reserves real-domain public exposure as a\nlater opt-in (per public-host-plan), not via per-host subdomains.\n\n## Source map\n\n- `docs/dns/hosts.csv`, `zones/*.db`, `*.srv.txt` → Still-true facts +\n  subnet map + SRV fleet inventory\n- `docs/idc1-vpn.json` → wg-easy + CoreDNS service details\n- `docs/pc2-stack-vpn.json` → Windows NRPT/DNS recovery notes\n- `docs/*url*.json`, `docs/wt_pc1.json` → per-host URL maps (folded\n  into topology summary)\n\n## Not preserved\n\n- Full SRV record listing (~40 records × 2 zones) — the complete\n  service port map of a dead fleet; the fleet's *concept* is captured\n  in mcp-ecosystem report.\n- Corefile.sample contents — CoreDNS no longer used anywhere.\n- ips.json raw values — host IPs are in the host-infrastructure\n  report's mapping table.\n",
+   "addedAt": 1790242850,
+   "updatedAt": 1790266154
+  },
+  {
+   "id": "chaba-archive|chaba0/operations-runbooks.md|en",
+   "key": "chaba0/operations-runbooks.md",
+   "lang": "en",
+   "meta": {
+    "content_md5": [
+     "aea2664d7a90d4aefe61d73ba544eedc"
+    ],
+    "last_synced": [
+     "2026-09-24T16:40:50.221942"
+    ],
+    "last_used": [
+     "2026-09-24"
+    ],
+    "rel_path": [
+     "chaba0/operations-runbooks.md"
+    ],
+    "repo": [
+     "chaba-archive"
+    ],
+    "source": [
+     "docs-sync"
+    ],
+    "title": [
+     "Operations Runbooks — archive of chaba0"
+    ],
+    "use_count": [
+     "53"
+    ]
+   },
+   "contentMd": "---\nkind: archive-report\nbank: chaba-archive\nsource_repo: chaba0\nsource_commit: b5f1a6268e3e754a3281c55261a4ba7c8980bae9\ntopic: operations-runbooks\nstatus: historical\nperiod: [2025-12, 2026-03]\nfollows: []\nsuperseded_by: current SSOT + health-check scripts\ncovers:\n  - README.md\n  - TODO.md\n  - docs/README.md\n  - docs/backlog.md\n  - docs/dev-host.md\n  - docs/docker-management.md\n  - docs/pc1-runbook.md\n  - experiments/README.md\n  - scripts/ai-app-fast.ps1\n  - scripts/apply-host-caddy-deka.ps1\n  - scripts/build-ui.sh\n  - scripts/deploy-a1-idc1.sh\n  - scripts/deploy-branch.ps1\n  - scripts/deploy-dev-host-mirror.sh\n  - scripts/deploy-idc1-test.sh\n  - scripts/deploy-node-1.sh\n  - scripts/deploy-tony-site.sh\n  - scripts/dever-deploy-git-branch.ps1\n  - scripts/diagnostics-a1-idc1.sh\n  - scripts/extract-secrets-and-endpoints.ps1\n  - scripts/idc1-caddy-ensure-hub.sh\n  - scripts/idc1-caddy-probe.sh\n  - scripts/idc1-caddy-reload.sh\n  - scripts/idc1-code-server-logs.sh\n  - scripts/idc1-code-server-proxy-status.sh\n  - scripts/idc1-code-server-proxy-switch-to-stack.sh\n  - scripts/idc1-code-server-restart.sh\n  - scripts/idc1-code-server-status.sh\n  - scripts/idc1-code-server.sh\n  - scripts/idc1-docker-ps.sh\n  - scripts/idc1-fix-mcp0-vpn.sh\n  - scripts/idc1-health-sweep.sh\n  - scripts/idc1-log-bundle.sh\n  - scripts/idc1-ls-workspace.sh\n  - scripts/idc1-stack-deploy-via-1mcp.ps1\n  - scripts/idc1-stack-verify.ps1\n  - scripts/idc1-stack.ps1\n  - scripts/migrate-idc1-stacks.ps1\n  - scripts/monitor-idc1-stack.ps1\n  - scripts/pc1-ai.ps1\n  - scripts/pc1-caddy-logs.ps1\n  - scripts/pc1-caddy-reload.ps1\n  - scripts/pc1-caddy-restart.ps1\n  - scripts/pc1-caddy-status.ps1\n  - scripts/pc1-db.ps1\n  - scripts/pc1-deka.ps1\n  - scripts/pc1-devops.ps1\n  - scripts/pc1-gpu.ps1\n  - scripts/pc1-mcp-smoke-test.ps1\n  - scripts/pc1-stack-self.sh\n  - scripts/pc1-stack.ps1\n  - scripts/pc1-start-all-stacks.ps1\n  - scripts/pc1-stop-all-stacks.ps1\n  - scripts/pc1-sync-prefixed-env.ps1\n  - scripts/pc1-web.ps1\n  - scripts/pc2-ai.ps1\n  - scripts/pc2-devops.ps1\n  - scripts/pc2-kvm-probe.sh\n  - scripts/pc2-stack.ps1\n  - scripts/pc2-start-all-stacks.ps1\n  - scripts/pc2-stop-all-stacks.ps1\n  - scripts/pc2-sync-prefixed-env.ps1\n  - scripts/pc2-webtops.ps1\n  - scripts/pc2-worker/deploy.ps1\n  - scripts/pc2-worker/pc2-stack.ps1\n  - scripts/pc2-worker/smoke-test.ps1\n  - scripts/pc2-worker/start.ps1\n  - scripts/pc2-worker/stop.ps1\n  - scripts/pc2-worker/sync-env.ps1\n  - scripts/pc2-worker-deploy-via-1mcp.ps1\n  - scripts/preview-detects.ps1\n  - scripts/preview-test.ps1\n  - scripts/preview-vaja.ps1\n  - scripts/pull-node-1.sh\n  - scripts/push_chat1_via_api.py\n  - scripts/register-mcp-provider.ps1\n  - scripts/release-a1-idc1.ps1\n  - scripts/reorganize-stacks.ps1\n  - scripts/rollback-a1-idc1.sh\n  - scripts/rollback-node-1.sh\n  - ... (26 more files under topic)\nextracted: 2026-09-24\nextracted_by: gemini-2.5-flash (benchmark)\n---\n\n# Operations Runbooks — archive of chaba0\n\n## Summary\nThis topic details the operational runbooks and infrastructure management practices for the `chaba0` platform. It covers the designated sources of truth for infrastructure configuration, local development overrides, and the CI/CD deployment policies. Key aspects include the modularization of Docker Compose stacks for PC1 and IDC1 environments, the use of `mcp-docker` for API-driven container management, and a suite of scripts for stack lifecycle management and diagnostics.\n\n## Timeline\ndates unknown — frozen 2026-03-28\n\n## Still-true facts\n*   Operational truth for `chaba0` lived in `docs/stacks.md` and per-stack JSON docs. [historical]\n*   `pc1-stack` supported local environment overrides via `PC1_STACK_ENV_FILE` pointing to a gitignored `.env.local` file. [still-true]\n*   The preferred CI/CD workflow involved GitHub Pull Requests targeting `main`. [still-true]\n*   Deployment from `C:\\chaba` was the policy for Windows hosts, serving as the single \"deploy working copy\" with host secret materialization. [superseded-by chaba/ada-pi's current deploy policy]\n*   `mcp-docker` was the default HTTP wrapper interface for managing Docker containers and Compose stacks, discoverable by `mcp0`. [still-true]\n*   The `dev-host` environment replaced the `node-1` container as the canonical development target, mirroring production nodes and exposing convenience routes. [superseded-by chaba/ada-pi's current dev environment]\n*   PC1 Docker Compose stacks were split into modular units: `pc1-db`, `pc1-gpu`, `pc1-ai`, `pc1-devops`, `pc1-web`, `pc1-stack`, `pc1-deka`. [historical]\n*   A recommended start order for PC1 stacks was based on dependencies. [historical]\n*   `dev-host` provided aggregated `/api/health` checks for downstream proxies. [still-true]\n*   `idc1` no longer used `mcp0` for VPN DNS + Caddy config sync. [historical]\n\n## Key details\n*   **Operational Source of Truth**: `docs/stacks.md` for general stack information and `docs/{pc2,pc1,idc1}-*.json` for per-stack recovery/runbook details, including ports, entrypoints, restart commands, and health checks.\n*   **Local Development & Deployment**:\n    *   `pc1-stack` allowed local environment overrides using `PC1_STACK_ENV_FILE` to point to a gitignored `.env.local` file.\n    *   The local deploy policy on Windows mandated deploying only from `C:\\chaba`, which served as the single \"deploy working copy\" containing complete host secret material. Development was conducted in separate worktrees (e.g., `C:\\chaba_wt\\...`).\n*   **CI/CD Workflow**: The standard workflow involved GitHub Pull Requests targeting the `main` branch as the default integration gate. Testing and deployment were often separate, manual steps, not assumed to be part of the PR merge.\n*   **Docker Management**: `mcp-docker` functioned as an HTTP wrapper around Docker MCP tools, providing an API for managing Docker containers and Compose stacks (e.g., listing containers, retrieving logs, deploying stacks). It was designed to be discoverable by `mcp0`.\n*   **`dev-host` Environment**:\n    *   Replaced the older `node-1` container as the canonical development target. It mirrored production nodes in terms of user accounts, SSH access, and mounted workspace, while exposing convenience routes (e.g., `/a1-idc1/*`, `/test/chat/*`) from a single container.\n    *   Container structure was defined in `docker/dev-host/`, exposing ports `2223:22` (SSH) and `3100:3000` (HTTP). Volumes mounted `../:/workspace`.\n    *   Secrets mirrored production environment files under `.secrets/dev-host/`, including a `publish.token` for `/api/deploy/*` endpoints. Local profiles could be overridden via `sites/dev-host/.env.dev-host`.\n    *   The Express gateway (`sites/dev-host/src/server.js`) provided routing for various UI components and API proxies.\n    *   API Proxies forwarded requests to backend services like Glama, Detects, Agents, MCP0, and Imagen, with configurable targets via environment variables.\n    *   Health Checks: A `GET /api/health` endpoint aggregated downstream proxy checks, reporting status, HTTP status, latency, and response body.\n*   **PC1 Stack Runbook**:\n    *   PC1 Docker Compose stacks were reorganized into modular units: `pc1-db` (datastores), `pc1-gpu` (GPU/CUDA), `pc1-ai` (AI gateways), `pc1-devops` (DevOps automation), `pc1-web` (web UI, ingress, dev-host), `pc1-stack` (core MCP services), and `pc1-deka` (scraper).\n    *   Each stack required its own `.env` file.\n    *   A recommended start order was established based on service dependencies.\n    *   PowerShell scripts (e.g., `scripts/pc1-*.ps1`, `scripts/pc1-start-all-stacks.ps1`) were the preferred interface for stack lifecycle management.\n*   **PC1 & PC2 Reorganization Patterns**:\n    *   PC1 served as the primary development and production host, featuring authentication (Authentik), webtops, and visualization tools.\n    *   PC2 was a Windows worker host for specialized services like Thai language processing, meeting transcription, and AI4Thai integration.\n    *   PC1's modular structure included `pc1-stack` (core MCP services), `pc1-auth` (Authentik), `pc1-web` (webtops), and `pc1-devops` (development tools).\n*   **Operational Scripts**: A collection of PowerShell (`.ps1`) and Bash (`.sh`) scripts facilitated various operational tasks, including:\n    *   Deploying UI components (`build-ui.sh`).\n    *   Deploying sites to remote hosts (`deploy-a1-idc1.sh`, `deploy-dev-host-mirror.sh`, `deploy-node-1.sh`).\n    *   Managing Caddy ingress configurations (`apply-host-caddy-deka.ps1`, `pc1-caddy-*.ps1`, `idc1-caddy-*.sh`).\n    *   Managing Docker Compose stacks (`scripts/stack.ps1`, `scripts/pc1-*.ps1`, `scripts/idc1-stack.ps1`).\n    *   Performing diagnostics and collecting logs (`diagnostics-a1-idc1.sh`, `idc1-log-bundle.sh`, `pc1-caddy-logs.ps1`).\n    *   Specific IDC1 operations like Code Server management, VPN fixes, and health sweeps.\n    *   `dever-deploy-git-branch.ps1` for git branch-based deployments.\n*   **Survival into `chaba`/`ada-pi`**: The modular Docker Compose stack approach, the concept of a dedicated development environment (like `dev-host`), the `mcp-docker` pattern for API-driven Docker management, the use of `mcp-tester` for automated testing, the general CI/CD workflow of PRs to `main`, and the importance of aggregated health checks likely survived and evolved into the successor projects.\n*   **Dropped from `chaba`/`ada-pi`**: Specific hostnames (e.g., `pc1.vpn`, `idc1.surf-thailand.com`), the `C:\\chaba` Windows-specific deploy policy, and the `node-1` container (already superseded by `dev-host` in `chaba0`). The specific `pc1-db`, `pc1-gpu`, etc., stack names were likely replaced, though the underlying principle of modularization continued.\n\n## Not preserved\n*   The specific `C:\\chaba` local deploy policy for Windows hosts, as successor projects likely adopted more platform-agnostic or containerized deployment strategies.\n*   The `node-1` container, which was already superseded by the `dev-host` environment within `chaba0`.\n*   The detailed, host-specific runbooks for `pc1` and `idc1` (e.g., `docs/pc1-runbook.md`, `docs/pc1-pc2-reorganization-patterns.md`), as the underlying infrastructure and host configurations would have evolved significantly in `chaba`/`ada-pi`. The *principles* of modularization and dependency-based startup would be preserved, but the exact commands and stack compositions would change.\n*   The `TODO.md` and `docs/backlog.md` items, as these represented future work for `chaba0` and would be re-evaluated or completed in the successor projects.\n*   The specific hostnames and network configurations (e.g., `pc1.vpn`, `a1.idc1.surf-thailand.com`), which are environment-specific and would be replaced by new infrastructure details.\n\n## Source map\n\n- `docs/runbooks, scripts/, tools/, backlog` → report sections above (bundle: file headers/READMEs/first-60-lines per file, 106 files)\n",
+   "addedAt": 1790242850,
+   "updatedAt": 1790266154
+  },
+  {
+   "id": "chaba-archive|chaba0/reorg-methodology.md|en",
+   "key": "chaba0/reorg-methodology.md",
+   "lang": "en",
+   "meta": {
+    "content_md5": [
+     "da7ede194af363ed688509e026405dd6"
+    ],
+    "last_synced": [
+     "2026-09-24T16:40:50.265649"
+    ],
+    "last_used": [
+     "2026-09-24"
+    ],
+    "rel_path": [
+     "chaba0/reorg-methodology.md"
+    ],
+    "repo": [
+     "chaba-archive"
+    ],
+    "source": [
+     "docs-sync"
+    ],
+    "title": [
+     "Reorg Methodology — archive of chaba0"
+    ],
+    "use_count": [
+     "52"
+    ]
+   },
+   "contentMd": "---\nkind: archive-report\nbank: chaba-archive\nsource_repo: chaba0\nsource_commit: b5f1a6268e3e754a3281c55261a4ba7c8980bae9\ntopic: reorg-methodology\nstatus: historical\nperiod: [2025-12, 2026-01]\nfollows: []\n\ncovers:\n  - docs/pc1-pc2-reorganization-patterns.md\n  - docs/stack-reorganization-patterns.md\nextracted: 2026-09-24\nextracted_by: gemini-2.5-flash (benchmark)\n---\n\n# Reorg Methodology — archive of chaba0\n\n## Summary\nThis topic outlines the methodology for reorganizing monolithic application stacks into modular, functionally separated components within the `chaba0` project. It established core principles like functional separation, standardized cross-stack communication, and host-specific port allocation. The methodology was initially derived from `idc1-stacks` and then specifically applied and adapted for `pc1` and `pc2` environments.\n\n## Timeline\ndates unknown — frozen 2026-03-28\n\n## Still-true facts\n*   Functional separation of services (Core, AI, DB, Web, DevOps, Line) [still-true]\n*   Use of external networks with consistent naming (`{stack}-{host}-net`) for cross-stack communication [still-true]\n*   Modular stack structure (`stacks/{host}-stack`, `stacks/{host}-{function}/`) [still-true]\n*   Service distribution rules (e.g., Core stack for MCP aggregation, AI stack for inference) [still-true]\n*   The principle of adapting reorganization patterns to host-specific characteristics [still-true]\n*   Specific port ranges for `idc1`, `pc1`, `pc2` within `chaba0` [historical]\n*   The specific modular structure and service assignments for `pc1` and `pc2` within `chaba0` [historical]\n\n## Key details\nThe reorganization methodology focused on breaking down monolithic stacks into smaller, manageable units.\n\n**Core Principles:**\n*   **Functional Separation**: Services were grouped by their primary function into categories: `Core` (MCP aggregation), `AI` (ML/inference), `DB` (data storage), `Web` (UIs), `DevOps` (dev/testing tools), and `Line` (host-specific integrations).\n*   **Cross-Stack Communication**: Standardized external networks (`{stack}-{host}-net`) were used for inter-stack communication, with a consistent `EXTERNAL_SERVICE_URL` environment variable pattern.\n*   **Port Allocation Strategy**: Host-specific port ranges were maintained to avoid conflicts, e.g., `idc1` used 84xx (MCP), 11xxx (AI); `pc1` used 80xx/82xx (MCP), 30xx (Web).\n\n**Architecture Patterns:**\n*   **Modular Stack Structure**: A directory structure was defined where `stacks/{host}-stack/` contained core services, and `stacks/{host}-{function}/` housed specialized stacks (e.g., `pc1-ai/`, `pc1-web/`).\n*   **Service Distribution Rules**: Specific services were assigned to particular stacks. For instance, `Core Stack` (`{host}-stack/`) included MCP aggregation (`1mcp-agent`) and essential MCP services. `AI Stack` (`{host}-ai/`) contained inference servers like `ollama`.\n\n**Host-Specific Adaptations:**\n*   **idc1**: Served as the initial learning ground for these patterns.\n*   **PC1 (Production/Development Host)**: Characterized by authentication (Authentik), webtops, visualization tools, and external Redis/PostgreSQL dependencies. Its modular structure included `pc1-stack` (core MCP), `pc1-auth` (Authentik), `pc1-web` (webtops), and `pc1-devops` (dev tools).\n*   **PC2 (Windows Worker Host)**: Focused on Windows-based development, Thai language processing, meeting transcription, and AI4Thai integration.\n\n**Survival into `chaba`/`ada-pi`:**\nThe fundamental principles of functional separation, modular stack architecture, and standardized cross-stack communication were core architectural tenets that carried forward into successor projects like `chaba` and `ada-pi`. The methodology for adapting these principles to host-specific requirements also survived.\n\n**Dropped from `chaba`/`ada-pi`:**\nThe specific, hardcoded port ranges and detailed service distributions for `idc1`, `pc1`, and `pc2` as defined in `chaba0` were not directly copied.\n\n## Not preserved\nThe highly specific port ranges and the exact, detailed service distributions for `idc1`, `pc1`, and `pc2` as concrete configurations were deliberately not preserved as direct blueprints for `chaba`/`ada-pi`. This was because these configurations were tailored to the `chaba0` environment's specific host roles and infrastructure, which were expected to evolve or be re-evaluated in successor projects. While the *principles* of host-specific adaptation and structured port management were preserved, the *concrete values* and specific service assignments for these legacy hosts were considered `chaba0`-specific and subject to change.\n\n## Source map\n\n- `docs/*reorganization*` → report sections above (bundle: file headers/READMEs/first-60-lines per file, 2 files)\n",
+   "addedAt": 1790242850,
+   "updatedAt": 1790266153
+  },
+  {
+   "id": "chaba-archive|chaba0/sites-apps.md|en",
+   "key": "chaba0/sites-apps.md",
+   "lang": "en",
+   "meta": {
+    "content_md5": [
+     "7d17e0eb091044f1387508482a680fef"
+    ],
+    "last_synced": [
+     "2026-09-24T16:40:50.306200"
+    ],
+    "last_used": [
+     "2026-09-24"
+    ],
+    "rel_path": [
+     "chaba0/sites-apps.md"
+    ],
+    "repo": [
+     "chaba-archive"
+    ],
+    "source": [
+     "docs-sync"
+    ],
+    "title": [
+     "Sites Apps — archive of chaba0"
+    ],
+    "use_count": [
+     "56"
+    ]
+   },
+   "contentMd": "---\nkind: archive-report\nbank: chaba-archive\nsource_repo: chaba0\nsource_commit: b5f1a6268e3e754a3281c55261a4ba7c8980bae9\ntopic: sites-apps\nstatus: historical\nperiod: [2025-12, 2026-03]\nfollows: []\nsuperseded_by: chaba stacks/web + ada-pi PWA\ncovers:\n  - sites/a1-idc1/api/agents/ecosystem.config.cjs\n  - sites/a1-idc1/api/agents/nodemon.json\n  - sites/a1-idc1/api/agents/package-lock.json\n  - sites/a1-idc1/api/agents/package.json\n  - sites/a1-idc1/api/agents/src/server.js\n  - sites/a1-idc1/api/detects/ecosystem.config.cjs\n  - sites/a1-idc1/api/detects/package-lock.json\n  - sites/a1-idc1/api/detects/package.json\n  - sites/a1-idc1/api/detects/src/server.js\n  - sites/a1-idc1/api/glama/ecosystem.config.cjs\n  - sites/a1-idc1/api/glama/package-lock.json\n  - sites/a1-idc1/api/glama/package.json\n  - sites/a1-idc1/api/glama/src/server.js\n  - sites/a1-idc1/config/Caddyfile\n  - sites/a1-idc1/config/Caddyfile.full\n  - sites/a1-idc1/config/Caddyfile.remote\n  - sites/a1-idc1/config/agents-api.service\n  - sites/a1-idc1/config/glama.service\n  - sites/a1-idc1/scripts/sync-agents-ui.js\n  - sites/a1-idc1/scripts/sync-chat-ui.js\n  - sites/a1-idc1/test/agents/index.html\n  - sites/a1-idc1/test/agents/main.js\n  - sites/a1-idc1/test/agents/style.css\n  - sites/a1-idc1/test/ai_app_src/.gitignore\n  - sites/a1-idc1/test/ai_app_src/README.md\n  - sites/a1-idc1/test/ai_app_src/eslint.config.mjs\n  - sites/a1-idc1/test/ai_app_src/next.config.ts\n  - sites/a1-idc1/test/ai_app_src/package-lock.json\n  - sites/a1-idc1/test/ai_app_src/package.json\n  - sites/a1-idc1/test/ai_app_src/public/file.svg\n  - sites/a1-idc1/test/ai_app_src/public/globe.svg\n  - sites/a1-idc1/test/ai_app_src/public/next.svg\n  - sites/a1-idc1/test/ai_app_src/public/vercel.svg\n  - sites/a1-idc1/test/ai_app_src/public/window.svg\n  - sites/a1-idc1/test/ai_app_src/scripts/publish-to-test-ai-app.mjs\n  - sites/a1-idc1/test/ai_app_src/src/app/favicon.ico\n  - sites/a1-idc1/test/ai_app_src/src/app/globals.css\n  - sites/a1-idc1/test/ai_app_src/src/app/layout.tsx\n  - sites/a1-idc1/test/ai_app_src/src/app/page.module.css\n  - sites/a1-idc1/test/ai_app_src/src/app/page.tsx\n  - sites/a1-idc1/test/ai_app_src/tsconfig.json\n  - sites/a1-idc1/test/chat/index.html\n  - sites/a1-idc1/test/chat/main.js\n  - sites/a1-idc1/test/chat/style.css\n  - sites/a1-idc1/test/deka/index.html\n  - sites/a1-idc1/test/deka/main.js\n  - sites/a1-idc1/test/deka/style.css\n  - sites/a1-idc1/test/detects/app.js\n  - sites/a1-idc1/test/detects/index.html\n  - sites/a1-idc1/test/detects/style.css\n  - sites/a1-idc1/test/imagen/app.js\n  - sites/a1-idc1/test/imagen/index.html\n  - sites/a1-idc1/test/imagen/style.css\n  - sites/a1-idc1/test/index.html\n  - sites/a1-idc1/test/inventory/index.html\n  - sites/a1-idc1/test/inventory/inventory.json\n  - sites/a1-idc1/test/project/app.js\n  - sites/a1-idc1/test/project/index.html\n  - sites/a1-idc1/test/project/styles.css\n  - sites/a1-idc1/test/vaja/index.html\n  - sites/a1-idc1/www/test/agents/index.html\n  - sites/a1-idc1/www/test/agents/main.js\n  - sites/a1-idc1/www/test/agents/style.css\n  - sites/a1-idc1/www/test/chat/index.html\n  - sites/a1-idc1/www/test/chat/main.js\n  - sites/a1-idc1/www/test/chat/style.css\n  - sites/dev-host/.env.dev-host.example\n  - sites/dev-host/package-lock.json\n  - sites/dev-host/package.json\n  - sites/dev-host/src/server.js\n  - sites/idc1/config/Caddyfile\n  - sites/idc1/public/cp/index.html\n  - sites/idc1/public/index.html\n  - sites/idc1/test/chat/index.html\n  - sites/idc1/test/chat/main.js\n  - sites/idc1/test/chat/style.css\n  - sites/idc1/test/glama/index.html\n  - sites/idc1/test/glama/main.js\n  - sites/idc1/test/glama/style.css\n  - sites/idc1/test/index.html\n  - ... (358 more files under topic)\nextracted: 2026-09-24\nextracted_by: gemini-2.5-flash (benchmark)\n---\n\n# Sites Apps — archive of chaba0\n\n## Summary\nThe `sites-apps` topic encompasses various web applications and utilities developed within the `chaba0` project, primarily focused on demonstrating deployment, logging, and providing user interfaces for AI interaction. These applications ranged from simple Express-based services for testing infrastructure to more complex Next.js frontends for chatbot functionality. The collection highlights the early exploration of different UI approaches and backend integrations with LLM services like Glama and OpenChat models.\n\n## Timeline\ndates unknown — frozen 2026-03-28\n*   April 2, 2023: Date of a screenshot in `openchat-ui` README, indicating activity around this time.\n\n## Still-true facts\n*   The `sites/` directory contained multiple distinct web applications and utilities. [still-true]\n*   Node.js and Express were the primary technologies for backend services across most applications. [still-true]\n*   `openchat-ui` was a forked version of Chatbot UI, adapted to support OpenChat models. [still-true]\n*   `site-chat` provided a Glama-backed chat panel with a simple static UI. [still-true]\n*   `dev-host-gateway` functioned as a local development proxy using `http-proxy-middleware`. [still-true]\n*   `site-logger`, `site-man`, and `site-sample` were primarily demonstration or testing applications. [still-true]\n*   Deployment targets included Plesk on `node-1.h3.surf-thailand.com`. [historical]\n*   Glama was a key LLM API backend for `site-chat`. [still-true]\n*   `site-man` and `site-sample` were functionally identical, serving as minimal Express application examples. [still-true]\n\n## Key details\nThe `sites-apps` collection served as a proving ground for various web technologies and deployment strategies relevant to an AI assistant platform.\n\n*   **`dev-host-gateway`**: An Express-based reverse proxy (`http-proxy-middleware`) designed to facilitate local development by routing requests to different backend services. This component was crucial for integrating multiple services during development.\n*   **`openchat-ui`**: A significant frontend application, this was a fork of the popular Chatbot UI, specifically modified to interact with OpenChat models. Built with Next.js, it represented an attempt to leverage an existing, feature-rich UI for `chaba0`'s AI interactions. It included internationalization (`next-i18next`) and various tokenizers (`llama3-tokenizer-js`, `mistral-tokenizer-js`).\n*   **`site-chat`**: A simpler, custom-built chat interface. This Express application served a static frontend and proxied API requests directly to the Glama LLM backend, configurable via environment variables for model, temperature, and API key. It offered a more direct, less abstracted approach to integrating with an LLM compared to `openchat-ui`.\n*   **`site-logger`**: An Express service demonstrating structured logging capabilities using `winston` and `winston-daily-rotate-file`. Its purpose was to test and showcase how `chaba0` services could emit and manage logs, particularly in a Plesk deployment environment.\n*   **`site-man` / `site-sample`**: These were identical, minimal Express applications designed to demonstrate basic web service deployment on Plesk. They served static assets and exposed a simple `/api/health` endpoint, acting as templates or proofs-of-concept for new service deployments.\n*   **`site-webhook`**: A minimal Express application, likely a placeholder or a simple endpoint for receiving webhooks, though its specific functionality is not detailed in the provided source.\n*   **`test-ui`**: A Vite-based project, likely intended for testing UI components or a separate frontend experiment, indicating exploration of different frontend build tools beyond Next.js.\n\n**Survival into `chaba`/`ada-pi`**:\n*   The *concept* of a sophisticated, feature-rich chat UI (like `openchat-ui`) likely survived and evolved into the primary user interface for `chaba`/`ada-pi`. Whether the exact `openchat-ui` codebase was directly preserved or heavily refactored/replaced is [uncertain], but its influence on UI design and LLM integration patterns is probable.\n*   The core functionality of `site-chat` (direct LLM interaction via a simple UI) likely informed the backend API design for `chaba`/`ada-pi`, even if the specific frontend was superseded.\n*   The logging patterns demonstrated in `site-logger` would have been critical for `chaba`/`ada-pi`'s operational observability.\n*   The `dev-host-gateway`'s role in local development proxying was likely absorbed into `chaba`/`ada-pi`'s integrated development environment or deployment pipeline.\n*   The specific demo applications (`site-man`, `site-sample`, `site-webhook`, `test-ui`) were likely dropped as distinct projects, but the *knowledge* gained from their deployment and development informed the architecture of `chaba`/`ada-pi`.\n\n## Not preserved\n*   The specific vendored `openchat-ui` fork was likely not preserved directly into `chaba`/`ada-pi`. While its features and design principles were influential, the successor projects likely developed a more tailored or integrated frontend solution, or adopted a different upstream. This decision would have been made to reduce external dependencies, improve maintainability, or better align with `chaba`/`ada-pi`'s unique branding and feature set.\n*   The individual demo and utility applications (`site-logger`, `site-man`, `site-sample`, `site-webhook`, `test-ui`) were not preserved as standalone components in `chaba`/`ada-pi`. Their purpose was primarily for testing and demonstration within `chaba0`'s early development and deployment phases. The functionalities they showcased (logging, basic web serving, deployment patterns) were integrated into the main `chaba`/`ada-pi` platform, but their specific codebases were deemed redundant for the production system.\n*   `dev-host-gateway` as a separate proxy service was likely superseded. Modern development setups or cloud-native deployments often incorporate more robust API gateways or service mesh solutions, making a custom Express proxy less necessary.\n\n## Source map\n\n- `sites/` → report sections above (bundle: file headers/READMEs/first-60-lines per file, 438 files)\n",
+   "addedAt": 1790242850,
+   "updatedAt": 1790266153
+  },
+  {
+   "id": "chaba-archive|index.md|en",
+   "key": "INDEX.md",
+   "lang": "en",
+   "meta": {
+    "content_md5": [
+     "c2a21dff00183b7109ca3492f16c6954"
+    ],
+    "last_synced": [
+     "2026-09-24T17:52:11.005194"
+    ],
+    "last_used": [
+     "2026-09-24"
+    ],
+    "rel_path": [
+     "INDEX.md"
+    ],
+    "repo": [
+     "chaba-archive"
+    ],
+    "source": [
+     "docs-sync"
+    ],
+    "title": [
+     "Archive index — distilled repos"
+    ],
+    "use_count": [
+     "50"
+    ]
+   },
+   "contentMd": "---\nkind: archive-index\nbank: chaba-archive\ntopic: archive-index\nstatus: index\nextracted: 2026-09-24\n---\n\n# Archive index — distilled repos\n\nWhat's here: topic-organized reports distilled from retired repos.\nConvention: `docs/ssot/apps/ssot.apps.archive-distillation.yml`.\nTimeline view: `TIMELINE.md`.\n\n## chaba0 (\"Super AI assistant\", 2025-12 → 2026-03)\n\nPredecessor platform to chaba/ada-pi. 2228 files → 7 reports + 1319\ndeclared-noise. Manifest: `docs/archive/manifests/chaba0.yml`.\nAudit: PASS (unaccounted=0).\n\n| Report | Files | One-liner |\n|---|---|---|\n| [host-infrastructure](chaba0/host-infrastructure.md) | 173 | pc1/pc2/idc1 topology → mapped to tony-omen/tony-dell+mn01/idc01 |\n| [network-dns](chaba0/network-dns.md) | 12 | WireGuard 10.8/24 + *.vpn CoreDNS + surf-thailand.com → replaced by Tailscale |\n| [operations-runbooks](chaba0/operations-runbooks.md) | 106 | scripts, runbooks, backlog — procedures + unmet goals |\n| [reorg-methodology](chaba0/reorg-methodology.md) | 2 | stack-modularization principles — still true |\n| [deployment](chaba0/deployment.md) | 7 | installer + webhook deploy — superseded |\n| [mcp-ecosystem](chaba0/mcp-ecosystem.md) | 171 | ~30 MCP prototypes → which ideas survive in today's MCP set |\n| [sites-apps](chaba0/sites-apps.md) | 438 | app surfaces incl. openchat-ui fork + site-man agent manager |\n\nExtracted by: host-infrastructure + network-dns = Devin; other 5 =\ngemini-2.5-flash (benchmark — see manifest audit.scorecard).\nArchived on GitHub 2026-09-24.\n\n## ada (\"A.D.A — Advanced Design Assistant\", 2025-12 → 2026-02)\n\nDirect ancestor of ada-pi: Gemini Native Audio voice + CAD + 3D\nprinting + gesture UI + face auth + Kasa. 78 files → 1 report.\nManifest: `docs/archive/manifests/ada.yml`. Audit: PASS.\nArchived on GitHub 2026-09-24.\n\n| Report | Files | One-liner |\n|---|---|---|\n| [ada-v2-platform](ada/ada-v2-platform.md) | 76 | the Ada lineage — voice+tools core survives in ada-pi; CAD/print/gesture dropped |\n\n## chaba_weaviate\n\nEmpty repo (0 files) — Weaviate DB experiment never populated.\nManifest records 0 files. Archived on GitHub 2026-09-24.\n",
+   "addedAt": 1790242849,
+   "updatedAt": 1790266153
+  },
+  {
+   "id": "chaba-archive|timeline.md|en",
+   "key": "TIMELINE.md",
+   "lang": "en",
+   "meta": {
+    "content_md5": [
+     "188da1fb8ce4176621759906bcdb8b3d"
+    ],
+    "last_synced": [
+     "2026-09-24T16:40:49.902594"
+    ],
+    "last_used": [
+     "2026-09-24"
+    ],
+    "rel_path": [
+     "TIMELINE.md"
+    ],
+    "repo": [
+     "chaba-archive"
+    ],
+    "source": [
+     "docs-sync"
+    ],
+    "title": [
+     "Archive timeline — all repos"
+    ],
+    "use_count": [
+     "55"
+    ]
+   },
+   "contentMd": "---\nkind: archive-timeline\nbank: chaba-archive\ntopic: global-timeline\nstatus: index\nextracted: 2026-09-24\n---\n\n# Archive timeline — all repos\n\nGenerated view of how the projects evolved. Each entry links to the\narchive report covering that era.\n\n## 2025\n\n- **2025-12-03** — chaba0 initial commit: \"Super AI assistant\" project\n  structure + sample deployment → [all reports](chaba0/)\n- **2025-12-06** — pc2 stack plan + first system census →\n  [host-infrastructure](chaba0/host-infrastructure.md)\n- **2025-12-10** — idc1 inventory snapshot →\n  [host-infrastructure](chaba0/host-infrastructure.md)\n- **2025-12-18/23** — DNS zones authored (surf-thailand.com + vpn.db) →\n  [network-dns](chaba0/network-dns.md)\n\n## 2026\n\n- **2026-01-26** — host JSONs + idc1-vpn last revised — mesh stable →\n  [host-infrastructure](chaba0/host-infrastructure.md)\n- **2026-03-28** — chaba0 frozen (b5f1a62). Work moved to chaba repo\n- **2026-07-08** — chaba0 repo last pushed; superseded by chaba\n- **2026-09** — tailnet cutover: WireGuard 10.8/24 + *.vpn CoreDNS →\n  Tailscale 100.64/10 + MagicDNS; pc1→tony-omen, pc2→tony-dell/mn01,\n  idc1→idc01 (supersedes network-dns, host-infrastructure)\n- **2026-09-24** — chaba0 distilled into 7 reports → chaba-archive bank;\n  repo archived on GitHub\n\n## Supersession chains\n\n```\nchaba0 wireguard+coredns ──superseded-by──► tailscale magicdns\nchaba0 1mcp-agent aggregator ──superseded-by──► devin mcp config\nchaba0 host-caddy :80/:443 ──superseded-by──► tailscale serve (idc01)\nchaba0 mcp fleet ──superseded-by──► current MCP servers (mddb, ha, yomi…)\nchaba0 sites ──superseded-by──► chaba stacks/web + ada-pi PWA\n```\n",
+   "addedAt": 1790242849,
+   "updatedAt": 1790266153
+  }
+ ]
+}

@@ -1,6 +1,6 @@
 {
  "collection": "ada-ha-bank-home",
- "exported_at": "2026-09-23T21:30:05.188953+00:00",
+ "exported_at": "2026-09-24T21:30:13.214752+00:00",
  "doc_count": 3,
  "docs": [
   {
@@ -13,9 +13,6 @@
     ],
     "kind": [
      "procedure"
-    ],
-    "last_used": [
-     "2026-09-23"
     ],
     "last_verified": [
      "2026-09-23"
@@ -38,11 +35,8 @@
     "subject": [
      "remote-access"
     ],
-    "use_count": [
-     "1"
-    ],
     "valid_from": [
-     "2026-09-23"
+     "2026-09-25"
     ],
     "written_by": [
      "obsidian-vault"
@@ -50,7 +44,7 @@
    },
    "contentMd": "How to reach things. Everything admin-facing is tailnet-only: ssh <host> works by tailnet name (tony-dell, mn01, idc01, michael-ha). HA web UIs are Tailscale HTTPS — tony-ha at https://tony-dell.taila0626a.ts.net:8123. MDDB health: curl http://100.74.146.0:11023/health; its systemd unit on idc01 is mddb.service (systemctl --user restart mddb.service). If idc01 freezes (tailscale pings but SSH hangs), use the Siamdata VPS panel console to reboot. Dashboard changes on tony-ha go through the lovelace websocket — no restart needed.",
    "addedAt": 1790180132,
-   "updatedAt": 1790180966
+   "updatedAt": 1790269207
   },
   {
    "id": "ada-ha-bank-home|ada-layout|en",
@@ -62,9 +56,6 @@
     ],
     "kind": [
      "fact"
-    ],
-    "last_used": [
-     "2026-09-23"
     ],
     "last_verified": [
      "2026-09-23"
@@ -87,11 +78,8 @@
     "subject": [
      "ada-instances"
     ],
-    "use_count": [
-     "1"
-    ],
     "valid_from": [
-     "2026-09-23"
+     "2026-09-25"
     ],
     "written_by": [
      "obsidian-vault"
@@ -99,7 +87,7 @@
    },
    "contentMd": "Ada runs as two HA-scoped instances on mn01, plus a guest backend on tony-dell. ada-ha-tony (ws endpoint wss://mn01.taila0626a.ts.net/apps/ha/ada-tony/ws, port 8002) serves Tony's household; ada-ha-michael (port 8003) serves Michael's. Voice clients connect over websocket with a per-device issued api_key; keys are minted/revoked via the chaba-admin Pair tab on tony-ha. The chaba-guest service on tony-dell :8014 runs Ada in CHABA_MEMORY mode — file-backed guest memory only, no MDDB banks, deny-listed dangerous entities. Speaker identification (ECAPA voiceprints) routes memory to person-scoped banks such as ada-ha-bank-personal-kk.",
    "addedAt": 1790180132,
-   "updatedAt": 1790180966
+   "updatedAt": 1790269207
   },
   {
    "id": "ada-ha-bank-home|home-topology|en",
@@ -111,9 +99,6 @@
     ],
     "kind": [
      "fact"
-    ],
-    "last_used": [
-     "2026-09-23"
     ],
     "last_verified": [
      "2026-09-23"
@@ -136,11 +121,8 @@
     "subject": [
      "home-topology"
     ],
-    "use_count": [
-     "1"
-    ],
     "valid_from": [
-     "2026-09-23"
+     "2026-09-25"
     ],
     "written_by": [
      "obsidian-vault"
@@ -148,7 +130,7 @@
    },
    "contentMd": "Household hosts and roles. tony-omen (tony-omen.taila0626a.ts.net): dev/GPU host. tony-dell (tony-dell.taila0626a.ts.net, LAN 192.168.2.67): Home Assistant plus apps host — tony-ha on :8123, michael-dev on :8124, guest services on :8125/:8126. mn01 (mn01.taila0626a.ts.net): Ada and memory host at mn-home — ada-ha-tony backend on :8002, ada-ha-michael on :8003. idc01 (idc01.taila0626a.ts.net): public VPS — MDDB on :11023, Ollama on :11434, gemini-ollama-proxy on :11435, obsidian-vault, open-notebook. michael-ha (michael-ha.taila0626a.ts.net): Michael's Home Assistant. All admin access is tailnet-only; tony-ha binds loopback, no LAN/plain-HTTP.",
    "addedAt": 1790180132,
-   "updatedAt": 1790180966
+   "updatedAt": 1790269207
   }
  ]
 }
