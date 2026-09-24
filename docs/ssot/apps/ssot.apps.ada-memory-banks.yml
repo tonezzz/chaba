@@ -178,6 +178,21 @@ banks:
     status: active
     public: false
     person_scope: person.kk
+  personal-testo:
+    title: Testo private memory
+    description: Person-scoped private memory for Testo (HA user). Assigned to the tony instance but isolated from Tony's personal bank — routed by speaker identity (person.testo_2). Testo also gets a restricted person_policies allowlist so his sessions cannot reach Tony's banks.
+    scope: person
+    instances: [tony]
+    mddb_collection: ada-ha-bank-personal-testo
+    notebooklm_group: null
+    notebooklm_id: null
+    kinds: [fact, preference, note]
+    writable: true
+    write_policy: direct
+    allowed_tools: [ada_remember, ada_forget, ada_outcome]
+    status: active
+    public: false
+    person_scope: person.testo_2
     speaker_name: KK
   tony-projects:
     title: Tony project notes
@@ -416,6 +431,19 @@ banks:
     allowed_tools: []
     status: active
     public: false
+
+# Per-identity bank ACL — resolved against the session's memory identity:
+# identified speaker's HA person entity first, then the issued device-key
+# name, then 'unknown' for anonymous sessions (no key, no speaker).
+# Identities without an entry get the full instance set (tony/kk unchanged).
+# allow = whitelist; deny = subtractive.
+person_policies:
+  person.testo_2:
+    allow: [general, home, people, purchase, personal-testo]
+  testo:
+    allow: [general, home, people, purchase, personal-testo]
+  unknown:
+    allow: [general, home]
 
 config:
   version: 3
