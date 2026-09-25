@@ -181,6 +181,36 @@ full remote serial: console read, DTR/RTS download-mode reset, flash.
 - SolarAssistant dongle: `192.168.1.120` (web UI on :80, MQTT :1883
   auth-required; monitors the house Solis system, NOT the station BMS).
 
+## Battery/BMS hunt status (2026-09-25)
+
+- **Physical layout (Tony):** battery packs + their controller ARE inside
+  the same cabinet as the RK600/HMI/ESP32. Tech says "JK BMS" (unverified);
+  his phone app connects when he's physically close.
+- **In-box BLE scan: NOTHING in 12 h+.** jkbms ran a continuous active
+  `esp32_ble_tracker` — only ~8 weak (-85..-97 dBm) unnamed random-MAC
+  advertisers (household devices). A JK dongle advertises continuously
+  when powered+unconnected (per JK manual), and its connection indicator
+  "flashes when disconnected" — silence therefore implies one of:
+  1. BLE module RST/power-switched off except when needed (documented JK
+     trick — syssi/esphome-jk-bms issue #107)
+  2. It's Bluetooth Classic/SPP, not BLE — esp32_ble_tracker is blind to
+     classic BT; the phone app would still work
+  3. "JK BMS" is shorthand and it's actually another brand with
+     wake-on-demand BLE
+- **Decisive next step:** the app NAME on the tech's phone (identifies
+  brand+protocol instantly) or an nRF Connect scan at the cabinet (shows
+  advert name/MAC; also check Android BT settings — if the device appears
+  there it's classic BT).
+- **HMI serial:** app holds ttyO0+ttyO1 (ttyO3=console, ttyUSB*=GSM modem,
+  no tty for the ESP32 CH340). ttyO1 carried ONE bursty burst of ~29-byte
+  binary frames @ ~1 Hz (see /tmp/o1.cap analysis — fields don't match
+  the weather snapshot, so probably NOT the RK600 feed; possibly the
+  battery controller). ttyO0 silent in all captures. App polls may only
+  run while the screen is awake — screen is off (mScreenOn=false,
+  screencap blank) and keyevent wake didn't stick.
+- `SCharger-7KS-S0-NS2351395951` @ 58:56:C2:C8:EE:62 = Huawei EV wallbox
+  (paired to michael-ha hci0 during earlier probing). Not the BMS.
+
 ## Notes
 
 - The PSK for `TONY-WIFI_2.4G` is stored in the tony-dell `secrets.yaml` and referenced via `!secret` in the repo config.
