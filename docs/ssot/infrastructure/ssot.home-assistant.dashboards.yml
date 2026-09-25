@@ -68,8 +68,11 @@ instances:
       added to the pair view 2026-09-25 — polls the input-bridge relay
       /api/input-bridge/displays (CORS-open, tailnet-only) and lists
       registered Screen #N rows + pending displays. Row actions: test HLS
-      play, test page nav, stop, re-pair (pushes unpaired so the display
-      shows its claim QR again), revoke (POST /release with admin key).
+      play, test page nav, test sound (audio pub of /apps/vcast/beep.wav),
+      stop, re-pair (pushes unpaired so the display shows its claim QR
+      again), revoke (POST /release with admin key). Header "➕ QR" pops a
+      QR for the bare /apps/vcast/ URL (vendored /local/qrcode.min.js) — the
+      scanned device opens unpaired and shows its own claim QR.
       Pairing itself is display-initiated: the unpaired /apps/vcast/ page
       shows a QR that opens /apps/vcast/pair.html?sid= on the admin phone
       (see docs/ssot/apps/ssot.apps.vcast.yml).

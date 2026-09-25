@@ -1,13 +1,18 @@
 // vcast-screens-card — lists virtual cast displays registered on the
 // input-bridge relay, plus pending (unpaired) displays showing a QR.
-// Polls GET <api>/displays; actions: test-cast (nav/play pub), re-pair
+// Polls GET <api>/displays; actions: test-cast (nav/play/audio pub), re-pair
 // (push unpaired -> display shows its QR again), release (revoke key).
+// "Add screen" pops a QR for the bare /apps/vcast/ URL — scan it on the
+// device to open the app; the device then shows its own claim QR.
 // Config: api (default https://tony-dell.taila0626a.ts.net/api/input-bridge),
-//         refresh (seconds, default 5), test_play_url, test_nav_url
+//         refresh (seconds, default 5), test_play_url, test_nav_url,
+//         test_audio_url, app_url
 class VcastScreensCard extends HTMLElement {
   setConfig(config) {
     this._config = config || {};
     this._api = (this._config.api || "https://tony-dell.taila0626a.ts.net/api/input-bridge").replace(/\/+$/, "");
+    this._origin = this._api.replace(/\/api\/input-bridge\/?$/, "");
+    this._appUrl = this._config.app_url || `${this._origin}/apps/vcast/`;
     this._refreshMs = Math.max(2, this._config.refresh || 5) * 1000;
     this._card = document.createElement("ha-card");
     this._card.header = this._config.title || "Virtual cast screens";
@@ -54,16 +59,84 @@ class VcastScreensCard extends HTMLElement {
     this._render(data);
   }
 
+  async _qrLib() {
+    if (window.qrcode) return window.qrcode;
+    if (!this._qrP) {
+      this._qrP = new Promise((res, rej) => {
+        const s = document.createElement("script");
+        s.src = "/local/qrcode.min.js";
+        s.onload = () => res(window.qrcode);
+        s.onerror = () => rej(new Error("qrcode.min.js not found"));
+        document.head.appendChild(s);
+      });
+    }
+    return this._qrP;
+  }
+
+  async _showAppQr() {
+    const ov = document.createElement("div");
+    ov.style.cssText =
+      "position:fixed;inset:0;z-index:9999;display:grid;place-items:center;background:rgba(0,0,0,.6)";
+    const card = document.createElement("div");
+    card.style.cssText =
+      "background:var(--card-background-color,#1c2128);padding:20px;border-radius:12px;" +
+      "display:flex;flex-direction:column;align-items:center;gap:10px;max-width:340px";
+    const title = document.createElement("div");
+    title.style.cssText = "font-weight:600;font-size:.95rem";
+    title.textContent = "Open vcast on a device";
+    const body = document.createElement("div");
+    body.style.cssText =
+      "width:236px;min-height:236px;background:#fff;border-radius:8px;padding:8px;" +
+      "display:grid;place-items:center;color:#333;font-size:12px;text-align:center";
+    body.textContent = "rendering…";
+    const link = document.createElement("a");
+    link.style.cssText = "font-size:.7rem;color:var(--primary-color);word-break:break-all;max-width:300px";
+    link.href = this._appUrl;
+    link.target = "_blank";
+    link.rel = "noopener";
+    link.textContent = this._appUrl;
+    const hint = document.createElement("div");
+    hint.style.cssText = "font-size:.72rem;color:var(--secondary-text-color);text-align:center";
+    hint.textContent = "The device opens unpaired and shows its own QR — scan that to claim it.";
+    const close = this._btn("Close");
+    close.onclick = () => ov.remove();
+    ov.onclick = (e) => { if (e.target === ov) ov.remove(); };
+    card.append(title, body, link, hint, close);
+    ov.appendChild(card);
+    document.body.appendChild(ov);
+    try {
+      const qrlib = await this._qrLib();
+      const qr = qrlib(0, "M");
+      qr.addData(this._appUrl);
+      qr.make();
+      body.innerHTML = qr.createImgTag(5);
+    } catch (e) {
+      body.textContent = "QR failed — open " + this._appUrl;
+      body.style.color = "#b43228";
+    }
+  }
+
   _render(data) {
     const list = this._list;
     list.innerHTML = "";
     const screens = (data && data.screens) || [];
     const pending = (data && data.pending) || [];
 
+    const top = document.createElement("div");
+    top.style.cssText = "display:flex;align-items:center;gap:8px";
+    const hintEl = document.createElement("span");
+    hintEl.style.cssText = "flex:1;font-size:.75rem;color:var(--secondary-text-color)";
+    hintEl.textContent = "New display:";
+    const addBtn = this._btn("➕ QR");
+    addBtn.title = "Show a QR that opens /apps/vcast/ on a device (it then shows its own claim QR)";
+    addBtn.onclick = () => this._showAppQr();
+    top.append(hintEl, addBtn);
+    list.appendChild(top);
+
     if (!screens.length && !pending.length) {
       const d = document.createElement("div");
       d.style.color = "var(--secondary-text-color)";
-      d.innerHTML = "No screens yet — open <b>/apps/vcast/</b> on a device and scan the QR it shows.";
+      d.innerHTML = "No screens yet — scan the QR above to open <b>/apps/vcast/</b> on a device.";
       list.appendChild(d);
       return;
     }
@@ -98,6 +171,16 @@ class VcastScreensCard extends HTMLElement {
       navBtn.title = "Cast a test page (iframe nav)";
       navBtn.onclick = () =>
         this._pub(s.screen, { type: "nav", url: this._config.test_nav_url || "https://tony-dell.taila0626a.ts.net/apps/" });
+      const sndBtn = this._iconBtn("mdi:volume-high");
+      sndBtn.title = "Play a test sound (needs the 'tap for audio' gesture once on iOS)";
+      sndBtn.onclick = async () => {
+        const r = await this._pub(s.screen, {
+          type: "audio",
+          url: this._config.test_audio_url || `${this._origin}/apps/vcast/beep.wav`,
+        });
+        sndBtn.style.opacity = r.delivered ? "0.5" : "1";
+        setTimeout(() => (sndBtn.style.opacity = "1"), 1200);
+      };
       const stopBtn = this._iconBtn("mdi:stop");
       stopBtn.title = "Stop casting — back to idle screen";
       stopBtn.onclick = () => this._pub(s.screen, { type: "stop" });
@@ -118,7 +201,7 @@ class VcastScreensCard extends HTMLElement {
         if (r.error) { localStorage.removeItem("vcast.admin_key"); alert("Release failed: " + r.error); }
         this._poll();
       };
-      row.append(playBtn, navBtn, stopBtn, reBtn, del);
+      row.append(playBtn, navBtn, sndBtn, stopBtn, reBtn, del);
       list.appendChild(row);
     }
   }
