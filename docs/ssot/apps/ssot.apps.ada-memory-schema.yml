@@ -108,6 +108,10 @@ meta_schema:
     # docs/ada-memory/tony-projects/knowledge-circle.md
     use_count: {required: false, type: int}
     last_used: {required: false, type: date}
+    # prime:true opts a fact into session-start context injection
+    # (session_prime_text) — use sparingly; primed facts cost tokens
+    # every turn of every live session.
+    prime: {required: false, type: bool}
     outcome: {required: false}
     outcome_note: {required: false}
     outcome_session: {role: provenance, required: false}
