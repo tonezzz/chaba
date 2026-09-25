@@ -42,7 +42,21 @@ def main():
         entry["ref"] = args.ref
     if args.ttl_hours != 72:
         entry["ttl_hours"] = args.ttl_hours
-    entries.append(entry)
+
+    # Refresh-on-re-mention: same --ref (or identical text with no ref)
+    # bumps ts in place so a still-active thread doesn't age out.
+    merged = False
+    for e in entries:
+        if args.ref and e.get("ref") == args.ref:
+            e["ts"], e["text"] = entry["ts"], text
+            merged = True
+            break
+        if not args.ref and e.get("text", "").casefold() == text.casefold():
+            e["ts"] = entry["ts"]
+            merged = True
+            break
+    if not merged:
+        entries.append(entry)
 
     entries.sort(key=lambda e: str(e.get("ts", "")), reverse=True)
     STORE.parent.mkdir(parents=True, exist_ok=True)

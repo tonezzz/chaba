@@ -31,6 +31,7 @@ import re
 import shutil
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 REMOTE_BASE = "~/.local/share/ada"
@@ -111,6 +112,9 @@ def main() -> int:
                     help="journal window for the ops layer")
     ap.add_argument("--no-hosts", action="store_true",
                     help="skip host-report.py health sweep")
+    ap.add_argument("--keep-days", type=int, default=30,
+                    help="prune mirrored transcripts/reports older than this "
+                         "(local mirror only; remote untouched)")
     ap.add_argument("--hosts", default="idc01,mn01,tony-dell,tony-omen",
                     help="comma-separated hosts for the health sweep")
     ap.add_argument("--backfill", action="store_true",
@@ -211,6 +215,20 @@ def main() -> int:
             capture_output=True, text=True)
         print(r.stdout.strip().splitlines()[0] if r.stdout.strip()
               else f"ops: {r.stderr.strip()[:120]}")
+
+    # ---- local mirror retention ----
+    cutoff = time.time() - args.keep_days * 86400
+    pruned = 0
+    for p in list(args.out.glob("*.md")) + list(reports_dir.glob("*.json")):
+        try:
+            if p.stat().st_mtime < cutoff:
+                p.unlink()
+                pruned += 1
+        except OSError:
+            pass
+    if pruned:
+        print(f"retention: pruned {pruned} mirrored files older than "
+              f"{args.keep_days}d")
 
     # ---- host health sweep ----
     host_ops = review / "host-ops.jsonl"
