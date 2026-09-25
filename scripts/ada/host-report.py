@@ -78,19 +78,22 @@ def sweep_host(host: str, since: str) -> dict:
     fails: Counter = Counter()
     restart_counters: dict[str, int] = {}
     for ln in journal:
+        # Skip function_call result dumps — transcript/tool-result text can
+        # contain phrases like "Out of memory" and inflate signal counts.
+        is_dump = "function_call result" in ln
         if (m := RX_STARTED.search(ln)):
             restarts[m.group(1)] += 1
         if (m := re.search(r"([\w@.-]+\.service): Scheduled restart job, "
                            r"restart counter is at (\d+)", ln)):
             restart_counters[m.group(1)] = max(
                 restart_counters.get(m.group(1), 0), int(m.group(2)))
-        if " ERROR" in ln or (" error" in ln.lower()
-                              and " 0 error" not in ln):
+        if not is_dump and (" ERROR" in ln or (" error" in ln.lower()
+                                              and " 0 error" not in ln)):
             key = ln.strip()[:80]
             errors[key] += 1
-        if RX_OOM.search(ln):
+        if not is_dump and RX_OOM.search(ln):
             oom += 1
-        if (m := RX_UNIT_FAIL.search(ln)):
+        if not is_dump and (m := RX_UNIT_FAIL.search(ln)):
             fails[m.group(1)] += 1
 
     failed_txt = _ssh(host, "systemctl --user --failed --no-legend "
