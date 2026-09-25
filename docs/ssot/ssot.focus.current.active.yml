@@ -9,13 +9,17 @@ sections:
       - label: Ada memory-recall misrouting + tool-call storm (from chaba-memory-review scenario)
         text:
           "Live scenario on ada-ha-tony (2026-09-25): 'summarize chaba memory development' misrouted to plan_day/tasks_list
-          instead of memory banks; 'propose an improvement plan' triggered a 194-call tool storm (device confidence, control_entity,
-          sensors) with an empty transcript. ada_remember then saved an off-topic note; corrected report is at
-          ada-ha-bank-projects-tony/tony-projects/chaba-memory-review.\n
-          Pending fixes:\n- Steer development/status questions to ada_memory_search(bank=all) before calendar/tasks tools.\n
-          - Per-turn tool-call budget (~20) with graceful fallback.\n- ada_remember content check against the turn transcript."
+          instead of memory banks; planning turns triggered 194/195-call tool storms (device confidence, control_entity,
+          sensors) with empty transcripts — and the storm ACTUATED plug_tv + a washing-machine plug, bypassing the
+          dangerous-device gate via model-asserted confirmed=true.\n
+          Fixes shipped (ada-pi d63e368/33e35f6/a4a4e72, deployed idc01): memory-first steering in instructions;
+          ADA_TOOL_CALL_BUDGET=20 + answer-now nudge; ADA_ACTUATION_BUDGET=6/turn; confirmed=true now requires a real
+          user affirmation in the transcript; ada_remember refused after budget exhaustion; scenario max_calls guard.\n
+          Final run: PASS 4/4. Report: ada-ha-bank-projects-tony/tony-projects/chaba-memory-review.\n
+          Residual: storms still occur intermittently (T4 ran 52 calls) — contained but worth watching; consider
+          lowering ADA_ACTUATION_BUDGET to ~3."
         status: active
-        priority: high
+        priority: medium
         started: "2026-09-25"
         tags:
           - ada
