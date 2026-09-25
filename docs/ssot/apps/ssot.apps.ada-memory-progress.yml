@@ -154,10 +154,24 @@ milestones:
       - { task: "Deployed ada-pi 8182b89 to mn01 (both services healthy); pushed a83f80d", status: done, date: "2026-09-22" }
       - { task: "Seeded michael notebooks: Infra 5 / Ops 5 / KB 3 / Apps 3 sources from shared ssot-summaries + kb runbooks; verified via chat/ask on Infra", status: done, date: "2026-09-22" }
 
+  - id: session-review
+    title: Session digestion + ops review pipeline (L0->L2)
+    status: done
+    items:
+      - { task: "L0->L1->L2 stack: raw transcripts (private) -> session-report.py Gemini reports + rolling session-memory.md -> focus-rollup.py digest + focus-index", status: done, date: "2026-09-24" }
+      - { task: "L1 written live at session end by ada-pi conversation_memory (a142760); export-transcripts.py pulls transcripts+reports+memory+events.md and is the single refresh entry point (--backfill idempotent)", status: done, date: "2026-09-24" }
+      - { task: "L1.5 ops layer: journal-report.py -> session-ops.jsonl (tools/errors/latency/tokens/aborts/suggestions/memory-writes/ext-writes/restarts) merged into reports + '## ops' block in digest", status: done, date: "2026-09-25" }
+      - { task: "L1.5b host sweep: host-report.py -> host-ops.jsonl (restarts/counters/err-lines/oom/unit-fails/disk per host) rendered as '## hosts' block; parallel ssh sweeps w/ reachability probe; transcript-dump lines excluded from signal counts", status: done, date: "2026-09-25" }
+      - { task: "Ops findings fixed: agenda prefetch 4s->12s timeout + repr(exc) logging (ada-pi ed7f689); HABIT_TOOLS exclusion group strips dead habit tools+instructions on non-hardware instances (0a60195, env set on all 3 idc01 units)", status: done, date: "2026-09-25" }
+      - { task: "Host findings: warp-taskbar crash-loop (6.6k restarts/48h, counter 10051) disabled on idc01; open-notebook-surreal ghost cleared on tony-dell; tony-dell disk 83% (13.4G reclaimable docker images)", status: done, date: "2026-09-25" }
+      - { task: "Backfill complete: all real transcripts have L1 reports (65 reports, 90 focus threads); Gemini 503 window recovered", status: done, date: "2026-09-25" }
+      - { task: "Open: export-transcripts.py refresh is manual — a daily timer (idc01 or tony-omen) would close the loop", status: pending }
+      - { task: "Open: tony-omen mcp-health-snapshot ~50 fails/48h (top persistent failure); tony-dell playlive-macbook-tunnel x35 fails", status: pending }
+
 config:
   version: 6
   created: "2026-09-19"
-  updated: "2026-09-22"
+  updated: "2026-09-25"
   maintainer: tony
   status: active
   deployment: mn01
