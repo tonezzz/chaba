@@ -1,0 +1,66 @@
+title: ARP inventory alert
+subtitle: Network scan changes detected at 2026-09-25-091335
+icon: inbox
+focus:
+  label: Review ARP inventory scan results
+  text: 'ARP inventory scan found changes compared to the MAC/IP registries.
+
+
+    - New devices: 0
+
+    - New IP for known device: 1
+
+    - MAC changed: 5
+
+    - Conflicts: 7
+
+    - Duplicate MACs in scan: 0
+
+
+    Report: reports/network-inventory-scan-2026-09-25-091335.json'
+  branch: chaba
+  priority: medium
+  status: draft
+  tags:
+  - network
+  - arp
+  - inventory
+  - mac-registry
+  safe_to_parallel:
+    value: true
+    reason: Registry review only; does not change live services.
+  subtasks:
+  - label: Add new IP 192.168.2.94 for kks-mac-studio to IP registry
+    status: not_started
+  - label: Check MAC change for 192.168.2.79 (was discovered-ea9b8fd280f0, now 90:1b:0e:e4:e3:a5)
+    status: not_started
+  - label: Check MAC change for 192.168.2.69 (was iphone-tony, now e4:ae:e4:35:70:1e)
+    status: not_started
+  - label: Check MAC change for 192.168.2.89 (was honor-pad-9, now 2c:b4:71:a7:2a:17)
+    status: not_started
+  - label: Check MAC change for 192.168.2.74 (was discovered-68f0bcad208a, now b8:88:80:cb:7d:2c)
+    status: not_started
+  - label: Check MAC change for 192.168.2.75 (was hp-deskjet-2700, now 26:40:66:65:16:7c)
+    status: not_started
+  - label: 'Resolve MAC/IP conflict: 192.168.2.88 / ea:9b:8f:d2:80:f0'
+    status: not_started
+  - label: 'Resolve MAC/IP conflict: 192.168.2.90 / 0a:f0:bc:ad:20:8b'
+    status: not_started
+  - label: 'Resolve MAC/IP conflict: 192.168.2.72 / 22:73:11:ed:13:53'
+    status: not_started
+  - label: 'Resolve MAC/IP conflict: 192.168.2.73 / e0:73:e7:05:c5:16'
+    status: not_started
+  - label: 'Resolve MAC/IP conflict: 192.168.2.80 / 06:28:58:26:4b:2c'
+    status: not_started
+  - label: 'Resolve MAC/IP conflict: 192.168.2.76 / fa:31:d9:bd:44:ff'
+    status: not_started
+  - label: 'Resolve MAC/IP conflict: 192.168.2.65 / 0a:f0:bc:ad:20:8b'
+    status: not_started
+ownership:
+  owner: tony
+  session: ''
+  locked: false
+  lock_reason: ''
+source:
+  session: ''
+  date: '2026-09-25'

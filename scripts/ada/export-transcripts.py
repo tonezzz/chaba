@@ -240,6 +240,15 @@ def main() -> int:
             capture_output=True, text=True, timeout=300)
         print((r.stdout.strip().splitlines() or ["host sweep: no output"])[0])
 
+    # ---- HA log sweep ----
+    ha_ops = review / "ha-ops.jsonl"
+    if not args.no_hosts and args.local is None:
+        r = subprocess.run(
+            [sys.executable, str(ADA_SCRIPTS / "ha-report.py"),
+             "--since", args.ops_since],
+            capture_output=True, text=True, timeout=300)
+        print((r.stdout.strip().splitlines() or ["ha sweep: no output"])[0])
+
     # ---- rollup ----
     if not args.no_rollup:
         cmd = [sys.executable, str(ADA_SCRIPTS / "focus-rollup.py"),
@@ -248,6 +257,8 @@ def main() -> int:
             cmd += ["--ops", str(ops_file)]
         if host_ops.exists():
             cmd += ["--hosts", str(host_ops)]
+        if ha_ops.exists():
+            cmd += ["--ha", str(ha_ops)]
         r = subprocess.run(cmd, capture_output=True, text=True)
         print(r.stdout.strip() or r.stderr.strip())
 
