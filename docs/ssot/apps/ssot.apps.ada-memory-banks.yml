@@ -433,6 +433,20 @@ banks:
     allowed_tools: []
     status: active
     public: false
+  ops-scenarios:
+    title: Live scenario test reports
+    description: "Reports from the ada-scenario-runner service (stacks/services/ada-scenario-runner): one doc per live-scenario run against ada-ha-* with pass/fail/flaky status, per-turn timeline (prompt → tool calls → verdict), and runner output. Read-only — reports are written by scenario-report.py, not ada_remember. Lets Ada answer 'did the doc-recall scenario pass last night?' from memory search."
+    scope: instance
+    instances: [tony]
+    mddb_collection: ada-ha-scenario-reports
+    notebooklm_group: null
+    notebooklm_id: null
+    kinds: [report]
+    writable: false
+    write_policy: confirmed
+    allowed_tools: []
+    status: active
+    public: false
 
 # Conversational persona — adjustable per-identity style knobs. Stored as
 # doc 'persona/self' inside the speaker's resolved personal bank (personal,

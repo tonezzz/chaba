@@ -68,6 +68,8 @@ class AdaVoiceCard extends HTMLElement {
     this._autoMuted = false;
     this._mintRetried = false;
     this._state = "idle"; // idle | locked | connecting | listening | speaking | reconnecting | error
+    this._docNotes = [];      // queued "document uploaded" session notes
+    this._docUploading = false;
     this._build();
   }
 
@@ -132,12 +134,31 @@ class AdaVoiceCard extends HTMLElement {
     autoLabel.title = "Auto-mute the mic when you stop speaking — speak again to resume";
     autoLabel.append(this._autoChk, document.createTextNode("Auto"));
 
+    // Attach button — upload a photo/document for Ada to assess, then
+    // archive/print via voice. capture-less accept still offers the camera
+    // on iOS/Android pickers.
+    this._attachBtn = document.createElement("button");
+    this._attachBtn.style.cssText = this._muteBtn.style.cssText;
+    this._attachBtn.textContent = "📎";
+    this._attachBtn.title = "Upload a document/photo for Ada";
+    this._attachBtn.onclick = () => this._fileInput?.click();
+    this._fileInput = document.createElement("input");
+    this._fileInput.type = "file";
+    this._fileInput.accept = "image/*";
+    this._fileInput.style.display = "none";
+    this._fileInput.onchange = () => {
+      const f = this._fileInput.files && this._fileInput.files[0];
+      this._fileInput.value = "";
+      if (f) this._uploadDoc(f);
+    };
+
     const ctl = document.createElement("div");
     ctl.style.cssText = "display:flex;flex-direction:column;gap:6px;align-items:stretch;flex:none";
-    ctl.append(this._muteBtn, autoLabel);
+    ctl.append(this._attachBtn, this._muteBtn, autoLabel);
 
     row.append(this._micBtn, mid, ctl);
     body.appendChild(row);
+    body.appendChild(this._fileInput);  // must be in-DOM for Safari pickers
 
     this._line = document.createElement("div");
     this._line.style.cssText =
@@ -178,6 +199,91 @@ class AdaVoiceCard extends HTMLElement {
     this._card.appendChild(body);
     this.appendChild(this._card);
     this._render();
+  }
+
+  // ---------- document upload ----------
+
+  _apiBase() {
+    const ws = this._config.ws_url || AVC_DEFAULT_WS;
+    return ws.replace(/^ws(s?):/, "http$1:").replace(/\/ws\/?$/, "");
+  }
+
+  async _uploadDoc(file) {
+    if (this._docUploading) return;
+    this._docUploading = true;
+    this._setStatus(`Uploading ${file.name}…`);
+    try {
+      const blob = await this._downscale(file);
+      const b64 = await new Promise((res, rej) => {
+        const r = new FileReader();
+        r.onload = () => res(String(r.result).split(",", 2)[1]);
+        r.onerror = rej;
+        r.readAsDataURL(blob);
+      });
+      const resp = await fetch(`${this._apiBase()}/api/documents/intake`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-API-Key": this._apiKey(),
+        },
+        body: JSON.stringify({
+          image_b64: b64, image_mime: blob.type || "image/jpeg",
+          filename: file.name, mode: "both",
+        }),
+      });
+      const out = await resp.json().catch(() => ({}));
+      if (!resp.ok) throw new Error(out.detail || `HTTP ${resp.status}`);
+      const w = (out.measured || {}).width || "?";
+      const h = (out.measured || {}).height || "?";
+      const warn = (out.warnings || []).length ? " ⚠ " + out.warnings.join("; ") : "";
+      this._line.textContent = `📎 ${file.name} → ${out.doc_type} ${w}×${h}${warn}`;
+      avcLog("doc", `${file.name} → ${out.doc_type} (${out.key})`);
+      // Session note — sent when the voice session is idle so it never
+      // lands mid-response (mid-turn text turns can abort the stream).
+      const note =
+        `[document uploaded via card] file=${file.name} intake_key=${out.key} ` +
+        `type=${out.doc_type} size=${w}x${h}` +
+        (warn ? ` warnings=${out.warnings.join("; ")}` : "") +
+        " — ask what to do with it (archive/print); the intake key is held in RAM only.";
+      this._docNotes.push(note);
+      this._flushDocNotes();
+    } catch (e) {
+      this._line.textContent = `📎 upload failed: ${e.message || e}`;
+      avcLog("error", `doc upload: ${e.message || e}`);
+    } finally {
+      this._docUploading = false;
+      this._render();
+    }
+  }
+
+  async _downscale(file, maxSide = 2400, quality = 0.87) {
+    // Phone shots are 10-15MB; intake needs at most ~2400px for 300dpi A4.
+    try {
+      const bmp = await createImageBitmap(file);
+      const scale = Math.min(1, maxSide / Math.max(bmp.width, bmp.height));
+      if (scale >= 1) return file;
+      const c = document.createElement("canvas");
+      c.width = Math.round(bmp.width * scale);
+      c.height = Math.round(bmp.height * scale);
+      c.getContext("2d").drawImage(bmp, 0, 0, c.width, c.height);
+      return await new Promise((res) =>
+        c.toBlob((b) => res(b || file), "image/jpeg", quality));
+    } catch {
+      return file;  // e.g. HEIC the browser can't decode — let the server try
+    }
+  }
+
+  _flushDocNotes() {
+    // Never inject a text turn while Ada is mid-response — queue until the
+    // session is listening (or reconnect flushes on 'ready').
+    if (!this._docNotes.length) return;
+    if (!this._socket || this._socket.readyState !== 1) return;
+    if (this._state !== "listening") return;
+    const notes = this._docNotes.splice(0);
+    for (const text of notes) {
+      try { this._socket.send(JSON.stringify({ type: "text", text })); }
+      catch { this._docNotes.unshift(text); break; }
+    }
   }
 
   // ---------- auth ----------
@@ -382,6 +488,7 @@ class AdaVoiceCard extends HTMLElement {
       case "ready":
         this._state = "listening";
         this._setStatus("Connected — listening");
+        this._flushDocNotes();
         break;
       case "speech_started":
         this._setStatus("Speech detected");
@@ -414,6 +521,7 @@ class AdaVoiceCard extends HTMLElement {
       case "response_completed":
         this._assistantPlaying = false;
         this._state = "listening";
+        this._flushDocNotes();
         if (this._assistantEntry) this._line.textContent = `Ada: ${this._assistantEntry}`;
         avcLog("ada", this._pendingAdaLog || this._assistantEntry);
         this._pendingAdaLog = null;
@@ -424,6 +532,7 @@ class AdaVoiceCard extends HTMLElement {
       case "response_interrupted":
         this._assistantPlaying = false;
         this._state = "listening";
+        this._flushDocNotes();
         if (this._pendingAdaLog) avcLog("ada", this._pendingAdaLog + " (interrupted)");
         this._pendingAdaLog = null;
         this._assistantEntry = null;
