@@ -25,7 +25,9 @@ from __future__ import annotations
 import argparse
 import datetime
 import json
+import os
 import re
+import urllib.request
 from pathlib import Path
 
 import yaml
@@ -266,6 +268,37 @@ def build_ada() -> dict:
             summary=f"{len(kids)} host(s) swept",
             children=kids))
 
+    # ops events — tool storms, actuation caps, confirm strips, blocked
+    # writes. Emitted by ada-pi into the ada-ha-events MDDB collection;
+    # read back here so containment shows on the Report tab. Optional:
+    # any failure just omits the section.
+    ops = _mddb_ops_events()
+    if ops:
+        kids = []
+        flagged = 0
+        for d in ops:
+            meta = d.get("meta") or {}
+            ev_type = (meta.get("type") or ["?"])[0]
+            ts = (meta.get("ts") or [""])[0][:16].replace("T", " ")
+            tool = (meta.get("tool") or [""])[0]
+            sev = ev_type in ("tool_storm", "actuation_cap", "confirm_strip")
+            flagged += sev
+            kids.append(node(
+                "opsev-" + slugify(ts + ev_type), f"{ts} — {ev_type}",
+                icon="mdi:shield-alert-outline",
+                badge=ev_type,
+                summary=(f"{tool}: " if tool else "")
+                        + first_line(d.get("contentMd", "")),
+                body=d.get("contentMd", ""),
+                meta={"type": ev_type, "tool": tool} if tool
+                     else {"type": ev_type}))
+        layer["children"].append(node(
+            "ada-ops-events", "Ops events",
+            icon="mdi:shield-outline",
+            badge=f"{flagged} flagged" if flagged else str(len(kids)),
+            summary=f"{len(kids)} containment event(s) in 24h",
+            children=kids))
+
     # recent session summaries
     smem = md_blocks(ADA_REVIEW / "session-memory.md", min_chars=60)
     if smem:
@@ -283,6 +316,51 @@ def build_ada() -> dict:
     layer["summary"] = ("; ".join(c["summary"] for c in layer["children"])
                         or "no ada-review data")
     return layer
+
+
+MDDB_URL = os.environ.get("MDDB_BASE_URL",
+                          "http://100.74.146.0:11023/v1").rstrip("/")
+OPS_COLLECTION = os.environ.get("ADA_OPS_COLLECTION",
+                                "ada-ha-events-tony")
+OPS_WINDOW_H = 24
+
+
+def _mddb_ops_events() -> list[dict]:
+    """Recent ops/containment events emitted by ada-pi (kind=ops-event).
+    Network read with a hard timeout — failure returns [] so the feed
+    still renders offline."""
+    try:
+        payload = json.dumps({
+            "collection": OPS_COLLECTION,
+            "filterMeta": {"kind": ["ops-event"]},
+            "limit": 50,
+        }).encode()
+        req = urllib.request.Request(
+            f"{MDDB_URL}/search", data=payload,
+            headers={"content-type": "application/json"}, method="POST")
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            docs = json.loads(resp.read())
+    except Exception:
+        return []
+    if not isinstance(docs, list):
+        return []
+    cutoff = (datetime.datetime.now(datetime.timezone.utc)
+              - datetime.timedelta(hours=OPS_WINDOW_H))
+    out = []
+    for d in docs:
+        ts = ((d.get("meta") or {}).get("ts") or [""])[0]
+        try:
+            dt = datetime.datetime.fromisoformat(ts)
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=datetime.timezone.utc)
+            if dt < cutoff:
+                continue
+        except ValueError:
+            pass
+        out.append(d)
+    out.sort(key=lambda d: ((d.get("meta") or {}).get("ts") or [""])[0],
+             reverse=True)
+    return out[:20]
 
 
 # ---------- L1: events ----------
