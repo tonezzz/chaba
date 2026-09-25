@@ -208,6 +208,26 @@ discharging ~3.9 W (the station load), 91 cycles, SOH 100 %, temps
 time" (default-password nag — cosmetic). All
 `sensor.terrace_weather_station_bms_*` entities live in michael-ha.
 
+**Device info (captured 2026-09-25 ~18:36 via device-info frame):**
+model `JK_BD4A17S4P` (17S-capable board, wired 8S here), HW `11.XW`,
+SW `11.272`, serial `3042050590`, mfg `2023-08-18`, power-on count 66.
+Added `device_model`/`hardware_version`/`software_version`/
+`manufacturing_date`/`serial_number` text sensors + `power_on_count` to
+jkbms.yaml so they persist in HA — the device-info frame is requested
+once per BLE connect, so bounce `switch.*_ble_link` to re-read it.
+
+**Dashboard:** new `rk600` tab on michael-ha `tony-test` (inserted after
+`mn-weather` via `lovelace/config/save`) — glance + per-block entities
+cards: Wind / Environment / Rain / Shutter / Logger / Station Battery.
+Also fixed a pre-existing bug on `mn-weather`: its two gauge cards used
+`config-template-card`'s old array `variables` format; installed v1.3.6
+(` /local/config-template-card.js`) wants an object map with `states[...]`
+and `vars['x']` for chained vars — converted, console spam gone.
+
+**Acceptance (Michael, 2026-09-25):** saw the panel — satisfied. Minor
+bugs remain and cosmetics could be better, but fine as a pilot: all
+shown values make sense.
+
 **Why it took so long — the advert appeared only after the power cycle.**
 The module had been silent for 12+ h; Michael power-cycling the cabinet
 restarted it and it began advertising again (matches the "switches off /
