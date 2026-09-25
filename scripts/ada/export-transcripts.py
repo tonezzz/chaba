@@ -37,6 +37,7 @@ REMOTE_BASE = "~/.local/share/ada"
 REMOTE_DIR = f"{REMOTE_BASE}/transcripts"
 REMOTE_REPORTS = f"{REMOTE_BASE}/reports"
 REMOTE_LOG = f"{REMOTE_BASE}/session-memory.md"
+REMOTE_EVENTS = f"{REMOTE_BASE}/events.md"
 DEFAULT_OUT = Path.home() / ".local/share/ada-review/transcripts"
 ADA_SCRIPTS = Path(__file__).resolve().parent
 
@@ -117,6 +118,7 @@ def main() -> int:
     review = args.out.parent          # ~/.local/share/ada-review
     reports_dir = review / "reports"
     session_log = review / "session-memory.md"
+    events_log = review / "events.md"
 
     # ---- transcripts ----
     if args.local is not None:
@@ -170,6 +172,15 @@ def main() -> int:
             added = _merge_session_log(session_log, out.stdout)
             print(f"session-memory.md: +{added} entries merged "
                   f"-> {session_log}")
+
+        out = subprocess.run(
+            ["ssh", "-o", "BatchMode=yes", args.host,
+             f"cat {REMOTE_EVENTS} 2>/dev/null"],
+            capture_output=True, text=True, timeout=30)
+        if out.returncode == 0 and out.stdout.strip():
+            added = _merge_session_log(events_log, out.stdout)
+            if added:
+                print(f"events.md: +{added} entries merged -> {events_log}")
 
     # ---- backfill missing reports (optional, LLM cost) ----
     if args.backfill:
