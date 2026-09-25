@@ -266,6 +266,34 @@ def run_source(src, render_dir, repo_root, errors):
             if n_entries >= src.get("max_entries", 3):
                 break
         return lines
+    if kind == "recent-events":
+        path = os.path.expanduser(src.get("file", ""))
+        try:
+            doc = load_yaml(path) or {}
+        except Exception as e:
+            errors.append(f"recent-events {src.get('file')}: {e}")
+            return []
+        import datetime
+        now = datetime.datetime.now().astimezone()
+        default_ttl = src.get("ttl_hours", 72)
+        lines = []
+        for e in doc.get("entries", []) or []:
+            if not isinstance(e, dict) or not e.get("text"):
+                continue
+            try:
+                ts = datetime.datetime.fromisoformat(str(e.get("ts", "")))
+                ttl = e.get("ttl_hours", default_ttl)
+                if ts.tzinfo and (now - ts).total_seconds() > ttl * 3600:
+                    continue  # cooled off — events fade out of the hot tier
+            except ValueError:
+                continue
+            line = f"- {str(e.get('ts', ''))[:16]}: {e['text']}"
+            if e.get("ref"):
+                line += f" → {e['ref']}"
+            lines.append(line)
+            if len(lines) >= src.get("max_entries", 10):
+                break
+        return lines
     errors.append(f"unknown source kind: {kind}")
     return []
 

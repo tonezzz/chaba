@@ -29,8 +29,8 @@ render:
       output: context.md
       report: report.yml
       limits: {soft: 12000, hard: 20000}
-      overflow_order: [ada-focus, ada-sessions, sessions, focus, project, home]   # dropped first → last
-      sections: [agent, user, immediate, home, project, focus, access, sessions, ada-sessions, ada-focus, timeline, events, ada-events]
+      overflow_order: [ada-focus, ada-sessions, sessions, focus, recent-events, project, home]   # dropped first → last
+      sections: [agent, user, immediate, recent-events, home, project, focus, access, sessions, ada-sessions, ada-focus, timeline, events, ada-events]
     guest:
       output: context-guest.md
       report: report-guest.yml
@@ -72,6 +72,21 @@ sections:
       kind: immediate
       file: ~/.local/share/chaba/immediate.yml
       max_entries: 3
+      ttl_hours: 72
+
+  recent-events:
+    description: |
+      Just-happened feed — the hot tier of recency memory. One line per
+      event, appended by scripts/chaba/recent-event.py (session-end hook
+      or ad-hoc pin by an agent). Entries expire via ttl_hours; a thread
+      that stays active promotes to 'focus', durable facts consolidate
+      into MDDB banks — the entry then cools off and drops away.
+    priority: 84
+    limits: {soft: 700, hard: 1200}
+    source:
+      kind: recent-events
+      file: ~/.local/share/chaba/recent-events.yml
+      max_entries: 10
       ttl_hours: 72
 
   home:

@@ -5,7 +5,23 @@ sections:
   - title: Active Shared Focus
     icon: active
     layout: list
-    items: []
+    items:
+      - label: Ada memory-recall misrouting + tool-call storm (from chaba-memory-review scenario)
+        text:
+          "Live scenario on ada-ha-tony (2026-09-25): 'summarize chaba memory development' misrouted to plan_day/tasks_list
+          instead of memory banks; 'propose an improvement plan' triggered a 194-call tool storm (device confidence, control_entity,
+          sensors) with an empty transcript. ada_remember then saved an off-topic note; corrected report is at
+          ada-ha-bank-projects-tony/tony-projects/chaba-memory-review.\n
+          Pending fixes:\n- Steer development/status questions to ada_memory_search(bank=all) before calendar/tasks tools.\n
+          - Per-turn tool-call budget (~20) with graceful fallback.\n- ada_remember content check against the turn transcript."
+        status: active
+        priority: high
+        started: "2026-09-25"
+        tags:
+          - ada
+          - memory
+          - recall
+          - tool-storm
   - title: Active Branch Focus
     icon: branch
     layout: list
