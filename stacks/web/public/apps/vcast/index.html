@@ -52,7 +52,7 @@
   <img id="img" alt="">
   <iframe id="frame" allow="autoplay; fullscreen"></iframe>
 
-  <div id="boot"><div class="spin">connecting…</div></div>
+  <div id="boot"><div class="spin" style="color:var(--muted);font-size:1.2rem">connecting…</div></div>
 
   <div id="idle">
     <div id="screenNum">?</div>
@@ -169,7 +169,20 @@
       setHud("unpaired — awaiting claim", true);
       sendState("unpaired", sid);
     }
+    // YouTube/Vimeo page URLs can't be a <video> source and their watch pages
+    // refuse iframes (X-Frame-Options) — rewrite to the embed player, which is
+    // frameable and autoplays. Prevents the classic "cast a YouTube link ->
+    // black screen".
+    function embedUrl(url) {
+      const yt = url.match(/(?:youtube\.com\/watch\?[^#]*v=|youtu\.be\/|youtube\.com\/(?:shorts|live)\/|music\.youtube\.com\/watch\?[^#]*v=)([\w-]{6,})/);
+      if (yt) return `https://www.youtube-nocookie.com/embed/${yt[1]}?autoplay=1&rel=0${audioOK ? "" : "&mute=1"}`;
+      const vm = url.match(/vimeo\.com\/(\d+)/);
+      if (vm) return `https://player.vimeo.com/video/${vm[1]}?autoplay=1${audioOK ? "" : "&muted=1"}`;
+      return null;
+    }
     function play(url) {
+      const emb = embedUrl(url);
+      if (emb) { nav(emb); sendState("playing", url); return; }
       showOnly(video);
       video.controls = false;
       video.muted = !audioOK;
@@ -198,7 +211,7 @@
     }
     function nav(url) {
       showOnly(frame);
-      frame.src = url;
+      frame.src = embedUrl(url) || url;
       setHud(`screen ${screenNum} · web`, true);
       sendState("nav", url);
     }
@@ -230,6 +243,14 @@
     function connect() {
       if (ws && ws.readyState <= 1) return;
       setHud("connecting", false);
+      // after ~4s still unconnected, show the boot overlay so a dead relay
+      // reads as "reconnecting" instead of a black screen
+      setTimeout(() => {
+        if (!screenNum && (!ws || ws.readyState !== 1)) {
+          boot.querySelector(".spin").textContent = "connecting to relay — retrying…";
+          boot.style.display = "flex";
+        }
+      }, 4000);
       ws = new WebSocket(WS_URL);
       ws.onopen = () => {
         wsRetry = 0;

@@ -3,7 +3,8 @@
 // vcast-headless — a headless vcast display for testing. Connects to the
 // relay, goes through the real pending -> claim -> paired -> registered
 // flow (POST /claim with ADA_ADMIN_KEY), then logs every message it
-// receives on its vcast-N room. Run on tony-dell during scenario tests.
+// receives on its vcast-N room. Run on idc01 (the relay host) during
+// scenario tests — loopback defaults below assume that.
 //
 //   ADA_ADMIN_KEY=... node vcast-headless.mjs [ws-url] [api-base]
 //

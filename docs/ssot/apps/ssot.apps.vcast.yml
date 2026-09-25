@@ -19,11 +19,11 @@ sections:
       - label: Receiver page
         text: "stacks/web/public/apps/vcast/index.html — joins the input-bridge WS room, registers with api_key (or shows pairing QR when unpaired), renders play/image/nav/audio/stop messages. Native HLS on iOS Safari, vendored hls.js elsewhere. Screen Wake Lock keeps the display on."
       - label: Relay + registry
-        text: "stacks/web/input-bridge/server.mjs — one node process on tony-dell :3010 (input-bridge.service). HTTP: GET /health, GET /displays, GET /pair-info?sid=, POST /pub {screen|room,msg}, POST /claim {sid,name?,force}, POST /dismiss {sid}, POST /release {screen|name} (admin key optional — falls back to ADA_ADMIN_KEY env). WS: room broadcast + register-display. Registry persisted at ~/.local/share/input-bridge/displays.json on tony-dell."
+        text: "stacks/web/input-bridge/server.mjs — podman quadlet input-bridge.service on idc01, bound to tailnet 100.74.146.0:3010 only (never the public VPS interface; INPUT_BRIDGE_BIND). HTTP: GET /health, GET /displays, GET /pair-info?sid=, POST /pub {screen|room,msg}, POST /claim {sid,name?,force}, POST /dismiss {sid}, POST /release {screen|name} (admin key optional — falls back to ADA_ADMIN_KEY env). WS: room broadcast + register-display. Registry persisted at ~/.local/share/input-bridge/displays.json on idc01."
       - label: Key verification
-        text: "Register/claim keys are verified server-side against ada-pi-pwa (ADA_AUTH_URL=https://idc01.taila0626a.ts.net) via /api/auth/status. Screen keys are normal ada device keys named screen-N — they appear in the ada-keys-card inventory and revoke disables the display on next register."
+        text: "Register/claim keys are verified server-side against ada-pi-pwa — loopback now that the relay lives on idc01 (ADA_AUTH_URL=http://127.0.0.1:8001). Screen keys are normal ada device keys named screen-N — they appear in the ada-keys-card inventory and revoke disables the display on next register."
       - label: Caddy
-        text: "Existing handle_path /api/input-bridge/* -> 127.0.0.1:3010 in stacks/web/Caddyfile carries /ws plus /pub /displays /claim /pair-info /health — no route change needed. Pages are static under /apps/vcast/."
+        text: "handle_path /api/input-bridge/* in stacks/web/Caddyfile now proxies to 100.74.146.0:3010 (idc01 tailnet) — carries /ws plus /pub /displays /claim /pair-info /health. Pages are static under /apps/vcast/ on tony-dell."
   - title: Pairing flow
     icon: "🔗"
     layout: list
@@ -53,7 +53,7 @@ sections:
       - label: Live
         text: "https://tony-dell.taila0626a.ts.net/apps/vcast/ ; web container mounts ~/CascadeProjects/chaba-tony-dell/stacks/web/public — rsync deploys instantly, no restart."
       - label: Service
-        text: "systemctl --user status input-bridge.service on tony-dell."
+        text: "systemctl --user status input-bridge.service on idc01 (quadlet; source+unit in stacks/idc01/input-bridge/). The old tony-dell unit is disabled."
       - label: Known limits
         text: "Not a real Chromecast — castv2/Chrome-cast/AirPlay senders cannot target it. nav-mode iframes cannot pass Tailscale-User-Login-gated pages (same caveat as the VMS cast path). iOS standalone-PWA mic is untrusted (use Safari tab). No auth on /pub beyond tailnet reachability."
   - title: Testing
@@ -61,7 +61,7 @@ sections:
     layout: list
     items:
       - label: Smoke
-        text: "curl http://127.0.0.1:3010/health ; curl /api/input-bridge/displays ; open /apps/vcast/ in a browser, scan QR, cast via POST /api/input-bridge/pub {screen:1, msg:{type:'play',url:...m3u8}}"
+        text: "curl http://100.74.146.0:3010/health (tailnet) ; curl /api/input-bridge/displays ; open /apps/vcast/ in a browser, scan QR, cast via POST /api/input-bridge/pub {screen:1, msg:{type:'play',url:...m3u8}}"
       - label: Scenarios
         text: "ada-pi tests/scenarios-live/vcast-*.yaml cover list/cast/stop/unknown-speaker flows via Ada voice."
 config:
@@ -69,4 +69,4 @@ config:
   created: "2026-09-25"
   maintainer: tony
   status: active
-  deployment: tony-dell
+  deployment: tony-dell (pages/edge) + idc01 (relay/registry)

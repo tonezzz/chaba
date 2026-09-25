@@ -8,6 +8,10 @@ import path from "node:path";
 import { WebSocketServer } from "ws";
 
 const PORT = parseInt(process.env.INPUT_BRIDGE_PORT || "3010", 10);
+// Default 0.0.0.0 is fine on a home host (LAN+tailnet). On idc01 (public VPS)
+// set INPUT_BRIDGE_BIND=100.74.146.0 so the relay never touches the public
+// interface — /pub and /claim have no listener auth of their own.
+const BIND = process.env.INPUT_BRIDGE_BIND || "0.0.0.0";
 const PING_INTERVAL_MS = 30000;
 const PENDING_TTL_MS = parseInt(process.env.VCAST_PENDING_TTL_MS || "300000", 10);
 const ADA_AUTH_URL = (process.env.ADA_AUTH_URL || "").replace(/\/+$/, "");
@@ -525,8 +529,8 @@ server.on("upgrade", (req, socket, head) => {
 });
 
 loadRegistry();
-server.listen(PORT, () => {
-  console.log(`[input-bridge] http+ws listening on 0.0.0.0:${PORT}`);
+server.listen(PORT, BIND, () => {
+  console.log(`[input-bridge] http+ws listening on ${BIND}:${PORT}`);
   console.log(`[input-bridge] rooms: default; join via {type:"join", room:"..."}`);
   console.log(`[input-bridge] vcast: GET /displays POST /pub POST /claim GET /pair-info`);
   console.log(`[input-bridge] registry: ${REGISTRY_FILE}`);

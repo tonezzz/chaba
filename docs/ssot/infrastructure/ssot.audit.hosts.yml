@@ -68,12 +68,6 @@ hosts:
         scope: user
         expected_state: active
         critical: false
-      - name: input-bridge.service
-        type: service
-        scope: user
-        expected_state: active
-        critical: false
-        note: "vcast virtual-display relay + registry on :3010 (deployed 2026-09-25)"
       - name: playlived.service
         type: service
         scope: user
@@ -1268,6 +1262,13 @@ hosts:
         expected_state: active
         critical: false
         note: Embedding proxy :11435 -> Gemini, ollama fallback
+      - name: input-bridge.service
+        type: service
+        scope: user
+        expected_state: active
+        critical: false
+        note: "vcast/input-bridge WS relay + registry on :3010 (quadlet; moved
+          from tony-dell 2026-09-25 — co-located with ada auth on :8001)"
       - name: ollama.service
         type: service
         scope: user

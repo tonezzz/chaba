@@ -604,9 +604,9 @@ tony-dell:
     environment:
       - NOTEBOOKLM_STORAGE_PATH=/data/storage_state.json
     env_file: ~/.config/secrets/notebooklm-rest-api.env
-    caddy_path: /apps/notebooklm/api
-    caddy_upstream: '127.0.0.1:${ssot("docs/ssot/infrastructure/ssot.values.yml", "ports.notebooklm_rest")}'
-    public_url: 'https://${ssot("docs/ssot/infrastructure/ssot.values.yml", "hosts.tony_dell.tailscale")}/apps/notebooklm/api'
+    caddy_path: ~  # removed 2026-09-25 — no public edge route anymore
+    public_url: ~  # consumers use tailnet address directly
+    tailnet_url: 'http://100.68.142.13:3011/v1'
     quadlet:
       container_unit: ~/.config/containers/systemd/notebooklm-rest.container
       service_unit: ~/.config/systemd/user/notebooklm-rest.service
@@ -624,7 +624,7 @@ tony-dell:
       - "Notebook scoping (ada-michael/ada-tony keys) is REST-layer only — the underlying Google session sees all notebooks. If master_token dies (revocation/password change), keepalive silently fails: GET /health/auth returns 503; manual re-extraction via notebooklm login required."
       - "GET /health* is intentionally unauthenticated for monitors (returns ok/expired only); POST /health/auth/refresh and all /v1/* remain key-gated."
       - 'auth check via CLI must pass --storage /data/storage_state.json (or NOTEBOOKLM_STORAGE_PATH); default profile path reports a false-negative "error".'
-    note: "FastAPI REST API on top of notebooklm-py. X-API-Key header enforced via NOTEBOOKLM_REST_API_KEYS; NOTEBOOKLM_REST_KEY_SCOPES maps scoped keys to notebook allowlists (ada-michael key -> 1c12d5c8 notebook only, ada-tony key -> the 5 tony notebooks memory/infra/apps/kb/ops, admin key unrestricted). Exposed through Caddy at /apps/notebooklm/api on tony-dell.taila0626a.ts.net. Keys live in ~/.config/secrets/notebooklm-rest-api.env (not in git). Source, Dockerfile, and the quadlet are versioned in stacks/tony-dell/notebooklm-rest/ (deploy.sh pushes, rebuilds, restarts); live copy at ~/.local/share/notebooklm/notebooklm-rest-api — always sync live edits back to the stack. Features: shared warm NotebookLMClient rebuilt on storage_state.json mtime change or request error (~2-3s saved per call, added 2026-09-17), in-container auth keepalive (notebooklm auth refresh --verify every NOTEBOOKLM_KEEPALIVE_INTERVAL=900s), GET /health/auth passive probe + POST /health/auth/refresh, Idempotency-Key dedupe on POSTs, write queue (/v1/queue, flush on auth recovery), POST .../sources/prune lifecycle (prefix/age/keep/dry_run). The ~/.local/bin/nbapi wrapper sends the request to tony-dell (local curl on tony-dell, ssh on tony-omen). Google Drive collection for sources: gdrive:notebooklm/chaba. Notebook files stored under gdrive:notebooklm/chaba/notebooks/<nb-id>/files."
+    note: "FastAPI REST API on top of notebooklm-py. X-API-Key header enforced via NOTEBOOKLM_REST_API_KEYS; NOTEBOOKLM_REST_KEY_SCOPES maps scoped keys to notebook allowlists (ada-michael key -> 1c12d5c8 notebook only, ada-tony key -> the 5 tony notebooks memory/infra/apps/kb/ops, admin key unrestricted). Not on the Caddy edge since 2026-09-25 — Ada and other consumers call the tailnet address http://100.68.142.13:3011/v1 directly (NOTEBOOKLM_REST_BASE_URL). Keys live in ~/.config/secrets/notebooklm-rest-api.env (not in git). Source, Dockerfile, and the quadlet are versioned in stacks/tony-dell/notebooklm-rest/ (deploy.sh pushes, rebuilds, restarts); live copy at ~/.local/share/notebooklm/notebooklm-rest-api — always sync live edits back to the stack. Features: shared warm NotebookLMClient rebuilt on storage_state.json mtime change or request error (~2-3s saved per call, added 2026-09-17), in-container auth keepalive (notebooklm auth refresh --verify every NOTEBOOKLM_KEEPALIVE_INTERVAL=900s), GET /health/auth passive probe + POST /health/auth/refresh, Idempotency-Key dedupe on POSTs, write queue (/v1/queue, flush on auth recovery), POST .../sources/prune lifecycle (prefix/age/keep/dry_run). The ~/.local/bin/nbapi wrapper sends the request to tony-dell (local curl on tony-dell, ssh on tony-omen). Google Drive collection for sources: gdrive:notebooklm/chaba. Notebook files stored under gdrive:notebooklm/chaba/notebooks/<nb-id>/files."
 
 tony-omen:
   ollama:

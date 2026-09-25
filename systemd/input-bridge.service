@@ -1,13 +1,16 @@
 [Unit]
-Description=Input-bridge WS relay + vcast virtual-display registry
+Description=Input-bridge WS relay + vcast virtual-display registry (native fallback)
+
+# Canonical deployment is the idc01 podman quadlet —
+# see stacks/idc01/input-bridge/. This unit is the non-container fallback.
 
 [Service]
-ExecStart=/usr/bin/node %h/CascadeProjects/chaba-tony-dell/stacks/web/input-bridge/server.mjs
+ExecStart=/usr/bin/node %h/apps/input-bridge/server.mjs
 Environment=INPUT_BRIDGE_PORT=3010
-Environment=ADA_AUTH_URL=https://idc01.taila0626a.ts.net
+Environment=ADA_AUTH_URL=http://127.0.0.1:8001
 Environment=VCAST_REGISTRY=%h/.local/share/input-bridge/displays.json
 EnvironmentFile=-%h/.config/secrets/input-bridge.env
-WorkingDirectory=%h/CascadeProjects/chaba-tony-dell/stacks/web/input-bridge
+WorkingDirectory=%h/apps/input-bridge
 Restart=on-failure
 RestartSec=5
 

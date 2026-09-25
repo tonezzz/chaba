@@ -197,16 +197,12 @@ http://127.0.0.1:8080 {
 		reverse_proxy 100.68.142.13:3001
 	}
 
-	# NotebookLM REST — Ada memory recall (API-key gated)
-	handle /apps/notebooklm/api {
-		redir /apps/notebooklm/api/ 308
-	}
-	handle_path /apps/notebooklm/api/* {
-		reverse_proxy 127.0.0.1:3011
-	}
+	# NotebookLM REST moved off the public edge 2026-09-25 — consumers use the
+	# tailnet address http://100.68.142.13:3011/v1 directly (API-key gated there).
 
+	# input-bridge relay moved to idc01 2026-09-25 (co-located with ada auth)
 	handle_path /api/input-bridge/* {
-		reverse_proxy 127.0.0.1:3010
+		reverse_proxy 100.74.146.0:3010
 	}
 
 	handle /api/* {
