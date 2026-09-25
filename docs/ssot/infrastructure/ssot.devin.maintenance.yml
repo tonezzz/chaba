@@ -17,12 +17,13 @@ hosts:
   tony-dell:
     path: /home/tony/.local/share/devin/cli/sessions.db
     description: Secondary workstation, headless browser/cast target
-    current_size: 45Mi
+    current_size: 1.1Gi
     service: devin-cleanup.timer
     retention_days: 7
     notes:
       - Cleanup timer runs Sundays at 04:00.
       - Service skips VACUUM if Devin code.lock is present.
+      - Manual cleanup/VACUUM ran 2026-09-25; deleted 1 preserved 7-day-old session and kept local backup sessions-pre-cleanup-20260925-203510.db.
       - Devin desktop updated to 3.10.23-1789035177 on 2026-09-12.
       - devin-desktop-watchdog.sh runs every 10 minutes to kill a renderer stuck above 50% CPU for 10 seconds.
       - cast-desktop@1.service, playlived.service, go2rtc.service, and Wine VMS.exe reniced to 10 to reduce UI contention.
