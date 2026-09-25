@@ -184,8 +184,13 @@ full remote serial: console read, DTR/RTS download-mode reset, flash.
 ## Battery/BMS hunt status (2026-09-25)
 
 - **Physical layout (Tony):** battery packs + their controller ARE inside
-  the same cabinet as the RK600/HMI/ESP32. Tech says "JK BMS" (unverified);
-  his phone app connects when he's physically close.
+  the same cabinet as the RK600/HMI/ESP32.
+- **App CONFIRMED (Michael 2026-09-25):** the tech uses the **JK BMS app**
+  → it is a JK BMS → JK02 protocol over BLE service `FFE0`. The Bluetooth
+  device ID/name reportedly **contains "20" or "8"** — consistent with JK
+  model-style advert names (`JK-B1A8S20P`/`JK-B2A8S20P`/`JK-B2A20S20P`,
+  8S/20S/20P cell layouts). Scanner now flags `BMS-CANDIDATE` for names
+  matching JK/BMS/8S/20P or service FFE0 and logs them every advert.
 - **In-box BLE scan: NOTHING in 12 h+.** jkbms ran a continuous active
   `esp32_ble_tracker` — only ~8 weak (-85..-97 dBm) unnamed random-MAC
   advertisers (household devices). A JK dongle advertises continuously
@@ -195,12 +200,11 @@ full remote serial: console read, DTR/RTS download-mode reset, flash.
      trick — syssi/esphome-jk-bms issue #107)
   2. It's Bluetooth Classic/SPP, not BLE — esp32_ble_tracker is blind to
      classic BT; the phone app would still work
-  3. "JK BMS" is shorthand and it's actually another brand with
-     wake-on-demand BLE
-- **Decisive next step:** the app NAME on the tech's phone (identifies
-  brand+protocol instantly) or an nRF Connect scan at the cabinet (shows
-  advert name/MAC; also check Android BT settings — if the device appears
-  there it's classic BT).
+  3. Heavy shielding inside a sealed steel battery box (tech must be
+     "close enough" even for the phone)
+- **Decisive next step:** the exact device NAME + MAC shown in the tech's
+  JK app (screenshot), or an nRF Connect scan at the cabinet. Once a
+  `BMS-CANDIDATE` advert appears, its MAC goes into `jkbms_ble_mac`.
 - **HMI serial:** app holds ttyO0+ttyO1 (ttyO3=console, ttyUSB*=GSM modem,
   no tty for the ESP32 CH340). ttyO1 carried ONE bursty burst of ~29-byte
   binary frames @ ~1 Hz (see /tmp/o1.cap analysis — fields don't match

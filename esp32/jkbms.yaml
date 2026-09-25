@@ -67,18 +67,29 @@ esp32_ble_tracker:
       - lambda: |-
           static std::set<std::string> seen;
           std::string n = x.get_name();
+          bool named = !n.empty();
           if (n.empty()) n = "[noname]";
-          if (!seen.insert(x.address_str()).second) return;
           char svc[192] = {0}; int off = 0;
+          bool ffe0 = false;
           for (auto &u : x.get_service_uuids()) {
             char ub[40]; u.to_str(ub);
             off += snprintf(svc + off, sizeof(svc) - off, "%s,", ub);
+            if (strstr(ub, "ffe0")) ffe0 = true;
           }
+          bool cand = ffe0 || (named && (
+              n.find("JK") != std::string::npos ||
+              n.find("jk") != std::string::npos ||
+              n.find("BMS") != std::string::npos ||
+              n.find("8S") != std::string::npos ||
+              n.find("20P") != std::string::npos ||
+              n.find("8S20P") != std::string::npos));
+          if (!seen.insert(x.address_str()).second && !cand) return;
           char mfr[192] = {0}; off = 0;
           for (auto &m : x.get_manufacturer_datas())
             off += snprintf(mfr + off, sizeof(mfr) - off, "%04X:%dB,", m.uuid, (int)m.data.size());
-          ESP_LOGW("ble_adv", "adv: name=%s mac=%s rssi=%d svc=[%s] mfr=[%s]",
-                   n.c_str(), x.address_str().c_str(), x.get_rssi(), svc, mfr);
+          ESP_LOGW("ble_adv", "%s name=%s mac=%s rssi=%d svc=[%s] mfr=[%s]",
+                   cand ? "BMS-CANDIDATE" : "adv:", n.c_str(),
+                   x.address_str().c_str(), x.get_rssi(), svc, mfr);
 
 ble_client:
   - mac_address: !secret jkbms_ble_mac
