@@ -16,13 +16,19 @@ if [[ -z "$TONY_OMEN_IP" ]]; then
     TONY_OMEN_IP="100.75.102.88"
 fi
 
+# MDDB lives on idc01 since the 2026-09-22 cutover
+IDC01_IP=$(tailscale ip -4 idc01 2>/dev/null || true)
+if [[ -z "$IDC01_IP" ]]; then
+    IDC01_IP="100.74.146.0"
+fi
+
 # Local tony-dell Funnel endpoint
 TONY_DELL_IP=$(tailscale ip -4 tony-dell 2>/dev/null || true)
 if [[ -z "$TONY_DELL_IP" ]]; then
     TONY_DELL_IP="127.0.0.1"
 fi
 
-python3 - "$LOG_FILE" "$TS" "$TONY_OMEN_IP" "$TONY_DELL_IP" <<'PY'
+python3 - "$LOG_FILE" "$TS" "$TONY_OMEN_IP" "$TONY_DELL_IP" "$IDC01_IP" <<'PY'
 import json
 import os
 import re
@@ -30,7 +36,7 @@ import subprocess
 import sys
 from datetime import datetime, timezone
 
-LOG_FILE, TS, TONY_OMEN_IP, TONY_DELL_IP = sys.argv[1:5]
+LOG_FILE, TS, TONY_OMEN_IP, TONY_DELL_IP, IDC01_IP = sys.argv[1:6]
 
 
 def curl_check(url, method="GET", expect=200, timeout=5):
@@ -91,7 +97,7 @@ remote_endpoints = {
     "caddy": f"http://{TONY_OMEN_IP}:8080/",
     "status-api": f"http://{TONY_OMEN_IP}:8080/health",
     "yomi-api": f"http://{TONY_OMEN_IP}:8080/api/yomi/health",
-    "mddb-api": f"http://{TONY_OMEN_IP}:11023/health",
+    "mddb-api": f"http://{IDC01_IP}:11023/health",
     "weaviate": f"http://{TONY_OMEN_IP}:8080/api/weaviate/v1/nodes",
     "llama-server": f"http://{TONY_OMEN_IP}:8008/health",
     "imagen2": f"http://{TONY_OMEN_IP}:8000/health",

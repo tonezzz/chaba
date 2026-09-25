@@ -20,7 +20,7 @@ import yaml from "js-yaml";
 const PROJECT_ROOT = new URL("../../", import.meta.url).pathname.replace(/\/$/, "");
 const BANKS_SSOT = join(PROJECT_ROOT, "docs/ssot/apps/ssot.apps.ada-memory-banks.yml");
 const AUDIT_SSOT = join(PROJECT_ROOT, "docs/ssot/infrastructure/ssot.audit.yml");
-const MDDB_BASE = (process.env.MDDB_BASE || "http://127.0.0.1:11023/v1").replace(/\/$/, "");
+const MDDB_BASE = (process.env.MDDB_BASE || "http://100.74.146.0:11023/v1").replace(/\/$/, "");
 const SUMMARIES_DIR = process.env.DEVIN_SUMMARIES_DIR || `${process.env.HOME}/.local/share/devin/cli/summaries`;
 const ADA_ENV_FILES = (process.env.ADA_ENV_FILES ||
   `${process.env.HOME}/.config/secrets/ada-pi-pwa.env`).split(":");

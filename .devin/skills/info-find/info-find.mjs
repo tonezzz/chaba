@@ -89,7 +89,7 @@ function buildPlan({ query, session, quick, forceWeb, max }) {
     code_glob: "**/*.{mjs,js,ts,py,sh,yml}",
     health_glob: "**/ssot*health*.yml",
     mcp_policy_glob: "**/ssot.mcp-tools.yml",
-    mddb_health_url: "http://127.0.0.1:11023/health",
+    mddb_health_url: "http://100.74.146.0:11023/health",
   };
 }
 

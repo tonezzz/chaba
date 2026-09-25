@@ -41,7 +41,7 @@ Unified information-finding flow for `chaba`, `trade`, and any other project in 
    - `general-doc` → MDDB first, then SSOT, then optionally web if `--web` is used
 
 5. MDDB health preflight (only if `use_mddb` is true)
-   - `exec curl -s http://127.0.0.1:11023/health`
+   - `exec curl -s http://100.74.146.0:11023/health` (idc01, tailnet-only)
    - If the health check does not return 200, use `ask_user_question` to offer:
      a) Fall back to SSOT/code grep
      b) Fall back to web search

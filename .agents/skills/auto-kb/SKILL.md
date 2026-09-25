@@ -11,15 +11,22 @@ discovery, with user confirmation for new topics.
 
 ## What it does
 
-1. Checks content against KB-worthy/negative triggers.
-2. Checks redundancy via caller-supplied MDDB result
-   (`MCP_REDUNDANCY_RESULT`/`MCP_REDUNDANCY_FILE`) or a local file-overlap
-   fallback. High redundancy → skips and reports the similar entries.
-3. Writes `<repo>/docs/kb/auto-kb-YYYYMMDD-<slug>.md` with frontmatter
+1. If the input contains a `## KB-worthy` section (or a `KB-worthy:`
+   line followed by bullets), only that part is evaluated — surrounding
+   session chatter can't trip the triggers.
+2. Checks content against KB-worthy/negative triggers.
+3. Checks redundancy via caller-supplied MDDB result
+   (`MCP_REDUNDANCY_RESULT`/`MCP_REDUNDANCY_FILE`), a filename-slug match
+   on same-topic entries, or a local word-overlap fallback. High
+   redundancy → skips and reports the similar entries.
+4. Writes `<repo>/docs/kb/auto-kb-YYYYMMDD-<slug>.md` with frontmatter
    `category`, `status` (default `draft`), `created`, `source: auto-kb`.
-4. Indexes the file by running `scripts/sync-kb-to-mddb.py --missing-only`
-   itself — no separate assistant MCP step required.
-5. Prints `AUTO_KB_RESULT {...}` as its last line. `"indexed": false`
+5. Indexes the file by running `scripts/sync-kb-to-mddb.py --missing-only`
+   itself — no separate assistant MCP step required. A fast `/health`
+   precheck (3s) on `MDDB_BASE` (default `http://100.74.146.0:11023`,
+   idc01) reports `pending_index` immediately when MDDB is down instead
+   of waiting through sync's retry cycle.
+6. Prints `AUTO_KB_RESULT {...}` as its last line. `"indexed": false`
    means created-but-pending; the `retry` field holds the command to
    finish indexing. Do not treat that run as fully successful.
 
@@ -38,7 +45,9 @@ One of:
 
 - CLI: `node auto-kb.mjs "<kb-review-content>" ["<context>"]`
 - Env: `KB_REVIEW_CONTENT`, `KB_SESSION_CONTEXT`, `KB_STATUS`,
-  `MCP_REDUNDANCY_FILE`/`MCP_REDUNDANCY_RESULT`, `KB_DIR` (override)
+  `MCP_REDUNDANCY_FILE`/`MCP_REDUNDANCY_RESULT`, `KB_DIR` (override),
+  `MDDB_BASE` (override), `AUTO_KB_NO_INDEX=1` (write file, skip indexing —
+  for tests/dry runs)
 - Stdin: `echo "..." | node auto-kb.mjs`
 
 ## Quality gate — create entries only for
