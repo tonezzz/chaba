@@ -39,9 +39,21 @@ _spec.loader.exec_module(ada_sync)
 CLI_SUMMARIES = Path.home() / ".local/share/devin/cli/summaries"
 NAMED_SUMMARIES = Path.home() / ".local/share/devin/summaries"
 COLLECTION = "ada-ha-bank-devin-tony"
-# MDDB drops the connection on very large docs; the structured summary
-# lives at the top of these files anyway — keep the distilled head.
+# MDDB drops the connection on very large docs. Oversized files keep the
+# distilled head (structured summary) plus the tail, where the outcome of
+# the session usually lands.
 MAX_CHARS = 50_000
+HEAD_FRACTION = 0.6
+
+
+def clip(text: str) -> str:
+    if len(text) <= MAX_CHARS:
+        return text
+    head = int(MAX_CHARS * HEAD_FRACTION)
+    tail = MAX_CHARS - head - 128  # room for the truncation marker
+    omitted = len(text) - head - tail
+    marker = f"\n\n[... {omitted} chars truncated ...]\n\n"
+    return text[:head] + marker + text[-tail:]
 
 
 def iter_docs(src_dir: Path):
@@ -77,7 +89,7 @@ def main() -> int:
         if not text:
             empty += 1
             continue
-        body = text[:MAX_CHARS]
+        body = clip(text)
         mtime = datetime.fromtimestamp(f.stat().st_mtime).date().isoformat()
         old = remote.get(key)
         if old and (old.get("contentMd") or "") == body:
