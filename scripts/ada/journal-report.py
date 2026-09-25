@@ -42,6 +42,13 @@ RX_EXTWRITE = re.compile(
 RX_SPEAKER_ID = re.compile(
     r"(?:identified|enrolled)\s+speaker[^a-z]*'([A-Za-zก-๙]+)'")
 RX_STARTED = re.compile(r"Started (ada-[\w.-]+)\.service")
+# Recall-tool results dump transcript/journal text into the log — the
+# phrases inside (session=..., "agenda prefetch failed", name=... result)
+# would otherwise be counted a second time. Still count the call/result
+# itself and its error flag, then skip all other pattern checks.
+RX_DUMP = re.compile(
+    r"name=(ada_memory_search|ada_session_recall|ada_doc_search|"
+    r"ada_ha_recall|get_logbook|recent_events) result")
 
 
 def fetch(host: str, unit: str, since: str) -> list[str]:
@@ -94,6 +101,8 @@ def parse(lines: list[str]) -> dict[str, dict]:
         elif RX_RESULT.search(ln):
             if "'error'" in ln or '"error"' in ln:
                 s["tool_errors"] += 1
+            if RX_DUMP.search(ln):
+                continue
         elif (m := RX_DONE.search(ln)):
             s["responses"] += 1
             s["durations"].append(int(m.group(1)))
