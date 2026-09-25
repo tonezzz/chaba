@@ -97,8 +97,22 @@ tony-dell:
     related_units:
       - mddb.service
       - gemini-ollama-proxy.service
-    status: migrated to idc01 (2026-09-22)
-    note: "Primary moved tony-dell -> idc01 (public VPS, tailnet-only access — UFW allows tailscale0 only). Snapshot /v1/backup pre-migration-20260922-0914 copied to idc01; all consumers repointed to 100.74.146.0. Embedding via gemini-ollama-proxy on idc01 (option A — Gemini-compatible vectors preserved). tony-dell copy retired after soak. Cold-start caveat — vector index loads minutes after HTTP is up and writes fail during that window."
+    status: replication leader on idc01 (follower on tony-dell since 2026-09-25)
+    replication:
+      role: leader
+      node_id: idc01
+      secret_var: MDDB_REPLICATION_SECRET (shared, in each host's mddb.container — not committed)
+      grpc: 100.74.146.0:11024
+      follower:
+        host: tony-dell
+        node_id: tony-dell
+        host_port: 100.68.142.13:11023
+        mode: read-only (forced by follower role)
+        seed: full /v1/backup from leader (2026-09-25) — fresh-start snapshot path
+          does not trigger because mddbd creates the DB file before the replication
+          freshness check; seed via backup restore instead
+        note: home consumers get a local read replica; promotion to standalone is manual
+    note: "Primary moved tony-dell -> idc01 (public VPS, tailnet-only access — UFW allows tailscale0 only). Snapshot /v1/backup pre-migration-20260922-0914 copied to idc01; all consumers repointed to 100.74.146.0. Embedding via gemini-ollama-proxy on idc01 (option A — Gemini-compatible vectors preserved); embeddings replicate to follower via binlog. tony-dell copy retired after soak, then re-deployed as follower. Cold-start caveat — vector index loads minutes after HTTP is up and writes fail during that window; on the follower, initial BoltDB open of a ~2GB seeded DB can take many minutes under disk load."
   mddb-panel:
     container: mddb-panel
     image: docker.io/tradik/mddb:panel-latest

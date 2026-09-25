@@ -161,6 +161,14 @@ hosts:
         expected_state: active
         critical: false
         note: Tailnet-only Secrets Console on port 8005
+      - name: mddb.service
+        type: service
+        scope: user
+        expected_state: active
+        critical: false
+        note: Read-only replication follower of idc01 leader (quadlet,
+          100.68.142.13:11023); home consumers get a local read replica;
+          re-added 2026-09-25 after leader/follower replication enabled
       - name: mcp-link-monitor.service
         type: service
         scope: user
@@ -1248,8 +1256,9 @@ hosts:
         scope: user
         expected_state: active
         critical: true
-        note: Sole MDDB instance on tailnet 100.74.146.0:11023 (quadlet);
-          migrated from tony-dell 2026-09-22
+        note: MDDB replication leader on tailnet 100.74.146.0:11023 (quadlet);
+          migrated from tony-dell 2026-09-22; tony-dell runs a read-only
+          follower since 2026-09-25
       - name: mddb-panel.service
         type: service
         scope: user
@@ -1303,7 +1312,8 @@ hosts:
         scope: user
         expected_state: active
         critical: true
-        note: Nightly /v1/backup — only safety net while no follower replica
+        note: Nightly /v1/backup — complements the tony-dell read-only
+          follower replica (added 2026-09-25)
       - name: obsidian-vault-sync.timer
         type: timer
         scope: user
