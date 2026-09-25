@@ -68,6 +68,12 @@ hosts:
         scope: user
         expected_state: active
         critical: false
+      - name: input-bridge.service
+        type: service
+        scope: user
+        expected_state: active
+        critical: false
+        note: "vcast virtual-display relay + registry on :3010 (deployed 2026-09-25)"
       - name: playlived.service
         type: service
         scope: user

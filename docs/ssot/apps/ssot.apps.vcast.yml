@@ -1,0 +1,72 @@
+title: vcast — Virtual Cast Display
+subtitle: Software cast target PWA for testing the cast pipeline without the TV; runs on any browser incl. iPad/iPhone/Linux.
+icon: "📺"
+sections:
+  - title: What it is
+    icon: "✅"
+    layout: list
+    items:
+      - label: Virtual cast target
+        text: "A fullscreen PWA that plays the payloads the cast pipeline already produces: HLS video (camera/desktop/YouTube-subtitle paths), PNG snapshots, iframed web pages, and audio. Not a Chromecast — it does not speak castv2; it is a parallel last hop inside our own pipeline."
+      - label: Screen numbers
+        text: "Each paired display gets a stable screen number (Screen #1, #2, ...) assigned by the relay registry, so Ada/HA can be told 'cast to screen 1'."
+      - label: Self-pairing QR
+        text: "An unpaired display shows a QR code on its own screen. Scanning it with an admin phone opens /apps/vcast/pair.html which claims the display: the relay mints an ada-pi key (screen-N) server-side, burns the redeem URL itself, and pushes the api_key to the waiting display over its pending websocket."
+  - title: Architecture
+    icon: "⚙️"
+    layout: list
+    items:
+      - label: Receiver page
+        text: "stacks/web/public/apps/vcast/index.html — joins the input-bridge WS room, registers with api_key (or shows pairing QR when unpaired), renders play/image/nav/audio/stop messages. Native HLS on iOS Safari, vendored hls.js elsewhere. Screen Wake Lock keeps the display on."
+      - label: Relay + registry
+        text: "stacks/web/input-bridge/server.mjs — one node process on tony-dell :3010 (input-bridge.service). HTTP: GET /health, GET /displays, GET /pair-info?sid=, POST /pub {screen|room,msg}, POST /claim {sid,admin_key,name?,force}. WS: room broadcast + register-display. Registry persisted at ~/.local/share/input-bridge/displays.json on tony-dell."
+      - label: Key verification
+        text: "Register/claim keys are verified server-side against ada-pi-pwa (ADA_AUTH_URL=https://idc01.taila0626a.ts.net) via /api/auth/status. Screen keys are normal ada device keys named screen-N — they appear in the ada-keys-card inventory and revoke disables the display on next register."
+      - label: Caddy
+        text: "Existing handle_path /api/input-bridge/* -> 127.0.0.1:3010 in stacks/web/Caddyfile carries /ws plus /pub /displays /claim /pair-info /health — no route change needed. Pages are static under /apps/vcast/."
+  - title: Pairing flow
+    icon: "🔗"
+    layout: list
+    items:
+      - label: Unpaired
+        text: "Page opens, relay returns {type:pending, sid}; page renders QR for /apps/vcast/pair.html?sid=<sid>."
+      - label: Claim
+        text: "Phone opens pair.html, enters admin ada key (stored in phone localStorage only), POSTs /claim. Relay verifies the admin key, POSTs ada /api/auth/keys {name:screen-N}, fetches the redeem URL server-side (allowlisted hosts), extracts api_key from the 302 Location, and pushes {type:paired} to the pending display."
+      - label: Re-pair
+        text: "POST /claim with force:true revokes the old key and issues a fresh one under the same screen-N name. Revoke from the admin page / ada-keys-card removes the key entirely."
+  - title: Message protocol
+    icon: "📨"
+    layout: list
+    items:
+      - label: Inbound to display (room vcast-N)
+        text: "play {url} (hls or direct video), image {url,interval}, nav {url} (iframe), audio {url}, stop, reload. uplink-start is stubbed for the camera/mic phase."
+      - label: Outbound
+        text: "register-display {api_key,label}, state {state,detail} reports (relay records them in the registry), normal room broadcast messages."
+      - label: Dev override
+        text: "URL params: room=vcast-N joins a room directly without pairing; api_key persists a key into localStorage; ws overrides the WS URL."
+  - title: Files & deployment
+    icon: "📁"
+    layout: list
+    items:
+      - label: Repo
+        text: "stacks/web/public/apps/vcast/ (index.html, pair.html, manifest.json, sw.js, vendored hls.min.js + qrcode.min.js, icons), stacks/web/input-bridge/server.mjs, systemd/input-bridge.service."
+      - label: Live
+        text: "https://tony-dell.taila0626a.ts.net/apps/vcast/ ; web container mounts ~/CascadeProjects/chaba-tony-dell/stacks/web/public — rsync deploys instantly, no restart."
+      - label: Service
+        text: "systemctl --user status input-bridge.service on tony-dell."
+      - label: Known limits
+        text: "Not a real Chromecast — castv2/Chrome-cast/AirPlay senders cannot target it. nav-mode iframes cannot pass Tailscale-User-Login-gated pages (same caveat as the VMS cast path). iOS standalone-PWA mic is untrusted (use Safari tab). No auth on /pub beyond tailnet reachability."
+  - title: Testing
+    icon: "🧪"
+    layout: list
+    items:
+      - label: Smoke
+        text: "curl http://127.0.0.1:3010/health ; curl /api/input-bridge/displays ; open /apps/vcast/ in a browser, scan QR, cast via POST /api/input-bridge/pub {screen:1, msg:{type:'play',url:...m3u8}}"
+      - label: Scenarios
+        text: "ada-pi tests/scenarios-live/vcast-*.yaml cover list/cast/stop/unknown-speaker flows via Ada voice."
+config:
+  version: 1
+  created: "2026-09-25"
+  maintainer: tony
+  status: active
+  deployment: tony-dell

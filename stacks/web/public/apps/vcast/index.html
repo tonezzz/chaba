@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#020617">
+  <link rel="manifest" href="/apps/vcast/manifest.json">
+  <link rel="icon" type="image/png" sizes="192x192" href="/apps/vcast/icon-192.png">
+  <link rel="apple-touch-icon" sizes="192x192" href="/apps/vcast/icon-192.png">
+  <title>vcast — virtual display</title>
+  <style>
+    :root { --bg: #020617; --panel: #0f172a; --text: #f8fafc; --muted: #64748b; --accent: #22d3ee; --ok: #22c55e; }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; margin: 0; background: var(--bg); color: var(--text); font-family: system-ui, -apple-system, sans-serif; overflow: hidden; }
+    #video, #img, #frame { position: fixed; inset: 0; width: 100%; height: 100%; border: 0; display: none; background: #000; }
+    #video, #img { object-fit: contain; }
+    #frame { object-fit: unset; }
+    #idle, #pair, #boot {
+      position: fixed; inset: 0; display: none; flex-direction: column;
+      align-items: center; justify-content: center; gap: 1.5rem; text-align: center; padding: 2rem;
+    }
+    #idle { display: none; }
+    #screenNum { font-size: clamp(5rem, 22vw, 14rem); font-weight: 800; line-height: 1;
+      background: linear-gradient(135deg, var(--accent), #818cf8); -webkit-background-clip: text; background-clip: text; color: transparent; }
+    #screenLabel { font-size: 1.4rem; color: var(--muted); }
+    #pairQr { background: #fff; padding: 1.2rem; border-radius: 12px; }
+    #pairQr img { display: block; width: min(56vw, 320px); height: auto; image-rendering: pixelated; }
+    #pairHint { color: var(--muted); font-size: 1rem; max-width: 30rem; }
+    #hud {
+      position: fixed; left: 0.6rem; bottom: 0.6rem; z-index: 20; font-size: 0.72rem;
+      color: var(--muted); background: rgba(2,6,23,0.75); padding: 0.3rem 0.6rem; border-radius: 6px;
+      border: 1px solid #1e293b; user-select: none;
+    }
+    #hud .dot { display: inline-block; width: 0.55rem; height: 0.55rem; border-radius: 50%; background: var(--muted); margin-right: 0.35rem; }
+    #hud .dot.on { background: var(--ok); }
+    #audioGate {
+      position: fixed; right: 0.6rem; bottom: 0.6rem; z-index: 30; display: none;
+      font: inherit; font-size: 0.8rem; padding: 0.5rem 0.9rem; border-radius: 8px; border: none;
+      background: var(--accent); color: #082f49; font-weight: 700; cursor: pointer;
+    }
+    #toast {
+      position: fixed; top: 1rem; left: 50%; transform: translateX(-50%); z-index: 40; display: none;
+      background: rgba(15,23,42,0.92); border: 1px solid #334155; border-radius: 8px;
+      padding: 0.5rem 1rem; font-size: 0.9rem; max-width: 90vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+  </style>
+</head>
+<body>
+  <video id="video" playsinline></video>
+  <img id="img" alt="">
+  <iframe id="frame" allow="autoplay; fullscreen"></iframe>
+
+  <div id="boot"><div class="spin">connecting…</div></div>
+
+  <div id="idle">
+    <div id="screenNum">?</div>
+    <div id="screenLabel"></div>
+  </div>
+
+  <div id="pair">
+    <div id="pairQr"></div>
+    <div id="pairHint">Unpaired display — scan with the admin phone to add it as a cast target.</div>
+  </div>
+
+  <div id="hud"><span class="dot" id="dot"></span><span id="hudText">connecting</span></div>
+  <button id="audioGate">tap for audio</button>
+  <div id="toast"></div>
+  <audio id="audio"></audio>
+
+  <script src="/apps/vcast/qrcode.min.js"></script>
+  <script src="/apps/vcast/hls.min.js"></script>
+  <script>
+    const params = new URLSearchParams(location.search);
+    const KEY_STORE = "vcast.api_key";
+    const proto = location.protocol === "https:" ? "wss:" : "ws:";
+    const WS_URL = params.get("ws") || `${proto}//${location.host}/api/input-bridge/ws`;
+
+    // redeem redirect lands with ?api_key=... — store it and clean the URL
+    if (params.get("api_key")) {
+      localStorage.setItem(KEY_STORE, params.get("api_key"));
+      const clean = new URL(location.href);
+      clean.searchParams.delete("api_key");
+      history.replaceState(null, "", clean);
+    }
+    const apiKey = () => localStorage.getItem(KEY_STORE) || "";
+    const manualRoom = params.get("room") || ""; // dev override: join vcast-N directly
+    const pairBase = `${location.origin}/apps/vcast/pair.html?sid=`;
+
+    const video = document.getElementById("video");
+    const img = document.getElementById("img");
+    const frame = document.getElementById("frame");
+    const idle = document.getElementById("idle");
+    const pair = document.getElementById("pair");
+    const boot = document.getElementById("boot");
+    const audio = document.getElementById("audio");
+    const hudText = document.getElementById("hudText");
+    const dot = document.getElementById("dot");
+    const toast = document.getElementById("toast");
+    const audioGate = document.getElementById("audioGate");
+
+    let ws = null, wsRetry = 0, hls = null, imgTimer = null;
+    let screenNum = null, audioOK = false;
+
+    function setHud(text, on) {
+      hudText.textContent = text;
+      dot.className = "dot" + (on ? " on" : "");
+    }
+    function showToast(text, ms = 3000) {
+      toast.textContent = text;
+      toast.style.display = "block";
+      clearTimeout(toast._t);
+      toast._t = setTimeout(() => (toast.style.display = "none"), ms);
+    }
+    function sendState(state, detail) {
+      if (ws && ws.readyState === 1) ws.send(JSON.stringify({ type: "state", state, detail: detail || "" }));
+    }
+    function deviceLabel() {
+      const ua = navigator.userAgent;
+      if (/iPad/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1)) return "iPad";
+      if (/iPhone/.test(ua)) return "iPhone";
+      if (/Android/.test(ua)) return "Android";
+      return "Browser";
+    }
+
+    // -- renderers ------------------------------------------------------------
+    function teardown() {
+      if (hls) { try { hls.destroy(); } catch (e) {} hls = null; }
+      video.pause(); video.removeAttribute("src"); video.load(); video.style.display = "none";
+      img.style.display = "none"; img.removeAttribute("src");
+      frame.style.display = "none"; frame.src = "about:blank";
+      audio.pause(); audio.removeAttribute("src");
+      clearInterval(imgTimer); imgTimer = null;
+    }
+    function showOnly(el) {
+      teardown();
+      for (const s of [idle, pair, boot]) s.style.display = "none";
+      if (el) el.style.display = el === video || el === img || el === frame ? "block" : "flex";
+    }
+    function showIdle() {
+      teardown();
+      showOnly(idle);
+      document.getElementById("screenNum").textContent = screenNum != null ? `#${screenNum}` : "?";
+      document.getElementById("screenLabel").textContent =
+        screenNum != null ? `Screen ${screenNum} · ${deviceLabel()}` : "registered";
+      setHud(`screen ${screenNum} idle`, true);
+      sendState("idle");
+    }
+    function showPair(sid) {
+      teardown();
+      showOnly(pair);
+      const el = document.getElementById("pairQr");
+      el.innerHTML = "";
+      try {
+        const qr = qrcode(0, "M");
+        qr.addData(pairBase + sid);
+        qr.make();
+        el.innerHTML = qr.createImgTag(6);
+      } catch (e) { el.textContent = pairBase + sid; }
+      setHud("unpaired — awaiting claim", true);
+      sendState("unpaired", sid);
+    }
+    function play(url) {
+      showOnly(video);
+      video.controls = false;
+      video.muted = !audioOK;
+      if (!audioOK) audioGate.style.display = "block";
+      const isHls = /\.m3u8($|\?)/i.test(url);
+      if (isHls && !video.canPlayType("application/vnd.apple.mpegurl")) {
+        if (!window.Hls || !Hls.isSupported()) { showToast("hls unsupported"); return sendState("error", "hls unsupported"); }
+        hls = new Hls({ liveSyncDurationCount: 3 });
+        hls.loadSource(url);
+        hls.attachMedia(video);
+        hls.on(Hls.Events.ERROR, (_, d) => { if (d.fatal) showToast("hls: " + (d.details || "error")); });
+      } else {
+        video.src = url;
+      }
+      video.play().catch(() => showToast("tap for playback"));
+      setHud(`screen ${screenNum} · video`, true);
+      sendState("playing", url);
+    }
+    function showImage(url, interval) {
+      showOnly(img);
+      const tick = () => { img.src = url + (url.includes("?") ? "&" : "?") + "_t=" + Date.now(); };
+      tick();
+      if (interval > 0) imgTimer = setInterval(tick, Math.max(1, interval) * 1000);
+      setHud(`screen ${screenNum} · image`, true);
+      sendState("image", url);
+    }
+    function nav(url) {
+      showOnly(frame);
+      frame.src = url;
+      setHud(`screen ${screenNum} · web`, true);
+      sendState("nav", url);
+    }
+    function playAudio(url) {
+      if (!audioOK) { audioGate.style.display = "block"; showToast("audio blocked — tap to enable"); }
+      audio.src = url;
+      audio.play().catch(() => {});
+      sendState("audio", url);
+    }
+
+    // -- wake lock --------------------------------------------------------------
+    let wakeLock = null;
+    async function keepAwake() {
+      try { wakeLock = await navigator.wakeLock.request("screen"); } catch (e) {}
+    }
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible") keepAwake();
+    });
+    keepAwake();
+
+    audioGate.addEventListener("click", () => {
+      audioOK = true;
+      audioGate.style.display = "none";
+      video.muted = false;
+      if (video.src) video.play().catch(() => {});
+    });
+
+    // -- websocket ---------------------------------------------------------------
+    function connect() {
+      if (ws && ws.readyState <= 1) return;
+      setHud("connecting", false);
+      ws = new WebSocket(WS_URL);
+      ws.onopen = () => {
+        wsRetry = 0;
+        setHud("connected", true);
+        if (manualRoom) {
+          ws.send(JSON.stringify({ type: "join", room: manualRoom }));
+          screenNum = manualRoom.replace(/^vcast-/, "");
+          showIdle();
+        } else {
+          ws.send(JSON.stringify({ type: "register-display", api_key: apiKey(), label: deviceLabel() }));
+        }
+      };
+      ws.onclose = () => {
+        ws = null;
+        setHud("reconnecting", false);
+        setTimeout(connect, Math.min(5000, 500 * ++wsRetry));
+      };
+      ws.onerror = () => {};
+      ws.onmessage = (e) => {
+        let msg;
+        try { msg = JSON.parse(e.data); } catch (err) { return; }
+        handle(msg);
+      };
+    }
+
+    function handle(msg) {
+      switch (msg.type) {
+        case "registered":
+          screenNum = msg.screen;
+          showIdle();
+          break;
+        case "pending":
+          showPair(msg.sid);
+          break;
+        case "paired":
+          localStorage.setItem(KEY_STORE, msg.api_key);
+          ws.send(JSON.stringify({ type: "register-display", api_key: apiKey(), label: deviceLabel() }));
+          break;
+        case "unpaired":
+          localStorage.removeItem(KEY_STORE);
+          screenNum = null;
+          ws.send(JSON.stringify({ type: "register-display", api_key: "", label: deviceLabel() }));
+          break;
+        case "play": play(msg.url); break;
+        case "image": showImage(msg.url, msg.interval); break;
+        case "nav": nav(msg.url); break;
+        case "audio": playAudio(msg.url); break;
+        case "stop": showIdle(); showToast("stopped"); break;
+        case "reload": location.reload(); break;
+        case "uplink-start":
+          showToast("camera uplink not enabled yet");
+          sendState("uplink-unsupported");
+          break;
+        case "ping": case "presence": case "pong": break;
+        default: break;
+      }
+    }
+
+    connect();
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/apps/vcast/sw.js', { scope: '/apps/vcast/' }).catch(() => {});
+    }
+  </script>
+</body>
+</html>

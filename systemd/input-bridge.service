@@ -1,0 +1,14 @@
+[Unit]
+Description=Input-bridge WS relay + vcast virtual-display registry
+
+[Service]
+ExecStart=/usr/bin/node %h/CascadeProjects/chaba-tony-dell/stacks/web/input-bridge/server.mjs
+Environment=INPUT_BRIDGE_PORT=3010
+Environment=ADA_AUTH_URL=https://idc01.taila0626a.ts.net
+Environment=VCAST_REGISTRY=%h/.local/share/input-bridge/displays.json
+WorkingDirectory=%h/CascadeProjects/chaba-tony-dell/stacks/web/input-bridge
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target

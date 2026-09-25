@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#020617">
+  <title>vcast — pair display</title>
+  <style>
+    :root { --bg: #020617; --panel: #0f172a; --text: #f8fafc; --muted: #94a3b8; --accent: #22d3ee; --ok: #22c55e; --err: #ef4444; }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100vh; background: var(--bg); color: var(--text); font-family: system-ui, -apple-system, sans-serif; padding: 1.25rem; }
+    main { max-width: 30rem; margin: 0 auto; }
+    h1 { font-size: 1.3rem; }
+    .card { background: var(--panel); border: 1px solid #1e293b; border-radius: 10px; padding: 1rem; margin-bottom: 1rem; }
+    label { font-size: 0.8rem; color: var(--muted); display: block; margin-bottom: 0.3rem; }
+    input { width: 100%; font: inherit; font-size: 0.9rem; padding: 0.5rem; border-radius: 6px; border: 1px solid #334155; background: var(--bg); color: var(--text); }
+    button { font: inherit; font-weight: 700; padding: 0.6rem 1rem; border-radius: 8px; border: none; background: var(--accent); color: #082f49; cursor: pointer; width: 100%; margin-top: 0.75rem; }
+    button:disabled { opacity: 0.5; }
+    .row { display: flex; align-items: center; gap: 0.5rem; margin-top: 0.5rem; }
+    .row input[type=checkbox] { width: auto; }
+    #result { margin-top: 0.75rem; font-size: 0.9rem; white-space: pre-wrap; word-break: break-all; }
+    .ok { color: var(--ok); } .err { color: var(--err); }
+    table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+    td, th { text-align: left; padding: 0.35rem 0.4rem; border-bottom: 1px solid #1e293b; }
+    th { color: var(--muted); font-weight: 600; }
+    .muted { color: var(--muted); font-size: 0.8rem; }
+  </style>
+</head>
+<body>
+<main>
+  <h1>Pair a virtual display</h1>
+  <div class="card" id="pendingCard">
+    <div class="muted">Pending display</div>
+    <div id="pendingInfo" style="margin-top:0.4rem">loading…</div>
+  </div>
+
+  <div class="card">
+    <label for="adminKey">Ada admin API key (stored on this phone only)</label>
+    <input id="adminKey" type="password" autocomplete="off" placeholder="ada admin key">
+    <div class="row">
+      <input type="checkbox" id="force">
+      <label for="force" style="margin:0">Re-issue if the screen name is already taken</label>
+    </div>
+    <button id="pairBtn">Add as cast target</button>
+    <div id="result"></div>
+  </div>
+
+  <div class="card">
+    <div class="muted">Registered screens</div>
+    <table id="screens"><thead><tr><th>#</th><th>name</th><th>device</th><th>state</th></tr></thead><tbody></tbody></table>
+  </div>
+</main>
+<script>
+  const sid = new URLSearchParams(location.search).get("sid") || "";
+  const KEY = "vcast.admin_key";
+  const adminKey = document.getElementById("adminKey");
+  adminKey.value = localStorage.getItem(KEY) || "";
+  adminKey.addEventListener("input", () => localStorage.setItem(KEY, adminKey.value.trim()));
+
+  async function api(path, opts) {
+    const r = await fetch(`/api/input-bridge${path}`, opts);
+    const data = await r.json().catch(() => ({}));
+    return { status: r.status, data };
+  }
+
+  async function loadPending() {
+    const el = document.getElementById("pendingInfo");
+    if (!sid) { el.innerHTML = '<span class="err">missing ?sid= — rescan the QR on the display</span>'; return; }
+    const { status, data } = await api(`/pair-info?sid=${encodeURIComponent(sid)}`);
+    el.innerHTML = status === 200
+      ? `<strong>${data.label || "display"}</strong> <span class="muted">waiting since ${data.since}</span>`
+      : `<span class="err">${data.error || status}</span>`;
+  }
+
+  async function loadScreens() {
+    const { data } = await api("/displays");
+    const tb = document.querySelector("#screens tbody");
+    tb.innerHTML = "";
+    for (const s of data.screens || []) {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `<td>#${s.screen}</td><td>${s.name}</td><td>${s.label || ""}</td>` +
+        `<td>${s.connected ? '<span class="ok">online</span>' : '<span class="muted">offline</span>'} ${s.state || ""}</td>`;
+      tb.appendChild(tr);
+    }
+    if (!(data.screens || []).length) tb.innerHTML = '<tr><td colspan="4" class="muted">none yet</td></tr>';
+  }
+
+  document.getElementById("pairBtn").addEventListener("click", async () => {
+    const out = document.getElementById("result");
+    const btn = document.getElementById("pairBtn");
+    if (!adminKey.value.trim()) { out.innerHTML = '<span class="err">admin key required</span>'; return; }
+    btn.disabled = true; out.textContent = "pairing…";
+    const { status, data } = await api("/claim", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ sid, admin_key: adminKey.value.trim(), force: document.getElementById("force").checked }),
+    });
+    btn.disabled = false;
+    if (status === 200) {
+      out.innerHTML = `<span class="ok">Paired — Screen #${data.screen} (${data.name})</span>`;
+      loadScreens();
+    } else if (status === 409) {
+      out.innerHTML = `<span class="err">${data.error}</span><br>tick “Re-issue” and try again, or revoke the key from the admin page.`;
+    } else {
+      out.innerHTML = `<span class="err">${data.error || status}</span>`;
+    }
+  });
+
+  loadPending();
+  loadScreens();
+</script>
+</body>
+</html>
