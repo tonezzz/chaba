@@ -162,7 +162,10 @@ class VcastScreensCard extends HTMLElement {
       const row = this._row(`⏳ ${p.label || "display"} — waiting to pair`, true);
       const open = this._btn("Pair");
       open.title = "Open the claim page (same flow the on-screen QR starts)";
-      open.onclick = () => window.open(`/apps/vcast/pair.html?sid=${encodeURIComponent(p.sid)}`, "_blank");
+      open.onclick = () => {
+        const base = new URL(this._appUrl).origin;
+        window.open(`${base}/apps/vcast/pair.html?sid=${encodeURIComponent(p.sid)}`, "_blank");
+      };
       row.appendChild(open);
       list.appendChild(row);
     }
