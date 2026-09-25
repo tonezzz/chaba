@@ -63,6 +63,16 @@ instances:
       users via config/auth/list; Issue runs script.ada_pair_issue, keyed
       users get a QR-icon button opening an overlay with the redeem QR +
       link to the HA web UI (/chaba-home/ai).
+      Virtual-screens card is custom:vcast-screens-card
+      (/local/vcast-screens-card.js?v=1, repo: stacks/tony-dell/tony-ha/www/)
+      added to the pair view 2026-09-25 — polls the input-bridge relay
+      /api/input-bridge/displays (CORS-open, tailnet-only) and lists
+      registered Screen #N rows + pending displays. Row actions: test HLS
+      play, test page nav, stop, re-pair (pushes unpaired so the display
+      shows its claim QR again), revoke (POST /release with admin key).
+      Pairing itself is display-initiated: the unpaired /apps/vcast/ page
+      shows a QR that opens /apps/vcast/pair.html?sid= on the admin phone
+      (see docs/ssot/apps/ssot.apps.vcast.yml).
       Events tab added 2026-09-20: custom:chaba-events-card
       (/local/chaba-events-card.js, repo: stacks/tony-dell/tony-ha/www/) reads
       /local/chaba-events.json (written by /config/scripts/chaba-event-log.py —
