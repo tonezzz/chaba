@@ -101,6 +101,8 @@ def main() -> int:
                     help="session-ops.jsonl — prepend an '## ops' rollup block")
     ap.add_argument("--hosts", type=Path, default=None,
                     help="host-ops.jsonl — prepend a '## hosts' health block")
+    ap.add_argument("--ha", type=Path, default=None,
+                    help="ha-ops.jsonl — prepend a '## ha' log block")
     ap.add_argument("--dormant-days", type=int, default=14,
                     help="tags with no session newer than this collapse into "
                          "a single '## dormant' block")
@@ -172,8 +174,16 @@ def main() -> int:
                       + f"\n_(no session in {args.dormant_days}d — "
                         "threads cool off; reopen by mentioning them again)_")
 
-    if args.ops or args.hosts:
+    if args.ops or args.hosts or args.ha:
         import importlib
+        if args.ha:
+            ha_path = args.ha.expanduser()
+            if ha_path.exists():
+                har = importlib.import_module("ha-report")
+                hrows = [json.loads(l) for l in ha_path.read_text(
+                    encoding="utf-8").splitlines() if l.strip()]
+                if hrows:
+                    blocks.insert(0, har.ha_block(hrows, "recent"))
         if args.ops:
             ops_path = args.ops.expanduser()
             if ops_path.exists():

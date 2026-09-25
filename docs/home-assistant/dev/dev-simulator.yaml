@@ -1,5 +1,21 @@
 # Dev simulator: random-walks dev_* mocks every 30s so dashboards/history are lively.
 automation:
+  - id: dev_sim_midnight_reset
+    alias: "Dev: reset today-counters at midnight"
+    triggers:
+      - trigger: time
+        at: "00:00:00"
+    actions:
+      - action: input_number.set_value
+        target: { entity_id: input_number.dev_today_load_energy }
+        data: { value: 0 }
+      - action: input_number.set_value
+        target: { entity_id: input_number.dev_today_battery_charge }
+        data: { value: 0 }
+      - action: input_number.set_value
+        target: { entity_id: input_number.dev_today_battery_discharge }
+        data: { value: 0 }
+    mode: single
   - id: dev_sim_walk
     alias: "Dev: simulate sensor walk (michael-dev mock)"
     triggers:
@@ -93,15 +109,15 @@ automation:
       - action: input_number.set_value
         target: { entity_id: input_number.dev_today_load_energy }
         data:
-          value: "{{ (states('input_number.dev_today_load_energy')|float(0) + states('input_number.dev_load_power')|float(0) / 120000) | round(2) }}"
+          value: "{{ [(states('input_number.dev_today_load_energy')|float(0) + states('input_number.dev_load_power')|float(0) / 120000) | round(2), 100] | min }}"
       - action: input_number.set_value
         target: { entity_id: input_number.dev_today_battery_charge }
         data:
-          value: "{{ (states('input_number.dev_today_battery_charge')|float(0) + [states('input_number.dev_battery_power')|float(0), 0]|max / 120000) | round(2) }}"
+          value: "{{ [(states('input_number.dev_today_battery_charge')|float(0) + [states('input_number.dev_battery_power')|float(0), 0]|max / 120000) | round(2), 100] | min }}"
       - action: input_number.set_value
         target: { entity_id: input_number.dev_today_battery_discharge }
         data:
-          value: "{{ (states('input_number.dev_today_battery_discharge')|float(0) + [0 - states('input_number.dev_battery_power')|float(0), 0]|max / 120000) | round(2) }}"
+          value: "{{ [(states('input_number.dev_today_battery_discharge')|float(0) + [0 - states('input_number.dev_battery_power')|float(0), 0]|max / 120000) | round(2), 100] | min }}"
       - action: input_select.select_option
         target: { entity_id: input_select.dev_battery_direction }
         data:
