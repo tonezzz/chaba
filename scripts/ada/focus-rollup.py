@@ -101,6 +101,9 @@ def main() -> int:
                     help="session-ops.jsonl — prepend an '## ops' rollup block")
     ap.add_argument("--hosts", type=Path, default=None,
                     help="host-ops.jsonl — prepend a '## hosts' health block")
+    ap.add_argument("--dormant-days", type=int, default=14,
+                    help="tags with no session newer than this collapse into "
+                         "a single '## dormant' block")
     args = ap.parse_args()
 
     aliases = dict(ALIASES)
@@ -127,11 +130,21 @@ def main() -> int:
     (outdir / "focus-index.json").write_text(
         json.dumps(index, ensure_ascii=False, indent=2), encoding="utf-8")
 
+    import datetime as _dt
+    today = _dt.date.today().isoformat()
+    dormant_cutoff = (_dt.date.today()
+                      - _dt.timedelta(days=args.dormant_days)).isoformat()
+
     blocks = []
+    dormant: list[str] = []
     for tag, rs in sorted(groups.items(), key=lambda kv: -len(kv[1])):
         rs = sorted(rs, key=lambda r: r.get("date", ""))
         first, last = rs[0].get("date", "?"), rs[-1].get("date", "?")
         dates = first if first == last else f"{first} → {last}"
+
+        if last < dormant_cutoff:
+            dormant.append(f"- {tag}: {len(rs)} session(s), {dates}")
+            continue
 
         loops: list[str] = []
         for r in reversed(rs):  # newest loops first, dedup by lowercase
@@ -153,6 +166,11 @@ def main() -> int:
             if len(loops) > args.max_loops:
                 lines.append(f"- …({len(loops) - args.max_loops} more)")
         blocks.append("\n".join(lines))
+
+    if dormant:
+        blocks.append("## dormant\n" + "\n".join(dormant)
+                      + f"\n_(no session in {args.dormant_days}d — "
+                        "threads cool off; reopen by mentioning them again)_")
 
     if args.ops or args.hosts:
         import importlib
