@@ -12,8 +12,15 @@ Decision: `docs/ssot/decisions/ssot.technical-decisions.yml` → `tv-casting-gro
 | noVNC/VMS | `input_select.tv_display=vms` → cast-browser nav → `http://tony-dell/apps/vnc/vnc.html` | stale: points at old dell path; update to `/apps/vms/` |
 | Desktop | `cast-desktop@1.service` → HLS | CPUQuota 60% |
 | YouTube | `youtube_*` automation chain → `script.cast_youtube_tv` | picker/queue/search helpers |
+| YouTube + subtitles | Ada `yt_cast` tool → `yt-live-api.py` :8791 → `yt-live.sh` → ffmpeg HLS w/ burned subs | subtitle policy below |
 | TTS speak | `tts.speak` on `media_player.tony_tv_cast` | e.g. speak_hello event |
 | IR control | `script.tv_*` via `remote.tony_tv` | power/vol/nav |
+
+Subtitle policy (`yt-live.sh` + `yt-vtt-translate.py`, `~/.local/bin/` — no repo
+home yet): the **original-language line always renders on top**, translations
+below it. `src=EN → +target`, `src==target (e.g. TH→TH) → +EN` (never a
+same-language duplicate), `other src → +EN +target`. Default target is `th`;
+Ada passes `language` to override.
 
 ## TVs
 
@@ -60,7 +67,7 @@ detection, `cast_enabled` in editable YouTube/assist paths.
 | **Cast storm** (>6 starts/10min) | `cast_guard_rate_limit`: `tv_display=off`, `cast_enabled=off`, cleanup, notify | investigate cause → `input_boolean.turn_on cast_enabled` |
 | **HA automation engine wedged** | `audit-cast.timer` still kills leaked ffmpeg / orphan helpers / bloated cast-browser | `tail ~/.local/share/cast-audit.log`; restart `tony-ha` |
 | **Plug turned off while cast paths active** | any `off` transition starts a 10-min auto-power cooldown (no helper needed — `cast_power_on`/`wakeCastTarget` compare `plug_tv.last_changed`); re-power attempts suppressed and post an **approval event** on `/chaba-admin/events` — clicking **Approve** runs `cast_power_on force:true` (bypasses cooldown, still honors `cast_enabled`). Caveat: `last_changed` resets at HA start, so a restart while the plug is `off` effectively restarts the cooldown | approve on the events page, power the plug yourself, or wait out the cooldown |
-| **Plug toggles "without command"** | verified 2026-09-24/25: every call was explicit — Ada voice sessions call `switch.turn_on/off` **directly** (bypass cast paths by design; they fire twice in the same second — Ada's tool double-call); `wakeCastTarget` powers on for explicit nav/cast commands once the 10-min cooldown expires and now notifies each time. Check `~/share/ada/transcripts/` on idc01 to attribute voice calls | none — attribute via transcripts/events page |
+| **Plug toggles "without command"** | verified 2026-09-24/25: every call was explicit — Ada voice sessions call `switch.turn_on/off` **directly**; `wakeCastTarget` powers on for explicit nav/cast commands once the 10-min cooldown expires and notifies each time. Since 2026-09-25 Ada **cannot** touch any mains plug (`switch.plug*`, `switch.plak*`, `switch.usb_test_hub`) without explicit voice confirmation — plugs classify `dangerous` (code default in `tool_runner.py` + MDDB `ada-ha-device-safety-tony`), so she must warn + get a spoken yes before `control_entity` runs with `confirmed=true`. Check `~/.local/share/ada/transcripts/` on idc01 to attribute voice calls | none — attribute via transcripts/events page |
 | **Cast guard won't stop / total wedge** | — | kill chain below; `switch.plug_tv` last |
 
 ## Kill chain (runaway response order)

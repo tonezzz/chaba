@@ -223,7 +223,10 @@ cast_entities:
     media_player.tony_tv_cast: "chromecast target"
     media_player.tv_40c5000: "second cast target (idle)"
     remote.tony_tv: "IR remote bridge"
-    switch.plug_tv: "smart plug — HARD power cut (last-resort kill)"
+    switch.plug_tv: "smart plug — HARD power cut (last-resort kill); Ada
+      dangerous-class since 2026-09-25 — voice confirm required
+      (control_entity confirmed=true), MDDB ada-ha-device-safety-tony +
+      tool_runner.py default covers switch.plug*/plak*/usb_test_hub"
   host_side:
     cast-browser.service: "persistent headless chrome :8799 (nav/shot/cast PNG);
       wakeCastTarget GATED 2026-09-24 — same cast_enabled + 10-min plug-off
