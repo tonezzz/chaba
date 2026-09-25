@@ -1,0 +1,9 @@
+[Unit]
+Description=Refresh ada-review corpus — transcripts, reports, memory, ops, hosts, digest
+# Runs on tony-omen: pulls from idc01 over tailscale, then rebuilds
+# session-ops.jsonl + host-ops.jsonl + focus-digest.md.
+
+[Service]
+Type=oneshot
+TimeoutStartSec=900
+ExecStart=/usr/bin/python3 %h/CascadeProjects/chaba/scripts/ada/export-transcripts.py
