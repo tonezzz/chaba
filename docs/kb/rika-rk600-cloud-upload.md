@@ -87,14 +87,20 @@ The site technician reported "the weather station has Bluetooth" — that is the
   it's Michael's **Huawei SCharger-7KS-S0 EV wallbox** (BLE = FusionSolar app
   auth only; bonding required, GATT reads empty). Also offers Modbus-TCP/OCPP
   if EV-charger telemetry is ever wanted — separate integration.
-- **The JK BMS itself did NOT appear in the scan** — confirmed 2026-09-24
-  to be a **range issue**, not a dead radio: the site technician's phone app
-  finds the BMS automatically when he is physically close to it. michael-ha
-  is too far away. An ESP32 parked near the battery enclosure would see the
-  advert the same way the phone does. Still needed on-site: advert name/MAC
-  (nRF Connect scan or read from the app), and WHICH app the tech uses
-  (identifies the protocol — "JK BMS" app → JK02 protocol →
-  `syssi/esphome-jk-bms` works out of the box).
+- **The JK BMS itself did NOT appear in the scan** — the site technician's
+  phone app finds the BMS automatically when he is physically close to it.
+  UPDATE 2026-09-25: an ESP32 (`jkbms` node) now sits **inside the
+  weather-station enclosure** running a continuous active BLE scanner —
+  12+ h produced only ~8 weak unnamed advertisers (RSSI -85..-97, all
+  household random-private MACs) and **no BMS advert at all**. A JK dongle
+  in the same box would be -40..-60 dBm. So either the battery is in a
+  *different* enclosure beyond BLE range, the BMS's BLE radio is off/sleeps
+  until woken (or only advertises while the tech's app session is active),
+  or the pack's BLE module isn't fitted. Still needed: advert name/MAC
+  from the tech's app (or nRF Connect right at the battery), WHICH app the
+  tech uses (identifies the protocol — "JK BMS" app → JK02 →
+  `syssi/esphome-jk-bms`), and **where the battery physically sits**
+  relative to the ESP32.
 - **No BMS on the Modbus bus:** `:502` regs 4–47 are all zero — only e1–e4
   (rain e5 when raining) are polled. The BMS cannot be read *through* the HMI.
 - **ESP32 path is viable if wanted:** JK BMS BLE = service `FFE0`, char `FFE1`;
