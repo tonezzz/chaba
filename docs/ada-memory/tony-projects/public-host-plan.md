@@ -215,12 +215,16 @@ writes are local on the VPS — unaffected.
 
 ## 10. DEFERRED backlog (after VPS deployment is proven)
 
-- **Standby replica**: MDDB has native leader-follower replication —
-  `MDDB_REPLICATION_ROLE=leader` on idc01, `follower` on a home host,
-  `MDDB_REPLICATION_SECRET` shared secret, gRPC :11024, <50ms lag,
-  embeddings replicate via binlog (follower needs no embedding
-  provider). Promotion is manual (restart as standalone). Also gives
-  home consumers a local read replica.
+- ~~**Standby replica**~~ — **done 2026-09-25**: idc01 `leader`,
+  tony-dell `follower` (read-only, 100.68.142.13:11023, quadlet pinned
+  to the leader's image digest). `MDDB_REPLICATION_SECRET` shared
+  secret on gRPC :11024; embeddings replicate via binlog. Caveats
+  learned: the "fresh follower auto-snapshot" path never fires (mddbd
+  creates the DB file before the freshness check) — seed via
+  `/v1/backup` + binlog stream; and a pre-restart `/v1/backup` file was
+  unopenable due to a stale on-disk bbolt freelist (leader restart
+  rebuilt it; historical nightly backups should be treated as
+  untested). Promotion is manual (restart as standalone).
 - `MDDB_AUTH_ENABLED=true` + per-consumer keys for HTTP/gRPC
   (MCP :9000 already key-gated; core ports still open on the tailnet).
 - **Local generation for deep-tier** — phi3-gguf on tony-omen's 4GB GPU
