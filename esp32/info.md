@@ -167,8 +167,15 @@ full remote serial: console read, DTR/RTS download-mode reset, flash.
 - **DANGER — `input keyevent 26` suspends/powers off the HMI.** Sent it
   ~10:36 2026-09-25 thinking "wake toggle"; weather data froze at that
   exact second and the box stopped answering ping/telnet/502 entirely
-  (screen was already off, so POWER → suspend/off). Recovery = physical
-  power-button press. Do NOT send keyevents 26/224 to this device again.
+  (screen was already off, so POWER → suspend/off; cloud uploads also
+  stopped — last row 10:35, proving OS-level suspend, not just WiFi).
+  Recovered 2026-09-25 ~16:29 by Michael power-cycling it. Do NOT send
+  keyevents 26/224 to this device again.
+- **Wake watcher:** `/root/hmi-watch.sh` on michael-ha pings .148 every
+  15 s and posts `binary_sensor.hmi_up` to HA on transitions
+  (log: `/root/hmi-watch.log`). Survives reboot? NO — restart by hand:
+  `nohup /root/hmi-watch.sh >/dev/null 2>&1 &`. Token at `/root/ha-token`.
+  Note: HA API from the host is `http://172.30.32.1:8123` (not localhost).
 - HMI USB devices: ttyUSB0-4 = Longsung GSM modem (NOT the ESP32);
   CH340 enumerates but binds no tty — hence userspace.
 
@@ -210,13 +217,17 @@ full remote serial: console read, DTR/RTS download-mode reset, flash.
 - **Decisive next step:** the exact device NAME + MAC shown in the tech's
   JK app (screenshot), or an nRF Connect scan at the cabinet. Once a
   `BMS-CANDIDATE` advert appears, its MAC goes into `jkbms_ble_mac`.
-- **HMI serial:** app holds ttyO0+ttyO1 (ttyO3=console, ttyUSB*=GSM modem,
-  no tty for the ESP32 CH340). ttyO1 carried ONE bursty burst of ~29-byte
-  binary frames @ ~1 Hz (see /tmp/o1.cap analysis — fields don't match
-  the weather snapshot, so probably NOT the RK600 feed; possibly the
-  battery controller). ttyO0 silent in all captures. App polls may only
-  run while the screen is awake — screen is off (mScreenOn=false,
-  screencap blank) and keyevent wake didn't stick.
+- **HMI serial RESOLVED (2026-09-25):** app holds ttyO0+ttyO1 (ttyO3=console,
+  ttyUSB*=GSM modem, no tty for the ESP32 CH340). **ttyO1 = the RK600
+  weather logger's Modbus-RTU feed** — NOT the battery controller.
+  Frames are `01 03 1a` (slave 1, func 03, 26 B = 13 regs) + CRC16, all
+  valid, ~1 Hz BUT ONLY WHILE THE SCREEN IS ON (mScreenOn=true). Decoded
+  float32s: reg2-3 wind speed m/s, reg4-5 temp °C, reg6-7 humidity %,
+  reg0-1 monotonic counter, reg10 const 1. ttyO0 silent even with screen
+  on — nothing wired to it. No wired serial path to the battery
+  controller exists; the controller is BLE-only. Screencap returns black
+  even when mScreenOn=true (framebuffer not readable). Capture:
+  o1-p1.cap (45 frames, all CRC-valid).
 - `SCharger-7KS-S0-NS2351395951` @ 58:56:C2:C8:EE:62 = Huawei EV wallbox
   (paired to michael-ha hci0 during earlier probing). Not the BMS.
 
