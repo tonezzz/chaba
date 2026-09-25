@@ -30,7 +30,7 @@ render:
       report: report.yml
       limits: {soft: 12000, hard: 20000}
       overflow_order: [ada-focus, ada-sessions, sessions, focus, project, home]   # dropped first → last
-      sections: [agent, user, immediate, home, project, focus, access, sessions, ada-sessions, ada-focus, timeline, events]
+      sections: [agent, user, immediate, home, project, focus, access, sessions, ada-sessions, ada-focus, timeline, events, ada-events]
     guest:
       output: context-guest.md
       report: report-guest.yml
@@ -161,6 +161,19 @@ sections:
     source:
       kind: rolling-log
       file: ~/.local/share/chaba/events.md
+      max_entries: 8
+      min_chars: 20
+
+  ada-events:
+    description: |
+      Ada-side event timeline (key-issued, speaker-enrolled, scenario-run)
+      — ~/.local/share/ada/events.md on the Ada host, mirrored to
+      ~/.local/share/ada-review/events.md by the session-report pipeline.
+    priority: 30
+    limits: {soft: 800, hard: 1200}
+    source:
+      kind: rolling-log
+      file: ~/.local/share/ada-review/events.md
       max_entries: 8
       min_chars: 20
 
