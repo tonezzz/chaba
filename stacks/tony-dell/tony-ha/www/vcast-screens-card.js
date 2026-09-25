@@ -74,6 +74,13 @@ class VcastScreensCard extends HTMLElement {
   }
 
   async _showAppQr() {
+    const urls = [
+      { label: "Tailnet (recommended)", url: this._appUrl },
+      { label: "Home Wi-Fi (no VPN)", url: this._config.lan_url || "http://192.168.2.67/apps/vcast/" },
+    ];
+    let qrlib = null;
+    try { qrlib = await this._qrLib(); } catch (e) {}
+
     const ov = document.createElement("div");
     ov.style.cssText =
       "position:fixed;inset:0;z-index:9999;display:grid;place-items:center;background:rgba(0,0,0,.6)";
@@ -84,36 +91,46 @@ class VcastScreensCard extends HTMLElement {
     const title = document.createElement("div");
     title.style.cssText = "font-weight:600;font-size:.95rem";
     title.textContent = "Open vcast on a device";
+    const tabs = document.createElement("div");
+    tabs.style.cssText = "display:flex;gap:6px";
     const body = document.createElement("div");
     body.style.cssText =
       "width:236px;min-height:236px;background:#fff;border-radius:8px;padding:8px;" +
       "display:grid;place-items:center;color:#333;font-size:12px;text-align:center";
-    body.textContent = "rendering…";
     const link = document.createElement("a");
     link.style.cssText = "font-size:.7rem;color:var(--primary-color);word-break:break-all;max-width:300px";
-    link.href = this._appUrl;
-    link.target = "_blank";
-    link.rel = "noopener";
-    link.textContent = this._appUrl;
+    link.target = "_blank"; link.rel = "noopener";
     const hint = document.createElement("div");
     hint.style.cssText = "font-size:.72rem;color:var(--secondary-text-color);text-align:center";
-    hint.textContent = "The device opens unpaired and shows its own QR — scan that to claim it.";
     const close = this._btn("Close");
     close.onclick = () => ov.remove();
     ov.onclick = (e) => { if (e.target === ov) ov.remove(); };
-    card.append(title, body, link, hint, close);
+
+    const pick = (i, btn) => {
+      for (const b of tabs.children) b.style.fontWeight = "400";
+      btn.style.fontWeight = "700";
+      const u = urls[i].url;
+      link.href = u; link.textContent = u;
+      if (qrlib) {
+        const qr = qrlib(0, "M");
+        qr.addData(u); qr.make();
+        body.innerHTML = qr.createImgTag(5);
+      } else {
+        body.textContent = u;
+      }
+      hint.textContent = i === 0
+        ? "iPad/iPhone must have Tailscale VPN connected — otherwise Safari can't open it."
+        : "Works on the same Wi-Fi, no Tailscale. Device opens unpaired and shows its own claim QR.";
+    };
+    urls.forEach((u, i) => {
+      const b = this._btn(u.label);
+      b.onclick = () => pick(i, b);
+      tabs.appendChild(b);
+    });
+    card.append(title, tabs, body, link, hint, close);
     ov.appendChild(card);
     document.body.appendChild(ov);
-    try {
-      const qrlib = await this._qrLib();
-      const qr = qrlib(0, "M");
-      qr.addData(this._appUrl);
-      qr.make();
-      body.innerHTML = qr.createImgTag(5);
-    } catch (e) {
-      body.textContent = "QR failed — open " + this._appUrl;
-      body.style.color = "#b43228";
-    }
+    pick(0, tabs.children[0]);
   }
 
   _render(data) {
