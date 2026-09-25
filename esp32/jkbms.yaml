@@ -26,6 +26,8 @@ substitutions:
 esphome:
   name: ${name}
   friendly_name: ${friendly_name}
+  includes:
+    - <set>
 
 esp32:
   board: esp32dev
@@ -63,12 +65,20 @@ esp32_ble_tracker:
   on_ble_advertise:
     then:
       - lambda: |-
+          static std::set<std::string> seen;
           std::string n = x.get_name();
-          if (n.rfind("JK-", 0) == 0 || n.rfind("JK_", 0) == 0 ||
-              n.find("BMS") != std::string::npos) {
-            ESP_LOGW("ble_adv", "BMS-like advert: name=%s mac=%s rssi=%d",
-                     n.c_str(), x.address_str().c_str(), x.get_rssi());
+          if (n.empty()) n = "[noname]";
+          if (!seen.insert(x.address_str()).second) return;
+          char svc[192] = {0}; int off = 0;
+          for (auto &u : x.get_service_uuids()) {
+            char ub[40]; u.to_str(ub);
+            off += snprintf(svc + off, sizeof(svc) - off, "%s,", ub);
           }
+          char mfr[192] = {0}; off = 0;
+          for (auto &m : x.get_manufacturer_datas())
+            off += snprintf(mfr + off, sizeof(mfr) - off, "%04X:%dB,", m.uuid, (int)m.data.size());
+          ESP_LOGW("ble_adv", "adv: name=%s mac=%s rssi=%d svc=[%s] mfr=[%s]",
+                   n.c_str(), x.address_str().c_str(), x.get_rssi(), svc, mfr);
 
 ble_client:
   - mac_address: !secret jkbms_ble_mac

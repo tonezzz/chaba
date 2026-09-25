@@ -128,30 +128,58 @@ michael-ha tunnel to `192.168.31.231:3232` succeeded, but the device died
 within ~1 min: WiFi came up, API port listened, handshake never completed,
 then total silence (no ping, no ports, no `safe_mode` OTA window after 10+ min).
 
-- **Likely cause:** heap exhaustion. NimBLE alone reserves ~56 KB DRAM
-  (DRAM pool 124,580 B with BLE vs 180,736 B without). The merged build's
-  ~51 KB static headroom couldn't cover NimBLE runtime allocs + display
-  buffers → malloc failure → crash/hang. A boot loop early enough never
-  increments the boot-failure counter, so `safe_mode` never engages.
+- **Actual cause (corrected 2026-09-25, from serial console):** NOT a
+  crash — the board ran fine but WiFi-cycled forever: `esp32/config.yaml`
+  in the repo had drifted from the deployed firmware and listed only
+  Tony's SSIDs (TONY-WIFI_*, Albatros, Maesang, TONY-IP) — none exist at
+  Michael's site. The deployed firmware had Michael's SSIDs
+  (`Xiaomi_A654`/`AisMN_2.4G`); the repo copy never did. So "dead" =
+  alive-but-no-network. Lesson: verify the wifi network list matches the
+  site's SSIDs before remote-flashing anything.
 - **Fix applied in the merge:** `ESP.getFreeHeap()` → `esp_get_free_heap_size()`
   (Arduino API doesn't exist under esp-idf).
-- **Conclusion:** single-board option (B) is not viable on a plain
-  ESP32-D0WD (no PSRAM). **Chosen: option A** — esp32test is repurposed as
-  the dedicated BMS bridge running `jkbms.yaml` (node name becomes `jkbms`,
-  display function retired). OTA retry loop + subnet watcher are armed to
-  push `recovery/jkbms.ota.bin` the moment the board answers on 3232 again
-  (needs a physical power-cycle first; a boot loop should reach `safe_mode`
-  OTA after ~10 failed boots).
-- **Recovery images** in `~/.local/share/esphome/recovery/`:
-  `esp32test-displayonly.{ota,factory}.bin` (original config, no BLE — full
-  restore), `jkbms.{ota,factory}.bin` (dedicated BMS bridge).
-- **Device state:** esp32test at Michael's is DOWN after the bad flash —
-  needs a physical power-cycle (any OTA window that appears: push
-  `esp32test-displayonly.ota.bin`) or serial reflash on-site
-  (`esphome upload` won't work remotely until it answers on 3232 again).
-- **Site address note:** on Michael's LAN it DHCPs as `192.168.31.231`
-  (reachable through michael-ha, which is a 172.30.x container — `ip neigh`
-  there never shows LAN MACs; find ESPHome nodes by port-sweeping 6053/3232).
+- **Conclusion:** **Chosen: option A** — esp32test repurposed as the
+  dedicated BMS bridge running `jkbms.yaml` (node `jkbms`, display
+  retired). Deployed 2026-09-25 via remote serial flash (below); now live
+  at `192.168.31.231`, auto-discovered in michael-ha as
+  `sensor.terrace_weather_station_bms_*` (all `unknown` until the BMS
+  links). Whether BLE+display would have coexisted was never actually
+  tested — the wifi misconfig masked everything.
+
+## Remote serial recovery via the Samkoon HMI (built 2026-09-25)
+
+The ESP32's USB cable plugs into the Samkoon HMI's USB host port (CH340
+`1a86:7523`, `/dev/bus/usb/001/006`, unbound — the kernel has no ch341
+driver). `espusb` (source: `esp32/espusb.c`) is a static ARM binary that
+does CH340 userspace serial + ESP32 SLIP flashing over USBDEVFS ioctls —
+full remote serial: console read, DTR/RTS download-mode reset, flash.
+
+- Binary lives at `/data/local/tmp/espusb2` on the HMI (transferred via
+  `nc -l 8000` on HMI + `nc 192.168.31.148 8000 < file` from michael-ha).
+- Build: `podman run --rm -v /tmp:/work debian:bookworm-slim bash -c
+  "apt-get update -qq && apt-get install -y -qq gcc-arm-linux-gnueabihf &&
+  arm-linux-gnueabihf-gcc -O2 -static -o /work/espusb /work/espusb.c"`
+- Usage: `espusb /dev/bus/usb/001/006 read 15` (console) |
+  `flash <file>` (DTR/RTS → ROM bootloader → SLIP flash at offset 0).
+- Android HMI notes: no nohup/tee/tail/head; `nc` is OpenBSD-style
+  (`nc -l PORT`); telnet shell at `192.168.31.148:23` reached from
+  michael-ha via `(printf "sh -i\n..."; sleep) | exec 3<>/dev/tcp/...`.
+- HMI USB devices: ttyUSB0-4 = Longsung GSM modem (NOT the ESP32);
+  CH340 enumerates but binds no tty — hence userspace.
+
+## Recovery images
+
+- `~/.local/share/esphome/recovery/esp32test-displayonly.{ota,factory}.bin`
+  (original display config, no BLE — full restore if display is wanted back)
+- `~/.local/share/esphome/recovery/jkbms.{ota,factory}.bin` (BMS bridge)
+
+## Site address notes
+
+- The board DHCPs as `192.168.31.231` on Michael's LAN. Reach via
+  michael-ha (a 172.30.x container — `ip neigh` there never shows LAN
+  MACs; find ESPHome nodes by port-sweeping 6053/3232).
+- SolarAssistant dongle: `192.168.1.120` (web UI on :80, MQTT :1883
+  auth-required; monitors the house Solis system, NOT the station BMS).
 
 ## Notes
 
