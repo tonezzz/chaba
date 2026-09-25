@@ -38,11 +38,18 @@ class ChabaReportCard extends HTMLElement {
         border:1px solid var(--divider-color,#666); border-radius:6px;
         padding:2px 10px; cursor:pointer; }
       chaba-report-card .tree { flex:1; min-height:0; overflow-y:auto;
-        padding:0 16px 16px; }
+        padding:4px 16px 16px;
+        background:color-mix(in srgb, var(--card-background-color,#1c2128) 74%, #000); }
       chaba-report-card .head { display:flex; align-items:center; gap:8px;
         padding:6px 8px; cursor:pointer; border-radius:6px; }
+      chaba-report-card .head.d0 {
+        background:var(--secondary-background-color,rgba(255,255,255,.07));
+        margin:2px 0; }
       chaba-report-card .head:hover {
         background:var(--secondary-background-color,rgba(0,0,0,.08)); }
+      chaba-report-card .head.d0:hover {
+        background:color-mix(in srgb,
+          var(--secondary-background-color,rgba(255,255,255,.07)) 60%, #fff 10%); }
       chaba-report-card .tw { width:14px; flex:0 0 auto;
         color:var(--secondary-text-color); font-size:.8rem;
         text-align:center; }
@@ -54,11 +61,12 @@ class ChabaReportCard extends HTMLElement {
         color:var(--text-primary-color,#fff); white-space:nowrap; }
       chaba-report-card .sum { flex:1; min-width:0; overflow:hidden;
         text-overflow:ellipsis; white-space:nowrap; font-size:.8rem;
-        color:var(--secondary-text-color); }
+        color:var(--primary-text-color); opacity:.72; }
       chaba-report-card .body { margin:2px 8px 8px 30px; padding:8px 10px;
         border-radius:6px; font-size:.8rem; white-space:pre-wrap;
         word-break:break-word; color:var(--primary-text-color);
-        background:var(--secondary-background-color,rgba(0,0,0,.06)); }
+        background:var(--card-background-color,#1c2128);
+        border:1px solid var(--divider-color,#666); }
       chaba-report-card .meta { margin:0 8px 6px 30px; font-size:.72rem;
         color:var(--secondary-text-color); }
       chaba-report-card .meta span { margin-right:10px; }
@@ -177,6 +185,7 @@ class ChabaReportCard extends HTMLElement {
 
     const head = document.createElement("div");
     head.className = "head";
+    if (!depth) head.classList.add("d0");
     head.style.paddingLeft = (depth * 14 + 8) + "px";
     const tw = document.createElement("span");
     tw.className = "tw";
