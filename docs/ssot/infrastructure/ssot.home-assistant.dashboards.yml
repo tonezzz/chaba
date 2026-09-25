@@ -233,7 +233,16 @@ instances:
       air_quality_index (enum 1–4), battery + battery_state (diagnostic).
       Caveat: HA only sees Tuya cloud snapshots — Tuya's own dp-log shows
       finer movement than HA statistics; hourly min==max slivers are
-      expected while the sensor sleeps.
+      expected while the sensor sleeps. 2026-09-25: Report tab added after
+      Chat (live order: AI, Chat, Report, Nobito — Chat was already ahead
+      of Nobito live, the repo snapshot had drifted). custom:chaba-report-card
+      (/local/chaba-report-card.js?v=1, repo:
+      stacks/tony-dell/tony-ha/www/chaba-report-card.js) renders a
+      hierarchical report feed /local/chaba-report.json generated offline
+      by scripts/chaba/render-report-feed.py on tony-omen and pushed hourly
+      by chaba-report-feed.timer (units: chaba/systemd/). The feed's
+      sources are focus SSOT + focus-inbox + ada-review mirror +
+      chaba recent-events — summaries only, no raw transcripts.
     tabs:
       - title: AI
         path: ai
@@ -241,13 +250,6 @@ instances:
         type: panel
         cards: vertical-stack of ada-voice-card ("Live assistant") +
           ada-activity-card ("Live activity" log feed)
-      - title: Nobito
-        path: nobito
-        icon: mdi:poll
-        type: panel
-        cards: pfg3d-card 3×1 grid, bar3d stat=range 10-day hour×day
-          floating lo–hi bars on nobito_pm2_5 (µg/m³), nobito_carbon_dioxide
-          (ppm), nobito_pm10 (µg/m³), no title
       - title: Chat
         path: chat
         icon: mdi:message-text-outline
@@ -255,6 +257,25 @@ instances:
         cards: ada-chat-card ("Ada chat", /local/ada-chat-card.js?v=1) —
           added 2026-09-23; text over the same /ws + shared device key as
           the voice card; replaces the standalone /chat/ miniapp.
+      - title: Report
+        path: report
+        icon: mdi:file-tree-outline
+        type: panel
+        cards: chaba-report-card ("System report",
+          /local/chaba-report-card.js?v=1) — added 2026-09-25; renders the
+          hierarchical system report feed /local/chaba-report.json as an
+          expand/collapse tree (Recent Events, Chaba Focus, Ada Pipeline).
+          The feed is rendered offline by scripts/chaba/render-report-feed.py
+          (no LLM, local files only — focus SSOT, focus-inbox, ada-review
+          digest/ops/hosts/sessions, chaba recent-events) and pushed to
+          tony-dell www by chaba-report-feed.timer on tony-omen (hourly).
+      - title: Nobito
+        path: nobito
+        icon: mdi:poll
+        type: panel
+        cards: pfg3d-card 3×1 grid, bar3d stat=range 10-day hour×day
+          floating lo–hi bars on nobito_pm2_5 (µg/m³), nobito_carbon_dioxide
+          (ppm), nobito_pm10 (µg/m³), no title
 
 tabs:
   dev:
@@ -358,6 +379,6 @@ manual_steps:
   - Sidebar order is per-user in .storage/frontend.user_data_<uid> under the 'sidebar' key (panelOrder array); set via websocket frontend/set_user_data with key='sidebar'. Current order: lovelace (Overview), tony-test, dossier, then defaults. michael-dev already had dossier-home under tony-test; michael-ha was set 2026-09-08 to place dossier under tony-test.
   - To snapshot, run scripts/home-assistant/sync-ssot-from-live.sh (copies .storage to docs/home-assistant/dashboards/tony-test-current.json and refreshes bundle version); tab order/titles/paths live in the saved config — to add a tab, push via websocket mutate or the HA UI, then snapshot
 status:
-  last_updated: "2026-09-23"
-  last_verified: "2026-09-23"
+  last_updated: "2026-09-25"
+  last_verified: "2026-09-25"
   health: active; G1 on both hosts (dev v171 / ha v161, same md5 b404aab0) — surface3d PV chart on sensor.inverters_1_pv_power, vendored echarts libs in /local; Cast tab removed from live michael-ha tony-test on 2026-09-14; PF3/PF4/PFG/PFG1/PFG2 removed

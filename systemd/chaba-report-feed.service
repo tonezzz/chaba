@@ -1,0 +1,9 @@
+[Unit]
+Description=Render the chaba-home Report feed and push it to tony-dell HA www
+# Runs on tony-omen: builds /local/chaba-report.json from focus SSOT +
+# ada-review mirror, then scp's it to tony-dell's HA www.
+
+[Service]
+Type=oneshot
+TimeoutStartSec=120
+ExecStart=/usr/bin/python3 %h/CascadeProjects/chaba/scripts/chaba/render-report-feed.py --output /tmp/chaba-report.json --host tony-dell

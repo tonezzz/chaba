@@ -646,6 +646,12 @@ hosts:
         expected_state: active
         critical: false
         note: Daily 08:30 — consumes pending staleness verdicts (approve->last_verified, deny->retract)
+      - name: chaba-report-feed.timer
+        type: timer
+        scope: user
+        expected_state: active
+        critical: false
+        note: Hourly — renders /local/chaba-report.json (focus SSOT + ada-review) and scp's to tony-dell HA www; units chaba/systemd/chaba-report-feed.{service,timer}
     known_failed:
       - name: arp-inventory-scan.service
         reason: Exits 2 when network conflicts/duplicates are detected, by design
