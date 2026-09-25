@@ -25,7 +25,7 @@ class ChabaLogCard extends HTMLElement {
     this._entities = this._config.entities || null;
     this._filterEntity =
       this._config.filter_entity || "input_text.chaba_events_filter";
-    this._mode = { recent: (this._config.hours_to_show || 24) * 3600 };
+    this._mode = { recent: (this._config.hours_to_show || 1) * 3600 };
     this._entText = "";
     this._lb = null;
 
