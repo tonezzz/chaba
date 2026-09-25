@@ -48,7 +48,7 @@ def fetch(host: str, unit: str, since: str) -> list[str]:
     out = subprocess.run(
         ["ssh", "-o", "BatchMode=yes", host,
          f"journalctl --user -u {unit} --since '{since}' --no-pager -o cat"],
-        capture_output=True, text=True, timeout=120)
+        capture_output=True, text=True, errors="replace", timeout=120)
     if out.returncode != 0:
         print(f"warn: journal {unit} failed: {out.stderr.strip()[:100]}",
               file=sys.stderr)
