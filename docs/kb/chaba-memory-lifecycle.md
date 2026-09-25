@@ -80,13 +80,13 @@ not content. Changes via git only. That's the right boundary.
 | `recent-events` 72h ttl | expires at render — but no ttl refresh on re-mention (stage-2 gap) |
 | `overflow_order` | drops whole sections when over hard cap — coarse but safe |
 | `immediate.yml` | overwritten per session — self-cleaning |
+| log files | `events.md` 120-cap, chaba `session-memory.md` 30-cap, devin `session-memory.md` 50KB-cap — all bounded |
 | focus digest | **no expiry** — a tag persists as long as its reports exist; old topics never fade |
 | ada side | `valid_until` + staleness sweeps + scenario-report 14-day retention — complete |
 
 **Need:**
 - focus-rollup window/dormancy — collapse or drop tags with `last_seen` > N days
 - retention sweep for mirrored `reports/` + `transcripts/` (e.g. 30d) — they accumulate on this host
-- file-level caps on chaba-side logs (events.md already 120; session-memory.md uncapped on disk)
 
 ## Proposed closing moves (ordered)
 
