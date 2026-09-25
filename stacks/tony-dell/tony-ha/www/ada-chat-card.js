@@ -13,6 +13,12 @@
 //   ws_url:   wss://idc01.taila0626a.ts.net/apps/ha/ada-tony/ws   (default)
 //   height:   log height (default 260px)
 //   api_key:  <key>   optional — normally unset, card self-mints
+//
+// Attach: the 📎 button uploads a photo/document to
+// POST {api_base}/api/documents/intake (client-downscaled to ~2400px first),
+// then queues a "[document uploaded via card]" session note that is sent over
+// the ws only while the session is idle — mid-turn text turns can abort the
+// stream (same flow as ada-voice-card).
 
 const ACC_KEY_STORAGE = "ada_voice_api_key";
 const ACC_DEVICE_STORAGE = "ada_voice_device_id";
@@ -26,6 +32,9 @@ class AdaChatCard extends HTMLElement {
     this._connecting = false;
     this._mintRetried = false;
     this._assistantEntry = null;
+    this._docNotes = [];      // queued "document uploaded" session notes
+    this._docUploading = false;
+    this._responseActive = false;
 
     this._card = document.createElement("ha-card");
     this._card.header = this._config.title || "Ada chat";
@@ -68,8 +77,25 @@ class AdaChatCard extends HTMLElement {
     this._sendBtn = this._btn("Send");
     this._sendBtn.disabled = true;
     this._sendBtn.onclick = () => this._send();
-    inRow.append(this._input, this._sendBtn);
+    // Attach button — upload a photo/document for Ada to assess, then
+    // archive/print via chat. capture-less accept still offers the camera
+    // on iOS/Android pickers.
+    this._attachBtn = this._btn("📎");
+    this._attachBtn.title = "Upload a document/photo for Ada";
+    this._attachBtn.disabled = true;
+    this._attachBtn.onclick = () => this._fileInput?.click();
+    this._fileInput = document.createElement("input");
+    this._fileInput.type = "file";
+    this._fileInput.accept = "image/*";
+    this._fileInput.style.display = "none";
+    this._fileInput.onchange = () => {
+      const f = this._fileInput.files && this._fileInput.files[0];
+      this._fileInput.value = "";
+      if (f) this._uploadDoc(f);
+    };
+    inRow.append(this._input, this._attachBtn, this._sendBtn);
     body.appendChild(inRow);
+    body.appendChild(this._fileInput);  // must be in-DOM for Safari pickers
 
     // unlock row — shown when minting fails twice / no key available
     this._unlockRow = document.createElement("div");
@@ -175,19 +201,108 @@ class AdaChatCard extends HTMLElement {
     this._assistantEntry = null;
   }
 
+  // ---------- document upload ----------
+
+  _apiBase() {
+    const ws = this._config.ws_url || ACC_DEFAULT_WS;
+    return ws.replace(/^ws(s?):/, "http$1:").replace(/\/ws\/?$/, "");
+  }
+
+  async _uploadDoc(file) {
+    if (this._docUploading) return;
+    this._docUploading = true;
+    this._setStatus(`Uploading ${file.name}…`);
+    try {
+      const blob = await this._downscale(file);
+      const b64 = await new Promise((res, rej) => {
+        const r = new FileReader();
+        r.onload = () => res(String(r.result).split(",", 2)[1]);
+        r.onerror = rej;
+        r.readAsDataURL(blob);
+      });
+      const resp = await fetch(`${this._apiBase()}/api/documents/intake`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-API-Key": this._apiKey(),
+        },
+        body: JSON.stringify({
+          image_b64: b64, image_mime: blob.type || "image/jpeg",
+          filename: file.name, mode: "both",
+        }),
+      });
+      const out = await resp.json().catch(() => ({}));
+      if (!resp.ok) throw new Error(out.detail || `HTTP ${resp.status}`);
+      const w = (out.measured || {}).width || "?";
+      const h = (out.measured || {}).height || "?";
+      const warn = (out.warnings || []).length ? " ⚠ " + out.warnings.join("; ") : "";
+      this._add("You", `📎 ${file.name}`, "var(--success-color,#4caf50)");
+      this._system(`${file.name} → ${out.doc_type} ${w}×${h}${warn}`);
+      this._setStatus(this._socket ? "Connected — type below" : "Disconnected");
+      // Session note — sent when the session is idle so it never lands
+      // mid-response (mid-turn text turns can abort the stream).
+      const note =
+        `[document uploaded via card] file=${file.name} intake_key=${out.key} ` +
+        `type=${out.doc_type} size=${w}x${h}` +
+        (warn ? ` warnings=${out.warnings.join("; ")}` : "") +
+        " — ask what to do with it (archive/print); the intake key is held in RAM only.";
+      this._docNotes.push(note);
+      this._flushDocNotes();
+    } catch (e) {
+      this._system(`📎 upload failed: ${e.message || e}`);
+      this._setStatus(this._socket ? "Connected — type below" : "Disconnected");
+    } finally {
+      this._docUploading = false;
+      this._render();
+    }
+  }
+
+  async _downscale(file, maxSide = 2400, quality = 0.87) {
+    // Phone shots are 10-15MB; intake needs at most ~2400px for 300dpi A4.
+    try {
+      const bmp = await createImageBitmap(file);
+      const scale = Math.min(1, maxSide / Math.max(bmp.width, bmp.height));
+      if (scale >= 1) return file;
+      const c = document.createElement("canvas");
+      c.width = Math.round(bmp.width * scale);
+      c.height = Math.round(bmp.height * scale);
+      c.getContext("2d").drawImage(bmp, 0, 0, c.width, c.height);
+      return await new Promise((res) =>
+        c.toBlob((b) => res(b || file), "image/jpeg", quality));
+    } catch {
+      return file;  // e.g. HEIC the browser can't decode — let the server try
+    }
+  }
+
+  _flushDocNotes() {
+    // Never inject a text turn while Ada is mid-response — queue until the
+    // response completes (or a reconnect flushes on 'ready').
+    if (!this._docNotes.length) return;
+    if (!this._socket || this._socket.readyState !== 1) return;
+    if (this._responseActive) return;
+    const notes = this._docNotes.splice(0);
+    for (const text of notes) {
+      try { this._socket.send(JSON.stringify({ type: "text", text })); }
+      catch { this._docNotes.unshift(text); break; }
+    }
+  }
+
   // ---------- ws ----------
 
   _handleControl(ev) {
     switch (ev.type) {
       case "ready":
         this._state = "connected";
+        this._responseActive = false;
         this._setStatus("Connected — type below");
+        this._flushDocNotes();
         break;
       case "speech_started":
         this._setStatus("Voice input in progress…");
         break;
       case "speech_stopped":
         this._setStatus(this._socket ? "Connected — type below" : "Disconnected");
+        this._flushDocNotes();
         break;
       case "user_transcript":
         this._add("Voice", ev.text, "var(--success-color,#4caf50)");
@@ -200,13 +315,20 @@ class AdaChatCard extends HTMLElement {
         break;
       }
       case "response_started":
-      case "response_completed":
-      case "clear_audio":
+        this._responseActive = true;
         this._flushAssistant();
         break;
+      case "response_completed":
+      case "clear_audio":
+        this._responseActive = false;
+        this._flushAssistant();
+        this._flushDocNotes();
+        break;
       case "response_interrupted":
+        this._responseActive = false;
         this._flushAssistant();
         this._system("(interrupted)");
+        this._flushDocNotes();
         break;
       case "live_reconnecting":
         this._setStatus("Reconnecting…");
@@ -274,6 +396,7 @@ class AdaChatCard extends HTMLElement {
       this._socket.close(1000, "user disconnect");
     this._socket = null;
     this._assistantEntry = null;
+    this._responseActive = false;
     if (this._state !== "locked" && this._state !== "error") {
       this._state = "idle";
       this._setStatus("Disconnected");
@@ -297,6 +420,7 @@ class AdaChatCard extends HTMLElement {
     this._disconnectBtn.disabled = !connected;
     this._input.disabled = !connected;
     this._sendBtn.disabled = !connected;
+    if (this._attachBtn) this._attachBtn.disabled = !connected || this._docUploading;
     this._unlockRow.style.display = this._state === "locked" ? "flex" : "none";
   }
 
