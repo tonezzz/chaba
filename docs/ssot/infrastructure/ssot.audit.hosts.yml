@@ -658,6 +658,12 @@ hosts:
         expected_state: active
         critical: false
         note: Hourly — renders /local/chaba-report.json (focus SSOT + ada-review) and scp's to tony-dell HA www; units chaba/systemd/chaba-report-feed.{service,timer}
+      - name: devin-bank-distill.timer
+        type: timer
+        scope: user
+        expected_state: active
+        critical: false
+        note: Weekly Sun 10:15 — distills completed ISO-week raw session docs into devin/weekly-* rollups and supersedes sources (scripts/ada/distill-devin-bank.py)
     known_failed:
       - name: arp-inventory-scan.service
         reason: Exits 2 when network conflicts/duplicates are detected, by design
