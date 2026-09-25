@@ -2,18 +2,6 @@ title: Chaba Health Checks (Home Profile) — Apps
 subtitle: HTTP health checks for web apps, generated from apps.yml
 icon: heart-pulse
 services:
-- id: app-.
-  name: Apps
-  type: http
-  url: https://tony-dell.taila0626a.ts.net/apps/./
-  expected_status: 200
-  timeout: 5
-  category: apps
-  profiles:
-  - home
-  - mobile
-  host: tony_dell
-  note: Auto-generated from stacks/web/public/apps/apps.yml
 - id: app-ada-ha
   name: Ada HA
   type: http
@@ -29,19 +17,31 @@ services:
 - id: app-ada-ha-michael
   name: Ada HA Michael
   type: http
-  url: https://mn01.taila0626a.ts.net/apps/ha/ada-michael/
+  url: https://idc01.taila0626a.ts.net/apps/ha/ada-michael/
   expected_status: 200
   timeout: 5
   category: apps
   profiles:
   - home
   - mobile
-  host: mn01
+  host: idc01
   note: Auto-generated from stacks/web/public/apps/apps.yml
 - id: app-ada-ha-tony
   name: Ada HA Tony
   type: http
-  url: https://mn01.taila0626a.ts.net/apps/ha/ada-tony/
+  url: https://idc01.taila0626a.ts.net/apps/ha/ada-tony/
+  expected_status: 200
+  timeout: 5
+  category: apps
+  profiles:
+  - home
+  - mobile
+  host: idc01
+  note: Auto-generated from stacks/web/public/apps/apps.yml
+- id: app-ada-cms
+  name: Ada Pages
+  type: http
+  url: https://mn01.taila0626a.ts.net/apps/ha/ada-tony/cms/
   expected_status: 200
   timeout: 5
   category: apps
@@ -53,14 +53,26 @@ services:
 - id: app-ada-pi
   name: Ada Pi
   type: http
-  url: https://tony-dell.taila0626a.ts.net/apps/ada-pi/
+  url: https://idc01.taila0626a.ts.net/
   expected_status: 200
   timeout: 5
   category: apps
   profiles:
   - home
   - mobile
-  host: tony_dell
+  host: idc01
+  note: Auto-generated from stacks/web/public/apps/apps.yml
+- id: app-speaker-enroll
+  name: Speaker Enrollment
+  type: http
+  url: https://idc01.taila0626a.ts.net/enroll.html
+  expected_status: 200
+  timeout: 5
+  category: apps
+  profiles:
+  - home
+  - mobile
+  host: idc01
   note: Auto-generated from stacks/web/public/apps/apps.yml
 - id: app-audit
   name: Chaba Audit Report
@@ -194,6 +206,18 @@ services:
   - mobile
   host: tony_dell
   note: Auto-generated from stacks/web/public/apps/apps.yml
+- id: app-gev-live
+  name: GEV Gemini Live
+  type: http
+  url: https://tony-dell.taila0626a.ts.net/apps/gev-live/
+  expected_status: 200
+  timeout: 5
+  category: apps
+  profiles:
+  - home
+  - mobile
+  host: tony_dell
+  note: Auto-generated from stacks/web/public/apps/apps.yml
 - id: app-gpu-monitor
   name: GPU Monitor
   type: http
@@ -210,6 +234,30 @@ services:
   name: Home Assistant
   type: http
   url: https://tony-dell.taila0626a.ts.net/apps/ha/
+  expected_status: 200
+  timeout: 5
+  category: apps
+  profiles:
+  - home
+  - mobile
+  host: tony_dell
+  note: Auto-generated from stacks/web/public/apps/apps.yml
+- id: app-ha-cast
+  name: Cast
+  type: http
+  url: https://tony-dell.taila0626a.ts.net/apps/ha/cast/
+  expected_status: 200
+  timeout: 5
+  category: apps
+  profiles:
+  - home
+  - mobile
+  host: tony_dell
+  note: Auto-generated from stacks/web/public/apps/apps.yml
+- id: app-ha-dossier
+  name: DOSSIER
+  type: http
+  url: https://tony-dell.taila0626a.ts.net/apps/ha/dossier/
   expected_status: 200
   timeout: 5
   category: apps
@@ -325,6 +373,30 @@ services:
   - home
   - mobile
   host: tony_dell
+  note: Auto-generated from stacks/web/public/apps/apps.yml
+- id: app-notebooklm-v0
+  name: NotebookLM v0
+  type: http
+  url: https://tony-dell.taila0626a.ts.net/apps/notebooklm/v0/
+  expected_status: 200
+  timeout: 5
+  category: apps
+  profiles:
+  - home
+  - mobile
+  host: tony_dell
+  note: Auto-generated from stacks/web/public/apps/apps.yml
+- id: app-obsidian
+  name: Ada Memory Vault
+  type: http
+  url: https://mn01.taila0626a.ts.net/apps/obsidian/
+  expected_status: 200
+  timeout: 5
+  category: apps
+  profiles:
+  - home
+  - mobile
+  host: mn01
   note: Auto-generated from stacks/web/public/apps/apps.yml
 - id: app-pegion
   name: Pigeon Race
