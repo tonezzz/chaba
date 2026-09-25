@@ -11,6 +11,7 @@ const PORT = parseInt(process.env.INPUT_BRIDGE_PORT || "3010", 10);
 const PING_INTERVAL_MS = 30000;
 const PENDING_TTL_MS = parseInt(process.env.VCAST_PENDING_TTL_MS || "300000", 10);
 const ADA_AUTH_URL = (process.env.ADA_AUTH_URL || "").replace(/\/+$/, "");
+const ADA_ADMIN_KEY = process.env.ADA_ADMIN_KEY || "";
 const REGISTRY_FILE =
   process.env.VCAST_REGISTRY ||
   path.join(os.homedir(), ".local", "share", "input-bridge", "displays.json");
@@ -256,11 +257,12 @@ const server = http.createServer(async (req, res) => {
     } catch (e) {
       return json(res, 400, { error: e.message });
     }
-    const { sid, admin_key, force } = body;
+    const { sid, force } = body;
+    const admin_key = body.admin_key || ADA_ADMIN_KEY;
     if (!sid || !pending.has(sid)) {
       return json(res, 404, { error: "unknown or expired sid" });
     }
-    if (!admin_key) return json(res, 400, { error: "admin_key required" });
+    if (!admin_key) return json(res, 403, { error: "no admin key configured" });
     const adminName = await adaKeyName(admin_key).catch(() => null);
     if (!adminName) return json(res, 403, { error: "admin key not accepted" });
 
@@ -315,8 +317,8 @@ const server = http.createServer(async (req, res) => {
     } catch (e) {
       return json(res, 400, { error: e.message });
     }
-    const { admin_key } = body;
-    if (!admin_key) return json(res, 400, { error: "admin_key required" });
+    const admin_key = body.admin_key || ADA_ADMIN_KEY;
+    if (!admin_key) return json(res, 403, { error: "no admin key configured" });
     const adminName = await adaKeyName(admin_key).catch(() => null);
     if (!adminName) return json(res, 403, { error: "admin key not accepted" });
 
@@ -335,6 +337,24 @@ const server = http.createServer(async (req, res) => {
       saveRegistry();
     }
     return json(res, 200, { ok: true, name, revoked });
+  }
+
+  if (req.method === "POST" && url.pathname === "/dismiss") {
+    // Drop a pending (unclaimed) display — the "revoke" for waiting rows.
+    let body;
+    try {
+      body = await readBody(req);
+    } catch (e) {
+      return json(res, 400, { error: e.message });
+    }
+    const p = pending.get(body.sid);
+    if (!p) return json(res, 404, { error: "unknown or expired sid" });
+    pending.delete(body.sid);
+    if (p.ws && p.ws.readyState === 1) {
+      p.ws.pendingSid = null;
+      p.ws.send(JSON.stringify({ type: "dismissed" }));
+    }
+    return json(res, 200, { ok: true });
   }
 
   json(res, 404, { error: "not found" });
@@ -399,14 +419,26 @@ async function registerDisplay(ws, msg) {
   let name = apiKey ? await adaKeyName(apiKey).catch(() => null) : null;
 
   if (!name) {
-    // unpaired display: hold it in a pending slot and show a QR claim code
+    // unpaired display: hold it in a pending slot and show a QR claim code.
+    // device_id (persisted in the page's localStorage) re-attaches a
+    // reconnecting display to its existing pending slot instead of stacking
+    // duplicate "waiting" rows on every drop/reload.
+    const devId = String(msg.device_id || "").slice(0, 64);
+    if (!ws.pendingSid && devId) {
+      for (const [sid, p] of pending) {
+        if (p.device_id === devId) { ws.pendingSid = sid; break; }
+      }
+    }
     if (!ws.pendingSid) {
       const sid = `p${Math.random().toString(36).slice(2, 10)}`;
       ws.pendingSid = sid;
       pending.set(sid, { ws, label, ts: Date.now() });
     }
-    pending.get(ws.pendingSid).label = label;
-    pending.get(ws.pendingSid).ts = Date.now();
+    const p = pending.get(ws.pendingSid);
+    p.ws = ws;
+    p.label = label;
+    p.ts = Date.now();
+    if (devId) p.device_id = devId;
     ws.send(
       JSON.stringify({
         type: "pending",

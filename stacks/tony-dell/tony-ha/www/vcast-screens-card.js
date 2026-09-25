@@ -30,15 +30,6 @@ class VcastScreensCard extends HTMLElement {
   }
   set hass(hass) { this._hass = hass; }
 
-  _adminKey() {
-    let k = localStorage.getItem("vcast.admin_key") || "";
-    if (!k) {
-      k = prompt("Ada admin API key (stored in this browser only):", "") || "";
-      if (k) localStorage.setItem("vcast.admin_key", k.trim());
-    }
-    return k.trim();
-  }
-
   async _call(path, opts) {
     const r = await fetch(this._api + path, opts);
     return r.json().catch(() => ({}));
@@ -166,7 +157,17 @@ class VcastScreensCard extends HTMLElement {
         const base = new URL(this._appUrl).origin;
         window.open(`${base}/apps/vcast/pair.html?sid=${encodeURIComponent(p.sid)}`, "_blank");
       };
-      row.appendChild(open);
+      const dis = this._btn("Dismiss");
+      dis.title = "Drop this pending display without pairing";
+      dis.onclick = async () => {
+        await this._call("/dismiss", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ sid: p.sid }),
+        });
+        this._poll();
+      };
+      row.append(open, dis);
       list.appendChild(row);
     }
 
@@ -211,14 +212,12 @@ class VcastScreensCard extends HTMLElement {
       del.style.color = "var(--error-color,#f47067)";
       del.onclick = async () => {
         if (!confirm(`Revoke ${s.name}? The display is unpaired immediately.`)) return;
-        const admin = this._adminKey();
-        if (!admin) return;
         const r = await this._call("/release", {
           method: "POST",
           headers: { "content-type": "application/json" },
-          body: JSON.stringify({ screen: s.screen, admin_key: admin }),
+          body: JSON.stringify({ screen: s.screen }),
         });
-        if (r.error) { localStorage.removeItem("vcast.admin_key"); alert("Release failed: " + r.error); }
+        if (r.error) alert("Release failed: " + r.error);
         this._poll();
       };
       row.append(playBtn, navBtn, sndBtn, stopBtn, reBtn, del);

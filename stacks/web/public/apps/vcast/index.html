@@ -85,6 +85,14 @@
       history.replaceState(null, "", clean);
     }
     const apiKey = () => localStorage.getItem(KEY_STORE) || "";
+    // stable device identity — dedupes the pending "waiting" row across
+    // reconnects/reloads so the same screen doesn't appear twice
+    const DEV_STORE = "vcast.device_id";
+    if (!localStorage.getItem(DEV_STORE)) {
+      localStorage.setItem(DEV_STORE, crypto.randomUUID ? crypto.randomUUID() : "d" + Math.random().toString(36).slice(2));
+    }
+    const deviceId = localStorage.getItem(DEV_STORE);
+    const registerMsg = () => ({ type: "register-display", api_key: apiKey(), label: deviceLabel(), device_id: deviceId });
     const manualRoom = params.get("room") || ""; // dev override: join vcast-N directly
     const pairBase = `${location.origin}/apps/vcast/pair.html?sid=`;
 
@@ -231,7 +239,7 @@
           screenNum = manualRoom.replace(/^vcast-/, "");
           showIdle();
         } else {
-          ws.send(JSON.stringify({ type: "register-display", api_key: apiKey(), label: deviceLabel() }));
+          ws.send(JSON.stringify(registerMsg()));
         }
       };
       ws.onclose = () => {
@@ -256,14 +264,22 @@
         case "pending":
           showPair(msg.sid);
           break;
+        case "dismissed":
+          teardown();
+          showOnly(idle);
+          document.getElementById("screenNum").textContent = "?";
+          document.getElementById("screenLabel").textContent = "pairing dismissed — tap to retry";
+          setHud("dismissed", false);
+          idle.onclick = () => { idle.onclick = null; ws.send(JSON.stringify(registerMsg())); };
+          break;
         case "paired":
           localStorage.setItem(KEY_STORE, msg.api_key);
-          ws.send(JSON.stringify({ type: "register-display", api_key: apiKey(), label: deviceLabel() }));
+          ws.send(JSON.stringify(registerMsg()));
           break;
         case "unpaired":
           localStorage.removeItem(KEY_STORE);
           screenNum = null;
-          ws.send(JSON.stringify({ type: "register-display", api_key: "", label: deviceLabel() }));
+          ws.send(JSON.stringify(registerMsg()));
           break;
         case "play": play(msg.url); break;
         case "image": showImage(msg.url, msg.interval); break;
