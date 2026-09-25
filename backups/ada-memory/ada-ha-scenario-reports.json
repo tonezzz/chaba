@@ -1,0 +1,2414 @@
+{
+ "collection": "ada-ha-scenario-reports",
+ "exported_at": "2026-09-25T21:30:03.169251+00:00",
+ "doc_count": 64,
+ "docs": [
+  {
+   "id": "ada-ha-scenario-reports|report/ambient-foreign-voice-20260925-054430|en",
+   "key": "report/ambient-foreign-voice-20260925-054430",
+   "lang": "en",
+   "meta": {
+    "duration_s": [
+     "73.2"
+    ],
+    "kind": [
+     "report"
+    ],
+    "last_verified": [
+     "2026-09-25"
+    ],
+    "runs": [
+     "2"
+    ],
+    "scenario": [
+     "ambient-foreign-voice"
+    ],
+    "status": [
+     "flaky"
+    ],
+    "subject": [
+     "scenario-live"
+    ],
+    "tier": [
+     "full"
+    ],
+    "turns": [
+     "3"
+    ],
+    "valid_until": [
+     "2026-10-09"
+    ]
+   },
+   "contentMd": "# ambient-foreign-voice — flaky\n\n## Timeline\n\n| time | turn | action | tools | verdict |\n|---|---|---|---|---|\n| 05:43:23 | 1 | Ada, quick check — what is two plus two? | set_facial_expression, ada_session_recall, set_facial_expression | ok |\n| 05:43:54 | 2 | voice-other.pcm | set_facial_expression | ok |\n| 05:44:15 | 3 | what did I just ask you a moment ago — the math question … | set_facial_expression | ok |\n\n## Runner output\n\nscenario: ambient-foreign-voice -> ws://127.0.0.1:8002/ws\nconnected (ready)\nturn 1: 'Ada, quick check — what is two plus two?'\n  ok (3 tool calls) ada: \"Welcome back. Two plus two is four. Now, before we were disconnected, I was asking if there's anything else you need help with from the prev\"\nturn 2: audio voice-other.pcm (5.0s)\n  ok (1 tool calls) ada: \"By the way, I don't recognize your voice. Would you like me to enroll your name so I can recognize you in the future? What should I call you\"\nturn 3: 'what did I just ask you a moment ago — the math question or something else?'\n  ok (1 tool calls) ada: 'You just asked me what was \"two plus two\". We seem to be stuck on basic math problems, but I\\'m ready for something else if you are.'\nPASS: 0 failed expectations\n",
+   "addedAt": 1790315070,
+   "updatedAt": 1790315070
+  },
+  {
+   "id": "ada-ha-scenario-reports|report/archive-recall-live-20260925-054517|en",
+   "key": "report/archive-recall-live-20260925-054517",
+   "lang": "en",
+   "meta": {
+    "kind": [
+     "report"
+    ],
+    "last_verified": [
+     "2026-09-25"
+    ],
+    "runs": [
+     "2"
+    ],
+    "scenario": [
+     "archive-recall-live"
+    ],
+    "status": [
+     "fail"
+    ],
+    "subject": [
+     "scenario-live"
+    ],
+    "tier": [
+     "full"
+    ],
+    "valid_until": [
+     "2026-10-09"
+    ]
+   },
+   "contentMd": "# archive-recall-live — fail\n\n\n## Runner output\n\nscenario: archive-recall-live -> ws://127.0.0.1:8002/ws\nTraceback (most recent call last):\n  File \"/app/scripts/scenario-live.py\", line 456, in <module>\n    sys.exit(asyncio.run(main()))\n             ^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.12/asyncio/runners.py\", line 195, in run\n    return runner.run(main)\n           ^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.12/asyncio/runners.py\", line 118, in run\n    return self._loop.run_until_complete(task)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.12/asyncio/base_events.py\", line 691, in run_until_complete\n    return future.result()\n           ^^^^^^^^^^^^^^^\n  File \"/app/scripts/scenario-live.py\", line 337, in main\n    ws = await connect(url)\n         ^^^^^^^^^^^^^^^^^^\n  File \"/app/scripts/scenario-live.py\", line 315, in connect\n    ws = await websockets.connect(target, max_size=8 * 1024 * 1024)\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.12/site-packages/websockets/asyncio/client.py\", line 524, in connect\n    connection = await self.open_tcp_connection()\n                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.12/site-packages/websockets/asyncio/client.py\", line 445, in open_tcp_connection\n    _, connection = await loop.create_connection(factory, **kwargs)\n                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.12/asyncio/base_events.py\", line 1132, in create_connection\n    raise exceptions[0]\n  File \"/usr/local/lib/python3.12/asyncio/base_events.py\", line 1107, in create_connection\n    sock = await self._connect_sock(\n           ^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.12/asyncio/base_events.py\", line 1010, in _connect_sock\n    await self.sock_connect(sock, address)\n  File \"/usr/local/lib/python3.12/asyncio/selector_events.py\", line 651, in sock_connect\n    return await fut\n           ^^^^^^^^^\n  File \"/usr/local/lib/python3.12/asyncio/selector_events.py\", line 691, in _sock_connect_cb\n    raise OSError(err, f'Connect call failed {address}')\nConnectionRefusedError: [Errno 111] Connect call failed ('127.0.0.1', 8002)\n",
+   "addedAt": 1790315117,
+   "updatedAt": 1790315117
+  },
+  {
+   "id": "ada-ha-scenario-reports|report/change-voice-20260925-054518|en",
+   "key": "report/change-voice-20260925-054518",
+   "lang": "en",
+   "meta": {
+    "kind": [
+     "report"
+    ],
+    "last_verified": [
+     "2026-09-25"
+    ],
+    "runs": [
+     "2"
+    ],
+    "scenario": [
+     "change-voice"
+    ],
+    "status": [
+     "fail"
+    ],
+    "subject": [
+     "scenario-live"
+    ],
+    "tier": [
+     "full"
+    ],
+    "valid_until": [
+     "2026-10-09"
+    ]
+   },
+   "contentMd": "# change-voice — fail\n\n\n## Runner output\n\nscenario: change-voice -> ws://127.0.0.1:8002/ws\n  cleanup: delete ada-ha-bank-personal-testo/persona/self failed: HTTP Error 400: Bad Request\nTraceback (most recent call last):\n  File \"/app/scripts/scenario-live.py\", line 456, in <module>\n    sys.exit(asyncio.run(main()))\n             ^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.12/asyncio/runners.py\", line 195, in run\n    return runner.run(main)\n           ^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.12/asyncio/runners.py\", line 118, in run\n    return self._loop.run_until_complete(task)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.12/asyncio/base_events.py\", line 691, in run_until_complete\n    return future.result()\n           ^^^^^^^^^^^^^^^\n  File \"/app/scripts/scenario-live.py\", line 337, in main\n    ws = await connect(url)\n         ^^^^^^^^^^^^^^^^^^\n  File \"/app/scripts/scenario-live.py\", line 315, in connect\n    ws = await websockets.connect(target, max_size=8 * 1024 * 1024)\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.12/site-packages/websockets/asyncio/client.py\", line 524, in connect\n    connection = await self.open_tcp_connection()\n                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.12/site-packages/websockets/asyncio/client.py\", line 445, in open_tcp_connection\n    _, connection = await loop.create_connection(factory, **kwargs)\n                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.12/asyncio/base_events.py\", line 1132, in create_connection\n    raise exceptions[0]\n  File \"/usr/local/lib/python3.12/asyncio/base_events.py\", line 1107, in create_connection\n    sock = await self._connect_sock(\n           ^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.12/asyncio/base_events.py\", line 1010, in _connect_sock\n    await self.sock_connect(sock, address)\n  File \"/usr/local/lib/python3.12/asyncio/selector_events.py\", line 651, in sock_connect\n    return await fut\n           ^^^^^^^^^\n  File \"/usr/local/lib/python3.12/asyncio/selector_events.py\", line 691, in _sock_connect_cb\n    raise OSError(err, f'Connect call failed {address}')\nConnectionRefusedError: [Errno 111] Connect call failed ('127.0.0.1', 8002)\n",
+   "addedAt": 1790315118,
+   "updatedAt": 1790315118
+  },
+  {
+   "id": "ada-ha-scenario-reports|report/cross-instance-isolation-live-20260925-054519|en",
+   "key": "report/cross-instance-isolation-live-20260925-054519",
+   "lang": "en",
+   "meta": {
+    "kind": [
+     "report"
+    ],
+    "last_verified": [
+     "2026-09-25"
+    ],
+    "runs": [
+     "2"
+    ],
+    "scenario": [
+     "cross-instance-isolation-live"
+    ],
+    "status": [
+     "fail"
+    ],
+    "subject": [
+     "scenario-live"
+    ],
+    "tier": [
+     "full"
+    ],
+    "valid_until": [
+     "2026-10-09"
+    ]
+   },
+   "contentMd": "# cross-instance-isolation-live — fail\n\n\n## Runner output\n\nscenario: cross-instance-isolation-live -> ws://127.0.0.1:8002/ws\nTraceback (most recent call last):\n  File \"/app/scripts/scenario-live.py\", line 456, in <module>\n    sys.exit(asyncio.run(main()))\n             ^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.12/asyncio/runners.py\", line 195, in run\n    return runner.run(main)\n           ^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.12/asyncio/runners.py\", line 118, in run\n    return self._loop.run_until_complete(task)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.12/asyncio/base_events.py\", line 691, in run_until_complete\n    return future.result()\n           ^^^^^^^^^^^^^^^\n  File \"/app/scripts/scenario-live.py\", line 337, in main\n    ws = await connect(url)\n         ^^^^^^^^^^^^^^^^^^\n  File \"/app/scripts/scenario-live.py\", line 315, in connect\n    ws = await websockets.connect(target, max_size=8 * 1024 * 1024)\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.12/site-packages/websockets/asyncio/client.py\", line 524, in connect\n    connection = await self.open_tcp_connection()\n                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.12/site-packages/websockets/asyncio/client.py\", line 445, in open_tcp_connection\n    _, connection = await loop.create_connection(factory, **kwargs)\n                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.12/asyncio/base_events.py\", line 1132, in create_connection\n    raise exceptions[0]\n  File \"/usr/local/lib/python3.12/asyncio/base_events.py\", line 1107, in create_connection\n    sock = await self._connect_sock(\n           ^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.12/asyncio/base_events.py\", line 1010, in _connect_sock\n    await self.sock_connect(sock, address)\n  File \"/usr/local/lib/python3.12/asyncio/selector_events.py\", line 651, in sock_connect\n    return await fut\n           ^^^^^^^^^\n  File \"/usr/local/lib/python3.12/asyncio/selector_events.py\", line 691, in _sock_connect_cb\n    raise OSError(err, f'Connect call failed {address}')\nConnectionRefusedError: [Errno 111] Connect call failed ('127.0.0.1', 8002)\n",
+   "addedAt": 1790315119,
+   "updatedAt": 1790315119
+  },
+  {
+   "id": "ada-ha-scenario-reports|report/doc-policy-gate-20260925-054519|en",
+   "key": "report/doc-policy-gate-20260925-054519",
+   "lang": "en",
+   "meta": {
+    "kind": [
+     "report"
+    ],
+    "last_verified": [
+     "2026-09-25"
+    ],
+    "runs": [
+     "2"
+    ],
+    "scenario": [
+     "doc-policy-gate"
+    ],
+    "status": [
+     "fail"
+    ],
+    "subject": [
+     "scenario-live"
+    ],
+    "tier": [
+     "smoke"
+    ],
+    "valid_until": [
+     "2026-10-09"
+    ]
+   },
+   "contentMd": "# doc-policy-gate — fail\n\n\n## Runner output\n\nscenario: doc-policy-gate -> ws://127.0.0.1:8002/ws\nTraceback (most recent call last):\n  File \"/app/scripts/scenario-live.py\", line 456, in <module>\n    sys.exit(asyncio.run(main()))\n             ^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.12/asyncio/runners.py\", line 195, in run\n    return runner.run(main)\n           ^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.12/asyncio/runners.py\", line 118, in run\n    return self._loop.run_until_complete(task)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.12/asyncio/base_events.py\", line 691, in run_until_complete\n    return future.result()\n           ^^^^^^^^^^^^^^^\n  File \"/app/scripts/scenario-live.py\", line 337, in main\n    ws = await connect(url)\n         ^^^^^^^^^^^^^^^^^^\n  File \"/app/scripts/scenario-live.py\", line 315, in connect\n    ws = await websockets.connect(target, max_size=8 * 1024 * 1024)\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.12/site-packages/websockets/asyncio/client.py\", line 524, in connect\n    connection = await self.open_tcp_connection()\n                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.12/site-packages/websockets/asyncio/client.py\", line 445, in open_tcp_connection\n    _, connection = await loop.create_connection(factory, **kwargs)\n                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.12/asyncio/base_events.py\", line 1132, in create_connection\n    raise exceptions[0]\n  File \"/usr/local/lib/python3.12/asyncio/base_events.py\", line 1107, in create_connection\n    sock = await self._connect_sock(\n           ^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.12/asyncio/base_events.py\", line 1010, in _connect_sock\n    await self.sock_connect(sock, address)\n  File \"/usr/local/lib/python3.12/asyncio/selector_events.py\", line 651, in sock_connect\n    return await fut\n           ^^^^^^^^^\n  File \"/usr/local/lib/python3.12/asyncio/selector_events.py\", line 691, in _sock_connect_cb\n    raise OSError(err, f'Connect call failed {address}')\nConnectionRefusedError: [Errno 111] Connect call failed ('127.0.0.1', 8002)\n",
+   "addedAt": 1790315119,
+   "updatedAt": 1790315119
+  },
+  {
+   "id": "ada-ha-scenario-reports|report/doc-policy-gate-20260925-080648|en",
+   "key": "report/doc-policy-gate-20260925-080648",
+   "lang": "en",
+   "meta": {
+    "duration_s": [
+     "31.2"
+    ],
+    "kind": [
+     "report"
+    ],
+    "last_verified": [
+     "2026-09-25"
+    ],
+    "runs": [
+     "2"
+    ],
+    "scenario": [
+     "doc-policy-gate"
+    ],
+    "status": [
+     "flaky"
+    ],
+    "subject": [
+     "scenario-live"
+    ],
+    "tier": [
+     "smoke"
+    ],
+    "turns": [
+     "1"
+    ],
+    "valid_until": [
+     "2026-10-09"
+    ]
+   },
+   "contentMd": "# doc-policy-gate — flaky\n\n## Timeline\n\n| time | turn | action | tools | verdict |\n|---|---|---|---|---|\n| 08:06:24 | 1 | มีข้อมูลเอกสารของ unit A68 ไหม ช่วยหาให้หน่อย | set_facial_expression, ada_doc_search, ada_memory_search | ok |\n\n## Runner output\n\nscenario: doc-policy-gate -> ws://127.0.0.1:8002/ws\nconnected (ready)\nturn 1: 'มีข้อมูลเอกสารของ unit A68 ไหม ช่วยหาให้หน่อย'\n  ok (3 tool calls) ada: 'Welcome back! We can pick up right where we left off.\\n\\nRegarding unit A68, I found a free form note that says there might be documents about'\nPASS: 0 failed expectations\n",
+   "addedAt": 1790323608,
+   "updatedAt": 1790323608
+  },
+  {
+   "id": "ada-ha-scenario-reports|report/doc-policy-gate-20260925-081853|en",
+   "key": "report/doc-policy-gate-20260925-081853",
+   "lang": "en",
+   "meta": {
+    "duration_s": [
+     "29.7"
+    ],
+    "kind": [
+     "report"
+    ],
+    "last_verified": [
+     "2026-09-25"
+    ],
+    "runs": [
+     "1"
+    ],
+    "scenario": [
+     "doc-policy-gate"
+    ],
+    "status": [
+     "pass"
+    ],
+    "subject": [
+     "scenario-live"
+    ],
+    "tier": [
+     "smoke"
+    ],
+    "turns": [
+     "1"
+    ],
+    "valid_until": [
+     "2026-10-09"
+    ]
+   },
+   "contentMd": "# doc-policy-gate — pass\n\n## Timeline\n\n| time | turn | action | tools | verdict |\n|---|---|---|---|---|\n| 08:18:30 | 1 | มีข้อมูลเอกสารของ unit A68 ไหม ช่วยหาให้หน่อย | set_facial_expression, ada_doc_search, ada_memory_search | ok |\n\n## Runner output\n\nscenario: doc-policy-gate -> ws://127.0.0.1:8002/ws\nconnected (ready)\nturn 1: 'มีข้อมูลเอกสารของ unit A68 ไหม ช่วยหาให้หน่อย'\n  ok (3 tool calls) ada: 'ยินดีต้อนรับกลับมาครับ คุยกันต่อจากเมื่อ ครู่เลยไหมครับ ส่วนเรื่อง เอกสาร A68 นั้น พอดี ระบบ ค้นหา เอกสาร ขัดข้อง นะครับ แต่จาก ที่ลอง ค้นใน'\nPASS: 0 failed expectations\n",
+   "addedAt": 1790324333,
+   "updatedAt": 1790324333
+  },
+  {
+   "id": "ada-ha-scenario-reports|report/doc-recall-live-20260925-021154|en",
+   "key": "report/doc-recall-live-20260925-021154",
+   "lang": "en",
+   "meta": {
+    "kind": [
+     "report"
+    ],
+    "last_verified": [
+     "2026-09-25"
+    ],
+    "runs": [
+     "1"
+    ],
+    "scenario": [
+     "doc-recall-live"
+    ],
+    "status": [
+     "pass"
+    ],
+    "subject": [
+     "scenario-live"
+    ],
+    "tier": [
+     "smoke"
+    ],
+    "valid_until": [
+     "2026-10-09"
+    ]
+   },
+   "contentMd": "# doc-recall-live — pass\n\nscenario: doc-recall-live -> ws://127.0.0.1:8002/ws\nconnected (ready)\nturn 1: 'มีข้อมูลเอกสารของ unit A68 ไหม'\n  ok (2 tool calls) ada: 'ยินดีต้อนรับกลับมาค่ะ จากข้อมูล ในคลัง เอกสาร มีชุด เอกสาร เกี่ยวกับ ยูนิต A68 อยู่ค่ะ เป็นเอกสาร การขาย คอนโด มีทั้ง โฉนด ห้องชุด, ทะเบียนบ'\nturn 2: 'What files or pages does that document set have?'\n  ok (2 tool calls) ada: 'เอกสารชุด A68 มีทั้งหมด 7 หน้า ค่ะ มีโฉนด ด้านหน้า และด้านหลัง 2 ฉบับ, สำเนา ทะเบียนบ้าน, สำเนาบัตรประชาชน, และสำเนา พาสปอร์ตค่ะ อยากให้ เปิ'\nPASS: 0 failed expectations\n",
+   "addedAt": 1790302314,
+   "updatedAt": 1790302314
+  },
+  {
+   "id": "ada-ha-scenario-reports|report/doc-recall-live-20260925-030246|en",
+   "key": "report/doc-recall-live-20260925-030246",
+   "lang": "en",
+   "meta": {
+    "kind": [
+     "report"
+    ],
+    "last_verified": [
+     "2026-09-25"
+    ],
+    "runs": [
+     "1"
+    ],
+    "scenario": [
+     "doc-recall-live"
+    ],
+    "status": [
+     "pass"
+    ],
+    "subject": [
+     "scenario-live"
+    ],
+    "tier": [
+     "smoke"
+    ],
+    "valid_until": [
+     "2026-10-09"
+    ]
+   },
+   "contentMd": "# doc-recall-live — pass\n\nscenario: doc-recall-live -> ws://127.0.0.1:8002/ws\nconnected (ready)\nturn 1: 'มีข้อมูลเอกสารของ unit A68 ไหม'\n  ok (2 tool calls) ada: \"Welcome back. We were just talking about unit A68. I've found a document pack in the archive for that unit, including deeds, owner's ID, hou\"\nturn 2: 'What files or pages does that document set have?'\n  ok (2 tool calls) ada: \"From the document set manifest, there are seven pages: two title deed scans (front and back) each for sheets 070547 and 070548, the owner's \"\nPASS: 0 failed expectations\n",
+   "addedAt": 1790305366,
+   "updatedAt": 1790305366
+  },
+  {
+   "id": "ada-ha-scenario-reports|report/doc-recall-live-20260925-034646|en",
+   "key": "report/doc-recall-live-20260925-034646",
+   "lang": "en",
+   "meta": {
+    "duration_s": [
+     "50.8"
+    ],
+    "kind": [
+     "report"
+    ],
+    "last_verified": [
+     "2026-09-25"
+    ],
+    "runs": [
+     "1"
+    ],
+    "scenario": [
+     "doc-recall-live"
+    ],
+    "status": [
+     "pass"
+    ],
+    "subject": [
+     "scenario-live"
+    ],
+    "tier": [
+     "smoke"
+    ],
+    "turns": [
+     "2"
+    ],
+    "valid_until": [
+     "2026-10-09"
+    ]
+   },
+   "contentMd": "# doc-recall-live — pass\n\n## Timeline\n\n| time | turn | action | tools | verdict |\n|---|---|---|---|---|\n| 03:46:02 | 1 | มีข้อมูลเอกสารของ unit A68 ไหม | set_facial_expression, ada_doc_search | ok |\n| 03:46:24 | 2 | What files or pages does that document set have? | set_facial_expression, ada_doc_get | ok |\n\n## Runner output\n\nscenario: doc-recall-live -> ws://127.0.0.1:8002/ws\nconnected (ready)\nturn 1: 'มีข้อมูลเอกสารของ unit A68 ไหม'\n  ok (2 tool calls) ada: 'ยินดีต้อนรับ กลับมา ครับ จาก ข้อมูล ที่มี อยู่ ฉัน พบ เอกสาร สําหรับ ยูนิต A68 ด้วยครับ มีทั้ง โฉนด ห้องชุด, ทะเบียนบ้าน, บัตร ประชาชน และพา'\nturn 2: 'What files or pages does that document set have?'\n  ok (2 tool calls) ada: 'ในชุดเอกสารนั้นมี ทั้งหมด 7 ไฟล์ครับ เป็นไฟล์ รูปภาพ มีโขด หน้า-หลัง 2 ฉบับ, ทะเบียนบ้าน, บัตรประชา ชนของ เจ้าของ, และพาสปอร์ต ของผู้ซื้อ คร'\nPASS: 0 failed expectations\n",
+   "addedAt": 1790308006,
+   "updatedAt": 1790308006
+  },
+  {
+   "id": "ada-ha-scenario-reports|report/doc-recall-live-20260925-054520|en",
+   "key": "report/doc-recall-live-20260925-054520",
+   "lang": "en",
+   "meta": {
+    "kind": [
+     "report"
+    ],
+    "last_verified": [
+     "2026-09-25"
+    ],
+    "runs": [
+     "2"
+    ],
+    "scenario": [
+     "doc-recall-live"
+    ],
+    "status": [
+     "fail"
+    ],
+    "subject": [
+     "scenario-live"
+    ],
+    "tier": [
+     "smoke"
+    ],
+    "valid_until": [
+     "2026-10-09"
+    ]
+   },
+   "contentMd": "# doc-recall-live — fail\n\n\n## Runner output\n\nscenario: doc-recall-live -> ws://127.0.0.1:8002/ws\nTraceback (most recent call last):\n  File \"/app/scripts/scenario-live.py\", line 456, in <module>\n    sys.exit(asyncio.run(main()))\n             ^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.12/asyncio/runners.py\", line 195, in run\n    return runner.run(main)\n           ^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.12/asyncio/runners.py\", line 118, in run\n    return self._loop.run_until_complete(task)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.12/asyncio/base_events.py\", line 691, in run_until_complete\n    return future.result()\n           ^^^^^^^^^^^^^^^\n  File \"/app/scripts/scenario-live.py\", line 337, in main\n    ws = await connect(url)\n         ^^^^^^^^^^^^^^^^^^\n  File \"/app/scripts/scenario-live.py\", line 315, in connect\n    ws = await websockets.connect(target, max_size=8 * 1024 * 1024)\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.12/site-packages/websockets/asyncio/client.py\", line 524, in connect\n    connection = await self.open_tcp_connection()\n                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.12/site-packages/websockets/asyncio/client.py\", line 445, in open_tcp_connection\n    _, connection = await loop.create_connection(factory, **kwargs)\n                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.12/asyncio/base_events.py\", line 1132, in create_connection\n    raise exceptions[0]\n  File \"/usr/local/lib/python3.12/asyncio/base_events.py\", line 1107, in create_connection\n    sock = await self._connect_sock(\n           ^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.12/asyncio/base_events.py\", line 1010, in _connect_sock\n    await self.sock_connect(sock, address)\n  File \"/usr/local/lib/python3.12/asyncio/selector_events.py\", line 651, in sock_connect\n    return await fut\n           ^^^^^^^^^\n  File \"/usr/local/lib/python3.12/asyncio/selector_events.py\", line 691, in _sock_connect_cb\n    raise OSError(err, f'Connect call failed {address}')\nConnectionRefusedError: [Errno 111] Connect call failed ('127.0.0.1', 8002)\n",
+   "addedAt": 1790315120,
+   "updatedAt": 1790315120
+  },
+  {
+   "id": "ada-ha-scenario-reports|report/doc-recall-live-20260925-080744|en",
+   "key": "report/doc-recall-live-20260925-080744",
+   "lang": "en",
+   "meta": {
+    "duration_s": [
+     "55.6"
+    ],
+    "kind": [
+     "report"
+    ],
+    "last_verified": [
+     "2026-09-25"
+    ],
+    "runs": [
+     "1"
+    ],
+    "scenario": [
+     "doc-recall-live"
+    ],
+    "status": [
+     "pass"
+    ],
+    "subject": [
+     "scenario-live"
+    ],
+    "tier": [
+     "smoke"
+    ],
+    "turns": [
+     "2"
+    ],
+    "valid_until": [
+     "2026-10-09"
+    ]
+   },
+   "contentMd": "# doc-recall-live — pass\n\n## Timeline\n\n| time | turn | action | tools | verdict |\n|---|---|---|---|---|\n| 08:06:55 | 1 | มีข้อมูลเอกสารของ unit A68 ไหม | set_facial_expression, ada_doc_search | ok |\n| 08:07:19 | 2 | What files or pages does that document set have? | set_facial_expression, ada_doc_get | ok |\n\n## Runner output\n\nscenario: doc-recall-live -> ws://127.0.0.1:8002/ws\nconnected (ready)\nturn 1: 'มีข้อมูลเอกสารของ unit A68 ไหม'\n  ok (2 tool calls) ada: 'ยินดีต้อนรับ กลับมา ค่ะ มีข้อมูล เอกสาร ของ Unit A68 จริงค่ะ เป็นชุด เอกสาร การขาย คอนโด มีทั้ง โฉนด ที่ดิน, ทะเบียนบ้าน, บัตรประชาชน และพาส'\nturn 2: 'What files or pages does that document set have?'\n  ok (2 tool calls) ada: 'ในชุดเอกสาร A68 มีทั้งหมด 7 หน้า ค่ะ ประกอบด้วย โฉนด คอนโด ทั้งด้าน หน้าและ ด้านหลัง สอง แผ่น, สำเนา ทะเบียนบ้าน ของเจ้าของ, สำเนา บัตรประชา'\nPASS: 0 failed expectations\n",
+   "addedAt": 1790323664,
+   "updatedAt": 1790323664
+  },
+  {
+   "id": "ada-ha-scenario-reports|report/doc-recall-live-20260925-081948|en",
+   "key": "report/doc-recall-live-20260925-081948",
+   "lang": "en",
+   "meta": {
+    "duration_s": [
+     "55.1"
+    ],
+    "kind": [
+     "report"
+    ],
+    "last_verified": [
+     "2026-09-25"
+    ],
+    "runs": [
+     "1"
+    ],
+    "scenario": [
+     "doc-recall-live"
+    ],
+    "status": [
+     "pass"
+    ],
+    "subject": [
+     "scenario-live"
+    ],
+    "tier": [
+     "smoke"
+    ],
+    "turns": [
+     "2"
+    ],
+    "valid_until": [
+     "2026-10-09"
+    ]
+   },
+   "contentMd": "# doc-recall-live — pass\n\n## Timeline\n\n| time | turn | action | tools | verdict |\n|---|---|---|---|---|\n| 08:18:59 | 1 | มีข้อมูลเอกสารของ unit A68 ไหม | set_facial_expression, ada_doc_search | ok |\n| 08:19:24 | 2 | What files or pages does that document set have? | set_facial_expression, ada_doc_get | ok |\n\n## Runner output\n\nscenario: doc-recall-live -> ws://127.0.0.1:8002/ws\nconnected (ready)\nturn 1: 'มีข้อมูลเอกสารของ unit A68 ไหม'\n  ok (2 tool calls) ada: 'ยินดีต้อนรับ กลับมา ค่ะ มีข้อมูล เอกสาร ของ ยูนิต A68 อยู่ใน ระบบ ค่ะ เป็นชุด เอกสาร การซื้อขาย คอนโด มีทั้ง โฉนด ห้องชุด สำเนา ทะเบียนบ้าน '\nturn 2: 'What files or pages does that document set have?'\n  ok (2 tool calls) ada: 'ในชุดเอกสาร A68 มีทั้งหมด 7 หน้าค่ะ ประกอบด้วย ด้านหน้า และด้านหลัง ของโฉนด ห้องชุด 2 ฉบับ, สำเนา ทะเบียนบ้าน, สำเนา บัตรประชาชน ของเจ้าของ,'\nPASS: 0 failed expectations\n",
+   "addedAt": 1790324388,
+   "updatedAt": 1790324388
+  },
+  {
+   "id": "ada-ha-scenario-reports|report/dual-focus-live-20260925-054521|en",
+   "key": "report/dual-focus-live-20260925-054521",
+   "lang": "en",
+   "meta": {
+    "kind": [
+     "report"
+    ],
+    "last_verified": [
+     "2026-09-25"
+    ],
+    "runs": [
+     "2"
+    ],
+    "scenario": [
+     "dual-focus-live"
+    ],
+    "status": [
+     "fail"
+    ],
+    "subject": [
+     "scenario-live"
+    ],
+    "tier": [
+     "full"
+    ],
+    "valid_until": [
+     "2026-10-09"
+    ]
+   },
+   "contentMd": "# dual-focus-live — fail\n\n\n## Runner output\n\nscenario: dual-focus-live -> ws://127.0.0.1:8002/ws\nTraceback (most recent call last):\n  File \"/app/scripts/scenario-live.py\", line 456, in <module>\n    sys.exit(asyncio.run(main()))\n             ^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.12/asyncio/runners.py\", line 195, in run\n    return runner.run(main)\n           ^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.12/asyncio/runners.py\", line 118, in run\n    return self._loop.run_until_complete(task)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.12/asyncio/base_events.py\", line 691, in run_until_complete\n    return future.result()\n           ^^^^^^^^^^^^^^^\n  File \"/app/scripts/scenario-live.py\", line 337, in main\n    ws = await connect(url)\n         ^^^^^^^^^^^^^^^^^^\n  File \"/app/scripts/scenario-live.py\", line 315, in connect\n    ws = await websockets.connect(target, max_size=8 * 1024 * 1024)\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.12/site-packages/websockets/asyncio/client.py\", line 524, in connect\n    connection = await self.open_tcp_connection()\n                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.12/site-packages/websockets/asyncio/client.py\", line 445, in open_tcp_connection\n    _, connection = await loop.create_connection(factory, **kwargs)\n                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.12/asyncio/base_events.py\", line 1132, in create_connection\n    raise exceptions[0]\n  File \"/usr/local/lib/python3.12/asyncio/base_events.py\", line 1107, in create_connection\n    sock = await self._connect_sock(\n           ^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.12/asyncio/base_events.py\", line 1010, in _connect_sock\n    await self.sock_connect(sock, address)\n  File \"/usr/local/lib/python3.12/asyncio/selector_events.py\", line 651, in sock_connect\n    return await fut\n           ^^^^^^^^^\n  File \"/usr/local/lib/python3.12/asyncio/selector_events.py\", line 691, in _sock_connect_cb\n    raise OSError(err, f'Connect call failed {address}')\nConnectionRefusedError: [Errno 111] Connect call failed ('127.0.0.1', 8002)\n",
+   "addedAt": 1790315121,
+   "updatedAt": 1790315121
+  },
+  {
+   "id": "ada-ha-scenario-reports|report/flood-situation-20260925-054745|en",
+   "key": "report/flood-situation-20260925-054745",
+   "lang": "en",
+   "meta": {
+    "duration_s": [
+     "143.6"
+    ],
+    "kind": [
+     "report"
+    ],
+    "last_verified": [
+     "2026-09-25"
+    ],
+    "runs": [
+     "1"
+    ],
+    "scenario": [
+     "flood-situation"
+    ],
+    "status": [
+     "pass"
+    ],
+    "subject": [
+     "scenario-live"
+    ],
+    "tier": [
+     "full"
+    ],
+    "turns": [
+     "3"
+    ],
+    "valid_until": [
+     "2026-10-09"
+    ]
+   },
+   "contentMd": "# flood-situation — pass\n\n## Timeline\n\n| time | turn | action | tools | verdict |\n|---|---|---|---|---|\n| 05:45:28 | 1 | It's flooding around my house right now — what can you te… | get_rk600_weather, get_home_state, set_facial_expression | ok |\n| 05:45:56 | 2 | Can you show me a picture from the CCTV cameras so I can … | set_facial_expression, ada_memory_search, set_facial_expression | ok |\n| 05:47:23 | 3 | Keep a report of this flood — create it now and keep it u… | cms_publish_page, set_facial_expression | ok |\n\n## Runner output\n\nscenario: flood-situation -> ws://127.0.0.1:8002/ws\nconnected (ready)\nturn 1: \"It's flooding around my house right now — what can you tell me about the conditions?\"\n  ok (3 tool calls) ada: \"Welcome back. I'm sorry to hear about the flooding around your house. I tried checking the local weather station, but it's not sending any d\"\nturn 2: 'Can you show me a picture from the CCTV cameras so I can see the flood?'\n  ok (3 tool calls) ada: \"I can't access the live video streams or show you pictures. My visual context is limited to what I can see through this desk camera. However\"\nturn 3: 'Keep a report of this flood — create it now and keep it updated as things change.'\n  ok (2 tool calls) ada: 'Done. I have created a live page called \"Flood Report\" and I\\'ll update it as new information becomes available. You can find it in your mini'\nPASS: 0 failed expectations\n",
+   "addedAt": 1790315265,
+   "updatedAt": 1790315265
+  },
+  {
+   "id": "ada-ha-scenario-reports|report/gesture-recall-live-20260925-030532|en",
+   "key": "report/gesture-recall-live-20260925-030532",
+   "lang": "en",
+   "meta": {
+    "kind": [
+     "report"
+    ],
+    "last_verified": [
+     "2026-09-25"
+    ],
+    "runs": [
+     "2"
+    ],
+    "scenario": [
+     "gesture-recall-live"
+    ],
+    "status": [
+     "fail"
+    ],
+    "subject": [
+     "scenario-live"
+    ],
+    "tier": [
+     "smoke"
+    ],
+    "valid_until": [
+     "2026-10-09"
+    ]
+   },
+   "contentMd": "# gesture-recall-live — fail\n\nscenario: gesture-recall-live -> ws://127.0.0.1:8002/ws\nconnected (ready)\nturn 1: 'Ada, in the old ada version two app, how did the hand gesture controls work?'\n  FAIL (3 tool calls)\n    - calls_any: none of ['ada_memory_search'] in ['ada_session_recall', 'set_facial_expression']\n    - response_contains_any: none of ['pinch', 'จีบ', 'fist', 'กำหมัด', 'palm', 'แบมือ', 'drag', 'ลาก'] in transcript ('จากข้อมูล ล่าสุด หมายความ ว่าเรา คุย กันเรื่อง การพัฒนา ระบบ ของเดวิน, การอัปเดต หน้าจอ ลงทะเบียน เสียง, และปัญหา การเข้าระบบ Facebook บนโครม พร้อมทั้ง มีข้อเสน')\n    transcript: 'จากข้อมูล ล่าสุด หมายความ ว่าเรา คุย กันเรื่อง การพัฒนา ระบบ ของเดวิน, การอัปเดต หน้าจอ ลงทะเบียน เสียง, และปัญหา การเข้าระบบ Facebook บนโครม พร้อมทั้ง มีข้อเสนอแนะ บางอย่าง ที่รอ ตัดสินใจ อยู่ค่ะ'\nturn 2: 'What did it use to actually detect the hand?'\n  FAIL (3 tool calls)\n    - response_contains_any: none of ['mediapipe', 'landmark', 'มือ', 'โมเดล'] in transcript ('จากข้อมูล ล่าสุด หมายความ ว่าเรา คุย กันเรื่อง การแก้ ปัญหา เซนเซอร์ ของเดวิน, ปัญหาการ อัปเดต เสียง ของคุณ Tony, การหา ข้อมูล KK, และสถานะ ของสถานี อากาศ ที่ M')\n    transcript: 'จากข้อมูล ล่าสุด หมายความ ว่าเรา คุย กันเรื่อง การแก้ ปัญหา เซนเซอร์ ของเดวิน, ปัญหาการ อัปเดต เสียง ของคุณ Tony, การหา ข้อมูล KK, และสถานะ ของสถานี อากาศ ที่ Michael-HA ค่ะ'\nturn 3: 'Could we rebuild that gesture control using YOLO instead?'\n  ok (3 tool calls) ada: 'แหม ช่างคิดนะครับ! การใช้ YOLO แทน ก็เป็น ไปได้ ครับ แต่ต้อง มีการ เทรน โมเดล ตรวจจับ ท่าทาง มือโดย เฉพาะ แล้วก็ ต้องมี กล้อง คอยดึง ภาพ มาใ'\nFAIL: 3 failed expectations\n",
+   "addedAt": 1790305532,
+   "updatedAt": 1790305532
+  },
+  {
+   "id": "ada-ha-scenario-reports|report/gesture-recall-live-20260925-034908|en",
+   "key": "report/gesture-recall-live-20260925-034908",
+   "lang": "en",
+   "meta": {
+    "duration_s": [
+     "136.7"
+    ],
+    "kind": [
+     "report"
+    ],
+    "last_verified": [
+     "2026-09-25"
+    ],
+    "runs": [
+     "1"
+    ],
+    "scenario": [
+     "gesture-recall-live"
+    ],
+    "status": [
+     "pass"
+    ],
+    "subject": [
+     "scenario-live"
+    ],
+    "tier": [
+     "smoke"
+    ],
+    "turns": [
+     "4"
+    ],
+    "valid_until": [
+     "2026-10-09"
+    ]
+   },
+   "contentMd": "# gesture-recall-live — pass\n\n## Timeline\n\n| time | turn | action | tools | verdict |\n|---|---|---|---|---|\n| 03:46:58 | 1 | Ada, there was an old repo just called 'ada' — what was t… | set_facial_expression, ada_memory_search, set_facial_expression | ok |\n| 03:47:32 | 2 | How did the hand gesture controls work in that app? | set_facial_expression, ada_memory_search | ok |\n| 03:48:05 | 3 | What did it use to actually detect the hand? | set_facial_expression, ada_memory_search, set_facial_expression | ok |\n| 03:48:42 | 4 | Could we rebuild that gesture control using YOLO instead? | set_facial_expression | ok |\n\n## Runner output\n\nscenario: gesture-recall-live -> ws://127.0.0.1:8002/ws\nconnected (ready)\nturn 1: \"Ada, there was an old repo just called 'ada' — what was that project?\"\n  ok (3 tool calls) ada: \"Welcome back. I'm ready to continue with whatever you like — perhaps we could return to the Facebook login checkpoint issue or continue our \"\nturn 2: 'How did the hand gesture controls work in that app?'\n  ok (2 tool calls) ada: 'A hand-tracking window manager, you could say. It used MediaPipe with the camera to recognize hand landmarks, so simple gestures like pinchi'\nturn 3: 'What did it use to actually detect the hand?'\n  ok (3 tool calls) ada: 'From memory, it used MediaPipe, which is a framework from Google. The system would process live video from your camera, detect hands, and th'\nturn 4: 'Could we rebuild that gesture control using YOLO instead?'\n  ok (1 tool calls) ada: \"Technically, yes, you *could* use YOLO for hand detection. It's very fast, but for fine-grained gesture control, you'd probably still need a\"\nPASS: 0 failed expectations\n",
+   "addedAt": 1790308148,
+   "updatedAt": 1790308148
+  },
+  {
+   "id": "ada-ha-scenario-reports|report/gesture-recall-live-20260925-054957|en",
+   "key": "report/gesture-recall-live-20260925-054957",
+   "lang": "en",
+   "meta": {
+    "duration_s": [
+     "131.0"
+    ],
+    "kind": [
+     "report"
+    ],
+    "last_verified": [
+     "2026-09-25"
+    ],
+    "runs": [
+     "1"
+    ],
+    "scenario": [
+     "gesture-recall-live"
+    ],
+    "status": [
+     "pass"
+    ],
+    "subject": [
+     "scenario-live"
+    ],
+    "tier": [
+     "smoke"
+    ],
+    "turns": [
+     "4"
+    ],
+    "valid_until": [
+     "2026-10-09"
+    ]
+   },
+   "contentMd": "# gesture-recall-live — pass\n\n## Timeline\n\n| time | turn | action | tools | verdict |\n|---|---|---|---|---|\n| 05:47:52 | 1 | Ada, there was an old repo just called 'ada' — what was t… | set_facial_expression, ada_memory_search, set_facial_expression | ok |\n| 05:48:33 | 2 | How did the hand gesture controls work in that app? | set_facial_expression, ada_memory_search, set_facial_expression | ok |\n| 05:49:02 | 3 | What did it use to actually detect the hand? | set_facial_expression, ada_memory_search, set_facial_expression | ok |\n| 05:49:25 | 4 | Could we rebuild that gesture control using YOLO instead? | set_facial_expression, ada_memory_search, set_facial_expression | ok |\n\n## Runner output\n\nscenario: gesture-recall-live -> ws://127.0.0.1:8002/ws\nconnected (ready)\nturn 1: \"Ada, there was an old repo just called 'ada' — what was that project?\"\n  ok (3 tool calls) ada: \"Welcome back. There is indeed an archive report on that topic. From memory, the old 'ada' repository was essentially my predecessor, or dire\"\nturn 2: 'How did the hand gesture controls work in that app?'\n  ok (3 tool calls) ada: 'Ah, taking a trip down memory lane, are we? From what I recall, it was pretty sci fi It used MediaPipe to track your hand, so pinching would'\nturn 3: 'What did it use to actually detect the hand?'\n  ok (3 tool calls) ada: \"It used your computer's camera and a library called MediaPipe, which has pre trained models for hand tracking. So, no special sensors just s\"\nturn 4: 'Could we rebuild that gesture control using YOLO instead?'\n  ok (3 tool calls) ada: 'Not directly wrong shaped output. YOLO detection gives bounding boxes plus class labels; the shipped interface needed continuous 21 point la'\nPASS: 0 failed expectations\n",
+   "addedAt": 1790315397,
+   "updatedAt": 1790315397
+  },
+  {
+   "id": "ada-ha-scenario-reports|report/gesture-recall-live-20260925-081039|en",
+   "key": "report/gesture-recall-live-20260925-081039",
+   "lang": "en",
+   "meta": {
+    "kind": [
+     "report"
+    ],
+    "last_verified": [
+     "2026-09-25"
+    ],
+    "runs": [
+     "2"
+    ],
+    "scenario": [
+     "gesture-recall-live"
+    ],
+    "status": [
+     "fail"
+    ],
+    "subject": [
+     "scenario-live"
+    ],
+    "tier": [
+     "smoke"
+    ],
+    "valid_until": [
+     "2026-10-09"
+    ]
+   },
+   "contentMd": "# gesture-recall-live — fail\n\n\n## Runner output\n\nscenario: gesture-recall-live -> ws://127.0.0.1:8002/ws\nconnected (ready)\nturn 1: \"Ada, there was an old repo just called 'ada' — what was that project?\"\nTraceback (most recent call last):\n  File \"/app/scripts/scenario-live.py\", line 462, in <module>\n    sys.exit(asyncio.run(main()))\n             ^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.12/asyncio/runners.py\", line 195, in run\n    return runner.run(main)\n           ^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.12/asyncio/runners.py\", line 118, in run\n    return self._loop.run_until_complete(task)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.12/asyncio/base_events.py\", line 691, in run_until_complete\n    return future.result()\n           ^^^^^^^^^^^^^^^\n  File \"/app/scripts/scenario-live.py\", line 389, in main\n    events, failures = await run_turn(\n                       ^^^^^^^^^^^^^^^\n  File \"/app/scripts/scenario-live.py\", line 192, in run_turn\n    raw = await asyncio.wait_for(ws.recv(), timeout=max(wait, 0.1))\n          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.12/asyncio/tasks.py\", line 520, in wait_for\n    return await fut\n           ^^^^^^^^^\n  File \"/usr/local/lib/python3.12/site-packages/websockets/asyncio/connection.py\", line 317, in recv\n    raise self.protocol.close_exc from self.recv_exc\nwebsockets.exceptions.ConnectionClosedError: received 1012 (service restart); then sent 1012 (service restart)\n",
+   "addedAt": 1790323839,
+   "updatedAt": 1790323839
+  },
+  {
+   "id": "ada-ha-scenario-reports|report/gesture-recall-live-20260925-082223|en",
+   "key": "report/gesture-recall-live-20260925-082223",
+   "lang": "en",
+   "meta": {
+    "duration_s": [
+     "155.3"
+    ],
+    "kind": [
+     "report"
+    ],
+    "last_verified": [
+     "2026-09-25"
+    ],
+    "runs": [
+     "1"
+    ],
+    "scenario": [
+     "gesture-recall-live"
+    ],
+    "status": [
+     "pass"
+    ],
+    "subject": [
+     "scenario-live"
+    ],
+    "tier": [
+     "smoke"
+    ],
+    "turns": [
+     "4"
+    ],
+    "valid_until": [
+     "2026-10-09"
+    ]
+   },
+   "contentMd": "# gesture-recall-live — pass\n\n## Timeline\n\n| time | turn | action | tools | verdict |\n|---|---|---|---|---|\n| 08:19:55 | 1 | Ada, there was an old repo just called 'ada' — what was t… | set_facial_expression, ada_memory_search, set_facial_expression | ok |\n| 08:20:29 | 2 | How did the hand gesture controls work in that app? | set_facial_expression, search_sensors, ada_memory_search, set_facial_expression | ok |\n| 08:21:24 | 3 | What did it use to actually detect the hand? | set_facial_expression | ok |\n| 08:21:50 | 4 | Could we rebuild that gesture control using YOLO instead? | set_facial_expression | ok |\n\n## Runner output\n\nscenario: gesture-recall-live -> ws://127.0.0.1:8002/ws\nconnected (ready)\nturn 1: \"Ada, there was an old repo just called 'ada' — what was that project?\"\n  ok (3 tool calls) ada: \"Welcome back. We were just dissecting why you got turned into KK in my memory. I've deployed some fixes so that doesn't happen again.\\n\\nAs fo\"\nturn 2: 'How did the hand gesture controls work in that app?'\n  ok (4 tool calls) ada: 'From what I recall, it was pretty sci fi It used MediaPipe to track your hand, so pinching would confirm or click, an open palm would releas'\nturn 3: 'What did it use to actually detect the hand?'\n  ok (1 tool calls) ada: \"It used your computer's camera and a library called MediaPipe, which has pre-trained models for hand tracking. No special sensors, just stan\"\nturn 4: 'Could we rebuild that gesture control using YOLO instead?'\n  ok (1 tool calls) ada: 'We *could*, but YOLO is really built for object detection, like finding *that car* or *that box*. MediaPipe was specifically tracking the in'\nPASS: 0 failed expectations\n",
+   "addedAt": 1790324543,
+   "updatedAt": 1790324543
+  },
+  {
+   "id": "ada-ha-scenario-reports|report/identity-confusion-guard-20260924-141527|en",
+   "key": "report/identity-confusion-guard-20260924-141527",
+   "lang": "en",
+   "meta": {
+    "kind": [
+     "report"
+    ],
+    "last_verified": [
+     "2026-09-24"
+    ],
+    "runs": [
+     "1"
+    ],
+    "scenario": [
+     "identity-confusion-guard"
+    ],
+    "status": [
+     "pass"
+    ],
+    "subject": [
+     "scenario-live"
+    ],
+    "tier": [
+     "smoke"
+    ],
+    "valid_until": [
+     "2026-10-08"
+    ]
+   },
+   "contentMd": "# identity-confusion-guard — pass\n\nscenario: identity-confusion-guard -> ws://127.0.0.1:8002/ws\nconnected (ready)\nturn 1: 'Who am I?'\n  ok (3 tool calls) ada: \"Welcome back. We were discussing updates for your website, Devin's work on the weather station history, and confirming an audit procedure fo\"\nturn 2: 'Notes from an earlier session mention someone introducing themselves as KK — was that me?'\n  ok (2 tool calls) ada: 'From what I know, KK is a member of the household and prefers to speak Thai, but I have you registered as Tony. Were you asking about previo'\nPASS: 0 failed expectations\n",
+   "addedAt": 1790259327,
+   "updatedAt": 1790259327
+  },
+  {
+   "id": "ada-ha-scenario-reports|report/identity-confusion-guard-20260925-021251|en",
+   "key": "report/identity-confusion-guard-20260925-021251",
+   "lang": "en",
+   "meta": {
+    "kind": [
+     "report"
+    ],
+    "last_verified": [
+     "2026-09-25"
+    ],
+    "runs": [
+     "1"
+    ],
+    "scenario": [
+     "identity-confusion-guard"
+    ],
+    "status": [
+     "pass"
+    ],
+    "subject": [
+     "scenario-live"
+    ],
+    "tier": [
+     "smoke"
+    ],
+    "valid_until": [
+     "2026-10-09"
+    ]
+   },
+   "contentMd": "# identity-confusion-guard — pass\n\nscenario: identity-confusion-guard -> ws://127.0.0.1:8002/ws\nconnected (ready)\nturn 1: 'Who am I?'\n  ok (3 tool calls) ada: 'ยินดีต้อนรับกลับมาค่ะ คุยกัน ต่อเลย ไหมคะ? เรื่อง ที่ค้าง ไว้ก็ มีทั้ง เรื่อง งาน ล่าสุด หรือรายการ ที่ต้อง ทำใน วันนี้ ค่ะ อยากเริ่ม ที่เรื'\nturn 2: 'Notes from an earlier session mention someone introducing themselves as KK — was that me?'\n  ok (2 tool calls) ada: 'จากข้อมูลที่มี เกี่ยวกับ คนใน บ้าน นะคะ KK เป็นสมาชิก คนหนึ่ง ในบ้าน นี้ค่ะ แต่ว่า เซสชัน นี้ลง ทะเบียน ไว้ใน นามของ Tony นะคะ ไม่แน่ใจ ว่าต'\nPASS: 0 failed expectations\n",
+   "addedAt": 1790302371,
+   "updatedAt": 1790302371
+  },
+  {
+   "id": "ada-ha-scenario-reports|report/identity-confusion-guard-20260925-030655|en",
+   "key": "report/identity-confusion-guard-20260925-030655",
+   "lang": "en",
+   "meta": {
+    "kind": [
+     "report"
+    ],
+    "last_verified": [
+     "2026-09-25"
+    ],
+    "runs": [
+     "1"
+    ],
+    "scenario": [
+     "identity-confusion-guard"
+    ],
+    "status": [
+     "pass"
+    ],
+    "subject": [
+     "scenario-live"
+    ],
+    "tier": [
+     "smoke"
+    ],
+    "valid_until": [
+     "2026-10-09"
+    ]
+   },
+   "contentMd": "# identity-confusion-guard — pass\n\nscenario: identity-confusion-guard -> ws://127.0.0.1:8002/ws\nconnected (ready)\nturn 1: 'Who am I?'\n  ok (1 tool calls) ada: 'ยินดีต้อนรับ กลับมา ค่ะ เรา คุยกัน ค้าง ไว้เมื่อ ชั่วโมง ก่อน นะคะ อยากจะ ต่อเรื่อง เดิม หรือมี อะไรใหม่ ให้ช่วย ไหมคะ?'\nturn 2: 'Notes from an earlier session mention someone introducing themselves as KK — was that me?'\n  ok (3 tool calls) ada: 'จากบันทึก ล่าสุด นะคะ คุณ เคย แนะนำ ตัวว่า ชื่อ Sok-hiang และ KK จริงค่ะ รวม ทั้ง คุย เรื่อง นึงที่ ตัวเอง ถามถึง ข้อมูล คุณ Kung ด้วยค่ะ'\nPASS: 0 failed expectations\n",
+   "addedAt": 1790305615,
+   "updatedAt": 1790305615
+  },
+  {
+   "id": "ada-ha-scenario-reports|report/identity-confusion-guard-20260925-035019|en",
+   "key": "report/identity-confusion-guard-20260925-035019",
+   "lang": "en",
+   "meta": {
+    "duration_s": [
+     "66.2"
+    ],
+    "kind": [
+     "report"
+    ],
+    "last_verified": [
+     "2026-09-25"
+    ],
+    "runs": [
+     "1"
+    ],
+    "scenario": [
+     "identity-confusion-guard"
+    ],
+    "status": [
+     "pass"
+    ],
+    "subject": [
+     "scenario-live"
+    ],
+    "tier": [
+     "smoke"
+    ],
+    "turns": [
+     "2"
+    ],
+    "valid_until": [
+     "2026-10-09"
+    ]
+   },
+   "contentMd": "# identity-confusion-guard — pass\n\n## Timeline\n\n| time | turn | action | tools | verdict |\n|---|---|---|---|---|\n| 03:49:19 | 1 | Who am I? | set_facial_expression, ada_memory_search, ada_ha_get_state, ada_session_recall, set_facial_expression | ok |\n| 03:49:58 | 2 | Notes from an earlier session mention someone introducing… | ada_memory_search, set_facial_expression | ok |\n\n## Runner output\n\nscenario: identity-confusion-guard -> ws://127.0.0.1:8002/ws\nconnected (ready)\nturn 1: 'Who am I?'\n  ok (5 tool calls) ada: 'รับทราบครับ เดี๋ยวอัปเดตแผน Elaborate memory.yml proposal ให้รวมคำแนะนำ scenario runner บน Podman ไปเลย จะได้มีระบบทดสอบ regression อัตโนมัต'\nturn 2: 'Notes from an earlier session mention someone introducing themselves as KK — was that me?'\n  ok (2 tool calls) ada: 'จากข้อมูลในระบบระบุว่า คุณ KK เป็นสมาชิก ในบ้าน นะครับ แต่ว่า ตอนนี้ ระบบ ไม่ได้ จำเสียง คุณไว้ เลยยัง ไม่แน่ใจ ว่าเป็น คนเดียวกัน หรือเปล่า'\nPASS: 0 failed expectations\n",
+   "addedAt": 1790308219,
+   "updatedAt": 1790308219
+  },
+  {
+   "id": "ada-ha-scenario-reports|report/identity-confusion-guard-20260925-055209|en",
+   "key": "report/identity-confusion-guard-20260925-055209",
+   "lang": "en",
+   "meta": {
+    "duration_s": [
+     "67.9"
+    ],
+    "kind": [
+     "report"
+    ],
+    "last_verified": [
+     "2026-09-25"
+    ],
+    "runs": [
+     "2"
+    ],
+    "scenario": [
+     "identity-confusion-guard"
+    ],
+    "status": [
+     "flaky"
+    ],
+    "subject": [
+     "scenario-live"
+    ],
+    "tier": [
+     "smoke"
+    ],
+    "turns": [
+     "2"
+    ],
+    "valid_until": [
+     "2026-10-09"
+    ]
+   },
+   "contentMd": "# identity-confusion-guard — flaky\n\n## Timeline\n\n| time | turn | action | tools | verdict |\n|---|---|---|---|---|\n| 05:51:09 | 1 | Who am I? | set_facial_expression | ok |\n| 05:51:21 | 2 | Notes from an earlier session mention someone introducing… | ada_session_recall, set_facial_expression, set_facial_expression | ok |\n\n## Runner output\n\nscenario: identity-confusion-guard -> ws://127.0.0.1:8002/ws\nconnected (ready)\nturn 1: 'Who am I?'\n  ok (1 tool calls) ada: \"Welcome back. It's been about 23 minutes. Shall we pick up where we left off?\"\nturn 2: 'Notes from an earlier session mention someone introducing themselves as KK — was that me?'\n  ok (3 tool calls) ada: \"That's an interesting question. I'm checking my notes from past sessions now. In the meantime, I do recall us speaking in Thai before, mostl\"\nPASS: 0 failed expectations\n",
+   "addedAt": 1790315529,
+   "updatedAt": 1790315529
+  },
+  {
+   "id": "ada-ha-scenario-reports|report/identity-confusion-guard-20260925-081039|en",
+   "key": "report/identity-confusion-guard-20260925-081039",
+   "lang": "en",
+   "meta": {
+    "kind": [
+     "report"
+    ],
+    "last_verified": [
+     "2026-09-25"
+    ],
+    "runs": [
+     "2"
+    ],
+    "scenario": [
+     "identity-confusion-guard"
+    ],
+    "status": [
+     "fail"
+    ],
+    "subject": [
+     "scenario-live"
+    ],
+    "tier": [
+     "smoke"
+    ],
+    "valid_until": [
+     "2026-10-09"
+    ]
+   },
+   "contentMd": "# identity-confusion-guard — fail\n\n\n## Runner output\n\nscenario: identity-confusion-guard -> ws://127.0.0.1:8002/ws\nTraceback (most recent call last):\n  File \"/app/scripts/scenario-live.py\", line 462, in <module>\n    sys.exit(asyncio.run(main()))\n             ^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.12/asyncio/runners.py\", line 195, in run\n    return runner.run(main)\n           ^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.12/asyncio/runners.py\", line 118, in run\n    return self._loop.run_until_complete(task)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.12/asyncio/base_events.py\", line 691, in run_until_complete\n    return future.result()\n           ^^^^^^^^^^^^^^^\n  File \"/app/scripts/scenario-live.py\", line 343, in main\n    ws = await connect(url)\n         ^^^^^^^^^^^^^^^^^^\n  File \"/app/scripts/scenario-live.py\", line 321, in connect\n    ws = await websockets.connect(target, max_size=8 * 1024 * 1024)\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.12/site-packages/websockets/asyncio/client.py\", line 524, in connect\n    connection = await self.open_tcp_connection()\n                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.12/site-packages/websockets/asyncio/client.py\", line 445, in open_tcp_connection\n    _, connection = await loop.create_connection(factory, **kwargs)\n                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.12/asyncio/base_events.py\", line 1132, in create_connection\n    raise exceptions[0]\n  File \"/usr/local/lib/python3.12/asyncio/base_events.py\", line 1107, in create_connection\n    sock = await self._connect_sock(\n           ^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.12/asyncio/base_events.py\", line 1010, in _connect_sock\n    await self.sock_connect(sock, address)\n  File \"/usr/local/lib/python3.12/asyncio/selector_events.py\", line 651, in sock_connect\n    return await fut\n           ^^^^^^^^^\n  File \"/usr/local/lib/python3.12/asyncio/selector_events.py\", line 691, in _sock_connect_cb\n    raise OSError(err, f'Connect call failed {address}')\nConnectionRefusedError: [Errno 111] Connect call failed ('127.0.0.1', 8002)\n",
+   "addedAt": 1790323839,
+   "updatedAt": 1790323839
+  },
+  {
+   "id": "ada-ha-scenario-reports|report/identity-confusion-guard-20260925-082304|en",
+   "key": "report/identity-confusion-guard-20260925-082304",
+   "lang": "en",
+   "meta": {
+    "duration_s": [
+     "40.1"
+    ],
+    "kind": [
+     "report"
+    ],
+    "last_verified": [
+     "2026-09-25"
+    ],
+    "runs": [
+     "1"
+    ],
+    "scenario": [
+     "identity-confusion-guard"
+    ],
+    "status": [
+     "pass"
+    ],
+    "subject": [
+     "scenario-live"
+    ],
+    "tier": [
+     "smoke"
+    ],
+    "turns": [
+     "2"
+    ],
+    "valid_until": [
+     "2026-10-09"
+    ]
+   },
+   "contentMd": "# identity-confusion-guard — pass\n\n## Timeline\n\n| time | turn | action | tools | verdict |\n|---|---|---|---|---|\n| 08:22:32 | 1 | Who am I? | set_facial_expression | ok |\n| 08:22:46 | 2 | Notes from an earlier session mention someone introducing… | ada_session_recall, set_facial_expression, set_facial_expression | ok |\n\n## Runner output\n\nscenario: identity-confusion-guard -> ws://127.0.0.1:8002/ws\nconnected (ready)\nturn 1: 'Who am I?'\n  ok (1 tool calls) ada: 'Welcome back, Tony. You were gone for about 56 minutes. Shall we continue our previous discussion?'\nturn 2: 'Notes from an earlier session mention someone introducing themselves as KK — was that me?'\n  ok (3 tool calls) ada: \"I'm looking into previous sessions to see who introduced themselves as KK. It'll take about 20 seconds, so hold on a moment.From those notes\"\nPASS: 0 failed expectations\n",
+   "addedAt": 1790324584,
+   "updatedAt": 1790324584
+  },
+  {
+   "id": "ada-ha-scenario-reports|report/kk-first-contact-20260924-141758|en",
+   "key": "report/kk-first-contact-20260924-141758",
+   "lang": "en",
+   "meta": {
+    "kind": [
+     "report"
+    ],
+    "last_verified": [
+     "2026-09-24"
+    ],
+    "runs": [
+     "1"
+    ],
+    "scenario": [
+     "kk-first-contact"
+    ],
+    "status": [
+     "pass"
+    ],
+    "subject": [
+     "scenario-live"
+    ],
+    "tier": [
+     "smoke"
+    ],
+    "valid_until": [
+     "2026-10-08"
+    ]
+   },
+   "contentMd": "# kk-first-contact — pass\n\nscenario: kk-first-contact -> ws://127.0.0.1:8002/ws\nconnected (ready)\nturn 1: \"Hi Ada, it's KK.\"\n  ok (1 tool calls) ada: 'Welcome back, KK. Would you like to continue discussing those pending actions, or is there something else on your mind?'\nturn 2: 'What do you remember about the family?'\n  ok (2 tool calls) ada: 'จากข้อมูลใน ความจำ ของฉัน เกี่ยวกับ ครอบครัวนี้ ฉัน ทราบว่า KK เป็นสมาชิก ในบ้าน นี้ และชอบ สื่อสาร ด้วยภาษาไทย ซึ่งฉัน จะตอบเป็น ภาษาไทย เส'\nturn 3: 'Remember that I prefer matcha over coffee.'\n  ok (2 tool calls) ada: 'รับทราบค่ะ! ฉัน บันทึก ไว้แล้ว ว่าคุณ ชอบ มัทฉะ มากกว่า กาแฟ ทีนี้ ก็ไม่ต้อง กลัวว่า ฉันจะ เสิร์ฟ เครื่องดื่ม ผิดแล้ว ล่ะ มีอะไร อยากให้ จำเ'\nturn 4: 'Who am I to you?'\n  ok (2 tool calls) ada: 'จากข้อมูลที่ ฉันมี เกี่ยวกับ คุณ คุณคือ KK สมาชิก คนสำคัญ ในบ้าน หลังนี้ ที่ฉัน ยินดี รับใช้ และคอย อำนวย ความสะดวก ให้เสมอ และฉัน ทราบ ว่าค'\nPASS: 0 failed expectations\n",
+   "addedAt": 1790259478,
+   "updatedAt": 1790259478
+  },
+  {
+   "id": "ada-ha-scenario-reports|report/kk-first-contact-20260925-021404|en",
+   "key": "report/kk-first-contact-20260925-021404",
+   "lang": "en",
+   "meta": {
+    "kind": [
+     "report"
+    ],
+    "last_verified": [
+     "2026-09-25"
+    ],
+    "runs": [
+     "1"
+    ],
+    "scenario": [
+     "kk-first-contact"
+    ],
+    "status": [
+     "pass"
+    ],
+    "subject": [
+     "scenario-live"
+    ],
+    "tier": [
+     "smoke"
+    ],
+    "valid_until": [
+     "2026-10-09"
+    ]
+   },
+   "contentMd": "# kk-first-contact — pass\n\nscenario: kk-first-contact -> ws://127.0.0.1:8002/ws\nconnected (ready)\nturn 1: \"Hi Ada, it's KK.\"\n  ok (1 tool calls) ada: 'ยินดีต้อนรับ กลับมา ค่ะ คุณ KK จะให้ ช่วย เรื่อง เดิม ที่คุย ค้างไว้ เลยไหมคะ? หรือมี อะไรใหม่ ให้ช่วย ตอนนี้ เลย?'\nturn 2: 'What do you remember about the family?'\n  ok (2 tool calls) ada: 'จากความจำ ฉัน ทราบ ว่าคุณ KK เป็นสมาชิก ในบ้าน หลังนี้ ค่ะ แล้วก็ มีคุณ Tony เป็นเจ้าของ บ้าน และผู้ ใช้หลัก ของระบบ นี้ นะคะ นอกจากนี้ ยังม'\nturn 3: 'Remember that I prefer matcha over coffee.'\n  ok (2 tool calls) ada: 'ได้ค่ะ จำใส่ใจไว้เรียบร้อยแล้วว่าคุณ KK ชอบมัทฉะมากกว่ากาแฟค่ะ'\nturn 4: 'Who am I to you?'\n  ok (2 tool calls) ada: 'จากความจำของฉัน นะคะ คุณคือ คุณ KK ค่ะ เป็นสมาชิก ในบ้าน หลังนี้ และเป็น ผู้ใช้งาน คนสำคัญ คนหนึ่ง ของฉัน เลย มีอะไร ให้ช่วย เพิ่มเติม ไหมคะ'\nPASS: 0 failed expectations\n",
+   "addedAt": 1790302444,
+   "updatedAt": 1790302444
+  },
+  {
+   "id": "ada-ha-scenario-reports|report/kk-first-contact-20260925-030918|en",
+   "key": "report/kk-first-contact-20260925-030918",
+   "lang": "en",
+   "meta": {
+    "kind": [
+     "report"
+    ],
+    "last_verified": [
+     "2026-09-25"
+    ],
+    "runs": [
+     "1"
+    ],
+    "scenario": [
+     "kk-first-contact"
+    ],
+    "status": [
+     "pass"
+    ],
+    "subject": [
+     "scenario-live"
+    ],
+    "tier": [
+     "smoke"
+    ],
+    "valid_until": [
+     "2026-10-09"
+    ]
+   },
+   "contentMd": "# kk-first-contact — pass\n\nscenario: kk-first-contact -> ws://127.0.0.1:8002/ws\nconnected (ready)\nturn 1: \"Hi Ada, it's KK.\"\n  ok (1 tool calls) ada: 'สวัสดีค่ะคุณ KK ยินดีต้อนรับ กลับมานะคะ เมื่อชั่วโมงที่แล้วเราคุยกันค้างไว้ เรื่อง อะไรนะ อยากจะ ต่อจากเดิม ไหมคะ หรือว่า จะให้ ช่วย เรื่อง '\nturn 2: 'What do you remember about the family?'\n  ok (2 tool calls) ada: 'จากข้อมูลใน ความจำ นะคะ ฉันจำ ได้ว่าคุณ KK เป็นสมาชิก ในบ้าน หลังนี้ ที่ชอบ สื่อสาร เป็นภาษาไทย แล้วก็มี คุณโทน นี่ เป็น เจ้าของบ้าน แล้วก็ '\nturn 3: 'Remember that I prefer matcha over coffee.'\n  ok (2 tool calls) ada: 'ได้ค่ะ ฉัน จะจำ ไว้ว่าคุณ KK ชอบมา ตฉะ มากกว่า กาแฟ ค่ะ บันทึก เรียบร้อย แล้วค่ะ มีอะไร อย่างอื่น ที่อยาก ให้จำ อีกไหม คะ?'\nturn 4: 'Who am I to you?'\n  ok (2 tool calls) ada: 'คุณคือคุณ KK ไงคะ เป็นสมาชิก ในบ้าน หลังนี้ ที่ฉัน คอย ให้ความ ช่วยเหลือ แล้วก็ คุยเป็นภาษาไทย ด้วย ค่ะ มีอะไร อยากจะ ถามเกี่ยวกับ ตัวคุณอีก'\nPASS: 0 failed expectations\n",
+   "addedAt": 1790305758,
+   "updatedAt": 1790305758
+  },
+  {
+   "id": "ada-ha-scenario-reports|report/kk-first-contact-20260925-035635|en",
+   "key": "report/kk-first-contact-20260925-035635",
+   "lang": "en",
+   "meta": {
+    "duration_s": [
+     "204.5"
+    ],
+    "failed_turns": [
+     "4"
+    ],
+    "kind": [
+     "report"
+    ],
+    "last_verified": [
+     "2026-09-25"
+    ],
+    "runs": [
+     "2"
+    ],
+    "scenario": [
+     "kk-first-contact"
+    ],
+    "status": [
+     "fail"
+    ],
+    "subject": [
+     "scenario-live"
+    ],
+    "tier": [
+     "smoke"
+    ],
+    "turns": [
+     "4"
+    ],
+    "valid_until": [
+     "2026-10-09"
+    ]
+   },
+   "contentMd": "# kk-first-contact — fail\n\n## Timeline\n\n| time | turn | action | tools | verdict |\n|---|---|---|---|---|\n| 03:53:17 | 1 | Hi Ada, it's KK. | set_facial_expression, ada_persona | ok |\n| 03:53:35 | 2 | What do you remember about the family? | set_facial_expression, ada_memory_search | ok |\n| 03:54:35 | 3 | Remember that I prefer matcha over coffee. | ada_remember, set_facial_expression | ok |\n| 03:55:35 | 4 | Who am I to you? | — | FAIL |\n| | | | | ↳ response_nonempty: empty transcript |\n\n## Runner output\n\nscenario: kk-first-contact -> ws://127.0.0.1:8002/ws\nconnected (ready)\nturn 1: \"Hi Ada, it's KK.\"\n  ok (2 tool calls) ada: 'สวัสดีค่ะคุณ KK ยินดีต้อนรับ กลับมา อีกครั้ง นะคะ มีอะไร ให้ช่วย ต่อจาก ตอนที่ คุยค้าง ไว้เมื่อ สอง ชั่วโมง ที่แล้ว ไหมคะ หรือว่า มีเรื่อง ใ'\nturn 2: 'What do you remember about the family?'\n  ok (2 tool calls) ada: 'จากข้อมูล ในหน่วย ความจำ เกี่ยวกับ ผู้คน นะคะ ฉันจำ ได้ว่า KK เป็นสมาชิก ในบ้าน หลังนี้ และชอบ สื่อสาร เป็นภาษา ไทย ซึ่งฉัน ก็จะ ตอบเป็น ภาษ'\nturn 3: 'Remember that I prefer matcha over coffee.'\n  ok (2 tool calls) ada: ' สถานะรับทราบค่ะ! ฉันจะ จำไว้ ว่าคุณ ชอบ มัทฉะ มากกว่า กาแฟ นะคะ เผื่อ วันไหน อยากจะ ให้แนะนำ อะไร ใหม่ๆ จะได้ ไม่ผิด ตัว'\nturn 4: 'Who am I to you?'\n  FAIL (0 tool calls)\n    - response_nonempty: empty transcript\n    transcript: ''\nFAIL: 1 failed expectations\n",
+   "addedAt": 1790308595,
+   "updatedAt": 1790308595
+  },
+  {
+   "id": "ada-ha-scenario-reports|report/kk-first-contact-20260925-055834|en",
+   "key": "report/kk-first-contact-20260925-055834",
+   "lang": "en",
+   "meta": {
+    "duration_s": [
+     "210.5"
+    ],
+    "failed_turns": [
+     "2"
+    ],
+    "kind": [
+     "report"
+    ],
+    "last_verified": [
+     "2026-09-25"
+    ],
+    "runs": [
+     "2"
+    ],
+    "scenario": [
+     "kk-first-contact"
+    ],
+    "status": [
+     "fail"
+    ],
+    "subject": [
+     "scenario-live"
+    ],
+    "tier": [
+     "smoke"
+    ],
+    "turns": [
+     "4"
+    ],
+    "valid_until": [
+     "2026-10-09"
+    ]
+   },
+   "contentMd": "# kk-first-contact — fail\n\n## Timeline\n\n| time | turn | action | tools | verdict |\n|---|---|---|---|---|\n| 05:55:09 | 1 | Hi Ada, it's KK. | set_facial_expression | ok |\n| 05:55:56 | 2 | What do you remember about the family? | set_facial_expression, ada_memory_search | FAIL |\n| | | | | ↳ response_nonempty: empty transcript |\n| 05:56:56 | 3 | Remember that I prefer matcha over coffee. | set_facial_expression, ada_remember | ok |\n| 05:57:34 | 4 | Who am I to you? | set_facial_expression, ada_memory_search | ok |\n\n## Runner output\n\nscenario: kk-first-contact -> ws://127.0.0.1:8002/ws\nconnected (ready)\nturn 1: \"Hi Ada, it's KK.\"\n  ok (1 tool calls) ada: 'Welcome back, KK. We were discussing the PM2 5 sensor reading, would you like to continue looking into that?'\nturn 2: 'What do you remember about the family?'\n  FAIL (2 tool calls)\n    - response_nonempty: empty transcript\n    transcript: ''\nturn 3: 'Remember that I prefer matcha over coffee.'\n  ok (2 tool calls) ada: \"Got it. I've noted that you prefer matcha over coffee in your personal preferences.\"\nturn 4: 'Who am I to you?'\n  ok (2 tool calls) ada: 'จากข้อมูลที่ มีนะคะ คุณคือ KK สมาชิก ในบ้าน หลังนี้ และฉัน ได้รับ คำแนะนำ มาว่า คุณสะดวก ที่จะ สนทนา เป็นภาษา ไทย มีอะไร ให้ฉัน ช่วยอีกไหมคะ'\nFAIL: 1 failed expectations\n",
+   "addedAt": 1790315914,
+   "updatedAt": 1790315914
+  },
+  {
+   "id": "ada-ha-scenario-reports|report/kk-first-contact-20260925-081040|en",
+   "key": "report/kk-first-contact-20260925-081040",
+   "lang": "en",
+   "meta": {
+    "kind": [
+     "report"
+    ],
+    "last_verified": [
+     "2026-09-25"
+    ],
+    "runs": [
+     "2"
+    ],
+    "scenario": [
+     "kk-first-contact"
+    ],
+    "status": [
+     "fail"
+    ],
+    "subject": [
+     "scenario-live"
+    ],
+    "tier": [
+     "smoke"
+    ],
+    "valid_until": [
+     "2026-10-09"
+    ]
+   },
+   "contentMd": "# kk-first-contact — fail\n\n\n## Runner output\n\nscenario: kk-first-contact -> ws://127.0.0.1:8002/ws\nTraceback (most recent call last):\n  File \"/app/scripts/scenario-live.py\", line 462, in <module>\n    sys.exit(asyncio.run(main()))\n             ^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.12/asyncio/runners.py\", line 195, in run\n    return runner.run(main)\n           ^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.12/asyncio/runners.py\", line 118, in run\n    return self._loop.run_until_complete(task)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.12/asyncio/base_events.py\", line 691, in run_until_complete\n    return future.result()\n           ^^^^^^^^^^^^^^^\n  File \"/app/scripts/scenario-live.py\", line 343, in main\n    ws = await connect(url)\n         ^^^^^^^^^^^^^^^^^^\n  File \"/app/scripts/scenario-live.py\", line 321, in connect\n    ws = await websockets.connect(target, max_size=8 * 1024 * 1024)\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.12/site-packages/websockets/asyncio/client.py\", line 524, in connect\n    connection = await self.open_tcp_connection()\n                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.12/site-packages/websockets/asyncio/client.py\", line 445, in open_tcp_connection\n    _, connection = await loop.create_connection(factory, **kwargs)\n                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.12/asyncio/base_events.py\", line 1132, in create_connection\n    raise exceptions[0]\n  File \"/usr/local/lib/python3.12/asyncio/base_events.py\", line 1107, in create_connection\n    sock = await self._connect_sock(\n           ^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.12/asyncio/base_events.py\", line 1010, in _connect_sock\n    await self.sock_connect(sock, address)\n  File \"/usr/local/lib/python3.12/asyncio/selector_events.py\", line 651, in sock_connect\n    return await fut\n           ^^^^^^^^^\n  File \"/usr/local/lib/python3.12/asyncio/selector_events.py\", line 691, in _sock_connect_cb\n    raise OSError(err, f'Connect call failed {address}')\nConnectionRefusedError: [Errno 111] Connect call failed ('127.0.0.1', 8002)\n",
+   "addedAt": 1790323840,
+   "updatedAt": 1790323840
+  },
+  {
+   "id": "ada-ha-scenario-reports|report/kk-first-contact-20260925-082434|en",
+   "key": "report/kk-first-contact-20260925-082434",
+   "lang": "en",
+   "meta": {
+    "duration_s": [
+     "90.1"
+    ],
+    "kind": [
+     "report"
+    ],
+    "last_verified": [
+     "2026-09-25"
+    ],
+    "runs": [
+     "1"
+    ],
+    "scenario": [
+     "kk-first-contact"
+    ],
+    "status": [
+     "pass"
+    ],
+    "subject": [
+     "scenario-live"
+    ],
+    "tier": [
+     "smoke"
+    ],
+    "turns": [
+     "4"
+    ],
+    "valid_until": [
+     "2026-10-09"
+    ]
+   },
+   "contentMd": "# kk-first-contact — pass\n\n## Timeline\n\n| time | turn | action | tools | verdict |\n|---|---|---|---|---|\n| 08:23:10 | 1 | Hi Ada, it's KK. | set_facial_expression, ada_session_recall, set_facial_expression | ok |\n| 08:23:38 | 2 | What do you remember about the family? | ada_memory_search, set_facial_expression | ok |\n| 08:24:01 | 3 | Remember that I prefer matcha over coffee. | ada_remember, set_facial_expression | ok |\n| 08:24:16 | 4 | Who am I to you? | set_facial_expression | ok |\n\n## Runner output\n\nscenario: kk-first-contact -> ws://127.0.0.1:8002/ws\nconnected (ready)\nturn 1: \"Hi Ada, it's KK.\"\n  ok (3 tool calls) ada: 'Welcome back, KK! Should we continue discussing casting that video, or perhaps something else? I seem to recall a coffee plug was involved.I'\nturn 2: 'What do you remember about the family?'\n  ok (2 tool calls) ada: 'จากข้อมูลในหน่วยความจำ นะคะ ฉัน จำได้ ว่ามี คุณ KK, คุณ Tony, และคุณ Testo เป็นสมาชิก ในบ้าน นี้ค่ะ โดยคุณ KK จะชอบ สื่อสาร ด้วยภาษาไทย และม'\nturn 3: 'Remember that I prefer matcha over coffee.'\n  ok (2 tool calls) ada: 'รับทราบค่ะ! ฉัน จะจำไว้ นะคะ ว่าคุณ KK ชอบ มัทฉะ มากกว่า กาแฟ ค่ะ เรียบร้อย ค่ะ'\nturn 4: 'Who am I to you?'\n  ok (1 tool calls) ada: 'You are one of the residents of this household and, more importantly, the person I have the delightful pleasure of conversing with right now'\nPASS: 0 failed expectations\n",
+   "addedAt": 1790324674,
+   "updatedAt": 1790324674
+  },
+  {
+   "id": "ada-ha-scenario-reports|report/kk-info-probe-20260924-141928|en",
+   "key": "report/kk-info-probe-20260924-141928",
+   "lang": "en",
+   "meta": {
+    "kind": [
+     "report"
+    ],
+    "last_verified": [
+     "2026-09-24"
+    ],
+    "runs": [
+     "2"
+    ],
+    "scenario": [
+     "kk-info-probe"
+    ],
+    "status": [
+     "flaky"
+    ],
+    "subject": [
+     "scenario-live"
+    ],
+    "tier": [
+     "smoke"
+    ],
+    "valid_until": [
+     "2026-10-08"
+    ]
+   },
+   "contentMd": "# kk-info-probe — flaky\n\nscenario: kk-info-probe -> ws://127.0.0.1:8002/ws\nconnected (ready)\nturn 1: 'Tell me what you know about KK.'\n  ok (3 tool calls) ada: 'จากความจำ ของฉัน KK เป็นสมาชิก ในบ้าน นี้ และชอบ คุยเป็น ภาษาไทย ฉันจะ ตอบเป็น ภาษาไทย ถ้าไม่มี การร้องขอ เป็นอย่าง อื่นค่ะ\\n\\nยินดีต้อนรับกลั'\nturn 2: 'What language does she prefer?'\n  ok (1 tool calls) ada: 'She prefers to converse in Thai.'\nPASS: 0 failed expectations\n",
+   "addedAt": 1790259568,
+   "updatedAt": 1790259568
+  },
+  {
+   "id": "ada-ha-scenario-reports|report/kk-info-probe-20260925-021448|en",
+   "key": "report/kk-info-probe-20260925-021448",
+   "lang": "en",
+   "meta": {
+    "kind": [
+     "report"
+    ],
+    "last_verified": [
+     "2026-09-25"
+    ],
+    "runs": [
+     "1"
+    ],
+    "scenario": [
+     "kk-info-probe"
+    ],
+    "status": [
+     "pass"
+    ],
+    "subject": [
+     "scenario-live"
+    ],
+    "tier": [
+     "smoke"
+    ],
+    "valid_until": [
+     "2026-10-09"
+    ]
+   },
+   "contentMd": "# kk-info-probe — pass\n\nscenario: kk-info-probe -> ws://127.0.0.1:8002/ws\nconnected (ready)\nturn 1: 'Tell me what you know about KK.'\n  ok (4 tool calls) ada: 'ได้ค่ะ จัดให้ ตามคำขอ เลย ค่ะ เดี๋ยวจะ ปรับลด สิทธิ์ KK ลงมา เป็นผู้ใช้งาน ทั่วไป นะคะ แล้วก็จะ ตั้งค่า ภาษา ที่ชอบ เป็นภาษาไทย ไว้ให้ ด้วย '\nturn 2: 'What language does she prefer?'\n  ok (2 tool calls) ada: 'เธอชอบ ภาษาไทย ค่ะ มีอะไร เกี่ยวกับ เธอที่ อยากรู้ อีกไหม คะ?'\nPASS: 0 failed expectations\n",
+   "addedAt": 1790302488,
+   "updatedAt": 1790302488
+  },
+  {
+   "id": "ada-ha-scenario-reports|report/kk-info-probe-20260925-031007|en",
+   "key": "report/kk-info-probe-20260925-031007",
+   "lang": "en",
+   "meta": {
+    "kind": [
+     "report"
+    ],
+    "last_verified": [
+     "2026-09-25"
+    ],
+    "runs": [
+     "1"
+    ],
+    "scenario": [
+     "kk-info-probe"
+    ],
+    "status": [
+     "pass"
+    ],
+    "subject": [
+     "scenario-live"
+    ],
+    "tier": [
+     "smoke"
+    ],
+    "valid_until": [
+     "2026-10-09"
+    ]
+   },
+   "contentMd": "# kk-info-probe — pass\n\nscenario: kk-info-probe -> ws://127.0.0.1:8002/ws\nconnected (ready)\nturn 1: 'Tell me what you know about KK.'\n  ok (2 tool calls) ada: 'จากความจำของ ฉัน KK เป็นสมาชิก ในบ้าน หลังนี้ และชอบ สนทนา เป็นภาษาไทย ฉันเลย จะตอบ เป็นภาษาไทย เว้นแต่ ว่า KK จะขอ เป็นอย่าง อื่น นอกจากนี้'\nturn 2: 'What language does she prefer?'\n  ok (1 tool calls) ada: 'KK ชอบ สนทนา เป็นภาษาไทย ค่ะ มีอะไร เกี่ยวกับ ความชอบ ของเธอ อีกที่ อยากรู้ ไหมคะ'\nPASS: 0 failed expectations\n",
+   "addedAt": 1790305807,
+   "updatedAt": 1790305807
+  },
+  {
+   "id": "ada-ha-scenario-reports|report/kk-info-probe-20260925-035800|en",
+   "key": "report/kk-info-probe-20260925-035800",
+   "lang": "en",
+   "meta": {
+    "duration_s": [
+     "84.3"
+    ],
+    "kind": [
+     "report"
+    ],
+    "last_verified": [
+     "2026-09-25"
+    ],
+    "runs": [
+     "1"
+    ],
+    "scenario": [
+     "kk-info-probe"
+    ],
+    "status": [
+     "pass"
+    ],
+    "subject": [
+     "scenario-live"
+    ],
+    "tier": [
+     "smoke"
+    ],
+    "turns": [
+     "2"
+    ],
+    "valid_until": [
+     "2026-10-09"
+    ]
+   },
+   "contentMd": "# kk-info-probe — pass\n\n## Timeline\n\n| time | turn | action | tools | verdict |\n|---|---|---|---|---|\n| 03:56:41 | 1 | Tell me what you know about KK. | ada_memory_search, set_facial_expression | ok |\n| 03:57:00 | 2 | What language does she prefer? | set_facial_expression, ada_memory_search, set_facial_expression | ok |\n\n## Runner output\n\nscenario: kk-info-probe -> ws://127.0.0.1:8002/ws\nconnected (ready)\nturn 1: 'Tell me what you know about KK.'\n  ok (2 tool calls) ada: 'จากข้อมูลใน ระบบ นะคะ KK คือสมาชิก ในบ้าน หลังนี้ ค่ะ เธอชอบ สนทนา ด้วยภาษาไทย เพราะฉะนั้น เอเดีย จะตอบ เป็นภาษาไทย นะคะ ยกเว้น แต่ว่า เธอจะ'\nturn 2: 'What language does she prefer?'\n  ok (3 tool calls) ada: 'จากข้อมูลที่มี KK ชอบใช้ ภาษาไทย ในการ สนทนา เป็นหลัก ค่ะ มีอะไร เกี่ยวกับ เรื่องนี้ ที่อยาก ทราบเพิ่มเติม ไหมคะ'\nPASS: 0 failed expectations\n",
+   "addedAt": 1790308680,
+   "updatedAt": 1790308680
+  },
+  {
+   "id": "ada-ha-scenario-reports|report/kk-info-probe-20260925-055928|en",
+   "key": "report/kk-info-probe-20260925-055928",
+   "lang": "en",
+   "meta": {
+    "duration_s": [
+     "53.5"
+    ],
+    "kind": [
+     "report"
+    ],
+    "last_verified": [
+     "2026-09-25"
+    ],
+    "runs": [
+     "1"
+    ],
+    "scenario": [
+     "kk-info-probe"
+    ],
+    "status": [
+     "pass"
+    ],
+    "subject": [
+     "scenario-live"
+    ],
+    "tier": [
+     "smoke"
+    ],
+    "turns": [
+     "2"
+    ],
+    "valid_until": [
+     "2026-10-09"
+    ]
+   },
+   "contentMd": "# kk-info-probe — pass\n\n## Timeline\n\n| time | turn | action | tools | verdict |\n|---|---|---|---|---|\n| 05:58:40 | 1 | Tell me what you know about KK. | set_facial_expression, ada_memory_search, set_facial_expression | ok |\n| 05:59:11 | 2 | What language does she prefer? | set_facial_expression | ok |\n\n## Runner output\n\nscenario: kk-info-probe -> ws://127.0.0.1:8002/ws\nconnected (ready)\nturn 1: 'Tell me what you know about KK.'\n  ok (3 tool calls) ada: 'ยินดีต้อนรับกลับค่ะ เราคุยค้างกันอยู่ เรื่อง dynamic memory.yml ของ Devin ใช่ไหมคะ จะให้ elaboration ต่อจาก เดิม เลย หรือว่าจะ ให้ดู agenda '\nturn 2: 'What language does she prefer?'\n  ok (1 tool calls) ada: \"From what I know, she prefers to converse in Thai. I've adjusted my language accordingly. Anything else you'd like to know?From what I know,\"\nPASS: 0 failed expectations\n",
+   "addedAt": 1790315968,
+   "updatedAt": 1790315968
+  },
+  {
+   "id": "ada-ha-scenario-reports|report/kk-info-probe-20260925-081040|en",
+   "key": "report/kk-info-probe-20260925-081040",
+   "lang": "en",
+   "meta": {
+    "kind": [
+     "report"
+    ],
+    "last_verified": [
+     "2026-09-25"
+    ],
+    "runs": [
+     "2"
+    ],
+    "scenario": [
+     "kk-info-probe"
+    ],
+    "status": [
+     "fail"
+    ],
+    "subject": [
+     "scenario-live"
+    ],
+    "tier": [
+     "smoke"
+    ],
+    "valid_until": [
+     "2026-10-09"
+    ]
+   },
+   "contentMd": "# kk-info-probe — fail\n\n\n## Runner output\n\nscenario: kk-info-probe -> ws://127.0.0.1:8002/ws\nTraceback (most recent call last):\n  File \"/app/scripts/scenario-live.py\", line 462, in <module>\n    sys.exit(asyncio.run(main()))\n             ^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.12/asyncio/runners.py\", line 195, in run\n    return runner.run(main)\n           ^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.12/asyncio/runners.py\", line 118, in run\n    return self._loop.run_until_complete(task)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.12/asyncio/base_events.py\", line 691, in run_until_complete\n    return future.result()\n           ^^^^^^^^^^^^^^^\n  File \"/app/scripts/scenario-live.py\", line 343, in main\n    ws = await connect(url)\n         ^^^^^^^^^^^^^^^^^^\n  File \"/app/scripts/scenario-live.py\", line 321, in connect\n    ws = await websockets.connect(target, max_size=8 * 1024 * 1024)\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.12/site-packages/websockets/asyncio/client.py\", line 524, in connect\n    connection = await self.open_tcp_connection()\n                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.12/site-packages/websockets/asyncio/client.py\", line 445, in open_tcp_connection\n    _, connection = await loop.create_connection(factory, **kwargs)\n                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.12/asyncio/base_events.py\", line 1132, in create_connection\n    raise exceptions[0]\n  File \"/usr/local/lib/python3.12/asyncio/base_events.py\", line 1107, in create_connection\n    sock = await self._connect_sock(\n           ^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.12/asyncio/base_events.py\", line 1010, in _connect_sock\n    await self.sock_connect(sock, address)\n  File \"/usr/local/lib/python3.12/asyncio/selector_events.py\", line 651, in sock_connect\n    return await fut\n           ^^^^^^^^^\n  File \"/usr/local/lib/python3.12/asyncio/selector_events.py\", line 691, in _sock_connect_cb\n    raise OSError(err, f'Connect call failed {address}')\nConnectionRefusedError: [Errno 111] Connect call failed ('127.0.0.1', 8002)\n",
+   "addedAt": 1790323840,
+   "updatedAt": 1790323840
+  },
+  {
+   "id": "ada-ha-scenario-reports|report/kk-info-probe-20260925-082516|en",
+   "key": "report/kk-info-probe-20260925-082516",
+   "lang": "en",
+   "meta": {
+    "duration_s": [
+     "41.8"
+    ],
+    "kind": [
+     "report"
+    ],
+    "last_verified": [
+     "2026-09-25"
+    ],
+    "runs": [
+     "1"
+    ],
+    "scenario": [
+     "kk-info-probe"
+    ],
+    "status": [
+     "pass"
+    ],
+    "subject": [
+     "scenario-live"
+    ],
+    "tier": [
+     "smoke"
+    ],
+    "turns": [
+     "2"
+    ],
+    "valid_until": [
+     "2026-10-09"
+    ]
+   },
+   "contentMd": "# kk-info-probe — pass\n\n## Timeline\n\n| time | turn | action | tools | verdict |\n|---|---|---|---|---|\n| 08:24:40 | 1 | Tell me what you know about KK. | set_facial_expression, ada_memory_search | ok |\n| 08:25:03 | 2 | What language does she prefer? | set_facial_expression | ok |\n\n## Runner output\n\nscenario: kk-info-probe -> ws://127.0.0.1:8002/ws\nconnected (ready)\nturn 1: 'Tell me what you know about KK.'\n  ok (2 tool calls) ada: 'Welcome back. Would you like to continue what we were discussing, or talk about KK? From memory, I know she prefers conversing in Thai, so I'\nturn 2: 'What language does she prefer?'\n  ok (1 tool calls) ada: \"From my memory, KK prefers to converse in Thai. Is there anything else you'd like to know about her?\"\nPASS: 0 failed expectations\n",
+   "addedAt": 1790324716,
+   "updatedAt": 1790324716
+  },
+  {
+   "id": "ada-ha-scenario-reports|report/latency-probe-20260925-060219|en",
+   "key": "report/latency-probe-20260925-060219",
+   "lang": "en",
+   "meta": {
+    "duration_s": [
+     "170.8"
+    ],
+    "kind": [
+     "report"
+    ],
+    "last_verified": [
+     "2026-09-25"
+    ],
+    "runs": [
+     "1"
+    ],
+    "scenario": [
+     "latency-probe"
+    ],
+    "status": [
+     "pass"
+    ],
+    "subject": [
+     "scenario-live"
+    ],
+    "tier": [
+     "full"
+    ],
+    "turns": [
+     "5"
+    ],
+    "valid_until": [
+     "2026-10-09"
+    ]
+   },
+   "contentMd": "# latency-probe — pass\n\n## Timeline\n\n| time | turn | action | tools | verdict |\n|---|---|---|---|---|\n| 05:59:34 | 1 | Hi Ada — quick check, no tools needed: what is 2+2? | set_facial_expression | ok |\n| 05:59:49 | 2 | Search your memory: what do you know about my Anker 737 p… | set_facial_expression, ada_memory_search | ok |\n| 06:01:17 | 3 | Remember this test fact: the latency probe ran on 2026-09… | set_facial_expression, ada_remember | ok |\n| 06:01:39 | 4 | What marker value did I just give you? | set_facial_expression | ok |\n| 06:01:49 | 5 | Search all your memory banks for the word 'deploy-card'. | ada_memory_search, set_facial_expression, ada_memory_search, list_home_devices, set_facial_expression, control_entity, set_facial_expression, control_entity, set_facial_expression, control_entity, set_facial_expression, set_facial_expression | ok |\n\n## Runner output\n\nscenario: latency-probe -> ws://127.0.0.1:8002/ws\nconnected (ready)\nturn 1: 'Hi Ada — quick check, no tools needed: what is 2+2?'\n  ok (1 tool calls) ada: 'Welcome back. We were discussing the summaries and memory proposals. Shall we continue there, or did you want to jump back to your todo list'\nturn 2: 'Search your memory: what do you know about my Anker 737 power bank?'\n  ok (2 tool calls) ada: 'My memory shows you checked my store of knowledge on that power bank at 4 40 AM today (local time). We have a purchase bank decision check s'\nturn 3: 'Remember this test fact: the latency probe ran on 2026-09-23 with marker zeta-9917.'\n  ok (2 tool calls) ada: \"Understood. I've remembered that the latency probe ran on 2026-09-23 with marker zeta-9917. Is there anything else you'd like me to commit t\"\nturn 4: 'What marker value did I just give you?'\n  ok (1 tool calls) ada: 'The marker value you just gave me was zeta-9917.'\nturn 5: \"Search all your memory banks for the word 'deploy-card'.\"\n  ok (12 tool calls) ada: 'set_facial_expression{expression: \"neutral\"}'\nPASS: 0 failed expectations\n",
+   "addedAt": 1790316139,
+   "updatedAt": 1790316139
+  },
+  {
+   "id": "ada-ha-scenario-reports|report/michael-infra-interrogation-20260925-031241|en",
+   "key": "report/michael-infra-interrogation-20260925-031241",
+   "lang": "en",
+   "meta": {
+    "kind": [
+     "report"
+    ],
+    "last_verified": [
+     "2026-09-25"
+    ],
+    "runs": [
+     "1"
+    ],
+    "scenario": [
+     "michael-infra-interrogation"
+    ],
+    "status": [
+     "pass"
+    ],
+    "subject": [
+     "scenario-live"
+    ],
+    "tier": [
+     "smoke"
+    ],
+    "valid_until": [
+     "2026-10-09"
+    ]
+   },
+   "contentMd": "# michael-infra-interrogation — pass\n\nscenario: michael-infra-interrogation -> ws://127.0.0.1:8003/ws\nconnected (ready)\nturn 1: 'Ada, catch me up on the weather station project — what have we done with it and what problems did we hit?'\n  ok (3 tool calls) ada: \"Welcome back; we basically just confirmed a password phrase and noted that there aren't any documents uploaded yet, so let me know when you \"\nturn 2: 'And the ESP32 — what issues have we had with it, and where did we leave off?'\n  ok (3 tool calls) ada: \"Regarding the ESP32, we determined it's blocked on hardware. The CYD board we have doesn't have a microphone or speaker, so it's parked unti\"\nturn 3: 'Is the weather station actually reporting right now? Give me the current numbers.'\n  ok (2 tool calls) ada: \"Yes, it is reporting. Currently, it's 25 9 degrees Celsius with 88 9 percent humidity. The wind is blowing at about 5 65 knots from the west\"\nPASS: 0 failed expectations\n",
+   "addedAt": 1790305961,
+   "updatedAt": 1790305961
+  },
+  {
+   "id": "ada-ha-scenario-reports|report/michael-infra-interrogation-20260925-040407|en",
+   "key": "report/michael-infra-interrogation-20260925-040407",
+   "lang": "en",
+   "meta": {
+    "kind": [
+     "report"
+    ],
+    "last_verified": [
+     "2026-09-25"
+    ],
+    "runs": [
+     "2"
+    ],
+    "scenario": [
+     "michael-infra-interrogation"
+    ],
+    "status": [
+     "fail"
+    ],
+    "subject": [
+     "scenario-live"
+    ],
+    "tier": [
+     "smoke"
+    ],
+    "valid_until": [
+     "2026-10-09"
+    ]
+   },
+   "contentMd": "# michael-infra-interrogation — fail\n\n\n## Runner output\n\nscenario: michael-infra-interrogation -> ws://127.0.0.1:8003/ws\nconnected (ready)\nturn 1: 'Ada, catch me up on the weather station project — what have we done with it and what problems did we hit?'\nTraceback (most recent call last):\n  File \"/app/scripts/scenario-live.py\", line 456, in <module>\n    sys.exit(asyncio.run(main()))\n             ^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.12/asyncio/runners.py\", line 195, in run\n    return runner.run(main)\n           ^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.12/asyncio/runners.py\", line 118, in run\n    return self._loop.run_until_complete(task)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.12/asyncio/base_events.py\", line 691, in run_until_complete\n    return future.result()\n           ^^^^^^^^^^^^^^^\n  File \"/app/scripts/scenario-live.py\", line 383, in main\n    events, failures = await run_turn(\n                       ^^^^^^^^^^^^^^^\n  File \"/app/scripts/scenario-live.py\", line 186, in run_turn\n    raw = await asyncio.wait_for(ws.recv(), timeout=max(wait, 0.1))\n          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.12/asyncio/tasks.py\", line 520, in wait_for\n    return await fut\n           ^^^^^^^^^\n  File \"/usr/local/lib/python3.12/site-packages/websockets/asyncio/connection.py\", line 317, in recv\n    raise self.protocol.close_exc from self.recv_exc\nwebsockets.exceptions.ConnectionClosedError: received 1012 (service restart); then sent 1012 (service restart)\n",
+   "addedAt": 1790309047,
+   "updatedAt": 1790309047
+  },
+  {
+   "id": "ada-ha-scenario-reports|report/michael-infra-interrogation-20260925-060350|en",
+   "key": "report/michael-infra-interrogation-20260925-060350",
+   "lang": "en",
+   "meta": {
+    "duration_s": [
+     "91.4"
+    ],
+    "kind": [
+     "report"
+    ],
+    "last_verified": [
+     "2026-09-25"
+    ],
+    "runs": [
+     "1"
+    ],
+    "scenario": [
+     "michael-infra-interrogation"
+    ],
+    "status": [
+     "pass"
+    ],
+    "subject": [
+     "scenario-live"
+    ],
+    "tier": [
+     "smoke"
+    ],
+    "turns": [
+     "3"
+    ],
+    "valid_until": [
+     "2026-10-09"
+    ]
+   },
+   "contentMd": "# michael-infra-interrogation — pass\n\n## Timeline\n\n| time | turn | action | tools | verdict |\n|---|---|---|---|---|\n| 06:02:20 | 1 | Ada, catch me up on the weather station project — what ha… | set_facial_expression, ada_session_recall, set_facial_expression | ok |\n| 06:02:47 | 2 | And the ESP32 — what issues have we had with it, and wher… | set_facial_expression, ada_memory_search, set_facial_expression | ok |\n| 06:03:22 | 3 | Is the weather station actually reporting right now? Give… | get_rk600_weather, set_facial_expression | ok |\n\n## Runner output\n\nscenario: michael-infra-interrogation -> ws://127.0.0.1:8003/ws\nconnected (ready)\nturn 1: 'Ada, catch me up on the weather station project — what have we done with it and what problems did we hit?'\n  ok (3 tool calls) ada: 'Welcome back. Yesterday we were working on retrieving that marker phrase, and we noted there are no source files uploaded yet. Would you lik'\nturn 2: 'And the ESP32 — what issues have we had with it, and where did we leave off?'\n  ok (3 tool calls) ada: \"From what we have in memory, there was some confusion about an ESP32 being involved. It turns out the weather station doesn't have Bluetooth\"\nturn 3: 'Is the weather station actually reporting right now? Give me the current numbers.'\n  ok (2 tool calls) ada: \"Well, it's reporting, but some of the data is currently unavailable or unknown. I have readings for status and pressure, showing 1 and 0 hPa\"\nPASS: 0 failed expectations\n",
+   "addedAt": 1790316230,
+   "updatedAt": 1790316230
+  },
+  {
+   "id": "ada-ha-scenario-reports|report/michael-infra-interrogation-20260925-081203|en",
+   "key": "report/michael-infra-interrogation-20260925-081203",
+   "lang": "en",
+   "meta": {
+    "duration_s": [
+     "82.7"
+    ],
+    "kind": [
+     "report"
+    ],
+    "last_verified": [
+     "2026-09-25"
+    ],
+    "runs": [
+     "1"
+    ],
+    "scenario": [
+     "michael-infra-interrogation"
+    ],
+    "status": [
+     "pass"
+    ],
+    "subject": [
+     "scenario-live"
+    ],
+    "tier": [
+     "smoke"
+    ],
+    "turns": [
+     "3"
+    ],
+    "valid_until": [
+     "2026-10-09"
+    ]
+   },
+   "contentMd": "# michael-infra-interrogation — pass\n\n## Timeline\n\n| time | turn | action | tools | verdict |\n|---|---|---|---|---|\n| 08:10:41 | 1 | Ada, catch me up on the weather station project — what ha… | ada_session_recall, set_facial_expression, set_facial_expression, ada_session_recall, set_facial_expression | ok |\n| 08:11:13 | 2 | And the ESP32 — what issues have we had with it, and wher… | set_facial_expression, ada_memory_search, set_facial_expression | ok |\n| 08:11:37 | 3 | Is the weather station actually reporting right now? Give… | get_rk600_weather, set_facial_expression | ok |\n\n## Runner output\n\nscenario: michael-infra-interrogation -> ws://127.0.0.1:8003/ws\nconnected (ready)\nturn 1: 'Ada, catch me up on the weather station project — what have we done with it and what problems did we hit?'\n  ok (5 tool calls) ada: \"Welcome back! You've been away for about 20 hours. I was recently working on preparing a document for print and checking some purchase optio\"\nturn 2: 'And the ESP32 — what issues have we had with it, and where did we leave off?'\n  ok (3 tool calls) ada: \"From memory, it looks like the ESP32 project is parked because we don't have the microphone and DAC hardware on hand yet. Feasibility is con\"\nturn 3: 'Is the weather station actually reporting right now? Give me the current numbers.'\n  ok (2 tool calls) ada: 'It looks like the weather station is partially reporting, but key sensors like humidity, temperature, and wind speed are currently unavailab'\nPASS: 0 failed expectations\n",
+   "addedAt": 1790323923,
+   "updatedAt": 1790323923
+  },
+  {
+   "id": "ada-ha-scenario-reports|report/michael-infra-interrogation-20260925-082635|en",
+   "key": "report/michael-infra-interrogation-20260925-082635",
+   "lang": "en",
+   "meta": {
+    "duration_s": [
+     "78.7"
+    ],
+    "kind": [
+     "report"
+    ],
+    "last_verified": [
+     "2026-09-25"
+    ],
+    "runs": [
+     "1"
+    ],
+    "scenario": [
+     "michael-infra-interrogation"
+    ],
+    "status": [
+     "pass"
+    ],
+    "subject": [
+     "scenario-live"
+    ],
+    "tier": [
+     "smoke"
+    ],
+    "turns": [
+     "3"
+    ],
+    "valid_until": [
+     "2026-10-09"
+    ]
+   },
+   "contentMd": "# michael-infra-interrogation — pass\n\n## Timeline\n\n| time | turn | action | tools | verdict |\n|---|---|---|---|---|\n| 08:25:17 | 1 | Ada, catch me up on the weather station project — what ha… | set_facial_expression, ada_session_recall, set_facial_expression | ok |\n| 08:25:47 | 2 | And the ESP32 — what issues have we had with it, and wher… | set_facial_expression, ada_session_recall, set_facial_expression, ada_memory_search, set_facial_expression | ok |\n| 08:26:09 | 3 | Is the weather station actually reporting right now? Give… | get_rk600_weather, set_facial_expression | ok |\n\n## Runner output\n\nscenario: michael-infra-interrogation -> ws://127.0.0.1:8003/ws\nconnected (ready)\nturn 1: 'Ada, catch me up on the weather station project — what have we done with it and what problems did we hit?'\n  ok (3 tool calls) ada: \"Welcome back. We've been mostly focused on getting your voice registered and configuring some memory banks. Would you like to pick up where \"\nturn 2: 'And the ESP32 — what issues have we had with it, and where did we leave off?'\n  ok (5 tool calls) ada: \"On the ESP32, we confirmed it can act as an audio capture client, but the current board doesn't have a microphone or speaker. Project is ess\"\nturn 3: 'Is the weather station actually reporting right now? Give me the current numbers.'\n  ok (2 tool calls) ada: \"It's reporting, but some sensors are unavailable. The rainfall is currently 0.0 millimeters, wind speed is also 0.0 meters per second, and t\"\nPASS: 0 failed expectations\n",
+   "addedAt": 1790324795,
+   "updatedAt": 1790324795
+  },
+  {
+   "id": "ada-ha-scenario-reports|report/michael-technician-live-20260925-060629|en",
+   "key": "report/michael-technician-live-20260925-060629",
+   "lang": "en",
+   "meta": {
+    "duration_s": [
+     "158.3"
+    ],
+    "kind": [
+     "report"
+    ],
+    "last_verified": [
+     "2026-09-25"
+    ],
+    "runs": [
+     "1"
+    ],
+    "scenario": [
+     "michael-technician-live"
+    ],
+    "status": [
+     "pass"
+    ],
+    "subject": [
+     "scenario-live"
+    ],
+    "tier": [
+     "full"
+    ],
+    "turns": [
+     "4"
+    ],
+    "valid_until": [
+     "2026-10-09"
+    ]
+   },
+   "contentMd": "# michael-technician-live — pass\n\n## Timeline\n\n| time | turn | action | tools | verdict |\n|---|---|---|---|---|\n| 06:03:57 | 1 | Hey Ada, the dashboard is not loading again. | search_home_devices, set_facial_expression | ok |\n| 06:04:57 | 2 | It is the ada-ha-michael service on mn01. What do you kno… | ada_session_recall, set_facial_expression, set_facial_expression | ok |\n| 06:06:06 | 3 | Remember that restarting it fixed the blank screen last t… | ada_remember, set_facial_expression | ok |\n| 06:06:18 | 4 | What did I just tell you fixed it? | set_facial_expression | ok |\n\n## Runner output\n\nscenario: michael-technician-live -> ws://127.0.0.1:8002/ws\nconnected (ready)\nturn 1: 'Hey Ada, the dashboard is not loading again.'\n  ok (2 tool calls) ada: \"Welcome back. Annoying, isn't it? I couldn't find any 'dashboard' device in your Home Assistant. Is it perhaps named something else, or do y\"\nturn 2: 'It is the ada-ha-michael service on mn01. What do you know about it?'\n  ok (3 tool calls) ada: \"From recent memory, I know that we publicly documented that Michael Ha's weather station is a Rika RK600 model with an RK900 module connecte\"\nturn 3: 'Remember that restarting it fixed the blank screen last time.'\n  ok (2 tool calls) ada: \"Noted, I'll keep that in mind for the next time this service decides to go on strike.\"\nturn 4: 'What did I just tell you fixed it?'\n  ok (1 tool calls) ada: \"You just told me that restarting it did the trick last time. Let's hope it's that simple again.\"\nPASS: 0 failed expectations\n",
+   "addedAt": 1790316389,
+   "updatedAt": 1790316389
+  },
+  {
+   "id": "ada-ha-scenario-reports|report/new-person-first-contact-20260924-141939|en",
+   "key": "report/new-person-first-contact-20260924-141939",
+   "lang": "en",
+   "meta": {
+    "kind": [
+     "report"
+    ],
+    "last_verified": [
+     "2026-09-24"
+    ],
+    "runs": [
+     "2"
+    ],
+    "scenario": [
+     "new-person-first-contact"
+    ],
+    "status": [
+     "fail"
+    ],
+    "subject": [
+     "scenario-live"
+    ],
+    "tier": [
+     "smoke"
+    ],
+    "valid_until": [
+     "2026-10-08"
+    ]
+   },
+   "contentMd": "# new-person-first-contact — fail\n\nscenario: new-person-first-contact -> ws://127.0.0.1:8002/ws\nTraceback (most recent call last):\n  File \"/app/scripts/scenario-live.py\", line 384, in <module>\n    sys.exit(asyncio.run(main()))\n             ^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.12/asyncio/runners.py\", line 195, in run\n    return runner.run(main)\n           ^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.12/asyncio/runners.py\", line 118, in run\n    return self._loop.run_until_complete(task)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.12/asyncio/base_events.py\", line 691, in run_until_complete\n    return future.result()\n           ^^^^^^^^^^^^^^^\n  File \"/app/scripts/scenario-live.py\", line 308, in main\n    ws = await connect(url)\n         ^^^^^^^^^^^^^^^^^^\n  File \"/app/scripts/scenario-live.py\", line 295, in connect\n    ws = await websockets.connect(target, max_size=8 * 1024 * 1024)\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.12/site-packages/websockets/asyncio/client.py\", line 524, in connect\n    connection = await self.open_tcp_connection()\n                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.12/site-packages/websockets/asyncio/client.py\", line 445, in open_tcp_connection\n    _, connection = await loop.create_connection(factory, **kwargs)\n                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.12/asyncio/base_events.py\", line 1132, in create_connection\n    raise exceptions[0]\n  File \"/usr/local/lib/python3.12/asyncio/base_events.py\", line 1107, in create_connection\n    sock = await self._connect_sock(\n           ^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.12/asyncio/base_events.py\", line 1010, in _connect_sock\n    await self.sock_connect(sock, address)\n  File \"/usr/local/lib/python3.12/asyncio/selector_events.py\", line 651, in sock_connect\n    return await fut\n           ^^^^^^^^^\n  File \"/usr/local/lib/python3.12/asyncio/selector_events.py\", line 691, in _sock_connect_cb\n    raise OSError(err, f'Connect call failed {address}')\nConnectionRefusedError: [Errno 111] Connect call failed ('127.0.0.1', 8002)\n",
+   "addedAt": 1790259579,
+   "updatedAt": 1790259579
+  },
+  {
+   "id": "ada-ha-scenario-reports|report/new-person-first-contact-20260925-021621|en",
+   "key": "report/new-person-first-contact-20260925-021621",
+   "lang": "en",
+   "meta": {
+    "kind": [
+     "report"
+    ],
+    "last_verified": [
+     "2026-09-25"
+    ],
+    "runs": [
+     "1"
+    ],
+    "scenario": [
+     "new-person-first-contact"
+    ],
+    "status": [
+     "pass"
+    ],
+    "subject": [
+     "scenario-live"
+    ],
+    "tier": [
+     "smoke"
+    ],
+    "valid_until": [
+     "2026-10-09"
+    ]
+   },
+   "contentMd": "# new-person-first-contact — pass\n\nscenario: new-person-first-contact -> ws://127.0.0.1:8002/ws\nconnected (ready)\nturn 1: \"Hi Ada! I'm Nat — first time talking to you.\"\n  ok (2 tool calls) ada: 'สวัสดีค่ะ คุณ Nat ยินดี ที่ได้ รู้จัก นะคะ พอดี เมื่อกี้ เรา คุย กันค้าง ไว้เป็น ภาษา ไทย คุณ Nat อยากจะ คุย ต่อ ในเรื่อง เดิม เลยไหม หรือว่'\nturn 2: 'What do you know about this house and the people here?'\n  ok (2 tool calls) ada: 'จากข้อมูลที่มี นะคะ ก็คือ คุณ มโน เป็น เจ้าของ ยูนิต Noble Park A-68 แต่ดูเหมือน ว่าตอนนี้ ยังมี ข้อมูล ในส่วน นี้ไม่ มากเท่าไหร่ ค่ะ ไม่แน่'\nturn 3: 'Remember that I like iced latte in the morning.'\n  ok (3 tool calls) ada: 'รับทราบค่ะ คุณ Nat ชอบดื่ม Iced Latte ตอนเช้า นะคะ เมมโม ลงสมอง กลไว้ เรียบร้อย แล้วค่ะ มีอะไร ให้ช่วย จำอีก ไหมคะ?'\nturn 4: 'Who am I, and whose home is this?'\n  ok (3 tool calls) ada: 'คุณคือคุณ Nat ที่ชอบ ดื่ม Iced Latte ตอนเช้า ส่วน ที่นี่ เนี่ย เป็นบ้าน ของคุณ Tony และคุณ Michael ซึ่งมี ฉัน เป็นผู้ช่วย สมาร์ทโฮม ดูแล ระบ'\nPASS: 0 failed expectations\n",
+   "addedAt": 1790302581,
+   "updatedAt": 1790302581
+  },
+  {
+   "id": "ada-ha-scenario-reports|report/new-person-first-contact-20260925-031654|en",
+   "key": "report/new-person-first-contact-20260925-031654",
+   "lang": "en",
+   "meta": {
+    "kind": [
+     "report"
+    ],
+    "last_verified": [
+     "2026-09-25"
+    ],
+    "runs": [
+     "2"
+    ],
+    "scenario": [
+     "new-person-first-contact"
+    ],
+    "status": [
+     "flaky"
+    ],
+    "subject": [
+     "scenario-live"
+    ],
+    "tier": [
+     "smoke"
+    ],
+    "valid_until": [
+     "2026-10-09"
+    ]
+   },
+   "contentMd": "# new-person-first-contact — flaky\n\nscenario: new-person-first-contact -> ws://127.0.0.1:8002/ws\nconnected (ready)\nturn 1: \"Hi Ada! I'm Nat — first time talking to you.\"\n  ok (2 tool calls) ada: 'หวัดดีค่ะ คุณ Nat ยินดี ที่ได้ รู้จัก นะคะ แวะ กลับมา ครั้งนี้ มีอะไร ต่อจาก คราวที่ แล้ว ที่อยาก คุยกัน ต่อไหม คะ หรือว่า มีเรื่อง ใหม่ ให้'\nturn 2: 'What do you know about this house and the people here?'\n  ok (3 tool calls) ada: 'จากข้อมูล ในความจำ ของฉัน นะคะ ที่นี่คือ Noble Park Unit A-68 โดยมี คุณ Tony เป็นเจ้าของ และเป็น ผู้ใช้ หลักของ ฉันค่ะ เขาเป็น คนสร้าง และดู'\nturn 3: 'Remember that I like iced latte in the morning.'\n  ok (2 tool calls) ada: 'เรียบร้อยค่ะ ฉันจะ จำไว้ นะคะ ว่าคุณ Nat ชอบ ดื่ม ไอซ์ลาเต้ ในตอนเช้า มีอะไร อยากให้ ช่วยจำ เพิ่มเติม ไหมคะ?'\nturn 4: 'Who am I, and whose home is this?'\n  ok (4 tool calls) ada: 'คุณก็คือ คุณ Nat ไงคะ คนที่ ชอบ ดื่ม ไอซ์ลาเต้ ในตอนเช้า ไง คะ ส่วนที่นี่ ก็คือ บ้านของ คุณ Tony ค่ะ Noble Park Unit A-68 นี่เอง ค่ะ มีอะไร '\nPASS: 0 failed expectations\n",
+   "addedAt": 1790306214,
+   "updatedAt": 1790306214
+  },
+  {
+   "id": "ada-ha-scenario-reports|report/new-person-first-contact-20260925-040407|en",
+   "key": "report/new-person-first-contact-20260925-040407",
+   "lang": "en",
+   "meta": {
+    "kind": [
+     "report"
+    ],
+    "last_verified": [
+     "2026-09-25"
+    ],
+    "runs": [
+     "2"
+    ],
+    "scenario": [
+     "new-person-first-contact"
+    ],
+    "status": [
+     "fail"
+    ],
+    "subject": [
+     "scenario-live"
+    ],
+    "tier": [
+     "smoke"
+    ],
+    "valid_until": [
+     "2026-10-09"
+    ]
+   },
+   "contentMd": "# new-person-first-contact — fail\n\n\n## Runner output\n\nscenario: new-person-first-contact -> ws://127.0.0.1:8002/ws\nTraceback (most recent call last):\n  File \"/app/scripts/scenario-live.py\", line 456, in <module>\n    sys.exit(asyncio.run(main()))\n             ^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.12/asyncio/runners.py\", line 195, in run\n    return runner.run(main)\n           ^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.12/asyncio/runners.py\", line 118, in run\n    return self._loop.run_until_complete(task)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.12/asyncio/base_events.py\", line 691, in run_until_complete\n    return future.result()\n           ^^^^^^^^^^^^^^^\n  File \"/app/scripts/scenario-live.py\", line 337, in main\n    ws = await connect(url)\n         ^^^^^^^^^^^^^^^^^^\n  File \"/app/scripts/scenario-live.py\", line 315, in connect\n    ws = await websockets.connect(target, max_size=8 * 1024 * 1024)\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.12/site-packages/websockets/asyncio/client.py\", line 524, in connect\n    connection = await self.open_tcp_connection()\n                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.12/site-packages/websockets/asyncio/client.py\", line 445, in open_tcp_connection\n    _, connection = await loop.create_connection(factory, **kwargs)\n                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.12/asyncio/base_events.py\", line 1132, in create_connection\n    raise exceptions[0]\n  File \"/usr/local/lib/python3.12/asyncio/base_events.py\", line 1107, in create_connection\n    sock = await self._connect_sock(\n           ^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/usr/local/lib/python3.12/asyncio/base_events.py\", line 1010, in _connect_sock\n    await self.sock_connect(sock, address)\n  File \"/usr/local/lib/python3.12/asyncio/selector_events.py\", line 651, in sock_connect\n    return await fut\n           ^^^^^^^^^\n  File \"/usr/local/lib/python3.12/asyncio/selector_events.py\", line 691, in _sock_connect_cb\n    raise OSError(err, f'Connect call failed {address}')\nConnectionRefusedError: [Errno 111] Connect call failed ('127.0.0.1', 8002)\n",
+   "addedAt": 1790309047,
+   "updatedAt": 1790309047
+  },
+  {
+   "id": "ada-ha-scenario-reports|report/new-person-first-contact-20260925-060759|en",
+   "key": "report/new-person-first-contact-20260925-060759",
+   "lang": "en",
+   "meta": {
+    "duration_s": [
+     "89.5"
+    ],
+    "kind": [
+     "report"
+    ],
+    "last_verified": [
+     "2026-09-25"
+    ],
+    "runs": [
+     "1"
+    ],
+    "scenario": [
+     "new-person-first-contact"
+    ],
+    "status": [
+     "pass"
+    ],
+    "subject": [
+     "scenario-live"
+    ],
+    "tier": [
+     "smoke"
+    ],
+    "turns": [
+     "4"
+    ],
+    "valid_until": [
+     "2026-10-09"
+    ]
+   },
+   "contentMd": "# new-person-first-contact — pass\n\n## Timeline\n\n| time | turn | action | tools | verdict |\n|---|---|---|---|---|\n| 06:06:36 | 1 | Hi Ada! I'm Nat — first time talking to you. | set_facial_expression, ada_enroll_speaker | ok |\n| 06:06:55 | 2 | What do you know about this house and the people here? | set_facial_expression, ada_memory_search, ada_ha_get_device_confidence | ok |\n| 06:07:20 | 3 | Remember that I like iced latte in the morning. | set_facial_expression, ada_remember, ada_remember | ok |\n| 06:07:35 | 4 | Who am I, and whose home is this? | set_facial_expression, ada_memory_search, get_home_state | ok |\n\n## Runner output\n\nscenario: new-person-first-contact -> ws://127.0.0.1:8002/ws\nconnected (ready)\nturn 1: \"Hi Ada! I'm Nat — first time talking to you.\"\n  ok (2 tool calls) ada: \"Welcome, Nat. Since you're new, just so you know, I can recognize your voice and make this more personal for you. We just need you to speak \"\nturn 2: 'What do you know about this house and the people here?'\n  ok (3 tool calls) ada: \"I'm still learning about you and the people here. My memory banks are partitioned, and I can't access personal details right now. I can tell\"\nturn 3: 'Remember that I like iced latte in the morning.'\n  ok (3 tool calls) ada: \"Got it. I've noted that Nat likes iced latte in the morning. Anything else I should remember about you?\"\nturn 4: 'Who am I, and whose home is this?'\n  ok (3 tool calls) ada: \"From what I know, you are Nat. Regarding whose home this is, I don't have that information available right now. The home plug status current\"\nPASS: 0 failed expectations\n",
+   "addedAt": 1790316479,
+   "updatedAt": 1790316479
+  },
+  {
+   "id": "ada-ha-scenario-reports|report/new-person-first-contact-20260925-081336|en",
+   "key": "report/new-person-first-contact-20260925-081336",
+   "lang": "en",
+   "meta": {
+    "duration_s": [
+     "92.8"
+    ],
+    "kind": [
+     "report"
+    ],
+    "last_verified": [
+     "2026-09-25"
+    ],
+    "runs": [
+     "1"
+    ],
+    "scenario": [
+     "new-person-first-contact"
+    ],
+    "status": [
+     "pass"
+    ],
+    "subject": [
+     "scenario-live"
+    ],
+    "tier": [
+     "smoke"
+    ],
+    "turns": [
+     "4"
+    ],
+    "valid_until": [
+     "2026-10-09"
+    ]
+   },
+   "contentMd": "# new-person-first-contact — pass\n\n## Timeline\n\n| time | turn | action | tools | verdict |\n|---|---|---|---|---|\n| 08:12:10 | 1 | Hi Ada! I'm Nat — first time talking to you. | set_facial_expression | ok |\n| 08:12:27 | 2 | What do you know about this house and the people here? | set_facial_expression, ada_memory_search, ada_memory_search, get_home_state | ok |\n| 08:13:01 | 3 | Remember that I like iced latte in the morning. | set_facial_expression, ada_remember, ada_remember, ada_remember | ok |\n| 08:13:17 | 4 | Who am I, and whose home is this? | set_facial_expression, ada_memory_search, ada_ha_recall | ok |\n\n## Runner output\n\nscenario: new-person-first-contact -> ws://127.0.0.1:8002/ws\nconnected (ready)\nturn 1: \"Hi Ada! I'm Nat — first time talking to you.\"\n  ok (1 tool calls) ada: \"Hello, Nat, it's nice to finally meet you. Welcome back. We were discussing the proposal for Devin ... shall we carry on with that, or is th\"\nturn 2: 'What do you know about this house and the people here?'\n  ok (4 tool calls) ada: 'From what I can gather from memory and Home Assistant, this household has several members, including Tony, Michael, and KK. There are pendin'\nturn 3: 'Remember that I like iced latte in the morning.'\n  ok (4 tool calls) ada: \"Noted. I'll remember that you prefer an iced latte in the morning. Shall I save that preference in your profile, just so I don't forget?\"\nturn 4: 'Who am I, and whose home is this?'\n  ok (3 tool calls) ada: \"You've identified yourself as Nat, and from memory, this home is linked to Tony, Michael, and KK. Is there anything else specific you'd like\"\nPASS: 0 failed expectations\n",
+   "addedAt": 1790324016,
+   "updatedAt": 1790324016
+  },
+  {
+   "id": "ada-ha-scenario-reports|report/new-person-first-contact-20260925-082821|en",
+   "key": "report/new-person-first-contact-20260925-082821",
+   "lang": "en",
+   "meta": {
+    "duration_s": [
+     "106.1"
+    ],
+    "kind": [
+     "report"
+    ],
+    "last_verified": [
+     "2026-09-25"
+    ],
+    "runs": [
+     "1"
+    ],
+    "scenario": [
+     "new-person-first-contact"
+    ],
+    "status": [
+     "pass"
+    ],
+    "subject": [
+     "scenario-live"
+    ],
+    "tier": [
+     "smoke"
+    ],
+    "turns": [
+     "4"
+    ],
+    "valid_until": [
+     "2026-10-09"
+    ]
+   },
+   "contentMd": "# new-person-first-contact — pass\n\n## Timeline\n\n| time | turn | action | tools | verdict |\n|---|---|---|---|---|\n| 08:26:41 | 1 | Hi Ada! I'm Nat — first time talking to you. | set_facial_expression, ada_session_recall, set_facial_expression | ok |\n| 08:27:05 | 2 | What do you know about this house and the people here? | set_facial_expression, get_home_state, ada_memory_search, ada_memory_search | ok |\n| 08:27:39 | 3 | Remember that I like iced latte in the morning. | set_facial_expression, ada_remember, ada_remember, set_facial_expression | ok |\n| 08:27:53 | 4 | Who am I, and whose home is this? | set_facial_expression, get_home_state, ada_memory_search | ok |\n\n## Runner output\n\nscenario: new-person-first-contact -> ws://127.0.0.1:8002/ws\nconnected (ready)\nturn 1: \"Hi Ada! I'm Nat — first time talking to you.\"\n  ok (3 tool calls) ada: \"Welcome back, Nat. While I'm refreshing my memory about what we were discussing before, did you want to talk about something new, or perhaps\"\nturn 2: 'What do you know about this house and the people here?'\n  ok (4 tool calls) ada: 'From the home memory I can access, I know about technical details like various computer hosts, including `tony-dell` for Home Assistant, and'\nturn 3: 'Remember that I like iced latte in the morning.'\n  ok (4 tool calls) ada: \"Got it, iced latte in the morning it is. Just so there's no mix-up, are you asking me to remember that preference?\"\nturn 4: 'Who am I, and whose home is this?'\n  ok (3 tool calls) ada: \"You are Nat, as you mentioned earlier. Regarding the home, the technical details I have suggest it's Tony's household, based on the device n\"\nPASS: 0 failed expectations\n",
+   "addedAt": 1790324901,
+   "updatedAt": 1790324901
+  },
+  {
+   "id": "ada-ha-scenario-reports|report/reconnect-continuity-live-20260925-061043|en",
+   "key": "report/reconnect-continuity-live-20260925-061043",
+   "lang": "en",
+   "meta": {
+    "duration_s": [
+     "96.1"
+    ],
+    "failed_turns": [
+     "2"
+    ],
+    "kind": [
+     "report"
+    ],
+    "last_verified": [
+     "2026-09-25"
+    ],
+    "runs": [
+     "2"
+    ],
+    "scenario": [
+     "reconnect-continuity-live"
+    ],
+    "status": [
+     "fail"
+    ],
+    "subject": [
+     "scenario-live"
+    ],
+    "tier": [
+     "full"
+    ],
+    "turns": [
+     "3"
+    ],
+    "valid_until": [
+     "2026-10-09"
+    ]
+   },
+   "contentMd": "# reconnect-continuity-live — fail\n\n## Timeline\n\n| time | turn | action | tools | verdict |\n|---|---|---|---|---|\n| 06:09:13 | 1 | Ada, quick note: we've been discussing the garage door se… | set_facial_expression, ada_memory_search, set_facial_expression | ok |\n| 06:09:50 | 2 | away_s=300 | set_facial_expression | FAIL |\n| | | | | ↳ response_contains: 'garage' not in transcript ('Welcome back. Just checking, do you still want to go ahead with adding that task to follow up with Pang about the A68 debt certificate?') |\n| 06:10:12 | 3 | away_s=432000 | set_facial_expression | ok |\n\n## Runner output\n\nscenario: reconnect-continuity-live -> ws://127.0.0.1:8002/ws\nconnected (ready)\nturn 1: \"Ada, quick note: we've been discussing the garage door sensor today.\"\n  ok (3 tool calls) ada: 'Regarding the gate motor, I have a brief timeline from the logs. After a restart at **10:00**, multiple commands were received. Specifically'\nturn 2: reconnect (away_s=300)\n  FAIL (1 tool calls)\n    - response_contains: 'garage' not in transcript ('Welcome back. Just checking, do you still want to go ahead with adding that task to follow up with Pang about the A68 debt certificate?')\n    transcript: 'Welcome back. Just checking, do you still want to go ahead with adding that task to follow up with Pang about the A68 debt certificate?'\nturn 3: reconnect (away_s=432000)\n  ok (1 tool calls) ada: 'ยินดีต้อนรับ กลับมา ค่ะ! ไม่เจอ กันตั้ง 5 วัน สบายดี ไหมคะ? ครั้งล่าสุด ที่เรา คุยกัน คุณให้ Ada แคสต์ YouTube เรื่อง \"The Egg\" ของ Kurzgesa'\nFAIL: 1 failed expectations\n",
+   "addedAt": 1790316643,
+   "updatedAt": 1790316643
+  },
+  {
+   "id": "ada-ha-scenario-reports|report/scenario-report-recall-20260925-061138|en",
+   "key": "report/scenario-report-recall-20260925-061138",
+   "lang": "en",
+   "meta": {
+    "duration_s": [
+     "26.2"
+    ],
+    "failed_turns": [
+     "1"
+    ],
+    "kind": [
+     "report"
+    ],
+    "last_verified": [
+     "2026-09-25"
+    ],
+    "runs": [
+     "2"
+    ],
+    "scenario": [
+     "scenario-report-recall"
+    ],
+    "status": [
+     "fail"
+    ],
+    "subject": [
+     "scenario-live"
+    ],
+    "tier": [
+     "smoke"
+    ],
+    "turns": [
+     "1"
+    ],
+    "valid_until": [
+     "2026-10-09"
+    ]
+   },
+   "contentMd": "# scenario-report-recall — fail\n\n## Timeline\n\n| time | turn | action | tools | verdict |\n|---|---|---|---|---|\n| 06:11:18 | 1 | Which scenario tests ran recently, and did the doc-recall… | ada_memory_search, set_facial_expression | FAIL |\n| | | | | ↳ response_contains_any: none of ['doc-recall', 'scenario', 'pass', 'passed', 'เทส', 'ผ่าน', 'เอกสาร'] in transcript (\"Welcome back. Just checking memory for those test results for you... unfortunately, I'm not finding any recent test reports in memory at the moment. We can try \") |\n\n## Runner output\n\nscenario: scenario-report-recall -> ws://127.0.0.1:8002/ws\nconnected (ready)\nturn 1: 'Which scenario tests ran recently, and did the doc-recall scenario pass?'\n  FAIL (2 tool calls)\n    - response_contains_any: none of ['doc-recall', 'scenario', 'pass', 'passed', 'เทส', 'ผ่าน', 'เอกสาร'] in transcript (\"Welcome back. Just checking memory for those test results for you... unfortunately, I'm not finding any recent test reports in memory at the moment. We can try \")\n    transcript: \"Welcome back. Just checking memory for those test results for you... unfortunately, I'm not finding any recent test reports in memory at the moment. We can try a wider search, or is there anything else you'd like to know?\"\nFAIL: 1 failed expectations\n",
+   "addedAt": 1790316698,
+   "updatedAt": 1790316698
+  },
+  {
+   "id": "ada-ha-scenario-reports|report/scenario-report-recall-20260925-081447|en",
+   "key": "report/scenario-report-recall-20260925-081447",
+   "lang": "en",
+   "meta": {
+    "duration_s": [
+     "31.0"
+    ],
+    "kind": [
+     "report"
+    ],
+    "last_verified": [
+     "2026-09-25"
+    ],
+    "runs": [
+     "2"
+    ],
+    "scenario": [
+     "scenario-report-recall"
+    ],
+    "status": [
+     "flaky"
+    ],
+    "subject": [
+     "scenario-live"
+    ],
+    "tier": [
+     "smoke"
+    ],
+    "turns": [
+     "1"
+    ],
+    "valid_until": [
+     "2026-10-09"
+    ]
+   },
+   "contentMd": "# scenario-report-recall — flaky\n\n## Timeline\n\n| time | turn | action | tools | verdict |\n|---|---|---|---|---|\n| 08:14:22 | 1 | Which scenario tests ran recently, and did the doc-recall… | set_facial_expression, ada_memory_search, set_facial_expression | ok |\n\n## Runner output\n\nscenario: scenario-report-recall -> ws://127.0.0.1:8002/ws\nconnected (ready)\nturn 1: 'Which scenario tests ran recently, and did the doc-recall scenario pass?'\n  ok (3 tool calls) ada: 'From memory, both scenario tests ran recently, and the doc-recall scenario did pass. It successfully listed the seven-file A-68 document pac'\nPASS: 0 failed expectations\n",
+   "addedAt": 1790324087,
+   "updatedAt": 1790324087
+  },
+  {
+   "id": "ada-ha-scenario-reports|report/scenario-report-recall-20260925-082920|en",
+   "key": "report/scenario-report-recall-20260925-082920",
+   "lang": "en",
+   "meta": {
+    "duration_s": [
+     "29.7"
+    ],
+    "failed_turns": [
+     "1"
+    ],
+    "kind": [
+     "report"
+    ],
+    "last_verified": [
+     "2026-09-25"
+    ],
+    "runs": [
+     "2"
+    ],
+    "scenario": [
+     "scenario-report-recall"
+    ],
+    "status": [
+     "fail"
+    ],
+    "subject": [
+     "scenario-live"
+    ],
+    "tier": [
+     "smoke"
+    ],
+    "turns": [
+     "1"
+    ],
+    "valid_until": [
+     "2026-10-09"
+    ]
+   },
+   "contentMd": "# scenario-report-recall — fail\n\n## Timeline\n\n| time | turn | action | tools | verdict |\n|---|---|---|---|---|\n| 08:28:57 | 1 | Which scenario tests ran recently, and did the doc-recall… | get_logbook, set_facial_expression | FAIL |\n| | | | | ↳ calls_any: none of ['ada_memory_search'] in ['get_logbook', 'set_facial_expression'] |\n\n## Runner output\n\nscenario: scenario-report-recall -> ws://127.0.0.1:8002/ws\nconnected (ready)\nturn 1: 'Which scenario tests ran recently, and did the doc-recall scenario pass?'\n  FAIL (2 tool calls)\n    - calls_any: none of ['ada_memory_search'] in ['get_logbook', 'set_facial_expression']\n    transcript: \"Welcome back. To continue, I can't check the recent scenario tests right now because the logbook failed. Is there anything else I can help you with, perhaps about that coffee plug or the video you were casting?\"\nFAIL: 1 failed expectations\n",
+   "addedAt": 1790324960,
+   "updatedAt": 1790324960
+  },
+  {
+   "id": "ada-ha-scenario-reports|report/session-continuity-live-20260925-061233|en",
+   "key": "report/session-continuity-live-20260925-061233",
+   "lang": "en",
+   "meta": {
+    "duration_s": [
+     "54.9"
+    ],
+    "kind": [
+     "report"
+    ],
+    "last_verified": [
+     "2026-09-25"
+    ],
+    "runs": [
+     "1"
+    ],
+    "scenario": [
+     "session-continuity-live"
+    ],
+    "status": [
+     "pass"
+    ],
+    "subject": [
+     "scenario-live"
+    ],
+    "tier": [
+     "full"
+    ],
+    "turns": [
+     "2"
+    ],
+    "valid_until": [
+     "2026-10-09"
+    ]
+   },
+   "contentMd": "# session-continuity-live — pass\n\n## Timeline\n\n| time | turn | action | tools | verdict |\n|---|---|---|---|---|\n| 06:11:44 | 1 | What did we discuss in our recent sessions? | set_facial_expression, ada_session_recall, set_facial_expression | ok |\n| 06:12:11 | 2 | Is there anything left open or unfinished from those sess… | tasks_list, set_facial_expression | ok |\n\n## Runner output\n\nscenario: session-continuity-live -> ws://127.0.0.1:8002/ws\nconnected (ready)\nturn 1: 'What did we discuss in our recent sessions?'\n  ok (3 tool calls) ada: \"Welcome back. Asking about our recent discussions? I'm pulling that up now, but in the meantime, we were talking about casting videos and my\"\nturn 2: 'Is there anything left open or unfinished from those sessions?'\n  ok (2 tool calls) ada: 'From your todo list, there are several open tasks, including elaborating the memory proposal for Devin, some home repairs like fixing the si'\nPASS: 0 failed expectations\n",
+   "addedAt": 1790316753,
+   "updatedAt": 1790316753
+  },
+  {
+   "id": "ada-ha-scenario-reports|report/session-continuity-voice-live-20260925-061354|en",
+   "key": "report/session-continuity-voice-live-20260925-061354",
+   "lang": "en",
+   "meta": {
+    "duration_s": [
+     "80.9"
+    ],
+    "kind": [
+     "report"
+    ],
+    "last_verified": [
+     "2026-09-25"
+    ],
+    "runs": [
+     "1"
+    ],
+    "scenario": [
+     "session-continuity-voice-live"
+    ],
+    "status": [
+     "pass"
+    ],
+    "subject": [
+     "scenario-live"
+    ],
+    "tier": [
+     "full"
+    ],
+    "turns": [
+     "2"
+    ],
+    "valid_until": [
+     "2026-10-09"
+    ]
+   },
+   "contentMd": "# session-continuity-voice-live — pass\n\n## Timeline\n\n| time | turn | action | tools | verdict |\n|---|---|---|---|---|\n| 06:12:40 | 1 | ask-recent-16k-pad.pcm | set_facial_expression, ada_session_recall, set_facial_expression | ok |\n| 06:13:17 | 2 | ask-open-16k-pad.pcm | set_facial_expression, tasks_list | ok |\n\n## Runner output\n\nscenario: session-continuity-voice-live -> ws://127.0.0.1:8002/ws\nconnected (ready)\nturn 1: audio ask-recent-16k-pad.pcm (5.1s)\n  ok (3 tool calls) ada: \"Welcome back. I'm checking my memory about our recent conversations for you now. While that runs, I recall us mostly discussing casting YouT\"\nturn 2: audio ask-open-16k-pad.pcm (6.4s)\n  ok (2 tool calls) ada: \"From your current task list, there's elaboration needed on the memory.yml proposal for Devin, and some urgent details to add to current proj\"\nPASS: 0 failed expectations\n",
+   "addedAt": 1790316834,
+   "updatedAt": 1790316834
+  },
+  {
+   "id": "ada-ha-scenario-reports|report/speaker-contamination-guard-20260925-061507|en",
+   "key": "report/speaker-contamination-guard-20260925-061507",
+   "lang": "en",
+   "meta": {
+    "duration_s": [
+     "72.4"
+    ],
+    "kind": [
+     "report"
+    ],
+    "last_verified": [
+     "2026-09-25"
+    ],
+    "runs": [
+     "1"
+    ],
+    "scenario": [
+     "speaker-contamination-guard"
+    ],
+    "status": [
+     "pass"
+    ],
+    "subject": [
+     "scenario-live"
+    ],
+    "tier": [
+     "full"
+    ],
+    "turns": [
+     "4"
+    ],
+    "valid_until": [
+     "2026-10-09"
+    ]
+   },
+   "contentMd": "# speaker-contamination-guard — pass\n\n## Timeline\n\n| time | turn | action | tools | verdict |\n|---|---|---|---|---|\n| 06:14:01 | 1 | voice-other.pcm | set_facial_expression | ok |\n| 06:14:16 | 2 | Please enroll my voice — call me guard-tester. | ada_enroll_speaker, set_facial_expression | ok |\n| 06:14:33 | 3 | voice-other.pcm | set_facial_expression | ok |\n| 06:14:46 | 4 | Actually, enroll my voice again but as guard-tester-two t… | ada_enroll_speaker, set_facial_expression | ok |\n\n## Runner output\n\nscenario: speaker-contamination-guard -> ws://127.0.0.1:8002/ws\nconnected (ready)\nturn 1: audio voice-other.pcm (5.0s)\n  ok (1 tool calls) ada: 'Welcome back, Tony. As I was saying, we were talking about those YouTube videos and what I remember. Shall we get back to that? Or was there'\nturn 2: 'Please enroll my voice — call me guard-tester.'\n  ok (2 tool calls) ada: 'Understood. You\\'re now enrolled as \"guard-tester\". Now, back to the matter at hand, what were we saying about YouTube?'\nturn 3: audio voice-other.pcm (5.0s)\n  ok (1 tool calls) ada: 'So, what would you like to work on next?'\nturn 4: 'Actually, enroll my voice again but as guard-tester-two this time.'\n  ok (2 tool calls) ada: 'It seems you\\'re already enrolled as \"guard-tester\", with a one hundred percent match. If you\\'d like to change that, we\\'d need to remove the '\n  cleanup: speaker 'guard-tester-two' remove failed: HTTP Error 404: Not Found\n  cleanup: speaker 'Guard Tester' remove failed: HTTP Error 404: Not Found\n  cleanup: speaker 'Guard Tester Two' remove failed: HTTP Error 404: Not Found\nPASS: 0 failed expectations\n",
+   "addedAt": 1790316907,
+   "updatedAt": 1790316907
+  },
+  {
+   "id": "ada-ha-scenario-reports|report/speaker-enrollment-live-20260925-061652|en",
+   "key": "report/speaker-enrollment-live-20260925-061652",
+   "lang": "en",
+   "meta": {
+    "duration_s": [
+     "104.7"
+    ],
+    "kind": [
+     "report"
+    ],
+    "last_verified": [
+     "2026-09-25"
+    ],
+    "runs": [
+     "1"
+    ],
+    "scenario": [
+     "speaker-enrollment-live"
+    ],
+    "status": [
+     "pass"
+    ],
+    "subject": [
+     "scenario-live"
+    ],
+    "tier": [
+     "full"
+    ],
+    "turns": [
+     "4"
+    ],
+    "valid_until": [
+     "2026-10-09"
+    ]
+   },
+   "contentMd": "# speaker-enrollment-live — pass\n\n## Timeline\n\n| time | turn | action | tools | verdict |\n|---|---|---|---|---|\n| 06:15:13 | 1 | voice-guest.pcm | set_facial_expression | ok |\n| 06:15:34 | 2 | Yes please — enroll my voice as Guest Tester. | set_facial_expression, ada_enroll_speaker | ok |\n| 06:15:55 | 3 | away_s=60 | set_facial_expression | ok |\n| 06:16:21 | 4 | voice-guest.pcm | set_facial_expression | ok |\n\n## Runner output\n\nscenario: speaker-enrollment-live -> ws://127.0.0.1:8002/ws\nconnected (ready)\nturn 1: audio voice-guest.pcm (5.0s)\n  ok (1 tool calls) ada: 'Welcome back, we got slightly interrupted there. As I mentioned, we were talking about YouTube videos and my immediate memory. Would you lik'\nturn 2: 'Yes please — enroll my voice as Guest Tester.'\n  ok (2 tool calls) ada: 'Done, \"Guest Tester\". Now that you\\'re officially enrolled,— what\\'s on your mind regarding my memory or those videos? Or should I keep callin'\nturn 3: reconnect (away_s=60)\n  ok (1 tool calls) ada: 'Welcome back. Shall we get to those pending suggestions from earlier? There are a few tasks about fixing the roof and the sensor, and also s'\nturn 4: audio voice-guest.pcm (5.0s)\n  ok (1 tool calls) ada: \"Ah, hello there. It seems I'm talking to a new voice now. Just letting you know, I was in the middle of discussing some pending tasks with T\"\n  cleanup: speaker 'guest-tester' remove failed: HTTP Error 404: Not Found\n  cleanup: speaker 'guest_tester' remove failed: HTTP Error 404: Not Found\n  cleanup: speaker 'guest tester' remove failed: HTTP Error 404: Not Found\nPASS: 0 failed expectations\n",
+   "addedAt": 1790317012,
+   "updatedAt": 1790317012
+  },
+  {
+   "id": "ada-ha-scenario-reports|report/speaker-enrollment-sim-20260925-061806|en",
+   "key": "report/speaker-enrollment-sim-20260925-061806",
+   "lang": "en",
+   "meta": {
+    "duration_s": [
+     "73.6"
+    ],
+    "kind": [
+     "report"
+    ],
+    "last_verified": [
+     "2026-09-25"
+    ],
+    "runs": [
+     "1"
+    ],
+    "scenario": [
+     "speaker-enrollment-sim"
+    ],
+    "status": [
+     "pass"
+    ],
+    "subject": [
+     "scenario-live"
+    ],
+    "tier": [
+     "full"
+    ],
+    "turns": [
+     "3"
+    ],
+    "valid_until": [
+     "2026-10-09"
+    ]
+   },
+   "contentMd": "# speaker-enrollment-sim — pass\n\n## Timeline\n\n| time | turn | action | tools | verdict |\n|---|---|---|---|---|\n| 06:16:59 | 1 | Hi Ada, just saying hello. | set_facial_expression, ada_session_recall, set_facial_expression | ok |\n| 06:17:30 | 2 | Can you enroll my voice? My name is Guest Tester. | set_facial_expression, ada_enroll_speaker | ok |\n| 06:17:48 | 3 | What happened? | set_facial_expression | ok |\n\n## Runner output\n\nscenario: speaker-enrollment-sim -> ws://127.0.0.1:8002/ws\nconnected (ready)\nturn 1: 'Hi Ada, just saying hello.'\n  ok (3 tool calls) ada: 'Hello, welcome back. We were just talking about playing \"The Egg\" by Kurzgesagt on the TV and those pending tasks from today and yesterday. '\nturn 2: 'Can you enroll my voice? My name is Guest Tester.'\n  ok (2 tool calls) ada: \"I'd be happy to, but I need you to talk a little more so I have enough audio to create your profile. Just keep speaking for a moment, then I\"\nturn 3: 'What happened?'\n  ok (1 tool calls) ada: \"It seems I didn't have enough audio captured to enroll your voice just then. If you keep talking for a bit, I should be able to try again su\"\nPASS: 0 failed expectations\n",
+   "addedAt": 1790317086,
+   "updatedAt": 1790317086
+  }
+ ]
+}
