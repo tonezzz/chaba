@@ -71,25 +71,32 @@ def get_json(url, token):
     return json.load(urllib.request.urlopen(req, context=ctx, timeout=15))
 
 
-async def get_dashboard(url, token):
+async def get_dashboard(url, token, retries=2):
     ws_url = url.replace("http", "ws", 1) + "/api/websocket"
-    async with websockets.connect(ws_url) as ws:
-        i = [0]
+    for attempt in range(retries):
+        try:
+            async with websockets.connect(ws_url) as ws:
+                i = [0]
 
-        async def cmd(p):
-            i[0] += 1
-            p["id"] = i[0]
-            await ws.send(json.dumps(p))
-            while True:
-                r = json.loads(await ws.recv())
-                if r.get("id") == i[0]:
-                    return r
+                async def cmd(p):
+                    i[0] += 1
+                    p["id"] = i[0]
+                    await ws.send(json.dumps(p))
+                    while True:
+                        r = json.loads(await ws.recv())
+                        if r.get("id") == i[0]:
+                            return r
 
-        await ws.recv()
-        await ws.send(json.dumps({"type": "auth", "access_token": token}))
-        await ws.recv()
-        cfg = await cmd({"type": "lovelace/config", "url_path": DASH})
-        return cfg["result"]
+                await ws.recv()
+                await ws.send(
+                    json.dumps({"type": "auth", "access_token": token})
+                )
+                await ws.recv()
+                cfg = await cmd({"type": "lovelace/config", "url_path": DASH})
+                return cfg["result"]
+        except websockets.exceptions.ConnectionClosed:
+            if attempt + 1 == retries:
+                raise
 
 
 def collect_entities(obj, out):

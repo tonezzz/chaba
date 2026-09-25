@@ -403,3 +403,13 @@ const server = createServer((req, res) => {
 server.listen(PORT, HOST, () => {
   console.log(`Gemini-Ollama proxy listening on http://${HOST}:${PORT}`);
 });
+
+// PID-1 in the podman container: SIGTERM is only delivered to PID 1 when a
+// handler is registered — without this, every unit stop waited out the 10s
+// timeout then SIGKILLed, logging "Failed with result exit-code".
+for (const sig of ["SIGTERM", "SIGINT"]) {
+  process.on(sig, () => {
+    server.close(() => process.exit(0));
+    setTimeout(() => process.exit(0), 2000).unref();
+  });
+}
