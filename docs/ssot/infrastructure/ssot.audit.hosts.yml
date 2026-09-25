@@ -119,7 +119,8 @@ hosts:
         scope: user
         expected_state: active
         critical: false
-        note: Weekly trigger for devin-cleanup.service; service skips if Devin code.lock
+        note: Currently disabled — superseded by devin-summaries-sync /
+          devin-dispatch-watch units; service skips if Devin code.lock
           is present
       - name: xorg-seat.service
         type: service
@@ -127,12 +128,12 @@ hosts:
         expected_state: active
         critical: true
         note: Root Xorg :1 on vt7 — the physical seat display that barrier controls
-      - name: lxqt-seat.service
+      - name: xfce-seat.service
         type: service
         scope: user
         expected_state: active
         critical: true
-        note: startlxqt on DISPLAY=:1; replaces the unusable Wayland GDM greeter
+        note: dbus-run-session xfce4-session on DISPLAY=:1 (vt7) — the seat barrier controls; replaced lxqt-seat 2026-09-18
       - name: barrier-client.service
         type: service
         scope: user
@@ -160,6 +161,12 @@ hosts:
         expected_state: active
         critical: false
         note: Tailnet-only Secrets Console on port 8005
+      - name: mcp-link-monitor.service
+        type: service
+        scope: user
+        expected_state: active
+        critical: false
+        note: TCP/IP link monitor (omen/dell/macbook); mn01 copy retired 2026-09-25 — this dell instance is the canonical one
     known_failed:
       - name: app-devin-desktop
         reason: Devin desktop is started as a background nohup job, not a persistent
@@ -189,6 +196,18 @@ hosts:
       - name: xdg-desktop-portal-gtk.service
         reason: GTK portal for sandboxed apps; fails without an active X session
         action: ignore-or-mask
+      - name: xdg-desktop-portal.service
+        reason: Desktop portal fails when no matching X session is active
+        action: ignore-or-mask
+      - name: plasma-xdg-desktop-portal-kde.service
+        reason: KDE portal backend; no KDE session on the xfce seat
+        action: ignore-or-mask
+      - name: xiaomi-token-refresh.service
+        reason: Nightly timer fails — no valid passToken cookie; Chrome on tony-dell is logged out of account.xiaomi.com. Cameras still stream on the stored token; it breaks when that token expires
+        action: re-login-xiaomi-browser
+      - name: user@60578.service
+        reason: Transient UID user-manager (greeter/login seat) — UID not in passwd
+        action: ignore
       - name: xfce4-notifyd.service
         reason: XFCE notification daemon; fails when no X session is active
         action: ignore-or-mask
@@ -583,7 +602,8 @@ hosts:
         scope: user
         expected_state: active
         critical: false
-        note: Daily trigger for devin-cleanup.service; skips VACUUM while Devin is open
+        note: Currently disabled — superseded by devin-summaries-sync /
+          devin-dispatch-watch units; skips VACUUM while Devin is open
       - name: ada-memory-pull.timer
         type: timer
         scope: user
@@ -639,6 +659,9 @@ hosts:
       - name: michael-dev-parity.service
         reason: Michael-dev parity service failing; investigate
         action: investigate
+      - name: nvidia-cdi-refresh.service
+        reason: "NVML driver/library version mismatch (userspace 595.91 vs loaded kernel module) — nvidia-smi fails; pending tony-omen reboot to load the new driver"
+        action: reboot-tony-omen
       - name: notebooklm-rest-auth-refresh.service
         reason: Retired auth-refresh timer; should be stopped/removed
         action: disable
@@ -972,50 +995,23 @@ hosts:
         scope: user
         expected_state: active
         critical: false
-        note: Standby since idc01 cutover (stopped+disabled 2026-09-23);
-          canonical instance now on idc01 :8002 — expected delta
+        note: Currently disabled — standby since idc01 cutover
+          (stopped+disabled 2026-09-23); canonical instance now on idc01 :8002
       - name: ada-ha-michael.service
         type: service
         scope: user
         expected_state: active
         critical: false
-        note: Standby since idc01 cutover (stopped+disabled 2026-09-23);
-          canonical instance now on idc01 :8003 — expected delta
+        note: Currently disabled — standby since idc01 cutover
+          (stopped+disabled 2026-09-23); canonical instance now on idc01 :8003
       - name: tailscaled.service
         type: service
         scope: system
         expected_state: active
         critical: true
-      - name: mcp-link-monitor-mn.service
-        type: service
-        scope: user
-        expected_state: active
-        critical: false
-        note: TCP/IP link monitor migrated from tony-dell
-      - name: ada-memory-sync.timer
-        type: timer
-        scope: user
-        expected_state: active
-        critical: false
-        note: Hourly — vault→MDDB sync on mn01
-      - name: ada-memory-drift.timer
-        type: timer
-        scope: user
-        expected_state: active
-        critical: false
-        note: Sunday 09:00 — recall drift report, tripwires emit chaba-events
-      - name: ada-memory-gaps.timer
-        type: timer
-        scope: user
-        expected_state: active
-        critical: false
-        note: Sunday 09:30 — clusters journal recall misses into status=draft gap notes -> inbox review
-      - name: ada-memory-distill.timer
-        type: timer
-        scope: user
-        expected_state: active
-        critical: false
-        note: Sunday 09:45 — batch backstop; distills session summaries into status=draft memory candidates (env from ada-ha-tony.env, --emit)
+      # ada-memory-* timers moved to idc01 2026-09-24 (consolidation step 6,
+      # jobs/infrastructure/2026-09-24-idc01-consolidation.yml) — unit files
+      # remain on mn01 disabled as standby.
     known_failed:
       - name: grub-initrd-fallback.service
         reason: Ubuntu/grub package service that fails on non-EFI fallback; harmless
@@ -1331,7 +1327,13 @@ hosts:
         expected_state: active
         critical: false
         note: Weekly known-answer recall probe
-    known_failed: []
+    known_failed:
+      - name: ada-memory-sync.service
+        reason: "Hourly vault→MDDB sync exits 1 when it detects push conflicts (remote content preserved) — exit code is the review signal, not a crash"
+        action: review-sync-conflicts
+      - name: ada-scenario-smoke.service
+        reason: "Live-scenario smoke suite — currently failing 3/7 (kk-first-contact, michael-infra-interrogation, new-person-first-contact) since idc01 migration; failures are the test signal"
+        action: review-scenario-results
 related_files:
   - scripts/audit-hosts.py
   - reports/audit-hosts/
