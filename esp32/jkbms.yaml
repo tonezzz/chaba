@@ -74,7 +74,7 @@ esp32_ble_tracker:
           for (auto &u : x.get_service_uuids()) {
             char ub[40]; u.to_str(ub);
             off += snprintf(svc + off, sizeof(svc) - off, "%s,", ub);
-            if (strstr(ub, "ffe0")) ffe0 = true;
+            if (strstr(ub, "ffe0") || strstr(ub, "FFE0")) ffe0 = true;
           }
           bool cand = ffe0 || (named && (
               n.find("JK") != std::string::npos ||
@@ -97,7 +97,7 @@ ble_client:
 
 jk_bms_ble:
   - ble_client_id: client0
-    protocol_version: JK02_24S
+    protocol_version: JK02_32S
     throttle: 10s
     id: bms0
 

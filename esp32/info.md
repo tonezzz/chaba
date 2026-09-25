@@ -193,7 +193,30 @@ full remote serial: console read, DTR/RTS download-mode reset, flash.
 - SolarAssistant dongle: `192.168.1.120` (web UI on :80, MQTT :1883
   auth-required; monitors the house Solis system, NOT the station BMS).
 
-## Battery/BMS hunt status (2026-09-25)
+## Battery/BMS — SOLVED (2026-09-25 ~17:35)
+
+**The BMS is `24v20ah` @ MAC `20:23:04:32:0D:14`** — a JK BLE module
+(service `FFE0`), advert name = pack spec "24V 20Ah" (the "20 or 8" Michael
+remembered). RSSI -43 dBm from inside the cabinet. Flashed with
+`protocol_version: JK02_32S` (JK02_24S produced garbage SOC/capacity —
+version-2 frames need the 32S profile, as predicted below).
+
+**Live data confirmed (every ~10 s):** 8S LiFePO4, cells 3.232–3.241 V
+(9 mV delta), pack 25.89 V, **SOC 81 %, 16.27 Ah remaining of ~20 Ah**,
+discharging ~3.9 W (the station load), 91 cycles, SOH 100 %, temps
+26.7 °C / MOS 30.9 °C, uptime ~1y344d. Only flag: "Modify password in
+time" (default-password nag — cosmetic). All
+`sensor.terrace_weather_station_bms_*` entities live in michael-ha.
+
+**Why it took so long — the advert appeared only after the power cycle.**
+The module had been silent for 12+ h; Michael power-cycling the cabinet
+restarted it and it began advertising again (matches the "switches off /
+sleeps" hypothesis — the module may stop advertising when the battery is
+idle/asleep and wake on events). Also: the BMS-CANDIDATE filter had a
+case-sensitivity bug (`ffe0` vs `FFE0`) — it never would have flagged.
+Fixed in the deployed yaml.
+
+**History of the hunt (superseded):**
 
 - **Physical layout (Tony):** battery packs + their controller ARE inside
   the same cabinet as the RK600/HMI/ESP32.
