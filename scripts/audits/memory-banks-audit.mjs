@@ -313,6 +313,41 @@ async function main() {
         } else {
           note(`devin sync freshness ok (lag ${lagDays.toFixed(1)}d)`);
         }
+
+        // --- devin coverage: every non-empty local summary should have a
+        // bank doc (devin/<hex> for CLI threads, devin-session/<name> for
+        // desktop session summaries). Fresh files get a grace window
+        // because the importer only runs hourly.
+        const remoteKeys = new Set(docs.map((d) => d.key).filter(Boolean));
+        const graceMs = 3 * 3600 * 1000;
+        const nowMs = Date.now();
+        let missing = 0, missingFresh = 0, emptyStubs = 0, missingNamed = 0;
+        for (const f of readdirSync(SUMMARIES_DIR)) {
+          if (!f.startsWith("history_") || !f.endsWith(".md")) continue;
+          const st = statSync(join(SUMMARIES_DIR, f));
+          if (st.size === 0) { emptyStubs++; continue; }
+          if (remoteKeys.has(`devin/${f.slice(8, -3)}`)) continue;
+          if (nowMs - st.mtimeMs > graceMs) missing++; else missingFresh++;
+        }
+        const namedDir = `${process.env.HOME}/.local/share/devin/summaries`;
+        if (existsSync(namedDir)) {
+          for (const f of readdirSync(namedDir)) {
+            if (!f.endsWith(".md")) continue;
+            const st = statSync(join(namedDir, f));
+            if (st.size === 0) { emptyStubs++; continue; }
+            if (remoteKeys.has(`devin-session/${f.slice(0, -3)}`)) continue;
+            if (nowMs - st.mtimeMs > graceMs) missingNamed++; else missingFresh++;
+          }
+        }
+        if (missing || missingNamed) {
+          warn(
+            `devin coverage: ${missing + missingNamed} non-empty summaries older than 3h missing from bank — sync-devin-summaries.py failing or keys drifting`
+          );
+        } else {
+          note(
+            `devin coverage ok (all non-empty summaries in bank; ${missingFresh} inside lag window, ${emptyStubs} empty stubs)`
+          );
+        }
       }
     }
   } else {
