@@ -103,31 +103,30 @@ systems:
   mddb:
     host: any
     description: >
-      Local MDDB mirror at 127.0.0.1:11023 (mddb-server container, compose at
-      CascadeProjects/mddb). The PRIMARY instance is tony-dell:11023 with
-      ~21 collections / ~607 docs; the local mirror holds a subset.
-      Embeddings: Gemini-Ollama proxy on tony-dell:11435 (nomic-embed-text,
-      768 dims), envs declared in CascadeProjects/mddb/docker-compose.yml.
-      Fixed 2026-09-18: provider envs restored + vector-reindex run for
-      existing docs.
-      QUOTA: Gemini embedding free tier ~1000 requests/day, resets midnight
-      Pacific (07:00 UTC). Reindex WITHOUT force — force re-embeds every doc
-      and burns the daily budget; the endpoint is incremental by default.
-    health_url: http://tony-omen.taila0626a.ts.net:11023/health
-    vector_search_url: http://tony-omen.taila0626a.ts.net:11023/v1/vector-search
+      MDDB PRIMARY moved tony-dell -> idc01 (2026-09-22/23 migration):
+      bound to the tailnet IP 100.74.146.0:11023 (tailnet-only, not
+      loopback). Ollama on idc01 127.0.0.1:11434; gemini-ollama-proxy
+      on idc01:11435. Embeddings: OpenRouter primary since 2026-09-23
+      (see mddb-embedding-providers.md); Gemini embedding free tier
+      ~1000 requests/day remains a secondary-path quota concern.
+      Reindex WITHOUT force — force re-embeds every doc.
+    health_url: http://100.74.146.0:11023/health
+    vector_search_url: http://100.74.146.0:11023/v1/vector-search
     min_collections: 3
     min_top_score: 0.45
     max_latency_ms: 600
     canary_collection: infrastructure-ssot
     canary_query: "GPU memory management"
-    remote_primary: http://tony-dell:11023
+    remote_primary: http://100.74.146.0:11023
     remote_min_collections: 21
     existing_script: scripts/test-global-rules-and-mddb.sh
 
   weaviate:
     host: any
-    description: Vector DB for SSOTDocument semantic search.
-    url: http://tony-omen.taila0626a.ts.net:8082
+    description: Vector DB for SSOTDocument semantic search. Runs on
+      tony-dell (docker container 'weaviate'), REST on :8084 + grpc :50051;
+      LAN raft on 8300/8301. Not on tony-omen — manifest fixed 2026-09-25.
+    url: http://100.68.142.13:8084
     collection: SSOTDocument
     min_objects: 300
 
