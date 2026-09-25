@@ -57,6 +57,139 @@ http://127.0.0.1:8080 {
 			file_server
 		}
 	}
+	# --- routes ported from the retired :8085 edge (caddy-tony-dell) 2026-09-25 ---
+
+	# Ada HA PWAs — canonical on idc01 tailscale serve
+	handle /apps/ha/ada-tony {
+		redir * /apps/ha/ada-tony/ 308
+	}
+	handle /apps/ha/ada-tony/* {
+		reverse_proxy https://idc01.taila0626a.ts.net {
+			header_up Host idc01.taila0626a.ts.net
+		}
+	}
+	handle /apps/ha/ada-michael {
+		redir * /apps/ha/ada-michael/ 308
+	}
+	handle /apps/ha/ada-michael/* {
+		reverse_proxy https://idc01.taila0626a.ts.net {
+			header_up Host idc01.taila0626a.ts.net
+		}
+	}
+
+	# Legacy Ada HA paths → /apps/ha/ada-*
+	handle /apps/ada_ha_tony {
+		redir * /apps/ha/ada-tony/ 308
+	}
+	handle_path /apps/ada_ha_tony/* {
+		redir * /apps/ha/ada-tony{uri} 308
+	}
+	handle /apps/ada_ha_michael {
+		redir * /apps/ha/ada-michael/ 308
+	}
+	handle_path /apps/ada_ha_michael/* {
+		redir * /apps/ha/ada-michael{uri} 308
+	}
+	handle /apps/ada_ha {
+		redir * /apps/ha/ada/ 308
+	}
+	handle_path /apps/ada_ha/* {
+		redir * /apps/ha/ada{uri} 308
+	}
+
+	# ada-pi PWA retired on tony-dell — canonical instance is idc01 serve root
+	handle /apps/ada_pi {
+		redir * /apps/ada_pi/ 308
+	}
+	handle_path /apps/ada_pi/* {
+		redir * https://idc01.taila0626a.ts.net{uri} 308
+	}
+
+	# HA convenience redirects
+	handle /apps/ha/tony-ha {
+		redir * /apps/ha/tony-ha/ 308
+	}
+	handle_path /apps/ha/tony-ha/* {
+		redir * https://tony-dell.taila0626a.ts.net:8123/ 308
+	}
+	handle /apps/ha/michael-dev {
+		redir * /apps/ha/michael-dev/ 308
+	}
+	handle_path /apps/ha/michael-dev/* {
+		redir * https://tony-dell.taila0626a.ts.net:8124/ 308
+	}
+	handle /apps/ha/michael-ha {
+		redir * /apps/ha/michael-ha/ 308
+	}
+	handle_path /apps/ha/michael-ha/* {
+		redir * https://nupo4ndqdqydt78zmpq0z5wzp1bdrqgs.ui.nabu.casa/ 308
+	}
+	handle /apps/tony-ha {
+		redir * /apps/ha/tony-ha/ 308
+	}
+	handle_path /apps/tony-ha/* {
+		redir * /apps/ha/tony-ha{uri} 308
+	}
+	handle /apps/ha {
+		redir * /apps/ha/ 308
+	}
+
+	# GEV token endpoint (separate from gev api/live)
+	handle_path /apps/gev/token {
+		reverse_proxy 127.0.0.1:8790 {
+			header_up Host 127.0.0.1:8790
+		}
+	}
+
+	# dev playground backend
+	handle /apps/dev/v0 {
+		redir * /apps/dev/v0/ 308
+	}
+	handle_path /apps/dev/v0/* {
+		reverse_proxy 127.0.0.1:8006 {
+			header_up Host 127.0.0.1:8006
+		}
+	}
+
+	# NotebookLM cookie bridge (ai-hub extension)
+	handle /apps/notebooklm-cookies {
+		redir * /apps/notebooklm-cookies/ 308
+	}
+	handle_path /apps/notebooklm-cookies/* {
+		reverse_proxy 127.0.0.1:9876 {
+			header_up Host 127.0.0.1:9876
+		}
+	}
+
+	# HLS static roots with CORS + segment mimetypes
+	handle_path /apps/yt-live/* {
+		root * /srv/public/apps/yt-live
+		header Access-Control-Allow-Origin "*"
+		header Access-Control-Allow-Headers "Origin, Range"
+		header Access-Control-Expose-Headers "Content-Length, Content-Range"
+		header Cache-Control "no-cache, no-store"
+		@m3u8 path *.m3u8
+		header @m3u8 Content-Type "application/vnd.apple.mpegurl"
+		@ts path *.ts
+		header @ts Content-Type "video/mp2t"
+		@vtt path *.vtt
+		header @vtt Content-Type "text/vtt"
+		file_server
+	}
+	handle_path /apps/walldance-live/* {
+		root * /srv/public/apps/walldance-live
+		header Access-Control-Allow-Origin "*"
+		header Access-Control-Allow-Headers "Origin, Range"
+		header Access-Control-Expose-Headers "Content-Length, Content-Range"
+		header Cache-Control "no-cache, no-store"
+		@m3u8w path *.m3u8
+		header @m3u8w Content-Type "application/vnd.apple.mpegurl"
+		@tsw path *.ts
+		header @tsw Content-Type "video/mp2t"
+		file_server
+	}
+	# --- end ported :8085 routes ---
+
 	handle /apps/yolo {
 		redir /apps/yolo/ 308
 	}

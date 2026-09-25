@@ -15,7 +15,7 @@ expected_exposure:
   # the Caddy edge is tailnet-only today. Verify externally before relying.
   - { listener: "ts-serve:443", class: tailnet-only, service: "tailscale serve", target: "127.0.0.1:80", note: "Caddy apps edge — tailnet-only; funnel not enabled per serve status 2026-09-25" }
   - { listener: "ts-serve:443/apps/home-assistant/", class: tailnet-only, service: "tailscale serve", target: "127.0.0.1:8123", note: "HA login — tailnet-only in practice" }
-  - { listener: "ts-serve:443/apps/vms/", class: tailnet-only, service: "tailscale serve", target: "127.0.0.1:80", note: "tailnet-gated in Caddyfile via Tailscale-User-Login — public+LAN get 403 (verified 2026-09-24); backend websockify 127.0.0.1:6082 → mn01:5900" }
+  - { listener: "ts-serve:443/apps/vms/", class: tailnet-only, service: "tailscale serve", target: "127.0.0.1:80", note: "NEEDS VERIFICATION — no Tailscale-User-Login gate found in either Caddyfile 2026-09-25 (page returns 200 tailnet-wide; WS to websockify :6082 appears unrouted). Claimed tailnet-gate 2026-09-24 does not exist in current configs" }
   # Tailnet
   - { listener: "100.68.142.13:5432", class: tailnet-only, service: "tailscale serve --tcp", target: "127.0.0.1:5432", note: "chaba-postgres-16" }
   - { listener: "100.68.142.13:8444", class: tailnet-only, service: "tailscale serve --https", target: "127.0.0.1:9005", note: "ha-live Gemini bridge" }
@@ -76,9 +76,10 @@ firewall:
 tailscale:
   ip: "100.68.142.13"
   serve:
+    - { port: 443,  proto: https, target: "127.0.0.1:80", note: "single edge — web container caddy. Repointed 2026-09-25: was held by a stale foreground `tailscale serve → :8085` process (caddy-tony-dell.service retired; all its routes ported into stacks/web/Caddyfile)" }
     - { port: 5432, proto: tcp,   target: "127.0.0.1:5432" }
     - { port: 8444, proto: https, target: "127.0.0.1:9005" }
-    - { port: 8080, note: "tailscale-serve-8080.service — confirm target on first audit" }
+    - { port: 8080, proto: https, target: "127.0.0.1:8080", note: "tailscale-serve-8080.service → web container inner block" }
   funnel: []  # off — `tailscale funnel status` shows no funnel mounts 2026-09-25
   role: [web-edge, ha-host]
 
