@@ -11,7 +11,7 @@ sections:
       - label: Screen numbers
         text: "Each paired display gets a stable screen number (Screen #1, #2, ...) assigned by the relay registry, so Ada/HA can be told 'cast to screen 1'."
       - label: Self-pairing QR
-        text: "An unpaired display shows a QR code on its own screen. Scanning it with an admin phone opens /apps/vcast/pair.html which claims the display: the relay mints an ada-pi key (screen-N) server-side, burns the redeem URL itself, and pushes the api_key to the waiting display over its pending websocket."
+        text: "An unpaired display shows a QR code on its own screen. Scanning it with an admin phone opens /apps/vcast/pair.html which claims the display: the relay mints an ada-pi key (screen-N) server-side, burns the redeem URL itself, and pushes the api_key to the waiting display over its pending websocket. Claim is keyless — the relay holds ADA_ADMIN_KEY in ~/.config/secrets/input-bridge.env, so scanning the QR only asks for a confirm tap."
   - title: Architecture
     icon: "⚙️"
     layout: list
@@ -19,7 +19,7 @@ sections:
       - label: Receiver page
         text: "stacks/web/public/apps/vcast/index.html — joins the input-bridge WS room, registers with api_key (or shows pairing QR when unpaired), renders play/image/nav/audio/stop messages. Native HLS on iOS Safari, vendored hls.js elsewhere. Screen Wake Lock keeps the display on."
       - label: Relay + registry
-        text: "stacks/web/input-bridge/server.mjs — one node process on tony-dell :3010 (input-bridge.service). HTTP: GET /health, GET /displays, GET /pair-info?sid=, POST /pub {screen|room,msg}, POST /claim {sid,admin_key,name?,force}. WS: room broadcast + register-display. Registry persisted at ~/.local/share/input-bridge/displays.json on tony-dell."
+        text: "stacks/web/input-bridge/server.mjs — one node process on tony-dell :3010 (input-bridge.service). HTTP: GET /health, GET /displays, GET /pair-info?sid=, POST /pub {screen|room,msg}, POST /claim {sid,name?,force}, POST /dismiss {sid}, POST /release {screen|name} (admin key optional — falls back to ADA_ADMIN_KEY env). WS: room broadcast + register-display. Registry persisted at ~/.local/share/input-bridge/displays.json on tony-dell."
       - label: Key verification
         text: "Register/claim keys are verified server-side against ada-pi-pwa (ADA_AUTH_URL=https://idc01.taila0626a.ts.net) via /api/auth/status. Screen keys are normal ada device keys named screen-N — they appear in the ada-keys-card inventory and revoke disables the display on next register."
       - label: Caddy
@@ -31,7 +31,7 @@ sections:
       - label: Unpaired
         text: "Page opens, relay returns {type:pending, sid}; page renders QR for /apps/vcast/pair.html?sid=<sid>."
       - label: Claim
-        text: "Phone opens pair.html, enters admin ada key (stored in phone localStorage only), POSTs /claim. Relay verifies the admin key, POSTs ada /api/auth/keys {name:screen-N}, fetches the redeem URL server-side (allowlisted hosts), extracts api_key from the 302 Location, and pushes {type:paired} to the pending display."
+        text: "Phone opens pair.html and taps confirm (no key entry — relay-side ADA_ADMIN_KEY); POSTs /claim. Relay verifies the admin key, POSTs ada /api/auth/keys {name:screen-N}, fetches the redeem URL server-side (allowlisted hosts), extracts api_key from the 302 Location, and pushes {type:paired} to the pending display."
       - label: Re-pair
         text: "POST /claim with force:true revokes the old key and issues a fresh one under the same screen-N name. Revoke from the admin page / ada-keys-card removes the key entirely."
   - title: Message protocol
