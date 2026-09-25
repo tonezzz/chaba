@@ -164,6 +164,11 @@ full remote serial: console read, DTR/RTS download-mode reset, flash.
 - Android HMI notes: no nohup/tee/tail/head; `nc` is OpenBSD-style
   (`nc -l PORT`); telnet shell at `192.168.31.148:23` reached from
   michael-ha via `(printf "sh -i\n..."; sleep) | exec 3<>/dev/tcp/...`.
+- **DANGER — `input keyevent 26` suspends/powers off the HMI.** Sent it
+  ~10:36 2026-09-25 thinking "wake toggle"; weather data froze at that
+  exact second and the box stopped answering ping/telnet/502 entirely
+  (screen was already off, so POWER → suspend/off). Recovery = physical
+  power-button press. Do NOT send keyevents 26/224 to this device again.
 - HMI USB devices: ttyUSB0-4 = Longsung GSM modem (NOT the ESP32);
   CH340 enumerates but binds no tty — hence userspace.
 
