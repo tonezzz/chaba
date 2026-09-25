@@ -166,23 +166,30 @@ Before taking any fallback or workaround actions due to service failures, API ke
 7. **Verify Resolution:** Confirm the fix works
 8. **Document:** Update relevant documentation/KB
 
-## Auto KB Processing (MANDATORY)
+## Auto KB Processing (MANDATORY at session end)
 
-At the end of every assistant response that answers or completes a user request, you MUST:
+At **session end** (finish-and-close, or when the user asks to wrap up), you MUST:
 
-1. **Append KB review section** with KB-worthy facts from the conversation:
-   - Decisions, discoveries, infrastructure changes, conventions, and workarounds
+1. **KB review**: summarize KB-worthy facts from the session:
+   - Verified decisions, discoveries, infrastructure changes, conventions, and workarounds
    - Check existing KB entries for overlap before suggesting new entries
    - Update existing entries instead of creating duplicates
-   - Archive outdated entries rather than deleting
+   - Mark outdated entries `status: superseded`/`archived` rather than deleting
    - Maintain single source of truth for each topic
 
-2. **Automatically invoke auto-kb skill** to process the KB review section:
-   - Auto-kb will check redundancy with existing entries
-   - Auto-kb will update existing entries or create new ones as needed
+2. **Invoke auto-kb once** with the review summary:
+   - Auto-kb writes the file AND indexes it via `scripts/sync-kb-to-mddb.py`
+   - Check the `AUTO_KB_RESULT` line — `indexed: false` means retry
+     `python3 scripts/sync-kb-to-mddb.py --missing-only` later
    - Auto-kb follows consistent KB entry structure and quality criteria
 
-3. **Exception**: Only ask for user confirmation when creating entirely new KB entries for major new topics (not updates to existing entries)
+3. **Verification gate**: only mint entries for stabilized findings
+   - `KB_STATUS=verified` when confirmed this session, else leave `status: draft`
+   - In-progress hypotheses stay in `info.md`/SSOT, not `docs/kb/`
+
+4. **Not per-response**: do NOT run auto-kb on ordinary replies — session-end only.
+
+5. **Exception**: Only ask for user confirmation when creating entirely new KB entries for major new topics (not updates to existing entries)
 
 **KB-Worthy Triggers**:
 
@@ -203,7 +210,7 @@ At the end of every assistant response that answers or completes a user request,
 
 ## Immediate KB Creation (During Work)
 
-For significant discoveries during work (not end-of-session):
+For significant **verified** discoveries during work (not end-of-session) — reserve this for major findings; everything else waits for the session-end review:
 
 1. Immediately suggest KB entry creation when encountering KB-worthy triggers
 2. Ask user for confirmation before creating major new entries

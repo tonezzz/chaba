@@ -3,29 +3,51 @@
 /**
  * Auto KB Creation Skill
  *
- * Analyzes KB review sections and automatically creates knowledge base entries
- * for high-value information while checking for redundancy using MDDB.
+ * Analyzes KB review sections and creates knowledge base entries for
+ * high-value, stabilized findings, checking for redundancy using MDDB.
  *
- * MDDB access is intentionally not performed inside this Node process, because
- * mcp_call_tool is a Devin assistant tool and is not available as a Node
- * global. The caller (assistant) is expected to:
- *   1. Call mcp_call_tool mddb semantic_search for relevant collections.
- *   2. Pass the combined result as MCP_REDUNDANCY_RESULT (JSON string) or
- *      MCP_REDUNDANCY_FILE (path to a JSON file).
- *   3. After a local KB file is created, call mcp_call_tool mddb add_document
- *      to index it.
+ * Indexing is handled by this script itself via scripts/sync-kb-to-mddb.py
+ * (--missing-only), which maps the entry's category frontmatter to the
+ * canonical kb-* collection. The assistant may still supply an optional
+ * pre-search redundancy result via MCP_REDUNDANCY_RESULT /
+ * MCP_REDUNDANCY_FILE; if omitted, a local file-overlap check is used.
+ *
+ * Output contract: the last stdout line is
+ *   AUTO_KB_RESULT {"file":..., "collection":..., "status":..., "indexed":bool, ...}
+ * When indexed=false, the file exists on disk but is NOT in MDDB yet;
+ * `retry` contains the command to finish indexing. Treat that as
+ * "created-but-pending", not success.
  *
  * Usage:
- *   KB_REVIEW_CONTENT="..." [MCP_REDUNDANCY_FILE=/tmp/kb-redundancy.json] node auto-kb.mjs
- *   echo "..." | MCP_REDUNDANCY_FILE=/tmp/kb-redundancy.json node auto-kb.mjs
+ *   KB_REVIEW_CONTENT="..." [KB_STATUS=verified] \
+ *     [MCP_REDUNDANCY_FILE=/tmp/kb-redundancy.json] node auto-kb.mjs
+ *   echo "..." | node auto-kb.mjs
  *   node auto-kb.mjs "..."
  */
 
-import { readFileSync, writeFileSync, readdirSync, existsSync, unlinkSync } from 'fs';
-import { join } from 'path';
+import { readFileSync, writeFileSync, readdirSync, existsSync, unlinkSync, mkdirSync } from 'fs';
+import { join, dirname } from 'path';
+import { fileURLToPath } from 'url';
+import { spawnSync } from 'child_process';
 
-const KB_DIR = process.env.KB_DIR || '/home/tony/CascadeProjects/chaba-tony-dell/docs/kb';
+const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
+const REPO_ROOT = join(SCRIPT_DIR, '..', '..', '..');
+const KB_DIR = process.env.KB_DIR || join(REPO_ROOT, 'docs', 'kb');
+const SYNC_SCRIPT = join(REPO_ROOT, 'scripts', 'sync-kb-to-mddb.py');
 const LOCK_FILE = process.env.AUTO_KB_LOCK_FILE || '/home/tony/.cache/auto-kb.lock';
+
+const VALID_STATUSES = ['draft', 'verified', 'superseded', 'archived'];
+
+function getStatus() {
+  const s = (process.env.KB_STATUS || 'draft').toLowerCase();
+  return VALID_STATUSES.includes(s) ? s : 'draft';
+}
+
+function slugify(title) {
+  const s = title.toLowerCase().replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '').slice(0, 50);
+  return s || 'entry';
+}
 
 // KB-worthy triggers
 const KB_WORTHY_TRIGGERS = [
@@ -229,7 +251,7 @@ async function checkRedundancy(content) {
 /**
  * Generate KB entry from content
  */
-function generateKBEntry(content, context = '', category = 'implementation') {
+function generateKBEntry(content, context = '', category = 'implementation', status = 'draft') {
   const timestamp = new Date().toISOString().split('T')[0];
 
   // Extract key information from content
@@ -238,6 +260,9 @@ function generateKBEntry(content, context = '', category = 'implementation') {
 
   return `---
 category: ${category}
+status: ${status}
+created: ${timestamp}
+source: auto-kb
 ---
 
 # ${title}
@@ -295,6 +320,26 @@ function getMDDBCollection(category) {
     return 'kb-system';
   }
   return 'kb-features';
+}
+
+/**
+ * Index the new entry via the canonical sync script (handles collection
+ * mapping, re-homing from legacy collections, and md5 drift detection).
+ */
+function syncIndex() {
+  if (!existsSync(SYNC_SCRIPT)) {
+    return { ok: false, reason: `sync script not found: ${SYNC_SCRIPT}` };
+  }
+  const res = spawnSync('python3', [SYNC_SCRIPT, '--missing-only'], {
+    cwd: REPO_ROOT, encoding: 'utf8', timeout: 120000,
+    env: { ...process.env, KB_DIR },
+  });
+  if (res.error || res.status !== 0) {
+    const stderr = (res.stderr || '').trim().split('\n').filter(Boolean).pop() || '';
+    const detail = res.error?.message || stderr || `exit ${res.status}`;
+    return { ok: false, reason: detail };
+  }
+  return { ok: true };
 }
 
 /**
@@ -386,28 +431,29 @@ async function main() {
     // Determine category and generate entry
     const category = determineCategory(content);
     const collection = getMDDBCollection(category);
-    const entry = generateKBEntry(content, context, category);
+    const status = getStatus();
+    const title = content.split('. ')[0]?.substring(0, 60) || 'KB Entry';
+    const entry = generateKBEntry(content, context, category, status);
 
-    // Generate filename
-    const timestamp = Date.now();
-    const filename = `auto-chaba-${timestamp}.md`;
+    // Filename: auto-kb-YYYYMMDD-<slug>.md
+    const date = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+    const filename = `auto-kb-${date}-${slugify(title)}.md`;
     const filepath = join(KB_DIR, filename);
 
-    // Ensure directory exists
-    if (!existsSync(KB_DIR)) {
-      // noop: let writeFileSync fail if needed, or create with mkdirSync?
-      // Keep minimal: original did not create KB_DIR.
-    }
-
-    // Write entry
+    mkdirSync(KB_DIR, { recursive: true });
     writeFileSync(filepath, entry, 'utf8');
 
-    console.log(`KB entry created: ${filename}`);
-    console.log(`Location: ${filepath}`);
-    console.log(`Category: ${category}`);
-    console.log(`MDDB collection: ${collection}`);
-    console.log('To index in MDDB, call:');
-    console.log(`  mcp_call_tool mddb add_document collection=${collection} key=${filename} lang=en content_md=<entry> meta={title:"...",source:"auto-kb",auto_generated:true}`);
+    // Index immediately; if MDDB is unreachable the failure is explicit
+    const index = syncIndex();
+    const result = { file: filename, path: filepath, category, collection, status, indexed: index.ok };
+    if (!index.ok) {
+      result.pending_index = true;
+      result.retry = `python3 ${SYNC_SCRIPT} --missing-only`;
+      console.log(`WARNING: KB file written but NOT indexed in MDDB: ${index.reason}`);
+      console.log(`Retry later with: ${result.retry}`);
+    }
+    console.log(`KB entry created: ${filename} (status: ${status}, indexed: ${index.ok})`);
+    console.log(`AUTO_KB_RESULT ${JSON.stringify(result)}`);
   } finally {
     removeLock();
   }

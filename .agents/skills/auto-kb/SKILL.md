@@ -1,110 +1,77 @@
 # Auto KB Creation Skill
 
-Automatically creates KB entries based on KB review sections from assistant responses.
+Creates KB entries from KB review sections — for **stabilized, verified
+findings only**. In-progress hypotheses and session narrative belong in
+living docs (`info.md`, SSOT), not here.
+
+**Automatic invocation**: at **session end** (finish-and-close), when the
+session produced KB-worthy verified knowledge — per `ssot.windsurf.common.md`.
+NOT per-response. Mid-session use is allowed only for a major verified
+discovery, with user confirmation for new topics.
 
 ## What it does
 
-This skill analyzes KB review sections from assistant responses and automatically creates knowledge base entries for high-value information, reducing manual overhead while maintaining KB quality.
+1. Checks content against KB-worthy/negative triggers.
+2. Checks redundancy via caller-supplied MDDB result
+   (`MCP_REDUNDANCY_RESULT`/`MCP_REDUNDANCY_FILE`) or a local file-overlap
+   fallback. High redundancy → skips and reports the similar entries.
+3. Writes `<repo>/docs/kb/auto-kb-YYYYMMDD-<slug>.md` with frontmatter
+   `category`, `status` (default `draft`), `created`, `source: auto-kb`.
+4. Indexes the file by running `scripts/sync-kb-to-mddb.py --missing-only`
+   itself — no separate assistant MCP step required.
+5. Prints `AUTO_KB_RESULT {...}` as its last line. `"indexed": false`
+   means created-but-pending; the `retry` field holds the command to
+   finish indexing. Do not treat that run as fully successful.
 
-**Automatic Invocation**: This skill is automatically invoked at the end of every session that contains KB-worthy information in the KB review section, as per the mandatory KB processing rules in `.windsurfrules`.
+## Status lifecycle
 
-## When to use
+- `draft` — auto-generated, not yet verified. Default.
+- `verified` — confirmed finding; set via `KB_STATUS=verified` or by
+  editing frontmatter during review.
+- `superseded` — replaced by a newer entry; link the replacement in the body.
+- `archived` — moved under `docs/kb/archive/`; kept for history, not
+  deleted. `sync-kb-to-mddb.py --sync-deletes` reconciles the index.
 
-Invoke this skill when:
+## Input
 
-- A KB review section contains KB-worthy information (automatic at end of sessions)
-- You want to automate KB entry creation during work (with user confirmation)
-- You need to check for redundancy with existing entries
-- You want to follow consistent KB entry structure
+One of:
 
-## What it needs
-
-Input (one of):
-
-- CLI argument: `node auto-kb.mjs "<kb-review-content>" ["<context>"]`
-- Environment: `KB_REVIEW_CONTENT="..."` and optional `KB_SESSION_CONTEXT="..."`, plus either `MCP_REDUNDANCY_FILE` or `MCP_REDUNDANCY_RESULT`
+- CLI: `node auto-kb.mjs "<kb-review-content>" ["<context>"]`
+- Env: `KB_REVIEW_CONTENT`, `KB_SESSION_CONTEXT`, `KB_STATUS`,
+  `MCP_REDUNDANCY_FILE`/`MCP_REDUNDANCY_RESULT`, `KB_DIR` (override)
 - Stdin: `echo "..." | node auto-kb.mjs`
 
-The KB review section should be a concise summary of decisions, discoveries, or fixes from the session.
+## Quality gate — create entries only for
 
-`auto-kb` does **not** call MCP tools itself. The assistant must provide MDDB redundancy results before invoking it:
+- Verified bug fixes / root causes
+- Reusable workarounds and patterns
+- New integrations or systems
+- Config/performance findings with lasting operational value
 
-1. Call `mcp_call_tool mddb semantic_search` for the relevant collections.
-2. Combine the results into an array and either:
-   - Set `MCP_REDUNDANCY_RESULT` to the JSON string, or
-   - Write the JSON to a file and set `MCP_REDUNDANCY_FILE` to its path.
-3. After `auto-kb` creates the file, call `mcp_call_tool mddb add_document` to index it.
+## Do NOT create entries for
 
-## Processing steps
-
-1. **Analyzes KB review content** for KB-worthiness triggers:
-   - Significant bug fixes (data corruption, security vulnerabilities)
-   - New patterns/workarounds
-   - New systems/integrations
-   - Configuration optimizations
-   - Language-specific issues
-   - Root cause analyses
-   - Reusable patterns
-
-2. **Checks for redundancy** with existing KB entries using the MDDB result supplied by the assistant:
-   - Uses `MCP_REDUNDANCY_RESULT` or `MCP_REDUNDANCY_FILE` if provided
-   - Falls back to local file-based check if an MDDB result is not provided
-   - Skips creation if high redundancy is detected
-
-3. **Creates KB entries** following the standard template:
-   - Title and description
-   - Context/background
-   - Key technical details
-   - Usage/commands
-   - Troubleshooting
-   - Related documentation
-   - Tags
-
-4. **Places entries** in the correct location:
-   - `/home/tony/CascadeProjects/chaba-tony-dell/docs/kb/` (local file) or `KB_DIR` if overridden
-
-5. **Indexes in MDDB** for future semantic search:
-   - The assistant calls `mcp_call_tool mddb add_document` with the collection, filename, and metadata
-   - `auto-kb` outputs the chosen collection and filename so the assistant can index it
-
-## Quality criteria
-
-Only creates entries for:
-
-- **Operational value**: Helps with current/future operations
-- **Reusability**: Can be applied to similar situations
-- **Prevention**: Helps prevent recurring issues
-- **Specificity**: Contains actionable technical details
-- **Context**: Includes when/why it's relevant
-
-Does NOT create entries for:
-
-- Temporary commands or one-off output
-- Obvious trivia or well-known information
-- Transient debugging steps without lasting value
-- Personal preferences without technical justification
+- Hypotheses or unverified conclusions (→ `info.md`/SSOT instead)
+- Transient commands, one-off output, trivia, personal preference
+- Session narrative or project state (→ `info.md`, job yml, handoff yml)
 
 ## Example usage
 
 ```bash
-# Basic (no MDDB redundancy result, uses file-based fallback)
-node .agents/skills/auto-kb/auto-kb.mjs "Created daily2 page with calendar layout..."
-
-# With pre-computed MDDB redundancy result as a JSON file
-KB_REVIEW_CONTENT="Created daily2 page..." \
-MCP_REDUNDANCY_FILE=/tmp/kb-redundancy.json \
+# Session-end capture of a verified finding
+KB_REVIEW_CONTENT="config-template-card v1.3.6 requires variables as an object map..." \
+KB_STATUS=verified \
   node .agents/skills/auto-kb/auto-kb.mjs
 
-# Or pass the result directly as a JSON string
-KB_REVIEW_CONTENT="Created daily2 page..." \
-MCP_REDUNDANCY_RESULT='[{"collection":"chaba-features","key":"...","score":0.85,"title":"..."}]' \
+# With pre-computed MDDB redundancy result
+KB_REVIEW_CONTENT="..." MCP_REDUNDANCY_FILE=/tmp/kb-redundancy.json \
   node .agents/skills/auto-kb/auto-kb.mjs
 
-# Or piped
-echo "Created daily2 page..." | MCP_REDUNDANCY_FILE=/tmp/kb-redundancy.json node .agents/skills/auto-kb/auto-kb.mjs
+# Retry indexing after MDDB was unreachable
+python3 scripts/sync-kb-to-mddb.py --missing-only
 ```
 
 ## Related documentation
 
 - `.windsurf/workflows/auto-kb-creation.md` - Detailed workflow documentation
+- `scripts/sync-kb-to-mddb.py` - Canonical KB→MDDB indexer
 - `docs/kb/` - Existing KB entries for reference patterns
