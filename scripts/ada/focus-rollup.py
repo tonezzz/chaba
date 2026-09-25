@@ -99,6 +99,8 @@ def main() -> int:
                     help="open loops kept per focus block")
     ap.add_argument("--ops", type=Path, default=None,
                     help="session-ops.jsonl — prepend an '## ops' rollup block")
+    ap.add_argument("--hosts", type=Path, default=None,
+                    help="host-ops.jsonl — prepend a '## hosts' health block")
     args = ap.parse_args()
 
     aliases = dict(ALIASES)
@@ -152,17 +154,26 @@ def main() -> int:
                 lines.append(f"- …({len(loops) - args.max_loops} more)")
         blocks.append("\n".join(lines))
 
-    if args.ops:
-        ops_path = args.ops.expanduser()
-        if ops_path.exists():
-            import importlib
-            jr = importlib.import_module("journal-report")
-            rows = [json.loads(l) for l in ops_path.read_text(
-                encoding="utf-8").splitlines() if l.strip()]
-            if rows:
-                first_ts = next(
-                    (r["first"] for r in rows if r.get("first")), "?")
-                blocks.insert(0, jr.ops_block(rows, first_ts[:10]))
+    if args.ops or args.hosts:
+        import importlib
+        if args.ops:
+            ops_path = args.ops.expanduser()
+            if ops_path.exists():
+                jr = importlib.import_module("journal-report")
+                rows = [json.loads(l) for l in ops_path.read_text(
+                    encoding="utf-8").splitlines() if l.strip()]
+                if rows:
+                    first_ts = next(
+                        (r["first"] for r in rows if r.get("first")), "?")
+                    blocks.insert(0, jr.ops_block(rows, first_ts[:10]))
+        if args.hosts:
+            host_path = args.hosts.expanduser()
+            if host_path.exists():
+                hr = importlib.import_module("host-report")
+                hrows = [json.loads(l) for l in host_path.read_text(
+                    encoding="utf-8").splitlines() if l.strip()]
+                if hrows:
+                    blocks.insert(0, hr.hosts_block(hrows, "recent"))
 
     digest = "\n\n".join(blocks) + "\n"
     (outdir / "focus-digest.md").write_text(digest, encoding="utf-8")

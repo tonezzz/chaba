@@ -109,6 +109,10 @@ def main() -> int:
                     help="skip journal-report.py session-ops pull")
     ap.add_argument("--ops-since", default="7 days ago",
                     help="journal window for the ops layer")
+    ap.add_argument("--no-hosts", action="store_true",
+                    help="skip host-report.py health sweep")
+    ap.add_argument("--hosts", default="idc01,mn01,tony-dell,tony-omen",
+                    help="comma-separated hosts for the health sweep")
     ap.add_argument("--backfill", action="store_true",
                     help="generate stage-2 reports for transcripts missing one "
                          "(one LLM call each — slow)")
@@ -208,12 +212,24 @@ def main() -> int:
         print(r.stdout.strip().splitlines()[0] if r.stdout.strip()
               else f"ops: {r.stderr.strip()[:120]}")
 
+    # ---- host health sweep ----
+    host_ops = review / "host-ops.jsonl"
+    if not args.no_hosts and args.local is None:
+        r = subprocess.run(
+            [sys.executable, str(ADA_SCRIPTS / "host-report.py"),
+             "--hosts", args.hosts, "--since", args.ops_since,
+             "--out", str(review)],
+            capture_output=True, text=True, timeout=300)
+        print((r.stdout.strip().splitlines() or ["host sweep: no output"])[0])
+
     # ---- rollup ----
     if not args.no_rollup:
         cmd = [sys.executable, str(ADA_SCRIPTS / "focus-rollup.py"),
                "--reports", str(reports_dir)]
         if ops_file.exists():
             cmd += ["--ops", str(ops_file)]
+        if host_ops.exists():
+            cmd += ["--hosts", str(host_ops)]
         r = subprocess.run(cmd, capture_output=True, text=True)
         print(r.stdout.strip() or r.stderr.strip())
 
