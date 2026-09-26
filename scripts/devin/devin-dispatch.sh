@@ -124,6 +124,9 @@ When finished, end with a short summary of what changed and how to verify it.
 If you are blocked and need a decision from the user, write your question to
 \$TASK_DIR/needs-input.txt (first line: one-line question, then context) and
 stop — the operator is notified and can resume you with an answer.
+If the work produces a decision, runbook, or new infra, write it to
+docs/ssot/jobs/<domain>/<date>-<slug>.yml or reports/ before ending —
+leave a trail.
 
 Task: $task
 EOF
@@ -198,6 +201,9 @@ the task explicitly says so.
 If you are blocked and need a decision from the user, write your question to
 \$TASK_DIR/needs-input.txt (first line: one-line question, then context) and
 stop — the operator is notified and can resume you with an answer.
+If the work produces a decision, runbook, or new infra, write it to
+docs/ssot/jobs/<domain>/<date>-<slug>.yml or reports/ before ending —
+leave a trail.
 
 $msg
 EOF

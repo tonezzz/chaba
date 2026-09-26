@@ -673,5 +673,8 @@ One Devin session can act as a console: Tony chats, work is dispatched to worker
 - **Answer via Ada**: `devin_pending` (read-only) lists blocked jobs; `devin_answer(task_id, message, confirmed)` refines+confirms then resumes devin sessions via followup / records mailbox doc for other jobs.
 - **Visibility**: chaba-admin Events (requires_response pins), iPhone push, Report tab Dispatch layer (`render-report-feed.py`).
 - **Deploy note**: `devin-dispatch` runs on tony-dell + tony-omen only; idc01 is intentionally not a dispatch host — reach it via `job-run ... -- ssh idc01 '...'`.
+- **Batch dispatch**: `dispatch-queue <spec.tsv> [cap]` (default cap 3) drains `repo<TAB>task` rows paced by active `devin-task-*` units — wrap in `job-run` to background it. `session-harvest.py` inventories stale desktop sessions in sessions.db → verdicts (awaiting/resume/redispatch/done/trivial).
+- **Resume caveat**: `devin-dispatch resume <sid>` exists but headless `-r` fails with "failed to start ACP agent session" on desktop-era sessions (seen 2026-09-26) — prefer redispatching a distilled task referencing the old session id.
+- **Trail convention**: dispatch prompts instruct workers to write `docs/ssot/jobs/…` or `reports/…` when work produces decisions/runbooks/infra — every job leaves a paper trail.
 
 Job SSOT: `docs/ssot/jobs/workflow/2026-09-26-dispatch-console.yml`
