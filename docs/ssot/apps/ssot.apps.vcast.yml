@@ -44,6 +44,20 @@ sections:
         text: "register-display {api_key,label}, state {state,detail} reports (relay records them in the registry), normal room broadcast messages."
       - label: Dev override
         text: "URL params: room=vcast-N joins a room directly without pairing; api_key persists a key into localStorage; ws overrides the WS URL."
+  - title: Screen ownership (ACL)
+    icon: "🔒"
+    layout: list
+    items:
+      - label: Model
+        text: "Every castable screen has an owner: a person.* entity or 'shared'. A speaker may only cast to/from their own screens; shared screens are communal. Unidentified speakers get shared-only. Denials return a speakable 'denied: ... is <name>'s private screen' error."
+      - label: TV path (cast-browser, tony-dell :8799)
+        text: "Registry ~/.config/cast-browser/screens.json — 'destinations' keyed by media_player.*, 'sources' (seat/omen/tv-desk), 'speaker_aliases' (caller key name → person). Enforced in runCommand: nav targets screenlive*/workspace*/screen:* gate source 'seat', tony-omen:* gates 'omen'; getCastTarget result gates destination. Returns HTTP 403 + denied text. Ada-side pre-check in tool_runner._check_tv_source_owner covers the same sources (rest_command swallows the 403); speaker flows tool_runner→ha_client→rest_command payload field 'speaker'."
+      - label: vcast path (Ada tool_runner, idc01)
+        text: "Registry ~/.local/share/ada-pi/cast-screens.json — 'screens' {N: person.*|shared}, 'aliases'. Enforced in cast_to_screen before /pub. Default for unlisted screens: shared."
+      - label: Current owners
+        text: "shared: living-room TV (tony_tv_cast, tony_tv, lg_webos_tv_nano81tsa, tv_40c5000), tv-desk. person.tony: omen desktop (:0), dell seat (:1), vcast screen-1 (iPad). person.kk/person.michael: none yet — assign their vcast screens on pairing."
+      - label: Tests
+        text: "tests/scenarios-live/vcast_owner_allow.yaml (admin key → person.tony: all pass) + vcast_owner_denied.yaml (non-owner key → anonymous: personal sources/screens deny, shared TV allows). Scenario runner: scripts/scenario-live.py --api-key <issued key>; mint via POST /api/auth/keys."
   - title: Files & deployment
     icon: "📁"
     layout: list
