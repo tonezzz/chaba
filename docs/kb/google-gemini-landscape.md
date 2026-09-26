@@ -63,7 +63,7 @@ Google quota burns are a known pain point (see `ssot.learning.idc01-warp-tailsca
 
 ## Re-research checklist (next pass)
 
-- [ ] Which Live model does Ada actually run today? Compare vs 3.1-flash-live.
+- [x] Ada's Live model: already `gemini-3.1-flash-live-preview` (verified in realtime_provider.py 2026-09-26) — current, no upgrade needed.
 - [ ] Confirm `daily-summary.mjs` model; consider moving yomi summarize to `gemini-3.1-flash-lite` or keep local gemma.
 - [ ] Nano Banana 2 Lite vs local `gemma-4-31b` for image understanding — run a small bake-off.
 - [ ] Check Live Translate availability/quota in our region (TH).
