@@ -44,8 +44,8 @@ Not measured at mn-home — **needs an on-device test there**.
 
 ## Options to grow
 
-1. **Bump idc01** — RAM upgrade already applied in panel (still 12G until a
-   full power-off/on — pending). Bandwidth cap is the real question, not RAM.
+1. **Bump idc01** — RAM already upgraded 8→12 GB (applied 2026-09-26).
+   Bandwidth cap is the real question, not RAM.
 2. **Second VPS in-region** — another Thai VPS for redundancy + capacity.
 3. **VPS outside Thailand** (SG/JP/US) — gives a **foreign egress IP**:
    better for geo-blocked content and can have superior international

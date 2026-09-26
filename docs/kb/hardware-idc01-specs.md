@@ -19,7 +19,8 @@ hard-reboot control, not a live view)
 - **OS:** Ubuntu 24.04.5 LTS (kernel 6.8.0-142-generic)
 - **Virtualization:** KVM
 - **CPU:** 2 vCPU (QEMU Virtual CPU 2.5+)
-- **RAM:** 12 GiB class (11Gi usable)
+- **RAM:** 12 GiB class (11Gi usable) — **upgraded from 8 GiB 2026-09-26**; the
+  ~19:20 reboot was the resize power cycle (panel "OFF" = mid-transition)
 - **Disk:** sda 100G (96G root fs, 34% used at probe)
 
 ## Network
