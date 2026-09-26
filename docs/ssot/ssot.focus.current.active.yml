@@ -2,110 +2,148 @@ title: Current Focus — Active
 subtitle: Active shared and branch focuses
 icon: target
 sections:
-  - title: Active Shared Focus
-    icon: active
-    layout: list
-    items:
-      - label: Ada memory-recall misrouting + tool-call storm (from chaba-memory-review scenario)
-        text:
-          "Live scenario on ada-ha-tony (2026-09-25): 'summarize chaba memory development' misrouted to plan_day/tasks_list
-          instead of memory banks; planning turns triggered 194/195-call tool storms (device confidence, control_entity,
-          sensors) with empty transcripts — and the storm ACTUATED plug_tv + a washing-machine plug, bypassing the
-          dangerous-device gate via model-asserted confirmed=true.\n
-          Fixes shipped (ada-pi d63e368/33e35f6/a4a4e72, deployed idc01): memory-first steering in instructions;
-          ADA_TOOL_CALL_BUDGET=20 + answer-now nudge; ADA_ACTUATION_BUDGET=6/turn; confirmed=true now requires a real
-          user affirmation in the transcript; ada_remember refused after budget exhaustion; scenario max_calls guard.\n
-          Final run: PASS 4/4. Report: ada-ha-bank-projects-tony/tony-projects/chaba-memory-review.\n
-          Residual: storms still occur intermittently (T4 ran 52 calls) — contained but worth watching; consider
-          lowering ADA_ACTUATION_BUDGET to ~3.\n
-          Re-verified 2026-09-26: flood-research turn self-asserted confirmed=true and the gate stripped it
-          (journal: 'ada_remember self-asserted confirmed=true without user affirmation — stripping'). Gate holds."
-        status: monitoring
-        priority: low
-        started: "2026-09-25"
-        tags:
-          - ada
-          - memory
-          - recall
-          - tool-storm
-  - title: Active Branch Focus
-    icon: branch
-    layout: list
-    items:
-      - label: 2026-09-10 session handoff — devin cleanup + barrier image copy
-        text:
-          "Session handoff from 2026-09-10. The Devin session grew too large; this item captures\npending work and learnings.\n\
-          \nCompleted:\n- michael-dev HA-MCP is now healthy: port 9585 responding, 172 entities via MCP.\n- All 3 HA MCPs verified:\
-          \ home-assistant (211), michael-ha (1,337), michael-dev (172).\n- SSOT updated: auth/display names synced for michael-dev\
-          \ and michael-ha.\n- ssot.home-assistant.instances.yml status block refreshed to 2026-09-10.\n- Commits b2f7aa21 and\
-          \ 4e800abd pushed to origin/master.\n\nPending work:\n- devin-cleanup.timer on tony-omen failed at 03:24: `No space\
-          \ left on device` while\n  copying 155G sessions.db to backups. Need more space or modify the script to skip/relocate\n\
-          \  the backup.\n- Barrier image copy/paste (tony-omen → tony-dell) is a known Barrier 2.4.0 Linux\n  limitation; needs\
-          \ a workaround or replacement.\n- mcp-health active alert: `Home Assistant Live (Gemini Live bridge)` HTTP 502 since\n\
-          \  2026-09-06 22:47.\n\nBarrier workaround options:\n1. Replace Barrier with input-leap / patched build on both hosts.\n\
-          2. Shared-clipboard folder + hotkey scripts (sync image via ssh/tailscale).\n3. Enable Barrier drag-and-drop and drop\
-          \ image files instead of paste.\n\nDevin cleanup options:\n1. Free ~155G on /home so the backup+vacuum can complete.\n\
-          2. Modify scripts/prune-devin-sessions.sh to skip the backup when disk is low.\n3. Move the DB to a larger disk, prune/vacuum,\
-          \ then move back.\n"
-        status: monitoring
-        priority: low
-        started: "2026-09-10"
-        estimated_duration: 1 session
-        tags:
-          - handoff
-          - devin-cleanup
-          - barrier
-          - home-assistant
-          - mcp
-        subtasks:
-          - label: Devin cleanup — free space or modify prune-devin-sessions.sh to skip backup
-            status: completed
-            completed_note: "2026-09-26: script now auto-skips backup when DB doesn't fit with 20% headroom + keeps max 3 backups; /home back to 195G free; timer re-enabled on omen."
-          - label: Barrier image copy — pick workaround and implement
-            status: not_started
-          - label: Investigate mcp-health alert — Home Assistant Live (Gemini Live bridge) HTTP 502
-            status: completed
-            completed_note: "2026-09-26: ha-live.service active on tony-dell."
-          - label: michael-dev HA-MCP — done; verify overnight and document if needed
-            status: completed
-        request_log: []
-        ownership:
-          owner: tony
-          session: ""
-          locked: true
-          lock_reason: Activated as active focus
-        branch: master
-        source: /home/tony/CascadeProjects/chaba/docs/ssot/focus-inbox/2026-09-10-070156-session-handoff-devin-cleanup-barrier-image.yml
-  - title: Quick Wins
-    icon: quick
-    layout: list
-    items:
-      - label: Log quick wins in this section
-        text:
-          Any task under 15 minutes (e.g. config fix, one-line health check, URL update) goes here. Complete immediately and
-          keep the list trimmed.
-        status: completed
-        completed: "2026-08-26"
-        priority: low
-        tags:
-          - workflow
-          - quick-wins
+- title: Active Shared Focus
+  icon: active
+  layout: list
+  items:
+  - label: Ada memory-recall misrouting + tool-call storm (from chaba-memory-review scenario)
+    text: "Live scenario on ada-ha-tony (2026-09-25): 'summarize chaba memory development' misrouted to plan_day/tasks_list\
+      \ instead of memory banks; planning turns triggered 194/195-call tool storms (device confidence, control_entity, sensors)\
+      \ with empty transcripts — and the storm ACTUATED plug_tv + a washing-machine plug, bypassing the dangerous-device gate\
+      \ via model-asserted confirmed=true.\n Fixes shipped (ada-pi d63e368/33e35f6/a4a4e72, deployed idc01): memory-first\
+      \ steering in instructions; ADA_TOOL_CALL_BUDGET=20 + answer-now nudge; ADA_ACTUATION_BUDGET=6/turn; confirmed=true\
+      \ now requires a real user affirmation in the transcript; ada_remember refused after budget exhaustion; scenario max_calls\
+      \ guard.\n Final run: PASS 4/4. Report: ada-ha-bank-projects-tony/tony-projects/chaba-memory-review.\n Residual: storms\
+      \ still occur intermittently (T4 ran 52 calls) — contained but worth watching; consider lowering ADA_ACTUATION_BUDGET\
+      \ to ~3.\n Re-verified 2026-09-26: flood-research turn self-asserted confirmed=true and the gate stripped it (journal:\
+      \ 'ada_remember self-asserted confirmed=true without user affirmation — stripping'). Gate holds."
+    status: monitoring
+    priority: low
+    started: '2026-09-25'
+    tags:
+    - ada
+    - memory
+    - recall
+    - tool-storm
+- title: Active Branch Focus
+  icon: branch
+  layout: list
+  items:
+  - label: 2026-09-10 session handoff — devin cleanup + barrier image copy
+    text: "Session handoff from 2026-09-10. The Devin session grew too large; this item captures\npending work and learnings.\n\
+      \nCompleted:\n- michael-dev HA-MCP is now healthy: port 9585 responding, 172 entities via MCP.\n- All 3 HA MCPs verified:\
+      \ home-assistant (211), michael-ha (1,337), michael-dev (172).\n- SSOT updated: auth/display names synced for michael-dev\
+      \ and michael-ha.\n- ssot.home-assistant.instances.yml status block refreshed to 2026-09-10.\n- Commits b2f7aa21 and\
+      \ 4e800abd pushed to origin/master.\n\nPending work:\n- devin-cleanup.timer on tony-omen failed at 03:24: `No space\
+      \ left on device` while\n  copying 155G sessions.db to backups. Need more space or modify the script to skip/relocate\n\
+      \  the backup.\n- Barrier image copy/paste (tony-omen → tony-dell) is a known Barrier 2.4.0 Linux\n  limitation; needs\
+      \ a workaround or replacement.\n- mcp-health active alert: `Home Assistant Live (Gemini Live bridge)` HTTP 502 since\n\
+      \  2026-09-06 22:47.\n\nBarrier workaround options:\n1. Replace Barrier with input-leap / patched build on both hosts.\n\
+      2. Shared-clipboard folder + hotkey scripts (sync image via ssh/tailscale).\n3. Enable Barrier drag-and-drop and drop\
+      \ image files instead of paste.\n\nDevin cleanup options:\n1. Free ~155G on /home so the backup+vacuum can complete.\n\
+      2. Modify scripts/prune-devin-sessions.sh to skip the backup when disk is low.\n3. Move the DB to a larger disk, prune/vacuum,\
+      \ then move back.\n"
+    status: monitoring
+    priority: low
+    started: '2026-09-10'
+    estimated_duration: 1 session
+    tags:
+    - handoff
+    - devin-cleanup
+    - barrier
+    - home-assistant
+    - mcp
+    subtasks:
+    - label: Devin cleanup — free space or modify prune-devin-sessions.sh to skip backup
+      status: completed
+      completed_note: '2026-09-26: script now auto-skips backup when DB doesn''t fit with 20% headroom + keeps max 3 backups;
+        /home back to 195G free; timer re-enabled on omen.'
+    - label: Barrier image copy — pick workaround and implement
+      status: not_started
+    - label: Investigate mcp-health alert — Home Assistant Live (Gemini Live bridge) HTTP 502
+      status: completed
+      completed_note: '2026-09-26: ha-live.service active on tony-dell.'
+    - label: michael-dev HA-MCP — done; verify overnight and document if needed
+      status: completed
     request_log: []
-  - title: Hand-Off Queue
-    icon: hand
-    layout: list
-    items: []
-  - title: Ready-Safe Queue
-    icon: safe
-    layout: list
-    items:
-      - label: Add real CI smoke tests
-        text: Add a GitHub Actions job that runs a live MCP call (mcp_debug, mcp_health, or mcp-focus) on every push to master.
-        status: completed
-        completed_at: "2026-09-02"
-        priority: medium
-        tags:
-          - ci
-          - mcp
-          - smoke-test
-          - master
+    ownership:
+      owner: tony
+      session: ''
+      locked: true
+      lock_reason: Activated as active focus
+    branch: master
+    source: /home/tony/CascadeProjects/chaba/docs/ssot/focus-inbox/2026-09-10-070156-session-handoff-devin-cleanup-barrier-image.yml
+  - label: tony_omen link down
+    text: 'Link monitor detected tony_omen is unreachable after scan and safe fixes.
+
+
+      Scan output:
+
+      - tailscale status --json (rc=0)
+
+      - ip -4 route (rc=0)
+
+      - ip -4 -br addr show (rc=0)
+
+      - ss -tlnp (rc=0)
+
+      - tailscale ping tony-omen -c 3 (rc=1)
+
+
+      Fix attempts:
+
+      - tailscale ping (rc=1)'
+    status: active
+    priority: high
+    started: '2026-09-26'
+    estimated_duration: 1 session
+    tags:
+    - monitoring
+    - network
+    - link
+    - alert
+    subtasks:
+    - label: Review scan output
+      status: not_started
+    - label: Apply manual fix or escalate
+      status: not_started
+    request_log: []
+    ownership:
+      owner: tony
+      session: ''
+      locked: true
+      lock_reason: Activated as active focus
+    branch: chaba
+    source: /home/tony/CascadeProjects/chaba/docs/ssot/focus-inbox/tony_omen-link-down-2026-09-14-123121.yml
+- title: Quick Wins
+  icon: quick
+  layout: list
+  items:
+  - label: Log quick wins in this section
+    text: Any task under 15 minutes (e.g. config fix, one-line health check, URL update) goes here. Complete immediately and
+      keep the list trimmed.
+    status: completed
+    completed: '2026-08-26'
+    priority: low
+    tags:
+    - workflow
+    - quick-wins
+  request_log: []
+- title: Hand-Off Queue
+  icon: hand
+  layout: list
+  items: []
+- title: Ready-Safe Queue
+  icon: safe
+  layout: list
+  items:
+  - label: Add real CI smoke tests
+    text: Add a GitHub Actions job that runs a live MCP call (mcp_debug, mcp_health, or mcp-focus) on every push to master.
+    status: completed
+    completed_at: '2026-09-02'
+    priority: medium
+    tags:
+    - ci
+    - mcp
+    - smoke-test
+    - master
