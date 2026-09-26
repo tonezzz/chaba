@@ -41,18 +41,14 @@ _spec = importlib.util.spec_from_file_location(
 ada_sync = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(ada_sync)
 
+import chaba_event
+
 STATE = Path.home() / ".cache/ada-memory-distill.json"
 MODEL = os.environ.get("ADA_SUMMARY_MODEL", "gemini-3.5-flash-lite")
 PER_DOC_CHARS = 3000
 MAX_PROMPT_CHARS = 120_000
 MAX_DOCS_PER_CHUNK = 30
 DEDUP_SCORE = 0.82  # top vector hit above this = already known, skip
-
-EVENT_CMD = [
-    "ssh", "tony-dell",
-    "python3", "/home/tony/.config/home-assistant/scripts/chaba-event-log.py",
-    "add", "-",
-]
 
 
 def load_writable_banks() -> dict[str, dict]:
@@ -274,19 +270,10 @@ def emit_event(title: str, body: str) -> None:
         "body": body, "requires_response": True, "confidence": 0.8,
     })
     try:
-        r = subprocess_run(EVENT_CMD, payload)
-        print(f"event: {'ok' if r == 0 else 'failed'}")
+        ok, via = chaba_event.send(payload)
+        print(f"event: {'ok via ' + via if ok else 'failed: ' + via}")
     except Exception as exc:
         print(f"event emit failed: {exc}")
-
-
-def subprocess_run(cmd: list[str], payload: str) -> int:
-    import subprocess
-    r = subprocess.run(cmd, input=payload, capture_output=True,
-                       text=True, timeout=30)
-    if r.returncode != 0:
-        print(f"  {r.stderr.strip()[:200]}")
-    return r.returncode
 
 
 def mval(doc: dict, field: str) -> str:

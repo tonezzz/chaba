@@ -25,6 +25,8 @@ import subprocess
 import sys
 from statistics import mean
 
+import chaba_event
+
 DEFAULT_UNITS = ["ada-ha-tony.service", "ada-ha-michael.service"]
 # Drift tripwires (fractions of recalls in the window).
 MISS_RATE_ALERT = 0.5       # more than half of recalls missed the bank
@@ -33,11 +35,6 @@ HIT_SCORE_FLOOR = 0.55      # mean hit score below this = embedding drift smell
 
 HIT_RE = re.compile(r"bank recall '([^']+)': (\d+) hit\(s\), scores=\[([^\]]*)\]")
 MISS_RE = re.compile(r"bank recall '([^']+)': miss")
-
-EVENT_CMD = [
-    "ssh", "tony-dell",
-    "python3", "/home/tony/.config/home-assistant/scripts/chaba-event-log.py", "add",
-]
 
 
 def journal_lines(units: list[str], since: str) -> str:
@@ -96,8 +93,8 @@ def emit_event(report: dict, reasons: list[str], since: str) -> None:
         "confidence": 0.7,
     })
     try:
-        r = subprocess.run(EVENT_CMD + [payload], capture_output=True, text=True, timeout=30)
-        print("event emitted" if r.returncode == 0 else f"event emit failed: {r.stderr.strip()}")
+        ok, via = chaba_event.send(payload)
+        print(f"event emitted via {via}" if ok else f"event emit failed: {via}")
     except Exception as exc:
         print(f"event emit failed: {exc}")
 

@@ -299,7 +299,7 @@ services:
       - "Check MDDB container: ssh idc01 'podman ps | grep mddb'"
       - "Restart MDDB: ssh idc01 'systemctl --user restart mddb'"
       - "Check MDDB logs: ssh idc01 'journalctl --user -u mddb --since \"1h ago\"'"
-      - "Verify port 11023 is accessible: curl -s http://tony-dell:11023/metrics"
+      - "Verify port 11023 is accessible: curl -s http://idc01:11023/metrics"
   - id: mddb-container
     name: MDDB Container
     disabled: true
@@ -311,12 +311,12 @@ services:
     profiles:
       - home
       - mobile
-    note: "Container runs on tony-dell. Disabled in mcp-health because mcp-health cannot run remote podman checks. Use MDDB API/HTTP checks instead; verify manually via ssh tony-dell podman ps | grep mddb."
+    note: "Container runs on idc01. Disabled in mcp-health because mcp-health cannot run remote podman checks. Use MDDB API/HTTP checks instead; verify manually via ssh idc01 podman ps | grep mddb."
     recovery_actions:
-      - "Check container status: docker ps -a | grep mddb"
-      - "Start container: cd /home/tony/CascadeProjects/chaba-kbman/stacks/web/mddb && docker compose up -d mddb"
-      - "Check container logs: cd /home/tony/CascadeProjects/chaba-kbman/stacks/web/mddb && docker compose logs mddb"
-      - "Verify docker compose config: cd /home/tony/CascadeProjects/chaba-kbman/stacks/web/mddb && docker compose config"
+      - "Check container status: ssh idc01 'podman ps -a | grep mddb'"
+      - "Start container: ssh idc01 'systemctl --user start mddb'"
+      - "Check container logs: ssh idc01 'journalctl --user -u mddb --since \"1h ago\"'"
+      - "Verify quadlet config: ssh idc01 'systemctl --user cat mddb.service'"
   - id: activepieces
     name: Activepieces
     disabled: true
