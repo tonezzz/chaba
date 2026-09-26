@@ -1,0 +1,106 @@
+title: Re-check of healthy-philosophy "Remaining" items
+subtitle: chaba ahead/behind, focus-inbox triage, dispatch worktree unmerged commits
+icon: clipboard-check
+id: 2026-09-26-dispatch-followup-recheck
+status: done
+owner: devin-dispatch
+project: chaba
+started: "2026-09-26"
+completed: "2026-09-26"
+
+source:
+  prior_session: healthy-philosophy
+  prior_tail_node: 1016  # sessions.db message_nodes, last assistant message
+
+findings:
+
+  chaba_sync:
+    prior: ahead 4, behind 24
+    now: ahead 0, behind 27
+    resolution: >
+      All 4 local commits reached origin/master via rebase with new SHAs:
+      bcfb305 -> 98c4eed (chaba-home dashboard), 20430fe -> 6e1082e (pfg3d
+      deploy fix), 5ec710f -> c97f886 (ada-voice-card on g3), 373fde6 (v3
+      Mute/Auto VAD) superseded by 1669c39 (mute streams silence) — mute/VAD
+      code verified present in current ada-voice-card.js.
+    action_needed: git pull (fast-forward) on chaba master for the 27 incoming
+      commits — ada-memory vault pulls, idc01 consolidation, vcast, MDDB
+      leader/follower replication, obsidian sidebar. NOT done here (live
+      checkout untouched per dispatch rules).
+
+  focus_inbox:
+    path: docs/ssot/focus-inbox/
+    total_files: 121
+    untracked: 65   # was 14 in the prior report
+    modified_tracked: 1   # weather-station-investigation.yml — routine re-render
+    breakdown:
+      handoff-job-*: 30        # 2026-09-26 dispatch batch records
+      handoff-extract-*: 22    # auto-extracts 09-23..09-25
+      handoff-devin-handoff-*: 8
+      monitoring-alerts: 5     # local_ip-drift x4, macbook-link-down x1
+    verdict: all generated artifacts; safe to bulk-commit or move to archived/
+
+  dispatch_worktrees:
+    note: >
+      The 9 worktrees flagged by the prior session (RK600, memory-bank,
+      hands-off; dated 09-22/23) are already cleaned up. Current set is the
+      09-25/26 batch. Branches below are local-only (no origin/dispatch/*).
+    chaba:
+      - branch: dispatch/20260926-184542-resume-the-unfinished-job-docs
+        ahead: 1   # ec924d0 docs(ada) evals job-report design + phase-1 patch
+        verdict: keep
+      - branch: dispatch/20260926-184618-resume-the-autokb-upgrade-work
+        ahead: 1   # 623bd2d feat(reports) layered reporting standard L0-L3
+        verdict: keep
+      - branch: dispatch/20260926-184624-continue-the-cast-youtube-to-t
+        ahead: 1   # e0cf3fe docs(yt-live) media cache design
+        verdict: keep
+      - branch: dispatch/20260926-184631-finish-the-rainfall-threshold-
+        ahead: 1   # 9ee858a feat(ha) mn-weather Demo button snapshot re-sync
+        verdict: keep
+      - branch: dispatch/20260926-190458-ada-cms-emit-fix
+        ahead: 3   # 9d95dae.. fix(ada) chaba-event emit HTTP fallback + SSOT
+        verdict: keep
+      - branch: dispatch/20260926-190808-finish-the-idc01-link-aggregat
+        ahead: 2   # 8168aa0 checkpoint + idc01 link-agg final assessment
+        verdict: keep
+      - branch: dispatch/20260926-190816-continue-the-nobito-3d-charts-
+        ahead: 0
+        dirty_files: 7
+        verdict: >
+          WARNING uncommitted work — scripts/home-assistant/nobito-tuya-logs.py
+          (Tuya DP log -> HA statistics backfill), tuya/HA SSOT updates,
+          docs/ssot/jobs/home-assistant/2026-09-26-nobito-tuya-history-bridge.yml.
+          Commit on its branch before any cleanup.
+      - branch: dispatch/20260925-215808-investigate-and-fix-the-issue-
+        ahead: 0
+        verdict: discardable
+      - branch: dispatch/20260926-190016-re-verify-the-tony-omen-devin-
+        ahead: 0
+        verdict: discardable
+      - branch: fix/devin-dispatch-outcome   # worktree wt-dispatch-hardening
+        ahead: 2   # 724d9ff transcript verdicts + outcome contract + retryable notify
+        verdict: keep
+    ada_pi:
+      repo_state: main ahead 1 (607035c feat(notify) unpushed), behind 32
+      worktrees:
+      - branch: dispatch/20260925-222223-investigate-why-ada-cannot-vie
+        ahead: 8   # 1d5a390.. session-owner pinning, ha_person keys, reports
+                   # rollups, MDDB OOM-incident docs; none upstream
+        dirty_files: 1   # untracked scripts/report-dig.py
+        verdict: HIGHEST-VALUE unmerged work — rebase/merge to main
+      - branch: dispatch/20260925-191301-investigate-and-fix-vcast-vide
+        ahead: 0
+        dirty_files: 2   # incl. untracked dispatch-outcome.md — harvest text
+        verdict: discardable after outcome harvest
+      - branch: dispatch/20260926-190458-finalize-the-ada-cms-multi-pag
+        ahead: 0
+        verdict: discardable
+    other_repos: devin-kb, sunsynk-power-flow-card, gods-eye-view — no stray
+      dispatch worktrees
+
+suggested_order:
+  - "chaba: commit/stash focus-inbox artifacts, then git pull (ff) for the 27"
+  - "ada-pi: rebase dispatch/...222223 onto main (8 commits) or merge; commit report-dig.py; then pull --rebase && push main (carries 607035c)"
+  - "chaba nobito worktree: commit the 7 dirty files on its dispatch branch"
+  - "merge/cherry-pick the 'keep' branches into master, then worktree remove + branch -D the discardable ones"
