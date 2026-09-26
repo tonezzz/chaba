@@ -7,7 +7,7 @@ attribute: plan
 
 # Lab stack — self-sufficient HA + Ada test environment
 
-Status: v6 draft, 2026-09-26. Host moved to **idc01** per Tony's decision
+Status: v4 draft, 2026-09-26. Host moved to **idc01** per Tony's decision
 (was mn01 in v3). Purpose: an isolated, resettable replica of the
 production stack (Home Assistant + MDDB + Ada + embeddings) for stable
 testing — break things freely without touching production data, quotas,
@@ -23,38 +23,6 @@ or audit state.
 | HA seeding | Golden tar of onboarded+configured `ha-config` |
 | HA image | `homeassistant/home-assistant` pinned tag (e.g. 2026.9.0) |
 | MDDB image | `tradik/mddb` pinned tag (e.g. 2.15.3) |
-| Naming | Faces: **Chaba** (repo/memory), **Chaba Home** (HA estate), **Chaba Voice** (Ada estate), **Chaba Core** (shared substrate), **Chaba Lab** (this env, slug `lab`) |
-| Variants | Parameterized template, `variants/*.env`; sequential benchmarking (one pod at a time on idc01) |
-
-## Naming
-
-Face × environment. Members keep existing names; the estate name groups
-them.
-
-- **Chaba Home** — tony-ha, michael-ha, michael-dev, dashboards, cards
-  (`chaba-home` dashboard slug becomes consistent, not a collision).
-- **Chaba Voice** — ada-pi-pwa, ada-ha-tony, ada-ha-michael, scenario
-  runner (rejected: Chaba Live — `live` already means prod michael-ha).
-- **Chaba Core** — mddb, ollama, notebooklm, caddy/tailscale edges.
-- **Chaba Lab** — this env: mini Home (`lab-ha`) + mini Voice
-  (`lab-ada`, `ADA_INSTANCE_ID=lab`) + mini Core (`lab-mddb`,
-  `lab-ollama`). Variants `lab-<name>` (`lab-base`, `lab-next-ha`,
-  `lab-chaos`).
-
-Conventions: units `<env>-<component>` (`lab-ha`, `lab-ada`);
-collections `ada-ha-*-lab`; secrets `lab-*.env`; edge `:8125`/`:8004`
-or `/apps/lab-*/`.
-
-## Variants (benchmarking)
-
-`stacks/lab/` is a parameterized template — `template/*.tpl` quadlets +
-`variants/<name>.env` diffs + `bin/lab-{render,up,down,reset,refresh,
-bench}`. Per-variant pods keep **prod-faithful internals** (HA :8123,
-prod bank names inside each lab-mddb); only published host ports differ
-(HA 8125+N, Ada 8004+N). Sequential runs only — idc01 RAM won't hold two
-pods; `lab-bench <a> <b>` diffs scenario suites into
-`ada-ha-scenario-reports`. Golden tar `golden/base.tgz` is the shared
-baseline; all differences live in `variants/*.env`.
 
 ## Architecture
 
