@@ -132,3 +132,11 @@ Devin edits + commits + syncs, Ada recalls via
   vector-space, Gemini-quota, reachability, fidelity caveats.
 - v4 (idc01): host changed per Tony; standby concern replaced by
   prod-contention + resource limits requirement.
+- 2026-09-26 real Ada review (ada-ha-tony, `lab_stack_review` scenario):
+  recalled via `ada_memory_search(bank=tony-projects)`. Verdict —
+  "a fine plan, as long as we set those limits carefully"; emphasized
+  idc01 resource demand and vector-space divergence; also noted
+  resource limits as a pro. She then wrote a summary doc
+  (`lab-stack-review`) back into the bank via `ada_remember`
+  (confirmed: true, self-supplied — worth watching as a write-gate
+  behavior) and over-promised scaffolding work she has no tool for.
