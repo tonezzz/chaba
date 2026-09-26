@@ -95,7 +95,12 @@ _devin_run() { # unit worktree prompt_file extra-args...
   # the Result field is gone (user journal doesn't retain Succeeded/Failed
   # lines here). Wrap the run so the real exit code lands in the task dir —
   # devin-dispatch-watch reads it to report the true outcome.
+  # DISPATCH_UNIT_PROPS: extra systemd-run properties, e.g.
+  #   "--property=CPUWeight=30 --property=IOWeight=30" to deprioritize
+  #   sessions on an interactive host (keeps the desktop responsive).
+  # shellcheck disable=SC2086
   systemd-run --user --unit="$unit" --working-directory="$wt" --collect \
+    ${DISPATCH_UNIT_PROPS:-} \
     --setenv=HOME="$HOME" --setenv=PATH="$PATH" \
     --setenv=DEVIN_BIN="$DEVIN_BIN" --setenv=PERMISSION_MODE="$PERMISSION_MODE" \
     --setenv=PROMPT="$prompt" --setenv=TASK_DIR="$(dirname "$prompt")" \

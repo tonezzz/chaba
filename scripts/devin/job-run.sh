@@ -171,6 +171,8 @@ cmd_start() {
     --setenv=JOB_COLLECTION="$COLLECTION" --setenv=HA_URL="$HA_URL" \
     --setenv=EVENT_LOG="$EVENT_LOG" --setenv=EVENT_SSH="$EVENT_SSH" \
     --setenv=JOB_SECRET_ENV="$SECRET_ENV" \
+    --setenv=DISPATCH_PERMISSION_MODE="${DISPATCH_PERMISSION_MODE:-}" \
+    --setenv=DISPATCH_UNIT_PROPS="${DISPATCH_UNIT_PROPS:-}" \
     /bin/bash -c 'rc=0; "$@" >> "$TASK_DIR/output.log" 2>&1 || rc=$?; \
       echo "$rc" > "$TASK_DIR/exit_code"; \
       source "$JOBRUN_SELF"; emit_done "$TASK_DIR" "$JOB_ID"; \
