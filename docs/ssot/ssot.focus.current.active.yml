@@ -17,9 +17,11 @@ sections:
           user affirmation in the transcript; ada_remember refused after budget exhaustion; scenario max_calls guard.\n
           Final run: PASS 4/4. Report: ada-ha-bank-projects-tony/tony-projects/chaba-memory-review.\n
           Residual: storms still occur intermittently (T4 ran 52 calls) — contained but worth watching; consider
-          lowering ADA_ACTUATION_BUDGET to ~3."
-        status: active
-        priority: medium
+          lowering ADA_ACTUATION_BUDGET to ~3.\n
+          Re-verified 2026-09-26: flood-research turn self-asserted confirmed=true and the gate stripped it
+          (journal: 'ada_remember self-asserted confirmed=true without user affirmation — stripping'). Gate holds."
+        status: monitoring
+        priority: low
         started: "2026-09-25"
         tags:
           - ada
@@ -45,8 +47,8 @@ sections:
           \ image files instead of paste.\n\nDevin cleanup options:\n1. Free ~155G on /home so the backup+vacuum can complete.\n\
           2. Modify scripts/prune-devin-sessions.sh to skip the backup when disk is low.\n3. Move the DB to a larger disk, prune/vacuum,\
           \ then move back.\n"
-        status: active
-        priority: medium
+        status: monitoring
+        priority: low
         started: "2026-09-10"
         estimated_duration: 1 session
         tags:
@@ -57,11 +59,13 @@ sections:
           - mcp
         subtasks:
           - label: Devin cleanup — free space or modify prune-devin-sessions.sh to skip backup
-            status: not_started
+            status: completed
+            completed_note: "2026-09-26: script now auto-skips backup when DB doesn't fit with 20% headroom + keeps max 3 backups; /home back to 195G free; timer re-enabled on omen."
           - label: Barrier image copy — pick workaround and implement
             status: not_started
           - label: Investigate mcp-health alert — Home Assistant Live (Gemini Live bridge) HTTP 502
-            status: not_started
+            status: completed
+            completed_note: "2026-09-26: ha-live.service active on tony-dell."
           - label: michael-dev HA-MCP — done; verify overnight and document if needed
             status: completed
         request_log: []
