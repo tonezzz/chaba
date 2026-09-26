@@ -35,6 +35,8 @@ from pathlib import Path
 
 import yaml
 
+import chaba_event
+
 SSOT = Path(__file__).resolve().parents[2] / "docs/ssot/apps/ssot.apps.ada-memory-banks.yml"
 MDDB_BASE_URL = os.environ.get("MDDB_BASE_URL", "http://100.74.146.0:11023/v1").rstrip("/")
 STATE = Path.home() / ".cache/ada-memory-gaps.json"
@@ -47,12 +49,6 @@ MIN_MISSES = 2  # a question missed this often in the window is a real gap
 MISS_RE = re.compile(
     r"bank recall '([^']+)': miss(?:\s+q=(\"(?:[^\"\\]|\\.)*\"))?"
 )
-
-EVENT_CMD = [
-    "ssh", "tony-dell",
-    "python3", "/home/tony/.config/home-assistant/scripts/chaba-event-log.py",
-    "add", "-",
-]
 
 UNIT_INSTANCE_RE = re.compile(r"ada-ha-([a-z0-9_-]+)\.service")
 
@@ -177,9 +173,8 @@ def emit_event(title: str, body: str) -> None:
         "confidence": 0.8,
     })
     try:
-        r = subprocess.run(EVENT_CMD, input=payload, capture_output=True,
-                           text=True, timeout=30)
-        print(f"event: {'ok' if r.returncode == 0 else r.stderr.strip()}")
+        ok, via = chaba_event.send(payload)
+        print(f"event: {'ok via ' + via if ok else 'failed: ' + via}")
     except Exception as exc:
         print(f"event emit failed: {exc}")
 
