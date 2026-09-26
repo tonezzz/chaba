@@ -1,0 +1,141 @@
+title: Nobito 3D charts — Tuya device-log history bridge
+subtitle: Bridge Tuya DP report logs into HA statistics so the chaba-home/Nobito
+  range chart shows real lo-hi variation
+icon: chart-bar
+id: 2026-09-26-nobito-tuya-history-bridge
+status: blocked
+owner: tony
+project: chaba
+started: "2026-09-26"
+blocked_on: tuya-iot-core-trial-renewal
+
+planning:
+  goal: |
+    The Nobito tab on chaba-home (tony-ha) renders floating lo-hi 3D bars
+    from hourly statistics, but HA's statistics are nearly flat: the Tuya
+    integration's MQ push channel delivers nothing, so entities only refresh
+    on config-entry reload (hourly watchdog) and most hours have min==max.
+    Tuya cloud keeps richer per-DP report logs; fetch them and import hourly
+    aggregates into HA long-term statistics so the EXISTING range chart
+    densifies with no card changes.
+  decisions:
+    - id: nobito-bridge-via-import-statistics
+      choice: >
+        Pull /v1.0/devices/{id}/logs (type=7, per-DP) with the developer
+        project creds, aggregate to hourly min/max/mean, then push via the
+        recorder/import_statistics websocket command into the existing
+        sensor.nobito_* statistic_ids. Chosen over (a) a live polled sensor —
+        the device sleeps and HA can't poll Tuya locally without a local key —
+        and (b) a custom data endpoint — reusing recorder statistics means
+        the deployed pfg3d range chart needs zero changes.
+      decided: "2026-09-26"
+    - id: nobito-dp-map-from-entity-registry
+      choice: >
+        DP codes are recoverable without the cloud: tony-ha entity-registry
+        unique_ids are tuya.<device_id><dp_code>. Device id
+        a35dc1b618d6a2378a3tzw comes from the device-registry identifiers.
+        Map is baked into scripts/home-assistant/nobito-tuya-logs.py.
+      decided: "2026-09-26"
+    - id: nobito-live-via-consumer-path
+      choice: >
+        The HA tuya integration's own token (tuya_sharing consumer API on
+        apigw-sg.iotbing.com, client HA_3y9q4ak7g4ephrvke) is UNAFFECTED by
+        the expired developer subscription. `nobito-tuya-logs.py live`
+        execs into the tony-ha container and reads current DP values +
+        specifications (category hjjcy) — used to verify scale factors
+        (temp/10, ch2o+voc/1000) and compare cloud vs frozen HA states.
+        No logs endpoint exists on this path — history still needs the
+        developer API. SAFETY: the consumer access token has a 2h TTL;
+        an external refresh would rotate the refresh_token and orphan HA's
+        stored copy, so `live` refuses to run within 60s of expiry.
+      decided: "2026-09-26"
+
+implementation:
+  steps:
+    - id: 1
+      label: Diagnose flat chart — sparse HA statistics, not a render bug
+      status: done
+      notes: |
+        Prior session (sunset-baron): 69 hourly statistic rows per entity,
+        only 4 with max>min; 5 raw state rows in 24h. Root cause documented
+        2026-09-24 (chaba 8d5596a): Tuya sharing MQ push delivers zero
+        messages; entities freeze until config-entry reload. The hourly
+        tuya_entry_reload_watchdog bounds staleness to ~1h but limits sample
+        density to ~24/day when values change.
+    - id: 2
+      label: Recover device id + DP codes locally
+      status: done
+      notes: |
+        2026-09-26. device_id a35dc1b618d6a2378a3tzw from
+        ~/.config/home-assistant/.storage/core.device_registry; DP codes
+        pm25_value, pm10, co2_value, temp_current, humidity_value,
+        voc_value, ch2o_value, air_quality_index, battery_percentage,
+        battery_state from core.entity_registry unique_ids.
+    - id: 3
+      label: Collector/importer script nobito-tuya-logs.py
+      status: done
+      notes: |
+        scripts/home-assistant/nobito-tuya-logs.py — commands probe, list,
+        live (consumer-API current values, no subscription needed), fetch
+        (-> ~/.local/share/tuya/nobito-logs/*.jsonl), import
+        (hourly aggregates -> recorder/import_statistics). Verified:
+        probe returns exit 2 with the expired message; live returns real
+        values (pm25 44 / pm10 51 / co2 407 / temp 27.2 vs HA-frozen
+        22/25/409 — confirms cloud freshness); import --dry-run completes
+        HA ws auth + statistic metadata lookup against tony-ha and prints
+        the stats it would write (nothing written).
+        Extra DPs found via specifications: pm1 (µg/m³), co_value,
+        charge_state — pm1 has no HA entity; fetched but not imported.
+    - id: 4
+      label: Renew IoT Core trial subscription (USER ACTION)
+      status: blocked
+      notes: |
+        All developer-OpenAPI calls (getdevices, device info, status, logs)
+        return code 28841002 "IoT Core service subscription has expired."
+        Device IS linked to the project (user confirmed). Renew:
+        iot.tuya.com -> open project p17871... -> Cloud -> Cloud Services ->
+        IoT Core -> Extend trial; wait ~2-3 min to propagate, then
+        `scripts/home-assistant/nobito-tuya-logs.py probe` must return OK.
+        NOTE: this is the DEVELOPER project subscription; the HA tuya
+        integration uses the Smart-Life user path (entry
+        01M1PBMNRENWNDC93N205E0VZA) and keeps working regardless.
+    - id: 5
+      label: Fetch logs + dry-run import
+      status: pending
+      notes: |
+        After probe is OK: `fetch --days 7` (free tier query_type=1 = last
+        7 days), eyeball JSONL scale/units, then `import --dry-run`, then
+        `import`. Watch DP scale — some Tuya DPs report 10x (use
+        --scale code=factor if a DP looks inflated vs HA values).
+    - id: 6
+      label: Reassess chart scaling after real data lands
+      status: pending
+      notes: |
+        Pending approval (live dashboard change): CO2 tile could take
+        min: ~400 (ppm never near 0 — tighter value axis), and optionally
+        add temperature/humidity tiles. Apply via push-dashboard.py mutate
+        + sync-ssot-from-live.sh.
+    - id: 7
+      label: Optional — faster watchdog cadence
+      status: pending
+      notes: |
+        packages/system-managed.yaml tuya_entry_reload_watchdog fires
+        hourly (minutes: "0"). A 10-15 min cadence would triple-to-6x
+        recorder sample density for ALL tuya entities without cloud
+        logs. Requires live ha-config edit + reload — needs user approval;
+        watch out for entities flickering unavailable during each reload.
+
+verification:
+  - python3 -m py_compile scripts/home-assistant/nobito-tuya-logs.py — ok
+  - probe -> "EXPIRED: IoT Core subscription expired (28841002)" exit 2 (expected while blocked)
+  - live -> real current values via tuya_sharing consumer token, token NOT rotated (verified refresh_token flag stayed False)
+  - import --dry-run with synthetic JSONL -> ws auth ok, matched sensor.nobito_pm2_5 metadata (µg/m³), printed hourly stat rows, wrote nothing
+  - node scripts/ssot-validate-all.mjs -> 420/420 valid
+
+related:
+  script: scripts/home-assistant/nobito-tuya-logs.py
+  runbook: ssot.home-assistant.howto.yml -> tuya_iot_core_trial_renewal
+  data_dir: ~/.local/share/tuya/nobito-logs/ (not in git)
+  creds: ~/.local/share/tuya/project-creds.json (mode 600, not in git)
+  prior_session: sunset-baron (Nobito 3d charts)
+  commits: c97f886, 0a0daf6, 12a7049, 6a6b7ea (dashboard/card work, on master)
