@@ -1,0 +1,89 @@
+title: idc01 link aggregation assessment
+subtitle: WiFi/mobile bonding verdict + public-IP SSOT policy decision
+icon: network
+id: 2026-09-26-idc01-link-aggregation-assessment
+status: completed
+owner: tony
+project: chaba
+started: "2026-09-22"
+completed: "2026-09-26"
+
+planning:
+  goal: |
+    Answer "is it possible/practical to increase idc01 bandwidth using
+    available WiFi/mobile connections" with measured data, and settle how
+    idc01's public IP should be represented in SSOT.
+  rationale: |
+    Session good-gosling (2026-09-22) did the measurement pass and deployed
+    Cloudflare WARP; a 2026-09-24 incident then showed WARP starves
+    tailscaled and it was disabled. This job consolidates the assessment into
+    a final recommendation so the verdict + the 9-24 reversal live in one
+    place.
+  scope:
+    in_scope:
+      - Final recommendation doc in docs/kb/
+      - Record measured baselines and the aggregation verdict
+      - Record the public-IP-in-SSOT decision
+    out_of_scope:
+      - Changing idc01's live network config (no deploys)
+      - Merging ssot.idc01.yml from test/ultralytics-yolo-ha (listed as a
+        follow-up; its WARP section predates the 9-24 disable)
+
+implementation:
+  steps:
+    - id: 1
+      label: Baseline measurements (done in good-gosling, 2026-09-22)
+      status: done
+      notes: |
+        tony-dell<->idc01 tailnet: ~280-310 Mbps single flow; 4 parallel
+        ~=302 Mbps (destination cap, no scaling). idc01 international:
+        2-5 Mbps/flow but parallel scales linearly (~8.8 Mbps x4). CF BKK
+        edge ~78-229 Mbps. MDDB ingest is app-limited, not network-limited.
+    - id: 2
+      label: Aggregation verdict
+      status: done
+      notes: |
+        Not worth it: already at the ~300 Mbps destination cap per flow;
+        Tailscale is one UDP flow pinned to one WAN path (no multipath);
+        WiFi+LTE bonding is sub-additive anyway. Failover or traffic
+        splitting are the useful second-link plays.
+    - id: 3
+      label: Egress fix attempted then reversed
+      status: done
+      notes: |
+        WARP deployed 9-22 (3-10x worst-case intl), disabled 9-24 after
+        starving tailscaled twice (ssot.learning.idc01-warp-tailscaled).
+        BBR+fq remains. Verified 2026-09-26: warp-svc disabled, bbr active.
+        Residual options ranked in the KB doc: aria2 -x16, tailscale exit
+        node via tony-dell, WARP only with console access, SG VPS relay.
+    - id: 4
+      label: Public-IP SSOT policy decision
+      status: done
+      notes: |
+        Keep <IDC01_PUBLIC_IP> placeholders (data-isolation scan rejects
+        public IPv4 even in ssot.values.yml); resolve live via
+        tailscale status / Siamdata panel. ${ssot(...)} rejected for this
+        value: no canonical home, unresolved readers see the blob, and the
+        value is quasi-static with live infra as the authority.
+    - id: 5
+      label: Write final recommendation doc
+      status: done
+      notes: docs/kb/idc01-link-aggregation-assessment-2026-09-26.md
+
+verification:
+  - "ssh tony@100.74.146.0 'systemctl is-enabled warp-svc' -> disabled"
+  - "ssh tony@100.74.146.0 'sysctl net.ipv4.tcp_congestion_control' -> bbr"
+  - "tailscale status | grep idc01 -> direct <IDC01_PUBLIC_IP>:41641"
+
+references:
+  - docs/kb/idc01-link-aggregation-assessment-2026-09-26.md
+  - docs/ssot/infrastructure/ssot.security.idc01.yml
+  - docs/ssot/ssot.learning.idc01-warp-tailscaled.2026-09-24.yml
+  - "commit 1eb2138c on test/ultralytics-yolo-ha (ssot.idc01.yml, unmerged)"
+
+followup:
+  - Decide whether to cherry-pick ssot.idc01.yml to master (fix its WARP
+    section for the disabled reality first)
+  - Optionally record the real public IP in devin-kb docs/machines/idc01.md
+  - "If intl egress still hurts: try tailscale exit node via tony-dell
+    before re-attempting WARP"
