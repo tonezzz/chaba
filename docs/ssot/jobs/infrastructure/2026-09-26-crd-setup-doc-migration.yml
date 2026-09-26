@@ -1,0 +1,59 @@
+title: Migrate CRD setup doc from devin-kb to chaba docs/kb
+subtitle: Recover the stranded fancy-aries commit and note devin-kb archive status
+icon: file-document
+id: 2026-09-26-crd-setup-doc-migration
+status: done
+owner: devin
+project: chaba
+started: "2026-09-26"
+
+planning:
+  goal: |
+    Session fancy-aries committed a Chrome Remote Desktop install runbook to
+    devin-kb as e601064 believing the repo was archived on GitHub and could
+    not be pushed. Publish the doc into chaba at
+    docs/kb/chrome-remote-desktop-setup.md.
+
+findings:
+  - id: e601064-rebased
+    note: |
+      e601064 (2026-09-18) is NOT on devin-kb main — a later local rebase
+      replayed it as 8276c25 (identical file content, verified by git diff).
+  - id: devin-kb-not-archived
+    note: |
+      GitHub API shows tonezzz/devin-kb archived=false and remote
+      origin/main == 73901ff == local main. The CRD doc is already live on
+      GitHub. The "can't push, repo archived" premise no longer holds — the
+      repo was either never archived or was unarchived and pushed between
+      2026-09-18 and the repo's updated_at of 2026-09-23.
+  - id: canonical-home
+    note: |
+      chaba docs/kb/ already hosts the chrome-remote-desktop-profile-*
+      series, so docs/kb/chrome-remote-desktop-setup.md is the sensible
+      canonical home; the devin-kb copy now duplicates it.
+
+implementation:
+  steps:
+    - id: 1
+      label: Locate e601064 and extract doc content
+      status: done
+      notes: Found via reflog; content identical to 8276c25 on main.
+    - id: 2
+      label: Publish to chaba docs/kb/chrome-remote-desktop-setup.md
+      status: done
+      notes: Added category front matter + provenance note; rewrote the
+        "Related chaba docs" pointer to repo-relative paths.
+    - id: 3
+      label: Record job trail
+      status: done
+      notes: This file.
+
+decisions:
+  - id: no-unarchive-needed
+    decision: Do not unarchive devin-kb
+    rationale: |
+      Moot — the repo is not archived and the content is already pushed.
+      Recommendation: if devin-kb is intended to stay the personal KB,
+      keep it writable and instead decide which repo is canonical for
+      infra runbooks to avoid drift between the two copies (the chaba copy
+      is the better fit since the profile-management series lives here).
