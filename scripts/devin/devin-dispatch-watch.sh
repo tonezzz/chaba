@@ -167,6 +167,34 @@ print(json.dumps({
 PY
 }
 
+mddb_job() { # id status summary question — job/<id> doc in devin-handoff,
+    # the ledger Ada's devin_pending and the Report dispatch layer read.
+    local id="$1" st="$2" summ="${3:-}" q="${4:-}"
+    ID="$id" ST="$st" SUMM="$summ" Q="$q" python3 - <<'PY' | curl -sf -m 15 \
+        -X POST -H "Content-Type: application/json" -d @- \
+        "$MDDB/add" >/dev/null 2>&1
+import json, os, socket
+from datetime import datetime, timezone
+meta = {"kind": ["job"], "status": [os.environ["ST"]],
+        "job_id": [os.environ["ID"]], "host": [socket.gethostname()],
+        "ts": [datetime.now(timezone.utc).isoformat()],
+        "subject": ["job-" + os.environ["ID"]],
+        "source": ["devin-dispatch"], "written_by": ["devin-dispatch"],
+        "scope": ["tony"], "bank": ["devin-handoff"]}
+if os.environ.get("Q"):
+    meta["question"] = [os.environ["Q"]]
+body = f"Job {os.environ['ID']} on {socket.gethostname()}: {os.environ['ST']}."
+if os.environ.get("Q"):
+    body += f"\n\nNeeds input: {os.environ['Q']}"
+if os.environ.get("SUMM"):
+    body += f"\n\n{os.environ['SUMM'][:2000]}"
+print(json.dumps({"collection": "ada-ha-bank-devin-handoff",
+                  "key": "job/" + os.environ["ID"], "lang": "en",
+                  "contentMd": body, "meta": meta}))
+PY
+    return 0
+}
+
 EVENT_LOG_LOCAL="$EVENT_LOG"
 HA_URL_LOCAL="$HA_URL"
 
@@ -200,16 +228,37 @@ for d in "$DISPATCH_DIR"/tasks/*/; do
     out=$(outcome "$d/transcript.json")
     sid=$(session_id "$d/transcript.json")
 
-    if [ "$result" = "success" ]; then
+    # needs-input.txt: the dispatched session wrote a question instead of
+    # finishing — route it to Tony with the question text and flip the
+    # job/<id> doc to awaiting-user so Ada's devin_pending can pick it up.
+    question=""
+    if [ -f "$d/needs-input.txt" ]; then
+        question=$(head -1 "$d/needs-input.txt" | cut -c1-300)
+    fi
+
+    if [ -n "$question" ]; then
+        sev="warn"; rr="true"; label="needs input"
+    elif [ "$result" = "success" ]; then
         sev="info"; rr="false"; label="done"
     else
         sev="fail"; rr="true"; label="FAILED ($result)"
     fi
 
-    log "task $id finished: unit=$unit fu=$fu result=${result:-none} sid=${sid:-?}"
+    log "task $id finished: unit=$unit fu=$fu result=${result:-none} sid=${sid:-?}${question:+ q=$question}"
     chans=""
-    emit_event "devin task $id: $label" "$sev" "$rr" "$out" && chans="event"
-    notify_iphone "Devin task ${label}" "${id}: ${out:0:200}" && chans="$chans,notify"
+    evbody="$out"
+    [ -n "$question" ] && evbody="Question: ${question}"$'\n\n'"$out"
+    emit_event "devin task $id: $label" "$sev" "$rr" "$evbody" && chans="event"
+    if [ -n "$question" ]; then
+        notify_iphone "Devin job needs input" \
+            "${id}: ${question} — reply via Ada or Devin" && chans="$chans,notify"
+    else
+        notify_iphone "Devin task ${label}" \
+            "${id}: ${out:0:200}" && chans="$chans,notify"
+    fi
+    if [ -n "$question" ]; then jstate="awaiting-user"
+    elif [ "$result" = "success" ]; then jstate="done"; else jstate="failed"; fi
+    mddb_job "$id" "$jstate" "$out" "$question" && chans="$chans,jobdoc"
     if [ -n "$sid" ]; then
         mddb_add "devin/$sid" \
             "$(printf 'Dispatched task %s (unit %s, result %s).\n\n%s' "$id" "$unit" "$result" "$out")" \

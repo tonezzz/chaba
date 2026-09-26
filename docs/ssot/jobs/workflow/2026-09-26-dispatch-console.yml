@@ -1,0 +1,90 @@
+# SSOT Job Lifecycle: Console-session dispatch loop
+# This Devin session acts as a console: Tony chats here, work is dispatched
+# to workers (headless Devin, subagents, Ada, remote job-run), results
+# stack up for Tony, and answers can come back through Ada by voice.
+
+title: Dispatch console loop
+subtitle: One conversational session dispatches work to workers; a shared job ledger in MDDB carries state, attention requests, and answers
+icon: rocket-launch
+
+planning:
+  goal: |
+    Tony keeps one long-running Devin console session. Instead of doing
+    work inline, the console dispatches to devin-dispatch (tony-dell),
+    job-run.sh (any host), run_subagent (in-session), or Ada. Every job
+    lands a job/<id> doc in ada-ha-bank-devin-handoff; blocked jobs flip
+    to awaiting-user with a question; Tony answers by voice through Ada
+    (devin_pending/devin_answer) or in the console; results stack in the
+    Report tab's Dispatch layer and notify the iPhone.
+  scope: |
+    In scope:
+      - scripts/devin/job-run.sh — generic background job wrapper
+        (systemd-run, self-emitting completion; no watch timer needed)
+      - devin-dispatch.sh — needs-input prompt instruction, followup
+        clears needs-input.txt, job/<id> running doc at dispatch
+      - devin-dispatch-watch.sh — needs-input detection, enriched iPhone
+        notify (question text), job/<id> doc per completion
+      - render-handoff-inbox.py — skips job//answer/ keys (ledger docs,
+        not specs)
+      - render-report-feed.py — Dispatch layer from MDDB job docs +
+        reports/dispatch/*.jsonl ledger
+      - ada-pi: devin_pending (read-only) + devin_answer (confirmed)
+        tools, Gemini declarations, DEVIN_INSTRUCTIONS
+      - Install: devin-dispatch + job-run on tony-omen; updated scripts
+        on tony-dell
+    Out of scope:
+      - devin-dispatch on idc01 (public VPS, RAM-tight, wider blast
+        radius — remote commands go via job-run + ssh instead)
+      - Ada session-prime pending-count announcement (phase 2)
+  success_criteria:
+    - 'job-run needs-input (exit 42 / NEEDS-INPUT: line / needs-input.txt)
+      produces job/<id> status=awaiting-user + question meta, chaba
+      requires_response event, iPhone push naming the question'
+    - 'devin-dispatch session that writes $TASK_DIR/needs-input.txt gets
+      the same awaiting-user path on next watch tick'
+    - 'Ada: "what needs me?" -> devin_pending lists blocked jobs; spoken
+      answer -> refined -> confirmed=true -> devin_answer resumes the
+      session (devin ids) or records the answer doc'
+    - 'Report tab Dispatch layer shows running/awaiting/done jobs'
+  risks:
+    - 'Meta list fields: MDDB meta values are lists — status flips must
+      preserve other meta keys (devin_answer merges existing meta).'
+    - 'render-handoff-inbox GC only removes ITS marked files; job docs
+      are excluded by key prefix, not marker.'
+    - 'job-run emit is inside the unit: if the host dies mid-job, the
+      emit never runs — the MDDB running doc is the stale-residue
+      marker for that case.'
+  owner: tony
+
+processing:
+  status: done
+  started_at: "2026-09-26"
+  steps:
+    - id: 1
+      label: "job-run.sh — start/status/tail/emit; self-emitting unit"
+      status: done
+      notes: "systemd-run --collect unit runs cmd, records exit_code, detects needs-input (file or exit 42 + NEEDS-INPUT: line), emits chaba event (local script or ssh tony-dell-lan), iPhone push via HA REST, job/<id> MDDB doc. Verified: done + awaiting-user paths end-to-end from tony-omen incl. chaba-events.json entries."
+    - id: 2
+      label: "devin-dispatch/watch: needs-input + job docs + notify detail"
+      status: done
+      notes: "Prompt tells the session to write $TASK_DIR/needs-input.txt when blocked; followup clears it; watch emits needs-input event/push with the question and upserts job/<id> (running|awaiting-user|done|failed)."
+    - id: 3
+      label: "render-handoff-inbox job//answer/ guard"
+      status: done
+    - id: 4
+      label: "Ada devin_pending + devin_answer (confirmed gate)"
+      status: done
+      notes: "tool_runner methods + DEVIN_TOOLS/DEVIN_CONFIRMED_TOOLS/DEVIN_INSTRUCTIONS/declarations. devin_answer resumes devin-dispatch tasks via followup AND writes answer/<id>; non-devin ids get the mailbox doc only (console picks up)."
+    - id: 5
+      label: "Report feed Dispatch layer + reports/dispatch/ ledger"
+      status: done
+      notes: "MDDB kind=job docs rendered grouped by status; ledger JSONL supplements. Badge 'N need you' when awaiting-user exists."
+    - id: 6
+      label: "Installs: tony-omen (~/.local/bin) + tony-dell"
+      status: done
+
+verification:
+  - "job-run smoke: done + awaiting-user verified (meta.json, MDDB doc, chaba events)"
+  - "devin_answer/pending wiring check passed; 71 ada-pi tests pass"
+  - "render-report-feed.py renders Dispatch layer with awaiting badge"
+  - "SSOT validation + commit"

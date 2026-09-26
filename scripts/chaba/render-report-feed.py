@@ -323,6 +323,115 @@ MDDB_URL = os.environ.get("MDDB_BASE_URL",
 OPS_COLLECTION = os.environ.get("ADA_OPS_COLLECTION",
                                 "ada-ha-events-tony")
 OPS_WINDOW_H = 24
+JOBS_COLLECTION = os.environ.get("DISPATCH_JOBS_COLLECTION",
+                                 "ada-ha-bank-devin-handoff")
+LEDGER_DIR = REPO / "reports/dispatch"
+
+
+# ---------- L1: dispatch (job ledger) ----------
+
+def _mddb_jobs() -> list[dict]:
+    """job/<id> + answer/<id> docs from the devin-handoff collection —
+    the shared ledger written by devin-dispatch(-watch) and job-run.sh.
+    Fails soft to [] so the feed renders offline."""
+    try:
+        payload = json.dumps({
+            "collection": JOBS_COLLECTION,
+            "filterMeta": {"kind": ["job"]},
+            "limit": 100,
+        }).encode()
+        req = urllib.request.Request(
+            f"{MDDB_URL}/search", data=payload,
+            headers={"content-type": "application/json"}, method="POST")
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            docs = json.loads(resp.read())
+    except Exception:
+        return []
+    return docs if isinstance(docs, list) else []
+
+
+def _ledger_entries() -> dict[str, dict]:
+    """reports/dispatch/*.jsonl — console-session dispatches. Latest line
+    per job id wins."""
+    out: dict[str, dict] = {}
+    if not LEDGER_DIR.is_dir():
+        return out
+    for p in sorted(LEDGER_DIR.glob("*.jsonl")):
+        try:
+            for ln in p.read_text(encoding="utf-8").splitlines():
+                if not ln.strip():
+                    continue
+                try:
+                    e = json.loads(ln)
+                except ValueError:
+                    continue
+                if e.get("id"):
+                    out[e["id"]] = e
+        except OSError:
+            continue
+    return out
+
+
+def build_dispatch() -> dict | None:
+    layer = node("dispatch", "Dispatch", icon="mdi:rocket-launch-outline")
+    jobs = _mddb_jobs()
+    jobs.sort(key=lambda d: ((d.get("meta") or {}).get("ts") or [""])[0],
+              reverse=True)
+    awaiting = []
+    for d in jobs[:25]:
+        meta = d.get("meta") or {}
+        jid = ((meta.get("job_id") or [""])[0]
+               or (d.get("key") or "").split("/", 1)[-1])
+        st = ((meta.get("status") or ["?"])[0])
+        q = ((meta.get("question") or [""])[0])
+        ts = ((meta.get("ts") or [""])[0])[:16].replace("T", " ")
+        src = ((meta.get("source") or [""])[0])
+        if st == "awaiting-user":
+            awaiting.append(jid)
+        layer["children"].append(node(
+            "job-" + slugify(jid), f"{jid}",
+            icon="mdi:rocket-launch-outline",
+            badge=st,
+            summary=(f"{ts} {src} — {q}" if q else
+                     f"{ts} {src} — " + first_line(d.get("contentMd", ""))),
+            body=d.get("contentMd", ""),
+            meta={k: v for k, v in {
+                "status": st, "host": (meta.get("host") or [""])[0],
+                "question": q, "job_id": jid}.items() if v}))
+    for e in sorted(_ledger_entries().values(),
+                    key=lambda e: e.get("dispatched_at", ""),
+                    reverse=True)[:15]:
+        lid = e.get("id", "?")
+        if any(f"job/{lid}" == (d.get("key") or "")
+               or ((d.get("meta") or {}).get("job_id") or [""])[0] == lid
+               for d in jobs):
+            continue  # already represented by its MDDB doc
+        layer["children"].append(node(
+            "led-" + slugify(lid), lid,
+            icon="mdi:clipboard-list-outline",
+            badge=e.get("status", "?"),
+            summary=first_line(e.get("task") or e.get("desc") or ""),
+            body=json.dumps(e, indent=1, ensure_ascii=False)))
+    if not layer["children"]:
+        return None
+    layer["badge"] = (f"{len(awaiting)} need you" if awaiting
+                      else str(len(layer["children"])))
+    layer["summary"] = (
+        (f"awaiting answer: {', '.join(awaiting[:5])}. " if awaiting else "")
+        + f"{len(layer['children'])} job(s)")
+    return layer
+
+
+def build_feed() -> dict:
+    layers = [build_events(), build_dispatch(), build_focus(), build_ada()]
+    layers = [l for l in layers if l is not None]
+    return {
+        "generated_at": datetime.datetime.now().astimezone().isoformat(
+            timespec="seconds"),
+        "title": "Chaba system report",
+        "summary": " — ".join(f"{l['title']}: {l['badge']}" for l in layers),
+        "layers": layers,
+    }
 
 
 def _mddb_ops_events() -> list[dict]:
@@ -387,17 +496,6 @@ def build_events() -> dict:
     layer["badge"] = str(len(kids))
     layer["summary"] = f"{len(kids)} recent event(s)"
     return layer
-
-
-def build_feed() -> dict:
-    layers = [build_events(), build_focus(), build_ada()]
-    return {
-        "generated_at": datetime.datetime.now().astimezone().isoformat(
-            timespec="seconds"),
-        "title": "Chaba system report",
-        "summary": " — ".join(f"{l['title']}: {l['badge']}" for l in layers),
-        "layers": layers,
-    }
 
 
 def main() -> int:

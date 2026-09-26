@@ -41,6 +41,35 @@ declare -A REPOS=(
 
 _slug() { tr '[:upper:]' '[:lower:]' <<<"$1" | tr -cs 'a-z0-9' '-' | sed 's/^-//;s/-$//' | cut -c1-30; }
 
+# job/<id> doc in the devin-handoff bank — the shared job ledger Ada's
+# devin_pending and the Report tab's dispatch layer read. Best-effort.
+mddb_job() { # id status summary question
+  local id="$1" st="$2" summ="${3:-}" q="${4:-}"
+  ID="$id" ST="$st" SUMM="$summ" Q="$q" HOSTN="$(hostname)" python3 - <<'PY' \
+    | curl -sf -m 15 -X POST -H "Content-Type: application/json" -d @- \
+      "${MDDB_URL:-http://100.74.146.0:11023/v1}/add" >/dev/null 2>&1
+import json, os
+from datetime import datetime, timezone
+meta = {"kind": ["job"], "status": [os.environ["ST"]],
+        "job_id": [os.environ["ID"]], "host": [os.environ["HOSTN"]],
+        "ts": [datetime.now(timezone.utc).isoformat()],
+        "subject": ["job-" + os.environ["ID"]],
+        "source": ["devin-dispatch"], "written_by": ["devin-dispatch"],
+        "scope": ["tony"], "bank": ["devin-handoff"]}
+if os.environ.get("Q"):
+    meta["question"] = [os.environ["Q"]]
+body = f"Job {os.environ['ID']} on {os.environ['HOSTN']}: {os.environ['ST']}."
+if os.environ.get("Q"):
+    body += f"\n\nNeeds input: {os.environ['Q']}"
+if os.environ.get("SUMM"):
+    body += f"\n\n{os.environ['SUMM']}"
+print(json.dumps({"collection": "ada-ha-bank-devin-handoff",
+                  "key": "job/" + os.environ["ID"], "lang": "en",
+                  "contentMd": body, "meta": meta}))
+PY
+  return 0
+}
+
 _meta_get() { python3 -c "import json,sys;print(json.load(open('$1')).get('$2') or '')"; }
 
 _meta_write() { # dir repo worktree branch unit
@@ -88,12 +117,16 @@ You are running unattended via devin-dispatch (a headless, user-triggered
 session). Work only inside this worktree. Do not commit to the default
 branch, do not push, and do not deploy unless the task explicitly says so.
 When finished, end with a short summary of what changed and how to verify it.
+If you are blocked and need a decision from the user, write your question to
+\$TASK_DIR/needs-input.txt (first line: one-line question, then context) and
+stop — the operator is notified and can resume you with an answer.
 
 Task: $task
 EOF
   _devin_run "devin-task-$id" "$wt" "$dir/prompt.txt" \
     --export "$dir/transcript.json"
   _meta_write "$dir" "$repo" "$wt" "dispatch/$id" "devin-task-$id"
+  mddb_job "$id" "running" "$task" &
   echo "$id"
 }
 
@@ -121,6 +154,9 @@ cmd_followup() {
   local d="$DISPATCH_DIR/tasks/$id" wt n
   [[ -d $d ]] || { echo "no task $id" >&2; exit 1; }
   wt=$(_meta_get "$d/meta.json" worktree)
+  # A follow-up answers the pending question — clear the marker so the watch
+  # reports the next completion on its own terms.
+  rm -f "$d/needs-input.txt"
   n=$(( $(find "$d" -name 'fu-*.txt' | wc -l) + 1 ))
   printf '%s\n' "$msg" > "$d/fu-$n.txt"
   _devin_run "devin-task-$id-fu$n" "$wt" "$d/fu-$n.txt" \
