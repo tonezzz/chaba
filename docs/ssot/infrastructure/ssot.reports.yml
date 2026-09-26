@@ -1,0 +1,338 @@
+title: Layered Reporting Standard
+subtitle: Memory-system report hierarchy — raw artifacts up through layers to the system overview
+icon: 📊
+version: 1
+
+overview:
+  purpose: |
+    Declared standard for how the memory system turns raw operational data
+    into a single human overview. Every report is a node in a layered
+    hierarchy: L0 raw artifacts at the bottom, L1 per-producer rollups,
+    L2 cross-producer domain rollups, and a single L3 overview
+    (reports/SYSTEM-REPORT.md). Each layer is generated from the one below —
+    digests are never hand-written.
+
+    The `nodes` registry below is declared intent; each node's meta.yml is
+    observed state. The gap between them is exactly what staleness and
+    drift detection report — the overview's job is to make absence loud.
+
+config:
+  version: 1
+  last_updated: "2026-09-26"
+  maintainer: tony
+  status: active
+  origin: >
+    Session flannel-surf plan v2 (2026-09-26): "a new standard for our
+    memory system — from raw logs/data up by layers until to overview",
+    timeline stored outside the repo.
+
+layers:
+  L0-raw:
+    description: >
+      Append-only artifacts — snapshots, logs, JSONL. Never edited, never
+      summarized in place; corrections are new artifacts, not rewrites.
+    examples:
+      - reports/audit-hosts/<host>-<ts>.yml
+      - ~/var/chaba/health/*.json
+      - per-audit stdout captured in reports/audits/summary.json
+  L1-producer:
+    description: >
+      Per-generator rollup — one node per host, per audit group, per feed.
+      Carries a meta.yml so upper layers can read status without parsing
+      raw artifacts.
+    examples:
+      - audit-hosts/<host>
+      - health-monitor
+      - report-feed
+  L2-domain:
+    description: >
+      Cross-producer rollup per domain — fleet, audit suite, memory, jobs,
+      attention. Rendered from its children's meta/artifacts.
+    examples:
+      - fleet (reports/fleet/FLEET-REPORT.md — planned)
+      - audit-suite (reports/audits/summary.{json,md} — the template)
+      - ada-memory-report (planned)
+      - overnight-assessment
+  L3-overview:
+    description: >
+      Single human digest — reports/SYSTEM-REPORT.md rendered by
+      scripts/report-system.py from the node registry. Missing and stale
+      nodes are first-class output, not silence.
+    examples:
+      - system-report
+
+format_rules:
+  machine_artifacts: >
+    yml / json / jsonl for anything parsed downstream — stable keys, no
+    prose. jsonl only for append-only streams.
+  digests: >
+    .md only for generated digests. Never hand-edit a digest — fix the
+    generator or the source data.
+  meta_location: >
+    meta.yml lives in the node's output dir. When several nodes share a
+    dir (e.g. reports/audit-hosts/), use meta.<slug>.yml per node.
+  timeline_location: >
+    The timeline lives outside the repo (it grows forever — same reasoning
+    as ~/var/chaba/health/): ~/var/chaba/reports/timeline.jsonl,
+    overridable via CHABA_REPORTS_DIR.
+
+meta_schema:
+  description: >
+    One meta.yml per registered node, written by its generator at the end
+    of each run. scripts/lib/report.py::write_meta() is the canonical
+    writer.
+  fields:
+    node: registry id (e.g. audit-hosts/tony-dell)
+    layer: one of the layers above
+    purpose: one line — what question this report answers
+    generated_by: the exact command that produced it
+    generated_at: ISO-8601 with timezone
+    status: one of status_enum below
+    summary: one line — the headline finding
+    sources: artifacts consumed this run (paths or names)
+    children: node ids rolled up into this one (L1/L2/L3 only)
+    extra: free-form map for node-specific details (deltas, counts, scores)
+
+status_enum:
+  ok: generated within cadence; no findings
+  delta: generated; findings present (observed != expected)
+  stale: last_run older than the node's declared cadence
+  error: generator failed or meta unreadable
+  missing: declared node with no meta and no artifacts
+  untracked: artifacts exist but no meta.yml yet (legacy producer)
+  remote: declared active, artifacts live off-repo — not observable locally
+  planned: registered but generator not built yet — informational, not an alarm
+
+timeline:
+  path: ~/var/chaba/reports/timeline.jsonl
+  env_override: CHABA_REPORTS_DIR
+  format: >
+    One JSON object per line, appended by each generator on completion
+    (scripts/lib/report.py::append_timeline). Full history lives here;
+    SYSTEM-REPORT.md renders only the last ~20 events.
+  event_fields:
+    ts: ISO-8601 with timezone
+    node: registry id
+    layer: L0|L1|L2|L3
+    status: one of status_enum
+    summary: one line
+    ref: path to the primary artifact produced (optional)
+  example: >
+    {"ts":"2026-09-26T18:45:00+07:00","node":"fleet","layer":"L2",
+     "status":"delta","summary":"idc01: 2 missing critical",
+     "ref":"reports/fleet/FLEET-REPORT.md"}
+
+nodes:
+  # --- Fleet domain ---
+  - id: audit-hosts/tony-dell
+    layer: L1-producer
+    purpose: Host snapshot + delta vs expected services/resources
+    generator: scripts/audit-hosts.py --host tony-dell
+    cadence: 24h
+    output: reports/audit-hosts
+    artifact_pattern: "tony-dell-*.yml"
+    meta: reports/audit-hosts/meta.tony-dell.yml
+    references:
+      - docs/ssot/infrastructure/ssot.audit.hosts.yml
+    children: []
+  - id: audit-hosts/tony-omen
+    layer: L1-producer
+    purpose: Host snapshot + delta vs expected services/resources
+    generator: scripts/audit-hosts.py --host tony-omen
+    cadence: 24h
+    output: reports/audit-hosts
+    artifact_pattern: "tony-omen-*.yml"
+    meta: reports/audit-hosts/meta.tony-omen.yml
+    references:
+      - docs/ssot/infrastructure/ssot.audit.hosts.yml
+    children: []
+  - id: audit-hosts/mn01
+    layer: L1-producer
+    purpose: Host snapshot + delta vs expected services/resources
+    generator: scripts/audit-hosts.py --host mn01
+    cadence: 24h
+    output: reports/audit-hosts
+    artifact_pattern: "mn01-*.yml"
+    meta: reports/audit-hosts/meta.mn01.yml
+    references:
+      - docs/ssot/infrastructure/ssot.audit.hosts.yml
+    children: []
+  - id: audit-hosts/idc01
+    layer: L1-producer
+    purpose: Host snapshot + delta vs expected services/resources
+    generator: scripts/audit-hosts.py --host idc01
+    cadence: 24h
+    output: reports/audit-hosts
+    artifact_pattern: "idc01-*.yml"
+    meta: reports/audit-hosts/meta.idc01.yml
+    references:
+      - docs/ssot/infrastructure/ssot.audit.hosts.yml
+    children: []
+  - id: audit-hosts/macbook
+    layer: L1-producer
+    purpose: Host snapshot (macOS) — services via launchctl
+    generator: scripts/audit-hosts.py --host macbook
+    cadence: 24h
+    output: reports/audit-hosts
+    artifact_pattern: "macbook-*.yml"
+    meta: reports/audit-hosts/meta.macbook.yml
+    references:
+      - docs/ssot/infrastructure/ssot.audit.hosts.yml
+    children: []
+  - id: health-monitor
+    layer: L1-producer
+    purpose: Continuous tony-dell health snapshots (JSON, ~5 min cycle)
+    generator: scripts/tony-dell-monitor.sh via scripts/tony-dell-monitor.timer
+    cadence: 1h
+    output: ~/var/chaba/health
+    artifact_pattern: "*.json"
+    meta: ~/var/chaba/health/meta.yml
+    references:
+      - docs/ssot/infrastructure/ssot.tony-dell-monitoring.yml
+    children: []
+  - id: fleet
+    layer: L2-domain
+    purpose: Cross-host rollup — delta trend + resource min/max over window
+    generator: scripts/audit-hosts.py --consolidate (planned)
+    cadence: 24h
+    output: reports/fleet
+    meta: reports/fleet/meta.yml
+    state: planned
+    children:
+      - audit-hosts/tony-dell
+      - audit-hosts/tony-omen
+      - audit-hosts/mn01
+      - audit-hosts/idc01
+      - audit-hosts/macbook
+      - health-monitor
+
+  # --- Audit domain ---
+  - id: audit-suite
+    layer: L2-domain
+    purpose: Normalized PASS/WARN/FAIL verdicts for all registered audits
+    generator: node scripts/audits/run.mjs
+    cadence: 7d
+    output: reports/audits
+    artifact_pattern: "summary.json"
+    meta: reports/audits/meta.yml
+    references:
+      - docs/ssot/infrastructure/ssot.audit.yml
+    children: []
+    note: >
+      Per-audit L1 children are the groups declared in ssot.audit.yml —
+      referenced there instead of duplicated here.
+
+  # --- Memory domain ---
+  - id: memory-suite
+    layer: L1-producer
+    purpose: Ada memory-bank health — registry/MDDB drift, vault, NLM routing
+    generator: node scripts/audits/memory-banks-audit.mjs (via run.mjs memory-suite)
+    cadence: 7d
+    output: reports/audits
+    artifact_pattern: "summary.json"
+    meta: reports/audits/meta.memory-suite.yml
+    references:
+      - docs/ssot/infrastructure/ssot.audit.yml
+    children: []
+  - id: ada-memory-report
+    layer: L2-domain
+    purpose: Bank health + recall-canary score + NLM routing rollup
+    generator: planned — renders from memory-suite + recall-canary results
+    cadence: 24h
+    output: reports/memory
+    meta: reports/memory/meta.yml
+    state: planned
+    children:
+      - memory-suite
+
+  # --- Jobs domain ---
+  - id: overnight-assessment
+    layer: L2-domain
+    purpose: Nightly job rollup — health areas, log analysis, per-job status
+    generator: python3 scripts/orchestrate.py --workflow overnight
+    cadence: 24h
+    output: reports
+    artifact_pattern: "overnight-assessment-*.md"
+    meta: reports/meta.overnight-assessment.yml
+    references:
+      - docs/ssot/infrastructure/ssot.orchestration.overnight.yml
+    children: []
+
+  # --- Attention domain ---
+  - id: focus-inbox
+    layer: L1-producer
+    purpose: Unprocessed attention items — alert ymls written by audits/monitors
+    generator: multiple producers (run.mjs, audit-watchdog, mcp-health-snapshot)
+    output: docs/ssot/focus-inbox
+    artifact_pattern: "*.yml"
+    meta: reports/meta.focus-inbox.yml
+    references:
+      - docs/ssot/infrastructure/ssot.focus.triage.yml
+    children: []
+    note: L2 attention section is rendered inside SYSTEM-REPORT.md directly.
+
+  # --- Remote producers ---
+  - id: report-feed
+    layer: L1-producer
+    purpose: chaba-home Report tab JSON feed (focus + ada-review + ops events)
+    generator: scripts/chaba/render-report-feed.py --host tony-dell (runs on tony-omen)
+    cadence: 1h
+    observe: remote
+    output: tony-dell HA www /local/chaba-report.json
+    meta: reports/meta.report-feed.yml
+    children: []
+
+  # --- Overview ---
+  - id: system-report
+    layer: L3-overview
+    purpose: Single human digest across all domains; makes absence loud
+    generator: scripts/report-system.py
+    cadence: 24h
+    output: reports
+    meta: reports/meta.system-report.yml
+    children:
+      - fleet
+      - audit-suite
+      - ada-memory-report
+      - overnight-assessment
+      - focus-inbox
+
+schedule:
+  system_report:
+    timer: systemd/chaba-system-report.timer
+    service: systemd/chaba-system-report.service
+    frequency: daily at 06:45 (after overnight producers)
+    status: defined (2026-09-26); not yet installed on any host
+
+plan:
+  current_state:
+    - ssot.reports.yml declares the standard — layers, node registry, meta.yml schema, status enum, timeline spec
+    - scripts/lib/report.py provides write_meta / append_timeline / latest_artifact / resolve_node
+    - scripts/report-system.py renders reports/SYSTEM-REPORT.md + reports/system-report.yml from the registry
+    - audit-hosts.py emits meta.<host>.yml + a timeline event on each run
+    - run.mjs emits reports/audits/meta.yml + a timeline event on each suite run
+    - chaba-system-report.service/.timer defined in systemd/ (not installed)
+  next_steps:
+    - audit-hosts.py --consolidate → per-host L1 rollup + fleet L2 render (reports/fleet/)
+    - wire tony-dell-monitor.sh and memory-banks-audit.mjs to emit meta + timeline events
+    - install chaba-system-report.timer on tony-dell; staleness-audit reads cadences from this registry instead of hardcoded 14d
+    - ada-memory-report L2 renderer (memory-suite + recall-canary)
+
+related_files:
+  - scripts/report-system.py
+  - scripts/lib/report.py
+  - scripts/audit-hosts.py
+  - scripts/audits/run.mjs
+  - systemd/chaba-system-report.service
+  - systemd/chaba-system-report.timer
+
+related_ssot:
+  - docs/ssot/infrastructure/ssot.audit.yml
+  - docs/ssot/infrastructure/ssot.audit.hosts.yml
+  - docs/ssot/infrastructure/ssot.automation.yml
+  - docs/ssot/infrastructure/ssot.tony-dell-monitoring.yml
+  - docs/ssot/infrastructure/ssot.orchestration.overnight.yml
+  - docs/ssot/infrastructure/ssot.focus.triage.yml
+
+related_kb:
+  - docs/kb/layered-reporting.md

@@ -1,0 +1,11 @@
+[Unit]
+Description=Render the Chaba layered system report (L3 overview)
+After=network.target
+
+[Service]
+Type=oneshot
+User=tony
+ExecStart=/usr/bin/python3 /home/tony/CascadeProjects/chaba-tony-dell/scripts/report-system.py
+WorkingDirectory=/home/tony/CascadeProjects/chaba-tony-dell
+StandardOutput=append:/home/tony/CascadeProjects/chaba-tony-dell/logs/system-report.log
+StandardError=append:/home/tony/CascadeProjects/chaba-tony-dell/logs/system-report.log
