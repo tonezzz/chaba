@@ -24,6 +24,7 @@ docs/
 
 Comprehensive guides for systems and workflows:
 
+- **[ada-eval-jobs.md](kb/ada-eval-jobs.md)** - Ada evals job-report dispatch design + verified phase-1 patch (`no_prime` A/B, per-turn metrics)
 - **[caddyfile-syntax-errors.md](kb/caddyfile-syntax-errors.md)** - Caddyfile syntax error patterns and fixes
 - **[dependency-management.md](kb/dependency-management.md)** - Dependency management system for improvements
 - **[dns-resolution-libvirt-dnsmasq.md](kb/dns-resolution-libvirt-dnsmasq.md)** - DNS resolution fix: Avahi restricted to wlo1, tony-omen.local → 192.168.1.48 (resolved 2026-08-05)
