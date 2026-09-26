@@ -40,6 +40,17 @@ hard-reboot control, not a live view)
 - Obsidian vault + open-notebook (migrated 2026-09-22/23)
 - Legacy mn01 Caddy alias target
 
+## Memory layout
+
+- No disk swap (disk is a single 99G root); **zram swap added 2026-09-26**:
+  `/dev/zram0` 6G, zstd, prio 100 via `systemd-zram-generator` +
+  `/etc/systemd/zram-generator.conf`. Kernel module comes from
+  `linux-modules-extra-<kver>` (installed — the `linux-image-virtual` flavor
+  ships zram there, not in linux-modules).
+- mddb.service cgroup drop-in (`mddb.service.d/mem.conf`): `MemoryHigh=8G`,
+  `MemoryMax=10G`, `GOMEMLIMIT=3500MiB` — raised 2026-09-26 after corpus load
+  (needs ~8.4G RSS) kept OOM-killing it under the old 5G/6.5G cap.
+
 ## Notes
 
 - The provider panel "OFF" toggle is a power control — during the 2026-09-26
