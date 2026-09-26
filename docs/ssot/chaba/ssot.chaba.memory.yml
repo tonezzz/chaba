@@ -29,8 +29,8 @@ render:
       output: context.md
       report: report.yml
       limits: {soft: 12000, hard: 20000}
-      overflow_order: [ada-focus, ada-sessions, sessions, focus, recent-events, project, home]   # dropped first → last
-      sections: [agent, user, immediate, recent-events, home, project, focus, access, sessions, ada-sessions, ada-focus, timeline, events, ada-events]
+      overflow_order: [ada-focus, ada-sessions, sessions, personal-digest, infra-digest, focus, recent-events, project, home]   # dropped first → last
+      sections: [agent, user, immediate, recent-events, home, project, focus, access, sessions, ada-sessions, ada-focus, personal-digest, infra-digest, timeline, events, ada-events]
     guest:
       output: context-guest.md
       report: report-guest.yml
@@ -219,6 +219,33 @@ sections:
       file: ~/.local/share/ada-review/focus-digest.md
       max_entries: 5
       min_chars: 80
+
+  personal-digest:
+    description: |
+      Personal-tier digest (devin-only — never synced to Ada banks or the
+      guest profile). Rendered by scripts/ada/personal-rollup.py —
+      ## devin: per-session timeline of recent Devin sessions.
+    priority: 44
+    limits: {soft: 2200, hard: 3800}
+    source:
+      kind: rolling-log
+      file: ~/.local/share/ada-review/personal-digest.md
+      max_entries: 6
+      min_chars: 60
+
+  infra-digest:
+    description: |
+      Personal-tier infra digest (devin-only). Rendered by
+      scripts/ada/personal-rollup.py — ## network (arp-inventory deltas),
+      ## ada-ops (Ada containment events), plus future ## apps / ## spend /
+      ## tasks / ## ha-events blocks.
+    priority: 43
+    limits: {soft: 1800, hard: 3200}
+    source:
+      kind: rolling-log
+      file: ~/.local/share/ada-review/infra-digest.md
+      max_entries: 6
+      min_chars: 60
 
   # ---- guest-only sections ----
 

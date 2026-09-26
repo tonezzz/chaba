@@ -27,6 +27,10 @@ LOCAL_NAMES = {"tony-omen", "localhost", ""}
 RX_STARTED = re.compile(r"Started ([\w@.-]+\.service)")
 RX_OOM = re.compile(r"oom[-_ ]?kill|Out of memory|Killed process", re.I)
 RX_UNIT_FAIL = re.compile(r"([\w@.-]+\.service): (Failed|Main process exited)")
+RX_PANIC = re.compile(r"panick|refused by the vector index|"
+                      r"vector index loaded", re.I)
+RX_OOM_UNIT = re.compile(r"([\w@.-]+\.service): A process of this unit "
+                         r"has been killed by the OOM killer", re.I)
 
 
 def _run(cmd: list[str], timeout: int = 60) -> str:
@@ -64,8 +68,8 @@ def sweep_host(host: str, since: str) -> dict:
     journal = _ssh(
         host,
         "journalctl --user --since '" + since + "' --no-pager -o cat "
-        "2>/dev/null | grep -iE 'Started|Stopped|Failed|error|oom|killed' "
-        "| head -20000; "
+        "2>/dev/null | grep -iE 'Started|Stopped|Failed|error|oom|killed"
+        "|panic|vector index' | head -20000; "
         "journalctl --since '" + since + "' --no-pager -o cat "
         "2>/dev/null | grep -vE 'pam_|session opened|session closed' | "
         "grep -iE 'Started|Failed|error|oom|killed' | head -4000",
@@ -75,6 +79,9 @@ def sweep_host(host: str, since: str) -> dict:
     restarts: Counter = Counter()
     errors: Counter = Counter()
     oom = 0
+    oom_units: Counter = Counter()
+    panics: Counter = Counter()
+    index_events = 0
     fails: Counter = Counter()
     restart_counters: dict[str, int] = {}
     for ln in journal:
@@ -93,6 +100,13 @@ def sweep_host(host: str, since: str) -> dict:
             errors[key] += 1
         if not is_dump and RX_OOM.search(ln):
             oom += 1
+        if not is_dump and (m := RX_OOM_UNIT.search(ln)):
+            oom_units[m.group(1)] += 1
+        if not is_dump and "vector index loaded" in ln.lower():
+            index_events += 1
+        elif not is_dump and (m := re.search(
+                r'(?:HNSW|vector)[^"]*panic|panic="([^"]+)"', ln, re.I)):
+            panics["hnsw"] += 1
         if not is_dump and (m := RX_UNIT_FAIL.search(ln)):
             fails[m.group(1)] += 1
 
@@ -109,7 +123,10 @@ def sweep_host(host: str, since: str) -> dict:
         "restart_counters": restart_counters,
         "error_lines": sum(errors.values()),
         "top_errors": dict(errors.most_common(5)),
-        "oom_kills": oom, "unit_failures": dict(fails),
+        "oom_kills": oom, "oom_units": dict(oom_units),
+        "panics": sum(panics.values()),
+        "index_rebuilds": index_events,
+        "unit_failures": dict(fails),
         "failed_units": failed_units, "disk_use": disk_use,
     }
 
@@ -118,12 +135,19 @@ def hosts_block(rows: list[dict], since: str) -> str:
     lines = [f"## hosts ({since} — {len(rows)} hosts)"]
     for r in rows:
         flag = ""
-        if r["oom_kills"] or r["failed_units"] or r["unit_failures"]:
+        if (r["oom_kills"] or r["failed_units"] or r["unit_failures"]
+                or r.get("panics") or r.get("oom_units")):
             flag = " ⚠"
         lines.append(
             f"{r['host']}: restarts {r['restart_total']}, err-lines "
             f"{r['error_lines']}, oom {r['oom_kills']}, failed-units "
             f"{len(r['failed_units'])}, disk {r['disk_use'] or '?'}{flag}")
+        if r.get("panics"):
+            lines.append(f"  vector-panics x{r['panics']}")
+        if r.get("index_rebuilds"):
+            lines.append(f"  index-rebuilds x{r['index_rebuilds']}")
+        for u, c in sorted(r.get("oom_units", {}).items()):
+            lines.append(f"  oom-killed {u} x{c}")
         for u, c in sorted(r["unit_failures"].items()):
             lines.append(f"  unit-fail {u} x{c}")
         for u, c in sorted(r.get("restart_counters", {}).items()):

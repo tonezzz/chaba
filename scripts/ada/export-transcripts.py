@@ -112,6 +112,8 @@ def main() -> int:
                     help="journal window for the ops layer")
     ap.add_argument("--no-hosts", action="store_true",
                     help="skip host-report.py health sweep")
+    ap.add_argument("--no-personal", action="store_true",
+                    help="skip personal-tier collectors + personal-rollup.py")
     ap.add_argument("--keep-days", type=int, default=30,
                     help="prune mirrored transcripts/reports older than this "
                          "(local mirror only; remote untouched)")
@@ -248,6 +250,23 @@ def main() -> int:
              "--since", args.ops_since],
             capture_output=True, text=True, timeout=300)
         print((r.stdout.strip().splitlines() or ["ha sweep: no output"])[0])
+
+    # ---- personal-tier collectors + rollup (local-only, devin context) ----
+    if not args.no_personal:
+        for name in ("devin-report", "net-report", "ops-report",
+                     "ha-events-report", "spend-report"):
+            r = subprocess.run(
+                [sys.executable, str(ADA_SCRIPTS / f"{name}.py"),
+                 "--out", str(review)],
+                capture_output=True, text=True, timeout=300)
+            first = r.stdout.strip().splitlines()
+            print(first[0] if first else
+                  f"{name}: {r.stderr.strip()[:120]}")
+        r = subprocess.run(
+            [sys.executable, str(ADA_SCRIPTS / "personal-rollup.py"),
+             "--out", str(review)],
+            capture_output=True, text=True, timeout=60)
+        print(r.stdout.strip() or r.stderr.strip())
 
     # ---- rollup ----
     if not args.no_rollup:
