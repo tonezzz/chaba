@@ -254,7 +254,8 @@ def main() -> int:
     # ---- personal-tier collectors + rollup (local-only, devin context) ----
     if not args.no_personal:
         for name in ("devin-report", "net-report", "ops-report",
-                     "ha-events-report", "spend-report"):
+                     "ha-events-report", "spend-report", "caddy-report",
+                     "tasks-report"):
             r = subprocess.run(
                 [sys.executable, str(ADA_SCRIPTS / f"{name}.py"),
                  "--out", str(review)],

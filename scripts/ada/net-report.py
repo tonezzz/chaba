@@ -57,10 +57,16 @@ def net_block(rows: list[dict], since: str, detail: int = 3) -> str:
         lines.append(
             f"{r['scanned_at'][:16]}: {s.get('discovered', '?')} seen, "
             f"{s.get('consistent', '?')} ok — {detail}{flag}")
-        for k in INTEREST:
-            for e in (r["detail"].get(k) or [])[:4]:
+        shown = 0
+        for k in ("conflict", "new_devices", "duplicate_macs"):
+            for e in (r["detail"].get(k) or []):
+                if shown >= 3:
+                    break
                 lines.append(f"  {k}: {_device(e)} "
                              f"{e.get('ip', '')} {e.get('mac', '')}")
+                shown += 1
+            if shown >= 3:
+                break
     return "\n".join(lines)
 
 

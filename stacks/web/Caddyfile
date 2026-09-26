@@ -4,6 +4,13 @@
 }
 
 http://:80 {
+	log app80 {
+		output file /data/access.log {
+			roll_size 10mb
+			roll_keep 5
+		}
+		format json
+	}
 	@root80 path /
 	handle @root80 {
 		reverse_proxy 127.0.0.1:8092 {
@@ -415,6 +422,13 @@ http://127.0.0.1:8080 {
 
 # chaba.h3 local dev root
 :8081 {
+	log dev8081 {
+		output file /data/access-8081.log {
+			roll_size 5mb
+			roll_keep 3
+		}
+		format json
+	}
 	root * /srv/public/chaba-h3
 	file_server
 }

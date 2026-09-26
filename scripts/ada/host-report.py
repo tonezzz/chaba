@@ -148,8 +148,11 @@ def hosts_block(rows: list[dict], since: str) -> str:
             lines.append(f"  index-rebuilds x{r['index_rebuilds']}")
         for u, c in sorted(r.get("oom_units", {}).items()):
             lines.append(f"  oom-killed {u} x{c}")
-        for u, c in sorted(r["unit_failures"].items()):
+        for u, c in sorted(r["unit_failures"].items(),
+                           key=lambda kv: -kv[1])[:6]:
             lines.append(f"  unit-fail {u} x{c}")
+        if len(r["unit_failures"]) > 6:
+            lines.append(f"  …({len(r['unit_failures']) - 6} more units)")
         for u, c in sorted(r.get("restart_counters", {}).items()):
             if c >= 5:
                 lines.append(f"  restart-loop {u} counter={c}")

@@ -31,14 +31,21 @@ DEFAULT_OUT = Path.home() / ".local/share/ada-review"
 SOURCES = {
     "devin": ("devin-report", "devin_block", "devin-ops.jsonl", "7d",
               "personal"),
-    "hosts": ("host-report", "hosts_block", "host-ops.jsonl", "24h",
-              "infra"),
+    # infra order matters — section hard cap truncates from the tail, so
+    # compact high-signal blocks go first; ## hosts last (also in
+    # focus-digest via focus-rollup --hosts).
+    "net": ("net-report", "net_block", "net-ops.jsonl", "recent", "infra"),
     "ops": ("ops-report", "ops_events_block", "ada-ops-events.jsonl", "72h",
             "infra"),
-    "net": ("net-report", "net_block", "net-ops.jsonl", "recent", "infra"),
+    "tasks": ("tasks-report", "tasks_block", "tasks-ops.jsonl", "7d",
+              "infra"),
+    "spend": ("spend-report", "spend_block", "spend-ops.jsonl", "24h",
+              "infra"),
     "haevents": ("ha-events-report", "ha_events_block",
                  "ha-events-ops.jsonl", "24h", "infra"),
-    "spend": ("spend-report", "spend_block", "spend-ops.jsonl", "24h",
+    "apps": ("caddy-report", "caddy_block", "apps-ops.jsonl", "recent",
+             "infra"),
+    "hosts": ("host-report", "hosts_block", "host-ops.jsonl", "24h",
               "infra"),
 }
 GROUPS = ("personal", "infra")
@@ -76,7 +83,13 @@ def main() -> int:
             continue
         try:
             mod = importlib.import_module(mod_name)
-            blocks[group].append(getattr(mod, func)(rows, window))
+            fn = getattr(mod, func)
+            # net_report accepts a detail cap; keep it tight for the
+            # shared section budget
+            if flag == "net":
+                blocks[group].append(fn(rows, window, detail=2))
+            else:
+                blocks[group].append(fn(rows, window))
         except Exception as e:
             print(f"warn: {flag} block failed: {e}", file=sys.stderr)
 
