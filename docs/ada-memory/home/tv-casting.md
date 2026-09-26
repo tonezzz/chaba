@@ -22,5 +22,3 @@ YouTube on the TV — use yt_cast (with subtitles support), not tv_action.
 Stop casting — cmd 'nav' to a normal page or use yt_cast_stop for YouTube casts.
 
 Examples: "cast my screen" → nav tony-omen:workspace:1. "cast my browser" → ask which workspace, or nav a URL directly. "scroll down on the TV" → scroll down. "click play" → click text 'Play'. "press enter" → press text 'Enter'.
-
-Screen ownership (added 2026-09-26): personal screens are locked to their owner — a speaker may only cast to/from their own screens. The living-room TV (media_player.tony_tv / tony_tv_cast) is shared: anyone can use it. Tony's desktops (tony-omen workspaces, the tony-dell seat display) are person.tony only; vcast screens (cast_to_screen) each have an owner — unlisted screens are shared. If the speaker is not identified, personal screens deny with "identify the speaker first". If a cast fails with 'denied: ... private screen', say so and offer a shared alternative. Owner maps: cast-browser screens.json on tony-dell (sources+destinations) and ~/.local/share/ada-pi/cast-screens.json on idc01 (vcast screens).
