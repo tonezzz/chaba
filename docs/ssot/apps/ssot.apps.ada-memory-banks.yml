@@ -253,6 +253,28 @@ banks:
     allowed_tools: [ada_remember, ada_forget, ada_outcome]
     status: active
     public: false
+  ideas:
+    title: Ideas inbox
+    description: >-
+      Raw idea-burst capture — half-formed notes, fragments, and
+      quick thoughts Tony wants parked before they disappear. Verbatim
+      wording is kept in contentMd (meta kind=idea, attribute=raw).
+      The Devin console session elaborates raw entries into connected,
+      well-formed items (attribute=elaborated) which Tony confirms
+      before they are filed as focus-inbox entries or devin-handoff
+      specs (attribute=filed). Direct writes — note-taking never gates
+      on confirmation.
+    scope: instance
+    instances: [tony]
+    mddb_collection: ada-ha-bank-ideas-{instance}
+    notebooklm_group: null
+    notebooklm_id: null
+    kinds: [note, idea]
+    writable: true
+    write_policy: direct
+    allowed_tools: [ada_remember, ada_forget]
+    status: active
+    public: false
   kb-development:
     title: Development knowledge base
     description: Chaba dev/architecture docs synced from the kb — read-only for Ada
