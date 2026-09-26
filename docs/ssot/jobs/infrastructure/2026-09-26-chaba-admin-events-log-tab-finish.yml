@@ -1,0 +1,76 @@
+# SSOT Job: finish chaba-admin events/logs tab (lively-microwave tail work)
+title: Chaba-admin Events/Log tab — finish tail work from lively-microwave
+subtitle: Live resource inventory (closed), fullscreen expand button (v6, pending deploy)
+icon: bell-badge-outline
+
+context:
+  prior_session: lively-microwave
+  finished_by: dispatch/20260926-205455-finish-the-chaba-admin-events-
+  date: "2026-09-26"
+
+prior_session_state:
+  summary: |
+    lively-microwave built and deployed the chaba-admin Events tab
+    (chaba-events-card v5: unified feed, category checkboxes persisted in
+    input_text.chaba_events_filter, pulsing requires_response alerts,
+    optimistic Ack/Approve/Dismiss) and the Log tab (chaba-log-card v5:
+    isolated /logbook copy, Live 1h/24h/7d presets + custom range, domain
+    checkbox row). Session ended in Ask mode mid-inventory, then a
+    todo_write loop — the tail work below was left open.
+  open_items_at_handoff:
+    - live lovelace/resources inventory on michael-ha vs tony-ha
+    - copy missing frontend plugins (card-mod etc.) to tony-ha
+    - events-log panel subview + expand button in chaba-events-card.js
+
+findings:
+  resource_inventory: |
+    Ran `{"type":"lovelace/resources"}` over websocket on all three
+    instances (read-only, from tony-omen):
+    - tony-ha: 12 resources, all /local/ chaba cards present
+      (events v5, log v5, voice v7, keys v7, pair-qr v2, users v4,
+      chat v4, report v2, vcast v5, pfg3d-card-v239 v2, youtube v4,
+      album-slideshow 1.9.0). No HACS plugins.
+    - michael-ha: 9 resources — HACS plugins (lovelace-card-mod,
+      apexcharts-card, ha-sankey-chart) + /local/ cards for the
+      tony-test dashboard only.
+    - michael-dev: websocket auth_invalid — ~/.config/secrets/
+      ha-michael-dev.env token is stale (was valid 2026-09-04).
+    Conclusion: nothing michael-ha has is needed by tony-ha's
+    dashboards — card-mod/apexcharts/sankey serve tony-test views that
+    don't exist on tony-ha. The "copy missing plugins" item is closed
+    with no deploy needed. chaba-admin + chaba-home are fully
+    self-contained on /local/ files.
+  subview: |
+    The events-log subview already shipped as the Log tab (regular
+    panel view) via fluttering-repair on 2026-09-21 — no extra view
+    needed. Remaining piece was only the in-card expand affordance.
+
+changes:
+  - stacks/tony-dell/tony-ha/www/chaba-events-card.js (v6, repo):
+    "⤢" button in the source toolbar toggles fullscreen
+  - stacks/tony-dell/tony-ha/www/chaba-log-card.js (v6, repo):
+    same button in the log toolbar (after entity filter input)
+  - mechanism: requestFullscreen() (covers HA chrome + browser chrome,
+    Esc exits natively); fixed-position overlay via data-fs="1" fallback
+    where element fullscreen is unsupported (iPhone Safari); second tap
+    exits either mode; _fitHeight() re-runs on fullscreenchange so the
+    panel still fills the screen edge-to-edge
+  - docs/ssot/infrastructure/ssot.home-assistant.dashboards.yml:
+    chaba_admin note + tab cards entries marked v6 pending deploy
+
+not_done:
+  - deploy to tony-ha (production — requires Tony's explicit approval):
+    scp chaba-events-card.js + chaba-log-card.js to
+    tony-dell:~/.config/home-assistant/www/, bump both resource URLs to
+    ?v=6 via push-dashboard.py --mutate, then sync-ssot-from-live.sh
+    and commit the refreshed snapshot
+  - michael-dev token refresh (~/.config/secrets/ha-michael-dev.env
+    returns auth_invalid on websocket auth — needs a new long-lived
+    token; read-only check only, no write attempted)
+
+verify_after_deploy:
+  - curl -s -o /dev/null -w '%{http_code}' \
+      https://tony-dell.taila0626a.ts.net:8123/local/chaba-log-card.js
+  - open /chaba-admin/events and /chaba-admin/log — ⤢ button in each
+    toolbar expands the card over the full screen; Esc or second tap
+    restores the tab view
