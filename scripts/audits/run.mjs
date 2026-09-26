@@ -5,9 +5,9 @@
  * runs each audit, and produces a normalized summary report.
  */
 import { spawn } from "child_process";
-import { writeFileSync, readFileSync, mkdirSync, copyFileSync, rmSync } from "fs";
+import { writeFileSync, appendFileSync, readFileSync, mkdirSync, copyFileSync, rmSync } from "fs";
 import { join } from "path";
-import { hostname } from "os";
+import { hostname, homedir } from "os";
 import yaml from "js-yaml";
 
 const PROJECT_ROOT = new URL("../../", import.meta.url).pathname.replace(/\/$/, "");
@@ -178,6 +178,41 @@ async function main() {
     history = history.slice(-90);
   }
   writeFileSync(historyFile, JSON.stringify(history, null, 2));
+
+  // Layered reporting (ssot.reports.yml): this node is the audit-suite L2
+  // rollup — emit meta.yml + append one timeline event.
+  try {
+    const meta = {
+      node: "audit-suite",
+      layer: "L2-domain",
+      purpose: "Normalized PASS/WARN/FAIL verdicts for all registered audits",
+      generated_by: "node scripts/audits/run.mjs",
+      generated_at: summary.generated,
+      status: hardFailed.length ? "delta" : "ok",
+      summary: `${summary.summary.passed}/${summary.summary.total} passed (warned: ${summary.summary.warned}, failed: ${summary.summary.failed})`,
+      sources: ["summary.json", "summary.md"],
+      children: [],
+      extra: { failed_audits: hardFailed.map((r) => r.name) },
+    };
+    writeFileSync(join(REPORTS_DIR, "meta.yml"), yaml.dump(meta));
+    const reportsRoot = process.env.CHABA_REPORTS_DIR
+      ? process.env.CHABA_REPORTS_DIR
+      : join(homedir(), "var", "chaba", "reports");
+    mkdirSync(reportsRoot, { recursive: true });
+    appendFileSync(
+      join(reportsRoot, "timeline.jsonl"),
+      JSON.stringify({
+        ts: meta.generated_at,
+        node: "audit-suite",
+        layer: "L2",
+        status: meta.status,
+        summary: meta.summary,
+        ref: join(REPORTS_DIR, "summary.md"),
+      }) + "\n"
+    );
+  } catch (e) {
+    console.log(`meta/timeline emit failed (report still written): ${e.message}`);
+  }
 
   // Focus-inbox alert on hard failures; auto-resolve by removing it when green.
   if (hardFailed.length > 0) {

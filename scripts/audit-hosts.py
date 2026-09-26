@@ -330,6 +330,7 @@ def main():
     ts = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
     report_path = args.output_dir / f"{args.host}-{ts}.yml"
     report_path.write_text(yaml.safe_dump(observed, sort_keys=False, allow_unicode=True))
+    emit_meta(args.host, observed, deltas, report_path, args.output_dir)
 
     print(f"Wrote report: {report_path}")
     print(f"Tailscale IP: {observed.get('tailscale_ip')}")
@@ -339,6 +340,39 @@ def main():
             print(f"  - {d}")
     else:
         print("No deltas against SSOT expected state.")
+
+
+def emit_meta(host: str, observed: dict, deltas: list[str],
+              report_path: Path, output_dir: Path):
+    """Write the node's meta.yml + timeline event (ssot.reports.yml L1)."""
+    try:
+        sys.path.insert(0, str(REPO_ROOT / "scripts"))
+        from lib.report import append_timeline, write_meta
+    except Exception as e:
+        print(f"meta emit skipped (lib.report unavailable): {e}")
+        return
+    status = "delta" if deltas else "ok"
+    summary = f"{len(deltas)} delta(s)" if deltas else "clean"
+    try:
+        write_meta(
+            output_dir / f"meta.{host}.yml",
+            node=f"audit-hosts/{host}",
+            layer="L1-producer",
+            purpose="Host snapshot + delta vs expected services/resources",
+            generated_by=f"scripts/audit-hosts.py --host {host}",
+            status=status,
+            summary=summary,
+            sources=[report_path.name],
+            extra={
+                "deltas": deltas,
+                "tailscale_ip": observed.get("tailscale_ip"),
+                "ssh_used": observed.get("ssh_used"),
+            },
+        )
+        append_timeline(f"audit-hosts/{host}", "L1", status, summary,
+                        ref=report_path)
+    except Exception as e:
+        print(f"meta/timeline emit failed (report still written): {e}")
 
 
 def save_to_ssot(host: str, observed: dict, ssot_path: Path):

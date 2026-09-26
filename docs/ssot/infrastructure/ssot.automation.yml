@@ -156,6 +156,19 @@ automation:
     alert_dir: docs/ssot/focus-inbox
     status: active (2026-08-29)
 
+  system_report:
+    ssot: docs/ssot/infrastructure/ssot.reports.yml
+    script: scripts/report-system.py
+    schedule: "45 6 * * *"
+    frequency: daily at 06:45 (after overnight producers)
+    timer: systemd/chaba-system-report.timer
+    service: systemd/chaba-system-report.service
+    log_file: logs/system-report.log
+    reports:
+      - reports/SYSTEM-REPORT.md
+      - reports/system-report.yml
+    status: defined (2026-09-26); timer not yet installed on any host
+
 monitoring:
   gpu:
     metrics:

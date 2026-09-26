@@ -1,5 +1,5 @@
 title: Registry — Script Core
-subtitle: Catalog of 31 script-core assets
+subtitle: Catalog of 33 script-core assets
 icon: 🗃️
 version: 1
 source: ssot.registry.script.yml
@@ -257,3 +257,33 @@ assets:
     project: chaba
     purpose: script asset at scripts/windsurfrules-check.py; purpose to be documented.
     status: draft
+  - id: report-system
+    name: report-system.py
+    type: script
+    path: scripts/report-system.py
+    project: chaba
+    purpose: Render the L3 system overview (reports/SYSTEM-REPORT.md) from the
+      node registry in ssot.reports.yml — missing/stale nodes are loud.
+    status: active
+    tags:
+      - reports
+      - overview
+    related:
+      - ssot-reports
+      - lib-report
+    added: "2026-09-26"
+  - id: lib-report
+    name: report.py
+    type: script
+    path: scripts/lib/report.py
+    project: chaba
+    purpose: Shared helpers for the layered reporting standard — write_meta,
+      append_timeline, latest_artifact, resolve_node.
+    status: active
+    tags:
+      - reports
+      - library
+    related:
+      - ssot-reports
+      - report-system
+    added: "2026-09-26"
