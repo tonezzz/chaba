@@ -9,6 +9,10 @@
 #   devin-dispatch start <repo> "<task>"     launch session, prints task id
 #   devin-dispatch status [id]               list tasks / show one
 #   devin-dispatch followup <id> "<msg>"     resume the session with a message
+#   devin-dispatch resume <sid> ["<msg>"]    continue a STALE session (any
+#                                          desktop/CLI session in sessions.db)
+#                                          headlessly in its recorded cwd —
+#                                          no worktree, wrap-up/research only
 #   devin-dispatch logs <id>                 journal for the task's unit(s)
 #   devin-dispatch tail <id>                 tail the exported transcript
 #
@@ -164,6 +168,46 @@ cmd_followup() {
   echo "followup $n sent to $id"
 }
 
+# resume <session-id> ["<message>"] — continue an EXISTING (e.g. stale
+# desktop) session headlessly in its recorded working dir. No worktree —
+# for wrap-up/research sessions only; code work should be redispatched
+# with `start`. Same unit/transcript/registry pipeline as start, so the
+# watch timer + job/<id> ledger pick it up automatically.
+cmd_resume() {
+    local sid="${1:?session-id}" msg="${2:-Continue where you left off and finish any pending work. Summarize what was completed.}"
+    local db="${DEVIN_SESSIONS_DB:-$HOME/.local/share/devin/cli/sessions.db}"
+    local cwd title
+    read -r cwd title < <(SESSION="$sid" DB="$db" python3 - <<'PY'
+import sqlite3, os
+c = sqlite3.connect("file:%s?mode=ro" % os.environ["DB"], uri=True)
+row = c.execute("select working_directory, title from sessions where id=?",
+                (os.environ["SESSION"],)).fetchone()
+if row:
+    print((row[0] or os.path.expanduser("~")), (row[1] or "session")[:80])
+PY
+)
+    [[ -d ${cwd:-/nonexistent} ]] || { echo "no session/cwd for $sid" >&2; exit 1; }
+    local id
+    id="resume-$(date +%Y%m%d-%H%M%S)-$(_slug "$title")"
+    local dir="$DISPATCH_DIR/tasks/$id"
+    mkdir -p "$dir"
+    cat > "$dir/prompt.txt" <<EOF
+You are resuming a session via devin-dispatch (headless, user-triggered).
+Do not commit to the default branch, do not push, and do not deploy unless
+the task explicitly says so.
+If you are blocked and need a decision from the user, write your question to
+\$TASK_DIR/needs-input.txt (first line: one-line question, then context) and
+stop — the operator is notified and can resume you with an answer.
+
+$msg
+EOF
+    _devin_run "devin-task-$id" "$cwd" "$dir/prompt.txt" \
+        --export "$dir/transcript.json" -r "$sid"
+    _meta_write "$dir" "resume" "$cwd" "resume/$sid" "devin-task-$id"
+    mddb_job "$id" "running" "resume: $title" &
+    echo "$id"
+}
+
 cmd_logs() { journalctl --user -u "devin-task-${1:?id required}*" --no-pager "${@:2}"; }
 cmd_tail() { tail -n "${2:-40}" "$DISPATCH_DIR/tasks/${1:?id required}/transcript.json"; }
 
@@ -171,6 +215,7 @@ case "${1:-}" in
   start)    shift; cmd_start "$@" ;;
   status)   shift; cmd_status "$@" ;;
   followup) shift; cmd_followup "$@" ;;
+  resume)   shift; cmd_resume "$@" ;;
   logs)     shift; cmd_logs "$@" ;;
   tail)     shift; cmd_tail "$@" ;;
   *) sed -n '2,16p' "$0"; exit 2 ;;

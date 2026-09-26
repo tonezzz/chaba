@@ -121,9 +121,13 @@
       clearTimeout(toast._t);
       toast._t = setTimeout(() => (toast.style.display = "none"), ms);
     }
+    let lastState = "idle", lastDetail = "";
     function sendState(state, detail) {
-      if (ws && ws.readyState === 1) ws.send(JSON.stringify({ type: "state", state, detail: detail || "" }));
+      lastState = state; lastDetail = detail || "";
+      if (ws && ws.readyState === 1) ws.send(JSON.stringify({ type: "state", state, detail: lastDetail }));
     }
+    // heartbeat — keeps registry last_seen honest between real state changes
+    setInterval(() => { if (screenNum != null) sendState(lastState, lastDetail); }, 30000);
     function deviceLabel() {
       const ua = navigator.userAgent;
       if (/iPad/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1)) return "iPad";

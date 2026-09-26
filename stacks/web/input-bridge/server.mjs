@@ -146,6 +146,22 @@ async function redeemKey(redeemUrl) {
 // ---------------------------------------------------------------------------
 // HTTP API
 // ---------------------------------------------------------------------------
+
+// Keyless claim/release/dismiss is only trusted from the tailnet (CGNAT
+// 100.64.0.0/10) or loopback. A LAN client (plain-http edge like
+// http://192.168.2.67) must supply body.admin_key, which is verified against
+// ada as before. The tailnet client IP is the FIRST X-Forwarded-For entry —
+// tailscale serve and Caddy both append, so the leftmost hop is the real peer.
+function clientIp(req) {
+  const xff = String(req.headers["x-forwarded-for"] || "").split(",")[0].trim();
+  return xff || req.socket.remoteAddress || "";
+}
+function tailnetClient(req) {
+  let ip = clientIp(req).replace(/^::ffff:/, "");
+  if (ip === "127.0.0.1" || ip === "::1") return true;
+  const m = ip.match(/^100\.(\d{1,3})\./);
+  return !!m && +m[1] >= 64 && +m[1] <= 127;
+}
 function json(res, code, obj) {
   res.writeHead(code, {
     "content-type": "application/json",
@@ -262,10 +278,13 @@ const server = http.createServer(async (req, res) => {
       return json(res, 400, { error: e.message });
     }
     const { sid, force } = body;
-    const admin_key = body.admin_key || ADA_ADMIN_KEY;
     if (!sid || !pending.has(sid)) {
       return json(res, 404, { error: "unknown or expired sid" });
     }
+    if (!body.admin_key && !tailnetClient(req)) {
+      return json(res, 403, { error: "admin key required off-tailnet" });
+    }
+    const admin_key = body.admin_key || ADA_ADMIN_KEY;
     if (!admin_key) return json(res, 403, { error: "no admin key configured" });
     const adminName = await adaKeyName(admin_key).catch(() => null);
     if (!adminName) return json(res, 403, { error: "admin key not accepted" });
@@ -321,6 +340,9 @@ const server = http.createServer(async (req, res) => {
     } catch (e) {
       return json(res, 400, { error: e.message });
     }
+    if (!body.admin_key && !tailnetClient(req)) {
+      return json(res, 403, { error: "admin key required off-tailnet" });
+    }
     const admin_key = body.admin_key || ADA_ADMIN_KEY;
     if (!admin_key) return json(res, 403, { error: "no admin key configured" });
     const adminName = await adaKeyName(admin_key).catch(() => null);
@@ -350,6 +372,9 @@ const server = http.createServer(async (req, res) => {
       body = await readBody(req);
     } catch (e) {
       return json(res, 400, { error: e.message });
+    }
+    if (!body.admin_key && !tailnetClient(req)) {
+      return json(res, 403, { error: "admin key required off-tailnet" });
     }
     const p = pending.get(body.sid);
     if (!p) return json(res, 404, { error: "unknown or expired sid" });

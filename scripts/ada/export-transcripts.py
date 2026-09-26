@@ -251,6 +251,14 @@ def main() -> int:
             capture_output=True, text=True, timeout=300)
         print((r.stdout.strip().splitlines() or ["ha sweep: no output"])[0])
 
+    # ---- journal -> MDDB shipper (host-logs collection) ----
+    if not args.no_personal:
+        r = subprocess.run(
+            [sys.executable, str(ADA_SCRIPTS / "log-shipper.py"),
+             "--hosts", args.hosts],
+            capture_output=True, text=True, timeout=600)
+        print((r.stdout.strip().splitlines() or ["log-ship: no output"])[-1])
+
     # ---- personal-tier collectors + rollup (local-only, devin context) ----
     if not args.no_personal:
         for name in ("devin-report", "net-report", "ops-report",

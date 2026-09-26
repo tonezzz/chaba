@@ -181,3 +181,26 @@ services:
       - 'Force refresh: curl -s -X POST http://tony-dell:3011/health/auth/refresh -H "X-API-Key: <admin-key>"'
       - "Restart container: ssh tony-dell systemctl --user restart notebooklm-rest"
       - "If master_token revoked: re-extract via notebooklm login on a browser host, then rsync master_token.json to ~/.local/share/notebooklm/notebooklm-rest-data/ and restart"
+  - id: input-bridge-relay
+    name: Input Bridge Relay (vcast)
+    type: http
+    url: http://idc01:3010/health
+    expected_status: 200
+    timeout: 5
+    category: api
+    profiles:
+      - home
+      - mobile
+    host: idc01
+    note: WS relay + vcast display registry — podman quadlet on idc01, tailnet-bound
+      (100.74.146.0:3010). If down, all vcast displays go black/reconnect-loop and
+      cast_to_screen fails.
+    verification:
+      - "Probe: curl -s http://idc01:3010/health"
+      - "Displays: curl -s http://idc01:3010/displays"
+      - "Via edge: curl -s https://tony-dell.taila0626a.ts.net/api/input-bridge/health"
+    recovery_actions:
+      - "Check unit: ssh idc01 systemctl --user status input-bridge.service"
+      - "Restart: ssh idc01 systemctl --user restart input-bridge.service"
+      - "Logs: ssh idc01 journalctl --user -u input-bridge.service -n 50"
+      - "Quadlet file: stacks/idc01/input-bridge/input-bridge.container (repo) -> ~/.config/containers/systemd/ (idc01)"
