@@ -128,7 +128,8 @@ journal_result() { # infer exit result from journal even after --collect GC
 }
 
 emit_event() { # title severity requires_response body — rc 0 on success
-    TITLE="$1" SEV="$2" RR="$3" BODY="$4" python3 - <<'PY' | python3 "$EVENT_LOG_LOCAL" add - >/dev/null 2>&1
+    local payload
+    payload=$(TITLE="$1" SEV="$2" RR="$3" BODY="$4" python3 - <<'PY'
 import json, os
 print(json.dumps({"title": os.environ["TITLE"], "category": "devin-dispatch",
     "source": "devin-dispatch-watch",
@@ -136,6 +137,16 @@ print(json.dumps({"title": os.environ["TITLE"], "category": "devin-dispatch",
     "requires_response": os.environ["RR"] == "true",
     "body": os.environ["BODY"]}))
 PY
+)
+    if [ -f "$EVENT_LOG_LOCAL" ]; then
+        printf '%s\n' "$payload" | python3 "$EVENT_LOG_LOCAL" add - >/dev/null 2>&1 && return 0
+    fi
+    # Non-event-feed hosts (mn01, tony-omen): ship to the shared feed via ssh.
+    printf '%s\n' "$payload" | ssh -o BatchMode=yes -o ConnectTimeout=8 \
+        "${EVENT_SSH:-tony-dell-lan}" \
+        "python3 ~/.config/home-assistant/scripts/chaba-event-log.py add -" \
+        >/dev/null 2>&1 || true
+    return 0
 }
 
 notify_iphone() { # title message
