@@ -161,6 +161,11 @@ automations:
   - id: tuya_entry_reload_watchdog
     group: managed
     purpose: "hourly reload via packages/system-managed.yaml — Tuya MQ push dead; bounds staleness <=1h. edeb520"
+    note: "each reload = one cloud REST snapshot per entity, so recorder sees
+      <=24 samples/day and hourly stats mostly have min==max (flat Nobito 3D
+      ranges). Options: faster cadence (10-15min; live-config edit, needs
+      approval) or Tuya DP-log backfill — scripts/home-assistant/nobito-tuya-logs.py
+      (blocked on IoT Core trial renewal, 28841002)"
   - id: battery_reminder_kk_macbook
     alias: "Battery reminder: kk-macbook"
     group: editable

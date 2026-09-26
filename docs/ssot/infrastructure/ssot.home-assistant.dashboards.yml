@@ -246,7 +246,12 @@ instances:
       air_quality_index (enum 1–4), battery + battery_state (diagnostic).
       Caveat: HA only sees Tuya cloud snapshots — Tuya's own dp-log shows
       finer movement than HA statistics; hourly min==max slivers are
-      expected while the sensor sleeps. 2026-09-25: Report tab added after
+      expected while the sensor sleeps. 2026-09-26: backfill bridge staged —
+      scripts/home-assistant/nobito-tuya-logs.py fetches Tuya DP logs and
+      imports hourly min/max/mean into the existing sensor.nobito_*
+      statistic_ids (recorder/import_statistics); currently BLOCKED on the
+      developer-project IoT Core trial being expired (28841002) — runbook
+      tuya_iot_core_trial_renewal. 2026-09-25: Report tab added after
       Chat (live order: AI, Chat, Report, Nobito — Chat was already ahead
       of Nobito live, the repo snapshot had drifted). custom:chaba-report-card
       (/local/chaba-report-card.js?v=2, repo:
