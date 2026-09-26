@@ -41,12 +41,18 @@
     a { color: var(--accent); }
     .hint { font-size: .8rem; color: var(--muted); }
     .devices { display: flex; flex-direction: column; gap: .4rem; }
-    .device { display: flex; align-items: center; gap: .5rem; font-size: .85rem; }
+    .device { display: flex; align-items: center; gap: .5rem; font-size: .85rem; flex-wrap: wrap; }
     .device code { color: var(--text); }
     .device .bind { flex: 1; font-size: .7rem; color: var(--muted); }
     .device .bind.bound { color: #3fb950; }
     .device .bind.unbound { color: #d29922; }
+    .device .bind.shared { color: var(--accent); }
     .details { border-top: 1px solid var(--border); padding-top: .5rem; font-size: .8rem; color: var(--muted); }
+    .apps-picker { display: inline-flex; gap: .8rem; font-size: .8rem; color: var(--muted); align-items: center; }
+    .apps-picker label { display: inline-flex; gap: .25rem; align-items: center; cursor: pointer; }
+    #overlay { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; background: rgba(0,0,0,.65); padding: 1rem; }
+    #overlay[hidden] { display: none; }
+    #overlay .card { max-width: 380px; width: 100%; }
   </style>
 </head>
 <body>
@@ -65,16 +71,19 @@
       <div class="status muted" id="admin-status"></div>
     </section>
     <section id="instances"></section>
-    <section class="card" id="result" hidden>
-      <h2 id="result-title">Pairing link</h2>
-      <div class="qr-box" id="qr-box"></div>
-      <div class="link-box">
-        <input type="text" id="pair-link" readonly>
-        <button id="copy-btn">Copy</button>
-      </div>
-      <div class="expiry" id="expiry"></div>
-      <div class="hint">Single use, ~10 minutes. The device that opens it stores its own key and unlocks the app immediately.</div>
-    </section>
+    <div id="overlay" hidden>
+      <section class="card" id="result">
+        <h2 id="result-title">Pairing link</h2>
+        <div class="qr-box" id="qr-box"></div>
+        <div class="link-box">
+          <input type="text" id="pair-link" readonly>
+          <button id="copy-btn">Copy</button>
+        </div>
+        <div class="expiry" id="expiry"></div>
+        <div class="hint">Single use, ~10 minutes. The device that opens it stores its own key and unlocks the app immediately.</div>
+        <button id="result-close">Close</button>
+      </section>
+    </div>
     <section class="card" id="access-info">
       <h2>What a paired device gets</h2>
       <div class="sub">The redeem link hands the device a <em>named, revocable</em> key for the chosen Ada HA instance — not the admin key, not the HA token.</div>
@@ -99,11 +108,16 @@
       { id: "tony", title: "Ada HA Tony", base: "/apps/ha/ada-tony", desc: "Tony's home (tony-ha)" },
       { id: "michael", title: "Ada HA Michael", base: "/apps/ha/ada-michael", desc: "Michael's home (michael-ha)" },
     ];
+    // Key → app surface. "apps" metadata on a key limits which of these
+    // open-buttons/pair targets it gets; no apps means voice+chat (default).
+    const APP_LABEL = { voice: "Voice", chat: "Text", view: "View" };
+    const APP_PATH = { voice: "", chat: "/chat", view: "/cms" };
+    const APP_ORDER = ["voice", "chat", "view"];
     const ADMIN_KEY = "ada_pair_admin_key";
     const adminInput = document.querySelector("#admin-key");
     const adminStatus = document.querySelector("#admin-status");
     const instEl = document.querySelector("#instances");
-    const resultEl = document.querySelector("#result");
+    const overlayEl = document.querySelector("#overlay");
     const qrBox = document.querySelector("#qr-box");
     const linkInput = document.querySelector("#pair-link");
     const expiryEl = document.querySelector("#expiry");
@@ -150,6 +164,12 @@
           <input type="text" id="name-${inst.id}" placeholder="Device name (e.g. tony-iphone)">
           <button class="primary" id="go-${inst.id}">Generate QR</button>
         </div>
+        <div class="apps-picker" title="Which apps this key pairs into">
+          Apps:
+          <label><input type="checkbox" id="app-voice-${inst.id}" checked> Voice</label>
+          <label><input type="checkbox" id="app-chat-${inst.id}" checked> Text</label>
+          <label><input type="checkbox" id="app-view-${inst.id}"> View</label>
+        </div>
         <div class="status muted" id="status-${inst.id}"></div>
         <div class="devices" id="devices-${inst.id}"></div>`;
       instEl.appendChild(div);
@@ -173,8 +193,27 @@
           row.className = "device";
           const bound = data.bindings?.[name];
           row.innerHTML = `<code>${name}</code>`
-            + `<span class="bind ${bound ? "bound" : "unbound"}">`
-            + (bound ? `bound · ${String(bound).slice(0, 8)}` : "unbound") + `</span>`;
+            + `<span class="bind ${bound ? (bound === "*" ? "shared" : "bound") : "unbound"}">`
+            + (bound === "*" ? "shared" : bound ? `bound · ${String(bound).slice(0, 8)}` : "unbound") + `</span>`;
+          // Per-app open buttons — mint a redeem link whose redirect lands on
+          // the app's page (voice base / chat / cms viewer).
+          const keyApps = (data.apps && data.apps[name]) || ["voice", "chat"];
+          for (const a of APP_ORDER.filter(a => keyApps.includes(a))) {
+            const obtn = document.createElement("button");
+            obtn.className = "small";
+            obtn.textContent = APP_LABEL[a];
+            obtn.title = `Mint a one-time link that opens this key in the ${APP_LABEL[a]} app`;
+            obtn.addEventListener("click", async () => {
+              try {
+                const data = await api(inst, "POST", `/api/auth/keys/${encodeURIComponent(name)}/redeem`,
+                  { path: inst.base, redirect: inst.base + APP_PATH[a], origin: location.origin });
+                window.open(location.origin + data.redeem_url, "_blank", "popup");
+              } catch (e) {
+                alert(e.message === "401" ? "Admin key rejected — check it above." : `Open failed: ${e.message}`);
+              }
+            });
+            row.appendChild(obtn);
+          }
           const rebtn = document.createElement("button");
           rebtn.className = "small";
           rebtn.textContent = "Re-pair";
@@ -212,8 +251,10 @@
       if (!name) { status.textContent = "Enter a device name first."; status.className = "status err"; input.focus(); return; }
       btn.disabled = true;
       status.textContent = `Issuing key "${name}"…`; status.className = "status muted";
+      const apps = APP_ORDER.filter(a => div_app(inst, a)?.checked);
       try {
-        const data = await api(inst, "POST", "/api/auth/keys", { name, path: inst.base, qr: true, origin: location.origin });
+        const data = await api(inst, "POST", "/api/auth/keys",
+          { name, path: inst.base, qr: true, origin: location.origin, apps });
         status.textContent = `Key "${name}" issued.`; status.className = "status ok";
         input.value = "";
         showResult(inst, name, location.origin + data.redeem_url, data.qr_svg, data.expires_in);
@@ -228,8 +269,19 @@
       }
     }
 
+    function div_app(inst, app) {
+      return document.querySelector(`#app-${app}-${inst.id}`);
+    }
+
+    function closeResult() {
+      overlayEl.hidden = true;
+      if (countdown) { clearInterval(countdown); countdown = null; }
+    }
+    document.querySelector("#result-close").addEventListener("click", closeResult);
+    overlayEl.addEventListener("click", e => { if (e.target === overlayEl) closeResult(); });
+
     function showResult(inst, name, url, svg, ttl) {
-      resultEl.hidden = false;
+      overlayEl.hidden = false;
       titleEl.textContent = `${inst.title} · ${name} — scan to pair`;
       qrBox.innerHTML = svg || `<div class="hint">QR unavailable — use the link below.</div>`;
       linkInput.value = url;
@@ -242,7 +294,6 @@
         left -= 1;
       };
       tick(); countdown = setInterval(tick, 1000);
-      resultEl.scrollIntoView({ behavior: "smooth", block: "nearest" });
     }
 
     document.querySelector("#copy-btn").addEventListener("click", async () => {
