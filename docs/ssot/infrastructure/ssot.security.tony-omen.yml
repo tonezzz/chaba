@@ -2,7 +2,7 @@ title: Security Posture — tony-omen
 subtitle: Declared security state for the primary workstation; diffed live by scripts/audit-security.py
 icon: shield
 version: 1
-last_updated: "2026-09-24"
+last_updated: "2026-09-27"
 maintainer: tony
 
 host: tony-omen
@@ -18,11 +18,11 @@ expected_exposure:
   - { listener: "0.0.0.0:11434", class: lan, service: ollama }
   - { listener: "0.0.0.0:3000",  class: lan, service: yomi-api }
   - { listener: "0.0.0.0:3002",  class: lan, service: weaviate-api, note: "chaba scripts/weaviate/api.mjs" }
-  - { listener: "0.0.0.0:5000",  class: lan, service: embedding-service-gpu, note: "chaba embeddings (venv-embeddings)" }
+  - { listener: "127.0.0.1:5000", class: loopback, service: weaviate-embed-proxy, note: "systemd-socket-proxyd -> mn01:5000; embedding-service moved to mn01 2026-09-27" }
   - { listener: "0.0.0.0:7070",  class: lan, service: anydesk, note: "anydesk client listener" }
   - { listener: "0.0.0.0:8001",  class: lan, service: sensor-reader, note: "docker container" }
   - { listener: "0.0.0.0:8123",  class: lan, service: homeassistant, note: "HA instance on omen (python3 -m homeassistant /config)" }
-  - { listener: "0.0.0.0:8780",  class: lan, service: ultralytics-yolo-ha, note: "experiments/ultralytics-yolo-ha server.py" }
+  # 0.0.0.0:8780 ultralytics-yolo-ha removed 2026-09-27 — service moved to mn01
   - { listener: "0.0.0.0:9010",  class: lan, service: tailscale-connections-server, note: "chaba stacks/web" }
   - { listener: "0.0.0.0:9100",  class: lan, service: mcp-debug-cors }
   - { listener: "0.0.0.0:9230",  class: lan, service: playlived, note: "PLAYLIVED_PORT=9230 in playlived.service; values.yml updated 2026-09-24" }

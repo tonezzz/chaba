@@ -14,11 +14,12 @@ condition re-emits only when it newly appears or every 24h while persisting.
 from __future__ import annotations
 
 import json
-import subprocess
 import sys
 import time
 import urllib.request
 from pathlib import Path
+
+import chaba_event
 
 REPO = Path(__file__).resolve().parents[2]
 INBOX = REPO / "docs/ada-memory/inbox"
@@ -26,12 +27,6 @@ STATE = Path.home() / ".cache/ada-memory-health.json"
 NLM_HEALTH = "http://tony-dell:3011/health/auth"
 INBOX_MAX_AGE_S = 7 * 24 * 3600
 REEMIT_AFTER_S = 24 * 3600
-
-EVENT_CMD = [
-    "ssh", "tony-dell",
-    "python3", "/home/tony/.config/home-assistant/scripts/chaba-event-log.py",
-    "add", "-",
-]
 
 
 def emit(check: str, title: str, body: str, requires_response: bool) -> None:
@@ -45,9 +40,8 @@ def emit(check: str, title: str, body: str, requires_response: bool) -> None:
         "confidence": 0.9,
     })
     try:
-        r = subprocess.run(EVENT_CMD, input=payload, capture_output=True,
-                           text=True, timeout=30)
-        print(f"emit {check}: {'ok' if r.returncode == 0 else r.stderr.strip()}")
+        ok, via = chaba_event.send(payload)
+        print(f"emit {check}: {'ok via ' + via if ok else 'failed: ' + via}")
     except Exception as exc:
         print(f"emit {check} failed: {exc}")
 

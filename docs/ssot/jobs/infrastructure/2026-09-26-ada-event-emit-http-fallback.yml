@@ -1,0 +1,85 @@
+title: chaba-event emit HTTP fallback for idc01 jobs
+subtitle: Close the last M6 known gap — idc01 cannot ssh tony-dell (Tailscale SSH check-mode)
+icon: bell
+id: 2026-09-26-ada-event-emit-http-fallback
+status: done
+owner: devin
+project: chaba
+started: "2026-09-26"
+estimated_duration: 1 session
+
+planning:
+  goal: |
+    Ada job event emits (memory-distill, memory-gap-report, recall-drift-report,
+    memory-health-check, memory-staleness-sweep) all pipe to `ssh tony-dell …
+    chaba-event-log.py add -`. On idc01 that ssh path fails — Tailscale SSH
+    check-mode demands a recurring browser auth — so events never reached the
+    chaba-admin Events feed. Jobs themselves succeed; only the notification
+    leg was dead.
+  rationale: |
+    HA on tony-dell already exposes `shell_command.chaba_event`, which pipes a
+    base64 payload into the same chaba-event-log.py. POSTing it over HA REST is
+    a zero-new-infra fallback and is durable (long-lived token vs recurring
+    tailscale re-auth).
+  scope:
+    in_scope:
+      - Shared emit helper used by all five ada job scripts
+      - Provision HA token env to idc01 secrets
+      - Deploy updated scripts to idc01 chaba-vault checkout
+    out_of_scope:
+      - deploy-ada.sh / audit-watchdog.mjs / devin-dispatch-watch.sh emit paths
+        (run interactively or on hosts where ssh works; same pattern if needed)
+      - Fixing Tailscale SSH check-mode ACLs for idc01→tony-dell
+
+implementation:
+  steps:
+    - id: 1
+      label: Add scripts/ada/chaba_event.py (ssh-first, HA-REST fallback)
+      status: done
+      notes: |
+        CHABA_EVENT_TRANSPORT=ssh|http forces a leg; token resolves from
+        env or ~/.config/secrets/home-assistant-token.env. Both legs verified
+        on tony-dell (ssh ok, http ok) and idc01 (ssh fails -> http lands).
+    - id: 2
+      label: Refactor emit_event in the five ada scripts to use the helper
+      status: done
+      notes: memory-distill, memory-gap-report, memory-health-check,
+        memory-staleness-sweep, recall-drift-report — EVENT_CMD removed.
+    - id: 3
+      label: Deploy to idc01 + provision token
+      status: done
+      notes: |
+        scp'd into ~/CascadeProjects/chaba-vault/scripts/ada/ and
+        ~/.config/secrets/home-assistant-token.env (chmod 600). chaba-vault is
+        pinned at 3d16b3d and now carries these files as local modifications
+        until this branch merges to master and the checkout pulls.
+    - id: 4
+      label: Cleanup pass
+      status: done
+      notes: |
+        ssot.health.mobile.yml mddb recovery actions repointed tony-dell ->
+        idc01 quadlet; stacks/mn01/verify.sh updated for standby role
+        (ada units inactive, edge 308s to idc01).
+
+verification:
+  - "ssh idc01 'cd ~/CascadeProjects/chaba-vault/scripts/ada && echo {\"title\":\"t\"} | python3 chaba_event.py' -> 'ok via http'"
+  - "/config/www/chaba-events.json on tony-dell shows the idc01 test event"
+  - "Weekly Sun timers (distill 09:45, gaps 09:30, drift 09:00 on idc01) emit normally"
+
+rollback_plan:
+  - "git checkout on idc01 chaba-vault restores old ssh-only emit (events silently drop again)"
+
+deferred:
+  - "Merge dispatch/20260926-190458-ada-cms-emit-fix to master + push (dispatch session cannot push); then git pull in idc01 chaba-vault to clean the dirty checkout"
+  - "stale ada-ha-tony.env HOME_ASSISTANT_TOKEN on idc01 returns 401 on tony-ha REST — investigate separately (Ada may auth via websocket client_id instead)"
+  - "M7 soak: ~1 week then archive tony-dell mddb.db (from achieved-butter session)"
+
+report:
+  status: done
+  completed_at: "2026-09-26"
+  summary: |
+    Prior session (achieved-butter) follow-ups closed: the 4 "unpushed" chaba
+    commits were already replayed onto origin/master by later rebases;
+    ssot.apps.ada-testing.yml no longer exists (validation is clean); the
+    distill event-emit gap is fixed via an HA-REST fallback now shared by all
+    emit-capable ada job scripts; stale tony-dell MDDB references cleaned.

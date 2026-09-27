@@ -12,7 +12,7 @@ Decision: `docs/ssot/decisions/ssot.technical-decisions.yml` → `tv-casting-gro
 | noVNC/VMS | `input_select.tv_display=vms` → cast-browser nav → `http://tony-dell/apps/vnc/vnc.html` | stale: points at old dell path; update to `/apps/vms/` |
 | Desktop | `cast-desktop@1.service` → HLS | CPUQuota 60% |
 | YouTube | `youtube_*` automation chain → `script.cast_youtube_tv` | picker/queue/search helpers |
-| YouTube + subtitles | Ada `yt_cast` tool → `yt-live-api.py` :8791 → `yt-live.sh` → ffmpeg HLS w/ burned subs | subtitle policy below |
+| YouTube + subtitles | Ada `yt_cast` tool → `yt-live-api.py` :8791 → `yt-live.sh` → ffmpeg HLS w/ burned subs | subtitle policy + media cache below |
 | TTS speak | `tts.speak` on `media_player.tony_tv_cast` | e.g. speak_hello event |
 | IR control | `script.tv_*` via `remote.tony_tv` | power/vol/nav |
 
@@ -21,6 +21,22 @@ home yet): the **original-language line always renders on top**, translations
 below it. `src=EN → +target`, `src==target (e.g. TH→TH) → +EN` (never a
 same-language duplicate), `other src → +EN +target`. Default target is `th`;
 Ada passes `language` to override.
+
+Serving path (changed 2026-09-26): HLS output goes to
+`chaba-tony-dell/stacks/web/public/apps/yt-live/` — the containerized web
+Caddy serves it as `http://<lan-ip>/apps/yt-live/media.m3u8` (`:80` proxies to
+`127.0.0.1:8080`). The retired `:8085` edge served `~/.config/caddy/public`;
+that dir now holds a `yt-live` symlink to the new docroot for stragglers.
+
+Media cache (`~/.cache/yt-live-media/<vid>.<srclang>.<langs>/`): on transcode
+completion a detached `__finalize` step hardlinks the finished HLS output +
+`meta.json` into the cache and writes a `complete` marker. A repeat cast of
+the same video+lang replays instantly (copy dir → `play_media`, ~1–6s);
+search queries check the cache again after yt-dlp resolves the id. LRU cap
+`YT_LIVE_CACHE_MAX` (default 8 GiB) evicts by `last_used`. Bypass with
+`YT_LIVE_NOCACHE=1`; `yt-live.sh cache` lists entries. `/status` exposes
+`media_cache_bytes`/`media_cache_entries`. Subtitle-only cache is separate:
+`~/.cache/yt-live-subs/<vid>.<langs>.vtt` (skips the Gemini pass).
 
 ## TVs
 

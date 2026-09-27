@@ -329,6 +329,38 @@ runbooks:
       - Iterating and previewing on michael-dev is fine; anything that touches michael-ha or tony-ha must be approved.
     note: tony-dell hosts both michael-dev and tony-ha, but they are separate instances; copying a bundle or resource to tony-ha is a deploy, not a local file move.
 
+  tuya_iot_core_trial_renewal:
+    purpose: Renew the expired Tuya developer-project IoT Core trial so OpenAPI
+      calls (device list/info/status/logs, e.g. scripts/home-assistant/nobito-tuya-logs.py)
+      stop returning code 28841002.
+    steps:
+      - "Run: python3 scripts/home-assistant/nobito-tuya-logs.py probe — exit 2 means expired."
+      - "Open https://iot.tuya.com, log in, open the project (code p17871... in ~/.local/share/tuya/project-creds.json)."
+      - "Left menu Cloud -> Cloud Services lists subscribed API products; IoT Core shows expired with a Renew/Extend-trial option. A banner on the project page usually offers the same."
+      - "Click renew/extend, wait ~2-3 minutes for propagation."
+      - "Re-run probe — expect OK with device name + online flag. Then fetch --days 7 and import --dry-run / import."
+    note: |
+      Device linking (Smart Life account -> project) and the service
+      subscription are independent — a device can be linked while every API
+      call still fails with 28841002. The trial lapses roughly monthly.
+      The HA Tuya integration itself uses the Smart-Life user path
+      (config entry 01M1PBMNRENWNDC93N205E0VZA) and is NOT affected — only
+      the developer-project apiKey/apiSecret in project-creds.json.
+    last_updated: '2026-09-26'
+
+  nobito_history_bridge:
+    purpose: Backfill Nobito hourly lo-hi statistics into HA so the
+      chaba-home/Nobito 3D range chart shows real variation.
+    steps:
+      - "Renew the IoT Core trial (tuya_iot_core_trial_renewal); probe must return OK."
+      - "Fetch DP report logs: nobito-tuya-logs.py fetch --days 7 -> ~/.local/share/tuya/nobito-logs/<dp>.jsonl"
+      - "Sanity-check with `nobito-tuya-logs.py live` (subscription-free consumer path — shows current cloud values vs frozen HA states); scale factors are already verified and built in (temp/10, ch2o+voc/1000); --scale code=factor overrides."
+      - "nobito-tuya-logs.py import --dry-run (prints per-entity hourly rows, writes nothing), then import."
+      - "Import targets existing sensor.nobito_* statistic_ids via recorder/import_statistics — the deployed pfg3d range chart picks it up on next statistics refresh; clear the tile's localStorage cache key (pfg3d:<entity>:...) if it looks stale."
+      - "Optional after real data lands: co2 tile min ~400 to tighten the value axis; add temperature/humidity tiles (push-dashboard.py mutate + sync-ssot-from-live.sh; approval needed — tony-ha is live)."
+    job: docs/ssot/jobs/home-assistant/2026-09-26-nobito-tuya-history-bridge.yml
+    last_updated: '2026-09-26'
+
   promote_tony_ha:
     purpose: Promote the dev bundle to tony-ha on tony-dell (rootless podman, port 8123).
     steps:
@@ -389,7 +421,7 @@ runbooks:
   person_detect_switch_automation:
     purpose: Wire YOLO person detection on a go2rtc camera to a switch on tony-ha (used for the Coffee Corner fan).
     steps:
-      - Ensure yolo-xiaomi.service is running; it serves person_count on http://127.0.0.1:8780/detect (source selectable via input_select.yolo_camera_source + rest_command.yolo_set_source)
+      - Ensure yolo-xiaomi.service is running on mn01; it serves person_count on http://mn01.taila0626a.ts.net:8780/detect (source selectable via input_select.yolo_camera_source + rest_command.yolo_set_source)
       - Add a rest resource in configuration.yaml polling /detect every 5s — a sensor for person_count and a binary_sensor gated on the desired source stream
       - Add the automation to automations.yaml: state trigger binary_sensor on for ~5s -> turn_on; off/unavailable/unknown for the clear delay -> turn_off
       - 'Reload live without restart: POST /api/services/rest/reload and /api/services/automation/reload with HA_LONG_LIVED_TOKEN from ~/.config/secrets/home-assistant-token.env'
@@ -438,6 +470,6 @@ runbooks:
     last_updated: '2026-09-23'
 
 status:
-  last_updated: '2026-09-20'
+  last_updated: '2026-09-26'
   last_verified: '2026-09-18'
   health: active; websocket push-dashboard workflow verified; deploy runbook corrected (.storage resource changes need service restart, not ha_reload_core); sidebar API scope documented; stale /local 404 workaround (v-bump) documented; michael-ha working token located in ha-michael-live.env; pfg chart code modularized into src/cards/pfg/ with registry + single placement engine; pfg_3d_charts runbook added (category x-axis, incremental cache, dev-vs-live data note); deployment_policy, promote_tony_ha and build_typecheck runbooks added 2026-09-09; rename_device_via_websocket and person_detect_switch_automation runbooks added 2026-09-18; request_iphone_confirmation runbook added 2026-09-20 (tony-ha iPhone approve/deny via notify.mobile_app_tony_ip + input_text.devin_confirmation, verified end-to-end)

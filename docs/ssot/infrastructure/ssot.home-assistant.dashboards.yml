@@ -49,16 +49,26 @@ instances:
       written to /config/www/pair-qr.svg and shown in a picture card. Admin key
       stays server-side in secrets.yaml.
       Issued-keys card is custom:ada-keys-card (/local/ada-keys-card.js?v=6,
-      repo: stacks/tony-dell/tony-ha/www/ada-keys-card.js) — key row buttons:
-      Voice/Text open the instance's HA-native page popup (chaba-home/ai and
-      /chat — HA is the primary surface, no re-pair); Re-pair refreshes the
-      QR without opening; Revoke calls script.ada_pair_revoke_named.
-      ada_pair_reissue (voice|chat ui) → rest_command.ada_repair_key POST
+      repo: stacks/tony-dell/tony-ha/www/ada-keys-card.js) — key row buttons
+      are driven by the key's `apps` metadata (sensor attribute, default
+      voice+chat): Voice/Text open the instance's HA-native page popup
+      (chaba-home/ai and /chat — HA is the primary surface, no re-pair);
+      View mints a redeem link via ada_pair_reissue ui=cms and opens it
+      (lands on /apps/ha/ada-{inst}/cms). Re-pair shows a modal (inline QR
+      svg + link + expiry countdown + close); Revoke calls
+      script.ada_pair_revoke_named. Rows also show a bound/unbound/shared
+      badge from the sensor's `bindings` attribute.
+      ada_pair_reissue (voice|chat|cms ui) → rest_command.ada_repair_key POST
       /api/auth/keys/{name}/redeem on mn01 (preserves key identity/audit;
-      ui=chat lands on /apps/ha/ada-{instance}/chat).
-      QR display is custom:ada-pair-qr-card (/local/ada-pair-qr-card.js, same
-      repo dir) — renders /local/pair-qr.svg with a ?v= cache-buster derived
-      from the redeem token (stock picture card caches the URL forever).
+      ui=chat lands on /apps/ha/ada-{instance}/chat, ui=cms on .../cms).
+      ada_pair_issue accepts an optional multi-select `apps` field
+      (voice/chat/view) passed through rest_command.ada_issue_key to the
+      backend, which stores it on the key (ada-pi auth.py; empty/missing =
+      voice+chat default). GET /api/auth/keys returns issued + bindings +
+      apps; the sensors carry all three in json_attributes.
+      QR display was custom:ada-pair-qr-card — removed from the view
+      2026-09-23 (QR now pops as a modal from the re-pair button); the
+      lovelace resource + repo file remain registered but unused.
       Users card is custom:ada-users-card (same repo dir) — lists HA auth
       users via config/auth/list; Issue runs script.ada_pair_issue, keyed
       users get a QR-icon button opening an overlay with the redeem QR +
@@ -255,7 +265,12 @@ instances:
       air_quality_index (enum 1–4), battery + battery_state (diagnostic).
       Caveat: HA only sees Tuya cloud snapshots — Tuya's own dp-log shows
       finer movement than HA statistics; hourly min==max slivers are
-      expected while the sensor sleeps. 2026-09-25: Report tab added after
+      expected while the sensor sleeps. 2026-09-26: backfill bridge staged —
+      scripts/home-assistant/nobito-tuya-logs.py fetches Tuya DP logs and
+      imports hourly min/max/mean into the existing sensor.nobito_*
+      statistic_ids (recorder/import_statistics); currently BLOCKED on the
+      developer-project IoT Core trial being expired (28841002) — runbook
+      tuya_iot_core_trial_renewal. 2026-09-25: Report tab added after
       Chat (live order: AI, Chat, Report, Nobito — Chat was already ahead
       of Nobito live, the repo snapshot had drifted). custom:chaba-report-card
       (/local/chaba-report-card.js?v=2, repo:

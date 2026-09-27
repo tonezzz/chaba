@@ -39,6 +39,8 @@ from pathlib import Path
 
 import yaml
 
+import chaba_event
+
 SSOT = Path(__file__).resolve().parents[2] / "docs/ssot/apps/ssot.apps.ada-memory-banks.yml"
 MDDB_BASE_URL = os.environ.get("MDDB_BASE_URL", "http://100.74.146.0:11023/v1").rstrip("/")
 STATE = Path.home() / ".cache/ada-memory-staleness.json"
@@ -54,12 +56,6 @@ HA_HOST = "tony-dell"
 HA_URL = "http://127.0.0.1:8123"
 TAG_PREFIX = "stale-"
 VERDICT_RE = re.compile(r"^(\w+) \[([^\]]+)\]")
-
-EVENT_CMD = [
-    "ssh", HA_HOST,
-    "python3", "/home/tony/.config/home-assistant/scripts/chaba-event-log.py",
-    "add", "-",
-]
 
 
 def load_state() -> dict:
@@ -137,9 +133,8 @@ def emit_event(title: str, body: str, requires_response: bool = False) -> None:
         "confidence": 0.8,
     })
     try:
-        r = subprocess.run(EVENT_CMD, input=payload, capture_output=True,
-                           text=True, timeout=30)
-        print(f"event: {'ok' if r.returncode == 0 else r.stderr.strip()}")
+        ok, via = chaba_event.send(payload)
+        print(f"event: {'ok via ' + via if ok else 'failed: ' + via}")
     except Exception as exc:
         print(f"event emit failed: {exc}")
 

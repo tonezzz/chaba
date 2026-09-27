@@ -1,8 +1,10 @@
 // ada-keys-card — lists issued Ada HA device keys with per-key actions.
-// Same row layout as ada-users-card: name | QR icon (re-pair popup via
-// script.ada_pair_reissue return_response) | Revoke. Keeps the extra
-// Voice/Text quick-open buttons (HA-native pages self-mint keys).
-// Reads the `issued` attribute of the ada_*_issued_keys rest sensors.
+// Same row layout as ada-users-card: name | bound badge | per-app open
+// buttons (Voice/Text/View driven by the key's `apps` metadata, default
+// voice+chat) | QR icon (re-pair popup via script.ada_pair_reissue
+// return_response — inline svg + link + countdown + close) | Revoke.
+// Reads the `issued`, `bindings`, and `apps` attributes of the
+// ada_*_issued_keys rest sensors.
 class AdaKeysCard extends HTMLElement {
   setConfig(config) {
     this._config = config;
@@ -22,6 +24,53 @@ class AdaKeysCard extends HTMLElement {
   _issued(inst) {
     const st = this._hass && this._hass.states["sensor.ada_" + inst.id + "_issued_keys"];
     return (st && st.attributes && st.attributes.issued) || [];
+  }
+
+  _keyAttrs(inst) {
+    const st = this._hass && this._hass.states["sensor.ada_" + inst.id + "_issued_keys"];
+    const attrs = (st && st.attributes) || {};
+    return { bindings: attrs.bindings || {}, apps: attrs.apps || {} };
+  }
+
+  // Per-app open buttons for an issued key. apps = ["voice","chat","view"];
+  // missing entry → the legacy voice+chat default.
+  _appButtons(inst, key) {
+    const { apps } = this._keyAttrs(inst);
+    const list = apps[key] || ["voice", "chat"];
+    const out = [];
+    if (list.includes("voice")) {
+      const voice = this._btn("Voice");
+      voice.title = "Open the HA-native voice page for this instance (the card self-mints a key)";
+      voice.onclick = () =>
+        window.open(this._haUrl(inst.id), "_blank", "popup,width=1100,height=800");
+      out.push(voice);
+    }
+    if (list.includes("chat")) {
+      const chat = this._btn("Text");
+      chat.title = "Open the HA-native chat page for this instance (the card self-mints a key)";
+      chat.onclick = () =>
+        window.open(this._haUrl(inst.id, "chat"), "_blank", "popup,width=1100,height=800");
+      out.push(chat);
+    }
+    if (list.includes("view")) {
+      const view = this._btn("View");
+      view.title = "Mint a redeem link that lands this key on the cms viewer";
+      view.onclick = () => this._repairAndOpen(inst.id, key, "cms");
+      out.push(view);
+    }
+    return out;
+  }
+
+  _bindBadge(inst, key) {
+    const { bindings } = this._keyAttrs(inst);
+    const bound = bindings[key];
+    const span = document.createElement("span");
+    span.style.cssText = "font-size:.7rem;white-space:nowrap;color:" +
+      (bound ? "var(--success-color,#3fb950)" : "var(--warning-color,#d29922)");
+    span.textContent = bound === "*" ? "shared" : bound ? "bound" : "unbound";
+    span.title = bound && bound !== "*" ? `bound to device ${bound}` :
+      bound === "*" ? "shared key — device binding disabled" : "not bound to a device yet";
+    return span;
   }
 
   _render() {
@@ -48,14 +97,6 @@ class AdaKeysCard extends HTMLElement {
         const name = document.createElement("span");
         name.style.cssText = "flex:1;overflow:hidden;text-overflow:ellipsis;font-family:monospace";
         name.textContent = key;
-        const voice = this._btn("Voice");
-        voice.title = "Open the HA-native voice page for this instance (the card self-mints a key)";
-        voice.onclick = () =>
-          window.open(this._haUrl(inst.id), "_blank", "popup,width=1100,height=800");
-        const chat = this._btn("Text");
-        chat.title = "Open the HA-native chat page for this instance (the card self-mints a key)";
-        chat.onclick = () =>
-          window.open(this._haUrl(inst.id, "chat"), "_blank", "popup,width=1100,height=800");
         const qr = this._iconBtn("mdi:qrcode");
         qr.title = "Re-pair — pop up a fresh pairing QR for this key";
         qr.onclick = () => this._showQrPopup(inst.id, key);
@@ -65,7 +106,7 @@ class AdaKeysCard extends HTMLElement {
           if (confirm(`Revoke key "${key}" on ${inst.title}? The device loses access immediately.`))
             hass.callService("script", "ada_pair_revoke_named", { instance: inst.id, name: key });
         };
-        row.append(name, voice, chat, qr, revoke);
+        row.append(name, this._bindBadge(inst, key), ...this._appButtons(inst, key), qr, revoke);
         list.appendChild(row);
       }
     }
@@ -96,10 +137,14 @@ class AdaKeysCard extends HTMLElement {
     const link = document.createElement("a");
     link.style.cssText = "font-size:.7rem;color:var(--primary-color);word-break:break-all;max-width:280px;cursor:pointer";
     link.rel = "noopener";
+    const expiry = document.createElement("div");
+    expiry.style.cssText = "font-size:.75rem;color:var(--secondary-text-color)";
+    let timer = null;
+    const done = () => { if (timer) clearInterval(timer); ov.remove(); };
     const close = this._btn("Close");
-    close.onclick = () => ov.remove();
-    ov.onclick = (e) => { if (e.target === ov) ov.remove(); };
-    card.append(title, body, link, close);
+    close.onclick = done;
+    ov.onclick = (e) => { if (e.target === ov) done(); };
+    card.append(title, body, link, expiry, close);
     ov.appendChild(card);
     document.body.appendChild(ov);
     try {
@@ -129,9 +174,39 @@ class AdaKeysCard extends HTMLElement {
         window.open(haUrl, "_blank", "popup,width=1100,height=800");
       };
       link.textContent = haUrl;
+      let left = (content && content.expires_in) | 0 || 600;
+      const tick = () => {
+        expiry.textContent = left > 0
+          ? `Single use — expires in ${Math.floor(left / 60)}:${String(left % 60).padStart(2, "0")}`
+          : "Expired — re-pair again for a fresh link.";
+        left -= 1;
+      };
+      tick();
+      timer = setInterval(tick, 1000);
     } catch (err) {
       body.textContent = "Re-pair failed: " + (err.message || err);
       body.style.color = "#b43228";
+    }
+  }
+
+  // Mint a redeem link for an existing key and open it — the redeem endpoint
+  // redirects to the app's path (e.g. /apps/ha/ada-tony/cms for ui="cms")
+  // with the real key handed over via ?api_key=. Used by the View button.
+  async _repairAndOpen(instance, name, ui) {
+    try {
+      const res = await this._hass.callWS({
+        type: "call_service",
+        domain: "script",
+        service: "ada_pair_reissue",
+        service_data: { instance, name, ui },
+        return_response: true,
+      });
+      const content = res && res.response && res.response.content;
+      const path = content && content.redeem_url;
+      if (!path) throw new Error("no redeem url in response");
+      window.open("https://mn01.taila0626a.ts.net" + path, "_blank", "popup,width=1100,height=800");
+    } catch (err) {
+      alert("Open failed: " + (err.message || err));
     }
   }
 

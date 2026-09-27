@@ -1029,6 +1029,19 @@ hosts:
         scope: system
         expected_state: active
         critical: true
+      - name: yolo-xiaomi.service
+        type: service
+        scope: user
+        expected_state: active
+        critical: false
+        note: YOLOv8 person detection on :8780 — moved from tony-omen 2026-09-27
+      - name: weaviate-embedding.service
+        type: service
+        scope: user
+        expected_state: active
+        critical: false
+        note: all-MiniLM-L6-v2 embeddings on :5000 — moved from tony-omen
+          2026-09-27; omen keeps 127.0.0.1:5000 -> mn01 socket proxy
       # ada-memory-* timers moved to idc01 2026-09-24 (consolidation step 6,
       # jobs/infrastructure/2026-09-24-idc01-consolidation.yml) — unit files
       # remain on mn01 disabled as standby.

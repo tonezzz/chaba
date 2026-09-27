@@ -1,0 +1,182 @@
+From: Devin (resumed session artistic-pleasure)
+Subject: evals phase 1 — no_prime A/B lever + per-turn metrics capture
+
+backend/realtime_provider.py
+  attach token totals + duration to response_completed so the scenario
+  runner can diff per-turn usage (totals are cumulative per provider
+  session; runner resets its baseline on reconnect).
+
+pwa_server.py
+  ?no_prime=1 ws param skips session-start prime AND the provider-reconnect
+  re-prime — both injection sites must honor it or the off-arm is
+  contaminated by mid-run Gemini reconnects (leak found on review of
+  pwa_server.py:729-732).
+
+scripts/scenario-live.py
+  --param K=V merges extra ws params after scenario params; per-turn
+  in/out tokens + response latency are recorded into turn_log and a
+  run-level "totals" block in --events-json.
+
+scripts/scenario-report.py
+  tool_calls / in_tokens / out_tokens roll up into report meta so
+  ada-ha-scenario-reports docs carry the bench numbers.
+---
+ backend/realtime_provider.py |  8 +++++++-
+ pwa_server.py                |  8 +++++++-
+ scripts/scenario-live.py     | 36 +++++++++++++++++++++++++++++++++---
+ scripts/scenario-report.py   |  5 +++++
+ 4 files changed, 53 insertions(+), 4 deletions(-)
+
+diff --git a/backend/realtime_provider.py b/backend/realtime_provider.py
+index 0000000..0000000 100644
+--- a/backend/realtime_provider.py
++++ b/backend/realtime_provider.py
+@@ -2925,7 +2925,14 @@
+                             "session=%s assistant response completed duration_ms=%d audio_chunks=%d audio_bytes=%d",
+                             self.session_id, elapsed * 1000, response_audio_chunks, response_audio_bytes,
+                         )
+-                        yield ProviderEvent("response_completed", {})
++                        yield ProviderEvent(
++                            "response_completed",
++                            {
++                                "duration_ms": int(elapsed * 1000),
++                                "in_tokens_total": self.usage_input_tokens,
++                                "out_tokens_total": self.usage_output_tokens,
++                            },
++                        )
+                     self._response_active = False
+ 
+     async def close(self) -> None:
+diff --git a/pwa_server.py b/pwa_server.py
+index 0000000..0000000 100644
+--- a/pwa_server.py
++++ b/pwa_server.py
+@@ -394,6 +394,10 @@
+     """Background session prime: resolve reconnect context (may hit MDDB)
+     then inject the session-start text. Runs after 'ready' is sent so a
+     stalled MDDB can't hold up the client handshake."""
++    if (ws.query_params.get("no_prime") or "").lower() in ("1", "true"):
++        logger.info("session=%s prime skipped (no_prime param)",
++                    provider.session_id)
++        return
+     try:
+         reconnect = await asyncio.wait_for(_reconnect_context(ws), timeout=6.0)
+     except Exception:
+@@ -726,7 +730,9 @@
+                         )
+                         await new_provider.connect(resumption_handle=handle)
+                         provider_ref[0] = new_provider
+-                        if not handle:
++                        no_prime = (ws.query_params.get("no_prime") or ""
++                                    ).lower() in ("1", "true")
++                        if not handle and not no_prime:
+                             # Fresh Gemini context — re-prime so the new
+                             # session starts aware of recent/general memory.
+                             await _prime_session(new_provider)
+diff --git a/scripts/scenario-live.py b/scripts/scenario-live.py
+index 0000000..0000000 100644
+--- a/scripts/scenario-live.py
++++ b/scripts/scenario-live.py
+@@ -293,6 +293,9 @@
+                     help="write per-turn records [{n,ts,kind,prompt,tools,"
+                          "transcript,ok,failures}] to this path — the "
+                          "scenario-report runner renders them as a timeline")
++    ap.add_argument("--param", action="append", default=[], metavar="K=V",
++                    help="extra ws connect param, repeatable — merged after "
++                         "scenario params (bench arms pass e.g. no_prime=1)")
+     args = ap.parse_args()
+ 
+     import os
+@@ -310,6 +313,11 @@
+     for k, v in (spec.get("params") or {}).items():
+         sep = "&" if "?" in url else "?"
+         url = f"{url}{sep}{k}={v}"
++    for kv in args.param:
++        k, _, v = kv.partition("=")
++        if k:
++            sep = "&" if "?" in url else "?"
++            url = f"{url}{sep}{k}={v}"
+ 
+     async def connect(target: str) -> Any:
+         ws = await websockets.connect(target, max_size=8 * 1024 * 1024)
+@@ -330,6 +338,8 @@
+ 
+     total_fail = 0
+     turn_log: list[dict[str, Any]] = []
++    prev_in = prev_out = 0   # cumulative totals of the current provider session
++    sum_in = sum_out = 0     # summed per-turn deltas across session resets
+     run_started = time.time()
+     ws = None
+     try:
+@@ -383,6 +393,21 @@
+                 events, failures = await run_turn(
+                     ws, text, expect, args.verbose, audio=audio_bytes
+                 )
++            comps = [e for e in events if e.get("type") == "response_completed"]
++            tot_in = int(comps[-1].get("in_tokens_total") or 0) if comps else None
++            tot_out = int(comps[-1].get("out_tokens_total") or 0) if comps else None
++            if tot_in is not None:
++                # provider/ws reconnect → new session → totals reset
++                if (tot_in < prev_in
++                        or any(e.get("type") == "live_reconnecting" for e in events)):
++                    prev_in = prev_out = 0
++                turn_in, turn_out = tot_in - prev_in, tot_out - prev_out
++                prev_in, prev_out = tot_in, tot_out
++                sum_in += turn_in
++                sum_out += turn_out
++            else:
++                turn_in = turn_out = None
++            latency = round(comps[-1]["_t"], 1) if comps else None
+             if args.timing:
+                 for e in events:
+                     t = e.get("type")
+@@ -406,15 +431,19 @@
+                 "transcript": transcript[:200],
+                 "ok": not failures,
+                 "failures": [str(f) for f in (failures or [])],
++                "n_tools": n_tools,
++                "latency_s": latency,
++                "in_tokens": turn_in,
++                "out_tokens": turn_out,
+             })
+             if failures:
+                 total_fail += len(failures)
+-                print(f"  FAIL ({n_tools} tool calls)")
++                print(f"  FAIL ({n_tools} calls, {turn_in or '?'}in/{turn_out or '?'}out tok, {latency}s)")
+                 for f in failures:
+                     print(f"    - {f}")
+                 print(f"    transcript: {transcript[:300]!r}")
+             else:
+-                print(f"  ok ({n_tools} tool calls) ada: {transcript[:140]!r}")
++                print(f"  ok ({n_tools} calls, {turn_in or '?'}in/{turn_out or '?'}out tok, {latency}s) ada: {transcript[:140]!r}")
+     finally:
+         if ws is not None:
+             await ws.close()
+@@ -445,6 +474,8 @@
+                 "duration_s": round(time.time() - run_started, 1),
+                 "turns": turn_log,
+                 "passed": total_fail == 0,
++                "totals": {"tool_calls": sum(len(t["tools"]) for t in turn_log),
++                           "in_tokens": sum_in, "out_tokens": sum_out},
+             }, ensure_ascii=False, indent=1), encoding="utf-8")
+         except OSError as exc:
+             print(f"events-json write failed: {exc}")
+diff --git a/scripts/scenario-report.py b/scripts/scenario-report.py
+index 0000000..0000000 100644
+--- a/scripts/scenario-report.py
++++ b/scripts/scenario-report.py
+@@ -129,9 +129,14 @@
+         turns = events.get("turns") or []
+         meta["turns"] = [str(len(turns))]
+         meta["duration_s"] = [str(events.get("duration_s") or "")]
++        meta["tool_calls"] = [str(sum(len(t.get("tools") or []) for t in turns))]
+         failed = [str(t.get("n")) for t in turns if not t.get("ok")]
+         if failed:
+             meta["failed_turns"] = failed
++        totals = events.get("totals") or {}
++        for k in ("in_tokens", "out_tokens"):
++            if totals.get(k):
++                meta[k] = [str(totals[k])]
+     content = (f"# {scenario} — {status}\n\n" + _timeline_md(events)
+                + "\n## Runner output\n\n" + transcript)
+     return _post(f"{mddb.rstrip('/')}/add", {

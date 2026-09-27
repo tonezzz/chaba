@@ -1,0 +1,72 @@
+# SSOT Job: Ada pairing UI — QR modal, per-key apps metadata, cms selector
+# Dispatch task dispatch-wt-20260926-193151, continuing the plan from prior
+# session aromatic-family (see its tail in sessions.db).
+
+title: Ada pairing UI — QR modal + key apps metadata
+subtitle: Modal QR on re-pair, ui=cms View path, apps metadata on keys, bindings in sensors
+icon: qrcode-edit
+
+status: implemented-not-deployed
+
+context: |
+  Plan origin: session aromatic-family. Since then the chaba-admin/pair view
+  changed — ada-pair-qr-card was already removed (2026-09-23) and the issued
+  keys list was merged into custom:ada-users-card (ada-keys-card remains a
+  registered resource, not on the view). So item 1's view removal needed no
+  mutation; the QR modal lives in ada-users-card (and ada-keys-card for
+  parity).
+
+changes:
+  chaba_repo:
+    branch: dispatch/20260926-193151-proceed-with-the-pairing-ui-pl
+    files:
+      - "stacks/tony-dell/tony-ha/www/ada-users-card.js — other-issued-keys rows render a bound|unbound|shared badge (sensor `bindings` attr) and per-app open buttons driven by the key's `apps` metadata (missing -> voice+chat default); View -> _repairAndOpen(ui=cms): callWS script.ada_pair_reissue return_response -> window.open the redeem URL, which 302s to /apps/ha/ada-{inst}/cms/?api_key=; QR modal refactored into _openQrOverlay/_fillQrOverlay with an expiry countdown (content.expires_in, default 600s), cleared on close/backdrop; Issue now uses callWS return_response and pops the same modal (restores the issue->QR flow lost when ada-pair-qr-card left the view)"
+      - "stacks/tony-dell/tony-ha/www/ada-keys-card.js — same apps-driven buttons, bind badge, countdown; kept in sync though currently not on the view"
+      - "stacks/web/public/apps/ha/pair/index.html — #result card -> fixed overlay modal (#overlay) with QR, copyable link, countdown, Close + backdrop click; issue form gained an Apps picker (Voice/Text/View checkboxes, Voice+Text default) -> POST /api/auth/keys {apps}; device rows render per-app open buttons (mint redeem with redirect={base}/|/chat|/cms -> window.open) and a shared badge for '*' bindings"
+      - "docs/ssot/infrastructure/ssot.home-assistant.dashboards.yml — chaba_admin note rewritten for modal/apps/cms/bindings"
+      - "docs/ssot/apps/ssot.apps.ada_ha.yml — device-keys endpoint doc updated ({name, apps?}, apps in GET)"
+  ha_config_repo:
+    note: "Path /home/tony/.config/home-assistant — edits left UNCOMMITTED (not deployed; take effect on next ha core reload/restart)"
+    files:
+      - "scripts.yaml — ada_pair_reissue: ui selector += cms; redirect maps chat -> {base}/chat, cms -> {base}/cms, voice -> empty; ada_pair_issue: new optional multi-select field apps (voice/chat/view) -> rest_command.ada_issue_key as a JSON string, plus trailing `stop: issued` + `response_variable: resp` so callers get {content: {qr_svg, redeem_url, expires_in}} back"
+      - "configuration.yaml — rest_command.ada_issue_key payload += apps (script sends a to_json string so it inserts as a real array, default []); sensors ada_tony_issued_keys / ada_michael_issued_keys json_attributes += bindings, apps"
+  ada_pi_repo:
+    note: "Worktree /home/tony/CascadeProjects/dispatch-wt-20260926-193151-ada-keys-apps, branch dispatch/20260926-193151-ada-keys-apps (commit 33cf55b, NOT merged to main)"
+    files:
+      - "backend/auth.py — VALID_KEY_APPS = (voice, chat, view) + _clean_apps sanitizer; _key_entries normalizes apps; create_key(name, apps=None) stores it; issued_key_apps() accessor; bind_device now mutates the entry in place (was rebuilding and would have dropped apps)"
+      - "pwa_server.py — POST /api/auth/keys accepts payload.apps; GET /api/auth/keys returns apps alongside issued/bindings"
+      - "tests/test_auth.py — +2 tests (apps roundtrip, bind preserves apps)"
+
+deploy_checklist: |
+  Nothing is live yet. To deploy, in order:
+    1. Merge ada-pi dispatch/20260926-193151-ada-keys-apps to main; restart
+       ada-ha-tony + ada-ha-michael (systemd user units on idc01).
+    2. Commit HA config edits (scripts.yaml, configuration.yaml) and
+       `ha core reload` (or restart) on tony-ha.
+    3. cp stacks/tony-dell/tony-ha/www/{ada-users-card,ada-keys-card}.js ->
+       ~/.config/home-assistant/www/ and bump ?v= in lovelace_resources.
+    4. Deploy stacks/web/public/apps/ha/pair/ to mn01 caddy public + the
+       tony-dell stacks/web public dir.
+    5. Optional cleanup: drop the unused ada-pair-qr-card lovelace resource
+       and delete www/ada-pair-qr-card.js + repo copy.
+    6. Re-issue cms-viewer with apps=["view"] (or edit the keys file) so it
+       shows View-only.
+  Rollback: all changes are additive/backward-compatible — old callers send
+  no apps and get the voice+chat default everywhere.
+
+verification: |
+  - ada-pi: python3 -m unittest tests.test_auth (11 tests, OK — run in the
+    ada-keys-apps worktree).
+  - YAML parsed with a tolerant loader (scripts.yaml, configuration.yaml OK).
+  - node --check on both card JS files and the pair page script — clean.
+  - node scripts/ssot-validate-all.mjs — all files valid.
+  - Post-deploy: pair a test key with apps=["view"], confirm the row shows
+    only View + QR + Revoke, and View lands on /apps/ha/ada-tony/cms/.
+
+notes: |
+  - /apps/ha/pair/ redeem open-buttons reset the device binding (re-pair
+    semantics) — '*' shared bindings are preserved by auth.unbind_device.
+  - The modal link still opens the HA web UI (HA is the primary surface);
+    the redeem URL is what the QR encodes.
+  - ada_pair_reissue still writes pair-qr.svg + input_text.ada_pair_redeem_url
+    — dead display state kept for debugging; nothing renders it.
