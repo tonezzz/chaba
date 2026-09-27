@@ -8,7 +8,10 @@ set -euo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
 
 podman build -t localhost/ada-scenario-runner:latest "$HERE"
-mkdir -p ~/.config/containers/systemd
+mkdir -p ~/.config/containers/systemd ~/.config/systemd/user
 cp "$HERE"/ada-scenario-*.container ~/.config/containers/systemd/
+cp "$HERE"/ada-scenario-research.service "$HERE"/ada-scenario-research.timer \
+   ~/.config/systemd/user/
 systemctl --user daemon-reload
-echo "installed — run: systemctl --user start ada-scenario-smoke|full"
+systemctl --user enable --now ada-scenario-research.timer
+echo "installed — run: systemctl --user start ada-scenario-smoke|full|research"
