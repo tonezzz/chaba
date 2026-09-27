@@ -68,6 +68,16 @@ L2/L3 reference.
 - `tests/bench_recall.py` — rerunnable latency bench (commit `bench_recall`
   output into this doc on re-runs)
 
+## Live test results (2026-09-27)
+
+| Test | Result | Notes |
+|---|---|---|
+| `memory_index_recall` scenario | **PASS** (baseline) | Ada answers via 2–3 tool calls/turn today; relaxes to `no_calls` once L0 injection lands |
+| `cms_publish_handshake` scenario | **PASS** | pending-register → "yes" → publish → `cms_verify_page` — the new stateful gate held; `bench-ping` test page deleted after |
+| `bench_recall.py` on idc01 | mddb vector **1–2ms**, keyword 3ms, get 1ms, weaviate ANN **29ms** (tailnet) | recall search is already sub-perceptual — the win is removing tool roundtrips, not storage speed |
+
+Scenario runs: `scripts/scenario-live.py <file> --url ws://127.0.0.1:8002/ws --api-key $ADA_API_KEY` on idc01.
+
 ## Effort estimate
 
 L0 index producer + injection: ~half day in ada-pi + one session-end test.
