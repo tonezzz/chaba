@@ -97,3 +97,24 @@ Tony, cosine 0.427) at 63%. Cleanup of `NewSpeaker` + `Timmy` (dup of
 | 4 | Speaker profile dedup (NewSpeaker, Timmy) | awaiting Tony approval |
 | 5 | Instruction nudge: describe shared bank accurately | open |
 | 6 | Shared-memory audit scenario | live, catching bugs |
+
+### Confirmed Ada-side language flips (added 12:35)
+
+Beyond ambient-media ingestion, real output-language flips confirmed:
+
+- **05:58:31** (session 681e1d6817) — Thai question answered in English
+  ("In memory, Devin does have a proper failure path…"); user had to say
+  "ภาษาไทยเด้อ". Cause class: model mirrors whatever English context
+  (tool/memory hits) dominated the turn.
+- **"ฮ่องกงอีกแล้ว"** — twice across sessions 40620e99d7 / d55e2767cf,
+  the reconnect greeting came out sounding Chinese. Cause class: Gemini
+  Live picks a language for the greeting turn; system instructions are
+  English and the voice sits near a CJK register when primed that way.
+
+Fix deployed (`39309f8`): LANGUAGE FIDELITY instruction — reply in the
+user's most-recent-turn language; reconnect greetings use the
+conversation's dominant language; English tool/system context never
+changes spoken language.
+
+Still open: speaker-ID kept addressing Tony as คุณกุ้ง in session
+d55e2767cf — the Timmy/NewSpeaker contamination needs profile cleanup.
