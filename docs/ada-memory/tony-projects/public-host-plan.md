@@ -263,12 +263,9 @@ writes are local on the VPS — unaffected.
   meta-churn conflict resolved via --take-remote), obsidian-vault-sync, mddb-backup
   (nightly, verified landing), open-notebook-backup, obsidian-vault-backup,
   ada-recall-canary, ada-memory-drift, ada-memory-gaps, ada-memory-distill
-  (migrated off mn01 + smoke-tested — emitted 2 drafts). Emit gap resolved
-  2026-09-26: `ssh tony-dell` is blocked from idc01 by Tailscale SSH
-  check-mode, so all emit-capable ada jobs now use `scripts/ada/chaba_event.py`
-  (ssh first, falls back to HA REST `shell_command.chaba_event`; token in
-  `~/.config/secrets/home-assistant-token.env` on idc01). Verified — an
-  idc01 emit lands in `/local/chaba-events.json`.
+  (migrated off mn01 + smoke-tested — emitted 2 drafts). Known gap: distill's
+  chaba-event-log emit does `ssh tony-dell` which idc01 can't reach — non-fatal,
+  events just don't land in the HA log.
 - M7 pending — soak ~1 week → archive tony-dell mddb.db → disable
 
 ## 12. Open questions for Tony
