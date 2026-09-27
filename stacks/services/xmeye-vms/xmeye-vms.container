@@ -1,0 +1,26 @@
+[Unit]
+Description=XMEye VMS (Wine + Xvfb + x11vnc) DVR viewer
+After=network-online.target
+Wants=network-online.target
+
+[Container]
+Image=localhost/xmeye-vms-x11vnc:latest
+ContainerName=xmeye-vms-vnc
+# Per-host bind IP — set to this host's tailscale IPv4. VNC has no password;
+# never bind 0.0.0.0 or a LAN/public interface.
+PublishPort=100.106.196.22:5900:5900
+Volume=%h/.local/share/xmeye-vms/vms-runtime:/app
+Volume=%h/.local/share/xmeye-vms/wineprefix:/wine
+Environment=WINEPREFIX=/wine
+Environment=DISPLAY=:99
+Environment=WINEDEBUG=-all
+Environment=WINEDLLOVERRIDES=uxtheme=b;UxTheme=b
+Exec=bash /app/start-vms.sh
+PodmanArgs=--cpus 0.5
+
+[Service]
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=default.target

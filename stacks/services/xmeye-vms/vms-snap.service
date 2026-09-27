@@ -1,0 +1,12 @@
+[Unit]
+Description=vms-snap — HTTP camera snapshot shim for XMEye VMS
+After=xmeye-vms.service
+Requires=xmeye-vms.service
+
+[Service]
+ExecStart=%h/.local/share/xmeye-vms-stack/vms-snap.py --bind 100.106.196.22 --port 8377
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target
