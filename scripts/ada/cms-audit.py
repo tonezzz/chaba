@@ -47,17 +47,39 @@ def audit(doc):
             fails.append("N4:no-why-it-matters")
     return fails
 
+def publish(lines: list[str], passed: int, failed: int) -> None:
+    """Upsert results to ada-cms-pages/cms-audit-report."""
+    import datetime
+    body = ("# CMS audit\n\nRun " +
+            datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds") +
+            f" — {passed} pass, {failed} fail\n\n```\n" + "\n".join(lines) + "\n```\n")
+    payload = {"collection": "ada-cms-pages", "key": "cms-audit-report",
+               "lang": "en", "contentMd": body,
+               "meta": {"kind": ["page"], "slug": ["cms-audit-report"],
+                        "title": ["CMS Audit Report"], "format": ["markdown"],
+                        "updated": [datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds")],
+                        "instance": ["cms-audit"]}}
+    req = urllib.request.Request(f"{MDDB}/add",
+        data=json.dumps(payload).encode(), headers={"Content-Type": "application/json"})
+    urllib.request.urlopen(req, timeout=30)
+
+
 def main():
+    publish_flag = "--publish" in sys.argv
+    only = next((a for a in sys.argv[1:] if not a.startswith("--")), None)
     pages = get_pages()
-    only = sys.argv[1] if len(sys.argv) > 1 else None
-    passed = failed = 0
+    lines, passed, failed = [], 0, 0
     for d in sorted(pages, key=lambda x: x["key"]):
         if only and not d["key"].startswith(only): continue
         fails = audit(d)
         if fails:
-            failed += 1; print(f"FAIL {d['key']:42} {', '.join(fails)}")
+            failed += 1; lines.append(f"FAIL {d['key']:42} {', '.join(fails)}")
         else:
-            passed += 1; print(f"pass {d['key']:42} {len(d.get('contentMd') or '')}c")
-    print(f"\n{passed} pass · {failed} fail")
+            passed += 1; lines.append(f"pass {d['key']:42} {len(d.get('contentMd') or '')}c")
+    lines.append(f"\n{passed} pass · {failed} fail")
+    print("\n".join(lines))
+    if publish_flag:
+        publish(lines, passed, failed)
+        print("published -> ada-cms-pages/cms-audit-report")
 
 main()
