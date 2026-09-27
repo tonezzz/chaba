@@ -79,3 +79,25 @@ devin-* toolset + github/docs MCP plus focused prompt cards. Gate by
 
 ## Weaviate continuation — see `ada-recall-architecture` page
 (updated: staged plan, decision gate, and metrics)
+
+## Connect UX — system boot voice (added 2026-09-27)
+
+Mic click → flat machine voice narrates each stage until Ada takes over:
+
+| Stage | Line |
+|---|---|
+| click | "Initializing voice link." |
+| mic ready | "Microphone ready. Establishing channel." |
+| ws open | "Channel open. Handing over to Ada." |
+| `ready` | "Ada online. Listening." |
+| failure | "Link failed. <reason>" |
+
+Implementation: browser `speechSynthesis` — pitch 0.85, rate 1.15,
+en-US voice — crisp and non-emotional by construction. The mic click
+is the user gesture that unlocks it on iOS/Safari. `systemHush()`
+cancels pending announcements on `response_started` (Ada speaks),
+ws close, and disconnect. Files: `pwa/app.js`.
+
+Next-step options if you want it more sci-fi: pre-baked WAV clips
+(synthesized once, zero TTS variance), a soft hum while connecting,
+or a distinct "Ada online" chime before the voice.
