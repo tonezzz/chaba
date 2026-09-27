@@ -101,3 +101,23 @@ ws close, and disconnect. Files: `pwa/app.js`.
 Next-step options if you want it more sci-fi: pre-baked WAV clips
 (synthesized once, zero TTS variance), a soft hum while connecting,
 or a distinct "Ada online" chime before the voice.
+
+## CMS ops assessment — 2026-09-27 (`cms_ops_assessment`, 9 turns, all PASS)
+
+Full lifecycle works end to end: list → read → publish (handshake) →
+verify → update → delete → honest not-found. Mechanical competence is
+fine — the pain Tony reports is *friction*, not failure:
+
+- **Stale pending handshakes bleed across sessions.** `_cms_pending`
+  lives on the shared `tool_runner` — a confirm request registered in
+  session A that never resolved greets session B with "should I delete
+  that page?" mid-conversation. Fix: namespace pending by session or
+  expire them.
+- **Confirmation phrasing is stricter than natural speech.** Turn 6
+  denied "Confirm the update." — Ada demanded an explicit "ใช่". The
+  `_CONFIRM_RE` + pending-handshake double gate means any soft
+  affirmative outside the regex loops her back to asking. Widened
+  earlier (`086de1b`) but the edge persists for phrasing like
+  "confirm the update" / "go ahead with it".
+- Both are UX-level, not correctness — every denied call refused safely
+  rather than publishing unwanted content.
