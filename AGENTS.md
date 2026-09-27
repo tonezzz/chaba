@@ -131,6 +131,7 @@ no password — never bind LAN/public). tony-dell keeps the old container stoppe
   - `QR.jpg`
   - `qr-noble-a.jpg`
 - Set `autologin=true` in `config.ini` after the saved hash is in place to skip the login prompt on next restart.
+- `vms-snap.service` (user unit, same stack): HTTP still-frame shim at `<bind-ip>:8377` — `GET /snap?ch=<name>` clicks the channel in the device tree via xdotool, xwd-captures pane 1, returns PNG (~10s). Channel→coordinate map in `channels.json` (recalibrate if the tree changes — see README). Ada reaches it via `ADA_VMS_SNAP_URL` (ada-ha-tony only; `ada_camera_snapshot` tool).
 
 ## GEV Gemini Live voice deployment
 
