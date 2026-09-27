@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Chaba Lab</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = { theme: { extend: {
+      colors: { bg: '#1a1a2e', card: '#16213e', accent: '#0a84ff' } } } };
+  </script>
+  <style>
+    body { font-family: system-ui, sans-serif; }
+    a.url { color: #7cc3ff; word-break: break-all; font-family: ui-monospace, monospace; font-size: 12px; }
+    a.url:hover { text-decoration: underline; }
+    td { padding: 6px 10px 6px 0; vertical-align: top; }
+  </style>
+</head>
+<body class="bg-bg text-gray-200 min-h-screen">
+  <nav class="bg-card border-b border-gray-800">
+    <div class="max-w-6xl mx-auto px-4 h-12 flex items-center gap-6" id="nav"></div>
+  </nav>
+  <main class="max-w-6xl mx-auto px-4 py-6">
+    <h1 class="text-2xl font-bold mb-1">🧫 Chaba Lab</h1>
+    <p class="text-gray-400 text-sm mb-6">Every project URL — click to test. Grouped by hub section, then internal endpoints.</p>
+    <div id="groups"></div>
+    <div id="endpoints"></div>
+  </main>
+  <script src="https://cdn.jsdelivr.net/npm/js-yaml@4.1.0/dist/js-yaml.min.js"></script>
+  <script>
+    // Internal endpoints not in apps.yml — raw services/APIs for testing.
+    const ENDPOINTS = [
+      { sec: 'Ada / voice', rows: [
+        ['Ada Tony ws', 'wss://idc01.taila0626a.ts.net/apps/ha/ada-tony/ws'],
+        ['Ada Michael ws', 'wss://idc01.taila0626a.ts.net/apps/ha/ada-michael/ws'],
+        ['Ada PWA (voice)', 'https://idc01.taila0626a.ts.net/'],
+        ['Speaker enroll', 'https://idc01.taila0626a.ts.net/enroll.html'],
+        ['Ada usage API', 'https://idc01.taila0626a.ts.net/apps/ha/ada-tony/api/usage'],
+      ]},
+      { sec: 'Cameras / casts', rows: [
+        ['go2rtc streams (mn/dell LAN)', 'http://192.168.2.67:1984/'],
+        ['VMS noVNC (XMEye)', 'https://tony-dell.taila0626a.ts.net/apps/vms/'],
+        ['vcast relay /displays', 'https://tony-dell.taila0626a.ts.net/api/input-bridge/displays'],
+        ['Latest cam snapshot dir', 'https://tony-dell.taila0626a.ts.net:8123/local/cam/'],
+      ]},
+      { sec: 'Home Assistant', rows: [
+        ['Tony HA', 'https://tony-dell.taila0626a.ts.net:8123/'],
+        ['Michael Dev HA', 'https://tony-dell.taila0626a.ts.net:8124/'],
+        ['Michael HA (Nabu Casa)', 'https://nupo4ndqdqydt78zmpq0z5wzp1bdrqgs.ui.nabu.casa/'],
+        ['Chaba home chat', 'https://tony-dell.taila0626a.ts.net:8123/chaba-home/chat'],
+      ]},
+      { sec: 'Backends / data', rows: [
+        ['MDDB api', 'https://idc01.taila0626a.ts.net:11023/v1/stats'],
+        ['Focus board', 'https://tony-dell.taila0626a.ts.net/apps/focus/'],
+        ['Health check', 'https://tony-dell.taila0626a.ts.net/apps/health-check/'],
+        ['Report feed (json)', 'https://tony-dell.taila0626a.ts.net/data/report.json'],
+      ]},
+    ];
+    fetch('../apps.yml').then(r => r.text()).then(text => {
+      const data = jsyaml.load(text);
+      document.getElementById('nav').innerHTML = (data.nav || []).map(n =>
+        `<a href="${n.href}" class="text-sm text-gray-300 hover:text-accent">${n.label}</a>`
+      ).join('');
+      const appMap = new Map((data.apps || []).map(a => [a.id, a]));
+      const hostname = window.location.hostname;
+      const hostLabel = hostname.includes('mn01') ? 'mn01' : 'tony-dell';
+      const resolve = (a) =>
+        (a.host && a.host_url && a.host !== hostLabel) ? a.host_url + a.href : a.href;
+      let html = '';
+      (data.groups || []).forEach(g => {
+        const rows = (g.apps || []).map(id => appMap.get(id)).filter(Boolean)
+          .map(a => `<tr><td class="text-gray-300 whitespace-nowrap">${a.icon||''} ${a.title}</td>
+                     <td><a class="url" href="${resolve(a)}">${resolve(a)}</a></td>
+                     <td class="text-gray-500 text-xs">${a.host && a.host!==hostLabel ? a.host : ''}</td></tr>`).join('');
+        if (rows) html += `<h2 class="text-lg font-semibold mt-5 mb-2 text-white">${g.icon||''} ${g.title}</h2>
+          <div class="bg-card border border-gray-700 rounded p-3 mb-2"><table>${rows}</table></div>`;
+      });
+      document.getElementById('groups').innerHTML = html;
+      let eh = `<h2 class="text-lg font-semibold mt-8 mb-2 text-white">🔌 Internal endpoints</h2>`;
+      ENDPOINTS.forEach(s => {
+        eh += `<h3 class="text-sm font-semibold mt-4 mb-1 text-gray-300">${s.sec}</h3>
+          <div class="bg-card border border-gray-700 rounded p-3"><table>${s.rows.map(r =>
+            `<tr><td class="text-gray-300 whitespace-nowrap">${r[0]}</td>
+             <td><a class="url" href="${r[1]}">${r[1]}</a></td></tr>`).join('')}</table></div>`;
+      });
+      document.getElementById('endpoints').innerHTML = eh;
+    });
+  </script>
+</body>
+</html>
