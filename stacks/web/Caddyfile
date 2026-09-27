@@ -41,6 +41,13 @@ http://127.0.0.1:8080 {
 		redir /apps/gev/ 308
 	}
 
+	# GEV command relay — Ada/tooling drives connected GEV clients
+	# (POST /command {name,args} -> function_call frame to browser clients)
+	handle /apps/gev-cmd/* {
+		uri strip_prefix /apps/gev-cmd
+		reverse_proxy 127.0.0.1:8790
+	}
+
 	# GEV API proxy - must come before static files
 	handle /apps/gev/api/* {
 		uri strip_prefix /apps/gev
