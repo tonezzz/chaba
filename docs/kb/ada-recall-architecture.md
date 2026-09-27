@@ -78,6 +78,29 @@ L2/L3 reference.
 
 Scenario runs: `scripts/scenario-live.py <file> --url ws://127.0.0.1:8002/ws --api-key $ADA_API_KEY` on idc01.
 
+## Embedding provenance (added 2026-09-27)
+
+Actual chain on idc01:
+
+```
+mddb (provider=ollama, model=nomic-embed-text — alias only)
+  → 127.0.0.1:11435 gemini-ollama-proxy (node shim)
+      PRIMARY: OpenRouter → google/gemini-embedding-2   (OPENROUTER_PRIMARY=1, active)
+      fallback: Gemini direct (gemini-embedding-2 ↔ 001 alternation)
+      last resort: real ollama nomic-embed-text (:11434)
+```
+
+Tony's earlier OpenRouter decision **is in effect** — `OPENROUTER_PRIMARY=1`
+with key configured in the proxy env.
+
+**Memory-confusion hypothesis**: plausible but *mixed-vector-space* is the
+mechanism, not model choice per se — docs embedded before the OpenRouter
+switch live in a different vector space, so current-space queries may
+under/over-rank them. Recommend a one-off re-vectorize of the ada banks,
+then re-run `bench_recall` + the scenario suite to measure delta.
+Note: the speaker-ID flips (Timmy↔กุ้ง etc.) are a **separate embedding
+pipeline** (voice profiles) — unrelated to mddb embeddings.
+
 ## Effort estimate
 
 L0 index producer + injection: ~half day in ada-pi + one session-end test.
