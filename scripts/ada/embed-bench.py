@@ -197,6 +197,42 @@ cosine(OR, direct) per doc — mean **{rep['cosine']['mean']}**, min **{rep['cos
 - Backup chain in proxy: OR → direct Gemini → local Ollama (`nomic-embed-text`)
 - Hard-fail on OR error is deliberate — a different-space fallback would
   poison retrieval silently.
+
+## Pros & cons of keeping OR in parallel
+
+**Pros**
+- Same vector space proven (cosine 1.000) — OR is a true mirror, no
+  re-embed or collection migration ever needed.
+- Off the Gemini free tier — embeddings no longer share the 20-req/day
+  budget with grounded `web_search` and voice traffic.
+- Predictable spend: measured **$0.0016/run**; steady state < $0.01/mo.
+- Chain stays intact on OR outage: OR → (direct Gemini) → local Ollama.
+
+**Cons**
+- ~5× slower per batch — OR's Vertex route rejects array input, so every
+  text is its own HTTP call (fine at our write volume).
+- Hard dependency: the proxy *refuses* wrong-space fallback, so an OR
+  outage means embed failures until direct-Gemini leg kicks in.
+- Silent spend creep — needs an occasional usage check, not alerts.
+- OR AI-Studio provider route is broken (bogus API_KEY_INVALID) —
+  pinned `order:[Google]` is the only working path.
+
+## Improvement candidates (ranked)
+
+1. **Restore `GEMINI_API_KEY` in `mddb-gemini.env`** — the file lost it
+   when OR went primary, so the middle fallback leg (direct Gemini) is
+   currently dead; an OR outage falls straight to Ollama, a DIFFERENT
+   vector space (nomic-embed-text) — the exact silent-poisoning the
+   design warns about. Highest value, zero cost. ⚠ verify before outage.
+2. **Add an OR search tier to `web_search`** — bigger win than embeddings:
+   paid Gemini grounding ≈ $35/1K queries vs OR sonar ≈ $5/1K. Would sit
+   between Gemini (20/day free) and DuckDuckGo. Needs a bench first.
+3. **Parallelize OR embed calls** (4-8 concurrent) in the proxy — recovers
+   most of the 5× latency gap while keeping the 1-req/text shape.
+4. **Weekly `embed-bench` timer + OR usage readout** — catches spend creep
+   and model-version drift automatically; cheap (pennies/month).
+5. **Pin `dimensions:768` + model version in SSOT** — mddb assumes 768;
+   a silent model bump on either route would break retrieval parity.
 """
         http_json(f"{MDDB}/add", {
             "collection": "ada-cms-pages", "key": "gemini-or-embedding-benchmark",
