@@ -22,6 +22,29 @@ Likely mechanisms (evidence-ranked):
    75%" identically on every voice test including a YouTube voice. The
    reported confidence appears session-sticky rather than per-utterance.
 
+### Root cause — ambient audio becomes user turns (confirmed)
+
+Transcript `2026-09-27-67d22d0e08` shows TV/YouTube audio logged as
+`## User` turns verbatim: "Goose meat represented less than 2.1 million
+tons…", "Industrial civilization cannot survive…", "nation, China…",
+"Inside the fifth dynasty tomb at Saqqara…". Ada then answers the
+*video's* content — English input biases her reply to English → this is
+the "suddenly switches to English + speaks out of another focus"
+symptom. The mic path has no speaker gate: any loud-enough audio is a
+conversation turn.
+
+**Consequence — profile pollution**: `NewSpeaker` and `EnglishSpeaker`
+are TV/YouTube voices enrolled through the same leak. The enroll guard
+refusing Murph→"Kung" was correct defense — a playing video's voice
+matched its own auto-created profile.
+
+**Fixes to implement**:
+- Tag each user turn with speaker attribution; suppress or
+  context-mark turns not attributable to an enrolled household speaker
+- Gate `ada_enroll_speaker` on an enrolled-speaker utterance — never
+  enroll audio that speaker-ID can't attribute to a person in the room
+- Delete junk profiles: `NewSpeaker`, `EnglishSpeaker`, `Timmy`
+
 ## 2. Shared memory (Devin ↔ Ada ↔ Tony)
 
 **It exists** — `ada-ha-bank-devin-handoff` (job ledger + handoff specs)
