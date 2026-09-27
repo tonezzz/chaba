@@ -15,6 +15,7 @@ expected_exposure:
   # Tailnet
   - { listener: "100.106.196.22:8004", class: tailnet-only, service: google-home-mcp, optional: true, note: "rootless podman, host net — container was down at first audit 2026-09-24" }
   - { listener: "100.106.196.22:5900", class: tailnet-only, service: xmeye-vms-vnc, note: "VNC, NO PASSWORD — tailnet bind only, never expose; moved from tony-dell 2026-09-24; quadlet stacks/services/xmeye-vms" }
+  - { listener: "100.106.196.22:8377", class: tailnet-only, service: vms-snap, note: "camera snapshot shim (Ada ada_camera_snapshot); tailnet bind only; stacks/services/xmeye-vms/vms-snap.py; added 2026-09-27" }
   # LAN
   - { listener: "0.0.0.0:8080", class: lan, service: caddy, note: "local edge behind funnel; Caddyfile.mn01" }
   - { listener: "0.0.0.0:8002", class: lan, service: ada-ha-tony, optional: true, note: "evacuated to idc01 2026-09-24 — Caddyfile.mn01 reverse-proxies /apps/ha/ada-* to idc01.taila0626a.ts.net" }
