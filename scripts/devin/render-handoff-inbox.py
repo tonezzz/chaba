@@ -37,7 +37,7 @@ _spec.loader.exec_module(ada_sync)
 
 COLLECTION = "ada-ha-bank-devin-handoff"
 REPOS = {"chaba", "ada-pi", "sunsynk-card"}
-DEAD_STATES = {"retracted", "superseded", "archived"}
+DEAD_STATES = {"retracted", "superseded", "archived", "done", "answered"}
 MAX_TEXT = 3000
 MARKER = "render-handoff-inbox"
 
