@@ -193,11 +193,10 @@ nodes:
   - id: fleet
     layer: L2-domain
     purpose: Cross-host rollup — delta trend + resource min/max over window
-    generator: scripts/audit-hosts.py --consolidate (planned)
+    generator: scripts/audit-hosts.py --consolidate
     cadence: 24h
     output: reports/fleet
     meta: reports/fleet/meta.yml
-    state: planned
     children:
       - audit-hosts/tony-dell
       - audit-hosts/tony-omen
@@ -226,7 +225,7 @@ nodes:
   - id: memory-suite
     layer: L1-producer
     purpose: Ada memory-bank health — registry/MDDB drift, vault, NLM routing
-    generator: node scripts/audits/memory-banks-audit.mjs (via run.mjs memory-suite)
+    generator: node scripts/audits/memory-banks-audit.mjs (emits meta directly; also runs via run.mjs)
     cadence: 7d
     output: reports/audits
     artifact_pattern: "summary.json"
@@ -257,6 +256,27 @@ nodes:
     references:
       - docs/ssot/infrastructure/ssot.orchestration.overnight.yml
     children: []
+  - id: systemwide-assessment
+    layer: L2-domain
+    purpose: Joint Ada+Devin systemwide assessment — Ada's memory/tool findings + Devin's audit/registry/SSOT state merged into one shared report
+    generator: >
+      ada-pi scenario-live tests/scenarios-live/chaba_systemwide_assessment.yaml
+      (Ada's half) + Devin in-session audit/registry gather (Devin's half);
+      result published as CMS page 'chaba-systemwide-assessment' in
+      ada-cms-pages and snapshotted to reports/chaba-systemwide-assessment-*.md
+    cadence: 7d
+    output: reports
+    artifact_pattern: "chaba-systemwide-assessment-*.md"
+    meta: reports/meta.systemwide-assessment.yml
+    references:
+      - docs/ssot/apps/ssot.apps.ada-testing.yml
+    children:
+      - audit-hosts/tony-dell
+      - audit-hosts/tony-omen
+      - audit-hosts/mn01
+      - audit-hosts/idc01
+      - audit-hosts/macbook
+      - memory-suite
 
   # --- Attention domain ---
   - id: focus-inbox
@@ -302,21 +322,25 @@ schedule:
     timer: systemd/chaba-system-report.timer
     service: systemd/chaba-system-report.service
     frequency: daily at 06:45 (after overnight producers)
-    status: defined (2026-09-26); not yet installed on any host
+    status: installed on tony-dell (2026-09-27); the service runs the full
+      chain — per-host audit-hosts snapshots -> --consolidate fleet L2 ->
+      report-system.py L3
 
 plan:
   current_state:
     - ssot.reports.yml declares the standard — layers, node registry, meta.yml schema, status enum, timeline spec
-    - scripts/lib/report.py provides write_meta / append_timeline / latest_artifact / resolve_node
-    - scripts/report-system.py renders reports/SYSTEM-REPORT.md + reports/system-report.yml from the registry
-    - audit-hosts.py emits meta.<host>.yml + a timeline event on each run
-    - run.mjs emits reports/audits/meta.yml + a timeline event on each suite run
-    - chaba-system-report.service/.timer defined in systemd/ (not installed)
+    - scripts/lib/report.py provides write_meta / append_timeline / latest_artifact / resolve_node, plus an `emit` CLI for shell producers
+    - scripts/report-system.py renders reports/SYSTEM-REPORT.md + reports/system-report.yml from the registry; also writes the focus-inbox node meta from the inbox dir itself
+    - audit-hosts.py emits meta.<host>.yml + a timeline event on each run; --consolidate renders reports/fleet/FLEET-REPORT.md + meta (L2)
+    - run.mjs emits reports/audits/meta.yml + a timeline event on each suite run; memory-banks-audit.mjs emits meta.memory-suite.yml
+    - tony-dell-monitor.sh emits ~/var/chaba/health/meta.yml + timeline event per cycle (installed to ~/.local/bin)
+    - staleness-audit.mjs reads per-host cadences from this registry (meta.generated_at preferred over SSOT last_observed; fallback 14d)
+    - chaba-system-report.service/.timer installed on tony-dell — daily chain: audit-hosts x5 -> --consolidate -> report-system.py
   next_steps:
-    - audit-hosts.py --consolidate → per-host L1 rollup + fleet L2 render (reports/fleet/)
-    - wire tony-dell-monitor.sh and memory-banks-audit.mjs to emit meta + timeline events
-    - install chaba-system-report.timer on tony-dell; staleness-audit reads cadences from this registry instead of hardcoded 14d
     - ada-memory-report L2 renderer (memory-suite + recall-canary)
+    - migrate tony-dell production units off the chaba-tony-dell checkout onto chaba (audit suite still writes reports/audits under the old checkout, so the audit-suite node reports missing here until then)
+    - mcp-health-snapshot.timer repointed in repo (systemd/) but not installed; install on tony-dell if the snapshot feed is still wanted
+    - ssot.audit.hosts.yml last_observed only refreshes via manual --save-to-ssot (rewrites YAML) — decide whether a lighter-weight scheduled refresh is wanted
 
 related_files:
   - scripts/report-system.py

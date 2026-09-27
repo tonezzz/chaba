@@ -28,7 +28,7 @@ if [[ -z "$TONY_DELL_IP" ]]; then
     TONY_DELL_IP="127.0.0.1"
 fi
 
-python3 - "$LOG_FILE" "$TS" "$TONY_OMEN_IP" "$TONY_DELL_IP" "$IDC01_IP" <<'PY'
+MONITOR_OUT=$(python3 - "$LOG_FILE" "$TS" "$TONY_OMEN_IP" "$TONY_DELL_IP" "$IDC01_IP" <<'PY'
 import json
 import os
 import re
@@ -146,16 +146,50 @@ with open(LOG_FILE, "w") as f:
         f.write(json.dumps(r, ensure_ascii=False, separators=(",", ":")) + "\n")
 
 # Last line to stdout for journal/systemd
-print(json.dumps({"timestamp": TS, "checks": len(results), "file": LOG_FILE}, ensure_ascii=False))
+unhealthy = sum(1 for r in results if r["status"] != "healthy")
+print(json.dumps({"timestamp": TS, "checks": len(results), "unhealthy": unhealthy,
+                  "file": LOG_FILE}, ensure_ascii=False))
 PY
+)
+printf '%s\n' "$MONITOR_OUT"
 
 # ── Phase 2: query tony-omen mcp-health and store the result on tony-dell ──
 MCP_HEALTH_OUT="$LOG_DIR/tony-dell-mcp-health.json"
-MCP_HEALTH_QUERY="python3 /home/tony/CascadeProjects/chaba-tony-dell/scripts/mcp-health-client.py get_health_score '{\"include_optional\":true}'"
+MCP_HEALTH_QUERY="python3 /home/tony/CascadeProjects/chaba/scripts/mcp-health-client.py get_health_score '{\"include_optional\":true}'"
 if ssh -o BatchMode=yes -o ConnectTimeout=5 -o StrictHostKeyChecking=no "tony@${TONY_OMEN_IP}" "$MCP_HEALTH_QUERY" > "${MCP_HEALTH_OUT}.tmp" 2>/dev/null; then
     mv "${MCP_HEALTH_OUT}.tmp" "$MCP_HEALTH_OUT"
     printf '%s\n' "{\"timestamp\":\"$TS\",\"mcp-health\":\"queried\",\"file\":\"$MCP_HEALTH_OUT\"}"
 else
     rm -f "${MCP_HEALTH_OUT}.tmp"
     printf '%s\n' "{\"timestamp\":\"$TS\",\"mcp-health\":\"failed\"}" >&2
+fi
+
+# ── Layered reporting (ssot.reports.yml): health-monitor L1 meta + timeline ──
+UNHEALTHY=$(printf '%s\n' "$MONITOR_OUT" | grep -oE '"unhealthy": [0-9]+' | grep -oE '[0-9]+' || echo 0)
+CHECKS=$(printf '%s\n' "$MONITOR_OUT" | grep -oE '"checks": [0-9]+' | grep -oE '[0-9]+' || echo 0)
+if [[ "${UNHEALTHY:-0}" -gt 0 ]]; then
+    MON_STATUS="delta"
+    MON_SUMMARY="${UNHEALTHY}/${CHECKS} checks unhealthy"
+else
+    MON_STATUS="ok"
+    MON_SUMMARY="${CHECKS} checks healthy"
+fi
+CHABA_REPO=""
+for d in "$HOME/CascadeProjects/chaba" "$HOME/CascadeProjects/chaba-tony-dell"; do
+    if [[ -f "$d/scripts/lib/report.py" ]]; then
+        CHABA_REPO="$d"
+        break
+    fi
+done
+if [[ -n "$CHABA_REPO" ]]; then
+    python3 "$CHABA_REPO/scripts/lib/report.py" emit \
+        --node health-monitor --layer L1-producer \
+        --meta "$LOG_DIR/meta.yml" \
+        --status "$MON_STATUS" --summary "$MON_SUMMARY" \
+        --purpose "Continuous tony-dell health snapshots (JSON, ~5 min cycle)" \
+        --generated-by "scripts/tony-dell-monitor.sh via tony-dell-monitor.timer" \
+        --source "tony-dell-monitor.log" --source "tony-dell-mcp-health.json" \
+        --extra-json "{\"checks\": ${CHECKS:-0}, \"unhealthy\": ${UNHEALTHY:-0}}" \
+        --ref "$LOG_FILE" || \
+        printf '%s\n' "{\"timestamp\":\"$TS\",\"meta-emit\":\"failed\"}" >&2
 fi

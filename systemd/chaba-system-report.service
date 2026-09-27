@@ -1,11 +1,21 @@
 [Unit]
-Description=Render the Chaba layered system report (L3 overview)
-After=network.target
+Description=Chaba layered reporting chain: host audits -> fleet rollup -> system report
+After=network-online.target
+Wants=network-online.target
 
 [Service]
 Type=oneshot
 User=tony
-ExecStart=/usr/bin/python3 /home/tony/CascadeProjects/chaba-tony-dell/scripts/report-system.py
-WorkingDirectory=/home/tony/CascadeProjects/chaba-tony-dell
-StandardOutput=append:/home/tony/CascadeProjects/chaba-tony-dell/logs/system-report.log
-StandardError=append:/home/tony/CascadeProjects/chaba-tony-dell/logs/system-report.log
+TimeoutStartSec=900
+# L1: refresh per-host snapshots+meta; L2: fleet rollup; L3: system overview.
+# Remote hosts audited over SSH; unreachable hosts still emit a delta meta.
+ExecStart=/bin/bash -c '\
+  cd /home/tony/CascadeProjects/chaba && \
+  for h in tony-dell tony-omen mn01 idc01 macbook; do \
+    /usr/bin/python3 scripts/audit-hosts.py --host "$h" || true; \
+  done; \
+  /usr/bin/python3 scripts/audit-hosts.py --consolidate; \
+  /usr/bin/python3 scripts/report-system.py'
+WorkingDirectory=/home/tony/CascadeProjects/chaba
+StandardOutput=append:/home/tony/CascadeProjects/chaba/logs/system-report.log
+StandardError=append:/home/tony/CascadeProjects/chaba/logs/system-report.log

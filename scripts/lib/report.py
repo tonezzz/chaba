@@ -14,6 +14,7 @@ import datetime
 import fnmatch
 import json
 import os
+import sys
 from pathlib import Path
 
 import yaml
@@ -205,3 +206,56 @@ def resolve_node(node: dict) -> dict:
 
 def resolve_all(nodes: list[dict]) -> list[dict]:
     return [resolve_node(n) for n in nodes]
+
+
+def _emit_cli(argv: list[str] | None = None) -> int:
+    """CLI entry point so shell producers can emit meta+timeline without
+    importing this module::
+
+        python3 scripts/lib/report.py emit \
+            --node health-monitor --layer L1-producer \
+            --meta ~/var/chaba/health/meta.yml \
+            --status ok --summary "9/9 healthy" \
+            --generated-by "scripts/tony-dell-monitor.sh" \
+            [--purpose "..."] [--source f.json]... [--child id]... \
+            [--extra-json '{"k": v}'] [--ref artifact]
+    """
+    import argparse
+
+    p = argparse.ArgumentParser(prog="report.py")
+    sub = p.add_subparsers(dest="cmd", required=True)
+    e = sub.add_parser("emit", help="Write a node meta.yml + append a timeline event")
+    e.add_argument("--node", required=True)
+    e.add_argument("--layer", required=True)
+    e.add_argument("--meta", required=True, help="meta.yml output path")
+    e.add_argument("--status", required=True, choices=STATUSES)
+    e.add_argument("--summary", default="")
+    e.add_argument("--purpose", default=None)
+    e.add_argument("--generated-by", required=True)
+    e.add_argument("--source", dest="sources", action="append", default=[])
+    e.add_argument("--child", dest="children", action="append", default=[])
+    e.add_argument("--extra-json", default=None,
+                   help="JSON object merged into meta.extra")
+    e.add_argument("--ref", default=None, help="primary artifact path")
+    args = p.parse_args(argv)
+
+    extra = {}
+    if args.extra_json:
+        try:
+            extra = json.loads(args.extra_json)
+        except json.JSONDecodeError as ex:
+            print(f"emit: bad --extra-json: {ex}", file=sys.stderr)
+            return 2
+
+    write_meta(args.meta, node=args.node, layer=args.layer,
+               generated_by=args.generated_by, status=args.status,
+               purpose=args.purpose, summary=args.summary,
+               sources=args.sources, children=args.children, extra=extra)
+    append_timeline(args.node, args.layer, args.status, args.summary,
+                    ref=args.ref)
+    print(f"meta -> {args.meta}")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(_emit_cli())

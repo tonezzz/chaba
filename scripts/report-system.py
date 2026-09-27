@@ -38,6 +38,8 @@ from lib.report import (  # noqa: E402
 OUT_MD = REPO / "reports" / "SYSTEM-REPORT.md"
 OUT_YML = REPO / "reports" / "system-report.yml"
 META = REPO / "reports" / "meta.system-report.yml"
+FOCUS_META = REPO / "reports" / "meta.focus-inbox.yml"
+FOCUS_DIR = REPO / "docs" / "ssot" / "focus-inbox"
 TIMELINE_TAIL = 20
 
 _LAYER_ORDER = ["L0-raw", "L1-producer", "L2-domain", "L3-overview"]
@@ -176,6 +178,29 @@ def render_markdown(doc: dict, states: list[dict], timeline_path: Path) -> str:
     return "\n".join(lines)
 
 
+def write_focus_inbox_meta() -> None:
+    """focus-inbox has no single generator — the L3 renderer observes the
+    inbox dir itself and writes the node's meta before resolution."""
+    try:
+        items = [p.name for p in FOCUS_DIR.iterdir()
+                 if p.is_file() and p.suffix in (".yml", ".yaml")
+                 and not p.name.startswith("TEMPLATE")]
+    except OSError:
+        return
+    n = len(items)
+    write_meta(
+        FOCUS_META,
+        node="focus-inbox",
+        layer="L1-producer",
+        purpose="Unprocessed attention items — alert ymls written by audits/monitors",
+        generated_by="scripts/report-system.py (inbox observation)",
+        status="delta" if n else "ok",
+        summary=f"{n} open item(s)" if n else "inbox clear",
+        children=[],
+        extra={"open_items": sorted(items)},
+    )
+
+
 def main() -> int:
     p = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     p.add_argument("--registry", type=Path, default=REGISTRY_PATH)
@@ -187,6 +212,7 @@ def main() -> int:
                    help="Render to stdout; write no files")
     args = p.parse_args()
 
+    write_focus_inbox_meta()
     doc = load_registry(args.registry)
     nodes = doc.get("nodes") or []
     states = resolve_all(nodes)

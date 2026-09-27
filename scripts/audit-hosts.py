@@ -213,8 +213,14 @@ def audit_host(host: str, ssh: bool | None = None) -> dict:
 
     if cfg["os"] == "linux":
         observed = linux_services(host, ssh)
+        primary = ("active_user_services", "memory", "uptime")
     else:
         observed = macos_services(host, ssh)
+        primary = ("active_services", "vm_stat", "uptime")
+    # An SSH probe that returns nothing at all means the host is unreachable —
+    # an empty snapshot must not read as "clean".
+    observed["unreachable"] = bool(ssh) and not any(
+        observed.get(k) for k in primary)
 
     return {
         "host": host,
@@ -301,9 +307,115 @@ def diff_against_ssot(host: str, observed: dict, ssot_path: Path) -> list[str]:
     return deltas
 
 
+def consolidate(output_dir: Path) -> int:
+    """Fleet L2 rollup: resolve audit-hosts/* + health-monitor node state,
+    render reports/fleet/FLEET-REPORT.md, write meta + timeline event."""
+    sys.path.insert(0, str(REPO_ROOT / "scripts"))
+    from lib.report import (append_timeline, latest_artifact, now_iso,
+                            registry_nodes, resolve_all, write_meta)
+
+    nodes = registry_nodes()
+    children = [n for n in nodes
+                if str(n.get("id", "")).startswith("audit-hosts/")
+                or n.get("id") == "health-monitor"]
+    states = resolve_all(children)
+
+    fleet_dir = REPO_ROOT / "reports" / "fleet"
+    fleet_dir.mkdir(parents=True, exist_ok=True)
+
+    # Pull headline resources from each host's newest snapshot artifact.
+    rows = []
+    attention = []
+    for s in states:
+        host = s["id"].split("/", 1)[-1]
+        res = {}
+        art = latest_artifact(output_dir, f"{host}-*.yml") \
+            if s["id"].startswith("audit-hosts/") else None
+        if art:
+            try:
+                snap = yaml.safe_load(art.read_text()) or {}
+                mem = snap.get("memory") or {}
+                res = {
+                    "ram_avail": mem.get("available") or mem.get("free") or "-",
+                    "disk_pct": (snap.get("disk") or {}).get("percent", "-"),
+                    "load1": (snap.get("load") or {}).get("1m", "-"),
+                    "uptime": snap.get("uptime", "-"),
+                }
+            except Exception:
+                pass
+        deltas = []
+        meta_path = s.get("meta_path")
+        if meta_path:
+            try:
+                meta = yaml.safe_load(Path(meta_path).read_text()) or {}
+                deltas = (meta.get("extra") or {}).get("deltas") or []
+            except Exception:
+                pass
+        rows.append({"state": s, "res": res, "n_deltas": len(deltas)})
+        if s["status"] in ("delta", "stale", "missing", "error"):
+            attention.append(f"{s['id']}={s['status']}")
+        for d in deltas:
+            attention.append(f"{host}: {d}")
+
+    status = "delta" if attention else "ok"
+    bad = [f"{s['id']}={s['status']}" for s in states
+           if s["status"] in ("delta", "stale", "missing", "error")]
+    summary = f"{len(states)} nodes; " + (", ".join(bad) or "all clean")
+
+    def fmt_ts(iso):
+        if not iso:
+            return "-"
+        try:
+            return datetime.datetime.fromisoformat(
+                str(iso)).astimezone().strftime("%Y-%m-%d %H:%M")
+        except ValueError:
+            return str(iso)[:16]
+
+    md = [
+        "# Fleet Report",
+        "",
+        f"- Generated: {now_iso()} by `scripts/audit-hosts.py --consolidate`",
+        f"- Status: **{status}** — {summary}",
+        "",
+        "| Node | Status | Last run | Deltas | RAM avail | Disk % | Load 1m | Uptime |",
+        "|------|--------|----------|--------|-----------|--------|---------|--------|",
+        *[f"| `{r['state']['id']}` | {r['state']['status']} | "
+          f"{fmt_ts(r['state']['last_run'])} | {r['n_deltas']} | "
+          f"{r['res'].get('ram_avail', '-')} | {r['res'].get('disk_pct', '-')} | "
+          f"{r['res'].get('load1', '-')} | {r['res'].get('uptime', '-')} |"
+          for r in rows],
+        "",
+    ]
+    if attention:
+        md += ["## Attention", "",
+               *[f"- {a}" for a in attention], ""]
+    md += ["_Generated file — do not hand-edit._", ""]
+    report_path = fleet_dir / "FLEET-REPORT.md"
+    report_path.write_text("\n".join(md), encoding="utf-8")
+
+    write_meta(
+        fleet_dir / "meta.yml",
+        node="fleet",
+        layer="L2-domain",
+        purpose="Cross-host rollup — delta trend + resource min/max over window",
+        generated_by="scripts/audit-hosts.py --consolidate",
+        status=status,
+        summary=summary,
+        sources=[r["state"]["meta_path"] or "" for r in rows],
+        children=[s["id"] for s in states],
+        extra={"attention": attention},
+    )
+    append_timeline("fleet", "L2", status, summary, ref=report_path)
+    print(f"Wrote {report_path}")
+    print(f"Status: {status} — {summary}")
+    return 0
+
+
 def main():
     parser = argparse.ArgumentParser(description="Snapshot a host's service and resource state")
-    parser.add_argument("--host", required=True, choices=list(HOSTS))
+    parser.add_argument("--host", choices=list(HOSTS))
+    parser.add_argument("--consolidate", action="store_true",
+                        help="Render the fleet L2 rollup instead of auditing a host")
     parser.add_argument("--ssot", type=Path, default=SSOT_DEFAULT)
     parser.add_argument("--output-dir", type=Path, default=OUTPUT_DIR_DEFAULT)
     parser.add_argument("--ssh", action="store_true", default=None,
@@ -312,6 +424,11 @@ def main():
     parser.add_argument("--save-to-ssot", action="store_true",
                         help="Write the observed live state back into the SSOT")
     args = parser.parse_args()
+
+    if args.consolidate:
+        raise SystemExit(consolidate(args.output_dir))
+    if not args.host:
+        parser.error("--host is required unless --consolidate is given")
 
     ssh = None
     if args.ssh:
@@ -334,6 +451,8 @@ def main():
 
     print(f"Wrote report: {report_path}")
     print(f"Tailscale IP: {observed.get('tailscale_ip')}")
+    if observed.get("unreachable"):
+        print("Host unreachable — snapshot is empty (ssh failed)")
     if deltas:
         print("Deltas:")
         for d in deltas:
@@ -351,8 +470,11 @@ def emit_meta(host: str, observed: dict, deltas: list[str],
     except Exception as e:
         print(f"meta emit skipped (lib.report unavailable): {e}")
         return
-    status = "delta" if deltas else "ok"
-    summary = f"{len(deltas)} delta(s)" if deltas else "clean"
+    if observed.get("unreachable"):
+        status, summary = "error", "unreachable — empty snapshot (ssh failed)"
+    else:
+        status = "delta" if deltas else "ok"
+        summary = f"{len(deltas)} delta(s)" if deltas else "clean"
     try:
         write_meta(
             output_dir / f"meta.{host}.yml",

@@ -13,8 +13,9 @@
  */
 import http from "http";
 import { URL } from "url";
-import { readFileSync, readdirSync, statSync, existsSync } from "fs";
+import { readFileSync, readdirSync, statSync, existsSync, writeFileSync, appendFileSync, mkdirSync } from "fs";
 import { join, dirname } from "path";
+import { homedir } from "os";
 import yaml from "js-yaml";
 
 const PROJECT_ROOT = new URL("../../", import.meta.url).pathname.replace(/\/$/, "");
@@ -387,6 +388,49 @@ async function main() {
   done(stats);
 }
 
+function emitMeta(result) {
+  // Layered reporting (ssot.reports.yml): this audit is the memory-suite
+  // L1 node's only child — its verdict maps straight onto the node.
+  try {
+    const status = result.ok ? "ok" : "delta";
+    const summary = result.ok
+      ? `clean (${result.total_warns} warns, ${result.total_notes} notes)`
+      : `${result.total_issues} issue(s), ${result.total_warns} warn(s)`;
+    const meta = {
+      node: "memory-suite",
+      layer: "L1-producer",
+      purpose:
+        "Ada memory-bank health — registry/MDDB drift, vault, NLM routing",
+      generated_by: "node scripts/audits/memory-banks-audit.mjs",
+      generated_at: result.generated,
+      status,
+      summary,
+      sources: [],
+      children: [],
+      extra: { issues, warns },
+    };
+    const metaDir = join(PROJECT_ROOT, "reports", "audits");
+    mkdirSync(metaDir, { recursive: true });
+    writeFileSync(join(metaDir, "meta.memory-suite.yml"), yaml.dump(meta));
+    const reportsRoot = process.env.CHABA_REPORTS_DIR
+      ? process.env.CHABA_REPORTS_DIR
+      : join(homedir(), "var", "chaba", "reports");
+    mkdirSync(reportsRoot, { recursive: true });
+    appendFileSync(
+      join(reportsRoot, "timeline.jsonl"),
+      JSON.stringify({
+        ts: result.generated,
+        node: "memory-suite",
+        layer: "L1",
+        status,
+        summary,
+      }) + "\n"
+    );
+  } catch (e) {
+    console.error(`meta/timeline emit failed (audit result still valid): ${e.message}`);
+  }
+}
+
 function done(stats) {
   const result = {
     ok: issues.length === 0,
@@ -399,6 +443,7 @@ function done(stats) {
     total_warns: warns.length,
     total_notes: notes.length,
   };
+  emitMeta(result);
   console.log(JSON.stringify(result, null, 2));
   process.exit(result.ok ? 0 : 1);
 }
