@@ -220,7 +220,7 @@ class AdaChatCard extends HTMLElement {
         r.onerror = rej;
         r.readAsDataURL(blob);
       });
-      const resp = await fetch(`${this._apiBase()}/api/documents/intake`, {
+      const post = () => fetch(`${this._apiBase()}/api/documents/intake`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -231,6 +231,13 @@ class AdaChatCard extends HTMLElement {
           filename: file.name, mode: "both",
         }),
       });
+      let resp = await post();
+      // 401 = stored key is stale/revoked — re-mint once and retry
+      // (ws layer already does this on a 4401 close; intake needs its own).
+      if (resp.status === 401 && !this._config.api_key) {
+        localStorage.removeItem(ACC_KEY_STORAGE);
+        if (await this._mintKey()) resp = await post();
+      }
       const out = await resp.json().catch(() => ({}));
       if (!resp.ok) throw new Error(out.detail || `HTTP ${resp.status}`);
       const w = (out.measured || {}).width || "?";
