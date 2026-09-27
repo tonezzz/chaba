@@ -118,3 +118,23 @@ changes spoken language.
 
 Still open: speaker-ID kept addressing Tony as คุณกุ้ง in session
 d55e2767cf — the Timmy/NewSpeaker contamination needs profile cleanup.
+
+### Turn stalls — watchdog shipped (added 14:45)
+
+Transcript audit found real dead air: 25–47s silences where user turns
+got no reply, and 20–30s slow replies, across sessions 681e1d6817,
+b168a79f63, d55e2767cf, 2e88884cc1, 853340398e. Journal shows
+`provider reconnected (resumed=True)` mid-gap — the Gemini Live stream
+dies without ending cleanly, so the reconnect loop never fired.
+
+The earlier watchdog dispatch job (`20260927-110148`, tony-dell) closed
+with exit 0 + empty transcript and no code — a false `done`; ledger
+trust issue again.
+
+Fix (`5c9095d`): provider tracks last-user-input vs last-model-event;
+`is_stalled()` trips at 25s silence after user speech; pwa_server
+`stall_watchdog` closes the stream → existing resume/reconnect path
+takes over. Watch `live_stalled` events to see it fire.
+
+Also found: `people/kk`, `people/tony` are empty-content docs (same
+wipe class as personal-kk) — retracted.
