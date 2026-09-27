@@ -78,6 +78,31 @@ L2/L3 reference.
 
 Scenario runs: `scripts/scenario-live.py <file> --url ws://127.0.0.1:8002/ws --api-key $ADA_API_KEY` on idc01.
 
+## Weaviate continuation — action plan (added 2026-09-27)
+
+**Decision**: proceed with Weaviate as the **corpus-selection tier** — not
+the hot path. Measured rationale stands: local MDDB p95 2ms vs Weaviate
+p95 57ms over the tailnet; Weaviate's value is ranking across corpora too
+broad for per-bank fan-out (YomiMessage, SSOTDocument, devin sessions).
+
+Staged plan:
+
+1. **Wire read path behind a flag** — `memory_ops` gains
+   `ADA_WEAVIATE_URL`/`ADA_WEAVIATE_ENABLE`: on `bank='all'` queries, run
+   Weaviate `nearVector` across non-bank corpora alongside MDDB;
+   merge by score, tag hits with `source=weaviate`. No behavior change
+   unless the flag is set. Effort: ~150 lines + weaviate-client dep.
+2. **Measure before promote** — extend `tests/bench_recall.py` with a
+   weaviate tier: canary question set (~10), p50/p95, hit@5 vs
+   MDDB-only. Report delta on the recall canary harness.
+3. **Embedding parity guard** — Weaviate objects must be embedded with
+   the same `gemini-embedding-2` space (via the OpenRouter-primary proxy
+   on :11435) or scores aren't comparable. Re-vectorize any corpus
+   written under the old nomic space before enabling.
+4. **Promote or park** — if hit@5 improves on cross-corpus questions
+   ("LINE + project + code" mixes) by >10% at acceptable latency (<150ms
+   p95), enable by default; else keep flag off and revisit quarterly.
+
 ## Embedding provenance (added 2026-09-27)
 
 Actual chain on idc01:
