@@ -226,6 +226,38 @@
       sendState("audio", url);
     }
 
+    // Ada's "look at the screen" path — draws the element actually on-screen
+    // into a canvas and POSTs the frame back through the relay. Canvas can
+    // capture video/img only; cross-origin iframes are reported as
+    // uncapturable-iframe rather than returning a black PNG.
+    async function snapFrame(token) {
+      const post = (extra) => fetch(`${location.origin}/api/input-bridge/frame`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ screen: screenNum, token, state: lastState, ...extra }),
+      }).catch(() => {});
+      const grab = (src, w, h) => {
+        const c = document.createElement("canvas");
+        c.width = w; c.height = h;
+        c.getContext("2d").drawImage(src, 0, 0);
+        return c.toDataURL("image/jpeg", 0.8);
+      };
+      try {
+        if (video.style.display !== "none" && video.videoWidth) {
+          return await post({ data: grab(video, video.videoWidth, video.videoHeight) });
+        }
+        if (img.style.display !== "none" && img.naturalWidth) {
+          return await post({ data: grab(img, img.naturalWidth, img.naturalHeight) });
+        }
+        if (frame.style.display !== "none") {
+          return await post({ error: "uncapturable-iframe" });
+        }
+        return await post({ error: "idle-or-overlay" });
+      } catch (e) {
+        return await post({ error: String((e && e.message) || e) });
+      }
+    }
+
     // -- wake lock --------------------------------------------------------------
     let wakeLock = null;
     async function keepAwake() {
@@ -315,6 +347,9 @@
         case "uplink-start":
           showToast("camera uplink not enabled yet");
           sendState("uplink-unsupported");
+          break;
+        case "snap-request":
+          snapFrame(msg.token);
           break;
         case "ping": case "presence": case "pong": break;
         default: break;

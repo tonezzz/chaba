@@ -173,12 +173,12 @@ function json(res, code, obj) {
   res.end(JSON.stringify(obj));
 }
 
-function readBody(req) {
+function readBody(req, limit = 65536) {
   return new Promise((resolve, reject) => {
     let data = "";
     req.on("data", (c) => {
       data += c;
-      if (data.length > 65536) {
+      if (data.length > limit) {
         req.destroy();
         reject(new Error("body too large"));
       }
@@ -265,6 +265,52 @@ const server = http.createServer(async (req, res) => {
     if (!room) return json(res, 400, { error: "screen or room required" });
     const delivered = broadcastTo(room, msg);
     return json(res, 200, { ok: true, room, delivered });
+  }
+
+  // Display self-snapshot: a vcast page answers a ws "snap-request" by
+  // POSTing {screen, token, data(dataURL), state, error?} here; tools poll
+  // GET /frame?screen=N&token=T for the latest capture. Frames are kept
+  // in memory only — latest-wins per screen, lost on restart.
+  if (req.method === "POST" && url.pathname === "/frame") {
+    let body;
+    try {
+      body = await readBody(req, 12 * 1024 * 1024);
+    } catch (e) {
+      return json(res, 400, { error: e.message });
+    }
+    const screen = Number(body.screen);
+    if (!screen) return json(res, 400, { error: "screen required" });
+    const raw = String(body.data || "");
+    const b64 = raw.includes(",") ? raw.slice(raw.indexOf(",") + 1) : raw;
+    const buf = b64 ? Buffer.from(b64, "base64") : null;
+    lastFrames.set(screen, {
+      token: body.token || null,
+      ts: Date.now(),
+      state: String(body.state || ""),
+      error: body.error ? String(body.error).slice(0, 300) : null,
+      buf,
+    });
+    return json(res, 200, { ok: true, bytes: buf ? buf.length : 0 });
+  }
+
+  if (req.method === "GET" && url.pathname === "/frame") {
+    const screen = Number(url.searchParams.get("screen"));
+    const token = url.searchParams.get("token");
+    const f = lastFrames.get(screen);
+    if (!f || (token && f.token !== token)) {
+      return json(res, 404, {
+        error: "frame not ready", screen,
+        state: f ? f.state : null,
+      });
+    }
+    if (f.error || !f.buf) {
+      return json(res, 200, {
+        ok: true, screen, state: f.state,
+        error: f.error || "no image data",
+      });
+    }
+    res.writeHead(200, { "content-type": "image/jpeg", "cache-control": "no-store" });
+    return res.end(f.buf);
   }
 
   if (req.method === "POST" && url.pathname === "/claim") {
@@ -393,6 +439,7 @@ const server = http.createServer(async (req, res) => {
 // WebSocket relay
 // ---------------------------------------------------------------------------
 const rooms = new Map();
+const lastFrames = new Map(); // screen -> {token, ts, state, error, buf}
 
 function leaveRoom(ws) {
   const room = ws.room;
@@ -546,7 +593,7 @@ wss.on("connection", (ws) => {
 
 server.on("upgrade", (req, socket, head) => {
   const pathname = new URL(req.url, "http://x").pathname;
-  if (["/pub", "/displays", "/claim", "/health", "/pair-info"].includes(pathname)) {
+  if (["/pub", "/displays", "/claim", "/health", "/pair-info", "/frame"].includes(pathname)) {
     socket.destroy();
     return;
   }
