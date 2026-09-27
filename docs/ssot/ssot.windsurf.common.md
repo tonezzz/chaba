@@ -62,6 +62,16 @@ TODO: Revisit this repo later to harvest more rules and prompts (memories/, tips
 - If Cascade ignores instructions, ask it to "check your guidelines and revise."
 - Reload the window if Cascade behavior degrades after long sessions.
 
+## Language Convention (decided 2026-09-27)
+
+- **English** for all technical artifacts: reports, kb docs, SSOT, CMS pages, job
+  docs, code, commit messages, dashboards.
+- **Thai** for everything else: voice/chat replies, casual summaries, user-facing
+  conversation. (Match the speaker's language if they use another one — KK uses
+  Thai, Tony mixes.)
+- Mixed sessions are fine: Thai in conversation, English when the artifact is
+  the deliverable.
+
 ## Commit Messages
 
 Write a short English commit message (one sentence max) and format it as a code block:
