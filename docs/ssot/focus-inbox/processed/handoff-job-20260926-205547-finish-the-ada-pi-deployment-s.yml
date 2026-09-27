@@ -1,0 +1,40 @@
+title: job-20260926-205547-finish-the-ada-pi-deployment-s
+subtitle: 'Devin handoff spec: job/20260926-205547-finish-the-ada-pi-deployment-s'
+icon: robot
+focus:
+  label: job-20260926-205547-finish-the-ada-pi-deployment-s
+  text: "Job 20260926-205547-finish-the-ada-pi-deployment-s on tony-omen: done.\n\nDone. Here's what changed:\n\
+    \n## What I did\n\n1. **Recovered the prior assessment** — `proud-airboat` (sessions.db) was a long-lived\
+    \ session; the Ada Pi assessment was its opening thread. Two earlier dispatch retries exited without\
+    \ committing anything, so I rebuilt the deliverable from the transcript plus current SSOT state.\n\
+    \n2. **Wrote the final recommendation doc** — `docs/assessments/ada-pi-deployment-strategy.md`:\n\
+    \   - Options matrix: dedicated Pi 5 / x86 port / client-only PWA / **thin-PWA + chaba-hosted backend**\
+    \ (adopted)\n   - The recommendation as actually implemented: fork `tonezzz/ada-pi` kept local, one\
+    \ `pwa_server.py` codebase pinned per-instance by `ADA_INSTANCE_ID`, idc01 primary (loopback + tailscale\
+    \ serve), mn01 standby, `chaba-guest` on tony-dell, HA-native UI primary per `ada-ha-native-primary-ui`,\
+    \ deploys via `deploy-ada.sh`\n   - Residual items (secret rotation, mn01 alias retirement, frontend\
+    \ cleanup tail, open Gemini 1008 issue)\n   - Verification commands\n\n3. **Trail file** — `docs/ssot/jobs/ada/2026-09-26-ada-pi-deployment-strategy.yml`\
+    \ records the job lifecycle.\n\n## Verify\n\n- `git log` on branch `dispatch/20260926-205547-finish-the-ada-pi-deployment-s`\
+    \ → commit `9b7b0447`\n- `node scripts/ssot-validate-all.mjs` → 425/425 files valid\n- Read the doc:\
+    \ `docs/assessments/ada-pi-deployment-strategy.md`\n\nNo commits to master, no push, no deploys."
+  branch: chaba
+  priority: medium
+  status: draft
+  tags:
+  - devin
+  - handoff
+  safe_to_parallel:
+    value: true
+    reason: Spec document; execution goes through devin_dispatch which creates an isolated worktree.
+  subtasks:
+  - label: Dispatch via devin_dispatch (repo chaba, prompt references bank doc job/20260926-205547-finish-the-ada-pi-deployment-s)
+    status: not_started
+ownership:
+  owner: tony
+  session: ''
+  locked: false
+  lock_reason: ''
+source:
+  bank_key: job/20260926-205547-finish-the-ada-pi-deployment-s
+  renderer: render-handoff-inbox
+  date: '2026-09-27'

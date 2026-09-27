@@ -1,0 +1,78 @@
+title: job-20260926-210246-finish-the-sessions-scenario-w
+subtitle: 'Devin handoff spec: job/20260926-210246-finish-the-sessions-scenario-w'
+icon: robot
+focus:
+  label: job-20260926-210246-finish-the-sessions-scenario-w
+  text: 'Job 20260926-210246-finish-the-sessions-scenario-w on tony-omen: done.
+
+
+    Done. prairie-chive''s "sessions & scenario" arc was actually complete — I verified every thread''s
+    end state rather than re-doing work, and wrote the missing trail.
+
+
+    ## Verified closed (no action needed)
+
+
+    - **KK session forensics** — latency from 1.9M-token context; silence from mn01 ada-ha units stopped
+    post-migration. Services restored+enabled, dispatch quoting/dedup/payload fixes pushed (`5bb444d`,
+    `b485d8d`).
+
+    - **Tuya freeze** — watchdog automation live on tony-ha (ha-config `d3cd6ad`, SSOT `0405b702`); the
+    "dangling" root-cause commit is on master as `8d5596ad`.
+
+    - **Transcript indexing** — 26 sessions pulled, 6 L1 reports backfilled, `journal-report.py` fix committed
+    (`0d0c04dd`).
+
+    - **Voice-ID repair** — profiles rebuilt on idc01, reserved-name guard + multi-sample enrollment +
+    person auto-resolution deployed (`c274a57`, `f1322f1`).
+
+    - **tony-ha wedge** — profiler armed, restart done, config committed (`46fb00e`).
+
+    - **TV casting** — `tv_cast_control.yaml` passes; timeout/filename/param bugs fixed (`95d1572`, `e077fc7e`).
+
+    - **Screen-ownership ACL** — registries + dual-layer enforcement live, both scenarios pass, docs committed
+    (`0e251698`, ada-pi `5024c07`), test key revoked.
+
+    - **Vault revert** — `8f8c150` re-fixed it; master and mn01''s source both carry the correct idc01-primary
+    content (confirmed over SSH).
+
+    - **`test_ops_events`** — passes in ada-pi''s `.venv` (3/3); the failure prairie-chive saw was a wrong-interpreter
+    artifact.
+
+
+    ## What I changed
+
+
+    - `docs/ssot/jobs/ada/2026-09-26-sessions-scenario-closeout.yml` — full arc record, per-thread status,
+    verification evidence, open items. Committed as `55941ce5` on `dispatch/20260926-210246-finish-the-sessions-scenario-w`
+    (not pushed, not on master). SSOT validation: 425/425 valid.
+
+
+    ## Open items for you (recorded in the trail file)
+
+
+    - prairie-chive''s unanswered offer: provision `Xvfb :2` + `cast-desktop@2` on tony-dell as a dedicated
+    cast-only "voice workspace".
+
+    - Optional: have KK (and you) say "enroll my voice" on'
+  branch: chaba
+  priority: medium
+  status: draft
+  tags:
+  - devin
+  - handoff
+  safe_to_parallel:
+    value: true
+    reason: Spec document; execution goes through devin_dispatch which creates an isolated worktree.
+  subtasks:
+  - label: Dispatch via devin_dispatch (repo chaba, prompt references bank doc job/20260926-210246-finish-the-sessions-scenario-w)
+    status: not_started
+ownership:
+  owner: tony
+  session: ''
+  locked: false
+  lock_reason: ''
+source:
+  bank_key: job/20260926-210246-finish-the-sessions-scenario-w
+  renderer: render-handoff-inbox
+  date: '2026-09-27'

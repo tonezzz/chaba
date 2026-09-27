@@ -1,0 +1,47 @@
+title: job-20260926-190458-finalize-the-ada-cms-multi-pag
+subtitle: 'Devin handoff spec: job/20260926-190458-finalize-the-ada-cms-multi-pag'
+icon: robot
+focus:
+  label: job-20260926-190458-finalize-the-ada-cms-multi-pag
+  text: "Job 20260926-190458-finalize-the-ada-cms-multi-pag on tony-dell: done.\n\nAll follow-ups from\
+    \ the `achieved-butter` tail are closed. Summary:\n\n## What I found\n\nThe tail listed 5 items. Status\
+    \ after this session:\n\n1. **Push 4 chaba commits** — already done. Later sessions rebased+ pushed\
+    \ master; equivalents of all 4 live on `origin/master` (`4c4582c`, `e53fe81`, M6 content via `a0d8e5b`,\
+    \ `8e739f0`). Nothing to push.\n2. **M7 soak** — passive, ~1 week; still running.\n3. **`ssot.apps.ada-testing.yml`\
+    \ YAML error** — file no longer exists; `ssot-validate-all` is clean (484/484).\n4. **Distill event-emit\
+    \ gap** — root-caused and fixed (below).\n5. **Optional cleanups** — done.\n\n## The emit fix (the\
+    \ only real gap)\n\n`ssh tony-dell` from idc01 fails because Tailscale SSH check-mode demands recurring\
+    \ browser auth — not a missing key. All 5 emit-capable ada job scripts used that path, so every idc01\
+    \ job event silently died.\n\n- New `scripts/ada/chaba_event.py`: ssh first (unchanged on tony-dell/tony-omen),\
+    \ falls back to `POST /api/services/shell_command/chaba_event` — the existing HA hook, zero new infra.\
+    \ Token resolves from env or `~/.config/secrets/home-assistant-token.env` (provisioned to idc01, 600).\n\
+    - Patched `memory-distill`, `memory-gap-report`, `memory-health-check`, `memory-staleness-sweep`,\
+    \ `recall-drift-report`.\n- Deployed to `idc01:~/CascadeProjects/chaba-vault/scripts/ada/`; live test\
+    \ from idc01 → `ok via http` → event lands in `/local/chaba-events.json`.\n\nCanonical change is committed\
+    \ on chaba branch **`dispatch/20260926-190458-ada-cms-emit-fix`** (worktree `~/CascadeProjects/dispatch-wt-20260926-190458-ada-cms-chaba`,\
+    \ commits `f1fa7c7`, `bda2313`, `9d95dae`) — **needs merge to master + push**, then `git pull` in\
+    \ idc01's chaba-vault to clean its dirty checkout. Report: `reports/2026-09-26-ada-cms-migration-finalize.md`\
+    \ (committed here, `5524bed`) and job SSOT in the chaba branch.\n\n## Verify\n\n```\nssh idc01 'cd\
+    \ ~/CascadeProjects/chaba-vault/scripts/ada && \\\n  echo \"{\\\"title\\\":\\\"t\\\"}\" | python3\
+    \ chaba_event.py'   # -> ok via http\npython3 ~/.con"
+  branch: chaba
+  priority: medium
+  status: draft
+  tags:
+  - devin
+  - handoff
+  safe_to_parallel:
+    value: true
+    reason: Spec document; execution goes through devin_dispatch which creates an isolated worktree.
+  subtasks:
+  - label: Dispatch via devin_dispatch (repo chaba, prompt references bank doc job/20260926-190458-finalize-the-ada-cms-multi-pag)
+    status: not_started
+ownership:
+  owner: tony
+  session: ''
+  locked: false
+  lock_reason: ''
+source:
+  bank_key: job/20260926-190458-finalize-the-ada-cms-multi-pag
+  renderer: render-handoff-inbox
+  date: '2026-09-27'

@@ -1,0 +1,75 @@
+title: job-20260926-204311-finalize-the-ssot-query-capabi
+subtitle: 'Devin handoff spec: job/20260926-204311-finalize-the-ssot-query-capabi'
+icon: robot
+focus:
+  label: job-20260926-204311-finalize-the-ssot-query-capabi
+  text: 'Job 20260926-204311-finalize-the-ssot-query-capabi on tony-omen: done.
+
+
+    Done. Assessment finalized and committed.
+
+
+    ## What changed
+
+
+    One new file: `docs/ssot/jobs/mcp-tools/2026-09-26-ssot-query-capability-status.yml` (commit `a7733a2d`
+    on `dispatch/20260926-204311-finalize-the-ssot-query-capabi`).
+
+
+    I recovered pollen-helper''s state from `~/.local/share/devin/cli/sessions.db` (id `pollen-helper`,
+    5,639 message nodes), then **live-verified every feature** by running `scripts/mcp_debug/ssot.py`
+    directly in this worktree rather than trusting the prior session''s claims.
+
+
+    ### What works (12 items, verified)
+
+    - `mcp_query_ssot`: dotted paths, list indexes, `*` wildcards, fuzzy matching + suggestions, parent
+    context, `resolve`/`trace`, mtime cache, telemetry to `data/mcp-usage.ndjson`
+
+    - Dynamic refs all resolve: `__ref__` (`mcp.caddy.backend` → `100.68.142.13`), `${ssot(...)}` interpolation
+    embedded in strings, circular detection
+
+    - `mcp_read_ssot`, `mcp_search_ssot` (MDDB + local fallback — fallback verified while MDDB index was
+    loading), `mcp_mddb_doc`, `mcp_ssot_query`/`mcp_ssot_get` registry lookups
+
+    - `mcp_debug command=reload` hot-reload; tool hierarchy + policy docs in `ssot.mcp-debug.yml` / `ssot.dynamic-references.yml`;
+    NotebookLM secondary layer
+
+
+    ### What''s missing (8 gaps)
+
+    - **High**: `mcp-debug.sh` pidfile reuse exits 0 for new stdio clients — observed breaking `tools/list`
+    in this very session (3 stale server processes running)
+
+    - Medium: `query=` doc discovery is top-1 fragile (picked wrong file on local fallback); no static
+    validation of `${ssot(...)}`/`__ref__` targets; no automated tests for the query engine; `mcp_ssot_append`
+    hardcodes the deployed `chaba-tony-dell` repo and lacks policy sign-off
+
+    - Low: `!ssot_ref` unused/unsafe for plain `yaml.safe_load` consumers; telemetry is write-only (24
+    rows, no consumer); the 10-question NotebookLM accuracy benchmark was never run
+
+
+    ### Where it lives
+
+    Code in `scripts/mcp_debug/{ssot,registry,ssot_edit,server,config}.py`; policy/docs in `docs/ssot/infrastructure/ssot.{mcp-debug,dynamic-refe'
+  branch: chaba
+  priority: medium
+  status: draft
+  tags:
+  - devin
+  - handoff
+  safe_to_parallel:
+    value: true
+    reason: Spec document; execution goes through devin_dispatch which creates an isolated worktree.
+  subtasks:
+  - label: Dispatch via devin_dispatch (repo chaba, prompt references bank doc job/20260926-204311-finalize-the-ssot-query-capabi)
+    status: not_started
+ownership:
+  owner: tony
+  session: ''
+  locked: false
+  lock_reason: ''
+source:
+  bank_key: job/20260926-204311-finalize-the-ssot-query-capabi
+  renderer: render-handoff-inbox
+  date: '2026-09-27'

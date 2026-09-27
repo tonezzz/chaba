@@ -1,0 +1,67 @@
+title: job-20260926-195915-finish-the-ada-knowledge-flow-
+subtitle: 'Devin handoff spec: job/20260926-195915-finish-the-ada-knowledge-flow-'
+icon: robot
+focus:
+  label: job-20260926-195915-finish-the-ada-knowledge-flow-
+  text: 'Job 20260926-195915-finish-the-ada-knowledge-flow- on tony-omen: done.
+
+
+    Done. Committed on the worktree branch (`61dc052a`), not pushed.
+
+
+    ## Summary
+
+
+    The prior session *pointy-uniform* implemented the knowledge-circle loop (verify + reinforce machinery
+    landed 2026-09-21/22) but drifted into MDDB replication work before writing the final narrative doc.
+    I reconstructed its intent from `sessions.db` and produced it:
+
+
+    - **`docs/kb/ada-knowledge-flow.md`** (new) — the canonical "from learning to production" map. Nine
+    stages, each grounded in the as-built machinery: CAPTURE (voice/speaker-routed/session-distill/vault/imports/handoff
+    banks), DISTILL (L1 summaries, L2 rollups, batch + gap distillation), REVIEW (inbox, confirmed write
+    policy, iPhone approve/deny, conflict-safe sync), ACTIVATE (status lifecycle + draft exception), APPLY
+    (three-tier recall: MDDB banks → summaries → NotebookLM, priming, coreference, confidence gate), VERIFY
+    (`use_count`, drift report, recall canary, health checks), REINFORCE (`ada_outcome`, staleness sweep),
+    CORRECT (correct/supersede/retract), GRADUATE (authority ladder). Plus storage-tier and ops-timer
+    tables, weak points, open items, and a verify-it-yourself command block.
+
+    - **`docs/ada-memory/tony-projects/knowledge-circle.md`** — status line updated from "implementation
+    in progress" to implemented, with a pointer to the flow doc.
+
+    - **`docs/ssot/jobs/ada-knowledge/2026-09-26-ada-knowledge-flow-doc.yml`** — dispatch job trail per
+    convention.
+
+
+    ## Verified
+
+
+    - `node scripts/ssot-validate-all.mjs`: 425/425 valid, 0 errors.
+
+    - Doc sized under the weekly kb-modularity audit limits (1495/1500 words, 19/25 headings — simulated,
+    `js-yaml` isn''t installed in this worktree).
+
+    - Facts cross-checked against `ssot.apps.ada-memory*.yml`, `ssot.services.yml` (idc01 topology), `pwa_server.py`/`auth.py`
+    (`x-api-key` header, `/api/memory/banks`), and the scripts'' real CLI flags (fixed a `--dry-run` that
+    `recall-canary.py` doesn''t support).'
+  branch: chaba
+  priority: medium
+  status: draft
+  tags:
+  - devin
+  - handoff
+  safe_to_parallel:
+    value: true
+    reason: Spec document; execution goes through devin_dispatch which creates an isolated worktree.
+  subtasks:
+  - label: Dispatch via devin_dispatch (repo chaba, prompt references bank doc job/20260926-195915-finish-the-ada-knowledge-flow-)
+    status: not_started
+ownership:
+  owner: tony
+  session: ''
+  locked: false
+  lock_reason: ''
+source:
+  bank_key: job/20260926-195915-finish-the-ada-knowledge-flow-
+  renderer: render-handoff-inbox
+  date: '2026-09-27'

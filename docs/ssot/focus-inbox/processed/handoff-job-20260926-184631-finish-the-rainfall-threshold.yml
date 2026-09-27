@@ -1,0 +1,84 @@
+title: job-20260926-184631-finish-the-rainfall-threshold-
+subtitle: 'Devin handoff spec: job/20260926-184631-finish-the-rainfall-threshold-'
+icon: robot
+focus:
+  label: job-20260926-184631-finish-the-rainfall-threshold-
+  text: 'Job 20260926-184631-finish-the-rainfall-threshold- on tony-dell: done.
+
+
+    All verified and committed. Here''s the summary.
+
+
+    ## What I found
+
+
+    **Session tail (mammoth-closet):** ended clean — final message reported the self-running demo verified
+    live and committed as `5b876e2`. No unfulfilled asks.
+
+
+    **The actual loose end:** `5b876e2` was committed directly on `master`, then **orphaned by a later
+    rebase** (reflog: rebase at `master@{7}` replayed surrounding commits but dropped it). The live dashboard
+    on michael-dev already had the change, but the repo snapshot reverted to the pre-demo state (`script.dev_tour_request`
+    / "Guided demo — tap for Devin").
+
+
+    ## What I did
+
+
+    - Ran `scripts/home-assistant/sync-ssot-from-live.sh` in this worktree → the resulting diff is byte-identical
+    to `5b876e2` (same blob `859e376`). No other drift between live and repo.
+
+    - Committed `9ee858a` on `dispatch/20260926-184631-finish-the-rainfall-threshold-` — nothing on master,
+    nothing pushed.
+
+
+    ## Toggle placement verified on live `.storage/lovelace.tony_test` (mn-weather view)
+
+
+    - Card header master toggle removed (`show_header_toggle: false`) — the redundant top-right toggle
+    replaced by row-1 **Demo**/**Start** button → `script.dev_shutter_demo`
+
+    - `Show Shutter Config` toggle sits directly above the conditional **Thresholds → Wind angles and
+    speed.** section (dir min/max, speed min, **rain min**)
+
+    - `Shutter State` toggle under Shutter Status; `Simulation` toggle at bottom gating the 3 dev sliders
+
+    - Rain wired end-to-end: `input_number.shutter_rain_min`, `sensor.dev_rainfall` (sim-or-RK600), `rain
+    ≥ rmin` in the status template, both automations, and the gauge `in_close_zone`
+
+    - `script.dev_shutter_demo` in `rk900_scripts.yaml` (included via `configuration.yaml`): 6 narrated
+    steps with snapshot/restore, `mode: restart`, clears the "Demo Running" flag
+
+
+    ## How to verify
+
+
+    Open `http://127.0.0.1:8124/tony-test/mn-weather` — first row under the title is the Demo button;
+    tap Start for the ~1 min narrated show.
+
+
+    ## Two heads-ups
+
+
+    - `ssot-validate-refs.py` fails with 3 `checklist'
+  branch: chaba
+  priority: medium
+  status: draft
+  tags:
+  - devin
+  - handoff
+  safe_to_parallel:
+    value: true
+    reason: Spec document; execution goes through devin_dispatch which creates an isolated worktree.
+  subtasks:
+  - label: Dispatch via devin_dispatch (repo chaba, prompt references bank doc job/20260926-184631-finish-the-rainfall-threshold-)
+    status: not_started
+ownership:
+  owner: tony
+  session: ''
+  locked: false
+  lock_reason: ''
+source:
+  bank_key: job/20260926-184631-finish-the-rainfall-threshold-
+  renderer: render-handoff-inbox
+  date: '2026-09-27'

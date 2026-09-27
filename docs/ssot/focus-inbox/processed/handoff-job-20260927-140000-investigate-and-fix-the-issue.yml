@@ -1,0 +1,33 @@
+title: job-20260927-140000-investigate-and-fix-the-issue-
+subtitle: 'Devin handoff spec: job/20260927-140000-investigate-and-fix-the-issue-'
+icon: robot
+focus:
+  label: job-20260927-140000-investigate-and-fix-the-issue-
+  text: 'Job 20260927-140000-investigate-and-fix-the-issue- on tony-dell: done.
+
+
+    This is the chaba repo. The task is about Ada (the voice assistant, `ada-pi`). Notably, `ssot.apps.ada_pi.yml`
+    already documents a very related known issue — mid-response replays caused by Gemini Live session-resumption
+    after 1008 closes, supposedly fixed in ada-pi `e58504d` (deployed 2026-09-24). This task is likely
+    a regression or an incomplete fix. Let me dig in.'
+  branch: chaba
+  priority: medium
+  status: draft
+  tags:
+  - devin
+  - handoff
+  safe_to_parallel:
+    value: true
+    reason: Spec document; execution goes through devin_dispatch which creates an isolated worktree.
+  subtasks:
+  - label: Dispatch via devin_dispatch (repo chaba, prompt references bank doc job/20260927-140000-investigate-and-fix-the-issue-)
+    status: not_started
+ownership:
+  owner: tony
+  session: ''
+  locked: false
+  lock_reason: ''
+source:
+  bank_key: job/20260927-140000-investigate-and-fix-the-issue-
+  renderer: render-handoff-inbox
+  date: '2026-09-27'

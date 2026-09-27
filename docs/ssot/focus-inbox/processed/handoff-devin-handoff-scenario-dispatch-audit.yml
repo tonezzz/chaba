@@ -1,0 +1,50 @@
+title: hands-off-scenario
+subtitle: 'Devin handoff spec: devin-handoff/scenario-dispatch-audit'
+icon: robot
+focus:
+  label: hands-off-scenario
+  text: 'Hands-off scenario (read-only): inspect ~/.local/share/devin-dispatch/tasks/
+
+    and report a table of every task — id, repo, result or running, started_at,
+
+    and whether transcript.json exists. Also count dispatch-wt-* worktrees under
+
+    ~/CascadeProjects. Do not modify any files. End with a one-paragraph summary.
+
+
+    ---
+
+    RUN RESULT 2026-09-23 (task 20260923-134503-hands-off-scenario-dispatch-au):
+
+    FAILED — known pipeline limitation. The task reads outside the worktree, so
+
+    `smart` permission mode rejected the tool call in non-interactive -p and the
+
+    session ended after ~20s with only an intro message. Unit reported
+
+    Result=success anyway (inferred-success gap in devin-dispatch-watch.sh).
+
+    Keep this scenario as the negative test case: a valid hands-off scenario must
+
+    be fully self-contained inside the dispatched worktree.'
+  branch: chaba
+  priority: medium
+  status: draft
+  tags:
+  - devin
+  - handoff
+  safe_to_parallel:
+    value: true
+    reason: Spec document; execution goes through devin_dispatch which creates an isolated worktree.
+  subtasks:
+  - label: Dispatch via devin_dispatch (repo chaba, prompt references bank doc devin-handoff/scenario-dispatch-audit)
+    status: not_started
+ownership:
+  owner: tony
+  session: ''
+  locked: false
+  lock_reason: ''
+source:
+  bank_key: devin-handoff/scenario-dispatch-audit
+  renderer: render-handoff-inbox
+  date: '2026-09-27'

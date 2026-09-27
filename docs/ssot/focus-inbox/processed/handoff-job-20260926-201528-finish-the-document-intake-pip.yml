@@ -1,0 +1,70 @@
+title: job-20260926-201528-finish-the-document-intake-pip
+subtitle: 'Devin handoff spec: job/20260926-201528-finish-the-document-intake-pip'
+icon: robot
+focus:
+  label: job-20260926-201528-finish-the-document-intake-pip
+  text: 'Job 20260926-201528-finish-the-document-intake-pip on tony-omen: done.
+
+
+    Done. Summary of what happened and what changed:
+
+
+    **Context**: Two prior dispatch sessions on this task died at startup (no output). The "document intake"
+    pipeline from sixth-litter was already mostly built — `doc-archive` service code in `stacks/idc01/doc-archive/`,
+    ada-pi side wired (`doc_archive_client` + `ada_doc_*` tools), documents bank registered, and the service
+    is already **deployed and running on idc01:11025**.
+
+
+    **What I finished** (commit `b44ac4db` on `dispatch/20260926-201528-finish-the-document-intake-pip`,
+    not pushed):
+
+
+    - `tests/test_doc_archive.py` was committed **empty** — now a real suite: 26 tests, Drive + MDDB fully
+    mocked (happy path, exact/near/far dedup, auth gate, slug/base64/empty/dup validation, page streaming,
+    Drive 500-retry + 401 token refresh, Mddb retry). All pass.
+
+    - `ArchiveRequest` gained an optional `identifiers` field so extracted doc numbers/parties/dates land
+    in the MDDB index doc — the bank description promised this but nothing could send it.
+
+    - `Mddb._post` got retry+backoff (timeout/5xx) — a live smoke hit a real wart: MDDB post-restart warmup
+    stalled the add response, producing a client-visible 500 even though the write committed.
+
+    - `doc-archive.service` soft-orders after `mddb.service` (every archive call needs the documents collection).
+
+    - Job SSOT updated with live state.
+
+
+    **Live verification** (upload→archive→index→readback, on idc01): `POST /v1/archive selftest-20260926`
+    → gdrive folder + manifest + MDDB doc; `GET /v1/archive/{slug}` + `/page/1` stream back with matching
+    sha256; re-POST of same bytes → `dedup=exact`. The selftest artifacts (1-page PNG) remain at `ada-documents/2026/selftest-20260926/`
+    + MDDB key `selftest-20260926` — delete if unwanted.
+
+
+    **Still blocked on approval/infra**:
+
+    - Redeploy doc-archive for the identifiers field + retry fix (`./deploy.sh`, deploys need approval).
+
+    - NLM auto-feed needs a designated documents notebook (`notebooklm_id` is null) + nlm auth on idc01.
+
+    - Note: MDDB 2.15.3 (restarted 20:'
+  branch: chaba
+  priority: medium
+  status: draft
+  tags:
+  - devin
+  - handoff
+  safe_to_parallel:
+    value: true
+    reason: Spec document; execution goes through devin_dispatch which creates an isolated worktree.
+  subtasks:
+  - label: Dispatch via devin_dispatch (repo chaba, prompt references bank doc job/20260926-201528-finish-the-document-intake-pip)
+    status: not_started
+ownership:
+  owner: tony
+  session: ''
+  locked: false
+  lock_reason: ''
+source:
+  bank_key: job/20260926-201528-finish-the-document-intake-pip
+  renderer: render-handoff-inbox
+  date: '2026-09-27'

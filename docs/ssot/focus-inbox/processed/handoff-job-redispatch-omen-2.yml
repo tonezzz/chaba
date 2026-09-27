@@ -1,0 +1,30 @@
+title: job-redispatch-omen-2
+subtitle: 'Devin handoff spec: job/redispatch-omen-2'
+icon: robot
+focus:
+  label: job-redispatch-omen-2
+  text: 'Job redispatch-omen-2 on tony-omen: running.
+
+
+    retry omen queue post-quota'
+  branch: chaba
+  priority: medium
+  status: draft
+  tags:
+  - devin
+  - handoff
+  safe_to_parallel:
+    value: true
+    reason: Spec document; execution goes through devin_dispatch which creates an isolated worktree.
+  subtasks:
+  - label: Dispatch via devin_dispatch (repo chaba, prompt references bank doc job/redispatch-omen-2)
+    status: not_started
+ownership:
+  owner: tony
+  session: ''
+  locked: false
+  lock_reason: ''
+source:
+  bank_key: job/redispatch-omen-2
+  renderer: render-handoff-inbox
+  date: '2026-09-27'

@@ -1,0 +1,88 @@
+title: job-20260926-204250-finish-the-opennotebook-assess
+subtitle: 'Devin handoff spec: job/20260926-204250-finish-the-opennotebook-assess'
+icon: robot
+focus:
+  label: job-20260926-204250-finish-the-opennotebook-assess
+  text: 'Job 20260926-204250-finish-the-opennotebook-assess on tony-omen: done.
+
+
+    Done. The assessment work from `chivalrous-babcat` was already complete on `feat/open-notebook-eval`
+    — it just never got delivered onto a mergeable branch (the two prior dispatch attempts, `191119` and
+    `ring-viper`/`194628`, exited early with code 1).
+
+
+    ## What changed
+
+
+    Cherry-picked the three eval commits onto `dispatch/20260926-204250-finish-the-opennotebook-assess`:
+
+
+    - `4aefa2c5` — Open Notebook stack (rootless podman quadlets on tony-dell), `scripts/bench-opennb.py`,
+    merged-corpus benchmark
+
+    - `fb91f329` — completed benchmark results (merged arm)
+
+    - `a369c8fc` — per-file arm results (the arm that flipped the verdict)
+
+    - `5a669ef7` — added a `delivery:` section to `docs/ssot/jobs/infrastructure/2026-09-17-open-notebook-eval.yml`
+    recording this handoff
+
+
+    Deliverables now on this branch:
+
+    - **Verdict doc**: `docs/kb/experiments/open-notebook-vs-notebooklm-2026-09-17.md`
+
+    - Raw results: `open-notebook-vs-notebooklm-2026-09-17.yml` + `-2026-09-20.yml`
+
+    - Stack: `stacks/tony-dell/open-notebook/` (quadlets + env example, no secrets)
+
+    - Bench script: `scripts/bench-opennb.py`
+
+
+    ## The verdict (for the record)
+
+
+    - Merged-corpus arm (33 × ~73KB sources): **1/8** — dominant-chunk retrieval bias
+
+    - Per-file arm (517 sources, `CHUNK_SIZE=1500`, local nomic embeddings): **7/8**, matching NotebookLM''s
+    7/8 — **meets the adoption bar**
+
+    - Recommendation: keep `notebooklm-rest`/`ada_session_recall` as production; ONB-perfile is a credible
+    fallback. Remaining weakness is provider resilience (silent SSE truncation on errors, free-tier quota
+    churn).
+
+
+    ## Verify
+
+
+    ```
+
+    git log --oneline master..dispatch/20260926-204250-finish-the-opennotebook-assess
+
+    cat docs/kb/experiments/open-notebook-vs-notebooklm-2026-09-17.md
+
+    ```
+
+
+    YAML validated with `yaml.safe_load`. Nothing pushed, nothing deployed, working tree clean.'
+  branch: chaba
+  priority: medium
+  status: draft
+  tags:
+  - devin
+  - handoff
+  safe_to_parallel:
+    value: true
+    reason: Spec document; execution goes through devin_dispatch which creates an isolated worktree.
+  subtasks:
+  - label: Dispatch via devin_dispatch (repo chaba, prompt references bank doc job/20260926-204250-finish-the-opennotebook-assess)
+    status: not_started
+ownership:
+  owner: tony
+  session: ''
+  locked: false
+  lock_reason: ''
+source:
+  bank_key: job/20260926-204250-finish-the-opennotebook-assess
+  renderer: render-handoff-inbox
+  date: '2026-09-27'

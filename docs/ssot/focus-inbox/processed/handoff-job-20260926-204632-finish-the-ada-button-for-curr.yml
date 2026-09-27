@@ -1,0 +1,70 @@
+title: job-20260926-204632-finish-the-ada-button-for-curr
+subtitle: 'Devin handoff spec: job/20260926-204632-finish-the-ada-button-for-curr'
+icon: robot
+focus:
+  label: job-20260926-204632-finish-the-ada-button-for-curr
+  text: 'Job 20260926-204632-finish-the-ada-button-for-curr on tony-omen: done.
+
+
+    Done. Summary:
+
+
+    ## What the task actually needed
+
+
+    The `calico-cost` session''s work — "Ada button for current user in-app without redirect" — was **already
+    built, merged, and deployed** before the two earlier dispatch attempts (which produced zero commits).
+    What was missing was a closeout verification and some doc drift.
+
+
+    ## Verified live on tony-ha
+
+
+    - `custom:ada-voice-card` ("Live assistant") on `chaba-home/ai` — embedded Gemini Live client, mic
+    button, no iframe/redirect, auto-mints per-device keys via `script.ada_voice_key`
+
+    - All five `ada-*.js` bundles on `/local/` are **md5-identical** to repo (`stacks/tony-dell/tony-ha/www/`)
+
+    - Lovelace resources: voice `?v=7`, chat `?v=4`, keys `?v=7`, users `?v=4`, pair-qr `?v=2`
+
+    - Backend `wss://idc01…/apps/ha/ada-tony/ws` healthy — `/api/health` ok with 23 memory banks; WS handshake
+    correctly 403-rejects invalid keys
+
+
+    ## Changes committed (`c428873a` on `dispatch/20260926-204632-…`)
+
+
+    - `ssot.home-assistant.dashboards.yml` — resource refs updated: voice card `v4→v7`, keys card `v6→v7`
+
+    - `chaba-admin-current.json` — synced missing `vcast-screens-card` on the Pair view (api_key stays
+    `REDACTED`)
+
+    - `docs/ssot/jobs/ada/2026-09-26-ada-in-ha-button-closeout.yml` — trail doc with verification evidence
+    and open items (Gemini 1008 abort trigger investigation remains the one flagged loose end — a separate
+    thread already tracked in SSOT)
+
+
+    `ssot-validate-all` passes (425 files, 0 errors). Not pushed, per dispatch rules. Verify by opening
+    `https://tony-dell.taila0626a.ts.net:8123/chaba-home/ai` — the Live assistant card should connect
+    on tap.'
+  branch: chaba
+  priority: medium
+  status: draft
+  tags:
+  - devin
+  - handoff
+  safe_to_parallel:
+    value: true
+    reason: Spec document; execution goes through devin_dispatch which creates an isolated worktree.
+  subtasks:
+  - label: Dispatch via devin_dispatch (repo chaba, prompt references bank doc job/20260926-204632-finish-the-ada-button-for-curr)
+    status: not_started
+ownership:
+  owner: tony
+  session: ''
+  locked: false
+  lock_reason: ''
+source:
+  bank_key: job/20260926-204632-finish-the-ada-button-for-curr
+  renderer: render-handoff-inbox
+  date: '2026-09-27'

@@ -1,0 +1,77 @@
+title: job-20260926-195902-continue-the-logs-digesting-wo
+subtitle: 'Devin handoff spec: job/20260926-195902-continue-the-logs-digesting-wo'
+icon: robot
+focus:
+  label: job-20260926-195902-continue-the-logs-digesting-wo
+  text: 'Job 20260926-195902-continue-the-logs-digesting-wo on tony-omen: done.
+
+
+    All work is committed on the dispatch branch and the watcher is armed. Here''s the summary.
+
+
+    ## What I did
+
+
+    Continued `young-script`''s log work — pulled the tail from `sessions.db` (last intents: "push" +
+    "let''s start" on the MDDB log-substrate plan). The prior session had built `log-shipper.py` and wired
+    it into `export-transcripts.py` but never landed a ship — it reported "mddb unreachable" and stopped.
+
+
+    **Fixed two real bugs in `log-shipper.py`:**
+
+    - `/v1/v1/add` double-prefix — `MDDB_URL` already carries `/v1`, so every post 404''d instantly. The
+    "unreachable" failures were never load-related.
+
+    - Cursor semantics — `journalctl --cursor-file` advances the file past *read* lines, so failed/dry-run
+    lines would never replay. Now it reads with `--cursor` and writes back only the last **confirmed-shipped**
+    cursor; failures and dry runs replay cleanly. First run (no cursor) falls back to `--since ''7 days
+    ago''`.
+
+
+    **Built the missing distillation half — `logs-report.py`:**
+
+    - Pages `/v1/search` over `host-logs`, window-filters, distills per host (kind counts, top units,
+    repeat offenders with volatile-token masking, first/last seen).
+
+    - Renders the `## host-logs` infra-digest block and publishes it to a new `ops-digests` collection
+    with a per-run key (same-key re-adds would feed the unfixed HNSW tombstone bug).
+
+    - Registered in `personal-rollup.py` SOURCES and the `export-transcripts.py` collector list.
+
+
+    **Added `systemd/log-shipper.{service,timer}`** — 15-min cadence (daily chain alone is too sparse
+    for "logs survive host death"). Repo only; enabling needs your approval — ExecStart targets the main
+    checkout.
+
+
+    ## Verified
+
+
+    - py_compile all touched scripts; SSOT validator passes on the trail doc.
+
+    - Full end-to-end against a local MDDB stub: **500 docs shipped, distilled to `## host-logs (24h —
+    500 lines, 55 severe)`**, published to ops-digests.
+
+    - Real MDDB: probe writes to `host-logs` land (~36s/add under rebuild load), `/v1/search` returns
+    them; degraded path renders an empty bl'
+  branch: chaba
+  priority: medium
+  status: draft
+  tags:
+  - devin
+  - handoff
+  safe_to_parallel:
+    value: true
+    reason: Spec document; execution goes through devin_dispatch which creates an isolated worktree.
+  subtasks:
+  - label: Dispatch via devin_dispatch (repo chaba, prompt references bank doc job/20260926-195902-continue-the-logs-digesting-wo)
+    status: not_started
+ownership:
+  owner: tony
+  session: ''
+  locked: false
+  lock_reason: ''
+source:
+  bank_key: job/20260926-195902-continue-the-logs-digesting-wo
+  renderer: render-handoff-inbox
+  date: '2026-09-27'

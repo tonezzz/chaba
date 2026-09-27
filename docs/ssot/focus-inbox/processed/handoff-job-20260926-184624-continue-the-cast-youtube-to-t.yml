@@ -1,0 +1,73 @@
+title: job-20260926-184624-continue-the-cast-youtube-to-t
+subtitle: 'Devin handoff spec: job/20260926-184624-continue-the-cast-youtube-to-t'
+icon: robot
+focus:
+  label: job-20260926-184624-continue-the-cast-youtube-to-t
+  text: 'Job 20260926-184624-continue-the-cast-youtube-to-t on tony-dell: done.
+
+
+    Done. Continued the sapphire-splash yt-live work — both remaining pieces are finished and verified
+    live.
+
+
+    **Disk cleanup on tony-dell** (the "clean up first" step):
+
+    - `journalctl --vacuum-size=500M` → +3.5G
+
+    - 11 disabled snap revisions removed → ~2.5G
+
+    - `/tmp` (tmpfs/RAM): removed stale mddb DBs, old archives, >1d devin-overflows → 5.1G→1.3G used
+
+    - Podman: `image prune` found nothing dangling — deliberately did **not** run `system prune` since
+    it would delete the intentionally-stopped xmeye standby container
+
+    - Result: **88G/118G used, 25G free** (was 94G/19G at session start)
+
+
+    **Media cache** (`~/.local/bin/yt-live.sh`):
+
+    - `~/.cache/yt-live-media/<vid>.<srclang>.<langs>/` stores complete HLS output + `meta.json`, populated
+    by a detached `__finalize` step after transcode finishes (`complete` marker written last; validated
+    against the playlist''s segment list)
+
+    - Cache hit → hardlink-copy into APP_DIR + `play_media` — no yt-dlp/transcode. Checked twice: by URL-derived
+    video id (pre-resolve, instant) and again post-resolve so search queries hit too. Matching recomputes
+    effective burned langs from the entry''s `srclang`, so lang variants coexist correctly
+
+    - LRU eviction by `last_used` at `YT_LIVE_CACHE_MAX` (8 GiB default), `YT_LIVE_NOCACHE=1` bypass,
+    `yt-live.sh cache` lists entries; `/status` exposes `media_cache_bytes`/`media_cache_entries`
+
+
+    **Bug found and fixed during testing:** the `:8085` Caddy edge was retired 2026-09-25 — casts were
+    writing to the orphaned `~/.config/caddy/public` docroot while the containerized web Caddy serves
+    `stacks/web/public`. Updated `APP_DIR` (→ live-checkout docroot) and `BASE_URL` (→ port 80) in `yt-live.sh`
+    and `yt-live-api.py`; left a symlink at the old path for stragglers like `yt-bench-translate.py`.
+
+
+    **Verified end-to-end:** Rick Astley cast populated `dQw4w9WgXcQ.en.th` (82M, 54 segs); replay cast
+    took ~6s and the TV reached `playing` state; stopped cleanly afterward. `yt-live-api` restarted and
+    healthy.
+
+
+    **Committed** on the dispa'
+  branch: chaba
+  priority: medium
+  status: draft
+  tags:
+  - devin
+  - handoff
+  safe_to_parallel:
+    value: true
+    reason: Spec document; execution goes through devin_dispatch which creates an isolated worktree.
+  subtasks:
+  - label: Dispatch via devin_dispatch (repo chaba, prompt references bank doc job/20260926-184624-continue-the-cast-youtube-to-t)
+    status: not_started
+ownership:
+  owner: tony
+  session: ''
+  locked: false
+  lock_reason: ''
+source:
+  bank_key: job/20260926-184624-continue-the-cast-youtube-to-t
+  renderer: render-handoff-inbox
+  date: '2026-09-27'

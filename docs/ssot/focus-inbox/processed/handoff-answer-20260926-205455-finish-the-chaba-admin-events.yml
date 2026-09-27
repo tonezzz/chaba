@@ -1,0 +1,31 @@
+title: chaba-admin-events
+subtitle: 'Devin handoff spec: answer/20260926-205455-finish-the-chaba-admin-events-'
+icon: robot
+focus:
+  label: chaba-admin-events
+  text: 'ANSWERED by Tony via console 2026-09-26: approved + EXECUTED by console. Bundles scp''d to tony-dell
+    ~/.config/home-assistant/www/, lovelace resources bumped ?v=5->6 (events+log), sync-ssot ran clean
+    (no dashboard diff — resource versions live in lovelace_resources storage), branch 3e941e57 merged
+    to master + pushed, worktree removed. Side finding logged: ha-michael-dev token stale (websocket auth_invalid)
+    — needs a fresh long-lived token; left for later.'
+  branch: chaba
+  priority: medium
+  status: draft
+  tags:
+  - devin
+  - handoff
+  safe_to_parallel:
+    value: true
+    reason: Spec document; execution goes through devin_dispatch which creates an isolated worktree.
+  subtasks:
+  - label: Dispatch via devin_dispatch (repo chaba, prompt references bank doc answer/20260926-205455-finish-the-chaba-admin-events-)
+    status: not_started
+ownership:
+  owner: tony
+  session: ''
+  locked: false
+  lock_reason: ''
+source:
+  bank_key: answer/20260926-205455-finish-the-chaba-admin-events-
+  renderer: render-handoff-inbox
+  date: '2026-09-27'

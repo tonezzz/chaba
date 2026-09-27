@@ -1,0 +1,60 @@
+title: job-20260926-195908-continue-the-memory-yml-work-f
+subtitle: 'Devin handoff spec: job/20260926-195908-continue-the-memory-yml-work-f'
+icon: robot
+focus:
+  label: job-20260926-195908-continue-the-memory-yml-work-f
+  text: 'Job 20260926-195908-continue-the-memory-yml-work-f on tony-omen: done.
+
+
+    Done. Summary of what I found and did:
+
+
+    **Audit finding:** `tricky-roadway` ended claiming "Both shipped" (ada-pi `a7af56e`, chaba `d2b58255`)
+    — but **neither commit exists**: not in local clones, not on `origin`, not on idc01. The live-verified
+    changes (idc01 quadlets carrying `ADA_HOST`) have since been wiped by redeploys from clean checkouts.
+    The rest of the memory.yml stack (immediate, recent-events, timeline, events, ada-events, digests,
+    access, guest profile) was confirmed already landed and rendering.
+
+
+    **Restored in this worktree (commit `d4ffa225` on `dispatch/20260926-195908-continue-the-memory-yml-work-f`):**
+
+    - `scripts/ada/export-transcripts.py` — re-added `--chaba-host` (default tony-dell): heading-union
+    merges the chaba-guest store''s `~/.local/share/chaba/events.md` into the local store so the `events`
+    section sees both writers. Runs in the daily `ada-review-refresh.timer` path.
+
+    - `scripts/chaba/render-memory.py` — new `--profile NAME` filter; repairs ada-pi''s deployed `render-memory.py
+    --profile guest` fallback call which currently dies on argparse.
+
+    - `docs/ssot/chaba/ssot.chaba.memory.yml` — `events` section documents the merge path.
+
+
+    **Trail doc:** `docs/ssot/jobs/chaba/2026-09-26-memory-yml-resume.yml` records the lost commits, what''s
+    verified-done, and open items — notably the ada-pi-side `ADA_HOST` redo (out of worktree scope) and
+    the two drifting chaba stores (tony-omen `:8015` vs tony-dell `:8014`), which was deferred as a design
+    call by the prior session.
+
+
+    **Verify:** `python3 scripts/chaba/render-memory.py --check` (exit 0), `--profile guest --check` renders
+    guest only, `--profile nope` errors cleanly, merge union tested idempotent, `ssot-validate-all.mjs`
+    424 files / 0 errors. Not pushed or deployed, per dispatch rules.'
+  branch: chaba
+  priority: medium
+  status: draft
+  tags:
+  - devin
+  - handoff
+  safe_to_parallel:
+    value: true
+    reason: Spec document; execution goes through devin_dispatch which creates an isolated worktree.
+  subtasks:
+  - label: Dispatch via devin_dispatch (repo chaba, prompt references bank doc job/20260926-195908-continue-the-memory-yml-work-f)
+    status: not_started
+ownership:
+  owner: tony
+  session: ''
+  locked: false
+  lock_reason: ''
+source:
+  bank_key: job/20260926-195908-continue-the-memory-yml-work-f
+  renderer: render-handoff-inbox
+  date: '2026-09-27'

@@ -1,0 +1,78 @@
+title: job-20260926-210637-finish-the-runbook-system-asse
+subtitle: 'Devin handoff spec: job/20260926-210637-finish-the-runbook-system-asse'
+icon: robot
+focus:
+  label: job-20260926-210637-finish-the-runbook-system-asse
+  text: 'Job 20260926-210637-finish-the-runbook-system-asse on tony-omen: done.
+
+
+    Done. Finished the runbook-system assessment that `dorian-judo` started on 2026-09-18 — it had built
+    the registry and fixed defects but never wrote the assessment itself.
+
+
+    ## What I found
+
+
+    The registry `docs/ssot/ssot.runbooks.yml` existed but had drifted within 8 days:
+
+    - `ssot.ada.howto.yml` (6 embedded Ada runbooks, added 2026-09-21) was unregistered
+
+    - 3 new KB runbooks (`media-casting`, `tv-casting`, `secret-rotation`) missing; 2 of them lacked the
+    `type: runbook` frontmatter tag
+
+    - 14 `type: troubleshooting` KB files unlisted
+
+    - The registry claimed `chaba-backup.timer`/`chaba-backup-monitor.timer` were "not deployed anywhere"
+    — live check shows both are now **installed and firing on tony-omen** (backup daily 02:00, monitor
+    hourly). `chaba-ci-pipeline.timer` is still undeployed on both hosts.
+
+
+    ## What I changed (commit `1d81b755` on the dispatch branch)
+
+
+    - **`docs/ssot/ssot.runbooks.yml`** → v2: added ada-howto tier-2 entry, 3 KB runbooks, a grouped troubleshooting
+    index, a tier-4 convention note for `stacks/services/*/README.md` runbooks (xmeye-vms), and corrected
+    the timer-reality section
+
+    - **`tv-casting-runbook.md` + `secret-rotation.md`** → added `type: runbook` frontmatter
+
+    - **`docs/INDEX.md`** → Runbooks section now points at the canonical registry and lists all 4 locations
+
+    - **`docs/ssot/jobs/infrastructure/2026-09-26-runbook-system-assessment.yml`** → the assessment trail:
+    inventory (4 tiers, ~45 runbook artifacts), verification status (1/7 formal runbooks verified-live,
+    5 partial/aspirational), pros/cons, gaps (no restore drills, no idc01/mddb-failover incident runbooks,
+    registry has no enforcement — drifted in 8 days), and open decisions for you.
+
+
+    ## Verify
+
+
+    - `python3 -c "import yaml; yaml.safe_load(open(''docs/ssot/ssot.runbooks.yml''))"` — passed
+
+    - `ssh tony-omen ''systemctl list-timers | grep chaba-backup''` — confirms the timers claim
+
+    - Read the assessment: `docs/ssot/jobs/infrastructure/2026-09-26-runbook-system-assessment.yml`
+
+
+    **Open decisions left f'
+  branch: chaba
+  priority: medium
+  status: draft
+  tags:
+  - devin
+  - handoff
+  safe_to_parallel:
+    value: true
+    reason: Spec document; execution goes through devin_dispatch which creates an isolated worktree.
+  subtasks:
+  - label: Dispatch via devin_dispatch (repo chaba, prompt references bank doc job/20260926-210637-finish-the-runbook-system-asse)
+    status: not_started
+ownership:
+  owner: tony
+  session: ''
+  locked: false
+  lock_reason: ''
+source:
+  bank_key: job/20260926-210637-finish-the-runbook-system-asse
+  renderer: render-handoff-inbox
+  date: '2026-09-27'

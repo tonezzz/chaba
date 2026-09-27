@@ -1,0 +1,45 @@
+title: job-20260926-190808-finish-the-idc01-link-aggregat
+subtitle: 'Devin handoff spec: job/20260926-190808-finish-the-idc01-link-aggregat'
+icon: robot
+focus:
+  label: job-20260926-190808-finish-the-idc01-link-aggregat
+  text: "Job 20260926-190808-finish-the-idc01-link-aggregat on tony-dell: done.\n\nCommitted cleanly on\
+    \ the dispatch branch. Done.\n\n## Summary\n\nFinished the IDC01 link-aggregation assessment from\
+    \ session `good-gosling` (reconstructed from `sessions.db` transcripts plus the 9-24 follow-up incident\
+    \ on master).\n\n**New files** (commit `ace41ed` on `dispatch/20260926-190808-finish-the-idc01-link-aggregat`):\n\
+    \n- `docs/kb/idc01-link-aggregation-assessment-2026-09-26.md` — the final recommendation doc. Verdicts:\n\
+    \  - **Link aggregation: not worth it.** tony-dell↔idc01 is already at the ~300 Mbps destination cap\
+    \ per single flow (parallel flows don't scale), Tailscale pins everything to one UDP path, and WiFi+LTE\
+    \ bonding is sub-additive. Useful alternatives: failover, or splitting bulk international traffic\
+    \ onto mobile.\n  - **Egress fix history:** WARP deployed 9-22 (3–10× worst-case international) then\
+    \ disabled 9-24 because warp-svc starved tailscaled. BBR+fq persists. Ranked residual options: `aria2c\
+    \ -x16`, Tailscale exit node via tony-dell, WARP only with Siamdata console access, SG VPS relay.\n\
+    \  - **Public IP in SSOT:** keep `<IDC01_PUBLIC_IP>` placeholders (data-isolation scan bans public\
+    \ IPv4 even in `ssot.values.yml`); resolve live via `tailscale status`/Siamdata panel. `${ssot(...)}`\
+    \ rejected — no canonical home, unresolved readers see the blob, value is quasi-static.\n- `docs/ssot/jobs/infrastructure/2026-09-26-idc01-link-aggregation-assessment.yml`\
+    \ — job trail with verification commands and follow-ups.\n\n**Verify:** `git show ace41ed`, or `ssh\
+    \ tony@100.74.146.0 'systemctl is-enabled warp-svc'` → `disabled`, `sysctl net.ipv4.tcp_congestion_control`\
+    \ → `bbr` (both re-verified live today).\n\n**Noted follow-up** (in both docs): `ssot.idc01.yml` sits\
+    \ unmerged on `test/ultralytics-yolo-ha` (commit `1eb2138c`) — cherry-pick decision left to you since\
+    \ its WARP section predates the 9-24 disable."
+  branch: chaba
+  priority: medium
+  status: draft
+  tags:
+  - devin
+  - handoff
+  safe_to_parallel:
+    value: true
+    reason: Spec document; execution goes through devin_dispatch which creates an isolated worktree.
+  subtasks:
+  - label: Dispatch via devin_dispatch (repo chaba, prompt references bank doc job/20260926-190808-finish-the-idc01-link-aggregat)
+    status: not_started
+ownership:
+  owner: tony
+  session: ''
+  locked: false
+  lock_reason: ''
+source:
+  bank_key: job/20260926-190808-finish-the-idc01-link-aggregat
+  renderer: render-handoff-inbox
+  date: '2026-09-27'

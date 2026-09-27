@@ -1,0 +1,70 @@
+title: job-20260926-193151-proceed-with-the-pairing-ui-pl
+subtitle: 'Devin handoff spec: job/20260926-193151-proceed-with-the-pairing-ui-pl'
+icon: robot
+focus:
+  label: job-20260926-193151-proceed-with-the-pairing-ui-pl
+  text: 'Job 20260926-193151-proceed-with-the-pairing-ui-pl on tony-dell: done.
+
+
+    Done. All six plan items implemented; nothing pushed or deployed.
+
+
+    ## What changed
+
+
+    **Chaba worktree** (commit `f703947` on `dispatch/20260926-193151-proceed-with-the-pairing-ui-pl`):
+
+    - `stacks/tony-dell/tony-ha/www/ada-users-card.js` — QR modal refactored into `_openQrOverlay`/`_fillQrOverlay`
+    (inline svg + link + expiry countdown + close), used by both Re-pair and Issue (Issue now uses `callWS
+    return_response`, restoring the issue→QR flow). Other-keys rows get a bound/unbound/shared badge and
+    per-app buttons driven by `apps` (missing = voice+chat); View mints a `ui=cms` redeem link and opens
+    it.
+
+    - `stacks/tony-dell/tony-ha/www/ada-keys-card.js` — same updates for parity (it''s registered but
+    off the view).
+
+    - `stacks/web/public/apps/ha/pair/index.html` — `#result` → overlay modal; issue form gains an Apps
+    picker (Voice/Text/View) → `POST /api/auth/keys {apps}`; device rows render per-app open buttons (redeem
+    + redirect → `/`, `/chat`, `/cms`) and a `shared` badge for `*` bindings.
+
+    - SSOT updates + job trail `docs/ssot/jobs/ada/2026-09-26-pairing-ui-apps-modal.yml` (includes deploy
+    checklist).
+
+
+    **HA config** (`~/.config/home-assistant`, left **uncommitted** — takes effect on reload/restart):
+
+    - `scripts.yaml`: `ada_pair_reissue` ui += `cms` → redirect `…/cms`; `ada_pair_issue` gains optional
+    multi-select `apps` field + trailing `stop: issued`/`response_variable` so it returns the QR.
+
+    - `configuration.yaml`: `ada_issue_key` payload += `apps`; both `ada_*_issued_keys` sensors `json_attributes`
+    += `bindings`, `apps`.
+
+
+    **ada-pi** — sibling worktree `/home/tony/CascadeProjects/dispatch-wt-20260926-193151-ada-keys-apps`,
+    branch `dispatch/20260926-193151-ada-keys-apps` (commit `33cf55b`, not merged): `auth.py` stores `apps`
+    per key (`VALID_KEY_APPS` = voice/chat/view), `issued_key_apps()`, `bind_device` now mutates in place;
+    `pwa_server.py` accepts/returns `apps`; +2 tests.
+
+
+    Note: `ada-pair-qr-card` was already removed from the live view on 2026-09-23 — no dashboard mutation'
+  branch: chaba
+  priority: medium
+  status: draft
+  tags:
+  - devin
+  - handoff
+  safe_to_parallel:
+    value: true
+    reason: Spec document; execution goes through devin_dispatch which creates an isolated worktree.
+  subtasks:
+  - label: Dispatch via devin_dispatch (repo chaba, prompt references bank doc job/20260926-193151-proceed-with-the-pairing-ui-pl)
+    status: not_started
+ownership:
+  owner: tony
+  session: ''
+  locked: false
+  lock_reason: ''
+source:
+  bank_key: job/20260926-193151-proceed-with-the-pairing-ui-pl
+  renderer: render-handoff-inbox
+  date: '2026-09-27'

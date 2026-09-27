@@ -1,0 +1,59 @@
+title: job-20260926-192929-prior-session-fancy-aries-left
+subtitle: 'Devin handoff spec: job/20260926-192929-prior-session-fancy-aries-left'
+icon: robot
+focus:
+  label: job-20260926-192929-prior-session-fancy-aries-left
+  text: 'Job 20260926-192929-prior-session-fancy-aries-left on tony-dell: done.
+
+
+    Done. Summary of what happened and what changed:
+
+
+    **Findings**
+
+    - `~/devin-kb` → `~/CascadeProjects/devin-kb`. Commit `e601064` was found via reflog — it was later
+    rebased into `8276c25` on main with identical content (verified by diff).
+
+    - **The premise was stale**: `tonezzz/devin-kb` is *not* archived on GitHub (`archived: false`), and
+    remote `main` (`73901ff`) already contains the doc. The push evidently succeeded between Sep 18 and
+    the repo''s Sep 23 `updated_at`.
+
+
+    **Changes** (committed as `57248b3` on `dispatch/20260926-192929-prior-session-fancy-aries-left`)
+
+    - `docs/kb/chrome-remote-desktop-setup.md` — the CRD install runbook, with chaba `category:` front
+    matter, a provenance note, and the "Related chaba docs" pointer rewritten to repo-relative paths (the
+    `chrome-remote-desktop-profile-*` series already lives here).
+
+    - `docs/ssot/jobs/infrastructure/2026-09-26-crd-setup-doc-migration.yml` — job trail recording the
+    rebase, the not-archived finding, and the recommendation.
+
+
+    **On unarchiving**: moot — the repo isn''t archived. The real open question is canonical-home drift:
+    the doc now exists in both devin-kb and chaba. Since the CRD doc series lives in chaba, I''d treat
+    chaba as canonical; noted in the job file.
+
+
+    **Verify**: `git show 57248b3`, or read `docs/kb/chrome-remote-desktop-setup.md`. `node scripts/ssot-validate-all.mjs`
+    passed (420/420 files).'
+  branch: chaba
+  priority: medium
+  status: draft
+  tags:
+  - devin
+  - handoff
+  safe_to_parallel:
+    value: true
+    reason: Spec document; execution goes through devin_dispatch which creates an isolated worktree.
+  subtasks:
+  - label: Dispatch via devin_dispatch (repo chaba, prompt references bank doc job/20260926-192929-prior-session-fancy-aries-left)
+    status: not_started
+ownership:
+  owner: tony
+  session: ''
+  locked: false
+  lock_reason: ''
+source:
+  bank_key: job/20260926-192929-prior-session-fancy-aries-left
+  renderer: render-handoff-inbox
+  date: '2026-09-27'

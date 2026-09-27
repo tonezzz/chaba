@@ -1,0 +1,76 @@
+title: job-20260926-184542-resume-the-unfinished-job-docs
+subtitle: 'Devin handoff spec: job/20260926-184542-resume-the-unfinished-job-docs'
+icon: robot
+focus:
+  label: job-20260926-184542-resume-the-unfinished-job-docs
+  text: 'Job 20260926-184542-resume-the-unfinished-job-docs on tony-dell: done.
+
+
+    Done. Here''s the summary.
+
+
+    ## What I recovered from `artistic-pleasure` ("Job docs")
+
+
+    The session''s tail was the **Ada evals job-report** design: your proposed model where a requester
+    pre-writes a job doc to MDDB `ada-eval-jobs`, and an evals runner claims + live-updates it. The plan
+    doc was written to `ada-pi/docs/eval-jobs.md` (still **untracked/uncommitted** there), you approved
+    phase 1, and the assistant specced four edits — but the session had flipped to ask/read-only mode,
+    so **nothing was ever applied**. Its final message was a paste-ready spec asking for write access.
+
+
+    ## Completed in this session
+
+
+    - **`docs/kb/ada-eval-jobs.md`** — canonical design doc (lifecycle, job-doc schema, `ada-evald` dispatcher,
+    phases 1–4, runner status baseline, open questions) plus phase-1 status and the exact apply/run procedure.
+
+    - **`docs/kb/ada-eval-jobs-phase1.patch`** — the four edits turned into a real unified diff, **verified**:
+    `git apply --check` clean against ada-pi HEAD `607035c`, all four files `py_compile` clean in a scratch
+    copy, `--param` registers in `--help`.
+
+    - **`docs/INDEX.md`** — added the entry.
+
+    - Committed as `ec924d0` on `dispatch/20260926-184542-resume-the-unfinished-job-docs`.
+
+
+    Two corrections I made to the original spec while verifying:
+
+
+    - `?no_prime=1` must gate **both** prime sites — the original only gated `_prime_session_task`; the
+    provider-reconnect re-prime at `pwa_server.py:729` would leak prime into the off-arm on any mid-run
+    Gemini reconnect.
+
+    - Token totals now accumulate per-turn deltas (`sum_in/sum_out`) and treat `live_reconnecting` events
+    as counter resets — the original `totals: prev_in` under-reported after session swaps.
+
+
+    ## Abandoned / deferred (by session constraints — worktree-only, no deploy)
+
+
+    - Applying the patch to the live `ada-pi` checkout (outside this worktree).
+
+    - Deploy to idc01 + `ada-ha-tony` restart, and the `tv_power` prime on/off A/B run.
+
+    - Writing the first `ada-eval-jobs` MDDB doc — deliberately left unwritten: a `queued'
+  branch: chaba
+  priority: medium
+  status: draft
+  tags:
+  - devin
+  - handoff
+  safe_to_parallel:
+    value: true
+    reason: Spec document; execution goes through devin_dispatch which creates an isolated worktree.
+  subtasks:
+  - label: Dispatch via devin_dispatch (repo chaba, prompt references bank doc job/20260926-184542-resume-the-unfinished-job-docs)
+    status: not_started
+ownership:
+  owner: tony
+  session: ''
+  locked: false
+  lock_reason: ''
+source:
+  bank_key: job/20260926-184542-resume-the-unfinished-job-docs
+  renderer: render-handoff-inbox
+  date: '2026-09-27'

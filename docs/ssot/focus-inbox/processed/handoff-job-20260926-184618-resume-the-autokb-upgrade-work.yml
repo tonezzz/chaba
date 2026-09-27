@@ -1,0 +1,74 @@
+title: job-20260926-184618-resume-the-autokb-upgrade-work
+subtitle: 'Devin handoff spec: job/20260926-184618-resume-the-autokb-upgrade-work'
+icon: robot
+focus:
+  label: job-20260926-184618-resume-the-autokb-upgrade-work
+  text: 'Job 20260926-184618-resume-the-autokb-upgrade-work on tony-dell: done.
+
+
+    Done. Recovered the flannel-surf spec from `sessions.db` (plan v2: new memory-system standard, layers
+    from raw data to overview, timeline outside the repo, ≥3 level candidates) and implemented it in this
+    worktree.
+
+
+    ## What changed — commit `623bd2d` on `dispatch/20260926-184618-resume-the-autokb-upgrade-work`
+
+
+    **The standard**
+
+    - `docs/ssot/infrastructure/ssot.reports.yml` — declares the layering standard: L0-raw (append-only
+    artifacts) → L1-producer → L2-domain → L3-overview, a 14-node registry of real producers, the `meta.yml`
+    schema, status enum (`ok/delta/stale/error/missing/untracked/remote/planned`), format rules, and the
+    timeline spec (`~/var/chaba/reports/timeline.jsonl`, outside the repo because it grows forever).
+
+    - `docs/kb/layered-reporting.md` — human-facing doc, indexed in `docs/INDEX.md`.
+
+
+    **The implementation**
+
+    - `scripts/lib/report.py` — shared helpers: `write_meta`, `append_timeline`, `latest_artifact`, `resolve_node`
+    (meta → artifact → missing precedence, cadence-aware staleness).
+
+    - `scripts/report-system.py` — L3 renderer: walks the registry, writes `reports/SYSTEM-REPORT.md`
+    + `system-report.yml` + its own meta + timeline event.
+
+    - Wired `audit-hosts.py` (meta per host + timeline event) and `audits/run.mjs` (`reports/audits/meta.yml`
+    + timeline event) — both Python and JS producers now conform.
+
+    - `systemd/chaba-system-report.{service,timer}` — daily 06:45; registered in `ssot.automation.yml`
+    as defined-but-not-installed.
+
+    - Registries/index updated: `ssot.index.yml` (both duplicated sections), `ssot.registry.ssot-infrastructure.yml`,
+    `ssot.registry.script{,-core}.yml`.
+
+
+    ## Verified
+
+
+    - `ssot-validate-all.mjs`: 420/420 valid, 0 warnings; `ssot-optimize.mjs`: 0 bloat (had to slim a
+    registry entry under the 350-line cap).
+
+    - End-to-end: `audit-hosts.py --host tony-dell` wrote a snapshot, `meta.tony-dell.yml` (status `delta`,
+    5 deltas), and appended a timeline event; `report-system.py` rendered SYSTEM-REPORT.md showing that
+    node DELTA, the 4 unaudited hos'
+  branch: chaba
+  priority: medium
+  status: draft
+  tags:
+  - devin
+  - handoff
+  safe_to_parallel:
+    value: true
+    reason: Spec document; execution goes through devin_dispatch which creates an isolated worktree.
+  subtasks:
+  - label: Dispatch via devin_dispatch (repo chaba, prompt references bank doc job/20260926-184618-resume-the-autokb-upgrade-work)
+    status: not_started
+ownership:
+  owner: tony
+  session: ''
+  locked: false
+  lock_reason: ''
+source:
+  bank_key: job/20260926-184618-resume-the-autokb-upgrade-work
+  renderer: render-handoff-inbox
+  date: '2026-09-27'

@@ -1,0 +1,68 @@
+title: job-20260926-200952-finish-the-idc01-migration-cle
+subtitle: 'Devin handoff spec: job/20260926-200952-finish-the-idc01-migration-cle'
+icon: robot
+focus:
+  label: job-20260926-200952-finish-the-idc01-migration-cle
+  text: 'Job 20260926-200952-finish-the-idc01-migration-cle on tony-omen: done.
+
+
+    Done. I recovered the stitch-spur session''s plan from `sessions.db` (it ended in ask mode after presenting
+    the plan — never executed) and finished the leftovers.
+
+
+    ## What I found and did
+
+
+    **Phase 1 — vault canonical flip (mn01 → idc01), completed:**
+
+    - Discovered the real defect the plan anticipated: the Obsidian app on idc01 served `~/obsidian-app/vault`,
+    a `--delete` rsync mirror of the git checkout — app edits would have been wiped hourly. Repointed
+    `obsidian.env` (`ADA_MEMORY_VAULT`/`ADA_VAULT_REPO`) and the service `ExecStart` to the checkout `~/CascadeProjects/chaba-vault`;
+    restarted, verified `:8443` → 200 and `/api/status` reports the checkout path.
+
+    - Disabled+removed the `obsidian-vault-sync` mirror timer; retargeted `obsidian-vault-backup.sh` to
+    tar the checkout; archived `~/obsidian-app` → `~/obsidian-app-retired-20260926.tar.gz` and removed
+    it.
+
+    - Copied the 2 mn01-only stragglers (`tony-projects/lab-stack-review-comparison.md`, `test-stack-plan.md`)
+    into the idc01 vault.
+
+    - Retired mn01''s vault copy per the approved "Retire" answer: archived `~/CascadeProjects/chaba-vault`
+    → `~/chaba-vault-retired-20260926.tar.gz`, removed it plus its dead `obsidian-vault*`/`ada-memory-*`
+    units (ada-ha-* standby units kept).
+
+    - Repointed tony-omen''s `ada-memory-pull` to idc01 — verified live: it pulled idc01''s ~90 uncommitted
+    extracts and pushed commit `70252c55`. A scheduled run raced the retire but landed before the delete.
+
+
+    **Phase 2 sweep — mostly already done:**
+
+    - mddb backup retention (keep-7), idc01 `/tmp` litter, mddb-panel tailnet bind (`100.74.146.0:3002`),
+    mn01 ada-pi worktree clean — all verified already correct.
+
+    - **Plan item was stale**: tony-dell''s "mddb corpse" is actually the **active follower replica**
+    (`MDDB_MODE=ro`, leader `100.74.146.0:11024`) — not deleted. Small litter (2 exited test containers,
+    24K test dirs, disabled open-notebook quadlets) documented as optional deletes pending approval.
+
+    - Mixed-space audit **deferred**: mddb restarted mid-session'
+  branch: chaba
+  priority: medium
+  status: draft
+  tags:
+  - devin
+  - handoff
+  safe_to_parallel:
+    value: true
+    reason: Spec document; execution goes through devin_dispatch which creates an isolated worktree.
+  subtasks:
+  - label: Dispatch via devin_dispatch (repo chaba, prompt references bank doc job/20260926-200952-finish-the-idc01-migration-cle)
+    status: not_started
+ownership:
+  owner: tony
+  session: ''
+  locked: false
+  lock_reason: ''
+source:
+  bank_key: job/20260926-200952-finish-the-idc01-migration-cle
+  renderer: render-handoff-inbox
+  date: '2026-09-27'

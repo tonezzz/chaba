@@ -1,0 +1,29 @@
+title: hands-off-scenario
+subtitle: 'Devin handoff spec: devin-handoff/scenario-ssot-validate'
+icon: robot
+focus:
+  label: hands-off-scenario
+  text: 'Hands-off scenario (read-only smoke test of the dispatch pipeline): run `node scripts/ssot-validate-all.mjs`
+    from the repo root and report how many files were validated, the error count, and the first 5 error
+    lines if any. Do not modify any files. End with a one-paragraph summary.'
+  branch: chaba
+  priority: medium
+  status: draft
+  tags:
+  - devin
+  - handoff
+  safe_to_parallel:
+    value: true
+    reason: Spec document; execution goes through devin_dispatch which creates an isolated worktree.
+  subtasks:
+  - label: Dispatch via devin_dispatch (repo chaba, prompt references bank doc devin-handoff/scenario-ssot-validate)
+    status: not_started
+ownership:
+  owner: tony
+  session: ''
+  locked: false
+  lock_reason: ''
+source:
+  bank_key: devin-handoff/scenario-ssot-validate
+  renderer: render-handoff-inbox
+  date: '2026-09-27'

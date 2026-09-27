@@ -1,0 +1,61 @@
+title: job-20260926-190016-re-verify-the-tony-omen-devin-
+subtitle: 'Devin handoff spec: job/20260926-190016-re-verify-the-tony-omen-devin-'
+icon: robot
+focus:
+  label: job-20260926-190016-re-verify-the-tony-omen-devin-
+  text: 'Job 20260926-190016-re-verify-the-tony-omen-devin- on tony-dell: done.
+
+
+    ## Status: diagnosis confirmed — and it''s still happening
+
+
+    Re-verified tony-omen over SSH. Prior session `strong-kileskus` was correct: renderer wedge → self-crash,
+    not an app crash. Key updates:
+
+
+    - **It recurred today**: renderer `1600728` ran hot ~2.5h (100→400% CPU), then self-crashed **18:51:26,
+    code 132 (SIGILL)** — the sixth such crash since 9-23, and the third in ~18h. Frequency is increasing.
+
+    - **App healthy**: main scope `app-devin-desktop-1600618` alive since 06:50 (521 tasks, 6.7 GB), window
+    present, ~20 processes.
+
+    - **sessions.db**: integrity_check `ok`, 168 sessions; 2.3 GB + 69 MB WAL — large but healthy. 551
+    session lock files = normal per-session accumulation, no corruption.
+
+    - **systemd**: previous stale scope `2899714` cleaned, but a **new stale scope `3034335`** (9-24 22:10,
+    12 tasks/2 GB, leftover vcast test procs) shows the same orphan-scope leak. No devin-related failed
+    units.
+
+    - **Watchdog**: cron */10, `KILL=0` since 9-22 — detecting wedges correctly in notify-only mode.
+
+
+    Nothing restarted or killed. Full report: `$TASK_DIR/status-report.md`
+
+
+    Verify: `ssh tony-omen ''tail ~/.local/share/devin/cli/watchdog.log; grep -a "code: 132" ~/.config/Devin/logs/*/main.log''`
+
+
+    Open decisions for you (not actioned): re-enable `WATCHDOG_RENDERER_KILL=1` to stop burning 2–3h of
+    CPU per wedge, clean stale scope `3034335`, and dig into which session transcript wedges the renderer
+    — it''s now ~daily on the same workspace.'
+  branch: chaba
+  priority: medium
+  status: draft
+  tags:
+  - devin
+  - handoff
+  safe_to_parallel:
+    value: true
+    reason: Spec document; execution goes through devin_dispatch which creates an isolated worktree.
+  subtasks:
+  - label: Dispatch via devin_dispatch (repo chaba, prompt references bank doc job/20260926-190016-re-verify-the-tony-omen-devin-)
+    status: not_started
+ownership:
+  owner: tony
+  session: ''
+  locked: false
+  lock_reason: ''
+source:
+  bank_key: job/20260926-190016-re-verify-the-tony-omen-devin-
+  renderer: render-handoff-inbox
+  date: '2026-09-27'

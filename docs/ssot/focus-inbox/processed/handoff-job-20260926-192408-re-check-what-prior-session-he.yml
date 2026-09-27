@@ -1,0 +1,64 @@
+title: job-20260926-192408-re-check-what-prior-session-he
+subtitle: 'Devin handoff spec: job/20260926-192408-re-check-what-prior-session-he'
+icon: robot
+focus:
+  label: job-20260926-192408-re-check-what-prior-session-he
+  text: 'Job 20260926-192408-re-check-what-prior-session-he on tony-dell: done.
+
+
+    Done. Status report committed as `f9b3818` on the dispatch branch (nothing on master, nothing pushed):
+
+    `docs/ssot/jobs/infrastructure/2026-09-26-dispatch-followup-recheck.yml`
+
+
+    ## Re-check results vs healthy-philosophy''s "Remaining"
+
+
+    **1. chaba ahead/behind — resolved.** Was ahead 4 / behind 24; now **ahead 0 / behind 27**. All 4
+    commits reached origin via rebase (verified: `bcfb305→98c4eed`, `20430fe→6e1082e`, `5ec710f→c97f886`;
+    `373fde6` mute/VAD superseded by `1669c39`, code present in current file). Remaining: a plain `git
+    pull` (ff) for the 27 incoming commits — not done here, live checkout untouched.
+
+
+    **2. focus-inbox — grew, still untriaged.** 121 files, **65 untracked** (was 14): 30 `handoff-job-*`,
+    22 `handoff-extract-*`, 8 rendered handoffs, 5 monitoring alerts. All generated artifacts — safe bulk-commit/archive.
+    The 1 modified tracked file is routine re-render churn.
+
+
+    **3. dispatch worktrees — old batch cleaned up; new batch has real unmerged work.**
+
+    - Prior session''s 9 worktrees (RK600, memory-bank, etc.) are gone.
+
+    - chaba: 6 branches keep-able (1–3 commits each: ada evals, layered reporting, yt-live design, rainfall
+    snapshot, ada-cms emit fix ×3, idc01 link-agg ×2, plus `fix/devin-dispatch-outcome` ×2). **⚠ `…190816-nobito-3d-charts`
+    has 7 dirty files — real uncommitted work** (`nobito-tuya-logs.py` + SSOT + job record) with 0 commits
+    to protect it.
+
+    - **ada-pi (new finding): `dispatch/…222223` has 8 unmerged commits** — session-owner pinning, ha_person
+    keys, reports rollups, MDDB incident docs — nothing upstream. ada-pi `main` itself is ahead 1 / behind
+    32.
+
+
+    To verify: `git -C ~/CascadeProjects/chaba log --oneline origin/master --grep=''ada-voice''` and `git
+    -C ~/CascadeProjects/ada-pi log --oneline main..dispatch/20260925-222223-investigate-why-ada-cannot-vie`.'
+  branch: chaba
+  priority: medium
+  status: draft
+  tags:
+  - devin
+  - handoff
+  safe_to_parallel:
+    value: true
+    reason: Spec document; execution goes through devin_dispatch which creates an isolated worktree.
+  subtasks:
+  - label: Dispatch via devin_dispatch (repo chaba, prompt references bank doc job/20260926-192408-re-check-what-prior-session-he)
+    status: not_started
+ownership:
+  owner: tony
+  session: ''
+  locked: false
+  lock_reason: ''
+source:
+  bank_key: job/20260926-192408-re-check-what-prior-session-he
+  renderer: render-handoff-inbox
+  date: '2026-09-27'

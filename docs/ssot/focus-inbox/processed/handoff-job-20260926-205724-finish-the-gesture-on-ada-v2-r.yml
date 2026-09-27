@@ -1,0 +1,69 @@
+title: job-20260926-205724-finish-the-gesture-on-ada-v2-r
+subtitle: 'Devin handoff spec: job/20260926-205724-finish-the-gesture-on-ada-v2-r'
+icon: robot
+focus:
+  label: job-20260926-205724-finish-the-gesture-on-ada-v2-r
+  text: 'Job 20260926-205724-finish-the-gesture-on-ada-v2-r on tony-omen: done.
+
+
+    Assessment finished. Summary of what I found and verified:
+
+
+    ## Status: complete and verified
+
+
+    **The report exists** — `docs/kb/gesture-ui-options.md` (330 lines): full ada_v2 "Minority Report"
+    hand-gesture implementation reference + YOLO assessment, distilled from the archived `tonezzz/ada`
+    repo. Committed in chaba as `667e4b59` (initial) + `511cf745` (expanded to rebuild spec).
+
+
+    **Synced to Ada''s memory** — `kb-system` collection on idc01, `meta.content_md5` matches the local
+    file exactly (`4dbc6091…`). `use_count: 33`, `last_used: 2026-09-26` — Ada is actively reading it.
+
+
+    **Live recall verified** — re-ran `ada-pi/tests/scenarios-live/gesture_recall.yaml` against `ada-ha-tony`
+    on idc01:
+
+    - Run 1: 3/4 — turn 2 flaked on the known session-continuity bleed (a flood-report topic hijacked
+    the answer)
+
+    - Run 2: **4/4 PASS** — pinch/fist/palm mappings, MediaPipe, and the YOLO assessment all recalled
+    from the banks
+
+
+    **idc01 recovered** — the outage that ended alkaline-comfort is resolved; `ada-ha-tony`, `ada-ha-michael`,
+    `ada-pi-pwa`, `mddb`, `doc-archive` all running.
+
+
+    ## Changed
+
+    - `docs/ssot/jobs/ada/2026-09-26-gesture-ui-options-report-status.yml` — closeout trail doc, committed
+    on `dispatch/20260926-205724-finish-the-gesture-on-ada-v2-r` (`e30a0d1d`). Not pushed.
+
+
+    ## One open item (not blocking)
+
+    Turn-2''s flake is real: Ada''s session-continuity context can still hijack mid-conversation recall
+    answers. It''s documented in the scenario comments and tracked in focus ("Ada memory-recall misrouting
+    + tool-call storm") — worth its own fix session.'
+  branch: chaba
+  priority: medium
+  status: draft
+  tags:
+  - devin
+  - handoff
+  safe_to_parallel:
+    value: true
+    reason: Spec document; execution goes through devin_dispatch which creates an isolated worktree.
+  subtasks:
+  - label: Dispatch via devin_dispatch (repo chaba, prompt references bank doc job/20260926-205724-finish-the-gesture-on-ada-v2-r)
+    status: not_started
+ownership:
+  owner: tony
+  session: ''
+  locked: false
+  lock_reason: ''
+source:
+  bank_key: job/20260926-205724-finish-the-gesture-on-ada-v2-r
+  renderer: render-handoff-inbox
+  date: '2026-09-27'
