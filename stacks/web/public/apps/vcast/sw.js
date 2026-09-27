@@ -11,7 +11,10 @@ const ASSETS = [
 ];
 
 self.addEventListener("install", (event) => {
-  event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS)));
+  event.waitUntil(
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS))
+      .then(() => self.skipWaiting())  // activate immediately — don't wait
+  );                                  // for old clients to close
 });
 
 self.addEventListener("activate", (event) => {
