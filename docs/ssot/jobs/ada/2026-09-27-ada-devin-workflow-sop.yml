@@ -1,0 +1,72 @@
+# SSOT Job Lifecycle: Ada -> Devin handoff workflow SOP
+# Document the standard operating procedure: Ada plans/drafts (e.g.
+# Before/After analysis) into the devin-handoff bank, Devin executes via
+# devin_dispatch handoff specs, outcome reports back as job/<id> ledger docs.
+# Dispatched via spec extract-2026-09-27-fd98e6e49c-0 — this task is itself
+# an instance of the workflow it documents.
+
+title: Ada -> Devin handoff workflow SOP
+subtitle: Standard operating procedure for spec-driven voice-to-execution handoff via the devin-handoff bank
+icon: robot
+
+planning:
+  goal: |
+    Write down the standard Ada->Devin workflow so any session (or Ada
+    herself) can follow it without re-deriving the pipeline: when Ada
+    drafts vs when Devin executes, the handoff spec format (MDDB bank doc
+    + rendered focus-inbox yml), the dispatch flow, and how outcomes are
+    reported back into the handoff bank's job/<id> ledger.
+  scope: |
+    In scope:
+      - docs/runbooks/ada-devin-handoff-workflow.md (the SOP, tier-1 runbook)
+      - registration in docs/ssot/ssot.runbooks.yml
+      - this job trail
+    Out of scope:
+      - Changing the dispatch scripts or Ada tools (docs only)
+      - Syncing deployed ~/.local/bin dispatch scripts back into the repo
+        (drift noted in processing step 3 — separate cleanup)
+  success_criteria:
+    - SOP covers Ada-draft vs Devin-execute split, spec format, dispatch,
+      and outcome reporting including job/<id> ledger + needs-input loop
+    - Runbook registered in ssot.runbooks.yml with verified status
+    - ssot-validate-all passes
+  risks:
+    - 'Documenting repo scripts would describe stale behavior — the live
+      ~/.local/bin copies lead the repo (job/ ledger, needs-input.txt,
+      resume, ssh event fallback). SOP describes live behavior and flags
+      the drift explicitly.'
+    - 'Parallel dispatch sessions are actively modifying this pipeline
+      (e.g. task 20260927-215500-separate-failed-devin-jobs-int) — SOP
+      sticks to stable interfaces (bank schema, subcommands, ledger
+      states) rather than flag/env minutiae.'
+  resources:
+    - scripts/devin/devin-dispatch.sh + deployed ~/.local/bin/devin-dispatch
+    - scripts/devin/devin-dispatch-watch.sh + deployed watch
+    - scripts/devin/render-handoff-inbox.py
+    - ada-pi backend/devin_dispatch.py + DEVIN_* blocks in realtime_provider.py
+    - MDDB ada-ha-bank-devin-handoff (specs + job ledger),
+      ada-ha-bank-devin-tony (outcome docs)
+    - Ref spec: docs/ssot/focus-inbox/handoff-extract-2026-09-27-fd98e6e49c-0.yml
+  owner: tony
+  estimated_duration: 1 session
+
+processing:
+  status: done
+  started_at: "2026-09-27"
+  steps:
+    - id: 1
+      label: "Gather ground truth: repo scripts, deployed scripts, Ada tool layer, live bank docs"
+      status: done
+      notes: "2026-09-27: read repo + deployed dispatch scripts, ada-pi backend/devin_dispatch.py + realtime_provider declarations, bank docs (spec extract-2026-09-27-fd98e6e49c-0, job/<id> ledger entries incl. this task's own status=running doc), focus-inbox rendered yml, job/answer key conventions."
+    - id: 2
+      label: "Write the SOP runbook + registry entry"
+      status: done
+      notes: "2026-09-27: docs/runbooks/ada-devin-handoff-workflow.md (status: verified — produced by the pipeline it documents) + tier-1 entry in ssot.runbooks.yml."
+    - id: 3
+      label: "Record findings"
+      status: done
+      notes: "2026-09-27: FINDING — deployed ~/.local/bin/devin-dispatch{,-watch} on tony-dell lead the repo copies: mddb_job() job-ledger writes (start -> running; watch -> done/failed/awaiting-user + meta.question), needs-input.txt handling in prompt/watch/followup, resume <sid> subcommand, EVENT_SSH fallback for non-event-feed hosts, DISPATCH_UNIT_PROPS. Repo sync left to a follow-up so this session does not race the in-flight dispatch-script work."
+    - id: 4
+      label: "Validate"
+      status: done
+      notes: "2026-09-27: python yaml.safe_load OK on both edited/created yml; ssot-validate-all run."
