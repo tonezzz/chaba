@@ -337,8 +337,8 @@ def _mddb_jobs() -> list[dict]:
     try:
         payload = json.dumps({
             "collection": JOBS_COLLECTION,
-            "filterMeta": {"kind": ["job"]},
-            "limit": 100,
+            "filterMeta": {"kind": ["job", "answer"]},
+            "limit": 150,
         }).encode()
         req = urllib.request.Request(
             f"{MDDB_URL}/search", data=payload,
@@ -348,6 +348,23 @@ def _mddb_jobs() -> list[dict]:
     except Exception:
         return []
     return docs if isinstance(docs, list) else []
+
+
+def _answered_ids(jobs: list[dict]) -> set[str]:
+    """job_ids that have an answer/<id> doc — the 'awaiting' badge must
+    not count jobs the user already answered (the job/ doc itself keeps
+    its stale status until the watch loop rewrites it)."""
+    out = set()
+    for d in jobs:
+        meta = d.get("meta") or {}
+        kinds = meta.get("kind") or []
+        if "answer" not in kinds:
+            continue
+        jid = ((meta.get("job_id") or [""])[0]
+               or (d.get("key") or "").split("/", 1)[-1])
+        if jid:
+            out.add(jid)
+    return out
 
 
 def _ledger_entries() -> dict[str, dict]:
@@ -377,12 +394,17 @@ def build_dispatch() -> dict | None:
     jobs = _mddb_jobs()
     jobs.sort(key=lambda d: ((d.get("meta") or {}).get("ts") or [""])[0],
               reverse=True)
+    answered = _answered_ids(jobs)
     awaiting = []
     for d in jobs[:25]:
         meta = d.get("meta") or {}
+        if "answer" in (meta.get("kind") or []):
+            continue  # answer docs render as part of their job, not alone
         jid = ((meta.get("job_id") or [""])[0]
                or (d.get("key") or "").split("/", 1)[-1])
         st = ((meta.get("status") or ["?"])[0])
+        if st == "awaiting-user" and jid in answered:
+            st = "answered"
         q = ((meta.get("question") or [""])[0])
         ts = ((meta.get("ts") or [""])[0])[:16].replace("T", " ")
         src = ((meta.get("source") or [""])[0])
@@ -474,13 +496,26 @@ def _mddb_ops_events() -> list[dict]:
 
 # ---------- L1: events ----------
 
+def _is_lifecycle_noise(text: str) -> bool:
+    """Events that are pure session-lifecycle noise — 'session ended',
+    reconnects, empty bursts. These dominate the feed during drain waves
+    (every drained dispatch posts one)."""
+    t = (text or "").lower()
+    return ("session ended" in t or "session finished" in t
+            or "session closed" in t)
+
+
 def build_events() -> dict:
     layer = node("events", "Recent Events", icon="mdi:bell-outline")
     kids = []
+    noise: list[str] = []   # timestamps of collapsed lifecycle events
 
     ev = load_yaml(CHABA_DATA / "recent-events.yml") or {}
     for e in (ev.get("entries") or [])[:15]:
         if isinstance(e, dict) and e.get("text"):
+            if _is_lifecycle_noise(e["text"]):
+                noise.append(str(e.get("ts", ""))[:16])
+                continue
             ts = str(e.get("ts", ""))[:16]
             body = e["text"] + (f"\n→ {e['ref']}" if e.get("ref") else "")
             kids.append(node("ev-" + slugify(ts), ts,
@@ -488,9 +523,22 @@ def build_events() -> dict:
                              summary=first_line(e["text"]), body=body))
 
     for b in md_blocks(ADA_REVIEW / "events.md")[-10:]:
+        if _is_lifecycle_noise(b["heading"] + " " + b["body"]):
+            noise.append(b["heading"][:16])
+            continue
         kids.append(node("aev-" + slugify(b["heading"], 50), b["heading"],
                          icon="mdi:microphone-outline",
                          summary=first_line(b["body"]), body=b["body"]))
+
+    if noise:
+        kids.insert(0, node(
+            "ev-lifecycle-rollup",
+            f"{len(noise)} session-end events",
+            icon="mdi:collapse-all",
+            badge="collapsed",
+            summary=f"{noise[-1] if noise else ''} → {noise[0]} — "
+                    "routine session lifecycle, folded",
+            body="\n".join(noise)))
 
     layer["children"] = kids
     layer["badge"] = str(len(kids))
