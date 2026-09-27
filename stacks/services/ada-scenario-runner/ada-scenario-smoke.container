@@ -6,18 +6,23 @@ After=network-online.target
 Image=localhost/ada-scenario-runner:latest
 ContainerName=ada-scenario-smoke
 Network=host
-Volume=/home/tony/CascadeProjects/ada-pi:/app:ro
-Volume=/home/tony/.config/secrets/ada-ha-tony-keys.json:/secrets/keys.json:ro
+Volume=%h/CascadeProjects/ada-pi:/app:ro
+Volume=%h/.config/secrets/ada-ha-tony-keys.json:/secrets/keys.json:ro
+Volume=%h/.config/secrets/ada-ha-michael.env:/secrets/michael.env:ro
+Volume=%h/.config/secrets/ada-ha-michael-keys.json:/secrets/michael-keys.json:ro
 Environment=ADA_LIVE_URL=ws://127.0.0.1:8002/ws
 Environment=MDDB_BASE_URL=http://100.74.146.0:11023/v1
 Environment=ADA_KEYS_FILE=/secrets/keys.json
-EnvironmentFile=/home/tony/.config/secrets/ada-ha-tony.env
+EnvironmentFile=%h/.config/secrets/ada-ha-tony.env
 Exec=--tier smoke
 
 [Service]
 Type=oneshot
 RemainAfterExit=no
-TimeoutStartSec=1800
+TimeoutStartSec=2700
+WorkingDirectory=%h/CascadeProjects/ada-pi
+Environment=MDDB_BASE_URL=http://100.74.146.0:11023/v1
+ExecStopPost=%h/CascadeProjects/ada-pi/.venv/bin/python scripts/ada/lab-results.py
 
 [Install]
 WantedBy=default.target
