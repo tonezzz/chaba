@@ -15,6 +15,11 @@
 #      the vault sync leaves these alone).
 #   5. Stamps meta.json: result, finished_at, notified_at — never re-fires.
 #
+# Env: WATCH_NOTIFY=0 skips iPhone pushes; WATCH_EVENTS=0 skips the event
+# feed; WATCH_JOB_DOC=0 skips the mddb job doc. All still stamp meta.json,
+# so a one-shot quiet run (WATCH_NOTIFY=0 WATCH_EVENTS=0) backfills job
+# docs for old tasks without spamming — used when the timer was missing.
+#
 # Install: systemd/devin-dispatch-watch.{service,timer} -> user units.
 set -uo pipefail
 
@@ -223,7 +228,18 @@ for d in "$DISPATCH_DIR"/tasks/*/; do
         # entirely. No unit + transcript = ran and was GC'd — but the unit's
         # Result is gone too, so prefer the exit_code the dispatch wrapper
         # records, then the journal; only fall back to inference last.
-        [ -f "$d/transcript.json" ] || continue   # never started / still pending
+        if [ ! -f "$d/transcript.json" ]; then
+            # Sessions that die before writing a transcript still have
+            # exit_code — report them as failed instead of skipping
+            # silently (observed: 6 omen tasks, exit=1, never reported).
+            if [ -f "$d/exit_code" ]; then
+                ec=$(cat "$d/exit_code" 2>/dev/null)
+                unit="(no-transcript,exit=$ec)"
+                [ "$ec" = "0" ] && result="success" || result="exit-$ec"
+            else
+                continue   # never started / still pending
+            fi
+        fi
         if [ -f "$d/exit_code" ]; then
             ec=$(cat "$d/exit_code" 2>/dev/null)
             unit="(collected,exit=$ec)"
@@ -259,17 +275,21 @@ for d in "$DISPATCH_DIR"/tasks/*/; do
     chans=""
     evbody="$out"
     [ -n "$question" ] && evbody="Question: ${question}"$'\n\n'"$out"
-    emit_event "devin task $id: $label" "$sev" "$rr" "$evbody" && chans="event"
-    if [ -n "$question" ]; then
-        notify_iphone "Devin job needs input" \
-            "${id}: ${question} — reply via Ada or Devin" && chans="$chans,notify"
-    else
-        notify_iphone "Devin task ${label}" \
-            "${id}: ${out:0:200}" && chans="$chans,notify"
+    [ "${WATCH_EVENTS:-1}" = "1" ] \
+        && emit_event "devin task $id: $label" "$sev" "$rr" "$evbody" && chans="event"
+    if [ "${WATCH_NOTIFY:-1}" = "1" ]; then
+        if [ -n "$question" ]; then
+            notify_iphone "Devin job needs input" \
+                "${id}: ${question} — reply via Ada or Devin" && chans="$chans,notify"
+        else
+            notify_iphone "Devin task ${label}" \
+                "${id}: ${out:0:200}" && chans="$chans,notify"
+        fi
     fi
     if [ -n "$question" ]; then jstate="awaiting-user"
     elif [ "$result" = "success" ]; then jstate="done"; else jstate="failed"; fi
-    mddb_job "$id" "$jstate" "$out" "$question" && chans="$chans,jobdoc"
+    [ "${WATCH_JOB_DOC:-1}" = "1" ] \
+        && mddb_job "$id" "$jstate" "$out" "$question" && chans="$chans,jobdoc"
     if [ -n "$sid" ]; then
         mddb_add "devin/$sid" \
             "$(printf 'Dispatched task %s (unit %s, result %s).\n\n%s' "$id" "$unit" "$result" "$out")" \
