@@ -24,6 +24,13 @@ systemctl --user daemon-reload
 systemctl --user enable --now yolo-xiaomi
 ```
 
+Deployment: runs on **mn01** since 2026-09-27 (offloaded from tony-omen).
+Unit lives at `~/.config/systemd/user/yolo-xiaomi.service` on mn01 with
+`GO2RTC_BASE=http://tony-dell.taila0626a.ts.net:1984` and
+`HA_BASE=https://tony-dell.taila0626a.ts.net:8123` — tailnet URLs so it
+keeps working if mn01 moves off the LAN. HA (tony-ha) polls
+`http://mn01.taila0626a.ts.net:8780/detect`.
+
 ## Home Assistant
 
 Add the `rest` and `camera` snippets from `ha-config-snippet.yaml` to `configuration.yaml` and restart HA. Adjust the host from `192.168.2.67` to `tony-dell` or `host.containers.internal` if needed.

@@ -1,10 +1,15 @@
 [Unit]
-Description=Ultralytics YOLOv8 detector for xiaomi_c201
-After=network-online.target go2rtc.service
+Description=Ultralytics YOLOv8 detector for xiaomi_c201 (deployed on mn01 since 2026-09-27)
+After=network-online.target
 
 [Service]
 Type=simple
-ExecStart=/home/tony/CascadeProjects/chaba-tony-dell/experiments/ultralytics-yolo-ha/run.sh
+Environment=GO2RTC_BASE=http://tony-dell.taila0626a.ts.net:1984
+Environment=HA_BASE=https://tony-dell.taila0626a.ts.net:8123
+Environment=YOLO_HOST=0.0.0.0
+Environment=YOLO_PORT=8780
+WorkingDirectory=/home/tony/CascadeProjects/chaba/experiments/ultralytics-yolo-ha
+ExecStart=/home/tony/CascadeProjects/chaba/experiments/ultralytics-yolo-ha/run.sh
 Restart=on-failure
 RestartSec=10
 
