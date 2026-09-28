@@ -281,6 +281,10 @@ def snap(query: str, settle: float) -> tuple[bytes, str]:
         raise LookupError(query)
     name, meta = hit
     with _lock:
+        # Pin a known layout: selecting the 4-grid is idempotent, so a
+        # later double-click unambiguously means "zoomed".
+        _podman("xdotool", "mousemove", str(GRID4_BTN[0]),
+                str(GRID4_BTN[1]), "click", "1", timeout=10)
         select_channel(meta["x"], meta["y"])
         time.sleep(settle)
         raw = capture_xwd()
@@ -298,28 +302,70 @@ def snap(query: str, settle: float) -> tuple[bytes, str]:
         # Zoom pane 1 for a ~4x-resolution capture, then restore the grid.
         # NOTE: no --sync — a synced mousemove blocks >30s while the Wine
         # app re-renders after the channel switch.
+        # Zoom pane 1 for a ~4x-resolution capture. We pinned the grid
+        # above, so this double-click deterministically toggles to
+        # single-pane; never click again (it would toggle back).
+        _podman("xdotool", "mousemove", str(PANE_CLICK[0]),
+                str(PANE_CLICK[1]), timeout=10)
+        _podman("xdotool", "click", "--repeat", "2", "--delay", "150",
+                "1", timeout=10)
+        # The stream re-opens on zoom and needs a few seconds to draw —
+        # poll until real video appears (bounded).
         raw2 = None
-        for _attempt in range(3):
-            _podman("xdotool", "mousemove", str(PANE_CLICK[0]),
-                    str(PANE_CLICK[1]), timeout=10)
-            _podman("xdotool", "click", "--repeat", "2", "--delay", "150",
-                    "1", timeout=10)
-            time.sleep(1.4)
+        for _poll in range(8):
+            time.sleep(1.5)
             cand = capture_xwd()
             w2, h2, rgb2 = xwd_to_rgb(cand)
-            if is_zoomed(w2, h2, rgb2):
+            cw, ch, crgb = crop_rgb(w2, h2, rgb2, SINGLE_PANE_RECT)
+            if _has_video(cw, ch, crgb):
                 raw2 = cand
                 break
         if raw2 is None:
-            raw2 = cand  # zoom never applied — grid capture is still usable
+            raw2 = cand  # zoomed pane never drew — grid may still show video
         _podman("xdotool", "mousemove", str(GRID4_BTN[0]),
                 str(GRID4_BTN[1]), "click", "1", timeout=10)
+    # Zoomed frame first. A dead pane (stream not drawn yet, offline cam)
+    # collapses content_bbox to a sliver — reject degenerate crops rather
+    # than returning a 5px "frame" that downstream treats as an image.
     w, h, rgb = xwd_to_rgb(raw2)
     w, h, rgb = crop_rgb(w, h, rgb, SINGLE_PANE_RECT)
     box = content_bbox(w, h, rgb)
+    if box and (box[2] - box[0]) * (box[3] - box[1]) < w * h // 4:
+        box = None
     if box:
         w, h, rgb = crop_rgb(w, h, rgb, box)
+    if w * h < 50_000 or min(w, h) < 100:
+        # Fall back to the pre-zoom grid capture at pane resolution.
+        w, h, rgb = xwd_to_rgb(raw)
+        w, h, rgb = crop_rgb(w, h, rgb, PANE_RECT)
+        box = content_bbox(w, h, rgb)
+        if box:
+            w, h, rgb = crop_rgb(w, h, rgb, box)
+    if (w * h < 50_000 or min(w, h) < 100
+            or not _has_video(w, h, rgb)):
+        raise RuntimeError(
+            f"'{name}' pane shows no video — camera offline or stream stalled")
     return png_encode(w, h, rgb), name
+
+
+def _has_video(width: int, height: int, rgb: bytes) -> bool:
+    """A live pane has texture everywhere — high mean neighbor luma delta.
+    A dead/offline pane is flat gray with at most an OSD strip — its
+    deltas sit near zero (measured ~5 vs ~126 on real video). Threshold
+    60 also rejects a 4-pane grid crop where only pane 1 has video
+    (diluted to ~31) — a mosaic is not an acceptable frame."""
+    tot = n = 0
+    for y in range(0, height, 4):
+        base = y * width * 3
+        for x in range(0, width - 8, 8):
+            o = base + x * 3
+            if o + 26 < len(rgb):
+                lum = rgb[o] + rgb[o + 1] + rgb[o + 2]
+                tot += abs(lum - rgb[o + 24] - rgb[o + 25] - rgb[o + 26])
+                n += 1
+    if n < 100:
+        return False
+    return tot / n > 60
 
 
 class Handler(BaseHTTPRequestHandler):
