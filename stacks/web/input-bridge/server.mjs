@@ -240,6 +240,71 @@ const server = http.createServer(async (req, res) => {
     return json(res, 200, displaysSnapshot());
   }
 
+  // Capture leases: {screen -> {source, ch?, active, since, by}} — ground
+  // truth for "is a camera capture running on this screen" so Ada asks
+  // permission before starting/stopping (camera_cast_permission contract).
+  // Writers: vcast page (uplink), Ada cast/cctv tools.
+  if (req.method === "GET" && url.pathname === "/capture") {
+    const screen = url.searchParams.get("screen");
+    if (screen != null) {
+      return json(res, 200, captureState[screen] || { active: false });
+    }
+    const active = Object.fromEntries(
+      Object.entries(captureState).filter(([, c]) => c.active));
+    return json(res, 200, { captures: active });
+  }
+
+  if (req.method === "POST" && url.pathname === "/capture") {
+    let body;
+    try {
+      body = await readBody(req);
+    } catch (e) {
+      return json(res, 400, { error: e.message });
+    }
+    const screen = Number(body.screen);
+    if (!Number.isInteger(screen) || screen < 0)
+      return json(res, 400, { error: "screen required" });
+    if (body.active === false) {
+      delete captureState[screen];
+      return json(res, 200, { ok: true, active: false });
+    }
+    captureState[screen] = {
+      active: true,
+      source: String(body.source || "cam"),
+      ch: body.ch ? String(body.ch).slice(0, 80) : null,
+      by: body.by ? String(body.by).slice(0, 80) : "display",
+      since: new Date().toISOString(),
+    };
+    return json(res, 200, { ok: true, capture: captureState[screen] });
+  }
+
+  // Cam-wall control: {zones: {<zone>: {enabled, screen, since}}} — the
+  // puller on tony-dell GETs this each cycle; Ada's cctv_wall tool POSTs it.
+  if (req.method === "GET" && url.pathname === "/camwall") {
+    return json(res, 200, camwallState);
+  }
+
+  if (req.method === "POST" && url.pathname === "/camwall") {
+    let body;
+    try {
+      body = await readBody(req);
+    } catch (e) {
+      return json(res, 400, { error: e.message });
+    }
+    const zone = String(body.zone || "");
+    if (!zone) return json(res, 400, { error: "zone required" });
+    if (body.enabled === false) {
+      delete camwallState.zones[zone];
+    } else {
+      camwallState.zones[zone] = {
+        enabled: true,
+        screen: body.screen != null ? Number(body.screen) : null,
+        since: new Date().toISOString(),
+      };
+    }
+    return json(res, 200, { ok: true, zones: camwallState.zones });
+  }
+
   if (req.method === "GET" && url.pathname === "/pair-info") {
     const sid = url.searchParams.get("sid") || "";
     const p = pending.get(sid);
@@ -279,25 +344,36 @@ const server = http.createServer(async (req, res) => {
       return json(res, 400, { error: e.message });
     }
     const screen = Number(body.screen);
-    if (!screen) return json(res, 400, { error: "screen required" });
+    if (!Number.isInteger(screen) || screen < 0)
+      return json(res, 400, { error: "screen required" });
+    // screen 0 = shared asset bucket (cam-snap casts); screens N>=1 are
+    // the display's own captures
+    const token = body.token ? String(body.token).slice(0, 80) : "snap";
     const raw = String(body.data || "");
     const b64 = raw.includes(",") ? raw.slice(raw.indexOf(",") + 1) : raw;
     const buf = b64 ? Buffer.from(b64, "base64") : null;
-    lastFrames.set(screen, {
-      token: body.token || null,
+    lastFrames.set(`${screen}:${token}`, {
       ts: Date.now(),
       state: String(body.state || ""),
       error: body.error ? String(body.error).slice(0, 300) : null,
+      detail: body.detail ? String(body.detail).slice(0, 300) : null,
       buf,
     });
+    if (lastFrames.size > 64) {  // bound memory — drop oldest
+      const oldest = lastFrames.keys().next().value;
+      lastFrames.delete(oldest);
+    }
     return json(res, 200, { ok: true, bytes: buf ? buf.length : 0 });
   }
 
   if (req.method === "GET" && url.pathname === "/frame") {
     const screen = Number(url.searchParams.get("screen"));
     const token = url.searchParams.get("token");
-    const f = lastFrames.get(screen);
-    if (!f || (token && f.token !== token)) {
+    const f = lastFrames.get(`${screen}:${token || ""}`)
+        || (token ? null : [...lastFrames.entries()]
+             .filter(([k]) => k.startsWith(`${screen}:`))
+             .sort((a, b) => b[1].ts - a[1].ts)[0]?.[1]);
+    if (!f) {
       return json(res, 404, {
         error: "frame not ready", screen,
         state: f ? f.state : null,
@@ -307,6 +383,7 @@ const server = http.createServer(async (req, res) => {
       return json(res, 200, {
         ok: true, screen, state: f.state,
         error: f.error || "no image data",
+        detail: f.detail || null,
       });
     }
     res.writeHead(200, { "content-type": "image/jpeg", "cache-control": "no-store" });
@@ -439,7 +516,12 @@ const server = http.createServer(async (req, res) => {
 // WebSocket relay
 // ---------------------------------------------------------------------------
 const rooms = new Map();
-const lastFrames = new Map(); // screen -> {token, ts, state, error, buf}
+const lastFrames = new Map(); // "screen:token" -> {ts, state, error, detail, buf}
+const lastCast = new Map();   // room -> last play/image/nav/stop msg (replayed
+                              // to a display on register so a ws flap doesn't
+                              // blank the screen)
+const camwallState = { zones: {} }; // in-memory; zones re-enable after restart
+const captureState = {}; // screen -> {source, ch, active, since, by} — capture leases
 
 function leaveRoom(ws) {
   const room = ws.room;
@@ -462,6 +544,12 @@ function broadcastTo(room, data) {
   const clients = rooms.get(room);
   if (!clients) return 0;
   const msg = typeof data === "string" ? data : JSON.stringify(data);
+  // remember display-state casts so a reconnecting screen re-renders instead
+  // of going idle after a ws flap
+  try {
+    const obj = typeof data === "string" ? JSON.parse(data) : data;
+    if (["play", "image", "nav", "stop"].includes(obj?.type)) lastCast.set(room, obj);
+  } catch (e) { /* ignore */ }
   let delivered = 0;
   for (const client of clients) {
     if (client.readyState === 1) {
@@ -537,6 +625,10 @@ async function registerDisplay(ws, msg) {
   live.set(screen, ws);
   joinRoom(ws, `vcast-${screen}`);
   ws.send(JSON.stringify({ type: "registered", screen, name }));
+  // restore the last cast after a reconnect — otherwise a ws flap blanks
+  // the display to idle
+  const last = lastCast.get(`vcast-${screen}`);
+  if (last) setTimeout(() => { try { ws.send(JSON.stringify(last)); } catch (e) {} }, 400);
 }
 
 const wss = new WebSocketServer({ noServer: true });
@@ -593,7 +685,7 @@ wss.on("connection", (ws) => {
 
 server.on("upgrade", (req, socket, head) => {
   const pathname = new URL(req.url, "http://x").pathname;
-  if (["/pub", "/displays", "/claim", "/health", "/pair-info", "/frame"].includes(pathname)) {
+  if (["/pub", "/displays", "/claim", "/health", "/pair-info", "/frame", "/camwall"].includes(pathname)) {
     socket.destroy();
     return;
   }
@@ -618,4 +710,19 @@ setInterval(() => {
     }
   }
   pendingCleanup();
+  // prune display registrations untouched for 72h — stale test devices
+  // otherwise pile up in /displays forever (iPad sleeping overnight is safe:
+  // it re-registers and re-renders via lastCast replay)
+  const cutoff = Date.now() - 72 * 3600e3;
+  let pruned = false;
+  for (const [n, s] of Object.entries(registry.screens)) {
+    if (live.has(Number(n))) continue;
+    const seen = Date.parse(s.last_seen || s.assigned_at || 0);
+    if (seen && seen < cutoff) {
+      console.log(`[vcast] pruning stale screen ${n} (${s.name || s.label})`);
+      delete registry.screens[n];
+      pruned = true;
+    }
+  }
+  if (pruned) saveRegistry();
 }, PING_INTERVAL_MS);

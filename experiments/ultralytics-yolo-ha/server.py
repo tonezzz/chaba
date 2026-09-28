@@ -15,6 +15,10 @@ from ultralytics import YOLO
 
 GO2RTC_BASE = os.environ.get("GO2RTC_BASE", "http://127.0.0.1:1984")
 GO2RTC_SOURCE = os.environ.get("GO2RTC_SOURCE", "xiaomi_c201")
+# Generic frame source — when set, {src} expands to the source name and
+# any URL works (e.g. the input-bridge last-frames endpoint):
+#   YOLO_FRAME_URL=http://100.74.146.0:3010/frame?screen={src}&token=cam
+FRAME_URL_TEMPLATE = os.environ.get("YOLO_FRAME_URL", "")
 MODEL_NAME = os.environ.get("YOLO_MODEL", "yolov8n.pt")
 HA_BASE = os.environ.get("HA_BASE", "http://192.168.2.67:8123")
 HA_TOKEN_FILE = os.environ.get("HA_TOKEN_FILE", "/home/tony/.config/secrets/home-assistant-token.env")
@@ -51,7 +55,10 @@ HA_TOKEN = HA_TOKEN or _ha_token()
 def fetch_frame():
     with state_lock:
         src = state["source"]
-    url = f"{GO2RTC_BASE}/api/frame.jpeg?src={src}"
+    if FRAME_URL_TEMPLATE:
+        url = FRAME_URL_TEMPLATE.format(src=src)
+    else:
+        url = f"{GO2RTC_BASE}/api/frame.jpeg?src={src}"
     with urllib.request.urlopen(url, timeout=10) as resp:
         data = resp.read()
     img = np.frombuffer(data, np.uint8)

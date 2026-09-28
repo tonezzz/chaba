@@ -3,7 +3,7 @@
 # No twm: the VMS desktop maps directly at 0,0 — a window manager forces
 # interactive window placement (the "wireframe" outline) and eats the first click.
 rm -f /tmp/.X11-unix/X99 /tmp/.X99-lock
-Xvfb :99 -screen 0 1280x720x16 &
+Xvfb :99 -screen 0 1280x720x24 &
 sleep 3
 x11vnc -display :99 -noxkb -forever -shared -rfbport 5900 -nopw -wait 50 -defer 30 -o /tmp/x11vnc.log &
 cd /app

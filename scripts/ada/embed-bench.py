@@ -222,24 +222,33 @@ cosine(OR, direct) per doc — mean **{rep['cosine']['mean']}**, min **{rep['cos
 - `GEMINI_API_KEY` restored in `mddb-gemini.env` + proxy now falls back
   to direct Gemini (same space, verified 1.000) on OR failure — Ollama
   still refused. Failover tested live: dead OR → direct Gemini → 768d.
+- **int8 quantization set on all 40 collections** (`/v1/collection-config`).
+  Applies to new writes + the in-memory index; existing float32 storage
+  stays readable.
+
+**Live observations during rollout**
+- The cold-start vector-index rebuild took **>75 min at ~96% CPU** on
+  ~11.6K vectors / 3.4GB DB — vector-search 503s the entire time
+  (500+ failed calls; Ada semantic recall degraded during rebuilds).
+  Cold-index rebuild is mddb's main operational weakness on this host.
+- mddb flagged **18 collections with stale embedding provenance**
+  (pre-gemini-embedding-2 space) and auto-re-embeds them through the
+  proxy at ~2 calls/min — OR-sequential latency again.
+- `POST /v1/vector-reindex` exists and is cheap to call.
 
 **Open (ranked)**
-1. **Per-collection int8 quantization on mddb** — native feature
-   (`PUT /v1/collection-config`, ~4× RAM cut, ~92-98% recall). Directly
-   addresses the 8.1GB OOM event; existing vectors keep working,
-   `vector-reindex --force` converts.
+1. **Scheduled `vector-reindex` for the 18 mismatched collections**
+   (provenance cleanup — do during off-hours; costs pennies in OR).
 2. **OR search tier for `web_search`** — paid Gemini grounding ≈ $35/1K
    vs OR sonar ≈ $5/1K; sits between free-20/day and DuckDuckGo.
-3. **Embedding-chunk tunables** — mddb splits docs at 1500 chars by
-   default; each chunk is one sequential OR call → the 20s+ CMS write
-   times. Larger chunks or proxy-side concurrency would cut latency.
+3. **Chunk-size tuning** — mddb chunks at 1500 chars; each chunk is one
+   sequential OR call → the 20s+ CMS write times. Larger chunks or
+   proxy concurrency would cut it.
 4. **Parallelize OR embed calls** (4-8 concurrent) in the proxy.
-5. **Weekly `embed-bench` timer + OR usage readout** — catches spend
-   creep and provider-side model drift.
+5. **Weekly `embed-bench` timer + OR usage readout.**
 6. **Pin `dimensions:768` + model in SSOT.**
-7. **OR Batch API** exists for embeddings (async, 24h window,
-   `provider.only` pin) — the right tool if we ever do a bulk
-   re-embed/backfill; not for live writes.
+7. **OR Batch API** exists for embeddings (async, `provider.only` pin)
+   — right tool for bulk re-embeds, not live writes.
 
 ## Sources
 

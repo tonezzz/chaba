@@ -214,4 +214,4 @@ if __name__ == '__main__':
     # Don't pre-load model - load on demand to save VRAM
     print("Model will be loaded on demand")
     
-    app.run(host='0.0.0.0', port=port, debug=False)
+    app.run(host=os.environ.get('HOST', '0.0.0.0'), port=port, debug=False)

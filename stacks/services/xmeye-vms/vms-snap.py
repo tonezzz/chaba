@@ -46,6 +46,21 @@ MAX_SETTLE = 30.0
 PANE_RECT = (7, 84, 536, 357)   # x1, y1, x2, y2
 # Click target to make pane 1 the active pane before selecting a channel.
 PANE_CLICK = (270, 218)
+# Point inside the device tree used to reset its scroll — row coordinates in
+# channels.json assume the tree is scrolled fully up; a drifted scroll shifts
+# every row and silently selects the wrong camera.
+TREE_ANCHOR = (1150, 205)
+# Rows at the top of PANE_RECT carrying the pane title/OSD header — stripped
+# before autocrop so it doesn't count as "content".
+PANE_TITLE_H = 30
+# Single-pane zoom: double-clicking the active monitor pane toggles a zoomed
+# view where the video area is ~4x the pixels of the grid cell — capture that
+# for quality. The 4-grid toolbar button restores multi-view afterwards.
+SINGLE_PANE_RECT = (5, 90, 1070, 640)   # video area in zoomed single-pane
+GRID4_BTN = (357, 672)                  # bottom-toolbar 2x2 grid icon
+# Tree strip scanned for the selected-row blue highlight (verify the click
+# landed on the intended channel instead of silently returning another).
+TREE_STRIP_X = (1090, 1260)
 
 STATE_DIR = os.environ.get("VMS_SNAP_STATE", "/tmp")
 _lock = threading.Lock()
@@ -77,11 +92,22 @@ def resolve_channel(query: str, channels: dict) -> tuple[str, dict] | None:
 
 def select_channel(x: int, y: int) -> None:
     # Activate pane 1, then double-click the channel's tree row.
-    _podman("xdotool", "mousemove", "--sync", str(PANE_CLICK[0]),
-            str(PANE_CLICK[1]), "click", "1")
+    # No --sync anywhere: a synced mousemove blocks >30s whenever the Wine
+    # app's event loop is busy (stream switch / reconnect) — fire-and-forget
+    # plus our own sleeps is strictly more robust.
+    _podman("xdotool", "mousemove", str(PANE_CLICK[0]),
+            str(PANE_CLICK[1]), "click", "1", timeout=10)
     time.sleep(0.4)
-    _podman("xdotool", "mousemove", "--sync", str(x), str(y))
-    _podman("xdotool", "click", "--repeat", "2", "--delay", "150", "1")
+    # Scroll the device tree fully to the top so channel-row coordinates
+    # stay true — a scrolled tree shifts every row and picks a wrong camera.
+    _podman("xdotool", "mousemove", str(TREE_ANCHOR[0]),
+            str(TREE_ANCHOR[1]), timeout=10)
+    _podman("xdotool", "click", "--repeat", "20", "--delay", "40", "4",
+            timeout=15)
+    time.sleep(0.3)
+    _podman("xdotool", "mousemove", str(x), str(y), timeout=10)
+    _podman("xdotool", "click", "--repeat", "2", "--delay", "150", "1",
+            timeout=10)
 
 
 def capture_xwd() -> bytes:
@@ -153,6 +179,85 @@ def crop_rgb(width: int, height: int, rgb: bytes,
     return w, h, bytes(out)
 
 
+def content_bbox(width: int, height: int, rgb: bytes) -> tuple[int, int, int, int] | None:
+    """Find the bounding box of non-uniform content by luma variance —
+    trims dead pane space (gray bars) and pillarboxing around 4:3 streams."""
+    if width < 16 or height < 16:
+        return None
+    step_y = max(1, height // 90)
+    step_x = max(1, width // 120)
+    thresh2 = 40 * 40  # luma variance threshold (~6.3 stddev of luma*3)
+
+    def colvar(c: int) -> float:
+        s = s2 = n = 0
+        for r in range(0, height, step_y):
+            o = (r * width + c) * 3
+            lum = rgb[o] + rgb[o + 1] + rgb[o + 2]
+            s += lum; s2 += lum * lum; n += 1
+        m = s / n
+        return s2 / n - m * m
+
+    def rowvar(r: int) -> float:
+        s = s2 = n = 0
+        for c in range(0, width, step_x):
+            o = (r * width + c) * 3
+            lum = rgb[o] + rgb[o + 1] + rgb[o + 2]
+            s += lum; s2 += lum * lum; n += 1
+        m = s / n
+        return s2 / n - m * m
+
+    cols = [c for c in range(0, width, step_x) if colvar(c) > thresh2]
+    rows = [r for r in range(0, height, step_y) if rowvar(r) > thresh2]
+    if not cols or not rows:
+        return None
+    pad = 4
+    return (max(0, cols[0] - pad), max(0, rows[0] - pad),
+            min(width, cols[-1] + pad), min(height, rows[-1] + pad))
+
+
+def selected_row_y(width: int, height: int, rgb: bytes) -> int | None:
+    """Y-center of the highlighted (blue) row in the device tree — verifies
+    the clicked channel is the one that got selected."""
+    x1, x2 = TREE_STRIP_X
+    rows: list[int] = []
+    run: list[int] = []
+    for y in range(120, height, 2):
+        blue = 0
+        for x in range(x1, min(x2, width), 4):
+            o = (y * width + x) * 3
+            r, g, b = rgb[o], rgb[o + 1], rgb[o + 2]
+            if b > 130 and b > r + 40 and b > g + 20:
+                blue += 1
+        if blue > 20:
+            run.append(y)
+        elif run:
+            rows.append(sum(run) // len(run))
+            run = []
+    if run:
+        rows.append(sum(run) // len(run))
+    return rows[0] if rows else None
+
+
+def is_zoomed(width: int, height: int, rgb: bytes) -> bool:
+    """Zoomed single-pane: the lower monitor quadrant is video content.
+    In grid mode that region is another empty pane (uniform gray)."""
+    x1, y1, x2, y2 = SINGLE_PANE_RECT
+    # sample the bottom half of the single-pane area
+    lo = 0
+    n = 0
+    vals = []
+    for y in range(y1 + (y2 - y1) * 6 // 10, y2, 8):
+        for x in range(x1, x2, 16):
+            o = (y * width + x) * 3
+            if o + 2 < len(rgb):
+                vals.append(rgb[o] + rgb[o + 1] + rgb[o + 2]); n += 1
+    if n < 10:
+        return False
+    m = sum(vals) / n
+    var = sum((v - m) * (v - m) for v in vals) / n
+    return var > 1500  # real video has spread; dead gray is ~uniform
+
+
 def png_encode(width: int, height: int, rgb: bytes) -> bytes:
     def chunk(tag: bytes, payload: bytes) -> bytes:
         return (struct.pack(">I", len(payload)) + tag + payload
@@ -179,8 +284,41 @@ def snap(query: str, settle: float) -> tuple[bytes, str]:
         select_channel(meta["x"], meta["y"])
         time.sleep(settle)
         raw = capture_xwd()
-    w, h, rgb = xwd_to_rgb(raw)
-    w, h, rgb = crop_rgb(w, h, rgb, PANE_RECT)
+        # The double-clicked row can drift off-target (tree scroll, dead rows
+        # shifting positions) — verify the highlighted row is the requested
+        # one before trusting the pane content.
+        w, h, rgb = xwd_to_rgb(raw)
+        sel_y = selected_row_y(w, h, rgb)
+        if sel_y is not None and abs(sel_y - meta["y"]) > 14:
+            raise RuntimeError(
+                f"selected row y={sel_y} does not match '{name}' "
+                f"(y={meta['y']}) — device tree layout drifted; "
+                "recalibrate channels.json")
+
+        # Zoom pane 1 for a ~4x-resolution capture, then restore the grid.
+        # NOTE: no --sync — a synced mousemove blocks >30s while the Wine
+        # app re-renders after the channel switch.
+        raw2 = None
+        for _attempt in range(3):
+            _podman("xdotool", "mousemove", str(PANE_CLICK[0]),
+                    str(PANE_CLICK[1]), timeout=10)
+            _podman("xdotool", "click", "--repeat", "2", "--delay", "150",
+                    "1", timeout=10)
+            time.sleep(1.4)
+            cand = capture_xwd()
+            w2, h2, rgb2 = xwd_to_rgb(cand)
+            if is_zoomed(w2, h2, rgb2):
+                raw2 = cand
+                break
+        if raw2 is None:
+            raw2 = cand  # zoom never applied — grid capture is still usable
+        _podman("xdotool", "mousemove", str(GRID4_BTN[0]),
+                str(GRID4_BTN[1]), "click", "1", timeout=10)
+    w, h, rgb = xwd_to_rgb(raw2)
+    w, h, rgb = crop_rgb(w, h, rgb, SINGLE_PANE_RECT)
+    box = content_bbox(w, h, rgb)
+    if box:
+        w, h, rgb = crop_rgb(w, h, rgb, box)
     return png_encode(w, h, rgb), name
 
 

@@ -226,6 +226,57 @@
       sendState("audio", url);
     }
 
+    // Camera uplink — getUserMedia frames POSTed to input-bridge under
+    // token "cam" so consumers (yolo-ipad, Ada) can poll
+    // GET /frame?screen=N&token=cam. Offscreen video element only.
+    let uplinkStream = null, uplinkTimer = null, uplinkVideo = null;
+    async function startUplink(intervalMs) {
+      if (uplinkTimer) return;                       // already running
+      if (!screenNum) { sendState("uplink-error", "no screen"); return; }
+      try {
+        uplinkStream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: "user", width: { ideal: 640 } }, audio: false });
+      } catch (e) {
+        showToast("camera denied");
+        return sendState("uplink-error", String(e.name || e));
+      }
+      uplinkVideo = document.createElement("video");
+      uplinkVideo.srcObject = uplinkStream;
+      uplinkVideo.muted = true; uplinkVideo.playsInline = true;
+      await uplinkVideo.play().catch(() => {});
+      const push = () => {
+        if (!uplinkVideo.videoWidth) return;          // first frames not ready
+        const c = document.createElement("canvas");
+        c.width = uplinkVideo.videoWidth; c.height = uplinkVideo.videoHeight;
+        c.getContext("2d").drawImage(uplinkVideo, 0, 0);
+        fetch(`${location.origin}/api/input-bridge/frame`, {
+          method: "POST", headers: { "content-type": "application/json" },
+          body: JSON.stringify({ screen: screenNum, token: "cam",
+            state: "uplink", data: c.toDataURL("image/jpeg", 0.6) }),
+        }).catch(() => {});
+      };
+      uplinkTimer = setInterval(push, Math.max(300, intervalMs));
+      showToast("camera uplink on");
+      sendState("uplink-on");
+      // record the capture lease — Ada checks GET /capture before stopping
+      fetch(`${location.origin}/api/input-bridge/capture`, {
+        method: "POST", headers: { "content-type": "application/json" },
+        body: JSON.stringify({ screen: screenNum, source: "cam",
+          active: true, by: "vcast-uplink" }),
+      }).catch(() => {});
+    }
+    function stopUplink() {
+      if (uplinkTimer) { clearInterval(uplinkTimer); uplinkTimer = null; }
+      if (uplinkStream) { uplinkStream.getTracks().forEach(t => t.stop()); uplinkStream = null; }
+      uplinkVideo = null;
+      showToast("camera uplink off");
+      sendState(lastState === "uplink-on" ? "idle" : lastState);
+      fetch(`${location.origin}/api/input-bridge/capture`, {
+        method: "POST", headers: { "content-type": "application/json" },
+        body: JSON.stringify({ screen: screenNum, active: false }),
+      }).catch(() => {});
+    }
+
     // Ada's "look at the screen" path — draws the element actually on-screen
     // into a canvas and POSTs the frame back through the relay. Canvas can
     // capture video/img only; cross-origin iframes are reported as
@@ -246,8 +297,15 @@
         if (video.style.display !== "none" && video.videoWidth) {
           return await post({ data: grab(video, video.videoWidth, video.videoHeight) });
         }
-        if (img.style.display !== "none" && img.naturalWidth) {
-          return await post({ data: grab(img, img.naturalWidth, img.naturalHeight) });
+        if (img.style.display !== "none") {
+          if (img.naturalWidth) {
+            return await post({ data: grab(img, img.naturalWidth, img.naturalHeight) });
+          }
+          // element shown but nothing loaded — the cast URL 404'd/tainted
+          if (img.src) {
+            return await post({ error: "image-load-failed", detail: img.src.slice(0, 200) });
+          }
+          return await post({ error: "idle-or-overlay" });
         }
         if (frame.style.display !== "none") {
           return await post({ error: "uncapturable-iframe" });
@@ -345,8 +403,10 @@
         case "stop": showIdle(); showToast("stopped"); break;
         case "reload": location.reload(); break;
         case "uplink-start":
-          showToast("camera uplink not enabled yet");
-          sendState("uplink-unsupported");
+          startUplink(msg.interval || 750);
+          break;
+        case "uplink-stop":
+          stopUplink();
           break;
         case "snap-request":
           snapFrame(msg.token);
