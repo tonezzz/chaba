@@ -697,6 +697,11 @@ tony-omen:
     models: "primary openrouter/qwen/qwen3.8-27b:free + 5 ranked :free fallbacks (GhostRoute-managed)"
     auth_profile: "openrouter:manual — key shared with idc01 mddb-gemini.env OPENROUTER_API_KEY"
     status: installed 2026-09-28; zero-cost OR free-tier agenting for the travel laptop
+    risk: "shared OR key (per-key credit cap): OpenClaw's heavy agenting can starve
+      mddb's OR embedding route — 2026-09-28 OR key hit total-limit 403s while mddb
+      depended on it during Gemini quota exhaustion. Mitigated by the proxy's
+      OR-failure circuit breaker + same-space direct-Gemini fallback, but a
+      dedicated OR key for openclaw is recommended (per-key limits are independent)."
   ghostroute-watcher:
     service: GhostRoute watcher — rotates OpenClaw primary across OR :free models on throttle
     runtime: systemd user service (ghostroute-watcher.service)
