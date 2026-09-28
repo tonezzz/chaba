@@ -17,7 +17,7 @@ sections:
     layout: list
     items:
       - label: Receiver page
-        text: "stacks/web/public/apps/vcast/index.html — joins the input-bridge WS room, registers with api_key (or shows pairing QR when unpaired), renders play/image/nav/audio/stop messages. Native HLS on iOS Safari, vendored hls.js elsewhere. Screen Wake Lock keeps the display on."
+        text: "stacks/web/public/apps/vcast/index.html — joins the input-bridge WS room, registers with api_key (or shows pairing QR when unpaired), renders play/image/nav/audio/stop messages. Native HLS on iOS Safari, vendored hls.js elsewhere. Screen Wake Lock keeps the display on. mediaUrl() upgrades http: media URLs to https: when the page is served over TLS (mixed-content guard — tony-ha :8123 is HTTPS-only and answers plain HTTP with a 400); image load failures surface as HUD 'image failed' + toast + state:error report."
       - label: Relay + registry
         text: "stacks/web/input-bridge/server.mjs — one node process on tony-dell :3010 (input-bridge.service). HTTP: GET /health, GET /displays, GET /pair-info?sid=, POST /pub {screen|room,msg}, POST /claim {sid,admin_key,name?,force}. WS: room broadcast + register-display. Registry persisted at ~/.local/share/input-bridge/displays.json on tony-dell."
       - label: Key verification

@@ -11,8 +11,9 @@
 
 const WS_URL = process.argv[2] || "ws://127.0.0.1:3010/ws";
 const API = (process.argv[3] || "http://127.0.0.1:3010").replace(/\/+$/, "");
-const ADMIN_KEY = process.env.ADA_ADMIN_KEY || "";
+const ADMIN_KEY = process.env.ADA_ADMIN_KEY || ""; // optional — relay env key is preferred
 const LABEL = process.env.VCAST_LABEL || "headless-test";
+const DEV_ID = process.env.VCAST_DEV_ID || "";
 
 import WebSocket from "ws";
 
@@ -21,18 +22,18 @@ let ws, screen = null, apiKey = null;
 function connect() {
   ws = new WebSocket(WS_URL);
   ws.on("open", () => {
-    ws.send(JSON.stringify({ type: "register-display", api_key: apiKey || "", label: LABEL }));
+    ws.send(JSON.stringify({ type: "register-display", api_key: apiKey || "", label: LABEL, device_id: DEV_ID }));
   });
   ws.on("message", async (raw) => {
     let m;
     try { m = JSON.parse(raw.toString()); } catch (e) { return; }
     if (m.type === "ping" || m.type === "presence") return;
     console.log("[recv]", JSON.stringify({ ...m, api_key: m.api_key ? "***" : undefined }));
-    if (m.type === "pending" && ADMIN_KEY) {
+    if (m.type === "pending") {
       const r = await fetch(`${API}/claim`, {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ sid: m.sid, admin_key: ADMIN_KEY, name: "screen-1" }),
+        body: JSON.stringify({ sid: m.sid, admin_key: ADMIN_KEY || undefined, name: "screen-1" }),
       });
       console.log("[claim]", r.status, await r.text());
     }

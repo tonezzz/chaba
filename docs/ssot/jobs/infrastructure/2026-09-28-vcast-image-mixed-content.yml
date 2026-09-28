@@ -1,0 +1,73 @@
+title: vcast receiver — image casts showed a broken icon (http→https fix)
+subtitle: 'Mixed-content + HTTPS-only listener: casted http:// URLs on :8123 could never render'
+icon: clipboard-check
+id: 2026-09-28-vcast-image-mixed-content
+status: done
+owner: devin-dispatch
+project: chaba
+started: "2026-09-28"
+completed: "2026-09-28"
+
+context:
+  report: "MDDB ada-cms-pages key 'fix-vcast-controls' (Fix V-Cast & Controls Report)"
+  transcript_extracts:
+    - extract-2026-09-28-2d6e54259e-2  # broken link/image casting screenshots to Screen 1
+    - extract-2026-09-28-5342a21530-0  # screen 1 broken, urgent repair
+    - extract-2026-09-28-5342a21530-2  # update the V-Cast report after repairs
+  reported_url: "http://tony-dell.taila0626a.ts.net:8123/local/documents/A-68/A-68-deed-front-070547.jpg"
+  user_request: >
+    cast_to_screen(action='image') delivered to room vcast-1 but the iPad
+    showed a broken image icon.
+
+findings:
+  root_cause_1_scheme: >
+    The casted URL used http:// on tony-ha :8123, which is an HTTPS-only
+    listener (verified: plain HTTP gets "400 — Client sent an HTTP request to
+    an HTTPS server"). The receiver page itself is served over HTTPS
+    (https://tony-dell.taila0626a.ts.net/apps/vcast/), so the browser also
+    blocks http subresources as mixed content — broken image icon either way.
+  root_cause_2_missing_file: >
+    Even upgraded to https://, the reported URL 404s: documents/ does not
+    exist in tony-ha's www (checked ~/.config/home-assistant/www — only
+    ada-* cards, cam/, ha/) nor on michael-ha (404 too). A-68 pages live
+    only on gdrive:ada-documents/2026/A-68 via the idc01 doc-archive service
+    (GET /v1/archive/{slug}/page/{n}, X-API-Key gated — not usable as a bare
+    <img> src). Whoever produced the cast URL assumed a /local/documents/
+    tree that was never published.
+  confirmed_working: >
+    https://tony-dell.taila0626a.ts.net:8123/local/cam/*.jpg returns 200
+    image/jpeg — the cctv_snapshot cast path is fine once the scheme is
+    corrected.
+
+changes:
+  file: stacks/web/public/apps/vcast/index.html
+  detail: >
+    Added mediaUrl() — rewrites http: to https: when the page itself is
+    served over TLS (on an https page an http subresource is dead anyway;
+    upgrading can only help). Applied to image/play/nav/audio renderers.
+    showImage() now attaches img.onerror/onload: first failure sets HUD
+    "image failed", shows a toast with the (normalized) URL, and reports
+    state:error to the relay (visible in /displays registry + vcast-ctl
+    room). Interval refreshes keep retrying but only report once; a
+    successful load re-arms error reporting. teardown() clears the handlers.
+  verification: >
+    Served the worktree page over local HTTPS (self-signed, CDP-driven
+    headless Chrome) joined to the live relay in room vcast-test.
+    POST /api/input-bridge/pub {type:image, url:http://...:8123/local/cam/
+    last-xiaomi-frame.jpg} -> receiver rewrote to https, img loaded
+    (naturalWidth=424, display:block). The A-68 URL now lands on https and
+    correctly reports "image failed" (file genuinely absent, HTTP 404).
+
+still_open:
+  - item: "/local/documents/* is not a serving path on either HA instance"
+    options:
+      - "publish doc-archive pages into tony-ha www/documents/ (display cache)"
+      - "have the sender resolve docs to a real URL (doc-archive /v1/archive/"
+      - "page/{n} is API-key gated; ada-pi /api/documents/{key}/preview only"
+      - "covers held intakes, not archived sets)"
+    needs: user decision — mutating tony-ha www is a live deploy
+  - item: "update MDDB ada-cms-pages 'fix-vcast-controls' with repair outcome"
+    needs: ada-bank write (Tony asked the report be updated post-repair)
+  - item: "deploy — rsync index.html into the live web mount"
+    command: "rsync -av stacks/web/public/apps/vcast/ ~/CascadeProjects/chaba-tony-dell/stacks/web/public/apps/vcast/"
+    needs: approval per dispatch/deploy rules
