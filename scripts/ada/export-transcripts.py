@@ -263,6 +263,17 @@ def main() -> int:
             [sys.executable, str(ADA_SCRIPTS / "vocab-pages-sync.py")],
             capture_output=True, text=True, timeout=120)
         print((r.stdout.strip().splitlines() or ["vocab-sync: no output"])[-1])
+        # retention sweep — append-only collections (host-logs 14d, events/
+        # snapshots 30d); standing rule that bounds their growth
+        r = subprocess.run(
+            [sys.executable, str(ADA_SCRIPTS / "prune-old-docs.py")],
+            capture_output=True, text=True, timeout=600)
+        print((r.stdout.strip().splitlines() or ["prune: no output"])[-1])
+        # bloat watch — docs/revisions/size block in the digest output
+        r = subprocess.run(
+            [sys.executable, str(ADA_SCRIPTS / "bloat-report.py")],
+            capture_output=True, text=True, timeout=60)
+        print(r.stdout.strip())
 
     # ---- personal-tier collectors + rollup (local-only, devin context) ----
     if not args.no_personal:
