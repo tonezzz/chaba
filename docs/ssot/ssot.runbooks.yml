@@ -27,6 +27,21 @@ verification:
 
 runbooks:
   # ── Tier 1: formal markdown runbooks (docs/runbooks/) ─────────────────────
+  ada-devin-handoff-workflow:
+    path: docs/runbooks/ada-devin-handoff-workflow.md
+    type: markdown
+    status: verified
+    last_verified: 2026-09-27
+    scope: Ada voice/PWA instances dispatching headless Devin sessions via devin-handoff bank specs (tony-dell primary, tony-omen; repos chaba/ada-pi/sunsynk-card)
+    related:
+      - scripts/devin/devin-dispatch.sh
+      - scripts/devin/devin-dispatch-watch.sh
+      - scripts/devin/render-handoff-inbox.py
+      - docs/ssot/jobs/ada/2026-09-22-ada-devin-dispatch.yml
+      - docs/ssot/ssot.learning.ada-devin-dispatch.2026-09-24.yml
+      - docs/ssot/apps/ssot.apps.ada-memory-banks.yml
+    note: "Written 2026-09-27 by the dispatched session launched from spec extract-2026-09-27-fd98e6e49c-0 — the pipeline documented itself. Caveat recorded in the runbook: live ~/.local/bin dispatch scripts lead the repo copies (job/ ledger, needs-input, resume)."
+
   backup-system-operations:
     path: docs/runbooks/backup-system-operations.md
     type: markdown
