@@ -1,6 +1,6 @@
 {
  "collection": "chaba-archive",
- "exported_at": "2026-09-27T21:30:18.387742+00:00",
+ "exported_at": "2026-09-28T21:30:04.506664+00:00",
  "doc_count": 14,
  "docs": [
   {
@@ -117,7 +117,7 @@
      "2026-09-24T16:40:49.993313"
     ],
     "last_used": [
-     "2026-09-27"
+     "2026-09-28"
     ],
     "rel_path": [
      "auto-kb-1786787696951.md"
@@ -132,12 +132,12 @@
      "No new KB-worthy facts"
     ],
     "use_count": [
-     "388"
+     "605"
     ]
    },
    "contentMd": "# No new KB-worthy facts\n\n## What it is\n\nNo new KB-worthy facts\n\n## Context/Background\n\nCreated 2026-08-15 from automated KB creation workflow.\n\n## Key Details\n\n### Technical Details\n\n- **Generated**: 2026-08-15\n- **Source**: Automated KB creation skill\n\n### Implementation\n\nNo new KB-worthy facts. The recommendation to renumber the TONY-WIFI_5G router's LAN subnet is standard networking practice for avoiding duplicate 192.168.1.0/24; no new systems, patterns, or infrastructure changes were introduced. No new KB entry needed.\n\n## Related Documentation\n\n- **[auto-kb-creation.md](../../.windsurf/workflows/auto-kb-creation.md)** - Automated KB creation workflow\n\n## Tags\n\n- **auto-generated**: Automatically created KB entry\n- **2026**: Year tag\n\n_Archived 2026-08-19: did not meet updated KB quality threshold._\n",
    "addedAt": 1790242849,
-   "updatedAt": 1790544150
+   "updatedAt": 1790630226
   },
   {
    "id": "chaba-archive|auto-kb-1786788497933.md|en",
@@ -355,7 +355,7 @@
      "2026-09-24T16:40:50.265649"
     ],
     "last_used": [
-     "2026-09-27"
+     "2026-09-28"
     ],
     "rel_path": [
      "chaba0/reorg-methodology.md"
@@ -370,12 +370,12 @@
      "Reorg Methodology — archive of chaba0"
     ],
     "use_count": [
-     "444"
+     "734"
     ]
    },
    "contentMd": "---\nkind: archive-report\nbank: chaba-archive\nsource_repo: chaba0\nsource_commit: b5f1a6268e3e754a3281c55261a4ba7c8980bae9\ntopic: reorg-methodology\nstatus: historical\nperiod: [2025-12, 2026-01]\nfollows: []\n\ncovers:\n  - docs/pc1-pc2-reorganization-patterns.md\n  - docs/stack-reorganization-patterns.md\nextracted: 2026-09-24\nextracted_by: gemini-2.5-flash (benchmark)\n---\n\n# Reorg Methodology — archive of chaba0\n\n## Summary\nThis topic outlines the methodology for reorganizing monolithic application stacks into modular, functionally separated components within the `chaba0` project. It established core principles like functional separation, standardized cross-stack communication, and host-specific port allocation. The methodology was initially derived from `idc1-stacks` and then specifically applied and adapted for `pc1` and `pc2` environments.\n\n## Timeline\ndates unknown — frozen 2026-03-28\n\n## Still-true facts\n*   Functional separation of services (Core, AI, DB, Web, DevOps, Line) [still-true]\n*   Use of external networks with consistent naming (`{stack}-{host}-net`) for cross-stack communication [still-true]\n*   Modular stack structure (`stacks/{host}-stack`, `stacks/{host}-{function}/`) [still-true]\n*   Service distribution rules (e.g., Core stack for MCP aggregation, AI stack for inference) [still-true]\n*   The principle of adapting reorganization patterns to host-specific characteristics [still-true]\n*   Specific port ranges for `idc1`, `pc1`, `pc2` within `chaba0` [historical]\n*   The specific modular structure and service assignments for `pc1` and `pc2` within `chaba0` [historical]\n\n## Key details\nThe reorganization methodology focused on breaking down monolithic stacks into smaller, manageable units.\n\n**Core Principles:**\n*   **Functional Separation**: Services were grouped by their primary function into categories: `Core` (MCP aggregation), `AI` (ML/inference), `DB` (data storage), `Web` (UIs), `DevOps` (dev/testing tools), and `Line` (host-specific integrations).\n*   **Cross-Stack Communication**: Standardized external networks (`{stack}-{host}-net`) were used for inter-stack communication, with a consistent `EXTERNAL_SERVICE_URL` environment variable pattern.\n*   **Port Allocation Strategy**: Host-specific port ranges were maintained to avoid conflicts, e.g., `idc1` used 84xx (MCP), 11xxx (AI); `pc1` used 80xx/82xx (MCP), 30xx (Web).\n\n**Architecture Patterns:**\n*   **Modular Stack Structure**: A directory structure was defined where `stacks/{host}-stack/` contained core services, and `stacks/{host}-{function}/` housed specialized stacks (e.g., `pc1-ai/`, `pc1-web/`).\n*   **Service Distribution Rules**: Specific services were assigned to particular stacks. For instance, `Core Stack` (`{host}-stack/`) included MCP aggregation (`1mcp-agent`) and essential MCP services. `AI Stack` (`{host}-ai/`) contained inference servers like `ollama`.\n\n**Host-Specific Adaptations:**\n*   **idc1**: Served as the initial learning ground for these patterns.\n*   **PC1 (Production/Development Host)**: Characterized by authentication (Authentik), webtops, visualization tools, and external Redis/PostgreSQL dependencies. Its modular structure included `pc1-stack` (core MCP), `pc1-auth` (Authentik), `pc1-web` (webtops), and `pc1-devops` (dev tools).\n*   **PC2 (Windows Worker Host)**: Focused on Windows-based development, Thai language processing, meeting transcription, and AI4Thai integration.\n\n**Survival into `chaba`/`ada-pi`:**\nThe fundamental principles of functional separation, modular stack architecture, and standardized cross-stack communication were core architectural tenets that carried forward into successor projects like `chaba` and `ada-pi`. The methodology for adapting these principles to host-specific requirements also survived.\n\n**Dropped from `chaba`/`ada-pi`:**\nThe specific, hardcoded port ranges and detailed service distributions for `idc1`, `pc1`, and `pc2` as defined in `chaba0` were not directly copied.\n\n## Not preserved\nThe highly specific port ranges and the exact, detailed service distributions for `idc1`, `pc1`, and `pc2` as concrete configurations were deliberately not preserved as direct blueprints for `chaba`/`ada-pi`. This was because these configurations were tailored to the `chaba0` environment's specific host roles and infrastructure, which were expected to evolve or be re-evaluated in successor projects. While the *principles* of host-specific adaptation and structured port management were preserved, the *concrete values* and specific service assignments for these legacy hosts were considered `chaba0`-specific and subject to change.\n\n## Source map\n\n- `docs/*reorganization*` → report sections above (bundle: file headers/READMEs/first-60-lines per file, 2 files)\n",
    "addedAt": 1790242850,
-   "updatedAt": 1790544151
+   "updatedAt": 1790630383
   },
   {
    "id": "chaba-archive|chaba0/sites-apps.md|en",
