@@ -258,6 +258,11 @@ def main() -> int:
              "--hosts", args.hosts],
             capture_output=True, text=True, timeout=600)
         print((r.stdout.strip().splitlines() or ["log-ship: no output"])[-1])
+        # vocab/log per-speaker notes -> my-words* CMS pages
+        r = subprocess.run(
+            [sys.executable, str(ADA_SCRIPTS / "vocab-pages-sync.py")],
+            capture_output=True, text=True, timeout=120)
+        print((r.stdout.strip().splitlines() or ["vocab-sync: no output"])[-1])
 
     # ---- personal-tier collectors + rollup (local-only, devin context) ----
     if not args.no_personal:
