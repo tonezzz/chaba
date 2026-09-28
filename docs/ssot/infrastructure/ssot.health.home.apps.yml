@@ -2,6 +2,18 @@ title: Chaba Health Checks (Home Profile) — Apps
 subtitle: HTTP health checks for web apps, generated from apps.yml
 icon: heart-pulse
 services:
+- id: app-chaba-lab
+  name: Chaba Lab
+  type: http
+  url: https://tony-dell.taila0626a.ts.net/apps/lab/
+  expected_status: 200
+  timeout: 5
+  category: apps
+  profiles:
+  - home
+  - mobile
+  host: tony_dell
+  note: Auto-generated from stacks/web/public/apps/apps.yml
 - id: app-ada-ha
   name: Ada HA
   type: http
