@@ -18,8 +18,11 @@ MODEL = os.environ.get('GEV_GEMINI_MODEL', 'gemini-3.1-flash-live-preview')
 CLIENTS = set()
 # Passive command clients (ws connected with ?remote=1) — the page registers
 # on load WITHOUT starting a Gemini Live session, so a casted display can be
-# driven via /command with nobody talking to it.
-REMOTE = set()
+# driven via /command with nobody talking to it. ws -> {'screen': int|None}
+REMOTE: dict = {}
+# cmd_id -> asyncio.Queue — remote clients' tool_response frames resolve
+# here so /command can return what the page actually did.
+PENDING: dict = {}
 _loop = None
 
 SYSTEM_INSTRUCTION = (
@@ -134,15 +137,39 @@ async def pump_responses(session, websocket):
             pass
 
 
-async def _broadcast(msg):
+async def _dispatch(msg: str, screen: int | None = None,
+                    wait_s: float = 0.0):
+    """Send msg to matching clients. screen=None broadcasts to voice CLIENTS
+    + every remote client; a number narrows remotes to that screen.
+    With wait_s>0, collects tool_response frames for the call's id."""
+    targets = list(CLIENTS) + [
+        w for w, m in REMOTE.items()
+        if screen is None or m.get('screen') == screen]
     delivered = 0
-    for ws in list(CLIENTS | REMOTE):
+    for ws in targets:
         try:
             await ws.send(msg)
             delivered += 1
         except Exception:
             pass
-    return delivered
+    if wait_s <= 0 or not delivered:
+        return delivered, []
+    cmd_id = json.loads(msg).get('id')
+    q: asyncio.Queue = asyncio.Queue()
+    PENDING[cmd_id] = q
+    responses = []
+    deadline = _loop.time() + wait_s
+    try:
+        while len(responses) < delivered:
+            try:
+                r = await asyncio.wait_for(
+                    q.get(), timeout=max(0.05, deadline - _loop.time()))
+                responses.append(r)
+            except asyncio.TimeoutError:
+                break
+    finally:
+        PENDING.pop(cmd_id, None)
+    return delivered, responses
 
 
 def _cmd_handler():
@@ -161,7 +188,10 @@ def _cmd_handler():
 
         def do_GET(self):
             if self.path == '/command/health':
-                self._reply(200, {'ok': True, 'clients': len(CLIENTS), 'remote': len(REMOTE)})
+                self._reply(200, {'ok': True, 'clients': len(CLIENTS),
+                                  'remote': len(REMOTE),
+                                  'remote_screens': sorted(
+                                      m.get('screen') for m in REMOTE.values())})
             else:
                 self._reply(404, {'error': 'not found'})
 
@@ -176,6 +206,10 @@ def _cmd_handler():
             name = body.get('name')
             if not name:
                 return self._reply(400, {'error': 'name required'})
+            screen = body.get('screen')
+            # wait>0 collects the clients' tool_response frames — lets
+            # get_current_view_state (and friends) actually answer.
+            wait_s = min(float(body.get('wait') or 0), 10.0)
             msg = json.dumps({
                 'type': 'function_call',
                 'id': 'cmd-' + uuid.uuid4().hex[:8],
@@ -183,11 +217,15 @@ def _cmd_handler():
                 'args': body.get('args') or {},
             })
             try:
-                delivered = asyncio.run_coroutine_threadsafe(
-                    _broadcast(msg), _loop).result(timeout=5)
+                delivered, responses = asyncio.run_coroutine_threadsafe(
+                    _dispatch(msg, screen, wait_s),
+                    _loop).result(timeout=wait_s + 5)
             except Exception as e:
                 return self._reply(502, {'error': str(e)})
-            self._reply(200, {'ok': True, 'delivered': delivered})
+            out = {'ok': True, 'delivered': delivered}
+            if responses:
+                out['responses'] = responses
+            self._reply(200, out)
 
         def log_message(self, fmt, *args):
             log('cmd http: ' + (fmt % args))
@@ -202,15 +240,29 @@ async def client_handler(websocket):
     req = getattr(websocket, 'request', None)
     path = (getattr(req, 'path', '') if req else '') or getattr(websocket, 'path', '') or ''
     if 'remote=1' in path:
-        REMOTE.add(websocket)
+        meta = {'screen': None}
+        REMOTE[websocket] = meta
         log(f'Remote client connected {websocket.remote_address} ({len(REMOTE)} remote, {len(CLIENTS)} voice)')
         try:
-            async for _ in websocket:
-                pass  # inbound ignored — commands flow one way
+            async for raw in websocket:
+                try:
+                    obj = json.loads(raw)
+                except Exception:
+                    continue
+                t = obj.get('type')
+                if t == 'hello':
+                    # page announces its vcast screen number (same-origin
+                    # parent knows it) so /command can target screen=N
+                    meta['screen'] = obj.get('screen')
+                elif t == 'tool_response':
+                    for r in obj.get('responses') or []:
+                        q = PENDING.get(r.get('id'))
+                        if q:
+                            q.put_nowait(r)
         except Exception:
             pass
         finally:
-            REMOTE.discard(websocket)
+            REMOTE.pop(websocket, None)
             log(f'Remote client disconnected ({len(REMOTE)} remote)')
         return
     CLIENTS.add(websocket)

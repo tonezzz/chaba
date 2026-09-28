@@ -16,7 +16,7 @@
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20,400,0,0" rel="stylesheet" />
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet" />
-  <script type="module" crossorigin src="/apps/gev/assets/index-CeIlPFGN.js"></script>
+  <script type="module" crossorigin src="/apps/gev/assets/index-BWYV9sYm.js"></script>
   <link rel="stylesheet" crossorigin href="/apps/gev/assets/index-BeKkcf38.css">
 </head>
 <body>
@@ -933,6 +933,50 @@
         .then((r) => console.log('SW registered', r.scope))
         .catch((e) => console.error('SW registration failed', e));
     }
+  </script>
+  <script>
+    // Early remote-control channel: opens the bridge command socket as soon as
+    // the page parses — before Cesium finishes init — so a casted display is
+    // reachable by Ada's gev_command even while the globe is still loading.
+    // Commands are queued until window.__gevVoiceCommands.runner exists.
+    (function gevRemoteEarly() {
+      const wsUrl = location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const url = wsUrl + '//' + location.host + '/apps/gev-live/ws?remote=1';
+      const queue = [];
+      let ws = null;
+      const runner = () => window.__gevVoiceCommands?.runner || null;
+      async function dispatch(call) {
+        const r = runner();
+        if (!r) { queue.push(call); return; }
+        try {
+          const res = await r(call.name, call.args || {});
+          ws?.readyState === 1 && ws.send(JSON.stringify({
+            type: 'tool_response',
+            responses: [{ id: call.id, name: call.name, response: res }]
+          }));
+        } catch (e) { /* fire-and-forget */ }
+      }
+      setInterval(() => { while (queue.length && runner()) dispatch(queue.shift()); }, 2000);
+      const myScreen = () => {
+        const q = new URLSearchParams(location.search).get('screen');
+        if (q) return parseInt(q, 10);
+        try { return window.parent.__vcastScreen ?? null; } catch { return null; }
+      };
+      function connect() {
+        try {
+          ws = new WebSocket(url);
+          const hello = () => { try { ws.readyState === 1 && ws.send(JSON.stringify({ type: 'hello', screen: myScreen() })); } catch {} };
+          ws.onopen = () => { hello(); setTimeout(hello, 6000); setTimeout(hello, 20000); }; // screen number arrives async via parent 'registered'
+          ws.onmessage = (ev) => {
+            let obj; try { obj = JSON.parse(ev.data); } catch { return; }
+            if (obj?.type === 'function_call') dispatch(obj);
+          };
+          ws.onclose = () => setTimeout(connect, 5000);
+          ws.onerror = () => { try { ws.close(); } catch {} };
+        } catch { setTimeout(connect, 5000); }
+      }
+      connect();
+    })();
   </script>
 </body>
 </html>

@@ -1,0 +1,11 @@
+[Unit]
+Description=Embedding benchmark — Gemini vs OpenRouter (weekly)
+After=network-online.target mddb.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=%h/CascadeProjects/chaba
+EnvironmentFile=%h/.config/secrets/mddb-gemini.env
+# --publish writes the report page to ada-cms-pages in mddb
+ExecStart=/usr/bin/python3 scripts/ada/embed-bench.py --publish
+TimeoutStartSec=900

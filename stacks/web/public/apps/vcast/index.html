@@ -449,6 +449,7 @@
       switch (msg.type) {
         case "registered":
           screenNum = msg.screen;
+          window.__vcastScreen = screenNum; // same-origin iframes (e.g. GEV) read this to identify their screen to the gev command relay
           showIdle();
           break;
         case "pending":

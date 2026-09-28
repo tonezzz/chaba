@@ -35,7 +35,7 @@ def main() -> int:
     cols = stats["collections"]
     docs = sum(c["documentCount"] for c in cols)
     revs = sum(c.get("revisionCount", 0) for c in cols)
-    size = stats.get("databaseSizeBytes", 0)
+    size = stats.get("databaseSize") or stats.get("databaseSizeBytes") or 0
     ratio = revs / docs if docs else 0
     gib = size / (1024 ** 3)
 
