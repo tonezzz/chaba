@@ -1,0 +1,88 @@
+title: idc01 — Siamdata VPS (offsite node)
+subtitle: Bangkok VPS hosting MDDB replica + public app edge; Cloudflare WARP egress for international
+icon: cloud
+version: 1
+
+ideas:
+  - idc01 is a rented VPS at Siamdata Communication (AS56309, Bangkok) — offsite from the tony-home LAN.
+  - Its primary role is tailnet-only MDDB (second instance to tony-dell's) plus a small public Caddy edge (speaker-enroll).
+  - International egress is slow per-flow on Siamdata transit; Cloudflare WARP routes outbound via the BKK edge + CF backbone.
+  - Link aggregation (WiFi/mobile bonding) was assessed and rejected 2026-09-22 — a VPS has no radios and inbound already hits the ~300 Mbps path cap.
+
+sections:
+  - title: Host Facts
+    icon: server
+    layout: list
+    items:
+      - label: Platform
+        text: Ubuntu 24.04.5, kernel 6.8.0-31, 2 vCPU, ~8 GB RAM. eth0 <IDC01_PUBLIC_IP>/24 (public, direct).
+      - label: Provider
+        text: 'Siamdata Communication Co., Ltd. (AS56309), Bangkok. Public IP <IDC01_PUBLIC_IP> — not stored in SSOT (data-isolation rule); resolve live via `tailscale status` CurAddr or the Siamdata panel.'
+      - label: Tailscale
+        text: idc01 / 100.74.146.0 (tailnet node created 2026-09-21). Direct WireGuard to home peers via endpoint <TONY_HOME_WAN_IP>.
+      - label: SSH access
+        text: sshd on tailnet :22 only (public :22 filtered). User `tony`; tony-dell and tony-omen ed25519 keys authorized (dell key added 2026-09-22 via omen jump). Tailscale SSH not enabled. Password auth is enabled on sshd as fallback.
+
+  - title: Services
+    icon: layers
+    layout: list
+    items:
+      - label: MDDB 2.15.0 (Docker)
+        text: Bound tailnet-only — http 100.74.146.0:11023, gRPC 11024, MCP 9000. DB /app/data/mddb.db (~710 MB, ext4, ~93 GB free). authEnabled=false; tailnet is the security boundary — do not rebind to 0.0.0.0. Collections mirror tony-dell's (ada-ha-bank-*, kb-*, infrastructure-ssot); omen's ssot-mddb-sync targets this instance.
+      - label: Embeddings
+        text: Local Ollama at 127.0.0.1:11435, nomic-embed-text, 768 dims — no external embedding dependency.
+      - label: Caddy public edge
+        text: Ports 80/443 open on the public IP; serves /enroll.html (speaker-enroll app). TLS requires proper SNI.
+      - label: Port 8443 (tailnet)
+        text: TLS listener answering HTTP 400 to plain HTTP — unidentified service; investigate if needed.
+
+  - title: Network Baseline (2026-09-22)
+    icon: gauge
+    layout: list
+    items:
+      - label: Inbound via Tailscale
+        text: ~280-310 Mbps both directions, ~7 ms RTT, direct (no DERP). Single flow saturates the path — 4 parallel flows aggregated only ~302 Mbps, i.e. pipe-limited not per-flow-limited.
+      - label: Outbound international (native)
+        text: Per-flow limited, scales linearly with parallel connections. Sweden ~2.8 Mbps, US ~10 Mbps, GitHub/Fastly ~95 Mbps, Cloudflare edge ~229 Mbps.
+      - label: import-url quirk
+        text: MDDB /v1/import-url has a ~10 s fetch deadline and SSRF-blocks private/loopback/CGNAT destinations — usable for egress testing of public URLs only.
+      - label: Large-doc hazard
+        text: A 21 MB MDDB document stalled the store pipeline ~20 min (≈14k chunks through local Ollama on 2 vCPU) — appeared as an import-url "outage". Avoid huge single documents; embedding is the bottleneck, not network.
+
+  - title: Cloudflare WARP Egress
+    icon: zap
+    layout: list
+    items:
+      - label: What
+        text: cloudflare-warp 2026.7 (free WARP), mode warp, Always On, warp-svc enabled — persists across reboot. Routes outbound via CF Bangkok edge then CF backbone.
+      - label: Exclusions (CLI)
+        text: '100.64.0.0/10 (tailnet — never through WARP), <TONY_HOME_WAN_IP>/32 and <MICHAEL_HA_WAN_IP>/32 (peer WireGuard endpoints — keeps direct tunnels direct; values discoverable via `tailscale status`). Verify with `warp-cli tunnel ip list`.'
+      - label: Results
+        text: 'Sweden 2.8→10.5 Mbps, OVH ~35 Mbps, GitHub CDN unchanged (~83-95 Mbps), CF edge 229→110 Mbps (hairpin, expected). Worst-case international improved 3-10x.'
+      - label: Caveats
+        text: 'Egress IP is now Cloudflare (IPv6 2a09:...) — anything allowlisted to the idc01 public IP for outbound breaks. Per-site regressions exist (Gutenberg 10→3.7 Mbps); bypass with `warp-cli tunnel ip add-range <ip>` or revert entirely with `warp-cli disconnect`.'
+      - label: BBR
+        text: net.core.default_qdisc=fq + net.ipv4.tcp_congestion_control=bbr persisted in /etc/sysctl.d/90-bbr.conf (was cubic).
+
+  - title: Operations
+    icon: wrench
+    layout: list
+    items:
+      - label: Egress test
+        text: 'On idc01: `curl -o /dev/null -w "%{speed_download}" http://speedtest.tele2.net/10MB.zip` — direct ≈2.8 Mbps vs WARP ≈10+ Mbps.'
+      - label: Toggle WARP
+        text: '`warp-cli disconnect` / `warp-cli connect`; status via `warp-cli status`.'
+      - label: MDDB health
+        text: '`curl http://100.74.146.0:11023/health` and `/v1/stats` — both unauthenticated on tailnet.'
+      - label: Provider console
+        text: Siamdata panel holds the recovery path if tailnet+ssh both break — check for web console / firewall toggles there.
+
+related_files:
+  - docs/ssot/infrastructure/ssot.host-roles.yml
+  - docs/ssot/infrastructure/ssot.services.yml
+  - docs/ssot/infrastructure/ssot.tony-omen-multi-wan.yml
+  - docs/ssot/infrastructure/ssot.tony-dell-multi-wan.yml
+
+metadata:
+  last_updated: "2026-09-22"
+  measured_by: devin-session (curl on host + MDDB import-url)

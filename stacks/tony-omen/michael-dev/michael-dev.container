@@ -1,0 +1,26 @@
+[Unit]
+Description=Michael Home Assistant dev instance (rootless podman)
+After=network-online.target
+Wants=network-online.target
+
+[Container]
+Image=docker.io/homeassistant/home-assistant:2026.9.2
+ContainerName=michael-dev
+User=root
+AddCapability=NET_ADMIN NET_RAW
+Network=host
+Volume=/home/tony/.config/michael-dev:/config:Z
+Volume=/etc/localtime:/etc/localtime:ro
+AutoUpdate=registry
+HealthCmd=/bin/bash -c 'curl -sf http://127.0.0.1:8123/ >/dev/null'
+HealthInterval=30s
+HealthTimeout=10s
+HealthRetries=3
+HealthStartPeriod=120s
+
+[Service]
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=default.target
