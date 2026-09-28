@@ -28,8 +28,11 @@ Env: GEMINI_API_KEY (required), ADA_MEMORY_MDDB_URL, ADA_SUMMARY_MODEL
 from __future__ import annotations
 
 import argparse
+import hashlib
 import importlib.util
+import json
 import os
+import re
 import sys
 from datetime import date, datetime, timezone
 from pathlib import Path
@@ -41,7 +44,9 @@ ada_sync = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(ada_sync)
 
 COLLECTION = "ada-ha-bank-devin-tony"
+DEVELOPER_COLLECTION = "ada-ha-bank-developer-tony"
 MODEL = os.environ.get("ADA_SUMMARY_MODEL", "gemini-3.5-flash-lite")
+MAX_EXTRACT_ITEMS = 20
 # Per-session prompt cap: the structured summary sits at the top of the
 # imported transcript; the tail is mostly tool noise.
 PER_DOC_CHARS = 3000
@@ -80,6 +85,22 @@ pass). Merge them into one weekly digest with the same four sections:
 
 Deduplicate aggressively — continued work should appear once. Keep the
 verbatim paths, commands, service names, and hostnames."""
+
+EXTRACT_PROMPT = """From this Devin weekly digest, extract up to {max_items}
+structured developer-knowledge items. Return ONLY a JSON array. Do not wrap it
+in markdown. Each item has exactly these keys:
+
+- "kind": one of "fact", "procedure", "decision", "note"
+- "text": a single, concise, self-contained sentence or command. Keep
+  exact paths, hostnames, service names, and commands verbatim.
+
+Rules:
+- fact = a durable truth (config values, host roles, file locations)
+- procedure = a reusable command or step-by-step
+- decision = a deliberate choice with its rationale
+- note = everything else worth recalling
+- Drop small talk, tool noise, and things already in kb-* banks.
+- Never include secrets, tokens, or passwords."""
 
 
 def mval(doc: dict, field: str) -> str:
@@ -191,6 +212,83 @@ def distill_week(sdocs: list[dict], week: str) -> str | None:
     )
 
 
+def _slug_key(text: str, week: str, limit: int = 64) -> str:
+    h = hashlib.sha1(text.encode("utf-8")).hexdigest()[:12]
+    stem = re.sub(r"[^a-z0-9]+", "-", text[:limit].lower()).strip("-") or "item"
+    return f"developer/{week}-{stem}-{h}"[:96]
+
+
+def extract_developer_items(digest: str, week: str) -> list[dict]:
+    """Ask the model to turn a weekly digest into structured items."""
+    prompt = EXTRACT_PROMPT.format(max_items=MAX_EXTRACT_ITEMS) + "\n\n" + digest
+    text = _gen(prompt)
+    if not text:
+        return []
+    # Strip any surrounding markdown fences or commentary.
+    text = text.strip()
+    if text.startswith("```"):
+        text = re.sub(r"^```(?:json)?\s*", "", text)
+        text = re.sub(r"\s*```$", "", text).strip()
+    try:
+        items = json.loads(text)
+    except json.JSONDecodeError as exc:
+        print(f"  ! {week} extract JSON parse failed: {exc}")
+        return []
+    if not isinstance(items, list):
+        print(f"  ! {week} extract returned non-list: {type(items)}")
+        return []
+    return items
+
+
+def write_developer_items(mddb, collection: str, items: list[dict], week: str,
+                          source_key: str, dry: bool = False) -> tuple[int, int]:
+    """Write extracted items to the developer bank as draft candidates."""
+    today = date.today().isoformat()
+    added = skipped = 0
+    remote = {d.get("key"): d for d in mddb.list_docs(collection)}
+    for item in items:
+        if not isinstance(item, dict):
+            continue
+        kind = str(item.get("kind") or "note").lower()
+        if kind not in {"fact", "procedure", "decision", "note"}:
+            kind = "note"
+        text = str(item.get("text") or "").strip()
+        if not text:
+            continue
+        if len(text) < 10:
+            continue
+        key = _slug_key(text, week)
+        existing = remote.get(key)
+        if existing:
+            existing_status = mval(existing, "status")
+            if existing_status != "draft":
+                skipped += 1
+                continue
+        meta = {
+            "kind": [kind],
+            "status": ["draft"],
+            "scope": ["tony"],
+            "bank": ["developer"],
+            "source": [source_key],
+            "subject": ["developer-candidate"],
+            "written_by": ["distill-devin-bank"],
+            "period": [week],
+            "date": [today],
+            "generated_at": [datetime.now(timezone.utc).isoformat()],
+        }
+        if dry:
+            print(f"  (dry) + {key} ({kind})")
+        else:
+            try:
+                mddb.add(collection, key, text, meta)
+            except Exception as exc:
+                print(f"  ! {key} add failed: {exc}")
+                continue
+            print(f"  + {key} ({kind})")
+        added += 1
+    return added, skipped
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -201,6 +299,10 @@ def main() -> int:
                     help="process at most N weeks, oldest first (0 = all)")
     ap.add_argument("--keep-sources", action="store_true",
                     help="write rollups but leave source docs active")
+    ap.add_argument("--extract-developer", action="store_true",
+                    help="also extract structured developer items from each new/updated rollup")
+    ap.add_argument("--developer-collection", default=DEVELOPER_COLLECTION,
+                    help="MDDB collection for extracted developer items")
     ap.add_argument("--dry-run", action="store_true")
     args = ap.parse_args()
 
@@ -287,6 +389,15 @@ def main() -> int:
                     print(f"    ! supersede {d.get('key')} failed: {exc}")
                     continue
                 print(f"    ~ {d.get('key')} superseded")
+
+        if args.extract_developer:
+            items = extract_developer_items(text, week)
+            if items:
+                dev_added, dev_skipped = write_developer_items(
+                    mddb, args.developer_collection, items, week, key,
+                    dry=args.dry_run)
+                print(f"    -> {dev_added} developer candidates, "
+                      f"{dev_skipped} unchanged")
         done += 1
 
     print(f"\n{done} weeks distilled, {skipped} unchanged, {failed} failed")
