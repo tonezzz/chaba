@@ -93,7 +93,11 @@ sections:
       Fix attempts:
 
       - tailscale ping (rc=1)'
-    status: active
+    status: completed
+    completed_note: '2026-09-28: checked on tony-omen directly — uptime ~21h
+      (booted 2026-09-27 ~20:12, so the 2026-09-26 alert was the host powered
+      off, not a link fault). eno1 1Gbps up, wlo1 associated (one ~14s auth
+      retry this morning), tailscale0 up, reachable over tailnet.'
     priority: high
     started: '2026-09-26'
     estimated_duration: 1 session
@@ -104,9 +108,11 @@ sections:
     - alert
     subtasks:
     - label: Review scan output
-      status: not_started
+      status: completed
+      completed_note: 2026-09-28 — host was powered off; no link fault found
     - label: Apply manual fix or escalate
-      status: not_started
+      status: completed
+      completed_note: 2026-09-28 — no fix needed; host back online
     request_log: []
     ownership:
       owner: tony
