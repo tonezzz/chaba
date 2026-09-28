@@ -274,6 +274,12 @@ def main() -> int:
             [sys.executable, str(ADA_SCRIPTS / "bloat-report.py")],
             capture_output=True, text=True, timeout=60)
         print(r.stdout.strip())
+        # host-logs digest — per-host kinds/units/repeat offenders
+        r = subprocess.run(
+            [sys.executable, str(ADA_SCRIPTS / "logs-report.py"),
+             "--hours", "24", "--no-publish"],
+            capture_output=True, text=True, timeout=300)
+        print(r.stdout.strip())
 
     # ---- personal-tier collectors + rollup (local-only, devin context) ----
     if not args.no_personal:
