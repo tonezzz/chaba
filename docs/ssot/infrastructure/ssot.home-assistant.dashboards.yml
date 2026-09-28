@@ -132,19 +132,16 @@ instances:
       2026-09-28: michael-ha resource parity on tony-ha — the 8 frontend
       bundles michael-ha registered but tony-ha lacked were copied
       byte-identical (md5-verified) to tony-dell ~/.config/home-assistant/www/
-      and registered as module resources: /local/community/lovelace-card-mod/
-      card-mod.js?v=3.4.6, /local/community/apexcharts-card/apexcharts-card.js
-      ?v=2.2.3, /local/community/ha-sankey-chart/ha-sankey-chart.js?v=3.1.0,
-      /local/layout-card.js?v=1, /local/canvas-gauge-card.js?v=1,
-      /local/config-template-card.js?v=1, /local/pro-v-weather-card.js?v=1,
-      /local/nimbus-weather-card.js?v=1. Registered under /local/community/
-      (not /hacsfiles/) because tony-ha had no HACS — the hacs custom_component
-      was ALSO copied from michael-ha (/config/custom_components/hacs, ~52MB)
-      and tony-ha restarted; it stays dormant until the one-time UI onboarding
-      (Settings → Integrations → + HACS → GitHub device auth), after which
-      /hacsfiles/ URLs resolve and HACS auto-update becomes possible. Until
-      then the /local/community/ URLs serve the files directly — functional
-      parity now, HACS optional.
+      and registered as module resources. HACS was also installed: the hacs
+      custom_component was copied from michael-ha (~52MB) and onboarded via
+      the UI the same day. The 3 HACS plugins are registered with the SAME
+      /hacsfiles/ URLs michael-ha uses —
+      /hacsfiles/lovelace-card-mod/card-mod.js?hacstag=1788342837494,
+      /hacsfiles/apexcharts-card/apexcharts-card.js?hacstag=1788342837494,
+      /hacsfiles/ha-sankey-chart/ha-sankey-chart.js?hacstag=455846088640 —
+      and the 5 plain files under /local/: layout-card.js?v=1,
+      canvas-gauge-card.js?v=1, config-template-card.js?v=1,
+      pro-v-weather-card.js?v=1, nimbus-weather-card.js?v=1.
       Voice card added 2026-09-22 at the top of the Pair tab, moved off it
       2026-09-23 (pair tab is admin-only; the live mic lives on
       chaba-home/ai):
