@@ -93,11 +93,18 @@ ada_sees_screen:
       upstream 404 -> 502"
     - "404 image -> snap posts image-load-failed with URL"
 
+deployed:
+  when: "2026-09-28 ~18:10 UTC+7"
+  steps:
+    - "index.html -> ~/CascadeProjects/chaba-tony-dell/stacks/web/public/apps/vcast/ (served file md5-verified)"
+    - "server.mjs + package.json -> idc01:~/apps/input-bridge/; systemctl --user restart input-bridge"
+    - "live screens needed a 'reload' cast — running tabs keep the old JS until next page load"
+  live_verified:
+    - "GET /img via Caddy: tailnet cam URL -> 200 JPEG 424x240; example.com -> 403"
+    - "screen 2: cast http://...:8123/local/cam/last-xiaomi-frame.jpg -> state=image with upgraded https URL; snap-request -> GET /frame returned real JPEG pixels (camera frame confirmed visually) — before deploy the same snap errored 'Tainted canvases may not be exported'"
+    - "screen 2 restored to nav camwall zone-a"
+
 still_open:
-  - item: "DEPLOY needed for the new code to reach live screens"
-    command: "rsync index.html -> ~/CascadeProjects/chaba-tony-dell/stacks/web/public/apps/vcast/ ; scp server.mjs + package.json -> idc01:~/apps/input-bridge/ && systemctl --user restart input-bridge (on idc01)"
-    needs: approval per dispatch/deploy rules — until then live snap of
-      cross-origin images still errors, and /img 404s
   - item: "/local/documents/* is not a serving path on either HA instance"
     options:
       - "publish doc-archive pages into tony-ha www/documents/ (display cache)"
