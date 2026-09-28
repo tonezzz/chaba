@@ -108,6 +108,22 @@ When the working tree is dirty and the user wants to test, spike, or experiment 
   - The experiment is known to become a production feature.
 - **Always record the work** in `ssot.focus.current.active.yml` or the focus inbox if it extends beyond a single conversation.
 
+## Deploy Discipline (added 2026-09-28 — origin is the single source of truth)
+
+`origin/master` IS the deployed state. Live checkouts must never diverge:
+
+- `~/CascadeProjects/chaba-tony-dell` is bind-mounted into the `web` Caddy
+  container (`/srv/public`, `/srv/docs`, `/etc/caddy/Caddyfile`) — any edit
+  there is a live deploy. It must stay on `master`; `git pull` IS the deploy.
+- Deploy = merge to `origin/master`, then `git pull` in the live checkout
+  (plus container/service restarts where needed). Never edit files in the
+  live checkout directly — that's how the Sept drift (593 commits behind,
+  22 unmerged commits, ~180 dirty files) happened.
+- idc01 `~/apps/input-bridge` is a deploy target (files copied there, not a
+  clone) — deploys rsync from master content only.
+- If a live checkout is dirty when you arrive, do not build on top —
+  reconcile or ask first.
+
 ## Hostname Usage Standards
 
 - Always use `.local` hostnames instead of IP addresses: `tony-omen.local` instead of `192.168.1.48`, `tony-dell.local` instead of `192.168.1.42`
