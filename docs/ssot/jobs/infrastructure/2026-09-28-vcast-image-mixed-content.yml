@@ -110,6 +110,29 @@ deployed:
     - "screen 2 restored to nav camwall zone-a"
     - "post-merge: reload -> image cast -> snap JPEG verified on merged build"
 
+screen1_acl:
+  request: "'screen 1 is public but Ada keeps getting denied' (transcript
+    e3a3a3cded: Tony explicitly confirmed 'บันทึกไว้เลย ผมยืนยัน')"
+  root_cause: >
+    Two stacked issues. (1) cast-screens.json had screens."1"=person.tony —
+    the speaker in those sessions resolved to anonymous (speaker-ID did not
+    identify Tony; contaminated profiles — NewSpeaker/Timmy dup — are a
+    known open item), so _check_screen_owner denied with 'identify the
+    speaker first'. (2) Ada then 'recorded' screen 1 as public via
+    ada_remember — but the ACL lives only in
+    ~/.local/share/ada-pi/cast-screens.json (read fresh per call); memory
+    notes can never change it, so every retry re-denied.
+  fix: >
+    screens."1" flipped to "shared" on idc01 (backup kept). Verified via the
+    exact check logic: anonymous/tony/kk all now ALLOW on screen 1; other
+    screens default shared; sources seat/omen remain person.tony.
+  followups:
+    - "Speaker-ID never resolved Tony in sessions fd3d4bdfcb/e3a3a3cded —
+      junk profiles (NewSpeaker, Timmy) cleanup still needs Tony approval."
+    - "Denial message could tell Ada the owner-lock lives in
+      cast-screens.json so she stops the record-note-then-retry loop —
+      small ada-pi patch, not yet done."
+
 still_open:
   - item: "/local/documents/* is not a serving path on either HA instance"
     options:
@@ -118,11 +141,9 @@ still_open:
       - "page/{n} is API-key gated; ada-pi /api/documents/{key}/preview only"
       - "covers held intakes, not archived sets)"
     needs: user decision — mutating tony-ha www is a live deploy
-  - item: "update MDDB ada-cms-pages 'fix-vcast-controls' with repair outcome"
-    needs: ada-bank write (Tony asked the report be updated post-repair)
-  - item: "live checkout has uncommitted V-Cast WIP ahead of master"
-    detail: >
-      ~/CascadeProjects/chaba-tony-dell index.html (+uplink) and idc01
-      ~/apps/input-bridge/server.mjs (+/capture /camwall tailnet auth) are
-      ahead of local master. This branch adopted them as baseline so merging
-      will converge rather than regress.
+
+resolved_later:
+  - "MDDB 'fix-vcast-controls' updated with the repair outcome (meta
+    restored after PATCH wholesale-replaced it)"
+  - "live-checkout / idc01 relay WIP ahead of master — adopted as this
+    branch's baseline, merged to master (de6705ab..628ae935), redeployed"
