@@ -11,7 +11,9 @@ podman build -t localhost/ada-scenario-runner:latest "$HERE"
 mkdir -p ~/.config/containers/systemd ~/.config/systemd/user
 cp "$HERE"/ada-scenario-*.container ~/.config/containers/systemd/
 cp "$HERE"/ada-scenario-research.service "$HERE"/ada-scenario-research.timer \
+   "$HERE"/ada-embed-bench.service "$HERE"/ada-embed-bench.timer \
    ~/.config/systemd/user/
 systemctl --user daemon-reload
 systemctl --user enable --now ada-scenario-research.timer
+systemctl --user enable --now ada-embed-bench.timer
 echo "installed — run: systemctl --user start ada-scenario-smoke|full|research"
