@@ -387,6 +387,27 @@
       if (video.src) video.play().catch(() => {});
     });
 
+    // -- narration ---------------------------------------------------------------
+    // Ada announces what she's doing on this screen via speak messages.
+    // speechSynthesis on iOS is gesture-gated — until audioOK, fall back to
+    // a toast so the narration is still visible, and report the block so the
+    // sender knows the screen is muted.
+    function speak(text) {
+      text = String(text || "").slice(0, 300);
+      if (!text) return;
+      if (!audioOK || !("speechSynthesis" in window)) {
+        showToast("🔊 " + text, 4000);
+        sendState("speak-blocked", text);
+        return;
+      }
+      speechSynthesis.cancel(); // new narration supersedes in-flight/queued
+      const u = new SpeechSynthesisUtterance(text);
+      u.rate = 1.05;
+      speechSynthesis.speak(u);
+      showToast("🔊 " + text, 3000);
+      sendState("speaking", text);
+    }
+
     // -- websocket ---------------------------------------------------------------
     function connect() {
       if (ws && ws.readyState <= 1) return;
@@ -454,6 +475,7 @@
         case "image": showImage(msg.url, msg.interval); break;
         case "nav": nav(msg.url); break;
         case "audio": playAudio(msg.url); break;
+        case "speak": speak(msg.text); break;
         case "stop": showIdle(); showToast("stopped"); break;
         case "reload": location.reload(); break;
         case "uplink-start":
