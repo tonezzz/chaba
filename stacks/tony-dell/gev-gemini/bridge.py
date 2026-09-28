@@ -16,6 +16,10 @@ MODEL = os.environ.get('GEV_GEMINI_MODEL', 'gemini-3.1-flash-live-preview')
 # Connected GEV browser clients — the same sockets Gemini tool calls are
 # forwarded to. /command pushes function_call frames into these.
 CLIENTS = set()
+# Passive command clients (ws connected with ?remote=1) — the page registers
+# on load WITHOUT starting a Gemini Live session, so a casted display can be
+# driven via /command with nobody talking to it.
+REMOTE = set()
 _loop = None
 
 SYSTEM_INSTRUCTION = (
@@ -132,7 +136,7 @@ async def pump_responses(session, websocket):
 
 async def _broadcast(msg):
     delivered = 0
-    for ws in list(CLIENTS):
+    for ws in list(CLIENTS | REMOTE):
         try:
             await ws.send(msg)
             delivered += 1
@@ -157,7 +161,7 @@ def _cmd_handler():
 
         def do_GET(self):
             if self.path == '/command/health':
-                self._reply(200, {'ok': True, 'clients': len(CLIENTS)})
+                self._reply(200, {'ok': True, 'clients': len(CLIENTS), 'remote': len(REMOTE)})
             else:
                 self._reply(404, {'error': 'not found'})
 
@@ -194,6 +198,21 @@ def _cmd_handler():
 
 
 async def client_handler(websocket):
+    # websockets>=10: websocket.request.path; legacy: websocket.path
+    req = getattr(websocket, 'request', None)
+    path = (getattr(req, 'path', '') if req else '') or getattr(websocket, 'path', '') or ''
+    if 'remote=1' in path:
+        REMOTE.add(websocket)
+        log(f'Remote client connected {websocket.remote_address} ({len(REMOTE)} remote, {len(CLIENTS)} voice)')
+        try:
+            async for _ in websocket:
+                pass  # inbound ignored — commands flow one way
+        except Exception:
+            pass
+        finally:
+            REMOTE.discard(websocket)
+            log(f'Remote client disconnected ({len(REMOTE)} remote)')
+        return
     CLIENTS.add(websocket)
     log(f'Client connected {websocket.remote_address} ({len(CLIENTS)} online)')
     try:
