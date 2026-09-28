@@ -25,6 +25,25 @@ sections:
     - memory
     - recall
     - tool-storm
+  - label: Home Assistant Live (Gemini Live bridge) health
+    text: 'mcp-health reported status ''error'' for Home Assistant Live (Gemini Live bridge) at 2026-09-11T10:01:25. Error:
+      HTTP 502 (expected 200)'
+    status: active
+    priority: high
+    started: '2026-09-28'
+    estimated_duration: 1 session
+    tags:
+    - health
+    - inbox
+    - optional
+    subtasks: []
+    request_log: []
+    ownership:
+      owner: tony
+      session: ''
+      locked: true
+      lock_reason: Activated as active focus
+    source: /home/tony/CascadeProjects/chaba/docs/ssot/focus-inbox/2026-09-11-100125-home-assistant-live-gemini-live-bridge-health.yml
 - title: Active Branch Focus
   icon: branch
   layout: list
@@ -73,39 +92,18 @@ sections:
       lock_reason: Activated as active focus
     branch: master
     source: /home/tony/CascadeProjects/chaba/docs/ssot/focus-inbox/2026-09-10-070156-session-handoff-devin-cleanup-barrier-image.yml
-  - label: tony_omen link down
-    text: 'Link monitor detected tony_omen is unreachable after scan and safe fixes.
-
-
-      Scan output:
-
-      - tailscale status --json (rc=0)
-
-      - ip -4 route (rc=0)
-
-      - ip -4 -br addr show (rc=0)
-
-      - ss -tlnp (rc=0)
-
-      - tailscale ping tony-omen -c 3 (rc=1)
-
-
-      Fix attempts:
-
-      - tailscale ping (rc=1)'
+  - label: Devin chaba repo flood news automation
+    text: Assigned Devin to create an automated tool in the 'chaba' repo to fetch flood news and update the CMS, aligning
+      CMS structure with memory.
     status: active
-    priority: high
-    started: '2026-09-26'
+    priority: medium
+    started: '2026-09-28'
     estimated_duration: 1 session
     tags:
-    - monitoring
-    - network
-    - link
-    - alert
+    - devin
+    - handoff
     subtasks:
-    - label: Review scan output
-      status: not_started
-    - label: Apply manual fix or escalate
+    - label: Dispatch via devin_dispatch (repo chaba, prompt references bank doc extract-2026-09-28-fb5f69ddbf-1)
       status: not_started
     request_log: []
     ownership:
@@ -114,7 +112,7 @@ sections:
       locked: true
       lock_reason: Activated as active focus
     branch: chaba
-    source: /home/tony/CascadeProjects/chaba/docs/ssot/focus-inbox/tony_omen-link-down-2026-09-14-123121.yml
+    source: /home/tony/CascadeProjects/chaba/docs/ssot/focus-inbox/handoff-extract-2026-09-28-fb5f69ddbf-1.yml
 - title: Quick Wins
   icon: quick
   layout: list

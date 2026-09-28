@@ -56,6 +56,31 @@ ZONES: dict[str, dict] = {
             ("Guard View", "vms", "2. Guard View"),
         ],
     },
+    # per-DVR walls — every channel the VMS device list exposes for that
+    # recorder. Serial pulls (~16s/cam + poll headroom): club 8, A 5.
+    "vms-noble-club": {
+        "interval": 180,
+        "cams": [
+            ("Washing Machines", "vms", "Washing Machines"),
+            ("Stairway Room", "vms", "Stairway Room"),
+            ("Mini Mart", "vms", "Mini Mart"),
+            ("Front Rd Left", "vms", "Front Rd. Left"),
+            ("Front Rd Right", "vms", "Front Rd. Right"),
+            ("Swimming Pool", "vms", "Swimming Pool"),
+            ("Tennis Court", "vms", "Tennis Court"),
+            ("Play Ground", "vms", "Play Ground"),
+        ],
+    },
+    "vms-noble-a": {
+        "interval": 120,
+        "cams": [
+            ("Road In", "vms", "1. Road In"),
+            ("Guard View", "vms", "2. Guard View"),
+            ("Walkway In", "vms", "3. Walkway In"),
+            ("Road Corner", "vms", "5. Road Corner"),
+            ("CAM01", "vms", "CAM01"),
+        ],
+    },
     "tony-house": {
         "interval": 15,
         "cams": [
@@ -86,7 +111,9 @@ def bridge(path: str) -> dict:
 def pull_cam(kind: str, key: str) -> bytes:
     if kind == "vms":
         url = f"{VMS_SNAP}/snap?ch={urllib.parse.quote(key)}"
-        _, data = http_get(url, 60)
+        # dead-pane polling + serialized Wine UI can push a snap to ~40s;
+        # leave headroom so honest 503s aren't cut off as timeouts
+        _, data = http_get(url, 95)
         return data
     # go2rtc: try the stream, then fall back to base/SD variants — an _hd
     # stream can be dead (200 + empty body) while the plain one is alive

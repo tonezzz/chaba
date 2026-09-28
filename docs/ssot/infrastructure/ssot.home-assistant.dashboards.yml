@@ -124,13 +124,27 @@ instances:
       wakeCastTarget plug-cooldown suppression. Log tab entity list trimmed:
       dropped vestigial input_boolean.chaba_events_show_logbook and
       input_text.chaba_events_filter (card internals, no logbook value).
-      v6 (repo, pending deploy approval 2026-09-26): both cards gain a "⤢"
+      v6 (live): both cards gain a "⤢"
       toolbar button toggling fullscreen — Fullscreen API first, fixed-position
       overlay fallback (data-fs="1") where element fullscreen is unsupported
       (iPhone Safari); Esc/second tap exits, _fitHeight re-runs on
-      fullscreenchange. Deploy = scp both files to tony-dell
-      ~/.config/home-assistant/www/ + bump ?v=6 on both resources via
-      push-dashboard.py --mutate, then sync-ssot-from-live.sh.
+      fullscreenchange.
+      2026-09-28: michael-ha resource parity on tony-ha — the 8 frontend
+      bundles michael-ha registered but tony-ha lacked were copied
+      byte-identical (md5-verified) to tony-dell ~/.config/home-assistant/www/
+      and registered as module resources: /local/community/lovelace-card-mod/
+      card-mod.js?v=3.4.6, /local/community/apexcharts-card/apexcharts-card.js
+      ?v=2.2.3, /local/community/ha-sankey-chart/ha-sankey-chart.js?v=3.1.0,
+      /local/layout-card.js?v=1, /local/canvas-gauge-card.js?v=1,
+      /local/config-template-card.js?v=1, /local/pro-v-weather-card.js?v=1,
+      /local/nimbus-weather-card.js?v=1. Registered under /local/community/
+      (not /hacsfiles/) because tony-ha had no HACS — the hacs custom_component
+      was ALSO copied from michael-ha (/config/custom_components/hacs, ~52MB)
+      and tony-ha restarted; it stays dormant until the one-time UI onboarding
+      (Settings → Integrations → + HACS → GitHub device auth), after which
+      /hacsfiles/ URLs resolve and HACS auto-update becomes possible. Until
+      then the /local/community/ URLs serve the files directly — functional
+      parity now, HACS optional.
       Voice card added 2026-09-22 at the top of the Pair tab, moved off it
       2026-09-23 (pair tab is admin-only; the live mic lives on
       chaba-home/ai):
@@ -182,14 +196,14 @@ instances:
         path: events
         icon: mdi:bell-badge-outline
         type: panel
-        cards: chaba-events-card v5 live / v6 repo pending deploy (full-height,
+        cards: chaba-events-card v6 live (full-height,
           source dropdown + category filters, rows scroll internally, ⤢
           fullscreen expand)
       - title: Log
         path: log
         icon: mdi:history
         type: panel
-        cards: chaba-log-card v5 live / v6 repo pending deploy (full-height
+        cards: chaba-log-card v6 live (full-height
           isolated /logbook copy; defaults to Live·1h, range dropdown up to
           7d or custom datetime window, ⤢ fullscreen expand)
       - title: Ada Pages

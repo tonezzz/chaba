@@ -57,7 +57,9 @@ PANE_TITLE_H = 30
 # view where the video area is ~4x the pixels of the grid cell — capture that
 # for quality. The 4-grid toolbar button restores multi-view afterwards.
 SINGLE_PANE_RECT = (5, 90, 1070, 640)   # video area in zoomed single-pane
-GRID4_BTN = (357, 672)                  # bottom-toolbar 2x2 grid icon
+GRID4_BTN = (388, 675)                  # bottom-toolbar 2x2 grid icon (2nd;
+                                        # 357 = 1-pane — a miss leaves VMS
+                                        # zoomed and corrupts the next snap)
 # Tree strip scanned for the selected-row blue highlight (verify the click
 # landed on the intended channel instead of silently returning another).
 TREE_STRIP_X = (1090, 1260)
@@ -238,26 +240,6 @@ def selected_row_y(width: int, height: int, rgb: bytes) -> int | None:
     return rows[0] if rows else None
 
 
-def is_zoomed(width: int, height: int, rgb: bytes) -> bool:
-    """Zoomed single-pane: the lower monitor quadrant is video content.
-    In grid mode that region is another empty pane (uniform gray)."""
-    x1, y1, x2, y2 = SINGLE_PANE_RECT
-    # sample the bottom half of the single-pane area
-    lo = 0
-    n = 0
-    vals = []
-    for y in range(y1 + (y2 - y1) * 6 // 10, y2, 8):
-        for x in range(x1, x2, 16):
-            o = (y * width + x) * 3
-            if o + 2 < len(rgb):
-                vals.append(rgb[o] + rgb[o + 1] + rgb[o + 2]); n += 1
-    if n < 10:
-        return False
-    m = sum(vals) / n
-    var = sum((v - m) * (v - m) for v in vals) / n
-    return var > 1500  # real video has spread; dead gray is ~uniform
-
-
 def png_encode(width: int, height: int, rgb: bytes) -> bytes:
     def chunk(tag: bytes, payload: bytes) -> bytes:
         return (struct.pack(">I", len(payload)) + tag + payload
@@ -281,15 +263,25 @@ def snap(query: str, settle: float) -> tuple[bytes, str]:
         raise LookupError(query)
     name, meta = hit
     with _lock:
-        select_channel(meta["x"], meta["y"])
-        time.sleep(settle)
-        raw = capture_xwd()
-        # The double-clicked row can drift off-target (tree scroll, dead rows
-        # shifting positions) — verify the highlighted row is the requested
-        # one before trusting the pane content.
-        w, h, rgb = xwd_to_rgb(raw)
-        sel_y = selected_row_y(w, h, rgb)
-        if sel_y is not None and abs(sel_y - meta["y"]) > 14:
+        # Pin a known layout: selecting the 4-grid is idempotent, so a
+        # later double-click unambiguously means "zoomed".
+        _podman("xdotool", "mousemove", str(GRID4_BTN[0]),
+                str(GRID4_BTN[1]), "click", "1", timeout=10)
+        raw = None
+        for _seltry in range(2):
+            select_channel(meta["x"], meta["y"])
+            time.sleep(settle)
+            raw = capture_xwd()
+            # The double-clicked row can drift off-target (tree scroll, dead
+            # rows shifting positions) — verify the highlighted row is the
+            # requested one before trusting the pane content. A busy Wine UI
+            # can eat the click; retry once before failing.
+            w, h, rgb = xwd_to_rgb(raw)
+            sel_y = selected_row_y(w, h, rgb)
+            if sel_y is None or abs(sel_y - meta["y"]) <= 14:
+                break
+            if _seltry == 0:
+                continue
             raise RuntimeError(
                 f"selected row y={sel_y} does not match '{name}' "
                 f"(y={meta['y']}) — device tree layout drifted; "
@@ -298,28 +290,70 @@ def snap(query: str, settle: float) -> tuple[bytes, str]:
         # Zoom pane 1 for a ~4x-resolution capture, then restore the grid.
         # NOTE: no --sync — a synced mousemove blocks >30s while the Wine
         # app re-renders after the channel switch.
+        # Zoom pane 1 for a ~4x-resolution capture. We pinned the grid
+        # above, so this double-click deterministically toggles to
+        # single-pane; never click again (it would toggle back).
+        _podman("xdotool", "mousemove", str(PANE_CLICK[0]),
+                str(PANE_CLICK[1]), timeout=10)
+        _podman("xdotool", "click", "--repeat", "2", "--delay", "150",
+                "1", timeout=10)
+        # The stream re-opens on zoom and needs a few seconds to draw —
+        # poll until real video appears (bounded).
         raw2 = None
-        for _attempt in range(3):
-            _podman("xdotool", "mousemove", str(PANE_CLICK[0]),
-                    str(PANE_CLICK[1]), timeout=10)
-            _podman("xdotool", "click", "--repeat", "2", "--delay", "150",
-                    "1", timeout=10)
-            time.sleep(1.4)
+        for _poll in range(8):
+            time.sleep(1.5)
             cand = capture_xwd()
             w2, h2, rgb2 = xwd_to_rgb(cand)
-            if is_zoomed(w2, h2, rgb2):
+            cw, ch, crgb = crop_rgb(w2, h2, rgb2, SINGLE_PANE_RECT)
+            if _has_video(cw, ch, crgb):
                 raw2 = cand
                 break
         if raw2 is None:
-            raw2 = cand  # zoom never applied — grid capture is still usable
+            raw2 = cand  # zoomed pane never drew — grid may still show video
         _podman("xdotool", "mousemove", str(GRID4_BTN[0]),
                 str(GRID4_BTN[1]), "click", "1", timeout=10)
+    # Zoomed frame first. A dead pane (stream not drawn yet, offline cam)
+    # collapses content_bbox to a sliver — reject degenerate crops rather
+    # than returning a 5px "frame" that downstream treats as an image.
     w, h, rgb = xwd_to_rgb(raw2)
     w, h, rgb = crop_rgb(w, h, rgb, SINGLE_PANE_RECT)
     box = content_bbox(w, h, rgb)
+    if box and (box[2] - box[0]) * (box[3] - box[1]) < w * h // 4:
+        box = None
     if box:
         w, h, rgb = crop_rgb(w, h, rgb, box)
+    if w * h < 50_000 or min(w, h) < 100:
+        # Fall back to the pre-zoom grid capture at pane resolution.
+        w, h, rgb = xwd_to_rgb(raw)
+        w, h, rgb = crop_rgb(w, h, rgb, PANE_RECT)
+        box = content_bbox(w, h, rgb)
+        if box:
+            w, h, rgb = crop_rgb(w, h, rgb, box)
+    if (w * h < 50_000 or min(w, h) < 100
+            or not _has_video(w, h, rgb)):
+        raise RuntimeError(
+            f"'{name}' pane shows no video — camera offline or stream stalled")
     return png_encode(w, h, rgb), name
+
+
+def _has_video(width: int, height: int, rgb: bytes) -> bool:
+    """A live pane has texture everywhere — high mean neighbor luma delta.
+    A dead/offline pane is flat gray with at most an OSD strip — its
+    deltas sit near zero (measured ~5 vs ~126 on real video). Threshold
+    60 also rejects a 4-pane grid crop where only pane 1 has video
+    (diluted to ~31) — a mosaic is not an acceptable frame."""
+    tot = n = 0
+    for y in range(0, height, 4):
+        base = y * width * 3
+        for x in range(0, width - 8, 8):
+            o = base + x * 3
+            if o + 26 < len(rgb):
+                lum = rgb[o] + rgb[o + 1] + rgb[o + 2]
+                tot += abs(lum - rgb[o + 24] - rgb[o + 25] - rgb[o + 26])
+                n += 1
+    if n < 100:
+        return False
+    return tot / n > 60
 
 
 class Handler(BaseHTTPRequestHandler):

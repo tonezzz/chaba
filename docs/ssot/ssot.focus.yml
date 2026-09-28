@@ -2,23 +2,23 @@ title: Request-Driven Focus & Task Tracking
 subtitle: Every assistant request is checked against active tasks and assigned or queued
 icon: target
 ideas:
-  - Capture every user request as a tracked item instead of letting it float between sessions
-  - Match each request to an active task, subtask, quick win, or backlog item before acting
-  - Limit active work to one shared focus and one branch focus to prevent fragmentation
-  - Archive completed or parked strategic focuses while keeping them searchable
-  - Review focus at the start and end of every assistant session
+- Capture every user request as a tracked item instead of letting it float between sessions
+- Match each request to an active task, subtask, quick win, or backlog item before acting
+- Limit active work to one shared focus and one branch focus to prevent fragmentation
+- Archive completed or parked strategic focuses while keeping them searchable
+- Review focus at the start and end of every assistant session
 workflow:
-  - For routine session starts, read ssot.focus.current.yml for workflow/decision tree, then ssot.focus.current.active.yml for
-    active foci and ssot.focus.current.backlog.yml for quick wins
-  - Use this file (ssot.focus.yml) for backlog, archived focuses, and focus history
-  - For each user request, first match it against active tasks and their subtasks in ssot.focus.current.active.yml
-  - If it matches, append it to that item's request_log in ssot.focus.current.active.yml and do the work inside that focus
-  - If it is a small standalone action, add it to quick_wins in ssot.focus.current.backlog.yml and complete it immediately
-  - If it is new strategic work, add it to backlog in this file with priority and ask the user to activate it
-  - Keep at most one active shared focus and one active branch focus at a time
-  - Merge completed branch work into master at the end of the session; do not let feature branches diverge more than one session
-  - Delete or archive feature branches after merging to keep the branch list short
-  - Update subtask status and append completed quick wins to focus history in this file at session end
+- For routine session starts, read ssot.focus.current.yml for workflow/decision tree, then ssot.focus.current.active.yml for
+  active foci and ssot.focus.current.backlog.yml for quick wins
+- Use this file (ssot.focus.yml) for backlog, archived focuses, and focus history
+- For each user request, first match it against active tasks and their subtasks in ssot.focus.current.active.yml
+- If it matches, append it to that item's request_log in ssot.focus.current.active.yml and do the work inside that focus
+- If it is a small standalone action, add it to quick_wins in ssot.focus.current.backlog.yml and complete it immediately
+- If it is new strategic work, add it to backlog in this file with priority and ask the user to activate it
+- Keep at most one active shared focus and one active branch focus at a time
+- Merge completed branch work into master at the end of the session; do not let feature branches diverge more than one session
+- Delete or archive feature branches after merging to keep the branch list short
+- Update subtask status and append completed quick wins to focus history in this file at session end
 validation:
   max_active_shared_focus: 1
   max_active_branch_focus: 1
@@ -27,7 +27,7 @@ validation:
   require_request_log: true
   archive_completed_after_days: 14
   completed_at_required: true
-  completed_at_note: "`completed_at` (ISO 8601 date) is required on completed focus items and
+  completed_at_note: '`completed_at` (ISO 8601 date) is required on completed focus items and
 
     completed subtasks.  The mcp-focus server uses it to avoid stale warnings.
 
@@ -35,7 +35,7 @@ validation:
 
     `completed_at`.
 
-    "
+    '
 sections:
 - title: Active Shared Focus
   icon: active
@@ -734,15 +734,44 @@ sections:
     - ios
     - thumbnails
     - completed
+  - label: tony_omen link down
+    text: 'Link monitor detected tony_omen is unreachable after scan and safe fixes.
+
+
+      Scan output:
+
+      - tailscale status --json (rc=0)
+
+      - ip -4 route (rc=0)
+
+      - ip -4 -br addr show (rc=0)
+
+      - ss -tlnp (rc=0)
+
+      - tailscale ping tony-omen -c 3 (rc=1)
+
+
+      Fix attempts:
+
+      - tailscale ping (rc=1)'
+    date: '2026-09-28'
+    duration: 1 session
+    outcome: 'Completed subtasks: Review scan output, Apply manual fix or escalate'
+    tags:
+    - monitoring
+    - network
+    - link
+    - alert
+    - completed
   note: 30 recent records. Oldest records archived to docs/ssot/ssot.focus.history.archive.2026.yml.
   archive_count: 10
 config:
   version: 2
-  last_updated: "2026-08-19"
+  last_updated: '2026-08-19'
   maintainer: tony
   validation_enabled: true
   related_files:
-    - docs/ssot/ssot.focus.current.yml
-    - docs/ssot/ssot.improvements.yml
-    - docs/ssot/ssot.index.yml
-    - .devin/agents/AGENTS.md
+  - docs/ssot/ssot.focus.current.yml
+  - docs/ssot/ssot.improvements.yml
+  - docs/ssot/ssot.index.yml
+  - .devin/agents/AGENTS.md

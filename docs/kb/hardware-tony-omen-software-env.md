@@ -21,8 +21,12 @@ status: active
 | -------------- | ------- |
 | Python         | 3.14.4  |
 | pip            | 25.1.1  |
+| Node.js        | 24.21.0 (upgraded 2026-09-28 by OpenClaw installer — was v22) |
+| npm            | 11.19.0 (user prefix `~/.npm-global`) |
 | Docker         | 29.6.1  |
 | Docker Compose | v5.2.0  |
+| OpenClaw       | 2026.9.6 (`~/.npm-global/bin/openclaw`, gateway :18789 loopback) |
+| GhostRoute     | 1.0 (pipx; `~/.openclaw/workspace/skills/ghost-route`, watcher via systemd user) |
 
 ---
 

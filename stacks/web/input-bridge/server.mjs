@@ -376,6 +376,7 @@ const server = http.createServer(async (req, res) => {
       state: String(body.state || ""),
       error: body.error ? String(body.error).slice(0, 300) : null,
       detail: body.detail ? String(body.detail).slice(0, 300) : null,
+      diag: body.diag ? String(body.diag).slice(0, 300) : null,
       buf,
     });
     if (lastFrames.size > 64) {  // bound memory — drop oldest
@@ -403,9 +404,13 @@ const server = http.createServer(async (req, res) => {
         ok: true, screen, state: f.state,
         error: f.error || "no image data",
         detail: f.detail || null,
+        diag: f.diag || null,
       });
     }
-    res.writeHead(200, { "content-type": "image/jpeg", "cache-control": "no-store" });
+    // sniff real type — iOS Safari can refuse a PNG body under image/jpeg
+    const ct = f.buf.length > 4 && f.buf[0] === 0x89 && f.buf[1] === 0x50
+        ? "image/png" : "image/jpeg";
+    res.writeHead(200, { "content-type": ct, "cache-control": "no-store" });
     return res.end(f.buf);
   }
 

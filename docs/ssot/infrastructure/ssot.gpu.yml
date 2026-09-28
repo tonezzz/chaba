@@ -216,8 +216,8 @@ current_state:
 embedding_offload:
   status: not_switched
   reason: Gemini round-trip latency is ~3.7x higher than local Ollama (see reports/gemini-embedding-comparison.md)
-  ollama_service: still running on tony-omen port 11434 for query-time MDDB embeddings
-  gemini_proxy: available on tony-omen port 11435 for batch/off-peak re-indexing
+  ollama_service: tony-omen ollama rebound to tailnet IP 100.75.102.88:11434 (2026-09-28) — no production consumers; primary embeddings now OR via idc01 gemini-ollama-proxy, idc01 ollama serves ONB + mcp-llama
+  gemini_proxy: moved to idc01 :11435 (loopback); MDDB embeddings via OpenRouter primary
   gpu_usage_ollama: ~388 MB reported by nomic-embed-text
 
 monitoring:

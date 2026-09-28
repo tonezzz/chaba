@@ -18,7 +18,7 @@ expected_exposure:
   - { listener: "100.74.146.0:11023",  class: tailnet-only, service: mddb,   note: "http API, authEnabled=false — tailnet is the boundary" }
   - { listener: "100.74.146.0:11024",  class: tailnet-only, service: mddb,   note: "gRPC" }
   - { listener: "100.74.146.0:9000",   class: tailnet-only, service: mddb,   note: "MCP listener, API-key gated (mddb-mcp-api-key)" }
-  - { listener: "127.0.0.1:11434",     class: loopback,     service: ollama, note: "nomic-embed-text fallback; also serves open-notebook" }
+  - { listener: "100.74.146.0:11434",  class: tailnet-only, service: ollama, note: "rebound to tailnet IP 2026-09-28 — nomic-embed-text/phi3 serve open-notebook + mcp-llama tailnet-wide; never on public iface" }
   - { listener: "127.0.0.1:11435",     class: loopback,     service: gemini-ollama-proxy, note: "MDDB connects here; maps embedding aliases to gemini-embedding-*" }
   - { listener: "127.0.0.1:8001",      class: loopback,     service: ada-pi-pwa, note: "Ada PWA backend; published via tailscale serve" }
   - { listener: "127.0.0.1:8002",      class: loopback,     service: ada-ha-tony, note: "evacuated from mn01 2026-09-24; mn01 caddy reverse-proxies here" }

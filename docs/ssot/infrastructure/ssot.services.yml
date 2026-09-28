@@ -281,7 +281,7 @@ tony-dell:
     dimensions: 768
     ollama_compatible: true
     ollama_fallback:
-      env: OLLAMA_FALLBACK_BASE=http://127.0.0.1:11434, OLLAMA_FALLBACK_MODEL=nomic-embed-text, OLLAMA_CIRCUIT_COOLDOWN_MS=3600000
+      env: OLLAMA_FALLBACK_BASE=http://100.74.146.0:11434, OLLAMA_FALLBACK_MODEL=nomic-embed-text, OLLAMA_CIRCUIT_COOLDOWN_MS=3600000
       behaviour: >-
         Per-chunk fallback after Gemini retries exhaust; circuit breaker opens
         on failure and routes straight to Ollama for the cooldown window.
@@ -293,11 +293,17 @@ tony-dell:
     runtime: rootless podman
     host: idc01
     port: 11434
-    host_port: 127.0.0.1:11434
+    host_port: 100.74.146.0:11434
     quadlet:
       container_unit: ~/.config/containers/systemd/ollama.container
       service_unit: ~/.config/systemd/user/ollama.service
-    models: [nomic-embed-text]
+      repo: stacks/idc01/ollama/ollama.container
+    models: [nomic-embed-text, phi3-gguf, llama3.2:3b]
+    consumers:
+      - open-notebook embeddings (OLLAMA_API_BASE, same host, same podman net via tailnet IP)
+      - mcp-llama (LLAMA_URL → idc01.taila0626a.ts.net:11434, repointed 2026-09-28)
+      - gemini-ollama-proxy OLLAMA_FALLBACK_BASE (when uncommented)
+    note: "Bound to tailscale IP only — reachable from open-notebook podman network and tailnet hosts; never exposed on the public interface."
     status: running on idc01 (2026-09-22) — embedding fallback for mddb;
       also serves open-notebook (ollama provider)
   open-notebook-backup:
@@ -334,6 +340,11 @@ tony-dell:
     quadlet:
       container_unit: ~/.config/containers/systemd/open-notebook.container
       service_unit: ~/.config/systemd/user/open-notebook.service
+      repo: stacks/idc01/open-notebook/
+    env_notes:
+      - OLLAMA_API_BASE=http://100.74.146.0:11434 (idc01-local ollama, tailnet IP; repointed from tony-omen 2026-09-28)
+      - OPEN_NOTEBOOK_CHUNK_SIZE=1500, OPEN_NOTEBOOK_WORKER_MAX_TASKS=2
+      - EnvironmentFile=~/.config/secrets/open-notebook.env (password/encryption/google key)
     access: tailnet-only via tailscale serve (UI :8444, API :8445)
     volumes: [open-notebook-data, open-notebook-surreal-data]
     status: running on idc01 (2026-09-22); migrated from tony-dell (unit files preserved in ~/.config/containers/systemd-disabled there)
@@ -465,7 +476,7 @@ tony-dell:
       - imagen2, yomi_summary, yomi_daily, yomi_daily_batch (priority 2)
       - llama (priority 1)
     status: migrated to tony-dell (2026-08-25)
-    note: "Migrated from tony-omen docker compose to tony-dell rootless podman with --network host. GPU workers (llama, imagen2, txt2vid) remain on tony-omen and are reached via 100.75.102.88. Removed from stacks/web/docker-compose.yml."
+    note: "Migrated from tony-omen docker compose to tony-dell rootless podman with --network host. GPU workers (llama, imagen2, txt2vid) remain on tony-omen and are reached via 100.75.102.88 — they pause (jobs queue) whenever the travel laptop is off-net; no move target exists since they need the Omen GPU. Removed from stacks/web/docker-compose.yml."
 
   gpu-queue-processor:
     container: gpu-queue-processor
@@ -648,12 +659,27 @@ tony-omen:
     models:
       - nomic-embed-text:latest
       - phi3-gguf:latest (imported from Phi-3-mini-4k-instruct-Q4_K_M.gguf)
-    port: 11434 (host), 11434 (internal)
+    port: 100.75.102.88:11434 (tailnet-only), 11434 (internal)
     network: web_default
     routing:
-      - /v1/chat/completions → phi3-gguf
-      - mcp-llama → http://tony-omen:11434
-    status: migrated to Ollama (2026-08-18); ghcr.io/ggml-org/llama.cpp retired
+      - /v1/chat/completions → phi3-gguf (local fallback only)
+    status: slimmed 2026-09-28 — tailnet-only bind (was 0.0.0.0 LAN-exposed); no production consumers (ONB embeddings + mcp-llama moved to idc01:11434); keep for GPU/local use when laptop is home
+  openclaw-gateway:
+    service: OpenClaw agent gateway (travel-mode agent)
+    runtime: systemd user service (openclaw-gateway.service) + npm user prefix ~/.npm-global
+    host: tony_omen
+    port: "127.0.0.1:18789 (loopback, token auth)"
+    config: ~/.openclaw/openclaw.json
+    models: "primary openrouter/qwen/qwen3.8-27b:free + 5 ranked :free fallbacks (GhostRoute-managed)"
+    auth_profile: "openrouter:manual — key shared with idc01 mddb-gemini.env OPENROUTER_API_KEY"
+    status: installed 2026-09-28; zero-cost OR free-tier agenting for the travel laptop
+  ghostroute-watcher:
+    service: GhostRoute watcher — rotates OpenClaw primary across OR :free models on throttle
+    runtime: systemd user service (ghostroute-watcher.service)
+    host: tony_omen
+    binary: ~/.local/bin/ghostroute-watcher (pipx, kittimasak/GhostRoute)
+    env: OPENROUTER_API_KEY via ~/.config/secrets/openrouter.env
+    status: active 2026-09-28
   postgres:
     container: postgres
     image: postgres:16-alpine

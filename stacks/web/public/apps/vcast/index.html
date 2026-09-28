@@ -218,20 +218,22 @@
     function showImage(url, interval) {
       url = mediaUrl(url);
       showOnly(img);
+      // surface a load failure instead of a silent black screen
       img.onerror = () => {
-        if (lastState !== "error" || lastDetail !== url) {
+        setHud(`screen ${screenNum} · image failed`, false);
+        if (lastState !== "image-load-failed" || lastDetail !== url) {
           showToast("image failed — " + url.slice(0, 120), 5000);
         }
-        setHud(`screen ${screenNum} · image failed`, false);
-        sendState("error", url);
+        sendState("image-load-failed", url);
       };
       img.onload = () => {
-        if (lastState === "error") {
-          setHud(`screen ${screenNum} · image`, true);
-          sendState("image", url);
-        }
+        setHud(`screen ${screenNum} · image`, true);
+        if (lastState === "image-load-failed") sendState("image", url);
       };
-      const tick = () => { img.src = url + (url.includes("?") ? "&" : "?") + "_t=" + Date.now(); };
+      // never append cache-busters to data: URLs — it corrupts the payload
+      const mkSrc = () => url.startsWith("data:") ? url
+        : url + (url.includes("?") ? "&" : "?") + "_t=" + Date.now();
+      const tick = () => { img.src = mkSrc(); };
       tick();
       if (interval > 0) imgTimer = setInterval(tick, Math.max(1, interval) * 1000);
       setHud(`screen ${screenNum} · image`, true);
@@ -346,7 +348,10 @@
           }
           // element shown but nothing loaded — the cast URL 404'd/tainted
           if (img.src) {
-            return await post({ error: "image-load-failed", detail: img.src.slice(0, 200) });
+            return await post({ error: "image-load-failed",
+              detail: img.src.slice(0, 200),
+              diag: `complete=${img.complete} nw=${img.naturalWidth} ` +
+                    `vis=${document.visibilityState} online=${navigator.onLine}` });
           }
           return await post({ error: "idle-or-overlay" });
         }
@@ -366,7 +371,12 @@
       try { wakeLock = await navigator.wakeLock.request("screen"); } catch (e) {}
     }
     document.addEventListener("visibilitychange", () => {
-      if (document.visibilityState === "visible") keepAwake();
+      if (document.visibilityState === "visible") {
+        keepAwake();
+        // iOS suspends suspended-tab JS: the ws can die while hidden and
+        // onclose timers never fire — force a reconnect on foreground.
+        if (!ws || ws.readyState > 1) connect();
+      }
     });
     keepAwake();
 
