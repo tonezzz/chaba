@@ -2,12 +2,12 @@
 // CALENDAR MODULE - Calendar rendering and interaction
 // ============================================================================
 
-const DAY_HEADERS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const DAY_HEADERS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 // Initialize current month in Thailand time
 let currentMonth = new Date();
 // Convert to Thailand time
-currentMonth = new Date(currentMonth.getTime() + (DateUtils.THAILAND_OFFSET_HOURS * 60 * 60 * 1000));
+currentMonth = new Date(currentMonth.getTime() + DateUtils.THAILAND_OFFSET_HOURS * 60 * 60 * 1000);
 
 let selectedDate = null;
 let availableDates = new Set();
@@ -27,7 +27,7 @@ function setCurrentMonthToData() {
   if (summaries.length > 0) {
     const dateStr = summaries[0].date;
     if (dateStr) {
-      const [year, month, day] = dateStr.split('-').map(Number);
+      const [year, month, day] = dateStr.split("-").map(Number);
       currentMonth = new Date(year, month - 1, 1);
     }
   }
@@ -37,43 +37,50 @@ function setCurrentMonthToData() {
  * Build the calendar grid
  */
 function buildCalendar() {
-  const grid = document.getElementById('calendar-grid');
-  const title = document.getElementById('calendar-title');
-  
+  const grid = document.getElementById("calendar-grid");
+  const title = document.getElementById("calendar-title");
+
   const year = currentMonth.getFullYear();
   const month = currentMonth.getMonth();
-  
-  title.textContent = currentMonth.toLocaleDateString(undefined, { year: 'numeric', month: 'long' });
-  
+
+  title.textContent = currentMonth.toLocaleDateString(undefined, {
+    year: "numeric",
+    month: "long",
+  });
+
   // Update available dates to use Thailand calendar date format
   const summaries = getDailySummaries();
-  availableDates = new Set(summaries.map(s => {
-    if (!s.date) return null;
-    // Database returns Thailand calendar date as YYYY-MM-DD string
-    // No conversion needed
-    return s.date;
-  }).filter(Boolean));
-  
+  availableDates = new Set(
+    summaries
+      .map((s) => {
+        if (!s.date) return null;
+        // Database returns Thailand calendar date as YYYY-MM-DD string
+        // No conversion needed
+        return s.date;
+      })
+      .filter(Boolean)
+  );
+
   // Clear and rebuild entire grid including headers
-  grid.innerHTML = '';
-  
+  grid.innerHTML = "";
+
   // Add day headers
-  DAY_HEADERS.forEach(day => {
-    const header = document.createElement('div');
-    header.className = 'calendar-day-header';
+  DAY_HEADERS.forEach((day) => {
+    const header = document.createElement("div");
+    header.className = "calendar-day-header";
     header.textContent = day;
     grid.appendChild(header);
   });
-  
+
   // Get first day of month and total days
   const firstDay = new Date(year, month, 1);
   const lastDay = new Date(year, month + 1, 0);
   const startDay = firstDay.getDay();
   const totalDays = lastDay.getDate();
-  
+
   // Add previous month's days for padding
   const prevMonthLastDay = new Date(year, month, 0).getDate();
-  
+
   // Add previous month's days
   for (let i = startDay - 1; i >= 0; i--) {
     const day = prevMonthLastDay - i;
@@ -82,7 +89,7 @@ function buildCalendar() {
     const dayEl = createDayElement(day, dateStr, true);
     grid.appendChild(dayEl);
   }
-  
+
   // Add current month's days
   const today = new Date();
   for (let day = 1; day <= totalDays; day++) {
@@ -92,7 +99,7 @@ function buildCalendar() {
     const dayEl = createDayElement(day, dateStr, false, isToday);
     grid.appendChild(dayEl);
   }
-  
+
   // Add next month's days to fill grid
   const totalCells = startDay + totalDays;
   const remainingCells = totalCells <= 35 ? 35 - totalCells : 42 - totalCells;
@@ -108,25 +115,25 @@ function buildCalendar() {
  * Create a calendar day element
  */
 function createDayElement(day, dateStr, isOtherMonth, isToday = false) {
-  const el = document.createElement('div');
-  el.className = 'calendar-day';
-  if (isOtherMonth) el.classList.add('other-month');
-  if (isToday) el.classList.add('today');
-  
+  const el = document.createElement("div");
+  el.className = "calendar-day";
+  if (isOtherMonth) el.classList.add("other-month");
+  if (isToday) el.classList.add("today");
+
   // Check if this date has data
   // Database returns Thailand calendar date as YYYY-MM-DD string
   // No conversion needed - direct string comparison
   const summaries = getDailySummaries();
-  const hasData = summaries.some(s => {
+  const hasData = summaries.some((s) => {
     if (!s.date) return false;
     return s.date === dateStr;
   });
-  if (hasData) el.classList.add('has-data');
-  
-  if (selectedDate === dateStr) el.classList.add('selected');
-  
+  if (hasData) el.classList.add("has-data");
+
+  if (selectedDate === dateStr) el.classList.add("selected");
+
   el.textContent = day;
-  el.addEventListener('click', () => selectDate(dateStr));
+  el.addEventListener("click", () => selectDate(dateStr));
   return el;
 }
 
@@ -216,7 +223,7 @@ window.setCurrentMonth = setCurrentMonth;
 window.setCurrentMonthToData = setCurrentMonthToData;
 
 // Export for use in other modules
-if (typeof module !== 'undefined' && module.exports) {
+if (typeof module !== "undefined" && module.exports) {
   module.exports = {
     buildCalendar,
     selectDate,
@@ -228,6 +235,6 @@ if (typeof module !== 'undefined' && module.exports) {
     setSelectedDate,
     getCurrentMonth,
     setCurrentMonth,
-    setCurrentMonthToData
+    setCurrentMonthToData,
   };
 }

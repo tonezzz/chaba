@@ -33,9 +33,9 @@ pages:
     show_indicators: true
     show_volume: true
     show_controls: true
-    data_source: "api"  # api, csv, or auto
+    data_source: "api" # api, csv, or auto
     api_endpoint: "/apps/trade/api/ui/chart-data"
-    
+
 navigation:
   - title: "Trading Dashboard"
     url: "index.html"
@@ -54,7 +54,7 @@ chart_settings:
     - "6M"
     - "1Y"
     - "2Y"
-  
+
   default_symbol: "THB"
   available_symbols:
     - value: "THB"
@@ -162,12 +162,12 @@ strategy_panel:
 
 # Data source configuration
 data_policy:
-  primary_source: "api"  # API is primary data source
-  fallback_source: "csv"  # CSV is fallback only
-  estimation_policy: "none"  # No estimated values - only real OHLC data shown
-  ohlc_requirement: "strict"  # Only include records with complete OHLC data in charts
-  gap_handling: "skip"  # Skip records without proper OHLC data rather than estimate
-  
+  primary_source: "api" # API is primary data source
+  fallback_source: "csv" # CSV is fallback only
+  estimation_policy: "none" # No estimated values - only real OHLC data shown
+  ohlc_requirement: "strict" # Only include records with complete OHLC data in charts
+  gap_handling: "skip" # Skip records without proper OHLC data rather than estimate
+
 # API configuration
 api:
   base_url: "http://100.75.102.88:9000"
@@ -177,7 +177,7 @@ api:
     commodities: ["GOLD", "SILVER", "OIL", "WTI", "BRENT", "COPPER", "NATURAL_GAS"]
     indices: ["DXY"]
   supported_timeframes: ["1D", "1W", "1M", "3M", "6M", "1Y", "all"]
-  
+
 # Recent changes
 recent_changes:
   - date: 2026-08-14

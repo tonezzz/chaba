@@ -10,11 +10,11 @@ To add a new page to the navigation menu:
 ```html
 <!-- Navigation Menu -->
 <nav class="nav-menu">
-    <ul class="nav-list">
-        <li class="nav-item"><a href="index.html" class="nav-link">Trading Dashboard</a></li>
-        <li class="nav-item"><a href="compare.html" class="nav-link">Compare</a></li>
-        <li class="nav-item"><a href="newpage.html" class="nav-link">New Page</a></li>
-    </ul>
+  <ul class="nav-list">
+    <li class="nav-item"><a href="index.html" class="nav-link">Trading Dashboard</a></li>
+    <li class="nav-item"><a href="compare.html" class="nav-link">Compare</a></li>
+    <li class="nav-item"><a href="newpage.html" class="nav-link">New Page</a></li>
+  </ul>
 </nav>
 ```
 

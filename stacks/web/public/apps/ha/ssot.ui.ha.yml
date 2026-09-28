@@ -3,7 +3,7 @@ subtitle: UI SSOT for the apps/ha mini apps
 icon: 🏠
 config:
   version: 1
-  last_updated: '2026-09-13'
+  last_updated: '2026-09-28'
   maintainer: tony
   status: active
   source: data/ssot/infrastructure/ssot.ha-devices.yml
@@ -19,31 +19,31 @@ instances:
     devices:
     - device_id: michael-ha
       label: michael-ha Home Assistant host
-      ip: 192.168.1.160
+      ip: 192.168.31.24
       mac: 2c:cf:67:36:c3:fb
       interface_id: end0
       type: ethernet
       mac_source: ha-network-info
-      ip_source: ha-network-info
-      network_id: michael-home-192.168.1.0-24
+      ip_source: arp-scan
+      network_id: michael-xiaomi-192.168.31.0-24
       network_status: active
       status: active
-      ip_kind: manual
-      first_seen: '2026-09-02'
+      ip_kind: discovered
+      first_seen: '2026-09-15'
       last_seen: null
     - device_id: michael-ha
       label: michael-ha Home Assistant host
-      ip: null
+      ip: 192.168.31.24
       mac: 2c:cf:67:36:c3:fc
       interface_id: wlan0
       type: wifi
       mac_source: ha-network-info
-      ip_source: null
-      network_id: null
-      network_status: null
-      status: stale
-      ip_kind: null
-      first_seen: '2026-09-02'
+      ip_source: arp-scan
+      network_id: michael-xiaomi-192.168.31.0-24
+      network_status: active
+      status: active
+      ip_kind: discovered
+      first_seen: '2026-09-15'
       last_seen: null
     - device_id: michael-ha
       label: michael-ha Home Assistant host
@@ -66,12 +66,12 @@ instances:
       interface_id: lan
       type: ethernet
       mac_source: arp-scan
-      ip_source: ha-config-upnp
+      ip_source: arp
       network_id: michael-home-192.168.1.0-24
       network_status: null
       status: active
-      ip_kind: static
-      first_seen: '2026-09-02'
+      ip_kind: discovered
+      first_seen: '2026-09-07'
       last_seen: '2026-09-10T05:40:29.915863+00:00'
     - device_id: michael-huawei-igd-secondary
       label: Huawei IGD secondary / AP
@@ -94,12 +94,12 @@ instances:
       interface_id: wlan0
       type: wifi
       mac_source: arp-scan
-      ip_source: ha-config-broadlink
+      ip_source: arp
       network_id: michael-home-192.168.1.0-24
       network_status: null
       status: active
-      ip_kind: manual
-      first_seen: '2026-09-02'
+      ip_kind: discovered
+      first_seen: '2026-09-07'
       last_seen: '2026-09-10T05:40:29.915863+00:00'
     - device_id: michael-ieast-denon
       label: IEAST oliostream Denon (michael)
@@ -108,12 +108,12 @@ instances:
       interface_id: wlan0
       type: wifi
       mac_source: arp-scan
-      ip_source: ha-config-linkplay
+      ip_source: arp
       network_id: michael-home-192.168.1.0-24
       network_status: null
       status: active
       ip_kind: discovered
-      first_seen: '2026-09-02'
+      first_seen: '2026-09-07'
       last_seen: '2026-09-10T05:40:29.915863+00:00'
     - device_id: michael-ieast-sony
       label: IEAST oliostream Sony (michael)
@@ -122,12 +122,12 @@ instances:
       interface_id: wlan0
       type: wifi
       mac_source: arp-scan
-      ip_source: ha-config-linkplay
+      ip_source: arp
       network_id: michael-home-192.168.1.0-24
       network_status: null
       status: active
       ip_kind: discovered
-      first_seen: '2026-09-02'
+      first_seen: '2026-09-07'
       last_seen: '2026-09-10T05:40:29.915863+00:00'
     - device_id: michael-ieast-1dd8
       label: IEAST oliostream 1DD8 (michael)
@@ -136,12 +136,12 @@ instances:
       interface_id: wlan0
       type: wifi
       mac_source: arp-scan
-      ip_source: ha-config-linkplay
+      ip_source: arp
       network_id: michael-home-192.168.1.0-24
       network_status: null
       status: active
       ip_kind: discovered
-      first_seen: '2026-09-02'
+      first_seen: '2026-09-07'
       last_seen: '2026-09-10T05:40:29.915863+00:00'
     - device_id: michael-sonoff-thr316d
       label: Sonoff THR316D (michael)
@@ -164,7 +164,7 @@ instances:
       interface_id: wlan0
       type: wifi
       mac_source: arp-scan
-      ip_source: arp-scan
+      ip_source: arp
       network_id: michael-home-192.168.1.0-24
       network_status: null
       status: active
@@ -192,7 +192,7 @@ instances:
       interface_id: wlan0
       type: wifi
       mac_source: arp-scan
-      ip_source: arp-scan
+      ip_source: arp
       network_id: michael-home-192.168.1.0-24
       network_status: null
       status: active
@@ -206,12 +206,12 @@ instances:
       interface_id: primary
       type: unknown
       mac_source: arp-scan
-      ip_source: arp-scan
+      ip_source: arp
       network_id: michael-home-192.168.1.0-24
       network_status: null
       status: active
-      ip_kind: manual
-      first_seen: '2026-09-02'
+      ip_kind: discovered
+      first_seen: '2026-09-07'
       last_seen: '2026-09-10T05:40:29.915863+00:00'
     - device_id: michael-iammeter-1c3bea19
       label: iMeter 1C3BEA19 (michael)
@@ -220,12 +220,12 @@ instances:
       interface_id: primary
       type: unknown
       mac_source: arp-scan
-      ip_source: arp-scan
+      ip_source: arp
       network_id: michael-home-192.168.1.0-24
       network_status: null
       status: active
-      ip_kind: manual
-      first_seen: '2026-09-02'
+      ip_kind: discovered
+      first_seen: '2026-09-07'
       last_seen: '2026-09-10T05:40:29.915863+00:00'
     - device_id: michael-solis-inverter-121
       label: Solis S6-EH3P10K-H-ZP (michael)
@@ -234,12 +234,12 @@ instances:
       interface_id: primary
       type: unknown
       mac_source: arp-scan
-      ip_source: arp-scan
+      ip_source: arp
       network_id: michael-home-192.168.1.0-24
       network_status: null
       status: active
-      ip_kind: manual
-      first_seen: '2026-09-02'
+      ip_kind: discovered
+      first_seen: '2026-09-07'
       last_seen: '2026-09-10T05:40:29.915863+00:00'
     - device_id: michael-tuya-192-168-1-153
       label: Unknown Tuya 192.168.1.153
@@ -262,26 +262,26 @@ instances:
       interface_id: primary
       type: unknown
       mac_source: arp-scan
-      ip_source: arp-scan
+      ip_source: arp
       network_id: michael-home-192.168.1.0-24
       network_status: null
       status: active
-      ip_kind: manual
-      first_seen: '2026-09-02'
+      ip_kind: discovered
+      first_seen: '2026-09-07'
       last_seen: '2026-09-10T05:40:29.915863+00:00'
     - device_id: michael-lg-webos-tv
       label: LG webOS TV NANO81TSA (michael)
-      ip: 192.168.1.129
+      ip: null
       mac: 74:c1:7e:9c:06:e7
       interface_id: wlan0
       type: wifi
       mac_source: arp-scan
-      ip_source: arp-scan
-      network_id: michael-home-192.168.1.0-24
-      network_status: stale
-      status: stale
-      ip_kind: manual
-      first_seen: '2026-09-02'
+      ip_source: null
+      network_id: null
+      network_status: null
+      status: active
+      ip_kind: null
+      first_seen: '2026-09-07'
       last_seen: null
     - device_id: michael-lg-webos-tv
       label: LG webOS TV NANO81TSA (michael)
@@ -304,572 +304,936 @@ instances:
       interface_id: primary
       type: unknown
       mac_source: arp-scan
-      ip_source: arp-scan
-      network_id: michael-home-192.168.1.0-24
-      network_status: null
-      status: active
-      ip_kind: discovered
-      first_seen: '2026-09-02'
-      last_seen: '2026-09-10T05:40:29.915863+00:00'
-    - device_id: michael-zhejiang-dahua-technology-co-ltd-dup-2-192-168-1-108
-      label: Dahua camera 192.168.1.108
-      ip: 192.168.1.108
-      mac: f4:b1:c2:76:06:3b
-      interface_id: primary
-      type: camera
-      mac_source: arp-scan
       ip_source: arp
       network_id: michael-home-192.168.1.0-24
       network_status: null
       status: active
       ip_kind: discovered
-      first_seen: '2026-09-10'
+      first_seen: '2026-09-07'
+      last_seen: '2026-09-10T05:40:29.915863+00:00'
+    - device_id: michael-xiaomi-router
+      label: Xiaomi A654 router/gateway
+      ip: 192.168.31.1
+      mac: 44:f7:70:3e:f2:fe
+      interface_id: primary
+      type: wifi
+      mac_source: arp-scan
+      ip_source: arp-scan
+      network_id: michael-xiaomi-192.168.31.0-24
+      network_status: active
+      status: active
+      ip_kind: discovered
+      first_seen: '2026-09-15'
+      last_seen: null
+    - device_id: michael-rk600-weather
+      label: Rika RK600-07B data logger with RK900 sensor head (Xiaomi A654)
+      ip: 192.168.31.148
+      mac: 0c:cf:89:a6:16:fd
+      interface_id: primary
+      type: wifi
+      mac_source: arp-scan
+      ip_source: arp-scan
+      network_id: michael-xiaomi-192.168.31.0-24
+      network_status: active
+      status: active
+      ip_kind: discovered
+      first_seen: '2026-09-15'
+      last_seen: null
+    - device_id: mn01
+      label: Tony MN PC (portable Ubuntu)
+      ip: 192.168.1.200
+      mac: 90:1b:0e:e4:e3:a5
+      interface_id: enp1s0
+      type: ethernet
+      mac_source: ip-link
+      ip_source: ssot
+      network_id: michael-home-192.168.1.0-24
+      network_status: active
+      status: active
+      ip_kind: reserved
+      first_seen: '2026-09-15'
+      last_seen: null
+    - device_id: mn01
+      label: Tony MN PC (portable Ubuntu)
+      ip: null
+      mac: 88:11:00:c5:0a:2c
+      interface_id: wlan0
+      type: wifi
+      mac_source: ip-link
+      ip_source: null
+      network_id: null
+      network_status: null
+      status: active
+      ip_kind: null
+      first_seen: '2026-09-15'
+      last_seen: null
+    - device_id: michael-unknown-192-168-1-1
+      label: michael-unknown-192-168-1-1
+      ip: 192.168.1.1
+      mac: null
+      interface_id: discovered
+      type: unknown
+      mac_source: null
+      ip_source: ping-sweep
+      network_id: michael-home-192.168.1.0-24
+      network_status: stale
+      status: stale
+      ip_kind: discovered
+      first_seen: '2026-09-13'
+      last_seen: '2026-09-10T05:40:29.915863+00:00'
+    - device_id: michael-unknown-192-168-1-102
+      label: michael-unknown-192-168-1-102
+      ip: 192.168.1.102
+      mac: null
+      interface_id: discovered
+      type: unknown
+      mac_source: null
+      ip_source: ping-sweep
+      network_id: michael-home-192.168.1.0-24
+      network_status: stale
+      status: stale
+      ip_kind: discovered
+      first_seen: '2026-09-13'
+      last_seen: '2026-09-10T05:40:29.915863+00:00'
+    - device_id: michael-unknown-192-168-1-104
+      label: michael-unknown-192-168-1-104
+      ip: 192.168.1.104
+      mac: null
+      interface_id: discovered
+      type: unknown
+      mac_source: null
+      ip_source: ping-sweep
+      network_id: michael-home-192.168.1.0-24
+      network_status: stale
+      status: stale
+      ip_kind: discovered
+      first_seen: '2026-09-13'
+      last_seen: '2026-09-10T05:40:29.915863+00:00'
+    - device_id: michael-unknown-192-168-1-105
+      label: michael-unknown-192-168-1-105
+      ip: 192.168.1.105
+      mac: null
+      interface_id: discovered
+      type: unknown
+      mac_source: null
+      ip_source: ping-sweep
+      network_id: michael-home-192.168.1.0-24
+      network_status: stale
+      status: stale
+      ip_kind: discovered
+      first_seen: '2026-09-13'
+      last_seen: '2026-09-10T05:40:29.915863+00:00'
+    - device_id: michael-unknown-192-168-1-106
+      label: michael-unknown-192-168-1-106
+      ip: 192.168.1.106
+      mac: null
+      interface_id: discovered
+      type: unknown
+      mac_source: null
+      ip_source: ping-sweep
+      network_id: michael-home-192.168.1.0-24
+      network_status: stale
+      status: stale
+      ip_kind: discovered
+      first_seen: '2026-09-13'
+      last_seen: '2026-09-10T05:40:29.915863+00:00'
+    - device_id: michael-unknown-192-168-1-108
+      label: michael-unknown-192-168-1-108
+      ip: 192.168.1.108
+      mac: null
+      interface_id: discovered
+      type: unknown
+      mac_source: null
+      ip_source: ping-sweep
+      network_id: michael-home-192.168.1.0-24
+      network_status: stale
+      status: stale
+      ip_kind: discovered
+      first_seen: '2026-09-13'
+      last_seen: '2026-09-10T05:40:29.915863+00:00'
+    - device_id: michael-unknown-192-168-1-111
+      label: michael-unknown-192-168-1-111
+      ip: 192.168.1.111
+      mac: null
+      interface_id: discovered
+      type: unknown
+      mac_source: null
+      ip_source: ping-sweep
+      network_id: michael-home-192.168.1.0-24
+      network_status: active
+      status: active
+      ip_kind: discovered
+      first_seen: '2026-09-13'
+      last_seen: null
+    - device_id: michael-unknown-192-168-1-117
+      label: michael-unknown-192-168-1-117
+      ip: 192.168.1.117
+      mac: null
+      interface_id: discovered
+      type: unknown
+      mac_source: null
+      ip_source: ping-sweep
+      network_id: michael-home-192.168.1.0-24
+      network_status: stale
+      status: stale
+      ip_kind: discovered
+      first_seen: '2026-09-13'
       last_seen: '2026-09-10T05:40:29.915863+00:00'
     - device_id: michael-unknown-192-168-1-118
-      label: Unknown 192.168.1.118
+      label: michael-unknown-192-168-1-118
       ip: 192.168.1.118
-      mac: c4:82:e1:ff:ca:df
-      interface_id: primary
+      mac: null
+      interface_id: discovered
       type: unknown
-      mac_source: arp-scan
-      ip_source: arp
+      mac_source: null
+      ip_source: ping-sweep
       network_id: michael-home-192.168.1.0-24
-      network_status: null
-      status: active
+      network_status: stale
+      status: stale
       ip_kind: discovered
-      first_seen: '2026-09-10'
+      first_seen: '2026-09-13'
       last_seen: '2026-09-10T05:40:29.915863+00:00'
-    - device_id: michael-zhejiang-dahua-technology-co-ltd-192-168-1-119
-      label: Dahua camera 192.168.1.119
+    - device_id: michael-unknown-192-168-1-119
+      label: michael-unknown-192-168-1-119
       ip: 192.168.1.119
-      mac: e4:24:6c:5e:61:fb
-      interface_id: primary
-      type: camera
-      mac_source: arp-scan
-      ip_source: arp
-      network_id: michael-home-192.168.1.0-24
-      network_status: null
-      status: active
-      ip_kind: discovered
-      first_seen: '2026-09-10'
-      last_seen: '2026-09-10T05:40:29.915863+00:00'
-    - device_id: michael-shanghai-high-flying-electronics-technology-co-ltd-dup-3-192-168-1-131
-      label: 'Shanghai High-Flying Electronics  Technology Co., Ltd (DUP: 3 192.168.1.131'
-      ip: 192.168.1.131
-      mac: e8:fd:f8:37:8e:40
-      interface_id: primary
+      mac: null
+      interface_id: discovered
       type: unknown
-      mac_source: arp-scan
-      ip_source: arp
+      mac_source: null
+      ip_source: ping-sweep
       network_id: michael-home-192.168.1.0-24
-      network_status: null
-      status: active
+      network_status: stale
+      status: stale
       ip_kind: discovered
-      first_seen: '2026-09-10'
+      first_seen: '2026-09-13'
+      last_seen: '2026-09-10T05:40:29.915863+00:00'
+    - device_id: michael-unknown-192-168-1-120
+      label: michael-unknown-192-168-1-120
+      ip: 192.168.1.120
+      mac: null
+      interface_id: discovered
+      type: unknown
+      mac_source: null
+      ip_source: ping-sweep
+      network_id: michael-home-192.168.1.0-24
+      network_status: stale
+      status: stale
+      ip_kind: discovered
+      first_seen: '2026-09-13'
+      last_seen: '2026-09-10T05:40:29.915863+00:00'
+    - device_id: michael-unknown-192-168-1-121
+      label: michael-unknown-192-168-1-121
+      ip: 192.168.1.121
+      mac: null
+      interface_id: discovered
+      type: unknown
+      mac_source: null
+      ip_source: ping-sweep
+      network_id: michael-home-192.168.1.0-24
+      network_status: stale
+      status: stale
+      ip_kind: discovered
+      first_seen: '2026-09-13'
+      last_seen: '2026-09-10T05:40:29.915863+00:00'
+    - device_id: michael-unknown-192-168-1-124
+      label: michael-unknown-192-168-1-124
+      ip: 192.168.1.124
+      mac: null
+      interface_id: discovered
+      type: unknown
+      mac_source: null
+      ip_source: ping-sweep
+      network_id: michael-home-192.168.1.0-24
+      network_status: stale
+      status: stale
+      ip_kind: discovered
+      first_seen: '2026-09-13'
+      last_seen: '2026-09-10T05:40:29.915863+00:00'
+    - device_id: michael-unknown-192-168-1-127
+      label: michael-unknown-192-168-1-127
+      ip: 192.168.1.127
+      mac: null
+      interface_id: discovered
+      type: unknown
+      mac_source: null
+      ip_source: ping-sweep
+      network_id: michael-home-192.168.1.0-24
+      network_status: stale
+      status: stale
+      ip_kind: discovered
+      first_seen: '2026-09-13'
+      last_seen: '2026-09-10T05:40:29.915863+00:00'
+    - device_id: michael-unknown-192-168-1-129
+      label: michael-unknown-192-168-1-129
+      ip: 192.168.1.129
+      mac: null
+      interface_id: discovered
+      type: unknown
+      mac_source: null
+      ip_source: ping-sweep
+      network_id: michael-home-192.168.1.0-24
+      network_status: stale
+      status: stale
+      ip_kind: discovered
+      first_seen: '2026-09-13'
+      last_seen: '2026-09-10T05:40:29.915863+00:00'
+    - device_id: michael-unknown-192-168-1-131
+      label: michael-unknown-192-168-1-131
+      ip: 192.168.1.131
+      mac: null
+      interface_id: discovered
+      type: unknown
+      mac_source: null
+      ip_source: ping-sweep
+      network_id: michael-home-192.168.1.0-24
+      network_status: stale
+      status: stale
+      ip_kind: discovered
+      first_seen: '2026-09-13'
       last_seen: '2026-09-10T05:40:29.915863+00:00'
     - device_id: michael-unknown-192-168-1-135
-      label: Unknown 192.168.1.135
+      label: michael-unknown-192-168-1-135
       ip: 192.168.1.135
-      mac: 1c:4d:89:e2:98:0f
-      interface_id: primary
+      mac: null
+      interface_id: discovered
       type: unknown
-      mac_source: arp-scan
-      ip_source: arp
+      mac_source: null
+      ip_source: ping-sweep
       network_id: michael-home-192.168.1.0-24
-      network_status: null
-      status: active
+      network_status: stale
+      status: stale
       ip_kind: discovered
-      first_seen: '2026-09-10'
+      first_seen: '2026-09-13'
       last_seen: '2026-09-10T05:40:29.915863+00:00'
     - device_id: michael-unknown-192-168-1-137
-      label: Unknown 192.168.1.137
+      label: michael-unknown-192-168-1-137
       ip: 192.168.1.137
-      mac: a4:a9:30:17:f2:74
-      interface_id: primary
+      mac: null
+      interface_id: discovered
       type: unknown
-      mac_source: arp-scan
-      ip_source: arp
+      mac_source: null
+      ip_source: ping-sweep
       network_id: michael-home-192.168.1.0-24
-      network_status: null
-      status: active
+      network_status: stale
+      status: stale
       ip_kind: discovered
-      first_seen: '2026-09-10'
+      first_seen: '2026-09-13'
       last_seen: '2026-09-10T05:40:29.915863+00:00'
-    - device_id: michael-zhejiang-dahua-technology-co-ltd-192-168-1-139
-      label: Dahua camera 192.168.1.139
+    - device_id: michael-unknown-192-168-1-139
+      label: michael-unknown-192-168-1-139
       ip: 192.168.1.139
-      mac: 6c:1c:71:76:5a:e1
-      interface_id: primary
-      type: camera
-      mac_source: arp-scan
-      ip_source: arp
+      mac: null
+      interface_id: discovered
+      type: unknown
+      mac_source: null
+      ip_source: ping-sweep
       network_id: michael-home-192.168.1.0-24
-      network_status: null
-      status: active
+      network_status: stale
+      status: stale
       ip_kind: discovered
-      first_seen: '2026-09-10'
+      first_seen: '2026-09-13'
       last_seen: '2026-09-10T05:40:29.915863+00:00'
-    - device_id: michael-zhejiang-dahua-technology-co-ltd-192-168-1-140
-      label: Dahua camera 192.168.1.140
+    - device_id: michael-unknown-192-168-1-140
+      label: michael-unknown-192-168-1-140
       ip: 192.168.1.140
-      mac: bc:32:5f:97:1b:be
-      interface_id: primary
-      type: camera
-      mac_source: arp-scan
-      ip_source: arp
+      mac: null
+      interface_id: discovered
+      type: unknown
+      mac_source: null
+      ip_source: ping-sweep
       network_id: michael-home-192.168.1.0-24
-      network_status: null
-      status: active
+      network_status: stale
+      status: stale
       ip_kind: discovered
-      first_seen: '2026-09-10'
+      first_seen: '2026-09-13'
       last_seen: '2026-09-10T05:40:29.915863+00:00'
-    - device_id: michael-zhejiang-dahua-technology-co-ltd-192-168-1-143
-      label: Dahua camera 192.168.1.143
-      ip: 192.168.1.108
-      mac: f4:b1:c2:76:06:3b
-      interface_id: primary
-      type: camera
-      mac_source: arp-scan
-      ip_source: arp
+    - device_id: michael-unknown-192-168-1-143
+      label: michael-unknown-192-168-1-143
+      ip: 192.168.1.143
+      mac: null
+      interface_id: discovered
+      type: unknown
+      mac_source: null
+      ip_source: ping-sweep
       network_id: michael-home-192.168.1.0-24
-      network_status: null
-      status: active
+      network_status: stale
+      status: stale
       ip_kind: discovered
-      first_seen: '2026-09-10'
+      first_seen: '2026-09-13'
       last_seen: '2026-09-10T05:40:29.915863+00:00'
     - device_id: michael-unknown-192-168-1-144
-      label: Unknown 192.168.1.144
+      label: michael-unknown-192-168-1-144
       ip: 192.168.1.144
-      mac: c4:82:e1:59:71:13
-      interface_id: primary
+      mac: null
+      interface_id: discovered
       type: unknown
-      mac_source: arp-scan
-      ip_source: arp
+      mac_source: null
+      ip_source: ping-sweep
       network_id: michael-home-192.168.1.0-24
-      network_status: null
-      status: active
+      network_status: stale
+      status: stale
       ip_kind: discovered
-      first_seen: '2026-09-10'
+      first_seen: '2026-09-13'
       last_seen: '2026-09-10T05:40:29.915863+00:00'
     - device_id: michael-unknown-192-168-1-147
-      label: Unknown 192.168.1.147
+      label: michael-unknown-192-168-1-147
       ip: 192.168.1.147
-      mac: 38:2c:e5:d1:6f:ae
-      interface_id: primary
+      mac: null
+      interface_id: discovered
       type: unknown
-      mac_source: arp-scan
-      ip_source: arp
+      mac_source: null
+      ip_source: ping-sweep
       network_id: michael-home-192.168.1.0-24
-      network_status: null
-      status: active
+      network_status: stale
+      status: stale
       ip_kind: discovered
-      first_seen: '2026-09-10'
+      first_seen: '2026-09-13'
       last_seen: '2026-09-10T05:40:29.915863+00:00'
-    - device_id: michael-newport-media-inc-192-168-1-148
-      label: Newport Media Inc. 192.168.1.148
+    - device_id: michael-unknown-192-168-1-148
+      label: michael-unknown-192-168-1-148
       ip: 192.168.1.148
-      mac: f8:f0:05:55:02:5e
-      interface_id: primary
+      mac: null
+      interface_id: discovered
       type: unknown
-      mac_source: arp-scan
-      ip_source: arp
+      mac_source: null
+      ip_source: ping-sweep
       network_id: michael-home-192.168.1.0-24
-      network_status: null
-      status: active
+      network_status: stale
+      status: stale
       ip_kind: discovered
-      first_seen: '2026-09-10'
+      first_seen: '2026-09-13'
       last_seen: '2026-09-10T05:40:29.915863+00:00'
-    - device_id: michael-zhejiang-dahua-technology-co-ltd-192-168-1-149
-      label: Dahua camera 192.168.1.149
+    - device_id: michael-unknown-192-168-1-149
+      label: michael-unknown-192-168-1-149
       ip: 192.168.1.149
-      mac: bc:32:5f:97:1b:9f
-      interface_id: primary
-      type: camera
-      mac_source: arp-scan
-      ip_source: arp
+      mac: null
+      interface_id: discovered
+      type: unknown
+      mac_source: null
+      ip_source: ping-sweep
       network_id: michael-home-192.168.1.0-24
-      network_status: null
-      status: active
+      network_status: stale
+      status: stale
       ip_kind: discovered
-      first_seen: '2026-09-10'
+      first_seen: '2026-09-13'
+      last_seen: '2026-09-10T05:40:29.915863+00:00'
+    - device_id: michael-unknown-192-168-1-150
+      label: michael-unknown-192-168-1-150
+      ip: 192.168.1.150
+      mac: null
+      interface_id: discovered
+      type: unknown
+      mac_source: null
+      ip_source: ping-sweep
+      network_id: michael-home-192.168.1.0-24
+      network_status: stale
+      status: stale
+      ip_kind: discovered
+      first_seen: '2026-09-13'
       last_seen: '2026-09-10T05:40:29.915863+00:00'
     - device_id: michael-unknown-192-168-1-151
-      label: Unknown 192.168.1.151
+      label: michael-unknown-192-168-1-151
       ip: 192.168.1.151
-      mac: a4:a9:30:18:0e:59
-      interface_id: primary
+      mac: null
+      interface_id: discovered
       type: unknown
-      mac_source: arp-scan
-      ip_source: arp
+      mac_source: null
+      ip_source: ping-sweep
       network_id: michael-home-192.168.1.0-24
-      network_status: null
-      status: active
+      network_status: stale
+      status: stale
       ip_kind: discovered
-      first_seen: '2026-09-10'
+      first_seen: '2026-09-13'
       last_seen: '2026-09-10T05:40:29.915863+00:00'
-    - device_id: michael-zhejiang-dahua-technology-co-ltd-192-168-1-152
-      label: Dahua camera 192.168.1.152
+    - device_id: michael-unknown-192-168-1-152
+      label: michael-unknown-192-168-1-152
       ip: 192.168.1.152
-      mac: e4:24:6c:a4:f4:94
-      interface_id: primary
-      type: camera
-      mac_source: arp-scan
-      ip_source: arp
+      mac: null
+      interface_id: discovered
+      type: unknown
+      mac_source: null
+      ip_source: ping-sweep
       network_id: michael-home-192.168.1.0-24
-      network_status: null
+      network_status: stale
+      status: stale
+      ip_kind: discovered
+      first_seen: '2026-09-13'
+      last_seen: '2026-09-10T05:40:29.915863+00:00'
+    - device_id: michael-unknown-192-168-1-156
+      label: michael-unknown-192-168-1-156
+      ip: 192.168.1.156
+      mac: null
+      interface_id: discovered
+      type: unknown
+      mac_source: null
+      ip_source: ping-sweep
+      network_id: michael-home-192.168.1.0-24
+      network_status: stale
+      status: stale
+      ip_kind: discovered
+      first_seen: '2026-09-13'
+      last_seen: '2026-09-10T05:40:29.915863+00:00'
+    - device_id: michael-unknown-192-168-1-157
+      label: michael-unknown-192-168-1-157
+      ip: 192.168.1.157
+      mac: null
+      interface_id: discovered
+      type: unknown
+      mac_source: null
+      ip_source: ping-sweep
+      network_id: michael-home-192.168.1.0-24
+      network_status: stale
+      status: stale
+      ip_kind: discovered
+      first_seen: '2026-09-13'
+      last_seen: '2026-09-10T05:40:29.915863+00:00'
+    - device_id: michael-unknown-192-168-1-158
+      label: michael-unknown-192-168-1-158
+      ip: 192.168.1.158
+      mac: null
+      interface_id: discovered
+      type: unknown
+      mac_source: null
+      ip_source: ping-sweep
+      network_id: michael-home-192.168.1.0-24
+      network_status: stale
+      status: stale
+      ip_kind: discovered
+      first_seen: '2026-09-13'
+      last_seen: '2026-09-10T05:40:29.915863+00:00'
+    - device_id: michael-unknown-192-168-1-160
+      label: michael-unknown-192-168-1-160
+      ip: 192.168.1.160
+      mac: null
+      interface_id: discovered
+      type: unknown
+      mac_source: null
+      ip_source: ping-sweep
+      network_id: michael-home-192.168.1.0-24
+      network_status: active
       status: active
       ip_kind: discovered
-      first_seen: '2026-09-10'
+      first_seen: '2026-09-13'
+      last_seen: null
+    - device_id: michael-unknown-192-168-1-161
+      label: michael-unknown-192-168-1-161
+      ip: 192.168.1.161
+      mac: null
+      interface_id: discovered
+      type: unknown
+      mac_source: null
+      ip_source: ping-sweep
+      network_id: michael-home-192.168.1.0-24
+      network_status: stale
+      status: stale
+      ip_kind: discovered
+      first_seen: '2026-09-13'
       last_seen: '2026-09-10T05:40:29.915863+00:00'
-    - device_id: michael-unknown-192-168-1-155
-      label: Unknown 192.168.1.155
+    - device_id: michael-unknown-192-168-1-162
+      label: michael-unknown-192-168-1-162
+      ip: 192.168.1.162
+      mac: null
+      interface_id: discovered
+      type: unknown
+      mac_source: null
+      ip_source: ping-sweep
+      network_id: michael-home-192.168.1.0-24
+      network_status: active
+      status: active
+      ip_kind: discovered
+      first_seen: '2026-09-13'
+      last_seen: null
+    - device_id: michael-unknown-192-168-1-163
+      label: michael-unknown-192-168-1-163
+      ip: 192.168.1.163
+      mac: null
+      interface_id: discovered
+      type: unknown
+      mac_source: null
+      ip_source: ping-sweep
+      network_id: michael-home-192.168.1.0-24
+      network_status: stale
+      status: stale
+      ip_kind: discovered
+      first_seen: '2026-09-13'
+      last_seen: '2026-09-10T05:40:29.915863+00:00'
+    - device_id: michael-unknown-192-168-1-164
+      label: michael-unknown-192-168-1-164
+      ip: 192.168.1.164
+      mac: null
+      interface_id: discovered
+      type: unknown
+      mac_source: null
+      ip_source: ping-sweep
+      network_id: michael-home-192.168.1.0-24
+      network_status: stale
+      status: stale
+      ip_kind: discovered
+      first_seen: '2026-09-13'
+      last_seen: '2026-09-10T05:40:29.915863+00:00'
+    - device_id: michael-unknown-192-168-1-165
+      label: michael-unknown-192-168-1-165
+      ip: 192.168.1.165
+      mac: null
+      interface_id: discovered
+      type: unknown
+      mac_source: null
+      ip_source: ping-sweep
+      network_id: michael-home-192.168.1.0-24
+      network_status: stale
+      status: stale
+      ip_kind: discovered
+      first_seen: '2026-09-13'
+      last_seen: '2026-09-10T05:40:29.915863+00:00'
+    - device_id: michael-unknown-192-168-1-166
+      label: michael-unknown-192-168-1-166
+      ip: 192.168.1.166
+      mac: null
+      interface_id: discovered
+      type: unknown
+      mac_source: null
+      ip_source: ping-sweep
+      network_id: michael-home-192.168.1.0-24
+      network_status: stale
+      status: stale
+      ip_kind: discovered
+      first_seen: '2026-09-13'
+      last_seen: '2026-09-10T05:40:29.915863+00:00'
+    - device_id: michael-unknown-192-168-1-167
+      label: michael-unknown-192-168-1-167
+      ip: 192.168.1.167
+      mac: null
+      interface_id: discovered
+      type: unknown
+      mac_source: null
+      ip_source: ping-sweep
+      network_id: michael-home-192.168.1.0-24
+      network_status: stale
+      status: stale
+      ip_kind: discovered
+      first_seen: '2026-09-13'
+      last_seen: '2026-09-10T05:40:29.915863+00:00'
+    - device_id: michael-unknown-192-168-1-169
+      label: michael-unknown-192-168-1-169
+      ip: 192.168.1.169
+      mac: null
+      interface_id: discovered
+      type: unknown
+      mac_source: null
+      ip_source: ping-sweep
+      network_id: michael-home-192.168.1.0-24
+      network_status: stale
+      status: stale
+      ip_kind: discovered
+      first_seen: '2026-09-13'
+      last_seen: '2026-09-10T05:40:29.915863+00:00'
+    - device_id: michael-unknown-192-168-1-170
+      label: michael-unknown-192-168-1-170
+      ip: 192.168.1.170
+      mac: null
+      interface_id: discovered
+      type: unknown
+      mac_source: null
+      ip_source: ping-sweep
+      network_id: michael-home-192.168.1.0-24
+      network_status: active
+      status: active
+      ip_kind: discovered
+      first_seen: '2026-09-13'
+      last_seen: null
+    - device_id: michael-unknown-192-168-1-171
+      label: michael-unknown-192-168-1-171
+      ip: 192.168.1.171
+      mac: null
+      interface_id: discovered
+      type: unknown
+      mac_source: null
+      ip_source: ping-sweep
+      network_id: michael-home-192.168.1.0-24
+      network_status: stale
+      status: stale
+      ip_kind: discovered
+      first_seen: '2026-09-13'
+      last_seen: '2026-09-10T05:40:29.915863+00:00'
+    - device_id: michael-unknown-192-168-1-173
+      label: michael-unknown-192-168-1-173
+      ip: 192.168.1.173
+      mac: null
+      interface_id: discovered
+      type: unknown
+      mac_source: null
+      ip_source: ping-sweep
+      network_id: michael-home-192.168.1.0-24
+      network_status: stale
+      status: stale
+      ip_kind: discovered
+      first_seen: '2026-09-13'
+      last_seen: '2026-09-10T05:40:29.915863+00:00'
+    - device_id: michael-unknown-192-168-1-174
+      label: michael-unknown-192-168-1-174
+      ip: 192.168.1.174
+      mac: null
+      interface_id: discovered
+      type: unknown
+      mac_source: null
+      ip_source: ping-sweep
+      network_id: michael-home-192.168.1.0-24
+      network_status: stale
+      status: stale
+      ip_kind: discovered
+      first_seen: '2026-09-13'
+      last_seen: '2026-09-10T05:40:29.915863+00:00'
+    - device_id: michael-unknown-192-168-1-175
+      label: michael-unknown-192-168-1-175
+      ip: 192.168.1.175
+      mac: null
+      interface_id: discovered
+      type: unknown
+      mac_source: null
+      ip_source: ping-sweep
+      network_id: michael-home-192.168.1.0-24
+      network_status: stale
+      status: stale
+      ip_kind: discovered
+      first_seen: '2026-09-13'
+      last_seen: '2026-09-10T05:40:29.915863+00:00'
+    - device_id: michael-unknown-192-168-1-176
+      label: michael-unknown-192-168-1-176
+      ip: 192.168.1.176
+      mac: null
+      interface_id: discovered
+      type: unknown
+      mac_source: null
+      ip_source: ping-sweep
+      network_id: michael-home-192.168.1.0-24
+      network_status: stale
+      status: stale
+      ip_kind: discovered
+      first_seen: '2026-09-13'
+      last_seen: '2026-09-10T05:40:29.915863+00:00'
+    - device_id: michael-unknown-192-168-1-178
+      label: michael-unknown-192-168-1-178
+      ip: 192.168.1.178
+      mac: null
+      interface_id: discovered
+      type: unknown
+      mac_source: null
+      ip_source: ping-sweep
+      network_id: michael-home-192.168.1.0-24
+      network_status: stale
+      status: stale
+      ip_kind: discovered
+      first_seen: '2026-09-13'
+      last_seen: '2026-09-10T05:40:29.915863+00:00'
+    - device_id: michael-unknown-192-168-1-180
+      label: michael-unknown-192-168-1-180
+      ip: 192.168.1.180
+      mac: null
+      interface_id: discovered
+      type: unknown
+      mac_source: null
+      ip_source: ping-sweep
+      network_id: michael-home-192.168.1.0-24
+      network_status: stale
+      status: stale
+      ip_kind: discovered
+      first_seen: '2026-09-13'
+      last_seen: '2026-09-10T05:40:29.915863+00:00'
+    - device_id: michael-unknown-192-168-1-181
+      label: michael-unknown-192-168-1-181
+      ip: 192.168.1.181
+      mac: null
+      interface_id: discovered
+      type: unknown
+      mac_source: null
+      ip_source: ping-sweep
+      network_id: michael-home-192.168.1.0-24
+      network_status: stale
+      status: stale
+      ip_kind: discovered
+      first_seen: '2026-09-13'
+      last_seen: '2026-09-10T05:40:29.915863+00:00'
+    - device_id: michael-unknown-192-168-1-182
+      label: michael-unknown-192-168-1-182
+      ip: 192.168.1.182
+      mac: null
+      interface_id: discovered
+      type: unknown
+      mac_source: null
+      ip_source: ping-sweep
+      network_id: michael-home-192.168.1.0-24
+      network_status: stale
+      status: stale
+      ip_kind: discovered
+      first_seen: '2026-09-13'
+      last_seen: '2026-09-10T05:40:29.915863+00:00'
+    - device_id: michael-unknown-192-168-1-183
+      label: michael-unknown-192-168-1-183
+      ip: 192.168.1.183
+      mac: null
+      interface_id: discovered
+      type: unknown
+      mac_source: null
+      ip_source: ping-sweep
+      network_id: michael-home-192.168.1.0-24
+      network_status: stale
+      status: stale
+      ip_kind: discovered
+      first_seen: '2026-09-13'
+      last_seen: '2026-09-10T05:40:29.915863+00:00'
+    - device_id: michael-unknown-192-168-1-184
+      label: michael-unknown-192-168-1-184
+      ip: 192.168.1.184
+      mac: null
+      interface_id: discovered
+      type: unknown
+      mac_source: null
+      ip_source: ping-sweep
+      network_id: michael-home-192.168.1.0-24
+      network_status: stale
+      status: stale
+      ip_kind: discovered
+      first_seen: '2026-09-13'
+      last_seen: '2026-09-10T05:40:29.915863+00:00'
+    - device_id: michael-unknown-192-168-1-185
+      label: michael-unknown-192-168-1-185
+      ip: 192.168.1.185
+      mac: null
+      interface_id: discovered
+      type: unknown
+      mac_source: null
+      ip_source: ping-sweep
+      network_id: michael-home-192.168.1.0-24
+      network_status: active
+      status: active
+      ip_kind: discovered
+      first_seen: '2026-09-13'
+      last_seen: null
+    - device_id: michael-unknown-192-168-1-187
+      label: michael-unknown-192-168-1-187
+      ip: 192.168.1.187
+      mac: null
+      interface_id: discovered
+      type: unknown
+      mac_source: null
+      ip_source: ping-sweep
+      network_id: michael-home-192.168.1.0-24
+      network_status: stale
+      status: stale
+      ip_kind: discovered
+      first_seen: '2026-09-13'
+      last_seen: '2026-09-10T05:40:29.915863+00:00'
+    - device_id: michael-unknown-192-168-1-188
+      label: michael-unknown-192-168-1-188
+      ip: 192.168.1.188
+      mac: null
+      interface_id: discovered
+      type: unknown
+      mac_source: null
+      ip_source: ping-sweep
+      network_id: michael-home-192.168.1.0-24
+      network_status: active
+      status: active
+      ip_kind: discovered
+      first_seen: '2026-09-13'
+      last_seen: null
+    - device_id: michael-unknown-192-168-1-191
+      label: michael-unknown-192-168-1-191
+      ip: 192.168.1.191
+      mac: null
+      interface_id: discovered
+      type: unknown
+      mac_source: null
+      ip_source: ping-sweep
+      network_id: michael-home-192.168.1.0-24
+      network_status: stale
+      status: stale
+      ip_kind: discovered
+      first_seen: '2026-09-13'
+      last_seen: '2026-09-10T05:40:29.915863+00:00'
+    - device_id: michael-unknown-192-168-1-196
+      label: michael-unknown-192-168-1-196
+      ip: 192.168.1.196
+      mac: null
+      interface_id: discovered
+      type: unknown
+      mac_source: null
+      ip_source: ping-sweep
+      network_id: michael-home-192.168.1.0-24
+      network_status: stale
+      status: stale
+      ip_kind: discovered
+      first_seen: '2026-09-13'
+      last_seen: '2026-09-10T05:40:29.915863+00:00'
+    - device_id: michael-unknown-192-168-1-197
+      label: michael-unknown-192-168-1-197
+      ip: 192.168.1.197
+      mac: null
+      interface_id: discovered
+      type: unknown
+      mac_source: null
+      ip_source: ping-sweep
+      network_id: michael-home-192.168.1.0-24
+      network_status: stale
+      status: stale
+      ip_kind: discovered
+      first_seen: '2026-09-13'
+      last_seen: '2026-09-10T05:40:29.915863+00:00'
+    - device_id: discovered-20f1b2c27ea6
+      label: Unknown host 192.168.1.155
       ip: 192.168.1.155
       mac: 20:f1:b2:c2:7e:a6
       interface_id: primary
       type: unknown
-      mac_source: arp-scan
+      mac_source: arp
       ip_source: arp
       network_id: michael-home-192.168.1.0-24
       network_status: null
       status: active
       ip_kind: discovered
-      first_seen: '2026-09-10'
+      first_seen: '2026-09-28'
       last_seen: '2026-09-10T05:40:29.915863+00:00'
-    - device_id: michael-unknown-192-168-1-156
-      label: Unknown 192.168.1.156
-      ip: 192.168.1.156
-      mac: 58:ea:1f:4c:2b:26
-      interface_id: primary
-      type: unknown
-      mac_source: arp-scan
-      ip_source: arp
-      network_id: michael-home-192.168.1.0-24
-      network_status: null
-      status: active
-      ip_kind: discovered
-      first_seen: '2026-09-10'
-      last_seen: '2026-09-10T05:40:29.915863+00:00'
-    - device_id: michael-huawei-technologies-co-ltd-192-168-1-157
-      label: HUAWEI TECHNOLOGIES CO.,LTD 192.168.1.157
-      ip: 192.168.1.157
-      mac: 58:56:c2:c8:ee:61
-      interface_id: primary
-      type: network
-      mac_source: arp-scan
-      ip_source: arp
-      network_id: michael-home-192.168.1.0-24
-      network_status: null
-      status: active
-      ip_kind: discovered
-      first_seen: '2026-09-10'
-      last_seen: '2026-09-10T05:40:29.915863+00:00'
-    - device_id: michael-unknown-192-168-1-158
-      label: Unknown 192.168.1.158
-      ip: 192.168.1.158
-      mac: 02:00:00:05:20:01
-      interface_id: primary
-      type: unknown
-      mac_source: arp-scan
-      ip_source: arp
-      network_id: michael-home-192.168.1.0-24
-      network_status: null
-      status: active
-      ip_kind: discovered
-      first_seen: '2026-09-10'
-      last_seen: '2026-09-10T05:40:29.915863+00:00'
-    - device_id: michael-unknown-192-168-1-161
-      label: Unknown 192.168.1.161
-      ip: 192.168.1.161
-      mac: d8:d6:68:5a:bd:38
-      interface_id: primary
-      type: unknown
-      mac_source: arp-scan
-      ip_source: arp
-      network_id: michael-home-192.168.1.0-24
-      network_status: null
-      status: active
-      ip_kind: discovered
-      first_seen: '2026-09-10'
-      last_seen: '2026-09-10T05:40:29.915863+00:00'
-    - device_id: michael-unknown-192-168-1-163
-      label: Unknown 192.168.1.163
-      ip: 192.168.1.163
-      mac: d8:d6:68:34:98:8d
-      interface_id: primary
-      type: unknown
-      mac_source: arp-scan
-      ip_source: arp
-      network_id: michael-home-192.168.1.0-24
-      network_status: null
-      status: active
-      ip_kind: discovered
-      first_seen: '2026-09-10'
-      last_seen: '2026-09-10T05:40:29.915863+00:00'
-    - device_id: michael-unknown-192-168-1-164
-      label: Unknown 192.168.1.164
-      ip: 192.168.1.164
-      mac: 18:de:50:64:fe:44
-      interface_id: primary
-      type: unknown
-      mac_source: arp-scan
-      ip_source: arp
-      network_id: michael-home-192.168.1.0-24
-      network_status: null
-      status: active
-      ip_kind: discovered
-      first_seen: '2026-09-10'
-      last_seen: '2026-09-10T05:40:29.915863+00:00'
-    - device_id: michael-unknown-192-168-1-166
-      label: Unknown 192.168.1.166
-      ip: 192.168.1.166
-      mac: 30:24:50:5c:39:7a
-      interface_id: primary
-      type: unknown
-      mac_source: arp-scan
-      ip_source: arp
-      network_id: michael-home-192.168.1.0-24
-      network_status: null
-      status: active
-      ip_kind: discovered
-      first_seen: '2026-09-10'
-      last_seen: '2026-09-10T05:40:29.915863+00:00'
-    - device_id: michael-seiko-epson-corporation-192-168-1-167
-      label: Seiko Epson Corporation 192.168.1.167
-      ip: 192.168.1.167
-      mac: 50:57:9c:97:9b:8f
-      interface_id: primary
-      type: unknown
-      mac_source: arp-scan
-      ip_source: arp
-      network_id: michael-home-192.168.1.0-24
-      network_status: null
-      status: active
-      ip_kind: discovered
-      first_seen: '2026-09-10'
-      last_seen: '2026-09-10T05:40:29.915863+00:00'
-    - device_id: michael-unknown-192-168-1-169
-      label: Unknown 192.168.1.169
-      ip: 192.168.1.169
-      mac: 1c:4d:89:a9:b9:a3
-      interface_id: primary
-      type: unknown
-      mac_source: arp-scan
-      ip_source: arp
-      network_id: michael-home-192.168.1.0-24
-      network_status: null
-      status: active
-      ip_kind: discovered
-      first_seen: '2026-09-10'
-      last_seen: '2026-09-10T05:40:29.915863+00:00'
-    - device_id: michael-unknown-192-168-1-171
-      label: Unknown 192.168.1.171
-      ip: 192.168.1.171
-      mac: 1c:e8:9e:e4:92:ab
-      interface_id: primary
-      type: unknown
-      mac_source: arp-scan
-      ip_source: arp
-      network_id: michael-home-192.168.1.0-24
-      network_status: null
-      status: active
-      ip_kind: discovered
-      first_seen: '2026-09-10'
-      last_seen: '2026-09-10T05:40:29.915863+00:00'
-    - device_id: michael-unknown-192-168-1-172
-      label: Unknown 192.168.1.172
+    - device_id: discovered-bac1cecca18e
+      label: Unknown host 192.168.1.172
       ip: 192.168.1.172
       mac: ba:c1:ce:cc:a1:8e
       interface_id: primary
       type: unknown
-      mac_source: arp-scan
+      mac_source: arp
       ip_source: arp
       network_id: michael-home-192.168.1.0-24
       network_status: null
       status: active
       ip_kind: discovered
-      first_seen: '2026-09-10'
+      first_seen: '2026-09-28'
       last_seen: '2026-09-10T05:40:29.915863+00:00'
-    - device_id: michael-unknown-192-168-1-173
-      label: Unknown 192.168.1.173
-      ip: 192.168.1.173
-      mac: 34:8e:89:e4:df:2d
-      interface_id: primary
-      type: unknown
-      mac_source: arp-scan
-      ip_source: arp
-      network_id: michael-home-192.168.1.0-24
-      network_status: null
-      status: active
-      ip_kind: discovered
-      first_seen: '2026-09-10'
-      last_seen: '2026-09-10T05:40:29.915863+00:00'
-    - device_id: michael-zhejiang-dahua-technology-co-ltd-192-168-1-174
-      label: Dahua camera 192.168.1.174
-      ip: 192.168.1.174
-      mac: e4:24:6c:5e:60:c0
-      interface_id: primary
-      type: camera
-      mac_source: arp-scan
-      ip_source: arp
-      network_id: michael-home-192.168.1.0-24
-      network_status: null
-      status: active
-      ip_kind: discovered
-      first_seen: '2026-09-10'
-      last_seen: '2026-09-10T05:40:29.915863+00:00'
-    - device_id: michael-zhejiang-dahua-technology-co-ltd-192-168-1-175
-      label: Dahua camera 192.168.1.175
-      ip: 192.168.1.175
-      mac: bc:32:5f:97:1b:dd
-      interface_id: primary
-      type: camera
-      mac_source: arp-scan
-      ip_source: arp
-      network_id: michael-home-192.168.1.0-24
-      network_status: null
-      status: active
-      ip_kind: discovered
-      first_seen: '2026-09-10'
-      last_seen: '2026-09-10T05:40:29.915863+00:00'
-    - device_id: michael-zhejiang-dahua-technology-co-ltd-192-168-1-176
-      label: Dahua camera 192.168.1.176
-      ip: 192.168.1.176
-      mac: 6c:1c:71:76:5a:01
-      interface_id: primary
-      type: camera
-      mac_source: arp-scan
-      ip_source: arp
-      network_id: michael-home-192.168.1.0-24
-      network_status: null
-      status: active
-      ip_kind: discovered
-      first_seen: '2026-09-10'
-      last_seen: '2026-09-10T05:40:29.915863+00:00'
-    - device_id: michael-unknown-192-168-1-177
-      label: Unknown 192.168.1.177
+    - device_id: discovered-d8fc925a7705
+      label: Unknown host 192.168.1.177
       ip: 192.168.1.177
       mac: d8:fc:92:5a:77:05
       interface_id: primary
       type: unknown
-      mac_source: arp-scan
+      mac_source: arp
       ip_source: arp
       network_id: michael-home-192.168.1.0-24
       network_status: null
       status: active
       ip_kind: discovered
-      first_seen: '2026-09-10'
+      first_seen: '2026-09-28'
       last_seen: '2026-09-10T05:40:29.915863+00:00'
-    - device_id: michael-unknown-192-168-1-180
-      label: Unknown 192.168.1.180
-      ip: 192.168.1.180
-      mac: 82:7f:36:35:be:bf
-      interface_id: primary
-      type: unknown
-      mac_source: arp-scan
-      ip_source: arp
-      network_id: michael-home-192.168.1.0-24
-      network_status: null
-      status: active
-      ip_kind: discovered
-      first_seen: '2026-09-10'
-      last_seen: '2026-09-10T05:40:29.915863+00:00'
-    - device_id: michael-murata-manufacturing-co-ltd-192-168-1-181
-      label: Murata Manufacturing Co., Ltd. 192.168.1.181
-      ip: 192.168.1.181
-      mac: c4:ac:59:c4:6e:ac
-      interface_id: primary
-      type: unknown
-      mac_source: arp-scan
-      ip_source: arp
-      network_id: michael-home-192.168.1.0-24
-      network_status: null
-      status: active
-      ip_kind: discovered
-      first_seen: '2026-09-10'
-      last_seen: '2026-09-10T05:40:29.915863+00:00'
-    - device_id: michael-shanghai-high-flying-electronics-technology-co-ltd-dup-2-192-168-1-182
-      label: 'Shanghai High-Flying Electronics  Technology Co., Ltd (DUP: 2 192.168.1.182'
-      ip: 192.168.1.182
-      mac: 34:ea:e7:bf:17:92
-      interface_id: primary
-      type: unknown
-      mac_source: arp-scan
-      ip_source: arp
-      network_id: michael-home-192.168.1.0-24
-      network_status: null
-      status: active
-      ip_kind: discovered
-      first_seen: '2026-09-10'
-      last_seen: '2026-09-10T05:40:29.915863+00:00'
-    - device_id: michael-unknown-192-168-1-184
-      label: Unknown 192.168.1.184
-      ip: 192.168.1.184
-      mac: 38:2c:e5:1e:b5:28
-      interface_id: primary
-      type: unknown
-      mac_source: arp-scan
-      ip_source: arp
-      network_id: michael-home-192.168.1.0-24
-      network_status: null
-      status: active
-      ip_kind: discovered
-      first_seen: '2026-09-10'
-      last_seen: '2026-09-10T05:40:29.915863+00:00'
-    - device_id: michael-unknown-192-168-1-187
-      label: Unknown 192.168.1.187
-      ip: 192.168.1.187
-      mac: fc:3c:d7:a1:d8:6b
-      interface_id: primary
-      type: unknown
-      mac_source: arp-scan
-      ip_source: arp
-      network_id: michael-home-192.168.1.0-24
-      network_status: null
-      status: active
-      ip_kind: discovered
-      first_seen: '2026-09-10'
-      last_seen: '2026-09-10T05:40:29.915863+00:00'
-    - device_id: michael-unknown-192-168-1-196
-      label: Unknown 192.168.1.196
-      ip: 192.168.1.196
-      mac: 4c:a9:19:11:92:f7
-      interface_id: primary
-      type: unknown
-      mac_source: arp-scan
-      ip_source: arp
-      network_id: michael-home-192.168.1.0-24
-      network_status: null
-      status: active
-      ip_kind: discovered
-      first_seen: '2026-09-10'
-      last_seen: '2026-09-10T05:40:29.915863+00:00'
-    - device_id: michael-unknown-192-168-1-197
-      label: Unknown 192.168.1.197
-      ip: 192.168.1.197
-      mac: 38:2c:e5:1e:c4:ee
-      interface_id: primary
-      type: unknown
-      mac_source: arp-scan
-      ip_source: arp
-      network_id: michael-home-192.168.1.0-24
-      network_status: null
-      status: active
-      ip_kind: discovered
-      first_seen: '2026-09-10'
-      last_seen: '2026-09-10T05:40:29.915863+00:00'
-    - device_id: michael-asustek-computer-inc-192-168-1-199
-      label: ASUSTek COMPUTER INC. 192.168.1.199
+    - device_id: discovered-c860008a6219
+      label: ASUSTek COMPUTER INC.
       ip: 192.168.1.199
       mac: c8:60:00:8a:62:19
       interface_id: primary
       type: unknown
-      mac_source: arp-scan
+      mac_source: arp
       ip_source: arp
       network_id: michael-home-192.168.1.0-24
       network_status: null
       status: active
       ip_kind: discovered
-      first_seen: '2026-09-10'
+      first_seen: '2026-09-28'
       last_seen: '2026-09-10T05:40:29.915863+00:00'
   tony-ha:
     title: Tony HA
@@ -882,32 +1246,32 @@ instances:
     devices:
     - device_id: tony-omen
       label: tony-omen primary workstation
-      ip: 192.168.2.84
+      ip: 192.168.2.86
       mac: b0:22:7a:f0:73:cd
       interface_id: eno1
       type: ethernet
       mac_source: manual
       ip_source: arp
       network_id: home-192.168.2.0-24
-      network_status: active
+      network_status: null
       status: active
       ip_kind: discovered
-      first_seen: '2026-09-01'
-      last_seen: null
+      first_seen: '2026-09-09'
+      last_seen: '2026-09-28T13:09:02.683345+00:00'
     - device_id: tony-omen
       label: tony-omen primary workstation
-      ip: 192.168.2.83
+      ip: 192.168.2.84
       mac: d0:57:7b:ea:6a:3c
       interface_id: wlo1
       type: wifi
       mac_source: manual
       ip_source: arp
       network_id: home-192.168.2.0-24
-      network_status: active
+      network_status: null
       status: active
       ip_kind: discovered
-      first_seen: '2026-09-01'
-      last_seen: null
+      first_seen: '2026-09-09'
+      last_seen: '2026-09-28T13:09:02.683345+00:00'
     - device_id: home-router
       label: Home router (192.168.2.1)
       ip: 192.168.2.1
@@ -920,8 +1284,8 @@ instances:
       network_status: null
       status: active
       ip_kind: static
-      first_seen: '2026-09-01'
-      last_seen: '2026-09-13T09:00:43.946657+00:00'
+      first_seen: '2026-09-10'
+      last_seen: '2026-09-28T13:09:02.683345+00:00'
     - device_id: tuya-plug-coffee
       label: ปลั๊กกาแฟ
       ip: 192.168.2.87
@@ -929,17 +1293,17 @@ instances:
       interface_id: wlan0
       type: wifi
       mac_source: arp
-      ip_source: arp
+      ip_source: dhcp
       network_id: home-192.168.2.0-24
       network_status: null
       status: active
-      ip_kind: discovered
-      first_seen: '2026-09-01'
-      last_seen: '2026-09-13T09:00:43.946657+00:00'
+      ip_kind: reservation
+      first_seen: '2026-09-09'
+      last_seen: '2026-09-28T13:09:02.683345+00:00'
     - device_id: tuya-plug-bedside
       label: ปลัฦหัวเตียง
-      ip: 192.168.2.66
-      mac: 2c:b4:71:e8:a8:e8
+      ip: 192.168.2.68
+      mac: 24:94:94:b0:f2:df
       interface_id: wlan0
       type: wifi
       mac_source: arp
@@ -948,8 +1312,36 @@ instances:
       network_status: null
       status: active
       ip_kind: discovered
+      first_seen: '2026-09-09'
+      last_seen: '2026-09-28T13:09:02.683345+00:00'
+    - device_id: tuya-plug-bedside
+      label: ปลัฦหัวเตียง
+      ip: null
+      mac: 2c:b4:71:e8:a8:e8
+      interface_id: wlan0-legacy
+      type: wifi
+      mac_source: arp
+      ip_source: null
+      network_id: null
+      network_status: null
+      status: stale
+      ip_kind: null
       first_seen: '2026-09-01'
-      last_seen: '2026-09-13T09:00:43.946657+00:00'
+      last_seen: null
+    - device_id: tuya-plug-bedside
+      label: ปลัฦหัวเตียง
+      ip: 192.168.2.70
+      mac: cc:50:e3:19:a0:2f
+      interface_id: wlan0-legacy-2
+      type: wifi
+      mac_source: arp
+      ip_source: arp
+      network_id: home-192.168.2.0-24
+      network_status: null
+      status: active
+      ip_kind: discovered
+      first_seen: '2026-09-08'
+      last_seen: '2026-09-28T13:09:02.683345+00:00'
     - device_id: ip-cam-65
       label: VStarcam C7824WIP
       ip: 192.168.2.71
@@ -957,16 +1349,16 @@ instances:
       interface_id: wlan0
       type: wifi
       mac_source: arp
-      ip_source: arp
+      ip_source: dhcp
       network_id: home-192.168.2.0-24
       network_status: null
       status: active
-      ip_kind: discovered
-      first_seen: '2026-09-01'
-      last_seen: '2026-09-13T09:00:43.946657+00:00'
+      ip_kind: reservation
+      first_seen: '2026-09-09'
+      last_seen: '2026-09-28T13:09:02.683345+00:00'
     - device_id: hp-deskjet-2700
       label: HP DeskJet 2700 series
-      ip: 192.168.2.75
+      ip: 192.168.2.74
       mac: e0:73:e7:05:c5:16
       interface_id: wlan0
       type: wifi
@@ -976,8 +1368,8 @@ instances:
       network_status: null
       status: active
       ip_kind: discovered
-      first_seen: '2026-09-01'
-      last_seen: '2026-09-13T09:00:43.946657+00:00'
+      first_seen: '2026-09-09'
+      last_seen: '2026-09-28T13:09:02.683345+00:00'
     - device_id: discovered-cc50e319a02f
       label: Espressif Inc.
       ip: 192.168.2.70
@@ -991,7 +1383,7 @@ instances:
       status: active
       ip_kind: discovered
       first_seen: '2026-09-01'
-      last_seen: '2026-09-13T09:00:43.946657+00:00'
+      last_seen: '2026-09-28T13:09:02.683345+00:00'
     - device_id: discovered-484d7ee43ac7
       label: Unknown host 192.168.2.67
       ip: null
@@ -1007,45 +1399,45 @@ instances:
       first_seen: '2026-09-01'
       last_seen: null
     - device_id: discovered-062858264b2c
-      label: Unknown host 192.168.2.73
-      ip: 192.168.2.73
+      label: Unknown host 192.168.2.80
+      ip: 192.168.2.80
       mac: 06:28:58:26:4b:2c
       interface_id: primary
       type: unknown
       mac_source: arp
       ip_source: arp
       network_id: home-192.168.2.0-24
-      network_status: active
+      network_status: null
       status: active
       ip_kind: discovered
       first_seen: '2026-09-01'
-      last_seen: null
+      last_seen: '2026-09-28T13:09:02.683345+00:00'
     - device_id: discovered-ea9b8fd280f0
-      label: Unknown host 192.168.2.78
-      ip: 192.168.2.72
+      label: Unknown host 192.168.2.92
+      ip: 192.168.2.92
       mac: ea:9b:8f:d2:80:f0
       interface_id: primary
       type: unknown
       mac_source: arp
       ip_source: arp
       network_id: home-192.168.2.0-24
-      network_status: active
+      network_status: null
       status: active
       ip_kind: discovered
-      first_seen: '2026-09-01'
-      last_seen: null
+      first_seen: '2026-09-09'
+      last_seen: '2026-09-28T13:09:02.683345+00:00'
     - device_id: discovered-c0cdd685a838
-      label: Unknown host 192.168.2.81
-      ip: 192.168.2.71
+      label: Unknown host 192.168.2.65
+      ip: null
       mac: c0:cd:d6:85:a8:38
       interface_id: primary
       type: unknown
       mac_source: arp
-      ip_source: arp
-      network_id: home-192.168.2.0-24
-      network_status: stale
-      status: stale
-      ip_kind: discovered
+      ip_source: null
+      network_id: null
+      network_status: null
+      status: active
+      ip_kind: null
       first_seen: '2026-09-01'
       last_seen: null
     - device_id: macbook
@@ -1078,46 +1470,46 @@ instances:
       last_seen: null
     - device_id: discovered-7cd2da73308a
       label: Unknown host 192.168.2.76
-      ip: 192.168.2.75
+      ip: null
       mac: 7c:d2:da:73:30:8a
       interface_id: primary
       type: unknown
       mac_source: arp
-      ip_source: arp
-      network_id: home-192.168.2.0-24
-      network_status: stale
-      status: stale
-      ip_kind: discovered
+      ip_source: null
+      network_id: null
+      network_status: null
+      status: active
+      ip_kind: null
       first_seen: '2026-09-01'
       last_seen: null
     - device_id: discovered-1c1dd3e80a4f
-      label: Unknown host 192.168.2.71
-      ip: 192.168.2.79
+      label: Apple, Inc.
+      ip: 192.168.2.83
       mac: 1c:1d:d3:e8:0a:4f
       interface_id: primary
       type: unknown
       mac_source: arp
       ip_source: arp
       network_id: home-192.168.2.0-24
-      network_status: stale
-      status: stale
+      network_status: null
+      status: active
       ip_kind: discovered
-      first_seen: '2026-09-04'
-      last_seen: null
+      first_seen: '2026-09-01'
+      last_seen: '2026-09-28T13:09:02.683345+00:00'
     - device_id: discovered-227311ed1353
-      label: Unknown host 192.168.2.75
-      ip: 192.168.2.65
+      label: Unknown host 192.168.2.73
+      ip: 192.168.2.73
       mac: 22:73:11:ed:13:53
       interface_id: primary
       type: unknown
       mac_source: arp
       ip_source: arp
       network_id: home-192.168.2.0-24
-      network_status: active
+      network_status: null
       status: active
       ip_kind: discovered
       first_seen: '2026-09-01'
-      last_seen: null
+      last_seen: '2026-09-28T13:09:02.683345+00:00'
     - device_id: discovered-caf042320432
       label: Unknown host 192.168.2.82
       ip: null
@@ -1146,146 +1538,286 @@ instances:
       ip_kind: null
       first_seen: '2026-09-01'
       last_seen: null
-    - device_id: hp-deskjet-2700
-      label: HP DeskJet 2700 series
-      ip: 192.168.2.70
-      mac: null
-      interface_id: eth0
-      type: unknown
-      mac_source: null
-      ip_source: arp
-      network_id: home-192.168.2.0-24
-      network_status: stale
-      status: stale
-      ip_kind: discovered
-      first_seen: '2026-09-04'
-      last_seen: '2026-09-13T09:00:43.946657+00:00'
-    - device_id: discovered-3a21760b0885
-      label: discovered-3a21760b0885
-      ip: 192.168.2.74
-      mac: null
-      interface_id: primary
-      type: unknown
-      mac_source: null
-      ip_source: arp
-      network_id: home-192.168.2.0-24
-      network_status: active
-      status: active
-      ip_kind: discovered
-      first_seen: '2026-09-04'
-      last_seen: null
-    - device_id: discovered-d83a367d100d
-      label: discovered-d83a367d100d
+    - device_id: bedroom-remote
+      label: Bedroom IR remote
       ip: 192.168.2.77
-      mac: null
+      mac: d8:3a:36:7d:10:0d
       interface_id: primary
-      type: unknown
-      mac_source: null
-      ip_source: arp
+      type: wifi
+      mac_source: arp
+      ip_source: dhcp
       network_id: home-192.168.2.0-24
-      network_status: active
+      network_status: null
       status: active
-      ip_kind: discovered
-      first_seen: '2026-09-04'
-      last_seen: null
-    - device_id: discovered-00e04c361276
-      label: discovered-00e04c361276
-      ip: 192.168.2.85
+      ip_kind: reservation
+      first_seen: '2026-09-09'
+      last_seen: '2026-09-28T13:09:02.683345+00:00'
+    - device_id: esp32-test
+      label: esp32-test
+      ip: 192.168.2.65
       mac: null
-      interface_id: primary
+      interface_id: wlan0
       type: unknown
       mac_source: null
-      ip_source: arp
+      ip_source: dhcp
       network_id: home-192.168.2.0-24
       network_status: stale
       status: stale
-      ip_kind: discovered
-      first_seen: '2026-09-04'
-      last_seen: '2026-09-13T09:00:43.946657+00:00'
-    - device_id: discovered-784f4386da1a
-      label: discovered-784f4386da1a
-      ip: 192.168.2.86
-      mac: null
-      interface_id: primary
-      type: unknown
-      mac_source: null
-      ip_source: arp
-      network_id: home-192.168.2.0-24
-      network_status: stale
-      status: stale
-      ip_kind: discovered
-      first_seen: '2026-09-04'
-      last_seen: '2026-09-13T09:00:43.946657+00:00'
-    - device_id: discovered-192-168-2-67
-      label: Unknown host 192.168.2.67
+      ip_kind: reservation
+      first_seen: '2026-09-09'
+      last_seen: '2026-09-28T13:09:02.683345+00:00'
+    - device_id: tony-dell
+      label: tony-dell
       ip: 192.168.2.67
       mac: null
       interface_id: primary
       type: unknown
       mac_source: null
-      ip_source: nmap
+      ip_source: dhcp
       network_id: home-192.168.2.0-24
       network_status: null
       status: active
-      ip_kind: discovered
-      first_seen: '2026-09-13'
-      last_seen: '2026-09-13T09:00:43.946657+00:00'
-    - device_id: discovered-249494b0f2df
-      label: Hong Kong Bouffalo Lab Limited
+      ip_kind: reservation
+      first_seen: '2026-09-09'
+      last_seen: '2026-09-28T13:09:02.683345+00:00'
+    - device_id: cozylife-01
+      label: cozylife-01
       ip: 192.168.2.68
-      mac: 24:94:94:b0:f2:df
-      interface_id: primary
+      mac: null
+      interface_id: wlan0
       type: unknown
-      mac_source: arp
-      ip_source: arp
+      mac_source: null
+      ip_source: dhcp
       network_id: home-192.168.2.0-24
-      network_status: null
-      status: active
-      ip_kind: discovered
-      first_seen: '2026-09-13'
-      last_seen: '2026-09-13T09:00:43.946657+00:00'
-    - device_id: discovered-0af0bcad208b
-      label: Unknown host 192.168.2.69
+      network_status: stale
+      status: stale
+      ip_kind: reservation
+      first_seen: '2026-09-09'
+      last_seen: '2026-09-28T13:09:02.683345+00:00'
+    - device_id: iphone-tony
+      label: iphone-tony
       ip: 192.168.2.69
-      mac: 0a:f0:bc:ad:20:8b
-      interface_id: primary
+      mac: null
+      interface_id: wlan0
       type: unknown
-      mac_source: arp
+      mac_source: null
+      ip_source: dhcp
+      network_id: home-192.168.2.0-24
+      network_status: active
+      status: active
+      ip_kind: dhcp
+      first_seen: '2026-09-09'
+      last_seen: null
+    - device_id: tuya-plug-tv
+      label: tuya-plug-tv
+      ip: 192.168.2.70
+      mac: null
+      interface_id: wlan0
+      type: unknown
+      mac_source: null
+      ip_source: dhcp
+      network_id: home-192.168.2.0-24
+      network_status: stale
+      status: stale
+      ip_kind: reservation
+      first_seen: '2026-09-09'
+      last_seen: '2026-09-28T13:09:02.683345+00:00'
+    - device_id: xiaomi-c100
+      label: xiaomi-c100
+      ip: 192.168.2.72
+      mac: null
+      interface_id: wlan0
+      type: unknown
+      mac_source: null
       ip_source: arp
       network_id: home-192.168.2.0-24
-      network_status: null
+      network_status: stale
+      status: stale
+      ip_kind: dhcp
+      first_seen: '2026-09-09'
+      last_seen: '2026-09-28T13:09:02.683345+00:00'
+    - device_id: tony-repeater
+      label: tony-repeater
+      ip: 192.168.2.73
+      mac: null
+      interface_id: wlan0
+      type: unknown
+      mac_source: null
+      ip_source: dhcp
+      network_id: home-192.168.2.0-24
+      network_status: stale
+      status: stale
+      ip_kind: dhcp
+      first_seen: '2026-09-09'
+      last_seen: '2026-09-28T13:09:02.683345+00:00'
+    - device_id: discovered-68f0bcad208a
+      label: discovered-68f0bcad208a
+      ip: 192.168.2.74
+      mac: null
+      interface_id: wlan0-0af0
+      type: unknown
+      mac_source: null
+      ip_source: arp
+      network_id: home-192.168.2.0-24
+      network_status: stale
+      status: stale
+      ip_kind: dhcp
+      first_seen: '2026-09-09'
+      last_seen: '2026-09-28T13:09:02.683345+00:00'
+    - device_id: iphone-227311ed1353
+      label: iphone-227311ed1353
+      ip: 192.168.2.76
+      mac: null
+      interface_id: wlan0
+      type: unknown
+      mac_source: null
+      ip_source: dhcp
+      network_id: home-192.168.2.0-24
+      network_status: stale
+      status: stale
+      ip_kind: dhcp
+      first_seen: '2026-09-09'
+      last_seen: '2026-09-28T13:09:02.683345+00:00'
+    - device_id: apple-watch-b67265caaae1
+      label: apple-watch-b67265caaae1
+      ip: 192.168.2.78
+      mac: null
+      interface_id: wlan0
+      type: unknown
+      mac_source: null
+      ip_source: dhcp
+      network_id: home-192.168.2.0-24
+      network_status: active
       status: active
-      ip_kind: discovered
-      first_seen: '2026-09-13'
-      last_seen: '2026-09-13T09:00:43.946657+00:00'
-    - device_id: discovered-b88880cb7d2c
-      label: Shanghai Imilab Technology Co.Ltd
+      ip_kind: dhcp
+      first_seen: '2026-09-09'
+      last_seen: null
+    - device_id: kks-macbook-pro
+      label: kks-macbook-pro
+      ip: 192.168.2.80
+      mac: null
+      interface_id: eth0
+      type: unknown
+      mac_source: null
+      ip_source: dhcp
+      network_id: home-192.168.2.0-24
+      network_status: stale
+      status: stale
+      ip_kind: dhcp
+      first_seen: '2026-09-09'
+      last_seen: '2026-09-28T13:09:02.683345+00:00'
+    - device_id: xiaomi-c100
+      label: xiaomi-c100
       ip: 192.168.2.81
-      mac: b8:88:80:cb:7d:2c
-      interface_id: primary
+      mac: null
+      interface_id: wlan0
       type: unknown
-      mac_source: arp
-      ip_source: arp
+      mac_source: null
+      ip_source: dhcp
       network_id: home-192.168.2.0-24
-      network_status: null
-      status: active
-      ip_kind: discovered
-      first_seen: '2026-09-13'
-      last_seen: '2026-09-13T09:00:43.946657+00:00'
-    - device_id: discovered-2cb471a72a17
-      label: Tuya Smart Inc.
+      network_status: stale
+      status: stale
+      ip_kind: dhcp
+      first_seen: '2026-09-11'
+      last_seen: '2026-09-28T13:09:02.683345+00:00'
+    - device_id: kks-mac-studio
+      label: kks-mac-studio
       ip: 192.168.2.82
-      mac: 2c:b4:71:a7:2a:17
-      interface_id: primary
+      mac: null
+      interface_id: wlan0
       type: unknown
-      mac_source: arp
-      ip_source: arp
+      mac_source: null
+      ip_source: dhcp
       network_id: home-192.168.2.0-24
-      network_status: null
+      network_status: active
       status: active
-      ip_kind: discovered
-      first_seen: '2026-09-13'
-      last_seen: '2026-09-13T09:00:43.946657+00:00'
+      ip_kind: dhcp
+      first_seen: '2026-09-09'
+      last_seen: null
+    - device_id: tony-tv
+      label: tony-tv
+      ip: 192.168.2.85
+      mac: null
+      interface_id: wlan0
+      type: unknown
+      mac_source: null
+      ip_source: dhcp
+      network_id: home-192.168.2.0-24
+      network_status: active
+      status: active
+      ip_kind: reservation
+      first_seen: '2026-09-09'
+      last_seen: null
+    - device_id: mac-72b5f0db14f3
+      label: mac-72b5f0db14f3
+      ip: 192.168.2.86
+      mac: null
+      interface_id: wlan0
+      type: unknown
+      mac_source: null
+      ip_source: dhcp
+      network_id: home-192.168.2.0-24
+      network_status: stale
+      status: stale
+      ip_kind: dhcp
+      first_seen: '2026-09-09'
+      last_seen: '2026-09-28T13:09:02.683345+00:00'
+    - device_id: iphone-fa31d9bd44ff
+      label: iphone-fa31d9bd44ff
+      ip: 192.168.2.88
+      mac: null
+      interface_id: wlan0
+      type: unknown
+      mac_source: null
+      ip_source: dhcp
+      network_id: home-192.168.2.0-24
+      network_status: active
+      status: active
+      ip_kind: dhcp
+      first_seen: '2026-09-09'
+      last_seen: null
+    - device_id: honor-pad-9
+      label: honor-pad-9
+      ip: 192.168.2.89
+      mac: null
+      interface_id: wlan0
+      type: unknown
+      mac_source: null
+      ip_source: dhcp
+      network_id: home-192.168.2.0-24
+      network_status: active
+      status: active
+      ip_kind: dhcp
+      first_seen: '2026-09-09'
+      last_seen: null
+    - device_id: realme-c63
+      label: realme-c63
+      ip: 192.168.2.90
+      mac: null
+      interface_id: wlan0
+      type: unknown
+      mac_source: null
+      ip_source: dhcp
+      network_id: home-192.168.2.0-24
+      network_status: stale
+      status: stale
+      ip_kind: dhcp
+      first_seen: '2026-09-09'
+      last_seen: '2026-09-28T13:09:02.683345+00:00'
+    - device_id: samsung-tv
+      label: samsung-tv
+      ip: 192.168.2.91
+      mac: null
+      interface_id: eth0
+      type: unknown
+      mac_source: null
+      ip_source: dhcp
+      network_id: home-192.168.2.0-24
+      network_status: stale
+      status: stale
+      ip_kind: dhcp
+      first_seen: '2026-09-09'
+      last_seen: '2026-09-28T13:09:02.683345+00:00'
   michael-dev:
     title: Michael Dev
     description: Michael dev HA on tony-dell
