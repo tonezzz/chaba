@@ -55,16 +55,47 @@ any_active() {
         "devin-task-$1*" 2>/dev/null | grep -q .
 }
 
-outcome() { # transcript.json -> last agent message (truncated)
+outcome() { # transcript.json -> last FINAL agent message (no pending tools)
+    # Agent steps that carry tool_calls are mid-turn preambles ("I'll inspect
+    # X"), not results. Prefer the last step that completed a turn.
     python3 - "$1" <<'PY'
 import json, sys
 try:
     t = json.load(open(sys.argv[1]))
-    msgs = [s.get("message", "") for s in t.get("steps", [])
-            if s.get("source") == "agent" and s.get("message")]
+    agent = [s for s in t.get("steps", []) if s.get("source") == "agent"]
+    finals = [s.get("message", "") for s in agent
+              if s.get("message") and not s.get("tool_calls")]
+    msgs = finals or [s.get("message", "") for s in agent if s.get("message")]
     print((msgs[-1] if msgs else "(no agent output)")[:3000])
 except Exception as exc:
     print(f"(transcript unreadable: {exc})")
+PY
+}
+
+transcript_verdict() { # transcript.json -> permission|incomplete|clean
+    # A rejected tool call is session-fatal in -p mode but the process still
+    # exits 0 — detect it here so a dead session isn't reported "success".
+    # 'incomplete' = last agent step still had pending tool_calls (crashed /
+    # killed mid-turn).
+    python3 - "$1" <<'PY'
+import json, sys
+try:
+    t = json.load(open(sys.argv[1]))
+except Exception:
+    print("clean"); raise SystemExit
+steps = t.get("steps", [])
+rejected = any(
+    "rejected by the user" in str(r.get("content", ""))
+    for s in steps
+    for r in (s.get("observation") or {}).get("results", []))
+agent = [s for s in steps if s.get("source") == "agent"]
+finished = bool(agent) and not agent[-1].get("tool_calls")
+# A rejection is only fatal if the session ended on it — agents can also
+# hit a rejected call mid-task, work around it, and finish cleanly.
+if not finished:
+    print("permission" if rejected else "incomplete")
+else:
+    print("clean")
 PY
 }
 
@@ -78,19 +109,23 @@ except Exception:
 PY
 }
 
-meta_stamp() { # dir result fu_index channels_done — stamps per-channel
-    # flags + notified_fu so follow-up completions re-fire and failed
-    # channels retry on the next run instead of going silent.
-    python3 - "$1" "$2" "$3" "$4" <<'PY'
+meta_stamp() { # dir result fu_index channels_done mddb_ok — stamps
+    # per-channel flags. notified_fu is only set when the durable MDDB
+    # outcome doc landed (or there was no session id to write) — otherwise
+    # the next tick retries the whole notification instead of losing it.
+    python3 - "$1" "$2" "$3" "$4" "$5" <<'PY'
 import json, sys
 from datetime import datetime, timezone
-d, result, fu, chans = sys.argv[1:5]
+d, result, fu, chans, mddb_ok = sys.argv[1:6]
 m = json.load(open(f"{d}/meta.json"))
 now = datetime.now(timezone.utc).isoformat()
 m["result"] = result
 m["finished_at"] = now
-m["notified_fu"] = int(fu)
-m["notified_at"] = now
+if mddb_ok == "1":
+    m["notified_fu"] = int(fu)
+    m["notified_at"] = now
+else:
+    m.pop("notified_at", None)
 for c in chans.split(","):
     if c:
         m[f"{c}_at"] = now
@@ -254,7 +289,10 @@ for d in "$DISPATCH_DIR"/tasks/*/; do
             [ -z "$result" ] && { result="success"; unit="(collected,inferred)"; }
         fi
     fi
-    out=$(outcome "$d/transcript.json")
+    out=""
+    wt=$(python3 -c "import json;print(json.load(open('$d/meta.json')).get('worktree') or '')" 2>/dev/null)
+    [ -n "$wt" ] && out=$(cat "$wt/dispatch-outcome.md" 2>/dev/null | head -c 3000)
+    [ -n "$out" ] || out=$(outcome "$d/transcript.json")
     sid=$(session_id "$d/transcript.json")
 
     # needs-input.txt: the dispatched session wrote a question instead of
@@ -265,6 +303,14 @@ for d in "$DISPATCH_DIR"/tasks/*/; do
         question=$(head -1 "$d/needs-input.txt" | cut -c1-300)
     fi
 
+    # Transcript verdict beats process exit status: a permission-rejected
+    # session exits 0, and a mid-turn crash leaves pending tool_calls.
+    verdict=$(transcript_verdict "$d/transcript.json")
+    case "$verdict" in
+        permission) result="failed:permission" ;;
+        incomplete) [ "$result" = "success" ] && result="incomplete" ;;
+    esac
+
     if [ -n "$question" ]; then
         sev="warn"; rr="true"; label="needs input"
     elif [ "$result" = "success" ]; then
@@ -273,8 +319,8 @@ for d in "$DISPATCH_DIR"/tasks/*/; do
         sev="fail"; rr="true"; label="FAILED ($result)"
     fi
 
-    log "task $id finished: unit=$unit fu=$fu result=${result:-none} sid=${sid:-?}${question:+ q=$question}"
-    chans=""
+    log "task $id finished: unit=$unit fu=$fu result=${result:-none} verdict=${verdict:-none} sid=${sid:-?}${question:+ q=$question}"
+    chans=""; mddb_ok=1
     evbody="$out"
     [ -n "$question" ] && evbody="Question: ${question}"$'\n\n'"$out"
     [ "${WATCH_EVENTS:-1}" = "1" ] \
@@ -293,12 +339,16 @@ for d in "$DISPATCH_DIR"/tasks/*/; do
     [ "${WATCH_JOB_DOC:-1}" = "1" ] \
         && mddb_job "$id" "$jstate" "$out" "$question" && chans="$chans,jobdoc"
     if [ -n "$sid" ]; then
-        mddb_add "devin/$sid" \
-            "$(printf 'Dispatched task %s (unit %s, result %s).\n\n%s' "$id" "$unit" "$result" "$out")" \
-            && chans="$chans,mddb"
+        if mddb_add "devin/$sid" \
+            "$(printf 'Dispatched task %s (unit %s, result %s).\n\n%s' "$id" "$unit" "$result" "$out")"; then
+            chans="$chans,mddb"
+        else
+            mddb_ok=0
+            log "WARN: mddb write failed for $id — will retry next run"
+        fi
     fi
     [ -n "$chans" ] || log "WARN: all channels failed for $id — will retry next run"
-    meta_stamp "$d" "${result:-unknown}" "$fu" "$chans"
+    meta_stamp "$d" "${result:-unknown}" "$fu" "$chans" "$mddb_ok"
 done
 
 # P4: keep focus-inbox entries in sync with the ada-ha-bank-devin-handoff
