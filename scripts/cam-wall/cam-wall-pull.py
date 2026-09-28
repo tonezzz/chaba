@@ -6,6 +6,8 @@ Runs on tony-dell (systemd timer every 30s). Each run:
   2. For each enabled zone whose thumbs are older than its interval:
        house cams  -> go2rtc frame.jpeg on 127.0.0.1:1984 (parallel, ~4s)
        VMS cams    -> mn01 vms-snap shim 8377 (serial — one Wine UI, ~12s each)
+       traffic     -> jpeg: direct GET (~0.3s) | youtube: yt-dlp -g
+                      (cached ~4h) + ffmpeg -frames:v 1 (~5-10s)
   3. Write <DATA>/<zone>/<slug>.jpg + manifest-<zone>.json
      (served at https://tony-dell.taila0626a.ts.net/apps/camwall/data/)
 
@@ -18,6 +20,7 @@ from __future__ import annotations
 
 import json
 import os
+import subprocess
 import sys
 import time
 import urllib.parse
@@ -90,7 +93,30 @@ ZONES: dict[str, dict] = {
             ("IP65 Low", "go2rtc", "ip_cam_65_low"),
         ],
     },
+    # demo traffic wall around Rama 9 — mixes direct JPEG stills (iTIC
+    # via the Longdo feed) with YouTube live cams grabbed via yt-dlp+ffmpeg.
+    # All kinds are independent HTTP pulls — no serial bottleneck.
+    "rama9": {
+        "interval": 60,
+        "cams": [
+            ("Petchaburi Rd", "youtube", "a_bUVExv_Cg"),
+            ("Sukhumvit Soi 11", "youtube", "UemFRPrl1hk"),
+            ("Rama4 x Expy A", "jpeg",
+             "https://camera1.iticfoundation.org/jpeg2.php?camid=10.8.0.14:8001"),
+            ("Rama4 x Expy B", "jpeg",
+             "https://camera1.iticfoundation.org/jpeg2.php?camid=10.8.0.14:8003"),
+            ("Rama4 x Expy C", "jpeg",
+             "https://camera1.iticfoundation.org/jpeg2.php?camid=10.8.0.14:8002"),
+            ("Sathorn Embassy", "jpeg",
+             "https://camera1.iticfoundation.org/jpeg2.php?camid=10.8.0.15:8002"),
+        ],
+    },
 }
+
+YTDLP = os.environ.get("YTDLP", str(Path.home() / ".local/bin/yt-dlp"))
+FFMPEG = os.environ.get("FFMPEG", "ffmpeg")
+YT_CACHE_TTL = 4 * 3600  # yt live manifest URLs expire (~6h); re-resolve often
+_yt_cache: dict[str, tuple[float, str]] = {}
 
 
 def slug(s: str) -> str:
@@ -108,6 +134,32 @@ def bridge(path: str) -> dict:
     return json.loads(data)
 
 
+def _yt_stream_url(video_id: str) -> str:
+    """Resolve a youtube live/video id to a streamable URL, cached ~4h
+    (googlevideo manifests expire; re-resolve on demand or expiry)."""
+    hit = _yt_cache.get(video_id)
+    if hit and time.time() - hit[0] < YT_CACHE_TTL:
+        return hit[1]
+    out = subprocess.run(
+        [YTDLP, "-g", f"https://www.youtube.com/watch?v={video_id}"],
+        capture_output=True, text=True, timeout=45)
+    url = (out.stdout.splitlines() or [""])[0].strip()
+    if not url.startswith("http"):
+        raise ValueError(f"yt-dlp resolve failed: {out.stderr[:80]}")
+    _yt_cache[video_id] = (time.time(), url)
+    return url
+
+
+def _ffmpeg_frame(src: str, timeout: float = 40) -> bytes:
+    out = subprocess.run(
+        [FFMPEG, "-y", "-loglevel", "error", "-i", src,
+         "-frames:v", "1", "-q:v", "4", "-f", "image2pipe", "-"],
+        capture_output=True, timeout=timeout)
+    if not out.stdout.startswith(b"\xff\xd8"):
+        raise ValueError(f"ffmpeg frame failed: {out.stderr.decode()[:80]}")
+    return out.stdout
+
+
 def pull_cam(kind: str, key: str) -> bytes:
     if kind == "vms":
         url = f"{VMS_SNAP}/snap?ch={urllib.parse.quote(key)}"
@@ -115,6 +167,20 @@ def pull_cam(kind: str, key: str) -> bytes:
         # leave headroom so honest 503s aren't cut off as timeouts
         _, data = http_get(url, 95)
         return data
+    if kind == "jpeg":
+        # direct traffic-cam still (iTIC jpeg2.php etc). Dead cams serve a
+        # ~43B 'not found' stub or a fixed ~3KB 'No sengnal' jpeg — real
+        # frames are ~20KB+.
+        _, data = http_get(key, 20)
+        if len(data) < 8000 or not data.startswith(b"\xff\xd8"):
+            raise ValueError(f"dead frame ({len(data)}B)")
+        return data
+    if kind == "youtube":
+        try:
+            return _ffmpeg_frame(_yt_stream_url(key))
+        except Exception:
+            _yt_cache.pop(key, None)          # stale manifest — re-resolve once
+            return _ffmpeg_frame(_yt_stream_url(key))
     # go2rtc: try the stream, then fall back to base/SD variants — an _hd
     # stream can be dead (200 + empty body) while the plain one is alive
     for v in [key, key.removesuffix("_hd"), key.removesuffix("_hd") + "_sd"]:
@@ -132,7 +198,8 @@ def pull_zone(zone: str, cfg: dict, zdir: Path) -> dict:
     """Pull all cams for a zone; write thumbs; return manifest dict."""
     cams = []
     vms = [(label, key) for label, kind, key in cfg["cams"] if kind == "vms"]
-    fast = [(label, key) for label, kind, key in cfg["cams"] if kind == "go2rtc"]
+    fast = [(label, kind, key) for label, kind, key in cfg["cams"]
+            if kind != "vms"]
 
     def one(label: str, key: str, kind: str) -> dict:
         out = {"key": slug(label), "label": label, "ts": 0, "ok": False}
@@ -149,9 +216,9 @@ def pull_zone(zone: str, cfg: dict, zdir: Path) -> dict:
                 out["ts"] = int(prev.stat().st_mtime)  # keep stale ts
         return out
 
-    # fast cams in parallel, then VMS serially (single Wine UI)
+    # independent-source cams in parallel, then VMS serially (one Wine UI)
     with ThreadPoolExecutor(max_workers=4) as pool:
-        cams += list(pool.map(lambda lk: one(lk[0], lk[1], "go2rtc"), fast))
+        cams += list(pool.map(lambda lk: one(lk[0], lk[2], lk[1]), fast))
     for label, key in vms:
         cams.append(one(label, key, "vms"))
     return {"zone": zone, "updated": int(time.time()), "cams": cams}
