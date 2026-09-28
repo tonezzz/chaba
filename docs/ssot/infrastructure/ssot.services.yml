@@ -84,7 +84,7 @@ tony-dell:
       - maxmemory-policy = volatile-lru
   mddb:
     container: mddb
-    image: docker.io/tradik/mddb:latest
+    image: docker.io/tradik/mddb:2.15.3  # pinned 2026-09-27 — never 'latest' (re-pull broke warmup)
     runtime: rootless podman
     network: host
     port: 11023 (API), 11024 (gRPC), 9000 (MCP)
@@ -94,6 +94,30 @@ tony-dell:
     quadlet:
       container_unit: ~/.config/containers/systemd/mddb.container
       service_unit: ~/.config/systemd/user/mddb.service
+      drop_in: ~/.config/systemd/user/mddb.service.d/mem.conf
+    tuning:
+      # Applied 2026-09-27/28 after 8G→32G RAM upgrade. Warmup RSS
+      # 19G→~550M, vector readiness ~50min→~5min.
+      drop_in_mem_conf: |
+        [Unit]
+        StartLimitIntervalSec=300   # MUST be in [Unit], not [Service]
+        [Service]
+        Environment=GOMEMLIMIT=12000MiB GOGC=150
+        MemoryHigh=24G
+        MemoryMax=28G
+        RestartSec=30
+      collection_config:
+        quantization: int8        # all collections (auto-applied)
+        diskOnlyVectors: true     # large collections — keeps HNSW off RAM
+        maxRevisions: 20          # all collections (2026-09-28, set via PUT /v1/collection-config — camelCase; snake_case is silently dropped)
+      retention: scripts/ada/prune-old-docs.py in export-transcripts chain —
+        host-logs 14d, ada-ha-events-* 30d, ada-ha-snapshots-* 30d
+      notes:
+        - Revisions drained 214k→12k 2026-09-28 via POST /v1/truncate keep_revs=20
+        - DB file (3.4G) does NOT shrink on truncate — BoltDB freelist reuses pages;
+          physical reclaim needs backup→restore cycle (deferred, disk is fine)
+        - sync-ssot-to-mddb.py is content_md5-gated (was unconditional — the churn source)
+        - watch block: scripts/ada/bloat-report.py prints docs/revs/size each refresh
     related_units:
       - mddb.service
       - gemini-ollama-proxy.service
