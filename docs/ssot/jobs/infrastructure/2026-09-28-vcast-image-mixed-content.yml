@@ -99,10 +99,16 @@ deployed:
     - "index.html -> ~/CascadeProjects/chaba-tony-dell/stacks/web/public/apps/vcast/ (served file md5-verified)"
     - "server.mjs + package.json -> idc01:~/apps/input-bridge/; systemctl --user restart input-bridge"
     - "live screens needed a 'reload' cast — running tabs keep the old JS until next page load"
+  merged_to_master: >
+    Pushed to origin/master (3ec7291d). A parallel session's vcast work
+    (data: URL cache-buster guard, iOS suspended-tab ws reconnect, snap diag
+    fields, image-load-failed state) was hand-merged in — both sides kept.
+    Live redeployed from the merged master.
   live_verified:
     - "GET /img via Caddy: tailnet cam URL -> 200 JPEG 424x240; example.com -> 403"
     - "screen 2: cast http://...:8123/local/cam/last-xiaomi-frame.jpg -> state=image with upgraded https URL; snap-request -> GET /frame returned real JPEG pixels (camera frame confirmed visually) — before deploy the same snap errored 'Tainted canvases may not be exported'"
     - "screen 2 restored to nav camwall zone-a"
+    - "post-merge: reload -> image cast -> snap JPEG verified on merged build"
 
 still_open:
   - item: "/local/documents/* is not a serving path on either HA instance"
