@@ -21,12 +21,11 @@ const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY || "";
 const OPENROUTER_BASE = (process.env.OPENROUTER_BASE || "https://openrouter.ai/api/v1").replace(/\/$/, "");
 const OPENROUTER_PREFIX = process.env.OPENROUTER_MODEL_PREFIX || "google/";
 const OPENROUTER_PROVIDER = process.env.OPENROUTER_PROVIDER || "Google";
-// When set, OpenRouter is tried FIRST for every request — keeps docs and
-// queries in one vector space even while direct-Gemini quota flaps
-// (Vertex gemini-embedding-2 != AI Studio gemini-embedding-2 in practice,
-// so interleaving the two silently zeroes scores).
-const OPENROUTER_PRIMARY = process.env.OPENROUTER_PRIMARY === "1"
-  || process.env.OPENROUTER_PRIMARY === "true";
+// When OPENROUTER_API_KEY is set, OpenRouter is the ONLY embedding
+// provider — OR errors are fatal to the caller (fail closed). Gemini and
+// Ollama embed in different vector spaces; a silent fallback write would
+// corrupt the index. The Gemini/Ollama legs below only serve deployments
+// with no OR key (e.g. the offline lab stack).
 const MAX_RPM = parseInt(process.env.GEMINI_PROXY_MAX_RPM || "100", 10);
 const BATCH_SIZE = parseInt(process.env.GEMINI_PROXY_BATCH_SIZE || "100", 10);
 const MAX_RETRIES = parseInt(process.env.GEMINI_PROXY_MAX_RETRIES || "5", 10);
@@ -225,17 +224,17 @@ async function fetchBackupBatch(texts, geminiModel, outputDimensionality, skipGe
   // Order: OpenRouter (Vertex gemini space) -> direct Gemini -> Ollama.
   // When OR is primary this whole chain is the normal path.
   if (OPENROUTER_API_KEY) {
+    const orModel = `${OPENROUTER_PREFIX}${geminiModel}`;
+    console.log(`routing ${texts.length} input(s) via OpenRouter ${orModel}`);
     try {
-      const orModel = `${OPENROUTER_PREFIX}${geminiModel}`;
-      console.log(`routing ${texts.length} input(s) via OpenRouter ${orModel}`);
       const out = await fetchOpenRouterBatch(texts, orModel, outputDimensionality);
       lastBackupProvider = orModel;
       return out;
     } catch (err) {
+      // Fail hard on ANY OpenRouter error — wrong-space fallback is
+      // worse than surfacing the failure to the caller.
       console.log(`OpenRouter failed (${String(err.message).slice(0, 80)})`);
-      // OR-primary: fail hard — Gemini/Ollama are different vector
-      // spaces; a fallback write silently corrupts the index.
-      if (OPENROUTER_PRIMARY) throw err;
+      throw err;
     }
   }
   if (GEMINI_API_KEY && !skipGemini) {
@@ -309,8 +308,10 @@ async function handleEmbed(req, res) {
     ? parseInt(outputDimensionality, 10)
     : DEFAULT_DIMENSIONS;
 
-  if (!GEMINI_API_KEY) {
-    return sendJson(res, 500, { error: "GEMINI_API_KEY not configured" });
+  if (!OPENROUTER_API_KEY && !GEMINI_API_KEY) {
+    return sendJson(res, 500, {
+      error: "no embedding provider configured (set OPENROUTER_API_KEY or GEMINI_API_KEY)",
+    });
   }
 
   const start = process.hrtime.bigint();
@@ -323,12 +324,16 @@ async function handleEmbed(req, res) {
       const circuitOpen =
         (OLLAMA_FALLBACK_BASE || OPENROUTER_API_KEY) &&
         Date.now() < geminiCircuitOpenUntil;
-      if (circuitOpen || (OPENROUTER_PRIMARY && OPENROUTER_API_KEY)) {
-        // skipGemini when the circuit is open (Gemini presumed dead);
-        // in OR-primary mode an OR failure is fatal — wrong-space
-        // fallback is worse than an error.
+      if (OPENROUTER_API_KEY) {
+        // OpenRouter-only: every request takes the backup chain, which
+        // goes OR -> fatal. skipGemini is irrelevant (unreachable) but
+        // kept explicit for readability.
         chunkEmbeddings = await fetchBackupBatch(
-          chunk, geminiModel, outputDimensionality, circuitOpen);
+          chunk, geminiModel, outputDimensionality, true);
+        usedFallback = true;
+      } else if (circuitOpen) {
+        chunkEmbeddings = await fetchBackupBatch(
+          chunk, geminiModel, outputDimensionality, true);
         usedFallback = true;
       } else {
         try {

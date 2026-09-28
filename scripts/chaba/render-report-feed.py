@@ -323,6 +323,137 @@ MDDB_URL = os.environ.get("MDDB_BASE_URL",
 OPS_COLLECTION = os.environ.get("ADA_OPS_COLLECTION",
                                 "ada-ha-events-tony")
 OPS_WINDOW_H = 24
+JOBS_COLLECTION = os.environ.get("DISPATCH_JOBS_COLLECTION",
+                                 "ada-ha-bank-devin-handoff")
+LEDGER_DIR = REPO / "reports/dispatch"
+
+
+# ---------- L1: dispatch (job ledger) ----------
+
+def _mddb_jobs() -> list[dict]:
+    """job/<id> + answer/<id> docs from the devin-handoff collection —
+    the shared ledger written by devin-dispatch(-watch) and job-run.sh.
+    Fails soft to [] so the feed renders offline."""
+    try:
+        payload = json.dumps({
+            "collection": JOBS_COLLECTION,
+            "filterMeta": {"kind": ["job", "answer"]},
+            "limit": 150,
+        }).encode()
+        req = urllib.request.Request(
+            f"{MDDB_URL}/search", data=payload,
+            headers={"content-type": "application/json"}, method="POST")
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            docs = json.loads(resp.read())
+    except Exception:
+        return []
+    return docs if isinstance(docs, list) else []
+
+
+def _answered_ids(jobs: list[dict]) -> set[str]:
+    """job_ids that have an answer/<id> doc — the 'awaiting' badge must
+    not count jobs the user already answered (the job/ doc itself keeps
+    its stale status until the watch loop rewrites it)."""
+    out = set()
+    for d in jobs:
+        meta = d.get("meta") or {}
+        kinds = meta.get("kind") or []
+        if "answer" not in kinds:
+            continue
+        jid = ((meta.get("job_id") or [""])[0]
+               or (d.get("key") or "").split("/", 1)[-1])
+        if jid:
+            out.add(jid)
+    return out
+
+
+def _ledger_entries() -> dict[str, dict]:
+    """reports/dispatch/*.jsonl — console-session dispatches. Latest line
+    per job id wins."""
+    out: dict[str, dict] = {}
+    if not LEDGER_DIR.is_dir():
+        return out
+    for p in sorted(LEDGER_DIR.glob("*.jsonl")):
+        try:
+            for ln in p.read_text(encoding="utf-8").splitlines():
+                if not ln.strip():
+                    continue
+                try:
+                    e = json.loads(ln)
+                except ValueError:
+                    continue
+                if e.get("id"):
+                    out[e["id"]] = e
+        except OSError:
+            continue
+    return out
+
+
+def build_dispatch() -> dict | None:
+    layer = node("dispatch", "Dispatch", icon="mdi:rocket-launch-outline")
+    jobs = _mddb_jobs()
+    jobs.sort(key=lambda d: ((d.get("meta") or {}).get("ts") or [""])[0],
+              reverse=True)
+    answered = _answered_ids(jobs)
+    awaiting = []
+    for d in jobs[:25]:
+        meta = d.get("meta") or {}
+        if "answer" in (meta.get("kind") or []):
+            continue  # answer docs render as part of their job, not alone
+        jid = ((meta.get("job_id") or [""])[0]
+               or (d.get("key") or "").split("/", 1)[-1])
+        st = ((meta.get("status") or ["?"])[0])
+        if st == "awaiting-user" and jid in answered:
+            st = "answered"
+        q = ((meta.get("question") or [""])[0])
+        ts = ((meta.get("ts") or [""])[0])[:16].replace("T", " ")
+        src = ((meta.get("source") or [""])[0])
+        if st == "awaiting-user":
+            awaiting.append(jid)
+        layer["children"].append(node(
+            "job-" + slugify(jid), f"{jid}",
+            icon="mdi:rocket-launch-outline",
+            badge=st,
+            summary=(f"{ts} {src} — {q}" if q else
+                     f"{ts} {src} — " + first_line(d.get("contentMd", ""))),
+            body=d.get("contentMd", ""),
+            meta={k: v for k, v in {
+                "status": st, "host": (meta.get("host") or [""])[0],
+                "question": q, "job_id": jid}.items() if v}))
+    for e in sorted(_ledger_entries().values(),
+                    key=lambda e: e.get("dispatched_at", ""),
+                    reverse=True)[:15]:
+        lid = e.get("id", "?")
+        if any(f"job/{lid}" == (d.get("key") or "")
+               or ((d.get("meta") or {}).get("job_id") or [""])[0] == lid
+               for d in jobs):
+            continue  # already represented by its MDDB doc
+        layer["children"].append(node(
+            "led-" + slugify(lid), lid,
+            icon="mdi:clipboard-list-outline",
+            badge=e.get("status", "?"),
+            summary=first_line(e.get("task") or e.get("desc") or ""),
+            body=json.dumps(e, indent=1, ensure_ascii=False)))
+    if not layer["children"]:
+        return None
+    layer["badge"] = (f"{len(awaiting)} need you" if awaiting
+                      else str(len(layer["children"])))
+    layer["summary"] = (
+        (f"awaiting answer: {', '.join(awaiting[:5])}. " if awaiting else "")
+        + f"{len(layer['children'])} job(s)")
+    return layer
+
+
+def build_feed() -> dict:
+    layers = [build_events(), build_dispatch(), build_focus(), build_ada()]
+    layers = [l for l in layers if l is not None]
+    return {
+        "generated_at": datetime.datetime.now().astimezone().isoformat(
+            timespec="seconds"),
+        "title": "Chaba system report",
+        "summary": " — ".join(f"{l['title']}: {l['badge']}" for l in layers),
+        "layers": layers,
+    }
 
 
 def _mddb_ops_events() -> list[dict]:
@@ -365,13 +496,26 @@ def _mddb_ops_events() -> list[dict]:
 
 # ---------- L1: events ----------
 
+def _is_lifecycle_noise(text: str) -> bool:
+    """Events that are pure session-lifecycle noise — 'session ended',
+    reconnects, empty bursts. These dominate the feed during drain waves
+    (every drained dispatch posts one)."""
+    t = (text or "").lower()
+    return ("session ended" in t or "session finished" in t
+            or "session closed" in t)
+
+
 def build_events() -> dict:
     layer = node("events", "Recent Events", icon="mdi:bell-outline")
     kids = []
+    noise: list[str] = []   # timestamps of collapsed lifecycle events
 
     ev = load_yaml(CHABA_DATA / "recent-events.yml") or {}
     for e in (ev.get("entries") or [])[:15]:
         if isinstance(e, dict) and e.get("text"):
+            if _is_lifecycle_noise(e["text"]):
+                noise.append(str(e.get("ts", ""))[:16])
+                continue
             ts = str(e.get("ts", ""))[:16]
             body = e["text"] + (f"\n→ {e['ref']}" if e.get("ref") else "")
             kids.append(node("ev-" + slugify(ts), ts,
@@ -379,25 +523,27 @@ def build_events() -> dict:
                              summary=first_line(e["text"]), body=body))
 
     for b in md_blocks(ADA_REVIEW / "events.md")[-10:]:
+        if _is_lifecycle_noise(b["heading"] + " " + b["body"]):
+            noise.append(b["heading"][:16])
+            continue
         kids.append(node("aev-" + slugify(b["heading"], 50), b["heading"],
                          icon="mdi:microphone-outline",
                          summary=first_line(b["body"]), body=b["body"]))
+
+    if noise:
+        kids.insert(0, node(
+            "ev-lifecycle-rollup",
+            f"{len(noise)} session-end events",
+            icon="mdi:collapse-all",
+            badge="collapsed",
+            summary=f"{noise[-1] if noise else ''} → {noise[0]} — "
+                    "routine session lifecycle, folded",
+            body="\n".join(noise)))
 
     layer["children"] = kids
     layer["badge"] = str(len(kids))
     layer["summary"] = f"{len(kids)} recent event(s)"
     return layer
-
-
-def build_feed() -> dict:
-    layers = [build_events(), build_focus(), build_ada()]
-    return {
-        "generated_at": datetime.datetime.now().astimezone().isoformat(
-            timespec="seconds"),
-        "title": "Chaba system report",
-        "summary": " — ".join(f"{l['title']}: {l['badge']}" for l in layers),
-        "layers": layers,
-    }
 
 
 def main() -> int:

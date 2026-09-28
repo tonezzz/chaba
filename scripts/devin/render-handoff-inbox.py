@@ -135,6 +135,9 @@ def main() -> int:
     live: dict[str, dict] = {}
     for doc in docs:
         key = doc.get("key") or ""
+        # job/<id> and answer/<id> are dispatch-ledger records, not specs.
+        if key.startswith(("job/", "answer/")):
+            continue
         status = (_first(doc.get("meta"), "status") or "active").lower()
         if key and status not in DEAD_STATES:
             live[key] = doc

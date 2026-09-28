@@ -26,35 +26,45 @@
       border-left: 2px solid #374151; padding-left: 6px; }
     .bank-chip { cursor: pointer; opacity: 1; transition: opacity .15s; }
     .bank-chip.off { opacity: .35; text-decoration: line-through; }
+    @media (max-width: 767px) {
+      #detail { top: auto; bottom: 0; left: 0; right: 0; width: 100%;
+        max-height: 55vh; overflow-y: auto; border-radius: .75rem .75rem 0 0; }
+      #legend { left: .5rem; right: .5rem; max-width: none; }
+    }
   </style>
 </head>
 <body class="bg-bg text-gray-200">
   <nav class="bg-card border-b border-gray-800">
-    <div class="px-4 h-12 flex items-center gap-4">
-      <a href="/apps/" class="text-sm text-gray-400 hover:text-accent">← Apps</a>
-      <a id="lnk-vault" href="#" class="text-sm text-gray-400 hover:text-accent">Vault</a>
-      <h1 class="font-semibold">Memory Graph</h1>
-      <span id="deploy-badge" class="hidden text-xs px-2 py-0.5 rounded bg-amber-900/50 text-amber-300"></span>
-      <div class="ml-auto flex items-center gap-3">
+    <div class="px-3 h-12 flex items-center gap-3">
+      <a href="/apps/" class="hidden md:block text-sm text-gray-400 hover:text-accent shrink-0">← Apps</a>
+      <a id="lnk-vault" href="#" class="text-sm text-gray-400 hover:text-accent shrink-0">Vault</a>
+      <h1 class="font-semibold truncate min-w-0">Memory Graph</h1>
+      <span id="deploy-badge" class="hidden text-xs px-2 py-0.5 rounded bg-amber-900/50 text-amber-300 shrink-0"></span>
+      <div class="ml-auto relative flex items-center gap-2 shrink-0">
         <input id="search" list="nodes-list" placeholder="search nodes…"
-               class="text-xs px-2 py-1.5 rounded bg-card border border-gray-700 w-40 focus:border-accent outline-none">
+               class="text-xs px-2 py-1.5 rounded bg-card border border-gray-700 w-28 md:w-40 focus:border-accent outline-none">
         <datalist id="nodes-list"></datalist>
-        <select id="f-depth" class="text-xs px-1.5 py-1.5 rounded bg-card border border-gray-700 text-gray-300"
-                title="Local graph: after clicking a node, show only its neighborhood to this depth">
-          <option value="0" selected>global</option>
-          <option value="1">local·1</option>
-          <option value="2">local·2</option>
-          <option value="3">local·3</option>
-        </select>
-        <label class="ctl"><input type="checkbox" id="f-subjects" checked> subjects</label>
-        <label class="ctl"><input type="checkbox" id="f-entities" checked> entities</label>
-        <label class="ctl"><input type="checkbox" id="f-unlinked"> hide unlinked</label>
-        <label class="ctl"><input type="checkbox" id="f-retracted"> show retracted</label>
-        <label class="ctl"><input type="checkbox" id="f-similar" title="Vector-similarity edges, computed for the top-250 most-linked docs (cached 1h)"> similarity</label>
-        <button id="btn-pause" class="navbtn" title="Freeze the layout physics">Pause</button>
-        <button id="btn-fit" class="navbtn" title="Fit graph to view">Fit</button>
-        <button id="btn-reload" class="navbtn">Reload</button>
-        <button id="btn-legend" class="navbtn w-7 rounded-full" title="How to read this graph">?</button>
+        <button id="btn-ctl" class="navbtn md:hidden" title="Filters & actions">⚙</button>
+        <div id="ctls" class="hidden md:flex absolute md:static top-10 right-0 z-50
+             flex-col md:flex-row items-start md:items-center gap-3
+             bg-card md:bg-transparent border border-gray-700 md:border-0 rounded-lg md:rounded-none p-3 md:p-0">
+          <select id="f-depth" class="text-xs px-1.5 py-1.5 rounded bg-card border border-gray-700 text-gray-300"
+                  title="Local graph: after clicking a node, show only its neighborhood to this depth">
+            <option value="0" selected>global</option>
+            <option value="1">local·1</option>
+            <option value="2">local·2</option>
+            <option value="3">local·3</option>
+          </select>
+          <label class="ctl"><input type="checkbox" id="f-subjects" checked> subjects</label>
+          <label class="ctl"><input type="checkbox" id="f-entities" checked> entities</label>
+          <label class="ctl"><input type="checkbox" id="f-unlinked"> hide unlinked</label>
+          <label class="ctl"><input type="checkbox" id="f-retracted"> show retracted</label>
+          <label class="ctl" title="Vector-similarity edges, computed for the top-250 most-linked docs (cached 1h)"><input type="checkbox" id="f-similar"> similarity</label>
+          <button id="btn-pause" class="navbtn" title="Freeze the layout physics">Pause</button>
+          <button id="btn-fit" class="navbtn" title="Fit graph to view">Fit</button>
+          <button id="btn-reload" class="navbtn">Reload</button>
+          <button id="btn-legend" class="navbtn w-7 rounded-full" title="How to read this graph">?</button>
+        </div>
       </div>
     </div>
   </nav>
@@ -621,6 +631,16 @@ document.getElementById('btn-pause').onclick = () => {
 };
 document.getElementById('btn-fit').onclick = () => Graph.zoomToFit(900, 50);
 document.getElementById('btn-reload').onclick = load;
+document.getElementById('btn-ctl').onclick = e => {
+  e.stopPropagation();
+  document.getElementById('ctls').classList.toggle('hidden');
+};
+document.addEventListener('click', e => {
+  const c = document.getElementById('ctls');
+  if (window.matchMedia('(max-width: 767px)').matches && !c.classList.contains('hidden')
+      && !e.target.closest('#ctls') && e.target.id !== 'btn-ctl')
+    c.classList.add('hidden');
+});
 document.getElementById('btn-legend').onclick = () =>
   document.getElementById('legend').classList.toggle('hidden');
 // client-side filters re-render without a refetch; data params refetch

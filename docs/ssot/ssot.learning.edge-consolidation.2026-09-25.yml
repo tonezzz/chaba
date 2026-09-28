@@ -1,0 +1,84 @@
+title: Edge Consolidation Lessons (2026-09-25)
+subtitle: What the idc01 auth-migration cleanup revealed about tony-dell's edge stack
+date: "2026-09-25"
+icon: 🔀
+context: |
+  Consolidated tony-dell's two Caddy edges (host caddy :8085 + web container :80)
+  into a single edge. The :8085 service was retired; tailscaled :443 now proxies
+  directly to :80. Several traps surfaced that are worth recording.
+
+lessons:
+  - id: caddy-running-config-vs-file
+    title: Editing a Caddyfile does not reload Caddy — live config can be weeks stale
+    severity: high
+    symptom: |
+      caddy-tony-dell (:8085) was still proxying /apps/ha/ada-* to mn01:8002 —
+      dead since the idc01 cutover — despite the on-disk file already pointing
+      at idc01. Same pattern hit the web container earlier: a bind-mounted
+      Caddyfile edit wasn't picked up even after `caddy reload` because the
+      mount held a stale inode (podman, not docker, quirk; file replaced by
+      an editor).
+    root_cause: |
+      Three different "is the config live?" gaps: host caddy needed an admin-API
+      /load, the podman bind-mount needed a container recreate (in-place edits
+      keep the inode; git checkout replaces it), and neither was verified.
+    fix: |
+      Reload via admin API (localhost:2018 for container, :2020 for host) or
+      restart the unit; then test the route, not the file.
+    prevention: |
+      After ANY Caddyfile change on tony-dell: reload + curl the affected route.
+      Never assume on-disk == running.
+
+  - id: tailscale-foreground-serve
+    title: Foreground `tailscale serve` processes hold listeners invisibly
+    severity: high
+    symptom: |
+      :443 answered but `tailscale serve status`/`funnel status` showed no :443
+      mount at all. Requests were actually reaching :8085.
+    root_cause: |
+      A `tailscale serve --https=443 --set-path=/ http://127.0.0.1:8085`
+      process (no --bg) was still running since 2026-09-24. Foreground serves
+      are ephemeral — held only while the process lives — and do NOT appear in
+      `serve status`. Attempting `--bg --https=443` fails with
+      "foreground listener already exists".
+    fix: |
+      `ps aux | grep 'tailscale serve'` → kill the foreground process →
+      `tailscale serve --bg --https=443 <target>`.
+    prevention: |
+      Always use --bg (or a systemd unit) for persistent mounts. If :443
+      behaves unexpectedly and serve status is empty, grep ps before assuming
+      the config is elsewhere.
+
+  - id: dual-apps-trees
+    title: tony-dell had two /apps/ static trees that silently drifted
+    severity: medium
+    symptom: |
+      :443 served ~/.config/caddy/public/apps (manual deploys); :80 served the
+      chaba-tony-dell checkout. ~900 files diverged — live-only runtime content
+      (audit data, dev data, gev .baks) existed only in .config.
+    fix: |
+      rsync -a --update .config/public/ → checkout/public/ (newer-wins), then
+      retired the .config tree to *.retired-20260925 as rollback.
+    prevention: |
+      Single tree now: the checkout IS the live /apps/ tree. Caveat — it now
+      contains untracked runtime content; a `git clean`/`checkout .` on
+      tony-dell would delete live-served files. Deploy habit: edit/checkout →
+      rsync to the live tree (or keep .config/public.retired until confident).
+
+  - id: parallel-ssh-host-mixing
+    title: Mixed-host outputs caused a false "missing backup" alarm
+    severity: low
+    symptom: |
+      Appeared that mn01 had mddb-backup units with no backup dir. Actually the
+      files were all on idc01 — two parallel ssh commands' outputs were
+      conflated during reading.
+    prevention: |
+      Label each host's output; don't batch differently-targeted ssh calls into
+      one block when the outputs interleave.
+
+related_files:
+  - stacks/web/Caddyfile (ported :8085 routes, section marked "ported from the retired :8085 edge")
+  - docs/ssot/infrastructure/ssot.security.tony-dell.yml (serve table, vms-gate flag)
+  - docs/ssot/infrastructure/ssot.secrets.yml (archived ada slots)
+  - ~/.config/caddy/Caddyfile.tony-dell.retired-20260925 (archived legacy edge)
+  - ~/.config/caddy/public.retired-20260925 (archived legacy tree)

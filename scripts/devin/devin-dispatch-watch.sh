@@ -15,6 +15,11 @@
 #      the vault sync leaves these alone).
 #   5. Stamps meta.json: result, finished_at, notified_at — never re-fires.
 #
+# Env: WATCH_NOTIFY=0 skips iPhone pushes; WATCH_EVENTS=0 skips the event
+# feed; WATCH_JOB_DOC=0 skips the mddb job doc. All still stamp meta.json,
+# so a one-shot quiet run (WATCH_NOTIFY=0 WATCH_EVENTS=0) backfills job
+# docs for old tasks without spamming — used when the timer was missing.
+#
 # Install: systemd/devin-dispatch-watch.{service,timer} -> user units.
 set -uo pipefail
 
@@ -128,7 +133,8 @@ journal_result() { # infer exit result from journal even after --collect GC
 }
 
 emit_event() { # title severity requires_response body — rc 0 on success
-    TITLE="$1" SEV="$2" RR="$3" BODY="$4" python3 - <<'PY' | python3 "$EVENT_LOG_LOCAL" add - >/dev/null 2>&1
+    local payload
+    payload=$(TITLE="$1" SEV="$2" RR="$3" BODY="$4" python3 - <<'PY'
 import json, os
 print(json.dumps({"title": os.environ["TITLE"], "category": "devin-dispatch",
     "source": "devin-dispatch-watch",
@@ -136,19 +142,31 @@ print(json.dumps({"title": os.environ["TITLE"], "category": "devin-dispatch",
     "requires_response": os.environ["RR"] == "true",
     "body": os.environ["BODY"]}))
 PY
+)
+    if [ -f "$EVENT_LOG_LOCAL" ]; then
+        printf '%s\n' "$payload" | python3 "$EVENT_LOG_LOCAL" add - >/dev/null 2>&1 && return 0
+    fi
+    # Non-event-feed hosts (mn01, tony-omen): ship to the shared feed via ssh.
+    printf '%s\n' "$payload" | ssh -o BatchMode=yes -o ConnectTimeout=8 \
+        "${EVENT_SSH:-tony-dell-lan}" \
+        "python3 ~/.config/home-assistant/scripts/chaba-event-log.py add -" \
+        >/dev/null 2>&1 || true
+    return 0
 }
 
-notify_iphone() { # title message
+notify_iphone() { # title message [url] — url opens on tap (in-app HA path)
     set -a; . "$HOME/.config/secrets/home-assistant-token.env" 2>/dev/null
     set +a
     local token="${HA_LONG_LIVED_TOKEN:-$HASS_TOKEN}"
     [ -n "$token" ] || return 0
-    TITLE="$1" MSG="$2" python3 - <<'PY' | curl -sf -X POST \
+    TITLE="$1" MSG="$2" URL="${3:-/chaba-home/report}" python3 - <<'PY' | curl -sf -X POST \
         -H "Authorization: Bearer $token" -H "Content-Type: application/json" \
         -d @- "$HA_URL_LOCAL/api/services/notify/mobile_app_tony_ip" >/dev/null 2>&1
 import json, os
 print(json.dumps({"title": os.environ["TITLE"],
-                  "message": os.environ["MSG"][:500]}))
+                  "message": os.environ["MSG"][:500],
+                  "data": {"url": os.environ["URL"],
+                           "clickAction": os.environ["URL"]}}))
 PY
 }
 
@@ -165,6 +183,34 @@ print(json.dumps({
              "written_by": ["devin-dispatch"], "subject": ["devin-dispatch"],
              "attribute": [os.environ["KEY"].split("/")[-1]]}}))
 PY
+}
+
+mddb_job() { # id status summary question — job/<id> doc in devin-handoff,
+    # the ledger Ada's devin_pending and the Report dispatch layer read.
+    local id="$1" st="$2" summ="${3:-}" q="${4:-}"
+    ID="$id" ST="$st" SUMM="$summ" Q="$q" python3 - <<'PY' | curl -sf -m 15 \
+        -X POST -H "Content-Type: application/json" -d @- \
+        "$MDDB/add" >/dev/null 2>&1
+import json, os, socket
+from datetime import datetime, timezone
+meta = {"kind": ["job"], "status": [os.environ["ST"]],
+        "job_id": [os.environ["ID"]], "host": [socket.gethostname()],
+        "ts": [datetime.now(timezone.utc).isoformat()],
+        "subject": ["job-" + os.environ["ID"]],
+        "source": ["devin-dispatch"], "written_by": ["devin-dispatch"],
+        "scope": ["tony"], "bank": ["devin-handoff"]}
+if os.environ.get("Q"):
+    meta["question"] = [os.environ["Q"]]
+body = f"Job {os.environ['ID']} on {socket.gethostname()}: {os.environ['ST']}."
+if os.environ.get("Q"):
+    body += f"\n\nNeeds input: {os.environ['Q']}"
+if os.environ.get("SUMM"):
+    body += f"\n\n{os.environ['SUMM'][:2000]}"
+print(json.dumps({"collection": "ada-ha-bank-devin-handoff",
+                  "key": "job/" + os.environ["ID"], "lang": "en",
+                  "contentMd": body, "meta": meta}))
+PY
+    return 0
 }
 
 EVENT_LOG_LOCAL="$EVENT_LOG"
@@ -184,7 +230,18 @@ for d in "$DISPATCH_DIR"/tasks/*/; do
         # entirely. No unit + transcript = ran and was GC'd — but the unit's
         # Result is gone too, so prefer the exit_code the dispatch wrapper
         # records, then the journal; only fall back to inference last.
-        [ -f "$d/transcript.json" ] || continue   # never started / still pending
+        if [ ! -f "$d/transcript.json" ]; then
+            # Sessions that die before writing a transcript still have
+            # exit_code — report them as failed instead of skipping
+            # silently (observed: 6 omen tasks, exit=1, never reported).
+            if [ -f "$d/exit_code" ]; then
+                ec=$(cat "$d/exit_code" 2>/dev/null)
+                unit="(no-transcript,exit=$ec)"
+                [ "$ec" = "0" ] && result="success" || result="exit-$ec"
+            else
+                continue   # never started / still pending
+            fi
+        fi
         if [ -f "$d/exit_code" ]; then
             ec=$(cat "$d/exit_code" 2>/dev/null)
             unit="(collected,exit=$ec)"
@@ -200,16 +257,41 @@ for d in "$DISPATCH_DIR"/tasks/*/; do
     out=$(outcome "$d/transcript.json")
     sid=$(session_id "$d/transcript.json")
 
-    if [ "$result" = "success" ]; then
+    # needs-input.txt: the dispatched session wrote a question instead of
+    # finishing — route it to Tony with the question text and flip the
+    # job/<id> doc to awaiting-user so Ada's devin_pending can pick it up.
+    question=""
+    if [ -f "$d/needs-input.txt" ]; then
+        question=$(head -1 "$d/needs-input.txt" | cut -c1-300)
+    fi
+
+    if [ -n "$question" ]; then
+        sev="warn"; rr="true"; label="needs input"
+    elif [ "$result" = "success" ]; then
         sev="info"; rr="false"; label="done"
     else
         sev="fail"; rr="true"; label="FAILED ($result)"
     fi
 
-    log "task $id finished: unit=$unit fu=$fu result=${result:-none} sid=${sid:-?}"
+    log "task $id finished: unit=$unit fu=$fu result=${result:-none} sid=${sid:-?}${question:+ q=$question}"
     chans=""
-    emit_event "devin task $id: $label" "$sev" "$rr" "$out" && chans="event"
-    notify_iphone "Devin task ${label}" "${id}: ${out:0:200}" && chans="$chans,notify"
+    evbody="$out"
+    [ -n "$question" ] && evbody="Question: ${question}"$'\n\n'"$out"
+    [ "${WATCH_EVENTS:-1}" = "1" ] \
+        && emit_event "devin task $id: $label" "$sev" "$rr" "$evbody" && chans="event"
+    if [ "${WATCH_NOTIFY:-1}" = "1" ]; then
+        if [ -n "$question" ]; then
+            notify_iphone "Devin job needs input" \
+                "${id}: ${question} — reply via Ada or Devin" && chans="$chans,notify"
+        else
+            notify_iphone "Devin task ${label}" \
+                "${id}: ${out:0:200}" && chans="$chans,notify"
+        fi
+    fi
+    if [ -n "$question" ]; then jstate="awaiting-user"
+    elif [ "$result" = "success" ]; then jstate="done"; else jstate="failed"; fi
+    [ "${WATCH_JOB_DOC:-1}" = "1" ] \
+        && mddb_job "$id" "$jstate" "$out" "$question" && chans="$chans,jobdoc"
     if [ -n "$sid" ]; then
         mddb_add "devin/$sid" \
             "$(printf 'Dispatched task %s (unit %s, result %s).\n\n%s' "$id" "$unit" "$result" "$out")" \

@@ -30,15 +30,6 @@ class VcastScreensCard extends HTMLElement {
   }
   set hass(hass) { this._hass = hass; }
 
-  _adminKey() {
-    let k = localStorage.getItem("vcast.admin_key") || "";
-    if (!k) {
-      k = prompt("Ada admin API key (stored in this browser only):", "") || "";
-      if (k) localStorage.setItem("vcast.admin_key", k.trim());
-    }
-    return k.trim();
-  }
-
   async _call(path, opts) {
     const r = await fetch(this._api + path, opts);
     return r.json().catch(() => ({}));
@@ -74,6 +65,13 @@ class VcastScreensCard extends HTMLElement {
   }
 
   async _showAppQr() {
+    const urls = [
+      { label: "Tailnet (recommended)", url: this._appUrl },
+      { label: "Home Wi-Fi (no VPN)", url: this._config.lan_url || "http://192.168.2.67/apps/vcast/" },
+    ];
+    let qrlib = null;
+    try { qrlib = await this._qrLib(); } catch (e) {}
+
     const ov = document.createElement("div");
     ov.style.cssText =
       "position:fixed;inset:0;z-index:9999;display:grid;place-items:center;background:rgba(0,0,0,.6)";
@@ -84,36 +82,46 @@ class VcastScreensCard extends HTMLElement {
     const title = document.createElement("div");
     title.style.cssText = "font-weight:600;font-size:.95rem";
     title.textContent = "Open vcast on a device";
+    const tabs = document.createElement("div");
+    tabs.style.cssText = "display:flex;gap:6px";
     const body = document.createElement("div");
     body.style.cssText =
       "width:236px;min-height:236px;background:#fff;border-radius:8px;padding:8px;" +
       "display:grid;place-items:center;color:#333;font-size:12px;text-align:center";
-    body.textContent = "rendering…";
     const link = document.createElement("a");
     link.style.cssText = "font-size:.7rem;color:var(--primary-color);word-break:break-all;max-width:300px";
-    link.href = this._appUrl;
-    link.target = "_blank";
-    link.rel = "noopener";
-    link.textContent = this._appUrl;
+    link.target = "_blank"; link.rel = "noopener";
     const hint = document.createElement("div");
     hint.style.cssText = "font-size:.72rem;color:var(--secondary-text-color);text-align:center";
-    hint.textContent = "The device opens unpaired and shows its own QR — scan that to claim it.";
     const close = this._btn("Close");
     close.onclick = () => ov.remove();
     ov.onclick = (e) => { if (e.target === ov) ov.remove(); };
-    card.append(title, body, link, hint, close);
+
+    const pick = (i, btn) => {
+      for (const b of tabs.children) b.style.fontWeight = "400";
+      btn.style.fontWeight = "700";
+      const u = urls[i].url;
+      link.href = u; link.textContent = u;
+      if (qrlib) {
+        const qr = qrlib(0, "M");
+        qr.addData(u); qr.make();
+        body.innerHTML = qr.createImgTag(5);
+      } else {
+        body.textContent = u;
+      }
+      hint.textContent = i === 0
+        ? "iPad/iPhone must have Tailscale VPN connected — otherwise Safari can't open it."
+        : "Works on the same Wi-Fi, no Tailscale. Device opens unpaired and shows its own claim QR.";
+    };
+    urls.forEach((u, i) => {
+      const b = this._btn(u.label);
+      b.onclick = () => pick(i, b);
+      tabs.appendChild(b);
+    });
+    card.append(title, tabs, body, link, hint, close);
     ov.appendChild(card);
     document.body.appendChild(ov);
-    try {
-      const qrlib = await this._qrLib();
-      const qr = qrlib(0, "M");
-      qr.addData(this._appUrl);
-      qr.make();
-      body.innerHTML = qr.createImgTag(5);
-    } catch (e) {
-      body.textContent = "QR failed — open " + this._appUrl;
-      body.style.color = "#b43228";
-    }
+    pick(0, tabs.children[0]);
   }
 
   _render(data) {
@@ -145,8 +153,21 @@ class VcastScreensCard extends HTMLElement {
       const row = this._row(`⏳ ${p.label || "display"} — waiting to pair`, true);
       const open = this._btn("Pair");
       open.title = "Open the claim page (same flow the on-screen QR starts)";
-      open.onclick = () => window.open(`/apps/vcast/pair.html?sid=${encodeURIComponent(p.sid)}`, "_blank");
-      row.appendChild(open);
+      open.onclick = () => {
+        const base = new URL(this._appUrl).origin;
+        window.open(`${base}/apps/vcast/pair.html?sid=${encodeURIComponent(p.sid)}`, "_blank");
+      };
+      const dis = this._btn("Dismiss");
+      dis.title = "Drop this pending display without pairing";
+      dis.onclick = async () => {
+        await this._call("/dismiss", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ sid: p.sid }),
+        });
+        this._poll();
+      };
+      row.append(open, dis);
       list.appendChild(row);
     }
 
@@ -191,14 +212,12 @@ class VcastScreensCard extends HTMLElement {
       del.style.color = "var(--error-color,#f47067)";
       del.onclick = async () => {
         if (!confirm(`Revoke ${s.name}? The display is unpaired immediately.`)) return;
-        const admin = this._adminKey();
-        if (!admin) return;
         const r = await this._call("/release", {
           method: "POST",
           headers: { "content-type": "application/json" },
-          body: JSON.stringify({ screen: s.screen, admin_key: admin }),
+          body: JSON.stringify({ screen: s.screen }),
         });
-        if (r.error) { localStorage.removeItem("vcast.admin_key"); alert("Release failed: " + r.error); }
+        if (r.error) alert("Release failed: " + r.error);
         this._poll();
       };
       row.append(playBtn, navBtn, sndBtn, stopBtn, reBtn, del);

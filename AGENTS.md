@@ -131,6 +131,7 @@ no password — never bind LAN/public). tony-dell keeps the old container stoppe
   - `QR.jpg`
   - `qr-noble-a.jpg`
 - Set `autologin=true` in `config.ini` after the saved hash is in place to skip the login prompt on next restart.
+- `vms-snap.service` (user unit, same stack): HTTP still-frame shim at `<bind-ip>:8377` — `GET /snap?ch=<name>` clicks the channel in the device tree via xdotool, xwd-captures pane 1, returns PNG (~10s). Channel→coordinate map in `channels.json` (recalibrate if the tree changes — see README). Ada reaches it via `ADA_VMS_SNAP_URL` (ada-ha-tony only; `ada_camera_snapshot` tool).
 
 ## GEV Gemini Live voice deployment
 
@@ -662,3 +663,19 @@ tony-ha cast lifecycle — every cast goes through the gate, nothing targets dea
 - Card: `custom:chaba-events-card` (`/local/chaba-events-card.js`, repo `stacks/tony-dell/tony-ha/www/`) — merges the JSON feed with live `persistent_notification` entities (always requires-response, Dismiss calls `persistent_notification.dismiss`). Unresolved response-needed events pin to top with a pulsing border (reduced-motion safe); `confidence < 0.6` gets an outlined chip.
 - Shared visibility state (same on every device): `input_text.chaba_events_filter` holds `{"hidden": ["category", ...]}` — new categories self-register, no YAML change needed. `input_boolean.chaba_events_show_logbook` gates the conditional native `logbook` card (24h). Gotcha: HA 2026.8 logbook cards error with "target has no entities" unless `entities:`/`target:` is set — it carries a curated list of admin-relevant entities.
 - To add a new producer from a HA automation/script: `action: shell_command.chaba_event` with `payload: "{{ {...} | to_json | base64_encode }}"`. From a shell script: `ssh tony-dell python3 /home/tony/.config/home-assistant/scripts/chaba-event-log.py add '<json>'`.
+
+## Dispatch console loop (built 2026-09-26)
+
+One Devin session can act as a console: Tony chats, work is dispatched to workers, results stack up, answers return by voice through Ada.
+
+- **Workers**: `devin-dispatch start <repo> "<task>"` (tony-dell + tony-omen, `~/.local/bin` — worktree per task, `systemd-run`, repo whitelist); `job-run start <id> "<desc>" -- <cmd>` (any host incl. `ssh idc01 ...` — self-emitting unit, no watch timer); `run_subagent` in-session; Ada via `devin-handoff` specs.
+- **Ledger**: `job/<id>` docs in MDDB `ada-ha-bank-devin-handoff` — status running|awaiting-user|answered|done|failed + `question` meta. `answer/<id>` docs hold Tony's replies. `render-handoff-inbox.py` skips both prefixes. Session-local stack: `reports/dispatch/*.jsonl` (gitignored).
+- **Needs-input**: worker writes `$TASK_DIR/needs-input.txt` (line 1 = question) or exits 42 with a `NEEDS-INPUT:` output line → awaiting-user + warn event + iPhone push naming the question.
+- **Answer via Ada**: `devin_pending` (read-only) lists blocked jobs; `devin_answer(task_id, message, confirmed)` refines+confirms then resumes devin sessions via followup / records mailbox doc for other jobs.
+- **Visibility**: chaba-admin Events (requires_response pins), iPhone push, Report tab Dispatch layer (`render-report-feed.py`).
+- **Deploy note**: `devin-dispatch` runs on tony-dell + tony-omen only; idc01 is intentionally not a dispatch host — reach it via `job-run ... -- ssh idc01 '...'`.
+- **Batch dispatch**: `dispatch-queue <spec.tsv> [cap]` (default cap 3) drains `repo<TAB>task` rows paced by active `devin-task-*` units — wrap in `job-run` to background it. `session-harvest.py` inventories stale desktop sessions in sessions.db → verdicts (awaiting/resume/redispatch/done/trivial).
+- **Resume caveat**: `devin-dispatch resume <sid>` exists but headless `-r` fails with "failed to start ACP agent session" on desktop-era sessions (seen 2026-09-26) — prefer redispatching a distilled task referencing the old session id.
+- **Trail convention**: dispatch prompts instruct workers to write `docs/ssot/jobs/…` or `reports/…` when work produces decisions/runbooks/infra — every job leaves a paper trail.
+
+Job SSOT: `docs/ssot/jobs/workflow/2026-09-26-dispatch-console.yml`

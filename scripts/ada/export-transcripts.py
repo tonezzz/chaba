@@ -112,6 +112,8 @@ def main() -> int:
                     help="journal window for the ops layer")
     ap.add_argument("--no-hosts", action="store_true",
                     help="skip host-report.py health sweep")
+    ap.add_argument("--no-personal", action="store_true",
+                    help="skip personal-tier collectors + personal-rollup.py")
     ap.add_argument("--keep-days", type=int, default=30,
                     help="prune mirrored transcripts/reports older than this "
                          "(local mirror only; remote untouched)")
@@ -240,6 +242,41 @@ def main() -> int:
             capture_output=True, text=True, timeout=300)
         print((r.stdout.strip().splitlines() or ["host sweep: no output"])[0])
 
+    # ---- HA log sweep ----
+    ha_ops = review / "ha-ops.jsonl"
+    if not args.no_hosts and args.local is None:
+        r = subprocess.run(
+            [sys.executable, str(ADA_SCRIPTS / "ha-report.py"),
+             "--since", args.ops_since],
+            capture_output=True, text=True, timeout=300)
+        print((r.stdout.strip().splitlines() or ["ha sweep: no output"])[0])
+
+    # ---- journal -> MDDB shipper (host-logs collection) ----
+    if not args.no_personal:
+        r = subprocess.run(
+            [sys.executable, str(ADA_SCRIPTS / "log-shipper.py"),
+             "--hosts", args.hosts],
+            capture_output=True, text=True, timeout=600)
+        print((r.stdout.strip().splitlines() or ["log-ship: no output"])[-1])
+
+    # ---- personal-tier collectors + rollup (local-only, devin context) ----
+    if not args.no_personal:
+        for name in ("devin-report", "net-report", "ops-report",
+                     "ha-events-report", "spend-report", "caddy-report",
+                     "tasks-report"):
+            r = subprocess.run(
+                [sys.executable, str(ADA_SCRIPTS / f"{name}.py"),
+                 "--out", str(review)],
+                capture_output=True, text=True, timeout=300)
+            first = r.stdout.strip().splitlines()
+            print(first[0] if first else
+                  f"{name}: {r.stderr.strip()[:120]}")
+        r = subprocess.run(
+            [sys.executable, str(ADA_SCRIPTS / "personal-rollup.py"),
+             "--out", str(review)],
+            capture_output=True, text=True, timeout=60)
+        print(r.stdout.strip() or r.stderr.strip())
+
     # ---- rollup ----
     if not args.no_rollup:
         cmd = [sys.executable, str(ADA_SCRIPTS / "focus-rollup.py"),
@@ -248,6 +285,8 @@ def main() -> int:
             cmd += ["--ops", str(ops_file)]
         if host_ops.exists():
             cmd += ["--hosts", str(host_ops)]
+        if ha_ops.exists():
+            cmd += ["--ha", str(ha_ops)]
         r = subprocess.run(cmd, capture_output=True, text=True)
         print(r.stdout.strip() or r.stderr.strip())
 

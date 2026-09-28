@@ -1,0 +1,11 @@
+[Unit]
+Description=Pull nightly MDDB snapshot from idc01 -> refresh tony-dell standby db
+# File-copy replica: the live replication stream balloons the leader
+# (~7G RSS in <1min -> OOM on the 12G box, seen 2026-09-27). Instead we
+# pull the nightly /v1/backup snapshot and lay it into the follower data
+# dir, so a cold standby stays <24h behind. mddb.service stays DISABLED
+# on this host; starting it resumes live replication and the storm.
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/bash -c 'rsync -az --timeout=60 idc01:mddb-backups/ %h/.local/share/mddb-backups/ && latest=$(ls -t %h/.local/share/mddb-backups/mddb-*.db | head -n1) && { systemctl --user is-active --quiet mddb.service || podman unshare cp "$latest" %h/.config/containers/mddb/data/mddb.db; }'

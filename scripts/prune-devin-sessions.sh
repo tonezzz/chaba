@@ -44,13 +44,20 @@ if [ "${SKIP_INTEGRITY_CHECK:-0}" != "1" ]; then
   fi
 fi
 
-if [ "${NO_BACKUP:-}" != "1" ]; then
+DB_BYTES=$(stat -c %s "$DB" 2>/dev/null || echo 0)
+FREE_KB=$(df -k --output=avail "$(dirname "$DB")" | tail -1 | tr -d ' ')
+# Auto-skip the pre-cleanup copy when the DB would not fit with 20% headroom
+# (learned 2026-09-10: a 155G sessions.db filled /home mid-copy and left the
+# timer permanently failing). Set FORCE_BACKUP=1 to override.
+if [ "${FORCE_BACKUP:-}" = "1" ] || { [ "${NO_BACKUP:-}" != "1" ] && [ $((DB_BYTES / 1024 * 6 / 5)) -lt "$FREE_KB" ]; }; then
   mkdir -p "$BACKUP_DIR"
   BACKUP="$BACKUP_DIR/sessions-$TIMESTAMP.db"
   cp -a "$DB" "$BACKUP"
   echo "Backup created: $BACKUP"
+  # keep only the newest 3 backups — the backup dir is what filled /home
+  ls -t "$BACKUP_DIR"/sessions-*.db 2>/dev/null | tail -n +4 | xargs -r rm -f
 else
-  echo "NO_BACKUP=1; skipping pre-cleanup copy"
+  echo "Skipping pre-cleanup copy (db=$((DB_BYTES/1024/1024))G free=$((FREE_KB/1024/1024))G; FORCE_BACKUP=1 to override)"
 fi
 
 BEFORE=$(du -sh "$DB" | awk '{print $1}')

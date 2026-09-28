@@ -10,6 +10,11 @@ ops-only, never reachable via ada_memory_search).
 - `smoke` — safe subset (`tier: smoke` in the yaml): connect/greet, memory
   read/write to own bank, ACL-deny probes. No actuation turns.
 - `full` — everything including actuation scenarios. Manual only.
+- `research` — weekly benchmark suite (`ada-scenario-research.timer`,
+  Mon 03:30): runs `scripts/scenario-benchmark.py --suite research` from
+  `tests/benchmark.yml`, scores pass/flaky/fail + audit-policy violations,
+  writes one `kind: benchmark` doc to `ada-ha-scenario-reports` for trend
+  tracking. Not a container — uses the repo venv directly.
 
 Scenarios resolve `key_name:` against the mounted keys file; dict entries
 with `device` also pass `device_id` (device-bound keys like user-kk).

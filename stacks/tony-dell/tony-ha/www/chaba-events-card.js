@@ -35,11 +35,19 @@ class ChabaEventsCard extends HTMLElement {
       chaba-events-card .srcbar { display:flex; flex-wrap:wrap; align-items:center;
         gap:6px 10px; padding:0 16px 8px; flex:0 0 auto; }
       chaba-events-card .srcbar .lbl { font-size:.82rem; color:var(--secondary-text-color); }
-      chaba-events-card .srcbar select { font:inherit; font-size:.82rem;
+      chaba-events-card .srcbar select, chaba-events-card .srcbar button {
+        font:inherit; font-size:.82rem;
         color:var(--primary-text-color);
         background:var(--secondary-background-color,rgba(0,0,0,.06));
         border:1px solid var(--divider-color,#666); border-radius:6px;
         padding:3px 8px; }
+      chaba-events-card .srcbar button { cursor:pointer; margin-left:auto; }
+      /* fullscreen fallback for webviews without the Fullscreen API
+         (iPhone Safari): the card covers the viewport instead. */
+      chaba-events-card[data-fs="1"] { position:fixed; inset:0; z-index:999;
+        background:var(--primary-background-color,#111); }
+      chaba-events-card:fullscreen {
+        background:var(--primary-background-color,#111); }
       chaba-events-card .filters { display:flex; flex-wrap:wrap; gap:4px 14px;
         padding:0 16px 8px; flex:0 0 auto; }
       chaba-events-card .filters label { display:flex; align-items:center; gap:5px; font-size:.85rem;
@@ -91,7 +99,11 @@ class ChabaEventsCard extends HTMLElement {
     lbl.textContent = "Source";
     this._srcSel = document.createElement("select");
     this._srcSel.onchange = () => this._setSrc(this._srcSel.value);
-    this._srcbar.append(lbl, this._srcSel);
+    const expand = document.createElement("button");
+    expand.textContent = "⤢";
+    expand.title = "Expand fullscreen";
+    expand.onclick = () => this._toggleFs();
+    this._srcbar.append(lbl, this._srcSel, expand);
     this._banner = document.createElement("div");
     this._banner.className = "attn-banner";
     this._filters = document.createElement("div");
@@ -113,6 +125,9 @@ class ChabaEventsCard extends HTMLElement {
     if (window.visualViewport) {
       window.visualViewport.addEventListener("resize", this._onResize);
     }
+    this._onFsChange = () => this._fitHeight();
+    document.addEventListener("fullscreenchange", this._onFsChange);
+    document.addEventListener("webkitfullscreenchange", this._onFsChange);
     this._fitHeight();
     requestAnimationFrame(() => this._fitHeight());
     setTimeout(() => this._fitHeight(), 300);
@@ -124,6 +139,34 @@ class ChabaEventsCard extends HTMLElement {
     if (window.visualViewport) {
       window.visualViewport.removeEventListener("resize", this._onResize);
     }
+    document.removeEventListener("fullscreenchange", this._onFsChange);
+    document.removeEventListener("webkitfullscreenchange", this._onFsChange);
+  }
+
+  // Expand the card over the whole screen. Prefers the Fullscreen API
+  // (drops browser chrome too); falls back to a fixed-position overlay
+  // where element fullscreen isn't supported (iPhone Safari).
+  async _toggleFs() {
+    try {
+      const fsEl =
+        document.fullscreenElement || document.webkitFullscreenElement;
+      if (this.dataset.fs === "1") {
+        this.dataset.fs = "";
+      } else if (fsEl === this) {
+        const exit = document.exitFullscreen ||
+          document.webkitExitFullscreen;
+        if (exit) await exit.call(document);
+      } else if (this.requestFullscreen) {
+        await this.requestFullscreen();
+      } else if (this.webkitRequestFullscreen) {
+        this.webkitRequestFullscreen();
+      } else {
+        this.dataset.fs = "1";
+      }
+    } catch {
+      this.dataset.fs = "1";
+    }
+    this._fitHeight();
   }
 
   // Fill down to the parent's content-box bottom (honors view padding),

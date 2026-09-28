@@ -253,6 +253,42 @@ banks:
     allowed_tools: [ada_remember, ada_forget, ada_outcome]
     status: active
     public: false
+  cms:
+    title: CMS pages & reports
+    description: Ada CMS pages and published reports (ada-cms-pages collection). Read-only via memory search — use cms_get_page/cms_publish_page for full access. This is where "research on X" and generated reports live.
+    scope: instance
+    instances: [tony]
+    mddb_collection: ada-cms-pages
+    notebooklm_group: null
+    notebooklm_id: null
+    kinds: [page]
+    writable: false
+    write_policy: confirmed
+    allowed_tools: []
+    status: active
+    public: false
+  ideas:
+    title: Ideas inbox
+    description: >-
+      Raw idea-burst capture — half-formed notes, fragments, and
+      quick thoughts Tony wants parked before they disappear. Verbatim
+      wording is kept in contentMd (meta kind=idea, attribute=raw).
+      The Devin console session elaborates raw entries into connected,
+      well-formed items (attribute=elaborated) which Tony confirms
+      before they are filed as focus-inbox entries or devin-handoff
+      specs (attribute=filed). Direct writes — note-taking never gates
+      on confirmation.
+    scope: instance
+    instances: [tony]
+    mddb_collection: ada-ha-bank-ideas-{instance}
+    notebooklm_group: null
+    notebooklm_id: null
+    kinds: [note, idea]
+    writable: true
+    write_policy: direct
+    allowed_tools: [ada_remember, ada_forget]
+    status: active
+    public: false
   kb-development:
     title: Development knowledge base
     description: Chaba dev/architecture docs synced from the kb — read-only for Ada
@@ -457,12 +493,13 @@ banks:
 persona:
   doc_key: persona/self
   knobs:
-    tone:          {values: [warm, direct, professional, playful], default: warm}
+    tone:          {values: [warm, direct, professional, playful], default: direct}
     verbosity:     {values: [brief, normal, detailed], default: normal}
     formality:     {values: [casual, polite, formal], default: polite}
     language:      {values: [auto, en, th], default: auto}
     address_name:  {type: string, max: 40, default: ""}
     emoji:         {type: bool, default: false}
+    sassiness:     {values: [none, light, playful], default: none}
     proactiveness: {values: [minimal, normal, proactive], default: normal}
 
 # Per-identity bank ACL — resolved against the session's memory identity:

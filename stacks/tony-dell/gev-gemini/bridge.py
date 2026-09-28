@@ -10,7 +10,13 @@ from google.genai import types
 
 HOST = os.environ.get('GEV_GEMINI_HOST', '0.0.0.0')
 PORT = int(os.environ.get('GEV_GEMINI_PORT', '8789'))
+CMD_PORT = int(os.environ.get('GEV_CMD_PORT', '8790'))
 MODEL = os.environ.get('GEV_GEMINI_MODEL', 'gemini-3.1-flash-live-preview')
+
+# Connected GEV browser clients — the same sockets Gemini tool calls are
+# forwarded to. /command pushes function_call frames into these.
+CLIENTS = set()
+_loop = None
 
 SYSTEM_INSTRUCTION = (
     "You are GEV Voice Control, a concise voice controller for the God's Eye View Cesium geospatial app. "
@@ -124,8 +130,72 @@ async def pump_responses(session, websocket):
             pass
 
 
+async def _broadcast(msg):
+    delivered = 0
+    for ws in list(CLIENTS):
+        try:
+            await ws.send(msg)
+            delivered += 1
+        except Exception:
+            pass
+    return delivered
+
+
+def _cmd_handler():
+    import http.server
+    import threading
+    import uuid
+
+    class H(http.server.BaseHTTPRequestHandler):
+        def _reply(self, code, obj):
+            body = json.dumps(obj).encode()
+            self.send_response(code)
+            self.send_header('Content-Type', 'application/json')
+            self.send_header('Content-Length', str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
+
+        def do_GET(self):
+            if self.path == '/command/health':
+                self._reply(200, {'ok': True, 'clients': len(CLIENTS)})
+            else:
+                self._reply(404, {'error': 'not found'})
+
+        def do_POST(self):
+            if self.path != '/command':
+                return self._reply(404, {'error': 'not found'})
+            n = int(self.headers.get('Content-Length') or 0)
+            try:
+                body = json.loads(self.rfile.read(n) or b'{}')
+            except Exception as e:
+                return self._reply(400, {'error': str(e)})
+            name = body.get('name')
+            if not name:
+                return self._reply(400, {'error': 'name required'})
+            msg = json.dumps({
+                'type': 'function_call',
+                'id': 'cmd-' + uuid.uuid4().hex[:8],
+                'name': name,
+                'args': body.get('args') or {},
+            })
+            try:
+                delivered = asyncio.run_coroutine_threadsafe(
+                    _broadcast(msg), _loop).result(timeout=5)
+            except Exception as e:
+                return self._reply(502, {'error': str(e)})
+            self._reply(200, {'ok': True, 'delivered': delivered})
+
+        def log_message(self, fmt, *args):
+            log('cmd http: ' + (fmt % args))
+
+    srv = http.server.ThreadingHTTPServer(('127.0.0.1', CMD_PORT), H)
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    log(f'command endpoint on 127.0.0.1:{CMD_PORT} (bind loopback — tailnet via Caddy)')
+
+
 async def client_handler(websocket):
-    log(f'Client connected {websocket.remote_address}')
+    CLIENTS.add(websocket)
+    log(f'Client connected {websocket.remote_address} ({len(CLIENTS)} online)')
     try:
         api_key = load_api_key()
         client = genai.Client(api_key=api_key)
@@ -198,10 +268,14 @@ async def client_handler(websocket):
             await websocket.send(json.dumps({'type': 'error', 'message': f'setup: {e}'}))
         except Exception:
             pass
-    log('Client disconnected')
+    CLIENTS.discard(websocket)
+    log(f'Client disconnected ({len(CLIENTS)} online)')
 
 
 async def main():
+    global _loop
+    _loop = asyncio.get_running_loop()
+    _cmd_handler()
     async with websockets.serve(client_handler, HOST, PORT):
         log(f'Bridge on ws://{HOST}:{PORT}')
         await asyncio.Future()

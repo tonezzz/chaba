@@ -60,6 +60,12 @@ class ChabaLogCard extends HTMLElement {
       .clc-content ha-logbook { display:block; height:100%; }
       .clc-err { padding:8px 16px; color:var(--error-color,#f47067);
         font-size:.85rem; }
+      .clc-fs { margin-left:auto; }
+      /* fullscreen fallback for webviews without the Fullscreen API
+         (iPhone Safari): the card covers the viewport instead. */
+      chaba-log-card[data-fs="1"] { position:fixed; inset:0; z-index:999;
+        background:var(--primary-background-color,#111); }
+      chaba-log-card:fullscreen { background:var(--primary-background-color,#111); }
     `;
     this._card.append(style);
 
@@ -98,6 +104,12 @@ class ChabaLogCard extends HTMLElement {
     refresh.title = "Refresh";
     refresh.onclick = () => this._lb && this._lb.refresh(true);
 
+    const expand = document.createElement("button");
+    expand.className = "clc-fs";
+    expand.textContent = "⤢";
+    expand.title = "Expand fullscreen";
+    expand.onclick = () => this._toggleFs();
+
     this._entInput = document.createElement("input");
     this._entInput.type = "search";
     this._entInput.className = "clc-ent";
@@ -111,7 +123,7 @@ class ChabaLogCard extends HTMLElement {
     };
 
     bar.append(this._rangeSel, this._from, this._to, apply, refresh,
-      this._entInput);
+      this._entInput, expand);
     this._card.appendChild(bar);
 
     this._filters = document.createElement("div");
@@ -133,6 +145,9 @@ class ChabaLogCard extends HTMLElement {
     if (window.visualViewport) {
       window.visualViewport.addEventListener("resize", this._onResize);
     }
+    this._onFsChange = () => this._fitHeight();
+    document.addEventListener("fullscreenchange", this._onFsChange);
+    document.addEventListener("webkitfullscreenchange", this._onFsChange);
     this._fitHeight();
     // settle after the view finishes layout (top edge moves into place)
     requestAnimationFrame(() => this._fitHeight());
@@ -144,7 +159,35 @@ class ChabaLogCard extends HTMLElement {
     if (window.visualViewport) {
       window.visualViewport.removeEventListener("resize", this._onResize);
     }
+    document.removeEventListener("fullscreenchange", this._onFsChange);
+    document.removeEventListener("webkitfullscreenchange", this._onFsChange);
     clearTimeout(this._entDeb);
+  }
+
+  // Expand the card over the whole screen. Prefers the Fullscreen API
+  // (drops browser chrome too); falls back to a fixed-position overlay
+  // where element fullscreen isn't supported (iPhone Safari).
+  async _toggleFs() {
+    try {
+      const fsEl =
+        document.fullscreenElement || document.webkitFullscreenElement;
+      if (this.dataset.fs === "1") {
+        this.dataset.fs = "";
+      } else if (fsEl === this) {
+        const exit = document.exitFullscreen ||
+          document.webkitExitFullscreen;
+        if (exit) await exit.call(document);
+      } else if (this.requestFullscreen) {
+        await this.requestFullscreen();
+      } else if (this.webkitRequestFullscreen) {
+        this.webkitRequestFullscreen();
+      } else {
+        this.dataset.fs = "1";
+      }
+    } catch {
+      this.dataset.fs = "1";
+    }
+    this._fitHeight();
   }
 
   // Fit exactly to the space the layout allocated: fill down to our
