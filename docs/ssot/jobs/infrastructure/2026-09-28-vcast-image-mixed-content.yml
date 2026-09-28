@@ -129,9 +129,13 @@ screen1_acl:
   followups:
     - "Speaker-ID never resolved Tony in sessions fd3d4bdfcb/e3a3a3cded —
       junk profiles (NewSpeaker, Timmy) cleanup still needs Tony approval."
-    - "Denial message could tell Ada the owner-lock lives in
-      cast-screens.json so she stops the record-note-then-retry loop —
-      small ada-pi patch, not yet done."
+  denial_message_fix: >
+    ada-pi commit d60305e — owner-lock denials now name cast-screens.json,
+    state memory notes cannot change the ACL, and give the remediation
+    (speaker-ID retry or owner flips to "shared"). Shared helper also covers
+    the tv_action source-owner path. Deployed to idc01 via file copy (the
+    checkout has unrelated WIP blocking a pull); all 4 Ada backends
+    restarted and healthy.
 
 still_open:
   - item: "/local/documents/* is not a serving path on either HA instance"
