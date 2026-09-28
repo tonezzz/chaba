@@ -56,6 +56,7 @@ Standard workflow for ending a session when the user asks to finish/close.
    - End with 'Session closed.'
 
 Edge cases
+
 - If the working tree is dirty with unrelated changes, still follow the trigger but do not
   include unrelated work unless the user explicitly says "everything".
 - If the user asks for a close but nothing is ready to commit, just say 'Session closed.'

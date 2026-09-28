@@ -25,47 +25,74 @@
  *   node auto-kb.mjs "..."
  */
 
-import { readFileSync, writeFileSync, readdirSync, existsSync, unlinkSync, mkdirSync } from 'fs';
-import { join, dirname } from 'path';
-import { fileURLToPath } from 'url';
-import { spawnSync } from 'child_process';
+import { readFileSync, writeFileSync, readdirSync, existsSync, unlinkSync, mkdirSync } from "fs";
+import { join, dirname } from "path";
+import { fileURLToPath } from "url";
+import { spawnSync } from "child_process";
 
 const SCRIPT_DIR = dirname(fileURLToPath(import.meta.url));
-const REPO_ROOT = join(SCRIPT_DIR, '..', '..', '..');
-const KB_DIR = process.env.KB_DIR || join(REPO_ROOT, 'docs', 'kb');
-const SYNC_SCRIPT = join(REPO_ROOT, 'scripts', 'sync-kb-to-mddb.py');
-const MDDB_BASE = process.env.MDDB_BASE || 'http://100.74.146.0:11023';
-const LOCK_FILE = process.env.AUTO_KB_LOCK_FILE || '/home/tony/.cache/auto-kb.lock';
+const REPO_ROOT = join(SCRIPT_DIR, "..", "..", "..");
+const KB_DIR = process.env.KB_DIR || join(REPO_ROOT, "docs", "kb");
+const SYNC_SCRIPT = join(REPO_ROOT, "scripts", "sync-kb-to-mddb.py");
+const MDDB_BASE = process.env.MDDB_BASE || "http://100.74.146.0:11023";
+const LOCK_FILE = process.env.AUTO_KB_LOCK_FILE || "/home/tony/.cache/auto-kb.lock";
 
-const VALID_STATUSES = ['draft', 'verified', 'superseded', 'archived'];
+const VALID_STATUSES = ["draft", "verified", "superseded", "archived"];
 
 function getStatus() {
-  const s = (process.env.KB_STATUS || 'draft').toLowerCase();
-  return VALID_STATUSES.includes(s) ? s : 'draft';
+  const s = (process.env.KB_STATUS || "draft").toLowerCase();
+  return VALID_STATUSES.includes(s) ? s : "draft";
 }
 
 function slugify(title) {
-  const s = title.toLowerCase().replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '').slice(0, 50);
-  return s || 'entry';
+  const s = title
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 50);
+  return s || "entry";
 }
 
 // KB-worthy triggers
 const KB_WORTHY_TRIGGERS = [
-  'bug fix', 'corruption', 'security', 'vulnerability',
-  'pattern', 'workaround', 'integration', 'implementation',
-  'optimization', 'performance', 'configuration',
-  'encoding', 'thai', 'english', 'language',
-  'root cause', 'investigation', 'resolution',
-  'convention', 'template', 'best practice'
+  "bug fix",
+  "corruption",
+  "security",
+  "vulnerability",
+  "pattern",
+  "workaround",
+  "integration",
+  "implementation",
+  "optimization",
+  "performance",
+  "configuration",
+  "encoding",
+  "thai",
+  "english",
+  "language",
+  "root cause",
+  "investigation",
+  "resolution",
+  "convention",
+  "template",
+  "best practice",
 ];
 
 // Negative triggers that reject low-value or meta-only content
 const KB_NEGATIVE_TRIGGERS = [
-  'no kb-worthy facts', 'does not meet kb-worthy', 'not kb-worthy',
-  'no new kb-worthy', 'no new kb', 'nothing to save', 'consider manual creation',
-  'temporary commands', 'one-off output', 'transient',
-  'trivial', 'obvious', 'personal preference'
+  "no kb-worthy facts",
+  "does not meet kb-worthy",
+  "not kb-worthy",
+  "no new kb-worthy",
+  "no new kb",
+  "nothing to save",
+  "consider manual creation",
+  "temporary commands",
+  "one-off output",
+  "transient",
+  "trivial",
+  "obvious",
+  "personal preference",
 ];
 
 // Minimum thresholds
@@ -73,10 +100,33 @@ const MIN_SENTENCES = 2;
 const MIN_TECHNICAL_TERMS = 2;
 
 const TECHNICAL_INDICATORS = [
-  'error', 'bug', 'fix', 'config', 'script', 'service', 'container',
-  'database', 'api', 'endpoint', 'mcp', 'ssot', 'yaml', 'json',
-  'python', 'node', 'docker', 'podman', 'systemd', 'git', 'commit',
-  'deploy', 'proxy', 'network', 'host', 'gpu', 'embedding'
+  "error",
+  "bug",
+  "fix",
+  "config",
+  "script",
+  "service",
+  "container",
+  "database",
+  "api",
+  "endpoint",
+  "mcp",
+  "ssot",
+  "yaml",
+  "json",
+  "python",
+  "node",
+  "docker",
+  "podman",
+  "systemd",
+  "git",
+  "commit",
+  "deploy",
+  "proxy",
+  "network",
+  "host",
+  "gpu",
+  "embedding",
 ];
 
 /**
@@ -84,7 +134,7 @@ const TECHNICAL_INDICATORS = [
  */
 function isRunning() {
   if (existsSync(LOCK_FILE)) {
-    const lockTime = parseInt(readFileSync(LOCK_FILE, 'utf8'));
+    const lockTime = parseInt(readFileSync(LOCK_FILE, "utf8"));
     const now = Date.now();
     // Lock expires after 5 minutes
     if (now - lockTime < 300000) {
@@ -106,7 +156,7 @@ function isRunning() {
  * Create lock file
  */
 function createLock() {
-  writeFileSync(LOCK_FILE, Date.now().toString(), 'utf8');
+  writeFileSync(LOCK_FILE, Date.now().toString(), "utf8");
 }
 
 /**
@@ -155,16 +205,16 @@ function isKBWorthy(content, marked = false) {
   }
 
   // Require at least two sentences (or one deliberately marked bullet)
-  const sentences = content.split(/[.!?]/).filter(s => s.trim().length > 3);
-  const bullets = content.split('\n').filter(l => /^\s*[-*+]\s+\S/.test(l));
+  const sentences = content.split(/[.!?]/).filter((s) => s.trim().length > 3);
+  const bullets = content.split("\n").filter((l) => /^\s*[-*+]\s+\S/.test(l));
   const minSentences = marked ? 1 : MIN_SENTENCES;
   if (Math.max(sentences.length, bullets.length) < minSentences) {
     return false;
   }
 
   // Require positive trigger or multiple technical terms
-  const hasPositiveTrigger = KB_WORTHY_TRIGGERS.some(trigger => lowerContent.includes(trigger));
-  const technicalMatches = TECHNICAL_INDICATORS.filter(term => lowerContent.includes(term));
+  const hasPositiveTrigger = KB_WORTHY_TRIGGERS.some((trigger) => lowerContent.includes(trigger));
+  const technicalMatches = TECHNICAL_INDICATORS.filter((term) => lowerContent.includes(term));
   return hasPositiveTrigger || technicalMatches.length >= MIN_TECHNICAL_TERMS;
 }
 
@@ -180,13 +230,13 @@ function getMcpRedundancy() {
         return parsed;
       }
     } catch (e) {
-      console.log('Warning: MCP_REDUNDANCY_RESULT is not valid JSON; ignoring.');
+      console.log("Warning: MCP_REDUNDANCY_RESULT is not valid JSON; ignoring.");
     }
   }
 
   if (process.env.MCP_REDUNDANCY_FILE) {
     try {
-      const data = readFileSync(process.env.MCP_REDUNDANCY_FILE, 'utf8');
+      const data = readFileSync(process.env.MCP_REDUNDANCY_FILE, "utf8");
       const parsed = JSON.parse(data);
       if (Array.isArray(parsed)) {
         return parsed;
@@ -203,7 +253,7 @@ function getMcpRedundancy() {
  * Map a score to a relevance label
  */
 function relevanceForScore(score) {
-  return score > 0.7 ? 'high' : score > 0.4 ? 'medium' : 'low';
+  return score > 0.7 ? "high" : score > 0.4 ? "medium" : "low";
 }
 
 /**
@@ -215,62 +265,67 @@ async function checkRedundancy(content) {
   // Prefer MDDB result provided by the caller
   if (mcpEntries && mcpEntries.length > 0) {
     const similarEntries = mcpEntries
-      .map(e => ({
+      .map((e) => ({
         collection: e.collection,
         key: e.key || e.id,
         score: e.score || 0,
         title: e.title || e.key || e.id,
         relevance: e.relevance || relevanceForScore(e.score || 0),
-        method: 'mcp'
+        method: "mcp",
       }))
       .sort((a, b) => b.score - a.score);
 
     return {
-      hasRedundancy: similarEntries.some(e => e.relevance === 'high'),
+      hasRedundancy: similarEntries.some((e) => e.relevance === "high"),
       similarEntries,
-      method: 'mcp'
+      method: "mcp",
     };
   }
 
-  console.log('MCP redundancy result not available, using local file-based redundancy check...');
+  console.log("MCP redundancy result not available, using local file-based redundancy check...");
 
   // Fallback to local file-based check
   if (!existsSync(KB_DIR)) {
-    return { hasRedundancy: false, similarEntries: [], method: 'fallback' };
+    return { hasRedundancy: false, similarEntries: [], method: "fallback" };
   }
 
-  const files = readdirSync(KB_DIR).filter(f => f.endsWith('.md'));
+  const files = readdirSync(KB_DIR).filter((f) => f.endsWith(".md"));
   const contentLower = content.toLowerCase();
   const similarEntries = [];
-  const candSlug = slugify((content.split('. ')[0] || '').substring(0, 60));
-  const candWords = new Set(candSlug.split('-'));
+  const candSlug = slugify((content.split(". ")[0] || "").substring(0, 60));
+  const candWords = new Set(candSlug.split("-"));
 
   const slugOverlap = (a, b) => {
     const [small, large] = a.size <= b.size ? [a, b] : [b, a];
-    return [...small].filter(w => large.has(w)).length / small.size;
+    return [...small].filter((w) => large.has(w)).length / small.size;
   };
 
   for (const file of files) {
     // Filename-slug match on the same topic → definite duplicate; update instead
-    const fileSlug = slugify(file.replace(/\.md$/, '').replace(/^auto-(kb|chaba)-\d+-?/, ''));
-    if (candSlug !== 'entry' && fileSlug !== 'entry' && !/^\d+$/.test(fileSlug) && fileSlug.length >= 8 &&
-        (fileSlug === candSlug || slugOverlap(candWords, new Set(fileSlug.split('-'))) >= 0.7)) {
+    const fileSlug = slugify(file.replace(/\.md$/, "").replace(/^auto-(kb|chaba)-\d+-?/, ""));
+    if (
+      candSlug !== "entry" &&
+      fileSlug !== "entry" &&
+      !/^\d+$/.test(fileSlug) &&
+      fileSlug.length >= 8 &&
+      (fileSlug === candSlug || slugOverlap(candWords, new Set(fileSlug.split("-"))) >= 0.7)
+    ) {
       similarEntries.push({
         file,
         overlapCount: 999,
         score: 1,
-        relevance: 'high',
-        method: 'slug'
+        relevance: "high",
+        method: "slug",
       });
       continue;
     }
 
     const filePath = join(KB_DIR, file);
-    const existingContent = readFileSync(filePath, 'utf8').toLowerCase();
+    const existingContent = readFileSync(filePath, "utf8").toLowerCase();
 
     const words = contentLower.split(/\s+/);
-    const overlapCount = words.filter(word =>
-      word.length > 4 && existingContent.includes(word)
+    const overlapCount = words.filter(
+      (word) => word.length > 4 && existingContent.includes(word)
     ).length;
 
     if (overlapCount > 5) {
@@ -278,28 +333,28 @@ async function checkRedundancy(content) {
         file,
         overlapCount,
         score: overlapCount / 20,
-        relevance: overlapCount > 10 ? 'high' : 'medium',
-        method: 'fallback'
+        relevance: overlapCount > 10 ? "high" : "medium",
+        method: "fallback",
       });
     }
   }
 
   return {
-    hasRedundancy: similarEntries.some(e => e.relevance === 'high'),
+    hasRedundancy: similarEntries.some((e) => e.relevance === "high"),
     similarEntries,
-    method: 'fallback'
+    method: "fallback",
   };
 }
 
 /**
  * Generate KB entry from content
  */
-function generateKBEntry(content, context = '', category = 'implementation', status = 'draft') {
-  const timestamp = new Date().toISOString().split('T')[0];
+function generateKBEntry(content, context = "", category = "implementation", status = "draft") {
+  const timestamp = new Date().toISOString().split("T")[0];
 
   // Extract key information from content
-  const sentences = content.split('. ').filter(s => s.trim());
-  const title = sentences[0]?.replace(/^\s*[-*#>]+\s*/, '').substring(0, 60) || 'KB Entry';
+  const sentences = content.split(". ").filter((s) => s.trim());
+  const title = sentences[0]?.replace(/^\s*[-*#>]+\s*/, "").substring(0, 60) || "KB Entry";
 
   return `---
 category: ${category}
@@ -312,13 +367,13 @@ source: auto-kb
 
 ## What it is
 
-${sentences[0] || 'KB entry generated from assistant response.'}
+${sentences[0] || "KB entry generated from assistant response."}
 
 ## Context/Background
 
 Created ${timestamp} from automated KB creation workflow.
 
-${context ? `Additional context: ${context}` : ''}
+${context ? `Additional context: ${context}` : ""}
 
 ## Key Details
 
@@ -337,32 +392,35 @@ ${content}
 ## Tags
 
 - **auto-generated**: Automatically created KB entry
-- **${timestamp.split('-')[0]}**: Year tag
+- **${timestamp.split("-")[0]}**: Year tag
 `;
 }
 
 function determineCategory(content) {
   const contentLower = content.toLowerCase();
-  function has(...words) { return words.some(w => contentLower.includes(w)); }
-  if (has('bug', 'fix', 'error', 'corruption')) return 'troubleshooting';
-  if (has('feature', 'implementation', 'integration')) return 'implementation';
-  if (has('system', 'service', 'infrastructure', 'operation', 'deployment', 'monitoring')) return 'operations';
-  if (has('architecture', 'design', 'pattern', 'workflow')) return 'architecture';
-  return 'implementation';
+  function has(...words) {
+    return words.some((w) => contentLower.includes(w));
+  }
+  if (has("bug", "fix", "error", "corruption")) return "troubleshooting";
+  if (has("feature", "implementation", "integration")) return "implementation";
+  if (has("system", "service", "infrastructure", "operation", "deployment", "monitoring"))
+    return "operations";
+  if (has("architecture", "design", "pattern", "workflow")) return "architecture";
+  return "implementation";
 }
 
 function getMDDBCollection(category) {
   // Canonical kb-* collections — keep in sync with scripts/sync-kb-to-mddb.py
-  if (category === 'troubleshooting' || category === 'development') {
-    return 'kb-development';
+  if (category === "troubleshooting" || category === "development") {
+    return "kb-development";
   }
-  if (category === 'operations') {
-    return 'kb-operations';
+  if (category === "operations") {
+    return "kb-operations";
   }
-  if (category === 'architecture' || category === 'implementation') {
-    return 'kb-system';
+  if (category === "architecture" || category === "implementation") {
+    return "kb-system";
   }
-  return 'kb-features';
+  return "kb-features";
 }
 
 /**
@@ -373,12 +431,14 @@ function syncIndex() {
   if (!existsSync(SYNC_SCRIPT)) {
     return { ok: false, reason: `sync script not found: ${SYNC_SCRIPT}` };
   }
-  const res = spawnSync('python3', [SYNC_SCRIPT, '--missing-only'], {
-    cwd: REPO_ROOT, encoding: 'utf8', timeout: 120000,
+  const res = spawnSync("python3", [SYNC_SCRIPT, "--missing-only"], {
+    cwd: REPO_ROOT,
+    encoding: "utf8",
+    timeout: 120000,
     env: { ...process.env, KB_DIR, MDDB_BASE },
   });
   if (res.error || res.status !== 0) {
-    const stderr = (res.stderr || '').trim().split('\n').filter(Boolean).pop() || '';
+    const stderr = (res.stderr || "").trim().split("\n").filter(Boolean).pop() || "";
     const detail = res.error?.message || stderr || `exit ${res.status}`;
     return { ok: false, reason: detail };
   }
@@ -410,16 +470,16 @@ async function getInput() {
   }
   if (process.stdin.isTTY) {
     throw new Error(
-      'Usage: auto-kb.mjs <chaba-review-content> [context]\n' +
-      '       KB_REVIEW_CONTENT="..." [MCP_REDUNDANCY_FILE=/tmp/kb-redundancy.json] node auto-kb.mjs\n' +
-      '       echo "..." | MCP_REDUNDANCY_FILE=/tmp/kb-redundancy.json node auto-kb.mjs'
+      "Usage: auto-kb.mjs <chaba-review-content> [context]\n" +
+        '       KB_REVIEW_CONTENT="..." [MCP_REDUNDANCY_FILE=/tmp/kb-redundancy.json] node auto-kb.mjs\n' +
+        '       echo "..." | MCP_REDUNDANCY_FILE=/tmp/kb-redundancy.json node auto-kb.mjs'
     );
   }
   const chunks = [];
   for await (const chunk of process.stdin) {
     chunks.push(chunk);
   }
-  return Buffer.concat(chunks).toString('utf8').trim();
+  return Buffer.concat(chunks).toString("utf8").trim();
 }
 
 /**
@@ -428,7 +488,7 @@ async function getInput() {
 async function main() {
   // Concurrency protection
   if (isRunning()) {
-    console.log('Auto-kb is already running. Skipping duplicate invocation.');
+    console.log("Auto-kb is already running. Skipping duplicate invocation.");
     return;
   }
 
@@ -437,83 +497,102 @@ async function main() {
   try {
     const extracted = extractKBContent(await getInput());
     const content = extracted.content;
-    const context = process.env.KB_SESSION_CONTEXT || process.argv[3] || '';
+    const context = process.env.KB_SESSION_CONTEXT || process.argv[3] || "";
 
-    console.log('Analyzing KB review content...');
+    console.log("Analyzing KB review content...");
 
     // Check if KB-worthy
     if (!isKBWorthy(content, extracted.marked)) {
-      console.log('Content does not meet KB-worthy criteria.');
-      console.log('Consider manual creation if this is important.');
+      console.log("Content does not meet KB-worthy criteria.");
+      console.log("Consider manual creation if this is important.");
       return;
     }
 
-    console.log('Content is KB-worthy. Checking for redundancy...');
+    console.log("Content is KB-worthy. Checking for redundancy...");
 
     // Check redundancy (now async with optional MDDB result from assistant)
     const redundancyCheck = await checkRedundancy(content);
 
-    if (redundancyCheck.method === 'mcp') {
-      console.log('Used MDDB result for redundancy checking.');
+    if (redundancyCheck.method === "mcp") {
+      console.log("Used MDDB result for redundancy checking.");
     } else {
-      console.log('Used fallback local file-based redundancy checking.');
+      console.log("Used fallback local file-based redundancy checking.");
     }
 
     if (redundancyCheck.hasRedundancy) {
-      console.log('High redundancy detected with existing entries:');
-      redundancyCheck.similarEntries.forEach(entry => {
-        if (entry.method === 'slug') {
+      console.log("High redundancy detected with existing entries:");
+      redundancyCheck.similarEntries.forEach((entry) => {
+        if (entry.method === "slug") {
           console.log(`  - ${entry.file} (same-topic filename match — update this file)`);
-        } else if (entry.method === 'fallback') {
-          console.log(`  - ${entry.file} (${entry.relevance} relevance, ${entry.overlapCount} overlapping words)`);
+        } else if (entry.method === "fallback") {
+          console.log(
+            `  - ${entry.file} (${entry.relevance} relevance, ${entry.overlapCount} overlapping words)`
+          );
         } else {
-          console.log(`  - ${entry.title} (${entry.collection}, ${entry.relevance} relevance, score: ${entry.score.toFixed(2)})`);
+          console.log(
+            `  - ${entry.title} (${entry.collection}, ${entry.relevance} relevance, score: ${entry.score.toFixed(2)})`
+          );
         }
       });
-      console.log('Consider updating existing entries instead of creating new ones.');
+      console.log("Consider updating existing entries instead of creating new ones.");
       return;
     }
 
     if (redundancyCheck.similarEntries.length > 0) {
-      console.log('Some similarity detected with existing entries:');
-      redundancyCheck.similarEntries.forEach(entry => {
-        if (entry.method === 'slug') {
+      console.log("Some similarity detected with existing entries:");
+      redundancyCheck.similarEntries.forEach((entry) => {
+        if (entry.method === "slug") {
           console.log(`  - ${entry.file} (same-topic filename match)`);
-        } else if (entry.method === 'fallback') {
-          console.log(`  - ${entry.file} (${entry.relevance} relevance, ${entry.overlapCount} overlapping words)`);
+        } else if (entry.method === "fallback") {
+          console.log(
+            `  - ${entry.file} (${entry.relevance} relevance, ${entry.overlapCount} overlapping words)`
+          );
         } else {
-          console.log(`  - ${entry.title} (${entry.collection}, ${entry.relevance} relevance, score: ${entry.score.toFixed(2)})`);
+          console.log(
+            `  - ${entry.title} (${entry.collection}, ${entry.relevance} relevance, score: ${entry.score.toFixed(2)})`
+          );
         }
       });
     }
 
-    console.log('Generating KB entry...');
+    console.log("Generating KB entry...");
 
     // Determine category and generate entry
     const category = determineCategory(content);
     const collection = getMDDBCollection(category);
     const status = getStatus();
-    const title = content.split('. ')[0]?.replace(/^\s*[-*#>]+\s*/, '').substring(0, 60) || 'KB Entry';
+    const title =
+      content
+        .split(". ")[0]
+        ?.replace(/^\s*[-*#>]+\s*/, "")
+        .substring(0, 60) || "KB Entry";
     const entry = generateKBEntry(content, context, category, status);
 
     // Filename: auto-kb-YYYYMMDD-<slug>.md
-    const date = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+    const date = new Date().toISOString().slice(0, 10).replace(/-/g, "");
     const filename = `auto-kb-${date}-${slugify(title)}.md`;
     const filepath = join(KB_DIR, filename);
 
     mkdirSync(KB_DIR, { recursive: true });
-    writeFileSync(filepath, entry, 'utf8');
+    writeFileSync(filepath, entry, "utf8");
 
     // Index immediately; if MDDB is unreachable the failure is explicit
     let index;
     if (process.env.AUTO_KB_NO_INDEX) {
-      index = { ok: false, reason: 'skipped (AUTO_KB_NO_INDEX)' };
+      index = { ok: false, reason: "skipped (AUTO_KB_NO_INDEX)" };
     } else if (!(await mddbReachable())) {
       index = { ok: false, reason: `MDDB unreachable at ${MDDB_BASE}` };
     } else {
       index = syncIndex();
     }
-    const result = { file: filename, path: filepath, category, collection, status, indexed: index.ok };
+    const result = {
+      file: filename,
+      path: filepath,
+      category,
+      collection,
+      status,
+      indexed: index.ok,
+    };
     if (!index.ok) {
       result.pending_index = true;
       result.retry = `python3 ${SYNC_SCRIPT} --missing-only`;
@@ -527,8 +606,8 @@ async function main() {
   }
 }
 
-main().catch(error => {
-  console.error('Auto-kb failed:', error);
+main().catch((error) => {
+  console.error("Auto-kb failed:", error);
   removeLock();
   process.exit(1);
 });

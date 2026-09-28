@@ -22,13 +22,19 @@ if [[ -z "$IDC01_IP" ]]; then
     IDC01_IP="100.74.146.0"
 fi
 
+# mn01 — secondary node (caddy :8080, yolo-xiaomi, weaviate-embedding)
+MN01_IP=$(tailscale ip -4 mn01 2>/dev/null || true)
+if [[ -z "$MN01_IP" ]]; then
+    MN01_IP="100.106.196.22"
+fi
+
 # Local tony-dell Funnel endpoint
 TONY_DELL_IP=$(tailscale ip -4 tony-dell 2>/dev/null || true)
 if [[ -z "$TONY_DELL_IP" ]]; then
     TONY_DELL_IP="127.0.0.1"
 fi
 
-MONITOR_OUT=$(python3 - "$LOG_FILE" "$TS" "$TONY_OMEN_IP" "$TONY_DELL_IP" "$IDC01_IP" <<'PY'
+MONITOR_OUT=$(python3 - "$LOG_FILE" "$TS" "$TONY_OMEN_IP" "$TONY_DELL_IP" "$IDC01_IP" "$MN01_IP" <<'PY'
 import json
 import os
 import re
@@ -36,7 +42,7 @@ import subprocess
 import sys
 from datetime import datetime, timezone
 
-LOG_FILE, TS, TONY_OMEN_IP, TONY_DELL_IP, IDC01_IP = sys.argv[1:6]
+LOG_FILE, TS, TONY_OMEN_IP, TONY_DELL_IP, IDC01_IP, MN01_IP = sys.argv[1:7]
 
 
 def curl_check(url, method="GET", expect=200, timeout=5):
@@ -92,33 +98,35 @@ def process_check(name, cmd, expected_pattern=None):
 
 results = []
 
-# tony-omen HTTP endpoints
+# tony-omen / idc01 / mn01 HTTP endpoints — post-migration set (2026-09-28).
+# Retired: caddy-omen :8080 (unit disabled 2026-09-12), gpu-queue/llama/imagen2
+# (GPU stack units disabled — VRAM reserved for WallDance/YOLO-TRT),
+# weaviate-embedding moved to mn01.
 remote_endpoints = {
-    "caddy": f"http://{TONY_OMEN_IP}:8080/",
-    "status-api": f"http://{TONY_OMEN_IP}:8080/health",
-    "yomi-api": f"http://{TONY_OMEN_IP}:8080/api/yomi/health",
-    "mddb-api": f"http://{IDC01_IP}:11023/health",
-    "weaviate": f"http://{TONY_OMEN_IP}:8080/api/weaviate/v1/nodes",
-    "llama-server": f"http://{TONY_OMEN_IP}:8008/health",
-    "imagen2": f"http://{TONY_OMEN_IP}:8000/health",
-    "gpu-queue": f"http://{TONY_OMEN_IP}:3001/health",
-    "playlived": f"http://{TONY_OMEN_IP}:9230/sessions",
+    "playlived": (f"http://{TONY_OMEN_IP}:9230/sessions", 200),
+    "weaviate-search": (f"http://{TONY_OMEN_IP}:3002/health", 200),
+    "ollama-omen": (f"http://{TONY_OMEN_IP}:11434/api/tags", 200),
+    "mddb-api": (f"http://{IDC01_IP}:11023/v1/health", 200),
+    "mn01-caddy": (f"http://{MN01_IP}:8080/", 302),
 }
 
-for name, url in remote_endpoints.items():
-    res = curl_check(url)
+for name, (url, expect) in remote_endpoints.items():
+    res = curl_check(url, expect=expect)
     res["timestamp"] = TS
-    res["source"] = "tony-omen"
+    res["source"] = ("tony-omen" if TONY_OMEN_IP in url else
+                     "idc01" if IDC01_IP in url else
+                     "mn01" if MN01_IP in url else "remote")
     res["service"] = name
     res["action"] = "log"
     results.append(res)
 
-# tony-dell local checks
+# tony-dell local checks — loopback Caddy + LAN Caddy (apps edge)
 local_http = {
-    "funnel-landing": f"http://{TONY_DELL_IP}:8082/",
+    "caddy-loopback": ("http://127.0.0.1:8080/", 200),
+    "caddy-lan-apps": ("http://192.168.2.67:8125/", 200),
 }
-for name, url in local_http.items():
-    res = curl_check(url)
+for name, (url, expect) in local_http.items():
+    res = curl_check(url, expect=expect)
     res["timestamp"] = TS
     res["source"] = "tony-dell"
     res["service"] = name

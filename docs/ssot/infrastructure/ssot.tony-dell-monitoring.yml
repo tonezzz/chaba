@@ -30,7 +30,7 @@ sections:
       - label: mcp-health schedule group
         text: tony-dell-mcp-health.sh runs every 5 minutes; queries mcp-health critical-only services and caches the score
       - label: Cross-host checks
-        text: polls tony-omen HTTP endpoints (caddy, yomi-api, mddb-api, status-api, gpu-queue, playlived, llama-server) and tony-dell local services (barrier-client, Funnel port 8082)
+        text: 'polls post-migration endpoints — tony-omen (playlived :9230, weaviate-search :3002, ollama :11434), idc01 (MDDB /v1/health :11023), mn01 (caddy :8080) — plus tony-dell local (caddy loopback :8080, caddy LAN apps :8125, barrier-client). Retired checks: caddy-omen :8080, gpu-queue, llama-server, imagen2, funnel-landing :8082.'
       - label: Recovery policy
         text: observe-only for 1 week, then allow safe restarts (barrierc, playlived, yomi timers, caddy only after confirmation)
       - label: Notifications
@@ -45,9 +45,9 @@ sections:
       - label: tony-omen web
         text: https://tony-dell.taila0626a.ts.net/, http://tony-dell:3000/api/yomi/health, https://tony-dell.taila0626a.ts.net/api/health
       - label: tony-omen AI/data
-        text: http://tony-omen:11023/health (MDDB), http://tony-omen:8008/health (llama), http://tony-omen:8000/health (imagen2)
+        text: http://tony-omen:3002/health (weaviate-search), http://tony-omen:11434/api/tags (ollama — query-time embeddings); MDDB moved to idc01 :11023/v1/health; llama :8008 and imagen2 :8000 disabled (VRAM reserved for WallDance)
       - label: tony-omen GPU queue
-        text: http://tony-omen:3001/health
+        text: gpu-queue :3001 unit disabled on tony-omen (GPU stack parked); mn01 caddy :8080 (302) now the web front on that host
       - label: tony-omen playlive
         text: http://tony-omen:9230/sessions
       - label: tony-dell local

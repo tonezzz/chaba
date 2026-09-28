@@ -46,31 +46,28 @@ findings:
     needed. Remaining piece was only the in-card expand affordance.
 
 changes:
-  - stacks/tony-dell/tony-ha/www/chaba-events-card.js (v6, repo):
-    "⤢" button in the source toolbar toggles fullscreen
-  - stacks/tony-dell/tony-ha/www/chaba-log-card.js (v6, repo):
-    same button in the log toolbar (after entity filter input)
+  - 'stacks/tony-dell/tony-ha/www/chaba-events-card.js (v6, repo): "⤢" button in the source toolbar toggles fullscreen'
+  - 'stacks/tony-dell/tony-ha/www/chaba-log-card.js (v6, repo): same button in the log toolbar (after entity filter input)'
   - mechanism: requestFullscreen() (covers HA chrome + browser chrome,
-    Esc exits natively); fixed-position overlay via data-fs="1" fallback
-    where element fullscreen is unsupported (iPhone Safari); second tap
-    exits either mode; _fitHeight() re-runs on fullscreenchange so the
-    panel still fills the screen edge-to-edge
-  - docs/ssot/infrastructure/ssot.home-assistant.dashboards.yml:
-    chaba_admin note + tab cards entries marked v6 pending deploy
+      Esc exits natively); fixed-position overlay via data-fs="1" fallback
+      where element fullscreen is unsupported (iPhone Safari); second tap
+      exits either mode; _fitHeight() re-runs on fullscreenchange so the
+      panel still fills the screen edge-to-edge
+  - 'docs/ssot/infrastructure/ssot.home-assistant.dashboards.yml: chaba_admin note + tab cards entries marked v6 pending deploy'
 
 not_done:
   - deploy to tony-ha (production — requires Tony's explicit approval):
-    scp chaba-events-card.js + chaba-log-card.js to
-    tony-dell:~/.config/home-assistant/www/, bump both resource URLs to
-    ?v=6 via push-dashboard.py --mutate, then sync-ssot-from-live.sh
-    and commit the refreshed snapshot
+      scp chaba-events-card.js + chaba-log-card.js to
+      tony-dell:~/.config/home-assistant/www/, bump both resource URLs to
+      ?v=6 via push-dashboard.py --mutate, then sync-ssot-from-live.sh
+      and commit the refreshed snapshot
   - michael-dev token refresh (~/.config/secrets/ha-michael-dev.env
-    returns auth_invalid on websocket auth — needs a new long-lived
-    token; read-only check only, no write attempted)
+      returns auth_invalid on websocket auth — needs a new long-lived
+      token; read-only check only, no write attempted)
 
 verify_after_deploy:
   - curl -s -o /dev/null -w '%{http_code}' \
       https://tony-dell.taila0626a.ts.net:8123/local/chaba-log-card.js
   - open /chaba-admin/events and /chaba-admin/log — ⤢ button in each
-    toolbar expands the card over the full screen; Esc or second tap
-    restores the tab view
+      toolbar expands the card over the full screen; Esc or second tap
+      restores the tab view
