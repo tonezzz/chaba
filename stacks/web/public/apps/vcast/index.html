@@ -303,7 +303,10 @@
           }
           // element shown but nothing loaded — the cast URL 404'd/tainted
           if (img.src) {
-            return await post({ error: "image-load-failed", detail: img.src.slice(0, 200) });
+            return await post({ error: "image-load-failed",
+              detail: img.src.slice(0, 200),
+              diag: `complete=${img.complete} nw=${img.naturalWidth} ` +
+                    `vis=${document.visibilityState} online=${navigator.onLine}` });
           }
           return await post({ error: "idle-or-overlay" });
         }

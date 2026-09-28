@@ -57,7 +57,9 @@ PANE_TITLE_H = 30
 # view where the video area is ~4x the pixels of the grid cell — capture that
 # for quality. The 4-grid toolbar button restores multi-view afterwards.
 SINGLE_PANE_RECT = (5, 90, 1070, 640)   # video area in zoomed single-pane
-GRID4_BTN = (357, 672)                  # bottom-toolbar 2x2 grid icon
+GRID4_BTN = (388, 675)                  # bottom-toolbar 2x2 grid icon (2nd;
+                                        # 357 = 1-pane — a miss leaves VMS
+                                        # zoomed and corrupts the next snap)
 # Tree strip scanned for the selected-row blue highlight (verify the click
 # landed on the intended channel instead of silently returning another).
 TREE_STRIP_X = (1090, 1260)
@@ -238,26 +240,6 @@ def selected_row_y(width: int, height: int, rgb: bytes) -> int | None:
     return rows[0] if rows else None
 
 
-def is_zoomed(width: int, height: int, rgb: bytes) -> bool:
-    """Zoomed single-pane: the lower monitor quadrant is video content.
-    In grid mode that region is another empty pane (uniform gray)."""
-    x1, y1, x2, y2 = SINGLE_PANE_RECT
-    # sample the bottom half of the single-pane area
-    lo = 0
-    n = 0
-    vals = []
-    for y in range(y1 + (y2 - y1) * 6 // 10, y2, 8):
-        for x in range(x1, x2, 16):
-            o = (y * width + x) * 3
-            if o + 2 < len(rgb):
-                vals.append(rgb[o] + rgb[o + 1] + rgb[o + 2]); n += 1
-    if n < 10:
-        return False
-    m = sum(vals) / n
-    var = sum((v - m) * (v - m) for v in vals) / n
-    return var > 1500  # real video has spread; dead gray is ~uniform
-
-
 def png_encode(width: int, height: int, rgb: bytes) -> bytes:
     def chunk(tag: bytes, payload: bytes) -> bytes:
         return (struct.pack(">I", len(payload)) + tag + payload
@@ -285,15 +267,21 @@ def snap(query: str, settle: float) -> tuple[bytes, str]:
         # later double-click unambiguously means "zoomed".
         _podman("xdotool", "mousemove", str(GRID4_BTN[0]),
                 str(GRID4_BTN[1]), "click", "1", timeout=10)
-        select_channel(meta["x"], meta["y"])
-        time.sleep(settle)
-        raw = capture_xwd()
-        # The double-clicked row can drift off-target (tree scroll, dead rows
-        # shifting positions) — verify the highlighted row is the requested
-        # one before trusting the pane content.
-        w, h, rgb = xwd_to_rgb(raw)
-        sel_y = selected_row_y(w, h, rgb)
-        if sel_y is not None and abs(sel_y - meta["y"]) > 14:
+        raw = None
+        for _seltry in range(2):
+            select_channel(meta["x"], meta["y"])
+            time.sleep(settle)
+            raw = capture_xwd()
+            # The double-clicked row can drift off-target (tree scroll, dead
+            # rows shifting positions) — verify the highlighted row is the
+            # requested one before trusting the pane content. A busy Wine UI
+            # can eat the click; retry once before failing.
+            w, h, rgb = xwd_to_rgb(raw)
+            sel_y = selected_row_y(w, h, rgb)
+            if sel_y is None or abs(sel_y - meta["y"]) <= 14:
+                break
+            if _seltry == 0:
+                continue
             raise RuntimeError(
                 f"selected row y={sel_y} does not match '{name}' "
                 f"(y={meta['y']}) — device tree layout drifted; "
