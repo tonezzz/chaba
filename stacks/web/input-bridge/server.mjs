@@ -240,6 +240,33 @@ const server = http.createServer(async (req, res) => {
     return json(res, 200, displaysSnapshot());
   }
 
+  // Cam-wall control: {zones: {<zone>: {enabled, screen, since}}} — the
+  // puller on tony-dell GETs this each cycle; Ada's cctv_wall tool POSTs it.
+  if (req.method === "GET" && url.pathname === "/camwall") {
+    return json(res, 200, camwallState);
+  }
+
+  if (req.method === "POST" && url.pathname === "/camwall") {
+    let body;
+    try {
+      body = await readBody(req);
+    } catch (e) {
+      return json(res, 400, { error: e.message });
+    }
+    const zone = String(body.zone || "");
+    if (!zone) return json(res, 400, { error: "zone required" });
+    if (body.enabled === false) {
+      delete camwallState.zones[zone];
+    } else {
+      camwallState.zones[zone] = {
+        enabled: true,
+        screen: body.screen != null ? Number(body.screen) : null,
+        since: new Date().toISOString(),
+      };
+    }
+    return json(res, 200, { ok: true, zones: camwallState.zones });
+  }
+
   if (req.method === "GET" && url.pathname === "/pair-info") {
     const sid = url.searchParams.get("sid") || "";
     const p = pending.get(sid);
@@ -288,6 +315,7 @@ const server = http.createServer(async (req, res) => {
       ts: Date.now(),
       state: String(body.state || ""),
       error: body.error ? String(body.error).slice(0, 300) : null,
+      detail: body.detail ? String(body.detail).slice(0, 300) : null,
       buf,
     });
     return json(res, 200, { ok: true, bytes: buf ? buf.length : 0 });
@@ -307,6 +335,7 @@ const server = http.createServer(async (req, res) => {
       return json(res, 200, {
         ok: true, screen, state: f.state,
         error: f.error || "no image data",
+        detail: f.detail || null,
       });
     }
     res.writeHead(200, { "content-type": "image/jpeg", "cache-control": "no-store" });
@@ -440,6 +469,7 @@ const server = http.createServer(async (req, res) => {
 // ---------------------------------------------------------------------------
 const rooms = new Map();
 const lastFrames = new Map(); // screen -> {token, ts, state, error, buf}
+const camwallState = { zones: {} }; // in-memory; zones re-enable after restart
 
 function leaveRoom(ws) {
   const room = ws.room;
@@ -593,7 +623,7 @@ wss.on("connection", (ws) => {
 
 server.on("upgrade", (req, socket, head) => {
   const pathname = new URL(req.url, "http://x").pathname;
-  if (["/pub", "/displays", "/claim", "/health", "/pair-info", "/frame"].includes(pathname)) {
+  if (["/pub", "/displays", "/claim", "/health", "/pair-info", "/frame", "/camwall"].includes(pathname)) {
     socket.destroy();
     return;
   }

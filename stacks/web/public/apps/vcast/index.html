@@ -246,8 +246,15 @@
         if (video.style.display !== "none" && video.videoWidth) {
           return await post({ data: grab(video, video.videoWidth, video.videoHeight) });
         }
-        if (img.style.display !== "none" && img.naturalWidth) {
-          return await post({ data: grab(img, img.naturalWidth, img.naturalHeight) });
+        if (img.style.display !== "none") {
+          if (img.naturalWidth) {
+            return await post({ data: grab(img, img.naturalWidth, img.naturalHeight) });
+          }
+          // element shown but nothing loaded — the cast URL 404'd/tainted
+          if (img.src) {
+            return await post({ error: "image-load-failed", detail: img.src.slice(0, 200) });
+          }
+          return await post({ error: "idle-or-overlay" });
         }
         if (frame.style.display !== "none") {
           return await post({ error: "uncapturable-iframe" });

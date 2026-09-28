@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>cam-wall</title>
+<style>
+  html, body { margin: 0; background: #000; color: #ddd; font-family: ui-monospace, monospace; height: 100%; }
+  #grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+          gap: 2px; height: 100vh; box-sizing: border-box; padding: 2px; }
+  .cell { position: relative; background: #111; overflow: hidden; min-height: 0; }
+  .cell img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .lbl { position: absolute; left: 0; top: 0; padding: 3px 8px; background: rgba(0,0,0,.55);
+         font-size: 13px; color: #8ef; letter-spacing: .04em; }
+  .age { position: absolute; right: 0; bottom: 0; padding: 2px 7px; background: rgba(0,0,0,.55);
+         font-size: 12px; color: #9aa; }
+  .age.stale { color: #f66; }
+  .err { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+         color: #f66; font-size: 13px; }
+  #hud { position: fixed; right: 8px; top: 8px; z-index: 10; font-size: 12px; color: #8ef;
+         background: rgba(0,0,0,.5); padding: 3px 8px; border-radius: 4px; }
+</style>
+</head>
+<body>
+<div id="grid"></div>
+<div id="hud">cam-wall</div>
+<script>
+  const zone = new URLSearchParams(location.search).get("zone") || "zone-a";
+  const grid = document.getElementById("grid");
+  const hud = document.getElementById("hud");
+  const cells = new Map(); // key -> {img, age}
+
+  async function refresh() {
+    let man;
+    try {
+      man = await (await fetch(`data/${zone}/manifest-${zone}.json?t=${Date.now()}`, { cache: "no-store" })).json();
+    } catch (e) {
+      hud.textContent = `cam-wall ${zone} — no manifest`;
+      return;
+    }
+    hud.textContent = `${zone} · ${man.cams.filter(c => c.ok).length}/${man.cams.length} live`;
+    const now = Date.now() / 1000;
+    for (const cam of man.cams) {
+      let c = cells.get(cam.key);
+      if (!c) {
+        const div = document.createElement("div");
+        div.className = "cell";
+        div.innerHTML = `<span class="lbl">${cam.label}</span><img alt=""><span class="age"></span><div class="err" style="display:none"></div>`;
+        grid.appendChild(div);
+        c = { img: div.querySelector("img"), age: div.querySelector(".age"), err: div.querySelector(".err"), ts: 0 };
+        cells.set(cam.key, c);
+      }
+      if (cam.ts && cam.ts !== c.ts) {
+        c.ts = cam.ts;
+        c.img.src = `data/${zone}/${cam.key}.jpg?t=${cam.ts}`;
+        c.img.style.display = "block";
+        c.err.style.display = "none";
+      } else if (!cam.ok && cam.err && !c.ts) {
+        c.err.textContent = cam.err;
+        c.err.style.display = "flex";
+      }
+      const age = cam.ts ? Math.round(now - cam.ts) : null;
+      if (age != null) {
+        c.age.textContent = age < 5 ? "live" : `${age}s ago`;
+        c.age.className = "age" + (age > 180 ? " stale" : "");
+      }
+    }
+  }
+  refresh();
+  setInterval(refresh, 5000);
+</script>
+</body>
+</html>
