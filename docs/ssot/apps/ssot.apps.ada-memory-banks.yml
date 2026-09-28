@@ -484,6 +484,21 @@ banks:
     status: active
     public: false
 
+  developer:
+    title: Developer knowledge
+    description: "Distilled, Tony-confirmed developer facts, procedures, and decisions extracted from Devin session history. Writable via ada_remember; candidates enter as drafts for review before becoming active."
+    scope: instance
+    instances: [tony]
+    mddb_collection: ada-ha-bank-developer-tony
+    notebooklm_group: null
+    notebooklm_id: null
+    kinds: [fact, procedure, decision, note]
+    writable: true
+    write_policy: confirmed
+    allowed_tools: [ada_remember, ada_forget, ada_outcome]
+    status: active
+    public: false
+
 # Conversational persona — adjustable per-identity style knobs. Stored as
 # doc 'persona/self' inside the speaker's resolved personal bank (personal,
 # personal-kk, personal-testo), so per-person isolation rides the existing
