@@ -918,6 +918,19 @@ mn01:
     edge: "tailscale serve path mount /apps/ha/ada-michael -> 127.0.0.1:8003 on idc01; mn01 Caddy reverse-proxies the same paths to idc01 as a legacy alias"
     upstream_ha: "http://michael-ha:8123/"
     note: "Backend is /home/tony/CascadeProjects/ada-pi/pwa_server.py. Environment uses HOME_ASSISTANT_URL=http://michael-ha:8123/ and the Michael long-lived token. A synced mirror runs on idc01 :8003 (loopback) exposed at https://idc01.taila0626a.ts.net/apps/ha/ada-michael/ — same admin keys; idc01 reaches michael-ha directly over tailnet (verified 401 on /api/ 2026-09-23)."
+  ada-dev:
+    service: ada-dev.service
+    host: idc01
+    port: 8005
+    host_port: 127.0.0.1:8005
+    purpose: Ada dev/lab instance — isolated lane for scenarios, benches, dispatch experiments
+    status: active (created 2026-09-28)
+    env_file: "~/.config/secrets/ada-dev.env"
+    domain: dev
+    upstream_ha: none — all HOME_ASSISTANT_* vars removed; HA/camera/actuation tools excluded
+    excluded_tools: "get_habit_status, report_habit_observation, control_entity, control_cover, press_button, control_media_player, tv_action, gev_command, cctv_snapshot, cctv_wall, ada_camera_snapshot, get_home_state, list_home_devices, search_home_devices, ada_ha_* (full set)"
+    banks: "dev-lab (ada-dev-lab), dev-bench (ada-dev-bench), dev-dispatch (ada-dev-dispatch) — instances:['dev'] in ~/.config/ada/memory-banks.json"
+    note: "ADA_INSTANCE_ID=dev; shares the ada-ha-tony ADA_API_KEY; exclusion strips tool declarations (model can't see them) — /api/tools still lists all server-side. Live-verified 2026-09-28: asked to write tony-projects, it correctly answered 'available banks are dev bench, dev dispatch, dev lab'. First scenario run: memory_confirm_gate ws://127.0.0.1:8005/ws."
   google-home-mcp:
     service: google-home-mcp.service
     host: mn01
