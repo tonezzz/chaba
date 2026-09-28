@@ -258,6 +258,12 @@
       uplinkTimer = setInterval(push, Math.max(300, intervalMs));
       showToast("camera uplink on");
       sendState("uplink-on");
+      // record the capture lease — Ada checks GET /capture before stopping
+      fetch(`${location.origin}/api/input-bridge/capture`, {
+        method: "POST", headers: { "content-type": "application/json" },
+        body: JSON.stringify({ screen: screenNum, source: "cam",
+          active: true, by: "vcast-uplink" }),
+      }).catch(() => {});
     }
     function stopUplink() {
       if (uplinkTimer) { clearInterval(uplinkTimer); uplinkTimer = null; }
@@ -265,6 +271,10 @@
       uplinkVideo = null;
       showToast("camera uplink off");
       sendState(lastState === "uplink-on" ? "idle" : lastState);
+      fetch(`${location.origin}/api/input-bridge/capture`, {
+        method: "POST", headers: { "content-type": "application/json" },
+        body: JSON.stringify({ screen: screenNum, active: false }),
+      }).catch(() => {});
     }
 
     // Ada's "look at the screen" path — draws the element actually on-screen

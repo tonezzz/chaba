@@ -240,6 +240,44 @@ const server = http.createServer(async (req, res) => {
     return json(res, 200, displaysSnapshot());
   }
 
+  // Capture leases: {screen -> {source, ch?, active, since, by}} — ground
+  // truth for "is a camera capture running on this screen" so Ada asks
+  // permission before starting/stopping (camera_cast_permission contract).
+  // Writers: vcast page (uplink), Ada cast/cctv tools.
+  if (req.method === "GET" && url.pathname === "/capture") {
+    const screen = url.searchParams.get("screen");
+    if (screen != null) {
+      return json(res, 200, captureState[screen] || { active: false });
+    }
+    const active = Object.fromEntries(
+      Object.entries(captureState).filter(([, c]) => c.active));
+    return json(res, 200, { captures: active });
+  }
+
+  if (req.method === "POST" && url.pathname === "/capture") {
+    let body;
+    try {
+      body = await readBody(req);
+    } catch (e) {
+      return json(res, 400, { error: e.message });
+    }
+    const screen = Number(body.screen);
+    if (!Number.isInteger(screen) || screen < 0)
+      return json(res, 400, { error: "screen required" });
+    if (body.active === false) {
+      delete captureState[screen];
+      return json(res, 200, { ok: true, active: false });
+    }
+    captureState[screen] = {
+      active: true,
+      source: String(body.source || "cam"),
+      ch: body.ch ? String(body.ch).slice(0, 80) : null,
+      by: body.by ? String(body.by).slice(0, 80) : "display",
+      since: new Date().toISOString(),
+    };
+    return json(res, 200, { ok: true, capture: captureState[screen] });
+  }
+
   // Cam-wall control: {zones: {<zone>: {enabled, screen, since}}} — the
   // puller on tony-dell GETs this each cycle; Ada's cctv_wall tool POSTs it.
   if (req.method === "GET" && url.pathname === "/camwall") {
@@ -483,6 +521,7 @@ const lastCast = new Map();   // room -> last play/image/nav/stop msg (replayed
                               // to a display on register so a ws flap doesn't
                               // blank the screen)
 const camwallState = { zones: {} }; // in-memory; zones re-enable after restart
+const captureState = {}; // screen -> {source, ch, active, since, by} — capture leases
 
 function leaveRoom(ws) {
   const room = ws.room;
