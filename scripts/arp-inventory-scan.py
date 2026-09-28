@@ -61,6 +61,7 @@ def build_mac_map(mac_data):
     for device in mac_data.get("config", {}).get("mac_registry", []):
         device_id = device["device_id"]
         label = device.get("label", device_id)
+        floating = bool(device.get("floating"))
         for iface in device.get("interfaces", []):
             mac = iface.get("mac")
             if not mac:
@@ -70,6 +71,7 @@ def build_mac_map(mac_data):
                     "device_id": device_id,
                     "interface_id": iface.get("interface_id", "primary"),
                     "label": label,
+                    "floating": floating,
                 }
             )
     return mac_map
@@ -89,6 +91,7 @@ def build_ip_map(ip_data):
                     "device_id": alloc.get("device_id"),
                     "interface_id": alloc.get("interface_id", "primary"),
                     "network_id": network_id,
+                    "kind": alloc.get("kind"),
                 }
             )
     return ip_map
@@ -292,6 +295,26 @@ def classify_discovery(discovered, mac_map, ip_map, last_seen):
                 seen_keys.add(key)
                 continue
             else:
+                # Floating device or plain DHCP-pinned IP: ownership churn is
+                # expected, not a real conflict. Conflicts are reserved for
+                # static/reserved allocations.
+                churn = mac_entries[0].get("floating") or all(
+                    a.get("kind") == "dhcp" for a in ip_entries
+                )
+                if churn:
+                    key = f"{mac_device}/{mac_entries[0]['interface_id']}"
+                    is_new = key not in last_seen or last_seen[key].get("ip") != ip
+                    results["new_ip_for_known_device"].append(
+                        {
+                            **result_entry,
+                            "device_id": mac_device,
+                            "interface_id": mac_entries[0]["interface_id"],
+                            "is_new": is_new,
+                            "churn": True,
+                        }
+                    )
+                    seen_keys.add(key)
+                    continue
                 results["conflict"].append(
                     {
                         **result_entry,
@@ -399,7 +422,10 @@ def update_last_seen(discovered, mac_map, ip_map, last_seen):
 
 def should_alert(results):
     """Only alert on *new* changes, not stale registry drift."""
-    for key in ("new_devices", "new_ip_for_known_device", "mac_changed", "conflict", "duplicate_macs"):
+    for key in ("new_devices", "new_ip_for_known_device", "mac_changed"):
+        if any(e.get("is_new") for e in results.get(key, [])):
+            return True
+    for key in ("conflict", "duplicate_macs"):
         if results.get(key):
             return True
     return False

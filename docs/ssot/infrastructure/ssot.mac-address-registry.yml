@@ -294,22 +294,24 @@ config:
           first_seen: "2026-09-09"
           last_observed: "2026-09-09"
           status: active
-    - device_id: discovered-68f0bcad208a
-      label: Discovered 0a:f0:bc:ad:20:8b
+    - device_id: xiaomi-c100
+      label: Xiaomi Smart Camera C100
       status: active
+      floating: true
       interfaces:
-        - interface_id: wlan0-0af0
-          mac: 0a:f0:bc:ad:20:8b
-          oui: 0AF0BC
-          vendor: Unknown
+        - interface_id: wlan0
+          mac: b8:88:80:cb:7d:2c
+          oui: B88880
+          vendor: Xiaomi
           type: wifi
-          source: arp
+          source: dhcp
           first_seen: "2026-09-09"
-          last_observed: "2026-09-10"
+          last_observed: "2026-09-27"
           status: active
     - device_id: iphone-227311ed1353
       label: iPhone (22:73:11:ed:13:53)
       status: active
+      floating: true
       interfaces:
         - interface_id: wlan0
           mac: 22:73:11:ed:13:53
@@ -323,6 +325,7 @@ config:
     - device_id: discovered-ea9b8fd280f0
       label: Discovered ea:9b:8f:d2:80:f0
       status: active
+      floating: true
       interfaces:
         - interface_id: wlan0
           mac: ea:9b:8f:d2:80:f0
@@ -371,6 +374,7 @@ config:
     - device_id: mac-72b5f0db14f3
       label: Mac (72:b5:f0:db:14:f3)
       status: active
+      floating: true
       interfaces:
         - interface_id: wlan0
           mac: 72:b5:f0:db:14:f3
@@ -384,6 +388,7 @@ config:
     - device_id: iphone-fa31d9bd44ff
       label: iPhone (fa:31:d9:bd:44:ff)
       status: active
+      floating: true
       interfaces:
         - interface_id: wlan0
           mac: fa:31:d9:bd:44:ff
@@ -410,6 +415,7 @@ config:
     - device_id: apple-watch-3a21760b0885
       label: Apple Watch (3a:21:76:0b:08:85)
       status: active
+      floating: true
       interfaces:
         - interface_id: wlan0
           mac: 3a:21:76:0b:08:85
@@ -423,6 +429,7 @@ config:
     - device_id: apple-watch-b67265caaae1
       label: Apple Watch (b6:72:65:ca:aa:e1)
       status: active
+      floating: true
       interfaces:
         - interface_id: wlan0
           mac: b6:72:65:ca:aa:e1
@@ -475,6 +482,7 @@ config:
     - device_id: tony-repeater
       label: Tenda Wi-Fi Repeater
       status: active
+      floating: true
       interfaces:
         - interface_id: wlan0
           mac: 06:28:58:26:4b:2c
@@ -484,6 +492,15 @@ config:
           source: dhcp
           first_seen: "2026-09-09"
           last_observed: "2026-09-17"
+          status: active
+        - interface_id: wan0
+          mac: 0a:f0:bc:ad:20:8b
+          oui: 0AF0BC
+          vendor: Tenda WAN side (locally administered; was discovered-68f0bcad208a)
+          type: wifi
+          source: arp
+          first_seen: "2026-09-09"
+          last_observed: "2026-09-27"
           status: active
     - device_id: esp32-test
       label: ESP32 Test
