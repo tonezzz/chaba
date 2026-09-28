@@ -664,6 +664,22 @@ tony-omen:
     routing:
       - /v1/chat/completions → phi3-gguf (local fallback only)
     status: slimmed 2026-09-28 — tailnet-only bind (was 0.0.0.0 LAN-exposed); no production consumers (ONB embeddings + mcp-llama moved to idc01:11434); keep for GPU/local use when laptop is home
+  openclaw-gateway:
+    service: OpenClaw agent gateway (travel-mode agent)
+    runtime: systemd user service (openclaw-gateway.service) + npm user prefix ~/.npm-global
+    host: tony_omen
+    port: "127.0.0.1:18789 (loopback, token auth)"
+    config: ~/.openclaw/openclaw.json
+    models: "primary openrouter/qwen/qwen3.8-27b:free + 5 ranked :free fallbacks (GhostRoute-managed)"
+    auth_profile: "openrouter:manual — key shared with idc01 mddb-gemini.env OPENROUTER_API_KEY"
+    status: installed 2026-09-28; zero-cost OR free-tier agenting for the travel laptop
+  ghostroute-watcher:
+    service: GhostRoute watcher — rotates OpenClaw primary across OR :free models on throttle
+    runtime: systemd user service (ghostroute-watcher.service)
+    host: tony_omen
+    binary: ~/.local/bin/ghostroute-watcher (pipx, kittimasak/GhostRoute)
+    env: OPENROUTER_API_KEY via ~/.config/secrets/openrouter.env
+    status: active 2026-09-28
   postgres:
     container: postgres
     image: postgres:16-alpine
