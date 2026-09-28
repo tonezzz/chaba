@@ -207,7 +207,17 @@
     }
     function showImage(url, interval) {
       showOnly(img);
-      const tick = () => { img.src = url + (url.includes("?") ? "&" : "?") + "_t=" + Date.now(); };
+      // surface a load failure instead of a silent black screen
+      img.onerror = () => {
+        setHud(`screen ${screenNum} · image failed`, false);
+        sendState("image-load-failed", url);
+        showToast("image failed to load");
+      };
+      img.onload = () => setHud(`screen ${screenNum} · image`, true);
+      // never append cache-busters to data: URLs — it corrupts the payload
+      const mkSrc = () => url.startsWith("data:") ? url
+        : url + (url.includes("?") ? "&" : "?") + "_t=" + Date.now();
+      const tick = () => { img.src = mkSrc(); };
       tick();
       if (interval > 0) imgTimer = setInterval(tick, Math.max(1, interval) * 1000);
       setHud(`screen ${screenNum} · image`, true);
@@ -325,7 +335,12 @@
       try { wakeLock = await navigator.wakeLock.request("screen"); } catch (e) {}
     }
     document.addEventListener("visibilitychange", () => {
-      if (document.visibilityState === "visible") keepAwake();
+      if (document.visibilityState === "visible") {
+        keepAwake();
+        // iOS suspends suspended-tab JS: the ws can die while hidden and
+        // onclose timers never fire — force a reconnect on foreground.
+        if (!ws || ws.readyState > 1) connect();
+      }
     });
     keepAwake();
 

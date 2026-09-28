@@ -8,8 +8,9 @@
   html, body { margin: 0; background: #000; color: #ddd; font-family: ui-monospace, monospace; height: 100%; }
   #grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
           gap: 2px; height: 100vh; box-sizing: border-box; padding: 2px; }
-  .cell { position: relative; background: #111; overflow: hidden; min-height: 0; }
+  .cell { position: relative; background: #111; overflow: hidden; min-height: 0; cursor: pointer; }
   .cell img { width: 100%; height: 100%; object-fit: contain; display: block; }
+  .cell.live-edge { outline: 1px solid #2af; outline-offset: -1px; }
   .lbl { position: absolute; left: 0; top: 0; padding: 3px 8px; background: rgba(0,0,0,.55);
          font-size: 13px; color: #8ef; letter-spacing: .04em; }
   .age { position: absolute; right: 0; bottom: 0; padding: 2px 7px; background: rgba(0,0,0,.55);
@@ -19,16 +20,43 @@
          color: #f66; font-size: 13px; }
   #hud { position: fixed; right: 8px; top: 8px; z-index: 10; font-size: 12px; color: #8ef;
          background: rgba(0,0,0,.5); padding: 3px 8px; border-radius: 4px; }
+  /* tap-to-fullscreen overlay — scrollable so a big frame can be panned */
+  #zoom { position: fixed; inset: 0; z-index: 50; background: #000; display: none;
+          overflow: auto; -webkit-overflow-scrolling: touch; }
+  #zoom img { display: block; margin: 0 auto; max-width: none; }
+  #zoom .cap { position: fixed; left: 0; top: 0; padding: 6px 12px; z-index: 51;
+               background: rgba(0,0,0,.6); color: #8ef; font-size: 14px; }
+  #zoom .x { position: fixed; right: 10px; top: 8px; z-index: 51; color: #f88;
+             font-size: 22px; background: rgba(0,0,0,.6); padding: 2px 10px;
+             border-radius: 6px; cursor: pointer; }
 </style>
 </head>
 <body>
 <div id="grid"></div>
 <div id="hud">cam-wall</div>
+<div id="zoom"><div class="cap"></div><div class="x">✕</div><img alt=""></div>
 <script>
   const zone = new URLSearchParams(location.search).get("zone") || "zone-a";
   const grid = document.getElementById("grid");
   const hud = document.getElementById("hud");
-  const cells = new Map(); // key -> {img, age}
+  const zoom = document.getElementById("zoom");
+  const zoomImg = zoom.querySelector("img");
+  const zoomCap = zoom.querySelector(".cap");
+  const cells = new Map(); // key -> {img, age, err, ts, url}
+  let order = [];          // round-robin rotation order (live cams)
+  let rrIdx = 0;
+
+  zoom.querySelector(".x").addEventListener("click", () => zoom.style.display = "none");
+  zoom.addEventListener("click", (e) => { if (e.target !== zoomImg) zoom.style.display = "none"; });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape") zoom.style.display = "none"; });
+
+  function openZoom(c, label) {
+    if (!c.url) return;
+    zoomImg.src = c.url;
+    zoomCap.textContent = label;
+    zoom.style.display = "block";
+    zoom.scrollTo(0, 0);
+  }
 
   async function refresh() {
     let man;
@@ -40,6 +68,7 @@
     }
     hud.textContent = `${zone} · ${man.cams.filter(c => c.ok).length}/${man.cams.length} live`;
     const now = Date.now() / 1000;
+    order = [];
     for (const cam of man.cams) {
       let c = cells.get(cam.key);
       if (!c) {
@@ -47,18 +76,24 @@
         div.className = "cell";
         div.innerHTML = `<span class="lbl">${cam.label}</span><img alt=""><span class="age"></span><div class="err" style="display:none"></div>`;
         grid.appendChild(div);
-        c = { img: div.querySelector("img"), age: div.querySelector(".age"), err: div.querySelector(".err"), ts: 0 };
+        c = { img: div.querySelector("img"), age: div.querySelector(".age"),
+              err: div.querySelector(".err"), ts: 0, url: "" };
+        div.addEventListener("click", () => openZoom(c, cam.label));
         cells.set(cam.key, c);
       }
       if (cam.ts && cam.ts !== c.ts) {
         c.ts = cam.ts;
-        c.img.src = `data/${zone}/${cam.key}.jpg?t=${cam.ts}`;
+        c.url = `data/${zone}/${cam.key}.jpg`;
+        c.img.src = `${c.url}?t=${cam.ts}`;
         c.img.style.display = "block";
         c.err.style.display = "none";
-      } else if (!cam.ok && cam.err && !c.ts) {
+        c.img.onload = () => { c.err.style.display = "none"; };
+      }
+      if (!cam.ok && cam.err && !c.url) {
         c.err.textContent = cam.err;
         c.err.style.display = "flex";
       }
+      if (c.url) order.push(c);   // only live cells join the rotation
       const age = cam.ts ? Math.round(now - cam.ts) : null;
       if (age != null) {
         c.age.textContent = age < 5 ? "live" : `${age}s ago`;
@@ -66,6 +101,21 @@
       }
     }
   }
+
+  // Round-robin live ticker: while the page is visible, bump ONE cell's
+  // image every second — cell 1 at t, cell 2 at t+1s, … loop. Fresh thumbs
+  // appear as the puller writes them; the rotation is page-side so Ada
+  // only turns the zone on/off via cctv_wall.
+  setInterval(() => {
+    if (document.visibilityState !== "visible" || !order.length) return;
+    for (const c of cells.values()) c.img.parentElement.classList.remove("live-edge");
+    const c = order[rrIdx++ % order.length];
+    c.img.parentElement.classList.add("live-edge");
+    c.img.src = `${c.url}?t=${Date.now()}`;
+    if (zoom.style.display === "block" && zoomCap.textContent === c.img.parentElement.querySelector(".lbl").textContent)
+      zoomImg.src = `${c.url}?t=${Date.now()}`;
+  }, 1000);
+
   refresh();
   setInterval(refresh, 5000);
 </script>
