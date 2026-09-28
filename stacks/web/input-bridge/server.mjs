@@ -671,4 +671,19 @@ setInterval(() => {
     }
   }
   pendingCleanup();
+  // prune display registrations untouched for 72h — stale test devices
+  // otherwise pile up in /displays forever (iPad sleeping overnight is safe:
+  // it re-registers and re-renders via lastCast replay)
+  const cutoff = Date.now() - 72 * 3600e3;
+  let pruned = false;
+  for (const [n, s] of Object.entries(registry.screens)) {
+    if (live.has(Number(n))) continue;
+    const seen = Date.parse(s.last_seen || s.assigned_at || 0);
+    if (seen && seen < cutoff) {
+      console.log(`[vcast] pruning stale screen ${n} (${s.name || s.label})`);
+      delete registry.screens[n];
+      pruned = true;
+    }
+  }
+  if (pruned) saveRegistry();
 }, PING_INTERVAL_MS);

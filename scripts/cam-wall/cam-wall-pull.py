@@ -88,9 +88,17 @@ def pull_cam(kind: str, key: str) -> bytes:
         url = f"{VMS_SNAP}/snap?ch={urllib.parse.quote(key)}"
         _, data = http_get(url, 60)
         return data
-    url = f"{GO2RTC}/api/frame.jpeg?src={urllib.parse.quote(key)}"
-    _, data = http_get(url, 20)
-    return data
+    # go2rtc: try the stream, then fall back to base/SD variants — an _hd
+    # stream can be dead (200 + empty body) while the plain one is alive
+    for v in [key, key.removesuffix("_hd"), key.removesuffix("_hd") + "_sd"]:
+        try:
+            _, data = http_get(
+                f"{GO2RTC}/api/frame.jpeg?src={urllib.parse.quote(v)}", 20)
+            if len(data) >= 500:
+                return data
+        except Exception:
+            continue
+    raise ValueError(f"empty frame from {key} (all variants)")
 
 
 def pull_zone(zone: str, cfg: dict, zdir: Path) -> dict:
