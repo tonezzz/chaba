@@ -92,17 +92,22 @@ def resolve_channel(query: str, channels: dict) -> tuple[str, dict] | None:
 
 def select_channel(x: int, y: int) -> None:
     # Activate pane 1, then double-click the channel's tree row.
-    _podman("xdotool", "mousemove", "--sync", str(PANE_CLICK[0]),
-            str(PANE_CLICK[1]), "click", "1")
+    # No --sync anywhere: a synced mousemove blocks >30s whenever the Wine
+    # app's event loop is busy (stream switch / reconnect) — fire-and-forget
+    # plus our own sleeps is strictly more robust.
+    _podman("xdotool", "mousemove", str(PANE_CLICK[0]),
+            str(PANE_CLICK[1]), "click", "1", timeout=10)
     time.sleep(0.4)
     # Scroll the device tree fully to the top so channel-row coordinates
     # stay true — a scrolled tree shifts every row and picks a wrong camera.
-    _podman("xdotool", "mousemove", "--sync", str(TREE_ANCHOR[0]),
-            str(TREE_ANCHOR[1]))
-    _podman("xdotool", "click", "--repeat", "20", "--delay", "40", "4")
+    _podman("xdotool", "mousemove", str(TREE_ANCHOR[0]),
+            str(TREE_ANCHOR[1]), timeout=10)
+    _podman("xdotool", "click", "--repeat", "20", "--delay", "40", "4",
+            timeout=15)
     time.sleep(0.3)
-    _podman("xdotool", "mousemove", "--sync", str(x), str(y))
-    _podman("xdotool", "click", "--repeat", "2", "--delay", "150", "1")
+    _podman("xdotool", "mousemove", str(x), str(y), timeout=10)
+    _podman("xdotool", "click", "--repeat", "2", "--delay", "150", "1",
+            timeout=10)
 
 
 def capture_xwd() -> bytes:
@@ -233,6 +238,26 @@ def selected_row_y(width: int, height: int, rgb: bytes) -> int | None:
     return rows[0] if rows else None
 
 
+def is_zoomed(width: int, height: int, rgb: bytes) -> bool:
+    """Zoomed single-pane: the lower monitor quadrant is video content.
+    In grid mode that region is another empty pane (uniform gray)."""
+    x1, y1, x2, y2 = SINGLE_PANE_RECT
+    # sample the bottom half of the single-pane area
+    lo = 0
+    n = 0
+    vals = []
+    for y in range(y1 + (y2 - y1) * 6 // 10, y2, 8):
+        for x in range(x1, x2, 16):
+            o = (y * width + x) * 3
+            if o + 2 < len(rgb):
+                vals.append(rgb[o] + rgb[o + 1] + rgb[o + 2]); n += 1
+    if n < 10:
+        return False
+    m = sum(vals) / n
+    var = sum((v - m) * (v - m) for v in vals) / n
+    return var > 1500  # real video has spread; dead gray is ~uniform
+
+
 def png_encode(width: int, height: int, rgb: bytes) -> bytes:
     def chunk(tag: bytes, payload: bytes) -> bytes:
         return (struct.pack(">I", len(payload)) + tag + payload
@@ -271,15 +296,24 @@ def snap(query: str, settle: float) -> tuple[bytes, str]:
                 "recalibrate channels.json")
 
         # Zoom pane 1 for a ~4x-resolution capture, then restore the grid.
-        # NOTE: no --sync here — the Wine app is busy re-rendering after the
-        # channel switch and a synced mousemove can block >30s.
-        _podman("xdotool", "mousemove", str(PANE_CLICK[0]),
-                str(PANE_CLICK[1]))
-        _podman("xdotool", "click", "--repeat", "2", "--delay", "150", "1")
-        time.sleep(1.2)
-        raw2 = capture_xwd()
+        # NOTE: no --sync — a synced mousemove blocks >30s while the Wine
+        # app re-renders after the channel switch.
+        raw2 = None
+        for _attempt in range(3):
+            _podman("xdotool", "mousemove", str(PANE_CLICK[0]),
+                    str(PANE_CLICK[1]), timeout=10)
+            _podman("xdotool", "click", "--repeat", "2", "--delay", "150",
+                    "1", timeout=10)
+            time.sleep(1.4)
+            cand = capture_xwd()
+            w2, h2, rgb2 = xwd_to_rgb(cand)
+            if is_zoomed(w2, h2, rgb2):
+                raw2 = cand
+                break
+        if raw2 is None:
+            raw2 = cand  # zoom never applied — grid capture is still usable
         _podman("xdotool", "mousemove", str(GRID4_BTN[0]),
-                str(GRID4_BTN[1]), "click", "1")
+                str(GRID4_BTN[1]), "click", "1", timeout=10)
     w, h, rgb = xwd_to_rgb(raw2)
     w, h, rgb = crop_rgb(w, h, rgb, SINGLE_PANE_RECT)
     box = content_bbox(w, h, rgb)
