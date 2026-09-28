@@ -2,6 +2,7 @@
 """Sync SSOT YAML files to MDDB for semantic search"""
 import os
 import json
+import hashlib
 import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
@@ -139,12 +140,33 @@ This document contains canonical values from `ssot.values.yml` expressed in plai
     }
 
 
+def _existing_md5(collection, key, lang):
+    """content_md5 of the stored doc, or None if absent/unreadable."""
+    try:
+        r = _mddb_session.post(
+            f"{MDBB_SERVER}/get",
+            json={"collection": collection, "key": key, "lang": lang},
+            timeout=15,
+        )
+        if not r.ok:
+            return None
+        meta = (r.json().get("meta") or {})
+        v = meta.get("content_md5")
+        return v[0] if isinstance(v, list) and v else v
+    except Exception:
+        return None
+
+
 def sync_file(yaml_path, rel_path):
     """Sync a single SSOT YAML file to MDDB"""
     payload = convert_yaml_to_mddb(yaml_path, rel_path)
     args = payload["arguments"]
 
     try:
+        md5 = hashlib.md5(args["content_md"].encode()).hexdigest()
+        args["meta"]["content_md5"] = md5
+        if _existing_md5(args["collection"], args["key"], args["lang"]) == md5:
+            return True, args["collection"], True  # unchanged — skip write
         # MDDB expects meta values to be string arrays
         meta_arrays = {k: [v] if isinstance(v, str) else v for k, v in args["meta"].items()}
         response = _mddb_session.post(
@@ -158,10 +180,10 @@ def sync_file(yaml_path, rel_path):
             }
         )
         response.raise_for_status()
-        return True, args["collection"]
+        return True, args["collection"], False
     except Exception as e:
         print(f"❌ Error syncing {rel_path}: {e}")
-        return False, args["collection"]
+        return False, args["collection"], False
 
 def main():
     # Find all SSOT YAML files
@@ -183,12 +205,13 @@ def main():
         yaml_path = os.path.join(SSOT_DIR, rel_path)
 
         print(f"📄 Syncing: {rel_path}", end=" ... ")
-        success, collection = sync_file(yaml_path, rel_path)
+        success, collection, skipped = sync_file(yaml_path, rel_path)
 
         if success:
-            print(f"✅ ({collection})")
+            print("⏭ unchanged" if skipped else f"✅ ({collection})")
             success_count += 1
-            collection_counts[collection] = collection_counts.get(collection, 0) + 1
+            if not skipped:
+                collection_counts[collection] = collection_counts.get(collection, 0) + 1
         else:
             print("❌")
 
@@ -197,13 +220,19 @@ def main():
     print(f"📄 Syncing: SSOT glossary", end=" ... ")
     glossary_doc = build_glossary_document(values_path)
     try:
-        response = _mddb_session.post(
-            f"{MDBB_SERVER}/add",
-            json=glossary_doc
-        )
-        response.raise_for_status()
-        print(f"✅ ({glossary_doc['collection']})")
-        collection_counts[glossary_doc['collection']] = collection_counts.get(glossary_doc['collection'], 0) + 1
+        gmd5 = hashlib.md5(glossary_doc["contentMd"].encode()).hexdigest()
+        glossary_doc["meta"]["content_md5"] = [gmd5]
+        if _existing_md5(glossary_doc["collection"], glossary_doc["key"],
+                         glossary_doc["lang"]) == gmd5:
+            print("⏭ unchanged")
+        else:
+            response = _mddb_session.post(
+                f"{MDBB_SERVER}/add",
+                json=glossary_doc
+            )
+            response.raise_for_status()
+            print(f"✅ ({glossary_doc['collection']})")
+            collection_counts[glossary_doc['collection']] = collection_counts.get(glossary_doc['collection'], 0) + 1
         success_count += 1
     except Exception as e:
         print(f"❌ {e}")
