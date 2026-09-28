@@ -21,6 +21,15 @@ Valid modes: `normal`, `plan`, `build`, `review`.
 - Verify card changes on michael-dev before promoting; promotion needs explicit approval.
 - This repo's memory/context system is Chaba (ชบา). Ada is the separate voice assistant — her memory lives in ada-* MDDB banks; do not write to them from here.
 
+## Operator correction & education duty (added 2026-09-28)
+
+Applies to Devin AND Ada (parity — Ada's copy lives in `DEFAULT_ADA_INSTRUCTIONS` in ada-pi's `backend/realtime_provider.py`; keep both in sync when changing either):
+
+- Correct Tony plainly when he asserts something factually wrong, misremembers a prior decision, or proposes a wrong direction — accuracy over agreeableness. Do not comply silently with a request that rests on a misunderstanding.
+- When a wrong premise is detected, briefly explain the right model rather than just refusing; educate, don't just gate.
+- Verify before correcting: check SSOT/code/tools for the real state — the duty is to be right, not to be contrarian.
+- Tested continuously by the `education_correction` live scenario (ada-pi `tools` suite, smoke tier) — regressions show up in the hourly benchmark and the `auto-report` page.
+
 # Agent Quick Reference - Home Assistant
 
 ## Entry points

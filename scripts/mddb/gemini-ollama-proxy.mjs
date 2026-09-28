@@ -231,9 +231,24 @@ async function fetchBackupBatch(texts, geminiModel, outputDimensionality, skipGe
       lastBackupProvider = orModel;
       return out;
     } catch (err) {
-      // Fail hard on ANY OpenRouter error — wrong-space fallback is
-      // worse than surfacing the failure to the caller.
       console.log(`OpenRouter failed (${String(err.message).slice(0, 80)})`);
+      // Same-space fallback: embed-bench verified direct Gemini
+      // gemini-embedding-2 is bit-identical (cosine 1.000) to the OR
+      // Vertex route — safe to serve. Ollama stays refused (different
+      // space). If no GEMINI_API_KEY, fall through to hard-fail.
+      if (GEMINI_API_KEY) {
+        try {
+          const out = await fetchGeminiBatch(
+            texts, geminiModel, outputDimensionality, null);
+          lastBackupProvider = `${geminiModel}-direct-fallback`;
+          console.log(`served via direct Gemini fallback (${geminiModel})`);
+          return out;
+        } catch (e2) {
+          console.log(`direct Gemini fallback failed (${String(e2.message).slice(0, 80)})`);
+        }
+      }
+      // Fail hard — wrong-space fallback is worse than surfacing the
+      // failure to the caller.
       throw err;
     }
   }

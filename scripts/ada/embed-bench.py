@@ -210,29 +210,43 @@ cosine(OR, direct) per doc — mean **{rep['cosine']['mean']}**, min **{rep['cos
 
 **Cons**
 - ~5× slower per batch — OR's Vertex route rejects array input, so every
-  text is its own HTTP call (fine at our write volume).
-- Hard dependency: the proxy *refuses* wrong-space fallback, so an OR
-  outage means embed failures until direct-Gemini leg kicks in.
+  text is its own HTTP call (fine at our write volume). OR docs claim
+  arrays are supported; the pin to provider `Google` is what breaks it.
 - Silent spend creep — needs an occasional usage check, not alerts.
 - OR AI-Studio provider route is broken (bogus API_KEY_INVALID) —
   pinned `order:[Google]` is the only working path.
 
-## Improvement candidates (ranked)
+## Improvements — applied vs open
 
-1. **Restore `GEMINI_API_KEY` in `mddb-gemini.env`** — the file lost it
-   when OR went primary, so the middle fallback leg (direct Gemini) is
-   currently dead; an OR outage falls straight to Ollama, a DIFFERENT
-   vector space (nomic-embed-text) — the exact silent-poisoning the
-   design warns about. Highest value, zero cost. ⚠ verify before outage.
-2. **Add an OR search tier to `web_search`** — bigger win than embeddings:
-   paid Gemini grounding ≈ $35/1K queries vs OR sonar ≈ $5/1K. Would sit
-   between Gemini (20/day free) and DuckDuckGo. Needs a bench first.
-3. **Parallelize OR embed calls** (4-8 concurrent) in the proxy — recovers
-   most of the 5× latency gap while keeping the 1-req/text shape.
-4. **Weekly `embed-bench` timer + OR usage readout** — catches spend creep
-   and model-version drift automatically; cheap (pennies/month).
-5. **Pin `dimensions:768` + model version in SSOT** — mddb assumes 768;
-   a silent model bump on either route would break retrieval parity.
+**Applied this run**
+- `GEMINI_API_KEY` restored in `mddb-gemini.env` + proxy now falls back
+  to direct Gemini (same space, verified 1.000) on OR failure — Ollama
+  still refused. Failover tested live: dead OR → direct Gemini → 768d.
+
+**Open (ranked)**
+1. **Per-collection int8 quantization on mddb** — native feature
+   (`PUT /v1/collection-config`, ~4× RAM cut, ~92-98% recall). Directly
+   addresses the 8.1GB OOM event; existing vectors keep working,
+   `vector-reindex --force` converts.
+2. **OR search tier for `web_search`** — paid Gemini grounding ≈ $35/1K
+   vs OR sonar ≈ $5/1K; sits between free-20/day and DuckDuckGo.
+3. **Embedding-chunk tunables** — mddb splits docs at 1500 chars by
+   default; each chunk is one sequential OR call → the 20s+ CMS write
+   times. Larger chunks or proxy-side concurrency would cut latency.
+4. **Parallelize OR embed calls** (4-8 concurrent) in the proxy.
+5. **Weekly `embed-bench` timer + OR usage readout** — catches spend
+   creep and provider-side model drift.
+6. **Pin `dimensions:768` + model in SSOT.**
+7. **OR Batch API** exists for embeddings (async, 24h window,
+   `provider.only` pin) — the right tool if we ever do a bulk
+   re-embed/backfill; not for live writes.
+
+## Sources
+
+- mddb quantization: github.com/tradik/mddb → docs/QUANTIZATION.md
+- mddb chunking/cache: docs/features + EMBEDDING_PROVIDERS.md
+- OR embeddings spec: openrouter.ai/docs/api_reference/embeddings
+- OR batch API: openrouter.ai/docs/batch-quickstart
 """
         http_json(f"{MDDB}/add", {
             "collection": "ada-cms-pages", "key": "gemini-or-embedding-benchmark",
