@@ -5,11 +5,12 @@ const PORT = parseInt(process.env.GEMINI_PROXY_PORT || "11435", 10);
 const HOST = process.env.GEMINI_PROXY_HOST || "0.0.0.0";
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const GEMINI_EMBEDDING_MODEL = process.env.GEMINI_EMBEDDING_MODEL || "gemini-embedding-2";
+// Fallback model is OFF by default — gemini-embedding-001 and -2 are
+// DIFFERENT vector spaces (measured cos ≈ 0.00), so cross-model retry
+// would write wrong-space vectors into the index. Set only if you know
+// the fallback shares the same space.
 const GEMINI_EMBEDDING_FALLBACK_MODEL =
-  process.env.GEMINI_EMBEDDING_FALLBACK_MODEL ||
-  (GEMINI_EMBEDDING_MODEL === "gemini-embedding-001"
-    ? "gemini-embedding-2"
-    : "gemini-embedding-001");
+  process.env.GEMINI_EMBEDDING_FALLBACK_MODEL || null;
 const DEFAULT_DIMENSIONS = parseInt(process.env.GEMINI_EMBEDDING_DIMENSIONS || "768", 10);
 const OLLAMA_FALLBACK_BASE = (process.env.OLLAMA_FALLBACK_BASE || "").replace(/\/$/, "");
 const OLLAMA_FALLBACK_MODEL = process.env.OLLAMA_FALLBACK_MODEL || "nomic-embed-text";
@@ -34,12 +35,19 @@ const CIRCUIT_COOLDOWN_MS = parseInt(process.env.OLLAMA_CIRCUIT_COOLDOWN_MS || "
 // straight to the Ollama fallback for a cooldown instead of paying the
 // retry+backoff cost on every request.
 let geminiCircuitOpenUntil = 0;
+// Same idea for the OR-primary path: once OR fails, skip the dead hop
+// and serve direct Gemini (verified same vector space — see embed-bench)
+// for a cooldown window instead of paying one doomed OR call per embed.
+const OR_CIRCUIT_COOLDOWN_MS = parseInt(process.env.OR_CIRCUIT_COOLDOWN_MS || "300000", 10);
+let orCircuitOpenUntil = 0;
 let lastBackupProvider = null;
 const INITIAL_BACKOFF_MS = 500;
 const MAX_BACKOFF_MS = 30000;
 
+// Alias map — anything unmapped falls through to GEMINI_EMBEDDING_MODEL
+// (the active space). Deliberately no text-embedding-004 → -001 alias:
+// -001 is a different vector space than -2 and would poison the index.
 const MODEL_ALIASES = {
-  "text-embedding-004": "gemini-embedding-001",
   "nomic-embed-text": "gemini-embedding-2",
   "gemini-embedding-001": "gemini-embedding-001",
   "gemini-embedding-1": "gemini-embedding-001",
@@ -225,32 +233,37 @@ async function fetchBackupBatch(texts, geminiModel, outputDimensionality, skipGe
   // When OR is primary this whole chain is the normal path.
   if (OPENROUTER_API_KEY) {
     const orModel = `${OPENROUTER_PREFIX}${geminiModel}`;
-    console.log(`routing ${texts.length} input(s) via OpenRouter ${orModel}`);
-    try {
-      const out = await fetchOpenRouterBatch(texts, orModel, outputDimensionality);
-      lastBackupProvider = orModel;
-      return out;
-    } catch (err) {
-      console.log(`OpenRouter failed (${String(err.message).slice(0, 80)})`);
-      // Same-space fallback: embed-bench verified direct Gemini
-      // gemini-embedding-2 is bit-identical (cosine 1.000) to the OR
-      // Vertex route — safe to serve. Ollama stays refused (different
-      // space). If no GEMINI_API_KEY, fall through to hard-fail.
-      if (GEMINI_API_KEY) {
-        try {
-          const out = await fetchGeminiBatch(
-            texts, geminiModel, outputDimensionality, null);
-          lastBackupProvider = `${geminiModel}-direct-fallback`;
-          console.log(`served via direct Gemini fallback (${geminiModel})`);
-          return out;
-        } catch (e2) {
-          console.log(`direct Gemini fallback failed (${String(e2.message).slice(0, 80)})`);
-        }
+    const orCircuitOpen = Date.now() < orCircuitOpenUntil;
+    if (!orCircuitOpen) {
+      console.log(`routing ${texts.length} input(s) via OpenRouter ${orModel}`);
+      try {
+        const out = await fetchOpenRouterBatch(texts, orModel, outputDimensionality);
+        lastBackupProvider = orModel;
+        return out;
+      } catch (err) {
+        console.log(`OpenRouter failed (${String(err.message).slice(0, 80)})`);
+        orCircuitOpenUntil = Date.now() + OR_CIRCUIT_COOLDOWN_MS;
       }
-      // Fail hard — wrong-space fallback is worse than surfacing the
-      // failure to the caller.
-      throw err;
     }
+    // Same-space fallback: embed-bench verified direct Gemini
+    // gemini-embedding-2 is bit-identical (cosine 1.000) to the OR
+    // Vertex route — safe to serve. Ollama stays refused (different
+    // space). If no GEMINI_API_KEY, fall through to hard-fail.
+    if (GEMINI_API_KEY) {
+      try {
+        const out = await fetchGeminiBatch(
+          texts, geminiModel, outputDimensionality, null);
+        lastBackupProvider = `${geminiModel}-direct-fallback`;
+        console.log(`served via direct Gemini fallback (${geminiModel}` +
+          `${orCircuitOpen ? ", OR circuit open" : ""})`);
+        return out;
+      } catch (e2) {
+        console.log(`direct Gemini fallback failed (${String(e2.message).slice(0, 80)})`);
+      }
+    }
+    // Fail hard — wrong-space fallback is worse than surfacing the
+    // failure to the caller.
+    throw new Error(`all same-space providers down (OR${orCircuitOpen ? " circuit-open" : ""} + Gemini failed)`);
   }
   if (GEMINI_API_KEY && !skipGemini) {
     try {
