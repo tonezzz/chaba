@@ -53,6 +53,14 @@ TREE_ANCHOR = (1150, 205)
 # Rows at the top of PANE_RECT carrying the pane title/OSD header — stripped
 # before autocrop so it doesn't count as "content".
 PANE_TITLE_H = 30
+# Single-pane zoom: double-clicking the active monitor pane toggles a zoomed
+# view where the video area is ~4x the pixels of the grid cell — capture that
+# for quality. The 4-grid toolbar button restores multi-view afterwards.
+SINGLE_PANE_RECT = (5, 90, 1070, 640)   # video area in zoomed single-pane
+GRID4_BTN = (357, 672)                  # bottom-toolbar 2x2 grid icon
+# Tree strip scanned for the selected-row blue highlight (verify the click
+# landed on the intended channel instead of silently returning another).
+TREE_STRIP_X = (1090, 1260)
 
 STATE_DIR = os.environ.get("VMS_SNAP_STATE", "/tmp")
 _lock = threading.Lock()
@@ -202,6 +210,29 @@ def content_bbox(width: int, height: int, rgb: bytes) -> tuple[int, int, int, in
             min(width, cols[-1] + pad), min(height, rows[-1] + pad))
 
 
+def selected_row_y(width: int, height: int, rgb: bytes) -> int | None:
+    """Y-center of the highlighted (blue) row in the device tree — verifies
+    the clicked channel is the one that got selected."""
+    x1, x2 = TREE_STRIP_X
+    rows: list[int] = []
+    run: list[int] = []
+    for y in range(120, height, 2):
+        blue = 0
+        for x in range(x1, min(x2, width), 4):
+            o = (y * width + x) * 3
+            r, g, b = rgb[o], rgb[o + 1], rgb[o + 2]
+            if b > 130 and b > r + 40 and b > g + 20:
+                blue += 1
+        if blue > 20:
+            run.append(y)
+        elif run:
+            rows.append(sum(run) // len(run))
+            run = []
+    if run:
+        rows.append(sum(run) // len(run))
+    return rows[0] if rows else None
+
+
 def png_encode(width: int, height: int, rgb: bytes) -> bytes:
     def chunk(tag: bytes, payload: bytes) -> bytes:
         return (struct.pack(">I", len(payload)) + tag + payload
@@ -228,12 +259,29 @@ def snap(query: str, settle: float) -> tuple[bytes, str]:
         select_channel(meta["x"], meta["y"])
         time.sleep(settle)
         raw = capture_xwd()
-    w, h, rgb = xwd_to_rgb(raw)
-    w, h, rgb = crop_rgb(w, h, rgb, PANE_RECT)
-    # strip the pane title/OSD header, then autocrop to the real video so
-    # dead pane space and 4:3 pillarboxing don't stretch on the display
-    rgb = rgb[PANE_TITLE_H * w * 3:]
-    h -= PANE_TITLE_H
+        # The double-clicked row can drift off-target (tree scroll, dead rows
+        # shifting positions) — verify the highlighted row is the requested
+        # one before trusting the pane content.
+        w, h, rgb = xwd_to_rgb(raw)
+        sel_y = selected_row_y(w, h, rgb)
+        if sel_y is not None and abs(sel_y - meta["y"]) > 14:
+            raise RuntimeError(
+                f"selected row y={sel_y} does not match '{name}' "
+                f"(y={meta['y']}) — device tree layout drifted; "
+                "recalibrate channels.json")
+
+        # Zoom pane 1 for a ~4x-resolution capture, then restore the grid.
+        # NOTE: no --sync here — the Wine app is busy re-rendering after the
+        # channel switch and a synced mousemove can block >30s.
+        _podman("xdotool", "mousemove", str(PANE_CLICK[0]),
+                str(PANE_CLICK[1]))
+        _podman("xdotool", "click", "--repeat", "2", "--delay", "150", "1")
+        time.sleep(1.2)
+        raw2 = capture_xwd()
+        _podman("xdotool", "mousemove", str(GRID4_BTN[0]),
+                str(GRID4_BTN[1]), "click", "1")
+    w, h, rgb = xwd_to_rgb(raw2)
+    w, h, rgb = crop_rgb(w, h, rgb, SINGLE_PANE_RECT)
     box = content_bbox(w, h, rgb)
     if box:
         w, h, rgb = crop_rgb(w, h, rgb, box)
