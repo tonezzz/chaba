@@ -306,26 +306,36 @@ const server = http.createServer(async (req, res) => {
       return json(res, 400, { error: e.message });
     }
     const screen = Number(body.screen);
-    if (!screen) return json(res, 400, { error: "screen required" });
+    if (!Number.isInteger(screen) || screen < 0)
+      return json(res, 400, { error: "screen required" });
+    // screen 0 = shared asset bucket (cam-snap casts); screens N>=1 are
+    // the display's own captures
+    const token = body.token ? String(body.token).slice(0, 80) : "snap";
     const raw = String(body.data || "");
     const b64 = raw.includes(",") ? raw.slice(raw.indexOf(",") + 1) : raw;
     const buf = b64 ? Buffer.from(b64, "base64") : null;
-    lastFrames.set(screen, {
-      token: body.token || null,
+    lastFrames.set(`${screen}:${token}`, {
       ts: Date.now(),
       state: String(body.state || ""),
       error: body.error ? String(body.error).slice(0, 300) : null,
       detail: body.detail ? String(body.detail).slice(0, 300) : null,
       buf,
     });
+    if (lastFrames.size > 64) {  // bound memory — drop oldest
+      const oldest = lastFrames.keys().next().value;
+      lastFrames.delete(oldest);
+    }
     return json(res, 200, { ok: true, bytes: buf ? buf.length : 0 });
   }
 
   if (req.method === "GET" && url.pathname === "/frame") {
     const screen = Number(url.searchParams.get("screen"));
     const token = url.searchParams.get("token");
-    const f = lastFrames.get(screen);
-    if (!f || (token && f.token !== token)) {
+    const f = lastFrames.get(`${screen}:${token || ""}`)
+        || (token ? null : [...lastFrames.entries()]
+             .filter(([k]) => k.startsWith(`${screen}:`))
+             .sort((a, b) => b[1].ts - a[1].ts)[0]?.[1]);
+    if (!f) {
       return json(res, 404, {
         error: "frame not ready", screen,
         state: f ? f.state : null,
@@ -468,7 +478,10 @@ const server = http.createServer(async (req, res) => {
 // WebSocket relay
 // ---------------------------------------------------------------------------
 const rooms = new Map();
-const lastFrames = new Map(); // screen -> {token, ts, state, error, buf}
+const lastFrames = new Map(); // "screen:token" -> {ts, state, error, detail, buf}
+const lastCast = new Map();   // room -> last play/image/nav/stop msg (replayed
+                              // to a display on register so a ws flap doesn't
+                              // blank the screen)
 const camwallState = { zones: {} }; // in-memory; zones re-enable after restart
 
 function leaveRoom(ws) {
@@ -492,6 +505,12 @@ function broadcastTo(room, data) {
   const clients = rooms.get(room);
   if (!clients) return 0;
   const msg = typeof data === "string" ? data : JSON.stringify(data);
+  // remember display-state casts so a reconnecting screen re-renders instead
+  // of going idle after a ws flap
+  try {
+    const obj = typeof data === "string" ? JSON.parse(data) : data;
+    if (["play", "image", "nav", "stop"].includes(obj?.type)) lastCast.set(room, obj);
+  } catch (e) { /* ignore */ }
   let delivered = 0;
   for (const client of clients) {
     if (client.readyState === 1) {
@@ -567,6 +586,10 @@ async function registerDisplay(ws, msg) {
   live.set(screen, ws);
   joinRoom(ws, `vcast-${screen}`);
   ws.send(JSON.stringify({ type: "registered", screen, name }));
+  // restore the last cast after a reconnect — otherwise a ws flap blanks
+  // the display to idle
+  const last = lastCast.get(`vcast-${screen}`);
+  if (last) setTimeout(() => { try { ws.send(JSON.stringify(last)); } catch (e) {} }, 400);
 }
 
 const wss = new WebSocketServer({ noServer: true });
