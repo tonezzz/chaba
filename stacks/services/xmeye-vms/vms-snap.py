@@ -46,6 +46,13 @@ MAX_SETTLE = 30.0
 PANE_RECT = (7, 84, 536, 357)   # x1, y1, x2, y2
 # Click target to make pane 1 the active pane before selecting a channel.
 PANE_CLICK = (270, 218)
+# Point inside the device tree used to reset its scroll — row coordinates in
+# channels.json assume the tree is scrolled fully up; a drifted scroll shifts
+# every row and silently selects the wrong camera.
+TREE_ANCHOR = (1150, 205)
+# Rows at the top of PANE_RECT carrying the pane title/OSD header — stripped
+# before autocrop so it doesn't count as "content".
+PANE_TITLE_H = 30
 
 STATE_DIR = os.environ.get("VMS_SNAP_STATE", "/tmp")
 _lock = threading.Lock()
@@ -80,6 +87,12 @@ def select_channel(x: int, y: int) -> None:
     _podman("xdotool", "mousemove", "--sync", str(PANE_CLICK[0]),
             str(PANE_CLICK[1]), "click", "1")
     time.sleep(0.4)
+    # Scroll the device tree fully to the top so channel-row coordinates
+    # stay true — a scrolled tree shifts every row and picks a wrong camera.
+    _podman("xdotool", "mousemove", "--sync", str(TREE_ANCHOR[0]),
+            str(TREE_ANCHOR[1]))
+    _podman("xdotool", "click", "--repeat", "20", "--delay", "40", "4")
+    time.sleep(0.3)
     _podman("xdotool", "mousemove", "--sync", str(x), str(y))
     _podman("xdotool", "click", "--repeat", "2", "--delay", "150", "1")
 
@@ -153,6 +166,42 @@ def crop_rgb(width: int, height: int, rgb: bytes,
     return w, h, bytes(out)
 
 
+def content_bbox(width: int, height: int, rgb: bytes) -> tuple[int, int, int, int] | None:
+    """Find the bounding box of non-uniform content by luma variance —
+    trims dead pane space (gray bars) and pillarboxing around 4:3 streams."""
+    if width < 16 or height < 16:
+        return None
+    step_y = max(1, height // 90)
+    step_x = max(1, width // 120)
+    thresh2 = 40 * 40  # luma variance threshold (~6.3 stddev of luma*3)
+
+    def colvar(c: int) -> float:
+        s = s2 = n = 0
+        for r in range(0, height, step_y):
+            o = (r * width + c) * 3
+            lum = rgb[o] + rgb[o + 1] + rgb[o + 2]
+            s += lum; s2 += lum * lum; n += 1
+        m = s / n
+        return s2 / n - m * m
+
+    def rowvar(r: int) -> float:
+        s = s2 = n = 0
+        for c in range(0, width, step_x):
+            o = (r * width + c) * 3
+            lum = rgb[o] + rgb[o + 1] + rgb[o + 2]
+            s += lum; s2 += lum * lum; n += 1
+        m = s / n
+        return s2 / n - m * m
+
+    cols = [c for c in range(0, width, step_x) if colvar(c) > thresh2]
+    rows = [r for r in range(0, height, step_y) if rowvar(r) > thresh2]
+    if not cols or not rows:
+        return None
+    pad = 4
+    return (max(0, cols[0] - pad), max(0, rows[0] - pad),
+            min(width, cols[-1] + pad), min(height, rows[-1] + pad))
+
+
 def png_encode(width: int, height: int, rgb: bytes) -> bytes:
     def chunk(tag: bytes, payload: bytes) -> bytes:
         return (struct.pack(">I", len(payload)) + tag + payload
@@ -181,6 +230,13 @@ def snap(query: str, settle: float) -> tuple[bytes, str]:
         raw = capture_xwd()
     w, h, rgb = xwd_to_rgb(raw)
     w, h, rgb = crop_rgb(w, h, rgb, PANE_RECT)
+    # strip the pane title/OSD header, then autocrop to the real video so
+    # dead pane space and 4:3 pillarboxing don't stretch on the display
+    rgb = rgb[PANE_TITLE_H * w * 3:]
+    h -= PANE_TITLE_H
+    box = content_bbox(w, h, rgb)
+    if box:
+        w, h, rgb = crop_rgb(w, h, rgb, box)
     return png_encode(w, h, rgb), name
 
 
