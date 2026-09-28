@@ -140,6 +140,7 @@
     function teardown() {
       if (hls) { try { hls.destroy(); } catch (e) {} hls = null; }
       video.pause(); video.removeAttribute("src"); video.load(); video.style.display = "none";
+      img.onerror = img.onload = null;
       img.style.display = "none"; img.removeAttribute("src");
       frame.style.display = "none"; frame.src = "about:blank";
       audio.pause(); audio.removeAttribute("src");
@@ -184,6 +185,15 @@
       if (vm) return `https://player.vimeo.com/video/${vm[1]}?autoplay=1${audioOK ? "" : "&muted=1"}`;
       return null;
     }
+    // The receiver is served over https, so plain http: media URLs are
+    // mixed-content-blocked — and tailscale :8123-style listeners are
+    // https-only anyway (http gets a bare 400). Upgrade when the page is TLS.
+    function mediaUrl(url) {
+      if (location.protocol === "https:" && /^http:\/\//i.test(url)) {
+        return "https:" + url.slice(5);
+      }
+      return url;
+    }
     function play(url) {
       const emb = embedUrl(url);
       if (emb) { nav(emb); sendState("playing", url); return; }
@@ -195,18 +205,32 @@
       if (isHls && !video.canPlayType("application/vnd.apple.mpegurl")) {
         if (!window.Hls || !Hls.isSupported()) { showToast("hls unsupported"); return sendState("error", "hls unsupported"); }
         hls = new Hls({ liveSyncDurationCount: 3 });
-        hls.loadSource(url);
+        hls.loadSource(mediaUrl(url));
         hls.attachMedia(video);
         hls.on(Hls.Events.ERROR, (_, d) => { if (d.fatal) showToast("hls: " + (d.details || "error")); });
       } else {
-        video.src = url;
+        video.src = mediaUrl(url);
       }
       video.play().catch(() => showToast("tap for playback"));
       setHud(`screen ${screenNum} · video`, true);
       sendState("playing", url);
     }
     function showImage(url, interval) {
+      url = mediaUrl(url);
       showOnly(img);
+      img.onerror = () => {
+        if (lastState !== "error" || lastDetail !== url) {
+          showToast("image failed — " + url.slice(0, 120), 5000);
+        }
+        setHud(`screen ${screenNum} · image failed`, false);
+        sendState("error", url);
+      };
+      img.onload = () => {
+        if (lastState === "error") {
+          setHud(`screen ${screenNum} · image`, true);
+          sendState("image", url);
+        }
+      };
       const tick = () => { img.src = url + (url.includes("?") ? "&" : "?") + "_t=" + Date.now(); };
       tick();
       if (interval > 0) imgTimer = setInterval(tick, Math.max(1, interval) * 1000);
@@ -215,13 +239,13 @@
     }
     function nav(url) {
       showOnly(frame);
-      frame.src = embedUrl(url) || url;
+      frame.src = embedUrl(url) || mediaUrl(url);
       setHud(`screen ${screenNum} · web`, true);
       sendState("nav", url);
     }
     function playAudio(url) {
       if (!audioOK) { audioGate.style.display = "block"; showToast("audio blocked — tap to enable"); }
-      audio.src = url;
+      audio.src = mediaUrl(url);
       audio.play().catch(() => {});
       sendState("audio", url);
     }
@@ -299,7 +323,26 @@
         }
         if (img.style.display !== "none") {
           if (img.naturalWidth) {
-            return await post({ data: grab(img, img.naturalWidth, img.naturalHeight) });
+            try {
+              return await post({ data: grab(img, img.naturalWidth, img.naturalHeight) });
+            } catch (e) {
+              // Canvas tainted by a cross-origin <img> without CORS — the
+              // pixels rendered fine on screen but can't be read back.
+              // Refetch the same URL through the relay's /img proxy so the
+              // copy is same-origin and clean.
+              const proxied = await fetch(
+                `${location.origin}/api/input-bridge/img?url=${encodeURIComponent(img.src)}`);
+              if (!proxied.ok) {
+                return await post({ error: "snap-proxy-failed",
+                  detail: `HTTP ${proxied.status} for ${img.src.slice(0, 160)}` });
+              }
+              const objUrl = URL.createObjectURL(await proxied.blob());
+              try {
+                const im = new Image();
+                await new Promise((res, rej) => { im.onload = res; im.onerror = rej; im.src = objUrl; });
+                return await post({ data: grab(im, im.naturalWidth, im.naturalHeight) });
+              } finally { URL.revokeObjectURL(objUrl); }
+            }
           }
           // element shown but nothing loaded — the cast URL 404'd/tainted
           if (img.src) {
@@ -308,7 +351,8 @@
           return await post({ error: "idle-or-overlay" });
         }
         if (frame.style.display !== "none") {
-          return await post({ error: "uncapturable-iframe" });
+          return await post({ error: "uncapturable-iframe",
+            detail: String(frame.src || "").slice(0, 200) });
         }
         return await post({ error: "idle-or-overlay" });
       } catch (e) {

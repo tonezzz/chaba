@@ -162,6 +162,25 @@ function tailnetClient(req) {
   const m = ip.match(/^100\.(\d{1,3})\./);
   return !!m && +m[1] >= 64 && +m[1] <= 127;
 }
+// GET /img allowlist — tailnet hostnames and private/loopback address space.
+function imgProxyAllowed(u) {
+  let h;
+  try {
+    h = new URL(u).hostname;
+  } catch (e) {
+    return false;
+  }
+  if (/^[^.]+\.taila0626a\.ts\.net$/i.test(h) || h === "localhost" ||
+      h.endsWith(".local") || h.endsWith(".lan")) return true;
+  const m = h.replace(/^::ffff:/, "").match(/^(\d+)\.(\d+)\.\d+\.\d+$/);
+  if (!m) return false;
+  const a = +m[1], b = +m[2];
+  if (a === 10 || a === 127 || (a === 100 && b >= 64 && b <= 127)) return true;
+  if (a === 192 && b === 168) return true;
+  if (a === 172 && b >= 16 && b <= 31) return true;
+  return false;
+}
+
 function json(res, code, obj) {
   res.writeHead(code, {
     "content-type": "application/json",
@@ -388,6 +407,39 @@ const server = http.createServer(async (req, res) => {
     }
     res.writeHead(200, { "content-type": "image/jpeg", "cache-control": "no-store" });
     return res.end(f.buf);
+  }
+
+  // Same-origin image proxy for snapFrame's tainted-canvas fallback: when a
+  // casted <img> came from a cross-origin host without CORS, the display can
+  // see it but can't read pixels back. It asks us to refetch the URL
+  // server-side and reloads the blob — same-origin, so canvas stays clean.
+  // Allowlisted to tailnet/LAN/loopback so this can't be an open proxy.
+  if (req.method === "GET" && url.pathname === "/img") {
+    const target = url.searchParams.get("url") || "";
+    if (!/^https?:\/\//i.test(target) || !imgProxyAllowed(target)) {
+      return json(res, 403, { error: "url not allowed" });
+    }
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), 10000);
+    let up;
+    try {
+      up = await fetch(target, { redirect: "follow", signal: ctrl.signal });
+    } catch (e) {
+      clearTimeout(t);
+      return json(res, 502, { error: String(e.message || e) });
+    }
+    clearTimeout(t);
+    if (!up.ok) return json(res, 502, { error: `upstream ${up.status}` });
+    const len = Number(up.headers.get("content-length") || 0);
+    if (len > 20 * 1024 * 1024) return json(res, 413, { error: "too large" });
+    const buf = Buffer.from(await up.arrayBuffer());
+    if (buf.length > 20 * 1024 * 1024) return json(res, 413, { error: "too large" });
+    res.writeHead(200, {
+      "content-type": up.headers.get("content-type") || "application/octet-stream",
+      "access-control-allow-origin": "*",
+      "cache-control": "no-store",
+    });
+    return res.end(buf);
   }
 
   if (req.method === "POST" && url.pathname === "/claim") {

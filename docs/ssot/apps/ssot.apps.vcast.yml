@@ -17,9 +17,9 @@ sections:
     layout: list
     items:
       - label: Receiver page
-        text: "stacks/web/public/apps/vcast/index.html — joins the input-bridge WS room, registers with api_key (or shows pairing QR when unpaired), renders play/image/nav/audio/stop messages. Native HLS on iOS Safari, vendored hls.js elsewhere. Screen Wake Lock keeps the display on."
+        text: "stacks/web/public/apps/vcast/index.html — joins the input-bridge WS room, registers with api_key (or shows pairing QR when unpaired), renders play/image/nav/audio/stop messages. Native HLS on iOS Safari, vendored hls.js elsewhere. Screen Wake Lock keeps the display on. mediaUrl() upgrades http: media URLs to https: when the page is served over TLS (mixed-content guard — tony-ha :8123 is HTTPS-only and answers plain HTTP with a 400); image load failures surface as HUD 'image failed' + toast + state:error report. snapFrame() answers snap-request by drawing the visible video/img element into a canvas and POSTing a JPEG to /frame; cross-origin images that taint the canvas are refetched through the relay's /img proxy so the pixels stay readable."
       - label: Relay + registry
-        text: "stacks/web/input-bridge/server.mjs — podman quadlet input-bridge.service on idc01, bound to tailnet 100.74.146.0:3010 only (never the public VPS interface; INPUT_BRIDGE_BIND). HTTP: GET /health, GET /displays, GET /pair-info?sid=, POST /pub {screen|room,msg}, POST /claim {sid,name?,force}, POST /dismiss {sid}, POST /release {screen|name} (admin key optional — falls back to ADA_ADMIN_KEY env). WS: room broadcast + register-display. Registry persisted at ~/.local/share/input-bridge/displays.json on idc01."
+        text: "stacks/web/input-bridge/server.mjs — podman quadlet input-bridge.service on idc01, bound to tailnet 100.74.146.0:3010 only (never the public VPS interface; INPUT_BRIDGE_BIND). HTTP: GET /health, GET /displays, GET /pair-info?sid=, POST /pub {screen|room,msg}, POST /claim {sid,name?,force}, POST /dismiss {sid}, POST /release {screen|name} (admin key optional — falls back to ADA_ADMIN_KEY env), POST+GET /frame (display self-snapshots), GET /img?url= (allowlisted image proxy for snapFrame fallback — tailnet/LAN/loopback only), GET+POST /capture (camera capture leases), GET+POST /camwall. WS: room broadcast + register-display; lastCast per room is replayed on re-register so a ws flap doesn't blank the screen. Keyless claim/release/dismiss trusted only from tailnet/loopback (X-Forwarded-For); off-tailnet needs admin_key. Registry persisted at ~/.local/share/input-bridge/displays.json on idc01."
       - label: Key verification
         text: "Register/claim keys are verified server-side against ada-pi-pwa — loopback now that the relay lives on idc01 (ADA_AUTH_URL=http://127.0.0.1:8001). Screen keys are normal ada device keys named screen-N — they appear in the ada-keys-card inventory and revoke disables the display on next register."
       - label: Caddy
@@ -39,9 +39,9 @@ sections:
     layout: list
     items:
       - label: Inbound to display (room vcast-N)
-        text: "play {url} (hls or direct video), image {url,interval}, nav {url} (iframe), audio {url}, stop, reload. uplink-start is stubbed for the camera/mic phase."
+        text: "play {url} (hls or direct video), image {url,interval}, nav {url} (iframe), audio {url}, stop, reload, snap-request {token} (self-capture -> POST /frame), uplink-start {interval} / uplink-stop (getUserMedia frames -> POST /frame token 'cam'). YouTube/Vimeo page URLs are rewritten to embed players by embedUrl()."
       - label: Outbound
-        text: "register-display {api_key,label}, state {state,detail} reports (relay records them in the registry), normal room broadcast messages."
+        text: "register-display {api_key,label,device_id}, state {state,detail} reports (relay records them in the registry), 30s state heartbeats, POST /frame snapshot uploads, POST /capture lease records, normal room broadcast messages."
       - label: Dev override
         text: "URL params: room=vcast-N joins a room directly without pairing; api_key persists a key into localStorage; ws overrides the WS URL."
   - title: Screen ownership (ACL)
@@ -69,13 +69,13 @@ sections:
       - label: Service
         text: "systemctl --user status input-bridge.service on idc01 (quadlet; source+unit in stacks/idc01/input-bridge/). The old tony-dell unit is disabled."
       - label: Known limits
-        text: "Not a real Chromecast — castv2/Chrome-cast/AirPlay senders cannot target it. nav-mode iframes cannot pass Tailscale-User-Login-gated pages (same caveat as the VMS cast path). iOS standalone-PWA mic is untrusted (use Safari tab). No auth on /pub beyond tailnet reachability."
+        text: "Not a real Chromecast — castv2/Chrome-cast/AirPlay senders cannot target it. nav-mode iframes cannot pass Tailscale-User-Login-gated pages (same caveat as the VMS cast path). iOS standalone-PWA mic is untrusted (use Safari tab). No auth on /pub beyond tailnet reachability. Snapshots: canvas capture works for video/img (cross-origin img via /img proxy); a nav-mode iframe returns error 'uncapturable-iframe' with the page URL in detail — Ada cannot screenshot arbitrary web pages."
   - title: Testing
     icon: "🧪"
     layout: list
     items:
       - label: Smoke
-        text: "curl http://100.74.146.0:3010/health (tailnet) ; curl /api/input-bridge/displays ; open /apps/vcast/ in a browser, scan QR, cast via POST /api/input-bridge/pub {screen:1, msg:{type:'play',url:...m3u8}}"
+        text: "curl http://100.74.146.0:3010/health (tailnet) ; curl /api/input-bridge/displays ; open /apps/vcast/ in a browser, scan QR, cast via POST /api/input-bridge/pub {screen:1, msg:{type:'play',url:...m3u8}}. Snapshot check: POST /pub {screen:N,msg:{type:'snap-request',token:'<tok>'}} then poll GET /frame?screen=N&token=<tok> for image/jpeg or a JSON error."
       - label: Scenarios
         text: "ada-pi tests/scenarios-live/vcast-*.yaml cover list/cast/stop/unknown-speaker flows via Ada voice."
 config:
