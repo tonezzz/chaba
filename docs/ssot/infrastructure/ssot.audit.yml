@@ -11,7 +11,7 @@ overview:
 
 config:
   version: 1
-  last_updated: "2026-09-18"
+  last_updated: "2026-09-27"
   maintainer: tony
   status: active
 
@@ -234,6 +234,20 @@ audits:
     last_run:
     last_result:
 
+  - name: cms-pages
+    script: scripts/audits/cms-pages-audit.mjs
+    command: node
+    args: []
+    schedule: weekly
+    severity_on_fail: warning
+    description: >
+      Ada CMS page (ada-cms-pages MDDB collection) structure and naming
+      contract: slug charset/length (^[a-z0-9][a-z0-9_-]{0,63}$), required
+      meta (kind=page, slug==key, title, format in markdown/html/yaml/slides,
+      updated timestamp), non-empty content. Live read-only probe.
+    last_run:
+    last_result:
+
   - name: code-quality
     script: scripts/audits/code-quality-audit.mjs
     command: node
@@ -376,6 +390,7 @@ groups:
       - infrastructure
       - http-health
       - mddb
+      - cms-pages
       - smoke
   - name: code-suite
     description: Code formatting, spell, and dependency security
@@ -414,7 +429,7 @@ plan:
     - run.mjs writes a focus-inbox alert (audit-failures.yml) on error-severity failures and auto-resolves it when green
     - weekly chaba-audit.timer/service runs the default set; monthly chaba-audit-full adds security-audit
     - chaba-audit-watchdog.timer (daily) runs scripts/audit-watchdog.mjs: alerts via focus-inbox when summary.json is stale (>8d) or the last run had error-severity failures
-    - 16 audits registered; last full run passed 14/14 on 2026-09-18 (doc-links added 2026-09-18, memory-banks added 2026-09-22, neither yet in a scheduled run)
+    - 22 audits registered; last full run passed 14/14 on 2026-09-18 (doc-links added 2026-09-18, memory-banks added 2026-09-22, cms-pages added 2026-09-27 — newest not yet in a scheduled run)
     - KB entry added at docs/kb/audit-framework.md
   next_steps:
     - monitor first weekly and monthly runs
