@@ -965,7 +965,8 @@
       function connect() {
         try {
           ws = new WebSocket(url);
-          ws.onopen = () => { try { ws.send(JSON.stringify({ type: 'hello', screen: myScreen() })); } catch {} };
+          const hello = () => { try { ws.readyState === 1 && ws.send(JSON.stringify({ type: 'hello', screen: myScreen() })); } catch {} };
+          ws.onopen = () => { hello(); setTimeout(hello, 6000); setTimeout(hello, 20000); }; // screen number arrives async via parent 'registered'
           ws.onmessage = (ev) => {
             let obj; try { obj = JSON.parse(ev.data); } catch { return; }
             if (obj?.type === 'function_call') dispatch(obj);
