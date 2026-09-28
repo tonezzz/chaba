@@ -15,7 +15,7 @@ expected_exposure:
   - { listener: "0.0.0.0:8080",  class: lan, service: caddy, optional: true, note: "web preview — not bound at first audit" }
   - { listener: "0.0.0.0:8081",  class: lan, service: caddy, optional: true, note: "chaba-h3 parity preview — not bound at first audit" }
   - { listener: "0.0.0.0:24800", class: lan, service: barrier, note: "barrier server" }
-  - { listener: "0.0.0.0:11434", class: lan, service: ollama }
+  - { listener: "100.75.102.88:11434", class: tailnet, service: ollama, note: "rebound 2026-09-28 (was 0.0.0.0 LAN) — travel-laptop hardening; no production consumers, ONB/mcp-llama moved to idc01" }
   - { listener: "0.0.0.0:3000",  class: lan, service: yomi-api }
   - { listener: "0.0.0.0:3002",  class: lan, service: weaviate-api, note: "chaba scripts/weaviate/api.mjs" }
   - { listener: "127.0.0.1:5000", class: loopback, service: weaviate-embed-proxy, note: "systemd-socket-proxyd -> mn01:5000; embedding-service moved to mn01 2026-09-27" }

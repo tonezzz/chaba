@@ -1,0 +1,19 @@
+[Unit]
+Description=Open Notebook SurrealDB (rootless podman, eval)
+After=network-online.target open-notebook-network.service
+Wants=network-online.target
+Requires=open-notebook-network.service
+
+[Container]
+Image=docker.io/surrealdb/surrealdb:v2
+ContainerName=open-notebook-surreal
+Network=open-notebook.network
+Exec=start --log info --user root --pass root rocksdb:/mydata/mydatabase.db
+Volume=open-notebook-surreal-data:/mydata
+
+[Service]
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=default.target

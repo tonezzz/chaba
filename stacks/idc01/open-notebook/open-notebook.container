@@ -1,0 +1,30 @@
+[Unit]
+Description=Open Notebook app+API (rootless podman, eval)
+After=network-online.target open-notebook-network.service open-notebook-surreal.service
+Wants=network-online.target
+Requires=open-notebook-network.service open-notebook-surreal.service
+
+[Container]
+Image=docker.io/lfnovo/open_notebook:v1-latest
+ContainerName=open-notebook
+Network=open-notebook.network
+PublishPort=127.0.0.1:5055:5055
+PublishPort=127.0.0.1:8502:8502
+EnvironmentFile=/home/tony/.config/secrets/open-notebook.env
+Environment=SURREAL_URL=ws://open-notebook-surreal:8000/rpc
+Environment=SURREAL_USER=root
+Environment=SURREAL_PASSWORD=root
+Environment=SURREAL_NAMESPACE=open_notebook
+Environment=SURREAL_DATABASE=open_notebook
+Environment=API_URL=https://idc01.taila0626a.ts.net:8445
+Environment=OLLAMA_API_BASE=http://100.74.146.0:11434
+Environment=OPEN_NOTEBOOK_WORKER_MAX_TASKS=2
+Environment=OPEN_NOTEBOOK_CHUNK_SIZE=1500
+Volume=open-notebook-data:/app/data
+
+[Service]
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=default.target
