@@ -58,7 +58,46 @@ changes:
     (naturalWidth=424, display:block). The A-68 URL now lands on https and
     correctly reports "image failed" (file genuinely absent, HTTP 404).
 
+ada_sees_screen:
+  request: "'fix ada cannot see the cast screen' + test webpage casting"
+  snapshot_architecture: >
+    Ada tool vcast_snapshot (ada-pi backend/realtime_provider.py, deployed on
+    idc01) sends a ws snap-request -> display draws its visible element into
+    a canvas -> POSTs a JPEG to relay /frame -> Ada polls
+    GET /frame?screen=N&token=T. Relay + display snap code were already live
+    (commits 1cc139e/348d684 + uncommitted live work); this branch's worktree
+    was based on an older snapshot of the files, so the live versions were
+    taken as the baseline before applying fixes.
+  gaps_fixed:
+    - "Cross-origin <img> without CORS tainted the canvas -> Ada got an error
+      instead of pixels. snapFrame now catches the SecurityError and refetches
+      the same URL through a new relay endpoint GET /img?url= (server-side
+      fetch, allowlisted to tailnet/LAN/loopback) — the blob copy is
+      same-origin so the canvas stays clean."
+    - "snap 'uncapturable-iframe' now carries detail=<iframe src> so Ada can
+      name the page even though its pixels can't be read (browser security —
+      no fix possible in-page)."
+    - "img shown-but-unloaded posts error 'image-load-failed' with the URL."
+  webpage_cast_test: >
+    Live relay, connected screen 2 (Browser): POST /pub nav example.com ->
+    delivered=1, /displays state=nav detail=url, iframe loads. Snap returns
+    uncapturable-iframe as designed (cross-origin page pixels unreadable).
+    Local harness (worktree page + local relay + CDP chrome): nav
+    http://example.com rendered as https://example.com (mediaUrl applied),
+    snap -> uncapturable-iframe detail=https://example.com/. Screen 2
+    restored to camwall zone-a after testing.
+  verified_locally:
+    - "image cast http://cam URL -> https upgrade -> rendered -> snap-request
+      returned real JPEG (17936B) via /img proxy fallback"
+    - "GET /img: allowlisted tailnet host -> 200 JPEG; public host -> 403;
+      upstream 404 -> 502"
+    - "404 image -> snap posts image-load-failed with URL"
+
 still_open:
+  - item: "DEPLOY needed for the new code to reach live screens"
+    command: "rsync index.html -> ~/CascadeProjects/chaba-tony-dell/stacks/web/public/apps/vcast/ ; scp server.mjs + package.json -> idc01:~/apps/input-bridge/ && systemctl --user restart input-bridge (on idc01)"
+    needs: approval per dispatch/deploy rules — until then live snap of
+      cross-origin images still errors, and /img 404s
   - item: "/local/documents/* is not a serving path on either HA instance"
     options:
       - "publish doc-archive pages into tony-ha www/documents/ (display cache)"
@@ -68,6 +107,9 @@ still_open:
     needs: user decision — mutating tony-ha www is a live deploy
   - item: "update MDDB ada-cms-pages 'fix-vcast-controls' with repair outcome"
     needs: ada-bank write (Tony asked the report be updated post-repair)
-  - item: "deploy — rsync index.html into the live web mount"
-    command: "rsync -av stacks/web/public/apps/vcast/ ~/CascadeProjects/chaba-tony-dell/stacks/web/public/apps/vcast/"
-    needs: approval per dispatch/deploy rules
+  - item: "live checkout has uncommitted V-Cast WIP ahead of master"
+    detail: >
+      ~/CascadeProjects/chaba-tony-dell index.html (+uplink) and idc01
+      ~/apps/input-bridge/server.mjs (+/capture /camwall tailnet auth) are
+      ahead of local master. This branch adopted them as baseline so merging
+      will converge rather than regress.
