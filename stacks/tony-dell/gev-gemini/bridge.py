@@ -189,7 +189,9 @@ def _cmd_handler():
         def do_GET(self):
             if self.path == '/command/health':
                 self._reply(200, {'ok': True, 'clients': len(CLIENTS),
-                                  'remote': len(REMOTE)})
+                                  'remote': len(REMOTE),
+                                  'remote_screens': sorted(
+                                      m.get('screen') for m in REMOTE.values())})
             else:
                 self._reply(404, {'error': 'not found'})
 
