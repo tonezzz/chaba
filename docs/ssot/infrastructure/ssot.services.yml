@@ -696,7 +696,13 @@ tony-omen:
     config: ~/.openclaw/openclaw.json
     models: "primary openrouter/qwen/qwen3.8-27b:free + 5 ranked :free fallbacks (GhostRoute-managed)"
     auth_profile: "openrouter:manual — key shared with idc01 mddb-gemini.env OPENROUTER_API_KEY"
-    status: installed 2026-09-28; zero-cost OR free-tier agenting for the travel laptop
+    channels:
+      telegram:
+        bot: "@myChabaBot (polling mode, connected 2026-09-29)"
+        dm_policy: pairing — unknown senders get a code; approve via `openclaw pairing list` + `openclaw pairing approve <code>`
+        group_policy: disabled
+        token: ~/.config/secrets/telegram-bot.env (TELEGRAM_BOT_TOKEN; TELEGRAM_ALLOWED_CHAT_IDS currently empty — pair then populate to lock down to allowlist)
+    status: installed 2026-09-28; zero-cost OR free-tier agenting for the travel laptop; telegram channel live 2026-09-29
     risk: "shared OR key (per-key credit cap): OpenClaw's heavy agenting can starve
       mddb's OR embedding route — 2026-09-28 OR key hit total-limit 403s while mddb
       depended on it during Gemini quota exhaustion. Mitigated by the proxy's
