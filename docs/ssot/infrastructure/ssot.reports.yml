@@ -7,14 +7,10 @@ overview:
   purpose: |
     Declared standard for how the memory system turns raw operational data
     into a single human overview. Every report is a node in a layered
-    hierarchy: L0 raw artifacts at the bottom, L1 per-producer rollups,
-    L2 cross-producer domain rollups, and a single L3 overview
-    (reports/SYSTEM-REPORT.md). Each layer is generated from the one below —
-    digests are never hand-written.
-
-    The `nodes` registry below is declared intent; each node's meta.yml is
-    observed state. The gap between them is exactly what staleness and
-    drift detection report — the overview's job is to make absence loud.
+    hierarchy (L0 raw → L1 producer → L2 domain → L3 overview
+    reports/SYSTEM-REPORT.md); digests are never hand-written.
+    The `nodes` registry is declared intent; each node's meta.yml is
+    observed state — the gap is what staleness/drift detection reports.
 
 config:
   version: 1
@@ -62,19 +58,10 @@ layers:
       - system-report
 
 format_rules:
-  machine_artifacts: >
-    yml / json / jsonl for anything parsed downstream — stable keys, no
-    prose. jsonl only for append-only streams.
-  digests: >
-    .md only for generated digests. Never hand-edit a digest — fix the
-    generator or the source data.
-  meta_location: >
-    meta.yml lives in the node's output dir. When several nodes share a
-    dir (e.g. reports/audit-hosts/), use meta.<slug>.yml per node.
-  timeline_location: >
-    The timeline lives outside the repo (it grows forever — same reasoning
-    as ~/var/chaba/health/): ~/var/chaba/reports/timeline.jsonl,
-    overridable via CHABA_REPORTS_DIR.
+  machine_artifacts: yml / json / jsonl for anything parsed downstream — stable keys, no prose; jsonl only for append-only streams
+  digests: .md only for generated digests — never hand-edit; fix the generator or the source data
+  meta_location: meta.yml in the node's output dir; meta.<slug>.yml when several nodes share a dir
+  timeline_location: ~/var/chaba/reports/timeline.jsonl (outside the repo — it grows forever), overridable via CHABA_REPORTS_DIR
 
 meta_schema:
   description: >
@@ -108,8 +95,8 @@ timeline:
   env_override: CHABA_REPORTS_DIR
   format: >
     One JSON object per line, appended by each generator on completion
-    (scripts/lib/report.py::append_timeline). Full history lives here;
-    SYSTEM-REPORT.md renders only the last ~20 events.
+    (scripts/lib/report.py::append_timeline); SYSTEM-REPORT.md renders only
+    the last ~20 events.
   event_fields:
     ts: ISO-8601 with timezone
     node: registry id
@@ -117,10 +104,7 @@ timeline:
     status: one of status_enum
     summary: one line
     ref: path to the primary artifact produced (optional)
-  example: >
-    {"ts":"2026-09-26T18:45:00+07:00","node":"fleet","layer":"L2",
-     "status":"delta","summary":"idc01: 2 missing critical",
-     "ref":"reports/fleet/FLEET-REPORT.md"}
+  example: '{"ts":"2026-09-26T18:45:00+07:00","node":"fleet","layer":"L2","status":"delta","summary":"idc01: 2 missing critical","ref":"reports/fleet/FLEET-REPORT.md"}'
 
 nodes:
   # --- Fleet domain ---
@@ -351,6 +335,7 @@ related_files:
   - systemd/chaba-system-report.timer
 
 related_ssot:
+  - docs/ssot/infrastructure/ssot.quality.yml
   - docs/ssot/infrastructure/ssot.audit.yml
   - docs/ssot/infrastructure/ssot.audit.hosts.yml
   - docs/ssot/infrastructure/ssot.automation.yml

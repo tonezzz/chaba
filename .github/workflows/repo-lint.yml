@@ -1,0 +1,41 @@
+name: Repo lint
+
+on:
+  push:
+    branches: [master, main]
+    paths:
+      - "scripts/**"
+      - "package.json"
+      - ".github/workflows/repo-lint.yml"
+  pull_request:
+    branches: [master, main]
+    paths:
+      - "scripts/**"
+      - "package.json"
+      - ".github/workflows/repo-lint.yml"
+
+jobs:
+  syntax:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      # Cheap lane gate (ssot.quality.yml id ci.repo-lint): every script
+      # must at least parse. .mjs is the repo's JS convention — vendored
+      # node_modules and mixed-module .js are excluded.
+      - name: Python syntax check (all scripts/)
+        run: python3 -m compileall -q -x 'node_modules' scripts/
+      - name: JS syntax check (*.mjs, excluding vendored deps)
+        run: |
+          FAIL=0
+          while IFS= read -r f; do
+            node --check "$f" || { echo "SYNTAX FAIL: $f"; FAIL=1; }
+          done < <(find scripts -name "*.mjs" -not -path "*/node_modules/*")
+          exit $FAIL

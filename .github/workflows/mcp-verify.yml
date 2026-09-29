@@ -16,5 +16,14 @@ jobs:
           python-version: "3.11"
       - name: Install dependencies
         run: pip install pyyaml
+      # Live probe, not a ci-gate check (ssot.quality.yml lane model): it
+      # needs the host's MCP config and tailnet access — GH runners have
+      # neither, so skip cleanly instead of failing forever. Coverage lives
+      # in the scheduled mcp-debug audit on tony-dell.
       - name: Verify all configured MCP servers
-        run: python3 scripts/verify-all-mcp-servers.py
+        run: |
+          if [ ! -f "${MCP_CONFIG:-$HOME/.config/devin/mcp_config.json}" ]; then
+            echo "::notice::no MCP config on this runner — live probe skipped (runs on tony-dell via the scheduled suite)"
+            exit 0
+          fi
+          python3 scripts/verify-all-mcp-servers.py

@@ -47,6 +47,7 @@ schedule:
       - dev-system
       - ssot-kb-memory
       - memory-suite
+      - cms-suite
     note: groups are expanded to individual audits by the runner
   full:
     frequency: monthly
@@ -361,6 +362,28 @@ audits:
     last_run:
     last_result:
 
+  - name: cms-pages
+    script: scripts/ada/cms-audit.py
+    command: python3
+    args:
+      - --baseline
+      - scripts/ada/cms-audit-baseline.json
+      - --publish
+    schedule: weekly
+    severity_on_fail: warning
+    description: >
+      Live ada-cms-pages audit — content rules (A*), news digests (N*),
+      generated-report provenance/hierarchy (R*, per
+      ssot.apps.cms-reports.yml). Baseline-ratcheted: fails only on
+      failures not in cms-audit-baseline.json (the 5 known content fails),
+      so new-page regressions surface without re-failing known debt.
+      --publish refreshes the cms-audit-report page (meta-preserving).
+      Lane: scheduled-audit (live MDDB); the CI lane lints the committed
+      snapshot instead (ssot.quality.yml registry id qc.cms-pages /
+      ci.cms-audit).
+    last_run:
+    last_result:
+
 groups:
   - name: kb-suite
     description: All KB health, quality, categorization, and modularity audits
@@ -406,6 +429,10 @@ groups:
     description: Ada memory-bank registry/health audits (MDDB banks, vault, NLM routing)
     children:
       - memory-banks
+  - name: cms-suite
+    description: CMS page content/provenance QC — live lane of cms-audit.py
+    children:
+      - cms-pages
 
 semantics:
   description: >

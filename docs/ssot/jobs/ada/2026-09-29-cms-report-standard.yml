@@ -1,0 +1,101 @@
+# SSOT Job: CMS generated-report standard + provenance/replay + CI ratchet
+# Same dispatch thread as 2026-09-29-flood-news-cms-meta-normalize.yml —
+# Tony's follow-up: "create standards for cms report and its sections along
+# with page format; add it to CI; record sources + how we create the report
+# so we can reference and re-play; link up to the parent; Regenerate button;
+# mind the resources cost."
+
+title: CMS generated-report standard — provenance, hierarchy, regenerate contract, CI
+subtitle: Reports record sources+recipe, children link up to parents, run_now is the Regenerate backend, audit ratcheted in CI
+icon: news
+status: done   # in-worktree parts; P1 (ada-pi tool + PWA button) is a follow-up
+project: chaba
+owner: devin-dispatch
+started: "2026-09-29"
+completed: "2026-09-29"
+
+context: |
+  CMS report pages (flood-report*, ops digests, audit rollups) were
+  generated ad-hoc with no recorded recipe — you couldn't tell what fed a
+  page or how to remake it, and there was no hierarchy between leaf
+  reports and rollups. Tony asked for: a standard for report pages and
+  sections, sources+recipe recorded per page for reference and replay, a
+  parent link so upper-level reports can extract with references, a
+  Regenerate button, and cost-conscious regeneration. The repo already
+  had the layered L0->L3 model in ssot.reports.yml — this job ports that
+  vocabulary (generated_by / sources / children / parent) onto the CMS
+  surface, where meta lives inside the MDDB doc instead of meta.yml.
+
+deliverables:
+  - path: docs/ssot/apps/ssot.apps.cms-reports.yml
+    what: >
+      The standard: page_format template (H1, อัปเดตล่าสุด line, paired
+      <!-- X:auto --> managed blocks, provenance footer), provenance_meta
+      fields (generated_by replayable command, sources, children, parent,
+      report_role leaf|rollup|index), regenerate_contract (registry doc +
+      run_now; generator kinds rss-block|command), cost_model (timeout_s,
+      interval_min, max_items knobs + last_duration_s telemetry +
+      cheap|llm cost tier), ci_enforcement (offline snapshot lane +
+      live lane), audit R1-R6 rule spec.
+  - path: scripts/ada/flood-news-update.py
+    what: >
+      Stamps provenance meta at publish (generated_by, sources,
+      report_role, parent/children when configured); provenance footer in
+      the auto block now lists feed names + parent/children links;
+      write-back records last_duration_s; failure paths record
+      last_status=error + last_error and still clear run_now; malformed
+      numeric knobs warn and fall back instead of crashing.
+  - path: scripts/ada/flood-news-feeds.json
+    what: >
+      Pages converted to {feeds, parent, children} objects — flood-report
+      is now the parent of flood-report-nongdon, which parents
+      flood-report-nongdon-saraburi: a real 3-level hierarchy.
+  - path: scripts/ada/cms-audit.py
+    what: >
+      --file audits a repo snapshot (backup-mddb-banks.py dump) for
+      offline CI; --baseline is a ratchet — JSON {slug:[rules]} of known
+      fails, exits 1 on NEW failures AND on stale baseline entries.
+      New R-rules (failures): R1 generated_by without sources, R2 missing
+      provenance footer, R3 dangling parent/children slug, R4 unbalanced
+      auto-block markers. R5/R6 warnings: no registry doc (live mode
+      only), report_role vs children mismatch.
+  - path: scripts/ada/cms-audit-baseline.json
+    what: 5 known-failure entries with _why explanations — the ratchet floor.
+  - path: .github/workflows/cms-audit.yml
+    what: >
+      CI job lints backups/ada-memory/ada-cms-pages.json with the
+      baseline ratchet. GitHub cannot reach tailnet MDDB, so the lane is
+      snapshot-based; ada-memory-backup.service (--git) refreshes the
+      input on tony-dell.
+  - path: backups/ada-memory/ada-cms-pages.json
+    what: refreshed dump (106 docs) — post-normalization state.
+
+hierarchy_now:
+  flood-report: {role: rollup, children: [flood-report-nongdon]}
+  flood-report-nongdon:
+    {role: rollup, parent: flood-report, children: [flood-report-nongdon-saraburi]}
+  flood-report-nongdon-saraburi: {role: leaf, parent: flood-report-nongdon}
+
+cost_benchmark:
+  measured: "2026-09-29 — flood-news-update.py --all --force: 8.2s wall, 3 pages / ~10 feeds, ~0.2s CPU. Network-bound, no LLM — tier=cheap."
+  telemetry: "registry last_duration_s per page (observed ~0.4s/page fetch+publish after feeds cached)"
+  note: "command-kind generators that call LLMs must declare cost.tier=llm in their registry doc — dispatcher/Ada prefer cheap regenerations."
+
+decisions:
+  - "Replay contract = registry doc, not meta alone: the page records WHAT ran (generated_by); the registry holds HOW to run it (generator spec, knobs). A Regenerate button anywhere is just a run_now write."
+  - "Same field names as ssot.reports.yml meta_schema (generated_by/sources/children/parent) so repo-layer and CMS-layer reports query identically."
+  - "CI uses a baseline ratchet instead of a hard pass/fail — 5 known content fails pre-date the standard; blocking on them would freeze the gate, allowing them to creep up defeats it."
+  - "Snapshot lane, not live lane, in GH Actions — MDDB is tailnet-only."
+  - "parent/children also stamped into page meta (not only registry) so search and audit can navigate lineage without the registry."
+
+verify:
+  - "python3 scripts/ada/cms-audit.py --file backups/ada-memory/ada-cms-pages.json --baseline scripts/ada/cms-audit-baseline.json   # ratchet OK, rc=0"
+  - "python3 scripts/ada/cms-audit.py --match flood   # live: 4 pass 0 fail"
+  - "MDDB ada-cms-pages/flood-report-nongdon-saraburi meta shows generated_by, sources, parent, report_role"
+  - "MDDB ada-cms-automation docs carry last_duration_s"
+
+followups:
+  - "P1 (ada-pi): cms_automation tool incl. action=run; PWA Regenerate button writing run_now — same backend, three surfaces."
+  - "P2: registry generator kind=command (allowlisted repo scripts) so non-feed reports (ops-report, ha-report, audit rollups) get Regenerate too; a denser dispatcher timer (5-15min) so run_now doesn't wait 4h."
+  - "Fix the 5 baseline entries — the ratchet forces removal as each is repaired."
+  - "Keep backups/ada-memory/ada-cms-pages.json fresh — the CI lane is only as current as the last backup commit."

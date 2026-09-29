@@ -255,7 +255,7 @@ banks:
     public: false
   cms:
     title: CMS pages & reports
-    description: Ada CMS pages and published reports (ada-cms-pages collection). Read-only via memory search — use cms_get_page/cms_publish_page for full access. This is where "research on X" and generated reports live.
+    description: Ada CMS pages and published reports (ada-cms-pages collection). Read-only via memory search — use cms_get_page/cms_publish_page for full access. This is where "research on X" and generated reports live. Page meta is normalized onto the memory schema by scripts/ada/cms-normalize-meta.py (bank=cms, scope=tony, status, source, written_by, subject=slug, attribute=page-type, valid_from, last_verified, lang=doc-lang); cms-audit.py warns on missing schema fields (S1). flood-report + flood-report-nongdon* carry auto-updated news blocks from scripts/ada/flood-news-update.py (seed map in scripts/ada/flood-news-feeds.json). Per-page switches/knobs live in the ada-cms-automation collection — one registry doc per slug (enabled, feeds, require, since_hours, max_items, interval_min, langs, run_now + worker write-back) — see docs/implementation/cms-page-automation-plan.md.
     scope: instance
     instances: [tony]
     mddb_collection: ada-cms-pages

@@ -14,11 +14,6 @@ automation:
       vram_critical: 90
       temp_warning: 75
       temp_critical: 85
-    features:
-      - real-time gpu monitoring
-      - historical data logging
-      - alert generation
-      - statistics calculation
     status: retired (2026-09-12)
     note: Superseded by tony-omen sensor-reader and the live monitoring dashboard. The script is no longer scheduled.
 
@@ -168,6 +163,49 @@ automation:
       - reports/SYSTEM-REPORT.md
       - reports/system-report.yml
     status: defined (2026-09-26); timer not yet installed on any host
+
+  flood_news:
+    ssot: docs/ssot/apps/ssot.apps.cms-reports.yml
+    script: scripts/ada/flood-news-update.py --all
+    config: scripts/ada/flood-news-feeds.json
+    registry: MDDB collection ada-cms-automation (per-page switches/knobs)
+    schedule: "every 15min (OnUnitActiveSec) — dispatcher tick"
+    frequency: >-
+      15-min tick; per-page interval_min gates real work and run_now queues
+      one-shot regeneration — worst-case ~15 min latency
+    timer: systemd/ada-flood-news.timer
+    service: systemd/ada-flood-news.service
+    reports:
+      - ada-cms-pages flood-report* auto blocks
+      - ada-cms-automation last_* registry write-back
+    status: committed (2026-09-29); install AFTER merge — the service runs
+      %h/CascadeProjects/chaba (master) which lacked the script until then
+
+  gh_runs_watch:
+    script: scripts/audits/gh-runs-watch.py --git
+    schedule: "every 15min (OnUnitActiveSec)"
+    frequency: every 15 minutes
+    host: tony-omen (gh authenticated there; tony-dell gh is NOT authed)
+    timer: systemd/ada-gh-runs-watch.timer
+    service: systemd/ada-gh-runs-watch.service
+    outputs:
+      - docs/ssot/focus-inbox/*-gh-run-*.yml (committed+pushed via --git)
+      - reports/gh-runs/meta.yml + timeline event
+    status: committed (2026-09-29); install AFTER merge so omen's master
+      checkout has the script — closes "CI failures die in the GH UI" gap
+
+  ada_memory_backup:
+    script: scripts/ada/backup-mddb-banks.py --git
+    schedule: "30 4 * * *"
+    frequency: daily at 04:30
+    timer: systemd/ada-memory-backup.timer
+    service: systemd/ada-memory-backup.service
+    outputs:
+      - backups/ada-memory/*.json (repo-bound banks; commits+pushes)
+      - ~/.local/share/ada-backups/ (private banks)
+    note: feeds the ci.cms-audit snapshot lane — see ssot.quality.yml
+    status: active — installed on tony-omen (verified 2026-09-29, next
+      run 04:30; pushes the dump to origin master nightly)
 
 monitoring:
   gpu:
