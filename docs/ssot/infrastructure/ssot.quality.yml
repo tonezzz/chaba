@@ -170,12 +170,12 @@ registry:
     runner: .github/workflows/mcp-smoke.yml
     script: python3 scripts/mcp-smoke-live.py
   - id: ci.mcp-verify
-    lane: ci-gate
-    gate: blocking
-    cost: cheap
-    runner: .github/workflows/mcp-verify.yml (push + 6h cron)
+    lane: live-health
+    gate: info
+    cost: network
+    runner: .github/workflows/mcp-verify.yml (workflow_dispatch + 6h cron)
     script: python3 scripts/verify-all-mcp-servers.py
-    note: "verifies wiring/config, not live calls — still offline-safe"
+    note: "needs host MCP config + tailnet — skips with a notice on GH runners (was permanently failing 2026-09-29); real coverage is the scheduled mcp-debug audit on tony-dell"
   - id: ci.cms-audit
     lane: ci-gate
     gate: ratchet
