@@ -268,11 +268,185 @@ def pull_cam(kind: str, key: str, alts: tuple = ()) -> bytes:
     raise ValueError(f"empty frame from {key} (all variants)")
 
 
+# ---------------------------------------------------------------------------
+# effects pipeline — post-process thumbs before write.
+# effect strings: "thumb_w:480" "jpeg_q:5" "timestamp" "grid"
+#                 "yolo" | "yolo:person,car@0.4"  (classes + conf)
+# yolo runs lazily on first use; detections are recorded per zone while the
+# effect is on (detections-<zone>.jsonl — the "on duration" log).
+# ---------------------------------------------------------------------------
+COCO = ("person bicycle car motorcycle airplane bus train truck boat "
+        "traffic_light fire_hydrant stop_sign parking_meter bench bird cat "
+        "dog horse sheep cow elephant bear zebra giraffe backpack umbrella "
+        "handbag tie suitcase frisbee skis snowboard sports_ball kite "
+        "baseball_bat baseball_glove skateboard surfboard tennis_racket "
+        "bottle wine_glass cup fork knife spoon bowl banana apple sandwich "
+        "orange broccoli carrot hot_dog pizza donut cake chair couch "
+        "potted_plant bed dining_table toilet tv laptop mouse remote "
+        "keyboard cell_phone microwave oven toaster sink refrigerator book "
+        "clock vase scissors teddy_bear hair_drier toothbrush").split()
+YOLO_MODEL = os.environ.get(
+    "CAMWALL_YOLO", str(Path.home() / ".local/share/camwall/yolov8n.onnx"))
+_yolo = None
+
+
+def _yolo_session():
+    global _yolo
+    if _yolo is None:
+        import onnxruntime as ort
+        _yolo = ort.InferenceSession(
+            YOLO_MODEL, providers=["CPUExecutionProvider"])
+    return _yolo
+
+
+def _yolo_detect(img, classes: set, conf: float) -> list[dict]:
+    """YOLOv8n on a PIL image -> [{cls, conf, box:[x1,y1,x2,y2]}] in img px."""
+    import numpy as np
+    W, H = img.size
+    im = img.resize((640, 640))
+    x = np.asarray(im, dtype=np.float32).transpose(2, 0, 1)[None] / 255.0
+    pred = _yolo_session().run(None, {"images": x})[0][0]  # (84, 8400)
+    boxes, scores, cls_ids = [], [], []
+    for i in range(pred.shape[1]):
+        p = pred[:, i]
+        c = int(p[4:].argmax())
+        s = float(p[4 + c])
+        if s < conf or (classes and COCO[c] not in classes):
+            continue
+        cx, cy, w, h = p[:4]
+        boxes.append([cx - w / 2, cy - h / 2, w, h])
+        scores.append(s)
+        cls_ids.append(c)
+    # greedy NMS @ IoU 0.45
+    keep: list[int] = []
+    order = sorted(range(len(boxes)), key=lambda i: -scores[i])
+    while order:
+        i = order.pop(0)
+        keep.append(i)
+        order = [j for j in order if _iou(boxes[i], boxes[j]) < 0.45]
+    sx, sy = W / 640.0, H / 640.0
+    out = []
+    for i in keep:
+        x1, y1, w, h = boxes[i]
+        out.append({"cls": COCO[cls_ids[i]], "conf": round(scores[i], 2),
+                    "box": [round(x1 * sx), round(y1 * sy),
+                            round((x1 + w) * sx), round((y1 + h) * sy)]})
+    return out
+
+
+def _iou(a, b) -> float:
+    ax, ay, aw, ah = a
+    bx, by, bw, bh = b
+    ix1, iy1 = max(ax, bx), max(ay, by)
+    ix2, iy2 = min(ax + aw, bx + bw), min(ay + ah, by + bh)
+    iw, ih = max(0.0, ix2 - ix1), max(0.0, iy2 - iy1)
+    inter = iw * ih
+    union = aw * ah + bw * bh - inter
+    return inter / union if union > 0 else 0.0
+
+
+def apply_effects(data: bytes, effects: list[str]) -> tuple[bytes, list[dict]]:
+    """bytes -> PIL -> effects -> jpeg bytes (+ yolo detections)."""
+    import io
+    from PIL import Image, ImageDraw
+    img = Image.open(io.BytesIO(data)).convert("RGB")
+    tw, q, dets = 0, 0, []
+    for eff in effects:
+        if eff.startswith("thumb_w:"):
+            tw = int(eff.split(":")[1])
+        elif eff.startswith("jpeg_q:"):
+            q = int(eff.split(":")[1])
+        elif eff.startswith("yolo"):
+            classes, conf = set(), 0.4
+            if ":" in eff:
+                spec = eff.split(":", 1)[1]
+                if "@" in spec:
+                    spec, c = spec.rsplit("@", 1)
+                    conf = float(c)
+                classes = {c.strip() for c in spec.split(",") if c.strip()}
+            dets = _yolo_detect(img, classes, conf)
+            dr = ImageDraw.Draw(img)
+            for d in dets:
+                dr.rectangle(d["box"], outline=(46, 160, 255), width=2)
+                dr.text((d["box"][0] + 2, d["box"][1] + 2),
+                        f"{d['cls']} {d['conf']}", fill=(46, 160, 255))
+        elif eff == "timestamp":
+            ImageDraw.Draw(img).text(
+                (6, img.height - 18),
+                time.strftime("%H:%M:%S"), fill=(255, 255, 0))
+        elif eff == "grid":
+            dr = ImageDraw.Draw(img)
+            for f in (1 / 3, 2 / 3):
+                dr.line([(img.width * f, 0), (img.width * f, img.height)],
+                        fill=(255, 255, 255, 60))
+                dr.line([(0, img.height * f), (img.width, img.height * f)],
+                        fill=(255, 255, 255, 60))
+    if tw and img.width > tw:
+        img = img.resize((tw, int(img.height * tw / img.width)))
+    buf = io.BytesIO()
+    img.save(buf, "JPEG", quality={0: 80}.get(q, min(95, max(10, 95 - q * 8))))
+    return buf.getvalue(), dets
+
+
+def bake_montage(zdir: Path, cams: list[dict], thumb_w: int = 480) -> None:
+    """Composite the zone's live thumbs into one jpg for the index page."""
+    from PIL import Image
+    tiles = []
+    for c in cams:
+        p = zdir / f"{c['key']}.jpg"
+        if c.get("ok") and p.exists():
+            try:
+                im = Image.open(p).convert("RGB")
+                h = int(im.height * thumb_w / im.width)
+                tiles.append((im.resize((thumb_w, h)), c["label"]))
+                continue
+            except Exception:
+                pass
+    if not tiles:
+        return
+    cols = 3
+    th = max(t.height for t, _ in tiles)
+    rows = (len(tiles) + cols - 1) // cols
+    from PIL import ImageDraw
+    canvas = Image.new("RGB", (cols * thumb_w, rows * (th + 18)), (8, 8, 8))
+    dr = ImageDraw.Draw(canvas)
+    for i, (im, label) in enumerate(tiles):
+        x, y = (i % cols) * thumb_w, (i // cols) * (th + 18)
+        canvas.paste(im, (x, y))
+        dr.text((x + 6, y + th + 2), label, fill=(140, 170, 200))
+    canvas.save(zdir / "montage.jpg", "JPEG", quality=80)
+
+
+def merge_settings(cfg: dict, settings: dict | None) -> dict:
+    """Relay per-zone settings override the static ZONES defaults."""
+    if not settings:
+        return cfg
+    eff = dict(cfg)
+    cams = [c for c in cfg["cams"]
+            if slug(c[0]) not in (settings.get("cams_skip") or [])]
+    for extra in settings.get("cams_extra") or []:
+        cams.append((extra.get("label") or "cam",
+                     extra.get("kind") or "jpeg",
+                     extra.get("url") or ""))
+    eff["cams"] = cams
+    for k in ("interval", "warm"):
+        if isinstance(settings.get(k), (int, float)):
+            eff[k] = max(15, int(settings[k]))
+    eff["effects"] = list(settings.get("effects") or [])
+    if isinstance(settings.get("thumb_w"), (int, float)):
+        eff["effects"].append(f"thumb_w:{int(settings['thumb_w'])}")
+    if isinstance(settings.get("jpeg_q"), (int, float)):
+        eff["effects"].append(f"jpeg_q:{int(settings['jpeg_q'])}")
+    return eff
+
+
 def pull_zone(zone: str, cfg: dict, zdir: Path) -> dict:
     """Pull all cams for a zone; write thumbs; return manifest dict."""
     cams = []
     vms = [c for c in cfg["cams"] if c[1] == "vms"]
     fast = [c for c in cfg["cams"] if c[1] != "vms"]
+
+    effects = cfg.get("effects") or []
 
     def one(cam: tuple) -> dict:
         label, kind, key = cam[0], cam[1], cam[2]
@@ -282,6 +456,16 @@ def pull_zone(zone: str, cfg: dict, zdir: Path) -> dict:
             data = pull_cam(kind, key, alts)
             if len(data) < 500:
                 raise ValueError("short frame")
+            if effects:
+                try:
+                    data, dets = apply_effects(data, effects)
+                    if dets:
+                        out["det"] = {d["cls"]: sum(
+                            1 for x in dets if x["cls"] == d["cls"])
+                            for d in dets}
+                        out["dets"] = dets
+                except Exception as exc:
+                    out["fx_err"] = str(exc)[:100]
             (zdir / f"{out['key']}.jpg").write_bytes(data)
             out.update(ts=int(time.time()), ok=True, bytes=len(data))
         except Exception as exc:
@@ -296,6 +480,18 @@ def pull_zone(zone: str, cfg: dict, zdir: Path) -> dict:
         cams += list(pool.map(one, fast))
     for cam in vms:
         cams.append(one(cam))
+    try:
+        bake_montage(zdir, cams)
+    except Exception as exc:
+        print(f"{zone}: montage failed: {exc}", file=sys.stderr)
+    # detections roll into a per-zone rolling log while a yolo effect is on
+    if any(e.startswith("yolo") for e in effects):
+        recs = [c for c in cams if c.get("dets")]
+        if recs:
+            line = json.dumps({"zone": zone, "ts": int(time.time()),
+                               "cams": {c["key"]: c["dets"] for c in recs}})
+            with (zdir / f"detections-{zone}.jsonl").open("a") as f:
+                f.write(line + "\n")
     return {"zone": zone, "updated": int(time.time()), "cams": cams}
 
 
@@ -335,7 +531,8 @@ def main() -> int:
     # multi-minute VMS dead-pull warm sweep
     order = sorted(ZONES, key=lambda z: 0 if (args.all or z in only) else 1)
     for zone in order:
-        cfg = ZONES[zone]
+        cfg = merge_settings(
+            ZONES[zone], (zones.get(zone) or {}).get("settings"))
         enabled = bool((zones.get(zone) or {}).get("enabled"))
         forced = args.all or zone in only
         if forced:

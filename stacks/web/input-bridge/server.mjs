@@ -312,15 +312,32 @@ const server = http.createServer(async (req, res) => {
     }
     const zone = String(body.zone || "");
     if (!zone) return json(res, 400, { error: "zone required" });
+    const cur = camwallState.zones[zone] || {};
     if (body.enabled === false) {
-      delete camwallState.zones[zone];
+      // disable refresh but KEEP settings — re-enabling restores the knobs;
+      // zones with no saved settings are dropped entirely
+      if (cur.settings) camwallState.zones[zone] = { ...cur, enabled: false };
+      else delete camwallState.zones[zone];
     } else {
       camwallState.zones[zone] = {
-        enabled: true,
-        screen: body.screen != null ? Number(body.screen) : null,
-        since: new Date().toISOString(),
+        ...cur,
+        enabled: body.enabled != null ? !!body.enabled
+                                    : cur.enabled ?? true,
+        screen: body.screen != null ? Number(body.screen)
+                                    : cur.screen ?? null,
+        since: cur.enabled && body.enabled == null
+               ? cur.since : new Date().toISOString(),
       };
     }
+    // settings knobs — merged shallowly; the puller validates/uses:
+    // {interval, jpeg_q, thumb_w, cams_skip[], cams_extra[], effects[]}
+    if (body.settings && typeof body.settings === "object") {
+      camwallState.zones[zone].settings = {
+        ...(camwallState.zones[zone].settings || {}),
+        ...body.settings,
+      };
+    }
+    saveCamwall();
     return json(res, 200, { ok: true, zones: camwallState.zones });
   }
 
@@ -577,7 +594,28 @@ const lastFrames = new Map(); // "screen:token" -> {ts, state, error, detail, bu
 const lastCast = new Map();   // room -> last play/image/nav/stop msg (replayed
                               // to a display on register so a ws flap doesn't
                               // blank the screen)
-const camwallState = { zones: {} }; // in-memory; zones re-enable after restart
+// Cam-wall zone state — persisted so enable flags AND settings knobs
+// (interval/quality/effects/cams) survive a bridge restart.
+const CAMWALL_FILE =
+  process.env.VCAST_CAMWALL ||
+  path.join(os.homedir(), ".local", "share", "input-bridge", "camwall.json");
+const camwallState = { zones: {} };
+
+function loadCamwall() {
+  try {
+    const data = JSON.parse(fs.readFileSync(CAMWALL_FILE, "utf8"));
+    if (data && typeof data.zones === "object") camwallState.zones = data.zones;
+  } catch (e) { /* fresh state */ }
+}
+function saveCamwall() {
+  try {
+    fs.mkdirSync(path.dirname(CAMWALL_FILE), { recursive: true });
+    fs.writeFileSync(CAMWALL_FILE, JSON.stringify(camwallState, null, 2));
+  } catch (e) {
+    console.error("[input-bridge] camwall save failed:", e.message);
+  }
+}
+loadCamwall();
 const captureState = {}; // screen -> {source, ch, active, since, by} — capture leases
 
 function leaveRoom(ws) {

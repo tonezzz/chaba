@@ -20,6 +20,23 @@
          color: #f66; font-size: 13px; }
   #hud { position: fixed; right: 8px; top: 8px; z-index: 10; font-size: 12px; color: #8ef;
          background: rgba(0,0,0,.5); padding: 3px 8px; border-radius: 4px; }
+  #gear { position: fixed; right: 8px; top: 34px; z-index: 10; font-size: 16px;
+          background: rgba(0,0,0,.5); border-radius: 4px; padding: 2px 8px;
+          cursor: pointer; color: #8ef; user-select: none; }
+  #panel { position: fixed; right: 8px; top: 62px; z-index: 20; width: 240px;
+           background: rgba(10,14,20,.94); border: 1px solid #234; border-radius: 8px;
+           padding: 10px 12px; display: none; font-size: 12px; color: #bcd; }
+  #panel label { display: flex; justify-content: space-between; align-items: center;
+                 margin: 6px 0; gap: 6px; }
+  #panel input[type=range] { width: 110px; }
+  #panel .cams { max-height: 140px; overflow: auto; margin: 6px 0; }
+  #panel .cams label { justify-content: flex-start; }
+  #panel .fx label { justify-content: flex-start; }
+  #panel button { margin-top: 6px; width: 100%; padding: 5px; background: #134;
+                  color: #8ef; border: 1px solid #2af; border-radius: 5px; cursor: pointer; }
+  #panel .st { font-size: 11px; color: #6a8; margin-top: 6px; }
+  .det { position: absolute; right: 0; top: 0; padding: 2px 7px;
+         background: rgba(20,60,20,.6); color: #8f8; font-size: 11px; }
   /* tap-to-fullscreen overlay — scrollable so a big frame can be panned */
   #zoom { position: fixed; inset: 0; z-index: 50; background: #000; display: none;
           overflow: auto; -webkit-overflow-scrolling: touch; }
@@ -34,6 +51,22 @@
 <body>
 <div id="grid"></div>
 <div id="hud">cam-wall</div>
+<div id="gear">⚙</div>
+<div id="panel">
+  <label>auto-refresh <input id="p-enabled" type="checkbox"></label>
+  <label>interval <input id="p-interval" type="range" min="15" max="600" step="15"><span id="p-interval-v"></span></label>
+  <label>quality <input id="p-q" type="range" min="1" max="8"><span id="p-q-v"></span></label>
+  <label>thumb px <input id="p-tw" type="range" min="240" max="960" step="40"><span id="p-tw-v"></span></label>
+  <div class="fx">
+    <label><input id="p-fx-ts" type="checkbox"> timestamp</label>
+    <label><input id="p-fx-grid" type="checkbox"> grid</label>
+    <label><input id="p-fx-yolo" type="checkbox"> yolo detect</label>
+    <label>classes <input id="p-fx-cls" size="12" placeholder="person,car"></label>
+  </div>
+  <div class="cams" id="p-cams"></div>
+  <button id="p-save">apply</button>
+  <div class="st" id="p-st"></div>
+</div>
 <div id="zoom"><div class="cap"></div><div class="x">✕</div><img alt=""></div>
 <script>
   const zone = new URLSearchParams(location.search).get("zone") || "zone-a";
@@ -77,10 +110,22 @@
         div.innerHTML = `<span class="lbl">${cam.label}</span><img alt=""><span class="age"></span><div class="err" style="display:none"></div>`;
         grid.appendChild(div);
         c = { img: div.querySelector("img"), age: div.querySelector(".age"),
-              err: div.querySelector(".err"), ts: 0, url: "" };
+              err: div.querySelector(".err"), ts: 0, url: "", det: null };
         div.addEventListener("click", () => openZoom(c, cam.label));
         cells.set(cam.key, c);
       }
+      // yolo detection badge (counts from manifest 'det')
+      let db = c.det || div.querySelector(".det");
+      if (!db) {
+        db = document.createElement("div");
+        db.className = "det"; db.style.display = "none";
+        div.appendChild(db); c.det = db;
+      }
+      if (cam.det) {
+        db.textContent = Object.entries(cam.det)
+          .map(([k, n]) => `${k}×${n}`).join(" ");
+        db.style.display = "block";
+      } else db.style.display = "none";
       if (cam.ts && cam.ts !== c.ts) {
         c.ts = cam.ts;
         c.url = `data/${zone}/${cam.key}.jpg`;
@@ -118,6 +163,71 @@
 
   refresh();
   setInterval(refresh, 5000);
+
+  // ---- settings drawer — per-zone knobs live in the relay /camwall state
+  const BRIDGE = `${location.origin}/api/input-bridge`;
+  const panel = document.getElementById("panel");
+  const pSt = document.getElementById("p-st");
+  document.getElementById("gear").addEventListener("click", () => {
+    panel.style.display = panel.style.display === "block" ? "none" : "block";
+    if (panel.style.display === "block") loadPanel();
+  });
+  const $ = id => document.getElementById(id);
+  $("p-interval").oninput = e => $("p-interval-v").textContent = e.target.value + "s";
+  $("p-q").oninput = e => $("p-q-v").textContent = "q" + e.target.value;
+  $("p-tw").oninput = e => $("p-tw-v").textContent = e.target.value + "px";
+
+  async function loadPanel() {
+    let st;
+    try { st = await (await fetch(`${BRIDGE}/camwall`)).json(); }
+    catch (e) { pSt.textContent = "bridge unreachable"; return; }
+    const z = (st.zones || {})[zone] || {};
+    const s = z.settings || {};
+    $("p-enabled").checked = !!z.enabled;
+    $("p-interval").value = s.interval || 60; $("p-interval").oninput({target: $("p-interval")});
+    $("p-q").value = s.jpeg_q || 4; $("p-q").oninput({target: $("p-q")});
+    $("p-tw").value = s.thumb_w || 480; $("p-tw").oninput({target: $("p-tw")});
+    const fx = s.effects || [];
+    $("p-fx-ts").checked = fx.includes("timestamp");
+    $("p-fx-grid").checked = fx.includes("grid");
+    const yolo = fx.find(e => e.startsWith("yolo"));
+    $("p-fx-yolo").checked = !!yolo;
+    $("p-fx-cls").value = yolo && yolo.includes(":") ? yolo.split(":")[1].split("@")[0] : "person,car";
+    // cam checkboxes from the current manifest
+    try {
+      const man = await (await fetch(`data/${zone}/manifest-${zone}.json`)).json();
+      const skip = new Set(s.cams_skip || []);
+      $("p-cams").innerHTML = man.cams.map(c =>
+        `<label><input type="checkbox" data-k="${c.key}" ${skip.has(c.key) ? "" : "checked"}> ${c.label}</label>`
+      ).join("");
+    } catch (e) { $("p-cams").innerHTML = ""; }
+    pSt.textContent = z.enabled ? "zone enabled" : "zone off (warm pulls still run)";
+  }
+
+  $("p-save").addEventListener("click", async () => {
+    const fx = [];
+    if ($("p-fx-ts").checked) fx.push("timestamp");
+    if ($("p-fx-grid").checked) fx.push("grid");
+    if ($("p-fx-yolo").checked) {
+      const cls = $("p-fx-cls").value.trim();
+      fx.push(cls ? `yolo:${cls}@0.35` : "yolo");
+    }
+    const skip = [...document.querySelectorAll("#p-cams input")]
+      .filter(i => !i.checked).map(i => i.dataset.k);
+    const body = { zone, enabled: $("p-enabled").checked, settings: {
+      interval: Number($("p-interval").value),
+      jpeg_q: Number($("p-q").value),
+      thumb_w: Number($("p-tw").value),
+      cams_skip: skip, effects: fx } };
+    pSt.textContent = "saving…";
+    try {
+      const r = await (await fetch(`${BRIDGE}/camwall`, {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body) })).json();
+      pSt.textContent = r.ok ? "saved — puller picks it up next cycle" :
+                             "error: " + (r.error || "?");
+    } catch (e) { pSt.textContent = "save failed"; }
+  });
 </script>
 </body>
 </html>
