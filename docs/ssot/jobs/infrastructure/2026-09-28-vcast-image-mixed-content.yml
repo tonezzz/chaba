@@ -137,6 +137,18 @@ screen1_acl:
     checkout has unrelated WIP blocking a pull); all 4 Ada backends
     restarted and healthy.
 
+repo_convergence:
+  why: "User asked to consolidate on chaba — the live web root was a
+    separate clone on test/ultralytics-yolo-ha with a grafted (unrelated)
+    history: 22 unmerged commits, 593 behind, ~180 dirty files."
+  actions:
+    - "snapshot of all tracked live state -> origin/live/tony-dell-snapshot-20260928 (audit trail)"
+    - "chaba-tony-dell switched to master; all file collisions verified — every differing file was older than master"
+    - "salvage audit: most branch work had already landed via other commits; unique files restored to master (e27c9075): apps/vms noVNC bundle (my checkout had 404'd it), cast-cam service, scripts/devin/session/*, ssot.idc01.yml + 3 kb docs, tony-omen michael-dev quadlet + a_dev_mocks, ha/pair manifest"
+    - "deploy-discipline rule added to ssot.windsurf.common.md — origin/master is source of truth, git pull in the live checkout IS the deploy"
+    - "tony-omen: chaba + ada-pi checkouts pulled current (no services run the code there)"
+  verified: "post-convergence smoke test on screen 2: image cast -> snap-request -> 18.8KB JPEG. /apps/vms/, /apps/vcast/, /apps/camwall/, /apps/gev/ all 200."
+
 still_open:
   - item: "/local/documents/* is not a serving path on either HA instance"
     options:
