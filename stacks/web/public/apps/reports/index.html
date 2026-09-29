@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Reports</title>
+  <style>
+    :root { --bg: #0f172a; --card: #1e293b; --text: #e2e8f0; --muted: #94a3b8; }
+    body { font-family: system-ui, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 2rem; }
+    h1 { margin-top: 0; }
+    a { color: #60a5fa; }
+    .card { background: var(--card); border-radius: 0.75rem; padding: 1.25rem; margin: 1rem 0; }
+    .muted { color: var(--muted); }
+    ul { list-style: none; padding: 0; }
+    li { padding: 0.6rem 0; border-bottom: 1px solid #334155; }
+    li:last-child { border-bottom: none; }
+    .lang { float: right; }
+  </style>
+</head>
+<body>
+  <h1>Reports <a class="lang" href="/apps/reports-th/">ไทย</a></h1>
+  <p class="muted">Curated status, benchmark, and health pages.</p>
+
+  <div class="card">
+    <ul>
+      <li><a href="/apps/project-health/">Project Health</a> — current alerts, audit findings, service status</li>
+      <li><a href="/apps/ada-developer-training/">Ada Developer Training</a> — developer knowledge pipeline and benchmarks</li>
+      <li>Lab Results <span class="muted">(planned)</span></li>
+      <li>Memory Health <span class="muted">(planned)</span></li>
+      <li>Benchmark History <span class="muted">(planned)</span></li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h2>About</h2>
+    <p class="muted">
+      Each report is kept under a soft/hard character budget and has a fixed section contract.
+      High-priority sections render first; low-priority sections are dropped if a page overflows.
+      See <code>docs/ssot/apps/ssot.apps.ada-cms-reports.yml</code> for the control manifest.
+    </p>
+  </div>
+</body>
+</html>
