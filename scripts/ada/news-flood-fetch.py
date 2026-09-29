@@ -102,11 +102,12 @@ def get_doc(key: str, lang: str):
         return None
 
 
-def publish(lang: str, content: str, dry: bool) -> str:
-    # hash content minus the Updated-footer — otherwise every hourly run
-    # creates a revision from the timestamp alone (churn, not news)
-    stable = re.sub(r"^\*Updated .+ ICT\*$", "", content, flags=re.M).strip()
-    md5 = hashlib.md5(stable.encode()).hexdigest()
+def publish(lang: str, content: str, items: list[dict], dry: bool) -> str:
+    # hash the story SET (sorted links) — Google News reshuffles item order
+    # hourly, which would otherwise churn a revision per run with no new news
+    md5 = hashlib.md5(
+        "\n".join(sorted(i["link"] for i in items[:MAX_ITEMS])).encode()
+    ).hexdigest()
     now = datetime.now(timezone.utc).isoformat(timespec="seconds")
     meta = {"format": ["markdown"], "instance": ["tony"], "kind": ["page"],
             "slug": [SLUG], "lang": [lang], "title": [TITLE[lang]],
@@ -155,7 +156,7 @@ def main() -> int:
         if dry:
             print(f"--- {lang} ({len(items)} items) ---")
             print(content)
-        print(publish(lang, content, dry))
+        print(publish(lang, content, items, dry))
     ensure_index(dry)
     return 0
 
