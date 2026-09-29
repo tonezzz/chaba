@@ -1,0 +1,12 @@
+[Unit]
+Description=Ada live-scenario benchmark — casting suite (weekly, off-peak)
+After=network-online.target mddb.service ada-ha-tony.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=%h/CascadeProjects/ada-pi
+EnvironmentFile=%h/.config/secrets/ada-ha-tony.env
+Environment=MDDB_BASE_URL=http://100.74.146.0:11023/v1
+Environment=ADA_LIVE_URL=ws://127.0.0.1:8002/ws
+ExecStart=%h/CascadeProjects/ada-pi/.venv/bin/python scripts/scenario-benchmark.py --suite casting
+TimeoutStartSec=7200
