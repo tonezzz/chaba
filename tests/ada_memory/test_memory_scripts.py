@@ -13,6 +13,9 @@ from pathlib import Path
 SCRIPTS = Path(__file__).resolve().parents[2] / "scripts/ada"
 
 
+sys.path.insert(0, str(SCRIPTS))
+
+
 def load(name: str):
     spec = importlib.util.spec_from_file_location(name, SCRIPTS / f"{name}.py")
     mod = importlib.util.module_from_spec(spec)
