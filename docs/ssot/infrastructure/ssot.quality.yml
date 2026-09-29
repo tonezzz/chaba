@@ -250,6 +250,14 @@ registry:
     cost: network
     runner: systemd/chaba-report-feed.timer (on tony-omen)
     outputs: HA /local/chaba-report.json
+  - id: health.gh-runs-watch
+    lane: live-health
+    gate: info
+    cost: network
+    runner: systemd/ada-gh-runs-watch.timer (on tony-omen — gh authed)
+    script: scripts/audits/gh-runs-watch.py
+    outputs: docs/ssot/focus-inbox/*-gh-run-*.yml + reports/gh-runs/meta.yml
+    note: closes "CI failures die in the GH UI"; install after merge to master
 
   # --- lane: benchmark ---
   - id: bench.embed
@@ -290,7 +298,7 @@ registry:
 
 coverage_gaps:
   - "No unit-test lane — repo is scripts+SSOT; ci.repo-lint covers syntax only. Tests exist mainly in ada-pi (scenario suites) and sunsynk-power-flow-card (tsc --noEmit in CI would be the minimum)"
-  - "GH workflow results never reach reports/audits or the timeline — CI failures die in the GH UI; gh is installed on tony-dell but NOT authenticated — needs `gh auth` before a runs->timeline job can poll"
+  - "CLOSED 2026-09-29: GH workflow failures → focus inbox via health.gh-runs-watch (scripts/audits/gh-runs-watch.py, 15-min timer on tony-omen where gh IS authed; --git pushes alert docs); first live poll already caught 4 silent master failures"
   - "ci-pipeline.sh RETIRED 2026-09-29 — legacy on-host pipeline tied to the chaba-tony-dell checkout, superseded by GH workflows + the scheduled suite; file kept for reference, timer was never installed"
   - "CLOSED 2026-09-29: cms-audit snapshot input — ada-memory-backup.timer was already installed on tony-omen (correct host), nightly push feeds the lane"
   - "CLOSED 2026-09-29: registry self-check — standardization-audit section 6 now validates this registry (paths exist, CI steps registered, audit coverage)"

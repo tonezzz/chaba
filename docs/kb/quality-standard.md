@@ -67,7 +67,7 @@ in `ssot.audit.yml`; CMS report QC rules in `ssot.apps.cms-reports.yml`.
 ## Known gaps (coverage_gaps in the SSOT)
 
 - No unit-test lane — `ci.repo-lint` covers syntax only.
-- GH workflow failures don't reach the timeline yet (`gh` needs auth).
+- GH workflow failures → focus inbox via `scripts/audits/gh-runs-watch.py` (15-min timer on tony-omen, `gh` authed there; `--git` pushes alert docs) — install `ada-gh-runs-watch.timer` after this branch merges.
 - `ada-memory-backup.timer` not installed — CI's CMS snapshot input is
   manually refreshed.
 - `ci-pipeline.sh` legacy on-host pipeline — retire-or-register pending.

@@ -188,6 +188,20 @@ automation:
       the service runs %h/CascadeProjects/chaba (master), which doesn't
       have flood-news-update.py until then
 
+  gh_runs_watch:
+    script: scripts/audits/gh-runs-watch.py --git
+    schedule: "every 15min (OnUnitActiveSec)"
+    frequency: every 15 minutes
+    host: tony-omen (gh authenticated there; tony-dell gh is NOT authed)
+    timer: systemd/ada-gh-runs-watch.timer
+    service: systemd/ada-gh-runs-watch.service
+    outputs:
+      - docs/ssot/focus-inbox/*-gh-run-*.yml (committed+pushed via --git)
+      - reports/gh-runs/meta.yml + timeline event
+    status: committed (2026-09-29); install AFTER merge — script must
+      exist in the master checkout on tony-omen first
+    note: closes the "GH workflow failures die in the GH UI" coverage gap
+
   ada_memory_backup:
     script: scripts/ada/backup-mddb-banks.py --git
     schedule: "30 4 * * *"

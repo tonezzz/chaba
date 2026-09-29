@@ -1,0 +1,14 @@
+[Unit]
+Description=Poll GitHub Actions runs; write focus-inbox alerts on new failures
+# Runs on tony-omen: gh is authenticated there (`gh auth status`) and this
+# chaba checkout is on master. Polls tonezzz/chaba + tonezzz/ada-pi; with
+# --git the focus-inbox alert files are committed+pushed so downstream
+# checkouts see CI failures on pull. Install:
+#   cp systemd/ada-gh-runs-watch.{service,timer} ~/.config/systemd/user/
+#   systemctl --user daemon-reload && systemctl --user enable --now ada-gh-runs-watch.timer
+
+[Service]
+Type=oneshot
+TimeoutStartSec=120
+WorkingDirectory=%h/CascadeProjects/chaba
+ExecStart=/usr/bin/python3 %h/CascadeProjects/chaba/scripts/audits/gh-runs-watch.py --git
