@@ -147,19 +147,30 @@ async def _dispatch(msg: str, screen: int | None = None,
     further narrows to the Nth split-screen pane (clients that never
     announced a pane are treated as the whole screen / pane 0).
     With wait_s>0, collects tool_response frames for the call's id."""
-    targets = list(CLIENTS) + [
+    # screen=None broadcasts to voice CLIENTS + every remote; a screen
+    # number targets ONLY remotes that announced that screen — voice
+    # clients have no screen binding, so including them sends a
+    # screen-targeted command to whichever GEV tab happens to be open
+    # (2026-09-29: "fly screen 4 to Joburg" answered from a stale tab
+    # parked on Austin).
+    remotes = [
         w for w, m in REMOTE.items()
         if (screen is None or m.get('screen') == screen)
         and (pane is None or m.get('pane') in (None, pane))]
+    targets = remotes + (list(CLIENTS) if screen is None else [])
     delivered = 0
+    hit_screens = set()
     for ws in targets:
         try:
             await ws.send(msg)
             delivered += 1
+            m = REMOTE.get(ws)
+            if m and m.get('screen') is not None:
+                hit_screens.add(m['screen'])
         except Exception:
             pass
     if wait_s <= 0 or not delivered:
-        return delivered, []
+        return delivered, [], sorted(hit_screens)
     cmd_id = json.loads(msg).get('id')
     q: asyncio.Queue = asyncio.Queue()
     PENDING[cmd_id] = q
@@ -175,7 +186,7 @@ async def _dispatch(msg: str, screen: int | None = None,
                 break
     finally:
         PENDING.pop(cmd_id, None)
-    return delivered, responses
+    return delivered, responses, sorted(hit_screens)
 
 
 def _cmd_handler():
@@ -234,12 +245,17 @@ def _cmd_handler():
                 'args': body.get('args') or {},
             })
             try:
-                delivered, responses = asyncio.run_coroutine_threadsafe(
+                delivered, responses, hit = asyncio.run_coroutine_threadsafe(
                     _dispatch(msg, screen, wait_s, pane),
                     _loop).result(timeout=wait_s + 5)
             except Exception as e:
                 return self._reply(502, {'error': str(e)})
-            out = {'ok': True, 'delivered': delivered}
+            out = {'ok': True, 'delivered': delivered,
+                   'delivered_screens': hit}
+            if screen is not None and delivered == 0:
+                out['ok'] = False
+                out['error'] = (f'no GEV remote on screen {screen} — '
+                                'the command reached nobody')
             if responses:
                 out['responses'] = responses
             self._reply(200, out)
