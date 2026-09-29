@@ -188,10 +188,16 @@ def _cmd_handler():
 
         def do_GET(self):
             if self.path == '/command/health':
+                # screen may be None — a remote that connected before its
+                # vcast page exposed __vcastScreen (hello-retry covers it,
+                # but health must not crash meanwhile)
+                screens = [m.get('screen') for m in REMOTE.values()]
                 self._reply(200, {'ok': True, 'clients': len(CLIENTS),
                                   'remote': len(REMOTE),
                                   'remote_screens': sorted(
-                                      m.get('screen') for m in REMOTE.values())})
+                                      s for s in screens if s is not None),
+                                  'remote_pending': sum(
+                                      1 for s in screens if s is None)})
             else:
                 self._reply(404, {'error': 'not found'})
 

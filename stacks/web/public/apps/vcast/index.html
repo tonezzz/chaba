@@ -241,7 +241,18 @@
     }
     function nav(url) {
       showOnly(frame);
-      frame.src = embedUrl(url) || mediaUrl(url);
+      let src = embedUrl(url) || mediaUrl(url);
+      // bust heuristic caches for same-origin pages — a re-cast should load
+      // the current deploy, not a stale iframe shell (Safari heuristic-cache
+      // trap: same URL with old cached response never re-requests)
+      try {
+        const u = new URL(src, location.href);
+        if (u.origin === location.origin) {
+          u.searchParams.set("_vcast", Date.now());
+          src = u.toString();
+        }
+      } catch { /* keep src */ }
+      frame.src = src;
       setHud(`screen ${screenNum} · web`, true);
       sendState("nav", url);
     }
@@ -478,7 +489,15 @@
         case "audio": playAudio(msg.url); break;
         case "speak": speak(msg.text); break;
         case "stop": showIdle(); showToast("stopped"); break;
-        case "reload": location.reload(); break;
+        case "reload":
+          // navigate to a cache-busted URL — a plain reload may re-serve
+          // this page (and its iframes) from a stale heuristic cache
+          // (Safari has no forceReload anymore); a fresh query param is a
+          // new cache key and always hits the network.
+          { const u = new URL(location.href);
+            u.searchParams.set("_r", Date.now());
+            location.replace(u); }
+          break;
         case "uplink-start":
           startUplink(msg.interval || 750);
           break;
