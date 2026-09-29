@@ -466,7 +466,10 @@ def pull_zone(zone: str, cfg: dict, zdir: Path) -> dict:
                         out["dets"] = dets
                 except Exception as exc:
                     out["fx_err"] = str(exc)[:100]
-            (zdir / f"{out['key']}.jpg").write_bytes(data)
+            jp = zdir / f"{out['key']}.jpg"
+            tmp = jp.with_suffix(".jpg.tmp")
+            tmp.write_bytes(data)
+            os.replace(tmp, jp)  # atomic — wall page never reads half a jpg
             out.update(ts=int(time.time()), ok=True, bytes=len(data))
         except Exception as exc:
             out["err"] = str(exc)[:120]
@@ -558,7 +561,10 @@ def main() -> int:
             except Exception:
                 pass
         man = pull_zone(zone, cfg, zdir)
-        (zdir / f"manifest-{zone}.json").write_text(json.dumps(man))
+        mf = zdir / f"manifest-{zone}.json"
+        tmp = mf.with_suffix(".json.tmp")
+        tmp.write_text(json.dumps(man))
+        os.replace(tmp, mf)  # atomic — a page fetch never reads half a file
         ok = sum(1 for c in man["cams"] if c.get("ok"))
         mode = "enabled" if enabled else "warm" if not forced else "forced"
         print(f"{zone}: {ok}/{len(man['cams'])} thumbs refreshed ({mode})")

@@ -99,7 +99,10 @@
       hud.textContent = `cam-wall ${zone} — no manifest`;
       return;
     }
-    hud.textContent = `${zone} · ${man.cams.filter(c => c.ok).length}/${man.cams.length} live`;
+    const live = man.cams.filter(c => c.ok).length;
+    hud.textContent = live
+      ? `${zone} · ${live}/${man.cams.length} live`
+      : `${zone} · all ${man.cams.length} cams down — showing stale/err`;
     const now = Date.now() / 1000;
     order = [];
     for (const cam of man.cams) {
