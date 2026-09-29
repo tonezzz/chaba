@@ -199,7 +199,8 @@
     }
 
     function setHud(text, on) {
-      hudText.textContent = text;
+      hudText.textContent = text + (audioOK ? "" : " · tap 🔊");
+      document.getElementById("hud").style.cursor = audioOK ? "default" : "pointer";
       dot.className = "dot" + (on ? " on" : "");
     }
     function showToast(text, ms = 3000) {
@@ -490,7 +491,7 @@
     });
     keepAwake();
 
-    audioGate.addEventListener("click", () => {
+    function unlockAudio() {
       audioOK = true;
       audioGate.style.display = "none";
       for (const p of panes) {
@@ -498,7 +499,15 @@
         p.video.muted = false;
         if (p.video.src) p.video.play().catch(() => {});
       }
-    });
+      hud.style.cursor = "default";
+      setHud(hudText.textContent.replace(/ · tap 🔊$/, ""), true);
+    }
+    audioGate.addEventListener("click", unlockAudio);
+    // the HUD label itself is the always-present audio unlock — the gate
+    // button only appears when a video needs unmuting, but narration needs
+    // audio even on an idle screen
+    const hud = document.getElementById("hud");
+    hud.addEventListener("click", unlockAudio);
 
     // -- narration ---------------------------------------------------------------
     // Ada announces what she's doing on this screen via speak messages.
