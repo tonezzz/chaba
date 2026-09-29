@@ -238,11 +238,27 @@ def _cmd_handler():
             # wait>0 collects the clients' tool_response frames — lets
             # get_current_view_state (and friends) actually answer.
             wait_s = min(float(body.get('wait') or 0), 10.0)
+            args = body.get('args') or {}
+            # Normalize nested-coordinate quirks — the model emits
+            # {"location": {"latitude":…,"longitude":…}} instead of the
+            # flat schema the client implements (seen live 2026-09-29:
+            # every coord flight on the za-windsurf tour errored).
+            loc = args.get('location')
+            if isinstance(loc, dict):
+                for k in ('latitude', 'longitude', 'lat', 'lon',
+                          'rangeM', 'altM'):
+                    if k in loc and k not in args:
+                        args[k] = loc[k]
+                args.pop('location', None)
+            if 'lat' in args and 'latitude' not in args:
+                args['latitude'] = args.pop('lat')
+            if 'lon' in args and 'longitude' not in args:
+                args['longitude'] = args.pop('lon')
             msg = json.dumps({
                 'type': 'function_call',
                 'id': 'cmd-' + uuid.uuid4().hex[:8],
                 'name': name,
-                'args': body.get('args') or {},
+                'args': args,
             })
             try:
                 delivered, responses, hit = asyncio.run_coroutine_threadsafe(
