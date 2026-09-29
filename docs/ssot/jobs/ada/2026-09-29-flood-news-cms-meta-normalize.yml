@@ -40,7 +40,12 @@ tools:
       when present. Idempotent: skips the MDDB write when the item set is
       unchanged, so a 4h timer does not churn revisions. --dry-run previews
       without writes; --feed name=url overrides for ad-hoc queries.
-    live_run: "2026-09-29 — flood-report en+th plus both nongdon pages updated; second run skipped cleanly."
+      REGISTRY-AWARE: per-page switches/knobs live in MDDB collection
+      ada-cms-automation (enabled/feeds/require/since_hours/max_items/
+      interval_min/langs/run_now + last_run/last_status/last_count
+      write-back). Registry wins over the JSON seed; disabled pages are
+      skipped even by --force. See docs/implementation/cms-page-automation-plan.md.
+    live_run: "2026-09-29 — flood-report en+th plus both nongdon pages updated; registry docs bootstrapped; enabled=false switch verified skipping."
   - path: scripts/ada/cms-normalize-meta.py
     what: >
       Aligns every ada-cms-pages doc meta to the memory schema. Sets
@@ -97,5 +102,5 @@ verify:
 
 followups:
   - "Install systemd/ada-flood-news.{service,timer} on tony-dell if continuous refresh is wanted — it runs flood-news-update.py --all."
-  - "ada-pi's cms_publish_page should stamp the schema fields at write time so new pages don't need a normalizer pass (ada-pi repo, separate change)."
-  - "New flood pages only need a feeds entry in scripts/ada/flood-news-feeds.json — no code change."
+  - "P1 (ada-pi repo, separate dispatch): cms_automation tool (action=list|get|set|run|enable|disable, cctv_wall-style) so Ada flips the registry switches/knobs by voice; cms_publish_page stamps schema meta at write time. Plan: docs/implementation/cms-page-automation-plan.md."
+  - "New flood pages only need a feeds entry in scripts/ada/flood-news-feeds.json — or Ada creates a registry doc in ada-cms-automation, no repo change at all."

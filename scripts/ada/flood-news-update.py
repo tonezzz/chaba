@@ -48,6 +48,7 @@ from datetime import datetime, timedelta, timezone
 
 MDDB = os.environ.get("MDDB_BASE_URL", "http://100.74.146.0:11023/v1").rstrip("/")
 COLLECTION = "ada-cms-pages"
+REGISTRY = "ada-cms-automation"  # per-page switches/knobs + worker state
 BLOCK_BEGIN = "<!-- flood-news:auto -->"
 BLOCK_END = "<!-- /flood-news:auto -->"
 ICT = timezone(timedelta(hours=7))
@@ -56,24 +57,67 @@ FEEDS_CONFIG = os.environ.get(
     os.path.join(os.path.dirname(os.path.abspath(__file__)), "flood-news-feeds.json"))
 
 
-def feeds_for(page, config, overrides):
-    """Returns (feeds, require_re). Config value per page is either a bare
-    [[name, url], ...] list or {"feeds": [...], "require": "<regex>"} —
-    require is matched case-insensitively against title+description and
-    filters RSS noise (program listings etc.) that merely rode the query."""
-    entry = config.get(page) if not overrides else None
-    require = config.get("_require_default")
+def _post(path, payload, timeout=60):
+    req = urllib.request.Request(
+        f"{MDDB}/{path}", data=json.dumps(payload).encode(),
+        headers={"Content-Type": "application/json"})
+    return json.load(urllib.request.urlopen(req, timeout=timeout))
+
+
+def list_registry():
+    """Registry docs keyed by page slug. MDDB down -> {} (seed-only mode)."""
+    try:
+        docs = _post("search", {"collection": REGISTRY, "query": "", "limit": 500})
+    except Exception as e:
+        print(f"warn: automation registry unreachable ({e}) — seed config only",
+              file=sys.stderr)
+        return {}, False
+    out = {}
+    for d in docs:
+        try:
+            out[d["key"]] = json.loads(d.get("contentMd") or "{}")
+        except (KeyError, json.JSONDecodeError) as e:
+            print(f"warn: bad registry doc {d.get('id')}: {e}", file=sys.stderr)
+    return out, True
+
+
+def save_registry_doc(page, cfg):
+    body = json.dumps(cfg, ensure_ascii=False, indent=2)
+    now = datetime.now(timezone.utc)
+    meta = {"kind": ["automation-config"], "bank": ["cms"], "scope": ["tony"],
+            "status": ["active"], "source": ["api"],
+            "written_by": ["flood-news-update"], "subject": [page],
+            "attribute": ["automation"], "slug": [page],
+            "title": [f"CMS automation: {page}"], "format": ["json"],
+            "lang": ["en"], "updated": [now.isoformat(timespec="seconds")],
+            "last_verified": [now.date().isoformat()]}
+    _post("add", {"collection": REGISTRY, "key": page, "lang": "en",
+                  "contentMd": body, "meta": meta}, timeout=120)
+
+
+def seed_entry(config, page):
+    entry = config.get(page)
     if isinstance(entry, dict):
-        require = entry.get("require", require)
-        feeds = entry.get("feeds")
-    else:
-        feeds = entry
-    if overrides:
-        feeds = overrides
+        return dict(entry)
+    if isinstance(entry, list):
+        return {"feeds": entry}
+    return {}
+
+
+def effective_config(page, seed, reg, overrides):
+    """Merged switches/knobs for one page — registry wins over seed.
+    Returns (cfg, ok) — ok=False when no feeds resolve."""
+    cfg = {"enabled": True, "interval_min": 0, "run_now": False}
+    cfg.update(seed)
+    if reg:
+        cfg.update(reg)
+    if overrides is not None:
+        cfg["feeds"] = overrides
+    feeds = cfg.get("feeds")
     if not feeds or not isinstance(feeds, list):
-        raise SystemExit(f"error: no feeds configured for page '{page}' "
-                         f"(config {FEEDS_CONFIG}); pass --feed name=url")
-    return [tuple(f) for f in feeds], require
+        return cfg, False
+    cfg["feeds"] = [tuple(f) for f in feeds]
+    return cfg, True
 
 
 def fetch_feed(name, url, timeout=20):
@@ -214,24 +258,70 @@ def load_config():
         raise SystemExit(f"error: cannot load feeds config {FEEDS_CONFIG}: {e}")
 
 
-def update_page(page, feeds, require, args, now, now_ict):
-    items = collect(feeds, args.since_hours, args.max_items, require)
-    print(f"== {page}: {len(items)} flood items within {args.since_hours}h")
+def _gated(cfg, now, force):
+    """(skip_reason or None). enabled and interval_min gate auto runs;
+    run_now and --force bypass interval_min but never 'enabled'."""
+    if not cfg.get("enabled", True):
+        return "disabled"
+    if force or cfg.get("run_now"):
+        return None
+    interval = int(cfg.get("interval_min") or 0)
+    last = cfg.get("last_run")
+    if interval and last:
+        try:
+            last_dt = datetime.fromisoformat(last)
+            if last_dt.tzinfo is None:
+                last_dt = last_dt.replace(tzinfo=timezone.utc)
+            if now < last_dt + timedelta(minutes=interval):
+                return f"interval (last run {last})"
+        except ValueError:
+            pass
+    return None
+
+
+def update_page(page, cfg, args, now, now_ict, registry_up, require_default):
+    why = _gated(cfg, now, args.force)
+    if why:
+        print(f"== {page}: skipped ({why})")
+        return 0
+    since = int(cfg.get("since_hours") or args.since_hours)
+    limit = int(cfg.get("max_items") or args.max_items)
+    items = collect(cfg["feeds"], since, limit,
+                    cfg.get("require") or require_default)
+    print(f"== {page}: {len(items)} flood items within {since}h"
+          + (" [run_now]" if cfg.get("run_now") else ""))
     for i in items:
         pub = i["pub"].astimezone(ICT).strftime("%m-%d %H:%M") if i["pub"] else "?"
         print(f"  [{pub}] {i['title'][:90]} ({i['source']})")
+
+    def write_state(status, count):
+        if args.dry_run or not registry_up:
+            return
+        st = dict(cfg)
+        st.update({"run_now": False, "last_run": now.isoformat(timespec="seconds"),
+                   "last_status": status, "last_count": count})
+        try:
+            save_registry_doc(page, st)
+        except Exception as e:
+            print(f"  warn: registry write-back failed: {e}", file=sys.stderr)
+
     if not items:
         print("  nothing new — page left untouched")
+        write_state("no-items", 0)
         return 0
 
-    block = render_block(items, now_ict, args.since_hours)
+    block = render_block(items, now_ict, since)
     if args.dry_run:
         print("\n" + block + "\n")
         return 0
 
     docs = get_page(page, args.lang)
+    langs = cfg.get("langs")
+    if isinstance(langs, list) and langs:
+        docs = [d for d in docs if (d.get("lang") or "en") in langs]
     if not docs:
         print(f"  error: no {COLLECTION} docs for key={page} lang={args.lang}", file=sys.stderr)
+        write_state("error: page missing", 0)
         return 2
     for doc in docs:
         body = doc.get("contentMd") or ""
@@ -245,6 +335,7 @@ def update_page(page, feeds, require, args, now, now_ict):
             continue
         publish(doc, new_body, now)
         print(f"  updated {doc['id']} ({len(new_body) - len(body):+d}c)")
+    write_state("ok", len(items))
     return 0
 
 
@@ -266,6 +357,8 @@ def main():
     ap.add_argument("--feed", action="append", default=[],
                     help="ad-hoc feed as name=url (repeatable; overrides config)")
     ap.add_argument("--config", help="feeds JSON path (default: flood-news-feeds.json)")
+    ap.add_argument("--force", action="store_true",
+                    help="ignore interval_min gating (still honors enabled)")
     ap.add_argument("--dry-run", action="store_true")
     args = ap.parse_args()
 
@@ -274,14 +367,29 @@ def main():
         FEEDS_CONFIG = args.config
     config = load_config()
     overrides = [parse_feed_override(f) for f in args.feed] or None
+    registry, registry_up = list_registry()
 
     now = datetime.now(timezone.utc)
     now_ict = now.astimezone(ICT)
-    pages = [k for k in config if not k.startswith("_")] if args.all else [args.page]
+    if args.all:
+        pages = sorted({k for k in config if not k.startswith("_")} | set(registry))
+    else:
+        pages = [args.page]
     rc = 0
     for page in pages:
-        feeds, require = feeds_for(page, config, overrides)
-        rc = update_page(page, feeds, require, args, now, now_ict) or rc
+        cfg, ok = effective_config(
+            page, seed_entry(config, page), registry.get(page), overrides)
+        if not ok:
+            print(f"== {page}: skipped (no feeds configured)")
+            continue
+        try:
+            rc = update_page(page, cfg, args, now, now_ict, registry_up,
+                             config.get("_require_default")) or rc
+        except SystemExit:
+            raise
+        except Exception as e:
+            print(f"== {page}: error {e}", file=sys.stderr)
+            rc = 2
     return rc
 
 
