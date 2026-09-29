@@ -14,9 +14,31 @@
     :root { --bg: #020617; --panel: #0f172a; --text: #f8fafc; --muted: #64748b; --accent: #22d3ee; --ok: #22c55e; }
     * { box-sizing: border-box; }
     html, body { height: 100%; margin: 0; background: var(--bg); color: var(--text); font-family: system-ui, -apple-system, sans-serif; overflow: hidden; }
-    #video, #img, #frame { position: fixed; inset: 0; width: 100%; height: 100%; border: 0; display: none; background: #000; }
+    #video, #img, #frame { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; display: none; background: #000; }
     #video, #img { object-fit: contain; }
     #frame { object-fit: unset; }
+    /* split-screen panes — #stage is the layout container, .pane owns its
+       own video/img/iframe elements (pane 0 wraps the legacy globals) */
+    #stage { position: fixed; inset: 0; display: grid; gap: 2px;
+             grid-template-columns: 1fr; }
+    #stage.n2 { grid-template-columns: 1fr 1fr; }
+    #stage.n3 { grid-template-columns: repeat(3, 1fr); }
+    #stage.n4 { grid-template-columns: 1fr 1fr; grid-auto-rows: 1fr; }
+    #stage.n5 { grid-template-columns: repeat(6, 1fr); }
+    #stage.n5 .pane { grid-column: span 2; }
+    #stage.n5 .pane:nth-child(4), #stage.n5 .pane:nth-child(5) {
+      grid-column: span 3; }
+    .pane { position: relative; background: #000; overflow: hidden; }
+    .pane > video, .pane > img, .pane > iframe {
+      position: absolute; inset: 0; width: 100%; height: 100%;
+      border: 0; display: none; background: #000; object-fit: contain; }
+    .pane > iframe { object-fit: unset; }
+    .pane.zoomed { position: fixed; inset: 0; z-index: 60; }
+    .pz { position: absolute; right: 4px; top: 4px; z-index: 5;
+          font-size: 15px; line-height: 1; color: #8ef; cursor: pointer;
+          background: rgba(0,0,0,.45); border-radius: 4px; padding: 4px 7px;
+          user-select: none; }
+    .pane.zoomed .pz { z-index: 61; }
     #idle, #pair, #boot {
       position: fixed; inset: 0; display: none; flex-direction: column;
       align-items: center; justify-content: center; gap: 1.5rem; text-align: center; padding: 2rem;
@@ -48,9 +70,14 @@
   </style>
 </head>
 <body>
-  <video id="video" playsinline></video>
-  <img id="img" alt="">
-  <iframe id="frame" allow="autoplay; fullscreen"></iframe>
+  <div id="stage">
+    <div class="pane" id="pane0">
+      <video id="video" playsinline></video>
+      <img id="img" alt="">
+      <iframe id="frame" allow="autoplay; fullscreen"></iframe>
+      <div class="pz">⤢</div>
+    </div>
+  </div>
 
   <div id="boot"><div class="spin" style="color:var(--muted);font-size:1.2rem">connecting…</div></div>
 
@@ -96,9 +123,7 @@
     const manualRoom = params.get("room") || ""; // dev override: join vcast-N directly
     const pairBase = `${location.origin}/apps/vcast/pair.html?sid=`;
 
-    const video = document.getElementById("video");
-    const img = document.getElementById("img");
-    const frame = document.getElementById("frame");
+    const stage = document.getElementById("stage");
     const idle = document.getElementById("idle");
     const pair = document.getElementById("pair");
     const boot = document.getElementById("boot");
@@ -108,8 +133,70 @@
     const toast = document.getElementById("toast");
     const audioGate = document.getElementById("audioGate");
 
-    let ws = null, wsRetry = 0, hls = null, imgTimer = null;
+    let ws = null, wsRetry = 0;
     let screenNum = null, audioOK = false;
+
+    // -- panes: each sub-screen owns video/img/frame; pane 0 wraps the
+    //    legacy markup so single-pane behaves exactly as before -----------
+    const panes = [];
+    let zoomedPane = -1;
+    function makePane(i) {
+      if (panes[i]) return panes[i];
+      const el = i === 0 ? document.getElementById("pane0")
+                         : document.createElement("div");
+      if (i !== 0) {
+        el.className = "pane";
+        el.innerHTML =
+          `<video playsinline></video><img alt="">` +
+          `<iframe allow="autoplay; fullscreen"></iframe>` +
+          `<div class="pz">⤢</div>`;
+        stage.appendChild(el);
+      }
+      const p = {
+        el, video: el.querySelector("video"), img: el.querySelector("img"),
+        frame: el.querySelector("iframe"), hls: null, imgTimer: null,
+      };
+      el.querySelector(".pz").addEventListener("click", (e) => {
+        e.stopPropagation();
+        zoomPane(zoomedPane === i ? -1 : i);
+      });
+      el.addEventListener("dblclick", () =>
+        zoomPane(zoomedPane === i ? -1 : i));
+      panes[i] = p;
+      return p;
+    }
+    makePane(0);
+    function paneAt(i) {
+      i = Math.max(0, Math.min(Number(i) || 0, panes.length - 1));
+      return panes[i] || panes[0];
+    }
+    function zoomPane(i) {
+      zoomedPane = i;
+      panes.forEach((p, j) =>
+        p && p.el.classList.toggle("zoomed", j === i));
+      sendState(i >= 0 ? "zoomed" : "unzoomed",
+                i >= 0 ? `pane ${i}` : "");
+    }
+    function setLayout(n) {
+      n = Math.max(1, Math.min(5, Math.round(Number(n) || 1)));
+      for (let i = panes.length - 1; i >= n; i--) {
+        const p = panes.pop();
+        if (p) { paneTeardown(p); p.el.remove(); }
+      }
+      for (let i = 0; i < n; i++) makePane(i);
+      stage.className = n > 1 ? "n" + n : "";
+      zoomPane(-1);
+      sendState("layout", `${n} pane${n > 1 ? "s" : ""}`);
+    }
+    function paneTeardown(p) {
+      if (p.hls) { try { p.hls.destroy(); } catch (e) {} p.hls = null; }
+      p.video.pause(); p.video.removeAttribute("src"); p.video.load();
+      p.video.style.display = "none";
+      p.img.onerror = p.img.onload = null;
+      p.img.style.display = "none"; p.img.removeAttribute("src");
+      p.frame.style.display = "none"; p.frame.src = "about:blank";
+      clearInterval(p.imgTimer); p.imgTimer = null;
+    }
 
     function setHud(text, on) {
       hudText.textContent = text;
@@ -138,18 +225,23 @@
 
     // -- renderers ------------------------------------------------------------
     function teardown() {
-      if (hls) { try { hls.destroy(); } catch (e) {} hls = null; }
-      video.pause(); video.removeAttribute("src"); video.load(); video.style.display = "none";
-      img.onerror = img.onload = null;
-      img.style.display = "none"; img.removeAttribute("src");
-      frame.style.display = "none"; frame.src = "about:blank";
+      for (const p of panes) if (p) paneTeardown(p);
       audio.pause(); audio.removeAttribute("src");
-      clearInterval(imgTimer); imgTimer = null;
     }
     function showOnly(el) {
+      // fullscreen overlays only (idle/pair/boot) — panes keep their own
+      // children; hiding the stage blanks content panes
       teardown();
       for (const s of [idle, pair, boot]) s.style.display = "none";
-      if (el) el.style.display = el === video || el === img || el === frame ? "block" : "flex";
+      stage.style.display = el ? "none" : "grid";
+      if (el) el.style.display = "flex";
+    }
+    function paneShow(p, el) {
+      paneTeardown(p);
+      stage.style.display = "grid";
+      for (const s of [idle, pair, boot]) s.style.display = "none";
+      for (const c of [p.video, p.img, p.frame])
+        c.style.display = c === el ? "block" : "none";
     }
     function showIdle() {
       teardown();
@@ -194,30 +286,32 @@
       }
       return url;
     }
-    function play(url) {
+    function play(pi, url) {
+      const p = paneAt(pi), video = p.video;
       const emb = embedUrl(url);
-      if (emb) { nav(emb); sendState("playing", url); return; }
-      showOnly(video);
+      if (emb) { nav(pi, emb); sendState("playing", url); return; }
+      paneShow(p, video);
       video.controls = false;
       video.muted = !audioOK;
       if (!audioOK) audioGate.style.display = "block";
       const isHls = /\.m3u8($|\?)/i.test(url);
       if (isHls && !video.canPlayType("application/vnd.apple.mpegurl")) {
         if (!window.Hls || !Hls.isSupported()) { showToast("hls unsupported"); return sendState("error", "hls unsupported"); }
-        hls = new Hls({ liveSyncDurationCount: 3 });
-        hls.loadSource(mediaUrl(url));
-        hls.attachMedia(video);
-        hls.on(Hls.Events.ERROR, (_, d) => { if (d.fatal) showToast("hls: " + (d.details || "error")); });
+        p.hls = new Hls({ liveSyncDurationCount: 3 });
+        p.hls.loadSource(mediaUrl(url));
+        p.hls.attachMedia(video);
+        p.hls.on(Hls.Events.ERROR, (_, d) => { if (d.fatal) showToast("hls: " + (d.details || "error")); });
       } else {
         video.src = mediaUrl(url);
       }
       video.play().catch(() => showToast("tap for playback"));
       setHud(`screen ${screenNum} · video`, true);
-      sendState("playing", url);
+      sendState("playing", `${pi || 0}:${url}`);
     }
-    function showImage(url, interval) {
+    function showImage(pi, url, interval) {
+      const p = paneAt(pi), img = p.img;
       url = mediaUrl(url);
-      showOnly(img);
+      paneShow(p, img);
       // surface a load failure instead of a silent black screen
       img.onerror = () => {
         setHud(`screen ${screenNum} · image failed`, false);
@@ -235,12 +329,13 @@
         : url + (url.includes("?") ? "&" : "?") + "_t=" + Date.now();
       const tick = () => { img.src = mkSrc(); };
       tick();
-      if (interval > 0) imgTimer = setInterval(tick, Math.max(1, interval) * 1000);
+      if (interval > 0) p.imgTimer = setInterval(tick, Math.max(1, interval) * 1000);
       setHud(`screen ${screenNum} · image`, true);
-      sendState("image", url);
+      sendState("image", `${pi || 0}:${url}`);
     }
-    function nav(url) {
-      showOnly(frame);
+    function nav(pi, url) {
+      const p = paneAt(pi), frame = p.frame;
+      paneShow(p, frame);
       let src = embedUrl(url) || mediaUrl(url);
       // bust heuristic caches for same-origin pages — a re-cast should load
       // the current deploy, not a stale iframe shell (Safari heuristic-cache
@@ -254,7 +349,7 @@
       } catch { /* keep src */ }
       frame.src = src;
       setHud(`screen ${screenNum} · web`, true);
-      sendState("nav", url);
+      sendState("nav", `${pi || 0}:${url}`);
     }
     function playAudio(url) {
       if (!audioOK) { audioGate.style.display = "block"; showToast("audio blocked — tap to enable"); }
@@ -318,6 +413,7 @@
     // into a canvas and POSTs the frame back through the relay. Canvas can
     // capture video/img only; cross-origin iframes are reported as
     // uncapturable-iframe rather than returning a black PNG.
+    // Targets the zoomed pane when one is zoomed, else pane 0.
     async function snapFrame(token) {
       const post = (extra) => fetch(`${location.origin}/api/input-bridge/frame`, {
         method: "POST",
@@ -330,6 +426,8 @@
         c.getContext("2d").drawImage(src, 0, 0);
         return c.toDataURL("image/jpeg", 0.8);
       };
+      const p = paneAt(zoomedPane >= 0 ? zoomedPane : 0);
+      const video = p.video, img = p.img, frame = p.frame;
       try {
         if (video.style.display !== "none" && video.videoWidth) {
           return await post({ data: grab(video, video.videoWidth, video.videoHeight) });
@@ -394,8 +492,11 @@
     audioGate.addEventListener("click", () => {
       audioOK = true;
       audioGate.style.display = "none";
-      video.muted = false;
-      if (video.src) video.play().catch(() => {});
+      for (const p of panes) {
+        if (!p) continue;
+        p.video.muted = false;
+        if (p.video.src) p.video.play().catch(() => {});
+      }
     });
 
     // -- narration ---------------------------------------------------------------
@@ -483,12 +584,22 @@
           screenNum = null;
           ws.send(JSON.stringify(registerMsg()));
           break;
-        case "play": play(msg.url); break;
-        case "image": showImage(msg.url, msg.interval); break;
-        case "nav": nav(msg.url); break;
+        case "layout": setLayout(msg.panes ?? msg.layout); showToast(`${panes.length} panes`); break;
+        case "zoom": zoomPane(msg.pane ?? -1); break;
+        case "unzoom": zoomPane(-1); break;
+        case "play": play(msg.pane, msg.url); break;
+        case "image": showImage(msg.pane, msg.url, msg.interval); break;
+        case "nav": nav(msg.pane, msg.url); break;
         case "audio": playAudio(msg.url); break;
         case "speak": speak(msg.text); break;
-        case "stop": showIdle(); showToast("stopped"); break;
+        case "stop":
+          if (msg.pane != null) {
+            paneTeardown(paneAt(msg.pane));
+            showToast(`pane ${msg.pane} stopped`);
+          } else {
+            setLayout(1); showIdle(); showToast("stopped");
+          }
+          break;
         case "reload":
           // navigate to a cache-busted URL — a plain reload may re-serve
           // this page (and its iframes) from a stale heuristic cache

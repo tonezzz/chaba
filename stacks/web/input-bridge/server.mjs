@@ -226,6 +226,7 @@ function displaysSnapshot() {
       last_seen: s.last_seen || null,
       state: s.state || "idle",
       state_detail: s.state_detail || null,
+      panes: s.panes || 1,
     };
   });
   screens.sort((a, b) => a.screen - b.screen);
@@ -591,9 +592,10 @@ const server = http.createServer(async (req, res) => {
 // ---------------------------------------------------------------------------
 const rooms = new Map();
 const lastFrames = new Map(); // "screen:token" -> {ts, state, error, detail, buf}
-const lastCast = new Map();   // room -> last play/image/nav/stop msg (replayed
-                              // to a display on register so a ws flap doesn't
-                              // blank the screen)
+const lastCast = new Map();   // "room|pane" -> last play/image/nav/stop/layout
+                              // msg (replayed to a display on register so a ws
+                              // flap doesn't blank the screen; pane-keyed so
+                              // split layouts restore every pane)
 // Cam-wall zone state — persisted so enable flags AND settings knobs
 // (interval/quality/effects/cams) survive a bridge restart.
 const CAMWALL_FILE =
@@ -643,7 +645,15 @@ function broadcastTo(room, data) {
   // of going idle after a ws flap
   try {
     const obj = typeof data === "string" ? JSON.parse(data) : data;
-    if (["play", "image", "nav", "stop"].includes(obj?.type)) lastCast.set(room, obj);
+    if (["play", "image", "nav", "stop", "layout", "zoom"].includes(obj?.type)) {
+      const pane = obj.pane ?? "";
+      // layout/stop reshape the whole screen — flush older pane state
+      if (obj.type === "layout" || (obj.type === "stop" && pane === "")) {
+        for (const k of [...lastCast.keys()])
+          if (k.startsWith(room + "|")) lastCast.delete(k);
+      }
+      lastCast.set(`${room}|${pane}`, obj);
+    }
   } catch (e) { /* ignore */ }
   let delivered = 0;
   for (const client of clients) {
@@ -720,10 +730,17 @@ async function registerDisplay(ws, msg) {
   live.set(screen, ws);
   joinRoom(ws, `vcast-${screen}`);
   ws.send(JSON.stringify({ type: "registered", screen, name }));
-  // restore the last cast after a reconnect — otherwise a ws flap blanks
-  // the display to idle
-  const last = lastCast.get(`vcast-${screen}`);
-  if (last) setTimeout(() => { try { ws.send(JSON.stringify(last)); } catch (e) {} }, 400);
+  // restore the last casts after a reconnect — pane-keyed, layout first so
+  // content lands in the right sub-screens (a ws flap no longer blanks it)
+  const prefix = `vcast-${screen}|`;
+  const replay = [...lastCast.entries()]
+    .filter(([k]) => k.startsWith(prefix))
+    // layout messages carry no pane — send them first so content lands
+    // in the right sub-screens
+    .sort(([, a], [, b]) =>
+      (a.type === "layout" ? 0 : 1) - (b.type === "layout" ? 0 : 1));
+  for (const [, msg] of replay)
+    setTimeout(() => { try { ws.send(JSON.stringify(msg)); } catch (e) {} }, 400);
 }
 
 const wss = new WebSocketServer({ noServer: true });
@@ -759,6 +776,15 @@ wss.on("connection", (ws) => {
       if (entry) {
         entry.state = String(msg.state || "idle").slice(0, 32);
         entry.state_detail = String(msg.detail || "").slice(0, 200);
+        // pane count for split screens — "layout" state carries
+        // "N pane(s)" in detail; idle resets to 1 so a pane-targeted
+        // cast can tell whether it fills a sub-screen or the whole thing
+        if (entry.state === "layout") {
+          const m = entry.state_detail.match(/^(\d+)/);
+          if (m) entry.panes = parseInt(m[1], 10);
+        } else if (entry.state === "idle") {
+          entry.panes = 1;
+        }
         entry.last_seen = new Date().toISOString();
         saveRegistry();
       }
