@@ -1,0 +1,9 @@
+[Unit]
+Description=Chaba system audit — SSOT/memory/services/timers score (weekly)
+After=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=%h/CascadeProjects/chaba
+ExecStart=/usr/bin/python3 scripts/audit/chaba-audit.py
+TimeoutStartSec=600
