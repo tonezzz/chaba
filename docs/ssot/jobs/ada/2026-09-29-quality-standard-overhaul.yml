@@ -49,6 +49,17 @@ deliverables:
       schema fields and the page would flag itself S1 on the next run.
   - path: docs/ssot/infrastructure/ssot.reports.yml
     what: related_ssot cross-link to ssot.quality.yml.
+  - path: scripts/audits/standardization-audit.mjs
+    what: >
+      Section 6 — registry self-check: every script/runner path in
+      ssot.quality.yml must exist; every script referenced by a GH
+      workflow must appear in the registry; every scheduled audit must be
+      covered by the registry. The standard audits itself — caught a glob
+      (bench-*.py) masquerading as a path on first run.
+  - path: .github/workflows/repo-lint.yml
+    what: >
+      ci.repo-lint — python3 -m compileall + node --check on every .mjs
+      (vendored node_modules excluded). Pure syntax gate for scripts/**.
 
 decisions:
   - "Umbrella file does NOT duplicate the per-audit config in ssot.audit.yml — registry entries point at it; ssot.audit.yml stays the scheduled-lane source of truth."
@@ -63,8 +74,7 @@ verify:
   - "node scripts/ssot-validate-all.mjs — all valid"
 
 followups:
-  - "standardization-audit should cross-check ssot.quality.yml registry vs .github/workflows + ssot.audit.yml — unregistered checks currently caught only by convention."
-  - "GH workflow failures never reach reports/audits or timeline.jsonl — a webhook/on-failure step could append events so SYSTEM-REPORT sees CI breaks."
+  - "GH workflow failures never reach reports/audits or timeline.jsonl — gh is installed on tony-dell but NOT authenticated; needs `gh auth login` first, then a small runs->timeline poller job."
+  - "INSTALL DECISION: ada-memory-backup.timer is in the repo but not installed on tony-dell — it runs backup-mddb-banks.py --git which commits AND PUSHES the ada-cms-pages dump (feeds the ci.cms-audit snapshot lane). Needs explicit approval — it pushes to origin nightly."
   - "Decide ci-pipeline.sh fate — legacy on-host pipeline overlapping this taxonomy."
-  - "Wire ada-cms-pages dump refresh into a timer/audit-adjacent job so the CI snapshot lane stays current."
   - "P1 (ada-pi): cms_publish_page meta stamping — live writes still strip schema fields (observed on wall-* pages between normalize runs)."

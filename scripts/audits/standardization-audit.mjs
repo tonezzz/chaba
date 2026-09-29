@@ -92,6 +92,60 @@ function main() {
     }
   }
 
+  // 6. ssot.quality.yml registry cross-checks (quality-standard umbrella)
+  const qualityPath = join(SSOT_DIR, "infrastructure", "ssot.quality.yml");
+  if (existsSync(qualityPath)) {
+    const quality = load(qualityPath);
+    const registry = quality.registry || [];
+    // 6a. every registry script/runner path must exist on disk
+    const PATH_RE = /(?:^|\s)(scripts\/[\w.\-\/]+|systemd\/[\w.\-]+|\.github\/workflows\/[\w.\-]+)/g;
+    for (const entry of registry) {
+      for (const field of ["script", "runner"]) {
+        const text = entry[field];
+        if (!text) continue;
+        for (const m of String(text).matchAll(PATH_RE)) {
+          const p = m[1];
+          if (!existsSync(join(PROJECT_ROOT, p))) {
+            issues.push(`quality registry '${entry.id}' references missing ${field} path: ${p}`);
+          }
+        }
+      }
+    }
+    // 6b. every GH workflow run: step's script must be registered
+    const wfDir = join(PROJECT_ROOT, ".github", "workflows");
+    const registeredPaths = new Set();
+    for (const entry of registry) {
+      for (const field of ["script", "runner", "inputs", "outputs"]) {
+        for (const m of String(entry[field] || "").matchAll(PATH_RE)) {
+          registeredPaths.add(m[1]);
+        }
+      }
+    }
+    if (existsSync(wfDir)) {
+      for (const wf of readdirSync(wfDir)) {
+        if (!/\.ya?ml$/.test(wf)) continue;
+        const wtext = readFileSync(join(wfDir, wf), "utf8");
+        for (const m of wtext.matchAll(PATH_RE)) {
+          const p = m[1];
+          if (p.startsWith(".github/")) continue;
+          if (!registeredPaths.has(p)) {
+            issues.push(`unregistered CI step script: ${p} (in ${wf})`);
+          }
+        }
+      }
+    }
+    // 6c. every scheduled-audit name must be mentioned in the registry's
+    // audit.suite entry text (or have its own registry id)
+    const suite = registry.find((r) => r.id === "audit.suite");
+    const suiteText = JSON.stringify(suite || {});
+    for (const name of auditNames) {
+      const ownEntry = registry.some((r) => String(r.id).endsWith(name));
+      if (!suiteText.includes(name) && !ownEntry) {
+        issues.push(`audit '${name}' not covered by quality registry`);
+      }
+    }
+  }
+
   const result = {
     ok: issues.length === 0,
     generated: new Date().toISOString(),

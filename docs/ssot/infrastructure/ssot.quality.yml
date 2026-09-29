@@ -182,8 +182,24 @@ registry:
     cost: cheap
     runner: .github/workflows/cms-audit.yml
     script: python3 scripts/ada/cms-audit.py --file backups/ada-memory/ada-cms-pages.json --baseline scripts/ada/cms-audit-baseline.json
-    inputs: committed MDDB snapshot (stale risk noted — refreshed by ada-memory-backup.service)
+    inputs: committed MDDB snapshot (stale risk noted — refreshed by ada-memory-backup.service, NOT currently installed on tony-dell)
     standard: docs/ssot/apps/ssot.apps.cms-reports.yml
+  - id: ci.repo-lint
+    lane: ci-gate
+    gate: blocking
+    cost: cheap
+    runner: .github/workflows/repo-lint.yml
+    script: "python3 -m compileall -q -x node_modules scripts/ + node --check per *.mjs (excluding vendored node_modules)"
+  - id: qa.registry-self-check
+    lane: scheduled-audit
+    gate: blocking
+    cost: cheap
+    runner: inside standardization-audit.mjs section 6
+    script: scripts/audits/standardization-audit.mjs
+    note: >
+      This file's registry is itself audited: every referenced script path
+      must exist, every CI workflow script must be registered, every
+      scheduled audit must be covered. The standard audits itself.
 
   # --- lane: scheduled-audit (run.mjs suite on tony-dell) ---
   - id: audit.suite
@@ -251,7 +267,7 @@ registry:
     lane: benchmark
     gate: info
     cost: cheap
-    script: scripts/bench-*.py (gdrive, kb-search, open-notebook)
+    script: "scripts/bench-gdrive.py, scripts/bench-kb-search.py, scripts/bench-open-notebook.py, scripts/benchmark.sh"
   - id: bench.flood-news
     lane: benchmark
     gate: info
@@ -273,11 +289,11 @@ registry:
     script: scripts/audits/{kb,ssot}-modularity-audit.mjs (in suite)
 
 coverage_gaps:
-  - "No unit-test lane — repo is scripts+SSOT; tests exist mainly in ada-pi (scenario suites) and sunsynk-power-flow-card (tsc --noEmit in CI would be the minimum)"
-  - "GH workflow results never reach reports/audits or the timeline — CI failures die in the GH UI; a failing-workflow hook could append timeline events"
-  - "cms-audit live lane is baseline-ratcheted but the snapshot input to CI lags until ada-memory-backup.service commits — consider wiring dump refresh into the audit timer"
-  - "standardization-audit doesn't yet cross-check this registry — unregistered checks are only caught by convention"
+  - "No unit-test lane — repo is scripts+SSOT; ci.repo-lint covers syntax only. Tests exist mainly in ada-pi (scenario suites) and sunsynk-power-flow-card (tsc --noEmit in CI would be the minimum)"
+  - "GH workflow results never reach reports/audits or the timeline — CI failures die in the GH UI; gh is installed on tony-dell but NOT authenticated — needs `gh auth` before a runs->timeline job can poll"
+  - "cms-audit CI lane input (backups/ada-memory/ada-cms-pages.json) only refreshes when ada-memory-backup.service runs — the timer is in the repo but NOT INSTALLED on tony-dell; install it (nightly, --git pushes the dump) or the snapshot lane lags"
   - "ci-pipeline.sh is a legacy on-host pipeline tied to the chaba-tony-dell checkout — overlaps this taxonomy; decide retire vs register"
+  - "CLOSED 2026-09-29: registry self-check — standardization-audit section 6 now validates this registry (paths exist, CI steps registered, audit coverage)"
 
 related_ssot:
   - docs/ssot/infrastructure/ssot.audit.yml
