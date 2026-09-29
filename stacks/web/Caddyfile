@@ -208,6 +208,11 @@ http://127.0.0.1:8080 {
 		redir /apps/yolo/ 308
 	}
 
+	# yolo detector backend on mn01 (detection + cast endpoints)
+	handle_path /apps/yolo/api/* {
+		reverse_proxy 100.106.196.22:8780
+	}
+
 	handle_path /apps/yolo/* {
 		root * /srv/public/apps/yolo
 		file_server
