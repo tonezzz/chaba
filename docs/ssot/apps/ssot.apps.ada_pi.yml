@@ -62,6 +62,8 @@ sections:
         text: "ada-pi-pwa previously bound 0.0.0.0:8001 on tony-dell (full PWA on plain-HTTP LAN). Service moved to idc01 (loopback + tailnet-only serve); the tony-dell unit is stopped+disabled."
       - label: "Backend routes that must stay"
         text: "/ws, /api/auth/*, /api/chaba/*, /api/home-assistant/*, /api/speakers/*, /api/memory/*, /api/decision/*, /api/documents/*, /api/tools/*, /api/chat/transcript, /api/cms/* (until cms tab retires), /api/health."
+      - label: "backend/tools.d drop-in tools (added 2026-09-30)"
+        text: "New tools ship as one module + one manifest.yml line under backend/tools.d/ — no tool_runner/realtime_provider edits. Module contract: DECLARATION dict + async run(runner, **args). Manifest sets policy (read|confirmed|owner_only), secondary_allowed (default deny), timeout_s. Authoring standard + ship flow: ada-pi docs/ada-tool-dev.md; loader: backend/tools_loader.py; reference tool: ada_mddb_health."
   - title: Testing
     icon: "🧪"
     layout: list
