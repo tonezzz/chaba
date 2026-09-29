@@ -138,13 +138,16 @@ async def pump_responses(session, websocket):
 
 
 async def _dispatch(msg: str, screen: int | None = None,
-                    wait_s: float = 0.0):
+                    wait_s: float = 0.0, pane: int | None = None):
     """Send msg to matching clients. screen=None broadcasts to voice CLIENTS
-    + every remote client; a number narrows remotes to that screen.
+    + every remote client; a number narrows remotes to that screen. pane=N
+    further narrows to the Nth split-screen pane (clients that never
+    announced a pane are treated as the whole screen / pane 0).
     With wait_s>0, collects tool_response frames for the call's id."""
     targets = list(CLIENTS) + [
         w for w, m in REMOTE.items()
-        if screen is None or m.get('screen') == screen]
+        if (screen is None or m.get('screen') == screen)
+        and (pane is None or m.get('pane') in (None, pane))]
     delivered = 0
     for ws in targets:
         try:
@@ -197,7 +200,10 @@ def _cmd_handler():
                                   'remote_screens': sorted(
                                       s for s in screens if s is not None),
                                   'remote_pending': sum(
-                                      1 for s in screens if s is None)})
+                                      1 for s in screens if s is None),
+                                  'remotes': [{'screen': m.get('screen'),
+                                               'pane': m.get('pane')}
+                                              for m in REMOTE.values()]})
             else:
                 self._reply(404, {'error': 'not found'})
 
@@ -213,6 +219,8 @@ def _cmd_handler():
             if not name:
                 return self._reply(400, {'error': 'name required'})
             screen = body.get('screen')
+            pane = body.get('pane')
+            pane = int(pane) if pane is not None else None
             # wait>0 collects the clients' tool_response frames — lets
             # get_current_view_state (and friends) actually answer.
             wait_s = min(float(body.get('wait') or 0), 10.0)
@@ -224,7 +232,7 @@ def _cmd_handler():
             })
             try:
                 delivered, responses = asyncio.run_coroutine_threadsafe(
-                    _dispatch(msg, screen, wait_s),
+                    _dispatch(msg, screen, wait_s, pane),
                     _loop).result(timeout=wait_s + 5)
             except Exception as e:
                 return self._reply(502, {'error': str(e)})
@@ -260,6 +268,7 @@ async def client_handler(websocket):
                     # page announces its vcast screen number (same-origin
                     # parent knows it) so /command can target screen=N
                     meta['screen'] = obj.get('screen')
+                    meta['pane'] = obj.get('pane')
                 elif t == 'tool_response':
                     for r in obj.get('responses') or []:
                         q = PENDING.get(r.get('id'))

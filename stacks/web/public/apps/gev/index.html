@@ -16,7 +16,7 @@
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20,400,0,0" rel="stylesheet" />
   <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet" />
-  <script type="module" crossorigin src="/apps/gev/assets/index-BWYV9sYm.js"></script>
+  <script type="module" crossorigin src="/apps/gev/assets/index-Co4SwebQ.js"></script>
   <link rel="stylesheet" crossorigin href="/apps/gev/assets/index-BeKkcf38.css">
 </head>
 <body>
@@ -945,7 +945,37 @@
       const queue = [];
       let ws = null;
       const runner = () => window.__gevVoiceCommands?.runner || null;
+      // capture_frame: grab the Cesium canvas (preserveDrawingBuffer is on)
+      // and POST it to the input-bridge frame store — vcast_snapshot then
+      // polls it down like any other frame. Works even while init runs, as
+      // long as a canvas exists.
+      async function captureFrame(call) {
+        const reply = (ok, extra = {}) => ws?.readyState === 1 && ws.send(JSON.stringify({
+          type: 'tool_response',
+          responses: [{ id: call.id, name: call.name, response: { ok, ...extra } }]
+        }));
+        try {
+          const canvas = document.querySelector('#cesiumContainer canvas') ||
+                         document.querySelector('canvas');
+          if (!canvas || !canvas.width) return reply(false, { error: 'no canvas yet — page still initializing' });
+          const maxW = 1024;
+          const scale = Math.min(1, maxW / canvas.width);
+          const c = document.createElement('canvas');
+          c.width = Math.round(canvas.width * scale);
+          c.height = Math.round(canvas.height * scale);
+          c.getContext('2d').drawImage(canvas, 0, 0, c.width, c.height);
+          const data = c.toDataURL('image/jpeg', 0.6);
+          const args = call.args || {};
+          await fetch('/api/input-bridge/frame', {
+            method: 'POST', headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ screen: myScreen(), token: args.token || 'gev',
+              state: 'gev-capture', data })
+          });
+          reply(true);
+        } catch (e) { reply(false, { error: String(e) }); }
+      }
       async function dispatch(call) {
+        if (call.name === 'capture_frame') return captureFrame(call);
         const r = runner();
         if (!r) {
           // page still initializing — acknowledge immediately so a waiting
@@ -965,7 +995,15 @@
             type: 'tool_response',
             responses: [{ id: call.id, name: call.name, response: res }]
           }));
-        } catch (e) { /* fire-and-forget */ }
+        } catch (e) {
+          // surface the error — a silent drop makes callers see
+          // "delivered" and report success for a command that never ran
+          ws?.readyState === 1 && ws.send(JSON.stringify({
+            type: 'tool_response',
+            responses: [{ id: call.id, name: call.name,
+              response: { ok: false, error: String(e) } }]
+          }));
+        }
       }
       setInterval(() => { while (queue.length && runner()) dispatch(queue.shift()); }, 2000);
       const myScreen = () => {
@@ -973,10 +1011,14 @@
         if (q) return parseInt(q, 10);
         try { return window.parent.__vcastScreen ?? null; } catch { return null; }
       };
+      const myPane = () => {
+        const q = new URLSearchParams(location.search).get('pane');
+        return q !== null ? parseInt(q, 10) : null;
+      };
       function connect() {
         try {
           ws = new WebSocket(url);
-          const hello = () => { try { ws.readyState === 1 && ws.send(JSON.stringify({ type: 'hello', screen: myScreen() })); } catch {} };
+          const hello = () => { try { ws.readyState === 1 && ws.send(JSON.stringify({ type: 'hello', screen: myScreen(), pane: myPane() })); } catch {} };
           ws.onopen = () => { hello(); setTimeout(hello, 6000); setTimeout(hello, 20000); }; // screen number arrives async via parent 'registered'
           ws.onmessage = (ev) => {
             let obj; try { obj = JSON.parse(ev.data); } catch { return; }
