@@ -34,6 +34,7 @@ Comprehensive guides for systems and workflows:
 - **[health-check.md](kb/health-check.md)** - Health check dashboard documentation
 - **[impact-scoring-system.md](kb/impact-scoring-system.md)** - Impact scoring system for improvements
 - **[layered-reporting.md](kb/layered-reporting.md)** - Layered reporting standard — L0 raw artifacts to L3 system overview
+- **[quality-standard.md](kb/quality-standard.md)** - Unified CI/QA/QC/audit taxonomy — lanes, severity model, baseline ratchets, registry
 - **[mcp-server-audit.md](kb/mcp-server-audit.md)** - MCP server audit and optimization
 - **[mcp-tools.md](kb/mcp-tools.md)** - MCP server inventory and maintenance
 - **[overnight-assessment.md](kb/overnight-assessment.md)** - Automated overnight system assessment

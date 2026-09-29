@@ -354,6 +354,7 @@ audits:
     args:
       - --baseline
       - scripts/ada/cms-audit-baseline.json
+      - --publish
     schedule: weekly
     severity_on_fail: warning
     description: >
@@ -362,6 +363,7 @@ audits:
       ssot.apps.cms-reports.yml). Baseline-ratcheted: fails only on
       failures not in cms-audit-baseline.json (the 5 known content fails),
       so new-page regressions surface without re-failing known debt.
+      --publish refreshes the cms-audit-report page (meta-preserving).
       Lane: scheduled-audit (live MDDB); the CI lane lints the committed
       snapshot instead (ssot.quality.yml registry id qc.cms-pages /
       ci.cms-audit).

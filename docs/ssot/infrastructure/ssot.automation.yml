@@ -169,6 +169,33 @@ automation:
       - reports/system-report.yml
     status: defined (2026-09-26); timer not yet installed on any host
 
+  flood_news:
+    ssot: docs/ssot/apps/ssot.apps.cms-reports.yml
+    script: scripts/ada/flood-news-update.py --all
+    config: scripts/ada/flood-news-feeds.json
+    registry: MDDB collection ada-cms-automation (per-page switches/knobs)
+    schedule: "4-hourly at :12 (00/04/08/12/16/20)"
+    frequency: every 4 hours
+    timer: systemd/ada-flood-news.timer
+    service: systemd/ada-flood-news.service
+    reports:
+      - ada-cms-pages flood-report* auto blocks
+      - ada-cms-automation last_* registry write-back
+    status: committed (2026-09-29); timer not installed — pending approval
+
+  ada_memory_backup:
+    script: scripts/ada/backup-mddb-banks.py --git
+    schedule: "30 4 * * *"
+    frequency: daily at 04:30
+    timer: systemd/ada-memory-backup.timer
+    service: systemd/ada-memory-backup.service
+    outputs:
+      - backups/ada-memory/*.json (repo-bound banks; commits+pushes)
+      - ~/.local/share/ada-backups/ (private banks)
+    note: feeds the ci.cms-audit snapshot lane — see ssot.quality.yml
+    status: committed; timer NOT installed on tony-dell (2026-09-29) —
+      pending approval since --git pushes to origin nightly
+
 monitoring:
   gpu:
     metrics:
