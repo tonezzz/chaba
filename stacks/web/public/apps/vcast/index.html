@@ -33,6 +33,12 @@
       position: absolute; inset: 0; width: 100%; height: 100%;
       border: 0; display: none; background: #000; object-fit: contain; }
     .pane > iframe { object-fit: unset; }
+    /* picture-in-picture: layout mode 'pip' leaves pane0 fullscreen and
+       floats panes 1..N in the top-right corner */
+    .pane.pip { position: fixed; top: 2.5%; right: 1.5%; width: min(30vw, 480px);
+                aspect-ratio: 16 / 9; z-index: 55; border: 1px solid #334155;
+                border-radius: 10px; box-shadow: 0 8px 30px rgba(0,0,0,.55); }
+    .pane.pip .pz { display: none; }
     .pane.zoomed { position: fixed; inset: 0; z-index: 60; }
     .pz { position: absolute; right: 4px; top: 4px; z-index: 5;
           font-size: 15px; line-height: 1; color: #8ef; cursor: pointer;
@@ -177,16 +183,18 @@
       sendState(i >= 0 ? "zoomed" : "unzoomed",
                 i >= 0 ? `pane ${i}` : "");
     }
-    function setLayout(n) {
+    function setLayout(n, mode) {
       n = Math.max(1, Math.min(5, Math.round(Number(n) || 1)));
       for (let i = panes.length - 1; i >= n; i--) {
         const p = panes.pop();
         if (p) { paneTeardown(p); p.el.remove(); }
       }
       for (let i = 0; i < n; i++) makePane(i);
-      stage.className = n > 1 ? "n" + n : "";
+      const pip = mode === "pip" && n > 1;
+      stage.className = (!pip && n > 1) ? "n" + n : "";
+      panes.forEach((p, i) => p && p.el.classList.toggle("pip", pip && i > 0));
       zoomPane(-1);
-      sendState("layout", `${n} pane${n > 1 ? "s" : ""}`);
+      sendState("layout", `${n} pane${n > 1 ? "s" : ""}${pip ? " (pip)" : ""}`);
     }
     function paneTeardown(p) {
       if (p.hls) { try { p.hls.destroy(); } catch (e) {} p.hls = null; }
@@ -594,7 +602,7 @@
           screenNum = null;
           ws.send(JSON.stringify(registerMsg()));
           break;
-        case "layout": setLayout(msg.panes ?? msg.layout); showToast(`${panes.length} panes`); break;
+        case "layout": setLayout(msg.panes ?? msg.layout, msg.mode); showToast(`${panes.length} panes${msg.mode === "pip" ? " · pip" : ""}`); break;
         case "zoom": zoomPane(msg.pane ?? -1); break;
         case "unzoom": zoomPane(-1); break;
         case "play": play(msg.pane, msg.url); break;
