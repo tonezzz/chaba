@@ -32,7 +32,7 @@ const DOCUMENT_PATTERNS = [
   { pattern: "docs/sessions/*.yml", type: "session", category: "sessions" },
   { pattern: "docs/kb/*.md", type: "kb", category: "kb" },
   { pattern: "docs/assessments/*.md", type: "assessment", category: "assessments" },
-  { pattern: "docs/assessments/gpu-embedding/*.md", type: "assessment", category: "gpu-embedding" },
+  { pattern: "docs/assessments/gpu-embedding/**/*.md", type: "assessment", category: "gpu-embedding" },
   { pattern: "docs/architecture/*.md", type: "architecture", category: "architecture" },
 ];
 
