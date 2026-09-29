@@ -42,6 +42,7 @@ import json
 import os
 import re
 import sys
+import time
 import urllib.request
 import xml.etree.ElementTree as ET
 from datetime import datetime, timedelta, timezone
@@ -183,8 +184,9 @@ def collect(feeds, since_hours, max_items, require=None):
     return items[:max_items]
 
 
-def render_block(items, now_ict, since_hours):
+def render_block(items, now_ict, since_hours, cfg=None):
     stamp = now_ict.strftime("%Y-%m-%d %H:%M")
+    feed_names = [n for n, _ in (cfg or {}).get("feeds") or []]
     lines = [BLOCK_BEGIN,
              f"## ข่าวน้ำท่วมอัตโนมัติ — ดึงเมื่อ {stamp} น. (ICT)",
              ""]
@@ -192,10 +194,17 @@ def render_block(items, now_ict, since_hours):
         pub = i["pub"].astimezone(ICT).strftime("%Y-%m-%d %H:%M") if i["pub"] else "ไม่ทราบเวลา"
         title = i["title"] if len(i["title"]) <= 140 else i["title"][:137].rstrip() + "…"
         lines.append(f"*   **[{title}]({i['link']})** — {i['source']} · เผยแพร่ {pub}")
-    lines += ["",
-              f"*รวบรวมอัตโนมัติจาก Google News RSS · {len(items)} รายการใน {since_hours} ชม.ล่าสุด · "
-              f"สคริปต์ scripts/ada/flood-news-update.py*",
-              BLOCK_END]
+    footer = (f"รวบรวมอัตโนมัติจาก Google News RSS · {len(items)} รายการใน "
+              f"{since_hours} ชม.ล่าสุด · สคริปต์ scripts/ada/flood-news-update.py")
+    if feed_names:
+        footer += f" · feeds: {', '.join(feed_names)}"
+    parent = (cfg or {}).get("parent")
+    children = (cfg or {}).get("children") or []
+    if parent:
+        footer += f" · parent: `{parent}`"
+    if children:
+        footer += " · children: " + ", ".join(f"`{c}`" for c in children)
+    lines += ["", f"*{footer}*", BLOCK_END]
     return "\n".join(lines)
 
 
@@ -234,12 +243,20 @@ def get_page(key, lang):
     return [d for d in docs if d.get("key") == key and (lang is None or d.get("lang") == lang)]
 
 
-def publish(doc, body, now):
+def publish(doc, body, now, cfg):
     meta = {k: (v if isinstance(v, list) else [str(v)])
             for k, v in (doc.get("meta") or {}).items()}
     meta["updated"] = [now.isoformat(timespec="seconds")]
     meta["last_verified"] = [now.date().isoformat()]
     meta["lang"] = [doc.get("lang") or "en"]
+    # Provenance per ssot.apps.cms-reports.yml — replayable recipe + lineage.
+    meta["generated_by"] = [f"flood-news-update.py --page {doc['key']}"]
+    meta["sources"] = [n for n, _ in cfg.get("feeds") or []]
+    meta["report_role"] = ["rollup" if cfg.get("children") else "leaf"]
+    if cfg.get("parent"):
+        meta["parent"] = [cfg["parent"]]
+    if cfg.get("children"):
+        meta["children"] = list(cfg["children"])
     payload = {"collection": COLLECTION, "key": doc["key"],
                "lang": doc.get("lang") or "en", "contentMd": body, "meta": meta}
     req = urllib.request.Request(
@@ -294,12 +311,15 @@ def update_page(page, cfg, args, now, now_ict, registry_up, require_default):
         print(f"== {page}: skipped ({why})")
         return 0
 
+    started = time.monotonic()
+
     def write_state(status, count, error=None):
         if args.dry_run or not registry_up:
             return
         st = dict(cfg)
         st.update({"run_now": False, "last_run": now.isoformat(timespec="seconds"),
-                   "last_status": status, "last_count": count})
+                   "last_status": status, "last_count": count,
+                   "last_duration_s": round(time.monotonic() - started, 1)})
         if error:
             st["last_error"] = str(error)[:500]
         else:
@@ -331,7 +351,7 @@ def update_page(page, cfg, args, now, now_ict, registry_up, require_default):
         write_state("no-items", 0)
         return 0
 
-    block = render_block(items, now_ict, since)
+    block = render_block(items, now_ict, since, cfg)
     if args.dry_run:
         print("\n" + block + "\n")
         return 0
@@ -355,7 +375,7 @@ def update_page(page, cfg, args, now, now_ict, registry_up, require_default):
             if new_body == body:
                 print(f"  skip {doc['id']} — block unchanged")
                 continue
-            publish(doc, new_body, now)
+            publish(doc, new_body, now, cfg)
             print(f"  updated {doc['id']} ({len(new_body) - len(body):+d}c)")
     except Exception as e:
         print(f"== {page}: error {e}", file=sys.stderr)

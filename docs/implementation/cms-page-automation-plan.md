@@ -30,9 +30,12 @@ schema (kind=automation-config, subject=slug, status, written_by...).
   "interval_min": 240,
   "langs": ["en", "th"],
   "run_now": false,
+  "parent": "rollup-slug",
+  "children": ["child-slug"],
   "last_run": "2026-09-29T00:44:00+00:00",
   "last_status": "ok",
   "last_count": 6,
+  "last_duration_s": 0.4,
   "last_error": "optional — set on failed runs, cleared on success"
 }
 ```
@@ -48,10 +51,18 @@ Switches/knobs:
 | `max_items` | list cap |
 | `interval_min` | min minutes between auto runs (denser timers can coexist) |
 | `langs` | which lang variants get the block |
-| `run_now` | one-shot flag — worker runs the page next tick, then clears |
+| `run_now` | one-shot flag — worker runs the page next tick, then clears — **this is the Regenerate button's backend** |
+| `parent` / `children` | hierarchy links — stamped onto page meta so rollups can extract children with references |
 
 `last_*` fields are the worker's write-back — the observability Ada reads
-("when did the flood page last refresh?").
+("when did the flood page last refresh?", "how long does it cost?").
+`last_duration_s` doubles as the cost telemetry for the benchmark.
+
+Page-format and provenance details are codified in
+`docs/ssot/apps/ssot.apps.cms-reports.yml` and enforced by
+`cms-audit.py` R-rules (snapshot mode for CI — see
+`.github/workflows/cms-audit.yml` + `scripts/ada/cms-audit-baseline.json`
+ratchet).
 
 ### 2. Seed (defaults)
 
@@ -96,6 +107,8 @@ cms_automation(
 - `run` — either sets `run_now` or subprocesses the runner on the host
   holding the chaba checkout (idc01 has `~/CascadeProjects/chaba-vault`) —
   decide during implementation; subprocess gives true "update it now".
+  The same `run_now` flag is what a ⟳ Regenerate button in the Ada PWA /
+  chaba-admin writes — one backend, three surfaces (voice, UI, timer).
 
 Same change in P1: `cms_publish_page` stamps the schema meta fields
 (bank/scope/status/source/written_by/subject/attribute/valid_from/
@@ -115,8 +128,9 @@ last_verified) at write time so new pages arrive already conformant.
 | phase | scope | where |
 |---|---|---|
 | P0 | registry-aware runner, state write-back, interval gating, --force | this worktree — DONE (enabled/interval/run_now all verified live) |
-| P1 | `cms_automation` tool, `cms_publish_page` schema stamping, scenarios | ada-pi worktree — new dispatch |
-| P2 | optional: chaba-admin toggles; generalize beyond flood pages (any `news-*`/report recurring page) | later |
+| P0b | report standard (ssot.apps.cms-reports.yml), provenance meta + hierarchy stamping, `last_duration_s`, cms-audit R-rules + snapshot/baseline CI | this worktree — DONE |
+| P1 | `cms_automation` tool, `cms_publish_page` schema stamping, scenarios, ⟳ Regenerate button in the PWA | ada-pi worktree — new dispatch |
+| P2 | `command`-kind generators in the registry (regenerate non-feed reports: ops-report etc.), denser dispatcher timer, chaba-admin toggles | later |
 
 ## Decisions
 

@@ -1,0 +1,15 @@
+{
+  "_comment": "Known cms-audit.py failures — the ratchet baseline for CI (workflow cms-audit.yml). Each entry is slug -> sorted list of failing rules. Rules: (1) a NEW failure not listed here fails CI; (2) an entry whose page now fails differently (including passing) is stale and fails CI — remove it. The baseline only shrinks. Document WHY each entry is tolerated in the _why map.",
+  "_why": {
+    "bench-ping": "thin ping/bench test page — kept intentionally",
+    "chaba-edge-plan": "A6 matches an env-var reference (Secret= with no value) in a plan doc, not a real credential",
+    "devin-job-report-fail": "thin fail-log artifact — point-in-time",
+    "document-audit-policy": "policy doc quoting placeholder-rule names verbatim",
+    "transcript-audit-2026-09-28": "audit transcript quoting a placeholder marker"
+  },
+  "bench-ping": ["A1:empty-or-thin"],
+  "chaba-edge-plan": ["A6:secret-ish"],
+  "devin-job-report-fail": ["A1:empty-or-thin"],
+  "document-audit-policy": ["A5:placeholder"],
+  "transcript-audit-2026-09-28": ["A5:placeholder"]
+}
