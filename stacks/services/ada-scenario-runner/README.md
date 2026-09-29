@@ -21,9 +21,10 @@ with `device` also pass `device_id` (device-bound keys like user-kk).
 A fail is retried once — pass-on-retry is recorded as `flaky`.
 
 Statuses: `pass` / `flaky` / `fail` / `skip` (missing key) / `quota`
-(upstream throttle seen in output) / `skip-quota` (quota sentinel tripped
-— 2 consecutive `quota` results skip the rest of the tier; quota statuses
-don't fail the unit).
+(upstream throttle seen in output) / `infra` (backend unreachable —
+connect refused, no ready event) / `skip-quota` (outage sentinel tripped
+— 2 consecutive quota/infra results skip the rest of the tier; none of
+these fail the unit).
 
 Dev lane: a scenario can set `url: ws://127.0.0.1:8005/ws` to run against
 `ada-dev` (isolated instance — `dev-*` banks only, no HA tools, admin key
