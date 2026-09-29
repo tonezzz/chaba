@@ -258,14 +258,23 @@ def load_config():
         raise SystemExit(f"error: cannot load feeds config {FEEDS_CONFIG}: {e}")
 
 
-def _gated(cfg, now, force):
+def _as_int(v, default, name, page=None):
+    try:
+        return int(v)
+    except (TypeError, ValueError):
+        print(f"warn: {page + ': ' if page else ''}bad {name}={v!r} — using {default}",
+              file=sys.stderr)
+        return default
+
+
+def _gated(cfg, now, force, page):
     """(skip_reason or None). enabled and interval_min gate auto runs;
     run_now and --force bypass interval_min but never 'enabled'."""
     if not cfg.get("enabled", True):
         return "disabled"
     if force or cfg.get("run_now"):
         return None
-    interval = int(cfg.get("interval_min") or 0)
+    interval = _as_int(cfg.get("interval_min") or 0, 0, "interval_min", page)
     last = cfg.get("last_run")
     if interval and last:
         try:
@@ -280,30 +289,42 @@ def _gated(cfg, now, force):
 
 
 def update_page(page, cfg, args, now, now_ict, registry_up, require_default):
-    why = _gated(cfg, now, args.force)
+    why = _gated(cfg, now, args.force, page)
     if why:
         print(f"== {page}: skipped ({why})")
         return 0
-    since = int(cfg.get("since_hours") or args.since_hours)
-    limit = int(cfg.get("max_items") or args.max_items)
-    items = collect(cfg["feeds"], since, limit,
-                    cfg.get("require") or require_default)
-    print(f"== {page}: {len(items)} flood items within {since}h"
-          + (" [run_now]" if cfg.get("run_now") else ""))
-    for i in items:
-        pub = i["pub"].astimezone(ICT).strftime("%m-%d %H:%M") if i["pub"] else "?"
-        print(f"  [{pub}] {i['title'][:90]} ({i['source']})")
 
-    def write_state(status, count):
+    def write_state(status, count, error=None):
         if args.dry_run or not registry_up:
             return
         st = dict(cfg)
         st.update({"run_now": False, "last_run": now.isoformat(timespec="seconds"),
                    "last_status": status, "last_count": count})
+        if error:
+            st["last_error"] = str(error)[:500]
+        else:
+            st.pop("last_error", None)
         try:
             save_registry_doc(page, st)
         except Exception as e:
             print(f"  warn: registry write-back failed: {e}", file=sys.stderr)
+
+    try:
+        since = _as_int(cfg.get("since_hours") or args.since_hours,
+                        args.since_hours, "since_hours", page)
+        limit = _as_int(cfg.get("max_items") or args.max_items,
+                        args.max_items, "max_items", page)
+        items = collect(cfg["feeds"], since, limit,
+                        cfg.get("require") or require_default)
+        print(f"== {page}: {len(items)} flood items within {since}h"
+              + (" [run_now]" if cfg.get("run_now") else ""))
+        for i in items:
+            pub = i["pub"].astimezone(ICT).strftime("%m-%d %H:%M") if i["pub"] else "?"
+            print(f"  [{pub}] {i['title'][:90]} ({i['source']})")
+    except Exception as e:
+        print(f"== {page}: error {e}", file=sys.stderr)
+        write_state("error", 0, e)
+        return 2
 
     if not items:
         print("  nothing new — page left untouched")
@@ -321,20 +342,25 @@ def update_page(page, cfg, args, now, now_ict, registry_up, require_default):
         docs = [d for d in docs if (d.get("lang") or "en") in langs]
     if not docs:
         print(f"  error: no {COLLECTION} docs for key={page} lang={args.lang}", file=sys.stderr)
-        write_state("error: page missing", 0)
+        write_state("error", 0, "page missing")
         return 2
-    for doc in docs:
-        body = doc.get("contentMd") or ""
-        existing = BLOCK_RE.search(body)
-        if existing and _item_lines(existing.group(0)) == _item_lines(block):
-            print(f"  skip {doc['id']} — item set unchanged")
-            continue
-        new_body = apply_block(body, block, now_ict)
-        if new_body == body:
-            print(f"  skip {doc['id']} — block unchanged")
-            continue
-        publish(doc, new_body, now)
-        print(f"  updated {doc['id']} ({len(new_body) - len(body):+d}c)")
+    try:
+        for doc in docs:
+            body = doc.get("contentMd") or ""
+            existing = BLOCK_RE.search(body)
+            if existing and _item_lines(existing.group(0)) == _item_lines(block):
+                print(f"  skip {doc['id']} — item set unchanged")
+                continue
+            new_body = apply_block(body, block, now_ict)
+            if new_body == body:
+                print(f"  skip {doc['id']} — block unchanged")
+                continue
+            publish(doc, new_body, now)
+            print(f"  updated {doc['id']} ({len(new_body) - len(body):+d}c)")
+    except Exception as e:
+        print(f"== {page}: error {e}", file=sys.stderr)
+        write_state("error", 0, e)
+        return 2
     write_state("ok", len(items))
     return 0
 

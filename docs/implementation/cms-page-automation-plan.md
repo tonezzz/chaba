@@ -32,7 +32,8 @@ schema (kind=automation-config, subject=slug, status, written_by...).
   "run_now": false,
   "last_run": "2026-09-29T00:44:00+00:00",
   "last_status": "ok",
-  "last_count": 6
+  "last_count": 6,
+  "last_error": "optional — set on failed runs, cleared on success"
 }
 ```
 
@@ -66,7 +67,11 @@ its registry doc from the effective config + state.
 - `--all` iterates the union of seed + registry pages; `enabled: false`
   skips; `interval_min` gates runs; `run_now: true` forces once.
 - Registry unreachable → seed-only mode (degrade, don't die).
-- Writes `last_run`/`last_status`/`last_count` back per page.
+- Writes `last_run`/`last_status`/`last_count` back per page; failures
+  record `last_status=error` + `last_error` and clear `run_now`; a
+  successful run clears `last_error`.
+- Malformed registry values (e.g. `interval_min: "abc"`) warn and fall
+  back to defaults rather than crashing the run.
 - `--force` bypasses `interval_min` for manual runs (still honors `enabled`).
 
 ### 4. Ada tool surface (P1 — ada-pi repo)
@@ -109,7 +114,7 @@ last_verified) at write time so new pages arrive already conformant.
 
 | phase | scope | where |
 |---|---|---|
-| P0 | registry-aware runner, state write-back, interval gating, --force | this worktree — DONE |
+| P0 | registry-aware runner, state write-back, interval gating, --force | this worktree — DONE (enabled/interval/run_now all verified live) |
 | P1 | `cms_automation` tool, `cms_publish_page` schema stamping, scenarios | ada-pi worktree — new dispatch |
 | P2 | optional: chaba-admin toggles; generalize beyond flood pages (any `news-*`/report recurring page) | later |
 
