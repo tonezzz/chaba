@@ -947,7 +947,18 @@
       const runner = () => window.__gevVoiceCommands?.runner || null;
       async function dispatch(call) {
         const r = runner();
-        if (!r) { queue.push(call); return; }
+        if (!r) {
+          // page still initializing — acknowledge immediately so a waiting
+          // caller gets an honest answer, then run it when the runner lands
+          queue.push(call);
+          ws?.readyState === 1 && ws.send(JSON.stringify({
+            type: 'tool_response',
+            responses: [{ id: call.id, name: call.name,
+              response: { ok: false, queued: true,
+                error: 'GEV page still initializing — command queued' } }]
+          }));
+          return;
+        }
         try {
           const res = await r(call.name, call.args || {});
           ws?.readyState === 1 && ws.send(JSON.stringify({
