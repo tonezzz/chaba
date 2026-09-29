@@ -1,7 +1,10 @@
 # CMS page automation — per-page switches & knobs for Ada
 
-Status: **P0 implemented** (this worktree). P1 (ada-pi tools) and P2 (UI)
-are planned phases — see below.
+Status: **P0 + P1 implemented.** P0 lives in this worktree; P1 lives in
+the ada-pi worktree `ada-pi-wt-cms-automation` (branch
+`feat/cms-automation-tool`, commit dae8194 — `cms_automation` tool,
+`cms_publish_page` schema stamping, `/api/cms/pages/{slug}/regenerate`
+endpoint, PWA Regenerate button). P2 remains planned.
 
 ## Idea
 
@@ -104,9 +107,13 @@ cms_automation(
 - `set` — merge knob changes into the registry doc (find-then-update
   semantics, same key, revision trail in MDDB).
 - `enable`/`disable` — sugar over `set enabled=`.
-- `run` — either sets `run_now` or subprocesses the runner on the host
-  holding the chaba checkout (idc01 has `~/CascadeProjects/chaba-vault`) —
-  decide during implementation; subprocess gives true "update it now".
+- `run` — implemented as `run_now=true` on the registry doc (queue
+  semantics); the worker executes on its next pass and self-clears.
+  Chosen over subprocessing the runner from ada-pi: no co-located chaba
+  checkout on the ada host is guaranteed, no shell surface is exposed to
+  the tool layer, and MDDB revision history records the request. Latency
+  between click and regeneration is bounded by the dispatcher timer —
+  tighten by installing `ada-flood-news.timer` (or a denser dispatcher).
   The same `run_now` flag is what a ⟳ Regenerate button in the Ada PWA /
   chaba-admin writes — one backend, three surfaces (voice, UI, timer).
 
@@ -129,7 +136,7 @@ last_verified) at write time so new pages arrive already conformant.
 |---|---|---|
 | P0 | registry-aware runner, state write-back, interval gating, --force | this worktree — DONE (enabled/interval/run_now all verified live) |
 | P0b | report standard (ssot.apps.cms-reports.yml), provenance meta + hierarchy stamping, `last_duration_s`, cms-audit R-rules + snapshot/baseline CI | this worktree — DONE |
-| P1 | `cms_automation` tool, `cms_publish_page` schema stamping, scenarios, ⟳ Regenerate button in the PWA | ada-pi worktree — new dispatch |
+| P1 | `cms_automation` tool, `cms_publish_page` schema stamping, scenarios, ⟳ Regenerate button in the PWA | ada-pi-wt-cms-automation — DONE (dae8194, 400 unit tests pass; live voice scenario added but not run) |
 | P2 | `command`-kind generators in the registry (regenerate non-feed reports: ops-report etc.), denser dispatcher timer, chaba-admin toggles | later |
 
 ## Decisions
