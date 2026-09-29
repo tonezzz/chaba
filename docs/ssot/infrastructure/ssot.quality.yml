@@ -182,7 +182,7 @@ registry:
     cost: cheap
     runner: .github/workflows/cms-audit.yml
     script: python3 scripts/ada/cms-audit.py --file backups/ada-memory/ada-cms-pages.json --baseline scripts/ada/cms-audit-baseline.json
-    inputs: committed MDDB snapshot (stale risk noted — refreshed by ada-memory-backup.service, NOT currently installed on tony-dell)
+    inputs: committed MDDB snapshot — refreshed nightly by ada-memory-backup.timer on tony-omen (verified installed 2026-09-29)
     standard: docs/ssot/apps/ssot.apps.cms-reports.yml
   - id: ci.repo-lint
     lane: ci-gate
@@ -291,8 +291,8 @@ registry:
 coverage_gaps:
   - "No unit-test lane — repo is scripts+SSOT; ci.repo-lint covers syntax only. Tests exist mainly in ada-pi (scenario suites) and sunsynk-power-flow-card (tsc --noEmit in CI would be the minimum)"
   - "GH workflow results never reach reports/audits or the timeline — CI failures die in the GH UI; gh is installed on tony-dell but NOT authenticated — needs `gh auth` before a runs->timeline job can poll"
-  - "cms-audit CI lane input (backups/ada-memory/ada-cms-pages.json) only refreshes when ada-memory-backup.service runs — the timer is in the repo but NOT INSTALLED on tony-dell; install it (nightly, --git pushes the dump) or the snapshot lane lags"
-  - "ci-pipeline.sh is a legacy on-host pipeline tied to the chaba-tony-dell checkout — overlaps this taxonomy; decide retire vs register"
+  - "ci-pipeline.sh RETIRED 2026-09-29 — legacy on-host pipeline tied to the chaba-tony-dell checkout, superseded by GH workflows + the scheduled suite; file kept for reference, timer was never installed"
+  - "CLOSED 2026-09-29: cms-audit snapshot input — ada-memory-backup.timer was already installed on tony-omen (correct host), nightly push feeds the lane"
   - "CLOSED 2026-09-29: registry self-check — standardization-audit section 6 now validates this registry (paths exist, CI steps registered, audit coverage)"
 
 related_ssot:

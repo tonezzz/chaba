@@ -1,8 +1,12 @@
 [Unit]
-Description=Refresh the flood-report CMS page from flood news RSS every 4h
+Description=Dispatcher tick — refresh automated CMS pages (flood news etc.) honoring per-page interval_min and run_now
 
 [Timer]
-OnCalendar=*-*-* 00,04,08,12,16,20:00
+# 15-min tick: the runner is idempotent (skips unchanged item sets) and
+# per-page interval_min gates real work, so frequent ticks are cheap and
+# keep queued run_now regenerations responsive (<= ~15 min latency).
+OnBootSec=5min
+OnUnitActiveSec=15min
 Persistent=true
 
 [Install]

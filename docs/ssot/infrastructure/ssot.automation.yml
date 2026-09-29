@@ -174,14 +174,19 @@ automation:
     script: scripts/ada/flood-news-update.py --all
     config: scripts/ada/flood-news-feeds.json
     registry: MDDB collection ada-cms-automation (per-page switches/knobs)
-    schedule: "4-hourly at :12 (00/04/08/12/16/20)"
-    frequency: every 4 hours
+    schedule: "every 15min (OnUnitActiveSec) — dispatcher tick"
+    frequency: >-
+      15-min tick; per-page interval_min (120 default) gates real work and
+      run_now queues one-shot regeneration (voice via cms_automation, UI via
+      POST /api/cms/pages/<slug>/regenerate) — worst-case ~15 min latency
     timer: systemd/ada-flood-news.timer
     service: systemd/ada-flood-news.service
     reports:
       - ada-cms-pages flood-report* auto blocks
       - ada-cms-automation last_* registry write-back
-    status: committed (2026-09-29); timer not installed — pending approval
+    status: committed (2026-09-29); install AFTER this branch merges —
+      the service runs %h/CascadeProjects/chaba (master), which doesn't
+      have flood-news-update.py until then
 
   ada_memory_backup:
     script: scripts/ada/backup-mddb-banks.py --git
@@ -193,8 +198,8 @@ automation:
       - backups/ada-memory/*.json (repo-bound banks; commits+pushes)
       - ~/.local/share/ada-backups/ (private banks)
     note: feeds the ci.cms-audit snapshot lane — see ssot.quality.yml
-    status: committed; timer NOT installed on tony-dell (2026-09-29) —
-      pending approval since --git pushes to origin nightly
+    status: active — installed on tony-omen (verified 2026-09-29, next
+      run 04:30; pushes the dump to origin master nightly)
 
 monitoring:
   gpu:
