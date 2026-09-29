@@ -12,6 +12,10 @@ Rules (docs-as-code adapted):
   C* consolidation/obsolete (warnings, not failures):
     C1 near-duplicate slug pairs (>=70% token overlap) — merge candidates
     C2 stale living page: `updated` older than STALE_DAYS
+  S* memory-schema conformance (warnings, not failures):
+    S1 doc missing schema fields — run scripts/ada/cms-normalize-meta.py
+       (fields: bank, scope, status, source, written_by, subject,
+        attribute, valid_from, last_verified)
 """
 import datetime, json, os, re, sys, urllib.request
 
@@ -21,6 +25,9 @@ STALE_DAYS = int(os.environ.get("CMS_AUDIT_STALE_DAYS", "14"))
 # SUPPOSED to be dated. Opt out by keeping a -report/-assessment/-proposal
 # suffix, or add the slug here.
 REPORT_SLUG_RE = re.compile(r"(report|assessment|proposal|analysis|review|incident|demo)$")
+# Memory-schema fields every page should carry after cms-normalize-meta.py.
+SCHEMA_FIELDS = ("bank", "scope", "status", "source", "written_by",
+                 "subject", "attribute", "valid_from", "last_verified")
 
 def get_pages():
     req = urllib.request.Request(f"{MDDB}/search",
@@ -43,9 +50,18 @@ def audit(doc):
         words = [w for w in re.findall(r"[a-z]+", title) if len(w) > 3]
         if words and not any(w in h1.group(1).lower() for w in words): fails.append("A3:h1-title-mismatch")
     if not re.search(r"^(#{1,3}\s|[-*]\s)", body, re.M): fails.append("A4:no-structure")
-    if re.search(r"\b(TODO|TBD|lorem ipsum|placeholder)\b", body, re.I): fails.append("A5:placeholder")
+    # A5 is skipped on the audit's own report — its body lists rule names
+    # like "A5:placeholder" verbatim and would fail itself every run.
+    # TODO/TBD stay case-sensitive (uppercase marker convention) so a page
+    # titled "Todo List" doesn't flag itself; lorem/placeholder insensitive.
+    if key != "cms-audit-report" and re.search(
+            r"\b(?:TODO|TBD)\b|(?i:lorem ipsum|placeholder)", body): fails.append("A5:placeholder")
     if re.search(r"(api[_-]?key|password|secret|token)\s*[:=]\s*[\"']?\w", body, re.I): fails.append("A6:secret-ish")
-    if key.startswith("news-"):
+    # N-rules apply to news-* digests only. Pages normalized by
+    # cms-normalize-meta.py carry attribute — a news-* slug classed as
+    # e.g. attribute=assessment (news-source-assessment) is exempt.
+    attr = (meta.get("attribute") or [""])[0]
+    if key.startswith("news-") and attr in ("", "news"):
         if "TL;DR" not in body: fails.append("N1:no-tldr")
         items = len(re.findall(r"^[-*]\s", body, re.M))
         if key != "news-system" and items > 6: fails.append(f"N2:too-many-items({items})")
@@ -93,6 +109,17 @@ def consolidation_warnings(docs: list[dict]) -> list[str]:
                 pass
     return warns
 
+
+def schema_warnings(docs: list[dict]) -> list[str]:
+    """S-rules — memory-schema conformance, warnings only."""
+    warns: list[str] = []
+    for d in sorted(docs, key=lambda x: x["id"]):
+        meta = d.get("meta") or {}
+        missing = [f for f in SCHEMA_FIELDS if not meta.get(f)]
+        if missing:
+            warns.append(f"S1 {d['id']}: missing schema meta {', '.join(missing)}")
+    return warns
+
 def publish(lines: list[str], passed: int, failed: int) -> None:
     """Upsert results to ada-cms-pages/cms-audit-report."""
     import datetime
@@ -122,7 +149,7 @@ def main():
             failed += 1; lines.append(f"FAIL {d['key']:42} {', '.join(fails)}")
         else:
             passed += 1; lines.append(f"pass {d['key']:42} {len(d.get('contentMd') or '')}c")
-    warns = [] if only else consolidation_warnings(pages)
+    warns = [] if only else consolidation_warnings(pages) + schema_warnings(pages)
     lines.append(f"\n{passed} pass · {failed} fail · {len(warns)} warnings")
     if warns:
         lines.append("\n## Consolidation / obsolete (warnings)")

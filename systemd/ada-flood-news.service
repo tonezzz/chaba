@@ -1,0 +1,12 @@
+[Unit]
+Description=Fetch flood news RSS and update the flood-report CMS page in ada-cms-pages
+# User oneshot — needs outbound HTTPS (Google News RSS) and tailnet access
+# to MDDB (100.74.146.0:11023). Runs from the chaba checkout; install on
+# tony-dell (or any host with both paths) via:
+#   cp systemd/ada-flood-news.{service,timer} ~/.config/systemd/user/
+#   systemctl --user daemon-reload && systemctl --user enable --now ada-flood-news.timer
+
+[Service]
+Type=oneshot
+TimeoutStartSec=180
+ExecStart=/usr/bin/python3 %h/CascadeProjects/chaba/scripts/ada/flood-news-update.py

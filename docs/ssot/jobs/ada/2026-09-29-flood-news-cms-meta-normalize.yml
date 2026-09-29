@@ -1,0 +1,97 @@
+# SSOT Job: flood-news automation + CMS page meta normalization
+# Dispatch task dispatch-wt-20260928-120132 ("build an automation tool to
+# fetch current flood news with timestamps and update relevant CMS pages;
+# review CMS page structure and align with memory structure conventions").
+
+title: Flood-news automation + ada-cms-pages meta normalization
+subtitle: RSS->flood-report tool, all 93 CMS docs aligned to the memory meta schema, audit extended
+icon: flood
+
+status: done   # live MDDB writes applied; systemd units committed but NOT installed
+project: chaba
+owner: devin-dispatch
+started: "2026-09-29"
+completed: "2026-09-29"
+
+context: |
+  The `cms` memory bank (ada-cms-pages collection) held 93 docs with
+  inconsistent meta: most had only kind/slug/title/format/updated/instance —
+  no bank/scope/status/source/written_by/subject/validity fields from
+  ssot.apps.ada-memory-schema.yml, so filtered search and status semantics
+  did not apply. 3 docs lacked `kind` entirely (invisible to the audit's
+  kind=page listing). `flood-report` (en+th bilingual pair) was a manually
+  curated living log last touched 2026-09-28; the news-source-assessment
+  page already recommended RSS ingestion over web_search for news pages.
+
+tools:
+  - path: scripts/ada/flood-news-update.py
+    what: >
+      Fetches 4 Google News RSS feeds (น้ำท่วม บางพลี / สมุทรปราการ /
+      กรุงเทพ TH + flooding-Bangkok EN), stdlib-only (no feedparser/requests
+      on hosts). Keeps items within --since-hours (default 72), dedups by
+      normalized title, newest first, cap --max-items (default 6). Renders a
+      managed `<!-- flood-news:auto -->` block — Thai heading with fetch
+      timestamp + per-item pubDate (ICT) and source links — into EVERY lang
+      variant of --page (default flood-report), inserted before the first
+      "##" heading; refreshes the **อัปเดตล่าสุด:** line when present.
+      Idempotent: skips the MDDB write when the item set is unchanged, so a
+      4h timer does not churn revisions. --dry-run previews without writes.
+    live_run: "2026-09-29 — 6 items, updated flood-report en+th; second run skipped cleanly."
+  - path: scripts/ada/cms-normalize-meta.py
+    what: >
+      Aligns every ada-cms-pages doc meta to the memory schema. Sets
+      bank=cms, scope=tony, kind=page, status=active, source=api (non-enum
+      values moved to origin_source), written_by inferred (cms-audit.py for
+      instance=cms-audit else cms_publish_page — inference documented),
+      subject=<slug>, attribute=content-type (report/assessment/news/plan/
+      benchmark/… via suffix-then-prefix rules), valid_from=addedAt date,
+      last_verified=updated date, lang=doc-lang. Adds `updated` from addedAt
+      when absent (never bumps existing `updated` — that feeds the audit's
+      C2 staleness check), prepends a missing H1 (audit A3). Dry-run by
+      default; --apply writes. Idempotent — verified 0 pending on re-run.
+    live_run: "2026-09-29 — 93 docs normalized, then 21 stragglers (missing updated/H1) fixed, then attribute fix for news-source-assessment."
+  - path: scripts/ada/cms-audit.py
+    what: >
+      Added S* schema-conformance warnings (S1 lists missing schema fields
+      per doc). N-rules now apply only to news-* docs whose attribute is
+      news-or-absent, so attribute=assessment exempts news-source-assessment
+      (it is an assessment ABOUT news, not a digest). A5 skips the audit's
+      own cms-audit-report page (it lists rule names verbatim) and TODO/TBD
+      became case-sensitive so a page titled "Todo List" stops failing.
+  - path: systemd/ada-flood-news.{service,timer}
+    what: >
+      User oneshot + 4-hourly timer (00/04/08/12/16/20, Persistent).
+      COMMITTED BUT NOT INSTALLED — operator installs on tony-dell (or any
+      host with outbound HTTPS + tailnet route to MDDB):
+      cp systemd/ada-flood-news.{service,timer} ~/.config/systemd/user/ &&
+      systemctl --user daemon-reload &&
+      systemctl --user enable --now ada-flood-news.timer
+
+cms_state:
+  docs_total: 93 (92 at first pass; live writes add pages continually)
+  audit_before: "66 pass / 27 fail"
+  audit_after: "89 pass / 4 fail / 3 warnings — zero S1 schema warnings"
+  remaining_fails:
+    bench-ping: "A1 thin — publish-handshake test page, thin by design"
+    devin-job-report-fail: "A1 thin — small failed-job list"
+    chaba-edge-plan: "A6 secret-ish — FALSE positive on 'Secret=cf_tunnel_token,type=env,target=TUNNEL_TOKEN' (env-var reference, no secret value)"
+    document-audit-policy: "A5 — meta-document describing the audit rules verbatim; expected"
+  c1_warnings: "devin-job-report~devin-job-report-fail, flood-report-nongdon~flood-report-nongdon-saraburi, my-words~my-words-kk (my-words-kk is KK's own vocab page — slug-token false positive, not a dup)"
+
+decisions:
+  - "en+th docs under one slug are an intentional bilingual CMS convention — normalize per (key,lang), never collapse."
+  - "meta.lang was unreliable (flood-report|en carried lang=th) — normalizer now stamps meta.lang = doc lang."
+  - "updated is content-freshness; meta-only passes must not bump it. Missing updated falls back to addedAt, NOT updatedAt (normalization itself bumps updatedAt, which would fake freshness past the C2 check)."
+  - "flood-report keeps its curated dated log; the RSS block is a managed section above it — automation adds freshness without eating history."
+  - "news-flood (separate Ada-side digest pipeline) and flood-report (living situation log) coexist; the tool owns only flood-report's auto block."
+
+verify:
+  - "python3 scripts/ada/flood-news-update.py --dry-run   # feeds + rendered block, no writes"
+  - "python3 scripts/ada/cms-normalize-meta.py           # should print '0 docs to update, 93 already conformant'"
+  - "python3 scripts/ada/cms-audit.py                    # 89 pass / 4 fail / 3 warnings, no S1 lines"
+  - "MDDB: ada-cms-pages flood-report (en+th) shows the flood-news:auto block on top"
+
+followups:
+  - "Install systemd/ada-flood-news.{service,timer} on tony-dell if continuous refresh is wanted."
+  - "ada-pi's cms_publish_page should stamp the schema fields at write time so new pages don't need a normalizer pass (ada-pi repo, separate change)."
+  - "flood-report-nongdon* pages could get their own feed set via --page + a feeds override if Nong Don/Saraburi coverage is wanted."
