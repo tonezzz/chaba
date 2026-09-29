@@ -60,7 +60,11 @@ DROP = [
     "function_call result",          # transcript dumps, not real events
     "[RATELIMIT]",                   # tailscaled log-suppression noise
     "session opened", "session closed", "pam_",
-]
+    "remote-only, kept)", "voice, kept)",  # ada-memory-sync status lines —
+    "remote-only, kept",                   # filenames in them (…-failed.yml)
+    "kept)",                               # were being misclassified 'failed'
+    "Started podman-", "Stopped podman-",  # per-transaction container scopes —
+]                                          # podman churn is not a restart event
 
 
 def classify(line: str) -> str | None:

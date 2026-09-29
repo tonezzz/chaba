@@ -20,6 +20,16 @@ Scenarios resolve `key_name:` against the mounted keys file; dict entries
 with `device` also pass `device_id` (device-bound keys like user-kk).
 A fail is retried once — pass-on-retry is recorded as `flaky`.
 
+Statuses: `pass` / `flaky` / `fail` / `skip` (missing key) / `quota`
+(upstream throttle seen in output) / `skip-quota` (quota sentinel tripped
+— 2 consecutive `quota` results skip the rest of the tier; quota statuses
+don't fail the unit).
+
+Dev lane: a scenario can set `url: ws://127.0.0.1:8005/ws` to run against
+`ada-dev` (isolated instance — `dev-*` banks only, no HA tools, admin key
+only). Suitable for dispatch/bench/lab-write experiments, NOT for
+memory-recall or person-keyed scenarios.
+
 ## Install (on the Ada host)
 
 ```bash
