@@ -26,17 +26,21 @@ context: |
 tools:
   - path: scripts/ada/flood-news-update.py
     what: >
-      Fetches 4 Google News RSS feeds (น้ำท่วม บางพลี / สมุทรปราการ /
-      กรุงเทพ TH + flooding-Bangkok EN), stdlib-only (no feedparser/requests
-      on hosts). Keeps items within --since-hours (default 72), dedups by
+      Fetches Google News RSS feeds per page from flood-news-feeds.json
+      (flood-report: Bang Phli/Samut Prakan/Bangkok TH+EN; the two
+      flood-report-nongdon pages: Saraburi/Lopburi + Chao Phraya dam
+      discharge), stdlib-only (no feedparser/requests on hosts). Keeps items
+      within --since-hours (default 72), drops query noise via a
+      title+description relevance regex (_require_default), dedups by
       normalized title, newest first, cap --max-items (default 6). Renders a
       managed `<!-- flood-news:auto -->` block — Thai heading with fetch
       timestamp + per-item pubDate (ICT) and source links — into EVERY lang
-      variant of --page (default flood-report), inserted before the first
-      "##" heading; refreshes the **อัปเดตล่าสุด:** line when present.
-      Idempotent: skips the MDDB write when the item set is unchanged, so a
-      4h timer does not churn revisions. --dry-run previews without writes.
-    live_run: "2026-09-29 — 6 items, updated flood-report en+th; second run skipped cleanly."
+      variant of --page (or every configured page with --all), inserted
+      before the first "##" heading; refreshes the **อัปเดตล่าสุด:** line
+      when present. Idempotent: skips the MDDB write when the item set is
+      unchanged, so a 4h timer does not churn revisions. --dry-run previews
+      without writes; --feed name=url overrides for ad-hoc queries.
+    live_run: "2026-09-29 — flood-report en+th plus both nongdon pages updated; second run skipped cleanly."
   - path: scripts/ada/cms-normalize-meta.py
     what: >
       Aligns every ada-cms-pages doc meta to the memory schema. Sets
@@ -92,6 +96,6 @@ verify:
   - "MDDB: ada-cms-pages flood-report (en+th) shows the flood-news:auto block on top"
 
 followups:
-  - "Install systemd/ada-flood-news.{service,timer} on tony-dell if continuous refresh is wanted."
+  - "Install systemd/ada-flood-news.{service,timer} on tony-dell if continuous refresh is wanted — it runs flood-news-update.py --all."
   - "ada-pi's cms_publish_page should stamp the schema fields at write time so new pages don't need a normalizer pass (ada-pi repo, separate change)."
-  - "flood-report-nongdon* pages could get their own feed set via --page + a feeds override if Nong Don/Saraburi coverage is wanted."
+  - "New flood pages only need a feeds entry in scripts/ada/flood-news-feeds.json — no code change."

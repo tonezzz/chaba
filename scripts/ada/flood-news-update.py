@@ -23,11 +23,17 @@ Each run:
 Usage:
     flood-news-update.py --dry-run            # show block, no write
     flood-news-update.py                      # update flood-report (all langs)
-    flood-news-update.py --page flood-report --lang en
+    flood-news-update.py --all                # every page in the feeds config
+    flood-news-update.py --page flood-report-nongdon --lang th
     flood-news-update.py --since-hours 96 --max-items 8
 
+Feeds come from flood-news-feeds.json (next to this script): a map of
+page slug -> [[name, rss-url], ...]. Override with --config or env
+FLOOD_NEWS_FEEDS. --feed name=url can be repeated for ad-hoc runs.
+
 Env:
-    MDDB_BASE_URL   default http://100.74.146.0:11023/v1
+    MDDB_BASE_URL     default http://100.74.146.0:11023/v1
+    FLOOD_NEWS_FEEDS  path to the feeds config
 """
 import argparse
 import email.utils
@@ -45,13 +51,29 @@ COLLECTION = "ada-cms-pages"
 BLOCK_BEGIN = "<!-- flood-news:auto -->"
 BLOCK_END = "<!-- /flood-news:auto -->"
 ICT = timezone(timedelta(hours=7))
+FEEDS_CONFIG = os.environ.get(
+    "FLOOD_NEWS_FEEDS",
+    os.path.join(os.path.dirname(os.path.abspath(__file__)), "flood-news-feeds.json"))
 
-FEEDS = [
-    ("bangphli", "https://news.google.com/rss/search?q=%E0%B8%99%E0%B9%89%E0%B8%B3%E0%B8%97%E0%B9%88%E0%B8%A7%E0%B8%A1%20%E0%B8%9A%E0%B8%B2%E0%B8%87%E0%B8%9E%E0%B8%A5%E0%B8%B5&hl=th&gl=TH&ceid=TH:th"),
-    ("samutprakan", "https://news.google.com/rss/search?q=%E0%B8%99%E0%B9%89%E0%B8%B3%E0%B8%97%E0%B9%88%E0%B8%A7%E0%B8%A1%20%E0%B8%AA%E0%B8%A1%E0%B8%B8%E0%B8%97%E0%B8%A3%E0%B8%9B%E0%B8%A3%E0%B8%B2%E0%B8%81%E0%B8%B2%E0%B8%A3&hl=th&gl=TH&ceid=TH:th"),
-    ("bangkok-th", "https://news.google.com/rss/search?q=%E0%B8%99%E0%B9%89%E0%B8%B3%E0%B8%97%E0%B9%88%E0%B8%A7%E0%B8%A1%20%E0%B8%81%E0%B8%A3%E0%B8%B8%E0%B8%87%E0%B9%80%E0%B8%97%E0%B8%9E&hl=th&gl=TH&ceid=TH:th"),
-    ("bangkok-en", "https://news.google.com/rss/search?q=flooding%20Bangkok%20OR%20%22Bang%20Phli%22&hl=en-US&gl=TH&ceid=TH:en"),
-]
+
+def feeds_for(page, config, overrides):
+    """Returns (feeds, require_re). Config value per page is either a bare
+    [[name, url], ...] list or {"feeds": [...], "require": "<regex>"} —
+    require is matched case-insensitively against title+description and
+    filters RSS noise (program listings etc.) that merely rode the query."""
+    entry = config.get(page) if not overrides else None
+    require = config.get("_require_default")
+    if isinstance(entry, dict):
+        require = entry.get("require", require)
+        feeds = entry.get("feeds")
+    else:
+        feeds = entry
+    if overrides:
+        feeds = overrides
+    if not feeds or not isinstance(feeds, list):
+        raise SystemExit(f"error: no feeds configured for page '{page}' "
+                         f"(config {FEEDS_CONFIG}); pass --feed name=url")
+    return [tuple(f) for f in feeds], require
 
 
 def fetch_feed(name, url, timeout=20):
@@ -71,6 +93,8 @@ def fetch_feed(name, url, timeout=20):
         title = (it.findtext("title") or "").strip()
         link = (it.findtext("link") or "").strip()
         pub_raw = (it.findtext("pubDate") or "").strip()
+        desc_raw = (it.findtext("description") or "")
+        desc = html.unescape(re.sub(r"<[^>]+>", " ", desc_raw))
         src = it.find("source")
         source = (src.text or "").strip() if src is not None else ""
         try:
@@ -81,7 +105,8 @@ def fetch_feed(name, url, timeout=20):
             pub = None
         if title and link:
             items.append({"title": html.unescape(title), "link": link,
-                          "pub": pub, "source": html.unescape(source) or name})
+                          "pub": pub, "source": html.unescape(source) or name,
+                          "desc": desc})
     return items
 
 
@@ -91,12 +116,15 @@ def dedup_key(title):
     return re.sub(r"[^0-9a-z\u0e00-\u0e7f]+", "", t.lower())
 
 
-def collect(since_hours, max_items):
+def collect(feeds, since_hours, max_items, require=None):
     cutoff = datetime.now(timezone.utc) - timedelta(hours=since_hours)
+    req_re = re.compile(require, re.I) if require else None
     seen = {}
-    for name, url in FEEDS:
+    for name, url in feeds:
         for item in fetch_feed(name, url):
             if item["pub"] and item["pub"] < cutoff:
+                continue
+            if req_re and not req_re.search(item["title"] + " " + item["desc"]):
                 continue
             key = dedup_key(item["title"])
             if not key:
@@ -137,7 +165,8 @@ def _item_lines(block):
     return [l for l in block.splitlines() if l.lstrip().startswith("*")]
 
 
-UPDATED_RE = re.compile(r"^\*\*(อัปเดตล่าสุด|Updated):\*\*.*$", re.M)
+# Matches both **อัปเดตล่าสุด:** ... and **อัปเดตล่าสุด: <text>** styles.
+UPDATED_RE = re.compile(r"^\*\*(อัปเดตล่าสุด|Updated)\s*:?.*$", re.M)
 
 
 def apply_block(body, block, now_ict):
@@ -176,48 +205,84 @@ def publish(doc, body, now):
     urllib.request.urlopen(req, timeout=120)
 
 
-def main():
-    ap = argparse.ArgumentParser(description="Fetch flood news RSS and update the flood-report CMS page")
-    ap.add_argument("--page", default="flood-report", help="CMS page slug (default flood-report)")
-    ap.add_argument("--lang", default=None, help="only update this lang variant (default: all)")
-    ap.add_argument("--since-hours", type=int, default=72)
-    ap.add_argument("--max-items", type=int, default=6)
-    ap.add_argument("--dry-run", action="store_true")
-    args = ap.parse_args()
+def load_config():
+    try:
+        return json.load(open(FEEDS_CONFIG))
+    except FileNotFoundError:
+        return {}
+    except (OSError, json.JSONDecodeError) as e:
+        raise SystemExit(f"error: cannot load feeds config {FEEDS_CONFIG}: {e}")
 
-    now = datetime.now(timezone.utc)
-    now_ict = now.astimezone(ICT)
-    items = collect(args.since_hours, args.max_items)
-    print(f"{len(items)} flood items within {args.since_hours}h")
+
+def update_page(page, feeds, require, args, now, now_ict):
+    items = collect(feeds, args.since_hours, args.max_items, require)
+    print(f"== {page}: {len(items)} flood items within {args.since_hours}h")
     for i in items:
         pub = i["pub"].astimezone(ICT).strftime("%m-%d %H:%M") if i["pub"] else "?"
         print(f"  [{pub}] {i['title'][:90]} ({i['source']})")
     if not items:
-        print("nothing new — page left untouched")
+        print("  nothing new — page left untouched")
         return 0
 
     block = render_block(items, now_ict, args.since_hours)
     if args.dry_run:
-        print("\n" + block)
+        print("\n" + block + "\n")
         return 0
 
-    docs = get_page(args.page, args.lang)
+    docs = get_page(page, args.lang)
     if not docs:
-        print(f"error: no {COLLECTION} docs for key={args.page} lang={args.lang}", file=sys.stderr)
+        print(f"  error: no {COLLECTION} docs for key={page} lang={args.lang}", file=sys.stderr)
         return 2
     for doc in docs:
         body = doc.get("contentMd") or ""
         existing = BLOCK_RE.search(body)
         if existing and _item_lines(existing.group(0)) == _item_lines(block):
-            print(f"skip {doc['id']} — item set unchanged")
+            print(f"  skip {doc['id']} — item set unchanged")
             continue
         new_body = apply_block(body, block, now_ict)
         if new_body == body:
-            print(f"skip {doc['id']} — block unchanged")
+            print(f"  skip {doc['id']} — block unchanged")
             continue
         publish(doc, new_body, now)
-        print(f"updated {doc['id']} ({len(new_body) - len(body):+d}c)")
+        print(f"  updated {doc['id']} ({len(new_body) - len(body):+d}c)")
     return 0
+
+
+def parse_feed_override(raw):
+    name, _, url = raw.partition("=")
+    if not name or not url:
+        raise SystemExit(f"error: --feed expects name=url, got '{raw}'")
+    return name, url
+
+
+def main():
+    ap = argparse.ArgumentParser(description="Fetch flood news RSS and update CMS flood pages")
+    ap.add_argument("--page", default="flood-report", help="CMS page slug (default flood-report)")
+    ap.add_argument("--all", action="store_true",
+                    help="update every page configured in the feeds file")
+    ap.add_argument("--lang", default=None, help="only update this lang variant (default: all)")
+    ap.add_argument("--since-hours", type=int, default=72)
+    ap.add_argument("--max-items", type=int, default=6)
+    ap.add_argument("--feed", action="append", default=[],
+                    help="ad-hoc feed as name=url (repeatable; overrides config)")
+    ap.add_argument("--config", help="feeds JSON path (default: flood-news-feeds.json)")
+    ap.add_argument("--dry-run", action="store_true")
+    args = ap.parse_args()
+
+    global FEEDS_CONFIG
+    if args.config:
+        FEEDS_CONFIG = args.config
+    config = load_config()
+    overrides = [parse_feed_override(f) for f in args.feed] or None
+
+    now = datetime.now(timezone.utc)
+    now_ict = now.astimezone(ICT)
+    pages = [k for k in config if not k.startswith("_")] if args.all else [args.page]
+    rc = 0
+    for page in pages:
+        feeds, require = feeds_for(page, config, overrides)
+        rc = update_page(page, feeds, require, args, now, now_ict) or rc
+    return rc
 
 
 if __name__ == "__main__":
