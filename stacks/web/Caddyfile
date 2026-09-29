@@ -27,7 +27,7 @@ http://127.0.0.1:8080 {
 	root * /srv/public
 
 	# Ensure PWA shell and catalog metadata are always revalidated
-	@pwa_shell path_regexp \.(html|json|yml)$
+	@pwa_shell path_regexp (\.(html|json|yml)|/)$
 	header @pwa_shell Cache-Control "no-cache"
 
 	# Never let the browser or any intermediary cache the service worker
