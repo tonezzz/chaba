@@ -1,0 +1,70 @@
+# SSOT Job: unified quality standard — CI/QA/QC/audit taxonomy + registry
+# Same dispatch thread. Tony: "I want a standard for the
+# CI/QA/QC/Audit/etc, basically everything — a big overhaul."
+
+title: Unified quality standard — lanes, severity model, registry
+subtitle: ssot.quality.yml umbrella over CI gates, scheduled audits, live health, benchmarks, and content QC
+icon: check
+status: done
+project: chaba
+owner: devin-dispatch
+started: "2026-09-29"
+completed: "2026-09-29"
+
+context: |
+  Quality checks had accreted in five disconnected places with no shared
+  vocabulary: GitHub workflow steps, the ssot.audit.yml scheduled suite,
+  timer-driven health probes, ad-hoc benchmark scripts, and cms-audit.py.
+  Different conventions everywhere: the suite uses severity_on_fail
+  error|warning, CI steps are binary, cms-audit has per-rule letter IDs
+  and a baseline ratchet, benchmarks report into the void. Nothing
+  catalogued which checks exist or where each belongs.
+
+deliverables:
+  - path: docs/ssot/infrastructure/ssot.quality.yml
+    what: >
+      Umbrella standard. Five lanes: ci-gate (offline-only GH Actions),
+      scheduled-audit (run.mjs suite, may touch live), live-health
+      (telemetry probes), benchmark (non-gating perf/cost), content-qc
+      (doc/CMS conformance — dual-lane). Severity model:
+      blocking|ratchet|warning|info. Conventions: exit codes 0/1/2,
+      <PREFIX><n> rule IDs, the *-baseline.json ratchet pattern,
+      normalized {name,ok,severity,duration_ms,exit_code} result record,
+      cost tiers cheap|network|privileged|llm deciding lane eligibility,
+      registration requirement. Registry: 23 entries cataloguing every
+      existing check with lane/gate/cost/script/outputs, plus a
+      coverage_gaps list (no unit-test lane, GH failures never reach the
+      timeline, ci-pipeline.sh overlap unresolved).
+  - path: docs/ssot/infrastructure/ssot.audit.yml
+    what: >
+      cms-pages audit registered (live lane, --baseline ratcheted so it
+      only fails on NEW failures, severity warning) under new cms-suite
+      group; added to default weekly runs — suite now expands to 19
+      audits, all defined.
+  - path: scripts/ada/cms-audit.py
+    what: >
+      publish() now merges existing doc meta and stamps provenance
+      (generated_by/sources/report_role) instead of replacing meta
+      wholesale — previously each --publish stripped the normalized
+      schema fields and the page would flag itself S1 on the next run.
+  - path: docs/ssot/infrastructure/ssot.reports.yml
+    what: related_ssot cross-link to ssot.quality.yml.
+
+decisions:
+  - "Umbrella file does NOT duplicate the per-audit config in ssot.audit.yml — registry entries point at it; ssot.audit.yml stays the scheduled-lane source of truth."
+  - "ci-gate admits cost_tier=cheap only — GH runners cannot reach tailnet; live checks stay in scheduled-audit on tony-dell. This is the hard boundary that decides where a new check belongs."
+  - "ratchet is now the standard gate for pre-existing debt (baseline JSON with _why reasons; entries must be removed when fixed — it only shrinks)."
+  - "live-health and benchmark lanes are never gates — they inform; only ci-gate and blocking scheduled audits can fail a change."
+
+verify:
+  - "python3 -c 'import yaml; yaml.safe_load(open(\"docs/ssot/infrastructure/ssot.quality.yml\"))'"
+  - "python3 scripts/ada/cms-audit.py --baseline scripts/ada/cms-audit-baseline.json   # live, rc=0 ratchet OK"
+  - "node scripts/audits/run.mjs on tony-dell — cms-pages appears under cms-suite"
+  - "node scripts/ssot-validate-all.mjs — all valid"
+
+followups:
+  - "standardization-audit should cross-check ssot.quality.yml registry vs .github/workflows + ssot.audit.yml — unregistered checks currently caught only by convention."
+  - "GH workflow failures never reach reports/audits or timeline.jsonl — a webhook/on-failure step could append events so SYSTEM-REPORT sees CI breaks."
+  - "Decide ci-pipeline.sh fate — legacy on-host pipeline overlapping this taxonomy."
+  - "Wire ada-cms-pages dump refresh into a timer/audit-adjacent job so the CI snapshot lane stays current."
+  - "P1 (ada-pi): cms_publish_page meta stamping — live writes still strip schema fields (observed on wall-* pages between normalize runs)."

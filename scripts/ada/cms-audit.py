@@ -209,17 +209,36 @@ def report_warnings(docs: list[dict], live: bool) -> list[str]:
     return warns
 
 def publish(lines: list[str], passed: int, failed: int) -> None:
-    """Upsert results to ada-cms-pages/cms-audit-report."""
+    """Upsert results to ada-cms-pages/cms-audit-report — preserving
+    existing meta (normalized schema fields, provenance)."""
     import datetime
     body = ("# CMS audit\n\nRun " +
             datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds") +
             f" — {passed} pass, {failed} fail\n\n```\n" + "\n".join(lines) + "\n```\n")
+    now = datetime.datetime.now(datetime.timezone.utc)
+    meta = {"kind": ["page"], "slug": ["cms-audit-report"],
+            "title": ["CMS Audit Report"], "format": ["markdown"],
+            "instance": ["cms-audit"],
+            "generated_by": ["cms-audit.py --publish"],
+            "sources": ["ada-cms-pages"],
+            "report_role": ["leaf"]}
+    try:  # merge existing doc meta so schema fields survive the rewrite
+        req = urllib.request.Request(
+            f"{MDDB}/get",
+            data=json.dumps({"collection": "ada-cms-pages",
+                             "key": "cms-audit-report", "lang": "en"}).encode(),
+            headers={"Content-Type": "application/json"})
+        old = json.load(urllib.request.urlopen(req, timeout=30))
+        old_meta = {k: (v if isinstance(v, list) else [str(v)])
+                    for k, v in (old.get("meta") or {}).items()}
+        old_meta.update(meta)  # tool-owned fields win; schema fields survive
+        meta = old_meta
+    except Exception:
+        pass
+    meta["updated"] = [now.isoformat(timespec="seconds")]
+    meta["last_verified"] = [now.date().isoformat()]
     payload = {"collection": "ada-cms-pages", "key": "cms-audit-report",
-               "lang": "en", "contentMd": body,
-               "meta": {"kind": ["page"], "slug": ["cms-audit-report"],
-                        "title": ["CMS Audit Report"], "format": ["markdown"],
-                        "updated": [datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds")],
-                        "instance": ["cms-audit"]}}
+               "lang": "en", "contentMd": body, "meta": meta}
     req = urllib.request.Request(f"{MDDB}/add",
         data=json.dumps(payload).encode(), headers={"Content-Type": "application/json"})
     urllib.request.urlopen(req, timeout=30)

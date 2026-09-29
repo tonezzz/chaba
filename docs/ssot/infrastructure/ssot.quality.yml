@@ -1,0 +1,294 @@
+title: Quality Standard
+subtitle: One taxonomy and registry for every check the project runs — CI gates, scheduled audits, live health, benchmarks, content QC
+icon: ✅
+version: 1
+
+overview:
+  purpose: |
+    Before this file, quality checks lived in five disconnected places:
+    GitHub workflow steps, the ssot.audit.yml scheduled suite, timer-driven
+    probes, ad-hoc benchmark scripts, and the CMS audit. This is the
+    umbrella: one taxonomy (lanes × severities × cost tiers), one naming
+    and result convention, and one registry cataloguing every check so a
+    new check lands in a known slot and nothing runs unregistered.
+
+    QA vs QC mapping: QC = per-artifact checks (does THIS page/PR/SSOT
+    file conform); QA = process-level checks (are baselines aging, is
+    coverage complete, is anything unregistered). Both are audit rules;
+    the lane decides where they run.
+
+config:
+  version: 1
+  last_updated: "2026-09-29"
+  maintainer: tony
+  status: active
+  origin: >
+    Dispatch 2026-09-29 (cms-report-standard job): Tony — "I want a
+    standard for the CI/QA/QC/Audit/etc, basically everything."
+
+lanes:
+  ci-gate:
+    description: >
+      GitHub Actions. Runs on push/PR to master|main. MUST be offline —
+      runners cannot reach tailnet services (MDDB, HA, MCP), so inputs are
+      repo files and committed snapshots (e.g.
+      backups/ada-memory/*.json). Fast (< ~2 min). Failure blocks merge.
+    runner: .github/workflows/*.yml
+    outputs: GH check status + uploaded artifacts
+  scheduled-audit:
+    description: >
+      On-host audit suite — node scripts/audits/run.mjs driven by
+      ssot.audit.yml, on systemd timers (chaba-audit.timer weekly,
+      chaba-audit-full.timer monthly). MAY touch live services (tailnet
+      reachable from tony-dell). severity_on_fail decides suite impact;
+      failures land in reports/audits/summary.{json,md}, history.jsonl
+      timeline, and docs/ssot/focus-inbox/audit-failures.yml alerts.
+    runner: scripts/audits/run.mjs + systemd/chaba-audit*.timer
+    outputs: reports/audits/*, focus-inbox alerts, ~/var/chaba/reports/timeline.jsonl
+  live-health:
+    description: >
+      Continuous/periodic probes — telemetry, not gates:
+      mcp-health-snapshot.timer, tony-dell-monitor, health-monitor.sh,
+      audit-watchdog, render-report-feed. Feed dashboards and the
+      focus-inbox; never block commits.
+    runner: per-probe timers
+    outputs: ~/var/chaba/health/, HA /local/chaba-report.json, focus-inbox
+  benchmark:
+    description: >
+      Non-gating performance/cost measurement — embed-bench.py,
+      memory-distill-benchmark.py, bench-*.py, gev benchmarks. Results are
+      trend data; a regression is information, not a failure. Record
+      duration/cost to registry/meta where the harness supports it
+      (last_duration_s convention).
+    runner: manual or scheduled
+    outputs: reports/, CMS benchmark pages
+  content-qc:
+    description: >
+      Per-document conformance — cms-audit.py (ada-cms-pages), kb/
+      ssot-modularity audits, doc-links. Runs in BOTH lanes: live via the
+      scheduled suite, offline via CI snapshot lint.
+    runner: scripts/ada/cms-audit.py + audits/*-audit.mjs
+    outputs: cms-audit-report page, summary.json, CI check
+
+severity_model:
+  description: >
+    Unified gate semantics across lanes. Maps to run.mjs severity_on_fail
+    (error=blocking, warning=warning) and to CI step behaviour.
+  levels:
+    blocking: "fails the pipeline/suite — new breakage is not allowed"
+    ratchet: >
+      baseline-file gate — fails only on REGRESSION: any failure not in
+      the baseline, or a baseline entry that no longer fails (stale —
+      remove it). The baseline only shrinks. Used for pre-existing debt.
+    warning: "reported in output/summary, never fails the run"
+    info: "telemetry only — benchmarks, durations, counts"
+
+conventions:
+  exit_codes:
+    "0": pass / all clean
+    "1": check ran, findings at blocking/ratchet level
+    "2": the check itself errored (crash, unreachable, bad input)
+  rule_ids: >
+    "<PREFIX><n>" inside each tool — PREFIX groups by domain, e.g.
+    cms-audit.py: A=page structure, N=news digest, R=report/provenance,
+    C=consolidation, S=schema. Every emitted finding must carry its ID so
+    baselines can name it exactly.
+  baseline_ratchet: >
+    "<tool>-baseline.json" beside the tool: {id: [rule-ids], _why: {id:
+    reason}}. Canonical implementation: cms-audit.py --baseline. Any check
+    gating on pre-existing debt must use this pattern rather than a flat
+    allowlist.
+  result_record: >
+    Normalized per-check record (run.mjs shape):
+    {name, command, ok, severity, duration_ms, exit_code, stdout, stderr}.
+    Long-running state goes to ~/var/chaba/reports/timeline.jsonl per
+    ssot.reports.yml; repo digests to reports/.
+  cost_tier: >
+    cheap (offline compute) | network (fetches live) | privileged (sudo/
+    host access) | llm (token spend). ci-gate admits cheap only;
+    network/privileged belong to scheduled-audit on a host that can reach;
+    llm needs an explicit budget note and is never a default gate.
+  registration: >
+    Every check must appear in this registry (lane != scheduled-audit) or
+    ssot.audit.yml (scheduled audits). An unregistered check is drift —
+    standardization-audit is the intended detector.
+
+registry:
+  # --- lane: ci-gate (GitHub Actions; all cheap/offline) ---
+  - id: ci.ssot-validate-all
+    lane: ci-gate
+    gate: blocking
+    cost: cheap
+    runner: .github/workflows/ssot.yml
+    script: node scripts/ssot-validate-all.mjs
+  - id: ci.ssot-validate-refs
+    lane: ci-gate
+    gate: blocking
+    cost: cheap
+    runner: .github/workflows/ssot.yml
+    script: python3 scripts/ssot-validate-refs.py
+  - id: ci.mcp-debug-smoke
+    lane: ci-gate
+    gate: blocking
+    cost: cheap
+    runner: .github/workflows/ssot.yml
+    script: python3 scripts/mcp-debug-server-smoke.py
+  - id: ci.stale-urls
+    lane: ci-gate
+    gate: blocking
+    cost: cheap
+    runner: .github/workflows/ssot.yml
+    script: bash scripts/ssot-check-stale-urls.sh
+  - id: ci.mcp-sources
+    lane: ci-gate
+    gate: blocking
+    cost: cheap
+    runner: .github/workflows/ssot.yml
+    script: python3 scripts/ssot-validate-mcp-sources.py
+  - id: ci.dev-system-assess
+    lane: ci-gate
+    gate: blocking
+    cost: cheap
+    runner: .github/workflows/ssot.yml
+    script: python3 scripts/dev-system-assess.py --check
+  - id: ci.ssot-optimize
+    lane: ci-gate
+    gate: blocking
+    cost: cheap
+    runner: .github/workflows/ssot.yml
+    script: node scripts/ssot-optimize.mjs + reports/SSOT_OPTIMIZATION_METRICS.json warning check
+  - id: ci.logs-check
+    lane: ci-gate
+    gate: blocking
+    cost: cheap
+    runner: .github/workflows/logs.yml (push/PR + daily cron)
+    script: python3 scripts/ci-check-logs.py --check-only
+  - id: ci.mcp-smoke-live
+    lane: ci-gate
+    gate: blocking
+    cost: cheap
+    runner: .github/workflows/mcp-smoke.yml
+    script: python3 scripts/mcp-smoke-live.py
+  - id: ci.mcp-verify
+    lane: ci-gate
+    gate: blocking
+    cost: cheap
+    runner: .github/workflows/mcp-verify.yml (push + 6h cron)
+    script: python3 scripts/verify-all-mcp-servers.py
+    note: "verifies wiring/config, not live calls — still offline-safe"
+  - id: ci.cms-audit
+    lane: ci-gate
+    gate: ratchet
+    cost: cheap
+    runner: .github/workflows/cms-audit.yml
+    script: python3 scripts/ada/cms-audit.py --file backups/ada-memory/ada-cms-pages.json --baseline scripts/ada/cms-audit-baseline.json
+    inputs: committed MDDB snapshot (stale risk noted — refreshed by ada-memory-backup.service)
+    standard: docs/ssot/apps/ssot.apps.cms-reports.yml
+
+  # --- lane: scheduled-audit (run.mjs suite on tony-dell) ---
+  - id: audit.suite
+    lane: scheduled-audit
+    gate: per-audit severity_on_fail
+    cost: mixed (network allowed)
+    runner: systemd/chaba-audit.timer (weekly) + chaba-audit-full.timer (monthly)
+    script: node scripts/audits/run.mjs [--full]
+    registry: >
+      docs/ssot/infrastructure/ssot.audit.yml — audits: kb, ssot,
+      kb-modularity, ssot-modularity, security-scan, security-audit,
+      security-posture, auto-kb-quality, kb-categorize, caddy,
+      standardization, infrastructure, mddb, code-quality, dev-system,
+      doc-links, http-health, smoke, staleness, ssot-kb-memory,
+      memory-banks, cms-pages
+    outputs: reports/audits/summary.{json,md}, history.json, focus-inbox
+  - id: audit.overnight-assessment
+    lane: scheduled-audit
+    gate: info
+    cost: network
+    runner: systemd/overnight-assessment.timer
+    script: scripts/orchestrate.py --workflow overnight
+    outputs: reports/overnight-assessment-*.md (L2 node in ssot.reports.yml)
+
+  # --- lane: live-health ---
+  - id: health.mcp-snapshot
+    lane: live-health
+    gate: info
+    cost: network
+    runner: systemd/mcp-health-snapshot.timer + mcp-health-to-inbox.py
+    script: scripts/mcp-health-snapshot.mjs
+  - id: health.tony-dell-monitor
+    lane: live-health
+    gate: info
+    cost: network
+    runner: scripts/tony-dell-monitor.timer
+    outputs: ~/var/chaba/health/*.json + meta.yml (L1 node)
+  - id: health.audit-watchdog
+    lane: live-health
+    gate: warning
+    cost: cheap
+    runner: systemd/chaba-audit-watchdog.timer
+    script: scripts/audit-watchdog.mjs
+    note: alerts when the audit suite itself hasn't run/stalled
+  - id: health.report-feed
+    lane: live-health
+    gate: info
+    cost: network
+    runner: systemd/chaba-report-feed.timer (on tony-omen)
+    outputs: HA /local/chaba-report.json
+
+  # --- lane: benchmark ---
+  - id: bench.embed
+    lane: benchmark
+    gate: info
+    cost: network
+    script: scripts/ada/embed-bench.py
+  - id: bench.memory-distill
+    lane: benchmark
+    gate: info
+    cost: llm
+    script: scripts/ada/memory-distill-benchmark.py
+    note: declares llm tier — token spend, never a gate
+  - id: bench.misc
+    lane: benchmark
+    gate: info
+    cost: cheap
+    script: scripts/bench-*.py (gdrive, kb-search, open-notebook)
+  - id: bench.flood-news
+    lane: benchmark
+    gate: info
+    cost: network
+    script: scripts/ada/flood-news-update.py --all
+    note: "8.2s wall / 3 pages / ~10 feeds (2026-09-29) — registry records last_duration_s per page"
+
+  # --- lane: content-qc ---
+  - id: qc.cms-pages
+    lane: content-qc
+    gate: ratchet (CI) + warning (scheduled live)
+    cost: cheap (snapshot) / network (live)
+    script: scripts/ada/cms-audit.py [--file|--baseline|--publish]
+    standard: docs/ssot/apps/ssot.apps.cms-reports.yml
+  - id: qc.kb-ssot-modularity
+    lane: content-qc
+    gate: warning
+    cost: cheap
+    script: scripts/audits/{kb,ssot}-modularity-audit.mjs (in suite)
+
+coverage_gaps:
+  - "No unit-test lane — repo is scripts+SSOT; tests exist mainly in ada-pi (scenario suites) and sunsynk-power-flow-card (tsc --noEmit in CI would be the minimum)"
+  - "GH workflow results never reach reports/audits or the timeline — CI failures die in the GH UI; a failing-workflow hook could append timeline events"
+  - "cms-audit live lane is baseline-ratcheted but the snapshot input to CI lags until ada-memory-backup.service commits — consider wiring dump refresh into the audit timer"
+  - "standardization-audit doesn't yet cross-check this registry — unregistered checks are only caught by convention"
+  - "ci-pipeline.sh is a legacy on-host pipeline tied to the chaba-tony-dell checkout — overlaps this taxonomy; decide retire vs register"
+
+related_ssot:
+  - docs/ssot/infrastructure/ssot.audit.yml
+  - docs/ssot/infrastructure/ssot.reports.yml
+  - docs/ssot/apps/ssot.apps.cms-reports.yml
+  - docs/ssot/infrastructure/ssot.test-manifest.yml
+
+related_files:
+  - scripts/audits/run.mjs
+  - scripts/ada/cms-audit.py
+  - scripts/ada/cms-audit-baseline.json
+  - scripts/ci-pipeline.sh
+  - .github/workflows/
+  - systemd/chaba-audit*.timer
