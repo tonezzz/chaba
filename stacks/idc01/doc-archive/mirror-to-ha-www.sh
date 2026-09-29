@@ -16,7 +16,11 @@ TARGET_DIR="${HA_WWW_DIR:-.config/home-assistant/www/documents}"
 STAGE=$(mktemp -d)
 trap 'rm -rf "$STAGE"' EXIT
 
-slugs=$(curl -sf -X POST "$MDDB/v1/search" -H 'content-type: application/json' \
+# Bound every curl so an unavailable/hung MDDB or doc-archive cannot stall the
+# hourly run forever (TimeoutStartSec in the unit is the outer backstop).
+CURL=(curl -sf --connect-timeout 10 --max-time 120)
+
+slugs=$("${CURL[@]}" -X POST "$MDDB/v1/search" -H 'content-type: application/json' \
   -d '{"collection":"documents","query":"","limit":100}' \
   | python3 -c 'import json,sys
 d=json.load(sys.stdin)
@@ -25,18 +29,19 @@ print(" ".join(x["key"] for x in docs if x.get("key")))')
 
 for slug in $slugs; do
   mkdir -p "$STAGE/$slug"
-  manifest=$(curl -sf -H "X-API-Key: $KEY" "http://$BIND:$PORT/v1/archive/$slug") || continue
+  manifest=$("${CURL[@]}" -H "X-API-Key: $KEY" "http://$BIND:$PORT/v1/archive/$slug") || continue
   pages=$(printf '%s' "$manifest" | python3 -c 'import json,sys
 print(len(json.load(sys.stdin)["manifest"]["pages"]))')
   for n in $(seq 1 "$pages"); do
     name=$(printf '%s' "$manifest" | python3 -c "import json,sys
 print(json.load(sys.stdin)['manifest']['pages'][$n-1]['name'])")
-    curl -sf -H "X-API-Key: $KEY" \
+    "${CURL[@]}" -H "X-API-Key: $KEY" \
       -o "$STAGE/$slug/$name" "http://$BIND:$PORT/v1/archive/$slug/page/$n"
   done
 done
 
 # --delete: retracted archives disappear from the mirror too. The dir is
 # dedicated to this mirror.
-rsync -a --delete "$STAGE/" "$TARGET_HOST:$TARGET_DIR/"
+rsync -a --delete --timeout=120 -e 'ssh -o ConnectTimeout=10 -o BatchMode=yes' \
+  "$STAGE/" "$TARGET_HOST:$TARGET_DIR/"
 echo "doc-mirror: synced $(find "$STAGE" -type f | wc -l) pages across $(echo $slugs | wc -w) archives"

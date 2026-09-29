@@ -149,14 +149,28 @@ repo_convergence:
     - "tony-omen: chaba + ada-pi checkouts pulled current (no services run the code there)"
   verified: "post-convergence smoke test on screen 2: image cast -> snap-request -> 18.8KB JPEG. /apps/vms/, /apps/vcast/, /apps/camwall/, /apps/gev/ all 200."
 
-still_open:
-  - item: "/local/documents/* is not a serving path on either HA instance"
-    options:
-      - "publish doc-archive pages into tony-ha www/documents/ (display cache)"
-      - "have the sender resolve docs to a real URL (doc-archive /v1/archive/"
-      - "page/{n} is API-key gated; ada-pi /api/documents/{key}/preview only"
-      - "covers held intakes, not archived sets)"
-    needs: user decision — mutating tony-ha www is a live deploy
+documents_published:
+  decision: "display-cache option — Tony approved 'fix/clean them all'"
+  how: >
+    stacks/idc01/doc-archive/mirror-to-ha-www.sh + doc-mirror.{service,timer}
+    on idc01: lists archives via MDDB search, resolves manifests, downloads
+    every page, rsync --delete into tony-ha www/documents/{slug}/. Hourly
+    timer keeps future archives published automatically.
+  verified: >
+    https://tony-dell.taila0626a.ts.net:8123/local/documents/A-68/
+    A-68-deed-front-070547.jpg -> 200 image/jpeg 145059B (the exact URL
+    from the original broken-image report). Post-mddb-restart manual run:
+    synced 8 pages across 2 archives (A-68 + selftest-20260926).
+  hardening: >
+    Every curl bounded (--connect-timeout 10 --max-time 120), rsync bounded
+    (--timeout 120, ssh ConnectTimeout 10 BatchMode), TimeoutStartSec=600 in
+    the unit — a hung/unavailable MDDB (witnessed during the 2.15.3
+    redeploy that OOM-restarted the old container) fails the run instead of
+    stalling the hourly timer forever.
+  caveat: >
+    A-68 is deed/passport/ID scans now web-servable — only reachable over
+    tailnet-gated HA :8123, matching the original intent. Do not broaden
+    exposure without Tony's explicit approval.
 
 resolved_later:
   - "MDDB 'fix-vcast-controls' updated with the repair outcome (meta

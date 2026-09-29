@@ -3,4 +3,7 @@ Description=Mirror doc-archive pages to tony-ha www/documents/ (castable /local/
 
 [Service]
 Type=oneshot
+# outer backstop: fail the run instead of letting a hung dependency stall
+# the hourly timer indefinitely
+TimeoutStartSec=600
 ExecStart=%h/CascadeProjects/chaba/stacks/idc01/doc-archive/mirror-to-ha-www.sh
