@@ -532,6 +532,9 @@
       }
       speechSynthesis.cancel(); // new narration supersedes in-flight/queued
       const u = new SpeechSynthesisUtterance(text);
+      // auto-language: Thai Unicode block -> th-TH so a Thai narration
+      // doesn't come out in the default English voice
+      u.lang = /[\u0E00-\u0E7F]/.test(text) ? "th-TH" : "en-US";
       u.rate = 1.05;
       speechSynthesis.speak(u);
       showToast("🔊 " + text, 3000);
