@@ -1,0 +1,146 @@
+title: Ada CMS Report Control
+subtitle: Declarative manifest for Ada's rendered CMS report pages (mirror of ssot.chaba.memory.yml pattern)
+icon: newspaper
+version: 0   # draft — for review
+
+overview:
+  purpose: |
+    Same control-file idea as ssot.chaba.memory.yml, applied to Ada's CMS
+    report pages. Each CMS page is currently hand-assembled by its own
+    script or tool path (lab-results.py, cms_publish_page, auto-report) —
+    this file declares every report page's sections, sources, and budgets
+    in one place, and a renderer resolves them deterministically at
+    publish time into ada-cms-pages.
+
+    The analogy to memory is direct: L0 is the compact rendered page
+    (what a reader sees), the `more:` blocks and linked collections are
+    the pull-only deeper layers. Same contract: declared sections,
+    per-section soft/hard budgets, priority-ordered overflow.
+  boundary: |
+    Report pages are CMS output — they may summarize ada-ha-* banks and
+    scenario/benchmark collections but never embed private memory content
+    beyond aggregate counts/status. Person-scoped banks (personal-*) are
+    counts-only. Chaba stays separate: this manifest lives in chaba's
+    repo because the report *structure* is chaba's standard, but the
+    rendered pages are Ada's CMS.
+
+render:
+  # A single renderer (to write: scripts/ada/render-cms-reports.py)
+  # resolves these sections into ada-cms-pages documents.
+  resolution: mddb-query        # unlike memory.yml's file/string renders,
+                                # report data lives in MDDB collections
+  collections:
+    reports: ada-ha-scenario-reports
+    pages:   ada-cms-pages
+    events:  ada-ha-ops-events
+  privacy:
+    # Hard rule — report pages show counts/status/keys, never raw
+    # contentMd from person-scoped or personal banks.
+    person_scoped_banks: counts_only
+    private_banks: counts_only
+
+pages:
+
+  lab-results:
+    title: Lab results — scenario suite
+    description: |
+      Latest status matrix across the live-scenario suite. Exists today
+      via lab-results.py — this section formalizes it.
+    target_key: lab-results
+    limits: {soft: 3000, hard: 6000}
+    sections:
+      - name: latest-matrix
+        priority: 100
+        required: true
+        description: One row per scenario — newest run only.
+        source:
+          collection: ada-ha-scenario-reports
+          filter_meta: {kind: [report]}
+          group_by: scenario          # report/<name>-<ts> → newest per name
+          format: table               # name | status | turns | failed | when
+      - name: benchmarks
+        priority: 80
+        description: Suite-level benchmark rollups (pass rates, scores).
+        source:
+          collection: ada-ha-scenario-reports
+          filter_meta: {kind: [benchmark]}
+          max_entries: 10
+          format: table               # suite | score | status | ts
+      - name: regressions
+        priority: 90
+        description: |
+          Scenarios whose status flipped pass→fail/flaky since the
+          previous run — the "what broke" banner at top.
+        source:
+          kind: derived             # computed by the renderer:
+          rule: status_regression   #   compare two newest runs per scenario
+        limits: {soft: 400, hard: 800}
+
+  memory-health:
+    title: Memory bank health
+    description: |
+      Bank sizes, draft accumulation, recall-miss gaps, retraction
+      audit — the state that hid the 2026-09-28 KK failure (retracted
+      people/kk, invisible drafts, vector-index downtime).
+    target_key: memory-health
+    limits: {soft: 3000, hard: 6000}
+    sections:
+      - name: bank-inventory
+        priority: 90
+        required: true
+        source:
+          collection: ada-ha-bank-people   # inventory counts per bank
+          kind: per_bank_stats             #   docs by status: active/draft/etc.
+          format: table
+      - name: lifecycle-alerts
+        priority: 100
+        required: true
+        description: |
+          Tripwires — retracted canonical docs, undrained draft rings,
+          stale embeddings, vector-index outages. Derived from ops
+          events + bank stats; absence reported as "none" not silence.
+        source:
+          collection: ada-ha-ops-events
+          filter_meta: {kind: [lifecycle]}
+          max_entries: 20
+          format: "- {ts} {event}"
+      - name: recall-gaps
+        priority: 70
+        description: Query log misses — asks that returned nothing.
+        source:
+          collection: ada-ha-ops-events
+          filter_meta: {kind: [recall-miss]}
+          max_entries: 15
+
+  benchmark-history:
+    title: Benchmark runs
+    description: |
+      Every benchmark/* doc, newest first — the trend line. Includes
+      score, per-scenario status, and violations.
+    target_key: benchmark-history
+    limits: {soft: 2500, hard: 5000}
+    sections:
+      - name: runs
+        priority: 90
+        required: true
+        source:
+          collection: ada-ha-scenario-reports
+          filter_meta: {kind: [benchmark]}
+          order: ts_desc
+          max_entries: 30
+          format: "- {ts} {suite}: {score} — {scenarios}"
+
+# Per-section contract (mirrors ssot.chaba.memory.yml sections.*):
+#   description — what the section is for (rendered as the section header note)
+#   priority    — overflow drop order (highest survives budget pressure)
+#   required    — never dropped; if it exceeds its hard limit the page
+#                 render fails loudly rather than silently truncating
+#   limits      — {soft, hard} in chars; over soft → warn, over hard → drop
+#                 or fail per `required`
+#   source      — collection + filter_meta + format, or a derived rule
+#                 computed by the renderer (status_regression, per_bank_stats)
+#   max_entries — row cap; overflow rows collapse to "…and N more"
+#
+# Overflow: sections are dropped lowest-priority-first until the page is
+# under `limits.hard` — same semantics as render.profiles.*.overflow_order
+# in ssot.chaba.memory.yml.
