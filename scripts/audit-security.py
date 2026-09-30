@@ -24,6 +24,7 @@ HOSTS = {
     "tony-omen": {"tailnet": "tony-omen", "os": "linux", "user": "tony"},
     "mn01": {"tailnet": "mn01", "os": "linux", "user": "tony"},
     "idc01": {"tailnet": "idc01", "os": "linux", "user": "tony"},
+    "idc02": {"tailnet": "idc02", "os": "linux", "user": "tony"},
     "kk-macbook": {"tailnet": "macbook", "os": "macos", "user": "kkkakk"},
 }
 

@@ -1,0 +1,52 @@
+title: Security Posture — idc02
+subtitle: Declared security state for the idc02 VPS; diffed live by scripts/audit-security.py
+icon: shield
+version: 1
+last_updated: "2026-09-30"
+maintainer: tony
+
+host: idc02
+standard: docs/ssot/infrastructure/ssot.security.yml
+
+expected_exposure:
+  - { listener: "0.0.0.0:22", class: public-ip, service: sshd,
+      note: "wildcard bind; ufw allows 22/tcp from anywhere until tailnet joins — tighten to tailscale0 once the node is authorized" }
+
+remote_access:
+  sshd: { port: 22, bind: "0.0.0.0", password_auth: "deviation" }
+  tailscale_ssh: false
+  recovery:
+    provider_panel: "VPS provider web console — recovery path if tailnet+ssh both break"
+
+firewall:
+  tool: ufw
+  inbound_default: deny
+  rules:
+    - "allow 22/tcp (ssh — tighten to tailscale0 after tailnet join)"
+  note: "Enabled 2026-09-30 during baseline setup; outbound default allow"
+
+tailscale:
+  ip: "pending — node authorized via https://login.tailscale.com/a/… on 2026-09-30; awaiting auth"
+  serve: []
+  funnel: []                  # none — explicitly declared
+  role: []
+
+egress:
+  warp: { enabled: false }
+  transparent_proxy: { enabled: false }
+
+baseline_applied:
+  - "non-root user 'tony' (sudo, uid 1000) with ssh authorized_keys copied from root"
+  - "ssh key auth verified — tony@idc02 BatchMode login works"
+  - "podman + uidmap installed (rootless-capable)"
+  - "loginctl enable-linger tony — user services survive logout"
+  - "ufw deny-incoming / allow-outgoing + 22/tcp, enabled on boot"
+  - "tailscaled installed and enabled (join pending)"
+
+deviations:
+  - item: "sshd PasswordAuthentication yes"
+    reason: "VPS image default; key auth installed 2026-09-30 — disable password auth once root+tony key logins confirmed stable, or keep as panel-recovery fallback like idc01"
+    last_verified: "2026-09-30"
+
+last_observed: {}
+deltas: []
