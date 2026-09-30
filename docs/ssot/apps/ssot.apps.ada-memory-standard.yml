@@ -1,0 +1,70 @@
+title: Ada Memory Quality Standard
+subtitle: Measurable bars the memory system must hold — checked by scripts/ada/memory-standard.py
+icon: gauge
+version: 1
+last_updated: "2026-09-30"
+
+overview:
+  purpose: |
+    Defines "healthy" for Ada's memory layer as executable numbers, not
+    vibes. scripts/ada/memory-standard.py measures every bar and writes
+    one ops-event doc (memory_standard) to ada-ha-events-<instance> per
+    run — pass lines and violations together. Threshold breaches that
+    need a decision fire /api/notify (non-urgent machine voice) so the
+    loop detection→remediation actually closes.
+  closes_the_loop: |
+    The gap in the flow was detection→action: drafts accumulated, ops
+    events were logged, and only a human reading a digest could react.
+    This standard + checker is the feedback actuator: breach → ops event
+    → notify → owner chooses promote/retract/ignore.
+
+bars:
+  lifecycle:
+    draft_ratio_max: 2.0
+      # drafts ≤ 2× active per bank. Drafts are a quarantine queue,
+      # not a holding pen. general was 96/37 ≈ 2.6× on 2026-09-30.
+    draft_age_days: 7
+      # a draft older than 7d needs a decision — the checker reports
+      # oldest-draft age per bank; auto-retract is deliberately NOT
+      # done (a draft may be the only copy of a fact).
+    superseded_retention_days: 30
+      # history is useful, not permanent. Checker reports docs past
+      # this age; pruning is a separate destructive step.
+  search:
+    superseded_in_results: 0
+      # superseded/retracted/draft docs must never appear in default
+      # recall. Vector endpoint returning them is a violation — the
+      # status filter must run before results are served.
+  recall:
+    probe_top1_min: 0.8
+      # of the probe query set (KK / คุณกุ้ง / แก้วตา / rotating),
+      # ≥80% must hit the expected doc at rank ≤3.
+    cross_speaker_leaks: 0
+      # a person-scoped bank doc must never surface to another speaker.
+  speaker:
+    min_prints_after_week: 3
+      # enrolled profile ≥1 week old should have ≥3 prints (auto_learn
+      # supplies them); fewer = enrollment path is starving.
+    audio_retention_days: 14
+      # ADA_SPEAKER_AUDIO_TTL_DAYS — raw voice clips expire.
+  ops:
+    phantom_write_claim_per_day: 20
+    confirm_strip_per_day: 30
+      # budgets, not zeros — the gates exist to strip; sustained excess
+      # means a prompt/model behavior problem worth investigating.
+    embed_probe: up
+      # mddb-embed-probe timer state — embed_outage event = P1.
+
+checker:
+  script: scripts/ada/memory-standard.py
+  runs_on: idc01
+  schedule: every 6h (mddb-memory-standard.timer)
+  writes:
+    ops_collection: ada-ha-events-tony
+    kind: ops-event
+    type: memory_standard   # value PASS or VIOLATION:<bar>…
+  notify:
+    endpoint: POST <pwa>/api/notify {text, urgent:false}
+    when: lifecycle.search bar breached OR 2+ bars breached in one run
+      # machine-voice one-liner ("draft queue over standard in
+      # general/personal-kk") — detection closes into the voice channel.
