@@ -227,3 +227,23 @@ services:
       - "Restart: ssh idc02 systemctl --user restart vcast-real@6.service"
       - "Logs: ssh idc02 journalctl --user -u vcast-real@6 -n 50"
       - "Client source: stacks/web/input-bridge/vcast-real.mjs (repo) -> ~/apps/vcast-real/ (idc02); unit ~/.config/systemd/user/vcast-real@.service"
+  - id: vcast-real-7
+    name: vcast Real-Browser Display (screen 7)
+    type: http
+    url: http://idc01:3010/displays
+    expected_status: 200
+    timeout: 5
+    category: api
+    profiles:
+      - home
+    host: idc02
+    note: Second lab display (vcast-real@7.service) — same template as
+      vcast-real-6. Reserved for multi-screen scenarios (cross-screen
+      cast/switch between two real browsers). Screen range convention —
+      6-9 are lab/automation displays; see ssot.apps.vcast.yml.
+    verification:
+      - "Claimed+connected: curl -s http://idc01:3010/displays | python3 -c 'import json,sys; s=[x for x in json.load(sys.stdin)[\"screens\"] if x[\"screen\"]==7]; print(s[0][\"connected\"] if s else \"screen 7 absent\")'"
+      - "Unit: ssh idc02 systemctl --user status vcast-real@7.service"
+    recovery_actions:
+      - "Restart: ssh idc02 systemctl --user restart vcast-real@7.service"
+      - "Logs: ssh idc02 journalctl --user -u vcast-real@7 -n 50"

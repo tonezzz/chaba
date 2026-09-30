@@ -9,7 +9,7 @@ sections:
       - label: Virtual cast target
         text: "A fullscreen PWA that plays the payloads the cast pipeline already produces: HLS video (camera/desktop/YouTube-subtitle paths), PNG snapshots, iframed web pages, and audio. Not a Chromecast — it does not speak castv2; it is a parallel last hop inside our own pipeline."
       - label: Screen numbers
-        text: "Each paired display gets a stable screen number (Screen #1, #2, ...) assigned by the relay registry, so Ada/HA can be told 'cast to screen 1'."
+        text: "Each paired display gets a stable screen number (Screen #1, #2, ...) assigned by the relay registry, so Ada/HA can be told 'cast to screen 1'. Numbers are unbounded — allocation picks the lowest free; an explicit screen-N claim honors N when free. Convention (2026-09-30): 1-5 = Tony's real devices (iPad, TV-adjacent), 6-9 = lab/automation displays (vcast-real@N on idc02 — real headless Chromium, the {real_screen} target in ada-pi live scenarios, default 6), 10+ = overflow/one-off tests. GEV remote registration keys on (screen, pane), so one GEV can run on many screens simultaneously — gev_command targets by screen."
       - label: Self-pairing QR
         text: "An unpaired display shows a QR code on its own screen. Scanning it with an admin phone opens /apps/vcast/pair.html which claims the display: the relay mints an ada-pi key (screen-N) server-side, burns the redeem URL itself, and pushes the api_key to the waiting display over its pending websocket. Claim is keyless — the relay holds ADA_ADMIN_KEY in ~/.config/secrets/input-bridge.env, so scanning the QR only asks for a confirm tap."
   - title: Architecture
