@@ -54,6 +54,25 @@ bars:
       # means a prompt/model behavior problem worth investigating.
     embed_probe: up
       # mddb-embed-probe timer state — embed_outage event = P1.
+  sync:
+    # Team-pace bar: anything Tony asks Ada to change must be visible to
+    # Devin sessions without asking. Two lanes exist:
+    #   - Ada applies it herself  -> tool_runner._log_change_request
+    #     emits `change-request` into ~/.local/share/ada/events.md,
+    #     mirrored to ~/.local/share/ada-review/events.md and rendered
+    #     in the `ada-events` section of context-devin.md.
+    #   - Ada dispatches to Devin -> devin_dispatch stamps dispatch_job
+    #     on the idea doc; devin-dispatch-watch writes job/<id> into
+    #     ada-ha-bank-devin-handoff + a chaba-admin event on completion.
+    # Un-dispatched "Ada, change X" asks that are neither applied nor
+    # dispatched are the leak this bar exists to catch — they should
+    # land as an ideas-bank draft at minimum.
+    ideas_draft_age_days: 14
+      # idea-burst drafts older than this need a decision (dispatch /
+      # file / retract) — the ideas bank is a queue, not a vault.
+    ideas_lifecycle: [draft, active, dispatched, handled, superseded]
+      # the ideas bank already runs this pipeline; `dispatched` means a
+      # devin job was kicked off, `handled` means outcome recorded.
 
 checker:
   script: scripts/ada/memory-standard.py

@@ -24,6 +24,7 @@ NOTIFY_KEY = os.environ.get("ADA_API_KEY", "")
 
 DRAFT_RATIO_MAX = 2.0
 DRAFT_AGE_DAYS = 7
+IDEAS_DRAFT_AGE_DAYS = 14
 PHANTOM_PER_DAY = 20
 CONFIRM_STRIP_PER_DAY = 30
 MIN_PRINTS_AFTER_WEEK = 3
@@ -50,8 +51,8 @@ def _list_banks() -> list[str]:
     cfg = os.path.expanduser("~/.config/ada/memory-banks.json")
     try:
         banks = json.load(open(cfg)).get("banks") or {}
-        return [b["mddb_collection"] for b in banks.values()
-                if b.get("mddb_collection")]
+        return [b["mddb_collection"].replace("{instance}", INSTANCE)
+                for b in banks.values() if b.get("mddb_collection")]
     except Exception:
         return ["ada-ha-bank-general", "ada-ha-bank-people",
                 "ada-ha-bank-purchase", "ada-ha-bank-personal-kk"]
@@ -89,10 +90,12 @@ def main() -> int:
                 f"{drafts} draft / {status.get('superseded', 0)} superseded")
         if ratio > DRAFT_RATIO_MAX and drafts >= 3:
             violations.append(f"draft_ratio {line} = {ratio:.1f}x")
-        if oldest_draft > DRAFT_AGE_DAYS * 86400:
+        draft_limit = (IDEAS_DRAFT_AGE_DAYS if "-ideas-" in coll
+                       else DRAFT_AGE_DAYS)
+        if oldest_draft > draft_limit * 86400:
             violations.append(
                 f"{coll}: oldest draft {oldest_draft / 86400:.0f}d > "
-                f"{DRAFT_AGE_DAYS}d")
+                f"{draft_limit}d")
         notes.append(line)
 
     # 2. superseded leaking through the recall path — probe with the same
