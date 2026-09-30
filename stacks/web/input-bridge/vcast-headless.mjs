@@ -24,6 +24,7 @@ const CLAIM_NAME = process.env.VCAST_NAME || "screen-1";
 import WebSocket from "ws";
 
 let ws, screen = null, apiKey = null, panes = 1;
+let lastState = "idle", lastDetail = "";
 
 function connect() {
   ws = new WebSocket(WS_URL);
@@ -64,14 +65,29 @@ function connect() {
     if (m.type === "stop") panes = 1;
     if (m.type === "gesture") {
       // a real page would open the camera; the sim just acks state
-      ws.send(JSON.stringify({ type: "state",
-        state: m.mode === "off" ? "idle" : `gesture-${m.mode}`,
-        detail: m.mode === "off" ? "" : `gesture:${m.mode}` }));
+      lastState = m.mode === "off" ? "idle" : `gesture-${m.mode}`;
+      lastDetail = m.mode === "off" ? "" : `gesture:${m.mode}`;
+      ws.send(JSON.stringify({ type: "state", state: lastState, detail: lastDetail }));
+    }
+    if (m.type === "snap-request" && screen != null) {
+      // No real pixels — report honestly instead of letting the tool poll
+      // itself into "did not return a frame — offline or stuck" (the sim
+      // is neither). The bridge forwards error+state in the frame body.
+      try {
+        await fetch(`${API}/frame`, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({
+            screen, token: m.token || "", state: lastState,
+            detail: lastDetail, error: "simulated",
+          }),
+        });
+      } catch {}
     }
     if (["play", "image", "nav", "audio", "stop", "layout", "zoom", "unzoom"].includes(m.type)) {
-      const st = m.type === "stop" ? "idle" : m.type;
-      const detail = m.type === "layout" ? `${panes}panes` : (m.url || "");
-      ws.send(JSON.stringify({ type: "state", state: st, detail }));
+      lastState = m.type === "stop" ? "idle" : m.type;
+      lastDetail = m.type === "layout" ? `${panes}panes` : (m.url || "");
+      ws.send(JSON.stringify({ type: "state", state: lastState, detail: lastDetail }));
     }
   });
   ws.on("close", () => setTimeout(connect, 2000));
