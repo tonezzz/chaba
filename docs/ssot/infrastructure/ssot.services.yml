@@ -153,6 +153,19 @@ tony-dell:
           scp same rebuilt file to follower, swap, start. Loses revision
           history; docs+meta fully preserved. Old leader DB kept as
           mddb.db.corrupt-YYYYMMDD in data dir.
+          Cold-start rescan operational notes (learnt 2026-09-30): even a CLEAN
+          DB pays the NoFreelistSync full-B-tree rescan on every open — it is
+          the normal open path, not a corruption check. The scan is
+          single-threaded, driven by random mmap page faults; on cold page
+          cache + contended HDD (tony-dell, r_await ~90ms) a 1.5 GB DB takes
+          tens of minutes to hours. Signals during rescan: no listeners, no
+          logs, RSS climbing/GC-cycling, main thread in folio_wait_bit_common.
+          Do NOT restart while it scans — every restart resets it to zero.
+          To accelerate: warm the file into page cache first
+          (`cat mddb.db > /dev/null`, synchronously over ssh — a backgrounded
+          remote cat dies with the session). Follower service has auto-restart;
+          multiple sessions SIGQUIT-debugging the same unit caused restart
+          churn — coordinate before killing.
         note: home consumers get a local read replica; promotion to standalone is manual
     note: "Primary moved tony-dell -> idc01 (public VPS, tailnet-only access — UFW allows tailscale0 only). Snapshot /v1/backup pre-migration-20260922-0914 copied to idc01; all consumers repointed to 100.74.146.0. Embedding via gemini-ollama-proxy on idc01 (option A — Gemini-compatible vectors preserved); embeddings replicate to follower via binlog. tony-dell copy retired after soak, then re-deployed as follower. Cold-start caveats — vector index load takes ~45 min after HTTP is up and /v1/stats blocks during it; on the follower, initial BoltDB open of a seeded DB can take hours if the seed carries freelist damage (see corruption_repair_20260930)."
   mddb-panel:
