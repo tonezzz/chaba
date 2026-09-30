@@ -1,7 +1,8 @@
 title: Ada CMS Report Control
 subtitle: Declarative manifest for Ada's rendered CMS report pages (mirror of ssot.chaba.memory.yml pattern)
 icon: newspaper
-version: 0   # draft — for review
+version: 1
+last_updated: "2026-09-30"
 
 overview:
   purpose: |
@@ -129,6 +130,58 @@ pages:
           order: ts_desc
           max_entries: 30
           format: "- {ts} {suite}: {score} — {scenarios}"
+
+# ── v1 additions (2026-09-30) — report meta standard + Ada ritual ──
+
+meta_contract:
+  # Every kind:report page in ada-cms-pages SHOULD carry these. Ada
+  # reads them BEFORE deciding whether to drill deeper — they are the
+  # "knobs" of the report-first ritual.
+  fields:
+    summary:    "one-line brief shown in reports-index — Ada answers from
+                 this without reading the page (~240 chars)"
+    domain:     "grouping tag — flood/health/bench/news/architecture/…"
+    fresh_for:  "staleness TTL ('1h','6h','1d'); index flags ⚠STALE past it"
+    confidence: "trust level — high|low|unverified; Ada hedges on low"
+    timeline:   "append-only audit entries '<ts> <what changed>' (cap 40)"
+    links:      "comma slugs — parents/children/source reports"
+    supersedes: "slug of the report this one replaces"
+    updated:    "last-change timestamp (ISO) — also the 'time-of-event'
+                 Ada states before quoting the report"
+
+ada_ritual:
+  # What Ada does when a question can be answered from reports —
+  # written into CMS_INSTRUCTIONS in realtime_provider.py.
+  steps:
+    - "read reports-index first; cms_get_page only when the index's
+       one-liner isn't enough"
+    - "before quoting, state the report's last-update summary + when
+       it was written (time-of-event)"
+    - "knobs: fresh_for stale → refresh via cms_note_update after a real
+       query; confidence low/unverified → hedge, don't state as settled"
+    - "after cms_note_update or publish, report the diff — what changed
+       and at what time — rather than silently updating"
+
+write_paths:
+  - cms_publish_page   # full replace — confirm-gated
+  - cms_note_update    # timeline annotation — no gate, auto-regens index
+  - reports-index      # auto-regen on every write; never hand-edited
+
+tiers:
+  L0_raw:      "transcripts, session logs — cold, never queried live"
+  L1_banks:    "ada-* MDDB banks — authoritative facts/recalls"
+  L2_reports:  "ada-cms-pages kind:report — curated, meta-contract above"
+  L3_index:    "reports-index — generated navigation; Ada's first read"
+  read_order:  "L3 → L2 → L1 → L0"
+  write_order: "L0 → L1 → L2 → L3 (auto)"
+
+distill_jobs:
+  # Nightly bank→report promotion — scheduled like the bench timers.
+  # Renderer: scripts/ada/report-distill.py (to write) — deterministic
+  # rollup per domain, NOT an LLM synthesis in v1.
+  schedule: "nightly, after ada-scenario-* timers"
+  host: idc01
+  note: "candidate to move to idc02 with the other offload work"
 
 # Per-section contract (mirrors ssot.chaba.memory.yml sections.*):
 #   description — what the section is for (rendered as the section header note)

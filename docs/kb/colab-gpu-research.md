@@ -28,3 +28,31 @@
 
 - Try 768×768 or SDXL/FLUX to measure VRAM/time scaling.
 - Test short video (Wan 2.1 / SVD) once the image pipeline is trusted.
+
+---
+
+## Working agreement — on-demand sessions
+
+Free Colab GPU is quota-limited and VMs idle-timeout fast, so **we never keep sessions warm**. Each experiment runs via `colab run` which allocates a fresh VM, executes the script, and releases it:
+
+```bash
+source ~/.local/venvs/colab-test/bin/activate
+uvx --from google-colab-cli==0.7.4 colab run --gpu T4 \
+    scripts/colab/img_gen.py -- \
+    --model prompthero/openjourney --prompt "<prompt>" \
+    --width 512 --height 512 --steps 25 --seed 42
+```
+
+- `--timeout` defaults to 30 s — pass `--timeout 600` for weight-cached runs, more on cold starts (pipeline load was ~119 s).
+- Outputs land in `/content/output` on the VM; pull with `colab download -s <session> ...` — or use `--session <name> --keep` to hold the VM open for follow-up `colab exec`, then `colab stop -s <name>`.
+- The browser `colab-mcp` server (`open_colab_browser_connection`) stays available for interactive notebook work on whichever runtime is switched to GPU.
+- Note: `google-colab-cli` 0.6.0 `exec` is broken with the installed `jupyter-kernel-client`; pin `uvx --from google-colab-cli==0.7.4` until the venv is upgraded.
+
+## Experiment queue
+
+| # | Task | Model | Config | Status |
+|---|---|---|---|---|
+| exp-01 | SD baseline | prompthero/openjourney | 512×512, 25 steps, g7.5, seed 42 | ✅ done — 5.2 s gen, 3.26 GB VRAM |
+| exp-02 | Resolution scaling | prompthero/openjourney | 768×768, 25 steps | queued |
+| exp-03 | Larger model | stabilityai/sdxl-turbo (needs HF token) | 512×512 | queued — gated model |
+| exp-04 | Video probe | aiges/svd or similar | short clip | queued — needs T4+ feasibility check |
