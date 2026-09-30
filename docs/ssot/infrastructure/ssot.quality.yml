@@ -38,11 +38,9 @@ lanes:
   on-host-gate:
     description: >
       Composite pre-push gates run manually on a dev host —
-      scripts/ci-{smoke,standard,qa,all}.sh. MAY touch tailnet/live
-      services (recall canary, ada-pi-pwa), so they cannot run as GH
-      Actions steps; they are the on-host equivalent of ci-gate plus the
-      live checks only a tailnet host can do. ci-all.sh runs all three
-      gates and is the single entry point for a pre-push green.
+      scripts/ci-{smoke,standard,qa,all}.sh. May touch tailnet services,
+      so they can't run as GH steps; the on-host equivalent of ci-gate
+      plus live checks. ci-all.sh is the single pre-push entry point.
     runner: manual — scripts/ci-all.sh
     outputs: terminal exit code
   scheduled-audit:
@@ -202,31 +200,10 @@ registry:
     script: "python3 -m compileall -q -x node_modules scripts/ + node --check per *.mjs (excluding vendored node_modules)"
 
   # --- lane: on-host-gate (manual pre-push composite gates) ---
-  - id: gate.smoke
-    lane: on-host-gate
-    gate: blocking
-    cost: network
-    runner: manual
-    script: bash scripts/ci-smoke.sh
-  - id: gate.standard
-    lane: on-host-gate
-    gate: blocking
-    cost: cheap
-    runner: manual
-    script: bash scripts/ci-standard.sh
-  - id: gate.qa
-    lane: on-host-gate
-    gate: blocking
-    cost: cheap
-    runner: manual
-    script: bash scripts/ci-qa.sh
-  - id: gate.all
-    lane: on-host-gate
-    gate: blocking
-    cost: network
-    runner: manual
-    script: bash scripts/ci-all.sh
-    note: single entry point — runs smoke + standard + qa
+  - {id: gate.smoke,    lane: on-host-gate, gate: blocking, cost: network, runner: manual, script: bash scripts/ci-smoke.sh}
+  - {id: gate.standard, lane: on-host-gate, gate: blocking, cost: cheap,   runner: manual, script: bash scripts/ci-standard.sh}
+  - {id: gate.qa,       lane: on-host-gate, gate: blocking, cost: cheap,   runner: manual, script: bash scripts/ci-qa.sh}
+  - {id: gate.all,      lane: on-host-gate, gate: blocking, cost: network, runner: manual, script: "bash scripts/ci-all.sh (single entry: smoke+standard+qa)"}
   - id: qa.registry-self-check
     lane: scheduled-audit
     gate: blocking
