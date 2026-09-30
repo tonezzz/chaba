@@ -338,14 +338,23 @@ def snap(query: str, settle: float) -> tuple[bytes, str]:
         # The stream re-opens on zoom and needs a few seconds to draw —
         # poll until real video appears (bounded).
         raw2 = None
-        for _poll in range(8):
-            time.sleep(1.5)
-            cand = capture_xwd()
-            w2, h2, rgb2 = xwd_to_rgb(cand)
-            cw, ch, crgb = crop_rgb(w2, h2, rgb2, SINGLE_PANE_RECT)
-            if _has_video(cw, ch, crgb):
-                raw2 = cand
+        for _round in range(2):
+            for _poll in range(8):
+                time.sleep(1.5)
+                cand = capture_xwd()
+                w2, h2, rgb2 = xwd_to_rgb(cand)
+                cw, ch, crgb = crop_rgb(w2, h2, rgb2, SINGLE_PANE_RECT)
+                if _has_video(cw, ch, crgb):
+                    raw2 = cand
+                    break
+            if raw2 is not None:
                 break
+            # P2P stream open is a coin flip — when it fails the pane
+            # stays dead forever no matter how long we wait; re-select the
+            # channel once to force a fresh stream attach (2026-09-30:
+            # ~half the noble-club channels flapped dead per sweep).
+            select_channel(meta["x"], meta["y"])
+            time.sleep(settle / 2)
         if raw2 is None:
             raw2 = cand  # zoomed pane never drew — grid may still show video
         _podman("xdotool", "mousemove", str(GRID4_BTN[0]),
