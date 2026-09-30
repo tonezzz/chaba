@@ -12,6 +12,7 @@ the 06:46 fleet audit delta readings (omen load 98.69 pre-fix).
 | tony-omen | 2d 21h | 6.5 / 6.6 / 6.1 | 22/30 GiB | 25/71 GiB | 38% | recovered — was 17.5 earlier |
 | idc01 | 2d 20h | 0.30 / 0.28 / 0.27 | 3/31 GiB | 0/5 GiB | 75% | healthy |
 | mn01 | 1d 8h | 0.78 / 1.4 / 1.65 | 3/7 GiB | — | 20% | healthy |
+| idc02 | 6h | 0.00 / 0.01 / 0.15 | 1/15 GiB | — | 5% | healthy — new offload host |
 | kk-macbook | — | — | — | — | — | offline 16d (travel laptop, expected) |
 
 ## Service checks
@@ -38,6 +39,13 @@ Swap 25 GiB is residual pressure draining slowly.
 `/detect` serves live detections — verified through Caddy
 `/apps/yolo/api/*` earlier); weaviate-embedding :5000 active;
 xmeye-vms-vnc up; websockify-vms-mn01 inactive (standby, normal).
+
+**idc02** — new offload VPS (45.136.236.190, tailnet-only services).
+Running: `open-jev` on tailnet :8777 (healthy, second instance —
+open-jev now runs on both omen and idc02); `vcast-real@6` and
+`vcast-real@7` headless Chromium+Playwright displays (active, ~186%
+CPU while rendering). sshd reachable via tailnet; key provisioned
+2026-09-30 and `idc02`/`idc01` entries added to `~/.ssh/config`.
 
 **kk-macbook** — tailscale last seen 16 days ago; offline expected.
 
