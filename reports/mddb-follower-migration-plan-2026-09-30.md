@@ -1,9 +1,26 @@
 # mddb follower migration: tony-dell → idc02
 
-2026-09-30 — plan + benchmark for moving the read-only replica off the
-contended HDD desktop onto the new offload VPS.
+**Status: benchmarked — idc02 wins by ~800× on the metric that hurt us.
+Recommendation: migrate as second follower, soak, then cutover.**
+
+## Latest
+
+- **2026-10-01** — idc01 nightly backup fixed (data-dir ownership →
+  `podman cp`; verify needed `-p` port mapping + a 20-min window for the
+  `NoFreelistSync` rescan). First **verified** backup of the clean
+  post-rebuild DB: `mddb-filecopy-mddb-20261001-0649.db` opens healthy.
+- **2026-10-01** — landing-page format piloted on this page: status +
+  `## Latest` on top, section links, benchmark chart embedded.
+- **2026-09-30** — benchmark done: cold-open 5–16 s on idc02 vs ~3.5 h
+  on dell ([details](#why-migrate)); migration procedure below.
+
+Sections: [Why migrate](#why-migrate) ·
+[Procedure](#migration-procedure-standard-backup-seed-path) ·
+[Risks](#risks--watch-outs) · [CMS pages audit](#cms-pages-audit--where-old-reports-stand)
 
 ## Why migrate
+
+![Cold-open benchmark: dell HDD ~3.5h vs idc02 5–16s](https://tony-dell.taila0626a.ts.net/apps/reports/mddb-coldopen-2026-09-30.png)
 
 | | tony-dell (current) | idc02 (target) |
 |---|---|---|
