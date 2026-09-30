@@ -29,7 +29,13 @@ print(" ".join(x["key"] for x in docs if x.get("key")))')
 
 for slug in $slugs; do
   mkdir -p "$STAGE/$slug"
-  manifest=$("${CURL[@]}" -H "X-API-Key: $KEY" "http://$BIND:$PORT/v1/archive/$slug") || continue
+  # abort the whole run if a manifest fetch fails — continuing with an
+  # empty stage + rsync --delete would wipe the mirror (seen 2026-09-30
+  # when Drive's oauth token was revoked: every manifest 502'd)
+  manifest=$("${CURL[@]}" -H "X-API-Key: $KEY" "http://$BIND:$PORT/v1/archive/$slug") || {
+    echo "doc-mirror: manifest fetch failed for $slug — aborting" >&2
+    exit 1
+  }
   pages=$(printf '%s' "$manifest" | python3 -c 'import json,sys
 print(len(json.load(sys.stdin)["manifest"]["pages"]))')
   for n in $(seq 1 "$pages"); do
@@ -40,8 +46,18 @@ print(json.load(sys.stdin)['manifest']['pages'][$n-1]['name'])")
   done
 done
 
+# second guard: never --delete an empty stage onto the target
+if [ -z "$(find "$STAGE" -type f -print -quit)" ]; then
+  echo "doc-mirror: stage is empty — refusing to rsync --delete" >&2
+  exit 1
+fi
+
 # --delete: retracted archives disappear from the mirror too. The dir is
 # dedicated to this mirror.
-rsync -a --delete --timeout=120 -e 'ssh -o ConnectTimeout=10 -o BatchMode=yes' \
+# :2222 is OpenSSHd's m2m port (sshd_config.d/tailnet-m2m.conf) — bypasses
+# Tailscale SSH check mode on :22, which periodically gates automation on a
+# browser re-auth and stalls rsync until timeout.
+rsync -a --delete --timeout=120 \
+  -e 'ssh -p 2222 -o ConnectTimeout=10 -o BatchMode=yes' \
   "$STAGE/" "$TARGET_HOST:$TARGET_DIR/"
 echo "doc-mirror: synced $(find "$STAGE" -type f | wc -l) pages across $(echo $slugs | wc -w) archives"
