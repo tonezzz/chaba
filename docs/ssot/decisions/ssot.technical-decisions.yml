@@ -540,6 +540,67 @@ decisions:
       - docs/ssot/infrastructure/ssot.home-assistant.automations.yml
       - docs/kb/home-assistant/tv-casting-runbook.md
 
+  - id: scenario-harness-false-negatives
+    date: '2026-09-30'
+    title: Separate MODEL_FAIL from INFRA/HARNESS failures in live scenarios
+    status: accepted
+    context: |
+      Batch run 2026-09-30 (7 screen-targeted scenarios vs ada-ha-tony) showed
+      the harness conflates three distinct failure classes into one "FAIL":
+      (1) vcast_screen_cast failed all 3 turns because displays were offline —
+          cast returned delivered:0; infra precondition, not an Ada defect;
+      (2) camera_cast_permission T2 failed calls_any — Ada verified the wall
+          with vcast_snapshot (visual check, arguably superior to the allowed
+          cctv_wall|vcast_list); split_screen T3 failed similarly when she
+          correctly concluded the split already existed via vcast_list;
+      (3) vcast_gesture_ops T2/T5 demanded vcast_gesture/vcast_pose — tools
+          that do not exist in the declarations; Ada reasonably fell back to
+          search_home_devices. One real model defect was found amid the noise:
+          wall_ops T3 where cctv_wall action=settings exists in schema but
+          Ada refused without calling. Empty-transcript turns (T4 earlier)
+          are interrupts mid-tool-call and flaky.
+    options:
+      - label: Keep single PASS/FAIL
+        pros: [no harness changes]
+        cons: [infra outages masquerade as regressions; alert fatigue —
+               the benchmark stops being trusted and real defects hide]
+      - label: Add precondition gating + outcome-based expectations + result taxonomy
+        pros: [FAIL means model; INFRA means environment; UNIMPLEMENTED means
+               missing tool; false negatives stop competing with real signal]
+        cons: [runner + yaml schema work; per-scenario preflight declarations]
+      - label: Loosen every failing expectation by hand
+        pros: [immediate]
+        cons: [chases symptoms; same ambiguity returns next scenario]
+    chosen: Add precondition gating + outcome-based expectations + result taxonomy
+    reasoning: |
+      The harness already owns expectation evaluation in check_expect(); the
+      missing layer is semantic. Proposed shape:
+      - `preflight:` per scenario — checks (relay displays online, MDDB 200,
+        zone manifest fresh, vms-snap reachable) with `on_fail: infra` so
+        environment failures score INFRA not FAIL.
+      - `verify_via:` in expectations — verification intent (e.g. "checked
+        wall state") satisfied by any tool in a declared family
+        ({cctv_wall, vcast_snapshot, vcast_list}), not just one name.
+      - `or_state:` — outcome assertion: the desired screen/relay state was
+        reached OR correctly reported unreachable, allowing honest-negative
+        answers to pass.
+      - Tool registry: scenario `needs_tools:` — if a tool is absent from the
+        live declarations, score UNIMPLEMENTED and feed the roadmap instead
+        of the regression count.
+      - Empty-transcript turns auto-retry once before scoring (interrupts
+        during tool-call arbitration are a known live-API race).
+      - Report taxonomy: PASS / MODEL_FAIL / HARNESS_AMBIG / INFRA /
+        UNIMPLEMENTED — benchmark and auto-report page group by class.
+    consequences:
+      - scripts/scenario-live.py: preflight block, result taxonomy, retry-once-empty
+      - scenarios-live/*.yaml: preflight + verify_via/or_state keys where needed
+      - benchmark/auto-report counts become trustworthy again
+      - identified real defect stays visible: wall_ops T3 cctv_wall.settings refusal
+    related:
+      - 'ada-pi: scripts/scenario-live.py'
+      - 'ada-pi: tests/scenarios-live/{camera_cast_permission,vcast_screen_cast,split_screen,wall_ops,vcast_gesture_ops}.yaml'
+      - docs/ssot/chaba/ssot.chaba.memory.yml
+
 related_files:
   - docs/ssot/ssot.focus.decisions.yml
   - docs/ssot/ssot.focus.sessions.yml
