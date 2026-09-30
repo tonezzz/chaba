@@ -1372,10 +1372,10 @@ hosts:
         reason: "Live-scenario smoke suite — currently failing 3/7 (kk-first-contact, michael-infra-interrogation, new-person-first-contact) since idc01 migration; failures are the test signal"
         action: review-scenario-results
   idc02:
-    tailscale_ip: pending
-    description: Public VPS — onboarded 2026-09-30;
-      role TBD (candidate for staging/lab offload, cross-site replica,
-      or bench worker — see structure plan)
+    tailscale_ip: 100.123.163.11
+    description: Public VPS — onboarded 2026-09-30; lab/offload node —
+      hosts open-jev 4b (bf16, ~6s/decision), mddb replica, and scenario
+      timers moved off idc01
     role: public-vps
     tags:
       - public
@@ -1392,13 +1392,13 @@ hosts:
         scope: system
         expected_state: active
         critical: true
-        note: Installed 2026-09-30; tailnet join pending auth URL
+        note: Joined tailnet 2026-09-30 as 100.123.163.11
       - name: ufw.service
         type: service
         scope: system
         expected_state: active
         critical: true
-        note: deny-inbound + 22/tcp; tighten :22 to tailscale0 after join
+        note: deny-inbound + tailscale0 only (public :22 closed 2026-09-30)
     known_failed: []
 related_files:
   - scripts/audit-hosts.py

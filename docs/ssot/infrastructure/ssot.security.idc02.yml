@@ -9,11 +9,11 @@ host: idc02
 standard: docs/ssot/infrastructure/ssot.security.yml
 
 expected_exposure:
-  - { listener: "0.0.0.0:22", class: public-ip, service: sshd,
-      note: "wildcard bind; ufw allows 22/tcp from anywhere until tailnet joins — tighten to tailscale0 once the node is authorized" }
+  - { listener: "0.0.0.0:22", class: tailnet-only, service: sshd,
+      note: "public :22 removed 2026-09-30 post-join — ufw allows tailscale0 only; PermitRootLogin prohibit-password (key-only)" }
 
 remote_access:
-  sshd: { port: 22, bind: "0.0.0.0", password_auth: "deviation" }
+  sshd: { port: 22, bind: "0.0.0.0", password_auth: "deviation — panel-recovery fallback; sshd listens tailnet-only via ufw" }
   tailscale_ssh: false
   recovery:
     provider_panel: "VPS provider web console — recovery path if tailnet+ssh both break"
@@ -22,11 +22,11 @@ firewall:
   tool: ufw
   inbound_default: deny
   rules:
-    - "allow 22/tcp (ssh — tighten to tailscale0 after tailnet join)"
+    - "allow in on tailscale0 (all traffic — tailnet only)"
   note: "Enabled 2026-09-30 during baseline setup; outbound default allow"
 
 tailscale:
-  ip: "pending — node authorized via https://login.tailscale.com/a/… on 2026-09-30; awaiting auth"
+  ip: "100.123.163.11"
   serve: []
   funnel: []                  # none — explicitly declared
   role: []
@@ -41,7 +41,7 @@ baseline_applied:
   - "podman + uidmap installed (rootless-capable)"
   - "loginctl enable-linger tony — user services survive logout"
   - "ufw deny-incoming / allow-outgoing + 22/tcp, enabled on boot"
-  - "tailscaled installed and enabled (join pending)"
+  - "tailscaled installed, joined tailnet 2026-09-30 (100.123.163.11); ufw :22 tightened to tailscale0; PermitRootLogin prohibit-password; fail2ban+unattended-upgrades+auditd+chrony active; sysctl.d/90-tuning.conf (bbr+fq, swappiness=10, inotify 524288, somaxconn 8192)"
 
 deviations:
   - item: "sshd PasswordAuthentication yes"
