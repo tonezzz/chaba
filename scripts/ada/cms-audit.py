@@ -113,7 +113,16 @@ def audit(doc, slugs=()):
     # titled "Todo List" doesn't flag itself; lorem/placeholder insensitive.
     if key != "cms-audit-report" and re.search(
             r"\b(?:TODO|TBD)\b|(?i:lorem ipsum|placeholder)", body): fails.append("A5:placeholder")
-    if re.search(r"(api[_-]?key|password|secret|token)\s*[:=]\s*[\"']?\w", body, re.I): fails.append("A6:secret-ish")
+    # A6: flag only values that look like real secrets — 16+ mixed-case
+    # chars or digits — so identifier names like Secret=cf_tunnel_token or
+    # prose ("copy the token") don't trip it.
+    if re.search(r"(api[_-]?key|password|secret|token)\s*[:=]\s*[\"']?"
+                 r"(?=[A-Za-z0-9_\-]{16,})(?=[A-Za-z0-9_\-]*[0-9A-Z])",
+                 body, re.I):
+        v = re.search(r"(?:api[_-]?key|password|secret|token)\s*[:=]\s*[\"']?"
+                      r"([A-Za-z0-9_\-]+)", body, re.I)
+        if v and not re.fullmatch(r"[a-z_]+", v.group(1)):
+            fails.append("A6:secret-ish")
     # N-rules apply to news-* digests only. Pages normalized by
     # cms-normalize-meta.py carry attribute — a news-* slug classed as
     # e.g. attribute=assessment (news-source-assessment) is exempt.
@@ -136,6 +145,15 @@ def slug_tokens(slug: str) -> set[str]:
     return {t for t in re.split(r"[-_]+", slug.lower()) if len(t) > 2}
 
 
+def body_tokens(body: str) -> set[str]:
+    """Content words for C1 body-similarity — strips markdown syntax and
+    very common glue words so prose overlap reflects real duplication."""
+    words = re.findall(r"[A-Za-zก-๙]{4,}", body.lower())
+    stop = {"with", "that", "this", "from", "have", "been", "they", "their",
+            "will", "would", "could", "should", "http", "https", "com"}
+    return {w for w in words if w not in stop}
+
+
 def consolidation_warnings(docs: list[dict]) -> list[str]:
     """C-rules — warnings, never failures.
 
@@ -156,8 +174,20 @@ def consolidation_warnings(docs: list[dict]) -> list[str]:
                 continue
             overlap = len(a & b) / len(a | b)
             if overlap >= 0.7:
-                warns.append(
-                    f"C1 duplicate-ish: {key} ~ {other} ({overlap:.0%} token overlap)")
+                # Slug similarity alone false-positives on dated series
+                # (transcript-audit-09-28/09-29), per-owner twins
+                # (my-words / my-words-kk) and auto-generated siblings
+                # (vms-noble-club / wall-vms-noble-club). Only flag when
+                # the bodies substantially overlap too.
+                ba = body_tokens(docs_by_key[key].get("contentMd") or "")
+                bb = body_tokens(docs_by_key[other].get("contentMd") or "")
+                if not ba or not bb:
+                    continue
+                sim = len(ba & bb) / len(ba | bb)
+                if sim >= 0.6:
+                    warns.append(
+                        f"C1 duplicate-ish: {key} ~ {other} "
+                        f"({overlap:.0%} slug, {sim:.0%} body overlap)")
         meta = docs_by_key[key].get("meta") or {}
         upd = (meta.get("updated") or [""])[0][:10]
         if upd and not REPORT_SLUG_RE.search(key):
@@ -204,7 +234,11 @@ def report_warnings(docs: list[dict], live: bool) -> list[str]:
             continue
         _, rw = report_rules(d, slugs)
         warns += [f"{d['id']}: {w}" for w in rw]
-        if live and d["key"] not in registry_keys:
+        # report-distill digests refresh via the report-distill.service
+        # systemd timer (bulk job) — they have no per-page registry config,
+        # so requiring an ada-cms-automation doc is a false positive.
+        gen = (meta.get("generated_by") or [""])[0]
+        if live and gen != "report-distill" and d["key"] not in registry_keys:
             warns.append(f"{d['id']}: R5:no-registry-doc")
     return warns
 
