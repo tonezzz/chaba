@@ -381,7 +381,7 @@ http://127.0.0.1:8080 {
 	handle @apps_helm {
 		reverse_proxy 127.0.0.1:3003 {
 			header_up Host localhost
-			health_uri /apps/helm/api/health
+			health_uri /apps/helm
 			health_interval 60s
 			health_timeout 30s
 		}
