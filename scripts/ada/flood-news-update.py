@@ -255,8 +255,12 @@ def publish(doc, body, now, cfg):
     meta["report_role"] = ["rollup" if cfg.get("children") else "leaf"]
     if cfg.get("parent"):
         meta["parent"] = [cfg["parent"]]
+    else:
+        meta.pop("parent", None)
     if cfg.get("children"):
         meta["children"] = list(cfg["children"])
+    else:
+        meta.pop("children", None)
     payload = {"collection": COLLECTION, "key": doc["key"],
                "lang": doc.get("lang") or "en", "contentMd": body, "meta": meta}
     req = urllib.request.Request(

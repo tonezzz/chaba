@@ -18,10 +18,10 @@ Flood Hub itself is **worth integrating**: free, CC BY 4.0, daily-updated 7-day 
 
 Flood coverage already exists in **ada-cms**, but it's *news digests*, not Flood Hub data:
 
-- **`flood-report`** (CMS rollup, "สถานการณ์น้ำท่วมล่าสุด") — auto-regenerated today 17:16 by `flood-news-update.py`; feeds: `bangphli`, `samutprakan`, `bangkok-th`, `bangkok-en` (Google News RSS). Has `children: [flood-report-nongdon]`.
-- **`flood-report-nongdon`** + **`flood-report-nongdon-saraburi`** — child pages covering Saraburi/Lopburi/Chao Phraya dam feeds. These two have **identical feed sets — likely a duplicate slug**; worth collapsing to one.
+- **`flood-report`** (CMS rollup, "สถานการณ์น้ำท่วมล่าสุด") — auto-regenerated hourly by `flood-news-update.py`; feeds: `bangphli`, `samutprakan`, `bangkok-th`, `bangkok-en` (Google News RSS). Has `children: [flood-report-nongdon]`.
+- **`flood-report-nongdon`** — leaf page covering Saraburi/Lopburi/Chao Phraya dam feeds. **Collapsed 2026-09-30**: was a single-child rollup of `flood-report-nongdon-saraburi` (identical feeds) — redundant layer removed; now `flood-report` → `flood-report-nongdon` (leaf) directly.
 - Generator: `scripts/ada/flood-news-update.py` + `scripts/ada/flood-news-feeds.json` (chaba repo). Pages use `<!-- flood-news:auto -->` managed blocks — a clean insertion point for a second managed section with gauge data.
-- Registry: `ada-cms-automation` MDDB collection — each generated page has a config doc (`run_now` flag → worker regenerates; `POST /api/cms/pages/{slug}/regenerate` triggers it).
+- Registry: `ada-cms-automation` MDDB collection — each generated page has a config doc (`run_now` flag → worker regenerates; `POST /api/cms/pages/{slug}/regenerate` triggers it). **Gotcha**: the registry doc caches its own effective config and *wins over* feeds.json — collapsing/splitting a page requires updating BOTH feeds.json and the registry doc, plus the page doc's meta (generator merges stale keys; `parent`/`children` now have removal paths in `publish()`).
 - Nothing in ada-cms currently uses Flood Hub / gauge data — the Flood Hub assessment lives only in this repo doc.
 
 ## Document management — the "two versions" question
@@ -91,16 +91,17 @@ Ranked by effort/benefit. All assume waitlist approval except #1.
 ## Next actions
 
 1. ~~Submit the waitlist form~~ — **done 2026-09-30**. Now: watch Tony's Gmail for the approval email (reportedly months). Focus item parked: `docs/ssot/focus-inbox/2026-09-30-193000-flood-hub-api-waitlist.yml`.
-2. On approval email: reply with Google Cloud Project ID → enable `floodforecasting.googleapis.com` → create key restricted to the API + idc01 IP (`157.85.110.99`) → store `FLOODS_API_KEY` in `~/.config/secrets/flood-forecasting.env`.
+2. On approval email: reply with Google Cloud Project ID **`flood-watch-510211`** (created 2026-09-30) → enable `floodforecasting.googleapis.com` → create key restricted to the API + idc01 IP (`157.85.110.99`) → store `FLOODS_API_KEY` in `~/.config/secrets/flood-forecasting.env`.
 3. Verify with `scripts/ada/flood-hub-check.py` (ready): `gauges --region TH` lists gauges, `status <id>...` shows severity/trend, `forecast <id>...` dumps the 8-day series.
 4. Meanwhile `flood-report` keeps working off news data — no blocker.
-5. Housekeeping found during research: **`flood-report-nongdon` and `flood-report-nongdon-saraburi` are duplicate pages** (identical feeds) — pick one slug.
+5. ~~Housekeeping~~ — **done**: `flood-report-nongdon-saraburi` collapsed into `flood-report-nongdon` (leaf); orphaned CMS page + automation docs deleted.
 6. When the key lands: #2 sensors → #3 managed block → #4 Ada alert. GEV overlay only if a map view is actually wanted.
 
 ## Update log
 
 - **2026-09-30** — initial assessment; link geocoded to Ongkharak, Nakhon Nayok (active dam-discharge flood); confirmed flood-report CMS pages exist and auto-regenerate (`flood-news-update.py`, last run 17:16); no Flood Hub data in ada-cms yet; found duplicate nongdon slugs.
 - **2026-09-30 (later)** — waitlist form submitted by Tony. Added `scripts/ada/flood-hub-check.py` (verify/enumerate tool, stdlib-only) + focus-inbox item to track the pending approval.
+- **2026-09-30 (evening)** — GCP project created: `flood-watch-510211` (ready to reply to approval email). Collapsed `flood-report-nongdon-saraburi` → `flood-report-nongdon` (leaf); learned the ada-cms-automation registry caches effective config and overrides feeds.json — collapses must clear both + page meta; patched `publish()` to drop stale parent/children keys. GEV staged bundle confirmed to carry Cesium GeoJSON/KML/CZML datasources + a layerStateCoordinator — a "flood layer" is architecturally feasible; needs data (API polygons or tiled Inundation History) + a registered layer in the GEV UI.
 
 ## Sources
 
