@@ -171,6 +171,16 @@ documents_published:
     A-68 is deed/passport/ID scans now web-servable — only reachable over
     tailnet-gated HA :8123, matching the original intent. Do not broaden
     exposure without Tony's explicit approval.
+  incidents_2026_09_30:
+    - "rsync stalled ~120s per run: tailscale-ssh :22 check mode demanded a
+      browser re-auth. Fixed: use sshd's m2m port :2222
+      (sshd_config.d/tailnet-m2m.conf) which does key auth only."
+    - "Worse: Drive oauth was revoked the same evening -> every manifest
+      fetch 502'd -> script rsync --delete'd an EMPTY stage and wiped
+      www/documents/. Guarded (abort on manifest failure + refuse empty
+      stage) and restored the mirror from idc01's /tmp/doc-mirror staging
+      copy. Drive re-auth still needed: rclone config reconnect gdrive:
+      on idc01 — until then the timer will abort each run harmlessly."
 
 resolved_later:
   - "MDDB 'fix-vcast-controls' updated with the repair outcome (meta
