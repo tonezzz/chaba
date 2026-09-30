@@ -338,7 +338,7 @@ def snap(query: str, settle: float) -> tuple[bytes, str]:
         # The stream re-opens on zoom and needs a few seconds to draw —
         # poll until real video appears (bounded).
         raw2 = None
-        for _round in range(2):
+        for _round in range(3):
             for _poll in range(8):
                 time.sleep(1.5)
                 cand = capture_xwd()
@@ -351,8 +351,9 @@ def snap(query: str, settle: float) -> tuple[bytes, str]:
                 break
             # P2P stream open is a coin flip — when it fails the pane
             # stays dead forever no matter how long we wait; re-select the
-            # channel once to force a fresh stream attach (2026-09-30:
-            # ~half the noble-club channels flapped dead per sweep).
+            # channel to force a fresh stream attach (2026-09-30: ~half the
+            # noble-club channels flapped dead per sweep; a single retry
+            # still dropped first-attempt snaps in Ada turns).
             select_channel(meta["x"], meta["y"])
             time.sleep(settle / 2)
         if raw2 is None:
