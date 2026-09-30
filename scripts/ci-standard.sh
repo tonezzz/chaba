@@ -96,7 +96,7 @@ run_check "no tracked dotenv files" bash -c "
 " || true
 
 # 5. Flag untracked files that are outside the known allowlist
-ALLOWED_UNTRACKED='^docs/kb/.*\.md$|^docs/ssot/apps/ssot\.apps\.ada-cms-reports\.yml$|^docs/ssot/focus-inbox/.*\.yml$|^scripts/ci-(smoke|standard)\.sh$|^scripts/ops/yt-transcript\.sh$|^stacks/web/public/media/.*$'
+ALLOWED_UNTRACKED='^docs/kb/.*\.md$|^docs/ssot/apps/ssot\.apps\.ada-cms-reports\.yml$|^docs/ssot/focus-inbox/.*\.yml$|^scripts/ci-(smoke|standard|qa|all)\.sh$|^scripts/ops/yt-transcript\.sh$|^stacks/web/public/media/.*$'
 if ! UNTRACKED=$(git -C "$ROOT" ls-files --others --exclude-standard | sort); then
     UNTRACKED=""
 fi
