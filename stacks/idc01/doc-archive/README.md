@@ -39,6 +39,39 @@ All require `X-API-Key` except `GET /health*`.
   `X-Page-Sha256` header carries the manifest hash
 - `GET /health` → `{ok:true, drive:"reachable"|"unreachable"}` (unauthenticated)
 
+### Drive browse/edit (2026-09-30)
+
+Whole-Drive access beyond the archive tree — Ada's `drive_*` tools call
+these:
+
+- `GET /v1/drive/search?q=&mime=&limit=` — name/fullText search, optional
+  mimeType filter (`image/`, `video/`, `application/pdf`)
+- `GET /v1/drive/file/{id}` — metadata + inline text for text/google-docs
+  (exported), or `media_url` for binaries
+- `PUT /v1/drive/file/{id}` `{content, mime}` — in-place content replace
+  for regular files (google-native docs → 400 with guidance)
+- `POST /v1/drive/media-token` `{file_id}` → `{url, ttl_s}` — mints a
+  15-min fetch URL (`DRIVE_MEDIA_TTL_S`) that vcast displays can load
+  with no api key
+- `GET /v1/drive/media/{id}?t=<token>` — streams file bytes; the `?t=`
+  token is the auth (file-bound)
+
+### Google Photos Picker (2026-09-30)
+
+Since 2025-03 Google limits the Photos Library API to app-created media —
+the picker is the only way to reach library photos:
+
+- `POST /v1/photos/picker` → `{session_id, picker_uri, expire_time}`;
+  the user opens `picker_uri` on a signed-in device and selects items
+- `GET /v1/photos/picker/{session_id}` → `{picked, items[{id, type,
+  baseUrl, mimeType, filename}]}` once `mediaItemsSet`; baseUrls work
+  directly for ~60 min (`=w2048` resizes images, `=dv` streams video)
+
+Requires `GPHOTO_REFRESH_TOKEN` in doc-archive.env — a
+`photospicker.mediaitems.readonly` grant minted by `gphoto-auth.py`
+(run on any machine with a browser; it prints the env line). Without it
+the picker endpoints return 501 while Drive keeps working.
+
 Example:
 
 ```bash
