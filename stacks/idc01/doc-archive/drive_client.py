@@ -187,7 +187,7 @@ class Drive:
         url = (f"{API}?q={urllib.parse.quote(q)}"
                f"&fields={urllib.parse.quote(self._LIST_FIELDS)}"
                f"&pageSize={max(1, min(int(limit), 100))}"
-               "&orderBy=modifiedTime desc")
+               "&orderBy=" + urllib.parse.quote("modifiedTime desc"))
         d, _ = self.req("GET", url)
         return json.loads(d).get("files", [])
 
