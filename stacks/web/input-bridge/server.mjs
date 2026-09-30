@@ -333,9 +333,21 @@ const server = http.createServer(async (req, res) => {
     // settings knobs — merged shallowly; the puller validates/uses:
     // {interval, jpeg_q, thumb_w, cams_skip[], cams_extra[], effects[]}
     if (body.settings && typeof body.settings === "object") {
+      const KNOWN = new Set(["interval", "jpeg_q", "thumb_w",
+                             "cams_skip", "cams_extra", "effects"]);
+      const clean = {};
+      for (const [k, v] of Object.entries(body.settings)) {
+        if (!KNOWN.has(k)) continue;               // drop stray keys
+        if (k === "cams_extra" && Array.isArray(v)) {
+          clean[k] = v.filter(c =>
+            c && typeof c === "object" && c.label && c.url && c.kind);
+          continue;
+        }
+        clean[k] = v;
+      }
       camwallState.zones[zone].settings = {
         ...(camwallState.zones[zone].settings || {}),
-        ...body.settings,
+        ...clean,
       };
     }
     saveCamwall();
@@ -510,7 +522,16 @@ const server = http.createServer(async (req, res) => {
     const redeemed = await redeemKey(created.redeem_url);
     if (redeemed.error) return json(res, 502, { error: redeemed.error });
 
-    const screen = allocScreen(name);
+    let screen = allocScreen(name);
+    // honor an explicit screen-N request: allocScreen() picks the lowest
+    // free slot which may differ from the wanted number — move the entry
+    // so "claim screen-4" actually lands on 4 (2026-09-30: headless test
+    // displays kept drifting to whatever slot freed first)
+    if (wanted && wanted !== screen && !registry.screens[wanted]) {
+      registry.screens[wanted] = registry.screens[screen];
+      delete registry.screens[screen];
+      screen = wanted;
+    }
     registry.screens[screen].label = pending.get(sid)?.label || name;
     saveRegistry();
 

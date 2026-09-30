@@ -447,6 +447,80 @@
       }).catch(() => {});
     }
 
+    // Gesture control — the display's own camera watches for motion.
+    // 'room' = wake-on-motion (a wave/approach wakes the screen and emits
+    // a gesture-wake event Ada can react to); 'hand' = MediaPipe hand
+    // tracking (not built yet — reported honestly). Tiny frame-diff loop:
+    // no ML deps, ~4fps at 64x36.
+    let gStream = null, gTimer = null, gVideo = null, gPrev = null,
+        gStreak = 0, gCooldownUntil = 0, gMode = "off";
+    function stopGesture() {
+      if (gTimer) { clearInterval(gTimer); gTimer = null; }
+      if (gStream) { gStream.getTracks().forEach(t => t.stop()); gStream = null; }
+      gVideo = null; gPrev = null; gStreak = 0; gMode = "off";
+      const ov = document.getElementById("gestureOverlay");
+      if (ov) ov.remove();
+    }
+    async function setGesture(mode) {
+      mode = String(mode || "off").toLowerCase();
+      if (mode === "off") { stopGesture(); showToast("gesture off"); sendState("idle"); return; }
+      if (mode === "hand") {
+        // honest until MediaPipe hands lands — don't claim it works
+        sendState("gesture-error", "hand mode not built");
+        return;
+      }
+      if (mode !== "room") { sendState("gesture-error", "unknown mode " + mode); return; }
+      if (gTimer) return;                              // already on
+      try {
+        gStream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: "user", width: { ideal: 320 } }, audio: false });
+      } catch (e) {
+        sendState("gesture-error", String(e.name || e));
+        return;
+      }
+      gVideo = document.createElement("video");
+      gVideo.srcObject = gStream; gVideo.muted = true; gVideo.playsInline = true;
+      await gVideo.play().catch(() => {});
+      const cv = document.createElement("canvas"); cv.width = 64; cv.height = 36;
+      const cx = cv.getContext("2d", { willReadFrequently: true });
+      gMode = "room";
+      const ov = document.createElement("div");
+      ov.id = "gestureOverlay";
+      ov.style.cssText = "position:fixed;top:8px;right:8px;padding:4px 10px;" +
+        "background:#0af0a0;color:#012;border-radius:12px;font:600 13px system-ui;" +
+        "z-index:99;opacity:.85";
+      ov.textContent = "gesture: room";
+      document.body.appendChild(ov);
+      showToast("gesture room on — wave to wake");
+      sendState("gesture-room");
+      gTimer = setInterval(() => {
+        if (!gVideo || !gVideo.videoWidth) return;
+        cx.drawImage(gVideo, 0, 0, 64, 36);
+        const cur = cx.getImageData(0, 0, 64, 36).data;
+        if (gPrev) {
+          let diff = 0;
+          for (let i = 0; i < cur.length; i += 4) {
+            diff += Math.abs(cur[i] - gPrev[i]) +
+                    Math.abs(cur[i + 1] - gPrev[i + 1]) +
+                    Math.abs(cur[i + 2] - gPrev[i + 2]);
+          }
+          const mean = diff / (cur.length / 4) / 3;
+          if (mean > 14) {                       // sustained motion burst
+            gStreak++;
+            if (gStreak >= 2 && Date.now() > gCooldownUntil) {
+              gCooldownUntil = Date.now() + 15000;
+              gStreak = 0;
+              sendState("gesture-wake", "motion");
+              ws && ws.send(JSON.stringify(
+                { type: "gesture-event", event: "wake", screen: screenNum }));
+              showToast("wake — motion detected");
+            }
+          } else gStreak = 0;
+        }
+        gPrev = cur.slice ? cur.slice() : cur;
+      }, 250);
+    }
+
     // Ada's "look at the screen" path — draws the element actually on-screen
     // into a canvas and POSTs the frame back through the relay. Canvas can
     // capture video/img only; cross-origin iframes are reported as
@@ -664,6 +738,7 @@
         case "uplink-stop":
           stopUplink();
           break;
+        case "gesture": setGesture(msg.mode); break;
         case "snap-request":
           snapFrame(msg.token);
           break;

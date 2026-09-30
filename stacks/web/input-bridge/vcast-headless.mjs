@@ -62,6 +62,12 @@ function connect() {
     // pane count from a leading integer in state detail on "layout".
     if (m.type === "layout" && m.panes) panes = Math.max(1, +m.panes || 1);
     if (m.type === "stop") panes = 1;
+    if (m.type === "gesture") {
+      // a real page would open the camera; the sim just acks state
+      ws.send(JSON.stringify({ type: "state",
+        state: m.mode === "off" ? "idle" : `gesture-${m.mode}`,
+        detail: m.mode === "off" ? "" : `gesture:${m.mode}` }));
+    }
     if (["play", "image", "nav", "audio", "stop", "layout", "zoom", "unzoom"].includes(m.type)) {
       const st = m.type === "stop" ? "idle" : m.type;
       const detail = m.type === "layout" ? `${panes}panes` : (m.url || "");
