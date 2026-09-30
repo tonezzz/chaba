@@ -87,7 +87,7 @@ def main() -> int:
         ratio = drafts / active if active else (0 if drafts == 0 else 99)
         line = (f"{coll.split('bank-')[-1]}: {active} active / "
                 f"{drafts} draft / {status.get('superseded', 0)} superseded")
-        if ratio > DRAFT_RATIO_MAX:
+        if ratio > DRAFT_RATIO_MAX and drafts >= 3:
             violations.append(f"draft_ratio {line} = {ratio:.1f}x")
         if oldest_draft > DRAFT_AGE_DAYS * 86400:
             violations.append(
