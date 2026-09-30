@@ -555,8 +555,15 @@ const server = http.createServer(async (req, res) => {
     const revoked = await adaRevokeKey(admin_key, name);
     const entry = Object.entries(registry.screens).find(([, s]) => s.name === name);
     if (entry) {
-      const ws = live.get(parseInt(entry[0], 10));
-      if (ws && ws.readyState === 1) ws.send(JSON.stringify({ type: "unpaired" }));
+      const num = parseInt(entry[0], 10);
+      const ws = live.get(num);
+      if (ws) {
+        if (ws.readyState === 1) ws.send(JSON.stringify({ type: "unpaired" }));
+        // detach now — the stale socket's later close would otherwise
+        // evict a re-registered display from live[]
+        ws.screen = null;
+        live.delete(num);
+      }
       delete registry.screens[entry[0]];
       saveRegistry();
     }
