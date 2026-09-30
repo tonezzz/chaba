@@ -90,14 +90,17 @@ Ranked by effort/benefit. All assume waitlist approval except #1.
 
 ## Next actions
 
-1. Submit the waitlist form (needs Tony's Google account + a Cloud Project ID — I can prep answers; can't submit as him).
-2. Meanwhile `flood-report` keeps working off news data — no blocker.
-3. Housekeeping found during research: **`flood-report-nongdon` and `flood-report-nongdon-saraburi` are duplicate pages** (identical feeds) — pick one slug.
-4. When the key lands: #2 (sensors) → #3 (managed block) → #4 (Ada alert). GEV overlay only if a map view is actually wanted.
+1. ~~Submit the waitlist form~~ — **done 2026-09-30**. Now: watch Tony's Gmail for the approval email (reportedly months). Focus item parked: `docs/ssot/focus-inbox/2026-09-30-193000-flood-hub-api-waitlist.yml`.
+2. On approval email: reply with Google Cloud Project ID → enable `floodforecasting.googleapis.com` → create key restricted to the API + idc01 IP (`157.85.110.99`) → store `FLOODS_API_KEY` in `~/.config/secrets/flood-forecasting.env`.
+3. Verify with `scripts/ada/flood-hub-check.py` (ready): `gauges --region TH` lists gauges, `status <id>...` shows severity/trend, `forecast <id>...` dumps the 8-day series.
+4. Meanwhile `flood-report` keeps working off news data — no blocker.
+5. Housekeeping found during research: **`flood-report-nongdon` and `flood-report-nongdon-saraburi` are duplicate pages** (identical feeds) — pick one slug.
+6. When the key lands: #2 sensors → #3 managed block → #4 Ada alert. GEV overlay only if a map view is actually wanted.
 
 ## Update log
 
 - **2026-09-30** — initial assessment; link geocoded to Ongkharak, Nakhon Nayok (active dam-discharge flood); confirmed flood-report CMS pages exist and auto-regenerate (`flood-news-update.py`, last run 17:16); no Flood Hub data in ada-cms yet; found duplicate nongdon slugs.
+- **2026-09-30 (later)** — waitlist form submitted by Tony. Added `scripts/ada/flood-hub-check.py` (verify/enumerate tool, stdlib-only) + focus-inbox item to track the pending approval.
 
 ## Sources
 

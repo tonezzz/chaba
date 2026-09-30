@@ -1,0 +1,48 @@
+title: Flood Hub API waitlist — watch for approval, then enable + key
+subtitle: Pending external dependency for Flood Hub integration
+icon: inbox
+
+focus:
+  label: flood-hub-api-waitlist
+  text: >
+    Tony submitted the Flood Forecasting API waitlist form on 2026-09-30.
+    When the approval email arrives: (1) reply with the Google Cloud
+    Project ID (pick/create one — suggested dedicated project
+    'flood-watch'), (2) enable floodforecasting.googleapis.com in that
+    project, (3) create an API key restricted to the API + idc01 public
+    IP, (4) store as FLOODS_API_KEY in ~/.config/secrets/flood-forecasting.env,
+    (5) verify with the colab or curl floodStatus:queryLatestFloodStatusByGaugeIds,
+    then enumerate Thai gauges via gauges:searchGaugesByArea regionCode=TH.
+    Full plan + endpoint details in docs/assessments/flood-hub-assessment.md.
+    Watch Tony's Gmail for the approval — that is the only trigger.
+  branch: chaba
+  priority: medium
+  status: draft
+  tags: [flood, flood-hub, api, external-dependency]
+  missing_info:
+    - Google approval email (waitlist — reportedly months)
+    - Which Google Cloud Project ID to register (recommend dedicated 'flood-watch')
+  safe_to_parallel:
+    value: true
+    reason: Waiting on external approval; no active work until the key lands.
+  subtasks:
+    - label: Watch for approval email, reply with GCP project ID
+      status: not_started
+    - label: Enable API + create restricted key, store in secrets
+      status: not_started
+    - label: Enumerate TH gauges, pick watch list (Nakhon Nayok / Chao Phraya / Saraburi-Lopburi)
+      status: not_started
+    - label: HA REST sensors on michael-dev + flood-news-update.py gauge block
+      status: not_started
+    - label: Housekeeping — collapse duplicate flood-report-nongdon CMS slugs
+      status: not_started
+
+ownership:
+  owner: tony
+  session: ""
+  locked: false
+  lock_reason: ""
+
+source:
+  session: flood-hub-assessment
+  date: 2026-09-30
