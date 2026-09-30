@@ -1399,6 +1399,25 @@ hosts:
         expected_state: active
         critical: true
         note: deny-inbound + tailscale0 only (public :22 closed 2026-09-30)
+      - name: open-jev.service
+        type: service
+        scope: user
+        expected_state: active
+        critical: false
+        note: Second /v1/systemone decision service on tailnet :8777 —
+          coexists with the omen instance (verified healthy 2026-09-30)
+      - name: vcast-real@6.service
+        type: service
+        scope: user
+        expected_state: active
+        critical: false
+        note: Headless Chromium+Playwright virtual display 6
+      - name: vcast-real@7.service
+        type: service
+        scope: user
+        expected_state: active
+        critical: false
+        note: Headless Chromium+Playwright virtual display 7
     known_failed: []
 related_files:
   - scripts/audit-hosts.py
