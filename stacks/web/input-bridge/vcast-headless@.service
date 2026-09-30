@@ -1,0 +1,23 @@
+[Unit]
+Description=Headless vcast display (screen %i) — deterministic test screen
+After=input-bridge.service
+
+# Deterministic protocol-level vcast displays for live scenario runs.
+# Deploy on idc01 (the relay host): ~/.config/systemd/user/vcast-headless@.service
+#   systemctl --user enable --now vcast-headless@2 vcast-headless@4
+# Slot numbering: /claim with name "screen-%i" takes slot %i when free,
+# else the lowest free slot. If the slot is pinned by a stale claim,
+# release it first: POST /release {screen:N, admin_key} from the relay host.
+
+[Service]
+EnvironmentFile=%h/.config/secrets/input-bridge.env
+Environment=VCAST_NAME=screen-%i
+Environment=VCAST_LABEL=headless-%i
+Environment=VCAST_DEV_ID=headless-%i
+ExecStart=/usr/bin/podman run --name=vcast-headless-%i --replace --rm --network=host -v %h/apps/input-bridge:/app:ro,Z -w /app --env ADA_ADMIN_KEY --env VCAST_NAME --env VCAST_LABEL --env VCAST_DEV_ID docker.io/library/node:22-alpine node vcast-headless.mjs ws://127.0.0.1:3010/ws http://127.0.0.1:3010
+ExecStop=/usr/bin/podman stop -t 3 vcast-headless-%i
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target
