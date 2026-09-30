@@ -1371,6 +1371,42 @@ hosts:
       - name: ada-scenario-smoke.service
         reason: "Live-scenario smoke suite — currently failing 3/7 (kk-first-contact, michael-infra-interrogation, new-person-first-contact) since idc01 migration; failures are the test signal"
         action: review-scenario-results
+  idc02:
+    tailscale_ip: 100.123.163.11
+    description: "Public VPS #2 — offload host; provisioned 2026-09-30;
+      runs a second open-jev instance plus headless vcast displays;
+      services tailnet-only"
+    role: public-vps
+    tags:
+      - public
+      - vps
+      - offload
+    expected_services:
+      - name: open-jev.service
+        type: service
+        scope: user
+        expected_state: active
+        critical: false
+        note: Second /v1/systemone decision service on tailnet :8777 —
+          coexists with the omen instance; gives verdict probes a
+          non-contended path (omen carries Devin+desktop load)
+      - name: vcast-real@6.service
+        type: service
+        scope: user
+        expected_state: active
+        critical: false
+        note: Headless Chromium+Playwright virtual display 6
+      - name: vcast-real@7.service
+        type: service
+        scope: user
+        expected_state: active
+        critical: false
+        note: Headless Chromium+Playwright virtual display 7
+      - name: tailscaled.service
+        type: service
+        scope: system
+        expected_state: active
+        critical: true
 related_files:
   - scripts/audit-hosts.py
   - reports/audit-hosts/
