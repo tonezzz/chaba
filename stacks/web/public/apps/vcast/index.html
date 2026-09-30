@@ -244,8 +244,11 @@
     }
     function sendState(state, detail) {
       lastState = state; lastDetail = detail || "";
+      // relay caps detail at 200 chars — cap the human part so the
+      // render proof isn't clipped off the end of a long URL
       if (ws && ws.readyState === 1) ws.send(JSON.stringify({
-        type: "state", state, detail: lastDetail + paneSummary() }));
+        type: "state", state,
+        detail: lastDetail.slice(0, 140) + paneSummary() }));
     }
     // heartbeat — keeps registry last_seen honest between real state changes
     setInterval(() => { if (screenNum != null) sendState(lastState, lastDetail); }, 30000);
