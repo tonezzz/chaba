@@ -324,8 +324,11 @@ const server = http.createServer(async (req, res) => {
         ...cur,
         enabled: body.enabled != null ? !!body.enabled
                                     : cur.enabled ?? true,
-        screen: body.screen != null ? Number(body.screen)
-                                    : cur.screen ?? null,
+        // explicit null unbinds the zone from its screen (stale-binding
+        // cleanup); omitting screen keeps the current binding
+        screen: "screen" in body
+                ? (body.screen == null ? null : Number(body.screen))
+                : cur.screen ?? null,
         since: cur.enabled && body.enabled == null
                ? cur.since : new Date().toISOString(),
       };
