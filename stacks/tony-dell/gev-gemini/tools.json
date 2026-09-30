@@ -158,7 +158,7 @@
       "properties": {
         "layerId": {
           "type": "string",
-          "description": "Common-name mapping for the non-obvious ids: space mission(s) → rocket-launches; fires/wildfires/active fires → local-firms (NASA FIRMS); ships/vessels/boats → ais-live-vessels; undersea/submarine cables → telegeography-submarine-cables; datacenters → local-datacenters; dams → local-dams; bikes/bike share → bikeshare; street traffic/congestion → traffic; traffic cameras → cctv; internet radio/stations → radio.",
+          "description": "Common-name mapping for the non-obvious ids: space mission(s) → rocket-launches; fires/wildfires/active fires → local-firms (NASA FIRMS); ships/vessels/boats → ais-live-vessels; undersea/submarine cables → telegeography-submarine-cables; datacenters → local-datacenters; dams → local-dams; bikes/bike share → bikeshare; street traffic/congestion → traffic; traffic cameras → cctv; internet radio/stations → radio; flood history/flood zones/inundation/historical flood risk → the three local-flood-inundation-* ids — enable high+medium+low together for the full historical-extent picture (they are independent layers).",
           "enum": [
             "flights",
             "military",
@@ -173,7 +173,10 @@
             "local-datacenters",
             "local-dams",
             "telegeography-submarine-cables",
-            "local-firms"
+            "local-firms",
+            "local-flood-inundation-high",
+            "local-flood-inundation-medium",
+            "local-flood-inundation-low"
           ]
         },
         "enabled": {
@@ -209,7 +212,10 @@
             "local-datacenters",
             "local-dams",
             "telegeography-submarine-cables",
-            "local-firms"
+            "local-firms",
+            "local-flood-inundation-high",
+            "local-flood-inundation-medium",
+            "local-flood-inundation-low"
           ],
           "description": "Optional layer row to scroll into view and highlight."
         }
