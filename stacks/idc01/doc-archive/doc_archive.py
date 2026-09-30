@@ -27,7 +27,8 @@ from fastapi import Depends, FastAPI, Header, HTTPException, Request
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
-from drive_client import Drive, token_provider_from_rclone
+from drive_client import (Drive, load_rclone_credentials,
+                          token_provider_for, token_provider_from_rclone)
 
 # ----------------------------
 # Config / Security
@@ -45,6 +46,35 @@ DRIVE_ROOT = os.environ.get("DRIVE_ROOT", "ada-documents")
 DHASH_MAX_HAMMING = int(os.environ.get("DHASH_MAX_HAMMING", "6"))
 MAX_FILES = int(os.environ.get("DOC_ARCHIVE_MAX_FILES", "50"))
 
+# Drive browse/edit + media streaming (GET /v1/drive/*) and the Google
+# Photos Picker flow (POST/GET /v1/photos/picker*).
+GPHOTO_REFRESH_TOKEN = os.environ.get("GPHOTO_REFRESH_TOKEN", "")
+DRIVE_TEXT_MAX_BYTES = int(os.environ.get("DRIVE_TEXT_MAX_BYTES", "262144"))
+MEDIA_TOKEN_TTL_S = int(os.environ.get("DRIVE_MEDIA_TTL_S", "900"))
+PICKER_ROOT = os.environ.get("GPHOTO_PICKER_ROOT", "")
+
+# Short-lived tokens that let a cast display fetch media without an
+# X-API-Key header — same pattern as Ada's redeem tokens.
+_MEDIA_TOKENS: dict[str, tuple[str, float]] = {}
+
+
+def mint_media_token(file_id: str) -> str:
+    import secrets, time as _t
+    now = _t.time()
+    for tok, (_, exp) in [kv for kv in _MEDIA_TOKENS.items() if kv[1][1] < now]:
+        _MEDIA_TOKENS.pop(tok, None)
+    tok = secrets.token_urlsafe(24)
+    _MEDIA_TOKENS[tok] = (file_id, now + MEDIA_TOKEN_TTL_S)
+    return tok
+
+
+def check_media_token(token: str, file_id: str) -> bool:
+    import time as _t
+    entry = _MEDIA_TOKENS.get(token)
+    if not entry or entry[1] < _t.time():
+        return False
+    return entry[0] == file_id
+
 _SLUG_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$")
 
 
@@ -54,6 +84,12 @@ def require_api_key(request: Request,
     # exposes only ok/drive status, no data.
     if request.method == "GET" and request.url.path.startswith("/health"):
         return
+    # GET /v1/drive/media/{id}?t=<minted-token> serves cast displays that
+    # can't send headers — the token is the auth (15 min TTL, file-bound).
+    if request.method == "GET" and request.url.path.startswith("/v1/drive/media/"):
+        fid = request.url.path.rsplit("/", 1)[-1]
+        if check_media_token(request.query_params.get("t") or "", fid):
+            return
     if _API_KEYS and x_api_key not in _API_KEYS:
         raise HTTPException(status_code=401, detail="Invalid API key")
 
@@ -377,3 +413,194 @@ def get_page(slug: str, n: int,
     return StreamingResponse(io.BytesIO(blob),
                              media_type=_guess_mime(page["name"]),
                              headers={"X-Page-Sha256": page.get("sha256", "")})
+
+
+# ----------------------------
+# Google Drive browse / read / edit / media-stream
+# ----------------------------
+_photos_drive = None
+
+
+def get_photos_drive():
+    """Drive client bound to the Photos-scoped refresh token — the rclone
+    `drive` token can't see the Picker API."""
+    global _photos_drive
+    if _photos_drive is None:
+        if not GPHOTO_REFRESH_TOKEN:
+            raise HTTPException(501, "photos picker not configured — "
+                                "set GPHOTO_REFRESH_TOKEN (run gphoto-auth.py)")
+        creds = load_rclone_credentials(RCLONE_CONF)
+        _photos_drive = Drive(token_provider_for(
+            creds["client_id"], creds["client_secret"],
+            GPHOTO_REFRESH_TOKEN))
+    return _photos_drive
+
+
+def _file_view(f: dict) -> dict:
+    return {"id": f.get("id"), "name": f.get("name"),
+            "mimeType": f.get("mimeType"), "size": f.get("size"),
+            "modifiedTime": f.get("modifiedTime"),
+            "webViewLink": f.get("webViewLink"),
+            "thumbnailLink": f.get("thumbnailLink"),
+            "parents": f.get("parents") or []}
+
+
+@app.get("/v1/drive/search")
+def drive_search(q: str, mime: str | None = None, limit: int = 20,
+                 drive: Drive = Depends(get_drive)):
+    """Drive fullText/name search. mime filter e.g. 'image/' 'video/'
+    'application/pdf'. Returns [{id,name,mimeType,size,modifiedTime,...}]."""
+    try:
+        files = drive.search(q, mime=mime, limit=limit)
+    except urllib.error.HTTPError as e:
+        raise HTTPException(502, f"drive search failed: HTTP {e.code}")
+    return {"files": [_file_view(f) for f in files]}
+
+
+_GOOGLE_EXPORT = {
+    "application/vnd.google-apps.document": "text/plain",
+    "application/vnd.google-apps.spreadsheet": "text/csv",
+    "application/vnd.google-apps.presentation": "text/plain",
+}
+
+
+@app.get("/v1/drive/file/{file_id}")
+def drive_file(file_id: str, drive: Drive = Depends(get_drive)):
+    """File metadata + content. Text/google-docs come back inline (capped);
+    binary types come back with a minted media_url for casting."""
+    try:
+        meta = drive.get_meta(file_id)
+    except urllib.error.HTTPError as e:
+        raise HTTPException(404 if e.code == 404 else 502,
+                            f"drive get failed: HTTP {e.code}")
+    out = _file_view(meta)
+    mime = meta.get("mimeType") or ""
+    export_mime = _GOOGLE_EXPORT.get(mime)
+    try:
+        if export_mime:
+            blob = drive.export(file_id, export_mime)
+            out["exported_as"] = export_mime
+            out["text"] = blob[:DRIVE_TEXT_MAX_BYTES].decode(
+                "utf-8", errors="replace")
+        elif (mime.startswith("text/") or mime in (
+                "application/json", "application/xml",
+                "application/x-yaml", "application/yaml",
+                "application/javascript", "image/svg+xml")):
+            size = int(meta.get("size") or 0)
+            if size > DRIVE_TEXT_MAX_BYTES:
+                out["too_large"] = True
+                out["media_url"] = _media_url(file_id)
+            else:
+                blob = drive.download(file_id)
+                out["text"] = blob.decode("utf-8", errors="replace")
+        else:
+            out["media"] = True
+            out["media_url"] = _media_url(file_id)
+    except urllib.error.HTTPError as e:
+        raise HTTPException(502, f"drive read failed: HTTP {e.code}")
+    return out
+
+
+def _media_url(file_id: str, request: Request | None = None) -> str:
+    tok = mint_media_token(file_id)
+    return f"/v1/drive/media/{file_id}?t={tok}"
+
+
+class DriveUpdateRequest(BaseModel):
+    content: str
+    mime: str = "text/plain"
+
+
+@app.put("/v1/drive/file/{file_id}")
+def drive_update(file_id: str, req: DriveUpdateRequest,
+                 drive: Drive = Depends(get_drive)):
+    """Replace a regular file's content in place (media upload PATCH).
+    Google-native types can't be media-updated — 400 with guidance."""
+    try:
+        meta = drive.get_meta(file_id, fields="id,name,mimeType")
+    except urllib.error.HTTPError as e:
+        raise HTTPException(404 if e.code == 404 else 502,
+                            f"drive get failed: HTTP {e.code}")
+    if (meta.get("mimeType") or "").startswith("application/vnd.google-apps."):
+        raise HTTPException(
+            400, "google-native docs can't be media-updated — export, "
+                 "edit, and re-upload as a new file")
+    blob = req.content.encode("utf-8")
+    if len(blob) > 25 * 1024 * 1024:
+        raise HTTPException(413, "content too large (25MB cap)")
+    try:
+        out = drive.update_media(file_id, blob, req.mime)
+    except urllib.error.HTTPError as e:
+        raise HTTPException(502, f"drive update failed: HTTP {e.code}")
+    return {"ok": True, "id": out.get("id"), "updated": True}
+
+
+@app.post("/v1/drive/media-token")
+def drive_media_token(req: dict):
+    """Mint a short-lived fetch URL a display can load without headers."""
+    file_id = str(req.get("file_id") or "").strip()
+    if not file_id:
+        raise HTTPException(400, "file_id required")
+    return {"url": _media_url(file_id), "ttl_s": MEDIA_TOKEN_TTL_S}
+
+
+@app.get("/v1/drive/media/{file_id}")
+def drive_media(file_id: str, drive: Drive = Depends(get_drive)):
+    """Stream file bytes — reachable by cast displays via the ?t= token
+    (auth waived in require_api_key for valid tokens)."""
+    try:
+        meta = drive.get_meta(file_id, fields="id,name,mimeType,size")
+        blob = drive.download(file_id)
+    except urllib.error.HTTPError as e:
+        raise HTTPException(404 if e.code == 404 else 502,
+                            f"drive media failed: HTTP {e.code}")
+    return StreamingResponse(
+        io.BytesIO(blob),
+        media_type=meta.get("mimeType") or "application/octet-stream",
+        headers={"Cache-Control": "private, max-age=300"})
+
+
+# ----------------------------
+# Google Photos Picker — photospicker.mediaitems.readonly flow
+# ----------------------------
+@app.post("/v1/photos/picker")
+def photos_picker_create(photos: Drive = Depends(get_photos_drive)):
+    """Create a Picker session: returns {session_id, picker_uri, expires}.
+    The user opens picker_uri on a signed-in device and selects items;
+    GET the poll endpoint until mediaItemsSet."""
+    try:
+        s = photos.picker_session_create()
+    except urllib.error.HTTPError as e:
+        raise HTTPException(502, f"picker create failed: HTTP {e.code}")
+    return {"session_id": s.get("id"), "picker_uri": s.get("pickerUri"),
+            "expire_time": s.get("expireTime"),
+            "poll": f"/v1/photos/picker/{s.get('id')}"}
+
+
+@app.get("/v1/photos/picker/{session_id}")
+def photos_picker_poll(session_id: str,
+                       photos: Drive = Depends(get_photos_drive)):
+    """Poll a Picker session. When mediaItemsSet, returns the picked
+    items [{id,type,baseUrl,mimeType,createTime}] — baseUrls are usable
+    directly (60 min) so a display can cast them as-is."""
+    try:
+        s = photos.picker_session_get(session_id)
+    except urllib.error.HTTPError as e:
+        raise HTTPException(404 if e.code == 404 else 502,
+                            f"picker poll failed: HTTP {e.code}")
+    out = {"session_id": session_id, "picked": bool(s.get("mediaItemsSet")),
+           "expire_time": s.get("expireTime")}
+    if s.get("mediaItemsSet"):
+        try:
+            items = photos.picker_media_items(session_id)
+        except urllib.error.HTTPError as e:
+            raise HTTPException(502, f"picker items failed: HTTP {e.code}")
+        out["items"] = [{
+            "id": m.get("id"),
+            "type": m.get("type"),
+            "baseUrl": m.get("baseUrl"),
+            "mimeType": (m.get("mediaFileMetadata") or {}).get("mimeType"),
+            "createTime": m.get("createTime"),
+            "filename": (m.get("mediaFile") or {}).get("filename"),
+        } for m in items]
+    return out

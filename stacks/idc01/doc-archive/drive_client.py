@@ -21,6 +21,7 @@ API = "https://www.googleapis.com/drive/v3/files"
 UP = "https://www.googleapis.com/upload/drive/v3/files"
 ABOUT = "https://www.googleapis.com/drive/v3/about"
 TOKEN_URL = "https://oauth2.googleapis.com/token"
+PICKER = "https://photospicker.googleapis.com/v1"
 FOLDER_MIME = "application/vnd.google-apps.folder"
 
 # Transient statuses worth retrying (quota 403s and 500s observed in bench).
@@ -57,6 +58,17 @@ def token_provider_from_rclone(conf_path=CONF):
     """Callable returning a fresh access token each invocation."""
     def provide():
         return refresh_access_token(load_rclone_credentials(conf_path))
+    return provide
+
+
+def token_provider_for(client_id, client_secret, refresh_token):
+    """Callable minting access tokens for a scoped refresh_token that is
+    NOT the rclone one — e.g. photospicker.mediaitems.readonly granted by
+    gphoto-auth.py and stored in doc-archive.env."""
+    creds = {"client_id": client_id, "client_secret": client_secret,
+             "refresh_token": refresh_token}
+    def provide():
+        return refresh_access_token(creds)
     return provide
 
 
@@ -159,3 +171,60 @@ class Drive:
         """Cheap reachability probe."""
         d, _ = self.req("GET", f"{ABOUT}?fields=user")
         return json.loads(d)
+
+    # -- browse / read / edit --------------------------------------------
+
+    _LIST_FIELDS = ("files(id,name,mimeType,size,modifiedTime,"
+                    "webViewLink,parents,thumbnailLink)")
+
+    def search(self, query, mime=None, limit=20):
+        """files.list — fullText+name match, optional mimeType filter.
+        Returns [{id,name,mimeType,size,modifiedTime,webViewLink,
+        thumbnailLink,parents}]."""
+        q = f"(name contains '{_esc(query)}' or fullText contains '{_esc(query)}') and trashed=false"
+        if mime:
+            q += f" and mimeType contains '{_esc(mime)}'"
+        url = (f"{API}?q={urllib.parse.quote(q)}"
+               f"&fields={urllib.parse.quote(self._LIST_FIELDS)}"
+               f"&pageSize={max(1, min(int(limit), 100))}"
+               "&orderBy=modifiedTime desc")
+        d, _ = self.req("GET", url)
+        return json.loads(d).get("files", [])
+
+    def get_meta(self, file_id, fields=None):
+        f = fields or ("id,name,mimeType,size,modifiedTime,"
+                       "webViewLink,parents,thumbnailLink")
+        d, _ = self.req("GET", f"{API}/{file_id}?fields={urllib.parse.quote(f)}")
+        return json.loads(d)
+
+    def export(self, file_id, mime="text/plain"):
+        """Export a Google-native doc (Docs/Sheets/Slides) to a flat mime."""
+        d, _ = self.req("GET",
+                        f"{API}/{file_id}/export?mimeType={urllib.parse.quote(mime)}")
+        return d
+
+    def update_media(self, file_id, blob, mime="text/plain"):
+        """PATCH upload — replaces a regular file's content in place.
+        Google-native types can't be media-updated; use export+re-upload."""
+        d, _ = self.req(
+            "PATCH", f"{UP}/{file_id}?uploadType=media", blob, mime)
+        return json.loads(d)
+
+    # -- Google Photos Picker --------------------------------------------
+
+    def picker_session_create(self):
+        """POST /v1/sessions — returns {id, pickerUri, expireTime, ...}.
+        Needs a token minted with photospicker.mediaitems.readonly scope."""
+        d, _ = self.req("POST", f"{PICKER}/sessions", b"{}",
+                        "application/json")
+        return json.loads(d)
+
+    def picker_session_get(self, session_id):
+        d, _ = self.req("GET", f"{PICKER}/sessions/{session_id}")
+        return json.loads(d)
+
+    def picker_media_items(self, session_id, limit=50):
+        d, _ = self.req(
+            "GET", f"{PICKER}/mediaItems?sessionId={session_id}"
+                   f"&pageSize={max(1, min(int(limit), 100))}")
+        return json.loads(d).get("mediaItems", [])

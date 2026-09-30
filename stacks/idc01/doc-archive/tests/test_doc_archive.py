@@ -31,6 +31,7 @@ class FakeDrive:
         self.folders = {}   # id -> {name, parent}
         self.files = {}     # id -> {name, parent, blob, mime}
         self.uploads = []   # (name, parent, len(blob))
+        self.picker_sessions = {}
         self._seq = 0
         self.about_calls = 0
 
@@ -66,6 +67,50 @@ class FakeDrive:
 
     def download(self, file_id):
         return self.files[file_id]["blob"]
+
+    # -- browse/read/edit (drive_* endpoints) ----------------------------
+
+    def search(self, query, mime=None, limit=20):
+        out = []
+        for fid, f in self.files.items():
+            if query.lower() in f["name"].lower():
+                if not mime or mime in f["mime"]:
+                    out.append({"id": fid, "name": f["name"],
+                                "mimeType": f["mime"],
+                                "size": str(len(f["blob"])),
+                                "modifiedTime": "2026-09-30T00:00:00Z"})
+        return out[:limit]
+
+    def get_meta(self, file_id, fields=None):
+        f = self.files[file_id]
+        return {"id": file_id, "name": f["name"], "mimeType": f["mime"],
+                "size": str(len(f["blob"]))}
+
+    def export(self, file_id, mime="text/plain"):
+        return self.files[file_id]["blob"]
+
+    def update_media(self, file_id, blob, mime="text/plain"):
+        self.files[file_id]["blob"] = blob
+        self.files[file_id]["mime"] = mime
+        return {"id": file_id}
+
+    def picker_session_create(self):
+        sid = f"psession-{len(self.picker_sessions) + 1}"
+        self.picker_sessions[sid] = {"set": False, "items": []}
+        return {"id": sid, "pickerUri": "https://photos/pick"}
+
+    def picker_session_get(self, session_id):
+        s = self.picker_sessions[session_id]
+        return {"id": session_id, "mediaItemsSet": s["set"]}
+
+    def picker_media_items(self, session_id, limit=50):
+        return self.picker_sessions[session_id]["items"]
+
+    def add_file(self, name, blob, mime="text/plain"):
+        fid = self._nid("file")
+        self.files[fid] = {"name": name, "parent": None, "blob": blob,
+                           "mime": mime}
+        return fid
 
 
 class FakeMddb:
@@ -275,3 +320,105 @@ def test_health(env):
     assert r.status_code == 200
     assert r.json() == {"ok": True, "drive": "reachable"}
     assert drive.about_calls == 1
+
+
+# ----------------------------
+# /v1/drive/* — browse / read / edit / media
+# ----------------------------
+def test_drive_search_and_get_text(env):
+    client, drive, _ = env
+    drive.add_file("notes.txt", b"hello drive")
+    drive.add_file("photo.jpg", png_bytes(), mime="image/jpeg")
+
+    r = client.get("/v1/drive/search?q=notes", headers=AUTH)
+    assert r.status_code == 200
+    files = r.json()["files"]
+    assert [f["name"] for f in files] == ["notes.txt"]
+
+    r = client.get("/v1/drive/search?q=photo&mime=image/", headers=AUTH)
+    assert r.status_code == 200
+    fid = r.json()["files"][0]["id"]
+
+    # binary file → media:true + minted media_url, not inline text
+    r = client.get(f"/v1/drive/file/{fid}", headers=AUTH)
+    assert r.status_code == 200
+    body = r.json()
+    assert body["media"] is True
+    assert "media_url" in body
+
+    # text file → inline text
+    tid = drive.add_file("todo.md", b"- milk\n- eggs")
+    r = client.get(f"/v1/drive/file/{tid}", headers=AUTH)
+    assert r.status_code == 200
+    assert r.json()["text"] == "- milk\n- eggs"
+
+
+def test_drive_media_token_flow(env):
+    client, drive, _ = env
+    fid = drive.add_file("pic.jpg", png_bytes(), mime="image/jpeg")
+
+    # unauthenticated direct fetch → 401 (token path only)
+    assert client.get(f"/v1/drive/media/{fid}").status_code == 401
+
+    r = client.post("/v1/drive/media-token", headers=AUTH,
+                    json={"file_id": fid})
+    assert r.status_code == 200
+    url = r.json()["url"]
+
+    # minted token fetches without the api key
+    r = client.get(url)
+    assert r.status_code == 200
+    assert r.headers["content-type"] == "image/jpeg"
+
+    # wrong file id → token is file-bound
+    other = drive.add_file("x.jpg", png_bytes(), mime="image/jpeg")
+    assert client.get(
+        f"/v1/drive/media/{other}?t={url.split('t=')[1]}"
+    ).status_code == 401
+
+
+def test_drive_update(env):
+    client, drive, _ = env
+    fid = drive.add_file("todo.md", b"old")
+    r = client.put(f"/v1/drive/file/{fid}", headers=AUTH,
+                   json={"content": "new body"})
+    assert r.status_code == 200
+    assert drive.files[fid]["blob"] == b"new body"
+
+    # google-native mime → 400 with guidance
+    gid = drive.add_file("doc", b"", mime="application/vnd.google-apps.document")
+    r = client.put(f"/v1/drive/file/{gid}", headers=AUTH,
+                   json={"content": "x"})
+    assert r.status_code == 400
+
+
+# ----------------------------
+# /v1/photos/picker*
+# ----------------------------
+def test_photos_picker_flow(env):
+    client, drive, _ = env
+    app = doc_archive.app
+    app.dependency_overrides[doc_archive.get_photos_drive] = lambda: drive
+
+    r = client.post("/v1/photos/picker", headers=AUTH)
+    assert r.status_code == 200
+    sid = r.json()["session_id"]
+    assert r.json()["picker_uri"] == "https://photos/pick"
+
+    r = client.get(f"/v1/photos/picker/{sid}", headers=AUTH)
+    assert r.status_code == 200
+    assert r.json()["picked"] is False
+
+    drive.picker_sessions[sid]["set"] = True
+    drive.picker_sessions[sid]["items"] = [{
+        "id": "m1", "type": "PHOTO", "baseUrl": "https://lh3/x",
+        "mediaFile": {"filename": "beach.jpg"},
+        "mediaFileMetadata": {"mimeType": "image/jpeg"},
+        "createTime": "2026-01-01T00:00:00Z"}]
+
+    r = client.get(f"/v1/photos/picker/{sid}", headers=AUTH)
+    assert r.status_code == 200
+    body = r.json()
+    assert body["picked"] is True
+    assert body["items"][0]["baseUrl"] == "https://lh3/x"
+    assert body["items"][0]["filename"] == "beach.jpg"
