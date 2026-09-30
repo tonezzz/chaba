@@ -67,6 +67,44 @@ TREE_STRIP_X = (1090, 1260)
 STATE_DIR = os.environ.get("VMS_SNAP_STATE", "/tmp")
 _lock = threading.Lock()
 
+# --- self-heal watchdog -----------------------------------------------------
+# The VMS app's cloud-P2P session to the DVR dies every ~day: clicks still
+# select channels but no stream attaches (all panes empty, every snap 503s
+# "pane shows no video"). A container restart re-logs in and restores it —
+# verified 2026-09-30. Track consecutive no-video failures; >=3 trips a
+# systemctl restart, max once per cooldown so a genuinely-down DVR doesn't
+# restart-loop.
+NOVIDEO_RESTART_AFTER = int(os.environ.get("VMS_NOVIDEO_RESTART_AFTER", "3"))
+NOVIDEO_COOLDOWN_S = float(os.environ.get("VMS_NOVIDEO_COOLDOWN_S", "900"))
+_novideo_streak = 0
+_novideo_next_restart = 0.0
+
+
+def _watchdog_novideo() -> None:
+    global _novideo_streak, _novideo_next_restart
+    _novideo_streak += 1
+    if (_novideo_streak < NOVIDEO_RESTART_AFTER
+            or time.time() < _novideo_next_restart):
+        return
+    _novideo_next_restart = time.time() + NOVIDEO_COOLDOWN_S
+    _novideo_streak = 0
+    def _restart():
+        logger.warning(
+            "watchdog: %d consecutive no-video snaps — restarting %s",
+            NOVIDEO_RESTART_AFTER, CONTAINER)
+        try:
+            subprocess.run(
+                ["systemctl", "--user", "restart", "xmeye-vms.service"],
+                timeout=90, capture_output=True)
+        except Exception:
+            logger.exception("watchdog: restart failed")
+    threading.Thread(target=_restart, daemon=True).start()
+
+
+def _watchdog_ok() -> None:
+    global _novideo_streak
+    _novideo_streak = 0
+
 
 def _podman(*args: str, timeout: float = 30) -> subprocess.CompletedProcess:
     return subprocess.run(
@@ -397,8 +435,11 @@ class Handler(BaseHTTPRequestHandler):
                 return
             except Exception as exc:
                 logger.exception("snap failed")
+                if "pane shows no video" in str(exc):
+                    _watchdog_novideo()
                 self._json(503, {"error": str(exc)})
                 return
+            _watchdog_ok()
             self.send_response(200)
             self.send_header("Content-Type", "image/png")
             self.send_header("X-Channel", resolved)
