@@ -78,15 +78,18 @@
   const cells = new Map(); // key -> {img, age, err, ts, url}
   let order = [];          // round-robin rotation order (live cams)
   let rrIdx = 0;
+  let zoomKey = null;
 
-  zoom.querySelector(".x").addEventListener("click", () => zoom.style.display = "none");
-  zoom.addEventListener("click", (e) => { if (e.target !== zoomImg) zoom.style.display = "none"; });
-  document.addEventListener("keydown", (e) => { if (e.key === "Escape") zoom.style.display = "none"; });
+  function closeZoom() { zoom.style.display = "none"; zoomKey = null; }
+  zoom.querySelector(".x").addEventListener("click", closeZoom);
+  zoom.addEventListener("click", (e) => { if (e.target !== zoomImg) closeZoom(); });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeZoom(); });
 
-  function openZoom(c, label) {
+  function openZoom(c, cam) {
     if (!c.url) return;
-    zoomImg.src = c.url;
-    zoomCap.textContent = label;
+    zoomKey = cam.key;
+    zoomImg.src = `${c.url}?t=${c.ts}`;
+    zoomCap.textContent = cam.label;
     zoom.style.display = "block";
     zoom.scrollTo(0, 0);
   }
@@ -114,7 +117,7 @@
         grid.appendChild(div);
         c = { img: div.querySelector("img"), age: div.querySelector(".age"),
               err: div.querySelector(".err"), ts: 0, url: "", det: null };
-        div.addEventListener("click", () => openZoom(c, cam.label));
+        div.addEventListener("click", () => openZoom(c, cam));
         cells.set(cam.key, c);
       }
       // yolo detection badge (counts from manifest 'det')
@@ -136,6 +139,7 @@
         c.img.style.display = "block";
         c.err.style.display = "none";
         c.img.onload = () => { c.err.style.display = "none"; };
+        if (zoomKey === cam.key) zoomImg.src = c.img.src;
       }
       if (!cam.ok && cam.err && !c.url) {
         c.err.textContent = cam.err;
@@ -150,18 +154,14 @@
     }
   }
 
-  // Round-robin live ticker: while the page is visible, bump ONE cell's
-  // image every second — cell 1 at t, cell 2 at t+1s, … loop. Fresh thumbs
-  // appear as the puller writes them; the rotation is page-side so Ada
-  // only turns the zone on/off via cctv_wall.
+  // Round-robin live ticker: rotate the highlight through live cells once
+  // a second. Image bytes only re-fetch when the manifest ts advances —
+  // re-downloading the same thumb every second made cells flicker and
+  // burned ~50-500KB/s of pointless decode bandwidth.
   setInterval(() => {
     if (document.visibilityState !== "visible" || !order.length) return;
     for (const c of cells.values()) c.img.parentElement.classList.remove("live-edge");
-    const c = order[rrIdx++ % order.length];
-    c.img.parentElement.classList.add("live-edge");
-    c.img.src = `${c.url}?t=${Date.now()}`;
-    if (zoom.style.display === "block" && zoomCap.textContent === c.img.parentElement.querySelector(".lbl").textContent)
-      zoomImg.src = `${c.url}?t=${Date.now()}`;
+    order[rrIdx++ % order.length].img.parentElement.classList.add("live-edge");
   }, 1000);
 
   refresh();
