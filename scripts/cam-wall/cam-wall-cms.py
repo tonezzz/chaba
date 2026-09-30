@@ -80,16 +80,27 @@ def mddb_add(key: str, md: str, title: str) -> bool:
         return False
 
 
-def detections_tail(zone: str, n: int = 24) -> tuple[str, str]:
-    """Summarize the rolling detection log — latest window + span."""
+DET_MAX_BYTES = 8 * 1024 * 1024   # ~14d of hourly-ish sweeps
+
+
+def _det_recs(zone: str) -> list[dict]:
+    """Read the rolling detection log; trim it past DET_MAX_BYTES so a
+    long-running yolo wall doesn't grow the file unboundedly."""
     f = DATA / zone / f"detections-{zone}.jsonl"
     if not f.exists():
-        return "", ""
+        return []
     try:
-        lines = f.read_text().strip().splitlines()[-n:]
-        recs = [json.loads(x) for x in lines]
+        if f.stat().st_size > DET_MAX_BYTES:
+            lines = f.read_text().splitlines()
+            f.write_text("\n".join(lines[-50_000:]) + "\n")
+        return [json.loads(x) for x in f.read_text().splitlines() if x.strip()]
     except Exception:
-        return "", ""
+        return []
+
+
+def detections_tail(zone: str, n: int = 24) -> tuple[str, str]:
+    """Summarize the rolling detection log — latest window + span."""
+    recs = _det_recs(zone)[-n:]
     if not recs:
         return "", ""
     from collections import Counter
@@ -102,6 +113,39 @@ def detections_tail(zone: str, n: int = 24) -> tuple[str, str]:
         "–" + time.strftime("%H:%M", time.localtime(recs[-1]["ts"]))
     top = ", ".join(f"{k}×{v}" for k, v in counts.most_common(8))
     return span, top
+
+
+def detections_timeline(zone: str, hours: int = 24) -> str:
+    """Hourly detection counts per cam over the last `hours` — the CMS
+    comparison table Tony asked for (2026-09-30)."""
+    recs = [r for r in _det_recs(zone)
+            if r.get("ts", 0) > time.time() - hours * 3600]
+    if not recs:
+        return ""
+    from collections import Counter, defaultdict
+    # hour -> cam -> class counts
+    grid: dict[str, dict[str, Counter]] = defaultdict(
+        lambda: defaultdict(Counter))
+    cams: set[str] = set()
+    for r in recs:
+        hr = time.strftime("%H:00", time.localtime(r["ts"]))
+        for cam_key, dets in (r.get("cams") or {}).items():
+            cams.add(cam_key)
+            for d in dets:
+                grid[hr][cam_key][d["cls"]] += 1
+    cam_list = sorted(cams)
+    header = "| hour | " + " | ".join(cam_list) + " |"
+    sep = "|---|" + "---|" * len(cam_list)
+    rows = []
+    for hr in sorted(grid, reverse=True):
+        cells = []
+        for cam in cam_list:
+            c = grid[hr].get(cam)
+            cells.append(", ".join(f"{k}×{v}" for k, v in
+                                   c.most_common(3)) if c else "—")
+        rows.append(f"| {hr} | " + " | ".join(cells) + " |")
+    return (f"\n## Detection timeline (last {hours}h)\n\n"
+            + header + "\n" + sep + "\n" + "\n".join(rows) + "\n")
 
 
 def wall_page(zone: str, man: dict, zstate: dict) -> str:
@@ -124,6 +168,7 @@ def wall_page(zone: str, man: dict, zstate: dict) -> str:
                      f"latest sweep: {det_top}\n\n"
                      f"Raw log: `data/{zone}/detections-{zone}.jsonl` "
                      "(append-only while the yolo effect is on).\n")
+    det_block += detections_timeline(zone)
     return f"""# Wall: {zone}
 
 {ZONE_INFO.get(zone, 'Camera wall zone.')}
