@@ -204,3 +204,26 @@ services:
       - "Restart: ssh idc01 systemctl --user restart input-bridge.service"
       - "Logs: ssh idc01 journalctl --user -u input-bridge.service -n 50"
       - "Quadlet file: stacks/idc01/input-bridge/input-bridge.container (repo) -> ~/.config/containers/systemd/ (idc01)"
+  - id: vcast-real-6
+    name: vcast Real-Browser Display (screen 6)
+    type: http
+    url: http://idc01:3010/displays
+    expected_status: 200
+    timeout: 5
+    category: api
+    profiles:
+      - home
+    host: idc02
+    note: Playwright/Chromium lab display on idc02 (vcast-real@6.service user
+      unit). Claims screen 6 via input-bridge pending->claim. Provides real
+      render evidence (p*:frame-ok) and GEV remote registration — the
+      {real_screen} target for live scenarios; if it drops, scenario
+      preflights gate to INFRA rather than producing false FAILs.
+    verification:
+      - "Claimed+connected: curl -s http://idc01:3010/displays | python3 -c 'import json,sys; s=[x for x in json.load(sys.stdin)[\"screens\"] if x[\"screen\"]==6]; print(s[0][\"connected\"], s[0][\"state_detail\"] if s else \"screen 6 absent\")'"
+      - "GEV remote on 6: curl -s -m 15 -X POST https://tony-dell.taila0626a.ts.net/apps/gev-cmd/command -H 'content-type: application/json' -d '{\"name\":\"get_current_view_state\",\"args\":{},\"screen\":6,\"wait\":5}'"
+      - "Unit: ssh idc02 systemctl --user status vcast-real@6.service"
+    recovery_actions:
+      - "Restart: ssh idc02 systemctl --user restart vcast-real@6.service"
+      - "Logs: ssh idc02 journalctl --user -u vcast-real@6 -n 50"
+      - "Client source: stacks/web/input-bridge/vcast-real.mjs (repo) -> ~/apps/vcast-real/ (idc02); unit ~/.config/systemd/user/vcast-real@.service"
