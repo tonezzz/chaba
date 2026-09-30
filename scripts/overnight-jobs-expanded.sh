@@ -713,6 +713,39 @@ ORDER BY performance_change DESC;
 " >> "$REPORT_FILE" 2>&1 || echo "Performance degradation detection failed" >> "$REPORT_FILE"
 
 # ============================================
+# 15. SCENARIO REPORT RETENTION (Ada benchmark hygiene)
+# ============================================
+echo "[15/15] Running scenario report retention/prune..." | tee -a "$LOG_FILE"
+cat >> "$REPORT_FILE" << EOF
+
+## 15. Scenario Report Retention (Ada benchmark hygiene)
+
+Enforces tests/benchmark.yml 'standard.retention' on
+ada-ha-scenario-reports: per-status TTL backstop, consecutive-duplicate
+dedupe (keep first+latest), benchmark validity stamps. Standard:
+ada-cms-pages/benchmark-standard.
+
+\`\`\`
+EOF
+
+ADA_PI=""
+for d in /home/tony/CascadeProjects/ada-pi /home/tony/ada-pi; do
+    if [ -f "$d/scripts/scenario-prune.py" ]; then
+        ADA_PI="$d"
+        break
+    fi
+done
+if [ -n "$ADA_PI" ]; then
+    python3 "$ADA_PI/scripts/scenario-prune.py" \
+        --mddb http://100.74.146.0:11023/v1 \
+        >> "$REPORT_FILE" 2>&1 \
+        || echo "scenario-prune.py failed" >> "$REPORT_FILE"
+else
+    echo "ada-pi checkout not found — retention prune skipped" >> "$REPORT_FILE"
+fi
+echo '```' >> "$REPORT_FILE"
+
+# ============================================
 # FINAL SUMMARY
 # ============================================
 echo "Generating Final Summary..." | tee -a "$LOG_FILE"
@@ -747,6 +780,7 @@ cat >> "$REPORT_FILE" << EOF
 - ✅ Configuration Validation
 - ✅ MCP Health Server Integration (PostgreSQL)
 - ✅ Performance Baseline Comparison (7-day trends)
+- ✅ Scenario Report Retention (Ada benchmark hygiene)
 
 **Assessment Completed:** $(date)
 **Report Location:** $REPORT_FILE
