@@ -161,7 +161,14 @@
       const p = {
         el, video: el.querySelector("video"), img: el.querySelector("img"),
         frame: el.querySelector("iframe"), hls: null, imgTimer: null,
+        frameOk: false,
       };
+      p.frame.addEventListener("load", () => {
+        if (p.frame.src && p.frame.src !== "about:blank") {
+          p.frameOk = true;
+          sendState(lastState, lastDetail);
+        }
+      });
       el.querySelector(".pz").addEventListener("click", (e) => {
         e.stopPropagation();
         zoomPane(zoomedPane === i ? -1 : i);
@@ -203,6 +210,7 @@
       p.img.onerror = p.img.onload = null;
       p.img.style.display = "none"; p.img.removeAttribute("src");
       p.frame.style.display = "none"; p.frame.src = "about:blank";
+      p.frameOk = false;
       clearInterval(p.imgTimer); p.imgTimer = null;
     }
 
@@ -218,9 +226,26 @@
       toast._t = setTimeout(() => (toast.style.display = "none"), ms);
     }
     let lastState = "idle", lastDetail = "";
+    // Per-pane render summary — proves the pane isn't just configured but
+    // has decoded/loaded content: p0:img-nw800 / p1:frame-ok / p1:video-vw1280
+    function paneSummary() {
+      const parts = [];
+      panes.forEach((p, i) => {
+        if (!p) return;
+        const v = p.video.style.display !== "none" && (p.video.src || p.hls);
+        const im = p.img.style.display !== "none" && p.img.src;
+        const fr = p.frame.style.display !== "none" &&
+                   p.frame.src && p.frame.src !== "about:blank";
+        if (v)      parts.push(`p${i}:video-vw${p.video.videoWidth || 0}`);
+        else if (im) parts.push(`p${i}:img-nw${p.img.naturalWidth || 0}`);
+        else if (fr) parts.push(`p${i}:frame-${p.frameOk ? "ok" : "loading"}`);
+      });
+      return parts.length ? ` | ${parts.join(" ")}` : "";
+    }
     function sendState(state, detail) {
       lastState = state; lastDetail = detail || "";
-      if (ws && ws.readyState === 1) ws.send(JSON.stringify({ type: "state", state, detail: lastDetail }));
+      if (ws && ws.readyState === 1) ws.send(JSON.stringify({
+        type: "state", state, detail: lastDetail + paneSummary() }));
     }
     // heartbeat — keeps registry last_seen honest between real state changes
     setInterval(() => { if (screenNum != null) sendState(lastState, lastDetail); }, 30000);
