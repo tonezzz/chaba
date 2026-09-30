@@ -1,0 +1,82 @@
+title: MDDB bbolt Corruption Repair — Lessons (2026-09-30)
+subtitle: What the leader free-page corruption and follower rescan saga taught us
+icon: 🧠
+ideas:
+  - Capture the diagnosis chain and the operational traps hit during repair
+  - Record what NOT to do when a bbolt/NoFreelistSync service won't come up
+
+sections:
+  - title: Root Cause Chain
+    icon: 🔬
+    layout: list
+    items:
+      - label: Page-level corruption propagates everywhere
+        text: |
+          mddb runs bbolt with NoFreelistSync + FreelistMapType. When the
+          leader's DB developed free-page corruption ("page N: multiple
+          references" in freepages/recursivelyCheckBucket), EVERY byte-level
+          copy inherited it: streamed replication snapshots, /v1/backup file
+          copies, even bbolt compact (which deadlocks on the corrupt region).
+          Only document-level export/import escapes page corruption.
+      - label: The runbook that worked
+        text: |
+          POST /v1/export per collection -> standalone mddb with
+          MDDB_EMBEDDING_PROVIDER=none (critical — enabled embeddings stall
+          add-batch on the 4000-deep queue) -> POST /v1/add-batch ~50-doc
+          chunks -> verify counts + `bbolt check` -> swap file, restart
+          (~1 min) -> per-collection /v1/vector-reindex (no "*" wildcard)
+          -> seed follower from the rebuilt file. Full recipe lives in
+          ssot.services.yml corruption_repair_20260930.
+
+  - title: Cold-Start Traps
+    icon: 🧊
+    layout: list
+    items:
+      - label: Rescan is the normal open path, not a corruption check
+        text: |
+          With NoFreelistSync, bbolt rebuilds the freelist via a full B-tree
+          walk on EVERY open — clean or not. No listeners, no logs, low CPU,
+          main thread in folio_wait_bit_common = IO-bound scanning, not hang.
+      - label: HDD cold-cache makes it brutal
+        text: |
+          The scan is driven by random mmap page faults. On tony-dell's
+          contended spinning disk (r_await ~90ms) a 1.5 GB DB took >1.5 h;
+          the leader opened the same file in ~3 s on warm cache.
+          Mitigations that worked: `cat mddb.db > /dev/null` run
+          SYNCHRONOUSLY over ssh (a backgrounded remote cat dies with the
+          session), ionice -c2 -n0, and above all DO NOT RESTART mid-scan —
+          every restart resets the rescan to zero.
+      - label: SIGQUIT is a footgun shared by sessions
+        text: |
+          Two sessions independently SIGQUIT'd the follower for stack dumps;
+          each dump killed the process (exit status 2) and restarted the
+          scan. Dump stacks once, share the result, then leave the unit alone.
+
+  - title: Process Lessons
+    icon: 🧭
+    layout: list
+    items:
+      - label: Verify before asserting corruption
+        text: |
+          The 15:51 follower "panic" looked like re-corruption but was a
+          manual SIGQUIT from a parallel session + cold rescan. Goroutine
+          dumps beat speculation; check journal before theorizing.
+      - label: git reset in a shared repo is hazardous
+        text: |
+          reset --mixed/--soft in the shared checkout left phantom staged
+          changes (index vs HEAD mismatch) visible to other sessions.
+          Prefer worktree + cherry-pick/copy flows for landing fixes when
+          master is moving under you.
+      - label: Upstream now knows
+        text: |
+          tradik/mddb#270 filed with the panic, the propagation modes, and
+          the cold-rescan operational evidence. Watch it for a persisted-
+          freelist or rescan-progress fix.
+
+config:
+  version: 1
+  last_updated: 2026-09-30
+  maintainer: devin
+  related_files:
+    - docs/ssot/infrastructure/ssot.services.yml
+    - reports/fleet/host-verification-2026-09-30.md
