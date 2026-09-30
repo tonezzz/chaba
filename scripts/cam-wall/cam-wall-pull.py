@@ -228,8 +228,8 @@ def pull_cam(kind: str, key: str, alts: tuple = ()) -> bytes:
     if kind == "vms":
         url = f"{VMS_SNAP}/snap?ch={urllib.parse.quote(key)}"
         # dead-pane polling + serialized Wine UI can push a snap to ~40s;
-        # leave headroom so honest 503s aren't cut off as timeouts
-        _, data = http_get(url, 95)
+        # 60s leaves headroom without letting a wedged snap eat the budget
+        _, data = http_get(url, 60)
         return data
     if kind == "hls":
         # traffic-cam HLS playlist -> single frame; try alt_urls in order
@@ -518,9 +518,10 @@ def pull_zone(zone: str, cfg: dict, zdir: Path) -> dict:
 
 
 def _vms_backoff(zone: str, cfg: dict, manifest: Path) -> bool:
-    """VMS outage backoff for warm pulls: when every vms cam in the zone
-    failed last cycle, require 4x the warm interval before retrying —
-    serial dead-P2P snaps burn ~35s each."""
+    """VMS outage backoff: when every vms cam in the zone failed last
+    cycle, require 4x the interval before retrying — serial dead-P2P
+    snaps burn ~35s each, and enabled zones otherwise starve every
+    other zone each cycle while a DVR stays offline."""
     vms_keys = {slug(c[0]) for c in cfg["cams"] if c[1] == "vms"}
     if not vms_keys or not manifest.exists():
         return False
@@ -573,7 +574,7 @@ def main() -> int:
             try:
                 last = json.loads(manifest.read_text()).get("updated", 0)
                 wait = interval
-                if not enabled and _vms_backoff(zone, cfg, manifest):
+                if _vms_backoff(zone, cfg, manifest):
                     wait = interval * 4
                 if time.time() - last < wait:
                     continue

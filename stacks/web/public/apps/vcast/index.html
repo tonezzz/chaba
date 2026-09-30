@@ -161,7 +161,14 @@
       const p = {
         el, video: el.querySelector("video"), img: el.querySelector("img"),
         frame: el.querySelector("iframe"), hls: null, imgTimer: null,
+        frameOk: false,
       };
+      p.frame.addEventListener("load", () => {
+        if (p.frame.src && p.frame.src !== "about:blank") {
+          p.frameOk = true;
+          sendState(lastState, lastDetail);
+        }
+      });
       el.querySelector(".pz").addEventListener("click", (e) => {
         e.stopPropagation();
         zoomPane(zoomedPane === i ? -1 : i);
@@ -203,6 +210,7 @@
       p.img.onerror = p.img.onload = null;
       p.img.style.display = "none"; p.img.removeAttribute("src");
       p.frame.style.display = "none"; p.frame.src = "about:blank";
+      p.frameOk = false;
       clearInterval(p.imgTimer); p.imgTimer = null;
     }
 
@@ -218,9 +226,29 @@
       toast._t = setTimeout(() => (toast.style.display = "none"), ms);
     }
     let lastState = "idle", lastDetail = "";
+    // Per-pane render summary — proves the pane isn't just configured but
+    // has decoded/loaded content: p0:img-nw800 / p1:frame-ok / p1:video-vw1280
+    function paneSummary() {
+      const parts = [];
+      panes.forEach((p, i) => {
+        if (!p) return;
+        const v = p.video.style.display !== "none" && (p.video.src || p.hls);
+        const im = p.img.style.display !== "none" && p.img.src;
+        const fr = p.frame.style.display !== "none" &&
+                   p.frame.src && p.frame.src !== "about:blank";
+        if (v)      parts.push(`p${i}:video-vw${p.video.videoWidth || 0}`);
+        else if (im) parts.push(`p${i}:img-nw${p.img.naturalWidth || 0}`);
+        else if (fr) parts.push(`p${i}:frame-${p.frameOk ? "ok" : "loading"}`);
+      });
+      return parts.length ? ` | ${parts.join(" ")}` : "";
+    }
     function sendState(state, detail) {
       lastState = state; lastDetail = detail || "";
-      if (ws && ws.readyState === 1) ws.send(JSON.stringify({ type: "state", state, detail: lastDetail }));
+      // relay caps detail at 200 chars — cap the human part so the
+      // render proof isn't clipped off the end of a long URL
+      if (ws && ws.readyState === 1) ws.send(JSON.stringify({
+        type: "state", state,
+        detail: lastDetail.slice(0, 140) + paneSummary() }));
     }
     // heartbeat — keeps registry last_seen honest between real state changes
     setInterval(() => { if (screenNum != null) sendState(lastState, lastDetail); }, 30000);
@@ -417,6 +445,80 @@
         method: "POST", headers: { "content-type": "application/json" },
         body: JSON.stringify({ screen: screenNum, active: false }),
       }).catch(() => {});
+    }
+
+    // Gesture control — the display's own camera watches for motion.
+    // 'room' = wake-on-motion (a wave/approach wakes the screen and emits
+    // a gesture-wake event Ada can react to); 'hand' = MediaPipe hand
+    // tracking (not built yet — reported honestly). Tiny frame-diff loop:
+    // no ML deps, ~4fps at 64x36.
+    let gStream = null, gTimer = null, gVideo = null, gPrev = null,
+        gStreak = 0, gCooldownUntil = 0, gMode = "off";
+    function stopGesture() {
+      if (gTimer) { clearInterval(gTimer); gTimer = null; }
+      if (gStream) { gStream.getTracks().forEach(t => t.stop()); gStream = null; }
+      gVideo = null; gPrev = null; gStreak = 0; gMode = "off";
+      const ov = document.getElementById("gestureOverlay");
+      if (ov) ov.remove();
+    }
+    async function setGesture(mode) {
+      mode = String(mode || "off").toLowerCase();
+      if (mode === "off") { stopGesture(); showToast("gesture off"); sendState("idle"); return; }
+      if (mode === "hand") {
+        // honest until MediaPipe hands lands — don't claim it works
+        sendState("gesture-error", "hand mode not built");
+        return;
+      }
+      if (mode !== "room") { sendState("gesture-error", "unknown mode " + mode); return; }
+      if (gTimer) return;                              // already on
+      try {
+        gStream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: "user", width: { ideal: 320 } }, audio: false });
+      } catch (e) {
+        sendState("gesture-error", String(e.name || e));
+        return;
+      }
+      gVideo = document.createElement("video");
+      gVideo.srcObject = gStream; gVideo.muted = true; gVideo.playsInline = true;
+      await gVideo.play().catch(() => {});
+      const cv = document.createElement("canvas"); cv.width = 64; cv.height = 36;
+      const cx = cv.getContext("2d", { willReadFrequently: true });
+      gMode = "room";
+      const ov = document.createElement("div");
+      ov.id = "gestureOverlay";
+      ov.style.cssText = "position:fixed;top:8px;right:8px;padding:4px 10px;" +
+        "background:#0af0a0;color:#012;border-radius:12px;font:600 13px system-ui;" +
+        "z-index:99;opacity:.85";
+      ov.textContent = "gesture: room";
+      document.body.appendChild(ov);
+      showToast("gesture room on — wave to wake");
+      sendState("gesture-room");
+      gTimer = setInterval(() => {
+        if (!gVideo || !gVideo.videoWidth) return;
+        cx.drawImage(gVideo, 0, 0, 64, 36);
+        const cur = cx.getImageData(0, 0, 64, 36).data;
+        if (gPrev) {
+          let diff = 0;
+          for (let i = 0; i < cur.length; i += 4) {
+            diff += Math.abs(cur[i] - gPrev[i]) +
+                    Math.abs(cur[i + 1] - gPrev[i + 1]) +
+                    Math.abs(cur[i + 2] - gPrev[i + 2]);
+          }
+          const mean = diff / (cur.length / 4) / 3;
+          if (mean > 14) {                       // sustained motion burst
+            gStreak++;
+            if (gStreak >= 2 && Date.now() > gCooldownUntil) {
+              gCooldownUntil = Date.now() + 15000;
+              gStreak = 0;
+              sendState("gesture-wake", "motion");
+              ws && ws.send(JSON.stringify(
+                { type: "gesture-event", event: "wake", screen: screenNum }));
+              showToast("wake — motion detected");
+            }
+          } else gStreak = 0;
+        }
+        gPrev = cur.slice ? cur.slice() : cur;
+      }, 250);
     }
 
     // Ada's "look at the screen" path — draws the element actually on-screen
@@ -636,6 +738,7 @@
         case "uplink-stop":
           stopUplink();
           break;
+        case "gesture": setGesture(msg.mode); break;
         case "snap-request":
           snapFrame(msg.token);
           break;
