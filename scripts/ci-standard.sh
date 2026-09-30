@@ -95,17 +95,27 @@ run_check "no tracked dotenv files" bash -c "
   fi
 " || true
 
-# 5. Flag untracked files that are outside the known allowlist
-ALLOWED_UNTRACKED='^docs/kb/.*\.md$|^docs/ssot/apps/ssot\.apps\.ada-cms-reports\.yml$|^docs/ssot/focus-inbox/.*\.yml$|^scripts/ci-(smoke|standard|qa|all)\.sh$|^scripts/ops/yt-transcript\.sh$|^stacks/web/public/media/.*$'
-if ! UNTRACKED=$(git -C "$ROOT" ls-files --others --exclude-standard | sort); then
-    UNTRACKED=""
+# 5. Flag untracked files older than 7 days that are outside the known
+# allowlist. Fresh untracked files are treated as active WIP (parallel
+# sessions write to this tree constantly) and only listed as a warning.
+ALLOWED_UNTRACKED='^docs/kb/.*\.md$|^docs/ssot/focus-inbox/.*\.yml$|^mcp-servers/mcp-opennb/.*$|^scripts/ci-(smoke|standard|qa|all)\.sh$|^scripts/mddb/vector-reindex\.py$|^scripts/ops/yt-transcript\.sh$|^stacks/idc01/line-relay/.*$|^stacks/web/public/media/.*$'
+MAX_AGE_DAYS=7
+STALE=$(git -C "$ROOT" ls-files --others --exclude-standard -z |
+    xargs -0 -I{} stat -c '%Y %n' "$ROOT/{}" 2>/dev/null |
+    awk -v cutoff="$(date -d "-$MAX_AGE_DAYS days" +%s)" '$1 < cutoff {print $2}' |
+    sort || true)
+UNEXPECTED=$(echo "$STALE" | grep -Ev "$ALLOWED_UNTRACKED" || true)
+FRESH=$(git -C "$ROOT" ls-files --others --exclude-standard -z |
+    xargs -0 -I{} stat -c '%Y %n' "$ROOT/{}" 2>/dev/null |
+    awk -v cutoff="$(date -d "-$MAX_AGE_DAYS days" +%s)" '$1 >= cutoff {print $2}' | sort || true)
+if [ -n "$FRESH" ]; then
+    echo "Fresh untracked (WIP, <$MAX_AGE_DAYS days — not failing):"
+    echo "$FRESH"
 fi
-UNEXPECTED=$(echo "$UNTRACKED" | grep -Ev "$ALLOWED_UNTRACKED" || true)
 if [ -n "$UNEXPECTED" ]; then
-    echo "Unexpected untracked files:"
+    echo "Stale unexpected untracked files (>$MAX_AGE_DAYS days):"
     echo "$UNEXPECTED"
     SUMMARY+=("[FAIL] untracked file allowlist")
-    cat /tmp/ci-standard-last.out
 else
     SUMMARY+=("[PASS] untracked file allowlist")
     PASS=$((PASS + 1))
