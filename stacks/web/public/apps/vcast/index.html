@@ -253,6 +253,8 @@
     // heartbeat — keeps registry last_seen honest between real state changes
     setInterval(() => { if (screenNum != null) sendState(lastState, lastDetail); }, 30000);
     function deviceLabel() {
+      const forced = params.get("label");
+      if (forced) return forced;
       const ua = navigator.userAgent;
       if (/iPad/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1)) return "iPad";
       if (/iPhone/.test(ua)) return "iPhone";
