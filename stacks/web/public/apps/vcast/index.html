@@ -381,6 +381,7 @@
         const u = new URL(src, location.href);
         if (u.origin === location.origin) {
           u.searchParams.set("_vcast", Date.now());
+          u.searchParams.set("screen", screenNum); // GEV remote needs screen
           u.searchParams.set("pane", pi || 0);   // iframe announces its pane
           src = u.toString();
         }
