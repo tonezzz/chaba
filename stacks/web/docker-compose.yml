@@ -91,31 +91,6 @@ services:
             - gpu
     networks:
     - default
-  helm:
-    container_name: helm
-    build:
-      context: /home/tony/CascadeProjects/helm
-      dockerfile: Dockerfile
-    env_file:
-    - /home/tony/CascadeProjects/helm/.env.local
-    restart: unless-stopped
-    ports:
-    - 3003:3000
-    extra_hosts:
-    - host.docker.internal:host-gateway
-    networks:
-    - default
-    healthcheck:
-      test:
-      - CMD-SHELL
-      - node -e "fetch('http://localhost:3000/apps/helm/api/health').then(r=>{if(!r.ok)
-        process.exit(1)}).catch(()=>process.exit(1))"
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 10s
-    volumes:
-    - helm_data:/app/data
   sensor-reader:
     container_name: sensor-reader
     build:
@@ -145,7 +120,6 @@ volumes:
   caddy_data: null
   caddy_config: null
   rview_api_state: null
-  helm_data:
 networks:
   frigate_default:
     external: true
