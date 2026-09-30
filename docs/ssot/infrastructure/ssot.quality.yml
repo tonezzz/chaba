@@ -35,6 +35,16 @@ lanes:
       backups/ada-memory/*.json). Fast (< ~2 min). Failure blocks merge.
     runner: .github/workflows/*.yml
     outputs: GH check status + uploaded artifacts
+  on-host-gate:
+    description: >
+      Composite pre-push gates run manually on a dev host —
+      scripts/ci-{smoke,standard,qa,all}.sh. MAY touch tailnet/live
+      services (recall canary, ada-pi-pwa), so they cannot run as GH
+      Actions steps; they are the on-host equivalent of ci-gate plus the
+      live checks only a tailnet host can do. ci-all.sh runs all three
+      gates and is the single entry point for a pre-push green.
+    runner: manual — scripts/ci-all.sh
+    outputs: terminal exit code
   scheduled-audit:
     description: >
       On-host audit suite — node scripts/audits/run.mjs driven by
@@ -190,6 +200,33 @@ registry:
     cost: cheap
     runner: .github/workflows/repo-lint.yml
     script: "python3 -m compileall -q -x node_modules scripts/ + node --check per *.mjs (excluding vendored node_modules)"
+
+  # --- lane: on-host-gate (manual pre-push composite gates) ---
+  - id: gate.smoke
+    lane: on-host-gate
+    gate: blocking
+    cost: network
+    runner: manual
+    script: bash scripts/ci-smoke.sh
+  - id: gate.standard
+    lane: on-host-gate
+    gate: blocking
+    cost: cheap
+    runner: manual
+    script: bash scripts/ci-standard.sh
+  - id: gate.qa
+    lane: on-host-gate
+    gate: blocking
+    cost: cheap
+    runner: manual
+    script: bash scripts/ci-qa.sh
+  - id: gate.all
+    lane: on-host-gate
+    gate: blocking
+    cost: network
+    runner: manual
+    script: bash scripts/ci-all.sh
+    note: single entry point — runs smoke + standard + qa
   - id: qa.registry-self-check
     lane: scheduled-audit
     gate: blocking
@@ -299,7 +336,7 @@ registry:
 coverage_gaps:
   - "No unit-test lane — repo is scripts+SSOT; ci.repo-lint covers syntax only. Tests exist mainly in ada-pi (scenario suites) and sunsynk-power-flow-card (tsc --noEmit in CI would be the minimum)"
   - "CLOSED 2026-09-29: GH workflow failures → focus inbox via health.gh-runs-watch (scripts/audits/gh-runs-watch.py, 15-min timer on tony-omen where gh IS authed; --git pushes alert docs); first live poll already caught 4 silent master failures"
-  - "ci-pipeline.sh RETIRED 2026-09-29 — legacy on-host pipeline tied to the chaba-tony-dell checkout, superseded by GH workflows + the scheduled suite; file kept for reference, timer was never installed"
+  - "ci-pipeline.sh RETIRED 2026-09-29, DELETED 2026-09-30 — legacy on-host pipeline tied to the chaba-tony-dell checkout, superseded by GH workflows + the scheduled suite + on-host gate scripts; timer was never installed"
   - "CLOSED 2026-09-29: cms-audit snapshot input — ada-memory-backup.timer was already installed on tony-omen (correct host), nightly push feeds the lane"
   - "CLOSED 2026-09-29: registry self-check — standardization-audit section 6 now validates this registry (paths exist, CI steps registered, audit coverage)"
 
@@ -313,6 +350,6 @@ related_files:
   - scripts/audits/run.mjs
   - scripts/ada/cms-audit.py
   - scripts/ada/cms-audit-baseline.json
-  - scripts/ci-pipeline.sh
+  - scripts/ci-all.sh
   - .github/workflows/
   - systemd/chaba-audit*.timer

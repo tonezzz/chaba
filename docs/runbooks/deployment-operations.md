@@ -13,10 +13,9 @@ owner: tony
 related:
   [
     scripts/deploy.sh,
-    scripts/ci-pipeline.sh,
-    systemd/chaba-ci-pipeline.service,
     docs/runbooks/backup-system-operations.md,
   ]
+retired: "ci-pipeline.sh + systemd/chaba-ci-pipeline.service deleted 2026-09-30 — superseded by .github/workflows/* (ci-gate lane) + scripts/ci-all.sh (on-host gate). Pipeline sections below describe the retired script."
 search_keywords: [deployment, cicd, pipeline, rollback, testing, automation]
 ---
 

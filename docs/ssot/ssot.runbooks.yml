@@ -80,10 +80,7 @@ runbooks:
     scope: chaba-tony-dell runtime checkout (hardcoded PROJECT_ROOT in scripts)
     related:
       - scripts/deploy.sh
-      - scripts/ci-pipeline.sh
-      - scripts/ci-pipeline.timer
-      - systemd/chaba-ci-pipeline.service
-    note: chaba-ci-pipeline.timer not installed on either host (checked 2026-09-18); chaba-tony-dell on tony-omen lacks scripts/ and systemd/, so the pre-deployment backup step would fail on missing members.
+    note: ci-pipeline.sh + systemd/chaba-ci-pipeline.service deleted 2026-09-30 (superseded by GH workflows + scripts/ci-all.sh); timer was never installed. chaba-tony-dell on tony-omen lacks scripts/ and systemd/, so the pre-deployment backup step would fail on missing members.
 
   monitoring-dashboard-operations:
     path: docs/runbooks/monitoring-dashboard-operations.md
