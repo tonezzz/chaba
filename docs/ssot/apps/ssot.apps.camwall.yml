@@ -1,0 +1,56 @@
+title: camwall — CCTV/traffic camera walls
+subtitle: Periodic thumbnail walls, last-good frame retention, and the detection timeline — the standard Ada/Devin implement and hold to.
+icon: "📷"
+sections:
+  - title: Guaranteed-image contract
+    icon: "✅"
+    layout: list
+    items:
+      - label: Last-good always kept
+        text: "Every camera's most recent successful thumb (<data>/<zone>/<key>.jpg) is NEVER deleted on pull failure — a failed cycle only leaves a stale mtime. Any consumer (wall tile, montage, Ada snapshot fallback, CMS page) can therefore always show an image; its honesty comes from the age, not from hiding it."
+      - label: Staleness is displayed, not hidden
+        text: "The wall page renders a per-tile age badge (red past the stale threshold). The montage keeps dead cams as dimmed tiles tagged '· stale' — a camera must never silently vanish. Ada tool results carry {stale: true, age_s} so she can say 'last frame from 14 minutes ago, camera appears down' instead of showing nothing."
+      - label: Ada snapshot fallback
+        text: "ada_camera_snapshot: live snap fails (503/timeout) → vms_camera.stale_snapshot() looks the channel up across the VMS zone manifests (zone-a, noble-park, vms-noble-club, vms-noble-a) by slug, fetches the last-good thumb, and returns it flagged stale+age_s with the live error. Ada must describe it as a stale frame, never as live."
+      - label: Freshness tiers
+        text: "live = age < 2×zone interval (can be called 'just now'); warm = < zone warm window; stale = beyond warm (always quote the age); dead = no thumb ever (>never had a frame — say 'no image yet'). Standard thresholds: interval per ZONES (75-180s VMS, 15s house, 60-120s traffic), warm 300-1800s."
+  - title: Retention + sizing
+    icon: "📦"
+    layout: list
+    items:
+      - label: Thumbs
+        text: "1 last-good JPG per cam, ~100-500KB at thumb_w 960 q80 — whole fleet ~55 cams ≈ 12MB. No ring buffer by default; if an hourly ring is ever wanted for before/after comparison, 24×~60 cams ≈ ~300MB/day — opt-in per zone, not standard."
+      - label: Detection log
+        text: "detections-<zone>.jsonl — append-only per pull cycle while a yolo:* effect is on; ~0.3-0.8MB/day/zone; trimmed by cam-wall-cms at 8MB (~14d). Format: {ts, zone, cams: {<key>: [{cls, conf, box}]}}."
+      - label: Manifest
+        text: "manifest-<zone>.json rewritten atomically each pull: {zone, updated, cams:[{key, label, ts, ok, err?, det?, bytes?}]}. ts is the thumb mtime — stale cams keep their old ts so consumers compute age."
+  - title: Detection timeline → CMS
+    icon: "📈"
+    layout: list
+    items:
+      - label: Standard
+        text: "cam-wall-cms.py renders each wall page with a 'Detection timeline (last 24h)' table — rows = hour buckets, columns = cams, cells = top class×count. That is the comparison surface: Tony/Ada can see 'guard view had person×12 at 19:00, zero since'. Runs on the 15min timer; the jsonl stays the raw source."
+      - label: Only while yolo is on
+        text: "Detections exist only while the zone's yolo effect is enabled (cctv_wall settings effects=['yolo:person,car@0.35']). Ada must say 'detection history starts when yolo was switched on' — never pretend older coverage exists."
+  - title: Ada contract
+    icon: "🗣️"
+    layout: list
+    items:
+      - label: "Live means live"
+        text: "Ada may say 'live' only for a fresh snap or age<2×interval. Stale frame → 'last frame from <age> ago — the camera appears down'. No thumb ever → 'no image yet'. Never describe a stale frame as current."
+      - label: Walls vs single cam
+        text: "'show <cam> on screen N' → ada_camera_snapshot + cast_to_screen(action=image, url=cast_url) — same still-image path as traffic cams (no video clip anywhere). 'show the <zone> wall' → cctv_wall casts the auto-refreshing thumb grid."
+      - label: Dead DVR honesty
+        text: "When every VMS cam in a DVR's zones is stale/dead, the answer is 'the recorder is offline' — never re-cast a dead wall. wall_offline_dvr scenario guards this."
+  - title: Implementation map
+    icon: "⚙️"
+    layout: list
+    items:
+      - label: Puller
+        text: "scripts/cam-wall/cam-wall-pull.py (timer 30s on tony-dell): zones ZONES + traffic from frigate/cameras.json; VMS serial w/ VMS_BUDGET cap; bake_montage keeps stale tiles dimmed."
+      - label: Ada
+        text: "backend/vms_camera.py stale_snapshot() + realtime_provider._camera_snapshot fallback; follow-up frame text marks '(STALE — last known frame)'. vision sidecar describes stale frames identically."
+      - label: CMS
+        text: "scripts/cam-wall/cam-wall-cms.py (15min timer) → ada-cms-pages 'wall-<zone>' + 'cctv-walls' index + detection timeline table."
+      - label: Shim
+        text: "mn01 vms-snap.py:8377 — channel select + 3 attach rounds + watchdog restart on 3 consecutive no-video; channels.json coordinate map."
