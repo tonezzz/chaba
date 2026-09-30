@@ -397,19 +397,26 @@ def apply_effects(data: bytes, effects: list[str]) -> tuple[bytes, list[dict]]:
 
 
 def bake_montage(zdir: Path, cams: list[dict], thumb_w: int = 480) -> None:
-    """Composite the zone's live thumbs into one jpg for the index page."""
-    from PIL import Image
+    """Composite the zone's thumbs into one jpg for the index page.
+    Guaranteed-image contract: a cam with a cached thumb always appears —
+    stale tiles render dimmed with a 'stale' tag, never dropped."""
+    from PIL import Image, ImageEnhance
     tiles = []
     for c in cams:
         p = zdir / f"{c['key']}.jpg"
-        if c.get("ok") and p.exists():
-            try:
-                im = Image.open(p).convert("RGB")
-                h = int(im.height * thumb_w / im.width)
-                tiles.append((im.resize((thumb_w, h)), c["label"]))
-                continue
-            except Exception:
-                pass
+        if not p.exists():
+            continue
+        try:
+            im = Image.open(p).convert("RGB")
+            h = int(im.height * thumb_w / im.width)
+            im = im.resize((thumb_w, h))
+            label = c["label"]
+            if not c.get("ok"):
+                im = ImageEnhance.Brightness(im).enhance(0.45)
+                label = f"{label} · stale"
+            tiles.append((im, label))
+        except Exception:
+            pass
     if not tiles:
         return
     cols = 3
@@ -550,10 +557,18 @@ def main() -> int:
         state = {}
 
     zones = state.get("zones") or {}
+    # host ownership — CAMWALL_OWN="burapha,chonburi" means this instance
+    # pulls only those zones; the peer host owns the rest. Empty = all
+    # (legacy single-host behaviour). Prevents two pullers racing the same
+    # zone's manifest.
+    own = {z.strip() for z in
+           os.environ.get("CAMWALL_OWN", "").split(",") if z.strip()}
     # forced/CLI zones first — a --only run shouldn't queue behind a
     # multi-minute VMS dead-pull warm sweep
     order = sorted(ZONES, key=lambda z: 0 if (args.all or z in only) else 1)
     for zone in order:
+        if own and zone not in own and zone not in only and not args.all:
+            continue
         cfg = merge_settings(
             ZONES[zone], (zones.get(zone) or {}).get("settings"))
         enabled = bool((zones.get(zone) or {}).get("enabled"))
@@ -588,7 +603,29 @@ def main() -> int:
         ok = sum(1 for c in man["cams"] if c.get("ok"))
         mode = "enabled" if enabled else "warm" if not forced else "forced"
         print(f"{zone}: {ok}/{len(man['cams'])} thumbs refreshed ({mode})")
+    if own:
+        _push_zones(own)
     return 0
+
+
+def _push_zones(zones: set[str]) -> None:
+    """rsync this host's zone dirs to the peer's data dir so both edges
+    serve the full set. CAMWALL_PUSH = 'user@host:/path/to/data' — each
+    puller pushes only the zones it owns, so there is no write overlap."""
+    target = os.environ.get("CAMWALL_PUSH", "").rstrip("/")
+    if not target:
+        return
+    for zone in sorted(zones):
+        zdir = DATA / zone
+        if not zdir.is_dir():
+            continue
+        r = subprocess.run(
+            ["rsync", "-a", "--delete", f"{zdir}/",
+             f"{target}/{zone}/"],
+            capture_output=True, text=True, timeout=120)
+        if r.returncode != 0:
+            print(f"push {zone} -> {target}: {r.stderr.strip()[:200]}",
+                  file=sys.stderr)
 
 
 if __name__ == "__main__":

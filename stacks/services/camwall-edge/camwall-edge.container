@@ -1,0 +1,17 @@
+# camwall-edge — static thumbnail server for /apps/camwall/*
+# install.sh renders PublishPort=<tailscale-ip>:8380 (tailnet-only —
+# VPSes are public; the feed must never bind a public interface).
+[Container]
+Image=docker.io/library/caddy:2-alpine
+ContainerName=camwall-edge
+PublishPort=__TAILIP__:8380:8380
+Volume=%h/.local/share/camwall:/srv:ro
+Volume=%h/.config/camwall-edge/Caddyfile:/etc/caddy/Caddyfile:ro
+NoNewPrivileges=true
+
+[Service]
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=default.target

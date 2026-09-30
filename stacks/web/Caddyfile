@@ -307,6 +307,20 @@ http://127.0.0.1:8080 {
 		file_server
 	}
 
+	# camwall — thumbs are pulled on idc01/idc02 (heavy ffmpeg/yt-dlp work
+	# off this saturated box) and served from their static edges; this host
+	# only load-balances. Tailnet-only upstreams.
+	handle /apps/camwall {
+		redir /apps/camwall/ 308
+	}
+	handle_path /apps/camwall/* {
+		reverse_proxy http://100.74.146.0:8380 http://100.123.163.11:8380 {
+			lb_policy least_conn
+			lb_retries 2
+			fail_duration 15s
+		}
+	}
+
 	handle /apps/rview {
 		redir /apps/rview/ 308
 	}
