@@ -225,6 +225,62 @@ Detail pages: {', '.join(f'`wall-{z}`' for z in sorted(zones))}
 """
 
 
+NOTIFY_URL = os.environ.get(
+    "ADA_NOTIFY_URL", "https://idc01.taila0626a.ts.net/api/notify")
+NOTIFY_KEY = os.environ.get("ADA_NOTIFY_KEY") or os.environ.get(
+    "ADA_API_KEY", "")
+NOTIFY_STATE = DATA / "_cms-notify-state.json"
+
+
+def notify_ada(text: str) -> None:
+    """Ping Ada's /api/notify so she relays a wall-state transition to Tony.
+    Non-urgent — lands as a deferred note, never hijacks a turn."""
+    if not NOTIFY_KEY:
+        return
+    body = json.dumps({"text": text[:400], "urgent": "0"}).encode()
+    req = urllib.request.Request(
+        NOTIFY_URL, data=body,
+        headers={"Content-Type": "application/json",
+                 "x-api-key": NOTIFY_KEY})
+    try:
+        urllib.request.urlopen(req, timeout=15).read()
+    except Exception as exc:
+        print(f"notify failed: {exc}", file=sys.stderr)
+
+
+def notify_transitions(zones: dict[str, dict]) -> None:
+    """Compare live-counts against the last published state and notify Ada
+    only on meaningful transitions — zone recovered, zone went all-dead,
+    or a wall page published for the first time. Routine churn is silent."""
+    try:
+        prev = json.loads(NOTIFY_STATE.read_text())
+    except Exception:
+        prev = {}
+    cur: dict[str, int] = {}
+    notes = []
+    for zone, m in zones.items():
+        cams = m["manifest"].get("cams") or []
+        live = sum(1 for c in cams if c.get("ok"))
+        cur[zone] = live
+        if zone not in prev:
+            continue  # first sighting — record, don't announce
+        was = prev[zone]
+        if was == 0 and live > 0:
+            notes.append(
+                f"camwall {zone} recovered — {live}/{len(cams)} cams live "
+                f"again (wall-{zone} updated)")
+        elif was > 0 and live == 0:
+            notes.append(
+                f"camwall {zone} went all-dead — 0/{len(cams)} live "
+                f"(wall-{zone} updated)")
+    try:
+        NOTIFY_STATE.write_text(json.dumps(cur))
+    except Exception:
+        pass
+    for n in notes[:4]:  # cap: a DVR fleet flap can hit every zone at once
+        notify_ada(n)
+
+
 def main() -> int:
     try:
         state = http_get(BRIDGE + "/camwall")
@@ -253,6 +309,7 @@ def main() -> int:
     if zones:
         ok &= mddb_add("cctv-walls", index_page(zones),
                        "CCTV / traffic camera walls")
+        notify_transitions(zones)
     print(f"walls: {len(zones)} pages + index {'ok' if ok else 'ERR'}")
     return 0
 
