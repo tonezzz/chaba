@@ -115,17 +115,17 @@
         div.className = "cell";
         div.innerHTML = `<span class="lbl">${cam.label}</span><img alt=""><span class="age"></span><div class="err" style="display:none"></div>`;
         grid.appendChild(div);
-        c = { img: div.querySelector("img"), age: div.querySelector(".age"),
+        c = { div, img: div.querySelector("img"), age: div.querySelector(".age"),
               err: div.querySelector(".err"), ts: 0, url: "", det: null };
         div.addEventListener("click", () => openZoom(c, cam));
         cells.set(cam.key, c);
       }
       // yolo detection badge (counts from manifest 'det')
-      let db = c.det || div.querySelector(".det");
+      let db = c.det;
       if (!db) {
         db = document.createElement("div");
         db.className = "det"; db.style.display = "none";
-        div.appendChild(db); c.det = db;
+        c.div.appendChild(db); c.det = db;
       }
       if (cam.det) {
         db.textContent = Object.entries(cam.det)
