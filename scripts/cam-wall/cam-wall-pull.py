@@ -258,9 +258,10 @@ def _ffmpeg_frame(src: str, timeout: float = 40, hls: bool = False) -> bytes:
 
 def pull_cam(kind: str, key: str, alts: tuple = ()) -> bytes:
     if kind == "vms":
-        url = f"{VMS_SNAP}/snap?ch={urllib.parse.quote(key)}"
-        # dead-pane polling + serialized Wine UI can push a snap to ~40s;
-        # 60s leaves headroom without letting a wedged snap eat the budget
+        url = f"{VMS_SNAP}/snap?ch={urllib.parse.quote(key)}&zoom=0"
+        # zoom=0 takes the grid-res pane — wall thumbs don't need the
+        # zoomed single-pane re-attach (12-36s/cam) that starved 8-cam
+        # zones under VMS_BUDGET; ~15s/cam fits the whole zone in one pass.
         _, data = http_get(url, 60)
         return data
     if kind == "hls":
