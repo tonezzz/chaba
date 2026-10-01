@@ -8,7 +8,8 @@ with xwd, crops the monitor pane, and returns a PNG.
 Endpoints:
   GET /health                      -> 200 {"ok": true}
   GET /channels                    -> 200 {"channels": [...]}
-  GET /snap?ch=<name>[&settle=<s>] -> 200 image/png | 404/503 JSON
+  GET /snap?ch=<name>[&settle=<s>][&zoom=0] -> 200 image/png | 404/503 JSON
+  zoom=0 skips the single-pane zoom — grid-res frame, ~15s instead of ~40s+.
 
 Channel name matching is case-insensitive substring against channels.json.
 Coordinates live in channels.json (device tree rows — recalibrate if the tree
@@ -294,7 +295,7 @@ def png_encode(width: int, height: int, rgb: bytes) -> bytes:
             + chunk(b"IEND", b""))
 
 
-def snap(query: str, settle: float) -> tuple[bytes, str]:
+def snap(query: str, settle: float, zoom: bool = True) -> tuple[bytes, str]:
     channels = load_channels()
     hit = resolve_channel(query, channels)
     if hit is None:
@@ -325,52 +326,57 @@ def snap(query: str, settle: float) -> tuple[bytes, str]:
                 f"(y={meta['y']}) — device tree layout drifted; "
                 "recalibrate channels.json")
 
-        # Zoom pane 1 for a ~4x-resolution capture, then restore the grid.
-        # NOTE: no --sync — a synced mousemove blocks >30s while the Wine
-        # app re-renders after the channel switch.
-        # Zoom pane 1 for a ~4x-resolution capture. We pinned the grid
-        # above, so this double-click deterministically toggles to
-        # single-pane; never click again (it would toggle back).
-        _podman("xdotool", "mousemove", str(PANE_CLICK[0]),
-                str(PANE_CLICK[1]), timeout=10)
-        _podman("xdotool", "click", "--repeat", "2", "--delay", "150",
-                "1", timeout=10)
-        # The stream re-opens on zoom and needs a few seconds to draw —
-        # poll until real video appears (bounded).
+        # zoom=0 (wall thumbs) skips the zoom dance entirely — the zoom
+        # re-opens the P2P stream and costs 12-36s per cam, which is why
+        # 8-cam zones starve under VMS_BUDGET.
         raw2 = None
-        for _round in range(3):
-            for _poll in range(8):
-                time.sleep(1.5)
-                cand = capture_xwd()
-                w2, h2, rgb2 = xwd_to_rgb(cand)
-                cw, ch, crgb = crop_rgb(w2, h2, rgb2, SINGLE_PANE_RECT)
-                if _has_video(cw, ch, crgb):
-                    raw2 = cand
+        if zoom:
+            # Zoom pane 1 for a ~4x-resolution capture. We pinned the grid
+            # above, so this double-click deterministically toggles to
+            # single-pane; never click again (it would toggle back).
+            # NOTE: no --sync — a synced mousemove blocks >30s while the
+            # Wine app re-renders after the channel switch.
+            _podman("xdotool", "mousemove", str(PANE_CLICK[0]),
+                    str(PANE_CLICK[1]), timeout=10)
+            _podman("xdotool", "click", "--repeat", "2", "--delay", "150",
+                    "1", timeout=10)
+            # The stream re-opens on zoom and needs a few seconds to
+            # draw — poll until real video appears (bounded).
+            for _round in range(3):
+                for _poll in range(8):
+                    time.sleep(1.5)
+                    cand = capture_xwd()
+                    w2, h2, rgb2 = xwd_to_rgb(cand)
+                    cw, ch, crgb = crop_rgb(w2, h2, rgb2, SINGLE_PANE_RECT)
+                    if _has_video(cw, ch, crgb):
+                        raw2 = cand
+                        break
+                if raw2 is not None:
                     break
-            if raw2 is not None:
-                break
-            # P2P stream open is a coin flip — when it fails the pane
-            # stays dead forever no matter how long we wait; re-select the
-            # channel to force a fresh stream attach (2026-09-30: ~half the
-            # noble-club channels flapped dead per sweep; a single retry
-            # still dropped first-attempt snaps in Ada turns).
-            select_channel(meta["x"], meta["y"])
-            time.sleep(settle / 2)
-        if raw2 is None:
-            raw2 = cand  # zoomed pane never drew — grid may still show video
-        _podman("xdotool", "mousemove", str(GRID4_BTN[0]),
-                str(GRID4_BTN[1]), "click", "1", timeout=10)
+                # P2P stream open is a coin flip — when it fails the pane
+                # stays dead forever no matter how long we wait; re-select
+                # the channel to force a fresh stream attach (2026-09-30:
+                # ~half the noble-club channels flapped dead per sweep; a
+                # single retry still dropped first-attempt snaps in Ada
+                # turns).
+                select_channel(meta["x"], meta["y"])
+                time.sleep(settle / 2)
+            if raw2 is None:
+                raw2 = cand  # zoomed pane never drew — grid may still show video
+            _podman("xdotool", "mousemove", str(GRID4_BTN[0]),
+                    str(GRID4_BTN[1]), "click", "1", timeout=10)
     # Zoomed frame first. A dead pane (stream not drawn yet, offline cam)
     # collapses content_bbox to a sliver — reject degenerate crops rather
     # than returning a 5px "frame" that downstream treats as an image.
-    w, h, rgb = xwd_to_rgb(raw2)
-    w, h, rgb = crop_rgb(w, h, rgb, SINGLE_PANE_RECT)
-    box = content_bbox(w, h, rgb)
-    if box and (box[2] - box[0]) * (box[3] - box[1]) < w * h // 4:
-        box = None
-    if box:
-        w, h, rgb = crop_rgb(w, h, rgb, box)
-    if w * h < 50_000 or min(w, h) < 100:
+    if raw2 is not None:
+        w, h, rgb = xwd_to_rgb(raw2)
+        w, h, rgb = crop_rgb(w, h, rgb, SINGLE_PANE_RECT)
+        box = content_bbox(w, h, rgb)
+        if box and (box[2] - box[0]) * (box[3] - box[1]) < w * h // 4:
+            box = None
+        if box:
+            w, h, rgb = crop_rgb(w, h, rgb, box)
+    if raw2 is None or w * h < 50_000 or min(w, h) < 100:
         # Fall back to the pre-zoom grid capture at pane resolution.
         w, h, rgb = xwd_to_rgb(raw)
         w, h, rgb = crop_rgb(w, h, rgb, PANE_RECT)
@@ -439,8 +445,9 @@ class Handler(BaseHTTPRequestHandler):
                              MAX_SETTLE)
             except ValueError:
                 settle = DEFAULT_SETTLE
+            zoom = (q.get("zoom") or ["1"])[0] != "0"
             try:
-                png, resolved = snap(ch, settle)
+                png, resolved = snap(ch, settle, zoom)
             except LookupError:
                 self._json(404, {"error": f"unknown channel {ch!r}",
                                  "channels": sorted(load_channels())})
