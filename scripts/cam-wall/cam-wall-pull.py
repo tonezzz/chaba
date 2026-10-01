@@ -396,6 +396,131 @@ def apply_effects(data: bytes, effects: list[str]) -> tuple[bytes, list[dict]]:
     return buf.getvalue(), dets
 
 
+# ---------------------------------------------------------------------------
+# status cards — every failed cam renders a generated status image instead of
+# a broken tile (ssot.apps.camwall: guaranteed-image standard). Classes:
+#   offline — never had a frame, or thumb older than DEAD_AFTER
+#   stale   — pull failed, last-good thumb kept (dimmed + banner)
+#   delayed — skipped by VMS budget this cycle (dimmed thumb or slate card)
+#   error   — anything else (slate card with short reason)
+# Written as <key>-status.jpg; deleted on the next successful pull.
+# ---------------------------------------------------------------------------
+FONT_EN = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
+# Loma covers Thai + Latin in one file (bilingual cam labels); keep fallbacks.
+FONT_BI = [
+    "/usr/share/fonts/truetype/tlwg/Loma-Bold.ttf",
+    "/usr/share/fonts/opentype/tlwg/Loma-Bold.otf",
+    "/usr/share/fonts/truetype/noto/NotoSansThai-Regular.ttf",
+]
+DEAD_AFTER = 6 * 3600  # stale thumb older than this -> 'offline' card
+
+
+def _font(path: str, size: int):
+    from PIL import ImageFont
+    try:
+        return ImageFont.truetype(path, size)
+    except Exception:
+        return ImageFont.load_default()
+
+
+def _font_bi(size: int):
+    from PIL import ImageFont
+    for p in FONT_BI:
+        try:
+            return ImageFont.truetype(p, size)
+        except Exception:
+            continue
+    return _font(FONT_EN, size)
+
+
+def _age_txt(age_s: int | None) -> str:
+    if age_s is None:
+        return "never"
+    if age_s < 3600:
+        return f"{age_s // 60}m ago"
+    if age_s < 86400:
+        return f"{age_s // 3600}h{(age_s % 3600) // 60}m ago"
+    return f"{age_s // 86400}d ago"
+
+
+def status_card(label: str, issue: str, age_s: int | None,
+                thumb: bytes | None) -> bytes:
+    """960x540 display image for a failed cam: dimmed last-good thumb with
+    an issue banner when we have one, else a generated slate card."""
+    import io
+    from PIL import Image, ImageDraw, ImageEnhance
+    W, H = 960, 540
+    big = _font(FONT_EN, 54)
+    med = _font(FONT_EN, 30)
+    th = _font_bi(30)
+    small = _font(FONT_EN, 24)
+    if thumb:
+        try:
+            img = Image.open(io.BytesIO(thumb)).convert("RGB")
+            img = img.resize((W, int(img.height * W / img.width)))
+            if img.height > H:
+                img = img.crop((0, (img.height - H) // 2, W,
+                                (img.height - H) // 2 + H))
+            elif img.height < H:
+                bg = Image.new("RGB", (W, H), (12, 14, 18))
+                bg.paste(img, (0, (H - img.height) // 2))
+                img = bg
+            img = ImageEnhance.Brightness(img).enhance(0.38)
+        except Exception:
+            thumb = None
+    if not thumb:
+        img = Image.new("RGB", (W, H), (16, 18, 24) if issue == "offline"
+                        else (28, 30, 38))
+    dr = ImageDraw.Draw(img, "RGBA")
+    title, th_line, color = {
+        "offline": ("OFFLINE", "กล้องออฟไลน์", (235, 87, 87)),
+        "stale":   ("STALE", "ภาพเก่า ไม่ใช่ภาพสด", (240, 173, 78)),
+        "delayed": ("DELAYED", "รอสัญญาณชั่วคราว", (120, 172, 255)),
+        "error":   ("NO SIGNAL", "ดึงภาพไม่สำเร็จ", (200, 90, 200)),
+    }.get(issue, ("NO SIGNAL", "ดึงภาพไม่สำเร็จ", (200, 90, 200)))
+    # banner strip + label — bilingual font (Loma covers Thai + Latin) for
+    # any label containing non-ASCII; DejaVu otherwise.
+    label_font = th if any(ord(ch) > 127 for ch in label) else med
+    dr.rectangle((0, 0, W, 96), fill=(0, 0, 0, 150))
+    dr.text((20, 14), label, font=label_font, fill=(230, 235, 240))
+    dr.text((W - 20, 60), f"last frame {_age_txt(age_s)}",
+            font=small, fill=(160, 168, 178), anchor="ra")
+    # centered issue block
+    tw = dr.textlength(title, font=big)
+    dr.text(((W - tw) / 2, H // 2 - 84), title, font=big, fill=color)
+    tw2 = dr.textlength(th_line, font=th)
+    dr.text(((W - tw2) / 2, H // 2 - 10), th_line, font=th, fill=color)
+    if not thumb:
+        dr.text((20, H - 44), "camwall · last-good cache", font=small,
+                fill=(90, 96, 108))
+    buf = io.BytesIO()
+    img.save(buf, "JPEG", quality=82)
+    return buf.getvalue()
+
+
+def write_status_card(zdir: Path, key: str, label: str, issue: str,
+                      ts: int) -> None:
+    """(Re)write <key>-status.jpg for a failed cam."""
+    p = zdir / f"{key}.jpg"
+    thumb = p.read_bytes() if p.exists() else None
+    if not thumb or not ts or (time.time() - ts) > DEAD_AFTER:
+        # no frame ever, or last-good is beyond the dead horizon — keep the
+        # dimmed backdrop if there is one, but the issue is 'offline'
+        issue = "offline"
+    elif issue != "delayed":
+        issue = "stale"
+    try:
+        data = status_card(label, issue,
+                           int(time.time() - ts) if ts else None, thumb)
+        f = zdir / f"{key}-status.jpg"
+        tmp = f.with_suffix(".jpg.tmp")
+        tmp.write_bytes(data)
+        os.replace(tmp, f)
+    except Exception as exc:
+        print(f"{zdir.name}/{key}: status card failed: {exc}",
+              file=sys.stderr)
+
+
 def bake_montage(zdir: Path, cams: list[dict], thumb_w: int = 480) -> None:
     """Composite the zone's thumbs into one jpg for the index page.
     Guaranteed-image contract: a cam with a cached thumb always appears —
@@ -403,7 +528,11 @@ def bake_montage(zdir: Path, cams: list[dict], thumb_w: int = 480) -> None:
     from PIL import Image, ImageEnhance
     tiles = []
     for c in cams:
-        p = zdir / f"{c['key']}.jpg"
+        # !ok cams show their generated status card (banner baked in);
+        # fall back to dimmed last-good if the card wasn't written
+        status = zdir / f"{c['key']}-status.jpg"
+        p = (status if not c.get("ok") and status.exists()
+             else zdir / f"{c['key']}.jpg")
         if not p.exists():
             continue
         try:
@@ -411,7 +540,7 @@ def bake_montage(zdir: Path, cams: list[dict], thumb_w: int = 480) -> None:
             h = int(im.height * thumb_w / im.width)
             im = im.resize((thumb_w, h))
             label = c["label"]
-            if not c.get("ok"):
+            if not c.get("ok") and p == zdir / f"{c['key']}.jpg":
                 im = ImageEnhance.Brightness(im).enhance(0.45)
                 label = f"{label} · stale"
             tiles.append((im, label))
@@ -488,11 +617,14 @@ def pull_zone(zone: str, cfg: dict, zdir: Path) -> dict:
             tmp.write_bytes(data)
             os.replace(tmp, jp)  # atomic — wall page never reads half a jpg
             out.update(ts=int(time.time()), ok=True, bytes=len(data))
+            (zdir / f"{out['key']}-status.jpg").unlink(missing_ok=True)
         except Exception as exc:
             out["err"] = str(exc)[:120]
             prev = zdir / f"{out['key']}.jpg"
             if prev.exists():
                 out["ts"] = int(prev.stat().st_mtime)  # keep stale ts
+            write_status_card(zdir, out["key"], label, "error",
+                              out["ts"])
         return out
 
     # independent-source cams in parallel, then VMS serially (one Wine UI)
@@ -506,6 +638,8 @@ def pull_zone(zone: str, cfg: dict, zdir: Path) -> dict:
             prev = zdir / f"{out['key']}.jpg"
             if prev.exists():
                 out["ts"] = int(prev.stat().st_mtime)
+            write_status_card(zdir, out["key"], cam[0], "delayed",
+                              out["ts"])
             cams.append(out)
             continue
         cams.append(one(cam))

@@ -132,7 +132,21 @@
           .map(([k, n]) => `${k}×${n}`).join(" ");
         db.style.display = "block";
       } else db.style.display = "none";
-      if (cam.ts && cam.ts !== c.ts) {
+      // guaranteed-image standard: a failed cam renders its generated
+      // status card (<key>-status.jpg) — dimmed last-good + banner, or an
+      // OFFLINE slate when it never had a frame. Regenerated each cycle,
+      // so refresh it every pass while the cam is down.
+      if (!cam.ok) {
+        const su = `data/${zone}/${cam.key}-status.jpg`;
+        if (c.url !== su) {
+          c.url = su;
+          c.img.src = `${su}?t=${Date.now()}`;
+        }
+        c.img.style.display = "block";
+        c.err.style.display = "none";
+        c.img.onload = () => { c.err.style.display = "none"; };
+        if (zoomKey === cam.key) zoomImg.src = c.img.src;
+      } else if (cam.ts && cam.ts !== c.ts) {
         c.ts = cam.ts;
         c.url = `data/${zone}/${cam.key}.jpg`;
         c.img.src = `${c.url}?t=${cam.ts}`;
@@ -145,7 +159,7 @@
         c.err.textContent = cam.err;
         c.err.style.display = "flex";
       }
-      if (c.url) order.push(c);   // only live cells join the rotation
+      if (cam.ok && c.url) order.push(c);   // only live cells join the rotation
       const age = cam.ts ? Math.round(now - cam.ts) : null;
       if (age != null) {
         c.age.textContent = age < 5 ? "live" : `${age}s ago`;
