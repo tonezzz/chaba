@@ -84,7 +84,7 @@ Failure clusters (fix the generator once → many pages comply):
 - **`chaba-edge-plan` — A6 secret-ish** — inspect before anything else;
   a possible secret pattern in page content.
 - **Thin/scratch**: `bench-ping`, `devin-job-report-fail` (empty),
-  `document-audit-policy`, `transcript-audit-2026-09-28` (placeholders).
+  `document-audit-policy`, `transcript-audit-2026-09-28` (stub markers).
 - **`camera-sources-2026-09-30`** — created today with zero meta.
 - **34 S1 schema warnings** (missing memory-schema fields — mostly
   `wall-*` pages), **5 C1 duplicate pairs** (my-words~my-words-kk,
