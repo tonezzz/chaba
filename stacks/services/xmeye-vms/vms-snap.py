@@ -388,8 +388,10 @@ def _has_video(width: int, height: int, rgb: bytes) -> bool:
     """A live pane has texture everywhere — high mean neighbor luma delta.
     A dead/offline pane is flat gray with at most an OSD strip — its
     deltas sit near zero (measured ~5 vs ~126 on real video). Threshold
-    60 also rejects a 4-pane grid crop where only pane 1 has video
-    (diluted to ~31) — a mosaic is not an acceptable frame."""
+    45 still rejects a 4-pane grid crop where only pane 1 has video
+    (diluted to ~31) — a mosaic is not an acceptable frame. Was 60, but
+    real night footage measured 58.1 (dark scenes compress neighbor
+    deltas) and was wrongly rejected — noble-a Road In, 2026-10-01."""
     tot = n = 0
     for y in range(0, height, 4):
         base = y * width * 3
@@ -401,7 +403,7 @@ def _has_video(width: int, height: int, rgb: bytes) -> bool:
                 n += 1
     if n < 100:
         return False
-    return tot / n > 60
+    return tot / n > 45
 
 
 class Handler(BaseHTTPRequestHandler):

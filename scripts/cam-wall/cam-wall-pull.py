@@ -126,6 +126,38 @@ ZONES: dict[str, dict] = {
              "https://camera1.iticfoundation.org/jpeg2.php?camid=10.8.0.15:8002"),
         ],
     },
+    # DOH national highway network — Wowza HLS on 180.180.242.207/208
+    # (same infra DOHWeb uses; camera list probed 2026-10-01 — 72 live
+    # PER_* streams on Phase3/7/9/10 alone; this is a Bangkok-and-ring
+    # subset. Site IDs match DOHWeb survey-station codes.)
+    "dohweb": {
+        "interval": 120,
+        "warm": 900,
+        "cams": [
+            ("Vibhavadi Don Mueang IN", "hls",
+             "https://camerai1.iticfoundation.org/pass/180.180.242.207:1935/Phase3/PER_3_008_IN.stream/playlist.m3u8",
+             "http://180.180.242.207:1935/Phase3/PER_3_008_IN.stream/playlist.m3u8"),
+            ("Min Buri Hwy304 IN", "hls",
+             "https://camerai1.iticfoundation.org/pass/180.180.242.207:1935/Phase9/PER_9_027_IN.stream/playlist.m3u8",
+             "http://180.180.242.207:1935/Phase9/PER_9_027_IN.stream/playlist.m3u8"),
+            ("Bang Pu Sukhumvit OUT", "hls",
+             "http://180.180.242.207:1935/Phase9/PER_9_022_OUT.stream/playlist.m3u8"),
+            ("Hwy303 Phra Samut Chedi IN", "hls",
+             "http://180.180.242.208:1935/Phase12/PER_12_015_IN.stream/playlist.m3u8"),
+            ("Hwy302 Suwinthawong km54", "hls",
+             "http://180.180.242.207:1935/Phase3/PER_3_005_IN.stream/playlist.m3u8"),
+            ("Hwy320 Pathum Thani km15", "hls",
+             "http://180.180.242.207:1935/Phase3/PER_3_015.stream/playlist.m3u8"),
+            ("Hwy302 Lam Luk Ka km5", "hls",
+             "http://180.180.242.207:1935/Phase3/PER_3_017.stream/playlist.m3u8"),
+            ("Hwy21 Saraburi km530", "hls",
+             "http://180.180.242.207:1935/Phase7/PER_7_002.stream/playlist.m3u8"),
+            ("Hwy305 km55", "hls",
+             "http://180.180.242.207:1935/Phase7/PER_7_017.stream/playlist.m3u8"),
+            ("Hwy32 Ayutthaya km95 IN", "hls",
+             "http://180.180.242.207:1935/Phase10/PER_10_016_IN.stream/playlist.m3u8"),
+        ],
+    },
 }
 
 YTDLP = os.environ.get("YTDLP", str(Path.home() / ".local/bin/yt-dlp"))

@@ -51,6 +51,9 @@ ZONE_INFO = {
     "burapha": "Bangna–Burapha expressway cams (registry group "
                "ทางพิเศษบูรพาวิถี).",
     "chonburi": "Chonburi corridor cams (registry group ชลบุรี).",
+    "dohweb": "DOH national highway cams (กล้องกรมทางหลวง) — Wowza HLS on "
+              "the DOH survey-station network (PER_* site codes, same feeds "
+              "DOHWeb maps); Bangkok ring + upcountry trunk roads.",
 }
 
 
