@@ -48,17 +48,10 @@ DATA = Path(os.environ.get(
 # burn ~35s — when every vms cam in a zone failed last cycle, the warm
 # wait is quadrupled.
 ZONES: dict[str, dict] = {
-    "zone-a": {
-        "interval": 75,  # ~5 serial vms pulls ~= 60s + margin
-        "warm": 900,
-        "cams": [
-            ("Front Rd Left", "vms", "Front Rd. Left"),
-            ("Front Rd Right", "vms", "Front Rd. Right"),
-            ("Road In", "vms", "1. Road In"),
-            ("Walkway", "vms", "3. Walkway In"),
-            ("Road Corner", "vms", "5. Road Corner"),
-        ],
-    },
+    # zone-a retired 2026-10-02 — it was 2 noble-club channels (Front Rd
+    # Left/Right) + 3 noble-a channels (Road In, Walkway, Road Corner);
+    # every cam lives on the per-DVR walls below and each duplicate pull
+    # burned ~80s of the shared serial VMS budget.
     # noble-park retired 2026-10-02 — it was 4 noble-club channels +
     # noble-a Guard View, i.e. a subset of the two per-DVR walls below;
     # every pull spent ~80s of the shared VMS budget re-snapping the same

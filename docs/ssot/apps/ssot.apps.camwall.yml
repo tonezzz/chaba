@@ -11,7 +11,7 @@ sections:
       - label: Staleness is displayed, not hidden
         text: "The wall page renders a per-tile age badge (red past the stale threshold). The montage keeps dead cams as dimmed tiles tagged '· stale' — a camera must never silently vanish. Ada tool results carry {stale: true, age_s} so she can say 'last frame from 14 minutes ago, camera appears down' instead of showing nothing."
       - label: Ada snapshot fallback
-        text: "ada_camera_snapshot: live snap fails (503/timeout) → vms_camera.stale_snapshot() looks the channel up across the VMS zone manifests (zone-a, noble-park, vms-noble-club, vms-noble-a) by slug, fetches the last-good thumb, and returns it flagged stale+age_s with the live error. Ada must describe it as a stale frame, never as live."
+        text: "ada_camera_snapshot: live snap fails (503/timeout) → vms_camera.stale_snapshot() looks the channel up across the VMS zone manifests (vms-noble-club, vms-noble-a) by slug, fetches the last-good thumb, and returns it flagged stale+age_s with the live error. Ada must describe it as a stale frame, never as live."
       - label: Freshness tiers
         text: "live = age < 2×zone interval (can be called 'just now'); warm = < zone warm window; stale = beyond warm (always quote the age); dead = no thumb ever (>never had a frame — say 'no image yet'). Standard thresholds: interval per ZONES (75-180s VMS, 15s house, 60-120s traffic), warm 300-1800s."
       - label: Status cards (the 'instead of broken' standard)
