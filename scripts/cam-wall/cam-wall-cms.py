@@ -19,6 +19,7 @@ import json
 import os
 import sys
 import time
+import urllib.error
 import urllib.request
 from pathlib import Path
 
@@ -143,6 +144,11 @@ def mddb_delete(key: str) -> None:
         headers={"Content-Type": "application/json"})
     try:
         urllib.request.urlopen(req, timeout=15).read()
+        _pub_hash.pop(f"{key}:en", None)
+    except urllib.error.HTTPError as exc:
+        # 400 'document not found' is fine — key was never published
+        if exc.code != 400:
+            print(f"mddb delete {key}: {exc}", file=sys.stderr)
         _pub_hash.pop(f"{key}:en", None)
     except Exception as exc:
         print(f"mddb delete {key}: {exc}", file=sys.stderr)
