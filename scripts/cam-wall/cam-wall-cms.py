@@ -62,7 +62,21 @@ def http_get(url: str, timeout: float = 15) -> dict:
         return json.load(r)
 
 
+# publish dedup: MDDB writes re-embed the doc, so we only POST when the
+# rendered markdown actually changed (per-key sha256 of content).
+PUB_HASH = DATA / "_cms-pub-hash.json"
+try:
+    _pub_hash: dict[str, str] = json.loads(PUB_HASH.read_text())
+except Exception:
+    _pub_hash = {}
+
+
 def mddb_add(key: str, md: str, title: str) -> bool:
+    import hashlib
+    h = hashlib.sha256(md.encode()).hexdigest()[:16]
+    hkey = f"{key}:en"
+    if _pub_hash.get(hkey) == h:
+        return True  # unchanged — skip write + re-embedding
     body = json.dumps({
         "collection": COLLECTION, "key": key, "lang": "en",
         "contentMd": md,
@@ -77,7 +91,14 @@ def mddb_add(key: str, md: str, title: str) -> bool:
         headers={"Content-Type": "application/json"})
     try:
         with urllib.request.urlopen(req, timeout=30) as r:
-            return r.status < 300
+            if r.status < 300:
+                _pub_hash[hkey] = h
+                try:
+                    PUB_HASH.write_text(json.dumps(_pub_hash))
+                except Exception:
+                    pass
+                return True
+            return False
     except Exception as exc:
         print(f"mddb add {key}: {exc}", file=sys.stderr)
         return False
@@ -159,7 +180,7 @@ def wall_page(zone: str, man: dict, zstate: dict) -> str:
     age = int(time.time() - man.get("updated", 0))
     det_span, det_top = detections_tail(zone)
     rows = "\n".join(
-        f"| {c['label']} | {c['key']} | "
+        f"| [{c['label']}](https://idc01.taila0626a.ts.net/cms/#/cam-{zone}-{c['key']}) | {c['key']} | "
         + ("live" if c.get("ok") else "down")
         + (f" · {int(time.time()-c['ts'])}s old" if c.get("ts") else "")
         + (f" · {c['err']}" if c.get("err") else "")
@@ -182,7 +203,9 @@ def wall_page(zone: str, man: dict, zstate: dict) -> str:
 - **Refresh**: {'enabled' if zstate.get('enabled') else 'off (warm thumbs only)'} · interval {s.get('interval', 'default')}s
 - **Status**: {len(live)}/{len(man['cams'])} cams live · {len(stale)} stale · {len(dead)} dead · manifest {age}s old
 - **Effects**: {', '.join(s.get('effects') or ['none'])}
-- **Knobs** (POST /camwall settings or `cctv_wall` settings): interval, jpeg_q, thumb_w, cams_skip, cams_extra, effects (timestamp, grid, yolo:classes@conf)
+
+Controls, status-card standard and Ada usage → `cctv-walls`
+(shared — kept on the index so wall pages carry data only).
 
 ## Cameras
 
@@ -190,13 +213,58 @@ def wall_page(zone: str, man: dict, zstate: dict) -> str:
 |---|---|---|
 {rows}
 {det_block}
-## For Ada
+"""
 
-- "put the {zone} wall on screen N" → `cctv_wall(zone='{zone}', screen=N)`
-  (ask before starting — it is a camera capture)
-- status: {len(live)}/{len(man['cams'])} cams returning frames right now
-- detection questions ("anyone at …?") are only answerable while the
-  yolo effect is on — the window is the detections jsonl span.
+
+def cam_dets(zone: str, cam_key: str, hours: int = 24) -> tuple[str, str]:
+    """Per-cam detection roll-up: 24h class counts + last-seen time."""
+    cutoff = time.time() - hours * 3600
+    counts: dict[str, int] = {}
+    last = 0
+    for r in _det_recs(zone):
+        if r.get("ts", 0) < cutoff:
+            continue
+        for d in (r.get("cams") or {}).get(cam_key) or []:
+            counts[d["cls"]] = counts.get(d["cls"], 0) + 1
+            last = max(last, r["ts"])
+    if not counts:
+        return "", ""
+    top = ", ".join(f"{k}×{v}" for k, v in
+                    sorted(counts.items(), key=lambda x: -x[1]))
+    return top, time.strftime("%H:%M", time.localtime(last))
+
+
+def cam_page(zone: str, cam: dict, man: dict) -> str:
+    """One CMS dossier per camera — linked from its wall's roster.
+    Data-only (standard lives on cctv-walls); state uses coarse buckets
+    so unchanged cams hash-identical and skip republish."""
+    key = cam["key"]
+    ok = cam.get("ok")
+    err = cam.get("err") or ""
+    ts = cam.get("ts") or 0
+    age = int(time.time() - ts) if ts else None
+    bucket = time.strftime("%Y-%m-%d %H:%M",
+                           time.localtime((man.get("updated") or 0)
+                                          // 300 * 300))
+    if ok:
+        state = "live"
+    elif ts:
+        state = f"stale — last frame {age}s ago"
+    else:
+        state = "down — no frame on record"
+    det_top, det_last = cam_dets(zone, key)
+    det_line = (f"{det_top} (last seen {det_last}, 24h window)"
+                if det_top else "none in window")
+    return f"""# Cam: {cam['label']} — {zone}
+
+![latest]({BASE}/data/{zone}/{key}.jpg)
+
+- **Zone**: `wall-{zone}` · wall `{BASE}/?zone={zone}`
+- **State**: {state} · manifest as of {bucket}
+{f"- **Error**: {err}" if err else ""}
+- **Detections**: {det_line}
+
+Part of `cctv-walls` — camera dossier for {key}.
 """
 
 
@@ -225,6 +293,20 @@ wall page or `cctv_wall settings`.
 {chr(10).join(rows)}
 
 Detail pages: {', '.join(f'`wall-{z}`' for z in sorted(zones))}
+
+## Controls (shared by every wall)
+
+- **Cast**: `cctv_wall(zone='<zone>', screen=N)` — or open
+  `{BASE}/?zone=<zone>` on any browser. Ask before casting: it is a
+  camera capture.
+- **Knobs** — ⚙ drawer on the wall page, POST /camwall settings, or
+  `cctv_wall` settings: `interval`, `jpeg_q`, `thumb_w`, `cams_skip`,
+  `cams_extra`, `effects` (timestamp, grid, yolo:classes@conf).
+- **Dead cams render status cards**, not broken images: STALE (dimmed
+  last-good, <6h) · DELAYED (budget skip) · OFFLINE (no/ancient frame)
+  · NO SIGNAL (other). Standard: `docs/ssot/apps/ssot.apps.camwall.yml`.
+- **Detections** ("anyone at …?") are answerable only while the yolo
+  effect is on — each wall page shows its detections jsonl window.
 """
 
 
@@ -306,14 +388,21 @@ def main() -> int:
         zones[zone] = {"manifest": man,
                        "state": zstate.get(zone) or {}}
     ok = True
+    cam_pages = 0
     for zone, m in zones.items():
         ok &= mddb_add(f"wall-{zone}", wall_page(
             zone, m["manifest"], m["state"]), f"Wall: {zone}")
+        for c in m["manifest"].get("cams") or []:
+            ok &= mddb_add(f"cam-{zone}-{c['key']}",
+                           cam_page(zone, c, m["manifest"]),
+                           f"Cam: {c['label']} — {zone}")
+            cam_pages += 1
     if zones:
         ok &= mddb_add("cctv-walls", index_page(zones),
                        "CCTV / traffic camera walls")
         notify_transitions(zones)
-    print(f"walls: {len(zones)} pages + index {'ok' if ok else 'ERR'}")
+    print(f"walls: {len(zones)} pages + {cam_pages} cams + index "
+          f"{'ok' if ok else 'ERR'}")
     return 0
 
 

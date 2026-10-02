@@ -317,14 +317,20 @@ def snap(query: str, settle: float, zoom: bool = True) -> tuple[bytes, str]:
             # can eat the click; retry once before failing.
             w, h, rgb = xwd_to_rgb(raw)
             sel_y = selected_row_y(w, h, rgb)
-            if sel_y is None or abs(sel_y - meta["y"]) <= 14:
+            # sel_y=None means NO highlighted row — the click missed and
+            # pane 1 still shows whatever stream was attached before (a
+            # DIFFERENT device entirely: 2026-10-02 wall showed noble-a
+            # CH05 in every noble-club tile because _has_video passed on
+            # the stale frame). Absence of highlight is a failure, not a
+            # pass — retry once, then fail loudly.
+            if sel_y is not None and abs(sel_y - meta["y"]) <= 14:
                 break
             if _seltry == 0:
                 continue
             raise RuntimeError(
-                f"selected row y={sel_y} does not match '{name}' "
-                f"(y={meta['y']}) — device tree layout drifted; "
-                "recalibrate channels.json")
+                f"selected row {'not highlighted' if sel_y is None else f'y={sel_y}'} "
+                f"does not match '{name}' (y={meta['y']}) — device tree "
+                "layout drifted; recalibrate channels.json")
 
         # zoom=0 (wall thumbs) skips the zoom dance entirely — the zoom
         # re-opens the P2P stream and costs 12-36s per cam, which is why
