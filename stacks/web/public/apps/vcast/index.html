@@ -627,10 +627,26 @@
     // speechSynthesis on iOS is gesture-gated — until audioOK, fall back to
     // a toast so the narration is still visible, and report the block so the
     // sender knows the screen is muted.
-    function speak(text) {
+    function speak(text, langHint, audioUrl) {
       text = String(text || "").slice(0, 300);
       if (!text) return;
-      if (!audioOK || !("speechSynthesis" in window)) {
+      if (!audioOK) {
+        showToast("🔊 " + text, 4000);
+        sendState("speak-blocked", text);
+        return;
+      }
+      // backend-TTS path: Ada pre-synthesized the line (same voice as her
+      // own speech) when the text is a language this display likely can't
+      // voice — e.g. Thai on a lab Chromium with only en voices.
+      if (audioUrl) {
+        const a = new Audio(audioUrl);
+        sendState("speaking", "[tts] " + text);
+        showToast("🔊 " + text, 3000);
+        a.play().catch(() => speak(text, langHint));  // fallback to synth
+        a.onended = () => sendState("idle");
+        return;
+      }
+      if (!("speechSynthesis" in window)) {
         showToast("🔊 " + text, 4000);
         sendState("speak-blocked", text);
         return;
@@ -638,12 +654,20 @@
       speechSynthesis.cancel(); // new narration supersedes in-flight/queued
       const u = new SpeechSynthesisUtterance(text);
       // auto-language: Thai Unicode block -> th-TH so a Thai narration
-      // doesn't come out in the default English voice
-      u.lang = /[\u0E00-\u0E7F]/.test(text) ? "th-TH" : "en-US";
+      // doesn't come out in the default English voice. Pick an actual
+      // voice for the lang — setting u.lang alone still falls back to the
+      // default voice when no matching voice is installed (observed:
+      // Thai text read by an English voice on a screen with no th voice).
+      const lang = langHint || (/[\u0E00-\u0E7F]/.test(text) ? "th-TH" : "en-US");
+      const voices = speechSynthesis.getVoices();
+      const voice = voices.find(v => v.lang === lang)
+                 || voices.find(v => v.lang && v.lang.startsWith(lang.split("-")[0]));
+      if (voice) u.voice = voice;
+      u.lang = lang;
       u.rate = 1.05;
       speechSynthesis.speak(u);
       showToast("🔊 " + text, 3000);
-      sendState("speaking", text);
+      sendState("speaking", `${voice ? "[" + voice.lang + "] " : "[missing-" + lang + " voice] "}${text}`);
     }
 
     // -- websocket ---------------------------------------------------------------
@@ -717,7 +741,7 @@
         case "image": showImage(msg.pane, msg.url, msg.interval); break;
         case "nav": nav(msg.pane, msg.url); break;
         case "audio": playAudio(msg.url); break;
-        case "speak": speak(msg.text); break;
+        case "speak": speak(msg.text, msg.lang, msg.audio); break;
         case "stop":
           if (msg.pane != null) {
             paneTeardown(paneAt(msg.pane));
