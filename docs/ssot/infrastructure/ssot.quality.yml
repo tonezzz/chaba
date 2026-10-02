@@ -204,6 +204,8 @@ registry:
   - {id: gate.standard, lane: on-host-gate, gate: blocking, cost: cheap,   runner: manual, script: bash scripts/ci-standard.sh}
   - {id: gate.qa,       lane: on-host-gate, gate: blocking, cost: cheap,   runner: manual, script: bash scripts/ci-qa.sh}
   - {id: gate.all,      lane: on-host-gate, gate: blocking, cost: network, runner: manual, script: "bash scripts/ci-all.sh (single entry: smoke+standard+qa)"}
+  - {id: gate.jobs-render, lane: on-host-gate, gate: blocking, cost: cheap, runner: inside ci-standard.sh, script: "render-jobs.py --check + systemd/generated/ drift diff (manifest edit without re-render fails)"}
+  - {id: audit.jobs-drift, lane: scheduled-audit, gate: warning, cost: network, runner: "TODO — standardization-audit", script: "systemctl --user list-timers vs ssot.jobs.yml per host — orphan units and unmanifested timers surface here"}
   - id: qa.registry-self-check
     lane: scheduled-audit
     gate: blocking

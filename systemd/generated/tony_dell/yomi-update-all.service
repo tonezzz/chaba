@@ -1,0 +1,7 @@
+[Unit]
+Description=Yomi Update All (job:yomi-update-all, rendered from ssot.jobs.yml — do not edit)
+
+[Service]
+Type=oneshot
+TimeoutStartSec=600
+ExecStart=/usr/bin/podman run --rm --name yomi-update-all -v %h/CascadeProjects/chaba-tony-dell:%h/CascadeProjects/chaba-tony-dell:Z -v %h/.yomi/mcpb:%h/.yomi/mcpb:Z -v %h/.local/share/yomi:%h/.local/share/yomi:Z -w %h/CascadeProjects/chaba-tony-dell/scripts/yomi --add-host postgre:100.68.142.13 --env-file %h/.config/yomi/yomi-update-all.env docker.io/library/node:22-slim node %h/CascadeProjects/chaba-tony-dell/scripts/yomi/update-conversations.mjs

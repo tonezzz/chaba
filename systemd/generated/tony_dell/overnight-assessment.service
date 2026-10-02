@@ -1,0 +1,7 @@
+[Unit]
+Description=Overnight Assessment (job:overnight-assessment, rendered from ssot.jobs.yml — do not edit)
+
+[Service]
+Type=oneshot
+TimeoutStartSec=1800
+ExecStart=/usr/bin/python3 %h/CascadeProjects/chaba/scripts/orchestrate.py --workflow overnight --force

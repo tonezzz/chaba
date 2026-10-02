@@ -1,0 +1,9 @@
+[Unit]
+Description=Yomi + PostgreSQL Backup (job:yomi-backup, rendered from ssot.jobs.yml — do not edit)
+
+[Service]
+Type=oneshot
+TimeoutStartSec=1800
+ExecStart=%h/.local/bin/yomi-backup.sh
+Environment="BACKUP_HOST=tony-omen"
+Environment="BACKUP_USER=tony"
