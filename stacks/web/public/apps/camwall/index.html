@@ -87,7 +87,13 @@
 </div>
 <div id="zoom"><div class="cap"></div><div class="x">✕</div><img alt=""></div>
 <script>
-  const zone = new URLSearchParams(location.search).get("zone") || "zone-a";
+  const qs = new URLSearchParams(location.search);
+  const zones = (qs.get("zones") || qs.get("zone") || "zone-a")
+    .split(",").map(z => z.trim()).filter(Boolean);
+  let zoneIdx = 0;
+  let zone = zones[0];
+  const ZONE_S = +(qs.get("zone_s") || 45);   // seconds per wall in a playlist
+  const CYCLE_S = +(qs.get("cycle") || 0);   // >0 = fullscreen cam rotation
   const grid = document.getElementById("grid");
   const hud = document.getElementById("hud");
   const zoom = document.getElementById("zoom");
@@ -97,13 +103,13 @@
   let order = [];          // round-robin rotation order (live cams)
   let rrIdx = 0;
   let zoomKey = null;
+  let cycleIdx = 0;
 
   // optimal-cols layout: pick the column count that maximizes image area
   // for n cells on this viewport — cells letterbox (object-fit:contain)
   // so we just need cell aspect ≈ thumb aspect (480x248) while filling
   // the screen. ?cols=N pins it for a specific screen. ?aspect=W/H
   // overrides the thumb aspect.
-  const qs = new URLSearchParams(location.search);
   const PIN_COLS = +(qs.get("cols") || 0);
   const THUMB_A = +(qs.get("aspect") || 0) || 480 / 248;
   function layout() {
@@ -166,7 +172,8 @@
         div.innerHTML = `<span class="lbl">${cam.label}</span><img alt=""><span class="age"></span><div class="err" style="display:none"></div>`;
         grid.appendChild(div);
         c = { div, img: div.querySelector("img"), age: div.querySelector(".age"),
-              err: div.querySelector(".err"), ts: 0, url: "", det: null };
+              err: div.querySelector(".err"), ts: 0, url: "", det: null,
+              key: cam.key, label: cam.label };
         div.addEventListener("click", () => openZoom(c, cam));
         cells.set(cam.key, c);
       }
@@ -235,6 +242,35 @@
     for (const c of cells.values()) c.img.parentElement.classList.remove("live-edge");
     order[rrIdx++ % order.length].img.parentElement.classList.add("live-edge");
   }, 1000);
+
+  // ?cycle=N — fullscreen auto-rotate through the zone's live cams, N s
+  // each. Reuses the zoom overlay: same img element, label in the cap.
+  if (CYCLE_S > 0) {
+    grid.style.display = "none";
+    zoom.style.display = "block";
+    zoom.querySelector(".x").style.display = "none";
+    setInterval(() => {
+      if (document.visibilityState !== "visible" || !order.length) return;
+      const c = order[cycleIdx++ % order.length];
+      if (!c.url) return;
+      zoomKey = c.key;
+      zoomImg.src = `${c.url}?t=${c.ts || Date.now()}`;
+      zoomCap.textContent = c.label || c.key;
+    }, CYCLE_S * 1000);
+  }
+
+  // ?zones=a,b,c — rotate the whole wall through zones every zone_s s.
+  // Swaps the manifest source; cells rebuild on the next refresh tick.
+  if (zones.length > 1) {
+    setInterval(() => {
+      if (document.visibilityState !== "visible") return;
+      zoneIdx = (zoneIdx + 1) % zones.length;
+      zone = zones[zoneIdx];
+      cells.forEach(c => c.div.remove());
+      cells.clear();
+      refresh();
+    }, ZONE_S * 1000);
+  }
 
   refresh();
   setInterval(refresh, 5000);
