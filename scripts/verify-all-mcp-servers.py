@@ -74,7 +74,18 @@ def stdio_verify(name, cmd, args, env):
         proc.terminate()
         # Some launchers (e.g. mcp-debug.sh) exit 0 silently when reusing an
         # already-running server — that IS the healthy state for this check.
-        if proc.wait(timeout=5) == 0 and _already_running(name):
+        # Singleton wrappers (mcp-single-instance.sh) may also ignore SIGTERM
+        # while the real server stays up — same verdict via pgrep.
+        try:
+            rc = proc.wait(timeout=5)
+        except subprocess.TimeoutExpired:
+            proc.kill()
+            try:
+                proc.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                pass
+            rc = None
+        if (rc == 0 or rc is None) and _already_running(name):
             return {"ok": True, "status": "already running"}
         return {"ok": False, "error": "no initialize response"}
 
@@ -102,7 +113,7 @@ def stdio_verify(name, cmd, args, env):
     return {"ok": True, "tool_count": len(tools), "tools": [t["name"] for t in tools[:10]]}
 
 
-def url_verify(name, url):
+def url_verify(name, url, extra_headers=None):
     try:
         # Streamable-HTTP MCP servers require this Accept pair and reply in
         # SSE format; Accept: */* gets a 406 from strict servers.
@@ -111,6 +122,7 @@ def url_verify(name, url):
             "User-Agent": "curl/8.0.0",
             "Accept": "application/json, text/event-stream",
         }
+        mcp_headers.update(extra_headers or {})
         init = json.dumps({"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {"protocolVersion": "2024-11-05", "capabilities": {}, "clientInfo": {"name": "verify"}}}).encode()
         req1 = urllib.request.Request(url, data=init, method="POST", headers=mcp_headers)
         session_id = None
@@ -143,13 +155,16 @@ def main():
     config = json.loads(CONFIG.read_text())
     results = {}
     for name, spec in config["mcpServers"].items():
-        if "url" in spec:
-            results[name] = url_verify(name, spec["url"])
-        elif "command" in spec:
-            env = spec.get("env")
-            results[name] = stdio_verify(name, spec["command"], spec.get("args", []), env)
-        else:
-            results[name] = {"ok": False, "error": "unknown transport"}
+        try:
+            if "url" in spec:
+                results[name] = url_verify(name, spec["url"], spec.get("headers"))
+            elif "command" in spec:
+                env = spec.get("env")
+                results[name] = stdio_verify(name, spec["command"], spec.get("args", []), env)
+            else:
+                results[name] = {"ok": False, "error": "unknown transport"}
+        except Exception as e:
+            results[name] = {"ok": False, "error": f"verify crashed: {e}"}
 
     ok = sum(1 for r in results.values() if r["ok"])
     print(f"\nVerified {ok}/{len(results)} MCP servers")
