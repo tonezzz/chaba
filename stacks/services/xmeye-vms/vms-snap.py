@@ -57,7 +57,10 @@ PANE_TITLE_H = 30
 # Single-pane zoom: double-clicking the active monitor pane toggles a zoomed
 # view where the video area is ~4x the pixels of the grid cell — capture that
 # for quality. The 4-grid toolbar button restores multi-view afterwards.
-SINGLE_PANE_RECT = (5, 90, 1070, 640)   # video area in zoomed single-pane
+SINGLE_PANE_RECT = (5, 120, 1070, 640)  # video area in zoomed single-pane —
+                                        # y1 below the pane's own OSD title
+                                        # strip (CH label + icons) which
+                                        # otherwise tops every frame
 GRID4_BTN = (388, 675)                  # bottom-toolbar 2x2 grid icon (2nd;
                                         # 357 = 1-pane — a miss leaves VMS
                                         # zoomed and corrupts the next snap)
