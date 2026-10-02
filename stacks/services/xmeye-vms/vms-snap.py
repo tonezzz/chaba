@@ -42,31 +42,31 @@ DISPLAY = os.environ.get("VMS_DISPLAY", ":99")
 DEFAULT_SETTLE = float(os.environ.get("VMS_SNAP_SETTLE", "9"))
 MAX_SETTLE = 30.0
 
-# Monitor pane 1 (top-left) inside the 1280x720 VMS desktop — includes the
-# pane title bar so the channel label is visible in the frame.
-PANE_RECT = (7, 84, 536, 357)   # x1, y1, x2, y2
+# Monitor pane 1 (top-left) inside the maximized 1920x1080 VMS desktop —
+# includes the pane title bar so the channel label is visible in the frame.
+PANE_RECT = (8, 85, 855, 537)   # x1, y1, x2, y2
 # Click target to make pane 1 the active pane before selecting a channel.
-PANE_CLICK = (270, 218)
+PANE_CLICK = (430, 310)
 # Point inside the device tree used to reset its scroll — row coordinates in
 # channels.json assume the tree is scrolled fully up; a drifted scroll shifts
 # every row and silently selects the wrong camera.
-TREE_ANCHOR = (1150, 205)
+TREE_ANCHOR = (1780, 300)
 # Rows at the top of PANE_RECT carrying the pane title/OSD header — stripped
 # before autocrop so it doesn't count as "content".
 PANE_TITLE_H = 30
 # Single-pane zoom: double-clicking the active monitor pane toggles a zoomed
 # view where the video area is ~4x the pixels of the grid cell — capture that
 # for quality. The 4-grid toolbar button restores multi-view afterwards.
-SINGLE_PANE_RECT = (5, 120, 1070, 640)  # video area in zoomed single-pane —
-                                        # y1 below the pane's own OSD title
-                                        # strip (CH label + icons) which
-                                        # otherwise tops every frame
-GRID4_BTN = (388, 675)                  # bottom-toolbar 2x2 grid icon (2nd;
-                                        # 357 = 1-pane — a miss leaves VMS
-                                        # zoomed and corrupts the next snap)
+SINGLE_PANE_RECT = (8, 113, 1706, 1000)  # zoomed pane video area; y1 below
+                                        # the pane's own OSD title strip (CH
+                                        # label + icons) — a bar otherwise
+                                        # tops every frame
+GRID4_BTN = (533, 1020)                 # bottom-toolbar 2x2 grid icon (2nd;
+                                        # miss leaves VMS zoomed and corrupts
+                                        # the next snap)
 # Tree strip scanned for the selected-row blue highlight (verify the click
 # landed on the intended channel instead of silently returning another).
-TREE_STRIP_X = (1090, 1260)
+TREE_STRIP_X = (1710, 1910)
 
 STATE_DIR = os.environ.get("VMS_SNAP_STATE", "/tmp")
 _lock = threading.RLock()
