@@ -341,6 +341,17 @@ class AdaVoiceCard extends HTMLElement {
     return localStorage.getItem(AVC_KEY_STORAGE) || "";
   }
 
+  // The HA session user's person.* entity (via user_id) — minted keys bind
+  // to it so Ada knows the device's registered owner before voice-id lands.
+  _myPerson() {
+    const uid = this._hass?.user?.id;
+    if (!uid || !this._hass?.states) return null;
+    for (const s of Object.values(this._hass.states))
+      if (s.entity_id.startsWith("person.") && s.attributes?.user_id === uid)
+        return s.entity_id;
+    return null;
+  }
+
   // Mint a per-device issued key through HA: script.ada_voice_key creates
   // (or re-pairs) ha-<device8> on the backend and redeems it server-side,
   // returning the raw key. The admin credential never leaves HA.
@@ -354,6 +365,7 @@ class AdaVoiceCard extends HTMLElement {
         service_data: {
           instance: this._config.instance || "tony",
           device_id: this._deviceId(),
+          person: this._myPerson() || "",
         },
         return_response: true,
       });
