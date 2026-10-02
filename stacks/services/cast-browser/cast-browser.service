@@ -1,0 +1,19 @@
+[Unit]
+Description=Persistent headless browser for voice-driven TV casting (on omen)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+Environment=HA_BASE=https://tony-dell.taila0626a.ts.net:8123
+Environment=OUT_DIR=/home/tony/.local/share/cast-shots
+Environment=MEDIA_BASE=http://192.168.2.86:8090
+Environment=HA_CAST_PROFILE=/home/tony/.config/ha-cast-profile
+Environment=PORT=8799
+Environment=BIND=0.0.0.0
+ExecStart=/usr/bin/node %h/.local/bin/cast-browser-server.mjs
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=default.target
