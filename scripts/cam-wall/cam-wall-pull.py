@@ -59,17 +59,11 @@ ZONES: dict[str, dict] = {
             ("Road Corner", "vms", "5. Road Corner"),
         ],
     },
-    "noble-park": {
-        "interval": 90,
-        "warm": 900,
-        "cams": [
-            ("Swimming Pool", "vms", "Swimming Pool"),
-            ("Tennis Court", "vms", "Tennis Court"),
-            ("Play Ground", "vms", "Play Ground"),
-            ("Mini Mart", "vms", "Mini Mart"),
-            ("Guard View", "vms", "2. Guard View"),
-        ],
-    },
+    # noble-park retired 2026-10-02 — it was 4 noble-club channels +
+    # noble-a Guard View, i.e. a subset of the two per-DVR walls below;
+    # every pull spent ~80s of the shared VMS budget re-snapping the same
+    # channels. Pool/Tennis/PlayGround/Mini Mart live on vms-noble-club,
+    # Guard View on vms-noble-a.
     # per-DVR walls — every channel the VMS device list exposes for that
     # recorder. Serial pulls (~16s/cam + poll headroom): club 8, A 5.
     "vms-noble-club": {

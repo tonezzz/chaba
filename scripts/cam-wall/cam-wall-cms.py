@@ -35,8 +35,7 @@ COLLECTION = "ada-cms-pages"
 ZONE_INFO = {
     "zone-a": "Noble-A estate perimeter — the roads in/out, walkway, "
               "guard view and road corner (VMS DVR, P2P uplink).",
-    "noble-park": "Noble park facilities — swimming pool, tennis court, "
-                  "playground, mini mart, guard view (VMS DVR).",
+
     "vms-noble-club": "Every channel on the Noble-Club DVR — laundry/"
                       "washing machines, stairway room, mini mart, front "
                       "roads, pool, tennis, playground.",
@@ -59,7 +58,7 @@ ZONE_INFO = {
 # zone -> display area for page titles: "CCTV Wall: <Area>"
 AREA = {
     "zone-a": "Noble-A Estate",
-    "noble-park": "Noble Park",
+
     "vms-noble-club": "Noble Club",
     "vms-noble-a": "Noble-A",
     "tony-house": "Tony House",
