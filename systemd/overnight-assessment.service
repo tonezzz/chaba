@@ -6,6 +6,6 @@ After=network.target
 Type=oneshot
 User=tony
 WorkingDirectory=/home/tony/CascadeProjects/chaba
-ExecStart=/home/tony/CascadeProjects/chaba/scripts/overnight-jobs-expanded.sh
+ExecStart=/usr/bin/python3 /home/tony/CascadeProjects/chaba/scripts/orchestrate.py --workflow overnight --force
 StandardOutput=append:/home/tony/CascadeProjects/chaba/logs/overnight-service.log
 StandardError=append:/home/tony/CascadeProjects/chaba/logs/overnight-service.log

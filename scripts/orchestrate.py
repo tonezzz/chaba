@@ -102,6 +102,31 @@ def run_step(step, dry_run=False, timeout=60):
         return {"ok": False, "cmd": cmd, "rc": -1, "error": str(e), "duration_ms": round((time.time() - t0) * 1000, 1)}
 
 
+def emit_report_meta(config, results, overall, report_file):
+    """Emit the node's meta.yml + timeline event (ssot.reports.yml L2 wiring)."""
+    node = config.get("report_node")
+    if not node:
+        return
+    try:
+        from lib.report import append_timeline, write_meta
+    except ImportError as e:
+        print(f"report meta emit skipped (lib.report unavailable): {e}")
+        return
+    failed = [sid for sid, r in results.items()
+              if not r.get("ok") and not r.get("skipped")]
+    status = "ok" if overall else "error"
+    summary = (f"{len(results) - len(failed)}/{len(results)} steps ok"
+               + (f"; failed: {', '.join(failed)}" if failed else ""))
+    meta_path = REPORTS_DIR / f"meta.{node}.yml"
+    layer = config.get("report_layer", "L2-domain")
+    write_meta(meta_path, node=node, layer=layer,
+               generated_by="orchestrate.py", status=status,
+               purpose=config.get("report_purpose"), summary=summary,
+               extra={"run_report": str(report_file)})
+    append_timeline(node, layer, status, summary, ref=str(report_file))
+    print(f"meta -> {meta_path}")
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--workflow", default="overnight", help="Workflow name (SSOT: ssot.orchestration.<name>.yml)")
@@ -182,6 +207,7 @@ def main():
         report["ok"] = overall
         report_file.parent.mkdir(parents=True, exist_ok=True)
         report_file.write_text(json.dumps(report, indent=2, default=str), encoding="utf-8")
+        emit_report_meta(ssot.get("config", {}), results, overall, report_file)
 
     print(f"Workflow {args.workflow}: {len(results)} step(s), ok={overall}")
     if not overall and not args.dry_run:

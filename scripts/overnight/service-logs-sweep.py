@@ -17,8 +17,8 @@ try:
 except ImportError:
     raise SystemExit("PyYAML is required: pip install pyyaml")
 
-sys.path.insert(0, str(REPO / "scripts" / "mcp_debug"))
-from tools import mcp_logs
+sys.path.insert(0, str(REPO / "scripts"))
+from mcp_debug.tools import mcp_logs
 
 
 def load_yaml(path):

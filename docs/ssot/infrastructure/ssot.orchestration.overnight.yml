@@ -14,6 +14,9 @@ config:
   state_file: reports/ORCHESTRATION_STATE.json
   report_file: reports/ORCHESTRATION.json
   default_on_fail: abort
+  report_node: overnight-assessment
+  report_layer: L2-domain
+  report_purpose: Nightly job rollup — health areas, log analysis, per-job status
 
 steps:
   - id: ssot_validate
@@ -24,7 +27,7 @@ steps:
 
   - id: health_snapshot
     name: Health Snapshot
-    run: node scripts/health-snapshot.mjs
+    run: node scripts/audits/http-health-audit.mjs
     on_fail: continue
     timeout: 300
     depends_on: [ssot_validate]
