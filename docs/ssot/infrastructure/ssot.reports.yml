@@ -4,16 +4,15 @@ icon: 📊
 version: 1
 
 overview:
-  purpose: |
+  purpose: >
     Declared standard for turning raw operational data into a single human
-    overview. Every report is a node in a layered hierarchy (L0 raw → L1
-    producer → L2 domain → L3 SYSTEM-REPORT.md); digests are never
-    hand-written. `nodes` is declared intent; each node's meta.yml is
-    observed state — the gap is what staleness detection reports.
+    overview — layered hierarchy L0 raw → L1 producer → L2 domain → L3
+    SYSTEM-REPORT.md; digests are never hand-written. `nodes` is declared
+    intent; each node's meta.yml is observed state.
 
 config:
   version: 1
-  last_updated: "2026-09-26"
+  last_updated: "2026-10-01"
   maintainer: tony
   status: active
   origin: >
@@ -76,9 +75,8 @@ format_rules:
 
 meta_schema:
   description: >
-    One meta.yml per registered node, written by its generator at the end
-    of each run. scripts/lib/report.py::write_meta() is the canonical
-    writer.
+    One meta.yml per node, written by its generator at run end;
+    scripts/lib/report.py::write_meta() is the canonical writer.
   fields:
     node: registry id (e.g. audit-hosts/tony-dell)
     layer: one of the layers above
@@ -105,9 +103,8 @@ timeline:
   path: ~/var/chaba/reports/timeline.jsonl
   env_override: CHABA_REPORTS_DIR
   format: >
-    One JSON object per line, appended by each generator on completion
-    (scripts/lib/report.py::append_timeline); SYSTEM-REPORT.md renders only
-    the last ~20 events.
+    One JSON object per line appended by each generator (append_timeline);
+    SYSTEM-REPORT.md renders only the last ~20 events.
   event_fields:
     ts: ISO-8601 with timezone
     node: registry id
