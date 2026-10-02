@@ -1,0 +1,10 @@
+[Unit]
+Description=Live desktop -> HLS stream for tony-omen X display :%i
+
+[Service]
+ExecStart=%h/.local/bin/cast-desktop-run.sh %i %h/.local/share/cast-desktop/desktop/index%i.m3u8
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target

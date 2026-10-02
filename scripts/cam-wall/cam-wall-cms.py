@@ -19,6 +19,7 @@ import json
 import os
 import sys
 import time
+import urllib.error
 import urllib.request
 from pathlib import Path
 
@@ -35,8 +36,7 @@ COLLECTION = "ada-cms-pages"
 ZONE_INFO = {
     "zone-a": "Noble-A estate perimeter — the roads in/out, walkway, "
               "guard view and road corner (VMS DVR, P2P uplink).",
-    "noble-park": "Noble park facilities — swimming pool, tennis court, "
-                  "playground, mini mart, guard view (VMS DVR).",
+
     "vms-noble-club": "Every channel on the Noble-Club DVR — laundry/"
                       "washing machines, stairway room, mini mart, front "
                       "roads, pool, tennis, playground.",
@@ -51,7 +51,40 @@ ZONE_INFO = {
     "burapha": "Bangna–Burapha expressway cams (registry group "
                "ทางพิเศษบูรพาวิถี).",
     "chonburi": "Chonburi corridor cams (registry group ชลบุรี).",
+    "dohweb": "DOH national highway cams (กล้องกรมทางหลวง) — Wowza HLS on "
+              "the DOH survey-station network (PER_* site codes, same feeds "
+              "DOHWeb maps); Bangkok ring + upcountry trunk roads.",
 }
+
+# zone -> display area for page titles: "CCTV Wall: <Area>"
+AREA = {
+    "zone-a": "Noble-A Estate",
+
+    "vms-noble-club": "Noble Club",
+    "vms-noble-a": "Noble-A",
+    "tony-house": "Tony House",
+    "rama9": "Rama 9 Traffic",
+    "traffic": "Bangkok Traffic",
+    "burapha": "Burapha Expressway",
+    "chonburi": "Chonburi Corridor",
+    "dohweb": "DOH Highways",
+}
+
+# VMS DVR device -> display area (a camera's canonical area is its DVR,
+# not whichever wall happens to list it)
+DEV_AREA = {"noble-club": "Noble Club", "noble-a": "Noble-A"}
+
+
+def cam_slug(zone: str, cam: dict) -> str:
+    """Canonical cam-page key. VMS cams key on <device>-<camkey> so the
+    same physical camera is ONE page even when several walls list it
+    (zone-a & vms-noble-a both carry '1. Road In')."""
+    dev = cam.get("dev")
+    return f"cam-{dev}-{cam['key']}" if dev else f"cam-{zone}-{cam['key']}"
+
+
+def cam_area(zone: str, cam: dict) -> str:
+    return DEV_AREA.get(cam.get("dev") or "", AREA.get(zone, zone))
 
 
 def http_get(url: str, timeout: float = 15) -> dict:
@@ -59,7 +92,21 @@ def http_get(url: str, timeout: float = 15) -> dict:
         return json.load(r)
 
 
+# publish dedup: MDDB writes re-embed the doc, so we only POST when the
+# rendered markdown actually changed (per-key sha256 of content).
+PUB_HASH = DATA / "_cms-pub-hash.json"
+try:
+    _pub_hash: dict[str, str] = json.loads(PUB_HASH.read_text())
+except Exception:
+    _pub_hash = {}
+
+
 def mddb_add(key: str, md: str, title: str) -> bool:
+    import hashlib
+    h = hashlib.sha256(md.encode()).hexdigest()[:16]
+    hkey = f"{key}:en"
+    if _pub_hash.get(hkey) == h:
+        return True  # unchanged — skip write + re-embedding
     body = json.dumps({
         "collection": COLLECTION, "key": key, "lang": "en",
         "contentMd": md,
@@ -74,10 +121,37 @@ def mddb_add(key: str, md: str, title: str) -> bool:
         headers={"Content-Type": "application/json"})
     try:
         with urllib.request.urlopen(req, timeout=30) as r:
-            return r.status < 300
+            if r.status < 300:
+                _pub_hash[hkey] = h
+                try:
+                    PUB_HASH.write_text(json.dumps(_pub_hash))
+                except Exception:
+                    pass
+                return True
+            return False
     except Exception as exc:
         print(f"mddb add {key}: {exc}", file=sys.stderr)
         return False
+
+
+def mddb_delete(key: str) -> None:
+    """Remove a superseded page (e.g. cam-<zone>-* replaced by the
+    canonical cam-<dev>-* key)."""
+    body = json.dumps({"collection": COLLECTION, "key": key,
+                       "lang": "en"}).encode()
+    req = urllib.request.Request(
+        f"{MDDB}/delete", data=body,
+        headers={"Content-Type": "application/json"})
+    try:
+        urllib.request.urlopen(req, timeout=15).read()
+        _pub_hash.pop(f"{key}:en", None)
+    except urllib.error.HTTPError as exc:
+        # 400 'document not found' is fine — key was never published
+        if exc.code != 400:
+            print(f"mddb delete {key}: {exc}", file=sys.stderr)
+        _pub_hash.pop(f"{key}:en", None)
+    except Exception as exc:
+        print(f"mddb delete {key}: {exc}", file=sys.stderr)
 
 
 DET_MAX_BYTES = 8 * 1024 * 1024   # ~14d of hourly-ish sweeps
@@ -156,7 +230,7 @@ def wall_page(zone: str, man: dict, zstate: dict) -> str:
     age = int(time.time() - man.get("updated", 0))
     det_span, det_top = detections_tail(zone)
     rows = "\n".join(
-        f"| {c['label']} | {c['key']} | "
+        f"| [{c['label']}](https://idc01.taila0626a.ts.net/cms/#{cam_slug(zone, c)}) | {c['key']} | "
         + ("live" if c.get("ok") else "down")
         + (f" · {int(time.time()-c['ts'])}s old" if c.get("ts") else "")
         + (f" · {c['err']}" if c.get("err") else "")
@@ -169,7 +243,7 @@ def wall_page(zone: str, man: dict, zstate: dict) -> str:
                      f"Raw log: `data/{zone}/detections-{zone}.jsonl` "
                      "(append-only while the yolo effect is on).\n")
     det_block += detections_timeline(zone)
-    return f"""# Wall: {zone}
+    return f"""# CCTV Wall: {AREA.get(zone, zone)} (`{zone}`)
 
 {ZONE_INFO.get(zone, 'Camera wall zone.')}
 
@@ -179,7 +253,9 @@ def wall_page(zone: str, man: dict, zstate: dict) -> str:
 - **Refresh**: {'enabled' if zstate.get('enabled') else 'off (warm thumbs only)'} · interval {s.get('interval', 'default')}s
 - **Status**: {len(live)}/{len(man['cams'])} cams live · {len(stale)} stale · {len(dead)} dead · manifest {age}s old
 - **Effects**: {', '.join(s.get('effects') or ['none'])}
-- **Knobs** (POST /camwall settings or `cctv_wall` settings): interval, jpeg_q, thumb_w, cams_skip, cams_extra, effects (timestamp, grid, yolo:classes@conf)
+
+Controls, status-card standard and Ada usage → `cctv-walls`
+(shared — kept on the index so wall pages carry data only).
 
 ## Cameras
 
@@ -187,13 +263,119 @@ def wall_page(zone: str, man: dict, zstate: dict) -> str:
 |---|---|---|
 {rows}
 {det_block}
-## For Ada
+"""
 
-- "put the {zone} wall on screen N" → `cctv_wall(zone='{zone}', screen=N)`
-  (ask before starting — it is a camera capture)
-- status: {len(live)}/{len(man['cams'])} cams returning frames right now
-- detection questions ("anyone at …?") are only answerable while the
-  yolo effect is on — the window is the detections jsonl span.
+
+def cam_dets(zone: str, cam_key: str, hours: int = 24) -> tuple[str, str]:
+    """Per-cam detection roll-up: 24h class counts + last-seen time."""
+    cutoff = time.time() - hours * 3600
+    counts: dict[str, int] = {}
+    last = 0
+    for r in _det_recs(zone):
+        if r.get("ts", 0) < cutoff:
+            continue
+        for d in (r.get("cams") or {}).get(cam_key) or []:
+            counts[d["cls"]] = counts.get(d["cls"], 0) + 1
+            last = max(last, r["ts"])
+    if not counts:
+        return "", ""
+    top = ", ".join(f"{k}×{v}" for k, v in
+                    sorted(counts.items(), key=lambda x: -x[1]))
+    return top, time.strftime("%H:%M", time.localtime(last))
+
+
+def cam_page(slug_key: str, entries: list[tuple[str, dict, dict]]) -> str:
+    """One CMS dossier per PHYSICAL camera — `entries` is every
+    (zone, cam, manifest) that lists it; the freshest one supplies the
+    image/state. Data-only (standard lives on cctv-walls); state uses
+    coarse buckets so unchanged cams hash-identical and skip republish."""
+    # freshest manifest entry wins for the still/state
+    zone, cam, man = max(
+        entries, key=lambda e: e[2].get("updated") or 0)
+    key = cam["key"]
+    ok = cam.get("ok")
+    err = cam.get("err") or ""
+    ts = cam.get("ts") or 0
+    age = int(time.time() - ts) if ts else None
+    bucket = time.strftime("%Y-%m-%d %H:%M",
+                           time.localtime((man.get("updated") or 0)
+                                          // 300 * 300))
+    if ok:
+        state = "live"
+    elif ts:
+        state = f"stale — last frame {age}s ago"
+    else:
+        state = "down — no frame on record"
+    det_top, det_last = cam_dets(zone, key)
+    det_line = (f"{det_top} (last seen {det_last}, 24h window)"
+                if det_top else "none in window")
+    walls = ", ".join(f"[{z}]({BASE}/?zone={z})"
+                      for z, _, _ in sorted(
+                          entries, key=lambda e: e[0]))
+    ident = (f"- **Source**: `{cam['dev']}` DVR · channel `{cam['ch']}`\n"
+             if cam.get("dev") else "")
+    return f"""# CCTV: {cam_area(zone, cam)} — {cam['label']}
+
+![latest]({BASE}/data/{zone}/{key}.jpg)
+
+{ident}- **Walls**: {walls} (`wall-{"`, `wall-".join(
+        sorted({z for z, _, _ in entries}))}`)
+- **State**: {state} · manifest as of {bucket}
+{f"- **Error**: {err}" if err else ""}
+- **Detections**: {det_line}
+
+Part of `cctv-walls` — camera dossier for `{slug_key}`.
+"""
+
+
+CMS = "https://idc01.taila0626a.ts.net/cms"
+
+
+def dvr_wall_page(cam_groups: dict[str, list[tuple[str, dict, dict]]]) -> str:
+    """Video-wall CMS page — every DVR/VMS channel as a clickable image
+    tile, grouped by DVR device. Each tile links to the camera's own
+    cam-* dossier page; image is the freshest still across the walls
+    that list it."""
+    per_dev: dict[str, list[tuple[str, dict, dict, str]]] = {}
+    for slug, entries in cam_groups.items():
+        zone, cam, man = max(
+            entries, key=lambda e: e[2].get("updated") or 0)
+        if not cam.get("dev"):
+            continue
+        per_dev.setdefault(cam["dev"], []).append((zone, cam, man, slug))
+    if not per_dev:
+        return ""
+    sections = []
+    for dev in sorted(per_dev):
+        cams = sorted(per_dev[dev],
+                      key=lambda e: str(e[1].get("ch", e[1]["key"])))
+        cells = []
+        for zone, cam, man, slug in cams:
+            state = "live" if cam.get("ok") else \
+                ("stale" if cam.get("ts") else "down")
+            cells.append(
+                f"[![{cam['label']}]({BASE}/data/{zone}/{cam['key']}.jpg)]"
+                f"({CMS}#{slug})<br>{cam['label']} · {state}")
+        # 4-column grid via markdown table
+        rows = []
+        for i in range(0, len(cells), 4):
+            row = cells[i:i + 4]
+            row += [""] * (4 - len(row))
+            rows.append("| " + " | ".join(row) + " |")
+        live = sum(1 for _, c, _, _ in cams if c.get("ok"))
+        sections.append(
+            f"## {DEV_AREA.get(dev, dev)} DVR (`{dev}`) — "
+            f"{live}/{len(cams)} live\n\n"
+            "| | | | |\n|---|---|---|---|\n" + "\n".join(rows))
+    return f"""# DVR Video Wall
+
+One tile per physical DVR channel (XMEye VMS on mn01, snaps via the
+vms-snap shim). Click any tile for that camera's dossier page.
+Refresh follows each channel's wall interval — typically minutes.
+
+{chr(10).join(sections)}
+
+Walls these channels appear on: `cctv-walls` index.
 """
 
 
@@ -222,7 +404,78 @@ wall page or `cctv_wall settings`.
 {chr(10).join(rows)}
 
 Detail pages: {', '.join(f'`wall-{z}`' for z in sorted(zones))}
+· `dvr-wall` — every DVR channel as a clickable tile grid
+
+## Controls (shared by every wall)
+
+- **Cast**: `cctv_wall(zone='<zone>', screen=N)` — or open
+  `{BASE}/?zone=<zone>` on any browser. Ask before casting: it is a
+  camera capture.
+- **Knobs** — ⚙ drawer on the wall page, POST /camwall settings, or
+  `cctv_wall` settings: `interval`, `jpeg_q`, `thumb_w`, `cams_skip`,
+  `cams_extra`, `effects` (timestamp, grid, yolo:classes@conf).
+- **Dead cams render status cards**, not broken images: STALE (dimmed
+  last-good, <6h) · DELAYED (budget skip) · OFFLINE (no/ancient frame)
+  · NO SIGNAL (other). Standard: `docs/ssot/apps/ssot.apps.camwall.yml`.
+- **Detections** ("anyone at …?") are answerable only while the yolo
+  effect is on — each wall page shows its detections jsonl window.
 """
+
+
+NOTIFY_URL = os.environ.get(
+    "ADA_NOTIFY_URL", "https://idc01.taila0626a.ts.net/api/notify")
+NOTIFY_KEY = os.environ.get("ADA_NOTIFY_KEY") or os.environ.get(
+    "ADA_API_KEY", "")
+NOTIFY_STATE = DATA / "_cms-notify-state.json"
+
+
+def notify_ada(text: str) -> None:
+    """Ping Ada's /api/notify so she relays a wall-state transition to Tony.
+    Non-urgent — lands as a deferred note, never hijacks a turn."""
+    if not NOTIFY_KEY:
+        return
+    body = json.dumps({"text": text[:400], "urgent": "0"}).encode()
+    req = urllib.request.Request(
+        NOTIFY_URL, data=body,
+        headers={"Content-Type": "application/json",
+                 "x-api-key": NOTIFY_KEY})
+    try:
+        urllib.request.urlopen(req, timeout=15).read()
+    except Exception as exc:
+        print(f"notify failed: {exc}", file=sys.stderr)
+
+
+def notify_transitions(zones: dict[str, dict]) -> None:
+    """Compare live-counts against the last published state and notify Ada
+    only on meaningful transitions — zone recovered, zone went all-dead,
+    or a wall page published for the first time. Routine churn is silent."""
+    try:
+        prev = json.loads(NOTIFY_STATE.read_text())
+    except Exception:
+        prev = {}
+    cur: dict[str, int] = {}
+    notes = []
+    for zone, m in zones.items():
+        cams = m["manifest"].get("cams") or []
+        live = sum(1 for c in cams if c.get("ok"))
+        cur[zone] = live
+        if zone not in prev:
+            continue  # first sighting — record, don't announce
+        was = prev[zone]
+        if was == 0 and live > 0:
+            notes.append(
+                f"camwall {zone} recovered — {live}/{len(cams)} cams live "
+                f"again (wall-{zone} updated)")
+        elif was > 0 and live == 0:
+            notes.append(
+                f"camwall {zone} went all-dead — 0/{len(cams)} live "
+                f"(wall-{zone} updated)")
+    try:
+        NOTIFY_STATE.write_text(json.dumps(cur))
+    except Exception:
+        pass
+    for n in notes[:4]:  # cap: a DVR fleet flap can hit every zone at once
+        notify_ada(n)
 
 
 def main() -> int:
@@ -247,13 +500,35 @@ def main() -> int:
         zones[zone] = {"manifest": man,
                        "state": zstate.get(zone) or {}}
     ok = True
+    # group cams by canonical slug — one dossier per physical camera
+    cam_groups: dict[str, list[tuple[str, dict, dict]]] = {}
     for zone, m in zones.items():
         ok &= mddb_add(f"wall-{zone}", wall_page(
-            zone, m["manifest"], m["state"]), f"Wall: {zone}")
+            zone, m["manifest"], m["state"]),
+            f"CCTV Wall: {AREA.get(zone, zone)}")
+        for c in m["manifest"].get("cams") or []:
+            cam_groups.setdefault(cam_slug(zone, c), []).append(
+                (zone, c, m["manifest"]))
+    cam_pages = len(cam_groups)
+    dvr = dvr_wall_page(cam_groups)
+    if dvr:
+        ok &= mddb_add("dvr-wall", dvr, "DVR Video Wall")
+    for slug_key, entries in sorted(cam_groups.items()):
+        _, cam, _ = max(entries, key=lambda e: e[2].get("updated") or 0)
+        zone, _cam, _ = entries[0]
+        ok &= mddb_add(slug_key, cam_page(slug_key, entries),
+                       f"CCTV: {cam_area(zone, cam)} — {cam['label']}")
+        # retire the old zone-scoped key the canonical dev-key replaced
+        for z, c, _ in entries:
+            legacy = f"cam-{z}-{c['key']}"
+            if legacy != slug_key:
+                mddb_delete(legacy)
     if zones:
         ok &= mddb_add("cctv-walls", index_page(zones),
-                       "CCTV / traffic camera walls")
-    print(f"walls: {len(zones)} pages + index {'ok' if ok else 'ERR'}")
+                       "CCTV Camera Walls")
+        notify_transitions(zones)
+    print(f"walls: {len(zones)} pages + {cam_pages} cams + index "
+          f"{'ok' if ok else 'ERR'}")
     return 0
 
 

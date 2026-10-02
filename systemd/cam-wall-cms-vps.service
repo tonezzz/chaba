@@ -1,0 +1,8 @@
+[Unit]
+Description=cam-wall CMS generator (VPS lane) — wall-* + cam-* + dvr-wall pages into ada-cms-pages
+[Service]
+Type=oneshot
+Environment=CAMWALL_DATA=%h/.local/share/camwall/data
+EnvironmentFile=-%h/.config/camwall.env
+ExecStart=/usr/bin/python3 %h/CascadeProjects/chaba/scripts/cam-wall/cam-wall-cms.py
+TimeoutStartSec=300

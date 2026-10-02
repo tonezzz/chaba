@@ -14,6 +14,10 @@ sections:
         text: "ada_camera_snapshot: live snap fails (503/timeout) → vms_camera.stale_snapshot() looks the channel up across the VMS zone manifests (zone-a, noble-park, vms-noble-club, vms-noble-a) by slug, fetches the last-good thumb, and returns it flagged stale+age_s with the live error. Ada must describe it as a stale frame, never as live."
       - label: Freshness tiers
         text: "live = age < 2×zone interval (can be called 'just now'); warm = < zone warm window; stale = beyond warm (always quote the age); dead = no thumb ever (>never had a frame — say 'no image yet'). Standard thresholds: interval per ZONES (75-180s VMS, 15s house, 60-120s traffic), warm 300-1800s."
+      - label: Status cards (the 'instead of broken' standard)
+        text: "Every failed cam gets a generated <key>-status.jpg each cycle: dimmed last-good frame + bilingual banner, or a slate card when no frame exists. Classes: stale (thumb < 6h, amber 'STALE'), delayed (VMS budget skip, blue 'DELAYED'), offline (no thumb or age > 6h, red 'OFFLINE'), error (other). Banner shows cam label + 'last frame <age>'. Deleted on next successful pull. Written by status_card() in the puller — DejaVuSans-Bold for Latin, Loma-Bold for bilingual labels."
+      - label: Status card consumers
+        text: "Wall page: !ok tiles show <key>-status.jpg (re-fetched each refresh, card regenerates per cycle). Montage: !ok tiles use the status card. Ada stale fallback: stale_snapshot() returns (thumb, label, age, card) — the CARD is published as the cast_url asset so a cast screen shows the labelled card, while the raw last-good thumb goes to the describe/vision path."
   - title: Retention + sizing
     icon: "📦"
     layout: list

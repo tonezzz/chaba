@@ -8,7 +8,8 @@ with xwd, crops the monitor pane, and returns a PNG.
 Endpoints:
   GET /health                      -> 200 {"ok": true}
   GET /channels                    -> 200 {"channels": [...]}
-  GET /snap?ch=<name>[&settle=<s>] -> 200 image/png | 404/503 JSON
+  GET /snap?ch=<name>[&settle=<s>][&zoom=0] -> 200 image/png | 404/503 JSON
+  zoom=0 skips the single-pane zoom — grid-res frame, ~15s instead of ~40s+.
 
 Channel name matching is case-insensitive substring against channels.json.
 Coordinates live in channels.json (device tree rows — recalibrate if the tree
@@ -41,31 +42,34 @@ DISPLAY = os.environ.get("VMS_DISPLAY", ":99")
 DEFAULT_SETTLE = float(os.environ.get("VMS_SNAP_SETTLE", "9"))
 MAX_SETTLE = 30.0
 
-# Monitor pane 1 (top-left) inside the 1280x720 VMS desktop — includes the
-# pane title bar so the channel label is visible in the frame.
-PANE_RECT = (7, 84, 536, 357)   # x1, y1, x2, y2
+# Monitor pane 1 (top-left) inside the maximized 1920x1080 VMS desktop —
+# includes the pane title bar so the channel label is visible in the frame.
+PANE_RECT = (8, 85, 855, 537)   # x1, y1, x2, y2
 # Click target to make pane 1 the active pane before selecting a channel.
-PANE_CLICK = (270, 218)
+PANE_CLICK = (430, 310)
 # Point inside the device tree used to reset its scroll — row coordinates in
 # channels.json assume the tree is scrolled fully up; a drifted scroll shifts
 # every row and silently selects the wrong camera.
-TREE_ANCHOR = (1150, 205)
+TREE_ANCHOR = (1780, 300)
 # Rows at the top of PANE_RECT carrying the pane title/OSD header — stripped
 # before autocrop so it doesn't count as "content".
 PANE_TITLE_H = 30
 # Single-pane zoom: double-clicking the active monitor pane toggles a zoomed
 # view where the video area is ~4x the pixels of the grid cell — capture that
 # for quality. The 4-grid toolbar button restores multi-view afterwards.
-SINGLE_PANE_RECT = (5, 90, 1070, 640)   # video area in zoomed single-pane
-GRID4_BTN = (388, 675)                  # bottom-toolbar 2x2 grid icon (2nd;
-                                        # 357 = 1-pane — a miss leaves VMS
-                                        # zoomed and corrupts the next snap)
+SINGLE_PANE_RECT = (8, 113, 1706, 1000)  # zoomed pane video area; y1 below
+                                        # the pane's own OSD title strip (CH
+                                        # label + icons) — a bar otherwise
+                                        # tops every frame
+GRID4_BTN = (533, 1020)                 # bottom-toolbar 2x2 grid icon (2nd;
+                                        # miss leaves VMS zoomed and corrupts
+                                        # the next snap)
 # Tree strip scanned for the selected-row blue highlight (verify the click
 # landed on the intended channel instead of silently returning another).
-TREE_STRIP_X = (1090, 1260)
+TREE_STRIP_X = (1710, 1910)
 
 STATE_DIR = os.environ.get("VMS_SNAP_STATE", "/tmp")
-_lock = threading.Lock()
+_lock = threading.RLock()
 
 # --- self-heal watchdog -----------------------------------------------------
 # The VMS app's cloud-P2P session to the DVR dies every ~day: clicks still
@@ -294,7 +298,8 @@ def png_encode(width: int, height: int, rgb: bytes) -> bytes:
             + chunk(b"IEND", b""))
 
 
-def snap(query: str, settle: float) -> tuple[bytes, str]:
+def snap(query: str, settle: float, zoom: bool = True,
+         _retry: int = 1) -> tuple[bytes, str]:
     channels = load_channels()
     hit = resolve_channel(query, channels)
     if hit is None:
@@ -316,61 +321,72 @@ def snap(query: str, settle: float) -> tuple[bytes, str]:
             # can eat the click; retry once before failing.
             w, h, rgb = xwd_to_rgb(raw)
             sel_y = selected_row_y(w, h, rgb)
-            if sel_y is None or abs(sel_y - meta["y"]) <= 14:
+            # sel_y=None means NO highlighted row — the click missed and
+            # pane 1 still shows whatever stream was attached before (a
+            # DIFFERENT device entirely: 2026-10-02 wall showed noble-a
+            # CH05 in every noble-club tile because _has_video passed on
+            # the stale frame). Absence of highlight is a failure, not a
+            # pass — retry once, then fail loudly.
+            if sel_y is not None and abs(sel_y - meta["y"]) <= 14:
                 break
             if _seltry == 0:
                 continue
             raise RuntimeError(
-                f"selected row y={sel_y} does not match '{name}' "
-                f"(y={meta['y']}) — device tree layout drifted; "
-                "recalibrate channels.json")
+                f"selected row {'not highlighted' if sel_y is None else f'y={sel_y}'} "
+                f"does not match '{name}' (y={meta['y']}) — device tree "
+                "layout drifted; recalibrate channels.json")
 
-        # Zoom pane 1 for a ~4x-resolution capture, then restore the grid.
-        # NOTE: no --sync — a synced mousemove blocks >30s while the Wine
-        # app re-renders after the channel switch.
-        # Zoom pane 1 for a ~4x-resolution capture. We pinned the grid
-        # above, so this double-click deterministically toggles to
-        # single-pane; never click again (it would toggle back).
-        _podman("xdotool", "mousemove", str(PANE_CLICK[0]),
-                str(PANE_CLICK[1]), timeout=10)
-        _podman("xdotool", "click", "--repeat", "2", "--delay", "150",
-                "1", timeout=10)
-        # The stream re-opens on zoom and needs a few seconds to draw —
-        # poll until real video appears (bounded).
+        # zoom=0 (wall thumbs) skips the zoom dance entirely — the zoom
+        # re-opens the P2P stream and costs 12-36s per cam, which is why
+        # 8-cam zones starve under VMS_BUDGET.
         raw2 = None
-        for _round in range(3):
-            for _poll in range(8):
-                time.sleep(1.5)
-                cand = capture_xwd()
-                w2, h2, rgb2 = xwd_to_rgb(cand)
-                cw, ch, crgb = crop_rgb(w2, h2, rgb2, SINGLE_PANE_RECT)
-                if _has_video(cw, ch, crgb):
-                    raw2 = cand
+        if zoom:
+            # Zoom pane 1 for a ~4x-resolution capture. We pinned the grid
+            # above, so this double-click deterministically toggles to
+            # single-pane; never click again (it would toggle back).
+            # NOTE: no --sync — a synced mousemove blocks >30s while the
+            # Wine app re-renders after the channel switch.
+            _podman("xdotool", "mousemove", str(PANE_CLICK[0]),
+                    str(PANE_CLICK[1]), timeout=10)
+            _podman("xdotool", "click", "--repeat", "2", "--delay", "150",
+                    "1", timeout=10)
+            # The stream re-opens on zoom and needs a few seconds to
+            # draw — poll until real video appears (bounded).
+            for _round in range(3):
+                for _poll in range(8):
+                    time.sleep(1.5)
+                    cand = capture_xwd()
+                    w2, h2, rgb2 = xwd_to_rgb(cand)
+                    cw, ch, crgb = crop_rgb(w2, h2, rgb2, SINGLE_PANE_RECT)
+                    if _has_video(cw, ch, crgb):
+                        raw2 = cand
+                        break
+                if raw2 is not None:
                     break
-            if raw2 is not None:
-                break
-            # P2P stream open is a coin flip — when it fails the pane
-            # stays dead forever no matter how long we wait; re-select the
-            # channel to force a fresh stream attach (2026-09-30: ~half the
-            # noble-club channels flapped dead per sweep; a single retry
-            # still dropped first-attempt snaps in Ada turns).
-            select_channel(meta["x"], meta["y"])
-            time.sleep(settle / 2)
-        if raw2 is None:
-            raw2 = cand  # zoomed pane never drew — grid may still show video
-        _podman("xdotool", "mousemove", str(GRID4_BTN[0]),
-                str(GRID4_BTN[1]), "click", "1", timeout=10)
+                # P2P stream open is a coin flip — when it fails the pane
+                # stays dead forever no matter how long we wait; re-select
+                # the channel to force a fresh stream attach (2026-09-30:
+                # ~half the noble-club channels flapped dead per sweep; a
+                # single retry still dropped first-attempt snaps in Ada
+                # turns).
+                select_channel(meta["x"], meta["y"])
+                time.sleep(settle / 2)
+            if raw2 is None:
+                raw2 = cand  # zoomed pane never drew — grid may still show video
+            _podman("xdotool", "mousemove", str(GRID4_BTN[0]),
+                    str(GRID4_BTN[1]), "click", "1", timeout=10)
     # Zoomed frame first. A dead pane (stream not drawn yet, offline cam)
     # collapses content_bbox to a sliver — reject degenerate crops rather
     # than returning a 5px "frame" that downstream treats as an image.
-    w, h, rgb = xwd_to_rgb(raw2)
-    w, h, rgb = crop_rgb(w, h, rgb, SINGLE_PANE_RECT)
-    box = content_bbox(w, h, rgb)
-    if box and (box[2] - box[0]) * (box[3] - box[1]) < w * h // 4:
-        box = None
-    if box:
-        w, h, rgb = crop_rgb(w, h, rgb, box)
-    if w * h < 50_000 or min(w, h) < 100:
+    if raw2 is not None:
+        w, h, rgb = xwd_to_rgb(raw2)
+        w, h, rgb = crop_rgb(w, h, rgb, SINGLE_PANE_RECT)
+        box = content_bbox(w, h, rgb)
+        if box and (box[2] - box[0]) * (box[3] - box[1]) < w * h // 4:
+            box = None
+        if box:
+            w, h, rgb = crop_rgb(w, h, rgb, box)
+    if raw2 is None or w * h < 50_000 or min(w, h) < 100:
         # Fall back to the pre-zoom grid capture at pane resolution.
         w, h, rgb = xwd_to_rgb(raw)
         w, h, rgb = crop_rgb(w, h, rgb, PANE_RECT)
@@ -381,15 +397,61 @@ def snap(query: str, settle: float) -> tuple[bytes, str]:
             or not _has_video(w, h, rgb)):
         raise RuntimeError(
             f"'{name}' pane shows no video — camera offline or stream stalled")
+    try:
+        _check_frame_identity(name, w, h, rgb)
+    except RuntimeError:
+        # Pane kept the previous channel's stream — the attach failed.
+        # One more select is a fresh attach attempt and often lands it
+        # (P2P is a coin flip); only then fail.
+        if _retry:
+            logger.warning("'%s' stale-pane frame; forcing re-select", name)
+            return snap(query, settle, zoom, _retry=0)
+        raise
     return png_encode(w, h, rgb), name
+
+
+# channel -> luma fingerprint of its last accepted frame. The
+# selected-row check proves the right TREE ROW lit up; it cannot prove
+# the PANE switched — when the new stream attach fails the pane keeps
+# the previously attached channel's video (2026-10-02: every noble-club
+# snap returned the same noble-a_CH05/CH06 frame). A frame identical to
+# another channel's recent frame means the pane never switched.
+_last_frames: dict[str, bytes] = {}
+
+
+def _frame_sig(w: int, h: int, rgb: bytes) -> bytes:
+    """Coarse 32x18 luma fingerprint — ignores OSD text/noise."""
+    out = bytearray()
+    for gy in range(18):
+        y = gy * h // 18
+        for gx in range(32):
+            x = gx * w // 32
+            o = (y * w + x) * 3
+            out.append((rgb[o] + rgb[o + 1] + rgb[o + 2]) // 3)
+    return bytes(out)
+
+
+def _check_frame_identity(name: str, w: int, h: int, rgb: bytes) -> None:
+    sig = _frame_sig(w, h, rgb)
+    for other, prev in _last_frames.items():
+        if other == name:
+            continue
+        diff = sum(1 for a, b in zip(sig, prev) if abs(a - b) > 40)
+        if diff < len(sig) * 0.15:
+            raise RuntimeError(
+                f"'{name}' frame identical to '{other}' — pane kept the "
+                "previous channel's stream (attach failed)")
+    _last_frames[name] = sig
 
 
 def _has_video(width: int, height: int, rgb: bytes) -> bool:
     """A live pane has texture everywhere — high mean neighbor luma delta.
     A dead/offline pane is flat gray with at most an OSD strip — its
     deltas sit near zero (measured ~5 vs ~126 on real video). Threshold
-    60 also rejects a 4-pane grid crop where only pane 1 has video
-    (diluted to ~31) — a mosaic is not an acceptable frame."""
+    45 still rejects a 4-pane grid crop where only pane 1 has video
+    (diluted to ~31) — a mosaic is not an acceptable frame. Was 60, but
+    real night footage measured 58.1 (dark scenes compress neighbor
+    deltas) and was wrongly rejected — noble-a Road In, 2026-10-01."""
     tot = n = 0
     for y in range(0, height, 4):
         base = y * width * 3
@@ -401,7 +463,7 @@ def _has_video(width: int, height: int, rgb: bytes) -> bool:
                 n += 1
     if n < 100:
         return False
-    return tot / n > 60
+    return tot / n > 45
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -437,15 +499,19 @@ class Handler(BaseHTTPRequestHandler):
                              MAX_SETTLE)
             except ValueError:
                 settle = DEFAULT_SETTLE
+            zoom = (q.get("zoom") or ["1"])[0] != "0"
             try:
-                png, resolved = snap(ch, settle)
+                png, resolved = snap(ch, settle, zoom)
             except LookupError:
                 self._json(404, {"error": f"unknown channel {ch!r}",
                                  "channels": sorted(load_channels())})
                 return
             except Exception as exc:
                 logger.exception("snap failed")
-                if "pane shows no video" in str(exc):
+                # both are attach-failure signatures — the pane either has
+                # no video or still plays the previous channel's stream
+                if ("pane shows no video" in str(exc)
+                        or "frame identical" in str(exc)):
                     _watchdog_novideo()
                 self._json(503, {"error": str(exc)})
                 return

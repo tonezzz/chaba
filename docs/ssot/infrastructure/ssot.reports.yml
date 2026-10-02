@@ -4,17 +4,15 @@ icon: 📊
 version: 1
 
 overview:
-  purpose: |
-    Declared standard for how the memory system turns raw operational data
-    into a single human overview. Every report is a node in a layered
-    hierarchy (L0 raw → L1 producer → L2 domain → L3 overview
-    reports/SYSTEM-REPORT.md); digests are never hand-written.
-    The `nodes` registry is declared intent; each node's meta.yml is
-    observed state — the gap is what staleness/drift detection reports.
+  purpose: >
+    Declared standard for turning raw operational data into a single human
+    overview — layered hierarchy L0 raw → L1 producer → L2 domain → L3
+    SYSTEM-REPORT.md; digests are never hand-written. `nodes` is declared
+    intent; each node's meta.yml is observed state.
 
 config:
   version: 1
-  last_updated: "2026-09-26"
+  last_updated: "2026-10-01"
   maintainer: tony
   status: active
   origin: >
@@ -57,6 +55,18 @@ layers:
     examples:
       - system-report
 
+placement:
+  description: >
+    Canonical content lives in the repo (docs/, docs/ssot/ — versioned,
+    reviewed, durable); CMS pages (ada-cms-pages) are generated outputs
+    that link back to their repo source via meta.sources/links.
+  rule: 'who needs this in 30 days? Ada speaks it / operational state -> CMS;
+    Devin/human needs reasoning, spec, decision -> repo. Both -> repo
+    canonical, CMS summarizes + links back.'
+  repo: durable truth — architecture, assessments, decisions, runbooks; changes are commits
+  cms: operational memory — reports, digests, incidents, live status; TTL'd,
+    regenerated, disposable; a page restating repo knowledge must link it
+
 format_rules:
   machine_artifacts: yml / json / jsonl for anything parsed downstream — stable keys, no prose; jsonl only for append-only streams
   digests: .md only for generated digests — never hand-edit; fix the generator or the source data
@@ -65,9 +75,8 @@ format_rules:
 
 meta_schema:
   description: >
-    One meta.yml per registered node, written by its generator at the end
-    of each run. scripts/lib/report.py::write_meta() is the canonical
-    writer.
+    One meta.yml per node, written by its generator at run end;
+    scripts/lib/report.py::write_meta() is the canonical writer.
   fields:
     node: registry id (e.g. audit-hosts/tony-dell)
     layer: one of the layers above
@@ -94,9 +103,8 @@ timeline:
   path: ~/var/chaba/reports/timeline.jsonl
   env_override: CHABA_REPORTS_DIR
   format: >
-    One JSON object per line, appended by each generator on completion
-    (scripts/lib/report.py::append_timeline); SYSTEM-REPORT.md renders only
-    the last ~20 events.
+    One JSON object per line appended by each generator (append_timeline);
+    SYSTEM-REPORT.md renders only the last ~20 events.
   event_fields:
     ts: ISO-8601 with timezone
     node: registry id
@@ -188,7 +196,6 @@ nodes:
       - audit-hosts/idc01
       - audit-hosts/macbook
       - health-monitor
-
   # --- Audit domain ---
   - id: audit-suite
     layer: L2-domain
@@ -204,7 +211,6 @@ nodes:
     note: >
       Per-audit L1 children are the groups declared in ssot.audit.yml —
       referenced there instead of duplicated here.
-
   # --- Memory domain ---
   - id: memory-suite
     layer: L1-producer
@@ -227,7 +233,6 @@ nodes:
     state: planned
     children:
       - memory-suite
-
   # --- Jobs domain ---
   - id: overnight-assessment
     layer: L2-domain
@@ -261,7 +266,6 @@ nodes:
       - audit-hosts/idc01
       - audit-hosts/macbook
       - memory-suite
-
   # --- Attention domain ---
   - id: focus-inbox
     layer: L1-producer
@@ -274,7 +278,6 @@ nodes:
       - docs/ssot/infrastructure/ssot.focus.triage.yml
     children: []
     note: L2 attention section is rendered inside SYSTEM-REPORT.md directly.
-
   # --- Remote producers ---
   - id: report-feed
     layer: L1-producer
@@ -285,7 +288,6 @@ nodes:
     output: tony-dell HA www /local/chaba-report.json
     meta: reports/meta.report-feed.yml
     children: []
-
   # --- Overview ---
   - id: system-report
     layer: L3-overview
@@ -325,7 +327,6 @@ plan:
     - migrate tony-dell production units off the chaba-tony-dell checkout onto chaba (audit suite still writes reports/audits under the old checkout, so the audit-suite node reports missing here until then)
     - mcp-health-snapshot.timer repointed in repo (systemd/) but not installed; install on tony-dell if the snapshot feed is still wanted
     - ssot.audit.hosts.yml last_observed only refreshes via manual --save-to-ssot (rewrites YAML) — decide whether a lighter-weight scheduled refresh is wanted
-
 related_files:
   - scripts/report-system.py
   - scripts/lib/report.py
@@ -333,7 +334,6 @@ related_files:
   - scripts/audits/run.mjs
   - systemd/chaba-system-report.service
   - systemd/chaba-system-report.timer
-
 related_ssot:
   - docs/ssot/infrastructure/ssot.quality.yml
   - docs/ssot/infrastructure/ssot.audit.yml
@@ -342,6 +342,5 @@ related_ssot:
   - docs/ssot/infrastructure/ssot.tony-dell-monitoring.yml
   - docs/ssot/infrastructure/ssot.orchestration.overnight.yml
   - docs/ssot/infrastructure/ssot.focus.triage.yml
-
 related_kb:
   - docs/kb/layered-reporting.md

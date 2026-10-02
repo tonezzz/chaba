@@ -1,6 +1,6 @@
 {
  "collection": "kb-development",
- "exported_at": "2026-09-30T21:30:02.859686+00:00",
+ "exported_at": "2026-10-01T21:30:14.540289+00:00",
  "doc_count": 16,
  "docs": [
   {
@@ -222,7 +222,7 @@
      "2026-09-25T17:32:55.957585"
     ],
     "last_used": [
-     "2026-09-30"
+     "2026-10-01"
     ],
     "rel_path": [
      "docs/kb/hardware-tony-dell-changes.md"
@@ -234,12 +234,12 @@
      "tony-dell — Change log"
     ],
     "use_count": [
-     "878"
+     "1022"
     ]
    },
    "contentMd": "---\ncategory: troubleshooting\nhostname: tony-dell\ndate: 2026-07-21\ntags: [hardware, changelog]\nstatus: active\n---\n\n# tony-dell — Change log\n\n| Date       | Change                                                                  | Reason                      | Result                                                                                                              | Reference                                  |\n| ---------- | ----------------------------------------------------------------------- | --------------------------- | ------------------------------------------------------------------------------------------------------------------- | ------------------------------------------ |\n| 2026-06-25 | Disk health check with `smartmontools`                                  | Establish hardware baseline | Internal Seagate HDD has 8 pending sectors and 8 offline uncorrectable sectors; SMART still PASSED, monitor ongoing | `hardware/tony-dell/2026-06-25-sensors.md` |\n| 2026-07-21 | Updated IP in KB dashboard/context from `192.168.1.37` to current lease | Current-context refresh     | Dashboard now reflects `192.168.1.37` as the known address                                                          | `current-context.md`, `hardware/README.md` |\n\n## Notes\n\n- No configuration changes have been applied to this machine yet; only monitoring and documentation.\n",
    "addedAt": 1790677648,
-   "updatedAt": 1790803754
+   "updatedAt": 1790825846
   },
   {
    "id": "kb-development|hardware-tony-dell-sensors-2026-06-25.md|en",
@@ -256,7 +256,7 @@
      "2026-09-25T17:32:58.176798"
     ],
     "last_used": [
-     "2026-09-30"
+     "2026-10-01"
     ],
     "rel_path": [
      "docs/kb/hardware-tony-dell-sensors-2026-06-25.md"
@@ -268,12 +268,12 @@
      "tony-dell — Sensor & disk health check"
     ],
     "use_count": [
-     "862"
+     "1007"
     ]
    },
    "contentMd": "---\ncategory: development\ndate: 2026-06-25\nhostname: tony-dell\nip: 192.168.1.37\nmodel: Dell Inc. OptiPlex 7040\nboard: Dell Inc. 0HD5W2\ncpu: Intel Core i7-6700\n---\n\n# tony-dell — Sensor & disk health check\n\n## Summary\n\n- All temperatures are within normal limits.\n- `sensors-detect` did **not** find any new sensor chips; only the existing Intel `coretemp` sensor was confirmed.\n- Internal HDD is still functional but has **8 pending sectors** and **8 offline uncorrectable sectors** that should be monitored.\n- No battery present.\n\n## Tools installed / used\n\n- `lm-sensors` (already present)\n- `smartmontools`\n- `nvme-cli`\n\n## `sensors-detect` result\n\n- **Intel digital thermal sensor (`coretemp`)** — confirmed.\n- Super I/O probe found an **unknown SMSC chip with ID 0xc9a1** — no driver available.\n- I2C/SMBus probe found only an `ee1004` EEPROM (not a sensor).\n- No new modules were added.\n\n## Temperatures / fans\n\n| Source        | Sensor          | Reading        | Limits / Notes        |\n| ------------- | --------------- | -------------- | --------------------- |\n| `coretemp`    | Package id 0    | 47.0°C         | high 84°C, crit 100°C |\n| `coretemp`    | Core 0          | 53.0°C         | high 84°C, crit 100°C |\n| `coretemp`    | Core 1          | 51.0°C         | high 84°C, crit 100°C |\n| `coretemp`    | Core 2          | 51.0°C         | high 84°C, crit 100°C |\n| `coretemp`    | Core 3          | 49.0°C         | high 84°C, crit 100°C |\n| `dell_smm`    | Ambient         | 45.0°C         |                       |\n| `dell_smm`    | CPU             | 39.0°C         |                       |\n| `dell_smm`    | Processor Fan   | 1,146 RPM      | max 3,300 RPM         |\n| `dell_smm`    | Motherboard Fan | 2,456 RPM      | max 3,100 RPM         |\n| `pch_skylake` | PCH             | 51.5°C         |                       |\n| `acpitz`      | temp1           | 27.8°C         |                       |\n| `acpitz`      | temp2           | 29.8°C         |                       |\n| `amdgpu`      | GPU edge        | 50.0°C         | crit 120°C            |\n| `amdgpu`      | pwm1            | 49%            |                       |\n| `amdgpu`      | sclk / mclk     | 300 / 1000 MHz |                       |\n\n## Disk (`/dev/sda`) — Seagate ST500LM000-1EJ162\n\n- **SMART overall-health: PASSED**\n- **Temperature:** 42°C\n- **Power-on hours:** 8,170\n- **Power cycle count:** 3,244\n- **Start/stop count:** 2,886\n\n### Attributes of concern\n\n| ID  | Attribute               | Value | Raw         |\n| --- | ----------------------- | ----- | ----------- |\n| 5   | Reallocated_Sector_Ct   | 100   | 0           |\n| 187 | Reported_Uncorrect      | 1     | **299**     |\n| 188 | Command_Timeout         | 100   | 1           |\n| 190 | Airflow_Temperature_Cel | 58    | 42°C        |\n| 193 | Load_Cycle_Count        | 1     | **306,291** |\n| 197 | Current_Pending_Sector  | 100   | **8**       |\n| 198 | Offline_Uncorrectable   | 100   | **8**       |\n\n### Self-test\n\n- **Short offline test started:** 2026-06-25 17:01:48\n- **Scheduled completion:** 2026-06-25 17:03:48\n- **Status when last checked:** in progress (90% remaining)\n- **Final result:** _not captured in this log — run `sudo smartctl -l selftest /dev/sda` to update_\n\n## Power (RAPL)\n\n| Zone      | Constraint | Limit   |\n| --------- | ---------- | ------- |\n| package-0 | long_term  | 65.0 W  |\n| package-0 | short_term | 81.25 W |\n| core      | long_term  | 0 W     |\n| uncore    | long_term  | 0 W     |\n| dram      | long_term  | 0 W     |\n\n## Battery\n\n- No battery present on this machine.\n\n## Notes / follow-up\n\n- The 8 pending sectors are the main item to watch. If the count increases, the drive should be replaced.\n- Re-run the short self-test and capture the final result.\n- Check the pending sector count again in ~30 days.\n",
    "addedAt": 1790677648,
-   "updatedAt": 1790803754
+   "updatedAt": 1790825846
   },
   {
    "id": "kb-development|hardware-tony-omen-changes.md|en",
@@ -290,7 +290,7 @@
      "2026-09-25T17:32:59.461398"
     ],
     "last_used": [
-     "2026-09-30"
+     "2026-10-01"
     ],
     "rel_path": [
      "docs/kb/hardware-tony-omen-changes.md"
@@ -302,12 +302,12 @@
      "tony-omen — Change log"
     ],
     "use_count": [
-     "889"
+     "1033"
     ]
    },
    "contentMd": "---\ncategory: troubleshooting\nhostname: tony-omen\ndate: 2026-07-21\ntags: [hardware, changelog]\nstatus: active\n---\n\n# tony-omen — Change log\n\n| Date       | Change                                                                                                | Reason                                                                                          | Result                                                                                                          | Reference                                                  |\n| ---------- | ----------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- |\n| 2026-06-25 | Sensor & disk health check                                                                            | Establish hardware baseline                                                                     | All temperatures normal, NVMe SSD healthy (5% wear), battery 100% / 0 cycles                                    | `hardware/tony-omen/2026-06-25-sensors.md`                 |\n| 2026-07-20 | Cleared stale xrdp/Chrome Remote Desktop sessions and restarted GDM                                   | GDM showed \"Session Already Running\" and local login failed                                     | Local login restored                                                                                            | `hardware/tony-omen/2026-07-20-session-already-running.md` |\n| 2026-07-21 | Applied xrdp PAM `XDG_SESSION_TYPE=tty` fix                                                           | Prevent xrdp sessions from being treated as graphical sessions that block GDM                   | New xrdp sessions register as `Type=tty`; local login no longer blocked by xrdp                                 | `hardware/tony-omen/2026-07-20-session-already-running.md` |\n| 2026-07-21 | Removed `chrome-remote-desktop` package and unused deps (`xbase-clients`, `xserver-xorg-video-dummy`) | CRD always spawns an X11 session at boot and has no clean way to avoid blocking GDM local login | CRD no longer creates a conflicting X11 session; `xrdp` remains the remote access method                        | `hardware/tony-omen/2026-07-20-session-already-running.md` |\n| 2026-07-21 | Updated IP in KB dashboard/context to `192.168.1.48` via `tony-omen.local`                            | Current-context refresh                                                                         | Dashboard now uses the current lease / mDNS name                                                                | `current-context.md`, `hardware/README.md`                 |\n| 2026-07-23 | Added Caddy route `/tony-omen/apps/imagen` with Docker inference proxy                                | Host the Imagen UI and API on the local web server                                              | UI live at `http://192.168.1.48:8080/tony-omen/apps/imagen/`; API health 200; 512x512 generation tested in ~62s | `tasks/2026-07-23-tony-omen-imagen-website.md`             |\n",
    "addedAt": 1790677648,
-   "updatedAt": 1790803754
+   "updatedAt": 1790825841
   },
   {
    "id": "kb-development|hardware-tony-omen-sensors-2026-06-25.md|en",
@@ -324,7 +324,7 @@
      "2026-09-25T17:33:00.109305"
     ],
     "last_used": [
-     "2026-09-30"
+     "2026-10-01"
     ],
     "rel_path": [
      "docs/kb/hardware-tony-omen-sensors-2026-06-25.md"
@@ -336,12 +336,12 @@
      "tony-omen — Sensor & disk health check"
     ],
     "use_count": [
-     "865"
+     "1010"
     ]
    },
    "contentMd": "---\ncategory: development\ndate: 2026-06-25\nhostname: tony-omen\nip: 192.168.1.40\nmodel: HP 15-BC (laptop)\nboard: HP 8641\ncpu: Intel Core i7-9750H\n---\n\n# tony-omen — Sensor & disk health check\n\n## Summary\n\n- All temperatures are within safe limits; CPU and GPU are cool.\n- `sensors-detect` did **not** discover any new sensor chips beyond the existing Intel `coretemp`.\n- Internal NVMe SSD is healthy (5% wear, 0 media errors).\n- External/USB drive (`/dev/sda`) reports SMART PASSED via the SAT pass-through driver.\n- Battery is at full health (100%, 0 cycles).\n\n## Tools installed / used\n\n- `lm-sensors`\n- `smartmontools`\n- `nvme-cli`\n\n## `sensors-detect` result\n\n- **Intel digital thermal sensor (`coretemp`)** — confirmed.\n- Super I/O probe found an **unknown chip with ID 0x8987** — no driver available.\n- I2C/SMBus probe found only an `ee1004` EEPROM (not a sensor).\n- No new modules were added.\n\n## Temperatures\n\n| Source           | Sensor       | Reading | Limits / Notes           |\n| ---------------- | ------------ | ------- | ------------------------ |\n| `coretemp`       | Package id 0 | 57.0°C  | high 100°C, crit 100°C   |\n| `coretemp`       | Core 0       | 57.0°C  | high 100°C, crit 100°C   |\n| `coretemp`       | Core 1       | 53.0°C  | high 100°C, crit 100°C   |\n| `coretemp`       | Core 2       | 48.0°C  | high 100°C, crit 100°C   |\n| `coretemp`       | Core 3       | 52.0°C  | high 100°C, crit 100°C   |\n| `coretemp`       | Core 4       | 50.0°C  | high 100°C, crit 100°C   |\n| `coretemp`       | Core 5       | 55.0°C  | high 100°C, crit 100°C   |\n| `pch_cannonlake` | PCH          | 60.0°C  |                          |\n| `acpitz`         | temp1        | 46.0°C  |                          |\n| `iwlwifi_1`      | Wi-Fi        | 47.0°C  |                          |\n| `nvme`           | Composite    | 46.9°C  | high 82.8°C, crit 89.8°C |\n| `nvme`           | Sensor 2     | 78.8°C  | warm but below critical  |\n| `hp`             | pwm1         | N/A     | no exposed RPM           |\n| `BAT0-acpi-0`    | Voltage      | 10.57 V |                          |\n\n## GPU — NVIDIA GeForce GTX 1650\n\n| Metric                    | Value     |\n| ------------------------- | --------- |\n| Performance state         | P8        |\n| GPU temperature           | 44°C      |\n| Shutdown temperature      | 102°C     |\n| Slowdown temperature      | 97°C      |\n| Max operating temperature | 102°C     |\n| Instantaneous power draw  | 1.30 W    |\n| Power limit               | 50.0 W    |\n| Graphics clock            | 300 MHz   |\n| Memory clock              | 405 MHz   |\n| Max graphics clock        | 2,100 MHz |\n| Max memory clock          | 4,001 MHz |\n\n## Disk — internal NVMe (`/dev/nvme0`)\n\n- **SMART overall-health: PASSED**\n- **Temperature:** 47°C (composite), 79°C (Sensor 2)\n- **Percentage used:** 5%\n- **Data read:** 49.2 TB\n- **Data written:** 53.7 TB\n- **Power cycles:** 1,520\n- **Power-on hours:** 6,024\n- **Unsafe shutdowns:** 40\n- **Media errors:** 0\n- **Critical warning:** 0x00\n\n## Disk — external USB (`/dev/sda`)\n\n- `smartctl -d sat -H /dev/sda` → **PASSED**\n- `smartctl -d usbjmicron` / `usbsunplus` → unsupported on this bridge\n- The drive appears to be behind a JMicron USB-SATA bridge that works with the SAT pass-through driver.\n\n## Power (RAPL)\n\n| Zone      | Constraint | Limit   |\n| --------- | ---------- | ------- |\n| package-0 | long_term  | 200.0 W |\n| package-0 | short_term | 56.25 W |\n| core      | long_term  | 0 W     |\n| uncore    | long_term  | 0 W     |\n| dram      | long_term  | 0 W     |\n\n## Battery\n\n| Property           | Value     |\n| ------------------ | --------- |\n| Status             | Full      |\n| Capacity           | 100%      |\n| Cycle count        | 0         |\n| Charge full        | 2,816 mAh |\n| Charge full design | 2,816 mAh |\n| Voltage now        | 10.568 V  |\n| Voltage design     | 11.400 V  |\n\nNo measurable wear.\n\n## Notes / follow-up\n\n- NVMe secondary sensor runs warm (79°C) but is below the critical threshold (89.8°C) and no thermal warnings are logged.\n- Consider checking NVMe temperature under sustained load.\n",
    "addedAt": 1790677648,
-   "updatedAt": 1790803754
+   "updatedAt": 1790825846
   },
   {
    "id": "kb-development|hardware-tony-omen-software-env.md|en",
@@ -358,7 +358,7 @@
      "2026-09-25T17:33:01.396807"
     ],
     "last_used": [
-     "2026-09-30"
+     "2026-10-01"
     ],
     "rel_path": [
      "docs/kb/hardware-tony-omen-software-env.md"
@@ -370,12 +370,12 @@
      "tony-omen — Software Environment"
     ],
     "use_count": [
-     "879"
+     "1021"
     ]
    },
    "contentMd": "---\ntitle: tony-omen Software Environment\ndescription: Software environment, runtimes, and active projects on tony-omen machine\ntags: [hardware, software, environment, tony-omen]\ncreated: 2026-07-08\nupdated: 2026-08-11\ncategory: troubleshooting\nstatus: active\n---\n\n# tony-omen — Software Environment\n\n**Scanned:** 2026-07-08\n**Last Updated**: 2026-08-11\n\n---\n\n## Core Runtimes\n\n| Tool           | Version |\n| -------------- | ------- |\n| Python         | 3.14.4  |\n| pip            | 25.1.1  |\n| Docker         | 29.6.1  |\n| Docker Compose | v5.2.0  |\n\n---\n\n## GPU / CUDA\n\n| Item          | Value                                       |\n| ------------- | ------------------------------------------- |\n| NVIDIA Driver | 595.71.05 (Open Kernel Module)              |\n| CUDA Version  | 13.2                                        |\n| GPU           | GeForce GTX 1650 Mobile / Max-Q — 4 GB VRAM |\n\n---\n\n## Active Projects (as of 2026-08-11)\n\n| Path                                          | Description                                                                                                                                |\n| --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |\n| `~/CascadeProjects/gaussian-splatting-docker` | Dockerised 3D Gaussian Splatting pipeline (3DGS, COLMAP, NeRFStudio). Renamed to `chaba` on GitHub: `https://github.com/tonezzz/chaba.git` |\n| `~/CascadeProjects/chaba-kbman/mcp-kbman`     | MCP server for KB management with search and workflow integration                                                                          |\n| `~/CascadeProjects/chaba`                     | Main Chaba project repository                                                                                                              |\n\n---\n\n## Notes\n\n- No conda environment detected (pure system Python)\n- No Tailscale installed\n- `~/GoogleDrive` mount directory exists and is mounted at `/home/tony/GoogleDrive`\n- `~/post-install.sh` — bootstrap script for setting up a new Ubuntu machine (see `scripts/post-install.sh`)\n- mcp-kbman provides KB management and search capabilities\n- Personal KB at `/home/tony/GoogleDrive/Tony AI/KB/` for knowledge management\n",
    "addedAt": 1790677648,
-   "updatedAt": 1790803754
+   "updatedAt": 1790825844
   },
   {
    "id": "kb-development|hardware-tony-omen-specs.md|en",
@@ -392,7 +392,7 @@
      "2026-09-25T17:33:01.865389"
     ],
     "last_used": [
-     "2026-09-30"
+     "2026-10-01"
     ],
     "rel_path": [
      "docs/kb/hardware-tony-omen-specs.md"
@@ -404,12 +404,12 @@
      "tony-omen — Hardware Specs"
     ],
     "use_count": [
-     "849"
+     "993"
     ]
    },
    "contentMd": "---\ncategory: development\n---\n\n# tony-omen — Hardware Specs\n\n**Scanned:** 2026-07-08  \n**Form Factor:** HP 15-BC Laptop  \n**Hardware SKU:** D98SKU1@@GM (HW Version: 52.08)  \n**Firmware:** BIOS F.19 (2023-04-17)\n\n**Note**: This file contains static hardware specifications. For operational history and changes, see `hardware/tony-omen/changes.md`\n\n---\n\n## OS & Kernel\n\n- **OS:** Ubuntu 26.04 LTS (Resolute Raccoon)\n- **Kernel:** Linux 7.0.0-27-generic (x86_64)\n\n---\n\n## CPU\n\n- **Model:** Intel Core i7-9750H @ 2.60 GHz (CoffeeLake-H)\n- **Cores / Threads:** 6 cores / 12 threads (Hyper-Threading enabled)\n- **Max Turbo:** 4.5 GHz\n- **Cache:** L1d 192 KiB, L1i 192 KiB, L2 1.5 MiB, L3 12 MiB\n- **Virtualization:** VT-x enabled\n\n---\n\n## RAM\n\n- **Total:** 32 GB DDR4 dual-channel (2 × 16 GB), configured at 2667 MT/s\n- **Slot 1 (BANK 0):** 16 GB DDR4 @ 2667 MT/s — Part: EXRAM (manufacturer unknown)\n- **Slot 2 (BANK 2):** 16 GB DDR4 @ 3200 MT/s (downclocked to 2667) — Corsair CMSX16GX4M1A3200C22\n\n---\n\n## GPU\n\n- **Discrete:** NVIDIA GeForce GTX 1650 Mobile / Max-Q (TU117M, rev a1) — 4 GB VRAM\n- **Integrated:** Intel UHD Graphics 630 (CoffeeLake-H GT2)\n- **NVIDIA Driver:** 595.71.05 (Open Kernel Module)\n\n---\n\n## Storage\n\n- **Primary:** Kingston SNV2S1000G — 1 TB NVMe SSD (`/dev/nvme0n1`)\n  - `nvme0n1p1` — 100 MB EFI\n  - `nvme0n1p2` — 16 MB (MSR)\n  - `nvme0n1p3` — 865.7 GB (Windows / shared data)\n  - `nvme0n1p4` — 768 MB (WinRE)\n  - `nvme0n1p5` — 64.9 GB → Ubuntu `/`\n- **Secondary:** WD WD5000LPLX-22ZNT — 500 GB 2.5\" SATA HDD (`/dev/sdb`)\n  - `sdb1` — 499 MB\n  - `sdb2` — 128 MB\n  - `sdb3` — 20 GB\n  - `sdb4` — 445.1 GB\n  - ⚠️ **Note (2026-07-08):** `gdisk` reports no valid partition table; `sdb1`–`sdb4` throw I/O errors when read directly. Drive may be failing or in an inconsistent state. `lsblk` shows partitions but `blkid` returns nothing. Recommend checking SMART data (`smartctl -a /dev/sdb`).\n- **SATA Controller:** Intel 82801 Mobile SATA Controller (RAID mode)\n\n---\n\n## Display\n\n- **Resolution:** 1920 × 1080 (internal panel; RDP active at time of scan)\n\n---\n\n## Networking\n\n- **Ethernet:** Realtek RTL8111/8168/8411 PCIe Gigabit (`03:00.0`)\n- **Wi-Fi:** Intel Wireless 7265 (`04:00.0`, interface `wlo1`)\n\n---\n\n## Audio\n\n- **Integrated:** Intel Cannon Lake PCH cAVS (`00:1f.3`)\n- **HDMI / DP audio:** NVIDIA Device 10fa (`01:00.1`)\n\n---\n\n## USB\n\n- **Controller:** Intel Cannon Lake PCH USB 3.1 xHCI (`00:14.0`)\n\n---\n\n## Battery\n\n- **Status at scan:** 100 %, Full\n",
    "addedAt": 1790677648,
-   "updatedAt": 1790803754
+   "updatedAt": 1790825846
   },
   {
    "id": "kb-development|test-pwa.md|en",

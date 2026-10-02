@@ -220,26 +220,55 @@ class AdaVoiceCard extends HTMLElement {
         r.onerror = rej;
         r.readAsDataURL(blob);
       });
-      const post = () => fetch(`${this._apiBase()}/api/documents/intake`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-API-Key": this._apiKey(),
-        },
-        body: JSON.stringify({
-          image_b64: b64, image_mime: blob.type || "image/jpeg",
-          filename: file.name, mode: "both",
-        }),
-      });
-      let resp = await post();
-      // 401 = stored key is stale/revoked — re-mint once and retry
-      // (ws layer already does this on a 4401 close; intake needs its own).
-      if (resp.status === 401 && !this._config.api_key) {
-        localStorage.removeItem(AVC_KEY_STORAGE);
-        if (await this._mintKey()) resp = await post();
+      // Preferred path inside HA: proxy through script.ada_doc_intake —
+      // the credential lives in HA secrets server-side, the card holds no
+      // ada key for uploads at all. Falls back to the direct POST for
+      // non-HA embeds (standalone page) or if the script call errors.
+      let out = null;
+      if (this._hass) {
+        try {
+          const res = await this._hass.callWS({
+            type: "call_service",
+            domain: "script",
+            service: "ada_doc_intake",
+            service_data: {
+              instance: this._config.instance || "tony",
+              image_b64: b64,
+              image_mime: blob.type || "image/jpeg",
+              filename: file.name,
+              mode: "both",
+            },
+            return_response: true,
+          });
+          const c = res?.response?.content || {};
+          if (c.ok && c.key) out = c;
+          else if (c.detail || c.error) throw new Error(c.detail || c.error);
+        } catch (e) {
+          avcLog("error", `intake via HA proxy failed: ${e?.message || e} — falling back to key path`);
+        }
       }
-      const out = await resp.json().catch(() => ({}));
-      if (!resp.ok) throw new Error(out.detail || `HTTP ${resp.status}`);
+      if (!out) {
+        const post = () => fetch(`${this._apiBase()}/api/documents/intake`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-API-Key": this._apiKey(),
+          },
+          body: JSON.stringify({
+            image_b64: b64, image_mime: blob.type || "image/jpeg",
+            filename: file.name, mode: "both",
+          }),
+        });
+        let resp = await post();
+        // 401 = stored key is stale/revoked — re-mint once and retry
+        // (ws layer already does this on a 4401 close; intake needs its own).
+        if (resp.status === 401 && !this._config.api_key) {
+          localStorage.removeItem(AVC_KEY_STORAGE);
+          if (await this._mintKey()) resp = await post();
+        }
+        out = await resp.json().catch(() => ({}));
+        if (!resp.ok) throw new Error(out.detail || `HTTP ${resp.status}`);
+      }
       const w = (out.measured || {}).width || "?";
       const h = (out.measured || {}).height || "?";
       const warn = (out.warnings || []).length ? " ⚠ " + out.warnings.join("; ") : "";
@@ -312,6 +341,17 @@ class AdaVoiceCard extends HTMLElement {
     return localStorage.getItem(AVC_KEY_STORAGE) || "";
   }
 
+  // The HA session user's person.* entity (via user_id) — minted keys bind
+  // to it so Ada knows the device's registered owner before voice-id lands.
+  _myPerson() {
+    const uid = this._hass?.user?.id;
+    if (!uid || !this._hass?.states) return null;
+    for (const s of Object.values(this._hass.states))
+      if (s.entity_id.startsWith("person.") && s.attributes?.user_id === uid)
+        return s.entity_id;
+    return null;
+  }
+
   // Mint a per-device issued key through HA: script.ada_voice_key creates
   // (or re-pairs) ha-<device8> on the backend and redeems it server-side,
   // returning the raw key. The admin credential never leaves HA.
@@ -325,13 +365,16 @@ class AdaVoiceCard extends HTMLElement {
         service_data: {
           instance: this._config.instance || "tony",
           device_id: this._deviceId(),
+          person: this._myPerson() || "",
         },
         return_response: true,
       });
       const key = res?.response?.content?.api_key || null;
       if (key) localStorage.setItem(AVC_KEY_STORAGE, key);
+      else avcLog("error", `key mint returned no key: ${JSON.stringify(res?.response || {}).slice(0, 200)}`);
       return key;
-    } catch {
+    } catch (e) {
+      avcLog("error", `key mint failed: ${e?.message || e}`);
       return null;
     }
   }

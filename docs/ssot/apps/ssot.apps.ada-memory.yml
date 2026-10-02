@@ -26,6 +26,24 @@ sections:
         text: 'docs/ada-memory/ is the human-curated, git-tracked authoring surface (folder = bank, frontmatter = meta schema). scripts/ada/sync-ada-memory-to-mddb.py pushes vault→MDDB and exports voice-written docs to inbox/ for review. The vault is never in the voice latency path — MDDB serves recall.'
       - label: Other databases
         text: MDDB is the document/memory tier only — it does NOT cover Postgres (trade/yomi), Redis, Weaviate, per-app SQLite, or HA .storage. The bank registry itself is a YAML→JSON file, not a database.
+  - title: Recall latency ladder
+    icon: "🪜"
+    layout: list
+    items:
+      - label: Concept
+        text: 'How fast a memory is to recall mirrors how humans weight recent vs distant memory: fresh items are spoken immediately, older ones cost a lookup. Declared 2026-10-01 — "recent or urgent report: 1-2 line summary Ada can tell right away while querying; old data reduces step by step, far memory needs more time."'
+      - label: L0 hot (headlines)
+        text: 'New report/digest pages carry a one-liner (meta.summary, ≤160 chars). memory_ops.fetch_headlines collects fresh (<72h, ADA_HEADLINE_MAX_AGE_H) unannounced pages and session_prime_text injects up to ADA_HEADLINE_MAX=5 at connect — Ada mentions them immediately; cms_get_page fetches detail only if asked. Skipped on <1h reconnects. Digest/index pages (report_role=digest|index, *-digest keys) never enter L0.'
+      - label: L0 fade-out
+        text: A headline is announced once — fetch_headlines stamps meta.announced_at when injected, after which the page cools to the warm tier. It also expires silently past 72h. Either way it stops being proactive; detail remains queryable.
+      - label: L1 recent (digests)
+        text: report-distill regenerates <domain>-digest rollups — one tool call (cms_get_page) puts a whole domain back in reach. Freshness tracked via fresh_for + updated; stale digests flag themselves.
+      - label: L2 warm (search)
+        text: ada_memory_search / ada_session_recall — MDDB semantic search, ~1-3 s. Full docs including archive-flagged reports; the default "let me check" path.
+      - label: L3 far (deep tier)
+        text: NotebookLM escalation + recall-summary banks. ~20 s fetch is acceptable — distant memory legitimately takes longer; the model says so rather than guessing.
+      - label: Devin parity
+        text: Devin reads the same CMS pages via MDDB search (operational state). Repo stays canonical truth per ssot.reports.yml placement — Devin must treat CMS as derived output, not source.
   - title: SSOT Family
     icon: "📚"
     layout: list

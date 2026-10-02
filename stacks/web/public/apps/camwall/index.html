@@ -6,9 +6,10 @@
 <title>cam-wall</title>
 <style>
   html, body { margin: 0; background: #000; color: #ddd; font-family: ui-monospace, monospace; height: 100%; }
-  #grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
-          gap: 2px; height: 100vh; box-sizing: border-box; padding: 2px; }
+  #grid { display: grid; gap: 2px; height: 100vh; box-sizing: border-box; padding: 2px; }
   .cell { position: relative; background: #111; overflow: hidden; min-height: 0; cursor: pointer; }
+  body.idle { cursor: none; }
+  body.idle #gear, body.idle #hud { opacity: .15; }
   .cell img { width: 100%; height: 100%; object-fit: contain; display: block; }
   .cell.live-edge { outline: 1px solid #2af; outline-offset: -1px; }
   .lbl { position: absolute; left: 0; top: 0; padding: 3px 8px; background: rgba(0,0,0,.55);
@@ -51,6 +52,23 @@
 <body>
 <div id="grid"></div>
 <div id="hud">cam-wall</div>
+<div id="jserr" style="display:none;position:fixed;left:0;bottom:0;right:0;z-index:90;
+     background:#500;color:#fcc;padding:8px 14px;font-size:13px;
+     border-top:2px solid #f44"></div>
+<script>
+  // a JS fault must show on the wall, not just blank tiles silently —
+  // the 'div is not defined' outage rendered one black cell for days.
+  window.addEventListener("error", (e) => {
+    const el = document.getElementById("jserr");
+    el.textContent = `wall render error: ${e.message}`;
+    el.style.display = "block";
+  });
+  window.addEventListener("unhandledrejection", (e) => {
+    const el = document.getElementById("jserr");
+    el.textContent = `wall render error: ${e.reason && e.reason.message || e.reason}`;
+    el.style.display = "block";
+  });
+</script>
 <div id="gear">⚙</div>
 <div id="panel">
   <label>auto-refresh <input id="p-enabled" type="checkbox"></label>
@@ -69,7 +87,13 @@
 </div>
 <div id="zoom"><div class="cap"></div><div class="x">✕</div><img alt=""></div>
 <script>
-  const zone = new URLSearchParams(location.search).get("zone") || "zone-a";
+  const qs = new URLSearchParams(location.search);
+  const zones = (qs.get("zones") || qs.get("zone") || "zone-a")
+    .split(",").map(z => z.trim()).filter(Boolean);
+  let zoneIdx = 0;
+  let zone = zones[0];
+  const ZONE_S = +(qs.get("zone_s") || 45);   // seconds per wall in a playlist
+  const CYCLE_S = +(qs.get("cycle") || 0);   // >0 = fullscreen cam rotation
   const grid = document.getElementById("grid");
   const hud = document.getElementById("hud");
   const zoom = document.getElementById("zoom");
@@ -79,6 +103,38 @@
   let order = [];          // round-robin rotation order (live cams)
   let rrIdx = 0;
   let zoomKey = null;
+  let cycleIdx = 0;
+
+  // optimal-cols layout: pick the column count that maximizes image area
+  // for n cells on this viewport — cells letterbox (object-fit:contain)
+  // so we just need cell aspect ≈ thumb aspect (480x248) while filling
+  // the screen. ?cols=N pins it for a specific screen. ?aspect=W/H
+  // overrides the thumb aspect.
+  const PIN_COLS = +(qs.get("cols") || 0);
+  const THUMB_A = +(qs.get("aspect") || 0) || 480 / 248;
+  function layout() {
+    const n = cells.size || 1;
+    const W = grid.clientWidth - 4, H = grid.clientHeight - 4;
+    let best = { cols: PIN_COLS || 1, area: -1 };
+    for (let cols = 1; cols <= (PIN_COLS || n); cols++) {
+      const rows = Math.ceil(n / cols);
+      const cw = W / cols, ch = H / rows;
+      const imgW = Math.min(cw, ch * THUMB_A), imgH = imgW / THUMB_A;
+      const area = imgW * imgH;           // usable image pixels per cell
+      if (area > best.area) best = { cols, area };
+    }
+    grid.style.gridTemplateColumns = `repeat(${best.cols}, 1fr)`;
+    grid.style.gridAutoRows = `1fr`;      // equal rows, contain centers imgs
+  }
+  addEventListener("resize", layout);
+
+  // hide the cursor + chrome after 3s idle — walls live on TVs
+  let idleT;
+  const wake = () => { document.body.classList.remove("idle");
+                       clearTimeout(idleT);
+                       idleT = setTimeout(() => document.body.classList.add("idle"), 3000); };
+  ["mousemove", "touchstart", "keydown"].forEach(e => addEventListener(e, wake, { passive: true }));
+  wake();
 
   function closeZoom() { zoom.style.display = "none"; zoomKey = null; }
   zoom.querySelector(".x").addEventListener("click", closeZoom);
@@ -115,43 +171,66 @@
         div.className = "cell";
         div.innerHTML = `<span class="lbl">${cam.label}</span><img alt=""><span class="age"></span><div class="err" style="display:none"></div>`;
         grid.appendChild(div);
-        c = { img: div.querySelector("img"), age: div.querySelector(".age"),
-              err: div.querySelector(".err"), ts: 0, url: "", det: null };
+        c = { div, img: div.querySelector("img"), age: div.querySelector(".age"),
+              err: div.querySelector(".err"), ts: 0, url: "", det: null,
+              key: cam.key, label: cam.label };
         div.addEventListener("click", () => openZoom(c, cam));
         cells.set(cam.key, c);
       }
-      // yolo detection badge (counts from manifest 'det')
-      let db = c.det || div.querySelector(".det");
-      if (!db) {
-        db = document.createElement("div");
-        db.className = "det"; db.style.display = "none";
-        div.appendChild(db); c.det = db;
-      }
-      if (cam.det) {
-        db.textContent = Object.entries(cam.det)
-          .map(([k, n]) => `${k}×${n}`).join(" ");
-        db.style.display = "block";
-      } else db.style.display = "none";
-      if (cam.ts && cam.ts !== c.ts) {
-        c.ts = cam.ts;
-        c.url = `data/${zone}/${cam.key}.jpg`;
-        c.img.src = `${c.url}?t=${cam.ts}`;
-        c.img.style.display = "block";
-        c.err.style.display = "none";
-        c.img.onload = () => { c.err.style.display = "none"; };
-        if (zoomKey === cam.key) zoomImg.src = c.img.src;
-      }
-      if (!cam.ok && cam.err && !c.url) {
-        c.err.textContent = cam.err;
+      try {
+        // yolo detection badge (counts from manifest 'det')
+        let db = c.det;
+        if (!db) {
+          db = document.createElement("div");
+          db.className = "det"; db.style.display = "none";
+          c.div.appendChild(db); c.det = db;
+        }
+        if (cam.det) {
+          db.textContent = Object.entries(cam.det)
+            .map(([k, n]) => `${k}×${n}`).join(" ");
+          db.style.display = "block";
+        } else db.style.display = "none";
+        // guaranteed-image standard: a failed cam renders its generated
+        // status card (<key>-status.jpg) — dimmed last-good + banner, or an
+        // OFFLINE slate when it never had a frame. Regenerated each cycle,
+        // so refresh it every pass while the cam is down.
+        if (!cam.ok) {
+          const su = `data/${zone}/${cam.key}-status.jpg`;
+          if (c.url !== su) {
+            c.url = su;
+            c.img.src = `${su}?t=${Date.now()}`;
+          }
+          c.img.style.display = "block";
+          c.err.style.display = "none";
+          c.img.onload = () => { c.err.style.display = "none"; };
+          if (zoomKey === cam.key) zoomImg.src = c.img.src;
+        } else if (cam.ts && cam.ts !== c.ts) {
+          c.ts = cam.ts;
+          c.url = `data/${zone}/${cam.key}.jpg`;
+          c.img.src = `${c.url}?t=${cam.ts}`;
+          c.img.style.display = "block";
+          c.err.style.display = "none";
+          c.img.onload = () => { c.err.style.display = "none"; };
+          if (zoomKey === cam.key) zoomImg.src = c.img.src;
+        }
+        if (!cam.ok && cam.err && !c.url) {
+          c.err.textContent = cam.err;
+          c.err.style.display = "flex";
+        }
+        if (cam.ok && c.url) order.push(c);   // only live cells join the rotation
+        const age = cam.ts ? Math.round(now - cam.ts) : null;
+        if (age != null) {
+          c.age.textContent = age < 5 ? "live" : `${age}s ago`;
+          c.age.className = "age" + (age > 180 ? " stale" : "");
+        }
+      } catch (e) {
+        // one bad cam must not blank the rest of the wall — mark this
+        // cell and keep iterating (page-level onerror still shows below)
+        c.err.textContent = `render: ${e.message}`;
         c.err.style.display = "flex";
       }
-      if (c.url) order.push(c);   // only live cells join the rotation
-      const age = cam.ts ? Math.round(now - cam.ts) : null;
-      if (age != null) {
-        c.age.textContent = age < 5 ? "live" : `${age}s ago`;
-        c.age.className = "age" + (age > 180 ? " stale" : "");
-      }
     }
+    layout();
   }
 
   // Round-robin live ticker: rotate the highlight through live cells once
@@ -163,6 +242,35 @@
     for (const c of cells.values()) c.img.parentElement.classList.remove("live-edge");
     order[rrIdx++ % order.length].img.parentElement.classList.add("live-edge");
   }, 1000);
+
+  // ?cycle=N — fullscreen auto-rotate through the zone's live cams, N s
+  // each. Reuses the zoom overlay: same img element, label in the cap.
+  if (CYCLE_S > 0) {
+    grid.style.display = "none";
+    zoom.style.display = "block";
+    zoom.querySelector(".x").style.display = "none";
+    setInterval(() => {
+      if (document.visibilityState !== "visible" || !order.length) return;
+      const c = order[cycleIdx++ % order.length];
+      if (!c.url) return;
+      zoomKey = c.key;
+      zoomImg.src = `${c.url}?t=${c.ts || Date.now()}`;
+      zoomCap.textContent = c.label || c.key;
+    }, CYCLE_S * 1000);
+  }
+
+  // ?zones=a,b,c — rotate the whole wall through zones every zone_s s.
+  // Swaps the manifest source; cells rebuild on the next refresh tick.
+  if (zones.length > 1) {
+    setInterval(() => {
+      if (document.visibilityState !== "visible") return;
+      zoneIdx = (zoneIdx + 1) % zones.length;
+      zone = zones[zoneIdx];
+      cells.forEach(c => c.div.remove());
+      cells.clear();
+      refresh();
+    }, ZONE_S * 1000);
+  }
 
   refresh();
   setInterval(refresh, 5000);
