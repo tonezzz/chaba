@@ -33,7 +33,13 @@
 
 set -euo pipefail
 
-DEVIN_BIN="${DEVIN_BIN:-$(command -v devin || echo /usr/share/devin-desktop/resources/app/extensions/windsurf/devin/bin/devin)}"
+# Resolution order: env -> PATH -> ~/.local/bin -> bundled desktop binary.
+# Non-login shells (systemd-run, ssh one-shots) don't carry ~/.local/bin in
+# PATH, so command -v misses it and lands on the STALE bundled binary
+# (mn01: 3000.2.17 — predates 'smart' mode and rejected dispatch jobs).
+DEVIN_BIN="${DEVIN_BIN:-$(command -v devin 2>/dev/null \
+  || { [ -x "$HOME/.local/bin/devin" ] && echo "$HOME/.local/bin/devin"; } \
+  || echo /usr/share/devin-desktop/resources/app/extensions/windsurf/devin/bin/devin)}"
 DISPATCH_DIR="${DISPATCH_DIR:-$HOME/.local/share/devin-dispatch}"
 PERMISSION_MODE="${DISPATCH_PERMISSION_MODE:-smart}"
 
