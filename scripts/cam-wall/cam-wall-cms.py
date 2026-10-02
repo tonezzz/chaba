@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-"""cam-wall CMS generator — one 'wall-<zone>' page per camera wall plus a
-'cctv-walls' index, written into the ada-cms-pages MDDB collection.
+"""cam-wall CMS generator — one 'camwall-<area>' page per camera wall plus
+a 'cctv-walls' index, written into the ada-cms-pages MDDB collection.
 
 Runs on tony-dell (systemd timer ~15min, or on demand). Sources:
   - relay /camwall          -> enabled flag + live settings knobs
@@ -143,6 +143,12 @@ def cam_slug(zone: str, cam: dict) -> str:
 
 def cam_area(zone: str, cam: dict) -> str:
     return DEV_AREA.get(cam.get("dev") or "", AREA.get(zone, zone))
+
+
+def wall_key(zone: str) -> str:
+    """CMS key for a wall page — `camwall-<area>` (the `vms-` prefix is a
+    transport detail, not part of the wall name)."""
+    return "camwall-" + (zone[4:] if zone.startswith("vms-") else zone)
 
 
 def http_get(url: str, timeout: float = 15) -> dict:
@@ -405,8 +411,8 @@ def cam_page(slug_key: str, entries: list[tuple[str, dict, dict]],
 
 ![latest]({BASE}/data/{zone}/{key}.jpg)
 
-{ident}- **{_t(lang, 'Walls', 'กำแพง')}**: {walls} (`wall-{"`, `wall-".join(
-        sorted({z for z, _, _ in entries}))}`)
+{ident}- **{_t(lang, 'Walls', 'กำแพง')}**: {walls} (`{"`, `".join(
+        wall_key(z) for z in sorted({z for z, _, _ in entries}))}`)
 - **{_t(lang, 'State', 'สถานะ')}**: {state} · {_t(lang, 'manifest as of', 'ข้อมูล ณ')} {bucket}
 {f"- **{_t(lang, 'Error', 'ข้อผิดพลาด')}**: {err}" if err else ""}
 - **{_t(lang, 'Detections', 'การตรวจจับ')}**: {det_line}
@@ -493,14 +499,14 @@ def index_page(zones: dict[str, dict], lang: str = "en") -> str:
     return f"""# CCTV / traffic camera walls
 
 One wall per area — each is a live grid page plus a CMS dossier page
-(`wall-<zone>`). Cast with `cctv_wall`; tune with the ⚙ drawer on the
+(`camwall-<area>`). Cast with `cctv_wall`; tune with the ⚙ drawer on the
 wall page or `cctv_wall settings`.
 
 | wall | montage | cams live | refresh | effects |
 |---|---|---|---|---|
 {chr(10).join(rows)}
 
-Detail pages: {', '.join(f'`wall-{z}`' for z in sorted(zones))}
+Detail pages: {', '.join(f'`{wall_key(z)}`' for z in sorted(zones))}
 · `dvr-wall` — every DVR channel as a clickable tile grid
 
 ## Controls (shared by every wall)
@@ -562,11 +568,11 @@ def notify_transitions(zones: dict[str, dict]) -> None:
         if was == 0 and live > 0:
             notes.append(
                 f"camwall {zone} recovered — {live}/{len(cams)} cams live "
-                f"again (wall-{zone} updated)")
+                f"again ({wall_key(zone)} updated)")
         elif was > 0 and live == 0:
             notes.append(
                 f"camwall {zone} went all-dead — 0/{len(cams)} live "
-                f"(wall-{zone} updated)")
+                f"({wall_key(zone)} updated)")
     try:
         NOTIFY_STATE.write_text(json.dumps(cur))
     except Exception:
@@ -604,12 +610,16 @@ def main() -> int:
         info = ZONE_INFO.get(zone, "Camera wall zone.")
         for lang in ("en", "th"):
             ok &= mddb_add(
-                f"wall-{zone}",
+                wall_key(zone),
                 wall_page(zone, m["manifest"], m["state"], lang),
                 _t(lang, f"CCTV Wall: {area}",
                    f"กำแพงกล้อง: {_area(area, lang)}"),
                 lang=lang, summary=_t(lang, info,
                                       ZONE_INFO_TH.get(zone, "")))
+        # retire the old wall-<zone> key (renamed to camwall-<area>)
+        legacy_wall = f"wall-{zone}"
+        if legacy_wall != wall_key(zone):
+            mddb_delete(legacy_wall)
         for c in m["manifest"].get("cams") or []:
             cam_groups.setdefault(cam_slug(zone, c), []).append(
                 (zone, c, m["manifest"]))
