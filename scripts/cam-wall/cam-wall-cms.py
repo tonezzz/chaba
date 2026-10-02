@@ -328,6 +328,57 @@ Part of `cctv-walls` — camera dossier for `{slug_key}`.
 """
 
 
+CMS = "https://idc01.taila0626a.ts.net/cms"
+
+
+def dvr_wall_page(cam_groups: dict[str, list[tuple[str, dict, dict]]]) -> str:
+    """Video-wall CMS page — every DVR/VMS channel as a clickable image
+    tile, grouped by DVR device. Each tile links to the camera's own
+    cam-* dossier page; image is the freshest still across the walls
+    that list it."""
+    per_dev: dict[str, list[tuple[str, dict, dict, str]]] = {}
+    for slug, entries in cam_groups.items():
+        zone, cam, man = max(
+            entries, key=lambda e: e[2].get("updated") or 0)
+        if not cam.get("dev"):
+            continue
+        per_dev.setdefault(cam["dev"], []).append((zone, cam, man, slug))
+    if not per_dev:
+        return ""
+    sections = []
+    for dev in sorted(per_dev):
+        cams = sorted(per_dev[dev],
+                      key=lambda e: str(e[1].get("ch", e[1]["key"])))
+        cells = []
+        for zone, cam, man, slug in cams:
+            state = "live" if cam.get("ok") else \
+                ("stale" if cam.get("ts") else "down")
+            cells.append(
+                f"[![{cam['label']}]({BASE}/data/{zone}/{cam['key']}.jpg)]"
+                f"({CMS}#{slug})<br>{cam['label']} · {state}")
+        # 4-column grid via markdown table
+        rows = []
+        for i in range(0, len(cells), 4):
+            row = cells[i:i + 4]
+            row += [""] * (4 - len(row))
+            rows.append("| " + " | ".join(row) + " |")
+        live = sum(1 for _, c, _, _ in cams if c.get("ok"))
+        sections.append(
+            f"## {DEV_AREA.get(dev, dev)} DVR (`{dev}`) — "
+            f"{live}/{len(cams)} live\n\n"
+            "| | | | |\n|---|---|---|---|\n" + "\n".join(rows))
+    return f"""# DVR Video Wall
+
+One tile per physical DVR channel (XMEye VMS on mn01, snaps via the
+vms-snap shim). Click any tile for that camera's dossier page.
+Refresh follows each channel's wall interval — typically minutes.
+
+{chr(10).join(sections)}
+
+Walls these channels appear on: `cctv-walls` index.
+"""
+
+
 def index_page(zones: dict[str, dict]) -> str:
     rows = []
     for zone, m in sorted(zones.items()):
@@ -353,6 +404,7 @@ wall page or `cctv_wall settings`.
 {chr(10).join(rows)}
 
 Detail pages: {', '.join(f'`wall-{z}`' for z in sorted(zones))}
+· `dvr-wall` — every DVR channel as a clickable tile grid
 
 ## Controls (shared by every wall)
 
@@ -458,6 +510,9 @@ def main() -> int:
             cam_groups.setdefault(cam_slug(zone, c), []).append(
                 (zone, c, m["manifest"]))
     cam_pages = len(cam_groups)
+    dvr = dvr_wall_page(cam_groups)
+    if dvr:
+        ok &= mddb_add("dvr-wall", dvr, "DVR Video Wall")
     for slug_key, entries in sorted(cam_groups.items()):
         _, cam, _ = max(entries, key=lambda e: e[2].get("updated") or 0)
         zone, _cam, _ = entries[0]
