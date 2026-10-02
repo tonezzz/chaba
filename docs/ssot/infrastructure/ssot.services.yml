@@ -729,23 +729,25 @@ tony-omen:
     auth_profile: "openrouter:manual — key shared with idc01 mddb-gemini.env OPENROUTER_API_KEY"
     channels:
       telegram:
-        bot: "@myChabaBot (polling mode, connected 2026-09-29)"
-        dm_policy: pairing — unknown senders get a code; approve via `openclaw pairing list` + `openclaw pairing approve <code>`
+        bot: "@myChabaBot (polling mode; NOT the ada-tg-relay bot — different token, no update-stealing)"
+        dm_policy: pairing — first sender approved 2026-10-02 (chat_id 8960073266 = Tony, also commands.ownerAllowFrom)
         group_policy: disabled
-        token: ~/.config/secrets/telegram-bot.env (TELEGRAM_BOT_TOKEN; TELEGRAM_ALLOWED_CHAT_IDS currently empty — pair then populate to lock down to allowlist)
+        token: ~/.config/secrets/telegram-bot.env
+        approve_cmd: "openclaw pairing approve telegram <code> (channel-scoped; pairing list CLI misreports 'no pairing channels' — check channel_pairing_requests table in ~/.openclaw/state/openclaw.sqlite if list is empty)"
       line:
-        status: staged 2026-09-29 — plugin installed, dmPolicy=pairing, groupPolicy=disabled; BLOCKED on empty LINE_CHANNEL_SECRET in ~/.config/secrets/line-bot.env, then needs a public webhook path (tailscale funnel decision — not yet exposed)
+        status: "disabled 2026-10-02 — Ada's ada-line-relay on idc01 owns the ชบา bot's sole webhook slot (webhook-only API, Caddy → 127.0.0.1:8912); OpenClaw LINE left installed+configured but disabled — enabling it cannot receive inbound unless the webhook moves"
+        creds: "~/.config/secrets/line-bot.env synced from idc01 (token+secret+allowed-user-ids); plugins.entries.line.enabled=true set"
     mcp_servers:
       mddb: "streamable-http http://100.74.146.0:9000/mcp + X-API-Key (same key as devin mcp_config)"
       home-assistant: "streamable-http tony-dell:9584 shim; toolFilter include = read-only set (ha_get_overview, ha_search, ha_search_tools, ha_call_read_tool, ha_config_get_automation, ha_get_skill_guide) — write/delete/service calls excluded"
       opennb: "stdio mcp-servers/mcp-opennb/server.py → ONB /api/search/ask on idc01:8445; ONB_PASSWORD via ~/.config/secrets/opennb-mcp.env"
     cron:
-      nightly-digest: "0 8 * * * Asia/Bangkok, announce→telegram; needs --to <chatId> patched in after first pairing (deliveryPreview warned)"
+      nightly-digest: "0 8 * * * Asia/Bangkok, announce→telegram to 8960073266; id d920fb81-c083-4705-89ee-12b7ea2a85e3"
     known_issues:
       - "ghostroute writes OR model ids unprefixed to fallbacks — openclaw 2026.9.6 needs openrouter/ prefix; patched locally in ~/.openclaw/workspace/skills/ghost-route/ghostroute/cli.py (editable pipx install); upstream fix to kittimasak/GhostRoute worthwhile"
       - "OR key in auth profile openrouter:manual must be re-pasted whenever idc01 mddb-gemini.env rotates (rotated 2026-09-28→29, caused 401s)"
       - "opennb_ask inherits ONB's upstream quota — gemini flash key saturates under ada/yomi load; consider an OpenAI-compatible OR provider inside Open Notebook"
-    status: installed 2026-09-28; zero-cost OR free-tier agenting for the travel laptop; telegram channel live 2026-09-29
+    status: installed 2026-09-28; zero-cost OR free-tier agenting for the travel laptop; telegram channel live 2026-09-29, paired 2026-10-02
     risk: "shared OR key (per-key credit cap): OpenClaw's heavy agenting can starve
       mddb's OR embedding route — 2026-09-28 OR key hit total-limit 403s while mddb
       depended on it during Gemini quota exhaustion. Mitigated by the proxy's
