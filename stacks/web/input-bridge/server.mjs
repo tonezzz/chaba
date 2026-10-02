@@ -337,6 +337,7 @@ const server = http.createServer(async (req, res) => {
     // {interval, jpeg_q, thumb_w, cams_skip[], cams_extra[], effects[]}
     if (body.settings && typeof body.settings === "object") {
       const KNOWN = new Set(["interval", "jpeg_q", "thumb_w",
+                             "thumb_frac",
                              "cams_skip", "cams_extra", "effects"]);
       const clean = {};
       for (const [k, v] of Object.entries(body.settings)) {

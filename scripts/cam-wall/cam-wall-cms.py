@@ -310,7 +310,7 @@ def wall_page(zone: str, man: dict, zstate: dict, lang: str = "en") -> str:
                   "down": _t(lang, "down", "ขัดข้อง")}
     rows = "\n".join(
         f"| [{_label(c, lang)}](https://idc01.taila0626a.ts.net/cms/"
-        f"#{cam_slug(zone, c)}) | {c['key']} | "
+        f"#/{cam_slug(zone, c)}) | {c['key']} | "
         + (state_word["live"] if c.get("ok") else state_word["down"])
         + (f" · {_t(lang, 'frame', 'เฟรมล่าสุด')} {int(time.time()-c['ts'])}s"
            if c.get("ts") else "")
@@ -451,7 +451,7 @@ def dvr_wall_page(cam_groups: dict[str, list[tuple[str, dict, dict]]],
                       else _t(lang, "down", "ขัดข้อง")))
             cells.append(
                 f"[![{_label(cam, lang)}]({BASE}/data/{zone}/{cam['key']}.jpg)]"
-                f"({CMS}#{slug})<br>{_label(cam, lang)} · {state}")
+                f"({CMS}/#/{slug})<br>{_label(cam, lang)} · {state}")
         # 4-column grid via markdown table
         rows = []
         for i in range(0, len(cells), 4):

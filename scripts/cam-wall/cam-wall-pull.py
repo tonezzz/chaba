@@ -421,6 +421,8 @@ def apply_effects(data: bytes, effects: list[str]) -> tuple[bytes, list[dict]]:
     for eff in effects:
         if eff.startswith("thumb_w:"):
             tw = int(eff.split(":")[1])
+        elif eff.startswith("thumb_frac:"):
+            tw = max(1, img.width // int(eff.split(":")[1]))
         elif eff.startswith("jpeg_q:"):
             q = int(eff.split(":")[1])
         elif eff.startswith("yolo"):
@@ -638,6 +640,8 @@ def merge_settings(cfg: dict, settings: dict | None) -> dict:
     eff["effects"] = list(settings.get("effects") or [])
     if isinstance(settings.get("thumb_w"), (int, float)):
         eff["effects"].append(f"thumb_w:{int(settings['thumb_w'])}")
+    if isinstance(settings.get("thumb_frac"), (int, float)):
+        eff["effects"].append(f"thumb_frac:{int(settings['thumb_frac'])}")
     if isinstance(settings.get("jpeg_q"), (int, float)):
         eff["effects"].append(f"jpeg_q:{int(settings['jpeg_q'])}")
     return eff
@@ -650,7 +654,7 @@ def pull_zone(zone: str, cfg: dict, zdir: Path) -> dict:
     fast = [c for c in cfg["cams"] if c[1] != "vms"]
 
     effects = cfg.get("effects") or []
-    if not any(e.startswith("thumb_w:") for e in effects):
+    if not any(e.startswith("thumb_") for e in effects):
         effects = [*effects, f"thumb_w:{THUMB_W}"]
 
     def one(cam: tuple) -> dict:
