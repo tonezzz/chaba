@@ -66,7 +66,7 @@ GRID4_BTN = (388, 675)                  # bottom-toolbar 2x2 grid icon (2nd;
 TREE_STRIP_X = (1090, 1260)
 
 STATE_DIR = os.environ.get("VMS_SNAP_STATE", "/tmp")
-_lock = threading.Lock()
+_lock = threading.RLock()
 
 # --- self-heal watchdog -----------------------------------------------------
 # The VMS app's cloud-P2P session to the DVR dies every ~day: clicks still
@@ -295,7 +295,8 @@ def png_encode(width: int, height: int, rgb: bytes) -> bytes:
             + chunk(b"IEND", b""))
 
 
-def snap(query: str, settle: float, zoom: bool = True) -> tuple[bytes, str]:
+def snap(query: str, settle: float, zoom: bool = True,
+         _retry: int = 1) -> tuple[bytes, str]:
     channels = load_channels()
     hit = resolve_channel(query, channels)
     if hit is None:
@@ -393,7 +394,16 @@ def snap(query: str, settle: float, zoom: bool = True) -> tuple[bytes, str]:
             or not _has_video(w, h, rgb)):
         raise RuntimeError(
             f"'{name}' pane shows no video — camera offline or stream stalled")
-    _check_frame_identity(name, w, h, rgb)
+    try:
+        _check_frame_identity(name, w, h, rgb)
+    except RuntimeError:
+        # Pane kept the previous channel's stream — the attach failed.
+        # One more select is a fresh attach attempt and often lands it
+        # (P2P is a coin flip); only then fail.
+        if _retry:
+            logger.warning("'%s' stale-pane frame; forcing re-select", name)
+            return snap(query, settle, zoom, _retry=0)
+        raise
     return png_encode(w, h, rgb), name
 
 
@@ -495,7 +505,10 @@ class Handler(BaseHTTPRequestHandler):
                 return
             except Exception as exc:
                 logger.exception("snap failed")
-                if "pane shows no video" in str(exc):
+                # both are attach-failure signatures — the pane either has
+                # no video or still plays the previous channel's stream
+                if ("pane shows no video" in str(exc)
+                        or "frame identical" in str(exc)):
                     _watchdog_novideo()
                 self._json(503, {"error": str(exc)})
                 return
