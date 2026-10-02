@@ -56,6 +56,36 @@ ZONE_INFO = {
               "DOHWeb maps); Bangkok ring + upcountry trunk roads.",
 }
 
+# zone -> display area for page titles: "CCTV Wall: <Area>"
+AREA = {
+    "zone-a": "Noble-A Estate",
+    "noble-park": "Noble Park",
+    "vms-noble-club": "Noble Club",
+    "vms-noble-a": "Noble-A",
+    "tony-house": "Tony House",
+    "rama9": "Rama 9 Traffic",
+    "traffic": "Bangkok Traffic",
+    "burapha": "Burapha Expressway",
+    "chonburi": "Chonburi Corridor",
+    "dohweb": "DOH Highways",
+}
+
+# VMS DVR device -> display area (a camera's canonical area is its DVR,
+# not whichever wall happens to list it)
+DEV_AREA = {"noble-club": "Noble Club", "noble-a": "Noble-A"}
+
+
+def cam_slug(zone: str, cam: dict) -> str:
+    """Canonical cam-page key. VMS cams key on <device>-<camkey> so the
+    same physical camera is ONE page even when several walls list it
+    (zone-a & vms-noble-a both carry '1. Road In')."""
+    dev = cam.get("dev")
+    return f"cam-{dev}-{cam['key']}" if dev else f"cam-{zone}-{cam['key']}"
+
+
+def cam_area(zone: str, cam: dict) -> str:
+    return DEV_AREA.get(cam.get("dev") or "", AREA.get(zone, zone))
+
 
 def http_get(url: str, timeout: float = 15) -> dict:
     with urllib.request.urlopen(url, timeout=timeout) as r:
@@ -102,6 +132,21 @@ def mddb_add(key: str, md: str, title: str) -> bool:
     except Exception as exc:
         print(f"mddb add {key}: {exc}", file=sys.stderr)
         return False
+
+
+def mddb_delete(key: str) -> None:
+    """Remove a superseded page (e.g. cam-<zone>-* replaced by the
+    canonical cam-<dev>-* key)."""
+    body = json.dumps({"collection": COLLECTION, "key": key,
+                       "lang": "en"}).encode()
+    req = urllib.request.Request(
+        f"{MDDB}/delete", data=body,
+        headers={"Content-Type": "application/json"})
+    try:
+        urllib.request.urlopen(req, timeout=15).read()
+        _pub_hash.pop(f"{key}:en", None)
+    except Exception as exc:
+        print(f"mddb delete {key}: {exc}", file=sys.stderr)
 
 
 DET_MAX_BYTES = 8 * 1024 * 1024   # ~14d of hourly-ish sweeps
@@ -180,7 +225,7 @@ def wall_page(zone: str, man: dict, zstate: dict) -> str:
     age = int(time.time() - man.get("updated", 0))
     det_span, det_top = detections_tail(zone)
     rows = "\n".join(
-        f"| [{c['label']}](https://idc01.taila0626a.ts.net/cms/#/cam-{zone}-{c['key']}) | {c['key']} | "
+        f"| [{c['label']}](https://idc01.taila0626a.ts.net/cms/#{cam_slug(zone, c)}) | {c['key']} | "
         + ("live" if c.get("ok") else "down")
         + (f" · {int(time.time()-c['ts'])}s old" if c.get("ts") else "")
         + (f" · {c['err']}" if c.get("err") else "")
@@ -193,7 +238,7 @@ def wall_page(zone: str, man: dict, zstate: dict) -> str:
                      f"Raw log: `data/{zone}/detections-{zone}.jsonl` "
                      "(append-only while the yolo effect is on).\n")
     det_block += detections_timeline(zone)
-    return f"""# Wall: {zone}
+    return f"""# CCTV Wall: {AREA.get(zone, zone)} (`{zone}`)
 
 {ZONE_INFO.get(zone, 'Camera wall zone.')}
 
@@ -234,10 +279,14 @@ def cam_dets(zone: str, cam_key: str, hours: int = 24) -> tuple[str, str]:
     return top, time.strftime("%H:%M", time.localtime(last))
 
 
-def cam_page(zone: str, cam: dict, man: dict) -> str:
-    """One CMS dossier per camera — linked from its wall's roster.
-    Data-only (standard lives on cctv-walls); state uses coarse buckets
-    so unchanged cams hash-identical and skip republish."""
+def cam_page(slug_key: str, entries: list[tuple[str, dict, dict]]) -> str:
+    """One CMS dossier per PHYSICAL camera — `entries` is every
+    (zone, cam, manifest) that lists it; the freshest one supplies the
+    image/state. Data-only (standard lives on cctv-walls); state uses
+    coarse buckets so unchanged cams hash-identical and skip republish."""
+    # freshest manifest entry wins for the still/state
+    zone, cam, man = max(
+        entries, key=lambda e: e[2].get("updated") or 0)
     key = cam["key"]
     ok = cam.get("ok")
     err = cam.get("err") or ""
@@ -255,16 +304,22 @@ def cam_page(zone: str, cam: dict, man: dict) -> str:
     det_top, det_last = cam_dets(zone, key)
     det_line = (f"{det_top} (last seen {det_last}, 24h window)"
                 if det_top else "none in window")
-    return f"""# Cam: {cam['label']} — {zone}
+    walls = ", ".join(f"[{z}]({BASE}/?zone={z})"
+                      for z, _, _ in sorted(
+                          entries, key=lambda e: e[0]))
+    ident = (f"- **Source**: `{cam['dev']}` DVR · channel `{cam['ch']}`\n"
+             if cam.get("dev") else "")
+    return f"""# CCTV: {cam_area(zone, cam)} — {cam['label']}
 
 ![latest]({BASE}/data/{zone}/{key}.jpg)
 
-- **Zone**: `wall-{zone}` · wall `{BASE}/?zone={zone}`
+{ident}- **Walls**: {walls} (`wall-{"`, `wall-".join(
+        sorted({z for z, _, _ in entries}))}`)
 - **State**: {state} · manifest as of {bucket}
 {f"- **Error**: {err}" if err else ""}
 - **Detections**: {det_line}
 
-Part of `cctv-walls` — camera dossier for {key}.
+Part of `cctv-walls` — camera dossier for `{slug_key}`.
 """
 
 
@@ -388,18 +443,29 @@ def main() -> int:
         zones[zone] = {"manifest": man,
                        "state": zstate.get(zone) or {}}
     ok = True
-    cam_pages = 0
+    # group cams by canonical slug — one dossier per physical camera
+    cam_groups: dict[str, list[tuple[str, dict, dict]]] = {}
     for zone, m in zones.items():
         ok &= mddb_add(f"wall-{zone}", wall_page(
-            zone, m["manifest"], m["state"]), f"Wall: {zone}")
+            zone, m["manifest"], m["state"]),
+            f"CCTV Wall: {AREA.get(zone, zone)}")
         for c in m["manifest"].get("cams") or []:
-            ok &= mddb_add(f"cam-{zone}-{c['key']}",
-                           cam_page(zone, c, m["manifest"]),
-                           f"Cam: {c['label']} — {zone}")
-            cam_pages += 1
+            cam_groups.setdefault(cam_slug(zone, c), []).append(
+                (zone, c, m["manifest"]))
+    cam_pages = len(cam_groups)
+    for slug_key, entries in sorted(cam_groups.items()):
+        _, cam, _ = max(entries, key=lambda e: e[2].get("updated") or 0)
+        zone, _cam, _ = entries[0]
+        ok &= mddb_add(slug_key, cam_page(slug_key, entries),
+                       f"CCTV: {cam_area(zone, cam)} — {cam['label']}")
+        # retire the old zone-scoped key the canonical dev-key replaced
+        for z, c, _ in entries:
+            legacy = f"cam-{z}-{c['key']}"
+            if legacy != slug_key:
+                mddb_delete(legacy)
     if zones:
         ok &= mddb_add("cctv-walls", index_page(zones),
-                       "CCTV / traffic camera walls")
+                       "CCTV Camera Walls")
         notify_transitions(zones)
     print(f"walls: {len(zones)} pages + {cam_pages} cams + index "
           f"{'ok' if ok else 'ERR'}")

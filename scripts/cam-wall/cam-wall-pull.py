@@ -215,6 +215,45 @@ def slug(s: str) -> str:
     return "".join(c if c.isalnum() else "-" for c in s.lower()).strip("-")
 
 
+# VMS channel -> DVR device map (canonical camera identity). channels.json
+# is the xmeye-vms stack SSOT — the same file the snap shim resolves
+# coordinates from.
+VMS_CHANNELS_JSON = Path(os.environ.get(
+    "VMS_CHANNELS_JSON",
+    str(Path(__file__).resolve().parents[2]
+        / "stacks" / "services" / "xmeye-vms" / "channels.json")))
+
+
+def _load_vms_channels() -> dict[str, str]:
+    try:
+        raw = json.loads(VMS_CHANNELS_JSON.read_text())
+    except Exception:
+        return {}
+    out: dict[str, str] = {}
+    for name, meta in raw.items():
+        dev = (meta or {}).get("device")
+        if not dev:
+            continue
+        out[name.lower()] = dev
+        for a in meta.get("aliases") or []:
+            out[str(a).lower()] = dev
+    return out
+
+
+_VMS_DEVS = _load_vms_channels()
+
+
+def vms_device(channel: str) -> str | None:
+    """resolve a channels.json name/alias -> DVR device (noble-club…)."""
+    q = channel.lower()
+    if q in _VMS_DEVS:
+        return _VMS_DEVS[q]
+    for name, dev in _VMS_DEVS.items():
+        if q in name or name in q:
+            return dev
+    return None
+
+
 def http_get(url: str, timeout: float) -> tuple[int, bytes]:
     req = urllib.request.Request(url)
     with urllib.request.urlopen(req, timeout=timeout) as r:
@@ -631,6 +670,14 @@ def pull_zone(zone: str, cfg: dict, zdir: Path) -> dict:
         label, kind, key = cam[0], cam[1], cam[2]
         alts = tuple(cam[3:])
         out = {"key": slug(label), "label": label, "ts": 0, "ok": False}
+        # canonical camera identity — vms channels carry DVR device+channel
+        # so the same physical cam shares one CMS page no matter how many
+        # walls list it (zone-a / vms-noble-a both pull "1. Road In").
+        if kind == "vms":
+            dev = vms_device(key)
+            if dev:
+                out["dev"] = dev
+                out["ch"] = key
         try:
             data = pull_cam(kind, key, alts)
             if len(data) < 500:

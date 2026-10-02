@@ -393,7 +393,42 @@ def snap(query: str, settle: float, zoom: bool = True) -> tuple[bytes, str]:
             or not _has_video(w, h, rgb)):
         raise RuntimeError(
             f"'{name}' pane shows no video — camera offline or stream stalled")
+    _check_frame_identity(name, w, h, rgb)
     return png_encode(w, h, rgb), name
+
+
+# channel -> luma fingerprint of its last accepted frame. The
+# selected-row check proves the right TREE ROW lit up; it cannot prove
+# the PANE switched — when the new stream attach fails the pane keeps
+# the previously attached channel's video (2026-10-02: every noble-club
+# snap returned the same noble-a_CH05/CH06 frame). A frame identical to
+# another channel's recent frame means the pane never switched.
+_last_frames: dict[str, bytes] = {}
+
+
+def _frame_sig(w: int, h: int, rgb: bytes) -> bytes:
+    """Coarse 32x18 luma fingerprint — ignores OSD text/noise."""
+    out = bytearray()
+    for gy in range(18):
+        y = gy * h // 18
+        for gx in range(32):
+            x = gx * w // 32
+            o = (y * w + x) * 3
+            out.append((rgb[o] + rgb[o + 1] + rgb[o + 2]) // 3)
+    return bytes(out)
+
+
+def _check_frame_identity(name: str, w: int, h: int, rgb: bytes) -> None:
+    sig = _frame_sig(w, h, rgb)
+    for other, prev in _last_frames.items():
+        if other == name:
+            continue
+        diff = sum(1 for a, b in zip(sig, prev) if abs(a - b) > 40)
+        if diff < len(sig) * 0.15:
+            raise RuntimeError(
+                f"'{name}' frame identical to '{other}' — pane kept the "
+                "previous channel's stream (attach failed)")
+    _last_frames[name] = sig
 
 
 def _has_video(width: int, height: int, rgb: bytes) -> bool:
