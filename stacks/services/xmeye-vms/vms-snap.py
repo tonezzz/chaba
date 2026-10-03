@@ -8,8 +8,12 @@ with xwd, crops the monitor pane, and returns a PNG.
 Endpoints:
   GET /health                      -> 200 {"ok": true}
   GET /channels                    -> 200 {"channels": [...]}
-  GET /snap?ch=<name>[&settle=<s>][&zoom=0] -> 200 image/png | 404/503 JSON
+  GET /snap?ch=<name>[&settle=<s>][&zoom=0][&native=1] -> 200 image/png
   zoom=0 skips the single-pane zoom — grid-res frame, ~15s instead of ~40s+.
+  native=1 uses the VMS's own OSD snapshot: the monitor composite lands in
+  pictures/*.bmp at native decode res (2560x1440), saved via the preview
+  dialog's Save. Zoomed single-pane gives one channel at full res; the
+  grid composite carries every attached pane at once.
 
 Channel name matching is case-insensitive substring against channels.json.
 Coordinates live in channels.json (device tree rows — recalibrate if the tree
@@ -30,6 +34,7 @@ import threading
 import time
 import zlib
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
 logger = logging.getLogger("vms-snap")
@@ -61,9 +66,27 @@ SINGLE_PANE_RECT = (8, 113, 1706, 1000)  # zoomed pane video area; y1 below
                                         # the pane's own OSD title strip (CH
                                         # label + icons) — a bar otherwise
                                         # tops every frame
-GRID4_BTN = (533, 1020)                 # bottom-toolbar 2x2 grid icon (2nd;
-                                        # miss leaves VMS zoomed and corrupts
-                                        # the next snap)
+GRID1_BTN = (530, 1030)                 # bottom-toolbar single-pane icon —
+                                        # the deterministic "zoom" (a pane
+                                        # double-click toggles nothing in
+                                        # this build; the layout buttons do)
+GRID4_BTN = (620, 1030)                 # bottom-toolbar 4-grid icon —
+                                        # measured 2026-10-03: 1-pane=530,
+                                        # 4-grid=620, 6-pane=645, gaps are
+                                        # dead space (590 hits nothing)
+# Native snapshot path (?native=1): the pane OSD photo-cam writes the whole
+# monitor composite to <user>/pictures/*.bmp at native decode res (2560x1440
+# — ~2.9x the 1698px screen crop). The Capture Information preview is a
+# modal dialog: SAVE keeps the file and closes it; CANCEL DELETES the
+# just-written file (learned 2026-10-03 — stray clicks while it is open are
+# swallowed and corrupt the next step).
+SNAP_ICON = (1599, 100)                 # pane OSD photo-camera (right side)
+CAP_SAVE = (1198, 743)                  # Capture Information -> Save
+CAP_CANCEL = (1287, 743)                # Capture Information -> Cancel
+PIC_DIR = Path(os.environ.get(
+    "VMS_PIC_DIR",
+    str(Path.home()
+        / ".local/share/xmeye-vms/vms-runtime/data/users/admin/pictures")))
 # Tree strip scanned for the selected-row blue highlight (verify the click
 # landed on the intended channel instead of silently returning another).
 TREE_STRIP_X = (1710, 1910)
@@ -298,8 +321,82 @@ def png_encode(width: int, height: int, rgb: bytes) -> bytes:
             + chunk(b"IEND", b""))
 
 
+def bmp_to_rgb(data: bytes) -> tuple[int, int, bytes]:
+    """Uncompressed 24/32bpp BMP -> (w, h, RGB bytes). Rows are bottom-up
+    BGR(A); slice-assignment does the channel swap at C speed."""
+    if data[:2] != b"BM":
+        raise ValueError("not a BMP")
+    off = int.from_bytes(data[10:14], "little")
+    w = int.from_bytes(data[18:22], "little", signed=True)
+    h = int.from_bytes(data[22:26], "little", signed=True)
+    bpp = int.from_bytes(data[28:30], "little")
+    if int.from_bytes(data[30:34], "little") != 0:
+        raise ValueError("compressed BMP")
+    topdown = h < 0
+    h = abs(h)
+    bypp = bpp // 8
+    stride = (w * bypp + 3) & ~3
+    if bpp not in (24, 32):
+        raise ValueError(f"unsupported bpp {bpp}")
+    px = bytearray(w * h * 3)
+    for y in range(h):
+        sy = y if topdown else h - 1 - y
+        row = bytearray(data[off + sy * stride: off + sy * stride + w * bypp])
+        if bpp == 24:
+            row[0::3], row[2::3] = row[2::3], row[0::3]  # BGR -> RGB
+            px[y * w * 3:(y + 1) * w * 3] = row
+        else:  # BGRA -> RGB
+            row[0::4], row[2::4] = row[2::4], row[0::4]
+            del row[3::4]
+            px[y * w * 3:(y + 1) * w * 3] = row
+    return w, h, bytes(px)
+
+
+def _native_capture() -> tuple[int, int, bytes]:
+    """Click the pane OSD snapshot icon, keep the capture via the preview
+    dialog's Save, and return the BMP it wrote as (w, h, rgb). The file is
+    written AT icon-click — the dialog only gates keep/delete/close."""
+    t0 = time.time()
+    _podman("xdotool", "mousemove", str(SNAP_ICON[0]), str(SNAP_ICON[1]),
+            "click", "1", timeout=10)
+    deadline = t0 + 15
+    found = None
+    while time.time() < deadline:
+        time.sleep(0.6)
+        try:
+            for p in sorted(PIC_DIR.glob("*.bmp"),
+                            key=lambda p: p.stat().st_mtime, reverse=True):
+                st = p.stat()
+                if st.st_mtime >= t0 - 1 and st.st_size > 100_000:
+                    found = p
+                    break
+        except OSError:
+            pass
+        if found:
+            break
+    if found is None:
+        # nothing landed — the modal may still be up; Cancel clears it so
+        # the next snap's clicks are not silently swallowed.
+        _podman("xdotool", "mousemove", str(CAP_CANCEL[0]),
+                str(CAP_CANCEL[1]), "click", "1", timeout=10)
+        raise RuntimeError("native snapshot: no bmp written")
+    data = found.read_bytes()
+    # The bmp lands ~0.5s BEFORE the preview dialog finishes painting —
+    # click Save too early and the hit falls into the still-empty button
+    # row, leaving the dialog up to cover the next frame (2026-10-03).
+    time.sleep(1.2)
+    # Save = keep + close the modal (Cancel would DELETE the file)
+    _podman("xdotool", "mousemove", str(CAP_SAVE[0]), str(CAP_SAVE[1]),
+            "click", "1", timeout=10)
+    try:
+        found.unlink()
+    except OSError:
+        pass
+    return bmp_to_rgb(data)
+
+
 def snap(query: str, settle: float, zoom: bool = True,
-         _retry: int = 1) -> tuple[bytes, str]:
+         _retry: int = 1, native: bool = False) -> tuple[bytes, str]:
     channels = load_channels()
     hit = resolve_channel(query, channels)
     if hit is None:
@@ -340,16 +437,17 @@ def snap(query: str, settle: float, zoom: bool = True,
         # re-opens the P2P stream and costs 12-36s per cam, which is why
         # 8-cam zones starve under VMS_BUDGET.
         raw2 = None
+        native_frame = None
         if zoom:
-            # Zoom pane 1 for a ~4x-resolution capture. We pinned the grid
-            # above, so this double-click deterministically toggles to
-            # single-pane; never click again (it would toggle back).
-            # NOTE: no --sync — a synced mousemove blocks >30s while the
-            # Wine app re-renders after the channel switch.
+            # Zoom to the single-pane layout — deterministic via the
+            # toolbar's 1-pane button (pane dbl-click toggles nothing in
+            # this build). Activate pane 1 first so it stays the pane
+            # shown. NOTE: no --sync — a synced mousemove blocks >30s while
+            # the Wine app re-renders after the channel switch.
             _podman("xdotool", "mousemove", str(PANE_CLICK[0]),
-                    str(PANE_CLICK[1]), timeout=10)
-            _podman("xdotool", "click", "--repeat", "2", "--delay", "150",
-                    "1", timeout=10)
+                    str(PANE_CLICK[1]), "click", "1", timeout=10)
+            _podman("xdotool", "mousemove", str(GRID1_BTN[0]),
+                    str(GRID1_BTN[1]), "click", "1", timeout=10)
             # The stream re-opens on zoom and needs a few seconds to
             # draw — poll until real video appears (bounded).
             for _round in range(3):
@@ -373,8 +471,25 @@ def snap(query: str, settle: float, zoom: bool = True,
                 time.sleep(settle / 2)
             if raw2 is None:
                 raw2 = cand  # zoomed pane never drew — grid may still show video
-            _podman("xdotool", "mousemove", str(GRID4_BTN[0]),
-                    str(GRID4_BTN[1]), "click", "1", timeout=10)
+            try:
+                if native:
+                    native_frame = _native_capture()   # while still zoomed
+            finally:
+                _podman("xdotool", "mousemove", str(GRID4_BTN[0]),
+                        str(GRID4_BTN[1]), "click", "1", timeout=10)
+        elif native:
+            native_frame = _native_capture()
+    if native_frame is not None:
+        w, h, rgb = native_frame
+        try:
+            _check_frame_identity(name, w, h, rgb)
+        except RuntimeError:
+            if _retry:
+                logger.warning("'%s' stale-pane frame; forcing re-select",
+                               name)
+                return snap(query, settle, zoom, _retry=0, native=native)
+            raise
+        return png_encode(w, h, rgb), name
     # Zoomed frame first. A dead pane (stream not drawn yet, offline cam)
     # collapses content_bbox to a sliver — reject degenerate crops rather
     # than returning a 5px "frame" that downstream treats as an image.
@@ -405,7 +520,7 @@ def snap(query: str, settle: float, zoom: bool = True,
         # (P2P is a coin flip); only then fail.
         if _retry:
             logger.warning("'%s' stale-pane frame; forcing re-select", name)
-            return snap(query, settle, zoom, _retry=0)
+            return snap(query, settle, zoom, _retry=0, native=native)
         raise
     return png_encode(w, h, rgb), name
 
@@ -500,8 +615,9 @@ class Handler(BaseHTTPRequestHandler):
             except ValueError:
                 settle = DEFAULT_SETTLE
             zoom = (q.get("zoom") or ["1"])[0] != "0"
+            native = (q.get("native") or ["0"])[0] != "0"
             try:
-                png, resolved = snap(ch, settle, zoom)
+                png, resolved = snap(ch, settle, zoom, native=native)
             except LookupError:
                 self._json(404, {"error": f"unknown channel {ch!r}",
                                  "channels": sorted(load_channels())})
