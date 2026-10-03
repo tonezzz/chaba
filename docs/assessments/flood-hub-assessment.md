@@ -32,7 +32,7 @@ We don't need two versions of *this* report. Proposed structure, consistent with
 |---|---|---|---|
 | Canonical | `docs/assessments/flood-hub-assessment.md` (this file, repo) | Working assessment — detailed, accumulating | Edit directly; git history = versions |
 | Presentation | ada-cms `flood-report*` pages | Household-facing situation digest | **Never hand-edit the auto block** — content flows one-way via `flood-news-update.py` |
-| Optional mirror | a `flood-hub-notes` CMS page, if we want the assessment readable in the miniapp | Rendered excerpt of this doc | Generated only — stamp `source:` + `rendered_at:` like render-memory.py does |
+| Optional mirror | `flood-hub-assessment` CMS page (en+th, `parent: flood-report`) — **exists since 2026-10-03** | Rendered copy of this doc | Republish on demand (MDDB `add` / `cms_publish_page`) when this doc changes materially; body stamps canonical source + rendered date |
 | Snapshot | `flood-hub-assessment-YYYY-MM-DD.md` | Frozen copy for external contact/submission | Created only when we actually send something |
 
 Rule of thumb: **one canonical location per document; anything elsewhere is a generated, timestamped copy.** The CMS flood pages aren't duplicates of this report — different audience (household vs. engineering), different content (news/gauges vs. service evaluation).
@@ -99,6 +99,7 @@ Ranked by effort/benefit. All assume waitlist approval except #1.
 
 ## Update log
 
+- **2026-10-03** — published CMS mirror: `flood-hub-assessment` (en+th) under `parent: flood-report`, `attribute=assessment`, hand-maintained (no `generated_by`). Only `parent` is set on the child — `children` on `flood-report` is owned by the generator and would be re-stamped on the next run.
 - **2026-09-30** — initial assessment; link geocoded to Ongkharak, Nakhon Nayok (active dam-discharge flood); confirmed flood-report CMS pages exist and auto-regenerate (`flood-news-update.py`, last run 17:16); no Flood Hub data in ada-cms yet; found duplicate nongdon slugs.
 - **2026-09-30 (later)** — waitlist form submitted by Tony. Added `scripts/ada/flood-hub-check.py` (verify/enumerate tool, stdlib-only) + focus-inbox item to track the pending approval.
 - **2026-09-30 (evening)** — GCP project created: `flood-watch-510211` (ready to reply to approval email). Collapsed `flood-report-nongdon-saraburi` → `flood-report-nongdon` (leaf); learned the ada-cms-automation registry caches effective config and overrides feeds.json — collapses must clear both + page meta; patched `publish()` to drop stale parent/children keys.
