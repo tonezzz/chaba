@@ -1,0 +1,20 @@
+id: speaker-echo-leak
+title: Speaker-ID — verify KK voice hits are real voice, not TTS echo
+column: review
+priority: high
+note: >-
+  Session e564b39502 audio replay shows a genuine KK=0.84 match at t=0s —
+  either KK spoke near the iPad, or Ada's own TTS / another device playing
+  KK's voice leaked into the mic path. If no human KK was present, this is an
+  echo-leak bug: self-voice or relayed audio reaching the recognizer. Owner-
+  reclaim (f394a90 + d630572) now recovers the label in ~30s, but the false
+  open still mis-greets. Also watch live identify logs for remaining
+  sub-threshold owner sessions post re-enrollment.
+help: >-
+  1. Reproduce: start a voice session with no KK present, speak as Tony.
+  2. journalctl -u ada-ha-tony | grep identified — check first-chunk hits.
+  3. If false KK hits recur: check capture pipeline for TTS output bleeding
+     back (see docs/ssot/ssot.learning.speaker-id-tts-echo.2026-10-03.yml).
+  4. Fix path would be AEC/echo suppression or ignoring speaker-id during
+     Ada's own speech window.
+updated: '2026-10-03'
