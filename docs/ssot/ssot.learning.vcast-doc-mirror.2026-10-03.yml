@@ -1,0 +1,33 @@
+title: vcast doc-mirror — OAuth expiry, empty-stage wipe, m2m ssh
+subtitle: "2026-09-30/10-03: three stacked infra lessons from the /local/documents/ pipeline"
+icon: 🧠
+sections:
+  - title: Lesson
+    icon: 🎓
+    layout: list
+    items:
+      - label: OAuth Testing-mode = 7-day expiry
+        text: "GCP project gen-lang-client-0694401188's consent screen is in Testing status → Google hard-expires refresh tokens after 7 days. Dedicated-client token written 9-23 died exactly 9-30 (invalid_grant). Fix (Tony, console): publish app to Production. Re-auth without browser dance: rclone authorize 'drive' <cid> <secret> --auth-no-open-browser, then write the token JSON into rclone.conf directly — `rclone config update` insists on re-running the full flow even with a valid token. Same token feeds rclone, doc-archive, notebooklm syncs."
+      - label: rsync --delete + empty stage = data loss
+        text: "mirror-to-ha-www.sh continued past failed manifest fetches, staged nothing, then rsync --delete wiped www/documents/. Guard pattern for any mirror: abort on source-fetch failure AND refuse to rsync an empty stage. Both guards now in place; recovered from /tmp staging copy."
+      - label: m2m ssh — use the alias, not raw ports
+        text: "tailscale-ssh intercepts :22 and check-mode gates machine ssh on browser re-auth. Established standard (ssot.learning.idc01-warp-tailscaled): socket-activated sshd on :8222 + idc01 ssh alias 'tony-dell-m2m'. Automation should use the alias, not hardcode ports — tony-dell also has a :2222 sshd (tailnet-m2m.conf) but :8222/m2m alias is the documented path (powers ada_doc_print)."
+      - label: Stale rclone processes hold the auth port
+        text: "A week-old orphaned `rclone config update` (from the original Sept-23 setup session) still held 127.0.0.1:53682, blocking every fresh authorize/reconnect attempt with bind errors. Check `ss -tlnp | grep 53682` and kill stale rclone before starting an OAuth flow."
+      - label: rclone vs REST bench holds
+        text: "Re-ran scripts/bench-gdrive.py on both hosts post-reauth: REST still wins every op (1.2–4×), per-op overhead dominates at ~1MB doc sizes. doc-archive's REST transport remains correct."
+  - title: Session learnings
+    icon: 📝
+    layout: list
+    items:
+      - label: Bench leftovers pollute Drive
+        text: "bench-gdrive-* folders from Sept-23 run were never cleaned — script deletes only its own folder on success. Purged. When writing bench tooling, register cleanup before the run, not after results print."
+status:
+  last_verified: "2026-10-03"
+  related:
+    - stacks/idc01/doc-archive/mirror-to-ha-www.sh
+    - stacks/idc01/doc-archive/doc_archive.py
+    - scripts/bench-gdrive.py
+    - docs/kb/document-archive-service.md
+    - docs/ssot/ssot.learning.idc01-warp-tailscaled.2026-09-24.yml
+    - docs/ssot/jobs/infrastructure/2026-09-28-vcast-image-mixed-content.yml

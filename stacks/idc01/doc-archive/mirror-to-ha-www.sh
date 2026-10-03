@@ -10,7 +10,10 @@ PORT=$(grep -oP 'DOC_ARCHIVE_PORT=\K.*' "$ENV_FILE")
 BIND=$(grep -oP 'DOC_ARCHIVE_BIND=\K.*' "$ENV_FILE")
 KEY=$(grep -oP 'API_KEY=\K.*' "$ENV_FILE")
 MDDB="${MDDB_BASE:-http://100.74.146.0:11023}"
-TARGET_HOST="${HA_WWW_HOST:-tony-dell}"
+# tony-dell-m2m = ssh alias → 100.68.142.13:8222 (socket-activated sshd, key
+# auth only) — bypasses tailscale-ssh :22 check mode which gates automation on
+# periodic browser re-auth. See ssot.learning.idc01-warp-tailscaled.2026-09-24.
+TARGET_HOST="${HA_WWW_HOST:-tony-dell-m2m}"
 TARGET_DIR="${HA_WWW_DIR:-.config/home-assistant/www/documents}"
 
 STAGE=$(mktemp -d)
@@ -54,10 +57,7 @@ fi
 
 # --delete: retracted archives disappear from the mirror too. The dir is
 # dedicated to this mirror.
-# :2222 is OpenSSHd's m2m port (sshd_config.d/tailnet-m2m.conf) — bypasses
-# Tailscale SSH check mode on :22, which periodically gates automation on a
-# browser re-auth and stalls rsync until timeout.
 rsync -a --delete --timeout=120 \
-  -e 'ssh -p 2222 -o ConnectTimeout=10 -o BatchMode=yes' \
+  -e 'ssh -o ConnectTimeout=10 -o BatchMode=yes' \
   "$STAGE/" "$TARGET_HOST:$TARGET_DIR/"
 echo "doc-mirror: synced $(find "$STAGE" -type f | wc -l) pages across $(echo $slugs | wc -w) archives"
