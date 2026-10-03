@@ -29,11 +29,27 @@ focus:
     reason: Diagnosis and repo/SSOT edits only; service restarts need approval.
   subtasks:
   - label: Fix overnight focus pipeline on tony-dell (overnight-assessment + focus-dispatcher-overnight errors)
-    status: not_started
+    status: completed
+    completed: '2026-10-03'
+    note: Root causes cleared — chaba-tony-dell wedged mid-rebase (camwall
+      conflict vs upstream 7c316228; resolved + pulled to tip) and the
+      2026-09-10 handoff sat first in Active Branch Focus with status
+      monitoring, gating advance_focus. Handoff closed honestly (barrier
+      subtask extracted to backlog), gate returns complete. Also fixed the
+      CMS-audit CI failure that kept the 'Fix CI CMS audit' focus active —
+      cam-wall-cms now emits sources+provenance footer and the 66
+      regenerated pages pass R1/R2.
   - label: Fix focus-dispatcher + chaba-audit-watchdog on tony-omen
-    status: not_started
+    status: in_progress
+    note: Same two gates exist on omen — stale handoff (clears on next
+      pull of bb1c1678/26dd1cac) + activate_inbox refusing while the
+      CMS-audit fix item is the active branch focus (correctly active —
+      CI fix shipped, awaiting tonight's snapshot+run to go green).
   - label: Diagnose mn01-canary persistent nightly failure
-    status: not_started
+    status: completed
+    completed: '2026-10-03'
+    note: Canary correctly reported 'ada-pi behind origin' — mn01's standby
+      checkout was stale (8dd05ea vs 79721bc). Pulled ff-only, clean.
   - label: Serialize idc01 scenario-bench weekly timers; fix ada-bench-casting 203/EXEC
     status: not_started
   - label: Reconcile tony-dell cast SSOT drift (cast-browser, cast-desktop@1 missing)
