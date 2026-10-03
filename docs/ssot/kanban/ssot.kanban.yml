@@ -1,0 +1,23 @@
+title: Kanban Board
+subtitle: Minimal pilot — cards in docs/ssot/kanban/cards/, rendered to /apps/board/
+icon: layout
+version: 0  # pilot — promote to standard after it proves useful
+
+columns:
+  - {id: backlog, title: Backlog}
+  - {id: doing,   title: Doing}
+  - {id: review,  title: Review}
+  - {id: done,    title: Done}
+
+rules:
+  doing_limit: 2            # per session — soft warning only in pilot
+  checkout_exclusive: true  # one claim per checkout — the merge-collision rule
+  terminal: [done]
+
+card_dir: docs/ssot/kanban/cards
+board_output: stacks/web/public/apps/board/index.html
+renderer: scripts/render-board.py
+
+note: >
+  Pilot. Focus-inbox stays the alert queue; this board tracks CHOSEN
+  work. First card is the kanban system itself.
