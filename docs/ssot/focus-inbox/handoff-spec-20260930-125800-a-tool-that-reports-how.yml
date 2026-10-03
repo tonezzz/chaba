@@ -1,0 +1,49 @@
+title: a-tool-that-reports-how-many-devin-sessions
+subtitle: 'Devin handoff spec: spec/20260930-125800-a-tool-that-reports-how'
+icon: robot
+focus:
+  label: a-tool-that-reports-how-many-devin-sessions
+  text: "# Dev-team review: devin-daily-status\n\n- verdict: **block**\n- model: gemini-3.5-flash-lite\n\
+    - reviewed: 2026-09-30T12:58:00+00:00\n\n## Panel\n- **security_privacy** — pass: Tool specification\
+    \ complies with security, privacy, and tools.d contract requirements. (No private memory banks or\
+    \ Tony-only data accessed; Policy class 'read' is appropriate for read-only status reporting; Honest\
+    \ failure behavior properly returns structured errors)\n- **standards** — pass: Tool specification\
+    \ adheres to all tools.d contract rules, naming conventions, and policy standards.\n- **qa** — block:\
+    \ Missing test plan and tools.d contract details. (Spec lacks the required smallest meaningful test\
+    \ plan (unit test with mocked runner/genai and live-scenario expectation).; Needs explicit confirmation\
+    \ of module path in backend/tools.d/ and manifest.yml entry.)\n- **scope** — pass: Spec is minimal,\
+    \ follows the tools.d contract, and contains no speculative features or unrelated work.\n\n## Revised\
+    \ spec\n\n# Tool Specification: `ada_devin_daily_summary`\n\n- **Purpose**: Reports the total count\
+    \ of Devin sessions executed today and whether any are currently awaiting user input.\n- **Parameters**:\
+    \ None\n- **Policy Class**: `read` (secondary_allowed: true)\n- **Expected Result Shape**: \n  ```json\n\
+    \  {\n    \"sessions_today\": 4,\n    \"awaiting_user_input_count\": 1,\n    \"awaiting_session_ids\"\
+    : [\"devin-xyz123\"]\n  }\n  ```\n- **Honest Failure Behavior**: Returns `{\"error\": \"DEVIN_API_UNREACHABLE\"\
+    , \"message\": \"Failed to connect to Devin API: <reason>\"}` if the upstream service is unavailable\
+    \ or credentials are missing.\n- **Test Plan & Contract Details**:\n  - **Module Path**: `backend/tools.d/ada_devin_daily_summary.py`\n\
+    \  - **Manifest Entry**: Required in `manifest.yml` under the tools registry.\n  - **Smallest Meaningful\
+    \ Test Plan**:\n    - *Unit Test*: Mock the Devin API client/runner to return a predefined list of\
+    \ sessions (some completed today, some awaiting input) and assert that the tool parses and formats\
+    \ the expected result shape correctly.\n    - *Live-Scenario Expectation*: Execute the tool against\
+    \ a staged/mocked upstream endpoint to verify integration compliance and structured error handling\
+    \ when the API is unreachable."
+  branch: chaba
+  priority: medium
+  status: draft
+  tags:
+  - devin
+  - handoff
+  safe_to_parallel:
+    value: true
+    reason: Spec document; execution goes through devin_dispatch which creates an isolated worktree.
+  subtasks:
+  - label: Dispatch via devin_dispatch (repo chaba, prompt references bank doc spec/20260930-125800-a-tool-that-reports-how)
+    status: not_started
+ownership:
+  owner: tony
+  session: ''
+  locked: false
+  lock_reason: ''
+source:
+  bank_key: spec/20260930-125800-a-tool-that-reports-how
+  renderer: render-handoff-inbox
+  date: '2026-10-03'

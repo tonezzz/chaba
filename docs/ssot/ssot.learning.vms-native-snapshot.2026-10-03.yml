@@ -1,0 +1,67 @@
+title: VMS native snapshot path + speaker-ID session-audio replay debugging
+date: 2026-10-03
+scope: [camwall, xmeye-vms, ada-pi, speaker-id]
+
+lessons:
+
+  - id: vms-native-is-per-channel
+    lesson: >-
+      The XMEye VMS pane-OSD photo icon captures the ACTIVE PANE's channel at
+      native decode res (2560x1440), not a monitor composite — the dialog's
+      "Device/Channel" field confirms it. What looked like a 2-pane composite
+      in early tests was Mini Mart's dual-view single frame. So
+      native=1&zoom=0 yields a full-res single-channel image at grid cost
+      (~18s; P2P attach dominates, BMP->dialog Save->PNG adds only ~2s).
+    evidence: >-
+      stacks/services/xmeye-vms/vms-snap.py _native_capture(); commit
+      4d85bb52. Puller uses it via scripts/cam-wall/cam-wall-pull.py
+      (&zoom=0&native=1).
+
+  - id: vms-osd-icons-per-pane
+    lesson: >-
+      OSD icon strips are PER-PANE — the photo icon's x position depends on
+      the active layout's pane-1 right edge, not the monitor edge
+      (single-pane ~1599, 4-pane-focus ~1042). Layout buttons at the bottom
+      toolbar: 1-pane ~(530,1030), 4-pane ~(620,1030), 6-pane ~(645,1030) —
+      the old (533,1020) hit dead space and caused silent layout drift.
+
+  - id: speaker-session-audio-replay
+    lesson: >-
+      ~/.local/share/ada/audio/<date>-<sessionid>.pcm holds captured session
+      audio (16kHz PCM16 mono) — replay it offline through SpeakerIdentifier
+      to settle "did the system really hear X" disputes. This proved the
+      "greeted as KK" bug: t=0s chunk scored KK=0.84 (real KK voice in the
+      mic), while Tony's live iPad audio scored 0.23-0.49 vs his own prints —
+      under the 0.40 threshold, so he could never re-identify himself.
+    evidence: ada-pi commit f394a90/d630572 (owner-reclaim streak).
+
+  - id: speaker-label-asymmetry
+    lesson: >-
+      A confident non-owner hit (KK 0.84) pins the label ~90s+; a
+      sub-threshold owner voice could never reclaim it — the soft
+      likely-owner hint never displaced the label. Fix: OWNER_RECLAIM streak
+      (>=0.25 owner-best x3 promotes to a real identification). Weak foreign
+      chunks (<0.25) no longer reset the streak — noise isn't a competing
+      voice. Also re-enroll owners from LIVE-PATH audio captures, not just
+      clean enrollment takes (Tony within-print 0.58-0.79 vs live 0.23-0.49).
+
+  - id: stored-first-camera-flow
+    lesson: >-
+      ada_camera_snapshot(mode="cached") serves the camwall stored thumb +
+      age instantly (~0.2s); mode="live" pulls native-res (~22s).
+      Instructions now drive stored-first -> announce refresh -> live result.
+      Verified by tests/scenarios-live/noble_a_cctv_wall.yaml
+      (call_args_contain mode='cached').
+
+  - id: line-relay-send
+    lesson: >-
+      Pushing images to LINE from tooling: POST idc01 loopback
+      http://127.0.0.1:8912/send {text?, image_url?, caption?} — the relay
+      fetches the image (any tailnet-reachable URL), hosts it publicly via
+      /relay-img, and pushes to the sole allowed user (Tony) when `to` is
+      omitted.
+
+open_followups:
+  - "Multi-pane one-shot native capture (bind several channels to panes once, one composite, split) — would cut serial VMS wall pull cost."
+  - "Owner voice coverage: Tony's live-path prints now include iPad audio; watch identify logs for remaining sub-threshold sessions."
+  - "KK real-voice hits at session start on Tony's device — if she wasn't present, investigate TTS-echo leaking into the mic path (see ssot.learning.speaker-id-tts-echo.2026-10-03.yml)."

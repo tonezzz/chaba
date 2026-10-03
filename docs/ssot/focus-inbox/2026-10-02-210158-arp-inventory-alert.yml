@@ -1,0 +1,60 @@
+title: ARP inventory alert
+subtitle: Network scan changes detected at 2026-10-02-210158
+icon: inbox
+focus:
+  label: Review ARP inventory scan results
+  text: 'ARP inventory scan found changes compared to the MAC/IP registries.
+
+
+    - New devices: 0
+
+    - New IP for known device: 7
+
+    - MAC changed: 3
+
+    - Conflicts: 0
+
+    - Duplicate MACs in scan: 0
+
+
+    Report: reports/network-inventory-scan-2026-10-02-210158.json'
+  branch: chaba
+  priority: low
+  status: draft
+  tags:
+  - network
+  - arp
+  - inventory
+  - mac-registry
+  safe_to_parallel:
+    value: true
+    reason: Registry review only; does not change live services.
+  subtasks:
+  - label: Add new IP 192.168.2.93 for kks-macbook-pro to IP registry
+    status: not_started
+  - label: Add new IP 192.168.2.89 for discovered-ea9b8fd280f0 to IP registry
+    status: not_started
+  - label: Add new IP 192.168.2.91 for honor-pad-9 to IP registry
+    status: not_started
+  - label: Add new IP 192.168.2.76 for tony-repeater to IP registry
+    status: not_started
+  - label: Add new IP 192.168.2.74 for hp-deskjet-2700 to IP registry
+    status: not_started
+  - label: Add new IP 192.168.2.80 for tony-repeater to IP registry
+    status: not_started
+  - label: Add new IP 192.168.2.88 for iphone-tony to IP registry
+    status: not_started
+  - label: Check MAC change for 192.168.2.73 (was hp-deskjet-2700, now e4:ae:e4:35:70:1e)
+    status: not_started
+  - label: Check MAC change for 192.168.2.81 (was xiaomi-c100, now 90:1b:0e:e4:e3:a5)
+    status: not_started
+  - label: Check MAC change for 192.168.2.78 (was apple-watch-b67265caaae1, now 98:60:ca:80:98:f0)
+    status: not_started
+ownership:
+  owner: tony
+  session: ''
+  locked: false
+  lock_reason: ''
+source:
+  session: ''
+  date: '2026-10-03'
