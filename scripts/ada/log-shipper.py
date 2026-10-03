@@ -39,8 +39,11 @@ from pathlib import Path
 
 DEFAULT_HOSTS = ["idc01", "mn01", "tony-dell", "tony-omen"]
 LOCAL_NAMES = {"tony-omen", "localhost", ""}
-MDDB_URL = os.environ.get("MDDB_BASE_URL",
-                          "http://100.74.146.0:11023/v1").rstrip("/")
+# Ops telemetry goes to mddb-ops when configured — keeps host-logs
+# (the largest collection) off the leader's vector index.
+MDDB_URL = (os.environ.get("MDDB_OPS_URL")
+            or os.environ.get("MDDB_BASE_URL",
+                              "http://100.74.146.0:11023/v1")).rstrip("/")
 COLLECTION = os.environ.get("LOG_COLLECTION", "host-logs")
 
 # server-side pre-filter (cheap, keeps ssh payload small)
