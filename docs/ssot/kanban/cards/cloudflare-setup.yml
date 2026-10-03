@@ -4,4 +4,18 @@ column: backlog
 note: >-
   Domain → CF nameservers → DNS records for idc01/new-VPS services →
   decide proxied vs DNS-only per record. Prereq for LG2SS+ public edge.
+help: |-
+  1. dash.cloudflare.com → "Add site" → enter your domain → Free plan.
+  2. Cloudflare gives you 2 nameservers (e.g. ada.ns.cloudflare.com).
+  3. At your domain REGISTRAR → replace NS records with those two.
+  4. Wait for "Active" status on the CF dashboard (minutes to a few hours).
+  5. DNS → Records → add:
+     A   idc01        <idc01 public IP — hardware-idc01-specs.md>   — see step 6
+     A   <new-vps>    <its public IP>
+  6. Per record choose the cloud color:
+     🟠 Proxied (orange) — only for real PUBLIC web endpoints (hides origin IP, adds WAF).
+     ⚪ DNS only (grey)  — anything only tailnet/ssh should reach.
+  7. SSL/TLS → set "Full" (upgrade to "Full (strict)" once the origin serves valid TLS).
+  Optional later: `cloudflared` tunnel = public HTTPS with ZERO open ports on the VPS.
+  Done when: DNS resolves + you can say which records are proxied vs grey. Then idc-vps-game unblocks.
 updated: '2026-10-03'

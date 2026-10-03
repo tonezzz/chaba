@@ -6,4 +6,16 @@ note: >-
   Proposed uses: second public edge (Caddy→tailnet), offsite backup
   target, external uptime monitor, optional third camwall pull edge.
   Needs CPU/RAM specs confirmed before role assignment.
+help: |-
+  Goal: LG2SS+ 150GB VPS → second public edge + offsite backup + external monitor.
+  1. Confirm CPU/RAM/disk in the provider panel (150GB is disk — get vCPU/RAM too).
+  2. Base hardening: apt update/upgrade, ufw allow 22/80/443, ssh keys only.
+  3. Join tailnet: `curl -fsSL https://tailscale.com/install.sh | sh && sudo tailscale up`
+     → host appears as a tailnet node (name it idc03 or similar).
+  4. Roles (in this order):
+     edge    — Caddy on 80/443 proxying public domains → tailnet services
+     backups — rsync/restic target receiving idc01 + tony-dell backups
+     monitor — external uptime checks hitting idc01 + tony-dell health endpoints
+  5. Optional: third camwall pull edge.
+  Prereq: cloudflare-setup (DNS records must point at this host first).
 updated: '2026-10-03'

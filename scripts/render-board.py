@@ -74,6 +74,11 @@ def main():
                     '<span class="text-xs bg-red-900/60 text-red-200 rounded px-1.5 py-0.5">'
                     f'blocked: {esc(c["blocked_by"])}</span>'
                 )
+            if c.get("help"):
+                badges += (
+                    f'<button class="help-btn text-xs bg-slate-700 hover:bg-slate-600 text-slate-200 rounded px-1.5 py-0.5" '
+                    f'data-help="{esc(c["help"])}" data-title="{esc(c.get("title", c["id"]))}">? help</button>'
+                )
             note = esc(c.get("note", ""))
             body += (
                 f'<div class="board-card bg-card border border-slate-700 rounded-lg p-3 mb-2" '
@@ -155,6 +160,16 @@ def main():
     <button id="btn-refresh" class="text-xs px-2 py-1 rounded bg-slate-700 hover:bg-slate-600">Refresh</button>
   </nav>
 
+  <div id="help-modal" class="fixed inset-0 bg-black/70 hidden items-center justify-center z-50 flex">
+    <div class="bg-card border border-slate-700 rounded-xl p-5 w-11/12 max-w-lg">
+      <div class="flex items-center justify-between mb-3">
+        <h3 id="help-title" class="font-semibold text-sm"></h3>
+        <button id="help-close" class="text-xs px-2 py-1 rounded bg-slate-700 hover:bg-slate-600">Close</button>
+      </div>
+      <pre id="help-body" class="text-xs text-slate-300 whitespace-pre-wrap font-sans"></pre>
+    </div>
+  </div>
+
   <div class="max-w-6xl mx-auto p-4 md:flex md:gap-6 board-shell">
     <aside class="md:w-64 shrink-0 mb-6 md:mb-0 board-aside">
       <div class="flex items-center gap-2 mb-2">
@@ -194,6 +209,17 @@ def main():
   document.getElementById('lang-en').onclick = () => setLang('en');
   document.getElementById('lang-th').onclick = () => setLang('th');
   setLang('en');
+  // help modal
+  const modal = document.getElementById('help-modal');
+  const openHelp = (title, body) => {{
+    document.getElementById('help-title').textContent = title;
+    document.getElementById('help-body').textContent = body;
+    modal.classList.remove('hidden');
+  }};
+  document.querySelectorAll('.help-btn').forEach(b =>
+    b.onclick = () => openHelp(b.dataset.title, b.dataset.help));
+  document.getElementById('help-close').onclick = () => modal.classList.add('hidden');
+  modal.onclick = e => {{ if (e.target === modal) modal.classList.add('hidden'); }};
 </script>
 </body>
 </html>
