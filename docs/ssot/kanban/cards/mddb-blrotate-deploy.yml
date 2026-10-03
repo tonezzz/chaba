@@ -1,6 +1,11 @@
 id: mddb-blrotate-deploy
 title: Deploy mddb 2.15.4-blrotate on idc01 (binlog retention)
 column: review
+incident: >-
+  2026-10-03 21:24 — wedged on first big rotation (11.4GB binlog):
+  health endpoint dead ~26min, process peaked 16.4GB RSS + 5.9GB swap,
+  needed SIGKILL; mddb-gate held all Ada services down (user-visible
+  outage). Rotation logic + memory bound needs fixing before promote.
 note: "Janitor built + staged: image localhost/mddb:2.15.4-blrotate loaded on
   idc01. Needs leader restart (~2.5min open-rescan downtime, Ada memory errors
   meanwhile). Runbook: docs/kb/mddb-backup-binlog-2026-10-03.md."
