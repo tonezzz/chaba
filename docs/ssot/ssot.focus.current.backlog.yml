@@ -296,10 +296,44 @@ sections:
           host: tony_dell
           notes: Dispatched to tony_dell via focus-dispatcher --process-ready
         lock_reason: Dispatched to subagent on tony_dell
+      - label: Fix overnight focus pipeline (tony-dell + tony-omen dispatchers)
+        text: "overnight-assessment exits 1 (~3min, 1.8G peak) and focus-dispatcher-overnight 'completed with errors' on tony-dell; focus-dispatcher x2 + chaba-audit-watchdog exit 1 on tony-omen. This pipeline triages the focus inbox — its failure explains the 149 unprocessed files. Root cause in the source finding."
+        branch: chaba
+        priority: high
+        status: ready
+        triage_score: 0.7
+        tags: [focus, overnight, dispatcher, tony-dell, tony-omen]
+        safe_to_parallel: true
+        subtasks:
+          - label: Read journals, fix the failing step, verify next timer run
+        queued_at: "2026-10-03"
+        source: docs/ssot/focus-inbox/finding-2026-10-03-failed-units-triage.yml
+      - label: Failed-units sweep — per-host fixes
+        text: "Nine triaged subtasks in the source finding: mn01-canary nightly exit 1; idc01 scenario-bench timer collisions + ada-bench-casting 203/EXEC; tony-dell cast SSOT drift (cast-browser, cast-desktop@1 gone); cam-wall-pull SIGTERM on both lanes; ada-flood-news exit 2; mddb-memory-standard breach-vs-known_failed; desktop-noise suppression in audits."
+        branch: chaba
+        priority: medium
+        status: ready
+        triage_score: 0.55
+        tags: [audit, failed-units, sweep]
+        safe_to_parallel: true
+        subtasks:
+          - label: Work through the 9 triaged subtasks in the source finding
+        queued_at: "2026-10-03"
+        source: docs/ssot/focus-inbox/finding-2026-10-03-failed-units-triage.yml
   - title: Hand-off Queue
     icon: handoff
     layout: list
-    items: []
+    items:
+      - label: tony-omen NVIDIA reboot approval
+        text: Userspace/kernel mismatch persists — needs a reboot at an approved time.
+        status: waiting_user
+        queued_at: "2026-10-03"
+        source: user
+      - label: tony-dell Xiaomi Chrome re-login
+        text: xiaomi-token-refresh needs a manual Chrome re-login on tony-dell.
+        status: waiting_user
+        queued_at: "2026-10-03"
+        source: user
   - title: Quick Wins
     icon: quick
     layout: list

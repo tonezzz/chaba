@@ -1,0 +1,56 @@
+title: Failed-units triage sweep — 2026-10-03 audit deltas
+subtitle: 'Consolidated card set from audit-hosts deltas across all four hosts'
+icon: alert
+focus:
+  label: Failed-units triage sweep 2026-10-03
+  text: >-
+    Latest audit-hosts runs (2026-10-03 20:38 UTC+7) show persistent failed-unit
+    deltas on every host. Root causes triaged from journals: (idc01) weekly
+    scenario-bench timers collide — reports/tools refuse while casting is
+    running, bench-casting is 203/EXEC (bad ExecStart), casting hit timeout;
+    cam-wall-pull-vps and tony-dell cam-wall-pull both SIGTERM'd mid-run;
+    mddb-memory-standard exits 1 by design on breach (last breach: Thai print
+    job). (tony-dell) cast-browser + cast-desktop@1 expected in SSOT but units
+    deleted; overnight-assessment exits 1 after ~3min and
+    focus-dispatcher-overnight completes with errors — the pipeline that
+    triages this very inbox is degraded. (tony-omen) focus-dispatcher x2 and
+    chaba-audit-watchdog exit 1; mcp-health-snapshot/ada-memory-pull succeed
+    then exit nonzero (result quirk). (mn01) mn01-canary fails nightly,
+    persistent across days.
+  branch: chaba
+  priority: high
+  status: open
+  tags:
+  - audit
+  - failed-units
+  - triage
+  safe_to_parallel:
+    value: true
+    reason: Diagnosis and repo/SSOT edits only; service restarts need approval.
+  subtasks:
+  - label: Fix overnight focus pipeline on tony-dell (overnight-assessment + focus-dispatcher-overnight errors)
+    status: not_started
+  - label: Fix focus-dispatcher + chaba-audit-watchdog on tony-omen
+    status: not_started
+  - label: Diagnose mn01-canary persistent nightly failure
+    status: not_started
+  - label: Serialize idc01 scenario-bench weekly timers; fix ada-bench-casting 203/EXEC
+    status: not_started
+  - label: Reconcile tony-dell cast SSOT drift (cast-browser, cast-desktop@1 missing)
+    status: not_started
+  - label: Investigate cam-wall-pull SIGTERM on both lanes (tony-dell + idc01-vps)
+    status: not_started
+  - label: Fix ada-flood-news exit 2 INVALIDARGUMENT on tony-dell
+    status: not_started
+  - label: Decide mddb-memory-standard breach vs known_failed (exit 1 = alert by design)
+    status: not_started
+  - label: Suppress desktop-noise units in audits (xdg-document-portal, session scopes, autostart)
+    status: not_started
+ownership:
+  owner: devin
+  session: devin-failed-units-triage-2026-10-03
+  locked: false
+  lock_reason: ''
+source:
+  report: audit-hosts-2026-10-03
+  artifacts: reports/audit-hosts/*-20261003-*.yml
