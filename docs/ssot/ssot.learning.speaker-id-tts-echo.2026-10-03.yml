@@ -1,0 +1,103 @@
+title: Speaker-ID TTS Echo — the "Hi KK" root cause
+subtitle: Ada identified her own synthesized voice as KK; how it was found and fixed
+icon: 🎙️
+ideas:
+  - "Diagnose recurring speaker misidentification (always starts with Hi KK)"
+  - "Separate the three stacked causes: context poisoning, weak far-field
+    prints, and TTS-echo self-identification"
+  - "Record the permanent guard: never run speaker-id during assistant playback"
+
+sections:
+  - title: Root Cause
+    icon: 🔍
+    layout: list
+    items:
+      - label: TTS echo identified as KK (0.68)
+        text: |
+          Session 1b2163906f (2026-10-03 21:15 ICT) greeted "สวัสดีครับ Tony"
+          correctly, then speaker-id fired KK (66%) and Ada re-greeted as KK.
+          The identified chunk sat at ~15s into the session — while Ada's own
+          greeting TTS was playing. Her synthetic voice lands on KK's print
+          cluster and even passed KK's own-voice auto-learn guard (0.68),
+          merging itself into KK's profile.
+      - label: Why AEC didn't save it
+        text: |
+          echoCancellation is enabled on both the PWA and the HA voice card,
+          but browser AEC can only cancel playback in its own audio graph —
+          TTS rendered through another speaker, cast target, or audio path
+          the browser can't reference reaches the mic raw.
+      - label: This explains the whole history
+        text: |
+          Every greeting was an identification opportunity against a
+          KK-adjacent synthetic voice — matching the long-standing
+          "always starts with Hi KK" complaint, the 2026-09-29 ambient-noise
+          greeting, and mid-session speaker flips while Ada talks.
+
+  - title: Contributing Causes (also fixed)
+    icon: 🧩
+    layout: list
+    items:
+      - label: KK-poisoned rolling summary
+        text: |
+          The recent-sessions summary described the user as "Tony/Khun
+          Kung/KK" (profile-merge sessions 09-24→29). At greeting time the
+          model name-guessed from that narrative. Fix: imperative identity
+          note moved to LAST position in the session prime — "You are
+          talking to <owner>; other names are other people" (memory_ops.py,
+          commit cb9c39f).
+      - label: Sub-threshold owner matches left her name-blind
+        text: |
+          Far-field mic audio scores 0.19–0.52 — below the 0.45 identify
+          bar, so Ada stayed unidentified for ~20s of speech. Fix: soft
+          owner hint — if best match IS the session owner's print at ≥0.30
+          for 2 chunks, inject "partially matches <owner>" (auth unchanged;
+          owner already pinned by key). Also merged 2 far-field prints into
+          Tony's profile from confirmed session audio — scores now mean
+          0.487, 18/26 chunks ≥0.45.
+      - label: Unbound key mints
+        text: |
+          ha-<device8> keys minted via script.ada_voice_key carried no
+          ha_person, so sessions opened ownerless. The card now resolves
+          the HA session user's person.* entity (user_id match) and passes
+          it through the mint chain; verified live (ha-6396d2c1 minted
+          already bound to person.tony).
+
+  - title: The Guard
+    icon: 🛡️
+    layout: list
+    items:
+      - label: Feed gate on response_active
+        text: |
+          pwa_server skips speaker_session.feed() while
+          provider._response_active, plus a 0.6s echo-decay tail. Her voice
+          can never reach the identifier again (commit bc06168, deployed
+          2026-10-03).
+      - label: No re-greet on speaker switch
+        text: |
+          Secondary-speaker note now forbids re-greeting/announcing the
+          switch — personalize silently, continue the conversation.
+      - label: Design rule for future audio pipelines
+        text: |
+          Any downstream consumer of mic audio (speaker-id, enrollment,
+          VAD stats) must gate on assistant playback state, not just trust
+          client-side AEC. Media-pool separation alone was not enough —
+          the TTS voice matched a real person's cluster.
+
+  - title: Verification Trail
+    icon: ✅
+    layout: list
+    items:
+      - label: How to check future complaints
+        text: |
+          1) journalctl -u ada-ha-<inst> | grep 'identified\|ambiguous' —
+          exact score + which profile won. 2) Session transcripts at
+          ~/.local/share/ada/transcripts/<date>-<session>.md show what she
+          actually said. 3) Saved pcm at ~/.local/share/ada/audio/ can be
+          re-scored against profiles (backend/speaker_id internals) to
+          prove which audio matched.
+      - label: Profile hygiene
+        text: |
+          Profiles live in ~/.local/share/ada-pi/speaker_profiles.json;
+          prints should cluster >0.96 to their centroid. Tony×KK centroid
+          cosine −0.017 — clean separation; drift events fire at
+          <voiceprint_drift> when session means sag below the bar.
