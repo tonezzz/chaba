@@ -62,7 +62,9 @@ function allocScreen(name) {
 
 function releaseScreenByWs(ws) {
   if (ws.screen == null) return;
-  live.delete(ws.screen);
+  // only the CURRENT live socket may release the slot — a stale socket
+  // that kept ws.screen must not evict a display that re-registered
+  if (live.get(ws.screen) === ws) live.delete(ws.screen);
   ws.screen = null;
 }
 
@@ -763,6 +765,17 @@ async function registerDisplay(ws, msg) {
 
   ws.pendingSid && pending.delete(ws.pendingSid);
   ws.pendingSid = null;
+  // A reconnect supersedes the previous live socket: detach it so its
+  // queued state reports can't overwrite the new display's ground truth
+  // and its later close can't evict the new registration (observed
+  // 2026-09-28: an iPad ws flap left /displays reporting idle while the
+  // screen was rendering the cast).
+  const prev = live.get(screen);
+  if (prev && prev !== ws) {
+    prev.screen = null;
+    leaveRoom(prev);
+    try { prev.terminate(); } catch (e) {}
+  }
   ws.screen = screen;
   live.set(screen, ws);
   joinRoom(ws, `vcast-${screen}`);
@@ -807,8 +820,11 @@ wss.on("connection", (ws) => {
       return;
     }
 
-    // state reports from a registered screen update the registry
-    if (msg && msg.type === "state" && ws.screen != null) {
+    // state reports from the live display socket update the registry —
+    // a superseded socket keeps no ground truth (its ws.screen is
+    // detached on re-register; the live check is belt-and-braces)
+    if (msg && msg.type === "state" && ws.screen != null
+        && live.get(ws.screen) === ws) {
       const entry = registry.screens[ws.screen];
       if (entry) {
         entry.state = String(msg.state || "idle").slice(0, 32);
