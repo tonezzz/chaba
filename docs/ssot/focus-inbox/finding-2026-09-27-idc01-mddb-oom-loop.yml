@@ -14,7 +14,7 @@ focus:
     1 OOM in 6 days, but the pattern can recur on any restart.
   branch: chaba
   priority: high
-  status: open
+  status: resolved
   tags:
   - infra
   - idc01
@@ -24,17 +24,30 @@ focus:
     reason: SSOT/quadlet edits only; any service restart is a separate approval.
   subtasks:
   - label: Add MemoryMax (~16G) + restart policy to idc01 mddb quadlet so OOM kills stay bounded
-    status: not_started
+    status: completed
+    completed: '2026-10-03'
+    note: Already bounded — mddb.service.d/mem.conf drop-in sets
+      MemoryHigh=16G, MemoryMax=20G, GOMEMLIMIT=22000MiB, GOGC=150,
+      RestartSec=30, StartLimitIntervalSec=300 (added by parallel work,
+      verified effective via systemctl show). No quadlet edit needed.
   - label: Check mddb follower sync — avoid full resync-from-LSN0 on every leader restart (persist follower LSN / snapshot bootstrap)
-    status: not_started
+    status: completed
+    completed: '2026-10-03'
+    note: Not a defect — leader log shows incremental reconnects
+      (fromLSN=13461689/13944872/14026704/14067323); the 09-27 fromLSN=0
+      was a one-time bootstrap, not per-restart.
   - label: Add mddb OOM count to audit-hosts known-failure/alert signals for idc01
     status: completed
     completed: '2026-10-03'
     note: audit-hosts.py now collects oom_kills_24h (user+system journal) and
       deltas when total > hosts.<host>.oom_kills_tolerance (default 0);
-      declared for idc01.
+      declared for idc01 (commit 507e0fc6).
   - label: 'Consider upgrade mddb 2.15.0 -> 2.15.3 (release notes: check resync/memory fixes)'
-    status: not_started
+    status: completed
+    completed: '2026-10-03'
+    note: Already ahead — idc01 runs localhost/mddb:2.15.4-allowlist
+      (includes the 2.15.3 replication-stream auth fix;
+      MDDB_REPLICATION_SECRET configured on both ends).
 ownership:
   owner: tony
   session: devin-systemwide-assessment-2026-09-27
