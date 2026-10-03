@@ -1,0 +1,18 @@
+id: cf-access-gate
+title: CF Zero Trust Access in front of *.surf-thailand.com HA instances
+column: backlog
+priority: high
+note: >-
+  tony-ha + michael-ha are public on HA-auth alone right now. Add CF Access
+  policy (Zero Trust -> Access -> Applications, dashboard-only step; the DNS
+  token cannot do it). Emails = Tony (+ KK if needed). Companion app stays
+  tailnet (cannot do CF login).
+help: |-
+  1. dash.cloudflare.com -> Zero Trust -> Access -> Applications -> Add
+  2. Application type: Self-hosted
+  3. App domain: *.surf-thailand.com (covers ha. + mha. + future) or per-name
+  4. Policy: Allow -> selector "Emails" -> your Google account email
+  5. Login method: Google (or One-time PIN) under Authentication settings
+  6. Save -> test https://tony-ha.surf-thailand.com in incognito ->
+     should get CF login BEFORE the HA login page
+  Note: HA companion app cannot do CF login -> keep it on tailnet.
