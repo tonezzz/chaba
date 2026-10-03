@@ -1,25 +1,46 @@
 {
   "_comment": "flood-news-update.py feed map — CMS page slug -> [[name, Google News RSS search url], ...] or {feeds: [...], require: \"<regex>\", parent: \"<slug>\", children: [\"<slug>\", ...]}. 'require' filters title+description (case-insensitive) to drop query noise; _require_default applies to every page. parent/children stamp provenance meta per ssot.apps.cms-reports.yml. Add a page by adding a key, then run --all or --page <slug>.",
   "_require_default": "น้ำท่วม|อุทกภัย|น้ำล้น|น้ำเอ่อ|ระบายน้ำ|เขื่อน|flood|inundat|overflow",
-
   "flood-report": {
     "interval_min": 120,
-    "children": ["flood-report-nongdon"],
+    "children": [
+      "flood-report-nongdon-saraburi"
+    ],
     "feeds": [
-      ["bangphli", "https://news.google.com/rss/search?q=%E0%B8%99%E0%B9%89%E0%B8%B3%E0%B8%97%E0%B9%88%E0%B8%A7%E0%B8%A1%20%E0%B8%9A%E0%B8%B2%E0%B8%87%E0%B8%9E%E0%B8%A5%E0%B8%B5&hl=th&gl=TH&ceid=TH:th"],
-      ["samutprakan", "https://news.google.com/rss/search?q=%E0%B8%99%E0%B9%89%E0%B8%B3%E0%B8%97%E0%B9%88%E0%B8%A7%E0%B8%A1%20%E0%B8%AA%E0%B8%A1%E0%B8%B8%E0%B8%97%E0%B8%A3%E0%B8%9B%E0%B8%A3%E0%B8%B2%E0%B8%81%E0%B8%B2%E0%B8%A3&hl=th&gl=TH&ceid=TH:th"],
-      ["bangkok-th", "https://news.google.com/rss/search?q=%E0%B8%99%E0%B9%89%E0%B8%B3%E0%B8%97%E0%B9%88%E0%B8%A7%E0%B8%A1%20%E0%B8%81%E0%B8%A3%E0%B8%B8%E0%B8%87%E0%B9%80%E0%B8%97%E0%B8%9E&hl=th&gl=TH&ceid=TH:th"],
-      ["bangkok-en", "https://news.google.com/rss/search?q=flooding%20Bangkok%20OR%20%22Bang%20Phli%22&hl=en-US&gl=TH&ceid=TH:en"]
+      [
+        "bangphli",
+        "https://news.google.com/rss/search?q=%E0%B8%99%E0%B9%89%E0%B8%B3%E0%B8%97%E0%B9%88%E0%B8%A7%E0%B8%A1%20%E0%B8%9A%E0%B8%B2%E0%B8%87%E0%B8%9E%E0%B8%A5%E0%B8%B5&hl=th&gl=TH&ceid=TH:th"
+      ],
+      [
+        "samutprakan",
+        "https://news.google.com/rss/search?q=%E0%B8%99%E0%B9%89%E0%B8%B3%E0%B8%97%E0%B9%88%E0%B8%A7%E0%B8%A1%20%E0%B8%AA%E0%B8%A1%E0%B8%B8%E0%B8%97%E0%B8%A3%E0%B8%9B%E0%B8%A3%E0%B8%B2%E0%B8%81%E0%B8%B2%E0%B8%A3&hl=th&gl=TH&ceid=TH:th"
+      ],
+      [
+        "bangkok-th",
+        "https://news.google.com/rss/search?q=%E0%B8%99%E0%B9%89%E0%B8%B3%E0%B8%97%E0%B9%88%E0%B8%A7%E0%B8%A1%20%E0%B8%81%E0%B8%A3%E0%B8%B8%E0%B8%87%E0%B9%80%E0%B8%97%E0%B8%9E&hl=th&gl=TH&ceid=TH:th"
+      ],
+      [
+        "bangkok-en",
+        "https://news.google.com/rss/search?q=flooding%20Bangkok%20OR%20%22Bang%20Phli%22&hl=en-US&gl=TH&ceid=TH:en"
+      ]
     ]
   },
-
-  "flood-report-nongdon": {
+  "flood-report-nongdon-saraburi": {
     "interval_min": 120,
     "parent": "flood-report",
     "feeds": [
-      ["saraburi", "https://news.google.com/rss/search?q=%E0%B8%99%E0%B9%89%E0%B8%B3%E0%B8%97%E0%B9%88%E0%B8%A7%E0%B8%A1%20%E0%B8%AA%E0%B8%A3%E0%B8%B0%E0%B8%9A%E0%B8%B8%E0%B8%A3%E0%B8%B5&hl=th&gl=TH&ceid=TH:th"],
-      ["lopburi", "https://news.google.com/rss/search?q=%E0%B8%99%E0%B9%89%E0%B8%B3%E0%B8%97%E0%B9%88%E0%B8%A7%E0%B8%A1%20%E0%B8%A5%E0%B8%9E%E0%B8%9A%E0%B8%B8%E0%B8%A3%E0%B8%B5&hl=th&gl=TH&ceid=TH:th"],
-      ["chaophraya-dam", "https://news.google.com/rss/search?q=%E0%B9%80%E0%B8%82%E0%B8%B7%E0%B9%88%E0%B8%AD%E0%B8%99%E0%B9%80%E0%B8%88%E0%B9%89%E0%B8%B2%E0%B8%9E%E0%B8%A3%E0%B8%B0%E0%B8%A2%E0%B8%B2%20%E0%B8%A3%E0%B8%B0%E0%B8%9A%E0%B8%B2%E0%B8%A2%E0%B8%99%E0%B9%89%E0%B8%B3&hl=th&gl=TH&ceid=TH:th"]
+      [
+        "saraburi",
+        "https://news.google.com/rss/search?q=%E0%B8%99%E0%B9%89%E0%B8%B3%E0%B8%97%E0%B9%88%E0%B8%A7%E0%B8%A1%20%E0%B8%AA%E0%B8%A3%E0%B8%B0%E0%B8%9A%E0%B8%B8%E0%B8%A3%E0%B8%B5&hl=th&gl=TH&ceid=TH:th"
+      ],
+      [
+        "lopburi",
+        "https://news.google.com/rss/search?q=%E0%B8%99%E0%B9%89%E0%B8%B3%E0%B8%97%E0%B9%88%E0%B8%A7%E0%B8%A1%20%E0%B8%A5%E0%B8%9E%E0%B8%9A%E0%B8%B8%E0%B8%A3%E0%B8%B5&hl=th&gl=TH&ceid=TH:th"
+      ],
+      [
+        "chaophraya-dam",
+        "https://news.google.com/rss/search?q=%E0%B9%80%E0%B8%82%E0%B8%B7%E0%B9%88%E0%B8%AD%E0%B8%99%E0%B9%80%E0%B8%88%E0%B9%89%E0%B8%B2%E0%B8%9E%E0%B8%A3%E0%B8%B0%E0%B8%A2%E0%B8%B2%20%E0%B8%A3%E0%B8%B0%E0%B8%9A%E0%B8%B2%E0%B8%A2%E0%B8%99%E0%B9%89%E0%B8%B3&hl=th&gl=TH&ceid=TH:th"
+      ]
     ]
   }
 }

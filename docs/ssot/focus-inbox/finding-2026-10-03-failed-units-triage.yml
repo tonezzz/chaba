@@ -51,17 +51,52 @@ focus:
     note: Canary correctly reported 'ada-pi behind origin' — mn01's standby
       checkout was stale (8dd05ea vs 79721bc). Pulled ff-only, clean.
   - label: Serialize idc01 scenario-bench weekly timers; fix ada-bench-casting 203/EXEC
-    status: not_started
+    status: completed
+    completed: '2026-10-04'
+    note: No serialization needed — timers were already day-staggered (reports
+      Thu 03:30, tools Fri 03:30, casting Sat 04:30); the refusals were a stale
+      overlap lock, not a calendar collision. ada-bench-casting ExecStart pointed
+      at nonexistent scripts/bench-casting-when-ready.sh — renamed to
+      scripts/preflight-bench.sh on idc01 (daemon-reload only, no restart).
   - label: Reconcile tony-dell cast SSOT drift (cast-browser, cast-desktop@1 missing)
-    status: not_started
+    status: completed
+    completed: '2026-10-04'
+    note: Cast moved to tony-omen 2026-10 — dell now runs
+      cast-browser-proxy.service (:8799 proxy to omen) + cast-ha-panel.timer.
+      expected_services updated accordingly; omen keeps cast-browser,
+      cast-desktop@0 and cast-shots-http. cast-desktop@0 added to omen
+      known_failed with a verify-needed action rather than silently retired.
   - label: Investigate cam-wall-pull SIGTERM on both lanes (tony-dell + idc01-vps)
-    status: not_started
+    status: completed
+    completed: '2026-10-04'
+    note: Not a crash — units were deliberately stopped during the cam-wall
+      pipeline rework (journal shows explicit Stopped alongside go2rtc).
+      cam-wall-pull.timer re-enabled on dell; a manual run completed cleanly
+      after go2rtc/camera lifecycle noise. pull-vps recorded in idc01
+      known_failed with verify-after-camwall-rework action.
   - label: Fix ada-flood-news exit 2 INVALIDARGUMENT on tony-dell
-    status: not_started
+    status: completed
+    completed: '2026-10-04'
+    note: Page key renamed upstream — flood-report-nongdon became
+      flood-report-nongdon-saraburi; feeds config still targeted the dead key.
+      Renamed the feed key, repaired parent/children meta on both live docs via
+      full-doc upsert (the script's unchanged-items dedup skips meta-only
+      updates), re-ran --all clean.
   - label: Decide mddb-memory-standard breach vs known_failed (exit 1 = alert by design)
-    status: not_started
+    status: completed
+    completed: '2026-10-04'
+    note: Exit 1 IS the alert — the sweep sends ops event + HA notification on
+      breach (last run 11 phantom ops + speaker prints). Added to idc01
+      known_failed with action review-breach-journal so the delta stops
+      double-firing; the service's own notification remains the breach signal.
   - label: Suppress desktop-noise units in audits (xdg-document-portal, session scopes, autostart)
-    status: not_started
+    status: completed
+    completed: '2026-10-04'
+    note: 'dell: xdg-document-portal + app-devin\x2ddesktop@autostart added to
+      known_failed. omen: chaba-audit-watchdog (alert-by-design),
+      mcp-health-snapshot + ada-memory-pull (succeed-then-exit-nonzero quirks)
+      recorded. audit-cast deliberately left LOUD — it is correctly alerting
+      that go2rtc is stopped while tv_display=camera (cast shows black).'
 ownership:
   owner: devin
   session: devin-failed-units-triage-2026-10-03

@@ -58,16 +58,20 @@ hosts:
         scope: user
         expected_state: active
         critical: true
-      - name: cast-browser.service
+      - name: cast-browser-proxy.service
         type: service
         scope: user
         expected_state: active
         critical: true
-      - name: cast-desktop@1.service
-        type: service
+        note: Renamed from cast-browser.service — now an :8799 proxy to the
+          cast-browser unit on tony-omen (cast moved there 2026-10).
+      - name: cast-ha-panel.timer
+        type: timer
         scope: user
         expected_state: active
         critical: false
+        note: Quasi-live tony-ha panel cast to TONY-TV every 60s — replaces
+          the retired cast-desktop@1.service instance on this host.
       - name: playlived.service
         type: service
         scope: user
@@ -257,6 +261,14 @@ hosts:
         note: "Sun 10:15 — distills completed ISO weeks of raw devin-session docs
           into devin/weekly-* digests and supersedes sources. Units in
           chaba/systemd/devin-bank-distill.{service,timer}."
+      - name: xdg-document-portal.service
+        reason: Document portal fails when no matching desktop session is
+          active — same class as the existing xdg-desktop-portal entries.
+        action: ignore-or-mask
+      - name: 'app-devin\x2ddesktop@autostart.service'
+        reason: Devin desktop runs as a background nohup job, not via the
+          autostart unit — same rationale as the app-devin-desktop entry.
+        action: restart-devin-desktop
     expected_resources:
       min_free_ram_mb: 500
       max_swap_used_percent: 80
@@ -691,6 +703,18 @@ hosts:
       - name: chaba-backup.service
         reason: Backup service failing; investigate
         action: investigate
+      - name: chaba-audit-watchdog.service
+        reason: "Exits 1 when the audit suite is stale or red — the exit code IS the alert signal; resolves once underlying suites pass"
+        action: review-underlying-audits
+      - name: mcp-health-snapshot.service
+        reason: "Snapshot completes successfully then exits nonzero after killing the mcp-health probe — exit-code quirk, work succeeds"
+        action: fix-exit-code
+      - name: ada-memory-pull.service
+        reason: "Vault sync completes (files synced) then exits nonzero at the end — exit-code quirk, not a failed sync"
+        action: fix-exit-code
+      - name: cast-desktop@0.service
+        reason: "Desktop-cast instance exits 255 when display :0 is idle-asleep; cast pipeline largely moved off this host — verify whether the instance should be retired like dell's @1"
+        action: verify-cast-instance-needed
     expected_resources:
       min_free_ram_mb: 1000
       max_swap_used_percent: 50
@@ -1375,6 +1399,12 @@ hosts:
       - name: ada-scenario-smoke.service
         reason: "Live-scenario smoke suite — currently failing 3/7 (kk-first-contact, michael-infra-interrogation, new-person-first-contact) since idc01 migration; failures are the test signal"
         action: review-scenario-results
+      - name: mddb-memory-standard.service
+        reason: "Exits 1 by design when the memory-standard sweep finds breaches — sends an ops event + HA notification; the exit code IS the alert (last run: 11 phantom ops, speaker print breaches)"
+        action: review-breach-journal
+      - name: cam-wall-pull-vps.service
+        reason: "Deliberately stopped during the 2026-10 cam-wall pipeline rework alongside go2rtc (journal shows explicit Stopped, not a crash)"
+        action: verify-after-camwall-rework
   idc02:
     tailscale_ip: 100.123.163.11
     description: Public VPS — onboarded 2026-09-30; lab/offload node —
