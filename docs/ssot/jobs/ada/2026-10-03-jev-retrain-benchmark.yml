@@ -1,0 +1,58 @@
+# SSOT Job: jev decision-model retrain + 4-candidate benchmark
+# Dispatch thread: retrain Gemma-based + tiny Jev models on latest
+# jev-corpus for embedded/Thai affirmation failures. Tony later approved
+# adding the ~43MB MiniLM candidate to the benchmark.
+
+title: Jev retrain — distilbert v5 100% on failure set; 4-candidate benchmark
+subtitle: corpus merge + targeted aug; v5 student / MiniLM-43MB / gemma-1b head / old student compared
+icon: brain
+status: done
+project: chaba
+owner: devin-dispatch
+started: "2026-10-02"
+completed: "2026-10-03"
+
+context: |
+  The deployed jev-student (distilbert-multilingual, idc01:8778) failed
+  recent production Thai affirmations (ตกลง → 0.02, อะ ตกลง ครับ → 0.01)
+  and embedded-affirmation false positives (ตัวต่อไป). Original task was
+  to retrain both the Gemma-based Jev model and the tiny model on the
+  latest live corpus; the MiniLM ~45MB candidate was added on Tony's
+  approval as the cheapest-tier option. kk-macbook was unreachable so the
+  MLX head path was ported to torch/CUDA on tony-omen (GTX 1650).
+
+data:
+  merged_corpus: 1767 rows (266 pos, 1290 Thai, 126 embedded-token rows)
+  sources: live jev-corpus.jsonl (603 used) + transcript-mined (1164) + reviewed overrides
+  excluded: 18 unreviewed divergent rows + 36 ambiguous rows (kept as eval only)
+  augmented_train: 3057 rows total (Thai affirms incl ASR spacing,
+    imperative affirms, English long-leading affirms, embedded-token
+    negatives, ตกลง interrogative negatives)
+
+results:
+  eval_set: 32 failure cases (golden 13 + 13 live divergences + reviewed), gate thr 0.75
+  table:
+    - {model: v5-student-distilbert, size: 520MB, thr: 0.70, failset: "100%", thai: "100%", embedded: "100%", val: "96.9%", lat: "~50ms", golden: "13/13", verdict: DEPLOYABLE-pending-approval}
+    - {model: gemma-1b-attn-head, size: "2.5GB+3.5MB", thr: 0.60, failset: "81.3%", thai: "82.4%", embedded: "100%", val: "92.2%", lat: "~1.4s", verdict: "embedded-clean but FP on trailing ok/please"}
+    - {model: minilm-mlp-43mb, size: 45MB, thr: 0.65, failset: "71.9%", thai: "64.7%", embedded: "66.7%", val: "81.3%", lat: "~16ms-cpu", verdict: "fastest; pre-filter only"}
+    - {model: old-student-deployed, size: 520MB, failset: "62.5%", thai: "35.3%", embedded: "50%", lat: "~70ms", verdict: superseded}
+    - {model: verdict-151m-zeroshot, size: ~600MB, failset: "10/31", verdict: inadequate}
+    - {model: gemma-3-4b-teacher, size: ~15.5GiB, lat: "10-70s", verdict: reference-only}
+
+artifacts:
+  - {path: "tony-omen:~/jev-student/ckpt-v2-20261002", what: "v5 distilbert student, thr 0.70 — proposed next deploy"}
+  - {path: "tony-omen:~/jev-retrain-20261002/minilm-clf/", what: "45MB fp16 encoder + head.npz"}
+  - {path: "tony-omen:~/jev-retrain-20261002/runs/gemma1b-head.pt", what: "3.5MB attention head over frozen gemma-3-1b"}
+  - {path: reports/2026-10-03-jev-retrain-benchmark.md, what: "full benchmark table + failure analysis"}
+  - {path: scripts/jev/, what: "merge-corpus, augment-corpus, eval-noul, eval-minilm, train-minilm-clf, train-gemma-head, serve-gemma-head"}
+
+decisions:
+  - v5 student is the recommended replacement (100% failure-set, 13/13 golden, thr 0.70)
+  - MiniLM 45MB tier is documented but not gate-capable (64.7% Thai)
+  - gemma-1b attention head works as torch port on GTX 1650; MLX path still Mac-only
+  - 4b gemma remains teacher/reference; no fine-tune attempted (VRAM)
+
+status_note: |
+  NOT deployed — production jev-student.service on idc01 unchanged.
+  Deploy = point serve-jev-student.py at ckpt-v2-20261002 + THR=0.70,
+  restart on idc01; requires Tony's explicit approval.
