@@ -1,0 +1,13 @@
+id: worktree-sprawl
+title: Branch/worktree sprawl — 20 branches ahead, 51 worktrees
+column: backlog
+note: >-
+  Standing con from DEV_SYSTEM_ASSESSMENT (was hard-failing SSOT CI until
+  2026-10-03 — now advisory). Work: list worktrees, classify merged/stale/
+  active, archive or delete merged branches, consolidate long-tail work.
+help: |-
+  1. git worktree list — classify each: merged / stale / active-session
+  2. git branch --merged master → delete merged branches (local + remote)
+  3. For branches ahead of master: either PR/merge, or archive label + remove
+  4. Worktrees belonging to dead sessions → git worktree remove
+  5. Re-run reports/DEV_SYSTEM_ASSESSMENT — cons should drop to 0
