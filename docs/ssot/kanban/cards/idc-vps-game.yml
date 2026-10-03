@@ -1,11 +1,9 @@
 id: idc-vps-game
 title: "Provision IDC VPS Game LG2SS+ (150GB) \u2014 edge+backups+monitor"
-column: backlog
-blocked_by: cloudflare-setup
-note: "edge.surf-thailand.com -> idc02 already created DNS-only.\
-  \ idc02 roles: second public edge (Caddy on 80/443), offsite backup target, external\
-  \ monitor. Remaining: public 80/443 on idc02 + Caddy + cert. No longer a separate\
-  \ VPS \u2014 this card IS idc02 edge."
+column: doing
+note: 'idc02 edge LIVE: caddy-edge quadlet on public 80/443 (ufw opened, sysctl unpriv
+  ports=80). tony-ha + michael-ha proxied via CF -> 200. CF Access policy = remaining
+  dashboard step (public now relies on HA auth alone).'
 help: "Goal: LG2SS+ 150GB VPS \u2192 second public edge + offsite backup + external\
   \ monitor.\n1. Confirm CPU/RAM/disk in the provider panel (150GB is disk \u2014\
   \ get vCPU/RAM too).\n2. Base hardening: apt update/upgrade, ufw allow 22/80/443,\
