@@ -1,0 +1,49 @@
+title: MDDB fork follow-ups (binlog retention, follower parity, backup verify)
+subtitle: Loose ends after deploying localhost/mddb:2.15.4-allowlist on idc01
+icon: inbox
+
+focus:
+  label: MDDB fork follow-ups
+  text: |
+    idc01 now runs the local fork (upstream v2.15.4 + MDDB_VECTOR_ALGORITHMS=flat,quantized):
+    vector index load 2h30m -> 2.2-18s, RSS 16GB -> ~500MB, zero HNSW panics.
+    Benchmark report: ada-cms-pages/mddb-index-build-benchmark. Fork at
+    ~/CascadeProjects/mddb-fork branch feat/vector-algorithms (commits f8205ca + polish).
+    Remaining: binlog janitor (fork commit 598c57d) is LIVE on idc01 since 21:09 —
+    watch first rotation; trimming is follower-LSN-bound so "nothing trimmable"
+    is expected until dell catches up. tony-dell follower upgraded to the same
+    image at 20:51 — still in bolt freelist-scan warmup on the loaded disk, then
+    re-streams + catches up automatically. Verify the 2026-10-04 02:30 backup
+    actually restores (first backup written by the #266 fix); upstream PR is
+    deliberately held — Tony wants soak time before submitting; bench workspace
+    on tony-dell can be cleaned except mddb-fresh.db (3.4G, verified-good backup).
+  branch: chaba
+  priority: medium
+  status: draft
+  tags: [mddb, idc01, ops, fork]
+  missing_info:
+    - Tony's call on when/if the MDDB_VECTOR_ALGORITHMS allowlist goes upstream
+  safe_to_parallel:
+    value: true
+    reason: Restart-bound changes only; each can land independently during a routine mddb restart
+  subtasks:
+    - label: Binlog retention live on idc01 via fork janitor (598c57d); watch first rotation tick
+      status: completed
+    - label: tony-dell follower on 2.15.4-allowlist; confirm warmup finishes + replication catches up
+      status: in_progress
+    - label: Verify 2026-10-04 nightly backup opens with bbolt (post-#266 fix)
+      status: not_started
+    - label: Decide on upstream PR for MDDB_VECTOR_ALGORITHMS after soak
+      status: deferred
+    - label: Clean ~/mddb-bench on tony-dell (keep mddb-fresh.db)
+      status: not_started
+
+ownership:
+  owner: tony
+  session: dispatch-wt-20260928-120132
+  locked: false
+  lock_reason: ""
+
+source:
+  session: dispatch-wt-20260928-120132
+  date: 2026-10-03

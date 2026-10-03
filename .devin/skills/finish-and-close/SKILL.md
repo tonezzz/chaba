@@ -46,12 +46,21 @@ Standard workflow for ending a session when the user asks to finish/close.
    - After commit, run `git status --short` again. If anything remains, do a second focused
      commit automatically or warn the user.
 
-6. Push (only if asked)
+6. Park unfinished work in the kanban inbox
+   - Anything still pending at close — deferred subtasks, follow-ups, "would be nice"
+     items — must not die in the summary. File it in `docs/ssot/focus-inbox/` per the
+     save-to-focus convention: one `<UTC-timestamp>-<slug>.yml` per coherent topic,
+     `status: draft`, following `TEMPLATE.yml`.
+   - Prefer one inbox file with a `subtasks:` list over many tiny files.
+   - Items deliberately dropped or already tracked elsewhere don't need parking.
+   - Tell the user what was parked; the next active session triages it from the inbox.
+
+7. Push (only if asked)
    - Push to `origin` for the current branch only when the user explicitly asks for it
      ('push', 'push/etc.', or similar).
    - Report the remote tracking status.
 
-7. Close
+8. Close
    - Report final status and commit hash(es).
    - End with 'Session closed.'
 
