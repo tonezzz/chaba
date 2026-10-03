@@ -80,7 +80,11 @@ GRID4_BTN = (620, 1030)                 # bottom-toolbar 4-grid icon —
 # modal dialog: SAVE keeps the file and closes it; CANCEL DELETES the
 # just-written file (learned 2026-10-03 — stray clicks while it is open are
 # swallowed and corrupt the next step).
-SNAP_ICON = (1599, 100)                 # pane OSD photo-camera (right side)
+SNAP_ICON = (1599, 100)                 # pane OSD photo-camera (right side,
+                                        # single-pane/2-pane strip)
+SNAP_ICON_GRID = (1042, 97)             # same icon when the 4-pane grid is
+                                        # up — each pane's strip ends at its
+                                        # own right edge, not the monitor's
 CAP_SAVE = (1198, 743)                  # Capture Information -> Save
 CAP_CANCEL = (1287, 743)                # Capture Information -> Cancel
 PIC_DIR = Path(os.environ.get(
@@ -352,12 +356,15 @@ def bmp_to_rgb(data: bytes) -> tuple[int, int, bytes]:
     return w, h, bytes(px)
 
 
-def _native_capture() -> tuple[int, int, bytes]:
+def _native_capture(grid: bool = False) -> tuple[int, int, bytes]:
     """Click the pane OSD snapshot icon, keep the capture via the preview
     dialog's Save, and return the BMP it wrote as (w, h, rgb). The file is
-    written AT icon-click — the dialog only gates keep/delete/close."""
+    written AT icon-click — the dialog only gates keep/delete/close.
+    grid=True clicks pane 1's strip (the OSD icons sit at each pane's own
+    right edge; the monitor-width coordinate only exists when zoomed)."""
+    icon = SNAP_ICON_GRID if grid else SNAP_ICON
     t0 = time.time()
-    _podman("xdotool", "mousemove", str(SNAP_ICON[0]), str(SNAP_ICON[1]),
+    _podman("xdotool", "mousemove", str(icon[0]), str(icon[1]),
             "click", "1", timeout=10)
     deadline = t0 + 15
     found = None
@@ -478,9 +485,16 @@ def snap(query: str, settle: float, zoom: bool = True,
                 _podman("xdotool", "mousemove", str(GRID4_BTN[0]),
                         str(GRID4_BTN[1]), "click", "1", timeout=10)
         elif native:
-            native_frame = _native_capture()
+            native_frame = _native_capture(grid=True)
     if native_frame is not None:
         w, h, rgb = native_frame
+        # The OSD snapshot is ALWAYS the active pane's channel at native
+        # decode res — never a monitor composite (2026-10-03: what looked
+        # like a 2-pane composite was Mini Mart's dual-view single frame).
+        if not _has_video(w, h, rgb):
+            raise RuntimeError(
+                f"'{name}' pane shows no video — camera offline or "
+                "stream stalled")
         try:
             _check_frame_identity(name, w, h, rgb)
         except RuntimeError:

@@ -284,10 +284,15 @@ def _ffmpeg_frame(src: str, timeout: float = 40, hls: bool = False) -> bytes:
 
 def pull_cam(kind: str, key: str, alts: tuple = ()) -> bytes:
     if kind == "vms":
-        url = f"{VMS_SNAP}/snap?ch={urllib.parse.quote(key)}&zoom=0"
         # zoom=0 takes the grid-res pane — wall thumbs don't need the
         # zoomed single-pane re-attach (12-36s/cam) that starved 8-cam
         # zones under VMS_BUDGET; ~15s/cam fits the whole zone in one pass.
+        # native=1 takes the VMS's own OSD snapshot of the active pane —
+        # the channel at native decode res (Mini Mart: 2560x1440 vs the old
+        # 847x452 screen crop) for the same attach cost, ~+2s for the
+        # icon->bmp->Save round trip.
+        url = (f"{VMS_SNAP}/snap?ch={urllib.parse.quote(key)}"
+               "&zoom=0&native=1")
         _, data = http_get(url, 60)
         return data
     if kind == "hls":
