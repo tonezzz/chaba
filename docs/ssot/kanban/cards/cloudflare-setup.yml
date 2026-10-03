@@ -1,8 +1,9 @@
 id: cloudflare-setup
 title: Cloudflare account + DNS for public edge
-column: doing
-note: 'Zone active; api+idc01 A records created (grey). Waiting: Caddy vhost target
-  for api., LG2SS+ VPS IP for edge.'
+column: done
+note: 'DONE: api.surf-thailand.com proxied -> idc01 caddy -> ada-pi-pwa (200 via CF
+  edge). idc01+edge records DNS-only. edge -> idc02. Optional: bump
+  token scope to Zone Settings Edit to set SSL=strict (origin cert is valid LE).'
 help: "1. dash.cloudflare.com \u2192 \"Add site\" \u2192 enter your domain \u2192\
   \ Free plan.\n2. Cloudflare gives you 2 nameservers (e.g. ada.ns.cloudflare.com).\n\
   3. At your domain REGISTRAR \u2192 replace NS records with those two.\n4. Wait for\
@@ -16,6 +17,3 @@ help: "1. dash.cloudflare.com \u2192 \"Add site\" \u2192 enter your domain \u219
   \ tunnel = public HTTPS with ZERO open ports on the VPS.\nDone when: DNS resolves\
   \ + you can say which records are proxied vs grey. Then idc-vps-game unblocks."
 updated: '2026-10-03'
-claim:
-  session: b36ac352
-  since: '2026-10-03'
