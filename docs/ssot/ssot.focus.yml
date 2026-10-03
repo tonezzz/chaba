@@ -48,8 +48,33 @@ sections:
 - title: Backlog - Triage Queue
   icon: backlog
   layout: list
-  items: []
-  note: No pending backlog items. 17 completed items archived to ssot.focus.backlog.archive.2026.yml
+  items:
+  - label: Jev student v5 deploy + optional 4b fine-tune
+    text:
+      Trained jev-student v5 (distilbert-multilingual) on merged live+mined+reviewed
+      corpus with targeted Thai/embedded-affirmation augmentation — 100% on the
+      32-case failure set at the 0.75 gate, 13/13 golden, thr 0.70. Checkpoint at
+      tony-omen jev-student/ckpt-v2-20261002. Benchmark + job record in
+      docs/ssot/jobs/ada/2026-10-03-jev-retrain-benchmark.yml. MiniLM-45MB and
+      gemma-1b attention-head candidates trained but inferior. NOT deployed —
+      production jev-student.service on idc01:8778 unchanged.
+    branch: chaba
+    status: pending
+    started: "2026-10-03"
+    priority: medium
+    tags:
+      - jev
+      - ada
+      - ml
+      - deploy-pending
+    subtasks:
+      - label: Deploy ckpt-v2-20261002 to idc01 (serve-jev-student.py THR=0.70, restart jev-student.service) — needs Tony approval
+        status: pending
+      - label: Optional — gemma-3-4b QLoRA via Colab PAYG/Enterprise A100 (~$3-5/run) if a calibrated 4b Jev is wanted
+        status: pending
+      - label: Wire scripts/jev/{merge,augment}-corpus.py into the weekly jev-retrain.sh so live corpus keeps flowing
+        status: pending
+  note: 17 completed items archived to ssot.focus.backlog.archive.2026.yml
   archive_count: 17
 - title: Quick Wins
   icon: quick
@@ -89,6 +114,23 @@ sections:
   icon: history
   layout: timeline
   items:
+  - label: Jev retrain + 4-candidate benchmark (2026-10-02/03)
+    text: Merged live+mined+reviewed jev corpora (1,767 rows), added targeted
+      augmentation for Thai/embedded affirmations (3,057 train rows). Retrained
+      distilbert student to v5 — 100% on the 32-case failure set vs 62.5% for the
+      deployed model; also trained MiniLM-45MB (71.9%) and a torch gemma-1b
+      attention head (81.3%, MLX path ported to CUDA on the 1650).
+    date: '2026-10-03'
+    duration: 2 sessions
+    outcome: 'v5 student deployable pending approval (thr 0.70); artifacts on
+      tony-omen; job record docs/ssot/jobs/ada/2026-10-03-jev-retrain-benchmark.yml;
+      follow-ups in backlog'
+    tags:
+    - jev
+    - ada
+    - ml
+    - benchmark
+    - completed
   - label: Review ARP inventory scan results (2026-09-04)
     text: Re-ran the ARP inventory scan on 2026-09-04, reconciled 18 discovered hosts with ssot.ip-address-registry.yml and
       ssot.mac-address-registry.yml, and updated the active focus subtasks. Marked tony-omen duplicate MAC (b0:22:7a:f0:73:cd
