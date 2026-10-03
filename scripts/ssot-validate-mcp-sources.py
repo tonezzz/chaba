@@ -15,7 +15,7 @@ import yaml
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 SSOT_FILE = REPO_ROOT / "docs" / "ssot" / "infrastructure" / "ssot.mcp.yml"
-SKIP_RUNNERS = {"npx", "node", "docker"}
+SKIP_RUNNERS = {"npx", "node", "docker", "podman"}
 
 
 def expand_path(token: str) -> str:
@@ -84,6 +84,12 @@ def main() -> int:
         if config.get("status") != "operational":
             continue
 
+        per_host = config.get("per_host")
+        if isinstance(per_host, dict) and per_host:
+            keys = {normalize_host(k) for k in per_host}
+            if host not in keys and host.replace("_", "-") not in {k.replace("_", "-") for k in keys}:
+                continue  # host-scoped server, remote for this host
+
         resolved = merge_host_overrides(config, host)
         impl = resolved.get("implementation", "")
         runner = impl.split(None, 1)[0] if impl else ""
@@ -101,6 +107,11 @@ def main() -> int:
             missing.append(f"{name}: implementation not found: {path}")
 
     if missing:
+        if os.environ.get("GITHUB_ACTIONS") == "true":
+            print("MCP source check: host-local paths cannot exist on CI runners; reporting as warnings.")
+            for item in missing:
+                print(f"  - WARN {item}")
+            return 0
         print("MCP source validation FAILED")
         print("Operational servers with missing implementation files:")
         for item in missing:

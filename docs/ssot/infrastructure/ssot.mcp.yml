@@ -1,10 +1,7 @@
-# SSOT: MCP Infrastructure Configuration
 title: MCP Infrastructure Configuration
 subtitle: Single source of truth for MCP server configuration and profile management
 icon: 🔧
 version: 2
-
-# Profile definitions for different network environments
 profiles:
   home:
     name: Home Network Profile
@@ -24,7 +21,6 @@ profiles:
       helm_url: http://tony-dell.taila0626a.ts.net:3003/apps/helm
     health_config: infrastructure/ssot.health.home.yml
     system_config: ssot.mysystem.home.yml
-
   mobile:
     name: Mobile Network Profile
     network: dynamic
@@ -43,8 +39,6 @@ profiles:
       helm_url: http://tony-dell.taila0626a.ts.net:3003/apps/helm
     health_config: infrastructure/ssot.health.mobile.yml
     system_config: ssot.mysystem.mobile.yml
-
-# MCP server definitions
 servers:
   github:
     name: GitHub Integration
@@ -53,20 +47,19 @@ servers:
     wrapper: run-github-mcp.sh
     filter: none
     filtered_tools:
-      - search_issues
-      - create_issue
-      - add_issue_comment
-      - create_pull_request
-      - list_pull_requests
-      - add_comment_to_pending_review
-      - list_commits
-      - get_file_contents
+    - search_issues
+    - create_issue
+    - add_issue_comment
+    - create_pull_request
+    - list_pull_requests
+    - add_comment_to_pending_review
+    - list_commits
+    - get_file_contents
     single_instance: true
     status: operational
     config_files:
-      - devin: true
-      - windsurf: true
-
+    - devin: true
+    - windsurf: true
   mcp-gpu:
     name: GPU Management
     description: GPU control and queue management
@@ -84,9 +77,8 @@ servers:
         implementation: bash /home/tony/.config/devin/mcp-scripts/mcp-gpu-ssh.sh
         pattern: mcp-gpu
     config_files:
-      - devin: true
-      - windsurf: true
-
+    - devin: true
+    - windsurf: true
   mcp-llama:
     name: Llama.cpp Server
     description: LLM inference server interface
@@ -102,9 +94,8 @@ servers:
       tony_dell:
         implementation: python3 /home/tony/CascadeProjects/chaba-tony-dell/mcp-servers/mcp-llama/server.py
     config_files:
-      - devin: true
-      - windsurf: true
-
+    - devin: true
+    - windsurf: true
   postgres:
     name: PostgreSQL Database
     description: Database operations and management
@@ -112,23 +103,22 @@ servers:
     wrapper: run-postgres-mcp.sh
     filter: none
     filtered_tools:
-      - pg_query
-      - pg_query_explain
-      - pg_insert
-      - pg_update
-      - pg_delete
-      - pg_upsert
-      - pg_schema_list
-      - pg_table_list
-      - pg_table_describe
+    - pg_query
+    - pg_query_explain
+    - pg_insert
+    - pg_update
+    - pg_delete
+    - pg_upsert
+    - pg_schema_list
+    - pg_table_list
+    - pg_table_describe
     env:
       POSTGRES_CONNECTION_STRING: profile.service_urls.postgres_url
     single_instance: true
     status: operational
     config_files:
-      - devin: true
-      - windsurf: false
-
+    - devin: true
+    - windsurf: false
   yomi:
     name: Yomi LINE Integration
     description: LINE conversation archive and viewer
@@ -136,15 +126,14 @@ servers:
     wrapper: mcp-yomi.sh
     filter: none
     filtered_tools:
-      - list_conversations
-      - get_chat_messages
-      - get_insight
+    - list_conversations
+    - get_chat_messages
+    - get_insight
     single_instance: false
     status: operational
     config_files:
-      - devin: true
-      - windsurf: true
-
+    - devin: true
+    - windsurf: true
   playlive:
     name: Playlive Browser Automation
     description: Consolidated browser automation for local and remote testing
@@ -156,10 +145,13 @@ servers:
       PLAYLIVE_HOSTS_FILE: /home/tony/CascadeProjects/chaba-tony-dell/docs/ssot/infrastructure/playlive-hosts.yml
     single_instance: true
     status: operational
-    notes: |
-      Host registry is now in docs/ssot/infrastructure/playlive-hosts.yml.
+    notes: 'Host registry is now in docs/ssot/infrastructure/playlive-hosts.yml.
+
       The playlive-hosts-loader.py wrapper reads that YAML, picks the per-host
+
       playlive_url, sets PLAYLIVE_HOSTS, and then execs the real playlive-server.py.
+
+      '
     per_host:
       tony_dell:
         implementation: python3 /home/tony/.config/devin/mcp-scripts/playlive-hosts-loader.py
@@ -168,9 +160,8 @@ servers:
         env:
           PLAYLIVE_HOSTS_FILE: /home/tony/CascadeProjects/chaba-tony-dell/docs/ssot/infrastructure/playlive-hosts.yml
     config_files:
-      - devin: true
-      - windsurf: false
-
+    - devin: true
+    - windsurf: false
   mcp-debug:
     name: MCP Debug
     description: Multi-host compact debug and remote execution via stdio on tony-dell
@@ -180,11 +171,12 @@ servers:
     single_instance: false
     status: operational
     config_files:
-      - devin: true
-      - windsurf: true
-    notes: |
-      Stdio MCP server runs on tony-dell over SSH. Keeps low-latency debug commands on the headless primary host.
+    - devin: true
+    - windsurf: true
+    notes: 'Stdio MCP server runs on tony-dell over SSH. Keeps low-latency debug commands
+      on the headless primary host.
 
+      '
   alphavantage:
     name: Alpha Vantage Financial Data
     description: Financial market data API integration
@@ -195,11 +187,11 @@ servers:
     single_instance: false
     status: operational
     config_files:
-      - devin: true
-      - windsurf: false
-    notes: |
-      API key is configured in ~/.config/devin/mcp_config.json.
+    - devin: true
+    - windsurf: false
+    notes: 'API key is configured in ~/.config/devin/mcp_config.json.
 
+      '
   docs:
     name: Documentation Search (Chaba)
     description: Full-text search across chaba project documentation
@@ -210,9 +202,8 @@ servers:
     single_instance: false
     status: operational
     config_files:
-      - devin: true
-      - windsurf: false
-
+    - devin: true
+    - windsurf: false
   docs-trade:
     name: Documentation Search (Trade)
     description: Full-text search across trade project documentation
@@ -220,17 +211,16 @@ servers:
     wrapper: none
     filter: none
     args:
-      - -y
-      - --docs
-      - /home/tony/CascadeProjects/trade/docs
-      - --cache-dir
-      - /home/tony/CascadeProjects/trade/.docs-mcp
+    - -y
+    - --docs
+    - /home/tony/CascadeProjects/trade/docs
+    - --cache-dir
+    - /home/tony/CascadeProjects/trade/.docs-mcp
     single_instance: false
     status: operational
     config_files:
-      - devin: true
-      - windsurf: false
-
+    - devin: true
+    - windsurf: false
   mcp-weaviate:
     name: Weaviate Vector Database
     description: Vector database integration for embeddings
@@ -247,9 +237,8 @@ servers:
       tony_dell:
         implementation: python3 /home/tony/CascadeProjects/chaba-tony-dell/mcp-servers/mcp-weaviate/server.py
     config_files:
-      - devin: true
-      - windsurf: true
-
+    - devin: true
+    - windsurf: true
   workflows:
     name: Workflows Automation
     description: YAML-based workflow orchestration and automation
@@ -262,37 +251,45 @@ servers:
     single_instance: false
     status: operational
     config_files:
-      - devin: true
-      - windsurf: false
-
+    - devin: true
+    - windsurf: false
   mddb:
     name: MDDB Knowledge Base
-    description: Personal Knowledge Base system with document management and semantic search
+    description: Personal Knowledge Base system with document management and semantic
+      search
     implementation: docker chaba/mddb-page-tools:latest (container mddb)
     wrapper: /home/tony/.config/devin/mcp-scripts/mddb-bridge.py
     filter: bridge
     filtered_tools:
-      - add_document
-      - search_documents
-      - delete_document
-      - get_stats
-      - aggregate
-      - semantic_search
+    - add_document
+    - search_documents
+    - delete_document
+    - get_stats
+    - aggregate
+    - semantic_search
     url: http://100.68.142.13:9000/mcp
     single_instance: false
     status: operational
     config_files:
-      - devin: true
-      - windsurf: false
-    notes: |
-      MCP endpoint requires /mcp path suffix (http://localhost:9000/mcp)
+    - devin: true
+    - windsurf: false
+    notes: 'MCP endpoint requires /mcp path suffix (http://localhost:9000/mcp)
+
       Container on tony-dell uses host networking and listens on port 9000
+
       Devin uses the stdio bridge at /home/tony/.config/devin/mcp-scripts/mddb-bridge.py
+
       The bridge preserves the 2025-11-25 protocolVersion returned by mddbd
-      Allowed tools for Claude: add_document, search_documents, delete_document, get_stats, aggregate, semantic_search
-      mcp-health "MDDB MCP Server" check: GET http://tony-dell:9000/mcp returns 400; only POST is valid, so 400 is the healthy HTTP status
+
+      Allowed tools for Claude: add_document, search_documents, delete_document, get_stats,
+      aggregate, semantic_search
+
+      mcp-health "MDDB MCP Server" check: GET http://tony-dell:9000/mcp returns 400;
+      only POST is valid, so 400 is the healthy HTTP status
+
       See docs/kb/mddb-claude-bridge.md for Claude-specific configuration details
 
+      '
   mcp-health:
     name: Health Monitoring
     description: Centralized health check and telemetry orchestrator on tony-dell
@@ -302,18 +299,32 @@ servers:
     single_instance: true
     status: operational
     config_files:
-      - devin: true
-      - windsurf: true
-    notes: |
-      Persist results to tony-dell Postgres (health_checks and alerts tables).
-      Phase 3 Enhanced: Complete - Port conflict detection, proxy validation, automated recovery, enhanced error context
+    - devin: true
+    - windsurf: true
+    notes: 'Persist results to tony-dell Postgres (health_checks and alerts tables).
+
+      Phase 3 Enhanced: Complete - Port conflict detection, proxy validation, automated
+      recovery, enhanced error context
+
       Phase 4: Complete - Streamlined health monitoring with advanced features (2026-08-12)
-      Features: 4-level status categorization, profile filtering, dependency analysis, recovery suggestions, alert system
-      Phase 3 Tools: check_port_conflicts, validate_proxy_config, restart_service, get_troubleshooting_info
-      Phase 4 Tools: quick_health (pass/fail for critical services), check_group (group-based checks), reload_config (YAML reload), get_health_score (system metric 0-100), batch_check (parallel checks), set_auto_recovery (automated policies), get_service_template (service templates), sync_to_mddb (health history integration)
-      Phase 4 Future: ML-based failure prediction and webhook notifications documented in ssot.improvements.yml
+
+      Features: 4-level status categorization, profile filtering, dependency analysis,
+      recovery suggestions, alert system
+
+      Phase 3 Tools: check_port_conflicts, validate_proxy_config, restart_service,
+      get_troubleshooting_info
+
+      Phase 4 Tools: quick_health (pass/fail for critical services), check_group (group-based
+      checks), reload_config (YAML reload), get_health_score (system metric 0-100),
+      batch_check (parallel checks), set_auto_recovery (automated policies), get_service_template
+      (service templates), sync_to_mddb (health history integration)
+
+      Phase 4 Future: ML-based failure prediction and webhook notifications documented
+      in ssot.improvements.yml
+
       See ssot.improvements.yml for detailed implementation plan
 
+      '
   mcp-focus:
     name: Focus Manager
     description: Session focus intake, status, and dispatch on tony-dell
@@ -323,11 +334,12 @@ servers:
     single_instance: true
     status: operational
     config_files:
-      - devin: true
-      - windsurf: false
-    notes: |
-      Runs on tony-dell so the canonical SSOT on tony-dell is used for focus queries.
+    - devin: true
+    - windsurf: false
+    notes: 'Runs on tony-dell so the canonical SSOT on tony-dell is used for focus
+      queries.
 
+      '
   home-assistant:
     name: Home Assistant Main
     description: Main Home Assistant MCP bridge on tony-dell
@@ -338,11 +350,11 @@ servers:
     single_instance: false
     status: operational
     config_files:
-      - devin: true
-      - windsurf: false
-    notes: |
-      Private token is configured in ~/.config/devin/mcp_config.json.
+    - devin: true
+    - windsurf: false
+    notes: 'Private token is configured in ~/.config/devin/mcp_config.json.
 
+      '
   michael-dev:
     name: Michael Dev Home Assistant
     description: Development Home Assistant instance MCP bridge
@@ -353,11 +365,11 @@ servers:
     single_instance: false
     status: operational
     config_files:
-      - devin: true
-      - windsurf: false
-    notes: |
-      Private token is configured in ~/.config/devin/mcp_config.json.
+    - devin: true
+    - windsurf: false
+    notes: 'Private token is configured in ~/.config/devin/mcp_config.json.
 
+      '
   michael-ha:
     name: Michael Home Assistant
     description: Michael production Home Assistant MCP bridge
@@ -368,11 +380,11 @@ servers:
     single_instance: false
     status: operational
     config_files:
-      - devin: true
-      - windsurf: false
-    notes: |
-      Private token is configured in ~/.config/devin/mcp_config.json.
+    - devin: true
+    - windsurf: false
+    notes: 'Private token is configured in ~/.config/devin/mcp_config.json.
 
+      '
   notebooklm:
     name: NotebookLM
     description: NotebookLM MCP/CLI bridge on tony-dell
@@ -382,15 +394,23 @@ servers:
     single_instance: false
     status: operational
     config_files:
-      - devin: true
-      - windsurf: false
-    notes: |
-      Persistent rootless Podman container on tony-dell. Mounts auth state from /home/tony/.local/share/notebooklm/.notebooklm-mcp-cli.
+    - devin: true
+    - windsurf: false
+    notes: 'Persistent rootless Podman container on tony-dell. Mounts auth state from
+      /home/tony/.local/share/notebooklm/.notebooklm-mcp-cli.
+
       `nlm notebook list` verified from tony-omen. Devin uses stdio via mcp-notebooklm-ssh.sh.
 
+      '
+    per_host:
+      tony_omen:
+        implementation: bash /home/tony/.config/devin/mcp-scripts/mcp-notebooklm-ssh.sh
+      tony_dell:
+        implementation: bash /home/tony/.config/devin/mcp-scripts/mcp-notebooklm.sh
   google-home-lan:
     name: Google Home LAN
-    description: Local-network control of Google Cast devices (Chromecast, Android TV, Google Home/Nest speakers) via pychromecast
+    description: Local-network control of Google Cast devices (Chromecast, Android
+      TV, Google Home/Nest speakers) via pychromecast
     implementation: podman localhost/google-home-mcp on mn01 (host network)
     wrapper: none
     url: http://100.106.196.22:8004/mcp
@@ -398,19 +418,33 @@ servers:
     single_instance: false
     status: operational
     config_files:
-      - devin: true
-      - windsurf: false
-    notes: |
-      FastMCP streamable-HTTP server, bound to the mn01 Tailscale IP only (100.106.196.22:8004).
-      Source: mcp-servers/google-home-mcp/server.py; stack: stacks/mn01/google-home-mcp/.
-      Quadlet: ~/.config/containers/systemd/google-home-mcp.container on mn01.
-      CAST_HOSTS=192.168.2.85 (TONY-TV, Skyworth SKWAMX3 TrueID box); mn01 is on the same 192.168.2.0/24 LAN (enp1s0 192.168.2.79), so discovery is local mDNS plus eureka enrichment on port 8008. Devices that are powered off appear as bare host entries until reachable.
-      Tools: discover_devices, device_info, cast_status, cast_play_media, cast_media_control, cast_volume, cast_quit_app, eureka_info.
-      Official remote Home MCP (home.googleapis.com/mcp) is configured separately as 'google-home'; it requires a Google Home Premium Advanced subscription (not active as of 2026-09-17).
+    - devin: true
+    - windsurf: false
+    notes: 'FastMCP streamable-HTTP server, bound to the mn01 Tailscale IP only (100.106.196.22:8004).
 
+      Source: mcp-servers/google-home-mcp/server.py; stack: stacks/mn01/google-home-mcp/.
+
+      Quadlet: ~/.config/containers/systemd/google-home-mcp.container on mn01.
+
+      CAST_HOSTS=192.168.2.85 (TONY-TV, Skyworth SKWAMX3 TrueID box); mn01 is on the
+      same 192.168.2.0/24 LAN (enp1s0 192.168.2.79), so discovery is local mDNS plus
+      eureka enrichment on port 8008. Devices that are powered off appear as bare
+      host entries until reachable.
+
+      Tools: discover_devices, device_info, cast_status, cast_play_media, cast_media_control,
+      cast_volume, cast_quit_app, eureka_info.
+
+      Official remote Home MCP (home.googleapis.com/mcp) is configured separately
+      as ''google-home''; it requires a Google Home Premium Advanced subscription
+      (not active as of 2026-09-17).
+
+      '
+    per_host:
+      mn01: {}
   google-home:
     name: Google Home (official)
-    description: Google-managed remote Home MCP endpoint for smart-home control via the Home API
+    description: Google-managed remote Home MCP endpoint for smart-home control via
+      the Home API
     implementation: remote https://home.googleapis.com/mcp (Streamable HTTP, OAuth2)
     wrapper: none
     url: https://home.googleapis.com/mcp
@@ -418,14 +452,18 @@ servers:
     single_instance: false
     status: blocked
     config_files:
-      - devin: true
-      - windsurf: false
-    notes: |
-      OAuth uses a pre-registered Web-application client in a Google Cloud project (Home API enabled, scope https://www.googleapis.com/auth/home.platform.v2).
-      Tokens stored by Devin CLI under ~/.local/share/devin/mcp/oauth/.
-      Authenticated successfully 2026-09-17 but list_homes returns "At least one Home Premium Advanced subscription is required" — blocked until the account has Google Home Premium Advanced (early access is US English rollout).
+    - devin: true
+    - windsurf: false
+    notes: 'OAuth uses a pre-registered Web-application client in a Google Cloud project
+      (Home API enabled, scope https://www.googleapis.com/auth/home.platform.v2).
 
-# Script locations (centralized)
+      Tokens stored by Devin CLI under ~/.local/share/devin/mcp/oauth/.
+
+      Authenticated successfully 2026-09-17 but list_homes returns "At least one Home
+      Premium Advanced subscription is required" — blocked until the account has Google
+      Home Premium Advanced (early access is US English rollout).
+
+      '
 scripts:
   base_dir: ~/.config/devin/mcp-scripts
   wrappers:
@@ -434,24 +472,23 @@ scripts:
     run-postgres-crud: run-postgres-crud-mcp.sh
   utilities:
     switch-profile: switch-profile.sh
-
-# Architectural Decisions
 decisions:
   mcp_filter_disabled:
     date: 2026-08-07
-    reason: "Compatibility issues with mcp-filter implementation"
+    reason: Compatibility issues with mcp-filter implementation
     details:
-      - "Original Python venv approach (/tmp/mcp-filter-venv/) did not exist on system"
-      - "Attempted npx version but encountered different CLI syntax (mcp-filter run vs mcp-filter --)"
-      - "Filtering layer caused connectivity issues and empty tool lists"
-      - "Decision: Disable filtering layer for reliable operation"
+    - Original Python venv approach (/tmp/mcp-filter-venv/) did not exist on system
+    - Attempted npx version but encountered different CLI syntax (mcp-filter run vs
+      mcp-filter --)
+    - Filtering layer caused connectivity issues and empty tool lists
+    - 'Decision: Disable filtering layer for reliable operation'
     impact:
-      - "All MCP servers now expose full tool sets (no token optimization)"
-      - "Simplified configuration and improved reliability"
-      - "Larger context usage due to unfiltered tool schemas"
-    future_consideration: "Re-enable filtering once mcp-filter npx compatibility is resolved"
-    status: "disabled"
-# Configuration generation settings
+    - All MCP servers now expose full tool sets (no token optimization)
+    - Simplified configuration and improved reliability
+    - Larger context usage due to unfiltered tool schemas
+    future_consideration: Re-enable filtering once mcp-filter npx compatibility is
+      resolved
+    status: disabled
 generation:
   output_dir: ~/.config/devin
   backup_dir: ~/.config/devin/mcp-backups
@@ -462,23 +499,19 @@ generation:
   profile_detection:
     method: network
     home_networks:
-      - 192.168.1.0/24
+    - 192.168.1.0/24
     mobile_indicator:
-      - TONY-IP
-
-# Validation rules
+    - TONY-IP
 validation:
   require_profile: true
   validate_urls: true
   validate_scripts: true
   check_env_files: true
   max_servers: 20
-
-# Related files
 related_files:
-  - ssot.devin.tools.yml
-  - ssot.mysystem.home.yml
-  - ssot.mysystem.mobile.yml
-  - infrastructure/ssot.health.home.yml
-  - infrastructure/ssot.health.mobile.yml
-  - ssot.token-optimization.yml
+- ssot.devin.tools.yml
+- ssot.mysystem.home.yml
+- ssot.mysystem.mobile.yml
+- infrastructure/ssot.health.home.yml
+- infrastructure/ssot.health.mobile.yml
+- ssot.token-optimization.yml
